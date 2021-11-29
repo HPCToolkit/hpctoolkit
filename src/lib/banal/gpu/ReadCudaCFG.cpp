@@ -85,7 +85,7 @@ splitFunctionName
     // If the function name cannot be found in the symbol table,
     // then we assume it is a function name with a suffix
     auto pos = name.rfind("__");
-    if (pos != std::string::npos) {
+    if (pos != std::string::npos && pos != 0) {
       suffix = stoi(name.substr(pos + 2));
       symbol_name = name.substr(0, pos);
     }
@@ -172,12 +172,11 @@ parseDotCFG
         const std::string cmd = "nvdisasm -fun " +
           std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
         if (system(cmd.c_str()) == 0) {
-          local_parsed_function_symbols.push_back(symbol);
           // Only parse valid symbols
-          GPUParse::GraphReader graph_reader(dot_filename);
+          local_parsed_function_symbols.push_back(symbol);
           GPUParse::Graph graph;
           std::vector<GPUParse::Function *> funcs;
-          graph_reader.read(graph);
+          GPUParse::GraphReader::read(dot_filename, graph);
           GPUParse::CudaCFGParser::parse(graph, funcs);
           // Local functions inside a global function cannot be independently parsed
           for (auto *func : funcs) {
@@ -231,24 +230,13 @@ parseDotCFG
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
         inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
-        inst->size = cuda_arch >= 70 ? 16 : 8;
+        inst->size = GPUParse::get_cuda_inst_size(cuda_arch);
       }
       block->address = block->insts[0]->offset;
     }
     // Allow gaps between a function begining and the first block?
     //function->blocks[0]->address = symbol->getOffset();
     function->address = symbol->getOffset();
-  }
-
-  if (DEBUG_CFG_PARSE) {
-    std::cout << "Debug functions before adding unparsable" << std::endl;
-    for (auto *function : functions) {
-      std::cout << "Function: " << function->name << std::endl;
-      for (auto *block : function->blocks) {
-        std::cout << "Block: " << block->name << " address: 0x" << std::hex << block->address << std::dec << std::endl;;
-      }
-      std::cout << std::endl;
-    }
   }
 
   // Step 3: add unparsable functions
@@ -269,9 +257,9 @@ parseDotCFG
     function->address = symbol->getOffset();
     auto block_name = symbol->getMangledName() + "_0";
     auto *block = new GPUParse::Block(max_block_id++, std::move(block_name));
-    block->begin_offset = cuda_arch >= 70 ? 0 : 8;
+    block->begin_offset = GPUParse::get_cuda_func_offset(cuda_arch);
     block->address = symbol->getOffset() + block->begin_offset;
-    int len = cuda_arch >= 70 ? 16 : 8;
+    int len = GPUParse::get_cuda_inst_size(cuda_arch);
     // Add dummy insts
     for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
       block->insts.push_back(new GPUParse::CudaInst(i, len));
@@ -286,17 +274,13 @@ parseDotCFG
     auto symbol = iter.second;
     auto function = iter.first;
     if (symbol->getSize() > 0) {
-      int len = cuda_arch >= 70 ? 16 : 8;
+      int len = GPUParse::get_cuda_inst_size(cuda_arch);
       int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
       int symbol_size = symbol->getSize();
       if (function_size < symbol_size) {
-        if (DEBUG_CFG_PARSE) {
-          std::cout << function->name << " append nop instructions" << std::endl;
-          std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
-        }
         auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
         block->address = function_size + function->address;
-        block->begin_offset = cuda_arch >= 70 ? 16 : 8;
+        block->begin_offset = GPUParse::get_cuda_inst_size(cuda_arch);
         max_block_id++;
         while (function_size < symbol_size) {
           block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));
@@ -315,37 +299,41 @@ parseDotCFG
   // Parse function calls
   GPUParse::CudaCFGParser::parse_calls(functions);
 
-  // Debug final functions and blocks
-  if (DEBUG_CFG_PARSE) {
-    std::cout << "Debug functions after adding unparsable" << std::endl;
-    for (auto *function : functions) {
-      std::cout << "Function: " << function->name << std::endl;
-      for (auto *block : function->blocks) {
-        std::cout << "Block: " << block->name << " address: 0x" << std::hex << block->address << std::dec << std::endl;;
-      }
-      std::cout << std::endl;
-    }
-  }
+  //for (auto *function : functions) {
+  //  if (function->name.find("_ZN5amrex13launch_globalILi256EZNS_11ParallelForIiZNS_7BaseFabIdE16protected_divideILNS_5RunOnE0EEERS3_RKS3_RKNS_3BoxESB_iiiEUliiiiE_vEENSt9e") != std::string::npos) {
+  //    for (auto *block : function->blocks) {
+  //      std::cout << "block " << block->id << std::endl;
+  //      for (auto *inst : block->insts) {
+  //        std::cout << std::hex << inst->offset << std::dec << std::endl;
+  //      }
+  //      for (auto *target : block->targets) {
+  //        std::cout << "from " << block->id << " to " << target->block->id << std::endl;
+  //      }
+  //    }
+  //  }
+  //}
 
   // Step 5: create a nvidia directory and dump dot files
-  if (parsed_function_symbols.size() > 0) {
-    const std::string dot_dir = search_path + "/nvidia";
-    int ret = mkdir(dot_dir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH);
-    if (ret != 0 && errno != EEXIST) {
-      std::cout << "WARNING: failed to mkdir: " << dot_dir << std::endl;
-      return;
-    }
+  if (DEBUG_CFG_PARSE) {
+    if (parsed_function_symbols.size() > 0) {
+      const std::string dot_dir = search_path + "/nvidia";
+      int ret = mkdir(dot_dir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH);
+      if (ret != 0 && errno != EEXIST) {
+        std::cout << "WARNING: failed to mkdir: " << dot_dir << std::endl;
+        return;
+      }
 
-    const std::string dot_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".dot";
-    std::string cmd = "nvdisasm -cfg -poff -fun ";
-    for (auto *symbol : parsed_function_symbols) {
-      auto index = symbol->getIndex();
-      cmd += std::to_string(index) + ",";
-    }
-    cmd += " " + cubin + " > " + dot_output;
+      const std::string dot_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".dot";
+      std::string cmd = "nvdisasm -cfg -poff -fun ";
+      for (auto *symbol : parsed_function_symbols) {
+        auto index = symbol->getIndex();
+        cmd += std::to_string(index) + ",";
+      }
+      cmd += " " + cubin + " > " + dot_output;
 
-    if (system(cmd.c_str()) != 0) {
-      std::cout << "WARNING: failed to dump static database file: " << dot_output << std::endl;
+      if (system(cmd.c_str()) != 0) {
+        std::cout << "WARNING: failed to dump static database file: " << dot_output << std::endl;
+      }
     }
   }
 }
