@@ -73,6 +73,8 @@ static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
 
 static loadmap_notify_t *notification_recipients = NULL;
 
+static void hpcrun_loadModule_flags_init(load_module_t *lm);
+
 void
 hpcrun_loadmap_notify_register(loadmap_notify_t *n)
 {
@@ -217,6 +219,8 @@ hpcrun_loadModule_new(const char* name)
   x->prev = NULL;
   x->phdr_info.dlpi_phdr = NULL;
 
+  hpcrun_loadModule_flags_init(x);
+
   return x;
 }
 
@@ -309,8 +313,9 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
 				  x->dso_info->start_to_ref_dist) : -1)
 	   );
       if (x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
-	TMSG(LOADMAP, "       --->%s", x->name);
-	return x;
+        TMSG(LOADMAP, "       --->%s", x->name);
+        hpcrun_loadModule_flags_set(x, LOADMAP_ENTRY_ANALYZE);
+        return x;
       }
     }
   }
@@ -559,6 +564,27 @@ hpcrun_loadModule_add(const char* name)
   load_module_t *lm = hpcrun_loadModule_new(name);
   hpcrun_loadmap_pushFront(lm);
   return lm->id;
+}
+
+
+static void
+hpcrun_loadModule_flags_init(load_module_t *lm)
+{
+  atomic_store(&(lm->flags), 0);
+}
+
+
+void
+hpcrun_loadModule_flags_set(load_module_t *lm, int flag)
+{
+  atomic_fetch_or(&(lm->flags), flag);
+}
+
+
+int
+hpcrun_loadModule_flags_get(load_module_t *lm)
+{
+  return atomic_load(&(lm->flags));
 }
 
 
