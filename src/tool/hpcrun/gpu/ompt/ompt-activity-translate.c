@@ -121,7 +121,7 @@ convert_target
 #if 0
   printf("\tTarget task: kind=%d endpoint=%d device=%d task_id=%lu target_id=%lu codeptr=%p\n",
 	 target_rec.kind, target_rec.endpoint, target_rec.device_num,
-	 target_rec.task_id, target_rec.target_id, 
+	 target_rec.task_id, target_rec.target_id,
 #endif
 }
 
@@ -207,7 +207,7 @@ convert_memcpy
   TMSG(OMPT_ACTIVITY, "Memcpy copy kind %u", d->optype);
   TMSG(OMPT_ACTIVITY, "Memcpy copy bytes %lu", d->bytes);
 
-  
+
   ga->details.memcpy.context_id = r->contextId;
   ga->details.memcpy.stream_id = r->streamId;
 #endif
@@ -271,7 +271,7 @@ convert_target_data_op
 	 d->dest_addr, d->dest_device_num,
 #endif
 
-  gpu_interval_set(&ga->details.interval, r->time, d->end_time); 
+  gpu_interval_set(&ga->details.interval, r->time, d->end_time);
 }
 
 
@@ -321,7 +321,7 @@ convert_target_submit
   ga->details.kernel.blockSharedMemory = blockSharedMemory;
 #endif
 
-  gpu_interval_set(&ga->details.interval, r->time, k->end_time); 
+  gpu_interval_set(&ga->details.interval, r->time, k->end_time);
 }
 
 
@@ -352,18 +352,18 @@ ompt_activity_translate
 
     convert_target_data_op(ga,r, cid_ptr);
     break;
-      
+
   case ompt_callback_target_submit:
   case ompt_callback_target_submit_emi:
 
     convert_target_submit(ga,r, cid_ptr);
     break;
-      
+
   default:
     convert_unknown(ga, r, cid_ptr);
     break;
   }
-  
+
 
   cstack_ptr_set(&(ga->next), 0);
 }

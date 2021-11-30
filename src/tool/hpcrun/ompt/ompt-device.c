@@ -2,7 +2,7 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$ 
+// $HeadURL$
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -101,7 +101,7 @@
   typedef return_type (*OMPT_API_FNTYPE(fn)) args
 
 #define OMPT_TARGET_API_FUNCTION(return_type, fn, args)  \
-  OMPT_API_FUNCTION(return_type, fn, args) 
+  OMPT_API_FUNCTION(return_type, fn, args)
 
 #define FOREACH_OMPT_TARGET_FN(macro) \
   macro(ompt_get_device_time) \
@@ -114,7 +114,7 @@
   macro(ompt_get_record_type) \
   macro(ompt_get_record_ompt) \
   macro(ompt_get_record_abstract) \
-  macro(ompt_advance_buffer_cursor) 
+  macro(ompt_advance_buffer_cursor)
 
 #define BUFFER_EMPTY(record, buffer, bytes) (((char *) record) >= (((char *)buffer) + bytes))
 
@@ -237,7 +237,7 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
 }
 
 
-void 
+void
 ompt_bind_names(ompt_function_lookup_t lookup)
 {
 #define ompt_bind_name(fn) \
@@ -252,7 +252,7 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 
 #define BUFFER_SIZE (1024 * 1024 * 8)
 
-static void 
+static void
 ompt_buffer_request
 (
  int device_id,
@@ -266,7 +266,7 @@ ompt_buffer_request
 }
 
 
-static void 
+static void
 ompt_buffer_release
 (
  ompt_buffer_t *buffer
@@ -282,7 +282,7 @@ ompt_dump
  ompt_record_ompt_t *r
 )
 {
-  if (r) { 
+  if (r) {
     printf("r=%p type=%d time=%lu thread_id=%lu target_id=0x%lx\n",
 	   r, r->type, r->time, r->thread_id, r->target_id);
 
@@ -402,7 +402,7 @@ ompt_finalize_trace
 
 
 
-static void 
+static void
 ompt_buffer_complete
 (
  int device_id,
@@ -451,7 +451,7 @@ ompt_trace_configure(ompt_device_t *device)
 {
   // indicate desired monitoring
   ompt_set_trace_ompt(device, 1, 0);
-  
+
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_buffer_request,
 		   ompt_buffer_complete);
@@ -476,14 +476,14 @@ ompt_device_initialize(int device_num,
 }
 
 
-void 
+void
 ompt_device_finalize(int device_num)
 {
   PRINT("ompt_device_finalize id=%d\n", device_num);
 }
 
 
-void 
+void
 ompt_device_load(int device_num,
                  const char *filename,
                  int64_t file_offset,
@@ -501,7 +501,7 @@ ompt_device_load(int device_num,
 }
 
 
-void 
+void
 ompt_device_unload(int device_num,
                    uint64_t module_id)
 {
@@ -509,19 +509,19 @@ ompt_device_unload(int device_num,
 }
 
 
-static int 
+static int
 get_load_module
 (
   cct_node_t *node
 )
 {
-  cct_addr_t *addr = hpcrun_cct_addr(target_node); 
+  cct_addr_t *addr = hpcrun_cct_addr(target_node);
   ip_normalized_t ip = addr->ip_norm;
   return ip.lm_id;
 }
 
 
-void 
+void
 ompt_target_callback_emi
 (
   ompt_target_t kind,
@@ -559,19 +559,19 @@ ompt_target_callback_emi
   td->overhead++;
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
   hpcrun_safe_enter();
-  
+
   int skip_this_frame = 1; // omit this procedure frame on the call path
-  target_node = 
-    hpcrun_sample_callpath(&uc, zero_metric_id, zero_metric_incr, 
-                           skip_this_frame, 1, NULL).sample_node; 
+  target_node =
+    hpcrun_sample_callpath(&uc, zero_metric_id, zero_metric_incr,
+                           skip_this_frame, 1, NULL).sample_node;
 
   // the load module for the runtime library that supports offloading
-  int lm = get_load_module(target_node); 
+  int lm = get_load_module(target_node);
 
 #if 0
-  // drop nodes on the call chain until we find one that is not in the load 
+  // drop nodes on the call chain until we find one that is not in the load
   // module for runtime library that supports offloading
-  for (;;) { 
+  for (;;) {
     target_node = hpcrun_cct_parent(target_node);
     if (get_load_module(target_node) != lm) break;
   }
@@ -585,7 +585,7 @@ ompt_target_callback_emi
   macro(op, ompt_target_data_alloc, ompt_tgt_alloc)		     \
   macro(op, ompt_target_data_delete, ompt_tgt_delete)		     \
   macro(op, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
-  macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout) 
+  macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout)
 
 void
 ompt_data_op_callback_emi
@@ -606,16 +606,16 @@ ompt_data_op_callback_emi
   if (endpoint == ompt_scope_end) return;
 
   uint64_t target_id = target_data->value;
-  uint64_t op_id = *host_op_id = gpu_correlation_id(); 
+  uint64_t op_id = *host_op_id = gpu_correlation_id();
 
   PRINT("ompt_data_op enter->target_id 0x%lx\n", target_id);
   ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
-  switch (optype) {                       
+  switch (optype) {
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
       op = ompt_placeholders.ompt_op_class;                              \
       break;
-    
+
     FOREACH_OMPT_DATA_OP(ompt_op_macro);
 
 #undef ompt_op_macro
