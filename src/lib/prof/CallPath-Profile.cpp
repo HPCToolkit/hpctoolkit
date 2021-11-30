@@ -1178,7 +1178,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
         
 	// make sure we eliminate the <vmlinux> and <vdso> load modules
 	// These modules have prefix '<' and hopefully it doesn't change
-	if (x->name != NULL && x->name[0] != '<')
+	if ((x->name != NULL && x->name[0] != '<') && 
+            (x->flags & LOADMAP_ENTRY_ANALYZE))
           fprintf(outfs, "%s\n", x->name );
       }
       // hack: case for hpcproftt with --lm option

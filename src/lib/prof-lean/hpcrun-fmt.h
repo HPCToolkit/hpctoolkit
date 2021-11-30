@@ -452,6 +452,8 @@ hpcrun_fmt_metric_set_format(metric_desc_t *metric_desc, char *format);
 // loadmap
 //***************************************************************************
 
+#define LOADMAP_ENTRY_ANALYZE 1
+
 typedef struct loadmap_entry_t {
 
   uint16_t id; // HPCRUN_FMT_LMId_NULL is the NULL value
