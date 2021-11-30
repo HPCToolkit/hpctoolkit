@@ -780,20 +780,10 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
-  hpcrun_mmap_init();
-
-  // ----------------------------------------
-  // call thread manager to get a thread data. If there is unused thread data,
-  //  we can recycle it, otherwise we need to allocate a new one.
-  // If we allocate a new one, we need to initialize the data and trace file.
-  // ----------------------------------------
-
-  thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
-  hpcrun_set_thread_data(td);
-
-  td->inside_hpcrun = 1;  // safe enter, disable signals
-
+  hpcrun_thread_init_mem_pool_once(id, thr_ctxt, has_trace, demand_new_thread);
+  
+  hpcrun_get_thread_data()->inside_hpcrun = 1;
+  
   
   if (ENABLED(THREAD_CTXT)) {
     if (thr_ctxt) {
@@ -1173,7 +1163,7 @@ monitor_thread_pre_create(void)
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
-    return NULL;
+    return MONITOR_IGNORE_NEW_THREAD;
   }
 
   struct monitor_thread_info mti;

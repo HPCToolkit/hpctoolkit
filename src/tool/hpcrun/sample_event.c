@@ -176,20 +176,27 @@ hpcrun_sample_callpath(void* context, int metricId,
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
 
-  if (monitor_block_shootdown()) {
+  // if monitor_block_shootdown() returns a non-zero value
+  // a thread is waiting to exit. if so, we can skip 
+  // recording an asynchronous sample; however, synchronous
+  // unwinds can't be skipped because the caller is
+  // expecting a call path.
+  int ready_to_exit = monitor_block_shootdown();
+  if (!isSync && ready_to_exit) {
     monitor_unblock_shootdown();
     return ret;
   }
 
   // Sampling turned off by the user application.
   // This doesn't count as a sample for the summary stats.
-  if (! hpctoolkit_sampling_is_active()) {
+  if (!isSync && !hpctoolkit_sampling_is_active()) {
+    monitor_unblock_shootdown();
     return ret;
   }
 
   hpcrun_stats_num_samples_total_inc();
 
-  if (hpcrun_is_sampling_disabled()) {
+  if (!isSync && hpcrun_is_sampling_disabled()) {
     TMSG(SAMPLE,"global suspension");
     hpcrun_all_sources_stop();
     monitor_unblock_shootdown();

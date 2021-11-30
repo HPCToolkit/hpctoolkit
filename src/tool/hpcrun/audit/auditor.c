@@ -512,6 +512,12 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
       pfn_init(&exports, &hooks);
       state = state_attached;
       break;
+#if 0
+    // early initialization can cause a SEGV with clang offloading at LLNL
+    // using libxlsmp. libxlsmp loads cuda, the auditor intervenes, the auditor
+    // tries to start hpctoolkit, which dlopens cuda when "-e gpu=nvidia". 
+    // in this circumstance, cuda is not properly initialized before 
+    // hpctoolkit tries to use it.
     case state_attached: {
       if(previous == LA_ACT_ADD) {
         if(verbose)
@@ -521,6 +527,7 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
       }
       break;
     }
+#endif
     case state_connecting:
       // The mainlib is still initializing, we can skip this notification.
       break;

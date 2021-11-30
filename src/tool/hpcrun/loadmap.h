@@ -62,6 +62,7 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/stdatomic.h>
 
 #include "fnbounds_file_header.h"
 
@@ -132,7 +133,7 @@ typedef struct load_module_t
   struct dl_phdr_info phdr_info;
   struct load_module_t* next;
   struct load_module_t* prev;
-
+  atomic_int flags;
 } load_module_t;
 
 
@@ -142,6 +143,13 @@ hpcrun_loadModule_new(const char* name);
 // used only to add a load module for the kernel 
 uint16_t 
 hpcrun_loadModule_add(const char* name);
+
+void
+hpcrun_loadModule_flags_set(load_module_t *lm, int flag);
+
+int
+hpcrun_loadModule_flags_get(load_module_t *lm);
+
 
 //***************************************************************************
 // 
