@@ -66,7 +66,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 1
+#define DEBUG 0
 
 
 #define FORALL_OPENCL_KINDS(macro)					\
