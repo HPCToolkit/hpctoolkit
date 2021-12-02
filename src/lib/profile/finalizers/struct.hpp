@@ -49,7 +49,10 @@
 
 #include "../finalizer.hpp"
 
-#include <vector>
+#include "../util/range_map.hpp"
+
+#include <deque>
+#include <map>
 
 namespace hpctoolkit::finalizers {
 
@@ -75,9 +78,22 @@ public:
   std::vector<stdshim::filesystem::path> forPaths() const;
 
 private:
+  struct udModule final {
+    // Storage for Function data
+    std::deque<Function> funcs;
+    using trienode = std::pair<Scope, const void* /* const trienode* */>;
+    // Trie of Scopes, for efficiently storing nested Scopes
+    std::deque<trienode> trie;
+    // Bounds-map (instruction -> nested Scope and function entry)
+    std::map<util::interval<uint64_t>, std::pair<std::reference_wrapper<const trienode>, uint64_t>> leaves;
+    // Reversed call graph (callee function entry -> caller instruction)
+    std::unordered_multimap<uint64_t, uint64_t> rcg;
+  };
+  friend class hpctoolkit::finalizers::detail::StructFileParser;
+
   stdshim::filesystem::path path;
-  Module::ud_t::typed_member_t<Classification> ud;
-  void load(const Module&, Classification&) noexcept;
+  Module::ud_t::typed_member_t<udModule> ud;
+  void load(const Module&, udModule&) noexcept;
 
   // Structfiles can have data on multiple load modules (LM tags), this maps
   // each binary path with the properly initialized Parser for that tag.

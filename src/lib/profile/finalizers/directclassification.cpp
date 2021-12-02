@@ -74,22 +74,46 @@ DirectClassification::DirectClassification(uintmax_t dt)
 }
 
 void DirectClassification::notifyPipeline() noexcept {
-  ud = sink.structs().module.add_initializer<Classification>(
-    [this](Classification& c, const Module& m){
-      load(m, c);
+  ud = sink.structs().module.add_default<udModule>(
+    [this](udModule& data, const Module& m){
+      load(m, data);
     });
 }
 
 util::optional_ref<Context> DirectClassification::classify(Context& c, Scope& s) noexcept {
   if(s.type() == Scope::Type::point) {
     auto mo = s.point_data();
-    auto scopes = mo.first.userdata[ud].getScopes(mo.second);
-    if(scopes.empty()) {
-      return std::nullopt;
+    const auto& udm = mo.first.userdata[ud];
+
+    // First attempt: DWARF data
+    auto leafit = udm.leaves.find({mo.second, mo.second});
+    if(leafit != udm.leaves.end()) {
+      std::reference_wrapper<Context> cc = c;
+
+      // Create Contexts from the root of the trie to this node. Use a
+      // mini-recursive algorithm since it shouldn't be very deep.
+      const std::function<void(const udModule::trienode&)> handle =
+        [&](const udModule::trienode& tn) {
+          if(tn.second != nullptr)
+            handle(*(const std::pair<Scope, const void*>*)tn.second);
+          cc = sink.context(cc, tn.first);
+        };
+      handle(leafit->second);
+
+      // Add an inner (line) Scope if we can
+      auto lineit = udm.lines.find(mo.second);
+      if(lineit != udm.lines.end() && lineit->second) {
+        const auto& l = *lineit->second;
+        cc = sink.context(cc, Scope(l.first, l.second));
+      }
+
+      return cc.get();
     }
-    std::reference_wrapper<Context> cc = c;
-    for(const auto& s: scopes) cc = sink.context(cc, s);
-    return cc.get();
+
+    // Second attempt: ELF data
+    auto symit = udm.symbols.find({mo.second, mo.second});
+    if(symit != udm.symbols.end())
+      return sink.context(c, Scope(symit->second));
   }
   return std::nullopt;
 }
@@ -149,20 +173,13 @@ static stdshim::filesystem::path altfile(const stdshim::filesystem::path& path, 
 #define HPC_ELF_C_READ ELF_C_READ
 #endif
 
-void DirectClassification::load(const Module& m, Classification& c) noexcept {
+void DirectClassification::load(const Module& m, udModule& ud) noexcept {
   int fd = -1;
   const auto& rpath = m.userdata[sink.resolvedPath()];
   const auto& mpath = rpath.empty() ? m.path() : rpath;
   fd = open(mpath.c_str(), O_RDONLY);
   if(fd == -1) {  // Can't do anything if we can't open it.
-    if(c.empty())
-      util::log::error{} << "Unable to find binary, no lexical information available for " << mpath.string();
-  }
-
-  struct stat sbuf;
-  fstat(fd, &sbuf);
-  if(c.filled({0, (uint64_t)sbuf.st_size-1})) {  // No holes left to fill
-    close(fd);
+    // TODO: ERROR or something in this case?
     return;
   }
 
@@ -178,7 +195,7 @@ void DirectClassification::load(const Module& m, Classification& c) noexcept {
   if(dbg != nullptr) {
     if(dwarfThreshold == std::numeric_limits<uintmax_t>::max()
        || baseweight < dwarfThreshold) {
-      if(!fullDwarf(dbg, m, c))
+      if(!fullDwarf(dbg, m, ud))
         util::log::error{} << "Error parsing DWARF for " << mpath.string();
     } else util::log::warning{} << "Skipping DWARF for " << mpath.string() << ","
         " over threshold (" << baseweight << " > " << dwarfThreshold << ")";
@@ -194,7 +211,7 @@ void DirectClassification::load(const Module& m, Classification& c) noexcept {
         if(altdbg != nullptr) {
           if(dwarfThreshold == std::numeric_limits<uintmax_t>::max()
              || baseweight + altweight < dwarfThreshold)
-            fullDwarf(altdbg, m, c);
+            fullDwarf(altdbg, m, ud);
           else util::log::warning{} << "Skipping DWARF for " << mpath.string()
             << ", over threshold (" << baseweight << " + " << altweight << " ="
             " " << (baseweight + altweight) << " > " << dwarfThreshold << ")";
@@ -205,15 +222,15 @@ void DirectClassification::load(const Module& m, Classification& c) noexcept {
     }
   }
 
-  if(!symtab(elf, m, c))
+  if(!symtab(elf, m, ud))
     util::log::error{} << "Error parsing ELF symbols for " << mpath.string();
 
   elf_end(elf);
   close(fd);
 }
 
-template<class Elf_Shdr, class Elf_Sym, auto elf_getshdr>
-static bool parse(Elf* elf, const Module& m, Classification& c) {
+template<class Elf_Shdr, class Elf_Sym, auto elf_getshdr, class F>
+static bool parse(Elf* elf, const Module& m, const F& callback) {
   // Try our best to find the symbol table.
   Elf_Scn* s_symtab = nullptr;
   Elf_Scn* s_dynsym = nullptr;
@@ -234,12 +251,10 @@ static bool parse(Elf* elf, const Module& m, Classification& c) {
   for(std::size_t off = 0; off < sh_symtab->sh_size; off += sizeof(Elf_Sym)) {
     Elf_Sym* sym = (Elf_Sym*)&((const char*)symtab->d_buf)[off];
     if(sym->st_size == 0) continue;  // Just skip over weird symbols
-    Classification::Interval range(sym->st_value, sym->st_value + sym->st_size - 1);  // Maybe?
-    if(c.filled(range)) continue;  // Skip over previously filled symbols
+    util::interval<uint64_t> range((uint64_t)sym->st_value, (uint64_t)sym->st_value + sym->st_size - 1);  // Maybe?
 
     // Create a Function to stuff all our data in.
-    auto& func = c.addFunction(m);
-    func.offset(range.lo);
+    Function func(m, range.begin);
 
     // Handle the name, the usual way
     const char* name = elf_strptr(elf, sh_symtab->sh_link, sym->st_name);
@@ -251,20 +266,23 @@ static bool parse(Elf* elf, const Module& m, Classification& c) {
       } else func.name(name);
     }
 
-    // Add our Classification as usual.
-    c.setScope(range, c.addScope(func));
+    callback(range, std::move(func));
   }
   return true;
 }
 
-bool DirectClassification::symtab(void* elf_vp, const Module& m, Classification& c) {
+bool DirectClassification::symtab(void* elf_vp, const Module& m, udModule& ud) {
   Elf* elf = (Elf*)elf_vp;
 
   if(elf_kind(elf) != ELF_K_ELF) return false;
 
+  const auto f = [&](util::interval<uint64_t> range, Function func){
+    ud.symbols.emplace(range, std::move(func));
+  };
+
   switch(elf_getident(elf, nullptr)[EI_CLASS]) {
-  case ELFCLASS32: return parse<Elf32_Shdr, Elf32_Sym, elf32_getshdr>(elf, m, c);
-  case ELFCLASS64: return parse<Elf64_Shdr, Elf64_Sym, elf64_getshdr>(elf, m, c);
+  case ELFCLASS32: return parse<Elf32_Shdr, Elf32_Sym, elf32_getshdr>(elf, m, f);
+  case ELFCLASS64: return parse<Elf64_Shdr, Elf64_Sym, elf64_getshdr>(elf, m, f);
   default: return false;
   }
 }
@@ -301,10 +319,7 @@ void dwarfwalk(Dwarf_Die die, const std::function<T(Dwarf_Die&, T)>& pre,
   } while(dwarf_siblingof(&die, &die) == 0);
 }
 
-bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classification& c) try {
-  std::unordered_map<Dwarf_Off, std::reference_wrapper<Function>> funcs;
-  std::vector<Classification::LineScope> lscopes;
-
+bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, udModule& ud) try {
   Dwarf* dbg = (Dwarf*)dbg_vp;
 
   // Cache Files so that we don't hammer the maps too much
@@ -348,8 +363,8 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classificati
   Dwarf_CU* cu = nullptr;
   Dwarf_Die root;
   while(dwarf_get_units(dbg, cu, &cu, nullptr, nullptr, &root, nullptr) == 0) {
-    dwarfwalk<Classification::Block*>(root,
-      [&](Dwarf_Die& die, Classification::Block* par) -> Classification::Block* {
+    dwarfwalk<udModule::trienode*>(root,
+      [&](Dwarf_Die& die, udModule::trienode* par) -> udModule::trienode* {
         // Check that the DIE is a function-like thing. Skip if not.
         int tag = dwarf_tag(&die);
         if(tag != DW_TAG_subprogram && tag != DW_TAG_inlined_subroutine)
@@ -404,15 +419,12 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classificati
           Dwarf_Die* fdie = dwarf_formref_die(attr, &fdie_mem);
           if(fdie != nullptr) offsetid = dwarf_dieoffset(fdie);
         }
-        auto funcit = funcs.find(offsetid);
-        if(funcit == funcs.end())
-          funcit = funcs.emplace(offsetid, c.addFunction(m)).first;
-        Function& func = funcit->second.get();
+        Function& func = ud.functions.try_emplace(offsetid, m).first->second;
         func += std::move(myfunc);
 
         // If this is not an inlined call, just emit as a normal Scope
         if(tag != DW_TAG_inlined_subroutine)
-          return c.addScope(func, par);
+          return &ud.trie.emplace_back(Scope(func), par);
 
         // Try to find the file for this inlined call.
         const File* srcf = nullptr;
@@ -430,16 +442,33 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classificati
           if(dwarf_formudata(attr, &word) == 0) linenum = word;
         }
 
-        return c.addScope(func, *srcf, linenum, par);
-    }, [&](Dwarf_Die& die, Classification::Block* here, Classification::Block* par) {
+        return &ud.trie.emplace_back(Scope(func, *srcf, linenum), par);
+      }, [&](Dwarf_Die& die, udModule::trienode* here, udModule::trienode* par) {
+        // If we have no trienode, skip without doing anything
+        if(here == nullptr) return;
+
         // Mark all remaining ranges as being from this tail
         ptrdiff_t offset = 0;
         Dwarf_Addr base, start, end;
         while((offset = dwarf_ranges(&die, offset, &base, &start, &end)) > 0) {
-          if(start != end) end -= 1;
-          c.setScope({start, end}, here);
+          // if(start != end) end -= 1;
+          util::interval<uint64_t> mine(start, end);
+          for(auto [it, end] = ud.leaves.equal_range(mine);
+              it != end; ++it) {
+            auto [before, after] = mine - it->first;
+            if(!before.empty()) {
+              [[maybe_unused]] bool first = ud.leaves.try_emplace(before, *here).second;
+              assert(first);
+            }
+            mine = after;
+            if(mine.empty()) break;
+          }
+          if(!mine.empty()) {
+            [[maybe_unused]] bool first = ud.leaves.try_emplace(mine, *here).second;
+            assert(first);
+          }
         }
-    }, nullptr);
+      }, nullptr);
 
     // Now that the scopes are in place for this CU, load in the line info.
     Dwarf_Lines* lines = nullptr;
@@ -453,17 +482,20 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classificati
       Dwarf_Files* dfiles;
       std::size_t fidx;
       dwarf_line_file(line, &dfiles, &fidx);
-      const File* file = getFile(dfiles, &root, fidx, true);
+      const File* file = getFile(dfiles, &root, fidx, false);
+      if(file != nullptr) {
+        int lineno = 0;
+        dwarf_lineno(line, &lineno);
 
-      int lineno = 0;
-      dwarf_lineno(line, &lineno);
-
-      lscopes.emplace_back(addr, file, lineno);
+        ud.lines.try_emplace(addr, udModule::line(*file, lineno));
+      } else
+        ud.lines.try_emplace(addr, std::nullopt);
     }
   }
 
-  // Overwrite everything with our new line info.
-  c.setLines(std::move(lscopes));
+  // Make sure the linemap is consistent before returning, since we use it in
+  // const mode just about everywhere else.
+  ud.lines.make_consistent();
   return true;
 } catch(std::exception& e) {
   const auto& rpath = m.userdata[sink.resolvedPath()];
