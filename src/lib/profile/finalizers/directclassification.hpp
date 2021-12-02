@@ -49,6 +49,10 @@
 
 #include "../finalizer.hpp"
 
+#include "../util/range_map.hpp"
+
+#include <map>
+
 namespace hpctoolkit::finalizers {
 
 // For Module Classification, drawing the data mostly directly from the file
@@ -66,11 +70,28 @@ public:
   util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
 
 private:
+  struct udModule final {
+    // Storage for DWARF function data
+    std::unordered_map<uint64_t, Function> functions;
+    using trienode = std::pair<Scope, const void* /* const trienode* */>;
+    std::deque<trienode> trie;
+    std::map<util::interval<uint64_t>, const trienode&> leaves;
+
+    // Storage for DWARF linemap data
+    using line = std::pair<util::reference_index<const File>, uint64_t>;
+    util::range_map<uint64_t, std::optional<line>,
+                    util::range_merge::truthy<void,
+                      util::range_merge::min<>>> lines;
+
+    // Storage for ELF symbols
+    std::multimap<util::interval<uint64_t>, Function> symbols;
+  };
+
   uintmax_t dwarfThreshold;
-  Module::ud_t::typed_member_t<Classification> ud;
-  void load(const Module&, Classification&) noexcept;
-  bool fullDwarf(void* dw, const Module&, Classification&);
-  bool symtab(void* elf, const Module&, Classification&);
+  Module::ud_t::typed_member_t<udModule> ud;
+  void load(const Module&, udModule&) noexcept;
+  bool fullDwarf(void* dw, const Module&, udModule&);
+  bool symtab(void* elf, const Module&, udModule&);
 };
 
 }

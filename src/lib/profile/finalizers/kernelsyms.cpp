@@ -64,25 +64,24 @@ KernelSymbols::KernelSymbols(stdshim::filesystem::path root)
   : root(std::move(root)) {}
 
 void KernelSymbols::notifyPipeline() noexcept {
-  ud = sink.structs().module.add_initializer<Classification>(
-    [this](Classification& c, const Module& m){
-      load(m, c);
+  ud = sink.structs().module.add_default<udModule>(
+    [this](udModule& data, const Module& m){
+      load(m, data);
     });
 }
 
 util::optional_ref<Context> KernelSymbols::classify(Context& c, Scope& s) noexcept {
   if(s.type() == Scope::Type::point) {
     auto mo = s.point_data();
-    auto scopes = mo.first.userdata[ud].getScopes(mo.second);
-    if(scopes.empty()) return std::nullopt;
-    std::reference_wrapper<Context> cc = c;
-    for(const auto& s: scopes) cc = sink.context(cc, s);
-    return cc.get();
+    const auto& udm = mo.first.userdata[ud];
+    auto symit = udm.symbols.find(mo.second);
+    if(symit != udm.symbols.end())
+      return sink.context(c, Scope(symit->second));
   }
   return std::nullopt;
 }
 
-void KernelSymbols::load(const Module& m, Classification& c) noexcept {
+void KernelSymbols::load(const Module& m, udModule& ud) noexcept {
   // We only take action if the Module's path is relatively awkward
   if(m.path().has_root_path() || m.path().has_parent_path()) return;
   // Check for the <...> markers that this is a "special case"
@@ -100,9 +99,6 @@ void KernelSymbols::load(const Module& m, Classification& c) noexcept {
     util::ilzmastream symsfile(symsfile_base.rdbuf());
 
     bool sawBadLine = false;
-
-    // We'll need to sort everything out at the end
-    std::vector<std::pair<uint64_t, Classification::Block*>> entries;
 
     // Keep reading lines until we run into really bad problems
     std::string linestr;
@@ -140,7 +136,7 @@ void KernelSymbols::load(const Module& m, Classification& c) noexcept {
       }
 
       // Log this entry
-      entries.push_back({addr, c.addScope(c.addFunction(m, addr, std::move(fname)))});
+      ud.symbols.emplace(addr, Function(m, addr, std::move(fname)));
 
       // Nom the end-of-line and any other whitespace until the next (real) line
       symsfile >> std::ws;
@@ -149,17 +145,8 @@ void KernelSymbols::load(const Module& m, Classification& c) noexcept {
       util::log::error{} << "I/O failure while reading from symbols file " << syms.string();
     }
 
-    // Sort the entries and register them as ranges
-    std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b){ return a.first < b.first; });
-    std::remove_reference_t<decltype(entries.front())> prev = {0, nullptr};
-    for(const auto& e: entries) {
-      if(prev.second != nullptr)
-        c.setScope({prev.first, e.first-1}, prev.second);
-      prev = e;
-    }
-    if(prev.second != nullptr)
-      c.setScope({prev.first, std::numeric_limits<uint64_t>::max()}, prev.second);
-
+    // Make sure this is consistent before continuing along
+    ud.symbols.make_consistent();
   } catch(std::exception& e) {
     util::log::info{} << "Exception caught while parsing symbols data from "
       << syms << " for " << name << "\n"

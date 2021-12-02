@@ -101,7 +101,9 @@ class Function {
 public:
   /// Functions can be constructed with some or all of their pieces.
   /// The arguments follow the available getter methods.
-  Function(const Module& mod, std::optional<uint64_t> offset = {})
+  explicit Function(const Module& mod)
+    : Function(mod, std::nullopt) {};
+  Function(const Module& mod, std::optional<uint64_t> offset)
     : Function(mod, offset, std::string()) {};
   Function(const Module&, std::optional<uint64_t>, std::string);
   Function(const Module& mod, std::string name, const File& file, uint64_t line)

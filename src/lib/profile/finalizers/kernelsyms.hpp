@@ -49,7 +49,10 @@
 
 #include "../finalizer.hpp"
 
+#include "../util/range_map.hpp"
+
 #include "../stdshim/filesystem.hpp"
+#include <map>
 
 namespace hpctoolkit::finalizers {
 
@@ -67,9 +70,13 @@ public:
   util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
 
 private:
+  struct udModule final {
+    util::range_map<uint64_t, Function, util::range_merge::always_throw<>> symbols;
+  };
+
   stdshim::filesystem::path root;
-  Module::ud_t::typed_member_t<Classification> ud;
-  void load(const Module&, Classification&) noexcept;
+  Module::ud_t::typed_member_t<udModule> ud;
+  void load(const Module&, udModule&) noexcept;
 };
 
 }
