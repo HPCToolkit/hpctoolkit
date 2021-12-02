@@ -517,6 +517,9 @@ gpu_metrics_attribute_kernel_block
 
     uint64_t covered_latency = (b->latency <= 0) ?
                                     0: (ALU_cycles * b->execution_count);
+    if (b->latency < covered_latency) {
+      covered_latency = b->latency;
+    }
     uint64_t uncovered_latency = (b->latency <= 0) ? 
                                     0: (b->latency - covered_latency);
     long thr_needed_for_covering_latency = (covered_latency == 0 || uncovered_latency == 0) ? 
