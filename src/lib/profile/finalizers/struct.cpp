@@ -342,14 +342,15 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       if(file.empty()) throw std::logic_error("Bad <F> tag seen");
       stack.top().file = &sink.file(std::move(file));
     } else if(ename == "P") {
-      auto& f = c.addFunction(m);
-      f.name = xmlstr(attr.getValue(XMLStr("n")));
-      f.offset = parseVs(xmlstr(attr.getValue(XMLStr("v")))).at(0).lo;
-      f.file = stack.top().file;
-      f.line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
+      auto offset = parseVs(xmlstr(attr.getValue(XMLStr("v")))).at(0).lo;
+      auto name = xmlstr(attr.getValue(XMLStr("n")));
+      auto& f = stack.top().file != nullptr
+                ? c.addFunction(m, offset, std::move(name), *stack.top().file,
+                                std::stoll(xmlstr(attr.getValue(XMLStr("l")))))
+                : c.addFunction(m, offset, std::move(name));
       stack.emplace(stack.top(), 'P');
       stack.top().scope = c.addScope(f, stack.top().scope);
-      funcs.emplace(f.offset, stack.top().scope);
+      funcs.emplace(offset, stack.top().scope);
     } else if(ename == "L") {
       auto file = xmlstr(attr.getValue(XMLStr("f")));
       const auto& f = !file.empty() ? sink.file(std::move(file))
@@ -372,12 +373,12 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
           stack.top().file = &sink.file(std::move(file));
         stack.top().a_line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
       } else {  // Double A, inlined function
-        auto& f = c.addFunction(m);
-        f.name = xmlstr(attr.getValue(XMLStr("n")));
-        f.offset = 0;  // Struct doesn't match it up with the original
         auto file = xmlstr(attr.getValue(XMLStr("f")));
-        f.file = !file.empty() ? &sink.file(std::move(file)) : stack.top().file;
-        f.line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
+        auto& f = c.addFunction(m,
+          std::nullopt,  // Struct doesn't match it up with the original
+          xmlstr(attr.getValue(XMLStr("n"))),
+          !file.empty() ? sink.file(std::move(file)) : *stack.top().file,
+          std::stoll(xmlstr(attr.getValue(XMLStr("l")))));
         stack.emplace(stack.top(), 'B');
         stack.top().scope = c.addScope(f, *stack.top().file, stack.top().a_line, stack.top().scope);
       }
@@ -443,7 +444,7 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
         // Terminate the route, we have nowhere else to go
         auto froute = route;
         std::reverse(froute.begin(), froute.end());
-        x.second->addRoute({m, b->getScope().function_data().offset}, std::move(froute));
+        x.second->addRoute({m, *b->getScope().function_data().offset()}, std::move(froute));
       } else {
         for(auto it = range.first; it != range.second; ++it) {
           const auto [from, addr] = it->second;

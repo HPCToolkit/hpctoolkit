@@ -173,15 +173,7 @@ public:
     bool isCall;
     LineScope(uint64_t a, const File* f, uint64_t l)
       : addr(a), file(f), line(l), isCall(false) {};
-    bool operator<(const LineScope& o) const noexcept {
-      if(addr != o.addr) return addr < o.addr;
-      if(file != o.file) {
-        if(file == nullptr) return true;
-        if(o.file == nullptr) return false;
-        return file->path() < o.file->path();
-      }
-      return line < o.line;
-    }
+    bool operator<(const LineScope& o) const noexcept;
   };
 
   /// Look up the LineScope for the given address. If unknown, returns nullptr.

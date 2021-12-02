@@ -239,16 +239,16 @@ static bool parse(Elf* elf, const Module& m, Classification& c) {
 
     // Create a Function to stuff all our data in.
     auto& func = c.addFunction(m);
-    func.offset = range.lo;
+    func.offset(range.lo);
 
     // Handle the name, the usual way
     const char* name = elf_strptr(elf, sh_symtab->sh_link, sym->st_name);
     if(name != nullptr) {
       char* dn = hpctoolkit_demangle(name);
       if(dn) {
-        func.name = dn;
+        func.name(dn);
         std::free(dn);
-      } else func.name = name;
+      } else func.name(name);
     }
 
     // Add our Classification as usual.
@@ -364,6 +364,39 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classificati
         Dwarf_Attribute attr_mem;
         Dwarf_Attribute* attr;
 
+        // Construct a Function based on the data we have in this DIE
+        Function myfunc(m);
+
+        // Name can either be the demangled symbol name or the better name.
+        attr = dwarf_attr_integrate(&die, DW_AT_linkage_name, &attr_mem);
+        if(attr == nullptr)
+          attr = dwarf_attr_integrate(&die, DW_AT_name, &attr_mem);
+        if(attr != nullptr) {
+          const char* str = dwarf_formstring(attr);
+          char* dn = hpctoolkit_demangle(str);
+          myfunc.name(dn == nullptr ? str : dn);
+          if(dn != nullptr) std::free(dn);
+        }
+
+        // Offset is always the entry pc
+        Dwarf_Addr offset;
+        if(dwarf_entrypc(&die, &offset) == 0) myfunc.offset(offset);
+
+        // Source location is based on the location of the declaration
+        Dwarf_Word idx = 0;
+        if(dwarf_formudata(dwarf_attr_integrate(&die, DW_AT_decl_file,
+                           &attr_mem), &idx) == 0 && idx > 0) {
+          Dwarf_Die cu_mem;
+          auto* file = getFileDie(dwarf_diecu(&die, &cu_mem, nullptr, nullptr),
+                                  idx, false);
+          if(file != nullptr) {
+            int linenum;
+            if(dwarf_decl_line(&die, &linenum) != 0) linenum = 0;
+            myfunc.sourceLocation(*file, linenum);
+          }
+        }
+
+        // Merge the Function we gathered here into the full one.
         // If this is an inlining, we work from that Function.
         Dwarf_Off offsetid = dwarf_dieoffset(&die);
         if((attr = dwarf_attr(&die, DW_AT_abstract_origin, &attr_mem)) != nullptr) {
@@ -375,34 +408,7 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classificati
         if(funcit == funcs.end())
           funcit = funcs.emplace(offsetid, c.addFunction(m)).first;
         Function& func = funcit->second.get();
-
-        // Try to fill in any missing data in the function
-        if(func.name.empty()) {
-          attr = dwarf_attr_integrate(&die, DW_AT_linkage_name, &attr_mem);
-          if(attr == nullptr)
-            attr = dwarf_attr_integrate(&die, DW_AT_name, &attr_mem);
-          if(attr != nullptr) {
-            const char* name = dwarf_formstring(attr);
-            char* dn = hpctoolkit_demangle(name);
-            func.name = dn == nullptr ? name : dn;
-            if(dn != nullptr) std::free(dn);
-          }
-        }
-        if(func.offset == 0) {
-          Dwarf_Addr offset;
-          if(dwarf_entrypc(&die, &offset) == 0) func.offset = offset;
-        }
-        if(func.file == nullptr) {
-          Dwarf_Word idx = 0;
-          if(dwarf_formudata(dwarf_attr_integrate(&die, DW_AT_decl_file,
-                             &attr_mem), &idx) == 0 && idx > 0) {
-            Dwarf_Die cu_mem;
-            func.file = getFileDie(dwarf_diecu(&die, &cu_mem, nullptr, nullptr),
-                                   idx, false);
-            int linenum;
-            if(dwarf_decl_line(&die, &linenum) == 0) func.line = linenum;
-          }
-        }
+        func += std::move(myfunc);
 
         // If this is not an inlined call, just emit as a normal Scope
         if(tag != DW_TAG_inlined_subroutine)

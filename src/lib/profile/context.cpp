@@ -48,6 +48,7 @@
 
 #include "module.hpp"
 #include "metric.hpp"
+#include "lexical.hpp"
 
 #include <cassert>
 #include <stack>
