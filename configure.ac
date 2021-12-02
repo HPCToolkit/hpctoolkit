@@ -5670,6 +5670,9 @@ AC_CONFIG_FILES([ \
   src/lib/support/Makefile \
   src/lib/support-lean/Makefile \
   src/lib/xml/Makefile \
+  \
+  tests/Makefile \
+  tests/Makefile.spack \
 ])
 
 
@@ -5693,6 +5696,9 @@ AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
   [chmod +x src/tool/hpcstruct/hpcstruct])
 AC_CONFIG_FILES([src/tool/hpcstruct/dotgraph],
   [chmod +x src/tool/hpcstruct/dotgraph])
+
+AC_CONFIG_FILES([tests/run-sort],
+  [chmod +x tests/run-sort])
 
 AC_SUBST_FILE([copyright_hash])
 copyright_hash="${srcdir}/config/copyright-hash"
