@@ -50,6 +50,7 @@
 #include "attributes.hpp"
 #include "context.hpp"
 #include "dataclass.hpp"
+#include "lexical.hpp"
 #include "metric.hpp"
 #include "module.hpp"
 

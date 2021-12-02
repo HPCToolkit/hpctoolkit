@@ -65,6 +65,16 @@ extern "C" {
 
 using namespace hpctoolkit;
 
+bool Classification::LineScope::operator<(const LineScope& o) const noexcept {
+  if(addr != o.addr) return addr < o.addr;
+  if(file != o.file) {
+    if(file == nullptr) return true;
+    if(o.file == nullptr) return false;
+    return file->path() < o.file->path();
+  }
+  return line < o.line;
+}
+
 std::vector<Scope> Classification::getScopes(uint64_t pos) const noexcept {
   std::vector<Scope> res;
   auto lsp = getLineScope(pos);

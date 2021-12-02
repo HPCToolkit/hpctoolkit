@@ -48,6 +48,7 @@
 
 #include "util/log.hpp"
 #include "module.hpp"
+#include "lexical.hpp"
 
 #include "lib/prof-lean/placeholders.h"
 
@@ -58,14 +59,6 @@
 #include <sstream>
 
 using namespace hpctoolkit;
-
-File::File(File&& f)
-  : userdata(std::move(f.userdata), std::ref(*this)),
-    u_path(std::move(f.path())) {};
-File::File(ud_t::struct_t& rs, stdshim::filesystem::path p)
-  : userdata(rs, std::ref(*this)), u_path(std::move(p)) {
-  assert(!u_path().empty() && "Attempt to create a File with an empty path!");
-}
 
 Scope::Scope() : ty(Type::unknown), data() {};
 Scope::Scope(const Module& m, uint64_t o)
@@ -241,9 +234,9 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
   auto func_str = [&]() -> std::string {
     std::ostringstream ss;
     const auto& f = s.function_data();
-    ss << f.name;
-    if(f.file)
-      ss << "@/" << f.file->path().filename().string() << ":" << f.line;
+    ss << f.name();
+    if(auto src = f.sourceLocation())
+      ss << "@/" << src->first.path().filename().string() << ":" << src->second;
     return ss.str();
   };
   auto line_str = [&]() -> std::string {

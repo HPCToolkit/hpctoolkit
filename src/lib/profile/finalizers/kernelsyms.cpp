@@ -140,7 +140,7 @@ void KernelSymbols::load(const Module& m, Classification& c) noexcept {
       }
 
       // Log this entry
-      entries.push_back({addr, c.addScope(c.addFunction(m, std::move(fname), addr))});
+      entries.push_back({addr, c.addScope(c.addFunction(m, addr, std::move(fname)))});
 
       // Nom the end-of-line and any other whitespace until the next (real) line
       symsfile >> std::ws;

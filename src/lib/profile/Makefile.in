@@ -158,7 +158,7 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	libHPCprofile_la-attributes.lo libHPCprofile_la-dataclass.lo \
 	libHPCprofile_la-sink.lo libHPCprofile_la-packedids.lo \
 	libHPCprofile_la-accumulators.lo libHPCprofile_la-finalizer.lo \
-	sources/libHPCprofile_la-packed.lo \
+	libHPCprofile_la-lexical.lo sources/libHPCprofile_la-packed.lo \
 	sources/libHPCprofile_la-hpcrun4.lo \
 	sinks/libHPCprofile_la-hpctracedb2.lo \
 	sinks/libHPCprofile_la-packed.lo \
@@ -578,7 +578,7 @@ MYSOURCES = \
 	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
-	accumulators.cpp finalizer.cpp \
+	accumulators.cpp finalizer.cpp lexical.cpp \
 	\
 	sources/packed.cpp sources/hpcrun4.cpp \
 	\
@@ -779,6 +779,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-context.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-dataclass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-finalizer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-lexical.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-metric.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-packedids.Plo@am__quote@
@@ -1009,6 +1010,13 @@ libHPCprofile_la-finalizer.lo: finalizer.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizer.cpp' object='libHPCprofile_la-finalizer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_la-finalizer.lo `test -f 'finalizer.cpp' || echo '$(srcdir)/'`finalizer.cpp
+
+libHPCprofile_la-lexical.lo: lexical.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_la-lexical.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_la-lexical.Tpo -c -o libHPCprofile_la-lexical.lo `test -f 'lexical.cpp' || echo '$(srcdir)/'`lexical.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_la-lexical.Tpo $(DEPDIR)/libHPCprofile_la-lexical.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='lexical.cpp' object='libHPCprofile_la-lexical.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_la-lexical.lo `test -f 'lexical.cpp' || echo '$(srcdir)/'`lexical.cpp
 
 sources/libHPCprofile_la-packed.lo: sources/packed.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT sources/libHPCprofile_la-packed.lo -MD -MP -MF sources/$(DEPDIR)/libHPCprofile_la-packed.Tpo -c -o sources/libHPCprofile_la-packed.lo `test -f 'sources/packed.cpp' || echo '$(srcdir)/'`sources/packed.cpp
