@@ -153,7 +153,10 @@ void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
             if (operand == ff->name) {
               callee_function = ff;
               break;
-            } else {
+            }
+          } 
+          if (callee_function == NULL) {
+            for (auto *ff : functions) {
               auto get_prefix = [&](const std::string &name) -> std::string {
                 // nvdisasm sometimes appends `__(num)` suffix to device functions
                 // We trim the suffix before matching operands and function names
