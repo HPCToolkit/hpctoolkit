@@ -53,6 +53,7 @@
 
 #include <cassert>
 #include <cctype>
+#include <iomanip>
 #include <stdexcept>
 #include <sstream>
 
