@@ -85,7 +85,8 @@ splitFunctionName
     // then we assume it is a function name with a suffix
     auto pos = name.rfind("__");
     if (pos != std::string::npos && pos != 0) {
-      suffix = stoi(name.substr(pos + 2));
+      // +1 to differentiate between __cuda_div_xxx and __cuda_div_xxx__0
+      suffix = stoi(name.substr(pos + 2)) + 1;
       symbol_name = name.substr(0, pos);
     }
   }

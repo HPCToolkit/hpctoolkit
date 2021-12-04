@@ -155,31 +155,6 @@ void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
               break;
             }
           } 
-          if (callee_function == NULL) {
-            // nvdisasm sometimes appends `__(num)` suffix to device functions
-            // We trim the suffix before matching operands and function names
-            //
-            // Two cases:
-            // __cuda_sm20_div: don't split
-            // __cuda_sm20_div__0: convert it to __cuda_sm20_div
-            auto get_prefix = [&](const std::string &name) -> std::string {
-              auto pos = name.rfind("__");
-              if (pos != std::string::npos && pos != 0) {
-                return name.substr(0, pos);
-              } else {
-                return name;
-              }
-            };
-            auto operand_prefix = get_prefix(operand);
-            for (auto *ff : functions) {
-              auto ff_name_prefix = get_prefix(ff->name);
-
-              if (operand_prefix == ff_name_prefix) {
-                callee_function = ff;
-                break;
-              }
-            }
-          }
           if (callee_function != NULL) {
             bool find_target = false;
             Target *t = NULL;
