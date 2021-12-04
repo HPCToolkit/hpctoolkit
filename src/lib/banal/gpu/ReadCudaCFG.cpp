@@ -73,7 +73,6 @@ splitFunctionName
 (
  const std::unordered_map<std::string, std::vector<Symbol*> > &symbols_by_name,
  const std::string& name,
- std::unordered_map<std::string, int > &symbols_suffix_counter,
  std::string& symbol_name,
  int& suffix
 )
@@ -88,14 +87,6 @@ splitFunctionName
     if (pos != std::string::npos && pos != 0) {
       suffix = stoi(name.substr(pos + 2));
       symbol_name = name.substr(0, pos);
-    }
-  } else if (iter->second.size() > 1) {
-    // If the function name has multiple matches,
-    // then we increase the suffix atomic
-    #pragma omp critical
-    {
-      suffix = symbols_suffix_counter[name];
-      ++symbols_suffix_counter[name];
     }
   }
 }
@@ -255,18 +246,16 @@ parseDotCFG
   std::map< std::pair<std::string, int>, GPUParse::Function *> function_map;
   // cubin may have multiple symbols that share the same name
   std::unordered_map<std::string, std::vector<Symbol*> > symbols_by_name;
-  std::unordered_map<std::string, int > symbols_suffix_counter;
 
   for (auto *symbol : symbols) {
     if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
       symbols_by_name[symbol->getMangledName()].emplace_back(symbol);
-      symbols_suffix_counter[symbol->getMangledName()] = 0;
     }
   }
 
   // Test valid symbols
   #pragma omp parallel shared(parsed_function_symbols, unparsable_function_symbols, symbols, \
-    function_map, symbols_by_name, symbols_suffix_counter)
+    function_map, symbols_by_name)
   { 
     std::string dot_filename = cubin + std::to_string(omp_get_thread_num()) + ".dot"; 
     std::vector<Symbol *> local_parsed_function_symbols;
@@ -291,8 +280,7 @@ parseDotCFG
           for (auto *func : funcs) {
             std::string symbol_name;
             int nvdisasm_suffix;
-            splitFunctionName(symbols_by_name, func->name, symbols_suffix_counter,
-              symbol_name, nvdisasm_suffix);
+            splitFunctionName(symbols_by_name, func->name, symbol_name, nvdisasm_suffix);
             local_function_map.emplace(std::make_pair(symbol_name, nvdisasm_suffix), func);
           }
         } else {
