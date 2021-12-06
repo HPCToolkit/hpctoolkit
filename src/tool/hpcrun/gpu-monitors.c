@@ -25,13 +25,12 @@ gpu_monitors_apply(cct_node_linkedlist_t *cct_nodes, uint32_t num_unfinished_ker
 {
   gpu_monitor_node_t *node = gpu_monitor_list;
 
-  if (type == gpu_monitor_type_enter){
+  if (type == gpu_monitor_type_enter) {
     while (node != NULL) {
       node->enter_fn(node->ci, cct_nodes, num_unfinished_kernels);
       node = node->next;
     }
-  }
-  else if (type == gpu_monitor_type_exit){
+  } else if (type == gpu_monitor_type_exit) {
     while (node != NULL) {
       node->exit_fn(node->ci);
       node = node->next;
