@@ -186,7 +186,12 @@ attribute_gpu_utilization
 
 
 static long long *
-papi_c_intel_read(cct_node_linkedlist_t *cct_nodes, uint32_t num_ccts, long long *previous_values)
+papi_c_intel_read
+(
+ cct_node_linkedlist_t *cct_nodes,
+ uint32_t num_ccts,
+ long long *previous_values
+)
 {
   long long metric_values[numMetrics];
   int retval = PAPI_read(eventset, metric_values);
@@ -201,7 +206,6 @@ papi_c_intel_read(cct_node_linkedlist_t *cct_nodes, uint32_t num_ccts, long long
     attribute_gpu_utilization(curr->node, curr->activity_channel, metric_values, previous_values);
     curr = atomic_load(&curr->next);
   }
-  cct_list_node_free_helper(cct_nodes);
   return metric_values;
 }
 

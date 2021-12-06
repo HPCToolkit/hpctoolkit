@@ -226,6 +226,15 @@ name ## _metric_kind
   idle_metric->format  = FORMAT_DISPLAY_PERCENTAGE
 
 
+#define THREADS_TO_COVER_LATENCY_FORMULA() \
+  hpcrun_set_display(METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY), HPCRUN_FMT_METRIC_SHOW); \
+  thrds_to_cover_latency_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY)); \
+  thrds_to_cover_latency_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(thrds_to_cover_latency_formula, "1 + (#%d/#%d)", METRIC_ID(GPU_INST_UNCOVERED_LATENCY), METRIC_ID(GPU_INST_COVERED_LATENCY)); \
+  thrds_to_cover_latency_metric->formula = thrds_to_cover_latency_formula; \
+  thrds_to_cover_latency_metric->format  = FORMAT_DISPLAY_INT
+
+
 
 //*****************************************************************************
 // local variables 
@@ -514,18 +523,13 @@ gpu_metrics_attribute_kernel_block
     // calculations at instruction level
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_LATENCY), b->latency);
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXEC_COUNT), b->execution_count);
-    uint64_t covered_latency = (b->latency <= 0) ?
-                                    0: (ALU_cycles * b->execution_count);
+    uint64_t covered_latency = (b->latency <= 0) ? 0: (ALU_cycles * b->execution_count);
     if (b->latency < covered_latency) {
       covered_latency = b->latency;
     }
-    uint64_t uncovered_latency = (b->latency <= 0) ? 
-                                    0: (b->latency - covered_latency);
-    long thr_needed_for_covering_latency = (covered_latency == 0 || uncovered_latency == 0) ? 
-                                                0 : (1 + (uncovered_latency/covered_latency));
+    uint64_t uncovered_latency = (b->latency <= 0) ? 0: (b->latency - covered_latency);
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_COVERED_LATENCY), covered_latency);
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_UNCOVERED_LATENCY), uncovered_latency);
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY), thr_needed_for_covering_latency);
   } else {
     // calculations at basic block level
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ACT_SIMD_LANES), b->active_simd_lanes);
@@ -939,6 +943,10 @@ gpu_metrics_GPU_INST_enable
   FORALL_GPU_INST(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
+
+  metric_desc_t *thrds_to_cover_latency_metric;
+  char *thrds_to_cover_latency_formula;
+  THREADS_TO_COVER_LATENCY_FORMULA();
 }
 
 

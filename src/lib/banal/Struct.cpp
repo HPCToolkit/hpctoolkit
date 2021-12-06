@@ -144,7 +144,7 @@ using namespace std;
 #define SYMTAB_ARCH_CUDA(symtab) 0
 #endif
 
-#define DEBUG_CFG_SOURCE  0
+#define DEBUG_CFG_SOURCE  1
 #define DEBUG_MAKE_SKEL   0
 #define DEBUG_SHOW_GAPS   0
 #define DEBUG_SKEL_SUMMARY  0

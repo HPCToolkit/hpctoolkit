@@ -39,13 +39,17 @@ cct_list_node_alloc_helper
  cct_node_linkedlist_t **free_list
 )
 {
+  printf("ref of free: %p, free: %p\n", free_list, *free_list);
   cct_node_linkedlist_t *first = *free_list;
 
   if (first) {
+    printf("free list is not empty. first: %p, first->next: %p\n", first, first->next);
     *free_list = atomic_load(&first->next);
   } else {
     first = (cct_node_linkedlist_t *) hpcrun_malloc_safe(sizeof(cct_node_linkedlist_t));
+    printf("free list is empty. first: %p, first->next: %p\n", first, first->next);
   }
+  printf("first: %p, free: %p\n", first, *free_list);
   memset(first, 0, sizeof(cct_node_linkedlist_t));
   return first;
 }
@@ -61,7 +65,7 @@ cct_list_node_free_helper
   cct_node_linkedlist_t *incoming_list_head = node;
   cct_node_linkedlist_t *incoming_list_tail = node;
   cct_node_linkedlist_t *next = atomic_load(&incoming_list_tail->next);
-
+  printf("list to be freed: %p -> %p", node, atomic_load(&node->next));
   // goto end of incoming_list
   while (next) {
     incoming_list_tail = next;
@@ -131,15 +135,18 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
 )
 {
   // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
-  int nodes_to_be_allocated = num_unfinished_kernels;
+  uint32_t nodes_to_be_allocated = num_unfinished_kernels;
   cct_node_linkedlist_t* curr_c, *cct_list_of_incomplete_kernels, *new_node;
   cct_list_of_incomplete_kernels = cct_list_node_alloc_helper(&cct_list_node_free_list);
   curr_c = cct_list_of_incomplete_kernels;
+  printf("num of nodes of the allocated: %"PRIu32". list: %p -> %p", num_unfinished_kernels, cct_list_of_incomplete_kernels, atomic_load(&cct_list_of_incomplete_kernels->next));
   while (--nodes_to_be_allocated > 0) {
     new_node = cct_list_node_alloc_helper(&cct_list_node_free_list);
+    printf(", %p", new_node);
     atomic_store(&curr_c->next, new_node);
     curr_c = new_node;
   }
+  printf("\n");
 
   spinlock_lock(&incomplete_kernel_list_lock);
   kernel_node_t *curr_k;
@@ -158,6 +165,7 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
   }
   spinlock_unlock(&incomplete_kernel_list_lock);
   gpu_monitors_apply(cct_list_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
+  // cct_list_node_free_helper(cct_list_of_incomplete_kernels);
 }
 
 
