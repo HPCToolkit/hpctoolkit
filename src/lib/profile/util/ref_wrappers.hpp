@@ -69,14 +69,17 @@ class reference_index {
 private:
   std::reference_wrapper<T> d;
 
+  static T* FUN(T& r) noexcept { return std::addressof(r); }
+  static void FUN(T&&) = delete;
+
 public:
-  template<class U>
-  reference_index(U&& x) noexcept : d((T&)std::forward<U>(x)) {};
+  template<class U,
+    class = std::enable_if_t<!std::is_same_v<reference_index, std::decay_t<U>>>,
+    class = std::void_t<decltype(reference_index::FUN(std::declval<U>()))>>
+  reference_index(U&& x) noexcept : d(std::forward<U>(x)) {};
   reference_index(const std::reference_wrapper<T>& o) noexcept : d(o) {};
 
   reference_index(const reference_index&) = default;
-  template<class U>
-  reference_index(const reference_index<U>& o) : d(o.get()) {};
 
   reference_index& operator=(const reference_index&) noexcept = default;
 
@@ -145,6 +148,8 @@ public:
   template<class U>
   friend constexpr bool operator>=(U* a, const reference_index<U>& b) noexcept;
 };
+
+template<class T> reference_index(T&) -> reference_index<T>;
 
 template<class T>
 constexpr bool operator==(const reference_index<T>& a, const reference_index<T>& b) noexcept { return &a.get() == &b.get(); }
