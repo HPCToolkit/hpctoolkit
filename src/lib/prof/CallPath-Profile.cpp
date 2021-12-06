@@ -1140,8 +1140,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   if (outfs) {
-    if (Analysis::Util::option == Analysis::Util::Print_All) 
-      fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
+    // if (Analysis::Util::option == Analysis::Util::Print_All) 
+    //   fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
   }
 
   hpcrun_fmt_hdr_free(&hdr, free);
@@ -1184,23 +1184,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
   }
 #endif
-
-  // ----------------------------------------
-  // metric-tbl
-  // ----------------------------------------
-  metric_tbl_t metricTbl;
-  metric_aux_info_t *aux_info;
-
-  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, &aux_info, infs, hdr.version, malloc);
-  if (ret != HPCFMT_OK) {
-    DIAG_Throw("error reading 'metric-tbl'");
-  }
-  if (outfs) {
-    if (Analysis::Util::option == Analysis::Util::Print_All) 
-      hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
-  }
-
-  const uint numMetricsSrc = metricTbl.len;
   
   // ----------------------------------------
   // loadmap

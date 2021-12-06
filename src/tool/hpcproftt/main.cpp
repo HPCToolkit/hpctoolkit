@@ -147,7 +147,7 @@ main_rawData(const std::vector<string>& profileFiles, bool sm_easyToGrep)
       os << fnm << std::endl;
       os << std::setfill('=') << std::setw(77) << "=" << std::endl;
     }
-    Analysis::Raw::writeAsText(fnm); // pass os FIXME
+    Analysis::Raw::writeAsText(fnm, sm_easyToGrep); // pass os FIXME
   }
   return 0;
 }
