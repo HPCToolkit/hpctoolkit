@@ -7,8 +7,8 @@
 namespace Dyninst {
 namespace ParseAPI {
 
-Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src, 
-  std::string name, CodeObject * obj, CodeRegion * region, 
+Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
+  std::string name, CodeObject * obj, CodeRegion * region,
   Dyninst::InstructionSource * isrc) {
   // Find function by name
   for (auto *function : _functions) {
@@ -26,26 +26,31 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
         GPUBlock *ret_block = NULL;
         // If a block has not been created by callers, create it
         // Otherwise get the block from _block_filter
-        if (_block_filter.find(block->id) == _block_filter.end()) {
-          if (DEBUG_GPU_CFGFACTORY) {
-            std::cout << "New block: " << block->name << " id: " << block->id << std::endl;
+
+        {
+          tbb::concurrent_hash_map<size_t, GPUBlock *>::accessor a;
+          if (_block_filter.insert(a, std::make_pair(block->id, nullptr))) {
+            if (DEBUG_GPU_CFGFACTORY) {
+              std::cout << "New block: " << block->name << " id: " << block->id << std::endl;
+            }
+            std::vector<std::pair<Offset, size_t>> inst_offsets;
+            for (auto *inst : block->insts) {
+              inst_offsets.emplace_back(std::make_pair(inst->offset, inst->size));
+            }
+            auto last_addr = inst_offsets.back().first;
+            auto block_end = last_addr + inst_offsets.back().second;
+            ret_block = new GPUBlock(obj, region, block->address,
+              block_end, last_addr, inst_offsets, arch);
+            a->second = ret_block;
+            blocks_.add(ret_block);
+          } else {
+            if (DEBUG_GPU_CFGFACTORY) {
+              std::cout << "Old block: " << block->name << " id: " << block->id << std::endl;
+            }
+            ret_block = a->second;
           }
-          std::vector<std::pair<Offset, size_t>> inst_offsets;
-          for (auto *inst : block->insts) {
-            inst_offsets.emplace_back(std::make_pair(inst->offset, inst->size));
-          }
-          auto last_addr = inst_offsets.back().first;
-          auto block_end = last_addr + inst_offsets.back().second;
-          ret_block = new GPUBlock(obj, region, block->address,
-            block_end, last_addr, block->insts, arch);
-          _block_filter[block->id] = ret_block;
-          blocks_.add(ret_block);
-        } else {
-          if (DEBUG_GPU_CFGFACTORY) {
-            std::cout << "Old block: " << block->name << " id: " << block->id << std::endl;
-          }
-          ret_block = _block_filter[block->id];
         }
+
         ret_func->add_block(ret_block);
 
         if (first_entry) {
@@ -56,25 +61,28 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
         // Create edges and related blocks
         for (auto *target : block->targets) {
           GPUBlock *ret_target_block = NULL;
-          if (_block_filter.find(target->block->id) == _block_filter.end()) {
-            if (DEBUG_GPU_CFGFACTORY) {
-              std::cout << "New block: " << target->block->name << " id: " << target->block->id << std::endl;
+          {
+            tbb::concurrent_hash_map<size_t, GPUBlock *>::accessor a;
+            if (_block_filter.insert(a, std::make_pair(target->block->id, nullptr))) {
+              if (DEBUG_GPU_CFGFACTORY) {
+                std::cout << "New block: " << target->block->name << " id: " << target->block->id << std::endl;
+              }
+              std::vector<std::pair<Offset, size_t>> inst_offsets;
+              for (auto *inst : target->block->insts) {
+                inst_offsets.push_back(std::make_pair(inst->offset, inst->size));
+              }
+              auto last_addr = inst_offsets.back().first;
+              auto block_end = last_addr + inst_offsets.back().second;
+              ret_target_block = new GPUBlock(obj, region, target->block->address,
+                block_end, last_addr, inst_offsets, arch);
+              a->second = ret_target_block;
+              blocks_.add(ret_target_block);
+            } else {
+              if (DEBUG_GPU_CFGFACTORY) {
+                std::cout << "Old block: " << target->block->name << " id: " << target->block->id << std::endl;
+              }
+              ret_target_block = a->second;
             }
-            std::vector<std::pair<Offset, size_t>> inst_offsets;
-            for (auto *inst : target->block->insts) {
-              inst_offsets.push_back(std::make_pair(inst->offset, inst->size));
-            }
-            auto last_addr = inst_offsets.back().first;
-            auto block_end = last_addr + inst_offsets.back().second;
-            ret_target_block = new GPUBlock(obj, region, target->block->address,
-              block_end, last_addr, target->block->insts, arch);
-            _block_filter[target->block->id] = ret_target_block;
-            blocks_.add(ret_target_block);
-          } else {
-            if (DEBUG_GPU_CFGFACTORY) {
-              std::cout << "Old block: " << target->block->name << " id: " << target->block->id << std::endl;
-            }
-            ret_target_block = _block_filter[target->block->id];
           }
 
           Edge *ret_edge = new Edge(ret_block, ret_target_block, target->type);

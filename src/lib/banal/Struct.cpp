@@ -314,6 +314,7 @@ public:
   long  file_index;
   long  base_index;
   long  line_num;
+  vector <FLPIndex> flp_path;
 
   HeaderInfo(Block * blk = NULL)
   {
@@ -324,6 +325,7 @@ public:
     file_index = 0;
     base_index = 0;
     line_num = 0;
+    flp_path.clear();
   }
 };
 
@@ -512,7 +514,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     Module * mod = sym_func->getModule();
 
     if (mod != NULL) {
-      mod->getSourceLines(svec, vma + cubin_size);
+      mod->getSourceLines(svec, vma /*+ cubin_size*/);
     }
   }
 
@@ -522,7 +524,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     the_symtab->findModuleByOffset(modSet, vma);
 
     for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
-      (*mit)->getSourceLines(svec, vma + cubin_size);
+      (*mit)->getSourceLines(svec, vma /*+ cubin_size*/);
       if (! svec.empty()) {
         break;
       }
@@ -1184,7 +1186,7 @@ static FileMap *
 makeSkeleton(CodeObject * code_obj, const string & basename)
 {
   FileMap * fileMap = new FileMap;
-  string unknown_base = unknown_file + " [" + basename + "]";
+  string unknown_base = "[" + basename + "]";
   bool is_shared = ! (the_symtab->isExec());
 
   // map of code regions to find end of region
@@ -1265,71 +1267,73 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       }
 
       if (vma == sym_start) {
-	//
-	// case 1 -- group leader of a valid symtab func.  take proc
-	// names from symtab func.  this is the normal case (but other
-	// cases are also valid).
-	//
-	DEBUG_SKEL("(case 1)\n");
+        //
+        // case 1 -- group leader of a valid symtab func.  take proc
+        // names from symtab func.  this is the normal case (but other
+        // cases are also valid).
+        //
+        DEBUG_SKEL("(case 1)\n");
 
-	getFuncNames(sym_func, prettynm, linknm);
-	if (is_shared) {
-	  prettynm += " [" + basename + "]";
-	}
+        getFuncNames(sym_func, prettynm, linknm);
+        if (is_shared) {
+          prettynm += " [" + basename + "]";
+        }
 
-	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
-					sym_func->getFirstSymbol()->getIndex());
-	addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+        ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
+                sym_func->getFirstSymbol()->getIndex());
+        addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
       }
       else {
-	// outline func -- see if parseapi and symtab file names match
-	string parse_filenm = unknown_base;
-	SrcFile::ln parse_line = 0;
+        // outline func -- see if parseapi and symtab file names match
+        string parse_filenm = unknown_base;
+        SrcFile::ln parse_line = 0;
 
-	// line map for parseapi func
-	vector <Statement::Ptr> pvec;
-	getProcLineMap(pvec, vma, sym_end, sym_func);
+        // line map for parseapi func
+        vector <Statement::Ptr> pvec;
+        getProcLineMap(pvec, vma, sym_end, sym_func);
 
-	if (! pvec.empty()) {
-	  parse_filenm = pvec[0]->getFile();
-	  parse_line = pvec[0]->getLine();
-	  RealPathMgr::singleton().realpath(parse_filenm);
-	}
+        stringstream buf;
+        buf << "<unknown procedure> " << vma_str;
+        if (! pvec.empty()) {
+          parse_filenm = pvec[0]->getFile();
+          parse_line = pvec[0]->getLine();
+          RealPathMgr::singleton().realpath(parse_filenm);
+          string parse_base = FileUtil::basename(parse_filenm.c_str());
+          buf << " " << parse_base;
+          if (parse_line > 0) buf << ":" << parse_line;
+        }
 
-	string parse_base = FileUtil::basename(parse_filenm.c_str());
-	stringstream buf;
-	buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
-	if (is_shared) {
-	  buf << " [" << basename << "]";
-	}
+        if (is_shared) {
+          buf << " [" << basename << "]";
+        }
 
-	linknm = func->name();
-	prettynm = buf.str();
+        linknm = func->name();
+        prettynm = buf.str();
 
-	if (filenm == parse_filenm) {
-	  //
-	  // case 2 -- outline func inside symtab func with same file
-	  // name.  use 'outline 0xxxxxx' proc name.
-	  //
-	  DEBUG_SKEL("(case 2)\n");
+        if (filenm == parse_filenm) {
+          //
+          // case 2 -- outline func inside symtab func with same file
+          // name.  use 'outline 0xxxxxx' proc name.
+          //
+          DEBUG_SKEL("(case 2)\n");
 
-	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
-	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
-	}
-	else {
-	  //
-	  // case 3 -- outline func but from a different file name.
-	  // add proc info to both files: outline file for full parse
-	  // (but no gaps), and symtab file for gap only.
-	  //
-	  DEBUG_SKEL("(case 3)\n");
+          ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
+          addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+        }
+        else {
+          //
+          // case 3 -- outline func but from a different file name.
+          // add proc info to both files: outline file for full parse
+          // (but no gaps), and symtab file for gap only.
+          //
+          DEBUG_SKEL("(case 3)\n");
 
-	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
-	  addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
+          ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
+          addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
 
-	  pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
-	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
-	}
+          pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
+          addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+        }
       }
     }
     else {
@@ -1344,7 +1348,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
       // symtab doesn't offer any guidance on demangling in this case
       if (linknm != prettynm
-	  && prettynm.find_first_of("()<>") == string::npos) {
+          && prettynm.find_first_of("()<>") == string::npos) {
         prettynm = linknm;
       }
 
@@ -1372,16 +1376,16 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       // stub.  not an ideal test, but I (krentel) can't find any
       // counter examples.
       if (end - vma <= 32) {
-	int len = linknm.length();
-	const char *str = linknm.c_str();
+        int len = linknm.length();
+        const char *str = linknm.c_str();
 
-	if (len < 5 || strncasecmp(&str[len-4], "@plt", 4) != 0) {
-	  linknm += "@plt";
-	  prettynm += "@plt";
-	}
+        if (len < 5 || strncasecmp(&str[len-4], "@plt", 4) != 0) {
+          linknm += "@plt";
+          prettynm += "@plt";
+        }
       }
       if (is_shared) {
-	prettynm += " [" + basename + "]";
+        prettynm += " [" + basename + "]";
       }
 
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
@@ -1641,11 +1645,13 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
   // computeGaps relies Block::start() and Block::end() to have
   // the correct address range for a block to detect gaps.
   //
-  // As of April 3, 2021, GPUBlock should have correct Block::start()
-  // and Block::end() results. However, since we have not tested gap
-  // computation with any GPU binaries, we choose to disable
-  // gap computation for GPU binaries at this point.
-  if (cuda_arch == 0 && intel_gpu_arch == 0) {
+  // Cubins often have branch instructions used as delay slots after
+  // the return instruction of a function. These branches may have PC
+  // samples. However, the CFGs from nvdisasm (at least for cuda-11.2)
+  // do not include delay slot instructions, which causes samples taken
+  // for delay slot instructions to be out of function ranges.
+  // We use gap computation to mitigate this problem.
+  if (intel_gpu_arch == 0) {
     // add unclaimed regions (gaps) to the group leader, but skip groups
     // in an alternate file (handled in orig file).
     if (! ginfo->alt_file) {
@@ -2016,6 +2022,7 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       string filenm = "";
       SrcFile::ln line = 0;
 
+      // terminal line map info
       StatementVector svec;
       getStatement(svec, src_vma, ginfo->sym_func);
 
@@ -2034,6 +2041,13 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       clist[src_vma].file_index = strTab->str2index(filenm);
       clist[src_vma].base_index = strTab->str2index(FileUtil::basename(filenm));
       clist[src_vma].line_num = line;
+
+      // inline sequence as vector of flp index
+      clist[src_vma].flp_path.clear();
+      for (auto it = seqn.begin(); it != seqn.end(); ++it) {
+	InlineNode node = *it;
+	clist[src_vma].flp_path.push_back(FLPIndex(*strTab, node));
+      }
     }
   }
 
@@ -2059,7 +2073,6 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
        << "file:  '" << finfo->fileName << "'\n\n";
   debugInlineTree(root, NULL, *strTab, 0, false);
   debugLoop(ginfo, func, loop, loopName, backEdges, clist, env.realPath);
-  cout << "\nsearching inline tree:\n";
 #endif
 
   //------------------------------------------------------------
@@ -2077,6 +2090,8 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
   StmtMap  stmts;
   int  depth_root = 0;
 
+  DEBUG_CFG("\nsearching for loop depth ...\n");
+
   while (root->nodeMap.size() == 1 && root->loopList.size() == 0) {
     FLPIndex flp = root->nodeMap.begin()->first;
 
@@ -2085,12 +2100,14 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       VMA vma = cit->first;
 
       if (root->stmtMap.member(vma)) {
+	DEBUG_CFG("exit cond at this level:  0x" << hex << vma << dec << "\n");
         goto found_level;
       }
 
       // reparented stmts must also match file name
       StmtInfo * sinfo = stmts.findStmt(vma);
       if (sinfo != NULL && sinfo->base_index == flp.base_index) {
+	DEBUG_CFG("unable to reparent stmts:  0x" << hex << vma << dec << "\n");
         goto found_level;
       }
     }
@@ -2113,6 +2130,21 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
 	      << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
 	      << "'\n");
   }
+#if DEBUG_CFG_SOURCE
+  if (root->nodeMap.size() > 1) {
+    cout << "inline split\n";
+  }
+  else if (root->nodeMap.size() == 0) {
+    cout << "end of inline steps\n";
+  }
+  else if (root->loopList.size() > 0) {
+    cout << "subloop\n";
+  }
+  else {
+    cout << "unknown end\n";
+  }
+#endif
+
 found_level:
 
 #if DEBUG_CFG_SOURCE
@@ -2155,6 +2187,8 @@ found_level:
   long base_ans = empty_index;
   long line_ans = 0;
 
+  DEBUG_CFG("\nsearching for loop file and line ...\n");
+
   // first choice is the file for the enclosing func that matches some
   // exit cond at top-level, but only if no inline steps
   if (depth_root == 0) {
@@ -2165,6 +2199,7 @@ found_level:
 	  && info->base_index == proc_base) {
         file_ans = proc_file;
         base_ans = proc_base;
+	DEBUG_CFG("file: exit cond at top-level func\n");
         goto found_file;
       }
     }
@@ -2181,6 +2216,7 @@ found_level:
 	  && info->base_index == flp.base_index) {
         file_ans = flp.file_index;
         base_ans = flp.base_index;
+	DEBUG_CFG("file: exit cond at inline subtree\n");
         goto found_file;
       }
     }
@@ -2194,6 +2230,7 @@ found_level:
     if (info->depth == depth_root && info->base_index != empty_index) {
       file_ans = info->file_index;
       base_ans = info->base_index;
+      DEBUG_CFG("file: unmatched exit cond\n");
       goto found_file;
     }
   }
@@ -2202,6 +2239,7 @@ found_level:
   if (depth_root == 0 && proc_file != empty_index) {
     file_ans = proc_file;
     base_ans = proc_base;
+    DEBUG_CFG("file: enclosing func but no exit cond\n");
     goto found_file;
   }
 
@@ -2212,6 +2250,7 @@ found_level:
     if (flp.file_index != empty_index) {
       file_ans = flp.file_index;
       base_ans = flp.base_index;
+      DEBUG_CFG("file: inline subtree but no exit cond\n");
       goto found_file;
     }
   }
@@ -2223,6 +2262,7 @@ found_level:
     if (linfo->file_index != empty_index) {
       file_ans = linfo->file_index;
       base_ans = linfo->base_index;
+      DEBUG_CFG("file: any subloop\n");
       goto found_file;
     }
   }
@@ -2235,43 +2275,80 @@ found_level:
       file_ans = sinfo->file_index;
       base_ans = sinfo->base_index;
       line_ans = sinfo->line_num;
-      break;
+      DEBUG_CFG("file: any stmt\n");
+      goto found_file;
     }
   }
 found_file:
 
-  // min line of inline callsites
-  // fixme: code motion breaks this
-#if 0
-  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
-    FLPIndex flp = nit->first;
-
-    if (flp.base_index == base_ans
-	&& (line_ans == 0 || (flp.line_num > 0 && flp.line_num < line_ans))) {
-      line_ans = flp.line_num;
-    }
-  }
-#endif
-
-  // min line of subloops
-  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
-    LoopInfo * linfo = *lit;
-
-    if (linfo->base_index == base_ans
-	&& (line_ans == 0 || (linfo->line_num > 0 && linfo->line_num < line_ans))) {
-      line_ans = linfo->line_num;
-    }
+  // if we can't find a file name, then don't look for a line
+  if (file_ans == empty_index) {
+    DEBUG_CFG("unable to find file, skipping line\n");
+    line_ans = 0;
+    goto found_line;
   }
 
-  // min line of exit cond stmts at root level
+  //
+  // line num -- the best answer is an exit cond at this level where
+  // the file name matches (with terminal line map).  it's ok to have
+  // multiple exit conds, pick the one with the min line number.
+  //
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     HeaderInfo * info = &(cit->second);
 
     if (info->depth == depth_root
-	&& (line_ans == 0 || (info->line_num > 0 && info->line_num < line_ans))) {
-      line_ans = info->line_num;
+	&& info->base_index == base_ans
+	&& info->line_num > 0)
+    {
+      long line = info->line_num;
+
+      if (line_ans == 0 || line < line_ans) {
+	line_ans = line;
+      }
+      DEBUG_CFG("line:  " << line << "  (exit cond at loop level)  0x"
+		<< hex << cit->first << dec << "\n");
     }
   }
+
+  //
+  // equally good is an exit cond that is inlined below the current
+  // depth if the file matches the next inline step.
+  //
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    HeaderInfo * info = &(cit->second);
+
+    if (info->depth > depth_root
+	&& info->flp_path[depth_root].base_index == base_ans
+	&& info->flp_path[depth_root].line_num > 0)
+    {
+      long line = info->flp_path[depth_root].line_num;
+
+      if (line_ans == 0 || line < line_ans) {
+	line_ans = line;
+      }
+      DEBUG_CFG("line:  " << line << "  (exit cond at loop +"
+		<< (info->depth - depth_root) << ")  0x"
+		<< hex << cit->first << dec << "\n");
+    }
+  }
+
+  //
+  // never locate the loop at a higher line number than a subloop
+  //
+  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (linfo->base_index == base_ans && linfo->line_num > 0)
+    {
+      long line = linfo->line_num;
+
+      if (line_ans == 0 || line < line_ans) {
+	line_ans = line;
+      }
+      DEBUG_CFG("line:  "  << line_ans << "  (subloop)  " << linfo->name << "\n");
+    }
+  }
+found_line:
 
   DEBUG_CFG("\nheader:  l=" << line_ans << "  f='"
 	    << strTab->index2str(file_ans) << "'\n");
@@ -2688,9 +2765,6 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     HeaderInfo * info = &(cit->second);
     SrcFile::ln line = 0;
     string filenm = "";
-
-    InlineSeqn seqn;
-    analyzeAddr(seqn, vma, realPath);
 
     StatementVector svec;
     getStatement(svec, vma, ginfo->sym_func);

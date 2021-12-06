@@ -61,28 +61,46 @@ namespace Struct {
 // Parameters on how to run makeStructure().
 class Options {
 public:
-  int  jobs;
-  int  jobs_struct;
-  int  jobs_parse;
-  int  jobs_symtab;
+  unsigned int jobs;
+
+  unsigned int jobs_struct;
+  unsigned int jobs_parse;
+  unsigned int jobs_symtab;
+
   bool show_time;
-  long gpu_size;
+
+  bool analyze_cpu_binaries;
+
+  bool analyze_gpu_binaries;
   bool compute_gpu_cfg;
   bool du_graph;
-  bool ourDemangle;
 
-  Options()
-  {
-    jobs = 1;
-    jobs_struct = 1;
-    jobs_parse = 1;
-    jobs_symtab = 1;
-    show_time = false;
-    gpu_size = 0;
-    compute_gpu_cfg = false;
-    du_graph = false;
-    ourDemangle = false;
-  }
+  unsigned long parallel_analysis_threshold;
+
+  void set
+  (
+   unsigned int _jobs,
+   unsigned int _jobs_struct,
+   unsigned int _jobs_parse,
+   unsigned int _jobs_symtab,
+   bool _show_time,
+   bool _analyze_cpu_binaries,
+   bool _analyze_gpu_binaries,
+   bool _compute_gpu_cfg,
+   bool _du_graph,
+   unsigned long _parallel_analysis_threshold
+  ) {
+   jobs = _jobs;
+   jobs_struct = _jobs_struct;
+   jobs_parse  = _jobs_parse;
+   jobs_symtab = _jobs_symtab;
+   show_time = _show_time;
+   analyze_cpu_binaries = _analyze_cpu_binaries;
+   analyze_gpu_binaries = _analyze_gpu_binaries;
+   compute_gpu_cfg = _compute_gpu_cfg;
+   du_graph = _du_graph;
+   parallel_analysis_threshold = _parallel_analysis_threshold;
+  };
 };
 
 void

@@ -79,6 +79,7 @@ using std::endl;
 
 #include <lib/banal/Struct.hpp>
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/cpuset_hwthreads.h>
 #include <lib/support/diagnostics.h>
 #include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
@@ -100,13 +101,13 @@ realmain(int argc, char* argv[]);
 
 //***************************** Analyze Cubins ******************************
 
-static const char* gpubin_analysis_makefile =
-#include "gpubin-analysis.h"
+static const char* analysis_makefile =
+#include "pmake.h"
 ;
 
 //
 // For a measurements directory, write a Makefile and launch hpcstruct
-// for each GPU binary (gpubin).
+// to analyze CPU and GPU binaries associated with the measurements
 //
 static void
 doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
@@ -119,36 +120,39 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 
   string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
   struct dirent *ent;
-  bool found = false;
+  bool has_gpubin = false;
 
   DIR *dir = opendir(gpubin_dir.c_str());
-  if (dir == NULL) {
-    PRINT_ERROR("Unable to open measurements directory: " << gpubin_dir);
-    exit(1);
-  }
-
-  while ((ent = readdir(dir)) != NULL) {
-    string file_name(ent->d_name);
-    if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
-      found = true;
-      break;
+  if (dir != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      string file_name(ent->d_name);
+      if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
+        has_gpubin = true;
+        break;
+      }
     }
+    closedir(dir);
   }
-
-  if (! found) {
-    PRINT_ERROR("Measurements directory does not contain gpubin: " << gpubin_dir);
-    exit(1);
-  }
-  closedir(dir);
 
   //
-  // Put hpctoolkit and cuda (nvdisasm) on path.
+  // Put hpctoolkit on PATH
   //
   char *path = getenv("PATH");
-  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin/"
-    + ":" + path + ":" + CUDA_INSTALL_PREFIX + "/bin/";
+  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
+
+  if (has_gpubin) {
+    // Put cuda (nvdisasm) on path.
+    new_path = new_path +":" + CUDA_INSTALL_PREFIX + "/bin";
+  }
 
   setenv("PATH", new_path.c_str(), 1);
+
+  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
+    + "/libexec/hpctoolkit/hpcproftt";
+
+  string struct_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
+    + "/bin/hpcstruct";
+
 
   //
   // Write Makefile and launch analysis.
@@ -165,23 +169,39 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
     exit(1);
   }
 
+  unsigned int pthreads;
+  unsigned int jobs;
+
+  if (opts.jobs == 0) { // not specified
+    unsigned int hwthreads = cpuset_hwthreads();
+    jobs = std::max(hwthreads/2, 1U);
+    pthreads = std::min(jobs, 16U);
+  } else {
+    jobs = opts.jobs;
+    pthreads = jobs;
+  }
+    
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
   string du_graph = opts.du_graph ? "yes" : "no";
 
-  makefile << "GPUBIN_DIR =  " << gpubin_dir << "\n"
-	   << "STRUCTS_DIR = " << structs_dir << "\n"
-	   << "GPUBIN_CFG = " << gpucfg << "\n"
-	   << "DU_GRAPH = " << du_graph << "\n"
-	   << "GPU_SIZE = " << opts.gpu_size << "\n"
-	   << "JOBS = " << opts.jobs << "\n\n"
-	   << gpubin_analysis_makefile << endl;
+  makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
+	   << "GPUBIN_CFG = "   << gpucfg << "\n"
+     << "DU_GRAPH = " << du_graph << "\n"
+	   << "CPU_ANALYZE = "  << opts.analyze_cpu_binaries << "\n"
+	   << "GPU_ANALYZE = "  << opts.analyze_gpu_binaries << "\n"
+	   << "PAR_SIZE = "     << opts.parallel_analysis_threshold << "\n"
+	   << "JOBS = "         << jobs << "\n"
+	   << "PTHREADS = "     << pthreads << "\n"
+	   << "PROFTT = "       << hpcproftt_path << "\n"
+	   << "STRUCT= "        << struct_path << "\n"
+	   << analysis_makefile << endl;
   makefile.close();
 
   string make_cmd = string("make -C ") + structs_dir + " -k --silent "
       + " --no-print-directory all";
 
   if (system(make_cmd.c_str()) != 0) {
-    DIAG_EMsg("Make hpcstruct files for GPU binaries failed.");
+    DIAG_EMsg("Make hpcstruct files for measurement directory failed.");
     exit(1);
   }
 }
@@ -217,7 +237,6 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
-  BAnal::Struct::Options opts;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
@@ -226,46 +245,39 @@ realmain(int argc, char* argv[])
   // Parameters on how to run hpcstruct
   // ------------------------------------------------------------
 
+  unsigned int jobs_struct;
+  unsigned int jobs_parse;
+  unsigned int jobs_symtab;
+
 #ifdef ENABLE_OPENMP
   //
   // Translate the args jobs to the struct opts jobs.  The specific
   // overrides the general: for example, -j sets all three phases,
   // --jobs-parse overrides just that one phase.
   //
-  int jobs = (args.jobs >= 1) ? args.jobs : 1;
 
-  opts.jobs = jobs;
-  opts.jobs_struct = jobs;
-  opts.jobs_parse = jobs;
-  opts.jobs_symtab = jobs;
-
-  if (args.jobs_struct >= 1) {
-    opts.jobs_struct = args.jobs_struct;
-  }
-  if (args.jobs_parse >= 1) {
-    opts.jobs_parse = args.jobs_parse;
-  }
-  if (args.jobs_symtab >= 1) {
-    opts.jobs_symtab = args.jobs_symtab;
-  }
+  jobs_struct = (args.jobs_struct >= 1) ? args.jobs_struct : args.jobs;
+  jobs_parse  = (args.jobs_parse >= 1)  ? args.jobs_parse  : args.jobs;
 
 #ifndef ENABLE_OPENMP_SYMTAB
-  opts.jobs_symtab = 1;
+  jobs_symtab = 1;
+#else
+  jobs_symtab = (args.jobs_symtab >= 1) ? args.jobs_symtab : args.jobs;
 #endif
 
   omp_set_num_threads(1);
 
 #else
-  opts.jobs = 1;
-  opts.jobs_struct = 1;
-  opts.jobs_parse = 1;
-  opts.jobs_symtab = 1;
+  jobs_struct = 1;
+  jobs_parse = 1;
+  jobs_symtab = 1;
 #endif
 
-  opts.show_time = args.show_time;
-  opts.compute_gpu_cfg = args.compute_gpu_cfg;
-  opts.du_graph = args.du_graph;
-  opts.gpu_size = args.gpu_size;
+  BAnal::Struct::Options opts;
+
+  opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
+	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
+	   args.compute_gpu_cfg, args.du_graph, args.parallel_analysis_threshold);
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately
@@ -273,6 +285,10 @@ realmain(int argc, char* argv[])
   struct stat sb;
 
   if (stat(args.in_filenm.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+    if (!args.out_filenm.empty()) {
+      DIAG_EMsg("Outfile file may not be specified when analyziing a measurement directory.");
+      exit(1);
+    }
     doMeasurementsDir(args.in_filenm, opts);
     return 0;
   }

@@ -487,7 +487,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
       stmtNode->vmaSet().fromString(vma.c_str());
     }
     if (!target.empty()) {
-      stmtNode->target((SrcFile::ln)StrUtil::toLong(target));
+      stmtNode->target((SrcFile::ln)StrUtil::toUInt64(target));
     }
     if (!device.empty()) {
       stmtNode->device(device);

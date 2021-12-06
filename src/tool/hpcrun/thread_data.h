@@ -294,9 +294,25 @@ typedef struct thread_data_t {
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;
 
 
-void hpcrun_init_pthread_key(void);
-void hpcrun_set_thread0_data(void);
-void hpcrun_set_thread_data(thread_data_t *td);
+void 
+hpcrun_init_pthread_key
+(
+  void
+);
+
+
+void 
+hpcrun_set_thread0_data
+(
+  void
+);
+
+
+void 
+hpcrun_set_thread_data
+(
+  thread_data_t *td
+);
 
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
@@ -304,23 +320,78 @@ void hpcrun_set_thread_data(thread_data_t *td);
 extern thread_data_t* (*hpcrun_get_thread_data)(void);
 extern bool           (*hpcrun_td_avail)(void);
 extern thread_data_t* hpcrun_safe_get_td(void);
-
-void hpcrun_unthreaded_data(void);
-void hpcrun_threaded_data(void);
- void hpcrun_thread_init_mem_pool_once(void);
-
 extern thread_data_t* hpcrun_allocate_thread_data(int id);
 
+
+void 
+hpcrun_unthreaded_data
+(
+  void
+);
+
+
+void 
+hpcrun_threaded_data
+(
+  void
+);
+
+
+void 
+hpcrun_thread_init_mem_pool_once
+(
+  int id, 
+  cct_ctxt_t *thr_ctxt,
+  bool has_trace, 
+  bool demand_new_thread
+);
+
+
 void
-hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources);
+hpcrun_thread_data_init
+(
+  int id, 
+  cct_ctxt_t* thr_ctxt, 
+  int is_child, 
+  size_t n_sources
+);
 
 
-void     hpcrun_cached_bt_adjust_size(size_t n);
-frame_t* hpcrun_expand_btbuf(void);
-void     hpcrun_ensure_btbuf_avail(void);
+void     
+hpcrun_cached_bt_adjust_size
+(
+  size_t n
+);
 
-void           hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt);
-void           hpcrun_cached_bt_adjust_size(size_t n);
+
+frame_t* 
+hpcrun_expand_btbuf
+(
+  void
+);
+
+
+void
+hpcrun_ensure_btbuf_avail
+(
+  void
+);
+
+
+void
+hpcrun_thread_data_reuse_init
+(
+  cct_ctxt_t* thr_ctxt
+);
+
+
+void
+hpcrun_cached_bt_adjust_size
+(
+  size_t n
+);
+
+
 
 void hpcrun_id_tuple_cputhread(thread_data_t *td);
 

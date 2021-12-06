@@ -58,7 +58,7 @@
 #include <hpcrun/gpu/blame-shifting/blame.h>
 #include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>
 #include <hpcrun/thread_data.h>
-#include <hpcrun/safe-sampling.h>                                   // hpcrun_safe_enter, hpcrun_safe_exit
+#include <hpcrun/trace.h>
 
 #include <messages/messages.h>
 
@@ -177,6 +177,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(OPENCL,"nevents = %d", nevents);
   gpu_metrics_default_enable();
   gpu_metrics_KINFO_enable();
+  hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
 
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);

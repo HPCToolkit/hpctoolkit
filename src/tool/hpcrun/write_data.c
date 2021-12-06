@@ -296,13 +296,8 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
       loadmap_entry_t lm_entry;
       lm_entry.id = lm_src->id;
       lm_entry.name = lm_src->name;
-      lm_entry.flags = 0;
-      
-      ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
-      if(ret != HPCFMT_OK){
-        TMSG(DATA_WRITE, "Error writing loadmap entry");
-        goto write_error;
-      }
+      lm_entry.flags = hpcrun_loadModule_flags_get(lm_src);
+      hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
     }
 
     //YUMENG: set footer  

@@ -19,7 +19,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: June 9, 2021.
+#  Last revised: October 1, 2021.
 #
 packages:
 
@@ -49,16 +49,14 @@ packages:
   # normally be built from source, even if there is a system install.
   # For most packages, the most recent version will work.
   #
-  # Note: the following packages have variants that may need changing
-  # for your local system.
+  # Note: the following packages have versions or variants that may
+  # need changing for your local system.
   #
-  #   1. binutils -- avoid 2.35, it has a bug that spews errors from
-  #   hpcprof.  Use 2.34 until 2.36 is available.
+  #   1. dyninst -- the latest hpctoolkit release should work with the
+  #   latest dyninst release.  But if you're building hpctoolkit at
+  #   master or develop, then you may need dyninst master.
   #
-  #   2. boost -- avoid 1.68.0, it breaks the build in hpctoolkit.
-  #   1.66.0 is good for older dyninst revs, or 1.72.0 for recent dyninst.
-  #
-  #   3. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
+  #   2. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
   #   old Intel systems that don't support transactional memory.
   #
   # Blue Gene is no longer supported.
@@ -79,7 +77,7 @@ packages:
   # +cuda, +rocm for GPU support.
   #
   # hpctoolkit:
-  #   version:  [2021.05.15, master]
+  #   version:  [2021.10.15, master]
   #   variants: +mpi +papi +viewer
 
 
@@ -135,15 +133,15 @@ packages:
   # and Dyninst issues releases infrequently, so sometimes it's
   # necessary to use master for the best results.
   #
-  # Latest hpctoolkit needs > 11.0.0. several problems with were
-  # discovered in dyninst 11.0.0 that caused failures in 
-  # HPCToolkit's hpcstruct. Until there is a new release of dyninst,
-  # we recommend building hpctoolkit atop dyninst master. 
+  # Latest hpctoolkit needs > 11.0.0.  Several problems were discovered
+  # in dyninst 11.0.0 that caused failures in hpcstruct.  Until there
+  # is a new release of dyninst, we recommend building hpctoolkit atop
+  # dyninst master.
   #
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [11.0.1]
+    version:  [11.0.1, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -229,7 +227,7 @@ packages:
   # Note: add +bgq on blue gene/q.
   #
   libmonitor:
-    version:  [2020.10.15, master]
+    version:  [2021.04.27, master]
     variants: +hpctoolkit ~dlopen
 
 
@@ -265,7 +263,7 @@ packages:
   # +pic is required for linking with hpcrun.
   #
   mbedtls:
-    version:  [2.16.1]
+    version:  [2.27.0]
     variants: +pic
 
 
@@ -293,7 +291,7 @@ packages:
   # netaccessor=none is to reduce prereqs.
   #
   xerces-c:
-    version:  [3.2.2]
+    version:  [3.2.3]
     variants: transcoder=iconv netaccessor=none
 
 
@@ -348,29 +346,17 @@ packages:
 
   # rocm -- amd gpus, now in master
   #
-  # Requires: 3.10.0 or later, 4.0.0 preferred.
+  # Requires: 3.10.0 or later, 4.x preferred.
   #
-  # For now, ROCM requires a 2-step build.  First, if /opt/rocm is
-  # available, then use that.  If not, then build hip, rocm-dbgapi and
-  # roctracer-dev with spack.
-  #
-  # hip:
-  #   version: [4.0.0]
-  #
-  # rocm-dbgapi:
-  #   version: [4.0.0]
-  #
-  # roctracer-dev:
-  #   version: [4.0.0]
-
-  # Second, specify the three packages with an externals prefix, even
-  # if you built them with spack.  For example, with /opt/rocm-4.0.0,
+  # If /opt/rocm is available, then the easiest solution is to use
+  # that.  In that case, specify hip, rocm-dbgapi and roctracer-dev as
+  # externals in packages.yaml.  For example, with /opt/rocm-4.0.0,
   # use:
   #
-  # hip:
-  #   externals:
-  #   - spec: hip@4.0.0
-  #     prefix: /opt/rocm-4.0.0/hip
+  #   hip:
+  #     externals:
+  #     - spec: hip@4.0.0
+  #       prefix: /opt/rocm-4.0.0/hip
   #
   #   rocm-dbgapi:
   #     externals:
@@ -384,6 +370,10 @@ packages:
   #
   # Note: for /opt/rocm, the hip prefix is the hip subdirectory,
   # for the other two, it is the /opt/rocm directory.
+  #
+  # If ROCM is not already installed, then you can build it as part of
+  # hpctoolkit with the spec: hpctoolkit +rocm
+
 
   #------------------------------------------------------------
 
@@ -407,6 +397,17 @@ packages:
 
   #------------------------------------------------------------
   # 3 -- System Build Tools
+  #------------------------------------------------------------
+
+  # Note: Spack can now search for these packages itself.
+  # For example:
+  #
+  #   spack external cmake
+  #
+  # This puts an 'externals:' entry for cmake in ~/.spack/packages.yaml
+  # if spack finds cmake on your PATH.  This works for cmake, perl,
+  # python (and several other packages).
+
   #------------------------------------------------------------
 
   # We require cmake >= 3.4, perl >= 5.x and python >= 3.4.

@@ -61,6 +61,8 @@ using std::string;
 
 #include "Args.hpp"
 
+#include <lib/analysis/Util.hpp>
+
 #include <lib/analysis/Flat-SrcCorrelation.hpp>
 #include <lib/analysis/Flat-ObjCorrelation.hpp>
 #include <lib/analysis/Raw.hpp>
@@ -140,11 +142,12 @@ main_rawData(const std::vector<string>& profileFiles, bool sm_easyToGrep)
     const char* fnm = profileFiles[i].c_str();
 
     // generate nice header
-    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
-    os << fnm << std::endl;
-    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
-
-    Analysis::Raw::writeAsText(fnm, sm_easyToGrep); // pass os FIXME
+    if (Analysis::Util::option == Analysis::Util::Print_All)  {
+      os << std::setfill('=') << std::setw(77) << "=" << std::endl;
+      os << fnm << std::endl;
+      os << std::setfill('=') << std::setw(77) << "=" << std::endl;
+    }
+    Analysis::Raw::writeAsText(fnm); // pass os FIXME
   }
   return 0;
 }

@@ -284,13 +284,32 @@ setup_main_bounds_check(void* main_addr)
   // dynamic symbol named 'main' (if any).
   // passed into libc_start_main as real_main. this might be a
   // trampoline in the PLT.
-  dlerror();
-  main_addr_dl = dlsym(RTLD_NEXT,"main");
-  if (main_addr_dl) {
-    fnbounds_enclosing_addr(main_addr_dl, &main_lower_dl, &main_upper_dl, &lm);
+  //
+  // dlsym("main") fails on some broken glibc (early access summit),
+  // but we only use this when CHECK_MAIN is enabled.
+  if (ENABLED(CHECK_MAIN)) {
+    dlerror();
+    main_addr_dl = dlsym(RTLD_NEXT,"main");
+    if (main_addr_dl) {
+      fnbounds_enclosing_addr(main_addr_dl, &main_lower_dl, &main_upper_dl, &lm);
+    }
   }
 #endif
 }
+
+
+static const char *
+get_process_name()
+{
+  static char buf[PROC_NAME_LEN];
+  buf[0] = 0;
+  int process_name_len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
+  if (process_name_len >= 0) {
+    buf[process_name_len] = 0;
+  }
+  return buf;
+}
+
 
 //
 // Derive the full executable name from the
@@ -391,8 +410,9 @@ hpcrun_set_safe_to_sync(void)
 static int
 abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
 {
-  EEMSG("hpcrun: abort timeout activated - context pc %p", 
-    hpcrun_context_pc(context)); 
+  long pid = (long) getpid();
+  EEMSG("hpcrun: abort timeout activated in process %ld - context pc %p", 
+    pid, hpcrun_context_pc(context)); 
   monitor_real_abort();
   
   return 0; /* keep compiler happy, but can't get here */
@@ -402,11 +422,18 @@ abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
 static void 
 hpcrun_set_abort_timeout()
 {
-  char *error_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
-  if (error_timeout) {
-     int seconds = atoi(error_timeout);
+  static process_index = 0;
+
+  char *abort_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
+
+  char *abort_process_str = getenv("HPCRUN_ABORT_PROCESS_INDEX");
+  int abort_process_index = abort_process_str ? atoi(abort_process_str) : 0;
+
+  if (abort_timeout && process_index++ >= abort_process_index) {
+     int seconds = atoi(abort_timeout);
      if (seconds != 0) {
-       EEMSG("hpcrun: abort timeout armed");
+       long pid = (long) getpid();
+       EEMSG("hpcrun: abort timeout armed in process %ld", pid);
        monitor_sigaction(SIGALRM, &abort_timeout_handler, 0, NULL);
        alarm(seconds);
      }
@@ -449,6 +476,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_options__getopts(&opts);
 
   hpcrun_trace_init(); // this must go after thread initialization
+
   hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
@@ -517,6 +545,14 @@ hpcrun_init_internal(bool is_child)
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
+  // Check whether tracing is enabled and metrics suitable for tracing are specified
+  if (hpcrun_trace_isactive() && hpcrun_has_trace_metric() == 0) {
+    fprintf(stderr, "Error: Tracing is specified at the command line without a sutable metric for tracing.\n");
+    fprintf(stderr, "\tCPU tracing is only meaningful when a time based metric is given, such as REALTIME, CPUTIME, and CYCLES\n");
+    fprintf(stderr, "\tGPU tracing is always meaningful.\n");
+    monitor_real_exit(1);
+  }
+
   // set up initial 'epoch'
 
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
@@ -553,6 +589,18 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_enable_sampling();
   hpcrun_set_safe_to_sync();
+
+  if (hpcrun_trace_isactive() && hpcrun_cpu_trace_on()) {
+    // If tracing on the CPU, insert <no activity> at the beginning of the 
+    // trace.  This ensures that if there is a long interval at the 
+    // beginning of the trace when sampling is disabled, the trace will 
+    // not be artificially short.  Don't add <no activity> to a CPU trace 
+    // line when only tracing on a GPU.
+    core_profile_trace_data_t * cptd = &(TD_GET(core_profile_trace_data));
+    cct_bundle_t* cct_bundle = &(cptd->epoch->csdata);
+    cct_node_t* no_activity = hpcrun_cct_bundle_get_no_activity_node(cct_bundle);
+    hpcrun_trace_append(cptd, no_activity, 0, INT_MAX, 0);
+  }
 
   // release the wallclock handler -for this thread-
   hpcrun_itimer_wallclock_ok(true);
@@ -736,20 +784,10 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
-  hpcrun_mmap_init();
-
-  // ----------------------------------------
-  // call thread manager to get a thread data. If there is unused thread data,
-  //  we can recycle it, otherwise we need to allocate a new one.
-  // If we allocate a new one, we need to initialize the data and trace file.
-  // ----------------------------------------
-
-  thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
-  hpcrun_set_thread_data(td);
-
-  td->inside_hpcrun = 1;  // safe enter, disable signals
-
+  hpcrun_thread_init_mem_pool_once(id, thr_ctxt, has_trace, demand_new_thread);
+  
+  hpcrun_get_thread_data()->inside_hpcrun = 1;
+  
   
   if (ENABLED(THREAD_CTXT)) {
     if (thr_ctxt) {
@@ -857,7 +895,6 @@ void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
   char* process_name;
-  char  buf[PROC_NAME_LEN];
 
   hpcrun_thread_suppress_sample = false;
 
@@ -880,19 +917,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_sample_prob_init();
 
-  // FIXME: if the process fork()s before main, then argc and argv
-  // will be NULL in the child here.  MPT on CNL does this.
-  process_name = "unknown";
-  if (argv != NULL && argv[0] != NULL) {
-    process_name = argv[0];
-  }
-  else {
-    int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
-    if (len > 1) {
-      buf[len] = 0;
-      process_name = buf;
-    }
-  }
+  process_name = get_process_name();
 
   hpcrun_set_using_threads(false);
 
@@ -918,7 +943,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
     // must initialize unwind recipe map before initializing fnbounds
     // because mapping of load modules affects the recipe map.
-    hpcrun_unw_init();
+    if (!is_child) hpcrun_unw_init();
 
     // We need to save vdso before initializing fnbounds this
     // is because fnbounds_init will iterate over the load map
@@ -929,7 +954,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     hpcrun_initializer_init();
 
     // fnbounds must be after module_ignore_map
-    fnbounds_init();
+    fnbounds_init(process_name);
 #ifndef HPCRUN_STATIC_LINK
     auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
@@ -1146,7 +1171,7 @@ monitor_thread_pre_create(void)
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
-    return NULL;
+    return MONITOR_IGNORE_NEW_THREAD;
   }
 
   struct monitor_thread_info mti;
@@ -1711,7 +1736,8 @@ static void auditor_close(auditor_map_entry_t* entry) {
 static void auditor_stable(bool additive) {
   if(!hpcrun_td_avail()) return;
   hpcrun_safe_enter();
-  if(additive) fnbounds_fini();
+  bool fnbounds_shutdown = hpcrun_get_env_bool("HPCRUN_FNBOUNDS_SHUTDOWN");
+  if(fnbounds_shutdown && additive) fnbounds_fini();
   hpcrun_safe_exit();
 }
 

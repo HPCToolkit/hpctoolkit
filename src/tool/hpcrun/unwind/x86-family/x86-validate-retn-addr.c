@@ -363,7 +363,7 @@ deep_validate_return_addr(void* addr, void* generic)
        addr);
 
   unwindr_info_t unwr_info;
-  if (!return_addr_valid(addr, &unwr_info) ) {
+  if (addr == 0 || !return_addr_valid(addr, &unwr_info) ) {
     TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }

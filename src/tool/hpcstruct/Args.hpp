@@ -114,7 +114,9 @@ public:
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
-  long gpu_size;
+  long parallel_analysis_threshold; 
+  bool analyze_cpu_binaries ;     // default: true
+  bool analyze_gpu_binaries ;     // default: true
   bool compute_gpu_cfg;
   bool du_graph;
 

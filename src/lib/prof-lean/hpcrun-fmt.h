@@ -455,6 +455,8 @@ hpcrun_fmt_metric_set_format(metric_desc_t *metric_desc, char *format);
 // loadmap
 //***************************************************************************
 
+#define LOADMAP_ENTRY_ANALYZE 1
+
 typedef struct loadmap_entry_t {
 
   uint16_t id; // HPCRUN_FMT_LMId_NULL is the NULL value
@@ -986,6 +988,16 @@ hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 typedef struct sampling_info_s {
   uint64_t  sample_clock;
   void     *sample_data;
+
+  // sampling period in nanoseconds.
+  // This is used for adding <no activity> to traces where threads are idle
+  // 0 means not a time-based metric, in which case we do not add 
+  // <no activity> to the trace.
+  uint64_t sampling_period;
+
+  // 1 if the sample is for a time-based metric
+  // 0 otherwise
+  int is_time_based_metric;
 } sampling_info_t;
 
 

@@ -52,6 +52,11 @@
 #define HPCRUN_PAPI_ERROR_UNAVAIL  1
 #define HPCRUN_PAPI_ERROR_VERSION  2
 
+// HPCRUN_CPU_FREQUENCY is used to add <no activity>
+// to CPU traces where we do not any sample for a long period.
+// The exact CPU frequency does not really matter.
+#define HPCRUN_CPU_FREQUENCY 2000000000
+
 void  METHOD_FN(hpcrun_ss_add_event, const char* ev);
 void  METHOD_FN(hpcrun_ss_store_event, int event_id, long thresh);
 void  METHOD_FN(hpcrun_ss_store_metric_id, int event_id, int metric_id);

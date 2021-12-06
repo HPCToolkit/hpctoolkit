@@ -73,6 +73,8 @@ static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
 
 static loadmap_notify_t *notification_recipients = NULL;
 
+static void hpcrun_loadModule_flags_init(load_module_t *lm);
+
 void
 hpcrun_loadmap_notify_register(loadmap_notify_t *n)
 {
@@ -217,6 +219,8 @@ hpcrun_loadModule_new(const char* name)
   x->prev = NULL;
   x->phdr_info.dlpi_phdr = NULL;
 
+  hpcrun_loadModule_flags_init(x);
+
   return x;
 }
 
@@ -292,7 +296,11 @@ hpcrun_loadmap_print(hpcrun_loadmap_t* loadmap)
 load_module_t*
 hpcrun_loadmap_findByAddr(void* begin, void* end)
 {
+  // don't waste effort on an obviously invalid address
+  if (begin == 0) return NULL; 
+
   TMSG(LOADMAP, "find by address %p -- %p", begin, end);
+
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     TMSG(LOADMAP, "\tload module %s", x->name);
     if (x->dso_info) {
@@ -305,8 +313,9 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
 				  x->dso_info->start_to_ref_dist) : -1)
 	   );
       if (x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
-	TMSG(LOADMAP, "       --->%s", x->name);
-	return x;
+        TMSG(LOADMAP, "       --->%s", x->name);
+        hpcrun_loadModule_flags_set(x, LOADMAP_ENTRY_ANALYZE);
+        return x;
       }
     }
   }
@@ -558,6 +567,27 @@ hpcrun_loadModule_add(const char* name)
 }
 
 
+static void
+hpcrun_loadModule_flags_init(load_module_t *lm)
+{
+  atomic_store(&(lm->flags), 0);
+}
+
+
+void
+hpcrun_loadModule_flags_set(load_module_t *lm, int flag)
+{
+  atomic_fetch_or(&(lm->flags), flag);
+}
+
+
+int
+hpcrun_loadModule_flags_get(load_module_t *lm)
+{
+  return atomic_load(&(lm->flags));
+}
+
+
 //***************************************************************************
 // 
 //***************************************************************************
@@ -565,12 +595,19 @@ hpcrun_loadModule_add(const char* name)
 void
 hpcrun_initLoadmap()
 {
-  notification_recipients = NULL; // necessary for forked executable
+  // all processes (initial and forked processes)
+  notification_recipients = NULL; 
 
-  s_loadmap_ptr = &s_loadmap;
-  hpcrun_loadmap_init(s_loadmap_ptr);
+  // initial process only
+  if (s_loadmap_ptr == NULL) { 
 
-  s_dso_free_list = NULL;
+    // initialize load map itself
+    s_loadmap_ptr = &s_loadmap;
+    hpcrun_loadmap_init(s_loadmap_ptr);
+
+    // initialize free list for shared libraries
+    s_dso_free_list = NULL;
+  }
 }
 
 

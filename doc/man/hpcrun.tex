@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2018/09/30}
+\setDate{2021/09/11}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -66,7 +66,7 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 \Prog{hpcrun} can profile an execution using multiple sample sources simultaneously, 
 supports measurement of applications with multiple processes and/or multiple threads, and handles complex runtime behaviors including
 fork, exec, and/or dynamic loading of shared libraries.
-\Prog{hpcrun} can be used in conjunction with program launchers such as \texttt{mpiexec} and SLURM's \texttt{srun}.
+\Prog{hpcrun} can be used in conjunction with program launchers such as \texttt{mpiexec}, SLURM's \texttt{srun}, LSF's \texttt{jsrun}, and Cray's \texttt{aprun}.
 
 To profile a statically-linked executable, make sure to link with \HTMLhref{hpclink.html}{\Cmd{hpclink}{1}}.
 
@@ -75,7 +75,7 @@ For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \em
 current calling context and augment its execution measurements of the monitored \Arg{command}.
 
 If no sample source is specified, by default \Prog{hpcrun} profile using the timer 
-CPUTIME on Linux or WALLCLOCK on Blue Gene at a frequency of 200 samples per second per thread. 
+CPUTIME on Linux at a frequency of 200 samples per second per thread. 
 
 When \Arg{command} terminates, a profile measurement database will be written to the directory:\\
 \\
@@ -147,8 +147,7 @@ is active in the same execution.
 
 \item[\OptArg{-e}{event\Lbr@howoften\Rbr}, \OptArg{--event}{event\Lbr@howoften\Rbr}]
 \Arg{event} may be an architecture-independent hardware or software event supported by Linux perf, a native hardware counter event, 
-a hardware counter event supported by the PAPI library, a Linux system timer (\Prog{CPUTIME} and \Prog{REALTIME}), or the
-operating system interval timer \Prog{WALLCLOCK}.
+a hardware counter event supported by the PAPI library, or a Linux system timer (\Prog{CPUTIME} and \Prog{REALTIME}).
 This option may be given multiple times to profile several events at once. 
 While events measured using the Linux perf monitoring infrastructure will be transparently multiplexed if necessary, 
 for other sampling sources or on operating systems such as the Blue Gene Compute Node Kernel,
@@ -158,21 +157,41 @@ For Linux perf events, one may specify a sampling frequency for \Arg{howoften} b
 For instance, to sample an event 100 times per second, specify \Arg{howoften} as '@f100'.
 For Linux perf events, if no value for \Arg{howoften} is specified, \Prog{hpcrun} will monitor the event using frequency-based sampling at 300 samples/second.
 \begin{itemize}
-  \item For timer events \Prog{CPUTIME}, \Prog{REALTIME}, and \Prog{WALLCLOCK}, the units for a sample period are microseconds.
-  \item Timer events should not be mixed with hardware events.
+  \item For timer events \Prog{CPUTIME} and \Prog{REALTIME}, the units for a sample period are microseconds.
+  \item Timer events should not be mixed with hardware counter events.
   \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
 \end{itemize}
+
+\item[\OptArg{-e}{gpu=nvidia\Lbr,pc\Rbr}, \OptArg{--event}{gpu=nvidia\Lbr,pc\Rbr}]
+Collect comprehensive operation-level measurements for CUDA programs on NVIDIA 
+GPUs, including timing of GPU kernel invocations, memory copies (implicit and 
+explicit), driver and runtime activity, and overhead.
+If the optional argument \Arg{pc} is used, the GPU will collect 
+instruction-level measurements of GPU kernels using Program Counter (PC) 
+sampling in addition to the operation-level data.  
+PC sampling attributes STALL reasons to individual GPU instructions.
+
+\item[\OptArg{-e}{gpu=amd}, \OptArg{--event}{gpu=amd}]
+Collect comprehensive operation-level measurements for HIP programs on AMD GPUs,
+including timing of GPU kernel invocations, memory copies 
+(implicit and explicit), driver and runtime activity, and overhead.
+
+\item[\OptArg{-e}{gpu=opencl}, \OptArg{--event}{gpu=opencl}]
+Collect comprehensive operation-level measurements for OpenCL programs on AMD, 
+Intel, or NVIDIA GPUs, including timing of GPU kernel invocations, memory 
+copies (implicit and explicit), driver and runtime activity, and overhead. 
+The opencl measurement mode may also be used to measure executions of DPC++ 
+programs compiled to Intel's OpenCL backend.
 
 \item[\OptArg{-c}{howoften}, \OptArg{--count}{howoften}]
                        Only available for events managed by Linux perf. This option
                        specifies a default value for how often to sample. The value for \Arg{howoften} may be a number that will be used as a default
                        event period or an f followed by a number, e.g. f100, to specify a default sampling frequency in samples/second.
-
+\medskip
 By default, \Prog{hpcrun} will allow attribution of hardware counter events to have arbitrary skid. 
 Some processor architectures, e.g., ARM,  don't support attribution with any higher level of precision.
 If a processor does not support the specified level of attribution precision for a hardware counter event, 
 \Prog{hpcrun} may record 0 occurrences of the event without reporting an error.
-
 
 \item[\OptArg{-f}{frac}, \OptArg{-fp}{frac}, \OptArg{--process-fraction}{frac}]
 Measure only a fraction \Arg{frac} of the execution's processes.
@@ -228,12 +247,15 @@ to gather accurate counts.
 
  \item[\Opt{-nu}, \Opt{--no-unwind}]
 Suppress unwinding of callstacks.
-Normally as \Prog{hpcrun} collects data against full callstacks at the time of each event.
-If this option is given, \Prog{hpcrun} will skip unwinding, and generate data with only
-the leafPC's.
+Normally as \Prog{hpcrun} attributes performance metrics to full calling contexts. 
+If this option is given, \Prog{hpcrun} collect only flat profiles, attributing 
+metrics directly to functions without any information about the contexts in which they are called.
 
 \item[\Opt{-t}, \Opt{--trace}]
-Generate a call path trace in addition to a call path profile.
+Generate a call path trace in addition to a call path profile. 
+This option will enable tracing for CPUs if a time-based metric, such as CPUTIME, REALTIME, or cycles is used. 
+This option will enable tracing for GPU operations if a '-e gpu=...' option is used to enable 
+measurement of GPU activities.
 
 \end{Description}
 
@@ -267,6 +289,9 @@ often dramatically slowing the application and potentially distorting the measur
 
 \item[\Opt{-md}, \Opt{--monitor-debug}]
 Enable debug tracing of \Prog{libmonitor}, the \Prog{hpcrun} subsystem which implements process/thread control.
+
+\item[\Opt{--fnbounds-eager-shutdown}]
+Terminate the  \Prog{hpcfnbounds} server when it goes idle.  By default, it is kept alive during the entire run.
 
 \end{Description}
 

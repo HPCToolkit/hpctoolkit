@@ -135,6 +135,8 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   }
   signal_handler_init();
 
+  write_mesg(SYSERV_READY, 0);
+
   for (;;) {
     int ret = read_mesg(&mesg);
 

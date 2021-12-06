@@ -204,7 +204,8 @@ relocateSymbolsHelper
 	      switch(symtype) {
 	        case STT_FUNC:
 	          {
-	            symbol_values->symbols[i] = sectionOffset(sections, section_index(section_index));
+              symbol_values->symbols[i] = sym.st_value + sectionOffset(sections, section_index(section_index));
+              break;
 	          }
 	        default: break;
 	      }

@@ -140,7 +140,7 @@ endif
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 GENHEADERS = \
-	gpubin-analysis.h \
+	pmake.h \
 	usage.h
 
 #----------------------------------------------------------------------

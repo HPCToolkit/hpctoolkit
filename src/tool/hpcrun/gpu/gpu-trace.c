@@ -354,6 +354,8 @@ gpu_trace_record
 {
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
 
+  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
     gpu_trace_channel_set_process(channel_set);
@@ -450,10 +452,7 @@ consume_one_trace_item
   }
 
   if (append) {
-    gpu_trace_stream_append(td, no_activity, start - 1);
     gpu_trace_stream_append(td, leaf, start);
-
-    gpu_trace_stream_append(td, leaf, end);
     gpu_trace_stream_append(td, no_activity, end + 1);
 
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
