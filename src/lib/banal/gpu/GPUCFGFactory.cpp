@@ -40,7 +40,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             auto last_addr = inst_offsets.back().first;
             auto block_end = last_addr + inst_offsets.back().second;
             ret_block = new GPUBlock(obj, region, block->address,
-              block_end, last_addr, inst_offsets, arch);
+              block_end, last_addr, block->insts, arch);
             a->second = ret_block;
             blocks_.add(ret_block);
           } else {
@@ -74,7 +74,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
               auto last_addr = inst_offsets.back().first;
               auto block_end = last_addr + inst_offsets.back().second;
               ret_target_block = new GPUBlock(obj, region, target->block->address,
-                block_end, last_addr, inst_offsets, arch);
+                block_end, last_addr, target->block->insts, arch);
               a->second = ret_target_block;
               blocks_.add(ret_target_block);
             } else {

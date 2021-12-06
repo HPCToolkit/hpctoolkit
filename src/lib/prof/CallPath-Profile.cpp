@@ -1188,7 +1188,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
   }
 #endif
-
   // ----------------------------------------
   // loadmap
   // ----------------------------------------
