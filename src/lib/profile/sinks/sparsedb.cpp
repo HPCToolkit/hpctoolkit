@@ -73,7 +73,7 @@ SparseDB::SparseDB(stdshim::filesystem::path p)
     fpos(0), accFpos(mpi::Tag::SparseDB_1),
     parForCiip([&](profCtxIdIdxPairs& item){ handleItemCiip(item); }),
     parForPd([&](profData& item){ handleItemPd(item); }),
-    ctxGrpId(0), accCtxGrp(mpi::Tag::SparseDB_1),
+    ctxGrpId(0), accCtxGrp(mpi::Tag::SparseDB_2),
     parForCtxs([&](ctxRange& item){ handleItemCtxs(item); }) {
 
   if(dir.empty())
