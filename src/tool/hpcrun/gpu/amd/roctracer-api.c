@@ -498,9 +498,6 @@ roctracer_buffer_completion_callback
 )
 {
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
-  if (collect_counter) {
-    return;
-  }
   roctracer_buffer_completion_notify();
   roctracer_record_t* record = (roctracer_record_t*)(begin);
   roctracer_record_t* end_record = (roctracer_record_t*)(end);

@@ -306,7 +306,7 @@ unsigned metrics_input(rocprofiler_feature_t** ret) {
 // Dump and delete the context entry
 // Return true if the context was dumped successfully
 static bool context_handler1(rocprofiler_group_t group, void* arg) {
-
+  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
   volatile bool valid = counter_data.valid;
   while (!valid) {
     sched_yield();
