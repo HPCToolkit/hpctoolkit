@@ -53,9 +53,8 @@ using namespace detail;
 
 namespace hpctoolkit::mpi::detail {
   struct Win{
-    Win(Tag tag) : tag(tag), active(false) {};
+    Win(Tag tag) : tag(tag) {};
     const Tag tag;
-    bool active;
     std::thread t;
   };
 }
@@ -64,7 +63,7 @@ SharedAccumulator::SharedAccumulator(Tag tag)
   : detail(World::size() > 1 ? std::make_unique<detail::Win>(tag) : nullptr) {}
 
 SharedAccumulator::~SharedAccumulator() {
-  if(detail && detail->active) {
+  if(detail && detail->t.joinable()) {
     cancel_server<std::uint64_t>(detail->tag);
     detail->t.join();
   }
@@ -73,7 +72,6 @@ SharedAccumulator::~SharedAccumulator() {
 void SharedAccumulator::initialize(std::uint64_t init) {
   atom.store(init, std::memory_order_relaxed);
   if(detail && World::rank() == 0) {
-    detail->active = true;
     detail->t = std::thread([](detail::Win& w, std::atomic<std::uint64_t>& atom) {
       while(auto query = receive_server<std::uint64_t>(w.tag)) {
         auto [val, src] = *query;
