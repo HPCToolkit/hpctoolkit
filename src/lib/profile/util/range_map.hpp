@@ -59,6 +59,89 @@
 
 namespace hpctoolkit::util {
 
+/// Simple structure suitable for representing intervals. The usual ordering
+/// operators for this type instead define a partial order where overlapping
+/// types are incomparable. This makes it really useful for keys in a std::map.
+///
+/// An extra template argument allows overriding the comparison operation. This
+/// comparison must implement a total order.
+template<class T, class Compare = std::less<T>>
+class interval {
+private:
+  Compare comp;
+
+public:
+  // Start and end of the interval. May be equal for a very small interval.
+  // Presumes C++-style indexing, where end is one-after-end.
+  T begin;
+  T end;
+
+  // Default constructor, if T is default-constructable
+  interval() = default;
+  ~interval() = default;
+
+  // Can also be constructed from two values.
+  constexpr interval(const T& a, const T& b)
+    : begin(std::min<T>(a, b, comp)), end(std::max<T>(a, b, comp)) {}
+
+  // Empty intervals can be constructed from one value.
+  constexpr interval(const T& v) : begin(v), end(v) {}
+
+  /// Check if this is an empty interval.
+  bool empty() const {
+    return !comp(begin, end) && !comp(end, begin);
+  }
+};
+
+template<class T, class C>
+constexpr bool operator<(const interval<T, C>& a, const interval<T, C>& b) {
+  C comp;
+  return !comp(b.begin, a.end) && comp(a.begin, b.begin);
+}
+template<class T, class C>
+constexpr bool operator<=(const interval<T, C>& a, const interval<T, C>& b) {
+  return a < b || a == b;
+}
+template<class T, class C>
+constexpr bool operator>(const interval<T, C>& a, const interval<T, C>& b) {
+  return b < a;
+}
+template<class T, class C>
+constexpr bool operator>=(const interval<T, C>& a, const interval<T, C>& b) {
+  return a > b || a == b;
+}
+template<class T, class C>
+constexpr bool operator==(const interval<T, C>& a, const interval<T, C>& b) {
+  C comp;
+  return !comp(a.begin, b.begin) && !comp(b.begin, a.begin)
+         && !comp(a.end, b.end) && !comp(b.end, a.end);
+}
+template<class T, class C>
+constexpr bool operator!=(const interval<T, C>& a, const interval<T, C>& b) {
+  return !(a == b);
+}
+
+/// Subtract an interval out of another. Two sub-intervals of `a` are returned,
+/// the first is strictly before `b` and the second is strictly after `b`.
+/// One or both of the intervals may be empty.
+template<class T, class C>
+constexpr std::pair<interval<T, C>, interval<T, C>>
+operator-(const interval<T, C>& a, const interval<T, C>& b) {
+  C comp;
+  if(a < b) return {a, interval<T, C>(a.end, a.end)};
+  if(b < a) return {interval<T, C>(a.begin, a.begin), a};
+  return {
+    interval<T,C>(std::min<T>(a.begin, b.begin, comp), b.begin),
+    interval<T,C>(b.end, std::max<T>(a.end, b.end, comp))
+  };
+}
+
+/// Debugging support for printing intervals
+template<class T, class C>
+std::ostream& operator<<(std::ostream& os, const interval<T, C>& v) {
+  return os << '[' << v.begin << '-' << v.end << ')';
+}
+
 /// Wrapper for std::vector/deque to make it a std::map with range-based lookup.
 /// Unlike a normal map, lookups that don't match exactly return a pair with the
 /// next lower key. Multiple values for a key can be inserted, they are merged
