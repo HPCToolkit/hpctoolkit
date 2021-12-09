@@ -61,19 +61,32 @@ void HatchetLiteral::write() {
   std::stack<bool, std::vector<bool>> firstStack;
   firstStack.push(true);
 
+  bool ignore_children = false;
   std::ofstream f(out);
   f << "[";
   src.contexts().citerate([&](const Context& c){
+    if (ignore_children) {
+      return;
+    }
+
     if(!firstStack.top()) f << ",";
     firstStack.top() = false;
 
     std::ostringstream ss;
     ss << c.scope();
+
+    if (ss.str().find("GPUKernl") != std::string::npos) {
+      ignore_children = true; 
+    }
+
     f << "{\"frame\":{\"name\":" << std::quoted(ss.str()) << ","
                        "\"type\":\"function\"},"
           "\"metrics\":{";
     bool first = true;
     for(const auto& [m, val]: c.statistics().citerate()) {
+      if (m->name() != "GINS") {
+        continue;
+      }
       // We only want the :Sum Statistic, so figure out which Partial that is.
       util::optional_ref<const StatisticPartial> part;
       for(const auto& s: m->statistics()) {
@@ -92,14 +105,31 @@ void HatchetLiteral::write() {
         first = false;
         f << "\"" << m->name() << suffix << "\":" << acc.get(ms).value_or(0);
       };
-      handle(MetricScope::execution, " (I)");
-      handle(MetricScope::function, " (E)");
-      handle(MetricScope::point, " (RAW)");
+      if (ss.str().find("GPUKernl") != std::string::npos) {
+        handle(MetricScope::execution, " (E)");
+        handle(MetricScope::execution, " (I)");
+        handle(MetricScope::execution, " (RAW)");
+      } else {
+        handle(MetricScope::execution, " (I)");
+        handle(MetricScope::function, " (E)");
+        handle(MetricScope::point, " (RAW)");
+      }
     }
     f << "},\"children\":[";
 
     firstStack.push(true);
   }, [&](const Context& c) {
+    std::ostringstream ss;
+    ss << c.scope();
+
+    if (ss.str().find("GPUKernl") != std::string::npos) {
+      ignore_children = false;
+    }
+
+    if (ignore_children) {
+      return;
+    }
+
     f << "]}";
     firstStack.pop();
   });
