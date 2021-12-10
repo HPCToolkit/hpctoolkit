@@ -136,14 +136,22 @@ DataClass MetricReceiver::provides() const noexcept {
          + (stash ? data::references + data::contexts : DataClass{});
 }
 
-void MetricReceiver::read(const DataClass& d) {
-  if(!d.hasMetrics() || done) return;
+DataClass MetricReceiver::finalizeRequest(const DataClass& d) const noexcept {
+  using namespace hpctoolkit::literals;
+  DataClass rd = d;
+  if(rd.hasContexts()) rd += data::references;
+  if(rd.hasMetrics()) rd += data::attributes;
+  return rd;
+}
 
-  if(stash) {
+void MetricReceiver::read(const DataClass& d) {
+  if(stash && d.hasContexts()) {
     iter_t it = stash->begin();
     it = unpackReferences(it);
     it = unpackContexts(it);
   }
+
+  if(!d.hasMetrics() || done) return;
 
   std::vector<std::uint8_t> block;
   {

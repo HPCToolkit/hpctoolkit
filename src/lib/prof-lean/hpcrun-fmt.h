@@ -459,6 +459,8 @@ hpcrun_fmt_metric_set_format(metric_desc_t *metric_desc, char *format);
 // loadmap
 //***************************************************************************
 
+#define LOADMAP_ENTRY_ANALYZE 1
+
 typedef struct loadmap_entry_t {
 
   uint16_t id; // HPCRUN_FMT_LMId_NULL is the NULL value
@@ -539,6 +541,10 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   hpcfmt_uint_t num_metrics;
   hpcrun_metricVal_t* metrics;
+
+  // If true, this cct was generated from an un-unwindable code region
+  // (eg. GPU), so there may be "missing" ccts between this one and id_parent.
+  bool from_ununwindable : 1;
 
 } hpcrun_fmt_cct_node_t;
 
@@ -721,7 +727,7 @@ static const int SF_footer_SIZE           = 7 * 16;
 static const int SF_num_lm_SIZE           = 4; 
 static const int SF_num_metric_SIZE       = 4;
 static const int SF_num_cct_SIZE          = 8;
-static const int SF_cct_node_SIZE         = 18; // id:4 id-parent:4 lm-id:2 im-ip:8
+static const int SF_cct_node_SIZE         = 19; // id:4 id-parent:4 lm-id:2 im-ip:8 flags:1
 static const int SF_tid_SIZE              = 4;
 static const int SF_num_val_SIZE          = 8;
 static const int SF_val_SIZE              = 8;

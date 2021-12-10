@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2019-2020, Rice University
+// Copyright ((c)) 2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,39 +44,50 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_PROFILE_CONTEXT_FWD_H
-#define HPCTOOLKIT_PROFILE_CONTEXT_FWD_H
+#include "finalizer.hpp"
 
-#include "scope.hpp"
+using namespace hpctoolkit;
 
-#include "util/ref_wrappers.hpp"
-
-namespace hpctoolkit {
-
-class Context;
-class SuperpositionedContext;
-class CollaborativeContext;
-class CollaborativeSharedContext;
-
-/// Generic reference to any of the Context-like classes.
-/// Use ContextRef::const_t for a constant reference to a Context-like.
-using CollaboratorRoot = std::pair<Scope, std::unique_ptr<CollaborativeSharedContext>>;
-using ContextRef = util::variant_ref<
-  // Ordinary reference to a (physical) calling Context
-  Context,
-  // Reference to a Superpositioned instance across multiple Contexts
-  SuperpositionedContext,
-  // Reference to a Collaborative Context, in particular its (shared) root
-  CollaborativeContext,
-  // Reference to a particular collaborator root for a Collaborative Context
-  // Note that consistency between the two refs is assumed.
-  // FIXME: This is really a giant hack, it should actually be a
-  // <Context&, CollaborativeContext&, Scope> tuple.
-  util::ref_pair<Context, const CollaboratorRoot>,
-  // Reference to the shared Context under a Collaborative Context
-  CollaborativeSharedContext
->;
-
+void ProfileFinalizer::bindPipeline(ProfilePipeline::Source&& se) noexcept {
+  sink = std::move(se);
+  notifyPipeline();
 }
 
-#endif // HPCTOOLKIT_PROFILE_CONTEXT_FWD_H
+void ProfileFinalizer::notifyPipeline() noexcept {};
+
+std::optional<unsigned int> ProfileFinalizer::identify(const Module&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const File&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const Metric&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const Context&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const Thread&) noexcept {
+  return std::nullopt;
+}
+
+std::optional<Metric::ScopedIdentifiers> ProfileFinalizer::subidentify(const Metric&) noexcept {
+  return std::nullopt;
+}
+
+std::optional<stdshim::filesystem::path> ProfileFinalizer::resolvePath(const File&) noexcept {
+  return std::nullopt;
+}
+std::optional<stdshim::filesystem::path> ProfileFinalizer::resolvePath(const Module&) noexcept {
+  return std::nullopt;
+}
+
+util::optional_ref<Context> ProfileFinalizer::classify(Context&, Scope&) noexcept {
+  return std::nullopt;
+}
+
+bool ProfileFinalizer::resolve(ContextFlowGraph&) noexcept {
+  return false;
+}
+
+void ProfileFinalizer::appendStatistics(const Metric&, Metric::StatsAccess) noexcept {};

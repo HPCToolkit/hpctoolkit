@@ -141,6 +141,7 @@ extern cct_node_t* hpcrun_leftmost_child(cct_node_t* node);
 extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);
+extern bool hpcrun_cct_from_ununwindable(cct_node_t* node);
 extern cct_node_t* hpcrun_cct_insert_path_return_leaf(cct_node_t *root, cct_node_t *path);
 extern void hpcrun_cct_delete_self(cct_node_t *node);
 //
@@ -156,7 +157,7 @@ extern bool hpcrun_cct_is_dummy(cct_node_t* node);
 // Mutator functions: modify a given cct
 //
 
-extern cct_node_t* hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm);
+extern cct_node_t* hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm, bool ununwind);
 
 //
 // Fundamental mutation operation: insert a given addr into the
@@ -165,7 +166,7 @@ extern cct_node_t* hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t i
 // the already present node is returned. Otherwise, a new node is created, linked in,
 // and returned]
 //
-extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
+extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr, bool ununwind);
 
 //
 // Insert a dummy node to represent the callback function by hpcrun, which will

@@ -113,10 +113,10 @@ public:
   StructFileParser(const StructFileParser&) = delete;
   StructFileParser& operator=(const StructFileParser&) = delete;
 
-  operator bool() const noexcept { return ok; }
+  bool valid() const noexcept { return ok; }
 
   std::string seekToNextLM() noexcept;
-  void parse(ProfilePipeline::Source&, const Module&, Classification&) noexcept;
+  bool parse(ProfilePipeline::Source&, const Module&, StructFile::udModule&) noexcept;
 
 private:
   std::unique_ptr<SAX2XMLReader> parser;
@@ -133,7 +133,7 @@ StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
 
   while(1) {  // Exit on EOF or error
     auto parser = std::make_unique<StructFileParser>(path);
-    if(!*parser) {
+    if(!parser->valid()) {
       util::log::error{} << "Error while parsing Structfile " << path.filename().string();
       return;
     }
@@ -143,7 +143,7 @@ StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
       lm = parser->seekToNextLM();
       if(lm.empty()) {
         // EOF or error
-        if(!*parser)
+        if(!parser->valid())
           util::log::error{} << "Error while parsing Structfile " << path.filename().string();
         return;
       }
@@ -158,6 +158,98 @@ StructFile::~StructFile() {
     XMLPlatformUtils::Terminate();
 }
 
+void StructFile::notifyPipeline() noexcept {
+  ud = sink.structs().module.add_default<udModule>(
+    [this](udModule& data, const Module& m){
+      load(m, data);
+    });
+}
+
+util::optional_ref<Context> StructFile::classify(Context& c, Scope& s) noexcept {
+  if(s.type() == Scope::Type::point) {
+    auto mo = s.point_data();
+    const auto& udm = mo.first.userdata[ud];
+    auto leafit = udm.leaves.find(mo.second);
+    if(leafit != udm.leaves.end()) {
+      std::reference_wrapper<Context> cc = c;
+      const std::function<void(const udModule::trienode&)> handle =
+        [&](const udModule::trienode& tn){
+          if(tn.second != nullptr)
+            handle(*(const udModule::trienode*)tn.second);
+          cc = sink.context(cc, tn.first);
+        };
+      handle(leafit->second.first);
+      return cc.get();
+    }
+  }
+  return std::nullopt;
+}
+
+bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
+  if(fg.scope().type() == Scope::Type::point) {
+    auto mo = fg.scope().point_data();
+    const auto& udm = mo.first.userdata[ud];
+
+    // First move from the instruction to it's enclosing function's entry. That
+    // makes things easier for the DFS later.
+    const auto leafit = udm.leaves.find(mo.second);
+    if(leafit == udm.leaves.end()) {
+      // Sample outside of our knowledge of function bounds. We know nothing.
+      // TODO: Emit an error in this case?
+      return false;
+    }
+
+    // DFS through the call graph to iterate all possible paths from a kernel
+    // entry point (uncalled function) to this function.
+    std::unordered_set<uint64_t> seen;
+    std::vector<Scope> rpath;
+    const std::function<void(uint64_t)> dfs = [&](uint64_t calleeFunc){
+      // TODO: SCC algorithms are needed to handle recursion in a meaningful
+      // way. For now just truncate the search.
+      if(!seen.insert(calleeFunc).second) return;
+
+      // Try to step "forwards" to the caller instructions. If we succeed, this
+      // is part of the path.
+      bool terminal = true;
+      for(auto [callerit, end] = udm.rcg.equal_range(calleeFunc);
+          callerit != end; ++callerit) {
+        terminal = false;
+        rpath.push_back(Scope(mo.first, callerit->second));
+
+        // Find the function for the caller instruction, and continue the DFS
+        // from there.
+        // TODO: Gracefully handle the error if the Structfile has a bad call graph.
+        dfs(udm.leaves.at({callerit->second, callerit->second}).second);
+        rpath.pop_back();
+      }
+
+      if(terminal) {
+        // This function is a kernel entry point. The path to get here is the
+        // reverse of the path we constructed along the way.
+        auto fpath = rpath;
+        std::reverse(fpath.begin(), fpath.end());
+        // Record the full Template representing this route.
+        fg.add({Scope(mo.first, calleeFunc), std::move(fpath)});
+      }
+
+      seen.erase(calleeFunc);
+    };
+    dfs(leafit->second.second);
+
+    // If we made it here, we found at least one path. Set up the handler and
+    // report it as the final answer.
+    fg.handler([](const Metric& m){
+      ContextFlowGraph::MetricHandling ret;
+      if(m.name() == "GINS") ret.interior = true;
+      else if(m.name() == "GKER:COUNT") ret.exterior = ret.exteriorLogical = true;
+      else if(m.name() == "GKER:SAMPLED_COUNT") ret.exterior = true;
+      return ret;
+    });
+    return true;
+  }
+  return false;
+}
+
 std::vector<stdshim::filesystem::path> StructFile::forPaths() const {
   std::vector<stdshim::filesystem::path> out;
   out.reserve(lms.size());
@@ -165,48 +257,40 @@ std::vector<stdshim::filesystem::path> StructFile::forPaths() const {
   return out;
 }
 
-void StructFile::module(const Module& m, Classification& c) noexcept {
+void StructFile::load(const Module& m, udModule& ud) noexcept {
   auto it = lms.find(m.path());
   if(it == lms.end()) it = lms.find(m.userdata[sink.resolvedPath()]);
   if(it == lms.end()) return;  // We got nothing
 
-  if(!c.empty()) {
-    util::log::warning{}
-    << "Multiple Structure files (may) apply for " << m.path().filename() << "!\n"
-       " Original path: " << m.path() << "\n"
-       "Alternate path: " << m.userdata[sink.resolvedPath()];
-  }
+  // TODO: Check if this is the only StructFile for this Module.
 
-  it->second->parse(sink, m, c);
-  if(!it->second)
+  if(!it->second->parse(sink, m, ud))
     util::log::error{} << "Error while parsing Structfile " << path.string();
 
   lms.erase(it);
 }
 
 StructFileParser::StructFileParser(const stdshim::filesystem::path& path) noexcept
-  : parser(XMLReaderFactory::createXMLReader()) {
+  : parser(XMLReaderFactory::createXMLReader()), ok(false) {
   try {
-    if(!parser) { ok = false; return; }
-
-    ok = parser->parseFirst(XMLStr(path.string()), token);
-    if(!ok) {
+    if(!parser) return;
+    if(!parser->parseFirst(XMLStr(path.string()), token)) {
       util::log::info{} << "Error while parsing Structfile XML prologue";
       return;
     }
+    ok = true;
   } catch(std::exception& e) {
     util::log::info{} << "Exception caught while parsing Structfile prologue\n"
          "  what(): " << e.what() << "\n";
-    ok = false;
   } catch(xercesc::SAXException& e) {
     util::log::info{} << "Exception caught while parsing Structfile prologue\n"
          "  msg: " << xmlstr(e.getMessage()) << "\n";
-    ok = false;
   }
 }
 
 std::string StructFileParser::seekToNextLM() noexcept try {
   assert(ok);
+  ok = false;
   std::string lm;
   bool eof = false;
   LHandler handler([&](const std::string& ename, const Attributes& attr){
@@ -221,8 +305,7 @@ std::string StructFileParser::seekToNextLM() noexcept try {
     if(!parser->parseNext(token)) {
       if(!eof) {
         util::log::info{} << "Error while parsing for Structfile LM";
-        ok = false;
-      }
+      } else ok = true;
       parser->setContentHandler(nullptr);
       parser->setErrorHandler(nullptr);
       return std::string();
@@ -230,28 +313,27 @@ std::string StructFileParser::seekToNextLM() noexcept try {
   }
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
+  ok = true;
   return lm;
 } catch(std::exception& e) {
   util::log::info{} << "Exception caught while parsing Structfile for LM\n"
        "  what(): " << e.what() << "\n";
-  ok = false;
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
   return std::string();
 } catch(xercesc::SAXException& e) {
   util::log::info{} << "Exception caught while parsing Structfile for LM\n"
        "  msg: " << xmlstr(e.getMessage()) << "\n";
-  ok = false;
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
   return std::string();
 }
 
-static std::vector<Classification::Interval> parseVs(const std::string& vs) {
+static std::vector<util::interval<uint64_t>> parseVs(const std::string& vs) {
   // General format: {[0xstart-0xend) ...}
   if(vs.at(0) != '{' || vs.size() < 2)
     throw std::invalid_argument("Bad VMA description: bad start");
-  std::vector<Classification::Interval> vals;
+  std::vector<util::interval<uint64_t>> vals;
   const char* c = vs.data() + 1;
   while(*c != '}') {
     char* cx;
@@ -267,94 +349,92 @@ static std::vector<Classification::Interval> parseVs(const std::string& vs) {
     if(*c != ')') throw std::invalid_argument("Bad VMA description: bad segment closing");
     c++;
 
-    vals.emplace_back(lo, hi-1);  // Because its a half-open interval
+    vals.emplace_back(lo, hi);
   }
   return vals;
 }
 
-void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
-                             Classification& c) noexcept try {
+bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
+                             StructFile::udModule& ud) noexcept try {
+  using trienode = std::pair<Scope, const void*>;
   assert(ok);
   struct Ctx {
     char tag;
-    const File* file;
-    Classification::Block* scope;
+    util::optional_ref<const File> file;
+    std::optional<uint64_t> funcEntry;
+    const trienode* node;
     uint64_t a_line;
-    Ctx() : tag('R'), file(nullptr), scope(nullptr), a_line(0) {};
-    Ctx(const Ctx& o, char t) : tag(t), file(o.file), scope(o.scope), a_line(o.a_line) {};
+    Ctx() : tag('R'), node(nullptr), a_line(0) {};
+    Ctx(const Ctx& o, char t) : Ctx(o) { tag = t; }
   };
-  struct Stack : public std::stack<Ctx, std::vector<Ctx>> {
-    Classification::Block* rootScope() const {
-      for(const auto& ctx: c)
-        if(ctx.scope != nullptr) return ctx.scope;
-      assert(false && "No root Scope!");
-      std::abort();
-    }
-  } stack;
+  std::stack<Ctx, std::vector<Ctx>> stack;
   bool done = false;
-  std::vector<Classification::LineScope> lscopes;
-  std::unordered_map<uint64_t, Classification::Block*> funcs;
-  std::forward_list<std::tuple<Classification::Block*, uint64_t, uint64_t>> cfg;
   LHandler handler([&](const std::string& ename, const Attributes& attr) {
-    if(ename == "LM") {
+    const auto& top = stack.top();
+    if(ename == "LM") {  // Load Module
       throw std::logic_error("More than one LM tag seen");
-    } else if(ename == "F") {
-      stack.emplace(stack.top(), 'F');
+    } else if(ename == "F") {  // File
       auto file = xmlstr(attr.getValue(XMLStr("n")));
       if(file.empty()) throw std::logic_error("Bad <F> tag seen");
-      stack.top().file = &sink.file(std::move(file));
-    } else if(ename == "P") {
-      auto& f = c.addFunction(m);
-      f.name = xmlstr(attr.getValue(XMLStr("n")));
-      f.offset = parseVs(xmlstr(attr.getValue(XMLStr("v")))).at(0).lo;
-      f.file = stack.top().file;
-      f.line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-      stack.emplace(stack.top(), 'P');
-      stack.top().scope = c.addScope(f, stack.top().scope);
-      funcs.emplace(f.offset, stack.top().scope);
-    } else if(ename == "L") {
-      auto file = xmlstr(attr.getValue(XMLStr("f")));
-      const auto& f = !file.empty() ? sink.file(std::move(file))
-                                    : *stack.top().file;
-      auto l = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-      stack.emplace(stack.top(), 'L');
-      stack.top().scope = c.addScope(Scope::loop, f, l, stack.top().scope);
-      stack.top().file = &f;
-    } else if(ename == "S") {
-      auto l = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-      for(const auto& i: parseVs(xmlstr(attr.getValue(XMLStr("v"))))) {
-        lscopes.emplace_back(i.lo, stack.top().file, l);
-        c.setScope(i, stack.top().scope);
+      auto& next = stack.emplace(top, 'F');
+      next.file = sink.file(std::move(file));
+    } else if(ename == "P") {  // Procedure (Function)
+      if(top.funcEntry) throw std::logic_error("<P> tags cannot be nested!");
+      auto is = parseVs(xmlstr(attr.getValue(XMLStr("v"))));
+      if(is.size() != 1) throw std::invalid_argument("VMA on <P> should only have one range!");
+      if(is[0].end != is[0].begin+1) throw std::invalid_argument("VMA on <P> should represent a single byte!");
+      auto name = xmlstr(attr.getValue(XMLStr("n")));
+      auto& func = top.file
+          ? ud.funcs.emplace_back(m, is[0].begin, std::move(name), *top.file,
+                std::stoll(xmlstr(attr.getValue(XMLStr("l")))) )
+          : ud.funcs.emplace_back(m, is[0].begin, std::move(name));
+      auto& next = stack.emplace(top, 'P');
+      next.node = &ud.trie.emplace_back(Scope(func), top.node);
+      next.funcEntry = is[0].begin;
+    } else if(ename == "L") {  // Loop (Scope::Type::loop)
+      auto fpath = xmlstr(attr.getValue(XMLStr("f")));
+      const File& file = fpath.empty() ? *top.file : sink.file(std::move(fpath));
+      auto line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
+      auto& next = stack.emplace(top, 'L');
+      next.node = &ud.trie.emplace_back(Scope(Scope::loop, file, line), top.node);
+      next.file = file;
+    } else if(ename == "S" || ename == "C") {  // Statement (Scope::Type::line)
+      if(!top.file) throw std::logic_error("<S> tag without an implicit f= attribute!");
+      if(!top.funcEntry) throw std::logic_error("<S> tag without an enclosing <P>!");
+      auto line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
+      const trienode& leaf = ud.trie.emplace_back(Scope(*top.file, line), top.node);
+      auto is = parseVs(xmlstr(attr.getValue(XMLStr("v"))));
+      for(const auto& i: is) {
+        // FIXME: Code regions may be shared by multiple functions,
+        // unfortunately Struct doesn't currently sort this out for us. So if
+        // there is an overlap we just ignore this tag's contribution.
+        ud.leaves.try_emplace(i, leaf, *top.funcEntry);
+      }
+      if(ename == "C") {  // Call: <S> with an additional call edge
+        if(is.size() != 1) throw std::invalid_argument("VMA on <C> tag should only have one range!");
+        auto caller = is[0].begin;
+        // FIXME: Sometimes the t= attribute is not there. No idea why, maybe
+        // indirect call sites? Since the call data is basically non-existent,
+        // we just ignore it and continue on.
+        auto callee = xmlstr(attr.getValue(XMLStr("t")));
+        if(!callee.empty())
+          ud.rcg.emplace(std::stoll(callee, nullptr, 16), caller);
       }
     } else if(ename == "A") {
-      if(stack.top().tag != 'A') {  // Single A, just changes the file
-        stack.emplace(stack.top(), 'A');
-        auto file = xmlstr(attr.getValue(XMLStr("f")));
-        if(!file.empty())
-          stack.top().file = &sink.file(std::move(file));
-        stack.top().a_line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-      } else {  // Double A, inlined function
-        auto& f = c.addFunction(m);
-        f.name = xmlstr(attr.getValue(XMLStr("n")));
-        f.offset = 0;  // Struct doesn't match it up with the original
-        auto file = xmlstr(attr.getValue(XMLStr("f")));
-        f.file = !file.empty() ? &sink.file(std::move(file)) : stack.top().file;
-        f.line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-        stack.emplace(stack.top(), 'B');
-        stack.top().scope = c.addScope(f, *stack.top().file, stack.top().a_line, stack.top().scope);
-      }
-    } else if(ename == "C") {
-      auto l = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-      auto is = parseVs(xmlstr(attr.getValue(XMLStr("v"))));
-      if(is.size() != 1) throw std::logic_error("C tags should only have a single v range");
-      auto i = is[0];
-      lscopes.emplace_back(i.lo, stack.top().file, l);
-      c.setScope(i, stack.top().scope);
-      auto d = xmlstr(attr.getValue(XMLStr("d")));
-      if(!d.empty()) {
-        auto tstr = xmlstr(attr.getValue(XMLStr("t")));
-        auto t = std::strtoll(&tstr.c_str()[2], nullptr, 16);
-        cfg.emplace_front(stack.rootScope(), i.lo, t);
+      if(top.tag != 'A') {  // First A, gives the caller line.
+        auto& next = stack.emplace(top, 'A');
+        auto fpath = xmlstr(attr.getValue(XMLStr("f")));
+        if(!fpath.empty()) next.file = sink.file(std::move(fpath));
+        next.a_line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
+      } else {  // Double A, inlined function. Gives the called function, like P
+        if(!top.file) throw std::logic_error("Double-<A> without an implicit f= attribute!");
+        auto fpath = xmlstr(attr.getValue(XMLStr("f")));
+        auto& func = ud.funcs.emplace_back(m, std::nullopt,
+            xmlstr(attr.getValue(XMLStr("n"))),
+            fpath.empty() ? *top.file : sink.file(std::move(fpath)),
+            std::stoll(xmlstr(attr.getValue(XMLStr("l")))));
+        auto& next = stack.emplace(top, 'B');
+        next.node = &ud.trie.emplace_back(Scope(func, *top.file, top.a_line), top.node);
       }
     } else throw std::logic_error("Unknown tag " + ename);
   }, [&](const std::string& ename){
@@ -369,77 +449,32 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
   parser->setContentHandler(&handler);
   parser->setErrorHandler(&handler);
   stack.emplace();
-  while((ok = parser->parseNext(token)) && !done);
+  bool fine;
+  while((fine = parser->parseNext(token)) && !done);
   stack.pop();
-  if(!ok) {
+  if(!fine) {
     util::log::info{} << "Error while parsing Structfile\n";
-    return;
+    return false;
   }
 
   assert(stack.size() == 0 && "Inconsistent stack handling!");
-  c.setLines(std::move(lscopes));
 
-  // Build the reverse call graph/CFG from the data we've gathered thus far
-  std::unordered_multimap<Classification::Block*,
-                          std::pair<Classification::Block*, uint64_t>> rcfg;
-  while(!cfg.empty()) {
-    const auto [in, from, to] = cfg.front();
-    auto it = funcs.find(to);
-    if(it != funcs.end())
-      rcfg.insert({it->second, {in, from}});
-    cfg.pop_front();
-  }
-
-  // Map out the possible routes from each top-level block. We assume all routes
-  // present in the static CFG are possible.
-  // TODO: Apply some SCC handling around here, and some general optimizations.
-  auto* unknown_block = c.addScope(Scope{});
-  for(const auto x: funcs) {
-    std::vector<Classification::Block::route_t> route;
-    std::unordered_set<Classification::Block*> seen;
-    std::function<void(Classification::Block*)> dfs = [&](Classification::Block* b) {
-      if(!seen.insert(b).second) {
-        // Terminate the route, we've looped on ourselves.
-        route.back() = unknown_block;
-        auto froute = route;
-        std::reverse(froute.begin(), froute.end());
-        x.second->addRoute(std::move(froute));
-        return;
-      }
-      auto range = rcfg.equal_range(b);
-      if(range.first == range.second) {
-        // Terminate the route, we have nowhere else to go
-        if(route.empty()) return;
-        auto froute = route;
-        std::reverse(froute.begin(), froute.end());
-        x.second->addRoute(std::move(froute));
-      } else {
-        for(auto it = range.first; it != range.second; ++it) {
-          const auto [from, addr] = it->second;
-          route.push_back(addr);
-          dfs(from);
-          route.pop_back();
-        }
-      }
-      seen.erase(b);
-    };
-    dfs(x.second);
-  }
-
+  // Cleanup and move on.
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
+  return true;
 } catch(std::exception& e) {
   util::log::info{} << "Exception caught while parsing Structfile\n"
        "  what(): " << e.what() << "\n"
        "  for binary: " << m.path().string();
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
-  ok = false;
+  return false;
 } catch(xercesc::SAXException& e) {
   util::log::info{} << "Exception caught while parsing Structfile\n"
        "  msg: " << xmlstr(e.getMessage()) << "\n"
        "  for binary: " << m.path().string();
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
-  ok = false;
+  return false;
 }

@@ -195,7 +195,7 @@ cct_trie_merge_thread
   ip_normalized_t kernel_ip = gpu_op_placeholder_ip(gpu_placeholder_type_kernel);
 
   while (cur != trie_logic_root) {
-    cct_node_t *kernel_ph = hpcrun_cct_insert_ip_norm(cur->key, kernel_ip);
+    cct_node_t *kernel_ph = hpcrun_cct_insert_ip_norm(cur->key, kernel_ip, false);
     cct_node_t *kernel_ph_children = hpcrun_cct_children(kernel_ph);
     cct_node_t *context_node = hpcrun_cct_insert_context(kernel_ph_children, context_id);
 

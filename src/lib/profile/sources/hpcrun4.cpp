@@ -60,10 +60,8 @@ using namespace sources;
 
 Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
-    thread(nullptr), path(fn), partial_node_id(0), unknown_node_id(0),
-    range_root_node_id(0),
-    tracepath(fn.parent_path() / fn.stem().concat(".hpctrace")),
-    trace_sort(false) {
+    thread(nullptr), path(fn),
+    tracepath(fn.parent_path() / fn.stem().concat(".hpctrace")) {
   // Try to open up the file. Errors handled inside somewhere.
   file = hpcrun_sparse_open(path.c_str(), 0, 0);
   if(file == nullptr) {
@@ -163,6 +161,7 @@ DataClass Hpcrun4::finalizeRequest(const DataClass& d) const noexcept {
   DataClass o = d;
   if(o.hasMetrics()) o += attributes + contexts + threads;
   if(o.hasCtxTimepoints()) o += contexts + threads;
+  if(o.hasThreads()) o += contexts;  // In case of outlined range trees
   if(o.hasContexts()) o += references;
   return o;
 }
@@ -261,8 +260,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           util::log::info{} << "Invalid metric value format: " << m.flags.fields.valFmt;
           return false;
         }
-        metricInt.emplace(id, isInt);
-        metrics.emplace(id, sink.metric(std::move(settings)));
+        metrics.insert({id, {sink.metric(std::move(settings)), isInt}});
       }
       hpcrun_fmt_metricDesc_free(&m, std::free);
     }
@@ -298,8 +296,9 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             util::log::info{} << "Value for unknown metric id: " << id;
             return false;
           }
-          es_settings.formula.emplace_back(ExtraStatistic::MetricPartialRef{
-            it->second, it->second.statsAccess().requestSumPartial()});
+          auto& met = it->second.first;
+          es_settings.formula.emplace_back(ExtraStatistic::MetricPartialRef(
+            met, met.statsAccess().requestSumPartial()));
         } else {
           // C-like formula components
           std::size_t next = rawFormula.find_first_of("#$@", idx);
@@ -312,7 +311,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       sink.extraStatistic(std::move(es_settings));
     }
-    for(const auto& im: metrics) sink.metricFreeze(im.second);
+    for(const auto& im: metrics) sink.metricFreeze(im.second.first);
   }
   if(needed.hasReferences()) {
     int id;
@@ -330,114 +329,177 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     int id;
     hpcrun_fmt_cct_node_t n;
     while((id = hpcrun_sparse_next_context(file, &n)) > 0) {
-      // Figure out the parent of this node, if it has one.
-      std::optional<ContextRef> grandpar;
-      std::optional<ContextRef> par;
-      Scope contextscope;
-      if(n.id_parent == 0) {  // Root of some kind
-        if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {  // Synthetic root, remap to something useful.
+      if(n.id_parent == 0) {
+        // Root nodes are very limited in their forms
+        if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {
           if(n.lm_ip == hpcrun_placeholder_root_primary) {
-            // Global Scope, for full or "normal" unwinds. No actual node.
-            nodes.insert({id, {std::nullopt, sink.global()}});
-            continue;
-          } else if(n.lm_ip == hpcrun_placeholder_root_partial) {
-            // Global unknown Scope, for "partial" unwinds.
-            partial_node_id = id;
-            continue;
+            // Primary root, for normal "full" unwinds. Maps to (global).
+            nodes.emplace(id, std::make_pair(nullptr, &sink.global()));
           } else {
-            // This really shouldn't happen.
-            util::log::info{} << "Unknown synthetic root: lm_ip = " << n.lm_ip;
+            // It seems like we should handle root_partial here as well, but a
+            // snippet in hpcrun/cct/cct.c stitches root_partial as a child of
+            // the root_primary. So we handle it later.
+
+            // All other cases are an error. Special case here for a slightly
+            // nicer error message
+            util::log::info{} << "Invalid root cct node: "
+                              << Scope(Scope::placeholder, n.lm_ip);
             return false;
           }
-        } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
-          util::log::info{} << "Invalid GPU_CONTEXT cct node, cannot be an orphan";
-          return false;
-        } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
-          util::log::info{} << "Invalid GPU_RANGE cct node, cannot be an orphan";
-          return false;
         } else if(n.lm_id == HPCRUN_GPU_ROOT_NODE) {
-          // Range root, mark it as such
-          range_root_node_id = id;
-          continue;
+          // Outlined range root node. No corresponding object.
+          nodes.emplace(id, (int)0);
         } else {
-          // If it looks like a sample but doesn't have a parent,
-          // stitch it to the global unknown.
-          par = sink.context(sink.global(), {});
+          // All other cases are an error
+          util::log::info{} << "Invalid root cct node: lm = " << n.lm_id
+                            << ", ip = " << n.lm_ip;
+          return false;
         }
-      } else if(n.id_parent == partial_node_id || n.id_parent == unknown_node_id) {
-        // Global unknown Scope, emitted lazily.
-        par = sink.context(sink.global(), {});
-      } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
-        auto it = contextparents.find(n.id_parent);
-        if(it != contextparents.end())
-          std::tie(par, contextscope) = it->second;
-      } else {
-        // Use a lambda to not have to use goto
-        bool ok = true;
-        std::tie(grandpar, par) = [&]() -> std::pair<decltype(grandpar), decltype(par)> {
-          if(n.id_parent == range_root_node_id)
-            return {std::nullopt, std::nullopt};
-
-          // Does the parent already exist?
-          auto ppar = nodes.find(n.id_parent);
-          if(ppar != nodes.end())
-            return ppar->second;
-
-          if(n.lm_id == HPCRUN_GPU_RANGE_NODE)
-            return {std::nullopt, std::nullopt};
-
-          util::log::info{} << "CCT nodes are not in a preorder: " << n.id_parent << " is not before " << n.id;
-          ok = false;
-          return {std::nullopt, std::nullopt};
-        }();
-        if(!ok) return false;
+        continue;  // No need to do any other processing
       }
 
-      // Figure out the Scope for this node, if it has one.
-      Scope scope;  // Default to the unknown Scope.
-      if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {
-        if(n.lm_ip == hpcrun_placeholder_root_partial && (!par || !grandpar)) {
-          // Special case: the partial root is global -> unknown in our world.
-          unknown_node_id = id;
-          continue;
-        }
-        // Special case, this is a placeholder node
-        scope = {Scope::placeholder, n.lm_ip};
-      } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
-        // Special case, this is a collaborative marker node
-        auto it = contextids.find(n.id_parent);
-        if(it == contextids.end()) {
-          util::log::info{} << "GPU_RANGE CCT node with non-context parent";
-          return false;
-        }
-        auto& collab = sink.collabContext(it->second, n.lm_ip);
-        nodes.insert({id, {par, par ? sink.collaborate(*par, collab, contextscope) : collab}});
-        continue;
-      } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
-        // Special case, mark it down but don't emit the Context
-        contextids.emplace(id, n.lm_ip);
-        if(n.id_parent == range_root_node_id)
-          // This is an outlined context tree, so we don't mark a parent for here
-          continue;
-        if(!grandpar || !par) {
-          util::log::info{} << "Inline GPU_CONTEXT cct node with no grandparent";
-          return false;
-        }
-        std::reference_wrapper<Context> c = std::get<Context>(*par);
-        while(c.get().direct_parent() != &std::get<Context>(*grandpar))
-          c = *c.get().direct_parent();
-        contextparents.insert({id, {*grandpar, c.get().scope()}});
-        continue;
-      } else {
-        auto it = modules.find(n.lm_id);
-        if(it == modules.end()) {
-          util::log::info{} << "Invalid load module id: " << n.lm_id;
-          return false;
-        }
-        scope = {it->second, n.lm_ip};
-      }
+      const auto outlineGpuContext = [this](uint64_t context){
+        // Synthesize the id-tuple for a GPU context based on our own id-tuple.
+        std::vector<pms_id_t> tuple = (tattrsValid ? tattrs : thread->thread().attributes).idTuple();
+        auto node = std::find_if(tuple.rbegin(), tuple.rend(),
+          [](const auto& e) -> bool {
+            switch(IDTUPLE_GET_KIND(e.kind)) {
+            default:
+              return false;
+            case IDTUPLE_NODE:
+            case IDTUPLE_RANK:
+              return true;
+            }
+          });
+        tuple.erase(node.base(), tuple.end());
+        tuple.push_back({IDTUPLE_COMPOSE(IDTUPLE_GPUCONTEXT, IDTUPLE_IDS_LOGIC_LOCAL),
+                         context, 0});
+        ThreadAttributes outlined_tattr;
+        outlined_tattr.idTuple(std::move(tuple));
+        return outlined_tattr;
+      };
 
-      nodes.insert({id, {*par, sink.context(*par, scope)}});
+      // Determine how to interpret this node based on its parent
+      auto par_it = nodes.find(n.id_parent);
+      if(par_it == nodes.end()) {
+        util::log::info{} << "Encountered out-of-order id_parent: " << n.id_parent;
+        return false;
+      }
+      const auto& par = par_it->second;
+      if(const auto* p_x = std::get_if<std::pair<Context*, Context*>>(&par)) {
+        Context& par = *p_x->second;
+        if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
+          // This is a reference to an outlined range tree, rooted at grandpar
+          // and par is the entry.
+          nodes.emplace(id, std::make_pair(p_x,
+              &sink.mergedThread(outlineGpuContext(n.lm_ip)) ));
+          continue;
+        }
+
+        // In all other valid cases, this either represents a point or
+        // placeholder Scope. Must be a point if we need reconstruction.
+        Scope scope;
+        if(n.lm_id == HPCRUN_PLACEHOLDER_LM && !n.from_ununwindable) {
+          switch(n.lm_ip) {
+          case hpcrun_placeholder_unnormalized_ip:
+          case hpcrun_placeholder_root_partial:  // Because hpcrun stitches here
+            // Maps to (unknown) instead of a placeholder
+            scope = Scope();
+            break;
+          case hpcrun_placeholder_root_primary:
+            util::log::info{} << "Encountered <primary root> that wasn't a root!";
+            return false;
+          default:
+            scope = Scope(Scope::placeholder, n.lm_ip);
+            break;
+          }
+        } else {
+          auto mod_it = modules.find(n.lm_id);
+          if(mod_it == modules.end()) {
+            util::log::info{} << "Invalid lm_id: " << n.lm_id;
+            return false;
+          }
+          scope = Scope(mod_it->second, n.lm_ip);
+        }
+
+        if(n.from_ununwindable) {
+          // In this case, we need a Reconstruction.
+          auto fg = sink.contextFlowGraph(scope);
+          if(fg) {
+            nodes.emplace(id, &sink.contextReconstruction(*fg, par));
+          } else {
+            // Failed to generate the appropriate FlowGraph, we must be missing
+            // some data. Map to par -> (unknown) -> (point) and throw an error.
+            util::log::error{} << "Missing required CFG data for binary: "
+              << scope.point_data().first.path().string();
+            nodes.emplace(id, std::make_pair(&par, &sink.context(sink.context(par, Scope()), scope)));
+          }
+        } else {
+          // Simple straightforward Context
+          nodes.emplace(id, std::make_pair(&par, &sink.context(par, scope)));
+        }
+      } else if(std::holds_alternative<ContextReconstruction*>(par)) {
+        // This is invalid, Reconstructions cannot have children. Yet.
+        util::log::info{} << "Encountered invalid child of un-unwindable cct node";
+        return false;
+      } else if(const auto* p_x = std::get_if<std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>>(&par)) {
+        if(n.lm_id != HPCRUN_GPU_RANGE_NODE) {
+          // Children of CONTEXT nodes must be RANGE nodes.
+          util::log::info{} << "Encountered invalid non-GPU_RANGE child of GPU_CONTEXT node";
+          return false;
+        }
+        // Add this root to the proper reconstruction group
+        n.lm_ip += 1;  // TODO: remove
+        sink.addToReconstructionGroup(*p_x->first->first, p_x->first->second->scope(), *p_x->second, n.lm_ip);
+        nodes.emplace(id, std::make_pair(p_x, n.lm_ip));
+      } else if(std::holds_alternative<std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t>>(par)) {
+        // This is invalid, inline GPU_RANGE nodes cannot have children.
+        util::log::info{} << "Encountered invalid child of inline GPU_RANGE node";
+        return false;
+      } else if(std::holds_alternative<int>(par)) {
+        if(n.lm_id != HPCRUN_GPU_CONTEXT_NODE) {
+          // Children of the range-root must be GPU_CONTEXT nodes.
+          util::log::info{} << "Encountered invalid non-GPU_CONTEXT child of outlined range tree root";
+          return false;
+        }
+        nodes.emplace(id, &sink.mergedThread(outlineGpuContext(n.lm_ip)));
+      } else if(auto* pp_thread = std::get_if<PerThreadTemporary*>(&par)) {
+        if(n.lm_id != HPCRUN_GPU_RANGE_NODE) {
+          // Children of CONTEXT nodes must be RANGE nodes.
+          util::log::info{} << "Encountered invalid non-GPU_RANGE child of GPU_CONTEXT node";
+          return false;
+        }
+        nodes.emplace(id, std::make_pair(*pp_thread, n.lm_ip));
+      } else if(auto* p_x = std::get_if<std::pair<PerThreadTemporary*, uint64_t>>(&par)) {
+        // Sample within an outlined range tree. Always represents a point Scope.
+        auto mod_it = modules.find(n.lm_id);
+        if(mod_it == modules.end()) {
+          util::log::info{} << "Invalid lm_id: " << n.lm_id;
+          return false;
+        }
+        Scope scope(mod_it->second, n.lm_ip);
+
+        auto fg = sink.contextFlowGraph(scope);
+        if(fg) {
+          sink.addToReconstructionGroup(*fg, *p_x->first, p_x->second);
+          nodes.emplace(id, std::make_pair(p_x, &*fg));
+        } else {
+          // Failed to generate the appropriate FlowGraph, we must be missing
+          // some data. Map to (global) -> (unknown) -> (point) and throw an error.
+          util::log::error{} << "Missing required CFG data for binary: "
+            << mod_it->second.path().string();
+          auto& unk = sink.context(sink.global(), Scope());
+          nodes.emplace(id, std::make_pair(&unk, &sink.context(unk, scope)));
+        }
+      } else if(std::holds_alternative<std::pair<const std::pair<PerThreadTemporary*, uint64_t>*, ContextFlowGraph*>>(par)) {
+        // This is invalid, outlined range-tree sample nodes cannot have children.
+        util::log::info{} << "Encountered invalid child of outlined range sample node";
+        return false;
+      } else {
+        // It must be one of the previous, otherwise we're in trouble
+        assert(false && "Invalid cct node saved storage!");
+        std::abort();
+      }
     }
     if(id < 0) {
       util::log::info{} << "Error while reading cct node entry";
@@ -450,17 +512,35 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       hpcrun_metricVal_t val;
       int mid = hpcrun_sparse_next_entry(file, &val);
       if(mid == 0) continue;
-      ContextRef here = !sink.limit().hasContexts() ? sink.global() : ({
-        auto it = nodes.find(cid);
-        if(it == nodes.end()) {
-          util::log::info{} << "Found value for invalid cct node id: " << cid;
-          return false;
+      assert(sink.limit().hasContexts());  // TODO: figure out what I was thinking here
+      auto node_it = nodes.find(cid);
+      if(node_it == nodes.end()) {
+        util::log::info{} << "Encountered metric value for invalid cct node id: " << cid;
+        return false;
+      }
+      auto accum = [&]() -> std::optional<ProfilePipeline::Source::AccumulatorsRef> {
+        if(auto* p_x = std::get_if<std::pair<Context*, Context*>>(&node_it->second)) {
+          return sink.accumulateTo(*thread, *p_x->second);
+        } else if(auto* pp_reconst = std::get_if<ContextReconstruction*>(&node_it->second)) {
+          return sink.accumulateTo(*thread, **pp_reconst);
+        } else if(auto* p_x = std::get_if<std::pair<const std::pair<const std::pair<Context*, Context*>*,
+            PerThreadTemporary*>*, uint64_t>>(&node_it->second)) {
+          return sink.accumulateTo(*p_x->first->second, p_x->second, *p_x->first->first->second);
+        } else if(auto* p_x = std::get_if<std::pair<const std::pair<PerThreadTemporary*, uint64_t>*,
+                                                    ContextFlowGraph*>>(&node_it->second)) {
+          return sink.accumulateTo(*p_x->first->first, p_x->first->second, *p_x->second);
         }
-        it->second.second;
-      });
-      auto accum = sink.accumulateTo(here, *thread);
+        return std::nullopt;
+      }();
+      if(!accum) {
+        util::log::info{} << "Encountered metric value for cct node that should have none: " << cid;
+        return false;
+      }
       while(mid > 0) {
-        accum.add(metrics.at(mid), metricInt.at(mid) ? (double)val.i : val.r);
+        const auto& x = metrics.at(mid);
+        Metric& met = x.first;
+        bool isInt = x.second;
+        accum->add(met, isInt ? (double)val.i : val.r);
         mid = hpcrun_sparse_next_entry(file, &val);
       }
     }
@@ -485,14 +565,16 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       auto it = nodes.find(tpoint.cpId);
       if(it != nodes.end()) {
-        switch(sink.timepoint(*thread, it->second.second,
-            std::chrono::nanoseconds(HPCTRACE_FMT_GET_TIME(tpoint.comp)))) {
-        case ProfilePipeline::Source::TimepointStatus::next:
-          break;  // 'Round the loop
-        case ProfilePipeline::Source::TimepointStatus::rewindStart:
-          // Put the cursor back at the beginning
-          std::fseek(f, trace_off, SEEK_SET);
-          break;
+        if(auto* p_x = std::get_if<std::pair<Context*, Context*>>(&it->second)) {
+          switch(sink.timepoint(*thread, *p_x->second,
+              std::chrono::nanoseconds(HPCTRACE_FMT_GET_TIME(tpoint.comp)))) {
+          case ProfilePipeline::Source::TimepointStatus::next:
+            break;  // 'Round the loop
+          case ProfilePipeline::Source::TimepointStatus::rewindStart:
+            // Put the cursor back at the beginning
+            std::fseek(f, trace_off, SEEK_SET);
+            break;
+          }
         }
       }
     }

@@ -207,7 +207,8 @@ private:                                                           \
   struct identifier_c        CONTENTS(1);
   struct mscopeIdentifiers_c CONTENTS(2);
   struct resolvedPath_c      CONTENTS(3);
-  std::bitset<4> mask;
+  struct statistics_c        CONTENTS(4);
+  std::bitset<5> mask;
 #undef CONTENTS
 
 public:
@@ -219,6 +220,8 @@ public:
   static constexpr mscopeIdentifiers_c mscopeIdentifiers = {};
   /// Extends Files and Modules with the real path in the current filesystem.
   static constexpr resolvedPath_c      resolvedPath      = {};
+  /// Extends Metrics with additional Statistics for better summary analysis.
+  static constexpr statistics_c        statistics        = {};
 
   // Universal set
   static ExtensionClass constexpr all() {
@@ -231,6 +234,7 @@ public:
   bool hasIdentifier()        const noexcept { return has(identifier); }
   bool hasMScopeIdentifiers() const noexcept { return has(mscopeIdentifiers); }
   bool hasResolvedPath()      const noexcept { return has(resolvedPath); }
+  bool hasStatistics()        const noexcept { return has(statistics); }
 
   // Query for whether there are any of such and so
   template<class Singleton>
@@ -262,7 +266,8 @@ public:
     os << '[';
     if(e.has(identifier)) os << 'i';
     if(e.has(mscopeIdentifiers)) os << 'm';
-    if(e.anyOf(identifier | mscopeIdentifiers)
+    if(e.has(statistics)) os << 's';
+    if(e.anyOf(identifier | mscopeIdentifiers | statistics)
        && e.anyOf(classification | resolvedPath)) os << ' ';
     if(e.has(classification)) os << 'c';
     if(e.has(resolvedPath)) os << 'r';
@@ -281,6 +286,7 @@ static constexpr auto classification    = Class::classification;
 static constexpr auto identifier        = Class::identifier;
 static constexpr auto mscopeIdentifiers = Class::mscopeIdentifiers;
 static constexpr auto resolvedPath      = Class::resolvedPath;
+static constexpr auto statistics        = Class::statistics;
 }
 }  // namespace hpctoolkit
 

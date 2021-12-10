@@ -658,7 +658,7 @@ ompt_adjust_calling_context
   // to use as the context. when using the GNU API for OpenMP, it will 
   // be a sibling to one returned by sample_callpath.
   cct_node_t *sibling = hpcrun_cct_insert_addr
-    (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
+    (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)), false);
   return sibling;
 #else
   return node;
@@ -801,7 +801,7 @@ ompt_cct_cursor_finalize
     // if no unresolved cct placeholder for the region, create it
     if (!notification->unresolved_cct) {
       cct_node_t *new_cct =
-              hpcrun_cct_insert_addr(cct->thread_root, &ADDR2(UNRESOLVED, notification->region_data->region_id));
+              hpcrun_cct_insert_addr(cct->thread_root, &ADDR2(UNRESOLVED, notification->region_data->region_id), false);
       notification->unresolved_cct = new_cct;
     }
     // return a placeholder for the sample taken inside tasks

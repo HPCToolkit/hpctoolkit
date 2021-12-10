@@ -135,9 +135,7 @@ public:
     return {false, true};
   }
   hpctoolkit::DataClass provides() const noexcept override;
-  hpctoolkit::DataClass finalizeRequest(const hpctoolkit::DataClass& d) const noexcept override {
-    return d;
-  }
+  hpctoolkit::DataClass finalizeRequest(const hpctoolkit::DataClass& d) const noexcept override;
   void read(const hpctoolkit::DataClass& d) override;
 
   static void append(hpctoolkit::ProfilePipeline::Settings&, RankTree&, ctx_map_t&);

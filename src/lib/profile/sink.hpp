@@ -118,7 +118,7 @@ public:
   /// Notify the Sink that a Context has been created via a Transformer expansion.
   /// Basically added only for IDPacker.
   // MT: Internally Synchronized
-  virtual void notifyContextExpansion(ContextRef::const_t from, Scope s, ContextRef::const_t to);
+  virtual void notifyContextExpansion(const Context& from, Scope s, const Context& to);
 
   /// Notify the Sink that a new Thread has been created.
   // MT: Internally Synchronized
@@ -126,7 +126,8 @@ public:
 
   /// Notify the Sink that some number of Context-type timepoints have been emitted.
   // MT: Internally Synchronized
-  virtual void notifyTimepoints(const Thread&, const std::vector<std::pair<std::chrono::nanoseconds, ContextRef::const_t>>&);
+  virtual void notifyTimepoints(const Thread&, const std::vector<
+    std::pair<std::chrono::nanoseconds, std::reference_wrapper<const Context>>>&);
 
   /// Notify the Sink that the next Context-type timepoint will not be the sequentially next,
   /// but instead be rewound back to the first.
@@ -134,7 +135,8 @@ public:
 
   /// Notify the Sink that some number of Metric-type timepoints have been emitted.
   // MT: Internally Synchronized
-  virtual void notifyTimepoints(const Thread&, const Metric&, const std::vector<std::pair<std::chrono::nanoseconds, double>>&);
+  virtual void notifyTimepoints(const Thread&, const Metric&, const std::vector<
+    std::pair<std::chrono::nanoseconds, double>>&);
 
   /// Notify the Sink that the next Metric-type timepoint will not be the sequentially next,
   /// but instead be rewound back to the first.
@@ -142,7 +144,7 @@ public:
 
   /// Notify the Sink that a Thread has finished.
   // MT: Internally Synchronized
-  virtual void notifyThreadFinal(const Thread::Temporary&);
+  virtual void notifyThreadFinal(const PerThreadTemporary&);
 
 protected:
   /// You should never create a base ProfileSink. Use a subclass.

@@ -83,7 +83,7 @@ void HatchetLiteral::write() {
                        "\"type\":\"function\"},"
           "\"metrics\":{";
     bool first = true;
-    for(const auto& [m, val]: c.statistics().citerate()) {
+    for(const auto& [m, val]: c.data().statistics().citerate()) {
       if (m->name() != "GINS") {
         continue;
       }

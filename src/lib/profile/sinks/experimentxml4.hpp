@@ -185,7 +185,9 @@ private:
     bool openIsClosedTag;
 
   private:
-    uint64_t adjusted_line;
+    bool tagIsC;
+    bool hasSiblingS;
+    uint64_t siblingSLine;
   };
 
   struct {

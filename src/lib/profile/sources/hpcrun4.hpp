@@ -68,7 +68,7 @@ public:
 
   bool valid() const noexcept override;
 
-  /// Read in enough data to satify a request or until a timeout is reached.
+  /// Read in enough data to satisfy a request or until a timeout is reached.
   /// See `ProfileSource::read(...)`.
   void read(const DataClass&) override;
 
@@ -87,22 +87,38 @@ private:
 
   // Tracefile setup and arrangements.
   bool setupTrace(unsigned int) noexcept;
-  Thread::Temporary* thread;
+  PerThreadTemporary* thread;
 
   // The actual file. Details for reading handled in prof-lean.
   hpcrun_sparse_file_t* file;
   stdshim::filesystem::path path;
 
-  // The various ID to Object mappings.
-  std::unordered_map<unsigned int, Metric&> metrics;
-  std::unordered_map<unsigned int, bool> metricInt;
+  // ID to Metric mapping. Also marks whether the values are in int format.
+  std::unordered_map<unsigned int, std::pair<Metric&, bool>> metrics;
+
+  // ID to Module mapping.
   std::unordered_map<unsigned int, Module&> modules;
-  std::unordered_map<unsigned int, std::pair<std::optional<ContextRef>, ContextRef>> nodes;
-  std::unordered_map<unsigned int, uint64_t> contextids;
-  std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> contextparents;
-  unsigned int partial_node_id;  // ID for the partial unwind fake root node
-  unsigned int unknown_node_id;  // ID for unwinds that start from "nowhere," but somehow aren't partial.
-  unsigned int range_root_node_id;
+
+  // ID to Context-like mapping.
+  std::unordered_map<unsigned int, std::variant<
+      // Simple single Context. First term is the parent, second is the Context.
+      std::pair<Context*, Context*>,
+      // Inlined Reconstruction (eg. GPU PC sampling in serialized mode).
+      ContextReconstruction*,
+      // Reference to an outlined range tree, GPU context node. Has no metrics.
+      // First Context is the root, second is the entry-Context.
+      std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>,
+      // Reference to an outlined range tree, range node. Has kernel metrics.
+      std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t /* group id */>,
+      // Outlined range tree root. Has no metrics, never actually represented.
+      int,
+      // Outlined range tree, GPU context node. Has no metrics.
+      PerThreadTemporary*,
+      // Outlined range tree, range node. Has no metrics.
+      std::pair<PerThreadTemporary*, uint64_t>,
+      // Outlined range tree, sample node. Has instruction-level metrics.
+      std::pair<const std::pair<PerThreadTemporary*, uint64_t>*, ContextFlowGraph*>
+    >> nodes;
 
   // Path to the tracefile, and offset of the actual data blob.
   stdshim::filesystem::path tracepath;

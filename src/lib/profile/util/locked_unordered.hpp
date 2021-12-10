@@ -47,6 +47,8 @@
 #ifndef HPCTOOLKIT_PROFILE_UTIL_LOCKED_UNORDERED_H
 #define HPCTOOLKIT_PROFILE_UTIL_LOCKED_UNORDERED_H
 
+#include "ref_wrappers.hpp"
+
 #include <unordered_map>
 #include <unordered_set>
 #include <mutex>
@@ -121,7 +123,7 @@ public:
   // MT: Internally Synchronized
   const V& at(const K& k) const {
     auto r = find(k);
-    if(r == nullptr) throw std::out_of_range("Attempt to at() a nonexistent key!");
+    if(!r) throw std::out_of_range("Attempt to at() a nonexistent key!");
     return *r;
   }
 
@@ -149,10 +151,10 @@ public:
     return opget(su_lock<M>(lock), std::move(k), std::forward<Args>(args)...);
   }
 
-  /// Look up an entry in the map, returning a pointer or nullptr.
+  /// Look up an entry in the map. May return std::nullopt.
   // MT: Internally Synchronized, Unstable
-  V* find(const K& k) { return opget_r(su_lock<M>(lock), k); }
-  const V* find(const K& k) const { return opget_r(su_lock<M>(lock), k); }
+  optional_ref<V> find(const K& k) { return opget_r(su_lock<M>(lock), k); }
+  optional_ref<const V> find(const K& k) const { return opget_r(su_lock<M>(lock), k); }
 
   /// Clear the map.
   // MT: Externally Synchronized
@@ -219,13 +221,15 @@ private:
     return opget(std::unique_lock<Mtx>(lock), std::forward<KA>(k), std::forward<Args>(args)...);
   }
 
-  V* opget_r(su_lock<M>&&, K k) {
+  optional_ref<V> opget_r(su_lock<M>&&, K k) {
     auto x = real.find(std::move(k));
-    return x == real.end() ? nullptr : &x->second;
+    if(x == real.end()) return std::nullopt;
+    return x->second;
   }
-  const V* opget_r(su_lock<M>&&, K k) const {
+  optional_ref<const V> opget_r(su_lock<M>&&, K k) const {
     auto x = real.find(std::move(k));
-    return x == real.end() ? nullptr : &x->second;
+    if(x == real.end()) return std::nullopt;
+    return x->second;
   }
 };
 

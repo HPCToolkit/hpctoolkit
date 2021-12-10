@@ -73,7 +73,7 @@ SparseDB::SparseDB(stdshim::filesystem::path p)
     fpos(0), accFpos(mpi::Tag::SparseDB_1),
     parForCiip([&](profCtxIdIdxPairs& item){ handleItemCiip(item); }),
     parForPd([&](profData& item){ handleItemPd(item); }),
-    ctxGrpId(0), accCtxGrp(mpi::Tag::SparseDB_1),
+    ctxGrpId(0), accCtxGrp(mpi::Tag::SparseDB_2),
     parForCtxs([&](ctxRange& item){ handleItemCtxs(item); }) {
 
   if(dir.empty())
@@ -144,7 +144,7 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
 
 }
 
-void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
+void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
   const auto& t = tt.thread();
   contextWavefront.wait();
 
@@ -266,7 +266,7 @@ void SparseDB::write()
 
     // Now stitch together each Context's results
     for(const Context& c: contexts) {
-      const auto& stats = c.statistics();
+      const auto& stats = c.data().statistics();
       if(stats.size() > 0) {
         cids.push_back(c.userdata[src.identifier()]);
         coffsets.push_back(values.size());
