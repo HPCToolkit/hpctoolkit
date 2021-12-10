@@ -2146,12 +2146,15 @@ cupti_callbacks_subscribe
 
   cupti_subscribers_driver_kernel_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_runtime_kernel_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
-  cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
+
+  if (cupti_pc_sampling_frequency_get() == -1) {
+    cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
+  }
 
   // XXX(Keren): timestamps for sync are captured on CPU
   //cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
