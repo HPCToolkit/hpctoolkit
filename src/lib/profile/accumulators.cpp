@@ -142,13 +142,14 @@ void PerThreadTemporary::finalize() noexcept {
         assert(!input.empty());
         auto& fg = const_cast<ContextFlowGraph&>(fg_c.get());
         const auto& reconsts = group.fg_reconsts.at(fg);
-        // If there are no Reconstructions in this group, there must be a
-        // bug in hpcrun with range-association. Kick up a fuss and then skip.
-        if(reconsts.empty()) {
-          util::log::error{} << "Found metric values not claimed by any calling context (range "
-            << idx << "). This is most likely a bug in range-based GPU sampling.";
-          continue;
-        }
+        // If there are no Reconstructions in this group, there must be a bug in
+        // hpcrun with range-association. We can't do anything with this data so
+        // we just drop it.
+        //
+        // FIXME: We should throw an ERROR when this happens, but it's a known
+        // bug with NVIDIA's code and we don't want to cause undue noise. So for
+        // now we skip silently.
+        if(reconsts.empty()) continue;
 
         auto inFactors = fg.interiorFactors(group.fg_data);
         for(auto& [r, factors]: fg.exteriorFactors(reconsts, group.c_data)) {
