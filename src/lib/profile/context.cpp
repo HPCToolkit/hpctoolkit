@@ -331,7 +331,7 @@ public:
       std::deque<group_t> next_groups;
       // First pass: split groups into subgroups where the paths diverge
       for(auto& g: groups) {
-        auto next_start = next_groups.end();
+        size_t next_start = next_groups.size();
         // Split the group into subgroups based on the diverging paths
         double total_v = 0;
         auto beg = g.begin;
@@ -351,13 +351,13 @@ public:
         total_v += v;
         // Then go back and fixup the factors based on the division.
         if(total_v > 0) {
-          for(auto it = next_start; it != next_groups.end(); ++it)
-            it->factor = g.factor * it->factor / total_v;
+          for(size_t i = next_start, e = next_groups.size(); i < e; ++i)
+            next_groups[i].factor = g.factor * next_groups[i].factor / total_v;
         } else {
           // Special case: if there is no metric value at this split, divide evenly
-          double cnt = std::distance(next_start, next_groups.end());
-          for(auto it = next_start; it != next_groups.end(); ++it)
-            it->factor = g.factor / cnt;
+          const double cnt = next_groups.size() - next_start;
+          for(size_t i = next_start, e = next_groups.size(); i < e; ++i)
+            next_groups[i].factor = g.factor / cnt;
         }
       }
       groups = std::move(next_groups);
