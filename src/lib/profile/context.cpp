@@ -395,7 +395,8 @@ ContextFlowGraph::ContextFlowGraph(ContextFlowGraph&& o)
 ContextFlowGraph::~ContextFlowGraph() = default;
 
 void ContextFlowGraph::add(Template t) {
-  assert(t.entry() != scope() && "FlowGraph::Templates cannot be recursive!");
+  //XXX(Keren): The following sanity check does not hold in the range sampling mode
+  //assert(t.entry() != scope() && "FlowGraph::Templates cannot be recursive!");
   assert(std::all_of(t.path().cbegin(), t.path().cend(),
                      [&](const Scope& s){ return s != scope(); })
          && "FlowGraph::Templates cannot be recursive!");

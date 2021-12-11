@@ -449,7 +449,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           return false;
         }
         // Add this root to the proper reconstruction group
-        n.lm_ip += 1;  // TODO: remove
+        //n.lm_ip += 1;  // TODO: remove
         sink.addToReconstructionGroup(*p_x->first->first, p_x->first->second->scope(), *p_x->second, n.lm_ip);
         nodes.emplace(id, std::make_pair(p_x, n.lm_ip));
       } else if(std::holds_alternative<std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t>>(par)) {

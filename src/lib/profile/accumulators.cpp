@@ -145,8 +145,11 @@ void PerThreadTemporary::finalize() noexcept {
         // If there are no Reconstructions in this group, there must be a
         // bug in hpcrun with range-association. Kick up a fuss and then skip.
         if(reconsts.empty()) {
-          util::log::error{} << "Found metric values not claimed by any calling context. This is most likely "
-            "a bug in range-based GPU sampling.";
+          // XXX(Keren): NVIDIA's pc sampling API still has a bug by 12/10/2021.
+          // They promise to fix it by the end of this year.
+          // We can uncomment the following error message by then.
+          //util::log::error{} << "Found metric values not claimed by any calling context. This is most likely "
+          //  "a bug in range-based GPU sampling.";
           continue;
         }
 
