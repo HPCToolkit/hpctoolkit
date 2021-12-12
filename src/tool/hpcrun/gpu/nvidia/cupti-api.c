@@ -1036,13 +1036,13 @@ cupti_resource_subscriber_callback
     DISPATCH_CALLBACK(cupti_unload_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
   } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
     TMSG(CUPTI, "Context %p created", rd->context);
-    if (pc_sampling_frequency != -1) {
+    if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
       cupti_pc_sampling_enable2(rd->context);
       cupti_pc_sampling_config(rd->context, pc_sampling_frequency);
     }
   } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
     TMSG(CUPTI, "Context %lu destroyed", rd->context);
-    if (pc_sampling_frequency != -1) {
+    if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
       uint32_t range_id = gpu_range_id_get();
       cupti_pc_sampling_range_context_collect(range_id, rd->context);
       cupti_pc_sampling_disable2(rd->context);
@@ -1060,7 +1060,7 @@ cupti_callback_init
   // stop flag is only set if a driver or a runtime api has been called
   cupti_activity_flag_set();
 
-  if (cupti_pc_sampling_frequency_get() != -1) {
+  if (cupti_pc_sampling_frequency_get() != CUPTI_PC_SAMPLING_PERIOD_NULL) {
     // channel is only initialized if a driver or a runtime api has been called
     gpu_operation_multiplexer_my_channel_init();
   }
@@ -1313,14 +1313,22 @@ cupti_driver_api_subscriber_callback_cuda
 {
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (!cupti_runtime_api_flag_get() && !ompt_runtime_status_get()) {
+    // Directly calls driver APIs
     if (cd->callbackSite == CUPTI_API_ENTER) {
       gpu_range_lock();
-      cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
+      if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
+        // In the pc sampling mode, we don't capture other GPU activities
+        cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
+      }
     } else {
-      cupti_api_exit_callback_cuda(cb_id);
+      if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
+        // In the pc sampling mode, we don't capture other GPU activities
+        cupti_api_exit_callback_cuda(cb_id);
+      }
       gpu_range_unlock();
     }
   } else if (cupti_runtime_api_flag_get()) {
+    // Runtime API calls driver APIs
     uint32_t range_id = gpu_range_id_get();
     if (cd->callbackSite == CUPTI_API_ENTER) {
       gpu_range_lock();
@@ -1397,11 +1405,17 @@ cupti_runtime_api_subscriber_callback_cuda
   if (cd->callbackSite == CUPTI_API_ENTER) {
     // Enter a CUDA runtime api
     cupti_runtime_api_flag_set();
-    cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
+    if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
+      // In the pc sampling mode, we don't capture other GPU activities
+      cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
+    }
   } else {
     // Exit an CUDA runtime api
     cupti_runtime_api_flag_unset();
-    cupti_api_exit_callback_cuda(cb_id);
+    if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
+      // In the pc sampling mode, we don't capture other GPU activities
+      cupti_api_exit_callback_cuda(cb_id);
+    }
     cupti_runtime_correlation_id_set(CUPTI_CORRELATION_ID_NULL);
   }
 }
@@ -1504,13 +1518,13 @@ cupti_subscriber_callback_cuda
 		} else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
 			TMSG(CUPTI, "Context %p created", rd->context);
 			int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
-			if (pc_sampling_frequency != -1) {
+			if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
 				cupti_pc_sampling_enable(rd->context, pc_sampling_frequency);
 			}
 		} else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
 			TMSG(CUPTI, "Context %lu destroyed", rd->context);
 			int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
-			if (pc_sampling_frequency != -1) {
+			if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
 				cupti_pc_sampling_disable(rd->context);
 			}
 		}
@@ -2145,16 +2159,13 @@ cupti_callbacks_subscribe
                    (void *) NULL));
 
   cupti_subscribers_driver_kernel_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_runtime_kernel_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
-
-  if (cupti_pc_sampling_frequency_get() == -1) {
-    cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
-  }
 
   // XXX(Keren): timestamps for sync are captured on CPU
   //cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
@@ -2583,7 +2594,7 @@ cupti_device_shutdown(void *args, int how)
     gpu_activity.kind = GPU_ACTIVITY_FLUSH;
     gpu_activity.details.flush.wait = &wait;
 
-    if (cupti_pc_sampling_frequency_get() != -1) {
+    if (cupti_pc_sampling_frequency_get() != CUPTI_PC_SAMPLING_PERIOD_NULL) {
       gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
     }
 
@@ -2593,7 +2604,7 @@ cupti_device_shutdown(void *args, int how)
   }
 #endif
 
-  if (cupti_pc_sampling_frequency_get() != -1) {
+  if (cupti_pc_sampling_frequency_get() != CUPTI_PC_SAMPLING_PERIOD_NULL) {
     // Terminate monitor thread
     gpu_operation_multiplexer_fini();
   }

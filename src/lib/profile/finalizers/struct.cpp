@@ -206,7 +206,8 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
     const std::function<void(uint64_t)> dfs = [&](uint64_t calleeFunc){
       // TODO: SCC algorithms are needed to handle recursion in a meaningful
       // way. For now just truncate the search.
-      if(!seen.insert(calleeFunc).second) return;
+      auto [seenit, first] = seen.insert(calleeFunc);
+      if(!first) return;
 
       // Try to step "forwards" to the caller instructions. If we succeed, this
       // is part of the path.
@@ -232,7 +233,7 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
         fg.add({Scope(mo.first, calleeFunc), std::move(fpath)});
       }
 
-      seen.erase(calleeFunc);
+      seen.erase(seenit);
     };
     dfs(leafit->second.second);
 

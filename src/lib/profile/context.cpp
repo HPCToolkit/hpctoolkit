@@ -289,12 +289,12 @@ public:
   }
   std::vector<double> extract(const ContextFlowGraph& graph,
                               const Shared& shared) const {
-    if(!shared.interior()) {
-      // We never saw the right Metric for this formulation. Unclear how to
-      // recover in this case, so for now just abort.
-      util::log::fatal{} << "No suitable Metrics for interior factor calculations!";
-    }
-    assert(!top_vals.empty());
+    //if(!shared.interior()) {
+    //  // We never saw the right Metric for this formulation. Unclear how to
+    //  // recover in this case, so for now just abort.
+    //  util::log::fatal{} << "No suitable Metrics for interior factor calculations!";
+    //}
+    //assert(!top_vals.empty());
     const auto& templates = graph.templates();
 
     // The interior factor for a Scope-path p = [p[0],...,p[n]] and entry e is calculated as
@@ -331,7 +331,7 @@ public:
       std::deque<group_t> next_groups;
       // First pass: split groups into subgroups where the paths diverge
       for(auto& g: groups) {
-        auto next_start = next_groups.end();
+        size_t next_start = next_groups.size();
         // Split the group into subgroups based on the diverging paths
         double total_v = 0;
         auto beg = g.begin;
@@ -351,13 +351,13 @@ public:
         total_v += v;
         // Then go back and fixup the factors based on the division.
         if(total_v > 0) {
-          for(auto it = next_start; it != next_groups.end(); ++it)
-            it->factor = g.factor * it->factor / total_v;
+          for(size_t i = next_start, e = next_groups.size(); i < e; ++i)
+            next_groups[i].factor = g.factor * next_groups[i].factor / total_v;
         } else {
           // Special case: if there is no metric value at this split, divide evenly
-          double cnt = std::distance(next_start, next_groups.end());
-          for(auto it = next_start; it != next_groups.end(); ++it)
-            it->factor = g.factor / cnt;
+          const double cnt = next_groups.size() - next_start;
+          for(size_t i = next_start, e = next_groups.size(); i < e; ++i)
+            next_groups[i].factor = g.factor / cnt;
         }
       }
       groups = std::move(next_groups);
@@ -395,8 +395,6 @@ ContextFlowGraph::ContextFlowGraph(ContextFlowGraph&& o)
 ContextFlowGraph::~ContextFlowGraph() = default;
 
 void ContextFlowGraph::add(Template t) {
-  //XXX(Keren): The following sanity check does not hold in the range sampling mode
-  //assert(t.entry() != scope() && "FlowGraph::Templates cannot be recursive!");
   assert(std::all_of(t.path().cbegin(), t.path().cend(),
                      [&](const Scope& s){ return s != scope(); })
          && "FlowGraph::Templates cannot be recursive!");
