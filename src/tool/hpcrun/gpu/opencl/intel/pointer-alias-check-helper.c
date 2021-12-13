@@ -213,7 +213,7 @@ transformKernelParamNodesToSortableNodes
   kp_node_t *curr_k = kernel_param_list;
   while (curr_k) {
     uint64_t mem_start = (uint64_t)curr_k->mem;
-    uint64_t mem_end = (uint64_t)curr_k->mem + curr_k->size;
+    uint64_t mem_end = (uint64_t)curr_k->mem + curr_k->size - 1;  // since index of memory regions start from 0, we substract 1 from the mem_end offset
     Node start_node = {mem_start, 1, NULL};
     Node end_node = {mem_end, 0, NULL};
     push(&start_head, start_node);

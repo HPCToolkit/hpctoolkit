@@ -184,13 +184,12 @@ typedef enum {
 
 typedef enum {
   INORDER_QUEUE                                   = 0,
-  KERNEL_TO_MULTIPLE_QUEUES                       = 1,
-  KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS     = 2,
-  KERNEL_PARAMS_NOT_ALIASED                       = 3,
-  KERNEL_PARAMS_ALIASED                           = 4,
-  SINGLE_DEVICE_USE_AOT_COMPILATION               = 5,
-  OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL        = 6,
-  ALL_DEVICES_NOT_USED                            = 7
+  KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS     = 1,
+  KERNEL_PARAMS_NOT_ALIASED                       = 2,
+  KERNEL_PARAMS_ALIASED                           = 3,
+  SINGLE_DEVICE_USE_AOT_COMPILATION               = 4,
+  OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL        = 5,
+  ALL_DEVICES_NOT_USED                            = 6
 } intel_optimization_type_t;
 
 
