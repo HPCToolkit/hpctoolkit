@@ -159,14 +159,11 @@ isKernelSubmittedToMultipleQueues
         continue;
       }
 #endif
-      // warning 1: kernel being passed to multiple queues
       cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
       intel_optimization_t i;
-      i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES;
-      record_intel_optimization_metrics(cct_node, &i);
 
       if (context_id != (uint64_t)queue_context) {
-        // warning 2: kernel passed to multiple queues with different context  
+        // kernel passed to multiple queues with different context
         i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS;
         record_intel_optimization_metrics(cct_node, &i);
       }

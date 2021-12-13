@@ -252,6 +252,11 @@ kernel_context_map_delete
   spinlock_lock(&kernel_context_map_lock);
   
   kernel_context_map_entry_t *node = st_delete(&map_root, kernel_id);
+
+  if (!node) {
+    // if st_delete returns a null node, that means clReleaseKernel gets called without a call to clEnqueueNDRangeKernel
+    return;
+  }
   // clear all nodes inside node->context_list
   context_node_t *qn = node->context_list;
   context_node_t *next;

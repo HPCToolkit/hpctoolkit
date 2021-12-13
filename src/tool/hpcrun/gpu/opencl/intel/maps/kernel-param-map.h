@@ -54,13 +54,21 @@
 
 
 //*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include <lib/prof-lean/hpcrun-opencl.h>  // cl_mem
+
+
+
+//*****************************************************************************
 // type definitions 
 //*****************************************************************************
 
 typedef struct kernel_param_map_entry_t kernel_param_map_entry_t;
 
 typedef struct kp_node_t {
-  void *mem;
+  cl_mem mem;
   size_t size;
   struct kp_node_t *next;
 } kp_node_t;
