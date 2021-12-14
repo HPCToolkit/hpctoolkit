@@ -22,12 +22,16 @@ struct cupti_cct_trie_node_s {
 
   struct cupti_cct_trie_node_s* left;
   struct cupti_cct_trie_node_s* right;
+
+  struct cupti_cct_trie_node_s* loop;
+  uint32_t loop_trip_count;
 };
 
 static __thread cupti_cct_trie_node_t *trie_root = NULL;
 static __thread cupti_cct_trie_node_t *trie_logic_root = NULL;
 static __thread cupti_cct_trie_node_t *free_list = NULL;
 static __thread cupti_cct_trie_node_t *trie_cur = NULL;
+static __thread uint32_t single_path = 0;
 
 //***********************************
 // splay
@@ -110,6 +114,8 @@ cct_trie_new
   trie_node->children = NULL;
   trie_node->left = NULL;
   trie_node->right = NULL;
+  trie_node->loop = NULL;
+  trie_node->loop_trip_count = 0;
 
   return trie_node;
 }
@@ -146,6 +152,12 @@ cupti_cct_trie_append
 
   if (found && found->key == cct) {
     trie_cur = found;
+
+    if (found->left == NULL && found->right == NULL) {
+      single_path += 1;
+    } else {
+      single_path = 0;
+    }
     return true;
   }
 
@@ -165,6 +177,12 @@ cupti_cct_trie_append
     new->left = found;
     new->right = found->right;
     found->right = NULL;
+  }
+
+  if (new->left == NULL && new->right == NULL) {
+    single_path += 1;
+  } else {
+    single_path = 0;
   }
 
   return false;
@@ -367,4 +385,13 @@ cupti_cct_trie_dump
   int single_path_nodes = 0;
   cct_trie_walk(trie_root, &num_nodes, &single_path_nodes);
   printf("num_nodes %d, single_path_nodes %d\n", num_nodes, single_path_nodes);
+}
+
+
+uint32_t
+cupti_cct_trie_single_path_length_get
+(
+)
+{
+  return single_path;
 }

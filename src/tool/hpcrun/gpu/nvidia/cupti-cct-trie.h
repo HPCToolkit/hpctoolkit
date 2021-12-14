@@ -14,6 +14,7 @@
 #include <hpcrun/cct/cct.h>
 
 #define CUPTI_CCT_TRIE_UNWIND_ROOT 0
+#define CUPTI_CCT_TRIE_COMPRESS_THRESHOLD 100
 
 typedef struct cupti_cct_trie_node_s cupti_cct_trie_node_t;
 
@@ -70,6 +71,12 @@ cupti_cct_trie_unwind
 // Dump cct trie statistics
 void
 cupti_cct_trie_dump
+(
+);
+
+// Get the number of contiguous parent nodes with a single path
+uint32_t
+cupti_cct_trie_single_path_length_get
 (
 );
 
