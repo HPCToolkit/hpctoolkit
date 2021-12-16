@@ -2382,6 +2382,7 @@ cupti_device_flush(void *args, int how)
 
   //cupti_cct_trie_dump();
 #endif
+  cupti_cct_trie_dump();
 
   spinlock_unlock(&print_lock);
 #endif

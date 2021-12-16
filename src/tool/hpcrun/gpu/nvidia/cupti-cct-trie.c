@@ -4,6 +4,7 @@
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/messages/messages.h>
+#include <hpcrun/safe-sampling.h>
 #include <lib/prof-lean/splay-macros.h>
 
 #include "cupti-range.h"
@@ -303,8 +304,9 @@ cupti_cct_trie_append
     single_path = 0;
   }
 
-  if (single_path > CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) {
+  if (single_path >= CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) {
     cupti_cct_trie_compress();
+    single_path = 0;
   }
 
   return ret;
@@ -333,22 +335,29 @@ cupti_cct_trie_compress
 )
 {
   // Allocate arrays
+  hpcrun_safe_enter();
+
   cupti_cct_trace_node_t *trace = (cupti_cct_trace_node_t *)malloc(sizeof(cupti_cct_trace_node_t));
-  trace->keys = (cct_node_t **)malloc((CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 1) * sizeof(cct_node_t *));
-  trace->range_ids = (uint32_t *)malloc((CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 1) * sizeof(uint32_t));
+  trace->keys = (cct_node_t **)malloc((CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) * sizeof(cct_node_t *));
+  trace->range_ids = (uint32_t *)malloc((CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) * sizeof(uint32_t));
+  trace->size = CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 2;
+
+  hpcrun_safe_exit();
 
   // A->B->C->D
   // We are currently at D, compress A->B->C to A
   cupti_cct_trie_node_t *cur = trie_cur.node->parent;
   int i;
-  for (i = 0; i < CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 1; ++i) {
-    trace->keys[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 2] = cur->key;
-    trace->range_ids[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 2] = cur->range_id;
+  for (i = 0; i < CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 2; ++i) {
+    trace->keys[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 3] = cur->key;
+    trace->range_ids[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 3] = cur->range_id;
     cupti_cct_trie_node_t *parent = cur->parent;
     trie_free(&free_list, cur); 
     cur = parent;
   }
   cur->trace = trace;
+  cur->children = trie_cur.node;
+  trie_cur.node->parent = cur;
 
   // TODO(Keren): lz compression
 }
@@ -480,6 +489,14 @@ cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path
   ++(*num_nodes);
   if (trie_node->children != NULL && trie_node->children->left == NULL && trie_node->children->right == NULL) {
     ++(*single_path_nodes);
+  }
+  printf("key %p, range_id %d\n", trie_node->key, trie_node->range_id);
+  if (trie_node->trace != NULL) {
+    printf("\ttrace\n");
+    int i;
+    for (i = 0; i < trie_node->trace->size; ++i) {
+      printf("\t\tkey %p, range_id %d\n", trie_node->trace->keys[i], trie_node->trace->range_ids[i]);
+    }
   }
   cct_trie_walk_child(trie_node->children, num_nodes, single_path_nodes);
 }
