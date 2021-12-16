@@ -14,7 +14,8 @@
 #include <hpcrun/cct/cct.h>
 
 #define CUPTI_CCT_TRIE_UNWIND_ROOT 0
-#define CUPTI_CCT_TRIE_COMPRESS_THRESHOLD 100
+#define CUPTI_CCT_TRIE_COMPRESS_THRESHOLD 1000
+#define CUPTI_CCT_TRIE_PTR_NULL (CUPTI_CCT_TRIE_COMPRESS_THRESHOLD + 1)
 
 typedef struct cupti_cct_trie_node_s cupti_cct_trie_node_t;
 
@@ -44,18 +45,6 @@ cupti_cct_trie_root_get
 (
 );
 
-// Return the trie current position of the querying thread
-cupti_cct_trie_node_t **
-cupti_cct_trie_cur_ptr_get
-(
-);
-
-// Return the trie logic root position of the querying thread
-cupti_cct_trie_node_t **
-cupti_cct_trie_logic_root_ptr_get
-(
-);
-
 // Process pending notifications
 void
 cupti_cct_trie_notification_process
@@ -71,6 +60,12 @@ cupti_cct_trie_unwind
 // Dump cct trie statistics
 void
 cupti_cct_trie_dump
+(
+);
+
+// Compress single path
+void
+cupti_cct_trie_compress
 (
 );
 
