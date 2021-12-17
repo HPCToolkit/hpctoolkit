@@ -77,7 +77,7 @@ splay(cupti_cct_trie_node_t *node, cct_node_t *key)
 //***********************************
 
 static cupti_cct_trie_node_t *
-cupti_cct_trie_alloc_helper
+cct_trie_alloc_helper
 (
  cupti_cct_trie_node_t **free_list, 
  size_t size
@@ -98,7 +98,7 @@ cupti_cct_trie_alloc_helper
 
 
 static void
-cupti_cct_trie_free_helper
+cct_trie_free_helper
 (
  cupti_cct_trie_node_t **free_list, 
  cupti_cct_trie_node_t *e 
@@ -109,24 +109,88 @@ cupti_cct_trie_free_helper
 }
 
 #define trie_alloc(free_list)		\
-  (cupti_cct_trie_node_t *) cupti_cct_trie_alloc_helper		\
+  (cupti_cct_trie_node_t *) cct_trie_alloc_helper		\
   ((cupti_cct_trie_node_t **) free_list, sizeof(cupti_cct_trie_node_t))	
 
 #define trie_free(free_list, node)			\
-  cupti_cct_trie_free_helper					\
+  cct_trie_free_helper					\
   ((cupti_cct_trie_node_t **) free_list,				\
    (cupti_cct_trie_node_t *) node)
+
+
+static void
+cct_trace_free
+(
+ cupti_cct_trie_node_t *node
+)
+{
+  if (node->trace == NULL) {
+    return;
+  }
+
+  hpcrun_safe_enter();
+
+  free(node->trace->keys);
+  free(node->trace->range_ids);
+  free(node->trace);
+
+  hpcrun_safe_exit();
+
+  node->trace = NULL;
+}
+
+
+static cupti_cct_trace_node_t *
+cct_trace_new
+(
+ size_t size
+)
+{
+  hpcrun_safe_enter();
+
+  cupti_cct_trace_node_t *trace = (cupti_cct_trace_node_t *)malloc(sizeof(cupti_cct_trace_node_t));
+  trace->keys = (cct_node_t **)malloc((size + 1) * sizeof(cct_node_t *));
+  trace->range_ids = (uint32_t *)malloc((size + 1) * sizeof(uint32_t));
+  trace->size = size;
+
+  hpcrun_safe_exit();
+
+  return trace;
+}
+
+
+static cct_node_t *
+cct_trace_get_key
+(
+ cupti_cct_trace_node_t *trace,
+ size_t ptr
+)
+{
+  return trace->keys[ptr];
+}
+
+
+static uint32_t
+cct_trace_get_range_id
+(
+ cupti_cct_trace_node_t *trace,
+ size_t ptr
+)
+{
+  return trace->range_ids[ptr];
+}
 
 
 static cupti_cct_trie_node_t *
 cct_trie_new
 (
  cupti_cct_trie_node_t *parent,
- cct_node_t *key
+ cct_node_t *key,
+ uint32_t range_id
 )
 {
   cupti_cct_trie_node_t *trie_node = trie_alloc(&free_list);
-  trie_node->range_id = GPU_RANGE_NULL;
+  trie_node->range_id = range_id;
   trie_node->key = key;
   trie_node->parent = parent;
   trie_node->children = NULL;
@@ -145,7 +209,7 @@ cct_trie_init
 )
 {
   if (trie_root == NULL) {
-    trie_root = cct_trie_new(NULL, NULL);
+    trie_root = cct_trie_new(NULL, NULL, GPU_RANGE_NULL);
     trie_logic_root.node = trie_root;
     trie_logic_root.ptr = CUPTI_CCT_TRIE_PTR_NULL;
     trie_cur.node = trie_root;
@@ -170,17 +234,68 @@ cct_trie_trace_append
 )
 {
   cupti_cct_trace_node_t *trace_cur = trie_cur.node->trace;
+
   if (trie_cur.ptr == trace_cur->size) {
     // Move to the children
     return CCT_TRIE_TRACE_CHILDREN;
-  } else {
-    if (trace_cur->keys[trie_cur.ptr] == cct) {
-      ++trie_cur.ptr;
-      return CCT_TRIE_TRACE_NEXT;
-    } else {
-      return CCT_TRIE_TRACE_FAIL;
-    }
+  } else if (trie_cur.ptr == CUPTI_CCT_TRIE_PTR_NULL) {
+    // Start looking into the trace
+    trie_cur.ptr = 0;
   }
+  
+  if (cct_trace_get_key(trace_cur, trie_cur.ptr) == cct) {
+    ++trie_cur.ptr;
+    return CCT_TRIE_TRACE_NEXT;
+  } else {
+    return CCT_TRIE_TRACE_FAIL;
+  }
+}
+
+
+static void
+cct_trie_trace_split()
+{
+  cupti_cct_trace_node_t *trace_cur = trie_cur.node->trace;
+  cupti_cct_trie_node_t *node_cur = trie_cur.node;
+  size_t ptr_cur = trie_cur.ptr;
+
+  // Split from the middle
+  size_t prev_size = ptr_cur == 0 ? 0 : ptr_cur - 1;
+  size_t next_size = ptr_cur == trace_cur->size - 1 ? 0 : trace_cur->size - prev_size - 1;
+
+  cupti_cct_trie_node_t *parent = node_cur;
+  cupti_cct_trie_node_t *children = node_cur->children;
+  size_t i;
+  for (i = 0; i < prev_size; ++i) {
+    // node_cur<->next1<->next2
+    cupti_cct_trie_node_t *next = cct_trie_new(parent, cct_trace_get_key(trace_cur, i),
+      cct_trace_get_range_id(trace_cur, i));
+    parent->children = next;
+    parent = next;
+  }
+
+  cupti_cct_trie_node_t *middle = cct_trie_new(parent, cct_trace_get_key(trace_cur, prev_size),
+    cct_trace_get_range_id(trace_cur, prev_size));
+  parent->children = middle;
+  parent = middle;
+
+  for (i = prev_size + 1; i < next_size; ++i) {
+    cupti_cct_trie_node_t *next = cct_trie_new(parent, cct_trace_get_key(trace_cur, i),
+      cct_trace_get_range_id(trace_cur, i));
+    parent->children = next;
+    parent = next;
+  }
+  parent->children = children;
+  if (children != NULL) {
+    children->parent = parent;
+  }
+  
+  // Release trace
+  cct_trace_free(node_cur);
+
+  // Update cur pointer
+  trie_cur.node = middle->parent;
+  trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
 }
 
 
@@ -216,11 +331,13 @@ cct_trie_merge_thread
       // Go to its parent
       cur = cct_trie_ptr_parent(cur);
     } else {
-      --cur.ptr;
-      key = cur.node->trace->keys[cur.ptr];
       if (cur.ptr == 0) {
         // Go to its parent
+        key = cur.node->key;
         cur = cct_trie_ptr_parent(cur);
+      } else {
+        --cur.ptr;
+        key = cct_trace_get_key(cur.node->trace, cur.ptr);
       }
     }
 
@@ -260,14 +377,16 @@ cupti_cct_trie_append
 
   if (trie_cur.node->trace != NULL) {
     cct_trie_trace_ret_t ret = cct_trie_trace_append(range_id, cct);
-    // XXX(Keren): We don't merge two compressed traces
-    single_path = 0;
     if (ret == CCT_TRIE_TRACE_NEXT) {
       return true;
-    } else if (ret == CCT_TRIE_TRACE_FAIL) {
-      // TODO(Keren): Split and reinsert
-      return false;
     }
+    if (ret == CCT_TRIE_TRACE_FAIL) {
+      // Split and reinsert
+      cct_trie_trace_split();
+    }
+
+    // XXX(Keren): We don't merge two compressed traces
+    single_path = 0;
   }
 
   bool ret;
@@ -276,13 +395,14 @@ cupti_cct_trie_append
 
   if (found && found->key == cct) {
     trie_cur.node = found;
+    trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
     ret = true;
   } else { 
-    cupti_cct_trie_node_t *new = cct_trie_new(trie_cur.node, cct);
+    // Only assign range_id when a node is created
+    cupti_cct_trie_node_t *new = cct_trie_new(trie_cur.node, cct, range_id);
     trie_cur.node->children = new;
     trie_cur.node = new;
-    // Only assign range_id when a node is created
-    trie_cur.node->range_id = range_id;
+    trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
 
     if (!found) {
       // Do nothing
@@ -306,6 +426,7 @@ cupti_cct_trie_append
 
   if (single_path >= CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) {
     cupti_cct_trie_compress();
+    // After compression, always reset single_path
     single_path = 0;
   }
 
@@ -334,18 +455,10 @@ cupti_cct_trie_compress
 (
 )
 {
-  // Allocate arrays
-  hpcrun_safe_enter();
-
-  cupti_cct_trace_node_t *trace = (cupti_cct_trace_node_t *)malloc(sizeof(cupti_cct_trace_node_t));
-  trace->keys = (cct_node_t **)malloc((CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) * sizeof(cct_node_t *));
-  trace->range_ids = (uint32_t *)malloc((CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) * sizeof(uint32_t));
-  trace->size = CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 2;
-
-  hpcrun_safe_exit();
-
   // A->B->C->D
-  // We are currently at D, compress A->B->C to A
+  // We are currently at D, merge B->C to A
+  cupti_cct_trace_node_t *trace = cct_trace_new(CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 1);
+
   cupti_cct_trie_node_t *cur = trie_cur.node->parent;
   int i;
   for (i = 0; i < CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 2; ++i) {
@@ -355,6 +468,7 @@ cupti_cct_trie_compress
     trie_free(&free_list, cur); 
     cur = parent;
   }
+
   cur->trace = trace;
   cur->children = trie_cur.node;
   trie_cur.node->parent = cur;
@@ -411,7 +525,7 @@ cupti_cct_trie_flush
   if (trie_cur.node->trace == NULL) {
     prev_range_id = trie_cur.node->range_id;
   } else {
-    prev_range_id = trie_cur.node->trace->range_ids[trie_cur.ptr - 1];
+    prev_range_id = cct_trace_get_range_id(trie_cur.node->trace, trie_cur.ptr - 1);
   }
 
   // Traverse up and use original range_id to merge
@@ -495,7 +609,8 @@ cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path
     printf("\ttrace\n");
     int i;
     for (i = 0; i < trie_node->trace->size; ++i) {
-      printf("\t\tkey %p, range_id %d\n", trie_node->trace->keys[i], trie_node->trace->range_ids[i]);
+      printf("\t\tkey %p, range_id %d\n", cct_trace_get_key(trie_node->trace, i),
+        cct_trace_get_range_id(trie_node->trace, i));
     }
   }
   cct_trie_walk_child(trie_node->children, num_nodes, single_path_nodes);

@@ -14,7 +14,7 @@
 #include <hpcrun/cct/cct.h>
 
 #define CUPTI_CCT_TRIE_UNWIND_ROOT 0
-#define CUPTI_CCT_TRIE_COMPRESS_THRESHOLD 1000
+#define CUPTI_CCT_TRIE_COMPRESS_THRESHOLD 10000
 #define CUPTI_CCT_TRIE_PTR_NULL (CUPTI_CCT_TRIE_COMPRESS_THRESHOLD + 1)
 
 typedef struct cupti_cct_trie_node_s cupti_cct_trie_node_t;
