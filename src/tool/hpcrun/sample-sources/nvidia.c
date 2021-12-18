@@ -90,6 +90,7 @@
 #ifdef NEW_CUPTI
 #include <hpcrun/gpu/nvidia/cupti-range.h>
 #include <hpcrun/gpu/nvidia/cupti-pc-sampling-api.h>
+#include <hpcrun/gpu/nvidia/cupti-cct-trie.h>
 #endif
 
 #include <hpcrun/messages/messages.h>
@@ -279,6 +280,7 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_string);
+  control_knob_register("HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD", CUPTI_CCT_TRIE_COMPRESS_THRESHOLD_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
   control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "-1", ck_int);
 #endif
