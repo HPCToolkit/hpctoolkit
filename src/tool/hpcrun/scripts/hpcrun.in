@@ -375,6 +375,9 @@ do
 		CPU_GPU_IDLE* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so" ;;
 		gpu=amd) roctracer_libdir="${roctracer_lib_path}"
+             export HSA_TOOLS_LIB=librocprofiler64.so.1
+             export ROCP_TOOL_LIB=libhpcrun.so
+             export ROCP_METRICS=@ROCM_PROFILER_LD_DIR@/metrics.xml
 			 export HIP_ENABLE_DEFERRED_LOADING=0;;
 		gpu=opencl)	 preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so" ;;
 
@@ -395,6 +398,9 @@ do
 	    ;;
 
 	-L | -l | --list-events )
+        export HSA_TOOLS_LIB=librocprofiler64.so.1
+        export ROCP_TOOL_LIB=libhpcrun.so
+        export ROCP_METRICS=@ROCM_PROFILER_LD_DIR@/metrics.xml
 	    export HPCRUN_EVENT_LIST=LIST
 		export HPCRUN_LIST_EVENT=1
 	    ;;

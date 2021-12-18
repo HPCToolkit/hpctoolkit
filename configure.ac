@@ -5508,6 +5508,7 @@ AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
 
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LD_LIB_PATH])
+AC_SUBST([ROCM_PROFILER_LD_DIR])
 
 
 #-------------------------------------------------

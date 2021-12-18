@@ -194,7 +194,7 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   for (int i = 0; i < total_counters; ++i) {
-    printf("%s%s\t\t%s\n", AMD_ROCPROFILER_PREFIX, rocprofiler_counter_name(i), rocprofiler_counter_description(i));
+    printf("%s::%s\t\t%s\n", AMD_ROCPROFILER_PREFIX, rocprofiler_counter_name(i), rocprofiler_counter_description(i));
   }
   printf("\n");
 }
