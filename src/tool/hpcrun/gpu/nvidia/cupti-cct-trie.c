@@ -14,7 +14,7 @@
 #include "../gpu-range.h"
 #include "../gpu-op-placeholders.h"
 
-#define ENABLE_LZ
+//#define ENABLE_LZ
 
 
 typedef struct cupti_cct_trie_trace_s {
@@ -139,9 +139,15 @@ cct_trace_free
 
   hpcrun_safe_enter();
 
-  free(node->trace->keys);
-  free(node->trace->range_ids);
-  free(node->trace);
+  if (node->trace->keys != NULL) {
+    free(node->trace->keys);
+  }
+  if (node->trace->range_ids != NULL) {
+    free(node->trace->range_ids);
+  }
+  if (node->trace != NULL) {
+    free(node->trace);
+  }
 
 #ifdef ENABLE_LZ
   if (node->trace->keys_buf != NULL) {
@@ -256,8 +262,10 @@ cct_trie_trace_lz_compress
  size_t *output_size
 )
 {
+  *output_size = input_size;
+
 	hpcrun_safe_enter();
-  *output = (uint8_t *)malloc(size);
+  *output = (uint8_t *)malloc(*output_size);
 	hpcrun_safe_exit();
 
 	// keys
@@ -266,11 +274,11 @@ cct_trie_trace_lz_compress
 	defstream.zfree = Z_NULL;
 	defstream.opaque = Z_NULL;
 	// Input bytes
-	defstream.avail_in = size;
+	defstream.avail_in = input_size;
 	// Input pointer
 	defstream.next_in = input;
 	// Output size
-	defstream.avail_out = size;
+	defstream.avail_out = *output_size;
 	// Output pointer
 	defstream.next_out = *output;
 
@@ -278,11 +286,11 @@ cct_trie_trace_lz_compress
 	deflate(&defstream, Z_FINISH);
 	deflateEnd(&defstream);
 
-	size_t left_size = size - defstream.avail_out;
+	size_t left_size = *output_size - defstream.avail_out;
 
 	// Debug compress rate
-	printf("origin size %zu, current size %zu\n", size, left_size);
-	*output = (uint8_t *)realloc(output, left_size + 1);
+	printf("Compress origin size %zu, current size %zu\n", *output_size, left_size);
+	*output = (uint8_t *)realloc(*output, left_size + 1);
   *output_size = left_size + 1;
 }
 
@@ -290,9 +298,33 @@ cct_trie_trace_lz_compress
 static void
 cct_trie_trace_lz_decompress
 (
- cupti_cct_trace_node_t *trace
+ uint8_t *input,
+ uint8_t **output,
+ size_t input_size,
+ size_t output_size
 )
 {
+	hpcrun_safe_enter();
+  *output = (uint8_t *)malloc(output_size);
+	hpcrun_safe_exit();
+
+	z_stream infstream;
+	infstream.zalloc = Z_NULL;
+	infstream.zfree = Z_NULL;
+	infstream.opaque = Z_NULL;
+	infstream.avail_in = input_size;
+	infstream.next_in = input;
+	infstream.avail_out = output_size;
+	infstream.next_out = *output;
+
+	inflateInit(&infstream);
+	inflate(&infstream, Z_NO_FLUSH);
+	inflateEnd(&infstream);
+
+	size_t left_size = output_size - infstream.avail_out;
+
+	// Debug compress rate
+	printf("Decompress origin size %zu, current size %zu\n", input_size, left_size);
 }
 
 
@@ -302,6 +334,17 @@ cct_trie_trace_lz_release
  cupti_cct_trace_node_t *trace
 )
 {
+  hpcrun_safe_enter();
+  if (trace->keys != NULL && trace->keys_buf != NULL && trace->keys_buf_size != 0) {
+    free(trace->keys);
+  }  
+  if (trace->range_ids != NULL && trace->range_ids_buf != NULL && trace->range_ids_buf_size != 0) {
+    free(trace->range_ids);
+  }
+  hpcrun_safe_exit();
+
+  trace->keys = NULL;
+  trace->range_ids = NULL;
 }
 
 #endif
@@ -332,7 +375,10 @@ cct_trie_trace_append
   } else if (trie_cur.ptr == CUPTI_CCT_TRIE_PTR_NULL) {
     // Start looking into the trace
 #ifdef ENABLE_LZ
-    cct_trie_trace_lz_decompress(trace_cur);
+    cct_trie_trace_lz_decompress((uint8_t *)trace_cur->keys_buf, (uint8_t **)&(trace_cur->keys),
+			trace_cur->keys_buf_size, trace_cur->size * sizeof(cct_node_t *));
+    cct_trie_trace_lz_decompress((uint8_t *)trace_cur->range_ids_buf, (uint8_t **)&(trace_cur->range_ids),
+			trace_cur->range_ids_buf_size, trace_cur->size * sizeof(uint32_t));
 #endif
     trie_cur.ptr = 0;
   }
@@ -566,12 +612,19 @@ cupti_cct_trie_compress
   cur->trace = trace;
   cur->children = trie_cur.node;
   trie_cur.node->parent = cur;
+  trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
 
-  // TODO(Keren): lz compression
+#ifdef ENABLE_LZ
 	cct_trie_trace_lz_compress((uint8_t *)trace->range_ids, (uint8_t **)&(trace->range_ids_buf),
-		sizeof(uint32_t) * trace->size, trace->range_ids_buf_size);
+		sizeof(uint32_t) * trace->size, &trace->range_ids_buf_size);
 	cct_trie_trace_lz_compress((uint8_t *)trace->keys, (uint8_t **)&(trace->keys_buf),
-		sizeof(cct_node_t *) * trace->size, trace->keys_buf_size);
+		sizeof(cct_node_t *) * trace->size, &trace->keys_buf_size);
+
+  hpcrun_safe_enter();
+  free(trace->range_ids);
+  free(trace->keys);
+  hpcrun_safe_exit();
+#endif
 }
 
 
@@ -679,29 +732,34 @@ cupti_cct_trie_root_get
 // Debuging
 //**********************************************
 
+static __thread int num_nodes = 0;
+static __thread int bytes = 0;
+static __thread int single_path_nodes = 0;
+
 static void
-cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes);
+cct_trie_walk(cupti_cct_trie_node_t* trie_node);
 
 
 static void
-cct_trie_walk_child(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes)
+cct_trie_walk_child(cupti_cct_trie_node_t* trie_node)
 {
   if (!trie_node) return;
 
-  cct_trie_walk_child(trie_node->left, num_nodes, single_path_nodes);
-  cct_trie_walk_child(trie_node->right, num_nodes, single_path_nodes);
-  cct_trie_walk(trie_node, num_nodes, single_path_nodes);
+  cct_trie_walk_child(trie_node->left);
+  cct_trie_walk_child(trie_node->right);
+  cct_trie_walk(trie_node);
 }
 
 
 static void
-cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes)
+cct_trie_walk(cupti_cct_trie_node_t* trie_node)
 {
   if (!trie_node) return;
-  ++(*num_nodes);
+  ++num_nodes;
   if (trie_node->children != NULL && trie_node->children->left == NULL && trie_node->children->right == NULL) {
-    ++(*single_path_nodes);
+    ++single_path_nodes;
   }
+  bytes += sizeof(trie_node);
   printf("key %p, range_id %d\n", trie_node->key, trie_node->range_id);
   if (trie_node->trace != NULL) {
     printf("\ttrace\n");
@@ -710,8 +768,18 @@ cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path
       printf("\t\tkey %p, range_id %d\n", cct_trace_get_key(trie_node->trace, i),
         cct_trace_get_range_id(trie_node->trace, i));
     }
+#ifdef ENABLE_LZ
+    if (trie_node->trace->keys_buf != NULL) {
+      bytes += trie_node->trace->keys_buf_size;
+    }
+    if (trie_node->trace->range_ids_buf != NULL) {
+      bytes += trie_node->trace->range_ids_buf_size;
+    }
+#else
+    bytes += trie_node->trace->size * (sizeof(uint32_t) + sizeof(cct_node_t *));
+#endif
   }
-  cct_trie_walk_child(trie_node->children, num_nodes, single_path_nodes);
+  cct_trie_walk_child(trie_node->children);
 }
 
 
@@ -720,10 +788,11 @@ cupti_cct_trie_dump
 (
 )
 {
-  int num_nodes = 0;
-  int single_path_nodes = 0;
-  cct_trie_walk(trie_root, &num_nodes, &single_path_nodes);
-  printf("num_nodes %d, single_path_nodes %d\n", num_nodes, single_path_nodes);
+  num_nodes = 0;
+  bytes = 0;
+  single_path_nodes = 0;
+  cct_trie_walk(trie_root);
+  printf("num_nodes %d, single_path_nodes %d, bytes %d\n", num_nodes, single_path_nodes, bytes);
 }
 
 
