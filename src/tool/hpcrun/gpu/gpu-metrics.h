@@ -495,6 +495,18 @@ gpu_metrics_GBR_enable
 
 
 //--------------------------------------------------
+// record GPU hardware counters
+//--------------------------------------------------
+
+void
+gpu_metrics_GPU_CTR_enable
+(
+  void
+);
+
+
+
+//--------------------------------------------------
 // attribute GPU measurements to an application 
 // thread's calling context tree
 //--------------------------------------------------

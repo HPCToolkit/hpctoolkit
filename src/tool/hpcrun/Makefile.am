@@ -542,6 +542,7 @@ endif
 if OPT_ENABLE_ROCM
 MY_ROCM_FILES =\
 	sample-sources/amd.c \
+	sample-sources/amd-rocprofiler.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c \
 	gpu/amd/rocprofiler-api.c \

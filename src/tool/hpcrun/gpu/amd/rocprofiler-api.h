@@ -91,5 +91,35 @@ rocprofiler_wait_context_callback
   void
 );
 
+int
+rocprofiler_total_counters
+(
+  void
+);
+
+const char*
+rocprofiler_counter_name
+(
+  int
+);
+
+const char*
+rocprofiler_counter_description
+(
+  int
+);
+
+int
+rocprofiler_match_event
+(
+  const char*
+);
+
+void
+rocprofiler_finalize_event_list
+(
+
+);
+
 
 #endif

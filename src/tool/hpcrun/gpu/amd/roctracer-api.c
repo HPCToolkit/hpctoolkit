@@ -115,7 +115,7 @@ static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
 // If we collect counters for GPU kernels,
 // we will serilize kernel executions.
 // Hopefully, AMD tool support will improve this the future
-static bool collect_counter = true;
+static bool collect_counter = false;
 
 //----------------------------------------------------------
 // roctracer function pointers for late binding
@@ -621,3 +621,11 @@ roctracer_fini
   gpu_application_thread_process_activities();
 }
 
+void
+roctracer_enable_counter_collection
+(
+  void
+)
+{
+  collect_counter = true;
+}

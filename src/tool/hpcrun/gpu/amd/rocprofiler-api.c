@@ -155,7 +155,8 @@ Context pool API:
   macro(rocprofiler_set_queue_callbacks) \
   macro(rocprofiler_start_queue_callbacks) \
   macro(rocprofiler_stop_queue_callbacks) \
-  macro(rocprofiler_remove_queue_callbacks)
+  macro(rocprofiler_remove_queue_callbacks) \
+  macro(rocprofiler_iterate_info)
 
 
 
@@ -175,10 +176,6 @@ Context pool API:
   }						\
 }
 
-
-typedef const char* (*hip_kernel_name_fnt)(const hipFunction_t f);
-typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStream_t stream);
-
 typedef struct {
   bool valid;
   hsa_agent_t agent;
@@ -195,9 +192,19 @@ static hpcrun_amd_counter_data_t counter_data;
 static uint64_t rocprofiler_correlation_id;
 static volatile int context_callback_finish;
 
+static bool rocprofiler_initialized = false;
 
-static hip_kernel_name_fnt hip_kernel_name_fn;
-static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
+// total number of counters supported by rocprofiler,
+// an array of their string names, and an array of their description
+static int total_counters = 0;
+static const char** counter_name = NULL;
+static const char** counter_description = NULL;
+
+//
+static int *is_specified_by_user = NULL;
+static int total_requested = 0;
+static rocprofiler_feature_t* rocprofiler_input = NULL;
+
 
 //----------------------------------------------------------
 // rocprofiler function pointers for late binding
@@ -265,6 +272,17 @@ ROCPROFILER_FN
   )
 );
 
+ROCPROFILER_FN
+(
+  rocprofiler_iterate_info,
+  (
+    const hsa_agent_t* agent,			// [in] GPU handle, NULL for all
+                                  // GPU agents
+	  rocprofiler_info_kind_t kind,			// kind of iterated info
+	  hsa_status_t (*callback)(const rocprofiler_info_data_t info, void *data), // callback
+	  void *data
+  )
+);
 
 //******************************************************************************
 // private operations
@@ -281,31 +299,17 @@ rocprofiler_path
   return path;
 }
 
-
-unsigned metrics_input(rocprofiler_feature_t** ret) {
-  // Profiling feature objects
-  const unsigned feature_count = 4;
-  rocprofiler_feature_t* features = (rocprofiler_feature_t*) malloc(sizeof(rocprofiler_feature_t) * feature_count);
-  memset(features, 0, feature_count * sizeof(rocprofiler_feature_t));
-
-  // PMC events
-  features[0].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[0].name = "GRBM_COUNT";
-  features[1].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[1].name = "GRBM_GUI_ACTIVE";
-  features[2].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[2].name = "TCC_HIT_sum";
-  features[3].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[3].name = "TCC_MISS_sum";
-
-  *ret = features;
-  return feature_count;
-}
-
 // Profiling completion handler
 // Dump and delete the context entry
 // Return true if the context was dumped successfully
-static bool context_handler1(rocprofiler_group_t group, void* arg) {
+static bool
+rocprofiler_context_handler
+(
+  rocprofiler_group_t group,
+  void* arg
+)
+{
+  printf("Enter rocprofiler_context_handler\n");
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
   volatile bool valid = counter_data.valid;
   while (!valid) {
@@ -356,13 +360,14 @@ static bool context_handler1(rocprofiler_group_t group, void* arg) {
 }
 
 static hsa_status_t
-dispatch_callback
+rocprofiler_dispatch_callback
 (
   const rocprofiler_callback_data_t* callback_data,
   void* arg,
   rocprofiler_group_t* group
 ) {
-  printf("Rocprofiler dispatch_callback\n\n");
+  if (total_requested == 0) return HSA_STATUS_SUCCESS;
+  printf("Enter rocprofiler_dispatch_callback\n");
   // Passed tool data
   hsa_agent_t agent = callback_data->agent;
   // HSA status
@@ -370,14 +375,11 @@ dispatch_callback
 
   rocprofiler_t* context = NULL;
   rocprofiler_properties_t properties = {};
-  properties.handler = context_handler1;
+  properties.handler = rocprofiler_context_handler;
   properties.handler_arg = NULL;
 
-  rocprofiler_feature_t *features;
-  unsigned feature_count = metrics_input(&features);
-
   counter_data.valid = false;
-  HPCRUN_ROCPROFILER_CALL(rocprofiler_open, (agent, features, feature_count,
+  HPCRUN_ROCPROFILER_CALL(rocprofiler_open, (agent, rocprofiler_input, total_requested,
                             &context, 0 /*ROCPROFILER_MODE_SINGLEGROUP*/, &properties));
 
 
@@ -395,14 +397,88 @@ dispatch_callback
 }
 
 
-static void rocp_inicialize() {
+static void
+rocp_inicialize
+(
+
+)
+{
   rocprofiler_queue_callbacks_t callbacks_ptrs = {};
-  callbacks_ptrs.dispatch = dispatch_callback;
+  callbacks_ptrs.dispatch = rocprofiler_dispatch_callback;
   rocprofiler_set_queue_callbacks(callbacks_ptrs, NULL);
 }
 
+static void cleanup() {
+  // Unregister dispatch callback
+  rocprofiler_remove_queue_callbacks();
+}
+
+static hsa_status_t
+total_counter_accumulator
+(
+  const rocprofiler_info_data_t info,
+  void *data
+)
+{
+  total_counters += 1;
+  return HSA_STATUS_SUCCESS;
+}
+
+static hsa_status_t
+counter_info_accumulator
+(
+  const rocprofiler_info_data_t info,
+  void *data
+)
+{
+  /*
+  fprintf(stderr, "Enter counter_info_accumulator\n");
+  fprintf(stderr, "\tname %s\n", info.metric.name);
+  fprintf(stderr, "\tinstances %d\n", info.metric.instances);
+  fprintf(stderr, "\texpr %s\n", info.metric.expr);
+  fprintf(stderr, "\tblock name %s\n", info.metric.block_name);
+  fprintf(stderr, "\tblock_counters %d\n", info.metric.block_counters);
+  */
+  counter_name[total_counters] = strdup(info.metric.name);
+  counter_description[total_counters] = strdup(info.metric.description);
+  total_counters += 1;
+  return HSA_STATUS_SUCCESS;
+}
+
+static void
+initialize_counter_information
+(
+
+)
+{
+  // First we iterate over all counters to get the total
+  HPCRUN_ROCPROFILER_CALL(rocprofiler_iterate_info,
+    (NULL, ROCPROFILER_INFO_KIND_METRIC, total_counter_accumulator, NULL));
+
+  // Allocate infomation array
+  counter_name = (const char**) malloc(total_counters * sizeof(const char*));
+  counter_description = (const char**) malloc(total_counters * sizeof(const char*));
+
+  // Fill in name and description string for each counter
+  total_counters = 0;
+  HPCRUN_ROCPROFILER_CALL(rocprofiler_iterate_info,
+    (NULL, ROCPROFILER_INFO_KIND_METRIC, counter_info_accumulator, NULL));
+
+  // Allocate an array to record whether a counter is asked by the user
+  is_specified_by_user = (int*) malloc(total_counters * sizeof(int));
+  memset(is_specified_by_user, 0, total_counters * sizeof(int));
+}
+
+//******************************************************************************
+// AMD hidden interface operations
+//******************************************************************************
+
 // This is necessary for rocprofiler callback to work
 extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
+  // Somehow needs to disable code object tracking
+  // to avoid a deadlock in rocprofiler
+  settings->code_obj_tracking = 0;
+  rocprofiler_init();
   printf("Rocprofiler OnLoadToolProp______________________\n");
   rocp_inicialize();
 }
@@ -415,13 +491,6 @@ extern PUBLIC_API void OnUnloadTool(){
 extern PUBLIC_API void OnLoad(){
   printf("Rocprofiler OnLoad______________________\n");
 }
-
-static void cleanup() {
-  // Unregister dispatch callback
-  rocprofiler_remove_queue_callbacks();
-}
-
-
 
 //******************************************************************************
 // interface operations
@@ -451,8 +520,21 @@ rocprofiler_init
  void
 )
 {
+  if (rocprofiler_initialized) {
+    return;
+  }
+  rocprofiler_initialized = true;
   printf("Rocprofiler INIT\n");
-  // rocp_inicialize();
+
+#ifndef HPCRUN_STATIC_LINK
+  // We usually bind GPU vendor library in finalize_event_list.
+  // But here we must do early binding to query supported list of counters
+  if (rocprofiler_bind() != DYNAMIC_BINDING_STATUS_OK) {
+    EEMSG("hpcrun: unable to bind to AMD rocprofiler library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+#endif
+  initialize_counter_information();
   return;
 }
 
@@ -477,23 +559,16 @@ rocprofiler_bind
  void
 )
 {
-//   // This is a workaround for roctracer to not hang when taking timer interrupts
-//   // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
-//   setenv("HSA_ENABLE_INTERRUPT", "0", 1);
-
-  // if (rocm_debug_api_bind() != DYNAMIC_BINDING_STATUS_OK) {
-  //   return DYNAMIC_BINDING_STATUS_ERROR;
-  // }
-
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(rocprofiler, rocprofiler_path(), RTLD_NOW | RTLD_GLOBAL);
-  // Somehow roctracter needs libkfdwrapper64.so, but does not really load it.
-  // So, we load it before using any function in roctracter.
-  CHK_DLOPEN(kfd, "libkfdwrapper64.so", RTLD_NOW | RTLD_GLOBAL);
 
-  CHK_DLOPEN(hip, "libamdhip64.so", RTLD_NOW | RTLD_GLOBAL);
+  if (getenv("HPCRUN_LIST_EVENT")) {
+    CHK_DLOPEN(hsa, "libhsa-runtime64.so", RTLD_NOW | RTLD_GLOBAL);
+    hsa_init();
+  }
+
   hpcrun_force_dlopen(false);
 
 #define ROCPROFILER_BIND(fn) \
@@ -502,18 +577,6 @@ rocprofiler_bind
   FORALL_ROCPROFILER_ROUTINES(ROCPROFILER_BIND);
 
 #undef ROCPROFILER_BIND
-
-  dlerror();
-  hip_kernel_name_fn = (hip_kernel_name_fnt) dlsym(hip, "hipKernelNameRef");
-  if (hip_kernel_name_fn == 0) {
-    return DYNAMIC_BINDING_STATUS_ERROR;
-  }
-
-  dlerror();
-  hip_kernel_name_ref_fn = (hip_kernel_name_ref_fnt) dlsym(hip, "hipKernelNameRefByPtr");
-  if (hip_kernel_name_ref_fn == 0) {
-    return DYNAMIC_BINDING_STATUS_ERROR;
-  }
 
   return DYNAMIC_BINDING_STATUS_OK;
 #else
@@ -528,4 +591,72 @@ rocprofiler_wait_context_callback
 )
 {
   while (context_callback_finish == 0);
+}
+
+int
+rocprofiler_total_counters
+(
+  void
+)
+{
+  return total_counters;
+}
+
+const char*
+rocprofiler_counter_name
+(
+  int idx
+)
+{
+  if (idx < 0 || idx >= total_counters || counter_name == NULL) return NULL;
+  return counter_name[idx];
+}
+
+const char*
+rocprofiler_counter_description
+(
+  int idx
+)
+{
+  if (idx < 0 || idx >= total_counters || counter_description == NULL) return NULL;
+  return counter_description[idx];
+}
+
+int
+rocprofiler_match_event
+(
+  const char* ev_str
+)
+{
+  for (int i = 0; i < total_counters; i++) {
+    if (strcmp(ev_str, counter_name[i]) == 0) {
+      is_specified_by_user[i] = 1;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void
+rocprofiler_finalize_event_list
+(
+)
+{
+  for (int i = 0; i < total_counters; i++) {
+    if (is_specified_by_user[i] == 1) {
+      total_requested += 1;
+    }
+  }
+
+  rocprofiler_input = (rocprofiler_feature_t*) malloc(sizeof(rocprofiler_feature_t) * total_requested);
+  memset(rocprofiler_input, 0, total_requested * sizeof(rocprofiler_feature_t));
+
+  total_requested = 0;
+  for (int i = 0; i < total_counters; i++) {
+    if (is_specified_by_user[i] == 1) {
+      rocprofiler_input[total_requested].kind = ROCPROFILER_FEATURE_KIND_METRIC;
+      rocprofiler_input[total_requested].name = counter_name[i];
+      total_requested += 1;
+    }
+  }
 }

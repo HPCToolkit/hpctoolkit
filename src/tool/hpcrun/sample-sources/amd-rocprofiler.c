@@ -71,12 +71,9 @@
 // macros
 //******************************************************************************
 
-#define AMD_ROCM "gpu=amd"
+#define AMD_ROCPROFILER_PREFIX "rocprof"
 
-static device_finalizer_fn_entry_t device_finalizer_roctracer_shutdown;
 static device_finalizer_fn_entry_t device_finalizer_rocprofiler_shutdown;
-static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
-
 
 //******************************************************************************
 // interface operations
@@ -121,24 +118,30 @@ METHOD_FN(thread_fini_action)
 static void
 METHOD_FN(stop)
 {
-    hpcrun_get_thread_data();
-
-    TD_GET(ss_state)[self->sel_idx] = STOP;
+  hpcrun_get_thread_data();
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 
 static void
 METHOD_FN(shutdown)
 {
-    self->state = UNINIT;
+  self->state = UNINIT;
 }
 
 
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+  rocprofiler_init();
 #ifndef HPCRUN_STATIC_LINK
-    return hpcrun_ev_is(ev_str, AMD_ROCM);
+  if (hpcrun_ev_is(ev_str, AMD_ROCPROFILER_PREFIX)) {
+    const char* roc_str = ev_str + sizeof(AMD_ROCPROFILER_PREFIX);
+    while (*roc_str == ':') roc_str++;
+    if (*roc_str == 0) return false;
+    return rocprofiler_match_event(roc_str) != 0;
+  }
+  return false;
 #else
     return false;
 #endif
@@ -149,39 +152,25 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-    int nevents = (self->evl).nevents;
-    gpu_metrics_default_enable();
-    hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
-    TMSG(CUDA,"nevents = %d", nevents);
+  int nevents = (self->evl).nevents;
+  gpu_metrics_GPU_CTR_enable();
+  TMSG(CUDA,"nevents = %d", nevents);
 }
 
 static void
 METHOD_FN(finalize_event_list)
 {
-#ifndef HPCRUN_STATIC_LINK
-  if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
-    monitor_real_exit(-1);
-  }
-#endif
+  // After going through all command line arguments,
+  // we call this function to generate a list of counters
+  // in rocprofiler's format
+  rocprofiler_finalize_event_list();
 
-#if 0
-  // Fetch the event string for the sample source
-  // only one event is allowed
-  char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-#endif
-    roctracer_init();
+  device_finalizer_rocprofiler_shutdown.fn = rocprofiler_fini;
+  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_rocprofiler_shutdown);
 
-    // Init records
-    gpu_trace_init();
-
-    device_finalizer_roctracer_shutdown.fn = roctracer_fini;
-    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_roctracer_shutdown);
-
-    // Register shutdown functions to write trace files
-    device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-    device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
+  // Inform roctracer component that we will collect hardware counters,
+  // which will serialize kernel launches
+  roctracer_enable_counter_collection();
 }
 
 
@@ -195,15 +184,18 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+  // We need to query rocprofiler to get a list of supported rocprofiler counters
+  rocprofiler_init();
+
+  int total_counters = rocprofiler_total_counters();
   printf("===========================================================================\n");
-  printf("Available AMD GPU events\n");
+  printf("Available AMD GPU hardware counter events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tComprehensive operation-level monitoring on an AMD GPU.\n"
-	 "\t\tCollect timing information on GPU kernel invocations,\n"
-	 "\t\tmemory copies, etc.\n",
-	 AMD_ROCM);
+  for (int i = 0; i < total_counters; ++i) {
+    printf("%s%s\t\t%s\n", AMD_ROCPROFILER_PREFIX, rocprofiler_counter_name(i), rocprofiler_counter_description(i));
+  }
   printf("\n");
 }
 
@@ -213,7 +205,7 @@ METHOD_FN(display_events)
 // object
 //**************************************************************************
 
-#define ss_name amd_gpu
+#define ss_name amd_rocprof
 #define ss_cls SS_HARDWARE
 
 #include "ss_obj.h"
