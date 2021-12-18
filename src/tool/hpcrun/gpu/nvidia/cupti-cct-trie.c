@@ -456,14 +456,14 @@ cupti_cct_trie_compress
 )
 {
   // A->B->C->D
-  // We are currently at D, merge B->C to A
+  // We are currently at D, merge B->C->D to A
   cupti_cct_trace_node_t *trace = cct_trace_new(CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 1);
 
-  cupti_cct_trie_node_t *cur = trie_cur.node->parent;
+  cupti_cct_trie_node_t *cur = trie_cur.node;
   int i;
-  for (i = 0; i < CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 2; ++i) {
-    trace->keys[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 3] = cur->key;
-    trace->range_ids[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 3] = cur->range_id;
+  for (i = 0; i < CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - 1; ++i) {
+    trace->keys[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 2] = cur->key;
+    trace->range_ids[CUPTI_CCT_TRIE_COMPRESS_THRESHOLD - i - 2] = cur->range_id;
     cupti_cct_trie_node_t *parent = cur->parent;
     trie_free(&free_list, cur); 
     cur = parent;
