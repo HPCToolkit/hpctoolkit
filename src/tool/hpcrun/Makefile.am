@@ -1003,8 +1003,9 @@ if OPT_ENABLE_CUPTI
 if OPT_ENABLE_NEW_CUPTI
   libhpcrun_la_SOURCES  += $(MY_NEW_CUPTI_FILES)
   libhpcrun_o_SOURCES   += $(MY_NEW_CUPTI_FILES)
-  libhpcrun_la_CFLAGS += -DNEW_CUPTI
-  libhpcrun_la_CPPFLAGS += -DNEW_CUPTI
+  libhpcrun_la_CFLAGS += -DNEW_CUPTI -I$(ZLIB_INC)
+  libhpcrun_la_CPPFLAGS += -DNEW_CUPTI -I$(ZLIB_INC)
+  libhpcrun_la_LDFLAGS  += -L$(ZLIB_LIB) -lz
 
 #pkglib_LTLIBRARIES += libhpcrun_cuda.la
 #libhpcrun_cuda_la_CPPFLAGS  = $(CUPTI_INC_FLGS)
