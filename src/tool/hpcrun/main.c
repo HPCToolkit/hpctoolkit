@@ -1166,7 +1166,7 @@ monitor_thread_pre_create(void)
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
-    return NULL;
+    return MONITOR_IGNORE_NEW_THREAD;
   }
 
   struct monitor_thread_info mti;

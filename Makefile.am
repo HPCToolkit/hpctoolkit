@@ -95,6 +95,8 @@ pkglibexec_SCRIPTS = $(MYSCRIPTS)
 dist_doc_DATA = $(MYDATA)
 endif
 
+SUBDIRS += tests
+
 
 #############################################################################
 # Other rules
@@ -195,7 +197,7 @@ endif
 ############################################################
 
 DIST_FILES = Makefile* README* aclocal.m4 autogen configure*  \
-	config doc lib src tools
+	config doc lib spack src tests tools 
 
 MY_DIST_DIR = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
 MY_TAR_FILE = $(MY_DIST_DIR).tar
