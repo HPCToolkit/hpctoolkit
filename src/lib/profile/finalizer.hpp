@@ -50,8 +50,11 @@
 #include "pipeline.hpp"
 #include "dataclass.hpp"
 
+#include "util/ref_wrappers.hpp"
+
 #include "stdshim/filesystem.hpp"
 #include <atomic>
+#include <optional>
 
 namespace hpctoolkit {
 
@@ -64,9 +67,11 @@ public:
 
   /// Bind this Finalizer to a Pipeline to actually get stuff done.
   // MT: Externally Synchronized
-  void bindPipeline(ProfilePipeline::Source&& se) noexcept {
-    sink = std::move(se);
-  }
+  void bindPipeline(ProfilePipeline::Source&&) noexcept;
+
+  /// Notify the Finalizer that a Pipeline has been bound, to register any userdata.
+  // MT: Externally Synchronized
+  virtual void notifyPipeline() noexcept;
 
   /// Query for the ExtensionClass this Finalizer provides to the Pipeline.
   // MT: Safe (const)
@@ -77,41 +82,45 @@ public:
   // MT: Safe (const)
   virtual ExtensionClass requires() const noexcept = 0;
 
-  /// Classify the given Module, filling in the Classification.
+  /// Generate an ID to the given object. Must be unique among all objects of the
+  /// same type, and preferably dense towards 0.
+  /// ExtensionClass: `identifier`
   // MT: Internally Synchronized
-  virtual void module(const Module&, Classification&) noexcept {};
+  virtual std::optional<unsigned int> identify(const Module&) noexcept;
+  virtual std::optional<unsigned int> identify(const File&) noexcept;
+  virtual std::optional<unsigned int> identify(const Metric&) noexcept;
+  virtual std::optional<unsigned int> identify(const Context&) noexcept;
+  virtual std::optional<unsigned int> identify(const Thread&) noexcept;
 
-  /// Assign a (unique, dense) ID to the given Module.
+  /// Generate a set of (unique, dense) IDs for the given Metric.
+  /// ExtensionClass: `mscopeIdentifiers`
   // MT: Internally Synchronized
-  virtual void module(const Module&, unsigned int&) noexcept {};
+  virtual std::optional<Metric::ScopedIdentifiers> subidentify(const Metric&) noexcept;
 
-  /// Assign a (unique, dense) ID to the given File.
+  /// Resolve the path for the given object.
+  /// ExtensionClass: `resolvedPath`
   // MT: Internally Synchronized
-  virtual void file(const File&, unsigned int&) noexcept {};
+  virtual std::optional<stdshim::filesystem::path> resolvePath(const File&) noexcept;
+  virtual std::optional<stdshim::filesystem::path> resolvePath(const Module&) noexcept;
 
-  /// Assign a (unique, dense) ID to the given Metric.
+  /// Generate parent Context for a particular Scope. Called when a new Context
+  /// is about to be emitted into the Pipeline. The returned Context will be
+  /// treated as the new parent of the given Scope.
+  /// ExtensionClass: `classification`
   // MT: Internally Synchronized
-  virtual void metric(const Metric&, unsigned int&) noexcept {};
+  virtual util::optional_ref<Context> classify(Context&, Scope&) noexcept;
 
-  /// Assign a set of (unique, dense) IDs to the given Metric.
+  /// Fill a ContextFlowGraph with the appropriate data. Returns true if this
+  /// Finalizer provided this data.
+  /// ExtensionClass: `classification`
   // MT: Internally Synchronized
-  virtual void metric(const Metric&, Metric::ScopedIdentifiers&) noexcept {};
+  virtual bool resolve(ContextFlowGraph&) noexcept;
 
-  /// Assign a (unique, dense) ID to the given Context.
+  /// Fill a Metric will the requested Statistics. Unlike other methods, this
+  /// one is called for all Finalizers.
+  /// ExtensionClass: `statistics`
   // MT: Internally Synchronized
-  virtual void context(const Context&, unsigned int&) noexcept {};
-
-  /// Assign a (unique, dense) ID to the given Thread.
-  // MT: Internally Synchronized
-  virtual void thread(const Thread&, unsigned int&) noexcept {};
-
-  /// Assign the resolved path for a File.
-  // MT: Internally Synchronized
-  virtual void file(const File&, stdshim::filesystem::path&) noexcept {};
-
-  /// Assign the resolved path for a Module.
-  // MT: Internally Synchronized
-  virtual void module(const Module&, stdshim::filesystem::path&) noexcept {};
+  virtual void appendStatistics(const Metric&, Metric::StatsAccess) noexcept;
 
 protected:
   // This is a base class, don't construct it directly.

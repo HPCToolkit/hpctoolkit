@@ -164,6 +164,11 @@ public:
   // Comparison, as usual
   bool operator==(const Scope& o) const noexcept;
   bool operator!=(const Scope& o) const noexcept { return !operator==(o); }
+  // Total ordering
+  bool operator<(const Scope& o) const noexcept;
+  bool operator<=(const Scope& o) const noexcept { return !operator>(o); }
+  bool operator>(const Scope& o) const noexcept { return o.operator<(*this); }
+  bool operator>=(const Scope& o) const noexcept { return !operator<(o); }
 
 private:
   Type ty;
@@ -175,6 +180,9 @@ private:
       bool operator==(const point_u& o) const {
         return m == o.m && offset == o.offset;
       }
+      bool operator<(const point_u& o) const {
+        return m != o.m ? m < o.m : offset < o.offset;
+      }
       operator std::pair<const Module&, uint64_t>() const {
         return {*m, offset};
       }
@@ -183,6 +191,9 @@ private:
       const Function* f;
       bool operator==(const function_u& o) const {
         return f == o.f;
+      }
+      bool operator<(const function_u& o) const {
+        return f < o.f;
       }
       operator const Function&() const {
         return *f;
@@ -194,6 +205,9 @@ private:
       bool operator==(const line_u& o) const {
         return s == o.s && l == o.l;
       }
+      bool operator<(const line_u& o) const {
+        return s != o.s ? s < o.s : l < o.l;
+      }
       operator std::pair<const File&, uint64_t>() const {
         return {*s, l};
       }
@@ -203,6 +217,9 @@ private:
       line_u line;
       bool operator==(const function_line_u& o) const {
         return function == o.function && line == o.line;
+      }
+      bool operator<(const function_line_u& o) const {
+        return !(function == o.function) ? function < o.function : line < o.line;
       }
     } function_line;
     uint64_t enumerated;
@@ -224,61 +241,6 @@ private:
   // A special constructor only available to Profiles for the `global` Scope.
   friend class ProfilePipeline;
   explicit Scope(ProfilePipeline&);
-};
-
-// A full representation of a Function written somewhere in the code.
-// Implicitly bound to a Module.
-class Function {
-public:
-  Function(const Module& m)
-    : name(), offset(0), file(nullptr), line(0), m_mod(m) {};
-  Function(Function&& f) = default;
-  Function(const Module& m, const std::string& n, uint64_t o = 0,
-           const File* f = nullptr, uint64_t l = 0)
-    : Function(m, std::string(n), o, f, l) {};
-  Function(const Module& m, std::string&& n, uint64_t o = 0,
-           const File* f = nullptr, uint64_t l = 0)
-    : name(std::move(n)), offset(o), file(f), line(l), m_mod(m) {};
-  ~Function() = default;
-
-  // Human-friendly name for the function.
-  std::string name;
-
-  // Offset into the Module for this Function
-  uint64_t offset;
-
-  // Source information for this Function.
-  const File* file;
-  uint64_t line;
-
-  // Technically this isn't right... but the current alternative is worse.
-  const Module& module() const noexcept { return m_mod; }
-
-private:
-  const Module& m_mod;
-};
-
-// A full representation for a source File the code was built with.
-class File {
-public:
-  using ud_t = util::ragged_vector<const File&>;
-
-  File(File&& f);
-  File(ud_t::struct_t& rs, stdshim::filesystem::path p);
-  ~File() = default;
-
-  // Full-ish path to the file in question
-  const stdshim::filesystem::path& path() const { return u_path; }
-
-  mutable ud_t userdata;
-
-private:
-  util::uniqable_key<stdshim::filesystem::path> u_path;
-
-  friend class util::uniqued<File>;
-  util::uniqable_key<stdshim::filesystem::path>& uniqable_key() {
-    return u_path;
-  }
 };
 
 }

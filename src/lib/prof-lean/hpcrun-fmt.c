@@ -638,6 +638,8 @@ hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc)
 // cct
 //***************************************************************************
 
+#define HPCFMT_CCT_FLAG_UNWOUND 1
+
  int
 hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 			  epoch_flags_t flags, FILE* fs)
@@ -662,6 +664,11 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->metrics[i].bits, fs));
   }
   */
+
+  uint8_t cct_flags;
+  _Static_assert(sizeof cct_flags == 1, "uint8_t > char?");
+  HPCFMT_ThrowIfError(hpcfmt_fread(&cct_flags, sizeof cct_flags, fs));
+  x->unwound = cct_flags & HPCFMT_CCT_FLAG_UNWOUND;
   return HPCFMT_OK;
 }
 
@@ -688,6 +695,11 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
     HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->metrics[i].bits, fs));
   }
   */
+
+  uint8_t cct_flags = 0
+    | (x->unwound ? HPCFMT_CCT_FLAG_UNWOUND : 0);
+  _Static_assert(sizeof cct_flags == 1, "uint8_t > char?");
+  HPCFMT_ThrowIfError(hpcfmt_fwrite(&cct_flags, sizeof cct_flags, fs));
   return HPCFMT_OK;
 }
 
@@ -715,6 +727,8 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 
     fprintf(fs, "(as: %s) ", as_str);
   }
+
+  if(!x->unwound) fprintf(fs, "(not unwound) ");
 
   fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm_id, x->lm_ip);
 

@@ -48,6 +48,7 @@
 
 #include "util/log.hpp"
 #include "module.hpp"
+#include "lexical.hpp"
 
 #include "lib/prof-lean/placeholders.h"
 
@@ -58,14 +59,6 @@
 #include <sstream>
 
 using namespace hpctoolkit;
-
-File::File(File&& f)
-  : userdata(std::move(f.userdata), std::ref(*this)),
-    u_path(std::move(f.path())) {};
-File::File(ud_t::struct_t& rs, stdshim::filesystem::path p)
-  : userdata(rs, std::ref(*this)), u_path(std::move(p)) {
-  assert(!u_path().empty() && "Attempt to create a File with an empty path!");
-}
 
 Scope::Scope() : ty(Type::unknown), data() {};
 Scope::Scope(const Module& m, uint64_t o)
@@ -172,6 +165,25 @@ bool Scope::operator==(const Scope& o) const noexcept {
   std::abort();
 }
 
+bool Scope::operator<(const Scope& o) const noexcept {
+  if(ty != o.ty) return ty < o.ty;
+  switch(ty) {
+  case Type::unknown: return false;  // Always equal
+  case Type::global: return false;  // Always equal
+  case Type::point:
+    return data.point < o.data.point;
+  case Type::function: return data.function < o.data.function;
+  case Type::inlined_function: return data.function_line < o.data.function_line;
+  case Type::loop:
+  case Type::line:
+    return data.line < o.data.line;
+  case Type::placeholder:
+    return data.enumerated < o.data.enumerated;
+  }
+  assert(false && "Invalid ty while comparing Scopes!");
+  std::abort();
+}
+
 // Hashes
 static constexpr unsigned int bits = std::numeric_limits<std::size_t>::digits;
 static constexpr unsigned int mask = bits - 1;
@@ -222,9 +234,9 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
   auto func_str = [&]() -> std::string {
     std::ostringstream ss;
     const auto& f = s.function_data();
-    ss << f.name;
-    if(f.file)
-      ss << "@/" << f.file->path().filename().string() << ":" << f.line;
+    ss << f.name();
+    if(auto src = f.sourceLocation())
+      ss << "@/" << src->first.path().filename().string() << ":" << src->second;
     return ss.str();
   };
   auto line_str = [&]() -> std::string {

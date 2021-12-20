@@ -49,7 +49,6 @@
 
 #include "lib/profile/source.hpp"
 #include "lib/profile/finalizer.hpp"
-#include "lib/profile/transformer.hpp"
 
 #include "lib/profile/stdshim/filesystem.hpp"
 #include <functional>
@@ -80,7 +79,7 @@ public:
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
     ExtensionClass requires() const noexcept override { return {}; }
-    void module(const Module&, Classification&) noexcept override;
+    util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
 
   private:
     ProfArgs& args;
@@ -93,12 +92,17 @@ public:
   std::unordered_map<stdshim::filesystem::path, stdshim::filesystem::path> prefixes;
 
   /// Statistics adding Transformer
-  class StatisticsExtender final : public ProfileTransformer {
+  class StatisticsExtender final : public ProfileFinalizer {
   public:
     StatisticsExtender(ProfArgs& a) : args(a) {};
     ~StatisticsExtender() = default;
 
-    void metric(const Metric&, Metric::StatsAccess) noexcept override;
+    ExtensionClass provides() const noexcept override {
+      return ExtensionClass::statistics;
+    }
+    ExtensionClass requires() const noexcept override { return {}; }
+
+    void appendStatistics(const Metric&, Metric::StatsAccess) noexcept override;
 
   private:
     ProfArgs& args;
@@ -112,8 +116,8 @@ public:
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::resolvedPath; }
     ExtensionClass requires() const noexcept override { return {}; }
-    void file(const File&, stdshim::filesystem::path&) noexcept override;
-    void module(const Module&, stdshim::filesystem::path&) noexcept override;
+    std::optional<stdshim::filesystem::path> resolvePath(const File&) noexcept override;
+    std::optional<stdshim::filesystem::path> resolvePath(const Module&) noexcept override;
 
   private:
     ProfArgs& args;

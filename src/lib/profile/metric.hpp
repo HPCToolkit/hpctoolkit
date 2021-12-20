@@ -145,6 +145,7 @@ private:
   const std::size_t m_idx;
 
   friend class Metric;
+  friend class PerThreadTemporary;
   friend class StatisticAccumulator;
   StatisticPartial() = default;
   StatisticPartial(Statistic::accumulate_t a, Statistic::combination_t c, std::size_t idx)
@@ -235,7 +236,7 @@ public:
   /// Obtain a pointer to the Thread-local Accumulator for a particular Context.
   /// Returns `nullptr` if no metric data exists for the given Context.
   // MT: Safe (const), Unstable (before notifyThreadFinal)
-  util::optional_ref<const MetricAccumulator> getFor(const Thread::Temporary&, const Context& c) const noexcept;
+  util::optional_ref<const MetricAccumulator> getFor(const PerThreadTemporary&, const Context& c) const noexcept;
 
   Metric(Metric&& m);
 
@@ -278,20 +279,6 @@ private:
   // Returns true if this call was the one to perform the freeze.
   // MT: Internally Synchronized
   bool freeze();
-
-  // Partially finalize the MetricAccumulators for a Thread, everything that can
-  // be done before crossfinalize.
-  // MT: Internally Synchronized
-  static void prefinalize(Thread::Temporary& t) noexcept;
-
-  // Partially finalize the MetricAccumulators referenced by a particular
-  // CollaborativeContext. Will affect the Accumulators for referenced Threads.
-  // MT: Internally Synchronized
-  static void crossfinalize(const CollaborativeContext&) noexcept;
-
-  // Finalize the MetricAccumulators for a Thread.
-  // MT: Internally Synchronized
-  static void finalize(Thread::Temporary& t) noexcept;
 
   friend class util::uniqued<Metric>;
   util::uniqable_key<Settings>& uniqable_key() { return u_settings; }

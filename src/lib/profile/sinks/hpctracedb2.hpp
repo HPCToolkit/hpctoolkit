@@ -81,9 +81,10 @@ public:
 
   void notifyWavefront(DataClass) override;
   void notifyThread(const Thread&) override;
-  void notifyTimepoints(const Thread&, const std::vector<std::pair<std::chrono::nanoseconds, ContextRef::const_t>>&) override;
+  void notifyTimepoints(const Thread&, const std::vector<
+    std::pair<std::chrono::nanoseconds, std::reference_wrapper<const Context>>>&) override;
   void notifyCtxTimepointRewindStart(const Thread&) override;
-  void notifyThreadFinal(const Thread::Temporary&) override;
+  void notifyThreadFinal(const PerThreadTemporary&) override;
 
   /// Return the tag for the experiment.xml, or an empty string if empty.
   std::string exmlTag();

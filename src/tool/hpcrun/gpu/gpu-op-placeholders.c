@@ -153,7 +153,7 @@ gpu_op_ccts_insert
     cct_node_t *node = NULL;
 
     if (flags & (1 << i)) {
-      node = hpcrun_cct_insert_ip_norm(api_node, gpu_op_placeholder_ip(i));
+      node = hpcrun_cct_insert_ip_norm(api_node, gpu_op_placeholder_ip(i), true);
     }
 
     gpu_op_ccts->ccts[i] = node;

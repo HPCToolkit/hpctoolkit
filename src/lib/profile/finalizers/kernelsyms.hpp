@@ -49,7 +49,10 @@
 
 #include "../finalizer.hpp"
 
+#include "../util/range_map.hpp"
+
 #include "../stdshim/filesystem.hpp"
+#include <map>
 
 namespace hpctoolkit::finalizers {
 
@@ -60,12 +63,20 @@ public:
   // `path` is the path to the directory containing symbol listings
   KernelSymbols(stdshim::filesystem::path path);
 
+  void notifyPipeline() noexcept override;
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
   ExtensionClass requires() const noexcept override { return {}; }
-  void module(const Module&, Classification&) noexcept override;
+
+  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
 
 private:
+  struct udModule final {
+    util::range_map<uint64_t, Function, util::range_merge::always_throw<>> symbols;
+  };
+
   stdshim::filesystem::path root;
+  Module::ud_t::typed_member_t<udModule> ud;
+  void load(const Module&, udModule&) noexcept;
 };
 
 }

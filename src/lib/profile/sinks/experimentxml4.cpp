@@ -324,8 +324,8 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     case Scope::Type::placeholder:
       break;
     case Scope::Type::function: {
-      const auto* f = p->scope().function_data().file;
-      if(f != nullptr) pf = *f;
+      if(auto src = p->scope().function_data().sourceLocation())
+        pf = src->first;
       break;
     }
     case Scope::Type::inlined_function:
@@ -488,13 +488,15 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     const auto& f = s.function_data();
     auto& fproc = exml.getProc(Scope(f));
     if(fproc.prep()) {  // Create the Procedure for this Function
-      if(f.name.empty()) { // Anonymous function, write as an <unknown proc>
+      const auto& name = f.name();
+      if(name.empty()) { // Anonymous function, write as an <unknown proc>
         std::ostringstream ss;
-        ss << "<unknown procedure> 0x" << std::hex << f.offset
-           << " [" << f.module().path().string() << "]";
-        fproc.setTag(ss.str(), f.offset, 1);
+        ss << "<unknown procedure>";
+        if(auto o = f.offset()) ss << " 0x" << std::hex << *o;
+        ss << " [" << f.module().path().string() << "]";
+        fproc.setTag(ss.str(), f.offset().value_or(0), 1);
       } else {  // Normal function
-        fproc.setTag(f.name, f.offset, 0);
+        fproc.setTag(name, f.offset().value_or(0), 0);
       }
     }
 
@@ -538,12 +540,13 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       close = "</PF>\n";
     }
 
-    auto& udf = f.file ? f.file->userdata[exml.ud] : udm.unknown_file;
+    auto src = f.sourceLocation();
+    auto& udf = src ? src->first.userdata[exml.ud] : udm.unknown_file;
     udf.incr(exml);
     ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
           " s=\"" << fproc.id << "\" n=\"" << fproc.id << "\""
-          " v=\"0x" << std::hex << f.offset << std::dec << "\""
-          " f=\"" << udf.id << "\" l=\"" << f.line << "\""
+          " v=\"0x" << std::hex << f.offset().value_or(0) << std::dec << "\""
+          " f=\"" << udf.id << "\" l=\"" << (src ? src->second : 0) << "\""
           " lm=\"" << udm.id << "\"";
     open = ss.str();
     tagIsC = false;  // It's PF

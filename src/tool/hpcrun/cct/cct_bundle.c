@@ -168,7 +168,7 @@ hpcrun_cct_bundle_get_no_activity_node
   cct_node_t *no_activity_cct = NULL; 
   if (cct) {
     no_activity_cct = hpcrun_cct_insert_ip_norm(cct->top,
-        get_placeholder_norm(hpcrun_placeholder_no_activity));
+        get_placeholder_norm(hpcrun_placeholder_no_activity), true);
   }
   return no_activity_cct;
 }

@@ -48,7 +48,7 @@
 #define HPCTOOLKIT_PROFILE_ATTRIBUTES_H
 
 #include "accumulators.hpp"
-#include "context-fwd.hpp"
+#include "scope.hpp"
 
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
@@ -65,8 +65,8 @@
 namespace hpctoolkit {
 
 class Context;
-class SuperpositionedContext;
-class CollaborativeContext;
+class ContextReconstruction;
+class ContextFlowGraph;
 class Metric;
 
 /// Attributes unique to a particular thread within a profile. Whether this is
@@ -170,59 +170,6 @@ public:
 
   /// Attributes accociated with this Thread.
   ThreadAttributes attributes;
-
-  /// Thread-local data that is temporary and should be removed quickly.
-  class Temporary {
-  public:
-    // Access to the backing thread.
-    operator Thread&() noexcept { return m_thread; }
-    operator const Thread&() const noexcept { return m_thread; }
-    Thread& thread() noexcept { return m_thread; }
-    const Thread& thread() const noexcept { return m_thread; }
-
-    // Movable, not copyable
-    Temporary(const Temporary&) = delete;
-    Temporary(Temporary&&) = default;
-
-    /// Reference to the Metric data for a particular Context in this Thread.
-    /// Returns `std::nullopt` if none is present.
-    // MT: Safe (const), Unstable (before notifyThreadFinal)
-    auto accumulatorsFor(const Context& c) const noexcept {
-      return data.find(c);
-    }
-
-    /// Reference to all of the Metric data on Thread.
-    // MT: Safe (const), Unstable (before notifyThreadFinal)
-    const auto& accumulators() const noexcept { return data; }
-
-  private:
-    Thread& m_thread;
-
-    friend class ProfilePipeline;
-    Temporary(Thread& t) : m_thread(t) {};
-    bool contributesToCollab = false;
-
-    // Bits needed for handling timepoints
-    std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
-    std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
-    template<class Tp>
-    struct TimepointsData {
-      bool unboundedDisorder = false;
-      util::bounded_streaming_sort_buffer<Tp, util::compare_only_first<Tp>> sortBuf;
-      std::vector<Tp> staging;
-    };
-    TimepointsData<std::pair<std::chrono::nanoseconds, ContextRef::const_t>> ctxTpData;
-    util::locked_unordered_map<util::reference_index<const Metric>,
-      TimepointsData<std::pair<std::chrono::nanoseconds, double>>> metricTpData;
-
-    friend class Metric;
-    util::locked_unordered_map<util::reference_index<const Context>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>> data;
-    util::locked_unordered_map<util::reference_index<const SuperpositionedContext>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>> sp_data;
-  };
 };
 
 /// Attributes unique to a particular profile. Since a profile represents an
