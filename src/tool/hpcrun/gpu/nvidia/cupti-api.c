@@ -909,6 +909,7 @@ cupti_unload_callback_cuda
 #ifdef NEW_CUPTI
   TMSG(CUDA_CUBIN, "Context %p cubin_id %d unload", context, cubin_id);
   if (context != NULL) {
+    // FIXME(Keren): range mode shouldn't call collect here
     // Flush records but not stop context.
     // No need to lock because the current operation is not on GPU
     uint32_t range_id = gpu_range_id_get();

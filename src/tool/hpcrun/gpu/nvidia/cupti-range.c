@@ -13,6 +13,7 @@
 #include "cupti-ip-norm-map.h"
 #include "cupti-pc-sampling-api.h"
 #include "cupti-cct-trie.h"
+#include "cupti-cct-map.h"
 #include "cupti-range-thread-list.h"
 
 //#define DEBUG
@@ -21,6 +22,7 @@ static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
 
 static uint32_t cupti_range_interval = CUPTI_RANGE_DEFAULT_INTERVAL;
 static uint32_t cupti_range_sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
+static uint32_t cupti_range_mode_even_range_id = GPU_RANGE_NULL;
 
 #ifdef DEBUG
 static uint64_t total_times = 0;
@@ -44,16 +46,59 @@ cupti_range_kernel_count_increase
 (
  cct_node_t *kernel_ph,
  uint32_t context_id,
- uint32_t range_id
+ uint32_t range_id,
+ bool sampled
 )
 {
   // Range processing
   cct_node_t *node = hpcrun_cct_children(kernel_ph);
-  node = hpcrun_cct_insert_context(node, context_id);
-  node = hpcrun_cct_insert_range(node, range_id);
 
+  if (range_id != GPU_RANGE_NULL) {
+    node = hpcrun_cct_insert_context(node, context_id);
+    node = hpcrun_cct_insert_range(node, range_id);
+  }
+  // else serial mode
+
+  uint64_t sampled_count = sampled ? 1 : 0;
   // Increase kernel count
-  gpu_metrics_attribute_kernel_count(node, 1, 1);
+  gpu_metrics_attribute_kernel_count(node, sampled_count, 1);
+}
+
+
+static bool
+cupti_range_is_sampled
+(
+)
+{
+  int left = rand() % cupti_range_sampling_period;
+  if (left == 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+static bool
+cupti_range_mode_even_is_sampled
+(
+ cct_node_t *kernel_ph,
+ uint32_t *range_id
+)
+{
+  if (cupti_range_sampling_period == 1) {
+    return true;
+  }
+
+  cupti_cct_map_entry_t *entry = cupti_cct_map_lookup(kernel_ph);
+
+  if (entry == NULL) {
+    cupti_cct_map_insert(kernel_ph, *range_id);
+    return true;
+  } else {
+    *range_id = cupti_cct_map_entry_range_id_get(entry);
+    return cupti_range_is_sampled();
+  }
 }
 
 
@@ -66,24 +111,24 @@ cupti_range_mode_even_is_enter
  uint32_t range_id
 )
 {
+  if (cupti_pc_sampling_active() == false && cupti_range_mode_even_is_sampled(kernel_ph, &range_id)) {
+    cupti_pc_sampling_start(context);
+  }
+  cupti_range_mode_even_range_id = range_id;
   uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
   // Increase kernel count for postmortem apportion based on counts
-  cupti_range_kernel_count_increase(kernel_ph, context_id, range_id);
+  cupti_range_kernel_count_increase(kernel_ph, context_id,
+    cupti_range_mode_even_range_id, cupti_pc_sampling_active());
   return (GPU_CORRELATION_ID_UNMASK(correlation_id) % cupti_range_interval) == 0;
 }
 
 
 static bool
-cupti_range_mode_is_sampled
+cupti_range_mode_context_sensitive_is_sampled
 (
 )
 {
-  int left = rand() % cupti_range_sampling_period;
-  if (left == 0) {
-    return true;
-  } else {
-    return false;
-  }
+  return cupti_range_is_sampled();
 }
 
 
@@ -157,7 +202,7 @@ cupti_range_mode_context_sensitive_is_enter
       // 1. abc | (a1)bc
       // a1 conflicts a, it must be a new rnage
       new_range = true;
-      if (cupti_range_mode_is_sampled()) {
+      if (cupti_range_mode_context_sensitive_is_sampled()) {
         sampled = true;
       }
     } else if (!repeated) {
@@ -252,12 +297,7 @@ cupti_range_mode_even_is_exit
   }
 
   // Collect pc samples from all contexts
-  uint32_t range_id = gpu_range_id_get();
-  cupti_pc_sampling_range_context_collect(range_id, context);
-  if (cupti_range_mode_is_sampled()) {
-    // Restart pc sampling immediately if sampled
-    cupti_pc_sampling_start(context);
-  }
+  cupti_pc_sampling_range_context_collect(cupti_range_mode_even_range_id, context);
 }
 
 
@@ -274,8 +314,10 @@ cupti_range_post_exit_callback
   cuda_context_get(&context);
 
   if (cupti_range_mode == CUPTI_RANGE_MODE_SERIAL) {
+    cct_node_t *kernel_ph = cupti_kernel_ph_get();
     // Collect pc samples from the current context
-    cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph_get(), context);
+    cupti_range_kernel_count_increase(kernel_ph, 0, GPU_RANGE_NULL, true);
+    cupti_pc_sampling_correlation_context_collect(kernel_ph, context);
   } else if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
     cupti_range_mode_even_is_exit(correlation_id, context);
   }
