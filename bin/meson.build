@@ -66,6 +66,7 @@ endforeach
 
 # The hpcrun and hpclink scripts are also handled here, because they require
 # a bit of extra tuning to be useful.
+hpcrun_exe = disabler()
 if is_variable('hpcrun_script')
   _hpcrun_intree_launch_config = configuration_data()
   _hpcrun_intree_launch_config.merge_from(launch_config)
@@ -74,7 +75,7 @@ if is_variable('hpcrun_script')
   hpcfnbounds_dir='bin'
   HPCTOOLKIT="$(dirname "$0")/.."
   ''')
-  custom_target('in-tree copy of hpcrun',
+  hpcrun_exe = custom_target('in-tree copy of hpcrun',
     command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
     input: custom_target(
       input: configure_file(input: hpcrun_script, output: '.hpcrun.prevcs',
@@ -85,6 +86,7 @@ if is_variable('hpcrun_script')
     output: 'hpcrun', build_by_default: true)
 endif
 
+hpclink_exe = disabler()
 if is_variable('hpclink_script')
   _hpclink_intree_launch_config = configuration_data()
   _hpclink_intree_launch_config.merge_from(launch_config)
@@ -94,7 +96,7 @@ if is_variable('hpclink_script')
   pc_dir='meson-uninstalled'
   HPCTOOLKIT="$(dirname "$0")/.."
   ''')
-  custom_target('in-tree copy of hpclink',
+  hpclink_exe = custom_target('in-tree copy of hpclink',
     command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
     input: custom_target(
       input: configure_file(input: hpclink_script, output: '.hpclink.prevcs',

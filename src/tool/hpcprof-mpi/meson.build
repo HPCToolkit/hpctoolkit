@@ -48,6 +48,7 @@ _srcs = files(
   'ParallelAnalysis.cpp',
 )
 
+hpcprof_mpi_exe = disabler()
 if not get_option('hpcprof').disabled()
   hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -61,4 +62,4 @@ endif
 if get_option('hpcprof').enabled() and get_option('mpi').enabled()
   assert(not is_disabler(hpcprof_mpi_exe), 'hpcprof-mpi required but disabled')
 endif
-summary('hpcprof-mpi', is_variable('hpcprof_mpi_exe') and not is_disabler(hpcprof_mpi_exe), section: 'Applications', bool_yn: true)
+summary('hpcprof-mpi', not is_disabler(hpcprof_mpi_exe), section: 'Applications', bool_yn: true)

@@ -57,6 +57,7 @@ _deps = [
   dependency('OpenMP', required: get_option('openmp')),
 ] + (is_disabler(hpcproftt_exe) ? [disabler()] : [])
 
+hpcstruct_exe = disabler()
 if not get_option('hpcstruct').disabled()
   hpcstruct_exe = executable('hpcstruct', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -67,8 +68,9 @@ endif
 if get_option('hpcstruct').enabled()
   assert(not is_disabler(hpcstruct_exe), 'hpcstruct required but disabled')
 endif
-summary('hpcstruct', is_variable('hpcstruct_exe') and not is_disabler(hpcstruct_exe), section: 'Applications', bool_yn: true)
+summary('hpcstruct', not is_disabler(hpcstruct_exe), section: 'Applications', bool_yn: true)
 
+dotgraph_exe = disabler()
 if not get_option('devtools').disabled()
   dotgraph_exe = executable('dotgraph', files('DotGraph.cpp'), hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -79,4 +81,4 @@ endif
 if get_option('devtools').enabled()
   assert(not is_disabler(dotgraph_exe), 'dotgraph required but disabled')
 endif
-summary('dotgraph', is_variable('dotgraph_exe') and not is_disabler(dotgraph_exe), section: 'Applications', bool_yn: true)
+summary('dotgraph', not is_disabler(dotgraph_exe), section: 'Applications', bool_yn: true)

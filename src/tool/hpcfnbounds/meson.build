@@ -62,6 +62,7 @@ else
   _srcs += files('generic-process-ranges.cpp')
 endif
 
+hpcfnbounds_exe = disabler()
 if not get_option('hpcrun').disabled()
   hpcfnbounds_exe = executable('hpcfnbounds', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -76,4 +77,4 @@ if not get_option('hpcrun').disabled()
     install: true, install_dir: get_option('libexecdir') / meson.project_name())
   all_apps += hpcfnbounds_exe
 endif
-summary('hpcfnbounds', is_variable('hpcfnbounds_exe') and not is_disabler(hpcfnbounds_exe), section: 'Applications', bool_yn: true)
+summary('hpcfnbounds', not is_disabler(hpcfnbounds_exe), section: 'Applications', bool_yn: true)

@@ -54,6 +54,7 @@ if _option.disabled() or (not _option.enabled() and get_option('hpcstruct').enab
   _option = get_option('hpcstruct')
 endif
 
+hpcproftt_exe = disabler()
 if not _option.disabled()
   hpcproftt_exe = executable('hpcproftt', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -67,4 +68,4 @@ endif
 if _option.enabled()
   assert(not is_disabler(hpcproftt_exe), 'hpcproftt required but disabled')
 endif
-summary('hpcproftt', is_variable('hpcproftt_exe') and not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)
+summary('hpcproftt', not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)

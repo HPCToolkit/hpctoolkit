@@ -49,6 +49,7 @@ _srcs = files(
   'server.c',
 )
 
+hpcfnbounds2_exe = disabler()
 if not get_option('hpcrun').disabled()
   hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -58,4 +59,4 @@ if not get_option('hpcrun').disabled()
     install: true, install_dir: get_option('libexecdir') / meson.project_name())
   all_apps += hpcfnbounds2_exe
 endif
-summary('hpcfnbounds2', is_variable('hpcfnbounds2_exe') and not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)
+summary('hpcfnbounds2', not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)

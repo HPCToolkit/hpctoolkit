@@ -47,6 +47,7 @@ _srcs = files(
   'Args.cpp',
 )
 
+hpcprof = disabler()
 if not get_option('hpcprof').disabled()
   hpcprof_exe = executable('hpcprof', _srcs, hpctoolkit_config_h,
     include_directories: main_includes,
@@ -57,4 +58,4 @@ endif
 if get_option('hpcprof').enabled()
   assert(not is_disabler(hpcprof_exe), 'hpcprof required but disabled')
 endif
-summary('hpcprof', is_variable('hpcprof_exe') and not is_disabler(hpcprof_exe), section: 'Applications', bool_yn: true)
+summary('hpcprof', not is_disabler(hpcprof_exe), section: 'Applications', bool_yn: true)

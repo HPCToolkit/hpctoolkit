@@ -61,6 +61,8 @@ _srcs = files(
   'main.cpp',
 )
 
+hpcserver_exe = disabler()
+hpcserver_mpi_exe = disabler()
 if not get_option('hpcserver').disabled()
   hpcserver_exe = executable('hpcserver', _srcs, hpctoolkit_config_h, files(
       'Communication-SingleThreaded.cpp',
@@ -95,5 +97,5 @@ endif
 #if get_option('hpcserver').enabled() and get_option('mpi').enabled()
 #  assert(not is_disabler(hpcserver_mpi_exe), 'hpcserver-mpi required but disabled')
 #endif
-summary('hpcserver', is_variable('hpcserver_exe') and not is_disabler(hpcserver_exe), section: 'Applications', bool_yn: true)
-#summary('hpcserver-mpi', is_variable('hpcserver_mpi_exe') and not is_disabler(hpcserver_mpi_exe), section: 'Applications', bool_yn: true)
+summary('hpcserver', not is_disabler(hpcserver_exe), section: 'Applications', bool_yn: true)
+#summary('hpcserver-mpi', not is_disabler(hpcserver_mpi_exe), section: 'Applications', bool_yn: true)

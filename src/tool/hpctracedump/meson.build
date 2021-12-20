@@ -46,6 +46,7 @@ _srcs = files(
   'main.cpp',
 )
 
+hpctracedump_exe = disabler()
 if not get_option('devtools').disabled()
   hpctracedump_exe = executable('hpctracedump', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -56,4 +57,4 @@ endif
 if get_option('devtools').enabled()
   assert(not is_disabler(hpctracedump_exe), 'hpctracedump required but disabled')
 endif
-summary('hpctracedump', is_variable('hpctracedump_exe') and not is_disabler(hpctracedump_exe), section: 'Applications', bool_yn: true)
+summary('hpctracedump', not is_disabler(hpctracedump_exe), section: 'Applications', bool_yn: true)

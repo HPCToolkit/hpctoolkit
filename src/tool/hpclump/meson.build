@@ -47,6 +47,7 @@ _srcs = files(
   'Args.cpp',
 )
 
+hpclump_exe = disabler()
 if not get_option('devtools').disabled()
   hpclump_exe = executable('hpclump', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
@@ -57,4 +58,4 @@ endif
 if get_option('devtools').enabled()
   assert(not is_disabler(hpclump_exe), 'hpclump required but disabled')
 endif
-summary('hpclump', is_variable('hpclump_exe') and not is_disabler(hpclump_exe), section: 'Applications', bool_yn: true)
+summary('hpclump', not is_disabler(hpclump_exe), section: 'Applications', bool_yn: true)
