@@ -45,7 +45,7 @@
 project('hpctoolkit', ['c', 'cpp'],
         version: '2021.10.15-master',
         license: 'MIT',
-        meson_version: '>=0.60.0',
+        meson_version: '>=0.60.2',
         default_options: ['buildtype=release', 'b_staticpic=false',
                           'libdir=lib', 'libexecdir=libexec',
                           'c_std=gnu11', 'cpp_std=gnu++11'])
