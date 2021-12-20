@@ -464,7 +464,7 @@ cct_trie_merge_thread
   cupti_cct_trie_ptr_t cur = trie_cur;
   ip_normalized_t kernel_ip = gpu_op_placeholder_ip(gpu_placeholder_type_kernel);
 
-  while (cur.node != trie_logic_root.node && cur.ptr != trie_logic_root.ptr) {
+  while (cur.node != trie_logic_root.node || cur.ptr != trie_logic_root.ptr) {
     cct_node_t *key = NULL;
     if (cur.node->trace == NULL) {
       key = cur.node->key;
