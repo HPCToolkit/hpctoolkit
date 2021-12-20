@@ -117,13 +117,13 @@ cct_trie_free_helper
   *free_list = e;
 }
 
-#define trie_alloc(free_list)		\
-  (cupti_cct_trie_node_t *) cct_trie_alloc_helper		\
-  ((cupti_cct_trie_node_t **) free_list, sizeof(cupti_cct_trie_node_t))	
+#define trie_alloc(free_list)    \
+  (cupti_cct_trie_node_t *) cct_trie_alloc_helper    \
+  ((cupti_cct_trie_node_t **) free_list, sizeof(cupti_cct_trie_node_t))  
 
-#define trie_free(free_list, node)			\
-  cct_trie_free_helper					\
-  ((cupti_cct_trie_node_t **) free_list,				\
+#define trie_free(free_list, node)      \
+  cct_trie_free_helper          \
+  ((cupti_cct_trie_node_t **) free_list,        \
    (cupti_cct_trie_node_t *) node)
 
 
@@ -264,33 +264,33 @@ cct_trie_trace_lz_compress
 {
   *output_size = input_size;
 
-	hpcrun_safe_enter();
+  hpcrun_safe_enter();
   *output = (uint8_t *)malloc(*output_size);
-	hpcrun_safe_exit();
+  hpcrun_safe_exit();
 
-	// keys
-	z_stream defstream;
-	defstream.zalloc = Z_NULL;
-	defstream.zfree = Z_NULL;
-	defstream.opaque = Z_NULL;
-	// Input bytes
-	defstream.avail_in = input_size;
-	// Input pointer
-	defstream.next_in = input;
-	// Output size
-	defstream.avail_out = *output_size;
-	// Output pointer
-	defstream.next_out = *output;
+  // keys
+  z_stream defstream;
+  defstream.zalloc = Z_NULL;
+  defstream.zfree = Z_NULL;
+  defstream.opaque = Z_NULL;
+  // Input bytes
+  defstream.avail_in = input_size;
+  // Input pointer
+  defstream.next_in = input;
+  // Output size
+  defstream.avail_out = *output_size;
+  // Output pointer
+  defstream.next_out = *output;
 
-	deflateInit(&defstream, Z_BEST_COMPRESSION);
-	deflate(&defstream, Z_FINISH);
-	deflateEnd(&defstream);
+  deflateInit(&defstream, Z_BEST_COMPRESSION);
+  deflate(&defstream, Z_FINISH);
+  deflateEnd(&defstream);
 
-	size_t left_size = *output_size - defstream.avail_out;
+  size_t left_size = *output_size - defstream.avail_out;
 
-	// Debug compress rate
-	printf("Compress origin size %zu, current size %zu\n", *output_size, left_size);
-	*output = (uint8_t *)realloc(*output, left_size + 1);
+  // Debug compress rate
+  printf("Compress origin size %zu, current size %zu\n", *output_size, left_size);
+  *output = (uint8_t *)realloc(*output, left_size + 1);
   *output_size = left_size + 1;
 }
 
@@ -304,27 +304,27 @@ cct_trie_trace_lz_decompress
  size_t output_size
 )
 {
-	hpcrun_safe_enter();
+  hpcrun_safe_enter();
   *output = (uint8_t *)malloc(output_size);
-	hpcrun_safe_exit();
+  hpcrun_safe_exit();
 
-	z_stream infstream;
-	infstream.zalloc = Z_NULL;
-	infstream.zfree = Z_NULL;
-	infstream.opaque = Z_NULL;
-	infstream.avail_in = input_size;
-	infstream.next_in = input;
-	infstream.avail_out = output_size;
-	infstream.next_out = *output;
+  z_stream infstream;
+  infstream.zalloc = Z_NULL;
+  infstream.zfree = Z_NULL;
+  infstream.opaque = Z_NULL;
+  infstream.avail_in = input_size;
+  infstream.next_in = input;
+  infstream.avail_out = output_size;
+  infstream.next_out = *output;
 
-	inflateInit(&infstream);
-	inflate(&infstream, Z_NO_FLUSH);
-	inflateEnd(&infstream);
+  inflateInit(&infstream);
+  inflate(&infstream, Z_NO_FLUSH);
+  inflateEnd(&infstream);
 
-	size_t left_size = output_size - infstream.avail_out;
+  size_t left_size = output_size - infstream.avail_out;
 
-	// Debug compress rate
-	printf("Decompress origin size %zu, current size %zu\n", input_size, left_size);
+  // Debug compress rate
+  printf("Decompress origin size %zu, current size %zu\n", input_size, left_size);
 }
 
 
@@ -369,16 +369,16 @@ cct_trie_trace_append
   if (trie_cur.ptr == trace_cur->size) {
     // Move to the children
 #ifdef ENABLE_LZ
-		cct_trie_trace_lz_release(trace_cur);
+    cct_trie_trace_lz_release(trace_cur);
 #endif
     return CCT_TRIE_TRACE_CHILDREN;
   } else if (trie_cur.ptr == CUPTI_CCT_TRIE_PTR_NULL) {
     // Start looking into the trace
 #ifdef ENABLE_LZ
     cct_trie_trace_lz_decompress((uint8_t *)trace_cur->keys_buf, (uint8_t **)&(trace_cur->keys),
-			trace_cur->keys_buf_size, trace_cur->size * sizeof(cct_node_t *));
+      trace_cur->keys_buf_size, trace_cur->size * sizeof(cct_node_t *));
     cct_trie_trace_lz_decompress((uint8_t *)trace_cur->range_ids_buf, (uint8_t **)&(trace_cur->range_ids),
-			trace_cur->range_ids_buf_size, trace_cur->size * sizeof(uint32_t));
+      trace_cur->range_ids_buf_size, trace_cur->size * sizeof(uint32_t));
 #endif
     trie_cur.ptr = 0;
   }
@@ -615,10 +615,10 @@ cupti_cct_trie_compress
   trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
 
 #ifdef ENABLE_LZ
-	cct_trie_trace_lz_compress((uint8_t *)trace->range_ids, (uint8_t **)&(trace->range_ids_buf),
-		sizeof(uint32_t) * trace->size, &trace->range_ids_buf_size);
-	cct_trie_trace_lz_compress((uint8_t *)trace->keys, (uint8_t **)&(trace->keys_buf),
-		sizeof(cct_node_t *) * trace->size, &trace->keys_buf_size);
+  cct_trie_trace_lz_compress((uint8_t *)trace->range_ids, (uint8_t **)&(trace->range_ids_buf),
+    sizeof(uint32_t) * trace->size, &trace->range_ids_buf_size);
+  cct_trie_trace_lz_compress((uint8_t *)trace->keys, (uint8_t **)&(trace->keys_buf),
+    sizeof(cct_node_t *) * trace->size, &trace->keys_buf_size);
 
   hpcrun_safe_enter();
   free(trace->range_ids);
@@ -749,7 +749,6 @@ cct_trie_walk_child(cupti_cct_trie_node_t* trie_node)
   cct_trie_walk_child(trie_node->right);
   cct_trie_walk(trie_node);
 }
-
 
 static void
 cct_trie_walk(cupti_cct_trie_node_t* trie_node)

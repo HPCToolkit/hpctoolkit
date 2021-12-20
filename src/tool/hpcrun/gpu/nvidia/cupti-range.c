@@ -66,7 +66,7 @@ cupti_range_mode_even_is_enter
  uint32_t range_id
 )
 {
-	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+  uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
   // Increase kernel count for postmortem apportion based on counts
   cupti_range_kernel_count_increase(kernel_ph, context_id, range_id);
   return (GPU_CORRELATION_ID_UNMASK(correlation_id) % cupti_range_interval) == 0;
@@ -98,7 +98,7 @@ cupti_range_mode_context_sensitive_is_enter
 {
   static bool first_range = true;
 
-	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+  uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
 
   // Add the current thread to the list
   cupti_range_thread_list_add();
