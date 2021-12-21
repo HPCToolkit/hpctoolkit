@@ -48,13 +48,10 @@
 
 # Recover the HPCToolkit main programs if we don't have them already
 if not is_variable('hpcrun_exe')
-  hpcrun_exe = find_program('hpcrun', disabler: true, required: false)
-endif
-if not is_variable('hpcstruct_exe')
-  hpcstruct_exe = find_program('hpcstruct', disabler: true, required: false)
-endif
-if not is_variable('hpcprof_exe')
-  hpcprof_exe = find_program('hpcprof', disabler: true, required: false)
+  assert(not is_variable('hpcstruct_exe') and not is_variable('hpcprof_exe'))
+  hpcrun_exe = find_program('hpcrun').full_path()
+  hpcstruct_exe = find_program('hpcstruct').full_path()
+  hpcprof_exe = find_program('hpcprof').full_path()
 endif
 
 
