@@ -57,6 +57,7 @@ endif
 
 # TEST: sort (Smoke test of hpcrun/struct/prof on selection sort)
 test('sort', find_program('run-sort.sh'), protocol: 'tap',
-     args: [executable('sort', files('sort.cpp')),
+     args: [executable('sort', files('sort.cpp'),
+                override_options: ['debug=true','optimization=2','c_std=c11']),
             hpcrun_exe, hpcstruct_exe, hpcprof_exe],
      workdir: meson.current_build_dir())
