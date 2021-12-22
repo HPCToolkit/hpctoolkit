@@ -66,7 +66,7 @@
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
-// #include <lib/prof-lean/stdatomic.h>
+#include <lib/prof-lean/spinlock.h>
 #include <pthread.h>
 
 #define DEBUG 0
@@ -78,75 +78,6 @@
 
 
 #define PUBLIC_API __attribute__((visibility("default")))
-
-#if 0
-Returned API status:
-- hsa_status_t - HSA status codes are used from hsa.h header
-
-Loading and Configuring, loadable plugin on-load/unload methods:
-- rocprofiler_settings_t – global properties
-- OnLoadTool
-- OnLoadToolProp
-- OnUnloadTool
-
-Info API:
-- rocprofiler_info_kind_t - profiling info kind
-- rocprofiler_info_query_t - profiling info query
-- rocprofiler_info_data_t - profiling info data
-- rocprofiler_get_info - return the info for a given info kind
-- rocprofiler_iterote_inf_ - iterate over the info for a given info kind
-- rocprofiler_query_info - iterate over the info for a given info query
-
-Context API:
-- rocprofiler_t - profiling context handle
-- rocprofiler_feature_kind_t - profiling feature kind
-- rocprofiler_feature_parameter_t - profiling feature parameter
-- rocprofiler_data_kind_t - profiling data kind
-- rocprofiler_data_t - profiling data
-- rocprofiler_feature_t - profiling feature
-- rocprofiler_mode_t - profiling modes
-- rocprofiler_properties_t - profiler properties
-- rocprofiler_open - open new profiling context
-- rocprofiler_close - close profiling context and release all allocated resources
-- rocprofiler_group_count - return profiling groups count
-- rocprofiler_get_group - return profiling group for a given index
-- rocprofiler_get_metrics - method for calculating the metrics data
-- rocprofiler_iterate_trace_data - method for iterating output trace data instances
-- rocprofiler_time_id_t - supported time value ID enumeration
-- rocprofiler_get_time – return time for a given time ID and profiling timestamp value
-
-Sampling API:
-- rocprofiler_start - start profiling
-- rocprofiler_stop - stop profiling
-- rocprofiler_read - read profiling data to the profiling features objects
-- rocprofiler_get_data - wait for profiling data
-  Group versions of start/stop/read/get_data methods:
-  o rocprofiler_group_start
-  o rocprofiler_group_stop
-  o rocprofiler_group_read
-  o rocprofiler_group_get_data
-
-Intercepting API:
-- rocprofiler_callback_t - profiling callback type
-- rocprofiler_callback_data_t - profiling callback data type
-- rocprofiler_dispatch_record_t – dispatch record
-- rocprofiler_queue_callbacks_t – queue callbacks, dispatch/destroy
-- rocprofiler_set_queue_callbacks - set queue kernel dispatch and queue destroy callbacks
-- rocprofiler_remove_queue_callbacks - remove queue callbacks
-
-Context pool API:
-- rocprofiler_pool_t – context pool handle
-- rocprofiler_pool_entry_t – context pool entry
-- rocprofiler_pool_properties_t – context pool properties
-- rocprofiler_pool_handler_t – context pool completion handler
-- rocprofiler_pool_open - context pool open
-- rocprofiler_pool_close - context pool close
-- rocprofiler_pool_fetch – fetch and empty context entry to pool
-- rocprofiler_pool_release – release a context entry
-- rocprofiler_pool_iterate – iterated fetched context entries
-- rocprofiler_pool_flush – flush completed context entries
-#endif
-
 
 #define FORALL_ROCPROFILER_ROUTINES(macro)			\
   macro(rocprofiler_open)   \
@@ -204,11 +135,13 @@ static int total_counters = 0;
 static const char** counter_name = NULL;
 static const char** counter_description = NULL;
 
-//
+// the list of counters specified at the command line
 static int *is_specified_by_user = NULL;
 static int total_requested = 0;
 static rocprofiler_feature_t* rocprofiler_input = NULL;
 
+// A spin lock to serialize GPU kernels
+static spinlock_t kernel_lock;
 
 //----------------------------------------------------------
 // rocprofiler function pointers for late binding
@@ -360,6 +293,10 @@ rocprofiler_context_handler
 )
 {
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+
+  // This wait-loop is taken from rocprofiler example.
+  // It is strange that the rocprofiler thread will have to
+  // wait for subscriber callback to finish.
   volatile bool valid = counter_data.valid;
   while (!valid) {
     sched_yield();
@@ -517,7 +454,10 @@ rocprofiler_start_kernel
   uint64_t cor
 )
 {
+  spinlock_lock(&kernel_lock);
   rocprofiler_correlation_id = cor;
+  // We will only allow the critical section
+  // to finish after we get rocprofiler results
   context_callback_finish = 0;
   HPCRUN_ROCPROFILER_CALL(rocprofiler_start_queue_callbacks, ());
 }
@@ -525,6 +465,7 @@ rocprofiler_start_kernel
 
 void rocprofiler_stop_kernel(){
   HPCRUN_ROCPROFILER_CALL(rocprofiler_stop_queue_callbacks, ());
+  spinlock_unlock(&kernel_lock);
 }
 
 
@@ -550,6 +491,9 @@ rocprofiler_init
   }
 #endif
   initialize_counter_information();
+
+  // Initialize the spin lock used to serialize GPU kernel launches
+  spinlock_init(&kernel_lock);
   return;
 }
 
@@ -605,6 +549,9 @@ rocprofiler_wait_context_callback
   void
 )
 {
+  // The rocprofiler monitoring thread will set
+  // context_callback_finish to 1 after it finishes processing
+  // rocprofiler data
   while (context_callback_finish == 0);
 }
 
