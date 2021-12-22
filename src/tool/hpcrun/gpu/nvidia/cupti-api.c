@@ -1316,7 +1316,6 @@ cupti_driver_api_subscriber_callback_cuda
   if (!cupti_runtime_api_flag_get() && !ompt_runtime_status_get()) {
     // Directly calls driver APIs
     if (cd->callbackSite == CUPTI_API_ENTER) {
-      gpu_range_lock();
       if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
         // In the pc sampling mode, we don't capture other GPU activities
         cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
@@ -1326,17 +1325,14 @@ cupti_driver_api_subscriber_callback_cuda
         // In the pc sampling mode, we don't capture other GPU activities
         cupti_api_exit_callback_cuda(cb_id);
       }
-      gpu_range_unlock();
     }
   } else if (cupti_runtime_api_flag_get()) {
     // Runtime API calls driver APIs
     uint32_t range_id = gpu_range_id_get();
     if (cd->callbackSite == CUPTI_API_ENTER) {
-      gpu_range_lock();
       TMSG(CUPTI_TRACE, "Driver enter (cb_id = %u, range_id = %u)", cb_id, range_id);
     } else {
       TMSG(CUPTI_TRACE, "Driver exit (cb_id = %u, range_id = %u)", cb_id, range_id);
-      gpu_range_unlock();
     }
   }
 }
@@ -1404,6 +1400,8 @@ cupti_runtime_api_subscriber_callback_cuda
 {
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
+    // Lock apis in the pc sampling mode
+    gpu_range_lock();
     // Enter a CUDA runtime api
     cupti_runtime_api_flag_set();
     if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
@@ -1418,6 +1416,7 @@ cupti_runtime_api_subscriber_callback_cuda
       cupti_api_exit_callback_cuda(cb_id);
     }
     cupti_runtime_correlation_id_set(CUPTI_CORRELATION_ID_NULL);
+    gpu_range_unlock();
   }
 }
 
@@ -1433,6 +1432,8 @@ cupti_runtime_api_subscriber_callback_cuda_kernel
 {
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
+    // Lock apis in the pc sampling mode
+    gpu_range_lock();
     // Enter a CUDA runtime api
     // For GPU kernels, we memoize a runtime API's correlation id and use it for its driver APIs
     // XXX(Keren): Don't call cupti_api_enter/exit to unwind at a runtime kernel callback
@@ -1447,6 +1448,7 @@ cupti_runtime_api_subscriber_callback_cuda_kernel
     cupti_runtime_api_flag_unset();
     cupti_kernel_ph_set(NULL);
     cupti_trace_ph_set(NULL);
+    gpu_range_unlock();
   }
 }
 
