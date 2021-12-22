@@ -120,8 +120,6 @@ gpu_range_enter
     return GPU_RANGE_DEFAULT_RANGE;
   }
 
-  gpu_range_lock();
-
   // Early update of range_id
   thread_range_id = atomic_load(&range_id);
 
@@ -170,8 +168,6 @@ gpu_range_exit
   if (gpu_range_is_lead()) {
     atomic_store(&lead_correlation_id, 0);
   } 
-
-  gpu_range_unlock();
 }
 
 bool
