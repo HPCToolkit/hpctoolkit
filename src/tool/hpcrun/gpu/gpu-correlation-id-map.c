@@ -119,9 +119,9 @@ typedef struct typed_splay_node(correlation_id) {
 // local data
 //******************************************************************************
 
-static gpu_correlation_id_map_entry_t *map_root = NULL;
+static __thread gpu_correlation_id_map_entry_t *map_root = NULL;
 
-static gpu_correlation_id_map_entry_t *free_list = NULL;
+static __thread gpu_correlation_id_map_entry_t *free_list = NULL;
 
 
 

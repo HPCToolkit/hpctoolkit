@@ -82,8 +82,7 @@
   macro(roctracer_enable_domain_activity_expl) \
   macro(roctracer_disable_domain_callback) \
   macro(roctracer_disable_domain_activity) \
-  macro(roctracer_set_properties) 
-
+  macro(roctracer_set_properties)
 
 #define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -398,7 +397,7 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_trace);
     is_valid_op = true;
     is_kernel_op = true;
-    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address, 
+    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address,
       data->args.hipLaunchKernel.stream);
     if (collect_counter) {
       kernel_stream = data->args.hipLaunchKernel.stream;
@@ -423,6 +422,7 @@ roctracer_subscriber_callback
 
   if (data->phase == ACTIVITY_API_PHASE_ENTER) {
     uint64_t correlation_id = data->correlation_id;
+    uint64_t rocprofiler_correlation_id = 0;
     cct_node_t *api_node =
       gpu_application_thread_correlation_callback(correlation_id);
 
@@ -440,19 +440,25 @@ roctracer_subscriber_callback
       ensure_kernel_ip_present(trace_ph, kernel_ip);
 
       if (collect_counter) {
-        rocprofiler_start_kernel(correlation_id);
+        rocprofiler_correlation_id = correlation_id; // | 0x800000000000LL;
+        rocprofiler_start_kernel(rocprofiler_correlation_id);
       }
     }
 
     hpcrun_safe_exit();
 
-
-    gpu_activity_channel_consume(gpu_metrics_attribute);
+    gpu_activity_channel_consume_with_idx(ROCTRACER_CHANNEL_IDX, gpu_metrics_attribute);
+    if (collect_counter) {
+      gpu_activity_channel_consume_with_idx(ROCPROFILER_CHANNEL_IDX, gpu_metrics_attribute);
+    }
 
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
-    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
-    
+    gpu_correlation_channel_produce_with_idx(ROCTRACER_CHANNEL_IDX, correlation_id, &gpu_op_ccts, cpu_submit_time);
+    if (collect_counter && is_kernel_op && kernel_name != NULL) {
+      gpu_correlation_channel_produce_with_idx(ROCPROFILER_CHANNEL_IDX, rocprofiler_correlation_id, &gpu_op_ccts, cpu_submit_time);
+    }
+
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
     if (is_kernel_op && collect_counter) {
       hipStreamSynchronize(kernel_stream);
@@ -469,7 +475,7 @@ roctracer_buffer_completion_notify
   void
 )
 {
-  gpu_monitoring_thread_activities_ready();
+  gpu_monitoring_thread_activities_ready_with_idx(ROCTRACER_CHANNEL_IDX);
 }
 
 

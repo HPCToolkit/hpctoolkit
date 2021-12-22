@@ -366,6 +366,9 @@ rocprofiler_context_handler
     valid = counter_data.valid;
   }
 
+  // Consume the correlation channel for rocprofiler
+  gpu_monitoring_thread_activities_ready_with_idx(ROCPROFILER_CHANNEL_IDX);
+
   if (counter_data.group.context == NULL) {
     EMSG("error: AMD group->context = NULL");
   }
@@ -373,8 +376,6 @@ rocprofiler_context_handler
     HPCRUN_ROCPROFILER_CALL(rocprofiler_group_get_data, (&counter_data.group));
     HPCRUN_ROCPROFILER_CALL(rocprofiler_get_metrics, (counter_data.group.context));
   }
-
-  gpu_monitoring_thread_activities_ready();
 
   gpu_activity_t ga;
   memset(&ga, 0, sizeof(gpu_activity_t));
@@ -497,7 +498,7 @@ extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
 
   rocprofiler_queue_callbacks_t callbacks_ptrs = {};
   callbacks_ptrs.dispatch = rocprofiler_dispatch_callback;
-  rocprofiler_set_queue_callbacks(callbacks_ptrs, NULL);
+  HPCRUN_ROCPROFILER_CALL(rocprofiler_set_queue_callbacks, (callbacks_ptrs, NULL));
 }
 
 extern PUBLIC_API void OnUnloadTool() {
@@ -576,12 +577,6 @@ rocprofiler_bind
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(rocprofiler, rocprofiler_path(), RTLD_NOW | RTLD_GLOBAL);
-
-  if (getenv("HPCRUN_LIST_EVENT")) {
-    CHK_DLOPEN(hsa, "libhsa-runtime64.so", RTLD_NOW | RTLD_GLOBAL);
-    hsa_init();
-  }
-
   hpcrun_force_dlopen(false);
 
 #define ROCPROFILER_BIND(fn) \
@@ -590,6 +585,13 @@ rocprofiler_bind
   FORALL_ROCPROFILER_ROUTINES(ROCPROFILER_BIND);
 
 #undef ROCPROFILER_BIND
+
+  hpcrun_force_dlopen(true);
+  if (getenv("HPCRUN_LIST_EVENT")) {
+    CHK_DLOPEN(hsa, "libhsa-runtime64.so", RTLD_NOW | RTLD_GLOBAL);
+    hsa_init();
+  }
+  hpcrun_force_dlopen(false);
 
   return DYNAMIC_BINDING_STATUS_OK;
 #else

@@ -44,7 +44,12 @@
 #ifndef rocprofiler_api_h
 #define rocprofiler_api_h
 
+//******************************************************************************
+// macro definitions
+//******************************************************************************
 
+#define ROCTRACER_CHANNEL_IDX 0
+#define ROCPROFILER_CHANNEL_IDX 1
 
 //******************************************************************************
 // interface operations

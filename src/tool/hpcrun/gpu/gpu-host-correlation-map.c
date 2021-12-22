@@ -125,11 +125,11 @@ typedef struct typed_splay_node(host_correlation) {
 // local data
 //******************************************************************************
 
-static gpu_host_correlation_map_entry_t *map_root = NULL;
+static __thread gpu_host_correlation_map_entry_t *map_root = NULL;
 
-static gpu_host_correlation_map_entry_t *free_list = NULL;
+static __thread gpu_host_correlation_map_entry_t *free_list = NULL;
 
-static bool allow_replace = false;
+static __thread bool allow_replace = false;
 
 //******************************************************************************
 // private operations

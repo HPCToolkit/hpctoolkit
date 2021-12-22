@@ -57,5 +57,12 @@ gpu_monitoring_thread_activities_ready
 );
 
 
+void
+gpu_monitoring_thread_activities_ready_with_idx
+(
+ int idx
+);
+
+
 
 #endif
