@@ -735,6 +735,37 @@ cupti_cct_trie_root_get
 }
 
 
+typedef void (*cct_trie_walk_fn)(cupti_cct_trie_node_t* trie_node);
+
+static void
+cct_trie_walk_child(cupti_cct_trie_node_t* trie_node, cct_trie_walk_fn cct_trie_walk)
+{
+  if (!trie_node) return;
+
+  cct_trie_walk_child(trie_node->left, cct_trie_walk);
+  cct_trie_walk_child(trie_node->right, cct_trie_walk);
+  cct_trie_walk(trie_node);
+}
+
+
+static void
+cct_trie_walk_cleanup(cupti_cct_trie_node_t* trie_node)
+{
+  cct_trie_walk_child(trie_node->children, cct_trie_walk_cleanup);
+  trie_free(&free_list, trie_node);
+}
+
+
+void
+cupti_cct_trie_cleanup
+(
+)
+{
+  cct_trie_walk_cleanup(trie_root);
+  cct_trie_reset();
+}
+
+
 //**********************************************
 // Debuging
 //**********************************************
@@ -744,21 +775,7 @@ static __thread int bytes = 0;
 static __thread int single_path_nodes = 0;
 
 static void
-cct_trie_walk(cupti_cct_trie_node_t* trie_node);
-
-
-static void
-cct_trie_walk_child(cupti_cct_trie_node_t* trie_node)
-{
-  if (!trie_node) return;
-
-  cct_trie_walk_child(trie_node->left);
-  cct_trie_walk_child(trie_node->right);
-  cct_trie_walk(trie_node);
-}
-
-static void
-cct_trie_walk(cupti_cct_trie_node_t* trie_node)
+cct_trie_walk_dump(cupti_cct_trie_node_t* trie_node)
 {
   if (!trie_node) return;
   ++num_nodes;
@@ -785,7 +802,7 @@ cct_trie_walk(cupti_cct_trie_node_t* trie_node)
     bytes += trie_node->trace->size * (sizeof(uint32_t) + sizeof(cct_node_t *));
 #endif
   }
-  cct_trie_walk_child(trie_node->children);
+  cct_trie_walk_child(trie_node->children, cct_trie_walk_dump);
 }
 
 
@@ -797,7 +814,7 @@ cupti_cct_trie_dump
   num_nodes = 0;
   bytes = 0;
   single_path_nodes = 0;
-  cct_trie_walk(trie_root);
+  cct_trie_dump(trie_root);
   printf("num_nodes %d, single_path_nodes %d, bytes %d\n", num_nodes, single_path_nodes, bytes);
 }
 

@@ -909,11 +909,9 @@ cupti_unload_callback_cuda
 #ifdef NEW_CUPTI
   TMSG(CUDA_CUBIN, "Context %p cubin_id %d unload", context, cubin_id);
   if (context != NULL) {
-    // FIXME(Keren): range mode shouldn't call collect here
     // Flush records but not stop context.
     // No need to lock because the current operation is not on GPU
-    uint32_t range_id = gpu_range_id_get();
-    cupti_pc_sampling_range_context_collect(range_id, context);
+    cupti_range_last(); 
   }
 #endif
   //cubin_id_map_delete(cubin_id);
@@ -1044,8 +1042,7 @@ cupti_resource_subscriber_callback
   } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
     TMSG(CUPTI, "Context %lu destroyed", rd->context);
     if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
-      uint32_t range_id = gpu_range_id_get();
-      cupti_pc_sampling_range_context_collect(range_id, rd->context);
+      cupti_range_last();
       cupti_pc_sampling_disable2(rd->context);
       cupti_pc_sampling_free(rd->context);
     }

@@ -58,6 +58,12 @@ cupti_cct_trie_unwind
 (
 );
 
+// Clean all cct nodes
+void
+cupti_cct_trie_cleanup
+(
+);
+
 // Dump cct trie statistics
 void
 cupti_cct_trie_dump
