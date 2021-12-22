@@ -142,11 +142,9 @@ cct_trace_free
   if (node->trace->keys != NULL) {
     free(node->trace->keys);
   }
+
   if (node->trace->range_ids != NULL) {
     free(node->trace->range_ids);
-  }
-  if (node->trace != NULL) {
-    free(node->trace);
   }
 
 #ifdef ENABLE_LZ
@@ -154,11 +152,14 @@ cct_trace_free
     free(node->trace->keys_buf);
     node->trace->keys_buf_size = 0;
   }
+
   if (node->trace->range_ids_buf != NULL) {
     free(node->trace->range_ids_buf);
     node->trace->range_ids_buf_size = 0;
   }
 #endif
+
+  free(node->trace);
 
   hpcrun_safe_exit();
 
@@ -236,18 +237,26 @@ cct_trie_new
 
 
 static void
+cct_trie_reset
+(
+)
+{
+  trie_logic_root.node = trie_root;
+  trie_logic_root.ptr = CUPTI_CCT_TRIE_PTR_NULL;
+  trie_cur.node = trie_root;
+  trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
+  single_path = 0;
+}
+
+
+static void
 cct_trie_init
 (
- void
 )
 {
   if (trie_root == NULL) {
     trie_root = cct_trie_new(NULL, NULL, GPU_RANGE_NULL);
-    trie_logic_root.node = trie_root;
-    trie_logic_root.ptr = CUPTI_CCT_TRIE_PTR_NULL;
-    trie_cur.node = trie_root;
-    trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
-    single_path = 0;
+    cct_trie_reset();
   }
 }
 
@@ -350,47 +359,6 @@ cct_trie_trace_lz_release
 #endif
 
 
-typedef enum {
-  CCT_TRIE_TRACE_CHILDREN = 0,
-  CCT_TRIE_TRACE_NEXT = 1,
-  CCT_TRIE_TRACE_FAIL = 2
-} cct_trie_trace_ret_t;
-
-
-static cct_trie_trace_ret_t
-cct_trie_trace_append
-(
- uint32_t range_id,
- cct_node_t *cct
-)
-{
-  cupti_cct_trace_node_t *trace_cur = trie_cur.node->trace;
-
-  if (trie_cur.ptr == trace_cur->size) {
-    // Move to the children
-#ifdef ENABLE_LZ
-    cct_trie_trace_lz_release(trace_cur);
-#endif
-    return CCT_TRIE_TRACE_CHILDREN;
-  } else if (trie_cur.ptr == CUPTI_CCT_TRIE_PTR_NULL) {
-    // Start looking into the trace
-#ifdef ENABLE_LZ
-    cct_trie_trace_lz_decompress((uint8_t *)trace_cur->keys_buf, (uint8_t **)&(trace_cur->keys),
-      trace_cur->keys_buf_size, trace_cur->size * sizeof(cct_node_t *));
-    cct_trie_trace_lz_decompress((uint8_t *)trace_cur->range_ids_buf, (uint8_t **)&(trace_cur->range_ids),
-      trace_cur->range_ids_buf_size, trace_cur->size * sizeof(uint32_t));
-#endif
-    trie_cur.ptr = 0;
-  }
-  
-  if (cct_trace_get_key(trace_cur, trie_cur.ptr) == cct) {
-    ++trie_cur.ptr;
-    return CCT_TRIE_TRACE_NEXT;
-  } else {
-    return CCT_TRIE_TRACE_FAIL;
-  }
-}
-
 
 static void
 cct_trie_trace_split()
@@ -439,6 +407,46 @@ cct_trie_trace_split()
 }
 
 
+static bool
+cct_trie_trace_append
+(
+ uint32_t range_id,
+ cct_node_t *cct
+)
+{
+  cupti_cct_trace_node_t *trace_cur = trie_cur.node->trace;
+
+  // XXX(Keren): We don't merge two compressed traces
+  single_path = 0;
+
+  if (trie_cur.ptr == trace_cur->size) {
+    // Move to the children
+#ifdef ENABLE_LZ
+    cct_trie_trace_lz_release(trace_cur);
+#endif
+    return false;
+  } else if (trie_cur.ptr == CUPTI_CCT_TRIE_PTR_NULL) {
+    // Start looking into the trace
+#ifdef ENABLE_LZ
+    cct_trie_trace_lz_decompress((uint8_t *)trace_cur->keys_buf, (uint8_t **)&(trace_cur->keys),
+      trace_cur->keys_buf_size, trace_cur->size * sizeof(cct_node_t *));
+    cct_trie_trace_lz_decompress((uint8_t *)trace_cur->range_ids_buf, (uint8_t **)&(trace_cur->range_ids),
+      trace_cur->range_ids_buf_size, trace_cur->size * sizeof(uint32_t));
+#endif
+    trie_cur.ptr = 0;
+  }
+  
+  if (cct_trace_get_key(trace_cur, trie_cur.ptr) == cct) {
+    ++trie_cur.ptr;
+    return true;
+  } else {
+    // Split and reinsert
+    cct_trie_trace_split();
+    return true;
+  }
+}
+
+
 static cupti_cct_trie_ptr_t
 cct_trie_ptr_parent
 (
@@ -476,6 +484,7 @@ cct_trie_merge_thread
         key = cur.node->key;
         cur = cct_trie_ptr_parent(cur);
       } else {
+        // Go it its prev trace
         --cur.ptr;
         key = cct_trace_get_key(cur.node->trace, cur.ptr);
       }
@@ -491,13 +500,29 @@ cct_trie_merge_thread
   }
 
   if (logic) {
-    trie_logic_root.node = trie_cur.node;
-    trie_logic_root.ptr = trie_cur.ptr;
+    trie_logic_root = trie_cur;
   } else {
-    trie_logic_root.node = trie_root;
-    trie_logic_root.ptr = CUPTI_CCT_TRIE_PTR_NULL;
-    trie_cur.node = trie_root;
-    trie_cur.ptr = CUPTI_CCT_TRIE_PTR_NULL;
+    cct_trie_reset();
+  }
+}
+
+
+static void
+cct_trie_single_path_increase
+(
+)
+{
+  if (trie_cur.node->left == NULL && trie_cur.node->right == NULL) {
+    // Accumulate single path length
+    ++single_path;
+  } else {
+    // Reset cumulative single path length
+    single_path = 0;
+  }
+
+  if (single_path >= CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) {
+    cupti_cct_trie_compress();
+    // After compression, always reset single_path
     single_path = 0;
   }
 }
@@ -516,17 +541,9 @@ cupti_cct_trie_append
   cct_trie_init();
 
   if (trie_cur.node->trace != NULL) {
-    cct_trie_trace_ret_t ret = cct_trie_trace_append(range_id, cct);
-    if (ret == CCT_TRIE_TRACE_NEXT) {
+    if (cct_trie_trace_append(range_id, cct)) {
       return true;
     }
-    if (ret == CCT_TRIE_TRACE_FAIL) {
-      // Split and reinsert
-      cct_trie_trace_split();
-    }
-
-    // XXX(Keren): We don't merge two compressed traces
-    single_path = 0;
   }
 
   bool ret;
@@ -558,17 +575,7 @@ cupti_cct_trie_append
     ret = false;
   }
 
-  if (trie_cur.node->left == NULL && trie_cur.node->right == NULL) {
-    ++single_path;
-  } else {
-    single_path = 0;
-  }
-
-  if (single_path >= CUPTI_CCT_TRIE_COMPRESS_THRESHOLD) {
-    cupti_cct_trie_compress();
-    // After compression, always reset single_path
-    single_path = 0;
-  }
+  cct_trie_single_path_increase();
 
   return ret;
 }
