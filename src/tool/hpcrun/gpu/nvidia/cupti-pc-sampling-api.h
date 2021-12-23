@@ -48,6 +48,8 @@
 #include <cupti_pcsampling.h>
 #include "../gpu-activity.h"
 
+#include "cupti-ip-norm-map.h"
+
 void
 cupti_pc_sampling_config
 (
@@ -100,6 +102,15 @@ void
 cupti_pc_sampling_range_context_collect
 (
  uint32_t range_id,
+ CUcontext context
+);
+
+
+// Collect and attribute samples to multiple ranges
+void
+cupti_pc_sampling_dynamic_range_context_collect
+(
+ cupti_ip_norm_map_entry_t *ip_norm_map,
  CUcontext context
 );
 

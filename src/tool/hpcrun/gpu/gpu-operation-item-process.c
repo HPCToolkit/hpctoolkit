@@ -208,6 +208,7 @@ gpu_pc_sampling_info2_process
 
   uint32_t context_id = pc_sampling_info2->context_id;
   void *pc_sampling_data = pc_sampling_info2->pc_sampling_data;
+  void *ip_norm_map = pc_sampling_info2->ip_norm_map;
   uint32_t period = pc_sampling_info2->samplingPeriodInCycles;
   uint64_t total_num_pcs = pc_sampling_info2->totalNumPcs;
 
@@ -218,7 +219,7 @@ gpu_pc_sampling_info2_process
   }
 
   // Translate a pc sample activity for each record
-  pc_sampling_info2->translate(pc_sampling_data, total_num_pcs, period, range_id, cct_node);
+  pc_sampling_info2->translate(pc_sampling_data, total_num_pcs, period, range_id, ip_norm_map, cct_node);
   pc_sampling_info2->free(pc_sampling_data);
 
   TMSG(GPU_OPERATION, "PC sampling range %u\n", range_id);

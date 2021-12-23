@@ -412,6 +412,7 @@ struct cupti_ip_norm_map_entry_s {
   struct cupti_ip_norm_map_entry_s *right;
   ip_normalized_t ip_norm;
   cct_node_t *cct;
+  uint32_t range_id;
 };
 
 
@@ -483,7 +484,8 @@ cupti_ip_norm_map_insert
 (
  cupti_ip_norm_map_entry_t **root,
  ip_normalized_t ip_norm,
- cct_node_t *cct
+ cct_node_t *cct,
+ uint32_t range_id
 )
 {
   cupti_ip_norm_map_entry_t *entry = st_lookup(root, ip_norm);
@@ -492,11 +494,12 @@ cupti_ip_norm_map_insert
     entry = st_alloc(&free_list);
     entry->ip_norm = ip_norm;
     entry->cct = cct;
+    entry->range_id = range_id;
     st_insert(root, entry);
   }
 
-  TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p)->(entry: %p)",
-    ip_norm.lm_id, ip_norm.lm_ip, cct, entry);
+  TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p, range_id: %d)->(entry: %p)",
+    ip_norm.lm_id, ip_norm.lm_ip, cct, range_id, entry);
 }
 
 
@@ -504,10 +507,11 @@ void
 cupti_ip_norm_map_insert_thread
 (
  ip_normalized_t ip_norm,
- cct_node_t *cct
+ cct_node_t *cct,
+ uint32_t range_id
 )
 {
-  cupti_ip_norm_map_insert(&local_map_root, ip_norm, cct);
+  cupti_ip_norm_map_insert(&local_map_root, ip_norm, cct, range_id);
 }
 
 
@@ -578,7 +582,8 @@ void
 cupti_ip_norm_global_map_insert
 (
  ip_normalized_t ip_norm,
- cct_node_t *cct
+ cct_node_t *cct,
+ uint32_t range_id
 )
 {
   cupti_ip_norm_map_entry_t *entry = st_lookup(&global_map_root, ip_norm);
@@ -587,11 +592,12 @@ cupti_ip_norm_global_map_insert
     entry = st_alloc(&free_list);
     entry->ip_norm = ip_norm;
     entry->cct = cct;
+    entry->range_id = range_id;
     st_insert(&global_map_root, entry);
   }
 
-  TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "Global IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p)->(entry: %p)",
-    ip_norm.lm_id, ip_norm.lm_ip, cct, entry);
+  TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "Global IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p, range_id: %u)->(entry: %p)",
+    ip_norm.lm_id, ip_norm.lm_ip, cct, range_id, entry);
 }
 
 
@@ -662,6 +668,16 @@ cupti_ip_norm_global_map_lookup
 }
 
 
+cupti_ip_norm_map_entry_t *
+cupti_ip_norm_global_map_retrieve
+(
+ ip_normalized_t ip_norm
+)
+{
+  return st_lookup(&global_map_root, ip_norm);
+}
+
+
 void
 cupti_ip_norm_global_map_clear
 (
@@ -669,4 +685,32 @@ cupti_ip_norm_global_map_clear
 {
   st_forall(global_map_root, splay_allorder, clear_fn_helper, NULL);
   global_map_root = NULL;
+}
+
+
+void
+cupti_ip_norm_global_map_reset
+(
+)
+{
+  global_map_root = NULL;
+}
+
+
+cupti_ip_norm_map_entry_t *
+cupti_ip_norm_global_map_root_get
+(
+)
+{
+  return global_map_root;
+}
+
+
+uint32_t
+cupti_ip_norm_global_map_entry_range_id_get
+(
+ cupti_ip_norm_map_entry_t *entry
+)
+{
+  return entry->range_id;
 }

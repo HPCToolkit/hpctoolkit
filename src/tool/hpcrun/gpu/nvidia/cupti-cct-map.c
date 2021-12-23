@@ -132,6 +132,20 @@ cupti_cct_map_entry_new
   return e;
 }
 
+
+static void
+clear_fn_helper
+(
+ cupti_cct_map_entry_t *entry,
+ splay_visit_t visit_type,
+ void *args
+)
+{
+  if (visit_type == splay_postorder_visit) {
+    st_free(&free_list, entry);
+  }
+}
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -161,6 +175,14 @@ cupti_cct_map_insert
     entry = cupti_cct_map_entry_new(cct, range_id);
     st_insert(&map_root, entry);
   }
+}
+
+
+void
+cupti_cct_map_clear()
+{
+  st_forall(map_root, splay_allorder, clear_fn_helper, NULL);
+  map_root = NULL;
 }
 
 

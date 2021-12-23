@@ -814,7 +814,7 @@ cupti_cct_trie_dump
   num_nodes = 0;
   bytes = 0;
   single_path_nodes = 0;
-  cct_trie_dump(trie_root);
+  cct_trie_walk_dump(trie_root);
   printf("num_nodes %d, single_path_nodes %d, bytes %d\n", num_nodes, single_path_nodes, bytes);
 }
 

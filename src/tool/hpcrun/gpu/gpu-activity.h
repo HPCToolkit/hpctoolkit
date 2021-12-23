@@ -241,6 +241,7 @@ typedef void (*gpu_pc_sampling2_translate_fn_t)
  uint64_t total_num_pcs,
  uint32_t period,
  uint32_t range_id,
+ void *ip_norm_map,
  cct_node_t *cct_node  // range node or api node
 );
 
@@ -258,6 +259,7 @@ typedef struct gpu_pc_sampling_info2_t {
   uint64_t totalSamples;
   uint64_t totalNumPcs;
   void *pc_sampling_data;
+  void *ip_norm_map;
   gpu_pc_sampling2_translate_fn_t translate;
   gpu_pc_sampling2_free_fn_t free;
 } gpu_pc_sampling_info2_t;

@@ -50,7 +50,8 @@ void
 cupti_ip_norm_map_insert_thread
 (
  ip_normalized_t ip_norm,
- cct_node_t *cct
+ cct_node_t *cct,
+ uint32_t range_id
 );
 
 
@@ -59,7 +60,8 @@ cupti_ip_norm_map_insert
 (
  cupti_ip_norm_map_entry_t **root,
  ip_normalized_t ip_norm,
- cct_node_t *cct
+ cct_node_t *cct,
+ uint32_t range_id
 );
 
 
@@ -95,7 +97,8 @@ void
 cupti_ip_norm_global_map_insert
 (
  ip_normalized_t ip_norm,
- cct_node_t *cct
+ cct_node_t *cct,
+ uint32_t range_id
 );
 
 
@@ -104,6 +107,13 @@ cupti_ip_norm_global_map_delete
 (
  ip_normalized_t ip_norm,
  cct_node_t *cct
+);
+
+
+cupti_ip_norm_map_entry_t *
+cupti_ip_norm_global_map_retrieve
+(
+ ip_normalized_t ip_norm
 );
 
 
@@ -117,6 +127,24 @@ cupti_ip_norm_global_map_lookup
 
 void
 cupti_ip_norm_global_map_clear
+(
+);
+
+
+void
+cupti_ip_norm_global_map_reset
+(
+);
+
+
+uint32_t
+cupti_ip_norm_global_map_entry_range_id_get
+(
+ cupti_ip_norm_map_entry_t *entry
+);
+
+cupti_ip_norm_map_entry_t *
+cupti_ip_norm_global_map_root_get
 (
 );
 

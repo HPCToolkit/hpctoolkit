@@ -183,8 +183,8 @@ cupti_range_mode_trie_is_enter
   }
 
   // Add a new node
-  cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
-  cupti_ip_norm_global_map_insert(kernel_ip, api_node);
+  cupti_ip_norm_map_insert_thread(kernel_ip, api_node, next_range_id);
+  cupti_ip_norm_global_map_insert(kernel_ip, api_node, next_range_id);
 
   // Update active status
   active = cupti_pc_sampling_active();
@@ -243,7 +243,6 @@ cupti_range_mode_trie_is_enter
 }
 
 
-
 static bool
 cupti_range_mode_context_sensitive_is_enter
 (
@@ -253,6 +252,8 @@ cupti_range_mode_context_sensitive_is_enter
  uint32_t range_id
 )
 {
+  static bool first_range = true;
+
   ip_normalized_t kernel_ip = hpcrun_cct_addr(hpcrun_cct_children(kernel_ph))->ip_norm;
   cct_node_t *api_node = hpcrun_cct_parent(kernel_ph);
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_global_map_lookup(kernel_ip, api_node);
@@ -263,19 +264,35 @@ cupti_range_mode_context_sensitive_is_enter
     }
     cupti_ip_norm_global_map_clear();
   }
-  cupti_ip_norm_global_map_insert(kernel_ip, api_node);
 
-  if (!cupti_pc_sampling_active()) {
+  bool new_range = false;
+  if (first_range) {
+    // Don't increase range_id for the first range
+    first_range = false;
+    cupti_pc_sampling_start(context);
+  } else if (!cupti_pc_sampling_active()) {
     // If not active, might need to turn it on
-    if (cupti_range_mode_even_is_sampled(kernel_ph, range_id)) {
+    cupti_cct_map_entry_t *entry = cupti_cct_map_lookup(kernel_ph);
+    if (entry == NULL || cupti_range_is_sampled()) {
+      // First time see this range or sampled.
+      // Range id is increased for the next range
+      new_range = true;
       cupti_pc_sampling_start(context);
+      range_id += 1;
+      if (entry == NULL) {
+        cupti_cct_map_insert(kernel_ph, range_id);
+      }
+    } else {
+      range_id = cupti_cct_map_entry_range_id_get(entry);
     }
   }
 
   uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
   // Increase kernel count for postmortem apportion based on counts
-  cupti_range_kernel_count_increase(kernel_ph, context_id, range_id,
-    cupti_pc_sampling_active());
+  cupti_range_kernel_count_increase(kernel_ph, context_id, range_id, cupti_pc_sampling_active());
+  cupti_ip_norm_global_map_insert(kernel_ip, api_node, range_id);
+
+  return new_range;
 }
 
 
@@ -491,6 +508,13 @@ cupti_range_last
     cupti_cct_trie_cleanup();
     cupti_ip_norm_map_clear_thread();
     cupti_ip_norm_global_map_clear();
+    cupti_cct_map_clear();
+  } else if (cupti_range_mode == CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
+    if (cupti_pc_sampling_active()) {
+      cupti_pc_sampling_range_context_collect(range_id, context);
+    }
+    cupti_ip_norm_global_map_clear();
+    cupti_cct_map_clear();
   }
 
 #ifdef DEBUG
