@@ -195,3 +195,9 @@ cupti_cct_map_entry_range_id_get
   return entry->range_id;
 }
 
+
+void
+cupti_cct_map_entry_range_id_update(cupti_cct_map_entry_t *entry, uint32_t range_id)
+{
+  entry->range_id = range_id;
+}

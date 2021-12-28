@@ -17,4 +17,7 @@ cupti_cct_map_clear();
 uint32_t
 cupti_cct_map_entry_range_id_get(cupti_cct_map_entry_t *entry);
 
+void
+cupti_cct_map_entry_range_id_update(cupti_cct_map_entry_t *entry, uint32_t range_id);
+
 #endif
