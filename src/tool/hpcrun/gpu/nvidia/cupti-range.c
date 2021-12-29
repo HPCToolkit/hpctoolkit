@@ -96,8 +96,13 @@ cupti_range_mode_even_is_sampled
     cupti_cct_map_insert(kernel_ph, *range_id);
     return true;
   } else {
-    *range_id = cupti_cct_map_entry_range_id_get(entry);
-    return cupti_range_is_sampled();
+    bool sampled = cupti_range_is_sampled();
+    if (sampled) {
+      cupti_cct_map_entry_range_id_update(entry, *range_id);
+    } else {
+      *range_id = cupti_cct_map_entry_range_id_get(entry);
+    }
+    return sampled;
   }
 }
 
@@ -362,7 +367,9 @@ cupti_range_mode_even_is_exit
   }
 
   // Collect pc samples from all contexts
-  cupti_pc_sampling_range_context_collect(cupti_range_post_enter_range_id, context);
+  if (cupti_pc_sampling_active()) {
+    cupti_pc_sampling_range_context_collect(cupti_range_post_enter_range_id, context);
+  }
 }
 
 
@@ -417,16 +424,13 @@ cupti_range_config
   // We don't flush pc samples unless a kernel in the range is launched
   // by two different contexts.
   if (strcmp(mode_str, "EVEN") == 0) {
-    if (cupti_range_sampling_period != CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD ||
-      interval > CUPTI_RANGE_DEFAULT_INTERVAL) {
-      cupti_range_mode = CUPTI_RANGE_MODE_EVEN;
-    } else {
-      cupti_range_mode = CUPTI_RANGE_MODE_SERIAL;
-    }
+    cupti_range_mode = CUPTI_RANGE_MODE_EVEN;
   } else if (strcmp(mode_str, "TRIE") == 0) {
     cupti_range_mode = CUPTI_RANGE_MODE_TRIE;
   } else if (strcmp(mode_str, "CONTEXT_SENSITIVE") == 0) {
     cupti_range_mode = CUPTI_RANGE_MODE_CONTEXT_SENSITIVE;
+  } else if (strcmp(mode_str, "SERIAL") == 0) {
+    cupti_range_mode = CUPTI_RANGE_MODE_SERIAL;
   }
 
   if (cupti_range_mode != CUPTI_RANGE_MODE_NONE) {

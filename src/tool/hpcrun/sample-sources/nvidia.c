@@ -279,7 +279,7 @@ METHOD_FN(init)
 #ifdef NEW_CUPTI
   control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD_STR, ck_int);
-  control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_string);
+  control_knob_register("HPCRUN_CUDA_RANGE_MODE", "SERIAL", ck_string);
   control_knob_register("HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD", CUPTI_CCT_TRIE_COMPRESS_THRESHOLD_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
   control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "-1", ck_int);
