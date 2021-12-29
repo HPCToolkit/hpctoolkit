@@ -1088,7 +1088,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   prof = NULL;
 
   //YUMENG: no epoch info needed
-  //uint num_epochs = 0;
+  uint num_epochs = 0;
   //size_t file_cur = 0;
   //while ( !feof(infs) && (file_cur != footer.footer_offset)) {
 
@@ -1117,13 +1117,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
       prof->merge(*myprof, Profile::Merge_MergeMetricById);
     }
    //YUMENG: no epoch info needed
-   //num_epochs++;
-
-   //footer print YUMENG
-   //file_cur = ftell(infs);
-   if(outfs){
-     hpcrun_fmt_footer_fprint(&footer, outfs, "  ");
-   }
+   num_epochs++;
 
   //}
 
@@ -1216,7 +1210,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 	// These modules have prefix '<' and hopefully it doesn't change
 	if ((x->name != NULL && x->name[0] != '<') && 
             (x->flags & LOADMAP_ENTRY_ANALYZE))
-          fprintf(outfs, "%s\n", x->name );
+              fprintf(outfs, "%s\n", x->name );
       }
       // hack: case for hpcproftt with --lm option
       // by returning HPCFMT_EOF we force hpcproftt to exit the loop
