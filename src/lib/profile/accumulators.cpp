@@ -123,6 +123,12 @@ void PerThreadTemporary::finalize() noexcept {
         std::transform(factors.begin(), factors.end(), inFs.begin(),
                        factors.begin(), std::multiplies<double>{});
       }
+      {
+        auto rsFs = r->rescalingFactors(c_data);
+        assert(factors.size() == rsFs.size());
+        std::transform(factors.begin(), factors.end(), rsFs.begin(),
+                       factors.begin(), std::multiplies<double>{});
+      }
       for(const auto& [m, va]: input.citerate()) {
         if(auto v = va.get(MetricScope::point)) {
           auto handling = r->graph().handler()(m);
@@ -157,6 +163,12 @@ void PerThreadTemporary::finalize() noexcept {
           assert(finals.size() == factors.size() && finals.size() == inFactors.size());
           std::transform(factors.begin(), factors.end(), inFactors.begin(),
                          factors.begin(), std::multiplies<double>{});
+          {
+            auto rsFs = r->rescalingFactors(group.c_data);
+            assert(factors.size() == rsFs.size());
+            std::transform(factors.begin(), factors.end(), rsFs.begin(),
+                           factors.begin(), std::multiplies<double>{});
+          }
           for(const auto& [m, va]: input.citerate()) {
             if(auto v = va.get(MetricScope::point)) {
               auto handling = fg.handler()(m);

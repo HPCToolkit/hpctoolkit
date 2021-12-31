@@ -156,10 +156,7 @@ namespace {
 
 class Shared {
 public:
-  void insert(const std::pair<const util::reference_index<const Metric>,
-                              MetricAccumulator>& mv,
-              const ContextFlowGraph& graph) {
-    const Metric& m = mv.first;
+  void insert(const Metric& m, double v, const ContextFlowGraph& graph) {
     if(queried.insert(m).second) {
       auto handling = graph.handler()(m);
       if(handling.exteriorLogical) {
@@ -191,9 +188,15 @@ public:
       }
     }
     if(metric_exterior == &m)
-      total_val_exterior += mv.second.get(MetricScope::point).value_or(0);
+      total_val_exterior += v;
     else if(metric_exteriorLogical == &m)
-      total_val_exteriorLogical += mv.second.get(MetricScope::point).value_or(0);
+      total_val_exteriorLogical += v;
+  }
+
+  void insert(const std::pair<const util::reference_index<const Metric>,
+                              MetricAccumulator>& mv,
+              const ContextFlowGraph& graph) {
+    return insert(mv.first, mv.second.get(MetricScope::point).value_or(0), graph);
   }
 
   util::optional_ref<const Metric> exteriorLogical() const {
@@ -203,6 +206,16 @@ public:
     // Check that the answer is consistent
     if(!exteriorLogicalObserved) exteriorLogicalObserved = res;
     else assert(exteriorLogicalObserved == res);
+#endif
+    return res;
+  }
+  util::optional_ref<const Metric> exterior() const {
+    util::optional_ref<const Metric> res = metric_exterior ? metric_exterior
+        : exteriorLogicalIsAlsoExterior ? metric_exteriorLogical : std::nullopt;
+#ifndef NDEBUG
+    // Check that the answer is consistent
+    if(!exteriorObserved) exteriorObserved = res;
+    else assert(exteriorObserved == res);
 #endif
     return res;
   }
@@ -225,6 +238,7 @@ private:
 
 #ifndef NDEBUG
   mutable util::optional_ref<const Metric> exteriorLogicalObserved;
+  mutable util::optional_ref<const Metric> exteriorObserved;
 #endif
 };
 
@@ -237,7 +251,7 @@ public:
               const std::pair<const util::reference_index<const Metric>,
                               MetricAccumulator>& mv,
               const Shared& shared) {
-    if(shared.exteriorLogical() == &mv.first.get()) {
+    if(shared.exterior() == &mv.first.get()) {
       if(auto vv = mv.second.get(MetricScope::point)) {
         entry_vals.emplace(entry, *vv);
       }
@@ -246,7 +260,7 @@ public:
   bool empty() { return entry_vals.empty(); }
   std::vector<double> extract(const ContextFlowGraph& graph,
                               const Shared& shared) const {
-    if(!shared.exteriorLogical()) {
+    if(!shared.exterior()) {
       // We never saw the right Metric for this formulation. Unclear how to
       // recover in this case, so for now just abort.
       util::log::fatal{} << "No suitable Metrics for exterior factor calculations!";
@@ -278,13 +292,10 @@ public:
   bool skip(const Scope& p, const Shared&) {
     return top_vals.find(p) != top_vals.end();
   }
-  void insert(const Scope& p,
-              const std::pair<const util::reference_index<const Metric>,
-                              MetricAccumulator>& mv,
+  void insert(const Scope& p, const Metric& m, double v,
               const Shared& shared) {
-    if(shared.interior() == &mv.first.get()) {
-      if(auto vv = mv.second.get(MetricScope::point))
-        top_vals.emplace(p, *vv);
+    if(shared.interior() == &m && v != 0) {
+      top_vals.emplace(p, v);
     }
   }
   std::vector<double> extract(const ContextFlowGraph& graph,
@@ -496,7 +507,22 @@ ContextFlowGraph::exteriorFactors(
   return factors;
 }
 
-std::vector<double> ContextFlowGraph::interiorFactors(const perctx_mvals_t<ContextFlowGraph>& fg_data) const {
+std::vector<double> ContextFlowGraph::interiorFactors(
+    const perctx_mvals_t<ContextFlowGraph>& fg_data) const {
+  return interiorFactors_impl<mvals_t>(
+    [&](const Scope& p) -> util::optional_ref<const mvals_t> {
+      return fg_data.find(m_siblings.at(p));
+    }, [&](const mvals_t& mvs, const Metric& m) -> double {
+      return mvs.at(m).get(MetricScope::point).value_or(0);
+    }, [&](const mvals_t& mvs, const auto& f){
+      for(const auto& [m, v]: mvs.citerate())
+        f(m, v.get(MetricScope::point).value_or(0));
+    });
+}
+
+template<class T, class Find, class At, class ForAll>
+std::vector<double> ContextFlowGraph::interiorFactors_impl(
+    const Find& find, const At&, const ForAll& forall) const {
   m_frozen_once.wait();
 
   // Shortcut: if there's only one Template, the factor is 1. Period. Also
@@ -508,10 +534,14 @@ std::vector<double> ContextFlowGraph::interiorFactors(const perctx_mvals_t<Conte
   for(const auto& t: m_templates) {
     for(const auto& p: t.path()) {
       if(factors.skip(p, shared)) continue;
-      if(auto mvs = fg_data.find(m_siblings.at(p))) {
-        for(const auto& mv: mvs->citerate()) shared.insert(mv, *this);
-        // Now the Shared should be more-or-less stable, so we can use Factors
-        for(const auto& mv: mvs->citerate()) factors.insert(p, mv, shared);
+      util::optional_ref<const T> mvs = find(p);
+      if(mvs) {
+        forall(*mvs, [&](const Metric& m, double v){
+          shared.insert(m, v, *this);
+        });
+        forall(*mvs, [&](const Metric& m, double v){
+          factors.insert(p, m, v, shared);
+        });
       }
     }
   }
@@ -556,6 +586,76 @@ void ContextReconstruction::instantiate(
   m_instantiated.signal();
 }
 
+std::vector<double> ContextReconstruction::rescalingFactors(
+    const perctx_mvals_t<Context>& c_data) const {
+  return rescalingFactors_impl<mvals_t>(
+    [&](const Context& entry_c) -> util::optional_ref<const mvals_t> {
+      return c_data.find(entry_c);
+    }, [&](const mvals_t& mvs, const Metric& m) -> double {
+      return mvs.at(m).get(MetricScope::point).value_or(0);
+    }, [&](const mvals_t& mvs, const auto& f){
+      for(const auto& [m, v]: mvs.citerate())
+        f(m, v.get(MetricScope::point).value_or(0));
+    });
+}
+
+std::vector<double> ContextReconstruction::rescalingFactors(
+    const std::unordered_map<util::reference_index<const Context>,
+      std::unordered_map<util::reference_index<const Metric>,
+        double>>& c_data) const {
+  using mvs_t = std::unordered_map<util::reference_index<const Metric>, double>;
+  return rescalingFactors_impl<mvs_t>(
+    [&](const Context& entry_c) -> util::optional_ref<const mvs_t> {
+      auto mvs_it = c_data.find(entry_c);
+      if(mvs_it == c_data.end()) return std::nullopt;
+      return mvs_it->second;
+    }, [&](const mvs_t& mvs, const Metric& m) -> double {
+      return mvs.at(m);
+    }, [&](const mvs_t& mvs, const auto& f){
+      for(const auto& [m, v]: mvs) f(m, v);
+    });
+}
+
+template<class T, class Find, class At, class ForAll>
+std::vector<double> ContextReconstruction::rescalingFactors_impl(
+    const Find& find, const At& at, const ForAll& forall) const {
+  m_instantiated.wait();
+  auto& templates = graph().templates();
+
+  Shared shared;
+  std::unordered_map<Scope, double> factors;
+  factors.reserve(m_entries.size());
+  for(const auto& [entry_s, entry_c]: m_entries) {
+    util::optional_ref<const T> mvs = find(entry_c);
+    if(mvs) {
+      forall(*mvs, [&](const Metric& m, double v){
+        shared.insert(m, v, graph());
+      });
+      if(!shared.exterior()) {
+        // We never saw the right Metric for this formulation. Unclear how to
+        // recover in this case, so for now just abort.
+        util::log::fatal{} << "No suitable Metrics for rescaling factor calculations!";
+      }
+      if(shared.exterior() == shared.exteriorLogical()) {
+        // Shortcut, the factor is just 1
+        factors.try_emplace(entry_s, 1);
+      } else {
+        factors.try_emplace(entry_s, at(*mvs, *shared.exteriorLogical())
+            / at(*mvs, *shared.exterior()));
+      }
+    }
+  }
+
+  // Expand for the final output
+  std::vector<double> out;
+  out.reserve(templates.size());
+  for(const auto& t: templates) {
+    auto fit = factors.find(t.entry());
+    out.push_back(fit != factors.end() ? fit->second : 0.);
+  }
+  return out;
+}
+
 std::vector<double> ContextReconstruction::exteriorFactors(
     const perctx_mvals_t<Context>& c_data) const {
   m_instantiated.wait();
@@ -579,27 +679,14 @@ std::vector<double> ContextReconstruction::exteriorFactors(
 }
 
 std::vector<double> ContextReconstruction::interiorFactors(
-    const util::locked_unordered_map<util::reference_index<const ContextReconstruction>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>& r_data) const {
-  m_instantiated.wait();
-  auto& templates = graph().templates();
-
-  // Shortcut: if there's only one Template, the factor is 1. Period. Also
-  // handles the edge-case where there is no interior (path) in the FlowGraph.
-  if(templates.size() == 1) return {1.};
-
-  Shared shared;
-  InteriorFactors factors;
-  for(const auto& t: templates) {
-    for(const auto& p: t.path()) {
-      if(factors.skip(p, shared)) continue;
-      if(auto mvs = r_data.find(m_siblings.at(p))) {
-        for(const auto& mv: mvs->citerate()) shared.insert(mv, graph());
-        // Now the Shared should be more-or-less stable, so we can use Factors
-        for(const auto& mv: mvs->citerate()) factors.insert(p, mv, shared);
-      }
-    }
-  }
-  return factors.extract(graph(), shared);
+    const perctx_mvals_t<ContextReconstruction>& r_data) const {
+  return graph().interiorFactors_impl<mvals_t>(
+    [&](const Scope& p) -> util::optional_ref<const mvals_t> {
+      return r_data.find(m_siblings.at(p));
+    }, [&](const mvals_t& mvs, const Metric& m) -> double {
+      return mvs.at(m).get(MetricScope::point).value_or(0);
+    }, [&](const mvals_t& mvs, const auto& f){
+      for(const auto& [m, v]: mvs.citerate())
+        f(m, v.get(MetricScope::point).value_or(0));
+    });
 }
