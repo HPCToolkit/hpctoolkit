@@ -114,15 +114,9 @@ void PerThreadTemporary::finalize() noexcept {
       if(!first) it->second += v;
     };
     for(const auto& [r, input]: r_data.citerate()) {
-      auto factors = r->exteriorFactors(c_data);
+      auto factors = r->interiorFactors(r_data);
       const auto& finals = r->m_finals;
       assert(factors.size() == finals.size());
-      {
-        auto inFs = r->interiorFactors(r_data);
-        assert(factors.size() == inFs.size());
-        std::transform(factors.begin(), factors.end(), inFs.begin(),
-                       factors.begin(), std::multiplies<double>{});
-      }
       {
         auto rsFs = r->rescalingFactors(c_data);
         assert(factors.size() == rsFs.size());

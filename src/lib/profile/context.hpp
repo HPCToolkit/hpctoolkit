@@ -231,14 +231,6 @@ private:
   template<class T, class F1, class F2, class F3>
   std::vector<double> rescalingFactors_impl(const F1&, const F2&, const F3&) const;
 
-  /// From the given data, calculate the exterior factors for each Template
-  /// within the main FlowGraph, as instantiated here.
-  // MT: Safe (const)
-  std::vector<double> exteriorFactors(
-    const util::locked_unordered_map<util::reference_index<const Context>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&) const;
-
   /// From the given data, calculate the interior factors for each Template
   /// within the main FlowGraph, as instantiated here.
   // MT: Safe (const)
@@ -330,7 +322,7 @@ public:
 
     /// Function used to "enter" the FlowGraph. Metric values attributed to
     /// `root -> entry()` are used to calculate the exterior factors, as:
-    ///     calls(root -> entry()) / sum(calls(root -> e) for root' in roots))
+    ///     calls(root -> entry()) / sum(calls(root' -> entry()) for root' in roots)
     /// where calls(c) is the number of (sampled) calls attributed to Context c.
     ///
     /// Note that this is simply 1 if there is a single root (e.g. in the case
