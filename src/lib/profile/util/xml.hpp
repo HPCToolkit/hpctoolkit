@@ -60,13 +60,12 @@ namespace hpctoolkit::util {
 /// Alternative to std::quoted for XML outputs.
 class xmlquoted {
 public:
-  xmlquoted(const std::string& s, bool q = true) : xmlquoted(std::string(s), q) {};
-  xmlquoted(std::string&&, bool = true);
+  xmlquoted(std::string_view s, bool q = true);
 
   friend std::ostream& ::operator<<(std::ostream&, const xmlquoted&);
 
 private:
-  std::string str;
+  std::string_view str;
   bool addquotes;
 };
 

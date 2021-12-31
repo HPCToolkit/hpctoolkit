@@ -612,7 +612,8 @@ void ExperimentXML4::notifyPipeline() noexcept {
 }
 
 void ExperimentXML4::write() {
-  const auto& name = src.attributes().name().value();
+  const auto& o_name = src.attributes().name();
+  std::string_view name = o_name ? *o_name : std::string_view{};
   of << "<?xml version=\"1.0\"?>\n"
         "<HPCToolkitExperiment version=\"4.0\">\n"
         "<Header n=" << util::xmlquoted(name) << ">\n"
