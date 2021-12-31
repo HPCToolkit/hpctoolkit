@@ -156,7 +156,7 @@ namespace {
 
 class Shared {
 public:
-  void insert(const Metric& m, double v, const ContextFlowGraph& graph) {
+  void insert(const Metric& m, const ContextFlowGraph& graph) {
     if(queried.insert(m).second) {
       auto handling = graph.handler()(m);
       if(handling.exteriorLogical) {
@@ -187,16 +187,6 @@ public:
         metric_interior = m;
       }
     }
-    if(metric_exterior == &m)
-      total_val_exterior += v;
-    else if(metric_exteriorLogical == &m)
-      total_val_exteriorLogical += v;
-  }
-
-  void insert(const std::pair<const util::reference_index<const Metric>,
-                              MetricAccumulator>& mv,
-              const ContextFlowGraph& graph) {
-    return insert(mv.first, mv.second.get(MetricScope::point).value_or(0), graph);
   }
 
   util::optional_ref<const Metric> exteriorLogical() const {
@@ -219,11 +209,6 @@ public:
 #endif
     return res;
   }
-  double total_exterior() const {
-    return metric_exterior ? total_val_exterior
-           : exteriorLogicalIsAlsoExterior ? total_val_exteriorLogical
-           : 0;
-  }
 
   util::optional_ref<const Metric> interior() const { return metric_interior; }
 
@@ -232,8 +217,6 @@ private:
   util::optional_ref<const Metric> metric_exterior;
   util::optional_ref<const Metric> metric_exteriorLogical;
   bool exteriorLogicalIsAlsoExterior = false;
-  double total_val_exterior = 0;
-  double total_val_exteriorLogical = 0;
   util::optional_ref<const Metric> metric_interior;
 
 #ifndef NDEBUG
@@ -445,7 +428,7 @@ ContextFlowGraph::exteriorFactors(
     assert(&r.graph() == this);
     for(const auto& [entry_s, entry_c]: r.m_entries) {
       if(auto mvs = c_data.find(entry_c)) {
-        for(const auto& mv: mvs->citerate()) shared.insert(mv, *this);
+        for(const auto& [m, v]: mvs->citerate()) shared.insert(m, *this);
         if(auto m = shared.exterior()) {
           if(auto vv = mvs->find(*m)) {
             double v = vv->get(MetricScope::point).value_or(0);
@@ -516,7 +499,7 @@ std::vector<double> ContextFlowGraph::interiorFactors_impl(
       util::optional_ref<const T> mvs = find(p);
       if(mvs) {
         forall(*mvs, [&](const Metric& m, double v){
-          shared.insert(m, v, *this);
+          shared.insert(m, *this);
         });
         forall(*mvs, [&](const Metric& m, double v){
           factors.insert(p, m, v, shared);
@@ -608,7 +591,7 @@ std::vector<double> ContextReconstruction::rescalingFactors_impl(
     util::optional_ref<const T> mvs = find(entry_c);
     if(mvs) {
       forall(*mvs, [&](const Metric& m, double v){
-        shared.insert(m, v, graph());
+        shared.insert(m, graph());
       });
       if(!shared.exterior()) {
         // We never saw the right Metric for this formulation. Unclear how to
