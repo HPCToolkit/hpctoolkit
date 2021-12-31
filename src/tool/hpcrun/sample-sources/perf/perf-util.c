@@ -126,7 +126,7 @@ perf_split_retained_node(
 
   // get the necessary sibling to node
   cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
-					       &sibling_addr, false);
+					       &sibling_addr, true);
 
   return sibling;
 }
@@ -153,7 +153,7 @@ perf_insert_cct(
   memset(&frm, 0, sizeof(cct_addr_t));
   frm.ip_norm = npc;
 
-  return hpcrun_cct_insert_addr(parent, &frm, false);
+  return hpcrun_cct_insert_addr(parent, &frm, true);
 }
 
 

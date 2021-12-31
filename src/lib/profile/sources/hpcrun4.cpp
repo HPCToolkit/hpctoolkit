@@ -399,7 +399,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         // In all other valid cases, this either represents a point or
         // placeholder Scope. Must be a point if we need reconstruction.
         Scope scope;
-        if(n.lm_id == HPCRUN_PLACEHOLDER_LM && !n.from_ununwindable) {
+        if(n.lm_id == HPCRUN_PLACEHOLDER_LM && n.unwound) {
           switch(n.lm_ip) {
           case hpcrun_placeholder_unnormalized_ip:
           case hpcrun_placeholder_root_partial:  // Because hpcrun stitches here
@@ -422,7 +422,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           scope = Scope(mod_it->second, n.lm_ip);
         }
 
-        if(n.from_ununwindable) {
+        if(!n.unwound) {
           // In this case, we need a Reconstruction.
           auto fg = sink.contextFlowGraph(scope);
           if(fg) {

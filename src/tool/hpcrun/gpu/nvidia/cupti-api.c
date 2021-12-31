@@ -954,7 +954,7 @@ ensure_kernel_ip_present
   // is already present
   if (hpcrun_cct_children(kernel_ph) == NULL) {
     cct_node_t *kernel = 
-      hpcrun_cct_insert_ip_norm(kernel_ph, kernel_ip, false);
+      hpcrun_cct_insert_ip_norm(kernel_ph, kernel_ip, true);
     hpcrun_cct_retain(kernel);
   }
 }
