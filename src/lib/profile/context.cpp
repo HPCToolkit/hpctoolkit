@@ -242,51 +242,6 @@ private:
 #endif
 };
 
-class ExteriorFactors {
-public:
-  bool skip(const ContextFlowGraph::Template& t, const Shared&) {
-    return entry_vals.find(t.entry()) != entry_vals.end();
-  }
-  void insert(const Scope& entry,
-              const std::pair<const util::reference_index<const Metric>,
-                              MetricAccumulator>& mv,
-              const Shared& shared) {
-    if(shared.exterior() == &mv.first.get()) {
-      if(auto vv = mv.second.get(MetricScope::point)) {
-        entry_vals.emplace(entry, *vv);
-      }
-    }
-  }
-  bool empty() { return entry_vals.empty(); }
-  std::vector<double> extract(const ContextFlowGraph& graph,
-                              const Shared& shared) const {
-    if(!shared.exterior()) {
-      // We never saw the right Metric for this formulation. Unclear how to
-      // recover in this case, so for now just abort.
-      util::log::fatal{} << "No suitable Metrics for exterior factor calculations!";
-    }
-    assert(shared.total_exterior() != 0 && !entry_vals.empty());
-    const auto& templates = graph.templates();
-    // The exterior factor for an entry e is calculated as
-    //   factor = weight(e) / sum(weight(e') for e' in {t.entry for i in templates})
-    // In short, the numerator is entry_vals[e] and the denominator shared.total_entry().
-    //
-    // The return from this function is based on the templates, so we need to
-    // inflate the entry_vals map. To save a loop do the division while inflating.
-    std::vector<double> t_factors;
-    t_factors.reserve(templates.size());
-    for(const auto& t: templates) {
-      auto it = entry_vals.find(t.entry());
-      t_factors.push_back(it == entry_vals.end() ? (double)0
-                          : it->second / shared.total_exterior());
-    }
-    return t_factors;
-  }
-
-private:
-  std::unordered_map<Scope, double> entry_vals;
-};
-
 class InteriorFactors {
 public:
   bool skip(const Scope& p, const Shared&) {
@@ -483,27 +438,51 @@ ContextFlowGraph::exteriorFactors(
     const perctx_mvals_t<Context>& c_data) const {
   m_frozen_once.wait();
 
-  std::unordered_map<util::reference_index<const ContextReconstruction>,
-                     ExteriorFactors> factors_acc;
+  // First sum up the denominators
+  std::unordered_map<Scope, double> entry_totals;
   Shared shared;
   for(const ContextReconstruction& r: reconsts) {
     assert(&r.graph() == this);
-    util::optional_ref<ExteriorFactors> factors;
     for(const auto& [entry_s, entry_c]: r.m_entries) {
       if(auto mvs = c_data.find(entry_c)) {
-        if(!factors) factors = factors_acc[r];
         for(const auto& mv: mvs->citerate()) shared.insert(mv, *this);
-        // Now the Shared should be more-or-less stable, so we can use Factors
-        for(const auto& mv: mvs->citerate())
-          factors->insert(entry_s, mv, shared);
+        if(auto m = shared.exterior()) {
+          if(auto vv = mvs->find(*m)) {
+            double v = vv->get(MetricScope::point).value_or(0);
+            auto [it, first] = entry_totals.try_emplace(entry_s, v);
+            if(!first) it->second += v;
+          }
+        }
       }
     }
   }
+  if(!shared.exterior()) {
+    // We never saw the right Metric for this formulation. Unclear how to
+    // recover in this case, so for now just abort.
+    util::log::fatal{} << "No suitable Metrics for exterior factor calculations!";
+  }
+
+  // Then divide to get the final result. Do it during expansion to save a loop.
   std::unordered_map<util::reference_index<const ContextReconstruction>,
                      std::vector<double>> factors;
-  factors.reserve(factors_acc.size());
-  for(auto& [r, acc]: factors_acc)
-    factors.emplace(r, std::move(acc).extract(*this, shared));
+  factors.reserve(reconsts.size());
+  for(const ContextReconstruction& r: reconsts) {
+    util::optional_ref<std::vector<double>> r_factors;
+    std::size_t idx = 0;
+    for(const auto& t: m_templates) {
+      if(auto mvs = c_data.find(r.m_entries.at(t.entry()))) {
+        if(auto vv = mvs->find(*shared.exterior())) {
+          if(!r_factors) {
+            r_factors = factors[r];
+            r_factors->resize(m_templates.size(), 0);
+          }
+          (*r_factors)[idx] = vv->get(MetricScope::point).value_or(0)
+                              / entry_totals.at(t.entry());
+        }
+      }
+      ++idx;
+    }
+  }
   return factors;
 }
 
@@ -654,28 +633,6 @@ std::vector<double> ContextReconstruction::rescalingFactors_impl(
     out.push_back(fit != factors.end() ? fit->second : 0.);
   }
   return out;
-}
-
-std::vector<double> ContextReconstruction::exteriorFactors(
-    const perctx_mvals_t<Context>& c_data) const {
-  m_instantiated.wait();
-  auto& templates = graph().templates();
-
-  // Shortcut: if there's only one Template, the factor is 1. Period.
-  if(templates.size() == 1) return {1.};
-
-  Shared shared;
-  ExteriorFactors factors;
-  for(const auto& t: templates) {
-    if(factors.skip(t, shared)) continue;
-    if(auto mvs = c_data.find(m_entries.at(t.entry()))) {
-      for(const auto& mv: mvs->citerate()) shared.insert(mv, graph());
-      // Now the Shared should be more-or-less stable, so we can use Factors
-      for(const auto& mv: mvs->citerate())
-        factors.insert(t.entry(), mv, shared);
-    }
-  }
-  return factors.extract(graph(), shared);
 }
 
 std::vector<double> ContextReconstruction::interiorFactors(
