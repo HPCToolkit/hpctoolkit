@@ -142,90 +142,11 @@ std::pair<Context&,bool> Context::ensure(Scope s) {
   return {x.first(), x.second};
 }
 
-//
-// Shared private factor calculation pieces
-//
-
 using mvals_t = util::locked_unordered_map<util::reference_index<const Metric>,
                                            MetricAccumulator>;
 template<class Ctx>
 using perctx_mvals_t = util::locked_unordered_map<
     util::reference_index<const Ctx>, mvals_t>;
-
-namespace {
-
-class Shared {
-public:
-  void insert(const Metric& m, const ContextFlowGraph& graph) {
-    if(queried.insert(m).second) {
-      auto handling = graph.handler()(m);
-      if(handling.exteriorLogical) {
-        if(metric_exteriorLogical) {
-          // The handler claims multiple Metrics are usable for exterior
-          // factor calculations. We don't know which to pick, so abort.
-          util::log::fatal{} << "Multiple suitable Metrics for exterior (logical) factor calculations: "
-            << metric_exteriorLogical->name() << " vs. " << m.name();
-        }
-        metric_exteriorLogical = m;
-        exteriorLogicalIsAlsoExterior = handling.exterior;
-      } else if(handling.exterior) {
-        if(metric_exterior) {
-          // The handler claims multiple Metrics are usable for exterior
-          // factor calculations. We don't know which to pick, so abort.
-          util::log::fatal{} << "Multiple suitable Metrics for exterior factor calculations: "
-            << metric_exterior->name() << " vs. " << m.name();
-        }
-        metric_exterior = m;
-      }
-      if(handling.interior) {
-        if(metric_interior) {
-          // The handler claims multiple Metrics are usable for interior
-          // factor calculations. We don't know which to pick, so abort.
-          util::log::fatal{} << "Multiple suitable Metrics for interior factor calculations: "
-            << metric_interior->name() << " vs. " << m.name();
-        }
-        metric_interior = m;
-      }
-    }
-  }
-
-  util::optional_ref<const Metric> exteriorLogical() const {
-    util::optional_ref<const Metric> res = metric_exteriorLogical
-        ? metric_exteriorLogical : metric_exterior;
-#ifndef NDEBUG
-    // Check that the answer is consistent
-    if(!exteriorLogicalObserved) exteriorLogicalObserved = res;
-    else assert(exteriorLogicalObserved == res);
-#endif
-    return res;
-  }
-  util::optional_ref<const Metric> exterior() const {
-    util::optional_ref<const Metric> res = metric_exterior ? metric_exterior
-        : exteriorLogicalIsAlsoExterior ? metric_exteriorLogical : std::nullopt;
-#ifndef NDEBUG
-    // Check that the answer is consistent
-    if(!exteriorObserved) exteriorObserved = res;
-    else assert(exteriorObserved == res);
-#endif
-    return res;
-  }
-
-  util::optional_ref<const Metric> interior() const { return metric_interior; }
-
-private:
-  std::unordered_set<util::reference_index<const Metric>> queried;
-  util::optional_ref<const Metric> metric_exterior;
-  util::optional_ref<const Metric> metric_exteriorLogical;
-  bool exteriorLogicalIsAlsoExterior = false;
-  util::optional_ref<const Metric> metric_interior;
-
-#ifndef NDEBUG
-  mutable util::optional_ref<const Metric> exteriorLogicalObserved;
-  mutable util::optional_ref<const Metric> exteriorObserved;
-#endif
-};
-
-}  // namespace
 
 //
 // ContextFlowGraph
@@ -329,23 +250,42 @@ std::pair<
 
   // First sum up the denominators
   std::unordered_map<Scope, double> entry_totals;
-  Shared shared;
-  for(const ContextReconstruction& r: reconsts) {
-    assert(&r.graph() == this);
-    for(const auto& [entry_s, entry_c]: r.m_entries) {
-      if(auto mvs = c_data.find(entry_c)) {
-        for(const auto& [m, v]: mvs->citerate()) shared.insert(m, *this);
-        if(auto m = shared.exterior()) {
-          if(auto vv = mvs->find(*m)) {
-            double v = vv->get(MetricScope::point).value_or(0);
-            auto [it, first] = entry_totals.try_emplace(entry_s, v);
-            if(!first) it->second += v;
+  util::optional_ref<const Metric> metricExterior;
+  bool exteriorIsAlsoLogical = false;
+  {
+    std::unordered_set<util::reference_index<const Metric>> queried;
+    for(const ContextReconstruction& r: reconsts) {
+      assert(&r.graph() == this);
+      for(const auto& [entry_s, entry_c]: r.m_entries) {
+        if(auto mvs = c_data.find(entry_c)) {
+          for(const auto& [m, v]: mvs->citerate()) {
+            if(!queried.emplace(m).second) continue;
+            auto handling = m_handler(m);
+            if(handling.exterior) {
+              if(metricExterior
+                 && exteriorIsAlsoLogical == handling.exteriorLogical) {
+                // The handler claims multiple Metrics are usable for exterior
+                // factor calculations. We don't know which to pick, so abort.
+                util::log::fatal{} << "Multiple suitable Metrics for exterior factor calculations: "
+                  << metricExterior->name() << " vs. " << m->name();
+              } else if(!metricExterior || exteriorIsAlsoLogical) {
+                metricExterior = m;
+                exteriorIsAlsoLogical = handling.exteriorLogical;
+              }
+            }
+          }
+          if(metricExterior) {
+            if(auto vv = mvs->find(*metricExterior)) {
+              double v = vv->get(MetricScope::point).value_or(0);
+              auto [it, first] = entry_totals.try_emplace(entry_s, v);
+              if(!first) it->second += v;
+            }
           }
         }
       }
     }
   }
-  if(!shared.exterior()) {
+  if(!metricExterior) {
     // We never saw the right Metric for this formulation. Unclear how to
     // recover in this case, so for now just abort.
     util::log::fatal{} << "No suitable Metrics for exterior factor calculations!";
@@ -361,7 +301,7 @@ std::pair<
     std::size_t idx = 0;
     for(const auto& t: m_templates) {
       if(auto mvs = c_data.find(r.m_entries.at(t.entry()))) {
-        if(auto vv = mvs->find(*shared.exterior())) {
+        if(auto vv = mvs->find(*metricExterior)) {
           if(!r_factors) {
             r_factors = factors[r];
             r_factors->resize(m_templates.size(), 0);
@@ -422,12 +362,24 @@ std::vector<double> ContextFlowGraph::interiorFactors_impl(
 
   // Find the Metric we will need for interior factor calculations, if we can.
   // If we can't, we'll still do our best from just the static paths.
-  Shared shared;
-  for(const auto& [s, fg]: m_siblings) {
-    if(auto mvs = find(s)) {
-      forall(*mvs, [&](const Metric& m, double){
-        shared.insert(m, *this);
-      });
+  util::optional_ref<const Metric> metricInterior;
+  {
+    std::unordered_set<util::reference_index<const Metric>> queried;
+    for(const auto& [s, fg]: m_siblings) {
+      if(auto mvs = find(s)) {
+        forall(*mvs, [&](const Metric& m, double){
+          if(!queried.emplace(m).second) return;
+          if(m_handler(m).interior) {
+            if(metricInterior) {
+              // The handler claims multiple Metrics are usable for interior
+              // factor calculations. We don't know which to pick, so abort.
+              util::log::fatal{} << "Multiple suitable Metrics for interior factor calculations: "
+                << metricInterior->name() << " vs. " << m.name();
+            }
+            metricInterior = m;
+          }
+        });
+      }
     }
   }
 
@@ -466,9 +418,9 @@ std::vector<double> ContextFlowGraph::interiorFactors_impl(
         if(rAtIdx(first->path()) != rAtIdx(it->path())) {
           // There is a divergence! Add a new group marking it and reset
           double v = 0;
-          if(auto m = shared.interior())
+          if(metricInterior)
             if(auto mvs = find(rAtIdx(first->path())))
-              v = at(*mvs, *m);
+              v = at(*mvs, *metricInterior);
           next_groups.push_back({first, it, v});
           total_v += v;
           first = it;
@@ -478,9 +430,9 @@ std::vector<double> ContextFlowGraph::interiorFactors_impl(
       // Add the last group in the series with whatever's left.
       // The "end" here may be before g.last depending on hasEC.
       double v = 0;
-      if(auto m = shared.interior())
+      if(metricInterior)
         if(auto mvs = find(rAtIdx(first->path())))
-          v = at(*mvs, *m);
+          v = at(*mvs, *metricInterior);
       next_groups.push_back({first, ++last, v});
       total_v += v;
 
@@ -591,26 +543,55 @@ ContextReconstruction::rescalingFactors_impl(
   m_instantiated.wait();
   auto& templates = graph().templates();
 
-  Shared shared;
   std::unordered_map<Scope, double> factors;
   factors.reserve(m_entries.size());
-  for(const auto& [entry_s, entry_c]: m_entries) {
-    util::optional_ref<const T> mvs = find(entry_c);
-    if(mvs) {
-      forall(*mvs, [&](const Metric& m, double v){
-        shared.insert(m, graph());
-      });
-      if(!shared.exterior()) {
-        // We never saw the right Metric for this formulation. Unclear how to
-        // recover in this case, so for now just abort.
-        util::log::fatal{} << "No suitable Metrics for rescaling factor calculations!";
-      }
-      if(shared.exterior() == shared.exteriorLogical()) {
-        // Shortcut, the factor is just 1
-        factors.try_emplace(entry_s, 1);
-      } else {
-        factors.try_emplace(entry_s, at(*mvs, *shared.exteriorLogical())
-            / at(*mvs, *shared.exterior()));
+
+  {
+    util::optional_ref<const Metric> metricExterior;
+    util::optional_ref<const Metric> metricExteriorLogical;
+    bool exteriorLogicalIsAlsoExterior = false;
+    std::unordered_set<util::reference_index<const Metric>> queried;
+    for(const auto& [entry_s, entry_c]: m_entries) {
+      util::optional_ref<const T> mvs = find(entry_c);
+      if(mvs) {
+        // Find the metrics we need for the rescaling factor calculations.
+        forall(*mvs, [&](const Metric& m, double){
+          if(!queried.emplace(m).second) return;
+          auto handling = graph().handler()(m);
+          if(handling.exteriorLogical) {
+            if(metricExteriorLogical) {
+              // The handler claims multiple Metrics are usable for rescaling
+              // factor calculations. We don't know which to pick, so abort.
+              util::log::fatal{} << "Multiple suitable Metrics for rescaling factor calculations (exteriorLogical): "
+                << metricExteriorLogical->name() << " vs. " << m.name();
+            }
+            metricExteriorLogical = m;
+            exteriorLogicalIsAlsoExterior = handling.exterior;
+          } else if(handling.exterior) {
+            if(metricExterior) {
+              // The handler claims multiple Metrics are usable for rescaling
+              // factor calculations. We don't know which to pick, so abort.
+              util::log::fatal{} << "Multiple suitable Metrics for rescaling factor calculations (exterior): "
+                << metricExterior->name() << " vs. " << m.name();
+            }
+            metricExterior = m;
+          }
+        });
+        assert(metricExteriorLogical || !exteriorLogicalIsAlsoExterior);
+        if(!metricExterior && !exteriorLogicalIsAlsoExterior) {
+          // We never saw the right Metric for this formulation. Unclear how to
+          // recover in this case, so for now just abort.
+          util::log::fatal{} << "No suitable Metrics for rescaling factor calculations!";
+        }
+
+        // Based on the results above, generate the final factor
+        if(!metricExterior || !metricExteriorLogical) {
+          // Shortcut: only one call count metric, so the factor is just 1.
+          factors.try_emplace(entry_s, 1);
+        } else {
+          factors.try_emplace(entry_s, at(*mvs, *metricExteriorLogical)
+                                       / at(*mvs, *metricExterior));
+        }
       }
     }
   }
