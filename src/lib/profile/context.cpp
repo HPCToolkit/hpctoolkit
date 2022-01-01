@@ -225,103 +225,6 @@ private:
 #endif
 };
 
-class InteriorFactors {
-public:
-  bool skip(const Scope& p, const Shared&) {
-    return top_vals.find(p) != top_vals.end();
-  }
-  void insert(const Scope& p, const Metric& m, double v,
-              const Shared& shared) {
-    if(shared.interior() == &m && v != 0) {
-      top_vals.emplace(p, v);
-    }
-  }
-  std::vector<double> extract(const ContextFlowGraph& graph,
-                              const Shared& shared) const {
-    const auto& templates = graph.templates();
-
-    // The interior factor for a Scope-path p = [p[0],...,p[n]] and entry e is calculated as
-    //   factor = 1
-    //   group = {t.path for t in templates if t.entry == e}
-    //   for i in range(n):
-    //     factor *= weight(p[i]) / sum(weight(s') for s' in {p'[i] for p' in group})
-    //     group = {p' in group if p'[i] == p[i]}
-    // The idea is that the "full" factor (1) is divided between diverging paths
-    // based on the input metric values, working from the "entry" to the "exit"
-    // of the possible path(s).
-    //
-    // To make things simple, the Templates are already sorted by entry and path,
-    // so the groups will always be contiguous. Initial groups are 1 for each
-    // entry, with a factor of 1 since we don't have exterior factors here.
-    std::vector<double> factors(templates.size(), 0);
-    struct group_t {
-      std::deque<ContextFlowGraph::Template>::const_iterator begin;
-      std::deque<ContextFlowGraph::Template>::const_iterator end;
-      double factor;
-    };
-    std::deque<group_t> groups;
-    {
-      auto beg = templates.begin();
-      for(auto it = beg; it != templates.end(); ++it) {
-        if(it->entry() != beg->entry()) {
-          groups.push_back({beg, it, 1});
-          beg = it;
-        }
-      }
-      groups.push_back({beg, templates.end(), 1});
-    }
-    for(size_t i = 0; !groups.empty(); i++) {
-      std::deque<group_t> next_groups;
-      // First pass: split groups into subgroups where the paths diverge
-      for(auto& g: groups) {
-        size_t next_start = next_groups.size();
-        // Split the group into subgroups based on the diverging paths
-        double total_v = 0;
-        auto beg = g.begin;
-        for(auto it = beg; it != g.end; ++it) {
-          assert(it->path().size() > i);
-          if(beg->path()[i] != it->path()[i]) {
-            auto vit = top_vals.find(beg->path()[i]);
-            double v = vit == top_vals.end() ? (double)0 : vit->second;
-            next_groups.push_back({beg, it, v});
-            total_v += v;
-            beg = it;
-          }
-        }
-        auto vit = top_vals.find(beg->path()[i]);
-        double v = vit == top_vals.end() ? (double)0 : vit->second;
-        next_groups.push_back({beg, g.end, v});
-        total_v += v;
-        // Then go back and fixup the factors based on the division.
-        if(total_v > 0) {
-          for(size_t i = next_start, e = next_groups.size(); i < e; ++i)
-            next_groups[i].factor = g.factor * next_groups[i].factor / total_v;
-        } else {
-          // Special case: if there is no metric value at this split, divide evenly
-          const double cnt = next_groups.size() - next_start;
-          for(size_t i = next_start, e = next_groups.size(); i < e; ++i)
-            next_groups[i].factor = g.factor / cnt;
-        }
-      }
-      groups = std::move(next_groups);
-      // Second pass: resolve any groups that can't or have no need to continue
-      for(auto& g: groups) {
-        if(g.factor == 0 || g.begin->path().size() == i+1
-           || std::distance(g.begin, g.end) == 1) {
-          // This group is done, save the factor back in the output
-          size_t idx = std::distance(templates.begin(), g.begin);
-          for(auto it = g.begin; it != g.end; ++it, ++idx)
-            factors[idx] = g.factor;
-        }
-      }
-      groups = std::move(next_groups);
-    }
-    return factors;
-  }
-private:
-  std::unordered_map<Scope, double> top_vals;
-};
-
 }  // namespace
 
 //
@@ -351,22 +254,23 @@ void ContextFlowGraph::handler(std::function<MetricHandling(const Metric&)> h) {
 void ContextFlowGraph::freeze(const std::function<util::optional_ref<ContextFlowGraph>(const Scope&)>& create) {
   assert(m_templates.empty() == !m_handler && "FlowGraph::Templates only make sense with a handler!");
 
-  // Sort the templates lexographically by their entries + paths, to make it
-  // easier for us to calculate the factors later.
+  // Sort the templates reverse-lexographically by their paths, to make it
+  // easier for us to calculate the interior factors later.
   std::sort(m_templates.begin(), m_templates.end(),
     [](const auto& a, const auto& b) {
-      return a.entry() != b.entry() ? a.entry() < b.entry() : a.path() < b.path();
+      return std::lexicographical_compare(a.path().rbegin(), a.path().rend(),
+                                          b.path().rbegin(), b.path().rend());
     });
-  // Verify that no path is a prefix of another. It's unclear what to do if this
+  // Verify that no path is a suffix of another. It's unclear what to do if this
   // is the case, so we just abort.
   for(size_t i = 1; i < m_templates.size(); i++) {
     const auto& a = m_templates[i-1];
     const auto& b = m_templates[i];
-    // The sort from before will make sure a prefix directly precedes the longer
+    // The sort from before will make sure a suffix directly precedes the longer
     // path, so we can just compare subsequent pairs.
-    if(a.entry() == b.entry() && a.path().size() <= b.path().size()) {
-      if(std::mismatch(a.path().begin(), a.path().end(), b.path().begin()).first == a.path().end()) {
-        util::log::fatal{} << "FlowGraph::Template paths cannot be prefixes of each other!";
+    if(a.path().size() <= b.path().size()) {
+      if(std::mismatch(a.path().rbegin(), a.path().rend(), b.path().rbegin()).first == a.path().rend()) {
+        util::log::fatal{} << "FlowGraph::Template paths cannot be suffixes of each other!";
       }
     }
   }
@@ -489,31 +393,126 @@ std::vector<double> ContextFlowGraph::interiorFactors(
 
 template<class T, class Find, class At, class ForAll>
 std::vector<double> ContextFlowGraph::interiorFactors_impl(
-    const Find& find, const At&, const ForAll& forall,
+    const Find& find, const At& at, const ForAll& forall,
     const std::vector<bool>& hasEC) const {
+  assert(hasEC.size() == m_templates.size());
   m_frozen_once.wait();
 
-  // Shortcut: if there's only one Template, the factor is 1. Period. Also
-  // handles the edge-case where there is no interior (path) in the FlowGraph.
-  if(m_templates.size() == 1) return {1.};
+  // Shortcut: if there's only one Template, the factor is 1 (or 0). Period.
+  // Also handles the edgecase where there is no interior path in the FlowGraph.
+  if(m_templates.size() == 1) return {hasEC[0] ? 1. : 0.};
 
-  Shared shared;
-  InteriorFactors factors;
-  for(const auto& t: m_templates) {
-    for(const auto& p: t.path()) {
-      if(factors.skip(p, shared)) continue;
-      util::optional_ref<const T> mvs = find(p);
-      if(mvs) {
-        forall(*mvs, [&](const Metric& m, double v){
-          shared.insert(m, *this);
-        });
-        forall(*mvs, [&](const Metric& m, double v){
-          factors.insert(p, m, v, shared);
-        });
+  // Shortcut 2: if there's <= 1 true in hasEC, the factor is 1 (or 0).
+  {
+    std::optional<size_t> single;
+    size_t idx = 0;
+    for(const auto& x: hasEC) {
+      if(x) {
+        if(single) { single = -1; break; }
+        else single = idx;
       }
+      ++idx;
+    }
+    if(single != -1) {
+      std::vector<double> factors(m_templates.size(), 0.);
+      if(single) factors[*single] = 1.;
+      return factors;
     }
   }
-  return factors.extract(*this, shared);
+
+  // Find the Metric we will need for interior factor calculations, if we can.
+  // If we can't, we'll still do our best from just the static paths.
+  Shared shared;
+  for(const auto& [s, fg]: m_siblings) {
+    if(auto mvs = find(s)) {
+      forall(*mvs, [&](const Metric& m, double){
+        shared.insert(m, *this);
+      });
+    }
+  }
+
+  // To save on calculations, we group the Templates by their shared suffix.
+  // Thanks to the sort in freeze, these are always contiguous groupings.
+  struct Group {
+    decltype(m_templates)::const_iterator first;
+    decltype(m_templates)::const_iterator last;
+    double factor;
+  };
+  std::deque<Group> groups;
+  groups.push_back({m_templates.begin(), m_templates.end(), 1.});
+
+  // The interior factors are calculated by looking at shared (or not) suffixes
+  // between the different possible paths. These are multiplied over the course
+  // of multiple "rounds" until there are no more groups to process.
+  std::vector<double> factors(m_templates.size(), 0);
+  for(size_t ridx = 0; !groups.empty(); ++ridx) {
+    const auto rAtIdx = [ridx](const auto& path){
+      return path[path.size() - ridx - 1];
+    };
+    decltype(groups) next_groups;
+
+    // First pass: try to split groups into sub-groups when paths diverge, in
+    // the caller's direction.
+    for(auto& g: groups) {
+      size_t next_first = next_groups.size();
+      double total_v = 0;
+      // Add a series of groups based on the divergence...
+      auto first = g.first;
+      auto last = m_templates.end();
+      for(auto it = first; it != g.last; ++it) {
+        if(!hasEC[std::distance(m_templates.begin(), it)]) continue;
+        last = it;
+        assert(it->path().size() > ridx);
+        if(rAtIdx(first->path()) != rAtIdx(it->path())) {
+          // There is a divergence! Add a new group marking it and reset
+          double v = 0;
+          if(auto m = shared.interior())
+            if(auto mvs = find(rAtIdx(first->path())))
+              v = at(*mvs, *m);
+          next_groups.push_back({first, it, v});
+          total_v += v;
+          first = it;
+        }
+      }
+      assert(last != m_templates.end() && "Entire group got elided by hasEC?");
+      // Add the last group in the series with whatever's left.
+      // The "end" here may be before g.last depending on hasEC.
+      double v = 0;
+      if(auto m = shared.interior())
+        if(auto mvs = find(rAtIdx(first->path())))
+          v = at(*mvs, *m);
+      next_groups.push_back({first, ++last, v});
+      total_v += v;
+
+      // ...Then go back through the new groups and do the division.
+      if(total_v > 0) {
+        for(size_t i = next_first, e = next_groups.size(); i < e; ++i)
+          next_groups[i].factor = g.factor * next_groups[i].factor / total_v;
+      } else {
+        // Special case: if we don't have any clue where these values came from,
+        // divide evenly among the statically available options.
+        for(size_t i = next_first, e = next_groups.size(); i < e; ++i)
+          next_groups[i].factor = g.factor / (double)(e - next_first);
+      }
+    }
+    groups = std::move(next_groups);
+    next_groups.clear();
+
+    // Second pass: resolve any groups that can be and assign their factors.
+    for(auto& g: groups) {
+      if(g.factor == 0  // No need to continue processing
+         || g.first->path().size() == ridx+1  // Path is terminating here
+         || std::distance(g.first, g.last) == 1) {  // Group contains 1 Template
+        // If any of the above is true, this group does not need to continue
+        // processing, we can assign the factors now.
+        size_t idx = std::distance(m_templates.begin(), g.first);
+        for(auto it = g.first; it != g.last; ++it, ++idx)
+          if(hasEC[idx]) factors[idx] = g.factor;
+      } else next_groups.emplace_back(std::move(g));
+    }
+    groups = std::move(next_groups);
+  }
+  return factors;
 }
 
 //

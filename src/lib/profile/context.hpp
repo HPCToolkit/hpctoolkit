@@ -341,13 +341,17 @@ public:
     /// Series of calls leading through the FlowGraph. Metric values attributed
     /// to `root -> path()[0...n]` are used to calculate the interior factors:
     ///     factor = 1
-    ///     siblings = set(t for t in templates() if t.entry() == entry())
-    ///     for idx,p in enumerate(path()):
-    ///       factor *= calls(root -> p) / sum(calls(root -> q) for q in set(t.path()[idx] for t in siblings))
-    ///       siblings = set(t for t in siblings if t.path()[idx] == p)
-    /// where calls(c) is the number of calls attributed to Context c.
+    ///     valid = set(t for t in templates() if pcalls(t.entry()) > 0)
+    ///     for idx = n...0:
+    ///       factor *= calls(path()[idx]) / sum(calls(q) for q in set(t.path()[idx] for t in siblings))
+    ///       valid = set(t for t in valid if t.path()[idx] == p)
+    /// where calls(x) is the number of calls attributed to the sibling
+    /// Reconstruction or FlowGraph x, and pcalls(c) is the number of (sampled)
+    /// "entry" calls attributed to Context c.
     ///
     /// Note that interior factors are calculated per-reconstruction group.
+    /// Note also that no path() can be a suffix of another path() in the same
+    /// FlowGraph.
     ///
     /// The Metric for calls has MetricHandling::interior set.
     ///
