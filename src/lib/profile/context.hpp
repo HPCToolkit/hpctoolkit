@@ -211,13 +211,28 @@ private:
   std::vector<std::reference_wrapper<Context>> m_finals;
 
   friend class PerThreadTemporary;
-  /// From the given data, calculate the exterior factors for each Template
+  /// From the given data, calculate the rescaling factors for each Template
   /// within the main FlowGraph, as instantiated here.
+  ///
+  /// Also determine which Templates have entry calls at all, for interiorFactors.
   // MT: Safe (const)
-  std::vector<double> exteriorFactors(
+  std::pair<std::vector<double>, std::vector<bool>> rescalingFactors(
     const util::locked_unordered_map<util::reference_index<const Context>,
       util::locked_unordered_map<util::reference_index<const Metric>,
         MetricAccumulator>>&) const;
+
+  /// Variant that allows for STL maps instead of the locked wrappers.
+  // MT: Safe (const)
+  std::vector<double> rescalingFactors(
+    const std::unordered_map<util::reference_index<const Context>,
+      std::unordered_map<util::reference_index<const Metric>,
+        double>>&) const;
+
+  /// Internal implementation template for rescalingFactors.
+  // MT: Safe (const)
+  template<class T, class F1, class F2, class F3>
+  std::pair<std::vector<double>, std::vector<bool>> rescalingFactors_impl(
+      const F1&, const F2&, const F3&) const;
 
   /// From the given data, calculate the interior factors for each Template
   /// within the main FlowGraph, as instantiated here.
@@ -225,7 +240,7 @@ private:
   std::vector<double> interiorFactors(
     const util::locked_unordered_map<util::reference_index<const ContextReconstruction>,
       util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&) const;
+        MetricAccumulator>>&, const std::vector<bool>&) const;
 
   friend class ProfilePipeline;
   ContextReconstruction(Context&, ContextFlowGraph&);
@@ -295,8 +310,9 @@ public:
   /// Metric values attributed to a Reconstruction or FlowGraph are
   /// redistributed among the Templates, the exact proportion of the value
   /// re-attributed to any one Template's full calling Context is the product
-  /// of the exterior and interior factors. See the method documentations for
-  /// how these are calculated.
+  /// of the exterior, interior and rescaling factors. See the method
+  /// documentations for how the first two are calculated, see
+  /// MetricHandling::exteriorLogical for the rescaling factors.
   class Template final {
   public:
     Template(Scope entry, std::vector<Scope> path)
@@ -309,32 +325,33 @@ public:
 
     /// Function used to "enter" the FlowGraph. Metric values attributed to
     /// `root -> entry()` are used to calculate the exterior factors, as:
-    ///     lcalls(root -> entry()) / sum(pcalls(root -> e) for e in set(t.entry() for t in templates()))
-    /// where pcalls(c) is the number of "physical" calls attributed to Context
-    /// c (that were sampled), and lcalls(c) is the number of "logical" calls
-    /// (including those that were observed but weren't sampled).
+    ///     calls(root -> entry()) / sum(calls(root' -> entry()) for root' in roots)
+    /// where calls(c) is the number of (sampled) calls attributed to Context c.
     ///
-    /// The Metric for pcalls has MetricHandling::exterior set, the Metric for
-    /// lcalls (if it can be different) has MetricHandling::exteriorLogical set.
+    /// Note that this is simply 1 if there is a single root (e.g. in the case
+    /// of ContextReconstruction). Note also that exterior factors are
+    /// calculated per-reconstruction group.
+    ///
+    /// The Metric for calls has MetricHandling::exterior set.
     ///
     /// This Scope is never intentionally added to the full calling Context, so
     /// it can actually be anything the call Metric is attributed to.
-    ///
-    /// The formula above comes from the more reasonable formula:
-    ///     ( pcalls(root -> entry()) / sum(pcalls(...)) ) * ( lcalls(root -> entry()) / pcalls(root -> entry()) )
-    /// The first term is the proportion of "physical" calls for this `root`,
-    /// the second scales all metric values to give the proper cost as if all
-    /// of the "logical" calls were samples.
     const Scope& entry() const noexcept { return m_entry; }
 
     /// Series of calls leading through the FlowGraph. Metric values attributed
     /// to `root -> path()[0...n]` are used to calculate the interior factors:
     ///     factor = 1
-    ///     siblings = set(t for t in templates() if t.entry() == entry())
-    ///     for idx,p in enumerate(path()):
-    ///       factor *= calls(root -> p) / sum(calls(root -> q) for q in set(t.path()[idx] for t in siblings))
-    ///       siblings = set(t for t in siblings if t.path()[idx] == p)
-    /// where calls(c) is the number of calls attributed to Context c.
+    ///     valid = set(t for t in templates() if pcalls(t.entry()) > 0)
+    ///     for idx = n...0:
+    ///       factor *= calls(path()[idx]) / sum(calls(q) for q in set(t.path()[idx] for t in siblings))
+    ///       valid = set(t for t in valid if t.path()[idx] == p)
+    /// where calls(x) is the number of calls attributed to the sibling
+    /// Reconstruction or FlowGraph x, and pcalls(c) is the number of (sampled)
+    /// "entry" calls attributed to Context c.
+    ///
+    /// Note that interior factors are calculated per-reconstruction group.
+    /// Note also that no path() can be a suffix of another path() in the same
+    /// FlowGraph.
     ///
     /// The Metric for calls has MetricHandling::interior set.
     ///
@@ -369,15 +386,29 @@ public:
     /// factors, see Template::entry() for details.
     ///
     /// If true, this Metric (may) represent the number of "physical" or
-    /// "sampled" calls to an entry function. Up to 2 Metrics may have this set
-    /// if exteriorLogical differs, exteriorLogical takes precedence.
+    /// "sampled" calls to an entry function, if there is not another metric
+    /// with this set and exteriorLogical not set. Up to two Metrics may have
+    /// this set if exteriorLogical differs.
     bool exterior = false;
 
-    /// If true, this Metric's value should be used to determine exterior
-    /// factors, see Template::entry() for details.
+    /// If true, this Metric's value should be used to determine rescaling
+    /// factors.
     ///
     /// If true, this Metric represents the number of "logical" or "all" calls
     /// to an entry function. This can only be set on one Metric.
+    ///
+    /// The concept here is that not all calls to an entry function need be
+    /// sampled ("physical"), we can presume all calls have roughly the same
+    /// performance characteristics and just rescale the values to make up for
+    /// the skipped calls. The rescaling factor for this is calculated as:
+    ///     lcalls(root -> entry) / pcalls(root -> entry)
+    /// where lcalls(c) is the number of "logical" calls to Context c and
+    /// pcalls(c) is the number of "physical" calls, both summed across all
+    /// reconstruction groups.
+    ///
+    /// Note that this calculation considers *all* calls root -> entry to have
+    /// the same performance characteristics, rather than all calls within a
+    /// reconstruction group.
     bool exteriorLogical = false;
 
     /// If true, this Metric's value should be used to determine interior
@@ -415,24 +446,37 @@ private:
 
   friend class PerThreadTemporary;
   /// From the given data, calculate the exterior factors for each Template
-  /// as instantiated within each Reconstruction.
+  /// as instantiated within each Reconstruction. Also determine the Templates
+  /// that have entry calls, for interiorFactors calculations.
+  ///
+  /// The metric values given are local to a reconstruction group. For
+  /// efficiency, only the given set of Reconstructions will be considered.
   // MT: Safe (const)
-  std::unordered_map<util::reference_index<const ContextReconstruction>,
-                     std::vector<double>>
-  exteriorFactors(
+  std::pair<
+    std::unordered_map<util::reference_index<const ContextReconstruction>,
+                       std::vector<double>>,
+    std::vector<bool>
+  > exteriorFactors(
     const std::unordered_set<
-      util::reference_index<const ContextReconstruction>>&,
+      util::reference_index<const ContextReconstruction>>& reconsts,
     const util::locked_unordered_map<util::reference_index<const Context>,
       util::locked_unordered_map<util::reference_index<const Metric>,
         MetricAccumulator>>&) const;
 
   /// From the given data, calculate the interior factors for each Template
   /// within the FlowGraph, using values attributed to top-level Scopes.
+  ///
+  /// The metric values given are local to a reconstruction group.
   // MT: Safe (const)
   std::vector<double> interiorFactors(
-    util::locked_unordered_map<util::reference_index<const ContextFlowGraph>,
+    const util::locked_unordered_map<util::reference_index<const ContextFlowGraph>,
       util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>> const&) const;
+        MetricAccumulator>>&, const std::vector<bool>&) const;
+
+  /// Internal implementation template for interiorFactors.
+  template<class T, class F1, class F2, class F3>
+  std::vector<double> interiorFactors_impl(const F1&, const F2&, const F3&,
+      const std::vector<bool>&) const;
 
   friend class ProfilePipeline;
   ContextFlowGraph(Scope);

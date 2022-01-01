@@ -368,7 +368,7 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
     Ctx() : tag('R'), node(nullptr), a_line(0) {};
     Ctx(const Ctx& o, char t) : Ctx(o) { tag = t; }
   };
-  std::stack<Ctx, std::vector<Ctx>> stack;
+  std::stack<Ctx, std::deque<Ctx>> stack;
   bool done = false;
   LHandler handler([&](const std::string& ename, const Attributes& attr) {
     const auto& top = stack.top();

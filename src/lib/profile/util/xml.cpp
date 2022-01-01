@@ -50,8 +50,8 @@
 
 using namespace hpctoolkit::util;
 
-xmlquoted::xmlquoted(std::string&& s, bool q)
-  : str(std::move(s)), addquotes(q) {};
+xmlquoted::xmlquoted(std::string_view s, bool q)
+  : str(s), addquotes(q) {};
 
 std::ostream& operator<<(std::ostream& os, const xmlquoted& q) {
   if(q.addquotes) os << '"';
