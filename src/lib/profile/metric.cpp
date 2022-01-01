@@ -363,10 +363,10 @@ std::optional<double> StatisticAccumulator::PartialCRef::get(MetricScope s) cons
 }
 
 void StatisticAccumulator::Partial::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0 ||
-          function.load(std::memory_order_relaxed) != 0 ||
-          execution.load(std::memory_order_relaxed) != 0) &&
-         "Attempt to access a StatisticAccumulator with 0 value!");
+  assert((point.load(std::memory_order_relaxed) != 0
+          || function.load(std::memory_order_relaxed) != 0
+          || execution.load(std::memory_order_relaxed) != 0)
+    && "Attempt to access a StatisticAccumulator with 0 value!");
 }
 
 util::optional_ref<const StatisticAccumulator> Metric::getFor(const Context& c) const noexcept {
@@ -388,18 +388,18 @@ std::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
 }
 
 void MetricAccumulator::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0 || function != 0 || execution != 0) &&
-         "Attempt to access a MetricAccumulator with 0 value!");
+  assert((point.load(std::memory_order_relaxed) != 0
+          || function != 0 || execution != 0)
+    && "Attempt to access a MetricAccumulator with 0 value!");
 }
 
-util::optional_ref<const MetricAccumulator> Metric::getFor(const PerThreadTemporary& t,
-                                                           const Context& c) const noexcept {
+util::optional_ref<const MetricAccumulator> Metric::getFor(const PerThreadTemporary& t, const Context& c) const noexcept {
   auto cd = t.c_data.find(c);
-  if (!cd) return std::nullopt;
+  if(!cd) return std::nullopt;
   return cd->find(*this);
 }
 
-std::size_t std::hash<Metric::Settings>::operator()(const Metric::Settings& s) const noexcept {
+std::size_t std::hash<Metric::Settings>::operator()(const Metric::Settings &s) const noexcept {
   const auto h1 = std::hash<std::string>{}(s.name);
   const auto h2 = std::hash<std::string>{}(s.description);
   return h1 ^ ((h2 << 1) | (h2 >> (-1 + 8 * sizeof h2)));

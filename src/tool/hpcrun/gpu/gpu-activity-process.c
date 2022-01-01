@@ -187,7 +187,7 @@ static void gpu_sample_process(gpu_activity_t *sample) {
 
       cct_node_t *host_op_node = gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
-      cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, true);
+      cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, false);
       if (cct_child) {
         attribute_activity(host_op_entry, sample, cct_child);
       }
@@ -306,9 +306,9 @@ static void gpu_kernel_process(gpu_activity_t *activity) {
         // in case placeholder doesn't have a child
         kernel_node = kernel_ph;
       } else {
-        // find the proper child of kernel_ph
-        cct_addr_t *addr = hpcrun_cct_addr(func_node);
-        kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm, false);
+	// find the proper child of kernel_ph
+	cct_addr_t *addr = hpcrun_cct_addr(func_node);
+	kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm, true);
       }
 
       uint64_t cpu_submit_time = gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
@@ -337,7 +337,7 @@ static void gpu_kernel_block_process(gpu_activity_t *activity) {
     // create a child cct node that contains 2 metrics: offset of block head wrt. original binary,
     // dynamic execution count of block
     cct_node_t *cct_child =
-        hpcrun_cct_insert_ip_norm(host_op_node, ip, false);  // how to set the ip_norm
+        hpcrun_cct_insert_ip_norm(host_op_node, ip, true);  // how to set the ip_norm
     if (cct_child) {
       attribute_activity(host_op_entry, activity, cct_child);
     }
@@ -476,7 +476,7 @@ static void gpu_instruction_process(gpu_activity_t *activity) {
     if (host_op_entry != NULL) {
       cct_node_t *func_ph = gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
-      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_ph, pc, true);
+      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_ph, pc, false);
       attribute_activity(host_op_entry, activity, func_ins);
     }
   }

@@ -490,7 +490,7 @@ cct_trie_merge_thread
       }
     }
 
-    cct_node_t *kernel_ph = hpcrun_cct_insert_ip_norm(key, kernel_ip, false);
+    cct_node_t *kernel_ph = hpcrun_cct_insert_ip_norm(key, kernel_ip, true);
     cct_node_t *kernel_ph_children = hpcrun_cct_children(kernel_ph);
     cct_node_t *context_node = hpcrun_cct_insert_context(kernel_ph_children, context_id);
 

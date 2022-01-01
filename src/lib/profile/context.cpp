@@ -289,12 +289,6 @@ public:
   }
   std::vector<double> extract(const ContextFlowGraph& graph,
                               const Shared& shared) const {
-    //if(!shared.interior()) {
-    //  // We never saw the right Metric for this formulation. Unclear how to
-    //  // recover in this case, so for now just abort.
-    //  util::log::fatal{} << "No suitable Metrics for interior factor calculations!";
-    //}
-    //assert(!top_vals.empty());
     const auto& templates = graph.templates();
 
     // The interior factor for a Scope-path p = [p[0],...,p[n]] and entry e is calculated as

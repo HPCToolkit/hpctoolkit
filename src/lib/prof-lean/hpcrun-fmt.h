@@ -542,9 +542,10 @@ typedef struct hpcrun_fmt_cct_node_t {
   hpcfmt_uint_t num_metrics;
   hpcrun_metricVal_t* metrics;
 
-  // If true, this cct was generated from an un-unwindable code region
-  // (eg. GPU), so there may be "missing" ccts between this one and id_parent.
-  bool from_ununwindable : 1;
+  // If true, this cct was generated from a stack unwind, like usual.
+  // If false, this cct was not generated from a stack unwind (eg. GPU samples),
+  // so there may be "missing" ccts between this one and id_parent.
+  bool unwound : 1;
 
 } hpcrun_fmt_cct_node_t;
 

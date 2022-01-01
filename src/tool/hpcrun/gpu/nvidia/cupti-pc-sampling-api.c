@@ -305,7 +305,7 @@ pc_sampling2_translate
   for (index = 0; index < total_num_pcs; ++index) {
     CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[index];
     ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
-    cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc, true);
+    cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc, false);
 
     if (global_ip_norm_map != NULL) {
       ip_normalized_t function_ip = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, 0);
