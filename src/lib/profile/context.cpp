@@ -414,9 +414,11 @@ const std::unordered_set<Scope>& ContextFlowGraph::entries() const {
   return m_entries;
 }
 
-std::unordered_map<util::reference_index<const ContextReconstruction>,
-                   std::vector<double>>
-ContextFlowGraph::exteriorFactors(
+std::pair<
+  std::unordered_map<util::reference_index<const ContextReconstruction>,
+                     std::vector<double>>,
+  std::vector<bool>
+> ContextFlowGraph::exteriorFactors(
     const std::unordered_set<util::reference_index<const ContextReconstruction>>& reconsts,
     const perctx_mvals_t<Context>& c_data) const {
   m_frozen_once.wait();
@@ -449,6 +451,7 @@ ContextFlowGraph::exteriorFactors(
   std::unordered_map<util::reference_index<const ContextReconstruction>,
                      std::vector<double>> factors;
   factors.reserve(reconsts.size());
+  std::vector<bool> hasEC(m_templates.size(), false);
   for(const ContextReconstruction& r: reconsts) {
     util::optional_ref<std::vector<double>> r_factors;
     std::size_t idx = 0;
@@ -459,18 +462,20 @@ ContextFlowGraph::exteriorFactors(
             r_factors = factors[r];
             r_factors->resize(m_templates.size(), 0);
           }
-          (*r_factors)[idx] = vv->get(MetricScope::point).value_or(0)
-                              / entry_totals.at(t.entry());
+          double v = vv->get(MetricScope::point).value_or(0);
+          (*r_factors)[idx] = v / entry_totals.at(t.entry());
+          hasEC[idx] = hasEC[idx] || v != 0;
         }
       }
       ++idx;
     }
   }
-  return factors;
+  return {std::move(factors), std::move(hasEC)};
 }
 
 std::vector<double> ContextFlowGraph::interiorFactors(
-    const perctx_mvals_t<ContextFlowGraph>& fg_data) const {
+    const perctx_mvals_t<ContextFlowGraph>& fg_data,
+    const std::vector<bool>& hasEC) const {
   return interiorFactors_impl<mvals_t>(
     [&](const Scope& p) -> util::optional_ref<const mvals_t> {
       return fg_data.find(m_siblings.at(p));
@@ -479,12 +484,13 @@ std::vector<double> ContextFlowGraph::interiorFactors(
     }, [&](const mvals_t& mvs, const auto& f){
       for(const auto& [m, v]: mvs.citerate())
         f(m, v.get(MetricScope::point).value_or(0));
-    });
+    }, hasEC);
 }
 
 template<class T, class Find, class At, class ForAll>
 std::vector<double> ContextFlowGraph::interiorFactors_impl(
-    const Find& find, const At&, const ForAll& forall) const {
+    const Find& find, const At&, const ForAll& forall,
+    const std::vector<bool>& hasEC) const {
   m_frozen_once.wait();
 
   // Shortcut: if there's only one Template, the factor is 1. Period. Also
@@ -548,7 +554,8 @@ void ContextReconstruction::instantiate(
   m_instantiated.signal();
 }
 
-std::vector<double> ContextReconstruction::rescalingFactors(
+std::pair<std::vector<double>, std::vector<bool>>
+ContextReconstruction::rescalingFactors(
     const perctx_mvals_t<Context>& c_data) const {
   return rescalingFactors_impl<mvals_t>(
     [&](const Context& entry_c) -> util::optional_ref<const mvals_t> {
@@ -575,11 +582,12 @@ std::vector<double> ContextReconstruction::rescalingFactors(
       return mvs.at(m);
     }, [&](const mvs_t& mvs, const auto& f){
       for(const auto& [m, v]: mvs) f(m, v);
-    });
+    }).first;
 }
 
 template<class T, class Find, class At, class ForAll>
-std::vector<double> ContextReconstruction::rescalingFactors_impl(
+std::pair<std::vector<double>, std::vector<bool>>
+ContextReconstruction::rescalingFactors_impl(
     const Find& find, const At& at, const ForAll& forall) const {
   m_instantiated.wait();
   auto& templates = graph().templates();
@@ -611,15 +619,19 @@ std::vector<double> ContextReconstruction::rescalingFactors_impl(
   // Expand for the final output
   std::vector<double> out;
   out.reserve(templates.size());
+  std::vector<bool> hasEC;
+  hasEC.reserve(templates.size());
   for(const auto& t: templates) {
     auto fit = factors.find(t.entry());
     out.push_back(fit != factors.end() ? fit->second : 0.);
+    hasEC.push_back(fit != factors.end() && fit->second != 0);
   }
-  return out;
+  return {std::move(out), std::move(hasEC)};
 }
 
 std::vector<double> ContextReconstruction::interiorFactors(
-    const perctx_mvals_t<ContextReconstruction>& r_data) const {
+    const perctx_mvals_t<ContextReconstruction>& r_data,
+    const std::vector<bool>& hasEC) const {
   return graph().interiorFactors_impl<mvals_t>(
     [&](const Scope& p) -> util::optional_ref<const mvals_t> {
       return r_data.find(m_siblings.at(p));
@@ -628,5 +640,5 @@ std::vector<double> ContextReconstruction::interiorFactors(
     }, [&](const mvals_t& mvs, const auto& f){
       for(const auto& [m, v]: mvs.citerate())
         f(m, v.get(MetricScope::point).value_or(0));
-    });
+    }, hasEC);
 }

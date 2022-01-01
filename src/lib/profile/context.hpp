@@ -213,8 +213,10 @@ private:
   friend class PerThreadTemporary;
   /// From the given data, calculate the rescaling factors for each Template
   /// within the main FlowGraph, as instantiated here.
+  ///
+  /// Also determine which Templates have entry calls at all, for interiorFactors.
   // MT: Safe (const)
-  std::vector<double> rescalingFactors(
+  std::pair<std::vector<double>, std::vector<bool>> rescalingFactors(
     const util::locked_unordered_map<util::reference_index<const Context>,
       util::locked_unordered_map<util::reference_index<const Metric>,
         MetricAccumulator>>&) const;
@@ -229,7 +231,8 @@ private:
   /// Internal implementation template for rescalingFactors.
   // MT: Safe (const)
   template<class T, class F1, class F2, class F3>
-  std::vector<double> rescalingFactors_impl(const F1&, const F2&, const F3&) const;
+  std::pair<std::vector<double>, std::vector<bool>> rescalingFactors_impl(
+      const F1&, const F2&, const F3&) const;
 
   /// From the given data, calculate the interior factors for each Template
   /// within the main FlowGraph, as instantiated here.
@@ -237,7 +240,7 @@ private:
   std::vector<double> interiorFactors(
     const util::locked_unordered_map<util::reference_index<const ContextReconstruction>,
       util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&) const;
+        MetricAccumulator>>&, const std::vector<bool>&) const;
 
   friend class ProfilePipeline;
   ContextReconstruction(Context&, ContextFlowGraph&);
@@ -439,14 +442,17 @@ private:
 
   friend class PerThreadTemporary;
   /// From the given data, calculate the exterior factors for each Template
-  /// as instantiated within each Reconstruction.
+  /// as instantiated within each Reconstruction. Also determine the Templates
+  /// that have entry calls, for interiorFactors calculations.
   ///
   /// The metric values given are local to a reconstruction group. For
   /// efficiency, only the given set of Reconstructions will be considered.
   // MT: Safe (const)
-  std::unordered_map<util::reference_index<const ContextReconstruction>,
-                     std::vector<double>>
-  exteriorFactors(
+  std::pair<
+    std::unordered_map<util::reference_index<const ContextReconstruction>,
+                       std::vector<double>>,
+    std::vector<bool>
+  > exteriorFactors(
     const std::unordered_set<
       util::reference_index<const ContextReconstruction>>& reconsts,
     const util::locked_unordered_map<util::reference_index<const Context>,
@@ -461,11 +467,12 @@ private:
   std::vector<double> interiorFactors(
     const util::locked_unordered_map<util::reference_index<const ContextFlowGraph>,
       util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&) const;
+        MetricAccumulator>>&, const std::vector<bool>&) const;
 
   /// Internal implementation template for interiorFactors.
   template<class T, class F1, class F2, class F3>
-  std::vector<double> interiorFactors_impl(const F1&, const F2&, const F3&) const;
+  std::vector<double> interiorFactors_impl(const F1&, const F2&, const F3&,
+      const std::vector<bool>&) const;
 
   friend class ProfilePipeline;
   ContextFlowGraph(Scope);
