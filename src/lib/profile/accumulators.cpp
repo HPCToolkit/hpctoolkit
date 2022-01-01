@@ -116,11 +116,11 @@ void PerThreadTemporary::finalize() noexcept {
 
     // First redistrubute the Reconstructions, since those are a bit easier.
     for(const auto& [r, input]: r_data.citerate()) {
-      auto factors = r->interiorFactors(r_data);
+      auto [factors, hasEC] = r->rescalingFactors(c_data);
       {
-        auto rsFs = r->rescalingFactors(c_data);
-        assert(factors.size() == rsFs.size());
-        std::transform(factors.begin(), factors.end(), rsFs.cbegin(),
+        auto inFs = r->interiorFactors(r_data, hasEC);
+        assert(factors.size() == inFs.size());
+        std::transform(factors.begin(), factors.end(), inFs.cbegin(),
                        factors.begin(), std::multiplies<double>{});
       }
 
@@ -180,10 +180,10 @@ void PerThreadTemporary::finalize() noexcept {
         // now we skip silently.
         if(reconsts.empty()) continue;
 
-        // The (per-group) interior factors are shared within the FlowGraph.
-        auto inFs = fg.interiorFactors(group.fg_data);
+        auto [exFactors, hasEC] = fg.exteriorFactors(reconsts, group.c_data);
 
-        for(auto& [r, factors]: fg.exteriorFactors(reconsts, group.c_data)) {
+        auto inFs = fg.interiorFactors(group.fg_data, std::move(hasEC));
+        for(auto& [r, factors]: std::move(exFactors)) {
           assert(factors.size() == inFs.size());
           std::transform(factors.begin(), factors.end(), inFs.cbegin(),
                          factors.begin(), std::multiplies<double>{});
