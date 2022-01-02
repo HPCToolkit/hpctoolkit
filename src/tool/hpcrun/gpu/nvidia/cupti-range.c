@@ -270,37 +270,44 @@ cupti_range_mode_context_sensitive_is_enter
     cupti_ip_norm_global_map_clear();
   }
 
-  bool not_existed = false;
-  cupti_cct_map_entry_t *entry = cupti_cct_map_lookup(kernel_ph);
-  if (entry == NULL) {
-    not_existed = true;
-    cupti_cct_map_insert(kernel_ph, range_id);
-    entry = cupti_cct_map_lookup(kernel_ph);
-  }
-
   bool new_range = false;
   if (first_range) {
     // Don't increase range_id for the first range
     first_range = false;
     cupti_pc_sampling_start(context);
-  } else if (!cupti_pc_sampling_active()) {
-    // If not active, might need to turn it on
-    if (not_existed || cupti_range_is_sampled()) {
-      // First time see this range or sampled.
-      // Range id is increased for the next range
-      new_range = true;
-      cupti_pc_sampling_start(context);
-      range_id += 1;
-
-      cupti_cct_map_entry_range_id_update(entry, range_id);
-    } else {
-      // Next times get the latest range id
-      range_id = cupti_cct_map_entry_range_id_get(entry);
-    }
+    // assert range_id == 1
+    cupti_cct_map_insert(api_node, range_id);
   } else {
-    // Update the latest range id
-    cupti_cct_map_entry_range_id_update(entry, range_id);
+    cupti_cct_map_entry_t *entry = cupti_cct_map_lookup(api_node);
+    if (!cupti_pc_sampling_active()) {
+      // If not active, might need to turn it on
+      if (entry == NULL || cupti_range_is_sampled()) {
+        // First time see this range or sampled.
+        // Range id is increased for the next range
+        new_range = true;
+        cupti_pc_sampling_start(context);
+        range_id += 1;
+
+        if (entry == NULL) {
+          cupti_cct_map_insert(api_node, range_id);
+        } else {
+          cupti_cct_map_entry_range_id_update(entry, range_id);
+        }
+      } else {
+        // assert(entry != NULL)
+        // Get the latest range id
+        range_id = cupti_cct_map_entry_range_id_get(entry);
+      }
+    } else {
+      // Update the latest range id
+      if (entry == NULL) {
+        cupti_cct_map_insert(api_node, range_id);
+      } else {
+        cupti_cct_map_entry_range_id_update(entry, range_id);
+      }
+    }
   }
+  
 
   uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
   // Increase kernel count for postmortem apportion based on counts
@@ -523,7 +530,8 @@ cupti_range_last
     cupti_ip_norm_map_clear_thread();
     cupti_ip_norm_global_map_clear();
     cupti_cct_map_clear();
-  } else if (cupti_range_mode == CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
+  } else if (cupti_range_mode == CUPTI_RANGE_MODE_CONTEXT_SENSITIVE || 
+    cupti_range_mode == CUPTI_RANGE_MODE_TRIE) {
     if (cupti_pc_sampling_active()) {
       cupti_pc_sampling_range_context_collect(range_id, context);
     }
