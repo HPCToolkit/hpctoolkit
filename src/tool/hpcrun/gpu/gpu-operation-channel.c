@@ -151,7 +151,6 @@ void
 
   channel_init(channel);
 
-
   pthread_mutex_init(&channel->mutex, NULL);
   pthread_cond_init(&channel->cond, NULL);
 
@@ -245,7 +244,9 @@ gpu_operation_channel_await
 
   // wait for a signal or for a few seconds. periodically waking
   // up avoids missing a signal.
+  pthread_mutex_lock(&channel->mutex);
   pthread_cond_timedwait(&channel->cond, &channel->mutex, &time);
+  pthread_mutex_unlock(&channel->mutex);
 }
 
 
