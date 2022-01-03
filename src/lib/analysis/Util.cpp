@@ -62,6 +62,7 @@
 #include "include/gcc-attr.h"
 #include "include/uint.h"
 #include "lib/banal/StructSimple.hpp"
+#include "lib/prof-lean/formats/metadb.h"
 #include "lib/prof-lean/hpcfmt.h"
 #include "lib/prof-lean/hpcio.h"
 #include "lib/prof-lean/hpcrun-fmt.h"
@@ -144,6 +145,8 @@ Analysis::Util::ProfType_t getProfileType(const std::string& filenm) {
     ty = ProfType_SparseDBcct;
   } else if (strncmp(buf, HPCTRACEDB_FMT_Magic, HPCTRACEDB_FMT_MagicLen) == 0) {
     ty = ProfType_TraceDB;
+  } else if (fmt_metadb_check(buf, nullptr) != fmt_version_invalid) {
+    ty = ProfType_MetaDB;
   }
 
   return ty;

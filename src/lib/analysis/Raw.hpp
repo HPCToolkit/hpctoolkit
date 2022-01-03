@@ -95,6 +95,8 @@ void writeAsText_sparseDBcct(const char* filenm, bool sm_easyToGrep);
 
 void writeAsText_tracedb(const char* filenm);
 
+void writeAsText_metadb(const char* filenm);
+
 void writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
 
 void writeAsText_callpathTrace(/*destination,*/ const char* filenm);

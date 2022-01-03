@@ -88,7 +88,8 @@ enum ProfType_t {
                          // first round
   ProfType_SparseDBthread,  // YUMENG
   ProfType_SparseDBcct,     // YUMENG
-  ProfType_TraceDB          // YUMENG
+  ProfType_TraceDB,         // YUMENG
+  ProfType_MetaDB,
 };
 
 ProfType_t getProfileType(const std::string& filenm);

@@ -46,6 +46,8 @@
 
 #include "metricsyaml.hpp"
 
+#include "metadb.hpp"
+
 #include "lib/profile/sinks/METRICS.yaml.inc"
 
 #include <fstream>
@@ -553,8 +555,9 @@ void MetricsYAML::standard(std::ostream& os) {
         return false;
       for (const auto& p : m.partials()) {
         out << Anchor(anchorName(m, p, s)) << BeginMap << Key << "metric" << Value << m.name()
-            << Key << "scope" << Value << s << Key << "formula" << Value << p.accumulate() << Key
-            << "combine" << Value << p.combinator() << EndMap;
+            << Key << "scope" << Value << s << Key << "formula" << Value
+            << MetaDB::accumulateFormulaString(p.accumulate()) << Key << "combine" << Value
+            << p.combinator() << EndMap;
       }
       return true;
     };

@@ -162,7 +162,9 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-splay-uint64.lo \
 	libHPCprof_lean_la-elf-helper.lo \
 	libHPCprof_lean_la-elf-hash.lo libHPCprof_lean_la-id-tuple.lo \
-	libHPCprof_lean_la-tracedb.lo
+	libHPCprof_lean_la-tracedb.lo \
+	formats/libHPCprof_lean_la-primitive.lo \
+	formats/libHPCprof_lean_la-metadb.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -580,7 +582,11 @@ MYSOURCES = \
 	elf-helper.h elf-helper.c elf-hash.h elf-hash.c \
 	\
 	id-tuple.h id-tuple.c \
-	tracedb.h tracedb.c 
+	tracedb.h tracedb.c \
+	\
+	formats/common.h \
+	formats/primitive.h formats/primitive.c \
+	formats/metadb.h formats/metadb.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -671,12 +677,24 @@ lush/$(DEPDIR)/$(am__dirstamp):
 	@: > lush/$(DEPDIR)/$(am__dirstamp)
 lush/libHPCprof_lean_la-lush-support.lo: lush/$(am__dirstamp) \
 	lush/$(DEPDIR)/$(am__dirstamp)
+formats/$(am__dirstamp):
+	@$(MKDIR_P) formats
+	@: > formats/$(am__dirstamp)
+formats/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) formats/$(DEPDIR)
+	@: > formats/$(DEPDIR)/$(am__dirstamp)
+formats/libHPCprof_lean_la-primitive.lo: formats/$(am__dirstamp) \
+	formats/$(DEPDIR)/$(am__dirstamp)
+formats/libHPCprof_lean_la-metadb.lo: formats/$(am__dirstamp) \
+	formats/$(DEPDIR)/$(am__dirstamp)
 
 libHPCprof-lean.la: $(libHPCprof_lean_la_OBJECTS) $(libHPCprof_lean_la_DEPENDENCIES) $(EXTRA_libHPCprof_lean_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libHPCprof_lean_la_LINK)  $(libHPCprof_lean_la_OBJECTS) $(libHPCprof_lean_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f formats/*.$(OBJEXT)
+	-rm -f formats/*.lo
 	-rm -f lush/*.$(OBJEXT)
 	-rm -f lush/*.lo
 
@@ -713,6 +731,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-urand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-usec_time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-vdso.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@formats/$(DEPDIR)/libHPCprof_lean_la-metadb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@formats/$(DEPDIR)/libHPCprof_lean_la-primitive.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush/$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
 
 .c.o:
@@ -956,11 +976,26 @@ libHPCprof_lean_la-tracedb.lo: tracedb.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-tracedb.lo `test -f 'tracedb.c' || echo '$(srcdir)/'`tracedb.c
 
+formats/libHPCprof_lean_la-primitive.lo: formats/primitive.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT formats/libHPCprof_lean_la-primitive.lo -MD -MP -MF formats/$(DEPDIR)/libHPCprof_lean_la-primitive.Tpo -c -o formats/libHPCprof_lean_la-primitive.lo `test -f 'formats/primitive.c' || echo '$(srcdir)/'`formats/primitive.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) formats/$(DEPDIR)/libHPCprof_lean_la-primitive.Tpo formats/$(DEPDIR)/libHPCprof_lean_la-primitive.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='formats/primitive.c' object='formats/libHPCprof_lean_la-primitive.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o formats/libHPCprof_lean_la-primitive.lo `test -f 'formats/primitive.c' || echo '$(srcdir)/'`formats/primitive.c
+
+formats/libHPCprof_lean_la-metadb.lo: formats/metadb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT formats/libHPCprof_lean_la-metadb.lo -MD -MP -MF formats/$(DEPDIR)/libHPCprof_lean_la-metadb.Tpo -c -o formats/libHPCprof_lean_la-metadb.lo `test -f 'formats/metadb.c' || echo '$(srcdir)/'`formats/metadb.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) formats/$(DEPDIR)/libHPCprof_lean_la-metadb.Tpo formats/$(DEPDIR)/libHPCprof_lean_la-metadb.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='formats/metadb.c' object='formats/libHPCprof_lean_la-metadb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o formats/libHPCprof_lean_la-metadb.lo `test -f 'formats/metadb.c' || echo '$(srcdir)/'`formats/metadb.c
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf formats/.libs formats/_libs
 	-rm -rf lush/.libs lush/_libs
 
 ID: $(am__tagged_files)
@@ -1076,6 +1111,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f formats/$(DEPDIR)/$(am__dirstamp)
+	-rm -f formats/$(am__dirstamp)
 	-rm -f lush/$(DEPDIR)/$(am__dirstamp)
 	-rm -f lush/$(am__dirstamp)
 
@@ -1088,7 +1125,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR) lush/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) formats/$(DEPDIR) lush/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1134,7 +1171,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR) lush/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) formats/$(DEPDIR) lush/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
