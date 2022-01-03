@@ -113,6 +113,9 @@ void
 writeAsText_tracedb(const char* filenm);
 
 void
+writeAsText_metadb(const char* filenm);
+
+void
 writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
 
 void
