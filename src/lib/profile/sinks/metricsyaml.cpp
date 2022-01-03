@@ -48,6 +48,8 @@
 
 #include "metricsyaml.hpp"
 
+#include "metadb.hpp"
+
 #include <yaml-cpp/yaml.h>
 
 #include <fstream>
@@ -585,7 +587,7 @@ void MetricsYAML::standard(std::ostream& os) {
         out << Anchor(anchorName(m, p, s)) << BeginMap
             << Key << "metric" << Value << m.name()
             << Key << "scope" << Value << s
-            << Key << "formula" << Value << p.accumulate()
+            << Key << "formula" << Value << MetaDB::accumulateFormulaString(p.accumulate())
             << Key << "combine" << Value << p.combinator()
             << EndMap;
       }
