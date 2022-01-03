@@ -1,13 +1,3 @@
-// -*-Mode: C++;-*-
-
-// * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
-//
-// --------------------------------------------------------------------------
-// Part of HPCToolkit (hpctoolkit.org)
-//
 // Information about sources of support for research and development of
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
@@ -46,80 +36,81 @@
 
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
-//
 // Purpose:
-//   [The purpose of this file]
+//   Low-level functions for standard byte-conversions
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Analysis_Util_hpp 
-#define Analysis_Util_hpp
+#ifndef FORMATS_PRIMITIVE_H
+#define FORMATS_PRIMITIVE_H
 
-//************************* System Include Files ****************************
+#include "common.h"
 
-#include <string>
+#include <string.h>
+#include <endian.h>
 
-#include <vector>
-#include <set>
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-//*************************** User Include Files ****************************
+// NOTE: Using memcpy in the functions dodges strict aliasing issues that might
+// come up with just type-punning. It optimizes away completely at -O1.
 
-#include <include/uint.h>
+// Operations for u16 (uint16_t)
+static_assert(sizeof(uint16_t) == 2, "uint16_t isn't 2 bytes?");
+inline uint16_t fmt_u16_read(const char v[sizeof(uint16_t)]) {
+  uint16_t o;
+  memcpy(&o, v, sizeof(uint16_t));
+  return le16toh(o);
+}
+inline void fmt_u16_write(char o[sizeof(uint16_t)], uint16_t v) {
+  v = htole16(v);
+  memcpy(o, &v, sizeof(uint16_t));
+}
 
-#include "Args.hpp"
+// Operations for u32 (uint32_t)
+static_assert(sizeof(uint32_t) == 4, "uint32_t isn't 4 bytes?");
+inline uint32_t fmt_u32_read(const char v[sizeof(uint32_t)]) {
+  uint32_t o;
+  memcpy(&o, v, sizeof(uint32_t));
+  return le32toh(o);
+}
+inline void fmt_u32_write(char o[sizeof(uint32_t)], uint32_t v) {
+  v = htole32(v);
+  memcpy(o, &v, sizeof(uint32_t));
+}
 
-#include <lib/prof/Struct-Tree.hpp>
+// Operations for u64 (uint64_t)
+static_assert(sizeof(uint64_t) == 8, "uint64_t isn't 8 bytes?");
+inline uint64_t fmt_u64_read(const char v[sizeof(uint64_t)]) {
+  uint64_t o;
+  memcpy(&o, v, sizeof(uint64_t));
+  return le64toh(o);
+}
+inline void fmt_u64_write(char o[sizeof(uint64_t)], uint64_t v) {
+  v = htole64(v);
+  memcpy(o, &v, sizeof(uint64_t));
+}
 
-//*************************** Forward Declarations ***************************
+// Operations for f64 (double)
+static_assert(sizeof(double) == 8, "doubles aren't 8 bytes?");
+inline double fmt_f64_read(const char v[sizeof(double)]) {
+  uint64_t vv = fmt_u64_read(v);
+  double o;
+  memcpy(&o, &vv, sizeof(double));
+  return o;
+}
+inline void fmt_f64_write(char o[sizeof(double)], const double v) {
+  uint64_t vv;
+  memcpy(&vv, &v, sizeof(double));
+  fmt_u64_write(o, vv);
+}
 
-//****************************************************************************
+#if defined(__cplusplus)
+}  // extern "C"
+#endif
 
-namespace Analysis {
-
-namespace Util {
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-enum ProfType_t {
-  ProfType_NULL,
-  ProfType_Callpath,
-  ProfType_CallpathMetricDB,
-  ProfType_CallpathTrace,
-  ProfType_Flat,
-  ProfType_SparseDBtmp, //YUMENG: for development purpose only, check the output files from prof2 first round
-  ProfType_SparseDBthread, //YUMENG
-  ProfType_SparseDBcct, //YUMENG
-  ProfType_TraceDB, //YUMENG
-  ProfType_MetaDB,
-};
-
-
-ProfType_t
-getProfileType(const std::string& filenm);
-
-
-// --------------------------------------------------------------------------
-// Output options
-// --------------------------------------------------------------------------
-
-enum OutputOption_t {
-   Print_All,
-   Print_LoadModule_Only
-};
-
-extern OutputOption_t option;
-
-} // namespace Util
-
-} // namespace Analysis
-
-//****************************************************************************
-
-#endif // Analysis_Util_hpp
+#endif  // FORMATS_PRIMITIVE_H

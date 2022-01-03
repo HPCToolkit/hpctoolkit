@@ -1,13 +1,3 @@
-// -*-Mode: C++;-*-
-
-// * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
-//
-// --------------------------------------------------------------------------
-// Part of HPCToolkit (hpctoolkit.org)
-//
 // Information about sources of support for research and development of
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
@@ -46,80 +36,22 @@
 
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
-//
 // Purpose:
-//   [The purpose of this file]
+//   Low-level functions for standard byte-conversions
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Analysis_Util_hpp 
-#define Analysis_Util_hpp
+#include "primitive.h"
 
-//************************* System Include Files ****************************
-
-#include <string>
-
-#include <vector>
-#include <set>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include "Args.hpp"
-
-#include <lib/prof/Struct-Tree.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-
-namespace Analysis {
-
-namespace Util {
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-enum ProfType_t {
-  ProfType_NULL,
-  ProfType_Callpath,
-  ProfType_CallpathMetricDB,
-  ProfType_CallpathTrace,
-  ProfType_Flat,
-  ProfType_SparseDBtmp, //YUMENG: for development purpose only, check the output files from prof2 first round
-  ProfType_SparseDBthread, //YUMENG
-  ProfType_SparseDBcct, //YUMENG
-  ProfType_TraceDB, //YUMENG
-  ProfType_MetaDB,
-};
-
-
-ProfType_t
-getProfileType(const std::string& filenm);
-
-
-// --------------------------------------------------------------------------
-// Output options
-// --------------------------------------------------------------------------
-
-enum OutputOption_t {
-   Print_All,
-   Print_LoadModule_Only
-};
-
-extern OutputOption_t option;
-
-} // namespace Util
-
-} // namespace Analysis
-
-//****************************************************************************
-
-#endif // Analysis_Util_hpp
+// Instantiate symbols for the inline functions
+uint16_t fmt_u16_read(const char[sizeof(uint16_t)]);
+void fmt_u16_write(char[sizeof(uint16_t)], uint16_t);
+uint32_t fmt_u32_read(const char[sizeof(uint32_t)]);
+void fmt_u32_write(char[sizeof(uint32_t)], uint32_t);
+uint64_t fmt_u64_read(const char[sizeof(uint64_t)]);
+void fmt_u64_write(char[sizeof(uint64_t)], uint64_t);
+double fmt_f64_read(const char[sizeof(double)]);
+void fmt_f64_write(char[sizeof(double)], const double);

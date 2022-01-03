@@ -1,18 +1,8 @@
-// -*-Mode: C++;-*-
-
-// * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
-//
-// --------------------------------------------------------------------------
-// Part of HPCToolkit (hpctoolkit.org)
-//
 // Information about sources of support for research and development of
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -46,80 +36,49 @@
 
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
-//
 // Purpose:
-//   [The purpose of this file]
+//   Common types and values across multiple HPCToolkit formats
+//
+//   See doc/FORMATS.md.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Analysis_Util_hpp 
-#define Analysis_Util_hpp
+#ifndef FORMATS_COMMON_H
+#define FORMATS_COMMON_H
 
-//************************* System Include Files ****************************
+#include <assert.h>
+#include <stdalign.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include <string>
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-#include <vector>
-#include <set>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include "Args.hpp"
-
-#include <lib/prof/Struct-Tree.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-
-namespace Analysis {
-
-namespace Util {
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-enum ProfType_t {
-  ProfType_NULL,
-  ProfType_Callpath,
-  ProfType_CallpathMetricDB,
-  ProfType_CallpathTrace,
-  ProfType_Flat,
-  ProfType_SparseDBtmp, //YUMENG: for development purpose only, check the output files from prof2 first round
-  ProfType_SparseDBthread, //YUMENG
-  ProfType_SparseDBcct, //YUMENG
-  ProfType_TraceDB, //YUMENG
-  ProfType_MetaDB,
+/// Success/error values returned by version-checking functions
+/// Negative values are hard errors, positive values are soft failures
+enum fmt_version_t {
+  /// Version is fully compatible with the implementation, good to go
+  fmt_version_exact = 0,
+  /// Format identifier failed to match, not a file of the correct type
+  fmt_version_invalid = -1,
+  /// Incompatible version, below the current version (no backward-compatibility)
+  fmt_version_backward = -2,
+  /// Incompatible version, different major version
+  fmt_version_major = -3,
+  /// Forward-compatible version, fields added later will be missing
+  fmt_version_forward = 1,
 };
 
+/// Major version of all the database formats
+enum { FMT_DB_MajorVersion = 4 };
 
-ProfType_t
-getProfileType(const std::string& filenm);
+#if defined(__cplusplus)
+}  // extern "C"
+#endif
 
-
-// --------------------------------------------------------------------------
-// Output options
-// --------------------------------------------------------------------------
-
-enum OutputOption_t {
-   Print_All,
-   Print_LoadModule_Only
-};
-
-extern OutputOption_t option;
-
-} // namespace Util
-
-} // namespace Analysis
-
-//****************************************************************************
-
-#endif // Analysis_Util_hpp
+#endif // FORMATS_COMMON_H
