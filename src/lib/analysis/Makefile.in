@@ -145,8 +145,7 @@ am__objects_1 = libHPCanalysis_la-CallPath.lo \
 	libHPCanalysis_la-Flat-ObjCorrelation.lo \
 	libHPCanalysis_la-Raw.lo libHPCanalysis_la-Args.lo \
 	libHPCanalysis_la-ArgsHPCProf.lo libHPCanalysis_la-Util.lo \
-	libHPCanalysis_la-TextUtil.lo \
-	libHPCanalysis_la-MetricNameProfMap.lo
+	libHPCanalysis_la-TextUtil.lo
 am_libHPCanalysis_la_OBJECTS = $(am__objects_1)
 libHPCanalysis_la_OBJECTS = $(am_libHPCanalysis_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -555,9 +554,7 @@ MYSOURCES = \
 	ArgsHPCProf.hpp ArgsHPCProf.cpp \
 	\
 	Util.hpp Util.cpp \
-	TextUtil.hpp TextUtil.cpp \
-	\
-	MetricNameProfMap.cpp
+	TextUtil.hpp TextUtil.cpp
 
 
 # GNU binutils flags are needed for HPCLIB_ISA.
@@ -648,7 +645,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat-ObjCorrelation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat-SrcCorrelation.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Raw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-TextUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Util.Plo@am__quote@
@@ -746,13 +742,6 @@ libHPCanalysis_la-TextUtil.lo: TextUtil.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='TextUtil.cpp' object='libHPCanalysis_la-TextUtil.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-TextUtil.lo `test -f 'TextUtil.cpp' || echo '$(srcdir)/'`TextUtil.cpp
-
-libHPCanalysis_la-MetricNameProfMap.lo: MetricNameProfMap.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-MetricNameProfMap.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Tpo -c -o libHPCanalysis_la-MetricNameProfMap.lo `test -f 'MetricNameProfMap.cpp' || echo '$(srcdir)/'`MetricNameProfMap.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Tpo $(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='MetricNameProfMap.cpp' object='libHPCanalysis_la-MetricNameProfMap.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-MetricNameProfMap.lo `test -f 'MetricNameProfMap.cpp' || echo '$(srcdir)/'`MetricNameProfMap.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

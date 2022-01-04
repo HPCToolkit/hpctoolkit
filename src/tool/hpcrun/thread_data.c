@@ -81,7 +81,6 @@
 #include <messages/messages.h>
 #include <trampoline/common/trampoline.h>
 #include <memory/mmap.h>
-#include "threadmgr.h"
 #include <lib/prof-lean/id-tuple.h>
 #include <lib/support-lean/OSUtil.h>
 
@@ -291,6 +290,7 @@ hpcrun_thread_init_mem_pool_once
     mem_pool_initialized = true;
   }
 }
+
 
 
 //***************************************************************************
@@ -520,7 +520,7 @@ hpcrun_thread_data_init
   // ----------------------------------------
   td->gpu_trace_prev_time = 0;
 
-#if defined(ENABLE_CUDA)
+#ifdef ENABLE_CUDA
   gpu_data_init(&(td->gpu_data));
 #endif
 }

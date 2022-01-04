@@ -55,17 +55,14 @@
 #include "lib/profile/sources/packed.hpp"
 #include "lib/profile/sinks/experimentxml4.hpp"
 #include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
-#include "lib/profile/finalizers/intel_def_use_graph.hpp"
-#include "lib/profile/transformer.hpp"
-#include "lib/profile/analyzer.hpp"
 #include "lib/profile/util/log.hpp"
 #include "lib/profile/mpi/all.hpp"
 
 #include <iostream>
 #include <stack>
-#include <unistd.h> // sleep(Aaron)
 
 using namespace hpctoolkit;
 using namespace hpctoolkit::literals;
@@ -77,7 +74,6 @@ static std::unique_ptr<T> make_unique_x(Args&&... args) {
 }
 
 int rank0(ProfArgs&& args) {
-  //sleep(10);
   // We only have one Pipeline, this is its builder.
   ProfilePipeline::Settings pipelineB;
   for(auto& sp: args.sources) pipelineB << std::move(sp.first);
@@ -106,19 +102,6 @@ int rank0(ProfArgs&& args) {
   // This is used as a fallback if the Structfiles aren't available.
   finalizers::DirectClassification dc(args.dwarfMaxSize);
   pipelineB << dc;
-
-  // Finalizer for filling intel def-use graph directly from the Modules.
-  finalizers::IntelDefUseGraphClassification du_graph;
-  pipelineB << du_graph;
-
-  // Now that Modules will be Classified during Finalization, add a Transformer
-  // to expand the Contexts as they enter the Pipe.
-  RouteExpansionTransformer retrans;
-  ClassificationTransformer ctrans;
-  pipelineB << retrans << ctrans;
-
-  LatencyBlameAnalyzer lb_analyzer;
-  pipelineB << lb_analyzer;
 
   // Ids for everything are pulled from the void. We call the shots here.
   finalizers::DenseIds dids;
@@ -180,16 +163,16 @@ int rank0(ProfArgs&& args) {
 
   // Finally, eventually we get to actually write stuff out.
   switch(args.format) {
-    case ProfArgs::Format::sparse: {
-       std::unique_ptr<sinks::HPCTraceDB2> tdb;
-       if(args.include_traces)
-         tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
-       sdb = make_unique_x<SparseDB>(args.output, args.threads);
-       auto exml = make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
-           tdb.get());
-       pipelineB << std::move(tdb) << std::move(exml);
-       if(sdb) pipelineB << *sdb;
-     }
+  case ProfArgs::Format::sparse: {
+    std::unique_ptr<sinks::HPCTraceDB2> tdb;
+    if(args.include_traces)
+      tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
+    pipelineB << make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
+                                                      tdb.get());
+    pipelineB << std::move(tdb);
+    pipelineB << make_unique_x<sinks::SparseDB>(args.output);
+    break;
+  }
   }
 
   // Create and drain the Pipeline, that's all we do.

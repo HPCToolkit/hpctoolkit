@@ -84,9 +84,7 @@ MYSOURCES = \
 	ArgsHPCProf.hpp ArgsHPCProf.cpp \
 	\
 	Util.hpp Util.cpp \
-	TextUtil.hpp TextUtil.cpp \
-	\
-	MetricNameProfMap.cpp
+	TextUtil.hpp TextUtil.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@

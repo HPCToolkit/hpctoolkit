@@ -96,7 +96,6 @@ MYSOURCES = \
 	sinks/sparsedb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
-	finalizers/intel_def_use_graph.cpp \
 	finalizers/denseids.cpp finalizers/kernelsyms.cpp
 
 MYSTANDALONESOURCES = mpi/standalone.cpp

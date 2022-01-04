@@ -166,7 +166,6 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	sinks/libHPCprofile_la-sparsedb.lo \
 	finalizers/libHPCprofile_la-struct.lo \
 	finalizers/libHPCprofile_la-directclassification.lo \
-	finalizers/libHPCprofile_la-intel_def_use_graph.lo \
 	finalizers/libHPCprofile_la-denseids.lo \
 	finalizers/libHPCprofile_la-kernelsyms.lo
 am_libHPCprofile_la_OBJECTS = $(am__objects_1)
@@ -587,7 +586,6 @@ MYSOURCES = \
 	sinks/sparsedb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
-	finalizers/intel_def_use_graph.cpp \
 	finalizers/denseids.cpp finalizers/kernelsyms.cpp
 
 MYSTANDALONESOURCES = mpi/standalone.cpp
@@ -747,9 +745,6 @@ finalizers/libHPCprofile_la-struct.lo: finalizers/$(am__dirstamp) \
 finalizers/libHPCprofile_la-directclassification.lo:  \
 	finalizers/$(am__dirstamp) \
 	finalizers/$(DEPDIR)/$(am__dirstamp)
-finalizers/libHPCprofile_la-intel_def_use_graph.lo:  \
-	finalizers/$(am__dirstamp) \
-	finalizers/$(DEPDIR)/$(am__dirstamp)
 finalizers/libHPCprofile_la-denseids.lo: finalizers/$(am__dirstamp) \
 	finalizers/$(DEPDIR)/$(am__dirstamp)
 finalizers/libHPCprofile_la-kernelsyms.lo: finalizers/$(am__dirstamp) \
@@ -796,7 +791,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-denseids.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-directclassification.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-intel_def_use_graph.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-kernelsyms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-struct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Plo@am__quote@
@@ -1081,13 +1075,6 @@ finalizers/libHPCprofile_la-directclassification.lo: finalizers/directclassifica
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/directclassification.cpp' object='finalizers/libHPCprofile_la-directclassification.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_la-directclassification.lo `test -f 'finalizers/directclassification.cpp' || echo '$(srcdir)/'`finalizers/directclassification.cpp
-
-finalizers/libHPCprofile_la-intel_def_use_graph.lo: finalizers/intel_def_use_graph.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_la-intel_def_use_graph.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_la-intel_def_use_graph.Tpo -c -o finalizers/libHPCprofile_la-intel_def_use_graph.lo `test -f 'finalizers/intel_def_use_graph.cpp' || echo '$(srcdir)/'`finalizers/intel_def_use_graph.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) finalizers/$(DEPDIR)/libHPCprofile_la-intel_def_use_graph.Tpo finalizers/$(DEPDIR)/libHPCprofile_la-intel_def_use_graph.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/intel_def_use_graph.cpp' object='finalizers/libHPCprofile_la-intel_def_use_graph.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_la-intel_def_use_graph.lo `test -f 'finalizers/intel_def_use_graph.cpp' || echo '$(srcdir)/'`finalizers/intel_def_use_graph.cpp
 
 finalizers/libHPCprofile_la-denseids.lo: finalizers/denseids.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_la-denseids.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_la-denseids.Tpo -c -o finalizers/libHPCprofile_la-denseids.lo `test -f 'finalizers/denseids.cpp' || echo '$(srcdir)/'`finalizers/denseids.cpp
