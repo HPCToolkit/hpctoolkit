@@ -258,7 +258,7 @@ static bool parse(Elf* elf, const Module& m, const F& callback) {
 
     // Handle the name, the usual way
     const char* name = elf_strptr(elf, sh_symtab->sh_link, sym->st_name);
-    if(name != nullptr) {
+    if(name != nullptr && name[0] != '\0') {
       char* dn = hpctoolkit_demangle(name);
       if(dn) {
         func.name(dn);
@@ -388,9 +388,11 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, udModule& ud
           attr = dwarf_attr_integrate(&die, DW_AT_name, &attr_mem);
         if(attr != nullptr) {
           const char* str = dwarf_formstring(attr);
-          char* dn = hpctoolkit_demangle(str);
-          myfunc.name(dn == nullptr ? str : dn);
-          if(dn != nullptr) std::free(dn);
+          if(str != nullptr && str[0] != '\0') {
+            char* dn = hpctoolkit_demangle(str);
+            myfunc.name(dn == nullptr ? str : dn);
+            if(dn != nullptr) std::free(dn);
+          }
         }
 
         // Offset is always the entry pc
