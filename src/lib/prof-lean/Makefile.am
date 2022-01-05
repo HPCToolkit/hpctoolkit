@@ -114,13 +114,13 @@ MYSOURCES = \
 	elf-helper.h elf-helper.c elf-hash.h elf-hash.c \
 	\
 	id-tuple.h id-tuple.c \
-	tracedb.h tracedb.c \
 	\
 	formats/common.h \
 	formats/primitive.h formats/primitive.c \
 	formats/metadb.h formats/metadb.c \
 	formats/profiledb.h formats/profiledb.c \
-	formats/cctdb.h formats/cctdb.c
+	formats/cctdb.h formats/cctdb.c \
+	formats/tracedb.h formats/tracedb.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
 

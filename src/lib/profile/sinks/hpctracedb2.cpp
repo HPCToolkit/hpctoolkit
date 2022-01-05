@@ -50,10 +50,9 @@
 
 #include "../util/log.hpp"
 #include "../util/cache.hpp"
-#include "lib/prof-lean/tracedb.h"
-#include "lib/prof-lean/hpcrun-fmt.h"
-#include "lib/prof-lean/hpcfmt.h"
 #include "../mpi/all.hpp"
+
+#include "lib/prof-lean/formats/tracedb.h"
 
 #include <iomanip>
 #include <sstream>
@@ -65,6 +64,10 @@
 
 using namespace hpctoolkit;
 using namespace sinks;
+
+static constexpr uint64_t align(uint64_t v, uint8_t a) {
+  return (v + a - 1) / a * a;
+}
 
 HPCTraceDB2::HPCTraceDB2(const stdshim::filesystem::path& dir) {
   if(!dir.empty()) {
@@ -78,6 +81,9 @@ HPCTraceDB2::HPCTraceDB2(const stdshim::filesystem::path& dir) {
 HPCTraceDB2::udThread::udThread(const Thread& t, HPCTraceDB2& tdb)
   : uds(tdb.uds), hdr(t, tdb) {}
 
+static constexpr uint64_t pCtxTraces = align(FMT_TRACEDB_SZ_FHdr, 8);
+static constexpr uint64_t ctx_pTraces = align(pCtxTraces + FMT_TRACEDB_SZ_CtxTraceSHdr, 8);
+
 void HPCTraceDB2::notifyWavefront(DataClass d){
   if(!d.hasThreads()) return;
   auto wd_sem = threadsReady.signal();
@@ -89,40 +95,26 @@ void HPCTraceDB2::notifyWavefront(DataClass d){
       traceinst = tracefile->open(true, true);
     }
 
-    //initialize the hdr to write
-    tracedb_hdr_t hdr;
-
-    //assign value to trace_hdrs_size
-    uint32_t num_traces = getTotalNumTraces();
-    trace_hdrs_size = num_traces * trace_hdr_SIZE;
-    hdr.num_trace = num_traces;
-    hdr.trace_hdr_sec_size = trace_hdrs_size;
+    totalNumTraces = getTotalNumTraces();
 
     //calculate the offsets for later stored in start and end
     //assign the values of the hdrs
     assignHdrs(calcStartEnd());
-
-    //open the trace.db for writing, and write magic string, version number and number of tracelines
-    if(mpi::World::rank() == 0) {
-      std::array<char, HPCTRACEDB_FMT_Real_HeaderLen> buf;
-      tracedb_hdr_swrite(&hdr, buf.data());
-      if(tracefile) traceinst.writeat(0, buf);
-    }
-
-    // Ensure the file is truncated by rank 0 before proceeding.
-    mpi::barrier();
   }
 
   // Write out the headers for threads that have no timepoints
   for(const auto& t : src.threads().iterate()) {
     const auto& hdr = t->userdata[uds.thread].hdr;
     if(hdr.start == hdr.end && tracefile) {
-      trace_hdr_t thdr = {
-        hdr.prof_info_idx, hdr.trace_idx, hdr.start, hdr.end
+      fmt_tracedb_ctxTrace_t thdr = {
+        .profIndex = hdr.prof_info_idx,
+        .pStart = hdr.start,
+        .pEnd = hdr.end,
       };
-      std::array<char, trace_hdr_SIZE> buf;
-      trace_hdr_swrite(thdr, buf.data());
-      traceinst.writeat((hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen, buf);
+      char buf[FMT_TRACEDB_SZ_CtxTrace];
+      fmt_tracedb_ctxTrace_write(buf, &thdr);
+      traceinst.writeat(ctx_pTraces + (hdr.prof_info_idx - 1) * FMT_TRACEDB_SZ_CtxTrace,
+                        sizeof buf, buf);
     }
   }
 }
@@ -148,30 +140,27 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
 
   for(const auto& [tm, cr]: tps) {
     const Context& c = cr;
+
+    // Never repeat "blank" samples
+    const bool isBlank = c.scope().flat().type() == Scope::Type::global;
+    if(ud.lastWasBlank && isBlank) continue;
+    ud.lastWasBlank = isBlank;
+
     // Try to cache our work as much as possible
     auto id = cache.lookup(c, [&](util::reference_index<const Context> c){
-      // HACK to work around experiment.xml. If this Context is a point and
-      // its parent is a line, emit a trace point for the line instead.
-      if(c->scope().relation() == Relation::enclosure
-         && c->scope().flat().type() == Scope::Type::point) {
-        if(auto pc = c->direct_parent()) {
-          if(pc->scope().flat().type() == Scope::Type::line)
-            c = *pc;
-        }
-      }
       return c.get().userdata[src.identifier()];
     });
 
-    hpctrace_fmt_datum_t datum = {
-      static_cast<uint64_t>(tm.count()),  // Point in time
-      id,  // Point in the CCT
-      0  // MetricID (for datacentric, I guess)
+    fmt_tracedb_ctxSample_t datum = {
+      .timestamp = static_cast<uint64_t>(tm.count()),
+      .ctxId = id,
     };
     if(ud.inst) {
       if(ud.cursor == ud.buffer.data())
-        ud.off = ud.hdr.start + ud.tmcntr * timepoint_SIZE;
-      assert(ud.hdr.start + ud.tmcntr * timepoint_SIZE < ud.hdr.end);
-      ud.cursor = hpctrace_fmt_datum_swrite(&datum, {0}, ud.cursor);
+        ud.off = ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample;
+      assert(ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample < ud.hdr.end);
+      fmt_tracedb_ctxSample_write(ud.cursor, &datum);
+      ud.cursor += FMT_TRACEDB_SZ_CtxSample;
       if(ud.cursor == &ud.buffer[ud.buffer.size()]) {
         ud.inst->writeat(ud.off, ud.buffer);
         ud.cursor = ud.buffer.data();
@@ -195,16 +184,19 @@ void HPCTraceDB2::notifyThreadFinal(const PerThreadTemporary& tt) {
       ud.inst->writeat(ud.off, ud.cursor - ud.buffer.data(), ud.buffer.data());
 
     //write the hdr
-    auto new_end = ud.hdr.start + ud.tmcntr * timepoint_SIZE;
+    auto new_end = ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample;
     assert(new_end <= ud.hdr.end);
     ud.hdr.end = new_end;
-    trace_hdr_t hdr = {
-      ud.hdr.prof_info_idx, ud.hdr.trace_idx, ud.hdr.start, ud.hdr.end
+    fmt_tracedb_ctxTrace_t hdr = {
+      .profIndex = ud.hdr.prof_info_idx,
+      .pStart = ud.hdr.start,
+      .pEnd = ud.hdr.end,
     };
-    assert((hdr.start != (uint64_t)INVALID_HDR) | (hdr.end != (uint64_t)INVALID_HDR));
-    std::array<char, trace_hdr_SIZE> buf;
-    trace_hdr_swrite(hdr, buf.data());
-    ud.inst->writeat((ud.hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen, buf);
+    assert((hdr.pStart != (uint64_t)INVALID_HDR) | (hdr.pEnd != (uint64_t)INVALID_HDR));
+    char buf[FMT_TRACEDB_SZ_CtxTrace];
+    fmt_tracedb_ctxTrace_write(buf, &hdr);
+    ud.inst->writeat(ctx_pTraces + (ud.hdr.prof_info_idx - 1) * FMT_TRACEDB_SZ_CtxTrace,
+                     sizeof buf, buf);
 
     ud.inst = std::nullopt;
   }
@@ -229,15 +221,46 @@ std::string HPCTraceDB2::exmlTag() {
   return ss.str();
 }
 
-void HPCTraceDB2::write() {}
+void HPCTraceDB2::write() {
+  if(!tracefile) return;
+  auto traceinst = tracefile->open(true, true);
+  if(mpi::World::rank() + 1 == mpi::World::size())
+    traceinst.writeat(footerPos, sizeof fmt_tracedb_footer, fmt_tracedb_footer);
+  if(mpi::World::rank() != 0) return;
+
+  auto [min, max] = src.timepointBounds().value_or(std::make_pair(
+      std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
+
+  // Write out the static headers
+  {
+    fmt_tracedb_fHdr_t fhdr = {
+      .szCtxTraces = ctx_pTraces + totalNumTraces * FMT_TRACEDB_SZ_CtxTrace - pCtxTraces,
+      .pCtxTraces = pCtxTraces,
+    };
+    char buf[FMT_TRACEDB_SZ_FHdr];
+    fmt_tracedb_fHdr_write(buf, &fhdr);
+    traceinst.writeat(0, sizeof buf, buf);
+  }
+  {
+    fmt_tracedb_ctxTraceSHdr_t shdr = {
+      .pTraces = ctx_pTraces,
+      .nTraces = (uint32_t)totalNumTraces,
+      .minTimestamp = (uint64_t)min.count(), .maxTimestamp = (uint64_t)max.count(),
+    };
+    char buf[FMT_TRACEDB_SZ_CtxTraceSHdr];
+    fmt_tracedb_ctxTraceSHdr_write(buf, &shdr);
+    traceinst.writeat(pCtxTraces, sizeof buf, buf);
+  }
+
+}
 
 
 //***************************************************************************
 // trace_hdr
 //***************************************************************************
 HPCTraceDB2::traceHdr::traceHdr(const Thread& t, HPCTraceDB2& tdb)
-  : prof_info_idx(t.userdata[tdb.src.identifier()] + 1) , 
-    trace_idx(0), start(INVALID_HDR), end(INVALID_HDR) {}
+  : prof_info_idx(t.userdata[tdb.src.identifier()] + 1),
+   start(INVALID_HDR), end(INVALID_HDR) {}
 
 uint64_t HPCTraceDB2::getTotalNumTraces() {
   uint32_t rank_num_traces = src.threads().size();
@@ -249,20 +272,21 @@ std::vector<uint64_t> HPCTraceDB2::calcStartEnd() {
   std::vector<uint64_t> trace_sizes;
   uint64_t total_size = 0;
   for(const auto& t : src.threads().iterate()){
-    uint64_t trace_sz = t->attributes.ctxTimepointMaxCount() * timepoint_SIZE;
+    uint64_t trace_sz = align(t->attributes.ctxTimepointMaxCount() * FMT_TRACEDB_SZ_CtxSample, 8);
     trace_sizes.emplace_back(trace_sz);
     total_size += trace_sz;
   }
 
   //get the offset of this rank's traces section
   uint64_t my_off = mpi::exscan(total_size, mpi::Op::sum()).value_or(0);
+  my_off += align(ctx_pTraces + totalNumTraces * FMT_TRACEDB_SZ_CtxTrace, 8);
 
   //get the individual offsets of this rank's traces
   std::vector<uint64_t> trace_offs(trace_sizes.size() + 1);
   trace_sizes.emplace_back(0);
   exscan<uint64_t>(trace_sizes);
   for(uint i = 0; i < trace_sizes.size();i++){
-    trace_offs[i] = trace_sizes[i] + my_off + HPCTRACEDB_FMT_HeaderLen + (MULTIPLE_8(trace_hdrs_size)); 
+    trace_offs[i] = trace_sizes[i] + my_off;
   }
 
   return trace_offs;
@@ -274,10 +298,10 @@ void HPCTraceDB2::assignHdrs(const std::vector<uint64_t>& trace_offs) {
   for(const auto& t : src.threads().iterate()){
     auto& hdr = t->userdata[uds.thread].hdr;
     hdr.start = trace_offs[i];
-    hdr.end = trace_offs[i+1];
+    hdr.end = trace_offs[i] + t->attributes.ctxTimepointMaxCount() * FMT_TRACEDB_SZ_CtxSample;
     i++;
   }
-
+  footerPos = trace_offs.back();
 }
 
 template <typename T>
