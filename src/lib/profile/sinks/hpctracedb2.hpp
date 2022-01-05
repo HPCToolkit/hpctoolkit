@@ -93,6 +93,8 @@ public:
 private:
   std::optional<hpctoolkit::util::File> tracefile;
   std::atomic<bool> has_traces{false};
+  size_t totalNumTraces;
+  uint64_t footerPos;
 
   util::Once threadsReady;
 
@@ -104,7 +106,6 @@ private:
     ~traceHdr() = default;
 
     uint32_t prof_info_idx;
-    uint16_t trace_idx;
     uint64_t start;
     uint64_t end;
   };
@@ -144,8 +145,6 @@ private:
 //***************************************************************************
 #define INVALID_HDR   -1
 #define MULTIPLE_8(v) ((v + 7) & ~7)
-
-  uint64_t trace_hdrs_size;
 
   uint64_t getTotalNumTraces();
   std::vector<uint64_t> calcStartEnd();

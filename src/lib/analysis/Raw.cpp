@@ -71,11 +71,11 @@ using std::string;
 #include "lib/prof-lean/formats/metadb.h"
 #include "lib/prof-lean/formats/primitive.h"
 #include "lib/prof-lean/formats/profiledb.h"
+#include "lib/prof-lean/formats/tracedb.h"
 #include "lib/prof-lean/hpcfmt.h"
 #include "lib/prof-lean/hpcio.h"
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/prof-lean/id-tuple.h"
-#include "lib/prof-lean/tracedb.h"
 #include "lib/prof/CallPath-Profile.hpp"
 #include "lib/prof/Flat-ProfileData.hpp"
 #include "lib/support/diagnostics.h"
@@ -98,7 +98,7 @@ void Analysis::Raw::writeAsText(/*destination,*/ const char* filenm, bool sm_eas
     writeAsText_profiledb(filenm, sm_easyToGrep);
   } else if (ty == ProfType_CctDB) {
     writeAsText_cctdb(filenm, sm_easyToGrep);
-  } else if (ty == ProfType_TraceDB) {  // YUMENG
+  } else if (ty == ProfType_TraceDB) {
     writeAsText_tracedb(filenm);
   } else if (ty == ProfType_MetaDB) {
     writeAsText_metadb(filenm);
@@ -119,14 +119,6 @@ void Analysis::Raw::writeAsText_callpath(const char* filenm, bool sm_easyToGrep)
     throw;
   }
   delete prof;
-}
-
-bool Analysis::Raw::traceHdr_sorter(trace_hdr_t const& lhs, trace_hdr_t const& rhs) {
-  return lhs.start < rhs.start;
-}
-
-void Analysis::Raw::sortTraceHdrs_onStarts(trace_hdr_t* x, uint32_t num_t) {
-  std::sort(x, x + num_t, &traceHdr_sorter);
 }
 
 void Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep) {
@@ -377,7 +369,7 @@ void Analysis::Raw::writeAsText_cctdb(const char* filenm, bool easygrep) {
       case fmt_version_forward:
         DIAG_Msg(
             0, "WARNING: Minor version mismatch (" << (unsigned int)minor << " > "
-                                                   << FMT_PROFILEDB_MinorVersion
+                                                   << FMT_CCTDB_MinorVersion
                                                    << "), some fields may be missing");
         break;
       default: break;
@@ -524,65 +516,127 @@ void Analysis::Raw::writeAsText_cctdb(const char* filenm, bool easygrep) {
   }
 }
 
-#define MULTIPLE_8(X) (((X) + 7) / 8 * 8)
-
-// YUMENG
 void Analysis::Raw::writeAsText_tracedb(const char* filenm) {
-  if (!filenm) {
+  if (!filenm)
     return;
-  }
 
   try {
     FILE* fs = hpcio_fopen_r(filenm);
     if (!fs) {
-      DIAG_Throw("error opening tracedb file '" << filenm << "'");
+      DIAG_Throw("error opening trace.db file '" << filenm << "'");
     }
 
-    tracedb_hdr_t hdr;
-    int ret = tracedb_hdr_fread(&hdr, fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading hdr from tracedb file '" << filenm << "'");
-    }
-    tracedb_hdr_fprint(&hdr, stdout);
-
-    uint32_t num_t = hdr.num_trace;
-
-    fseek(fs, hdr.trace_hdr_sec_ptr, SEEK_SET);
-    trace_hdr_t* x;
-    ret = trace_hdrs_fread(&x, num_t, fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading trace hdrs from tracedb file '" << filenm << "'");
-    }
-    trace_hdrs_fprint(num_t, x, stdout);
-
-    sortTraceHdrs_onStarts(x, num_t);
-    fseek(fs, hdr.trace_hdr_sec_ptr + (MULTIPLE_8(hdr.trace_hdr_sec_size)), SEEK_SET);
-    for (uint i = 0; i < num_t; i++) {
-      uint64_t start = x[i].start;
-      uint64_t end = x[i].end;
-      hpctrace_fmt_datum_t* trace_data;
-      ret = tracedb_data_fread(&trace_data, (end - start) / timepoint_SIZE, {0}, fs);
-      if (ret != HPCFMT_OK) {
-        DIAG_Throw("error reading trace data from tracedb file '" << filenm << "'");
+    {
+      char buf[16];
+      if (fread(buf, 1, sizeof buf, fs) < sizeof buf)
+        DIAG_Throw("eof/error reading trace.db format header");
+      uint8_t minor;
+      auto ver = fmt_tracedb_check(buf, &minor);
+      switch (ver) {
+      case fmt_version_invalid: DIAG_Throw("Not a trace.db file");
+      case fmt_version_backward: DIAG_Throw("Incompatible trace.db version (too old)");
+      case fmt_version_major: DIAG_Throw("Incompatible trace.db version (major version mismatch)");
+      case fmt_version_forward:
+        DIAG_Msg(
+            0, "WARNING: Minor version mismatch (" << (unsigned int)minor << " > "
+                                                   << FMT_TRACEDB_MinorVersion
+                                                   << "), some fields may be missing");
+        break;
+      default: break;
       }
-      tracedb_data_fprint(
-          trace_data, (end - start) / timepoint_SIZE, x[i].prof_info_idx, {0}, stdout);
-      tracedb_data_free(&trace_data);
+      if (ver < 0)
+        DIAG_Throw("error parsing trace.db format header");
+
+      std::cout << "trace.db version " << FMT_DB_MajorVersion << "." << (unsigned int)minor << "\n";
     }
 
-    if (fgetc(fs) == EOF)
-      fprintf(stdout, "END OF FILE\n");
-    else
-      fprintf(stdout, "SHOULD BE EOF, BUT NOT, SOME ERRORS HAPPENED\n");
+    fmt_tracedb_fHdr_t fhdr;
+    {  // trace.db file header
+      rewind(fs);
+      char buf[FMT_CCTDB_SZ_FHdr];
+      if (fread(buf, 1, sizeof buf, fs) < sizeof buf)
+        DIAG_Throw("eof reading cct.db file header");
+      fmt_tracedb_fHdr_read(&fhdr, buf);
+      std::cout << std::hex
+                << "[file header:\n"
+                   "  (szCtxTraces: 0x"
+                << fhdr.szCtxTraces << ") (pCtxTraces: 0x" << fhdr.pCtxTraces
+                << ")\n"
+                   "]\n"
+                << std::dec;
+    }
 
-    /*
-    uint64_t footer;
-    fread(&footer, sizeof(footer), 1, fs);
-    if(footer != TRACDBft) DIAG_Throw("'" << filenm << "' is incomplete");
-    fprintf(stdout, "TRACEDB FOOTER CORRECT, FILE COMPLETE\n");
-    */
+    std::vector<fmt_tracedb_ctxTrace_t> ctxTraces;
+    {  // Context Trace Headers section
+      if (fseeko(fs, fhdr.pCtxTraces, SEEK_SET) < 0)
+        DIAG_Throw("error seeking to trace.db Context Trace Headers section");
+      std::vector<char> buf(fhdr.szCtxTraces);
+      if (fread(buf.data(), 1, buf.size(), fs) < buf.size())
+        DIAG_Throw("eof reading trace.db Context Trace Headers section");
 
-    trace_hdrs_free(&x);
+      fmt_tracedb_ctxTraceSHdr_t shdr;
+      fmt_tracedb_ctxTraceSHdr_read(&shdr, buf.data());
+      std::cout << std::hex
+                << "[context trace headers:\n"
+                   "  (pTraces: 0x"
+                << shdr.pTraces << ") (nTraces: " << std::dec << shdr.nTraces << std::hex
+                << ")\n"
+                   "  (szTrace: 0x"
+                << (unsigned int)shdr.szTrace << " >= 0x" << FMT_TRACEDB_SZ_CtxTrace
+                << ")\n"
+                   "  (minTimestamp: "
+                << std::dec << shdr.minTimestamp
+                << ")\n"
+                   "  (maxTimestamp: "
+                << shdr.maxTimestamp << ")\n";
+      for (uint32_t i = 0; i < shdr.nTraces; i++) {
+        fmt_tracedb_ctxTrace_t ct;
+        fmt_tracedb_ctxTrace_read(&ct, &buf[shdr.pTraces + i * shdr.szTrace - fhdr.pCtxTraces]);
+        ctxTraces.push_back(ct);
+        std::cout << "  [pTraces[" << std::dec << i << "]:\n"
+                  << "    (profIndex: " << ct.profIndex << ")\n"
+                  << std::hex << "    (pStart: 0x" << ct.pStart << ") (pEnd: 0x" << ct.pEnd
+                  << ")\n"
+                     "  ]\n";
+      }
+      std::cout << "]\n" << std::dec;
+    }
+
+    // Rest of the file is context traces. Output is in file order.
+    std::sort(ctxTraces.begin(), ctxTraces.end(), [](const auto& a, const auto& b) {
+      return a.pStart < b.pStart;
+    });
+    for (const auto& ct : ctxTraces) {
+      if (fseeko(fs, ct.pStart, SEEK_SET) < 0)
+        DIAG_Throw("error seeking to trace.db context trace data segment");
+      std::vector<char> buf(ct.pEnd - ct.pStart);
+      if (fread(buf.data(), 1, buf.size(), fs) < buf.size())
+        DIAG_Throw("eof reading trace.db context trace data segment");
+
+      std::cout << std::hex << "(0x" << ct.pStart << ") [context trace:\n" << std::dec;
+      for (char *cur = buf.data(), *end = cur + buf.size(); cur < end;
+           cur += FMT_TRACEDB_SZ_CtxSample) {
+        fmt_tracedb_ctxSample_t elem;
+        fmt_tracedb_ctxSample_read(&elem, cur);
+        std::cout << "  (timestamp: " << elem.timestamp << ", ctxId: " << elem.ctxId << ")\n";
+      }
+      std::cout << "]\n";
+    }
+
+    {  // File footer
+      char buf[sizeof fmt_tracedb_footer + 1];
+      if (fseeko(fs, -sizeof fmt_tracedb_footer, SEEK_END) < 0)
+        DIAG_Throw("error seeking to trace.db footer");
+      if (fread(buf, 1, sizeof fmt_tracedb_footer, fs) < sizeof fmt_tracedb_footer)
+        DIAG_Throw("error reading trace.db footer");
+      buf[sizeof fmt_tracedb_footer] = '\0';
+      std::cout << "[footer: '" << buf << "'";
+      if (memcmp(buf, fmt_tracedb_footer, sizeof fmt_tracedb_footer) == 0)
+        std::cout << ", OK]\n";
+      else
+        std::cout << ", INVALID]\n";
+    }
+
     hpcio_fclose(fs);
   } catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");
