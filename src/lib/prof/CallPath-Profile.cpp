@@ -1088,7 +1088,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   prof = NULL;
 
   //YUMENG: no epoch info needed
-  uint num_epochs = 0;
+  //uint num_epochs = 0;
   //size_t file_cur = 0;
   //while ( !feof(infs) && (file_cur != footer.footer_offset)) {
 
@@ -1188,6 +1188,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
   }
 #endif
+
   // ----------------------------------------
   // loadmap
   // ----------------------------------------
@@ -1219,7 +1220,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 	// These modules have prefix '<' and hopefully it doesn't change
 	if ((x->name != NULL && x->name[0] != '<') && 
             (x->flags & LOADMAP_ENTRY_ANALYZE))
-              fprintf(outfs, "%s\n", x->name );
+          fprintf(outfs, "%s\n", x->name );
       }
       // hack: case for hpcproftt with --lm option
       // by returning HPCFMT_EOF we force hpcproftt to exit the loop
@@ -1601,9 +1602,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
      filename);
      prof_abort(-1);
   }
-  if (outfs) {
-    hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs, &metricTbl, "  ", sm_easyToGrep);
-  }
+  hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs, &metricTbl, "  ", sm_easyToGrep);
   hpcrun_fmt_sparse_metrics_free(&sparse_metrics, free);
 
   //YUMENG: no epoch info 
