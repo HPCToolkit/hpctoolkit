@@ -204,11 +204,14 @@ name ## _metric_kind
 // local variables 
 //*****************************************************************************
 
-FORALL_METRIC_KINDS(INITIALIZE_METRIC_KINDS)
+FORALL_METRIC_KINDS(INITIALIZE_METRIC_KINDS);
 
-FORALL_INDEXED_METRIC_KINDS(INITIALIZE_INDEXED_METRIC)
+FORALL_INDEXED_METRIC_KINDS(INITIALIZE_INDEXED_METRIC);
 
-FORALL_SCALAR_METRIC_KINDS(INITIALIZE_SCALAR_METRIC_KIND)
+FORALL_SCALAR_METRIC_KINDS(INITIALIZE_SCALAR_METRIC_KIND);
+
+static kind_info_t* GPU_COUNTER_METRIC_KIND_INFO = NULL;
+static int* gpu_counter_hpcrun_metric_id_array = NULL;
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
 
@@ -603,16 +606,13 @@ gpu_metrics_attribute_counter
   cct_node_t *cct_node = activity->cct_node;
 
   metric_data_list_t *metrics =
-    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_CTR_CYCLES));
+    hpcrun_reify_metric_set(cct_node,gpu_counter_hpcrun_metric_id_array[0]);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_CTR_CYCLES),
-           c->cycles);
+  for (int i = 0; i < c->total_counters; ++i) {
+    gpu_metrics_attribute_metric_int(metrics, gpu_counter_hpcrun_metric_id_array[i], c->values[i]);
+  }
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_CTR_L2_CACHE_HIT),
-           c->l2_cache_hit);
-
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_CTR_L2_CACHE_MISS),
-           c->l2_cache_miss);
+  free(c->values);
 }
 
 //******************************************************************************
@@ -927,15 +927,21 @@ gpu_metrics_GPU_INST_STALL_enable
 void
 gpu_metrics_GPU_CTR_enable
 (
- void
+  int total,
+  const char** counter_name,
+  const char** counter_desc
 )
 {
-#undef CURRENT_METRIC
-#define CURRENT_METRIC CTR
+  gpu_counter_hpcrun_metric_id_array = (int*) malloc(sizeof(int) * total);
 
-  INITIALIZE_METRIC_KIND();
+  GPU_COUNTER_METRIC_KIND_INFO = hpcrun_metrics_new_kind();
 
-  FORALL_CTR(INITIALIZE_SCALAR_METRIC_INT);
+  for (int i = 0; i < total; ++i) {
+    gpu_counter_hpcrun_metric_id_array[i] = hpcrun_set_new_metric_desc_and_period(
+      GPU_COUNTER_METRIC_KIND_INFO, counter_name[i], counter_desc[i],
+      MetricFlags_ValFmt_Int, 1, metric_property_none
+    );
+  }
 
-  FINALIZE_METRIC_KIND();
+  hpcrun_close_kind(GPU_COUNTER_METRIC_KIND_INFO);
 }

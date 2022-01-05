@@ -440,7 +440,7 @@ roctracer_subscriber_callback
       ensure_kernel_ip_present(trace_ph, kernel_ip);
 
       if (collect_counter) {
-        rocprofiler_correlation_id = correlation_id; // | 0x800000000000LL;
+        rocprofiler_correlation_id = correlation_id;
         rocprofiler_start_kernel(rocprofiler_correlation_id);
       }
     }

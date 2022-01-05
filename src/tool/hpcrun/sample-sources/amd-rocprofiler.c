@@ -153,7 +153,6 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   int nevents = (self->evl).nevents;
-  gpu_metrics_GPU_CTR_enable();
   TMSG(CUDA,"nevents = %d", nevents);
 }
 
@@ -162,7 +161,8 @@ METHOD_FN(finalize_event_list)
 {
   // After going through all command line arguments,
   // we call this function to generate a list of counters
-  // in rocprofiler's format
+  // in rocprofiler's format and initialize corresponding
+  // hpcrun metrics
   rocprofiler_finalize_event_list();
 
   device_finalizer_rocprofiler_shutdown.fn = rocprofiler_fini;

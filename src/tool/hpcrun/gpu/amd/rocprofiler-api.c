@@ -139,6 +139,8 @@ static const char** counter_description = NULL;
 static int *is_specified_by_user = NULL;
 static int total_requested = 0;
 static rocprofiler_feature_t* rocprofiler_input = NULL;
+static const char** requested_counter_name = NULL;
+static const char** requested_counter_description = NULL;
 
 // A spin lock to serialize GPU kernels
 static spinlock_t kernel_lock;
@@ -269,16 +271,19 @@ translate_rocprofiler_output
 
   ga->kind = GPU_ACTIVITY_COUNTER;
   ga->details.counters.correlation_id = rocprofiler_correlation_id;
+  ga->details.counters.total_counters = feature_count;
 
+  // This function should be called by rocprofiler thread,
+  // which is not monitored. So, this function will not be called
+  // inside a signal handler and we can call malloc.
+  // The memory is freed when we attribute this gpu_activity_t.
+  ga->details.counters.values = (uint64_t*) malloc(sizeof(uint64_t) * feature_count);
+
+  // rocprofiler should pass metric results in the same order
+  // that we pass metrics as input to rocprofiler
   for (unsigned i = 0; i < feature_count; ++i) {
     const rocprofiler_feature_t* p = features[i];
-    if (strcmp(p->name, "GRBM_COUNT") == 0) {
-      ga->details.counters.cycles = p->data.result_int64;
-    } else if (strstr(p->name, "TCC_HIT") != NULL) {
-      ga->details.counters.l2_cache_hit += p->data.result_int64;
-    } else if (strstr(p->name, "TCC_MISS") != NULL) {
-      ga->details.counters.l2_cache_miss += p->data.result_int64;
-    }
+    ga->details.counters.values[i] = p->data.result_int64;
   }
 }
 
@@ -303,9 +308,6 @@ rocprofiler_context_handler
     valid = counter_data.valid;
   }
 
-  // Consume the correlation channel for rocprofiler
-  gpu_monitoring_thread_activities_ready_with_idx(ROCPROFILER_CHANNEL_IDX);
-
   if (counter_data.group.context == NULL) {
     EMSG("error: AMD group->context = NULL");
   }
@@ -320,6 +322,8 @@ rocprofiler_context_handler
 
   translate_rocprofiler_output(&ga);
 
+  // Consume the correlation channel for rocprofiler
+  gpu_monitoring_thread_activities_ready_with_idx(ROCPROFILER_CHANNEL_IDX);
   if (gpu_correlation_id_map_lookup(rocprofiler_correlation_id) == NULL) {
     gpu_correlation_id_map_insert(rocprofiler_correlation_id, rocprofiler_correlation_id);
   }
@@ -613,12 +617,19 @@ rocprofiler_finalize_event_list
   rocprofiler_input = (rocprofiler_feature_t*) malloc(sizeof(rocprofiler_feature_t) * total_requested);
   memset(rocprofiler_input, 0, total_requested * sizeof(rocprofiler_feature_t));
 
-  total_requested = 0;
+  requested_counter_name = (const char**) malloc(sizeof(const char*) * total_requested);
+  requested_counter_description = (const char**) malloc(sizeof(const char*) * total_requested);
+
+  int cur_id = 0;
   for (int i = 0; i < total_counters; i++) {
     if (is_specified_by_user[i] == 1) {
-      rocprofiler_input[total_requested].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-      rocprofiler_input[total_requested].name = counter_name[i];
-      total_requested += 1;
+      rocprofiler_input[cur_id].kind = ROCPROFILER_FEATURE_KIND_METRIC;
+      rocprofiler_input[cur_id].name = counter_name[i];
+      requested_counter_name[cur_id] = counter_name[i];
+      requested_counter_description[cur_id] = counter_description[i];
+      cur_id += 1;
     }
   }
+
+  gpu_metrics_GPU_CTR_enable(total_requested, requested_counter_name, requested_counter_description);
 }

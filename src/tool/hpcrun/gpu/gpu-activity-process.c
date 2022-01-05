@@ -655,9 +655,18 @@ gpu_counter_process
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
       assert(host_op_node != NULL);
+
+      cct_node_t *func_node = hpcrun_cct_children(host_op_node); // only child
+      cct_node_t *kernel_node;
+      if (func_node == NULL) {
+        kernel_node = host_op_node;
+      } else {
+        cct_addr_t *addr = hpcrun_cct_addr(func_node);
+        kernel_node = hpcrun_cct_insert_ip_norm(host_op_node, addr->ip_norm);
+      }
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
-      attribute_activity(host_op_entry, activity, host_op_node);
+      attribute_activity(host_op_entry, activity, kernel_node);
     }
     gpu_correlation_id_map_delete(correlation_id);
   } else {
@@ -666,7 +675,7 @@ gpu_counter_process
   PRINT("Counter CorrelationId %u\n", correlation_id);
   PRINT("Counter cycles %lu\n", activity->details.counters.cycles);
   PRINT("Counter l2 cache hit %lu\n", activity->details.counters.l2_cache_hit);
-  PRINT("Counter l2 cache miss %lu\n", activity->details.counters.l2._cache_miss);
+  PRINT("Counter l2 cache miss %lu\n", activity->details.counters.l2_cache_miss);
 }
 
 

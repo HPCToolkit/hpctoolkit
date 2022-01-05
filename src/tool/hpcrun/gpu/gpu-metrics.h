@@ -329,15 +329,6 @@ typedef enum {
 	"GPU kernel: launch count")					\
   macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
 	"GPU kernel: theoretical occupancy (FGP_ACT / FGP_MAX)")          \
-  
-// gpu kernel hardware counter metrics
-#define FORALL_CTR(macro) \
-  macro("GCTR:CYCLES",         GPU_CTR_CYCLES, \
-	"GPU counter : cycles")	\
-  macro("GCTR:L2_CACHE_HIT",         GPU_CTR_L2_CACHE_HIT, \
-	"GPU counter : L2 cache hit")	\
-  macro("GCTR:L2_CACHE_MISS",         GPU_CTR_L2_CACHE_MISS, \
-	"GPU counter : L2 cache miss")	\
 
 // gpu implicit copy
 #define FORALL_GICOPY(macro)					\
@@ -498,10 +489,16 @@ gpu_metrics_GBR_enable
 // record GPU hardware counters
 //--------------------------------------------------
 
+// Unlike other GPU metric types that may have up to a dozen of metrics,
+// GPU hardware counters may have a few hundred metrics.
+// So, we should only create counter metrics for the ones that are
+// requested at the command line.
 void
 gpu_metrics_GPU_CTR_enable
 (
-  void
+  int,
+  const char**,
+  const char**
 );
 
 
