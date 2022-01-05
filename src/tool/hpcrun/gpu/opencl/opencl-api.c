@@ -930,6 +930,7 @@ opencl_activity_completion_callback
  void *user_data
 )
 {
+  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
   opencl_object_t *cb_data = (opencl_object_t*)user_data;
   cl_basic_callback_t cb_basic = opencl_cb_basic_get(cb_data);
 
