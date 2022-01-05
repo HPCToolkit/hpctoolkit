@@ -95,7 +95,7 @@ enum ProfType_t {
   ProfType_Flat,
   ProfType_ProfileDB,
   ProfType_CctDB,
-  ProfType_TraceDB, //YUMENG
+  ProfType_TraceDB,
   ProfType_MetaDB,
 };
 
