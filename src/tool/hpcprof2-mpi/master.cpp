@@ -56,6 +56,7 @@
 #include "lib/profile/pipeline.hpp"
 #include "lib/profile/sinks/experimentxml4.hpp"
 #include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/metadb.hpp"
 #include "lib/profile/sinks/metricsyaml.hpp"
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/source.hpp"
@@ -166,7 +167,7 @@ int rank0(ProfArgs&& args) {
 
   // Finally, eventually we get to actually write stuff out.
   switch (args.format) {
-  case ProfArgs::Format::sparse: {
+  case ProfArgs::Format::exml: {
     std::unique_ptr<sinks::HPCTraceDB2> tdb;
     if (args.include_traces)
       tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
@@ -174,6 +175,14 @@ int rank0(ProfArgs&& args) {
     pipelineB << std::move(tdb);
     pipelineB << make_unique_x<sinks::SparseDB>(args.output);
     pipelineB << make_unique_x<sinks::MetricsYAML>(args.output);
+    break;
+  }
+  case ProfArgs::Format::metadb: {
+    pipelineB << make_unique_x<sinks::MetaDB>(args.output, args.include_sources)
+              << make_unique_x<sinks::SparseDB>(args.output)
+              << make_unique_x<sinks::MetricsYAML>(args.output);
+    if (args.include_traces)
+      pipelineB << make_unique_x<sinks::HPCTraceDB2>(args.output);
     break;
   }
   }
