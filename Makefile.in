@@ -203,7 +203,7 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = src doc lib
+DIST_SUBDIRS = src doc lib tests
 
 #############################################################################
 # Automake rules
@@ -488,7 +488,7 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
-SUBDIRS = src $(am__append_1)
+SUBDIRS = src $(am__append_1) tests
 @OPT_BUILD_FRONT_END_TRUE@pkglibexec_SCRIPTS = $(MYSCRIPTS)
 @OPT_BUILD_FRONT_END_TRUE@dist_doc_DATA = $(MYDATA)
 
@@ -517,7 +517,7 @@ hash_file = $(BASE_LIBS_DIR)/hash-file
 # Dist
 ############################################################
 DIST_FILES = Makefile* README* aclocal.m4 autogen configure*  \
-	config doc lib src tools
+	config doc lib spack src tests tools 
 
 MY_DIST_DIR = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
 MY_TAR_FILE = $(MY_DIST_DIR).tar

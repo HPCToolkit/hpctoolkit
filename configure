@@ -11,7 +11,7 @@
 # This configure script is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
 #
-# Copyright (c) 2002-2021, Rice University.
+# Copyright (c) 2002-2022, Rice University.
 # See the file README.License for details.
 ## -------------------- ##
 ## M4sh Initialization. ##
@@ -1948,7 +1948,7 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This configure script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it.
 
-Copyright (c) 2002-2021, Rice University.
+Copyright (c) 2002-2022, Rice University.
 See the file README.License for details.
 _ACEOF
   exit
@@ -24935,7 +24935,7 @@ launch_early_options="${srcdir}/config/launch-options"
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/extern/Makefile src/extern/libunwind/Makefile src/extern/lzma/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof2/Makefile src/tool/hpcprof2-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profile/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/extern/Makefile src/extern/libunwind/Makefile src/extern/lzma/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof2/Makefile src/tool/hpcprof2-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profile/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile tests/Makefile tests/Makefile.spack"
 
 
 
@@ -24958,6 +24958,9 @@ ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
 ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
 
 ac_config_files="$ac_config_files src/tool/hpcstruct/dotgraph"
+
+
+ac_config_files="$ac_config_files tests/run-sort"
 
 
 
@@ -26350,6 +26353,8 @@ do
     "src/lib/support/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/support/Makefile" ;;
     "src/lib/support-lean/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/support-lean/Makefile" ;;
     "src/lib/xml/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/xml/Makefile" ;;
+    "tests/Makefile") CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
+    "tests/Makefile.spack") CONFIG_FILES="$CONFIG_FILES tests/Makefile.spack" ;;
     "src/tool/hpcrun/scripts/hpcrun") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcrun" ;;
     "src/tool/hpcrun/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpclink" ;;
     "src/tool/hpcrun/scripts/hpcsummary") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcsummary" ;;
@@ -26360,6 +26365,7 @@ do
     "src/tool/hpcproftt/hpcproftt") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/hpcproftt" ;;
     "src/tool/hpcstruct/hpcstruct") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/hpcstruct" ;;
     "src/tool/hpcstruct/dotgraph") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/dotgraph" ;;
+    "tests/run-sort") CONFIG_FILES="$CONFIG_FILES tests/run-sort" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -27807,6 +27813,7 @@ _LT_EOF
     "src/tool/hpcproftt/hpcproftt":F) chmod +x src/tool/hpcproftt/hpcproftt ;;
     "src/tool/hpcstruct/hpcstruct":F) chmod +x src/tool/hpcstruct/hpcstruct ;;
     "src/tool/hpcstruct/dotgraph":F) chmod +x src/tool/hpcstruct/dotgraph ;;
+    "tests/run-sort":F) chmod +x tests/run-sort ;;
 
   esac
 done # for ac_tag

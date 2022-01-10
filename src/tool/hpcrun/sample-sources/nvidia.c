@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2002-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -110,7 +110,6 @@
 
 // finalizers
 static device_finalizer_fn_entry_t device_finalizer_flush;
-static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 
@@ -391,16 +390,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     monitor_real_exit(-1);
   }
 #endif
-
-  // Register hpcrun callbacks
-  device_finalizer_flush.fn = cupti_device_flush;
-  device_finalizer_register(device_finalizer_type_flush,
-			    &device_finalizer_flush);
-
-  device_finalizer_shutdown.fn = cupti_device_shutdown;
-  device_finalizer_register(device_finalizer_type_shutdown,
-			    &device_finalizer_shutdown);
-
   // Get control knobs
   int device_buffer_size;
   if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", &device_buffer_size) != 0)
@@ -441,6 +430,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
   cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
   cupti_enabled_activities |= CUPTI_OVERHEAD;
+
+  // Register flush function to turn off cupti activity tracing  and flush traces 
+  // NOTE: this is a registered as a flush callback because is MUST precede 
+  //       GPU trace finalization, which is registered as a shutdown callback
+  device_finalizer_flush.fn = cupti_device_shutdown;
+  device_finalizer_register(device_finalizer_type_flush,
+			    &device_finalizer_flush);
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
