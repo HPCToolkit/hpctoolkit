@@ -47,7 +47,7 @@ _srcs = files(
   'Args.cpp',
 )
 
-hpcprof = disabler()
+hpcprof_exe = disabler()
 if not get_option('hpcprof').disabled()
   hpcprof_exe = executable('hpcprof', _srcs, hpctoolkit_config_h,
     include_directories: main_includes,
