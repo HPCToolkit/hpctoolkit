@@ -113,16 +113,20 @@ void PerThreadTemporary::finalize() noexcept {
       auto [it, first] = outputs[c].try_emplace(m, v);
       if(!first) it->second += v;
     };
+
+    // First redistrubute the Reconstructions, since those are a bit easier.
     for(const auto& [r, input]: r_data.citerate()) {
-      auto factors = r->exteriorFactors(c_data);
-      const auto& finals = r->m_finals;
-      assert(factors.size() == finals.size());
+      auto [factors, hasEC] = r->rescalingFactors(c_data);
       {
-        auto inFs = r->interiorFactors(r_data);
+        auto inFs = r->interiorFactors(r_data, hasEC);
         assert(factors.size() == inFs.size());
-        std::transform(factors.begin(), factors.end(), inFs.begin(),
+        std::transform(factors.begin(), factors.end(), inFs.cbegin(),
                        factors.begin(), std::multiplies<double>{});
       }
+
+      // Re-attribute the values back to the "final" Contexts.
+      const auto& finals = r->m_finals;
+      assert(factors.size() == finals.size());
       for(const auto& [m, va]: input.citerate()) {
         if(auto v = va.get(MetricScope::point)) {
           auto handling = r->graph().handler()(m);
@@ -131,13 +135,38 @@ void PerThreadTemporary::finalize() noexcept {
         }
       }
     }
+    r_data.clear();  // Free some memory early
+
+    // For the rescaling factors we need the summed call counts from all the
+    // reconstruction groups. Sum them up here.
+    // While we're here, also fold them into the proper Context metric values.
+    std::unordered_map<util::reference_index<const Context>,
+      std::unordered_map<util::reference_index<const Metric>, double>> r_sums;
     for(auto& [idx, group]: r_groups.iterate()) {
       for(const auto& [c, input]: group.c_data.citerate()) {
+        auto& data = c_data[c];
         for(const auto& [m, va]: input.citerate()) {
-          if(auto v = va.get(MetricScope::point))
-            add(c, m, *v);
+          if(auto v = va.get(MetricScope::point)) {
+            auto [it, first] = r_sums[c].try_emplace(m, *v);
+            if(!first) it->second += *v;
+
+            data[m].add(*v);
+          }
         }
       }
+    }
+
+    // Cache the rescaling factors here, to keep from recalculating them.
+    std::unordered_map<util::reference_index<const ContextReconstruction>,
+      std::vector<double>> r_rescalingFactors;
+    const auto rescalingFactors = [&](const ContextReconstruction& r) -> const std::vector<double>& {
+      auto [it, first] = r_rescalingFactors.try_emplace(r);
+      if(first) it->second = r.rescalingFactors(r_sums);
+      return it->second;
+    };
+
+    // Now process the FlowGraphs, per-reconstruction group.
+    for(auto& [idx, group]: r_groups.iterate()) {
       for(const auto& [fg_c, input]: group.fg_data.citerate()) {
         assert(!input.empty());
         auto& fg = const_cast<ContextFlowGraph&>(fg_c.get());
@@ -151,12 +180,22 @@ void PerThreadTemporary::finalize() noexcept {
         // now we skip silently.
         if(reconsts.empty()) continue;
 
-        auto inFactors = fg.interiorFactors(group.fg_data);
-        for(auto& [r, factors]: fg.exteriorFactors(reconsts, group.c_data)) {
-          const auto& finals = r->m_finals;
-          assert(finals.size() == factors.size() && finals.size() == inFactors.size());
-          std::transform(factors.begin(), factors.end(), inFactors.begin(),
+        auto [exFactors, hasEC] = fg.exteriorFactors(reconsts, group.c_data);
+
+        auto inFs = fg.interiorFactors(group.fg_data, std::move(hasEC));
+        for(auto& [r, factors]: std::move(exFactors)) {
+          assert(factors.size() == inFs.size());
+          std::transform(factors.begin(), factors.end(), inFs.cbegin(),
                          factors.begin(), std::multiplies<double>{});
+
+          const auto& rsFs = rescalingFactors(r);
+          assert(factors.size() == rsFs.size());
+          std::transform(factors.begin(), factors.end(), rsFs.cbegin(),
+                         factors.begin(), std::multiplies<double>{});
+
+          // Re-attribute the values back to the "final" Contexts.
+          const auto& finals = r->m_finals;
+          assert(factors.size() == finals.size());
           for(const auto& [m, va]: input.citerate()) {
             if(auto v = va.get(MetricScope::point)) {
               auto handling = fg.handler()(m);
@@ -164,15 +203,16 @@ void PerThreadTemporary::finalize() noexcept {
                 add(finals[i], m, factors[i] * *v);
             }
           }
-          factors.clear();
+          factors.clear();  // Free some memory early
         }
       }
+
+      // Free up the memory within the reconstruction group
       group.c_data.clear();
       group.fg_data.clear();
       group.c_entries.clear();
       group.fg_reconsts.clear();
     }
-    r_data.clear();
     r_groups.clear();
 
     // Fold the redistributed values back into the larger Context tree data
