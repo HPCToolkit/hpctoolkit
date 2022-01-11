@@ -106,15 +106,6 @@ cupti_pc_sampling_range_context_collect
 );
 
 
-// Collect and attribute samples to multiple ranges
-void
-cupti_pc_sampling_dynamic_range_context_collect
-(
- cupti_ip_norm_map_entry_t *ip_norm_map,
- CUcontext context
-);
-
-
 // Collect and attribute samples to the current context
 void
 cupti_pc_sampling_range_collect

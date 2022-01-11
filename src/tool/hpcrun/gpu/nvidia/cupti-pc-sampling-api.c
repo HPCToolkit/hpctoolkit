@@ -292,13 +292,11 @@ pc_sampling2_translate
  uint64_t total_num_pcs,
  uint32_t period,
  uint32_t range_id,
- void *ip_norm_map,
  cct_node_t *cct_node
 )
 {
   cupti_pc_sampling_data_t *data = (cupti_pc_sampling_data_t *)pc_sampling_data;
   CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(data);
-  cupti_ip_norm_map_entry_t *global_ip_norm_map = (cupti_ip_norm_map_entry_t *)ip_norm_map;
 
   uint64_t sample_period = 1 << period;
   uint64_t index;
@@ -306,16 +304,6 @@ pc_sampling2_translate
     CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[index];
     ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
     cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc, false);
-
-    if (global_ip_norm_map != NULL) {
-      ip_normalized_t function_ip = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, 0);
-      // XXX(Keren): could be extended to retrieve entries from different ip_norm maps
-      cupti_ip_norm_map_entry_t *entry = cupti_ip_norm_global_map_retrieve(function_ip);
-      if (entry != NULL) {
-        range_id = cupti_ip_norm_global_map_entry_range_id_get(entry);
-        printf("range id %u\n", range_id);
-      }
-    }
 
     TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
       pc.lm_id, pc.lm_ip, pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
@@ -361,7 +349,6 @@ pc_sampling_activity_set
 (
  gpu_activity_t *activity,
  uint32_t range_id,
- cupti_ip_norm_map_entry_t *ip_norm_map,
  uint32_t context_id,
  cct_node_t *cct_node,
  cupti_pc_sampling_data_t *pc_sampling_data
@@ -377,7 +364,6 @@ pc_sampling_activity_set
   activity->details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
   activity->details.pc_sampling_info2.totalSamples = buffer_pc->totalSamples;
   activity->details.pc_sampling_info2.totalNumPcs = buffer_pc->totalNumPcs;
-  activity->details.pc_sampling_info2.ip_norm_map = ip_norm_map;
   activity->details.pc_sampling_info2.pc_sampling_data = pc_sampling_data;
   activity->details.pc_sampling_info2.translate = pc_sampling2_translate;
   activity->details.pc_sampling_info2.free = cupti_pc_sampling_data_free;
@@ -453,7 +439,6 @@ void
 pc_sampling_collect
 (
  uint32_t range_id,
- cupti_ip_norm_map_entry_t *ip_norm_map,
  cct_node_t *cct_node,
  CUcontext context
 )
@@ -465,7 +450,7 @@ pc_sampling_collect
   }
 
   uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-  TMSG(CUPTI_TRACE, "PC sampling collect context_id %u, range_id %u, ip_norm_map %p", context_id, range_id, ip_norm_map);
+  TMSG(CUPTI_TRACE, "PC sampling collect context_id %u, range_id %u", context_id, range_id);
 
   cupti_pc_sampling_data_t *device_pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
   CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(device_pc_sampling_data);
@@ -497,9 +482,15 @@ pc_sampling_collect
       .pPriv = NULL
     };
 
+#ifdef NEW_CUPTI_ANALYSIS
+    cct_node_t *kernel_ph = cupti_kernel_ph_get();
+    ip_normalized_t kernel_ip = hpcrun_cct_addr(hpcrun_cct_children(kernel_ph))->ip_norm;
+    printf("CUPTI total samples %p: %lu, %lu, %p\n", kernel_ph, buffer_pc->totalSamples, kernel_ip.lm_id, kernel_ip.lm_ip);
+#endif
+
     HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
-    pc_sampling_activity_set(&gpu_activity, range_id, ip_norm_map, context_id, cct_node, pc_sampling_data);
-    if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL || ip_norm_map != NULL) {
+    pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
+    if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
       gpu_pc_sampling_info2_process(&gpu_activity);
     } else {
       gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
@@ -517,8 +508,8 @@ pc_sampling_collect
       params.pcSamplingData = user_buffer_pc;
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
-      pc_sampling_activity_set(&gpu_activity, range_id, ip_norm_map, context_id, cct_node, pc_sampling_data);
-      if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL || ip_norm_map != NULL) {
+      pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
+      if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
         gpu_pc_sampling_info2_process(&gpu_activity);
       } else {
         gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
@@ -724,7 +715,7 @@ cupti_pc_sampling_correlation_context_collect
 {
   // In the correlation mode, we serialize every kernel.
   // So we don't have to explicitly call pc_sampling_stop.
-  pc_sampling_collect(0, NULL, cct_node, context);
+  pc_sampling_collect(0, cct_node, context);
 }
 
 
@@ -739,22 +730,7 @@ cupti_pc_sampling_range_context_collect
     cupti_pc_sampling_stop(context);
   }
 
-  pc_sampling_collect(range_id, NULL, NULL, context);
-}
-
-
-void
-cupti_pc_sampling_dynamic_range_context_collect
-(
- cupti_ip_norm_map_entry_t *ip_norm_map,
- CUcontext context
-)
-{
-  if (cupti_pc_sampling_active()) {
-    cupti_pc_sampling_stop(context);
-  }
-
-  pc_sampling_collect(GPU_RANGE_NULL, ip_norm_map, NULL, context);
+  pc_sampling_collect(range_id, NULL, context);
 }
 
 
