@@ -1689,12 +1689,5 @@ opencl_api_process_finalize
     areAllDevicesUsed();
   }
   gpu_operation_multiplexer_fini();
-  if (optimization_check) { // is this the right to do final optimization checks
-    // we cannot get cct nodes using gpu_application_thread_correlation_callback inside fini-thread callback
-    // monitor_block_shootdown() inside libmonitor blocks this call
-    isSingleDeviceUsed();
-    areAllDevicesUsed();
-  }
-  gpu_operation_multiplexer_fini();
 }
 
