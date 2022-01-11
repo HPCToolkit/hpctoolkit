@@ -298,7 +298,11 @@ copy_kallsyms()
   if (infile == NULL)
     return -1;
 
-  char  dest[PATH_MAX], kernel_name[PATH_MAX];
+  // double the size of the buffer for the destination path to avoid warning
+  // if we set the size to PATH_MAX gcc will bark 
+  const int PATH_DEST_MAX = PATH_MAX * 2;
+  char  dest[PATH_DEST_MAX]; 
+  char  kernel_name[PATH_MAX];
   char  dest_directory[PATH_MAX];
   const char *output_directory = hpcrun_files_output_directory();
 
@@ -311,7 +315,7 @@ copy_kallsyms()
   // as the hpcrun file. If the filename format changes in hpcun
   //  we need to adapt again here.
 
-  snprintf(dest, PATH_MAX, "%s/%s", dest_directory, kernel_name);
+  snprintf(dest, PATH_DEST_MAX, "%s/%s", dest_directory, kernel_name);
 
   // test if the file already exist
   struct stat st = {0};
@@ -814,8 +818,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
   
   // setup all requested events
-  // if an event cannot be initialized, we still keep it in our list
-  //  but there will be no samples
 
   size_t size = sizeof(event_info_t) * num_events;
   event_desc = (event_info_t*) hpcrun_malloc(size);
@@ -974,9 +976,10 @@ METHOD_FN(gen_event_set, int lush_metrics)
   td->core_profile_trace_data.perf_event_info = aux_info;
   td->ss_info[self->sel_idx].ptr = event_thread;
 
-  // setup all requested events
-  // if an event cannot be initialized, we still keep it in our list
-  //  but there will be no samples
+  // Initialize the requested events
+  // If it fails, we exit the program immediately (useless to continue)
+  // If it succeeds, it doesn't mean we can get samples or everything is fine
+  //    if there is no samples, users need to check the flags or root privilege or something else
 
   for (int i=0; i<nevents; i++)
   {
