@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2021, Rice University
+dnl Copyright ((c)) 2002-2022, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,7 @@ AC_INIT([hpctoolkit], [2021.10.15-master],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
-AC_COPYRIGHT([Copyright (c) 2002-2021, Rice University.
+AC_COPYRIGHT([Copyright (c) 2002-2022, Rice University.
 See the file README.License for details.])
 
 AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
@@ -5876,6 +5876,9 @@ AC_CONFIG_FILES([ \
   src/lib/support/Makefile \
   src/lib/support-lean/Makefile \
   src/lib/xml/Makefile \
+  \
+  tests/Makefile \
+  tests/Makefile.spack \
 ])
 
 
@@ -5899,6 +5902,9 @@ AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
   [chmod +x src/tool/hpcstruct/hpcstruct])
 AC_CONFIG_FILES([src/tool/hpcstruct/dotgraph],
   [chmod +x src/tool/hpcstruct/dotgraph])
+
+AC_CONFIG_FILES([tests/run-sort],
+  [chmod +x tests/run-sort])
 
 AC_SUBST_FILE([copyright_hash])
 copyright_hash="${srcdir}/config/copyright-hash"

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2019-2020, Rice University
+// Copyright ((c)) 2019-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -63,6 +63,21 @@ using namespace hpctoolkit;
 using namespace finalizers;
 using namespace xercesc;
 
+// Xerces requires the global XMLPlatformUtils to be called before and after all
+// usage. Since that's a big pain, we just tie it into the static constructors.
+namespace {
+struct XercesState {
+  XercesState() {
+    XMLPlatformUtils::Initialize();
+  }
+  ~XercesState() {
+    XMLPlatformUtils::Terminate();
+  }
+};
+}
+
+static XercesState xercesState;
+
 static std::string xmlstr(const XMLCh* const str) {
   char* n = XMLString::transcode(str);
   if(n == nullptr) return "";
@@ -99,9 +114,6 @@ struct LHandler : public DefaultHandler {
     : start(s) {};
 };
 
-static std::once_flag xmlinit;
-static std::atomic<unsigned int> xmlusers;
-
 namespace hpctoolkit::finalizers::detail {
 class StructFileParser {
 public:
@@ -128,9 +140,6 @@ private:
 using StructFileParser = hpctoolkit::finalizers::detail::StructFileParser;
 
 StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
-  util::call_once(xmlinit, [](){ XMLPlatformUtils::Initialize(); });
-  xmlusers.fetch_add(1, std::memory_order_relaxed);
-
   while(1) {  // Exit on EOF or error
     auto parser = std::make_unique<StructFileParser>(path);
     if(!parser->valid()) {
@@ -153,10 +162,7 @@ StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
   }
 }
 
-StructFile::~StructFile() {
-  if(xmlusers.fetch_sub(1, std::memory_order_relaxed) == 1)
-    XMLPlatformUtils::Terminate();
-}
+StructFile::~StructFile() = default;
 
 void StructFile::notifyPipeline() noexcept {
   ud = sink.structs().module.add_default<udModule>(
@@ -447,11 +453,15 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
     if(ename == "C") return;
     stack.pop();
   });
-  parser->setContentHandler(&handler);
-  parser->setErrorHandler(&handler);
+
+  // We can't repeat the parsing process, so nab ownership in this function
+  assert(parser);
+  auto my_parser = std::move(parser);
+  my_parser->setContentHandler(&handler);
+  my_parser->setErrorHandler(&handler);
   stack.emplace();
   bool fine;
-  while((fine = parser->parseNext(token)) && !done);
+  while((fine = my_parser->parseNext(token)) && !done);
   stack.pop();
   if(!fine) {
     util::log::info{} << "Error while parsing Structfile\n";
@@ -459,23 +469,15 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
   }
 
   assert(stack.size() == 0 && "Inconsistent stack handling!");
-
-  // Cleanup and move on.
-  parser->setContentHandler(nullptr);
-  parser->setErrorHandler(nullptr);
   return true;
 } catch(std::exception& e) {
   util::log::info{} << "Exception caught while parsing Structfile\n"
        "  what(): " << e.what() << "\n"
        "  for binary: " << m.path().string();
-  parser->setContentHandler(nullptr);
-  parser->setErrorHandler(nullptr);
   return false;
 } catch(xercesc::SAXException& e) {
   util::log::info{} << "Exception caught while parsing Structfile\n"
        "  msg: " << xmlstr(e.getMessage()) << "\n"
        "  for binary: " << m.path().string();
-  parser->setContentHandler(nullptr);
-  parser->setErrorHandler(nullptr);
   return false;
 }

@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2021, Rice University
+## Copyright ((c)) 2002-2022, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -94,6 +94,8 @@ SUBDIRS +=  \
 pkglibexec_SCRIPTS = $(MYSCRIPTS)
 dist_doc_DATA = $(MYDATA)
 endif
+
+SUBDIRS += tests
 
 
 #############################################################################
@@ -195,7 +197,7 @@ endif
 ############################################################
 
 DIST_FILES = Makefile* README* aclocal.m4 autogen configure*  \
-	config doc lib src tools
+	config doc lib spack src tests tools 
 
 MY_DIST_DIR = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
 MY_TAR_FILE = $(MY_DIST_DIR).tar
