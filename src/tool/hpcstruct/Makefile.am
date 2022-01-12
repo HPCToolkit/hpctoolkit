@@ -82,7 +82,7 @@ IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 IGC_IFLAGS = @OPT_IGC_IFLAGS@
 endif
 
-MYSOURCES = main.cpp Args.cpp
+MYSOURCES = main.cpp Args.cpp cache.cpp
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \

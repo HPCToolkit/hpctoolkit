@@ -47,6 +47,16 @@ endif
 #*******************************************************************************
 
 #*******************************************************************************
+# use a measurement cache, if available
+#*******************************************************************************
+ifneq ($(CACHE),"")
+CACHE_ARGS = -c $(CACHE)
+else
+CACHE_ARGS = --nocache
+endif
+
+
+#*******************************************************************************
 # enable analysis of CPU binaries
 #*******************************************************************************
 ifeq ($(CPU_ANALYZE),1)
@@ -118,7 +128,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		else
 			echo msg: begin concurrent analysis of $$cpubin_name \\(size = $$nbytes, using 1 of $(JOBS) threads\\)
 		fi
-		$(STRUCT) -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
 			echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then
@@ -152,7 +162,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 		else
 			echo msg: begin concurrent analysis of $$gpubin_name \\(size = $$nbytes, using 1 of $(JOBS) threads\\)
 		fi
-		$(STRUCT) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
 			echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then

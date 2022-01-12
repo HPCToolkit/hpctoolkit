@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,99 +47,64 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   cache.c
 //
 // Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   functions that support management of a cache for hpcstruct files
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef hpcstruct_cache_hpp
+#define hpcstruct_cache_hpp
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-#include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
 
 //***************************************************************************
+// interface operations
+//***************************************************************************
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
+char *
+hpcstruct_cache_entry
+(
+ const char *cache_dir,
+ const char *binary_abspath,
+ const char *kind
+);
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
 
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
+char *
+hpcstruct_cache_directory
+(
+ const char *cache_dir,
+ const char *kind
+); 
 
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
+bool
+hpcstruct_cache_find
+(
+ const char *cached_entry
+);
 
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
 
-  void
-  ddump() const;
+bool
+hpcstruct_cache_writable
+(
+ const char *cache_dir
+);
 
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
 
-  int jobs;
-  int jobs_struct;
-  int jobs_parse;
-  int jobs_symtab;
-  bool show_time;
-  long parallel_analysis_threshold; 
-  bool analyze_cpu_binaries ;     // default: true
-  bool analyze_gpu_binaries ;     // default: true
-  bool compute_gpu_cfg;
+void
+hpcstruct_reify_path
+(
+ const char *path
+);
 
-  // Parsed Data: optional arguments
-  std::string searchPathStr;          // default: "."
-  std::string dbgProcGlob;
 
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-  bool nocache;                   // default: false
+void
+hpcstruct_reify_path_parent
+(
+ const char *path
+);
 
-  // Parsed Data: arguments
-  std::string in_filenm;
-  std::string out_filenm;
-  std::string cache_directory;
 
-private:
-  void
-  Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif

@@ -114,6 +114,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "psize",        CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
+  { 'c',  "cache",        CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "nocache",      CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
   // Structure recovery options
   {  0 ,  "gpucfg",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
@@ -291,6 +293,15 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("psize")) {
       const string & arg = parser.getOptArg("psize");
       parallel_analysis_threshold = CmdLineParser::toLong(arg);
+    }
+
+    if (parser.isOpt("cache")) {
+      const string & arg = parser.getOptArg("cache");
+      cache_directory = arg.c_str();
+    }
+
+    if (parser.isOpt("nocache")) {
+      nocache =  true;
     }
 
     if (parser.isOpt("gpucfg")) {

@@ -1,9 +1,4 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +7,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,102 +39,53 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: elf-helper.h
 //
 // Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
+//   interface to query ELF binary information and hide the details about 
+//   extended number
+//   
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef ELF_HASH_H
+#define ELF_HASH_H
 
-//************************* System Include Files ****************************
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <iostream>
-#include <string>
 
-//*************************** User Include Files ****************************
 
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
+//-----------------------------------------------------------------------------
+// function: 
+//   elf_hash
+//
+// arguments:
+//   filename:        
+//     name of the ELF file to hash
+//   hash:        
+//     pointer to a vector of bytes of length >= elf_hash_length()
+//
+//   hash_length:        
+//     length of hash
+//
+// return value:
+//   success: hash string
+//   failure: NULL
+//-----------------------------------------------------------------------------
+char *
+elf_hash
+(
+ const char *filename
+);
 
-//*************************** Forward Declarations **************************
 
-//***************************************************************************
+#ifdef __cplusplus
+};
+#endif
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  int jobs;
-  int jobs_struct;
-  int jobs_parse;
-  int jobs_symtab;
-  bool show_time;
-  long parallel_analysis_threshold; 
-  bool analyze_cpu_binaries ;     // default: true
-  bool analyze_gpu_binaries ;     // default: true
-  bool compute_gpu_cfg;
-
-  // Parsed Data: optional arguments
-  std::string searchPathStr;          // default: "."
-  std::string dbgProcGlob;
-
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-  bool nocache;                   // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-  std::string out_filenm;
-  std::string cache_directory;
-
-private:
-  void
-  Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif
