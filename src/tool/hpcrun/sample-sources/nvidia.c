@@ -117,6 +117,7 @@
 
 // finalizers
 static device_finalizer_fn_entry_t device_finalizer_flush;
+static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 
@@ -485,12 +486,19 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
   }
 
+#ifdef NEW_CUPTI
+	// Using the new cupti api, the flush and shutdown callbacks perform different tasks
+  device_finalizer_flush.fn = cupti_device_flush;
+  device_finalizer_register(device_finalizer_type_flush,
+			    &device_finalizer_flush);
+#endif
+
   // Register flush function to turn off cupti activity tracing  and flush traces 
   // NOTE: this is a registered as a flush callback because is MUST precede 
   //       GPU trace finalization, which is registered as a shutdown callback
-  device_finalizer_flush.fn = cupti_device_shutdown;
-  device_finalizer_register(device_finalizer_type_flush,
-			    &device_finalizer_flush);
+  device_finalizer_shutdown.fn = cupti_device_shutdown;
+  device_finalizer_register(device_finalizer_type_shutdown,
+			    &device_finalizer_shutdown);
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
