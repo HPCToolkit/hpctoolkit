@@ -352,8 +352,10 @@ mkdir(const char* dir)
 
     int ret = ::mkdir(x.c_str(), mode);
     if (ret != 0) {
-      DIAG_Throw("[FileUtil::mkdir] '" << pathStr << "': Could not mkdir '"
-		 << x << "' (" << strerror(errno) << ")");
+      if (errno != EEXIST) {
+	DIAG_Throw(pathStr << "': Could not mkdir '"
+		   << x << "' (" << strerror(errno) << ")");
+      }
     }
   }
 

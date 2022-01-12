@@ -159,7 +159,7 @@ dotgraph_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(dotgraph_bin_CXXFLAGS) \
 	$(CXXFLAGS) $(dotgraph_bin_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_1 = hpcstruct_bin-main.$(OBJEXT) \
-	hpcstruct_bin-Args.$(OBJEXT)
+	hpcstruct_bin-Args.$(OBJEXT) hpcstruct_bin-cache.$(OBJEXT)
 am_hpcstruct_bin_OBJECTS = $(am__objects_1)
 hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
@@ -563,7 +563,7 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 @OPT_ENABLE_IGC_TRUE@IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 @OPT_ENABLE_IGC_TRUE@IGC_IFLAGS = @OPT_IGC_IFLAGS@
-MYSOURCES = main.cpp Args.cpp
+MYSOURCES = main.cpp Args.cpp cache.cpp
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS) $(DYNINST_IFLAGS) -I$(LIBELF_INC) \
 	$(IGC_IFLAGS) $(TBB_IFLAGS) $(am__append_1)
@@ -799,6 +799,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dotgraph_bin-DotGraph.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-cache.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-main.Po@am__quote@
 
 .cpp.o:
@@ -863,6 +864,20 @@ hpcstruct_bin-Args.obj: Args.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Args.cpp' object='hpcstruct_bin-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+
+hpcstruct_bin-cache.o: cache.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-cache.o -MD -MP -MF $(DEPDIR)/hpcstruct_bin-cache.Tpo -c -o hpcstruct_bin-cache.o `test -f 'cache.cpp' || echo '$(srcdir)/'`cache.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-cache.Tpo $(DEPDIR)/hpcstruct_bin-cache.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cache.cpp' object='hpcstruct_bin-cache.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-cache.o `test -f 'cache.cpp' || echo '$(srcdir)/'`cache.cpp
+
+hpcstruct_bin-cache.obj: cache.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-cache.obj -MD -MP -MF $(DEPDIR)/hpcstruct_bin-cache.Tpo -c -o hpcstruct_bin-cache.obj `if test -f 'cache.cpp'; then $(CYGPATH_W) 'cache.cpp'; else $(CYGPATH_W) '$(srcdir)/cache.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-cache.Tpo $(DEPDIR)/hpcstruct_bin-cache.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cache.cpp' object='hpcstruct_bin-cache.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-cache.obj `if test -f 'cache.cpp'; then $(CYGPATH_W) 'cache.cpp'; else $(CYGPATH_W) '$(srcdir)/cache.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

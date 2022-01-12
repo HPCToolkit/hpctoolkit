@@ -109,7 +109,7 @@ MYSOURCES = \
 	vdso.h vdso.c \
 	randomizer.h randomizer.c \
 	splay-uint64.h splay-uint64.c \
-	elf-helper.h elf-helper.c
+	elf-helper.h elf-helper.c elf-hash.h elf-hash.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)  -I$(LIBELF_INC)
 

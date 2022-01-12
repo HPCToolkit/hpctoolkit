@@ -70,12 +70,15 @@ using std::endl;
 #include <streambuf>
 #include <new>
 #include <vector>
+
+#include <string.h>
 #include <unistd.h>
 
 #include <include/gpu-binary.h>
 #include <include/hpctoolkit-config.h>
 
 #include "Args.hpp"
+#include "cache.hpp"
 
 #include <lib/banal/Struct.hpp>
 #include <lib/prof-lean/hpcio.h>
@@ -110,20 +113,23 @@ static const char* analysis_makefile =
 // to analyze CPU and GPU binaries associated with the measurements
 //
 static void
-doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
+doMeasurementsDir
+(
+ Args &args,
+ BAnal::Struct::Options & opts
+)
 {
-  measurements_dir = RealPath(measurements_dir.c_str());
+  std::string measurements_dir = RealPath(args.in_filenm.c_str());
 
   //
-  // Check that 'measurements_dir' has at least one .gpubin file.
+  // Check if 'measurements_dir' has at least one .gpubin file.
   //
-
   string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
-  struct dirent *ent;
   bool has_gpubin = false;
 
   DIR *dir = opendir(gpubin_dir.c_str());
   if (dir != NULL) {
+    struct dirent *ent;
     while ((ent = readdir(dir)) != NULL) {
       string file_name(ent->d_name);
       if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
@@ -150,7 +156,7 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
   string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
     + "/libexec/hpctoolkit/hpcproftt";
 
-  string struct_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
+  string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
     + "/bin/hpcstruct";
 
 
@@ -181,6 +187,24 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
     pthreads = jobs;
   }
     
+  string cache_path; 
+
+  if (!args.nocache) {
+    char *cpath = 0;
+    try {
+      cpath = hpcstruct_cache_directory(args.cache_directory.c_str(), "");
+    } catch(const Diagnostics::FatalException &e) {
+      exit(1);
+    };
+    if (cpath) {
+      cache_path = cpath;
+      if (!hpcstruct_cache_writable(cpath)) {
+	DIAG_EMsg("hpcstruct cache directory " << cpath << " not writable");
+	exit(1);
+      }
+    }
+  }
+  
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
 
   makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
@@ -191,8 +215,14 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 	   << "JOBS = "         << jobs << "\n"
 	   << "PTHREADS = "     << pthreads << "\n"
 	   << "PROFTT = "       << hpcproftt_path << "\n"
-	   << "STRUCT= "        << struct_path << "\n"
-	   << analysis_makefile << endl;
+	   << "STRUCT= "        << hpcstruct_path << "\n";
+
+  if (!cache_path.empty()) {
+    makefile << "CACHE= "         << cache_path << "\n";
+  }
+
+  makefile << analysis_makefile << endl;
+
   makefile.close();
 
   string make_cmd = string("make -C ") + structs_dir + " -k --silent "
@@ -228,6 +258,120 @@ main(int argc, char* argv[])
     DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
+}
+
+class FileOutputStream {
+public:
+  FileOutputStream() : stream(0), buffer(0), use_cache(false),
+		       is_cached(false) {};
+  void init(const char *cache_directory, const char *binary_abspath,
+	    const char *kind, const char *result) {
+    name = strdup(result);
+    if (cache_directory && cache_directory[0] != 0) {
+      use_cache = true;
+      stream_name = hpcstruct_cache_entry(cache_directory, binary_abspath, kind);
+    } else {
+      stream_name = name;
+    }
+  };
+  void open() {
+    if (!stream_name.empty()) {
+      stream = IOUtil::OpenOStream(stream_name.c_str());
+      buffer = new char[HPCIO_RWBufferSz];
+      stream->rdbuf()->pubsetbuf(buffer, HPCIO_RWBufferSz);
+    }
+  };
+  bool needed() {
+    bool needed = false;
+    if (!name.empty()) {
+      if (use_cache && hpcstruct_cache_find(stream_name.c_str())) {
+	is_cached = true;
+      } else {
+	needed = true;
+      }
+    }
+    return needed;
+  };
+  void finalize(int error) {
+    if (stream) IOUtil::CloseStream(stream);
+    if (buffer) delete[] buffer;
+    if (!name.empty()) {
+      if (error) {
+	unlink(name.c_str());
+      } else {
+	if (use_cache) {
+	  FileUtil::copy(name, stream_name);
+	}
+      }
+    }
+  };
+  std::ostream *getStream() { return stream; };
+  std::string &getName() { return name; };
+  
+private:
+  std::ostream *stream;
+  std::string name;
+  std::string stream_name;
+  char *buffer;
+  bool use_cache;
+  bool is_cached;
+};
+
+
+void
+singleApplicationBinary
+(
+ Args &args,
+ BAnal::Struct::Options &opts
+)
+{
+  if (args.show_gaps && args.out_filenm == "-") {
+    DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
+    exit(1);
+  }
+
+  string binary_abspath = RealPath(args.in_filenm.c_str());
+
+  string cache_directory;
+  if (!args.nocache) {
+    char *path = hpcstruct_cache_directory(args.cache_directory.c_str(), "");
+    if (path) cache_directory = path;
+  }
+
+  std::string hpcstruct_path =
+    (args.out_filenm == "-") ? "" : RealPath(args.out_filenm.c_str());
+
+  FileOutputStream gaps;
+  FileOutputStream hpcstruct;
+
+  hpcstruct.init(cache_directory.c_str(), binary_abspath.c_str(), "hpcstruct",
+		 hpcstruct_path.c_str());
+
+  if (args.show_gaps) {
+    std::string gaps_path =
+      std::string(hpcstruct_path) + std::string(".gaps");
+    gaps.init(cache_directory.c_str(), binary_abspath.c_str(), "gaps",
+	      gaps_path.c_str());
+  }
+
+  int error = 0;
+
+  if (hpcstruct.needed() || gaps.needed()) {
+    hpcstruct.open();
+    gaps.open();
+    try {
+      BAnal::Struct::makeStructure(args.in_filenm, hpcstruct.getStream(),
+				   gaps.getStream(), gaps.getName(),
+				   args.searchPathStr, opts);
+    } catch (int n) {
+      error = n;
+    }
+  }
+
+  hpcstruct.finalize(error);
+  gaps.finalize(error);
+
+  if (error) exit(error);
 }
 
 
@@ -284,65 +428,12 @@ realmain(int argc, char* argv[])
 
   if (stat(args.in_filenm.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
     if (!args.out_filenm.empty()) {
-      DIAG_EMsg("Outfile file may not be specified when analyziing a measurement directory.");
+      DIAG_EMsg("Outfile file may not be specified when analyzing a measurement directory.");
       exit(1);
     }
-    doMeasurementsDir(args.in_filenm, opts);
-    return 0;
+    doMeasurementsDir(args, opts);
+  } else {
+    singleApplicationBinary(args, opts);
   }
-
-  // ------------------------------------------------------------
-  // Single application binary
-  // ------------------------------------------------------------
-
-  const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
-  std::ostream* outFile = IOUtil::OpenOStream(osnm);
-  char* outBuf = new char[HPCIO_RWBufferSz];
-
-  std::streambuf* os_buf = outFile->rdbuf();
-  os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
-
-  std::string gapsName = "";
-  std::ostream* gapsFile = NULL;
-  char* gapsBuf = NULL;
-  std::streambuf* gaps_rdbuf = NULL;
-
-  if (args.show_gaps) {
-    // fixme: may want to add --gaps-name option
-    if (args.out_filenm == "-") {
-      DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
-      exit(1);
-    }
-
-    gapsName = RealPath(osnm) + std::string(".gaps");
-    gapsFile = IOUtil::OpenOStream(gapsName.c_str());
-    gapsBuf = new char[HPCIO_RWBufferSz];
-    gaps_rdbuf = gapsFile->rdbuf();
-    gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
-  }
-
-  try {
-    BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
-			         args.searchPathStr, opts);
-  } catch (int n) {
-    IOUtil::CloseStream(outFile);
-    if (osnm) {
-      unlink(osnm);
-    }
-    if (gapsFile) {
-      IOUtil::CloseStream(gapsFile);
-      unlink(gapsName.c_str());
-    }
-    exit(n);
-  }
-
-  IOUtil::CloseStream(outFile);
-  delete[] outBuf;
-
-  if (gapsFile != NULL) {
-    IOUtil::CloseStream(gapsFile);
-    delete[] gapsBuf;
-  }
-
-  return (0);
+  return 0;
 }
