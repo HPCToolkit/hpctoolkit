@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2021/05/06}
+\setDate{2022/01/10}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -191,7 +191,8 @@ This is an easy way to find performance bottlenecks for that metric.
 \item \textbf{Derived metric}. Define a new metric in terms of existing metrics
 by entering a spreadsheet-style formula.
 
-\item \textbf{Filter metrics}. Show or hide specified metrics.
+\item \textbf{Filter metrics}. Show the metric property view which allows to show or hide specified metrics of the current table.
+One can also edit the name of a metric colum or even edit the formula of a derived metric.
 
 \item \textbf{CSV export}. Write data from the current table to a file
 in standard CSV (Comma Separated Values) format.
@@ -411,20 +412,20 @@ This menu includes several menu items for controlling basic viewer operations.
 \item \textbf{New window}
   Open a new \Prog{hpcviewer} window that is independent from the existing one.
 
-\item \textbf{Open database}
+\item \textbf{Switch database}
   Load a performance database into the current \Prog{hpcviewer} window and close all opened databases (if any). 
 
-\item \textbf{Add database}
+\item \textbf{Open database}
   Load a performance database into the current \Prog{hpcviewer} window. 
-  Currently \Prog{hpcviewer} restricts maximum of two database open at a time. 
-  If you want to display more than two, either you close an existing open database first, or you open a new \Prog{hpcviewer} window.
+  Currently \Prog{hpcviewer} restricts maximum of five database open at a time. 
+  To display more, one can either closing an existing open database, or opening a new \Prog{hpcviewer} window.
 
 \item \textbf{Close database}
-  Unloading one of more open performance database.
+  Unloading a performance database.
 
 \item \textbf{Merge database}
   Merging two database that are currently in the viewer. If \Prog{hpcviewer} has more than two
-  open database, then you need to choose which database you want to merge.
+  open database, then one needs to choose which database to be merged.
   Currently \Prog{hpcviewer} does not support storing a merged database into a file.
 
   \begin{itemize}
@@ -435,9 +436,9 @@ This menu includes several menu items for controlling basic viewer operations.
 \item \textbf{Preferences...}
   Display the settings dialog box which consists of three sections:
   \begin{itemize}
-     \item \textbf{General} Enable/disable debug mode.
      \item \textbf{Appearance} Change the fonts for tree and metric columns and source viewer.
-     \item \textbf{Traces} Specify settings for Trace view such as the rendering option, the number of working threads to be used and the tooltip's delay.
+     \item \textbf{Traces} Specify settings for Trace view such as the number of working threads to be used and the tooltip's delay.
+     \item \textbf{Debug} Enable/disable debug mode.
   \end{itemize}
 
 \item \textbf{Exit}
@@ -469,16 +470,15 @@ remove matched nodes and its descendants.
 \subsection{View}
 This menu is only visible if at least one database is loaded.
 All actions in this menu are intended primarily for tool developer use. 
-By default, the menu is hidden. Once you open a database, the menu is then shown.
+By default, the menu is hidden. Once a database is loaded, the menu is then visible.
 
 \begin{itemize}
  \item \textbf{Show metric}
- Display a list of metrics in a window. From this window, you can modify the name of the metric. For derived metrics, this also allows to modify the formula as well as the format.
+Show the metric property view which allows to show or hide specified metrics of the current table.
+One can also edit the name of a metric colum or even edit the formula of a derived metric.
 
  \item \textbf{Split window}
  Enabled if there are two databases open. This menu allows to split vertically two databases into two panes to easily compare them.
-
- \item \textbf{Show color mapping} \emph{Trace view only}: to open a window which shows customized mapping between a procedure pattern and a color. \Prog{hpcviewer} allows users to customize assignment of a pattern of procedure names with a specific color.
 
  \item \textbf{Debug} \emph{(if the debug mode is enabled)}
  A special set of menus for advanced users when the debug mode is enabled. The menu is useful to debug \Prog{hpcviewer}. The menu consists of:
@@ -495,7 +495,7 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
 
 \subsection{Help}
 
-This menu displays information about the viewer. The menu contains two items:
+This menu displays information about the viewer. 
 \begin{itemize}
 
 \item \textbf{About}.
