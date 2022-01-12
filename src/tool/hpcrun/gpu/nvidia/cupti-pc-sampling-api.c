@@ -483,9 +483,11 @@ pc_sampling_collect
     };
 
 #ifdef NEW_CUPTI_ANALYSIS
-    cct_node_t *kernel_ph = cupti_kernel_ph_get();
-    ip_normalized_t kernel_ip = hpcrun_cct_addr(hpcrun_cct_children(kernel_ph))->ip_norm;
-    printf("CUPTI total samples %p: %lu, %lu, %p\n", kernel_ph, buffer_pc->totalSamples, kernel_ip.lm_id, kernel_ip.lm_ip);
+    if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
+      cct_node_t *kernel_ph = cupti_kernel_ph_get();
+      ip_normalized_t kernel_ip = hpcrun_cct_addr(hpcrun_cct_children(kernel_ph))->ip_norm;
+      printf("CUPTI total samples %p: %lu, %lu, %p\n", kernel_ph, buffer_pc->totalSamples, kernel_ip.lm_id, kernel_ip.lm_ip);
+    }
 #endif
 
     HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));

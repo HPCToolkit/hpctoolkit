@@ -2369,18 +2369,12 @@ cupti_device_flush(void *args, int how)
   spinlock_lock(&print_lock);
 
 #ifdef PRINT_UNWIND_TIME
-  printf("Unwind time %lu\n", unwind_time);
+  printf("CUPTI unwind time %lu\n", unwind_time);
 #endif
 
 #ifdef NEW_CUPTI_ANALYSIS
-  printf("Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu, unique ccts %zu\n",
+  printf("CUPTI Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu, unique ccts %zu\n",
     total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds, cupti_cct_analysis_map_size_get());
-
-  //printf("-----------------------------------------------------------------\n");
-
-  //printf("CCT trie\n");
-
-  //cupti_cct_trie_dump();
 #endif
 
   spinlock_unlock(&print_lock);
