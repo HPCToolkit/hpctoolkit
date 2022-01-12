@@ -1301,10 +1301,6 @@ monitor_fini_thread(void* init_thread_data)
     return;
   }
 
-  if (init_thread_data == NULL) {
-    return;
-  }
-
   hpcrun_safe_enter();
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
