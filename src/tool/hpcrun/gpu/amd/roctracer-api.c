@@ -517,9 +517,6 @@ roctracer_bind
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(roctracer, roctracer_path(), RTLD_NOW | RTLD_GLOBAL);
-  // Somehow roctracter needs libkfdwrapper64.so, but does not really load it.
-  // So, we load it before using any function in roctracter.
-  CHK_DLOPEN(kfd, "libkfdwrapper64.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLOPEN(hip, "libamdhip64.so", RTLD_NOW | RTLD_GLOBAL);
   hpcrun_force_dlopen(false);
