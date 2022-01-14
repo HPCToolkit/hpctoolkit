@@ -578,6 +578,19 @@ roctracer_init
 }
 
 void
+roctracer_flush
+(
+ void* args,
+ int how
+)
+{
+  HPCRUN_ROCTRACER_CALL(roctracer_flush_activity_expl, (NULL));
+
+  gpu_application_thread_process_activities();
+}
+
+
+void
 roctracer_fini
 (
  void* args,
@@ -590,8 +603,7 @@ roctracer_fini
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HSA_OPS));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_KFD_API));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_ROCTX));
-  HPCRUN_ROCTRACER_CALL(roctracer_flush_activity_expl, (NULL));
 
-  gpu_application_thread_process_activities();
+  roctracer_flush(args, how);
 }
 
