@@ -102,7 +102,7 @@
 	      db-header-sz   CDATA #IMPLIED>
 
     <!-- TraceDBTable: -->
-    <!ELEMENT TraceDBTable (TraceDB)>
+    <!ELEMENT TraceDBTable (TraceDB?)>
 
     <!-- TraceDB: (i)d -->
     <!--   u: unit time of the trace (ms, ns, ..) -->
@@ -203,6 +203,7 @@
 		i CDATA #IMPLIED
 		it CDATA #IMPLIED
 		s CDATA #IMPLIED
+		f CDATA #IMPLIED
 		l CDATA #IMPLIED
 		str CDATA #IMPLIED
 		v CDATA #IMPLIED>
@@ -260,6 +261,7 @@
 		i  CDATA #IMPLIED
 		it CDATA #IMPLIED
 		s  CDATA #IMPLIED
+		f CDATA #IMPLIED
 		l  CDATA #IMPLIED
 		str  CDATA #IMPLIED
 		v  CDATA #IMPLIED>

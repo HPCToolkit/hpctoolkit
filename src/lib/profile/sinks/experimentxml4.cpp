@@ -300,42 +300,20 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned i
 // ud Context bits
 
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
-  : onlyOutputWithChildren(false), openIsClosedTag(false), siblingSLine(0) {
+  : onlyOutputWithChildren(false), openIsClosedTag(false),
+    siblingS(exml.file_unknown, 0) {
   const auto& s = c.scope();
   auto& proc = exml.getProc(s);
   auto id = c.userdata[exml.src.identifier()];
   bool parentIsC = false;
   bool hasUncleS = false;
-  uint64_t uncleSLine = 0;
+  std::pair<std::reference_wrapper<udFile>, uint64_t> uncleS(exml.file_unknown, 0);
   if(auto p = c.direct_parent()) {
     const auto& udp = p->userdata[exml.ud];
     parentIsC = udp.tagIsC;
     hasUncleS = udp.hasSiblingS;
-    uncleSLine = udp.siblingSLine;
+    uncleS = udp.siblingS;
   }
-  const auto isParentFile = [&](const File& f) {
-    auto p = c.direct_parent();
-    while(p->scope().type() == Scope::Type::line) p = p->direct_parent();
-    util::optional_ref<const File> pf;
-    switch(p->scope().type()) {
-    case Scope::Type::global:
-    case Scope::Type::unknown:
-    case Scope::Type::point:
-    case Scope::Type::placeholder:
-      break;
-    case Scope::Type::function: {
-      if(auto src = p->scope().function_data().sourceLocation())
-        pf = src->first;
-      break;
-    }
-    case Scope::Type::inlined_function:
-    case Scope::Type::loop:
-    case Scope::Type::line:
-      pf = p->scope().line_data().first;
-      break;
-    }
-    return !pf || &*pf == &f;
-  };
 
   switch(s.type()) {
   case Scope::Type::global:
@@ -347,18 +325,18 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   case Scope::Type::unknown: {
     auto& uproc = (c.direct_parent()->scope().type() == Scope::Type::global)
                    ? exml.proc_partial() : exml.proc_unknown();
+    exml.file_unknown.incr(exml);
     std::ostringstream ss;
     if(!parentIsC) {
       ss << "<C i=\"-" << id << "\""
-              " s=\"" << uproc.id << "\" v=\"0\" l=\"0\""
+              " s=\"" << uproc.id << "\" v=\"0\""
+              " f=\"" << exml.file_unknown.id << "\" l=\"0\""
               " it=\"" << id << "\">";
       post = "</C>\n";
     }
-    exml.file_unknown.incr(exml);
     ss << "<PF i=\"" << id << "\""
              " n=\"" << uproc.id << "\" s=\"" << uproc.id << "\""
-             " f=\"" << exml.file_unknown.id << "\""
-             " l=\"0\">\n";
+             " f=\"" << exml.file_unknown.id << "\" l=\"0\">\n";
     close = "</PF>\n";
     open = ss.str();
     onlyOutputWithChildren = true;
@@ -377,22 +355,23 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
         proc.setTag(ss.str(), 0, 1);
       }
     }
+    exml.file_unknown.incr(exml);
     std::ostringstream ss;
     if(!parentIsC) {
       ss << "<C i=\"-" << id << "\""
-              " s=\"" << proc.id << "\" v=\"0\" l=\"0\""
+              " s=\"" << proc.id << "\" v=\"0\""
+              " f=\"" << exml.file_unknown.id << "\" l=\"0\""
               " it=\"" << id << "\">";
       post = "</C>\n";
     }
-    exml.file_unknown.incr(exml);
     ss << "<PF i=\"" << id << "\""
              " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
-             " f=\"" << exml.file_unknown.id << "\""
-             " l=\"0\">\n";
+             " f=\"" << exml.file_unknown.id << "\" l=\"0\">\n";
     open = ss.str();
     std::ostringstream ssattr;
     ssattr << " i=\"-" << id << "\""
-              " s=\"" << proc.id << "\" v=\"0\" l=\"0\""
+              " s=\"" << proc.id << "\" v=\"0\""
+              " f=\"" << exml.file_unknown.id << "\" l=\"0\""
               " it=\"" << id << "\"";
     attr = ssattr.str();
     post = "</PF>\n" + post;
@@ -422,8 +401,10 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       post = "</PF>\n";
     }
     std::ostringstream ss;
+    uncleS.first.get().incr(exml);
     ss << " i=\"" << (parentIsC ? "-" : "") << id << "\""
-          " s=\"" << proc.id << "\" l=\"" << uncleSLine << "\""
+          " s=\"" << proc.id << "\" "
+          " f=\"" << uncleS.first.get().id << "\" l=\"" << uncleS.second << "\""
           " v=\"0x" << std::hex << mo.second << std::dec << "\""
           " it=\"" << id << "\"";
     attr = ss.str();
@@ -437,13 +418,13 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   case Scope::Type::line: {
     auto fl = s.line_data();
     std::ostringstream ss;
-    siblingSLine = fl.second;
+    auto& udf = fl.first.userdata[exml.ud];
+    siblingS = {udf, fl.second};
 
+    udf.incr(exml);
     if(parentIsC) {
       // Lines without *any* lexical context are noted as <unknown proc>
       auto& fproc = exml.proc_unknown();
-      auto& udf = fl.first.userdata[exml.ud];
-      udf.incr(exml);
       ss << "<PF i=\"" << id << "\""
                " n=\"" << fproc.id << "\" s=\"" << fproc.id << "\""
                " f=\"" << udf.id << "\" l=\"" << fl.second << "\""
@@ -451,17 +432,10 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       post = "</PF>\n";
     }
 
-    // Since <C> tags don't set the file, throw in an error if it doesn't match
-    // what we want it to.
-    if(!isParentFile(fl.first)) {
-      ss << "<!-- EXMLv4 ERROR: Inconsistent file, following tag is really part of file "
-         << fl.first.path().string() << " -->\n";
-      siblingSLine = 0;  // The line doesn't help in this case
-    }
-
     ss << "<S i=\"" << (parentIsC ? "-" : "") << id << "\""
             " it=\"" << id << "\""
-            " l=\"" << siblingSLine << "\" s=\"" << proc.id << "\""
+            " f=\"" << udf.id << "\" l=\"" << siblingS.second << "\""
+            " s=\"" << proc.id << "\""
             " v=\"0\"/>\n";
     open = ss.str();
     openIsClosedTag = true;
@@ -514,26 +488,21 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       }
 
       const auto fl = s.line_data();
-      // Since <C> tags don't set the file, throw in an error if it doesn't match
-      // what we want it to.
-      if(!isParentFile(fl.first)) {
-        ss << "<!-- EXMLv4 ERROR: Inconsistent file, following tag is really part of file "
-           << fl.first.path().string() << " -->\n";
-      }
-
       auto& udf = fl.first.userdata[exml.ud];
       udf.incr(exml);
       ss << "<C i=\"-" << id << "\" it=\"" << id << "\""
               " s=\"" << proc.id << "\" v=\"0\""
-              " l=\"" << fl.second << "\">\n"
+              " f=\"" << udf.id << "\" l=\"" << fl.second << "\">\n"
             "<PF";
       close = "</PF>\n";
       post = "</C>\n" + post;
     } else {
       if(!parentIsC) {
         // ...Then we need an extra C tag around the outside, called from nowhere
+        exml.file_unknown.incr(exml);
         ss << "<C i=\"-" << id << "\" it=\"" << id << "\""
-                " s=\"" << proc.id << "\" v=\"0\" l=\"0\">\n";
+                " s=\"" << proc.id << "\" v=\"0\""
+                " f=\"" << exml.file_unknown.id << "\" l=\"0\">\n";
         post = "</C>\n";
       }
       ss << "<PF";

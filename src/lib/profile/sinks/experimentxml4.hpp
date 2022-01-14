@@ -187,7 +187,7 @@ private:
   private:
     bool tagIsC;
     bool hasSiblingS;
-    uint64_t siblingSLine;
+    std::pair<std::reference_wrapper<udFile>, uint64_t> siblingS;
   };
 
   struct {
