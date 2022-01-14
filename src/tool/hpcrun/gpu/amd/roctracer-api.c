@@ -585,6 +585,8 @@ roctracer_flush
 )
 {
   HPCRUN_ROCTRACER_CALL(roctracer_flush_activity_expl, (NULL));
+
+  gpu_application_thread_process_activities();
 }
 
 
@@ -603,7 +605,5 @@ roctracer_fini
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_ROCTX));
 
   roctracer_flush(args, how);
-
-  gpu_application_thread_process_activities();
 }
 
