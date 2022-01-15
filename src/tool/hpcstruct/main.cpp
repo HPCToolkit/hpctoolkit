@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2002-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -188,7 +188,7 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 	   << "GPUBIN_CFG = "   << gpucfg << "\n"
 	   << "CPU_ANALYZE = "  << opts.analyze_cpu_binaries << "\n"
 	   << "GPU_ANALYZE = "  << opts.analyze_gpu_binaries << "\n"
-     << "DU_GRAPH = "  << opts.du_graph << "\n"
+     << "DU_GRAPH = "  << du_graph << "\n"
 	   << "PAR_SIZE = "     << opts.parallel_analysis_threshold << "\n"
 	   << "JOBS = "         << jobs << "\n"
 	   << "PTHREADS = "     << pthreads << "\n"

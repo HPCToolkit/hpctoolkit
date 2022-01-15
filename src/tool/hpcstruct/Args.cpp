@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2002-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -326,14 +326,6 @@ Args::parse(int argc, const char* const argv[])
       bool no = strcasecmp("no", arg.c_str()) == 0;
       if (!yes && !no) ARG_ERROR("cpu argument must be 'yes' or 'no'.");
       analyze_cpu_binaries = yes;
-    }
-
-    if (parser.isOpt("du-graph")) {
-      const string & arg = parser.getOptArg("du-graph");
-      bool yes = strcasecmp("yes", arg.c_str()) == 0;
-      bool no = strcasecmp("no", arg.c_str()) == 0;
-      if (!yes && !no) ARG_ERROR("du-graph argument must be 'yes' or 'no'.");
-      du_graph = yes;
     }
 
     if (parser.isOpt("time")) {
