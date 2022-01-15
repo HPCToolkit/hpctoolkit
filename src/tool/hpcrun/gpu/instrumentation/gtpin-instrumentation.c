@@ -469,7 +469,7 @@ kernelInstructionActivityProcess
       0, bb_execution_count, inst_latency, 0, 0, 0);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
-  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, false); // how to set the ip_norm
+  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, true); // how to set the ip_norm
   if (cct_child) {
     ga.cct_node = cct_child;
     gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
@@ -498,7 +498,7 @@ kernelBlockActivityProcess
       bb_instruction_count, bb_execution_count, bb_latency_cycles, bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
-  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, false); // how to set the ip_norm
+  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, true); // how to set the ip_norm
   if (cct_child) {
     ga.cct_node = cct_child;
     gpu_operation_multiplexer_push(activity_channel, NULL, &ga);

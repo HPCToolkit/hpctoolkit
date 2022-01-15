@@ -905,7 +905,7 @@ opencl_subscriber_callback
     kernel_ip.lm_id = (uint16_t) obj->details.module_id;
     kernel_ip.lm_ip = 0;  // offset=0
     cct_node_t *kernel =
-      hpcrun_cct_insert_ip_norm(cct_ph, kernel_ip, false);
+      hpcrun_cct_insert_ip_norm(cct_ph, kernel_ip, true);
     hpcrun_cct_retain(kernel);
   }
 
