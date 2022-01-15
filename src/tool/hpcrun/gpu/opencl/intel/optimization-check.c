@@ -10,6 +10,7 @@
 //******************************************************************************
 
 #include "optimization-check.h"
+#include <cct/cct.h>                                // hpcrun_cct_insert_ip_norm, hpcrun_cct_retain
 #include "maps/queue-context-map.h"
 #include "maps/kernel-context-map.h"
 #include "maps/kernel-param-map.h"
@@ -18,8 +19,10 @@
 #include "maps/device-map.h"
 
 #include <hpcrun/gpu/gpu-activity.h>                // intel_optimization_t
-#include <hpcrun/gpu/gpu-metrics.h>                 // gpu_metrics_attribute
 #include <hpcrun/gpu/gpu-application-thread-api.h>  // gpu_application_thread_correlation_callback
+#include <hpcrun/gpu/gpu-metrics.h>                 // gpu_metrics_attribute
+#include <hpcrun/gpu/gpu-op-placeholders.h>         // gpu_op_placeholder_flags, gpu_op_placeholder_flags_set
+#include <hpcrun/safe-sampling.h>                   // hpcrun_safe_enter, hpcrun_safe_exit
 
 
 
@@ -199,7 +202,8 @@ recordKernelParams
 void
 areKernelParamsAliased
 (
- cl_kernel kernel
+ cl_kernel kernel,
+ uint32_t kernel_module_id
 )
 {
   /* Kernels typically operate on arrays of elements that are provided as pointer arguments. When the compiler cannot determine whether these pointers
@@ -212,14 +216,34 @@ areKernelParamsAliased
   kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
   bool aliased = checkIfMemoryRegionsOverlap(kp_list);
   
-  cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+  cct_node_t *api_node = gpu_application_thread_correlation_callback(0);
+  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+          gpu_placeholder_type_kernel);
+  gpu_placeholder_type_t placeholder_type = gpu_placeholder_type_kernel;
+  gpu_op_ccts_t gpu_op_ccts;
+
+  hpcrun_safe_enter();
+  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+  cct_node_t *cct_ph = gpu_op_ccts_get(&gpu_op_ccts, placeholder_type);
+  hpcrun_safe_exit();
+
+  if (hpcrun_cct_children(cct_ph) == NULL) {
+    ip_normalized_t kernel_ip;
+    kernel_ip.lm_id = (uint16_t) kernel_module_id;
+    kernel_ip.lm_ip = 0;  // offset=0
+    cct_node_t *kernel_cct =
+      hpcrun_cct_insert_ip_norm(cct_ph, kernel_ip);
+    hpcrun_cct_retain(kernel_cct);
+  }
+
   intel_optimization_t i;
   if (!aliased) {
     i.intelOptKind = KERNEL_PARAMS_NOT_ALIASED;
   } else {
     i.intelOptKind = KERNEL_PARAMS_ALIASED;
   }
-  record_intel_optimization_metrics(cct_node, &i);
+  record_intel_optimization_metrics(cct_ph, &i);
   // this check happens during kernel execution.
   // after a kernel is executed, new params could be added for the kernel
   // so we need to clear the previously set params
