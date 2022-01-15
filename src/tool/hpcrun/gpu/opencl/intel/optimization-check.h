@@ -70,7 +70,8 @@ recordKernelParams
 void
 areKernelParamsAliased
 (
- cl_kernel kernel
+ cl_kernel kernel,
+ uint32_t kernel_module_id
 );
 
 

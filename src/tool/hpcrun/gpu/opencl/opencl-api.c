@@ -1207,7 +1207,7 @@ hpcrun_clEnqueueNDRangeKernel
                                 num_events_in_wait_list, event_wait_list, eventp));
   if (optimization_check && return_status == CL_SUCCESS) {
     isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
-    areKernelParamsAliased(ocl_kernel);
+    areKernelParamsAliased(ocl_kernel, module_id);
   }
 
 	if(is_opencl_blame_shifting_enabled()) {
@@ -1251,7 +1251,7 @@ hpcrun_clEnqueueTask
                                 num_events_in_wait_list, event_wait_list, eventp));
   if (optimization_check && return_status == CL_SUCCESS) {
     isKernelSubmittedToMultipleQueues(kernel, command_queue);
-    areKernelParamsAliased(kernel);
+    areKernelParamsAliased(kernel, module_id);
   }
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
