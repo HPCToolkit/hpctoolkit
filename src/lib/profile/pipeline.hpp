@@ -316,7 +316,7 @@ public:
 
   public:
     /// Emit a new Context into the Pipeline as the child of another.
-    /// ProfileTransformers may inject additional Contexts between the parent
+    /// ProfileFinalizers may inject additional Contexts between the parent
     /// resulting child Context to provide additional (usually lexical) context.
     ///
     /// This method presupposes the single sequence of Contexts between the
@@ -324,7 +324,7 @@ public:
     /// See contextReconstruction for a case when this is not possible.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Context& context(Context&, const Scope&);
+    Context& context(Context&, const NestedScope&);
 
     /// Emit a new ContextReconstruction for the given ContextFlowGraph,
     /// rooted at a particular Context.

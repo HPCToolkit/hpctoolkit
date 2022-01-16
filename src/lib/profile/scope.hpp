@@ -62,8 +62,12 @@ class Module;
 class Function;
 class File;
 
-/// The Location of some Context, roughly. Basically its an identifier of a
-/// scope in the source (or binary) code.
+/// The (flat) Scope in which operations occur, everything from functions or
+/// or lines to individual instructions.
+///
+/// (Flat) Scopes represent a single, static (vauge) area of the application,
+/// they do not consider surrounding Scopes or what they might mean in context.
+/// See NestedScope for that.
 class Scope {
 public:
   /// Constructor for the default, from an "unknown" scope.
@@ -74,9 +78,6 @@ public:
 
   /// Constructor for Function-wide Scopes.
   explicit Scope(const Function&);
-
-  /// Constructor for inlined Function call Scopes.
-  Scope(const Function&, const File&, uint64_t line);
 
   struct loop_t {};
   static inline constexpr loop_t loop = {};
@@ -97,31 +98,12 @@ public:
   Scope(const Scope& s) = default;
   Scope& operator=(const Scope&) = default;
 
-  /// Types of possible Scopes, which are associated with Contexts.
-  ///
-  /// Excepting global, every Scope adds semantic context to every descendant
-  /// Context. Currently the following nesting patterns have well-known semantics:
-  /// - `* A > unknown > * B`: `B` was called from (zero or more) unknown locations/calling contexts,
-  ///                          which is known to have been called from `A`.
-  /// - `point > *`: Operations called from a physical instruction.
-  /// - `placeholder > *`: Operations bounded within a marked context.
-  /// - `function > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a function(-like construct).
-  /// - `inlined_function > (loop|line|point)`: Operations within the lexical bounds of a function(-like construct),
-  ///                                           called from an inlined function call.
-  /// - `loop > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a loop construct.
-  /// - `line > point`: Instruction generated from a single source line.
-  ///
-  /// The following patterns do not yet have solid semantics:
-  /// - `(function|loop|inlined_function) > function`: Nested function construct (C++ lambda or GNU nested function extension)?
-  /// - `line > (inlined_function|loop|line)`: Macro expansion?
-  /// - `line > function`: Macro-expanded nested function construct? Not a call to the given function.
-  /// - `(function|loop|inlined_function|line) > placeholder`: ??? Currently can never happen.
+  /// Full list of possible Scopes that can be represented.
   enum class Type {
     unknown,  ///< Some amount of missing Context data, of unknown depth.
     global,  ///< Scope of the global Context, root of the entire execution.
     point,  ///< A single instruction within the application, thus a "point".
     function,  ///< A normal ordinary function within the application.
-    inlined_function,  ///< A function call that was inlined.
     loop,  ///< A loop-like construct, potentially source-level.
     line,  ///< A single line within the original source.
     placeholder,  ///< A marker context with special meaning (and nothing else).
@@ -135,7 +117,7 @@ public:
   std::pair<const Module&, uint64_t> point_data() const;
 
   /// For '*function' scopes, get the Function that created this Scope.
-  /// Throws if the Scope is not a 'function' or 'inlined_function' Scope.
+  /// Throws if the Scope is not a 'function' Scope.
   const Function& function_data() const;
 
   /// For Scopes with line info, get the line that created this Scope.
@@ -212,24 +194,12 @@ private:
         return {*s, l};
       }
     } line;
-    struct function_line_u {
-      function_u function;
-      line_u line;
-      bool operator==(const function_line_u& o) const {
-        return function == o.function && line == o.line;
-      }
-      bool operator<(const function_line_u& o) const {
-        return !(function == o.function) ? function < o.function : line < o.line;
-      }
-    } function_line;
     uint64_t enumerated;
     Data() : empty{} {};
     Data(const Module& m, uint64_t o)
       : point{&m, o} {};
     Data(const Function& f)
       : function{&f} {};
-    Data(const Function& f, const File& s, uint64_t l)
-      : function_line{{&f}, {&s, l}} {};
     Data(const File& s, uint64_t l)
       : line{&s, l} {};
     Data(uint64_t l)
@@ -243,6 +213,79 @@ private:
   explicit Scope(ProfilePipeline&);
 };
 
+/// The Relation a NestedScope has with its parent Scope. We nest Scopes to
+/// indicate a number of different relationships while retaining a consistent
+/// tree structure, this lists all the different possible Relations.
+///
+/// For all of these (except `global`), there is a parent Scope and a child
+/// Scope, related by the given Relation.
+enum class Relation {
+  /// Special value specific to the root Context. There is no parent Scope.
+  global,
+
+  /// The parent Scope fully encloses the child Scope, the child Scope is a
+  /// (usually strict) sub-Scope of the parent. For example, a source line
+  /// within a function.
+  enclosure,
+
+  /// The parent Scope called the child Scope, using a typical nominal call.
+  /// For example, a function called from a point instruction.
+  call,
+
+  /// The parent Scope called the child Scope, but the call was inlined and so
+  /// did not "actually happen". For example, a function called from a source
+  /// line (not a point since there is no associated call instruction).
+  inlined_call,
+};
+
+/// Check if `r` indicates that the parent Scope called the child Scope.
+bool isCall(Relation r) noexcept;
+
+/// Stringification support for Relation enumeration constants
+std::string_view stringify(Relation) noexcept;
+
+/// Flat Scope that has a Relation with its parent. These are the core scopes
+/// listed in the Context tree.
+class NestedScope final {
+public:
+  NestedScope(Relation, Scope);
+  ~NestedScope() = default;
+
+  NestedScope(NestedScope&&) = default;
+  NestedScope(const NestedScope&) = default;
+  NestedScope& operator=(NestedScope&&) = default;
+  NestedScope& operator=(const NestedScope&) = default;
+
+  /// Access the Relation this NestedScope has with its parent.
+  // MT: Externally Synchronized
+  Relation& relation() noexcept { return m_relation; }
+
+  /// Get the Relation this NestedScope has with its parent.
+  // MT: Safe (const)
+  const Relation& relation() const noexcept { return m_relation; }
+
+  /// Access the flat Scope this NestedScope represents.
+  // MT: Externally Synchronized
+  Scope& flat() noexcept { return m_flat; }
+
+  /// Get the flat Scope this NestedScope represents.
+  // MT: Safe (const)
+  const Scope& flat() const noexcept { return m_flat; }
+
+  // Comparison, as usual
+  bool operator==(const NestedScope& o) const noexcept;
+  bool operator!=(const NestedScope& o) const noexcept { return !operator==(o); }
+  // Total ordering
+  bool operator<(const NestedScope& o) const noexcept;
+  bool operator<=(const NestedScope& o) const noexcept { return !operator>(o); }
+  bool operator>(const NestedScope& o) const noexcept { return o.operator<(*this); }
+  bool operator>=(const NestedScope& o) const noexcept { return !operator<(o); }
+
+private:
+  Relation m_relation;
+  Scope m_flat;
+};
+
 }
 
 namespace std {
@@ -254,7 +297,14 @@ namespace std {
     std::hash<uint64_t> h_u64;
     std::size_t operator()(const Scope&) const noexcept;
   };
+  template<> struct hash<NestedScope> {
+    std::hash<Relation> h_rel;
+    std::hash<Scope> h_scope;
+    std::size_t operator()(const NestedScope&) const noexcept;
+  };
   std::ostream& operator<<(std::ostream&, const Scope&) noexcept;
+  std::ostream& operator<<(std::ostream&, Relation) noexcept;
+  std::ostream& operator<<(std::ostream&, const NestedScope&) noexcept;
 }
 
 #endif  // HPCTOOLKIT_PROFILE_SCOPE_H

@@ -69,39 +69,6 @@ static double atomic_op(std::atomic<double>& a, const double v, Statistic::combi
   return old;
 }
 
-static bool pullsFunction(Scope parent, Scope child) {
-  switch(child.type()) {
-  // Function-type Scopes, placeholder and unknown (which could be a call)
-  case Scope::Type::function:
-  case Scope::Type::inlined_function:
-  case Scope::Type::unknown:
-  case Scope::Type::placeholder:
-    return false;
-  case Scope::Type::point:
-  case Scope::Type::loop:
-  case Scope::Type::line:
-    switch(parent.type()) {
-    // Function-type scopes, and unknown (which could be a call)
-    case Scope::Type::unknown:
-    case Scope::Type::function:
-    case Scope::Type::inlined_function:
-    case Scope::Type::loop:
-    case Scope::Type::line:
-      return true;
-    case Scope::Type::global:
-    case Scope::Type::point:
-    case Scope::Type::placeholder:
-      return false;
-    }
-    break;
-  case Scope::Type::global:
-    assert(false && "global Context should have no parent!");
-    std::abort();
-  }
-  assert(false && "Unhandled Scope type!");
-  std::abort();
-}
-
 void PerThreadTemporary::finalize() noexcept {
   // Before doing anything else, we need to redistribute the metric values
   // attributed to Reconstructions and FlowGraphs within this Thread.
@@ -240,7 +207,7 @@ void PerThreadTemporary::finalize() noexcept {
     }
     if(!c.get().direct_parent()) {
       assert((!global || global == &c.get()) && "Multiple root contexts???");
-      assert(c.get().scope().type() == Scope::Type::global && "Root context without (global) Scope!");
+      assert(c.get().scope().flat().type() == Scope::Type::global && "Root context without (global) Scope!");
       global = c.get();
     }
   }
@@ -287,9 +254,8 @@ void PerThreadTemporary::finalize() noexcept {
 
     // Go through our children and sum into our bits
     for(std::size_t i = 0; i < stack.top().submds.size(); i++) {
-      const Context& cc = stack.top().submds[i].first;
       const md_t& ccmd = stack.top().submds[i].second;
-      const bool pullfunc = pullsFunction(c.scope(), cc.scope());
+      const bool pullfunc = !isCall(c.scope().relation());
       for(const auto& mx: ccmd.citerate()) {
         auto& accum = data[mx.first];
         if(pullfunc) accum.function += mx.second.function;

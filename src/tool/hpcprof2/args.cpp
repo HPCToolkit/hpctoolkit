@@ -658,10 +658,10 @@ std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const Module& m) noexcep
   return search(args.prefixes, m.path());
 }
 
-util::optional_ref<Context> ProfArgs::StructWarner::classify(Context& c, Scope& s) noexcept {
-  if(s.type() == Scope::Type::point) {
+util::optional_ref<Context> ProfArgs::StructWarner::classify(Context& c, NestedScope& ns) noexcept {
+  if(ns.flat().type() == Scope::Type::point) {
     // Check if there any Structfiles might match this Module
-    const auto& m = s.point_data().first;
+    const auto& m = ns.flat().point_data().first;
     const auto it = args.structheads.find(m.path().filename());
     if(it != args.structheads.end()) {
       std::cerr << "WARNING: Struct file partial match on "

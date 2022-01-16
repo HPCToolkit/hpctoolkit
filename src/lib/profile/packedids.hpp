@@ -101,7 +101,7 @@ public:
   std::optional<unsigned int> identify(const Context&) noexcept override;
   std::optional<Metric::Identifier> identify(const Metric&) noexcept override;
 
-  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
+  util::optional_ref<Context> classify(Context&, NestedScope&) noexcept override;
 
 private:
   void unpack() noexcept;
@@ -109,11 +109,9 @@ private:
 
   std::once_flag once;
   const Module* exmod;
-  const File* exfile;
-  std::unique_ptr<Function> exfunc;
   std::vector<std::reference_wrapper<const Module>> modmap;
   unsigned int globalid;
-  std::unordered_map<unsigned int, std::unordered_map<Scope, std::vector<Scope>>> exmap;
+  std::unordered_map<unsigned int, std::unordered_map<NestedScope, std::vector<NestedScope>>> exmap;
 
   std::unordered_map<std::string, unsigned int> metmap;
 };

@@ -103,7 +103,7 @@ public:
   /// treated as the new parent of the given Scope.
   /// ExtensionClass: `classification`
   // MT: Internally Synchronized
-  virtual util::optional_ref<Context> classify(Context&, Scope&) noexcept;
+  virtual util::optional_ref<Context> classify(Context&, NestedScope&) noexcept;
 
   /// Fill a ContextFlowGraph with the appropriate data. Returns true if this
   /// Finalizer provided this data.

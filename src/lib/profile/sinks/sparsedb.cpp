@@ -175,14 +175,14 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
           values.push_back(v);
           // HACK conditional to work around experiment.xml. Line Scopes are
           // emitted as leaves (<S>), so they should have no extra inclusive cost.
-          if(c.scope().type() == Scope::Type::line) {
+          if(c.scope().flat().type() == Scope::Type::line) {
             mids.push_back(id.getFor(MetricScope::execution));
             values.push_back(v);
           }
         }
         // HACK conditional to work around experiment.xml. Line Scopes are
         // emitted as leaves (<S>), so they should have no extra inclusive cost.
-        if(c.scope().type() != Scope::Type::line) {
+        if(c.scope().flat().type() != Scope::Type::line) {
           if(auto vinc = vv.get(MetricScope::execution)) {
             v.r = *vinc;
             mids.push_back(id.getFor(MetricScope::execution));
@@ -288,7 +288,7 @@ void SparseDB::write()
             hasEx = true;
             // HACK conditional to work around experiment.xml. Line Scopes are
             // emitted as leaves (<S>), so they should have no extra inclusive cost.
-            if(c.scope().type() == Scope::Type::line) {
+            if(c.scope().flat().type() == Scope::Type::line) {
               mids.push_back(id.getFor(sp, MetricScope::execution));
               values.push_back(v);
               hasInc = true;
@@ -296,7 +296,7 @@ void SparseDB::write()
           }
           // HACK conditional to work around experiment.xml. Line Scopes are
           // emitted as leaves (<S>), so they should have no extra inclusive cost.
-          if(c.scope().type() != Scope::Type::line) {
+          if(c.scope().flat().type() != Scope::Type::line) {
             if(auto vinc = vv.get(sp).get(MetricScope::execution)) {
               v.r = *vinc;
               mids.push_back(id.getFor(sp, MetricScope::execution));

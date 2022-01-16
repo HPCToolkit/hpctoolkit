@@ -242,7 +242,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   structs.thread.freeze();
 
   // Make sure the global Context is ready before letting any data in.
-  cct.reset(new Context(structs.context, std::nullopt, Scope(*this)));
+  cct.reset(new Context(structs.context, std::nullopt, {Relation::global, Scope(*this)}));
   for(auto& s: sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(*cct);
   }
@@ -630,16 +630,16 @@ void Source::notifyContext(Context& c) {
   }
   c.userdata.initialize();
 }
-Context& Source::context(Context& p, const Scope& s) {
+Context& Source::context(Context& p, const NestedScope& ns) {
   assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
   std::reference_wrapper<Context> res = p;
-  Scope ss = s;
+  NestedScope res_ns = ns;
   if(finalizeContexts) {
     for(ProfileFinalizer& f: pipe->finalizers.classification) {
-      Scope rs = s;
-      auto r = f.classify(p, rs);
+      NestedScope this_ns = ns;
+      auto r = f.classify(p, this_ns);
       if(r) {
-        ss = rs;
+        res_ns = this_ns;
         res = *r;
         break;
       }
@@ -647,12 +647,12 @@ Context& Source::context(Context& p, const Scope& s) {
   }
 
   bool first;
-  std::tie(res, first) = res.get().ensure(ss);
+  std::tie(res, first) = res.get().ensure(res_ns);
   if(first) notifyContext(res);
 
   if(finalizeContexts)
     for(ProfileSink& sink: pipe->sinks)
-      sink.notifyContextExpansion(p, s, res);
+      sink.notifyContextExpansion(p, ns.flat(), res);
   return res;
 }
 
@@ -681,7 +681,7 @@ ContextReconstruction& Source::contextReconstruction(ContextFlowGraph& g, Contex
   if(x.second) {
     rc.instantiate(
       [&](Context& c, const Scope& s) -> Context& {
-        return context(c, s);
+        return context(c, {Relation::call, s});
       }, [&](const Scope& s) -> ContextReconstruction& {
         assert(s != g.scope());
         auto fg = contextFlowGraph(s);

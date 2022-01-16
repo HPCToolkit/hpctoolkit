@@ -164,25 +164,28 @@ void Packed::packReferences(std::vector<std::uint8_t>& out) noexcept {
 
 void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
   src.contexts().citerate([&](const Context& c){
-    pack(out, (std::uint64_t)c.scope().type());
-    switch(c.scope().type()) {
+    if(c.scope().relation() != Relation::global
+       && c.scope().relation() != Relation::call) {
+      util::log::fatal{} << "sinks::Packed does not support non-physical calling Context!";
+    }
+    pack(out, (std::uint64_t)c.scope().flat().type());
+    switch(c.scope().flat().type()) {
     case Scope::Type::point: {
       // Format: <type> [module id] [offset] children... [sentinel]
-      auto mo = c.scope().point_data();
+      auto mo = c.scope().flat().point_data();
       pack(out, moduleIDs.at(&mo.first));
       pack(out, mo.second);
       break;
     }
     case Scope::Type::placeholder:
       // Format: <type> [placeholder] children... [sentinel]
-      pack(out, (uint64_t)c.scope().enumerated_data());
+      pack(out, (uint64_t)c.scope().flat().enumerated_data());
       break;
     case Scope::Type::unknown:
     case Scope::Type::global:
       // Format: <type> children... [sentinel]
       break;
     case Scope::Type::function:
-    case Scope::Type::inlined_function:
     case Scope::Type::loop:
     case Scope::Type::line:
       assert(false && "Unhandled Scope type in Packed!");

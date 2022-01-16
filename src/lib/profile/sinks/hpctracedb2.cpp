@@ -152,9 +152,10 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
     auto id = cache.lookup(c, [&](util::reference_index<const Context> c){
       // HACK to work around experiment.xml. If this Context is a point and
       // its parent is a line, emit a trace point for the line instead.
-      if(c->scope().type() == Scope::Type::point) {
+      if(c->scope().relation() == Relation::enclosure
+         && c->scope().flat().type() == Scope::Type::point) {
         if(auto pc = c->direct_parent()) {
-          if(pc->scope().type() == Scope::Type::line)
+          if(pc->scope().flat().type() == Scope::Type::line)
             c = *pc;
         }
       }

@@ -292,7 +292,7 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es) {
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   : onlyOutputWithChildren(false), openIsClosedTag(false),
     siblingS(exml.file_unknown, 0) {
-  const auto& s = c.scope();
+  const auto& s = c.scope().flat();
   auto& proc = exml.getProc(s);
   auto id = c.userdata[exml.src.identifier()];
   bool parentIsC = false;
@@ -313,20 +313,20 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     hasSiblingS = false;
     break;
   case Scope::Type::unknown: {
-    auto& uproc = (c.direct_parent()->scope().type() == Scope::Type::global)
-                   ? exml.proc_partial() : exml.proc_unknown();
+    auto& uproc = c.direct_parent()->scope().relation() == Relation::global
+                  ? exml.proc_partial() : exml.proc_unknown();
     exml.file_unknown.incr(exml);
     std::ostringstream ss;
     if(!parentIsC) {
       ss << "<C i=\"-" << id << "\""
               " s=\"" << uproc.id << "\" v=\"0\""
               " f=\"" << exml.file_unknown.id << "\" l=\"0\""
-              " it=\"" << id << "\">";
+              " it=\"" << id << "\">\n";
       post = "</C>\n";
     }
     ss << "<PF i=\"" << id << "\""
              " n=\"" << uproc.id << "\" s=\"" << uproc.id << "\""
-             " f=\"" << exml.file_unknown.id << "\" l=\"0\">\n";
+             " f=\"" << exml.file_unknown.id << "\" l=\"0\"";
     close = "</PF>\n";
     open = ss.str();
     onlyOutputWithChildren = true;
@@ -447,20 +447,18 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     hasSiblingS = false;
     break;
   }
-  case Scope::Type::function:
-  case Scope::Type::inlined_function: {
+  case Scope::Type::function: {
     const auto& f = s.function_data();
-    auto& fproc = exml.getProc(Scope(f));
-    if(fproc.prep()) {  // Create the Procedure for this Function
+    if(proc.prep()) {  // Create the Procedure for this Function
       const auto& name = f.name();
       if(name.empty()) { // Anonymous function, write as an <unknown proc>
         std::ostringstream ss;
         ss << "<unknown procedure>";
         if(auto o = f.offset()) ss << " 0x" << std::hex << *o;
         ss << " [" << f.module().path().string() << "]";
-        fproc.setTag(ss.str(), f.offset().value_or(0), 1);
+        proc.setTag(ss.str(), f.offset().value_or(0), 1);
       } else {  // Normal function
-        fproc.setTag(name, f.offset().value_or(0), 0);
+        proc.setTag(name, f.offset().value_or(0), 0);
       }
     }
 
@@ -468,42 +466,29 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     udm.incr(f.module(), exml);
 
     std::ostringstream ss;
-    if(s.type() == Scope::Type::inlined_function) {
-      if(parentIsC) {
-        // ...Then we need an extra <unknown proc> PF tag around the outside
-        // But we can't actually do that in EXMLv4 because we would need an
-        // extra Context id, and making up one breaks the metric acquisition.
-        // So just abort.
-        util::log::fatal{} << "inlined_function Scope outside function Scope, unable to represent in EXMLv4!";
-      }
-
-      const auto fl = s.line_data();
-      auto& udf = fl.first.userdata[exml.ud];
-      udf.incr(exml);
+    if(!parentIsC) {
+      // We need an extra C tag around the outside. If we have an enclosing line
+      // Scope (in range) we'll use that for the data.
       ss << "<C i=\"-" << id << "\" it=\"" << id << "\""
-              " s=\"" << proc.id << "\" v=\"0\""
-              " f=\"" << udf.id << "\" l=\"" << fl.second << "\">\n"
-            "<PF";
-      close = "</PF>\n";
-      post = "</C>\n" + post;
-    } else {
-      if(!parentIsC) {
-        // ...Then we need an extra C tag around the outside, called from nowhere
+              " s=\"" << proc.id << "\" v=\"0\"";
+      if(hasUncleS) {
+        uncleS.first.get().incr(exml);
+        ss << " f=\"" << uncleS.first.get().id << "\" l=\"" << uncleS.second << "\">\n";
+      } else {
+        // ...Guess it's just called from nowhere.
         exml.file_unknown.incr(exml);
-        ss << "<C i=\"-" << id << "\" it=\"" << id << "\""
-                " s=\"" << proc.id << "\" v=\"0\""
-                " f=\"" << exml.file_unknown.id << "\" l=\"0\">\n";
-        post = "</C>\n";
+        ss << " f=\"" << exml.file_unknown.id << "\" l=\"0\">\n";
       }
-      ss << "<PF";
-      close = "</PF>\n";
+      post = "</C>\n" + post;
     }
+    ss << "<PF";
+    close = "</PF>\n";
 
     auto src = f.sourceLocation();
     auto& udf = src ? src->first.userdata[exml.ud] : udm.unknown_file;
     udf.incr(exml);
     ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
-          " s=\"" << fproc.id << "\" n=\"" << fproc.id << "\""
+          " s=\"" << proc.id << "\" n=\"" << proc.id << "\""
           " v=\"0x" << std::hex << f.offset().value_or(0) << std::dec << "\""
           " f=\"" << udf.id << "\" l=\"" << (src ? src->second : 0) << "\""
           " lm=\"" << udm.id << "\"";

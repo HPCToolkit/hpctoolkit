@@ -93,9 +93,9 @@ public:
   util::optional_ref<Context> direct_parent() noexcept { return m_parent; }
   util::optional_ref<const Context> direct_parent() const noexcept { return m_parent; }
 
-  /// The Scope that this Context represents.
+  /// The full NestedScope that this Context represents.
   // MT: Safe (const)
-  const Scope& scope() const noexcept { return u_scope; }
+  const NestedScope& scope() const noexcept { return u_scope(); }
 
   /// Userdata storage and access.
   // MT: See ragged_vector.
@@ -117,7 +117,7 @@ private:
   std::unique_ptr<children_t> children_p;
   std::unique_ptr<reconsts_t> reconsts_p;
 
-  Context(ud_t::struct_t&, util::optional_ref<Context>, Scope);
+  Context(ud_t::struct_t&, util::optional_ref<Context>, NestedScope);
   Context(Context&& c);
 
   friend class PerThreadTemporary;
@@ -127,13 +127,13 @@ private:
   /// Get the child Context for a given Scope, creating one if none exists.
   /// Returns true if the Context was created by this call.
   // MT: Internally Synchronized
-  std::pair<Context&, bool> ensure(Scope);
+  std::pair<Context&, bool> ensure(NestedScope);
 
   const util::optional_ref<Context> m_parent;
-  util::uniqable_key<Scope> u_scope;
+  util::uniqable_key<NestedScope> u_scope;
 
   friend class util::uniqued<Context>;
-  util::uniqable_key<Scope>& uniqable_key() { return u_scope; }
+  util::uniqable_key<NestedScope>& uniqable_key() { return u_scope; }
 };
 
 /// Reconstruction of a potentially missing sequence of calling Contexts.
