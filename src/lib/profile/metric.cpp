@@ -56,28 +56,6 @@
 
 using namespace hpctoolkit;
 
-static double atomic_add(std::atomic<double>& a, const double v) noexcept {
-  double old = a.load(std::memory_order_relaxed);
-  while(!a.compare_exchange_weak(old, old+v, std::memory_order_relaxed));
-  return old;
-}
-
-static double atomic_op(std::atomic<double>& a, const double v, Statistic::combination_t op) noexcept {
-  double old = a.load(std::memory_order_relaxed);
-  switch(op) {
-  case Statistic::combination_t::sum:
-    while(!a.compare_exchange_weak(old, old+v, std::memory_order_relaxed));
-    break;
-  case Statistic::combination_t::min:
-    while((v < old || old == 0) && !a.compare_exchange_weak(old, v, std::memory_order_relaxed));
-    break;
-  case Statistic::combination_t::max:
-    while((v > old || old == 0) && !a.compare_exchange_weak(old, v, std::memory_order_relaxed));
-    break;
-  }
-  return old;
-}
-
 ExtraStatistic::ExtraStatistic(Settings s)
   : u_settings(std::move(s)) {
   assert(!u_settings().formula.empty() && "ExtraStatistics must have a non-empty formula!");
@@ -261,85 +239,6 @@ const std::vector<StatisticPartial>& Metric::partials() const noexcept {
 const std::vector<Statistic>& Metric::statistics() const noexcept {
   assert(m_frozen.load(std::memory_order_relaxed) && "Attempt to access a Metric's Statistics before a freeze!");
   return m_stats;
-}
-
-StatisticAccumulator::StatisticAccumulator(const Metric& m)
-  : partials(m.partials().size()) {};
-
-void StatisticAccumulator::PartialRef::add(MetricScope s, double v) noexcept {
-  assert(v > 0 && "Attempt to add 0 value to a Partial!");
-  switch(s) {
-  case MetricScope::point: atomic_op(partial.point, v, statpart.combinator()); return;
-  case MetricScope::function: atomic_op(partial.function, v, statpart.combinator()); return;
-  case MetricScope::execution: atomic_op(partial.execution, v, statpart.combinator()); return;
-  }
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-
-StatisticAccumulator::PartialCRef StatisticAccumulator::get(const StatisticPartial& p) const noexcept {
-  return {partials[p.m_idx], p};
-}
-StatisticAccumulator::PartialRef StatisticAccumulator::get(const StatisticPartial& p) noexcept {
-  return {partials[p.m_idx], p};
-}
-
-void MetricAccumulator::add(double v) noexcept {
-  if(v == 0) util::log::warning{} << "Adding a 0-metric value!";
-  atomic_add(point, v);
-}
-
-static std::optional<double> opt0(double d) {
-  return d == 0 ? std::optional<double>{} : d;
-}
-
-std::optional<double> StatisticAccumulator::PartialRef::get(MetricScope s) const noexcept {
-  partial.validate();
-  switch(s) {
-  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
-  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
-  };
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-std::optional<double> StatisticAccumulator::PartialCRef::get(MetricScope s) const noexcept {
-  partial.validate();
-  switch(s) {
-  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
-  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
-  };
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-
-void StatisticAccumulator::Partial::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0
-          || function.load(std::memory_order_relaxed) != 0
-          || execution.load(std::memory_order_relaxed) != 0)
-    && "Attempt to access a StatisticAccumulator with 0 value!");
-}
-
-util::optional_ref<const StatisticAccumulator> Metric::getFor(const Context& c) const noexcept {
-  return c.data().stats.find(*this);
-}
-
-std::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
-  validate();
-  switch(s) {
-  case MetricScope::point: return opt0(point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(function);
-  case MetricScope::execution: return opt0(execution);
-  }
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-
-void MetricAccumulator::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0
-          || function != 0 || execution != 0)
-    && "Attempt to access a MetricAccumulator with 0 value!");
 }
 
 util::optional_ref<const MetricAccumulator> Metric::getFor(const PerThreadTemporary& t, const Context& c) const noexcept {

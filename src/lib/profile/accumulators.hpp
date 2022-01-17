@@ -55,6 +55,7 @@
 #include <atomic>
 #include <bitset>
 #include <chrono>
+#include <iosfwd>
 #include <optional>
 #include <vector>
 
@@ -87,6 +88,10 @@ enum class MetricScope : size_t {
   execution,
 };
 
+/// Standardized stringification for MetricScope constants.
+std::ostream& operator<<(std::ostream&, MetricScope);
+const std::string& stringify(MetricScope);
+
 /// Bitset-like object used as a set of Scope values.
 class MetricScopeSet final : private std::bitset<3> {
 private:
@@ -112,6 +117,51 @@ public:
   MetricScopeSet& operator&=(const MetricScopeSet& o) { base::operator&=(o); return *this; }
 
   using base::count;
+
+  class const_iterator final {
+  public:
+    const_iterator() {};
+
+    const_iterator(const const_iterator&) = default;
+    const_iterator& operator=(const const_iterator&) = default;
+
+    bool operator==(const const_iterator& o) const {
+      return set == o.set && (set == nullptr || scope == o.scope);
+    }
+    bool operator!=(const const_iterator& o) const { return !operator==(o); }
+
+    MetricScope operator*() const { return scope; }
+    const MetricScope* operator->() const { return &scope; }
+
+    const_iterator& operator++() {
+      assert(set != nullptr);
+      size_t ms = static_cast<size_t>(scope);
+      for(++ms; ms < set->size() && !set->has(static_cast<MetricScope>(ms));
+          ++ms);
+      if(ms >= set->size()) set = nullptr;
+      else scope = static_cast<MetricScope>(ms);
+      return *this;
+    }
+    const_iterator operator++(int) {
+      const_iterator old = *this;
+      operator++();
+      return old;
+    }
+
+  private:
+    friend class MetricScopeSet;
+    const MetricScopeSet* set = nullptr;
+    MetricScope scope;
+  };
+
+  const_iterator begin() const {
+    const_iterator it;
+    it.set = this;
+    it.scope = static_cast<MetricScope>(0);
+    if(!operator[](0)) ++it;
+    return it;
+  }
+  const_iterator end() const { return {}; }
 };
 
 /// Accumulator structure for the data implicitly bound to a Thread and Context.
