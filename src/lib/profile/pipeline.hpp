@@ -131,7 +131,6 @@ protected:
   struct {
     std::vector<std::reference_wrapper<ProfileFinalizer>> classification;
     std::vector<std::reference_wrapper<ProfileFinalizer>> identifier;
-    std::vector<std::reference_wrapper<ProfileFinalizer>> mscopeIdentifiers;
     std::vector<std::reference_wrapper<ProfileFinalizer>> resolvedPath;
     std::vector<std::reference_wrapper<ProfileFinalizer>> statistics;
     std::vector<std::reference_wrapper<ProfileFinalizer>> all;
@@ -210,16 +209,11 @@ public:
       const auto& operator()(Context::ud_t&) const noexcept { return context; }
       Module::ud_t::typed_member_t<unsigned int> module;
       const auto& operator()(Module::ud_t&) const noexcept { return module; }
-      Metric::ud_t::typed_member_t<unsigned int> metric;
+      Metric::ud_t::typed_member_t<Metric::Identifier> metric;
       const auto& operator()(Metric::ud_t&) const noexcept { return metric; }
       Thread::ud_t::typed_member_t<unsigned int> thread;
       const auto& operator()(Thread::ud_t&) const noexcept { return thread; }
     } identifier;
-
-    struct {
-      Metric::ud_t::typed_member_t<Metric::ScopedIdentifiers> metric;
-      const auto& operator()(Metric::ud_t&) const noexcept { return metric; }
-    } mscopeIdentifiers;
 
     struct {
       File::ud_t::typed_member_t<stdshim::filesystem::path> file;
@@ -261,7 +255,6 @@ public:
     /// Access the Extension userdata members.
     // MT: Safe (const)
     const decltype(Extensions::identifier)& identifier() const;
-    const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
 
     /// Wait for and enter a region used for ordering of pre-wavefront parts.
@@ -323,7 +316,7 @@ public:
 
   public:
     /// Emit a new Context into the Pipeline as the child of another.
-    /// ProfileTransformers may inject additional Contexts between the parent
+    /// ProfileFinalizers may inject additional Contexts between the parent
     /// resulting child Context to provide additional (usually lexical) context.
     ///
     /// This method presupposes the single sequence of Contexts between the
@@ -331,7 +324,7 @@ public:
     /// See contextReconstruction for a case when this is not possible.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Context& context(Context&, const Scope&);
+    Context& context(Context&, const NestedScope&);
 
     /// Emit a new ContextReconstruction for the given ContextFlowGraph,
     /// rooted at a particular Context.
@@ -537,7 +530,6 @@ public:
 
     /// Access the Extensions available within the Pipeline.
     const decltype(Extensions::identifier)& identifier() const;
-    const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
 
     /// Allow registration of Userdata for Sinks.

@@ -61,7 +61,7 @@ using namespace hpctoolkit;
 // Context
 //
 
-Context::Context(ud_t::struct_t& rs, util::optional_ref<Context> p, Scope s)
+Context::Context(ud_t::struct_t& rs, util::optional_ref<Context> p, NestedScope s)
   : userdata(rs, std::ref(*this)), children_p(new children_t()),
     reconsts_p(new reconsts_t()), m_parent(p), u_scope(s) {};
 Context::Context(Context&& c)
@@ -137,7 +137,7 @@ void Context::citerate(const std::function<void(const Context&)>& pre,
   }
 }
 
-std::pair<Context&,bool> Context::ensure(Scope s) {
+std::pair<Context&,bool> Context::ensure(NestedScope s) {
   auto x = children_p->emplace(userdata.base(), *this, std::move(s));
   return {x.first(), x.second};
 }

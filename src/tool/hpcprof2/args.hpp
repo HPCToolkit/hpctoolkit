@@ -79,7 +79,7 @@ public:
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
     ExtensionClass requires() const noexcept override { return {}; }
-    util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
+    util::optional_ref<Context> classify(Context&, NestedScope&) noexcept override;
 
   private:
     ProfArgs& args;

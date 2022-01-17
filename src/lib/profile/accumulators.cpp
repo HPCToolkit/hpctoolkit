@@ -49,9 +49,32 @@
 #include "context.hpp"
 #include "metric.hpp"
 
+#include <ostream>
 #include <stack>
 
 using namespace hpctoolkit;
+
+static const std::string ms_point = "point";
+static const std::string ms_function = "function";
+static const std::string ms_execution = "execution";
+
+const std::string& hpctoolkit::stringify(MetricScope ms) {
+  switch(ms) {
+  case MetricScope::point: return ms_point;
+  case MetricScope::function: return ms_function;
+  case MetricScope::execution: return ms_execution;
+  }
+  std::abort();
+}
+std::ostream& hpctoolkit::operator<<(std::ostream& os, MetricScope ms) {
+  return os << stringify(ms);
+}
+
+static double atomic_add(std::atomic<double>& a, const double v) noexcept {
+  double old = a.load(std::memory_order_relaxed);
+  while(!a.compare_exchange_weak(old, old+v, std::memory_order_relaxed));
+  return old;
+}
 
 static double atomic_op(std::atomic<double>& a, const double v, Statistic::combination_t op) noexcept {
   double old = a.load(std::memory_order_relaxed);
@@ -69,37 +92,83 @@ static double atomic_op(std::atomic<double>& a, const double v, Statistic::combi
   return old;
 }
 
-static bool pullsFunction(Scope parent, Scope child) {
-  switch(child.type()) {
-  // Function-type Scopes, placeholder and unknown (which could be a call)
-  case Scope::Type::function:
-  case Scope::Type::inlined_function:
-  case Scope::Type::unknown:
-  case Scope::Type::placeholder:
-    return false;
-  case Scope::Type::point:
-  case Scope::Type::loop:
-  case Scope::Type::line:
-    switch(parent.type()) {
-    // Function-type scopes, and unknown (which could be a call)
-    case Scope::Type::unknown:
-    case Scope::Type::function:
-    case Scope::Type::inlined_function:
-    case Scope::Type::loop:
-    case Scope::Type::line:
-      return true;
-    case Scope::Type::global:
-    case Scope::Type::point:
-    case Scope::Type::placeholder:
-      return false;
-    }
-    break;
-  case Scope::Type::global:
-    assert(false && "global Context should have no parent!");
-    std::abort();
+StatisticAccumulator::StatisticAccumulator(const Metric& m)
+  : partials(m.partials().size()) {};
+
+void StatisticAccumulator::PartialRef::add(MetricScope s, double v) noexcept {
+  assert(v > 0 && "Attempt to add 0 value to a Partial!");
+  switch(s) {
+  case MetricScope::point: atomic_op(partial.point, v, statpart.combinator()); return;
+  case MetricScope::function: atomic_op(partial.function, v, statpart.combinator()); return;
+  case MetricScope::execution: atomic_op(partial.execution, v, statpart.combinator()); return;
   }
-  assert(false && "Unhandled Scope type!");
+  assert(false && "Invalid MetricScope!");
   std::abort();
+}
+
+StatisticAccumulator::PartialCRef StatisticAccumulator::get(const StatisticPartial& p) const noexcept {
+  return {partials[p.m_idx], p};
+}
+StatisticAccumulator::PartialRef StatisticAccumulator::get(const StatisticPartial& p) noexcept {
+  return {partials[p.m_idx], p};
+}
+
+void MetricAccumulator::add(double v) noexcept {
+  if(v == 0) util::log::warning{} << "Adding a 0-metric value!";
+  atomic_add(point, v);
+}
+
+static std::optional<double> opt0(double d) {
+  return d == 0 ? std::optional<double>{} : d;
+}
+
+std::optional<double> StatisticAccumulator::PartialRef::get(MetricScope s) const noexcept {
+  partial.validate();
+  switch(s) {
+  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
+  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
+  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
+  };
+  assert(false && "Invalid MetricScope!");
+  std::abort();
+}
+std::optional<double> StatisticAccumulator::PartialCRef::get(MetricScope s) const noexcept {
+  partial.validate();
+  switch(s) {
+  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
+  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
+  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
+  };
+  assert(false && "Invalid MetricScope!");
+  std::abort();
+}
+
+void StatisticAccumulator::Partial::validate() const noexcept {
+  assert((point.load(std::memory_order_relaxed) != 0
+          || function.load(std::memory_order_relaxed) != 0
+          || execution.load(std::memory_order_relaxed) != 0)
+    && "Attempt to access a StatisticAccumulator with 0 value!");
+}
+
+util::optional_ref<const StatisticAccumulator> Metric::getFor(const Context& c) const noexcept {
+  return c.data().stats.find(*this);
+}
+
+std::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
+  validate();
+  switch(s) {
+  case MetricScope::point: return opt0(point.load(std::memory_order_relaxed));
+  case MetricScope::function: return opt0(function);
+  case MetricScope::execution: return opt0(execution);
+  }
+  assert(false && "Invalid MetricScope!");
+  std::abort();
+}
+
+void MetricAccumulator::validate() const noexcept {
+  assert((point.load(std::memory_order_relaxed) != 0
+          || function != 0 || execution != 0)
+    && "Attempt to access a MetricAccumulator with 0 value!");
 }
 
 void PerThreadTemporary::finalize() noexcept {
@@ -240,7 +309,7 @@ void PerThreadTemporary::finalize() noexcept {
     }
     if(!c.get().direct_parent()) {
       assert((!global || global == &c.get()) && "Multiple root contexts???");
-      assert(c.get().scope().type() == Scope::Type::global && "Root context without (global) Scope!");
+      assert(c.get().scope().flat().type() == Scope::Type::global && "Root context without (global) Scope!");
       global = c.get();
     }
   }
@@ -287,9 +356,8 @@ void PerThreadTemporary::finalize() noexcept {
 
     // Go through our children and sum into our bits
     for(std::size_t i = 0; i < stack.top().submds.size(); i++) {
-      const Context& cc = stack.top().submds[i].first;
       const md_t& ccmd = stack.top().submds[i].second;
-      const bool pullfunc = pullsFunction(c.scope(), cc.scope());
+      const bool pullfunc = !isCall(c.scope().relation());
       for(const auto& mx: ccmd.citerate()) {
         auto& accum = data[mx.first];
         if(pullfunc) accum.function += mx.second.function;
@@ -305,9 +373,9 @@ void PerThreadTemporary::finalize() noexcept {
       for(size_t i = 0; i < mx.first->partials().size(); i++) {
         auto& partial = mx.first->partials()[i];
         auto& atomics = accum.partials[i];
-        atomic_op(atomics.point, partial.m_accum(mx.second.point.load(std::memory_order_relaxed)), partial.combinator());
-        atomic_op(atomics.function, partial.m_accum(mx.second.function), partial.combinator());
-        atomic_op(atomics.execution, partial.m_accum(mx.second.execution), partial.combinator());
+        atomic_op(atomics.point, partial.m_accum.evaluate(mx.second.point.load(std::memory_order_relaxed)), partial.combinator());
+        atomic_op(atomics.function, partial.m_accum.evaluate(mx.second.function), partial.combinator());
+        atomic_op(atomics.execution, partial.m_accum.evaluate(mx.second.execution), partial.combinator());
       }
     }
 

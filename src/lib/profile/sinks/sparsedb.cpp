@@ -167,25 +167,25 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
         const auto& vv = mx.second;
         if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
           util::log::fatal{} << "Metric isn't function/execution!";
-        const auto& ids = m.userdata[src.mscopeIdentifiers()];
+        const auto& id = m.userdata[src.identifier()];
         hpcrun_metricVal_t v;
         if(auto vex = vv.get(MetricScope::function)) {
           v.r = *vex;
-          mids.push_back(ids.function);
+          mids.push_back(id.getFor(MetricScope::function));
           values.push_back(v);
           // HACK conditional to work around experiment.xml. Line Scopes are
           // emitted as leaves (<S>), so they should have no extra inclusive cost.
-          if(c.scope().type() == Scope::Type::line) {
-            mids.push_back(ids.execution);
+          if(c.scope().flat().type() == Scope::Type::line) {
+            mids.push_back(id.getFor(MetricScope::execution));
             values.push_back(v);
           }
         }
         // HACK conditional to work around experiment.xml. Line Scopes are
         // emitted as leaves (<S>), so they should have no extra inclusive cost.
-        if(c.scope().type() != Scope::Type::line) {
+        if(c.scope().flat().type() != Scope::Type::line) {
           if(auto vinc = vv.get(MetricScope::execution)) {
             v.r = *vinc;
-            mids.push_back(ids.execution);
+            mids.push_back(id.getFor(MetricScope::execution));
             values.push_back(v);
           }
         }
@@ -277,35 +277,33 @@ void SparseDB::write()
         const Metric& m = mx.first;
         if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
           util::log::fatal{} << "Metric isn't function/execution!";
-        const auto& ids = m.userdata[src.mscopeIdentifiers()];
+        const auto& id = m.userdata[src.identifier()];
         const auto& vv = mx.second;
-        size_t idx = 0;
         for(const auto& sp: m.partials()) {
           hpcrun_metricVal_t v;
           if(auto vex = vv.get(sp).get(MetricScope::function)) {
             v.r = *vex;
-            mids.push_back((ids.function << 8) + idx);
+            mids.push_back(id.getFor(sp, MetricScope::function));
             values.push_back(v);
             hasEx = true;
             // HACK conditional to work around experiment.xml. Line Scopes are
             // emitted as leaves (<S>), so they should have no extra inclusive cost.
-            if(c.scope().type() == Scope::Type::line) {
-              mids.push_back((ids.execution << 8) + idx);
+            if(c.scope().flat().type() == Scope::Type::line) {
+              mids.push_back(id.getFor(sp, MetricScope::execution));
               values.push_back(v);
               hasInc = true;
             }
           }
           // HACK conditional to work around experiment.xml. Line Scopes are
           // emitted as leaves (<S>), so they should have no extra inclusive cost.
-          if(c.scope().type() != Scope::Type::line) {
+          if(c.scope().flat().type() != Scope::Type::line) {
             if(auto vinc = vv.get(sp).get(MetricScope::execution)) {
               v.r = *vinc;
-              mids.push_back((ids.execution << 8) + idx);
+              mids.push_back(id.getFor(sp, MetricScope::execution));
               values.push_back(v);
               hasInc = true;
             }
           }
-          idx++;
         }
         if(hasEx) ctx_nzmids_cnts[c.userdata[src.identifier()]]++;
         if(hasInc) ctx_nzmids_cnts[c.userdata[src.identifier()]]++;

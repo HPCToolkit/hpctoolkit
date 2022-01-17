@@ -219,7 +219,8 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
     default:
       assert(false && "Unrecognized Scope type while unpacking Contexts!");
     }
-    auto& c = sink.context(tip.empty() ? sink.global() : tip.top().get(), s);
+    auto& c = sink.context(tip.empty() ? sink.global() : tip.top().get(),
+        {Relation::call, s});
     tip.push(c);
   }
   return it;
