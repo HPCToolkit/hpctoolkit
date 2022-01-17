@@ -56,6 +56,15 @@
 
 using namespace hpctoolkit;
 
+std::ostream& hpctoolkit::operator<<(std::ostream& os, Statistic::combination_t c) {
+  switch(c) {
+  case Statistic::combination_t::sum: return os << "sum";
+  case Statistic::combination_t::min: return os << "min";
+  case Statistic::combination_t::max: return os << "max";
+  }
+  std::abort();
+}
+
 ExtraStatistic::ExtraStatistic(Settings s)
   : u_settings(std::move(s)) {
   assert(!u_settings().formula.empty() && "ExtraStatistics must have a non-empty formula!");
@@ -105,7 +114,7 @@ bool ExtraStatistic::Settings::operator==(const Settings& o) const noexcept {
   return res;
 }
 
-Statistic::Statistic(std::string suff, bool showp, formula_t form, bool showBD)
+Statistic::Statistic(std::string suff, bool showp, Expression form, bool showBD)
   : m_suffix(std::move(suff)), m_showPerc(showp), m_formula(std::move(form)),
     m_visibleByDefault(showBD) {};
 
@@ -164,8 +173,8 @@ std::size_t Metric::StatsAccess::requestSumPartial() {
   assert(l && "Unable to satisfy :Sum Partial request on a frozen Metric!");
 
   m.m_thawed_sumPartial = m.m_partials.size();
-  m.m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::sum, m.m_thawed_sumPartial});
+  m.m_partials.push_back({Expression::variable, Statistic::combination_t::sum,
+                          m.m_thawed_sumPartial});
   return m.m_thawed_sumPartial;
 }
 
@@ -179,53 +188,74 @@ bool Metric::freeze() {
   size_t cntIdx = -1;
   if(ss.mean || ss.stddev || ss.cfvar) {
     cntIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x == 0 ? 0 : 1; },
-                          Statistic::combination_t::sum, cntIdx});
+    m_partials.push_back({1, Statistic::combination_t::sum, cntIdx});
   }
   if(m_thawed_sumPartial == std::numeric_limits<std::size_t>::max()
      && (ss.sum || ss.mean || ss.stddev || ss.cfvar)) {
     m_thawed_sumPartial = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::sum, m_thawed_sumPartial});
+    m_partials.push_back({Expression::variable, Statistic::combination_t::sum,
+                          m_thawed_sumPartial});
   }
   size_t x2Idx = -1;
   if(ss.stddev || ss.cfvar) {
     x2Idx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x * x; },
+    m_partials.push_back({{Expression::Kind::op_pow, {Expression::variable, 2}},
                           Statistic::combination_t::sum, x2Idx});
   }
   size_t minIdx = -1;
   if(ss.min) {
     minIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::min, minIdx});
+    m_partials.push_back({Expression::variable, Statistic::combination_t::min,
+                          minIdx});
   }
   size_t maxIdx = -1;
   if(ss.max) {
     maxIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::max, maxIdx});
+    m_partials.push_back({Expression::variable, Statistic::combination_t::max,
+                          maxIdx});
   }
 
   if(ss.sum)
-    m_stats.push_back({"Sum", true, {(Statistic::formula_t::value_type)m_thawed_sumPartial},
+    m_stats.push_back({"Sum", true, {Expression::variable, m_thawed_sumPartial},
                        u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.mean)
-    m_stats.push_back({"Mean", false, {m_thawed_sumPartial, "/", cntIdx},
-                       u_settings().visibility == Settings::visibility_t::shownByDefault});
+    m_stats.push_back({"Mean", false,
+      {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                   {Expression::variable, cntIdx}}},
+      u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.stddev)
     m_stats.push_back({"StdDev", false,
-      {"sqrt((", x2Idx, "/", cntIdx, ") - pow(", m_thawed_sumPartial, "/", cntIdx, ", 2))"},
+      {Expression::Kind::op_sqrt, {{Expression::Kind::op_sub, {
+        {Expression::Kind::op_div, { {Expression::variable, x2Idx},
+                                     {Expression::variable, cntIdx}}},
+        {Expression::Kind::op_pow, {
+          {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                       {Expression::variable, cntIdx}}},
+          2,
+        }},
+      }}}},
       u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.cfvar)
     m_stats.push_back({"CfVar", false,
-      {"sqrt((", x2Idx, "/", cntIdx, ") - pow(", m_thawed_sumPartial, "/", cntIdx, ", 2)) / (", m_thawed_sumPartial, "/", cntIdx, ")"},
+      {Expression::Kind::op_div, {
+        {Expression::Kind::op_sqrt, {{Expression::Kind::op_sub, {
+          {Expression::Kind::op_div, { {Expression::variable, x2Idx},
+                                       {Expression::variable, cntIdx}}},
+          {Expression::Kind::op_pow, {
+            {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                         {Expression::variable, cntIdx}}},
+            2,
+          }},
+        }}}},
+        {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                     {Expression::variable, cntIdx}}},
+      }},
       u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.min)
-    m_stats.push_back({"Min", false, {(Statistic::formula_t::value_type)minIdx},
+    m_stats.push_back({"Min", false, {Expression::variable, minIdx},
                        u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.max)
-    m_stats.push_back({"Max", false, {(Statistic::formula_t::value_type)maxIdx},
+    m_stats.push_back({"Max", false, {Expression::variable, maxIdx},
                        u_settings().visibility == Settings::visibility_t::shownByDefault});
 
   m_frozen.store(true, std::memory_order_release);

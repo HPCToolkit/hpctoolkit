@@ -52,6 +52,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <sstream>
+#include <stack>
 #include <limits>
 
 using namespace hpctoolkit;
@@ -133,16 +134,58 @@ static void combineFormula(std::ostream& os, unsigned int id,
 }
 
 static void finalizeFormula(std::ostream& os, const std::string& mode,
-                            const Metric::Identifier& id, MetricScope ms,
-                            const Metric& m, const Statistic& s) {
+                            const Metric& m, const Metric::Identifier& id,
+                            MetricScope ms, const Statistic& s) {
   os << "<MetricFormula t=\"" << mode << "\" frm=\"";
-  for(const auto& e: s.finalizeFormula()) {
-    if(const auto* idx = std::get_if<size_t>(&e))
-      os << "$" << id.getFor(m.partials()[*idx], ms);
-    else if(const auto* frag = std::get_if<std::string>(&e))
-      os << *frag;
-    else std::abort();
-  }
+
+  std::stack<bool, std::vector<bool>> first;
+  first.push(true);
+  std::stack<std::string, std::vector<std::string>> infix;
+  infix.push("!!!");
+  s.finalizeFormula().citerate_all(
+    [&](double v){
+      if(!first.top()) os << infix.top();
+      first.top() = false;
+      os << v;
+    },
+    [&](Expression::uservalue_t idx){
+      if(!first.top()) os << infix.top();
+      first.top() = false;
+      os << "$" << id.getFor(m.partials()[idx], ms);
+    },
+    [&](const Expression& e) {
+      if(!first.top()) os << infix.top();
+      first.top() = false;
+      std::string fix = "!!!";
+      switch(e.kind()) {
+      case Expression::Kind::constant:
+      case Expression::Kind::subexpression:
+      case Expression::Kind::variable:
+        std::abort();
+      case Expression::Kind::op_sum:  os << '('; fix = "+"; break;
+      case Expression::Kind::op_sub:  os << '('; fix = "-"; break;
+      case Expression::Kind::op_neg:  os << "-("; break;
+      case Expression::Kind::op_prod: os << '('; fix = "*"; break;
+      case Expression::Kind::op_div:  os << '('; fix = "/"; break;
+      case Expression::Kind::op_pow:  os << '('; fix = "^"; break;
+      case Expression::Kind::op_sqrt: os << "sqrt("; break;
+      case Expression::Kind::op_log:  os << "log("; fix = ","; break;
+      case Expression::Kind::op_ln:   os << "ln(";break;
+      case Expression::Kind::op_min:  os << "min("; fix = ","; break;
+      case Expression::Kind::op_max:  os << "max("; fix = ","; break;
+      case Expression::Kind::op_floor: os << "floor("; break;
+      case Expression::Kind::op_ceil: os << "ceil("; break;
+      }
+      first.push(true);
+      infix.push(std::move(fix));
+    },
+    [&](const Expression&) {
+      first.pop();
+      infix.pop();
+      os << ')';
+    }
+  );
+
   os << "\"/>\n";
 }
 
@@ -206,7 +249,7 @@ ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
                             "t=\"" << type << "\" partner=\"" << p_id << "\" "
                             "show=\"" << (stat.visibleByDefault() ? "1" : "0") << "\" "
                             "show-percent=\"" << (stat.showPercent() ? "1" : "0") << "\">\n";
-          finalizeFormula(ss, "view", id, ms, m, stat);
+          finalizeFormula(ss, "view", m, id, ms, stat);
           ss << "<Info><NV n=\"units\" v=\"events\"/></Info>\n"
                 "</Metric>\n";
         } else {

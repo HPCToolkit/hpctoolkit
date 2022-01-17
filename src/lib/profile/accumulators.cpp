@@ -373,9 +373,9 @@ void PerThreadTemporary::finalize() noexcept {
       for(size_t i = 0; i < mx.first->partials().size(); i++) {
         auto& partial = mx.first->partials()[i];
         auto& atomics = accum.partials[i];
-        atomic_op(atomics.point, partial.m_accum(mx.second.point.load(std::memory_order_relaxed)), partial.combinator());
-        atomic_op(atomics.function, partial.m_accum(mx.second.function), partial.combinator());
-        atomic_op(atomics.execution, partial.m_accum(mx.second.execution), partial.combinator());
+        atomic_op(atomics.point, partial.m_accum.evaluate(mx.second.point.load(std::memory_order_relaxed)), partial.combinator());
+        atomic_op(atomics.function, partial.m_accum.evaluate(mx.second.function), partial.combinator());
+        atomic_op(atomics.execution, partial.m_accum.evaluate(mx.second.execution), partial.combinator());
       }
     }
 

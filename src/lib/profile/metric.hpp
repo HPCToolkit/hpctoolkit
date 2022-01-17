@@ -49,6 +49,7 @@
 
 #include "accumulators.hpp"
 #include "attributes.hpp"
+#include "expression.hpp"
 
 #include "util/locked_unordered.hpp"
 #include "util/uniqable.hpp"
@@ -56,6 +57,7 @@
 
 #include <atomic>
 #include <bitset>
+#include <iosfwd>
 #include <functional>
 #include <optional>
 #include <variant>
@@ -85,10 +87,6 @@ public:
   // Only a few combination formulas are permitted. This is the set.
   enum class combination_t { sum, min, max };
 
-  // The other two formulas are best represented by C++ functions.
-  using accumulate_t = std::function<double(double)>;
-  using finalize_t = std::function<double(const std::vector<double>&)>;
-
   /// Statistics are created by the associated Metric.
   Statistic() = delete;
 
@@ -106,24 +104,24 @@ public:
   // MT: Safe (const)
   bool visibleByDefault() const noexcept { return m_visibleByDefault; }
 
-  /// Type for formulas. Each element is either a string or the index of a Partial.
-  /// If all such indices are replaced by variable names and the entire vector
-  /// concatinated, the result is a C-like math formula.
-  using formula_t = std::vector<std::variant<size_t, std::string>>;
-
-  /// Get the formula used generate the final value for this Statistic.
+  /// Get the Expression used generate the final value for this Statistic.
+  /// The variables in this Expression are indices of the Partials for the
+  /// associated Metric.
   // MT: Safe (const)
-  const formula_t& finalizeFormula() const noexcept { return m_formula; }
+  const Expression& finalizeFormula() const noexcept { return m_formula; }
 
 private:
   const std::string m_suffix;
   const bool m_showPerc;
-  const formula_t m_formula;
+  const Expression m_formula;
   const bool m_visibleByDefault;
 
   friend class Metric;
-  Statistic(std::string, bool, formula_t, bool);
+  Statistic(std::string, bool, Expression, bool);
 };
+
+/// Standard stringification for Statistic::combination_t values
+std::ostream& operator<<(std::ostream&, Statistic::combination_t);
 
 /// A StatisticPartial is the "accumulate" and "combine" parts of a Statistic.
 /// There may be multiple Partials used for a Statistic, and multiple Statistics
@@ -135,12 +133,17 @@ public:
   StatisticPartial& operator=(const StatisticPartial&) = delete;
   StatisticPartial& operator=(StatisticPartial&&) = default;
 
+  /// Get the Expression representing the "accumulate" function for this
+  /// Partial. Single-variable (which is 0).
+  // MT: Safe (const)
+  const Expression& accumulate() const noexcept { return m_accum; }
+
   /// Get the combination function used for this Partial
   // MT: Safe (const)
   Statistic::combination_t combinator() const noexcept { return m_combin; }
 
 private:
-  const Statistic::accumulate_t m_accum;
+  const Expression m_accum;
   const Statistic::combination_t m_combin;
   const std::size_t m_idx;
 
@@ -148,7 +151,7 @@ private:
   friend class PerThreadTemporary;
   friend class StatisticAccumulator;
   StatisticPartial() = default;
-  StatisticPartial(Statistic::accumulate_t a, Statistic::combination_t c, std::size_t idx)
+  StatisticPartial(Expression a, Statistic::combination_t c, std::size_t idx)
     : m_accum(std::move(a)), m_combin(std::move(c)), m_idx(idx) {};
 };
 
