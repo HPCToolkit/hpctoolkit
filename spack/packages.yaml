@@ -19,7 +19,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: December 17, 2021.
+#  Last revised: January 17, 2022.
 #
 packages:
 
@@ -77,7 +77,7 @@ packages:
   # +cuda, +rocm for GPU support.
   #
   # hpctoolkit:
-  #   version:  [2021.10.15, master]
+  #   version:  [2022.01.15, master]
   #   variants: +mpi +papi +viewer
 
 
