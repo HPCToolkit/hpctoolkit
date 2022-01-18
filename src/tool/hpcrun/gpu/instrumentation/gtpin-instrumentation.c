@@ -430,6 +430,7 @@ kernelActivityTranslate
  uint32_t bb_instruction_count,
  uint64_t execution_count,
  uint64_t latency,
+ uint16_t theoretical_latency,
  uint64_t active_simd_lanes,
  uint64_t total_simd_lanes,
  uint64_t scalar_simd_loss
@@ -443,6 +444,7 @@ kernelActivityTranslate
   ga->details.kernel_block.bb_instruction_count = bb_instruction_count;
   ga->details.kernel_block.execution_count = execution_count;
   ga->details.kernel_block.latency = latency;
+  ga->details.kernel_block.theoretical_latency = theoretical_latency;
   ga->details.kernel_block.active_simd_lanes = active_simd_lanes;
   ga->details.kernel_block.total_simd_lanes = total_simd_lanes;
   ga->details.kernel_block.scalar_simd_loss = scalar_simd_loss;
@@ -460,13 +462,14 @@ kernelInstructionActivityProcess
  uint64_t offset,
  uint64_t bb_execution_count,
  uint64_t inst_latency,
+ uint16_t theoretical_latency,
  gpu_activity_channel_t *activity_channel,
  cct_node_t *host_op_node
 )
 {
   gpu_activity_t ga;
   kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, true,
-      0, bb_execution_count, inst_latency, 0, 0, 0);
+      0, bb_execution_count, inst_latency, theoretical_latency, 0, 0, 0);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, true); // how to set the ip_norm
@@ -495,7 +498,7 @@ kernelBlockActivityProcess
 {
   gpu_activity_t ga;
   kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, false,
-      bb_instruction_count, bb_execution_count, bb_latency_cycles, bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss);
+      bb_instruction_count, bb_execution_count, 0, bb_latency_cycles, bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, true); // how to set the ip_norm
@@ -663,6 +666,92 @@ addSimdInstrumentation
     sectionHead = ins;
   } while (HPCRUN_GTPIN_CALL(GTPin_InsValid, (sectionHead)));
   return sHead;
+}
+
+
+static inline int
+SFIDtoInt
+(
+ GED_SFID id
+)
+{
+  if (id == GED_SFID_DP_SAMPLER || id == GED_SFID_DP_CC || id == GED_SFID_INVALID) {
+    return 13;  // 13th offset in LegacyFFLatency contains latency values for "unknown" categories of SFID
+  }
+  return (int)(id);
+};
+
+
+static PlatformGen
+getIntelGPUGeneration
+(
+ void
+)
+{
+  // returns the Intel GPU generation
+  // clGetDeviceInfo can be used (with CL_​DEVICE_​NAME) to get a string
+  // e.g. "Intel(R) Iris(TM) Pro Graphics P580 [0x193a]" is returned for GEN9 GPUs
+  // getIntelGPUGeneration currently hardcoded to GEN9
+  return GEN9;
+}
+
+
+static uint16_t
+getLatencyG12
+(
+ GTPinINS ins
+)
+{
+  // reference: https://github.com/intel/intel-graphics-compiler/blob/2fa6f56384a44bae0696d194990ba57821e53057/visa/LocalScheduler/LatencyTable.cpp#L131
+  // Instruction latency calculations for Gen12+ GPUs will be added in future
+  // instruction latency currently hardcoded to 1
+  return 1;
+}
+
+
+static uint16_t
+getLatencyLegacy
+(
+ GTPinINS ins,
+ ged_ins_t gedInst,
+ bool isMathIns,
+ char *asm_str
+)
+{
+  GED_RETURN_VALUE *status;
+  if (GTPin_InsIsSend(ins)) {
+    GED_SFID sfid = GED_GetSFID(&gedInst, NULL);
+    uint16_t send_lat = LegacyFFLatency[SFIDtoInt(sfid)];
+    return send_lat;
+  } else if (isMathIns) {
+    GED_MATH_FC mathInsType = GED_GetMathFC(&gedInst, status);
+    if (mathInsType == GED_MATH_FC_FDIV || mathInsType == GED_MATH_FC_POW) {
+      return LegacyLatencies_EDGE_LATENCY_MATH_TYPE2;
+    }
+    return LegacyLatencies_EDGE_LATENCY_MATH;
+  }
+  return LegacyLatencies_IVB_PIPELINE_LENGTH;
+}
+
+
+static uint16_t
+getInstructionCycles
+(
+ GTPinINS ins,
+ ged_ins_t gedInst,
+ bool isMathIns,
+ char *asm_str
+)
+{
+  // reference: https://github.com/intel/intel-graphics-compiler/blob/b0ec8e5a68dcb1f587ae453cc81572c459c593d4/visa/LocalScheduler/LatencyTable.cpp#L15
+  // the attached link has latency values for two classes of GPU's:
+  // 1. Gen12 i.e XE processors
+  // 2. Legacy GPU's (all other GPU's before GEN12 are categorized into the Legacy category)
+  PlatformGen GEN = getIntelGPUGeneration();
+  if (GEN >= GEN12) {
+    return getLatencyG12(ins);
+  }
+  return getLatencyLegacy(ins, gedInst, isMathIns, asm_str);
 }
 
 
@@ -839,6 +928,7 @@ onKernelBuild
       gtpin_inst->isPredictable = isPredictable(asm_str);
       gtpin_inst->isComplex = isComplex(asm_str);
       gtpin_inst->execSize = HPCRUN_GTPIN_CALL(GTPin_InsGetExecSize, (inst));
+      gtpin_inst->theoretical_latency = getInstructionCycles(inst, gedInst, gtpin_inst->isComplex, asm_str);
 
       if (gtpin_inst_curr == NULL) {
         gtpin_block_curr->inst = gtpin_inst;
@@ -1031,6 +1121,7 @@ onKernelComplete
     while (inst != NULL) {
       kernelInstructionActivityProcess(correlation_id, kernel_data.loadmap_module_id,
         inst->offset, bb_exec_count, inst->aggregated_latency,
+        inst->theoretical_latency,
         activity_channel, host_op_node);
       inst = inst->next;
     }

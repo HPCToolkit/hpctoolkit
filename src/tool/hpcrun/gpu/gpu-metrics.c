@@ -516,14 +516,11 @@ gpu_metrics_attribute_kernel_block
   metric_data_list_t *metrics = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_EXEC_COUNT));
 
-  // avg count of cycles taken by ALU to execute an instruction
-  int ALU_cycles = 1;
-
   if (b->instruction) {
     // calculations at instruction level
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_LATENCY), b->latency);
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXEC_COUNT), b->execution_count);
-    uint64_t covered_latency = (b->latency <= 0) ? 0: (ALU_cycles * b->execution_count);
+    uint64_t covered_latency = (b->latency <= 0) ? 0: (b->theoretical_latency * b->execution_count);
     if (b->latency < covered_latency) {
       covered_latency = b->latency;
     }

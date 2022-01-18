@@ -292,6 +292,7 @@ typedef struct gpu_kernel_block_t {
   uint32_t bb_instruction_count;
   uint64_t execution_count;
   uint64_t latency;
+  uint16_t theoretical_latency;
   uint64_t active_simd_lanes;
   uint64_t total_simd_lanes;
   uint64_t scalar_simd_loss;
