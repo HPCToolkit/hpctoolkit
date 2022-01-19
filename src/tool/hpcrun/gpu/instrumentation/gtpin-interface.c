@@ -64,7 +64,6 @@
 #define str(t) #t
 #define xstr(t) str(t)
 #define gtpin_path() xstr(GTPIN_LIBDIR) "/libgtpin.so"
-#define gtpin_ged_path() xstr(GTPIN_LIBDIR) "/libged.so"
 
 #define GTPIN_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -120,9 +119,6 @@
   macro(GTPin_MemClaim)		     \
   macro(GTPin_MemRead)
 
-#define FORALL_GTPIN_GED_ROUTINES(macro) \
-  macro(GED_GetSFID)		     \
-  macro(GED_GetMathFC)
 
 
 
@@ -527,28 +523,6 @@ GTPIN_FN
 );
 
 
-GTPIN_FN
-(
- GED_SFID, 
- GED_GetSFID,
- (
-  ged_ins_t*,
-  GED_RETURN_VALUE*
- )
-);
-
-
-GTPIN_FN
-(
- GED_MATH_FC, 
- GED_GetMathFC,
- (
-  ged_ins_t*,
-  GED_RETURN_VALUE*
- )
-);
-
-
 
 //******************************************************************************
 // private operations
@@ -564,20 +538,14 @@ gtpin_bind
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(gtpin, gtpin_path(), RTLD_NOW | RTLD_GLOBAL);
-  CHK_DLOPEN(gtpin_ged, gtpin_ged_path(), RTLD_NOW | RTLD_GLOBAL);
   hpcrun_force_dlopen(false);
   
 #define GTPIN_BIND(fn)        \
   CHK_DLSYM(gtpin, fn);
-
-#define GTPIN_GED_BIND(fn)        \
-  CHK_DLSYM(gtpin_ged, fn);
   
   FORALL_GTPIN_ROUTINES(GTPIN_BIND)
-  FORALL_GTPIN_GED_ROUTINES(GTPIN_GED_BIND)
     
 #undef GTPIN_BIND
-#undef GTPIN_GED_BIND
     
   return 0;
 #else

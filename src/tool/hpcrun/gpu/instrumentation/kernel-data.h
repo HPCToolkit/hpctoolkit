@@ -32,7 +32,6 @@ typedef struct kernel_data_gtpin_inst {
   bool isPredictable;
   bool isComplex;
   uint32_t aggregated_latency;
-  uint16_t theoretical_latency;
   struct kernel_data_gtpin_inst *next;
 } kernel_data_gtpin_inst_t; 
 
