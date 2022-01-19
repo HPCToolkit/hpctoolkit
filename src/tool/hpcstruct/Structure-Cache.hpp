@@ -63,12 +63,35 @@
 //***************************************************************************
 
 char *
-hpcstruct_cache_entry
+hpcstruct_cache_path_directory
 (
  const char *cache_dir,
  const char *binary_abspath,
- const char *hash,
+ const char *hash // hash for elf file
+);
+
+
+char *
+hpcstruct_cache_path_link
+(
+ const char *binary_abspath,
+ const char *hash // hash for elf file
+);
+
+
+char *
+hpcstruct_cache_entry
+(
+ const char *directory,
  const char *kind
+);
+
+
+char *
+hpcstruct_cache_flat_directory
+(
+ const char *cache_dir,
+ const char *hash // hash for elf file
 );
 
 
