@@ -47,7 +47,7 @@
 //***************************************************************************
 //
 // File:
-//   cache.cpp
+//   Structure-Cache.cpp
 //
 // Purpose:
 //   functions that support management of a cache for hpcstruct files
@@ -75,7 +75,8 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/Exception.hpp>
 #include <lib/support/FileUtil.hpp>
-#include "cache.hpp"
+
+#include "Structure-Cache.hpp"
 
 
 
@@ -222,15 +223,38 @@ hpcstruct_cache_hash
 
 
 char *
-hpcstruct_cache_entry
+hpcstruct_cache_flat_directory
 (
  const char *cache_dir,
- const char *binary_abspath,
- const char *hash, // hash for elf file
- const char *kind
+ const char *hash // hash for elf file
 )
 {
   std::string path = cache_dir;
+
+  path += "/FLAT";
+
+  mkpath(path.c_str(), "Failed to create entry in hpcstruct cache directory");
+
+  // compute the full path to the new cache directory
+  path = path + '/' + hash;
+
+  // return the full path for the new cache entry
+  return strdup(path.c_str());
+}
+
+
+char *
+hpcstruct_cache_path_directory
+(
+ const char *cache_dir,
+ const char *binary_abspath,
+ const char *hash // hash for elf file
+)
+{
+  std::string path = cache_dir;
+
+  path += "/PATH";
+
   path += binary_abspath;
 
   // FIXME: catch error
@@ -244,6 +268,36 @@ hpcstruct_cache_entry
 
   // ensure the new cache directory exists
   mkpath(path.c_str(), "Failed to create hpcstruct cache entry");
+
+  // return the full path for the new cache entry
+  return strdup(path.c_str());
+}
+
+
+char *
+hpcstruct_cache_path_link
+(
+ const char *binary_abspath,
+ const char *hash // hash for elf file
+)
+{
+  std::string path = "../PATH";
+
+  path += binary_abspath;
+  path = path + '/' + hash;
+
+  return strdup(path.c_str());
+}
+
+
+char *
+hpcstruct_cache_entry
+(
+ const char *directory,
+ const char *kind
+)
+{
+  std::string path = directory;
 
   // compute the full path for the new cache entry
   path = path + '/' + kind;
@@ -274,8 +328,8 @@ hpcstruct_cache_directory
     // no cache directory specified,
     if (warn) {
       DIAG_MsgIf_GENERIC
-	("ADVICE: ", warn, "Use a structure cache to accelerate analysis of "
-	 "CPU binaries; see the documentation for how.");
+	("ADVICE: ", warn, "See the usage message for how to use "
+	 "a structure cache to accelerate analysis of CPU and GPU binaries");
       warn = false;
     }
     return 0;
@@ -289,7 +343,6 @@ hpcstruct_cache_directory
 
   return strdup(abspath);
 }
-
 
 
 void

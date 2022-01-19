@@ -78,7 +78,7 @@ using std::endl;
 #include <include/hpctoolkit-config.h>
 
 #include "Args.hpp"
-#include "cache.hpp"
+#include "Structure-Cache.hpp"
 
 #include <lib/banal/Struct.hpp>
 #include <lib/prof-lean/hpcio.h>
@@ -263,13 +263,15 @@ main(int argc, char* argv[])
 class FileOutputStream {
 public:
   FileOutputStream() : stream(0), buffer(0), use_cache(false),
-		       is_cached(false) {};
-  void init(const char *cache_directory, const char *binary_abspath,
-	    const char *hash, const char *kind, const char *result) {
+		       is_cached(false) {
+  };
+  void init(const char *cache_path_directory, const char *cache_flat_directory, const char *kind,
+	    const char *result) {
     name = strdup(result);
-    if (cache_directory && cache_directory[0] != 0) {
+    if (cache_path_directory && cache_path_directory[0] != 0) {
       use_cache = true;
-      stream_name = hpcstruct_cache_entry(cache_directory, binary_abspath, hash, kind);
+      stream_name = hpcstruct_cache_entry(cache_path_directory, kind);
+      flat_name = hpcstruct_cache_entry(cache_flat_directory, kind);
     } else {
       stream_name = name;
     }
@@ -284,7 +286,8 @@ public:
   bool needed() {
     bool needed = false;
     if (!name.empty()) {
-      if (use_cache && hpcstruct_cache_find(stream_name.c_str())) {
+      if (use_cache && (hpcstruct_cache_find(flat_name.c_str()) ||
+			hpcstruct_cache_find(stream_name.c_str()))) {
 	is_cached = true;
       } else {
 	needed = true;
@@ -300,7 +303,11 @@ public:
 	unlink(name.c_str());
       } else {
 	if (use_cache) {
-	  FileUtil::copy(name, stream_name);
+	  if (hpcstruct_cache_find(flat_name.c_str())) {
+	    FileUtil::copy(name, flat_name);
+	  } else {
+	    FileUtil::copy(name, stream_name);
+	  }
 	}
       }
     }
@@ -312,6 +319,7 @@ private:
   std::ostream *stream;
   std::string name;
   std::string stream_name;
+  std::string flat_name;
   char *buffer;
   bool use_cache;
   bool is_cached;
@@ -332,10 +340,23 @@ singleApplicationBinary
 
   string binary_abspath = RealPath(args.in_filenm.c_str());
 
+  string cache_path_directory;
+  string cache_flat_directory;
   string cache_directory;
+
   if (!args.nocache) {
     char *path = hpcstruct_cache_directory(args.cache_directory.c_str(), "");
-    if (path) cache_directory = path;
+    if (path) {
+      cache_directory = path;
+
+      char *hash = hpcstruct_cache_hash(binary_abspath.c_str()); 
+
+      cache_path_directory = hpcstruct_cache_path_directory(path, binary_abspath.c_str(), hash);
+      cache_flat_directory = hpcstruct_cache_flat_directory(path, hash);
+
+      string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
+      symlink(cache_path_link.c_str(), cache_flat_directory.c_str());
+    }
   }
 
   std::string hpcstruct_path =
@@ -343,16 +364,14 @@ singleApplicationBinary
 
   FileOutputStream gaps;
   FileOutputStream hpcstruct;
-
-  char *hash = hpcstruct_cache_hash(binary_abspath.c_str()); 
   
-  hpcstruct.init(cache_directory.c_str(), binary_abspath.c_str(), hash, "hpcstruct",
+  hpcstruct.init(cache_path_directory.c_str(), cache_flat_directory.c_str(), "hpcstruct",
 		 hpcstruct_path.c_str());
 
   if (args.show_gaps) {
     std::string gaps_path =
       std::string(hpcstruct_path) + std::string(".gaps");
-    gaps.init(cache_directory.c_str(), binary_abspath.c_str(), hash, "gaps",
+    gaps.init(cache_path_directory.c_str(), cache_flat_directory.c_str(), "gaps",
 	      gaps_path.c_str());
   }
 

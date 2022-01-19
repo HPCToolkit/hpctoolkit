@@ -35,6 +35,16 @@ Options: General
   -V, --version        Print version information.
   -h, --help           Print this help message.
 
+Options: Control caching of structure files
+  -c <dir>, --cache <dir> Specify that structure files for CPU and GPU
+                       binaries should be cached and reused in
+		       directory <dir>. Overrides any default setting in
+		       the HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
+  --nocache            Specify that a structure cache should not be used, 
+                       even if the HPCTOOLKIT_HPCSTRUCT_CACHE environment
+		       variable is set. With this option, advice to use
+                       a structure cache will be suppressed.
+
 Options: Override parallelism defaults
   -j <num>, --jobs <num> Use <num> threads for for concurrent analysis of
                        small binaries. Use <num> threads for parallel
@@ -53,6 +63,7 @@ Options: Override structure recovery defaults
                        Loop nesting structure is only useful with
                        instruction-level measurements collected using PC
                        sampling or instrumentation. {no} 
+
 
 Options: Specify output file when analyzing a single binary
   -o <file>, --output <file>
