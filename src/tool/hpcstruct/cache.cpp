@@ -211,10 +211,22 @@ hpcstruct_cache_writable
 
 
 char *
+hpcstruct_cache_hash
+(
+ const char *binary_abspath
+)
+{
+  char *eh  = elf_hash(binary_abspath);
+  return eh;
+}
+
+
+char *
 hpcstruct_cache_entry
 (
  const char *cache_dir,
  const char *binary_abspath,
+ const char *hash, // hash for elf file
  const char *kind
 )
 {
@@ -224,15 +236,11 @@ hpcstruct_cache_entry
   // FIXME: catch error
   mkpath(path.c_str(), "Failed to create entry in hpcstruct cache directory");
 
-  // compute hash for elf file
-  char *eh  = elf_hash(binary_abspath);
-
   // discard any prior entries for path with a different hash 
-  hpcstruct_cache_cleanup(path.c_str(), eh);
+  hpcstruct_cache_cleanup(path.c_str(), hash);
 
   // compute the full path to the new cache directory
-  path = path + '/' + eh;
-  free(eh);
+  path = path + '/' + hash;
 
   // ensure the new cache directory exists
   mkpath(path.c_str(), "Failed to create hpcstruct cache entry");

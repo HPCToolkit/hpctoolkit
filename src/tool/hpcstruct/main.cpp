@@ -265,11 +265,11 @@ public:
   FileOutputStream() : stream(0), buffer(0), use_cache(false),
 		       is_cached(false) {};
   void init(const char *cache_directory, const char *binary_abspath,
-	    const char *kind, const char *result) {
+	    const char *hash, const char *kind, const char *result) {
     name = strdup(result);
     if (cache_directory && cache_directory[0] != 0) {
       use_cache = true;
-      stream_name = hpcstruct_cache_entry(cache_directory, binary_abspath, kind);
+      stream_name = hpcstruct_cache_entry(cache_directory, binary_abspath, hash, kind);
     } else {
       stream_name = name;
     }
@@ -344,13 +344,15 @@ singleApplicationBinary
   FileOutputStream gaps;
   FileOutputStream hpcstruct;
 
-  hpcstruct.init(cache_directory.c_str(), binary_abspath.c_str(), "hpcstruct",
+  char *hash = hpcstruct_cache_hash(binary_abspath.c_str()); 
+  
+  hpcstruct.init(cache_directory.c_str(), binary_abspath.c_str(), hash, "hpcstruct",
 		 hpcstruct_path.c_str());
 
   if (args.show_gaps) {
     std::string gaps_path =
       std::string(hpcstruct_path) + std::string(".gaps");
-    gaps.init(cache_directory.c_str(), binary_abspath.c_str(), "gaps",
+    gaps.init(cache_directory.c_str(), binary_abspath.c_str(), hash, "gaps",
 	      gaps_path.c_str());
   }
 

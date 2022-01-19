@@ -67,6 +67,7 @@ hpcstruct_cache_entry
 (
  const char *cache_dir,
  const char *binary_abspath,
+ const char *hash,
  const char *kind
 );
 
@@ -83,6 +84,13 @@ bool
 hpcstruct_cache_find
 (
  const char *cached_entry
+);
+
+
+char *
+hpcstruct_cache_hash
+(
+ const char *binary_abspath
 );
 
 
