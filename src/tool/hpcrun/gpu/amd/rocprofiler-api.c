@@ -431,10 +431,6 @@ initialize_counter_information
 
 // This is necessary for rocprofiler callback to work
 extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
-  // Somehow needs to disable code object tracking
-  // to avoid a deadlock in rocprofiler
-  settings->code_obj_tracking = 0;
-
   rocprofiler_init();
 
   rocprofiler_queue_callbacks_t callbacks_ptrs = {};

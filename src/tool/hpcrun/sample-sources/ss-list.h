@@ -97,7 +97,9 @@ SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
 #endif
 
 #ifdef HPCRUN_SS_AMD
+#ifndef HPCRUN_STATIC_LINK
 SAMPLE_SOURCE_DECL_MACRO(amd_rocprof)
+#endif
 #endif
 
 #ifdef HPCRUN_SS_LEVEL0
