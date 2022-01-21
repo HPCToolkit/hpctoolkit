@@ -125,8 +125,8 @@ struct CudaInst : public Inst {
                 }
               }
             } else {
-							// Extract target name of the jump or the sync instruction
-							// The target name can be in two forms:
+              // Extract target name of the jump or the sync instruction
+              // The target name can be in two forms:
               // "**.L_<number>**" for CUDA < 11.5
               // "**.L_x_<number>**" for CUDA >= 11.5
               static const std::string target_label1 = ".L_";
