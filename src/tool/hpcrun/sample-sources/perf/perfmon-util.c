@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2002-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -269,6 +269,8 @@ show_info(char *event )
 
   pname = event_has_pname(event);
 
+  printf("(*) Denotes the counter may not be profilable.\n\n");
+
   /*
    * scan all supported events, incl. those
    * from undetected PMU models
@@ -293,8 +295,6 @@ show_info(char *event )
       }
     }
   }
-  if (profilable != EVENT_IS_PROFILABLE) 
-    printf("(*) The counter may not be profilable.\n\n");
   
   return match;
 }
@@ -445,6 +445,7 @@ pfmu_showEventList()
 {
   static char *argv_all =  ".*";
 
+#if 0
   int total_supported_events = 0;
   int total_available_events = 0;
   int i, ret;
@@ -459,7 +460,6 @@ pfmu_showEventList()
       "uncore",
       "OS generic",
   };
-
   printf("Detected PMU models:\n");
   
   pfm_for_all_pmus(i) {
@@ -487,7 +487,7 @@ pfmu_showEventList()
   printf("Total events: %d available, %d supported\n", total_available_events, total_supported_events);
 
   display_line_single(stdout);
-
+#endif
   show_info(argv_all);
 
   return 0;

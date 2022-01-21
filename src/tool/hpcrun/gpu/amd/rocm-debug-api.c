@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2002-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -166,51 +166,9 @@ hpcrun_self_process
 }
 
 static amd_dbgapi_status_t
-hpcrun_enable_notify_shared_library
-(
-  amd_dbgapi_client_process_id_t client_process_id,
-  const char *shared_library_name,
-  amd_dbgapi_shared_library_id_t shared_library_id,
-  amd_dbgapi_shared_library_state_t *shared_library_state
-)
-{
-  if (strcmp(shared_library_name, "libhsa-runtime64.so.1") == 0)
-    *shared_library_state = AMD_DBGAPI_SHARED_LIBRARY_STATE_LOADED;
-  else
-    *shared_library_state = AMD_DBGAPI_SHARED_LIBRARY_STATE_UNLOADED;
-  return AMD_DBGAPI_STATUS_SUCCESS;
-}
-
-static amd_dbgapi_status_t
-hpcrun_disable_notify_shared_library
-(
-  amd_dbgapi_client_process_id_t client_process_id,
-  amd_dbgapi_shared_library_id_t shared_library_id
-)
-{
-  return AMD_DBGAPI_STATUS_SUCCESS;
-}
-
-static amd_dbgapi_status_t
-hpcrun_get_symbol_address
-(
-  amd_dbgapi_client_process_id_t client_process_id,
-  amd_dbgapi_shared_library_id_t shared_library_id,
-  const char *symbol_name,
-  amd_dbgapi_global_address_t *address
-)
-{
-  // It is necessary to allow rocm debug library to call dlsym through this function.
-  // We need to ensure that this code will not be called in a signal handler
-  *address = (amd_dbgapi_global_address_t) dlsym(RTLD_DEFAULT, symbol_name);
-  return AMD_DBGAPI_STATUS_SUCCESS;
-}
-
-static amd_dbgapi_status_t
 hpcrun_insert_breakpoint
 (
   amd_dbgapi_client_process_id_t client_process_id,
-  amd_dbgapi_shared_library_id_t shared_library_id,
   amd_dbgapi_global_address_t address,
   amd_dbgapi_breakpoint_id_t breakpoint_id
 )
@@ -310,9 +268,6 @@ rocm_debug_api_init
   callbacks.allocate_memory = malloc;
   callbacks.deallocate_memory = free;
   callbacks.get_os_pid = hpcrun_self_process;
-  callbacks.enable_notify_shared_library = hpcrun_enable_notify_shared_library;
-  callbacks.disable_notify_shared_library = hpcrun_disable_notify_shared_library;
-  callbacks.get_symbol_address = hpcrun_get_symbol_address;
   callbacks.insert_breakpoint = hpcrun_insert_breakpoint;
   callbacks.remove_breakpoint = hpcrun_remove_breakpoint;
   callbacks.log_message = hpcrun_log_message;
