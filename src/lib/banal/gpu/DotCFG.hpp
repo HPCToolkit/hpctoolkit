@@ -140,9 +140,11 @@ struct CudaInst : public Inst {
                   for (;digit_pos != std::string::npos && !std::isdigit(s[digit_pos]); ++digit_pos);
                   // Find the end digit of the number
                   for (;digit_pos != std::string::npos && std::isdigit(s[digit_pos]); ++digit_pos);
-                  this->target = s.substr(pos, digit_pos - pos);
+                  if (digit_pos != std::string::npos) {
+                    this->target = s.substr(pos, digit_pos - pos);
+                  }
                 }
-              }   
+              } 
             }
           }
         }
