@@ -88,6 +88,7 @@
 #define STRUCT_CACHE_ENV "HPCTOOLKIT_HPCSTRUCT_CACHE"
 
 
+
 //***************************************************************************
 // local operations
 //***************************************************************************
@@ -141,8 +142,10 @@ hpcstruct_cache_needs_cleanup
 )
 {
   DIR *dir = opendir(path.c_str());
+
   for (;;) {
     struct dirent *d = readdir(dir);
+
     if (d == 0) break;
 
     // ignore "." and ".."
@@ -157,6 +160,8 @@ hpcstruct_cache_needs_cleanup
       return 1;
     }
   }
+
+  closedir(dir);
   return 0;
 }
 
@@ -169,6 +174,7 @@ hpcstruct_cache_cleanup
 )
 {
   int cleanup = hpcstruct_cache_needs_cleanup(path, hash);
+
   if (cleanup) {
     std::string command("rm -rf ");
     command += path;
@@ -179,9 +185,14 @@ hpcstruct_cache_cleanup
   return 0;
 }
 
-bool no_cache(const char *cache_dir)
+
+static bool
+empty_string
+(
+ const char *s
+)
 {
-  return cache_dir == 0 || *cache_dir == 0;
+  return s == 0 || *s == 0;
 }
 
 
@@ -198,7 +209,6 @@ hpcstruct_cache_find
 {
   return path_accessible(cached_entry, O_RDONLY);
 }
-
 
 
 bool
@@ -317,10 +327,10 @@ hpcstruct_cache_directory
   static bool warn = true;
   char abspath[PATH_MAX];
 
-  if (no_cache(cache_dir)) {
+  if (empty_string(cache_dir)) {
     // cache directory is not explicit: consider environment variable value
     cache_dir = getenv(STRUCT_CACHE_ENV);
-    if (no_cache(cache_dir)) cache_dir = 0;
+    if (empty_string(cache_dir)) cache_dir = 0;
   }
   // invariant: if cache_dir was NULL or empty, it is now NULL
 

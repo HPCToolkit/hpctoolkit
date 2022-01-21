@@ -338,6 +338,8 @@ singleApplicationBinary
     exit(1);
   }
 
+  bool gpu_binary = args.in_filenm.find(GPU_BINARY_SUFFIX) != string::npos;
+
   string binary_abspath = RealPath(args.in_filenm.c_str());
 
   string cache_path_directory;
@@ -364,9 +366,13 @@ singleApplicationBinary
 
   FileOutputStream gaps;
   FileOutputStream hpcstruct;
+
+  string structure_name = "hpcstruct";
+
+  if (gpu_binary && args.compute_gpu_cfg) structure_name += "+gpucfg";
   
-  hpcstruct.init(cache_path_directory.c_str(), cache_flat_directory.c_str(), "hpcstruct",
-		 hpcstruct_path.c_str());
+  hpcstruct.init(cache_path_directory.c_str(), cache_flat_directory.c_str(),
+		 structure_name.c_str(), hpcstruct_path.c_str());
 
   if (args.show_gaps) {
     std::string gaps_path =
