@@ -129,28 +129,19 @@ struct CudaInst : public Inst {
               // The target name can be in two forms:
               // "**.L_<number>**" for CUDA < 11.5
               // "**.L_x_<number>**" for CUDA >= 11.5
-              static const std::string target_label1 = ".L_";
-              static const std::string target_label2 = ".L_x_";
+              // We assuming the target label will keep the form "**.L_**<number>**" in the further release
+              static const std::string TARGET_LABEL = ".L_";
               operands.push_back(s);
               if (is_jump || is_sync) {
-                auto pos = std::string::npos;
-                auto label_length = 0;
-                if ((pos = s.find(target_label2)) != std::string::npos) {
-                  label_length = target_label2.size();
-                } else if ((pos = s.find(target_label1)) != std::string::npos) {
-                  label_length = target_label1.size();
-                }   
+                auto pos = s.find(TARGET_LABEL);
                 if (pos != std::string::npos) {
-                  auto digit_pos = pos + label_length;
-                  while (digit_pos != std::string::npos) {
-                    if (!std::isdigit(s[digit_pos])) {
-                      break;
-                    }   
-                    ++label_length;
-                    ++digit_pos;
-                  }   
-                  this->target = s.substr(pos, label_length);
-                }   
+                  auto digit_pos = pos + TARGET_LABEL.size();
+                  // Find the start digit of the number
+                  for (;digit_pos != std::string::npos && !std::isdigit(s[digit_pos]); ++digit_pos);
+                  // Find the end digit of the number
+                  for (;digit_pos != std::string::npos && std::isdigit(s[digit_pos]); ++digit_pos);
+                  this->target = s.substr(pos, digit_pos - pos);
+                }
               }   
             }
           }
