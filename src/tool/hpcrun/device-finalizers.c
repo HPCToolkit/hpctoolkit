@@ -6,9 +6,13 @@ static device_finalizer_fn_entry_t *kinds[2] = {0, 0};
 void
 device_finalizer_register(device_finalizer_type_t type, device_finalizer_fn_entry_t *entry)
 {
-   device_finalizer_fn_entry_t* device_fn = kinds[type];
-   entry->next = device_fn;
-   kinds[type] = entry;
+   device_finalizer_fn_entry_t** device_fn = &kinds[type];
+
+   // append finalizer at end of list.
+   while (*device_fn != 0) {
+     device_fn = &((*device_fn)->next);
+   }
+   *device_fn = entry;
 }
 
 

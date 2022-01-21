@@ -1,4 +1,43 @@
 ----------------------------------------
+HPCToolkit 2021.01.10
+----------------------------------------
+
+Bug fixes
+  - fix thread memory pool for amd gpus
+  - fix hpcrun use of ignore thread
+  - cleanup gpu traces
+  - fix auditor initialization bug
+
+hpcrun
+  - add spack smoke test
+
+hpcviewer
+  - Using NatTable widget instead of SWT table for better scalable data representation.
+  - Support for more than two databases in a window (issue #135)
+  - Search a text in the tree table (issue #142)
+
+  Issue #20 (partial fix): enhancement for x-axis in the trace view
+  Issue #62 (partial fix): render tiny gpu trace when it's possible
+  Issue #101: fix clipped figures in the statistics view
+  Issue #112: fix white dots on the trace view (Windows only)
+  Issue #113: fix trace view refresh problem (Windows only)
+  Issue #118: fix computing the ideal width of table columns
+  Issue #121: fix tree image in the bottom-up view
+  Issue #126: fix illegal argument exception when flattening a tree
+  Issue #127: fix dark mode on macOS
+  Issue #128: fix -v option on Linux command line
+  Issue #132: fix font color for row selection on macOS
+  Issue #134: fix dark mode in Linux GNOME window manager
+  Issue #137: fix a spacer in a leaf node
+  Issue #138: fix call site icon position in the table
+  Issue #139: fix data concurrency problems
+  Issue #140: fix row number in the metric view
+  Issue #141: ensure consistency between metric view and thread view
+  Issue #143: fix support for ISO 8859 character set
+  Issue #145: fix the column width when resizing the window or the table
+
+
+----------------------------------------
 HPCToolkit 2021.05.15 
 ----------------------------------------
 
