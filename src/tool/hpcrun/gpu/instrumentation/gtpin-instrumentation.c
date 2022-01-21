@@ -147,26 +147,6 @@ int C = 2;      // # complex weight
 
 // FIXME the asserts in this file should be replaced by fatal error messages
 
-static void
-knobAddBool
-(
- const char *name,
- bool value
-)
-{
-  GTPinKnob knob = HPCRUN_GTPIN_CALL(KNOB_FindArg, (name));
-  assert(knob != NULL);
-
-  KnobValue knob_value;
-  knob_value.value._bool = value;
-  knob_value.type = KNOB_TYPE_BOOL;
-
-  KNOB_STATUS status = 
-    HPCRUN_GTPIN_CALL(KNOB_AddValue, (knob, &knob_value));
-  assert(status == KNOB_STATUS_SUCCESS);
-}
-
-
 void
 initializeInstrumentation
 (
@@ -1053,13 +1033,6 @@ gtpin_enable_profiling
 {
   ETMSG(OPENCL, "inside enableProfiling");
   initializeInstrumentation();
-  knobAddBool("silent_warnings", true);
-
-#if 0
-  if (utils::GetEnv("PTI_GEN12") != nullptr) {
-    KnobAddBool("gen12_1", true);
-  }
-#endif
 
   // Use opencl/level zero runtime stack
   gtpin_use_runtime_callstack = true;

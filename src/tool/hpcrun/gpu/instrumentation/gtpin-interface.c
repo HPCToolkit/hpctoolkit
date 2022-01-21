@@ -73,9 +73,6 @@
 #define HPCRUN_GTPIN_CALL(fn, args) (GTPIN_FN_NAME(fn) args)
 
 #define FORALL_GTPIN_ROUTINES(macro) \
-  macro(KNOB_FindArg)		     \
-  macro(KNOB_AddValue)		     \
-  				     \
   macro(GTPin_BBLHead)		     \
   macro(GTPin_BBLNext)		     \
   macro(GTPin_BBLValid)		     \
@@ -125,27 +122,6 @@
 //******************************************************************************
 // local data
 //******************************************************************************
-
-GTPIN_FN
-(
- GTPinKnob, 
- KNOB_FindArg,
- (
-  const char *name
- )
-);
-
-
-GTPIN_FN
-(
- KNOB_STATUS,
- KNOB_AddValue, 
- (
-  GTPinKnob knob, 
-  KnobValue *knob_value
- )
-);
-
 
 GTPIN_FN
 (
