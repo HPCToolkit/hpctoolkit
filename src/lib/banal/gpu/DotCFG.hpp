@@ -125,23 +125,26 @@ struct CudaInst : public Inst {
                 }
               }
             } else {
-              // Target
+              // Extract target name of the jump or the sync instruction
+              // The target name can be in two forms:
+              // "**.L_<number>**" for CUDA < 11.5
+              // "**.L_x_<number>**" for CUDA >= 11.5
+              // We assuming the target label will keep the form "**.L_**<number>**" in the further release
+              static const std::string TARGET_LABEL = ".L_";
               operands.push_back(s);
               if (is_jump || is_sync) {
-                auto pos = s.find(".L_");
+                auto pos = s.find(TARGET_LABEL);
                 if (pos != std::string::npos) {
-                  auto end_pos = pos + 3;
-                  size_t len = 0;
-                  while (end_pos != std::string::npos) {
-                    if (!std::isdigit(s[end_pos])) {
-                      break;
-                    }
-                    ++len;
-                    ++end_pos;
+                  auto digit_pos = pos + TARGET_LABEL.size();
+                  // Find the start digit of the number
+                  for (;digit_pos != std::string::npos && !std::isdigit(s[digit_pos]); ++digit_pos);
+                  // Find the end digit of the number
+                  for (;digit_pos != std::string::npos && std::isdigit(s[digit_pos]); ++digit_pos);
+                  if (digit_pos != std::string::npos) {
+                    this->target = s.substr(pos, digit_pos - pos);
                   }
-                  this->target = s.substr(pos, len + 3);
                 }
-              }
+              } 
             }
           }
         }
