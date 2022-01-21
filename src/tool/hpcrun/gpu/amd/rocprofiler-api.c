@@ -46,11 +46,11 @@
 //******************************************************************************
 
 #include "rocprofiler-api.h"
-// #include "rocm-debug-api.h"
 #include "rocm-binary-processing.h"
 
 #include <roctracer_hip.h>
 #include <rocprofiler.h>
+#include <activity.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -425,12 +425,45 @@ initialize_counter_information
   memset(is_specified_by_user, 0, total_counters * sizeof(int));
 }
 
+// This function should be implemented in roctracer-api.c,
+// but due to c++ism in AMD software, I can only include rocprofiler header
+// filers in one .o
+static void
+roctracer_codeobj_callback
+(
+  uint32_t domain,
+  uint32_t cid,
+  const void* data,
+  void* arg
+)
+{
+  const hsa_evt_data_t* evt_data = (const hsa_evt_data_t*)(data);
+  const char* uri = evt_data->codeobj.uri;
+  rocm_binary_uri_add(uri);
+  PRINT("codeobj_callback domain(%u) cid(%u): load_base(0x%lx) load_size(0x%lx) load_delta(0x%lx) uri(\"%s\")\n",
+    domain,
+    cid,
+    evt_data->codeobj.load_base,
+    evt_data->codeobj.load_size,
+    evt_data->codeobj.load_delta,
+    uri);
+  free((void*)uri);
+}
+
 //******************************************************************************
 // AMD hidden interface operations
 //******************************************************************************
 
 // This is necessary for rocprofiler callback to work
 extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
+  // Enable hsa interception for getting code object URIs
+  settings->hsa_intercepting = 1;
+
+  // Ask roctracer to set up code object URI callbacks
+  rocm_binary_uri_list_init();
+  roctracer_enable_op_callback(
+    ACTIVITY_DOMAIN_HSA_EVT, HSA_EVT_ID_CODEOBJ, roctracer_codeobj_callback, NULL
+  );
   rocprofiler_init();
 
   rocprofiler_queue_callbacks_t callbacks_ptrs = {};

@@ -77,5 +77,4 @@ roctracer_enable_counter_collection
   void
 );
 
-
 #endif

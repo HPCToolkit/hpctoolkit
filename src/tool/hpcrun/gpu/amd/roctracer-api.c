@@ -47,7 +47,6 @@
 
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
-#include "rocm-debug-api.h"
 #include "rocm-binary-processing.h"
 
 #include <roctracer_hip.h>
@@ -524,8 +523,6 @@ roctracer_path
 
   return path;
 }
-
-
 
 //******************************************************************************
 // interface operations
