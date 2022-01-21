@@ -662,7 +662,7 @@ gpu_counter_process
         kernel_node = host_op_node;
       } else {
         cct_addr_t *addr = hpcrun_cct_addr(func_node);
-        kernel_node = hpcrun_cct_insert_ip_norm(host_op_node, addr->ip_norm);
+        kernel_node = hpcrun_cct_insert_ip_norm(host_op_node, addr->ip_norm, true);
       }
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
