@@ -45,8 +45,8 @@
 // File: elf-hash.c
 //
 // Purpose:
-//   compute a useful hash of an ELF file
-//   
+//    compute a crpytographic hash string for an elf binary
+//
 //***************************************************************************
 
 
@@ -91,7 +91,7 @@ elf_hash_compute
     int fd = open(filename, O_RDONLY | O_CLOEXEC);
     if (fd != -1) {
       // for speed, hash at most FILE_MAX_HASH_LENGTH data
-      size_t flen = statbuf.st_size; 
+      size_t flen = statbuf.st_size;
 
       void * ANYWHERE = 0;
       off_t NO_OFFSET = 0;
@@ -103,7 +103,7 @@ elf_hash_compute
       }
       close(fd);
     }
-  } 
+  }
 
   return status;
 }
@@ -174,7 +174,7 @@ main
 {
   char *h = elf_hash("/bin/ls");
   if (h) {
-    printf("hash string: %s\n", h); 
+    printf("hash string: %s\n", h);
     free(h);
     return 0;
   }

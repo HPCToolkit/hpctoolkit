@@ -156,7 +156,7 @@ doMeasurementsDir
   string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
     + "/libexec/hpctoolkit/hpcproftt";
 
-  string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
+  string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
     + "/bin/hpcstruct";
 
 
@@ -187,7 +187,7 @@ doMeasurementsDir
     pthreads = jobs;
   }
     
-  string cache_path; 
+  string cache_path;
 
   if (!args.nocache) {
     char *cpath = 0;
@@ -204,7 +204,7 @@ doMeasurementsDir
       }
     }
   }
-  
+
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
 
   makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
@@ -314,7 +314,7 @@ public:
   };
   std::ostream *getStream() { return stream; };
   std::string &getName() { return name; };
-  
+
 private:
   std::ostream *stream;
   std::string name;
@@ -351,7 +351,7 @@ singleApplicationBinary
     if (path) {
       cache_directory = path;
 
-      char *hash = hpcstruct_cache_hash(binary_abspath.c_str()); 
+      char *hash = hpcstruct_cache_hash(binary_abspath.c_str());
 
       cache_path_directory = hpcstruct_cache_path_directory(path, binary_abspath.c_str(), hash);
       cache_flat_directory = hpcstruct_cache_flat_directory(path, hash);
@@ -370,7 +370,7 @@ singleApplicationBinary
   string structure_name = "hpcstruct";
 
   if (gpu_binary && args.compute_gpu_cfg) structure_name += "+gpucfg";
-  
+
   hpcstruct.init(cache_path_directory.c_str(), cache_flat_directory.c_str(),
 		 structure_name.c_str(), hpcstruct_path.c_str());
 

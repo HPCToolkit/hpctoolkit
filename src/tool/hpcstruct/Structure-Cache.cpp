@@ -271,7 +271,7 @@ hpcstruct_cache_path_directory
   // FIXME: catch error
   mkpath(path.c_str(), "Failed to create entry in hpcstruct cache directory");
 
-  // discard any prior entries for path with a different hash 
+  // discard any prior entries for path with a different hash
   hpcstruct_cache_cleanup(path.c_str(), hash);
 
   // compute the full path to the new cache directory
@@ -323,7 +323,7 @@ hpcstruct_cache_directory
 (
  const char *cache_dir,
  const char *kind
-) 
+)
 {
   static bool warn = true;
   char abspath[PATH_MAX];
@@ -349,7 +349,7 @@ hpcstruct_cache_directory
   }
 
   strcat(abspath, kind);
-    
+
   mkpath(abspath, "Failed to create hpcstruct cache directory");
 
   return strdup(abspath);

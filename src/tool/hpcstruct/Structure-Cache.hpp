@@ -47,15 +47,15 @@
 //***************************************************************************
 //
 // File:
-//   cache.c
+//   Structure-Cache.hpp
 //
 // Purpose:
 //   functions that support management of a cache for hpcstruct files
 //
 //***************************************************************************
 
-#ifndef hpcstruct_cache_hpp
-#define hpcstruct_cache_hpp
+#ifndef Structure_Cache_hpp
+#define Structure_Cache_hpp
 
 
 //***************************************************************************
@@ -100,7 +100,7 @@ hpcstruct_cache_directory
 (
  const char *cache_dir,
  const char *kind
-); 
+);
 
 
 bool

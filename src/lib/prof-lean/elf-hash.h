@@ -42,12 +42,11 @@
 
 //***************************************************************************
 //
-// File: elf-helper.h
+// File: elf-hash.h
 //
 // Purpose:
-//   interface to query ELF binary information and hide the details about 
-//   extended number
-//   
+//   interface to compute a crpytographic hash string for an elf binary
+//
 //***************************************************************************
 
 #ifndef ELF_HASH_H
@@ -60,17 +59,11 @@ extern "C" {
 
 
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   elf_hash
 //
 // arguments:
-//   filename:        
-//     name of the ELF file to hash
-//   hash:        
-//     pointer to a vector of bytes of length >= elf_hash_length()
-//
-//   hash_length:        
-//     length of hash
+//   filename: name of the ELF file to hash
 //
 // return value:
 //   success: hash string
