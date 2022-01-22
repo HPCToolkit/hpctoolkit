@@ -2,6 +2,7 @@
 #define cupti_range_h
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define CUPTI_RANGE_DEFAULT_INTERVAL 1
 #define CUPTI_RANGE_DEFAULT_INTERVAL_STR "1"
@@ -24,7 +25,8 @@ cupti_range_config
 (
  const char *mode_str,
  int interval,
- int sampling_period
+ int sampling_period,
+ bool dynamic_period
 );
 
 cupti_range_mode_t

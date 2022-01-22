@@ -184,7 +184,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
-#include "cupti-cct-analysis-map.h"
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 #include "cubin-crc-map.h"
@@ -195,6 +194,8 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "cupti-pc-sampling-api.h"
 #include "cupti-unwind-map.h"
 #include "cupti-cct-trie.h"
+#include "cupti-cct-map.h"
+#include "cupti-cct-analysis-map.h"
 #endif
 
 //******************************************************************************
@@ -1097,6 +1098,7 @@ cupti_unwind
     // Slow path to generate a cct
 #ifdef NEW_CUPTI_ANALYSIS
     slow_unwinds += 1;
+    total_unwinds += 1;
 #endif
     cct_node_t *node = cupti_correlation_callback();
 #ifdef PRINT_UNWIND_TIME
@@ -2375,6 +2377,8 @@ cupti_device_flush(void *args, int how)
 #ifdef NEW_CUPTI_ANALYSIS
   printf("CUPTI Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu, unique ccts %zu\n",
     total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds, cupti_cct_analysis_map_size_get());
+
+  cupti_cct_map_stats();
 #endif
 
   spinlock_unlock(&print_lock);

@@ -2,6 +2,7 @@
 
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/gpu/gpu-metrics.h>
@@ -23,6 +24,7 @@ static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
 static uint32_t cupti_range_interval = CUPTI_RANGE_DEFAULT_INTERVAL;
 static uint32_t cupti_range_sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
 static uint32_t cupti_range_post_enter_range_id = GPU_RANGE_NULL;
+static bool cupti_dynamic_period = false;
 
 #ifdef DEBUG
 static uint64_t total_times = 0;
@@ -249,6 +251,39 @@ cupti_range_mode_trie_is_enter
 
 
 static bool
+cupti_range_mode_context_sensitive_is_sampled
+(
+ cupti_cct_map_entry_t *entry
+)
+{
+  if (cupti_dynamic_period == false) {
+    return cupti_range_is_sampled();
+  }
+
+  double sampled_count = cupti_cct_map_entry_sampled_count_get(entry);
+  double count = cupti_cct_map_entry_count_get(entry);
+  double ratio = sampled_count / count;
+  double frequency = 1.0 / cupti_range_sampling_period;
+
+  if (ratio < frequency) {
+    // not over sampled  
+    return true;
+  } else {
+    const static double EPS = 0.001;
+    // y = (-p) / (1 - p) * x + p / (1 - p) + EPS
+    double ret = (-frequency) * (1 - frequency) * ratio + frequency / (1 - frequency) + EPS;
+    double left = (float)rand() / RAND_MAX;
+
+    if (left <= ret) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+
+static bool
 cupti_range_mode_context_sensitive_is_enter
 (
  CUcontext context,
@@ -281,7 +316,7 @@ cupti_range_mode_context_sensitive_is_enter
     cupti_cct_map_entry_t *entry = cupti_cct_map_lookup(api_node);
     if (!cupti_pc_sampling_active()) {
       // If not active, might need to turn it on
-      if (entry == NULL || cupti_range_is_sampled()) {
+      if (entry == NULL || cupti_range_mode_context_sensitive_is_sampled(entry)) {
         // First time see this range or sampled.
         // Range id is increased for the next range
         new_range = true;
@@ -292,11 +327,13 @@ cupti_range_mode_context_sensitive_is_enter
           cupti_cct_map_insert(api_node, range_id);
         } else {
           cupti_cct_map_entry_range_id_update(entry, range_id);
+          cupti_cct_map_entry_count_increase(entry, 1, 1);
         }
       } else {
         // assert(entry != NULL)
         // Get the latest range id
         range_id = cupti_cct_map_entry_range_id_get(entry);
+        cupti_cct_map_entry_count_increase(entry, 0, 1);
       }
     } else {
       // Update the latest range id
@@ -304,6 +341,7 @@ cupti_range_mode_context_sensitive_is_enter
         cupti_cct_map_insert(api_node, range_id);
       } else {
         cupti_cct_map_entry_range_id_update(entry, range_id);
+        cupti_cct_map_entry_count_increase(entry, 1, 1);
       }
     }
   }
@@ -410,21 +448,21 @@ cupti_range_config
 (
  const char *mode_str,
  int interval,
- int sampling_period
+ int sampling_period,
+ bool dynamic_period
 )
 {
-  TMSG(CUPTI, "Enter cupti_range_config mode %s, interval %d, sampling period %d", mode_str, interval, sampling_period);
+  TMSG(CUPTI, "Enter cupti_range_config mode %s, interval %d, sampling period %d, dynamic period %d", mode_str, interval, sampling_period, dynamic_period);
 
   gpu_range_enable();
 
   cupti_range_interval = interval;
   cupti_range_sampling_period = sampling_period;
+  cupti_dynamic_period = dynamic_period;
 
   // Range mode is only enabled with option "gpu=nvidia,pc"
   //
   // In the even mode, pc samples are collected for every n kernels.
-  // If n == 1, we fall back to the serialized pc sampling collection,
-  // in which pc samples are collected after every kernel launch.
   //
   // In the context sensitive mode, pc samples are flushed based on
   // the number of kernels belong to different contexts.

@@ -279,6 +279,7 @@ METHOD_FN(init)
 #ifdef NEW_CUPTI
   control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD_STR, ck_int);
+  control_knob_register("HPCRUN_CUDA_RANGE_DYNAMIC_PERIOD", "FALSE", ck_string);
   control_knob_register("HPCRUN_CUDA_RANGE_MODE", "SERIAL", ck_string);
   control_knob_register("HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD", CUPTI_CCT_TRIE_COMPRESS_THRESHOLD_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
@@ -419,7 +420,12 @@ METHOD_FN(process_event_list, int lush_metrics)
       monitor_real_exit(-1);
     }
 
-    cupti_range_config(range_mode, interval, sampling_period);
+    char *dynamic_period = NULL;
+    if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_DYNAMIC_PERIOD", &dynamic_period) != 0)
+      monitor_real_exit(-1);
+
+    bool enable_dynamic_period = strcmp(dynamic_period, "TRUE") == 0;
+    cupti_range_config(range_mode, interval, sampling_period, enable_dynamic_period);
 #endif
   }
 

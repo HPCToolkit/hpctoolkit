@@ -47,8 +47,7 @@
 
 #include <assert.h>
 #include <string.h>
-
-
+#include <math.h>
 
 //******************************************************************************
 // local includes
@@ -100,6 +99,8 @@ struct cupti_cct_map_entry_s {
   struct cupti_cct_map_entry_s *right;
   uint64_t cct;
 
+  uint64_t sampled_count;
+  uint64_t count;
   uint32_t range_id;
 }; 
 
@@ -128,6 +129,8 @@ cupti_cct_map_entry_new
 
   e->cct = (uint64_t)cct;
   e->range_id = range_id;
+  e->sampled_count = 1;
+  e->count = 1;
 
   return e;
 }
@@ -143,6 +146,29 @@ clear_fn_helper
 {
   if (visit_type == splay_postorder_visit) {
     st_free(&free_list, entry);
+  }
+}
+
+
+static __thread double count_total = 0;
+static __thread double count_square_total = 0;
+static __thread double entry_num = 0;
+
+
+static void
+stats_fn_helper
+(
+ cupti_cct_map_entry_t *entry,
+ splay_visit_t visit_type,
+ void *args
+)
+{
+  if (visit_type == splay_postorder_visit) {
+    double sampled_count = entry->sampled_count;
+    double count = entry->count;
+    count_total += sampled_count / count;
+    count_square_total += sampled_count / count * sampled_count / count;
+    entry_num += 1;
   }
 }
 
@@ -186,6 +212,16 @@ cupti_cct_map_clear()
 }
 
 
+void
+cupti_cct_map_stats()
+{
+  st_forall(map_root, splay_allorder, stats_fn_helper, NULL);
+  double mean = count_total / entry_num;
+  double stddev = sqrt(count_square_total / entry_num - mean * mean);
+  printf("CUPTI Stats mean %f stddev %f\n", mean, stddev);
+}
+
+
 uint32_t
 cupti_cct_map_entry_range_id_get
 (
@@ -196,8 +232,36 @@ cupti_cct_map_entry_range_id_get
 }
 
 
+uint64_t
+cupti_cct_map_entry_count_get
+(
+ cupti_cct_map_entry_t *entry
+)
+{
+  return entry->count;
+}
+
+
+uint64_t
+cupti_cct_map_entry_sampled_count_get
+(
+ cupti_cct_map_entry_t *entry
+)
+{
+  return entry->sampled_count;
+}
+
+
 void
 cupti_cct_map_entry_range_id_update(cupti_cct_map_entry_t *entry, uint32_t range_id)
 {
   entry->range_id = range_id;
+}
+
+
+void
+cupti_cct_map_entry_count_increase(cupti_cct_map_entry_t *entry, uint64_t sampled_count, uint64_t count)
+{
+  entry->sampled_count += sampled_count;
+  entry->count += count;
 }

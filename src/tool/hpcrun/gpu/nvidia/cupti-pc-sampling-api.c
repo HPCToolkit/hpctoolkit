@@ -562,14 +562,9 @@ cupti_pc_sampling_config
 
   hardware_buffer_size_config(HPCRUN_CUPTI_ACTIVITY_HW_BUFFER_SIZE, hw_buffer_size_info);
 
-  // If range == 1 and no range sampling (by default), we serialize every kernel launch and
-  // attribute pc samples at the end of each kernel.
-  // This mode works for apps with multiple cuda contexts.
-  // If range != 1 or range sampling is used (controlled by control knob `-ck HPCRUN_CUDA_RANGE_INTERVAL`,
-  // and `-ck HPCRUN_CUDA_RANGE_SAMPLING_PERIOD`.
   // we collect pc samples at the end of each range and attribute pc samples postmortem.
   // This mode requires user controlled pc sampling start/stop support and only
-  // works for apps with a single cuda context due to the limitation of CUPTI (<=11.5).
+  // works for apps with a single cuda context due to the limitation of CUPTI (<=11.6).
   if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
     // PC sampling is always active
     pc_sampling_active = true;
