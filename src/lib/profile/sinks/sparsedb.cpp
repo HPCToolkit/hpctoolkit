@@ -1550,12 +1550,11 @@ uint32_t SparseDB::ctxGrpIdFetch()
 
 void SparseDB::rwAllCtxGroup()
 {
-  uint32_t idx = rank - 1;
+  uint32_t idx = rank > 0 ? rank - 1 : ctxGrpIdFetch();
   uint32_t num_groups = ctx_group_list.size();
   std::vector<uint32_t> ctx_ids;
 
   while(idx < num_groups - 1){
-    if(idx == (uint32_t)-1) idx = ctxGrpIdFetch();// check if there is any group left for rank 0
     ctx_ids.clear();
     auto& start_id = ctx_group_list[idx];
     auto& end_id = ctx_group_list[idx + 1];
