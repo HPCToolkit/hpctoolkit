@@ -162,6 +162,7 @@ hpcstruct_cache_needs_cleanup
   }
 
   closedir(dir);
+
   return 0;
 }
 
