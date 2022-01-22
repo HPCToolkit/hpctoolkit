@@ -73,14 +73,6 @@
 
 
 //******************************************************************************
-// macros
-//******************************************************************************
-
-#define FILE_MAX_HASH_LENGTH (1 << 16) // 64K
-
-
-
-//******************************************************************************
 // internal functions
 //******************************************************************************
 
@@ -100,9 +92,6 @@ elf_hash_compute
     if (fd != -1) {
       // for speed, hash at most FILE_MAX_HASH_LENGTH data
       size_t flen = statbuf.st_size; 
-      if (flen > FILE_MAX_HASH_LENGTH) {
-	flen = FILE_MAX_HASH_LENGTH;
-      }
 
       void * ANYWHERE = 0;
       off_t NO_OFFSET = 0;
