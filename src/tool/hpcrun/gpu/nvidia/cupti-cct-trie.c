@@ -512,6 +512,9 @@ cct_trie_single_path_increase
 (
 )
 {
+  return;
+/* 
+ * XXX(Keren): Don't turn on this functionality for now
   if (trie_cur.node->left == NULL && trie_cur.node->right == NULL) {
     // Accumulate single path length
     ++single_path;
@@ -525,6 +528,7 @@ cct_trie_single_path_increase
     // After compression, always reset single_path
     single_path = 0;
   }
+*/
 }
 
 //***********************************
