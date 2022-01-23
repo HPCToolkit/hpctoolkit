@@ -108,24 +108,51 @@ static const char* analysis_makefile =
 #include "pmake.h"
 ;
 
-//
-// For a measurements directory, write a Makefile and launch hpcstruct
-// to analyze CPU and GPU binaries associated with the measurements
-//
-static void
-doMeasurementsDir
+// verify that measurements directory 
+// (1) is readable
+// (2) contains measurement files
+void
+verify_measurements_directory
 (
- Args &args,
- BAnal::Struct::Options & opts
+  string &measurements_dir
 )
 {
-  std::string measurements_dir = RealPath(args.in_filenm.c_str());
+  DIR *dir = opendir(measurements_dir.c_str());
+  
+  if (dir != NULL) {
+    struct dirent *ent;
+    bool has_hpcrun = false;
+    while ((ent = readdir(dir)) != NULL) {
+      string file_name(ent->d_name);
+      if (file_name.find(".hpcrun") != string::npos) {
+        has_hpcrun = true;
+        break;
+      }
+    }
+    closedir(dir);
+    if (!has_hpcrun) {
+      DIAG_EMsg("Measurements directory " << measurements_dir <<
+                "does not contain any .hpcrun measurement files ");
+      exit(1);
+    }
+  } else {
+    DIAG_EMsg("Unable to open measurements directory " << measurements_dir 
+              << ": " << strerror(errno));
+    exit(1);
+  }
+}
 
-  //
-  // Check if 'measurements_dir' has at least one .gpubin file.
-  //
-  string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
+
+// check if measurements directory contains a GPU binary 
+bool
+check_gpubin
+(
+  string &measurements_dir
+)
+{
   bool has_gpubin = false;
+
+  string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
 
   DIR *dir = opendir(gpubin_dir.c_str());
   if (dir != NULL) {
@@ -139,6 +166,58 @@ doMeasurementsDir
     }
     closedir(dir);
   }
+
+  return has_gpubin;
+}
+
+
+void
+create_structs_directory
+(
+  string &structs_dir
+)
+{
+  int result_dir = mkdir(structs_dir.c_str(), 0755);
+
+  if (result_dir != 0 && errno != EEXIST) {
+    DIAG_EMsg("Unable to create results directory " << structs_dir 
+              << ": " << strerror(errno));
+    exit(1);
+  }
+}
+
+void
+open_makefile
+(
+  string &makefile_name,
+  fstream &makefile
+)
+{
+  makefile.open(makefile_name, fstream::out | fstream::trunc);
+
+  if (! makefile.is_open()) {
+    DIAG_EMsg("Unable to write file: " << makefile_name);
+    exit(1);
+  }
+}
+
+
+//
+// For a measurements directory, write a Makefile and launch hpcstruct
+// to analyze CPU and GPU binaries associated with the measurements
+//
+static void
+doMeasurementsDir
+(
+ Args &args,
+ BAnal::Struct::Options & opts
+)
+{
+  std::string measurements_dir = RealPath(args.in_filenm.c_str());
+
+  verify_measurements_directory(measurements_dir);
+
+  bool has_gpubin = check_gpubin(measurements_dir);
 
   //
   // Put hpctoolkit on PATH
@@ -159,21 +238,16 @@ doMeasurementsDir
   string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
     + "/bin/hpcstruct";
 
-
   //
   // Write Makefile and launch analysis.
   //
   string structs_dir = measurements_dir + "/structs";
-  mkdir(structs_dir.c_str(), 0755);
+  create_structs_directory(structs_dir);
 
   string makefile_name = structs_dir + "/Makefile";
-  fstream makefile;
-  makefile.open(makefile_name, fstream::out | fstream::trunc);
 
-  if (! makefile.is_open()) {
-    DIAG_EMsg("Unable to write file: " << makefile_name);
-    exit(1);
-  }
+  fstream makefile;
+  open_makefile(makefile_name, makefile);
 
   unsigned int pthreads;
   unsigned int jobs;
@@ -208,7 +282,7 @@ doMeasurementsDir
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
 
   makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
-	   << "GPUBIN_CFG = "   << gpucfg << "\n"
+ 	   << "GPUBIN_CFG = "   << gpucfg << "\n"
 	   << "CPU_ANALYZE = "  << opts.analyze_cpu_binaries << "\n"
 	   << "GPU_ANALYZE = "  << opts.analyze_gpu_binaries << "\n"
 	   << "PAR_SIZE = "     << opts.parallel_analysis_threshold << "\n"
