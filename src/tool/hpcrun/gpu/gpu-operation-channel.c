@@ -109,8 +109,6 @@ typedef struct gpu_operation_channel_t {
   uint64_t count;
 } gpu_operation_channel_t;
 
-
-
 //******************************************************************************
 // local data
 //******************************************************************************
@@ -206,7 +204,6 @@ gpu_operation_channel_consume
  gpu_operation_channel_t *channel
 )
 {
-
   // steal elements previously pushed by the producer
   channel_steal(channel, bichannel_direction_forward);
 
