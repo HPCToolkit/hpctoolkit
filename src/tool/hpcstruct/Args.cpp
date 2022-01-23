@@ -302,6 +302,8 @@ Args::parse(int argc, const char* const argv[])
 
     if (parser.isOpt("nocache")) {
       nocache =  true;
+      if (!cache_directory.empty())
+        ARG_ERROR("can't specify nocache and a cache directory.");
     }
 
     if (parser.isOpt("gpucfg")) {
