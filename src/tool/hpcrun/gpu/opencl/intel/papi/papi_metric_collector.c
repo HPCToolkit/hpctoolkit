@@ -14,6 +14,8 @@
 #include <lib/prof-lean/spinlock.h>                                     // spinlock_t, SPINLOCK_UNLOCKED
 #include <hpcrun/gpu-monitors.h>                                        // gpu_monitors_apply, gpu_monitor_type_enter
 #include <hpcrun/memory/hpcrun-malloc.h>                                // hpcrun_malloc_safe
+#include <hpcrun/gpu/opencl/opencl-api.h>                               // opencl_api_thread_finalize
+#include <hpcrun/device-finalizers.h>                                   // device_finalizer_register
 
 
 
@@ -26,6 +28,7 @@ static bool hpcrun_complete = false;
 static kernel_node_t* incomplete_kernel_list_head = NULL;
 static kernel_node_t* incomplete_kernel_list_tail = NULL;
 static cct_node_linkedlist_t *cct_list_node_free_list = NULL;
+static device_finalizer_fn_entry_t device_finalizer_flush;
 
 
 
@@ -198,4 +201,5 @@ papi_metric_callback
     }
     usleep(5000);  // sleep for 5000 microseconds i.e fire 200 times per second
   }
+  opencl_api_thread_finalize(NULL, 0);
 }

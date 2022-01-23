@@ -187,6 +187,9 @@ static bool instrumentation = false;
 static bool optimization_check = false;
 static bool ENABLE_BLAME_SHIFTING = false;
 
+static bool gpu_utilization_enabled = false;
+static pthread_t gpu_utilization_tid;
+
 
 
 //----------------------------------------------------------
@@ -1644,6 +1647,17 @@ opencl_instrumentation_count_enable
 
 
 void
+set_gpu_utilization_tid
+(
+  pthread_t tid
+)
+{
+  gpu_utilization_enabled = true;
+  gpu_utilization_tid = tid;
+}
+
+
+void
 opencl_api_thread_finalize
 (
  void *args,
@@ -1683,6 +1697,9 @@ opencl_api_process_finalize
  int how
 )
 {
+  if (gpu_utilization_enabled) {
+    pthread_join(gpu_utilization_tid, NULL);
+  }
   if (optimization_check) { // is this the right to do final optimization checks
     // we cannot get cct nodes using gpu_application_thread_correlation_callback inside fini-thread callback
     // monitor_block_shootdown() inside libmonitor blocks this call

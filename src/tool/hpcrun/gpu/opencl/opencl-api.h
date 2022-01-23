@@ -192,6 +192,13 @@ opencl_instrumentation_count_enable
 
 
 void
+set_gpu_utilization_tid
+(
+ pthread_t tid
+);
+
+
+void
 opencl_api_thread_finalize
 (
  void *args,

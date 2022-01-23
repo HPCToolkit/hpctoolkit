@@ -91,7 +91,7 @@ static device_finalizer_fn_entry_t device_finalizer_shutdown;
 //******************************************************************************
 
 static char opencl_name[128];
-static pthread_t threadId;
+static pthread_t gpu_utilization_tid;
 static bool gpu_utilization_enabled = false;
 
 
@@ -148,7 +148,7 @@ METHOD_FN(shutdown)
 {
   if (gpu_utilization_enabled) {
     hpcrun_completed();
-    pthread_join(threadId, NULL);
+    set_gpu_utilization_tid(gpu_utilization_tid);
   }
   self->state = UNINIT;
 }
@@ -230,7 +230,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 			opencl_blame_shifting_enable();
 		} else if (hpcrun_ev_is(opencl_name, ENABLE_INTEL_GPU_UTILIZATION)) {
       // papi metric collection for OpenCL
-      int err = pthread_create(&threadId, NULL, &papi_metric_callback, NULL);
+      int err = pthread_create(&gpu_utilization_tid, NULL, &papi_metric_callback, NULL);
       gpu_utilization_enabled = true;
       gpu_metrics_gpu_utilization_enable();
 		}
