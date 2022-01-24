@@ -284,6 +284,7 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD", CUPTI_CCT_TRIE_COMPRESS_THRESHOLD_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
   control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "-1", ck_int);
+  control_knob_register("HPCRUN_CUDA_BACKOFF_BASE", "4", ck_int);
 #endif
 
   // Reset cupti flags
@@ -467,10 +468,15 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (control_knob_value_get_int("HPCRUN_CUDA_CORRELATION_THRESHOLD", &correlation_threshold) != 0)
     monitor_real_exit(-1);
 
+  int backoff_base;
+  if (control_knob_value_get_int("HPCRUN_CUDA_BACKOFF_BASE", &backoff_base) != 0)
+    monitor_real_exit(-1);
+
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
   TMSG(CUDA, "Kernel serialization %s", kernel_serialization);
   TMSG(CUDA, "Correlation threshold %d", correlation_threshold);
+  TMSG(CUDA, "Backoff base %d", backoff_base);
 
   // By default we enable concurrent kernel monitoring,
   // which instruments the begin and exit of a block to measure running time.
@@ -482,6 +488,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
   cupti_correlation_threshold_set(correlation_threshold);
+
+  cupti_backoff_base_set(backoff_base);
 
   // Register cupti callbacks
   cupti_init();

@@ -314,7 +314,7 @@ cupti_correlation_callback_dummy
 // static data
 //******************************************************************************
 
-const static int CUPTI_BACKOFF_BASE = 4;
+static int cupti_backoff_base = 4;
 static int cupti_correlation_threshold = -1;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
@@ -1139,7 +1139,7 @@ cupti_unwind
     api_node = cupti_unwind_map_entry_cct_node_get(entry);
     int backoff = cupti_unwind_map_entry_backoff_get(entry);
     if (backoff < cupti_correlation_threshold_get()) {
-      int threshold = pow(CUPTI_BACKOFF_BASE, backoff);
+      int threshold = pow(cupti_backoff_base_get(), backoff);
       int left = rand() % threshold;
       if (left == 0) {
 #ifdef NEW_CUPTI_ANALYSIS
@@ -2521,6 +2521,25 @@ cupti_correlation_threshold_get
 )
 {
   return cupti_correlation_threshold;
+}
+
+
+void
+cupti_backoff_base_set
+(
+ int32_t backoff_base
+)
+{
+  cupti_backoff_base = backoff_base;
+}
+
+
+int32_t
+cupti_backoff_base_get
+(
+)
+{
+  return cupti_backoff_base;
 }
 
 

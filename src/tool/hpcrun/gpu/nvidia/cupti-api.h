@@ -461,4 +461,17 @@ cupti_correlation_threshold_get
 (
 );
 
+
+void
+cupti_backoff_base_set
+(
+ int32_t backoff_base
+);
+
+
+int32_t
+cupti_backoff_base_get
+(
+);
+
 #endif
