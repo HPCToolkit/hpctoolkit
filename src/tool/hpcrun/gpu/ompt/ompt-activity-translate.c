@@ -113,16 +113,10 @@ convert_target
  uint64_t *cid_ptr
 )
 {
-  ompt_record_target_t *t = &r->record.target;
+  ompt_record_target_t *t __attribute__((unused)) = &r->record.target;
 
   ga->kind = GPU_ACTIVITY_UNKNOWN;
   *cid_ptr = 0;
-
-#if 0
-  printf("\tTarget task: kind=%d endpoint=%d device=%d task_id=%lu target_id=%lu codeptr=%p\n",
-	 target_rec.kind, target_rec.endpoint, target_rec.device_num,
-	 target_rec.task_id, target_rec.target_id,
-#endif
 }
 
 
@@ -202,16 +196,6 @@ convert_memcpy
 {
   ompt_record_target_data_op_t *d = &r->record.target_data_op;
 
-# if 0
-  TMSG(OMPT_ACTIVITY, "Memcpy copy CorrelationId %u", r->correlationId);
-  TMSG(OMPT_ACTIVITY, "Memcpy copy kind %u", d->optype);
-  TMSG(OMPT_ACTIVITY, "Memcpy copy bytes %lu", d->bytes);
-
-
-  ga->details.memcpy.context_id = r->contextId;
-  ga->details.memcpy.stream_id = r->streamId;
-#endif
-
   ga->kind = GPU_ACTIVITY_MEMCPY;
 
   ga->details.memcpy.correlation_id = d->host_op_id;
@@ -257,19 +241,7 @@ convert_target_data_op
   default:
     convert_unknown(ga, r, cid_ptr);
     break;
- }
-
-#if 0
-  ( r->thread_id, r->target_id);
-
-
-  printf("\tTarget data op: host_op_id=%lu optype=%d src_addr=%p "
-	 "src_device=%d dest_addr=%p dest_device=%d bytes=%lu "
-	 "end_time=%lu duration=%luus codeptr=%p\n",
-	 d->host_op_id, d->optype,
-	 d->src_addr, d->src_device_num,
-	 d->dest_addr, d->dest_device_num,
-#endif
+  }
 
   gpu_interval_set(&ga->details.interval, r->time, d->end_time);
 }
@@ -288,38 +260,6 @@ convert_target_submit
   ga->kind = GPU_ACTIVITY_KERNEL;
   ga->details.kernel.correlation_id = k->host_op_id;
   *cid_ptr = k->host_op_id;
-
-#if 0
-  ( r->thread_id, r->target_id);
-  printf("\tTarget kernel: host_op_id=%lu requested_num_teams=%u "
-	 "granted_num_teams=%u end_time=%lu duration=%luus\n",
-	 target_kernel_rec.host_op_id,
-	 target_kernel_rec.requested_num_teams,
-	 target_kernel_rec.granted_num_teams,
-
-  ga->details.kernel.dynamicSharedMemory = r->dynamicSharedMemory;
-  ga->details.kernel.staticSharedMemory = r->staticSharedMemory;
-  ga->details.kernel.localMemoryTotal = r->localMemoryTotal;
-  ga->details.kernel.device_id = r->deviceId;
-  ga->details.kernel.context_id = r->contextId;
-  ga->details.kernel.stream_id = r->streamId;
-  ga->details.kernel.blocks = r->blockX * r->blockY * r->blockZ;
-
-
-  uint32_t activeWarpsPerSM = 0;
-  uint32_t maxActiveWarpsPerSM = 0;
-  uint32_t threadRegisters = 0;
-  uint32_t blockThreads = 0;
-  uint32_t blockSharedMemory = 0;
-  cupti_occupancy_analyze(r, &activeWarpsPerSM, &maxActiveWarpsPerSM,
-			  &threadRegisters, &blockThreads, &blockSharedMemory);
-
-  ga->details.kernel.activeWarpsPerSM = activeWarpsPerSM;
-  ga->details.kernel.maxActiveWarpsPerSM = maxActiveWarpsPerSM;
-  ga->details.kernel.threadRegisters = threadRegisters;
-  ga->details.kernel.blockThreads = blockThreads;
-  ga->details.kernel.blockSharedMemory = blockSharedMemory;
-#endif
 
   gpu_interval_set(&ga->details.interval, r->time, k->end_time);
 }
