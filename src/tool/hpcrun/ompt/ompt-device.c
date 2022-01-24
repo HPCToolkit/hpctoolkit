@@ -87,6 +87,9 @@
 // macros
 //*****************************************************************************
 
+// with OMPT support turned on, callpath pruning should not be necessary
+#define PRUNE_CALLPATH 0
+
 #define OMPT_ACTIVITY_DEBUG 1
 
 #if OMPT_ACTIVITY_DEBUG
@@ -131,6 +134,14 @@ typedef struct ompt_device_entry_t {
 
 
 //*****************************************************************************
+// forward declarations
+//*****************************************************************************
+
+static void ompt_dump(ompt_record_ompt_t *r) __attribute__((unused));
+
+
+
+//*****************************************************************************
 // static variables
 //*****************************************************************************
 
@@ -141,6 +152,14 @@ static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static int ompt_shutdown_complete = 0;
 
 static ompt_device_entry_t *device_list = 0;
+
+static __thread bool ompt_need_flush = false;
+
+
+
+//*****************************************************************************
+// private operations
+//*****************************************************************************
 
 static void
 device_list_insert
@@ -359,7 +378,7 @@ ompt_finalize_flush
   while (e) {
     PRINT("ompt_finalize_flush flush id=%d device=%p\n",
 	  e->device_id, e->device);
-    ompt_flush_trace(e->device);
+    if (ompt_need_flush) ompt_flush_trace(e->device);
     e = e->next;
   }
   PRINT("ompt_finalize_flush exit\n");
@@ -509,6 +528,7 @@ ompt_device_unload(int device_num,
 }
 
 
+#if PRUNE_CALLPATH
 static int
 get_load_module
 (
@@ -519,6 +539,7 @@ get_load_module
   ip_normalized_t ip = addr->ip_norm;
   return ip.lm_id;
 }
+#endif
 
 
 void
@@ -565,10 +586,10 @@ ompt_target_callback_emi
     hpcrun_sample_callpath(&uc, zero_metric_id, zero_metric_incr,
                            skip_this_frame, 1, NULL).sample_node;
 
+#if PRUNE_CALLPATH
   // the load module for the runtime library that supports offloading
   int lm = get_load_module(target_node);
 
-#if 0
   // drop nodes on the call chain until we find one that is not in the load
   // module for runtime library that supports offloading
   for (;;) {
@@ -579,6 +600,8 @@ ompt_target_callback_emi
 
   hpcrun_safe_exit();
   td->overhead--;
+
+  ompt_need_flush = true;
 }
 
 #define FOREACH_OMPT_DATA_OP(macro)				     \
