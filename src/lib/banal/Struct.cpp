@@ -95,6 +95,7 @@
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/diagnostics.h>
 #include <lib/support/dictionary.h>
 
 #include <boost/atomic.hpp>
@@ -597,7 +598,8 @@ makeStructure(string filename,
   const char * cfilename = inputFile.CfileName();
 
   if (elfFileVector == NULL || elfFileVector->empty()) {
-    return;
+    DIAG_EMsg("Input file " << inputFile.fileName() << " is not an ELF file");
+    throw 1;
   }
 
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
