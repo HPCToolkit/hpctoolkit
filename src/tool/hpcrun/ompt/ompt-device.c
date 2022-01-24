@@ -87,6 +87,12 @@
 // macros
 //*****************************************************************************
 
+#define FOREACH_OMPT_DATA_OP(macro)				     \
+  macro(op, ompt_target_data_alloc, ompt_tgt_alloc)		     \
+  macro(op, ompt_target_data_delete, ompt_tgt_delete)		     \
+  macro(op, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
+  macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout)
+
 // with OMPT support turned on, callpath pruning should not be necessary
 #define PRUNE_CALLPATH 0
 
@@ -559,6 +565,8 @@ ompt_target_callback_emi
     return;
   }
 
+  ompt_need_flush = true;
+
   uint64_t target_id = target_data->value = gpu_correlation_id();
   PRINT("ompt_target_callback->target_id 0x%lx\n", target_id);
 
@@ -600,15 +608,8 @@ ompt_target_callback_emi
 
   hpcrun_safe_exit();
   td->overhead--;
-
-  ompt_need_flush = true;
 }
 
-#define FOREACH_OMPT_DATA_OP(macro)				     \
-  macro(op, ompt_target_data_alloc, ompt_tgt_alloc)		     \
-  macro(op, ompt_target_data_delete, ompt_tgt_delete)		     \
-  macro(op, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
-  macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout)
 
 void
 ompt_data_op_callback_emi
@@ -627,6 +628,8 @@ ompt_data_op_callback_emi
 )
 {
   if (endpoint == ompt_scope_end) return;
+
+  ompt_need_flush = true;
 
   uint64_t target_id = target_data->value;
   uint64_t op_id = *host_op_id = gpu_correlation_id();
@@ -661,12 +664,17 @@ ompt_submit_callback_emi
 )
 {
   uint64_t target_id = target_data->value;
+
   PRINT("ompt_submit_callback enter->target_id 0x%lx\n", target_id);
+
   if (endpoint == ompt_scope_begin) {
     *host_op_id = gpu_correlation_id();
     hpcrun_ompt_op_id_notify(endpoint, *host_op_id,
       ompt_placeholders.ompt_tgt_kernel.pc_norm);
+
+    ompt_need_flush = true;
   }
+
   PRINT("ompt_submit_callback exit->target_id 0x%lx\n", target_id);
 }
 
@@ -679,6 +687,7 @@ ompt_map_callback(ompt_id_t target_id,
                   size_t *bytes,
                   unsigned int *mapping_flags)
 {
+  ompt_need_flush = true;
 }
 
 
