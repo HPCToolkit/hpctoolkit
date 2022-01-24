@@ -1069,7 +1069,7 @@ cupti_callback_init
 // Runtime and driver API callbacks
 //******************************************************************************
 
-//#define PRINT_UNWIND_TIME
+#define PRINT_UNWIND_TIME
 
 #ifdef PRINT_UNWIND_TIME
 static uint64_t get_timestamp() {
@@ -2346,7 +2346,7 @@ cupti_activity_flush
       FLUSH_ALARM_TEST();
       FLUSH_ALARM_CLEAR();
     }
-    FLUSH_ALARM_FINI();			\
+    FLUSH_ALARM_FINI();
   }
 
   TMSG(CUPTI, "Exit cupti_activity_flush");
@@ -2371,7 +2371,7 @@ cupti_device_flush(void *args, int how)
   spinlock_lock(&print_lock);
 
 #ifdef PRINT_UNWIND_TIME
-  printf("CUPTI unwind time: %lu\n", unwind_time);
+  printf("CUPTI unwind time: %.2f\n", unwind_time / 1000000000.0);
 #endif
 
 #ifdef NEW_CUPTI_ANALYSIS
