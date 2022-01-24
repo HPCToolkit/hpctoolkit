@@ -2371,7 +2371,7 @@ cupti_device_flush(void *args, int how)
   spinlock_lock(&print_lock);
 
 #ifdef PRINT_UNWIND_TIME
-  printf("CUPTI unwind time %lu\n", unwind_time);
+  printf("CUPTI unwind time: %lu\n", unwind_time);
 #endif
 
 #ifdef NEW_CUPTI_ANALYSIS
