@@ -95,6 +95,7 @@ static pthread_t gpu_utilization_tid;
 static bool gpu_utilization_enabled = false;
 
 
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -131,6 +132,9 @@ METHOD_FN(start)
 static void
 METHOD_FN(thread_fini_action)
 {
+  if (gpu_utilization_enabled) {
+    notify_gpu_util_thr_hpcrun_completion();
+  }
   TMSG(OPENCL, "thread_fini_action");
 }
 
@@ -147,8 +151,7 @@ static void
 METHOD_FN(shutdown)
 {
   if (gpu_utilization_enabled) {
-    hpcrun_completed();
-    set_gpu_utilization_tid(gpu_utilization_tid);
+    notify_gpu_util_thr_hpcrun_completion();
   }
   self->state = UNINIT;
 }
@@ -233,6 +236,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       int err = pthread_create(&gpu_utilization_tid, NULL, &papi_metric_callback, NULL);
       gpu_utilization_enabled = true;
       gpu_metrics_gpu_utilization_enable();
+      set_gpu_utilization_tid(gpu_utilization_tid);
 		}
 	}
 }

@@ -1664,6 +1664,7 @@ opencl_api_thread_finalize
  int how
 )
 {
+  notify_gpu_util_thr_hpcrun_completion();
   if (opencl_api_flag) {
     // If I have invoked any opencl api, I have to attribute all my activities to my ccts
     opencl_api_flag = false;

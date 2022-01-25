@@ -178,12 +178,14 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
 //******************************************************************************
 
 void
-hpcrun_completed
+notify_gpu_util_thr_hpcrun_completion
 (
  void
 )
 {
-  hpcrun_complete = true;
+  if (!hpcrun_complete) {
+    hpcrun_complete = true;
+  }
 }
 
 

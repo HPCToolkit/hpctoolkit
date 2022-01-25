@@ -28,7 +28,7 @@ typedef struct cct_node_linkedlist_t {
 //******************************************************************************
 
 void
-hpcrun_completed
+notify_gpu_util_thr_hpcrun_completion
 (
  void
 );
