@@ -599,3 +599,14 @@ unsigned int la_objclose(uintptr_t* cookie) {
   *cookie = 0;
   return 0;
 }
+
+char *la_objsearch(const char *name, uintptr_t *cookie, unsigned int flag) {
+  if (strstr(name, "librocprofiler64.so") == NULL) {
+    return name;
+  }
+  char* path = getenv("HPCRUN_USE_CUSTOM_ROCPROFILER");
+  if (path != NULL) {
+    return path;
+  }
+  return name;
+}
