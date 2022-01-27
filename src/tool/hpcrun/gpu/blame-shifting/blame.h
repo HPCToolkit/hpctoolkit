@@ -14,13 +14,6 @@
 // interface operations
 //******************************************************************************
 
-uint32_t
-get_count_of_unfinished_kernels
-(
- void
-);
-
-
 void
 gpu_idle_blame
 (

@@ -52,6 +52,8 @@ char const *metric_name[MAX_STR_LEN] = {
            "ComputeBasic.EuStall"
 };
 
+static int null_counter = 0; 
+
 
 
 //******************************************************************************
@@ -171,6 +173,13 @@ attribute_gpu_utilization
   long long *previous_values
 )
 {
+  if (!cct_node || !activity_channel) {
+    // intermittently, cct_node and activity_channel values passed are NULL
+    // While the root cause isn't identified, this may be due to improper locking of data-structures and
+    // thus free being called on these datastructures. Adding this if-block as a temporary fix for this issue
+    // printf("null_counter: %d\n", ++null_counter); // null_counter=0 for PeleC, null_counter=10-16 for AMR-Wind
+    return;
+  }
   gpu_activity_t ga;
   gpu_activity_t *ga_ptr = &ga;
   ga_ptr->kind = GPU_ACTIVITY_INTEL_GPU_UTILIZATION;

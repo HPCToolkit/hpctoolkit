@@ -437,7 +437,7 @@ sync_epilogue
 }
 
 
-uint32_t
+static uint32_t
 get_count_of_unfinished_kernels
 (
  void

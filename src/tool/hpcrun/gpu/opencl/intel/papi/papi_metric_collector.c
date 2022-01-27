@@ -29,12 +29,26 @@ static kernel_node_t* incomplete_kernel_list_head = NULL;
 static kernel_node_t* incomplete_kernel_list_tail = NULL;
 static cct_node_linkedlist_t *cct_list_node_free_list = NULL;
 static device_finalizer_fn_entry_t device_finalizer_flush;
+static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static uint32_t
+get_count_of_unfinished_kernels
+(
+ void
+)
+{
+  spinlock_lock(&incomplete_kernel_list_lock);
+  uint32_t count = atomic_load(&g_unfinished_kernels);
+  spinlock_unlock(&incomplete_kernel_list_lock);
+  return count;
+}
+
 
 static cct_node_linkedlist_t*
 cct_list_node_alloc_helper
@@ -91,6 +105,7 @@ add_kernel_to_incomplete_list
 )
 {
   spinlock_lock(&incomplete_kernel_list_lock);
+  atomic_fetch_add(&g_unfinished_kernels, 1L);
   kernel_node_t *current_tail = incomplete_kernel_list_tail;
   incomplete_kernel_list_tail = kernel_node;
   if (current_tail != NULL) {
@@ -127,6 +142,7 @@ remove_kernel_from_incomplete_list
     }
     curr = curr->next;
   }
+  atomic_fetch_add(&g_unfinished_kernels, -1L);
   spinlock_unlock(&incomplete_kernel_list_lock);
 }
 
@@ -137,6 +153,7 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
  uint32_t num_unfinished_kernels
 )
 {
+  spinlock_lock(&incomplete_kernel_list_lock);
   // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
   uint32_t nodes_to_be_allocated = num_unfinished_kernels;
   cct_node_linkedlist_t* curr_c, *cct_list_of_incomplete_kernels, *new_node;
@@ -151,7 +168,6 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
   }
   // printf("\n");
 
-  spinlock_lock(&incomplete_kernel_list_lock);
   kernel_node_t *curr_k;
   curr_k = incomplete_kernel_list_head;
 
@@ -160,14 +176,14 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
    * 2. delete the entry from the list if marked for deletion (i.e. the kernel has completed)
    */
   curr_c = cct_list_of_incomplete_kernels;
-  while (curr_k) {
+  while (curr_c && curr_k) {
     curr_c->node = curr_k->launcher_cct;
     curr_c->activity_channel = curr_k->activity_channel;
     curr_c = atomic_load(&curr_c->next);
     curr_k = curr_k->next;
   }
-  spinlock_unlock(&incomplete_kernel_list_lock);
   gpu_monitors_apply(cct_list_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
+  spinlock_unlock(&incomplete_kernel_list_lock);
   // cct_list_node_free_helper(cct_list_of_incomplete_kernels);
 }
 
