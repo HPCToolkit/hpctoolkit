@@ -69,12 +69,8 @@ using namespace hpctoolkit::sinks;
 
 SparseDB::SparseDB(stdshim::filesystem::path p)
   : dir(std::move(p)), rank(mpi::World::rank()), ctxMaxId(0),
-    parForPi([&](pms_profile_info_t& item){ handleItemPi(item); }),
     fpos(0), accFpos(mpi::Tag::SparseDB_1),
-    parForCiip([&](profCtxIdIdxPairs& item){ handleItemCiip(item); }),
-    parForPd([&](profData& item){ handleItemPd(item); }),
-    ctxGrpId(0), accCtxGrp(mpi::Tag::SparseDB_2),
-    parForCtxs([&](ctxRange& item){ handleItemCtxs(item); }) {
+    ctxGrpId(0), accCtxGrp(mpi::Tag::SparseDB_2) {
 
   if(dir.empty())
     util::log::fatal{} << "SparseDB doesn't allow for dry runs!";
@@ -739,7 +735,8 @@ void SparseDB::handleItemPi(pms_profile_info_t& pi)
 void SparseDB::writeProfInfos()
 {
 
-  parForPi.fill(std::move(prof_infos));
+  parForPi.fill(std::move(prof_infos),
+                [&](pms_profile_info_t& item){ handleItemPi(item); });
   parForPi.contribute(parForPi.wait());
 
 }
@@ -1104,7 +1101,8 @@ void SparseDB::fillAllProfileCtxIdIdxPairs()
     ciips[i] = std::move(ciip);
   }
 
-  parForCiip.fill(std::move(ciips));
+  parForCiip.fill(std::move(ciips),
+                  [&](profCtxIdIdxPairs& item){ handleItemCiip(item); });
   parForCiip.contribute(parForCiip.wait());
 
 }
@@ -1227,7 +1225,8 @@ SparseDB::profilesData(std::vector<uint32_t>& ctx_ids)
     pds[i] = std::move(pd);
   }
 
-  parForPd.fill(std::move(pds));
+  parForPd.fill(std::move(pds),
+                [&](profData& item){ handleItemPd(item); });
   parForPd.reset();  // Also waits for work to complete
 
   return profiles_data;
@@ -1506,7 +1505,8 @@ void SparseDB::rwOneCtxGroup(std::vector<uint32_t>& ctx_ids)
     cr.pis = pisptr;
     crs[i] = std::move(cr);
   }
-  parForCtxs.fill(std::move(crs));
+  parForCtxs.fill(std::move(crs),
+                  [&](ctxRange& item){ handleItemCtxs(item); });
   parForCtxs.reset();
 
 }

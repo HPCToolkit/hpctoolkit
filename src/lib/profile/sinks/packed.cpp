@@ -225,8 +225,7 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
 }
 
 ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)
-    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0),
-      fePackMetrics([this](auto& group){ packMetricGroup(group); }) {}
+    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0) {}
 
 void ParallelPacked::notifyPipeline() noexcept {
   if(doContexts || doMetrics) {
@@ -272,7 +271,8 @@ void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
     prev += sz;
   }
 
-  fePackMetrics.fill(std::move(workitems));
+  fePackMetrics.fill(std::move(workitems),
+                     [this](auto& group){ packMetricGroup(group); });
   packMetricsGroups.clear();
   fePackMetrics.contribute(fePackMetrics.wait());
   output = nullptr;
