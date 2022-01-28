@@ -134,6 +134,7 @@ static long pc_sampling_frequency_default = 12;
 
 
 static int cupti_enabled_activities = 0;
+static bool cupti_sync_yield = false;
 
 // event name, which is nvidia-cuda
 static char nvidia_name[128];
@@ -237,6 +238,13 @@ cupti_trace_frequency_get()
 }
 
 
+bool
+cupti_sync_yield_get()
+{
+  return cupti_sync_yield;
+}
+
+
 void
 cupti_enable_activities
 (
@@ -285,6 +293,7 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
   control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "-1", ck_int);
   control_knob_register("HPCRUN_CUDA_BACKOFF_BASE", "4", ck_int);
+  control_knob_register("HPCRUN_CUDA_SYNC_YIELD", "TRUE", ck_string);
 #endif
 
   // Reset cupti flags
@@ -425,6 +434,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_DYNAMIC_PERIOD", &dynamic_period) != 0)
       monitor_real_exit(-1);
 
+    char *sync_yield = NULL;
+    if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
+      monitor_real_exit(-1);
+
     bool enable_dynamic_period = strcmp(dynamic_period, "TRUE") == 0;
     cupti_range_config(range_mode, interval, sampling_period, enable_dynamic_period);
 #endif
@@ -471,6 +484,12 @@ METHOD_FN(process_event_list, int lush_metrics)
   int backoff_base;
   if (control_knob_value_get_int("HPCRUN_CUDA_BACKOFF_BASE", &backoff_base) != 0)
     monitor_real_exit(-1);
+
+  char *sync_yield;
+  if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
+    monitor_real_exit(-1);
+
+  cupti_sync_yield = strcmp(sync_yield, "TRUE") == 0;
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
