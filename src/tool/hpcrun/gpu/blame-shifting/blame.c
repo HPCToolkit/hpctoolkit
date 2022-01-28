@@ -330,20 +330,12 @@ queue_epilogue
 void
 kernel_prologue
 (
- uint64_t kernelexec_id
+ uint64_t kernelexec_id,
+ cct_node_t *cct_node
 )
 {
-  // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter();
-
-  ucontext_t context;
-  getcontext(&context);
-  cct_node_t *cct_node = gpu_application_thread_correlation_callback(0); // param is not used in the function
-
   create_and_insert_kernel_entry(kernelexec_id, cct_node);
   atomic_fetch_add(&g_unfinished_kernels, 1L);
-
-  hpcrun_safe_exit();
 }
 
 

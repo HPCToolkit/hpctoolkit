@@ -41,7 +41,8 @@ queue_epilogue
 void
 kernel_prologue
 (
- uint64_t kernelexec_id
+ uint64_t kernelexec_id,
+ cct_node_t *cct_node
 );
 
 

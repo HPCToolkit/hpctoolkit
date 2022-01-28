@@ -15,6 +15,7 @@
 #include <hpcrun/safe-sampling.h>             // hpcrun_safe_enter, hpcrun_safe_exit
 
 #include "../blame.h"                         // sync_prologue, sync_epilogue, etc
+#include <hpcrun/gpu/opencl/opencl-api.h>     // place_cct_under_opencl_kernel
 #include "opencl-blame.h"
 #include "../blame-kernel-cleanup-map.h"      // kernel_cleanup_map_insert
 
@@ -70,7 +71,8 @@ opencl_queue_epilogue
 void
 opencl_kernel_prologue
 (
- cl_event event
+ cl_event event,
+ uint32_t kernel_module_id
 )
 {
   // prevent self a sample interrupt while gathering calling context
@@ -81,7 +83,8 @@ opencl_kernel_prologue
   kernel_cleanup_data_t *data = kcd_alloc_helper();
   data->event = event;
   kernel_cleanup_map_insert((uint64_t) event, data);
-  kernel_prologue((uint64_t) event);
+  cct_node_t *cct = place_cct_under_opencl_kernel(kernel_module_id);
+  kernel_prologue((uint64_t) event, cct);
 
   hpcrun_safe_exit();
 }

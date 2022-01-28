@@ -30,7 +30,8 @@ opencl_queue_epilogue
 void
 opencl_kernel_prologue
 (
- cl_event event
+ cl_event event,
+ uint32_t kernel_module_id
 );
 
 
