@@ -327,6 +327,9 @@ void cct_remove_my_subtree(cct_node_t* cct);
 
 
 
+// for hpcrun_cct_walkset_merge
+typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
+extern void hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg);
 
 
 // copy cct node
