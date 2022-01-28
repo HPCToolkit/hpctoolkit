@@ -54,6 +54,7 @@
 #include <hpcrun/metrics.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/hpcrun_stats.h>
 
 #include "gpu-activity.h"
 #include "gpu-metrics.h"
@@ -313,6 +314,8 @@ gpu_metrics_attribute_pc_sampling2
 
   // frequencly is handled already 
   uint64_t inst_count = sinfo->samples;
+
+  hpcrun_stats_acc_samples_add(inst_count);
 
   metric_data_list_t *inst_metric = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
