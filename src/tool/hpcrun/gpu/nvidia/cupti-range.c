@@ -123,9 +123,12 @@ cupti_range_mode_even_is_enter
   }
   cupti_range_post_enter_range_id = range_id;
   uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-  // Increase kernel count for postmortem apportion based on counts
-  cupti_range_kernel_count_increase(kernel_ph, context_id,
-    cupti_range_post_enter_range_id, cupti_pc_sampling_active());
+  if (cupti_range_interval != GPU_RANGE_DEFAULT_RANGE) {
+    // Increase kernel count for postmortem apportion based on counts
+    cupti_range_kernel_count_increase(kernel_ph, context_id,
+      cupti_range_post_enter_range_id, cupti_pc_sampling_active());
+  } 
+  // else don't increase kernel count now, fall back to the serialized mode
   return (GPU_CORRELATION_ID_UNMASK(correlation_id) % cupti_range_interval) == 0;
 }
 
@@ -225,7 +228,23 @@ cupti_range_mode_trie_is_enter
         cupti_ip_norm_global_map_clear();
         cupti_cct_trie_append(next_range_id, api_node);
       }
-    } 
+    } else {
+      // Randomly turn on sampling
+      if (cupti_range_mode_trie_is_sampled()) {
+        sampled = true;
+
+        // Flush does not affect the node just inserted, so we need to unwind it and reinsert it
+        cupti_cct_trie_unwind();
+        cupti_cct_trie_flush(context_id, active, false);
+        cupti_ip_norm_map_clear_thread();
+        cupti_ip_norm_global_map_clear();
+
+        // Add a new node
+        cupti_cct_trie_append(next_range_id, api_node);
+        cupti_ip_norm_map_insert_thread(kernel_ip, api_node, next_range_id);
+        cupti_ip_norm_global_map_insert(kernel_ip, api_node, next_range_id);
+      }
+    }
       
     if (sampled) {
 #ifdef DEBUG
@@ -413,7 +432,15 @@ cupti_range_mode_even_is_exit
 
   // Collect pc samples from all contexts
   if (cupti_pc_sampling_active()) {
-    cupti_pc_sampling_range_context_collect(cupti_range_post_enter_range_id, context);
+    if (cupti_range_interval == GPU_RANGE_DEFAULT_RANGE) {
+      cupti_pc_sampling_stop(context);
+      cct_node_t *kernel_ph = cupti_kernel_ph_get();
+      // Collect pc samples from the current context
+      cupti_range_kernel_count_increase(kernel_ph, 0, GPU_RANGE_NULL, true);
+      cupti_pc_sampling_correlation_context_collect(kernel_ph, context);
+    } else {
+      cupti_pc_sampling_range_context_collect(cupti_range_post_enter_range_id, context);
+    }
   }
 }
 

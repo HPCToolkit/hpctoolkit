@@ -245,6 +245,15 @@ CUDA_FN
 
 CUDA_RUNTIME_FN
 (
+ cudaSetDeviceFlags,
+ (
+  int flags
+ )
+);
+
+
+CUDA_RUNTIME_FN
+(
  cudaGetDevice,
  (
   int *device_id
@@ -316,6 +325,7 @@ cuda_bind
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cudart, cudaGetDevice);
+  CHK_DLSYM(cudart, cudaSetDeviceFlags);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
   CHK_DLSYM(cudart, cudaLaunchKernel);
   CHK_DLSYM(cudart, cudaMemcpy);
@@ -366,6 +376,22 @@ cuda_device_compute_capability
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
   api_internal = false;
 
+  return 0;
+#else
+  return -1;
+#endif
+}
+
+
+int
+cuda_sync_yield_set
+(
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  api_internal = true;
+  HPCRUN_CUDA_RUNTIME_CALL(cudaSetDeviceFlags, (cudaDeviceScheduleYield));
+  api_internal = false;
   return 0;
 #else
   return -1;

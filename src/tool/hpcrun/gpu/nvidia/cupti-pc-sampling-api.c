@@ -26,7 +26,7 @@
 #include "cupti-range.h"
 #include "cupti-pc-sampling-data.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -369,7 +369,6 @@ pc_sampling_activity_set
   activity->details.pc_sampling_info2.free = cupti_pc_sampling_data_free;
 }
 
-
 static void
 pc_sampling_data_debug
 (
@@ -461,14 +460,6 @@ pc_sampling_collect
   gpu_activity_t gpu_activity;
   memset(&gpu_activity, 0, sizeof(gpu_activity_t));
 
-  if (DEBUG) {
-    for (size_t i = 0; i < num_stall_reasons; ++i) {
-      TMSG(CUPTI_ACTIVITY, "stall name %u : %s", stall_reason_index[i], stall_reason_names[i]);
-    }
-    TMSG(CUPTI_ACTIVITY, "device totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
-      buffer_pc->totalNumPcs, buffer_pc->totalSamples, buffer_pc->collectNumPcs, buffer_pc->remainingNumPcs);
-  }
-
   if (buffer_pc != NULL && (buffer_pc->totalNumPcs > 0 || buffer_pc->remainingNumPcs > 0)) {
     cupti_pc_sampling_data_t *pc_sampling_data = cupti_pc_sampling_data_produce(
       HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, num_stall_reasons);
@@ -482,17 +473,10 @@ pc_sampling_collect
       .pPriv = NULL
     };
 
-#ifdef NEW_CUPTI_ANALYSIS
-    if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
-      cct_node_t *kernel_ph = cupti_kernel_ph_get();
-      ip_normalized_t kernel_ip = hpcrun_cct_addr(hpcrun_cct_children(kernel_ph))->ip_norm;
-      printf("CUPTI total samples %p: %lu, %lu, %p\n", kernel_ph, buffer_pc->totalSamples, kernel_ip.lm_id, kernel_ip.lm_ip);
-    }
-#endif
-
     HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
     pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-    if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
+    if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL ||
+      (cupti_range_mode_get() == CUPTI_RANGE_MODE_EVEN && cupti_range_interval_get() == GPU_RANGE_DEFAULT_RANGE)) {
       gpu_pc_sampling_info2_process(&gpu_activity);
     } else {
       gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
@@ -511,7 +495,8 @@ pc_sampling_collect
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
       pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-      if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
+      if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL ||
+        (cupti_range_mode_get() == CUPTI_RANGE_MODE_EVEN && cupti_range_interval_get() == GPU_RANGE_DEFAULT_RANGE)) {
         gpu_pc_sampling_info2_process(&gpu_activity);
       } else {
         gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);

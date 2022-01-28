@@ -28,5 +28,7 @@ int cupti_pc_sampling_frequency_get();
 
 int cupti_trace_frequency_get();
 
+bool cupti_sync_yield_get();
+
 
 #endif

@@ -125,6 +125,12 @@ cuda_device_property_query
 
 
 int
+cuda_sync_yield_set
+(
+);
+
+
+int
 cuda_global_pc_sampling_required
 (
   int *required

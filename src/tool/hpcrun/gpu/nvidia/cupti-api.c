@@ -1037,6 +1037,9 @@ cupti_resource_subscriber_callback
   } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
     TMSG(CUPTI, "Context %p created", rd->context);
     if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
+      if (cupti_sync_yield_get()) {
+        cuda_sync_yield_set();
+      }
       cupti_pc_sampling_enable2(rd->context);
       cupti_pc_sampling_config(rd->context, pc_sampling_frequency);
     }
