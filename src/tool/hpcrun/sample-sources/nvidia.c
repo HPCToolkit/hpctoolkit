@@ -293,7 +293,7 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
   control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "-1", ck_int);
   control_knob_register("HPCRUN_CUDA_BACKOFF_BASE", "4", ck_int);
-  control_knob_register("HPCRUN_CUDA_SYNC_YIELD", "TRUE", ck_string);
+  control_knob_register("HPCRUN_CUDA_SYNC_YIELD", "FALSE", ck_string);
 #endif
 
   // Reset cupti flags
