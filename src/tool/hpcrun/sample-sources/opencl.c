@@ -56,7 +56,7 @@
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/gpu/blame-shifting/blame.h>
-#include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>
+#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
 

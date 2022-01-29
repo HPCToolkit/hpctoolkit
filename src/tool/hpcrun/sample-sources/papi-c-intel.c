@@ -24,7 +24,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_all.h>
-#include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>     // cct_node_linkedlist_t
+#include <hpcrun/gpu/blame-shifting/blame-kernel-map.h>             // kernel_node_t
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>                   // gpu_operation_multiplexer_push
 #include <hpcrun/gpu/gpu-activity.h>
 #include <sample-sources/common.h>
@@ -47,7 +47,7 @@ static spinlock_t setup_lock = SPINLOCK_UNLOCKED;
 int eventset = PAPI_NULL;
 
 char const *metric_name[MAX_STR_LEN] = {
-           "ComputeBasic.GpuTime",
+           "ComputeBasic.GpuTime",      // TODO: remove this metric if unnecessary
            "ComputeBasic.EuActive",
            "ComputeBasic.EuStall"
 };
@@ -187,7 +187,7 @@ attribute_gpu_utilization
 static long long *
 papi_c_intel_read
 (
- cct_node_linkedlist_t *cct_nodes,
+ kernel_node_t *cct_nodes,
  uint32_t num_ccts,
  long long *previous_values
 )
@@ -200,9 +200,9 @@ papi_c_intel_read
   }
   // printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[0], metric_values[0], metric_name[1], metric_values[1], metric_name[2], metric_values[2]);
 
-  cct_node_linkedlist_t* curr = cct_nodes;
+  kernel_node_t* curr = cct_nodes;
   for(int i=0; i<num_ccts; i++) {
-    attribute_gpu_utilization(curr->node, curr->activity_channel, metric_values, previous_values);
+    attribute_gpu_utilization(curr->launcher_cct, curr->activity_channel, metric_values, previous_values);
     curr = curr->next;
   }
   return metric_values;

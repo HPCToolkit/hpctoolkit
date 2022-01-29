@@ -24,7 +24,7 @@
 #include <hpcrun/gpu/gpu-activity.h>                                // gpu_activity_t
 #include <hpcrun/gpu/gpu-metrics.h>                                 // gpu_metrics_attribute
 #include <hpcrun/gpu/gpu-application-thread-api.h>                  // gpu_application_thread_correlation_callback
-#include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
+#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
 #include <hpcrun/gpu/gpu-activity-channel.h>                        // gpu_activity_channel_get
 #include <hpcrun/memory/hpcrun-malloc.h>                            // hpcrun_malloc_safe
 #include <hpcrun/safe-sampling.h>                                   // hpcrun_safe_enter, hpcrun_safe_exit
@@ -273,8 +273,8 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
       record_blame_shift_metrics(curr->launcher_cct, &bs);
 
       next = curr->next;
-      kernel_map_delete(curr->kernel_id);
       id[i++] = curr->kernel_id;
+      kernel_map_delete(curr->kernel_id);
       kernel_node_free_helper(&kernel_node_free_list, curr);
       curr = next;
     }

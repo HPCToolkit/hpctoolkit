@@ -21,7 +21,7 @@ gpu_monitor_register(	gpu_monitor_node_t node)
 
 
 void
-gpu_monitors_apply(cct_node_linkedlist_t *cct_nodes, uint32_t num_unfinished_kernels, gpu_monitor_type_t type)
+gpu_monitors_apply(kernel_node_t *cct_nodes, uint32_t num_unfinished_kernels, gpu_monitor_type_t type)
 {
   gpu_monitor_node_t *node = gpu_monitor_list;
 

@@ -7,7 +7,7 @@
 
 #include <cct.h>
 #include <sample-sources/papi-c.h>
-#include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>     // cct_node_linkedlist_t
+#include <hpcrun/gpu/blame-shifting/blame-kernel-map.h>                 // kernel_node_t
 
 
 
@@ -30,7 +30,7 @@ typedef struct gpu_monitor_node_t {
 
 
 extern void gpu_monitor_register(gpu_monitor_node_t node);
-extern void gpu_monitors_apply(cct_node_linkedlist_t *cct_nodes, uint32_t num_unfinished_kernels, gpu_monitor_type_t type);
+extern void gpu_monitors_apply(kernel_node_t *cct_nodes, uint32_t num_unfinished_kernels, gpu_monitor_type_t type);
 
 
 
