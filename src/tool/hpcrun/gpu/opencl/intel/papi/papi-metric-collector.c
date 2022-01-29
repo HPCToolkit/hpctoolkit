@@ -131,7 +131,7 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
     return;
   }
   // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
-  gpu_monitors_apply(incomplete_kernel_list_tail, num_unfinished_kernels, gpu_monitor_type_enter);
+  gpu_monitors_apply(incomplete_kernel_list_head, num_unfinished_kernels, gpu_monitor_type_enter);
   spinlock_unlock(&incomplete_kernel_list_lock);
 }
 
@@ -159,12 +159,12 @@ add_kernel_to_incomplete_list
 )
 {
   spinlock_lock(&incomplete_kernel_list_lock);
-  atomic_fetch_add(&g_unfinished_kernels, 1L);
   // the reason for allocating a new kernel_node_t* instead of using the function parameter is
   // that the links (next pointer) for the parameter may get updated at the caller site. This will result in
   // loss of integrity of incomplete_kernel_list_head linked-list
   kernel_node_t *new_node = kernel_node_alloc_helper(&kernel_node_free_list);
   *new_node = *kernel_node;
+  new_node->next = NULL;
 
   kernel_node_t *current_tail = incomplete_kernel_list_tail;
   incomplete_kernel_list_tail = new_node;
@@ -173,6 +173,7 @@ add_kernel_to_incomplete_list
   } else {
     incomplete_kernel_list_head = new_node;
   }
+  atomic_fetch_add(&g_unfinished_kernels, 1L);
   spinlock_unlock(&incomplete_kernel_list_lock);
 }
 
@@ -184,6 +185,7 @@ remove_kernel_from_incomplete_list
 )
 {
   spinlock_lock(&incomplete_kernel_list_lock);
+  atomic_fetch_add(&g_unfinished_kernels, -1L);
   kernel_node_t *curr = incomplete_kernel_list_head, *prev = NULL, *next = NULL;
   while (curr) {
     next = curr->next;
@@ -205,7 +207,6 @@ remove_kernel_from_incomplete_list
     curr = next;
   }
   kernel_node_free_helper(&kernel_node_free_list, curr);
-  atomic_fetch_add(&g_unfinished_kernels, -1L);
   spinlock_unlock(&incomplete_kernel_list_lock);
 }
 
