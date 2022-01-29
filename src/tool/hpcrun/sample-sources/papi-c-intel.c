@@ -52,8 +52,6 @@ char const *metric_name[MAX_STR_LEN] = {
            "ComputeBasic.EuStall"
 };
 
-static int null_counter = 0; 
-
 
 
 //******************************************************************************
@@ -173,13 +171,6 @@ attribute_gpu_utilization
   long long *previous_values
 )
 {
-  if (!cct_node || !activity_channel) {
-    // intermittently, cct_node and activity_channel values passed are NULL
-    // While the root cause isn't identified, this may be due to improper locking of data-structures and
-    // thus free being called on these datastructures. Adding this if-block as a temporary fix for this issue
-    // printf("null_counter: %d\n", ++null_counter); // null_counter=0 for PeleC, null_counter=10-16 for AMR-Wind
-    return;
-  }
   gpu_activity_t ga;
   gpu_activity_t *ga_ptr = &ga;
   ga_ptr->kind = GPU_ACTIVITY_INTEL_GPU_UTILIZATION;
@@ -188,7 +179,6 @@ attribute_gpu_utilization
   ga_ptr->details.gpu_utilization_info.active = current_values[ACTIVE_INDEX];
   ga_ptr->details.gpu_utilization_info.stalled = current_values[STALL_INDEX];
   ga_ptr->details.gpu_utilization_info.idle = 100 - (current_values[ACTIVE_INDEX] + current_values[STALL_INDEX]);
-  // gpu_metrics_attribute(ga_ptr);
   cstack_ptr_set(&(ga_ptr->next), 0);
   gpu_operation_multiplexer_push(activity_channel, NULL, ga_ptr);
 }
@@ -213,7 +203,7 @@ papi_c_intel_read
   cct_node_linkedlist_t* curr = cct_nodes;
   for(int i=0; i<num_ccts; i++) {
     attribute_gpu_utilization(curr->node, curr->activity_channel, metric_values, previous_values);
-    curr = atomic_load(&curr->next);
+    curr = curr->next;
   }
   return metric_values;
 }

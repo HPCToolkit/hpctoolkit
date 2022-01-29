@@ -43,10 +43,7 @@ get_count_of_unfinished_kernels
  void
 )
 {
-  spinlock_lock(&incomplete_kernel_list_lock);
-  uint32_t count = atomic_load(&g_unfinished_kernels);
-  spinlock_unlock(&incomplete_kernel_list_lock);
-  return count;
+  return atomic_load(&g_unfinished_kernels);
 }
 
 
@@ -56,17 +53,13 @@ cct_list_node_alloc_helper
  cct_node_linkedlist_t **free_list
 )
 {
-  // printf("ref of free: %p, free: %p\n", free_list, *free_list);
   cct_node_linkedlist_t *first = *free_list;
 
   if (first) {
-    // printf("free list is not empty. first: %p, first->next: %p\n", first, first->next);
-    *free_list = atomic_load(&first->next);
+    *free_list = first->next;
   } else {
     first = (cct_node_linkedlist_t *) hpcrun_malloc_safe(sizeof(cct_node_linkedlist_t));
-    // printf("free list is empty. first: %p, first->next: %p\n", first, first->next);
   }
-  // printf("first: %p, free: %p\n", first, *free_list);
   memset(first, 0, sizeof(cct_node_linkedlist_t));
   return first;
 }
@@ -81,12 +74,11 @@ cct_list_node_free_helper
   cct_node_linkedlist_t **free_list = &cct_list_node_free_list;
   cct_node_linkedlist_t *incoming_list_head = node;
   cct_node_linkedlist_t *incoming_list_tail = node;
-  cct_node_linkedlist_t *next = atomic_load(&incoming_list_tail->next);
-  // printf("list to be freed: %p -> %p", node, atomic_load(&node->next));
+  cct_node_linkedlist_t *next = incoming_list_tail->next;
   // goto end of incoming_list
   while (next) {
     incoming_list_tail = next;
-    next = atomic_load(&incoming_list_tail->next);
+    next = incoming_list_tail->next;
   }
 
   cct_node_linkedlist_t *old_list_head = *free_list;
@@ -94,7 +86,7 @@ cct_list_node_free_helper
   *free_list = incoming_list_head;
 
   // incoming_list->end->next = old_head
-  atomic_store(&incoming_list_tail->next, old_list_head);
+  incoming_list_tail->next = old_list_head;
 }
 
 
@@ -127,10 +119,10 @@ remove_kernel_from_incomplete_list
   kernel_node_t *curr = incomplete_kernel_list_head, *prev = NULL, *next = NULL;
   while (curr) {
     next = curr->next;
-    if (kernel_node == curr) {
+    if (kernel_node->kernel_id == curr->kernel_id) {
       if (prev) {
         if (!next) {
-          incomplete_kernel_list_tail = NULL;
+          incomplete_kernel_list_tail = prev;
         }
         prev->next = next;
       } else {
@@ -140,7 +132,8 @@ remove_kernel_from_incomplete_list
         incomplete_kernel_list_head = next;
       }
     }
-    curr = curr->next;
+    prev = curr;
+    curr = next;
   }
   atomic_fetch_add(&g_unfinished_kernels, -1L);
   spinlock_unlock(&incomplete_kernel_list_lock);
@@ -150,23 +143,26 @@ remove_kernel_from_incomplete_list
 static void
 accumulate_gpu_utilization_metrics_to_incomplete_kernels
 (
- uint32_t num_unfinished_kernels
+ void
 )
 {
   spinlock_lock(&incomplete_kernel_list_lock);
+  uint32_t num_unfinished_kernels = get_count_of_unfinished_kernels();
+  if (num_unfinished_kernels == 0) {
+    spinlock_unlock(&incomplete_kernel_list_lock);
+    return;
+  }
   // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
   uint32_t nodes_to_be_allocated = num_unfinished_kernels;
   cct_node_linkedlist_t* curr_c, *cct_list_of_incomplete_kernels, *new_node;
   cct_list_of_incomplete_kernels = cct_list_node_alloc_helper(&cct_list_node_free_list);
   curr_c = cct_list_of_incomplete_kernels;
-  // printf("num of nodes of the allocated: %"PRIu32". list: %p -> %p", num_unfinished_kernels, cct_list_of_incomplete_kernels, atomic_load(&cct_list_of_incomplete_kernels->next));
+
   while (--nodes_to_be_allocated > 0) {
     new_node = cct_list_node_alloc_helper(&cct_list_node_free_list);
-    // printf(", %p", new_node);
-    atomic_store(&curr_c->next, new_node);
+    curr_c->next = new_node;
     curr_c = new_node;
   }
-  // printf("\n");
 
   kernel_node_t *curr_k;
   curr_k = incomplete_kernel_list_head;
@@ -179,12 +175,12 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
   while (curr_c && curr_k) {
     curr_c->node = curr_k->launcher_cct;
     curr_c->activity_channel = curr_k->activity_channel;
-    curr_c = atomic_load(&curr_c->next);
+    curr_c = curr_c->next;
     curr_k = curr_k->next;
   }
   gpu_monitors_apply(cct_list_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
+  cct_list_node_free_helper(cct_list_of_incomplete_kernels);
   spinlock_unlock(&incomplete_kernel_list_lock);
-  // cct_list_node_free_helper(cct_list_of_incomplete_kernels);
 }
 
 
@@ -213,10 +209,7 @@ papi_metric_callback
 {
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
   while (!hpcrun_complete) {
-    uint32_t num_unfinished_kernels = get_count_of_unfinished_kernels();
-    if (num_unfinished_kernels != 0) {
-      accumulate_gpu_utilization_metrics_to_incomplete_kernels(num_unfinished_kernels);
-    }
+    accumulate_gpu_utilization_metrics_to_incomplete_kernels();
     usleep(5000);  // sleep for 5000 microseconds i.e fire 200 times per second
   }
   opencl_api_thread_finalize(NULL, 0);

@@ -16,7 +16,7 @@
 //******************************************************************************
 
 typedef struct cct_node_linkedlist_t {
-  _Atomic (struct cct_node_linkedlist_t*) next;
+  struct cct_node_linkedlist_t* next;
   cct_node_t *node;
   gpu_activity_channel_t *activity_channel;
 } cct_node_linkedlist_t;
