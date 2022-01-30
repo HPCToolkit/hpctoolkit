@@ -114,7 +114,7 @@ void gpu_function_id_map_insert(uint64_t function_id, ip_normalized_t pc) {
   if (st_lookup(&map_root, function_id)) {
     // fatal error: function_id already present; a
     // correlation should be inserted only once.
-    assert(0);
+    hpcrun_terminate();
   } else {
     gpu_function_id_map_entry_t* entry = gpu_function_id_map_entry_new(function_id, pc);
 

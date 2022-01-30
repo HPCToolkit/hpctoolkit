@@ -145,7 +145,8 @@ void cupti_context_stream_id_map_insert(uint32_t context_id, uint32_t stream_id)
     } else {
       // correlation_id already present: fatal error since a correlation_id
       //   should only be inserted once
-      assert(0);
+      assert(false && "correlation_id should only be inserted once");
+      hpcrun_terminate();
     }
   }
   cupti_context_stream_id_map_root = entry;

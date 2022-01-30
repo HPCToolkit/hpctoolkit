@@ -208,7 +208,8 @@ void ompt_bind_names(ompt_function_lookup_t lookup) {
 static void ompt_buffer_request(int device_id, ompt_buffer_t** buffer, size_t* bytes) {
   *bytes = BUFFER_SIZE;
   *buffer = (ompt_buffer_t*)malloc(*bytes);
-  assert(buffer);
+  if (!*buffer)
+    hpcrun_terminate();  // OOM
 }
 
 static void ompt_buffer_release(ompt_buffer_t* buffer) {

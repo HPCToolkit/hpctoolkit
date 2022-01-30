@@ -48,6 +48,7 @@
 #include "lib/prof-lean/placeholders.h"
 
 #include <assert.h>
+#include <messages/errors.h>
 #include <pthread.h>
 #include <string.h>
 
@@ -85,7 +86,7 @@ ip_normalized_t gpu_op_placeholder_ip(gpu_placeholder_type_t type) {
   case gpu_placeholder_type_count: break;
   }
   assert(false && "Invalid GPU placeholder type!");
-  abort();
+  hpcrun_terminate();
 }
 
 cct_node_t* gpu_op_ccts_get(gpu_op_ccts_t* gpu_op_ccts, gpu_placeholder_type_t type) {

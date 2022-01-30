@@ -301,8 +301,10 @@ static void __attribute__((unused)) ompt_idle(ompt_scope_endpoint_t endpoint) {
     ompt_idle_begin();
   else if (endpoint == ompt_scope_end)
     ompt_idle_end();
-  else
-    assert(0);
+  else {
+    assert(false && "Invalid OMPT endpoint");
+    hpcrun_terminate();
+  }
 
   // printf("Thread id = %d, \tIdle %s\n", omp_get_thread_num(), endpoint==1?"begin":"end");
 }
@@ -315,8 +317,10 @@ static void ompt_sync(
       ompt_idle_begin();
     else if (endpoint == ompt_scope_end)
       ompt_idle_end();
-    else
-      assert(0);
+    else {
+      assert(false && "Invalid OMPT endpoint");
+      hpcrun_terminate();
+    }
 
     // printf("Thread id = %d, \tBarrier %s\n", omp_get_thread_num(), endpoint==1?"begin":"end");
   }

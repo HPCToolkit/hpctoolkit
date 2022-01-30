@@ -164,7 +164,7 @@ static void METHOD_FN(start) {
   int ret = time_getTimeCPU(&TD_GET(last_time_us));
   if (ret != 0) {
     EMSG("time_getTimeCPU (clock_gettime) failed!");
-    abort();
+    hpcrun_terminate();
   }
 #endif
 
@@ -312,7 +312,7 @@ static int _tst_signal_handler(int sig, siginfo_t* siginfo, void* context) {
     int ret = time_getTimeCPU(&cur_time_us);
     if (ret != 0) {
       EMSG("time_getTimeCPU (clock_gettime) failed!");
-      abort();
+      hpcrun_terminate();
     }
     metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif

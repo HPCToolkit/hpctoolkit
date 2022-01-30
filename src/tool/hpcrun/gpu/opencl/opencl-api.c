@@ -453,7 +453,7 @@ void opencl_subscriber_callback(opencl_object_t* obj) {
     break;
   }
 
-  default: assert(0);
+  default: assert(false && "Invalid activity kind!"); hpcrun_terminate();
   }
 
   cct_node_t* api_node = gpu_application_thread_correlation_callback(correlation_id);

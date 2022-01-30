@@ -90,7 +90,8 @@ static void find_select(void) {
   real_select = (select_fn*)dlsym(RTLD_NEXT, "select");
 #endif
 
-  assert(real_select);
+  if (real_select == NULL)
+    hpcrun_terminate();  // select is not available
 }
 
 int MONITOR_EXT_WRAP_NAME(select)(

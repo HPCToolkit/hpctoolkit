@@ -48,6 +48,7 @@
 #define messages_h
 
 #include <messages/debug-flag.h>
+#include <messages/errors.h>
 #include <messages/fmt.h>
 #include <stdarg.h>
 #include <stdbool.h>

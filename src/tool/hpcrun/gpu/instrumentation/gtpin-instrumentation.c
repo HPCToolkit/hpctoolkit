@@ -93,18 +93,18 @@ static __thread uint64_t gtpin_cpu_submit_time = 0;
 static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
 static __thread bool gtpin_first = true;
 
-// FIXME the asserts in this file should be replaced by fatal error messages
-
 static void knobAddBool(const char* name, bool value) {
   GTPinKnob knob = HPCRUN_GTPIN_CALL(KNOB_FindArg, (name));
-  assert(knob != NULL);
+  if (knob == NULL)
+    hpcrun_terminate();
 
   KnobValue knob_value;
   knob_value.value._bool = value;
   knob_value.type = KNOB_TYPE_BOOL;
 
   KNOB_STATUS status = HPCRUN_GTPIN_CALL(KNOB_AddValue, (knob, &knob_value));
-  assert(status == KNOB_STATUS_SUCCESS);
+  if (status != KNOB_STATUS_SUCCESS)
+    hpcrun_terminate();
 }
 
 void initializeInstrumentation(void) {
@@ -162,15 +162,18 @@ static uint32_t findOrAddKernelModule(GTPinKernel kernel) {
 
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName, (kernel, MAX_STR_SIZE, kernel_name, NULL));
 
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
+  if (status != GTPINTOOL_STATUS_SUCCESS)
+    hpcrun_terminate();
 
   uint32_t kernel_elf_size = 0;
   status = HPCRUN_GTPIN_CALL(GTPin_GetElf, (kernel, 0, NULL, &kernel_elf_size));
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
+  if (status != GTPINTOOL_STATUS_SUCCESS)
+    hpcrun_terminate();
 
   char* kernel_elf = (char*)malloc(sizeof(char) * kernel_elf_size);
   status = HPCRUN_GTPIN_CALL(GTPin_GetElf, (kernel, kernel_elf_size, kernel_elf, NULL));
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
+  if (status != GTPINTOOL_STATUS_SUCCESS)
+    hpcrun_terminate();
 
   // Create file name
   char file_name[PATH_MAX];
@@ -256,17 +259,20 @@ static void onKernelBuild(GTPinKernel kernel, void* v) {
        block = HPCRUN_GTPIN_CALL(GTPin_BBLNext, (block))) {
     GTPinINS head = HPCRUN_GTPIN_CALL(GTPin_InsHead, (block));
     GTPinINS tail = HPCRUN_GTPIN_CALL(GTPin_InsTail, (block));
-    assert(HPCRUN_GTPIN_CALL(GTPin_InsValid, (head)));
+    if (!HPCRUN_GTPIN_CALL(GTPin_InsValid, (head)))
+      hpcrun_terminate();
 
     int32_t head_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset, (head));
     int32_t tail_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset, (tail));
 
     GTPinMem mem = NULL;
     status = HPCRUN_GTPIN_CALL(GTPin_MemClaim, (kernel, sizeof(uint32_t), &mem));
-    assert(status == GTPINTOOL_STATUS_SUCCESS);
+    if (status != GTPINTOOL_STATUS_SUCCESS)
+      hpcrun_terminate();
 
     status = HPCRUN_GTPIN_CALL(GTPin_OpcodeprofInstrument, (head, mem));
-    assert(status == GTPINTOOL_STATUS_SUCCESS);
+    if (status != GTPINTOOL_STATUS_SUCCESS)
+      hpcrun_terminate();
 
     kernel_data_gtpin_block_t* gtpin_block =
         (kernel_data_gtpin_block_t*)hpcrun_malloc(sizeof(kernel_data_gtpin_block_t));
@@ -321,7 +327,8 @@ static void onKernelRun(GTPinKernelExec kernelExec, void* v) {
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   HPCRUN_GTPIN_CALL(GTPin_KernelProfilingActive, (kernelExec, 1));
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
+  if (status != GTPINTOOL_STATUS_SUCCESS)
+    hpcrun_terminate();
 
   createKernelNode((uint64_t)kernelExec);
 }
@@ -363,13 +370,15 @@ static void onKernelComplete(GTPinKernelExec kernelExec, void* v) {
 
   while (block != NULL) {
     uint32_t thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength, (block->mem));
-    assert(thread_count > 0);
+    if (thread_count == 0)
+      hpcrun_terminate();
 
     uint32_t total = 0, value = 0;
     for (uint32_t tid = 0; tid < thread_count; ++tid) {
       status = HPCRUN_GTPIN_CALL(
           GTPin_MemRead, (block->mem, tid, sizeof(uint32_t), (char*)(&value), NULL));
-      assert(status == GTPINTOOL_STATUS_SUCCESS);
+      if (status != GTPINTOOL_STATUS_SUCCESS)
+        hpcrun_terminate();
       total += value;
     }
     uint64_t execution_count = total;  // + bm->val

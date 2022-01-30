@@ -121,7 +121,8 @@ static int get_event_index(sample_source_t* self, int event_code) {
     if (event_code == evcode)
       return i;
   }
-  assert(0);
+  assert(false && "Invalid event_code!");
+  hpcrun_terminate();
 }
 
 //

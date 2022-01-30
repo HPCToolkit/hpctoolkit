@@ -216,7 +216,7 @@ static const char* ra_status_string(ra_loc l) {
     STR(RA_BP_FRAME);
     STR(RA_REGISTER);
     STR(POISON);
-  default: assert(0);
+  default: hpcrun_terminate();
   }
   return NULL;
 }
@@ -226,6 +226,6 @@ static const char* bp_status_string(bp_loc l) {
     STR(BP_UNCHANGED);
     STR(BP_SAVED);
     STR(BP_HOSED);
-  default: assert(0);
+  default: hpcrun_terminate();
   }
 }

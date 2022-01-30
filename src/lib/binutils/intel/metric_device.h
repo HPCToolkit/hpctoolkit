@@ -92,7 +92,8 @@ public:
       md::OpenMetricsDevice_fn OpenMetricsDevice =
           lib->GetSym<md::OpenMetricsDevice_fn>("OpenMetricsDevice");
       md::TCompletionCode status = OpenMetricsDevice(&device);
-      assert(status == md::CC_OK || status == md::CC_ALREADY_INITIALIZED);
+      if (status != md::CC_OK && status != md::CC_ALREADY_INITIALIZED)
+        std::abort();
 
       if (device != nullptr) {
         return new MetricDevice(device, lib);
@@ -109,7 +110,8 @@ public:
     md::CloseMetricsDevice_fn CloseMetricsDevice =
         lib_->GetSym<md::CloseMetricsDevice_fn>("CloseMetricsDevice");
     md::TCompletionCode status = CloseMetricsDevice(device_);
-    assert(status == md::CC_OK);
+    if (status != md::CC_OK)
+      std::abort();
 
     assert(lib_ != nullptr);
     delete lib_;

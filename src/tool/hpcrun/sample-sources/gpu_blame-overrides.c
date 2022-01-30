@@ -669,7 +669,8 @@ static uint32_t splay_get_stream_id(cudaStream_t key) {
   struct stream_to_id_map_t* root = stream_to_id_tree_root;
   REGULAR_SPLAY_TREE(stream_to_id_map_t, root, key, stream, left, right);
   // The stream at the root must match the key, else we are in a bad shape.
-  assert(root->stream == key);
+  if (root->stream != key)
+    hpcrun_terminate();
   stream_to_id_tree_root = root;
   uint32_t ret = stream_to_id_tree_root->id;
   spinlock_unlock(&g_stream_id_lock);
@@ -884,7 +885,8 @@ static uint64_t attribute_shared_blame_on_kernels(
       }
       continue;
     }
-    assert(start_active_kernel_node->event_time < end_active_kernel_node->event_time);
+    if (start_active_kernel_node->event_time >= end_active_kernel_node->event_time)
+      hpcrun_terminate();
 
     if (sorted_active_kernels_begin == NULL) {
       // First entry
@@ -960,7 +962,8 @@ static uint64_t attribute_shared_blame_on_kernels(
     do {
       uint64_t new_time = current->event_time;
 
-      assert(new_time >= last_time);
+      if (new_time < last_time)
+        hpcrun_terminate();
       assert(current != dummy_kernel_node && "should never process dummy_kernel_node");
 
       if (num_active_kernels && (new_time > last_time)) {
@@ -1071,7 +1074,8 @@ static uint32_t cleanup_finished_events() {
           break;
         }
 
-        assert(elapsedTime > 0);
+        if (elapsedTime <= 0)
+          hpcrun_terminate();
 
         uint64_t micro_time_start =
             (uint64_t)(((double)elapsedTime) * 1000) + g_start_of_world_time;
@@ -1080,10 +1084,12 @@ static uint32_t cleanup_finished_events() {
             cudaRuntimeFunctionPointer[cudaEventElapsedTimeEnum].cudaEventElapsedTimeReal(
                 &elapsedTime, g_start_of_world_event, current_event->event_end));
 
-        assert(elapsedTime > 0);
+        if (elapsedTime <= 0)
+          hpcrun_terminate();
         uint64_t micro_time_end = (uint64_t)(((double)elapsedTime) * 1000) + g_start_of_world_time;
 
-        assert(micro_time_start <= micro_time_end);
+        if (micro_time_start > micro_time_end)
+          hpcrun_terminate();
 
         if (hpcrun_trace_isactive()) {
           hpcrun_trace_append_with_time(

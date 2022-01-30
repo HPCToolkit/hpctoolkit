@@ -134,7 +134,8 @@ static void applyRelocation(void* addr, unsigned rel_type, uint64_t rel_value) {
     uint32_t* addr32 = (uint32_t*)addr;
     *addr32 = rel_value;
   } else {
-    assert(0);
+    assert(false && "Invalid relocation type");
+    std::abort();
   }
 }
 

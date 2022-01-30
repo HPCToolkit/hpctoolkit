@@ -95,14 +95,16 @@ public:
     tracer_desc.pUserData = &data_;
 
     status = zetTracerCreate(driver, &tracer_desc, &handle_);
-    assert(status == ZE_RESULT_SUCCESS);
+    if (status != ZE_RESULT_SUCCESS)
+      abort();
   }
 
   ~ZeTracer() {
     if (handle_ != nullptr) {
       ze_result_t status = ZE_RESULT_SUCCESS;
       status = zetTracerDestroy(handle_);
-      assert(status == ZE_RESULT_SUCCESS);
+      if (status != ZE_RESULT_SUCCESS)
+        abort();
     }
   }
 

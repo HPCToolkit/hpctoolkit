@@ -96,12 +96,12 @@ fnbounds_table_t fnbounds_fetch_executable_table(void) {
 }
 
 int fnbounds_query(void* pc) {
-  assert(0);
+  assert(false && "query not supported in static fnbounds");
   return 0;
 }
 
 int fnbounds_add(char* module_name, void* start, void* end) {
-  assert(0);
+  assert(false && "add not supported in static fnbounds");
   return 0;
 }
 

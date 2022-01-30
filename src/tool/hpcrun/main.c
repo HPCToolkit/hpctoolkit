@@ -131,12 +131,6 @@ extern void hpcrun_set_retain_recursion_mode(bool mode);
 extern void hpcrun_dump_intervals(void* addr);
 #endif
 
-#define MONITOR_INITIALIZE 1
-
-#if MONITOR_INITIALIZE == 0
-#define monitor_initialize() assert(0 && "entry into hpctoolkit prior to initialization");
-#endif
-
 typedef struct local_thread_data_t {
   cct_ctxt_t* thr_ctxt;
 } local_thread_data_t;

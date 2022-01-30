@@ -87,7 +87,8 @@ static void find_poll(void) {
   real_poll = (poll_fn*)dlsym(RTLD_NEXT, "poll");
 #endif
 
-  assert(real_poll);
+  if (real_poll == NULL)
+    hpcrun_terminate();  // poll is not available
 }
 
 int MONITOR_EXT_WRAP_NAME(poll)(struct pollfd* fds, nfds_t nfds, int init_timeout) {

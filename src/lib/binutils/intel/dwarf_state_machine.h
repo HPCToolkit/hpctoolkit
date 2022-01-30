@@ -124,7 +124,8 @@ private:
     UpdateLineInfo();
 
     ++ptr;
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
     return ptr;
   }
 
@@ -133,7 +134,8 @@ private:
     ++ptr;
 
     assert(opcode < header_->opcode_base);
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
 
     switch (opcode) {
     case DW_LNS_COPY: {
@@ -144,8 +146,8 @@ private:
       uint32_t operation_advance = 0;
       bool done = false;
       ptr = utils::leb128::Decode32(ptr, operation_advance, done);
-      assert(done);
-      assert(ptr < data_ + size_);
+      if (!done || ptr >= data_ + size_)
+        std::abort();
       UpdateAddress(operation_advance);
       UpdateOperation(operation_advance);
       break;
@@ -154,8 +156,8 @@ private:
       int32_t line = 0;
       bool done = false;
       ptr = utils::leb128::Decode32(ptr, line, done);
-      assert(done);
-      assert(ptr < data_ + size_);
+      if (!done || ptr >= data_ + size_)
+        std::abort();
       state_.line += line;
       break;
     }
@@ -163,8 +165,8 @@ private:
       uint32_t file = 0;
       bool done = false;
       ptr = utils::leb128::Decode32(ptr, file, done);
-      assert(done);
-      assert(ptr < data_ + size_);
+      if (!done || ptr >= data_ + size_)
+        std::abort();
       state_.file = file;
       break;
     }
@@ -172,8 +174,8 @@ private:
       uint32_t column = 0;
       bool done = false;
       ptr = utils::leb128::Decode32(ptr, column, done);
-      assert(done);
-      assert(ptr < data_ + size_);
+      if (!done || ptr >= data_ + size_)
+        std::abort();
       break;
     }
     case DW_LNS_NEGATE_STMT:
@@ -188,14 +190,15 @@ private:
     case DW_LNS_FIXED_ADVANCE_PC: {
       uint16_t advance = *((uint16_t*)ptr);
       ptr += sizeof(uint16_t);
-      assert(ptr < data_ + size_);
+      if (ptr >= data_ + size_)
+        std::abort();
       state_.address += advance;
       state_.operation = 0;
       break;
     }
     default: {
-      assert(0);  // Not supported
-      break;
+      assert(false && "Unsupported DWARF opcode");
+      std::abort();
     }
     }
 
@@ -203,36 +206,44 @@ private:
   }
 
   const uint8_t* RunExtended(const uint8_t* ptr) {
-    assert(*ptr == 0);
+    if (*ptr != 0)
+      std::abort();
     ++ptr;
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
 
     uint8_t size = *ptr;
-    assert(size > 0);
+    if (size == 0)
+      std::abort();
     ++ptr;
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
 
     uint8_t opcode = *ptr;
     ++ptr;
-    assert(ptr <= data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
 
     switch (opcode) {
     case DW_LNS_END_SEQUENCE: {
-      assert(ptr == data_ + size_);
+      if (ptr != data_ + size_)
+        std::abort();
       UpdateLineInfo();
       break;
     }
     case DW_LNE_SET_ADDRESS: {
       uint64_t address = *((const uint64_t*)ptr);
-      assert(size - 1 == sizeof(uint64_t));
+      if (size - 1 != sizeof(uint64_t))
+        std::abort();
       ptr += sizeof(uint64_t);
-      assert(ptr < data_ + size_);
+      if (ptr >= data_ + size_)
+        std::abort();
       state_.address = address;
       break;
     }
     default: {
-      assert(0);  // Not supported
-      break;
+      assert(false && "Unsupported DWARF opcode");
+      std::abort();
     }
     }
 

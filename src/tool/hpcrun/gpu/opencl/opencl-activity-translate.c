@@ -106,7 +106,7 @@ void opencl_activity_translate(
   case GPU_ACTIVITY_KERNEL: convert_kernel_launch(ga, cb_data, interval.start, interval.end); break;
   case GPU_ACTIVITY_MEMORY: convert_memory(ga, cb_data, interval.start, interval.end); break;
 
-  default: assert(0);
+  default: assert(false && "Invalid activity kind!"); hpcrun_terminate();
   }
 
   cstack_ptr_set(&(ga->next), 0);

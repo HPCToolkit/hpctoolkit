@@ -330,11 +330,20 @@ void ompt_regions_init(void) {
 void ompt_parallel_region_register_callbacks(ompt_set_callback_t ompt_set_callback_fn) {
   int retval;
   retval = ompt_set_callback_fn(ompt_callback_parallel_begin, (ompt_callback_t)ompt_parallel_begin);
-  assert(ompt_event_may_occur(retval));
+  if (!ompt_event_may_occur(retval)) {
+    assert(false && "Insufficient OMPT support");
+    hpcrun_terminate();
+  }
 
   retval = ompt_set_callback_fn(ompt_callback_parallel_end, (ompt_callback_t)ompt_parallel_end);
-  assert(ompt_event_may_occur(retval));
+  if (!ompt_event_may_occur(retval)) {
+    assert(false && "Insufficient OMPT support");
+    hpcrun_terminate();
+  }
 
   retval = ompt_set_callback_fn(ompt_callback_implicit_task, (ompt_callback_t)ompt_implicit_task);
-  assert(ompt_event_may_occur(retval));
+  if (!ompt_event_may_occur(retval)) {
+    assert(false && "Insufficient OMPT support");
+    hpcrun_terminate();
+  }
 }

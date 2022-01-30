@@ -103,7 +103,8 @@ public:
       }
 
       size_t lenght = kernel_view_.getInstSyntax(offset, text, MAX_STR_SIZE);
-      assert(lenght > 0);
+      if (lenght == 0)
+        std::abort();
       instruction_list.push_back(std::make_pair(offset, text));
 
       offset += size;

@@ -51,6 +51,7 @@
 #include "lib/isa-lean/x86/instruction-set.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 unwind_interval*
 process_push(xed_decoded_inst_t* xptr, const xed_inst_t* xi, interval_arg_t* iarg) {
@@ -68,7 +69,7 @@ process_push(xed_decoded_inst_t* xptr, const xed_inst_t* xi, interval_arg_t* iar
   case XED_ICLASS_PUSHFQ: size = 8; break;
   case XED_ICLASS_PUSHFD: size = 4; break;
   case XED_ICLASS_PUSHF: size = 2; break;
-  default: assert(0);
+  default: assert(false && "Invalid XED instruction class"); hpcrun_terminate();
   }
 
   reg.sp_ra_pos += size;
@@ -100,7 +101,7 @@ unwind_interval* process_pop(xed_decoded_inst_t* xptr, const xed_inst_t* xi, int
   case XED_ICLASS_POPFQ: size = -8; break;
   case XED_ICLASS_POPFD: size = -4; break;
   case XED_ICLASS_POPF: size = -2; break;
-  default: assert(0);
+  default: assert(false && "Invalid XED instruction class"); hpcrun_terminate();
   }
 
   reg.sp_ra_pos += size;

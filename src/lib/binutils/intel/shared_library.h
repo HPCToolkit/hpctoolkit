@@ -100,10 +100,12 @@ public:
   ~SharedLibrary() {
 #if defined(_WIN32)
     BOOL completed = FreeLibrary(handle_);
-    assert(completed == TRUE);
+    if (completed != TRUE)
+      std::abort();
 #elif defined(__gnu_linux__) || defined(__APPLE__)
     int completed = dlclose(handle_);
-    assert(completed == 0);
+    if (completed != 0)
+      std::abort();
 #endif
   }
 

@@ -52,6 +52,7 @@
 #include "lib/prof-lean/splay-uint64.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define kd_insert typed_splay_insert(kernel_data)
@@ -107,7 +108,7 @@ kernel_data_map_entry_t* kernel_data_map_lookup(uint64_t kernel_id) {
 
 void kernel_data_map_insert(uint64_t kernel_id, kernel_data_t kernel_data) {
   if (kd_lookup(&kernel_data_map_root, kernel_id)) {
-    assert(0);  // entry for a given key should be inserted only once
+    hpcrun_terminate();
   } else {
     spinlock_lock(&kernel_data_map_lock);
     kernel_data_map_entry_t* entry = kernel_data_new(kernel_id, kernel_data);

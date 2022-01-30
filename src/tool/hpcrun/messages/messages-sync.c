@@ -161,7 +161,7 @@ void hpcrun_exit_on_error(int ret, int ret_expected, const char* fmt, ...) {
   va_list_box box;
   va_list_box_start(box, fmt);
   hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
-  abort();
+  hpcrun_terminate();
 }
 
 void hpcrun_abort_w_info(void (*info)(void), const char* fmt, ...) {

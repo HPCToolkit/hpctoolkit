@@ -51,6 +51,7 @@
 #include "lib/prof-lean/splay-uint64.h"
 
 #include <assert.h>
+#include <messages/errors.h>
 #include <string.h>
 
 #define DEBUG 0
@@ -151,7 +152,7 @@ void gpu_host_correlation_map_insert(
     } else {
       // fatal error: host_correlation id already present; a
       // correlation should be inserted only once.
-      assert(0);
+      hpcrun_terminate();
     }
   } else {
     gpu_host_correlation_map_entry_t* entry = gpu_host_correlation_map_entry_new(

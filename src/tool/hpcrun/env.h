@@ -60,6 +60,8 @@ extern const char* HPCRUN_EVENT_LIST;
 extern const char* HPCRUN_MEMSIZE;
 extern const char* HPCRUN_LOW_MEMSIZE;
 
+extern const char* HPCRUN_ABORT_LIBC;
+
 bool hpcrun_get_env_bool(const char*);
 
 #endif /* hpcrun_env_h */

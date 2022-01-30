@@ -412,7 +412,7 @@ void hpcrun_metric_std(
     else if (operation == '=')
       loc->r = val.r;
     break;
-  default: assert(false);
+  default: assert(false && "Invalid metric value kind"); hpcrun_terminate();
   }
 }
 //
