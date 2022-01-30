@@ -47,25 +47,10 @@
 #ifndef HPCTOOLKIT_PROFILE_UTIL_VGANNOTATIONS_H
 #define HPCTOOLKIT_PROFILE_UTIL_VGANNOTATIONS_H
 
-#include "include/hpctoolkit-config.h"
-
-#if ENABLE_VG_ANNOTATIONS == 1
-
-#include <valgrind/helgrind.h>
-#include <valgrind/drd.h>
+#include "extern/valgrind/helgrind.h"
+#include "extern/valgrind/drd.h"
 
 #define _GLIBCXX_SYNCHRONIZATION_HAPPENS_BEFORE(addr) ANNOTATE_HAPPENS_BEFORE(addr)
 #define _GLIBCXX_SYNCHRONIZATION_HAPPENS_AFTER(addr)  ANNOTATE_HAPPENS_AFTER(addr)
-
-#else
-
-#define ANNOTATE_HAPPENS_BEFORE(X)
-#define ANNOTATE_HAPPENS_AFTER(X)
-#define ANNOTATE_RWLOCK_CREATE(X)
-#define ANNOTATE_RWLOCK_DESTROY(X)
-#define ANNOTATE_RWLOCK_ACQUIRED(X, M)
-#define ANNOTATE_RWLOCK_RELEASED(X, M)
-
-#endif
 
 #endif  // HPCTOOLKIT_PROFILE_UTIL_VGANNOTATIONS_H

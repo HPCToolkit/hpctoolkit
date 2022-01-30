@@ -83,9 +83,9 @@ MYSOURCES = \
 	main.cpp master.cpp worker.cpp tree.cpp \
 	mpi.cpp ../hpcprof/args.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BOOST_IFLAGS@ \
-             @VALGRIND_IFLAGS@ -std=gnu++17
+             -std=gnu++17
 
 
 MYLDFLAGS = \

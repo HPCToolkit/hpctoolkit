@@ -70,13 +70,8 @@
 #include <string.h>
 #include <include/uint.h>
 
-#if ENABLE_VG_ANNOTATIONS == 1
-#include <valgrind/helgrind.h>
-#include <valgrind/drd.h>
-#else
-#define ANNOTATE_HAPPENS_BEFORE(X)
-#define ANNOTATE_HAPPENS_AFTER(X)
-#endif
+#include "extern/valgrind/helgrind.h"
+#include "extern/valgrind/drd.h"
 
 #include <algorithm>
 #include <map>
