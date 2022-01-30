@@ -161,18 +161,6 @@ extern void hpcrun_dump_intervals(void* addr);
 
 
 //***************************************************************************
-// macros
-//***************************************************************************
-
-#define MONITOR_INITIALIZE 1
-
-#if  MONITOR_INITIALIZE == 0
-#define monitor_initialize() \
-    assert(0 && "entry into hpctoolkit prior to initialization");
-#endif
-
-
-//***************************************************************************
 // local data types. Primarily for passing data between pre_PHASE, PHASE, and post_PHASE
 //***************************************************************************
 

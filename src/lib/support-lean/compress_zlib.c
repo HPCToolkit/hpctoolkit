@@ -60,6 +60,7 @@
 
 #include "compress.h"
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -122,7 +123,8 @@ compress_deflate(FILE *source, FILE *dest, int level)
             strm.avail_out = CHUNK;
             strm.next_out = out;
             ret = deflate(&strm, flush);    /* no bad return value */
-            assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+            if(ret == Z_STREAM_ERROR)
+              abort();  /* state not clobbered */
             have = CHUNK - strm.avail_out;
             if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
                 (void)deflateEnd(&strm);
@@ -184,7 +186,8 @@ compress_inflate(FILE *source, FILE *dest)
             strm.avail_out = CHUNK;
             strm.next_out = out;
             ret = inflate(&strm, Z_NO_FLUSH);
-            assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+            if(ret == Z_STREAM_ERROR)
+              abort();  /* state not clobbered */
             switch (ret) {
             case Z_NEED_DICT:
                 ret = Z_DATA_ERROR;     /* and fall through */

@@ -122,7 +122,8 @@ queue_map_insert
   spinlock_lock(&queue_map_lock);
   if (queue_lookup(&queue_map_root, queue_id)) {
     spinlock_unlock(&queue_map_lock);
-    assert(0);  // entry for a given key should be inserted only once
+    assert(false && "entry for a given key should be inserted only once");
+    hpcrun_terminate();
   } else {
     queue_map_entry_t *entry = queue_node_new(queue_id, node);
     queue_insert(&queue_map_root, entry);  

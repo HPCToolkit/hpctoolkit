@@ -378,7 +378,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   default:
     EMSG("unw_step: ILLEGAL UNWIND INTERVAL");
     dump_ui(cursor->unwr_info.btuwi, 0);
-    assert(0);
+    hpcrun_terminate();
   }
   if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
 

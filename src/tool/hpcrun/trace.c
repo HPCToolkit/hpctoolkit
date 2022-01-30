@@ -191,7 +191,8 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metr
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
     int ret = gettimeofday(&tv, NULL);
-    assert(ret == 0 && "in trace_append: gettimeofday failed!");
+    if(ret != 0)
+      hpcrun_terminate();  // gettimeofday failed!
     uint64_t nanotime = ((uint64_t)tv.tv_usec
                          + (((uint64_t)tv.tv_sec) * 1000000)) * 1000;
     if (sampling_period > 0 && prev_nanotime != 0 && nanotime - prev_nanotime > TRACE_GAP_FACTOR * sampling_period) {

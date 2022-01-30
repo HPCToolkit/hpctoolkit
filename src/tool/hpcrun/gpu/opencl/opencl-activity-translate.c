@@ -164,7 +164,8 @@ opencl_activity_translate
       break;
 
     default:
-      assert(0);
+      assert(false && "Invalid activity kind!");
+      hpcrun_terminate();
   }
 
   cstack_ptr_set(&(ga->next), 0);

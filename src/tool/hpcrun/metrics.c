@@ -485,7 +485,8 @@ hpcrun_metric_std(int metric_id, metric_data_list_t* set,
         loc->r = val.r;
       break;
     default:
-      assert(false);
+      assert(false && "Invalid metric value kind");
+      hpcrun_terminate();
   }
 }
 //

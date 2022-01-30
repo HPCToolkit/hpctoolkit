@@ -131,7 +131,8 @@ simdgroup_map_insert
 )
 {
   if (sg_lookup(&simdgroup_map_root, simdgroup_id)) {
-    assert(0);  // entry for a given key should be inserted only once
+    assert(false && "entry for a given key should be inserted only once");
+    hpcrun_terminate();
   } else {
     spinlock_lock(&simdgroup_map_lock);
     simdgroup_map_entry_t *entry = simdgroup_new(simdgroup_id, maskCtrl, execMask, predArgs);

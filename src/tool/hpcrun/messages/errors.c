@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2022-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,24 +44,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef hpcrun_env_h
-#define hpcrun_env_h
+#include "messages.h"
 
-#include <stdbool.h>
+#include "../env.h"
 
-// Names for option environment variables
-extern const char* HPCRUN_OPT_LUSH_AGENTS;
+#include <monitor.h>
 
-extern const char* HPCRUN_OUT_PATH;
+#include <stdlib.h>
 
-extern const char* HPCRUN_TRACE;
-
-extern const char* HPCRUN_EVENT_LIST;
-extern const char* HPCRUN_MEMSIZE;
-extern const char* HPCRUN_LOW_MEMSIZE;
-
-extern const char* HPCRUN_ABORT_LIBC;
-
-bool hpcrun_get_env_bool(const char *);
-
-#endif /* hpcrun_env_h */
+noreturn void hpcrun_terminate() {
+  if(hpcrun_get_env_bool(HPCRUN_ABORT_LIBC)) {
+    abort();
+  } else {
+    monitor_real_abort();
+  }
+  __builtin_unreachable();
+}

@@ -235,7 +235,7 @@ ra_ty_string(ra_ty_t ty)
     STR(RATy_Reg);
     STR(RATy_SPRel);
   default:
-    assert(0);
+    hpcrun_terminate();
   }
   return NULL;
 }
@@ -249,7 +249,7 @@ sp_ty_string(sp_ty_t ty)
     STR(SPTy_Reg);
     STR(SPTy_SPRel);
   default:
-    assert(0);
+    hpcrun_terminate();
   }
 }
 
@@ -261,7 +261,7 @@ register_name(int reg)
    switch(reg) {
    case PPC_REG_LR: return "lr";
    case PPC_REG_R0: return "r0";
-   default:          assert(0);
+   default:          hpcrun_terminate();
    }
    return NULL;
 }

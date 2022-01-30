@@ -613,7 +613,8 @@ gpu_memory_placeholder
   case GPU_MEM_OP_ALLOC: return gpu_placeholder_type_alloc;
   case GPU_MEM_OP_DELETE: return gpu_placeholder_type_delete;
   default:
-    assert(0);
+    assert(false && "Invalid memory placeholder");
+    hpcrun_terminate();
   }
   return gpu_placeholder_type_alloc;
 }

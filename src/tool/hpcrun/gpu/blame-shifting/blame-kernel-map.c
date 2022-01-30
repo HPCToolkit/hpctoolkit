@@ -122,7 +122,8 @@ kernel_map_insert
   spinlock_lock(&kernel_map_lock);
   if (kernel_lookup(&kernel_map_root, kernel_id)) {
     spinlock_unlock(&kernel_map_lock);
-    assert(0);  // entry for a given key should be inserted only once
+    assert(false && "entry for a given key should be inserted only once");
+    hpcrun_terminate();
   } else {
     kernel_map_entry_t *entry = kernel_node_new(kernel_id, node);
     kernel_insert(&kernel_map_root, entry);

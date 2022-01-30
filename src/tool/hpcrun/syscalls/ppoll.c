@@ -108,7 +108,8 @@ find_ppoll(void)
   real_ppoll = (ppoll_fn *) dlsym(RTLD_NEXT, "ppoll");
 #endif
 
-  assert(real_ppoll);
+  if(real_ppoll == NULL)
+    hpcrun_terminate();  // ppoll is not available
 }
 
 static void
@@ -120,7 +121,8 @@ find_pselect(void)
   real_pselect = (pselect_fn *) dlsym(RTLD_NEXT, "pselect");
 #endif
 
-  assert(real_pselect);
+  if(real_pselect == NULL)
+    hpcrun_terminate();  // pselect is not available
 }
 
 //----------------------------------------------------------------------

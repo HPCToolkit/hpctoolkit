@@ -115,7 +115,7 @@
 
 #define MAX_STR_SIZE 1024
 #define KERNEL_SUFFIX ".kernel"
-#define ASSERT_GTPIN_STATUS(status) assert(GTPINTOOL_STATUS_SUCCESS == (status))
+#define ASSERT_GTPIN_STATUS(status) if(GTPINTOOL_STATUS_SUCCESS != (status)) hpcrun_terminate()
 
 //******************************************************************************
 // type declaration
@@ -238,7 +238,8 @@ findOrAddKernelModule
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
 			     (kernel, 0, NULL, &kernel_name_len));
 
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
+  if(status != GTPINTOOL_STATUS_SUCCESS)
+    hpcrun_terminate();
 
   char *kernel_name = (char *) malloc(kernel_name_len+1);
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
@@ -734,7 +735,8 @@ onKernelBuild
        block = HPCRUN_GTPIN_CALL(GTPin_BBLNext, (block))) {
     GTPinINS head = HPCRUN_GTPIN_CALL(GTPin_InsHead,(block));
     GTPinINS tail = HPCRUN_GTPIN_CALL(GTPin_InsTail,(block));
-    assert(HPCRUN_GTPIN_CALL(GTPin_InsValid,(head)));
+    if(!HPCRUN_GTPIN_CALL(GTPin_InsValid,(head)))
+      hpcrun_terminate();
 
     uint32_t bb_scalar_instructions = 0;
 
@@ -898,6 +900,8 @@ onKernelComplete
       // latency: needs mem_opcode for all basic blocks where latency probes couldnt be added
       thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_opcode));
     }
+    if(thread_count == 0)
+      hpcrun_terminate();
     assert(thread_count > 0);
 
     uint64_t bb_exec_count = 0, bb_latency_cycles = 0, bb_active_simd_lanes = 0;

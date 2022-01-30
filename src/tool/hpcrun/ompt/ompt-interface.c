@@ -427,7 +427,10 @@ ompt_idle
 {
   if (endpoint == ompt_scope_begin) ompt_idle_begin();
   else if (endpoint == ompt_scope_end) ompt_idle_end();
-  else assert(0);
+  else {
+    assert(false && "Invalid OMPT endpoint");
+    hpcrun_terminate();
+  }
 
   //printf("Thread id = %d, \tIdle %s\n", omp_get_thread_num(), endpoint==1?"begin":"end");
 }
@@ -445,7 +448,10 @@ ompt_sync
   if (kind == ompt_sync_region_barrier) {
     if (endpoint == ompt_scope_begin) ompt_idle_begin();
     else if (endpoint == ompt_scope_end) ompt_idle_end();
-    else assert(0);
+    else {
+      assert(false && "Invalid OMPT endpoint");
+      hpcrun_terminate();
+    }
 
     //printf("Thread id = %d, \tBarrier %s\n", omp_get_thread_num(), endpoint==1?"begin":"end");
   }

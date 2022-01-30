@@ -2,8 +2,9 @@
 // system includes
 //******************************************************************************
 
-#include <string.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 //******************************************************************************
 // local includes
@@ -111,7 +112,7 @@ kernel_data_map_insert
 )
 {
   if (kd_lookup(&kernel_data_map_root, kernel_id)) {
-    assert(0);  // entry for a given key should be inserted only once
+    hpcrun_terminate();
   } else {
     spinlock_lock(&kernel_data_map_lock);
     kernel_data_map_entry_t *entry = kernel_data_new(kernel_id, kernel_data);

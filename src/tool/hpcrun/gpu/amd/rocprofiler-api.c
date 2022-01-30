@@ -105,7 +105,7 @@
     const char* error_string = NULL; \
     rocprofiler_error_string(&error_string); \
     fprintf(stderr, "ERROR: %s\n", error_string); \
-    abort(); \
+    hpcrun_terminate(); \
   }						\
 }
 

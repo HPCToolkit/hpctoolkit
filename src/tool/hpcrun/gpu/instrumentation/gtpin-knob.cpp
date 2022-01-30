@@ -70,7 +70,10 @@ gtpin_knob_bool
   using namespace gtpin;
   
   GTPinKnob knob = KNOB_FindArg(name);
-  assert(knob != NULL);
+  if(knob == NULL) {
+    assert(false && "gtpin knob is unavailable?");
+    std::abort();
+  }
 
   KnobValue knob_value;
   knob_value.value._bool = value;

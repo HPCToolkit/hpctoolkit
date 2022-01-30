@@ -325,7 +325,8 @@ addCustomFunctionObject
 {
   Region *reg = NULL;
   bool status = symtab->findRegion(reg, ".text");
-  assert(status == true);
+  if(!status)
+    std::abort();
 
   unsigned long reg_size = reg->getMemSize();
   Symbol *custom_symbol = new Symbol(
@@ -346,7 +347,8 @@ addCustomFunctionObject
 
   //adding the custom symbol into the symtab object
   status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
-  assert(status == true);
+  if(!status)
+    std::abort();
 
   // After injecting symbol, we can parse inlining info
   symtab->parseTypesNow();
@@ -909,7 +911,8 @@ parseIntelCFG
 
       for (auto *inst : block->insts) {
         size_t n = kv.getInstSyntax(inst->offset, NULL, 0);
-        assert(n < MAX_STR_SIZE);
+        if(n >= MAX_STR_SIZE)
+          std::abort();
 
         inst_str[n] = '\0';
         auto fmt_opts = IGA_FORMATTING_OPTS_DEFAULT; // see iga.h

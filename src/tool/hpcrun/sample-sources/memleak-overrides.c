@@ -227,7 +227,7 @@ splay_insert(struct leakinfo_s *node)
     } else {
       TMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)", 
 	   node->memblock);
-      assert(0);
+      hpcrun_terminate();
     }
   }
   memleak_tree_root = node;
