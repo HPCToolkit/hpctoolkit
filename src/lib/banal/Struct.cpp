@@ -61,29 +61,17 @@
 // Printing the internal objects in the hpcstruct XML format is
 // handled in Struct-Output.cpp.
 
-#include "include/uint.h"
+#include "Struct.hpp"
 
-#include <stdlib.h>
-#include <string.h>
-#include <sys/resource.h>
-#include <sys/time.h>
-#include <sys/types.h>
-
-#if ENABLE_VG_ANNOTATIONS == 1
-#include <valgrind/drd.h>
-#include <valgrind/helgrind.h>
-#else
-#define ANNOTATE_HAPPENS_BEFORE(X)
-#define ANNOTATE_HAPPENS_AFTER(X)
-#endif
-
+#include "extern/valgrind/drd.h"
+#include "extern/valgrind/helgrind.h"
 #include "gpu/ReadCudaCFG.hpp"
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
-#include "Struct.hpp"
 
 #include "include/hpctoolkit-config.h"
+#include "include/uint.h"
 #include "lib/binutils/BinUtils.hpp"
 #include "lib/binutils/ElfHelper.hpp"
 #include "lib/binutils/InputFile.hpp"
@@ -109,8 +97,13 @@
 #include <Region.h>
 #include <set>
 #include <sstream>
+#include <stdlib.h>
+#include <string.h>
 #include <string>
 #include <Symtab.h>
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <vector>
 
 #ifdef ENABLE_IGC

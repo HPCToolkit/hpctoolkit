@@ -339,13 +339,11 @@ void ProfilePipeline::complete(
 }
 
 void ProfilePipeline::run() {
-#if ENABLE_VG_ANNOTATIONS == 1
   char start_arc;
   char barrier_arc;
   char single_arc;
   char barrier2_arc;
   char end_arc;
-#endif
 
   std::array<std::atomic<std::size_t>, 4> countdowns;
   for (auto& c : countdowns)

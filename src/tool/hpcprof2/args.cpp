@@ -502,10 +502,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     for (auto& a : cnts_a)
       a.store(0, std::memory_order_relaxed);
 
-#ifdef ENABLE_VG_ANNOTATIONS
     char start_arc;
     char end_arc;
-#endif
 
     const fs::path profileext = std::string(".") + HPCRUN_ProfileFnmSfx;
 

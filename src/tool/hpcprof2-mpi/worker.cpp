@@ -84,10 +84,8 @@ int rankN(ProfArgs&& args) {
   ProfilePipeline::Settings pipelineB2;
 
   // We use (mostly) the same Sources for both Pipelines.
-#ifdef ENABLE_VG_ANNOTATIONS
   char start_arc;
   char end_arc;
-#endif
   ANNOTATE_HAPPENS_BEFORE(&start_arc);
 #pragma omp parallel num_threads(args.threads)
   {
