@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "lib/profile/util/vgannotations.hpp"
+
 #include "../hpcprof/args.hpp"
 #include "tree.hpp"
 
@@ -131,10 +133,10 @@ int main(int argc, char* const argv[]) {
   // Add the base Sources to the two Pipelines we'll be using.
   ProfilePipeline::Settings pipelineB1;
   ProfilePipeline::Settings pipelineB2;
-#ifdef ENABLE_VG_ANNOTATIONS
+#ifndef NVALGRIND
   char start_arc;
   char end_arc;
-#endif
+#endif  // !NVALGRIND
   ANNOTATE_HAPPENS_BEFORE(&start_arc);
   #pragma omp parallel num_threads(args.threads)
   {

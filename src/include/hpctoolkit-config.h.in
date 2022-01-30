@@ -33,9 +33,6 @@
 /* Symtab supports openmp (for fnbounds) */
 #undef ENABLE_OPENMP_SYMTAB
 
-/* Add extra annotations for debugging with Valgrind */
-#undef ENABLE_VG_ANNOTATIONS
-
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
 

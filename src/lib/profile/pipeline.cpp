@@ -311,13 +311,13 @@ void ProfilePipeline::complete(PerThreadTemporary&& tt, std::optional<std::pair<
 }
 
 void ProfilePipeline::run() {
-#if ENABLE_VG_ANNOTATIONS == 1
+#ifndef NVALGRIND
   char start_arc;
   char barrier_arc;
   char single_arc;
   char barrier2_arc;
   char end_arc;
-#endif
+#endif  // !NVALGRIND
 
   std::array<std::atomic<std::size_t>, 4> countdowns;
   for(auto& c: countdowns) c.store(sources.size(), std::memory_order_relaxed);

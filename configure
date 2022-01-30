@@ -648,7 +648,6 @@ MESON_NATIVE_FILE
 MESON
 OPT_ENABLE_VG_ANNOTATIONS_FALSE
 OPT_ENABLE_VG_ANNOTATIONS_TRUE
-VALGRIND_IFLAGS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_HAVE_LEVEL0
@@ -1091,7 +1090,6 @@ with_rocm_profiler
 with_level0
 enable_data_centric_tracing
 enable_devtools
-with_valgrind
 enable_valgrind_annotations
 enable_tests2
 '
@@ -1855,7 +1853,6 @@ Optional Packages:
                           path to rocprofiler-dev install directory
   --with-level0=PATH      use given Level Zero installation (absolute path)
                           with hpcrun (default is NO)
-  --with-valgrind=PATH    path to Valgrind install directory
 
 Some influential environment variables:
   HPCPROFMPI_LT_LDFLAGS
@@ -24409,46 +24406,6 @@ fi
 
 
 #-------------------------------------------------
-# Option: --with-valgrind=PATH
-#-------------------------------------------------
-
-VALGRIND="$default_valgrind_prefix"
-
-
-# Check whether --with-valgrind was given.
-if test "${with_valgrind+set}" = set; then :
-  withval=$with_valgrind; VALGRIND="$withval"
-fi
-
-
-VALGRIND_IFLAGS=
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Valgrind headers" >&5
-$as_echo_n "checking for Valgrind headers... " >&6; }
-
-case "$VALGRIND" in
-  /* )
-    # valgrind/valgrind.h must exist on the include path
-    if test -f "$VALGRIND"/include/valgrind/valgrind.h; then
-      VALGRIND_IFLAGS=-I"$VALGRIND"/include
-    else
-      as_fn_error $? "unable to find valgrind.h in: $VALGRIND" "$LINENO" 5
-    fi
-    ;;
-  no )
-    ;;
-  * )
-    as_fn_error $? "Valgrind directory must be an absolute path" "$LINENO" 5
-    ;;
-esac
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $VALGRIND" >&5
-$as_echo "$VALGRIND" >&6; }
-
-
-
-
-#-------------------------------------------------
 # Option: --enable-valgrind-annotations
 #-------------------------------------------------
 
@@ -24466,13 +24423,8 @@ else
 fi
 
 
-if test x"$OPT_ENABLE_VG_ANNOTATIONS" = xyes; then
-  if test x"$VALGRIND" = xno; then
-    as_fn_error $? "Valgrind annotations requested but valgrind headers not available!" "$LINENO" 5
-  fi
-
-$as_echo "#define ENABLE_VG_ANNOTATIONS 1" >>confdefs.h
-
+if test x"$OPT_ENABLE_VG_ANNOTATIONS" = xno; then
+  CPPFLAGS="${CPPFLAGS} -DNVALGRIND"
 fi
 
  if test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes"; then
@@ -27611,6 +27563,10 @@ $as_echo "$as_me:   perf-events:  ${perf_event_mesg}" >&6;}
 $as_echo "$as_me:   rtld-audit:   ${rtld_audit_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind annotations: ${OPT_ENABLE_VG_ANNOTATIONS}" >&5
+$as_echo "$as_me:   valgrind annotations: ${OPT_ENABLE_VG_ANNOTATIONS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C compiler: $CC_VERSION" >&5
 $as_echo "$as_me:   C compiler: $CC_VERSION" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   Path:      $CC_PATH" >&5
@@ -27709,10 +27665,6 @@ $as_echo "$as_me:   rocm tracer:  $ROCM_TRACER_MESG" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm profiler: $ROCM_PROFILER_MESG" >&5
 $as_echo "$as_me:   rocm profiler: $ROCM_PROFILER_MESG" >&6;}
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     ${VALGRIND}" >&5
-$as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&5
-$as_echo "$as_me:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   yaml-cpp:     ${YAMLCPP}" >&5
 $as_echo "$as_me:   yaml-cpp:     ${YAMLCPP}" >&6;}
 
