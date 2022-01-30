@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "../util/vgannotations.hpp"
+
 #include "sparsedb.hpp"
 
 #include "../mpi/all.hpp"

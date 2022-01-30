@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "util/vgannotations.hpp"
+
 #include "sink.hpp"
 
 #include "util/log.hpp"

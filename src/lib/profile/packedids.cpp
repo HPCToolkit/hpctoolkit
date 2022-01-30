@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "util/vgannotations.hpp"
+
 #include "packedids.hpp"
 
 #include "mpi/core.hpp"
