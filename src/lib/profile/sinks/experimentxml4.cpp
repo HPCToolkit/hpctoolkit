@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "../util/vgannotations.hpp"
+
 #include "experimentxml4.hpp"
 
 #include "hpctracedb2.hpp"

@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "lib/profile/util/vgannotations.hpp"
+
 #include "tree.hpp"
 
 #include "lib/profile/mpi/all.hpp"
