@@ -133,9 +133,9 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  rocprofiler_init();
 #ifndef HPCRUN_STATIC_LINK
   if (hpcrun_ev_is(ev_str, AMD_ROCPROFILER_PREFIX)) {
+    rocprofiler_init();
     const char* roc_str = ev_str + sizeof(AMD_ROCPROFILER_PREFIX);
     while (*roc_str == ':') roc_str++;
     if (*roc_str == 0) return false;
