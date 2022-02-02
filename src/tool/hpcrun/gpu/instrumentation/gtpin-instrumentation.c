@@ -987,12 +987,6 @@ onKernelComplete
 
     // we need count_knob to get the bb_exec_count
     if (simd_knob) {
-      if (kernel_data_gtpin->simd_width == 32) { // && GPU == Gen9
-        // reason for this block. Gen9 GPU's have 32width SIMD lanes
-        // but Gen9's ISA supports only SIMD16 instructions
-        // Thus we decrement the simd width to 16 (should be done only for Gen9 and other applicable GPU's)
-        kernel_data_gtpin->simd_width = 16;
-      }
       bb_total_simd_lanes = bb_exec_count * kernel_data_gtpin->simd_width * block->instruction_count;
       scalar_simd_loss = block->scalar_instructions * bb_exec_count * (kernel_data_gtpin->simd_width - 1);
     }
