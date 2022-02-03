@@ -107,3 +107,6 @@ SAMPLE_SOURCE_DECL_MACRO(opencl)
 #endif
 #endif
 
+#ifdef HPCRUN_SS_MPI
+SAMPLE_SOURCE_DECL_MACRO(wrap_mpi)
+#endif

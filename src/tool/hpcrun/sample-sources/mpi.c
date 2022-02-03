@@ -141,17 +141,17 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return hpcrun_ev_is(ev_str,"MPI_MSG");
+  return hpcrun_ev_is(ev_str,"MPIMSG");
 }
  
 
-// MPI_MSG creates one metrics: bytes sent/received in bytes
+// MPIMSG creates one metrics: bytes sent/received in bytes
 
 static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
   kind_info_t *mpi_kind = hpcrun_metrics_new_kind();
-  hpmpi_metric_id = hpcrun_set_new_metric_info(mpi_kind, "MPI_MSG(B)");
+  hpmpi_metric_id = hpcrun_set_new_metric_info(mpi_kind, "MPIMSG(B)");
   hpcrun_close_kind(mpi_kind);
   TMSG(MPI, "Setting up metrics for MPI: %d", hpmpi_metric_id);
 }
@@ -182,7 +182,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("MPI_MSG\t\tThe number of bytes for all sent/received messages\n");
+  printf("MPIMSG\t\tThe number of bytes for all sent/received messages\n");
   printf("\n");
 }
 
@@ -194,8 +194,9 @@ METHOD_FN(display_events)
 // sync class is "SS_SOFTWARE" so that both synchronous and asynchronous sampling is possible
 // 
 
-#define ss_name hpmpi
+#define ss_name wrap_mpi
 #define ss_cls SS_SOFTWARE
+#define ss_sort_order  70
 
 #include "ss_obj.h"
 

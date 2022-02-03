@@ -454,10 +454,10 @@ MY_BASE_FILES += sample-sources/perf/kernel_blocking_stub.c
 endif
 endif
 
-## if OPT_ENABLE_MPI_WRAP
-## MY_BASE_FILES +=  			\
-## 	sample-sources/mpi.c
-## endif
+if OPT_ENABLE_MPI_WRAP
+MY_BASE_FILES +=  			\
+ 	sample-sources/mpi.c
+endif
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
@@ -768,8 +768,10 @@ BUILT_SOURCES += mpi-overrides.c
 CLEANFILES += mpi-overrides.c
 
 mpi-overrides.c: $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
-	$(srcdir)/sample-sources/make-wrappers.py \
+	$(srcdir)/sample-sources/make-mpi-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
+
+MY_CPP_DEFINES  += -DHPCRUN_SS_MPI
 
 endif
 
