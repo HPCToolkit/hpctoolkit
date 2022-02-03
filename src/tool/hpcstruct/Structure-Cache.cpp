@@ -126,7 +126,7 @@ mkpath
     FileUtil::mkdir(path);
   } catch (Diagnostics::FatalException &e) {
     std::cerr << "ERROR: " << errortype << " - " << e.what() << std::endl;
-    throw e;
+    exit(1);
   }
 }
 
@@ -266,9 +266,12 @@ hpcstruct_cache_path_directory
 
   path += "/PATH";
 
+  // early error for path prefix
+  mkpath(path.c_str(), "Failed to create entry in hpcstruct cache directory");
+
   path += binary_abspath;
 
-  // FIXME: catch error
+  // error checking for full path
   mkpath(path.c_str(), "Failed to create entry in hpcstruct cache directory");
 
   // discard any prior entries for path with a different hash
