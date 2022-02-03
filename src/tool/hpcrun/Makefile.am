@@ -70,7 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-PYTHON = python
+# In some platforms python is not in the path.
+# We should configure the location of python in the configure script
+# PYTHON = python
 
 
 #############################################################################
@@ -766,7 +768,7 @@ BUILT_SOURCES += mpi-overrides.c
 CLEANFILES += mpi-overrides.c
 
 mpi-overrides.c: $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
-	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+	$(srcdir)/sample-sources/make-wrappers.py \
 		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
 
 endif

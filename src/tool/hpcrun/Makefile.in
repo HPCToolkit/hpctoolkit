@@ -1752,7 +1752,10 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 #############################################################################
 # Local settings
 #############################################################################
-PYTHON = python
+
+# In some platforms python is not in the path.
+# We should configure the location of python in the configure script
+# PYTHON = python
 
 #############################################################################
 # Automake rules
@@ -9283,7 +9286,7 @@ endef
 #############################################################################
 
 @OPT_ENABLE_MPI_WRAP_TRUE@mpi-overrides.c: $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
-@OPT_ENABLE_MPI_WRAP_TRUE@	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
+@OPT_ENABLE_MPI_WRAP_TRUE@	$(srcdir)/sample-sources/make-wrappers.py \
 @OPT_ENABLE_MPI_WRAP_TRUE@		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
 
 install-exec-hook:

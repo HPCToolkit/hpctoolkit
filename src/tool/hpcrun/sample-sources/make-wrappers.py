@@ -1,4 +1,4 @@
-#!/usr/local/bin/python 
+#!/usr/bin/env python2.7
 # -*- python -*-
 #   
 #   HPCToolkit MPI Profiler
@@ -1119,7 +1119,7 @@ def GenerateWrappers():
     olist.append("  ucontext_t uc;\n");
     olist.append("  if (hpcrun_safe_enter()) {\n");
     olist.append("    getcontext(&uc);\n");
-    olist.append("    sample_val_t sampleVal = hpcrun_sample_callpath(&uc, hpcrun_mpi_metric_id(), bytes, 0, 1);\n");
+    olist.append("    sample_val_t sampleVal = hpcrun_sample_callpath(&uc, hpcrun_mpi_metric_id(),(hpcrun_metricVal_t) {.i=bytes}, 0, 1, NULL);\n");
     olist.append("    TMSG(MPI, \"sample: %p, bytes: %d\", sampleVal.sample_node, bytes);\n");
     olist.append("    hpcrun_safe_exit();\n");
     olist.append("  }\n");
