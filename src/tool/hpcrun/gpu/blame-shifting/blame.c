@@ -466,9 +466,9 @@ gpu_idle_blame
   spinlock_lock(&itimer_blame_lock);
 
   uint64_t cur_time_us = 0;
-  int ret = time_getTimeCPU(&cur_time_us);
+  int ret = time_getTimeReal(&cur_time_us);
   if (ret != 0) {
-    EMSG("time_getTimeCPU (clock_gettime) failed!");
+    EMSG("time_getTimeReal (clock_gettime) failed!");
     spinlock_unlock(&itimer_blame_lock);
     monitor_real_abort();
     return;
@@ -476,7 +476,8 @@ gpu_idle_blame
 
   // metric_incr is in microseconds. converting to sec
   double msec_to_sec = pow(10,-6);
-  double metric_incr = cur_time_us - TD_GET(last_time_us);
+  uint64_t last_time = TD_GET(last_time_us);
+  double metric_incr = cur_time_us - last_time;
   metric_incr *= msec_to_sec;
 
   uint32_t num_unfinished_kernels = get_count_of_unfinished_kernels();

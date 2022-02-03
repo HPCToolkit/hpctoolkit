@@ -218,7 +218,11 @@ kernel_param_map_insert
   }
 
   kp_node_t *node = kp_node_alloc_helper(&kp_node_free_list);
-  node->mem = *((cl_mem*)mem);
+  if (mem) {
+    node->mem = *((cl_mem*)mem);
+  } else {
+    node->mem = mem;
+  }
   node->size = size;
   node->next = entry->kp_list;
   entry->kp_list = node;
