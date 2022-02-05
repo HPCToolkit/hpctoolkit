@@ -17,7 +17,10 @@ typedef struct device_finalizer_fn_entry_t {
 } device_finalizer_fn_entry_t;
 
 
+// note finalizers in the order they are registered
 extern void device_finalizer_register(device_finalizer_type_t type, device_finalizer_fn_entry_t* entry);
+
+// apply finalizers in the order they are registered
 extern void device_finalizer_apply(device_finalizer_type_t type, int how);
 
 #endif
