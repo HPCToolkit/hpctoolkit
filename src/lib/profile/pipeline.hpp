@@ -476,27 +476,6 @@ public:
     AccumulatorsRef accumulateTo(PerThreadTemporary&, uint64_t group,
                                  ContextFlowGraph&);
 
-    /// Reference to the Statistic data for a particular Context.
-    /// Allows for efficient emmission of multiple Statistics' data to one location.
-    class StatisticsRef final {
-    public:
-      StatisticsRef() = delete;
-
-      /// Emit Partial value into the Pipeline, for the given MetricScope.
-      // MT: Externally Synchronized (this, Source), Internally Synchronized
-      void add(Metric& m, const StatisticPartial& sp, MetricScope ms, double v);
-
-    private:
-      friend class ProfilePipeline::Source;
-      Context& ctx;
-      explicit StatisticsRef(Context& ctx) : ctx(ctx) {};
-    };
-
-    /// Obtain a StatisticsRef for the given Context.
-    /// DataClass: `metrics`
-    // MT: Externally Synchronized (this), Internally Synchronized
-    StatisticsRef accumulateTo(Context& c);
-
     // Disable copy-assignment, and allow move assignment.
     Source& operator=(const Source&) = delete;
     Source& operator=(Source&&);

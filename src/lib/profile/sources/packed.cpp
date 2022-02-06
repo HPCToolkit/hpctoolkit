@@ -236,16 +236,20 @@ std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it, const ctx_
   // Format: [cnt] ([context ID] ([metrics]...)...)
   auto cnt = unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
-    auto accum = sink.accumulateTo(cs.at(unpack<std::uint64_t>(it)));
+    Context& c = cs.at(unpack<std::uint64_t>(it));
     for(Metric& m: metrics) {
+      c.data().markUsed(m, MetricScopeSet(unpack<MetricScopeSet::int_type>(it)));
+
+      auto& accums = c.data().statisticsFor(m);
       for(const auto& p: m.partials()) {
+        auto accum = accums.get(p);
         double v;
         if((v = unpack<double>(it)) != 0)
-          accum.add(m, p, MetricScope::point, v);
+          accum.add(MetricScope::point, v);
         if((v = unpack<double>(it)) != 0)
-          accum.add(m, p, MetricScope::function, v);
+          accum.add(MetricScope::function, v);
         if((v = unpack<double>(it)) != 0)
-          accum.add(m, p, MetricScope::execution, v);
+          accum.add(MetricScope::execution, v);
       }
     }
   }

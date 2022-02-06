@@ -760,19 +760,6 @@ void Source::AccumulatorsRef::add(Metric& m, double v) {
   map[m].add(v);
 }
 
-Source::StatisticsRef Source::accumulateTo(Context& c) {
-  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
-  return StatisticsRef(c);
-}
-
-void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
-                                MetricScope ms, double v) {
-  auto& a = ctx.m_data.stats.emplace(std::piecewise_construct,
-                                     std::forward_as_tuple(m),
-                                     std::forward_as_tuple(m)).first;
-  a.get(sp).add(ms, v);
-}
-
 Thread& Source::newThread(ThreadAttributes o) {
   o.finalize(pipe->threadAttrFinalizeState);
   auto& t = *pipe->threads.emplace(new Thread(pipe->structs.thread, o)).first;
