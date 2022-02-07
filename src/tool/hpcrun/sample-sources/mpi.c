@@ -79,11 +79,24 @@
 #include <hpcrun/sample_sources_registered.h>
 #include "simple_oo.h"
 #include <hpcrun/thread_data.h>
+#include <utilities/tokenize.h>
 
 #include <messages/messages.h>
 
 
-static int hpmpi_metric_id = -1;
+/******************************************************************************
+ * Constants/definition
+ *****************************************************************************/
+
+#define MPI_EVENT "MPI"
+
+
+/******************************************************************************
+ * Static variables
+ *****************************************************************************/
+
+static int mpi_byte_metric_id = -1;
+static int mpi_count_metric_id = -1;
 
 /******************************************************************************
  * method definitions
@@ -141,7 +154,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return hpcrun_ev_is(ev_str,"MPIMSG");
+  return hpcrun_ev_is(ev_str, MPI_EVENT);
 }
  
 
@@ -151,9 +164,15 @@ static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
   kind_info_t *mpi_kind = hpcrun_metrics_new_kind();
-  hpmpi_metric_id = hpcrun_set_new_metric_info(mpi_kind, "MPIMSG(B)");
+  mpi_byte_metric_id = hpcrun_set_new_metric_info(mpi_kind, MPI_EVENT ":MSG (B)");
   hpcrun_close_kind(mpi_kind);
-  TMSG(MPI, "Setting up metrics for MPI: %d", hpmpi_metric_id);
+
+  kind_info_t *mpi_count_kind = hpcrun_metrics_new_kind();
+  mpi_count_metric_id = hpcrun_set_new_metric_info(mpi_count_kind, MPI_EVENT ":COUNT");
+  hpcrun_close_kind(mpi_count_kind);
+
+  //mpi_count_metric_id
+  TMSG(MPI, "Setting up metrics for %s  %d, %d ", MPI_EVENT, mpi_byte_metric_id, mpi_count_metric_id);
 }
 
 static void
@@ -182,7 +201,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("MPIMSG\t\tThe number of bytes for all sent/received messages\n");
+  printf("%s\t\tThe number of bytes for all sent/received messages\n", MPI_EVENT);
   printf("\n");
 }
 
@@ -205,28 +224,29 @@ METHOD_FN(display_events)
 //  Interface functions
 // ***************************************************************************
 
-// increment the return count
-//
-// N.B. : This function is necessary to avoid exposing the retcnt_obj.
-//        For the case of the retcnt sample source, the handler (the trampoline)
-//        is separate from the sample source code.
-//        Consequently, the interaction with metrics must be done procedurally
 
 int
-hpcrun_mpi_metric_id()
+hpcrun_mpi_msg_metric_id()
 {
-  return hpmpi_metric_id;
+  return mpi_byte_metric_id;
 }
 
 
+int
+hpcrun_mpi_count_metric_id()
+{
+  return mpi_count_metric_id;
+}
+
 
 void
-hpcrun_mpi_inc(cct_node_t* node, int incr)
+hpcrun_mpi_count_inc(cct_node_t* node, int incr)
 {
+
   if (node != NULL) {
     TMSG(MPI, "\tmpi (cct node %p): metric[%d] += %d",
-	 node, hpmpi_metric_id, incr);
-    cct_metric_data_increment(hpmpi_metric_id,
+	 node, mpi_count_metric_id, incr);
+    cct_metric_data_increment(mpi_count_metric_id,
 			       node,
 			      (cct_metric_data_t){.i = incr});
   }

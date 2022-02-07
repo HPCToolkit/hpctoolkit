@@ -1110,7 +1110,8 @@ def GenerateWrappers():
     olist.append("\n#define HPCRUN_MPI_WRAP MONITOR_EXT_WRAP_NAME\n")
 
     olist.append("\n/**** external functions ****/\n")
-    olist.append("\nextern int hpcrun_mpi_metric_id();\n")
+    olist.append("\nextern int hpcrun_mpi_msg_metric_id();\n")
+    olist.append("\nextern void hpcrun_mpi_count_inc(cct_node_t* node, int incr);\n")
 
     olist.append("\n/**** internal private functions ****/\n")
     olist.append("\nstatic inline int Get_Msg_size( int count, MPI_Datatype datatype ){\n")
@@ -1119,7 +1120,8 @@ def GenerateWrappers():
     olist.append("  ucontext_t uc;\n");
     olist.append("  if (hpcrun_safe_enter()) {\n");
     olist.append("    getcontext(&uc);\n");
-    olist.append("    sample_val_t sampleVal = hpcrun_sample_callpath(&uc, hpcrun_mpi_metric_id(),(hpcrun_metricVal_t) {.i=bytes}, 0, 1, NULL);\n");
+    olist.append("    sample_val_t sampleVal = hpcrun_sample_callpath(&uc, hpcrun_mpi_msg_metric_id(),(hpcrun_metricVal_t) {.i=bytes}, 0, 1, NULL);\n");
+    olist.append("    hpcrun_mpi_count_inc(sampleVal.sample_node, 1);\n");
     olist.append("    TMSG(MPI, \"sample: %p, bytes: %d\", sampleVal.sample_node, bytes);\n");
     olist.append("    hpcrun_safe_exit();\n");
     olist.append("  }\n");
