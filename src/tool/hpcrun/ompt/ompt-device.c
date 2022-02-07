@@ -96,7 +96,7 @@
 // with OMPT support turned on, callpath pruning should not be necessary
 #define PRUNE_CALLPATH 0
 
-#define OMPT_ACTIVITY_DEBUG 1
+#define OMPT_ACTIVITY_DEBUG 0
 
 #if OMPT_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -267,7 +267,7 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 {
 #define ompt_bind_name(fn) \
   fn = (fn ## _t ) lookup(#fn); \
-  printf("look up function %s, got %p\n", #fn, fn);
+  PRINT("look up function %s, got %p\n", #fn, fn);
 
   FOREACH_OMPT_TARGET_FN(ompt_bind_name)
 
@@ -570,8 +570,8 @@ ompt_target_callback_emi
 
   ompt_need_flush = true;
 
-  uint64_t target_id = target_data->value = gpu_correlation_id();
-  PRINT("ompt_target_callback->target_id 0x%lx\n", target_id);
+  target_data->value = gpu_correlation_id();
+  PRINT("ompt_target_callback->target_id 0x%lx\n", target_data->value);
 
   // XXX(Keren): Do not use openmp callbacks to consume and produce records
   // HPCToolkit always subscribes its own cupti callback
@@ -634,10 +634,9 @@ ompt_data_op_callback_emi
 
   ompt_need_flush = true;
 
-  uint64_t target_id = target_data->value;
   uint64_t op_id = *host_op_id = gpu_correlation_id();
 
-  PRINT("ompt_data_op enter->target_id 0x%lx\n", target_id);
+  PRINT("ompt_data_op enter->target_id 0x%lx\n", target_data->value);
   ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
   switch (optype) {
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
@@ -653,7 +652,7 @@ ompt_data_op_callback_emi
   }
 
   hpcrun_ompt_op_id_notify(endpoint, op_id, op.pc_norm);
-  PRINT("ompt_data_op exit->target_id 0x%lx\n", target_id);
+  PRINT("ompt_data_op exit->target_id 0x%lx\n", target_data->value);
 }
 
 
@@ -666,9 +665,7 @@ ompt_submit_callback_emi
  unsigned int requested_num_teams
 )
 {
-  uint64_t target_id = target_data->value;
-
-  PRINT("ompt_submit_callback enter->target_id 0x%lx\n", target_id);
+  PRINT("ompt_submit_callback enter->target_id 0x%lx\n", target_data->value);
 
   if (endpoint == ompt_scope_begin) {
     *host_op_id = gpu_correlation_id();
@@ -678,7 +675,7 @@ ompt_submit_callback_emi
     ompt_need_flush = true;
   }
 
-  PRINT("ompt_submit_callback exit->target_id 0x%lx\n", target_id);
+  PRINT("ompt_submit_callback exit->target_id 0x%lx\n", target_data->value);
 }
 
 

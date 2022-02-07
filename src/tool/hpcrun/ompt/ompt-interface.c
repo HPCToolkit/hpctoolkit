@@ -91,7 +91,7 @@
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_set_sometimes) | (r ==  ompt_set_always))
 
-#define OMPT_DEBUG_STARTUP 1
+#define OMPT_DEBUG_STARTUP 0
 #define OMPT_DEBUG_TASK 0
 
 
