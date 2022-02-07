@@ -125,7 +125,7 @@
   macro(ompt_get_record_abstract) \
   macro(ompt_advance_buffer_cursor)
 
-#define BUFFER_EMPTY(record, buffer, bytes) (((char *) record) >= (((char *)buffer) + bytes))
+
 
 //*****************************************************************************
 // type declarations
@@ -380,6 +380,7 @@ ompt_finalize_flush
 )
 {
   PRINT("ompt_finalize_flush enter\n");
+
   ompt_device_entry_t *e = device_list;
   while (e) {
     PRINT("ompt_finalize_flush flush id=%d device=%p\n",
@@ -387,6 +388,9 @@ ompt_finalize_flush
     if (ompt_need_flush) ompt_flush_trace(e->device);
     e = e->next;
   }
+
+  gpu_application_thread_process_activities();
+
   PRINT("ompt_finalize_flush exit\n");
 }
 
@@ -447,9 +451,12 @@ ompt_buffer_complete
     // signal advance to return pointer to first record
     ompt_buffer_cursor_t current = begin;
     int status = 1;
-    while(status) {
+    while (status) {
       // extract the next record from the buffer
       ompt_record_ompt_t *record = ompt_get_record_ompt(buffer, current);
+
+      // a buffer may be empty, so the first record may be NULL
+      if (record == NULL) break;
 
       // process the record
       ompt_activity_process(record);
@@ -458,10 +465,6 @@ ompt_buffer_complete
       // status will be 0 if there is no next record
       status = ompt_advance_buffer_cursor(device, buffer, bytes, current,
 					  &current);
-#if 0
-      // obsolete with changes from AMD
-      if (BUFFER_EMPTY(record, buffer, bytes)) break;
-#endif
     }
   }
 
