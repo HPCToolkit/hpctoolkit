@@ -47,18 +47,14 @@
 #define HPCTOOLKIT_PROF2MPI_SPARSE_H
 #ifdef HPCTOOLKIT_PROF2MPI_SPARSE_H
 
-#include <lib/profile/sink.hpp>
-#include <lib/profile/stdshim/filesystem.hpp>
-#include <lib/profile/util/once.hpp>
-#include <lib/profile/util/locked_unordered.hpp>
-#include <lib/profile/util/file.hpp>
-#include <lib/profile/mpi/all.hpp>
+#include "lib/profile/sink.hpp"
+#include "lib/profile/stdshim/filesystem.hpp"
+#include "lib/profile/util/once.hpp"
+#include "lib/profile/util/locked_unordered.hpp"
+#include "lib/profile/util/file.hpp"
+#include "lib/profile/mpi/all.hpp"
 
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/id-tuple.h>
-#include <lib/prof/pms-format.h>
-#include <lib/prof/cms-format.h>
-
+#include "lib/prof-lean/formats/profiledb.h"
 
 #include <vector>
 
@@ -98,16 +94,7 @@ private:
     uint16_t nMetrics = 0;
   };
   struct udThread {
-    pms_profile_info_t info = {
-      .prof_info_idx = (uint32_t)-1,
-      .num_vals = (uint64_t)-1,
-      .num_nzctxs = (uint32_t)-1,
-      .offset = (uint64_t)-1,
-      .id_tuple_ptr = (uint64_t)-1,
-      .metadata_ptr = 0,
-      .spare_one = 0,
-      .spare_two = 0,
-    };
+    fmt_profiledb_profInfo_t info;
   };
   struct {
     hpctoolkit::Context::ud_t::typed_member_t<udContext> context;
@@ -144,8 +131,8 @@ private:
     // concatinating the two given blobs. The final offset of the blob will be
     // saved to `offset` after flush() has been called.
     // MT: Internally Synchronized
-    void write(const std::vector<char>& mvBlob, const std::vector<char>& ciBlob,
-               uint64_t& offset);
+    void write(const std::vector<char>& mvBlob, uint64_t& mvOffset,
+               const std::vector<char>& ciBlob, uint64_t& ciOffset);
 
     // Flush the buffers and write everything out to the file.
     // MT: Internally Synchronized
@@ -190,22 +177,9 @@ private:
   // Filled during the Contexts wavefront
   std::deque<std::reference_wrapper<const hpctoolkit::Context>> contexts;
 
-  // prof_info for the summary profile
-  // Filled during the Threads wavefront
-  pms_profile_info_t summary_info = {
-    .prof_info_idx = 0,
-    .num_vals = (uint64_t)-1,
-    .num_nzctxs = (uint32_t)-1,
-    .offset = (uint64_t)-1,
-    .id_tuple_ptr = (uint64_t)-1,
-    .metadata_ptr = 0,
-    .spare_one = 0,
-    .spare_two = 0,
-  };
-
   // Parallel workshares for the various parallel operations
   hpctoolkit::util::ParallelForEach<
-      std::reference_wrapper<const pms_profile_info_t>> forEachProfileInfo;
+      std::reference_wrapper<const Thread>> forEachThread;
   hpctoolkit::util::ParallelFor forProfilesParse;
   hpctoolkit::util::ResettableParallelFor forProfilesLoad;
   hpctoolkit::util::ResettableParallelForEach<
