@@ -76,7 +76,6 @@ MYSOURCES = \
 	\
 	CallPath-Profile.hpp CallPath-Profile.cpp \
 	\
-	pms-format.c pms-format.h \
 	cms-format.c cms-format.h
 
 

@@ -82,7 +82,7 @@ using std::string;
 #include <lib/prof-lean/tracedb.h>
 #include <lib/prof-lean/formats/metadb.h>
 #include <lib/prof-lean/formats/primitive.h>
-#include <lib/prof/pms-format.h>
+#include <lib/prof-lean/formats/profiledb.h>
 #include <lib/prof/cms-format.h>
 
 
@@ -107,11 +107,8 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGr
   else if (ty == ProfType_CallpathTrace) {
     writeAsText_callpathTrace(filenm);
   }
-  else if (ty == ProfType_SparseDBtmp) { //YUMENG
-    writeAsText_sparseDBtmp(filenm, sm_easyToGrep);
-  }
-  else if (ty == ProfType_SparseDBthread){ //YUMENG
-    writeAsText_sparseDBthread(filenm, sm_easyToGrep);
+  else if (ty == ProfType_ProfileDB) {
+    writeAsText_profiledb(filenm, sm_easyToGrep);
   }
   else if (ty == ProfType_SparseDBcct){ //YUMENG
     writeAsText_sparseDBcct(filenm, sm_easyToGrep);
@@ -142,47 +139,9 @@ Analysis::Raw::writeAsText_callpath(const char* filenm, bool sm_easyToGrep)
   }
 }
 
-//YUMENG
-void
-Analysis::Raw::writeAsText_sparseDBtmp(const char* filenm, bool sm_easyToGrep)
-{
-  if (!filenm) { return; }
-
-  try {
-    FILE* fs = hpcio_fopen_r(filenm);
-    if (!fs) {
-      DIAG_Throw("error opening tmp sparse-db file '" << filenm << "'");
-    }
-
-    hpcrun_fmt_sparse_metrics_t sm;
-    int ret = hpcrun_fmt_sparse_metrics_fread(&sm,fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading tmp sparse-db file '" << filenm << "'");
-    }
-    hpcrun_fmt_sparse_metrics_fprint(&sm,stdout,NULL, "  ", sm_easyToGrep);
-    hpcrun_fmt_sparse_metrics_free(&sm, free);
-    hpcio_fclose(fs);
-  }
-  catch (...) {
-    DIAG_EMsg("While reading '" << filenm << "'...");
-    throw;
-  }
-}
-
-bool 
-Analysis::Raw::profileInfoOffsets_sorter(pms_profile_info_t const& lhs, pms_profile_info_t const& rhs) {
-    return lhs.offset< rhs.offset;
-}
-
 bool 
 Analysis::Raw::traceHdr_sorter(trace_hdr_t const& lhs, trace_hdr_t const& rhs) {
     return lhs.start< rhs.start;
-}
-
-void
-Analysis::Raw::sortProfileInfo_onOffsets(pms_profile_info_t* x, uint32_t num_prof)
-{
-    std::sort(x,x+num_prof,&profileInfoOffsets_sorter);
 }
 
 void
@@ -191,73 +150,214 @@ Analysis::Raw::sortTraceHdrs_onStarts(trace_hdr_t* x, uint32_t num_t)
     std::sort(x,x+num_t,&traceHdr_sorter);
 }
 
-//YUMENG
 void
-Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
+Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep)
 {
-  if (!filenm) { return; }
+  if(!filenm) return;
 
   try {
     FILE* fs = hpcio_fopen_r(filenm);
     if (!fs) {
-      DIAG_Throw("error opening thread sparse file '" << filenm << "'");
+      DIAG_Throw("error opening profile.db file '" << filenm << "'");
     }
 
-    pms_hdr_t hdr;
-    int ret = pms_hdr_fread(&hdr, fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading hdr from sparse metrics file '" << filenm << "'");
-    }
-    pms_hdr_fprint(&hdr, stdout);
-
-    uint32_t num_prof = hdr.num_prof;
-
-    fseek(fs, hdr.prof_info_sec_ptr, SEEK_SET);
-    pms_profile_info_t* x;
-    ret = pms_profile_info_fread(&x,num_prof,fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading profile information from sparse metrics file '" << filenm << "'");
-    }
-    pms_profile_info_fprint(num_prof,x,stdout);
-
-    fseek(fs, hdr.id_tuples_sec_ptr, SEEK_SET);
-    id_tuple_t* tuples;
-    uint64_t tuples_size = hdr.id_tuples_sec_size;
-    ret = id_tuples_pms_fread(&tuples, num_prof,fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading profile identifier tuples from sparse metrics file '" << filenm << "'");
-    }
-    id_tuples_pms_fprint(num_prof,tuples_size,tuples,stdout);
-
-    sortProfileInfo_onOffsets(x,num_prof);
-    fseek(fs, hdr.id_tuples_sec_ptr + (MULTIPLE_8(hdr.id_tuples_sec_size)), SEEK_SET);
-    for(uint i = 0; i<num_prof; i++){
-      hpcrun_fmt_sparse_metrics_t sm;
-      sm.num_vals = x[i].num_vals;
-      sm.num_nz_cct_nodes = x[i].num_nzctxs;
-      ret = pms_sparse_metrics_fread(&sm,fs);
-      if (ret != HPCFMT_OK) {
-        DIAG_Throw("error reading sparse metrics data from sparse metrics file '" << filenm << "'");
+    {
+      char buf[16];
+      if(fread(buf, 1, sizeof buf, fs) < sizeof buf)
+        DIAG_Throw("eof/error reading profile.db format header");
+      uint8_t minor;
+      auto ver = fmt_profiledb_check(buf, &minor);
+      switch(ver) {
+      case fmt_version_invalid:
+        DIAG_Throw("Not a profile.db file");
+      case fmt_version_backward:
+        DIAG_Throw("Incompatible profile.db version (too old)");
+      case fmt_version_major:
+        DIAG_Throw("Incompatible profile.db version (major version mismatch)");
+      case fmt_version_forward:
+        DIAG_Msg(0, "WARNING: Minor version mismatch (" << (unsigned int)minor
+          << " > " << FMT_PROFILEDB_MinorVersion << "), some fields may be missing");
+        break;
+      default:
+        break;
       }
-      pms_sparse_metrics_fprint(&sm,stdout, NULL, x[i].prof_info_idx, "  ", easygrep);
-      pms_sparse_metrics_free(&sm);
+      if(ver < 0)
+        DIAG_Throw("error parsing profile.db format header");
+
+      std::cout << "profile.db version " << FMT_DB_MajorVersion << "."
+                << (unsigned int)minor << "\n";
     }
 
-    uint64_t footer;
-    fread(&footer, sizeof(footer), 1, fs); 
-    if(footer != PROFDBft) DIAG_Throw("'" << filenm << "' is incomplete");
-    fprintf(stdout, "PROFILEDB FOOTER CORRECT, FILE COMPLETE\n");
-   
-    pms_profile_info_free(&x);     
-    id_tuples_pms_free(&tuples, num_prof);
+    fmt_profiledb_fHdr_t fhdr;
+    { // profile.db file header
+      rewind(fs);
+      char buf[FMT_PROFILEDB_SZ_FHdr];
+      if(fread(buf, 1, sizeof buf, fs) < sizeof buf)
+        DIAG_Throw("eof reading profile.db file header");
+      fmt_profiledb_fHdr_read(&fhdr, buf);
+      std::cout << std::hex <<
+        "[file header:\n"
+        "  (szProfileInfos: 0x" << fhdr.szProfileInfos << ") (pProfileInfos: 0x" << fhdr.pProfileInfos << ")\n"
+        "  (szIdTuples: 0x" << fhdr.szIdTuples << ") (pIdTuples: 0x" << fhdr.pIdTuples << ")\n"
+        "]\n" << std::dec;
+    }
 
-    hpcio_fclose(fs);
+    std::vector<fmt_profiledb_profInfo_t> pis;
+    { // Profile Info section
+      if(fseeko(fs, fhdr.pProfileInfos, SEEK_SET) < 0)
+        DIAG_Throw("error seeking to profile.db Profile Info section");
+      std::vector<char> buf(fhdr.szProfileInfos);
+      if(fread(buf.data(), 1, buf.size(), fs) < buf.size())
+        DIAG_Throw("eof reading profile.db Profile Info section");
+
+      fmt_profiledb_profInfoSHdr_t shdr;
+      fmt_profiledb_profInfoSHdr_read(&shdr, buf.data());
+      std::cout << std::hex <<
+        "[profile info:\n"
+        "  (pProfiles: 0x" << shdr.pProfiles << ") (nProfiles: "
+          << std::dec << shdr.nProfiles << std::hex << ")\n"
+        "  (szProfile: 0x" << (unsigned int)shdr.szProfile << " >= 0x" << FMT_PROFILEDB_SZ_ProfInfo << ")\n";
+      pis.reserve(shdr.nProfiles);
+      for(uint32_t i = 0; i < shdr.nProfiles; i++) {
+        fmt_profiledb_profInfo_t pi;
+        fmt_profiledb_profInfo_read(&pi, &buf[shdr.pProfiles + i*shdr.szProfile - fhdr.pProfileInfos]);
+        pis.push_back(pi);
+        std::cout << "  [pProfiles[" << i << "]:\n"
+          "    [profile-major sparse value block:\n"
+          "      (nValues: " << std::dec << pi.valueBlock.nValues << std::hex << ")"
+            " (pValues: 0x" << pi.valueBlock.pValues << ")\n"
+          "      (nCtxs: " << std::dec << pi.valueBlock.nCtxs << std::hex << ")"
+            " (pCtxIndices: 0x" << pi.valueBlock.pCtxIndices << ")\n"
+          "    ]\n"
+          "    (pIdTuple: 0x" << pi.pIdTuple << ")\n"
+          "    (isSummary: " << (pi.isSummary ? 1 : 0) << ")\n"
+          "  ]\n";
+      }
+      std::cout << "]\n" << std::dec;
+    }
+
+    { // Hierarchical Identifier Tuple section
+      if(fseeko(fs, fhdr.pIdTuples, SEEK_SET) < 0)
+        DIAG_Throw("error seeking to profile.db Identifier Tuple section");
+      std::vector<char> buf(fhdr.szIdTuples);
+      if(fread(buf.data(), 1, buf.size(), fs) < buf.size())
+        DIAG_Throw("eof reading profile.db Identifier Tuple section");
+
+      std::cout << "[hierarchical identifier tuples:\n" << std::hex;
+
+      // In actuality, each tuple is only identified by the Profile Info that
+      // references it. So loop through the PIs in order by id tuple
+      std::sort(pis.begin(), pis.end(), [](const auto& a, const auto& b){
+        return a.pIdTuple < b.pIdTuple;
+      });
+      for(const auto& pi: pis) {
+        if(pi.pIdTuple == 0) continue;
+        fmt_profiledb_idTupleHdr_t hdr;
+        fmt_profiledb_idTupleHdr_read(&hdr, &buf[pi.pIdTuple - fhdr.pIdTuples]);
+        std::cout << "  (0x" << pi.pIdTuple << ") [";
+        for(uint16_t i = 0; i < hdr.nIds; i++) {
+          fmt_profiledb_idTupleElem_t elem;
+          fmt_profiledb_idTupleElem_read(&elem, &buf[pi.pIdTuple - fhdr.pIdTuples
+              + FMT_PROFILEDB_SZ_IdTupleHdr + i*FMT_PROFILEDB_SZ_IdTupleElem]);
+          std::cout << (i > 0 ? " (" : "(");
+          switch(elem.kind) {
+          case IDTUPLE_SUMMARY: std::cout << "SUMMARY"; break;
+          case IDTUPLE_NODE: std::cout << "NODE"; break;
+          case IDTUPLE_THREAD: std::cout << "THREAD"; break;
+          case IDTUPLE_GPUDEVICE: std::cout << "GPUDEVICE"; break;
+          case IDTUPLE_GPUCONTEXT: std::cout << "GPUCONTEXT"; break;
+          case IDTUPLE_GPUSTREAM: std::cout << "GPUSTREAM"; break;
+          case IDTUPLE_CORE: std::cout << "CORE";
+          }
+          std::cout << " " << std::dec << elem.logicalId << std::hex;
+          if(elem.isPhysical)
+            std::cout << " / 0x" << elem.physicalId;
+          std::cout << ")";
+        }
+        std::cout << "]\n";
+      }
+      std::cout << "]\n" << std::dec;
+    }
+
+    // Rest of the file is profile data. Pointers are listed in the PIs, we
+    // output in file order.
+    std::sort(pis.begin(), pis.end(), [](const auto& a, const auto& b){
+      return a.valueBlock.pValues < b.valueBlock.pValues;
+    });
+    for(const auto& pi: pis) {
+      const auto& psvb = pi.valueBlock;
+
+      if(psvb.nValues == 0) {
+        // Empty profile, no need to print anything
+        continue;
+      }
+
+      if(fseeko(fs, psvb.pValues, SEEK_SET) < 0)
+        DIAG_Throw("error seeking to profile.db profile data segment");
+      std::vector<char> buf(psvb.pCtxIndices + psvb.nCtxs*FMT_PROFILEDB_SZ_CIdx - psvb.pValues);
+      if(fread(buf.data(), 1, buf.size(), fs) < buf.size())
+        DIAG_Throw("eof reading profile.db profile data segment");
+
+      std::cout << std::hex << "(0x" << psvb.pValues << ") [profile data:\n" << std::dec;
+      if(!easygrep) {
+        std::cout << "  [metric-value pairs:\n";
+        for(uint64_t i = 0; i < psvb.nValues; i++) {
+          fmt_profiledb_mVal_t val;
+          fmt_profiledb_mVal_read(&val, &buf[i * FMT_PROFILEDB_SZ_MVal]);
+          std::cout << "    [" << i << "] (metric id: " << val.metricId << ", value: " << val.value << ")\n";
+        }
+        std::cout << "  ]\n  [context-index pairs:\n";
+        for(uint64_t i = 0; i < psvb.nCtxs; i++) {
+          fmt_profiledb_cIdx_t idx;
+          fmt_profiledb_cIdx_read(&idx, &buf[psvb.pCtxIndices - psvb.pValues + i * FMT_PROFILEDB_SZ_CIdx]);
+          std::cout << "    (ctx id: " << idx.ctxId << ", index: " << idx.startIndex << ")\n";
+        }
+        std::cout << "  ]\n";
+      } else if(psvb.nCtxs > 0) {
+        fmt_profiledb_cIdx_t idx;
+        fmt_profiledb_cIdx_read(&idx, &buf[psvb.pCtxIndices - psvb.pValues]);
+        for(uint64_t i = 1; i <= psvb.nCtxs; i++) {
+          std::cout << "  (ctx id: " << idx.ctxId << ")";
+
+          uint64_t startIndex = idx.startIndex;
+          uint64_t endIndex = psvb.nValues;
+          if(i < psvb.nCtxs) {
+            fmt_profiledb_cIdx_read(&idx, &buf[psvb.pCtxIndices - psvb.pValues + i * FMT_PROFILEDB_SZ_CIdx]);
+            endIndex = idx.startIndex;
+          }
+
+          for(uint64_t j = startIndex; j < endIndex; j++) {
+            fmt_profiledb_mVal_t val;
+            fmt_profiledb_mVal_read(&val, &buf[j * FMT_PROFILEDB_SZ_MVal]);
+            std::cout << " (metric id: " << val.metricId << ", value: " << val.value << ")";
+          }
+          std::cout << "\n";
+        }
+      }
+      std::cout << "]\n" << std::dec;
+    }
+
+    { // File footer
+      char buf[sizeof fmt_profiledb_footer + 1];
+      if(fseeko(fs, -sizeof fmt_profiledb_footer, SEEK_END) < 0)
+        DIAG_Throw("error seeking to profile.db footer");
+      if(fread(buf, 1, sizeof fmt_profiledb_footer, fs) < sizeof fmt_profiledb_footer)
+        DIAG_Throw("error reading profile.db footer");
+      buf[sizeof fmt_profiledb_footer] = '\0';
+      std::cout << "[footer: '" << buf << "'";
+      if(memcmp(buf, fmt_profiledb_footer, sizeof fmt_profiledb_footer) == 0)
+        std::cout << ", OK]\n";
+      else
+        std::cout << ", INVALID]\n";
+    }
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");
     throw;
   }
 }
+
+#define MULTIPLE_8(X) (((X) + 7) / 8 * 8)
 
 //YUMENG
 void
