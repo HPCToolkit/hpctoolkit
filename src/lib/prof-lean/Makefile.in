@@ -166,7 +166,8 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-tracedb.lo \
 	formats/libHPCprof_lean_la-primitive.lo \
 	formats/libHPCprof_lean_la-metadb.lo \
-	formats/libHPCprof_lean_la-profiledb.lo
+	formats/libHPCprof_lean_la-profiledb.lo \
+	formats/libHPCprof_lean_la-cctdb.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -584,7 +585,8 @@ MYSOURCES = \
 	formats/common.h \
 	formats/primitive.h formats/primitive.c \
 	formats/metadb.h formats/metadb.c \
-	formats/profiledb.h formats/profiledb.c
+	formats/profiledb.h formats/profiledb.c \
+	formats/cctdb.h formats/cctdb.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -687,6 +689,8 @@ formats/libHPCprof_lean_la-metadb.lo: formats/$(am__dirstamp) \
 	formats/$(DEPDIR)/$(am__dirstamp)
 formats/libHPCprof_lean_la-profiledb.lo: formats/$(am__dirstamp) \
 	formats/$(DEPDIR)/$(am__dirstamp)
+formats/libHPCprof_lean_la-cctdb.lo: formats/$(am__dirstamp) \
+	formats/$(DEPDIR)/$(am__dirstamp)
 
 libHPCprof-lean.la: $(libHPCprof_lean_la_OBJECTS) $(libHPCprof_lean_la_DEPENDENCIES) $(EXTRA_libHPCprof_lean_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libHPCprof_lean_la_LINK)  $(libHPCprof_lean_la_OBJECTS) $(libHPCprof_lean_la_LIBADD) $(LIBS)
@@ -732,6 +736,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-urand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-usec_time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-vdso.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@formats/$(DEPDIR)/libHPCprof_lean_la-cctdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@formats/$(DEPDIR)/libHPCprof_lean_la-metadb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@formats/$(DEPDIR)/libHPCprof_lean_la-primitive.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@formats/$(DEPDIR)/libHPCprof_lean_la-profiledb.Plo@am__quote@
@@ -1005,6 +1010,13 @@ formats/libHPCprof_lean_la-profiledb.lo: formats/profiledb.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='formats/profiledb.c' object='formats/libHPCprof_lean_la-profiledb.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o formats/libHPCprof_lean_la-profiledb.lo `test -f 'formats/profiledb.c' || echo '$(srcdir)/'`formats/profiledb.c
+
+formats/libHPCprof_lean_la-cctdb.lo: formats/cctdb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT formats/libHPCprof_lean_la-cctdb.lo -MD -MP -MF formats/$(DEPDIR)/libHPCprof_lean_la-cctdb.Tpo -c -o formats/libHPCprof_lean_la-cctdb.lo `test -f 'formats/cctdb.c' || echo '$(srcdir)/'`formats/cctdb.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) formats/$(DEPDIR)/libHPCprof_lean_la-cctdb.Tpo formats/$(DEPDIR)/libHPCprof_lean_la-cctdb.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='formats/cctdb.c' object='formats/libHPCprof_lean_la-cctdb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o formats/libHPCprof_lean_la-cctdb.lo `test -f 'formats/cctdb.c' || echo '$(srcdir)/'`formats/cctdb.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
