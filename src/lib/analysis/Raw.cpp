@@ -80,10 +80,10 @@ using std::string;
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/id-tuple.h>
 #include <lib/prof-lean/tracedb.h>
+#include <lib/prof-lean/formats/cctdb.h>
 #include <lib/prof-lean/formats/metadb.h>
 #include <lib/prof-lean/formats/primitive.h>
 #include <lib/prof-lean/formats/profiledb.h>
-#include <lib/prof/cms-format.h>
 
 
 #include <lib/support/diagnostics.h>
@@ -110,8 +110,8 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGr
   else if (ty == ProfType_ProfileDB) {
     writeAsText_profiledb(filenm, sm_easyToGrep);
   }
-  else if (ty == ProfType_SparseDBcct){ //YUMENG
-    writeAsText_sparseDBcct(filenm, sm_easyToGrep);
+  else if (ty == ProfType_CctDB){
+    writeAsText_cctdb(filenm, sm_easyToGrep);
   }
   else if (ty == ProfType_TraceDB){ //YUMENG
     writeAsText_tracedb(filenm);
@@ -222,7 +222,7 @@ Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep)
         fmt_profiledb_profInfo_t pi;
         fmt_profiledb_profInfo_read(&pi, &buf[shdr.pProfiles + i*shdr.szProfile - fhdr.pProfileInfos]);
         pis.push_back(pi);
-        std::cout << "  [pProfiles[" << i << "]:\n"
+        std::cout << "  [pProfiles[" << std::dec << i << std::hex << "]:\n"
           "    [profile-major sparse value block:\n"
           "      (nValues: " << std::dec << pi.valueBlock.nValues << std::hex << ")"
             " (pValues: 0x" << pi.valueBlock.pValues << ")\n"
@@ -307,7 +307,7 @@ Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep)
           std::cout << "    [" << i << "] (metric id: " << val.metricId << ", value: " << val.value << ")\n";
         }
         std::cout << "  ]\n  [context-index pairs:\n";
-        for(uint64_t i = 0; i < psvb.nCtxs; i++) {
+        for(uint32_t i = 0; i < psvb.nCtxs; i++) {
           fmt_profiledb_cIdx_t idx;
           fmt_profiledb_cIdx_read(&idx, &buf[psvb.pCtxIndices - psvb.pValues + i * FMT_PROFILEDB_SZ_CIdx]);
           std::cout << "    (ctx id: " << idx.ctxId << ", index: " << idx.startIndex << ")\n";
@@ -316,7 +316,7 @@ Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep)
       } else if(psvb.nCtxs > 0) {
         fmt_profiledb_cIdx_t idx;
         fmt_profiledb_cIdx_read(&idx, &buf[psvb.pCtxIndices - psvb.pValues]);
-        for(uint64_t i = 1; i <= psvb.nCtxs; i++) {
+        for(uint32_t i = 1; i <= psvb.nCtxs; i++) {
           std::cout << "  (ctx id: " << idx.ctxId << ")";
 
           uint64_t startIndex = idx.startIndex;
@@ -350,6 +350,171 @@ Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep)
       else
         std::cout << ", INVALID]\n";
     }
+
+    hpcio_fclose(fs);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'...");
+    throw;
+  }
+}
+
+void
+Analysis::Raw::writeAsText_cctdb(const char* filenm, bool easygrep)
+{
+  if (!filenm) return;
+
+  try {
+    FILE* fs = hpcio_fopen_r(filenm);
+    if (!fs) {
+      DIAG_Throw("error opening cct.db file '" << filenm << "'");
+    }
+
+    {
+      char buf[16];
+      if(fread(buf, 1, sizeof buf, fs) < sizeof buf)
+        DIAG_Throw("eof/error reading cct.db format header");
+      uint8_t minor;
+      auto ver = fmt_cctdb_check(buf, &minor);
+      switch(ver) {
+      case fmt_version_invalid:
+        DIAG_Throw("Not a cct.db file");
+      case fmt_version_backward:
+        DIAG_Throw("Incompatible cct.db version (too old)");
+      case fmt_version_major:
+        DIAG_Throw("Incompatible cct.db version (major version mismatch)");
+      case fmt_version_forward:
+        DIAG_Msg(0, "WARNING: Minor version mismatch (" << (unsigned int)minor
+          << " > " << FMT_PROFILEDB_MinorVersion << "), some fields may be missing");
+        break;
+      default:
+        break;
+      }
+      if(ver < 0)
+        DIAG_Throw("error parsing cct.db format header");
+
+      std::cout << "cct.db version " << FMT_DB_MajorVersion << "."
+                << (unsigned int)minor << "\n";
+    }
+
+    fmt_cctdb_fHdr_t fhdr;
+    { // cct.db file header
+      rewind(fs);
+      char buf[FMT_CCTDB_SZ_FHdr];
+      if(fread(buf, 1, sizeof buf, fs) < sizeof buf)
+        DIAG_Throw("eof reading cct.db file header");
+      fmt_cctdb_fHdr_read(&fhdr, buf);
+      std::cout << std::hex <<
+        "[file header:\n"
+        "  (szCtxInfo: 0x" << fhdr.szCtxInfo << ") (pCtxInfo: 0x" << fhdr.pCtxInfo << ")\n"
+        "]\n" << std::dec;
+    }
+
+    std::vector<fmt_cctdb_ctxInfo_t> cis;
+    { // Context Info section
+      if(fseeko(fs, fhdr.pCtxInfo, SEEK_SET) < 0)
+        DIAG_Throw("error seeking to cct.db Context Info section");
+      std::vector<char> buf(fhdr.szCtxInfo);
+      if(fread(buf.data(), 1, buf.size(), fs) < buf.size())
+        DIAG_Throw("eof reading cct.db Context Info section");
+
+      fmt_cctdb_ctxInfoSHdr_t shdr;
+      fmt_cctdb_ctxInfoSHdr_read(&shdr, buf.data());
+      std::cout << std::hex <<
+        "[context info:\n"
+        "  (pCtxs: 0x" << shdr.pCtxs << ") (nCtxs: "
+          << std::dec << shdr.nCtxs << std::hex << ")\n"
+        "  (szCtx: 0x" << (unsigned int)shdr.szCtx << " >= 0x" << FMT_CCTDB_SZ_CtxInfo << ")\n";
+      cis.reserve(shdr.nCtxs);
+      for(uint32_t i = 0; i < shdr.nCtxs; i++) {
+        fmt_cctdb_ctxInfo_t ci;
+        fmt_cctdb_ctxInfo_read(&ci, &buf[shdr.pCtxs + i*shdr.szCtx - fhdr.pCtxInfo]);
+        cis.push_back(ci);
+        std::cout << "  [pCtxs[" << std::dec << i << std::hex << "]:\n"
+          "    [context-major sparse value block:\n"
+          "      (nValues: " << std::dec << ci.valueBlock.nValues << std::hex << ")"
+            " (pValues: 0x" << ci.valueBlock.pValues << ")\n"
+          "      (nMetrics: " << std::dec << ci.valueBlock.nMetrics << std::hex << ")"
+            " (pMetricIndices: 0x" << ci.valueBlock.pMetricIndices << ")\n"
+          "    ]\n"
+          "  ]\n";
+      }
+      std::cout << "]\n" << std::dec;
+    }
+
+    // Rest of the file is context metric data. Pointers are listed in the CIs,
+    // we output in file order.
+    std::sort(cis.begin(), cis.end(), [](const auto& a, const auto& b){
+      return a.valueBlock.pValues < b.valueBlock.pValues;
+    });
+    for(const auto& ci: cis) {
+      const auto& csvb = ci.valueBlock;
+
+      if(csvb.nValues == 0) {
+        // Empty context, no need to print anything
+        continue;
+      }
+
+      if(fseeko(fs, csvb.pValues, SEEK_SET) < 0)
+        DIAG_Throw("error seeking to cct.db context data segment");
+      std::vector<char> buf(csvb.pMetricIndices + csvb.nMetrics*FMT_CCTDB_SZ_MIdx - csvb.pValues);
+      if(fread(buf.data(), 1, buf.size(), fs) < buf.size())
+        DIAG_Throw("eof reading cct.db context data segment");
+
+      std::cout << std::hex << "(0x" << csvb.pValues << ") [context data:\n" << std::dec;
+      if(!easygrep) {
+        std::cout << "  [profile-value pairs:\n";
+        for(uint64_t i = 0; i < csvb.nValues; i++) {
+          fmt_cctdb_pVal_t val;
+          fmt_cctdb_pVal_read(&val, &buf[i * FMT_CCTDB_SZ_PVal]);
+          std::cout << "    [" << i << "] (profile index: " << val.profIndex << ", value: " << val.value << ")\n";
+        }
+        std::cout << "  ]\n  [metric-index pairs:\n";
+        for(uint16_t i = 0; i < csvb.nMetrics; i++) {
+          fmt_cctdb_mIdx_t idx;
+          fmt_cctdb_mIdx_read(&idx, &buf[csvb.pMetricIndices - csvb.pValues + i * FMT_CCTDB_SZ_MIdx]);
+          std::cout << "    (metric id: " << idx.metricId << ", index: " << idx.startIndex << ")\n";
+        }
+        std::cout << "  ]\n";
+      } else if(csvb.nMetrics > 0) {
+        fmt_cctdb_mIdx_t idx;
+        fmt_cctdb_mIdx_read(&idx, &buf[csvb.pMetricIndices - csvb.pValues]);
+        for(uint16_t i = 1; i <= csvb.nMetrics; i++) {
+          std::cout << "  (metric id: " << idx.metricId << ")";
+
+          uint64_t startIndex = idx.startIndex;
+          uint64_t endIndex = csvb.nValues;
+          if(i < csvb.nMetrics) {
+            fmt_cctdb_mIdx_read(&idx, &buf[csvb.pMetricIndices - csvb.pValues + i * FMT_CCTDB_SZ_MIdx]);
+            endIndex = idx.startIndex;
+          }
+
+          for(uint64_t j = startIndex; j < endIndex; j++) {
+            fmt_cctdb_pVal_t val;
+            fmt_cctdb_pVal_read(&val, &buf[j * FMT_CCTDB_SZ_PVal]);
+            std::cout << " (profile index: " << val.profIndex << ", value: " << val.value << ")";
+          }
+          std::cout << "\n";
+        }
+      }
+      std::cout << "]\n" << std::dec;
+    }
+
+    { // File footer
+      char buf[sizeof fmt_cctdb_footer + 1];
+      if(fseeko(fs, -sizeof fmt_cctdb_footer, SEEK_END) < 0)
+        DIAG_Throw("error seeking to cct.db footer");
+      if(fread(buf, 1, sizeof fmt_cctdb_footer, fs) < sizeof fmt_cctdb_footer)
+        DIAG_Throw("error reading cct.db footer");
+      buf[sizeof fmt_cctdb_footer] = '\0';
+      std::cout << "[footer: '" << buf << "'";
+      if(memcmp(buf, fmt_cctdb_footer, sizeof fmt_cctdb_footer) == 0)
+        std::cout << ", OK]\n";
+      else
+        std::cout << ", INVALID]\n";
+    }
+
+    hpcio_fclose(fs);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");
@@ -358,66 +523,6 @@ Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep)
 }
 
 #define MULTIPLE_8(X) (((X) + 7) / 8 * 8)
-
-//YUMENG
-void
-Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
-{
-  if (!filenm) { return; }
-
-  try {
-    FILE* fs = hpcio_fopen_r(filenm);
-    if (!fs) {
-      DIAG_Throw("error opening cct sparse file '" << filenm << "'");
-    }
-
-    cms_hdr_t hdr;
-    int ret = cms_hdr_fread(&hdr, fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading hdr from sparse metrics file '" << filenm << "'");
-    }
-    cms_hdr_fprint(&hdr, stdout);
-
-    fseek(fs, hdr.ctx_info_sec_ptr, SEEK_SET);
-    uint32_t num_ctx = hdr.num_ctx;
-    cms_ctx_info_t* x;
-    ret = cms_ctx_info_fread(&x, num_ctx,fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading cct information from sparse metrics file '" << filenm << "'");
-    }
-    cms_ctx_info_fprint(num_ctx,x,stdout);
-
-    fseek(fs, hdr.ctx_info_sec_ptr + (MULTIPLE_8(hdr.ctx_info_sec_size)), SEEK_SET);
-    for(uint i = 0; i<num_ctx; i++){
-      if(x[i].num_vals != 0){
-        cct_sparse_metrics_t csm;
-        csm.ctx_id = x[i].ctx_id;
-        csm.num_vals = x[i].num_vals;
-        csm.num_nzmids = x[i].num_nzmids;
-        ret = cms_sparse_metrics_fread(&csm,fs);
-        if (ret != HPCFMT_OK) {
-          DIAG_Throw("error reading cct data from sparse metrics file '" << filenm << "'");
-        }
-        cms_sparse_metrics_fprint(&csm,stdout, "  ", easygrep);
-        cms_sparse_metrics_free(&csm);
-      }
-      
-    }
-
-    uint64_t footer;
-    fread(&footer, sizeof(footer), 1, fs); 
-    if(footer != CCTDBftr) DIAG_Throw("'" << filenm << "' is incomplete");
-    fprintf(stdout, "CCTDB FOOTER CORRECT, FILE COMPLETE\n");
-
-    cms_ctx_info_free(&x);
-   
-    hpcio_fclose(fs);
-  }
-  catch (...) {
-    DIAG_EMsg("While reading '" << filenm << "'...");
-    throw;
-  }
-}
 
 //YUMENG
 void
@@ -870,6 +975,8 @@ Analysis::Raw::writeAsText_metadb(const char* filenm)
       else
         std::cout << ", INVALID]\n";
     }
+
+    hpcio_fclose(fs);
   }
   catch(...) {
     DIAG_EMsg("While reading '" << filenm << "'...");

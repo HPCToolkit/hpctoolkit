@@ -51,9 +51,9 @@
 #include "../mpi/all.hpp"
 #include "../util/log.hpp"
 
-#include <lib/prof/cms-format.h>
 #include <lib/prof-lean/id-tuple.h>
 #include "lib/prof-lean/formats/profiledb.h"
+#include "lib/prof-lean/formats/cctdb.h"
 
 #include "../stdshim/numeric.hpp"
 #include <cassert>
@@ -71,57 +71,6 @@ using namespace hpctoolkit::sinks;
 
 static constexpr uint64_t align(uint64_t v, uint8_t a) {
   return (v + a - 1) / a * a;
-}
-
-static char* insertByte2(char* bytes, uint16_t val) {
-  int shift = 0, num_writes = 0;
-
-  for (shift = 8; shift >= 0; shift -= 8) {
-    bytes[num_writes] = (val >> shift) & 0xff;
-    num_writes++;
-  }
-  return bytes + 2;
-}
-static char* insertByte4(char* bytes, uint32_t val) {
-  int shift = 0, num_writes = 0;
-
-  for (shift = 24; shift >= 0; shift -= 8) {
-    bytes[num_writes] = (val >> shift) & 0xff;
-    num_writes++;
-  }
-  return bytes + 4;
-}
-static char* insertByte8(char* bytes, uint64_t val) {
-  int shift = 0, num_writes = 0;
-
-  for (shift = 56; shift >= 0; shift -= 8) {
-    bytes[num_writes] = (val >> shift) & 0xff;
-    num_writes++;
-  }
-  return bytes + 8;
-}
-
-static std::array<char, CMS_real_hdr_SIZE> composeCtxHdr(uint32_t ctxcnt) {
-  std::array<char, CMS_real_hdr_SIZE> out;
-  char* cur = out.data();
-  cur = std::copy(HPCCCTSPARSE_FMT_Magic, HPCCCTSPARSE_FMT_Magic + HPCCCTSPARSE_FMT_MagicLen,
-                  cur);
-  *(cur++) = HPCCCTSPARSE_FMT_VersionMajor;
-  *(cur++) = HPCCCTSPARSE_FMT_VersionMinor;
-
-  cur = insertByte4(cur, ctxcnt);  // num_ctx
-  cur = insertByte2(cur, HPCCCTSPARSE_FMT_NumSec);  // num_sec
-  cur = insertByte8(cur, ctxcnt * CMS_ctx_info_SIZE);  // ci_size
-  cur = insertByte8(cur, CMS_hdr_SIZE);  // ci_ptr
-  return out;
-}
-
-static char* insertCtxInfo(char* cur, cms_ctx_info_t ci) {
-  cur = insertByte4(cur, ci.ctx_id);
-  cur = insertByte8(cur, ci.num_vals);
-  cur = insertByte2(cur, ci.num_nzmids);
-  cur = insertByte8(cur, ci.offset);
-  return cur;
 }
 
 //
@@ -558,14 +507,15 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
         fmt_profiledb_mVal_t val;
         fmt_profiledb_mVal_read(&val, cur);
         auto& subbuf = valuebufs.try_emplace(val.metricId).first->second;
-
-        union { double d; uint64_t u; } v;
-        v.d = val.value;
+        fmt_cctdb_pVal_t outval = {
+          .profIndex = profile.index,
+          .value = val.value,
+        };
 
         // Write in this prof_idx/value pair, in bytes.
-        subbuf.reserve(subbuf.size() + CMS_val_prof_idx_pair_SIZE);
-        insertByte8(&*subbuf.insert(subbuf.end(), CMS_val_SIZE, 0), v.u);
-        insertByte4(&*subbuf.insert(subbuf.end(), CMS_prof_idx_SIZE, 0), profile.index);
+        auto oldsz = subbuf.size();
+        subbuf.resize(oldsz + FMT_CCTDB_SZ_PVal, 0);
+        fmt_cctdb_pVal_write(&subbuf[oldsz], &outval);
       }
 
       // If the updated entry is still in range, push it back into the heap.
@@ -577,9 +527,11 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
     }
 
     // Allocate enough space in buf for all the bits we want.
-    const auto newsz = allpvs * CMS_val_prof_idx_pair_SIZE
-                       + (valuebufs.size()+1) * CMS_m_pair_SIZE;
-    assert(ctxOffsets[ctx_id] + newsz == ctxOffsets[ctx_id+1]
+    buf.resize(align(buf.size(), 4));
+    assert(align(ctxOffsets[ctx_id], 4) == ctxOffsets[ctx_id]
+           && "Final layout is not sufficiently aligned!");
+    const auto newsz = allpvs * FMT_CCTDB_SZ_PVal + valuebufs.size() * FMT_CCTDB_SZ_MIdx;
+    assert(align(ctxOffsets[ctx_id] + newsz, 4) == ctxOffsets[ctx_id+1]
            && "Final layout doesn't match precalculated ctx_off!");
     buf.reserve(buf.size() + newsz);
 
@@ -589,24 +541,25 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
 
     // Construct the metric_id/idx pairs for this context, in bytes
     {
-      char* cur = &*buf.insert(buf.end(), (valuebufs.size()+1) * CMS_m_pair_SIZE, 0);
+      auto oldsz = buf.size();
+      buf.resize(oldsz + valuebufs.size() * FMT_CCTDB_SZ_MIdx);
+      char* cur = &buf[oldsz];
       uint64_t pvs = 0;
       for(const auto& [mid, pvbuf]: valuebufs) {
-        cur = insertByte2(cur, mid);
-        cur = insertByte8(cur, pvs);
-        pvs += pvbuf.size() / CMS_val_prof_idx_pair_SIZE;
+        fmt_cctdb_mIdx_t idx = {
+          .metricId = mid,
+          .startIndex = pvs,
+        };
+        fmt_cctdb_mIdx_write(cur, &idx);
+        cur += FMT_CCTDB_SZ_MIdx;
+        pvs += pvbuf.size() / FMT_CCTDB_SZ_PVal;
       }
       assert(pvs == allpvs);
-
-      // Last entry is always LastMidEnd
-      cur = insertByte2(cur, LastMidEnd);
-      cur = insertByte8(cur, pvs);
     }
   }
 
   // Write out the whole blob of data where it belongs in the file
   if(buf.empty()) return;
-  assert(firstCtxId != LastNodeEnd);
   auto cmfi = cmf.open(true, true);
   cmfi.writeat(ctxOffsets[firstCtxId], buf.size(), buf.data());
 }
@@ -637,37 +590,43 @@ void SparseDB::write() {
     forEachThread.contribute(forEachThread.wait());
   }
 
-  // Lay out the cct.db metric data section, in terms of offsets for every context
-  auto ctxcnt = mpi::bcast(contexts.size(), 0);
-  std::vector<uint64_t> ctxOffsets(ctxcnt + 1, 0);
+  // Lay out the main parts of the cct.db file
+  fmt_cctdb_fHdr_t fHdr;
+  fHdr.pCtxInfo = align(FMT_CCTDB_SZ_FHdr, 8);
+  fmt_cctdb_ctxInfoSHdr_t ci_sHdr;
+  ci_sHdr.pCtxs = align(fHdr.pCtxInfo + FMT_CCTDB_SZ_CtxInfoSHdr, 8);
+  ci_sHdr.nCtxs = mpi::bcast(contexts.size(), 0);
+  fHdr.szCtxInfo = ci_sHdr.pCtxs + ci_sHdr.nCtxs * FMT_CCTDB_SZ_CtxInfo - fHdr.pCtxInfo;
+
+  // Lay out the cct.db metric data, in terms of offsets for every context
+  // First figure out the byte counts for each context's blob
+  std::vector<uint64_t> ctxOffsets(ci_sHdr.nCtxs + 1, 0);
   for(const Context& c: contexts) {
     const auto i = c.userdata[src.identifier()];
     assert(&c == &contexts[i].get());
     auto& udc = c.userdata[ud];
-    ctxOffsets[i] = udc.nValues.load(std::memory_order_relaxed)
-                    * CMS_val_prof_idx_pair_SIZE;
+    ctxOffsets[i] = udc.nValues.load(std::memory_order_relaxed) * FMT_CCTDB_SZ_PVal;
 
     // Rank 0 has the final number of metric/idx pairs
     if(mpi::World::rank() == 0) {
       const auto& use = c.data().metricUsage();
       auto iter = use.citerate();
-      bool isLine = c.scope().flat().type() == Scope::Type::line;
       udc.nMetrics = std::accumulate(iter.begin(), iter.end(), (uint16_t)0,
-        [isLine](uint16_t out, const auto& mu) -> uint16_t {
+        [](uint16_t out, const auto& mu) -> uint16_t {
           MetricScopeSet use = mu.second;
           assert((mu.first->scopes() & use) == use && "Inconsistent Metric value usage data!");
           return out + use.count();
         });
-      if(udc.nMetrics > 0)
-        ctxOffsets[i] += (udc.nMetrics + 1) * CMS_m_pair_SIZE;
+      ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;
     }
   }
-  // Exclusive scan to get offsets. Rank 0 adds the initial offset for the section
-  const uint64_t ctxStart = align(ctxcnt * CMS_ctx_info_SIZE, 8) + CMS_hdr_SIZE;
-  stdshim::exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
-      mpi::World::rank() == 0 ? ctxStart : 0);
-  // All-reduce the offsets to get global offsets incorporating everyone
+  // All-reduce to get the total size for every context
   ctxOffsets = mpi::allreduce(ctxOffsets, mpi::Op::sum());
+  // Exclusive-scan the sizes to get the offsets, adjusting for 4-alignment
+  const auto ctxStart = align(fHdr.pCtxInfo + fHdr.szCtxInfo, 4);
+  stdshim::transform_exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
+    ctxStart, std::plus<>{},
+    [](uint64_t sz){ return align(sz, 4); });
 
   // Divide the contexts into ranges of easily distributable sizes
   std::vector<uint32_t> ctxRanges;
@@ -676,7 +635,7 @@ void SparseDB::write() {
     const uint64_t limit = std::min<uint64_t>(1024ULL*1024*1024*3,
         (ctxOffsets.back() - ctxStart) / (3 * mpi::World::size()));
     uint64_t cursize = 0;
-    for(size_t i = 0; i < ctxcnt; i++) {
+    for(size_t i = 0; i < ci_sHdr.nCtxs; i++) {
       const uint64_t size = ctxOffsets[i+1] - ctxOffsets[i];
       if(cursize + size > limit) {
         ctxRanges.push_back(i);
@@ -684,7 +643,7 @@ void SparseDB::write() {
       }
       cursize += size;
     }
-    ctxRanges.push_back(ctxcnt);
+    ctxRanges.push_back(ci_sHdr.nCtxs);
   }
 
   // We use a SharedAccumulator to dynamically distribute context ranges across
@@ -805,21 +764,29 @@ void SparseDB::write() {
     {
       auto cmfi = cmf->open(true, true);
 
-      auto hdr = composeCtxHdr(ctxcnt);
-      cmfi.writeat(0, hdr.size(), hdr.data());
-
-      std::vector<char> buf(ctxcnt * CMS_ctx_info_SIZE);
-      char* cur = buf.data();
-      for(uint32_t i = 0; i < ctxcnt; i++) {
-        uint16_t nMetrics = contexts[i].get().userdata[ud].nMetrics;
-        uint64_t nVals = nMetrics == 0 ? 0 :
-          (ctxOffsets[i+1] - ctxOffsets[i] - (nMetrics + 1) * CMS_m_pair_SIZE) / CMS_val_prof_idx_pair_SIZE;
-        cur = insertCtxInfo(cur, {
-          .ctx_id = i, .num_vals = nVals, .num_nzmids = nMetrics,
-          .offset = ctxOffsets[i],
-        });
+      {
+        char buf[FMT_CCTDB_SZ_FHdr];
+        fmt_cctdb_fHdr_write(buf, &fHdr);
+        cmfi.writeat(0, sizeof buf, buf);
       }
-      cmfi.writeat(CMS_hdr_SIZE, buf.size(), buf.data());
+      {
+        char buf[FMT_CCTDB_SZ_CtxInfoSHdr];
+        fmt_cctdb_ctxInfoSHdr_write(buf, &ci_sHdr);
+        cmfi.writeat(fHdr.pCtxInfo, sizeof buf, buf);
+      }
+
+      std::vector<char> buf(ci_sHdr.nCtxs * FMT_CCTDB_SZ_CtxInfo);
+      char* cur = buf.data();
+      for(uint32_t i = 0; i < ci_sHdr.nCtxs; i++) {
+        fmt_cctdb_ctxInfo_t ci;
+        ci.valueBlock.nMetrics = contexts[i].get().userdata[ud].nMetrics;
+        ci.valueBlock.nValues = (ctxOffsets[i+1] - ctxOffsets[i] - ci.valueBlock.nMetrics * FMT_CCTDB_SZ_MIdx) / FMT_CCTDB_SZ_PVal;
+        ci.valueBlock.pValues = ctxOffsets[i];
+        ci.valueBlock.pMetricIndices = ci.valueBlock.pValues + ci.valueBlock.nValues * FMT_CCTDB_SZ_PVal;
+        fmt_cctdb_ctxInfo_write(cur, &ci);
+        cur += FMT_CCTDB_SZ_CtxInfo;
+      }
+      cmfi.writeat(ci_sHdr.pCtxs, buf.size(), buf.data());
     }
   }
 
@@ -887,8 +854,7 @@ void SparseDB::write() {
   // writes have completed. If the footer isn't there, the file isn't complete.
   mpi::barrier();
   if(mpi::World::rank() + 1 == mpi::World::size()) {
-    const uint64_t footer = CCTDBftr;
-    auto cmfi = cmf->open(true, false);
-    cmfi.writeat(ctxOffsets.back(), sizeof footer, &footer);
+    cmf->open(true, false).writeat(ctxOffsets.back(),
+                                   sizeof fmt_cctdb_footer, fmt_cctdb_footer);
   }
 }
