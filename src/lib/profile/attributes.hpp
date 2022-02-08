@@ -53,7 +53,6 @@
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
 #include "util/streaming_sort.hpp"
-#include "lib/prof/pms-format.h"
 #include "lib/prof-lean/id-tuple.h"
 
 #include "stdshim/filesystem.hpp"

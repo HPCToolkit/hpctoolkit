@@ -55,6 +55,7 @@
 #include "lib/profile/mpi/all.hpp"
 
 #include "lib/prof-lean/cpuset_hwthreads.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
 
 #include <cassert>
 #include <getopt.h>
