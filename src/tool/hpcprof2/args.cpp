@@ -49,6 +49,7 @@
 #include "args.hpp"
 
 #include "include/hpctoolkit-config.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/profile/finalizers/kernelsyms.hpp"
 #include "lib/profile/finalizers/struct.hpp"
 #include "lib/profile/mpi/all.hpp"

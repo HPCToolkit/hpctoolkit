@@ -55,7 +55,6 @@
 #include "util/streaming_sort.hpp"
 
 #include "lib/prof-lean/id-tuple.h"
-#include "lib/prof/pms-format.h"
 
 #include <functional>
 #include <optional>
