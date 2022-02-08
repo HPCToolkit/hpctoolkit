@@ -74,9 +74,7 @@ MYSOURCES = \
 	Struct-Tree.hpp Struct-Tree.cpp \
 	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \
 	\
-	CallPath-Profile.hpp CallPath-Profile.cpp \
-	\
-	cms-format.c cms-format.h
+	CallPath-Profile.hpp CallPath-Profile.cpp
 
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
