@@ -70,7 +70,6 @@
 #include <lib/prof-lean/hpcrun-fmt.h> 
 #include <lib/prof-lean/id-tuple.h>
 #include <lib/prof-lean/tracedb.h>
-#include <lib/prof/cms-format.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -97,7 +96,7 @@ void
 writeAsText_profiledb(const char* filenm, bool sm_easyToGrep);
 
 void
-writeAsText_sparseDBcct(const char* filenm, bool sm_easyToGrep); 
+writeAsText_cctdb(const char* filenm, bool sm_easyToGrep);
 
 void
 writeAsText_tracedb(const char* filenm);

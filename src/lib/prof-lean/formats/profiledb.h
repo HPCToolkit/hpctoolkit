@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // Purpose:
-//   Low-level types and functions for reading/writing meta.db
+//   Low-level types and functions for reading/writing profile.db
 //
 //   See doc/FORMATS.md.
 //
