@@ -78,7 +78,6 @@ using std::string;
 
 #include "Util.hpp"
 
-#include <lib/prof/pms-format.h>
 #include <lib/prof/cms-format.h>
 
 #include <lib/prof-lean/hpcio.h>
@@ -87,6 +86,7 @@ using std::string;
 #include <lib/prof-lean/hpcrunflat-fmt.h>
 #include <lib/prof-lean/tracedb.h>
 #include <lib/prof-lean/formats/metadb.h>
+#include <lib/prof-lean/formats/profiledb.h>
 
 #include <lib/support/PathFindMgr.hpp>
 #include <lib/support/PathReplacementMgr.hpp>
@@ -127,10 +127,8 @@ getProfileType(const std::string& filenm)
   }
   else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
     ty = ProfType_Flat;
-  }else if(filenm.find(".sparse-db") != std::string::npos){ //YUMENG: is->read didn't work, may need to FIX later
-    ty = ProfType_SparseDBtmp;
-  }else if(strncmp(buf, HPCPROFILESPARSE_FMT_Magic, HPCPROFILESPARSE_FMT_MagicLen) == 0){ 
-    ty = ProfType_SparseDBthread;
+  }else if(fmt_profiledb_check(buf, nullptr) != fmt_version_invalid){
+    ty = ProfType_ProfileDB;
   }else if(strncmp(buf, HPCCCTSPARSE_FMT_Magic, HPCCCTSPARSE_FMT_MagicLen) == 0){ 
     ty = ProfType_SparseDBcct;
   }else if(strncmp(buf, HPCTRACEDB_FMT_Magic, HPCTRACEDB_FMT_MagicLen) == 0){ 
