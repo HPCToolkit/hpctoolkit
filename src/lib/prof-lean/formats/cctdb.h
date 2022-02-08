@@ -83,7 +83,7 @@
 //***************************************************************************
 //
 // Purpose:
-//   Low-level types and functions for reading/writing profile.db
+//   Low-level types and functions for reading/writing cct.db
 //
 //   See doc/FORMATS.md.
 //
@@ -92,8 +92,8 @@
 //
 //***************************************************************************
 
-#ifndef FORMATS_PROFILEDB_H
-#define FORMATS_PROFILEDB_H
+#ifndef FORMATS_CCTDB_H
+#define FORMATS_CCTDB_H
 
 #include "common.h"
 
@@ -101,126 +101,88 @@
 extern "C" {
 #endif
 
-/// Minor version of the profile.db format implemented here
-enum { FMT_PROFILEDB_MinorVersion = 0 };
+/// Minor version of the cct.db format implemented here
+enum { FMT_CCTDB_MinorVersion = 0 };
 
-/// Check the given file start bytes for the profile.db format.
+/// Check the given file start bytes for the cct.db format.
 /// If minorVer != NULL, also returns the exact minor version.
-enum fmt_version_t fmt_profiledb_check(const char[16], uint8_t* minorVer);
+enum fmt_version_t fmt_cctdb_check(const char[16], uint8_t* minorVer);
 
-/// Footer byte sequence for profile.db files.
-extern const char fmt_profiledb_footer[8];
+/// Footer byte sequence for cct.db files.
+extern const char fmt_cctdb_footer[8];
 
 //
-// profile.db file
+// cct.db file
 //
 
-/// Size of the profile.db file header in serialized form
-enum { FMT_PROFILEDB_SZ_FHdr = 0x30 };
+/// Size of the cct.db file header in serialized form
+enum { FMT_CCTDB_SZ_FHdr = 0x30 };
 
-/// profile.db file header, names match FORMATS.md
-typedef struct fmt_profiledb_fHdr_t {
+/// cct.db file header, names match FORMATS.md
+typedef struct fmt_cctdb_fHdr_t {
   // NOTE: magic and versions are constant and cannot be adjusted
-  uint64_t szProfileInfos;
-  uint64_t pProfileInfos;
-  uint64_t szIdTuples;
-  uint64_t pIdTuples;
-} fmt_profiledb_fHdr_t;
+  uint64_t szCtxInfo;
+  uint64_t pCtxInfo;
+} fmt_cctdb_fHdr_t;
 
-/// Read a profile.db file header from a byte array
-void fmt_profiledb_fHdr_read(fmt_profiledb_fHdr_t*, const char[FMT_PROFILEDB_SZ_FHdr]);
+/// Read a cct.db file header from a byte array
+void fmt_cctdb_fHdr_read(fmt_cctdb_fHdr_t*, const char[FMT_CCTDB_SZ_FHdr]);
 
-/// Write a profile.db file header into a byte array
-void fmt_profiledb_fHdr_write(char[FMT_PROFILEDB_SZ_FHdr], const fmt_profiledb_fHdr_t*);
+/// Write a cct.db file header into a byte array
+void fmt_cctdb_fHdr_write(char[FMT_CCTDB_SZ_FHdr], const fmt_cctdb_fHdr_t*);
 
 //
-// profile.db Profile Info section
+// Context Info section
 //
 
-// profile.db Profile Info section header
-enum { FMT_PROFILEDB_SZ_ProfInfoSHdr = 0x0d };
-typedef struct fmt_profiledb_profInfoSHdr_t {
-  uint64_t pProfiles;
-  uint32_t nProfiles;
-  // NOTE: The following member is ignored on write
-  uint8_t szProfile;
-} fmt_profiledb_profInfoSHdr_t;
+// Context Info section header
+enum { FMT_CCTDB_SZ_CtxInfoSHdr = 0x0d };
+typedef struct fmt_cctdb_ctxInfoSHdr_t {
+  uint64_t pCtxs;
+  uint32_t nCtxs;
+  // NOTE: The following field is ignored on write
+  uint8_t szCtx;
+} fmt_cctdb_ctxInfoSHdr_t;
 
-void fmt_profiledb_profInfoSHdr_read(
-    fmt_profiledb_profInfoSHdr_t*, const char[FMT_PROFILEDB_SZ_ProfInfoSHdr]);
-void fmt_profiledb_profInfoSHdr_write(
-    char[FMT_PROFILEDB_SZ_ProfInfoSHdr], const fmt_profiledb_profInfoSHdr_t*);
+void fmt_cctdb_ctxInfoSHdr_read(fmt_cctdb_ctxInfoSHdr_t*, const char[FMT_CCTDB_SZ_CtxInfoSHdr]);
+void fmt_cctdb_ctxInfoSHdr_write(char[FMT_CCTDB_SZ_CtxInfoSHdr], const fmt_cctdb_ctxInfoSHdr_t*);
 
-// Profile Information block {PI}
-enum { FMT_PROFILEDB_SZ_ProfInfo = 0x28 };
-typedef struct fmt_profiledb_profInfo_t {
-  // Profile-Major Sparse Value Block [PSVB]
+// Context Information block {CI}
+enum { FMT_CCTDB_SZ_CtxInfo = 0x20 };
+typedef struct fmt_cctdb_ctxInfo_t {
   struct {
     uint64_t nValues;
     uint64_t pValues;
-    uint32_t nCtxs;
-    uint64_t pCtxIndices;
+    uint16_t nMetrics;
+    uint64_t pMetricIndices;
   } valueBlock;
-  uint64_t pIdTuple;
-} fmt_profiledb_profInfo_t;
+} fmt_cctdb_ctxInfo_t;
 
-void fmt_profiledb_profInfo_read(fmt_profiledb_profInfo_t*, const char[FMT_PROFILEDB_SZ_ProfInfo]);
-void fmt_profiledb_profInfo_write(char[FMT_PROFILEDB_SZ_ProfInfo], const fmt_profiledb_profInfo_t*);
+void fmt_cctdb_ctxInfo_read(fmt_cctdb_ctxInfo_t*, const char[FMT_CCTDB_SZ_CtxInfo]);
+void fmt_cctdb_ctxInfo_write(char[FMT_CCTDB_SZ_CtxInfo], const fmt_cctdb_ctxInfo_t*);
 
-// Metric-Value pair {Val}
-enum { FMT_PROFILEDB_SZ_MVal = 0x0a };
-typedef struct fmt_profiledb_mVal_t {
-  uint16_t metricId;
+// Profile-Value pair {Val}
+enum { FMT_CCTDB_SZ_PVal = 0x0c };
+typedef struct fmt_cctdb_pVal_t {
+  uint32_t profIndex;
   double value;
-} fmt_profiledb_mVal_t;
+} fmt_cctdb_pVal_t;
 
-void fmt_profiledb_mVal_read(fmt_profiledb_mVal_t*, const char[FMT_PROFILEDB_SZ_MVal]);
-void fmt_profiledb_mVal_write(char[FMT_PROFILEDB_SZ_MVal], const fmt_profiledb_mVal_t*);
+void fmt_cctdb_pVal_read(fmt_cctdb_pVal_t*, const char[FMT_CCTDB_SZ_PVal]);
+void fmt_cctdb_pVal_write(char[FMT_CCTDB_SZ_PVal], const fmt_cctdb_pVal_t*);
 
-// Context-Index pair {Idx}
-enum { FMT_PROFILEDB_SZ_CIdx = 0x0c };
-typedef struct fmt_profiledb_cIdx_t {
-  uint32_t ctxId;
+// Metric-Index pair
+enum { FMT_CCTDB_SZ_MIdx = 0x0a };
+typedef struct fmt_cctdb_mIdx_t {
+  uint16_t metricId;
   uint64_t startIndex;
-} fmt_profiledb_cIdx_t;
+} fmt_cctdb_mIdx_t;
 
-void fmt_profiledb_cIdx_read(fmt_profiledb_cIdx_t*, const char[FMT_PROFILEDB_SZ_CIdx]);
-void fmt_profiledb_cIdx_write(char[FMT_PROFILEDB_SZ_CIdx], const fmt_profiledb_cIdx_t*);
-
-//
-// profile.db Hierarchical Identifier Tuple section
-//
-
-// Hierarchical Identifier Tuple [HIT] header
-enum { FMT_PROFILEDB_SZ_IdTupleHdr = 0x08 };
-typedef struct fmt_profiledb_idTupleHdr_t {
-  uint16_t nIds;
-} fmt_profiledb_idTupleHdr_t;
-
-void fmt_profiledb_idTupleHdr_read(
-    fmt_profiledb_idTupleHdr_t*, const char[FMT_PROFILEDB_SZ_IdTupleHdr]);
-void fmt_profiledb_idTupleHdr_write(
-    char[FMT_PROFILEDB_SZ_IdTupleHdr], const fmt_profiledb_idTupleHdr_t*);
-
-// Hierarchical Identifier Tuple [HIT] element
-enum { FMT_PROFILEDB_SZ_IdTupleElem = 0x10 };
-typedef struct fmt_profiledb_idTupleElem_t {
-  uint8_t kind;
-  bool isPhysical : 1;
-  uint32_t logicalId;
-  uint64_t physicalId;
-} fmt_profiledb_idTupleElem_t;
-
-void fmt_profiledb_idTupleElem_read(
-    fmt_profiledb_idTupleElem_t*, const char[FMT_PROFILEDB_SZ_IdTupleElem]);
-void fmt_profiledb_idTupleElem_write(
-    char[FMT_PROFILEDB_SZ_IdTupleElem], const fmt_profiledb_idTupleElem_t*);
-
-#define FMT_PROFILEDB_SZ_IdTuple(nIds) \
-  (FMT_PROFILEDB_SZ_IdTupleHdr + (nIds)*FMT_PROFILEDB_SZ_IdTupleElem)
+void fmt_cctdb_mIdx_read(fmt_cctdb_mIdx_t*, const char[FMT_CCTDB_SZ_MIdx]);
+void fmt_cctdb_mIdx_write(char[FMT_CCTDB_SZ_MIdx], const fmt_cctdb_mIdx_t*);
 
 #if defined(__cplusplus)
 }  // extern "C"
 #endif
 
-#endif  // FORMATS_PROFILEDB_H
+#endif  // FORMATS_CCTDB_H

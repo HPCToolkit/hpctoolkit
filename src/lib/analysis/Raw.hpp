@@ -64,7 +64,6 @@
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/prof-lean/id-tuple.h"
 #include "lib/prof-lean/tracedb.h"
-#include "lib/prof/cms-format.h"
 
 #include <string>
 
@@ -84,7 +83,7 @@ void sortTraceHdrs_onStarts(trace_hdr_t* x, uint32_t num_t);
 
 void writeAsText_profiledb(const char* filenm, bool sm_easyToGrep);
 
-void writeAsText_sparseDBcct(const char* filenm, bool sm_easyToGrep);
+void writeAsText_cctdb(const char* filenm, bool sm_easyToGrep);
 
 void writeAsText_tracedb(const char* filenm);
 

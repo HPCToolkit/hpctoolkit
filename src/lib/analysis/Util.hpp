@@ -85,8 +85,8 @@ enum ProfType_t {
   ProfType_CallpathTrace,
   ProfType_Flat,
   ProfType_ProfileDB,
-  ProfType_SparseDBcct,  // YUMENG
-  ProfType_TraceDB,      // YUMENG
+  ProfType_CctDB,
+  ProfType_TraceDB,  // YUMENG
   ProfType_MetaDB,
 };
 

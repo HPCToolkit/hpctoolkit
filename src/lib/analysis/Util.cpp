@@ -62,6 +62,7 @@
 #include "include/gcc-attr.h"
 #include "include/uint.h"
 #include "lib/banal/StructSimple.hpp"
+#include "lib/prof-lean/formats/cctdb.h"
 #include "lib/prof-lean/formats/metadb.h"
 #include "lib/prof-lean/formats/profiledb.h"
 #include "lib/prof-lean/hpcfmt.h"
@@ -69,7 +70,6 @@
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/prof-lean/hpcrunflat-fmt.h"
 #include "lib/prof-lean/tracedb.h"
-#include "lib/prof/cms-format.h"
 #include "lib/support/diagnostics.h"
 #include "lib/support/dictionary.h"
 #include "lib/support/PathFindMgr.hpp"
@@ -127,8 +127,8 @@ Analysis::Util::ProfType_t getProfileType(const std::string& filenm) {
     ty = ProfType_Flat;
   } else if (fmt_profiledb_check(buf, nullptr) != fmt_version_invalid) {
     ty = ProfType_ProfileDB;
-  } else if (strncmp(buf, HPCCCTSPARSE_FMT_Magic, HPCCCTSPARSE_FMT_MagicLen) == 0) {
-    ty = ProfType_SparseDBcct;
+  } else if (fmt_cctdb_check(buf, nullptr) != fmt_version_invalid) {
+    ty = ProfType_CctDB;
   } else if (strncmp(buf, HPCTRACEDB_FMT_Magic, HPCTRACEDB_FMT_MagicLen) == 0) {
     ty = ProfType_TraceDB;
   } else if (fmt_metadb_check(buf, nullptr) != fmt_version_invalid) {
