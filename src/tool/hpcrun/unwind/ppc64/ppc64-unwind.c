@@ -250,7 +250,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   ucontext_t* ctxt = (ucontext_t*)context;
 
   save_registers(cursor, ucontext_pc(ctxt), NULL, ucontext_sp(ctxt), NULL);
-  cursor->pc_norm   = (ip_normalized_t) ip_normalized_NULL;
+  cursor->pc_norm   = (ip_normalized_t) {0, 0};
   cursor->ra        = NULL;
   cursor->sp        = ucontext_sp(ctxt);
   cursor->bp        = NULL;
