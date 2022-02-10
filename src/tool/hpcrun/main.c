@@ -409,7 +409,7 @@ abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
   long pid = (long) getpid();
   EEMSG("hpcrun: abort timeout activated in process %ld - context pc %p", 
     pid, hpcrun_context_pc(context)); 
-  monitor_real_abort();
+  hpcrun_terminate();
   
   return 0; /* keep compiler happy, but can't get here */
 }
