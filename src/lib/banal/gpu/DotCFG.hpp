@@ -154,6 +154,13 @@ struct CudaInst : public Inst {
   }
 };
 
+inline int get_cuda_inst_size(int arch) {
+  return arch >= 70 ? 16 : 8;
+}
+
+inline int get_cuda_func_offset(int arch) {
+  return arch >= 70 ? 0 : 8;
+}
 
 struct Block;
 

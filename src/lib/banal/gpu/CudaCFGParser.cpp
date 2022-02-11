@@ -148,14 +148,14 @@ void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
       for (auto *inst : block->insts) {
         if (inst->is_call) {
           std::string &operand = inst->operands[0];
-          Function *callee_function = 0;
+          Function *callee_function = NULL;
           for (auto *ff : functions) {
-            if (ff->name == operand) {
+            if (operand == ff->name) {
               callee_function = ff;
               break;
             }
-          }
-          if (callee_function != 0) {
+          } 
+          if (callee_function != NULL) {
             bool find_target = false;
             Target *t = NULL;
             for (auto *target : block->targets) {
@@ -188,7 +188,7 @@ void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
 }
 
 
-void CudaCFGParser::find_block_parent(const std::vector<Block *> &blocks) {
+void CudaCFGParser::find_block_parent(const std::vector<Block *> &blocks, std::vector<size_t> &block_parent) {
   bool incoming_nodes[blocks.size()];
   std::fill(incoming_nodes, incoming_nodes + blocks.size(), false);
   for (auto *block : blocks) {
@@ -202,20 +202,20 @@ void CudaCFGParser::find_block_parent(const std::vector<Block *> &blocks) {
     if (visited[block->id] == false) {
       if (incoming_nodes[block->id] == false) {
         visited[block->id] = true;
-        _block_parent[block->id] = block->id;
-        unite_blocks(block, visited, block->id);
+        block_parent[block->id] = block->id;
+        unite_blocks(block, block->id, block_parent, visited);
       }
     }
   }
 }
 
 
-void CudaCFGParser::unite_blocks(const Block *block, bool *visited, size_t parent) {
+void CudaCFGParser::unite_blocks(const Block *block, size_t parent, std::vector<size_t> &block_parent, bool *visited) {
   for (auto *target : block->targets) {
     if (visited[target->block->id] == false) {
       visited[target->block->id] = true;
-      _block_parent[target->block->id] = parent;
-      unite_blocks(target->block, visited, parent);
+      block_parent[target->block->id] = parent;
+      unite_blocks(target->block, parent, block_parent, visited);
     }
   }
 }
@@ -286,12 +286,12 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
   }
 
   // Find toppest block
-  _block_parent.clear();
-  _block_parent.resize(blocks.size());
-  for (size_t i = 0; i < _block_parent.size(); ++i) {
-    _block_parent[i] = i;
+  std::vector<size_t> block_parent;
+  block_parent.resize(blocks.size());
+  for (size_t i = 0; i < block_parent.size(); ++i) {
+    block_parent[i] = i;
   }
-  find_block_parent(blocks);
+  find_block_parent(blocks, block_parent);
 
   // Build functions
   // Find dangling blocks
@@ -304,7 +304,7 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
   for (auto *block : blocks) {
     // Sort block targets according to inst offset
     std::sort(block->targets.begin(), block->targets.end(), compare_target_ptr);
-    if (_block_parent[block->id] == block->id) {
+    if (block_parent[block->id] == block->id) {
       // Filter out self contained useless loops. A normal function will not start with "."
       if (block_id_map[block->id]->name[0] == '.') {
         continue;
@@ -312,9 +312,9 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
       Function *function = new Function(function_id, block_id_map[block->id]->name);
       ++function_id;
       for (auto *bb : blocks) {
-        if (_block_parent[bb->id] == block->id) {
+        if (block_parent[bb->id] == block->id) {
           if (DEBUG_CUDA_CFGPARSER) {
-            std::cout << "Link " << bb->name << " with " << block_id_map[_block_parent[block->id]]->name << std::endl;
+            std::cout << "Link " << bb->name << " with " << block_id_map[block_parent[block->id]]->name << std::endl;
           }
           function->blocks.push_back(bb);
 
