@@ -154,7 +154,7 @@ void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
               callee_function = ff;
               break;
             }
-          } 
+          }
           if (callee_function != NULL) {
             bool find_target = false;
             Target *t = NULL;
