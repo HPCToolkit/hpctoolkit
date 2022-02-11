@@ -120,7 +120,7 @@ _spack_cache = {}
 _deps = {
   'libbfd': { 'propstems': ['bfd', 'binutils'], 'spack': 'binutils',
               'libs': ['bfd'], 'headers': ['bfd.h'],
-              'check_headers': true,
+              'check_headers': false,
             },
   'libiberty': { 'propstems': ['iberty', 'binutils'], 'spack': 'binutils',
                  'libs': ['iberty'], 'headers': ['libiberty/demangle.h'],

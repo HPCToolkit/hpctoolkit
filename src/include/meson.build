@@ -60,6 +60,7 @@ _rocm_dep = dependency('rocm-headers', required: false)
 _valgrind_dep = dependency('valgrind', required: get_option('valgrind-annotations'))
 
 hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
+    #define PACKAGE "binutils"
     #include <bfd.h>
     int main() {
       return bfd_section_vma((asection*)0);

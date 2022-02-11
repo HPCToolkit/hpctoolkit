@@ -70,6 +70,11 @@
 
 //***************************************************************************
 
+// bfd.h (incorrectly) assumes that config.h has already been included
+#ifndef PACKAGE
+#define PACKAGE  "hpctoolkit"
+#endif
+
 /* binutils/bfd/bfd.h only correctly tests for GNU compilers */
 #define TRUE_FALSE_ALREADY_DEFINED
 
