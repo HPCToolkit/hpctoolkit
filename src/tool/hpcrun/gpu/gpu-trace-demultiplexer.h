@@ -46,6 +46,7 @@
 #define gpu_trace_demultiplexer_h
 
 
+#include <pthread.h>
 
 //******************************************************************************
 // type declarations

@@ -5,6 +5,7 @@
 
 #include "sample-sources/blame-shift/blame-map.h"
 
+#include "hpcrun/cct/cct.h"
 
 /******************************************************************************
  * interface operations for clients 

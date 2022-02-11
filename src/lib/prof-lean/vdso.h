@@ -58,6 +58,8 @@
 #ifndef __VDSO_H__
 #define __VDSO_H__
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

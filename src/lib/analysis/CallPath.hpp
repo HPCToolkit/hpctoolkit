@@ -102,7 +102,7 @@ Prof::CallPath::Profile*
 read(const char* prof_fnm, uint groupId, uint rFlags = 0);
 
 static inline Prof::CallPath::Profile*
-read(const string& prof_fnm, uint groupId, uint rFlags = 0)
+read(const std::string& prof_fnm, uint groupId, uint rFlags = 0)
 {
   return read(prof_fnm.c_str(), groupId, rFlags);
 }
@@ -136,7 +136,7 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
-			   string agent, bool doNormalizeTy,
+			   std::string agent, bool doNormalizeTy,
                            bool printProgress);
 
 // lm is optional and may be NULL
@@ -153,7 +153,7 @@ void
 pruneBySummaryMetrics(Prof::CallPath::Profile& prof, uint8_t* prunedNodes);
 
 void
-normalize(Prof::CallPath::Profile& prof, string agent, bool doNormalizeTy);
+normalize(Prof::CallPath::Profile& prof, std::string agent, bool doNormalizeTy);
 
 void
 pruneStructTree(Prof::CallPath::Profile& prof);
@@ -164,10 +164,10 @@ pruneStructTree(Prof::CallPath::Profile& prof);
 // ---------------------------------------------------------
 
 void
-applyThreadMetricAgents(Prof::CallPath::Profile& prof, string agent);
+applyThreadMetricAgents(Prof::CallPath::Profile& prof, std::string agent);
 
 void
-applySummaryMetricAgents(Prof::CallPath::Profile& prof, string agent);
+applySummaryMetricAgents(Prof::CallPath::Profile& prof, std::string agent);
 
 
 // ---------------------------------------------------------

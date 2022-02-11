@@ -65,10 +65,6 @@
 
 //************************* System Include Files ****************************
 
-#ifndef _POSIX_SOURCE
-#  define _POSIX_SOURCE /* enable clockid_t */
-#endif
-
 #include <stdlib.h>
 #include <stdint.h>
 

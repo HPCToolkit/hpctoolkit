@@ -79,7 +79,7 @@ namespace Struct {
 
 void
 readStructure(Tree& structure, 
-	      const std::vector<string>& structureFiles,
+	      const std::vector<std::string>& structureFiles,
 	      PGMDocHandler::Doc_t docty, 
 	      DocHandlerArgs& docargs);
 

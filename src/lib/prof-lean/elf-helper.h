@@ -53,6 +53,8 @@
 #ifndef ELF_HELPER_H
 #define ELF_HELPER_H
 
+#include <gelf.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

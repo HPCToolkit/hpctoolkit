@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <string>
 #include <boost/graph/graphviz.hpp>
-#include <boost/graph/detail/read_graphviz_new.hpp>
 #include "Graph.hpp"
 
 namespace GPUParse {

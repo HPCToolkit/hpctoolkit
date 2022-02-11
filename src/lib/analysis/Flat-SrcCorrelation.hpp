@@ -130,7 +130,7 @@ public:
   dump() const;
 
 public:
-  typedef std::map<string, bool> StringToBoolMap;
+  typedef std::map<std::string, bool> StringToBoolMap;
 
   typedef std::pair<Prof::Flat::ProfileData*,
 		    Prof::Metric::ADescVec*> ProfToMetricsTuple;
@@ -151,7 +151,7 @@ private:
   computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
 
   void
-  computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
+  computeRawBatchJob_LM(const std::string& lmname, const std::string& lmname_orig,
 			Prof::Struct::Tree& structure,
 			ProfToMetricsTupleVec& profToMetricsVec,
 			bool useStruct);
@@ -174,7 +174,7 @@ private:
   clearRawBatch(ProfToMetricsTupleVec& batchJob);
 
   bool
-  hasStructure(const string& lmname, Prof::Struct::Tree& structure,
+  hasStructure(const std::string& lmname, Prof::Struct::Tree& structure,
 	       StringToBoolMap& hasStructureTbl);
 
   // -------------------------------------------------------
@@ -191,13 +191,13 @@ private:
   // -------------------------------------------------------
 
   Prof::Flat::ProfileData*
-  readProf(const string& fnm);
+  readProf(const std::string& fnm);
 
   void
   readProf(Prof::Flat::ProfileData* prof);
 
   BinUtil::LM*
-  openLM(const string& fnm);
+  openLM(const std::string& fnm);
 
   // -------------------------------------------------------
 
@@ -240,11 +240,11 @@ public:
   { }
 
   // Would be better to use realpath() and RealPathMgr
-  string
+  std::string
   replacePath(const char* oldpath) const
   { return m_driver->replacePath(oldpath); }
 
-  string
+  std::string
   replacePath(const std::string& oldpath) const
   { return m_driver->replacePath(oldpath); }
   

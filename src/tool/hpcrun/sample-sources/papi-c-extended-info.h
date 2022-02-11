@@ -1,6 +1,8 @@
 #ifndef PAPI_C_EXTENDED_INFO_H
 #define PAPI_C_EXTENDED_INFO_H
 
+#include <stdbool.h>
+
 typedef void (*get_event_set_proc_t)(int* ev_s);
 typedef int (*add_event_proc_t)(int ev_s, int evcode);
 typedef void (*finalize_event_set_proc_t)(void);

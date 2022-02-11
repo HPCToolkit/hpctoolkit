@@ -1,6 +1,10 @@
 #ifndef __undirected_h__
 #define __undirected_h__
 
+#include "lib/prof-lean/stdatomic.h"
+
+#include "hpcrun/cct/cct.h"
+
 /******************************************************************************
  * types 
  *****************************************************************************/

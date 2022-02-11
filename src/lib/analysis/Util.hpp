@@ -162,7 +162,7 @@ parseReplacePath(const std::string& arg);
 
 Prof::Struct::ACodeNode*
 demandStructure(VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, 
-		bool useStruct, const string* unknownProcNm = NULL);
+		bool useStruct, const std::string* unknownProcNm = NULL);
 
 
 // --------------------------------------------------------------------------

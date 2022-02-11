@@ -27,6 +27,8 @@
 #include "dwarf.h"
 #include "leb128.h"
 
+#include <assert.h>
+
 using DwarfLineInfo =
   std::vector< std::pair<uint64_t, std::pair<uint32_t, uint32_t> > >;
 

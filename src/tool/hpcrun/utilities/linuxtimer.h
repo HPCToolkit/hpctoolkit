@@ -53,6 +53,7 @@
 
 #include <time.h>
 #include <stdbool.h>
+#include <signal.h>
 
 
 

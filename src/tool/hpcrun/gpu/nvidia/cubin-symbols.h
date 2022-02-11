@@ -53,6 +53,7 @@
 #ifndef cubin_symbols_h
 #define cubin_symbols_h
 
+#include <stddef.h>
 
 
 //******************************************************************************
