@@ -1,0 +1,265 @@
+---
+# Whitespace
+## Widths
+AccessModifierOffset: -2
+ColumnLimit: 100
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+IndentWidth:     2
+SpacesBeforeTrailingComments: 2
+SpacesInLineCommentPrefix:
+  Minimum:         1
+  Maximum:         -1
+UseCRLF:         false
+UseTab:          Never
+# NOTE: Ignored when not using tabs
+TabWidth:        8
+
+## Alignments
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+
+## Braces
+BreakBeforeBraces: Attach
+# NOTE: The following are the full settings for the above being Attach
+BraceWrapping:
+  AfterCaseLabel:  false
+  AfterClass:      false
+  AfterControlStatement: Never
+  AfterEnum:       false
+  AfterFunction:   false
+  AfterNamespace:  false
+  AfterObjCDeclaration: false
+  AfterStruct:     false
+  AfterUnion:      false
+  AfterExternBlock: false
+  BeforeCatch:     false
+  BeforeElse:      false
+  BeforeLambdaBody: false
+  BeforeWhile:     false
+  IndentBraces:    false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+SpaceInEmptyBlock: false
+
+## Breaking Penalties
+PenaltyIndentedWhitespace: 0
+PenaltyBreakTemplateDeclaration: 2
+PenaltyBreakAssignment: 15
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyReturnTypeOnItsOwnLine: 60
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakComment: 300
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+
+## Other
+MaxEmptyLinesToKeep: 1
+
+
+# Include/Extern/PP/Using
+IncludeBlocks: Regroup
+SortIncludes: CaseInsensitive
+IndentExternBlock: NoIndent
+IndentPPDirectives: AfterHash
+# NOTE: -1 means just use IndentWidth
+PPIndentWidth: -1
+SortUsingDeclarations: true
+
+
+# Statements/Expressions
+SpaceBeforeParens: Never
+SpacesInConditionalStatement: false
+SpacesInSquareBrackets: false
+SpacesInParentheses: false
+SpaceBeforeSquareBrackets: false
+
+## Variables/Members
+AlignConsecutiveMacros: Consecutive
+AlignConsecutiveAssignments: None
+SpaceBeforeAssignmentOperators: true
+AlignConsecutiveBitFields: AcrossComments
+AlignConsecutiveDeclarations: None
+
+## Call Arguments
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: None
+BinPackArguments: true
+Cpp11BracedListStyle: true
+SpaceBeforeCpp11BracedList: false
+SpaceInEmptyParentheses: false
+
+## Expressions
+AlwaysBreakBeforeMultilineStrings: false
+AlignOperands: AlignAfterOperator
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+BreakStringLiterals: true
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpacesInCStyleCastParentheses: false
+
+## Switch
+AllowShortCaseLabelsOnASingleLine: true
+IndentCaseLabels: false
+IndentCaseBlocks: false
+SpaceBeforeCaseColon: false
+
+## If/Loops
+AllowShortLoopsOnASingleLine: false
+SpaceBeforeRangeBasedForLoopColon: true
+
+## Wrapping
+AllowShortBlocksOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: Never
+
+## Whitespace
+IndentGotoLabels: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: Signature
+
+## Types
+BitFieldColonSpacing: Both
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+SpaceAroundPointerQualifiers: Before
+
+
+# Classes
+## Class declaration
+BreakInheritanceList: BeforeColon
+SpaceBeforeInheritanceColon: true
+
+## Access Modifiers
+IndentAccessModifiers: false
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: LogicalBlock
+
+## Constructors
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+AllowAllConstructorInitializersOnNextLine: true
+SpaceBeforeCtorInitializerColon: true
+
+
+# Namespaces
+CompactNamespaces: false
+NamespaceIndentation: None
+FixNamespaceComments: true
+ShortNamespaceLines: 1
+
+
+# Functions/Declarations
+## Wrapping
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+# NOTE: Deprecated in 13, AlwaysBreakAfterReturnType is roughly equivalent
+#AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+AlwaysBreakTemplateDeclarations: MultiLine
+BinPackParameters: true
+BreakBeforeConceptDeclarations: true
+SpaceAfterTemplateKeyword: false
+
+## Whitespace
+IndentWrappedFunctionNames: false
+IndentRequires:  true
+SpacesInAngles:  Never
+
+## Short
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+
+
+# Project-specific configs
+AttributeMacros: []
+CommentPragmas:  '^ IWYU pragma:'
+ForEachMacros: []
+IfMacros: []
+IncludeCategories:
+# Prof2 Valgrind annotations header must always comes first, for techincal reasons
+  - Regex:           '/vgannotations\.hpp"$'
+    Priority:        -100
+    SortPriority:    0
+    CaseSensitive:   true
+# Headers in higher parts of hpcrun should be just after local headers
+  - Regex:           '^"hpcrun/'
+    Priority:        2
+    SortPriority:    0
+    CaseSensitive:   false
+# Cross-section headers should be after local/higher headers and before system ones
+  - Regex:           '^["<](\.\.|lib|include)/'
+    Priority:        3
+    SortPriority:    0
+    CaseSensitive:   false
+# System headers should be at the end
+  - Regex:           '^<'
+    Priority:        4
+    SortPriority:    0
+    CaseSensitive:   false
+# Everything else (local headers) is right after the main #include
+  - Regex:           '.*'
+    Priority:        1
+    SortPriority:    0
+    CaseSensitive:   false
+IncludeIsMainRegex: '$'
+IncludeIsMainSourceRegex: ''
+MacroBlockBegin: ''
+MacroBlockEnd:   ''
+StatementAttributeLikeMacros: []
+StatementMacros: []
+WhitespaceSensitiveMacros: []
+Standard: c++17
+
+
+# Operation settings
+DisableFormat:   false
+ReflowComments:  true
+
+
+# Auto-detection
+ExperimentalAutoDetectBinPacking: false
+DeriveLineEnding: false
+DerivePointerAlignment: false
+
+
+# Missing or Unneeded for C/C++
+#BreakBeforeInheritanceComma: false
+#BreakConstructorInitializersBeforeComma: false
+#BreakAfterJavaFieldAnnotations: false
+#JavaScriptQuotes: Leave
+#JavaScriptWrapImports: true
+#ObjCBinPackProtocolList: Auto
+#ObjCBlockIndentWidth: 2
+#ObjCBreakBeforeNestedBlockParam: true
+#ObjCSpaceAfterProperty: false
+#ObjCSpaceBeforeProtocolList: true
+#SortJavaStaticImport: Before
+#SpacesInContainerLiterals: true
+#InsertTrailingCommas: None
+
+# Disable formatting for languages C can't be mistaken for
+---
+Language: Proto
+DisableFormat: true
+---
+Language: Java
+DisableFormat: true
+---
+Language: JavaScript
+DisableFormat: true
+---
+Language: Json
+DisableFormat: true
+---
+Language: TableGen
+DisableFormat: true
+---
+Language: TextProto
+DisableFormat: true
+---
+Language: CSharp
+DisableFormat: true
+...
