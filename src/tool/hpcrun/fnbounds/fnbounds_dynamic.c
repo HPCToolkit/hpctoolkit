@@ -220,7 +220,6 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 load_module_t*
 fnbounds_map_dso(const char *module_name, void *start, void *end, struct dl_phdr_info* info)
 {
-  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
   dso_info_t *dso = fnbounds_compute(module_name, start, end);
   if (dso) {
     load_module_t* lm = hpcrun_loadmap_map(dso);
