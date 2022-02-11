@@ -121,27 +121,42 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 	@cpubin_name=`basename -s x $<`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$cpubin_name.warnings
+	# cache_stat=$(STRUCTS_DIR)/$$cpubin_name.cachestat
+	@echo  DEBUG cpubin = $$cpu_bin_name
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
+	meas_dir=$(MEAS_DIR)
+	# echo DEBUG meas_dir = $$meas_dir
+
 	if test $$nbytes -gt $(CPAR_SIZE) ; then
+		# inform the user the analysis is starting
+		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$cpubin_name \\(size = $$nbytes, using $(THREADS) threads\\)
+		    echo  \\ begin parallel analysis of CPU binary $$cpubin_name \\(size = $$nbytes, threads = $(THREADS) \\)
+		    PARSTAT=parallel
 		else
-			echo msg: begin concurrent analysis of $$cpubin_name \\(size = $$nbytes, using 1 of $(JOBS) threads\\)
+		    echo \\ begin concurrent analysis of CPU binary $$cpubin_name \\(size = $$nbytes, threads = 1 of a possible $(JOBS) \\)
 		fi
-		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
-		if test -s $$warn_name ; then
-			echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
-			if test ! -s $$struct_name ; then
-				rm -f $$struct_name
-			fi
-		else
-			rm -f $$warn_name
+
+		#  invoke hpcstruct on the CPU binary in the measurements directory
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1
+		# echo DEBUG: hpcstruct for analysis of CPU binary $$cpubin_name returned
+
+		# See if there is anything to worry about in the warnings file
+		#  suppress any ADVICE, NOTE, DEBUG, and CACHESTAT lines and any blank lines;
+		#  it's an error if anything remains
+                #
+		errs=`sed 's/^$//NOTE/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
+
+		# echo DEBUG errs = XX $$errs XX
+		if [ $${errs} -eq 1 ] ; then
+		    echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 		fi
-		if test $(THREADS) -gt 1 ; then
-			echo msg: end parallel analysis of $$cpubin_name
-		else
-			echo msg: end concurrent analysis of $$cpubin_name
-		fi
+
+		# extract the status relative to the cache
+		CACHE_STAT=`grep CACHESTAT $$warn_name | sed 's/CACHESTAT// ' `
+		# echo DEBUG CACHE_STAT = XX $$CACHE_STAT XX
+		echo \\ \\ \\ end  $$PARSTAT analysis of CPU binary $$cpubin_name $$CACHE_STAT
+
 	fi
 
 #-------------------------------------------------------------------------------
@@ -155,27 +170,41 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 	@gpubin_name=`basename -s x $<`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$gpubin_name.warnings
+	cache_stat=$(STRUCTS_DIR)/$$gpubin_name.cachestat
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
+	meas_dir=$(MEAS_DIR)
+	# echo DEBUG meas_dir = $$meas_dir
+
 	if test $$nbytes -gt $(GPAR_SIZE) ; then
+		# tell user we're starting
+		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$gpubin_name \\(size = $$nbytes, using $(THREADS) threads\\)
+		    PARSTAT=parallel
+		    echo \\ begin parallel [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \\(size = $$nbytes, threads = $(THREADS) \\)
 		else
-			echo msg: begin concurrent analysis of $$gpubin_name \\(size = $$nbytes, using 1 of $(JOBS) threads\\)
+		    echo \\ begin concurrent [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \\(size = $$nbytes, threads = 1 of a possible $(JOBS) \\)
 		fi
-		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
-		if test -s $$warn_name ; then
-			echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
-			if test ! -s $$struct_name ; then
-				rm -f $$struct_name
-			fi
-		else
-			rm -f $$warn_name
+
+		# invoke hpcstruct to process the gpu binary
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1
+		# echo debug: hpcstruct for analysis of GPU binary $$gpubin_name returned
+
+		# See if there is anything to worry about in the warnings file
+		#  suppress any ADVICE, NOTE, DEBUG, and CACHESTAT lines and any blank lines;
+		#  it's an error if anything remains
+		#
+		errs=`sed 's/^$/NOTE//g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
+		# echo DEBUG errs = XX $$errs XX
+
+		if [ $${errs} -eq 1 ] ; then
+		    echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 		fi
-		if test $(THREADS) -gt 1 ; then
-			echo msg: end parallel analysis of $$gpubin_name
-		else
-			echo msg: end concurrent analysis of $$gpubin_name
-		fi
+
+		# extract the status relative to the cache
+		CACHE_STAT=`grep CACHESTAT $$warn_name  | sed 's/CACHESTAT// ' `
+		# echo DEBUG CACHE_STAT = XX $$CACHE_STAT XX
+
+		echo \\ \\ \\ end  $$PARSTAT [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name $$CACHE_STAT
 	fi
 
 #-------------------------------------------------------------------------------
@@ -216,6 +245,5 @@ clean:
 	@echo removing all links to CPU binaries in $(CPUBIN_DIR)
 	@rm -rf $(CPUBIN_DIR)
 	@rm -rf $(LM_DIR)
-	@echo removing all warnings in $(STRUCTS_DIR)
+	@echo removing all warnings files in $(STRUCTS_DIR)
 	@rm -f $(CW)
-	@rm -f $(GW)
