@@ -573,7 +573,7 @@ hpcrun_save_vdso()
   strcat(name, "/vdso/");
   mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   strcat(name, vdso_hash_str);
-  strcat(name, ".[vdso]");  
+  strcat(name, ".vdso");
 
   // loop enables us to use break for unstructured control flow
   for(;;) {

@@ -286,7 +286,7 @@ doSingleBinary
   const char * cache_stat_str;
   switch( args.cache_stat ) {
     case CACHE_NOT_NAMED:
-      cache_stat_str = " (Cache not named)";
+      cache_stat_str = " (Cache not specified)";
       break;
     case CACHE_DISABLED:
       cache_stat_str = " (Cache disabled by user)";
