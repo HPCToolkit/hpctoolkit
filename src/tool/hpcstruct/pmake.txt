@@ -52,7 +52,7 @@ endif
 ifneq ($(CACHE),"")
 CACHE_ARGS = -c $(CACHE)
 else
-CACHE_ARGS = --nocache
+CACHE_ARGS = ""
 endif
 
 
@@ -191,11 +191,11 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 		#  suppress any ADVICE, NOTE, DEBUG, and CACHESTAT lines and any blank lines;
 		#  it's an error if anything remains
 		#
-		errs=`sed 's/^$/NOTE//g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
+		errs=`sed 's/^$//NOTE/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
 		# echo DEBUG errs = XX $$errs XX
 
 		if [ $${errs} -eq 1 ] ; then
-		    echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
+		    echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
 		fi
 
 		# extract the status relative to the cache
