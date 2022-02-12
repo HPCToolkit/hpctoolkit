@@ -57,97 +57,73 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
-
-//************************* System Include Files ****************************
-
-#include <iostream>
-#include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-typedef enum { CACHE_DISABLED, CACHE_ENABLED, CACHE_NOT_NAMED, CACHE_ENTRY_COPIED, CACHE_ENTRY_COPIED_RENAME, CACHE_ENTRY_ADDED,
-        CACHE_ENTRY_ADDED_RENAME, CACHE_ENTRY_REPLACED, CACHE_ENTRY_REMOVED } cachestat_t;
-
-//***************************************************************************
-
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
-
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
+class FileOutputStream {
 public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  int jobs;
-  int jobs_struct;
-  int jobs_parse;
-  int jobs_symtab;
-  bool show_time;
-  long parallel_analysis_threshold; 
-  bool analyze_cpu_binaries ;     // default: true
-  bool analyze_gpu_binaries ;     // default: true
-  bool compute_gpu_cfg;
-  std::string meas_dir;
-  bool is_from_makefile;	// set true if -M argument is seen
-  cachestat_t cache_stat;	// reflects cache interactions for the binary
-
-  // Parsed Data: optional arguments
-  std::string searchPathStr;          // default: "."
-  std::string dbgProcGlob;
-
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-  bool nocache;                   // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-  std::string out_filenm;
-  std::string cache_directory;
+  FileOutputStream() : stream(0), buffer(0), use_cache(false),
+		       is_cached(false) {
+  };
+  void init(const char *cache_path_directory, const char *cache_flat_directory, const char *kind,
+	    const char *result) {
+    name = strdup(result);
+    if (cache_path_directory && cache_path_directory[0] != 0) {
+      use_cache = true;
+      stream_name = hpcstruct_cache_entry(cache_path_directory, kind);
+      flat_name = hpcstruct_cache_entry(cache_flat_directory, kind);
+    } else {
+      stream_name = name;
+    }
+  };
+  void open() {
+    if (!stream_name.empty()) {
+      stream = IOUtil::OpenOStream(stream_name.c_str());
+      buffer = new char[HPCIO_RWBufferSz];
+      stream->rdbuf()->pubsetbuf(buffer, HPCIO_RWBufferSz);
+    }
+  };
+  bool needed() {
+    bool needed = false;
+    if (!name.empty()) {
+      if (use_cache && (hpcstruct_cache_find(flat_name.c_str()) ||
+			hpcstruct_cache_find(stream_name.c_str()))) {
+	is_cached = true;
+	if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
+          global_args->cache_stat = CACHE_ENTRY_COPIED;
+        }
+      } else {
+	needed = true;
+	if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
+          global_args->cache_stat = CACHE_ENTRY_ADDED;
+        }
+      }
+    }
+    return needed;
+  };
+  void finalize(int error) {
+    if (stream) IOUtil::CloseStream(stream);
+    if (buffer) delete[] buffer;
+    if (!name.empty()) {
+      if (error) {
+	unlink(name.c_str());
+      } else {
+	if (use_cache) {
+	  if (hpcstruct_cache_find(flat_name.c_str())) {
+	    FileUtil::copy(name, flat_name);
+	  } else {
+	    FileUtil::copy(name, stream_name);
+	  }
+	}
+      }
+    }
+  };
+  std::ostream *getStream() { return stream; };
+  std::string &getName() { return name; };
 
 private:
-  void
-  Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-extern Args *global_args;
-
-#endif // Args_hpp 
+  std::ostream *stream;
+  std::string name;
+  std::string stream_name;
+  std::string flat_name;
+  char *buffer;
+  bool use_cache;
+  bool is_cached;
+};

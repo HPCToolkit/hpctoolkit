@@ -116,6 +116,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
   { 'c',  "cache",        CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
   {  0 ,  "nocache",      CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
+  { 'M',  "meas_dir",     CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
 
   // Structure recovery options
   {  0 ,  "gpucfg",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
@@ -181,6 +182,9 @@ Args::Ctor()
   searchPathStr = ".";
   show_gaps = false;
   compute_gpu_cfg = false;
+  meas_dir = "";
+  is_from_makefile = false;
+  cache_stat = CACHE_DISABLED;
 }
 
 
@@ -330,6 +334,12 @@ Args::parse(int argc, const char* const argv[])
       analyze_cpu_binaries = yes;
     }
 
+    if (parser.isOpt("meas_dir")) {
+      const string & arg = parser.getOptArg("meas_dir");
+      meas_dir = arg.c_str();
+      is_from_makefile = true;
+      // fprintf(stderr, "DEBUG meas_dir = %s; is_from_makefile set to true\n", meas_dir.c_str() );
+    }
     if (parser.isOpt("time")) {
       show_time = true;
     }
@@ -381,6 +391,12 @@ Args::parse(int argc, const char* const argv[])
 	out_filenm = base_filenm + ".hpcstruct";
       }
     }
+#if 0
+    fprintf(stderr, "DEBUG XXX in_filenm = `%s', is_from_makefile = %s\n",
+	in_filenm.c_str(),
+	(is_from_makefile == true ? "true" : (is_from_makefile == false? "false" : "bad value" ) ) );
+#endif
+
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());

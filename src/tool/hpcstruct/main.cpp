@@ -44,13 +44,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file is the main program for hpcstruct.  This side just
-// handles the argument list.  The real work is in makeStructure() in
-// lib/banal/Struct.cpp.
+// This file is the main program for hpcstruct
 //
-// This side now handles the case of a measurements directory with
-// GPU binaries.  We don't analyze anything here, just setup a Makefile and
-// launch the work for each GPU binary.
+// It handles its argument list, and decides what to do.
+//
+// It then manages the structure cache initialization.
+//  If a cache argument is not supplied, it checks for the
+//  environment variable for a cache name.  If none is found,
+//  an ADVICE message is written to the user, advising cache use.
+//  If a cache directory is specified and the directory exists,
+//  it is checked for read and write access.  If it does not exist,
+//  it is created.
+//
+// If the argument is a measurements directory, which may contain both
+//  CPU and GPU binaries, it writes a Makefile with commands for
+//  launching subsidiary hpcstruct commands, one for each binary.
+//  It then runs make with Makefile, which invokes those commands.
+//
+// If the argument is a single binary, hpstruct may have been invoked
+//  directly by a user or invoked for a binary in a measurements directory.
+//  The latter case is distinguished by a "-M measurements-dir" argument,
+//  which should never be used directly by a user.
+//  
+//  In either case, if a cache is specified, and the binary's structure
+//  file is found, it is copied to the output structure file.
+//  If no cache is specified, or the binary is not found in the cache,
+//  it sets up the data structures for the real processing, which is
+//  done in makeStructure() in lib/banal/Struct.cpp.
+//  After generating the structure file, if a cache is specified, the
+//  structure file is entered into the cache.
 
 //****************************** Include Files ******************************
 
@@ -93,220 +115,22 @@ using std::endl;
 #include <omp.h>
 #endif
 
+#include "hpcstruct.hpp"
+
 #define PRINT_ERROR(mesg)  \
   DIAG_EMsg(mesg << "\nTry 'hpcstruct --help' for more information.")
 
 using namespace std;
 
-static int
-realmain(int argc, char* argv[]);
+Args *global_args;
 
+// Internal functions
+static int realmain(int argc, char* argv[]);
 
-//***************************** Analyze Cubins ******************************
-
-static const char* analysis_makefile =
-#include "pmake.h"
-;
-
-// verify that measurements directory 
-// (1) is readable
-// (2) contains measurement files
-void
-verify_measurements_directory
-(
-  string &measurements_dir
-)
-{
-  DIR *dir = opendir(measurements_dir.c_str());
-  
-  if (dir != NULL) {
-    struct dirent *ent;
-    bool has_hpcrun = false;
-    while ((ent = readdir(dir)) != NULL) {
-      string file_name(ent->d_name);
-      if (file_name.find(".hpcrun") != string::npos) {
-        has_hpcrun = true;
-        break;
-      }
-    }
-    closedir(dir);
-    if (!has_hpcrun) {
-      DIAG_EMsg("Measurements directory " << measurements_dir <<
-                "does not contain any .hpcrun measurement files ");
-      exit(1);
-    }
-  } else {
-    DIAG_EMsg("Unable to open measurements directory " << measurements_dir 
-              << ": " << strerror(errno));
-    exit(1);
-  }
-}
-
-
-// check if measurements directory contains a GPU binary 
-bool
-check_gpubin
-(
-  string &measurements_dir
-)
-{
-  bool has_gpubin = false;
-
-  string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
-
-  DIR *dir = opendir(gpubin_dir.c_str());
-  if (dir != NULL) {
-    struct dirent *ent;
-    while ((ent = readdir(dir)) != NULL) {
-      string file_name(ent->d_name);
-      if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
-        has_gpubin = true;
-        break;
-      }
-    }
-    closedir(dir);
-  }
-
-  return has_gpubin;
-}
-
-
-void
-create_structs_directory
-(
-  string &structs_dir
-)
-{
-  int result_dir = mkdir(structs_dir.c_str(), 0755);
-
-  if (result_dir != 0 && errno != EEXIST) {
-    DIAG_EMsg("Unable to create results directory " << structs_dir 
-              << ": " << strerror(errno));
-    exit(1);
-  }
-}
-
-void
-open_makefile
-(
-  string &makefile_name,
-  fstream &makefile
-)
-{
-  makefile.open(makefile_name, fstream::out | fstream::trunc);
-
-  if (! makefile.is_open()) {
-    DIAG_EMsg("Unable to write file: " << makefile_name);
-    exit(1);
-  }
-}
-
-
-//
-// For a measurements directory, write a Makefile and launch hpcstruct
-// to analyze CPU and GPU binaries associated with the measurements
-//
-static void
-doMeasurementsDir
-(
- Args &args,
- BAnal::Struct::Options & opts
-)
-{
-  std::string measurements_dir = RealPath(args.in_filenm.c_str());
-
-  verify_measurements_directory(measurements_dir);
-
-  bool has_gpubin = check_gpubin(measurements_dir);
-
-  //
-  // Put hpctoolkit on PATH
-  //
-  char *path = getenv("PATH");
-  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
-
-  if (has_gpubin) {
-    // Put cuda (nvdisasm) on path.
-    new_path = new_path +":" + CUDA_INSTALL_PREFIX + "/bin";
-  }
-
-  setenv("PATH", new_path.c_str(), 1);
-
-  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
-    + "/libexec/hpctoolkit/hpcproftt";
-
-  string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
-    + "/bin/hpcstruct";
-
-  //
-  // Write Makefile and launch analysis.
-  //
-  string structs_dir = measurements_dir + "/structs";
-  create_structs_directory(structs_dir);
-
-  string makefile_name = structs_dir + "/Makefile";
-
-  fstream makefile;
-  open_makefile(makefile_name, makefile);
-
-  unsigned int pthreads;
-  unsigned int jobs;
-
-  if (opts.jobs == 0) { // not specified
-    unsigned int hwthreads = cpuset_hwthreads();
-    jobs = std::max(hwthreads/2, 1U);
-    pthreads = std::min(jobs, 16U);
-  } else {
-    jobs = opts.jobs;
-    pthreads = jobs;
-  }
-    
-  string cache_path;
-
-  if (!args.nocache) {
-    char *cpath = 0;
-    try {
-      cpath = hpcstruct_cache_directory(args.cache_directory.c_str(), "");
-    } catch(const Diagnostics::FatalException &e) {
-      exit(1);
-    };
-    if (cpath) {
-      cache_path = cpath;
-      if (!hpcstruct_cache_writable(cpath)) {
-	DIAG_EMsg("hpcstruct cache directory " << cpath << " not writable");
-	exit(1);
-      }
-    }
-  }
-
-  string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
-
-  makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
- 	   << "GPUBIN_CFG = "   << gpucfg << "\n"
-	   << "CPU_ANALYZE = "  << opts.analyze_cpu_binaries << "\n"
-	   << "GPU_ANALYZE = "  << opts.analyze_gpu_binaries << "\n"
-	   << "PAR_SIZE = "     << opts.parallel_analysis_threshold << "\n"
-	   << "JOBS = "         << jobs << "\n"
-	   << "PTHREADS = "     << pthreads << "\n"
-	   << "PROFTT = "       << hpcproftt_path << "\n"
-	   << "STRUCT= "        << hpcstruct_path << "\n";
-
-  if (!cache_path.empty()) {
-    makefile << "CACHE= "         << cache_path << "\n";
-  }
-
-  makefile << analysis_makefile << endl;
-
-  makefile.close();
-
-  string make_cmd = string("make -C ") + structs_dir + " -k --silent "
-      + " --no-print-directory all";
-
-  if (system(make_cmd.c_str()) != 0) {
-    DIAG_EMsg("Make hpcstruct files for measurement directory failed.");
-    exit(1);
-  }
-}
+// void verify_measurements_directory ( string &measurements_dir );
+// bool check_gpubin ( string &measurements_dir );
+// void create_structs_directory ( string &structs_dir );
+// void open_makefile ( string &makefile_name, fstream &makefile);
 
 //****************************** Main Program *******************************
 
@@ -334,207 +158,50 @@ main(int argc, char* argv[])
   }
 }
 
-class FileOutputStream {
-public:
-  FileOutputStream() : stream(0), buffer(0), use_cache(false),
-		       is_cached(false) {
-  };
-  void init(const char *cache_path_directory, const char *cache_flat_directory, const char *kind,
-	    const char *result) {
-    name = strdup(result);
-    if (cache_path_directory && cache_path_directory[0] != 0) {
-      use_cache = true;
-      stream_name = hpcstruct_cache_entry(cache_path_directory, kind);
-      flat_name = hpcstruct_cache_entry(cache_flat_directory, kind);
-    } else {
-      stream_name = name;
-    }
-  };
-  void open() {
-    if (!stream_name.empty()) {
-      stream = IOUtil::OpenOStream(stream_name.c_str());
-      buffer = new char[HPCIO_RWBufferSz];
-      stream->rdbuf()->pubsetbuf(buffer, HPCIO_RWBufferSz);
-    }
-  };
-  bool needed() {
-    bool needed = false;
-    if (!name.empty()) {
-      if (use_cache && (hpcstruct_cache_find(flat_name.c_str()) ||
-			hpcstruct_cache_find(stream_name.c_str()))) {
-	is_cached = true;
-      } else {
-	needed = true;
-      }
-    }
-    return needed;
-  };
-  void finalize(int error) {
-    if (stream) IOUtil::CloseStream(stream);
-    if (buffer) delete[] buffer;
-    if (!name.empty()) {
-      if (error) {
-	unlink(name.c_str());
-      } else {
-	if (use_cache) {
-	  if (hpcstruct_cache_find(flat_name.c_str())) {
-	    FileUtil::copy(name, flat_name);
-	  } else {
-	    FileUtil::copy(name, stream_name);
-	  }
-	}
-      }
-    }
-  };
-  std::ostream *getStream() { return stream; };
-  std::string &getName() { return name; };
 
-private:
-  std::ostream *stream;
-  std::string name;
-  std::string stream_name;
-  std::string flat_name;
-  char *buffer;
-  bool use_cache;
-  bool is_cached;
-};
-
-
-void
-singleApplicationBinary
-(
- Args &args,
- BAnal::Struct::Options &opts
-)
-{
-  if (args.show_gaps && args.out_filenm == "-") {
-    DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
-    exit(1);
-  }
-
-  bool gpu_binary = args.in_filenm.find(GPU_BINARY_SUFFIX) != string::npos;
-
-  string binary_abspath = RealPath(args.in_filenm.c_str());
-
-  string cache_path_directory;
-  string cache_flat_directory;
-  string cache_directory;
-
-  if (!args.nocache) {
-    char *path = hpcstruct_cache_directory(args.cache_directory.c_str(), "");
-    if (path) {
-      cache_directory = path;
-
-      char *hash = hpcstruct_cache_hash(binary_abspath.c_str());
-
-      cache_path_directory = hpcstruct_cache_path_directory(path, binary_abspath.c_str(), hash);
-      cache_flat_directory = hpcstruct_cache_flat_directory(path, hash);
-
-      string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
-      symlink(cache_path_link.c_str(), cache_flat_directory.c_str());
-    }
-  }
-
-  std::string hpcstruct_path =
-    (args.out_filenm == "-") ? "" : RealPath(args.out_filenm.c_str());
-
-  FileOutputStream gaps;
-  FileOutputStream hpcstruct;
-
-  string structure_name = "hpcstruct";
-
-  if (gpu_binary && args.compute_gpu_cfg) structure_name += "+gpucfg";
-
-  hpcstruct.init(cache_path_directory.c_str(), cache_flat_directory.c_str(),
-		 structure_name.c_str(), hpcstruct_path.c_str());
-
-  if (args.show_gaps) {
-    std::string gaps_path =
-      std::string(hpcstruct_path) + std::string(".gaps");
-    gaps.init(cache_path_directory.c_str(), cache_flat_directory.c_str(), "gaps",
-	      gaps_path.c_str());
-  }
-
-  int error = 0;
-
-  if (hpcstruct.needed() || gaps.needed()) {
-    hpcstruct.open();
-    gaps.open();
-    try {
-      BAnal::Struct::makeStructure(args.in_filenm, hpcstruct.getStream(),
-				   gaps.getStream(), gaps.getName(),
-				   args.searchPathStr, opts);
-    } catch (int n) {
-      error = n;
-    }
-  }
-
-  hpcstruct.finalize(error);
-  gaps.finalize(error);
-
-  if (error) exit(error);
-}
-
+//=====================================================================================
 
 static int
 realmain(int argc, char* argv[])
 {
+#if 0
+  fprintf(stderr, "DEBUG hpcstruct, argc = %d, pid = %d\n",
+    argc, getpid() );
+  
+  char **p = argv;
+  for (int i = 0; i < argc; i ++) {
+    fprintf(stderr, "DEBUG  argv[%d] = %s\n", i, *p);
+    p ++;
+  }
+#endif
+
   Args args(argc, argv);
+  global_args = &args;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
-
-  // ------------------------------------------------------------
-  // Parameters on how to run hpcstruct
-  // ------------------------------------------------------------
-
-  unsigned int jobs_struct;
-  unsigned int jobs_parse;
-  unsigned int jobs_symtab;
-
-#ifdef ENABLE_OPENMP
-  //
-  // Translate the args jobs to the struct opts jobs.  The specific
-  // overrides the general: for example, -j sets all three phases,
-  // --jobs-parse overrides just that one phase.
-  //
-
-  jobs_struct = (args.jobs_struct >= 1) ? args.jobs_struct : args.jobs;
-  jobs_parse  = (args.jobs_parse >= 1)  ? args.jobs_parse  : args.jobs;
-
-#ifndef ENABLE_OPENMP_SYMTAB
-  jobs_symtab = 1;
-#else
-  jobs_symtab = (args.jobs_symtab >= 1) ? args.jobs_symtab : args.jobs;
-#endif
-
-  omp_set_num_threads(1);
-
-#else
-  jobs_struct = 1;
-  jobs_parse = 1;
-  jobs_symtab = 1;
-#endif
-
-  BAnal::Struct::Options opts;
-
-  opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
-	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
-	   args.compute_gpu_cfg, args.parallel_analysis_threshold);
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately
   // ------------------------------------------------------------
   struct stat sb;
 
-  if (stat(args.in_filenm.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+  if ( stat(args.in_filenm.c_str(), &sb) != 0 ) {
+    cerr << "ERROR -- input file " << args.in_filenm.c_str() << " does not exist" << endl;
+    exit(1);
+  }
+
+  if ( S_ISDIR(sb.st_mode) ) {
     if (!args.out_filenm.empty()) {
       DIAG_EMsg("Outfile file may not be specified when analyzing a measurement directory.");
       exit(1);
     }
-    doMeasurementsDir(args, opts);
+
+    doMeasurementsDir(args, &sb);
+
   } else {
-    singleApplicationBinary(args, opts);
+    // Process a single binary, passing in its stat result
+    doSingleBinary(args, &sb );
   }
   return 0;
 }

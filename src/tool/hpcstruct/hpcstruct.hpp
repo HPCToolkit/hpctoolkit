@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2002-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,101 +44,17 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   Structure-Cache.hpp
-//
-// Purpose:
-//   functions that support management of a cache for hpcstruct files
-//
-//***************************************************************************
+#ifndef hpcstruct_hpp
+#define hpcstruct_hpp
 
-#ifndef Structure_Cache_hpp
-#define Structure_Cache_hpp
 
 #include "Args.hpp"
+#include "Structure-Cache.hpp"
+// #include <lib/banal/Struct.hpp>
 
+void doSingleBinary( Args &args, struct stat *sb);
+void doMeasurementsDir ( Args &args, struct stat *sb);
 
-//***************************************************************************
-// interface operations
-//***************************************************************************
+void verify_measurements_directory(std::string &measurements_dir);
 
-char *
-hpcstruct_cache_path_directory
-(
- const char *cache_dir,
- const char *binary_abspath,
- const char *hash // hash for elf file
-);
-
-
-char *
-hpcstruct_cache_path_link
-(
- const char *binary_abspath,
- const char *hash // hash for elf file
-);
-
-
-char *
-hpcstruct_cache_entry
-(
- const char *directory,
- const char *kind
-);
-
-
-char *
-hpcstruct_cache_flat_directory
-(
- const char *cache_dir,
- const char *hash // hash for elf file
-);
-
-
-char *
-hpcstruct_cache_directory
-(
- const char *cache_dir,
- const char *kind,
- Args *args
-);
-
-
-bool
-hpcstruct_cache_find
-(
- const char *cached_entry
-);
-
-
-char *
-hpcstruct_cache_hash
-(
- const char *binary_abspath
-);
-
-
-bool
-hpcstruct_cache_writable
-(
- const char *cache_dir
-);
-
-
-void
-hpcstruct_reify_path
-(
- const char *path
-);
-
-
-void
-hpcstruct_reify_path_parent
-(
- const char *path
-);
-
-
-#endif
+#endif //hpcstruct_hpp
