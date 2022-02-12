@@ -19,7 +19,13 @@ GPUBIN_DIR  = $(MEAS_DIR)/gpubins
 STRUCTS_DIR = $(MEAS_DIR)/structs
 
 #*******************************************************************************
+# calculate the alternate kind of GPU CFG analysis 
 #*******************************************************************************
+ifeq ($(GPUBIN_CFG),yes)
+GPUBIN_CFG_ALT = no
+else
+GPUBIN_CFG_ALT = yes
+endif
 
 #*******************************************************************************
 # enable analysis of GPU binaries
@@ -34,7 +40,7 @@ GB := $(wildcard $(GPUBIN_DIR)/*.gpubin)
 #-------------------------------------------------------------------------------
 # $(GS): hpcstruct files for gpubins
 #-------------------------------------------------------------------------------
-GS := $(patsubst $(GPUBIN_DIR)/%,$(STRUCTS_DIR)/%.hpcstruct,$(GB))
+GS := $(patsubst $(GPUBIN_DIR)/%,$(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct,$(GB))
 
 #-------------------------------------------------------------------------------
 # $(GW): warning files that may be generated during structure analysis of gpubins
@@ -165,10 +171,12 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 # 3. leave a warnings file in $(STRUCTS_DIR) if trouble arises
 # 4. announce when analysis of a gpubin begins and ends
 #-------------------------------------------------------------------------------
-$(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
+$(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 	@gpubin_name=`basename -s x $<`
 	struct_name=$@
-	warn_name=$(STRUCTS_DIR)/$$gpubin_name.warnings
+	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).hpcstruct
+	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).warnings
+	warn_name=$(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG).warnings
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
 	meas_dir=$(MEAS_DIR)
 	# echo DEBUG meas_dir = $$meas_dir
@@ -245,3 +253,4 @@ clean:
 	@rm -rf $(LM_DIR)
 	@echo removing all warnings files in $(STRUCTS_DIR)
 	@rm -f $(CW)
+	@rm -f $(GW)
