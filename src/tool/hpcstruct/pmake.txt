@@ -121,8 +121,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 	@cpubin_name=`basename -s x $<`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$cpubin_name.warnings
-	# cache_stat=$(STRUCTS_DIR)/$$cpubin_name.cachestat
-	@echo  DEBUG cpubin = $$cpu_bin_name
+	# @echo  DEBUG cpubin = $$cpu_bin_name
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
 	meas_dir=$(MEAS_DIR)
 	# echo DEBUG meas_dir = $$meas_dir
@@ -170,7 +169,6 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 	@gpubin_name=`basename -s x $<`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$gpubin_name.warnings
-	cache_stat=$(STRUCTS_DIR)/$$gpubin_name.cachestat
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
 	meas_dir=$(MEAS_DIR)
 	# echo DEBUG meas_dir = $$meas_dir
