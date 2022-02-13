@@ -138,6 +138,11 @@ doSingleBinary
     exit(1);
   }
 
+  // Now that we've set the BAnal options, we can force jobs to be non-zero
+  if (args.jobs == 0 ){
+    args.jobs = 1;
+  }
+
   bool gpu_binary = args.in_filenm.find(GPU_BINARY_SUFFIX) != string::npos;
 
   string binary_abspath = RealPath(args.in_filenm.c_str());
@@ -198,11 +203,27 @@ doSingleBinary
     if (gpu_binary == true ) {
       std::cerr << " begin [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
         << "] analysis of " "GPU binary "
-        << args.in_filenm.c_str() << " (size = " << sb->st_size << " )" << std::endl;
+        << args.in_filenm.c_str() << " (size = " << sb->st_size
+	<< ", threads = " << args.jobs << " )" << std::endl;
     } else {
       std::cerr << " begin analysis of CPU binary "
-        << args.in_filenm.c_str() << " (size = " << sb->st_size << " )" << std::endl;
+        << args.in_filenm.c_str() << " (size = " << sb->st_size
+	<< ", threads = " << args.jobs << " )" << std::endl;
     }
+  }
+
+  hpcstruct.init(cache_path_directory.c_str(), cache_flat_directory.c_str(),
+		 structure_name.c_str(), hpcstruct_path.c_str());
+
+#if 0
+  cerr << "DEBUG singleApplicationBinary  -- hpcstruct.init done -- hpcstruct_path = " << hpcstruct_path.c_str() << endl;
+#endif
+
+  if (args.show_gaps) {
+    std::string gaps_path =
+      std::string(hpcstruct_path) + std::string(".gaps");
+    gaps.init(cache_path_directory.c_str(), cache_flat_directory.c_str(), "gaps",
+	      gaps_path.c_str());
   }
 
   hpcstruct.init(cache_path_directory.c_str(), cache_flat_directory.c_str(),

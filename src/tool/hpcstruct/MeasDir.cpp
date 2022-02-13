@@ -131,18 +131,6 @@ doMeasurementsDir
   string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
     + "/bin/hpcstruct";
 
-#if 0
-  // XXXX  John to add deleting mismatched gpucfg GPU structs from cache directory
-  // delete the structs directory already in the measurements directory
-  string delcmd = "/bin/rm -rf " + measurements_dir + "/structs";
-  // cerr << "DEBUG -- deleting the structs directory with command " << delcmd.c_str() << endl;
-  if (system(delcmd.c_str()) != 0) {
-    DIAG_EMsg("Unable to remove structs directory.");
-    exit(1);
-  }
-  // cerr << "DEBUG -- deletion of " << measurements_dir + "/structs" << " succeeded" << endl;
-#endif
-
   //
   // Write Makefile and launch analysis.
   //
