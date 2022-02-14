@@ -62,26 +62,52 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcstruct} recovers the program structure for all CPU and GPU
-binaries referenced by a directory containing HPCToolkit performance
-measurements. If needed, one can apply \Prog{hpcstruct} to recover program
+\Prog{hpcstruct} generates a program structure file for each CPU and GPU
+binary referenced by a directory containing HPCToolkit performance
+measurements.
+\Prog{hpcstruct} is usually run against an application's HPCToolkit \Arg{measurement-directory} directing
+it to analyze all CPU and GPU binaries recorded within it.
+Although no normally needed, one can apply \Prog{hpcstruct} to recover program
 structure for an individual CPU or GPU binary.
 
-During execution of a any application, HPCToolkit records the name of the application binary,
-and the names of any shared-libraries used. During execution of a GPU-accelerated application,
-HPCToolkit also records GPU binaries in the application's measurement directory.
+When \Prog{hpcprof} is applied to a \Arg{measurement-directory} that contains program structure files,
+those program structure files will be used to help attribute performance measurements.
 
-Normally, \Prog{hpcstruct} is run against an application's HPCToolkit \Arg{measurement-directory} directing
-it to analyze all CPU and GPU binaries recorded within.
+\Prog{hpcstruct} is designed to cache its results so that processing multiple measurement directories
+can copy previously generated structure files from the cache rather than regenerating the information.
+A cache may be specified either on the command line (see the -C option, below) or
+by setting the HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
+\Prog{hpcstruct} emits a message for each binary processed saying one of "Added to cache",
+"Copied from cache", or "Copied from cache +".  The latter indicates that although the structure file was found in the
+cache, it came from the identical binary with a different full path, so it was edited to reflect the actual path.
+If the \Arg{--nocache} option will not use the cache, even if the environment variable is set, and the message
+will say "(Cache disabled by user)".
+Users are strongly urged to use a cache.
+
+When an application execution is measured using \Prog{hpcrun}, HPCToolkit records the name of the application binary,
+and the names of any shared-libraries and GPU binaries it used. As a GPU-accelerated application is measured,
+HPCToolkit also records the contentes of any GPU binaries it loads in the application's measurement directory.
 
 When analyzing a \Arg{measurement-directory},  \Prog{hpcstruct} writes its results into a subdirectory of the directory.
 It analyzes the application and all the shared libraries used during the run, as well as any
 GPU binaries recorded in the directory.  It also puts links to all shared libraries in another subdirectory.
-When \Prog{hpcprof} is applied to a measurement directory that contains program structure files,
-those program structure files will be used to help attribute performance measurements.
+When rerun against a \Arg{measurement-directory},  \Prog{hpcstruct} will reprocess only those GPU binaries that were
+previously processed with a different \Arg{--gpucfg} setting.
 
-When analyzing a CPU or GPU binary \Arg{b}, \Prog{hpcstruct} only writes its results to the file
-'basename(\Arg{b}).hpcstruct', and does not link to the binary.
+To accelerate analysis of a measurement directory, which contains
+references to an application as well as any shared libraries
+and/or GPU binaries it uses, \Prog{hpcstruct} employs multiple threads by
+default. Multiple small binaries are analyzed concurrently, using one single-threads
+process per binary. By default, this analysis will use half of the
+CPUs in the CPU set for the process. Binaries larger than a certain
+threshold (see the \Arg{--psize} option and its default) are analyzed using
+multiple threads. By default, large binaries will be analyzed using
+the minimum of half of the CPUs in the CPU set for the process or 16 OpenMP threads.
+
+When analyzing a single CPU or GPU binary \Arg{b}, \Prog{hpcstruct} only writes its results to the file
+'basename(\Arg{b}).hpcstruct' in the current directory, and does not link to the binary.
+When rerun against a single binary, it will reprocess that binary and rewrite
+its structure file.
 
 Program structure is a mapping from addresses of machine instructions
 in a binary to source code contexts; this mapping is used to attribute
@@ -99,16 +125,6 @@ binaries be compiled with standard debug information or at a minimum,
 line map information. Typically, this is accomplished by passing a '-g'
 option to each compiler along with any optimization flags. See the
 HPCToolkit manual for more information.
-
-To accelerate analysis of a measurement directory, which contains
-references to an application as well as any shared libraries
-and/or GPU binaries it uses, \Prog{hpcstruct} employs multiple threads by
-default. Multiple small binaries are analyzed concurrently, using one
-thread per binary. By default, this analysis will use half of the
-threads in the CPU set for the process. Binaries larger than a certain
-threshold (see the --psize option and its default) are analyzed using
-multiple threads. By default, large binaries will be analyzed using
-min(half of the threads in the CPU set for the process, 16) threads.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -148,7 +164,13 @@ Generate progress messages to stderr, at verbosity level \Arg{num}. {1}
 
 \subsection{Options: Override parallel defaults}
 \item[\OptArg{-j}{num}, \OptArg{--jobs}{num}]
-Use \Arg{num} threads in \Prog{hpcstruct}.
+Specify the degree of parallelism to be used in processing.
+When processing a \Arg{measurement directory},large binaries (size greater than \Arg{psize})
+are processed first, one at a time, with each using
+\Arg{num} OpenMP threads in \Prog{hpcstruct}.
+Following that, all other binaries are processes concurrently with \Arg{num} 
+processes running, each using one OpenMP thread.
+When processing a single binary, \Arg{num} OpenMP threads are used.
 
 \item[\OptArg{--psize}{n}]
 Size, in bytes, of a binary that will cause \Prog{hpcstruct}
@@ -229,8 +251,8 @@ Display the time and space usage per phase in \Prog{hpcstruct}.
 \subsection{Options used internally, but not for user use}
 
 \item[\OptArg{-M}{dirname}]
-Indicate that the invocation of hpcstruct comes from the Makefile generated
-by processing a measurements-directory.
+Indicate that the invocation of \Prog{hpcstruct} comes from the Makefile generated
+by processing a \Arg{measurements-directory}.
 
 \end{Description}
 

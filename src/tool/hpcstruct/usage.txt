@@ -46,9 +46,13 @@ Options: Control caching of structure files
                        a structure cache will be suppressed.
 
 Options: Override parallelism defaults
-  -j <num>, --jobs <num> Use <num> threads for for concurrent analysis of
-                       small binaries. Use <num> threads for parallel
-                       analysis of binaries of greater than <psize>.
+  -j <num>, --jobs <num> Specify the degree of parallelism to be used in processing.
+                       When processing a measurement directory,large binaries (size greater
+                       than <psize>) are processed first, one at a time, with each using <num>
+                       OpenMP threads in hpcstruct.  Following that, all other binaries
+                       are  processed concurrently with <num> processes running, each using
+                       one OpenMP thread.  When processing a single binary, <num> OpenMP
+                       threads are used.
   --psize <psize>      Size (bytes) of a binary that will cause hpcstruct
                        to use threads to analyze a binary in parallel.
                        Binaries with fewer than <psize> bytes will be analyzed
