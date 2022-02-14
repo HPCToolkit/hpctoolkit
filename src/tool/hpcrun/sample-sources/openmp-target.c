@@ -43,7 +43,6 @@
 #include <hpcrun/control-knob.h>
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/gpu/amd/roctracer-api.h>
-#include <hpcrun/gpu/amd/rocprofiler-api.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
@@ -63,7 +62,6 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-#include <roctracer_hip.h>
 
 
 
@@ -71,9 +69,8 @@
 // macros
 //******************************************************************************
 
-#define AMD_ROCM "gpu=amd"
+#define OPENMP_TARGET "gpu=openmp"
 
-static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
@@ -138,7 +135,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-    return hpcrun_ev_is(ev_str, AMD_ROCM);
+    return hpcrun_ev_is(ev_str, OPENMP_TARGET);
 #else
     return false;
 #endif
@@ -158,36 +155,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-#ifndef HPCRUN_STATIC_LINK
-  if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
-    monitor_real_exit(-1);
-  }
-#endif
-
-#if 0
-  // Fetch the event string for the sample source
-  // only one event is allowed
-  char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-#endif
-  roctracer_init();
-
-  device_finalizer_flush.fn = roctracer_flush;
-  device_finalizer_register(device_finalizer_type_flush, 
-                            &device_finalizer_flush);
-
-  device_finalizer_shutdown.fn = roctracer_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, 
-                            &device_finalizer_shutdown);
-
-  // initialize gpu tracing 
-  gpu_trace_init();
-
-  // Register shutdown function to finalize gpu tracing and write trace files
-  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, 
-                            &device_trace_finalizer_shutdown);
+    gpu_metrics_default_enable();
+    gpu_trace_init();
 }
 
 
@@ -206,10 +175,10 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tComprehensive operation-level monitoring on an AMD GPU.\n"
+  printf("%s\t\tOperation-level monitoring of OpenMP offloading.\n"
 	 "\t\tCollect timing information on GPU kernel invocations,\n"
 	 "\t\tmemory copies, etc.\n",
-	 AMD_ROCM);
+	 OPENMP_TARGET);
   printf("\n");
 }
 
@@ -219,7 +188,7 @@ METHOD_FN(display_events)
 // object
 //**************************************************************************
 
-#define ss_name amd_gpu
+#define ss_name openmp_gpu
 #define ss_cls SS_HARDWARE
 
 #include "ss_obj.h"

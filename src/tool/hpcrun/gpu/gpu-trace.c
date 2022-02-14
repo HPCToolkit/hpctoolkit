@@ -480,8 +480,11 @@ consume_one_trace_item
 
   if (append) {
     gpu_trace_stream_append(td, leaf, start);
-    gpu_trace_stream_append(td, no_activity, end + 1);
 
-    PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
+    // note: adding 1 to end makes sense. however, with AMD OMPT, this
+    // causes adjacent events to share a timestamp. so, don't add 1.
+    gpu_trace_stream_append(td, no_activity, end);
+
+    PRINT("%p Append trace activity [%lu, %lu)\n", td, start, end);
   }
 }

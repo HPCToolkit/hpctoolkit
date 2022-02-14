@@ -58,6 +58,14 @@ roctracer_init
 
 
 void
+roctracer_flush
+(
+ void *args,
+ int how
+);
+
+
+void
 roctracer_fini
 (
  void *args,

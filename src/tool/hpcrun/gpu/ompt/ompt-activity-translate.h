@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -12,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,70 +41,39 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __OMPT_DEVICE_H__
-#define __OMPT_DEVICE_H__
-
-#include <stdbool.h>
-#include <include/hpctoolkit-config.h>
-#include <cct/cct.h>
-
-void 
-prepare_device
-(
- void
-);
+#ifndef ompt_activity_translate_h
+#define ompt_activity_translate_h
 
 
-//---------------------------------------------
-// If a API is invoked by OMPT (TRUE/FALSE)
-//---------------------------------------------
+//******************************************************************************
+// OpenMP includes
+//******************************************************************************
 
-bool
-ompt_runtime_status_get
-(
- void
-);
+#include <omp-tools.h>
 
 
-cct_node_t *
-ompt_trace_node_get
-(
- void
-);
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef struct gpu_activity_t gpu_activity_t;
+typedef struct cct_node_t cct_node_t;
 
 
-//-----------------------------------------------------------------------------
-// NVIDIA GPU pc sampling support
-//-----------------------------------------------------------------------------
 
-void 
-ompt_pc_sampling_enable
-(
- void 
-);
-
-
-void 
-ompt_pc_sampling_disable
-(
- void
-);
-
-//-----------------------------------------------------------------------------
-// Use hpctoolkit callback/OMPT callback
-//-----------------------------------------------------------------------------
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
 void
-ompt_external_subscriber_enable
+ompt_activity_translate
 (
- void
+ gpu_activity_t *entry,
+ ompt_record_ompt_t *record,
+ uint64_t *cid_ptr
 );
 
 
-void
-ompt_external_subscriber_disable
-(
- void
-);
 
-#endif // _OMPT_INTERFACE_H_
+#endif
