@@ -68,7 +68,6 @@
 
 #include "ompt-interface.h"
 #include "ompt-device-map.h"
-#include "ompt-placeholders.h"
 #include "ompt-device.h"
 
 #include "gpu/gpu-op-placeholders.h"
@@ -615,12 +614,6 @@ ompt_target_callback_emi
   td->overhead--;
 }
 
-#define FOREACH_OMPT_DATA_OP(macro)				     \
-  macro(ph, ompt_target_data_alloc, ompt_tgt_alloc)		     \
-  macro(ph, ompt_target_data_delete, ompt_tgt_delete)		     \
-  macro(ph, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
-  macro(ph, ompt_target_data_transfer_from_device, ompt_tgt_copyout)
-
 void
 ompt_data_op_callback_emi
 (
@@ -644,7 +637,7 @@ ompt_data_op_callback_emi
   uint64_t op_id = *host_op_id = gpu_correlation_id();
 
   PRINT("ompt_data_op enter->target_id 0x%lx\n", target_data->value);
-  ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
+  enum hpcrun_placeholder op = hpcrun_placeholder_ompt_tgt_none;
   switch (optype) {
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
@@ -658,7 +651,7 @@ ompt_data_op_callback_emi
       break;
   }
 
-  hpcrun_ompt_op_id_notify(endpoint, op_id, op.pc_norm);
+  hpcrun_ompt_op_id_notify(endpoint, op_id, get_placeholder_norm(op));
   PRINT("ompt_data_op exit->target_id 0x%lx\n", target_data->value);
 }
 
@@ -677,7 +670,7 @@ ompt_submit_callback_emi
   if (endpoint == ompt_scope_begin) {
     *host_op_id = gpu_correlation_id();
     hpcrun_ompt_op_id_notify(endpoint, *host_op_id,
-      ompt_placeholders.ompt_tgt_kernel.pc_norm);
+      get_placeholder_norm(hpcrun_placeholder_ompt_tgt_kernel));
 
     ompt_need_flush = true;
   }

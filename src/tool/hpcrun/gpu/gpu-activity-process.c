@@ -628,7 +628,8 @@ gpu_memory_process
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-	(activity->details.memory.context_id,
+	(activity->details.memory.device_id,
+   activity->details.memory.context_id,
 	 activity->details.memory.stream_id,
 	 &entry_trace);
 
