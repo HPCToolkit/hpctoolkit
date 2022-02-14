@@ -123,7 +123,13 @@ rocprofiler_match_event
 void
 rocprofiler_finalize_event_list
 (
+  void
+);
 
+void
+rocprofiler_uri_setup
+(
+  void
 );
 
 

@@ -458,17 +458,6 @@ roctracer_codeobj_callback
 extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
   // Enable hsa interception for getting code object URIs
   settings->hsa_intercepting = 1;
-
-  // Ask roctracer to set up code object URI callbacks
-  rocm_binary_uri_list_init();
-  roctracer_enable_op_callback(
-    ACTIVITY_DOMAIN_HSA_EVT, HSA_EVT_ID_CODEOBJ, roctracer_codeobj_callback, NULL
-  );
-  rocprofiler_init();
-
-  rocprofiler_queue_callbacks_t callbacks_ptrs = {};
-  callbacks_ptrs.dispatch = rocprofiler_dispatch_callback;
-  HPCRUN_ROCPROFILER_CALL(rocprofiler_set_queue_callbacks, (callbacks_ptrs, NULL));
 }
 
 extern PUBLIC_API void OnUnloadTool() {
@@ -523,6 +512,11 @@ rocprofiler_init
     monitor_real_exit(-1);
   }
 #endif
+
+  rocprofiler_queue_callbacks_t callbacks_ptrs = {};
+  callbacks_ptrs.dispatch = rocprofiler_dispatch_callback;
+  HPCRUN_ROCPROFILER_CALL(rocprofiler_set_queue_callbacks, (callbacks_ptrs, NULL));
+
   initialize_counter_information();
 
   // Initialize the spin lock used to serialize GPU kernel launches
@@ -564,10 +558,10 @@ rocprofiler_bind
 #undef ROCPROFILER_BIND
 
   hpcrun_force_dlopen(true);
-  if (getenv("HPCRUN_LIST_EVENT")) {
+  //if (getenv("HPCRUN_LIST_EVENT")) {
     CHK_DLOPEN(hsa, "libhsa-runtime64.so", RTLD_NOW | RTLD_GLOBAL);
     hsa_init();
-  }
+  //}
   hpcrun_force_dlopen(false);
 
   return DYNAMIC_BINDING_STATUS_OK;
@@ -661,4 +655,20 @@ rocprofiler_finalize_event_list
   }
 
   gpu_metrics_GPU_CTR_enable(total_requested, requested_counter_name, requested_counter_description);
+}
+
+void
+rocprofiler_uri_setup
+(
+  void
+)
+{
+  // Ask roctracer to set up code object URI callbacks
+  // TODO: this really should be implemented in roctracer-api.c,
+  // however, due to an AMD header file that is not fully C compatible,
+  // I can only include rocprofiler header file in one source file.
+  rocm_binary_uri_list_init();
+  roctracer_enable_op_callback(
+    ACTIVITY_DOMAIN_HSA_EVT, HSA_EVT_ID_CODEOBJ, roctracer_codeobj_callback, NULL
+  );
 }

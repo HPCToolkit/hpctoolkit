@@ -597,6 +597,9 @@ roctracer_init
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_KFD_API, roctracer_subscriber_callback, NULL));
   // Enable rocTX
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_ROCTX, roctracer_subscriber_callback, NULL));
+
+  // Prepare getting URI
+  rocprofiler_uri_setup();
 }
 
 void
