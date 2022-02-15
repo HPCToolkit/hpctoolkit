@@ -141,9 +141,6 @@ _deps = {
   'libdw': { 'propstems': ['libdw', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libdw',
              'libs': ['dw'], 'headers': ['elfutils/libdw.h'],
            },
-  'libdwarf': { 'propstems': ['libdwarf'], 'spack': 'libdwarf',
-                'libs': ['dwarf'], 'headers': ['libdwarf.h'],
-              },
   'liblzma': { 'propstems': ['liblzma', 'lzma'], 'spack': 'xz', 'dependency': 'liblzma',
                'spack_spec': '+pic',
                'libs': ['lzma'], 'headers': ['lzma.h'],
@@ -189,6 +186,7 @@ _deps = {
   'libmonitor': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
                   'spack_spec': '+hpctoolkit',
                   'libs': ['monitor'], 'headers': ['monitor.h'],
+                  'link_check': false,
                 },
   'libmonitor_static': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
                        'spack_spec': '+hpctoolkit',
@@ -238,6 +236,10 @@ _deps2 = {
                      'libs': ['elf'], 'headers': ['libelf.h'], 'static': true,
                      'extra_deps': ['zlib_static'],
                    },
+  'libdwarf': { 'propstems': ['libdwarf'], 'spack': 'libdwarf',
+                'libs': ['dwarf'], 'headers': ['libdwarf.h'],
+                'extra_deps': ['libelf'],
+              },
   'dyninst': { 'propstems': ['dyninst'], 'spack': 'dyninst',
                'libs': ['parseAPI', 'instructionAPI', 'symtabAPI', 'dynDwarf',
                         'dynElf', 'common'],
@@ -417,24 +419,19 @@ foreach var, dep : deps
         dirs: _dep_search['ldirs'], required: _dep_search.get('required', true),
         static: dep.get('static', false))
     endforeach
-    # Special case: make sure we scan for header-only dependencies
-    if dep['libs'].length() == 0
-      foreach h : dep['headers']
-        if not dep.get('cc', cc).has_header(h, include_directories: _dep_idirs,
-                    required: _dep_search.get('required', true))
-          _dep_libs += [disabler()]
-        endif
-      endforeach
-    endif
-    # Optionally ensure that the headers actually work. Catches issues early.
-    if dep.get('check_headers', false)
-      foreach h : dep['headers']
-        if not dep.get('cc', cc).check_header(h, include_directories: _dep_idirs,
-                    required: _dep_search.get('required', true))
-          _dep_libs += [disabler()]
-        endif
-      endforeach
-    endif
+    # Check that the headers are also available.
+    foreach h : dep['headers']
+      if dep.get('check_headers', false)
+        _found = dep.get('cc', cc).check_header(h, include_directories: _dep_idirs,
+            required: _dep_search.get('required', true))
+      else
+        _found = dep.get('cc', cc).has_header(h, include_directories: _dep_idirs,
+              required: _dep_search.get('required', true))
+      endif
+      if not _found
+        _dep_libs += [disabler()]
+      endif
+    endforeach
 
     # If there are any extra dependencies, make sure they get incorperated
     foreach xdep : dep.get('extra_deps', [])
@@ -451,22 +448,44 @@ foreach var, dep : deps
       endif
     endforeach
 
-    # Stitch together a final dependncy to represent the entire mess
-    # FIXME: Workaround for an issue where the compiler objects don't add
-    # include_directories to their compile lines.
+    # There's one case where the link arguments produced by Meson's
+    # find_libarary search scheme fail: for sufficiently old ld when the library
+    # is actually a linker script that contains a relative path. In newer ld
+    # the path is considered relative to the file, in older ld it is not.
+    #
+    # So, we check if we can actually do a link, and if we can't, we add some
+    # extra arguments and see if that helps.
+    _dep_lflags = []
+    if dep.get('link_check', true)
+      if not dep.get('cc', cc).links('int main() { return 0; }', dependencies: _dep_libs)
+        foreach dir : _dep_search['ldirs']
+          _dep_lflags += ['-L', dir]
+        endforeach
+        if not dep.get('cc', cc).links('int main() { return 0; }', dependencies: _dep_libs,
+                                       args: _dep_lflags)
+          error('Unable to link a simple test program for dependency @0@!'.format(_dep_name))
+        endif
+      endif
+    endif
+
+    # Stitch together a final dependency to represent the entire mess
+    # NOTE: In Meson's world, declare_dependency returns "internal" dependencies
+    # that represent things only available at build tim, so the
+    # include_directories are not automatically added to compiler compiles()
+    # lines. So we have to convert to compile_args instead.
+    # Meson bug? Quite possibly.
     _dep_flags = []
     foreach dir : _dep_search['idirs']
-      _dep_flags += '-I'+dir
+      _dep_flags += ['-isystem', dir]
     endforeach
-    _dep = declare_dependency(
-      dependencies: _dep_libs,
-      include_directories: include_directories(_dep_search['idirs']),
-      compile_args: _dep_flags,
-      version: _dep_search.get('version', 'unknown'),
-    )
+    _dep = declare_dependency(dependencies: _dep_libs, compile_args: _dep_flags,
+        link_args: _dep_lflags, version: _dep_search.get('version', 'unknown'))
+
+    # Sanitize to make sure we output a proper not-found dependency
     if is_disabler(_dep)
       _dep = dependency('', required: false)
     endif
+
     if dep.has_key('out_var') or dep.has_key('modules')
       assert(dep.has_key('out_var'), 'Dependencies requiring modules must use an out_ver instead of override_dependency!')
       set_variable(dep['out_var'], _dep)
@@ -475,7 +494,7 @@ foreach var, dep : deps
     endif
     _resolved_deps += {var: _dep}
   else
-    _resolved_deps += {var: disabler()}
+    _resolved_deps += {var: dependency('', required: false)}
   endif
 endforeach
 endforeach
