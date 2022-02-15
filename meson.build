@@ -459,7 +459,9 @@ foreach var, dep : deps
     if dep.get('link_check', true)
       if not dep.get('cc', cc).links('int main() { return 0; }', dependencies: _dep_libs)
         foreach dir : _dep_search['ldirs']
-          _dep_lflags += ['-L', dir]
+          if fs.is_dir(dir)
+            _dep_lflags += ['-L', dir]
+          endif
         endforeach
         if not dep.get('cc', cc).links('int main() { return 0; }', dependencies: _dep_libs,
                                        args: _dep_lflags)
