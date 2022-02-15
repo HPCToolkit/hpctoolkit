@@ -542,7 +542,7 @@ foreach lang : ['c', 'cpp']
 
   # On some systems (Cray) MPI is integrated into the base compiler.
   _comp = meson.get_compiler(lang)
-  if _comp.links(_mpi_test_code, name: 'MPI is available by default test')
+  if _comp.links(_mpi_test_code, name: 'MPI is available by default')
     _Mver = _comp.get_define('MPI_VERSION', prefix: '#include <mpi.h>')
     _mver = _comp.get_define('MPI_SUBVERSION', prefix: '#include <mpi.h>')
     _ver = _Mver + (_mver == '' ? '' : '.') + _mver
@@ -555,9 +555,9 @@ foreach lang : ['c', 'cpp']
   # Note that this is a fragile uncached test. It would be more robust to upstream support.
   _printenv = find_program('printenv')
   if lang == 'c'
-    _names = [run_command(_printenv, 'MPICC').stdout().strip(), 'mpicc']
+    _names = [run_command(_printenv, 'MPICC', check: false).stdout().strip(), 'mpicc']
   elif lang == 'cpp'
-    _names = [run_command(_printenv, 'MPICXX').stdout().strip(), 'mpicxx']
+    _names = [run_command(_printenv, 'MPICXX', check: false).stdout().strip(), 'mpicxx']
   endif
   foreach name : _names
     if name == ''
