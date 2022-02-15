@@ -97,7 +97,7 @@ def query(spackpath, mode, package, force_spec, user_spec):
 
 # Process every query, and output stanzas terminated by a |
 assert(len(sys.argv) % 5 == 2)
-spackpath = sys.argv[2]
+spackpath = sys.argv[1]
 queries = sys.argv[2:]
 out = []
 for i in range(2, len(sys.argv), 4):
