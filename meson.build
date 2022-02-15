@@ -113,7 +113,6 @@ endif
 # Get all the bits for our dependencies, hunt down the parts and construct
 # the dependency objects. We do the searches within Meson to allow the automatic
 # addition into the build_rpath (not the install_rpath, as per the usual).
-_spack_cache = {}
 _deps = {
   'libbfd': { 'propstems': ['bfd', 'binutils'], 'spack': 'binutils',
               'libs': ['bfd'], 'headers': ['bfd.h'],
@@ -248,6 +247,9 @@ _deps2 = {
              },
 }
 _resolved_deps = {}
+_spack_queue = []
+_spack_query_args = []
+_dep_searches = {}
 foreach deps : [_deps, _deps2]
 foreach var, dep : deps
   # If we need to, we'll add an override for dependencies that can't be found
@@ -343,69 +345,12 @@ foreach var, dep : deps
   # If a Spack is available and usable for this dependency, use it to scare up some paths
   if _dep_search == {} and is_variable('spack') and dep.has_key('spack') \
      and meson.get_external_property(dep['spack']+'_spec', '') != 'system'
-    # To reduce the amount of times we have to fire up Spack, check the cache.
-    if not _spack_cache.has_key(dep['spack'])
-      # Run our helper script, and do our best with it.
-      _spack_paths = run_command(spack, 'python', files('meson/spack-query.py'),
-        spack, _spack_mode, dep['spack'], dep.get('spack_spec', ''),
-        meson.get_external_property(dep['spack']+'_spec', meson.get_external_property('default_spec', '')), check: true)
-      if _spack_paths.stdout() == ''
-        if _spack_paths.stderr().strip() != ''
-          error(_spack_paths.stderr().strip())
-        else
-          error('Failure during Spack lookup!')
-        endif
-      endif
-
-      _spack_directives = _spack_paths.stdout().strip().split('\0')
-      _spack_skip = false
-      _dep_version = 'unknown'
-      _dep_idirs = []
-      _dep_ldirs = []
-      foreach part : _spack_directives
-        if part.startswith('F')  # Fatal error
-          error(part.substring(1))
-        elif part.startswith('E')  # non-fatal Error
-          warning(part.substring(1))
-          _spack_skip = true
-          break
-        elif part.startswith('W')  # Warning
-          warning(part.substring(1))
-        elif part.startswith('L')  # Link directory
-          _dep_ldirs += part.substring(1)
-        elif part.startswith('I')  # Include directory
-          _dep_idirs += part.substring(1) / dep.get('spack_include_suffix', '')
-        elif part.startswith('V')  # Version information
-          assert(_dep_version == 'unknown', 'multiple version values?')
-          _dep_version = part.substring(1)
-        elif part != ''
-          error('Invalid output from spack-query.py: ' + part)
-        endif
-      endforeach
-      if _spack_skip
-        if dep.has_key('out_var') or dep.has_key('modules')
-          assert(dep.has_key('out_var'), 'Dependencies requiring modules must use an out_ver instead of override_dependency!')
-          set_variable(dep['out_var'], dependency('', required: false))
-        else
-          meson.override_dependency(_dep_name, dependency('', required: false),
-            static: dep.get('static', false))
-        endif
-        _resolved_deps += {var: dependency('', required: false)}
-        continue
-      endif
-      if _dep_idirs.length() == 0 or _dep_ldirs.length() == 0
-        error('Invalid output from spack-query.py, missing elements')
-      endif
-
-      # Throw the variables in the cache for later
-      _spack_cache += {
-        dep['spack']: {
-          'version': 'spack: '+_dep_version,
-          'idirs': _dep_idirs, 'ldirs': _dep_ldirs,
-        }
-      }
-    endif
-    _dep_search = _spack_cache[dep['spack']]
+    _spack_queue += {
+      'var': var, 'dep': dep, 'dep_name': _dep_name,
+    }
+    _spack_query_args += [_spack_mode, dep['spack'], dep.get('spack_spec', ''),
+      meson.get_external_property(dep['spack']+'_spec', meson.get_external_property('default_spec', ''))]
+    continue
   endif
 
   # If we don't have an alternative with dependency(), search the system paths
@@ -413,6 +358,78 @@ foreach var, dep : deps
   if _dep_search == {} and not dep.has_key('dependency')
     _dep_search = {'idirs': [], 'ldirs': [], 'required': false}
   endif
+
+  # Save the dep-search for a later pass
+  _dep_searches += {var: [_dep_name, _dep_search]}
+endforeach
+endforeach
+
+# Ask Spack for everything we need out of it
+_spack_query_out = run_command(spack, 'python', files('meson/spack-query.py'),
+                               spack, _spack_query_args, check: true)
+_spack_directives = _spack_query_out.stdout().strip().split('\0')
+_spack_dep_idx = 0
+_spack_dep_skip = false
+_spack_dep_version = 'unknown'
+_spack_dep_idirs = []
+_spack_dep_ldirs = []
+foreach part : _spack_directives
+  if part.startswith('F')  # Fatal error
+    error(part.substring(1))
+  elif part.startswith('E')  # non-fatal Error
+    warning(part.substring(1))
+    _spack_dep_skip = true
+  elif part.startswith('W')  # Warning
+    warning(part.substring(1))
+  elif part.startswith('L')  # Link directory
+    _spack_dep_ldirs += part.substring(1)
+  elif part.startswith('I')  # Include directory
+    _spack_dep_idirs += part.substring(1) / dep.get('spack_include_suffix', '')
+  elif part.startswith('V')  # Version information
+    assert(_spack_dep_version == 'unknown', 'multiple version values?')
+    _spack_dep_version = part.substring(1)
+  elif part.startswith('|')
+    # End of stanza, submit into the pile for further processing
+    if _spack_dep_skip
+      if _spack_queue[_spack_dep_idx]['dep'].has_key('out_var') \
+         or _spack_queue[_spack_dep_idx]['dep'].has_key('modules')
+        assert(_spack_queue[_spack_dep_idx]['dep'].has_key('out_var'),
+               'Dependencies requiring modules must use an out_ver instead of override_dependency!')
+        set_variable(_spack_queue[_spack_dep_idx]['dep']['out_var'], dependency('', required: false))
+      else
+        meson.override_dependency(_spack_queue[_spack_dep_idx]['dep_name'], dependency('', required: false),
+          static: _spack_queue[_spack_dep_idx]['dep'].get('static', false))
+      endif
+      _resolved_deps += {var: dependency('', required: false)}
+    else
+      if _spack_dep_idirs.length() == 0 or _spack_dep_ldirs.length() == 0
+        error('Invalid output from spack-query.py, missing elements')
+      endif
+      _dep_search = {
+        'version': 'spack: '+_spack_dep_version,
+        'idirs': _spack_dep_idirs, 'ldirs': _spack_dep_ldirs,
+      }
+      _dep_searches += {_spack_queue[_spack_dep_idx]['var']:
+        [_spack_queue[_spack_dep_idx]['dep_name'], _dep_search]}
+    endif
+    _spack_dep_idx += 1
+    _spack_dep_skip = false
+    _spack_dep_version = 'unknown'
+    _spack_dep_idirs = []
+    _spack_dep_ldirs = []
+  elif part != ''
+    error('Invalid output from spack-query.py: ' + part)
+  endif
+endforeach
+
+# Pass back through the dependencies and do the actual searches
+foreach deps : [_deps, _deps2]
+foreach var, dep : deps
+  if var not in _dep_searches
+    continue
+  endif
+  _dep_name = _dep_searches[var][0]
+  _dep_search = _dep_searches[var][1]
 
   # At this point we have enough info to attempt to search for the dependency
   if _dep_search != {} and not _dep_search.get('skip_to_dep', false)

@@ -15,6 +15,13 @@ def flatten(x):
       o.append(e)
   return o
 
+messaged_for = set()
+def message_once(package, message):
+  if package in messaged_for:
+    return []
+  messaged_for.add(package)
+  return message
+
 def query(spackpath, mode, package, force_spec, user_spec):
   if len(force_spec) > 0:
     force_spec = ' '+force_spec
@@ -30,26 +37,26 @@ def query(spackpath, mode, package, force_spec, user_spec):
     specs = db.query(package + force_spec)
     if len(specs) > 0:
       # The package is installed, but the spec is wrong. Report this.
-      return ['F'+'''
+      return message_once(package, ['F'+'''
   No package matching `{0}{1}{2}\' but {0} is installed. Suggestions:
     1. Adjust {0}_spec to match an installed spec (see `{3} find {0}{1}`)
     2. Install the specific spec (`{3} install {0}{1}{2}`)'''
-        .format(package, force_spec, user_spec, spackpath)]
+        .format(package, force_spec, user_spec, spackpath)])
     else:
       # The package isn't even installed. Report this.
-      return ['E'+'''
+      return message_once(package, ['E'+'''
   No valid variant of package {0} is installed. Suggestions:
     1. Install the requested spec (`{3} install {0}{1}{2}`)
     2. Set {0}_spec to \'system\' to search the system and current environment
     3. Set the relevant *_root property to an installation for {0}.'''
-        .format(package, force_spec, user_spec, spackpath)]
+        .format(package, force_spec, user_spec, spackpath)])
   elif len(specs) > 1:
     # There are multiple matching packages. Report this.
-    out = [('F' if mode == '--unique' else 'W')+'''
+    out = message_once(package, [('F' if mode == '--unique' else 'W')+'''
   Multiple packages match `{0}{1}{2}\'. Suggestions:
     1. Adjust {0}_spec to be more specific (usually `/<hash>`, see `{3} find {0}{1}{2}`)
     2. Remove the conficting packages (`{3} uninstall {0}{1}{2}`)'''
-      .format(package, force_spec, user_spec, spackpath)]
+      .format(package, force_spec, user_spec, spackpath)])
     if mode == '--unique':
       return out
   spec = specs[0]
@@ -88,11 +95,12 @@ def query(spackpath, mode, package, force_spec, user_spec):
     ['L'+x for x in spec_links],
   ]])
 
-# Process every query, and output stanzas separated by |
-assert(len(sys.argv) % 5 == 1)
-args = sys.argv[1:]
+# Process every query, and output stanzas terminated by a |
+assert(len(sys.argv) % 5 == 2)
+spackpath = sys.argv[2]
+queries = sys.argv[2:]
 out = []
-for i in range(1, len(sys.argv), 5):
-  if i > 1: out.append('|')
-  out.extend(query(*sys.argv[i:i+5]))
+for i in range(2, len(sys.argv), 4):
+  out.extend(query(spackpath, *sys.argv[i:i+4]))
+  out.append('|')
 print('\0'.join(out))
