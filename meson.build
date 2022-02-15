@@ -185,7 +185,7 @@ _deps = {
   'libmonitor': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
                   'spack_spec': '+hpctoolkit',
                   'libs': ['monitor'], 'headers': ['monitor.h'],
-                  'link_check': false,
+                  'extra_system_deps': ['thread'],
                 },
   'libmonitor_static': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
                        'spack_spec': '+hpctoolkit',
@@ -469,6 +469,9 @@ foreach var, dep : deps
       else
         _dep_libs += xdep
       endif
+    endforeach
+    foreach xdep : dep.get('extra_system_deps', [])
+      _dep_libs += dependency(xdep, required: false, disabler: true)
     endforeach
 
     # There's one case where the link arguments produced by Meson's
