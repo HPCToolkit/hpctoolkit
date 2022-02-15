@@ -356,10 +356,33 @@ foreach var, dep : deps
           error('Failure during Spack lookup!')
         endif
       endif
-      if _spack_paths.stdout().strip() == 'SKIP'
-        if _spack_paths.stderr().strip() != ''
-          warning(_spack_paths.stderr().strip())
+
+      _spack_directives = _spack_paths.stdout().strip().split('\0')
+      _spack_skip = false
+      _dep_version = 'unknown'
+      _dep_idirs = []
+      _dep_ldirs = []
+      foreach part : _spack_directives
+        if part.startswith('F')  # Fatal error
+          error(part.substring(1))
+        elif part.startswith('E')  # non-fatal Error
+          warning(part.substring(1))
+          _spack_skip = true
+          break
+        elif part.startswith('W')  # Warning
+          warning(part.substring(1))
+        elif part.startswith('L')  # Link directory
+          _dep_ldirs += part.substring(1)
+        elif part.startswith('I')  # Include directory
+          _dep_idirs += part.substring(1) / dep.get('spack_include_suffix', '')
+        elif part.startswith('V')  # Version information
+          assert(_dep_version == 'unknown', 'multiple version values?')
+          _dep_version = part.substring(1)
+        elif part != ''
+          error('Invalid output from spack-query.py: ' + part)
         endif
+      endforeach
+      if _spack_skip
         if dep.has_key('out_var') or dep.has_key('modules')
           assert(dep.has_key('out_var'), 'Dependencies requiring modules must use an out_ver instead of override_dependency!')
           set_variable(dep['out_var'], dependency('', required: false))
@@ -370,23 +393,6 @@ foreach var, dep : deps
         _resolved_deps += {var: dependency('', required: false)}
         continue
       endif
-
-      _spack_paths = _spack_paths.stdout().strip().split('\0')
-      _dep_version = 'unknown'
-      _dep_idirs = []
-      _dep_ldirs = []
-      foreach part : _spack_paths
-        if part.startswith('L')
-          _dep_ldirs += part.substring(1)
-        elif part.startswith('I')
-          _dep_idirs += part.substring(1) / dep.get('spack_include_suffix', '')
-        elif part.startswith('V')
-          assert(_dep_version == 'unknown', 'multiple version values?')
-          _dep_version = part.substring(1)
-        elif part != ''
-          error('Invalid output from spack-query.py: ' + part)
-        endif
-      endforeach
       if _dep_idirs.length() == 0 or _dep_ldirs.length() == 0
         error('Invalid output from spack-query.py, missing elements')
       endif
