@@ -460,7 +460,7 @@ foreach var, dep : deps
       if not dep.get('cc', cc).links('int main() { return 0; }', dependencies: _dep_libs)
         foreach dir : _dep_search['ldirs']
           if fs.is_dir(dir)
-            _dep_lflags += ['-L', dir]
+            _dep_lflags += '-L'+dir
           endif
         endforeach
         if not dep.get('cc', cc).links('int main() { return 0; }', dependencies: _dep_libs,
