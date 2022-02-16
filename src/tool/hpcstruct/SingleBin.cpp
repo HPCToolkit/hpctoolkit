@@ -198,15 +198,31 @@ doSingleBinary
 
   if (gpu_binary && args.compute_gpu_cfg) structure_name += "+gpucfg";
 
+  // set sequential or parallel mode
+  std::string mode = "sequential";
+  if (args.jobs > 1 ) {
+    mode = "parallel";
+  }
+
   // If this invocation was not from a Makefile, write a message to the user
   if ( args.is_from_makefile != true ) {
+#if 0
+    // Figure out a plausible maximum == 1/2 the number of HW threads in machine
+    unsigned int maxthreads;
+    unsigned int hwthreads = cpuset_hwthreads();
+    if (args.jobs == 0) { // not specified
+      maxthreads =  std::min(jobs, 16U);
+    }
+#endif
+
+    // Write a starting message
     if (gpu_binary == true ) {
-      std::cerr << " begin [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      std::cerr << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
         << "] analysis of " "GPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
 	<< ", threads = " << args.jobs << " )" << std::endl;
     } else {
-      std::cerr << " begin analysis of CPU binary "
+      std::cerr << " begin " << mode.c_str() << " analysis of CPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
 	<< ", threads = " << args.jobs << " )" << std::endl;
     }
@@ -264,8 +280,11 @@ doSingleBinary
   cerr << "DEBUG singleApplicationBinary : checkname_cmd  = " << checkname_cmd.c_str() << endl;
 #endif
 
-  // now invoke renamestruct to ensure the correct path
-  //    renamestruct <path to infile> <path to output structure file>
+  // Ensure that the module path in the new .struct file is correct.
+  //
+  // Invoke the renamestuct shell script from the installation library
+  //    Script is invoked with two arguments, $1 = path needed, $2 = structure-file
+  //
   int retstat = system( checkname_cmd.c_str() );
 
   int renamestat = -1;
@@ -288,7 +307,7 @@ doSingleBinary
       
     } else if (renamestat == 0 ) {
 #if 0
-  cerr << "DEBUG singleApplicationBinary : checkname_cmd did not replace names in struct file " << endl;
+  cerr << "DEBUG singleApplicationBinary : checkname_cmd did not need to replace names in struct file " << endl;
 #endif
     } else {
 #if 0
@@ -297,7 +316,7 @@ doSingleBinary
     }
 
   } else {
-    // Not a normal exit -- a serious exit
+    // Not a normal exit -- a serious error
     DIAG_EMsg("Running renamepath to fix lines in structure files failed.");
     exit(1);
   }
@@ -338,22 +357,14 @@ doSingleBinary
       break;
   }
   //
-  // Ensure that the module path in the new .struct file is correct.
-  //
-  // Invoke the renamestuct shell script from the installation library
-  //    Script is invoked with two arguments, $1 = path needed, $2 = structure-file
-  //
-  // XXX copy from make launch
-
-
   if ( args.is_from_makefile != true ) {
     // If this invocation was not from a Makefile, write a message to the user
     if (gpu_binary == true ) {
-      std::cerr << " end   [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      std::cerr << "   end " << mode.c_str() << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
         << "] analysis of " "GPU binary "
         << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
     } else {
-      std::cerr << " end   analysis of CPU binary "
+      std::cerr << "   end " << mode.c_str() << " analysis of CPU binary "
         << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
     }
 

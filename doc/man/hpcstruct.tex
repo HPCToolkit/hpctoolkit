@@ -81,7 +81,7 @@ by setting the HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
 "Copied from cache", or "Copied from cache +".  The latter indicates that although the structure file was found in the
 cache, it came from the identical binary with a different full path, so it was edited to reflect the actual path.
 If the \Arg{--nocache} option will not use the cache, even if the environment variable is set, and the message
-will say "(Cache disabled by user)".
+will say "(Cache disabled by user)".  If no cache is specified, the message will say "Cache not specified".
 Users are strongly urged to use a cache.
 
 When an application execution is measured using \Prog{hpcrun}, HPCToolkit records the name of the application binary,
