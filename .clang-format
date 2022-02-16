@@ -45,8 +45,8 @@ SpaceInEmptyBlock: false
 
 ## Breaking Penalties
 PenaltyIndentedWhitespace: 0
-PenaltyBreakTemplateDeclaration: 2
-PenaltyBreakAssignment: 15
+PenaltyBreakAssignment: 2
+PenaltyBreakTemplateDeclaration: 10
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyReturnTypeOnItsOwnLine: 60
 PenaltyBreakFirstLessLess: 120
@@ -62,14 +62,14 @@ MaxEmptyLinesToKeep: 1
 IncludeBlocks: Regroup
 SortIncludes: CaseInsensitive
 IndentExternBlock: NoIndent
-IndentPPDirectives: AfterHash
+IndentPPDirectives: None
 # NOTE: -1 means just use IndentWidth
 PPIndentWidth: -1
 SortUsingDeclarations: true
 
 
 # Statements/Expressions
-SpaceBeforeParens: Never
+SpaceBeforeParens: ControlStatements
 SpacesInConditionalStatement: false
 SpacesInSquareBrackets: false
 SpacesInParentheses: false
@@ -83,7 +83,7 @@ AlignConsecutiveBitFields: AcrossComments
 AlignConsecutiveDeclarations: None
 
 ## Call Arguments
-AlignAfterOpenBracket: Align
+AlignAfterOpenBracket: AlwaysBreak
 AlignArrayOfStructures: None
 BinPackArguments: true
 Cpp11BracedListStyle: true
