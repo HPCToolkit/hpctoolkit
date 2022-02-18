@@ -158,6 +158,7 @@ doSingleBinary
   cerr << "DEBUG singleApplicationBinary  -- cache setup started" << args.cache_directory.c_str() << endl;
 #endif
 
+  bool use_cache = false;
   if (args.nocache) {
     // the user intentionally turned off the cache
     args.cache_stat = CACHE_DISABLED;
@@ -177,6 +178,7 @@ doSingleBinary
       string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
       symlink(cache_path_link.c_str(), cache_flat_directory.c_str());
       args.cache_stat = CACHE_ENABLED;
+      use_cache = true;
     } else {
       // the user did not specify a cache directory
       args.cache_stat = CACHE_NOT_NAMED;
@@ -273,54 +275,55 @@ doSingleBinary
   hpcstruct.finalize(error);
   gaps.finalize(error);
 
-  string checkname_cmd =  string(HPCTOOLKIT_INSTALL_PREFIX) + "/libexec/hpctoolkit/renamestruct.sh "
+  // if a cache is in use, ensure that the module path in the new .struct file is correct.
+  //
+  if (use_cache == true ) {
+    string checkname_cmd =  string(HPCTOOLKIT_INSTALL_PREFIX) + "/libexec/hpctoolkit/renamestruct.sh "
         + args.in_filenm.c_str() + " " + hpcstruct_path.c_str();
 
 #if 0
-  cerr << "DEBUG singleApplicationBinary : checkname_cmd  = " << checkname_cmd.c_str() << endl;
+    cerr << "DEBUG singleApplicationBinary : checkname_cmd  = " << checkname_cmd.c_str() << endl;
 #endif
 
-  // Ensure that the module path in the new .struct file is correct.
-  //
-  // Invoke the renamestuct shell script from the installation library
-  //    Script is invoked with two arguments, $1 = path needed, $2 = structure-file
-  //
-  int retstat = system( checkname_cmd.c_str() );
+    // Invoke the renamestuct shell script from the installation library
+    //    Script is invoked with two arguments, $1 = path needed, $2 = structure-file
+    //
+    int retstat = system( checkname_cmd.c_str() );
 
-  int renamestat = -1;
+    int renamestat = -1;
 
-  if ( WIFEXITED(retstat) == true ) {
-    // a normal exit
-    renamestat = WEXITSTATUS (retstat);
-    if (renamestat == 1 ) {
-      //The names were really updated
-      if ( args.cache_stat == CACHE_ENTRY_ADDED ) {
-        args.cache_stat = CACHE_ENTRY_ADDED_RENAME;
-      } else if ( args.cache_stat == CACHE_ENTRY_COPIED ) {
-        args.cache_stat = CACHE_ENTRY_COPIED_RENAME;
-      }
-
+    if ( WIFEXITED(retstat) == true ) {
+      // a normal exit
+      renamestat = WEXITSTATUS (retstat);
+      if (renamestat == 1 ) {
+        //The names were really updated
+        if ( args.cache_stat == CACHE_ENTRY_ADDED ) {
+          args.cache_stat = CACHE_ENTRY_ADDED_RENAME;
+        } else if ( args.cache_stat == CACHE_ENTRY_COPIED ) {
+          args.cache_stat = CACHE_ENTRY_COPIED_RENAME;
+        }
 
 #if 0
-  cerr << "DEBUG singleApplicationBinary : checkname_cmd replaced names in struct file " << endl;
+    cerr << "DEBUG singleApplicationBinary : checkname_cmd replaced names in struct file " << endl;
 #endif
       
-    } else if (renamestat == 0 ) {
+      } else if (renamestat == 0 ) {
 #if 0
-  cerr << "DEBUG singleApplicationBinary : checkname_cmd did not need to replace names in struct file " << endl;
+        cerr << "DEBUG singleApplicationBinary : checkname_cmd did not need to replace names in struct file " << endl;
 #endif
+      } else {
+#if 0
+        cerr << "DEBUG singleApplicationBinary : checkname_cmd returned = " << renamestat << endl;
+#endif
+      }
+
     } else {
-#if 0
-  cerr << "DEBUG singleApplicationBinary : checkname_cmd returned = " << renamestat << endl;
-#endif
+      // Not a normal exit -- a serious error
+      DIAG_EMsg("Running renamepath to fix lines in structure files failed.");
+      exit(1);
     }
 
-  } else {
-    // Not a normal exit -- a serious error
-    DIAG_EMsg("Running renamepath to fix lines in structure files failed.");
-    exit(1);
-  }
-
+  }  // if (use_cache == true)
 
   // Set cache usage status string
   const char * cache_stat_str;
