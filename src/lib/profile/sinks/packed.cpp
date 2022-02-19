@@ -65,6 +65,10 @@ static void pack(std::vector<std::uint8_t>& out, const std::string& s) noexcept 
 static void pack(std::vector<std::uint8_t>& out, const std::uint8_t v) noexcept {
   out.push_back(v);
 }
+static std::uint8_t* pack(std::uint8_t* out, const std::uint8_t v) noexcept {
+  *out = v;
+  return ++out;
+}
 static void pack(std::vector<std::uint8_t>& out, const std::uint16_t v) noexcept {
   // Little-endian order. Just in case the compiler can optimize it away.
   for(int shift = 0; shift < 16; shift += 8)
@@ -204,6 +208,8 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   src.contexts().citerate([&](const Context& c){
     pack(out, (std::uint64_t)c.userdata[src.identifier()]);
     for(const Metric& m: metrics) {
+      pack(out, c.data().metricUsageFor(m).toInt());
+
       for(const auto& p: m.partials()) {
         if(auto v = m.getFor(c)) {
           pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
@@ -225,8 +231,7 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
 }
 
 ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)
-    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0),
-      fePackMetrics([this](auto& group){ packMetricGroup(group); }) {}
+    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0) {}
 
 void ParallelPacked::notifyPipeline() noexcept {
   if(doContexts || doMetrics) {
@@ -272,7 +277,8 @@ void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
     prev += sz;
   }
 
-  fePackMetrics.fill(std::move(workitems));
+  fePackMetrics.fill(std::move(workitems),
+                     [this](auto& group){ packMetricGroup(group); });
   packMetricsGroups.clear();
   fePackMetrics.contribute(fePackMetrics.wait());
   output = nullptr;
@@ -287,6 +293,8 @@ void ParallelPacked::packMetricGroup(std::pair<std::size_t, std::vector<std::ref
   for(const Context& c: std::move(task.second)) {
     out = pack(out, (std::uint64_t)c.userdata[src.identifier()]);
     for(const Metric& m: metrics) {
+      out = pack(out, c.data().metricUsageFor(m).toInt());
+
       for(const auto& p: m.partials()) {
         if(auto v = m.getFor(c)) {
           out = pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));

@@ -101,9 +101,10 @@ public:
   // MT: See ragged_vector.
   mutable ud_t userdata;
 
-  /// Access the Statistics data attributed to this Context
-  // MT: Safe (const), Unstable (before `metrics` wavefront)
+  /// Access this Context's per-Context data.
+  // MT: Internally Synchronized, Unstable (before `metrics` wavefront)
   const auto& data() const noexcept { return m_data; }
+  auto& data() noexcept { return m_data; }
 
   /// Iterate over the Context sub-tree rooted at this Context. The given
   /// functions are called before and after every Context.
