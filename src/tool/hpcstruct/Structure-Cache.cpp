@@ -454,7 +454,7 @@ hpcstruct_cache_directory
   }
   // invariant: if cache_dir was NULL or empty, it is now NULL
 
-  if (cache_dir == NULL) {
+  if ( (cache_dir == NULL) &&  (global_args->nocache == false) ) {
     // no cache directory specified,
     if (warn) {
       DIAG_MsgIf_GENERIC

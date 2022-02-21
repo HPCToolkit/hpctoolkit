@@ -77,11 +77,13 @@ those program structure files will be used to help attribute performance measure
 can copy previously generated structure files from the cache rather than regenerating the information.
 A cache may be specified either on the command line (see the -C option, below) or
 by setting the HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
-\Prog{hpcstruct} emits a message for each binary processed saying one of "Added to cache",
+If a cache is specified, \Prog{hpcstruct} emits a message for each binary processed saying one of "Added to cache",
 "Copied from cache", or "Copied from cache +".  The latter indicates that although the structure file was found in the
-cache, it came from the identical binary with a different full path, so it was edited to reflect the actual path.
-If the \Arg{--nocache} option will not use the cache, even if the environment variable is set, and the message
-will say "(Cache disabled by user)".  If no cache is specified, the message will say "Cache not specified".
+cache, it came from an identical binary with a different full path, so it was edited to reflect the actual path.
+If the \Arg{--nocache} option is set, \Prog{hpcstruct}  will not use the cache, even if the environment
+variable is set, and the message will say "(Cache disabled by user)".
+If no cache is specified, the message will say "Cache not specified",
+and, unless the --nocache option was set, an ADVICE message urging use of the cache will be written.
 Users are strongly urged to use a cache.
 
 When an application execution is measured using \Prog{hpcrun}, HPCToolkit records the name of the application binary,
@@ -161,6 +163,14 @@ Print help message.
 Generate progress messages to stderr, at verbosity level \Arg{num}. {1}
 
 \end{Description}
+
+\subsection{Options: Using the Cache}
+\item[\OptArg{-c}{dir}, \OptArg{--cache}{dir}]
+Specify the directory to be used for the structure cache.
+
+\item[\Opt{--nocache}]
+Specify the the structure cache is not to be used, even if one is specified by the
+HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
 
 \subsection{Options: Override parallel defaults}
 \item[\OptArg{-j}{num}, \OptArg{--jobs}{num}]

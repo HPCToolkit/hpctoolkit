@@ -1,8 +1,8 @@
 Description:
   hpcstruct recovers the program structure for all CPU and GPU
   binaries referenced by a directory containing HPCToolkit performance
-  measurements. If needed, one can apply hpcstruct to recover program
-  structure for an individual CPU or GPU binary.
+  measurements. Although not usually needed, one can apply hpcstruct to
+  recover program structure for an individual CPU or GPU binary.
 
   Program structure is a mapping from addresses of machine instructions
   in a binary to source code contexts; this mapping is used to attribute
@@ -11,6 +11,21 @@ Description:
   and loops; such mappings are especially useful for understanding the
   performance of programs generated using template-based programming
   models.
+
+  hpcstruct is designed to cache its results so that processing multiple measurement
+  directories can copy previously generated structure files from the cache rather than
+  regenerating the information.  A cache may be specified either on the command line
+  (see the -C option, below) or by setting the HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
+  If one is specified, hpcstruct emits a message for each binary processed saying one
+  of 'Added to cache', 'Copied from cache', or 'Copied from cache +'.  The latter
+  indicates that although the structure file was found in the cache, it came from
+  an identical binary with a different full path, so the cached content was edited
+  to reflect the actual path.  If the --nocache option is set, hpcstruct will not use
+  the cache, even if the environment variable is set, and the message will say
+  '(Cache disabled by user)'.  If no cache is specified, the message will say
+  'Cache not specified' and, unless the --nocache option was set,
+  an ADVICE message urging use of a cache will be written.  Users are strongly urged
+  to use a cache,
 
   hpcstruct is designed for analysis of optimized binaries created from
   C, C++, Fortran, CUDA, HIP, and DPC++ source code. Because hpcstruct's
@@ -42,8 +57,7 @@ Options: Control caching of structure files
                        the HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
   --nocache            Specify that a structure cache should not be used,
                        even if the HPCTOOLKIT_HPCSTRUCT_CACHE environment
-                       variable is set. With this option, advice to use
-                       a structure cache will be suppressed.
+                       variable is set.
 
 Options: Override parallelism defaults
   -j <num>, --jobs <num> Specify the degree of parallelism to be used in processing.
