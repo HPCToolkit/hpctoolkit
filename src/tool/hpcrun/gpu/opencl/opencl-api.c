@@ -1082,10 +1082,6 @@ hpcrun_clCreateCommandQueue
 		opencl_queue_prologue(queue);
 	}
 
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_queue_prologue(queue);
-	}
-
   return queue;
 }
 
