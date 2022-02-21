@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -41,30 +41,72 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef gpu_correlation_id_h
-#define gpu_correlation_id_h
+//***************************************************************************
+//
+// File:
+//   cuda-api.h
+//
+// Purpose:
+//   interface definitions for wrapper around AMD HIP layer
+//
+//***************************************************************************
+
+#ifndef hip_api_h
+#define hip_api_h
 
 
 
-//******************************************************************************
-// system includes
-//******************************************************************************
+//*****************************************************************************
+// rocm includes
+//*****************************************************************************
 
-#include <stdint.h>
+// #include <roctracer_hip.h>
+#include <hip/hip_runtime.h>
 
-//we use this for our activity that should be ignored
-#define IGNORE_CORR_ID (~0ULL)
 
-//******************************************************************************
+
+//*****************************************************************************
 // interface operations
-//******************************************************************************
+//*****************************************************************************
 
-uint64_t
-gpu_correlation_id
+typedef struct hip_device_property {
+ int sm_count;
+ int sm_clock_rate;
+ int sm_shared_memory;
+ int sm_registers;
+ int sm_threads;
+ int sm_blocks;
+ int num_threads_per_warp;
+} hip_device_property_t;
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+// returns 0 on success
+int
+hip_bind
 (
  void
 );
 
+// returns 0 on success
+int
+hip_context
+(
+ hipCtx_t *ctx
+);
 
+// returns 0 on success
+int
+hip_device_property_query
+(
+ int device_id,
+ hip_device_property_t *property
+);
 
-#endif
+int
+hip_dev_sync();
+
+#endif //hip_api_h

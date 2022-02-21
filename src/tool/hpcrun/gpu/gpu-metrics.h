@@ -89,6 +89,15 @@ typedef enum {
 } gpu_lmem_ops_t;
 
 
+typedef enum {
+GPU_XFER_XMIT                  				 = 0,
+GPU_XFER_XRCV                  				 = 1,
+GPU_XFER_XMIT_TP                   		 = 2,
+GPU_XFER_XRCV_TP                   		 = 3,
+GPU_XFER_XMIT_COUNT              			 = 4,
+GPU_XFER_XRCV_COUNT              			 = 5
+} gpu_xfer_ops_t;
+
 
 //--------------------------------------------------------------------------
 // indexed metrics
@@ -386,6 +395,21 @@ typedef enum {
   FORALL_GSAMP_REAL(macro)				
 
 
+// gpu transfer information
+#define FORALL_GXFER(macro)			\
+	macro("GXFER:XMIT (B)",          			GPU_XFER_XMIT,		\
+	"GPU link total data transmited")			\
+	macro("GXFER:XRCV (B)",          			GPU_XFER_XRCV,		\
+	"GPU link total data received")		\
+	macro("GXFER:XMIT_TP (GB)",          	GPU_XFER_XMIT_TP,		\
+	"GPU link total transmit throughput")		\
+	macro("GXFER:XRCV_TP (GB)",          	GPU_XFER_XRCV_TP,		\
+	"GPU link total received throughput")		\
+	macro("GXFER:XMIT_COUNT",             GPU_XFER_XMIT_COUNT,  			\
+	"GPU link launch count transmited")					\
+	macro("GXFER:XRCV_COUNT",             GPU_XFER_XRCV_COUNT,  			\
+	"GPU kernel: launch count received")
+
 
 //******************************************************************************
 // interface operations
@@ -451,6 +475,11 @@ gpu_metrics_GSAMP_enable
  void
 );
 
+void
+gpu_metrics_GXFER_enable
+(
+void
+);
 
 //--------------------------------------------------
 // record global memory access statistics

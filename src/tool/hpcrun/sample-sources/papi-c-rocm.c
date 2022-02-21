@@ -44,10 +44,10 @@
 //***************************************************************************
 //
 // File:
-//   cupti-api.c
+//   rocm-api.c
 //
 // Purpose:
-//   implementation of wrapper around NVIDIA's CUPTI performance tools API
+//   implementation of wrapper around NVIDIA's ROCM performance tools API
 //
 //***************************************************************************
 
@@ -68,7 +68,7 @@
 #include <sample-sources/ss-obj-name.h>
 #include "papi-c.h"
 #include "papi-c-extended-info.h"
-
+#include <hpcrun/gpu/amd/hip-api.h>
 
 
 //******************************************************************************
@@ -93,19 +93,19 @@ papi_c_no_action(void)
 
 
 static bool
-is_papi_c_cuda(const char* name)
+is_papi_c_rocm(const char* name)
 {
-  return strstr(name, "cuda") == name;
+  return strstr(name, "rocm") == name;
 }
 
 
-// Get or create a cupti event set
+// Get or create a rocm event set
 static void
-papi_c_cupti_get_event_set(int* event_set)
+papi_c_rocm_get_event_set(int* event_set)
 {
-  TMSG(CUDA, "Get event set");
+  TMSG(ROCM, "Get event set");
   if (! event_set_created) {
-    TMSG(CUDA, "No event set created, so create one");
+    TMSG(ROCM, "No event set created, so create one");
     int ret = PAPI_create_eventset(&my_event_set);
     if (ret != PAPI_OK) {
       hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s",
@@ -113,39 +113,39 @@ papi_c_cupti_get_event_set(int* event_set)
     }
     *event_set = my_event_set;
     event_set_created = true;
-    TMSG(CUDA, "Event set %d created", my_event_set);
+    TMSG(ROCM, "Event set %d created", my_event_set);
   }
 }
 
 
 // Add event to my_event_set
 void
-papi_c_cupti_add_event(int event_set, int evcode)
+papi_c_rocm_add_event(int event_set, int evcode)
 {
   assert(event_set == my_event_set);
 
   int rv = PAPI_OK;
   if (! event_set_finalized) {
-    TMSG(CUDA, "Adding event %x to cupti event set", evcode);
+    TMSG(ROCM, "Adding event %x to rocm event set", evcode);
     rv = PAPI_add_event(my_event_set, evcode);
     if (rv != PAPI_OK) {
       hpcrun_abort("failure in PAPI gen_event_set(): PAPI_add_event() returned: %s (%d)",
                    PAPI_strerror(rv), rv);
     }
-    TMSG(CUDA, "Added event %d, to cuda event set %d", evcode, my_event_set);
+    TMSG(ROCM, "Added event %d, to rocm event set %d", evcode, my_event_set);
   }
 }
 
 // No adding new events after this point
 void
-papi_c_cupti_finalize_event_set(void)
+papi_c_rocm_finalize_event_set(void)
 {
   event_set_finalized = true;
 }
 
 
 void
-papi_c_cupti_start()
+papi_c_rocm_start()
 {
   int ret = PAPI_start(my_event_set);
   if (ret != PAPI_OK) {
@@ -156,8 +156,9 @@ papi_c_cupti_start()
 
 
 void
-papi_c_cupti_read(long long *values)
+papi_c_rocm_read(long long *values)
 {
+  hip_dev_sync(); // TODO:Dejan check this out
   int ret = PAPI_read(my_event_set, values);
   if (ret != PAPI_OK) {
     hpcrun_abort("PAPI_read of event set %d failed with %s (%d)",
@@ -167,7 +168,7 @@ papi_c_cupti_read(long long *values)
 
 
 void
-papi_c_cupti_stop(long long *values)
+papi_c_rocm_stop(long long *values)
 {
   int ret = PAPI_stop(my_event_set, values);
   if (ret != PAPI_OK) {
@@ -177,24 +178,24 @@ papi_c_cupti_stop(long long *values)
 }
 
 
-static sync_info_list_t cuda_component = {
-  .pred = is_papi_c_cuda,
-  .get_event_set = papi_c_cupti_get_event_set,
-  .add_event = papi_c_cupti_add_event,
-  .finalize_event_set = papi_c_cupti_finalize_event_set,
+static sync_info_list_t rocm_component = {
+  .pred = is_papi_c_rocm,
+  .get_event_set = papi_c_rocm_get_event_set,
+  .add_event = papi_c_rocm_add_event,
+  .finalize_event_set = papi_c_rocm_finalize_event_set,
   .is_gpu_sync = true,
   .setup = papi_c_no_action,
   .teardown = papi_c_no_action,
-  .start = papi_c_cupti_start,
-  .read = papi_c_cupti_read,
-  .stop = papi_c_cupti_stop,
+  .start = papi_c_rocm_start,
+  .read = papi_c_rocm_read,
+  .stop = papi_c_rocm_stop,
   .process_only = true,
   .next = NULL,
 };
 
 
 void
-SS_OBJ_CONSTRUCTOR(papi_c_cupti)(void)
+SS_OBJ_CONSTRUCTOR(papi_c_rocm)(void)
 {
-  papi_c_sync_register(&cuda_component);
+  papi_c_sync_register(&rocm_component);
 }

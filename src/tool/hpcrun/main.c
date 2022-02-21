@@ -78,6 +78,7 @@
 #include <include/uint.h>
 
 #include <include/hpctoolkit-config.h>
+#include <lib/prof-lean/placeholders.h>
 
 #include "main.h"
 
@@ -221,7 +222,6 @@ bool hpcrun_no_unwind = false;
  *****************************************************************************/
 static __thread bool hpcrun_thread_suppress_sample = true;
 
-
 //***************************************************************************
 // local variables 
 //***************************************************************************
@@ -244,6 +244,9 @@ static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
 
 static int monitor_fini_process_how = 0;
+static atomic_int ms_init_started = ATOMIC_VAR_INIT(0);
+static atomic_int ms_init_completed = ATOMIC_VAR_INIT(0);
+
 
 //***************************************************************************
 // Interface functions for suppressing samples
@@ -422,7 +425,7 @@ abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
 static void 
 hpcrun_set_abort_timeout()
 {
-  static process_index = 0;
+  static int process_index = 0;
 
   char *abort_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
 
@@ -799,11 +802,12 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
-  if (! hpcrun_thread_suppress_sample) {
-    // handle event sets for sample sources
-    SAMPLE_SOURCES(gen_event_set,lush_metrics);
+  if (! hpcrun_thread_suppress_sample ) {
     // sample sources take thread specific action prior to start (often is a 'registration' action);
     SAMPLE_SOURCES(thread_init_action);
+
+    // handle event sets for sample sources
+    SAMPLE_SOURCES(gen_event_set,lush_metrics);
 
     // start the sample sources
     SAMPLE_SOURCES(start);
@@ -888,18 +892,18 @@ hpcrun_wait()
 
 
 //***************************************************************************
-// process control (via libmonitor)
+// hpcrun initialization ( process control via libmonitor)
 //***************************************************************************
+
+static
+void  hpcrun_prepare_measurement_subsystem(bool is_child);
 
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
-  char* process_name;
+  const char* process_name;
 
   hpcrun_thread_suppress_sample = false;
-
-  fork_data_t* fork_data = (fork_data_t*) data;
-  bool is_child = data && fork_data->is_child;
 
   hpcrun_wait();
 
@@ -924,6 +928,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
+  TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
+
   // We initialize the load map and fnbounds before registering sample source.
   // This is because sample source init (such as PAPI)  may dlopen other libraries,
   // which will trigger our library monitoring code and fnbound queries
@@ -937,6 +943,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   // We need to initialize messages related functions and set up measurement directory,
   // so that we can write vdso and prevent fnbounds print messages to the terminal.
   messages_init();
+
+  fork_data_t* fork_data = (fork_data_t*) data;
+  bool is_child = data && fork_data->is_child;
+
   if (!hpcrun_get_disabled()) {
     hpcrun_files_set_directory();
     messages_logfile_create();
@@ -959,53 +969,73 @@ monitor_init_process(int *argc, char **argv, void* data)
     auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
   }
-
-  hpcrun_registered_sources_init();
-
-  hpcrun_do_custom_init();
-
-
-  // for debugging, limit the life of the execution with an alarm.
-  char* life  = getenv("HPCRUN_LIFETIME");
-  if (life != NULL){
-    int seconds = atoi(life);
-    if (seconds > 0) alarm((unsigned int) seconds);
+  
+  if (is_child){
+    hpcrun_prepare_measurement_subsystem(is_child);
   }
-
-  // see if unwinding has been turned off
-  // the same setting governs whether or not fnbounds is needed or used.
-  hpcrun_no_unwind = hpcrun_get_env_bool("HPCRUN_NO_UNWIND");
-
-  char* s = getenv(HPCRUN_EVENT_LIST);
-
-  if (! is_child) {
-    hpcrun_sample_sources_from_eventlist(s);
-  }
-
-  hpcrun_set_abort_timeout();
-
-  hpcrun_process_sample_source_none();
-
-  TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
-
-  TMSG(PROCESS,"init");
-
-
-  hpcrun_sample_prob_mesg();
-
-  TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
-
-  hpcrun_init_internal(is_child);
-
-  if (ENABLED(TST)){
-    EEMSG("TST debug ctl is active!");
-    STDERR_MSG("Std Err message appears");
-  }
-
-
-  hpcrun_safe_exit();
 
   return data;
+}
+
+
+void
+monitor_at_main()
+{  
+  bool is_child = false;
+  hpcrun_prepare_measurement_subsystem(is_child);
+}
+
+
+static
+void  hpcrun_prepare_measurement_subsystem(bool is_child)
+{  
+  if (atomic_fetch_add(&ms_init_started, 1) == 0){
+    hpcrun_registered_sources_init();
+
+    hpcrun_do_custom_init();
+
+    // for debugging, limit the life of the execution with an alarm.
+    char* life  = getenv("HPCRUN_LIFETIME");
+    if (life != NULL){
+      int seconds = atoi(life);
+      if (seconds > 0) alarm((unsigned int) seconds);
+    }
+
+    // see if unwinding has been turned off
+    // the same setting governs whether or not fnbounds is needed or used.
+    hpcrun_no_unwind = hpcrun_get_env_bool("HPCRUN_NO_UNWIND");
+
+    char* s = getenv(HPCRUN_EVENT_LIST);
+
+    if (! is_child) {
+      hpcrun_sample_sources_from_eventlist(s);
+    }
+
+    hpcrun_set_abort_timeout();
+
+    hpcrun_process_sample_source_none();
+
+    TMSG(PROCESS,"hpcrun outer initialization");
+
+    hpcrun_sample_prob_mesg();
+
+    TMSG(PROCESS, "I am a %s process parent");
+
+    hpcrun_init_internal(is_child);
+
+    if (ENABLED(TST)){
+      EEMSG("TST debug ctl is active!");
+      STDERR_MSG("Std Err message appears");
+    }
+
+    hpcrun_safe_exit();
+
+    atomic_store(&ms_init_completed, 1);
+
+  }else{
+    while(! atomic_load(&ms_init_completed));
+  }
+    
 }
 
 
@@ -1165,6 +1195,7 @@ monitor_init_thread_support(void)
   hpcrun_safe_exit();
 }
 
+
 void*
 monitor_thread_pre_create(void)
 {
@@ -1181,7 +1212,11 @@ monitor_thread_pre_create(void)
   if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
     return MONITOR_IGNORE_NEW_THREAD;
   }
-  
+  bool is_child = false;
+  // outer initialization
+   hpcrun_prepare_measurement_subsystem(is_child);
+
+
   hpcrun_safe_enter();
   local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));
 

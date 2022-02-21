@@ -244,7 +244,7 @@ hpcrun_sample_callpath(void* context, int metricId,
       }
     }
   }
-  else {
+  else {  // Partial unwind case
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
         metricId, metricIncr, skipInner, NULL);

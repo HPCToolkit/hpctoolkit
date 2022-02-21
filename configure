@@ -656,6 +656,7 @@ OPT_ROCM_LD_LIB_PATH
 OPT_ROCM_IFLAGS
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
+OPT_GTPIN_LDFLAGS
 OPT_GTPIN_LIBDIR
 OPT_GTPIN_IFLAGS
 OPT_GTPIN
@@ -748,6 +749,8 @@ TBB_LIB_DIR
 TBB_PROXY_LIB
 TBB_LFLAGS
 TBB_IFLAGS
+OPT_PAPI_ROCM_FALSE
+OPT_PAPI_ROCM_TRUE
 OPT_PAPI_CUPTI_FALSE
 OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
@@ -1054,6 +1057,7 @@ with_papi
 enable_force_papi
 enable_papi_c
 enable_papi_c_cupti
+enable_papi_c_rocm
 with_perfmon
 enable_perf_events
 enable_kernel_blocking
@@ -1763,6 +1767,8 @@ Optional Features:
   --enable-papi-c         use component papi, if available (default yes)
   --enable-papi-c-cupti   use papi CUPTI support, if available (default no),
                           requires papi cuda component
+  --enable-papi-c-rocm    use papi ROCM support, if available (default no),
+                          requires papi rocm component
   --enable-perf-events    force enable or disable perf events in hpcrun
                           (normally 2.6.32 or later), only needed if fails to
                           auto-detect correctly
@@ -21996,10 +22002,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #include "papi.h"
-extern void CUDA_init_component(void);
 int main()
 {
-  CUDA_init_component();
 }
 
 _ACEOF
@@ -22022,6 +22026,67 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c_cupti" >&5
 $as_echo "$use_papi_c_cupti" >&6; }
+fi
+
+
+#-------------------------------------------------
+# Option: --enable-papi-c-rocm
+#-------------------------------------------------
+
+use_papi_c_rocm=no
+
+# Check whether --enable-papi-c-rocm was given.
+if test "${enable_papi_c_rocm+set}" = set; then :
+  enableval=$enable_papi_c_rocm; use_papi_c_rocm="$enableval"
+fi
+
+
+if test "$use_papi_c" = no || test "$use_papi_c_rocm" != yes ; then
+  use_papi_c_rocm=no
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for papi rocm component" >&5
+$as_echo_n "checking for papi rocm component... " >&6; }
+
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include "papi.h"
+int main()
+{
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  use_papi_c_rocm=yes
+else
+  use_papi_c_rocm=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c_rocm" >&5
+$as_echo "$use_papi_c_rocm" >&6; }
 fi
 
 
@@ -22354,6 +22419,7 @@ $as_echo "$as_me: WARNING: disable papi due to possible conflict with perfmon" >
     OPT_PAPI_LIBPATH=
     use_papi_c=no
     use_papi_c_cupti=no
+    use_papi_c_rocm=no
   fi
 fi
 
@@ -22389,6 +22455,14 @@ fi
 else
   OPT_PAPI_CUPTI_TRUE='#'
   OPT_PAPI_CUPTI_FALSE=
+fi
+
+ if test "$use_papi_c_rocm" = yes; then
+  OPT_PAPI_ROCM_TRUE=
+  OPT_PAPI_ROCM_FALSE='#'
+else
+  OPT_PAPI_ROCM_TRUE='#'
+  OPT_PAPI_ROCM_FALSE=
 fi
 
 
@@ -24375,6 +24449,201 @@ $as_echo "$GTPIN" >&6; }
 
 
 #-------------------------------------------------
+# Option: --with-igc=PATH
+#-------------------------------------------------
+
+IGC=no
+OPT_HAVE_IGC=no
+OPT_IGC_IFLAGS=
+OPT_IGC_LDFLAGS=
+
+
+# Check whether --with-igc was given.
+if test "${with_igc+set}" = set; then :
+  withval=$with_igc; IGC="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for igc" >&5
+$as_echo_n "checking for igc... " >&6; }
+
+case "$IGC" in
+  /* )
+    if test ! -f "${IGC}/include/igc/igc.opencl.h" ; then
+      as_fn_error $? "unable to find igc.opencl.h in: $IGC" "$LINENO" 5
+    fi
+    OPT_IGC_IFLAGS="-I${IGC}/include"
+
+    IGC_LDFLAGS =
+    IGA_LDFLAGS =
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libigc.so" ; then
+        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+        break
+      fi
+    done
+    if test "x$IGC_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libigc.so in: $IGC" "$LINENO" 5
+    fi
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libiga64.so" ; then
+        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+        break
+      fi
+    done
+    if test "x$IGA_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libiga.so in: $IGC" "$LINENO" 5
+    fi
+
+    OPT_IGC_LDFLAGS="${IGC_LDFLAGS} ${IGA_LDFLAGS}"
+
+    OPT_HAVE_IGC=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "igc directory must be absolute path: $IGC" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_IGC" = yes; then
+  OPT_ENABLE_IGC_TRUE=
+  OPT_ENABLE_IGC_FALSE='#'
+else
+  OPT_ENABLE_IGC_TRUE='#'
+  OPT_ENABLE_IGC_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $IGC" >&5
+$as_echo "$IGC" >&6; }
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-metrics-discovery=PATH
+#-------------------------------------------------
+
+METRICS_DISCOVERY=no
+OPT_HAVE_METRICS_DISCOVERY=no
+OPT_METRICS_DISCOVERY_IFLAGS=
+OPT_METRICS_DISCOVERY_LDFLAGS=
+
+
+# Check whether --with-metrics-discovery was given.
+if test "${with_metrics_discovery+set}" = set; then :
+  withval=$with_metrics_discovery; METRICS_DISCOVERY="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for metrics-discovery" >&5
+$as_echo_n "checking for metrics-discovery... " >&6; }
+
+case "$METRICS_DISCOVERY" in
+  /* )
+    if test ! -f "${METRICS_DISCOVERY}/include/metrics_discovery_api.h" ; then
+      as_fn_error $? "unable to find metrics_discovery_api.h in: $METRICS_DISCOVERY" "$LINENO" 5
+    fi
+    OPT_METRICS_DISCOVERY_IFLAGS="-I${METRICS_DISCOVERY}/include"
+
+    for lib in $multilib_path ; do
+      if test -f "${METRICS_DISCOVERY}/${lib}/libmd.so" ; then
+        OPT_METRICS_DISCOVERY_LDFLAGS="-L${METRICS_DISCOVERY}/$lib -Wl,-rpath=${METRICS_DISCOVERY}/$lib -lmd"
+        break
+      fi
+    done
+    if test "x$OPT_METRICS_DISCOVERY_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libmd.so in: $METRICS_DISCOVERY" "$LINENO" 5
+    fi
+    OPT_HAVE_METRICS_DISCOVERY=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "metrics-discovery directory must be absolute path: $METRICS_DISCOVERY" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_METRICS_DISCOVERY" = yes; then
+  OPT_ENABLE_METRICS_DISCOVERY_TRUE=
+  OPT_ENABLE_METRICS_DISCOVERY_FALSE='#'
+else
+  OPT_ENABLE_METRICS_DISCOVERY_TRUE='#'
+  OPT_ENABLE_METRICS_DISCOVERY_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $METRICS_DISCOVERY" >&5
+$as_echo "$METRICS_DISCOVERY" >&6; }
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-gtpin=PATH
+#-------------------------------------------------
+
+GTPIN=no
+OPT_HAVE_GTPIN=no
+OPT_GTPIN_IFLAGS=
+OPT_GTPIN_LDFLAGS=
+
+
+# Check whether --with-gtpin was given.
+if test "${with_gtpin+set}" = set; then :
+  withval=$with_gtpin; GTPIN="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gtpin" >&5
+$as_echo_n "checking for gtpin... " >&6; }
+
+case "$GTPIN" in
+  /* )
+    if test ! -f "${GTPIN}/Profilers/Include/gtpin.h" ; then
+      as_fn_error $? "unable to find gtpin.h in: $GTPIN" "$LINENO" 5
+    fi
+    OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
+
+    if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
+      OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+    fi
+
+    if test "x$OPT_GTPIN_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libgtpin.so in: $GTPIN" "$LINENO" 5
+    fi
+    OPT_HAVE_GTPIN=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "gtpin directory must be absolute path: $GTPIN" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_GTPIN" = yes; then
+  OPT_ENABLE_GTPIN_TRUE=
+  OPT_ENABLE_GTPIN_FALSE='#'
+else
+  OPT_ENABLE_GTPIN_TRUE='#'
+  OPT_ENABLE_GTPIN_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTPIN" >&5
+$as_echo "$GTPIN" >&6; }
+
+
+
+
+
+
+#-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
@@ -25358,6 +25627,10 @@ if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_PAPI_ROCM_TRUE}" && test -z "${OPT_PAPI_ROCM_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_PAPI_ROCM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -25436,6 +25709,18 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_OPENCL_TRUE}" && test -z "${OPT_ENABLE_OPENCL_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_OPENCL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_IGC_TRUE}" && test -z "${OPT_ENABLE_IGC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_IGC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_METRICS_DISCOVERY_TRUE}" && test -z "${OPT_ENABLE_METRICS_DISCOVERY_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_METRICS_DISCOVERY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_GTPIN_TRUE}" && test -z "${OPT_ENABLE_GTPIN_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_GTPIN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_IGC_TRUE}" && test -z "${OPT_ENABLE_IGC_FALSE}"; then
@@ -28132,6 +28417,8 @@ $as_echo "$as_me:   gtpin:        ${GTPIN}" >&6;}
 $as_echo "$as_me:   metrics-discovery: ${METRICS_DISCOVERY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-rocm: ${use_papi_c_rocm}" >&5
+$as_echo "$as_me:   papi-c-rocm: ${use_papi_c_rocm}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm:         ${rocm_mesg}" >&5
 $as_echo "$as_me:   rocm:         ${rocm_mesg}" >&6;}
 if test "$OPT_HAVE_ROCM" = yes ; then

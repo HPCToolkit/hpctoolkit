@@ -133,10 +133,15 @@ ElfFile::open
       fwrite(getMemory(), getLength(), 1, f);
       fclose(f);
     }
+    // Prevent memory leak
+    free(memPtr);
 #else
     result = false;
     memPtr = 0;
 #endif
+    // If we cannot open the binary, release memPtr's memory
+    // If we opened the binary, we've copied memPtr to origPtr, also release memory
+    memPtr = 0;
   }
 #endif
 

@@ -108,7 +108,7 @@
 // where any GPU can indicate that its functions should be added to
 // the module ignore map when that type of GPU is being monitored.
 
-#define NUM_FNS 8
+#define NUM_FNS 9
 
 
 
@@ -127,16 +127,19 @@ typedef struct module_ignore_entry {
 // static data
 //***************************************************************************
 
-static const char *IGNORE_FNS[NUM_FNS] = {
+
+static const char *IGNORE_FNS[] = {
   "cuLaunchKernel",
   "cudaLaunchKernel",
   "cuptiActivityEnable",
+  "rocprofiler_iterate_info",
   "roctracer_set_properties",  // amd roctracer library
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
-  "hsa_queue_create",          // amd hsa runtime
+  "hsa_init",                  // amd hsa runtime
   "hpcrun_malloc"              // hpcrun library
 };
+
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
 
@@ -250,7 +253,7 @@ module_ignore_map_lookup
 }
 
 int
-serach_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
+search_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
 {
   Elf_Data *data;
   char *symName;
@@ -287,6 +290,8 @@ module_ignore_map_ignore
   load_module_t* lm
 )
 {
+  if (lm == NULL) return false;
+  
   // Update path
   // Only one thread could update the flag,
   // Guarantee dlopen modules before notification are updated.
@@ -332,7 +337,7 @@ module_ignore_map_ignore
       gelf_getshdr(scn, &secHead);
       // Only search .dynsym section
       if (secHead.sh_type != SHT_DYNSYM) continue;
-      int module_ignore_index = serach_functions_in_module(elf, &secHead, scn);
+      int module_ignore_index = search_functions_in_module(elf, &secHead, scn);
       if (module_ignore_index != -1) {
         modules[module_ignore_index].module = module;
         modules[module_ignore_index].empty = false;

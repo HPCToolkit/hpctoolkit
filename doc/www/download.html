@@ -69,28 +69,29 @@ The instructions to install Java:
 	</li>
 	<li>Set <b><code>JAVA_HOME</code></b> environment variable to the installed directory</li>
 </ol>
-<ul>
-	Additional Mac OS directions if other Java versions are installed
-		<ul>
-			<li>Leave all JDKs at their default location, under <code>/Library/Java/JavaVirtualMachines</code>. The system will pick the highest version by default. </li>
-			<li>To exclude a JDK from being picked by default, rename its <code>Contents/Info.plist</code> to: <code>Info.plist.disabled</code>. <br/>
-				That JDK can still be used when <code>$JAVA_HOME</code> points to it, or explicitly referenced in a script or configuration. It will simply be ignored by system's java command.</li>
-		</ul>
-</ul>
-</ul>
+	
+Additional Mac OS directions if other Java versions are installed:
 
-<h2>Latest Release</h2>
+	<ul>
+		<li>Leave all JDKs at their default location, under <code>/Library/Java/JavaVirtualMachines</code>. The system will pick the highest version by default. </li>
+		<li>To exclude a JDK from being picked by default, rename its <code>Contents/Info.plist</code> to: <code>Info.plist.disabled</code>. <br/>
+			That JDK can still be used when <code>$JAVA_HOME</code> points to it, or explicitly referenced in a script or configuration. It will simply be ignored by system's java command.</li>
+	</ul>
+
+
+<h2>Latest release</h2>
 
 <table>
   <thead>
-    <tr> <th>OS</th> <th>Platform</th> <th>Download link</th></tr>
+    <tr> <th>OS</th> <th>Processor</th> <th>Download link</th></tr>
   </thead>
   <tbody>
-    <tr><td><b>Linux</b></td> <td>x86-64</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.x86_64.tgz">hpcviewer-linux.gtk.x86_64.tgz</a></td> </tr>
-    <tr><td><b>Linux</b></td> <td> Power Little endian 64</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.ppc64le.tgz">hpcviewer-linux.gtk.ppc64le.tgz</a></td> </tr>
-    <tr><td><b>Linux</b></td> <td> ARM 64 (experimental)</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.aarch64.tgz">hpcviewer-linux.gtk.aarch64.tgz</a></td> </tr>
-    <tr><td><b>MacOS</b></td> <td> x86-64</td> <td><a href="download/hpcviewer/latest/hpcviewer-macosx.cocoa.x86_64.dmg">hpcviewer-macosx.cocoa.x86_64.dmg</a></td> </tr>
-    <tr><td><b>Windows</b></td> <td> x86-64</td> <td><a href="download/hpcviewer/latest/hpcviewer-win32.win32.x86_64.zip">hpcviewer-win32.win32.x86_64.zip</a></td> </tr>
+    <tr><td><b>Linux</b></td> <td>x86_64</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.x86_64.tgz">hpcviewer-linux.gtk.x86_64.tgz</a></td> </tr>
+    <tr><td><b>Linux</b></td> <td>ppcle</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.ppc64le.tgz">hpcviewer-linux.gtk.ppc64le.tgz</a></td> </tr>
+    <tr><td><b>Linux</b></td> <td>aarch64</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.aarch64.tgz">hpcviewer-linux.gtk.aarch64.tgz</a></td> </tr>
+    <tr><td><b>MacOS</b></td> <td> x86_64</td> <td><a href="download/hpcviewer/latest/hpcviewer-macosx.cocoa.x86_64.dmg">hpcviewer-macosx.cocoa.x86_64.dmg</a></td> </tr>
+    <tr><td><b>MacOS</b></td> <td>aarch64</td> <td><a href="download/hpcviewer/latest/hpcviewer-macosx.cocoa.aarch64.dmg">hpcviewer-macosx.cocoa.aarch64.dmg</a></td> </tr>
+    <tr><td><b>Windows</b></td> <td>x86_64</td> <td><a href="download/hpcviewer/latest/hpcviewer-win32.win32.x86_64.zip">hpcviewer-win32.win32.x86_64.zip</a></td> </tr>
   </tbody>
 </table>
 

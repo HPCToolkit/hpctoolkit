@@ -84,8 +84,9 @@
   macro(GPU_INST, 9)  \
   macro(GTIMES, 10)  \
   macro(KINFO, 12)  \
-  macro(GSAMP, 13) \
-  macro(CTR, 3)
+  macro(GSAMP, 13) \  
+  macro(GXFER, 14) \
+  macro(CTR, 3) 
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -615,6 +616,41 @@ gpu_metrics_attribute_counter
   free(c->values);
 }
 
+static void
+gpu_metrics_attribute_link
+(
+gpu_activity_t *activity
+)
+{
+
+	printf("Attrubute NVLINK not implemented\n\n");
+//	gpu_link_t *m = &(activity->details.memcpy);
+//	cct_node_t *cct_node = activity->cct_node;
+
+//	metric_data_list_t *metrics =
+//	hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT),
+//																	 m->staticSharedMemory);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_RCV),
+//																	 m->dynamicSharedMemory);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT_TP),
+//																	 m->localMemoryTotal);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XRCV_TP),
+//																	 m->activeWarpsPerSM);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT_COUNT),
+//																	 m->activeWarpsPerSM);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XRCV_COUNT),
+//																	 m->activeWarpsPerSM);
+
+
+}
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -944,4 +980,21 @@ gpu_metrics_GPU_CTR_enable
   }
 
   hpcrun_close_kind(GPU_COUNTER_METRIC_KIND_INFO);
+}
+
+
+void
+gpu_metrics_GXFER_enable
+(
+void
+)
+{
+//#undef CURRENT_METRIC
+//#define CURRENT_METRIC GXFER
+
+	//INITIALIZE_METRIC_KIND();
+
+	//FORALL_GXFER(INITIALIZE_SCALAR_METRIC_INT)
+
+	//FINALIZE_METRIC_KIND();
 }

@@ -57,6 +57,7 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-trace-item.h>
+#include <hpcrun/gpu/gpu-correlation-id.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
 #include <hpcrun/gpu/gpu-event-id-map.h>
@@ -475,9 +476,11 @@ gpu_synchronization_process
   if (cid_map_entry != NULL) {
     uint64_t external_id =
       gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
-    if (host_op_entry != NULL) {
+    if (host_op_entry != NULL && external_id != IGNORE_CORR_ID) {
+
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
           gpu_placeholder_type_sync);

@@ -454,7 +454,7 @@ launch_server(void)
   struct {
     int sendfd[2], recvfd[2];
   } fds;
-  bool sampling_is_running;
+  bool sampling_is_running = false;
   pid_t child_pid;
 
   // already running
@@ -472,11 +472,13 @@ launch_server(void)
     return -1;
   }
 
-  // some sample sources need to be stopped in the parent, or else
-  // they cause problems in the child.
-  sampling_is_running = SAMPLE_SOURCES(started);
-  if (sampling_is_running) {
-    SAMPLE_SOURCES(stop);
+  if (hpcrun_is_initialized()){
+    // some sample sources need to be stopped in the parent, or else
+    // they cause problems in the child.
+    sampling_is_running = SAMPLE_SOURCES(started);
+    if (sampling_is_running) {
+      SAMPLE_SOURCES(stop);
+    }
   }
 
   // Give up a bit of our stack for the child shim. It doesn't need much.

@@ -129,7 +129,6 @@ static pthread_key_t _hpcrun_key;
 static int use_getspecific = 0;
 static __thread bool mem_pool_initialized = false;
 
-
 void
 hpcrun_init_pthread_key
 (
@@ -290,8 +289,6 @@ hpcrun_thread_init_mem_pool_once
     mem_pool_initialized = true;
   }
 }
-
-
 
 //***************************************************************************
 // 

@@ -476,10 +476,10 @@ opencl_operation_multiplexer_push
   gpu_activity.details.correlation.host_correlation_id = correlation_id;
   gpu_operation_multiplexer_push(obj->details.initiator_channel,
     NULL, &gpu_activity);
-
+  
   // The actual entry
   opencl_activity_translate(&gpu_activity, obj, interval);
-  gpu_operation_multiplexer_push(obj->details.initiator_channel,
+  gpu_operation_multiplexer_push(obj->details.initiator_channel, 
     obj->pending_operations, &gpu_activity);
 }
 
@@ -1243,6 +1243,441 @@ opencl_api_thread_finalize
 
     // Wait until my activities are drained
     if (how == MONITOR_EXIT_NORMAL) opencl_wait_for_self_pending_operations();
+
+    // Now I can attribute activities
+    gpu_application_thread_process_activities();
+  }
+}
+
+
+cl_program
+clCreateProgramWithSource
+(
+ cl_context context,
+ cl_uint count,
+ const char** strings,
+ const size_t* lengths,
+ cl_int* errcode_ret
+)
+{
+  ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
+
+#if 0
+  if (strings != NULL && lengths != NULL) {
+    FILE *f_ptr;
+    for (int i = 0; i < (int)count; i++) {
+      // what if a single file has multiple kernels?
+      // we need to add logic to get filenames by reading the strings contents
+      char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
+
+      // TO-DO: AARON using malloc instead of hpcrun_malloc gives extra garbage characters in file name
+      char *filename = (char *)hpcrun_malloc(sizeof(fileno) + 1);
+      *filename = fileno + '\0';
+      f_ptr = fopen(filename, "w");
+      fwrite(strings[i], lengths[i], 1, f_ptr);
+    }
+    fclose(f_ptr);
+  }
+#endif
+
+  return HPCRUN_OPENCL_CALL(clCreateProgramWithSource, (context, count, strings, lengths, errcode_ret));
+}
+
+#ifdef OPT_ENABLE_IGC
+// one downside of this appproach is that we may override the callback provided by user
+cl_int
+clBuildProgram
+(
+ cl_program program,
+ cl_uint num_devices,
+ const cl_device_id* device_list,
+ const char* options,
+ void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
+ void* user_data
+)
+{
+  ETMSG(OPENCL, "inside clBuildProgram_wrapper");
+  // XXX(Aaron): Caution, what's the maximum length of options?
+  int len_options = options == NULL ? 0 : strlen(options);
+  int len_flag = strlen(LINE_TABLE_FLAG);
+  char *options_with_debug_flags = (char *)malloc((len_options + len_flag + 1) * sizeof(char));
+  memset(options_with_debug_flags, 0, (len_options + len_flag + 1));
+  if (len_options != 0) {
+    strncat(options_with_debug_flags, options, len_options);
+  }
+  strcat(options_with_debug_flags, LINE_TABLE_FLAG);
+  cl_int ret = HPCRUN_OPENCL_CALL(clBuildProgram, (program, num_devices, device_list, options_with_debug_flags, clBuildProgramCallback, user_data));
+  free(options_with_debug_flags);
+  return ret;
+}
+#endif // OPT_ENABLE_IGC
+
+
+cl_command_queue
+clCreateCommandQueue
+(
+ cl_context context,
+ cl_device_id device,
+ cl_command_queue_properties properties,
+ cl_int *errcode_ret
+)
+{
+  // enabling profiling
+  properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; 
+
+  cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
+        properties,errcode_ret));
+
+  uint32_t context_id = opencl_cl_context_map_update((uint64_t)context);
+  opencl_cl_queue_map_update((uint64_t)queue, context_id);
+
+  return queue;
+}
+
+
+cl_command_queue
+clCreateCommandQueueWithProperties
+(
+ cl_context context,
+ cl_device_id device,
+ const cl_queue_properties* properties,
+ cl_int* errcode_ret
+)
+{
+  cl_queue_properties *queue_properties = (cl_queue_properties *)properties;
+  if (properties == NULL) {
+    queue_properties = (cl_queue_properties *)malloc(sizeof(cl_queue_properties) * 3);
+    queue_properties[0] = CL_QUEUE_PROPERTIES;
+    queue_properties[1] = CL_QUEUE_PROFILING_ENABLE;
+    queue_properties[2] = 0;
+  } else {
+    int queue_props_id = -1;
+    int props_count = 0;
+    while (properties[props_count] != 0) {
+      if (properties[props_count] == CL_QUEUE_PROPERTIES) {
+        queue_props_id = props_count;
+        ++props_count;
+      } else if (properties[props_count] == CL_QUEUE_SIZE) {
+        ++props_count;
+      }
+      ++props_count;
+    }
+
+    if (queue_props_id >= 0 && queue_props_id + 1 < props_count) {
+      queue_properties = (cl_queue_properties *)malloc(sizeof(cl_queue_properties) * (props_count + 1));
+      for (int i = 0; i < props_count; ++i) {
+        queue_properties[i] = properties[i];
+      }
+      // We do have a queue property entry, just enable profiling
+      queue_properties[queue_props_id + 1] |= CL_QUEUE_PROFILING_ENABLE;
+      queue_properties[props_count] = 0;
+    } else {
+      // We do not have a queue property entry, need to allocate a queue property entry and set up
+      queue_properties = (cl_queue_properties *)malloc(sizeof(cl_queue_properties) * (props_count + 3));
+      for (int i = 0; i < props_count; ++i) {
+        queue_properties[i] = properties[i];
+      }
+      queue_properties[props_count] = CL_QUEUE_PROPERTIES;
+      queue_properties[props_count + 1] = CL_QUEUE_PROFILING_ENABLE;
+      queue_properties[props_count + 2] = 0;
+    }
+  }
+  cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueueWithProperties, (context, device, queue_properties, errcode_ret));
+  if (queue_properties != NULL) {
+    // The property is created by us
+    free(queue_properties);
+  }
+
+  uint32_t context_id = opencl_cl_context_map_update((uint64_t)context);
+  opencl_cl_queue_map_update((uint64_t)queue, context_id);
+  return queue;
+}
+
+
+cl_int
+clEnqueueNDRangeKernel
+(
+ cl_command_queue command_queue,
+ cl_kernel ocl_kernel,
+ cl_uint work_dim,
+ const size_t *global_work_offset, 
+ const size_t *global_work_size,
+ const size_t *local_work_size,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
+)
+{
+  opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL);
+  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue))
+
+  opencl_subscriber_callback(kernel_info);
+
+  cl_event *eventp = NULL;
+  SET_EVENT_POINTER(eventp, event, kernel_info)
+
+  cl_int return_status =
+            HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
+                                global_work_offset, global_work_size, local_work_size,
+                                num_events_in_wait_list, event_wait_list, eventp));
+
+  ETMSG(OPENCL, "Registering callback for kind: Kernel. "
+                "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
+                             &opencl_activity_completion_callback, kernel_info);
+  return return_status;
+}
+
+
+// this is a simplified version of clEnqueueNDRangeKernel, TODO: check if code duplication can be avoided
+cl_int
+clEnqueueTask
+(
+ cl_command_queue command_queue,
+ cl_kernel kernel,
+ cl_uint num_events_in_wait_list,
+ const cl_event* event_wait_list,
+ cl_event* event
+)
+{
+  opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL);
+  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue))
+
+  opencl_subscriber_callback(kernel_info);
+
+  cl_event *eventp = NULL;
+  SET_EVENT_POINTER(eventp, event, kernel_info);
+
+  cl_int return_status =
+            HPCRUN_OPENCL_CALL(clEnqueueTask, (command_queue, kernel,
+                                num_events_in_wait_list, event_wait_list, eventp));
+
+  ETMSG(OPENCL, "Registering callback for kind: Kernel. "
+                "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
+                             &opencl_activity_completion_callback, kernel_info);
+  return return_status;
+}
+
+
+cl_int
+clEnqueueReadBuffer
+(
+ cl_command_queue command_queue,
+ cl_mem buffer,
+ cl_bool blocking_read,
+ size_t offset,
+ size_t cb,
+ void *ptr,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
+)
+{
+  ETMSG(OPENCL, "inside clEnqueueReadBuffer wrapper");
+
+  opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY);
+  INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_D2H, cb, command_queue))
+
+  opencl_subscriber_callback(cpy_info);
+
+  cl_event *eventp = NULL;
+  SET_EVENT_POINTER(eventp, event, cpy_info);
+
+  cl_int return_status =
+    HPCRUN_OPENCL_CALL(clEnqueueReadBuffer,
+      (command_queue, buffer, blocking_read, offset,
+       cb, ptr, num_events_in_wait_list, event_wait_list, eventp));
+
+  ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: D2H. "
+                "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host",
+        (long)cb);
+
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
+                             &opencl_activity_completion_callback, cpy_info);
+
+  return return_status;
+}
+
+
+cl_int
+clEnqueueWriteBuffer
+(
+ cl_command_queue command_queue,
+ cl_mem buffer,
+ cl_bool blocking_write,
+ size_t offset,
+ size_t cb,
+ const void *ptr,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
+)
+{
+  ETMSG(OPENCL, "inside clEnqueueWriteBuffer wrapper. cl_mem buffer: %p", buffer);
+  opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY);
+  INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_H2D, cb, command_queue))
+
+  opencl_subscriber_callback(cpy_info);
+
+  cl_event *eventp = NULL;
+  SET_EVENT_POINTER(eventp, event, cpy_info);
+
+  cl_int return_status =
+  HPCRUN_OPENCL_CALL(clEnqueueWriteBuffer,
+                     (command_queue, buffer, blocking_write, offset, cb, ptr,
+                          num_events_in_wait_list, event_wait_list, eventp));
+
+  ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: H2D. "
+                "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device",
+        (long)cb);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
+                             &opencl_activity_completion_callback,
+                             (void*) cpy_info);
+
+  return return_status;
+}
+
+
+void*
+clEnqueueMapBuffer
+(
+ cl_command_queue command_queue,
+ cl_mem buffer,
+ cl_bool blocking_map,
+ cl_map_flags map_flags,
+ size_t offset,
+ size_t size,
+ cl_uint num_events_in_wait_list,
+ const cl_event* event_wait_list,
+ cl_event* event,
+ cl_int* errcode_ret
+)
+{
+  ETMSG(OPENCL, "inside clEnqueueMapBuffer wrapper");
+
+  opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY);
+  if (map_flags == CL_MAP_READ) {
+    INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_D2H, size, command_queue));
+  } else {
+    //map_flags == CL_MAP_WRITE || map_flags == CL_MAP_WRITE_INVALIDATE_REGION
+    INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_H2D, size, command_queue));
+  }
+  
+  opencl_subscriber_callback(cpy_info);
+
+  cl_event *eventp = NULL;
+  SET_EVENT_POINTER(eventp, event, cpy_info);
+
+  void *map_ptr =
+  HPCRUN_OPENCL_CALL(clEnqueueMapBuffer,
+                     (command_queue, buffer, blocking_map, map_flags, offset,
+                     size, num_events_in_wait_list, event_wait_list, eventp, errcode_ret));
+
+  if (map_flags == CL_MAP_READ) {
+    ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: D2H. "
+                  "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
+    ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host",
+          (long)size);
+  } else {
+    ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: H2D. "
+                  "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
+    ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device",
+          (long)size);
+  }
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
+                             &opencl_activity_completion_callback, cpy_info);
+
+  return map_ptr;
+}
+
+
+cl_mem
+clCreateBuffer
+(
+ cl_context context,
+ cl_mem_flags flags,
+ size_t size,
+ void* host_ptr,
+ cl_int* errcode_ret
+)
+{
+  ETMSG(OPENCL, "clCreateBuffer flags: %u, size: %"PRIu64 "", flags, size);
+
+  opencl_object_t *mem_info = opencl_malloc_kind(GPU_ACTIVITY_MEMORY);
+  INITIALIZE_CALLBACK_INFO(initializeMemoryCallBackInfo, mem_info, (mem_info, flags, size))
+
+  opencl_subscriber_callback(mem_info);
+
+  gpu_interval_t interval;
+  interval.start = CPU_NANOTIME();
+  cl_mem buffer = 
+    HPCRUN_OPENCL_CALL(clCreateBuffer, (context, flags, size, host_ptr, errcode_ret));
+  interval.end = CPU_NANOTIME();
+
+  opencl_operation_multiplexer_push(interval, mem_info, mem_info->details.mem_cb.correlation_id);
+
+  opencl_free(mem_info);
+  
+  return buffer;
+}
+
+
+cl_int
+clSetKernelArg
+(
+ cl_kernel kernel,
+ cl_uint arg_index,
+ size_t arg_size,
+ const void* arg_value
+)
+{
+  return HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
+}
+
+
+void
+opencl_instrumentation_enable
+(
+ void
+)
+{
+  instrumentation = true;
+}
+
+
+void
+opencl_api_thread_finalize
+(
+ void *args
+)
+{
+  if (opencl_api_flag) {
+    // If I have invoked any opencl api, I have to attribute all my activities to my ccts
+    opencl_api_flag = false;
+
+    atomic_bool wait;
+    atomic_store(&wait, true);
+    gpu_activity_t gpu_activity;
+    memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
+    gpu_activity.kind = GPU_ACTIVITY_FLUSH;
+    gpu_activity.details.flush.wait = &wait;
+    gpu_operation_multiplexer_push(gpu_activity_channel_get(), NULL, &gpu_activity);
+
+    // Wait until operations are drained
+    // Operation channel is FIFO
+    while (atomic_load(&wait)) {}
+
+    // Wait until my activities are drained
+    opencl_wait_for_self_pending_operations();
 
     // Now I can attribute activities
     gpu_application_thread_process_activities();
