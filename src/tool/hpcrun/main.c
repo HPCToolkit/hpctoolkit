@@ -849,12 +849,13 @@ hpcrun_thread_fini(epoch_t *epoch)
     // inform thread manager that we are terminating the thread
     // thread manager may enqueue the thread_data (in compact mode)
     // or flush the data into hpcrun file
-    int add_separator = 0;
     thread_data_t* td = hpcrun_get_thread_data();
 
     // assign id tuple for pthreads
     hpcrun_id_tuple_cputhread(td);
 
+    // add separator for each compact thread
+    bool add_separator = true;
     hpcrun_threadMgr_data_put(epoch, td, add_separator);
 
     TMSG(PROCESS, "End of thread");

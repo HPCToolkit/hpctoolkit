@@ -43,7 +43,6 @@ control_knob_register(char *name, char *value, control_knob_type type)
     control_knobs = iter;
   }
   iter->value = strdup(value);
-  
 }
 
 
@@ -62,20 +61,18 @@ control_knob_init()
   char *in = getenv("HPCRUN_CONTROL_KNOBS");
   if (in == NULL) return;
 
-  char *save;
+  char *save = NULL;
   for (char *f = start_tok(in); more_tok(); f = next_tok()){
     char *tmp = strdup(f);
     char *name = strtok_r(tmp, "=", &save);
-    control_knob_t *iter = NULL;
+    char *value = strtok_r(NULL, "=", &save);
 
-    if (name != NULL && (iter = control_knob_name_lookup(name))) {
-      char *value = strtok_r(NULL, "=", &save);
-      iter->value = value;
+    if (name != NULL && value != NULL) {
+      control_knob_register(name, value, ck_int);
     } else {
       fprintf(stderr, "\tcontrol token %s not recognized\n\n", f);
     }
   }
-
 }
 
 
