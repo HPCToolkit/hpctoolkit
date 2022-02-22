@@ -136,10 +136,10 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		# inform the user the analysis is starting
 		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
-		    echo  \\ begin parallel analysis of CPU binary $$cpubin_name \\(size = $$nbytes, threads = $(THREADS) \\)
+		    echo  \\ begin parallel analysis of CPU binary $$cpubin_name \\(size = $$nbytes, threads = $(THREADS)\\)
 		    PARSTAT=parallel
 		else
-		    echo \\ begin concurrent analysis of CPU binary $$cpubin_name \\(size = $$nbytes, threads = 1 \\)
+		    echo \\ begin concurrent analysis of CPU binary $$cpubin_name \\(size = $$nbytes, threads = 1\\)
 		fi
 
 		#  invoke hpcstruct on the CPU binary in the measurements directory
@@ -186,9 +186,9 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
 		    PARSTAT=parallel
-		    echo \\ begin parallel [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \\(size = $$nbytes, threads = $(THREADS) \\)
+		    echo \\ begin parallel [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \\(size = $$nbytes, threads = $(THREADS)\\)
 		else
-		    echo \\ begin concurrent [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \\(size = $$nbytes, threads = 1 \\)
+		    echo \\ begin concurrent [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \\(size = $$nbytes, threads = 1\\)
 		fi
 
 		# invoke hpcstruct to process the gpu binary
