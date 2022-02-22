@@ -50,11 +50,8 @@
 
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
-// #include <lib/banal/Struct.hpp>
 
 void doSingleBinary( Args &args, struct stat *sb);
 void doMeasurementsDir ( Args &args, struct stat *sb);
-
-void verify_measurements_directory(std::string &measurements_dir);
 
 #endif //hpcstruct_hpp

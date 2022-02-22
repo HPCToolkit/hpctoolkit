@@ -83,9 +83,10 @@ using namespace std;
 
 
 // Function prototypes
-void create_structs_directory ( string &structs_dir);
-bool check_gpubin ( string &measurements_dir);
-void open_makefile ( string &makefile_name, fstream &makefile);
+static void create_structs_directory ( string &structs_dir);
+static bool check_gpubin ( string &measurements_dir);
+static void open_makefile ( string &makefile_name, fstream &makefile);
+static void verify_measurements_directory(string &measurements_dir);
 
 // Contents of Makefile to be generated for the directory
 static const char* analysis_makefile =
@@ -183,14 +184,20 @@ doMeasurementsDir
 
   string gpucfg = args.compute_gpu_cfg ? "yes" : "no";
 
+  // two threads per small binary unless concurrency is 1
+  int small_jobs = (jobs >= 2) ? jobs / 2 : jobs;
+  int small_threads = (jobs == 1) ? 1 : 2;
+
   makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
  	   << "GPUBIN_CFG = "   << gpucfg << "\n"
 	   << "CPU_ANALYZE = "  << args.analyze_cpu_binaries << "\n"
 	   << "GPU_ANALYZE = "  << args.analyze_gpu_binaries << "\n"
 	   << "PAR_SIZE = "     << args.parallel_analysis_threshold << "\n"
 	   << "JOBS = "         << jobs << "\n"
-	   << "PJOBS = "        << jobs/pthreads << "\n"
-	   << "PTHREADS = "     << pthreads << "\n"
+	   << "SJOBS = "        << small_jobs << "\n"
+	   << "STHREADS = "     << small_threads << "\n"
+	   << "LJOBS = "        << jobs/pthreads << "\n"
+	   << "LTHREADS = "     << pthreads << "\n"
 	   << "PROFTT = "       << hpcproftt_path << "\n"
 	   << "STRUCT= "        << hpcstruct_path << "\n";
 
@@ -210,7 +217,8 @@ doMeasurementsDir
   cout << "NOTE: Using a pool of " << jobs << " threads to analyze binaries in a measurement directory" << endl;
   cout << "NOTE: Analyzing each large binary of >= " << args.parallel_analysis_threshold << " bytes in parallel using " << pthreads
        << " threads" << endl;
-  cout << "NOTE: Analyzing each small binary using a single thread\n" << endl;
+  cout << "NOTE: Analyzing each small binary using " << small_threads <<
+    " thread" << ((small_threads > 1) ? "s" : "") <<  "\n" << endl;
 
   if (system(make_cmd.c_str()) != 0) {
     DIAG_EMsg("Running make to generate hpcstruct files for measurement directory failed.");
@@ -248,7 +256,7 @@ verify_measurements_directory
       string file_name(ent->d_name);
       if (file_name.find(".hpcrun") != string::npos) {
         has_hpcrun = true;
-        break;
+	break;
       }
     }
     closedir(dir);
@@ -266,7 +274,7 @@ verify_measurements_directory
 
 
 // check if measurements directory contains a GPU binary 
-bool
+static bool
 check_gpubin
 (
   string &measurements_dir
@@ -294,7 +302,7 @@ check_gpubin
 
 // Invoked for a measurements-directory handling to ensure
 //  that it has a subdirectory for structure files
-void
+static void
 create_structs_directory
 (
   string &structs_dir
@@ -310,7 +318,7 @@ create_structs_directory
 }
 
 // Open the Makefile to create it.
-void
+static void
 open_makefile
 (
   string &makefile_name,

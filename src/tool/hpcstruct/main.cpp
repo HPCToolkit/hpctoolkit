@@ -127,10 +127,6 @@ Args *global_args;
 // Internal functions
 static int realmain(int argc, char* argv[]);
 
-// void verify_measurements_directory ( string &measurements_dir );
-// bool check_gpubin ( string &measurements_dir );
-// void create_structs_directory ( string &structs_dir );
-// void open_makefile ( string &makefile_name, fstream &makefile);
 
 //****************************** Main Program *******************************
 

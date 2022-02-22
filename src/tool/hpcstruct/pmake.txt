@@ -18,6 +18,7 @@
 GPUBIN_DIR  = $(MEAS_DIR)/gpubins
 STRUCTS_DIR = $(MEAS_DIR)/structs
 
+
 #*******************************************************************************
 # calculate the alternate kind of GPU CFG analysis 
 #*******************************************************************************
@@ -228,8 +229,8 @@ endif
 
 ifeq ($(DOMAKE),1)
 all: $(CPUBIN_DIR)
-	$(MAKE) -j $(PJOBS) THREADS=$(PTHREADS)  GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
-	$(MAKE) -j $(JOBS) THREADS=1  GPAR_SIZE=0 CPAR_SIZE=0 analyze
+	$(MAKE) -j $(LJOBS) THREADS=$(LTHREADS) GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
+	$(MAKE) -j $(SJOBS) THREADS=$(STHREADS) GPAR_SIZE=0 CPAR_SIZE=0 analyze
 endif
 
 analyze: $(GS) $(CS) 
