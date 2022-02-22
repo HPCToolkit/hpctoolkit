@@ -114,9 +114,9 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
 	if test $$nbytes -gt $(CPAR_SIZE) ; then
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$cpubin_name \\(size = $$nbytes, using $(THREADS) threads\\)
+			echo msg: begin parallel analysis of $$cpubin_name \(size = $$nbytes, using $(THREADS) threads\)
 		else
-			echo msg: begin concurrent analysis of $$cpubin_name \\(size = $$nbytes, using 1 of $(JOBS) threads\\)
+			echo msg: begin concurrent analysis of $$cpubin_name \(size = $$nbytes, using 1 of $(JOBS) threads\)
 		fi
 		$(STRUCT) -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
@@ -148,9 +148,9 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
 	if test $$nbytes -gt $(GPAR_SIZE) ; then
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$gpubin_name \\(size = $$nbytes, using $(THREADS) threads\\)
+			echo msg: begin parallel analysis of $$gpubin_name \(size = $$nbytes, using $(THREADS) threads\)
 		else
-			echo msg: begin concurrent analysis of $$gpubin_name \\(size = $$nbytes, using 1 of $(JOBS) threads\\)
+			echo msg: begin concurrent analysis of $$gpubin_name \(size = $$nbytes, using 1 of $(JOBS) threads\)
 		fi
 		$(STRUCT) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
