@@ -99,7 +99,14 @@ private:
   };
   struct udThread {
     pms_profile_info_t info = {
-      .metadata_ptr = 0, .spare_one = 0, .spare_two = 0,
+      .prof_info_idx = (uint32_t)-1,
+      .num_vals = (uint64_t)-1,
+      .num_nzctxs = (uint32_t)-1,
+      .offset = (uint64_t)-1,
+      .id_tuple_ptr = (uint64_t)-1,
+      .metadata_ptr = 0,
+      .spare_one = 0,
+      .spare_two = 0,
     };
   };
   struct {
@@ -187,7 +194,13 @@ private:
   // Filled during the Threads wavefront
   pms_profile_info_t summary_info = {
     .prof_info_idx = 0,
-    .metadata_ptr = 0, .spare_one = 0, .spare_two = 0,
+    .num_vals = (uint64_t)-1,
+    .num_nzctxs = (uint32_t)-1,
+    .offset = (uint64_t)-1,
+    .id_tuple_ptr = (uint64_t)-1,
+    .metadata_ptr = 0,
+    .spare_one = 0,
+    .spare_two = 0,
   };
 
   // Parallel workshares for the various parallel operations
