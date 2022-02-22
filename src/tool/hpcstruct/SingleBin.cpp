@@ -222,11 +222,11 @@ doSingleBinary
       std::cerr << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
         << "] analysis of " "GPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << " )" << std::endl;
+	<< ", threads = " << args.jobs << ")" << std::endl;
     } else {
       std::cerr << " begin " << mode.c_str() << " analysis of CPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << " )" << std::endl;
+	<< ", threads = " << args.jobs << ")" << std::endl;
     }
   }
 
