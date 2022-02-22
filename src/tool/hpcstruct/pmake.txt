@@ -228,8 +228,8 @@ endif
 
 ifeq ($(DOMAKE),1)
 all: $(CPUBIN_DIR)
-	$(MAKE) -j 1 JOBS=1 THREADS=$(PTHREADS)  GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
-	$(MAKE) -j $(JOBS) JOBS=$(JOBS) THREADS=1  GPAR_SIZE=0 CPAR_SIZE=0 analyze
+	$(MAKE) -j $(PJOBS) THREADS=$(PTHREADS)  GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
+	$(MAKE) -j $(JOBS) THREADS=1  GPAR_SIZE=0 CPAR_SIZE=0 analyze
 endif
 
 analyze: $(GS) $(CS) 

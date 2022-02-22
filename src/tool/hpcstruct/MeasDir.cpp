@@ -189,6 +189,7 @@ doMeasurementsDir
 	   << "GPU_ANALYZE = "  << args.analyze_gpu_binaries << "\n"
 	   << "PAR_SIZE = "     << args.parallel_analysis_threshold << "\n"
 	   << "JOBS = "         << jobs << "\n"
+	   << "PJOBS = "        << jobs/pthreads << "\n"
 	   << "PTHREADS = "     << pthreads << "\n"
 	   << "PROFTT = "       << hpcproftt_path << "\n"
 	   << "STRUCT= "        << hpcstruct_path << "\n";
@@ -205,6 +206,11 @@ doMeasurementsDir
 
   string make_cmd = string("make -C ") + structs_dir + " -k --silent "
       + " --no-print-directory all";
+
+  cout << "NOTE: Using a pool of " << jobs << " threads to analyze binaries in a measurement directory" << endl;
+  cout << "NOTE: Analyzing each large binary of >= " << args.parallel_analysis_threshold << " bytes in parallel using " << pthreads
+       << " threads" << endl;
+  cout << "NOTE: Analyzing each small binary using a single thread\n" << endl;
 
   if (system(make_cmd.c_str()) != 0) {
     DIAG_EMsg("Running make to generate hpcstruct files for measurement directory failed.");
