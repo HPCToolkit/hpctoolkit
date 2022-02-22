@@ -46,9 +46,9 @@
 
 #include "expression.hpp"
 
+#include "stdshim/numeric.hpp"
 #include <cassert>
 #include <cmath>
-#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
@@ -121,22 +121,22 @@ double Expression::evaluate(Kind op, const std::vector<double>& args) {
   case Kind::variable:
     std::abort();
   case Kind::op_sum:
-    return std::accumulate(args.begin(), args.end(), (double)0.);
+    return stdshim::accumulate(args.begin(), args.end(), (double)0.);
   case Kind::op_sub:
-    return std::accumulate(args.begin(), args.end(), (double)0.,
-                           [](double l, double r){ return l - r; });
+    return stdshim::accumulate(args.begin(), args.end(), (double)0.,
+                               [](double l, double r){ return l - r; });
   case Kind::op_neg:
     assert(args.size() == 1);
     return -args[0];
   case Kind::op_prod:
-    return std::accumulate(args.begin(), args.end(), (double)0.,
-                           [](double l, double r){ return l * r; });
+    return stdshim::accumulate(args.begin(), args.end(), (double)0.,
+                               [](double l, double r){ return l * r; });
   case Kind::op_div:
-    return std::accumulate(args.begin(), args.end(), (double)0.,
-                           [](double l, double r){ return l / r; });
+    return stdshim::accumulate(args.begin(), args.end(), (double)0.,
+                               [](double l, double r){ return l / r; });
   case Kind::op_pow:
-    return std::accumulate(args.rbegin(), args.rend(), (double)0.,
-                           [](double r, double l){ return std::pow(l, r); });
+    return stdshim::accumulate(args.rbegin(), args.rend(), (double)0.,
+                               [](double r, double l){ return std::pow(l, r); });
   case Kind::op_sqrt:
     assert(args.size() == 1);
     return std::sqrt(args[0]);
@@ -147,10 +147,10 @@ double Expression::evaluate(Kind op, const std::vector<double>& args) {
     assert(args.size() == 1);
     return std::log(args[0]);
   case Kind::op_min:
-    return std::accumulate(args.begin(), args.end(), (double)0.,
+    return stdshim::accumulate(args.begin(), args.end(), (double)0.,
         [](double l, double r){ return std::min<double>(l, r); });
   case Kind::op_max:
-    return std::accumulate(args.begin(), args.end(), (double)0.,
+    return stdshim::accumulate(args.begin(), args.end(), (double)0.,
         [](double l, double r){ return std::max<double>(l, r); });
   case Kind::op_floor:
     assert(args.size() == 1);
