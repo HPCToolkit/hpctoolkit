@@ -44,39 +44,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_STDSHIM_VERSION_H
-#define HPCTOOLKIT_STDSHIM_VERSION_H
+#ifndef HPCTOOLKIT_STDSHIM_ALGORITHMNUMERIC_H
+#define HPCTOOLKIT_STDSHIM_ALGORITHMNUMERIC_H
 
 // This file is one of multiple "stdshim" headers, which act as a seamless
 // transition library across versions of the STL. Mostly all this does is
-// backport features into C++11, sometimes by using class inheritance tricks,
-// and sometimes by importing implementations from Boost or ourselves.
+// backport features from C++17 into C++11, sometimes by using class inheritance
+// tricks, and sometimes by importing implementations from Boost or ourselves.
 // Also see Google's Abseil project.
 
-// This file provides the compile-time checks for the various features.
+// This is the shim for <algorithm> and <numeric>.
 
-// If the compiler claims a version of the C++ spec, we'll assume its correct.
-// For now. Change later when things break on some compiler in the future.
-#if __cplusplus >= 201903L
-#define HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
-#endif  // __cplusplus >= 201903L
-#if __cplusplus >= 201703L
+#include "version.hpp"
 
-#if defined(__has_include)
-#if __has_include(<filesystem>)
-#define HPCTOOLKIT_STDSHIM_STD_HAS_filesystem
-#else
-// We assume experimental/filesystem is available, its close enough to work with
-#define HPCTOOLKIT_STDSHIM_STD_HAS_experimental_filesystem
-#endif
-#else  // defined(__has_include)
-// If we can't test it directly, just assume the compiler has it
-#define HPCTOOLKIT_STDSHIM_STD_HAS_filesystem
-#endif
+#include <algorithm>
+#include <numeric>
 
-#ifndef HPCTOOLKIT_SLOW_LIBC
-#define HPCTOOLKIT_STDSHIM_STD_HAS_shared_mutex
-#endif
-#endif  // __cplusplus >= 201703L
+namespace hpctoolkit::stdshim {
 
-#endif  // HPCTOOLKIT_STDSHIM_VERSION_H
+// Identical to GCC 9.x-11.x STL implementation
+template<class InIt, class OutIt, class T, class BinOp>
+constexpr OutIt exclusive_scan(InIt first, InIt last, OutIt result, T init, BinOp op) {
+  while(first != last) {
+    auto v = init;
+    init = op(init, *first);
+    ++first;
+    *result++ = std::move(v);
+  }
+  return result;
+}
+template<class InIt, class OutIt, class T>
+constexpr OutIt exclusive_scan(InIt first, InIt last, OutIt result, T init) {
+  return exclusive_scan(first, last, result, std::move(init), std::plus<>{});
+}
+
+}  // hpctoolkit::stdshim
+
+#endif  // HPCTOOLKIT_STDSHIM_ALGORITHMNUMERIC_H

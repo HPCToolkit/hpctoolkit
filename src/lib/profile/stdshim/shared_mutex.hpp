@@ -49,7 +49,7 @@
 
 // This file is one of multiple "stdshim" headers, which act as a seamless
 // transition library across versions of the STL. Mostly all this does is
-// backport features from C++17 into C++11, sometimes by using class inheritence
+// backport features from C++17 into C++11, sometimes by using class inheritance
 // tricks, and sometimes by importing implementations from Boost or ourselves.
 // Also see Google's Abseil project.
 
@@ -57,14 +57,14 @@
 
 #include "version.hpp"
 
-#if STD_HAS(shared_lock)
+#ifdef HPCTOOLKIT_STDSHIM_STD_HAS_shared_lock
 #include <shared_mutex>
 #else
 #include <mutex>
 #include <stdexcept>
 #endif
 
-#if STD_HAS(shared_mutex) || STD_HAS(shared_timed_mutex)
+#if defined(HPCTOOLKIT_STDSHIM_STD_HAS_shared_mutex) || defined(HPCTOOLKIT_STDSHIM_STD_HAS_shared_timed_mutex)
 #include <shared_mutex>
 #else
 #include <atomic>
@@ -80,9 +80,9 @@ namespace detail {
 // standard in C++14, but the untimed version only became standard in C++17.
 // So we use the timed version if we don't have the untimed, and our own thing
 // if neither are available (since Boost's implementation isn't great).
-#if STD_HAS(shared_mutex)
+#ifdef HPCTOOLKIT_STDSHIM_STD_HAS_shared_mutex
 using shared_mutex = std::shared_mutex;
-#else  // STD_HAS(shared_mutex)
+#else  // HPCTOOLKIT_STDSHIM_STD_HAS_shared_mutex
 class shared_mutex {
 public:
   shared_mutex();
@@ -136,9 +136,5 @@ private:
 
 
 }  // namespace hpctoolkit::stdshim
-
-#ifndef STDSHIM_DONT_UNDEF
-#undef STD_HAS
-#endif
 
 #endif  // HPCTOOLKIT_STDSHIM_SHARED_MUTEX_H

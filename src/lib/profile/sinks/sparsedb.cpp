@@ -54,6 +54,7 @@
 #include <lib/prof-lean/id-tuple.h>
 #include <lib/prof/pms-format.h>
 
+#include "../stdshim/algorithm_numeric.hpp"
 #include <cassert>
 #include <cmath>
 #include <fstream>
@@ -787,7 +788,7 @@ void SparseDB::write() {
   }
   // Exclusive scan to get offsets. Rank 0 adds the initial offset for the section
   const uint64_t ctxStart = align(ctxcnt * CMS_ctx_info_SIZE, 8) + CMS_hdr_SIZE;
-  std::exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
+  stdshim::exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
       mpi::World::rank() == 0 ? ctxStart : 0);
   // All-reduce the offsets to get global offsets incorporating everyone
   ctxOffsets = mpi::allreduce(ctxOffsets, mpi::Op::sum());
