@@ -331,6 +331,7 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
       };
       id_tuple_t idt = {
         .length = 1,
+        .ids_length = 1,
         .ids = &sumId,
       };
 
@@ -357,6 +358,7 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
       // Id tuple for t
       id_tuple_t idt = {
         .length = (uint16_t)t.attributes.idTuple().size(),
+        .ids_length = (uint16_t)t.attributes.idTuple().size(),
         .ids = const_cast<pms_id_t*>(t.attributes.idTuple().data()),
       };
 
