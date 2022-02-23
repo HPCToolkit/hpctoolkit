@@ -50,6 +50,7 @@
 #include "gpu-activity.h"
 #include "gpu-activity-channel.h"
 #include "gpu-channel-item-allocator.h"
+#include "gpu-channel-common.h"
 
 
 //******************************************************************************
@@ -96,7 +97,7 @@ typedef struct gpu_activity_channel_t {
 // local data
 //******************************************************************************
 
-static __thread gpu_activity_channel_t *gpu_activity_channel = NULL;
+static __thread gpu_activity_channel_t *gpu_activity_channels[GPU_CHANNEL_TOTAL];
 
 
 
@@ -134,11 +135,20 @@ gpu_activity_channel_get
  void
 )
 {
-  if (gpu_activity_channel == NULL) {
-    gpu_activity_channel = gpu_activity_channel_alloc();
+  return gpu_activity_channel_get_with_idx(0);
+}
+
+gpu_activity_channel_t *
+gpu_activity_channel_get_with_idx
+(
+ int idx
+)
+{
+  if (gpu_activity_channels[idx] == NULL) {
+    gpu_activity_channels[idx] = gpu_activity_channel_alloc();
   }
 
-  return gpu_activity_channel;
+  return gpu_activity_channels[idx];
 }
 
 
@@ -164,7 +174,17 @@ gpu_activity_channel_consume
  gpu_activity_attribute_fn_t aa_fn
 )
 {
-  gpu_activity_channel_t *channel = gpu_activity_channel_get();
+  return gpu_activity_channel_consume_with_idx(0, aa_fn);
+}
+
+void
+gpu_activity_channel_consume_with_idx
+(
+ int idx,
+ gpu_activity_attribute_fn_t aa_fn
+)
+{
+  gpu_activity_channel_t *channel = gpu_activity_channel_get_with_idx(idx);
 
   // steal elements previously enqueued by the producer
   channel_steal(channel, bichannel_direction_forward);

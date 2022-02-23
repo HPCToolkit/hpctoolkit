@@ -159,6 +159,10 @@ crypto_hash_self_test
   int verbose
 );
 
+#if defined(__cplusplus)
+}
+#endif
+
 #endif
 
 #if defined(__cplusplus)

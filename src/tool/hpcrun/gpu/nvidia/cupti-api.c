@@ -162,6 +162,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/main.h> // hpcrun_force_dlopen
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/gpu-monitors.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
@@ -177,20 +178,31 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
+#include <hpcrun/thread_data.h>
+
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 
+#include "tool_state.h"
+
+//#include "sample_sources_all.h"
 
 
 //******************************************************************************
 // macros
 //******************************************************************************
 
-#define CUPTI_LIBRARY_LOCATION "lib64/libcupti.so"
-#define CUPTI_PATH_FROM_CUDA "extras/CUPTI/"
+
+#define DEBUG 0
+#include <hpcrun/gpu/gpu-print.h>
+
+
+#define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"
+#define CUPTI_PATH_FROM_CUDA "extras/CUPTI"
+
 
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE (16 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT (8)
@@ -854,6 +866,23 @@ ensure_kernel_ip_present
 
 
 static void
+cupti_gpu_monitors_apply_enter(cct_node_t *cct_node)
+{
+  cupti_correlation_id_push(IGNORE_CORR_ID);
+  gpu_monitors_apply( cct_node, gpu_monitor_type_enter);
+  cupti_correlation_id_pop();
+}
+
+
+static void
+cupti_gpu_monitors_apply_exit()
+{
+  cupti_correlation_id_push(IGNORE_CORR_ID);
+  gpu_monitors_apply( NULL, gpu_monitor_type_exit);
+  cupti_correlation_id_pop();
+}
+
+static void
 cupti_subscriber_callback
 (
  void *userdata,
@@ -862,6 +891,11 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
+
+	if (is_tool_active()) {
+		return;
+	}
+
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -889,6 +923,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
+		PRINT("\nDriver API:  -----------------%s\n", cd->functionName );
 
     bool ompt_runtime_api_flag = ompt_runtime_status_get();
 
@@ -1043,11 +1078,15 @@ cupti_subscriber_callback
       default:
         break;
     }
-    bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags,
-      gpu_placeholder_type_kernel);
+
+    bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags,gpu_placeholder_type_kernel);
+
+//		PRINT("DRIVER: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
+//					 is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_api_flag, cd->callbackSite);
+
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
     if (is_valid_op && !cupti_runtime_api_flag && !ompt_runtime_api_flag) {
-      if (cd->callbackSite == CUPTI_API_ENTER) {
+			if (cd->callbackSite == CUPTI_API_ENTER) {
         // A driver API cannot be implemented by other driver APIs, so we get an id
         // and unwind when the API is entered
 
@@ -1073,19 +1112,26 @@ cupti_subscriber_callback
 	  ensure_kernel_ip_present(trace_ph, kernel_ip);
         }
 
+
         hpcrun_safe_exit();
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
+
+
+        cupti_gpu_monitors_apply_enter(api_node);
+
+				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
+        cupti_gpu_monitors_apply_exit();
+
         uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
-      }
+			}
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
@@ -1106,6 +1152,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
+		PRINT("\nRuntime API:  -----------------%s\n", cd->functionName );
 
     bool is_valid_op = false;
     bool is_kernel_op __attribute__((unused)) = false; // used only by PRINT when debugging
@@ -1200,12 +1247,17 @@ cupti_subscriber_callback
       default:
         break;
     }
+
+//		PRINT("RUNTIME: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
+//					 is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_status_get(), cd->callbackSite);
+
     if (is_valid_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
         // Enter a CUDA runtime api
         cupti_runtime_api_flag_set();
         uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
+
         // We should make notification records in the api enter callback.
         // A runtime API must be implemented by driver APIs.
         // Though unlikely in most cases,
@@ -1226,11 +1278,16 @@ cupti_subscriber_callback
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
+
+        cupti_gpu_monitors_apply_enter(cupti_kernel_ph);
+
+				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
+
+        cupti_gpu_monitors_apply_exit();
         // Exit an CUDA runtime api
         cupti_runtime_api_flag_unset();
 
@@ -1348,7 +1405,7 @@ cupti_buffer_completion_callback
     do {
       status = cupti_buffer_cursor_advance(buffer, validSize, &cupti_activity);
       if (status) {
-        cupti_activity_process(cupti_activity);
+				cupti_activity_process(cupti_activity);
         ++processed;
       }
     } while (status);

@@ -109,7 +109,7 @@ typedef struct typed_splay_node(correlation_id) {
   uint32_t device_id;
   uint64_t start;
   uint64_t end;
-} typed_splay_node(correlation_id); 
+} typed_splay_node(correlation_id);
 
 
 
@@ -119,9 +119,9 @@ typedef struct typed_splay_node(correlation_id) {
 // local data
 //******************************************************************************
 
-static gpu_correlation_id_map_entry_t *map_root = NULL;
+static __thread gpu_correlation_id_map_entry_t *map_root = NULL;
 
-static gpu_correlation_id_map_entry_t *free_list = NULL;
+static __thread gpu_correlation_id_map_entry_t *free_list = NULL;
 
 
 
@@ -142,13 +142,13 @@ gpu_correlation_id_map_entry_alloc()
 static gpu_correlation_id_map_entry_t *
 gpu_correlation_id_map_entry_new
 (
- uint32_t gpu_correlation_id, 
+ uint64_t gpu_correlation_id,
  uint64_t host_correlation_id
 )
 {
   gpu_correlation_id_map_entry_t *e = gpu_correlation_id_map_entry_alloc();
 
-  memset(e, 0, sizeof(gpu_correlation_id_map_entry_t)); 
+  memset(e, 0, sizeof(gpu_correlation_id_map_entry_t));
 
   e->gpu_correlation_id = gpu_correlation_id;
   e->host_correlation_id = host_correlation_id;
@@ -165,13 +165,13 @@ gpu_correlation_id_map_entry_new
 gpu_correlation_id_map_entry_t *
 gpu_correlation_id_map_lookup
 (
- uint32_t gpu_correlation_id
+ uint64_t gpu_correlation_id
 )
 {
   uint64_t correlation_id = gpu_correlation_id;
   gpu_correlation_id_map_entry_t *result = st_lookup(&map_root, correlation_id);
 
-  PRINT("correlation_id map lookup: id=0x%lx (record %p)\n", 
+  PRINT("correlation_id map lookup: id=0x%lx (record %p)\n",
        correlation_id, result);
 
   return result;
@@ -181,21 +181,21 @@ gpu_correlation_id_map_lookup
 void
 gpu_correlation_id_map_insert
 (
- uint32_t gpu_correlation_id, 
+ uint64_t gpu_correlation_id,
  uint64_t host_correlation_id
 )
 {
-  if (st_lookup(&map_root, gpu_correlation_id)) { 
+  if (st_lookup(&map_root, gpu_correlation_id)) {
     // fatal error: correlation_id already present; a
     // correlation should be inserted only once.
     assert(0);
   } else {
-    gpu_correlation_id_map_entry_t *entry = 
+    gpu_correlation_id_map_entry_t *entry =
       gpu_correlation_id_map_entry_new(gpu_correlation_id, host_correlation_id);
 
     st_insert(&map_root, entry);
 
-    PRINT("correlation_id_map insert: correlation_id=0x%lx external_id=%ld (entry=%p)\n", 
+    PRINT("correlation_id_map insert: correlation_id=0x%lx external_id=%ld (entry=%p)\n",
 	  gpu_correlation_id, host_correlation_id, entry);
   }
 }
@@ -205,7 +205,7 @@ gpu_correlation_id_map_insert
 void
 gpu_correlation_id_map_external_id_replace
 (
- uint32_t gpu_correlation_id, 
+ uint64_t gpu_correlation_id,
  uint64_t host_correlation_id
 )
 {
@@ -221,7 +221,7 @@ gpu_correlation_id_map_external_id_replace
 void
 gpu_correlation_id_map_delete
 (
- uint32_t gpu_correlation_id
+ uint64_t gpu_correlation_id
 )
 {
   gpu_correlation_id_map_entry_t *node = st_delete(&map_root, gpu_correlation_id);
@@ -232,7 +232,7 @@ gpu_correlation_id_map_delete
 void
 gpu_correlation_id_map_kernel_update
 (
- uint32_t gpu_correlation_id,
+ uint64_t gpu_correlation_id,
  uint32_t device_id,
  uint64_t start,
  uint64_t end
@@ -280,7 +280,7 @@ gpu_correlation_id_map_entry_end_get
 }
 
 
-uint32_t
+uint64_t
 gpu_correlation_id_map_entry_device_id_get
 (
  gpu_correlation_id_map_entry_t *entry
