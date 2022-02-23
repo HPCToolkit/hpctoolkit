@@ -54,7 +54,7 @@
 #include <lib/prof-lean/id-tuple.h>
 #include <lib/prof/pms-format.h>
 
-#include "../stdshim/algorithm_numeric.hpp"
+#include "../stdshim/numeric.hpp"
 #include <cassert>
 #include <cmath>
 #include <fstream>
