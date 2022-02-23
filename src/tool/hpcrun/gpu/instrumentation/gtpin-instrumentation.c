@@ -243,7 +243,6 @@ writeBinary
   }
 }
 
-
 static size_t
 computeHash
 (
@@ -263,7 +262,6 @@ computeHash
   }
   return used;
 }
-
 
 static void
 computeBinaryHash

@@ -79,6 +79,10 @@ roctracer_bind
   void
 );
 
-
+void
+roctracer_enable_counter_collection
+(
+  void
+);
 
 #endif

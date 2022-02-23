@@ -94,6 +94,15 @@ static long total_non_freeable = 0;
 
 static int out_of_mem_mesg = 0;
 
+
+// ---------------------------------------------------
+// hpcrun_malloc() memory thread local data structures
+// ---------------------------------------------------
+__thread hpcrun_meminfo_t memstore;
+__thread int              mem_low;
+
+
+
 //------------------------------------------------------------------
 // Internal functions
 //------------------------------------------------------------------
@@ -222,21 +231,11 @@ hpcrun_memory_reinit(void)
 // Allocate space and init a thread's memstore.
 // If failure, shutdown sampling and leave old memstore in place.
 void
-hpcrun_make_memstore(hpcrun_meminfo_t *mi, int is_child)
+hpcrun_make_memstore(hpcrun_meminfo_t *mi)
 {
   void *addr;
 
   hpcrun_mem_init();
-
-  // If in the child after fork(), then continue to use the parent's
-  // memstore if it looks ok, else mmap a new one.  Note: we can't
-  // reset the memstore to empty unless we delete everything that was
-  // created via hpcrun_malloc() (cct, uw_recipe_map, ...).
-  if (is_child && mi->mi_start != NULL
-      && mi->mi_start <= mi->mi_low && mi->mi_low <= mi->mi_high
-      && mi->mi_high <= mi->mi_start + mi->mi_size) {
-    return;
-  }
 
   addr = hpcrun_mmap_anon(memsize);
   if (addr == NULL) {
@@ -260,10 +259,10 @@ hpcrun_make_memstore(hpcrun_meminfo_t *mi, int is_child)
 void
 hpcrun_reclaim_freeable_mem(void)
 {
-  hpcrun_meminfo_t *mi = &TD_GET(memstore);
+  hpcrun_meminfo_t *mi = &memstore;
 
   mi->mi_low = mi->mi_start;
-  TD_GET(mem_low) = 0;
+  mem_low = 0;
   num_reclaims++;
   TMSG(MALLOC, "%s: %d", __func__, num_reclaims);
 }
@@ -283,7 +282,7 @@ hpcrun_malloc(size_t size)
     return NULL;
   }
 
-  mi = &TD_GET(memstore);
+  mi = &memstore;
   size = round_up(size);
 
   // For a large request that doesn't fit within the existing
@@ -310,7 +309,7 @@ hpcrun_malloc(size_t size)
       || mi->mi_high - mi->mi_low < low_memsize
       || mi->mi_high - mi->mi_low < size) {
     if (allow_extra_mmap) {
-      hpcrun_make_memstore(mi, 0);
+      hpcrun_make_memstore(mi);
     } else {
       if (! out_of_mem_mesg) {
 	EMSG("%s: out of memory, shutting down sampling", __func__);
@@ -411,4 +410,12 @@ hpcrun_memory_summary(void)
   AMSG("MEMORY: total freeable: %.1f meg, total non-freeable: %.1f meg, "
        "malloc failures: %ld",
        total_freeable/meg, total_non_freeable/meg, num_failures);
+}
+
+int
+get_mem_low(
+  void
+)
+{
+  return mem_low;
 }

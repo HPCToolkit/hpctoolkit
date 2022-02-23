@@ -147,7 +147,7 @@ hpcrun_dso_make(const char* name, void** table,
   TMSG(DSO," hpcrun_dso_make for module %s", name);
 
   int namelen = strlen(name) + 1;
-  x->name = (char*) hpcrun_malloc(namelen);
+  x->name = (char*) malloc(namelen);
   strcpy(x->name, name);
 
   x->table = table;

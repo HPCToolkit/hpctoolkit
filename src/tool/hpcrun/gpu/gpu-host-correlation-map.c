@@ -125,11 +125,11 @@ typedef struct typed_splay_node(host_correlation) {
 // local data
 //******************************************************************************
 
-static gpu_host_correlation_map_entry_t *map_root = NULL;
+static __thread gpu_host_correlation_map_entry_t *map_root = NULL;
 
-static gpu_host_correlation_map_entry_t *free_list = NULL;
+static __thread gpu_host_correlation_map_entry_t *free_list = NULL;
 
-static bool allow_replace = false;
+static __thread bool allow_replace = false;
 
 //******************************************************************************
 // private operations
@@ -200,7 +200,8 @@ gpu_host_correlation_map_lookup
 {
   gpu_host_correlation_map_entry_t *result = st_lookup(&map_root, host_correlation_id);
 
-  PRINT("host_correlation_map lookup: id=0x%lx (entry %p)\n", host_correlation_id, result);
+  PRINT("host_correlation_map lookup: id=0x%lx (entry %p) (&map_root=%p) tid=%llu\n",
+	host_correlation_id, result, &map_root, (uint64_t) pthread_self());
 
   return result;
 }
@@ -234,8 +235,9 @@ gpu_host_correlation_map_insert
     st_insert(&map_root, entry);
 
     PRINT("host_correlation_map insert: correlation_id=0x%lx "
-	 "activity_channel=%p (entry=%p)\n",
-	  host_correlation_id, activity_channel, entry);
+	 "activity_channel=%p (entry=%p) (&map_root=%p) tid=%llu\n",
+	  host_correlation_id, activity_channel, entry, &map_root,
+	  (uint64_t) pthread_self());
   }
 }
 

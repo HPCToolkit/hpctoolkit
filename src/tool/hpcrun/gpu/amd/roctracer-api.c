@@ -47,10 +47,14 @@
 
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
-#include "rocm-debug-api.h"
+
+#include "hip-api.h"
 #include "rocm-binary-processing.h"
+#include "tool_state.h"
 
 #include <roctracer_hip.h>
+
+#include <hpcrun/gpu-monitors.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -66,11 +70,18 @@
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
+
+#include "rocprofiler-api.h"
+
 //******************************************************************************
 // macros
 //******************************************************************************
 
-#define FORALL_ROCTRACER_ROUTINES(macro)			\
+#define DEBUG 0
+#include <hpcrun/gpu/gpu-print.h>
+
+
+#define FORALL_ROCTRACER_ROUTINES(macro)      \
   macro(roctracer_open_pool_expl)   \
   macro(roctracer_flush_activity_expl)   \
   macro(roctracer_activity_push_external_correlation_id) \
@@ -81,7 +92,6 @@
   macro(roctracer_disable_domain_activity) \
   macro(roctracer_set_properties)
 
-
 #define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
 
 #define ROCTRACER_FN(fn, args) \
@@ -89,10 +99,10 @@
 
 #define HPCRUN_ROCTRACER_CALL(fn, args) \
 {      \
-  roctracer_status_t status = ROCTRACER_FN_NAME(fn) args;	\
-  if (status != ROCTRACER_STATUS_SUCCESS) {		\
+  roctracer_status_t status = ROCTRACER_FN_NAME(fn) args;  \
+  if (status != ROCTRACER_STATUS_SUCCESS) {    \
     /* use roctracer_error_string() */ \
-  }						\
+  }            \
 }
 
 typedef const char* (*hip_kernel_name_fnt)(const hipFunction_t f);
@@ -108,6 +118,11 @@ typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStre
 
 static hip_kernel_name_fnt hip_kernel_name_fn;
 static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
+
+// If we collect counters for GPU kernels,
+// we will serilize kernel executions.
+// Hopefully, AMD tool support will improve this the future
+static bool collect_counter = false;
 
 //----------------------------------------------------------
 // roctracer function pointers for late binding
@@ -230,35 +245,35 @@ roctracer_kernel_data_set
     {
     case HIP_API_ID_hipModuleLaunchKernel:
       entry_data->kernel.blockSharedMemory =
-	data->args.hipModuleLaunchKernel.sharedMemBytes;
+  data->args.hipModuleLaunchKernel.sharedMemBytes;
 
       entry_data->kernel.blockThreads =
-	data->args.hipModuleLaunchKernel.blockDimX *
-	data->args.hipModuleLaunchKernel.blockDimY *
-	data->args.hipModuleLaunchKernel.blockDimZ;
+  data->args.hipModuleLaunchKernel.blockDimX *
+  data->args.hipModuleLaunchKernel.blockDimY *
+  data->args.hipModuleLaunchKernel.blockDimZ;
       break;
 
     case HIP_API_ID_hipLaunchCooperativeKernel:
       entry_data->kernel.blockSharedMemory =
-	data->args.hipLaunchCooperativeKernel.sharedMemBytes;
+  data->args.hipLaunchCooperativeKernel.sharedMemBytes;
 
       entry_data->kernel.blockThreads =
-	data->args.hipLaunchCooperativeKernel.blockDimX.x *
-	data->args.hipLaunchCooperativeKernel.blockDimX.y *
-	data->args.hipLaunchCooperativeKernel.blockDimX.z;
+  data->args.hipLaunchCooperativeKernel.blockDimX.x *
+  data->args.hipLaunchCooperativeKernel.blockDimX.y *
+  data->args.hipLaunchCooperativeKernel.blockDimX.z;
       break;
 
     case HIP_API_ID_hipHccModuleLaunchKernel:
       entry_data->kernel.blockSharedMemory =
-	data->args.hipHccModuleLaunchKernel.sharedMemBytes;
+  data->args.hipHccModuleLaunchKernel.sharedMemBytes;
 
       entry_data->kernel.blockThreads =
-	(data->args.hipHccModuleLaunchKernel.globalWorkSizeX *
-	 data->args.hipHccModuleLaunchKernel.globalWorkSizeY *
-	 data->args.hipHccModuleLaunchKernel.globalWorkSizeZ) +
-	(data->args.hipHccModuleLaunchKernel.localWorkSizeX *
-	 data->args.hipHccModuleLaunchKernel.localWorkSizeY *
-	 data->args.hipHccModuleLaunchKernel.localWorkSizeZ);
+  (data->args.hipHccModuleLaunchKernel.globalWorkSizeX *
+   data->args.hipHccModuleLaunchKernel.globalWorkSizeY *
+   data->args.hipHccModuleLaunchKernel.globalWorkSizeZ) +
+  (data->args.hipHccModuleLaunchKernel.localWorkSizeX *
+   data->args.hipHccModuleLaunchKernel.localWorkSizeY *
+   data->args.hipHccModuleLaunchKernel.localWorkSizeZ);
       break;
     }
 }
@@ -298,11 +313,18 @@ roctracer_subscriber_callback
  void* arg
 )
 {
+  if (is_tool_active()) {
+//    TMSG(ROCM, "PAPI correlation callback");
+//    gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
+    return;
+  }
+
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   bool is_valid_op = false;
   bool is_kernel_op = false;
   const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
-  const char* kernel_name = NULL;  
+  const char* kernel_name = NULL;
+  hipStream_t kernel_stream = 0;
 
   switch (callback_id) {
   case HIP_API_ID_hipMemcpy:
@@ -329,7 +351,7 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipMemcpyDtoHAsync:
   case HIP_API_ID_hipMemcpyParam2D:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_copy);
+         gpu_placeholder_type_copy);
     is_valid_op = true;
     break;
 
@@ -342,7 +364,7 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipMalloc3D:
   case HIP_API_ID_hipExtMallocWithFlags:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_alloc);
+         gpu_placeholder_type_alloc);
     is_valid_op = true;
     break;
 
@@ -355,14 +377,14 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipMemsetAsync:
   case HIP_API_ID_hipMemsetD32Async:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_memset);
+         gpu_placeholder_type_memset);
     is_valid_op = true;
     break;
 
   case HIP_API_ID_hipFree:
   case HIP_API_ID_hipFreeArray:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_delete);
+         gpu_placeholder_type_delete);
     is_valid_op = true;
     break;
 
@@ -377,6 +399,9 @@ roctracer_subscriber_callback
     is_valid_op = true;
     is_kernel_op = true;
     kernel_name = hip_kernel_name_fn(data->args.hipModuleLaunchKernel.f);
+    if (collect_counter) {
+      kernel_stream = data->args.hipModuleLaunchKernel.stream;
+    }
     break;
   }
   case HIP_API_ID_hipLaunchKernel: {
@@ -386,8 +411,11 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_trace);
     is_valid_op = true;
     is_kernel_op = true;
-    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address, 
+    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address,
       data->args.hipLaunchKernel.stream);
+    if (collect_counter) {
+      kernel_stream = data->args.hipLaunchKernel.stream;
+    }
     break;
   }
   case HIP_API_ID_hipCtxSynchronize:
@@ -395,7 +423,7 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipDeviceSynchronize:
   case HIP_API_ID_hipEventSynchronize:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_sync);
+         gpu_placeholder_type_sync);
     is_valid_op = true;
     break;
   default:
@@ -408,8 +436,9 @@ roctracer_subscriber_callback
 
   if (data->phase == ACTIVITY_API_PHASE_ENTER) {
     uint64_t correlation_id = data->correlation_id;
+    uint64_t rocprofiler_correlation_id = 0;
     cct_node_t *api_node =
-      gpu_application_thread_correlation_callback(correlation_id);
+    gpu_application_thread_correlation_callback(correlation_id);
 
     gpu_op_ccts_t gpu_op_ccts;
     hpcrun_safe_enter();
@@ -423,17 +452,39 @@ roctracer_subscriber_callback
 
       cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
       ensure_kernel_ip_present(trace_ph, kernel_ip);
+
+      if (collect_counter) {
+        rocprofiler_correlation_id = correlation_id;
+        rocprofiler_start_kernel(rocprofiler_correlation_id);
+      }
     }
 
     hpcrun_safe_exit();
 
-
-    gpu_activity_channel_consume(gpu_metrics_attribute);
+    gpu_activity_channel_consume_with_idx(ROCTRACER_CHANNEL_IDX, gpu_metrics_attribute);
+    if (collect_counter) {
+      gpu_activity_channel_consume_with_idx(ROCPROFILER_CHANNEL_IDX, gpu_metrics_attribute);
+    }
 
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
-    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+    //gpu_monitors_apply(api_node, gpu_monitor_type_enter);
+
+    gpu_correlation_channel_produce_with_idx(ROCTRACER_CHANNEL_IDX, correlation_id, &gpu_op_ccts, cpu_submit_time);
+    if (collect_counter && is_kernel_op && kernel_name != NULL) {
+      gpu_correlation_channel_produce_with_idx(ROCPROFILER_CHANNEL_IDX, rocprofiler_correlation_id, &gpu_op_ccts, cpu_submit_time);
+    }
+
+  }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
+    if (is_kernel_op && collect_counter) {
+      //gpu_monitors_apply(NULL, gpu_monitor_type_exit);
+      hipStreamSynchronize(kernel_stream);
+      rocprofiler_wait_context_callback();
+      rocprofiler_stop_kernel();
+    }
   }
+
+
 }
 
 
@@ -443,7 +494,7 @@ roctracer_buffer_completion_notify
   void
 )
 {
-  gpu_monitoring_thread_activities_ready();
+  gpu_monitoring_thread_activities_ready_with_idx(ROCTRACER_CHANNEL_IDX);
 }
 
 
@@ -457,7 +508,7 @@ roctracer_activity_process
   roctracer_activity_translate(&gpu_activity, roctracer_record);
   if (gpu_correlation_id_map_lookup(roctracer_record->correlation_id) == NULL) {
     gpu_correlation_id_map_insert(roctracer_record->correlation_id,
-				  roctracer_record->correlation_id);
+          roctracer_record->correlation_id);
   }
   gpu_activity_process(&gpu_activity);
 }
@@ -493,8 +544,6 @@ roctracer_path
   return path;
 }
 
-
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -508,10 +557,6 @@ roctracer_bind
   // This is a workaround for roctracer to not hang when taking timer interrupts
   // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
   setenv("HSA_ENABLE_INTERRUPT", "0", 1);
-
-  if (rocm_debug_api_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    return DYNAMIC_BINDING_STATUS_ERROR;
-  }
 
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
@@ -572,6 +617,9 @@ roctracer_init
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_KFD_API, roctracer_subscriber_callback, NULL));
   // Enable rocTX
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_ROCTX, roctracer_subscriber_callback, NULL));
+
+  // Prepare getting URI
+  rocprofiler_uri_setup();
 }
 
 void
@@ -604,3 +652,11 @@ roctracer_fini
   roctracer_flush(args, how);
 }
 
+void
+roctracer_enable_counter_collection
+(
+  void
+)
+{
+  collect_counter = true;
+}

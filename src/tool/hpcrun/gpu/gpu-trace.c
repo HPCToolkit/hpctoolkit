@@ -185,19 +185,6 @@ gpu_trace_cct_insert_context
 }
 
 
-static uint64_t
-gpu_trace_time
-(
- uint64_t gpu_time
-)
-{
-  // return time in ns
-  uint64_t time = gpu_time;
-
-  return time;
-}
-
-
 static void
 gpu_trace_stream_append
 (
@@ -334,6 +321,7 @@ gpu_trace_fini
 }
 
 
+// Tracing thread
 void *
 gpu_trace_record
 (
@@ -343,6 +331,7 @@ gpu_trace_record
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
 
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  atomic_fetch_add(&active_streams_counter, 1);
 
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
@@ -369,9 +358,6 @@ gpu_trace_create
   monitor_disable_new_threads();
 
   trace->thread = gpu_trace_demultiplexer_push(trace->trace_channel);
-  atomic_fetch_add(&active_streams_counter, 1);
-
-  monitor_enable_new_threads();
 
   return trace;
 }
@@ -411,8 +397,8 @@ consume_one_trace_item
 
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
 
-  uint64_t start = gpu_trace_time(start_time);
-  uint64_t end   = gpu_trace_time(end_time);
+  uint64_t start = start_time;
+  uint64_t end   = end_time;
 
   stream_start_set(start_time);
 
@@ -441,8 +427,11 @@ consume_one_trace_item
 
   if (append) {
     gpu_trace_stream_append(td, leaf, start);
-    gpu_trace_stream_append(td, no_activity, end + 1);
 
-    PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
+    // note: adding 1 to end makes sense. however, with AMD OMPT, this
+    // causes adjacent events to share a timestamp. so, don't add 1.
+    gpu_trace_stream_append(td, no_activity, end);
+
+    PRINT("%p Append trace activity [%lu, %lu)\n", td, start, end);
   }
 }

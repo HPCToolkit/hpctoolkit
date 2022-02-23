@@ -580,7 +580,7 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
     convert_pcsampling_record_info
-      (ga, (CUpti_ActivityPCSamplingRecordInfo *)activity);
+				(ga, (CUpti_ActivityPCSamplingRecordInfo *)activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_MEMCPY2:

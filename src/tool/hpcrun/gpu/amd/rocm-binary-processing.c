@@ -58,8 +58,7 @@
 //******************************************************************************
 
 #include <include/gpu-binary.h>
-
-#include "rocm-debug-api.h"
+#include <lib/prof-lean/spinlock.h>
 #include "rocm-binary-processing.h"
 #include <hpcrun/files.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
@@ -97,6 +96,12 @@ typedef struct amd_gpu_binary {
 //******************************************************************************
 
 amd_gpu_binary_t* binary_list = NULL;
+
+// A spin lock to serialize two AMD GPU binary opertionas:
+// 1. parse and add a code object to the binary list
+// 2. look up a function name from the the binary list
+static spinlock_t rocm_binary_list_lock;
+
 
 //******************************************************************************
 // private operations
@@ -316,55 +321,33 @@ file_uri_exists
   return 0;
 }
 
-static int
+static void
 parse_amd_gpu_binary
 (
-  void
+  const char* uri
 )
 {
-  // rocm debug api library creates a new thread through std::thread.
-  // This breaks automatic thread ignoring code because we only check
-  // the caller of pthread_create. So, we manually ignore the new thread.
-  monitor_disable_new_threads();
+  // Handle file URIs
+  if (strncmp(uri, "file://", strlen("file://")) == 0) {
+    if (file_uri_exists(uri)) return;
 
-  rocm_debug_api_init();
-  size_t code_object_count;
-  rocm_debug_api_query_code_object(&code_object_count);
+    // Handle a new AMD GPU binary
+    amd_gpu_binary_t* bin = (amd_gpu_binary_t*) malloc(sizeof(amd_gpu_binary_t));
+    bin->uri = strdup(uri);
+    bin->next = binary_list;
+    binary_list = bin;
 
-  for (size_t i = 0; i < code_object_count; ++i) {
-    char* uri = rocm_debug_api_query_uri(i);
-    PRINT("uri %d, %s\n", i, uri);
+    // Parse URI to extract the binary
+    parse_amd_gpu_binary_uri(uri, bin);
 
-    // Handle file URIs
-    if (strncmp(uri, "file://", strlen("file://")) == 0) {
-      if (file_uri_exists(uri)) continue;
-
-      // Handle a new AMD GPU binary
-      amd_gpu_binary_t* bin = (amd_gpu_binary_t*) malloc(sizeof(amd_gpu_binary_t));
-      bin->uri = strdup(uri);
-      bin->next = binary_list;
-      binary_list = bin;
-
-      // Parse URI to extract the binary
-      parse_amd_gpu_binary_uri(uri, bin);
-
-      // Parse the ELF symbol table
-      elf_version(EV_CURRENT);
-      Elf *elf = elf_memory(bin->buf, bin->size);
-      if (elf != 0) {
-        construct_amd_gpu_symbols(elf, &(bin->function_table));
-        elf_end(elf);
-      }
+    // Parse the ELF symbol table
+    elf_version(EV_CURRENT);
+    Elf *elf = elf_memory(bin->buf, bin->size);
+    if (elf != 0) {
+      construct_amd_gpu_symbols(elf, &(bin->function_table));
+      elf_end(elf);
     }
   }
-
-  rocm_debug_api_fini();
-
-  // Now we are done with the rocm debug api.
-  // we enable tracing threads
-  monitor_enable_new_threads();
-
-  return 0;
 }
 
 // TODO:
@@ -420,19 +403,31 @@ rocm_binary_function_lookup
 )
 {
   // TODO:
-  // 1. Handle multi-threaded case. Currently, this function is called when the first
-  //    HIP kernel launch is done. So multiple threads can enter this concurrently.
-  // 2. Currently we support multiple GPU binaries, but assume that kernel is unique
+  // 1. Currently we support multiple GPU binaries, but assume that kernel is unique
   //    across GPU binaries.
-  if (binary_list == NULL) {
-    if (parse_amd_gpu_binary() < 0) {
-      // Allocate a placeholder binary
-      binary_list = (amd_gpu_binary_t*)malloc(sizeof(amd_gpu_binary_t));
-      binary_list->next = NULL;
-      binary_list->function_table.size = 0;
-    }
-  }
+  spinlock_lock(&rocm_binary_list_lock);
   ip_normalized_t nip = lookup_amd_function(kernel_name);
   PRINT("HIP launch kernel %s, lm_ip %lx\n", kernel_name, nip.lm_ip);
+  spinlock_unlock(&rocm_binary_list_lock);
   return nip;
+}
+
+void
+rocm_binary_uri_add
+(
+  const char* uri
+)
+{
+  spinlock_lock(&rocm_binary_list_lock);
+  parse_amd_gpu_binary(uri);
+  spinlock_unlock(&rocm_binary_list_lock);
+}
+
+void
+rocm_binary_uri_list_init
+(
+  void
+)
+{
+  spinlock_init(&rocm_binary_list_lock);
 }

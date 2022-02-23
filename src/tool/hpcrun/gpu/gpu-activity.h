@@ -95,7 +95,8 @@ typedef enum {
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
-  GPU_ACTIVITY_FLUSH                   = 17
+  GPU_ACTIVITY_FLUSH                   = 17,
+  GPU_ACTIVITY_COUNTER                 = 18
 } gpu_activity_kind_t;
 
 
@@ -179,9 +180,16 @@ typedef enum {
 } gpu_mem_type_t;
 
 
+typedef enum {
+  GPU_MEM_OP_ALLOC        = 0,
+  GPU_MEM_OP_DELETE       = 1,
+  GPU_MEM_OP_UNKNOWN      = 2
+} gpu_mem_op_t;
+
+
 // pc sampling
 typedef struct gpu_pc_sampling_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint32_t samples;
   uint32_t latencySamples;
@@ -190,7 +198,7 @@ typedef struct gpu_pc_sampling_t {
 
 
 typedef struct gpu_pc_sampling_info_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
   uint64_t totalSamples;
@@ -217,7 +225,8 @@ typedef struct gpu_memcpy_t {
   uint64_t end;
   uint64_t bytes;
   uint64_t submit_time;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
+  uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
   gpu_memcpy_type_t copyKind;
@@ -230,8 +239,12 @@ typedef struct gpu_memory_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
+  uint32_t device_id;
+  uint32_t context_id;
+  uint32_t stream_id;
   gpu_mem_type_t memKind;
+  gpu_mem_op_t mem_op;
 } gpu_memory_t;
 
 
@@ -240,7 +253,8 @@ typedef struct gpu_memset_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
+  uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
   gpu_mem_type_t memKind;
@@ -252,7 +266,7 @@ typedef struct gpu_kernel_t {
   uint64_t start;
   uint64_t end;
   uint64_t submit_time;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
@@ -278,7 +292,8 @@ typedef struct gpu_kernel_block_t {
 typedef struct gpu_cdpkernel_t {
   uint64_t start;
   uint64_t end;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
+  uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
 } gpu_cdpkernel_t;
@@ -298,7 +313,7 @@ typedef struct gpu_event_t {
 
 
 typedef struct gpu_global_access_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint64_t l2_transactions;
   uint64_t theoreticalL2Transactions;
@@ -308,7 +323,7 @@ typedef struct gpu_global_access_t {
 
 
 typedef struct gpu_local_access_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint64_t sharedTransactions;
   uint64_t theoreticalSharedTransactions;
@@ -318,7 +333,7 @@ typedef struct gpu_local_access_t {
 
 
 typedef struct gpu_branch_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint32_t diverged;
   uint32_t executed;
@@ -328,7 +343,7 @@ typedef struct gpu_branch_t {
 typedef struct gpu_synchronization_t {
   uint64_t start;
   uint64_t end;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
   uint32_t event_id;
@@ -337,10 +352,19 @@ typedef struct gpu_synchronization_t {
 
 
 typedef struct gpu_host_correlation_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint64_t host_correlation_id;
 } gpu_host_correlation_t;
 
+typedef struct gpu_counter_t {
+  uint32_t correlation_id;
+  int total_counters;
+  // The function that creates the structure should
+  // be responsible for allocating memory.
+  // The function that attributes the structure should
+  // be responsible for deallocating the memory.
+  uint64_t* values;
+} gpu_counter_t;
 
 // a type that can be used to access start and end times
 // for a subset of activity kinds including kernel execution,
@@ -352,7 +376,7 @@ typedef struct gpu_interval_t {
 
 
 typedef struct gpu_instruction_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
 } gpu_instruction_t;
 
@@ -378,6 +402,7 @@ typedef struct gpu_activity_details_t {
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
     gpu_flush_t flush;
+    gpu_counter_t counters;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 

@@ -447,6 +447,7 @@ METHOD_FN(display_events)
   printf("\n");
 }
 
+
 #define ss_name upc
 #define ss_cls SS_HARDWARE
 
