@@ -94,7 +94,8 @@
   macro(zeCommandListDestroy) \
   macro(zeCommandListReset) \
   macro(zeCommandQueueExecuteCommandLists) \
-  macro(zeEventHostReset)
+  macro(zeEventHostReset) \
+  macro(zeModuleCreate)
 
 #define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -305,6 +306,20 @@ LEVEL0_FN
     ze_event_handle_t hEvent                        ///< [in] handle of the event
   )
 );
+
+LEVEL0_FN
+(
+  zeModuleCreate,
+  (
+    ze_context_handle_t hContext,                // [in] handle of the context object
+    ze_device_handle_t hDevice,                  // [in] handle of the device
+    const ze_module_desc_t *desc,                // [in] pointer to module descriptor
+    ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
+    ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+  )
+);
+
+
 
 //******************************************************************************
 // private operations
@@ -921,6 +936,35 @@ hpcrun_zeEventHostReset
   return ret;
 }
 
+ze_result_t
+hpcrun_zeModuleCreate
+(
+  ze_context_handle_t hContext,                // [in] handle of the context object
+  ze_device_handle_t hDevice,                  // [in] handle of the device
+  const ze_module_desc_t *desc,                // [in] pointer to module descriptor
+  ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
+  ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+)
+{
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
+    (hContext, hDevice, desc, phModule, phBuildLog));
+
+  static int count = 0;
+  size_t size;
+  zeModuleGetNativeBinary(*phModule, &size, NULL);
+
+  uint8_t* buf = (uint8_t*) malloc(size);
+  zeModuleGetNativeBinary(*phModule, &size, buf);
+
+  char filename[128];
+  snprintf(filename, 128, "intel-gpubin-%d", count++);
+  FILE *f = fopen(filename, "w");
+  fwrite(buf, size, 1, f);
+
+  // Exit action
+
+  return ret;
+}
 int
 level0_bind
 (

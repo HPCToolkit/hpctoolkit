@@ -189,3 +189,18 @@ zeEventHostReset
 {
   return hpcrun_zeEventHostReset(hEvent);
 }
+
+ze_result_t
+zeModuleCreate
+(
+  ze_context_handle_t hContext,                // [in] handle of the context object
+  ze_device_handle_t hDevice,                  // [in] handle of the device
+  const ze_module_desc_t *desc,                // [in] pointer to module descriptor
+  ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
+  ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+)
+{
+  return hpcrun_zeModuleCreate(
+    hContext, hDevice, desc, phModule, phBuildLog
+  );
+}
