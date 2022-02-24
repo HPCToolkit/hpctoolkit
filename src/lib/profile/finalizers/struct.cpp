@@ -412,7 +412,7 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       if(!top.file) throw std::logic_error("<S> tag without an implicit f= attribute!");
       if(!top.funcEntry) throw std::logic_error("<S> tag without an enclosing <P>!");
       auto line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-      ud.trie.push_back({{Scope(*top.file, line), Relation::call}, top.node});
+      ud.trie.push_back({{Scope(*top.file, line), Relation::enclosure}, top.node});
       const trienode& leaf = ud.trie.back();
       auto is = parseVs(xmlstr(attr.getValue(XMLStr("v"))));
       for(const auto& i: is) {
