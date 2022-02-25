@@ -67,11 +67,18 @@ binary referenced by a directory containing HPCToolkit performance
 measurements.
 \Prog{hpcstruct} is usually run against an application's HPCToolkit \Arg{measurement-directory} directing
 it to analyze all CPU and GPU binaries recorded within it.
-Although no normally needed, one can apply \Prog{hpcstruct} to recover program
+Although not normally needed, one can apply \Prog{hpcstruct} to recover program
 structure for an individual CPU or GPU binary.
 
-When \Prog{hpcprof} is applied to a \Arg{measurement-directory} that contains program structure files,
-those program structure files will be used to help attribute performance measurements.
+Program structure is a mapping from addresses of machine instructions
+in a binary to source code contexts; this mapping is used to attribute
+measured performance metrics back to source code. A strength of
+\Prog{hpcstruct} is its ability to attribute metrics to inlined functions
+and loops; such mappings are especially useful for understanding the
+performance of programs generated using template-based programming
+models.
+When \Prog{hpcprof} is invoked on a \Arg{measurement-directory} that contains program structure files,
+they will be used attribute performance measurements.
 
 \Prog{hpcstruct} is designed to cache its results so that processing multiple measurement directories
 can copy previously generated structure files from the cache rather than regenerating the information.
@@ -99,25 +106,19 @@ previously processed with a different \Arg{--gpucfg} setting.
 To accelerate analysis of a measurement directory, which contains
 references to an application as well as any shared libraries
 and/or GPU binaries it uses, \Prog{hpcstruct} employs multiple threads by
-default. Multiple small binaries are analyzed concurrently, using one single-threads
-process per binary. By default, this analysis will use half of the
-CPUs in the CPU set for the process. Binaries larger than a certain
-threshold (see the \Arg{--psize} option and its default) are analyzed using
-multiple threads. By default, large binaries will be analyzed using
-the minimum of half of the CPUs in the CPU set for the process or 16 OpenMP threads.
+default.  A pool of threads equal to half of the threads in the CPU set for
+the process is used.
+Binaries larger than a certain threshold (see the \Arg{--psize} option and
+its default) are analyzed using more OpenMP threads than those smaller than
+the threshold.
+Multiple binaries are processed concurrently.
+\Prog{hpcstruct} will describe the actual parallelization and concurrency
+used when the run starts.
 
 When analyzing a single CPU or GPU binary \Arg{b}, \Prog{hpcstruct} only writes its results to the file
 'basename(\Arg{b}).hpcstruct' in the current directory, and does not link to the binary.
 When rerun against a single binary, it will reprocess that binary and rewrite
 its structure file.
-
-Program structure is a mapping from addresses of machine instructions
-in a binary to source code contexts; this mapping is used to attribute
-measured performance metrics back to source code. A strength of
-\Prog{hpcstruct} is its ability to attribute metrics to inlined functions
-and loops; such mappings are especially useful for understanding the
-performance of programs generated using template-based programming
-models.
 
 \Prog{hpcstruct} is designed for analysis of optimized binaries created from
 C, C++, Fortran, CUDA, HIP, and DPC++ source code. Because \Prog{hpcstruct}'s
@@ -175,18 +176,13 @@ HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
 \subsection{Options: Override parallel defaults}
 \item[\OptArg{-j}{num}, \OptArg{--jobs}{num}]
 Specify the degree of parallelism to be used in processing.
-When processing a \Arg{measurement directory},large binaries (size greater than \Arg{psize})
-are processed first, one at a time, with each using
-\Arg{num} OpenMP threads in \Prog{hpcstruct}.
-Following that, all other binaries are processes concurrently with \Arg{num} 
-processes running, each using one OpenMP thread.
-When processing a single binary, \Arg{num} OpenMP threads are used.
+\Arg{num} is used as the setting for both OpenMP threads and
+concurrent processes.
 
 \item[\OptArg{--psize}{n}]
 Size, in bytes, of a binary that will cause \Prog{hpcstruct}
-to analyze a binary in parallel.
-Binaries with fewer than \Arg{n} bytes will be analyzed
-concurrently. {100000000}
+to use a  larger number of OpenMP threads to analyze it in parallel.
+{100000000}
 
 \subsection{Options: override structure recovery defaults}
 
