@@ -946,6 +946,10 @@ hpcrun_zeModuleCreate
   ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
 )
 {
+  fprintf(stderr, "Enter zeModuleCreate, desc %p\n", desc);
+  if (desc != NULL) {
+    fprintf(stderr,"\tformat %d, build flag %s\n", desc->format, desc->pBuildFlags);
+  }
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
     (hContext, hDevice, desc, phModule, phBuildLog));
 
@@ -957,9 +961,22 @@ hpcrun_zeModuleCreate
   zeModuleGetNativeBinary(*phModule, &size, buf);
 
   char filename[128];
-  snprintf(filename, 128, "intel-gpubin-%d", count++);
+  snprintf(filename, 128, "intel-gpubin-%d", count);
   FILE *f = fopen(filename, "w");
   fwrite(buf, size, 1, f);
+  fclose(f);
+  free(buf);
+
+  zetModuleGetDebugInfo(*phModule,ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,&size, NULL);
+  buf = (uint8_t*) malloc(size);
+  zetModuleGetDebugInfo(*phModule,ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,&size, buf);
+  snprintf(filename, 128, "intel-gpubin-debug-%d", count);
+  f = fopen(filename, "w");
+  fwrite(buf, size, 1, f);
+  fclose(f);
+  free(buf);
+
+  count++;
 
   // Exit action
 
