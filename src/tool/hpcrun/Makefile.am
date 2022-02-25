@@ -577,6 +577,7 @@ MY_LEVEL0_FILES=\
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
 libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
+libhpcrun_level0_la_CFLAGS    = $(OPT_LEVEL0_IFLAGS)
 libhpcrun_level0_la_LDFLAGS   = -Wl,-Bsymbolic
 
 endif
