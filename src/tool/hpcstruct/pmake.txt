@@ -28,30 +28,6 @@ else
 GPUBIN_CFG_ALT = yes
 endif
 
-#*******************************************************************************
-# enable analysis of GPU binaries
-#*******************************************************************************
-ifeq ($(GPU_ANALYZE),1)
-
-#-------------------------------------------------------------------------------
-# $(GB): gpubin files
-#-------------------------------------------------------------------------------
-GB := $(wildcard $(GPUBIN_DIR)/*.gpubin)
-
-#-------------------------------------------------------------------------------
-# $(GS): hpcstruct files for gpubins
-#-------------------------------------------------------------------------------
-GS := $(patsubst $(GPUBIN_DIR)/%,$(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct,$(GB))
-
-#-------------------------------------------------------------------------------
-# $(GW): warning files that may be generated during structure analysis of gpubins
-#-------------------------------------------------------------------------------
-GW := $(patsubst %.hpcstruct,%.warnings,$(GS))
-
-endif
-
-#*******************************************************************************
-#*******************************************************************************
 
 #*******************************************************************************
 # use a measurement cache, if available
@@ -64,14 +40,12 @@ endif
 
 
 #*******************************************************************************
-# enable analysis of CPU binaries
+# identify load modules to analyze
 #*******************************************************************************
-ifeq ($(CPU_ANALYZE),1)
-CPUBIN_DIR  = $(MEAS_DIR)/cpubins
 LM_DIR      = $(MEAS_DIR)/lm
 
 #-------------------------------------------------------------------------------
-# $(H): hpcrun file for thread 0 in each process
+# $(H): hpcrun file for all threads
 #-------------------------------------------------------------------------------
 H := $(wildcard $(MEAS_DIR)/*.hpcrun)
 
@@ -84,14 +58,55 @@ L := $(patsubst $(MEAS_DIR)/%.hpcrun,$(LM_DIR)/%.lm,$(H))
 # create $(LM_DIR)/all.lm: a list of all load modules involved in the execution
 #-------------------------------------------------------------------------------
 $(LM_DIR)/all.lm: $(L)
-	cat $(L) | sort -u | grep -v gpubin | grep -v libhpcrun | grep -v libmonitor | grep -v libxed | grep -v libpfm | grep -v libcuda | grep -v libcupti > $(LM_DIR)/all.lm
+	cat $(L) | sort -u | grep -v libhpcrun | grep -v libmonitor | grep -v libxed | grep -v libpfm | grep -v libcuda | grep -v libcupti > $(LM_DIR)/all.lm
+
+
+#*******************************************************************************
+# enable analysis of GPU binaries
+#*******************************************************************************
+ifeq ($(GPU_ANALYZE),1)
+GPUBIN_USED_DIR  = $(MEAS_DIR)/gpubins-used
+
+#-------------------------------------------------------------------------------
+# create gpubins-used directory containing links to all GPU binaries used
+#-------------------------------------------------------------------------------
+$(GPUBIN_USED_DIR): $(LM_DIR)/all.lm
+	-@mkdir $(GPUBIN_USED_DIR) >&- 2>&-
+	-@cd $(GPUBIN_USED_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm | grep gpubin`; do ln -s $$i; done >&- 2>&-
+
+#-------------------------------------------------------------------------------
+# $(GB): gpubin files
+#-------------------------------------------------------------------------------
+GB := $(wildcard $(GPUBIN_USED_DIR)/*)
+
+#-------------------------------------------------------------------------------
+# $(GS): hpcstruct files for gpubins
+#-------------------------------------------------------------------------------
+GS := $(patsubst $(GPUBIN_USED_DIR)/%,$(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct,$(GB))
+
+#-------------------------------------------------------------------------------
+# $(GW): warning files that may be generated during structure analysis of gpubins
+#-------------------------------------------------------------------------------
+GW := $(patsubst %.hpcstruct,%.warnings,$(GS))
+
+endif
+
+#*******************************************************************************
+#*******************************************************************************
+
+
+#*******************************************************************************
+# enable analysis of CPU binaries
+#*******************************************************************************
+ifeq ($(CPU_ANALYZE),1)
+CPUBIN_DIR  = $(MEAS_DIR)/cpubins
 
 #-------------------------------------------------------------------------------
 # create cpubins directory containing links to all CPU binaries
 #-------------------------------------------------------------------------------
 $(CPUBIN_DIR): $(LM_DIR)/all.lm
 	-@mkdir $(CPUBIN_DIR) >&- 2>&-
-	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm`; do ln -s $$i; done >&- 2>&-
+	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm | grep -v gpubin`; do ln -s $$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------
 # $(CB): cpubin files
@@ -219,16 +234,14 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 #-------------------------------------------------------------------------------
 DOMAKE=1
 
-ifeq ($(CPU_ANALYZE),1)
 ifeq ($(L),)
 all:
 	echo ERROR: directory $(MEAS_DIR) does not contain any hpcrun measurement files
 DOMAKE=0
 endif
-endif
 
 ifeq ($(DOMAKE),1)
-all: $(CPUBIN_DIR)
+all: $(CPUBIN_DIR) $(GPUBIN_USED_DIR)
 	$(MAKE) -j $(LJOBS) THREADS=$(LTHREADS) GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
 	$(MAKE) -j $(SJOBS) THREADS=$(STHREADS) GPAR_SIZE=0 CPAR_SIZE=0 analyze
 endif
