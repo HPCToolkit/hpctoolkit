@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.10.15}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2022.03.15}
 %\subtitle{}
 
 \author{John Mellor-Crummey,\\
@@ -136,7 +136,7 @@ Keren Zhou\\
 Rice University\\
 }
 
-\date{October 15, 2021}
+\date{February 26, 2022}
 
 \maketitle
 
@@ -299,7 +299,7 @@ For the most detailed attribution of application performance data using \HPCTool
 Second, one launches an application with \HPCToolkit{}'s measurement tool, \hpcrun{}, which uses statistical sampling to collect a performance profile.
 Third, one invokes \hpcstruct{}, \HPCToolkit{}'s tool for analyzing an application binary and any shared objects and GPU binaries
 it used in the data collection run, as stored in the measurements directory.  It recovers
-information about files, procedures, loops, and inlined code.
+information about source files, procedures, loops, and inlined code.
 Fourth, one uses \hpcprof{} of \hpcprof-mpi{} to combine information about an application's structure with dynamic performance measurements to produce a performance database.
 Finally, one explores a performance database with \HPCToolkit{}'s \hpcviewer{} and/or \hpctraceviewer{} graphical presentation tools.
 
@@ -365,8 +365,8 @@ we need a mapping between object code and its associated source code structure.
 \HPCToolkit{} constructs this mapping using binary analysis; we call this process
 \emph{recovering program structure}~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
 
-\HPCToolkit{} focuses its efforts on recovering procedures, inlined functions and templates, as well as
-loop nests, the most important elements of source code structure.
+\HPCToolkit{} focuses its efforts on recovering source files, procedures, inlined functions and templates, as well as
+loop nests as the most important elements of source code structure.
 To recover program structure, \HPCToolkit's \hpcstruct{} utility parses a binary's machine instructions,
 reconstructs a control flow graph, combines line map and DWARF information about inlining with interval
 analysis on the control flow graph in a way that enables it to relate machine code after optimization
@@ -377,7 +377,6 @@ One important benefit accrues from this approach.
 For example, \hpcstruct{}'s program structure naturally reveals transformations such as loop fusion and scalarization
 loops that arise from compilation of Fortran 90 array notation.
 Similarly, it exposes calls to compiler support routines and wait loops in communication libraries of which one would otherwise be unaware.
-%\hpcrun{}'s function discovery heuristics expose distinct logical procedures within stripped binaries.
 
 
 \section{Reducing Performance Measurements}
@@ -442,17 +441,18 @@ It assumes an operational installation of \HPCToolkit{}.
 \HPCToolkit{}'s work flow is summarized in Figure~\ref{fig:hpctoolkit-overview:b} (on page~\pageref{fig:hpctoolkit-overview:b}) and is organized around four principal capabilities:
 \begin{enumerate}
   \item \emph{measurement} of context-sensitive performance metrics while an application executes;
-  \item \emph{binary analysis} to recover program structure from application binaries;
+  \item \emph{binary analysis} to recover program structure from CPU and GPU binaries;
   \item \emph{attribution} of performance metrics by correlating dynamic performance metrics with static program structure; and
   \item \emph{presentation} of performance metrics and associated source code.
 \end{enumerate}
 
 To use \HPCToolkit{} to measure and analyze an application's performance, one first compiles and links the application for a production run, using \emph{full} optimization.
 Second, one launches an application with \HPCToolkit{}'s measurement tool, \hpcrun{}, which uses statistical sampling to collect a performance profile.
-Third, one invokes \hpcstruct{}, \HPCToolkit{}'s tool for analyzing an application binary to recover information about files, procedures, loops, and inlined code.
+Third, one applies \hpcstruct{} to an application's measurement directory to recover program structure information from any CPU or GPU binary that was measured. 
+Program structure, which includes information about files, procedures, inlined code, and loops, is used to relate performance measurements to source code. 
 Fourth, one uses \hpcprof{} to combine information about an application's structure with dynamic performance measurements to produce a performance database.
 For large executions where analyzing performance measurements serially would be imprudent, \HPCToolkit{}  provides \hpcprof-mpi{} - an MPI program that can be launched to analyze  performance data from many MPI ranks and threads in parallel.
-Finally, one explores a performance database with \HPCToolkit{}'s graphical user interface: \hpcviewer{} which presentes
+Finally, one explores a performance database with \HPCToolkit{}'s graphical user interface: \hpcviewer{} which presents
 both a code-centric analysis of performance metrics and a time-centric (trace-based) analysis of an execution.
 
 The following subsections explain \HPCToolkit{}'s work flow in more detail.
@@ -552,21 +552,20 @@ To use the same sample sources with an \hpclink{}-ed application, use a command 
 
 \subsection{Recovering Program Structure}
 
-Typically, \hpcstruct{} is launched without any options, with an argument that is a \emph{measurements directory}.
-It recovers the names of all shared libraries and GPU binaries invoked by the application.
-It processes all of them, and puts links to the shared libaries and copies of the GPU binaries into that
-directory.
-It also puts the structure information for all of them into the \emph{measurements directory}.
-The structure information includes its loop nesting structure, and inlining information.
+Typically, \hpcstruct{} is launched without any options, with an argument that is a \HPCToolkit{}  \emph{measurements directory}.
+\hpcstruct{} identifies the application as well as any shared libraries and GPU binaries it invokes.
+It processes each of them and records information its program structure in the \emph{measurements directory}.
+Program structure for a binary includes information about its source files, procedures, inlined code, loop nests, and statements.
 
-By default, \hpcstruct{} processes multiple objects concurrently, and processes any large objects
-using internal parallelism.
+When applied to a measurements directory, \hpcstruct{} analyzes multiple binaries concurrently by default.
+It analyzes each small binary using a few threads and each large binary using more threads.
 
-To recover static program structure for a single binary \texttt{bin}, use the command:
+Although not usually necessary, one can apply \hpcstruct{}  to recover program structure information for a single CPU or GPU binary.
+To recover static program structure for a single binary \texttt{b}, use the command:
 \begin{quote}
-  \verb|hpcstruct bin|
+  \verb|hpcstruct b|
 \end{quote}
-This command analyzes the binary and saves this information in a file named \texttt{bin.hpcstruct}.
+This command analyzes the binary and saves this information in a file named \texttt{b.hpcstruct}.
 
 
 % ==========================================================
@@ -575,7 +574,7 @@ This command analyzes the binary and saves this information in a file named \tex
 \subsection{Analyzing Measurements \& Attributing Them to Source Code}
 
 To analyze \HPCToolkit{}'s measurements and attribute them to the application's source code, use either \hpcprof{} or \hpcprof-mpi{}.
-In most respects, \hpcprof{} and \hpcprof-mpi{} are semantically idential.
+In most respects, \hpcprof{} and \hpcprof-mpi{} are semantically identical.
 Both generate the same set of summary metrics over all threads and processes in an execution.
 The difference between the two is that the latter is designed to process (in parallel) measurements from large-scale executions.
 Consequently, while the former can optionally generate separate metrics for each thread (see the \mytt{--metric/-M} option), the latter only generates summary metrics.
@@ -1071,8 +1070,8 @@ argument to \hpclink{}.
 For dynamically linked executables, the \hpcrun{} script sets environment variables to pass information to the \HPCToolkit{} monitoring library.
 On standard Linux systems, statically linked \hpclink{}-ed executables can still be launched with \hpcrun{}.
 
-For statically-linked binaries, the \hpcrun{} script is not applicable because of differences in application launch procedures.
-On these systems, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
+You many encounter a situation where the \hpcrun{} script cannot be used with an application launcher.
+In such cases, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
 Typically, you would set \mytt{HPCRUN_EVENT_LIST} in your launch script.
 
 The \mytt{HPCRUN_EVENT_LIST} environment variable should be set to a space-separated list of \mytt{EVENT@COUNT} pairs.
