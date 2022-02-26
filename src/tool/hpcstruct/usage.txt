@@ -1,9 +1,13 @@
 Description:
+  hpcstruct recovers program structure information for CPU and GPU
+  binaries.  hpcprof uses program structure information to relate
+  performance measurements back to source code.
+  
   Apply hpcstruct to a directory containing HPCToolkit performance
   measurements to recover the program structure for each CPU and GPU
-  binary referenced by measurement data. Although not normally necessary,
-  one can apply hpcstruct directly to an individual CPU or GPU binary
-  to recover its program structure.
+  binary referenced by measurement data. Although not normally
+  necessary, one can apply hpcstruct directly to an individual CPU or
+  GPU binary to recover its program structure.
 
   Program structure is a mapping from addresses of machine
   instructions in a binary to source code contexts; this mapping is
@@ -68,8 +72,8 @@ Options: Control caching of structure files
 Options: Override parallelism defaults
   -j <num>, --jobs <num> Specify the number of threads to be used. <num>
                        OpenMP threads will be used to analyze any large
-		       binaries. A pool of <num> threads will be used for
-		       analysis of small binaries.
+		       binaries. A pool of <num> threads will be used to
+		       analyze small binaries.
   --psize <psize>      hpcstruct will consider any binary of at least
                        <psize> bytes as large. hpcstruct will use more
                        OpenMP threads to analyze large binaries than
@@ -101,7 +105,7 @@ Options: Developers only
                        in the control-flow graph.
   --time               Display stats on hpcstruct's time and space usage.
 
-Options: Internal use only (not for use by users)
+Options: Internal use only
   -M <measurement-dir> Indicates that hpcstruct was invoked by a
                        script used to process measurement directory
                        <measurement-dir>. This information is used to
