@@ -74,17 +74,12 @@ using std::endl;
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 
-// #include "fileout.hpp"
-
 #include <lib/support/RealPathMgr.hpp>
-
 
 using namespace std;
 
-
 // Function prototypes
 static void create_structs_directory ( string &structs_dir);
-static bool check_gpubin ( string &measurements_dir);
 static void open_makefile ( string &makefile_name, fstream &makefile);
 static void verify_measurements_directory(string &measurements_dir);
 
@@ -111,21 +106,18 @@ doMeasurementsDir
 
   verify_measurements_directory(measurements_dir);
 
-  bool has_gpubin = check_gpubin(measurements_dir);
-
   //
   // Put hpctoolkit on PATH
   //
   char *path = getenv("PATH");
   string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
 
-  if (has_gpubin) {
-    // Put cuda (nvdisasm) on path.
-    new_path = new_path +":" + CUDA_INSTALL_PREFIX + "/bin";
-  }
+  // Assume that nvdisasm is on the user's path; if not BAnal will complain
 
   setenv("PATH", new_path.c_str(), 1);
 
+  // Construct full paths for hpcproftt and hpcstruct
+  //
   string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
     + "/libexec/hpctoolkit/hpcproftt";
 
@@ -159,12 +151,14 @@ doMeasurementsDir
 
   string cache_path;
 
+  // Initialize the structure cache, if specified
+  //
   if (!args.nocache) {
     char *cpath = NULL;
 
     // Find or create the actual cache directory
     try {
-      cpath = hpcstruct_cache_directory(args.cache_directory.c_str(), "", &args);
+      cpath = setup_cache_dir(args.cache_directory.c_str(), &args);
     } catch(const Diagnostics::FatalException &e) {
       exit(1);
     };
@@ -188,6 +182,7 @@ doMeasurementsDir
   int small_jobs = (jobs >= 2) ? jobs / 2 : jobs;
   int small_threads = (jobs == 1) ? 1 : 2;
 
+  // Write the header with definitions to the makefile
   makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
  	   << "GPUBIN_CFG = "   << gpucfg << "\n"
 	   << "CPU_ANALYZE = "  << args.analyze_cpu_binaries << "\n"
@@ -203,23 +198,27 @@ doMeasurementsDir
 
   if (!cache_path.empty()) {
     makefile << "CACHE= "       << cache_path << "\n";
-   } else {
-     makefile << "CACHE= " << "\n";
+  } else {
+    makefile << "CACHE= " << "\n";
   }
 
   makefile << analysis_makefile << endl;
 
   makefile.close();
 
+  // Construct the make command to invoke it
   string make_cmd = string("make -C ") + structs_dir + " -k --silent "
       + " --no-print-directory all";
 
+  // Describe the parallelism and concurrency used
   cout << "NOTE: Using a pool of " << jobs << " threads to analyze binaries in a measurement directory" << endl;
   cout << "NOTE: Analyzing each large binary of >= " << args.parallel_analysis_threshold << " bytes in parallel using " << pthreads
        << " threads" << endl;
   cout << "NOTE: Analyzing each small binary using " << small_threads <<
     " thread" << ((small_threads > 1) ? "s" : "") <<  "\n" << endl;
 
+  // Run the make command
+  //
   if (system(make_cmd.c_str()) != 0) {
     DIAG_EMsg("Running make to generate hpcstruct files for measurement directory failed.");
     exit(1);
@@ -273,6 +272,7 @@ verify_measurements_directory
 }
 
 
+#if 0
 // check if measurements directory contains a GPU binary 
 static bool
 check_gpubin
@@ -299,6 +299,7 @@ check_gpubin
 
   return has_gpubin;
 }
+#endif
 
 // Invoked for a measurements-directory handling to ensure
 //  that it has a subdirectory for structure files

@@ -24,15 +24,16 @@ Description:
   structure files from the cache rather than regenerating the
   information.  A cache may be specified either on the command line
   (see the -C option, below) or by setting the
-  HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.  If one is
+  HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.  If a cache is
   specified, hpcstruct emits a message for each binary processed
-  saying one of 'Added to cache', 'Copied from cache', or 'Copied from
-  cache +'.  The latter indicates that although the structure file was
-  found in the cache, it came from an identical binary with a
-  different full path, so the cached content was edited to reflect the
-  actual path.  If the --nocache option is set, hpcstruct will not use
-  the cache, even if the environment variable is set, and the message
-  will say '(Cache disabled by user)'.  If no cache is specified, the
+  saying 'Added to cache', 'Replaced in cache', 'Copied from cache',
+  or 'Copied from cache +'.  The latter indicates that the structure
+  file was found in the cache, but it came from an identical binary with
+  a different full path, so the cached content was edited to reflect the
+  actual path.  'Replaced in cache' indicates that a previous version at
+  that path was replaced.  If the --nocache option is set, hpcstruct will
+  not use the cache, even if the environment variable is set; the message
+  will say 'Cache disabled by user'.  If no cache is specified, the
   message will say 'Cache not specified' and, unless the --nocache
   option was set, an ADVICE message urging use of a cache will be
   written.  Users are strongly encouraged to use a cache,

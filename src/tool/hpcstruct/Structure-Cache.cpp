@@ -79,6 +79,8 @@
 #include "Structure-Cache.hpp"
 #include "Args.hpp"
 
+using namespace std;
+
 //***************************************************************************
 // environment variable naming the structure cache; may be overriden from command line
 //***************************************************************************
@@ -117,6 +119,7 @@ path_accessible
   return status;
 }
 
+//  Examine a file-system path and return its state
 static ckpath_ret_t
 ck_path
 (
@@ -196,6 +199,8 @@ ck_path
  } 
 
 
+//  Make or create a directory path
+//  Returns the same state enum as ck_path, above
 static ckpath_ret_t
 mk_dirpath
 (
@@ -223,9 +228,11 @@ mk_dirpath
 
 
 // determine if there already exists a different hash entry for a file path
-// 1: cleanup needed
+//    Returns:
+// 1: replacement of existing entry needed
 // 0: no cleanup needed
-static int
+
+static char *
 hpcstruct_cache_needs_cleanup
 (
  std::string path,
@@ -244,33 +251,49 @@ hpcstruct_cache_needs_cleanup
 	(strcmp(d->d_name, "..") == 0)) continue;
 
     if (strcmp(hash, d->d_name) == 0) { // hash present; nothing to do
-      continue;
+      continue;	// Shouldn't this be "break;"  ??
     } else {
+      char * ret = strdup(d->d_name);
       // something else present: cleanup needed
       closedir(dir);
-      return 1;
+      return ret;
     }
   }
 
   closedir(dir);
 
-  return 0;
+  return NULL;
 }
 
+
+//  clean up cache entry being replaced 
 
 static int
 hpcstruct_cache_cleanup
 (
+ const char *cachedir,
  std::string path,
- const char *hash
+ const char *hash,
+ const char *suffix
 )
 {
-  int cleanup = hpcstruct_cache_needs_cleanup(path, hash);
+  if ( global_args->nocache == true) {
+#if 0
+    std::cerr << "DEBUG cache_cleanup nocache true, returning 0" << std::endl;
+#endif
+    return 0;
+  }
 
-  if (cleanup) {
-    // First try to do the cleanup 
+  char* oldhash = hpcstruct_cache_needs_cleanup(path, hash);
+
+  if (oldhash != NULL) {
+    // indicates the name of the replaced entry
+    // First, try to remove the directory 
     std::string command("rm -rf ");
     command += path;
+#if 0
+    std::cerr << "DEBUG PATH cleanup running " << command.c_str() << std::endl;
+#endif
     system(command.c_str());
 
     // check to see that it worked
@@ -279,10 +302,30 @@ hpcstruct_cache_cleanup
       std::cerr << "ERROR: cache_cleanup of " << path.c_str() << " failed" << std::endl;
       exit(1);
     }
-    if ( global_args->nocache == true) return 0;
 
     // indicate that the entry removed from cache
     global_args->cache_stat = CACHE_ENTRY_REMOVED;
+
+    // construct the name for the CACHE/FLAT directory entry
+    string fpath =  hpcstruct_cache_flat_entry(cachedir, oldhash, suffix );
+
+    // Remove that entry
+    command = "rm -f " + fpath;
+
+#if 0
+    std::cerr << "DEBUG FLAT cleanup running " << command.c_str() << std::endl;
+#endif
+    system(command.c_str());
+
+    // check to see that it worked
+    ret = ck_path ( fpath.c_str(), "cache_cleanup -- FLAT" );
+    if ( ret != PATH_ABSENT ) {
+      std::cerr << "ERROR: cache_cleanup FLAT of " << fpath.c_str() << " failed" << std::endl;
+      exit(1);
+    }
+#if 0
+    std::cerr << "DEBUG cache_cleanup set state to CACHE_ENTRY_REMOVED = " << CACHE_ENTRY_REMOVED << std::endl;
+#endif
   }
 
   return 0;
@@ -339,11 +382,15 @@ hpcstruct_cache_hash
 }
 
 
+// Ensure that the cache FLAT subdirectory is created and writeable
+//  Returns the path to the entry in the FLAT subdirectory for the input file
+//
 char *
-hpcstruct_cache_flat_directory
+hpcstruct_cache_flat_entry
 (
  const char *cache_dir,
- const char *hash // hash for elf file
+ const char *hash, // hash for elf file
+ const char *suffix
 )
 {
   std::string path = cache_dir;
@@ -357,19 +404,22 @@ hpcstruct_cache_flat_directory
   }
 
   // compute the full path to the new cache directory
-  path = path + '/' + hash;
+  path = path + '/' + hash + suffix;
 
   // return the full path for the new cache entry
   return strdup(path.c_str());
 }
 
 
+// Construct the path within the CACHE/PATH for the binary
+//
 char *
 hpcstruct_cache_path_directory
 (
  const char *cache_dir,
  const char *binary_abspath,
- const char *hash // hash for elf file
+ const char *hash, // hash for elf file
+ const char *suffix  // used to remove replaced FLAT link
 )
 {
   std::string path = cache_dir;
@@ -389,15 +439,15 @@ hpcstruct_cache_path_directory
   mk_dirpath(path.c_str(), "Failed to create entry in hpcstruct cache directory", true);
 
   // discard any prior entries for path with a different hash
-  hpcstruct_cache_cleanup(path.c_str(), hash);
+  hpcstruct_cache_cleanup(cache_dir, path.c_str(), hash, suffix);
 
-  // compute the full path to the new cache directory
+  // compute the full path to the new cache entry's directory
   path = path + '/' + hash;
 
   // ensure the new cache directory exists
   mk_dirpath(path.c_str(), "Failed to create new hpcstruct cache directory", true);
 
-  // return the full path for the new cache entry
+  // return the full path for the new cache entry's directory
   return strdup(path.c_str());
 }
 
@@ -435,11 +485,14 @@ hpcstruct_cache_entry
 }
 
 
+// Routine to examine arguments, and set up the cache directory
+// Returns the absolute path to the top-level cache directory
+//  Returns NULL if no cache directory was specified
+//
 char *
-hpcstruct_cache_directory
+setup_cache_dir
 (
  const char *cache_dir,
- const char *kind,
  Args *args
 )
 {
@@ -466,7 +519,6 @@ hpcstruct_cache_directory
   }
 
   realpath(cache_dir, abspath);
-  strcat(abspath, kind);
 
   ckpath_ret_t ret = mk_dirpath(abspath, "Failed to create hpcstruct cache directory", true);
   if ( ret == PATH_DIR_CREATED ) {
@@ -476,35 +528,4 @@ hpcstruct_cache_directory
   }
 
   return strdup(abspath);
-}
-
-
-void
-hpcstruct_reify_path
-(
- const char *path
-)
-{
-  mk_dirpath(path, "Failed to create hpcstruct output directory", true);
-  if ( global_args->nocache == true) return;
-
-  if ( global_args->cache_stat == CACHE_ENTRY_REMOVED ) {
-    global_args->cache_stat = CACHE_ENTRY_REPLACED;
-  } else {
-    global_args->cache_stat = CACHE_ENTRY_ADDED;
-  }
-}
-
-
-void
-hpcstruct_reify_path_parent
-(
- const char *path
-)
-{
-  std::string outpath = path;
-  size_t pos = outpath.find_last_of("/");
-  if (pos != std::string::npos) {
-    hpcstruct_reify_path(outpath.substr(0, pos).c_str());
-  }
 }

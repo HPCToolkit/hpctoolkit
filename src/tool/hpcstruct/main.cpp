@@ -171,6 +171,8 @@ realmain(int argc, char* argv[])
   }
 #endif
 
+  // Process the arguments
+  //
   Args args(argc, argv);
   global_args = &args;
 
@@ -178,7 +180,7 @@ realmain(int argc, char* argv[])
   RealPathMgr::singleton().realpath(args.in_filenm);
 
   // ------------------------------------------------------------
-  // If in_filenm is a directory, then analyze separately
+  // If in_filenm is a directory, then analyze entire directory
   // ------------------------------------------------------------
   struct stat sb;
 
@@ -187,16 +189,23 @@ realmain(int argc, char* argv[])
     exit(1);
   }
 
+  // See if the argument is a directory, or a single binary
+  //
   if ( S_ISDIR(sb.st_mode) ) {
+    // it's a directory
+    // Make sure output file was not specified
+    //
     if (!args.out_filenm.empty()) {
       DIAG_EMsg("Outfile file may not be specified when analyzing a measurement directory.");
       exit(1);
     }
-
+    // Now process the measurements directory, passing it its stat result
+    //
     doMeasurementsDir(args, &sb);
 
   } else {
     // Process a single binary, passing in its stat result
+    //
     doSingleBinary(args, &sb );
   }
   return 0;

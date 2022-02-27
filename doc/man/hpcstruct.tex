@@ -86,8 +86,10 @@ can copy previously generated structure files from the cache rather than regener
 A cache may be specified either on the command line (see the -C option, below) or
 by setting the HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.
 If a cache is specified, \Prog{hpcstruct} emits a message for each binary processed saying one of "Added to cache",
-"Copied from cache", or "Copied from cache +".  The latter indicates that although the structure file was found in the
-cache, it came from an identical binary with a different full path, so it was edited to reflect the actual path.
+"Replaced in cache", "Copied from cache", or "Copied from cache +".  The latter indicates that although the
+structure file was found in the cache, it came from an identical binary with a different full path,
+so it was edited to reflect the actual path.
+"Replaced in cache" indicates that a previous version at that path was replaced.
 If the \Arg{--nocache} option is set, \Prog{hpcstruct}  will not use the cache, even if the environment
 variable is set, and the message will say "(Cache disabled by user)".
 If no cache is specified, the message will say "Cache not specified",

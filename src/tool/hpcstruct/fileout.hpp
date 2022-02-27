@@ -62,6 +62,22 @@ public:
   FileOutputStream() : stream(0), buffer(0), use_cache(false),
 		       is_cached(false) {
   };
+
+  // init is called to set up the output for writing the structure file
+  //    The first parameter is the directory under CACHE/PATH into which the cache'd structure file
+  //    will be written.  It will be written with the name "kind" in that directory.  For normal
+  //    structure files "kind" is "hpcstruct".
+  //    For structure files for gpu binaries, analyzed with gpucfg yes, "kind" is "hpcstruct+gpucfg"
+  //    For gap files, the name is "gap"
+  //
+  //    The third parameter is the name under which the symlink to the structure file will be
+  //    created in the CACHE/FLAT directory.
+  //
+  //    The fourth parameter, result, is the name of the output structure file
+  //
+  //    When the cache is used, the output stream points to the cache'd structure file
+  //    When it is not used, the output stream points to the actual output file.
+  //
   void init(const char *cache_path_directory, const char *cache_flat_directory, const char *kind,
 	    const char *result) {
     name = strdup(result);
@@ -73,6 +89,9 @@ public:
       stream_name = name;
     }
   };
+
+  // open is called to actually open the output stream for writing.
+  //
   void open() {
     if (!stream_name.empty()) {
       stream = IOUtil::OpenOStream(stream_name.c_str());
@@ -80,6 +99,8 @@ public:
       stream->rdbuf()->pubsetbuf(buffer, HPCIO_RWBufferSz);
     }
   };
+
+  // needed determines whether or not the needed structure file is cache'd.
   bool needed() {
     bool needed = false;
     if (!name.empty()) {
@@ -91,13 +112,28 @@ public:
         }
       } else {
 	needed = true;
+#if 0
+        std::cerr << "DEBUG needed set true, found cachestat = " << global_args->cache_stat << std::endl;
+#endif
 	if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
-          global_args->cache_stat = CACHE_ENTRY_ADDED;
+          if ( global_args->cache_stat == CACHE_ENTRY_REMOVED ) {
+            // A previous entry at that path was removed
+            global_args->cache_stat = CACHE_ENTRY_REPLACED;
+
+          } else {
+            // No previous entry existed
+            global_args->cache_stat = CACHE_ENTRY_ADDED;
+          }
         }
+#if 0
+        std::cerr << "DEBUG needed set cachestat = " << global_args->cache_stat << std::endl;
+#endif
       }
     }
     return needed;
   };
+
+  // finalize closes the output stream
   void finalize(int error) {
     if (stream) IOUtil::CloseStream(stream);
     if (buffer) delete[] buffer;
@@ -115,6 +151,7 @@ public:
       }
     }
   };
+
   std::ostream *getStream() { return stream; };
   std::string &getName() { return name; };
 
