@@ -93,7 +93,7 @@ MYSOURCES = \
 	sources/packed.cpp sources/hpcrun4.cpp \
 	\
 	sinks/hpctracedb2.cpp sinks/packed.cpp sinks/experimentxml4.cpp \
-	sinks/sparsedb.cpp \
+	sinks/sparsedb.cpp sinks/hatchet-literal.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
 	finalizers/denseids.cpp finalizers/kernelsyms.cpp

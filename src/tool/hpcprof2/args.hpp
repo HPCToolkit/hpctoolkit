@@ -155,6 +155,8 @@ public:
   enum class Format {
     // experiment.xml + sparse thing, the current database format.
     sparse,
+    // Hachet-compatible Python format (for Hachet's from_literal)
+    hatchet_literal,
   };
   /// Requested output format
   Format format;
