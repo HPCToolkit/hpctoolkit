@@ -65,21 +65,21 @@
 //  There are two subdirectories in the CACHE:  CACHE/FLAT and CACHE/PATH
 //    CACHE/FLAT is a directory with one entry for every binary stored in the cache
 //      Each of those entries is a symlink to a corresponding directory in CACHE/PATH.
-//      Each is named by the hash, with a "+gpucfg" suffix for files generated with
-//      --gpucfg yes.
+//      Each is named by the hash of the binary.
 //
 //    Entries in CACHE/PATH are stored in subdirectories named with the full path
-//      to the binary to which is appended a subdirectory named by the same hash.
+//      to the binary to which is appended a subdirectory named by the hash.
 //      That subdirectory contains a file named "hpcstruct" which is the fully
 //      processed structure file for the binary.
+//      The gaps file, when generated with "--show-gaps", will be named gaps, in
+//	the same subdirectory
 //
-//    GPU binaries are handled slightly differently.  The name of the binary
-//      is its hash with ".gpubin" appended so CACHE/PATH will have
-//      a subdirectory named like
-//        <path>/1a6d78399cdaa856e8d251aee819459f.gpubin/1a6d78399cdaa856e8d251aee819459f
+//    GPU binaries are handled slightly differently.  The name of the GPU binary
 //      The structure file when generated with "--gpucfg no", the default, will be named hpcstruct
 //      The structure file when generated with "--gpucfg yes" will be named hpcstruct+gpucfg
 //
+//    If a GPU binary is reprocessed with a different --gpucfg value, there may be
+//	three different files in that subdirectory: hpcstruct, hpcstruct+gpucfg, and gaps
 //  
 
 #ifndef Structure_Cache_hpp
@@ -108,7 +108,7 @@ setup_cache_dir
 
 //  construct the directory in CACHE/PATH for the file
 //    As a side-effect, this routine removes any previous entry
-//    in the directory for that path
+//    in the directory for that path but with a different hash
 //
 char *
 hpcstruct_cache_path_directory
@@ -116,7 +116,7 @@ hpcstruct_cache_path_directory
  const char *cache_dir,
  const char *binary_abspath,
  const char *hash, // hash for elf file
- const char *suffix  // used to remove replaced FLAT link
+ const char *suffix  // appended to the hpcstruct file for runs with --gpucfg yes
 );
 
 
@@ -138,14 +138,13 @@ hpcstruct_cache_entry
 
 // Ensure the the cache FLAT subdirectory is created and writeable
 //  Returns the absolute path for the entry
-//    Will be a file name of the form <cache_dir>/FLAT/<hash><suffix>
+//    Will be a file name of the form <cache_dir>/FLAT/<hash>
 
 char *
 hpcstruct_cache_flat_entry
 (
  const char *cache_dir,
- const char *hash, // hash for elf file
- const char *suffix  // suffix to append, e.g. "+gpucfg"
+ const char *hash  // hash for elf file
 );
 
 

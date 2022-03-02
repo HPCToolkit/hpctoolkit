@@ -338,7 +338,9 @@ Args::parse(int argc, const char* const argv[])
       const string & arg = parser.getOptArg("meas_dir");
       meas_dir = arg.c_str();
       is_from_makefile = true;
-      // fprintf(stderr, "DEBUG meas_dir = %s; is_from_makefile set to true\n", meas_dir.c_str() );
+#if 0
+      fprintf(stderr, "DEBUG meas_dir = %s; is_from_makefile set to true\n", meas_dir.c_str() );
+#endif
     }
     if (parser.isOpt("time")) {
       show_time = true;
@@ -392,7 +394,7 @@ Args::parse(int argc, const char* const argv[])
       }
     }
 #if 0
-    fprintf(stderr, "DEBUG XXX in_filenm = `%s', is_from_makefile = %s\n",
+    fprintf(stderr, "DEBUG in_filenm = `%s', is_from_makefile = %s\n",
 	in_filenm.c_str(),
 	(is_from_makefile == true ? "true" : (is_from_makefile == false? "false" : "bad value" ) ) );
 #endif

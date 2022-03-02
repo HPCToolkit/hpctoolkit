@@ -273,8 +273,7 @@ hpcstruct_cache_cleanup
 (
  const char *cachedir,
  std::string path,
- const char *hash,
- const char *suffix
+ const char *hash
 )
 {
   if ( global_args->nocache == true) {
@@ -307,7 +306,7 @@ hpcstruct_cache_cleanup
     global_args->cache_stat = CACHE_ENTRY_REMOVED;
 
     // construct the name for the CACHE/FLAT directory entry
-    string fpath =  hpcstruct_cache_flat_entry(cachedir, oldhash, suffix );
+    string fpath =  hpcstruct_cache_flat_entry(cachedir, oldhash );
 
     // Remove that entry
     command = "rm -f " + fpath;
@@ -389,8 +388,7 @@ char *
 hpcstruct_cache_flat_entry
 (
  const char *cache_dir,
- const char *hash, // hash for elf file
- const char *suffix
+ const char *hash  // hash for elf file
 )
 {
   std::string path = cache_dir;
@@ -404,7 +402,7 @@ hpcstruct_cache_flat_entry
   }
 
   // compute the full path to the new cache directory
-  path = path + '/' + hash + suffix;
+  path = path + '/' + hash;
 
   // return the full path for the new cache entry
   return strdup(path.c_str());
@@ -419,7 +417,7 @@ hpcstruct_cache_path_directory
  const char *cache_dir,
  const char *binary_abspath,
  const char *hash, // hash for elf file
- const char *suffix  // used to remove replaced FLAT link
+ const char *suffix
 )
 {
   std::string path = cache_dir;
@@ -439,7 +437,7 @@ hpcstruct_cache_path_directory
   mk_dirpath(path.c_str(), "Failed to create entry in hpcstruct cache directory", true);
 
   // discard any prior entries for path with a different hash
-  hpcstruct_cache_cleanup(cache_dir, path.c_str(), hash, suffix);
+  hpcstruct_cache_cleanup(cache_dir, path.c_str(), hash );
 
   // compute the full path to the new cache entry's directory
   path = path + '/' + hash;

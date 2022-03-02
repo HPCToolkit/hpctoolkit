@@ -189,7 +189,7 @@ doSingleBinary
            binary_abspath.c_str(), hash, suffix.c_str() );
 
       // Compute the path for the entry in the FLAT subdirectory of the cache
-      cache_flat_entry = hpcstruct_cache_flat_entry(cache_directory.c_str(), hash, suffix.c_str() );
+      cache_flat_entry = hpcstruct_cache_flat_entry(cache_directory.c_str(), hash );
 
       string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
       symlink(cache_path_link.c_str(), cache_flat_entry.c_str());
