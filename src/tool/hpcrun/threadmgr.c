@@ -262,6 +262,16 @@ hpcrun_threadMgr_compact_thread()
   return compact_thread;
 }
 
+static void 
+extend_thread_data(thread_data_t *td_self, thread_data_t *td_new){
+  td_self->core_profile_trace_data.trace_buffer = td_new->core_profile_trace_data.trace_buffer;
+  td_self->core_profile_trace_data.trace_outbuf = td_new->core_profile_trace_data.trace_outbuf;
+}
+static void
+copy_thread_data(thread_data_t *td_copy, thread_data_t *td_orig){
+  memcpy(td_copy, td_orig, sizeof(thread_data_t));
+}
+
 /***
  *   Wrapper around hpcrun_threadMgr_data_get
  *   Checks if there is thread specific data and preserves it
@@ -276,13 +286,22 @@ hpcrun_threadMgr_data_get_safe
  bool demand_new_thread
 )
 {
-  thread_data_t *td_self;
+  thread_data_t td_first, *td_self;
   bool res;
 
   if (hpcrun_td_avail()) {
+    // copy_thread_data(&td_first, hpcrun_get_thread_data());
+    // res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
+    // td_self = hpcrun_get_thread_data();
+    // extend_thread_data(td_self, &td_first);
+
     td_self = hpcrun_get_thread_data();
+    void* trace_buffer = td_self->core_profile_trace_data.trace_buffer;
+    hpcio_outbuf_t *trace_outbuf = td_self->core_profile_trace_data.trace_outbuf;
     res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
-    hpcrun_set_thread_data(td_self);
+    td_self->core_profile_trace_data.trace_buffer = trace_buffer;
+    td_self->core_profile_trace_data.trace_outbuf = trace_outbuf;
+    
   }
   else{
     res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
