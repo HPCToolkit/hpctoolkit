@@ -53,6 +53,7 @@
 // local includes
 //*****************************************************************************
 
+#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
 #include <hpcrun/messages/messages.h>
@@ -78,6 +79,7 @@
 struct cubin_id_map_entry_s {
   uint32_t cubin_id;
   uint32_t hpctoolkit_module_id;
+  bool load_module_unused;
   Elf_SymbolVector *elf_vector;
   struct cubin_id_map_entry_s *left;
   struct cubin_id_map_entry_s *right;
@@ -105,11 +107,18 @@ static spinlock_t cubin_id_map_lock = SPINLOCK_UNLOCKED;
 //*****************************************************************************
 
 static cubin_id_map_entry_t *
-cubin_id_map_entry_new(uint32_t cubin_id, Elf_SymbolVector *vector)
+cubin_id_map_entry_new
+(
+ uint32_t cubin_id,
+ Elf_SymbolVector *vector,
+ uint32_t hpctoolkit_module_id
+)
 {
   cubin_id_map_entry_t *e;
   e = (cubin_id_map_entry_t *)hpcrun_malloc_safe(sizeof(cubin_id_map_entry_t));
   e->cubin_id = cubin_id;
+  e->hpctoolkit_module_id = hpctoolkit_module_id;
+  e->load_module_unused = true; // unused until a kernel is invoked
   e->left = NULL;
   e->right = NULL;
   e->elf_vector = vector;
@@ -203,19 +212,19 @@ cubin_id_map_insert
       cubin_id_map_splay(cubin_id_map_root, cubin_id);
 
     if (cubin_id < cubin_id_map_root->cubin_id) {
-      cubin_id_map_entry_t *entry = cubin_id_map_entry_new(cubin_id, vector);
+      cubin_id_map_entry_t *entry =
+	cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
       TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
-      entry->hpctoolkit_module_id = hpctoolkit_module_id;
       entry->left = cubin_id_map_root->left;
       entry->right = cubin_id_map_root;
       cubin_id_map_root->left = NULL;
       cubin_id_map_root = entry;
     } else if (cubin_id > cubin_id_map_root->cubin_id) {
-      cubin_id_map_entry_t *entry = cubin_id_map_entry_new(cubin_id, vector);
+      cubin_id_map_entry_t *entry =
+	cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
       TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
-      entry->hpctoolkit_module_id = hpctoolkit_module_id;
       entry->left = cubin_id_map_root;
       entry->right = cubin_id_map_root->right;
       cubin_id_map_root->right = NULL;
@@ -224,8 +233,8 @@ cubin_id_map_insert
       // cubin_id already present
     }
   } else {
-    cubin_id_map_entry_t *entry = cubin_id_map_entry_new(cubin_id, vector);
-    entry->hpctoolkit_module_id = hpctoolkit_module_id;
+    cubin_id_map_entry_t *entry =
+      cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
     cubin_id_map_root = entry;
   }
 
@@ -282,6 +291,15 @@ cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
     const Elf_SymbolVector *vector = cubin_id_map_entry_elf_vector_get(entry);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
     ip.lm_ip = (uintptr_t)(vector->symbols[function_index] + offset);
+    if (entry->load_module_unused) {
+      hpcrun_loadmap_lock();
+      load_module_t *lm = hpcrun_loadmap_findById(ip.lm_id);
+      if (lm) {
+	hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
+	entry->load_module_unused = false;
+      }
+      hpcrun_loadmap_unlock();
+    }
   }
   return ip;
 }

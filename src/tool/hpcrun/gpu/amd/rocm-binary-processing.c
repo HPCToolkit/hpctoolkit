@@ -63,6 +63,7 @@
 #include "rocm-binary-processing.h"
 #include <hpcrun/files.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
+#include <hpcrun/messages/messages.h>
 #include "lib/prof-lean/elf-helper.h"
 
 #include <monitor.h> // enable and disable threads
@@ -81,6 +82,7 @@ typedef struct amd_gpu_binary {
   int size;
   amd_function_table_t function_table;
   uint32_t amd_gpu_module_id;
+  bool load_module_unused;
   char* buf;
   char* uri;
   struct amd_gpu_binary* next;
@@ -297,6 +299,7 @@ parse_amd_gpu_binary_uri
   }
 
   bin->amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
+  bin->load_module_unused = true;
 }
 
 static int
@@ -390,6 +393,15 @@ lookup_amd_function
       if (strcmp(kernel_name, ft->names[i]) == 0) {
         nip.lm_id = bin->amd_gpu_module_id;
         nip.lm_ip = (uintptr_t)(ft->addrs[i]);
+	if (bin->load_module_unused) {
+	  hpcrun_loadmap_lock();
+	  load_module_t *lm = hpcrun_loadmap_findById(nip.lm_id);
+	  if (lm) {
+	    hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
+	    bin->load_module_unused = false;
+	  }
+	  hpcrun_loadmap_unlock();
+	}
         return nip;
       }
     }
