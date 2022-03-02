@@ -171,9 +171,9 @@ void StructFile::notifyPipeline() noexcept {
     });
 }
 
-util::optional_ref<Context> StructFile::classify(Context& c, Scope& s) noexcept {
-  if(s.type() == Scope::Type::point) {
-    auto mo = s.point_data();
+util::optional_ref<Context> StructFile::classify(Context& c, NestedScope& ns) noexcept {
+  if(ns.flat().type() == Scope::Type::point) {
+    auto mo = ns.flat().point_data();
     const auto& udm = mo.first.userdata[ud];
     auto leafit = udm.leaves.find(mo.second);
     if(leafit != udm.leaves.end()) {
@@ -182,7 +182,8 @@ util::optional_ref<Context> StructFile::classify(Context& c, Scope& s) noexcept 
         [&](const udModule::trienode& tn){
           if(tn.second != nullptr)
             handle(*(const udModule::trienode*)tn.second);
-          cc = sink.context(cc, tn.first);
+          cc = sink.context(cc, {ns.relation(), tn.first.first});
+          ns.relation() = tn.first.second;
         };
       handle(leafit->second.first);
       return cc.get();
@@ -363,7 +364,7 @@ static std::vector<util::interval<uint64_t>> parseVs(const std::string& vs) {
 
 bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
                              StructFile::udModule& ud) noexcept try {
-  using trienode = std::pair<Scope, const void*>;
+  using trienode = std::pair<std::pair<Scope, Relation>, const void*>;
   assert(ok);
   struct Ctx {
     char tag;
@@ -396,20 +397,23 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
                 std::stoll(xmlstr(attr.getValue(XMLStr("l")))) )
           : ud.funcs.emplace_back(m, is[0].begin, std::move(name));
       auto& next = stack.emplace(top, 'P');
-      next.node = &ud.trie.emplace_back(Scope(func), top.node);
+      ud.trie.push_back({{Scope(func), Relation::enclosure}, top.node});
+      next.node = &ud.trie.back();
       next.funcEntry = is[0].begin;
     } else if(ename == "L") {  // Loop (Scope::Type::loop)
       auto fpath = xmlstr(attr.getValue(XMLStr("f")));
       const File& file = fpath.empty() ? *top.file : sink.file(std::move(fpath));
       auto line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
       auto& next = stack.emplace(top, 'L');
-      next.node = &ud.trie.emplace_back(Scope(Scope::loop, file, line), top.node);
+      ud.trie.push_back({{Scope(Scope::loop, file, line), Relation::enclosure}, top.node});
+      next.node = &ud.trie.back();
       next.file = file;
     } else if(ename == "S" || ename == "C") {  // Statement (Scope::Type::line)
       if(!top.file) throw std::logic_error("<S> tag without an implicit f= attribute!");
       if(!top.funcEntry) throw std::logic_error("<S> tag without an enclosing <P>!");
       auto line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
-      const trienode& leaf = ud.trie.emplace_back(Scope(*top.file, line), top.node);
+      ud.trie.push_back({{Scope(*top.file, line), Relation::enclosure}, top.node});
+      const trienode& leaf = ud.trie.back();
       auto is = parseVs(xmlstr(attr.getValue(XMLStr("v"))));
       for(const auto& i: is) {
         // FIXME: Code regions may be shared by multiple functions,
@@ -441,7 +445,9 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
             fpath.empty() ? *top.file : sink.file(std::move(fpath)),
             std::stoll(xmlstr(attr.getValue(XMLStr("l")))));
         auto& next = stack.emplace(top, 'B');
-        next.node = &ud.trie.emplace_back(Scope(func, *top.file, top.a_line), top.node);
+        ud.trie.push_back({{Scope(*top.file, top.a_line), Relation::inlined_call}, top.node});
+        ud.trie.push_back({{Scope(func), Relation::enclosure}, &ud.trie.back()});
+        next.node = &ud.trie.back();
       }
     } else throw std::logic_error("Unknown tag " + ename);
   }, [&](const std::string& ename){

@@ -65,6 +65,10 @@ static void pack(std::vector<std::uint8_t>& out, const std::string& s) noexcept 
 static void pack(std::vector<std::uint8_t>& out, const std::uint8_t v) noexcept {
   out.push_back(v);
 }
+static std::uint8_t* pack(std::uint8_t* out, const std::uint8_t v) noexcept {
+  *out = v;
+  return ++out;
+}
 static void pack(std::vector<std::uint8_t>& out, const std::uint16_t v) noexcept {
   // Little-endian order. Just in case the compiler can optimize it away.
   for(int shift = 0; shift < 16; shift += 8)
@@ -164,25 +168,28 @@ void Packed::packReferences(std::vector<std::uint8_t>& out) noexcept {
 
 void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
   src.contexts().citerate([&](const Context& c){
-    pack(out, (std::uint64_t)c.scope().type());
-    switch(c.scope().type()) {
+    if(c.scope().relation() != Relation::global
+       && c.scope().relation() != Relation::call) {
+      util::log::fatal{} << "sinks::Packed does not support non-physical calling Context!";
+    }
+    pack(out, (std::uint64_t)c.scope().flat().type());
+    switch(c.scope().flat().type()) {
     case Scope::Type::point: {
       // Format: <type> [module id] [offset] children... [sentinel]
-      auto mo = c.scope().point_data();
+      auto mo = c.scope().flat().point_data();
       pack(out, moduleIDs.at(&mo.first));
       pack(out, mo.second);
       break;
     }
     case Scope::Type::placeholder:
       // Format: <type> [placeholder] children... [sentinel]
-      pack(out, (uint64_t)c.scope().enumerated_data());
+      pack(out, (uint64_t)c.scope().flat().enumerated_data());
       break;
     case Scope::Type::unknown:
     case Scope::Type::global:
       // Format: <type> children... [sentinel]
       break;
     case Scope::Type::function:
-    case Scope::Type::inlined_function:
     case Scope::Type::loop:
     case Scope::Type::line:
       assert(false && "Unhandled Scope type in Packed!");
@@ -201,6 +208,8 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   src.contexts().citerate([&](const Context& c){
     pack(out, (std::uint64_t)c.userdata[src.identifier()]);
     for(const Metric& m: metrics) {
+      pack(out, c.data().metricUsageFor(m).toInt());
+
       for(const auto& p: m.partials()) {
         if(auto v = m.getFor(c)) {
           pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
@@ -222,8 +231,7 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
 }
 
 ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)
-    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0),
-      fePackMetrics([this](auto& group){ packMetricGroup(group); }) {}
+    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0) {}
 
 void ParallelPacked::notifyPipeline() noexcept {
   if(doContexts || doMetrics) {
@@ -269,7 +277,8 @@ void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
     prev += sz;
   }
 
-  fePackMetrics.fill(std::move(workitems));
+  fePackMetrics.fill(std::move(workitems),
+                     [this](auto& group){ packMetricGroup(group); });
   packMetricsGroups.clear();
   fePackMetrics.contribute(fePackMetrics.wait());
   output = nullptr;
@@ -284,6 +293,8 @@ void ParallelPacked::packMetricGroup(std::pair<std::size_t, std::vector<std::ref
   for(const Context& c: std::move(task.second)) {
     out = pack(out, (std::uint64_t)c.userdata[src.identifier()]);
     for(const Metric& m: metrics) {
+      out = pack(out, c.data().metricUsageFor(m).toInt());
+
       for(const auto& p: m.partials()) {
         if(auto v = m.getFor(c)) {
           out = pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));

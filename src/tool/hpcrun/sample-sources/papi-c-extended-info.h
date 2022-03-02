@@ -19,15 +19,17 @@ typedef struct sync_info_list_t {
   const get_event_set_proc_t get_event_set;
   const add_event_proc_t add_event;
   const finalize_event_set_proc_t finalize_event_set;
-  const setup_proc_t sync_setup;
-  const teardown_proc_t sync_teardown;
-  const start_proc_t sync_start;
+  const bool is_gpu_sync;
+  const setup_proc_t setup;
+  const teardown_proc_t teardown;
+  const start_proc_t start;
   const read_proc_t read;
-  const stop_proc_t sync_stop;
+  const stop_proc_t stop;
   const bool process_only;
   struct sync_info_list_t* next;
 } sync_info_list_t;
 
+extern const char* component_get_name(int cidx);
 extern bool component_uses_sync_samples(int cidx);
 extern get_event_set_proc_t component_get_event_set(int cidx);
 extern add_event_proc_t component_add_event_proc(int cidx);

@@ -49,7 +49,7 @@
 
 // This file is one of multiple "stdshim" headers, which act as a seamless
 // transition library across versions of the STL. Mostly all this does is
-// backport features from C++20 into C++11, sometimes by using class inheritence
+// backport features from C++20 into C++11, sometimes by using class inheritance
 // tricks, and sometimes by importing implementations from Boost or ourselves.
 // Also see Google's Abseil project.
 
@@ -59,7 +59,7 @@
 
 #include <atomic>
 
-#if !STD_HAS(atomic_wait)
+#if !defined(HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait)
 #include "futex-detail.h"
 
 #include <cstdint>
@@ -69,12 +69,12 @@
 
 namespace hpctoolkit::stdshim {
 
-#if STD_HAS(atomic_wait)
+#ifdef HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
 // If we have C++20, atomics are just atomics.
 template<class T>
 using atomic = std::atomic<T>;
 
-#else  // !STD_HAS(atomic_wait)
+#else  // !HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
 
 namespace detail {
 // In C++20 atomics will have futex-like operations, but its not clear exactly
@@ -305,12 +305,8 @@ using atomic = typename std::conditional<std::is_same<T, std::uint32_t>::value,
   std::atomic<T>
   >::type>::type>::type;
 
-#endif  // STD_HAS(atomic_wait)
+#endif  // HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
 
 }  // namespace hpctoolkit::stdshim
-
-#ifndef STDSHIM_DONT_UNDEF
-#undef STD_HAS
-#endif
 
 #endif  // HPCTOOLKIT_STDSHIM_ATOMIC_H

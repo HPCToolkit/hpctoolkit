@@ -51,8 +51,6 @@
 #include <include/hpctoolkit-config.h>
 #include <cct/cct.h>
 
-#if HAVE_CUPTI_H 
-
 void 
 prepare_device
 (
@@ -111,13 +109,5 @@ ompt_external_subscriber_disable
 (
  void
 );
-
-#else
-
-// no op without a CUDA device
-#define prepare_device()
-
-#endif
-
 
 #endif // _OMPT_INTERFACE_H_

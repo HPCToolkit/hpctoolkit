@@ -61,17 +61,13 @@ std::optional<unsigned int> ProfileFinalizer::identify(const Module&) noexcept {
 std::optional<unsigned int> ProfileFinalizer::identify(const File&) noexcept {
   return std::nullopt;
 }
-std::optional<unsigned int> ProfileFinalizer::identify(const Metric&) noexcept {
+std::optional<Metric::Identifier> ProfileFinalizer::identify(const Metric&) noexcept {
   return std::nullopt;
 }
 std::optional<unsigned int> ProfileFinalizer::identify(const Context&) noexcept {
   return std::nullopt;
 }
 std::optional<unsigned int> ProfileFinalizer::identify(const Thread&) noexcept {
-  return std::nullopt;
-}
-
-std::optional<Metric::ScopedIdentifiers> ProfileFinalizer::subidentify(const Metric&) noexcept {
   return std::nullopt;
 }
 
@@ -82,7 +78,7 @@ std::optional<stdshim::filesystem::path> ProfileFinalizer::resolvePath(const Mod
   return std::nullopt;
 }
 
-util::optional_ref<Context> ProfileFinalizer::classify(Context&, Scope&) noexcept {
+util::optional_ref<Context> ProfileFinalizer::classify(Context&, NestedScope&) noexcept {
   return std::nullopt;
 }
 

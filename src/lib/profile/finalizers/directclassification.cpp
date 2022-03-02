@@ -80,9 +80,9 @@ void DirectClassification::notifyPipeline() noexcept {
     });
 }
 
-util::optional_ref<Context> DirectClassification::classify(Context& c, Scope& s) noexcept {
-  if(s.type() == Scope::Type::point) {
-    auto mo = s.point_data();
+util::optional_ref<Context> DirectClassification::classify(Context& c, NestedScope& ns) noexcept {
+  if(ns.flat().type() == Scope::Type::point) {
+    auto mo = ns.flat().point_data();
     const auto& udm = mo.first.userdata[ud];
 
     // First attempt: DWARF data
@@ -95,8 +95,9 @@ util::optional_ref<Context> DirectClassification::classify(Context& c, Scope& s)
       const std::function<void(const udModule::trienode&)> handle =
         [&](const udModule::trienode& tn) {
           if(tn.second != nullptr)
-            handle(*(const std::pair<Scope, const void*>*)tn.second);
-          cc = sink.context(cc, tn.first);
+            handle(*(const udModule::trienode*)tn.second);
+          cc = sink.context(cc, {ns.relation(), tn.first.first});
+          ns.relation() = tn.first.second;
         };
       handle(leafit->second);
 
@@ -104,7 +105,8 @@ util::optional_ref<Context> DirectClassification::classify(Context& c, Scope& s)
       auto lineit = udm.lines.find(mo.second);
       if(lineit != udm.lines.end() && lineit->second) {
         const auto& l = *lineit->second;
-        cc = sink.context(cc, Scope(l.first, l.second));
+        cc = sink.context(cc, {ns.relation(), Scope(l.first, l.second)});
+        ns.relation() = Relation::enclosure;
       }
 
       return cc.get();
@@ -112,8 +114,11 @@ util::optional_ref<Context> DirectClassification::classify(Context& c, Scope& s)
 
     // Second attempt: ELF data
     auto symit = udm.symbols.find({mo.second, mo.second});
-    if(symit != udm.symbols.end())
-      return sink.context(c, Scope(symit->second));
+    if(symit != udm.symbols.end()) {
+      auto& cc = sink.context(c, {ns.relation(), Scope(symit->second)});
+      ns.relation() = Relation::enclosure;
+      return cc;
+    }
   }
   return std::nullopt;
 }
@@ -425,8 +430,10 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, udModule& ud
         func += std::move(myfunc);
 
         // If this is not an inlined call, just emit as a normal Scope
-        if(tag != DW_TAG_inlined_subroutine)
-          return &ud.trie.emplace_back(Scope(func), par);
+        if(tag != DW_TAG_inlined_subroutine) {
+          ud.trie.push_back({{Scope(func), Relation::enclosure}, par});
+          return &ud.trie.back();
+        }
 
         // Try to find the file for this inlined call.
         const File* srcf = nullptr;
@@ -444,7 +451,9 @@ bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, udModule& ud
           if(dwarf_formudata(attr, &word) == 0) linenum = word;
         }
 
-        return &ud.trie.emplace_back(Scope(func, *srcf, linenum), par);
+        ud.trie.push_back({{Scope(*srcf, linenum), Relation::inlined_call}, par});
+        ud.trie.push_back({{Scope(func), Relation::enclosure}, &ud.trie.back()});
+        return &ud.trie.back();
       }, [&](Dwarf_Die& die, udModule::trienode* here, udModule::trienode* par) {
         // If we have no trienode, skip without doing anything
         if(here == nullptr) return;

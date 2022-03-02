@@ -49,7 +49,7 @@
 
 // This file is one of multiple "stdshim" headers, which act as a seamless
 // transition library across versions of the STL. Mostly all this does is
-// backport features from C++17 into C++11, sometimes by using class inheritence
+// backport features from C++17 into C++11, sometimes by using class inheritance
 // tricks, and sometimes by importing implementations from Boost or ourselves.
 // Also see Google's Abseil project.
 
@@ -57,14 +57,14 @@
 
 #include "version.hpp"
 
-#if STD_HAS(filesystem)
+#if defined(HPCTOOLKIT_STDSHIM_STD_HAS_filesystem)
 #include <filesystem>
 
 namespace hpctoolkit::stdshim {
 namespace filesystem = std::filesystem;
 }
 
-#elif STD_HAS(experimental_filesystem)
+#elif defined(HPCTOOLKIT_STDSHIM_STD_HAS_experimental_filesystem)
 #include <experimental/filesystem>
 
 namespace hpctoolkit::stdshim {
@@ -135,9 +135,9 @@ namespace filesystem {
 }
 }
 
-#else  // STD_HAS(filesystem)
+#else  // HPCTOOLKIT_STDSHIM_STD_HAS_filesystem
 #error HPCToolkit requires C++17 std::filesystem support!
-#endif  // STD_HAS(filesystem)
+#endif  // HPCTOOLKIT_STDSHIM_STD_HAS_filesystem
 
 // For some reason both the STL and Boost don't specialize std::hash for
 // filesystem::path, even though there's a function for that very purpose.
@@ -151,9 +151,5 @@ namespace std {
     }
   };
 }
-
-#ifndef STDSHIM_DONT_UNDEF
-#undef STD_HAS
-#endif
 
 #endif  // HPCTOOLKIT_STDSHIM_FILESYSTEM_H

@@ -55,6 +55,7 @@
 #include <atomic>
 #include <bitset>
 #include <chrono>
+#include <iosfwd>
 #include <optional>
 #include <vector>
 
@@ -87,22 +88,30 @@ enum class MetricScope : size_t {
   execution,
 };
 
+/// Standardized stringification for MetricScope constants.
+std::ostream& operator<<(std::ostream&, MetricScope);
+const std::string& stringify(MetricScope);
+
 /// Bitset-like object used as a set of Scope values.
 class MetricScopeSet final : private std::bitset<3> {
 private:
   using base = std::bitset<3>;
   MetricScopeSet(const base& b) : base(b) {};
 public:
-  MetricScopeSet() = default;
-  MetricScopeSet(MetricScope s) : base(1<<static_cast<size_t>(s)) {};
+  using int_type = uint8_t;
+  constexpr MetricScopeSet() = default;
+  constexpr MetricScopeSet(MetricScope s) : base(1<<static_cast<size_t>(s)) {};
   MetricScopeSet(std::initializer_list<MetricScope> l) : base(0) {
     for(const auto s: l) base::set(static_cast<size_t>(s));
   }
+  explicit constexpr MetricScopeSet(int_type val) : base(val) {};
 
   static inline constexpr struct all_t {} all = {};
-  MetricScopeSet(all_t) : base(0) { base::set(); }
+  constexpr MetricScopeSet(all_t)
+    : base(std::numeric_limits<unsigned long long>::max()) {}
 
   bool has(MetricScope s) const noexcept { return base::operator[](static_cast<size_t>(s)); }
+  auto operator[](MetricScope s) noexcept { return base::operator[](static_cast<size_t>(s)); }
 
   MetricScopeSet operator|(const MetricScopeSet& o) { return (base)*this | (base)o; }
   MetricScopeSet operator+(const MetricScopeSet& o) { return (base)*this | (base)o; }
@@ -110,8 +119,57 @@ public:
   MetricScopeSet& operator|=(const MetricScopeSet& o) { base::operator|=(o); return *this; }
   MetricScopeSet& operator+=(const MetricScopeSet& o) { base::operator|=(o); return *this; }
   MetricScopeSet& operator&=(const MetricScopeSet& o) { base::operator&=(o); return *this; }
+  bool operator==(const MetricScopeSet& o) { return base::operator==(o); }
+  bool operator!=(const MetricScopeSet& o) { return base::operator!=(o); }
+
+  int_type toInt() const noexcept { return base::to_ullong(); }
 
   using base::count;
+
+  class const_iterator final {
+  public:
+    const_iterator() {};
+
+    const_iterator(const const_iterator&) = default;
+    const_iterator& operator=(const const_iterator&) = default;
+
+    bool operator==(const const_iterator& o) const {
+      return set == o.set && (set == nullptr || scope == o.scope);
+    }
+    bool operator!=(const const_iterator& o) const { return !operator==(o); }
+
+    MetricScope operator*() const { return scope; }
+    const MetricScope* operator->() const { return &scope; }
+
+    const_iterator& operator++() {
+      assert(set != nullptr);
+      size_t ms = static_cast<size_t>(scope);
+      for(++ms; ms < set->size() && !set->has(static_cast<MetricScope>(ms));
+          ++ms);
+      if(ms >= set->size()) set = nullptr;
+      else scope = static_cast<MetricScope>(ms);
+      return *this;
+    }
+    const_iterator operator++(int) {
+      const_iterator old = *this;
+      operator++();
+      return old;
+    }
+
+  private:
+    friend class MetricScopeSet;
+    const MetricScopeSet* set = nullptr;
+    MetricScope scope;
+  };
+
+  const_iterator begin() const {
+    const_iterator it;
+    it.set = this;
+    it.scope = static_cast<MetricScope>(0);
+    if(!base::operator[](0)) ++it;
+    return it;
+  }
+  const_iterator end() const { return {}; }
 };
 
 /// Accumulator structure for the data implicitly bound to a Thread and Context.
@@ -128,12 +186,13 @@ public:
   // MT: Internally Synchronized
   void add(double) noexcept;
 
-  /// Get the Thread-local (:Sum) Statistic accumulation, for a particular Metric Scope.
+  /// Get the Thread-local sum of Metric value, for a particular Metric Scope.
   // MT: Safe (const), Unstable (before ThreadFinal wavefront)
   std::optional<double> get(MetricScope) const noexcept;
 
 private:
   void validate() const noexcept;
+  MetricScopeSet getNonZero() const noexcept;
 
   friend class PerThreadTemporary;
   std::atomic<double> point;
@@ -318,14 +377,65 @@ public:
 
   /// Access the Statistics data attributed to this Context
   // MT: Safe (const), Unstable (before `metrics` wavefront)
-  const auto& statistics() const noexcept { return stats; }
+  const auto& statistics() const noexcept { return m_statistics; }
+
+  /// Access the Statistics data for a particular Metric, attributed to this Context
+  // MT: Internally Synchronized
+  StatisticAccumulator& statisticsFor(const Metric& m) noexcept;
+
+  /// Helper wrapper to allow a MetricScopeSet to be atomically modified.
+  /// Used for the metricUsage() data.
+  class AtomicMetricScopeSet final {
+  public:
+    AtomicMetricScopeSet() : val(MetricScopeSet().toInt()) {}
+    ~AtomicMetricScopeSet() = default;
+
+    AtomicMetricScopeSet(const AtomicMetricScopeSet&) = delete;
+    AtomicMetricScopeSet(AtomicMetricScopeSet&&) = delete;
+    AtomicMetricScopeSet& operator=(const AtomicMetricScopeSet&) = delete;
+    AtomicMetricScopeSet& operator=(AtomicMetricScopeSet&&) = delete;
+
+    /// Union the given MetricScopeSet into this atomic set
+    // MT: Internally Synchronized
+    AtomicMetricScopeSet& operator|=(MetricScopeSet ms) noexcept {
+      val.fetch_or(ms.toInt(), std::memory_order_relaxed);
+      return *this;
+    }
+
+    /// Load the current value of the MetricScopeSet
+    // MT: Safe (const), Unstable (before `metrics` wavefront)
+    MetricScopeSet get() const noexcept {
+      return MetricScopeSet(val.load(std::memory_order_relaxed));
+    }
+    operator MetricScopeSet() const noexcept { return get(); }
+
+  private:
+    std::atomic<MetricScopeSet::int_type> val;
+  };
+
+  /// Access the use of this Context in Metric values
+  // MT: Safe (const), Unstable (before `metrics` wavefront)
+  const auto& metricUsage() const noexcept { return m_metricUsage; }
+
+  /// Get the use of this Context for a particular Metric.
+  // MT: Safe (const), Unstable (before `metrics` wavefront)
+  MetricScopeSet metricUsageFor(const Metric& m) const noexcept {
+    if(auto use = m_metricUsage.find(m)) return use->get();
+    return {};
+  }
+
+  /// Mark this Context as having been used for the given Metric values
+  // MT: Internally Synchronized
+  void markUsed(const Metric& m, MetricScopeSet ms) noexcept;
 
 private:
   friend class PerThreadTemporary;
   friend class Metric;
   friend class ProfilePipeline;
   util::locked_unordered_map<util::reference_index<const Metric>,
-    StatisticAccumulator> stats;
+    StatisticAccumulator> m_statistics;
+  util::locked_unordered_map<util::reference_index<const Metric>,
+    AtomicMetricScopeSet> m_metricUsage;
 };
 
 }  // namespace hpctoolkit

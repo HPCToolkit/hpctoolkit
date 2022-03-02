@@ -64,8 +64,6 @@ Scope::Scope() : ty(Type::unknown), data() {};
 Scope::Scope(const Module& m, uint64_t o)
   : ty(Type::point), data(m, o) {};
 Scope::Scope(const Function& f) : ty(Type::function), data(f) {};
-Scope::Scope(const Function& f, const File& s, uint64_t l)
-  : ty(Type::inlined_function), data(f,s,l) {};
 Scope::Scope(loop_t, const File& s, uint64_t l)
   : ty(Type::loop), data(s,l) {};
 Scope::Scope(const File& s, uint64_t l)
@@ -73,6 +71,12 @@ Scope::Scope(const File& s, uint64_t l)
 Scope::Scope(placeholder_t, uint64_t v)
   : ty(Type::placeholder), data(v) {};
 Scope::Scope(ProfilePipeline&) : ty(Type::global), data() {};
+
+NestedScope::NestedScope(Relation r, Scope s)
+  : m_relation(r), m_flat(std::move(s)) {
+  assert((m_relation != Relation::global || m_flat.type() == Scope::Type::global)
+         && "Relation::global should only every be used with the Scope::Type::global!");
+}
 
 std::pair<const Module&, uint64_t> Scope::point_data() const {
   switch(ty) {
@@ -86,8 +90,8 @@ std::pair<const Module&, uint64_t> Scope::point_data() const {
 
 const Function& Scope::function_data() const {
   switch(ty) {
-  case Type::function: return data.function;
-  case Type::inlined_function: return data.function_line.function;
+  case Type::function:
+    return data.function;
   default:
     assert(false && "function_data is only valid on function Scopes!");
     std::abort();
@@ -96,7 +100,6 @@ const Function& Scope::function_data() const {
 
 std::pair<const File&, uint64_t> Scope::line_data() const {
   switch(ty) {
-  case Type::inlined_function: return data.function_line.line;
   case Type::loop:
   case Type::line:
     return data.line;
@@ -146,6 +149,18 @@ std::string Scope::enumerated_fallback_name() const {
   }
 }
 
+bool hpctoolkit::isCall(Relation r) noexcept {
+  switch(r) {
+  case Relation::global:
+  case Relation::enclosure:
+    return false;
+  case Relation::call:
+  case Relation::inlined_call:
+    return true;
+  }
+  std::abort();
+}
+
 bool Scope::operator==(const Scope& o) const noexcept {
   if(ty != o.ty) return false;
   switch(ty) {
@@ -153,8 +168,8 @@ bool Scope::operator==(const Scope& o) const noexcept {
   case Type::global: return true;
   case Type::point:
     return data.point == o.data.point;
-  case Type::function: return data.function == o.data.function;
-  case Type::inlined_function: return data.function_line == o.data.function_line;
+  case Type::function:
+    return data.function == o.data.function;
   case Type::loop:
   case Type::line:
     return data.line == o.data.line;
@@ -164,6 +179,9 @@ bool Scope::operator==(const Scope& o) const noexcept {
   assert(false && "Invalid ty while comparing Scopes!");
   std::abort();
 }
+bool NestedScope::operator==(const NestedScope& o) const noexcept {
+  return m_relation == o.m_relation && m_flat == o.m_flat;
+}
 
 bool Scope::operator<(const Scope& o) const noexcept {
   if(ty != o.ty) return ty < o.ty;
@@ -172,8 +190,8 @@ bool Scope::operator<(const Scope& o) const noexcept {
   case Type::global: return false;  // Always equal
   case Type::point:
     return data.point < o.data.point;
-  case Type::function: return data.function < o.data.function;
-  case Type::inlined_function: return data.function_line < o.data.function_line;
+  case Type::function:
+    return data.function < o.data.function;
   case Type::loop:
   case Type::line:
     return data.line < o.data.line;
@@ -183,6 +201,10 @@ bool Scope::operator<(const Scope& o) const noexcept {
   assert(false && "Invalid ty while comparing Scopes!");
   std::abort();
 }
+bool NestedScope::operator<(const NestedScope& o) const noexcept {
+  return m_relation != o.m_relation ? m_relation < o.m_relation
+                                    : m_flat < o.m_flat;
+}
 
 // Hashes
 static constexpr unsigned int bits = std::numeric_limits<std::size_t>::digits;
@@ -191,8 +213,7 @@ static_assert(0 == (bits & (bits - 1)), "value to rotate must be a power of 2");
 static constexpr std::size_t rotl(std::size_t n, unsigned int c) noexcept {
   return (n << (mask & c)) | (n >> (-(mask & c)) & mask);
 }
-std::size_t std::hash<Scope>::
-operator()(const Scope &l) const noexcept {
+std::size_t std::hash<Scope>::operator()(const Scope &l) const noexcept {
   switch(l.ty) {
   case Scope::Type::unknown: return 0x5;
   case Scope::Type::global: return 0x3;
@@ -202,14 +223,8 @@ operator()(const Scope &l) const noexcept {
     sponge = rotl(sponge ^ h_u64(l.data.point.offset), 3);
     return sponge;
   }
-  case Scope::Type::function: return h_func(l.data.function.f);
-  case Scope::Type::inlined_function: {
-    std::size_t sponge = 0xE;
-    sponge = rotl(sponge ^ h_func(l.data.function_line.function.f), 1);
-    sponge = rotl(sponge ^ h_file(l.data.function_line.line.s), 3);
-    sponge = rotl(sponge ^ h_u64(l.data.function_line.line.l), 5);
-    return sponge;
-  }
+  case Scope::Type::function:
+    return h_func(l.data.function.f);
   case Scope::Type::loop:
   case Scope::Type::line: {
     std::size_t sponge = l.ty == Scope::Type::loop ? 0x11 : 0x13;
@@ -222,6 +237,9 @@ operator()(const Scope &l) const noexcept {
   }
   return 0;  // unreachable
 };
+std::size_t std::hash<NestedScope>::operator()(const NestedScope& ns) const noexcept {
+  return rotl(h_rel(ns.relation()), 5) ^ h_scope(ns.flat());
+}
 
 // Stringification
 std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
@@ -260,11 +278,38 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
   case Scope::Type::global: return os << "(global)";
   case Scope::Type::point: return os << "(point){" << point_str() << "}";
   case Scope::Type::function: return os << "(func){" << func_str() << "}";
-  case Scope::Type::inlined_function:
-    return os << "(inlined_func){" << func_str() << " called at " << line_str() << "}";
   case Scope::Type::loop: return os << "(loop){" << line_str() << "}";
   case Scope::Type::line: return os << "(line){" << line_str() << "}";
   case Scope::Type::placeholder: return os << "(placeholder){" << enumerated_str() << "}";
   }
+  return os;
+}
+
+static const std::string rel_global = "global";
+static const std::string rel_enclosure = "enclosure";
+static const std::string rel_pcall = "nominal call";
+static const std::string rel_icall = "inlined call";
+std::string_view hpctoolkit::stringify(Relation r) noexcept {
+  switch(r) {
+  case Relation::global: return rel_global;
+  case Relation::enclosure: return rel_enclosure;
+  case Relation::call: return rel_pcall;
+  case Relation::inlined_call: return rel_icall;
+  }
+  std::abort();
+}
+std::ostream& std::operator<<(std::ostream& os, Relation r) noexcept {
+  os << stringify(r);
+  return os;
+}
+
+std::ostream& std::operator<<(std::ostream& os, const NestedScope& ns) noexcept {
+  switch(ns.relation()) {
+  case Relation::global: break;
+  case Relation::enclosure: os << "(enclosed sub-Scope):"; break;
+  case Relation::call: os << "(nominal call to):"; break;
+  case Relation::inlined_call: os << "(inlined call to):"; break;
+  }
+  os << ns.flat();
   return os;
 }

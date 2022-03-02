@@ -71,7 +71,7 @@
 #define typed_bichannel(x) gpu_correlation_channel_t
 #define typed_stack_elem(x) gpu_correlation_t
 
-// define macros that simplify use of correlation channel API 
+// define macros that simplify use of correlation channel API
 #define channel_init  \
   typed_bichannel_init(gpu_correlation_t)
 
@@ -100,7 +100,7 @@ typedef struct gpu_correlation_channel_t {
 // local data
 //******************************************************************************
 
-static __thread gpu_correlation_channel_t *gpu_correlation_channel = NULL;
+static __thread gpu_correlation_channel_t *gpu_correlation_channels[GPU_CHANNEL_TOTAL];
 
 
 
@@ -113,36 +113,34 @@ typed_bichannel_impl(gpu_correlation_t)
 
 
 static gpu_correlation_channel_t *
-gpu_correlation_channel_alloc
+gpu_correlation_channel_alloc_with_idx
 (
- void
+ int idx
 )
 {
-  gpu_correlation_channel_t *c = 
+  gpu_correlation_channel_t *c =
     hpcrun_malloc_safe(sizeof(gpu_correlation_channel_t));
 
   channel_init(c);
 
-  gpu_correlation_channel_set_insert(c);
+  gpu_correlation_channel_set_insert_with_idx(idx, c);
 
   return c;
 }
 
 
 static gpu_correlation_channel_t *
-gpu_correlation_channel_get
+gpu_correlation_channel_get_with_idx
 (
- void
+ int idx
 )
 {
-  if (gpu_correlation_channel == NULL) {
-    gpu_correlation_channel = gpu_correlation_channel_alloc();
+  if (gpu_correlation_channels[idx] == NULL) {
+    gpu_correlation_channels[idx] = gpu_correlation_channel_alloc_with_idx(idx);
   }
 
-  return gpu_correlation_channel;
+  return gpu_correlation_channels[idx];
 }
-
-
 
 //******************************************************************************
 // interface functions
@@ -156,8 +154,21 @@ gpu_correlation_channel_produce
  uint64_t cpu_submit_time
 )
 {
-  gpu_correlation_channel_t *corr_channel = gpu_correlation_channel_get();
-  gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
+  // Relaying parameters with index 0
+  gpu_correlation_channel_produce_with_idx(0, host_correlation_id, gpu_op_ccts, cpu_submit_time);
+}
+
+void
+gpu_correlation_channel_produce_with_idx
+(
+ int idx,
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_op_ccts,
+ uint64_t cpu_submit_time
+)
+{
+  gpu_correlation_channel_t *corr_channel = gpu_correlation_channel_get_with_idx(idx);
+  gpu_activity_channel_t *activity_channel = gpu_activity_channel_get_with_idx(idx);
 
   gpu_correlation_t *c = gpu_correlation_alloc(corr_channel);
 
@@ -166,7 +177,6 @@ gpu_correlation_channel_produce
 
   channel_push(corr_channel, bichannel_direction_forward, c);
 }
-
 
 void
 gpu_correlation_channel_consume
@@ -204,7 +214,7 @@ gpu_correlation_channel_consume
 void *hpcrun_malloc_safe
 (
  size_t s
-) 
+)
 {
   return malloc(s);
 }
@@ -214,7 +224,7 @@ gpu_activity_channel_t *
 gpu_activity_channel_get
 (
  void
-) 
+)
 {
   return (gpu_activity_channel_t *) 0x5000;
 }
@@ -223,7 +233,7 @@ gpu_activity_channel_get
 int
 main
 (
- int argc, 
+ int argc,
  char **argv
 )
 {

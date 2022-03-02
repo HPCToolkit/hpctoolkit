@@ -100,24 +100,7 @@ void IdPacker::notifyContextExpansion(const Context& from, Scope s, const Contex
     pack(buffer, (std::uint64_t)stack.size());
     for(auto it = stack.crbegin(), ite = stack.crend(); it != ite; ++it) {
       const Context& c = it->get();
-      switch(c.scope().type()) {
-      case Scope::Type::global:
-        assert(false && "Global Contexts shouldn't come out of expansion!");
-        std::abort();
-      case Scope::Type::unknown:
-      case Scope::Type::point:
-      case Scope::Type::placeholder:
-        buffer.emplace_back(0);
-        break;
-      case Scope::Type::function:
-      case Scope::Type::inlined_function:
-        buffer.emplace_back(1);
-        break;
-      case Scope::Type::loop:
-      case Scope::Type::line:
-        buffer.emplace_back(2);
-        break;
-      }
+      buffer.push_back((std::uint8_t)c.scope().relation());
       pack(buffer, (std::uint64_t)c.userdata[src.identifier()]);
     }
   };
@@ -145,14 +128,13 @@ void IdPacker::notifyContextExpansion(const Context& from, Scope s, const Contex
     break;
   case Scope::Type::global:
   case Scope::Type::function:
-  case Scope::Type::inlined_function:
   case Scope::Type::loop:
   case Scope::Type::line:
     assert(false && "PackedIds can't handle non-point Contexts!");
     std::abort();
   }
 
-  // Format: [cnt] ([type] [context id])...
+  // Format: [cnt] ((Relation) [context id])...
   trace(to);
 
   buffersize.fetch_add(buffer.size() - oldsz, std::memory_order_relaxed);
@@ -178,15 +160,10 @@ void IdPacker::notifyWavefront(DataClass ds) {
     for(const auto& ls: stripbuffers)
       ct.insert(ct.end(), ls.second.begin(), ls.second.end());
 
-    // Format: ... [met cnt] ([id] [p id] [ex id] [inc id] [name])...
+    // Format: ... [met cnt] ([id] [name])...
     pack(ct, (std::uint64_t)src.metrics().size());
     for(auto& m: src.metrics().citerate()) {
-      pack(ct, (std::uint64_t)m().userdata[src.identifier()]);
-      const auto& ids = m().userdata[src.mscopeIdentifiers()];
-      const auto& sc = m().scopes();
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::point) ? ids.point : -1));
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::function) ? ids.function : -1));
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::execution) ? ids.execution : -1));
+      pack(ct, (std::uint64_t)m().userdata[src.identifier()].base());
       pack(ct, m().name());
     }
 
@@ -224,8 +201,6 @@ void IdUnpacker::unpack() noexcept {
   ::unpack<std::uint64_t>(it);  // Skip over the global id
 
   exmod = &sink.module("/nonexistent/exmod");
-  exfile = &sink.file("/nonexistent/exfile");
-  exfunc.reset(new Function(*exmod));
 
   auto cnt = ::unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++)
@@ -249,79 +224,54 @@ void IdUnpacker::unpack() noexcept {
       s = {modmap.at(next), off};
     }
     std::size_t cnt = ::unpack<std::uint64_t>(it);
-    auto& scopes = exmap[parent][s];
     if(cnt == 0) {
       // TODO: Figure out how to handle Superpositions in IdPacker and IdUnpacker
       assert(false && "IdUnpacker currently doesn't handle Superpositions!");
       std::abort();
     }
+    auto& scopes = exmap[parent][{(Relation)*it, s}];
     for(std::size_t x = 0; x < cnt; x++) {
-      auto ty = *it;
+      Relation rel = (Relation)*it;
       it++;
       auto id = ::unpack<std::uint64_t>(it);
-      switch(ty) {
-      case 0:  // unknown or point or placeholder -> point
-        scopes.emplace_back(*exmod, id);
-        break;
-      case 1:  // function or inlined_function -> inlined_function
-        scopes.emplace_back(*exfunc, *exfile, id);
-        break;
-      case 2:  // loop or line -> line
-        scopes.emplace_back(*exfile, id);
-        break;
-      default:
-        assert(false && "Invalid packed Scope type!");
-        std::abort();
-      }
+      scopes.emplace_back(rel, Scope(*exmod, id));
     }
   }
 
   cnt = ::unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
     auto id = ::unpack<std::uint64_t>(it);
-    Metric::ScopedIdentifiers ids;
-    ids.point = ::unpack<std::uint64_t>(it);
-    ids.function = ::unpack<std::uint64_t>(it);
-    ids.execution = ::unpack<std::uint64_t>(it);
     auto name = ::unpack<std::string>(it);
-    metmap.insert({std::move(name), {id, ids}});
+    metmap.insert({std::move(name), id});
   }
 
   ctxtree.clear();
 }
 
-util::optional_ref<Context> IdUnpacker::classify(Context& c, Scope& s) noexcept {
+util::optional_ref<Context> IdUnpacker::classify(Context& c, NestedScope& ns) noexcept {
   util::call_once(once, [this]{ unpack(); });
   bool first = true;
   auto x = exmap.find(c.userdata[sink.identifier()]);
   assert(x != exmap.end() && "Missing data for Context `co`!");
-  auto y = x->second.find(s);
+  auto y = x->second.find(ns);
   assert(y != x->second.end() && "Missing data for Scope `s` from Context `co`!");
   std::reference_wrapper<Context> cc = c;
   for(const auto& next: y->second) {
-    if(!first) cc = sink.context(cc, s);
-    s = next;
+    if(!first) cc = sink.context(cc, ns);
+    ns = next;
     first = false;
   }
   return cc.get();
 }
 
 std::optional<unsigned int> IdUnpacker::identify(const Context& c) noexcept {
-  switch(c.scope().type()) {
+  switch(c.scope().flat().type()) {
   case Scope::Type::global:
     return globalid;
   case Scope::Type::point: {
-    auto mo = c.scope().point_data();
+    auto mo = c.scope().flat().point_data();
     assert(&mo.first == exmod && "point Scopes must reference the marker Module!");
     return mo.second;
-  }
-  case Scope::Type::inlined_function:
-    assert(&c.scope().function_data() == exfunc.get() && "inlined_function Scopes must reference the marker Function!");
-    // fallthrough
-  case Scope::Type::line: {
-    auto fl = c.scope().line_data();
-    assert(&fl.first == exfile && "line Scopes must reference the marker File!");
-    return fl.second;
   }
   default:
     assert(false && "Unhandled Scope in IdUnpacker");
@@ -329,16 +279,9 @@ std::optional<unsigned int> IdUnpacker::identify(const Context& c) noexcept {
   }
 }
 
-std::optional<unsigned int> IdUnpacker::identify(const Metric& m) noexcept {
+std::optional<Metric::Identifier> IdUnpacker::identify(const Metric& m) noexcept {
   util::call_once(once, [this]{ unpack(); });
   auto it = metmap.find(m.name());
   assert(it != metmap.end() && "No data for Metric `m`!");
-  return it->second.first;
-}
-
-std::optional<Metric::ScopedIdentifiers> IdUnpacker::subidentify(const Metric& m) noexcept {
-  util::call_once(once, [this]{ unpack(); });
-  auto it = metmap.find(m.name());
-  assert(it != metmap.end() && "No data for Metric `m`!");
-  return it->second.second;
+  return Metric::Identifier(m, it->second);
 }

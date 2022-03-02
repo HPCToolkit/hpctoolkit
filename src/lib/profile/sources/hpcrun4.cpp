@@ -432,11 +432,14 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             // some data. Map to par -> (unknown) -> (point) and throw an error.
             util::log::error{} << "Missing required CFG data for binary: "
               << scope.point_data().first.path().string();
-            nodes.emplace(id, std::make_pair(&par, &sink.context(sink.context(par, Scope()), scope)));
+            auto& unk = sink.context(par, {Relation::call, Scope()});
+            auto& pnt = sink.context(unk, {Relation::call, scope});
+            nodes.emplace(id, std::make_pair(&par, &pnt));
           }
         } else {
           // Simple straightforward Context
-          nodes.emplace(id, std::make_pair(&par, &sink.context(par, scope)));
+          nodes.emplace(id, std::make_pair(&par,
+              &sink.context(par, {Relation::call, scope})));
         }
       } else if(std::holds_alternative<ContextReconstruction*>(par)) {
         // This is invalid, Reconstructions cannot have children. Yet.
@@ -449,7 +452,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           return false;
         }
         // Add this root to the proper reconstruction group
-        sink.addToReconstructionGroup(*p_x->first->first, p_x->first->second->scope(), *p_x->second, n.lm_ip);
+        sink.addToReconstructionGroup(*p_x->first->first, p_x->first->second->scope().flat(), *p_x->second, n.lm_ip);
         nodes.emplace(id, std::make_pair(p_x, n.lm_ip));
       } else if(std::holds_alternative<std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t>>(par)) {
         // This is invalid, inline GPU_RANGE nodes cannot have children.
@@ -487,8 +490,9 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           // some data. Map to (global) -> (unknown) -> (point) and throw an error.
           util::log::error{} << "Missing required CFG data for binary: "
             << mod_it->second.path().string();
-          auto& unk = sink.context(sink.global(), Scope());
-          nodes.emplace(id, std::make_pair(&unk, &sink.context(unk, scope)));
+          auto& unk = sink.context(sink.global(), {Relation::call, Scope()});
+          auto& pnt = sink.context(unk, {Relation::call, scope});
+          nodes.emplace(id, std::make_pair(&unk, &pnt));
         }
       } else if(std::holds_alternative<std::pair<const std::pair<PerThreadTemporary*, uint64_t>*, ContextFlowGraph*>>(par)) {
         // This is invalid, outlined range-tree sample nodes cannot have children.

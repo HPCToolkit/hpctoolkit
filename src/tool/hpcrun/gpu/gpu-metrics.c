@@ -85,9 +85,11 @@
   macro(GTIMES, 10)  \
   macro(KINFO, 12)  \
   macro(GSAMP, 13)  \
-  macro(INTEL_OPTIMIZATION, 14) \
-  macro(BLAME_SHIFT, 15)  \
-  macro(GPU_UTILIZATION, 16)
+  macro(GXFER, 14) \
+  macro(INTEL_OPTIMIZATION, 15) \
+  macro(BLAME_SHIFT, 16)  \
+  macro(GPU_UTILIZATION, 17) \
+  macro(CTR, 18) \
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -240,11 +242,14 @@ name ## _metric_kind
 // local variables 
 //*****************************************************************************
 
-FORALL_METRIC_KINDS(INITIALIZE_METRIC_KINDS)
+FORALL_METRIC_KINDS(INITIALIZE_METRIC_KINDS);
 
-FORALL_INDEXED_METRIC_KINDS(INITIALIZE_INDEXED_METRIC)
+FORALL_INDEXED_METRIC_KINDS(INITIALIZE_INDEXED_METRIC);
 
-FORALL_SCALAR_METRIC_KINDS(INITIALIZE_SCALAR_METRIC_KIND)
+FORALL_SCALAR_METRIC_KINDS(INITIALIZE_SCALAR_METRIC_KIND);
+
+static kind_info_t* GPU_COUNTER_METRIC_KIND_INFO = NULL;
+static int* gpu_counter_hpcrun_metric_id_array = NULL;
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
 
@@ -649,6 +654,59 @@ gpu_metrics_attribute_branch
            b->executed);
 }
 
+static void
+gpu_metrics_attribute_counter
+(
+  gpu_activity_t *activity
+)
+{
+  gpu_counter_t * c = &(activity->details.counters);
+  cct_node_t *cct_node = activity->cct_node;
+
+  metric_data_list_t *metrics =
+    hpcrun_reify_metric_set(cct_node,gpu_counter_hpcrun_metric_id_array[0]);
+
+  for (int i = 0; i < c->total_counters; ++i) {
+    gpu_metrics_attribute_metric_int(metrics, gpu_counter_hpcrun_metric_id_array[i], c->values[i]);
+  }
+
+  free(c->values);
+}
+
+static void
+gpu_metrics_attribute_link
+(
+gpu_activity_t *activity
+)
+{
+
+	printf("Attrubute NVLINK not implemented\n\n");
+//	gpu_link_t *m = &(activity->details.memcpy);
+//	cct_node_t *cct_node = activity->cct_node;
+
+//	metric_data_list_t *metrics =
+//	hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT),
+//																	 m->staticSharedMemory);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_RCV),
+//																	 m->dynamicSharedMemory);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT_TP),
+//																	 m->localMemoryTotal);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XRCV_TP),
+//																	 m->activeWarpsPerSM);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT_COUNT),
+//																	 m->activeWarpsPerSM);
+//
+//	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XRCV_COUNT),
+//																	 m->activeWarpsPerSM);
+
+
+}
 
 static void
 metrics_attribute_intel_optimization
@@ -758,6 +816,10 @@ gpu_metrics_attribute
 
   case GPU_ACTIVITY_BRANCH:
     gpu_metrics_attribute_branch(activity);
+    break;
+
+  case GPU_ACTIVITY_COUNTER:
+    gpu_metrics_attribute_counter(activity);
     break;
 
   case GPU_ACTIVITY_INTEL_OPTIMIZATION:
@@ -1025,6 +1087,46 @@ gpu_metrics_GPU_INST_STALL_enable
 
 
 void
+gpu_metrics_GPU_CTR_enable
+(
+  int total,
+  const char** counter_name,
+  const char** counter_desc
+)
+{
+  gpu_counter_hpcrun_metric_id_array = (int*) malloc(sizeof(int) * total);
+
+  GPU_COUNTER_METRIC_KIND_INFO = hpcrun_metrics_new_kind();
+
+  for (int i = 0; i < total; ++i) {
+    gpu_counter_hpcrun_metric_id_array[i] = hpcrun_set_new_metric_desc_and_period(
+      GPU_COUNTER_METRIC_KIND_INFO, counter_name[i], counter_desc[i],
+      MetricFlags_ValFmt_Int, 1, metric_property_none
+    );
+  }
+
+  hpcrun_close_kind(GPU_COUNTER_METRIC_KIND_INFO);
+}
+
+
+void
+gpu_metrics_GXFER_enable
+(
+void
+)
+{
+//#undef CURRENT_METRIC
+//#define CURRENT_METRIC GXFER
+
+	//INITIALIZE_METRIC_KIND();
+
+	//FORALL_GXFER(INITIALIZE_SCALAR_METRIC_INT)
+
+	//FINALIZE_METRIC_KIND();
+}
+
+
+void
 gpu_metrics_INTEL_OPTIMIZATION_enable
 (
  void
@@ -1039,7 +1141,6 @@ gpu_metrics_INTEL_OPTIMIZATION_enable
 
   FINALIZE_METRIC_KIND();
 }
-
 
 void
 gpu_metrics_BLAME_SHIFT_enable

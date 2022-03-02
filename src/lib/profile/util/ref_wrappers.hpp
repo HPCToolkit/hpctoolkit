@@ -307,7 +307,7 @@ public:
   constexpr T& value() const { return d.value().get(); }
 
   template<class U>
-  constexpr T& value_or(U& u) { return d.value_or(u).get(); }
+  constexpr T& value_or(U& u) const { return d.value_or(u).get(); }
 
   void swap(optional_ref& o) noexcept { d.swap(o.d); }
   void reset() noexcept { d.reset(); }

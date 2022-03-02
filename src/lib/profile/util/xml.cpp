@@ -53,7 +53,7 @@ using namespace hpctoolkit::util;
 xmlquoted::xmlquoted(std::string_view s, bool q)
   : str(s), addquotes(q) {};
 
-std::ostream& operator<<(std::ostream& os, const xmlquoted& q) {
+std::ostream& hpctoolkit::util::operator<<(std::ostream& os, const xmlquoted& q) {
   if(q.addquotes) os << '"';
   for(const char& c: q.str) {
     if(c == '"') os << "\\\"";

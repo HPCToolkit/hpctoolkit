@@ -594,10 +594,10 @@ opencl_operation_multiplexer_push
   gpu_activity.details.correlation.host_correlation_id = correlation_id;
   gpu_operation_multiplexer_push(obj->details.initiator_channel,
     NULL, &gpu_activity);
-
+  
   // The actual entry
   opencl_activity_translate(&gpu_activity, obj, interval);
-  gpu_operation_multiplexer_push(obj->details.initiator_channel,
+  gpu_operation_multiplexer_push(obj->details.initiator_channel, 
     obj->pending_operations, &gpu_activity);
 }
 
@@ -996,6 +996,7 @@ opencl_api_initialize
   atomic_store(&opencl_pending_operations, 0);
   atomic_store(&opencl_h2d_pending_operations, 0);
 }
+
 
 //#ifdef ENABLE_GTPIN
 #if 1
@@ -1735,4 +1736,3 @@ opencl_api_process_finalize
   }
   gpu_operation_multiplexer_fini();
 }
-

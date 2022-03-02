@@ -13,5 +13,7 @@ IFS=
 
 while read -r line
 do
-    printf "%s%s%s%s\n"  "$quote" "${line//\"/\\\"}" "$newline" "$quote"
+    line="${line//\\/\\\\}"
+    line="${line//\"/\\\"}"
+    printf "%s%s%s%s\n"  "$quote" "$line" "$newline" "$quote"
 done

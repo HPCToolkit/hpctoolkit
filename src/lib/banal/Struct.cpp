@@ -117,6 +117,7 @@
 
 #include "gpu/ReadCudaCFG.hpp"
 
+
 #ifdef ENABLE_IGC
 #include "gpu/ReadIntelCFG.hpp"
 #endif // ENABLE_IGC

@@ -46,7 +46,6 @@
 
 #include "../util/vgannotations.hpp"
 
-#define STDSHIM_DONT_UNDEF
 #include "shared_mutex.hpp"
 
 using namespace hpctoolkit::stdshim;
@@ -82,7 +81,7 @@ void shared_mutex::unlock_shared() {
   real.unlock_shared();
 }
 
-#if !STD_HAS(shared_mutex) && !STD_HAS(shared_timed_mutex)
+#if !defined(HPCTOOLKIT_STDSHIM_STD_HAS_shared_mutex) && !defined(HPCTOOLKIT_STDSHIM_STD_HAS_shared_timed_mutex)
 
 static constexpr unsigned int phase  = 1 << 0;
 static constexpr unsigned int writer = 1 << 1;
@@ -115,7 +114,7 @@ void detail::shared_mutex::lock() {
 
 bool detail::shared_mutex::try_lock() {
   if(!unique.try_lock()) return false;
-  // For simplicity, at this point we're commited
+  // For simplicity, at this point we're committed
   auto in = incoming.fetch_xor(phase | writer, std::memory_order_acquire);
   last = (in - ticket) ^ (phase | writer);
   auto out = outgoing.fetch_xor(phase | writer, std::memory_order_acq_rel);

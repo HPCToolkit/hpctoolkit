@@ -58,6 +58,14 @@ roctracer_init
 
 
 void
+roctracer_flush
+(
+ void *args,
+ int how
+);
+
+
+void
 roctracer_fini
 (
  void *args,
@@ -71,6 +79,10 @@ roctracer_bind
   void
 );
 
-
+void
+roctracer_enable_counter_collection
+(
+  void
+);
 
 #endif

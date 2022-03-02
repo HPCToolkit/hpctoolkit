@@ -51,6 +51,7 @@
 #include <lib/prof-lean/bichannel.h>
 
 #include "gpu-activity.h"
+#include "gpu-channel-common.h"
 
 
 //******************************************************************************
@@ -74,6 +75,13 @@ gpu_activity_channel_get
 );
 
 
+gpu_activity_channel_t *
+gpu_activity_channel_get_with_idx
+(
+ int
+);
+
+
 void
 gpu_activity_channel_produce
 (
@@ -88,6 +96,13 @@ gpu_activity_channel_consume
  gpu_activity_attribute_fn_t aa_fn
 );
 
+
+void
+gpu_activity_channel_consume_with_idx
+(
+ int idx,
+ gpu_activity_attribute_fn_t aa_fn
+);
 
 
 #endif

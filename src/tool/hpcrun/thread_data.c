@@ -129,7 +129,6 @@ static pthread_key_t _hpcrun_key;
 static int use_getspecific = 0;
 static __thread bool mem_pool_initialized = false;
 
-
 void
 hpcrun_init_pthread_key
 (
@@ -291,8 +290,6 @@ hpcrun_thread_init_mem_pool_once
   }
 }
 
-
-
 //***************************************************************************
 // 
 //***************************************************************************
@@ -385,7 +382,6 @@ hpcrun_thread_data_init
   size_t n_sources
 )
 {
-  hpcrun_meminfo_t memstore;
   thread_data_t* td = hpcrun_get_thread_data();
 
   // ----------------------------------------
@@ -396,12 +392,8 @@ hpcrun_thread_data_init
   // memstore so we can reuse it in the child after fork.  This must
   // come first.
   td->inside_hpcrun = 1;
-  memstore = td->memstore;
   memset(td, 0xfe, sizeof(thread_data_t));
   td->inside_hpcrun = 1;
-  td->memstore = memstore;
-  hpcrun_make_memstore(&td->memstore, is_child);
-  td->mem_low = 0;
 
   // ----------------------------------------
   // normalized thread id (monitor-generated)

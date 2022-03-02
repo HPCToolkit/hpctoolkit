@@ -51,6 +51,7 @@
 
 #include "gpu-correlation-channel.h"
 #include "gpu-correlation-channel-set.h"
+#include "gpu-channel-common.h"
 
 
 
@@ -99,7 +100,7 @@ typed_stack_declare_type(gpu_correlation_channel_ptr_t);
 
 static 
 typed_stack_elem_ptr(gpu_correlation_channel_ptr_t) 
-gpu_correlation_channel_stack;
+gpu_correlation_channel_stacks[GPU_CHANNEL_TOTAL];
 
 
 
@@ -128,12 +129,13 @@ channel_forone
 
 
 static void
-gpu_correlation_channel_set_forall
+gpu_correlation_channel_set_forall_with_idx
 (
+ int idx,
  gpu_correlation_channel_fn_t channel_fn
 )
 {
-  channel_stack_forall(&gpu_correlation_channel_stack, channel_forone, 
+  channel_stack_forall(&gpu_correlation_channel_stacks[idx], channel_forone,
 		       channel_fn);
 }
 
@@ -143,8 +145,9 @@ gpu_correlation_channel_set_forall
 //******************************************************************************
 
 void
-gpu_correlation_channel_set_insert
+gpu_correlation_channel_set_insert_with_idx
 (
+ int idx,
  gpu_correlation_channel_t *channel
 )
 {
@@ -157,15 +160,15 @@ gpu_correlation_channel_set_insert
   channel_stack_elem_ptr_set(e, 0); // clear the entry's next ptr
 
   // add the entry to the channel stack
-  channel_stack_push(&gpu_correlation_channel_stack, e);
+  channel_stack_push(&gpu_correlation_channel_stacks[idx], e);
 }
 
 
 void
-gpu_correlation_channel_set_consume
+gpu_correlation_channel_set_consume_with_idx
 (
- void
+ int idx
 )
 {
-  gpu_correlation_channel_set_forall(gpu_correlation_channel_consume);
+  gpu_correlation_channel_set_forall_with_idx(idx, gpu_correlation_channel_consume);
 }
