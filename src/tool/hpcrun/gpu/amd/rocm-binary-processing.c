@@ -46,12 +46,6 @@
 //******************************************************************************
 
 #include <gelf.h>
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
-#include <sys/stat.h>  // mkdir
-#include <sys/types.h>
-#include <unistd.h>
-#include <linux/limits.h>  // PATH_MAX
 
 //******************************************************************************
 // local includes
@@ -253,13 +247,13 @@ parse_amd_gpu_binary_uri
 
   // Create file name
   char gpu_file_path[PATH_MAX];
-  size_t used = 0;
-  used += sprintf(&gpu_file_path[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&gpu_file_path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
-  mkdir(gpu_file_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&gpu_file_path[used], "%s.%llx" GPU_BINARY_SUFFIX,
-		  filename, offset);
+  char amd_gpu_file_name[PATH_MAX];
+  // We use the host CPU binary name and the GPU binary starting offset
+  // as the file name to store an AMD GPU binary
+  sprintf(amd_gpu_file_name, "%s.%llx", filename, offset);
+  gpu_binary_path_generate(amd_gpu_file_name, gpu_file_path));
 
+  // Read the AMD GPU binary from disk
   int rfd = open(filepath, O_RDONLY);
   if (rfd < 0) {
     PRINT("\tcannot open the file specified in the file URI\n");
@@ -282,24 +276,7 @@ parse_amd_gpu_binary_uri
 
   // We write down this GPU binary if necessary.
   // We may not need to create this GPU binary when reusing a measurement directory.
-  errno = 0;
-  int wfd = open(gpu_file_path, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (wfd >= 0) {
-    errno = 0;
-    if (write(wfd, (const void*)(bin->buf), bin->size) != bin->size) {
-      // This could happen if running out of disk quota
-      int error = errno;
-      close(wfd);
-      hpcrun_abort("hpctoolkit: unable to write AMD GPU binary file %s: %s", gpu_file_path, strerror(error));
-    }
-    close(wfd);
-  } else {
-    // We tolerate an existing file.
-    // Otherwise, fatal error
-    if (errno != EEXIST) {
-      hpcrun_abort("hpctoolkit: unable to create AMD GPU binary file %s: %s", gpu_file_path, strerror(errno));
-    }
-  }
+  gpu_binary_store(gpu_file_path, (const void*)(bin->buf), bin->size);
 
   bin->amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
 }

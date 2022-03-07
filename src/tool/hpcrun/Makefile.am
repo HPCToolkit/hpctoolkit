@@ -365,6 +365,8 @@ MY_BASE_FILES =				\
 	gpu/gpu-activity-channel.c 	\
 	gpu/gpu-activity-process.c 	\
 	gpu/gpu-application-thread-api.c \
+	gpu/gpu-binary.c \
+	gpu/gpu-cct.c \
 	gpu/gpu-channel-item-allocator.c \
 	gpu/gpu-context-id-map.c	\
 	gpu/gpu-correlation.c 		\
@@ -527,7 +529,7 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-activity-translate.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\
-	gpu/nvidia/cupti-gpu-api.c		
+	gpu/nvidia/cupti-gpu-api.c
 endif
 
 if OPT_ENABLE_OPENCL
@@ -568,12 +570,14 @@ if OPT_ENABLE_LEVEL0
 MY_LEVEL0_FILES=\
 	sample-sources/level0.c \
 	gpu/level0/level0-api.c \
+	gpu/level0/level0-binary.c \
 	gpu/level0/level0-command-list-context-map.c \
 	gpu/level0/level0-command-list-map.c \
 	gpu/level0/level0-command-process.c \
 	gpu/level0/level0-data-node.c \
 	gpu/level0/level0-event-map.c \
-	gpu/level0/level0-handle-map.c
+	gpu/level0/level0-handle-map.c \
+	gpu/level0/level0-kernel-module-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
 libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c

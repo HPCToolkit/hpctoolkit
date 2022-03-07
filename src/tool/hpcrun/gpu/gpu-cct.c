@@ -41,59 +41,48 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef gpu_binary_h
-#define gpu_binary_h
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
-
-#define GPU_BINARY_NAME           "gpubin"
-
-#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
-#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
+//***************************************************************************
+//
+// File:
+//   gpu-cct.c
+//
+// Purpose:
+//   A general interface for inserting new CCT nodes
+//
+//***************************************************************************
 
 //******************************************************************************
-// system include
+// local includes
 //******************************************************************************
 
-#include <stdbool.h>
-#include <stddef.h>
+#include "gpu-cct.h"
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-bool
-gpu_binary_store
-(
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
-);
 
 void
-gpu_binary_path_generate
+gpu_cct_insert
 (
-  const char *file_name,
-  char *path
-);
-
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-);
-
-#if defined(__cplusplus)
+ cct_node_t *cct_node, 
+ ip_normalized_t ip
+)
+{
+  // if the phaceholder was previously inserted, it will have a child
+  // we only want to insert a child if there isn't one already. if the
+  // node contains a child already, then the gpu monitoring thread 
+  // may be adding children to the splay tree of children. in that case 
+  // trying to add a child here (which will turn into a lookup of the
+  // previously added child, would race with any insertions by the 
+  // GPU monitoring thread.
+  //
+  // INVARIANT: avoid a race modifying the splay tree of children by 
+  // not attempting to insert a child in a worker thread when a child 
+  // is already present
+  if (hpcrun_cct_children(cct_node) == NULL) {
+    cct_node_t *new_node = 
+      hpcrun_cct_insert_ip_norm(cct_node, ip, true);
+    hpcrun_cct_retain(new_node);
+  }
 }
-#endif
-
-#endif
-

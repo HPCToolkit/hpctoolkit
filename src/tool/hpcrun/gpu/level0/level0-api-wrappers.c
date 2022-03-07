@@ -204,3 +204,34 @@ zeModuleCreate
     hContext, hDevice, desc, phModule, phBuildLog
   );
 }
+
+ze_result_t
+zeModuleDestroy
+(
+  ze_module_handle_t hModule       // [in][release] handle of the module
+)
+{
+  return hpcrun_zeModuleDestroy(hModule);
+}
+
+ze_result_t
+zeKernelCreate
+(
+  ze_module_handle_t hModule,          // [in] handle of the module
+  const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
+  ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+)
+{
+  return hpcrun_zeKernelCreate(
+    hModule, desc, phKernel
+  );
+}
+
+ze_result_t
+zeKernelDestroy
+(
+  ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
+)
+{
+  return hpcrun_zeKernelDestroy(hKernel);
+}

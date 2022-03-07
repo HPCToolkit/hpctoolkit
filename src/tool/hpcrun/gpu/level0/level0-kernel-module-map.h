@@ -41,59 +41,37 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef gpu_binary_h
-#define gpu_binary_h
+#ifndef level0_kernel_module_map_h
+#define level0_kernel_module_map_h
 
 //*****************************************************************************
-// macros
+// local includes
 //*****************************************************************************
 
-#define GPU_BINARY_NAME           "gpubin"
-
-#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
-#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
-
-//******************************************************************************
-// system include
-//******************************************************************************
-
-#include <stdbool.h>
-#include <stddef.h>
+#include <level_zero/ze_api.h>
+#include <level_zero/zet_api.h>
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-bool
-gpu_binary_store
+void
+level0_kernel_module_map_insert
 (
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
+  ze_kernel_handle_t kernel,
+  ze_module_handle_t module
+);
+
+ze_module_handle_t
+level0_kernel_module_map_lookup
+(
+  ze_kernel_handle_t kernel
 );
 
 void
-gpu_binary_path_generate
+level0_kernel_module_map_delete
 (
-  const char *file_name,
-  char *path
+  ze_kernel_handle_t kernel
 );
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-);
-
-#if defined(__cplusplus)
-}
 #endif
-
-#endif
-

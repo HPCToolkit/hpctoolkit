@@ -68,7 +68,7 @@ typedef enum level0_command_type {
 } level0_command_type_t;
 
 typedef struct level0_kernel_entry {
-  ze_kernel_handle_t kernel;  
+  ze_kernel_handle_t kernel;
 } level0_kernel_entry_t;
 
 typedef struct level0_memcpy_entry {

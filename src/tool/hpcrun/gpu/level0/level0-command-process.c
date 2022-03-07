@@ -47,6 +47,8 @@
 
 #include "level0-command-process.h"
 #include "level0-data-node.h"
+#include "level0-binary.h"
+#include "level0-kernel-module-map.h"
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -57,9 +59,11 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/gpu-cct.h>
 
 #include <hpcrun/safe-sampling.h>
 #include <lib/prof-lean/usec_time.h>
+#include <include/gpu-binary.h>
 
 //*****************************************************************************
 // macro declarations
@@ -164,6 +168,51 @@ level0_memcpy_translate
   gpu_interval_set(&ga->details.interval, start, end);
 }
 
+static uint32_t
+get_load_module
+(
+  ze_kernel_handle_t kernel
+)
+{
+  // Step 1: get the string name for the kernel
+  size_t name_size = 0;
+  zeKernelGetName(kernel, &name_size, NULL);
+  char* kernel_name = malloc(name_size);
+  zeKernelGetName(kernel, &name_size, kernel_name);
+
+  // Compute hash for the kernel name
+  char kernel_name_hash[PATH_MAX];
+  gpu_binary_compute_hash_string(
+    kernel_name,
+    strlen(kernel_name),
+    kernel_name_hash
+  );
+  free(kernel_name);
+
+  // Step 2: get the hash for the binary that contains the kernel
+  ze_module_handle_t module_handle = level0_kernel_module_map_lookup(kernel);
+  char* binary_hash = level0_module_handle_map_lookup(module_handle);
+
+  // Step 3: generate <binary hash>.<kernel name hash> as the load module name
+  char load_module_name[PATH_MAX];
+  strcpy(load_module_name, binary_hash);
+  strcat(load_module_name, ".");
+  strcat(load_module_name, kernel_name_hash);
+
+  // Step 4: find or create the load module
+  uint32_t module_id = 0;
+  hpcrun_loadmap_lock();
+  load_module_t *module = hpcrun_loadmap_findByName(load_module_name);
+  if (module == NULL) {
+    module_id = hpcrun_loadModule_add(load_module_name);
+  } else {
+    // Find module
+    module_id = module->id;
+  }
+  hpcrun_loadmap_unlock();
+  return module_id;
+}
+
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
@@ -210,6 +259,19 @@ level0_command_begin
   gpu_op_ccts_t gpu_op_ccts;
   hpcrun_safe_enter();
   gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+
+  if (command_node->type == LEVEL0_KERNEL) {
+    ip_normalized_t kernel_ip;
+    kernel_ip.lm_id = get_load_module(command_node->details.kernel.kernel);
+    kernel_ip.lm_ip = 0;
+
+    cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+    gpu_cct_insert(kernel_ph, kernel_ip);
+
+    cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+    gpu_cct_insert(trace_ph, kernel_ip);
+  }
+
   hpcrun_safe_exit();
 
   gpu_activity_channel_consume(gpu_metrics_attribute);

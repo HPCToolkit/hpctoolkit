@@ -64,6 +64,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/gpu-cct.h>
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -280,31 +281,6 @@ roctracer_kernel_data_set
 #endif
 
 static void
-ensure_kernel_ip_present
-(
- cct_node_t *kernel_ph,
- ip_normalized_t kernel_ip
-)
-{
-  // if the phaceholder was previously inserted, it will have a child
-  // we only want to insert a child if there isn't one already. if the
-  // node contains a child already, then the gpu monitoring thread
-  // may be adding children to the splay tree of children. in that case
-  // trying to add a child here (which will turn into a lookup of the
-  // previously added child, would race with any insertions by the
-  // GPU monitoring thread.
-  //
-  // INVARIANT: avoid a race modifying the splay tree of children by
-  // not attempting to insert a child in a worker thread when a child
-  // is already present
-  if (hpcrun_cct_children(kernel_ph) == NULL) {
-    cct_node_t *kernel =
-      hpcrun_cct_insert_ip_norm(kernel_ph, kernel_ip, true);
-    hpcrun_cct_retain(kernel);
-  }
-}
-
-static void
 roctracer_subscriber_callback
 (
  uint32_t domain,
@@ -448,10 +424,10 @@ roctracer_subscriber_callback
       ip_normalized_t kernel_ip = rocm_binary_function_lookup(kernel_name);
 
       cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
-      ensure_kernel_ip_present(kernel_ph, kernel_ip);
+      gpu_cct_insert(kernel_ph, kernel_ip);
 
       cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
-      ensure_kernel_ip_present(trace_ph, kernel_ip);
+      gpu_cct_insert(trace_ph, kernel_ip);
 
       if (collect_counter) {
         rocprofiler_correlation_id = correlation_id;

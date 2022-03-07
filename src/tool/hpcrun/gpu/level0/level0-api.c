@@ -59,6 +59,8 @@
 #include "level0-event-map.h"
 #include "level0-command-process.h"
 #include "level0-data-node.h"
+#include "level0-binary.h"
+#include "level0-kernel-module-map.h"
 
 #include <hpcrun/main.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
@@ -95,7 +97,10 @@
   macro(zeCommandListReset) \
   macro(zeCommandQueueExecuteCommandLists) \
   macro(zeEventHostReset) \
-  macro(zeModuleCreate)
+  macro(zeModuleCreate) \
+  macro(zeModuleDestroy) \
+  macro(zeKernelCreate) \
+  macro(zeKernelDestroy)
 
 #define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -319,7 +324,31 @@ LEVEL0_FN
   )
 );
 
+LEVEL0_FN
+(
+  zeModuleDestroy,
+  (
+    ze_module_handle_t hModule       // [in][release] handle of the module
+  )
+);
 
+LEVEL0_FN
+(
+  zeKernelCreate,
+  (
+    ze_module_handle_t hModule,          // [in] handle of the module
+    const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
+    ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+  )
+);
+
+LEVEL0_FN
+(
+  zeKernelDestroy,
+  (
+    ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
+  )
+);
 
 //******************************************************************************
 // private operations
@@ -946,42 +975,62 @@ hpcrun_zeModuleCreate
   ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
 )
 {
-  fprintf(stderr, "Enter zeModuleCreate, desc %p\n", desc);
-  if (desc != NULL) {
-    fprintf(stderr,"\tformat %d, build flag %s\n", desc->format, desc->pBuildFlags);
-  }
+  // TODO: do we want to append "-g" to desc->pBuildFlags
+  // to force building with debug information?
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
     (hContext, hDevice, desc, phModule, phBuildLog));
 
-  static int count = 0;
-  size_t size;
-  zeModuleGetNativeBinary(*phModule, &size, NULL);
-
-  uint8_t* buf = (uint8_t*) malloc(size);
-  zeModuleGetNativeBinary(*phModule, &size, buf);
-
-  char filename[128];
-  snprintf(filename, 128, "intel-gpubin-%d", count);
-  FILE *f = fopen(filename, "w");
-  fwrite(buf, size, 1, f);
-  fclose(f);
-  free(buf);
-
-  zetModuleGetDebugInfo(*phModule,ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,&size, NULL);
-  buf = (uint8_t*) malloc(size);
-  zetModuleGetDebugInfo(*phModule,ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,&size, buf);
-  snprintf(filename, 128, "intel-gpubin-debug-%d", count);
-  f = fopen(filename, "w");
-  fwrite(buf, size, 1, f);
-  fclose(f);
-  free(buf);
-
-  count++;
-
   // Exit action
+  level0_binary_process(*phModule);
 
   return ret;
 }
+
+ze_result_t
+hpcrun_zeModuleDestroy
+(
+  ze_module_handle_t hModule       // [in][release] handle of the module
+)
+{
+  // Entry action
+  level0_module_handle_map_delete(hModule);
+
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleDestroy,
+    (hModule));
+
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeKernelCreate
+(
+  ze_module_handle_t hModule,          // [in] handle of the module
+  const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
+  ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+)
+{
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeKernelCreate,
+    (hModule, desc, phKernel));
+
+  // Exit action
+  level0_kernel_module_map_insert(*phKernel, hModule);
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeKernelDestroy
+(
+  ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
+)
+{
+  // Entry action
+  level0_kernel_module_map_delete(hKernel);
+
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeKernelDestroy, (hKernel));
+
+  return ret;
+}
+
 int
 level0_bind
 (

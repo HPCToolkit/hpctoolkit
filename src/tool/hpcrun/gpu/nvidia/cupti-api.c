@@ -55,12 +55,6 @@
 // system includes
 //***************************************************************************
 
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
-#include <sys/stat.h>  // mkdir
-#include <sys/types.h>
-#include <unistd.h>
-
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
 #undef _GNU_SOURCE
@@ -170,6 +164,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/gpu-cct.h>
 
 #include <hpcrun/ompt/ompt-device.h>
 
@@ -720,38 +715,6 @@ cupti_error_report
 // private operations
 //******************************************************************************
 
-static bool
-cupti_write_cubin
-(
- const char *file_name,
- const void *cubin,
- size_t cubin_size
-)
-{
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, cubin, cubin_size) != cubin_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
-
-
 void
 cupti_load_callback_cuda
 (
@@ -772,21 +735,20 @@ cupti_load_callback_cuda
 
   // Create file name
   char file_name[PATH_MAX];
-  size_t i;
+  char hash_string[PATH_MAX];
   size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  size_t i;
   for (i = 0; i < hash_len; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
+    used += sprintf(&hash_string[used], "%02x", hash[i]);
   }
-  used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
-  TMSG(CUPTI, "cubin_id %d hash %s", cubin_id, file_name);
+
+  // Create full path for the CUBIN
+  gpu_binary_path_generate(hash_string, file_name);
 
   // Write a file if does not exist
   bool file_flag;
   spinlock_lock(&files_lock);
-  file_flag = cupti_write_cubin(file_name, cubin, cubin_size);
+  file_flag = gpu_binary_store(file_name, cubin, cubin_size);
   spinlock_unlock(&files_lock);
 
   if (file_flag) {
@@ -837,33 +799,6 @@ cupti_func_ip_resolve
   TMSG(CUPTI_TRACE, "Decode function_index %u cubin_id %u", function_index, cubin_id);
   return ip_norm;
 }
-
-
-void
-ensure_kernel_ip_present
-(
- cct_node_t *kernel_ph, 
- ip_normalized_t kernel_ip
-)
-{
-  // if the phaceholder was previously inserted, it will have a child
-  // we only want to insert a child if there isn't one already. if the
-  // node contains a child already, then the gpu monitoring thread 
-  // may be adding children to the splay tree of children. in that case 
-  // trying to add a child here (which will turn into a lookup of the
-  // previously added child, would race with any insertions by the 
-  // GPU monitoring thread.
-  //
-  // INVARIANT: avoid a race modifying the splay tree of children by 
-  // not attempting to insert a child in a worker thread when a child 
-  // is already present
-  if (hpcrun_cct_children(kernel_ph) == NULL) {
-    cct_node_t *kernel = 
-      hpcrun_cct_insert_ip_norm(kernel_ph, kernel_ip, true);
-    hpcrun_cct_retain(kernel);
-  }
-}
-
 
 static void
 cupti_gpu_monitors_apply_enter(cct_node_t *cct_node)
@@ -1104,12 +1039,12 @@ cupti_subscriber_callback
         if (is_kernel_op) {
           cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
-	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
+	  gpu_cct_insert(kernel_ph, kernel_ip);
 
           cct_node_t *trace_ph = 
 	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
-	  ensure_kernel_ip_present(trace_ph, kernel_ip);
+	  gpu_cct_insert(trace_ph, kernel_ip);
         }
 
 
@@ -1135,16 +1070,16 @@ cupti_subscriber_callback
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
-        ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+        gpu_cct_insert(cupti_kernel_ph, kernel_ip);
       }
       if (cupti_trace_ph != NULL) {
-	ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
+	gpu_cct_insert(cupti_trace_ph, kernel_ip);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
-        ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
+        gpu_cct_insert(ompt_trace_node, kernel_ip);
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
