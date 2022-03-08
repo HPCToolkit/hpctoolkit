@@ -55,6 +55,6 @@
 void
 gpu_cct_insert
 (
- cct_node_t *cct_node, 
+ cct_node_t *cct_node,
  ip_normalized_t ip
 );
