@@ -45,9 +45,8 @@
 // system includes
 //******************************************************************************
 
-#include <gelf.h>
 #include <fcntl.h>
-#include <sys/types.h>
+#include <gelf.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
