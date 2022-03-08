@@ -1078,11 +1078,17 @@ case $basic_machine in
 	rtpc | rtpc-*)
 		basic_machine=romp-ibm
 		;;
-	s390 | s390-*)
+	s390)
 		basic_machine=s390-ibm
 		;;
-	s390x | s390x-*)
+	s390-*)
+		basic_machine=s390-`echo $basic_machine | sed 's/^[^-]*-//'`
+		;;
+	s390x)
 		basic_machine=s390x-ibm
+		;;
+	s390x-*)
+		basic_machine=s390x-`echo $basic_machine | sed 's/^[^-]*-//'`
 		;;
 	sa29200)
 		basic_machine=a29k-amd
