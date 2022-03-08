@@ -91,8 +91,10 @@ level0_kernel_module_map_lookup
   spinlock_lock(&kernel_module_lock);
 
   uint64_t key = (uint64_t)kernel;
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_lookup(&kernel_module_map_root, key);
   ze_module_handle_t result =
-    (ze_module_handle_t) level0_handle_map_lookup(&kernel_module_map_root, key);
+    (ze_module_handle_t) (*level0_handle_map_entry_data_get(entry));
 
   spinlock_unlock(&kernel_module_lock);
   return result;

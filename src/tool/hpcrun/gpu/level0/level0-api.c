@@ -979,7 +979,7 @@ hpcrun_zeModuleCreate
   // to force building with debug information?
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
     (hContext, hDevice, desc, phModule, phBuildLog));
-
+  PRINT("hpcrun_zeModuleCreate: module handle %p\n", *phModule);
   // Exit action
   level0_binary_process(*phModule);
 
@@ -1011,7 +1011,7 @@ hpcrun_zeKernelCreate
 {
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeKernelCreate,
     (hModule, desc, phKernel));
-
+  PRINT("hpcrun_zeKernelCreate: module handle %p, kernel handle %p\n",hModule, *phKernel);
   // Exit action
   level0_kernel_module_map_insert(*phKernel, hModule);
   return ret;

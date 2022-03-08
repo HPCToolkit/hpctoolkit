@@ -251,7 +251,7 @@ parse_amd_gpu_binary_uri
   // We use the host CPU binary name and the GPU binary starting offset
   // as the file name to store an AMD GPU binary
   sprintf(amd_gpu_file_name, "%s.%llx", filename, offset);
-  gpu_binary_path_generate(amd_gpu_file_name, gpu_file_path));
+  gpu_binary_path_generate(amd_gpu_file_name, gpu_file_path);
 
   // Read the AMD GPU binary from disk
   int rfd = open(filepath, O_RDONLY);

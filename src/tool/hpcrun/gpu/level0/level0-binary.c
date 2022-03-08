@@ -142,9 +142,9 @@ level0_module_handle_map_lookup
   spinlock_lock(&module_lock);
 
   uint64_t key = (uint64_t)module;
-  char *result =
-    (char*) level0_handle_map_lookup(&module_map_root, key);
-
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_lookup(&module_map_root, key);
+  char *result = (char*) (*level0_handle_map_entry_data_get(entry));
   spinlock_unlock(&module_lock);
   return result;
 }

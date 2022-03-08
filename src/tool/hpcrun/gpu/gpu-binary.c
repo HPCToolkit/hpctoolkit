@@ -58,6 +58,7 @@
 //******************************************************************************
 
 #include <include/gpu-binary.h>
+#include <hpcrun/files.h>
 #include <lib/prof-lean/crypto-hash.h>
 
 //******************************************************************************
@@ -102,7 +103,6 @@ gpu_binary_path_generate
   char *path
 )
 {
-  size_t i;
   size_t used = 0;
   used += sprintf(&path[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");

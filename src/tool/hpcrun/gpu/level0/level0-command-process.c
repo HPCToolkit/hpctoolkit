@@ -191,11 +191,12 @@ get_load_module
 
   // Step 2: get the hash for the binary that contains the kernel
   ze_module_handle_t module_handle = level0_kernel_module_map_lookup(kernel);
+  PRINT("get_load_module: kernel handle %p, module handl %p\n", kernel, module_handle);
   char* binary_hash = level0_module_handle_map_lookup(module_handle);
 
-  // Step 3: generate <binary hash>.<kernel name hash> as the load module name
-  char load_module_name[PATH_MAX];
-  strcpy(load_module_name, binary_hash);
+  // Step 3: generate <binary hash>.gpubin.<kernel name hash> as the load module name
+  char load_module_name[PATH_MAX] = {'\0'};
+  gpu_binary_path_generate(binary_hash, load_module_name);
   strcat(load_module_name, ".");
   strcat(load_module_name, kernel_name_hash);
 
@@ -309,6 +310,7 @@ level0_command_end
   if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
     gpu_correlation_id_map_insert(correlation_id, correlation_id);
   }
+
   gpu_activity_process(&gpu_activity);
   // gpu_activity_process will delete items in gpu-correlation-id-map
   // We will need to delete items in gpu-host-correlation-map
