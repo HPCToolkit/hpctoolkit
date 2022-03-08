@@ -773,9 +773,6 @@ OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
 MEMKIND_LIBDIR
-OPENSSL_LIBS
-OPENSSL_IFLAGS
-OPENSSL_LIB
 CRYPTO_LIBS
 CRYPTO_IFLAGS
 CRYPTO_LIB
@@ -21703,11 +21700,6 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
     ;;
 esac
 
-
-
-
-
-
 #-------------------------------------------------
 # Check for openssl as mbedtls alternative
 #-------------------------------------------------
@@ -21721,48 +21713,45 @@ if test "${with_openssl+set}" = set; then :
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for openssl" >&5
+if [ $MBEDTLS == no ]; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for openssl" >&5
 $as_echo_n "checking for openssl... " >&6; }
 
-case "$OPENSSL" in
-  /* )
-    if test ! -f "${OPENSSL}/include/openssl/md5.h" ; then
-      as_fn_error $? "unable to find md5.h in: $OPENSSL" "$LINENO" 5
-    fi
-    CRYPTO_IFLAGS="-I ${OPENSSL}/include -D CRYPTO_LIB=openssl"
-    for lib in $multilib_path ; do
-      if test -f "${OPENSSL}/${lib}/libcrypto.so" ; then
-        CRYPTO_LIB="${OPENSSL}/${lib}"
-        CRYPTO_LIBS="${OPENSSL}/${lib}/libopenss.so"
-        break
-      fi
-    done
-    if test "x$CRYPTO_LIBS" = x ; then
-      as_fn_error $? "unable to find libmbedcrypto.a in: $OPENSSL" "$LINENO" 5
-    fi
-    num_pkgs=`expr 1 + $num_pkgs`
-    ;;
-  no )
-    ;;
-  * )
-    as_fn_error $? "openssl directory must be absolute path: $OPENSSL" "$LINENO" 5
-    ;;
-esac
+    case "$OPENSSL" in
+      /* )
+        if test ! -f "${OPENSSL}/include/openssl/md5.h" ; then
+          as_fn_error $? "unable to find md5.h in: $OPENSSL" "$LINENO" 5
+        fi
+        CRYPTO_IFLAGS="-I ${OPENSSL}/include -D CRYPTO_LIB=openssl"
+        for lib in $multilib_path ; do
+          if test -f "${OPENSSL}/${lib}/libcrypto.so" ; then
+            CRYPTO_LIB="${OPENSSL}/${lib}"
+            CRYPTO_LIBS="${OPENSSL}/${lib}/libopenss.so"
+            break
+          fi
+        done
+        if test "x$CRYPTO_LIBS" = x ; then
+          as_fn_error $? "unable to find libmbedcrypto.a in: $OPENSSL" "$LINENO" 5
+        fi
+        num_pkgs=`expr 1 + $num_pkgs`
+        ;;
+      no )
+        ;;
+      * )
+        as_fn_error $? "openssl directory must be absolute path: $OPENSSL" "$LINENO" 5
+        ;;
+    esac
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPENSSL" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPENSSL" >&5
 $as_echo "$OPENSSL" >&6; }
-
-if [ $OPENSSL == /* ]; then
-    if [ $MBEDTLS == /* ]; then
-        OPENSSL=no
-        { $as_echo "$as_me:${as_lineno-$LINENO}: \"Ignoring openssl in favor of provided mbedtls.\"" >&5
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: \"Ignoring openssl in favor of provided mbedtls.\"" >&5
 $as_echo "$as_me: \"Ignoring openssl in favor of provided mbedtls.\"" >&6;}
-    else
-
-
-
-    fi
 fi
+
+
+
+
 
 #-------------------------------------------------
 # Option: --with-memkind=PATH

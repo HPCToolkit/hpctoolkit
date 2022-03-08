@@ -3084,11 +3084,6 @@ my_md5_hash(char *buf, size_t len)
     ;;
 esac
 
-AC_SUBST([CRYPTO_LIB])
-AC_SUBST([CRYPTO_IFLAGS])
-AC_SUBST([CRYPTO_LIBS])
-
-
 #-------------------------------------------------
 # Check for openssl as mbedtls alternative
 #-------------------------------------------------
@@ -3101,45 +3096,42 @@ AC_ARG_WITH([openssl],
   [OPENSSL="$withval"],
   [])
 
-AC_MSG_CHECKING([for openssl])
+if [[ $MBEDTLS == no ]]; then
+    AC_MSG_CHECKING([for openssl])
 
-case "$OPENSSL" in
-  /* )
-    if test ! -f "${OPENSSL}/include/openssl/md5.h" ; then
-      AC_MSG_ERROR([unable to find md5.h in: $OPENSSL])
-    fi
-    CRYPTO_IFLAGS="-I ${OPENSSL}/include -D CRYPTO_LIB=openssl"
-    for lib in $multilib_path ; do
-      if test -f "${OPENSSL}/${lib}/libcrypto.so" ; then
-        CRYPTO_LIB="${OPENSSL}/${lib}"
-        CRYPTO_LIBS="${OPENSSL}/${lib}/libopenss.so"
-        break
-      fi
-    done
-    if test "x$CRYPTO_LIBS" = x ; then
-      AC_MSG_ERROR([unable to find libmbedcrypto.a in: $OPENSSL])
-    fi
-    num_pkgs=`expr 1 + $num_pkgs`
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([openssl directory must be absolute path: $OPENSSL])
-    ;;
-esac
+    case "$OPENSSL" in
+      /* )
+        if test ! -f "${OPENSSL}/include/openssl/md5.h" ; then
+          AC_MSG_ERROR([unable to find md5.h in: $OPENSSL])
+        fi
+        CRYPTO_IFLAGS="-I ${OPENSSL}/include -D CRYPTO_LIB=openssl"
+        for lib in $multilib_path ; do
+          if test -f "${OPENSSL}/${lib}/libcrypto.so" ; then
+            CRYPTO_LIB="${OPENSSL}/${lib}"
+            CRYPTO_LIBS="${OPENSSL}/${lib}/libopenss.so"
+            break
+          fi
+        done
+        if test "x$CRYPTO_LIBS" = x ; then
+          AC_MSG_ERROR([unable to find libmbedcrypto.a in: $OPENSSL])
+        fi
+        num_pkgs=`expr 1 + $num_pkgs`
+        ;;
+      no )
+        ;;
+      * )
+        AC_MSG_ERROR([openssl directory must be absolute path: $OPENSSL])
+        ;;
+    esac
 
-AC_MSG_RESULT([$OPENSSL])
-
-if [[ $OPENSSL == /* ]]; then
-    if [[ $MBEDTLS == /* ]]; then
-        OPENSSL=no
-        AC_MSG_NOTICE("Ignoring openssl in favor of provided mbedtls.")
-    else
-        AC_SUBST([OPENSSL_LIB])
-        AC_SUBST([OPENSSL_IFLAGS])
-        AC_SUBST([OPENSSL_LIBS])
-    fi
+    AC_MSG_RESULT([$OPENSSL])
+else
+    AC_MSG_NOTICE("Ignoring openssl in favor of provided mbedtls.")
 fi
+
+AC_SUBST([CRYPTO_LIB])
+AC_SUBST([CRYPTO_IFLAGS])
+AC_SUBST([CRYPTO_LIBS])
 
 #-------------------------------------------------
 # Option: --with-memkind=PATH
