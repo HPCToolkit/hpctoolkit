@@ -3127,6 +3127,7 @@ if [[ $MBEDTLS == no ]]; then
     AC_MSG_RESULT([$OPENSSL])
 else
     AC_MSG_NOTICE("Ignoring openssl in favor of provided mbedtls.")
+    OPENSSL=no
 fi
 
 AC_SUBST([CRYPTO_LIB])
