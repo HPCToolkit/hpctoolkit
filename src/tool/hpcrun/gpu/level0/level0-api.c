@@ -59,6 +59,8 @@
 #include "level0-event-map.h"
 #include "level0-command-process.h"
 #include "level0-data-node.h"
+#include "level0-binary.h"
+#include "level0-kernel-module-map.h"
 
 #include <hpcrun/main.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
@@ -94,7 +96,11 @@
   macro(zeCommandListDestroy) \
   macro(zeCommandListReset) \
   macro(zeCommandQueueExecuteCommandLists) \
-  macro(zeEventHostReset)
+  macro(zeEventHostReset) \
+  macro(zeModuleCreate) \
+  macro(zeModuleDestroy) \
+  macro(zeKernelCreate) \
+  macro(zeKernelDestroy)
 
 #define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -303,6 +309,44 @@ LEVEL0_FN
   zeEventHostReset,
   (
     ze_event_handle_t hEvent                        ///< [in] handle of the event
+  )
+);
+
+LEVEL0_FN
+(
+  zeModuleCreate,
+  (
+    ze_context_handle_t hContext,                // [in] handle of the context object
+    ze_device_handle_t hDevice,                  // [in] handle of the device
+    const ze_module_desc_t *desc,                // [in] pointer to module descriptor
+    ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
+    ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+  )
+);
+
+LEVEL0_FN
+(
+  zeModuleDestroy,
+  (
+    ze_module_handle_t hModule       // [in][release] handle of the module
+  )
+);
+
+LEVEL0_FN
+(
+  zeKernelCreate,
+  (
+    ze_module_handle_t hModule,          // [in] handle of the module
+    const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
+    ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+  )
+);
+
+LEVEL0_FN
+(
+  zeKernelDestroy,
+  (
+    ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
   )
 );
 
@@ -918,6 +962,72 @@ hpcrun_zeEventHostReset
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeEventHostReset, (hEvent));
 
   // Exit action
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeModuleCreate
+(
+  ze_context_handle_t hContext,                // [in] handle of the context object
+  ze_device_handle_t hDevice,                  // [in] handle of the device
+  const ze_module_desc_t *desc,                // [in] pointer to module descriptor
+  ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
+  ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+)
+{
+  // TODO: do we want to append "-g" to desc->pBuildFlags
+  // to force building with debug information?
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
+    (hContext, hDevice, desc, phModule, phBuildLog));
+  PRINT("hpcrun_zeModuleCreate: module handle %p\n", *phModule);
+  // Exit action
+  level0_binary_process(*phModule);
+
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeModuleDestroy
+(
+  ze_module_handle_t hModule       // [in][release] handle of the module
+)
+{
+  // Entry action
+  level0_module_handle_map_delete(hModule);
+
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleDestroy,
+    (hModule));
+
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeKernelCreate
+(
+  ze_module_handle_t hModule,          // [in] handle of the module
+  const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
+  ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+)
+{
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeKernelCreate,
+    (hModule, desc, phKernel));
+  PRINT("hpcrun_zeKernelCreate: module handle %p, kernel handle %p\n",hModule, *phKernel);
+  // Exit action
+  level0_kernel_module_map_insert(*phKernel, hModule);
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeKernelDestroy
+(
+  ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
+)
+{
+  // Entry action
+  level0_kernel_module_map_delete(hKernel);
+
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeKernelDestroy, (hKernel));
+
   return ret;
 }
 

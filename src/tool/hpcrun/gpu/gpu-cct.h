@@ -41,59 +41,20 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef gpu_binary_h
-#define gpu_binary_h
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
-
-#define GPU_BINARY_NAME           "gpubin"
-
-#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
-#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
-
 //******************************************************************************
-// system include
+// local includes
 //******************************************************************************
 
-#include <stdbool.h>
-#include <stddef.h>
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/utilities/ip-normalized.h>
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-bool
-gpu_binary_store
-(
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
-);
-
 void
-gpu_binary_path_generate
+gpu_cct_insert
 (
-  const char *file_name,
-  char *path
+ cct_node_t *cct_node,
+ ip_normalized_t ip
 );
-
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-);
-
-#if defined(__cplusplus)
-}
-#endif
-
-#endif
-

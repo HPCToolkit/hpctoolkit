@@ -41,59 +41,128 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef gpu_binary_h
-#define gpu_binary_h
-
 //*****************************************************************************
-// macros
+// system includes
 //*****************************************************************************
 
-#define GPU_BINARY_NAME           "gpubin"
+#include <stdlib.h>
+#include <limits.h>
 
-#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
-#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include <level_zero/ze_api.h>
+#include <level_zero/zet_api.h>
+
+#include "level0-handle-map.h"
+#include "lib/prof-lean/spinlock.h"
+#include "lib/prof-lean/crypto-hash.h"
+#include "include/gpu-binary.h"
 
 //******************************************************************************
-// system include
+// local variables
 //******************************************************************************
 
-#include <stdbool.h>
-#include <stddef.h>
+static level0_handle_map_entry_t *module_map_root = NULL;
+
+static level0_handle_map_entry_t *module_free_list = NULL;
+
+static spinlock_t module_lock = SPINLOCK_UNLOCKED;
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+void
+level0_module_handle_map_insert
+(
+  ze_module_handle_t module,
+  char* hash_buf
+)
+{
+  spinlock_lock(&module_lock);
+
+  uint64_t key = (uint64_t)module;
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_entry_new(&module_free_list, key, (level0_data_node_t*)hash_buf);
+  level0_handle_map_insert(&module_map_root, entry);
+
+  spinlock_unlock(&module_lock);
+}
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-bool
-gpu_binary_store
+void
+level0_binary_process
 (
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
-);
+  ze_module_handle_t module
+)
+{
+  // Get the debug binary
+  size_t size;
+  zetModuleGetDebugInfo(
+    module,
+    ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
+    &size,
+    NULL
+  );
+
+  uint8_t* buf = (uint8_t*) malloc(size);
+  zetModuleGetDebugInfo(
+    module,
+    ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
+    &size,
+    buf
+  );
+
+  // Generate a hash for the binary
+  char *hash_buf = (char*)malloc(HASH_LENGTH * 2);
+  gpu_binary_compute_hash_string((const char*)buf, size, hash_buf);
+
+  // Prepare to a file path to write down the binary
+  char path[PATH_MAX];
+  gpu_binary_path_generate(hash_buf, path);
+
+  // Write down the binary and free the space
+  gpu_binary_store(path, buf, size);
+  free(buf);
+
+  level0_module_handle_map_insert(module, hash_buf);
+}
+
+char*
+level0_module_handle_map_lookup
+(
+  ze_module_handle_t module
+)
+{
+  spinlock_lock(&module_lock);
+
+  uint64_t key = (uint64_t)module;
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_lookup(&module_map_root, key);
+  char *result = (char*) (*level0_handle_map_entry_data_get(entry));
+  spinlock_unlock(&module_lock);
+  return result;
+}
 
 void
-gpu_binary_path_generate
+level0_module_handle_map_delete
 (
-  const char *file_name,
-  char *path
-);
+  ze_module_handle_t module
+)
+{
+  spinlock_lock(&module_lock);
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-);
+  uint64_t key = (uint64_t)module;
+  level0_handle_map_delete(
+    &module_map_root,
+    &module_free_list,
+    key
+  );
 
-#if defined(__cplusplus)
+  spinlock_unlock(&module_lock);
 }
-#endif
-
-#endif
-
