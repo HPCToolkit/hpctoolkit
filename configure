@@ -27973,8 +27973,8 @@ $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 $as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mbedtls:      ${MBEDTLS}" >&5
 $as_echo "$as_me:   mbedtls:      ${MBEDTLS}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   mbedtls:      ${OPENSSL}" >&5
-$as_echo "$as_me:   mbedtls:      ${OPENSSL}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   openssl:      ${OPENSSL}" >&5
+$as_echo "$as_me:   openssl:      ${OPENSSL}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   memkind:      ${MEMKIND}" >&5
 $as_echo "$as_me:   memkind:      ${MEMKIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
