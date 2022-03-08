@@ -64,7 +64,11 @@
 #include <assert.h>
 #include <string.h>
 
+#if (CRYPTO_LIB == "mbedtls")
 #include <mbedtls/md5.h>  // MD5
+#else
+#include <openssl/md5.h>
+#endif
 
 #include "crypto-hash.h"
 
@@ -121,8 +125,15 @@ crypto_hash_compute
   // zero the hash result
   memset(hash, 0, hash_length); 
 
+  // NOTE: There's buffer overflow here. It doesn't matter how many bytes of has we ask for - 
+  // we're always getting 16. 
+
+#if (CRYPTO_LIB == 'mbedtls')
   // compute an MD5 hash of input
   mbedtls_md5(input, input_length, hash);
+#else
+  MD5(input, input_length, hash);
+#endif
 
   return 0;
 }

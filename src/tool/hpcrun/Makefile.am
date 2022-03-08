@@ -840,7 +840,7 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_la_LIBADD =  \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
-	$(MBEDTLS_LIBS)  \
+	$(CRYPTO_LIBS)  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
 
@@ -855,7 +855,7 @@ libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
 	$(PERFMON_LDFLAGS_STAT)  \
-	$(MBEDTLS_LIBS)  \
+	$(CRYPTO_LIBS)  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
 

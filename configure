@@ -773,9 +773,9 @@ OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
 MEMKIND_LIBDIR
-MBEDTLS_LIBS
-MBEDTLS_IFLAGS
-MBEDTLS_LIB
+CRYPTO_LIBS
+CRYPTO_IFLAGS
+CRYPTO_LIB
 OPT_LZMA_STATIC_FALSE
 OPT_LZMA_STATIC_TRUE
 LZMA_LIB_DIR
@@ -21593,9 +21593,9 @@ fi
 # Note: we require libmbedcrypto.a to be compiled with -fPIC.
 
 MBEDTLS="$default_mbedtls_prefix"
-MBEDTLS_IFLAGS=
-MBEDTLS_LIBS=
-MBEDTLS_LIB=
+CRYPTO_IFLAGS=
+CRYPTO_LIBS=
+CRYPTO_LIB=
 
 
 # Check whether --with-mbedtls was given.
@@ -21612,15 +21612,15 @@ case "$MBEDTLS" in
     if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
       as_fn_error $? "unable to find md5.h in: $MBEDTLS" "$LINENO" 5
     fi
-    MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
+    CRYPTO_IFLAGS="-I ${MBEDTLS}/include"
     for lib in $multilib_path ; do
       if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
-	MBEDTLS_LIB="${MBEDTLS}/lib"
-        MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
+	CRYPTO_LIB="${MBEDTLS}/lib"
+        CRYPTO_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
 	break
       fi
     done
-    if test "x$MBEDTLS_LIBS" = x ; then
+    if test "x$CRYPTO_LIBS" = x ; then
       as_fn_error $? "unable to find libmbedcrypto.a in: $MBEDTLS" "$LINENO" 5
     fi
     num_pkgs=`expr 1 + $num_pkgs`
@@ -21645,8 +21645,8 @@ $as_echo_n "checking if libmbedcrypto.a was compiled with -fPIC... " >&6; }
 
     ORIG_CFLAGS="$CFLAGS"
     ORIG_LIBS="$LIBS"
-    CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
-    LIBS="$MBEDTLS_LIBS"
+    CFLAGS="-shared -fPIC $CRYPTO_IFLAGS"
+    LIBS="$CRYPTO_LIBS"
 
     ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'

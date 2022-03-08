@@ -110,7 +110,7 @@ MYLDADD = \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
 	$(IGC_LDFLGS) \
-	$(MBEDTLS_LIBS) \
+	$(CRYPTO_LIBS) \
 	@LZMA_LDFLAGS_STAT@ \
 	@BINUTILS_LIBS@ \
 	$(HPCLIB_gettext) \
