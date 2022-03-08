@@ -3025,7 +3025,7 @@ case "$MBEDTLS" in
     if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
       AC_MSG_ERROR([unable to find md5.h in: $MBEDTLS])
     fi
-    CRYPTO_IFLAGS="-I ${MBEDTLS}/include -D CRYPTO_LIB=mbedtls"
+    CRYPTO_IFLAGS="-I ${MBEDTLS}/include -D MBEDTLS_CRYPTO"
     for lib in $multilib_path ; do
       if test -f "${MBEDTLS}/${lib}/libmbedcrypto.a" ; then
     	CRYPTO_LIB="${MBEDTLS}/${lib}"
@@ -3104,7 +3104,7 @@ if [[ $MBEDTLS == no ]]; then
         if test ! -f "${OPENSSL}/include/openssl/md5.h" ; then
           AC_MSG_ERROR([unable to find md5.h in: $OPENSSL])
         fi
-        CRYPTO_IFLAGS="-I ${OPENSSL}/include -D CRYPTO_LIB=openssl"
+        CRYPTO_IFLAGS="-I ${OPENSSL}/include"
         for lib in $multilib_path ; do
           if test -f "${OPENSSL}/${lib}/libcrypto.so" ; then
             CRYPTO_LIB="${OPENSSL}/${lib}"
