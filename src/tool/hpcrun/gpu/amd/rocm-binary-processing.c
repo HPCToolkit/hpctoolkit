@@ -46,6 +46,11 @@
 //******************************************************************************
 
 #include <gelf.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 //******************************************************************************
 // local includes
@@ -217,12 +222,12 @@ construct_amd_gpu_symbols
 static void
 parse_amd_gpu_binary_uri
 (
-  char *uri,
+  const char *uri,
   amd_gpu_binary_t *bin
 )
 {
   // File URI example: file:///home/users/coe0173/HIP-Examples/HIP-Examples-Applications/FloydWarshall/FloydWarshall#offset=26589&size=31088
-  char* filepath = uri + strlen("file://");
+  char* filepath = (char*)uri + strlen("file://");
   char* filepath_end = filepath;
 
   // filepath is seperated by either # or ?
@@ -284,7 +289,7 @@ parse_amd_gpu_binary_uri
 static int
 file_uri_exists
 (
-  char* uri
+  const char* uri
 )
 {
   for (amd_gpu_binary_t * bin = binary_list; bin != NULL; bin = bin->next) {

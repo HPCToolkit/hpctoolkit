@@ -55,6 +55,8 @@
 // system includes
 //***************************************************************************
 
+#include <sys/stat.h>
+
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
 #undef _GNU_SOURCE
