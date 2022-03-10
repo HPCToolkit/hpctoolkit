@@ -62,15 +62,22 @@ namespace fs = stdshim::filesystem;
 // ud Module bits
 
 ExperimentXML4::udModule::udModule(const Module& m, ExperimentXML4& exml)
-  : id(m.userdata[exml.src.identifier()]+1), unknown_file(exml, m),
+  : id(m.userdata[exml.src.identifier()]+2), unknown_file(exml, m),
     used(false) {};
 
 ExperimentXML4::udModule::udModule(ExperimentXML4& exml)
   : id(0), unknown_file(exml), used(true) {
   std::ostringstream ss;
-  ss << "<LoadModule i=\"" << id << "\" n=" << util::xmlquoted("unknown module") << "/>\n";
+  ss << "<LoadModule i=\"" << id << "\" n=" << util::xmlquoted("<unknown module>") << "/>\n";
   tag = ss.str();
 }
+ExperimentXML4::udModule::udModule(ExperimentXML4& exml, int)
+  : id(1), unknown_file(exml), used(true) {
+  std::ostringstream ss;
+  ss << "<LoadModule i=\"" << id << "\" n=" << util::xmlquoted("<no module>") << "/>\n";
+  tag = ss.str();
+}
+
 
 void ExperimentXML4::udModule::incr(const Module& mod, ExperimentXML4&) {
   if(!used.exchange(true, std::memory_order_relaxed)) {
@@ -369,7 +376,8 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     }
     ss << "<PF i=\"" << id << "\""
              " n=\"" << uproc.id << "\" s=\"" << uproc.id << "\""
-             " f=\"" << exml.file_unknown.id << "\" l=\"0\"";
+             " f=\"" << exml.file_unknown.id << "\" l=\"0\""
+             " lm=\"" << exml.unknown_module.id << "\"";
     close = "</PF>\n";
     open = ss.str();
     onlyOutputWithChildren = true;
@@ -399,7 +407,8 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     }
     ss << "<PF i=\"" << id << "\""
              " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
-             " f=\"" << exml.file_unknown.id << "\" l=\"0\">\n";
+             " f=\"" << exml.file_unknown.id << "\" l=\"0\""
+             " lm=\"" << exml.no_module.id << "\">\n";
     open = ss.str();
     std::ostringstream ssattr;
     ssattr << " i=\"-" << id << "\""
@@ -549,7 +558,7 @@ ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, HPCTraceDB2* db)
   : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF), tracedb(db),
     include_sources(srcs), file_unknown(*this), next_statid(-1), next_procid(2),
     proc_unknown_proc(0), proc_partial_proc(1), unknown_module(*this),
-    next_cid(0x7FFFFFFF) {
+    no_module(*this, 0), next_cid(0x7FFFFFFF) {
   if(dir.empty()) {  // Dry run
     util::log::info() << "ExperimentXML4 issuing a dry run!";
   } else {
@@ -631,7 +640,7 @@ void ExperimentXML4::write() {
     of << "<TraceDBTable>\n" << tracedb->exmlTag() << "</TraceDBTable>\n";
   of << "<LoadModuleTable>\n";
   // LoadModuleTable: from the Modules
-  of << unknown_module.tag;
+  of << unknown_module.tag << no_module.tag;
   for(const auto& m: src.modules().iterate()) {
     auto& udm = m().userdata[ud];
     if(!udm) continue;
