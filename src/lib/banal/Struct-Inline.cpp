@@ -151,7 +151,7 @@ closeSymtab()
 // innermost.
 //
 bool
-analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
+analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr & realPath)
 {
   FunctionBase *func, *parent;
   bool ret = false;
@@ -173,7 +173,7 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
       InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
       pair <string, Offset> callsite = ifunc->getCallsite();
       string filenm = callsite.first;
-      if (filenm != "") { realPath->realpath(filenm); }
+      if (filenm != "") { realPath.realpath(filenm); }
       long lineno = callsite.second;
 
       // symtab does not provide mangled and pretty names for
@@ -297,7 +297,7 @@ StmtMap::insert(StmtInfo * sinfo)
 // adjacent stmts if their file and line match.
 //
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath, 
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr & realPath,
               VMA vma, int len, string & filenm, SrcFile::ln line, 
               string & device, bool is_call, bool is_sink, VMA target)
 {

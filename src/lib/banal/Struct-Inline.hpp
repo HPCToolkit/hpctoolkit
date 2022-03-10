@@ -358,10 +358,10 @@ public:
 Symtab * openSymtab(ElfFile *elfFile);
 bool closeSymtab();
 
-bool analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr *);
+bool analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr &);
 
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr *,
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr &,
               VMA vma, int len, string & filenm, SrcFile::ln line,
               std::string & device, bool is_call = false, bool is_sink = false,
               VMA target = 0);
