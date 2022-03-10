@@ -86,7 +86,7 @@ MYSOURCES = \
 SIMPLE_SRCS = StructSimple.cpp
 
 MYCXXFLAGS = \
-	@HOST_CXXFLAGS@  \
+	@HOST_CXXFLAGS@ -std=c++17  \
 	$(HPC_IFLAGS)  \
 	$(BINUTILS_IFLAGS)  \
 	$(BOOST_IFLAGS)  \

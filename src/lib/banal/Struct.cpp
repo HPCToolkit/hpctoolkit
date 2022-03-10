@@ -207,7 +207,8 @@ static void
 makeWorkList(FileMap *, WorkList &, WorkList &);
 
 static void
-printWorkList(WorkList &, uint &, ostream *, ostream *, string &);
+printWorkList(WorkList &, uint &, ostream *, ostream *, string &,
+	      Output::CompactStringTable &);
 
 static void
 doFunctionList(HPC::StringTable &, RealPathMgr &, FileInfo *, GroupInfo *, bool);
@@ -589,7 +590,8 @@ makeStructure(string filename,
     return;
   }
 
-  Output::printStructFileBegin(outFile, gapsFile, sfilename);
+  Output::CompactStringTable cst;
+  Output::printStructFileBegin(cst, outFile, gapsFile, sfilename);
 	
   for (uint i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
@@ -692,10 +694,10 @@ makeStructure(string filename,
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
 		
-    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
+    Output::printLoadModuleBegin(cst, outFile, elfFile->getFileName());
 
 #pragma omp parallel  default(none)				\
-    shared(wlPrint, wlLaunch, num_done, output_mtx)		\
+    shared(wlPrint, wlLaunch, num_done, output_mtx, cst)	\
     firstprivate(outFile, gapsFile, search_path, gaps_filenm, parsable)
     {
 #pragma omp for  schedule(dynamic, 1)
@@ -704,7 +706,7 @@ makeStructure(string filename,
 
 	// the printing must be single threaded
 	if (output_mtx.try_lock()) {
-	  printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
+	  printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm, cst);
 	  output_mtx.unlock();
 	}
       }
@@ -712,9 +714,9 @@ makeStructure(string filename,
 
     // with try_lock(), there are interleavings where not all items
     // have been printed.
-    printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
+    printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm, cst);
 
-    Output::printLoadModuleEnd(outFile);
+    Output::printLoadModuleEnd(cst, outFile);
 
     if (opts.show_time) {
       printTime("struct:", &tv_parse, &ru_parse, &tv_fini, &ru_fini);
@@ -738,7 +740,7 @@ makeStructure(string filename,
     }
   }
 
-  Output::printStructFileEnd(outFile, gapsFile);
+  Output::printStructFileEnd(cst, outFile, gapsFile);
 }
 
 //----------------------------------------------------------------------
@@ -864,7 +866,8 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
 //
 static void
 printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
-	      ostream * gapsFile, string & gaps_filenm)
+	      ostream * gapsFile, string & gaps_filenm,
+	      Output::CompactStringTable & cst)
 {
   while (num_done < workList.size() && workList[num_done]->is_done.load()) {
     ANNOTATE_HAPPENS_AFTER(&workList[num_done]->is_done);
@@ -874,21 +877,21 @@ printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
     HPC::StringTable * strTab = witem->strTab;
 
     if (witem->first_proc) {
-      Output::printFileBegin(outFile, finfo);
+      Output::printFileBegin(cst, outFile, finfo);
     }
 
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
       ProcInfo * pinfo = pit->second;
 
       if (! pinfo->gap_only) {
-	Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, *strTab);
+	Output::printProc(cst, outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, *strTab);
       }
       delete pinfo->root;
       pinfo->root = NULL;
     }
 
     if (witem->last_proc) {
-      Output::printFileEnd(outFile, finfo);
+      Output::printFileEnd(cst, outFile, finfo);
     }
 
     // delete the work environment

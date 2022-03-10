@@ -105,6 +105,87 @@ static const char * hpcstruct_xml_head =
 
 //----------------------------------------------------------------------
 
+std::pair<std::string_view, uint64_t>
+BAnal::Output::CompactStringTable::lookup(std::string_view str) {
+  // Short-circuit: empty strings don't get an entry in the table.
+  if(str.empty()) return {{}, 0};
+
+  // Fast case: check if the table has something already. If it does, use that.
+  // Don't contend for the lock in this path.
+  {
+    std::shared_lock<std::shared_mutex> l(mtx);
+    auto it = offsets.find(str);
+    if(it != offsets.end()) {
+      hits.fetch_add(1, std::memory_order_relaxed);
+      return *it;
+    }
+  }
+
+  std::unique_lock<std::shared_mutex> l(mtx);
+
+  // Slower case: check again if someone added it to the table already.
+  // Get out as fast as possible to keep from holding the lock too long.
+  {
+    auto it = offsets.find(str);
+    if(it != offsets.end()) {
+      hits.fetch_add(1, std::memory_order_relaxed);
+      return *it;
+    }
+  }
+
+  // Slow case: we actually have to add the string in.
+  // Check if we need a new blob for this one, and if so allocate one.
+  if(blobs.empty() || blobs.back().size() + str.size() > blobs.back().capacity())
+    blobs.emplace_back(std::max<size_t>(16 * str.size(), 64 * 1024));
+
+  // Concatinate the string at the end of the blob, and construct the final
+  // result.
+  uint64_t offset = totalSize;
+  char* start = blobs.back().insert_back(str.begin(), str.end());
+  totalSize += str.size();
+  std::pair<std::string_view, uint64_t> r({start, str.size()}, offset);
+
+  // Add it to the cache, and return the result.
+  [[maybe_unused]] bool first = offsets.insert(r).second;
+  assert(first);
+  return r;
+}
+
+std::ostream&
+BAnal::Output::operator<<(std::ostream& os,
+			  const CompactStringTable::Identifier& id) {
+  // Empty strings are always identified by... an empty string.
+  if(id.string.empty())
+    return os;
+
+  auto fmt = os.flags();
+  os << std::hex << "0x" << id.offset << "+" << id.string.length();
+  os.flags(fmt);
+  return os;
+}
+
+void BAnal::Output::CompactStringTable::Blob::dump(std::ostream& os) const {
+  os << std::string_view(m_data.get(), m_size);
+}
+
+void BAnal::Output::CompactStringTable::dump(std::ostream& os) const {
+  uint64_t n_hits = hits.load(std::memory_order_relaxed);
+  uint64_t n_misses = offsets.size();
+  std::cerr << "String table statistics:\n"
+    "  hits:   " << n_hits << "\n"
+    "  misses: " << n_misses << "\n"
+    "  ratio:  " << ((double)n_hits / (double)(n_hits + n_misses)) << "\n";
+  for(const auto& b: blobs) b.dump(os);
+}
+
+std::ostream&
+BAnal::Output::operator<<(std::ostream& os, const CompactStringTable& cst) {
+  cst.dump(os);
+  return os;
+}
+
+//----------------------------------------------------------------------
+
 // Helpers to generate fields inside tags.  The macros are designed to
 // fit within << operators.
 
@@ -118,8 +199,11 @@ static const char * hpcstruct_xml_head =
 #define HEX(label, num)  \
   " " << label << "=\"0x" << hex << num << dec << "\""
 
-#define STRING(label, str)  \
-  " " << label << "=\"" << xml::EscapeStr(str) << "\""
+#define STRING(label, str, cst)  \
+  " " << (label) << "=\"" << (cst).lookupId(xml::EscapeStr(str)) << "\""
+
+#define RAWSTRING(label, str, cst)  \
+  " " << (label) << "=\"" << xml::EscapeStr(str)) << "\""
 
 #define VRANGE(vma, len)  \
   " v=\"{[0x" << hex << vma << "-0x" << vma + len << dec << ")}\""
@@ -155,16 +239,19 @@ public:
 };
 
 static void
-doGaps(ostream *, ostream *, string, FileInfo *, GroupInfo *, ProcInfo *);
+doGaps(CompactStringTable &, ostream *, ostream *, string, FileInfo *,
+       GroupInfo *, ProcInfo *);
 
 static void
-doTreeNode(ostream *, int, TreeNode *, ScopeInfo, HPC::StringTable &);
+doTreeNode(CompactStringTable &, ostream *, int, TreeNode *, ScopeInfo,
+	   HPC::StringTable &);
 
 static void
-doStmtList(ostream *, int, TreeNode *);
+doStmtList(CompactStringTable &, ostream *, int, TreeNode *);
 
 static void
-doLoopList(ostream *, int, TreeNode *, HPC::StringTable &);
+doLoopList(CompactStringTable &, ostream *, int, TreeNode *,
+           HPC::StringTable &);
 
 static void
 locateTree(TreeNode *, ScopeInfo &, HPC::StringTable &, bool = false);
@@ -185,7 +272,8 @@ StmtLessThan(StmtInfo * s1, StmtInfo * s2)
 
 // DOCTYPE header and <HPCToolkitStructure> tag.
 void
-printStructFileBegin(ostream * os, ostream * gaps, string filenm)
+printStructFileBegin(CompactStringTable & cst, ostream * os, ostream * gaps,
+		     string filenm)
 {
   if (os == NULL) {
     return;
@@ -208,11 +296,13 @@ printStructFileBegin(ostream * os, ostream * gaps, string filenm)
 
 // Closing tag.
 void
-printStructFileEnd(ostream * os, ostream * gaps)
+printStructFileEnd(CompactStringTable & cst, ostream * os, ostream * gaps)
 {
   if (os == NULL) {
     return;
   }
+
+  *os << "  <Strings>" << cst << "</Strings>\n";
 
   *os << "</HPCToolkitStructure>\n";
   os->flush();
@@ -226,7 +316,7 @@ printStructFileEnd(ostream * os, ostream * gaps)
 
 // Begin <LM> load module tag.
 void
-printLoadModuleBegin(ostream * os, string lmName)
+printLoadModuleBegin(CompactStringTable & cst, ostream * os, string lmName)
 {
   if (os == NULL) {
     return;
@@ -236,13 +326,13 @@ printLoadModuleBegin(ostream * os, string lmName)
 
   *os << "<LM"
       << INDEX
-      << STRING("n", lmName)
+      << STRING("n", lmName, cst)
       << " v=\"{}\">\n";
 }
 
 // Closing </LM> tag.
 void
-printLoadModuleEnd(ostream * os)
+printLoadModuleEnd(CompactStringTable & cst, ostream * os)
 {
   if (os == NULL) {
     return;
@@ -256,7 +346,7 @@ printLoadModuleEnd(ostream * os)
 
 // Begin <F> file tag.
 void
-printFileBegin(ostream * os, FileInfo * finfo)
+printFileBegin(CompactStringTable & cst, ostream * os, FileInfo * finfo)
 {
   if (os == NULL || finfo == NULL) {
     return;
@@ -265,13 +355,13 @@ printFileBegin(ostream * os, FileInfo * finfo)
   doIndent(os, 1);
   *os << "<F"
       << INDEX
-      << STRING("n", finfo->fileName)
+      << STRING("n", finfo->fileName, cst)
       << ">\n";
 }
 
 // Closing </F> tag.
 void
-printFileEnd(ostream * os, FileInfo * finfo)
+printFileEnd(CompactStringTable & cst, ostream * os, FileInfo * finfo)
 {
   if (os == NULL || finfo == NULL) {
     return;
@@ -285,9 +375,9 @@ printFileEnd(ostream * os, FileInfo * finfo)
 
 // Entry point for <P> proc tag and its subtree.
 void
-printProc(ostream * os, ostream * gaps, string gaps_file,
-	  FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo,
-	  HPC::StringTable & strTab)
+printProc(CompactStringTable & cst, ostream * os, ostream * gaps,
+	  string gaps_file, FileInfo * finfo, GroupInfo * ginfo,
+	  ProcInfo * pinfo, HPC::StringTable & strTab)
 {
   if (os == NULL || finfo == NULL || ginfo == NULL
       || pinfo == NULL || pinfo->root == NULL) {
@@ -302,10 +392,10 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
   doIndent(os, 2);
   *os << "<P"
       << INDEX
-      << STRING("n", pinfo->prettyName);
+      << STRING("n", pinfo->prettyName, cst);
 
   if (pinfo->linkName != pinfo->prettyName) {
-    *os << STRING("ln", pinfo->linkName);
+    *os << STRING("ln", pinfo->linkName, cst);
   }
   if (pinfo->symbol_index != 0) {
     *os << NUMBER("s", pinfo->symbol_index);
@@ -317,10 +407,10 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
   // write the gaps to the first proc (low vma) of the group.  this
   // only applies to full gaps.
   if (gaps != NULL && (! ginfo->alt_file) && pinfo == ginfo->procMap.begin()->second) {
-    doGaps(os, gaps, gaps_file, finfo, ginfo, pinfo);
+    doGaps(cst, os, gaps, gaps_file, finfo, ginfo, pinfo);
   }
 
-  doTreeNode(os, 3, root, scope, strTab);
+  doTreeNode(cst, os, 3, root, scope, strTab);
 
   doIndent(os, 2);
   *os << "</P>\n";
@@ -337,7 +427,7 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
 // folded into the inline tree in Struct.cpp.
 //
 static void
-doGaps(ostream * os, ostream * gaps, string gaps_file,
+doGaps(CompactStringTable & cst, ostream * os, ostream * gaps, string gaps_file,
        FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo)
 {
   if (gaps == NULL || ginfo->gapSet.empty()) {
@@ -354,8 +444,8 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
   *os << "<A"
       << INDEX
       << NUMBER("l", pinfo->line_num)
-      << STRING("f", finfo->fileName)
-      << STRING("n", "")
+      << STRING("f", finfo->fileName, cst)
+      << STRING("n", "", cst)
       << " v=\"{}\""
       << ">\n";
 
@@ -363,8 +453,8 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
   *os << "<A"
       << INDEX
       << NUMBER("l", gaps_line - 4)
-      << STRING("f", gaps_file)
-      << STRING("n", "unclaimed region in: " + pinfo->prettyName)
+      << STRING("f", gaps_file, cst)
+      << STRING("n", "unclaimed region in: " + pinfo->prettyName, cst)
       << " v=\"{}\""
       << ">\n";
 
@@ -403,8 +493,8 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
 // inside a proc scope).
 //
 static void
-doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
-	   HPC::StringTable & strTab)
+doTreeNode(CompactStringTable & cst, ostream * os, int depth, TreeNode * root,
+	   ScopeInfo scope, HPC::StringTable & strTab)
 {
   if (root == NULL) {
     return;
@@ -477,7 +567,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
   }
 
   // first, print the stmts with no alien
-  doStmtList(os, depth, &localNode);
+  doStmtList(cst, os, depth, &localNode);
 
   // second, print the stmts and loops that do need a guard alien and
   // delete the remaining tree nodes.
@@ -494,13 +584,13 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     *os << "<A"
 	<< INDEX
 	<< NUMBER("l", alien_scope.line_num)
-	<< STRING("f", strTab.index2str(file_index))
-	<< STRING("n", GUARD_NAME)
+	<< STRING("f", strTab.index2str(file_index), cst)
+	<< STRING("n", GUARD_NAME, cst)
 	<< " v=\"{}\""
 	<< ">\n";
 
-    doStmtList(os, depth + 1, node);
-    doLoopList(os, depth + 1, node, strTab);
+    doStmtList(cst, os, depth + 1, node);
+    doLoopList(cst, os, depth + 1, node, strTab);
 
     doIndent(os, depth);
     *os << "</A>\n";
@@ -511,7 +601,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
   alienMap.clear();
 
   // third, print the loops with no alien
-  doLoopList(os, depth, &localNode, strTab);
+  doLoopList(cst, os, depth, &localNode, strTab);
   localNode.clear();
 
   // inline call sites, use double alien
@@ -529,8 +619,8 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     *os << "<A"
 	<< INDEX
 	<< NUMBER("l", flp.line_num)
-	<< STRING("f", strTab.index2str(flp.file_index))
-	<< STRING("n", "")
+	<< STRING("f", strTab.index2str(flp.file_index), cst)
+	<< STRING("n", "", cst)
 	<< " v=\"{}\""
 	<< ">\n";
 
@@ -540,12 +630,12 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     *os << "<A"
 	<< INDEX
 	<< NUMBER("l", subscope.line_num)
-	<< STRING("f", strTab.index2str(subscope.file_index))
-	<< STRING("n", callname)
+	<< STRING("f", strTab.index2str(subscope.file_index), cst)
+	<< STRING("n", callname, cst)
 	<< " v=\"{}\""
 	<< ">\n";
 
-    doTreeNode(os, depth + 2, subtree, subscope, strTab);
+    doTreeNode(cst, os, depth + 2, subtree, subscope, strTab);
 
     doIndent(os, depth + 1);
     *os << "</A>\n";
@@ -564,7 +654,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
 // Any guard alien, if needed, has already been printed.
 //
 static void
-doStmtList(ostream * os, int depth, TreeNode * node)
+doStmtList(CompactStringTable & cst, ostream * os, int depth, TreeNode * node)
 {
   LineNumberMap lineMap;
   vector <StmtInfo *> callVec;
@@ -624,7 +714,7 @@ doStmtList(ostream * os, int depth, TreeNode * node)
       *os << HEX("t", sinfo->target);
     }
     if (ENABLE_DEVICE_FIELD) {
-      *os << STRING("d", sinfo->device);
+      *os << STRING("d", sinfo->device, cst);
     }
     *os << "/>\n";
   }
@@ -636,7 +726,8 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 // needed, has already been printed.
 //
 static void
-doLoopList(ostream * os, int depth, TreeNode * node, HPC::StringTable & strTab)
+doLoopList(CompactStringTable & cst, ostream * os, int depth, TreeNode * node,
+	   HPC::StringTable & strTab)
 {
   for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
     LoopInfo * linfo = *lit;
@@ -646,11 +737,11 @@ doLoopList(ostream * os, int depth, TreeNode * node, HPC::StringTable & strTab)
     *os << "<L"
 	<< INDEX
 	<< NUMBER("l", linfo->line_num)
-	<< STRING("f", strTab.index2str(linfo->file_index))
+	<< STRING("f", strTab.index2str(linfo->file_index), cst)
 	<< VRANGE(linfo->entry_vma, 1)
 	<< ">\n";
 
-    doTreeNode(os, depth + 1, linfo->node, scope, strTab);
+    doTreeNode(cst, os, depth + 1, linfo->node, scope, strTab);
 
     doIndent(os, depth);
     *os << "</L>\n";
