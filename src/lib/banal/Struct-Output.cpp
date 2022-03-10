@@ -87,6 +87,7 @@
 #define INDENT  "  "
 #define INIT_LM_INDEX  2
 
+using namespace BAnal::Struct;
 using namespace Inline;
 using namespace std;
 

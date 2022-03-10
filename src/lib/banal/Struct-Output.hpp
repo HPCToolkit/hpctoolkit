@@ -63,20 +63,17 @@
 namespace BAnal {
 namespace Output {
 
-using namespace Struct;
-using namespace std;
+void printStructFileBegin(std::ostream *, std::ostream *, std::string);
+void printStructFileEnd(std::ostream *, std::ostream *);
 
-void printStructFileBegin(ostream *, ostream *, string);
-void printStructFileEnd(ostream *, ostream *);
+void printLoadModuleBegin(std::ostream *, std::string);
+void printLoadModuleEnd(std::ostream *);
 
-void printLoadModuleBegin(ostream *, string);
-void printLoadModuleEnd(ostream *);
+void printFileBegin(std::ostream *, Struct::FileInfo *);
+void printFileEnd(std::ostream *, Struct::FileInfo *);
 
-void printFileBegin(ostream *, FileInfo *);
-void printFileEnd(ostream *, FileInfo *);
-
-void printProc(ostream *, ostream *, string, FileInfo *, GroupInfo *,
-	       ProcInfo *, HPC::StringTable & strTab);
+void printProc(std::ostream *, std::ostream *, std::string, Struct::FileInfo *, Struct::GroupInfo *,
+	       Struct::ProcInfo *, HPC::StringTable & strTab);
 
 }  // namespace Output
 }  // namespace BAnal
