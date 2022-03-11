@@ -1072,5 +1072,6 @@ level0_fini
  int how
 )
 {
-  gpu_application_thread_process_activities();
+  //gpu_application_thread_process_activities();
+  gpu_operation_multiplexer_fini();
 }

@@ -207,9 +207,6 @@ METHOD_FN(finalize_event_list)
 
   device_finalizer_shutdown.fn = level0_fini;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
-
-  device_finalizer_trace.fn = gpu_trace_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_trace);
 }
 
 
