@@ -1,0 +1,74 @@
+#ifndef HPCTIO_H
+#define HPCTIO_H
+
+#include <mpi.h>
+#include <sys/stat.h>
+
+/*************************** FILE SYSTEM STRUCTS ***************************/
+//file system parameters struct
+typedef struct hpctio_sys_params {
+  void* dummy;
+} hpctio_sys_params_t;
+
+//file system functions struct
+typedef struct hpctio_sys_func {
+  hpctio_sys_params_t * (*construct_params)(const char * path);
+  int (*compare_params)(const char * path, hpctio_sys_params_t * p);
+  void (*initialize)(hpctio_sys_params_t * params);
+  void (*finalize)(hpctio_sys_params_t * params);
+
+  /*
+   hpctio_fd_t * (*create)(const char *path, mode_t md);
+    int (*delete)(const char * path);
+    hpctio_fd_t * (*open)(const char *path, int flags, mode_t md);
+    int (*close)(hpctio_fd_t * fd);
+
+    int (*mkdir)(const char *path, mode_t md);
+    int (*rmdir)(const char *path);
+
+    int (*write)(hpctio_fd_t * fd, const void* buf, hpctio_size_t size, hpctio_size_t num, hpctio_offset_t off);
+    int (*read)(hpctio_fd_t * fd, void* buf, hpctio_size_t size, hpctio_size_t num, hpctio_offset_t off);
+
+    hpctio_mod_opt_t * (*get_options)(int argc, char **argv);
+    */
+
+
+
+} hpctio_sys_func_t;
+
+extern hpctio_sys_func_t hpctio_sys_func_dfs;
+extern hpctio_sys_func_t hpctio_sys_func_posix;
+
+//file system struct
+typedef struct hpctio_sys {
+  hpctio_sys_func_t* func_ptr;
+  hpctio_sys_params_t* params_ptr;  
+} hpctio_sys_t;
+
+extern hpctio_sys_t hpctio_sys_posix;
+
+
+/*************************** FILE SYSTEM OBJECT RELATED STRUCTS ***************************/
+//file system objects options struct
+typedef struct hpctio_obj_opt {
+  void* dummy;
+}hpctio_obj_opt_t;
+
+//file system object struct
+typedef struct hpctio_obj_id {
+  void* dummy;
+}hpctio_obj_id_t;
+
+
+/*************************** TYPE DEFINITIONS ***************************/
+typedef long long int hpctio_offset_t;
+typedef long long int hpctio_size_t;
+
+const char * daos_prefix = "daos://";
+/*************************** FILE SYSTEM FUNCTIONS ***************************/
+hpctio_sys_t * hpctio_sys_initialize(const char * path);
+
+
+
+
+#endif /* ifndef HPCTIO_H */

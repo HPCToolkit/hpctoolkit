@@ -1248,6 +1248,9 @@ define HPC_moveIfStaticallyLinked
 endef
 
 #############################################################################
+	tracedb.h tracedb.c \
+	hpctio.h hpctio.c hpctio_dfs.c hpctio_posix.c \
+	hpctio_obj.h
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@

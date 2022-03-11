@@ -461,8 +461,6 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
 
   //YUMENG: set up footer
-  //size_t footer[SF_FOOTER_LENGTH];
-  //footer[SF_FOOTER_hdr] = 0;
   hpcrun_fmt_footer_t footer;
   footer.hdr_start = 0;
 
