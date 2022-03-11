@@ -279,7 +279,7 @@ gpu_trace_stream_acquire
 
   // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
 
-  hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
+  hpcrun_threadMgr_data_get(id, NULL, &td, has_trace, demand_new_thread);
 
   return td;
 }
