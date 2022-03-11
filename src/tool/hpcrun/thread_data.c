@@ -284,10 +284,8 @@ hpcrun_thread_init_mem_pool_once
 
   if (mem_pool_initialized == false){
     hpcrun_mmap_init();
-    hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
+    hpcrun_threadMgr_data_get(id, thr_ctxt, &td, has_trace, demand_new_thread);
     hpcrun_set_thread_data(td);
-
-    mem_pool_initialized = true;
   }
 }
 
@@ -402,6 +400,7 @@ hpcrun_thread_data_init
   td->memstore = memstore;
   hpcrun_make_memstore(&td->memstore, is_child);
   td->mem_low = 0;
+  mem_pool_initialized = true;
 
   // ----------------------------------------
   // normalized thread id (monitor-generated)
