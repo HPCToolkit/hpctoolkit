@@ -58,6 +58,9 @@
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
 
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/gpu/gpu-activity-channel.h>
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -86,6 +89,8 @@ typedef struct level0_data_node {
   level0_command_type_t type;
   ze_event_handle_t event;
   ze_event_pool_handle_t event_pool;
+  gpu_activity_channel_t *initiator_channel;
+  cct_node_t *cct_node;
   level0_detail_entry_t details;
   struct level0_data_node *next;
 } level0_data_node_t;

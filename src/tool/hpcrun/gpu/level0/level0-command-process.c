@@ -60,6 +60,7 @@
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-cct.h>
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>
 
 #include <hpcrun/safe-sampling.h>
 #include <lib/prof-lean/usec_time.h>
@@ -228,10 +229,12 @@ level0_command_begin
 {
   // Set up placeholder type
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+  gpu_placeholder_type_t gpu_placeholder_node;
   switch (command_node->type) {
     case LEVEL0_KERNEL: {
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_trace);
+      gpu_placeholder_node = gpu_placeholder_type_kernel;
       break;
     }
     case LEVEL0_MEMCPY: {
@@ -246,6 +249,7 @@ level0_command_begin
 //        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
 //      } else {
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
+      gpu_placeholder_node = gpu_placeholder_type_copy;
 //      }
       break;
     }
@@ -273,6 +277,8 @@ level0_command_begin
     gpu_cct_insert(trace_ph, kernel_ip);
   }
 
+  command_node->cct_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_node);
+
   hpcrun_safe_exit();
 
   gpu_activity_channel_consume(gpu_metrics_attribute);
@@ -295,6 +301,8 @@ level0_command_end
   gpu_activity_t gpu_activity;
   gpu_activity_t* ga = &gpu_activity;
   memset(ga, 0, sizeof(gpu_activity_t));
+  ga->cct_node = command_node->cct_node;
+  PRINT("cct node %p, command node type %d\n", ga->cct_node, command_node->type);
   switch (command_node->type) {
     case LEVEL0_KERNEL:
       level0_kernel_translate(ga, command_node, start, end);
@@ -307,6 +315,13 @@ level0_command_end
   }
 
   cstack_ptr_set(&(ga->next), 0);
+
+  gpu_operation_multiplexer_push(
+    command_node->initiator_channel,
+    NULL,
+    ga
+  );
+  /*
   if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
     gpu_correlation_id_map_insert(correlation_id, correlation_id);
   }
@@ -315,4 +330,5 @@ level0_command_end
   // gpu_activity_process will delete items in gpu-correlation-id-map
   // We will need to delete items in gpu-host-correlation-map
   gpu_host_correlation_map_delete(correlation_id);
+  */
 }
