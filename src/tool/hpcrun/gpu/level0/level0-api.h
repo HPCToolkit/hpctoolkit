@@ -159,7 +159,6 @@ level0_init
  void
 );
 
-
 void
 level0_fini
 (
@@ -167,6 +166,12 @@ level0_fini
  int how
 );
 
+void
+level0_flush
+(
+ void *args,
+ int how
+);
 
 int
 level0_bind

@@ -113,8 +113,9 @@
 
 #define LEVEL0 "gpu=level0"
 
+static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
-static device_finalizer_fn_entry_t device_finalizer_trace;
+//static device_finalizer_fn_entry_t device_finalizer_trace;
 
 //******************************************************************************
 // interface operations
@@ -204,6 +205,9 @@ METHOD_FN(finalize_event_list)
 
   // Init records
   gpu_trace_init();
+
+  device_finalizer_flush.fn = level0_flush;
+  device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
 
   device_finalizer_shutdown.fn = level0_fini;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);

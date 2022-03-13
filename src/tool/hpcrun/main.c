@@ -924,7 +924,8 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   process_name = get_process_name();
 
-  hpcrun_set_using_threads(false);
+  hpcrun_set_using_threads(1);
+  hpcrun_init_thread_support();
 
   copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
@@ -1186,14 +1187,6 @@ monitor_init_mpi(int *argc, char ***argv)
 void
 monitor_init_thread_support(void)
 {
-  hpcrun_safe_enter();
-
-  TMSG(THREAD,"REALLY init_thread_support ---");
-  hpcrun_init_thread_support();
-  hpcrun_set_using_threads(1);
-  TMSG(THREAD,"Init thread support done");
-
-  hpcrun_safe_exit();
 }
 
 
