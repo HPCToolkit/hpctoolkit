@@ -63,6 +63,8 @@
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
 
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/utilities/hpcrun-nanotime.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/usec_time.h>
 #include <include/gpu-binary.h>
 
@@ -73,8 +75,12 @@
 
 #include "hpcrun/gpu/gpu-print.h"
 
+//*****************************************************************************
+// local variables
+//*****************************************************************************
 
-#define CPU_NANOTIME() (usec_time() * 1000)
+// The thread itself how many pending operations
+static __thread atomic_int level0_self_pending_operations = { 0 };
 
 //*****************************************************************************
 // private operations
@@ -89,8 +95,10 @@ level0_kernel_translate
   uint64_t end
 )
 {
+  PRINT("level0_kernel_translate: submit_time %llu, start %llu, end %llu\n", c->submit_time, start, end);
   ga->kind = GPU_ACTIVITY_KERNEL;
   ga->details.kernel.correlation_id = (uint64_t)(c->event);
+  ga->details.kernel.submit_time = c->submit_time;
   gpu_interval_set(&ga->details.interval, start, end);
 }
 
@@ -111,6 +119,7 @@ level0_memcpy_translate
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.bytes = c->details.memcpy.copy_size;
   ga->details.memcpy.correlation_id = (uint64_t)(c->event);
+  ga->details.memcpy.submit_time = c->submit_time;
 
   // Switch on memory src and dst types
   ga->details.memcpy.copyKind = GPU_MEMCPY_UNK;
@@ -192,7 +201,7 @@ get_load_module
 
   // Step 2: get the hash for the binary that contains the kernel
   ze_module_handle_t module_handle = level0_kernel_module_map_lookup(kernel);
-  PRINT("get_load_module: kernel handle %p, module handl %p\n", kernel, module_handle);
+  PRINT("get_load_module: kernel handle %p, module handle %p\n", kernel, module_handle);
   char* binary_hash = level0_module_handle_map_lookup(module_handle);
 
   // Step 3: generate <binary hash>.gpubin.<kernel name hash> as the load module name
@@ -227,6 +236,10 @@ level0_command_begin
   level0_data_node_t* command_node
 )
 {
+  // Increment the operation counter for this thread
+  atomic_fetch_add(&level0_self_pending_operations, 1);
+  command_node->pending_operations = &level0_self_pending_operations;
+
   // Set up placeholder type
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   gpu_placeholder_type_t gpu_placeholder_node;
@@ -283,9 +296,8 @@ level0_command_begin
 
   gpu_activity_channel_consume(gpu_metrics_attribute);
 
-  // Generate notification entry
-  uint64_t cpu_submit_time = CPU_NANOTIME();
-  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+  // Generate host side operation timestamp
+  command_node->submit_time = hpcrun_nanotime();
 }
 
 void
@@ -316,19 +328,39 @@ level0_command_end
 
   cstack_ptr_set(&(ga->next), 0);
 
+  // Send this activity record to the hpcrun monitoring thread
   gpu_operation_multiplexer_push(
     command_node->initiator_channel,
-    NULL,
+    command_node->pending_operations,
     ga
   );
-  /*
-  if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
-    gpu_correlation_id_map_insert(correlation_id, correlation_id);
-  }
+}
 
-  gpu_activity_process(&gpu_activity);
-  // gpu_activity_process will delete items in gpu-correlation-id-map
-  // We will need to delete items in gpu-host-correlation-map
-  gpu_host_correlation_map_delete(correlation_id);
-  */
+void
+level0_flush_and_wait
+(
+  void
+)
+{
+  atomic_bool wait;
+  atomic_store(&wait, true);
+  gpu_activity_t gpu_activity;
+  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
+  gpu_activity.kind = GPU_ACTIVITY_FLUSH;
+  gpu_activity.details.flush.wait = &wait;
+  gpu_operation_multiplexer_push(gpu_activity_channel_get(), NULL, &gpu_activity);
+
+  // Wait until operations are drained
+  // Operation channel is FIFO
+  while (atomic_load(&wait)) {}
+}
+
+void
+level0_wait_for_self_pending_operations
+(
+  void
+)
+{
+  while (atomic_load(&level0_self_pending_operations) != 0);
 }

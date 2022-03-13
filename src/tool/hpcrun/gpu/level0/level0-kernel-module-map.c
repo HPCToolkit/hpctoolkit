@@ -51,6 +51,8 @@
 #include "level0-handle-map.h"
 #include "lib/prof-lean/spinlock.h"
 
+#include <stdio.h>
+
 //******************************************************************************
 // local variables
 //******************************************************************************
@@ -73,7 +75,6 @@ level0_kernel_module_map_insert
 )
 {
   spinlock_lock(&kernel_module_lock);
-
   uint64_t key = (uint64_t)kernel;
   level0_handle_map_entry_t *entry =
     level0_handle_map_entry_new(&kernel_module_free_list, key, (level0_data_node_t*)module);
@@ -107,7 +108,6 @@ level0_kernel_module_map_delete
 )
 {
   spinlock_lock(&kernel_module_lock);
-
   uint64_t key = (uint64_t)kernel;
   level0_handle_map_delete(
     &kernel_module_map_root,

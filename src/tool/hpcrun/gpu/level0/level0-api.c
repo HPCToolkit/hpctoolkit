@@ -1072,6 +1072,21 @@ level0_fini
  int how
 )
 {
-  //gpu_application_thread_process_activities();
   gpu_operation_multiplexer_fini();
+}
+
+void
+level0_flush
+(
+ void *args,
+ int how
+)
+{
+  level0_flush_and_wait();
+
+  // Wait until my activities are drained
+  if (how == MONITOR_EXIT_NORMAL) level0_wait_for_self_pending_operations();
+
+  // Now I can attribute activities
+  gpu_application_thread_process_activities();
 }

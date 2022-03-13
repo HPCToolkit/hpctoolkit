@@ -57,6 +57,7 @@ typedef struct cct_node_t cct_node_t;
 
 void level0_init();
 void level0_fini();
+void level0_flush();
 int level0_bind();
 
 #endif //HPCTOOLKIT_LEVEL0_H
