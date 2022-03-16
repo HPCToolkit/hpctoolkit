@@ -116,6 +116,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
   { 'c',  "cache",        CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
   {  0 ,  "nocache",      CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "pretty-print", CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
   { 'M',  "meas_dir",     CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
 
   // Structure recovery options
@@ -185,6 +186,7 @@ Args::Ctor()
   meas_dir = "";
   is_from_makefile = false;
   cache_stat = CACHE_DISABLED;
+  pretty_print_output = false;
 }
 
 
@@ -308,6 +310,10 @@ Args::parse(int argc, const char* const argv[])
       nocache =  true;
       if (!cache_directory.empty())
         ARG_ERROR("can't specify nocache and a cache directory.");
+    }
+
+    if (parser.isOpt("pretty-print")) {
+      pretty_print_output = true; // default: false
     }
 
     if (parser.isOpt("gpucfg")) {

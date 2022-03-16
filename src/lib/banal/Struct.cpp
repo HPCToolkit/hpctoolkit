@@ -602,6 +602,8 @@ makeStructure(string filename,
     throw 1;
   }
 
+  Output::setPrettyPrint(structOpts.pretty_print_output);
+
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 	
   for (uint i = 0; i < elfFileVector->size(); i++) {

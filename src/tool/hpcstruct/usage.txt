@@ -99,6 +99,7 @@ Options: Specify output file when analyzing a single binary
                        a single binary.
 
 Options: Developers only
+  --pretty-print       Add indenting for more readable XML output
   --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.
   --jobs-parse  <num>  Use <num> threads for the ParseAPI::parse() phase only.
   --jobs-symtab <num>  Use <num> threads for the Symtab phase (if possible).

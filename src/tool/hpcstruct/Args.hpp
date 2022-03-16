@@ -129,7 +129,7 @@ public:
   std::string searchPathStr;          // default: "."
   std::string dbgProcGlob;
 
-  bool prettyPrintOutput;         // default: true
+  bool pretty_print_output;       // default: false
   bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false
   bool nocache;                   // default: false

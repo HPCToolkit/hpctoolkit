@@ -92,6 +92,7 @@ using namespace std;
 
 static long next_index;
 static long gaps_line;
+static bool pretty_print_output;
 
 static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
@@ -123,11 +124,14 @@ static const char * hpcstruct_xml_head =
 #define VRANGE(vma, len)  \
   " v=\"{[0x" << hex << vma << "-0x" << vma + len << dec << ")}\""
 
+
 static void
 doIndent(ostream * os, int depth)
 {
-  for (int n = 1; n <= depth; n++) {
-    *os << INDENT;
+  if (pretty_print_output) {
+    for (int n = 1; n <= depth; n++) {
+      *os << INDENT;
+    }
   }
 }
 
@@ -324,6 +328,16 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
   doIndent(os, 2);
   *os << "</P>\n";
 }
+
+
+//----------------------------------------------------------------------
+
+// turn on indenting in XML output
+void setPrettyPrint(bool _pretty_print_output)
+{
+  pretty_print_output = _pretty_print_output;
+}
+
 
 //----------------------------------------------------------------------
 

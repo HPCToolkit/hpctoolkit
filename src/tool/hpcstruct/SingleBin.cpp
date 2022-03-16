@@ -132,7 +132,8 @@ doSingleBinary
 
   opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
 	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
-	   args.compute_gpu_cfg, args.parallel_analysis_threshold);
+	   args.compute_gpu_cfg, args.parallel_analysis_threshold,
+	   args.pretty_print_output);
   if (args.show_gaps && args.out_filenm == "-") {
     DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
     exit(1);
