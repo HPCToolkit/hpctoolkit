@@ -164,8 +164,7 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Use <path> as alternate hpcfnbounds command.
                        (mostly for developers)
   -js <num>, --jobs-symtab <num>
-                       Use <num> openmp threads for Symtab in hpcfnbounds,
-                       if Symtab supports openmp (default 1).
+                       Deprecated, now a no-op.
 
   -m, --merge-threads  Merge non-overlapped threads into one virtual thread.
                        This option is to reduce the number of generated
@@ -437,7 +436,7 @@ do
 	# --------------------------------------------------
 
 	-js | --jobs-symtab )
-	    export HPCFNBOUNDS_NUM_THREADS="$1"
+	    # Deprecated
 	    shift
 	    ;;
 

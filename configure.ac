@@ -1129,8 +1129,7 @@ AC_SUBST([cxx_c11_flag])
 
 #-------------------------------------------------
 
-# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.  It is not used by hpcfnbounds2.
+# Find location of libstdc++.
 #
 # Try --print-file-name first.  If that doesn't work, then try ldd.
 # If --print-file-name works, then its answer is more reliable because
@@ -4384,7 +4383,7 @@ AC_ARG_ENABLE([openmp],
   [enable_openmp="$parse_openmp"])
 
 if test "x$enable_openmp" != xyes ; then
-  AC_MSG_NOTICE([disable openmp support in hpcstruct and hpcfnbounds])
+  AC_MSG_NOTICE([disable openmp support in hpcstruct])
   parse_openmp=no
   symtab_openmp=no
 fi
@@ -5701,7 +5700,6 @@ AC_CONFIG_FILES([ \
   src/extern/libunwind/Makefile \
   src/extern/lzma/Makefile \
   src/tool/Makefile \
-  src/tool/hpcfnbounds/Makefile \
   src/tool/hpcfnbounds2/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
@@ -5744,8 +5742,6 @@ AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcsummary],
   [chmod +x src/tool/hpcrun/scripts/hpcsummary])
-AC_CONFIG_FILES([src/tool/hpcfnbounds/hpcfnbounds],
-  [chmod +x src/tool/hpcfnbounds/hpcfnbounds])
 AC_CONFIG_FILES([src/tool/hpcprof/hpcprof],
   [chmod +x src/tool/hpcprof/hpcprof])
 AC_CONFIG_FILES([src/tool/hpcprof-mpi/hpcprof-mpi],

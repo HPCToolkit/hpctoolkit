@@ -19364,8 +19364,7 @@ HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 
 #-------------------------------------------------
 
-# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.  It is not used by hpcfnbounds2.
+# Find location of libstdc++.
 #
 # Try --print-file-name first.  If that doesn't work, then try ldd.
 # If --print-file-name works, then its answer is more reliable because
@@ -23365,8 +23364,8 @@ fi
 
 
 if test "x$enable_openmp" != xyes ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: disable openmp support in hpcstruct and hpcfnbounds" >&5
-$as_echo "$as_me: disable openmp support in hpcstruct and hpcfnbounds" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: disable openmp support in hpcstruct" >&5
+$as_echo "$as_me: disable openmp support in hpcstruct" >&6;}
   parse_openmp=no
   symtab_openmp=no
 fi
@@ -25020,7 +25019,7 @@ launch_early_options="${srcdir}/config/launch-options"
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/extern/Makefile src/extern/libunwind/Makefile src/extern/lzma/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof2/Makefile src/tool/hpcprof2-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profile/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile tests/Makefile tests/Makefile.spack"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/extern/Makefile src/extern/libunwind/Makefile src/extern/lzma/Makefile src/tool/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof2/Makefile src/tool/hpcprof2-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profile/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile tests/Makefile tests/Makefile.spack"
 
 
 
@@ -25029,8 +25028,6 @@ ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpcrun"
 ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpclink"
 
 ac_config_files="$ac_config_files src/tool/hpcrun/scripts/hpcsummary"
-
-ac_config_files="$ac_config_files src/tool/hpcfnbounds/hpcfnbounds"
 
 ac_config_files="$ac_config_files src/tool/hpcprof/hpcprof"
 
@@ -26411,7 +26408,6 @@ do
     "src/extern/libunwind/Makefile") CONFIG_FILES="$CONFIG_FILES src/extern/libunwind/Makefile" ;;
     "src/extern/lzma/Makefile") CONFIG_FILES="$CONFIG_FILES src/extern/lzma/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
-    "src/tool/hpcfnbounds/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/Makefile" ;;
     "src/tool/hpcfnbounds2/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds2/Makefile" ;;
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
@@ -26447,7 +26443,6 @@ do
     "src/tool/hpcrun/scripts/hpcrun") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcrun" ;;
     "src/tool/hpcrun/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpclink" ;;
     "src/tool/hpcrun/scripts/hpcsummary") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/scripts/hpcsummary" ;;
-    "src/tool/hpcfnbounds/hpcfnbounds") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/hpcfnbounds" ;;
     "src/tool/hpcprof/hpcprof") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/hpcprof" ;;
     "src/tool/hpcprof-mpi/hpcprof-mpi") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/hpcprof-mpi" ;;
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
@@ -27895,7 +27890,6 @@ _LT_EOF
     "src/tool/hpcrun/scripts/hpcrun":F) chmod +x src/tool/hpcrun/scripts/hpcrun ;;
     "src/tool/hpcrun/scripts/hpclink":F) chmod +x src/tool/hpcrun/scripts/hpclink ;;
     "src/tool/hpcrun/scripts/hpcsummary":F) chmod +x src/tool/hpcrun/scripts/hpcsummary ;;
-    "src/tool/hpcfnbounds/hpcfnbounds":F) chmod +x src/tool/hpcfnbounds/hpcfnbounds ;;
     "src/tool/hpcprof/hpcprof":F) chmod +x src/tool/hpcprof/hpcprof ;;
     "src/tool/hpcprof-mpi/hpcprof-mpi":F) chmod +x src/tool/hpcprof-mpi/hpcprof-mpi ;;
     "src/tool/hpcprof-flat/hpcprof-flat":F) chmod +x src/tool/hpcprof-flat/hpcprof-flat ;;
