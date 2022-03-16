@@ -21,7 +21,6 @@ papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM_LD_LIB_PATH@'
 gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
-# gotcha_lib_path='@GOTCHA_LIBDIR@'
 memkind_libdir='@MEMKIND_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
