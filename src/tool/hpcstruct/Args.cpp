@@ -182,6 +182,7 @@ Args::Ctor()
   parallel_analysis_threshold = DEFAULT_PSIZE;
   searchPathStr = ".";
   show_gaps = false;
+  nocache = false;
   compute_gpu_cfg = false;
   meas_dir = "";
   is_from_makefile = false;

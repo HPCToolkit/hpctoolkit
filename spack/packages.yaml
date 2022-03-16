@@ -158,15 +158,6 @@ packages:
     variants: +bzip2 +xz ~nls
 
 
-  # gotcha -- used in hpcrun to assist libunwind
-  #
-  # Requires version 1.0.3 or later.
-  #
-  gotcha:
-    version:  [1.0.3]
-    variants: build_type=RelWithDebInfo
-
-
   # intel-tbb -- used by dyninst as part of parallel parsing.
   #
   # Dyninst requires >= 2018.6, most anything after that is good.
