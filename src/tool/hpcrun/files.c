@@ -132,6 +132,7 @@
 #include <lib/prof-lean/vdso.h>
 #include <lib/prof-lean/crypto-hash.h> // Calculate a hash for vdso
 #include <lib/support-lean/OSUtil.h>
+#include <lib/prof-lean/hpctio.h>
 
 
 //***************************************************************
@@ -400,6 +401,10 @@ void
 hpcrun_files_set_directory()
 {  
   char *path = getenv(HPCRUN_OUT_PATH);
+
+  hpctio_sys_t * sys = hpctio_sys_initialize(path);
+
+  hpctio_sys_finalize(sys);
 
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {

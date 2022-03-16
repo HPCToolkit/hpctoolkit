@@ -341,7 +341,7 @@ static hpctio_sys_params_t * DFS_Construct_Params(const char * path){
     sys_p->inited = false;
 
     char * path_copy = strdup(path);
-    path_copy += strlen(daos_prefix);
+    path_copy += strlen(hpctio_daos_prefix);
     
     sys_p->pool = strtok(path_copy, "/");
     sys_p->cont = strtok(NULL, "/");
@@ -354,7 +354,7 @@ static hpctio_sys_params_t * DFS_Construct_Params(const char * path){
 // return 0 if equal, -1 if not
 static int DFS_Compare_Params(const char * path, hpctio_sys_params_t * p){
     char * path_copy = strdup(path);
-    path_copy += strlen(daos_prefix);   
+    path_copy += strlen(hpctio_daos_prefix);   
     char * pool = strtok(path_copy, "/");
     char * cont = strtok(NULL, "/");
 

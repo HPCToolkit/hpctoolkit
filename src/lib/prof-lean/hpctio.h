@@ -64,10 +64,15 @@ typedef struct hpctio_obj_id {
 typedef long long int hpctio_offset_t;
 typedef long long int hpctio_size_t;
 
-const char * daos_prefix = "daos://";
+
+/*************************** GLOBAL I/O CONSTANTS ***************************/
+const char *  hpctio_daos_prefix;
+
+
 /*************************** FILE SYSTEM FUNCTIONS ***************************/
 hpctio_sys_t * hpctio_sys_initialize(const char * path);
-
+void hpctio_sys_finalize(hpctio_sys_t * sys);
+void hpctio_sys_avail_display();
 
 
 
