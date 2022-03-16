@@ -78,6 +78,8 @@ void printFileEnd(ostream *, FileInfo *);
 void printProc(ostream *, ostream *, string, FileInfo *, GroupInfo *,
 	       ProcInfo *, HPC::StringTable & strTab);
 
+void setPrettyPrint(bool _pretty_print_output);
+
 }  // namespace Output
 }  // namespace BAnal
 

@@ -21178,6 +21178,13 @@ $as_echo_n "checking for libiberty.a for binutils... " >&6; }
   found_libiberty=no
   case "$LIBIBERTY" in
     /* )
+      # demangle.h must exist
+      if test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
+        BINUTILS_IFLAGS="${BINUTILS_IFLAGS} -I${LIBIBERTY}/include"
+      else
+        as_fn_error $? "unable to find libiberty/demangle.h in: $LIBIBERTY" "$LINENO" 5
+      fi
+
       for lib in $multilib_path ; do
         file="${LIBIBERTY}/${lib}/libiberty.a"
 	if test -f "$file" ; then

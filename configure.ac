@@ -2645,6 +2645,13 @@ else
   found_libiberty=no
   case "$LIBIBERTY" in
     /* )
+      # demangle.h must exist
+      if test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
+        BINUTILS_IFLAGS="${BINUTILS_IFLAGS} -I${LIBIBERTY}/include"
+      else
+        AC_MSG_ERROR([unable to find libiberty/demangle.h in: $LIBIBERTY])
+      fi
+
       for lib in $multilib_path ; do
         file="${LIBIBERTY}/${lib}/libiberty.a"
 	if test -f "$file" ; then

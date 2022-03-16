@@ -44,13 +44,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file is the main program for hpcstruct.  This side just
-// handles the argument list.  The real work is in makeStructure() in
-// lib/banal/Struct.cpp.
+// This file is the main program for hpcstruct
 //
-// This side now handles the case of a measurements directory with
-// GPU binaries.  We don't analyze anything here, just setup a Makefile and
-// launch the work for each GPU binary.
+// It handles its argument list, and decides what to do.
+//
+// It then manages the structure cache initialization.
+//  If a cache argument is not supplied, it checks for the
+//  environment variable for a cache name.  If none is found,
+//  an ADVICE message is written to the user, advising cache use.
+//  If a cache directory is specified and the directory exists,
+//  it is checked for read and write access.  If it does not exist,
+//  it is created.
+//
+// If the argument is a measurements directory, which may contain both
+//  CPU and GPU binaries, it writes a Makefile with commands for
+//  launching subsidiary hpcstruct commands, one for each binary.
+//  It then runs make with Makefile, which invokes those commands.
+//
+// If the argument is a single binary, hpstruct may have been invoked
+//  directly by a user or invoked for a binary in a measurements directory.
+//  The latter case is distinguished by a "-M measurements-dir" argument,
+//  which should never be used directly by a user.
+//  
+//  In either case, if a cache is specified, and the binary's structure
+//  file is found, it is copied to the output structure file.
+//  If no cache is specified, or the binary is not found in the cache,
+//  it sets up the data structures for the real processing, which is
+//  done in makeStructure() in lib/banal/Struct.cpp.
+//  After generating the structure file, if a cache is specified, the
+//  structure file is entered into the cache.
 
 //****************************** Include Files ******************************
 
@@ -70,12 +92,15 @@ using std::endl;
 #include <streambuf>
 #include <new>
 #include <vector>
+
+#include <string.h>
 #include <unistd.h>
 
 #include <include/gpu-binary.h>
 #include <include/hpctoolkit-config.h>
 
 #include "Args.hpp"
+#include "Structure-Cache.hpp"
 
 #include <lib/banal/Struct.hpp>
 #include <lib/prof-lean/hpcio.h>
@@ -90,119 +115,18 @@ using std::endl;
 #include <omp.h>
 #endif
 
+#include "hpcstruct.hpp"
+
 #define PRINT_ERROR(mesg)  \
   DIAG_EMsg(mesg << "\nTry 'hpcstruct --help' for more information.")
 
 using namespace std;
 
-static int
-realmain(int argc, char* argv[]);
+Args *global_args;
 
+// Internal functions
+static int realmain(int argc, char* argv[]);
 
-//***************************** Analyze Cubins ******************************
-
-static const char* analysis_makefile =
-#include "pmake.h"
-;
-
-//
-// For a measurements directory, write a Makefile and launch hpcstruct
-// to analyze CPU and GPU binaries associated with the measurements
-//
-static void
-doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
-{
-  measurements_dir = RealPath(measurements_dir.c_str());
-
-  //
-  // Check that 'measurements_dir' has at least one .gpubin file.
-  //
-
-  string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
-  struct dirent *ent;
-  bool has_gpubin = false;
-
-  DIR *dir = opendir(gpubin_dir.c_str());
-  if (dir != NULL) {
-    while ((ent = readdir(dir)) != NULL) {
-      string file_name(ent->d_name);
-      if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
-        has_gpubin = true;
-        break;
-      }
-    }
-    closedir(dir);
-  }
-
-  //
-  // Put hpctoolkit on PATH
-  //
-  char *path = getenv("PATH");
-  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
-
-  if (has_gpubin) {
-    // Put cuda (nvdisasm) on path.
-    new_path = new_path +":" + CUDA_INSTALL_PREFIX + "/bin";
-  }
-
-  setenv("PATH", new_path.c_str(), 1);
-
-  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
-    + "/libexec/hpctoolkit/hpcproftt";
-
-  string struct_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
-    + "/bin/hpcstruct";
-
-
-  //
-  // Write Makefile and launch analysis.
-  //
-  string structs_dir = measurements_dir + "/structs";
-  mkdir(structs_dir.c_str(), 0755);
-
-  string makefile_name = structs_dir + "/Makefile";
-  fstream makefile;
-  makefile.open(makefile_name, fstream::out | fstream::trunc);
-
-  if (! makefile.is_open()) {
-    DIAG_EMsg("Unable to write file: " << makefile_name);
-    exit(1);
-  }
-
-  unsigned int pthreads;
-  unsigned int jobs;
-
-  if (opts.jobs == 0) { // not specified
-    unsigned int hwthreads = cpuset_hwthreads();
-    jobs = std::max(hwthreads/2, 1U);
-    pthreads = std::min(jobs, 16U);
-  } else {
-    jobs = opts.jobs;
-    pthreads = jobs;
-  }
-    
-  string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
-
-  makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
-	   << "GPUBIN_CFG = "   << gpucfg << "\n"
-	   << "CPU_ANALYZE = "  << opts.analyze_cpu_binaries << "\n"
-	   << "GPU_ANALYZE = "  << opts.analyze_gpu_binaries << "\n"
-	   << "PAR_SIZE = "     << opts.parallel_analysis_threshold << "\n"
-	   << "JOBS = "         << jobs << "\n"
-	   << "PTHREADS = "     << pthreads << "\n"
-	   << "PROFTT = "       << hpcproftt_path << "\n"
-	   << "STRUCT= "        << struct_path << "\n"
-	   << analysis_makefile << endl;
-  makefile.close();
-
-  string make_cmd = string("make -C ") + structs_dir + " -k --silent "
-      + " --no-print-directory all";
-
-  if (system(make_cmd.c_str()) != 0) {
-    DIAG_EMsg("Make hpcstruct files for measurement directory failed.");
-    exit(1);
-  }
-}
 
 //****************************** Main Program *******************************
 
@@ -231,118 +155,58 @@ main(int argc, char* argv[])
 }
 
 
+//=====================================================================================
+
 static int
 realmain(int argc, char* argv[])
 {
+#if 0
+  fprintf(stderr, "DEBUG hpcstruct, argc = %d, pid = %d\n",
+    argc, getpid() );
+  
+  char **p = argv;
+  for (int i = 0; i < argc; i ++) {
+    fprintf(stderr, "DEBUG  argv[%d] = %s\n", i, *p);
+    p ++;
+  }
+#endif
+
+  // Process the arguments
+  //
   Args args(argc, argv);
+  global_args = &args;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
 
   // ------------------------------------------------------------
-  // Parameters on how to run hpcstruct
-  // ------------------------------------------------------------
-
-  unsigned int jobs_struct;
-  unsigned int jobs_parse;
-  unsigned int jobs_symtab;
-
-#ifdef ENABLE_OPENMP
-  //
-  // Translate the args jobs to the struct opts jobs.  The specific
-  // overrides the general: for example, -j sets all three phases,
-  // --jobs-parse overrides just that one phase.
-  //
-
-  jobs_struct = (args.jobs_struct >= 1) ? args.jobs_struct : args.jobs;
-  jobs_parse  = (args.jobs_parse >= 1)  ? args.jobs_parse  : args.jobs;
-
-#ifndef ENABLE_OPENMP_SYMTAB
-  jobs_symtab = 1;
-#else
-  jobs_symtab = (args.jobs_symtab >= 1) ? args.jobs_symtab : args.jobs;
-#endif
-
-  omp_set_num_threads(1);
-
-#else
-  jobs_struct = 1;
-  jobs_parse = 1;
-  jobs_symtab = 1;
-#endif
-
-  BAnal::Struct::Options opts;
-
-  opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
-	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
-	   args.compute_gpu_cfg, args.parallel_analysis_threshold);
-
-  // ------------------------------------------------------------
-  // If in_filenm is a directory, then analyze separately
+  // If in_filenm is a directory, then analyze entire directory
   // ------------------------------------------------------------
   struct stat sb;
 
-  if (stat(args.in_filenm.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+  if ( stat(args.in_filenm.c_str(), &sb) != 0 ) {
+    cerr << "ERROR -- input file " << args.in_filenm.c_str() << " does not exist" << endl;
+    exit(1);
+  }
+
+  // See if the argument is a directory, or a single binary
+  //
+  if ( S_ISDIR(sb.st_mode) ) {
+    // it's a directory
+    // Make sure output file was not specified
+    //
     if (!args.out_filenm.empty()) {
-      DIAG_EMsg("Outfile file may not be specified when analyziing a measurement directory.");
+      DIAG_EMsg("Outfile file may not be specified when analyzing a measurement directory.");
       exit(1);
     }
-    doMeasurementsDir(args.in_filenm, opts);
-    return 0;
+    // Now process the measurements directory, passing it its stat result
+    //
+    doMeasurementsDir(args, &sb);
+
+  } else {
+    // Process a single binary, passing in its stat result
+    //
+    doSingleBinary(args, &sb );
   }
-
-  // ------------------------------------------------------------
-  // Single application binary
-  // ------------------------------------------------------------
-
-  const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
-  std::ostream* outFile = IOUtil::OpenOStream(osnm);
-  char* outBuf = new char[HPCIO_RWBufferSz];
-
-  std::streambuf* os_buf = outFile->rdbuf();
-  os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
-
-  std::string gapsName = "";
-  std::ostream* gapsFile = NULL;
-  char* gapsBuf = NULL;
-  std::streambuf* gaps_rdbuf = NULL;
-
-  if (args.show_gaps) {
-    // fixme: may want to add --gaps-name option
-    if (args.out_filenm == "-") {
-      DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
-      exit(1);
-    }
-
-    gapsName = RealPath(osnm) + std::string(".gaps");
-    gapsFile = IOUtil::OpenOStream(gapsName.c_str());
-    gapsBuf = new char[HPCIO_RWBufferSz];
-    gaps_rdbuf = gapsFile->rdbuf();
-    gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
-  }
-
-  try {
-    BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
-			         args.searchPathStr, opts);
-  } catch (int n) {
-    IOUtil::CloseStream(outFile);
-    if (osnm) {
-      unlink(osnm);
-    }
-    if (gapsFile) {
-      IOUtil::CloseStream(gapsFile);
-      unlink(gapsName.c_str());
-    }
-    exit(n);
-  }
-
-  IOUtil::CloseStream(outFile);
-  delete[] outBuf;
-
-  if (gapsFile != NULL) {
-    IOUtil::CloseStream(gapsFile);
-    delete[] gapsBuf;
-  }
-
-  return (0);
+  return 0;
 }

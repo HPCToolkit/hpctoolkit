@@ -114,6 +114,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "psize",        CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
+  { 'c',  "cache",        CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
+  {  0 ,  "nocache",      CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "pretty-print", CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
+  { 'M',  "meas_dir",     CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
 
   // Structure recovery options
   {  0 ,  "gpucfg",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
@@ -179,6 +183,10 @@ Args::Ctor()
   searchPathStr = ".";
   show_gaps = false;
   compute_gpu_cfg = false;
+  meas_dir = "";
+  is_from_makefile = false;
+  cache_stat = CACHE_DISABLED;
+  pretty_print_output = false;
 }
 
 
@@ -293,6 +301,21 @@ Args::parse(int argc, const char* const argv[])
       parallel_analysis_threshold = CmdLineParser::toLong(arg);
     }
 
+    if (parser.isOpt("cache")) {
+      const string & arg = parser.getOptArg("cache");
+      cache_directory = arg.c_str();
+    }
+
+    if (parser.isOpt("nocache")) {
+      nocache =  true;
+      if (!cache_directory.empty())
+        ARG_ERROR("can't specify nocache and a cache directory.");
+    }
+
+    if (parser.isOpt("pretty-print")) {
+      pretty_print_output = true; // default: false
+    }
+
     if (parser.isOpt("gpucfg")) {
       const string & arg = parser.getOptArg("gpucfg");
       bool yes = strcasecmp("yes", arg.c_str()) == 0;
@@ -317,6 +340,14 @@ Args::parse(int argc, const char* const argv[])
       analyze_cpu_binaries = yes;
     }
 
+    if (parser.isOpt("meas_dir")) {
+      const string & arg = parser.getOptArg("meas_dir");
+      meas_dir = arg.c_str();
+      is_from_makefile = true;
+#if 0
+      fprintf(stderr, "DEBUG meas_dir = %s; is_from_makefile set to true\n", meas_dir.c_str() );
+#endif
+    }
     if (parser.isOpt("time")) {
       show_time = true;
     }
@@ -368,6 +399,12 @@ Args::parse(int argc, const char* const argv[])
 	out_filenm = base_filenm + ".hpcstruct";
       }
     }
+#if 0
+    fprintf(stderr, "DEBUG in_filenm = `%s', is_from_makefile = %s\n",
+	in_filenm.c_str(),
+	(is_from_makefile == true ? "true" : (is_from_makefile == false? "false" : "bad value" ) ) );
+#endif
+
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());

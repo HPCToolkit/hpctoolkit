@@ -262,34 +262,6 @@ hpcrun_threadMgr_compact_thread()
   return compact_thread;
 }
 
-/***
- *   Wrapper around hpcrun_threadMgr_data_get
- *   Checks if there is thread specific data and preserves it
- *****/
-bool
-hpcrun_threadMgr_data_get_safe
-(
- int id,
- cct_ctxt_t *thr_ctxt,
- thread_data_t **data,
- bool has_trace,
- bool demand_new_thread
-)
-{
-  thread_data_t *td_self;
-  bool res;
-
-  if (hpcrun_td_avail()) {
-    td_self = hpcrun_get_thread_data();
-    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
-    hpcrun_set_thread_data(td_self);
-  }
-  else{
-    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
-  }
-  return res;
-}
-
 
 /***
  * get pointer of thread local data

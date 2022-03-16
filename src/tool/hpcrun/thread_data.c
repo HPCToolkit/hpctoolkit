@@ -283,10 +283,8 @@ hpcrun_thread_init_mem_pool_once
 
   if (mem_pool_initialized == false){
     hpcrun_mmap_init();
-    hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
+    hpcrun_threadMgr_data_get(id, thr_ctxt, &td, has_trace, demand_new_thread);
     hpcrun_set_thread_data(td);
-
-    mem_pool_initialized = true;
   }
 }
 

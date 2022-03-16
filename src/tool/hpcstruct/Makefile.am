@@ -82,7 +82,7 @@ IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 IGC_IFLAGS = @OPT_IGC_IFLAGS@
 endif
 
-MYSOURCES = main.cpp Args.cpp
+MYSOURCES = main.cpp Args.cpp Structure-Cache.cpp SingleBin.cpp MeasDir.cpp
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
@@ -152,7 +152,7 @@ noinst_HEADERS = $(GENHEADERS)
 BUILT_SOURCES = $(GENHEADERS)
 
 bin_SCRIPTS = hpcstruct
-pkglibexec_SCRIPTS = dotgraph
+pkglibexec_SCRIPTS = dotgraph renamestruct.sh
 pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)

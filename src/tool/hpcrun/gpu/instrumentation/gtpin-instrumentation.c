@@ -263,6 +263,8 @@ findOrAddKernelModule
   load_module_t *module = hpcrun_loadmap_findByName(file_name);
   if (module == NULL) {
     module_id = hpcrun_loadModule_add(file_name);
+    load_module_t *lm = hpcrun_loadmap_findById(module_id);
+    hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
   } else {
     // Find module
     module_id = module->id;
