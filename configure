@@ -720,10 +720,6 @@ OPT_BUILD_FRONT_END_TRUE
 OPT_BUILD_BACK_END_FALSE
 OPT_BUILD_BACK_END_TRUE
 BACK_END_LABEL
-OPT_DYNINST_LIBDW_FALSE
-OPT_DYNINST_LIBDW_TRUE
-OPT_DYNINST_LIBDWARF_FALSE
-OPT_DYNINST_LIBDWARF_TRUE
 ZLIB_COPY
 ZLIB_HPCLINK_LIB
 ZLIB_LIB
@@ -804,9 +800,6 @@ LIBMONITOR_RUN_DIR
 LIBMONITOR_COPY
 LIBMONITOR_LIB
 LIBMONITOR_INC
-LIBDWARF_COPY
-LIBDWARF_INC
-LIBDWARF_LIB
 LIBELF_COPY
 LIBELF_LIB
 LIBELF_INC
@@ -1041,7 +1034,6 @@ with_boost
 with_bzip
 with_dyninst
 with_elfutils
-with_libdwarf
 with_libiberty
 with_libmonitor
 with_libunwind
@@ -1812,7 +1804,6 @@ Optional Packages:
   --with-bzip=PATH        path to bzip2 install directory
   --with-dyninst=PATH     path to dyninst install directory
   --with-elfutils=PATH    path to elfutils install directory
-  --with-libdwarf=PATH    path to libdwarf install directory
   --with-libiberty=PATH   path to libiberty install directory (only needed if
                           binutils does not contain libiberty.a)
   --with-libmonitor=PATH  path to libmonitor install directory
@@ -20331,7 +20322,6 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
-default_libdwarf_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
@@ -20351,7 +20341,6 @@ if test "$use_externals" = yes ; then
   default_boost_prefix="$ext_boost_prefix"
   default_dyninst_prefix="$ext_symtabAPI_prefix"
   default_elfutils_prefix="$ext_libelf_prefix"
-  default_libdwarf_prefix="$ext_libdwarf_prefix"
   default_libmonitor_prefix="$ext_libmonitor_prefix"
   default_libunwind_prefix="$ext_libunwind_prefix"
   if test "x$ext_lzma_prefix" != x ; then
@@ -20431,9 +20420,6 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
-  fi
-  if find_spack_pkg libdwarf ; then
-    default_libdwarf_prefix="$spack_ans"
   fi
   if find_spack_pkg libiberty ; then
     default_libiberty_prefix="$spack_ans"
@@ -20936,7 +20922,6 @@ $as_echo_n "checking for elfutils... " >&6; }
 LIBELF_INC=no
 LIBELF_LIB=no
 LIBELF_COPY=no
-elf_has_libdw=no
 
 case "$LIBELF" in
   /* )
@@ -20956,10 +20941,6 @@ case "$LIBELF" in
       as_fn_error $? "unable to find libelf.so in: $LIBELF" "$LINENO" 5
     fi
     LIBELF_COPY=yes
-
-    if test -f "${LIBELF_LIB}/libdw.so" ; then
-      elf_has_libdw=yes
-    fi
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -20971,49 +20952,6 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
-
-
-
-
-
-#-------------------------------------------------
-# Option: --with-libdwarf=PATH
-#-------------------------------------------------
-
-LIBDWARF="$default_libdwarf_prefix"
-
-
-# Check whether --with-libdwarf was given.
-if test "${with_libdwarf+set}" = set; then :
-  withval=$with_libdwarf; LIBDWARF="$withval"
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libdwarf" >&5
-$as_echo_n "checking for libdwarf... " >&6; }
-
-case "${LIBDWARF}" in
-  /* )
-    if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
-    else
-        as_fn_error $? "invalid libdwarf directory: $LIBDWARF" "$LINENO" 5
-    fi
-    LIBDWARF_COPY=yes
-    num_pkgs=`expr 1 + $num_pkgs`
-    ;;
-  no )
-    LIBDWARF_COPY=no
-    ;;
-  * )
-    as_fn_error $? "libdwarf directory must be absolute path: $LIBDWARF" "$LINENO" 5
-    ;;
-esac
-
-LIBDWARF_LIB="${LIBDWARF}/lib"
-LIBDWARF_INC="${LIBDWARF}/include"
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBDWARF" >&5
-$as_echo "$LIBDWARF" >&6; }
 
 
 
@@ -22869,43 +22807,6 @@ fi
 
 #-------------------------------------------------
 
-# Test if dyninst was built with libdw or libdwarf.
-#
-# There is not a good compile or link test for this, so we fall back
-# on ldd.  But note: ldd only works for dynamic libraries and doesn't
-# work cross-platform.
-
-use_libdw=no
-
-if test "$DYNINST" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with libdw.so" >&5
-$as_echo_n "checking if dyninst built with libdw.so... " >&6; }
-
-  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$dyn_dwarf" ; then
-    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
-    if test $? -eq 0 ; then
-       use_libdw=yes
-    fi
-  fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_libdw" >&5
-$as_echo "$use_libdw" >&6; }
-
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  if test "$use_libdw" = yes
-  then dyninst_features="$dyninst_features libdw"
-  else dyninst_features="$dyninst_features libdwarf"
-  fi
-fi
-
-#-------------------------------------------------
-
 # Test if dyninst supports cuda.
 
 use_cuda=no
@@ -23047,8 +22948,7 @@ CXXFLAGS="$ORIG_CXXFLAGS"
 # Temporary option to identify version of dyninst, only necessary if
 # the above tests produce the wrong answer.
 #
-#  old = orig version from externals
-#  libdw = uses libdw instead of libdwarf, but not cuda
+#  libdw = uses libdw, but does not support cuda
 #  cuda = uses libdw and supports cuda
 
 dyninst_type=unset
@@ -23062,7 +22962,6 @@ fi
 
 if test "$dyninst_type" != unset ; then
   case "$dyninst_type" in
-    old )   use_libdw=no ;  use_cuda=no ;;
     libdw ) use_libdw=yes ; use_cuda=no ;;
     cuda )  use_libdw=yes ; use_cuda=yes ;;
     * ) as_fn_error $? "bad value for --with-dyninst-type: $dyninst_type" "$LINENO" 5 ;;
@@ -23072,46 +22971,11 @@ if test "$dyninst_type" != unset ; then
 $as_echo "$as_me: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&6;}
 fi
 
- if test "$use_libdw" = no; then
-  OPT_DYNINST_LIBDWARF_TRUE=
-  OPT_DYNINST_LIBDWARF_FALSE='#'
-else
-  OPT_DYNINST_LIBDWARF_TRUE='#'
-  OPT_DYNINST_LIBDWARF_FALSE=
-fi
-
- if test "$use_libdw" = yes; then
-  OPT_DYNINST_LIBDW_TRUE=
-  OPT_DYNINST_LIBDW_FALSE='#'
-else
-  OPT_DYNINST_LIBDW_TRUE='#'
-  OPT_DYNINST_LIBDW_FALSE=
-fi
-
-
-if test "$use_libdw" = yes ; then
-
-$as_echo "#define DYNINST_USE_LIBDW 1" >>confdefs.h
-
-fi
-
 if test "$use_cuda" = yes ; then
 
 $as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h
 
 fi
-
-#-------------------------------------------------
-
-if test "$use_libdw" = yes && test "$elf_has_libdw" != yes ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst uses libdw but elfutils is missing libdw" >&5
-$as_echo "$as_me: WARNING: dyninst uses libdw but elfutils is missing libdw" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst:  $DYNINST" >&5
-$as_echo "$as_me: WARNING: dyninst:  $DYNINST" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: elfutils: $LIBELF" >&5
-$as_echo "$as_me: WARNING: elfutils: $LIBELF" >&2;}
-fi
-
 
 #----------------------------------------------------------------------------
 # Options
@@ -23212,7 +23076,7 @@ enable_hpcrun_mesg=yes
 if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
-elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
+elif test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$DYNINST" = no || \
      test "$no_xed_for_hpcrun" = yes || test "$libunwind_exists" = no
 then
@@ -25313,14 +25177,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_DYNINST_LIBDWARF_TRUE}" && test -z "${OPT_DYNINST_LIBDWARF_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_DYNINST_LIBDWARF\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_DYNINST_LIBDW_TRUE}" && test -z "${OPT_DYNINST_LIBDW_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_DYNINST_LIBDW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
@@ -28044,8 +27900,6 @@ $as_echo "$as_me:   dyninst:      ${DYNINST}" >&6;}
 $as_echo "$as_me:   dyninst:      ${dyninst_features}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   elfutils:     ${LIBELF}" >&5
 $as_echo "$as_me:   elfutils:     ${LIBELF}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   libdwarf:     ${LIBDWARF}" >&5
-$as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libiberty:    ${LIBIBERTY}" >&5
 $as_echo "$as_me:   libiberty:    ${LIBIBERTY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libmonitor:   ${LIBMONITOR}" >&5
@@ -28165,7 +28019,7 @@ $as_echo "$as_me: WARNING: Perf events is enabled, but perfmon is not available.
 $as_echo "$as_me: WARNING: Mnemonic names will not be available for perf events." >&2;}
 fi
 
-if test "x$with_spack" = xno && test "$num_pkgs" -lt 7 ; then
+if test "x$with_spack" = xno && test "$num_pkgs" -lt 6 ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using --with-spack." >&5

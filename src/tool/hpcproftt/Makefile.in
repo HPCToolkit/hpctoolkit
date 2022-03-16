@@ -350,7 +350,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
-LIBDWARF_COPY = @LIBDWARF_COPY@
+LIBELF_COPY = @LIBELF_COPY@
 
 #############################################################################
 # Common settings
@@ -359,9 +359,6 @@ LIBDWARF_COPY = @LIBDWARF_COPY@
 #############################################################################
 # Local settings
 #############################################################################
-LIBDWARF_INC = @LIBDWARF_INC@
-LIBDWARF_LIB = @LIBDWARF_LIB@
-LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
@@ -576,8 +573,7 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-@OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
-@OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 @OPT_ENABLE_IGC_TRUE@IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 MYSOURCES = \
 	main.cpp \

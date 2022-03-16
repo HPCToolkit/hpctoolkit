@@ -1881,7 +1881,6 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
-default_libdwarf_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
@@ -1901,7 +1900,6 @@ if test "$use_externals" = yes ; then
   default_boost_prefix="$ext_boost_prefix"
   default_dyninst_prefix="$ext_symtabAPI_prefix"
   default_elfutils_prefix="$ext_libelf_prefix"
-  default_libdwarf_prefix="$ext_libdwarf_prefix"
   default_libmonitor_prefix="$ext_libmonitor_prefix"
   default_libunwind_prefix="$ext_libunwind_prefix"
   if test "x$ext_lzma_prefix" != x ; then
@@ -1979,9 +1977,6 @@ then
   fi
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
-  fi
-  if find_spack_pkg libdwarf ; then
-    default_libdwarf_prefix="$spack_ans"
   fi
   if find_spack_pkg libiberty ; then
     default_libiberty_prefix="$spack_ans"
@@ -2440,7 +2435,6 @@ AC_MSG_CHECKING([for elfutils])
 LIBELF_INC=no
 LIBELF_LIB=no
 LIBELF_COPY=no
-elf_has_libdw=no
 
 case "$LIBELF" in
   /* )
@@ -2460,10 +2454,6 @@ case "$LIBELF" in
       AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
     fi
     LIBELF_COPY=yes
-
-    if test -f "${LIBELF_LIB}/libdw.so" ; then
-      elf_has_libdw=yes
-    fi
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -2478,46 +2468,6 @@ AC_MSG_RESULT([$LIBELF])
 AC_SUBST([LIBELF_INC])
 AC_SUBST([LIBELF_LIB])
 AC_SUBST([LIBELF_COPY])
-
-#-------------------------------------------------
-# Option: --with-libdwarf=PATH
-#-------------------------------------------------
-
-LIBDWARF="$default_libdwarf_prefix"
-
-AC_ARG_WITH([libdwarf],
-  [AS_HELP_STRING([--with-libdwarf=PATH],
-  	    [path to libdwarf install directory])],
-  [LIBDWARF="$withval"],
-  [])
-
-AC_MSG_CHECKING([for libdwarf])
-
-case "${LIBDWARF}" in
-  /* )
-    if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
-    else
-        AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
-    fi
-    LIBDWARF_COPY=yes
-    num_pkgs=`expr 1 + $num_pkgs`
-    ;;
-  no )
-    LIBDWARF_COPY=no
-    ;;
-  * )
-    AC_MSG_ERROR([libdwarf directory must be absolute path: $LIBDWARF])
-    ;;
-esac
-
-LIBDWARF_LIB="${LIBDWARF}/lib"
-LIBDWARF_INC="${LIBDWARF}/include"
-
-AC_MSG_RESULT([$LIBDWARF])
-
-AC_SUBST([LIBDWARF_LIB])
-AC_SUBST([LIBDWARF_INC])
-AC_SUBST([LIBDWARF_COPY])
 
 
 #-------------------------------------------------
@@ -4011,41 +3961,6 @@ fi
 
 #-------------------------------------------------
 
-# Test if dyninst was built with libdw or libdwarf.
-#
-# There is not a good compile or link test for this, so we fall back
-# on ldd.  But note: ldd only works for dynamic libraries and doesn't
-# work cross-platform.
-
-use_libdw=no
-
-if test "$DYNINST" != no ; then
-  AC_MSG_CHECKING([if dyninst built with libdw.so])
-
-  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$dyn_dwarf" ; then
-    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
-    if test $? -eq 0 ; then
-       use_libdw=yes
-    fi
-  fi
-
-  AC_MSG_RESULT([$use_libdw])
-
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  if test "$use_libdw" = yes
-  then dyninst_features="$dyninst_features libdw"
-  else dyninst_features="$dyninst_features libdwarf"
-  fi
-fi
-
-#-------------------------------------------------
-
 # Test if dyninst supports cuda.
 
 use_cuda=no
@@ -4158,8 +4073,7 @@ CXXFLAGS="$ORIG_CXXFLAGS"
 # Temporary option to identify version of dyninst, only necessary if
 # the above tests produce the wrong answer.
 #
-#  old = orig version from externals
-#  libdw = uses libdw instead of libdwarf, but not cuda
+#  libdw = uses libdw, but does not support cuda
 #  cuda = uses libdw and supports cuda
 
 dyninst_type=unset
@@ -4173,7 +4087,6 @@ AC_ARG_WITH([dyninst-type],
 
 if test "$dyninst_type" != unset ; then
   case "$dyninst_type" in
-    old )   use_libdw=no ;  use_cuda=no ;;
     libdw ) use_libdw=yes ; use_cuda=no ;;
     cuda )  use_libdw=yes ; use_cuda=yes ;;
     * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
@@ -4182,25 +4095,9 @@ if test "$dyninst_type" != unset ; then
   AC_MSG_NOTICE([override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda])
 fi
 
-AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
-AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
-
-if test "$use_libdw" = yes ; then
-  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
-fi
-
 if test "$use_cuda" = yes ; then
   AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
 fi
-
-#-------------------------------------------------
-
-if test "$use_libdw" = yes && test "$elf_has_libdw" != yes ; then
-  AC_MSG_WARN([dyninst uses libdw but elfutils is missing libdw])
-  AC_MSG_WARN([dyninst:  $DYNINST])
-  AC_MSG_WARN([elfutils: $LIBELF])
-fi
-
 
 #----------------------------------------------------------------------------
 # Options
@@ -4269,7 +4166,7 @@ enable_hpcrun_mesg=yes
 if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
-elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
+elif test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$DYNINST" = no || \
      test "$no_xed_for_hpcrun" = yes || test "$libunwind_exists" = no
 then
@@ -5835,7 +5732,6 @@ AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
 AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
-AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
@@ -5905,7 +5801,7 @@ if test "$warn_no_perfmon" = yes ; then
   AC_MSG_WARN([Mnemonic names will not be available for perf events.])
 fi
 
-if test "x$with_spack" = xno && test "$num_pkgs" -lt 7 ; then
+if test "x$with_spack" = xno && test "$num_pkgs" -lt 6 ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using --with-spack.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
