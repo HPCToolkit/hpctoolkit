@@ -558,7 +558,6 @@ MY_OPENCL_FILES = \
 	gpu/opencl/intel/maps/queue-context-map.c \
 	gpu/opencl/intel/maps/kernel-context-map.c	\
 	gpu/opencl/intel/maps/kernel-param-map.c	\
-	gpu/opencl/intel/pointer-alias-check-helper.c \
 	gpu/opencl/intel/maps/buffer-map.c	\
 	gpu/opencl/intel/maps/device-map.c	\
 	gpu/blame-shifting/opencl/opencl-blame.c

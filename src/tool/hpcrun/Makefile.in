@@ -573,7 +573,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/opencl/intel/maps/queue-context-map.c \
 	gpu/opencl/intel/maps/kernel-context-map.c \
 	gpu/opencl/intel/maps/kernel-param-map.c \
-	gpu/opencl/intel/pointer-alias-check-helper.c \
 	gpu/opencl/intel/maps/buffer-map.c \
 	gpu/opencl/intel/maps/device-map.c \
 	gpu/blame-shifting/opencl/opencl-blame.c \
@@ -818,7 +817,6 @@ am__objects_36 =
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-kernel-context-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo \
-@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-device-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo
@@ -2088,7 +2086,6 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/queue-context-map.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/kernel-context-map.c	\
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/kernel-param-map.c	\
-@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/pointer-alias-check-helper.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/buffer-map.c	\
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/device-map.c	\
 @OPT_ENABLE_OPENCL_TRUE@	gpu/blame-shifting/opencl/opencl-blame.c
@@ -3259,9 +3256,6 @@ gpu/opencl/intel/maps/libhpcrun_la-kernel-context-map.lo:  \
 gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo:  \
 	gpu/opencl/intel/maps/$(am__dirstamp) \
 	gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
-gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo:  \
-	gpu/opencl/intel/$(am__dirstamp) \
-	gpu/opencl/intel/$(DEPDIR)/$(am__dirstamp)
 gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo:  \
 	gpu/opencl/intel/maps/$(am__dirstamp) \
 	gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
@@ -4332,7 +4326,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-queue-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_opencl_la-opencl-api-wrappers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-optimization-check.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-buffer-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-device-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-context-map.Plo@am__quote@
@@ -6240,13 +6233,6 @@ gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo: gpu/opencl/intel/maps/ke
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/maps/kernel-param-map.c' object='gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo `test -f 'gpu/opencl/intel/maps/kernel-param-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/kernel-param-map.c
-
-gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo: gpu/opencl/intel/pointer-alias-check-helper.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo -MD -MP -MF gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Tpo -c -o gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo `test -f 'gpu/opencl/intel/pointer-alias-check-helper.c' || echo '$(srcdir)/'`gpu/opencl/intel/pointer-alias-check-helper.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Tpo gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/pointer-alias-check-helper.c' object='gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo `test -f 'gpu/opencl/intel/pointer-alias-check-helper.c' || echo '$(srcdir)/'`gpu/opencl/intel/pointer-alias-check-helper.c
 
 gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo: gpu/opencl/intel/maps/buffer-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo -MD -MP -MF gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-buffer-map.Tpo -c -o gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo `test -f 'gpu/opencl/intel/maps/buffer-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/buffer-map.c
