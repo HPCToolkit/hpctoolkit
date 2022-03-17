@@ -204,22 +204,22 @@ name ## _metric_kind
 
 
 #define GPU_UTILIZATION_FORMULA() \
-  hpcrun_set_display(METRIC_ID(GPU_ACT), HPCRUN_FMT_METRIC_INVISIBLE); \
-  hpcrun_set_display(METRIC_ID(GPU_STL), HPCRUN_FMT_METRIC_INVISIBLE); \
-  hpcrun_set_display(METRIC_ID(GPU_IDLE), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(EU_ACT), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(EU_STL), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(EU_IDLE), HPCRUN_FMT_METRIC_INVISIBLE); \
   hpcrun_set_display(METRIC_ID(GPU_UTIL_DENOMINATOR), HPCRUN_FMT_METRIC_INVISIBLE); \
-  hpcrun_set_percent(METRIC_ID(GPU_ACT_PERCENT), 0); \
-  hpcrun_set_percent(METRIC_ID(GPU_STL_PERCENT), 0); \
-  hpcrun_set_percent(METRIC_ID(GPU_IDLE_PERCENT), 0); \
-  active_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_ACT_PERCENT)); \
-  stalled_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_STL_PERCENT)); \
-  idle_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_IDLE_PERCENT)); \
+  hpcrun_set_percent(METRIC_ID(EU_ACT_PERCENT), 0); \
+  hpcrun_set_percent(METRIC_ID(EU_STL_PERCENT), 0); \
+  hpcrun_set_percent(METRIC_ID(EU_IDLE_PERCENT), 0); \
+  active_metric  = hpcrun_id2metric_linked(METRIC_ID(EU_ACT_PERCENT)); \
+  stalled_metric  = hpcrun_id2metric_linked(METRIC_ID(EU_STL_PERCENT)); \
+  idle_metric  = hpcrun_id2metric_linked(METRIC_ID(EU_IDLE_PERCENT)); \
   active_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
   stall_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
   idle_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
-  sprintf(active_formula, "100*(#%d/#%d)", METRIC_ID(GPU_ACT), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
-  sprintf(stall_formula, "100*(#%d/#%d)", METRIC_ID(GPU_STL), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
-  sprintf(idle_formula, "100*(#%d/#%d)", METRIC_ID(GPU_IDLE), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  sprintf(active_formula, "100*(#%d/#%d)", METRIC_ID(EU_ACT), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  sprintf(stall_formula, "100*(#%d/#%d)", METRIC_ID(EU_STL), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  sprintf(idle_formula, "100*(#%d/#%d)", METRIC_ID(EU_IDLE), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
   active_metric->formula = active_formula; \
   stalled_metric->formula = stall_formula; \
   idle_metric->formula = idle_formula; \
@@ -750,10 +750,10 @@ gpu_metrics_attribute_gpu_utilization
   gpu_utlization_t *gpu_info = &(activity->details.gpu_utilization_info);
   cct_node_t *cct_node = activity->cct_node;
 
-  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_ACT));
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_ACT), gpu_info->active);
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_STL), gpu_info->stalled);
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_IDLE), gpu_info->idle);
+  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(EU_ACT));
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(EU_ACT), gpu_info->active);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(EU_STL), gpu_info->stalled);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(EU_IDLE), gpu_info->idle);
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_UTIL_DENOMINATOR), 100);
 }
 
