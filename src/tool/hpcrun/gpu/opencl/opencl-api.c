@@ -1468,25 +1468,26 @@ hpcrun_clWaitForEvents
 )
 {
   ETMSG(OPENCL, "clWaitForEvents called");
-  // on the assumption that clWaitForEvents is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
-  // clWaitForEvents can wait on multiple events(probably from different queues).
-  // We need a more sophisticated approach of finding the queues on which the CPU will wait
-  // For now we pass the 1st queue
-  cl_command_queue queue;
+  cl_command_queue *queues;
+  queues = (cl_command_queue*)malloc(num_events*sizeof(cl_command_queue));
 
   if(is_opencl_blame_shifting_enabled()) {
-    size_t queue_size;
-    clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
-    char queue_data[queue_size];
-    clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue_data, NULL);
-    queue = *(cl_command_queue*)queue_data;
-    opencl_sync_prologue(queue);
+    for (int i = 0; i < num_events; i++) {
+      size_t queue_size;
+      clGetEventInfo(event_list[i], CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
+      char queue_data[queue_size];
+      clGetEventInfo(event_list[i], CL_EVENT_COMMAND_QUEUE, queue_size, queue_data, NULL);
+      queues[i] = *(cl_command_queue*)queue_data;
+      opencl_sync_prologue(queues[i]);
+    }
   }
 
   cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
 
   if(is_opencl_blame_shifting_enabled()) {
-    opencl_sync_epilogue(queue);
+    for (int i = 0; i < num_events; i++) {
+      opencl_sync_epilogue(queues[i]);
+    }
   }
   return status;
 }
