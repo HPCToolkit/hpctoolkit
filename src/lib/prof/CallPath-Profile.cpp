@@ -1171,6 +1171,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'loadmap'");
   }
   if (outfs) {
+    size_t gpubin_suffix_len = strlen("gpubin");
     if (Analysis::Util::option == Analysis::Util::Print_LoadModule_Only) {
       for (uint32_t i = 0; i < loadmap_tbl.len; i++) {
 
@@ -1179,8 +1180,16 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 	// make sure we eliminate the <vmlinux> and <vdso> load modules
 	// These modules have prefix '<' and hopefully it doesn't change
 	if ((x->name != NULL && x->name[0] != '<') && 
-            (x->flags & LOADMAP_ENTRY_ANALYZE))
-          fprintf(outfs, "%s\n", x->name );
+            (x->flags & LOADMAP_ENTRY_ANALYZE)) {
+
+	  // for any gpubin, erase any kernel name hash following
+	  // "gpubin" in a load module name
+	  string name(x->name);
+	  size_t pos = name.find("gpubin.");
+	  if (pos != string::npos) name.erase(pos+gpubin_suffix_len);
+
+          fprintf(outfs, "%s\n", name.c_str());
+	}
       }
       // hack: case for hpcproftt with --lm option
       // by returning HPCFMT_EOF we force hpcproftt to exit the loop
