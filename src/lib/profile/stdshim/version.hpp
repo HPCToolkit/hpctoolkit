@@ -49,7 +49,7 @@
 
 // This file is one of multiple "stdshim" headers, which act as a seamless
 // transition library across versions of the STL. Mostly all this does is
-// backport features into C++11, sometimes by using class inheritence tricks,
+// backport features into C++11, sometimes by using class inheritance tricks,
 // and sometimes by importing implementations from Boost or ourselves.
 // Also see Google's Abseil project.
 
@@ -58,31 +58,25 @@
 // If the compiler claims a version of the C++ spec, we'll assume its correct.
 // For now. Change later when things break on some compiler in the future.
 #if __cplusplus >= 201903L
-#define _HPCTOOLKIT_STDSHIM_HAS_atomic_wait
+#define HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
 #endif  // __cplusplus >= 201903L
 #if __cplusplus >= 201703L
 
 #if defined(__has_include)
 #if __has_include(<filesystem>)
-#define _HPCTOOLKIT_STDSHIM_HAS_filesystem
+#define HPCTOOLKIT_STDSHIM_STD_HAS_filesystem
 #else
 // We assume experimental/filesystem is available, its close enough to work with
-#define _HPCTOOLKIT_STDSHIM_HAS_experimental_filesystem
+#define HPCTOOLKIT_STDSHIM_STD_HAS_experimental_filesystem
 #endif
 #else  // defined(__has_include)
 // If we can't test it directly, just assume the compiler has it
-#define _HPCTOOLKIT_STDSHIM_HAS_filesystem
+#define HPCTOOLKIT_STDSHIM_STD_HAS_filesystem
 #endif
 
-#define _HPCTOOLKIT_STDSHIM_HAS_optional
 #ifndef HPCTOOLKIT_SLOW_LIBC
-#define _HPCTOOLKIT_STDSHIM_HAS_shared_mutex
+#define HPCTOOLKIT_STDSHIM_STD_HAS_shared_mutex
 #endif
 #endif  // __cplusplus >= 201703L
 
-#define _HPCTOOLKIT_STDSHIM_STD_HAS(X) defined(_HPCTOOLKIT_STDSHIM_HAS_ ## X)
-
 #endif  // HPCTOOLKIT_STDSHIM_VERSION_H
-
-// Easier macro for #if clauses, should be undef'd at the end of files.
-#define STD_HAS(X) _HPCTOOLKIT_STDSHIM_STD_HAS(X)

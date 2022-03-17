@@ -244,7 +244,7 @@ hpcrun_sample_callpath(void* context, int metricId,
       }
     }
   }
-  else {
+  else {  // Partial unwind case
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
         metricId, metricIncr, skipInner, NULL);
@@ -305,7 +305,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   }
 
   hpcrun_clear_handling_sample(td);
-  if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
+  if (get_mem_low() || ENABLED(FLUSH_EVERY_SAMPLE)) {
     hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
   }
@@ -384,7 +384,7 @@ hpcrun_gen_thread_ctxt(void* context)
   }
 #endif
   hpcrun_clear_handling_sample(td);
-  if (TD_GET(mem_low) || ENABLED(FLUSH_EVERY_SAMPLE)) {
+  if (get_mem_low() || ENABLED(FLUSH_EVERY_SAMPLE)) {
     hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
   }

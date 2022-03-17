@@ -52,7 +52,6 @@
 #include "../util/log.hpp"
 
 #include <array>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <vector>

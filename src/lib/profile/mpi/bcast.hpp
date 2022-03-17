@@ -49,8 +49,8 @@
 
 #include "core.hpp"
 
+#include "../stdshim/numeric.hpp"
 #include <array>
-#include <numeric>
 #include <string>
 #include <vector>
 
@@ -112,7 +112,7 @@ std::vector<std::basic_string<C,T,AS>,AV> bcast(std::vector<std::basic_string<C,
   }
   sizes = bcast(std::vector<unsigned long long>{sizes}, root);
   std::vector<unsigned long long> ends(sizes.size(), 0);
-  std::partial_sum(sizes.begin(), sizes.end(), ends.begin());
+  stdshim::partial_sum(sizes.begin(), sizes.end(), ends.begin());
   std::vector<C> buffer;
   if(World::rank() == root) {
     buffer.reserve(ends.back());

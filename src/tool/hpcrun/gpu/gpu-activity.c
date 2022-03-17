@@ -56,6 +56,9 @@
 
 #include "gpu-activity.h"
 #include "gpu-channel-item-allocator.h"
+
+#define DEBUG 0
+
 #include "gpu-print.h"
 
 
@@ -65,9 +68,6 @@
 //******************************************************************************
 
 #define UNIT_TEST 0
-
-#define DEBUG 0
-
 
 #define FORALL_OPENCL_KINDS(macro)					\
   macro(GPU_ACTIVITY_UNKNOWN)							\
@@ -160,6 +160,8 @@ gpu_interval_set
 {
   interval->start = start;
   interval->end = end;
+  PRINT("gpu interval: [%lu, %lu) delta = %ld\n", interval->start, 
+        interval->end, interval->end - interval->start); 
 }
 
 

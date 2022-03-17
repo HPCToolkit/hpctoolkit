@@ -60,4 +60,16 @@ rocm_binary_function_lookup
   const char* kernel_name
 );
 
+void
+rocm_binary_uri_add
+(
+  const char* uri
+);
+
+void
+rocm_binary_uri_list_init
+(
+  void
+);
+
 #endif

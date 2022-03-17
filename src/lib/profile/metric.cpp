@@ -56,35 +56,12 @@
 
 using namespace hpctoolkit;
 
-static double atomic_add(std::atomic<double>& a, const double v) noexcept {
-  double old = a.load(std::memory_order_relaxed);
-  while(!a.compare_exchange_weak(old, old+v, std::memory_order_relaxed));
-  return old;
-}
-
-static double atomic_op(std::atomic<double>& a, const double v, Statistic::combination_t op) noexcept {
-  double old = a.load(std::memory_order_relaxed);
-  switch(op) {
-  case Statistic::combination_t::sum:
-    while(!a.compare_exchange_weak(old, old+v, std::memory_order_relaxed));
-    break;
-  case Statistic::combination_t::min:
-    while((v < old || old == 0) && !a.compare_exchange_weak(old, v, std::memory_order_relaxed));
-    break;
-  case Statistic::combination_t::max:
-    while((v > old || old == 0) && !a.compare_exchange_weak(old, v, std::memory_order_relaxed));
-    break;
+std::ostream& hpctoolkit::operator<<(std::ostream& os, Statistic::combination_t c) {
+  switch(c) {
+  case Statistic::combination_t::sum: return os << "sum";
+  case Statistic::combination_t::min: return os << "min";
+  case Statistic::combination_t::max: return os << "max";
   }
-  return old;
-}
-
-unsigned int Metric::ScopedIdentifiers::get(MetricScope s) const noexcept {
-  switch(s) {
-  case MetricScope::point: return point;
-  case MetricScope::function: return function;
-  case MetricScope::execution: return execution;
-  }
-  assert(false && "Invalid MetricScope value!");
   std::abort();
 }
 
@@ -137,7 +114,7 @@ bool ExtraStatistic::Settings::operator==(const Settings& o) const noexcept {
   return res;
 }
 
-Statistic::Statistic(std::string suff, bool showp, formula_t form, bool showBD)
+Statistic::Statistic(std::string suff, bool showp, Expression form, bool showBD)
   : m_suffix(std::move(suff)), m_showPerc(showp), m_formula(std::move(form)),
     m_visibleByDefault(showBD) {};
 
@@ -196,8 +173,8 @@ std::size_t Metric::StatsAccess::requestSumPartial() {
   assert(l && "Unable to satisfy :Sum Partial request on a frozen Metric!");
 
   m.m_thawed_sumPartial = m.m_partials.size();
-  m.m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::sum, m.m_thawed_sumPartial});
+  m.m_partials.push_back({Expression::variable, Statistic::combination_t::sum,
+                          m.m_thawed_sumPartial});
   return m.m_thawed_sumPartial;
 }
 
@@ -211,53 +188,74 @@ bool Metric::freeze() {
   size_t cntIdx = -1;
   if(ss.mean || ss.stddev || ss.cfvar) {
     cntIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x == 0 ? 0 : 1; },
-                          Statistic::combination_t::sum, cntIdx});
+    m_partials.push_back({1, Statistic::combination_t::sum, cntIdx});
   }
   if(m_thawed_sumPartial == std::numeric_limits<std::size_t>::max()
      && (ss.sum || ss.mean || ss.stddev || ss.cfvar)) {
     m_thawed_sumPartial = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::sum, m_thawed_sumPartial});
+    m_partials.push_back({Expression::variable, Statistic::combination_t::sum,
+                          m_thawed_sumPartial});
   }
   size_t x2Idx = -1;
   if(ss.stddev || ss.cfvar) {
     x2Idx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x * x; },
+    m_partials.push_back({{Expression::Kind::op_pow, {Expression::variable, 2}},
                           Statistic::combination_t::sum, x2Idx});
   }
   size_t minIdx = -1;
   if(ss.min) {
     minIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::min, minIdx});
+    m_partials.push_back({Expression::variable, Statistic::combination_t::min,
+                          minIdx});
   }
   size_t maxIdx = -1;
   if(ss.max) {
     maxIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
-                          Statistic::combination_t::max, maxIdx});
+    m_partials.push_back({Expression::variable, Statistic::combination_t::max,
+                          maxIdx});
   }
 
   if(ss.sum)
-    m_stats.push_back({"Sum", true, {(Statistic::formula_t::value_type)m_thawed_sumPartial},
+    m_stats.push_back({"Sum", true, {Expression::variable, m_thawed_sumPartial},
                        u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.mean)
-    m_stats.push_back({"Mean", false, {m_thawed_sumPartial, "/", cntIdx},
-                       u_settings().visibility == Settings::visibility_t::shownByDefault});
+    m_stats.push_back({"Mean", false,
+      {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                   {Expression::variable, cntIdx}}},
+      u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.stddev)
     m_stats.push_back({"StdDev", false,
-      {"sqrt((", x2Idx, "/", cntIdx, ") - pow(", m_thawed_sumPartial, "/", cntIdx, ", 2))"},
+      {Expression::Kind::op_sqrt, {{Expression::Kind::op_sub, {
+        {Expression::Kind::op_div, { {Expression::variable, x2Idx},
+                                     {Expression::variable, cntIdx}}},
+        {Expression::Kind::op_pow, {
+          {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                       {Expression::variable, cntIdx}}},
+          2,
+        }},
+      }}}},
       u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.cfvar)
     m_stats.push_back({"CfVar", false,
-      {"sqrt((", x2Idx, "/", cntIdx, ") - pow(", m_thawed_sumPartial, "/", cntIdx, ", 2)) / (", m_thawed_sumPartial, "/", cntIdx, ")"},
+      {Expression::Kind::op_div, {
+        {Expression::Kind::op_sqrt, {{Expression::Kind::op_sub, {
+          {Expression::Kind::op_div, { {Expression::variable, x2Idx},
+                                       {Expression::variable, cntIdx}}},
+          {Expression::Kind::op_pow, {
+            {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                         {Expression::variable, cntIdx}}},
+            2,
+          }},
+        }}}},
+        {Expression::Kind::op_div, { {Expression::variable, m_thawed_sumPartial},
+                                     {Expression::variable, cntIdx}}},
+      }},
       u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.min)
-    m_stats.push_back({"Min", false, {(Statistic::formula_t::value_type)minIdx},
+    m_stats.push_back({"Min", false, {Expression::variable, minIdx},
                        u_settings().visibility == Settings::visibility_t::shownByDefault});
   if(ss.max)
-    m_stats.push_back({"Max", false, {(Statistic::formula_t::value_type)maxIdx},
+    m_stats.push_back({"Max", false, {Expression::variable, maxIdx},
                        u_settings().visibility == Settings::visibility_t::shownByDefault});
 
   m_frozen.store(true, std::memory_order_release);
@@ -271,85 +269,6 @@ const std::vector<StatisticPartial>& Metric::partials() const noexcept {
 const std::vector<Statistic>& Metric::statistics() const noexcept {
   assert(m_frozen.load(std::memory_order_relaxed) && "Attempt to access a Metric's Statistics before a freeze!");
   return m_stats;
-}
-
-StatisticAccumulator::StatisticAccumulator(const Metric& m)
-  : partials(m.partials().size()) {};
-
-void StatisticAccumulator::PartialRef::add(MetricScope s, double v) noexcept {
-  assert(v > 0 && "Attempt to add 0 value to a Partial!");
-  switch(s) {
-  case MetricScope::point: atomic_op(partial.point, v, statpart.combinator()); return;
-  case MetricScope::function: atomic_op(partial.function, v, statpart.combinator()); return;
-  case MetricScope::execution: atomic_op(partial.execution, v, statpart.combinator()); return;
-  }
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-
-StatisticAccumulator::PartialCRef StatisticAccumulator::get(const StatisticPartial& p) const noexcept {
-  return {partials[p.m_idx], p};
-}
-StatisticAccumulator::PartialRef StatisticAccumulator::get(const StatisticPartial& p) noexcept {
-  return {partials[p.m_idx], p};
-}
-
-void MetricAccumulator::add(double v) noexcept {
-  if(v == 0) util::log::warning{} << "Adding a 0-metric value!";
-  atomic_add(point, v);
-}
-
-static std::optional<double> opt0(double d) {
-  return d == 0 ? std::optional<double>{} : d;
-}
-
-std::optional<double> StatisticAccumulator::PartialRef::get(MetricScope s) const noexcept {
-  partial.validate();
-  switch(s) {
-  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
-  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
-  };
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-std::optional<double> StatisticAccumulator::PartialCRef::get(MetricScope s) const noexcept {
-  partial.validate();
-  switch(s) {
-  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
-  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
-  };
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-
-void StatisticAccumulator::Partial::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0
-          || function.load(std::memory_order_relaxed) != 0
-          || execution.load(std::memory_order_relaxed) != 0)
-    && "Attempt to access a StatisticAccumulator with 0 value!");
-}
-
-util::optional_ref<const StatisticAccumulator> Metric::getFor(const Context& c) const noexcept {
-  return c.data().stats.find(*this);
-}
-
-std::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
-  validate();
-  switch(s) {
-  case MetricScope::point: return opt0(point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(function);
-  case MetricScope::execution: return opt0(execution);
-  }
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-
-void MetricAccumulator::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0
-          || function != 0 || execution != 0)
-    && "Attempt to access a MetricAccumulator with 0 value!");
 }
 
 util::optional_ref<const MetricAccumulator> Metric::getFor(const PerThreadTemporary& t, const Context& c) const noexcept {

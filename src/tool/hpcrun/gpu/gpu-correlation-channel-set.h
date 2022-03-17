@@ -70,16 +70,17 @@ typedef void (*gpu_correlation_channel_fn_t)
 //******************************************************************************
 
 void
-gpu_correlation_channel_set_insert
+gpu_correlation_channel_set_insert_with_idx
 (
+ int idx,
  gpu_correlation_channel_t *channel
 );
 
 
 void
-gpu_correlation_channel_set_consume
+gpu_correlation_channel_set_consume_with_idx
 (
- void
+ int idx
 );
 
 

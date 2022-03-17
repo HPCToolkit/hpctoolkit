@@ -11,6 +11,13 @@ static gpu_monitor_node_t *gpu_monitor_list = NULL;
 void
 gpu_monitor_register(	gpu_monitor_node_t node)
 {
+  gpu_monitor_node_t *curr = gpu_monitor_list;
+  while (curr) {
+    if (curr->ci->name == node.ci->name) {
+      return;
+    }
+    curr = curr->next;
+  }
   gpu_monitor_node_t* new_node = hpcrun_malloc(sizeof(gpu_monitor_node_t));
   new_node->ci = node.ci;
   new_node->enter_fn = node.enter_fn;

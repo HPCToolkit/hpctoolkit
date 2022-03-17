@@ -123,7 +123,6 @@ Settings& Settings::operator<<(ProfileFinalizer& f) {
   available += pro;
   finalizers.all.emplace_back(f);
   if(pro.hasIdentifier()) finalizers.identifier.emplace_back(f);
-  if(pro.hasMScopeIdentifiers()) finalizers.mscopeIdentifiers.emplace_back(f);
   if(pro.hasResolvedPath()) finalizers.resolvedPath.emplace_back(f);
   if(pro.hasClassification()) finalizers.classification.emplace_back(f);
   if(pro.hasStatistics()) finalizers.statistics.emplace_back(f);
@@ -176,12 +175,12 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
           }
         }
       });
-    uds.identifier.metric = structs.metric.add_default<unsigned int>(
-      [this](unsigned int& id, const Metric& m){
-        id = std::numeric_limits<unsigned int>::max();
+    uds.identifier.metric = structs.metric.add_initializer<Metric::Identifier>(
+      [this](Metric::Identifier& id, const Metric& m){
         for(ProfileFinalizer& fp: finalizers.identifier) {
           if(auto v = fp.identify(m)) {
-            id = *v;
+            assert(&v->getMetric() == &m);
+            id = std::move(*v);
             break;
           }
         }
@@ -192,20 +191,6 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
         for(ProfileFinalizer& fp: finalizers.identifier) {
           if(auto v = fp.identify(t)) {
             id = *v;
-            break;
-          }
-        }
-      });
-  }
-  if(requested.hasMScopeIdentifiers()) {
-    uds.mscopeIdentifiers.metric = structs.metric.add_default<Metric::ScopedIdentifiers>(
-      [this](Metric::ScopedIdentifiers& ids, const Metric& m){
-        ids.point = std::numeric_limits<unsigned int>::max();
-        ids.function = std::numeric_limits<unsigned int>::max();
-        ids.execution = std::numeric_limits<unsigned int>::max();
-        for(ProfileFinalizer& fp: finalizers.mscopeIdentifiers) {
-          if(auto v = fp.subidentify(m)) {
-            ids = *v;
             break;
           }
         }
@@ -257,7 +242,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   structs.thread.freeze();
 
   // Make sure the global Context is ready before letting any data in.
-  cct.reset(new Context(structs.context, std::nullopt, Scope(*this)));
+  cct.reset(new Context(structs.context, std::nullopt, {Relation::global, Scope(*this)}));
   for(auto& s: sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(*cct);
   }
@@ -541,11 +526,6 @@ Source::identifier() const {
   assert(extensionLimit.hasIdentifier() && "Source did not register for `identifier` emission!");
   return pipe->uds.identifier;
 }
-const decltype(ProfilePipeline::Extensions::mscopeIdentifiers)&
-Source::mscopeIdentifiers() const {
-  assert(extensionLimit.hasMScopeIdentifiers() && "Source did not register for `mscopeIdentifiers` emission!");
-  return pipe->uds.mscopeIdentifiers;
-}
 const decltype(ProfilePipeline::Extensions::resolvedPath)&
 Source::resolvedPath() const {
   assert(extensionLimit.hasResolvedPath() && "Source did not register for `resolvedPath` emission!");
@@ -650,16 +630,16 @@ void Source::notifyContext(Context& c) {
   }
   c.userdata.initialize();
 }
-Context& Source::context(Context& p, const Scope& s) {
+Context& Source::context(Context& p, const NestedScope& ns) {
   assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
   std::reference_wrapper<Context> res = p;
-  Scope ss = s;
+  NestedScope res_ns = ns;
   if(finalizeContexts) {
     for(ProfileFinalizer& f: pipe->finalizers.classification) {
-      Scope rs = s;
-      auto r = f.classify(p, rs);
+      NestedScope this_ns = ns;
+      auto r = f.classify(p, this_ns);
       if(r) {
-        ss = rs;
+        res_ns = this_ns;
         res = *r;
         break;
       }
@@ -667,12 +647,12 @@ Context& Source::context(Context& p, const Scope& s) {
   }
 
   bool first;
-  std::tie(res, first) = res.get().ensure(ss);
+  std::tie(res, first) = res.get().ensure(res_ns);
   if(first) notifyContext(res);
 
   if(finalizeContexts)
     for(ProfileSink& sink: pipe->sinks)
-      sink.notifyContextExpansion(p, s, res);
+      sink.notifyContextExpansion(p, ns.flat(), res);
   return res;
 }
 
@@ -701,7 +681,7 @@ ContextReconstruction& Source::contextReconstruction(ContextFlowGraph& g, Contex
   if(x.second) {
     rc.instantiate(
       [&](Context& c, const Scope& s) -> Context& {
-        return context(c, s);
+        return context(c, {Relation::call, s});
       }, [&](const Scope& s) -> ContextReconstruction& {
         assert(s != g.scope());
         auto fg = contextFlowGraph(s);
@@ -778,19 +758,6 @@ Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, uint64_t g, 
 
 void Source::AccumulatorsRef::add(Metric& m, double v) {
   map[m].add(v);
-}
-
-Source::StatisticsRef Source::accumulateTo(Context& c) {
-  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
-  return StatisticsRef(c);
-}
-
-void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
-                                MetricScope ms, double v) {
-  auto& a = ctx.m_data.stats.emplace(std::piecewise_construct,
-                                     std::forward_as_tuple(m),
-                                     std::forward_as_tuple(m)).first;
-  a.get(sp).add(ms, v);
 }
 
 Thread& Source::newThread(ThreadAttributes o) {
@@ -986,11 +953,6 @@ const decltype(ProfilePipeline::Extensions::identifier)&
 Sink::identifier() const {
   assert(extensionLimit.hasIdentifier() && "Sink did not register for `identifier` absorption!");
   return pipe->uds.identifier;
-}
-const decltype(ProfilePipeline::Extensions::mscopeIdentifiers)&
-Sink::mscopeIdentifiers() const {
-  assert(extensionLimit.hasMScopeIdentifiers() && "Sink did not register for `mscopeIdentifiers` absorption!");
-  return pipe->uds.mscopeIdentifiers;
 }
 const decltype(ProfilePipeline::Extensions::resolvedPath)&
 Sink::resolvedPath() const {

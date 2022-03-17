@@ -92,12 +92,26 @@ SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
 SAMPLE_SOURCE_DECL_MACRO(papi_c_intel)
 #endif
 
+#ifdef HPCRUN_SS_PAPI_C_ROCM
+SAMPLE_SOURCE_DECL_MACRO(papi_c_rocm)
+#endif
+
 #ifdef HPCRUN_SS_NVIDIA
 SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
 #endif
 
 #ifdef HPCRUN_SS_AMD
+#ifndef HPCRUN_STATIC_LINK
 SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
+#endif
+#endif
+
+SAMPLE_SOURCE_DECL_MACRO(openmp_gpu)
+
+#ifdef HPCRUN_SS_AMD
+#ifndef HPCRUN_STATIC_LINK
+SAMPLE_SOURCE_DECL_MACRO(amd_rocprof)
+#endif
 #endif
 
 #ifdef HPCRUN_SS_LEVEL0

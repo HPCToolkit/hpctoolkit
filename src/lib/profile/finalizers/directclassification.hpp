@@ -67,13 +67,13 @@ public:
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
   ExtensionClass requires() const noexcept override { return ExtensionClass::resolvedPath; }
 
-  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
+  util::optional_ref<Context> classify(Context&, NestedScope&) noexcept override;
 
 private:
   struct udModule final {
     // Storage for DWARF function data
     std::unordered_map<uint64_t, Function> functions;
-    using trienode = std::pair<Scope, const void* /* const trienode* */>;
+    using trienode = std::pair<std::pair<Scope, Relation>, const void* /* const trienode* */>;
     std::deque<trienode> trie;
     std::map<util::interval<uint64_t>, const trienode&> leaves;
 

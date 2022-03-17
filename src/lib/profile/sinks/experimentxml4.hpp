@@ -78,7 +78,7 @@ public:
 
   ExtensionClass requires() const noexcept override {
     using namespace hpctoolkit::literals::extensions;
-    Class ret = classification + identifier + mscopeIdentifiers;
+    Class ret = classification + identifier;
     if(include_sources) ret += resolvedPath;
     return ret;
   }
@@ -122,9 +122,9 @@ private:
 
     std::string metricdb_tags;
     std::string metric_tags;
-    unsigned int maxId;
   };
-  std::string eStatMetricTags(const ExtraStatistic&, unsigned int&);
+  std::atomic<int> next_statid;
+  std::string eStatMetricTags(const ExtraStatistic&);
 
   struct Proc {
     Proc() = default;

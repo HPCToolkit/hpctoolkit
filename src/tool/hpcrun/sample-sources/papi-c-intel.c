@@ -214,12 +214,13 @@ static sync_info_list_t intel_component = {
   .get_event_set = papi_c_intel_get_event_set,
   .add_event = papi_c_intel_add_event,
   .finalize_event_set = papi_c_no_action,
-  .sync_setup = papi_c_no_action, //papi_c_intel_setup,
-  .sync_teardown = papi_c_intel_teardown,
-  .sync_start = papi_c_intel_start,
+  .setup = papi_c_no_action, //papi_c_intel_setup,
+  .teardown = papi_c_intel_teardown,
+  .start = papi_c_intel_start,
   .read = papi_c_intel_read,
-  .sync_stop = papi_c_intel_stop,
+  .stop = papi_c_intel_stop,
   .process_only = true,
+  .is_gpu_sync = true,
   .next = NULL,
 };
 

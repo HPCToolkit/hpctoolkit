@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2021.10.15-master],
+AC_INIT([hpctoolkit], [2022.01.15-master],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -3314,10 +3314,8 @@ else
   AC_LINK_IFELSE([
   AC_LANG_SOURCE([[
 #include "papi.h"
-extern void CUDA_init_component(void);
 int main()
 {
-  CUDA_init_component();
 }
 ]])], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
 
@@ -3326,6 +3324,46 @@ int main()
   LIBS="$ORIG_LIBS"
 
   AC_MSG_RESULT([$use_papi_c_cupti])
+fi
+
+
+#-------------------------------------------------
+# Option: --enable-papi-c-rocm
+#-------------------------------------------------
+
+use_papi_c_rocm=no
+
+AC_ARG_ENABLE([papi-c-rocm],
+  [AS_HELP_STRING([--enable-papi-c-rocm],
+      [use papi ROCM support, if available (default no), requires
+       papi rocm component])],
+  [use_papi_c_rocm="$enableval"],
+  [])
+
+if test "$use_papi_c" = no || test "$use_papi_c_rocm" != yes ; then
+  use_papi_c_rocm=no
+else
+  AC_MSG_CHECKING([for papi rocm component])
+
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
+  AC_LANG_PUSH([C])
+
+  AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
+#include "papi.h"
+int main()
+{
+}
+]])], [use_papi_c_rocm=yes], [use_papi_c_rocm=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+
+  AC_MSG_RESULT([$use_papi_c_rocm])
 fi
 
 
@@ -3602,6 +3640,7 @@ then
     OPT_PAPI_LIBPATH=
     use_papi_c=no
     use_papi_c_cupti=no
+    use_papi_c_rocm=no
   fi
 fi
 
@@ -3611,6 +3650,7 @@ AM_CONDITIONAL(OPT_PAPI_DYNAMIC, [test "$OPT_PAPI_DYNAMIC" = yes])
 AM_CONDITIONAL(OPT_PAPI_STATIC,  [test "$OPT_PAPI_STATIC" = yes])
 AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
+AM_CONDITIONAL(OPT_PAPI_ROCM, [test "$use_papi_c_rocm" = yes])
 
 
 #-------------------------------------------------
@@ -4996,6 +5036,7 @@ case "$IGC" in
     IGC_LDFLAGS =
     IGA_LDFLAGS =
 
+    AC_MSG_NOTICE([IGC: multilib_path is ${multilib_path}])
     for lib in $multilib_path ; do
       if test -f "${IGC}/${lib}/libigc.so" ; then
         IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
@@ -5085,6 +5126,7 @@ AC_SUBST([OPT_METRICS_DISCOVERY])
 AC_SUBST([OPT_METRICS_DISCOVERY_IFLAGS])
 AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
 
+
 #-------------------------------------------------
 # Option: --with-gtpin=PATH
 #-------------------------------------------------
@@ -5112,7 +5154,6 @@ case "$GTPIN" in
     if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
       OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
     fi
-
     if test "x$OPT_GTPIN_LIBDIR" = x ; then
       AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
     fi
@@ -5149,6 +5190,8 @@ ROCM=
 ROCM_HIP=
 ROCM_DBGAPI=
 ROCM_TRACER=
+ROCM_PROFILER=
+ROCM_HSA=
 
 AC_ARG_WITH([rocm],
   AS_HELP_STRING([--with-rocm=PATH],
@@ -5170,17 +5213,35 @@ AC_ARG_WITH([rocm-tracer],
       [path to roctracer-dev install directory]),
   [ROCM_TRACER="$withval"], [])
 
+AC_ARG_WITH([rocm-profiler],
+  AS_HELP_STRING([--with-rocm-profiler=PATH],
+      [path to rocprofiler-dev install directory]),
+  [ROCM_PROFILER="$withval"], [])
+
+AC_ARG_WITH([rocm-hsa],
+  AS_HELP_STRING([--with-rocm-hsa=PATH],
+      [path to hsa-dev install directory]),
+  [ROCM_HSA="$withval"], [])
+
+
+
 ROCM_HIP_IFLAGS=
 ROCM_DBGAPI_IFLAGS=
 ROCM_TRACER_IFLAGS=
+ROCM_PROFILER_IFLAGS=
+ROCM_HSA_IFLAGS=
 
 ROCM_HIP_LD_DIR=
 ROCM_DBGAPI_LD_DIR=
 ROCM_TRACER_LD_DIR=
+ROCM_PROFILER_LD_DIR=
+ROCM_HSA_LD_DIR=
 
 ROCM_HIP_MESG=
 ROCM_DBGAPI_MESG=
 ROCM_TRACER_MESG=
+ROCM_PROFILER_MESG=
+ROCM_HSA_MESG=
 
 require_rocm=no
 
@@ -5233,6 +5294,34 @@ case "$ROCM" in
       AC_MSG_NOTICE([found $ROCM/roctracer/lib/libroctracer64.so])
       ROCM_TRACER_LD_DIR="$ROCM/roctracer/lib"
       ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+
+    # ROCPROFILER
+    if test -f "$ROCM/rocprofiler/include/rocprofiler.h" ; then
+      AC_MSG_NOTICE([found $ROCM/rocprofiler/include/rocprofiler.h])
+      ROCM_PROFILER_IFLAGS="-I$ROCM/rocprofiler/include"
+      ROCM_PROFILER_MESG="$ROCM/rocprofiler"
+      found=yes
+    fi
+    if test -f "$ROCM/rocprofiler/lib/librocprofiler64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/rocprofiler/lib/librocprofiler64.so])
+      ROCM_PROFILER_LD_DIR="$ROCM/rocprofiler/lib"
+      ROCM_PROFILER_MESG="$ROCM/rocprofiler"
+      found=yes
+    fi
+
+    # HSA
+    if test -f "$ROCM/hsa/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM/hsa/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM/hsa/include/hsa"
+      ROCM_HSA_MESG="$ROCM/hsa"
+      found=yes
+    fi
+    if test -f "$ROCM/hsa/lib/libhsa-runtime64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/hsa/lib/libhsa-runtime64.so])
+      ROCM_HSA_LD_DIR="$ROCM/hsa/lib"
+      ROCM_HSA_MESG="$ROCM/hsa"
       found=yes
     fi
 
@@ -5327,6 +5416,58 @@ case "$ROCM_TRACER" in
     ;;
 esac
 
+case "$ROCM_PROFILER" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_PROFILER/rocprofiler/include/rocprofiler.h" ; then
+      AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/include/rocprofiler.h])
+      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/rocprofiler/include"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      found=yes
+    fi
+    if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so])
+      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_PROFILER])
+    fi
+    ;;
+  * )
+    ROCM_PROFILER=no
+    ;;
+esac
+
+case "$ROCM_HSA" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_HSA/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM_HSA/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
+      ROCM_HSA_MESG="$ROCM_HSA"
+      found=yes
+    fi
+    if test -f "$ROCM_HSA/lib/libhsa-runtime64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_HSA/lib/libhsa-runtime64.so])
+      ROCM_HSA_LD_DIR="$ROCM_HSA/lib"
+      ROCM_HSA_MESG="$ROCM_HSA"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_HSA])
+    fi
+    ;;
+  * )
+    ROCM_HSA=no
+    ;;
+esac
+
 #
 # Check that we found all the pieces.
 #
@@ -5343,6 +5484,12 @@ then
   if test "x$ROCM_TRACER_IFLAGS" = x ; then
     AC_MSG_ERROR([unable to find roctracer_hip.h])
   fi
+  if test "x$ROCM_PROFILER_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find rocprofiler.h])
+  fi
+  if test "x$ROCM_HSA_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find hsa.h])
+  fi
 
   if test "x$ROCM_HIP_LD_DIR" = x ; then
     AC_MSG_ERROR([unable to find libamdhip64.so])
@@ -5353,10 +5500,16 @@ then
   if test "x$ROCM_TRACER_LD_DIR" = x ; then
     AC_MSG_ERROR([unable to find libroctracer64.so])
   fi
+  if test "x$ROCM_PROFILER_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find librocprofiler64.so])
+  fi
+  if test "x$ROCM_HSA_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find libhsa-runtime64.so])
+  fi
 
   OPT_HAVE_ROCM=yes
-  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
-  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
 fi
 
 #
@@ -5397,6 +5550,7 @@ AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
 
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LD_LIB_PATH])
+AC_SUBST([ROCM_PROFILER_LD_DIR])
 
 
 #-------------------------------------------------
@@ -5797,11 +5951,14 @@ AC_MSG_NOTICE([  igc:          ${IGC}])
 AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
 AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
+AC_MSG_NOTICE([  papi-c-rocm: ${use_papi_c_rocm}])
 AC_MSG_NOTICE([  rocm:         ${rocm_mesg}])
 if test "$OPT_HAVE_ROCM" = yes ; then
   AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])
   AC_MSG_NOTICE([  rocm dbgapi:  $ROCM_DBGAPI_MESG])
   AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
+  AC_MSG_NOTICE([  rocm profiler:$ROCM_PROFILER_MESG])
+  AC_MSG_NOTICE([  rocm hsa:     $ROCM_HSA_MESG])
 fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])

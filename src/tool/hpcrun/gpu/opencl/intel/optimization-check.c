@@ -14,7 +14,6 @@
 #include "maps/queue-context-map.h"
 #include "maps/kernel-context-map.h"
 #include "maps/kernel-param-map.h"
-#include "pointer-alias-check-helper.h"
 #include "maps/buffer-map.h"
 #include "maps/device-map.h"
 
@@ -39,6 +38,86 @@ static cct_node_t *firstDeviceCCT = NULL;
 //******************************************************************************
 // private functions
 //******************************************************************************
+
+static int
+boundary_compare
+(
+ const void* a,
+ const void* b
+)
+{
+  const char* aa = *(const char**)a;
+  const char* bb = *(const char**)b;
+  
+  // strtok will alter input argument, hence creating a clone of aa and bb
+  char* aa_clone = strdup(aa);
+  char* bb_clone = strdup(bb);
+  
+  // a and b are in the format "<mem> <S/E>"
+  // mem(int): memory address of the boundary
+  // S/E(char): type of boundary (S=start, E=end)
+  int a_num = atoi(strtok(aa_clone, " "));
+  char * a_type = strtok(NULL, " ");
+  int b_num = atoi(strtok(bb_clone, " "));
+  char * b_type = strtok(NULL, " ");
+  
+  // if boundaries have same address, we sort by type (E comes before S lexicographically)
+  if (a_num == b_num) {
+    return strcmp(a_type, b_type);
+  }
+  // if boundaries have different address, we sort by address
+  return a_num - b_num;
+}
+
+
+static bool
+checkIfMemoryRegionsOverlap
+(
+ kp_node_t *kernel_param_list
+) 
+{
+  uint16_t num_params = 0;
+  kp_node_t *curr = kernel_param_list;
+  while (curr) {
+    num_params++;
+    curr = curr->next;
+  }
+
+  uint16_t arr_length = num_params*2;
+  char* boundaries[arr_length];
+  uint16_t index = 0;
+
+  curr = kernel_param_list;
+  while (curr) {
+    char start[22], end[22];
+    long long mem_start = (long)curr->mem;
+    long long mem_end = (long)curr->mem + (size_t)curr->size;
+    sprintf(start, "%lld %s", mem_start, "S");
+    sprintf(end, "%lld %s", mem_end, "E");
+    boundaries[index++] =  strdup(start);
+    boundaries[index++] =  strdup(end);
+    curr = curr->next;
+  }
+  
+  qsort(boundaries, arr_length, sizeof(char*), boundary_compare);
+
+  bool currentOpen = false;
+  for (int i = 0; i < arr_length; i++) {
+    char *b = strdup(boundaries[i]);
+    strtok(b, " ");             // memory address, which will be useful when returning all overlapped buffers
+    char *boundary_type = strtok(NULL, " ");
+    
+    if (strcmp(boundary_type, "S") == 0) {
+      // if there are two consecutive start boundaries, there is an overlap
+      if (currentOpen) return true;
+      currentOpen = true;
+    } else {
+      currentOpen = false;
+    }
+  }
+  return false;
+}
+
 
 static void
 create_activity_object

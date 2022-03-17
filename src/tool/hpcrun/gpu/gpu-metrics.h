@@ -89,6 +89,15 @@ typedef enum {
 } gpu_lmem_ops_t;
 
 
+typedef enum {
+GPU_XFER_XMIT                  				 = 0,
+GPU_XFER_XRCV                  				 = 1,
+GPU_XFER_XMIT_TP                   		 = 2,
+GPU_XFER_XRCV_TP                   		 = 3,
+GPU_XFER_XMIT_COUNT              			 = 4,
+GPU_XFER_XRCV_COUNT              			 = 5
+} gpu_xfer_ops_t;
+
 
 //--------------------------------------------------------------------------
 // indexed metrics
@@ -285,21 +294,21 @@ typedef enum {
 #define FORALL_GPU_INST(macro)			\
   macro(GPU_INST_METRIC_NAME ": EXC_CNT", GPU_INST_EXEC_COUNT,	\
 	"GPU instruction/basic-block execution count")  \
-  macro(GPU_INST_METRIC_NAME ": ACT_SIMD", GPU_INST_ACT_SIMD_LANES,	\
+  macro(GPU_INST_METRIC_NAME ": SIMD_ACT", GPU_INST_ACT_SIMD_LANES,	\
 	"GPU active simd lanes")  \
-  macro(GPU_INST_METRIC_NAME ": WAST_SIMD", GPU_INST_WASTE_SIMD_LANES,	\
+  macro(GPU_INST_METRIC_NAME ": SIMD_WST", GPU_INST_WASTE_SIMD_LANES,	\
 	"GPU wasted simd lanes")  \
-  macro(GPU_INST_METRIC_NAME ": TOT_SIMD", GPU_INST_TOT_SIMD_LANES,	\
+  macro(GPU_INST_METRIC_NAME ": SIMD_TOT", GPU_INST_TOT_SIMD_LANES,	\
 	"GPU total simd lanes")   \
-  macro(GPU_INST_METRIC_NAME ": SIMD_SCLR_LOSS", GPU_INST_SCALAR_SIMD_LOSS,	\
+  macro(GPU_INST_METRIC_NAME ": SIMD_SLS", GPU_INST_SCALAR_SIMD_LOSS,	\
 	"GPU simd lanes lost due to scalar instructions")   \
   macro(GPU_INST_METRIC_NAME ": LAT(cycles)", GPU_INST_LATENCY,	\
 	"GPU instruction latency")  \
-  macro(GPU_INST_METRIC_NAME ": COV_LAT(cycles)", GPU_INST_COVERED_LATENCY,	\
+  macro(GPU_INST_METRIC_NAME ": LAT_COV(cycles)", GPU_INST_COVERED_LATENCY,	\
 	"GPU covered latency")  \
-  macro(GPU_INST_METRIC_NAME ": UNCOV_LAT(cycles)", GPU_INST_UNCOVERED_LATENCY,	\
+  macro(GPU_INST_METRIC_NAME ": LAT_UCV(cycles)", GPU_INST_UNCOVERED_LATENCY,	\
 	"GPU uncovered latency")   \
-  macro(GPU_INST_METRIC_NAME ": THR_COV_LAT", GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY,	\
+  macro(GPU_INST_METRIC_NAME ": LAT_THR", GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY,	\
 	"GPU threads for covering latency (1 + U/C)")
 
 
@@ -344,8 +353,7 @@ typedef enum {
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\
   macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
-	"GPU kernel: theoretical occupancy (FGP_ACT / FGP_MAX)")          \
-  
+	"GPU kernel: theoretical occupancy (FGP_ACT / FGP_MAX)")
 
 // gpu implicit copy
 #define FORALL_GICOPY(macro)					\
@@ -403,6 +411,22 @@ typedef enum {
   FORALL_GSAMP_REAL(macro)				
 
 
+// gpu transfer information
+#define FORALL_GXFER(macro)			\
+	macro("GXFER:XMIT (B)",          			GPU_XFER_XMIT,		\
+	"GPU link total data transmited")			\
+	macro("GXFER:XRCV (B)",          			GPU_XFER_XRCV,		\
+	"GPU link total data received")		\
+	macro("GXFER:XMIT_TP (GB)",          	GPU_XFER_XMIT_TP,		\
+	"GPU link total transmit throughput")		\
+	macro("GXFER:XRCV_TP (GB)",          	GPU_XFER_XRCV_TP,		\
+	"GPU link total received throughput")		\
+	macro("GXFER:XMIT_COUNT",             GPU_XFER_XMIT_COUNT,  			\
+	"GPU link launch count transmited")					\
+	macro("GXFER:XRCV_COUNT",             GPU_XFER_XRCV_COUNT,  			\
+	"GPU kernel: launch count received")
+
+
 // intel optimization metrics
 #define FORALL_INTEL_OPTIMIZATION(macro)					\
     macro("INORDER_QUEUE:COUNT",                INORDER_QUEUE,		\
@@ -433,17 +457,17 @@ typedef enum {
 
 // gpu-utilization metrics
 #define FORALL_GPU_UTILIZATION(macro)					\
-  macro("GPU_ACT",              GPU_ACT,		"")  \
-  macro("GPU_STL",              GPU_STL,		"")	 \
-  macro("GPU_IDLE",             GPU_IDLE,		"")  \
+  macro("EU_ACTIVE",              EU_ACT,		"")  \
+  macro("EU_STALL",              EU_STL,		"")	 \
+  macro("EU_IDLE",             EU_IDLE,		"")  \
   macro("GPU_UTIL_DENOMINATOR",              GPU_UTIL_DENOMINATOR,		\
 	"this is a helper metric that increments the metric value by 100 for the corresponding CCT. This can be denominator to the above three \
   to metrics to get the \% of GPU utilization")  \
-  macro("GPU_ACTIVE (%)",              GPU_ACT_PERCENT,		\
+  macro("EU_ACT (%)",              EU_ACT_PERCENT,		\
 	"The percentage of time in which the Execution Units were active")    \
-  macro("GPU_STALL (%)",              GPU_STL_PERCENT,		\
+  macro("EU_STL (%)",              EU_STL_PERCENT,		\
 	"The percentage of time in which the Execution Units were stalled")    \
-  macro("GPU_IDLE (%)",              GPU_IDLE_PERCENT,		\
+  macro("EU_IDLE (%)",              EU_IDLE_PERCENT,		\
 	"The percentage of time in which the Execution Units were idle")
 
 
@@ -512,6 +536,11 @@ gpu_metrics_GSAMP_enable
  void
 );
 
+void
+gpu_metrics_GXFER_enable
+(
+void
+);
 
 // record blame-shifting metrics
 void
@@ -561,6 +590,22 @@ gpu_metrics_GBR_enable
  void
 );
 
+
+//--------------------------------------------------
+// record GPU hardware counters
+//--------------------------------------------------
+
+// Unlike other GPU metric types that may have up to a dozen of metrics,
+// GPU hardware counters may have a few hundred metrics.
+// So, we should only create counter metrics for the ones that are
+// requested at the command line.
+void
+gpu_metrics_GPU_CTR_enable
+(
+  int,
+  const char**,
+  const char**
+);
 
 //--------------------------------------------------
 // intel optimization metrics

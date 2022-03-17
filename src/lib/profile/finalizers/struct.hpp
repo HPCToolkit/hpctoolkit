@@ -72,7 +72,7 @@ public:
   }
   ExtensionClass requires() const noexcept override { return {}; }
 
-  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
+  util::optional_ref<Context> classify(Context&, NestedScope&) noexcept override;
   bool resolve(ContextFlowGraph&) noexcept override;
 
   std::vector<stdshim::filesystem::path> forPaths() const;
@@ -81,7 +81,7 @@ private:
   struct udModule final {
     // Storage for Function data
     std::deque<Function> funcs;
-    using trienode = std::pair<Scope, const void* /* const trienode* */>;
+    using trienode = std::pair<std::pair<Scope, Relation>, const void* /* const trienode* */>;
     // Trie of Scopes, for efficiently storing nested Scopes
     std::deque<trienode> trie;
     // Bounds-map (instruction -> nested Scope and function entry)

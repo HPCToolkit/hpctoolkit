@@ -41,41 +41,96 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef rocm_debug_api_h
-#define rocm_debug_api_h
+#ifndef rocprofiler_api_h
+#define rocprofiler_api_h
+
+//******************************************************************************
+// macro definitions
+//******************************************************************************
+
+#define ROCTRACER_CHANNEL_IDX 0
+#define ROCPROFILER_CHANNEL_IDX 1
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
+void
+rocprofiler_start_kernel
+(
+  uint64_t
+);
+
+
+void
+rocprofiler_stop_kernel
+(
+	void
+);
+
+
+void
+rocprofiler_init
+(
+ void
+);
+
+
+void
+rocprofiler_fini
+(
+ void *args,
+ int how
+);
+
+
 int
-rocm_debug_api_bind
+rocprofiler_bind
 (
   void
 );
 
 void
-rocm_debug_api_init
+rocprofiler_wait_context_callback
+(
+  void
+);
+
+int
+rocprofiler_total_counters
+(
+  void
+);
+
+const char*
+rocprofiler_counter_name
+(
+  int
+);
+
+const char*
+rocprofiler_counter_description
+(
+  int
+);
+
+int
+rocprofiler_match_event
+(
+  const char*
+);
+
+void
+rocprofiler_finalize_event_list
 (
   void
 );
 
 void
-rocm_debug_api_fini
+rocprofiler_uri_setup
 (
   void
 );
 
-void
-rocm_debug_api_query_code_object
-(
-  size_t* code_obejct_count_ptr
-);
-
-char*
-rocm_debug_api_query_uri
-(
-  size_t code_object_index
-);
 
 #endif

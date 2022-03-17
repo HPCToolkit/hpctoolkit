@@ -58,25 +58,20 @@ public:
   ~DenseIds() = default;
 
   ExtensionClass provides() const noexcept override {
-    return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
+    return ExtensionClass::identifier;
   }
   ExtensionClass requires() const noexcept override { return {}; }
 
   std::optional<unsigned int> identify(const Module&) noexcept override;
   std::optional<unsigned int> identify(const File&) noexcept override;
-  std::optional<unsigned int> identify(const Metric&) noexcept override;
+  std::optional<Metric::Identifier> identify(const Metric&) noexcept override;
   std::optional<unsigned int> identify(const Context&) noexcept override;
   std::optional<unsigned int> identify(const Thread&) noexcept override;
-
-  std::optional<Metric::ScopedIdentifiers> subidentify(const Metric&) noexcept override;
 
 private:
   std::atomic<unsigned int> mod_id;
   std::atomic<unsigned int> file_id;
   std::atomic<unsigned int> met_id;
-  std::atomic<unsigned int> smet_id;
-  std::atomic<unsigned int> stat_id;
-  std::atomic<unsigned int> sstat_id;
   std::atomic<unsigned int> ctx_id;
   std::atomic<unsigned int> t_id;
 };
