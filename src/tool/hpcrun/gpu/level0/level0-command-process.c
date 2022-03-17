@@ -216,6 +216,8 @@ get_load_module
   load_module_t *module = hpcrun_loadmap_findByName(load_module_name);
   if (module == NULL) {
     module_id = hpcrun_loadModule_add(load_module_name);
+    load_module_t *lm = hpcrun_loadmap_findById(module_id);
+    hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
   } else {
     // Find module
     module_id = module->id;
