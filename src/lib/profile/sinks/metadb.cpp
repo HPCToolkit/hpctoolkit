@@ -674,11 +674,19 @@ void MetaDB::write() try {
       auto& udc = top.userdata[ud];
       top.citerate(nullptr, [&](const Context& c){
         if(c.children().empty()) return;
+        if(elide(c)) return;
 
         auto& udc = c.userdata[ud];
         std::vector<char> buf;
         for(const Context& cc: c.children().citerate()) {
-          compose(cc, buf);
+          if(elide(cc)) {
+            for(const Context& gcc: cc.children().citerate()) {
+              assert(!elide(gcc) && "Recursion needed for this algorithm!");
+              compose(gcc, buf);
+            }
+          } else {
+            compose(cc, buf);
+          }
         }
         udc.pChildren = cursor;
         f.write(buf.data(), buf.size());
