@@ -46,6 +46,8 @@
 
 #include "sparsedb.hpp"
 
+#include "metadb.hpp"
+
 #include "../mpi/all.hpp"
 #include "../stdshim/numeric.hpp"
 #include "../util/log.hpp"
@@ -243,6 +245,8 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
 
   // Now stitch together each Context's results
   for (const Context& c : contexts) {
+    if (MetaDB::elide(c))
+      continue;
     if (auto accums = tt.accumulatorsFor(c)) {
       // Add the ctx_id/idx pair for this Context
       addCIdx({
@@ -614,15 +618,19 @@ void SparseDB::write() {
 
     // Rank 0 has the final number of metric/idx pairs
     if (mpi::World::rank() == 0) {
-      const auto& use = c.data().metricUsage();
-      auto iter = use.citerate();
-      udc.nMetrics = std::accumulate(
-          iter.begin(), iter.end(), (uint16_t)0, [](uint16_t out, const auto& mu) -> uint16_t {
-            MetricScopeSet use = mu.second;
-            assert((mu.first->scopes() & use) == use && "Inconsistent Metric value usage data!");
-            return out + use.count();
-          });
-      ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;
+      if (MetaDB::elide(c)) {
+        udc.nMetrics = 0;
+      } else {
+        const auto& use = c.data().metricUsage();
+        auto iter = use.citerate();
+        udc.nMetrics = std::accumulate(
+            iter.begin(), iter.end(), (uint16_t)0, [](uint16_t out, const auto& mu) -> uint16_t {
+              MetricScopeSet use = mu.second;
+              assert((mu.first->scopes() & use) == use && "Inconsistent Metric value usage data!");
+              return out + use.count();
+            });
+        ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;
+      }
     }
   }
   // All-reduce to get the total size for every context
@@ -710,6 +718,8 @@ void SparseDB::write() {
 
       // Now stitch together each Context's results
       for (const Context& c : contexts) {
+        if (MetaDB::elide(c))
+          continue;
         const auto& stats = c.data().statistics();
         if (stats.size() > 0) {
           addCIdx({

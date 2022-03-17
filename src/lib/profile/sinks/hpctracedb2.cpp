@@ -48,6 +48,8 @@
 
 #include "hpctracedb2.hpp"
 
+#include "metadb.hpp"
+
 #include "../mpi/all.hpp"
 #include "../util/cache.hpp"
 #include "../util/log.hpp"
@@ -143,7 +145,9 @@ void HPCTraceDB2::notifyTimepoints(
     const Context& c = cr;
     // Try to cache our work as much as possible
     auto id = cache.lookup(c, [&](util::reference_index<const Context> c) {
-      return c.get().userdata[src.identifier()];
+      if (MetaDB::elide(c))
+        c = *c->direct_parent();
+      return c->userdata[src.identifier()];
     });
 
     fmt_tracedb_ctxSample_t datum = {
