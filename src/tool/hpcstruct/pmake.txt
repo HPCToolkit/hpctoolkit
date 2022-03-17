@@ -35,7 +35,7 @@ endif
 ifneq ($(CACHE),"")
 CACHE_ARGS = -c $(CACHE)
 else
-CACHE_ARGS = ""
+CACHE_ARGS = --nocache
 endif
 
 
