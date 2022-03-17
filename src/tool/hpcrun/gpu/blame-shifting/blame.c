@@ -47,8 +47,6 @@ static spinlock_t itimer_blame_lock = SPINLOCK_UNLOCKED;
 static _Atomic(uint64_t) g_num_threads_at_sync = { 0 };
 static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 
-_Atomic(unsigned long) latest_kernel_end_time = { 0 }; // in nanoseconds
-
 static kernel_node_t* completed_kernel_list_head = NULL;
 
 static queue_node_t *queue_node_free_list = NULL;
@@ -186,19 +184,6 @@ create_and_insert_kernel_entry
 
 
 static void
-record_latest_kernel_end_time
-(
- unsigned long kernel_end_time
-)
-{
-  unsigned long expected = atomic_load(&latest_kernel_end_time);
-  if (kernel_end_time > expected) {
-    atomic_compare_exchange_strong(&latest_kernel_end_time, &expected, kernel_end_time);
-  }
-}
-
-
-static void
 add_kernel_to_completed_list
 (
  kernel_node_t *kernel_node
@@ -219,11 +204,7 @@ attributing_cpu_idle_metric_at_sync_epilogue
  unsigned long sync_end
 )
 {
-  // attributing cpu_idle time for the min of (sync_end - sync_start, sync_end - last_kernel_end)
-  uint64_t last_kernel_end_time = atomic_load(&latest_kernel_end_time);
-
-  uint64_t cpu_idle_time = ((sync_end - last_kernel_end_time) < (sync_end - sync_start)) ?
-    (sync_end - last_kernel_end_time) :	(sync_end  - sync_start);
+  uint64_t cpu_idle_time = sync_end  - sync_start;
   // converting nsec to sec
   double nsec_to_sec = pow(10,-9);
   double cpu_idle_time_in_sec = cpu_idle_time * nsec_to_sec;
@@ -362,7 +343,6 @@ kernel_epilogue
   kernel_node->kernel_start_time = kernel_start;
   kernel_node->kernel_end_time = kernel_end;
 
-  record_latest_kernel_end_time(kernel_node->kernel_end_time);
   remove_kernel_from_incomplete_list(kernel_node);
   kernel_node->next = NULL;
   add_kernel_to_completed_list(kernel_node);
