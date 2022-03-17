@@ -80,6 +80,14 @@ public:
 
   void notifyPipeline() noexcept override;
 
+  // Check whether the given Context should be elided from the output
+  // TODO: Remove once the Viewer can handle instruction-grain data
+  static bool elide(const Context& c) noexcept {
+    return c.direct_parent()
+           && c.scope().relation() == Relation::enclosure
+           && c.scope().flat().type() == Scope::Type::point;
+  }
+
 private:
   stdshim::filesystem::path dir;
   bool copySources;
