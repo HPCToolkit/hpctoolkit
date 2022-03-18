@@ -14,6 +14,7 @@ typedef struct hpctio_sys_params {
 typedef struct hpctio_sys_func {
   hpctio_sys_params_t * (*construct_params)(const char * path);
   int (*compare_params)(const char * path, hpctio_sys_params_t * p);
+  void (*display_params)(hpctio_sys_params_t * p);
   void (*initialize)(hpctio_sys_params_t * params);
   void (*finalize)(hpctio_sys_params_t * params);
 
@@ -66,7 +67,7 @@ typedef long long int hpctio_size_t;
 
 
 /*************************** GLOBAL I/O CONSTANTS ***************************/
-const char *  hpctio_daos_prefix;
+extern const char *  hpctio_daos_prefix;
 
 
 /*************************** FILE SYSTEM FUNCTIONS ***************************/

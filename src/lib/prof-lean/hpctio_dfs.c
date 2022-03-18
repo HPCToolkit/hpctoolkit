@@ -15,6 +15,7 @@ static pthread_once_t real_daos_inited;
 /************************** PROTOTYPES *****************************/
 static hpctio_sys_params_t * DFS_Construct_Params(const char * path);
 static int DFS_Compare_Params(const char * path, hpctio_sys_params_t * p);
+static void DFS_Display_Params(hpctio_sys_params_t * p);
 static void DFS_Init(hpctio_sys_params_t * params);
 static void DFS_Final(hpctio_sys_params_t * params);
 
@@ -34,6 +35,7 @@ typedef struct hpctio_dfs_params {
 hpctio_sys_func_t hpctio_sys_func_dfs = {
     .construct_params = DFS_Construct_Params,
     .compare_params = DFS_Compare_Params,
+    .display_params = DFS_Display_Params,
     .initialize = DFS_Init,
     .finalize   = DFS_Final
 
@@ -75,21 +77,34 @@ typedef struct hpctio_dfs_obj_opt {
     }                                                                 \
 }  
 
-
+/*
+* call daos_init() only once if we create multiple DAOS system objects
+* reset real_daos_inited after all objects get finalized
+*/
 static void hpctio_daos_init(){
+    printf("in hpctio_daos_init:\n");
     // make sure daos_init() can still be called after daos_fini()
     if(daos_init_count == 0){
+        printf("daos_init_count == 0, set real_daos_inited = PTHREAD_ONCE_INIT\n");
         real_daos_inited = PTHREAD_ONCE_INIT;
     }
-    int r = pthread_once(&real_daos_inited, daos_init());
+    printf("value of real_daos_inited: %d\n", real_daos_inited);
+    int r = pthread_once(&real_daos_inited, daos_init);
     CHECK(r, "Failed to initialize daos");
     daos_init_count++;
+    printf("daos_init_count: %d\n", daos_init_count);
 exit: ;
 }
 
+/*
+* call daos_fini() when no DAOS system objects left
+*/
 static void hpctio_daos_fini(){
+    printf("in hpctio_daos_fini:\n");
     daos_init_count--;
+    printf("daos_init_count: %d\n", daos_init_count);
     if(daos_init_count == 0){
+        printf("daos_init_count == 0, actually calling daos_fini()\n");
         int r = daos_fini();
         CHECK(r, "Failed to finalize daos");
     }
@@ -365,7 +380,13 @@ static int DFS_Compare_Params(const char * path, hpctio_sys_params_t * p){
     return -1;
 }
 
+static void DFS_Display_Params(hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * params = (hpctio_dfs_params_t *) p;
+    printf("Pool: %s\nCont: %s\nInited: %d\n", params->pool, params->cont, params->inited);
+}
+
 static void DFS_Init(hpctio_sys_params_t * params){
+    /*
     int mpi_avail;
     CHECK_MPI(MPI_Initialized(&mpi_avail), "Failed to check if MPI initialized");
 
@@ -378,11 +399,16 @@ static void DFS_Init(hpctio_sys_params_t * params){
         //TODO: log printf("DFS init NONMPI version\n");
         dfs_init_regular(params);
     }
+    */
+
+   hpctio_daos_init();
+
 }
 
 
 
 static void DFS_Final(hpctio_sys_params_t * params){
+    /*
     int mpi_avail;
     CHECK_MPI(MPI_Initialized(&mpi_avail), "Failed to check if MPI initialized");
 
@@ -395,5 +421,6 @@ static void DFS_Final(hpctio_sys_params_t * params){
         //TODO: log printf("DFS final NONMPI version\n");
         dfs_final_regular(params);
     }
-
+*/
+    hpctio_daos_fini();
 }

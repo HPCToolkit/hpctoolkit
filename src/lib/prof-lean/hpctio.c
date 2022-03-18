@@ -33,6 +33,9 @@ hpctio_sys_t * hpctio_sys_initialize(const char * path){
         new_sys->func_ptr = &hpctio_sys_func_dfs;
         new_sys->params_ptr = hpctio_sys_func_dfs.construct_params(path);
 
+        // initialize the object
+        new_sys->func_ptr->initialize(new_sys->params_ptr);
+
         // append the new system object into hpctio_sys_avail
         hpctio_sys_avail[hpctio_sys_count] = new_sys;
         hpctio_sys_count++;
@@ -62,13 +65,30 @@ void hpctio_sys_finalize(hpctio_sys_t * sys){
             free(sys);
             if(i != hpctio_sys_count - 1){
                 hpctio_sys_avail[i] = hpctio_sys_avail[hpctio_sys_count - 1];
-            }else{
-                hpctio_sys_avail[i] = NULL;
             }
-
+            hpctio_sys_avail[hpctio_sys_count - 1] = NULL;        
             hpctio_sys_count--;
             break;
         }       
     }
 }
 
+void hpctio_sys_avail_display(){
+    printf("---------------------------------------------\n");
+    printf("Available/Initialized %d file system objects:\n", hpctio_sys_count);
+    for(int i = 0; i < hpctio_sys_count; i++){
+        hpctio_sys_t * sys = hpctio_sys_avail[i];
+        printf("Object %d - %d:\n", i, sys);
+        if(sys->func_ptr == &hpctio_sys_func_dfs){
+            printf("File system: DAOS\n");
+            hpctio_sys_func_dfs.display_params(sys->params_ptr);
+        }else if(sys->func_ptr == &hpctio_sys_func_posix){
+            printf("File system: POSIX\n");
+            printf("No parameters for POSIX\n");
+        }else{
+            printf("ERROR: Unknown File System function pointer\n");
+        }
+    }
+    if(hpctio_sys_count < 4) printf("Last one %s\n", hpctio_sys_avail[hpctio_sys_count]);
+    printf("---------------------------------------------\n");
+}

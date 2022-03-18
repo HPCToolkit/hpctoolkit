@@ -13,6 +13,7 @@ static void POSIX_Final(hpctio_sys_params_t * params);
 hpctio_sys_func_t hpctio_sys_func_posix = {
   .construct_params = NULL,
   .compare_params = NULL,
+  .display_params = NULL,
   .initialize = POSIX_Init,
   .finalize   = POSIX_Final
 
