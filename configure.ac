@@ -5440,7 +5440,6 @@ AC_CONFIG_FILES([ \
   src/extern/lzma/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds2/Makefile \
-  src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
   src/tool/hpcproftt/Makefile \

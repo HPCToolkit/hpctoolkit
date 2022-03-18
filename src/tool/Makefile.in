@@ -96,7 +96,6 @@ host_triplet = @host@
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcstruct \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcprof \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcproftt \
-@OPT_BUILD_TOOL_ALL_TRUE@	hpclump \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpctracedump
 
 @OPT_BUILD_TOOL_ALL_TRUE@@OPT_ENABLE_HPCSERVER_TRUE@am__append_2 = hpcserver
@@ -176,8 +175,8 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = hpcstruct hpcprof hpcproftt hpclump hpctracedump \
-	hpcserver hpcrun hpcfnbounds2 hpcprof-mpi hpcserver/mpi
+DIST_SUBDIRS = hpcstruct hpcprof hpcproftt hpctracedump hpcserver \
+	hpcrun hpcfnbounds2 hpcprof-mpi hpcserver/mpi
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/config/mkinstalldirs
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
