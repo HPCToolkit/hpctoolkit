@@ -75,7 +75,6 @@
 
 #include <include/uint.h>
 
-#include <lib/isa/ISA.hpp>
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>

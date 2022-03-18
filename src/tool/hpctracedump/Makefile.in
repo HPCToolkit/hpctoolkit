@@ -140,7 +140,7 @@ am__objects_1 = hpctracedump-main.$(OBJEXT)
 am_hpctracedump_OBJECTS = $(am__objects_1)
 hpctracedump_OBJECTS = $(am_hpctracedump_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_ProfLean) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) $(HPCLIB_gettext)
+	$(HPCLIB_SupportLean)
 hpctracedump_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -498,8 +498,6 @@ HPCLIB_Profile = $(top_builddir)/src/lib/profile/libHPCprofile.la
 HPCLIB_ProfileStandalone = $(top_builddir)/src/lib/profile/libHPCprofile_standalone.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
-HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
-HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
@@ -524,8 +522,7 @@ MYLDADD = \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext)
+	@BINUTILS_LIBS@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpctracedump_SOURCES = $(MYSOURCES)

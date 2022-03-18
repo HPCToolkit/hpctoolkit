@@ -139,15 +139,9 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_1 = libHPCbinutils_la-LM.lo libHPCbinutils_la-Seg.lo \
-	libHPCbinutils_la-Proc.lo libHPCbinutils_la-Insn.lo \
-	libHPCbinutils_la-LinuxKernelSymbols.lo \
-	libHPCbinutils_la-SimpleSymbols.lo \
-	libHPCbinutils_la-SimpleSymbolsFactories.lo \
-	libHPCbinutils_la-Dbg-LM.lo libHPCbinutils_la-Dbg-Proc.lo \
-	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo \
-	libHPCbinutils_la-Fatbin.lo libHPCbinutils_la-ElfHelper.lo \
-	libHPCbinutils_la-InputFile.lo \
+am__objects_1 = libHPCbinutils_la-BinUtils.lo \
+	libHPCbinutils_la-VMAInterval.lo libHPCbinutils_la-Fatbin.lo \
+	libHPCbinutils_la-ElfHelper.lo libHPCbinutils_la-InputFile.lo \
 	libHPCbinutils_la-RelocateCubin.lo \
 	intel/libHPCbinutils_la-IntelGPUBinutils.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
@@ -160,13 +154,6 @@ libHPCbinutils_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libHPCgettext_la_LIBADD =
-am_libHPCgettext_la_OBJECTS = libHPCgettext_la-gettext.lo
-libHPCgettext_la_OBJECTS = $(am_libHPCgettext_la_OBJECTS)
-libHPCgettext_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(libHPCgettext_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -183,24 +170,6 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -219,9 +188,26 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(libHPCbinutils_la_SOURCES) $(libHPCgettext_la_SOURCES)
-DIST_SOURCES = $(libHPCbinutils_la_SOURCES) \
-	$(libHPCgettext_la_SOURCES)
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
+SOURCES = $(libHPCbinutils_la_SOURCES)
+DIST_SOURCES = $(libHPCbinutils_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -533,8 +519,6 @@ HPCLIB_Profile = $(top_builddir)/src/lib/profile/libHPCprofile.la
 HPCLIB_ProfileStandalone = $(top_builddir)/src/lib/profile/libHPCprofile_standalone.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
-HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
-HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
@@ -545,18 +529,6 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	LM.hpp LM.cpp \
-	Seg.hpp Seg.cpp \
-	Proc.hpp Proc.cpp \
-	Insn.hpp Insn.cpp \
-	\
-	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
-	SimpleSymbols.hpp SimpleSymbols.cpp\
-	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
-	\
-	Dbg-LM.hpp Dbg-LM.cpp \
-	Dbg-Proc.hpp Dbg-Proc.cpp \
-	\
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp \
 	Fatbin.cpp \
@@ -584,14 +556,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-noinst_LTLIBRARIES = libHPCbinutils.la libHPCgettext.la
+noinst_LTLIBRARIES = libHPCbinutils.la
 libHPCbinutils_la_SOURCES = $(MYSOURCES)
 libHPCbinutils_la_CFLAGS = $(MYCFLAGS)
 libHPCbinutils_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbinutils_la_AR = $(MYAR)
 libHPCbinutils_la_LIBADD = $(MYLIBADD)
-libHPCgettext_la_SOURCES = gettext.c
-libHPCgettext_la_CFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -604,7 +574,7 @@ MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -658,9 +628,6 @@ intel/libHPCbinutils_la-IntelGPUBinutils.lo: intel/$(am__dirstamp) \
 libHPCbinutils.la: $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_DEPENDENCIES) $(EXTRA_libHPCbinutils_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCbinutils_la_LINK)  $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_LIBADD) $(LIBS)
 
-libHPCgettext.la: $(libHPCgettext_la_OBJECTS) $(libHPCgettext_la_DEPENDENCIES) $(EXTRA_libHPCgettext_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libHPCgettext_la_LINK)  $(libHPCgettext_la_OBJECTS) $(libHPCgettext_la_LIBADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f intel/*.$(OBJEXT)
@@ -670,53 +637,12 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-BinUtils.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-LM.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-ElfHelper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Fatbin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-InputFile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Insn.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-LM.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Proc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-RelocateCubin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Seg.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCgettext_la-gettext.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@intel/$(DEPDIR)/libHPCbinutils_la-IntelGPUBinutils.Plo@am__quote@
-
-.c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-libHPCgettext_la-gettext.lo: gettext.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCgettext_la_CFLAGS) $(CFLAGS) -MT libHPCgettext_la-gettext.lo -MD -MP -MF $(DEPDIR)/libHPCgettext_la-gettext.Tpo -c -o libHPCgettext_la-gettext.lo `test -f 'gettext.c' || echo '$(srcdir)/'`gettext.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCgettext_la-gettext.Tpo $(DEPDIR)/libHPCgettext_la-gettext.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gettext.c' object='libHPCgettext_la-gettext.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCgettext_la_CFLAGS) $(CFLAGS) -c -o libHPCgettext_la-gettext.lo `test -f 'gettext.c' || echo '$(srcdir)/'`gettext.c
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -741,69 +667,6 @@ libHPCgettext_la-gettext.lo: gettext.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
-
-libHPCbinutils_la-LM.lo: LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LM.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-LM.Tpo -c -o libHPCbinutils_la-LM.lo `test -f 'LM.cpp' || echo '$(srcdir)/'`LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-LM.Tpo $(DEPDIR)/libHPCbinutils_la-LM.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='LM.cpp' object='libHPCbinutils_la-LM.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-LM.lo `test -f 'LM.cpp' || echo '$(srcdir)/'`LM.cpp
-
-libHPCbinutils_la-Seg.lo: Seg.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Seg.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Seg.Tpo -c -o libHPCbinutils_la-Seg.lo `test -f 'Seg.cpp' || echo '$(srcdir)/'`Seg.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Seg.Tpo $(DEPDIR)/libHPCbinutils_la-Seg.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Seg.cpp' object='libHPCbinutils_la-Seg.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Seg.lo `test -f 'Seg.cpp' || echo '$(srcdir)/'`Seg.cpp
-
-libHPCbinutils_la-Proc.lo: Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Proc.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Proc.Tpo -c -o libHPCbinutils_la-Proc.lo `test -f 'Proc.cpp' || echo '$(srcdir)/'`Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Proc.Tpo $(DEPDIR)/libHPCbinutils_la-Proc.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Proc.cpp' object='libHPCbinutils_la-Proc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Proc.lo `test -f 'Proc.cpp' || echo '$(srcdir)/'`Proc.cpp
-
-libHPCbinutils_la-Insn.lo: Insn.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Insn.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Insn.Tpo -c -o libHPCbinutils_la-Insn.lo `test -f 'Insn.cpp' || echo '$(srcdir)/'`Insn.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Insn.Tpo $(DEPDIR)/libHPCbinutils_la-Insn.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Insn.cpp' object='libHPCbinutils_la-Insn.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Insn.lo `test -f 'Insn.cpp' || echo '$(srcdir)/'`Insn.cpp
-
-libHPCbinutils_la-LinuxKernelSymbols.lo: LinuxKernelSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LinuxKernelSymbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Tpo -c -o libHPCbinutils_la-LinuxKernelSymbols.lo `test -f 'LinuxKernelSymbols.cpp' || echo '$(srcdir)/'`LinuxKernelSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Tpo $(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='LinuxKernelSymbols.cpp' object='libHPCbinutils_la-LinuxKernelSymbols.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-LinuxKernelSymbols.lo `test -f 'LinuxKernelSymbols.cpp' || echo '$(srcdir)/'`LinuxKernelSymbols.cpp
-
-libHPCbinutils_la-SimpleSymbols.lo: SimpleSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-SimpleSymbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Tpo -c -o libHPCbinutils_la-SimpleSymbols.lo `test -f 'SimpleSymbols.cpp' || echo '$(srcdir)/'`SimpleSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Tpo $(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='SimpleSymbols.cpp' object='libHPCbinutils_la-SimpleSymbols.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-SimpleSymbols.lo `test -f 'SimpleSymbols.cpp' || echo '$(srcdir)/'`SimpleSymbols.cpp
-
-libHPCbinutils_la-SimpleSymbolsFactories.lo: SimpleSymbolsFactories.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-SimpleSymbolsFactories.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Tpo -c -o libHPCbinutils_la-SimpleSymbolsFactories.lo `test -f 'SimpleSymbolsFactories.cpp' || echo '$(srcdir)/'`SimpleSymbolsFactories.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Tpo $(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='SimpleSymbolsFactories.cpp' object='libHPCbinutils_la-SimpleSymbolsFactories.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-SimpleSymbolsFactories.lo `test -f 'SimpleSymbolsFactories.cpp' || echo '$(srcdir)/'`SimpleSymbolsFactories.cpp
-
-libHPCbinutils_la-Dbg-LM.lo: Dbg-LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Dbg-LM.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Dbg-LM.Tpo -c -o libHPCbinutils_la-Dbg-LM.lo `test -f 'Dbg-LM.cpp' || echo '$(srcdir)/'`Dbg-LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Dbg-LM.Tpo $(DEPDIR)/libHPCbinutils_la-Dbg-LM.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Dbg-LM.cpp' object='libHPCbinutils_la-Dbg-LM.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Dbg-LM.lo `test -f 'Dbg-LM.cpp' || echo '$(srcdir)/'`Dbg-LM.cpp
-
-libHPCbinutils_la-Dbg-Proc.lo: Dbg-Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Dbg-Proc.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Tpo -c -o libHPCbinutils_la-Dbg-Proc.lo `test -f 'Dbg-Proc.cpp' || echo '$(srcdir)/'`Dbg-Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Tpo $(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Dbg-Proc.cpp' object='libHPCbinutils_la-Dbg-Proc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Dbg-Proc.lo `test -f 'Dbg-Proc.cpp' || echo '$(srcdir)/'`Dbg-Proc.cpp
 
 libHPCbinutils_la-BinUtils.lo: BinUtils.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-BinUtils.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp

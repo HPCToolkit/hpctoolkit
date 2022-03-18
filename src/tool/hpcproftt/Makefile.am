@@ -99,7 +99,6 @@ MYLDADD = \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ProfLean) \
-	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
@@ -109,7 +108,6 @@ MYLDADD = \
 	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext)  \
 	@HOST_HPCPROFTT_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY

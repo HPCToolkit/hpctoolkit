@@ -5453,7 +5453,6 @@ AC_CONFIG_FILES([ \
   src/lib/analysis/Makefile \
   src/lib/banal/Makefile \
   src/lib/binutils/Makefile \
-  src/lib/isa/Makefile \
   src/lib/prof/Makefile \
   src/lib/profile/Makefile \
   src/lib/prof-lean/Makefile \

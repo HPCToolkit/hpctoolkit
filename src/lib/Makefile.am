@@ -73,7 +73,6 @@ SUBDIRS += \
 	analysis \
 	banal \
 	binutils \
-	isa \
 	prof \
 	profile \
 	xml \

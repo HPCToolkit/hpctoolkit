@@ -96,7 +96,6 @@ host_triplet = @host@
 @OPT_BUILD_LIB_ALL_TRUE@	analysis \
 @OPT_BUILD_LIB_ALL_TRUE@	banal \
 @OPT_BUILD_LIB_ALL_TRUE@	binutils \
-@OPT_BUILD_LIB_ALL_TRUE@	isa \
 @OPT_BUILD_LIB_ALL_TRUE@	prof \
 @OPT_BUILD_LIB_ALL_TRUE@	profile \
 @OPT_BUILD_LIB_ALL_TRUE@	xml \
@@ -172,7 +171,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = prof-lean support-lean analysis banal binutils isa prof \
+DIST_SUBDIRS = prof-lean support-lean analysis banal binutils prof \
 	profile xml support
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/config/mkinstalldirs

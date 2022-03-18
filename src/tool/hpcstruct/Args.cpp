@@ -66,6 +66,8 @@ using std::endl;
 #include <string>
 using std::string;
 
+#include <strings.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/hpctoolkit-config.h>

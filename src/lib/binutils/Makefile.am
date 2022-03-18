@@ -83,18 +83,6 @@ endif
 #############################################################################
 
 MYSOURCES = \
-	LM.hpp LM.cpp \
-	Seg.hpp Seg.cpp \
-	Proc.hpp Proc.cpp \
-	Insn.hpp Insn.cpp \
-	\
-	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
-	SimpleSymbols.hpp SimpleSymbols.cpp\
-	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
-	\
-	Dbg-LM.hpp Dbg-LM.cpp \
-	Dbg-Proc.hpp Dbg-Proc.cpp \
-	\
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp \
 	Fatbin.cpp \
@@ -129,16 +117,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LTLIBRARIES = libHPCbinutils.la libHPCgettext.la
+noinst_LTLIBRARIES = libHPCbinutils.la
 
 libHPCbinutils_la_SOURCES  = $(MYSOURCES)
 libHPCbinutils_la_CFLAGS   = $(MYCFLAGS)
 libHPCbinutils_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbinutils_la_AR       = $(MYAR)
 libHPCbinutils_la_LIBADD   = $(MYLIBADD)
-
-libHPCgettext_la_SOURCES = gettext.c
-libHPCgettext_la_CFLAGS  = @HOST_CFLAGS@ $(HPC_IFLAGS)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
