@@ -118,9 +118,6 @@ writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
 void
 writeAsText_callpathTrace(/*destination,*/ const char* filenm);
 
-void
-writeAsText_flat(/*destination,*/ const char* filenm);
-
 } // namespace Raw
 
 } // namespace Analysis

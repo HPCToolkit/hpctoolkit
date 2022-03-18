@@ -71,20 +71,11 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	CallPath.hpp CallPath.cpp \
-	CallPath-MetricComponentsFact.hpp CallPath-MetricComponentsFact.cpp \
-	CallPath-CudaCFG.hpp CallPath-CudaCFG.cpp \
-	\
-	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \
-	Flat-ObjCorrelation.hpp Flat-ObjCorrelation.cpp \
-	\
 	Raw.hpp Raw.cpp	\
 	\
 	Args.hpp Args.cpp \
-	ArgsHPCProf.hpp ArgsHPCProf.cpp \
 	\
-	Util.hpp Util.cpp \
-	TextUtil.hpp TextUtil.cpp
+	Util.hpp Util.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@

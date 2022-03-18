@@ -71,32 +71,13 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	Metric-Mgr.hpp Metric-Mgr.cpp \
-	Metric-ADesc.hpp Metric-ADesc.cpp \
-	Metric-IData.hpp Metric-IData.cpp \
-	Metric-AExpr.hpp Metric-AExpr.cpp \
-	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
-	Metric-IDBExpr.hpp Metric-IDBExpr.cpp \
-	\
-	FileError.hpp FileError.cpp \
-	\
-	LoadMap.hpp LoadMap.cpp \
-	\
 	Struct-Tree.hpp Struct-Tree.cpp \
 	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \
 	\
-	CCT-Tree.hpp CCT-Tree.cpp \
-	CCT-TreeIterator.hpp CCT-TreeIterator.cpp \
-	CCT-Merge.hpp CCT-Merge.cpp \
-	\
-	Flat-ProfileData.hpp Flat-ProfileData.cpp \
-	\
 	CallPath-Profile.hpp CallPath-Profile.cpp \
-	pms-format.c pms-format.h \
-	cms-format.c cms-format.h \
 	\
-	StringSet.hpp StringSet.cpp \
-	NameMappings.hpp NameMappings.cpp 
+	pms-format.c pms-format.h \
+	cms-format.c cms-format.h
 
 
 # GNU binutils flags are needed for HPCLIB_ISA.

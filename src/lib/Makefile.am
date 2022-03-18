@@ -76,10 +76,8 @@ SUBDIRS += \
 	isa \
 	prof \
 	profile \
-	profxml \
 	xml \
-	support \
-	stubs-gcc_s
+	support
 endif
 
 

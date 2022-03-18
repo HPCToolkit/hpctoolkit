@@ -73,8 +73,6 @@
 
 #include "Args.hpp"
 
-#include <lib/prof/CallPath-Profile.hpp>
-
 #include <lib/prof/Struct-Tree.hpp>
 
 //*************************** Forward Declarations ***************************
@@ -104,79 +102,6 @@ enum ProfType_t {
 
 ProfType_t
 getProfileType(const std::string& filenm);
-
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-typedef std::vector<std::string> StringVec;
-typedef std::vector<uint> UIntVec;
-
-class NormalizeProfileArgs_t {
-public:
-  NormalizeProfileArgs_t()
-  {
-    paths = new StringVec;
-    pathLenMax = 0;
-    groupMap = new UIntVec;
-    groupMax = 0; // 1-based group numbering
-  }
-
-  ~NormalizeProfileArgs_t()
-  { /* no delete b/c no deep copy constructor */ }
-
-  void
-  destroy()
-  {
-    delete paths;
-    paths = NULL;
-    delete groupMap;
-    groupMap = NULL;
-  }
-
-public:
-  StringVec* paths;
-  uint       pathLenMax;
-
-  UIntVec* groupMap;
-  uint     groupMax; // 1-based group numbering
-};
-
-
-NormalizeProfileArgs_t
-normalizeProfileArgs(const StringVec& inPaths);
-
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-int
-parseReplacePath(const std::string& arg);
-
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-Prof::Struct::ACodeNode*
-demandStructure(VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, 
-		bool useStruct, const string* unknownProcNm = NULL);
-
-
-// --------------------------------------------------------------------------
-//
-// --------------------------------------------------------------------------
-
-void 
-copySourceFiles(Prof::Struct::Root* structure,
-		const Analysis::PathTupleVec& pathVec,
-		const std::string& dstDir);
-
-void
-copyTraceFiles(const std::string& dstDir,
-	       const std::set<std::string>& srcFiles);
 
 
 // --------------------------------------------------------------------------

@@ -59,6 +59,7 @@
 
 //************************* System Include Files ****************************
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 using std::string;
@@ -72,8 +73,6 @@ using std::string;
 #include "Util.hpp"
 
 #include <lib/prof/CallPath-Profile.hpp>
-#include <lib/prof/Flat-ProfileData.hpp>
-
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
@@ -105,9 +104,6 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGr
   else if (ty == ProfType_CallpathTrace) {
     writeAsText_callpathTrace(filenm);
   }
-  else if (ty == ProfType_Flat) {
-    writeAsText_flat(filenm);
-  }
   else if (ty == ProfType_SparseDBtmp) { //YUMENG
     writeAsText_sparseDBtmp(filenm, sm_easyToGrep);
   }
@@ -130,15 +126,14 @@ void
 Analysis::Raw::writeAsText_callpath(const char* filenm, bool sm_easyToGrep)
 {
   if (!filenm) { return; }
-  Prof::CallPath::Profile* prof = NULL;
+
   try {
-    prof = Prof::CallPath::Profile::make(filenm, 0/*rFlags*/, stdout, sm_easyToGrep);
+    Prof::CallPath::Profile::make(filenm, stdout, sm_easyToGrep);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");
     throw;
   }
-  delete prof;
 }
 
 //YUMENG
@@ -464,23 +459,5 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
     DIAG_EMsg("While reading '" << filenm << "'...");
     throw;
   }
-}
-
-
-void
-Analysis::Raw::writeAsText_flat(const char* filenm)
-{
-  if (!filenm) { return; }
-  
-  Prof::Flat::ProfileData prof;
-  try {
-    prof.openread(filenm);
-  }
-  catch (...) {
-    DIAG_EMsg("While reading '" << filenm << "'...");
-    throw;
-  }
-
-  prof.dump(std::cout);
 }
 
