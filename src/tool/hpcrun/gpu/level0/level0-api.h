@@ -163,6 +163,36 @@ hpcrun_zeEventHostReset
   ze_event_handle_t hEvent                        ///< [in] handle of the event
 );
 
+ze_result_t
+hpcrun_zeModuleCreate
+(
+  ze_context_handle_t hContext,                // [in] handle of the context object
+  ze_device_handle_t hDevice,                  // [in] handle of the device
+  const ze_module_desc_t *desc,                // [in] pointer to module descriptor
+  ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
+  ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+);
+
+ze_result_t
+hpcrun_zeModuleDestroy
+(
+  ze_module_handle_t hModule       // [in][release] handle of the module
+);
+
+ze_result_t
+hpcrun_zeKernelCreate
+(
+  ze_module_handle_t hModule,          // [in] handle of the module
+  const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
+  ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+);
+
+ze_result_t
+hpcrun_zeKernelDestroy
+(
+  ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
+);
+
 void
 level0_init
 (
