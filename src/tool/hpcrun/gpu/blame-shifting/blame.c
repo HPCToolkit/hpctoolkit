@@ -439,8 +439,8 @@ gpu_idle_blame
 #if 1
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
 
-  // Only blame shift idleness for time metric.
-  if (!metric_desc->properties.time)
+  // Only blame shift idleness for time metric and application thread (thread 0)
+  if (!TD_GET(application_thread_0) || !metric_desc->properties.time)
     return;
 
   spinlock_lock(&itimer_blame_lock);

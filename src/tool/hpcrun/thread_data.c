@@ -517,6 +517,11 @@ hpcrun_thread_data_init
   // ----------------------------------------
   td->gpu_trace_prev_time = 0;
 
+  // ----------------------------------------
+  // blame-shifting
+  // ----------------------------------------
+  td->application_thread_0 = false;
+
 #ifdef ENABLE_CUDA
   gpu_data_init(&(td->gpu_data));
 #endif

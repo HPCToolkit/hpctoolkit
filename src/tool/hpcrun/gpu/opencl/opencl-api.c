@@ -988,6 +988,12 @@ opencl_api_initialize
   ETMSG(OPENCL, "CL_TARGET_OPENCL_VERSION: %d", CL_TARGET_OPENCL_VERSION);
   // we need this even when instrumentation is off inorder to get kernel names in hpcviewer
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  
+  // GPU_IDLE_CAUSE should be attributed only to application thread
+  // application thread calls this fn
+  thread_data_t* td   = hpcrun_get_thread_data();
+  td->application_thread_0 = true;
+
   gtpin_enable_profiling();
   if (instrumentation) {
     gtpin_enable_instrumentation();

@@ -283,6 +283,11 @@ typedef struct thread_data_t {
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
 #endif
+
+  // this flag is used to identify application thread
+  // USE CASE: Certain metrics (like GPU_IDLE_CAUSE from blame-shifting) should only be
+  // attributed to main thread (thread 0) and not background threads.
+  bool application_thread_0;
   
   uint64_t gpu_trace_prev_time;
  
