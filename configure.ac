@@ -5443,17 +5443,13 @@ AC_CONFIG_FILES([ \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
-  src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
   src/tool/hpcrun/Makefile \
   src/tool/hpcrun/utilities/bgq-cnk/Makefile \
-  src/tool/hpcrun-flat/Makefile \
   src/tool/hpcserver/Makefile \
   src/tool/hpcserver/mpi/Makefile \
   src/tool/hpcstruct/Makefile \
   src/tool/hpctracedump/Makefile \
-  src/tool/misc/Makefile \
-  src/tool/xprof/Makefile \
   src/lib/Makefile \
   src/lib/analysis/Makefile \
   src/lib/banal/Makefile \
@@ -5479,8 +5475,6 @@ AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcsummary],
   [chmod +x src/tool/hpcrun/scripts/hpcsummary])
-AC_CONFIG_FILES([src/tool/hpcprof-flat/hpcprof-flat],
-  [chmod +x src/tool/hpcprof-flat/hpcprof-flat])
 AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
 AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
