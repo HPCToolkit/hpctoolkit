@@ -18,43 +18,34 @@
 GPUBIN_DIR  = $(MEAS_DIR)/gpubins
 STRUCTS_DIR = $(MEAS_DIR)/structs
 
-#*******************************************************************************
-#*******************************************************************************
 
 #*******************************************************************************
-# enable analysis of GPU binaries
+# calculate the alternate kind of GPU CFG analysis
 #*******************************************************************************
-ifeq ($(GPU_ANALYZE),1)
-
-#-------------------------------------------------------------------------------
-# $(GB): gpubin files
-#-------------------------------------------------------------------------------
-GB := $(wildcard $(GPUBIN_DIR)/*.gpubin)
-
-#-------------------------------------------------------------------------------
-# $(GS): hpcstruct files for gpubins
-#-------------------------------------------------------------------------------
-GS := $(patsubst $(GPUBIN_DIR)/%,$(STRUCTS_DIR)/%.hpcstruct,$(GB))
-
-#-------------------------------------------------------------------------------
-# $(GW): warning files that may be generated during structure analysis of gpubins
-#-------------------------------------------------------------------------------
-GW := $(patsubst %.hpcstruct,%.warnings,$(GS))
-
+ifeq ($(GPUBIN_CFG),yes)
+GPUBIN_CFG_ALT = no
+else
+GPUBIN_CFG_ALT = yes
 endif
 
-#*******************************************************************************
-#*******************************************************************************
 
 #*******************************************************************************
-# enable analysis of CPU binaries
+# use a measurement cache, if available
 #*******************************************************************************
-ifeq ($(CPU_ANALYZE),1)
-CPUBIN_DIR  = $(MEAS_DIR)/cpubins
+ifneq ($(CACHE),"")
+CACHE_ARGS = -c $(CACHE)
+else
+CACHE_ARGS = ""
+endif
+
+
+#*******************************************************************************
+# identify load modules to analyze
+#*******************************************************************************
 LM_DIR      = $(MEAS_DIR)/lm
 
 #-------------------------------------------------------------------------------
-# $(H): hpcrun file for thread 0 in each process
+# $(H): hpcrun file for all threads
 #-------------------------------------------------------------------------------
 H := $(wildcard $(MEAS_DIR)/*.hpcrun)
 
@@ -67,14 +58,55 @@ L := $(patsubst $(MEAS_DIR)/%.hpcrun,$(LM_DIR)/%.lm,$(H))
 # create $(LM_DIR)/all.lm: a list of all load modules involved in the execution
 #-------------------------------------------------------------------------------
 $(LM_DIR)/all.lm: $(L)
-	cat $(L) | sort -u | grep -v gpubin | grep -v libhpcrun | grep -v libmonitor | grep -v libxed | grep -v libpfm | grep -v libcuda | grep -v libcupti > $(LM_DIR)/all.lm
+	cat $(L) | sort -u | grep -v libhpcrun | grep -v libmonitor | grep -v libxed | grep -v libpfm | grep -v libcuda | grep -v libcupti > $(LM_DIR)/all.lm
+
+
+#*******************************************************************************
+# enable analysis of GPU binaries
+#*******************************************************************************
+ifeq ($(GPU_ANALYZE),1)
+GPUBIN_USED_DIR  = $(MEAS_DIR)/gpubins-used
+
+#-------------------------------------------------------------------------------
+# create gpubins-used directory containing links to all GPU binaries used
+#-------------------------------------------------------------------------------
+$(GPUBIN_USED_DIR): $(LM_DIR)/all.lm
+	-@mkdir $(GPUBIN_USED_DIR) >&- 2>&-
+	-@cd $(GPUBIN_USED_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm | grep gpubin`; do ln -s $$i; done >&- 2>&-
+
+#-------------------------------------------------------------------------------
+# $(GB): gpubin files
+#-------------------------------------------------------------------------------
+GB := $(wildcard $(GPUBIN_USED_DIR)/*)
+
+#-------------------------------------------------------------------------------
+# $(GS): hpcstruct files for gpubins
+#-------------------------------------------------------------------------------
+GS := $(patsubst $(GPUBIN_USED_DIR)/%,$(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct,$(GB))
+
+#-------------------------------------------------------------------------------
+# $(GW): warning files that may be generated during structure analysis of gpubins
+#-------------------------------------------------------------------------------
+GW := $(patsubst %.hpcstruct,%.warnings,$(GS))
+
+endif
+
+#*******************************************************************************
+#*******************************************************************************
+
+
+#*******************************************************************************
+# enable analysis of CPU binaries
+#*******************************************************************************
+ifeq ($(CPU_ANALYZE),1)
+CPUBIN_DIR  = $(MEAS_DIR)/cpubins
 
 #-------------------------------------------------------------------------------
 # create cpubins directory containing links to all CPU binaries
 #-------------------------------------------------------------------------------
 $(CPUBIN_DIR): $(LM_DIR)/all.lm
 	-@mkdir $(CPUBIN_DIR) >&- 2>&-
-	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm`; do ln -s $$i; done >&- 2>&-
+	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm | grep -v gpubin`; do ln -s $$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------
 # $(CB): cpubin files
@@ -111,27 +143,41 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 	@cpubin_name=`basename -s x $<`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$cpubin_name.warnings
+	# @echo  DEBUG cpubin = $$cpu_bin_name
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
+	meas_dir=$(MEAS_DIR)
+	# echo DEBUG meas_dir = $$meas_dir
+
 	if test $$nbytes -gt $(CPAR_SIZE) ; then
+		# inform the user the analysis is starting
+		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$cpubin_name \(size = $$nbytes, using $(THREADS) threads\)
+		    echo  \ begin parallel analysis of CPU binary $$cpubin_name \(size = $$nbytes, threads = $(THREADS)\)
+		    PARSTAT=parallel
 		else
-			echo msg: begin concurrent analysis of $$cpubin_name \(size = $$nbytes, using 1 of $(JOBS) threads\)
+		    echo \ begin concurrent analysis of CPU binary $$cpubin_name \(size = $$nbytes, threads = 1\)
 		fi
-		$(STRUCT) -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
-		if test -s $$warn_name ; then
-			echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
-			if test ! -s $$struct_name ; then
-				rm -f $$struct_name
-			fi
-		else
-			rm -f $$warn_name
+
+		#  invoke hpcstruct on the CPU binary in the measurements directory
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1
+		# echo DEBUG: hpcstruct for analysis of CPU binary $$cpubin_name returned
+
+		# See if there is anything to worry about in the warnings file
+		#  suppress any ADVICE, NOTE, DEBUG, and CACHESTAT lines and any blank lines;
+		#  it's an error if anything remains
+                #
+		errs=`sed 's/^$//NOTE/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
+
+		# echo DEBUG errs = XX $$errs XX
+		if [ $${errs} -eq 1 ] ; then
+		    echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 		fi
-		if test $(THREADS) -gt 1 ; then
-			echo msg: end parallel analysis of $$cpubin_name
-		else
-			echo msg: end concurrent analysis of $$cpubin_name
-		fi
+
+		# extract the status relative to the cache
+		CACHE_STAT=`grep CACHESTAT $$warn_name | sed 's/CACHESTAT// ' `
+		# echo DEBUG CACHE_STAT = XX $$CACHE_STAT XX
+		echo \ \ \ end  $$PARSTAT analysis of CPU binary $$cpubin_name $$CACHE_STAT
+
 	fi
 
 #-------------------------------------------------------------------------------
@@ -141,31 +187,46 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 # 3. leave a warnings file in $(STRUCTS_DIR) if trouble arises
 # 4. announce when analysis of a gpubin begins and ends
 #-------------------------------------------------------------------------------
-$(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
+$(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 	@gpubin_name=`basename -s x $<`
 	struct_name=$@
-	warn_name=$(STRUCTS_DIR)/$$gpubin_name.warnings
+	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).hpcstruct
+	rm -f $(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG_ALT).warnings
+	warn_name=$(STRUCTS_DIR)/$$gpubin_name-gpucfg-$(GPUBIN_CFG).warnings
 	nbytes=`du -b -L $< | tail -1 | awk '{ print $$1 }'`
+	meas_dir=$(MEAS_DIR)
+	# echo DEBUG meas_dir = $$meas_dir
+
 	if test $$nbytes -gt $(GPAR_SIZE) ; then
+		# tell user we're starting
+		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$gpubin_name \(size = $$nbytes, using $(THREADS) threads\)
+		    PARSTAT=parallel
+		    echo \ begin parallel [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \(size = $$nbytes, threads = $(THREADS)\)
 		else
-			echo msg: begin concurrent analysis of $$gpubin_name \(size = $$nbytes, using 1 of $(JOBS) threads\)
+		    echo \ begin concurrent [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \(size = $$nbytes, threads = 1\)
 		fi
-		$(STRUCT) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
-		if test -s $$warn_name ; then
-			echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
-			if test ! -s $$struct_name ; then
-				rm -f $$struct_name
-			fi
-		else
-			rm -f $$warn_name
+
+		# invoke hpcstruct to process the gpu binary
+		$(STRUCT) $(CACHE_ARGS) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name -M $$meas_dir $< > $$warn_name 2>&1
+		# echo debug: hpcstruct for analysis of GPU binary $$gpubin_name returned
+
+		# See if there is anything to worry about in the warnings file
+		#  suppress any ADVICE, NOTE, DEBUG, and CACHESTAT lines and any blank lines;
+		#  it's an error if anything remains
+		#
+		errs=`sed 's/^$//NOTE/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
+		# echo DEBUG errs = XX $$errs XX
+
+		if [ $${errs} -eq 1 ] ; then
+		    echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
 		fi
-		if test $(THREADS) -gt 1 ; then
-			echo msg: end parallel analysis of $$gpubin_name
-		else
-			echo msg: end concurrent analysis of $$gpubin_name
-		fi
+
+		# extract the status relative to the cache
+		CACHE_STAT=`grep CACHESTAT $$warn_name  | sed 's/CACHESTAT// ' `
+		# echo DEBUG CACHE_STAT = XX $$CACHE_STAT XX
+
+		echo \ \ \ end  $$PARSTAT [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name $$CACHE_STAT
 	fi
 
 #-------------------------------------------------------------------------------
@@ -173,18 +234,16 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 #-------------------------------------------------------------------------------
 DOMAKE=1
 
-ifeq ($(CPU_ANALYZE),1)
 ifeq ($(L),)
 all:
 	echo ERROR: directory $(MEAS_DIR) does not contain any hpcrun measurement files
 DOMAKE=0
 endif
-endif
 
 ifeq ($(DOMAKE),1)
-all: $(CPUBIN_DIR)
-	$(MAKE) -j 1 JOBS=1 THREADS=$(PTHREADS)  GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
-	$(MAKE) -j $(JOBS) JOBS=$(JOBS) THREADS=1  GPAR_SIZE=0 CPAR_SIZE=0 analyze
+all: $(CPUBIN_DIR) $(GPUBIN_USED_DIR)
+	$(MAKE) -j $(LJOBS) THREADS=$(LTHREADS) GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
+	$(MAKE) -j $(SJOBS) THREADS=$(STHREADS) GPAR_SIZE=0 CPAR_SIZE=0 analyze
 endif
 
 analyze: $(GS) $(CS) 
@@ -206,6 +265,6 @@ clean:
 	@echo removing all links to CPU binaries in $(CPUBIN_DIR)
 	@rm -rf $(CPUBIN_DIR)
 	@rm -rf $(LM_DIR)
-	@echo removing all warnings in $(STRUCTS_DIR)
+	@echo removing all warnings files in $(STRUCTS_DIR)
 	@rm -f $(CW)
 	@rm -f $(GW)

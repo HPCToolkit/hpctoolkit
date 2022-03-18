@@ -215,8 +215,19 @@ size is 80K.
 \parg
 Flags to set low memsize with \hpcrun: \verb|-lm/--low-memsize| $bytes$
 
-\section{Environment Variables that May Avoid a Crash}
 
+\paragraph{HPCTOOLKIT\_HPCSTRUCT\_CACHE}
+
+If this enviroment variable contains the name of a Linux directory
+that is readable and writable to you, \hpcstruct{} will cache any
+program structure files it computes in this directory. When invoked
+to analyze a binary, \hpcstruct{} will check if program structure
+information for the binary exists in the cache. If so, \hpcstruct{}
+will return the cached copy.  If not, \hpcstruct{} will compute
+program structure information for the binary and record it in the
+cache.
+
+\section{Environment Variables that May Avoid a Crash}
 
 \paragraph{HPCRUN\_AUDIT\_FAKE\_AUDITOR.}
 

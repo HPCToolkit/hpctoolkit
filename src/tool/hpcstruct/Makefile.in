@@ -159,7 +159,10 @@ dotgraph_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(dotgraph_bin_CXXFLAGS) \
 	$(CXXFLAGS) $(dotgraph_bin_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_1 = hpcstruct_bin-main.$(OBJEXT) \
-	hpcstruct_bin-Args.$(OBJEXT)
+	hpcstruct_bin-Args.$(OBJEXT) \
+	hpcstruct_bin-Structure-Cache.$(OBJEXT) \
+	hpcstruct_bin-SingleBin.$(OBJEXT) \
+	hpcstruct_bin-MeasDir.$(OBJEXT)
 am_hpcstruct_bin_OBJECTS = $(am__objects_1)
 hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
@@ -318,9 +321,6 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 F77_SYMBOLS = @F77_SYMBOLS@
 FGREP = @FGREP@
-GOTCHA_IFLAGS = @GOTCHA_IFLAGS@
-GOTCHA_LDFLAGS = @GOTCHA_LDFLAGS@
-GOTCHA_LIBDIR = @GOTCHA_LIBDIR@
 GREP = @GREP@
 HOST_AR = @HOST_AR@
 HOST_CFLAGS = @HOST_CFLAGS@
@@ -566,7 +566,7 @@ SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 @OPT_ENABLE_IGC_TRUE@IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 @OPT_ENABLE_IGC_TRUE@IGC_IFLAGS = @OPT_IGC_IFLAGS@
-MYSOURCES = main.cpp Args.cpp
+MYSOURCES = main.cpp Args.cpp Structure-Cache.cpp SingleBin.cpp MeasDir.cpp
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS) $(DYNINST_IFLAGS) -I$(LIBELF_INC) \
 	$(IGC_IFLAGS) $(TBB_IFLAGS) $(am__append_1)
@@ -609,7 +609,7 @@ GENHEADERS = \
 noinst_HEADERS = $(GENHEADERS)
 BUILT_SOURCES = $(GENHEADERS)
 bin_SCRIPTS = hpcstruct
-pkglibexec_SCRIPTS = dotgraph
+pkglibexec_SCRIPTS = dotgraph renamestruct.sh
 hpcstruct_bin_SOURCES = $(MYSOURCES)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS = $(MYLDFLAGS)
@@ -802,6 +802,9 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dotgraph_bin-DotGraph.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-MeasDir.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-SingleBin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-Structure-Cache.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-main.Po@am__quote@
 
 .cpp.o:
@@ -866,6 +869,48 @@ hpcstruct_bin-Args.obj: Args.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Args.cpp' object='hpcstruct_bin-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+
+hpcstruct_bin-Structure-Cache.o: Structure-Cache.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-Structure-Cache.o -MD -MP -MF $(DEPDIR)/hpcstruct_bin-Structure-Cache.Tpo -c -o hpcstruct_bin-Structure-Cache.o `test -f 'Structure-Cache.cpp' || echo '$(srcdir)/'`Structure-Cache.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-Structure-Cache.Tpo $(DEPDIR)/hpcstruct_bin-Structure-Cache.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Structure-Cache.cpp' object='hpcstruct_bin-Structure-Cache.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-Structure-Cache.o `test -f 'Structure-Cache.cpp' || echo '$(srcdir)/'`Structure-Cache.cpp
+
+hpcstruct_bin-Structure-Cache.obj: Structure-Cache.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-Structure-Cache.obj -MD -MP -MF $(DEPDIR)/hpcstruct_bin-Structure-Cache.Tpo -c -o hpcstruct_bin-Structure-Cache.obj `if test -f 'Structure-Cache.cpp'; then $(CYGPATH_W) 'Structure-Cache.cpp'; else $(CYGPATH_W) '$(srcdir)/Structure-Cache.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-Structure-Cache.Tpo $(DEPDIR)/hpcstruct_bin-Structure-Cache.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Structure-Cache.cpp' object='hpcstruct_bin-Structure-Cache.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-Structure-Cache.obj `if test -f 'Structure-Cache.cpp'; then $(CYGPATH_W) 'Structure-Cache.cpp'; else $(CYGPATH_W) '$(srcdir)/Structure-Cache.cpp'; fi`
+
+hpcstruct_bin-SingleBin.o: SingleBin.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-SingleBin.o -MD -MP -MF $(DEPDIR)/hpcstruct_bin-SingleBin.Tpo -c -o hpcstruct_bin-SingleBin.o `test -f 'SingleBin.cpp' || echo '$(srcdir)/'`SingleBin.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-SingleBin.Tpo $(DEPDIR)/hpcstruct_bin-SingleBin.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='SingleBin.cpp' object='hpcstruct_bin-SingleBin.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-SingleBin.o `test -f 'SingleBin.cpp' || echo '$(srcdir)/'`SingleBin.cpp
+
+hpcstruct_bin-SingleBin.obj: SingleBin.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-SingleBin.obj -MD -MP -MF $(DEPDIR)/hpcstruct_bin-SingleBin.Tpo -c -o hpcstruct_bin-SingleBin.obj `if test -f 'SingleBin.cpp'; then $(CYGPATH_W) 'SingleBin.cpp'; else $(CYGPATH_W) '$(srcdir)/SingleBin.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-SingleBin.Tpo $(DEPDIR)/hpcstruct_bin-SingleBin.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='SingleBin.cpp' object='hpcstruct_bin-SingleBin.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-SingleBin.obj `if test -f 'SingleBin.cpp'; then $(CYGPATH_W) 'SingleBin.cpp'; else $(CYGPATH_W) '$(srcdir)/SingleBin.cpp'; fi`
+
+hpcstruct_bin-MeasDir.o: MeasDir.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-MeasDir.o -MD -MP -MF $(DEPDIR)/hpcstruct_bin-MeasDir.Tpo -c -o hpcstruct_bin-MeasDir.o `test -f 'MeasDir.cpp' || echo '$(srcdir)/'`MeasDir.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-MeasDir.Tpo $(DEPDIR)/hpcstruct_bin-MeasDir.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='MeasDir.cpp' object='hpcstruct_bin-MeasDir.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-MeasDir.o `test -f 'MeasDir.cpp' || echo '$(srcdir)/'`MeasDir.cpp
+
+hpcstruct_bin-MeasDir.obj: MeasDir.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-MeasDir.obj -MD -MP -MF $(DEPDIR)/hpcstruct_bin-MeasDir.Tpo -c -o hpcstruct_bin-MeasDir.obj `if test -f 'MeasDir.cpp'; then $(CYGPATH_W) 'MeasDir.cpp'; else $(CYGPATH_W) '$(srcdir)/MeasDir.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcstruct_bin-MeasDir.Tpo $(DEPDIR)/hpcstruct_bin-MeasDir.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='MeasDir.cpp' object='hpcstruct_bin-MeasDir.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct_bin-MeasDir.obj `if test -f 'MeasDir.cpp'; then $(CYGPATH_W) 'MeasDir.cpp'; else $(CYGPATH_W) '$(srcdir)/MeasDir.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

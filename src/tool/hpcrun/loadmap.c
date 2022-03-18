@@ -44,7 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include <libgen.h>
 #include <sys/time.h>
+
 #include "cct.h"
 #include "loadmap.h"
 #include "fnbounds_interface.h"
@@ -357,7 +359,8 @@ hpcrun_loadmap_findLoadName(const char* name)
 {
   TMSG(LOADMAP, "find load name: %s", name);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
-    if (strstr(x->name, name)) {
+    char *bn = basename(x->name);
+    if (bn && strcmp(bn, name) == 0) {
       TMSG(LOADMAP, "       --->%s", x->name);
       return x->name;
     }

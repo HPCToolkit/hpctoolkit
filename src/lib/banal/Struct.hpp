@@ -76,6 +76,8 @@ public:
 
   unsigned long parallel_analysis_threshold;
 
+  bool pretty_print_output;
+
   void set
   (
    unsigned int _jobs,
@@ -86,7 +88,8 @@ public:
    bool _analyze_cpu_binaries,
    bool _analyze_gpu_binaries,
    bool _compute_gpu_cfg,
-   unsigned long _parallel_analysis_threshold
+   unsigned long _parallel_analysis_threshold,
+   bool _pretty_print_output
   ) {
    jobs = _jobs;
    jobs_struct = _jobs_struct;
@@ -97,6 +100,7 @@ public:
    analyze_gpu_binaries = _analyze_gpu_binaries;
    compute_gpu_cfg = _compute_gpu_cfg;
    parallel_analysis_threshold = _parallel_analysis_threshold;
+   pretty_print_output = _pretty_print_output;
   };
 };
 
