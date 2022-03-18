@@ -979,10 +979,18 @@ hpcrun_zeModuleCreate
   ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
 )
 {
-  // TODO: do we want to append "-g" to desc->pBuildFlags
-  // to force building with debug information?
+  char compile_flags[128] = {0};
+  ze_module_desc_t new_desc = *desc;
+  if (new_desc.format == ZE_MODULE_FORMAT_IL_SPIRV) {
+    // if the module is created through SPIRV IR,
+    // it will go through JIT compilation, and we can append
+    // the -g flag to add debug information
+    strcpy(compile_flags, desc->pBuildFlags);
+    strcat(compile_flags, " -g");
+    new_desc.pBuildFlags = compile_flags;
+  }
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
-    (hContext, hDevice, desc, phModule, phBuildLog));
+    (hContext, hDevice, &new_desc, phModule, phBuildLog));
   PRINT("hpcrun_zeModuleCreate: module handle %p\n", *phModule);
   // Exit action
   level0_binary_process(*phModule);
