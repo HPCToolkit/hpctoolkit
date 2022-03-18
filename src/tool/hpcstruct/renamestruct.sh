@@ -4,7 +4,7 @@
 
 #  Find the old name embedded in the structure file
 
-oldname=`grep "<LM" $2  | awk '{print $3}'| sed '/n="/s///' | sed '/"/s///'`
+oldname=`grep "<LM" $2  | head -1 | awk '{print $3}' | sed '/n="/s///' | sed '/gpubin\.[0-9a-f]\+/s//gpubin/' | sed '/"/s///'`
 
 # echo DEBUG oldname = $oldname
 # echo DEBUG newname = $1
