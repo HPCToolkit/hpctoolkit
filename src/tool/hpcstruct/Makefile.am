@@ -84,7 +84,6 @@ MYSOURCES = main.cpp Args.cpp Structure-Cache.cpp SingleBin.cpp MeasDir.cpp
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	@BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS)  \
 	$(DYNINST_IFLAGS) \
 	-I$(LIBELF_INC)  \
@@ -109,7 +108,6 @@ MYLDADD = \
 	$(DYNINST_LFLAGS) \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
-	@BINUTILS_LIBS@ \
 	$(IGC_LDFLGS) \
 	$(LZMA_LDFLAGS_DYN) \
 	$(TBB_LFLAGS)

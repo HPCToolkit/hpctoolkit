@@ -50,7 +50,6 @@ include $(top_srcdir)/src/Makeinclude.config
 
 #----------------------------------------------------------------------
 
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BOOST_IFLAGS = @BOOST_IFLAGS@
 DYNINST_IFLAGS = @DYNINST_IFLAGS@
 LIBELF_INC = @LIBELF_INC@
@@ -81,7 +80,6 @@ MYSOURCES = \
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	$(BINUTILS_IFLAGS)  \
 	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \

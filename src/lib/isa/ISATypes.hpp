@@ -65,7 +65,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
-#include <include/gnu_bfd.h> // for 'bfd_vma'
 
 //*************************** Forward Declarations ***************************
 
@@ -73,13 +72,11 @@
 
 // Architectural datatypes:
 
-// A virtual memory address for an arbitrary target machine.  Take
-// advantage of 'bfd_vma' so we don't have to mess with differently
-// sized address spaces.  (0 is the null value)
-typedef bfd_vma VMA;
-typedef bfd_signed_vma VMASigned; // useful for offsets
+// A virtual memory address for an arbitrary target machine.
+typedef uint64_t VMA;
+typedef int64_t VMASigned; // useful for offsets
 
-#define VMA_MAX ( ~((bfd_vma)(0)) )
+#define VMA_MAX UINT64_MAX
 
 // MachInsn* can point to (non-)variable length instructions (or
 // instruction words) and should not be dereferenced.  To examine the
@@ -87,11 +84,8 @@ typedef bfd_signed_vma VMASigned; // useful for offsets
 typedef void MachInsn;
 typedef unsigned char MachInsnByte;
 
-// When GNU binutils is built as a cross-platform tool, bfd_vma will
-// be 64-bits on a 32-bit machine.  Use these casting macros to
-// eliminate compiler warnings about, e.g., "casting a 32-bit pointer
-// to an integer of different size".
-#define PTR_TO_BFDVMA(x)         ((bfd_vma)(uintptr_t)(x))
+// Casting helpers, in case we aren't on a 64-bit machine.
+#define PTR_TO_BFDVMA(x)         ((uint64_t)(uintptr_t)(x))
 #define BFDVMA_TO_PTR(x, totype) ((totype)(uintptr_t)(x))
 
 #define PTR_TO_VMA(x)          PTR_TO_BFDVMA(x)

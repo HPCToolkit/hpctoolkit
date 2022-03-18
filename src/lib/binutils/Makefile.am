@@ -93,8 +93,8 @@ MYSOURCES = \
 
 
 #############################################################################
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) \
 	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
