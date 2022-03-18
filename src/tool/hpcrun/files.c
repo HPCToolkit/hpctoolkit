@@ -407,11 +407,18 @@ hpcrun_files_set_directory()
   char * p2 = "daos://4fd1e460-63b2-4b89-a4d7-d6661a57bd92/d96fc1e1-493c-4819-92ab-68fd71c98f0e/dirb";
   char * p3 = "daos://35121c26-f85c-4ccb-a9c9-028a24ec6e40/e6e6f472-3f18-451f-b487-d8b6ab938c09/dirc";
   
-  hpctio_sys_avail_display();
-  hpctio_sys_t * sys1 = hpctio_sys_initialize(p1);
+  int r;
+  r = daos_init();
+  printf("init %d\n", r);
+/*  r = daos_fini();
+  printf("fini %d\n", r);
+*/
   //hpctio_sys_avail_display();
-  //hpctio_sys_t * sys2 = hpctio_sys_initialize(p2);
-  hpctio_sys_avail_display();
+  //hpctio_sys_t * sys1 = hpctio_sys_initialize(p1);
+  //hpctio_sys_avail_display();
+ // hpctio_sys_t * sys2 = hpctio_sys_initialize(p2);
+//  hpctio_sys_t * sys3 = hpctio_sys_initialize(p3);
+  //hpctio_sys_avail_display();
   /*
   hpctio_sys_t * sys3 = hpctio_sys_initialize(p3);
   hpctio_sys_avail_display();
@@ -422,9 +429,14 @@ hpcrun_files_set_directory()
   */
 
 
-  hpctio_sys_finalize(sys1);
-  hpctio_sys_avail_display();
- // hpctio_sys_finalize(sys2);
+ // hpctio_sys_finalize(sys1);
+  //hpctio_sys_avail_display();
+    // hpctio_sys_finalize(sys2);
+    // sys2 = hpctio_sys_initialize(p2);
+    // hpctio_sys_finalize(sys2);
+    // hpctio_sys_finalize(sys3);
+    // sys2 = hpctio_sys_initialize(p2);
+    // hpctio_sys_finalize(sys2);
   //hpctio_sys_avail_display();
   /*
   hpctio_sys_finalize(sys3);

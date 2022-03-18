@@ -162,7 +162,7 @@ enum {
 };
 
 static int client_status = SYSERV_INACTIVE;
-static char *server;
+static char *server = NULL;
 static char *server_stack;
 
 static int fdout = -1;
@@ -645,6 +645,11 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     EMSG("FNBOUNDS_CLIENT ERROR: passed NULL pointer to %s", __func__);
     return NULL;
   }
+
+  if (server == NULL) {
+    hpcrun_syserv_init();
+  }
+
 
   if (client_status != SYSERV_ACTIVE || my_pid != getpid()) {
     launch_server();

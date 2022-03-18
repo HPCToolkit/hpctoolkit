@@ -106,7 +106,7 @@ static void hpctio_daos_fini(){
     if(daos_init_count == 0){
         printf("daos_init_count == 0, actually calling daos_fini()\n");
         int r = daos_fini();
-        CHECK(r, "Failed to finalize daos");
+        CHECK(r, "Failed to finalize daos with error code %d", r);
     }
 exit: ;
 }
