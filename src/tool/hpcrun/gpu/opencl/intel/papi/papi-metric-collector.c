@@ -56,6 +56,8 @@
 #include "papi-metric-collector.h"
 #include <hpcrun/gpu/gpu-activity-channel.h>                            // gpu_activity_channel_get
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>                       // gpu_operation_multiplexer_push
+#include <hpcrun/memory/hpcrun-malloc.h>                                // hpcrun_malloc_safe
+#include <hpcrun/gpu/opencl/intel/papi/papi-kernel-map.h>
 
 
 
@@ -63,25 +65,84 @@
 // local data
 //******************************************************************************
 
-#define numMetrics 3
-#define ACTIVE_INDEX 1
-#define STALL_INDEX 2
+#define numMetrics 2
+#define ACTIVE_INDEX 0
+#define STALL_INDEX 1
 #define MAX_STR_LEN     128
-int my_event_set = PAPI_NULL;
-char const *metric_name[MAX_STR_LEN] = {
-           "ComputeBasic.GpuTime",      // TODO: remove this metric if unnecessary
-           "ComputeBasic.EuActive",
-           "ComputeBasic.EuStall"
-};
-cct_node_t *kernel_cct_node;
-gpu_activity_channel_t *kernel_activity_channel;
-long long prev_values[numMetrics];
+
+static int my_event_set = PAPI_NULL;
+static char const *metric_name[MAX_STR_LEN] = {"ComputeBasic.EuActive", "ComputeBasic.EuStall"};
+static papi_kernel_node_t *kernel_node_free_list = NULL;
 
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static papi_kernel_node_t*
+kernel_node_alloc_helper
+(
+ papi_kernel_node_t **free_list
+)
+{
+  papi_kernel_node_t *first = *free_list;
+
+  if (first) {
+    *free_list = first->next;
+  } else {
+    first = (papi_kernel_node_t *) hpcrun_malloc_safe(sizeof(papi_kernel_node_t));
+  }
+  memset(first, 0, sizeof(papi_kernel_node_t));
+  return first;
+}
+
+
+static void
+kernel_node_free_helper
+(
+ papi_kernel_node_t **free_list,
+ papi_kernel_node_t *node
+)
+{
+  node->next = *free_list;
+  *free_list = node;
+}
+
+
+static void
+attribute_gpu_utilization_counters_to_kernel
+(
+ cct_node_t *kernel_cct,
+ gpu_activity_channel_t *kernel_activity_channel,
+ long long *prev_values,
+ long long *current_values
+)
+{
+  gpu_activity_t ga;
+  gpu_activity_t *ga_ptr = &ga;
+  ga_ptr->kind = GPU_ACTIVITY_INTEL_GPU_UTILIZATION;
+  ga_ptr->cct_node = kernel_cct;
+
+  uint8_t kernel_eu_active = current_values[ACTIVE_INDEX] - prev_values[ACTIVE_INDEX];
+  uint8_t kernel_eu_stall  = current_values[STALL_INDEX] - prev_values[STALL_INDEX];
+  uint8_t kernel_eu_idle = 100 - (kernel_eu_active + kernel_eu_stall);
+  ga_ptr->details.gpu_utilization_info = (gpu_utilization_t) { .active = kernel_eu_active,
+                                            .stalled = kernel_eu_stall,
+                                            .idle = kernel_eu_idle};
+  // printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[ACTIVE_INDEX], kernel_eu_active,
+  //                                          metric_name[STALL_INDEX], kernel_eu_stall,
+  //                                          "ComputeBasic.EuIdle", kernel_eu_idle);
+  cstack_ptr_set(&(ga_ptr->next), 0);
+  gpu_operation_multiplexer_push(kernel_activity_channel, NULL, ga_ptr);
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
 
 void
 intel_papi_setup
@@ -150,57 +211,42 @@ intel_papi_teardown
 }
 
 
-static void
-attribute_gpu_utilization_counters_to_kernel
-(
- long long *current_values
-)
-{
-  gpu_activity_t ga;
-  gpu_activity_t *ga_ptr = &ga;
-  ga_ptr->kind = GPU_ACTIVITY_INTEL_GPU_UTILIZATION;
-  ga_ptr->cct_node = kernel_cct_node;
-
-  uint8_t kernel_eu_active = current_values[ACTIVE_INDEX] - prev_values[ACTIVE_INDEX];
-  uint8_t kernel_eu_stall  = current_values[STALL_INDEX] - prev_values[STALL_INDEX];
-  uint8_t kernel_eu_idle = 100 - (kernel_eu_active + kernel_eu_stall);
-  ga_ptr->details.gpu_utilization_info = (gpu_utilization_t) { .active = kernel_eu_active,
-                                            .stalled = kernel_eu_stall,
-                                            .idle = kernel_eu_idle};
-  // printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[ACTIVE_INDEX], kernel_eu_active,
-  //                                          metric_name[STALL_INDEX], kernel_eu_stall,
-  //                                          "ComputeBasic.EuIdle", kernel_eu_idle);
-  cstack_ptr_set(&(ga_ptr->next), 0);
-  gpu_operation_multiplexer_push(kernel_activity_channel, NULL, ga_ptr);
-}
-
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
 void
 papi_metric_collection_at_kernel_start
 (
+ uint64_t kernelexec_id,
  cct_node_t *kernel_cct,
  gpu_activity_channel_t *activity_channel
 )
 {
-  kernel_cct_node = kernel_cct;
-  kernel_activity_channel = activity_channel;
-  PAPI_read(my_event_set, prev_values);
+  papi_kernel_node_t *kernel_node = kernel_node_alloc_helper(&kernel_node_free_list);
+  kernel_node->kernel_id = kernelexec_id;
+  kernel_node->cct = kernel_cct;
+  kernel_node->activity_channel = activity_channel;
+  kernel_node->next = NULL;
+
+  PAPI_read(my_event_set, kernel_node->prev_values);
+
+  papi_kernel_map_insert(kernelexec_id, kernel_node);
 }
 
 
 void
 papi_metric_collection_at_kernel_end
 (
- void
+ uint64_t kernelexec_id
 )
 {
   long long collected_values[MAX_EVENTS];
 
   PAPI_read(my_event_set, collected_values);
-  attribute_gpu_utilization_counters_to_kernel(collected_values);
+
+  papi_kernel_map_entry_t *entry = papi_kernel_map_lookup(kernelexec_id);
+  papi_kernel_node_t *kernel_node = papi_kernel_map_entry_kernel_node_get(entry);
+
+  attribute_gpu_utilization_counters_to_kernel(kernel_node->cct, kernel_node->activity_channel,
+                                               kernel_node->prev_values, collected_values);
+
+  papi_kernel_map_delete(kernelexec_id);
+  kernel_node_free_helper(&kernel_node_free_list, kernel_node);
 }

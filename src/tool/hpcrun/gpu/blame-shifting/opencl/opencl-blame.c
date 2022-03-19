@@ -87,7 +87,7 @@ opencl_kernel_prologue
   kernel_cleanup_map_insert((uint64_t) event, data);
   cct_node_t *cct = place_cct_under_opencl_kernel(kernel_module_id);
   kernel_prologue((uint64_t) event, cct);
-  papi_metric_collection_at_kernel_start(cct, gpu_activity_channel_get());
+  papi_metric_collection_at_kernel_start((uint64_t) event, cct, gpu_activity_channel_get());
 
   hpcrun_safe_exit();
 }
@@ -122,7 +122,7 @@ opencl_kernel_epilogue
       hpcrun_safe_exit();
       return;
     }
-    papi_metric_collection_at_kernel_end();
+    papi_metric_collection_at_kernel_end(event_id);
 		kernel_epilogue(event_id, kernel_start, kernel_end);
 
   } else {

@@ -435,6 +435,7 @@ MY_BASE_FILES =				\
 	gpu/blame-shifting/active-kernels-map.c \
 	gpu/blame-shifting/blame-kernel-cleanup-map.c \
 	\
+	gpu/opencl/intel/papi/papi-kernel-map.c	\
 	gpu/opencl/intel/papi/papi-metric-collector.c
 
 # 	gpu/gpu-api.c

@@ -74,15 +74,16 @@ intel_papi_teardown
 void
 papi_metric_collection_at_kernel_start
 (
-  cct_node_t*,
-  gpu_activity_channel_t*
+ uint64_t,
+ cct_node_t*,
+ gpu_activity_channel_t*
 );
 
 
 void
 papi_metric_collection_at_kernel_end
 (
-  void
+ uint64_t
 );
 
 #endif      // PAPI_METRIC_COLLECTOR_H_
