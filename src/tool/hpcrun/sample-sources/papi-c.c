@@ -83,7 +83,6 @@
 #include "papi-c-extended-info.h"
 #include "sample-filters.h"
 
-#include <hpcrun/gpu-monitors.h>
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -124,7 +123,7 @@
  * forward declarations 
  *****************************************************************************/
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
-static void papi_monitor_enter(papi_component_info_t *ci, cct_node_t **cct_nodes, uint32_t num_unfinished_kernels);
+static void papi_monitor_enter(papi_component_info_t *ci, cct_node_t *cct_node);
 static void papi_monitor_exit(papi_component_info_t *ci);
 
 static int  event_is_derived(int ev_code);
@@ -309,7 +308,6 @@ thread_count_scaling_for_component(int cidx)
   if (strcmp(pci->name, "bgpm/L2Unit") == 0) return true;
   return 0;
 }
-
 
 
 /******************************************************************************
@@ -535,7 +533,7 @@ METHOD_FN(stop)
     papi_component_info_t *ci = &(psi->component_info[cidx]);
     if (ci->inUse) {
       if (component_uses_sync_samples(cidx)) {
-	      TMSG(PAPI, "component %d is synchronous, stop is trivial", cidx);
+  TMSG(PAPI, "component %d is synchronous, stop is trivial", cidx);
       }
       else {
   TMSG(PAPI,"stop w event set = %d", ci->eventSet);
@@ -1086,11 +1084,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   if (ci->some_derived) {
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
-        hpcrun_safe_enter();
         hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-            (hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
-            0, 0, NULL);
-        hpcrun_safe_exit();
+      (hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
+      0, 0, NULL);
       }
     }
 
@@ -1107,31 +1103,92 @@ finish:
 
 
 static void
-papi_monitor_enter(papi_component_info_t *ci, cct_node_t **cct_nodes, uint32_t num_unfinished_kernels)
+attribute_metric_to_cct
+(
+ int metric_id,
+ cct_node_t *cct_node,
+ long long value
+)
 {
-  // if sampling disabled explicitly for this thread, skip all processing
-  // if (hpcrun_suppress_sample() || sample_filters_apply()) return;
-  if (sample_filters_apply()) return;
+  metric_data_list_t* metrics = hpcrun_reify_metric_set(cct_node, metric_id);
 
-  ci->cct_nodes = cct_nodes;
+  hpcrun_metric_std_inc(metric_id,
+                        metrics,
+                        (cct_metric_data_t) {.i = value});
+}
+
+
+static void
+attribute_counters(papi_component_info_t *ci, long long *collected_values, cct_node_t *cct_node)
+{
+  sample_source_t *self = &obj_name();
+  int events_codes[MAX_EVENTS];
+  int my_events_number = MAX_EVENTS;
+  int ret;
+
+  // Attribute collected metric to cct nodes
+  ret = PAPI_list_events(ci->eventSet, events_codes, &my_events_number);
+  if (ret != PAPI_OK) {
+    hpcrun_abort("PAPI_list_events failed inside papi_event_handler."
+                 "Return code = %d ==> %s", ret, PAPI_strerror(ret));
+  }
+
+  for (int eid = 0; eid < my_events_number; ++eid) {
+    int event_index = get_event_index(self, events_codes[eid]);
+    int metric_id = hpcrun_event2metric(self, event_index);
+    long long int final_counts = collected_values[eid] - ci->prev_values[eid];
+
+
+    blame_shift_apply(metric_id, cct_node, final_counts/*metricIncr*/);
+    attribute_metric_to_cct(metric_id, cct_node, final_counts);
+
+    PRINT("PAPI_EXIT:: %d Event = %x, event_index = %d, metric_id = %d || value = %lld - %lld == %lld\n",
+          eid, events_codes[eid], event_index, metric_id,
+          collected_values[eid], ci->prev_values[eid],
+          final_counts);
+  }
+}
+
+
+static void
+papi_monitor_enter(papi_component_info_t *ci, cct_node_t *cct_node)
+{
+  tool_enter();
+//  PRINT("|------->PAPI_MONITOR_ENTER | cct = %p\n", cct_node);
+
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
+
+  ci->cct_node = cct_node;
 
   // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
+
   if (ci->inUse) {
-    ci->read(cct_nodes, num_unfinished_kernels, ci->prev_values);
+    ci->read(ci->prev_values);
+
+    PRINT("PAPI_ENTER:: Component %s Event = %d, value = %lld   |  %p\n", ci->name, ci->eventSet, ci->prev_values[0], cct_node);
   }
+
+finish:
+  tool_exit();
 }
 
 
 static void
 papi_monitor_exit(papi_component_info_t *ci)
 {
+  tool_enter();
   long long collected_values[MAX_EVENTS];
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_suppress_sample() || sample_filters_apply()) return;
+  if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
   if (ci->inUse){
-    ci->read(NULL, 0, collected_values);
-    attribute_counters(ci, collected_values, ci->cct_nodes);
+    ci->read(collected_values);
+    attribute_counters(ci, collected_values, ci->cct_node);
   }
+
+
+finish:
+  tool_exit();
 }

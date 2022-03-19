@@ -1,17 +1,14 @@
 #ifndef PAPI_C_EXTENDED_INFO_H
 #define PAPI_C_EXTENDED_INFO_H
 
-#include <hpcrun/cct/cct.h>
-
-
-typedef void (*get_event_set_proc_t)(int* ev_s);
-typedef int (*add_event_proc_t)(int ev_s, int evcode);
+typedef void (*get_event_set_proc_t)(int* event_set);
+typedef void (*add_event_proc_t)(int event_set, int evcode);
 typedef void (*finalize_event_set_proc_t)(void);
 typedef void (*setup_proc_t)(void);
 typedef void (*teardown_proc_t)(void);
 typedef void (*start_proc_t)(void);
-typedef void (*read_proc_t)(cct_node_t **cct_nodes, uint32_t num_ccts, long long *prev_values);
-typedef void (*stop_proc_t)(void);
+typedef void (*read_proc_t)(long long *values);
+typedef void (*stop_proc_t)(long long *values);
 typedef bool (*pred_proc_t)(const char* name);
 
 typedef struct sync_info_list_t {

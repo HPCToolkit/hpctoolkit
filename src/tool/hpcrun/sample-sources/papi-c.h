@@ -54,8 +54,7 @@
 #include "papi-c-extended-info.h"
 
 #include "sample_source_obj.h"
-#include <hpcrun/cct/cct.h>
-
+#include "cct.h"
 
 
 /******************************************************************************
@@ -70,7 +69,7 @@ typedef struct {
   int some_derived;
   bool scale_by_thread_count;
   long long prev_values[MAX_EVENTS];
-  cct_node_t **cct_nodes;
+  cct_node_t *cct_node;
   bool is_gpu_sync;
   bool setup_process_only;
   get_event_set_proc_t get_event_set;
