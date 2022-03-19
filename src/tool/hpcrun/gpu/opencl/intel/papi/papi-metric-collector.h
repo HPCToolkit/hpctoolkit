@@ -50,7 +50,6 @@
 
 #include <hpcrun/cct/cct.h>                                             // cct_node_t
 #include <hpcrun/gpu/gpu-activity.h>                                    // gpu_activity_channel_t
-#include <hpcrun/gpu/blame-shifting/blame-kernel-map.h>                 // kernel_node_t
 
 
 
@@ -59,30 +58,31 @@
 //******************************************************************************
 
 void
-notify_gpu_util_thr_hpcrun_completion
+intel_papi_setup
 (
  void
 );
 
 
 void
-add_kernel_to_incomplete_list
+intel_papi_teardown
 (
- kernel_node_t *kernel_node
+ void
 );
 
 
 void
-remove_kernel_from_incomplete_list
+papi_metric_collection_at_kernel_start
 (
- kernel_node_t *kernel_node
+  cct_node_t*,
+  gpu_activity_channel_t*
 );
 
 
-void*
-papi_metric_callback
+void
+papi_metric_collection_at_kernel_end
 (
- void *arg
+  void
 );
 
 #endif      // PAPI_METRIC_COLLECTOR_H_

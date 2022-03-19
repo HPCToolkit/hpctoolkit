@@ -74,6 +74,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
+#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/gpu/blame-shifting/opencl/opencl-blame.h>
@@ -188,7 +189,6 @@ static bool optimization_check = false;
 static bool ENABLE_BLAME_SHIFTING = false;
 
 static bool gpu_utilization_enabled = false;
-static pthread_t gpu_utilization_tid;
 
 
 
@@ -1088,7 +1088,6 @@ hpcrun_clCreateCommandQueue
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_queue_prologue(queue);
 	}
-
   return queue;
 }
 
@@ -1651,13 +1650,12 @@ opencl_instrumentation_count_enable
 
 
 void
-set_gpu_utilization_tid
+set_gpu_utilization
 (
-  pthread_t tid
+ void
 )
 {
   gpu_utilization_enabled = true;
-  gpu_utilization_tid = tid;
 }
 
 
@@ -1698,7 +1696,6 @@ opencl_api_thread_finalize
  int how
 )
 {
-  notify_gpu_util_thr_hpcrun_completion();
   if (opencl_api_flag) {
     // If I have invoked any opencl api, I have to attribute all my activities to my ccts
     opencl_api_flag = false;
@@ -1733,7 +1730,7 @@ opencl_api_process_finalize
 )
 {
   if (gpu_utilization_enabled) {
-    pthread_join(gpu_utilization_tid, NULL);
+    intel_papi_teardown();
   }
   if (optimization_check) { // is this the right to do final optimization checks
     // we cannot get cct nodes using gpu_application_thread_correlation_callback inside fini-thread callback

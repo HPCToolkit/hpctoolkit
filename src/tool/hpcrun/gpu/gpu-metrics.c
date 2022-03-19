@@ -747,7 +747,7 @@ gpu_metrics_attribute_gpu_utilization
  gpu_activity_t *activity
 )
 {
-  gpu_utlization_t *gpu_info = &(activity->details.gpu_utilization_info);
+  gpu_utilization_t *gpu_info = &(activity->details.gpu_utilization_info);
   cct_node_t *cct_node = activity->cct_node;
 
   metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(EU_ACT));

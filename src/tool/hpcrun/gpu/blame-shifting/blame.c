@@ -24,7 +24,6 @@
 #include <hpcrun/gpu/gpu-activity.h>                                // gpu_activity_t
 #include <hpcrun/gpu/gpu-metrics.h>                                 // gpu_metrics_attribute
 #include <hpcrun/gpu/gpu-application-thread-api.h>                  // gpu_application_thread_correlation_callback
-#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
 #include <hpcrun/gpu/gpu-activity-channel.h>                        // gpu_activity_channel_get
 #include <hpcrun/memory/hpcrun-malloc.h>                            // hpcrun_malloc_safe
 #include <hpcrun/safe-sampling.h>                                   // hpcrun_safe_enter, hpcrun_safe_exit
@@ -179,7 +178,6 @@ create_and_insert_kernel_entry
   kernel_node->activity_channel = gpu_activity_channel_get();
   kernel_node->next = NULL;
   kernel_map_insert(kernelexec_id, kernel_node);
-  add_kernel_to_incomplete_list(kernel_node);
 }
 
 
@@ -343,7 +341,6 @@ kernel_epilogue
   kernel_node->kernel_start_time = kernel_start;
   kernel_node->kernel_end_time = kernel_end;
 
-  remove_kernel_from_incomplete_list(kernel_node);
   kernel_node->next = NULL;
   add_kernel_to_completed_list(kernel_node);
   atomic_fetch_add(&g_unfinished_kernels, -1L);

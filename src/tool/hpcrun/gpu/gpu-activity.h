@@ -414,11 +414,11 @@ typedef struct intel_optimization_t {
 } intel_optimization_t;
 
 
-typedef struct gpu_utlization_t {
-  uint32_t active;
-  uint32_t stalled;
-  uint32_t idle;
-} gpu_utlization_t;
+typedef struct gpu_utilization_t {
+  uint8_t active;
+  uint8_t stalled;
+  uint8_t idle;
+} gpu_utilization_t;
 
 
 typedef struct gpu_activity_details_t { 
@@ -445,7 +445,7 @@ typedef struct gpu_activity_details_t {
     gpu_counter_t counters;
     intel_optimization_t intel_optimization;
     gpu_blame_shift_t blame_shift;
-    gpu_utlization_t gpu_utilization_info;
+    gpu_utilization_t gpu_utilization_info;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 

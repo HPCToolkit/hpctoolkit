@@ -45,7 +45,7 @@
 // system includes
 //******************************************************************************
 
-#include <unistd.h>                                                     // usleep
+#include <papi.h>
 
 
 
@@ -54,10 +54,8 @@
 //******************************************************************************
 
 #include "papi-metric-collector.h"
-#include <lib/prof-lean/spinlock.h>                                     // spinlock_t, SPINLOCK_UNLOCKED
-#include <hpcrun/gpu-monitors.h>                                        // gpu_monitors_apply, gpu_monitor_type_enter
-#include <hpcrun/memory/hpcrun-malloc.h>                                // hpcrun_malloc_safe
-#include <hpcrun/gpu/opencl/opencl-api.h>                               // opencl_api_thread_finalize
+#include <hpcrun/gpu/gpu-activity-channel.h>                            // gpu_activity_channel_get
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>                       // gpu_operation_multiplexer_push
 
 
 
@@ -65,12 +63,19 @@
 // local data
 //******************************************************************************
 
-static spinlock_t incomplete_kernel_list_lock = SPINLOCK_UNLOCKED;
-static bool hpcrun_complete = false;
-static kernel_node_t* incomplete_kernel_list_head = NULL;
-static kernel_node_t* incomplete_kernel_list_tail = NULL;
-static kernel_node_t *kernel_node_free_list = NULL;
-static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
+#define numMetrics 3
+#define ACTIVE_INDEX 1
+#define STALL_INDEX 2
+#define MAX_STR_LEN     128
+int my_event_set = PAPI_NULL;
+char const *metric_name[MAX_STR_LEN] = {
+           "ComputeBasic.GpuTime",      // TODO: remove this metric if unnecessary
+           "ComputeBasic.EuActive",
+           "ComputeBasic.EuStall"
+};
+cct_node_t *kernel_cct_node;
+gpu_activity_channel_t *kernel_activity_channel;
+long long prev_values[numMetrics];
 
 
 
@@ -78,61 +83,95 @@ static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 // private operations
 //******************************************************************************
 
-static uint32_t
-get_count_of_unfinished_kernels
+void
+intel_papi_setup
 (
  void
 )
 {
-  return atomic_load(&g_unfinished_kernels);
-}
-
-
-static kernel_node_t*
-kernel_node_alloc_helper
-(
- kernel_node_t **free_list
-)
-{
-  kernel_node_t *first = *free_list;
-
-  if (first) {
-    *free_list = first->next;
-  } else {
-    first = (kernel_node_t *) hpcrun_malloc_safe(sizeof(kernel_node_t));
+  my_event_set = PAPI_NULL;
+  int ret=PAPI_library_init(PAPI_VER_CURRENT);
+  if (ret!=PAPI_VER_CURRENT) {
+    hpcrun_abort("Failure: PAPI_library_init.Return code = %d (%d)",
+                   ret, PAPI_strerror(ret));
   }
-  memset(first, 0, sizeof(kernel_node_t));
-  return first;
+
+  ret=PAPI_create_eventset(&my_event_set);
+  if (ret!=PAPI_OK) {
+    hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d (%d)",
+                   ret, PAPI_strerror(ret));
+  }
+
+  for (int i=0; i<numMetrics; i++) {
+    ret=PAPI_add_named_event(my_event_set, metric_name[i]);
+    if (ret!=PAPI_OK) {
+      hpcrun_abort("Failure: PAPI_add_named_event().Return code = %s (%d)",
+                   ret, PAPI_strerror(ret));
+    }
+  }
+
+  PAPI_reset(my_event_set);
+  ret=PAPI_start(my_event_set);
+  if (ret!=PAPI_OK) {
+    hpcrun_abort("Failure: PAPI_start.Return code = %s (%d)",
+                  ret, PAPI_strerror(ret));
+  }
 }
 
 
-static void
-kernel_node_free_helper
-(
- kernel_node_t **free_list,
- kernel_node_t *node
-)
-{
-  node->next = *free_list;
-  *free_list = node;
-}
-
-
-static void
-accumulate_gpu_utilization_metrics_to_incomplete_kernels
+void
+intel_papi_teardown
 (
  void
 )
 {
-  spinlock_lock(&incomplete_kernel_list_lock);
-  uint32_t num_unfinished_kernels = get_count_of_unfinished_kernels();
-  if (num_unfinished_kernels == 0) {
-    spinlock_unlock(&incomplete_kernel_list_lock);
-    return;
+  int ret=PAPI_stop(my_event_set, NULL);
+  if (ret!=PAPI_OK) {
+    hpcrun_abort("Failure: PAPI_stop.Return code = %s (%d)",
+                  ret, PAPI_strerror(ret));
   }
-  // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
-  gpu_monitors_apply(incomplete_kernel_list_head, num_unfinished_kernels, gpu_monitor_type_enter);
-  spinlock_unlock(&incomplete_kernel_list_lock);
+
+  // some metric attrbutions were missing from .hpcrun files, 
+  // hence adding a flush operation
+  atomic_bool wait;
+  atomic_store(&wait, true);
+  gpu_activity_t gpu_activity;
+  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
+  gpu_activity.kind = GPU_ACTIVITY_FLUSH;
+  gpu_activity.details.flush.wait = &wait;
+  // instead of using channel from kernel_activity_channel (channel that ran the last kernek),
+  // we directly calling gpu_activity_channel_get as this will be called from main thread
+  gpu_operation_multiplexer_push(gpu_activity_channel_get(), NULL, &gpu_activity);
+
+  // Wait until operations are drained
+  // Operation channel is FIFO
+  while (atomic_load(&wait)) {}
+}
+
+
+static void
+attribute_gpu_utilization_counters_to_kernel
+(
+ long long *current_values
+)
+{
+  gpu_activity_t ga;
+  gpu_activity_t *ga_ptr = &ga;
+  ga_ptr->kind = GPU_ACTIVITY_INTEL_GPU_UTILIZATION;
+  ga_ptr->cct_node = kernel_cct_node;
+
+  uint8_t kernel_eu_active = current_values[ACTIVE_INDEX] - prev_values[ACTIVE_INDEX];
+  uint8_t kernel_eu_stall  = current_values[STALL_INDEX] - prev_values[STALL_INDEX];
+  uint8_t kernel_eu_idle = 100 - (kernel_eu_active + kernel_eu_stall);
+  ga_ptr->details.gpu_utilization_info = (gpu_utilization_t) { .active = kernel_eu_active,
+                                            .stalled = kernel_eu_stall,
+                                            .idle = kernel_eu_idle};
+  // printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[ACTIVE_INDEX], kernel_eu_active,
+  //                                          metric_name[STALL_INDEX], kernel_eu_stall,
+  //                                          "ComputeBasic.EuIdle", kernel_eu_idle);
+  cstack_ptr_set(&(ga_ptr->next), 0);
+  gpu_operation_multiplexer_push(kernel_activity_channel, NULL, ga_ptr);
 }
 
 
@@ -142,85 +181,26 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
 //******************************************************************************
 
 void
-notify_gpu_util_thr_hpcrun_completion
+papi_metric_collection_at_kernel_start
+(
+ cct_node_t *kernel_cct,
+ gpu_activity_channel_t *activity_channel
+)
+{
+  kernel_cct_node = kernel_cct;
+  kernel_activity_channel = activity_channel;
+  PAPI_read(my_event_set, prev_values);
+}
+
+
+void
+papi_metric_collection_at_kernel_end
 (
  void
 )
 {
-  if (!hpcrun_complete) {
-    hpcrun_complete = true;
-  }
-}
+  long long collected_values[MAX_EVENTS];
 
-void
-add_kernel_to_incomplete_list
-(
- kernel_node_t *kernel_node
-)
-{
-  spinlock_lock(&incomplete_kernel_list_lock);
-  // the reason for allocating a new kernel_node_t* instead of using the function parameter is
-  // that the links (next pointer) for the parameter may get updated at the caller site. This will result in
-  // loss of integrity of incomplete_kernel_list_head linked-list
-  kernel_node_t *new_node = kernel_node_alloc_helper(&kernel_node_free_list);
-  *new_node = *kernel_node;
-  new_node->next = NULL;
-
-  kernel_node_t *current_tail = incomplete_kernel_list_tail;
-  incomplete_kernel_list_tail = new_node;
-  if (current_tail != NULL) {
-    current_tail->next = new_node;
-  } else {
-    incomplete_kernel_list_head = new_node;
-  }
-  atomic_fetch_add(&g_unfinished_kernels, 1L);
-  spinlock_unlock(&incomplete_kernel_list_lock);
-}
-
-
-void
-remove_kernel_from_incomplete_list
-(
- kernel_node_t *kernel_node
-)
-{
-  spinlock_lock(&incomplete_kernel_list_lock);
-  atomic_fetch_add(&g_unfinished_kernels, -1L);
-  kernel_node_t *curr = incomplete_kernel_list_head, *prev = NULL, *next = NULL;
-  while (curr) {
-    next = curr->next;
-    if (kernel_node->kernel_id == curr->kernel_id) {
-      if (prev) {
-        if (!next) {
-          incomplete_kernel_list_tail = prev;
-        }
-        prev->next = next;
-      } else {
-        if (!next) {
-          incomplete_kernel_list_tail = NULL;
-        }
-        incomplete_kernel_list_head = next;
-      }
-      break;
-    }
-    prev = curr;
-    curr = next;
-  }
-  kernel_node_free_helper(&kernel_node_free_list, curr);
-  spinlock_unlock(&incomplete_kernel_list_lock);
-}
-
-
-void*
-papi_metric_callback
-(
- void *arg
-)
-{
-  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
-  while (!hpcrun_complete) {
-    accumulate_gpu_utilization_metrics_to_incomplete_kernels();
-    usleep(5000);  // sleep for 5000 microseconds i.e fire 200 times per second
-  }
-  opencl_api_thread_finalize(NULL, 0);
+  PAPI_read(my_event_set, collected_values);
+  attribute_gpu_utilization_counters_to_kernel(collected_values);
 }

@@ -18,6 +18,8 @@
 #include <hpcrun/gpu/opencl/opencl-api.h>     // place_cct_under_opencl_kernel
 #include "opencl-blame.h"
 #include "../blame-kernel-cleanup-map.h"      // kernel_cleanup_map_insert
+#include <hpcrun/gpu/gpu-activity-channel.h>                        // gpu_activity_channel_get
+#include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>     // add_kernel_to_incomplete_list, remove_kernel_from_incomplete_list
 
 
 
@@ -85,6 +87,7 @@ opencl_kernel_prologue
   kernel_cleanup_map_insert((uint64_t) event, data);
   cct_node_t *cct = place_cct_under_opencl_kernel(kernel_module_id);
   kernel_prologue((uint64_t) event, cct);
+  papi_metric_collection_at_kernel_start(cct, gpu_activity_channel_get());
 
   hpcrun_safe_exit();
 }
@@ -119,6 +122,7 @@ opencl_kernel_epilogue
       hpcrun_safe_exit();
       return;
     }
+    papi_metric_collection_at_kernel_end();
 		kernel_epilogue(event_id, kernel_start, kernel_end);
 
   } else {
