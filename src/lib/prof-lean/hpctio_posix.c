@@ -3,8 +3,10 @@
 
 
 /************************** PROTOTYPES *****************************/
+static char * POSIX_Realpath(const char * path);
 static void POSIX_Init(hpctio_sys_params_t * params);
 static void POSIX_Final(hpctio_sys_params_t * params);
+
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct - only use one POSIX, no struct to define "each" 
@@ -14,6 +16,7 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .construct_params = NULL,
   .compare_params = NULL,
   .display_params = NULL,
+  .real_path = POSIX_Realpath,
   .initialize = POSIX_Init,
   .finalize   = POSIX_Final
 
@@ -42,3 +45,7 @@ typedef struct hpctio_posix_fd {
 /************************** FUNCTIONS *****************************/
 static void POSIX_Init(hpctio_sys_params_t * params){}
 static void POSIX_Final(hpctio_sys_params_t * params){}
+
+static char * POSIX_Realpath(const char * path){
+  return path;
+}

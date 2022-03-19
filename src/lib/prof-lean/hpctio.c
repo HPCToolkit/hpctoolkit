@@ -49,6 +49,14 @@ hpctio_sys_t * hpctio_sys_initialize(const char * path){
     }
 }
 
+
+/*
+* return a default system object
+*/
+hpctio_sys_t * hpctio_sys_default(){
+    return hpctio_sys_avail[0]; //default system is always POSIX
+}
+
 //TODO: need a lock?
 /*
 * finalize and free the system object

@@ -15,8 +15,11 @@ typedef struct hpctio_sys_func {
   hpctio_sys_params_t * (*construct_params)(const char * path);
   int (*compare_params)(const char * path, hpctio_sys_params_t * p);
   void (*display_params)(hpctio_sys_params_t * p);
+  char * (*real_path)(const char * path);
+
   void (*initialize)(hpctio_sys_params_t * params);
   void (*finalize)(hpctio_sys_params_t * params);
+
 
   /*
    hpctio_fd_t * (*create)(const char *path, mode_t md);
@@ -72,6 +75,7 @@ extern const char *  hpctio_daos_prefix;
 
 /*************************** FILE SYSTEM FUNCTIONS ***************************/
 hpctio_sys_t * hpctio_sys_initialize(const char * path);
+hpctio_sys_t * hpctio_sys_default();
 void hpctio_sys_finalize(hpctio_sys_t * sys);
 void hpctio_sys_avail_display();
 
