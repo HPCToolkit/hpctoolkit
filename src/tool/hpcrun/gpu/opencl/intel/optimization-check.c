@@ -131,6 +131,9 @@ create_activity_object
   ga->cct_node = cct_node;
   ga->details.intel_optimization.intelOptKind = activity->intelOptKind;
   ga->details.intel_optimization.val = 1; // metric values will be 1(bool/count)
+  if (activity->intelOptKind == UNUSED_DEVICES) {
+    ga->details.intel_optimization.val = activity->val;
+  }
 }
 
 
@@ -336,7 +339,7 @@ recordDeviceCount
       usedDeviceCount++;
     }
     if (usedDeviceCount == 1) {
-      // first device. If we need to record SINGLE_DEVICE_USE_AOT_COMPILATION or ALL_DEVICES_NOT_USED, this is the place to do it
+      // first device. If we need to record SINGLE_DEVICE_USE_AOT_COMPILATION or UNUSED_DEVICES, this is the place to do it
       firstDeviceCCT = gpu_application_thread_correlation_callback(0);
     }
   }
@@ -468,7 +471,8 @@ areAllDevicesUsed
   uint totalDeviceCount = getTotalDeviceCount();
   if (totalDeviceCount != usedDeviceCount) {
     intel_optimization_t i;
-    i.intelOptKind = ALL_DEVICES_NOT_USED;
+    i.intelOptKind = UNUSED_DEVICES;
+    i.val = (totalDeviceCount - usedDeviceCount);
     record_intel_optimization_metrics(firstDeviceCCT, &i);  // this may crash when firstDeviceCCT == NULL
   }
 }

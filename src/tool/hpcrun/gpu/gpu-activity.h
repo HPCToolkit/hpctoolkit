@@ -190,7 +190,7 @@ typedef enum {
   KERNEL_PARAMS_ALIASED                           = 3,
   SINGLE_DEVICE_USE_AOT_COMPILATION               = 4,
   OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL        = 5,
-  ALL_DEVICES_NOT_USED                            = 6
+  UNUSED_DEVICES                                  = 6
 } intel_optimization_type_t;
 
 

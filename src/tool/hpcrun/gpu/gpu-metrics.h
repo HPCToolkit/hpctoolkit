@@ -441,8 +441,8 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	"since a single device is being used, use AOT for saving time JITing kernels: bool")        \
   macro("OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL",                OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL,		\
 	"kernel output is input for another kernel. Try merging kernels to avoid sending redundant data to GPU: bool")        \
-  macro("ALL_DEVICES_NOT_USED",                ALL_DEVICES_NOT_USED,		\
-	"all avaiable devices are not getting utilized. Offload computations to all devices to reduce total application execution time: bool")
+  macro("UNUSED_DEVICES:COUNT",                UNUSED_DEVICES,		\
+	"all avaiable devices are not getting utilized. Offload computations to all devices to reduce total application execution time: count")
 
 
 // blame-shifting metrics
