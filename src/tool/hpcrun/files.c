@@ -405,7 +405,7 @@ hpcrun_files_set_directory()
 
   if(path != NULL){
     sys = hpctio_sys_initialize(path);
-    path = sys->func_ptr->real_path(path);
+    path = hpctio_sys_path(path, sys);
   }
 
   // compute path for default measurement directory
@@ -429,7 +429,8 @@ hpcrun_files_set_directory()
     // N.B.: safe to skip checking for errors as realpath will notice them
   }
 
-  int ret = mkdir(path, 0755);
+  //int ret = mkdir(path, 0755);
+  int ret = hpctio_sys_mkdir(path, 0775, sys);
   if (ret != 0 && errno != EEXIST) {
     hpcrun_abort("hpcrun: could not create output directory `%s': %s",
 		 path, strerror(errno));

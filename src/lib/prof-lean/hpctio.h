@@ -20,6 +20,10 @@ typedef struct hpctio_sys_func {
   void (*initialize)(hpctio_sys_params_t * params);
   void (*finalize)(hpctio_sys_params_t * params);
 
+  int (*mkdir)(const char *path, mode_t md, hpctio_sys_params_t * p);
+
+
+
 
   /*
    hpctio_fd_t * (*create)(const char *path, mode_t md);
@@ -79,6 +83,8 @@ hpctio_sys_t * hpctio_sys_default();
 void hpctio_sys_finalize(hpctio_sys_t * sys);
 void hpctio_sys_avail_display();
 
+char * hpctio_sys_path(const char * path, hpctio_sys_t * sys);
 
+int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys);
 
 #endif /* ifndef HPCTIO_H */

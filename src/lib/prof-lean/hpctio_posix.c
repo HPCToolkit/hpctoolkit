@@ -6,6 +6,7 @@
 static char * POSIX_Realpath(const char * path);
 static void POSIX_Init(hpctio_sys_params_t * params);
 static void POSIX_Final(hpctio_sys_params_t * params);
+static int POSIX_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
 
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
@@ -18,7 +19,8 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .display_params = NULL,
   .real_path = POSIX_Realpath,
   .initialize = POSIX_Init,
-  .finalize   = POSIX_Final
+  .finalize   = POSIX_Final,
+  .mkdir = POSIX_Mkdir
 
 
 
@@ -48,4 +50,8 @@ static void POSIX_Final(hpctio_sys_params_t * params){}
 
 static char * POSIX_Realpath(const char * path){
   return path;
+}
+
+static int POSIX_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p){
+  mkdir(path, md);
 }

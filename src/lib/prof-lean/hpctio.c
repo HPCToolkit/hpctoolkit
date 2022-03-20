@@ -100,3 +100,19 @@ void hpctio_sys_avail_display(){
     if(hpctio_sys_count < 4) printf("Last one %s\n", hpctio_sys_avail[hpctio_sys_count]);
     printf("---------------------------------------------\n");
 }
+
+/*
+* return the path without file system prefixes
+*/
+char * hpctio_sys_path(const char * path, hpctio_sys_t * sys){
+    return sys->func_ptr->real_path(path);
+}
+
+
+/*
+* make a diretcory with path and mode specified
+* return 0 on success, -1 on failure, errno set properly
+*/
+int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys){
+    return sys->func_ptr->mkdir(path, md, sys->params_ptr);
+}

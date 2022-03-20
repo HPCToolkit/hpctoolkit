@@ -19,6 +19,7 @@ static void DFS_Display_Params(hpctio_sys_params_t * p);
 static char * DFS_Realpath(const char * path);
 static void DFS_Init(hpctio_sys_params_t * params);
 static void DFS_Final(hpctio_sys_params_t * params);
+static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct
@@ -39,7 +40,9 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .display_params = DFS_Display_Params,
     .real_path = DFS_Realpath,
     .initialize = DFS_Init,
-    .finalize   = DFS_Final
+    .finalize   = DFS_Final,
+    .mkdir = DFS_Mkdir
+    
 
 
 
@@ -79,6 +82,12 @@ typedef struct hpctio_dfs_obj_opt {
     }                                                                 \
 }  
 
+static void actual_daos_init(){
+    int r = daos_init();
+    CHECK(r, "Failed to initialize daos");
+exit: ;
+}
+
 /*
 * call daos_init() only once if we create multiple DAOS system objects
 * reset real_daos_inited after all objects get finalized
@@ -89,8 +98,8 @@ static void hpctio_daos_init(){
     if(daos_init_count == 0){
         real_daos_inited = PTHREAD_ONCE_INIT;
     }
-    int r = pthread_once(&real_daos_inited, daos_init);
-    CHECK(r, "Failed to initialize daos");
+    int r = pthread_once(&real_daos_inited, actual_daos_init);
+    CHECK(r, "Failed to initialize daos via pthread_once");
     daos_init_count++;
 exit: ;
 }
@@ -201,7 +210,7 @@ static int handle_bcast(enum handleType type, hpctio_dfs_params_t *p, MPI_Comm c
 
     global.iov_len = global.iov_buf_len;
     global.iov_buf = malloc(global.iov_buf_len);
-    CHECK(global.iov_buf == NULL, "Failed to allocate handle buffer, global.");
+    CHECK((global.iov_buf == NULL), "Failed to allocate handle buffer, global.");
 
     // iov_buf gets malloced, so that we can get the actual handle this round
     if(rank == 0){
@@ -349,6 +358,50 @@ exit:
     p->inited = false;
 }
 
+// split a path into the object name and the directory
+static int parse_filename(const char * path, char ** objn, char ** contn){
+    int r = 0;
+
+    if (path == NULL || objn == NULL || contn == NULL)
+		return EINVAL;
+
+    char * path1 = strdup(path);
+    char * path2 = strdup(path);
+
+    if(path1 == NULL || path2 == NULL){
+        r = ENOMEM;
+        goto exit;
+    }
+
+    char* filen = basename(path1);
+    char* dirn = dirname(path2);
+
+    *objn = strdup(filen);
+    if (*objn == NULL) {
+        r = ENOMEM;
+        goto exit;
+    }
+
+    
+    if(dirn[0] == '/'){
+        *contn = strdup(dirn);
+    }else{
+        char buf[PATH_MAX];
+        sprintf(buf, "/%s", dirn);
+        *contn = strdup(buf);
+    }
+    if (*contn == NULL) {
+        r = ENOMEM;
+        goto exit;
+    }
+
+exit:
+    if(path1) free(path1);
+    if(path2) free(path2);
+    return r;
+
+}
+
 static hpctio_sys_params_t * DFS_Construct_Params(const char * path){
     hpctio_dfs_params_t * sys_p = (hpctio_dfs_params_t *)malloc(sizeof(hpctio_dfs_params_t));
     sys_p->inited = false;
@@ -424,4 +477,35 @@ static void DFS_Final(hpctio_sys_params_t * params){
         //TODO: log printf("DFS final NONMPI version\n");
         dfs_final_regular(params);
     }
+}
+
+
+static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p){    
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+
+    dfs_obj_t * parent = NULL;
+    char * name = NULL;
+    char * dir_name = NULL;
+    int r;
+
+    r = parse_filename(path, &name, &dir_name);
+    CHECK(r, "Failed to parse path name %s with error code %d", path, r);
+
+    if(strcmp(dir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, dir_name, O_RDWR, &parent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
+    }
+
+    r = dfs_mkdir(dfs_p->dfs, parent, name, md, 0);
+    CHECK(r, "Failed to create the directory %s with errno %d", name, r);
+
+exit:
+    if(name) free(name);
+    if(dir_name) free(dir_name);
+    if(r){
+        errno = r;
+        r = -1;
+    }
+    return r;
+    
 }
