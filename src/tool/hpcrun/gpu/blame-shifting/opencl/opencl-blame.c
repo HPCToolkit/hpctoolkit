@@ -155,7 +155,8 @@ opencl_sync_prologue
 void
 opencl_sync_epilogue
 (
- cl_command_queue queue
+ cl_command_queue queue,
+ uint16_t num_sync_events
 )
 {
   // prevent self a sample interrupt while gathering calling context
@@ -168,7 +169,7 @@ opencl_sync_epilogue
 
   // we cant release opencl events at kernel_epilogue. Their unique event ids can be used later for attributing cpu_idle_blame.
   // so we release them once they are processed in sync_epilogue
-  kernel_id_t id_node = sync_epilogue((uint64_t)queue, sync_end);
+  kernel_id_t id_node = sync_epilogue((uint64_t)queue, sync_end, num_sync_events);
   releasing_opencl_events(id_node);
 
   hpcrun_safe_exit();

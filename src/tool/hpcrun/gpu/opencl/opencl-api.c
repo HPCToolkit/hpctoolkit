@@ -1491,7 +1491,7 @@ hpcrun_clWaitForEvents
 
   if(is_opencl_blame_shifting_enabled()) {
     for (int i = 0; i < num_events; i++) {
-      opencl_sync_epilogue(queues[i]);
+      opencl_sync_epilogue(queues[i], (uint16_t)num_events);
     }
   }
   return status;
@@ -1581,7 +1581,7 @@ hpcrun_clFinish
   }
   cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
   if(is_opencl_blame_shifting_enabled()) {
-    opencl_sync_epilogue(command_queue);
+    opencl_sync_epilogue(command_queue, 1);
   }
   return status;
 }

@@ -52,7 +52,8 @@ opencl_sync_prologue
 void
 opencl_sync_epilogue
 (
- cl_command_queue queue
+ cl_command_queue queue,
+ uint16_t num_sync_events
 );
 
 #endif 	//blame_shift_opencl_h

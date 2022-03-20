@@ -199,13 +199,16 @@ attributing_cpu_idle_metric_at_sync_epilogue
 (
  cct_node_t *cpu_cct_node,
  unsigned long sync_start,
- unsigned long sync_end
+ unsigned long sync_end,
+ uint16_t num_sync_events
 )
 {
   uint64_t cpu_idle_time = sync_end  - sync_start;
   // converting nsec to sec
   double nsec_to_sec = pow(10,-9);
-  double cpu_idle_time_in_sec = cpu_idle_time * nsec_to_sec;
+  // CPU thread could be synchronizing on multiple GPU events,
+  // we divide CPU_IDLE time amongst all these events (by dividing by num_sync_events)
+  double cpu_idle_time_in_sec = cpu_idle_time * nsec_to_sec * pow(num_sync_events,-1);
 
   gpu_blame_shift_t bs = {cpu_idle_time_in_sec, 0, 0};
   record_blame_shift_metrics(cpu_cct_node, &bs);
@@ -379,7 +382,8 @@ kernel_id_t
 sync_epilogue
 (
  uint64_t queue_id,
- struct timespec sync_end
+ struct timespec sync_end,
+ uint16_t num_sync_events
 )
 {
   // prevent self a sample interrupt while gathering calling context
@@ -394,7 +398,7 @@ sync_epilogue
   unsigned long sec_to_nsec = pow(10,9);
   unsigned long sync_start_nsec = sync_start.tv_sec * sec_to_nsec + sync_start.tv_nsec;
   unsigned long sync_end_nsec = sync_end.tv_sec * sec_to_nsec + sync_end.tv_nsec;
-  attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start_nsec, sync_end_nsec);
+  attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start_nsec, sync_end_nsec, num_sync_events);
   kernel_id_t processed_ids = attributing_cpu_idle_cause_metric_at_sync_epilogue(sync_start_nsec, sync_end_nsec);
 
   queue_node->cpu_idle_cct = NULL;

@@ -67,7 +67,8 @@ kernel_id_t
 sync_epilogue
 (
  uint64_t queue_id,
- struct timespec sync_end
+ struct timespec sync_end,
+ uint16_t num_sync_events
 );
 
 #endif 	//blame_h
