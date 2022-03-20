@@ -230,7 +230,12 @@ hpcrun_threaded_data
   void
 )
 {
+#if 0
+  // this assertion isn't true for when a threaded process forks and the child then creates a thread
+  // GNU bash, version 4.4.23(1)-release (x86_64-suse-linux-gnu) does this.
   assert(hpcrun_get_thread_data == &hpcrun_get_thread_data_local);
+#endif
+
   hpcrun_get_thread_data = &hpcrun_get_thread_data_specific;
   hpcrun_td_avail        = &hpcrun_get_thread_data_specific_avail;
 }
