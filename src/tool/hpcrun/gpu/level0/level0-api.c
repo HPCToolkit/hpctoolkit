@@ -67,13 +67,15 @@
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 
 #include <level_zero/ze_api.h>
 
 //******************************************************************************
 // macros
 //******************************************************************************
-#define DEBUG 0
+#define DEBUG 1
 
 #include "hpcrun/gpu/gpu-print.h"
 
@@ -116,6 +118,8 @@
 // Assume one driver and one device.
 ze_driver_handle_t hDriver = NULL;
 ze_device_handle_t hDevice = NULL;
+
+static bool gtpin_instrumentation = false;
 
 //----------------------------------------------------------
 // level0 function pointers for late binding
@@ -1059,10 +1063,13 @@ level0_bind
 void
 level0_init
 (
- void
+ bool enable_instrumentation
 )
 {
-
+  gtpin_instrumentation = enable_instrumentation;
+  if (gtpin_instrumentation) {
+    gtpin_enable_profiling();
+  }
 }
 
 void

@@ -86,6 +86,11 @@
 #include "kernel-data.h"
 #include "kernel-data-map.h"
 
+//******************************************************************************
+// macros
+//******************************************************************************
+
+// #define STUB
 
 
 //******************************************************************************
@@ -115,6 +120,7 @@ static atomic_ullong correlation_id;
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static bool gtpin_use_runtime_callstack = false;
+static bool gtpin_is_enabled = false;
 
 static __thread uint64_t gtpin_correlation_id = 0;
 static __thread uint64_t gtpin_cpu_submit_time = 0;
@@ -129,6 +135,8 @@ static __thread bool gtpin_first = true;
 
 // FIXME the asserts in this file should be replaced by fatal error messages
 
+
+#ifdef GTPIN_KNOB_AVAILABLE
 static void
 knobAddBool
 (
@@ -147,6 +155,7 @@ knobAddBool
     HPCRUN_GTPIN_CALL(KNOB_AddValue, (knob, &knob_value));
   assert(status == KNOB_STATUS_SUCCESS);
 }
+#endif
 
 
 void
@@ -311,7 +320,7 @@ kernelBlockActivityProcess
   kernelBlockActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, execution_count);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
-  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
+  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, false); // how to set the ip_norm
   if (cct_child) {
     ga.cct_node = cct_child;
     gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
@@ -326,7 +335,10 @@ onKernelBuild
  void *v
 )
 {
-  // return; // stub
+#ifdef STUB
+  return; // stub
+#endif
+
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
 
   assert(kernel_data_map_lookup((uint64_t)kernel) == 0);
@@ -408,7 +420,10 @@ onKernelRun
  void *v
 )
 {
-  // return; // stub
+#ifdef STUB
+  return; // stub
+#endif
+
   ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %"PRIu64"", (uint64_t)kernelExec);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
@@ -426,7 +441,10 @@ onKernelComplete
  void *v
 )
 {
-  // return; // stub
+#ifdef STUB
+  return; // stub
+#endif
+
   // FIXME: johnmc thinks this is unsafe to use kernel pointer as correlation id
   uint64_t correlation_id = (uint64_t)kernelExec;
 
@@ -488,7 +506,6 @@ onKernelComplete
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
 void
 gtpin_enable_profiling
 (
@@ -497,7 +514,9 @@ gtpin_enable_profiling
 {
   ETMSG(OPENCL, "inside enableProfiling");
   initializeInstrumentation();
+#ifdef GTPIN_KNOB_AVAILABLE
   knobAddBool("silent_warnings", true);
+#endif
 
 #if 0
   if (utils::GetEnv("PTI_GEN12") != nullptr) {
@@ -513,6 +532,18 @@ gtpin_enable_profiling
   HPCRUN_GTPIN_CALL(GTPin_OnKernelComplete,(onKernelComplete, NULL));
 
   HPCRUN_GTPIN_CALL(GTPIN_Start,());
+
+  gtpin_is_enabled = true;
+}
+
+
+bool
+gtpin_enabled
+(
+ void
+)
+{
+  return gtpin_is_enabled == true;
 }
 
 

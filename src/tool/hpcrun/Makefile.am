@@ -872,7 +872,8 @@ libhpcrun_la_LDFLAGS +=  \
 	-lpthread -lrt  \
 	-L$(LIBELF_LIB) -lelf  \
 	$(PERFMON_LDFLAGS_DYN)  \
-	$(OPT_ROCM_LDFLAGS)
+	$(OPT_ROCM_LDFLAGS) \
+	$(OPT_GTPIN_LDFLAGS)
 
 libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \

@@ -112,10 +112,24 @@
 //******************************************************************************
 
 #define LEVEL0 "gpu=level0"
+#define LEVEL0_INST "gpu=level0,inst"
+
+#define NO_THRESHOLD  1L
+
+
+
+//******************************************************************************
+// local variables
+//******************************************************************************
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 //static device_finalizer_fn_entry_t device_finalizer_trace;
+
+static char event_name[128];
+
+static bool enable_instrumentation = false;
+
 
 //******************************************************************************
 // interface operations
@@ -175,7 +189,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, LEVEL0);
+  return hpcrun_ev_is(ev_str, LEVEL0) || hpcrun_ev_is(ev_str, LEVEL0_INST);
 #else
   return false;
 #endif
@@ -186,10 +200,25 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
+#if 0
   int nevents = (self->evl).nevents;
+#endif
+
   hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
   gpu_metrics_default_enable();
-  TMSG(CUDA,"nevents = %d", nevents);
+
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+  long th;
+  hpcrun_extract_ev_thresh(event, sizeof(event_name), event_name,
+    &th, NO_THRESHOLD);
+
+  if (hpcrun_ev_is(event_name, LEVEL0_INST)) {
+    gpu_metrics_GPU_INST_enable();
+#if 1
+    enable_instrumentation = true;
+#endif
+  }
 }
 
 static void
@@ -201,7 +230,7 @@ METHOD_FN(finalize_event_list)
     monitor_real_exit(-1);
   }
 #endif
-  level0_init();
+  level0_init(enable_instrumentation);
 
   // Init records
   gpu_trace_init();
@@ -228,10 +257,14 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tOperation-level monitoring on an Intel GPU.\n"
-	 "\t\tCollect timing information on GPU kernel invocations,\n"
-	 "\t\tmemory copies, etc.\n",
+  printf("%s\t\tProfile time of GPU operations initiated\n"
+	 "\t\tusing Intel's Level0 runtime.\n",
 	 LEVEL0);
+  printf("\n");
+  printf("%s\t\tProfile time of GPU operations initiated\n"
+	 "\t\tusing Intel's Level0 runtime. Collect instruction\n",
+	 "\t\tcounts for GPU kernels using GT-Pin.\n"
+	 LEVEL0_INST);
   printf("\n");
 }
 
