@@ -5059,7 +5059,9 @@ case "$GTPIN" in
     OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
 
     if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
-      OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+      # OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+      OPT_GTPIN_LDFLAGS="-Wl,-rpath=${GTPIN}/Profilers/Lib/intel64"
+      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
     fi
 
     if test "x$OPT_GTPIN_LDFLAGS" = x ; then
@@ -5081,6 +5083,7 @@ AC_MSG_RESULT([$GTPIN])
 AC_SUBST([OPT_GTPIN])
 AC_SUBST([OPT_GTPIN_IFLAGS])
 AC_SUBST([OPT_GTPIN_LDFLAGS])
+AC_SUBST([OPT_GTPIN_LIBDIR])
 
 
 #-------------------------------------------------

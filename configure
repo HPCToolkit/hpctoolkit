@@ -656,6 +656,7 @@ OPT_ROCM_LD_LIB_PATH
 OPT_ROCM_IFLAGS
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
+OPT_GTPIN_LIBDIR
 OPT_GTPIN_LDFLAGS
 OPT_GTPIN_IFLAGS
 OPT_GTPIN
@@ -24294,7 +24295,9 @@ case "$GTPIN" in
     OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
 
     if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
-      OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+      # OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+      OPT_GTPIN_LDFLAGS="-Wl,-rpath=${GTPIN}/Profilers/Lib/intel64"
+      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
     fi
 
     if test "x$OPT_GTPIN_LDFLAGS" = x ; then
@@ -24320,6 +24323,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTPIN" >&5
 $as_echo "$GTPIN" >&6; }
+
 
 
 

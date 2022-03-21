@@ -63,7 +63,7 @@
 
 #define str(t) #t
 #define xstr(t) str(t)
-#define gtpin_path() xstr(GTPIN_LIBDIR) "/libgtpin.so"
+#define gtpin_path() /* xstr(GTPIN_LIBDIR) "/" */ "libgtpin.so"
 
 #define GTPIN_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -72,6 +72,7 @@
 
 #define HPCRUN_GTPIN_CALL(fn, args) (GTPIN_FN_NAME(fn) args)
 
+#ifdef GTPIN_KNOB_AVAILABLE
 #define FORALL_GTPIN_ROUTINES(macro) \
   macro(KNOB_FindArg)		     \
   macro(KNOB_AddValue)		     \
@@ -103,6 +104,36 @@
   macro(GTPin_MemSampleLength)	     \
   macro(GTPin_MemClaim)		     \
   macro(GTPin_MemRead)
+#else
+#define FORALL_GTPIN_ROUTINES(macro) \
+  macro(GTPin_BBLHead)		     \
+  macro(GTPin_BBLNext)		     \
+  macro(GTPin_BBLValid)		     \
+  				     \
+  macro(GTPin_InsHead)		     \
+  macro(GTPin_InsTail)		     \
+  macro(GTPin_InsValid)		     \
+  macro(GTPin_InsOffset)	     \
+  macro(GTPin_InsNext)		     \
+  				     \
+  macro(GTPin_OnKernelBuild)	     \
+  macro(GTPin_OnKernelRun)	     \
+  macro(GTPin_OnKernelComplete)	     \
+  macro(GTPIN_Start)		     \
+				     \
+  macro(GTPin_KernelExec_GetKernel)  \
+				     \
+  macro(GTPin_KernelProfilingActive) \
+  macro(GTPin_KernelGetName)	     \
+  				     \
+  macro(GTPin_OpcodeprofInstrument)  \
+  				     \
+  macro(GTPin_GetElf)		     \
+  				     \
+  macro(GTPin_MemSampleLength)	     \
+  macro(GTPin_MemClaim)		     \
+  macro(GTPin_MemRead)
+#endif
 
 
 
@@ -110,6 +141,7 @@
 // local data
 //******************************************************************************
 
+#ifdef GTPIN_KNOB_AVAILABLE
 GTPIN_FN
 (
  GTPinKnob, 
@@ -129,6 +161,7 @@ GTPIN_FN
   KnobValue *knob_value
  )
 );
+#endif
 
 
 GTPIN_FN
@@ -367,7 +400,9 @@ gtpin_bind
   hpcrun_force_dlopen(false);
   
 #define GTPIN_BIND(fn)        \
-  CHK_DLSYM(gtpin, fn);
+  EEMSG("Trying to bind %s", xstr(fn)); \
+  CHK_DLSYM(gtpin, fn); \
+  EEMSG("Bound %s", xstr(fn));
   
   FORALL_GTPIN_ROUTINES(GTPIN_BIND)
     
