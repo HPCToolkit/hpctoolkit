@@ -59,11 +59,6 @@
 
 typedef struct kernel_context_map_entry_t kernel_context_map_entry_t;
 
-typedef struct context_node_t {
-  uint64_t context_id;
-  struct context_node_t *next;
-} context_node_t;
-
 
 
 //*****************************************************************************
@@ -77,7 +72,7 @@ kernel_context_map_lookup
 );
 
 
-kernel_context_map_entry_t*
+void
 kernel_context_map_insert
 (
  uint64_t, 
@@ -99,8 +94,8 @@ kernel_context_map_entry_kernel_id_get
 );
 
 
-context_node_t*
-kernel_context_map_entry_qc_list_get
+uint64_t
+kernel_context_map_entry_context_id_get
 (
  kernel_context_map_entry_t *entry
 );

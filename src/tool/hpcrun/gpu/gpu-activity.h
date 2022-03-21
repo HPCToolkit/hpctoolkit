@@ -185,7 +185,7 @@ typedef enum {
 
 typedef enum {
   INORDER_QUEUE                                   = 0,
-  KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS     = 1,
+  KERNEL_TO_MULTIPLE_CONTEXTS     = 1,
   KERNEL_PARAMS_NOT_ALIASED                       = 2,
   KERNEL_PARAMS_ALIASED                           = 3,
   SINGLE_DEVICE_USE_AOT_COMPILATION               = 4,

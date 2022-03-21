@@ -226,35 +226,20 @@ isKernelSubmittedToMultipleQueues
   
   queue_context_map_entry_t *qc_entry = queue_context_map_lookup((uint64_t)queue);
   uint64_t queue_context = queue_context_map_entry_context_id_get(qc_entry);
-  kernel_context_map_entry_t *kc_entry = kernel_context_map_insert((uint64_t)kernel, queue_context);
+  // kernel_context_map_entry_t *kc_entry = kernel_context_map_insert((uint64_t)kernel, queue_context);
+  kernel_context_map_entry_t *kc_entry = kernel_context_map_lookup((uint64_t)kernel);
   if (!kc_entry) {
-    // insertion failed; the entry already exists
+    kernel_context_map_insert((uint64_t)kernel, queue_context);
     return;
   }
-  context_node_t *list_head = kernel_context_map_entry_qc_list_get(kc_entry);
+  uint64_t kernel_context_id = kernel_context_map_entry_context_id_get(kc_entry);
 
-  // check if the list has multiple queues. If yes, are the contexts same or different?
-  context_node_t *curr = list_head;
-  while (curr) {
-    uint64_t context_id = curr->context_id;
-    if (context_id != (uint64_t)queue_context) {
-#if 0
-      queue_context_map_entry_t *qce = queue_context_map_lookup(queue_id);
-      if (!qce) {
-        // this queue has been deleted. We need to delete this context_node_t 
-        continue;
-      }
-#endif
-      cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
-      intel_optimization_t i;
-
-      if (context_id != (uint64_t)queue_context) {
-        // kernel passed to multiple queues with different context
-        i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS;
-        record_intel_optimization_metrics(cct_node, &i);
-      }
-    }
-    curr = curr->next;
+  if (kernel_context_id != (uint64_t)queue_context) {
+    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+    intel_optimization_t i;
+    // kernel passed to multiple queues with different context
+    i.intelOptKind = KERNEL_TO_MULTIPLE_CONTEXTS;
+    record_intel_optimization_metrics(cct_node, &i);
   }
 }
 

@@ -431,8 +431,8 @@ GPU_XFER_XRCV_COUNT              			 = 5
 #define FORALL_INTEL_OPTIMIZATION(macro)					\
     macro("INORDER_QUEUE:COUNT",                INORDER_QUEUE,		\
 	  "count of inorder GPU queues/streams (enable out-of-order execution to run kernels in parallel)")				\
-  macro("GKER_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS:COUNT",                KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS,		\
-	"count of kernel executions on multiple queues with different contexts (each context will JIT the kernel)")        \
+  macro("GKER_MULTIPLE_CONTEXTS:COUNT",                KERNEL_TO_MULTIPLE_CONTEXTS,		\
+	"count of kernel executions on multiple contexts (each context will JIT the kernel)")        \
   macro("GKER_PARAMS_NOT_ALIASED:COUNT",                KERNEL_PARAMS_NOT_ALIASED,		\
 	"count of kernel invocations with non-aliased parameters (add directive for enabling code-reordering optimization)")        \
   macro("GKER_PARAMS_ALIASED:COUNT",                KERNEL_PARAMS_ALIASED,		\
