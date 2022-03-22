@@ -16,7 +16,8 @@ static pthread_once_t real_daos_inited;
 static hpctio_sys_params_t * DFS_Construct_Params(const char * path);
 static int DFS_Compare_Params(const char * path, hpctio_sys_params_t * p);
 static void DFS_Display_Params(hpctio_sys_params_t * p);
-static char * DFS_Realpath(const char * path);
+static char * DFS_Cut_Prefix(const char * path);
+static char * DFS_Realpath(const char * path, char * resolved_path);
 static void DFS_Init(hpctio_sys_params_t * params);
 static void DFS_Final(hpctio_sys_params_t * params);
 static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
@@ -38,6 +39,7 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .construct_params = DFS_Construct_Params,
     .compare_params = DFS_Compare_Params,
     .display_params = DFS_Display_Params,
+    .cut_prefix = DFS_Cut_Prefix,
     .real_path = DFS_Realpath,
     .initialize = DFS_Init,
     .finalize   = DFS_Final,
@@ -436,7 +438,7 @@ static void DFS_Display_Params(hpctio_sys_params_t * p){
     printf("Pool: %s\nCont: %s\nInited: %d\n", params->pool, params->cont, params->inited);
 }
 
-static char * DFS_Realpath(const char * path){
+static char * DFS_Cut_Prefix(const char * path){
     char * path_copy = strdup(path);
     path_copy += strlen(hpctio_daos_prefix);
     
@@ -446,6 +448,12 @@ static char * DFS_Realpath(const char * path){
 
     return path_copy;
 }
+
+static char * DFS_Realpath(const char * path, char * resolved_path){
+    int r = sprintf(resolved_path, "%s", path);
+    return r == strlen(resolved_path) ? resolved_path : NULL;
+}
+
 
 static void DFS_Init(hpctio_sys_params_t * params){
     int mpi_avail;

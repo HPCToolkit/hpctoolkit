@@ -133,6 +133,7 @@
 #include <lib/prof-lean/crypto-hash.h> // Calculate a hash for vdso
 #include <lib/support-lean/OSUtil.h>
 #include <lib/prof-lean/hpctio.h>
+#include <lib/prof-lean/hpctio_obj.h>
 
 
 //***************************************************************
@@ -168,6 +169,7 @@ static void hpcrun_rename_log_file_early(int rank);
 
 static char default_path[PATH_MAX + 1] = {'\0'};
 static char output_directory[PATH_MAX + 1] = {'\0'};
+static char output_dir[PATH_MAX + 1] = {'\0'};
 static char executable_name[PATH_MAX + 1] = {'\0'};
 static char executable_pathname[PATH_MAX + 1] = {'\0'};
 
@@ -345,6 +347,8 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
       errno = ENAMETOOLONG;
       break;
     }
+    
+    //
     ret = link(old_name, new_name);
     if (ret == 0) {
       // success
@@ -405,7 +409,7 @@ hpcrun_files_set_directory()
 
   if(path != NULL){
     sys = hpctio_sys_initialize(path);
-    path = hpctio_sys_path(path, sys);
+    path = hpctio_sys_cut_prefix(path, sys);
   }
 
   // compute path for default measurement directory
@@ -429,17 +433,17 @@ hpcrun_files_set_directory()
     // N.B.: safe to skip checking for errors as realpath will notice them
   }
 
-  //int ret = mkdir(path, 0755);
   int ret = hpctio_sys_mkdir(path, 0775, sys);
   if (ret != 0 && errno != EEXIST) {
     hpcrun_abort("hpcrun: could not create output directory `%s': %s",
 		 path, strerror(errno));
   }
 
-  char* rpath = realpath(path, output_directory);
+  char * rpath = hpctio_sys_realpath(path, output_dir, sys);
   if (!rpath) {
     hpcrun_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
   }
+
 }
 
 

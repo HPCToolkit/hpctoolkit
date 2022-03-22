@@ -15,7 +15,8 @@ typedef struct hpctio_sys_func {
   hpctio_sys_params_t * (*construct_params)(const char * path);
   int (*compare_params)(const char * path, hpctio_sys_params_t * p);
   void (*display_params)(hpctio_sys_params_t * p);
-  char * (*real_path)(const char * path);
+  char * (*cut_prefix)(const char * path);
+  char * (*real_path)(const char * path, char * resolved_path);
 
   void (*initialize)(hpctio_sys_params_t * params);
   void (*finalize)(hpctio_sys_params_t * params);
@@ -83,7 +84,8 @@ hpctio_sys_t * hpctio_sys_default();
 void hpctio_sys_finalize(hpctio_sys_t * sys);
 void hpctio_sys_avail_display();
 
-char * hpctio_sys_path(const char * path, hpctio_sys_t * sys);
+char * hpctio_sys_cut_prefix(const char * path, hpctio_sys_t * sys);
+char * hpctio_sys_realpath(const char * path, char * resolved_path, hpctio_sys_t * sys);
 
 int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys);
 

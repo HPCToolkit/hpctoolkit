@@ -1,6 +1,7 @@
 #include "hpctio.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // define global I/O constants
 const char *  hpctio_daos_prefix = "daos://";
@@ -102,10 +103,19 @@ void hpctio_sys_avail_display(){
 }
 
 /*
-* return the path without file system prefixes
+* return the given path without file system prefixes
 */
-char * hpctio_sys_path(const char * path, hpctio_sys_t * sys){
-    return sys->func_ptr->real_path(path);
+char * hpctio_sys_cut_prefix(const char * path, hpctio_sys_t * sys){
+    return sys->func_ptr->cut_prefix(path);
+}
+
+/*
+* return the realpath 
+* POSIX: the absolute full path
+* DAOS: the given path is the realpath
+*/
+char * hpctio_sys_realpath(const char * path, char * resolved_path, hpctio_sys_t * sys){
+    return sys->func_ptr->real_path(path, resolved_path);
 }
 
 

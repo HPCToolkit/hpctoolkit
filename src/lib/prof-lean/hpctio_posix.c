@@ -3,7 +3,8 @@
 
 
 /************************** PROTOTYPES *****************************/
-static char * POSIX_Realpath(const char * path);
+static char * POSIX_Cut_Prefix(const char * path);
+static char * POSIX_Realpath(const char * path, char * resolved_path);
 static void POSIX_Init(hpctio_sys_params_t * params);
 static void POSIX_Final(hpctio_sys_params_t * params);
 static int POSIX_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
@@ -17,6 +18,7 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .construct_params = NULL,
   .compare_params = NULL,
   .display_params = NULL,
+  .cut_prefix = POSIX_Cut_Prefix,
   .real_path = POSIX_Realpath,
   .initialize = POSIX_Init,
   .finalize   = POSIX_Final,
@@ -48,8 +50,13 @@ typedef struct hpctio_posix_fd {
 static void POSIX_Init(hpctio_sys_params_t * params){}
 static void POSIX_Final(hpctio_sys_params_t * params){}
 
-static char * POSIX_Realpath(const char * path){
+static char * POSIX_Cut_Prefix(const char * path){
   return path;
+}
+
+static char * POSIX_Realpath(const char * path, char * resolved_path){
+  char* rpath = realpath(path, resolved_path);
+  return rpath;
 }
 
 static int POSIX_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p){
