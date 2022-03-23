@@ -193,6 +193,25 @@ hpcrun_zeKernelDestroy
   ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
 );
 
+ze_result_t
+hpcrun_zeFenceDestroy
+(
+  ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
+);
+
+ze_result_t
+hpcrun_zeFenceReset
+(
+  ze_fence_handle_t hFence       //  [in] handle of the fence
+);
+
+ze_result_t
+hpcrun_zeCommandQueueSynchronize
+(
+  ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
+  uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
+);
+
 void
 level0_init
 (

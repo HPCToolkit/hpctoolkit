@@ -577,7 +577,9 @@ MY_LEVEL0_FILES=\
 	gpu/level0/level0-data-node.c \
 	gpu/level0/level0-event-map.c \
 	gpu/level0/level0-handle-map.c \
-	gpu/level0/level0-kernel-module-map.c
+	gpu/level0/level0-kernel-module-map.c \
+	gpu/level0/level0-fence-map.c \
+	gpu/level0/level0-command-queue-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
 libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
