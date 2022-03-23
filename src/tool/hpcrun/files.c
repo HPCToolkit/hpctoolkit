@@ -173,6 +173,8 @@ static char output_dir[PATH_MAX + 1] = {'\0'};
 static char executable_name[PATH_MAX + 1] = {'\0'};
 static char executable_pathname[PATH_MAX + 1] = {'\0'};
 
+static hpctio_sys_t * output_sys;
+
 // These variables are protected by the files lock.
 // Opening or renaming a file must acquire the lock.
 
@@ -347,7 +349,7 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
       errno = ENAMETOOLONG;
       break;
     }
-    
+
     //
     ret = link(old_name, new_name);
     if (ret == 0) {
@@ -364,6 +366,75 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
   lateid.done = 1;
 
 warn:
+  // Failure to rename is a loud warning.
+  if (ret < 0) {
+    EEMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
+	  suffix, old_name, new_name, strerror(errno));
+    EMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
+	 suffix, old_name, new_name, strerror(errno));
+  }
+
+  return ret;
+}
+
+
+// Rename the file from MPI rank 0 and early id to new rank and late
+// id (rename is always late).  Must hold the files lock.
+//
+// Note: must use link(2) and unlink(2) instead of rename(2) to
+// atomically test if the new file exists.  rename() silently
+// overwrites a previous file.
+//
+// Returns: 0 on success, else -1 on failure.
+static int
+hpcrun_rename_file2(int rank, int thread, const char *suffix)
+{
+  char old_name[PATH_MAX], new_name[PATH_MAX];
+  int ret;
+
+  // Not recoding data for this process.
+  if (! hpcrun_sample_prob_active()) {
+    return 0;
+  }
+
+  // Old and new names are the same.
+  if (rank == 0 && earlyid.host == lateid.host && earlyid.gen == lateid.gen) {
+    return 0;
+  }
+
+  snprintf(old_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
+	   executable_name, 0, thread, earlyid.host, mypid, earlyid.gen, suffix);
+  for (;;) {
+    errno = 0;
+    ret = snprintf(new_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
+		   executable_name, rank, thread, lateid.host, mypid, lateid.gen, suffix);
+    if (ret >= PATH_MAX) {
+      ret = -1;
+      errno = ENAMETOOLONG;
+      break;
+    }
+
+    //
+   
+
+
+
+
+
+    ret = link(old_name, new_name);
+    if (ret == 0) {
+      // success
+      unlink(old_name);
+      break;
+    }
+    if (errno != EEXIST || hpcrun_files_next_id(&lateid) != 0) {
+      // failure, out of options
+      ret = -1;
+      break;
+    }
+  }
+  lateid.done = 1;
+
   // Failure to rename is a loud warning.
   if (ret < 0) {
     EEMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
@@ -405,11 +476,11 @@ void
 hpcrun_files_set_directory()
 {  
   char *path = getenv(HPCRUN_OUT_PATH);
-  hpctio_sys_t * sys = hpctio_sys_default();
+  output_sys = hpctio_sys_default();
 
   if(path != NULL){
-    sys = hpctio_sys_initialize(path);
-    path = hpctio_sys_cut_prefix(path, sys);
+    output_sys = hpctio_sys_initialize(path);
+    path = hpctio_sys_cut_prefix(path, output_sys);
   }
 
   // compute path for default measurement directory
@@ -433,13 +504,19 @@ hpcrun_files_set_directory()
     // N.B.: safe to skip checking for errors as realpath will notice them
   }
 
-  int ret = hpctio_sys_mkdir(path, 0775, sys);
+  int ret = hpctio_sys_mkdir(path, 0775, output_sys);
   if (ret != 0 && errno != EEXIST) {
     hpcrun_abort("hpcrun: could not create output directory `%s': %s",
 		 path, strerror(errno));
   }
 
-  char * rpath = hpctio_sys_realpath(path, output_dir, sys);
+  // TODO: needs to be eliminated later
+  char * rpath = realpath(path, output_directory);
+  if (!rpath) {
+    hpcrun_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
+  }
+
+  rpath = hpctio_sys_realpath(path, output_dir, output_sys);
   if (!rpath) {
     hpcrun_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
   }
@@ -533,6 +610,7 @@ hpcrun_rename_log_file_early(int rank)
     log_rename_done = 1;
   }
 }
+
 
 
 // Returns: 0 on success, else -1 on failure.
