@@ -403,6 +403,10 @@ level0_check_result
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_DEVICE_LOST);
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_ENUMERATION);
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_NULL_HANDLE);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SYNCHRONIZATION_OBJECT);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SIZE);
+    LEVEL0_ERROR_CASE(ZE_RESULT_NOT_READY);
     default:
       fprintf(stderr, " unknown return code");
   }
@@ -1147,8 +1151,8 @@ hpcrun_zeCommandQueueSynchronize
 )
 {
   PRINT("Enter zeCommandQueueSynchronize wrapper: commmand queue %p\n", hCommandQueue);
-  level0_attribute_command_queue(hCommandQueue);
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandQueueSynchronize, (hCommandQueue, timeout));
+  level0_attribute_command_queue(hCommandQueue);
   return ret;
 }
 
