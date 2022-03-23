@@ -78,16 +78,20 @@ opencl_kernel_prologue
 )
 {
   // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
+  hpcrun_safe_enter();
+
+  uint64_t event_id = (uint64_t) event;
 
   // increment the reference count for the event
   clRetainEvent(event);
   kernel_cleanup_data_t *data = kcd_alloc_helper();
   data->event = event;
-  kernel_cleanup_map_insert((uint64_t) event, data);
+  kernel_cleanup_map_insert(event_id, data);
   cct_node_t *cct = place_cct_under_opencl_kernel(kernel_module_id);
-  kernel_prologue((uint64_t) event, cct);
-  papi_metric_collection_at_kernel_start((uint64_t) event, cct, gpu_activity_channel_get());
+  kernel_prologue(event_id, cct);
+  if (get_gpu_utilization_flag()) {
+    papi_metric_collection_at_kernel_start(event_id, cct, gpu_activity_channel_get());
+  }
 
   hpcrun_safe_exit();
 }
@@ -122,7 +126,9 @@ opencl_kernel_epilogue
       hpcrun_safe_exit();
       return;
     }
-    papi_metric_collection_at_kernel_end(event_id);
+    if (get_gpu_utilization_flag()) {
+      papi_metric_collection_at_kernel_end(event_id);
+    }
 		kernel_epilogue(event_id, kernel_start, kernel_end);
 
   } else {

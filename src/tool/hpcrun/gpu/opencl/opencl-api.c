@@ -1650,12 +1650,22 @@ opencl_instrumentation_count_enable
 
 
 void
-set_gpu_utilization
+set_gpu_utilization_flag
 (
  void
 )
 {
   gpu_utilization_enabled = true;
+}
+
+
+bool
+get_gpu_utilization_flag
+(
+ void
+)
+{
+  return gpu_utilization_enabled;
 }
 
 

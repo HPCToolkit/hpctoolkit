@@ -227,9 +227,9 @@ METHOD_FN(process_event_list, int lush_metrics)
       // papi metric collection for OpenCL
       intel_papi_setup();
       gpu_metrics_gpu_utilization_enable();
-      set_gpu_utilization();
-		}
-	}
+      set_gpu_utilization_flag();
+    }
+  }
 }
 
 

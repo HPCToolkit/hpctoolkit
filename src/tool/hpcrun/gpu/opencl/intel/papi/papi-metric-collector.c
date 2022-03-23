@@ -124,15 +124,19 @@ attribute_gpu_utilization_counters_to_kernel
   ga_ptr->kind = GPU_ACTIVITY_INTEL_GPU_UTILIZATION;
   ga_ptr->cct_node = kernel_cct;
 
-  uint8_t kernel_eu_active = current_values[ACTIVE_INDEX] - prev_values[ACTIVE_INDEX];
-  uint8_t kernel_eu_stall  = current_values[STALL_INDEX] - prev_values[STALL_INDEX];
+  uint8_t kernel_eu_active = 0, kernel_eu_stall = 0;
+  int16_t active_delta = current_values[ACTIVE_INDEX] - prev_values[ACTIVE_INDEX];
+  int16_t stall_delta = current_values[STALL_INDEX] - prev_values[STALL_INDEX];
+  if (active_delta > 0) kernel_eu_active = active_delta;
+  if (stall_delta > 0) kernel_eu_stall = stall_delta;
+
   uint8_t kernel_eu_idle = 100 - (kernel_eu_active + kernel_eu_stall);
   ga_ptr->details.gpu_utilization_info = (gpu_utilization_t) { .active = kernel_eu_active,
                                             .stalled = kernel_eu_stall,
                                             .idle = kernel_eu_idle};
-  // printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[ACTIVE_INDEX], kernel_eu_active,
-  //                                          metric_name[STALL_INDEX], kernel_eu_stall,
-  //                                          "ComputeBasic.EuIdle", kernel_eu_idle);
+  printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[ACTIVE_INDEX], kernel_eu_active,
+                                           metric_name[STALL_INDEX], kernel_eu_stall,
+                                           "ComputeBasic.EuIdle", kernel_eu_idle);
   cstack_ptr_set(&(ga_ptr->next), 0);
   gpu_operation_multiplexer_push(kernel_activity_channel, NULL, ga_ptr);
 }
