@@ -334,7 +334,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {
           if(n.lm_ip == hpcrun_placeholder_root_primary) {
             // Primary root, for normal "full" unwinds. Maps to (global).
-            nodes.emplace(id, std::make_pair(nullptr, &sink.global()));
+            nodes.emplace(id, singleCtx_t({}, sink.global()));
           } else {
             // It seems like we should handle root_partial here as well, but a
             // snippet in hpcrun/cct/cct.c stitches root_partial as a child of
@@ -386,13 +386,13 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         return false;
       }
       const auto& par = par_it->second;
-      if(const auto* p_x = std::get_if<std::pair<Context*, Context*>>(&par)) {
-        Context& par = *p_x->second;
+      if(const auto* p_x = std::get_if<singleCtx_t>(&par)) {
+        Context& par = p_x->second;
         if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
           // This is a reference to an outlined range tree, rooted at grandpar
           // and par is the entry.
-          nodes.emplace(id, std::make_pair(p_x,
-              &sink.mergedThread(outlineGpuContext(n.lm_ip)) ));
+          nodes.emplace(id, refRangeContext_t(*p_x,
+              sink.mergedThread(outlineGpuContext(n.lm_ip)) ));
           continue;
         }
 
@@ -426,7 +426,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           // In this case, we need a Reconstruction.
           auto fg = sink.contextFlowGraph(scope);
           if(fg) {
-            nodes.emplace(id, &sink.contextReconstruction(*fg, par));
+            nodes.emplace(id, reconstructedCtx_t{sink.contextReconstruction(*fg, par)});
           } else {
             // Failed to generate the appropriate FlowGraph, we must be missing
             // some data. Map to par -> (unknown) -> (point) and throw an error.
@@ -434,45 +434,45 @@ bool Hpcrun4::realread(const DataClass& needed) try {
               << scope.point_data().first.path().string();
             auto& unk = sink.context(par, {Relation::call, Scope()});
             auto& pnt = sink.context(unk, {Relation::call, scope});
-            nodes.emplace(id, std::make_pair(&par, &pnt));
+            nodes.emplace(id, singleCtx_t(par, pnt));
           }
         } else {
           // Simple straightforward Context
-          nodes.emplace(id, std::make_pair(&par,
-              &sink.context(par, {Relation::call, scope})));
+          nodes.emplace(id, singleCtx_t(par,
+              sink.context(par, {Relation::call, scope})));
         }
-      } else if(std::holds_alternative<ContextReconstruction*>(par)) {
+      } else if(std::holds_alternative<reconstructedCtx_t>(par)) {
         // This is invalid, Reconstructions cannot have children. Yet.
         util::log::info{} << "Encountered invalid child of un-unwindable cct node";
         return false;
-      } else if(const auto* p_x = std::get_if<std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>>(&par)) {
+      } else if(const auto* p_x = std::get_if<refRangeContext_t>(&par)) {
         if(n.lm_id != HPCRUN_GPU_RANGE_NODE) {
           // Children of CONTEXT nodes must be RANGE nodes.
           util::log::info{} << "Encountered invalid non-GPU_RANGE child of GPU_CONTEXT node";
           return false;
         }
         // Add this root to the proper reconstruction group
-        sink.addToReconstructionGroup(*p_x->first->first, p_x->first->second->scope().flat(), *p_x->second, n.lm_ip);
-        nodes.emplace(id, std::make_pair(p_x, n.lm_ip));
-      } else if(std::holds_alternative<std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t>>(par)) {
+        sink.addToReconstructionGroup(*p_x->first.first, p_x->first.second.scope().flat(), p_x->second, n.lm_ip);
+        nodes.emplace(id, refRange_t(*p_x, n.lm_ip));
+      } else if(std::holds_alternative<refRange_t>(par)) {
         // This is invalid, inline GPU_RANGE nodes cannot have children.
         util::log::info{} << "Encountered invalid child of inline GPU_RANGE node";
         return false;
-      } else if(std::holds_alternative<int>(par)) {
+      } else if(std::holds_alternative<outlinedRangeRoot_t>(par)) {
         if(n.lm_id != HPCRUN_GPU_CONTEXT_NODE) {
           // Children of the range-root must be GPU_CONTEXT nodes.
           util::log::info{} << "Encountered invalid non-GPU_CONTEXT child of outlined range tree root";
           return false;
         }
-        nodes.emplace(id, &sink.mergedThread(outlineGpuContext(n.lm_ip)));
-      } else if(auto* pp_thread = std::get_if<PerThreadTemporary*>(&par)) {
+        nodes.emplace(id, outlinedRangeContext_t{sink.mergedThread(outlineGpuContext(n.lm_ip))});
+      } else if(auto* p_x = std::get_if<outlinedRangeContext_t>(&par)) {
         if(n.lm_id != HPCRUN_GPU_RANGE_NODE) {
           // Children of CONTEXT nodes must be RANGE nodes.
           util::log::info{} << "Encountered invalid non-GPU_RANGE child of GPU_CONTEXT node";
           return false;
         }
-        nodes.emplace(id, std::make_pair(*pp_thread, n.lm_ip));
-      } else if(auto* p_x = std::get_if<std::pair<PerThreadTemporary*, uint64_t>>(&par)) {
+        nodes.emplace(id, outlinedRange_t(p_x->thread, n.lm_ip));
+      } else if(auto* p_x = std::get_if<outlinedRange_t>(&par)) {
         // Sample within an outlined range tree. Always represents a point Scope.
         auto mod_it = modules.find(n.lm_id);
         if(mod_it == modules.end()) {
@@ -483,8 +483,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
 
         auto fg = sink.contextFlowGraph(scope);
         if(fg) {
-          sink.addToReconstructionGroup(*fg, *p_x->first, p_x->second);
-          nodes.emplace(id, std::make_pair(p_x, &*fg));
+          sink.addToReconstructionGroup(*fg, p_x->first, p_x->second);
+          nodes.emplace(id, outlinedRangeSample_t(*p_x, *fg));
         } else {
           // Failed to generate the appropriate FlowGraph, we must be missing
           // some data. Map to (global) -> (unknown) -> (point) and throw an error.
@@ -492,9 +492,9 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             << mod_it->second.path().string();
           auto& unk = sink.context(sink.global(), {Relation::call, Scope()});
           auto& pnt = sink.context(unk, {Relation::call, scope});
-          nodes.emplace(id, std::make_pair(&unk, &pnt));
+          nodes.emplace(id, singleCtx_t(unk, pnt));
         }
-      } else if(std::holds_alternative<std::pair<const std::pair<PerThreadTemporary*, uint64_t>*, ContextFlowGraph*>>(par)) {
+      } else if(std::holds_alternative<outlinedRangeSample_t>(par)) {
         // This is invalid, outlined range-tree sample nodes cannot have children.
         util::log::info{} << "Encountered invalid child of outlined range sample node";
         return false;
@@ -515,23 +515,21 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       hpcrun_metricVal_t val;
       int mid = hpcrun_sparse_next_entry(file, &val);
       if(mid == 0) continue;
-      assert(sink.limit().hasContexts());  // TODO: figure out what I was thinking here
+      assert(sink.limit().hasContexts());
       auto node_it = nodes.find(cid);
       if(node_it == nodes.end()) {
         util::log::info{} << "Encountered metric value for invalid cct node id: " << cid;
         return false;
       }
       auto accum = [&]() -> std::optional<ProfilePipeline::Source::AccumulatorsRef> {
-        if(auto* p_x = std::get_if<std::pair<Context*, Context*>>(&node_it->second)) {
-          return sink.accumulateTo(*thread, *p_x->second);
-        } else if(auto* pp_reconst = std::get_if<ContextReconstruction*>(&node_it->second)) {
-          return sink.accumulateTo(*thread, **pp_reconst);
-        } else if(auto* p_x = std::get_if<std::pair<const std::pair<const std::pair<Context*, Context*>*,
-            PerThreadTemporary*>*, uint64_t>>(&node_it->second)) {
-          return sink.accumulateTo(*p_x->first->second, p_x->second, *p_x->first->first->second);
-        } else if(auto* p_x = std::get_if<std::pair<const std::pair<PerThreadTemporary*, uint64_t>*,
-                                                    ContextFlowGraph*>>(&node_it->second)) {
-          return sink.accumulateTo(*p_x->first->first, p_x->first->second, *p_x->second);
+        if(auto* p_x = std::get_if<singleCtx_t>(&node_it->second)) {
+          return sink.accumulateTo(*thread, p_x->second);
+        } else if(auto* p_x = std::get_if<reconstructedCtx_t>(&node_it->second)) {
+          return sink.accumulateTo(*thread, p_x->ctx);
+        } else if(auto* p_x = std::get_if<refRange_t>(&node_it->second)) {
+          return sink.accumulateTo(p_x->first.second, p_x->second, p_x->first.first.second);
+        } else if(auto* p_x = std::get_if<outlinedRangeSample_t>(&node_it->second)) {
+          return sink.accumulateTo(p_x->first.first, p_x->first.second, p_x->second);
         }
         return std::nullopt;
       }();
@@ -568,8 +566,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       auto it = nodes.find(tpoint.cpId);
       if(it != nodes.end()) {
-        if(auto* p_x = std::get_if<std::pair<Context*, Context*>>(&it->second)) {
-          switch(sink.timepoint(*thread, *p_x->second,
+        if(auto* p_x = std::get_if<singleCtx_t>(&it->second)) {
+          switch(sink.timepoint(*thread, p_x->second,
               std::chrono::nanoseconds(HPCTRACE_FMT_GET_TIME(tpoint.comp)))) {
           case ProfilePipeline::Source::TimepointStatus::next:
             break;  // 'Round the loop

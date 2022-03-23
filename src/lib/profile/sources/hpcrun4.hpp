@@ -99,25 +99,34 @@ private:
   // ID to Module mapping.
   std::unordered_map<unsigned int, Module&> modules;
 
+  // Simple single Context. First term is the parent, second is the Context.
+  using singleCtx_t = std::pair<util::optional_ref<Context>, Context&>;
+  // Inlined Reconstruction (eg. GPU PC sampling in serialized mode).
+  struct reconstructedCtx_t { ContextReconstruction& ctx; };
+  // Reference to an outlined range tree, GPU context node. Has no metrics.
+  // First Context is the root, second is the entry-Context.
+  using refRangeContext_t = std::pair<const singleCtx_t&, PerThreadTemporary&>;
+  // Reference to an outlined range tree, range node. Has kernel metrics.
+  using refRange_t = std::pair<const refRangeContext_t&, uint64_t /* group id */>;
+  // Outlined range tree root. Has no metrics, never actually represented.
+  using outlinedRangeRoot_t = int;
+  // Outlined range tree, GPU context node. Has no metrics.
+  struct outlinedRangeContext_t { PerThreadTemporary& thread; };
+  // Outlined range tree, range node. Has no metrics.
+  using outlinedRange_t = std::pair<PerThreadTemporary&, uint64_t>;
+  // Outlined range tree, sample node. Has instruction-level metrics.
+  using outlinedRangeSample_t = std::pair<const outlinedRange_t&, ContextFlowGraph&>;
+
   // ID to Context-like mapping.
   std::unordered_map<unsigned int, std::variant<
-      // Simple single Context. First term is the parent, second is the Context.
-      std::pair<Context*, Context*>,
-      // Inlined Reconstruction (eg. GPU PC sampling in serialized mode).
-      ContextReconstruction*,
-      // Reference to an outlined range tree, GPU context node. Has no metrics.
-      // First Context is the root, second is the entry-Context.
-      std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>,
-      // Reference to an outlined range tree, range node. Has kernel metrics.
-      std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t /* group id */>,
-      // Outlined range tree root. Has no metrics, never actually represented.
-      int,
-      // Outlined range tree, GPU context node. Has no metrics.
-      PerThreadTemporary*,
-      // Outlined range tree, range node. Has no metrics.
-      std::pair<PerThreadTemporary*, uint64_t>,
-      // Outlined range tree, sample node. Has instruction-level metrics.
-      std::pair<const std::pair<PerThreadTemporary*, uint64_t>*, ContextFlowGraph*>
+      singleCtx_t,
+      reconstructedCtx_t,
+      refRangeContext_t,
+      refRange_t,
+      outlinedRangeRoot_t,
+      outlinedRangeContext_t,
+      outlinedRange_t,
+      outlinedRangeSample_t
     >> nodes;
 
   // Path to the tracefile, and offset of the actual data blob.
