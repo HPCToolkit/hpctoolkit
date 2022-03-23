@@ -72,7 +72,8 @@ public:
   }
   ExtensionClass requires() const noexcept override { return {}; }
 
-  util::optional_ref<Context> classify(Context&, NestedScope&) noexcept override;
+  std::optional<std::pair<util::optional_ref<Context>, Context&>>
+  classify(Context&, NestedScope&) noexcept override;
   bool resolve(ContextFlowGraph&) noexcept override;
 
   std::vector<stdshim::filesystem::path> forPaths() const;

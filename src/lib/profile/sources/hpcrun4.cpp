@@ -334,7 +334,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {
           if(n.lm_ip == hpcrun_placeholder_root_primary) {
             // Primary root, for normal "full" unwinds. Maps to (global).
-            nodes.emplace(id, singleCtx_t({}, sink.global()));
+            auto& g = sink.global();
+            nodes.emplace(id, singleCtx_t({}, g, g));
           } else {
             // It seems like we should handle root_partial here as well, but a
             // snippet in hpcrun/cct/cct.c stitches root_partial as a child of
@@ -387,10 +388,10 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       const auto& par = par_it->second;
       if(const auto* p_x = std::get_if<singleCtx_t>(&par)) {
-        Context& par = p_x->second;
+        Context& par = p_x->full;
         if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
-          // This is a reference to an outlined range tree, rooted at grandpar
-          // and par is the entry.
+          // This is a reference to an outlined range tree, rooted at grandpar.
+          // The relation is the "entry" to here.
           nodes.emplace(id, refRangeContext_t(*p_x,
               sink.mergedThread(outlineGpuContext(n.lm_ip)) ));
           continue;
@@ -432,8 +433,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             // some data. Map to par -> (unknown) -> (point) and throw an error.
             util::log::error{} << "Missing required CFG data for binary: "
               << scope.point_data().first.path().string();
-            auto& unk = sink.context(par, {Relation::call, Scope()});
-            auto& pnt = sink.context(unk, {Relation::call, scope});
+            auto& unk = sink.context(par, {Relation::call, Scope()}).second;
+            auto pnt = sink.context(unk, {Relation::call, scope});
             nodes.emplace(id, singleCtx_t(par, pnt));
           }
         } else {
@@ -452,7 +453,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           return false;
         }
         // Add this root to the proper reconstruction group
-        sink.addToReconstructionGroup(*p_x->first.first, p_x->first.second.scope().flat(), p_x->second, n.lm_ip);
+        sink.addToReconstructionGroup(*p_x->first.par,
+            p_x->first.rel.scope().flat(), p_x->second, n.lm_ip);
         nodes.emplace(id, refRange_t(*p_x, n.lm_ip));
       } else if(std::holds_alternative<refRange_t>(par)) {
         // This is invalid, inline GPU_RANGE nodes cannot have children.
@@ -490,8 +492,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           // some data. Map to (global) -> (unknown) -> (point) and throw an error.
           util::log::error{} << "Missing required CFG data for binary: "
             << mod_it->second.path().string();
-          auto& unk = sink.context(sink.global(), {Relation::call, Scope()});
-          auto& pnt = sink.context(unk, {Relation::call, scope});
+          auto& unk = sink.context(sink.global(), {Relation::call, Scope()}).second;
+          auto pnt = sink.context(unk, {Relation::call, scope});
           nodes.emplace(id, singleCtx_t(unk, pnt));
         }
       } else if(std::holds_alternative<outlinedRangeSample_t>(par)) {
@@ -523,11 +525,11 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       auto accum = [&]() -> std::optional<ProfilePipeline::Source::AccumulatorsRef> {
         if(auto* p_x = std::get_if<singleCtx_t>(&node_it->second)) {
-          return sink.accumulateTo(*thread, p_x->second);
+          return sink.accumulateTo(*thread, p_x->full);
         } else if(auto* p_x = std::get_if<reconstructedCtx_t>(&node_it->second)) {
           return sink.accumulateTo(*thread, p_x->ctx);
         } else if(auto* p_x = std::get_if<refRange_t>(&node_it->second)) {
-          return sink.accumulateTo(p_x->first.second, p_x->second, p_x->first.first.second);
+          return sink.accumulateTo(p_x->first.second, p_x->second, p_x->first.first.rel);
         } else if(auto* p_x = std::get_if<outlinedRangeSample_t>(&node_it->second)) {
           return sink.accumulateTo(p_x->first.first, p_x->first.second, p_x->second);
         }
@@ -567,7 +569,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       auto it = nodes.find(tpoint.cpId);
       if(it != nodes.end()) {
         if(auto* p_x = std::get_if<singleCtx_t>(&it->second)) {
-          switch(sink.timepoint(*thread, p_x->second,
+          switch(sink.timepoint(*thread, p_x->full,
               std::chrono::nanoseconds(HPCTRACE_FMT_GET_TIME(tpoint.comp)))) {
           case ProfilePipeline::Source::TimepointStatus::next:
             break;  // 'Round the loop

@@ -319,12 +319,21 @@ public:
     /// ProfileFinalizers may inject additional Contexts between the parent
     /// resulting child Context to provide additional (usually lexical) context.
     ///
+    /// Two Contexts are returned, the first refers to the relation while the
+    /// second refers to the flat Scope in context. For example, a call to
+    /// `context((point){A}, (nominal call to):(point){B})` that expands to
+    ///     (point){A}
+    ///       (nominal call to):(func){funcB@/b.c:10}  <-- .first
+    ///         (enclosed sub-Scope):(line){b.c:12}
+    ///           (enclosed sub-Scope):(point){B}      <-- .second
+    /// will return the two marked Contexts.
+    ///
     /// This method presupposes the single sequence of Contexts between the
     /// parent and child can be derived statically from the Scope.
     /// See contextReconstruction for a case when this is not possible.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Context& context(Context&, const NestedScope&);
+    std::pair<Context&, Context&> context(Context&, const NestedScope&);
 
     /// Emit a new ContextReconstruction for the given ContextFlowGraph,
     /// rooted at a particular Context.

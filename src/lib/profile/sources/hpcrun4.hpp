@@ -99,12 +99,20 @@ private:
   // ID to Module mapping.
   std::unordered_map<unsigned int, Module&> modules;
 
-  // Simple single Context. First term is the parent, second is the Context.
-  using singleCtx_t = std::pair<util::optional_ref<Context>, Context&>;
+  // Simple single Context.
+  struct singleCtx_t {
+    singleCtx_t(util::optional_ref<Context> par, std::pair<Context&, Context&> ctxs)
+      : par(par), rel(ctxs.first), full(ctxs.second) {};
+    singleCtx_t(util::optional_ref<Context> par, Context& rel, Context& full)
+      : par(par), rel(rel), full(full) {};
+    util::optional_ref<Context> par;  ///< Parent Context
+    Context& rel;  ///< Context referring to the Relation
+    Context& full;  ///< Full nested Context
+  };
   // Inlined Reconstruction (eg. GPU PC sampling in serialized mode).
   struct reconstructedCtx_t { ContextReconstruction& ctx; };
   // Reference to an outlined range tree, GPU context node. Has no metrics.
-  // First Context is the root, second is the entry-Context.
+  // first.par is the root, first.rel is the entry-Context.
   using refRangeContext_t = std::pair<const singleCtx_t&, PerThreadTemporary&>;
   // Reference to an outlined range tree, range node. Has kernel metrics.
   using refRange_t = std::pair<const refRangeContext_t&, uint64_t /* group id */>;

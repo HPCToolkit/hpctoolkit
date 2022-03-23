@@ -630,9 +630,10 @@ void Source::notifyContext(Context& c) {
   }
   c.userdata.initialize();
 }
-Context& Source::context(Context& p, const NestedScope& ns) {
+std::pair<Context&, Context&> Source::context(Context& p, const NestedScope& ns) {
   assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
-  std::reference_wrapper<Context> res = p;
+  util::optional_ref<Context> res_rel;
+  std::reference_wrapper<Context> res_flat = p;
   NestedScope res_ns = ns;
   if(finalizeContexts) {
     for(ProfileFinalizer& f: pipe->finalizers.classification) {
@@ -640,20 +641,22 @@ Context& Source::context(Context& p, const NestedScope& ns) {
       auto r = f.classify(p, this_ns);
       if(r) {
         res_ns = this_ns;
-        res = *r;
+        res_rel = r->first;
+        assert(!res_rel || res_rel->direct_parent() == &p);
+        res_flat = r->second;
         break;
       }
     }
   }
 
   bool first;
-  std::tie(res, first) = res.get().ensure(res_ns);
-  if(first) notifyContext(res);
+  std::tie(res_flat, first) = res_flat.get().ensure(res_ns);
+  if(first) notifyContext(res_flat);
 
   if(finalizeContexts)
     for(ProfileSink& sink: pipe->sinks)
-      sink.notifyContextExpansion(p, ns.flat(), res);
-  return res;
+      sink.notifyContextExpansion(p, ns.flat(), res_flat);
+  return {res_rel ? *res_rel : res_flat.get(), res_flat};
 }
 
 util::optional_ref<ContextFlowGraph> Source::contextFlowGraph(const Scope& s) {
@@ -681,7 +684,7 @@ ContextReconstruction& Source::contextReconstruction(ContextFlowGraph& g, Contex
   if(x.second) {
     rc.instantiate(
       [&](Context& c, const Scope& s) -> Context& {
-        return context(c, {Relation::call, s});
+        return context(c, {Relation::call, s}).second;
       }, [&](const Scope& s) -> ContextReconstruction& {
         assert(s != g.scope());
         auto fg = contextFlowGraph(s);

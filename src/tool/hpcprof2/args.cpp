@@ -658,7 +658,8 @@ std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const Module& m) noexcep
   return search(args.prefixes, m.path());
 }
 
-util::optional_ref<Context> ProfArgs::StructWarner::classify(Context& c, NestedScope& ns) noexcept {
+std::optional<std::pair<util::optional_ref<Context>, Context&>>
+ProfArgs::StructWarner::classify(Context& c, NestedScope& ns) noexcept {
   if(ns.flat().type() == Scope::Type::point) {
     // Check if there any Structfiles might match this Module
     const auto& m = ns.flat().point_data().first;

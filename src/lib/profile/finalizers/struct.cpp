@@ -171,22 +171,25 @@ void StructFile::notifyPipeline() noexcept {
     });
 }
 
-util::optional_ref<Context> StructFile::classify(Context& c, NestedScope& ns) noexcept {
+std::optional<std::pair<util::optional_ref<Context>, Context&>>
+StructFile::classify(Context& c, NestedScope& ns) noexcept {
   if(ns.flat().type() == Scope::Type::point) {
     auto mo = ns.flat().point_data();
     const auto& udm = mo.first.userdata[ud];
     auto leafit = udm.leaves.find(mo.second);
     if(leafit != udm.leaves.end()) {
+      util::optional_ref<Context> cr;
       std::reference_wrapper<Context> cc = c;
       const std::function<void(const udModule::trienode&)> handle =
         [&](const udModule::trienode& tn){
           if(tn.second != nullptr)
             handle(*(const udModule::trienode*)tn.second);
-          cc = sink.context(cc, {ns.relation(), tn.first.first});
+          cc = sink.context(cc, {ns.relation(), tn.first.first}).second;
+          if(!cr) cr = cc;
           ns.relation() = tn.first.second;
         };
       handle(leafit->second.first);
-      return cc.get();
+      return std::make_pair(cr, cc);
     }
   }
   return std::nullopt;
