@@ -206,6 +206,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
   gpu_metrics_default_enable();
+  gpu_metrics_KINFO_enable();
 
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);

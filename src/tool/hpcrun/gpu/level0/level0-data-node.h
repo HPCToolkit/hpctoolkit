@@ -92,6 +92,7 @@ typedef struct level0_data_node {
   ze_event_pool_handle_t event_pool;
   gpu_activity_channel_t *initiator_channel;
   cct_node_t *cct_node;
+  cct_node_t *kernel;
   atomic_int *pending_operations;
   uint64_t submit_time;
   level0_detail_entry_t details;
