@@ -77,7 +77,7 @@
 //******************************************************************************
 // macros
 //******************************************************************************
-#define DEBUG 1
+#define DEBUG 0
 
 #include "hpcrun/gpu/gpu-print.h"
 
@@ -1217,4 +1217,13 @@ level0_flush
 
   // Now I can attribute activities
   gpu_application_thread_process_activities();
+}
+
+bool
+level0_gtpin_enabled
+(
+  void
+)
+{
+  return gtpin_instrumentation;
 }

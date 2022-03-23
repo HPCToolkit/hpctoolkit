@@ -49,6 +49,7 @@
 #include "level0-data-node.h"
 #include "level0-binary.h"
 #include "level0-kernel-module-map.h"
+#include "level0-api.h"
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -303,7 +304,7 @@ level0_command_begin
   // Generate host side operation timestamp
   command_node->submit_time = hpcrun_nanotime();
 
-  if (command_node->type == LEVEL0_KERNEL && gtpin_enabled()) {
+  if (command_node->type == LEVEL0_KERNEL && level0_gtpin_enabled()) {
     // Callback to produce gtpin correlation
     gtpin_produce_runtime_callstack(&gpu_op_ccts);
   }
