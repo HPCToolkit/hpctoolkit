@@ -252,26 +252,27 @@ findOrAddKernelModule
   char kernel_name_hash[PATH_MAX];
   gpu_binary_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
 
-  strcat(file_name, ".");
-  strncat(file_name, kernel_name_hash, strlen(kernel_name_hash));
-
   char path[PATH_MAX];
   gpu_binary_path_generate(file_name, path);
 
-  // Write a file if does not exist
+  // Write the GPU binary if it doesn't exist
   spinlock_lock(&files_lock);
   gpu_binary_store(path, kernel_elf, kernel_elf_size);
   spinlock_unlock(&files_lock);
 
   free(kernel_elf);
 
+  // extend the GPU binary name with the kernel hash
+  // for the module name
+  strcat(path, ".");
+  strncat(path, kernel_name_hash, strlen(kernel_name_hash));
 
   uint32_t module_id = 0;
 
   hpcrun_loadmap_lock();
-  load_module_t *module = hpcrun_loadmap_findByName(file_name);
+  load_module_t *module = hpcrun_loadmap_findByName(path);
   if (module == NULL) {
-    module_id = hpcrun_loadModule_add(file_name);
+    module_id = hpcrun_loadModule_add(path);
     load_module_t *lm = hpcrun_loadmap_findById(module_id);
     hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
   } else {

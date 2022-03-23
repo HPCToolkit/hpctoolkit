@@ -62,13 +62,14 @@
 //******************************************************************************
 
 
-void
+cct_node_t *
 gpu_cct_insert
 (
  cct_node_t *cct_node, 
  ip_normalized_t ip
 )
 {
+#if 0
   // if the phaceholder was previously inserted, it will have a child
   // we only want to insert a child if there isn't one already. if the
   // node contains a child already, then the gpu monitoring thread 
@@ -85,4 +86,9 @@ gpu_cct_insert
       hpcrun_cct_insert_ip_norm(cct_node, ip, true);
     hpcrun_cct_retain(new_node);
   }
+#else
+  cct_node_t *node = hpcrun_cct_insert_ip_norm(cct_node, ip, true);
+  hpcrun_cct_retain(node);
+  return node;
+#endif
 }
