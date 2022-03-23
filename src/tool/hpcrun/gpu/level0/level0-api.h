@@ -238,4 +238,10 @@ level0_bind
   void
 );
 
+bool
+level0_gtpin_enabled
+(
+  void
+);
+
 #endif
