@@ -32,7 +32,7 @@ endif
 #*******************************************************************************
 # use a measurement cache, if available
 #*******************************************************************************
-ifneq ($(CACHE),"")
+ifneq ($(CACHE)x,x)
 CACHE_ARGS = -c $(CACHE)
 else
 CACHE_ARGS = --nocache
