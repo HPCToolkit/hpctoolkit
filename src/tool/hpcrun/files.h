@@ -62,7 +62,7 @@ const char *hpcrun_files_output_directory();
 
 int hpcrun_open_log_file(void);
 int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
+hpctio_obj_t * hpcrun_open_profile_file(int rank, int thread);
 int hpcrun_rename_log_file(int rank);
 int hpcrun_rename_trace_file(int rank, int thread);
 

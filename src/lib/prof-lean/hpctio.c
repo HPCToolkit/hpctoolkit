@@ -1,7 +1,11 @@
 #include "hpctio.h"
+#include "hpctio_obj.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+
+///////////////////////////////////////HPCTIO_SYS FUNCTIONS///////////////////////////////////////////////
 
 // define global I/O constants
 const char *  hpctio_daos_prefix = "daos://";
@@ -125,4 +129,43 @@ char * hpctio_sys_realpath(const char * path, char * resolved_path, hpctio_sys_t
 */
 int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys){
     return sys->func_ptr->mkdir(path, md, sys->params_ptr);
+}
+
+
+/*
+* check access permissions on a file/object
+* return 0 on success, -1 on failure, errno set properly
+*/
+int hpctio_sys_access(const char *path, int md, hpctio_sys_t * sys){
+    return sys->func_ptr->access(path, md, sys->params_ptr);
+}
+
+/*
+* rename a file/object from old_path to new_path
+* return 0 on success, -1 on failure, errno set properly
+*/
+int hpctio_sys_rename(const char *oldpath, const char *newpath, hpctio_sys_t * sys){
+    return sys->func_ptr->rename(oldpath, newpath, sys->params_ptr);
+}
+
+
+
+
+///////////////////////////////////////HPCTIO_OBJ FUNCTIONS///////////////////////////////////////////////
+/*
+* Open/create a file/object with path and flags
+* return hpctio_obj_t * on success, NULL on failure, errno set properly
+*/
+hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int writemode, hpctio_sys_t * sys){
+    hpctio_obj_t * obj = (hpctio_obj_t *) malloc(sizeof(hpctio_obj_t));
+    
+    obj->sys_ptr = sys;
+
+    hpctio_obj_opt_t * opt = sys->func_ptr->obj_options(writemode);
+    obj->opt_ptr = opt;
+
+    hpctio_obj_id_t * oid = sys->func_ptr->open(path, flags, md, opt, sys->params_ptr);
+    obj->oh = oid;
+    
+    return obj;
 }

@@ -1,4 +1,5 @@
 #include "hpctio.h"
+#include "hpctio_obj.h"
 #include <stdio.h>
 #include <assert.h>
 #include <libgen.h>
@@ -21,6 +22,11 @@ static char * DFS_Realpath(const char * path, char * resolved_path);
 static void DFS_Init(hpctio_sys_params_t * params);
 static void DFS_Final(hpctio_sys_params_t * params);
 static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
+static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p);
+static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_params_t * p);
+
+static hpctio_obj_opt_t * DFS_Obj_Options(int writemode);
+static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct
@@ -43,7 +49,11 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .real_path = DFS_Realpath,
     .initialize = DFS_Init,
     .finalize   = DFS_Final,
-    .mkdir = DFS_Mkdir
+    .mkdir = DFS_Mkdir,
+    .access = DFS_Access,
+    .rename = DFS_Rename,
+    .obj_options = DFS_Obj_Options,
+    .open = DFS_Open
     
 
 
@@ -55,6 +65,9 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
 typedef struct hpctio_dfs_obj_opt {
   daos_oclass_id_t objectClass;
   //daos_oclass_id_t dir_oclass;
+
+  int writemode;
+  int cursor;
 }hpctio_dfs_obj_opt_t;
 
 //use dfs_obj_t directly as dfs version of hpctio_obj_id_t 
@@ -510,10 +523,124 @@ static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p){
 exit:
     if(name) free(name);
     if(dir_name) free(dir_name);
+    if(parent) dfs_release(parent);
     if(r){
         errno = r;
         r = -1;
     }
     return r;
     
+}
+
+static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+
+    dfs_obj_t * parent = NULL;
+    char * name = NULL;
+    char * dir_name = NULL;
+    int r;
+
+    r = parse_filename(path, &name, &dir_name);
+    CHECK(r, "Failed to parse path name %s with error code %d", path, r);
+
+    if(strcmp(dir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, dir_name, O_RDWR, &parent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
+    }
+
+    r = dfs_access(dfs_p->dfs, parent, name, md);
+
+exit:
+    if(name) free(name);
+    if(dir_name) free(dir_name);
+    if(parent) dfs_release(parent);
+    if(r){
+        errno = r;
+        r = -1;
+    }
+    return r;
+}
+
+static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+
+    dfs_obj_t * oldparent = NULL;
+    dfs_obj_t * newparent = NULL;
+    char * oldname = NULL;
+    char * olddir_name = NULL;
+    char * newname = NULL;
+    char * newdir_name = NULL;
+    int r;
+
+    r = parse_filename(oldpath, &oldname, &olddir_name);
+    CHECK(r, "Failed to parse path name %s with error code %d", oldpath, r);
+
+    r = parse_filename(newpath, &newname, &newdir_name);
+    CHECK(r, "Failed to parse path name %s with error code %d", newpath, r);
+
+    if(strcmp(olddir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, olddir_name, O_RDWR, &oldparent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", olddir_name, r);
+    }
+    if(strcmp(newdir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, newdir_name, O_RDWR, &newparent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", newdir_name, r);
+    }
+
+    r = dfs_move(dfs_p->dfs, oldparent, oldname, newparent, newname, NULL);
+
+exit:
+    if(oldname) free(oldname);
+    if(newname) free(newname);
+    if(olddir_name) free(olddir_name);
+    if(newdir_name) free(newdir_name);
+    if(oldparent) dfs_release(oldparent);
+    if(newparent) dfs_release(newparent);
+    if(r){
+        errno = r;
+        r = -1;
+    }
+    return r;
+}
+
+
+static hpctio_obj_opt_t * DFS_Obj_Options(int writemode){
+    hpctio_dfs_obj_opt_t * opt = (hpctio_dfs_obj_opt_t *) malloc(sizeof(hpctio_dfs_obj_opt_t));
+    opt->writemode = writemode;
+    return (hpctio_obj_opt_t *)opt;
+}
+
+static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * dfs_p = （hpctio_dfs_params_t *）p;
+    hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
+
+    char * name = NULL;
+    char * dir_name = NULL;
+    dfs_obj_t * obj = NULL; 
+    dfs_obj_t * parent = NULL; 
+
+    int r = parse_filename(path, &name, &dir_name);
+    CHECK(r, "Failed to parse path %s with errno %d", path, r);
+
+    if(strcmp(dir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, dir_name, O_RDWR, &parent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
+    }
+
+    r = dfs_open(dfs_p->dfs, parent, name, md | S_IFREG, flags, dfs_opt->objectClass, 0, NULL, &obj);
+
+    if(dfs_opt->writemode == HPCTIO_APPEND_ONLY || 
+        dfs_opt->writemode == HPCTIO_WRITAPPEND){
+        dfs_opt->cursor = 0;
+    }
+
+exit:
+    if(name) free(name);
+    if(dir_name) free(dir_name);
+    if(parent) dfs_release(parent);
+    if(r){
+        errno = r;
+        obj = NULL;
+    }
+    return (hpctio_obj_id_t *) obj;
 }

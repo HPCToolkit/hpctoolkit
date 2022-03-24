@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
 #include <lib/prof-lean/hpcfmt.h> // for metric_aux_info_t
+#include <lib/prof-lean/hpctio_obj.h>
 
 #include "epoch.h"
 #include "cct2metrics.h"
@@ -40,7 +41,7 @@ typedef struct core_profile_trace_data_t {
   // ----------------------------------------
   // IO support
   // ----------------------------------------
-  FILE* hpcrun_file;
+  hpctio_obj_t * hpcrun_file;
   void* trace_buffer;
   hpcio_outbuf_t *trace_outbuf;
 

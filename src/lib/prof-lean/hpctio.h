@@ -4,6 +4,18 @@
 #include <mpi.h>
 #include <sys/stat.h>
 
+/*************************** FILE SYSTEM OBJECT RELATED STRUCTS ***************************/
+//file system objects options struct
+typedef struct hpctio_obj_opt {
+  void* dummy;
+}hpctio_obj_opt_t;
+
+//file system object struct
+typedef struct hpctio_obj_id {
+  void* dummy;
+}hpctio_obj_id_t;
+
+
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct
 typedef struct hpctio_sys_params {
@@ -22,6 +34,11 @@ typedef struct hpctio_sys_func {
   void (*finalize)(hpctio_sys_params_t * params);
 
   int (*mkdir)(const char *path, mode_t md, hpctio_sys_params_t * p);
+  int (*access)(const char *path, int md, hpctio_sys_params_t * p);
+  int (*rename)(const char *old_path, const char * new_path, hpctio_sys_params_t * p);
+
+  hpctio_obj_opt_t * (*obj_options)(int writemode);
+  hpctio_obj_id_t * (*open)(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
 
 
@@ -57,18 +74,6 @@ typedef struct hpctio_sys {
 extern hpctio_sys_t hpctio_sys_posix;
 
 
-/*************************** FILE SYSTEM OBJECT RELATED STRUCTS ***************************/
-//file system objects options struct
-typedef struct hpctio_obj_opt {
-  void* dummy;
-}hpctio_obj_opt_t;
-
-//file system object struct
-typedef struct hpctio_obj_id {
-  void* dummy;
-}hpctio_obj_id_t;
-
-
 /*************************** TYPE DEFINITIONS ***************************/
 typedef long long int hpctio_offset_t;
 typedef long long int hpctio_size_t;
@@ -88,5 +93,7 @@ char * hpctio_sys_cut_prefix(const char * path, hpctio_sys_t * sys);
 char * hpctio_sys_realpath(const char * path, char * resolved_path, hpctio_sys_t * sys);
 
 int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys);
+int hpctio_sys_access(const char *path, int md, hpctio_sys_t * sys);
+int hpctio_sys_rename(const char *old_path, const char *new_path, hpctio_sys_t * sys);
 
 #endif /* ifndef HPCTIO_H */

@@ -15,8 +15,13 @@ typedef struct hpctio_obj{
     hpctio_obj_id_t * oh; 
 }hpctio_obj_t;
 
-/*************************** FILE SYSTEM OBJECT FUNCTIONS ***************************/
+/*************************** FILE SYSTEM OBJECT WRITING MODES ***************************/
+#define HPCTIO_WRITE_ONLY  0
+#define HPCTIO_APPEND_ONLY 1
+#define HPCTIO_WRITAPPEND  2
 
+/*************************** FILE SYSTEM OBJECT FUNCTIONS ***************************/
+hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int writemode, hpctio_sys_t * sys);
 
 
 

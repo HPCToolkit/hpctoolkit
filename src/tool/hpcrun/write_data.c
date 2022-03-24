@@ -79,6 +79,8 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/hpctio.h>
+#include <lib/prof-lean/hpctio_obj.h>
 
 #include <lib/support-lean/OSUtil.h>
 
@@ -143,12 +145,12 @@ static const uint64_t default_measurement_granularity = 1;
 //
 //***************************************************************************
 
-static FILE *
+static hpctio_obj_t *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
-  FILE* fs = cptd->hpcrun_file;
-  if (fs) {
-    return fs;
+  hpctio_obj_t * fobj = cptd->hpcrun_file;
+  if (fobj) {
+    return fobj;
   }
 
   int rank = hpcrun_get_rank();
@@ -156,16 +158,15 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
     rank = 0;
   }
   
-  int fd = hpcrun_open_profile_file(rank, cptd->id);
-  fs = fdopen(fd, "w");
-  if (fs == NULL) {
+  fobj = hpcrun_open_profile_file(rank, cptd->id);
+  if (fobj == NULL) {
     EEMSG("HPCToolkit: %s: unable to open profile file", __func__);
     return NULL;
   }
-  cptd->hpcrun_file = fs;
+  cptd->hpcrun_file = fobj;
 
   if (! hpcrun_sample_prob_active())
-    return fs;
+    return fobj;
 
   const uint bufSZ = 32; // sufficient to hold a 64-bit integer in base 10
 
@@ -199,7 +200,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   //
   // ==== file hdr =====
   //
-
+/*
   TMSG(DATA_WRITE,"writing file header");
   hpcrun_fmt_hdr_fwrite(fs,
                         HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(),
@@ -215,8 +216,8 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
                         HPCRUN_FMT_NV_traceDisorder,
                           cptd->trace_is_ordered ? "0" : traceDisorderStr,
                         NULL);
-  
-  return fs;
+*/
+  return fobj;
 }
 
 //YUMENG: add footer
@@ -447,11 +448,11 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 void
 hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
 {
-  FILE *fs = lazy_open_data_file(cptd);
-  if (fs == NULL)
+  hpctio_obj_t * fobj = lazy_open_data_file(cptd);
+  if (fobj == NULL)
     return;
 
-  write_epochs(fs, cptd, cptd->epoch,NULL);
+  //write_epochs(fs, cptd, cptd->epoch, NULL);
   hpcrun_epoch_reset();
 }
 
@@ -465,8 +466,9 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   footer.hdr_start = 0;
 
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
-  FILE* fs = lazy_open_data_file(cptd);
+  hpctio_obj_t * fobj = lazy_open_data_file(cptd);
 
+/*
   //YUMENG: set footer
   footer.hdr_end = ftell(fs);
   fseek(fs, MULTIPLE_1024(footer.hdr_end), SEEK_SET);
@@ -479,7 +481,7 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);
   TMSG(DATA_WRITE,"Done!");
-
+*/
   return HPCRUN_OK;
 }
 

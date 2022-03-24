@@ -162,6 +162,7 @@ struct fileid {
 
 static void hpcrun_rename_log_file_early(int rank);
 
+static void hpcrun_rename_log_file_early2(int rank);
 
 //***************************************************************
 // local data 
@@ -308,6 +309,64 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
 }
 
 
+// Open the file with O_EXCL and try the next file id if it already
+// exists.  The log and trace files are opened early, the profile file
+// (hpcrun) is opened late.  Must hold the files lock.
+
+// Returns: hpctio_obj_t pointer, else die on failure.
+//
+static hpctio_obj_t *
+hpcrun_open_file2(int rank, int thread, const char *suffix, int flags)
+{
+  char name[PATH_MAX];
+  struct fileid *id;
+  int fd, ret;
+  hpctio_obj_t * obj;
+
+  // If not recording data for this process, then open /dev/null.
+  if (! hpcrun_sample_prob_active()) {
+    obj = hpctio_obj_open("/dev/null", O_WRONLY, NULL, HPCTIO_WRITAPPEND, output_sys);
+    return obj;
+  }
+
+  id = (flags & FILES_EARLY) ? &earlyid : &lateid;
+  for (;;) {
+    errno = 0;
+    ret = snprintf(name, PATH_MAX, FILENAME_TEMPLATE, output_dir,
+		   executable_name, rank, thread, id->host, mypid, id->gen, suffix);
+    if (ret >= PATH_MAX) {
+      obj = NULL;
+      errno = ENAMETOOLONG;
+      break;
+    }
+    obj = hpctio_obj_open(name, O_WRONLY | O_CREAT | O_EXCL, 0644, HPCTIO_WRITAPPEND, output_sys);
+    if (obj) {
+      // success
+      break;
+    }
+    if (errno != EEXIST || hpcrun_files_next_id(id) != 0) {
+      // failure, out of options
+      obj = NULL;
+      break;
+    }
+  }
+  id->done = 1;
+  if (flags & FILES_EARLY) {
+    // late id starts where early id is chosen
+    lateid = earlyid;
+    lateid.done = 0;
+  }
+
+  // Failure to open is a fatal error.
+  if (obj == NULL) {
+    hpcrun_abort("hpctoolkit: unable to open %s file: '%s': %s",
+		 suffix, name, strerror(errno));
+  }
+
+  return obj;
+}
+
+
 // Rename the file from MPI rank 0 and early id to new rank and late
 // id (rename is always late).  Must hold the files lock.
 //
@@ -350,7 +409,6 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
       break;
     }
 
-    //
     ret = link(old_name, new_name);
     if (ret == 0) {
       // success
@@ -381,10 +439,7 @@ warn:
 // Rename the file from MPI rank 0 and early id to new rank and late
 // id (rename is always late).  Must hold the files lock.
 //
-// Note: must use link(2) and unlink(2) instead of rename(2) to
-// atomically test if the new file exists.  rename() silently
-// overwrites a previous file.
-//
+// Assume this is called by one thread a time with files_lock
 // Returns: 0 on success, else -1 on failure.
 static int
 hpcrun_rename_file2(int rank, int thread, const char *suffix)
@@ -402,11 +457,11 @@ hpcrun_rename_file2(int rank, int thread, const char *suffix)
     return 0;
   }
 
-  snprintf(old_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
+  snprintf(old_name, PATH_MAX, FILENAME_TEMPLATE, output_dir,
 	   executable_name, 0, thread, earlyid.host, mypid, earlyid.gen, suffix);
   for (;;) {
     errno = 0;
-    ret = snprintf(new_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
+    ret = snprintf(new_name, PATH_MAX, FILENAME_TEMPLATE, output_dir,
 		   executable_name, rank, thread, lateid.host, mypid, lateid.gen, suffix);
     if (ret >= PATH_MAX) {
       ret = -1;
@@ -414,22 +469,16 @@ hpcrun_rename_file2(int rank, int thread, const char *suffix)
       break;
     }
 
-    //
-   
-
-
-
-
-
-    ret = link(old_name, new_name);
-    if (ret == 0) {
-      // success
-      unlink(old_name);
+    //check if new_name already exists
+    ret = hpctio_sys_access(new_name, F_OK, output_sys);
+    if(ret == 0 && hpcrun_files_next_id(&lateid) != 0){
+      // we do have existing new_name file and we don't have next id
+      ret = -1;
       break;
     }
-    if (errno != EEXIST || hpcrun_files_next_id(&lateid) != 0) {
-      // failure, out of options
-      ret = -1;
+    if(ret != 0){
+      // no new_name exists
+      ret = hpctio_sys_rename(old_name, new_name, output_sys);
       break;
     }
   }
@@ -511,6 +560,11 @@ hpcrun_files_set_directory()
   }
 
   // TODO: needs to be eliminated later
+  ret = mkdir(path, 0775);
+  if (ret != 0 && errno != EEXIST) {
+    hpcrun_abort("hpcrun: could not create output directory `%s': %s",
+		 path, strerror(errno));
+  }
   char * rpath = realpath(path, output_directory);
   if (!rpath) {
     hpcrun_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
@@ -582,15 +636,15 @@ hpcrun_open_trace_file(int thread)
 }
 
 // Returns: file descriptor for profile (hpcrun) file.
-int
+hpctio_obj_t *
 hpcrun_open_profile_file(int rank, int thread)
 {
-  int ret;
+  hpctio_obj_t * ret;
 
   spinlock_lock(&files_lock);
   hpcrun_files_init();
-  hpcrun_rename_log_file_early(rank);
-  ret = hpcrun_open_file(rank, thread, HPCRUN_ProfileFnmSfx, FILES_LATE);
+  hpcrun_rename_log_file_early2(rank);
+  ret = hpcrun_open_file2(rank, thread, HPCRUN_ProfileFnmSfx, FILES_LATE);
   spinlock_unlock(&files_lock);
 
   return ret;
@@ -611,6 +665,20 @@ hpcrun_rename_log_file_early(int rank)
   }
 }
 
+
+// Note: we use the log file as the lock for the file names, so we
+// need to rename the log file as the first late action.  Since this
+// is out of sequence, we save the return value and return it when the
+// log rename is actually called.  Must hold the files lock.
+//
+static void
+hpcrun_rename_log_file_early2(int rank)
+{
+  if (log_done && !log_rename_done) {
+    log_rename_ret = hpcrun_rename_file2(rank, 0, HPCRUN_LogFnmSfx);
+    log_rename_done = 1;
+  }
+}
 
 
 // Returns: 0 on success, else -1 on failure.
