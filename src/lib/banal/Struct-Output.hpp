@@ -75,8 +75,11 @@ void printLoadModuleEnd(ostream *);
 void printFileBegin(ostream *, FileInfo *);
 void printFileEnd(ostream *, FileInfo *);
 
-void printProc(ostream *, ostream *, string, FileInfo *, GroupInfo *,
-	       ProcInfo *, HPC::StringTable & strTab);
+void earlyFormatProc(ostream *, FileInfo *, GroupInfo *, ProcInfo *,
+		     bool, HPC::StringTable & strTab);
+
+void finalPrintProc(ostream *, ostream *, string &, string &,
+		    FileInfo *, GroupInfo *, ProcInfo *);
 
 void setPrettyPrint(bool _pretty_print_output);
 
