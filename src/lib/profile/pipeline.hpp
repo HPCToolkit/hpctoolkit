@@ -439,14 +439,19 @@ public:
     public:
       AccumulatorsRef() = delete;
 
+      AccumulatorsRef(const AccumulatorsRef&) = default;
+      AccumulatorsRef(AccumulatorsRef&&) = default;
+      AccumulatorsRef& operator=(const AccumulatorsRef&) = default;
+      AccumulatorsRef& operator=(AccumulatorsRef&&) = default;
+
       /// Emit some Thread-local metric data into the Pipeline.
       // MT: Externally Synchronized (this, Source), Internally Synchronized
       void add(Metric&, double);
 
     private:
       friend class ProfilePipeline::Source;
-      decltype(PerThreadTemporary::c_data)::mapped_type& map;
-      explicit AccumulatorsRef(decltype(map)& m) : map(m) {};
+      std::reference_wrapper<decltype(PerThreadTemporary::c_data)::mapped_type> map;
+      explicit AccumulatorsRef(decltype(map)::type& m) : map(m) {};
     };
 
     /// Attribute metric values to the given Thread and Context, by proxy

@@ -757,7 +757,7 @@ Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, uint64_t g, 
 }
 
 void Source::AccumulatorsRef::add(Metric& m, double v) {
-  map[m].add(v);
+  map.get()[m].add(v);
 }
 
 Thread& Source::newThread(ThreadAttributes o) {
