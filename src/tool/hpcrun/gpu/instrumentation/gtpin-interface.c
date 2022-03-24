@@ -61,6 +61,8 @@
 // macros
 //******************************************************************************
 
+#define DEBUG 0
+
 #define str(t) #t
 #define xstr(t) str(t)
 #define gtpin_path() /* xstr(GTPIN_LIBDIR) "/" */ "libgtpin.so"
@@ -133,6 +135,12 @@
   macro(GTPin_MemSampleLength)	     \
   macro(GTPin_MemClaim)		     \
   macro(GTPin_MemRead)
+#endif
+
+#if DEBUG
+#define IF_DEBUG(x) x
+#else
+#define IF_DEBUG(x)
 #endif
 
 
@@ -400,9 +408,9 @@ gtpin_bind
   hpcrun_force_dlopen(false);
   
 #define GTPIN_BIND(fn)        \
-  EEMSG("Trying to bind %s", xstr(fn)); \
+  IF_DEBUG(EEMSG("Trying to bind %s", xstr(fn));) \
   CHK_DLSYM(gtpin, fn); \
-  EEMSG("Bound %s", xstr(fn));
+  IF_DEBUG(EEMSG("Bound %s", xstr(fn));)
   
   FORALL_GTPIN_ROUTINES(GTPIN_BIND)
     
