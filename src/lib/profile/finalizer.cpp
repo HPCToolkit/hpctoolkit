@@ -78,7 +78,8 @@ std::optional<stdshim::filesystem::path> ProfileFinalizer::resolvePath(const Mod
   return std::nullopt;
 }
 
-util::optional_ref<Context> ProfileFinalizer::classify(Context&, NestedScope&) noexcept {
+std::optional<std::pair<util::optional_ref<Context>, Context&>>
+ProfileFinalizer::classify(Context&, NestedScope&) noexcept {
   return std::nullopt;
 }
 

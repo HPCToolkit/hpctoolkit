@@ -270,7 +270,7 @@ typedef struct hpcrun_metricFlags_fields {
   MetricFlags_Ty_t     ty     : 8;
   MetricFlags_ValTy_t  valTy  : 8;
   MetricFlags_ValFmt_t valFmt : 8;
-  uint8_t              unused0;
+  uint8_t              move2proc;
 
   uint16_t             partner;
   uint8_t /*bool*/     show;

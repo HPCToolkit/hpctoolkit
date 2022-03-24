@@ -70,15 +70,16 @@ void KernelSymbols::notifyPipeline() noexcept {
     });
 }
 
-util::optional_ref<Context> KernelSymbols::classify(Context& c, NestedScope& ns) noexcept {
+std::optional<std::pair<util::optional_ref<Context>, Context&>>
+KernelSymbols::classify(Context& c, NestedScope& ns) noexcept {
   if(ns.flat().type() == Scope::Type::point) {
     auto mo = ns.flat().point_data();
     const auto& udm = mo.first.userdata[ud];
     auto symit = udm.symbols.find(mo.second);
     if(symit != udm.symbols.end()) {
-      auto& cc = sink.context(c, {ns.relation(), Scope(symit->second)});
+      auto& cc = sink.context(c, {ns.relation(), Scope(symit->second)}).second;
       ns.relation() = Relation::enclosure;
-      return cc;
+      return std::make_pair(std::ref(cc), std::ref(cc));
     }
   }
   return std::nullopt;

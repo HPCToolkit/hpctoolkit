@@ -171,22 +171,25 @@ void StructFile::notifyPipeline() noexcept {
     });
 }
 
-util::optional_ref<Context> StructFile::classify(Context& c, NestedScope& ns) noexcept {
+std::optional<std::pair<util::optional_ref<Context>, Context&>>
+StructFile::classify(Context& c, NestedScope& ns) noexcept {
   if(ns.flat().type() == Scope::Type::point) {
     auto mo = ns.flat().point_data();
     const auto& udm = mo.first.userdata[ud];
     auto leafit = udm.leaves.find(mo.second);
     if(leafit != udm.leaves.end()) {
+      util::optional_ref<Context> cr;
       std::reference_wrapper<Context> cc = c;
       const std::function<void(const udModule::trienode&)> handle =
         [&](const udModule::trienode& tn){
           if(tn.second != nullptr)
             handle(*(const udModule::trienode*)tn.second);
-          cc = sink.context(cc, {ns.relation(), tn.first.first});
+          cc = sink.context(cc, {ns.relation(), tn.first.first}).second;
+          if(!cr) cr = cc;
           ns.relation() = tn.first.second;
         };
       handle(leafit->second.first);
-      return cc.get();
+      return std::make_pair(cr, cc);
     }
   }
   return std::nullopt;
@@ -208,26 +211,26 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
 
     // DFS through the call graph to iterate all possible paths from a kernel
     // entry point (uncalled function) to this function.
-    std::unordered_set<uint64_t> seen;
+    std::unordered_set<util::reference_index<const Function>> seen;
     std::vector<Scope> rpath;
-    const std::function<void(uint64_t)> dfs = [&](uint64_t calleeFunc){
+    const std::function<void(const Function&)> dfs = [&](const Function& callee){
       // TODO: SCC algorithms are needed to handle recursion in a meaningful
       // way. For now just truncate the search.
-      auto [seenit, first] = seen.insert(calleeFunc);
+      auto [seenit, first] = seen.insert(callee);
       if(!first) return;
 
       // Try to step "forwards" to the caller instructions. If we succeed, this
       // is part of the path.
       bool terminal = true;
-      for(auto [callerit, end] = udm.rcg.equal_range(calleeFunc);
+      for(auto [callerit, end] = udm.rcg.equal_range(callee);
           callerit != end; ++callerit) {
         terminal = false;
-        rpath.push_back(Scope(mo.first, callerit->second));
+        rpath.push_back(Scope(mo.first, callerit->second.first));
 
         // Find the function for the caller instruction, and continue the DFS
         // from there.
         // TODO: Gracefully handle the error if the Structfile has a bad call graph.
-        dfs(udm.leaves.at({callerit->second, callerit->second}).second);
+        dfs(callerit->second.second);
         rpath.pop_back();
       }
 
@@ -237,7 +240,7 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
         auto fpath = rpath;
         std::reverse(fpath.begin(), fpath.end());
         // Record the full Template representing this route.
-        fg.add({Scope(mo.first, calleeFunc), std::move(fpath)});
+        fg.add({Scope(callee), std::move(fpath)});
       }
 
       seen.erase(seenit);
@@ -369,13 +372,20 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
   struct Ctx {
     char tag;
     util::optional_ref<const File> file;
-    std::optional<uint64_t> funcEntry;
+    util::optional_ref<const Function> func;
     const trienode* node;
     uint64_t a_line;
     Ctx() : tag('R'), node(nullptr), a_line(0) {};
     Ctx(const Ctx& o, char t) : Ctx(o) { tag = t; }
   };
   std::stack<Ctx, std::deque<Ctx>> stack;
+
+  // Reversed call graph, but with callee function entries instead of Functions
+  std::deque<std::pair<uint64_t, std::pair<uint64_t,
+      std::reference_wrapper<const Function>>>> tmp_rcg;
+  // Mapping of function entries to Functions
+  std::unordered_map<uint64_t, const Function&> funcs;
+
   bool done = false;
   LHandler handler([&](const std::string& ename, const Attributes& attr) {
     const auto& top = stack.top();
@@ -387,7 +397,7 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       auto& next = stack.emplace(top, 'F');
       next.file = sink.file(std::move(file));
     } else if(ename == "P") {  // Procedure (Function)
-      if(top.funcEntry) throw std::logic_error("<P> tags cannot be nested!");
+      if(top.func) throw std::logic_error("<P> tags cannot be nested!");
       auto is = parseVs(xmlstr(attr.getValue(XMLStr("v"))));
       if(is.size() != 1) throw std::invalid_argument("VMA on <P> should only have one range!");
       if(is[0].end != is[0].begin+1) throw std::invalid_argument("VMA on <P> should represent a single byte!");
@@ -396,10 +406,12 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
           ? ud.funcs.emplace_back(m, is[0].begin, std::move(name), *top.file,
                 std::stoll(xmlstr(attr.getValue(XMLStr("l")))) )
           : ud.funcs.emplace_back(m, is[0].begin, std::move(name));
+      if(!funcs.emplace(is[0].begin, func).second)
+        throw std::logic_error("<P> tags must have unique function entries!");
       auto& next = stack.emplace(top, 'P');
       ud.trie.push_back({{Scope(func), Relation::enclosure}, top.node});
       next.node = &ud.trie.back();
-      next.funcEntry = is[0].begin;
+      next.func = func;
     } else if(ename == "L") {  // Loop (Scope::Type::loop)
       auto fpath = xmlstr(attr.getValue(XMLStr("f")));
       const File& file = fpath.empty() ? *top.file : sink.file(std::move(fpath));
@@ -410,7 +422,7 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       next.file = file;
     } else if(ename == "S" || ename == "C") {  // Statement (Scope::Type::line)
       if(!top.file) throw std::logic_error("<S> tag without an implicit f= attribute!");
-      if(!top.funcEntry) throw std::logic_error("<S> tag without an enclosing <P>!");
+      if(!top.func) throw std::logic_error("<S> tag without an enclosing <P>!");
       auto line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
       ud.trie.push_back({{Scope(*top.file, line), Relation::enclosure}, top.node});
       const trienode& leaf = ud.trie.back();
@@ -419,17 +431,17 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
         // FIXME: Code regions may be shared by multiple functions,
         // unfortunately Struct doesn't currently sort this out for us. So if
         // there is an overlap we just ignore this tag's contribution.
-        ud.leaves.try_emplace(i, leaf, *top.funcEntry);
+        ud.leaves.try_emplace(i, leaf, *top.func);
       }
       if(ename == "C") {  // Call: <S> with an additional call edge
         if(is.size() != 1) throw std::invalid_argument("VMA on <C> tag should only have one range!");
-        auto caller = is[0].begin;
+        auto callerInst = is[0].begin;
         // FIXME: Sometimes the t= attribute is not there. No idea why, maybe
         // indirect call sites? Since the call data is basically non-existent,
         // we just ignore it and continue on.
         auto callee = xmlstr(attr.getValue(XMLStr("t")));
         if(!callee.empty())
-          ud.rcg.emplace(std::stoll(callee, nullptr, 16), caller);
+          tmp_rcg.push_back({std::stoll(callee, nullptr, 16), {callerInst, *top.func}});
       }
     } else if(ename == "A") {
       if(top.tag != 'A') {  // First A, gives the caller line.
@@ -473,8 +485,13 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
     util::log::info{} << "Error while parsing Structfile\n";
     return false;
   }
-
   assert(stack.size() == 0 && "Inconsistent stack handling!");
+
+  // Now convert the tmp_rcg into the proper rcg
+  ud.rcg.reserve(tmp_rcg.size());
+  for(const auto& [callee, caller]: tmp_rcg)
+    ud.rcg.emplace(funcs.at(callee), std::move(caller));
+
   return true;
 } catch(std::exception& e) {
   util::log::info{} << "Exception caught while parsing Structfile\n"
