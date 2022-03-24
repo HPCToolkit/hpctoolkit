@@ -319,12 +319,21 @@ public:
     /// ProfileFinalizers may inject additional Contexts between the parent
     /// resulting child Context to provide additional (usually lexical) context.
     ///
+    /// Two Contexts are returned, the first refers to the relation while the
+    /// second refers to the flat Scope in context. For example, a call to
+    /// `context((point){A}, (nominal call to):(point){B})` that expands to
+    ///     (point){A}
+    ///       (nominal call to):(func){funcB@/b.c:10}  <-- .first
+    ///         (enclosed sub-Scope):(line){b.c:12}
+    ///           (enclosed sub-Scope):(point){B}      <-- .second
+    /// will return the two marked Contexts.
+    ///
     /// This method presupposes the single sequence of Contexts between the
     /// parent and child can be derived statically from the Scope.
     /// See contextReconstruction for a case when this is not possible.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Context& context(Context&, const NestedScope&);
+    std::pair<Context&, Context&> context(Context&, const NestedScope&);
 
     /// Emit a new ContextReconstruction for the given ContextFlowGraph,
     /// rooted at a particular Context.
@@ -439,14 +448,19 @@ public:
     public:
       AccumulatorsRef() = delete;
 
+      AccumulatorsRef(const AccumulatorsRef&) = default;
+      AccumulatorsRef(AccumulatorsRef&&) = default;
+      AccumulatorsRef& operator=(const AccumulatorsRef&) = default;
+      AccumulatorsRef& operator=(AccumulatorsRef&&) = default;
+
       /// Emit some Thread-local metric data into the Pipeline.
       // MT: Externally Synchronized (this, Source), Internally Synchronized
       void add(Metric&, double);
 
     private:
       friend class ProfilePipeline::Source;
-      decltype(PerThreadTemporary::c_data)::mapped_type& map;
-      explicit AccumulatorsRef(decltype(map)& m) : map(m) {};
+      std::reference_wrapper<decltype(PerThreadTemporary::c_data)::mapped_type> map;
+      explicit AccumulatorsRef(decltype(map)::type& m) : map(m) {};
     };
 
     /// Attribute metric values to the given Thread and Context, by proxy

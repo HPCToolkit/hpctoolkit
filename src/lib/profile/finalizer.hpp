@@ -98,12 +98,21 @@ public:
   virtual std::optional<stdshim::filesystem::path> resolvePath(const File&) noexcept;
   virtual std::optional<stdshim::filesystem::path> resolvePath(const Module&) noexcept;
 
-  /// Generate parent Context for a particular Scope. Called when a new Context
-  /// is about to be emitted into the Pipeline. The returned Context will be
-  /// treated as the new parent of the given Scope.
+  /// Generate the parent Context for a particular NestedScope, if possible by
+  /// this Finalizer.
+  ///
+  /// Two Contexts are returned, the first refers to the relation while the
+  /// second refers to the parent Context of the flat Scope. See
+  /// ProfilePipeline::Source::context for more details, note that `.second`
+  /// here is the *parent* of `.second` over there.
+  ///
+  /// If the first Context is omitted, the newly created child Context will be
+  /// used to refer to the relation.
+  ///
   /// ExtensionClass: `classification`
   // MT: Internally Synchronized
-  virtual util::optional_ref<Context> classify(Context&, NestedScope&) noexcept;
+  virtual std::optional<std::pair<util::optional_ref<Context>, Context&>>
+  classify(Context& ancestor, NestedScope&) noexcept;
 
   /// Fill a ContextFlowGraph with the appropriate data. Returns true if this
   /// Finalizer provided this data.

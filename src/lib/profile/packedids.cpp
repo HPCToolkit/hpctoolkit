@@ -248,20 +248,25 @@ void IdUnpacker::unpack() noexcept {
   ctxtree.clear();
 }
 
-util::optional_ref<Context> IdUnpacker::classify(Context& c, NestedScope& ns) noexcept {
+std::optional<std::pair<util::optional_ref<Context>, Context&>>
+IdUnpacker::classify(Context& c, NestedScope& ns) noexcept {
   util::call_once(once, [this]{ unpack(); });
   bool first = true;
   auto x = exmap.find(c.userdata[sink.identifier()]);
   assert(x != exmap.end() && "Missing data for Context `co`!");
   auto y = x->second.find(ns);
   assert(y != x->second.end() && "Missing data for Scope `s` from Context `co`!");
+  util::optional_ref<Context> cr;
   std::reference_wrapper<Context> cc = c;
   for(const auto& next: y->second) {
-    if(!first) cc = sink.context(cc, ns);
+    if(!first) {
+      cc = sink.context(cc, ns).second;
+      if(!cr) cr = cc;
+    }
     ns = next;
     first = false;
   }
-  return cc.get();
+  return std::make_pair(cr, cc);
 }
 
 std::optional<unsigned int> IdUnpacker::identify(const Context& c) noexcept {
