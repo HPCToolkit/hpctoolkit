@@ -253,14 +253,18 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         es_settings.format = m.format;
         estats.emplace_back(m.formula, std::move(es_settings));
       } else {
-        bool isInt = false;
-        if(m.flags.fields.valFmt == MetricFlags_ValFmt_Real) isInt = false;
-        else if(m.flags.fields.valFmt == MetricFlags_ValFmt_Int) isInt = true;
+        metric_t met(sink.metric(settings));
+
+        if(m.flags.fields.valFmt == MetricFlags_ValFmt_Real) met.isInt = false;
+        else if(m.flags.fields.valFmt == MetricFlags_ValFmt_Int) met.isInt = true;
         else {
           util::log::info{} << "Invalid metric value format: " << m.flags.fields.valFmt;
           return false;
         }
-        metrics.insert({id, {sink.metric(std::move(settings)), isInt}});
+
+        met.isRelation = m.flags.fields.move2proc;
+
+        metrics.emplace(id, std::move(met));
       }
       hpcrun_fmt_metricDesc_free(&m, std::free);
     }
@@ -296,7 +300,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             util::log::info{} << "Value for unknown metric id: " << id;
             return false;
           }
-          auto& met = it->second.first;
+          auto& met = it->second.metric;
           es_settings.formula.emplace_back(ExtraStatistic::MetricPartialRef(
             met, met.statsAccess().requestSumPartial()));
         } else {
@@ -311,7 +315,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       sink.extraStatistic(std::move(es_settings));
     }
-    for(const auto& im: metrics) sink.metricFreeze(im.second.first);
+    for(const auto& im: metrics) sink.metricFreeze(im.second.metric);
   }
   if(needed.hasReferences()) {
     int id;
@@ -523,27 +527,38 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         util::log::info{} << "Encountered metric value for invalid cct node id: " << cid;
         return false;
       }
-      auto accum = [&]() -> std::optional<ProfilePipeline::Source::AccumulatorsRef> {
-        if(auto* p_x = std::get_if<singleCtx_t>(&node_it->second)) {
-          return sink.accumulateTo(*thread, p_x->full);
-        } else if(auto* p_x = std::get_if<reconstructedCtx_t>(&node_it->second)) {
-          return sink.accumulateTo(*thread, p_x->ctx);
-        } else if(auto* p_x = std::get_if<refRange_t>(&node_it->second)) {
-          return sink.accumulateTo(p_x->first.second, p_x->second, p_x->first.first.rel);
-        } else if(auto* p_x = std::get_if<outlinedRangeSample_t>(&node_it->second)) {
-          return sink.accumulateTo(p_x->first.first, p_x->first.second, p_x->second);
-        }
-        return std::nullopt;
-      }();
-      if(!accum) {
-        util::log::info{} << "Encountered metric value for cct node that should have none: " << cid;
-        return false;
-      }
+      std::optional<ProfilePipeline::Source::AccumulatorsRef> raccum;
+      std::optional<ProfilePipeline::Source::AccumulatorsRef> faccum;
       while(mid > 0) {
         const auto& x = metrics.at(mid);
-        Metric& met = x.first;
-        bool isInt = x.second;
-        accum->add(met, isInt ? (double)val.i : val.r);
+        double v = x.isInt ? (double)val.i : val.r;
+        if(x.isRelation) {
+          if(!raccum) {
+            if(auto* p_x = std::get_if<singleCtx_t>(&node_it->second)) {
+              raccum = sink.accumulateTo(*thread, p_x->rel);
+            } else if(auto* p_x = std::get_if<refRange_t>(&node_it->second)) {
+              raccum = sink.accumulateTo(p_x->first.second, p_x->second, p_x->first.first.rel);
+            } else {
+              util::log::info{} << "Encountered metric value for cct node of invalid type: " << cid;
+              return false;
+            }
+          }
+          raccum->add(x.metric, v);
+        } else {
+          if(!faccum) {
+            if(auto* p_x = std::get_if<singleCtx_t>(&node_it->second)) {
+              faccum = sink.accumulateTo(*thread, p_x->full);
+            } else if(auto* p_x = std::get_if<reconstructedCtx_t>(&node_it->second)) {
+              faccum = sink.accumulateTo(*thread, p_x->ctx);
+            } else if(auto* p_x = std::get_if<outlinedRangeSample_t>(&node_it->second)) {
+              faccum = sink.accumulateTo(p_x->first.first, p_x->first.second, p_x->second);
+            } else {
+              util::log::info{} << "Encountered metric value for cct node of invalid type: " << cid;
+              return false;
+            }
+          }
+          faccum->add(x.metric, v);
+        }
         mid = hpcrun_sparse_next_entry(file, &val);
       }
     }

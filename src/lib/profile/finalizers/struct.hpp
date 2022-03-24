@@ -85,10 +85,13 @@ private:
     using trienode = std::pair<std::pair<Scope, Relation>, const void* /* const trienode* */>;
     // Trie of Scopes, for efficiently storing nested Scopes
     std::deque<trienode> trie;
-    // Bounds-map (instruction -> nested Scope and function entry)
-    std::map<util::interval<uint64_t>, std::pair<std::reference_wrapper<const trienode>, uint64_t>> leaves;
-    // Reversed call graph (callee function entry -> caller instruction)
-    std::unordered_multimap<uint64_t, uint64_t> rcg;
+    // Bounds-map (instruction -> nested Scope and top Function)
+    std::map<util::interval<uint64_t>, std::pair<
+        std::reference_wrapper<const trienode>,
+        std::reference_wrapper<const Function>>> leaves;
+    // Reversed call graph (callee Function -> caller instruction and top Function)
+    std::unordered_multimap<util::reference_index<const Function>,
+        std::pair<uint64_t, std::reference_wrapper<const Function>>> rcg;
   };
   friend class hpctoolkit::finalizers::detail::StructFileParser;
 

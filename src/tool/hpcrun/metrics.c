@@ -305,6 +305,13 @@ void hpcrun_set_display(int metric_id, uint8_t show) {
 
 
 // non finalizing
+void hpcrun_set_move2proc(int metric_id, bool move) {
+  metric_desc_t* mdesc = hpcrun_id2metric_linked(metric_id);
+  mdesc->flags.fields.move2proc = move;
+}
+
+
+// non finalizing
 void hpcrun_set_percent(int metric_id, uint8_t show_percent) {
   metric_desc_t* mdesc = hpcrun_id2metric_linked(metric_id);
   mdesc->flags.fields.showPercent = show_percent;

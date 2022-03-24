@@ -93,8 +93,17 @@ private:
   hpcrun_sparse_file_t* file;
   stdshim::filesystem::path path;
 
-  // ID to Metric mapping. Also marks whether the values are in int format.
-  std::unordered_map<unsigned int, std::pair<Metric&, bool>> metrics;
+  struct metric_t {
+    metric_t(Metric& metric) : metric(metric) {};
+    Metric& metric;
+    // If true, the Metric applies to the relation instead of the full Context
+    bool isRelation : 1;
+    // If true, the values should be interpreted as ints instead of floats
+    bool isInt : 1;
+  };
+
+  // ID to Metric mapping.
+  std::unordered_map<unsigned int, metric_t> metrics;
 
   // ID to Module mapping.
   std::unordered_map<unsigned int, Module&> modules;
