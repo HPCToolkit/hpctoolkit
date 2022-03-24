@@ -108,26 +108,39 @@
 #define MAX_STR_SIZE 1024
 #define KERNEL_SUFFIX ".kernel"
 
+//******************************************************************************
+// type declaration
+//******************************************************************************
 
+// We assume that the OnKernelRun callback from gtpin and the
+// subscriber callback from level 0 or opencl
+// for each kernel are executed in the same order.
+// Suppose we have kernel K1, K2, K3 launched in order.
+// It is possible that OnKernelRun(K2) is before subscriber(K1).
+// However, OnKernelRun(K1) < OnKernelRun(K2) < OnKernelRun(K3)
+// and subscriber(K1) < subscriber(K2) < subscriber(K3).
+// Therefore, we can use a queue (implemented as a linked list) to match
+// the gpu cct node (from the subscriber callback) with the correlation id
+// (from the gtpin OnKernelRun callback)
+typedef struct gtpin_correlation_data {
+  uint64_t correlation_id;
+  uint64_t cpu_submit_time;
+  struct gtpin_correlation_data * next;
+} gtpin_correlation_data_t;
 
 //******************************************************************************
 // local data
 //******************************************************************************
-
-// TODO(Aaron): Why there are so many correlation ids
-static atomic_ullong correlation_id;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static bool gtpin_use_runtime_callstack = false;
 static bool gtpin_is_enabled = false;
 
-static __thread uint64_t gtpin_correlation_id = 0;
-static __thread uint64_t gtpin_cpu_submit_time = 0;
-static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
-static __thread bool gtpin_first = true;
-
-
+// The gtpin correlation data list is thread local
+// as there is no ordering guarantee among threads
+static __thread gtpin_correlation_data_t head;
+static __thread gtpin_correlation_data_t* tail = NULL;
 
 //******************************************************************************
 // private operations
@@ -169,20 +182,9 @@ initializeInstrumentation
 	  "for instrumentation of GPU binaries");
     exit(1);
   }
-
-  atomic_store(&correlation_id, 100000000);  // to avoid conflict with opencl operation correlation ids, we start instrumentation ids with 5000 (TODO(Aaron):FIX)
+  head.next = NULL;
+  tail = &head;
 }
-
-
-static uint64_t
-getCorrelationId
-(
- void
-)
-{
-  return atomic_fetch_add(&correlation_id, 1);
-}
-
 
 static void
 createKernelNode
@@ -193,18 +195,17 @@ createKernelNode
   uint64_t cpu_submit_time = hpcrun_nanotime();
 
   if (gtpin_use_runtime_callstack) {
-    // XXX(Keren): gtpin's call stack is a mass, better to use opencl's call path
-    // onKernelRun->clEnqueueNDRangeKernel_wrapper->opencl_subscriber_callback
-    if (gtpin_first) {
-      // gtpin callback->runtime callback
-      gtpin_correlation_id = correlation_id;
-      gtpin_cpu_submit_time = cpu_submit_time;
-    } else {
-      // runtime callback->gtpin callback
-      gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
-      gtpin_correlation_id_map_insert(correlation_id, &gtpin_gpu_op_ccts, activity_channel, cpu_submit_time);
-    }
+    // allocate a new node and put it into the thread local list
+    gtpin_correlation_data_t* data = (gtpin_correlation_data_t*) malloc(sizeof(gtpin_correlation_data_t));
+    data->correlation_id = correlation_id;
+    data->cpu_submit_time = cpu_submit_time;
+    data->next = NULL;
+    tail->next = data;
+    tail = data;
   } else {
+    // If we do not use opencl or level 0 call path,
+    // then we just take a call path right now
+    // and generate the correlation id record
     cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
 
     gpu_op_ccts_t gpu_op_ccts;
@@ -554,17 +555,18 @@ gtpin_produce_runtime_callstack
  gpu_op_ccts_t *gpu_op_ccts
 )
 {
-  if (gtpin_use_runtime_callstack) {
-    if (gtpin_correlation_id != 0) {
-      // gtpin callback->opencl callback
-      gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
-      gtpin_correlation_id_map_insert(gtpin_correlation_id, gpu_op_ccts, activity_channel, gtpin_cpu_submit_time);
-      gtpin_correlation_id = 0;
-      gtpin_first = true;
-    } else {
-      // opencl callback->gtpin callback;
-      gtpin_gpu_op_ccts = *gpu_op_ccts;      
-      gtpin_first = false;
-    }
+  // We assume that the gtpin OnKernelRun callback has been invoked
+  // before the level 0 / opencl subscriber callback.
+  // So, the correlation data link list should never be empty
+  assert(head.next != NULL);
+
+  // We get the first gtpin correlation data node
+  // as we assume that the OnKernelRun and level 0 / opnecl subscriber callback
+  gtpin_correlation_data_t* data = head.next;
+  gtpin_correlation_id_map_insert(data->correlation_id, gpu_op_ccts, gpu_activity_channel_get(), data->cpu_submit_time);
+  if (data->next == NULL) {
+    tail = &head;
   }
+  head.next = data->next;
+  free(data);
 }
