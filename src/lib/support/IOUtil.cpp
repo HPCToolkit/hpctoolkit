@@ -185,7 +185,7 @@ std::string
 Get(std::istream& is, char end)
 {
   static const int bufSz = 256;
-  static char buf[bufSz];
+  char buf[bufSz];
   std::string str;
   
   while ( (!is.eof() && !is.fail()) && is.peek() != end) {

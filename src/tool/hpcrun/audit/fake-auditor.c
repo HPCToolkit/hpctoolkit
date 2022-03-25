@@ -292,7 +292,9 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
 }
 
 // Notification from the rest of the world that we have begun!
+static bool connected = false;
 void mainlib_connected(const char* new_vdso_path) {
+  connected = true;
   vdso_path = new_vdso_path;
   update_shadow();
 }
@@ -302,7 +304,7 @@ void* dlopen(const char* fn, int flags) {
   if(!real_dlopen)
     return ((void*(*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
   void* out = real_dlopen(fn, flags);
-  if((flags & RTLD_NOLOAD) == 0 && update_shadow()) {
+  if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
     if(verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
     hooks.stable(true);
@@ -314,7 +316,7 @@ void* dlmopen(Lmid_t lmid, const char* fn, int flags) {
     return ((void*(*)(Lmid_t, const char*, int))dlsym(RTLD_NEXT, "dlmopen"))(lmid, fn, flags);
   void* out = real_dlmopen(lmid, fn, flags);
   // TODO: Scan the (potentially newly created) link map for entries
-  if((flags & RTLD_NOLOAD) == 0 && update_shadow()) {
+  if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
     if(verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
     hooks.stable(true);
@@ -325,7 +327,7 @@ int dlclose(void* handle) {
   if(!real_dlclose)
     return ((int(*)(void*))dlsym(RTLD_NEXT, "dlclose"))(handle);
   int out = real_dlclose(handle);
-  if(update_shadow()) {
+  if(connected && update_shadow()) {
     if(verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 0)\n");
     hooks.stable(false);
