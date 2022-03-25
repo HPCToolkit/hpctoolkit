@@ -924,6 +924,9 @@ printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
     delete witem->env.realPath;
     witem->env.realPath = NULL;
 
+    witem->obuf.str("");
+    witem->obuf.clear();
+
     num_done++;
   }
 }
