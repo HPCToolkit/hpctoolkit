@@ -55,11 +55,11 @@
 #include <dlfcn.h>
 #include <elf.h>
 #include <pthread.h>
-#include <string.h>
 #include <sched.h>
 #include <stddef.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/auxv.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -84,6 +84,7 @@ static auditor_exports_t exports;
 static auditor_hooks_t hooks;
 
 static void mainlib_connected(const char*);
+static void mainlib_disconnect();
 static bool update_shadow();
 
 static void* (*real_dlopen)(const char*, int) = NULL;
@@ -162,6 +163,7 @@ void hpcrun_init_fake_auditor() {
   if(!exports.execve) exports.execve = monitor_real_execve;
 
   exports.mainlib_connected = mainlib_connected;
+  exports.mainlib_disconnect = mainlib_disconnect;
 
   verbose = getenv("HPCRUN_AUDIT_DEBUG");
   vdso_path = "[vdso]";  // Set later to something more reasonable.
@@ -192,11 +194,6 @@ void hpcrun_init_fake_auditor() {
 __attribute__((constructor))
 static void hpcrun_constructor_init_fake_auditor() {
   hpcrun_init_fake_auditor();
-
-  // Since we're late to the party, we can kick bits off right now
-  if(verbose)
-    fprintf(stderr, "[fake audit] Beginning initialization\n");
-  hooks.initialize();
 }
 
 // Whenever things change, we scan through with dl_iterate_phdr, update the
@@ -256,8 +253,6 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   entry->addr = map->dlpi_addr;
   entry->seen = true;
   entry->new = true;
-  entry->entry.ehdr = map->dlpi_addr != 0 ? (void*)map->dlpi_addr
-    : (void*)(uintptr_t)(map->dlpi_phdr[0].p_vaddr - map->dlpi_phdr[0].p_offset);
 
   uintptr_t start = UINTPTR_MAX;
   uintptr_t end = 0;
@@ -273,11 +268,14 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   entry->entry.end = (void*)map->dlpi_addr + end;
 
   entry->entry.path = NULL;
-  if (entry->entry.start == (void *)getauxval(AT_SYSINFO_EHDR))
+  if (map->dlpi_addr == getauxval(AT_SYSINFO_EHDR))
     entry->entry.path = realpath(vdso_path, NULL);
-  else if(map->dlpi_name[0] == '\0')
-    entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
-  else 
+  else if(map->dlpi_phdr == (void*)getauxval(AT_PHDR)) {
+    entry->entry.path = realpath("/proc/self/exe", NULL);
+    if(entry->entry.path == NULL || strcmp(entry->entry.path, "/proc/self/exe") == 0)
+      entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
+  }
+  if(entry->entry.path == NULL)
     entry->entry.path = realpath(map->dlpi_name, NULL);
 
   entry->entry.dl_info = *map;
@@ -297,6 +295,9 @@ void mainlib_connected(const char* new_vdso_path) {
   connected = true;
   vdso_path = new_vdso_path;
   update_shadow();
+}
+void mainlib_disconnect() {
+  connected = false;
 }
 
 // The remainder here is overloads for dl* that update as per the usual
