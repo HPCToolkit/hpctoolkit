@@ -166,6 +166,11 @@ hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int write
 
     hpctio_obj_id_t * oid = sys->func_ptr->open(path, flags, md, opt, sys->params_ptr);
     obj->oh = oid;
+
+    if(oid == NULL){
+        free(obj);
+        obj = NULL;
+    }
     
     return obj;
 }

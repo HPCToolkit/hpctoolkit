@@ -47,6 +47,8 @@
 #ifndef files_h
 #define files_h
 
+#include <lib/prof-lean/hpctio.h>
+#include <lib/prof-lean/hpctio_obj.h>
 
 //*****************************************************************************
 // forward declarations

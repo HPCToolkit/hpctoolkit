@@ -549,6 +549,7 @@ static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p){
     }
 
     r = dfs_access(dfs_p->dfs, parent, name, md);
+    CHECK(r, "Failed to check access for %s with errno %d", path, r);
 
 exit:
     if(name) free(name);
@@ -588,6 +589,7 @@ static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_param
     }
 
     r = dfs_move(dfs_p->dfs, oldparent, oldname, newparent, newname, NULL);
+    CHECK(r, "Failed to rename the file %s to %s, with errno %d", oldpath, newpath, r);
 
 exit:
     if(oldname) free(oldname);
@@ -607,11 +609,12 @@ exit:
 static hpctio_obj_opt_t * DFS_Obj_Options(int writemode){
     hpctio_dfs_obj_opt_t * opt = (hpctio_dfs_obj_opt_t *) malloc(sizeof(hpctio_dfs_obj_opt_t));
     opt->writemode = writemode;
+    opt->objectClass = 0;
     return (hpctio_obj_opt_t *)opt;
 }
 
 static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
-    hpctio_dfs_params_t * dfs_p = （hpctio_dfs_params_t *）p;
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
     hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
 
     char * name = NULL;
@@ -628,6 +631,7 @@ static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpcti
     }
 
     r = dfs_open(dfs_p->dfs, parent, name, md | S_IFREG, flags, dfs_opt->objectClass, 0, NULL, &obj);
+    CHECK(r, "Failed to open file %s due to errno %d", path, r);
 
     if(dfs_opt->writemode == HPCTIO_APPEND_ONLY || 
         dfs_opt->writemode == HPCTIO_WRITAPPEND){
@@ -642,5 +646,6 @@ exit:
         errno = r;
         obj = NULL;
     }
+
     return (hpctio_obj_id_t *) obj;
 }

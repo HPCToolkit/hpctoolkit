@@ -468,6 +468,9 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   hpctio_obj_t * fobj = lazy_open_data_file(cptd);
 
+  if(fobj == NULL)
+    return HPCRUN_ERR;
+
 /*
   //YUMENG: set footer
   footer.hdr_end = ftell(fs);
