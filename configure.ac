@@ -2439,19 +2439,24 @@ LIBELF_COPY=no
 case "$LIBELF" in
   /* )
     if test ! -f "${LIBELF}/include/libelf.h" \
-        && test ! -f "${LIBELF}/include/libelf/libelf.h"
+	&& test ! -f "${LIBELF}/include/libelf/libelf.h"
     then
       AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
     fi
+    if test ! -f "${LIBELF}/include/elfutils/libdw.h"; then
+      AC_MSG_ERROR([unable to find libdw.h in: $LIBELF])
+    fi
     LIBELF_INC="${LIBELF}/include"
     for lib in $multilib_path ; do
-      if test -f "${LIBELF}/${lib}/libelf.so" ; then
+      if test -f "${LIBELF}/${lib}/libelf.so" \
+	 && test -f "${LIBELF}/${lib}/libdw.so"
+      then
         LIBELF_LIB="${LIBELF}/${lib}"
 	break
       fi
     done
     if test "$LIBELF_LIB" = no ; then
-      AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
+      AC_MSG_ERROR([unable to find libelf.so or libdw.so in: $LIBELF])
     fi
     LIBELF_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
