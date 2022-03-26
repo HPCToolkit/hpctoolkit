@@ -496,6 +496,9 @@ setup_cache_dir
 {
   global_args = args;
   static bool warn = true;
+  char abspath[PATH_MAX];
+  ckpath_ret_t ret;
+  bool created = false;
 
   if (empty_string(cache_dir)) {
     // cache directory is not explicit: consider environment variable value
@@ -514,13 +517,34 @@ setup_cache_dir
     }
     return NULL;
   }
-
-  ckpath_ret_t ret = mk_dirpath(cache_dir, "Failed to create hpcstruct cache directory", true);
-  if ( ret == PATH_DIR_CREATED ) {
-      std::cerr << "NOTE: created structure cache directory " << cache_dir << std::endl << std::endl;
-  } else {
-     std::cerr << "NOTE: using structure cache directory " << cache_dir << std::endl << std::endl;
+  // convert the user path to an absolute path
+  for (;;) {
+    char* pr = realpath(cache_dir, abspath);
+    if (pr != NULL) {
+      // the directory now exists, or was created in the previous iteration
+      break;
+    }
+    // The path does not exist
+    if (errno == ENOENT) {
+      created = true;
+      // try to create the partial (or full) path as given in abspath
+      ret = mk_dirpath(abspath, "Failed to create hpcstruct cache directory", true);
+      if ( ret == PATH_DIR_CREATED ) {
+        // the path was created. now see if it's the full path to the cache directory
+        continue;
+      }
+    } else {
+      // attempt to create path failed for some other reason
+      std::cerr << "ERROR: Failed to create hpcstruct cache directory: " << strerror(errno) << std::endl;
+      exit(1);
+    }
   }
 
-  return strdup(cache_dir);
+  if ( created == true ) {
+      std::cerr << "NOTE: created structure cache directory " << abspath << std::endl << std::endl;
+  } else {
+     std::cerr << "NOTE: using structure cache directory " << abspath << std::endl << std::endl;
+  }
+
+  return strdup(abspath);
 }
