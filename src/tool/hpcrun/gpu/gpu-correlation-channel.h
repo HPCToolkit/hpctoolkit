@@ -50,8 +50,7 @@
 //******************************************************************************
 
 #include "gpu-correlation.h"
-
-
+#include "gpu-channel-common.h"
 
 //******************************************************************************
 // type declarations
@@ -67,7 +66,7 @@ typedef struct gpu_op_ccts_t gpu_op_ccts_t;
 // interface operations 
 //******************************************************************************
 
-// produce into a channel that my thread created
+// produce into the first channel that my thread created
 void
 gpu_correlation_channel_produce
 (
@@ -76,6 +75,16 @@ gpu_correlation_channel_produce
  uint64_t cpu_submit_time
 );
 
+// produce into a specified channel (with idx) that my thread created
+// when idx == 0, this function is equivalent to gpu_correlation_channel_produce
+void
+gpu_correlation_channel_produce_with_idx
+(
+ int idx,
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_ccts,
+ uint64_t cpu_submit_time
+);
 
 // consume from a channel that another thread created
 void

@@ -139,28 +139,6 @@ crypto_hash_to_hexstring
   unsigned int hash_string_length
 );
 
-
-#if 0
-
-//-----------------------------------------------------------------------------
-// function: 
-//   crypto_hash_self_test
-//
-// arguments:
-//   verbose: if non-zero, it prints individual self test results
-//
-// return value:
-//   0: success
-//   non-zero: failure
-//-----------------------------------------------------------------------------
-int
-crypto_hash_self_test
-(
-  int verbose
-);
-
-#endif
-
 #if defined(__cplusplus)
 }
 #endif

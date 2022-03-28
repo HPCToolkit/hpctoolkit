@@ -103,7 +103,7 @@ gpu_correlation_produce
 {
   PRINT("Produce correlation id 0x%lx\n", host_correlation_id);
   c->host_correlation_id = host_correlation_id;
-  c->gpu_op_ccts = *gpu_op_ccts;
+  if (gpu_op_ccts) c->gpu_op_ccts = *gpu_op_ccts;
   c->activity_channel = activity_channel;
   c->cpu_submit_time = cpu_submit_time;
 }

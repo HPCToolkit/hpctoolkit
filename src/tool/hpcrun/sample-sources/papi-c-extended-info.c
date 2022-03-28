@@ -14,26 +14,16 @@ papi_c_sync_register(sync_info_list_t* info)
   registered_sync_components = info;
 }
 
+
 void
 no_action(void)
 {
 }
 
-void
-std_get_event_set(int* ev_s)
+const char *
+component_get_name(int cidx)
 {
-  int ret = PAPI_create_eventset(ev_s);
-  TMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, *ev_s);
-  if (ret != PAPI_OK) {
-    hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
-                 ret, PAPI_strerror(ret));
-  }
-}
-
-int
-std_add_event(int ev_s, int ev)
-{
-  return PAPI_add_event(ev_s, ev);
+  return PAPI_get_component_info(cidx)->name;
 }
 
 get_event_set_proc_t
@@ -45,8 +35,10 @@ component_get_event_set(int cidx)
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
     if (item->pred(name)) return item->get_event_set;
   }
-  return std_get_event_set;
+//  hpcrun_abort("Failure: PAPI_create_eventset to not registered component");
+  return NULL;
 }
+
 
 add_event_proc_t
 component_add_event_proc(int cidx)
@@ -57,7 +49,8 @@ component_add_event_proc(int cidx)
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
     if (item->pred(name)) return item->add_event;
   }
-  return std_add_event;
+//  hpcrun_abort("Failure: PAPI_add_event to not registered component");
+  return NULL;
 }
 
 finalize_event_set_proc_t
@@ -76,13 +69,10 @@ bool
 component_uses_sync_samples(int cidx)
 {
   const char* name = PAPI_get_component_info(cidx)->name;
-  
+
   TMSG(PAPI, "checking component idx %d (name %s) to see if it is synchronous", cidx, name);
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
-    if (item->pred(name)) {
-      TMSG(PAPI, "Component %s IS a synchronous component", name);
-      return true;
-    }
+    if (item->pred(name)) return item->is_gpu_sync;
   }
   return false;
 }
@@ -94,9 +84,9 @@ sync_setup_for_component(int cidx)
   
   TMSG(PAPI, "looking for sync setup for component idx=%d(%s)", cidx, name);
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
-    if (item->pred(name)) return item->sync_setup;
+    if (item->pred(name)) return item->setup;
   }
-  return no_action;
+  return NULL;
 }
 
 teardown_proc_t
@@ -106,9 +96,9 @@ sync_teardown_for_component(int cidx)
   
   TMSG(PAPI, "looking for sync teardown for component idx=%d(%s)", cidx, name);
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
-    if (item->pred(name)) return item->sync_teardown;
+    if (item->pred(name)) return item->teardown;
   }
-  return no_action;
+  return NULL;
 }
 
 start_proc_t
@@ -118,10 +108,24 @@ sync_start_for_component(int cidx)
   
   TMSG(PAPI, "looking for sync start for component idx=%d(%s)", cidx, name);
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
-    if (item->pred(name)) return item->sync_start;
+    if (item->pred(name)) return item->start;
   }
-  return no_action;
+  return NULL;
 }
+
+
+read_proc_t
+sync_read_for_component(int cidx)
+{
+  const char* name = PAPI_get_component_info(cidx)->name;
+
+  TMSG(PAPI, "looking for sync start for component idx=%d(%s)", cidx, name);
+  for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
+    if (item->pred(name)) return item->read;
+  }
+  return NULL;
+}
+
 
 stop_proc_t
 sync_stop_for_component(int cidx)
@@ -130,7 +134,7 @@ sync_stop_for_component(int cidx)
   
   TMSG(PAPI, "looking for sync stop for component idx=%d(%s)", cidx, name);
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
-    if (item->pred(name)) return item->sync_stop;
+    if (item->pred(name)) return item->stop;
   }
-  return no_action;
+  return NULL;
 }

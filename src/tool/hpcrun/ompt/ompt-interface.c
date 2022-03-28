@@ -70,6 +70,8 @@
 #include <hpcrun/sample-sources/sample-filters.h>
 #include <hpcrun/thread_data.h>
 
+#include <monitor.h>
+
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
@@ -477,11 +479,9 @@ init_threads
  void
 )
 {
-  ompt_set_callback_fn
-    (ompt_callback_thread_begin, (ompt_callback_t)ompt_thread_begin);
+  ompt_set_callback(ompt_callback_thread_begin, ompt_thread_begin);
 
-  ompt_set_callback_fn
-    (ompt_callback_thread_end, (ompt_callback_t) ompt_thread_end);
+  ompt_set_callback(ompt_callback_thread_end, ompt_thread_end);
 }
 
 
@@ -491,7 +491,7 @@ init_parallel_regions
  void
 )
 {
-  ompt_parallel_region_register_callbacks(ompt_set_callback_fn);
+  ompt_parallel_region_register_callbacks(ompt_set_callback_internal);
   ompt_regions_init();
 }
 
@@ -502,7 +502,7 @@ init_tasks
  void
 )
 {
-  ompt_task_register_callbacks(ompt_set_callback_fn);
+  ompt_task_register_callbacks(ompt_set_callback_internal);
 }
 
 
@@ -520,8 +520,8 @@ init_mutex_blame_shift
 
   if (!ompt_mutex_blame_requested) return;
 
-  retval = ompt_set_callback_fn(ompt_callback_mutex_released,
-                                (ompt_callback_t) ompt_mutex_blame_accept);
+  retval = ompt_set_callback(ompt_callback_mutex_released, 
+                             ompt_mutex_blame_accept);
   mutex_blame_shift_avail |= ompt_event_may_occur(retval);
 
 
@@ -557,13 +557,11 @@ init_idle_blame_shift
 #if 0
   ompt_idle_blame_shift_request();
 
-  retval = ompt_set_callback_fn(ompt_callback_idle,
-                                (ompt_callback_t)ompt_idle);
+  retval = ompt_set_callback(ompt_callback_idle, ompt_idle);
   idle_blame_shift_avail |= ompt_event_may_occur(retval);
 #endif
 
-  retval = ompt_set_callback_fn(ompt_callback_sync_region_wait,
-                                (ompt_callback_t)ompt_sync);
+  retval = ompt_set_callback(ompt_callback_sync_region_wait, ompt_sync);
   idle_blame_shift_avail |= ompt_event_may_occur(retval);
 
 
@@ -672,10 +670,13 @@ ompt_start_tool
  const char *runtime_version
 )
 {
+  // force hpctoolkit initialization
+  monitor_initialize();
+  // post-condition: hpctoolkit is initialized
 
- if (getenv("OMPT_DEBUG_WAIT")) {
+  if (getenv("OMPT_DEBUG_WAIT")) {
     while (ompt_debug_wait);
- }
+  }
  
 #if OMPT_DEBUG_STARTUP
   printf("Starting tool...\n");
@@ -1029,18 +1030,19 @@ hpcrun_ompt_get_parent_region_data
 int
 hpcrun_ompt_get_thread_num(int level)
 {
-    if (ompt_initialized) {
-        int task_type_flags;
-        ompt_data_t *task_data = NULL;
-        ompt_data_t *parallel_data = NULL;
-        ompt_frame_t *task_frame = NULL;
-        int thread_num = 0;
+  if (ompt_initialized) {
+    int task_type_flags;
+    ompt_data_t *task_data = NULL;
+    ompt_data_t *parallel_data = NULL;
+    ompt_frame_t *task_frame = NULL;
+    int thread_num = 0;
 
-        ompt_get_task_info_fn(level, &task_type_flags, &task_data, &task_frame, &parallel_data, &thread_num);
-        //printf("Task frame pointer = %p\n", task_frame);
-        return thread_num;
-    }
-    return -1;
+    ompt_get_task_info_fn(level, &task_type_flags, &task_data,
+			  &task_frame, &parallel_data, &thread_num);
+    //printf("Task frame pointer = %p\n", task_frame);
+    return thread_num;
+  }
+  return -1;
 }
 
 

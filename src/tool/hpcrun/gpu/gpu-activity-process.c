@@ -57,6 +57,7 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-trace-item.h>
+#include <hpcrun/gpu/gpu-correlation-id.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
 #include <hpcrun/gpu/gpu-event-id-map.h>
@@ -140,6 +141,11 @@ attribute_activity
   gpu_activity_channel_t *channel =
     gpu_host_correlation_map_entry_channel_get(hc);
   activity->cct_node = cct_node;
+
+  PRINT("attributing activity to %p time = [%lu,%lu)\n",
+	cct_node, activity->details.interval.start,
+	activity->details.interval.end);
+
   gpu_activity_channel_produce(channel, activity);
 }
 
@@ -150,7 +156,7 @@ gpu_memcpy_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.memcpy.correlation_id;
+  uint64_t correlation_id = activity->details.memcpy.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
@@ -194,9 +200,9 @@ gpu_memcpy_process
     }
     gpu_correlation_id_map_delete(correlation_id);
   } else {
-    PRINT("Memcpy copy correlation_id %u cannot be found\n", correlation_id);
+    PRINT("Memcpy copy correlation_id 0x%lx cannot be found\n", correlation_id);
   }
-  PRINT("Memcpy copy CorrelationId %u\n", correlation_id);
+  PRINT("Memcpy copy correlation_id 0x%lx\n", correlation_id);
   PRINT("Memcpy copy kind %u\n", activity->details.memcpy.copyKind);
   PRINT("Memcpy copy bytes %lu\n", activity->details.memcpy.bytes);
 }
@@ -217,7 +223,7 @@ gpu_sample_process
  gpu_activity_t* sample
 )
 {
-  uint32_t correlation_id = sample->details.pc_sampling.correlation_id;
+  uint64_t correlation_id = sample->details.pc_sampling.correlation_id;
 
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -254,7 +260,7 @@ gpu_sample_process
       PRINT("host_map_entry %lu not found\n", external_id);
     }
   } else {
-    PRINT("correlation_id_map_entry %u not found\n", correlation_id);
+    PRINT("correlation_id_map_entry %lu not found\n", correlation_id);
   }
 }
 
@@ -265,7 +271,7 @@ gpu_sampling_info_process
  gpu_activity_t *sri
 )
 {
-  uint32_t correlation_id = sri->details.pc_sampling_info.correlation_id;
+  uint64_t correlation_id = sri->details.pc_sampling_info.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
@@ -305,7 +311,8 @@ gpu_correlation_process
   if (gpu_correlation_id_map_lookup(gpu_correlation_id) == NULL) {
     gpu_correlation_id_map_insert(gpu_correlation_id, host_correlation_id);
   } else {
-    gpu_correlation_id_map_external_id_replace(gpu_correlation_id, host_correlation_id);
+    gpu_correlation_id_map_external_id_replace(gpu_correlation_id,
+					       host_correlation_id);
   }
   PRINT("Correlation: native_correlation %u --> host_correlation %lu\n", 
       gpu_correlation_id, host_correlation_id);
@@ -318,7 +325,7 @@ gpu_memset_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.memset.correlation_id;
+  uint64_t correlation_id = activity->details.memset.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
@@ -344,7 +351,7 @@ gpu_memset_process
     }
     gpu_correlation_id_map_delete(correlation_id);
   }
-  PRINT("Memset CorrelationId %u\n", correlation_id);
+  PRINT("Memset correlation_id 0x%lx\n", correlation_id);
   PRINT("Memset kind %u\n", activity->details.memset.memKind);
   PRINT("Memset bytes %lu\n", activity->details.memset.bytes);
 }
@@ -356,7 +363,8 @@ gpu_function_process
  gpu_activity_t *activity
 )
 {
-  gpu_function_id_map_insert(activity->details.function.function_id, activity->details.function.pc);
+  gpu_function_id_map_insert(activity->details.function.function_id,
+			     activity->details.function.pc);
   PRINT("Function id %u\n", activity->details.function.function_id);
 }
 
@@ -367,7 +375,7 @@ gpu_kernel_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.kernel.correlation_id;
+  uint64_t correlation_id = activity->details.kernel.correlation_id;
 
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -417,11 +425,12 @@ gpu_kernel_process
       attribute_activity(host_op_entry, activity, kernel_node);
     }
   } else {
-    PRINT("Kernel execution correlation_id %u cannot be found\n", correlation_id);
+    PRINT("Kernel execution correlation_id 0x%lx cannot be found\n",
+	  correlation_id);
   }
 
   PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
-  PRINT("Kernel execution CorrelationId %u\n", correlation_id);
+  PRINT("Kernel execution correlation_id 0x%lx\n", correlation_id);
 }
 
 
@@ -461,15 +470,17 @@ gpu_synchronization_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.synchronization.correlation_id;
+  uint64_t correlation_id = activity->details.synchronization.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
     uint64_t external_id =
       gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
-    if (host_op_entry != NULL) {
+    if (host_op_entry != NULL && external_id != IGNORE_CORR_ID) {
+
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
           gpu_placeholder_type_sync);
@@ -500,7 +511,8 @@ gpu_synchronization_process
           case GPU_SYNC_EVENT:
             {
               // Find the corresponding stream that records the event
-              gpu_event_id_map_entry_t *event_id_entry = gpu_event_id_map_lookup(event_id);
+              gpu_event_id_map_entry_t *event_id_entry =
+		gpu_event_id_map_lookup(event_id);
               if (event_id_entry != NULL) {
                 context_id = gpu_event_id_map_entry_context_id_get(event_id_entry);
                 stream_id = gpu_event_id_map_entry_stream_id_get(event_id_entry);
@@ -511,7 +523,8 @@ gpu_synchronization_process
             }
           default:
             // invalid
-            PRINT("Invalid synchronization %u\n", correlation_id);
+            PRINT("Synchronization correlation_id 0x%lx cannot be found\n",
+		  correlation_id);
         }
       }
       // TODO(Keren): handle event synchronization
@@ -520,7 +533,7 @@ gpu_synchronization_process
     }
     gpu_correlation_id_map_delete(correlation_id);
   }
-  PRINT("Synchronization CorrelationId %u\n", correlation_id);
+  PRINT("Synchronization correlation_id 0x%lx\n", correlation_id);
 }
 
 
@@ -530,7 +543,7 @@ gpu_cdpkernel_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.cdpkernel.correlation_id;
+  uint64_t correlation_id = activity->details.cdpkernel.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
@@ -557,7 +570,7 @@ gpu_cdpkernel_process
     }
     gpu_correlation_id_map_delete(correlation_id);
   }
-  PRINT("Cdp Kernel CorrelationId %u\n", correlation_id);
+  PRINT("Cdp Kernel correlation_id 0x%lx\n", correlation_id);
 }
 
 
@@ -575,6 +588,22 @@ gpu_event_process
   PRINT("GPU event %u\n", event_id);
 }
 
+static gpu_placeholder_type_t
+gpu_memory_placeholder
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_mem_op_t mem_op = activity->details.memory.mem_op;;
+  switch(mem_op) {
+  case GPU_MEM_OP_ALLOC: return gpu_placeholder_type_alloc;
+  case GPU_MEM_OP_DELETE: return gpu_placeholder_type_delete;
+  default:
+    assert(0);
+  }
+  return gpu_placeholder_type_alloc;
+}
+
 
 static void
 gpu_memory_process
@@ -582,7 +611,7 @@ gpu_memory_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.memory.correlation_id;
+  uint64_t correlation_id = activity->details.memory.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
@@ -591,19 +620,28 @@ gpu_memory_process
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      gpu_placeholder_type_t ph = gpu_placeholder_type_alloc;
+      gpu_placeholder_type_t ph = gpu_memory_placeholder(activity);
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
       assert(host_op_node != NULL);
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
+
+      gpu_trace_item_t entry_trace;
+      trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
+
+      gpu_context_stream_trace
+	(activity->details.memory.context_id,
+	 activity->details.memory.stream_id,
+	 &entry_trace);
+
       attribute_activity(host_op_entry, activity, host_op_node);
     }
     gpu_correlation_id_map_delete(correlation_id);
   } else {
-    PRINT("Memory correlation_id %u cannot be found\n", correlation_id);
+    PRINT("Memory correlation_id 0x%lx cannot be found\n", correlation_id);
   }
-  PRINT("Memory CorrelationId %u\n", correlation_id);
+  PRINT("Memory correlation_id 0x%lx\n", correlation_id);
   PRINT("Memory kind %u\n", activity->details.memory.memKind);
   PRINT("Memory bytes %lu\n", activity->details.memory.bytes);
 }
@@ -615,7 +653,7 @@ gpu_instruction_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.instruction.correlation_id;
+  uint64_t correlation_id = activity->details.instruction.correlation_id;
   ip_normalized_t pc = activity->details.instruction.pc;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -633,7 +671,49 @@ gpu_instruction_process
       attribute_activity(host_op_entry, activity, func_ins);
     }
   }
-  PRINT("Instruction correlation_id %u\n", correlation_id);
+  PRINT("Instruction correlation_id 0x%lx\n", correlation_id);
+}
+
+static void
+gpu_counter_process
+(
+ gpu_activity_t *activity
+)
+{
+  uint32_t correlation_id = activity->details.counters.correlation_id;
+  gpu_correlation_id_map_entry_t *cid_map_entry =
+    gpu_correlation_id_map_lookup(correlation_id);
+  if (cid_map_entry != NULL) {
+    uint64_t external_id =
+      gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
+    if (host_op_entry != NULL) {
+      gpu_placeholder_type_t ph = gpu_placeholder_type_kernel;
+      cct_node_t *host_op_node =
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
+      assert(host_op_node != NULL);
+
+      cct_node_t *func_node = hpcrun_cct_children(host_op_node); // only child
+      cct_node_t *kernel_node;
+      if (func_node == NULL) {
+        kernel_node = host_op_node;
+      } else {
+        cct_addr_t *addr = hpcrun_cct_addr(func_node);
+        kernel_node = hpcrun_cct_insert_ip_norm(host_op_node, addr->ip_norm);
+      }
+      // Memory allocation does not always happen on the device
+      // Do not send it to trace channels
+      attribute_activity(host_op_entry, activity, kernel_node);
+    }
+    gpu_correlation_id_map_delete(correlation_id);
+  } else {
+    PRINT("Counter correlation_id %u cannot be found\n", correlation_id);
+  }
+  PRINT("Counter CorrelationId %u\n", correlation_id);
+  PRINT("Counter cycles %lu\n", activity->details.counters.cycles);
+  PRINT("Counter l2 cache hit %lu\n", activity->details.counters.l2_cache_hit);
+  PRINT("Counter l2 cache miss %lu\n", activity->details.counters.l2_cache_miss);
 }
 
 
@@ -711,6 +791,10 @@ gpu_activity_process
 
   case GPU_ACTIVITY_EVENT:
     gpu_event_process(ga);
+    break;
+
+  case GPU_ACTIVITY_COUNTER:
+    gpu_counter_process(ga);
     break;
 
   case GPU_ACTIVITY_MEMCPY2:

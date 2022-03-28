@@ -163,6 +163,9 @@ XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+
+ROCM_INC_FLGS = @OPT_ROCM_IFLAGS@
+
 OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
@@ -296,6 +299,7 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
+	tool_state.c			\
 	sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c   \
 	sample-sources/blame-shift/directed.c    \
@@ -324,6 +328,7 @@ MY_BASE_FILES =				\
 	control-knob.c   \
 	control-knob.h   \
 	device-finalizers.c \
+	gpu-monitors.c		\
 	device-initializers.c \
 	module-ignore-map.c \
 	threadmgr.c			\
@@ -386,6 +391,10 @@ MY_BASE_FILES =				\
 	gpu/gpu-trace-item.c		\
 	gpu/gpu-trace-channel-set.c	\
 	gpu/gpu-trace-demultiplexer.c	\
+	\
+	gpu/ompt/ompt-gpu-api.c 			\
+	gpu/ompt/ompt-activity-translate.c 		\
+	sample-sources/openmp-target.c                  \
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
@@ -504,6 +513,11 @@ if OPT_PAPI_CUPTI
     MY_PAPI_FILES += sample-sources/papi-c-cupti.c
 endif
 
+if OPT_PAPI_ROCM
+    MY_PAPI_FILES += sample-sources/papi-c-rocm.c
+endif
+
+
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cubin-hash-map.c		\
@@ -543,9 +557,11 @@ endif
 if OPT_ENABLE_ROCM
 MY_ROCM_FILES =\
 	sample-sources/amd.c \
+	sample-sources/amd-rocprofiler.c \
+	gpu/amd/hip-api.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c \
-	gpu/amd/rocm-debug-api.c \
+	gpu/amd/rocprofiler-api.c \
 	gpu/amd/rocm-binary-processing.c
 endif
 
@@ -591,6 +607,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)             \
+		$(ROCM_INC_FLGS) \
 	-I$(LIBELF_INC)			\
 	-I$(LIBMONITOR_INC)	\
 	$(GOTCHA_IFLAGS)	\
@@ -994,11 +1011,16 @@ libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_CUPTI
 endif
 
+if OPT_PAPI_ROCM
+libhpcrun_la_CPPFLAGS   += $(ROCM_INC_FLGS)
+MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_ROCM
+endif
+
 if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
   libhpcrun_o_LDADD     += $(OPT_PAPI_LIBS_STAT)
-
+  
   MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
 
@@ -1041,11 +1063,10 @@ if OPT_ENABLE_CUDA
   libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
 
-
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
-  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS)
+  libhpcrun_la_CFLAGS   += $(ROCM_INC_FLGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
 endif
@@ -1180,7 +1201,7 @@ endif
 # Don't use LDFLAGS for static case.
 
 MONITOR_NAMES = -G 'monitor_*'
-HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
+HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*' -G 'OnLoadToolProp' -G 'OnLoad' -G 'OnUnloadTool'
 MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 

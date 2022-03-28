@@ -173,12 +173,6 @@ typedef struct thread_data_t {
   uint64_t last_bar_time_us;
 
   // ----------------------------------------
-  // hpcrun_malloc() memory data structures
-  // ----------------------------------------
-  hpcrun_meminfo_t memstore;
-  int              mem_low;
-
-  // ----------------------------------------
   // sample sources
   // ----------------------------------------
 
