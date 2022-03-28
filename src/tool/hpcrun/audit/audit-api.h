@@ -65,9 +65,6 @@ typedef struct auditor_map_entry_t {
   // handling the main application name.
   char* path;
 
-  // Base address of the file. Points to the ELF header.
-  void* ehdr;
-
   // Byterange of the mapped region
   void* start;
   void* end;
@@ -85,10 +82,6 @@ typedef struct auditor_map_entry_t {
 } auditor_map_entry_t;
 
 typedef struct auditor_hooks_t {
-  // Called early in the process startup, as soon after libc's initialization
-  // as possible, and before any of the other hooks are called.
-  void (*initialize)();
-
   // Called whenever a new entry is entering the link map.
   void (*open)(auditor_map_entry_t* entry);
 
@@ -104,6 +97,8 @@ typedef struct auditor_hooks_t {
 typedef struct auditor_exports_t {
   // Called by the mainlib once it is prepared to receive notifications.
   void (*mainlib_connected)(const char* vdso_path);
+  // Called by the mainlib when it no longer wishes to receive notifications.
+  void (*mainlib_disconnect)();
 
   // Purified environment that has our effects (mostly) removed.
   char** pure_environ;
