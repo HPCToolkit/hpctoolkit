@@ -283,9 +283,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
-LIBDWARF_COPY = @LIBDWARF_COPY@
-LIBDWARF_INC = @LIBDWARF_INC@
-LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
@@ -905,7 +902,6 @@ install-exec-local:
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf.a)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libdw*so*)
-	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*so*)
 	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
 	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
 	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB_DIR),liblzma.so*)

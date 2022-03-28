@@ -180,8 +180,6 @@ ZLIB_INC = @ZLIB_INC@
 LZMA_LDFLAGS_DYN=@LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT=@LZMA_LDFLAGS_STAT@
 
-HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-
 PLUGIN_CONFIG_FILES = ga io memleak pthread
 
 # Disable the ibm-xlomp plugin in favor of the new openmp tools
@@ -608,7 +606,6 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
 	$(LIBUNWIND_IFLAGS)		\
-	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)             \
 		$(ROCM_INC_FLGS) \
