@@ -24195,6 +24195,201 @@ $as_echo "$GTPIN" >&6; }
 
 
 #-------------------------------------------------
+# Option: --with-igc=PATH
+#-------------------------------------------------
+
+IGC=no
+OPT_HAVE_IGC=no
+OPT_IGC_IFLAGS=
+OPT_IGC_LDFLAGS=
+
+
+# Check whether --with-igc was given.
+if test "${with_igc+set}" = set; then :
+  withval=$with_igc; IGC="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for igc" >&5
+$as_echo_n "checking for igc... " >&6; }
+
+case "$IGC" in
+  /* )
+    if test ! -f "${IGC}/include/igc/igc.opencl.h" ; then
+      as_fn_error $? "unable to find igc.opencl.h in: $IGC" "$LINENO" 5
+    fi
+    OPT_IGC_IFLAGS="-I${IGC}/include"
+
+    IGC_LDFLAGS =
+    IGA_LDFLAGS =
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libigc.so" ; then
+        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+        break
+      fi
+    done
+    if test "x$IGC_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libigc.so in: $IGC" "$LINENO" 5
+    fi
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libiga64.so" ; then
+        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+        break
+      fi
+    done
+    if test "x$IGA_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libiga.so in: $IGC" "$LINENO" 5
+    fi
+
+    OPT_IGC_LDFLAGS="${IGC_LDFLAGS} ${IGA_LDFLAGS}"
+
+    OPT_HAVE_IGC=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "igc directory must be absolute path: $IGC" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_IGC" = yes; then
+  OPT_ENABLE_IGC_TRUE=
+  OPT_ENABLE_IGC_FALSE='#'
+else
+  OPT_ENABLE_IGC_TRUE='#'
+  OPT_ENABLE_IGC_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $IGC" >&5
+$as_echo "$IGC" >&6; }
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-metrics-discovery=PATH
+#-------------------------------------------------
+
+METRICS_DISCOVERY=no
+OPT_HAVE_METRICS_DISCOVERY=no
+OPT_METRICS_DISCOVERY_IFLAGS=
+OPT_METRICS_DISCOVERY_LDFLAGS=
+
+
+# Check whether --with-metrics-discovery was given.
+if test "${with_metrics_discovery+set}" = set; then :
+  withval=$with_metrics_discovery; METRICS_DISCOVERY="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for metrics-discovery" >&5
+$as_echo_n "checking for metrics-discovery... " >&6; }
+
+case "$METRICS_DISCOVERY" in
+  /* )
+    if test ! -f "${METRICS_DISCOVERY}/include/metrics_discovery_api.h" ; then
+      as_fn_error $? "unable to find metrics_discovery_api.h in: $METRICS_DISCOVERY" "$LINENO" 5
+    fi
+    OPT_METRICS_DISCOVERY_IFLAGS="-I${METRICS_DISCOVERY}/include"
+
+    for lib in $multilib_path ; do
+      if test -f "${METRICS_DISCOVERY}/${lib}/libmd.so" ; then
+        OPT_METRICS_DISCOVERY_LDFLAGS="-L${METRICS_DISCOVERY}/$lib -Wl,-rpath=${METRICS_DISCOVERY}/$lib -lmd"
+        break
+      fi
+    done
+    if test "x$OPT_METRICS_DISCOVERY_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libmd.so in: $METRICS_DISCOVERY" "$LINENO" 5
+    fi
+    OPT_HAVE_METRICS_DISCOVERY=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "metrics-discovery directory must be absolute path: $METRICS_DISCOVERY" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_METRICS_DISCOVERY" = yes; then
+  OPT_ENABLE_METRICS_DISCOVERY_TRUE=
+  OPT_ENABLE_METRICS_DISCOVERY_FALSE='#'
+else
+  OPT_ENABLE_METRICS_DISCOVERY_TRUE='#'
+  OPT_ENABLE_METRICS_DISCOVERY_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $METRICS_DISCOVERY" >&5
+$as_echo "$METRICS_DISCOVERY" >&6; }
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-gtpin=PATH
+#-------------------------------------------------
+
+GTPIN=no
+OPT_HAVE_GTPIN=no
+OPT_GTPIN_IFLAGS=
+OPT_GTPIN_LDFLAGS=
+
+
+# Check whether --with-gtpin was given.
+if test "${with_gtpin+set}" = set; then :
+  withval=$with_gtpin; GTPIN="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gtpin" >&5
+$as_echo_n "checking for gtpin... " >&6; }
+
+case "$GTPIN" in
+  /* )
+    if test ! -f "${GTPIN}/Profilers/Include/gtpin.h" ; then
+      as_fn_error $? "unable to find gtpin.h in: $GTPIN" "$LINENO" 5
+    fi
+    OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
+
+    if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
+      OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+    fi
+
+    if test "x$OPT_GTPIN_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libgtpin.so in: $GTPIN" "$LINENO" 5
+    fi
+    OPT_HAVE_GTPIN=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "gtpin directory must be absolute path: $GTPIN" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_GTPIN" = yes; then
+  OPT_ENABLE_GTPIN_TRUE=
+  OPT_ENABLE_GTPIN_FALSE='#'
+else
+  OPT_ENABLE_GTPIN_TRUE='#'
+  OPT_ENABLE_GTPIN_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTPIN" >&5
+$as_echo "$GTPIN" >&6; }
+
+
+
+
+
+
+#-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
@@ -25250,6 +25445,18 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_OPENCL_TRUE}" && test -z "${OPT_ENABLE_OPENCL_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_OPENCL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_IGC_TRUE}" && test -z "${OPT_ENABLE_IGC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_IGC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_METRICS_DISCOVERY_TRUE}" && test -z "${OPT_ENABLE_METRICS_DISCOVERY_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_METRICS_DISCOVERY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_GTPIN_TRUE}" && test -z "${OPT_ENABLE_GTPIN_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_GTPIN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_IGC_TRUE}" && test -z "${OPT_ENABLE_IGC_FALSE}"; then

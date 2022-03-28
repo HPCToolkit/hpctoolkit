@@ -745,6 +745,9 @@ hpcrun_fini_internal()
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
 
+#ifndef HPCRUN_STATIC_LINK
+    auditor_exports->mainlib_disconnect();
+#endif
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -1777,15 +1780,9 @@ static void auditor_stable(bool additive) {
   hpcrun_safe_exit();
 }
 
-static void auditor_init() {
-  if(!hpcrun_is_initialized())
-    monitor_initialize();
-}
-
 const auditor_exports_t* auditor_exports;
 void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* hooks) {
   auditor_exports = exports;
-  hooks->initialize = auditor_init;
   hooks->open = auditor_open;
   hooks->close = auditor_close;
   hooks->stable = auditor_stable;

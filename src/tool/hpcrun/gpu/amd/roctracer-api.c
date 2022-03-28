@@ -428,6 +428,7 @@ roctracer_subscriber_callback
 
       cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
       gpu_cct_insert(trace_ph, kernel_ip);
+      ensure_kernel_ip_present(trace_ph, kernel_ip);
 
       if (collect_counter) {
         rocprofiler_correlation_id = correlation_id;
