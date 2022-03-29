@@ -961,7 +961,9 @@ monitor_init_process(int *argc, char **argv, void* data)
     // fnbounds must be after module_ignore_map
     fnbounds_init(process_name);
 #ifndef HPCRUN_STATIC_LINK
-    auditor_exports->mainlib_connected(get_saved_vdso_path());
+    if (!is_child) {
+      auditor_exports->mainlib_connected(get_saved_vdso_path());
+    }
 #endif
   }
   

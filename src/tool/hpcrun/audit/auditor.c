@@ -574,7 +574,9 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
 
 
 static void mainlib_connected(const char* vdso_path) {
-  assert(!connected && "Attempt to connect more than once?");
+  // No need to execute this code in a forked child without exec
+  if (connected) return;
+
   connected = true;
 
   // Finalize and deliver notifications for all the objects we've buffered
