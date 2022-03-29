@@ -1,8 +1,12 @@
-#include "hpctio.h"
-#include "hpctio_obj.h"
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "hpctio.h"
+#include "hpctio_obj.h"
+
 
 
 ///////////////////////////////////////HPCTIO_SYS FUNCTIONS///////////////////////////////////////////////
@@ -91,7 +95,7 @@ void hpctio_sys_avail_display(){
     printf("Available/Initialized %d file system objects:\n", hpctio_sys_count);
     for(int i = 0; i < hpctio_sys_count; i++){
         hpctio_sys_t * sys = hpctio_sys_avail[i];
-        printf("Object %d - %d:\n", i, sys);
+        printf("Object %d - %ld:\n", i, (intptr_t)sys);
         if(sys->func_ptr == &hpctio_sys_func_dfs){
             printf("File system: DAOS\n");
             hpctio_sys_func_dfs.display_params(sys->params_ptr);
@@ -102,7 +106,7 @@ void hpctio_sys_avail_display(){
             printf("ERROR: Unknown File System function pointer\n");
         }
     }
-    if(hpctio_sys_count < 4) printf("Last one %s\n", hpctio_sys_avail[hpctio_sys_count]);
+    if(hpctio_sys_count < 4) printf("Last one %ld\n", (intptr_t)hpctio_sys_avail[hpctio_sys_count]);
     printf("---------------------------------------------\n");
 }
 
@@ -173,4 +177,28 @@ hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int write
     }
     
     return obj;
+}
+
+/*
+* Closes a file/object with hpctio_obj_t *
+* return 0 on success, -1 on failure, errno set properly
+*/
+int hpctio_obj_close(hpctio_obj_t * obj){
+    int r = obj->sys_ptr->func_ptr->close(obj->oh);  
+    if(r == 0){
+        free(obj->opt_ptr);
+        obj->opt_ptr = NULL;
+        free(obj);
+    } 
+    return r;
+}
+
+
+
+/*
+* Append to a file 
+* return the number of elements written if succeed, -1  on failure with errno set
+*/
+size_t hpctio_obj_append(const void * buf, size_t size, size_t nitems, hpctio_obj_t * obj){
+    return obj->sys_ptr->func_ptr->append(buf, size, nitems, obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);
 }

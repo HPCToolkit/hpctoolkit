@@ -2,6 +2,7 @@
 #define HPCTIO_H
 
 #include <mpi.h>
+#include <stddef.h>
 #include <sys/stat.h>
 
 /*************************** FILE SYSTEM OBJECT RELATED STRUCTS ***************************/
@@ -39,6 +40,10 @@ typedef struct hpctio_sys_func {
 
   hpctio_obj_opt_t * (*obj_options)(int writemode);
   hpctio_obj_id_t * (*open)(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+  int (*close)(hpctio_obj_id_t * obj);
+
+  // write only write at specific offset
+  size_t (*append)(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
 
 

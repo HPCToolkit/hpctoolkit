@@ -1,14 +1,14 @@
-#include "hpctio.h"
-#include "hpctio_obj.h"
 #include <stdio.h>
 #include <assert.h>
 #include <libgen.h>
-#include <mpi.h>
 #include <daos.h>
 #include <daos_fs.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <string.h>
+
+#include "hpctio.h"
+#include "hpctio_obj.h"
 
 static int daos_init_count;
 static pthread_once_t real_daos_inited;
@@ -27,6 +27,10 @@ static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_param
 
 static hpctio_obj_opt_t * DFS_Obj_Options(int writemode);
 static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+static int DFS_Close(hpctio_obj_id_t * obj);
+
+static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct
@@ -53,7 +57,9 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .access = DFS_Access,
     .rename = DFS_Rename,
     .obj_options = DFS_Obj_Options,
-    .open = DFS_Open
+    .open = DFS_Open,
+    .close = DFS_Close,
+    .append = DFS_Append
     
 
 
@@ -67,7 +73,7 @@ typedef struct hpctio_dfs_obj_opt {
   //daos_oclass_id_t dir_oclass;
 
   int writemode;
-  int cursor;
+  daos_off_t cursor;
 }hpctio_dfs_obj_opt_t;
 
 //use dfs_obj_t directly as dfs version of hpctio_obj_id_t 
@@ -83,7 +89,7 @@ typedef struct hpctio_dfs_obj_opt {
     }                                                \
 }    
 
-
+/*
 #define CHECK_MPI(MPI_STAT, msg, ...)                                 \
 {                                                                     \
     char errstr[MPI_MAX_ERROR_STRING];                                \
@@ -96,6 +102,7 @@ typedef struct hpctio_dfs_obj_opt {
         MPI_Abort(MPI_COMM_WORLD, -1);                                \
     }                                                                 \
 }  
+*/
 
 static void actual_daos_init(){
     int r = daos_init();
@@ -199,6 +206,7 @@ enum handleType {
 	DFS_HANDLE
 };
 
+/*
 // 0 on success, erron on failure
 static int handle_bcast(enum handleType type, hpctio_dfs_params_t *p, MPI_Comm comm, int rank){
     d_iov_t global;
@@ -255,6 +263,7 @@ exit:
     return r;
 
 }
+
 
 // Initialization of Daos WITH MPI, so yes communication between processes
 static void dfs_init_mpi(hpctio_sys_params_t * params, int rank, MPI_Comm comm){
@@ -326,6 +335,7 @@ exit:
 
 
 }
+*/
 
 // Finalization of DAOS without MPI, so no communication between processes
 static void dfs_final_regular(hpctio_sys_params_t * params){
@@ -347,6 +357,7 @@ exit:
     p->inited = false;
 }
 
+/*
 // Finalization of DAOS with MPI, so yes communication between processes
 static void dfs_final_mpi(hpctio_sys_params_t * params, MPI_Comm comm){
     hpctio_dfs_params_t *p = (hpctio_dfs_params_t *) params;
@@ -372,6 +383,7 @@ static void dfs_final_mpi(hpctio_sys_params_t * params, MPI_Comm comm){
 exit:
     p->inited = false;
 }
+*/
 
 // split a path into the object name and the directory
 static int parse_filename(const char * path, char ** objn, char ** contn){
@@ -469,6 +481,7 @@ static char * DFS_Realpath(const char * path, char * resolved_path){
 
 
 static void DFS_Init(hpctio_sys_params_t * params){
+    /*
     int mpi_avail;
     CHECK_MPI(MPI_Initialized(&mpi_avail), "Failed to check if MPI initialized");
 
@@ -477,15 +490,16 @@ static void DFS_Init(hpctio_sys_params_t * params){
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         dfs_init_mpi(params, rank, MPI_COMM_WORLD);
-    }else{
+    }else{*/
         //TODO: log printf("DFS init NONMPI version\n");
         dfs_init_regular(params);
-    }
+    //}
 }
 
 
 
 static void DFS_Final(hpctio_sys_params_t * params){
+    /*
     int mpi_avail;
     CHECK_MPI(MPI_Initialized(&mpi_avail), "Failed to check if MPI initialized");
 
@@ -494,10 +508,10 @@ static void DFS_Final(hpctio_sys_params_t * params){
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         dfs_final_mpi(params, MPI_COMM_WORLD);
-    }else{
+    }else{*/
         //TODO: log printf("DFS final NONMPI version\n");
         dfs_final_regular(params);
-    }
+    //}
 }
 
 
@@ -648,4 +662,49 @@ exit:
     }
 
     return (hpctio_obj_id_t *) obj;
+}
+
+
+static int DFS_Close(hpctio_obj_id_t * obj){
+    dfs_obj_t * dobj = (dfs_obj_t *) obj;
+    int r = dfs_release(dobj);
+    CHECK(r, "Failed to dfs_release the file object");
+
+exit:
+    if(r){
+        errno = r;
+        r = -1;
+    }
+    return r;
+}
+
+
+static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+    printf("I am here\n");
+    hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
+    CHECK((dfs_opt->writemode == HPCTIO_WRITE_ONLY),  "DFS - Appending to a file with HPCTIO_WRITE_ONLY mode is not allowed");
+
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+    dfs_obj_t * dobj = (dfs_obj_t *) obj;
+
+    d_iov_t iov; //io vector for memory buffer 
+    d_sg_list_t sgl; //scatter and gather list
+    sgl.sg_nr = 1;
+    sgl.sg_nr_out = 0;
+    d_iov_set(&iov, buf, size*nitems);
+    sgl.sg_iovs = &iov;
+
+    int r = dfs_write(dfs_p->dfs, dobj, &sgl, dfs_opt->cursor, NULL);
+    CHECK(r, "DFS - failed to dfs_write with errno %d", r);
+
+    dfs_opt->cursor += size*nitems;
+
+exit:
+    if(r){
+        errno = r;
+        r = -1;
+    }else{
+        r = nitems;
+    }
+    return r;
 }

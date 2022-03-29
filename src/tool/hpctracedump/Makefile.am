@@ -85,7 +85,11 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext)
+	$(HPCLIB_gettext) \
+	-lpthread \
+	-ldfs \
+	-ldaos \
+	-luuid
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

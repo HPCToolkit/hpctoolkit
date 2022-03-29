@@ -130,11 +130,30 @@ hpcrun_fmt_hdr_fwrite(FILE* fs, ...)
   va_list args;
   va_start(args, fs);
 
-  fwrite(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fs);
-  fwrite(HPCRUN_FMT_Version, 1, HPCRUN_FMT_VersionLen, fs);
-  fwrite(HPCRUN_FMT_Endian,  1, HPCRUN_FMT_EndianLen, fs);
+  //hpctio_obj_append(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fobj);
+  // hpctio_obj_append(HPCRUN_FMT_Version, 1, HPCRUN_FMT_VersionLen, fobj);
+  // hpctio_obj_append(HPCRUN_FMT_Endian,  1, HPCRUN_FMT_EndianLen, fobj);
 
-  hpcfmt_nvpairs_vfwrite(fs, args);
+  //hpcfmt_nvpairs_vfwrite(fs, args);
+
+  va_end(args);
+
+  return HPCFMT_OK;
+}
+
+int
+hpcrun_fmt_hdr_fwrite2(hpctio_obj_t * fobj, ...)
+{
+  va_list args;
+  va_start(args, fobj);
+
+  printf("AAA\n");
+
+  hpctio_obj_append(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fobj);
+  // hpctio_obj_append(HPCRUN_FMT_Version, 1, HPCRUN_FMT_VersionLen, fobj);
+  // hpctio_obj_append(HPCRUN_FMT_Endian,  1, HPCRUN_FMT_EndianLen, fobj);
+
+  //hpcfmt_nvpairs_vfwrite(fs, args);
 
   va_end(args);
 

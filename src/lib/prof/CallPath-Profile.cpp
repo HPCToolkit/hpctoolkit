@@ -1808,12 +1808,12 @@ Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 
   string traceMinTimeStr = StrUtil::toStr(prof.m_traceMinTime);
   string traceMaxTimeStr = StrUtil::toStr(prof.m_traceMaxTime);
-
+/*
   ret = hpcrun_fmt_hdr_fwrite(fs,
 			"TODO:hdr-name","TODO:hdr-value",
 			HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr.c_str(),
 			HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr.c_str(),
-			NULL);
+			NULL);*/
   if (ret == HPCFMT_ERR) return HPCFMT_ERR;
 
   // ------------------------------------------------------------

@@ -106,7 +106,11 @@ MYLDADD = \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
 	$(HPCLIB_gettext) \
-	@HOST_HPCPROF_FLAT_LDFLAGS@
+	@HOST_HPCPROF_FLAT_LDFLAGS@ \
+	-lpthread \
+	-ldfs \
+	-ldaos \
+	-luuid
 
 if HOST_CPU_X86_FAMILY
 MY_LIB_XED = $(XED2_LIB_FLAGS)

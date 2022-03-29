@@ -132,8 +132,6 @@
 #include <lib/prof-lean/vdso.h>
 #include <lib/prof-lean/crypto-hash.h> // Calculate a hash for vdso
 #include <lib/support-lean/OSUtil.h>
-#include <lib/prof-lean/hpctio.h>
-#include <lib/prof-lean/hpctio_obj.h>
 
 
 //***************************************************************

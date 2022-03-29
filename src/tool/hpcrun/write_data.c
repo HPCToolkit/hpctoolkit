@@ -200,9 +200,9 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   //
   // ==== file hdr =====
   //
-/*
+
   TMSG(DATA_WRITE,"writing file header");
-  hpcrun_fmt_hdr_fwrite(fs,
+  hpcrun_fmt_hdr_fwrite2(fobj,
                         HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(),
                         HPCRUN_FMT_NV_progPath, hpcrun_files_executable_pathname(),
 			                  HPCRUN_FMT_NV_envPath, getenv("PATH"),
@@ -216,7 +216,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
                         HPCRUN_FMT_NV_traceDisorder,
                           cptd->trace_is_ordered ? "0" : traceDisorderStr,
                         NULL);
-*/
+
   return fobj;
 }
 
@@ -480,11 +480,12 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
     return HPCRUN_ERR;
 
   write_epochs(fs, cptd, cptd->epoch, &footer);
-
-  TMSG(DATA_WRITE,"closing file");
-  hpcio_fclose(fs);
-  TMSG(DATA_WRITE,"Done!");
 */
+  TMSG(DATA_WRITE,"closing file");
+  //hpcio_fclose(fs);
+  hpctio_obj_close(fobj);
+  TMSG(DATA_WRITE,"Done!");
+
   return HPCRUN_OK;
 }
 
