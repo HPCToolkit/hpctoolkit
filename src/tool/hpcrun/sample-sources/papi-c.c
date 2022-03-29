@@ -595,12 +595,7 @@ METHOD_FN(supports_event, const char *ev_str)
   long th;
 
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
-
-  // corner case: check if it isn't a misspelling event
-  if (is_event_to_exclude(evtmp)) {
-    return false;
-  }
-    
+  
   ret = (PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK);
 
 finish:
