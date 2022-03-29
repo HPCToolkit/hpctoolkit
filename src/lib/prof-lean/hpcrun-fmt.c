@@ -79,11 +79,14 @@
 #include <include/gcc-attr.h>
 
 #include "hpcio.h"
+#include "hpcio2.h"
 #include "hpcio-buffer.h"
 #include "hpcfmt.h"
+#include "hpcfmt2.h"
 #include "hpcrun-fmt.h"
 #include "placeholders.h"
 #include "id-tuple.h"
+#include "hpctio_obj.h"
 
 //***************************************************************************
 
@@ -125,41 +128,21 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc)
 
 
 int
-hpcrun_fmt_hdr_fwrite(FILE* fs, ...)
-{
-  va_list args;
-  va_start(args, fs);
-
-  //hpctio_obj_append(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fobj);
-  // hpctio_obj_append(HPCRUN_FMT_Version, 1, HPCRUN_FMT_VersionLen, fobj);
-  // hpctio_obj_append(HPCRUN_FMT_Endian,  1, HPCRUN_FMT_EndianLen, fobj);
-
-  //hpcfmt_nvpairs_vfwrite(fs, args);
-
-  va_end(args);
-
-  return HPCFMT_OK;
-}
-
-int
-hpcrun_fmt_hdr_fwrite2(hpctio_obj_t * fobj, ...)
+hpcrun_fmt_hdr_fwrite(hpctio_obj_t * fobj, ...)
 {
   va_list args;
   va_start(args, fobj);
 
-  printf("AAA\n");
-
   hpctio_obj_append(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fobj);
-  // hpctio_obj_append(HPCRUN_FMT_Version, 1, HPCRUN_FMT_VersionLen, fobj);
-  // hpctio_obj_append(HPCRUN_FMT_Endian,  1, HPCRUN_FMT_EndianLen, fobj);
+  hpctio_obj_append(HPCRUN_FMT_Version, 1, HPCRUN_FMT_VersionLen, fobj);
+  hpctio_obj_append(HPCRUN_FMT_Endian,  1, HPCRUN_FMT_EndianLen, fobj);
 
-  //hpcfmt_nvpairs_vfwrite(fs, args);
+  hpcfmt_nvpairs_vfwrite2(fobj, args);
 
   va_end(args);
 
   return HPCFMT_OK;
 }
-
 
 int
 hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* fs)

@@ -27,7 +27,8 @@ static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_param
 
 static hpctio_obj_opt_t * DFS_Obj_Options(int writemode);
 static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
-static int DFS_Close(hpctio_obj_id_t * obj);
+static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+
 
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
@@ -73,7 +74,10 @@ typedef struct hpctio_dfs_obj_opt {
   //daos_oclass_id_t dir_oclass;
 
   int writemode;
-  daos_off_t cursor;
+  daos_off_t fileCursor;
+  int bufferSize;
+  char * buffer;
+  int bufferCursor;
 }hpctio_dfs_obj_opt_t;
 
 //use dfs_obj_t directly as dfs version of hpctio_obj_id_t 
@@ -429,6 +433,33 @@ exit:
 
 }
 
+
+// return number of bytes written on success and -1 on failure with errno set
+static int real_write(const void * buf, size_t len, daos_off_t off, dfs_t * dfs, dfs_obj_t * obj){
+    //prepare the scatter gather list for writing
+    d_iov_t iov; //io vector for memory buffer 
+    d_sg_list_t sgl; //scatter and gather list
+    sgl.sg_nr = 1;
+    sgl.sg_nr_out = 0;
+    d_iov_set(&iov, buf, len);
+    sgl.sg_iovs = &iov;
+    
+    int r = dfs_write(dfs, obj, &sgl, off, NULL);
+    CHECK(r, "DFS - failed to dfs_write with errno %d", r);
+
+exit:
+    if(r){
+        errno = r;
+        r = -1;
+    }else{
+        r = len;
+    }
+    return r;
+
+}
+
+
+
 static hpctio_sys_params_t * DFS_Construct_Params(const char * path){
     hpctio_dfs_params_t * sys_p = (hpctio_dfs_params_t *)malloc(sizeof(hpctio_dfs_params_t));
     sys_p->inited = false;
@@ -624,6 +655,7 @@ static hpctio_obj_opt_t * DFS_Obj_Options(int writemode){
     hpctio_dfs_obj_opt_t * opt = (hpctio_dfs_obj_opt_t *) malloc(sizeof(hpctio_dfs_obj_opt_t));
     opt->writemode = writemode;
     opt->objectClass = 0;
+    opt->bufferSize = 1024 * 1024;
     return (hpctio_obj_opt_t *)opt;
 }
 
@@ -649,7 +681,9 @@ static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpcti
 
     if(dfs_opt->writemode == HPCTIO_APPEND_ONLY || 
         dfs_opt->writemode == HPCTIO_WRITAPPEND){
-        dfs_opt->cursor = 0;
+        dfs_opt->fileCursor = 0;
+        dfs_opt->bufferCursor = 0;
+        dfs_opt->buffer = (char *) malloc(dfs_opt->bufferSize); 
     }
 
 exit:
@@ -665,13 +699,32 @@ exit:
 }
 
 
-static int DFS_Close(hpctio_obj_id_t * obj){
+static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
     dfs_obj_t * dobj = (dfs_obj_t *) obj;
-    int r = dfs_release(dobj);
+    hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;  
+    int r;
+
+    // check if any data remain in the buffer to be flushed
+    if((dfs_opt->writemode != HPCTIO_WRITE_ONLY) && (dfs_opt->bufferCursor > 0)){
+        r = real_write(dfs_opt->buffer, dfs_opt->bufferCursor, dfs_opt->fileCursor, dfs_p->dfs, dobj);
+        if(r == dfs_opt->bufferCursor){
+            dfs_opt->bufferCursor = 0;
+            dfs_opt->fileCursor += r;
+        }
+        CHECK((r == -1), "Failed to flush the buffer during DFS_Close() the file object");
+    }
+
+    if(dfs_opt->writemode != HPCTIO_WRITE_ONLY){
+        free(dfs_opt->buffer);
+        dfs_opt->buffer = NULL;
+    }
+
+    r = dfs_release(dobj);
     CHECK(r, "Failed to dfs_release the file object");
 
 exit:
-    if(r){
+    if(r && (r != -1)){
         errno = r;
         r = -1;
     }
@@ -680,31 +733,34 @@ exit:
 
 
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
-    printf("I am here\n");
     hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
     CHECK((dfs_opt->writemode == HPCTIO_WRITE_ONLY),  "DFS - Appending to a file with HPCTIO_WRITE_ONLY mode is not allowed");
 
     hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
     dfs_obj_t * dobj = (dfs_obj_t *) obj;
+    int r;
 
-    d_iov_t iov; //io vector for memory buffer 
-    d_sg_list_t sgl; //scatter and gather list
-    sgl.sg_nr = 1;
-    sgl.sg_nr_out = 0;
-    d_iov_set(&iov, buf, size*nitems);
-    sgl.sg_iovs = &iov;
+    if((dfs_opt->bufferCursor + size*nitems) >= dfs_opt->bufferSize){
+        r = real_write(dfs_opt->buffer, dfs_opt->bufferCursor, dfs_opt->fileCursor, dfs_p->dfs, dobj);
+        if(r == dfs_opt->bufferCursor){
+            dfs_opt->bufferCursor = 0;
+            dfs_opt->fileCursor += r;
+        }
+        CHECK((r == -1), "Failed to flush the buffer during DFS_Append() the file object");
+    }
 
-    int r = dfs_write(dfs_p->dfs, dobj, &sgl, dfs_opt->cursor, NULL);
-    CHECK(r, "DFS - failed to dfs_write with errno %d", r);
-
-    dfs_opt->cursor += size*nitems;
+    if(size*nitems >= dfs_opt->bufferSize){
+        r = real_write(buf, size*nitems, dfs_opt->fileCursor, dfs_p->dfs, dobj);
+        if(r == size*nitems){
+            dfs_opt->fileCursor += r;
+        }
+        CHECK((r == -1), "Failed to write the large data directly during DFS_Close() the file object");
+    }else{
+        memmove(&(dfs_opt->buffer[dfs_opt->bufferCursor]), buf, size * nitems);
+        dfs_opt->bufferCursor += size * nitems;
+        r = size * nitems;
+    }
 
 exit:
-    if(r){
-        errno = r;
-        r = -1;
-    }else{
-        r = nitems;
-    }
     return r;
 }

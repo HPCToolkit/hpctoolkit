@@ -184,7 +184,7 @@ hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int write
 * return 0 on success, -1 on failure, errno set properly
 */
 int hpctio_obj_close(hpctio_obj_t * obj){
-    int r = obj->sys_ptr->func_ptr->close(obj->oh);  
+    int r = obj->sys_ptr->func_ptr->close(obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);  
     if(r == 0){
         free(obj->opt_ptr);
         obj->opt_ptr = NULL;

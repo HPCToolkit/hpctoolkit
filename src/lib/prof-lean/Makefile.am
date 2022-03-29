@@ -122,7 +122,9 @@ MYSOURCES = \
 	formats/tracedb.h formats/tracedb.c
 	tracedb.h tracedb.c \
 	hpctio.h hpctio.c hpctio_dfs.c hpctio_posix.c \
-	hpctio_obj.h
+	hpctio_obj.h \
+	hpcfmt2.h hpcfmt2.c \
+	hpcio2.h hpcio2.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
 

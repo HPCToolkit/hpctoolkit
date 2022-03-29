@@ -91,7 +91,7 @@
 //*************************** User Include Files ****************************
 
 #include "hpcio.h"
-
+#include "hpctio_obj.h"
 
 
 //*************************** Forward Declarations **************************

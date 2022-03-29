@@ -202,7 +202,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   //
 
   TMSG(DATA_WRITE,"writing file header");
-  hpcrun_fmt_hdr_fwrite2(fobj,
+  hpcrun_fmt_hdr_fwrite(fobj,
                         HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(),
                         HPCRUN_FMT_NV_progPath, hpcrun_files_executable_pathname(),
 			                  HPCRUN_FMT_NV_envPath, getenv("PATH"),

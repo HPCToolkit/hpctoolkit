@@ -142,10 +142,7 @@ extern int
 hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_hdr_fwrite(FILE * fs, ...);
-
-extern int
-hpcrun_fmt_hdr_fwrite2(hpctio_obj_t * fobj, ...);
+hpcrun_fmt_hdr_fwrite(hpctio_obj_t * fobj, ...);
 
 extern int
 hpcrun_fmt_hdr_fprint(hpcrun_fmt_hdr_t* hdr, FILE* outf);

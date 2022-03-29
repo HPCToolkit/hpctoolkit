@@ -21,7 +21,8 @@ static int POSIX_Rename(const char *oldpath, const char *newpath, hpctio_sys_par
 
 static hpctio_obj_opt_t * POSIX_Obj_Options(int writemode);
 static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
-static int POSIX_Close(hpctio_obj_id_t * obj);
+static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+
 
 static size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
@@ -134,19 +135,25 @@ static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpc
     obj->fd = fd;
     obj->fs = fdopen(fd, "w");
     //popt->cursor = 0;
+  }else{
+    obj->fd = fd;
+    obj->fs = NULL;
   }
 
   return (hpctio_obj_id_t *)obj;
 }
 
-static int POSIX_Close(hpctio_obj_id_t * obj){
+static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
   hpctio_posix_fd_t * pobj = (hpctio_posix_fd_t *) obj;
   int r;
-  r = fclose(pobj->fs);
-  CHECK(r,  "POSIX - Failed to fclose the file stream");
 
-  r = close(pobj->fd);
-  CHECK(r,  "POSIX - Failed to fclose the file descriptor");
+  if(pobj->fs){
+    r = fclose(pobj->fs);
+    CHECK(r,  "POSIX - Failed to fclose the file stream");
+  }else{
+    r = close(pobj->fd);
+    CHECK(r,  "POSIX - Failed to close the file descriptor");
+  }
 
   pobj->fs = NULL;
   pobj->fd = NULL;

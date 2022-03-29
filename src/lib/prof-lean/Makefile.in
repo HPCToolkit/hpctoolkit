@@ -162,11 +162,18 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-splay-uint64.lo \
 	libHPCprof_lean_la-elf-helper.lo \
 	libHPCprof_lean_la-elf-hash.lo libHPCprof_lean_la-id-tuple.lo \
+<<<<<<< HEAD
 	formats/libHPCprof_lean_la-primitive.lo \
 	formats/libHPCprof_lean_la-metadb.lo \
 	formats/libHPCprof_lean_la-profiledb.lo \
 	formats/libHPCprof_lean_la-cctdb.lo \
 	formats/libHPCprof_lean_la-tracedb.lo
+=======
+	libHPCprof_lean_la-tracedb.lo libHPCprof_lean_la-hpctio.lo \
+	libHPCprof_lean_la-hpctio_dfs.lo \
+	libHPCprof_lean_la-hpctio_posix.lo \
+	libHPCprof_lean_la-hpcfmt2.lo libHPCprof_lean_la-hpcio2.lo
+>>>>>>> c7cd31e43 (upgrade DFS_Append to contain a buffer, and DFS_close will flush the buffer if necessary)
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -591,6 +598,11 @@ MYSOURCES = \
 	formats/profiledb.h formats/profiledb.c \
 	formats/cctdb.h formats/cctdb.c \
 	formats/tracedb.h formats/tracedb.c
+	tracedb.h tracedb.c \
+	hpctio.h hpctio.c hpctio_dfs.c hpctio_posix.c \
+	hpctio_obj.h \
+	hpcfmt2.h hpcfmt2.c \
+	hpcio2.h hpcio2.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -722,8 +734,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-elf-helper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-generic_pair.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-id-tuple.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-mcs-lock.Plo@am__quote@
@@ -1015,6 +1029,20 @@ formats/libHPCprof_lean_la-tracedb.lo: formats/tracedb.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='formats/tracedb.c' object='formats/libHPCprof_lean_la-tracedb.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o formats/libHPCprof_lean_la-tracedb.lo `test -f 'formats/tracedb.c' || echo '$(srcdir)/'`formats/tracedb.c
+
+libHPCprof_lean_la-hpcfmt2.lo: hpcfmt2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-hpcfmt2.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-hpcfmt2.Tpo -c -o libHPCprof_lean_la-hpcfmt2.lo `test -f 'hpcfmt2.c' || echo '$(srcdir)/'`hpcfmt2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-hpcfmt2.Tpo $(DEPDIR)/libHPCprof_lean_la-hpcfmt2.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcfmt2.c' object='libHPCprof_lean_la-hpcfmt2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcfmt2.lo `test -f 'hpcfmt2.c' || echo '$(srcdir)/'`hpcfmt2.c
+
+libHPCprof_lean_la-hpcio2.lo: hpcio2.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-hpcio2.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-hpcio2.Tpo -c -o libHPCprof_lean_la-hpcio2.lo `test -f 'hpcio2.c' || echo '$(srcdir)/'`hpcio2.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-hpcio2.Tpo $(DEPDIR)/libHPCprof_lean_la-hpcio2.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcio2.c' object='libHPCprof_lean_la-hpcio2.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-hpcio2.lo `test -f 'hpcio2.c' || echo '$(srcdir)/'`hpcio2.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
