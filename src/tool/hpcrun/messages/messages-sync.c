@@ -171,9 +171,12 @@ messages_fini(void)
   if (log_file_fd != 2) {
     int rv = close(log_file_fd);
     if (rv) {
-      char *mesg = "hpctoolkit warning: unable to access log file "
-                   "(maybe application closed the file descriptor)\n";
-      write(2, mesg, strlen(mesg));
+      char executable[PATH_MAX];
+      char *exec = realpath("/proc/self/exe", executable);
+      unsigned long pid = (unsigned long) getpid();
+
+      STDERR_MSG("hpctoolkit warning: executable '%s' (pid=%ld) "
+	      "prematurely closed hpctoolkit's log file", exec, pid);
     }
     //----------------------------------------------------------------------
     // if this is an execution of an MPI program, we opened the log file 
