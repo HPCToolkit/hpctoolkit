@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <string.h>
+#include <errno.h>
 
 #include "hpctio.h"
 #include "hpctio_obj.h"
@@ -563,7 +564,9 @@ static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p){
     }
 
     r = dfs_mkdir(dfs_p->dfs, parent, name, md, 0);
-    CHECK(r, "Failed to create the directory %s with errno %d", name, r);
+    if(r != EEXIST){
+        CHECK(r, "Failed to create the directory %s with errno %d", name, r);
+    }
 
 exit:
     if(name) free(name);
@@ -571,7 +574,7 @@ exit:
     if(parent) dfs_release(parent);
     if(r){
         errno = r;
-        r = -1;
+        r = -1;  
     }
     return r;
     
