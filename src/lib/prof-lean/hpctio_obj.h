@@ -24,6 +24,6 @@ typedef struct hpctio_obj{
 hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int writemode, hpctio_sys_t * sys);
 int hpctio_obj_close(hpctio_obj_t * obj);
 size_t hpctio_obj_append(const void * buf, size_t size, size_t nitems, hpctio_obj_t * obj);
-
+long int hpctio_obj_tell(hpctio_obj_t * obj);
 
 #endif /* ifndef HPCTIO_OBJ_H */

@@ -1819,7 +1819,7 @@ Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // ------------------------------------------------------------
   // epoch
   // ------------------------------------------------------------
-  ret = fmt_epoch_fwrite(prof, fs, wFlags);
+  //ret = fmt_epoch_fwrite(prof, fs, wFlags);
   if (ret == HPCFMT_ERR) return HPCFMT_ERR;
 
   return HPCFMT_OK;
@@ -1874,7 +1874,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.format = NULL;
     mdesc.is_frequency_metric = false;
 
-    ret = hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
+    //ret = hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
     if (ret == HPCFMT_ERR) return HPCFMT_ERR;
   }
 
@@ -1896,7 +1896,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     lm_entry.name = const_cast<char*>(lm->name().c_str());
     lm_entry.flags = 0; // TODO:flags
     
-    ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
+    //ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
     if (ret == HPCFMT_ERR) return HPCFMT_ERR;
   }
 
@@ -1962,7 +1962,7 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     CCT::ANode* n = it.current();
     fmt_cct_makeNode(nodeFmt, *n, prof.m_flags);
 
-    ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
+    //ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
     if (ret != HPCFMT_OK) return HPCFMT_ERR;
   }
 

@@ -77,7 +77,9 @@
 #include <lush/lush-backtrace.h>
 
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcio2.h>
 #include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcfmt2.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpctio.h>
 #include <lib/prof-lean/hpctio_obj.h>
@@ -222,7 +224,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
 
 //YUMENG: add footer
 static int
-write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_fmt_footer_t* footer)
+write_epochs(hpctio_obj_t* fobj, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_fmt_footer_t* footer)
 {
   //YUMENG: no epoch info needed
   //uint32_t num_epochs = 0;
@@ -287,13 +289,13 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     // == load map ==
     //
     //YUMENG
-    if(footer) footer->loadmap_start = ftell(fs); 
+    if(footer) footer->loadmap_start = hpctio_obj_tell(fobj);
 
     TMSG(DATA_WRITE, "Preparing to write loadmap");
 
     hpcrun_loadmap_t* current_loadmap = s->loadmap;
     
-    hpcfmt_int4_fwrite(current_loadmap->size, fs);
+    hpcfmt_int4_fwrite2(current_loadmap->size, fobj);
 
     // N.B.: Write in reverse order to obtain nicely ascending LM ids.
     for (load_module_t* lm_src = current_loadmap->lm_end;
@@ -303,7 +305,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
       lm_entry.name = lm_src->name;
       lm_entry.flags = hpcrun_loadModule_flags_get(lm_src);
       
-      ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
+      ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fobj);
       if(ret != HPCFMT_OK){
         TMSG(DATA_WRITE, "Error writing loadmap entry");
         goto write_error;
@@ -311,9 +313,13 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     }
 
     //YUMENG: set footer  
+    int padding_size;
     if(footer) {
-      footer->loadmap_end = ftell(fs);
-      fseek(fs, MULTIPLE_1024(footer->loadmap_end), SEEK_SET);
+      footer->loadmap_end = hpctio_obj_tell(fobj);
+      padding_size = MULTIPLE_1024(footer->loadmap_end) - footer->loadmap_end;
+      char lm_padding[padding_size];
+      memset(lm_padding, 0, padding_size);
+      hpctio_obj_append(lm_padding, 1, padding_size, fobj);
     }
     
     TMSG(DATA_WRITE, "Done writing loadmap");
@@ -329,19 +335,22 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
   #else
     //YUMENG: set up sparse_metrics and walk through cct
     //footer
-    if(footer) footer->cct_start = ftell(fs); 
+    if(footer) footer->cct_start = hpctio_obj_tell(fobj);
  
     //initialize the sparse_metrics
     hpcrun_fmt_sparse_metrics_t sparse_metrics;
     sparse_metrics.id_tuple = cptd->id_tuple;
 
     //assign value to sparse metrics while writing cct info
-    ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map, &sparse_metrics);
+    ret = hpcrun_cct_bundle_fwrite(fobj, epoch_flags, cct, cptd->cct2metrics_map, &sparse_metrics);
 
     //footer
     if(footer) {
-      footer->cct_end = ftell(fs);
-      fseek(fs, MULTIPLE_1024(footer->cct_end), SEEK_SET);
+      footer->cct_end = hpctio_obj_tell(fobj);
+      padding_size = MULTIPLE_1024(footer->cct_end) - footer->cct_end;
+      char cct_padding[padding_size];
+      memset(cct_padding, 0, padding_size);
+      hpctio_obj_append(cct_padding, 1, padding_size, fobj);
     }
 
   #endif
@@ -359,15 +368,15 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     // == metrics ==
     //
     //YUMENG: footer
-    if(footer) footer->met_tbl_start = ftell(fs);
+    if(footer) footer->met_tbl_start = hpctio_obj_tell(fobj);
 
     kind_info_t *curr = NULL;
     metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
 
-    hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
+    hpcfmt_int4_fwrite2(hpcrun_get_num_kind_metrics(), fobj);
     while (curr != NULL) {
       TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-      ret = hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
+      ret = hpcrun_fmt_metricTbl_fwrite(metric_tbl, fobj);
       metric_tbl = hpcrun_get_metric_tbl(&curr);
 
       if(ret != HPCFMT_OK){
@@ -378,8 +387,11 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 
     //YUMENG: footer
     if(footer) {
-      footer->met_tbl_end = ftell(fs);
-      fseek(fs, MULTIPLE_1024(footer->met_tbl_end), SEEK_SET);
+      footer->met_tbl_end = hpctio_obj_tell(fobj);
+      padding_size = MULTIPLE_1024(footer->met_tbl_end) - footer->met_tbl_end;
+      char mtbl_padding[padding_size];
+      memset(mtbl_padding, 0, padding_size);
+      hpctio_obj_append(mtbl_padding, 1, padding_size, fobj);
     }
 
     TMSG(DATA_WRITE, "Done writing metric tbl");
@@ -388,13 +400,16 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     //
     // == id-tuple dictionary ==
     //
-    if(footer) footer->idtpl_dxnry_start = ftell(fs); 
+    if(footer) footer->idtpl_dxnry_start = hpctio_obj_tell(fobj);
 
-    hpcrun_fmt_idtuple_dxnry_fwrite(fs);
+    hpcrun_fmt_idtuple_dxnry_fwrite(fobj);
 
     if(footer) {
-      footer->idtpl_dxnry_end = ftell(fs);
-      fseek(fs, MULTIPLE_1024(footer->idtpl_dxnry_end), SEEK_SET);
+      footer->idtpl_dxnry_end = hpctio_obj_tell(fobj);
+      padding_size = MULTIPLE_1024(footer->idtpl_dxnry_end) - footer->idtpl_dxnry_end;
+      char idtpl_padding[padding_size];
+      memset(idtpl_padding, 0, padding_size);
+      hpctio_obj_append(idtpl_padding, 1, padding_size, fobj);
     }
 
     //
@@ -402,19 +417,22 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     //
 
     //footer
-    if(footer) footer->sm_start = ftell(fs);
+    if(footer) footer->sm_start = hpctio_obj_tell(fobj);
 
-    ret = hpcrun_fmt_sparse_metrics_fwrite(&sparse_metrics,fs);
+    ret = hpcrun_fmt_sparse_metrics_fwrite(&sparse_metrics, fobj);
     if(ret != HPCFMT_OK){
       TMSG(DATA_WRITE, "Error writing sparse metrics data");
       goto write_error;
     }
 
     if(footer) {
-      footer->sm_end = ftell(fs);
-      fseek(fs, MULTIPLE_1024(footer->sm_end), SEEK_SET);
+      footer->sm_end = hpctio_obj_tell(fobj);
+      padding_size = MULTIPLE_1024(footer->sm_end) - footer->sm_end;
+      char sm_padding[padding_size];
+      memset(sm_padding, 0, padding_size);
+      hpctio_obj_append(sm_padding, 1, padding_size, fobj);
       //record for footer section
-      footer->footer_start = ftell(fs);
+      footer->footer_start = hpctio_obj_tell(fobj);
     }
 
     TMSG(DATA_WRITE, "Done writing sparse metrics data");
@@ -424,7 +442,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     //
     if(s->next == NULL){
       footer->HPCRUNsm = HPCRUNsm;
-      ret = hpcrun_fmt_footer_fwrite(footer, fs);
+      ret = hpcrun_fmt_footer_fwrite(footer, fobj);
       if(ret != HPCFMT_OK){
         TMSG(DATA_WRITE, "Error writing footer");
         goto write_error;
@@ -452,7 +470,7 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
   if (fobj == NULL)
     return;
 
-  //write_epochs(fs, cptd, cptd->epoch, NULL);
+  write_epochs(fobj, cptd, cptd->epoch, NULL);
   hpcrun_epoch_reset();
 }
 
@@ -471,18 +489,17 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   if(fobj == NULL)
     return HPCRUN_ERR;
 
-/*
-  //YUMENG: set footer
-  footer.hdr_end = ftell(fs);
-  fseek(fs, MULTIPLE_1024(footer.hdr_end), SEEK_SET);
-  
-  if (fs == NULL)
-    return HPCRUN_ERR;
 
-  write_epochs(fs, cptd, cptd->epoch, &footer);
-*/
+  //YUMENG: set footer
+  footer.hdr_end = hpctio_obj_tell(fobj);
+  int padding = MULTIPLE_1024(footer.hdr_end) - footer.hdr_end;
+  char padding_buf[padding];
+  memset(padding_buf, 0, padding);
+  hpctio_obj_append(padding_buf, 1, padding, fobj);
+
+  write_epochs(fobj, cptd, cptd->epoch, &footer);
+
   TMSG(DATA_WRITE,"closing file");
-  //hpcio_fclose(fs);
   hpctio_obj_close(fobj);
   TMSG(DATA_WRITE,"Done!");
 

@@ -73,8 +73,11 @@
 #include <include/uint.h>
 
 #include "../prof-lean/hpcio.h"
+#include "../prof-lean/hpcio2.h"
 #include "../prof-lean/hpcio-buffer.h"
 #include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcfmt2.h"
+#include "../prof-lean/hpcrun-fmt.h"
 
 
 
@@ -185,6 +188,9 @@ id_tuple_copy
 
 int 
 id_tuple_fwrite(id_tuple_t* x, FILE* fs);
+
+int 
+id_tuple_fwrite2(id_tuple_t* x, hpctio_obj_t* fobj);
 
 int 
 id_tuple_fread(id_tuple_t* x, FILE* fs);

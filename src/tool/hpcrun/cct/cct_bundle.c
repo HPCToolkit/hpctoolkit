@@ -111,11 +111,11 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
 #else
 //YUMENG: add sparse_metrics to collect metric values and info
 int 
-hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
+hpcrun_cct_bundle_fwrite(hpctio_obj_t* fobj, epoch_flags_t flags, cct_bundle_t* bndl,
                          cct2metrics_t* cct2metrics_map, hpcrun_fmt_sparse_metrics_t* sparse_metrics)
 #endif
 {
-  if (!fs) { return HPCRUN_ERR; }
+  if (!fobj) { return HPCRUN_ERR; }
 
   cct_node_t* final = bndl->tree_root;
   cct_node_t* partial_insert = final;
@@ -137,7 +137,7 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
   return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags);
 #else 
 //YUMENG: add sparse_metrics to collect metric values and info
-  return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags, sparse_metrics);
+  return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fobj, flags, sparse_metrics);
 #endif
 }
 

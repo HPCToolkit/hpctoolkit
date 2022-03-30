@@ -81,7 +81,8 @@
 #include <messages/messages.h>
 #include <lib/prof-lean/splay-macros.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/hpcio2.h>
+#include <lib/prof-lean/hpcfmt2.h>
 #include <lib/prof-lean/spinlock.h>
 #include <hpcrun/hpcrun_return_codes.h>
 
@@ -292,7 +293,7 @@ walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 //
 typedef struct {
   hpcfmt_uint_t num_kind_metrics;
-  FILE* fs;
+  hpctio_obj_t* fobj;
   epoch_flags_t flags;
   hpcrun_fmt_cct_node_t* tmp_node;
   cct2metrics_t* cct2metrics_map;
@@ -447,7 +448,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   hpcrun_metric_set_dense_copy(tmp->metrics, ms, my_arg->num_metrics);
 #endif
 
-  hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
+  hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fobj);
 }
 
 //
@@ -846,10 +847,10 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
 #else
 //YUMENG: add sparse_metrics to collect metric values
 int
-hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags, hpcrun_fmt_sparse_metrics_t* sparse_metrics)
+hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, hpctio_obj_t* fobj, epoch_flags_t flags, hpcrun_fmt_sparse_metrics_t* sparse_metrics)
 #endif
 {
-  if (!fs) return HPCRUN_ERR;
+  if (!fobj) return HPCRUN_ERR;
 
   //YUMENG: count number of nodes & number of non-zero values for all nodes
   size_t nodes = 0;
@@ -868,7 +869,7 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
   sparse_metrics->cct_node_ids = (uint32_t *) hpcrun_malloc((num_nz_cct_nodes+1)*sizeof(uint32_t));
   sparse_metrics->num_nz_cct_nodes = 0;
 
-  hpcfmt_int8_fwrite((uint64_t) nodes, fs);
+  hpcfmt_int8_fwrite2((uint64_t) nodes, fobj);
   TMSG(DATA_WRITE, "num cct nodes = %d", nodes);
 
   hpcfmt_uint_t num_kind_metrics = hpcrun_get_num_kind_metrics();
@@ -882,7 +883,7 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
 
   write_arg_t write_arg = {
     .num_kind_metrics = num_kind_metrics,
-    .fs          = fs,
+    .fobj          = fobj,
     .flags       = flags,
     .tmp_node    = &tmp_node,
 
@@ -914,11 +915,11 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
   //YUMENG: try to make sure the recorded info are correct
   //sparse_metrics->id_tuple.length should be changed to something else that represents a file
   if(sparse_metrics->num_nz_cct_nodes != num_nz_cct_nodes) {
-    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->id_tuple.length, "recorded number of non-zero cct nodes after walking through the cct don't match");
+    EEMSG("ERROR: recorded number of non-zero cct nodes after walking through the cct don't match");
     return HPCRUN_ERR;
   }
   if(sparse_metrics->cur_cct_node_idx != sparse_metrics->num_vals){
-    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->id_tuple.length, "number of nzvals and cur_cct_node_idx are not equal after walking through the cct");
+    EEMSG("ERROR: number of nzvals and cur_cct_node_idx are not equal after walking through the cct");
     return HPCRUN_ERR;
   } 
     

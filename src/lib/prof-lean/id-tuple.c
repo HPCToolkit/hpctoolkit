@@ -71,8 +71,10 @@
 #include <include/gcc-attr.h>
 
 #include "../prof-lean/hpcio.h"
+#include "../prof-lean/hpcio2.h"
 #include "../prof-lean/hpcio-buffer.h"
 #include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcfmt2.h"
 #include "../prof-lean/hpcrun-fmt.h"
 #include "id-tuple.h"
 
@@ -163,6 +165,18 @@ id_tuple_fwrite(id_tuple_t* x, FILE* fs)
       HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->ids[j].kind, fs));
       HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->ids[j].physical_index, fs));
       HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->ids[j].logical_index, fs));
+    }
+    return HPCFMT_OK;
+}
+
+int 
+id_tuple_fwrite2(id_tuple_t* x, hpctio_obj_t* fobj)
+{
+    HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->length, fobj));
+    for (uint j = 0; j < x->length; ++j) {
+      HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->ids[j].kind, fobj));
+      HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->ids[j].physical_index, fobj));
+      HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->ids[j].logical_index, fobj));
     }
     return HPCFMT_OK;
 }

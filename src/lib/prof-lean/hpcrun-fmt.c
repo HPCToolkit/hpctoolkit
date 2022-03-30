@@ -307,10 +307,10 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl,
 
 
 int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* fs)
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, hpctio_obj_t* fobj)
 {
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
-    hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], fs);
+    hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], fobj);
   }
 
   return HPCFMT_OK;
@@ -393,20 +393,20 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
 
 
 int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, hpctio_obj_t* fobj)
 {
-  HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->name, fs));
-  HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->description, fs));
-  HPCFMT_ThrowIfError(hpcfmt_intX_fwrite(x->flags.bits, sizeof(x->flags), fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->period, fs));
-  HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->formula, fs));
-  HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->format, fs));
+  HPCFMT_ThrowIfError(hpcfmt_str_fwrite2(x->name, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_str_fwrite2(x->description, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_intX_fwrite2(x->flags.bits, sizeof(x->flags), fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->period, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_str_fwrite2(x->formula, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_str_fwrite2(x->format, fobj));
 
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->is_frequency_metric, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->is_frequency_metric, fobj));
 
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->aux_info.is_multiplexed, fs));
-  HPCFMT_ThrowIfError(hpcfmt_real8_fwrite(x->aux_info.threshold_mean, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->aux_info.num_samples, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(aux_info->is_multiplexed, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_real8_fwrite2(aux_info->threshold_mean, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(aux_info->num_samples, fobj));
 
   return HPCFMT_OK;
 }
@@ -590,11 +590,11 @@ hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* fs,
 
 
 int
-hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* fs)
+hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, hpctio_obj_t* fobj)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->id, fs));
-  HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->name, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->flags, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->id, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_str_fwrite2(x->name, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->flags, fobj));
   return HPCFMT_OK;
 }
 
@@ -657,31 +657,26 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 
 int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
-			   epoch_flags_t flags, FILE* fs)
+			   epoch_flags_t flags, hpctio_obj_t* fobj)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id_parent, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite2(x->id, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite2(x->id_parent, fobj));
 
   if (flags.fields.isLogicalUnwind) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->as_info.bits, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite2(x->as_info.bits, fobj));
   }
 
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->lm_id, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->lm_ip, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->lm_id, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->lm_ip, fobj));
 
   if (flags.fields.isLogicalUnwind) {
-    HPCFMT_ThrowIfError(hpcrun_fmt_lip_fwrite(&x->lip, fs));
+    HPCFMT_ThrowIfError(hpcrun_fmt_lip_fwrite(&x->lip, fobj));
   }
-  /*YUMENG: no need for sparse metrics
-  for (int i = 0; i < x->num_metrics; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->metrics[i].bits, fs));
-  }
-  */
 
   uint8_t cct_flags = 0
     | (x->unwound ? HPCFMT_CCT_FLAG_UNWOUND : 0);
   _Static_assert(sizeof cct_flags == 1, "uint8_t > char?");
-  HPCFMT_ThrowIfError(hpcfmt_fwrite(&cct_flags, sizeof cct_flags, fs));
+  HPCFMT_ThrowIfError(hpcfmt_fwrite2(&cct_flags, sizeof cct_flags, fobj));
   return HPCFMT_OK;
 }
 
@@ -781,10 +776,10 @@ hpcrun_fmt_lip_fread(lush_lip_t* x, FILE* fs)
 
 
 int
-hpcrun_fmt_lip_fwrite(lush_lip_t* x, FILE* fs)
+hpcrun_fmt_lip_fwrite(lush_lip_t* x, hpctio_obj_t* fobj)
 {
   for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->data8[i], fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->data8[i], fobj));
   }
 
   return HPCFMT_OK;
@@ -825,33 +820,33 @@ hpcrun_fmt_idtuple_dxnry_fread(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* infs, hp
 
 
 int
-hpcrun_fmt_idtuple_dxnry_fwrite(FILE* outfs)
+hpcrun_fmt_idtuple_dxnry_fwrite(hpctio_obj_t* out)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(HPCRUN_IDTUPLE_COUNT, outfs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(HPCRUN_IDTUPLE_COUNT, out));
 
-  hpcfmt_int2_fwrite(IDTUPLE_SUMMARY, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_SUMMARY, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_SUMMARY, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_SUMMARY, out);
 
-  hpcfmt_int2_fwrite(IDTUPLE_NODE, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_NODE, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_NODE, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_NODE, out);
 
-  hpcfmt_int2_fwrite(IDTUPLE_RANK, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_RANK, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_RANK, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_RANK, out);
 
-  hpcfmt_int2_fwrite(IDTUPLE_THREAD, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_THREAD, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_THREAD, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_THREAD, out);
 
-  hpcfmt_int2_fwrite(IDTUPLE_GPUDEVICE, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_GPUDEVICE, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_GPUDEVICE, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_GPUDEVICE, out);
 
-  hpcfmt_int2_fwrite(IDTUPLE_GPUCONTEXT, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_GPUCONTEXT, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_GPUCONTEXT, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_GPUCONTEXT, out);
 
-  hpcfmt_int2_fwrite(IDTUPLE_GPUSTREAM, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_GPUSTREAM, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_GPUSTREAM, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_GPUSTREAM, out);
 
-  hpcfmt_int2_fwrite(IDTUPLE_CORE, outfs);
-  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_CORE, outfs);
+  hpcfmt_int2_fwrite2(IDTUPLE_CORE, out);
+  hpcfmt_str_fwrite2(HPCRUN_IDTUPLE_CORE, out);
 
   return HPCFMT_OK;
 }
@@ -931,22 +926,22 @@ hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs)
 
 
 int
-hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x,FILE* fs)
+hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x, hpctio_obj_t* fobj)
 {
 
-  HPCFMT_ThrowIfError(id_tuple_fwrite(&(x->id_tuple), fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->num_vals, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->num_nz_cct_nodes, fs));
+  HPCFMT_ThrowIfError(id_tuple_fwrite2(&(x->id_tuple), fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->num_vals, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite2(x->num_nz_cct_nodes, fobj));
 
 
   for (uint i = 0; i < x->num_vals; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->values[i].bits, fs));
-    HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->mids[i], fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->values[i].bits, fobj));
+    HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->mids[i], fobj));
   }
 
   for (uint i = 0; i < x->num_nz_cct_nodes + 1; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->cct_node_ids[i], fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_node_idxs[i], fs));
+    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite2(x->cct_node_ids[i], fobj));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->cct_node_idxs[i], fobj));
   }
 
   return HPCFMT_OK;
@@ -1075,22 +1070,22 @@ hpcrun_fmt_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x, hpcfmt_free_fn de
 // hpcrun_fmt_footer_t - YUMENG
 //***************************************************************************
 int
-hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, FILE* fs)
+hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->hdr_start,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->hdr_end,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->loadmap_start,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->loadmap_end,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_start,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_end,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->met_tbl_start,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->met_tbl_end,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->idtpl_dxnry_start,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->idtpl_dxnry_end,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->sm_start,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->sm_end,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->footer_start,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->HPCRUNsm,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->hdr_start,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->hdr_end,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->loadmap_start,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->loadmap_end,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->cct_start,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->cct_end,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->met_tbl_start,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->met_tbl_end,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->idtpl_dxnry_start,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->idtpl_dxnry_end,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->sm_start,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->sm_end,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->footer_start,fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->HPCRUNsm,fobj));
 
   return HPCFMT_OK;
 }

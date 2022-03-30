@@ -409,7 +409,7 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
 			   double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, hpctio_obj_t* out);
 
 extern int
 hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
@@ -423,7 +423,7 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
 			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, hpctio_obj_t* out);
 
 extern int
 hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre, uint32_t id);
@@ -489,7 +489,7 @@ hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* infs,
 			      hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* outfs);
+hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, hpctio_obj_t* out);
 
 extern int
 hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* outfs,
@@ -563,7 +563,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 
 extern int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
-			   epoch_flags_t flags, FILE* fs);
+			   epoch_flags_t flags, hpctio_obj_t* fobj);
 
 #if 0
 extern int
@@ -585,7 +585,7 @@ extern int
 hpcrun_fmt_lip_fread(lush_lip_t* x, FILE* fs);
 
 extern int
-hpcrun_fmt_lip_fwrite(lush_lip_t* x, FILE* fs);
+hpcrun_fmt_lip_fwrite(lush_lip_t* x, hpctio_obj_t* fobj);
 
 extern int
 hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
@@ -623,7 +623,7 @@ extern int
 hpcrun_fmt_idtuple_dxnry_fread(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* infs, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_idtuple_dxnry_fwrite(FILE* outfs);
+hpcrun_fmt_idtuple_dxnry_fwrite(hpctio_obj_t* out);
 
 extern int
 hpcrun_fmt_idtuple_dxnry_fprint(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* outf);
@@ -664,7 +664,7 @@ extern int
 hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
 
 extern int
-hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
+hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x, hpctio_obj_t* fobj);
 
 extern int
 hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
@@ -702,7 +702,7 @@ typedef struct hpcrun_fmt_footer_t{
 }hpcrun_fmt_footer_t;
 
 int
-hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, FILE* fs);
+hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj);
 
 int
 hpcrun_fmt_footer_fread(hpcrun_fmt_footer_t* x, FILE* fs);

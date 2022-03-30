@@ -25,7 +25,7 @@ static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys
 
 
 static size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
-
+static long int POSIX_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct - only use one POSIX, no struct to define "each" 
@@ -45,7 +45,8 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .obj_options = POSIX_Obj_Options,
   .open = POSIX_Open,
   .close = POSIX_Close,
-  .append = POSIX_Append
+  .append = POSIX_Append,
+  .tell = POSIX_Tell
 
 
 };
@@ -168,7 +169,7 @@ exit:
   return r;
 }
 
-size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+static size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
   hpctio_posix_obj_opt_t * popt = (hpctio_posix_obj_opt_t *) opt;
   CHECK((popt->writemode == HPCTIO_WRITE_ONLY),  "POSIX - Appending to a file with HPCTIO_WRITE_ONLY mode is not allowed");
 
@@ -179,3 +180,17 @@ size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_
 exit:
   return s == nitems ? s : -1;
 }
+
+static long int POSIX_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt){
+  hpctio_posix_fd_t * pfd = (hpctio_posix_fd_t *) obj;
+  hpctio_posix_obj_opt_t * popt = (hpctio_posix_obj_opt_t *) opt;
+
+  if(popt->writemode == HPCTIO_WRITE_ONLY || pfd->fs == NULL){
+    return -1;
+  }
+
+  int r = ftell(pfd->fs);
+  return r;
+}
+
+

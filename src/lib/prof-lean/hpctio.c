@@ -202,3 +202,13 @@ int hpctio_obj_close(hpctio_obj_t * obj){
 size_t hpctio_obj_append(const void * buf, size_t size, size_t nitems, hpctio_obj_t * obj){
     return obj->sys_ptr->func_ptr->append(buf, size, nitems, obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);
 }
+
+
+/*
+* Tell the current cursor position of the object
+* return the cursor position on success, -1 on failure with sometimes errno set
+*/
+long int hpctio_obj_tell(hpctio_obj_t * obj){
+    return obj->sys_ptr->func_ptr->tell(obj->oh, obj->opt_ptr);
+}
+
