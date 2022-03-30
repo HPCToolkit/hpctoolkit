@@ -474,7 +474,7 @@ hpcrun_rename_file2(int rank, int thread, const char *suffix)
       ret = -1;
       break;
     }
-    if(ret != 0){
+    if(ret == -1 && errno == ENOENT){
       // no new_name exists
       ret = hpctio_sys_rename(old_name, new_name, output_sys);
       break;

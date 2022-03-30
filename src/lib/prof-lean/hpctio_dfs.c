@@ -597,7 +597,9 @@ static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p){
     }
 
     r = dfs_access(dfs_p->dfs, parent, name, md);
-    CHECK(r, "Failed to check access for %s with errno %d", path, r);
+    if(r != ENOENT){
+        CHECK(r, "Failed to check access for %s with errno %d", path, r);
+    }
 
 exit:
     if(name) free(name);
