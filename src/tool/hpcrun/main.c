@@ -986,6 +986,12 @@ monitor_at_main()
 static
 void  hpcrun_prepare_measurement_subsystem(bool is_child)
 {  
+  if (is_child) {
+    // reset flags so measurement system is fully initialized in a child
+    atomic_store(&ms_init_started, 0);
+    atomic_store(&ms_init_completed, 0);
+  }
+
   if (atomic_fetch_add(&ms_init_started, 1) == 0){
     hpcrun_registered_sources_init();
 
@@ -1210,9 +1216,9 @@ monitor_thread_pre_create(void)
     return NULL;
   }
   bool is_child = false;
-  // outer initialization
-   hpcrun_prepare_measurement_subsystem(is_child);
 
+  // outer initialization
+  hpcrun_prepare_measurement_subsystem(is_child);
 
   hpcrun_safe_enter();
   local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));
