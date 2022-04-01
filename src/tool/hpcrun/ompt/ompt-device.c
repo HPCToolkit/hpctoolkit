@@ -634,6 +634,10 @@ ompt_data_op_callback_emi
   const void *codeptr_ra
 )
 {
+  if (endpoint == ompt_scope_begin) {
+    *host_op_id = gpu_correlation_id();
+  }
+
   ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
@@ -648,7 +652,7 @@ ompt_data_op_callback_emi
       break;
   }
 
-  hpcrun_ompt_op_id_notify(endpoint, host_op_id, op.pc_norm);
+  hpcrun_ompt_op_id_notify(endpoint, *host_op_id, op.pc_norm);
 }
 
 
@@ -661,8 +665,15 @@ ompt_submit_callback_emi
  unsigned int requested_num_teams
 )
 {
+  if (endpoint == ompt_scope_begin) {
+    *host_op_id = gpu_correlation_id();
+  }
+
   PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);
-  hpcrun_ompt_op_id_notify(endpoint, host_op_id, ompt_placeholders.ompt_tgt_kernel.pc_norm);
+
+  hpcrun_ompt_op_id_notify(endpoint, *host_op_id,
+			   ompt_placeholders.ompt_tgt_kernel.pc_norm);
+
   PRINT("ompt_submit_callback exit->target_id %" PRIu64 "\n", target_id);
 }
 
