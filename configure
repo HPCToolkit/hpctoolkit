@@ -24713,9 +24713,9 @@ $as_echo "$as_me: found $ROCM_PROFILER/include/rocprofiler/rocprofiler.h" >&6;}
       found=yes
     fi
     if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_PROFILER/lib/librocprofiler64.so" >&5
-$as_echo "$as_me: found $ROCM_PROFILER/lib/librocprofiler64.so" >&6;}
-      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/lib"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" >&5
+$as_echo "$as_me: found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" >&6;}
+      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
       ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi

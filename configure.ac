@@ -5436,8 +5436,8 @@ case "$ROCM_PROFILER" in
       found=yes
     fi
     if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
-      AC_MSG_NOTICE([found $ROCM_PROFILER/lib/librocprofiler64.so])
-      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/lib"
+      AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so])
+      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
       ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi
