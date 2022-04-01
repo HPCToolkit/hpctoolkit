@@ -5222,34 +5222,29 @@ AC_SUBST([OPT_GTPIN_LDFLAGS])
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
-# Can specify ROCM with all-in-one ROCM + HIP directory (normally
-# /opt/rocm), or with spack packages: hip, rocm-dbgapi, roctracer-dev,
-# or partially with /opt/rocm plus a subset of spack packages.
+# Can specify ROCM with all-in-one ROCM directory (normally
+# /opt/rocm), or with spack packages: hip, roctracer-dev,
+# rocprofiler-dev, and hsa-rocr-dev or partially with 
+# /opt/rocm plus a subset of spack packages.
 #
 # Note: may use both --with-rocm plus specific rocm package(s).
 # In this case, the specific overrides the general.
 
 ROCM=
 ROCM_HIP=
-ROCM_DBGAPI=
 ROCM_TRACER=
 ROCM_PROFILER=
 ROCM_HSA=
 
 AC_ARG_WITH([rocm],
   AS_HELP_STRING([--with-rocm=PATH],
-      [path to full ROCM + HIP install directory]),
+      [path to full ROCM install directory]),
   [ROCM="$withval"], [])
 
 AC_ARG_WITH([rocm-hip],
   AS_HELP_STRING([--with-rocm-hip=PATH],
       [path to hip install directory]),
   [ROCM_HIP="$withval"], [])
-
-AC_ARG_WITH([rocm-dbgapi],
-  AS_HELP_STRING([--with-rocm-dbgapi=PATH],
-      [path to rocm-dbgapi install directory]),
-  [ROCM_DBGAPI="$withval"], [])
 
 AC_ARG_WITH([rocm-tracer],
   AS_HELP_STRING([--with-rocm-tracer=PATH],
@@ -5263,27 +5258,32 @@ AC_ARG_WITH([rocm-profiler],
 
 AC_ARG_WITH([rocm-hsa],
   AS_HELP_STRING([--with-rocm-hsa=PATH],
-      [path to hsa-dev install directory]),
+      [path to hsa-rocr-dev install directory]),
   [ROCM_HSA="$withval"], [])
 
 
 
+ROCM_IFLAGS=
 ROCM_HIP_IFLAGS=
-ROCM_DBGAPI_IFLAGS=
 ROCM_TRACER_IFLAGS=
 ROCM_PROFILER_IFLAGS=
 ROCM_HSA_IFLAGS=
 
 ROCM_HIP_LD_DIR=
-ROCM_DBGAPI_LD_DIR=
 ROCM_TRACER_LD_DIR=
 ROCM_PROFILER_LD_DIR=
 ROCM_HSA_LD_DIR=
 
+ROCM_HIP_INC_MESG=
 ROCM_HIP_MESG=
-ROCM_DBGAPI_MESG=
+
+ROCM_TRACER_INC_MESG=
 ROCM_TRACER_MESG=
+
+ROCM_PROFILER_INC_MESG=
 ROCM_PROFILER_MESG=
+
+ROCM_HSA_INC_MESG=
 ROCM_HSA_MESG=
 
 require_rocm=no
@@ -5298,11 +5298,17 @@ case "$ROCM" in
     require_rocm=yes
     found=no
 
+    # ROCM
+    if test -f "$ROCM/include/rocm_version.h" ; then
+      AC_MSG_NOTICE([found $ROCM/rocm_version.h])
+      ROCM_IFLAGS="-I$ROCM/include"
+      ROCM_MESG="$ROCM"
+    fi
+
     # HIP
-    if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
-      AC_MSG_NOTICE([found $ROCM/hip/include/hip/hip_runtime.h])
-      ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
-      ROCM_HIP_MESG="$ROCM/hip"
+    if test -f "$ROCM/include/hip/hip_runtime.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/hip/hip_runtime.h])
+      ROCM_HIP_INC_MESG="$ROCM/hip"
       found=yes
     fi
     if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
@@ -5312,25 +5318,11 @@ case "$ROCM" in
       found=yes
     fi
 
-    # AMD-DBGAPI
-    if test -f "$ROCM/include/amd-dbgapi.h" ; then
-      AC_MSG_NOTICE([found $ROCM/include/amd-dbgapi.h])
-      ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
-      ROCM_DBGAPI_MESG="$ROCM"
-      found=yes
-    fi
-    if test -f "$ROCM/lib/librocm-dbgapi.so" ; then
-      AC_MSG_NOTICE([found $ROCM/lib/librocm-dbgapi.so])
-      ROCM_DBGAPI_LD_DIR="$ROCM/lib"
-      ROCM_DBGAPI_MESG="$ROCM"
-      found=yes
-    fi
-
     # ROCTRACER
-    if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
-      AC_MSG_NOTICE([found $ROCM/roctracer/include/roctracer_hip.h])
-      ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
-      ROCM_TRACER_MESG="$ROCM/roctracer"
+    if test -f "$ROCM/include/roctracer/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/roctracer/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM/include/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM/roctracer"
       found=yes
     fi
     if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
@@ -5341,10 +5333,9 @@ case "$ROCM" in
     fi
 
     # ROCPROFILER
-    if test -f "$ROCM/rocprofiler/include/rocprofiler.h" ; then
-      AC_MSG_NOTICE([found $ROCM/rocprofiler/include/rocprofiler.h])
-      ROCM_PROFILER_IFLAGS="-I$ROCM/rocprofiler/include"
-      ROCM_PROFILER_MESG="$ROCM/rocprofiler"
+    if test -f "$ROCM/include/rocprofiler/rocprofiler.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/rocprofiler/rocprofiler.h])
+      ROCM_PROFILER_INC_MESG="$ROCM/rocprofiler"
       found=yes
     fi
     if test -f "$ROCM/rocprofiler/lib/librocprofiler64.so" ; then
@@ -5355,10 +5346,10 @@ case "$ROCM" in
     fi
 
     # HSA
-    if test -f "$ROCM/hsa/include/hsa/hsa.h" ; then
-      AC_MSG_NOTICE([found $ROCM/hsa/include/hsa/hsa.h])
-      ROCM_HSA_IFLAGS="-I$ROCM/hsa/include/hsa"
-      ROCM_HSA_MESG="$ROCM/hsa"
+    if test -f "$ROCM/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM/include/hsa"
+      ROCM_HSA_INC_MESG="$ROCM/hsa"
       found=yes
     fi
     if test -f "$ROCM/hsa/lib/libhsa-runtime64.so" ; then
@@ -5389,7 +5380,7 @@ case "$ROCM_HIP" in
     if test -f "$ROCM_HIP/include/hip/hip_runtime.h" ; then
       AC_MSG_NOTICE([found $ROCM_HIP/include/hip/hip_runtime.h])
       ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
-      ROCM_HIP_MESG="$ROCM_HIP"
+      ROCM_HIP_INC_MESG="$ROCM_HIP"
       found=yes
     fi
     if test -f "$ROCM_HIP/lib/libamdhip64.so" ; then
@@ -5407,32 +5398,6 @@ case "$ROCM_HIP" in
     ;;
 esac
 
-case "$ROCM_DBGAPI" in
-  /* )
-    require_rocm=yes
-    found=no
-
-    if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
-      AC_MSG_NOTICE([found $ROCM_DBGAPI/include/amd-dbgapi.h])
-      ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
-      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
-      found=yes
-    fi
-    if test -f "$ROCM_DBGAPI/lib/librocm-dbgapi.so" ; then
-      AC_MSG_NOTICE([found $ROCM_DBGAPI/lib/librocm-dbgapi.so])
-      ROCM_DBGAPI_LD_DIR="$ROCM_DBGAPI/lib"
-      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
-      found=yes
-    fi
-    if test "$found" = no ; then
-      AC_MSG_WARN([found nothing useful in $ROCM_DBGAPI])
-    fi
-    ;;
-  * )
-    ROCM_DBGAPI=no
-    ;;
-esac
-
 case "$ROCM_TRACER" in
   /* )
     require_rocm=yes
@@ -5441,7 +5406,7 @@ case "$ROCM_TRACER" in
     if test -f "$ROCM_TRACER/roctracer/include/roctracer_hip.h" ; then
       AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/include/roctracer_hip.h])
       ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
-      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM_TRACER/roctracer"
       found=yes
     fi
     if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
@@ -5464,16 +5429,16 @@ case "$ROCM_PROFILER" in
     require_rocm=yes
     found=no
 
-    if test -f "$ROCM_PROFILER/rocprofiler/include/rocprofiler.h" ; then
-      AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/include/rocprofiler.h])
-      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/rocprofiler/include"
-      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+    if test -f "$ROCM_PROFILER/include/rocprofiler/rocprofiler.h" ; then
+      AC_MSG_NOTICE([found $ROCM_PROFILER/include/rocprofiler/rocprofiler.h])
+      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/include"
+      ROCM_PROFILER_INC_MESG="$ROCM_PROFILER"
       found=yes
     fi
     if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
-      AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so])
-      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
-      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      AC_MSG_NOTICE([found $ROCM_PROFILER/lib/librocprofiler64.so])
+      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/lib"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi
     if test "$found" = no ; then
@@ -5493,7 +5458,7 @@ case "$ROCM_HSA" in
     if test -f "$ROCM_HSA/include/hsa/hsa.h" ; then
       AC_MSG_NOTICE([found $ROCM_HSA/include/hsa/hsa.h])
       ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
-      ROCM_HSA_MESG="$ROCM_HSA"
+      ROCM_HSA_INC_MESG="$ROCM_HSA"
       found=yes
     fi
     if test -f "$ROCM_HSA/lib/libhsa-runtime64.so" ; then
@@ -5518,27 +5483,21 @@ OPT_HAVE_ROCM=no
 
 if test "$require_rocm" = yes
 then
-  if test "x$ROCM_HIP_IFLAGS" = x ; then
+  if test "x$ROCM_HIP_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find hip_runtime.h])
   fi
-  if test "x$ROCM_DBGAPI_IFLAGS" = x ; then
-    AC_MSG_ERROR([unable to find amd-dbgapi.h])
-  fi
-  if test "x$ROCM_TRACER_IFLAGS" = x ; then
+  if test "x$ROCM_TRACER_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find roctracer_hip.h])
   fi
-  if test "x$ROCM_PROFILER_IFLAGS" = x ; then
+  if test "x$ROCM_PROFILER_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find rocprofiler.h])
   fi
-  if test "x$ROCM_HSA_IFLAGS" = x ; then
+  if test "x$ROCM_HSA_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find hsa.h])
   fi
 
   if test "x$ROCM_HIP_LD_DIR" = x ; then
     AC_MSG_ERROR([unable to find libamdhip64.so])
-  fi
-  if test "x$ROCM_DBGAPI_LD_DIR" = x ; then
-    AC_MSG_ERROR([unable to find librocm-dbgapi.so])
   fi
   if test "x$ROCM_TRACER_LD_DIR" = x ; then
     AC_MSG_ERROR([unable to find libroctracer64.so])
@@ -5551,8 +5510,8 @@ then
   fi
 
   OPT_HAVE_ROCM=yes
-  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS"
-  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS $ROCM_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
 fi
 
 #
@@ -5994,7 +5953,6 @@ AC_MSG_NOTICE([  papi-c-rocm: ${use_papi_c_rocm}])
 AC_MSG_NOTICE([  rocm:         ${rocm_mesg}])
 if test "$OPT_HAVE_ROCM" = yes ; then
   AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])
-  AC_MSG_NOTICE([  rocm dbgapi:  $ROCM_DBGAPI_MESG])
   AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
   AC_MSG_NOTICE([  rocm profiler:$ROCM_PROFILER_MESG])
   AC_MSG_NOTICE([  rocm hsa:     $ROCM_HSA_MESG])
