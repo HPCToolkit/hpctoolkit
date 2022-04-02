@@ -49,8 +49,8 @@
 #include "rocm-binary-processing.h"
 
 #include <roctracer_hip.h>
-#include <rocprofiler.h>
-#include <activity.h>
+#include <rocprofiler/rocprofiler.h>
+#include <rocprofiler/activity.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>

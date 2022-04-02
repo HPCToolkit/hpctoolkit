@@ -1080,7 +1080,6 @@ with_metrics_discovery
 with_gtpin
 with_rocm
 with_rocm_hip
-with_rocm_dbgapi
 with_rocm_tracer
 with_rocm_profiler
 with_rocm_hsa
@@ -1839,13 +1838,12 @@ Optional Packages:
   --with-metrics-discovery=PATH
                           path to metrics-discovery install directory
   --with-gtpin=PATH       path to gtpin install directory
-  --with-rocm=PATH        path to full ROCM + HIP install directory
+  --with-rocm=PATH        path to full ROCM install directory
   --with-rocm-hip=PATH    path to hip install directory
-  --with-rocm-dbgapi=PATH path to rocm-dbgapi install directory
   --with-rocm-tracer=PATH path to roctracer-dev install directory
   --with-rocm-profiler=PATH
                           path to rocprofiler-dev install directory
-  --with-rocm-hsa=PATH    path to hsa-dev install directory
+  --with-rocm-hsa=PATH    path to hsa-rocr-dev install directory
   --with-level0=PATH      use given Level Zero installation (absolute path)
                           with hpcrun (default is NO)
   --with-valgrind=PATH    path to Valgrind install directory
@@ -24473,16 +24471,16 @@ $as_echo "$GTPIN" >&6; }
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
-# Can specify ROCM with all-in-one ROCM + HIP directory (normally
-# /opt/rocm), or with spack packages: hip, rocm-dbgapi, roctracer-dev,
-# or partially with /opt/rocm plus a subset of spack packages.
+# Can specify ROCM with all-in-one ROCM directory (normally
+# /opt/rocm), or with spack packages: hip, roctracer-dev,
+# rocprofiler-dev, and hsa-rocr-dev or partially with
+# /opt/rocm plus a subset of spack packages.
 #
 # Note: may use both --with-rocm plus specific rocm package(s).
 # In this case, the specific overrides the general.
 
 ROCM=
 ROCM_HIP=
-ROCM_DBGAPI=
 ROCM_TRACER=
 ROCM_PROFILER=
 ROCM_HSA=
@@ -24498,13 +24496,6 @@ fi
 # Check whether --with-rocm-hip was given.
 if test "${with_rocm_hip+set}" = set; then :
   withval=$with_rocm_hip; ROCM_HIP="$withval"
-fi
-
-
-
-# Check whether --with-rocm-dbgapi was given.
-if test "${with_rocm_dbgapi+set}" = set; then :
-  withval=$with_rocm_dbgapi; ROCM_DBGAPI="$withval"
 fi
 
 
@@ -24531,22 +24522,27 @@ fi
 
 
 
+ROCM_IFLAGS=
 ROCM_HIP_IFLAGS=
-ROCM_DBGAPI_IFLAGS=
 ROCM_TRACER_IFLAGS=
 ROCM_PROFILER_IFLAGS=
 ROCM_HSA_IFLAGS=
 
 ROCM_HIP_LD_DIR=
-ROCM_DBGAPI_LD_DIR=
 ROCM_TRACER_LD_DIR=
 ROCM_PROFILER_LD_DIR=
 ROCM_HSA_LD_DIR=
 
+ROCM_HIP_INC_MESG=
 ROCM_HIP_MESG=
-ROCM_DBGAPI_MESG=
+
+ROCM_TRACER_INC_MESG=
 ROCM_TRACER_MESG=
+
+ROCM_PROFILER_INC_MESG=
 ROCM_PROFILER_MESG=
+
+ROCM_HSA_INC_MESG=
 ROCM_HSA_MESG=
 
 require_rocm=no
@@ -24562,12 +24558,19 @@ case "$ROCM" in
     require_rocm=yes
     found=no
 
+    # ROCM
+    if test -f "$ROCM/include/rocm_version.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/rocm_version.h" >&5
+$as_echo "$as_me: found $ROCM/rocm_version.h" >&6;}
+      ROCM_IFLAGS="-I$ROCM/include"
+      ROCM_MESG="$ROCM"
+    fi
+
     # HIP
-    if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hip/include/hip/hip_runtime.h" >&5
-$as_echo "$as_me: found $ROCM/hip/include/hip/hip_runtime.h" >&6;}
-      ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
-      ROCM_HIP_MESG="$ROCM/hip"
+    if test -f "$ROCM/include/hip/hip_runtime.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/hip/hip_runtime.h" >&5
+$as_echo "$as_me: found $ROCM/include/hip/hip_runtime.h" >&6;}
+      ROCM_HIP_INC_MESG="$ROCM/hip"
       found=yes
     fi
     if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
@@ -24578,28 +24581,12 @@ $as_echo "$as_me: found $ROCM/hip/lib/libamdhip64.so" >&6;}
       found=yes
     fi
 
-    # AMD-DBGAPI
-    if test -f "$ROCM/include/amd-dbgapi.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/amd-dbgapi.h" >&5
-$as_echo "$as_me: found $ROCM/include/amd-dbgapi.h" >&6;}
-      ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
-      ROCM_DBGAPI_MESG="$ROCM"
-      found=yes
-    fi
-    if test -f "$ROCM/lib/librocm-dbgapi.so" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/lib/librocm-dbgapi.so" >&5
-$as_echo "$as_me: found $ROCM/lib/librocm-dbgapi.so" >&6;}
-      ROCM_DBGAPI_LD_DIR="$ROCM/lib"
-      ROCM_DBGAPI_MESG="$ROCM"
-      found=yes
-    fi
-
     # ROCTRACER
-    if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/roctracer/include/roctracer_hip.h" >&5
-$as_echo "$as_me: found $ROCM/roctracer/include/roctracer_hip.h" >&6;}
-      ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
-      ROCM_TRACER_MESG="$ROCM/roctracer"
+    if test -f "$ROCM/include/roctracer/roctracer_hip.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/roctracer/roctracer_hip.h" >&5
+$as_echo "$as_me: found $ROCM/include/roctracer/roctracer_hip.h" >&6;}
+      ROCM_TRACER_IFLAGS="-I$ROCM/include/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM/roctracer"
       found=yes
     fi
     if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
@@ -24611,11 +24598,10 @@ $as_echo "$as_me: found $ROCM/roctracer/lib/libroctracer64.so" >&6;}
     fi
 
     # ROCPROFILER
-    if test -f "$ROCM/rocprofiler/include/rocprofiler.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/rocprofiler/include/rocprofiler.h" >&5
-$as_echo "$as_me: found $ROCM/rocprofiler/include/rocprofiler.h" >&6;}
-      ROCM_PROFILER_IFLAGS="-I$ROCM/rocprofiler/include"
-      ROCM_PROFILER_MESG="$ROCM/rocprofiler"
+    if test -f "$ROCM/include/rocprofiler/rocprofiler.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/rocprofiler/rocprofiler.h" >&5
+$as_echo "$as_me: found $ROCM/include/rocprofiler/rocprofiler.h" >&6;}
+      ROCM_PROFILER_INC_MESG="$ROCM/rocprofiler"
       found=yes
     fi
     if test -f "$ROCM/rocprofiler/lib/librocprofiler64.so" ; then
@@ -24627,11 +24613,11 @@ $as_echo "$as_me: found $ROCM/rocprofiler/lib/librocprofiler64.so" >&6;}
     fi
 
     # HSA
-    if test -f "$ROCM/hsa/include/hsa/hsa.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hsa/include/hsa/hsa.h" >&5
-$as_echo "$as_me: found $ROCM/hsa/include/hsa/hsa.h" >&6;}
-      ROCM_HSA_IFLAGS="-I$ROCM/hsa/include/hsa"
-      ROCM_HSA_MESG="$ROCM/hsa"
+    if test -f "$ROCM/include/hsa/hsa.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/hsa/hsa.h" >&5
+$as_echo "$as_me: found $ROCM/include/hsa/hsa.h" >&6;}
+      ROCM_HSA_IFLAGS="-I$ROCM/include/hsa"
+      ROCM_HSA_INC_MESG="$ROCM/hsa"
       found=yes
     fi
     if test -f "$ROCM/hsa/lib/libhsa-runtime64.so" ; then
@@ -24665,7 +24651,7 @@ case "$ROCM_HIP" in
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HIP/include/hip/hip_runtime.h" >&5
 $as_echo "$as_me: found $ROCM_HIP/include/hip/hip_runtime.h" >&6;}
       ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
-      ROCM_HIP_MESG="$ROCM_HIP"
+      ROCM_HIP_INC_MESG="$ROCM_HIP"
       found=yes
     fi
     if test -f "$ROCM_HIP/lib/libamdhip64.so" ; then
@@ -24685,35 +24671,6 @@ $as_echo "$as_me: WARNING: found nothing useful in $ROCM_HIP" >&2;}
     ;;
 esac
 
-case "$ROCM_DBGAPI" in
-  /* )
-    require_rocm=yes
-    found=no
-
-    if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_DBGAPI/include/amd-dbgapi.h" >&5
-$as_echo "$as_me: found $ROCM_DBGAPI/include/amd-dbgapi.h" >&6;}
-      ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
-      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
-      found=yes
-    fi
-    if test -f "$ROCM_DBGAPI/lib/librocm-dbgapi.so" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_DBGAPI/lib/librocm-dbgapi.so" >&5
-$as_echo "$as_me: found $ROCM_DBGAPI/lib/librocm-dbgapi.so" >&6;}
-      ROCM_DBGAPI_LD_DIR="$ROCM_DBGAPI/lib"
-      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
-      found=yes
-    fi
-    if test "$found" = no ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_DBGAPI" >&5
-$as_echo "$as_me: WARNING: found nothing useful in $ROCM_DBGAPI" >&2;}
-    fi
-    ;;
-  * )
-    ROCM_DBGAPI=no
-    ;;
-esac
-
 case "$ROCM_TRACER" in
   /* )
     require_rocm=yes
@@ -24723,7 +24680,7 @@ case "$ROCM_TRACER" in
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_TRACER/roctracer/include/roctracer_hip.h" >&5
 $as_echo "$as_me: found $ROCM_TRACER/roctracer/include/roctracer_hip.h" >&6;}
       ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
-      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM_TRACER/roctracer"
       found=yes
     fi
     if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
@@ -24748,18 +24705,18 @@ case "$ROCM_PROFILER" in
     require_rocm=yes
     found=no
 
-    if test -f "$ROCM_PROFILER/rocprofiler/include/rocprofiler.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_PROFILER/rocprofiler/include/rocprofiler.h" >&5
-$as_echo "$as_me: found $ROCM_PROFILER/rocprofiler/include/rocprofiler.h" >&6;}
-      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/rocprofiler/include"
-      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+    if test -f "$ROCM_PROFILER/include/rocprofiler/rocprofiler.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_PROFILER/include/rocprofiler/rocprofiler.h" >&5
+$as_echo "$as_me: found $ROCM_PROFILER/include/rocprofiler/rocprofiler.h" >&6;}
+      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/include"
+      ROCM_PROFILER_INC_MESG="$ROCM_PROFILER"
       found=yes
     fi
     if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" >&5
 $as_echo "$as_me: found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" >&6;}
       ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
-      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi
     if test "$found" = no ; then
@@ -24781,7 +24738,7 @@ case "$ROCM_HSA" in
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HSA/include/hsa/hsa.h" >&5
 $as_echo "$as_me: found $ROCM_HSA/include/hsa/hsa.h" >&6;}
       ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
-      ROCM_HSA_MESG="$ROCM_HSA"
+      ROCM_HSA_INC_MESG="$ROCM_HSA"
       found=yes
     fi
     if test -f "$ROCM_HSA/lib/libhsa-runtime64.so" ; then
@@ -24808,27 +24765,21 @@ OPT_HAVE_ROCM=no
 
 if test "$require_rocm" = yes
 then
-  if test "x$ROCM_HIP_IFLAGS" = x ; then
+  if test "x$ROCM_HIP_INC_MESG" = x ; then
     as_fn_error $? "unable to find hip_runtime.h" "$LINENO" 5
   fi
-  if test "x$ROCM_DBGAPI_IFLAGS" = x ; then
-    as_fn_error $? "unable to find amd-dbgapi.h" "$LINENO" 5
-  fi
-  if test "x$ROCM_TRACER_IFLAGS" = x ; then
+  if test "x$ROCM_TRACER_INC_MESG" = x ; then
     as_fn_error $? "unable to find roctracer_hip.h" "$LINENO" 5
   fi
-  if test "x$ROCM_PROFILER_IFLAGS" = x ; then
+  if test "x$ROCM_PROFILER_INC_MESG" = x ; then
     as_fn_error $? "unable to find rocprofiler.h" "$LINENO" 5
   fi
-  if test "x$ROCM_HSA_IFLAGS" = x ; then
+  if test "x$ROCM_HSA_INC_MESG" = x ; then
     as_fn_error $? "unable to find hsa.h" "$LINENO" 5
   fi
 
   if test "x$ROCM_HIP_LD_DIR" = x ; then
     as_fn_error $? "unable to find libamdhip64.so" "$LINENO" 5
-  fi
-  if test "x$ROCM_DBGAPI_LD_DIR" = x ; then
-    as_fn_error $? "unable to find librocm-dbgapi.so" "$LINENO" 5
   fi
   if test "x$ROCM_TRACER_LD_DIR" = x ; then
     as_fn_error $? "unable to find libroctracer64.so" "$LINENO" 5
@@ -24841,8 +24792,8 @@ then
   fi
 
   OPT_HAVE_ROCM=yes
-  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS"
-  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS $ROCM_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
 fi
 
 #
@@ -28247,8 +28198,6 @@ $as_echo "$as_me:   rocm:         ${rocm_mesg}" >&6;}
 if test "$OPT_HAVE_ROCM" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hip:     $ROCM_HIP_MESG" >&5
 $as_echo "$as_me:   rocm hip:     $ROCM_HIP_MESG" >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm dbgapi:  $ROCM_DBGAPI_MESG" >&5
-$as_echo "$as_me:   rocm dbgapi:  $ROCM_DBGAPI_MESG" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm tracer:  $ROCM_TRACER_MESG" >&5
 $as_echo "$as_me:   rocm tracer:  $ROCM_TRACER_MESG" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm profiler:$ROCM_PROFILER_MESG" >&5
