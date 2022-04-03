@@ -475,7 +475,7 @@ extern int
 hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* infs, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_loadmap_fwrite(loadmap_t* loadmap, FILE* outfs);
+hpcrun_fmt_loadmap_fwrite(loadmap_t* loadmap, hpctio_obj_t* outfobj);
 
 extern int
 hpcrun_fmt_loadmap_fprint(loadmap_t* loadmap, FILE* outfs);

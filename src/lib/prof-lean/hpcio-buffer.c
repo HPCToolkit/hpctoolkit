@@ -86,6 +86,9 @@
 //*************************** User Include Files ****************************
 
 #include "hpcfmt.h"
+#include "hpcfmt2.h"
+#include "hpctio.h"
+#include "hpctio_obj.h"
 #include "hpcio-buffer.h"
 #include "spinlock.h"
 #include <include/min-max.h>
@@ -104,7 +107,7 @@ typedef struct hpcio_outbuf_s {
   void  *buf_start;
   size_t buf_size;
   size_t in_use;
-  int  fd;
+  hpctio_obj_t * fobj;
   int  flags;
   char use_lock;
   spinlock_t lock;
@@ -180,8 +183,7 @@ outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
   amt_done = 0;
   while (amt_done < outbuf->in_use) {
     errno = 0;
-    ret = write(outbuf->fd, outbuf->buf_start + amt_done,
-		outbuf->in_use - amt_done);
+    ret = hpctio_obj_append(outbuf->buf_start + amt_done, 1, outbuf->in_use - amt_done, outbuf->fobj);
 
     // Check for short writes.  Note: EINTR is not failure.
     if (ret > 0 || (ret == 0 && errno == EINTR)) {
@@ -220,7 +222,7 @@ int
 hpcio_outbuf_attach
 (
   hpcio_outbuf_t **outbuf_ptr /* out */, 
-  int fd,
+  hpctio_obj_t * fobj,
   void *buf_start, 
   size_t buf_size, 
   int flags,
@@ -229,7 +231,7 @@ hpcio_outbuf_attach
 {
   // Attach fills in the outbuf struct, so there is no magic number
   // and locks don't exist.
-  if (outbuf_ptr == NULL || fd < 0 || buf_start == NULL || buf_size == 0) {
+  if (outbuf_ptr == NULL || fobj == NULL || buf_start == NULL || buf_size == 0) {
     return HPCFMT_ERR;
   }
 
@@ -240,7 +242,7 @@ hpcio_outbuf_attach
   outbuf->buf_start = buf_start;
   outbuf->buf_size = buf_size;
   outbuf->in_use = 0;
-  outbuf->fd = fd;
+  outbuf->fobj = fobj;
   outbuf->flags = flags;
   outbuf->use_lock = (flags & HPCIO_OUTBUF_LOCKED);
   spinlock_unlock(&outbuf->lock);
@@ -336,10 +338,10 @@ hpcio_outbuf_close(hpcio_outbuf_t **outbuf_ptr)
   }
 
   if (outbuf_flush_buffer(outbuf) == HPCFMT_OK
-      && close(outbuf->fd) == 0) {
+      && hpctio_obj_close(outbuf->fobj) == 0) {
     // flush and close both succeed
     outbuf->magic = 0;
-    outbuf->fd = -1;
+    outbuf->fobj = NULL;
   }
   else {
     ret = HPCFMT_ERR;

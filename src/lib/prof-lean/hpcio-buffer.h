@@ -52,6 +52,9 @@
 #include <stdio.h>
 
 #include "allocator.h"
+#include "hpcfmt2.h"
+#include "hpctio.h"
+#include "hpctio_obj.h"
 
 // opaque type
 
@@ -72,7 +75,7 @@ int
 hpcio_outbuf_attach
 (
   hpcio_outbuf_t **outbuf /* out */, 
-  int fd,
+  hpctio_obj_t * fobj,
   void *buf_start, 
   size_t buf_size, 
   int flags,

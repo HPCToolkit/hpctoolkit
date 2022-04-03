@@ -535,12 +535,12 @@ hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* fs, hpcfmt_alloc_fn alloc)
 
 
 int
-hpcrun_fmt_loadmap_fwrite(loadmap_t* loadmap, FILE* fs)
+hpcrun_fmt_loadmap_fwrite(loadmap_t* loadmap, hpctio_obj_t* fobj)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(loadmap->len, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite2(loadmap->len, fobj));
   for (uint32_t i = 0; i < loadmap->len; i++) {
     loadmap_entry_t* e = &loadmap->lst[i];
-    HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fwrite(e, fs));
+    HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fwrite(e, fobj));
   }
 
   return HPCFMT_OK;

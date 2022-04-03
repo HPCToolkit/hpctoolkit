@@ -74,9 +74,13 @@
 #include <messages/messages.h>
 
 #include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcfmt2.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/hpcio2.h>
 #include <lib/prof-lean/hpcio-buffer.h>
+#include <lib/prof-lean/hpctio.h>
+#include <lib/prof-lean/hpctio_obj.h>
 
 //*********************************************************************
 // local macros
@@ -141,16 +145,17 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
   if (tracing && hpcrun_sample_prob_active()) {
 	
     TMSG(TRACE, "Hit active portion");
-    int fd, ret;
+    int ret;
+    hpctio_obj_t * fobj;
 
     // I think unlocked is ok here (we don't overlap any system
     // locks).  At any rate, locks only protect against threads, they
     // don't help with signal handlers (that's much harder).
-    fd = hpcrun_open_trace_file(cptd->id);
-    hpcrun_trace_file_validate(fd >= 0, "open");
+    fobj = hpcrun_open_trace_file(cptd->id);
+    hpcrun_trace_file_validate(fobj != NULL, "open");
     cptd->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
 
-    ret = hpcio_outbuf_attach(&cptd->trace_outbuf, fd, cptd->trace_buffer,
+    ret = hpcio_outbuf_attach(&cptd->trace_outbuf, fobj, cptd->trace_buffer,
 			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED, hpcrun_malloc);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
