@@ -716,7 +716,7 @@ void
 hpcrun_save_vdso()
 {
   char name[PATH_MAX + 1];
-  int fd;
+  hpctio_obj_t * fobj;
   int error = 0;
 
   // don't try to write vdso file if measurement is disabled
@@ -743,39 +743,39 @@ hpcrun_save_vdso()
   for (i = 0; i < hash_len; ++i) {
     sprintf(&vdso_hash_str[i*2], "%02x", hash[i]);
   }
-  if (strlen(output_directory) + 6 + hash_len * 2 + 5 > PATH_MAX) {
-    fd = -1;
+  if (strlen(output_dir) + 6 + hash_len * 2 + 5 >= PATH_MAX) {
+    fobj = NULL;
     error = ENAMETOOLONG;
     hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
     return;
   }
-  strcpy(name, output_directory);
+  strcpy(name, output_dir);
   strcat(name, "/vdso/");
-  mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  hpctio_sys_mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH, output_sys);
   strcat(name, vdso_hash_str);
   strcat(name, ".vdso");
 
   // loop enables us to use break for unstructured control flow
   for(;;) {
     errno = 0;
-    fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+    fobj = hpctio_obj_open(name, O_WRONLY | O_CREAT | O_EXCL, 0644, HPCTIO_WRITAPPEND, output_sys);
     if (errno == EEXIST) {
       // another process already wrote [vdso]
       set_saved_vdso_path(name);
       return;
     }
-    if (fd >= 0) {
+    if (fobj != NULL) {
       // my process is the designated writer of [vdso]
 
-      if (write(fd, vdso_addr, vdso_len) != vdso_len) {
+      if (hpctio_obj_append(vdso_addr, 1, vdso_len, fobj) != vdso_len) {
 	// write error; attempt to close file and
         // jump to error reporting. no checking on close
         // necessary. we are reporting an error anyway
         error = errno;
-        close(fd);
+        hpctio_obj_close(fobj);
         break;
       }
-      if (close(fd) == 0) {
+      if (hpctio_obj_close(fobj) == 0) {
         set_saved_vdso_path(name);
         return;
       }
