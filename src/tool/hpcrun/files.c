@@ -596,16 +596,16 @@ hpcrun_files_set_executable(const char *execname)
 }
 
 
-// Returns: file descriptor for log file.
-int
+// Returns: file object for log file.
+hpctio_obj_t *
 hpcrun_open_log_file(void)
 {
-  int ret;
+  hpctio_obj_t * ret;
 
   spinlock_lock(&files_lock);
   hpcrun_files_init();
-  ret = hpcrun_open_file(0, 0, HPCRUN_LogFnmSfx, FILES_EARLY);
-  if (ret >= 0) {
+  ret = hpcrun_open_file2(0, 0, HPCRUN_LogFnmSfx, FILES_EARLY);
+  if (ret != NULL) {
     log_done = 1;
   }
   spinlock_unlock(&files_lock);
@@ -614,7 +614,7 @@ hpcrun_open_log_file(void)
 }
 
 
-// Returns: file descriptor for trace file.
+// Returns: file object for trace file.
 hpctio_obj_t *
 hpcrun_open_trace_file(int thread)
 {
@@ -633,7 +633,7 @@ hpcrun_open_trace_file(int thread)
   return ret;
 }
 
-// Returns: file descriptor for profile (hpcrun) file.
+// Returns: file object for profile (hpcrun) file.
 hpctio_obj_t *
 hpcrun_open_profile_file(int rank, int thread)
 {
@@ -684,7 +684,7 @@ int
 hpcrun_rename_log_file(int rank)
 {
   spinlock_lock(&files_lock);
-  hpcrun_rename_log_file_early(rank);
+  hpcrun_rename_log_file_early2(rank);
   spinlock_unlock(&files_lock);
 
   return log_rename_ret;

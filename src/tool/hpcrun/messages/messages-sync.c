@@ -119,8 +119,7 @@ static int global_msg_count = 0;
 //-------------------------------------
 static int const threshold = 500;
 
-static int log_file_fd = STDERR_FD;
-
+static hpctio_obj_t * log_file_fobj = NULL;
 
 //*****************************************************************************
 // forward declarations 
@@ -139,7 +138,7 @@ messages_init()
 
   spinlock_init(&pmsg_lock); // initialize lock for async operations
 
-  log_file_fd = STDERR_FD;      // std unix stderr
+  log_file_fobj = NULL;
 }
 
 
@@ -151,15 +150,14 @@ messages_logfile_create()
   // open log file
   if (getenv("HPCRUN_LOG_STDERR") != NULL) {
     // HPCRUN_LOG_STDERR variable set ==> log goes to stderr
-    log_file_fd = STDERR_FD;
+    log_file_fobj = NULL;
   }
   else {
     // Normal case of opening .log file.
-    log_file_fd = hpcrun_open_log_file();
+    log_file_fobj = hpcrun_open_log_file();
   }
-  if (log_file_fd == -1) {
-    log_file_fd = STDERR_FD; // cannot open log_file ==> revert to stderr
-  }
+  
+
 }
 
 
@@ -168,8 +166,8 @@ messages_fini(void)
 {
   if (hpcrun_get_disabled()) return;
 
-  if (log_file_fd != STDERR_FD) {
-    int rv = close(log_file_fd);
+  if (log_file_fobj != NULL) {
+    int rv = hpctio_obj_close(log_file_fobj);
     if (rv) {
       char executable[PATH_MAX];
       char *exec = realpath("/proc/self/exe", executable);
@@ -217,7 +215,7 @@ hpcrun_abort_w_info(void (*info)(void), const char *fmt, ...)
 
   va_list_box box;
 
-  if (log_file_fd != STDERR_FD) {
+  if (log_file_fobj != NULL) {
     va_list_box_start(box, fmt);
     hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
   }
@@ -249,7 +247,7 @@ hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
   write(STDERR_FD, buf, strlen(buf));
   va_list_box_end(box);
 
-  if (copy_to_log && log_file_fd != STDERR_FD){
+  if (copy_to_log && log_file_fobj != NULL){
     va_list_box_start(box, fmt);
     hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
   }
@@ -262,10 +260,10 @@ messages_donothing(void)
 }
 
 
-int
-messages_logfile_fd(void)
+hpctio_obj_t *
+messages_logfile_fobj(void)
 {
-  return log_file_fd;
+  return log_file_fobj;
 }
 
 

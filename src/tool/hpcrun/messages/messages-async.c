@@ -237,9 +237,9 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id,
 
   spinlock_lock(&pmsg_lock);
 
-  // use write to logfile file descriptor, instead of fprintf stuff
+  // use write to logfile file object, instead of fprintf stuff
   //
-  write(messages_logfile_fd(), buf, strlen(buf));
+  hpctio_obj_append(buf, 1, strlen(buf), messages_logfile_fobj());
   msgs_out++;
 
   spinlock_unlock(&pmsg_lock);

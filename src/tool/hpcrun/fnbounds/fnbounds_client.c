@@ -397,12 +397,12 @@ hpcfnbounds_grandchild(void* fds_vp)
   auditor_exports->close(fds->recvfd[0]);
 
   // dup the hpcrun log file fd onto stdout and stderr.
-  if (dup2(messages_logfile_fd(), 1) < 0) {
-    warn("dup of log fd onto stdout failed");
-  }
-  if (dup2(messages_logfile_fd(), 2) < 0) {
-    warn("dup of log fd onto stderr failed");
-  }
+  // if (dup2(messages_logfile_fobj(), 1) < 0) {
+  //   warn("dup of log fd onto stdout failed");
+  // }
+  // if (dup2(messages_logfile_fobj(), 2) < 0) {
+  //   warn("dup of log fd onto stderr failed");
+  // }
 
   // make the command line and exec
   char *arglist[15];

@@ -61,6 +61,7 @@
 
 #include <messages/debug-flag.h>
 #include <messages/fmt.h>
+#include <lib/prof-lean/hpctio_obj.h>
 
 
 //*****************************************************************************
@@ -107,7 +108,7 @@ void messages_init();
 void messages_fini(void);
 
 void messages_logfile_create();
-int  messages_logfile_fd(void);
+hpctio_obj_t *  messages_logfile_fobj(void);
 
 void messages_donothing(void);
 
