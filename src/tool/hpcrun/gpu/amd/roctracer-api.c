@@ -504,6 +504,20 @@ roctracer_activity_process
  roctracer_record_t* roctracer_record
 )
 {
+  // As of April 4th, 2022, enabling rocprofiler
+  // causes roctracer to generate a dubious GPU kernel record.
+  // The dubious GPU kernel record has a very small start timestamp,
+  // causing a huge duration.
+  // We drop roctracer records when the user collects
+  // AMD GPU hardware counters.
+  //
+  // In rocm-5.1, rocprof does not collect HIP GPU traces and
+  // hardware counters at the same time. It is unclear whether
+  // this is a fundamental limitation of rocm or not.
+  //
+  // Therefore, at this point, it is safer to simply drop roctracer records
+  // when using rocprofiler
+  if (collect_counter) return;
   gpu_activity_t gpu_activity;
   roctracer_activity_translate(&gpu_activity, roctracer_record);
   if (gpu_correlation_id_map_lookup(roctracer_record->correlation_id) == NULL) {
