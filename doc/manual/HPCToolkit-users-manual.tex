@@ -1836,7 +1836,7 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
-\section{Launching \hpcviewer{} is very slow on Windows}
+\subsection{Launching \hpcviewer{} is very slow on Windows}
 
 There is a known issue that Windows Defender significantly slow down Java-based applications.
 See the github issue at \url{https://github.com/microsoft/java-wdb/issues/9}.
@@ -1855,11 +1855,11 @@ A temporary solution is to add \hpcviewer{} in the Windows' exclusion list:
 % ===========================================================================
 % ===========================================================================
 
-\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
+\subsection{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
 
-\hpcviewer{} has only been tested on Java 11. If you are running an older or newer version of Java than Java 11, obtain a version of Java 11 from \url{https://adoptopenjdk.net}.
+\hpcviewer{} has mainly been tested on Java 11 and 17. If you are running an older than Java 11 or newer than Java 17, obtain a version of Java 11 or newer from \url{https://adoptopenjdk.net} or \url{https://adoptium.net/}.
 
-If your system has multiple versions of Java and Java 11 is not the newest version, you need to set Java 11 as the default JVM:
+If your system has multiple versions of Java and Java 11 is not the newest version, you need to set Java 11 as the default JVM. On MacOS, you need to exclude older Java as follows:
 
 \begin{enumerate}
 \item Leave all JDKs at their default location (usually under \texttt{/Library/Java/JavaVirtualMachines}). The system will pick the highest version by default.
@@ -1875,14 +1875,16 @@ If you encounter this problem, we recommend that you edit the
 \texttt{hpcviewer.ini}
 file which is located in HPCToolkit installation directory to reduce the
 Java heap size.
-By default, the content of the file on \verb|ppc64le| is as follows:
+By default, the content of the file on Linux \verb|x86| is as follows:
 \begin{verbatim}
--consoleLog
+-startup
+plugins/org.eclipse.equinox.launcher_1.6.200.v20210416-2027.jar
+--launcher.library
+plugins/org.eclipse.equinox.launcher.gtk.linux.x86_64_1.2.200.v20210429-1609
 -clearPersistedState
 -vmargs
--Dosgi.locking=none
--Dosgi.requiredJavaVersion=1.8
 -Xmx2048m
+-Dosgi.locking=none
 \end{verbatim}
 You can decrease the maximum size of the Java heap from 2048MB to 1GB
  by changing the {\tt Xmx} specification in the \texttt{hpcviewer.ini} file as follows:
