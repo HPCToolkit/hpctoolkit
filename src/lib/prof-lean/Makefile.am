@@ -98,6 +98,7 @@ MYSOURCES = \
 	cskiplist.h cskiplist.c \
 	cpuset_hwthreads.h cpuset_hwthreads.c \
 	crypto-hash.h crypto-hash.c \
+	md5.h md5.c \
 	queues.h queues.c \
 	stacks.h stacks.c \
 	bistack.h bistack.c \
@@ -111,7 +112,7 @@ MYSOURCES = \
 	splay-uint64.h splay-uint64.c \
 	elf-helper.h elf-helper.c elf-hash.h elf-hash.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)  -I$(LIBELF_INC)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

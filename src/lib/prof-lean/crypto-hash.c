@@ -64,8 +64,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include <mbedtls/md5.h>  // MD5
-
+#include "md5.h"
 #include "crypto-hash.h"
 
 
@@ -112,6 +111,9 @@ crypto_hash_compute
   unsigned int hash_length
 )
 {
+  struct md5_context context;
+  struct md5_digest digest;
+
   if (hash_length > HASH_LENGTH) {
     // failure: caller not prepared to accept a hash of at least the length 
     // that we will provide
@@ -122,7 +124,11 @@ crypto_hash_compute
   memset(hash, 0, hash_length); 
 
   // compute an MD5 hash of input
-  mbedtls_md5(input, input_length, hash);
+  md5_init(&context);
+  md5_update(&context, input, (unsigned int) input_length);
+  md5_finalize(&context, &digest);
+
+  memcpy(hash, &digest, hash_length);
 
   return 0;
 }
@@ -197,51 +203,26 @@ crypto_hash_to_hexstring
 // unit test
 //******************************************************************************
 
-#if UNIT_TEST
+// To run the crypto/md5 unit test, change #if to 1 and compile as:
+//
+//   gcc -g -O crypto-hash.c md5.c -o hash
+//
+// Run as:  ./hash filename
+//
+// Results should match the output of /usr/bin/md5sum.
+//
 
-#include <stdio.h>
-#include <stdlib.h>
+#if 0
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-
-
-//-----------------------------------------------------------------------------
-// function: 
-//   crypto_hash_self_test
-//
-// arguments:
-//   verbose: if non-zero, it prints individual self test results
-//
-// return value:
-//   0: success
-//   non-zero: failure
-//-----------------------------------------------------------------------------
-int
-crypto_hash_self_test
-(
-  int verbose
-)
-{
-  int status = mbedtls_md5_self_test(verbose);
-  return status;
-}
-
 
 int
 main(int argc, char **argv)
 {
-  int verbose = 1;
-  int self_test_result = crypto_hash_self_test(verbose);
-
-  if (self_test_result) {
-     printf("%s crypto hash self test failed\n", argv[0]);
-     exit(-1);
-  } else {
-     printf("%s crypto hash self test succeeded\n", argv[0]);
-  }
-
   if (argc < 2) {
      printf("usage: %s <filename>\n", argv[0]);
      exit(-1);
@@ -288,9 +269,9 @@ main(int argc, char **argv)
 
   // compute ASCII version of hash and dump it
   crypto_hash_to_hexstring(hash, buffer, hash_strlen);
-  printf("hash string = %s\n", buffer);
+  printf("%s  (test) %s\n", buffer, filename);
 
   return 0;
 }
 
-#endif
+#endif  // end unit test
