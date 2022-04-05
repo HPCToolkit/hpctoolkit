@@ -129,6 +129,12 @@ gpu_context_stream_map_signal_all
  void
 );
 
+void
+gpu_set_cpu_gpu_timestamp
+(
+  uint64_t t1,
+  uint64_t t2
+);
 
 
 #endif
