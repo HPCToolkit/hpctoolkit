@@ -64,6 +64,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/gpu-context-id-map.h>
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -72,6 +73,8 @@
 
 
 #include "rocprofiler-api.h"
+
+#include "hsa/hsa.h"
 
 //******************************************************************************
 // macros
@@ -468,6 +471,12 @@ roctracer_subscriber_callback
 
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
+    uint64_t hsa_timestamp;
+    hsa_system_get_info(HSA_SYSTEM_INFO_TIMESTAMP, &hsa_timestamp);
+
+    // We align CPU & GPU timestamps
+    gpu_set_cpu_gpu_timestamp(cpu_submit_time, hsa_timestamp);
+
     //gpu_monitors_apply(api_node, gpu_monitor_type_enter);
 
     gpu_correlation_channel_produce_with_idx(ROCTRACER_CHANNEL_IDX, correlation_id, &gpu_op_ccts, cpu_submit_time);
