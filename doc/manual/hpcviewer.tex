@@ -734,7 +734,7 @@ Otherwise, the configuration will be applied only on the current view.
 \newcommand{\depthview}{Depth View}
 \newcommand{\summaryview}{Summary View}
 \newcommand{\miniview}{Mini Map View}
-\newcommand{\callview}{Call Path View}
+\newcommand{\callview}{Call Stack View}
 \newcommand{\statview}{Statistics View}
 
 
@@ -1044,11 +1044,17 @@ This menu displays information about the viewer. The menu contains only one menu
 Some important \hpcviewer{} limitations are listed below:
 \begin{itemize}
 
-\item \textbf{Experimental ARM platforms}.
-The ARM version of \hpcviewer{} is currently in beta release because the Eclipse Rich Client Platform does not officially support ARM platform.
-
 \item \textbf{Limited number of metric columns}.
 With a large number of metric columns, \hpcviewer{}'s response time may become sluggish as this requires a large amount of memory.
+
+\item \textbf{Experimental Windows 11 platform}.
+The Windows version of \hpcviewer{} is mainly tested on Windows 10. Support for Windows 11 is still experimental.
+
+\item \textbf{Dark theme on Linux platforms}.
+We received reports that \hpcviewer{} is not very visible on Linux with dark theme. Support for dark theme on Linux is still an ongoing work.
+
+\item \textbf{Linux TWM window manager is not supported}.
+Reason: this window manager is too ancient.
 
 %\item \textbf{Printing metrics}.
 %  \hpcviewer{} does not currently support printing metric values.
