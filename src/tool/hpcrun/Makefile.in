@@ -450,9 +450,8 @@ libagent_tbb_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(libagent_tbb_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
-am__DEPENDENCIES_1 =
 libhpcrun_la_DEPENDENCIES = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
-	$(am__DEPENDENCIES_1) $(OUR_LIBUNWIND_A) $(OUR_LZMA_A)
+	$(OUR_LIBUNWIND_A) $(OUR_LZMA_A)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -1296,6 +1295,7 @@ am_libhpcrun_o_OBJECTS = $(am__objects_58) $(am__objects_59) \
 	$(am__objects_75) $(am__objects_77) $(am__objects_36) \
 	$(am__objects_83) utilities/libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
+am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 @OPT_PAPI_STATIC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 @UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
@@ -1303,8 +1303,8 @@ libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
 @UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@	$(am__DEPENDENCIES_1)
 @UNW_LIBUNW_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 libhpcrun_o_DEPENDENCIES = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(OUR_LIBUNWIND_A) \
-	$(OUR_LZMA_A) $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
+	$(am__DEPENDENCIES_1) $(OUR_LIBUNWIND_A) $(OUR_LZMA_A) \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_4)
 libhpcrun_o_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_o_CFLAGS) \
@@ -1579,9 +1579,6 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
-MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
-MBEDTLS_LIB = @MBEDTLS_LIB@
-MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MEMKIND_LIBDIR = @MEMKIND_LIBDIR@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
@@ -2273,14 +2270,12 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_la_LIBADD = \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
-	$(MBEDTLS_LIBS)  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
 
 libhpcrun_o_LDADD = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
-	$(PERFMON_LDFLAGS_STAT) $(MBEDTLS_LIBS) $(OUR_LIBUNWIND_A) \
-	$(OUR_LZMA_A) $(am__append_59) $(am__append_114) \
-	$(UNW_STATIC_LD_FLAGS)
+	$(PERFMON_LDFLAGS_STAT) $(OUR_LIBUNWIND_A) $(OUR_LZMA_A) \
+	$(am__append_59) $(am__append_114) $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_71) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
