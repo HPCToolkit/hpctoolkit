@@ -127,6 +127,10 @@ addCustomFunctionObject
   //adding the custom symbol into the symtab object
   status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
   assert(status == true);
+
+  // After injecting symbol, we can parse inlining info
+  symtab->parseTypesNow();
+  symtab->parseFunctionRanges();
 }
 
 
