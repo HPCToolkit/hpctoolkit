@@ -319,11 +319,11 @@ get_process_name()
 // process name. Store in a local variable.
 //
 static void
-copy_execname(char* process_name)
+copy_execname(const char* process_name)
 {
   char tmp[PATH_MAX] = {'\0'};
   char* rpath = realpath(process_name, tmp);
-  char* src = (rpath != NULL) ? rpath : process_name;
+  const char* src = (rpath != NULL) ? rpath : process_name;
 
   strncpy(execname, src, sizeof(execname));
 }
