@@ -72,6 +72,16 @@
 // macros
 //******************************************************************************
 
+
+//  2021-09-08:
+//  The timestamps for GPU synchronziation operations are currently
+//  taken when entering and exiting synchronization APIs on the host.
+//  Such timestamps are useless for GPU monitoring.
+//  This is the case for NVIDIA and AMD.
+//  We should revisit this if we start to get GPU side time stamps
+//  regarding inter-stream synchronization.
+#define TRACK_SYNCHRONIZATION 0
+
 #define UNIT_TEST 0
 
 #define DEBUG 0
@@ -100,6 +110,7 @@ gpu_context_stream_trace
 }
 
 
+#if TRACK_SYNCHRONIZATION
 static void
 gpu_context_trace
 (
@@ -111,6 +122,7 @@ gpu_context_trace
     gpu_context_id_map_context_process(context_id, gpu_trace_produce, ti);
   }
 }
+#endif
 
 
 static void
@@ -464,6 +476,7 @@ gpu_kernel_block_process
 }
 
 
+#if TRACK_SYNCHRONIZATION
 static void
 gpu_synchronization_process
 (
@@ -535,6 +548,7 @@ gpu_synchronization_process
   }
   PRINT("Synchronization correlation_id 0x%lx\n", correlation_id);
 }
+#endif
 
 
 static void
@@ -761,19 +775,11 @@ gpu_activity_process
     gpu_kernel_block_process(ga);
     break;
 
-  /*
-  2021-09-08:
-  The timestamps for GPU synchronziation operations are currently
-  taken when entering and exiting synchronization APIs on the host.
-  Such timestamps are useless for GPU monitoring.
-  This is the case for NVIDIA and AMD.
-  We should revisit this if we start to get GPU side time stamps
-  regarding inter-stream synchronization.
-
+#if TRACK_SYNCHRONIZATION
   case GPU_ACTIVITY_SYNCHRONIZATION:
     gpu_synchronization_process(ga);
     break;
-  */
+#endif
 
   case GPU_ACTIVITY_MEMORY:
     gpu_memory_process(ga);
