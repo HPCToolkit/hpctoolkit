@@ -149,7 +149,7 @@
 
 struct fileid {
   int  done;
-  long host;
+  unsigned int host;
   int  gen;
 };
 
@@ -230,15 +230,16 @@ hpcrun_files_next_id(struct fileid *id)
 
   id->gen++;
   if (id->gen >= FILES_RANDOM_GEN) {
+    long randval;
     // give up and use a random host id
     fd = open("/dev/urandom", O_RDONLY);
     if (fd >= 0) {
-      read(fd, &id->host, sizeof(id->host));
+      read(fd, &randval, sizeof(randval));
       close(fd);
     }
     gettimeofday(&tv, NULL);
-    id->host += (tv.tv_sec << 20) + tv.tv_usec;
-    id->host &= 0x00ffffffff;
+    randval += (tv.tv_sec << 20) + tv.tv_usec;
+    id->host = (unsigned int) randval;
   }
 
   return 0;
@@ -392,17 +393,24 @@ void
 hpcrun_files_set_directory()
 {  
   char *path = getenv(HPCRUN_OUT_PATH);
+  int pathlen;
 
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {
     const char *jid = OSUtil_jobid();
     if (jid == NULL) {
-      sprintf(default_path, "./hpctoolkit-%s-measurements", executable_name);
+      pathlen = snprintf(default_path, PATH_MAX,
+                         "./hpctoolkit-%s-measurements", executable_name);
     } else {
-      sprintf(default_path, "./hpctoolkit-%s-measurements-%s", executable_name, jid);
+      pathlen = snprintf(default_path, PATH_MAX,
+                         "./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
     path = default_path;
     // N.B.: safe to skip checking for errors as realpath will notice them
+  }
+
+  if (pathlen == 0) {
+    hpcrun_abort("hpcrun: could not create output directory - empty path name");
   }
 
   int ret = mkdir(path, 0755);
@@ -426,7 +434,7 @@ hpcrun_files_output_directory()
 
 
 void 
-hpcrun_files_set_executable(char *execname)
+hpcrun_files_set_executable(const char *execname)
 {
   strncpy(executable_name, basename(execname), sizeof(executable_name));
 
