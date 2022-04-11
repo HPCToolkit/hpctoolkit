@@ -5151,6 +5151,11 @@ AC_ARG_WITH([rocm-hip],
       [path to hip install directory]),
   [ROCM_HIP="$withval"], [])
 
+AC_ARG_WITH([rocm-hsa],
+  AS_HELP_STRING([--with-rocm-hsa=PATH],
+      [path to hsa-rocr-dev install directory]),
+  [ROCM_HSA="$withval"], [])
+
 AC_ARG_WITH([rocm-tracer],
   AS_HELP_STRING([--with-rocm-tracer=PATH],
       [path to roctracer-dev install directory]),
@@ -5160,13 +5165,6 @@ AC_ARG_WITH([rocm-profiler],
   AS_HELP_STRING([--with-rocm-profiler=PATH],
       [path to rocprofiler-dev install directory]),
   [ROCM_PROFILER="$withval"], [])
-
-AC_ARG_WITH([rocm-hsa],
-  AS_HELP_STRING([--with-rocm-hsa=PATH],
-      [path to hsa-rocr-dev install directory]),
-  [ROCM_HSA="$withval"], [])
-
-
 
 ROCM_IFLAGS=
 ROCM_HIP_IFLAGS=
@@ -5436,12 +5434,12 @@ if test "$OPT_HAVE_ROCM" = yes ; then
   else
     rocm_version="${rocm_major}.${rocm_minor}"
 
-    # Require 3.10 or 4.0 or greater.
-    if ( test $rocm_major -eq 3 && test $rocm_minor -ge 10 )  \
-       || test $rocm_major -ge 4
+    # Require 4.5 or 5.0 or greater.
+    if ( test $rocm_major -eq 4 && test $rocm_minor -ge 5 )  \
+       || test $rocm_major -ge 5
     then :
     else
-      AC_MSG_ERROR([rocm version $rocm_version is too old, use 3.10.0 or later])
+      AC_MSG_ERROR([rocm version $rocm_version is too old, use 5.0 or later])
     fi
   fi
   rocm_mesg="yes, version: $rocm_version"
@@ -5853,13 +5851,13 @@ AC_MSG_NOTICE([  igc:          ${IGC}])
 AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
 AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
-AC_MSG_NOTICE([  papi-c-rocm: ${use_papi_c_rocm}])
+AC_MSG_NOTICE([  papi-c-rocm:  ${use_papi_c_rocm}])
 AC_MSG_NOTICE([  rocm:         ${rocm_mesg}])
 if test "$OPT_HAVE_ROCM" = yes ; then
   AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])
-  AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
-  AC_MSG_NOTICE([  rocm profiler:$ROCM_PROFILER_MESG])
   AC_MSG_NOTICE([  rocm hsa:     $ROCM_HSA_MESG])
+  AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
+  AC_MSG_NOTICE([  rocm profiler: $ROCM_PROFILER_MESG])
 fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])

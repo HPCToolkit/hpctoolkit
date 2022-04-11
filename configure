@@ -1076,9 +1076,9 @@ with_metrics_discovery
 with_gtpin
 with_rocm
 with_rocm_hip
+with_rocm_hsa
 with_rocm_tracer
 with_rocm_profiler
-with_rocm_hsa
 with_level0
 enable_data_centric_tracing
 enable_devtools
@@ -1835,10 +1835,10 @@ Optional Packages:
   --with-gtpin=PATH       path to gtpin install directory
   --with-rocm=PATH        path to full ROCM install directory
   --with-rocm-hip=PATH    path to hip install directory
+  --with-rocm-hsa=PATH    path to hsa-rocr-dev install directory
   --with-rocm-tracer=PATH path to roctracer-dev install directory
   --with-rocm-profiler=PATH
                           path to rocprofiler-dev install directory
-  --with-rocm-hsa=PATH    path to hsa-rocr-dev install directory
   --with-level0=PATH      use given Level Zero installation (absolute path)
                           with hpcrun (default is NO)
   --with-valgrind=PATH    path to Valgrind install directory
@@ -24375,6 +24375,13 @@ fi
 
 
 
+# Check whether --with-rocm-hsa was given.
+if test "${with_rocm_hsa+set}" = set; then :
+  withval=$with_rocm_hsa; ROCM_HSA="$withval"
+fi
+
+
+
 # Check whether --with-rocm-tracer was given.
 if test "${with_rocm_tracer+set}" = set; then :
   withval=$with_rocm_tracer; ROCM_TRACER="$withval"
@@ -24386,15 +24393,6 @@ fi
 if test "${with_rocm_profiler+set}" = set; then :
   withval=$with_rocm_profiler; ROCM_PROFILER="$withval"
 fi
-
-
-
-# Check whether --with-rocm-hsa was given.
-if test "${with_rocm_hsa+set}" = set; then :
-  withval=$with_rocm_hsa; ROCM_HSA="$withval"
-fi
-
-
 
 
 ROCM_IFLAGS=
@@ -24689,12 +24687,12 @@ $as_echo "$as_me: WARNING: unable to find rocm version" >&2;}
   else
     rocm_version="${rocm_major}.${rocm_minor}"
 
-    # Require 3.10 or 4.0 or greater.
-    if ( test $rocm_major -eq 3 && test $rocm_minor -ge 10 )  \
-       || test $rocm_major -ge 4
+    # Require 4.5 or 5.0 or greater.
+    if ( test $rocm_major -eq 4 && test $rocm_minor -ge 5 )  \
+       || test $rocm_major -ge 5
     then :
     else
-      as_fn_error $? "rocm version $rocm_version is too old, use 3.10.0 or later" "$LINENO" 5
+      as_fn_error $? "rocm version $rocm_version is too old, use 5.0 or later" "$LINENO" 5
     fi
   fi
   rocm_mesg="yes, version: $rocm_version"
@@ -28064,19 +28062,19 @@ $as_echo "$as_me:   gtpin:        ${GTPIN}" >&6;}
 $as_echo "$as_me:   metrics-discovery: ${METRICS_DISCOVERY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-rocm: ${use_papi_c_rocm}" >&5
-$as_echo "$as_me:   papi-c-rocm: ${use_papi_c_rocm}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-rocm:  ${use_papi_c_rocm}" >&5
+$as_echo "$as_me:   papi-c-rocm:  ${use_papi_c_rocm}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm:         ${rocm_mesg}" >&5
 $as_echo "$as_me:   rocm:         ${rocm_mesg}" >&6;}
 if test "$OPT_HAVE_ROCM" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hip:     $ROCM_HIP_MESG" >&5
 $as_echo "$as_me:   rocm hip:     $ROCM_HIP_MESG" >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm tracer:  $ROCM_TRACER_MESG" >&5
-$as_echo "$as_me:   rocm tracer:  $ROCM_TRACER_MESG" >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm profiler:$ROCM_PROFILER_MESG" >&5
-$as_echo "$as_me:   rocm profiler:$ROCM_PROFILER_MESG" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hsa:     $ROCM_HSA_MESG" >&5
 $as_echo "$as_me:   rocm hsa:     $ROCM_HSA_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm tracer:  $ROCM_TRACER_MESG" >&5
+$as_echo "$as_me:   rocm tracer:  $ROCM_TRACER_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm profiler: $ROCM_PROFILER_MESG" >&5
+$as_echo "$as_me:   rocm profiler: $ROCM_PROFILER_MESG" >&6;}
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     ${VALGRIND}" >&5
 $as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}

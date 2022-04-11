@@ -71,7 +71,7 @@
 
 #include "rocprofiler-api.h"
 
-#include "hsa/hsa.h"
+#include <hsa.h>
 
 //******************************************************************************
 // macros
