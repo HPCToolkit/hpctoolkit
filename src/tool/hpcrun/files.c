@@ -393,11 +393,12 @@ void
 hpcrun_files_set_directory()
 {  
   char *path = getenv(HPCRUN_OUT_PATH);
-  int pathlen;
 
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {
     const char *jid = OSUtil_jobid();
+    int pathlen;
+
     if (jid == NULL) {
       pathlen = snprintf(default_path, PATH_MAX,
                          "./hpctoolkit-%s-measurements", executable_name);
@@ -405,12 +406,13 @@ hpcrun_files_set_directory()
       pathlen = snprintf(default_path, PATH_MAX,
                          "./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
+
+    if (pathlen == 0) {
+      hpcrun_abort("hpcrun: could not create output directory - empty path name");
+    }
+
     path = default_path;
     // N.B.: safe to skip checking for errors as realpath will notice them
-  }
-
-  if (pathlen == 0) {
-    hpcrun_abort("hpcrun: could not create output directory - empty path name");
   }
 
   int ret = mkdir(path, 0755);
