@@ -50,11 +50,8 @@
 
 #include "hip-api.h"
 #include "rocm-binary-processing.h"
-#include "tool_state.h"
 
 #include <roctracer_hip.h>
-
-#include <hpcrun/gpu-monitors.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -316,12 +313,6 @@ roctracer_subscriber_callback
  void* arg
 )
 {
-  if (is_tool_active()) {
-//    TMSG(ROCM, "PAPI correlation callback");
-//    gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
-    return;
-  }
-
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   bool is_valid_op = false;
   bool is_kernel_op = false;
