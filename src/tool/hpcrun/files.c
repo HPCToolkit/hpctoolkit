@@ -149,7 +149,7 @@
 
 struct fileid {
   int  done;
-  long host;
+  unsigned int host;
   int  gen;
 };
 
@@ -165,10 +165,10 @@ static void hpcrun_rename_log_file_early(int rank);
 // local data 
 //***************************************************************
 
-static char default_path[PATH_MAX] = {'\0'};
-static char output_directory[PATH_MAX] = {'\0'};
-static char executable_name[PATH_MAX] = {'\0'};
-static char executable_pathname[PATH_MAX] = {'\0'};
+static char default_path[PATH_MAX + 1] = {'\0'};
+static char output_directory[PATH_MAX + 1] = {'\0'};
+static char executable_name[PATH_MAX + 1] = {'\0'};
+static char executable_pathname[PATH_MAX + 1] = {'\0'};
 
 // These variables are protected by the files lock.
 // Opening or renaming a file must acquire the lock.
@@ -230,15 +230,16 @@ hpcrun_files_next_id(struct fileid *id)
 
   id->gen++;
   if (id->gen >= FILES_RANDOM_GEN) {
+    long randval;
     // give up and use a random host id
     fd = open("/dev/urandom", O_RDONLY);
     if (fd >= 0) {
-      read(fd, &id->host, sizeof(id->host));
+      read(fd, &randval, sizeof(randval));
       close(fd);
     }
     gettimeofday(&tv, NULL);
-    id->host += (tv.tv_sec << 20) + tv.tv_usec;
-    id->host &= 0x00ffffffff;
+    randval += (tv.tv_sec << 20) + tv.tv_usec;
+    id->host = (unsigned int) randval;
   }
 
   return 0;
@@ -254,7 +255,7 @@ hpcrun_files_next_id(struct fileid *id)
 static int
 hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
 {
-  char name[PATH_MAX];
+  char name[PATH_MAX + 1];
   struct fileid *id;
   int fd, ret;
 
@@ -269,7 +270,7 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
     errno = 0;
     ret = snprintf(name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
 		   executable_name, rank, thread, id->host, mypid, id->gen, suffix);
-    if (ret >= PATH_MAX) {
+    if (ret > PATH_MAX) {
       fd = -1;
       errno = ENAMETOOLONG;
       break;
@@ -313,7 +314,7 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
 static int
 hpcrun_rename_file(int rank, int thread, const char *suffix)
 {
-  char old_name[PATH_MAX], new_name[PATH_MAX];
+  char old_name[PATH_MAX + 1], new_name[PATH_MAX + 1];
   int ret;
 
   // Not recoding data for this process.
@@ -326,13 +327,19 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
     return 0;
   }
 
-  snprintf(old_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
-	   executable_name, 0, thread, earlyid.host, mypid, earlyid.gen, suffix);
+  ret = snprintf(old_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
+	         executable_name, 0, thread, earlyid.host, mypid, earlyid.gen, suffix);
+  if (ret > PATH_MAX) {
+    ret = -1;
+    errno = ENAMETOOLONG;
+    goto warn;
+  }
+
   for (;;) {
     errno = 0;
     ret = snprintf(new_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
 		   executable_name, rank, thread, lateid.host, mypid, lateid.gen, suffix);
-    if (ret >= PATH_MAX) {
+    if (ret > PATH_MAX) {
       ret = -1;
       errno = ENAMETOOLONG;
       break;
@@ -351,6 +358,7 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
   }
   lateid.done = 1;
 
+warn:
   // Failure to rename is a loud warning.
   if (ret < 0) {
     EEMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
@@ -396,11 +404,20 @@ hpcrun_files_set_directory()
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {
     const char *jid = OSUtil_jobid();
+    int pathlen;
+
     if (jid == NULL) {
-      sprintf(default_path, "./hpctoolkit-%s-measurements", executable_name);
+      pathlen = snprintf(default_path, PATH_MAX,
+                         "./hpctoolkit-%s-measurements", executable_name);
     } else {
-      sprintf(default_path, "./hpctoolkit-%s-measurements-%s", executable_name, jid);
+      pathlen = snprintf(default_path, PATH_MAX,
+                         "./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
+
+    if (pathlen == 0) {
+      hpcrun_abort("hpcrun: could not create output directory - empty path name");
+    }
+
     path = default_path;
     // N.B.: safe to skip checking for errors as realpath will notice them
   }
@@ -426,7 +443,7 @@ hpcrun_files_output_directory()
 
 
 void 
-hpcrun_files_set_executable(char *execname)
+hpcrun_files_set_executable(const char *execname)
 {
   strncpy(executable_name, basename(execname), sizeof(executable_name));
 
@@ -541,7 +558,7 @@ hpcrun_rename_trace_file(int rank, int thread)
 void
 hpcrun_save_vdso()
 {
-  char name[PATH_MAX];
+  char name[PATH_MAX + 1];
   int fd;
   int error = 0;
 
@@ -569,7 +586,7 @@ hpcrun_save_vdso()
   for (i = 0; i < hash_len; ++i) {
     sprintf(&vdso_hash_str[i*2], "%02x", hash[i]);
   }
-  if (strlen(output_directory) + 6 + hash_len * 2 + 5 >= PATH_MAX) {
+  if (strlen(output_directory) + 6 + hash_len * 2 + 5 > PATH_MAX) {
     fd = -1;
     error = ENAMETOOLONG;
     hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));

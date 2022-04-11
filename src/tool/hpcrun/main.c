@@ -241,7 +241,7 @@ static void* main_upper_dl = (void*) (intptr_t) -1;
 static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
-static char execname[PATH_MAX] = {'\0'};
+static char execname[PATH_MAX + 1] = {'\0'};
 
 static int monitor_fini_process_how = 0;
 static atomic_int ms_init_started = ATOMIC_VAR_INIT(0);
@@ -319,11 +319,11 @@ get_process_name()
 // process name. Store in a local variable.
 //
 static void
-copy_execname(char* process_name)
+copy_execname(const char* process_name)
 {
-  char tmp[PATH_MAX] = {'\0'};
+  char tmp[PATH_MAX + 1] = {'\0'};
   char* rpath = realpath(process_name, tmp);
-  char* src = (rpath != NULL) ? rpath : process_name;
+  const char* src = (rpath != NULL) ? rpath : process_name;
 
   strncpy(execname, src, sizeof(execname));
 }

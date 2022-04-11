@@ -42,14 +42,22 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
+// macros
+//******************************************************************************
+
+#define TRACK_SYNCHRONIZATION 0
+#define DEBUG 0
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
 #include "roctracer-activity-translate.h"
-
-#define DEBUG 0
-
 #include <hpcrun/gpu/gpu-print.h>
+
+
 
 //******************************************************************************
 // private operations
@@ -96,6 +104,7 @@ convert_memset
 }
 
 
+#if TRACK_SYNCHRONIZATION
 static void
 convert_sync
 (
@@ -109,6 +118,7 @@ convert_sync
   ga->details.synchronization.syncKind = syncKind;
   ga->details.synchronization.correlation_id = activity->correlation_id;
 }
+#endif
 
 
 static void

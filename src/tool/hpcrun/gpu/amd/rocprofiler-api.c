@@ -344,6 +344,7 @@ rocprofiler_dispatch_callback
 
   // Passed tool data
   hsa_agent_t agent = callback_data->agent;
+
   // HSA status
   hsa_status_t status = HSA_STATUS_ERROR;
 
@@ -366,7 +367,10 @@ rocprofiler_dispatch_callback
   counter_data.data = *callback_data;
   counter_data.valid = true;
 
-  return HSA_STATUS_SUCCESS;
+  // FIXME: some error checking seems warranted
+  status = HSA_STATUS_SUCCESS;
+
+  return status;
 }
 
 static hsa_status_t
@@ -473,11 +477,11 @@ extern PUBLIC_API void OnUnloadTool() {
 void
 rocprofiler_start_kernel
 (
-  uint64_t cor
+  uint64_t correlation_id
 )
 {
   spinlock_lock(&kernel_lock);
-  rocprofiler_correlation_id = cor;
+  rocprofiler_correlation_id = correlation_id;
   // We will only allow the critical section
   // to finish after we get rocprofiler results
   context_callback_finish = 0;
@@ -614,7 +618,7 @@ rocprofiler_counter_description
 int
 rocprofiler_match_event
 (
-  const char* ev_str
+  const char *ev_str
 )
 {
   for (int i = 0; i < total_counters; i++) {

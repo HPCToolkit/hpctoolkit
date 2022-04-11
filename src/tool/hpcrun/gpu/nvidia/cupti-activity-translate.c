@@ -156,6 +156,7 @@ convert_memcpy_type
 }
 
 
+#if TRACK_SYNCHRONIZATION
 static gpu_sync_type_t
 convert_sync_type
 (
@@ -176,6 +177,7 @@ convert_sync_type
     return GPU_SYNC_UNKNOWN;
   }
 }
+#endif
 
 
 static void
@@ -454,6 +456,7 @@ convert_branch
 }
 
 
+#if TRACK_SYNCHRONIZATION
 static void
 convert_synchronization
 (
@@ -470,6 +473,7 @@ convert_synchronization
 
   gpu_interval_set(&ga->details.interval, activity_sync->start, activity_sync->end);
 }
+#endif
 
 
 static void
@@ -612,12 +616,12 @@ cupti_activity_translate
     convert_branch(ga, (CUpti_ActivityBranch2 *) activity);
     break;
 
-  /*
-  Ignore sychronization events as the time stamps are from the host.
+#if TRACK_SYNCHRONIZATION
+  // Ignore sychronization events as the time stamps are from the host.
   case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
     convert_synchronization(ga, (CUpti_ActivitySynchronization *) activity);
     break;
-  */
+#endif
 
   case CUPTI_ACTIVITY_KIND_MEMORY:
     convert_memory(ga, (CUpti_ActivityMemory *) activity);

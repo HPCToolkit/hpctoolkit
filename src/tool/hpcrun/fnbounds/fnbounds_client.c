@@ -139,6 +139,7 @@ char	*outfile;
 #include "client.h"
 #include "disabled.h"
 #include "fnbounds_file_header.h"
+#include "main.h"
 #include "messages.h"
 #include "sample_sources_all.h"
 #include "monitor.h"
