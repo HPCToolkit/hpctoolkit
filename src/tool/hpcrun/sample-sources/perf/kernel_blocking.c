@@ -93,6 +93,8 @@
 // usually each thread has the same metric index, so it's safe to make it global
 // for each thread (I hope).
 static int metric_blocking_index = -1;
+static kind_info_t *blocktime_kind;
+
 
 static __thread u64          time_cs_out = 0;    // time when leaving the application process
 static __thread cct_node_t  *cct_kernel  = NULL; // cct of the last access to kernel
@@ -213,12 +215,17 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 static void
 register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
 {
+  blocktime_kind = hpcrun_metrics_new_kind();
+
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
+  // fix issue #556: need to allocate the metric custom
+  event_desc->metric_custom = hpcrun_malloc(sizeof(event_custom_t));
+
   event_desc->metric_custom->metric_index = 
     hpcrun_set_new_metric_info_and_period(
-      kb_kind, EVNAME_KERNEL_BLOCK,
+      blocktime_kind, EVNAME_KERNEL_BLOCK,
       MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
   event_desc->metric_custom->metric_desc = 
@@ -259,6 +266,7 @@ register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
 
   event_desc->attr.context_switch = 1;
   event_desc->attr.sample_id_all = 1;
+  hpcrun_close_kind(blocktime_kind);
 }
 
 
