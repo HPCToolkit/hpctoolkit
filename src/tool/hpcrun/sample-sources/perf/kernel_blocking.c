@@ -128,9 +128,11 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
   // ----------------------------------------------------------------
   // it's important to always count the number of samples for debugging purpose
   // ----------------------------------------------------------------
-
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->core_profile_trace_data.perf_event_info[metric_blocking_index].num_samples++;
+// fix issue #556: since we use blocktime metric kind, we don't have access to perf info
+//                 we don't need these 2 lines as they are used for debug purpose.
+//
+//  thread_data_t *td = hpcrun_get_thread_data();
+//  td->core_profile_trace_data.perf_event_info[metric_blocking_index].num_samples++;
 }
 
 /***********************************************************************
@@ -220,9 +222,6 @@ register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
-  // fix issue #556: need to allocate the metric custom
-  event_desc->metric_custom = hpcrun_malloc(sizeof(event_custom_t));
-
   event_desc->metric_custom->metric_index = 
     hpcrun_set_new_metric_info_and_period(
       blocktime_kind, EVNAME_KERNEL_BLOCK,
