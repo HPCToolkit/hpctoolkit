@@ -405,9 +405,9 @@ ompt_finalize_shutdown
 
   ompt_device_entry_t *e = device_list;
   while (e) {
-    PRINT("ompt_finalize_flush flush id=%d device=%p\n",
+    PRINT("ompt_stop_trace id=%d device=%p\n",
 	  e->device_id, e->device);
-    ompt_stop_trace(e->device);
+    if (ompt_stop_trace) ompt_stop_trace(e->device);
     e = e->next;
   }
   ompt_shutdown_complete = 1;
@@ -494,9 +494,11 @@ ompt_device_initialize(int device_num,
 {
   PRINT("ompt_device_initialize->%s, %d\n", type, device_num);
 
-  ompt_bind_names(lookup);
+  if (lookup) {
+    ompt_bind_names(lookup);
 
-  ompt_trace_configure(device);
+    ompt_trace_configure(device);
+  }
 
   device_list_insert(device_num, device);
   ompt_device_map_insert(device_num, device, type);
