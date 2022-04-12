@@ -325,7 +325,8 @@ copy_execname(const char* process_name)
   char* rpath = realpath(process_name, tmp);
   const char* src = (rpath != NULL) ? rpath : process_name;
 
-  strncpy(execname, src, sizeof(execname));
+  execname[sizeof(execname) - 1] = 0;
+  strncpy(execname, src, sizeof(execname) - 1);
 }
 
 //

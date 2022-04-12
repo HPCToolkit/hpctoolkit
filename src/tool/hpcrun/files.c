@@ -445,11 +445,12 @@ hpcrun_files_output_directory()
 void 
 hpcrun_files_set_executable(const char *execname)
 {
-  strncpy(executable_name, basename(execname), sizeof(executable_name));
+  executable_name[sizeof(executable_name) - 1] = 0;
+  strncpy(executable_name, basename(execname), sizeof(executable_name) - 1);
 
   char *real =  realpath(execname, executable_pathname);
   if (!real) {
-    strncpy(executable_pathname, execname, sizeof(executable_pathname));
+    strncpy(executable_pathname, execname, sizeof(executable_pathname) - 1);
   }
 }
 

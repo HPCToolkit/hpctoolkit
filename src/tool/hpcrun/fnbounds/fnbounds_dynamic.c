@@ -258,7 +258,7 @@ fnbounds_release_lock(void)
 fnbounds_table_t
 fnbounds_fetch_executable_table(void)
 {
-  char exename[PATH_MAX];
+  char exename[PATH_MAX + 1];
   realpath("/proc/self/exe", exename);
   TMSG(INTERVALS_PRINT, "name of loadmap = %s", exename);
   load_module_t* exe_lm = hpcrun_loadmap_findByName(exename);
@@ -282,7 +282,7 @@ static dso_info_t*
 fnbounds_compute(const char* incoming_filename, void* start, void* end)
 {
   struct fnbounds_file_header fh;
-  char filename[PATH_MAX];
+  char filename[PATH_MAX + 1];
   void** nm_table;
   long map_size;
 
@@ -305,6 +305,7 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   // [vdso] and linux-gate.so are virtual files and don't exist
   // in the file system.
   if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
+    filename[sizeof(filename) - 1] = 0;
     strncpy(filename, incoming_filename, PATH_MAX);
     pathname_for_query = filename;
   } else {
