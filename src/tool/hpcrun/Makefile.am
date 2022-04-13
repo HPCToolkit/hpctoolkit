@@ -182,8 +182,6 @@ ZLIB_INC = @ZLIB_INC@
 LZMA_LDFLAGS_DYN=@LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT=@LZMA_LDFLAGS_STAT@
 
-HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-
 PLUGIN_CONFIG_FILES = ga io memleak pthread
 
 # Disable the ibm-xlomp plugin in favor of the new openmp tools
@@ -368,6 +366,8 @@ MY_BASE_FILES =				\
 	gpu/gpu-activity-channel.c 	\
 	gpu/gpu-activity-process.c 	\
 	gpu/gpu-application-thread-api.c \
+	gpu/gpu-binary.c \
+	gpu/gpu-cct.c \
 	gpu/gpu-channel-item-allocator.c \
 	gpu/gpu-context-id-map.c	\
 	gpu/gpu-correlation.c 		\
@@ -542,7 +542,7 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-activity-translate.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\
-	gpu/nvidia/cupti-gpu-api.c		
+	gpu/nvidia/cupti-gpu-api.c
 endif
 
 if OPT_ENABLE_OPENCL
@@ -593,15 +593,18 @@ if OPT_ENABLE_LEVEL0
 MY_LEVEL0_FILES=\
 	sample-sources/level0.c \
 	gpu/level0/level0-api.c \
+	gpu/level0/level0-binary.c \
 	gpu/level0/level0-command-list-context-map.c \
 	gpu/level0/level0-command-list-map.c \
 	gpu/level0/level0-command-process.c \
 	gpu/level0/level0-data-node.c \
 	gpu/level0/level0-event-map.c \
-	gpu/level0/level0-handle-map.c
+	gpu/level0/level0-handle-map.c \
+	gpu/level0/level0-kernel-module-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
 libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
+libhpcrun_level0_la_CFLAGS    = $(OPT_LEVEL0_IFLAGS)
 libhpcrun_level0_la_LDFLAGS   = -Wl,-Bsymbolic
 
 endif
@@ -628,7 +631,6 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
 	$(LIBUNWIND_IFLAGS)		\
-	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)             \
 		$(ROCM_INC_FLGS) \
@@ -820,6 +822,8 @@ endif
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
+libhpcrun_fake_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)

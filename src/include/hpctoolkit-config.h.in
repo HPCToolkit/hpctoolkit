@@ -21,9 +21,6 @@
 /* dyninst supports cuda */
 #undef DYNINST_USE_CUDA
 
-/* dyninst built with libdw */
-#undef DYNINST_USE_LIBDW
-
 /* Support for CLOCK_THREAD_CPUTIME_ID */
 #undef ENABLE_CLOCK_CPUTIME
 

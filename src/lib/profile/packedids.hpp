@@ -101,7 +101,8 @@ public:
   std::optional<unsigned int> identify(const Context&) noexcept override;
   std::optional<Metric::Identifier> identify(const Metric&) noexcept override;
 
-  util::optional_ref<Context> classify(Context&, NestedScope&) noexcept override;
+  std::optional<std::pair<util::optional_ref<Context>, Context&>>
+  classify(Context&, NestedScope&) noexcept override;
 
 private:
   void unpack() noexcept;

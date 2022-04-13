@@ -161,7 +161,8 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-randomizer.lo \
 	libHPCprof_lean_la-splay-uint64.lo \
 	libHPCprof_lean_la-elf-helper.lo \
-	libHPCprof_lean_la-id-tuple.lo libHPCprof_lean_la-tracedb.lo
+	libHPCprof_lean_la-elf-hash.lo libHPCprof_lean_la-id-tuple.lo \
+	libHPCprof_lean_la-tracedb.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -285,9 +286,6 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 F77_SYMBOLS = @F77_SYMBOLS@
 FGREP = @FGREP@
-GOTCHA_IFLAGS = @GOTCHA_IFLAGS@
-GOTCHA_LDFLAGS = @GOTCHA_LDFLAGS@
-GOTCHA_LIBDIR = @GOTCHA_LIBDIR@
 GREP = @GREP@
 HOST_AR = @HOST_AR@
 HOST_CFLAGS = @HOST_CFLAGS@
@@ -313,9 +311,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
-LIBDWARF_COPY = @LIBDWARF_COPY@
-LIBDWARF_INC = @LIBDWARF_INC@
-LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
@@ -578,7 +573,7 @@ MYSOURCES = \
 	vdso.h vdso.c \
 	randomizer.h randomizer.c \
 	splay-uint64.h splay-uint64.c \
-	elf-helper.h elf-helper.c \
+	elf-helper.h elf-helper.c elf-hash.h elf-hash.c \
 	\
 	id-tuple.h id-tuple.c \
 	tracedb.h tracedb.c 
@@ -691,6 +686,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-cpuset_hwthreads.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-crypto-hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-cskiplist.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-elf-hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-elf-helper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-generic_pair.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfmt.Plo@am__quote@
@@ -926,6 +922,13 @@ libHPCprof_lean_la-elf-helper.lo: elf-helper.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='elf-helper.c' object='libHPCprof_lean_la-elf-helper.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-elf-helper.lo `test -f 'elf-helper.c' || echo '$(srcdir)/'`elf-helper.c
+
+libHPCprof_lean_la-elf-hash.lo: elf-hash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-elf-hash.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-elf-hash.Tpo -c -o libHPCprof_lean_la-elf-hash.lo `test -f 'elf-hash.c' || echo '$(srcdir)/'`elf-hash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-elf-hash.Tpo $(DEPDIR)/libHPCprof_lean_la-elf-hash.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='elf-hash.c' object='libHPCprof_lean_la-elf-hash.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-elf-hash.lo `test -f 'elf-hash.c' || echo '$(srcdir)/'`elf-hash.c
 
 libHPCprof_lean_la-id-tuple.lo: id-tuple.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-id-tuple.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-id-tuple.Tpo -c -o libHPCprof_lean_la-id-tuple.lo `test -f 'id-tuple.c' || echo '$(srcdir)/'`id-tuple.c

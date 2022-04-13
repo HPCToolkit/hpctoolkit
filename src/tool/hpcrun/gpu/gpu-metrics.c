@@ -158,6 +158,9 @@ name ## _metric_kind
     (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,  \
      MetricFlags_ValFmt_Int, 1, metric_property_none);
 
+#define INITIALIZE_SCALAR_METRIC_INT_MOVE2PROC(metric_name, metric_var, metric_desc) \
+  INITIALIZE_SCALAR_METRIC_INT(metric_name, metric_var, metric_desc)	\
+  hpcrun_set_move2proc(METRIC_ID(metric_var), true);
 
 #define INITIALIZE_SCALAR_METRIC_REAL(metric_name, metric_var, metric_desc) \
   METRIC_ID(metric_var) =            \
@@ -165,6 +168,9 @@ name ## _metric_kind
     (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,  \
      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
+#define INITIALIZE_SCALAR_METRIC_REAL_MOVE2PROC(metric_name, metric_var, metric_desc) \
+  INITIALIZE_SCALAR_METRIC_REAL(metric_name, metric_var, metric_desc)	\
+  hpcrun_set_move2proc(METRIC_ID(metric_var), true);
 
 #define SET_DISPLAY_INDEXED_METRIC(name, index, val)      \
   hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], val);
@@ -857,7 +863,7 @@ gpu_metrics_default_enable
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_GTIMES(INITIALIZE_SCALAR_METRIC_REAL)
+  FORALL_GTIMES(INITIALIZE_SCALAR_METRIC_REAL_MOVE2PROC)
 
   FINALIZE_METRIC_KIND();
 
@@ -917,7 +923,7 @@ gpu_metrics_KINFO_enable
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_KINFO(INITIALIZE_SCALAR_METRIC_INT)
+  FORALL_KINFO(INITIALIZE_SCALAR_METRIC_INT_MOVE2PROC)
 
   FINALIZE_METRIC_KIND();
 
@@ -1023,11 +1029,11 @@ gpu_metrics_GSAMP_enable
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_GSAMP_INT(INITIALIZE_SCALAR_METRIC_INT);
+  FORALL_GSAMP_INT(INITIALIZE_SCALAR_METRIC_INT_MOVE2PROC);
 
   FORALL_GSAMP_INT(HIDE_SCALAR_METRIC);
 
-  FORALL_GSAMP_REAL(INITIALIZE_SCALAR_METRIC_REAL);
+  FORALL_GSAMP_REAL(INITIALIZE_SCALAR_METRIC_REAL_MOVE2PROC);
 
   FINALIZE_METRIC_KIND();
 

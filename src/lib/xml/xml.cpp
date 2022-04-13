@@ -151,7 +151,7 @@ xml::UnEscapeStr(const char* str)
 static string
 xml::substitute(const char* str, const string* fromStrs, const string* toStrs)
 {
-  static string newStr = string("", 512);
+  string newStr = string("", 512);
 
   string retStr = str;
   if (!str) { return retStr; }

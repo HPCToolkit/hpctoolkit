@@ -58,9 +58,6 @@ BOOST_LFLAGS = @BOOST_LFLAGS@
 DYNINST_IFLAGS = @DYNINST_IFLAGS@
 DYNINST_LFLAGS = @DYNINST_LFLAGS@
 
-LIBDWARF_INC = @LIBDWARF_INC@
-LIBDWARF_LIB = @LIBDWARF_LIB@
-
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 
@@ -82,7 +79,7 @@ IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 IGC_IFLAGS = @OPT_IGC_IFLAGS@
 endif
 
-MYSOURCES = main.cpp Args.cpp
+MYSOURCES = main.cpp Args.cpp Structure-Cache.cpp SingleBin.cpp MeasDir.cpp
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
@@ -121,11 +118,7 @@ MYLDADD = \
 	$(MBEDTLS_LIBS) \
 	$(TBB_LFLAGS)
 
-if OPT_DYNINST_LIBDW
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
-else
-MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
-endif
 
 if OPT_ENABLE_OPENMP
 MYCXXFLAGS += $(OPENMP_FLAG)
@@ -152,7 +145,7 @@ noinst_HEADERS = $(GENHEADERS)
 BUILT_SOURCES = $(GENHEADERS)
 
 bin_SCRIPTS = hpcstruct
-pkglibexec_SCRIPTS = dotgraph
+pkglibexec_SCRIPTS = dotgraph renamestruct.sh
 pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)

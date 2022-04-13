@@ -370,6 +370,11 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
 const char*
 hpcrun_files_executable_pathname()
 {
+  if (strlen (executable_pathname) != 0 ) {
+    return executable_pathname;
+  }
+
+  // The expectation is that this code will never be hit
   const char* load_name = hpcrun_loadmap_findLoadName(executable_name);
 
   return load_name ? load_name : executable_name;
@@ -425,7 +430,8 @@ hpcrun_files_set_executable(char *execname)
 {
   strncpy(executable_name, basename(execname), sizeof(executable_name));
 
-  if ( ! realpath(execname, executable_pathname) ) {
+  char *real =  realpath(execname, executable_pathname);
+  if (!real) {
     strncpy(executable_pathname, execname, sizeof(executable_pathname));
   }
 }
@@ -573,7 +579,7 @@ hpcrun_save_vdso()
   strcat(name, "/vdso/");
   mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   strcat(name, vdso_hash_str);
-  strcat(name, ".[vdso]");  
+  strcat(name, ".vdso");
 
   // loop enables us to use break for unstructured control flow
   for(;;) {

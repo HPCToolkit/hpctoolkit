@@ -262,16 +262,6 @@ hpcrun_threadMgr_compact_thread()
   return compact_thread;
 }
 
-static void 
-extend_thread_data(thread_data_t *td_self, thread_data_t *td_new){
-  td_self->core_profile_trace_data.trace_buffer = td_new->core_profile_trace_data.trace_buffer;
-  td_self->core_profile_trace_data.trace_outbuf = td_new->core_profile_trace_data.trace_outbuf;
-}
-static void
-copy_thread_data(thread_data_t *td_copy, thread_data_t *td_orig){
-  memcpy(td_copy, td_orig, sizeof(thread_data_t));
-}
-
 
 /***
  * get pointer of thread local data

@@ -95,6 +95,7 @@
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/diagnostics.h>
 #include <lib/support/dictionary.h>
 
 #include <boost/atomic.hpp>
@@ -354,6 +355,7 @@ public:
   GroupInfo * ginfo;
   WorkEnv env;
   double cost;
+  stringstream obuf;
   bool first_proc;
   bool last_proc;
   bool promote;
@@ -598,8 +600,11 @@ makeStructure(string filename,
   const char * cfilename = inputFile.CfileName();
 
   if (elfFileVector == NULL || elfFileVector->empty()) {
-    return;
+    DIAG_EMsg("Input file " << inputFile.fileName() << " is not an ELF file");
+    throw 1;
   }
+
+  Output::setPrettyPrint(structOpts.pretty_print_output);
 
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 	
@@ -667,7 +672,7 @@ makeStructure(string filename,
 
       #ifdef ENABLE_IGC
       parsable = readIntelCFG(search_path, elfFile, the_symtab,
-        structOpts.compute_gpu_cfg, structOpts.du_graph, structOpts.jobs, &code_src, &code_obj);
+        structOpts.compute_gpu_cfg, false, structOpts.jobs, &code_src, &code_obj);
       #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);
@@ -760,8 +765,7 @@ makeStructure(string filename,
 // run concurrently.
 //
 static void
-doWorkItem(WorkItem * witem, string & search_path, bool parsable,
-	   bool fullGaps)
+doWorkItem(WorkItem * witem, string & search_path, bool parsable, bool do_gaps)
 {
   FileInfo * finfo = witem->finfo;
   GroupInfo * ginfo = witem->ginfo;
@@ -779,10 +783,23 @@ doWorkItem(WorkItem * witem, string & search_path, bool parsable,
   witem->env.strTab = strTab;
   witem->env.realPath = realPath;
 
+  // make the inline tree for every proc in this group
   if (parsable) {
-    doFunctionList(witem->env, finfo, ginfo, fullGaps);
+    doFunctionList(witem->env, finfo, ginfo, do_gaps);
   } else {
     doUnparsableFunctionList(witem->env, finfo, ginfo);
+  }
+
+  // partially format the output (except for index and gap fields)
+  // into a string stream
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+    ProcInfo * pinfo = pit->second;
+
+    if (! pinfo->gap_only) {
+      Output::earlyFormatProc(&(witem->obuf), finfo, ginfo, pinfo, do_gaps, *strTab);
+    }
+    delete pinfo->root;
+    pinfo->root = NULL;
   }
 
   ANNOTATE_HAPPENS_BEFORE(&witem->is_done);
@@ -883,20 +900,18 @@ printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
     WorkItem * witem = workList[num_done];
     FileInfo * finfo = witem->finfo;
     GroupInfo * ginfo = witem->ginfo;
+    ProcInfo * pinfo = ginfo->procMap.begin()->second;
     HPC::StringTable * strTab = witem->env.strTab;
 
     if (witem->first_proc) {
       Output::printFileBegin(outFile, finfo);
     }
 
-    for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-      ProcInfo * pinfo = pit->second;
+    if (! pinfo->gap_only) {
+      string buf = witem->obuf.str();
 
-      if (! pinfo->gap_only) {
-	Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, *strTab);
-      }
-      delete pinfo->root;
-      pinfo->root = NULL;
+      Output::finalPrintProc(outFile, gapsFile, buf, gaps_filenm,
+			     finfo, ginfo, pinfo);
     }
 
     if (witem->last_proc) {
@@ -909,6 +924,9 @@ printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
 
     delete witem->env.realPath;
     witem->env.realPath = NULL;
+
+    witem->obuf.str("");
+    witem->obuf.clear();
 
     num_done++;
   }

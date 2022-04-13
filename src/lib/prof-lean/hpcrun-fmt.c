@@ -271,7 +271,7 @@ const hpcrun_metricFlags_t hpcrun_metricFlags_NULL = {
   .fields.ty          = MetricFlags_Ty_NULL,
   .fields.valTy       = MetricFlags_ValTy_NULL,
   .fields.valFmt      = MetricFlags_ValFmt_NULL,
-  .fields.unused0     = 0,
+  .fields.move2proc   = (uint8_t)false,
 
   .fields.partner     = 0,
   .fields.show        = (uint8_t)true,
@@ -374,7 +374,6 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE*
   // FIXME: tallent: temporarily support old non-portable convention
   if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw
 	   || x->flags.fields.ty == MetricFlags_Ty_Final)
-       || x->flags.fields.unused0 != 0
        || x->flags.fields.unused1 != 0) {
     fseek(fs, -sizeof(x->flags), SEEK_CUR);
 

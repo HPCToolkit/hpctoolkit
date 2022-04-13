@@ -101,8 +101,8 @@
 typedef struct typed_splay_node(handle) {
   struct typed_splay_node(handle) *left;
   struct typed_splay_node(handle) *right;
-  uint64_t level0_handle; // key
-  level0_data_node_t* data;
+  uint64_t level0_handle; // key : can be any level0 handle
+  level0_data_node_t* data; // value: can also be any pointer type
 } typed_splay_node(handle);
 
 //*****************************************************************************

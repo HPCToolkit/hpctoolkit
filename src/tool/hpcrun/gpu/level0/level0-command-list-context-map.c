@@ -90,14 +90,16 @@ level0_commandlist_context_map_lookup
   spinlock_lock(&commandlist_context_map_lock);
 
   uint64_t key = (uint64_t)command_list_handle;
-  level0_handle_map_entry_t *result =
+  level0_handle_map_entry_t *entry =
     level0_handle_map_lookup(&commandlist_context_map_root, key);
+  ze_context_handle_t result =
+    (ze_context_handle_t)(*level0_handle_map_entry_data_get(entry));
 
-  PRINT("level0 commandlist context map lookup: id=0x%lx (record %p)\n",
+  PRINT("level0 commandlist context map lookup: id=0x%lx (context_handle %p)\n",
        key, result);
 
   spinlock_unlock(&commandlist_context_map_lock);
-  return (ze_context_handle_t)(*level0_handle_map_entry_data_get(result));
+  return result;
 }
 
 void

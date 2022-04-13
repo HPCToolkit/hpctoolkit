@@ -199,75 +199,6 @@ createKernelNode
   }
 }
 
-
-static bool
-writeBinary
-(
- const char *file_name,
- const void *binary,
- size_t binary_size
-)
-{
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, binary, binary_size) != binary_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
-
-static size_t
-computeHash
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-)
-{
-  // Compute hash for mem_ptr with mem_size
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
-
-  size_t i;
-  size_t used = 0;
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&name[used], "%02x", hash[i]);
-  }
-  return used;
-}
-
-static void
-computeBinaryHash
-(
- const char *binary,
- size_t binary_size,
- char *file_name
-)
-{
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += computeHash(binary, binary_size, &file_name[used]);
-  used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
-}
-
-
 static uint32_t
 findOrAddKernelModule
 (
@@ -297,28 +228,34 @@ findOrAddKernelModule
   // Create file name
   char file_name[PATH_MAX];
   memset(file_name, 0, PATH_MAX);
-  computeBinaryHash(kernel_elf, kernel_elf_size, file_name);
-
-  // Write a file if does not exist
-  spinlock_lock(&files_lock);
-  writeBinary(file_name, kernel_elf, kernel_elf_size);
-  spinlock_unlock(&files_lock);
-
-  free(kernel_elf);
+  gpu_binary_compute_hash_string(kernel_elf, kernel_elf_size, file_name);
 
   // Compute hash for the kernel name
   char kernel_name_hash[PATH_MAX];
-  computeHash(kernel_name, strlen(kernel_name), kernel_name_hash);
+  gpu_binary_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
 
   strcat(file_name, ".");
   strncat(file_name, kernel_name_hash, strlen(kernel_name_hash));
 
+  char file_path[PATH_MAX];
+  gpu_binary_path_generate(file_name, file_path);
+
+  // Write a file if does not exist
+  spinlock_lock(&files_lock);
+  gpu_binary_store(file_path, kernel_elf, kernel_elf_size);
+  spinlock_unlock(&files_lock);
+
+  free(kernel_elf);
+
+
   uint32_t module_id = 0;
 
   hpcrun_loadmap_lock();
-  load_module_t *module = hpcrun_loadmap_findByName(file_name);
+  load_module_t *module = hpcrun_loadmap_findByName(file_path);
   if (module == NULL) {
-    module_id = hpcrun_loadModule_add(file_name);
+    module_id = hpcrun_loadModule_add(file_path);
+    load_module_t *lm = hpcrun_loadmap_findById(module_id);
+    hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
   } else {
     // Find module
     module_id = module->id;

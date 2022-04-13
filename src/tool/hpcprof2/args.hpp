@@ -79,7 +79,8 @@ public:
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
     ExtensionClass requires() const noexcept override { return {}; }
-    util::optional_ref<Context> classify(Context&, NestedScope&) noexcept override;
+    std::optional<std::pair<util::optional_ref<Context>, Context&>>
+    classify(Context&, NestedScope&) noexcept override;
 
   private:
     ProfArgs& args;

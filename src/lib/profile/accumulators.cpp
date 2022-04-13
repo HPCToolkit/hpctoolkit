@@ -374,9 +374,9 @@ void PerThreadTemporary::finalize() noexcept {
 
     // Go through our children and sum into our bits
     for(std::size_t i = 0; i < stack.top().submds.size(); i++) {
-      const md_t& ccmd = stack.top().submds[i].second;
-      const bool pullfunc = !isCall(c.scope().relation());
-      for(const auto& mx: ccmd.citerate()) {
+      const auto& sub = stack.top().submds[i];
+      const bool pullfunc = !isCall(sub.first.get().scope().relation());
+      for(const auto& mx: sub.second.get().citerate()) {
         auto& accum = data[mx.first];
         if(pullfunc) accum.function += mx.second.function;
         accum.execution += mx.second.execution;

@@ -28,9 +28,34 @@
 #ifdef ENABLE_IGC
 #include <igc/ocl_igc_shared/executable_format/patch_list.h>
 
-#include <metrics_discovery_internal_api.h>
-
 #include "gen_binary_decoder.h"
+
+typedef enum {
+    IGFX_UNKNOWN_CORE    = 0,
+    IGFX_GEN3_CORE       = 1,   //Gen3 Family
+    IGFX_GEN3_5_CORE     = 2,   //Gen3.5 Family
+    IGFX_GEN4_CORE       = 3,   //Gen4 Family
+    IGFX_GEN4_5_CORE     = 4,   //Gen4.5 Family
+    IGFX_GEN5_CORE       = 5,   //Gen5 Family
+    IGFX_GEN5_5_CORE     = 6,   //Gen5.5 Family
+    IGFX_GEN5_75_CORE    = 7,   //Gen5.75 Family
+    IGFX_GEN6_CORE       = 8,   //Gen6 Family
+    IGFX_GEN7_CORE       = 9,   //Gen7 Family
+    IGFX_GEN7_5_CORE     = 10,  //Gen7.5 Family
+    IGFX_GEN8_CORE       = 11,  //Gen8 Family
+    IGFX_GEN9_CORE       = 12,  //Gen9 Family
+    IGFX_GEN10_CORE      = 13,  //Gen10 Family
+    IGFX_GEN10LP_CORE    = 14,  //Gen10 LP Family
+    IGFX_GEN11_CORE      = 15,  //Gen11 Family
+    IGFX_GEN11LP_CORE    = 16,  //Gen11 LP Family
+    IGFX_GEN12_CORE      = 17,  //Gen12 Family
+    IGFX_GEN12LP_CORE    = 18,  //Gen12 LP Family
+    IGFX_MAX_CORE,              //Max Family, for lookup table
+
+    IGFX_GENNEXT_CORE          = 0x7ffffffe,  //GenNext
+    GFXCORE_FAMILY_FORCE_ULONG = 0x7fffffff
+} GFXCORE_FAMILY;
+
 
 using namespace iOpenCL;
 
@@ -94,16 +119,16 @@ class IgcBinaryDecoder {
   }
 
   static iga_gen_t GetArch(uint32_t device) {
-    switch (1 << device) {
-      case MetricsDiscovery::PLATFORM_BDW:
+    switch (device) {
+      case IGFX_GEN8_CORE:
         return IGA_GEN8;
-      case MetricsDiscovery::PLATFORM_SKL:
-        return IGA_GEN9;
-      case MetricsDiscovery::PLATFORM_KBL:
+      case IGFX_GEN9_CORE:
         return IGA_GEN9p5;
-      case MetricsDiscovery::PLATFORM_ICL:
+      case IGFX_GEN11_CORE:
+      case IGFX_GEN11LP_CORE:
         return IGA_GEN11;
-      case 1 << 18: // TGL (?)
+      case IGFX_GEN12_CORE:
+      case IGFX_GEN12LP_CORE:
         return IGA_GEN12p1;
       default:
         break;

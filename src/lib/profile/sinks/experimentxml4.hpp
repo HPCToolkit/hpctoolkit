@@ -156,6 +156,7 @@ private:
   public:
     udModule(const Module&, ExperimentXML4&);
     udModule(ExperimentXML4&);
+    udModule(ExperimentXML4&, int);
     ~udModule() = default;
 
     void incr(const Module&, ExperimentXML4&);
@@ -170,6 +171,7 @@ private:
   };
 
   udModule unknown_module;
+  udModule no_module;
 
   std::atomic<unsigned int> next_cid;
   class udContext {

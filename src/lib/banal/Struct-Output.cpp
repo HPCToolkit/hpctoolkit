@@ -66,6 +66,7 @@
 
 //***************************************************************************
 
+#include <sys/types.h>
 #include <limits.h>
 
 #include <list>
@@ -92,6 +93,7 @@ using namespace std;
 
 static long next_index;
 static long gaps_line;
+static bool pretty_print_output;
 
 static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
@@ -102,14 +104,27 @@ static const char * hpcstruct_xml_head =
 #define ENABLE_TARGET_FIELD  1
 #define ENABLE_DEVICE_FIELD  1
 
+#define USE_INDEX_NUMBERS  1
+
 //----------------------------------------------------------------------
 
 // Helpers to generate fields inside tags.  The macros are designed to
 // fit within << operators.
 
+#define MARKER  "<>"
+#define MARKER_LEN  2
+
+#define GAPS_MARKER   "<>g"
+
+#if USE_INDEX_NUMBERS
 // this generates pre-order
-#define INDEX  \
-  " i=\"" << next_index++ << "\""
+#define INDEX  " i=\"" << next_index++ << "\""
+#define INDEX_MARKER  "<>i"
+
+#else
+#define INDEX         ""
+#define INDEX_MARKER  ""
+#endif
 
 #define NUMBER(label, num)  \
   " " << label << "=\"" << num << "\""
@@ -126,8 +141,10 @@ static const char * hpcstruct_xml_head =
 static void
 doIndent(ostream * os, int depth)
 {
-  for (int n = 1; n <= depth; n++) {
-    *os << INDENT;
+  if (pretty_print_output) {
+    for (int n = 1; n <= depth; n++) {
+      *os << INDENT;
+    }
   }
 }
 
@@ -170,6 +187,14 @@ locateTree(TreeNode *, ScopeInfo &, HPC::StringTable &, bool = false);
 
 //----------------------------------------------------------------------
 
+// Turn on indenting in XML output
+void setPrettyPrint(bool _pretty_print_output)
+{
+  pretty_print_output = _pretty_print_output;
+}
+
+//----------------------------------------------------------------------
+
 // Sort StmtInfo by line number and then by vma.
 static bool
 StmtLessThan(StmtInfo * s1, StmtInfo * s2)
@@ -178,7 +203,6 @@ StmtLessThan(StmtInfo * s1, StmtInfo * s2)
   if (s1->line_num > s2->line_num) { return false; }
   return s1->vma < s2->vma;
 }
-
 
 //----------------------------------------------------------------------
 
@@ -250,7 +274,6 @@ printLoadModuleEnd(ostream * os)
   *os << "</LM>\n";
 }
 
-
 //----------------------------------------------------------------------
 
 // Begin <F> file tag.
@@ -283,10 +306,15 @@ printFileEnd(ostream * os, FileInfo * finfo)
 //----------------------------------------------------------------------
 
 // Entry point for <P> proc tag and its subtree.
+//
+// This now does internal formatting of everything except index and
+// gap fields to a string stream buffer.  Note: this runs concurrently
+// with other procs, so must not touch internal state.  So, the index
+// and gap fields must be delayed.
+//
 void
-printProc(ostream * os, ostream * gaps, string gaps_file,
-	  FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo,
-	  HPC::StringTable & strTab)
+earlyFormatProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo,
+		bool do_gaps, HPC::StringTable & strTab)
 {
   if (os == NULL || finfo == NULL || ginfo == NULL
       || pinfo == NULL || pinfo->root == NULL) {
@@ -300,7 +328,7 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
 
   doIndent(os, 2);
   *os << "<P"
-      << INDEX
+      << INDEX_MARKER
       << STRING("n", pinfo->prettyName);
 
   if (pinfo->linkName != pinfo->prettyName) {
@@ -315,14 +343,68 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
 
   // write the gaps to the first proc (low vma) of the group.  this
   // only applies to full gaps.
-  if (gaps != NULL && (! ginfo->alt_file) && pinfo == ginfo->procMap.begin()->second) {
-    doGaps(os, gaps, gaps_file, finfo, ginfo, pinfo);
+  if (do_gaps && (! ginfo->alt_file) && pinfo == ginfo->procMap.begin()->second) {
+    *os << GAPS_MARKER;
   }
 
   doTreeNode(os, 3, root, scope, strTab);
 
   doIndent(os, 2);
   *os << "</P>\n";
+}
+
+//----------------------------------------------------------------------
+
+//
+// Do the final translation of the index and gaps markers (<>i, <>g)
+// from 'buf' and write the output to 'os' (hpcstruct file) and 'gaps'
+// (gaps file, if used).  This part is run serial, inside a lock.
+//
+// Note: this is called once per group, where pinfo is the group leader.
+//
+void
+finalPrintProc(ostream * os, ostream * gaps, string & buf, string & gaps_filenm,
+	       FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo)
+{
+  // if no index or gaps, then nothing to translate, just dump 'buf'
+  // directly to 'os'
+#if ! USE_INDEX_NUMBERS
+  if (gaps == NULL) {
+    *os << buf;
+    return;
+  }
+#endif
+
+  size_t start = 0;
+
+  for (;;) {
+    size_t pos = buf.find(MARKER, start);
+
+    // no more markers to translate
+    if (pos == string::npos) {
+      *os << buf.substr(start);
+      break;
+    }
+
+    *os << buf.substr(start, pos - start);
+
+    switch (buf[pos + MARKER_LEN]) {
+    case 'g':
+      doGaps(os, gaps, gaps_filenm, finfo, ginfo, pinfo);
+      break;
+
+    case 'i':
+      *os << INDEX;
+      break;
+
+    default:
+      cerr << "internal error (unknown marker) in hpcstruct: "
+	   << buf.substr(pos, 3) << "\n";
+      break;
+    }
+
+    start = pos + MARKER_LEN + 1;
+  }
 }
 
 //----------------------------------------------------------------------
@@ -491,7 +573,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     // guard alien
     doIndent(os, depth);
     *os << "<A"
-	<< INDEX
+	<< INDEX_MARKER
 	<< NUMBER("l", alien_scope.line_num)
 	<< STRING("f", strTab.index2str(file_index))
 	<< STRING("n", GUARD_NAME)
@@ -526,7 +608,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     // empty proc name.
     doIndent(os, depth);
     *os << "<A"
-	<< INDEX
+	<< INDEX_MARKER
 	<< NUMBER("l", flp.line_num)
 	<< STRING("f", strTab.index2str(flp.file_index))
 	<< STRING("n", "")
@@ -537,7 +619,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     // file and line from subtree.
     doIndent(os, depth + 1);
     *os << "<A"
-	<< INDEX
+	<< INDEX_MARKER
 	<< NUMBER("l", subscope.line_num)
 	<< STRING("f", strTab.index2str(subscope.file_index))
 	<< STRING("n", callname)
@@ -601,7 +683,7 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 
     doIndent(os, depth);
     *os << "<S"
-	<< INDEX
+	<< INDEX_MARKER
 	<< NUMBER("l", line)
 	<< " v=\"" << vset->toString() << "\""
 	<< "/>\n";
@@ -615,7 +697,7 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 
     doIndent(os, depth);
     *os << "<C"
-	<< INDEX
+	<< INDEX_MARKER
 	<< NUMBER("l", sinfo->line_num)
 	<< VRANGE(sinfo->vma, sinfo->len);
 
@@ -643,7 +725,7 @@ doLoopList(ostream * os, int depth, TreeNode * node, HPC::StringTable & strTab)
 
     doIndent(os, depth);
     *os << "<L"
-	<< INDEX
+	<< INDEX_MARKER
 	<< NUMBER("l", linfo->line_num)
 	<< STRING("f", strTab.index2str(linfo->file_index))
 	<< VRANGE(linfo->entry_vma, 1)
