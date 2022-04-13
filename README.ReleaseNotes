@@ -11,40 +11,53 @@ Enhancements:
 - Hpcrun supports profiling of kernels on AMD GPUs using publicly available
   hardware counters with AMD’s rocprofiler API.
 - Hpcrun obtains binaries for code that executes on AMD GPUs using AMD’s
-  Roctracer API instead of ROCm Debug API. 
+  Roctracer API instead of ROCm Debug API.
 - Hpcrun emits a better error message when an application unexpectedly closes
   hpcrun’s log file.
-- Hpcrun now uses an embedded implementation of an MD5 hash function for naming
-  CPU and GPU binaries revealed in memory. 
-- Hpcstruct now supports caching of structure files from binaries it analyzes. A
-  cache greatly reduces the time to analyze binaries for executions as the cache
-  will almost always contain up to date analysis results for commonly used shared
-  platform libraries, e.g. libc, libm, as well as libraries for MPI. When a binary
-  changes, results in the cache are updated as needed.
+- Hpcrun now uses an embedded implementation of an MD5 hash function for
+  naming CPU and GPU binaries revealed in memory.
+- Hpcstruct now supports caching of structure files from binaries it analyzes.
+  A cache greatly reduces the time to analyze binaries for executions as the
+  cache will almost always contain up to date analysis results for commonly
+  used shared platform libraries, e.g. libc, libm, as well as libraries for MPI.
+  When a binary changes, results in the cache are updated as needed.
 - Hpcstruct no longer pretty-prints its output by default. Omitting leading
   blanks due to pretty printing reduced the output size by over 15%, which was
   quite significant when analyzing multi-gigabyte binaries.
 - When applied to a measurements directory, hpcstruct will analyze only CPU and
   GPU binaries that were measured in the execution using a mix of parallelism
   and concurrency.  Binaries that did not get any profile hits are not analyzed.
-- Hpcstruct’s parallel efficiency has been improved. Changes that contributed to
-  that improvement include enhancements to parallelism in Dyninst’s finalization
-  of binary analysis and parallel assembly of hpcstruct’s output file, 
+- Hpcstruct’s parallel efficiency has been improved. Changes that contributed
+  to that improvement include enhancements to parallelism in Dyninst’s
+  finalization of binary analysis and parallel assembly of hpcstruct’s output
+  file.
 - Update hpcstruct to support analysis of CUDA binaries from 11.5+ to
   accommodate change to NVIDIA’s nvdisasm output format.
+- When measuring hardware counter metrics for kernels on AMD GPUs, disable
+  kernel measurement with Roctracer because it gives an incorrect timestamp
+  for the first kernel. The timestamp is wrong by a mile and destroys the
+  accuracy of kernel profiles and traces.
+
+Bug fixes:
+- Adjust tracing for ROCm GPU activities to correct alignment between CPU and
+  GPU timelines.
+- Fix use of Dyninst by hpcstruct so that it sees inlining info in Intel GPU
+  binaries.
 
 Infrastructure improvements:
 - Code for hpcrun’s use of LD_AUDIT has been streamlined.
-- Fixed recording of program path names as part of metadata in hpcrun’s output
-  files.
+- Fixed recording of program path names as part of metadata in hpcrun’s
+  output files.
 
 Dependency changes:
 - Deletions
   - Mbedtls - superceded by internal MD5 hash implementation
   - ROCm Debug API - obtain GPU binaries using Roctracer API instead
+  - Gotcha - unused and removed
 - Additions
-  - Rocprofiler API - included for a spack ‘+rocm’ install to provide access to
-    hardware counters on AMD GPUs
+  - Rocprofiler API - included for a spack ‘+rocm’ install to provide access
+    to hardware counters on AMD GPUs
+  - HSA - included for a spack ‘+rocm’ install to support rocprofiler
 
 
 HPCViewer Release Notes
@@ -66,17 +79,17 @@ Bug fixes:
   bottom-up views)
 - Fix issue #177 (truncated row selection)
 - Fix issue #179 (three dots in the statistic view)
-- Fix issue #188 (incorrect column size in bottom-up and flat views). Related to
-  issue #169
-- Fix issue #189 (selected row is not refreshed after expanding a node). 
+- Fix issue #188 (incorrect column size in bottom-up and flat views). Related
+  to issue #169
+- Fix issue #189 (selected row is not refreshed after expanding a node).
 - Fix "Apply to all views" option in the metric view for a merged database
 - Fix an error in the preference window
-- Fix row resizing in the statistic view 
+- Fix row resizing in the statistic view
 
 
 
 ----------------------------------------
-HPCToolkit 2021.01.10
+HPCToolkit 2022.01.10
 ----------------------------------------
 
 Bug fixes
