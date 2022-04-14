@@ -160,12 +160,12 @@ int hpctio_sys_rename(const char *oldpath, const char *newpath, hpctio_sys_t * s
 * Open/create a file/object with path and flags
 * return hpctio_obj_t * on success, NULL on failure, errno set properly
 */
-hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int writemode, hpctio_sys_t * sys){
+hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int wmode, int sizetype, hpctio_sys_t * sys){
     hpctio_obj_t * obj = (hpctio_obj_t *) malloc(sizeof(hpctio_obj_t));
     
     obj->sys_ptr = sys;
 
-    hpctio_obj_opt_t * opt = sys->func_ptr->obj_options(writemode);
+    hpctio_obj_opt_t * opt = sys->func_ptr->obj_options(wmode, sizetype);
     obj->opt_ptr = opt;
 
     hpctio_obj_id_t * oid = sys->func_ptr->open(path, flags, md, opt, sys->params_ptr);

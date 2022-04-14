@@ -737,7 +737,9 @@ static const int SF_cct_node_id_SIZE      = 4;
 static const int SF_cct_node_idx_SIZE     = 8;
 
 typedef struct hpcrun_sparse_file {
+  //hpctio_obj_t * fobj;
   FILE* file;
+  hpctio_sys_t * input_sys;
   hpcrun_fmt_footer_t footer;
 
   //use for Pause, Resume

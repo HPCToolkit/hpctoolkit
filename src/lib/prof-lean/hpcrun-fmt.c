@@ -1145,13 +1145,14 @@ hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre)
 // File sections in order:
 // hdr, loadmap, ccts, metric-tbl, sparse metrics, footer
 //***************************************************************************
-hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, size_t end_pos)
+hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, size_t end_pos)//, hpctio_sys_t * sys)
 {
   FILE* fs = hpcio_fopen_r(path);
-  if(!fs) return NULL;
+  //hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, NULL, sys);
+  //if(!fobj) return NULL;
 
   hpcrun_sparse_file_t* sparse_fs = (hpcrun_sparse_file_t*) malloc(sizeof(hpcrun_sparse_file_t));
-  sparse_fs->file = fs;
+  //sparse_fs->fobj = fobj;
   sparse_fs->mode = OPENED;
   sparse_fs->cur_pos = start_pos;
   sparse_fs->start_pos = start_pos;

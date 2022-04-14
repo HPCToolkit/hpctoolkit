@@ -323,7 +323,7 @@ hpcrun_open_file2(int rank, int thread, const char *suffix, int flags)
 
   // If not recording data for this process, then open /dev/null.
   if (! hpcrun_sample_prob_active()) {
-    obj = hpctio_obj_open("/dev/null", O_WRONLY, NULL, HPCTIO_WRITAPPEND, output_sys);
+    obj = hpctio_obj_open("/dev/null", O_WRONLY, NULL, HPCTIO_APPEND, HPCTIO_SMALL_F, output_sys);
     return obj;
   }
 
@@ -337,7 +337,7 @@ hpcrun_open_file2(int rank, int thread, const char *suffix, int flags)
       errno = ENAMETOOLONG;
       break;
     }
-    obj = hpctio_obj_open(name, O_WRONLY | O_CREAT | O_EXCL, 0644, HPCTIO_WRITAPPEND, output_sys);
+    obj = hpctio_obj_open(name, O_WRONLY | O_CREAT | O_EXCL, 0644, HPCTIO_APPEND, HPCTIO_SMALL_F, output_sys);
     if (obj) {
       // success
       break;
@@ -758,7 +758,7 @@ hpcrun_save_vdso()
   // loop enables us to use break for unstructured control flow
   for(;;) {
     errno = 0;
-    fobj = hpctio_obj_open(name, O_WRONLY | O_CREAT | O_EXCL, 0644, HPCTIO_WRITAPPEND, output_sys);
+    fobj = hpctio_obj_open(name, O_WRONLY | O_CREAT | O_EXCL, 0644, HPCTIO_APPEND, HPCTIO_SMALL_F, output_sys);
     if (errno == EEXIST) {
       // another process already wrote [vdso]
       set_saved_vdso_path(name);

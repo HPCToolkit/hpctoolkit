@@ -3,6 +3,7 @@
 #include <libgen.h>
 #include <daos.h>
 #include <daos_fs.h>
+#include <daos_obj_class.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <string.h>
@@ -26,7 +27,7 @@ static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
 static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p);
 static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_params_t * p);
 
-static hpctio_obj_opt_t * DFS_Obj_Options(int writemode);
+static hpctio_obj_opt_t * DFS_Obj_Options(int wmode, int sizetype);
 static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
@@ -72,10 +73,9 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
 /*************************** FILE SYSTEM OBJECT STRUCTS ***************************/
 //file system objects options struct
 typedef struct hpctio_dfs_obj_opt {
-  daos_oclass_id_t objectClass;
-  //daos_oclass_id_t dir_oclass;
+  daos_oclass_id_t oc;
 
-  int writemode;
+  int wmode;
   long file_size;
   int buffer_size;
   int buffer_capacity;
@@ -563,9 +563,9 @@ static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p){
         CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
     }
 
-    r = dfs_mkdir(dfs_p->dfs, parent, name, md, 0);
-    if(r != EEXIST){
-        CHECK(r, "Failed to create the directory %s with errno %d", name, r);
+    r = dfs_mkdir(dfs_p->dfs, parent, name, md, OC_SX);
+    if(r == EEXIST){
+        r = 0;
     }
 
 exit:
@@ -597,9 +597,6 @@ static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p){
     }
 
     r = dfs_access(dfs_p->dfs, parent, name, md);
-    if(r != ENOENT){
-        CHECK(r, "Failed to check access for %s with errno %d", path, r);
-    }
 
 exit:
     if(name) free(name);
@@ -639,7 +636,6 @@ static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_param
     }
 
     r = dfs_move(dfs_p->dfs, oldparent, oldname, newparent, newname, NULL);
-    CHECK(r, "Failed to rename the file %s to %s, with errno %d", oldpath, newpath, r);
 
 exit:
     if(oldname) free(oldname);
@@ -656,10 +652,14 @@ exit:
 }
 
 
-static hpctio_obj_opt_t * DFS_Obj_Options(int writemode){
+static hpctio_obj_opt_t * DFS_Obj_Options(int wmode, int sizetype){
     hpctio_dfs_obj_opt_t * opt = (hpctio_dfs_obj_opt_t *) malloc(sizeof(hpctio_dfs_obj_opt_t));
-    opt->writemode = writemode;
-    opt->objectClass = 0;
+    if(sizetype == HPCTIO_SMALL_F) 
+        opt->oc = OC_S1;   
+    if(sizetype == HPCTIO_LARGE_F)
+        opt->oc = OC_EC_2P1GX; //on Aurora, it should be OC_EC_16P2GX
+    
+    opt->wmode = wmode;
     opt->buffer_capacity = 1024 * 1024;
     return (hpctio_obj_opt_t *)opt;
 }
@@ -681,11 +681,9 @@ static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpcti
         CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
     }
 
-    r = dfs_open(dfs_p->dfs, parent, name, md | S_IFREG, flags, dfs_opt->objectClass, 0, NULL, &obj);
-    CHECK(r, "Failed to open file %s due to errno %d", path, r);
+    r = dfs_open(dfs_p->dfs, parent, name, md | S_IFREG, flags, dfs_opt->oc, 0, NULL, &obj);
 
-    if(dfs_opt->writemode == HPCTIO_APPEND_ONLY || 
-        dfs_opt->writemode == HPCTIO_WRITAPPEND){
+    if(dfs_opt->wmode == HPCTIO_APPEND){
         dfs_opt->file_size = 0;
         dfs_opt->buffer_size = 0;
         dfs_opt->buffer = (char *) malloc(dfs_opt->buffer_capacity); 
@@ -711,7 +709,7 @@ static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_p
     int r;
 
     // check if any data remain in the buffer to be flushed
-    if((dfs_opt->writemode != HPCTIO_WRITE_ONLY) && (dfs_opt->buffer_size > 0)){
+    if((dfs_opt->wmode == HPCTIO_APPEND) && (dfs_opt->buffer_size > 0)){
         r = real_write(dfs_opt->buffer, dfs_opt->buffer_size, dfs_opt->file_size, dfs_p->dfs, dobj);
         if(r == dfs_opt->buffer_size){
             dfs_opt->buffer_size = 0;
@@ -720,13 +718,12 @@ static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_p
         CHECK((r == -1), "Failed to flush the buffer during DFS_Close() the file object");
     }
 
-    if(dfs_opt->writemode != HPCTIO_WRITE_ONLY){
+    if(dfs_opt->wmode == HPCTIO_APPEND){
         free(dfs_opt->buffer);
         dfs_opt->buffer = NULL;
     }
 
     r = dfs_release(dobj);
-    CHECK(r, "Failed to dfs_release the file object");
 
 exit:
     if(r && (r != -1)){
@@ -739,7 +736,7 @@ exit:
 
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
     hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
-    CHECK((dfs_opt->writemode == HPCTIO_WRITE_ONLY),  "DFS - Appending to a file with HPCTIO_WRITE_ONLY mode is not allowed");
+    CHECK((dfs_opt->wmode != HPCTIO_APPEND),  "DFS - Appending to a file without HPCTIO_APPEND mode is not allowed");
 
     hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
     dfs_obj_t * dobj = (dfs_obj_t *) obj;
@@ -773,10 +770,13 @@ exit:
 
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt){
     hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
-    if(dfs_opt->writemode == HPCTIO_WRITE_ONLY){
+
+    if(dfs_opt->wmode == HPCTIO_APPEND){
+        return (dfs_opt->file_size + dfs_opt->buffer_size);
+    }else{ //HPCTIO_WRITE_AT or error
         return -1;
     }
-    return (dfs_opt->file_size + dfs_opt->buffer_size);
+    
 }
 
 

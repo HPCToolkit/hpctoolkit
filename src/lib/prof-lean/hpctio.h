@@ -38,7 +38,7 @@ typedef struct hpctio_sys_func {
   int (*access)(const char *path, int md, hpctio_sys_params_t * p);
   int (*rename)(const char *old_path, const char * new_path, hpctio_sys_params_t * p);
 
-  hpctio_obj_opt_t * (*obj_options)(int writemode);
+  hpctio_obj_opt_t * (*obj_options)(int wrmode, int sizetype);
   hpctio_obj_id_t * (*open)(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
   int (*close)(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
@@ -47,22 +47,6 @@ typedef struct hpctio_sys_func {
   long int (*tell)(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
 
-
-
-  /*
-   hpctio_fd_t * (*create)(const char *path, mode_t md);
-    int (*delete)(const char * path);
-    hpctio_fd_t * (*open)(const char *path, int flags, mode_t md);
-    int (*close)(hpctio_fd_t * fd);
-
-    int (*mkdir)(const char *path, mode_t md);
-    int (*rmdir)(const char *path);
-
-    int (*write)(hpctio_fd_t * fd, const void* buf, hpctio_size_t size, hpctio_size_t num, hpctio_offset_t off);
-    int (*read)(hpctio_fd_t * fd, void* buf, hpctio_size_t size, hpctio_size_t num, hpctio_offset_t off);
-
-    hpctio_mod_opt_t * (*get_options)(int argc, char **argv);
-    */
 
 
 
