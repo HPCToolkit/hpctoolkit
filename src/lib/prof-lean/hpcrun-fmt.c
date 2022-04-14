@@ -280,7 +280,7 @@ hpcrun_metricVal_t hpcrun_metricVal_ZERO = { .bits = 0 };
 //***************************************************************************
 
 int
-hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_info,
+hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, 
 		FILE* fs, double fmtVersion, hpcfmt_alloc_fn alloc)
 {
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(metric_tbl->len), fs));
@@ -289,39 +289,21 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_inf
       (metric_desc_t*) alloc(metric_tbl->len * sizeof(metric_desc_t));
   }
 
-  size_t aux_info_size = sizeof(metric_aux_info_t) * metric_tbl->len;
-  metric_aux_info_t *perf_info = (metric_aux_info_t*)malloc(aux_info_size);
-  memset(perf_info, 0, aux_info_size);
 
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
     metric_desc_t* x = &metric_tbl->lst[i];
-    HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(x, &(perf_info)[i], fs, fmtVersion, alloc));
+    HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(x, fs, fmtVersion, alloc));
   }
-  *aux_info = perf_info;
   
   return HPCFMT_OK;
 }
 
 
 int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* fs)
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* fs)
 {
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
-
-	  // corner case: for other sampling sources than perf event, the
-	  // value of aux_info is NULL
-
-    metric_aux_info_t info_tmp;
-	metric_aux_info_t *info_ptr = aux_info;
-
-	if (aux_info == NULL) {
-	  memset(&info_tmp, 0, sizeof(metric_aux_info_t));
-	  info_ptr = &info_tmp;
-	} else {
-	  info_ptr = &(aux_info[i]);
-	}
-
-    hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], info_ptr, fs);
+    hpcrun_fmt_metricDesc_fwrite(metric_tbl->lst[i], fs);
   }
 
   return HPCFMT_OK;
@@ -329,12 +311,12 @@ hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *
 
 
 int
-hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* fs)
+hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metric_tbl, FILE* fs)
 {
   fprintf(fs, "[metric-tbl: (num-entries: %u)\n", metric_tbl->len);
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
     metric_desc_t* x = &metric_tbl->lst[i];
-    hpcrun_fmt_metricDesc_fprint(x, &(aux_info[i]), fs, "  ");
+    hpcrun_fmt_metricDesc_fprint(x, fs, "  ");
   }
   fputs("]\n", fs);
   
@@ -357,7 +339,7 @@ hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc)
 //***************************************************************************
 
 int
-hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* fs,
+hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
 			    double GCC_ATTR_UNUSED fmtVersion,
 			    hpcfmt_alloc_fn alloc)
 {
@@ -392,9 +374,9 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE*
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->format), fs, alloc));
 
   HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->is_frequency_metric),    fs));
-  HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(aux_info->is_multiplexed),  fs));
-  HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(aux_info->threshold_mean),  fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread ((&aux_info->num_samples),     fs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->aux_info.is_multiplexed),  fs));
+  HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->aux_info.threshold_mean),  fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread ((&x->aux_info.num_samples),     fs));
 
   // These two aren't written into the hpcrun file; hence manually set them.
   x->properties.time = 0;
@@ -405,7 +387,7 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE*
 
 
 int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* fs)
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->name, fs));
   HPCFMT_ThrowIfError(hpcfmt_str_fwrite(x->description, fs));
@@ -416,16 +398,16 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE
 
   HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->is_frequency_metric, fs));
 
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(aux_info->is_multiplexed, fs));
-  HPCFMT_ThrowIfError(hpcfmt_real8_fwrite(aux_info->threshold_mean, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(aux_info->num_samples, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->aux_info.is_multiplexed, fs));
+  HPCFMT_ThrowIfError(hpcfmt_real8_fwrite(x->aux_info.threshold_mean, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->aux_info.num_samples, fs));
 
   return HPCFMT_OK;
 }
 
 
 int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* fs, const char* pre)
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "%s[(nm: %s) (desc: %s) "
 	  "((ty: %d) (val-ty: %d) (val-fmt: %d) (partner: %u) (show: %d) (showPercent: %d)) "
@@ -437,8 +419,8 @@ hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE
 	  x->period,
 	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
   fprintf(fs, "    (frequency: %d) (multiplexed: %d) (period-mean: %f) (num-samples: %d)]\n",
-          (int)x->is_frequency_metric, (int)aux_info->is_multiplexed,
-		  aux_info->threshold_mean,  (int) aux_info->num_samples);
+          (int)x->is_frequency_metric, (int)x->aux_info.is_multiplexed,
+		  x->aux_info.threshold_mean,  (int) x->aux_info.num_samples);
   return HPCFMT_OK;
 }
 

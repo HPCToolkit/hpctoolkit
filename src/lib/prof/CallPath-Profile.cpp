@@ -1149,15 +1149,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // metric-tbl
   // ----------------------------------------
   metric_tbl_t metricTbl;
-  metric_aux_info_t *aux_info;
 
-  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, &aux_info, infs, hdr.version, malloc);
+  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, infs, hdr.version, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
     if (Analysis::Util::option == Analysis::Util::Print_All) 
-      hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
+      hpcrun_fmt_metricTbl_fprint(&metricTbl, outfs);
   }
 
   const uint numMetricsSrc = metricTbl.len;
@@ -1345,7 +1344,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     const metric_desc_t& mdesc = m_lst[i];
-    const metric_aux_info_t &current_aux_info = aux_info[i];
+    const metric_aux_info_t &current_aux_info = mdesc.aux_info;
 
     // ----------------------------------------
     // 
@@ -1497,10 +1496,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   hpcrun_fmt_epochHdr_free(&ehdr, free);
   hpcrun_fmt_metricTbl_free(&metricTbl, free);
 
-  if (aux_info) {
-    free(aux_info);
-  }
-  
   return HPCFMT_OK;
 }
 
@@ -1736,12 +1731,7 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.format = NULL;
     mdesc.is_frequency_metric = false;
 
-    metric_aux_info_t aux_info;
-    aux_info.is_multiplexed = m->isMultiplexed();
-    aux_info.num_samples    = m->num_samples();
-    aux_info.threshold_mean = m->periodMean();
-
-    ret = hpcrun_fmt_metricDesc_fwrite(&mdesc, &aux_info, fs);
+    ret = hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
     if (ret == HPCFMT_ERR) return HPCFMT_ERR;
   }
 

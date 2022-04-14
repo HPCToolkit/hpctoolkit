@@ -385,7 +385,9 @@ typedef struct metric_desc_t {
   char* formula;
   char* format;
 
+  // Additional perf events info 
   bool is_frequency_metric;
+  metric_aux_info_t aux_info;
 } metric_desc_t;
 
 extern const metric_desc_t metricDesc_NULL;
@@ -399,28 +401,28 @@ HPCFMT_List_declare(metric_desc_p_t);
 typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metric_desc_t*
 
 extern int
-hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_info, FILE* in,
+hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
 			   double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
 
 extern int
-hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, metric_aux_info_t *aux_info, FILE* out);
+hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
 
 extern void
 hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 extern int
-hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* infs,
+hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
 			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs);
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
 
 extern int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs, const char* pre);
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre);
 
 extern void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
