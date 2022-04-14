@@ -76,6 +76,7 @@
 // -----------------------------------------------------
 
 #define EVNAME_KERNEL_BLOCK     "BLOCKTIME"
+#define METRIC_NAME_BLOCKTIME   "BLOCKTIME (s)"
 #define EVNAME_CONTEXT_SWITCHES "CNTXT_SWTCH"
 
 
@@ -117,14 +118,20 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
     return;
   }
 
+  // compute the blocking time: current_time - time_last_cs_out 
+  // Linux kernel should give us time in nanosec (see the sched_clock()) so we need
+  // to convert it to sec by multiply it with 1e-09
+  const double SEC_PER_NANOSEC = 0.000000001;
+
   uint64_t delta = mmap_data->time - time_cs_out;
+  double   delta_in_sec = delta * SEC_PER_NANOSEC;
 
   // ----------------------------------------------------------------
   // blame the time spent in the kernel to the cct kernel
   // ----------------------------------------------------------------
 
   cct_metric_data_increment(metric_blocking_index, cct_kernel,
-      (cct_metric_data_t){.i = delta});
+      (cct_metric_data_t){.r = delta_in_sec});
 
   // ----------------------------------------------------------------
   // it's important to always count the number of samples for debugging purpose
@@ -224,8 +231,8 @@ register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
   // ------------------------------------------
   event_desc->metric_custom->metric_index = 
     hpcrun_set_new_metric_info_and_period(
-      blocktime_kind, EVNAME_KERNEL_BLOCK,
-      MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
+      blocktime_kind, METRIC_NAME_BLOCKTIME,
+      MetricFlags_ValFmt_Real, 1 /* period */, metric_property_none);
 
   event_desc->metric_custom->metric_desc = 
     hpcrun_id2metric_linked(event_desc->metric_custom->metric_index);  
@@ -277,10 +284,8 @@ register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
 void kernel_blocking_init()
 {
   event_kernel_blocking.name         = EVNAME_KERNEL_BLOCK;
-  event_kernel_blocking.desc         = "Approximation of a thread's blocking time."  
-					" This event requires another event (such as CYCLES) to profile with."  
-					" The unit time is hardware-dependent but mostly in microseconds."  
-					" This event is only available on Linux kernel 4.3 or newer.";
+  event_kernel_blocking.desc         = "Approximation of a thread's blocking time in the Linux kernel."
+                                       " This event is only available on Linux kernel 4.3 or newer.";
   event_kernel_blocking.register_fn  = register_blocking;   // call backs
   event_kernel_blocking.handler_fn   = NULL; 		// No call backs: we want all event to call us
   event_kernel_blocking.metric_index = 0;   		// these fields to be defined later
