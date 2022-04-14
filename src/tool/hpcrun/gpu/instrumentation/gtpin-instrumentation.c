@@ -230,13 +230,6 @@ findOrAddKernelModule
   memset(file_name, 0, PATH_MAX);
   gpu_binary_compute_hash_string(kernel_elf, kernel_elf_size, file_name);
 
-  // Compute hash for the kernel name
-  char kernel_name_hash[PATH_MAX];
-  gpu_binary_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
-
-  strcat(file_name, ".");
-  strncat(file_name, kernel_name_hash, strlen(kernel_name_hash));
-
   char file_path[PATH_MAX];
   gpu_binary_path_generate(file_name, file_path);
 
@@ -247,6 +240,12 @@ findOrAddKernelModule
 
   free(kernel_elf);
 
+  // Compute hash for the kernel name
+  char kernel_name_hash[PATH_MAX];
+  gpu_binary_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
+
+  strcat(file_path, ".");
+  strncat(file_path, kernel_name_hash, strlen(kernel_name_hash));
 
   uint32_t module_id = 0;
 
