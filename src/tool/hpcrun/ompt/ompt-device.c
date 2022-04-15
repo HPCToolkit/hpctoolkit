@@ -61,6 +61,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/messages/messages.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
@@ -498,6 +499,8 @@ ompt_device_initialize(int device_num,
     ompt_bind_names(lookup);
 
     ompt_trace_configure(device);
+  } else {
+    EEMSG("WARNING: OMPT GPU monitoring not supported by vendor runtime");
   }
 
   device_list_insert(device_num, device);
