@@ -81,6 +81,8 @@
 
 #include "gpu/ompt/ompt-gpu-api.h"
 
+#include "monitor.h"
+
 
 
 //*****************************************************************************
@@ -477,12 +479,18 @@ ompt_buffer_complete
 void
 ompt_trace_configure(ompt_device_t *device)
 {
+  // ignore tooling threads created while enabling a device
+  monitor_disable_new_threads();
+
   // indicate desired monitoring
   ompt_set_trace_ompt(device, 1, 0);
 
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_buffer_request,
 		   ompt_buffer_complete);
+
+  // resume thread tracking
+  monitor_enable_new_threads();
 }
 
 
