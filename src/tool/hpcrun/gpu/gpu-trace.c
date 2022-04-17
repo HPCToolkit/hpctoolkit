@@ -313,11 +313,15 @@ gpu_trace_fini
 {
   PRINT("gpu_trace_fini called\n");
 
-  atomic_store(&stop_trace_flag, true);
+  // trace finalization is idempotent
+  if (atomic_load(&stop_trace_flag) != true) {
 
-  gpu_trace_demultiplexer_notify();
+    atomic_store(&stop_trace_flag, true);
 
-  while (atomic_load(&active_streams_counter));
+    gpu_trace_demultiplexer_notify();
+
+    while (atomic_load(&active_streams_counter));
+  }
 }
 
 
