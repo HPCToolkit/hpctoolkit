@@ -1212,10 +1212,10 @@ monitor_thread_pre_create(void)
   struct monitor_thread_info mti;
   monitor_get_new_thread_info(&mti);
   void *thread_pre_create_address = mti.mti_create_return_addr;
-
   if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
-    return NULL;
+    return MONITOR_IGNORE_NEW_THREAD;
   }
+
   bool is_child = false;
 
   // outer initialization
