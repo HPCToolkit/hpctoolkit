@@ -76,7 +76,7 @@
 // -----------------------------------------------------
 
 #define EVNAME_KERNEL_BLOCK     "BLOCKTIME"
-#define METRIC_NAME_BLOCKTIME   "BLOCKTIME (s)"
+#define METRIC_NAME_BLOCKTIME   "BLOCKTIME (sec)"
 #define EVNAME_CONTEXT_SWITCHES "CNTXT_SWTCH"
 
 
