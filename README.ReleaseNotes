@@ -62,20 +62,21 @@ Dependency changes:
 Known Issues:
 - Profile measurements and traces for AMD GPUs, which are new for ROCm 5.1,
   should be viewed with some skepticism.
-  
-  Also, elapsed time for copies seem too large for executions that we've 
+    Also, elapsed time for copies seem too large for executions that we've 
   measured. For a 96-thread run of miniqmc, the aggregate time for copies 
   reported by AMD's OMPT implementation for its GPUs was almost 100x longer
   than the real time of the execution. If timestamps are incorrect for 
   OpenMP events on AMD GPUs, this will affect the accuracy of both profile 
   and trace views.
-
-  Furthermore, trace items for OpenMP events on AMD GPUs are known to
+    Furthermore, trace items for OpenMP events on AMD GPUs are known to
   overlap. For that reason, having hpcviewer render them on a single
   trace line, which it does, is problematic. As a result, overlapping
   trace items will cause incorrect statistics in trace view. In such
   cases, the profile view will accurately represent the aggregate values
   reported by OMPT for AMD GPUs.
+- In some cases, attribution of exclusive metrics for BLOCKTIME and 
+  CTXT SWTCH to call paths within the Linux kernel may be missing 
+  even though inclusive costs for these metrics are attributed properly.
 
 
 HPCViewer Release Notes
