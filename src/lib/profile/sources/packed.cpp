@@ -240,16 +240,18 @@ std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it, const ctx_
     for(Metric& m: metrics) {
       c.data().markUsed(m, MetricScopeSet(unpack<MetricScopeSet::int_type>(it)));
 
-      auto& accums = c.data().statisticsFor(m);
+      util::optional_ref<StatisticAccumulator> accums;
       for(const auto& p: m.partials()) {
-        auto accum = accums.get(p);
-        double v;
-        if((v = unpack<double>(it)) != 0)
-          accum.add(MetricScope::point, v);
-        if((v = unpack<double>(it)) != 0)
-          accum.add(MetricScope::function, v);
-        if((v = unpack<double>(it)) != 0)
-          accum.add(MetricScope::execution, v);
+        double point = unpack<double>(it);
+        double function = unpack<double>(it);
+        double execution = unpack<double>(it);
+        if(point != 0 || function != 0 || execution != 0) {
+          if(!accums) accums = c.data().statisticsFor(m);
+          auto accum = accums->get(p);
+          if(point != 0) accum.add(MetricScope::point, point);
+          if(function != 0) accum.add(MetricScope::function, function);
+          if(execution != 0) accum.add(MetricScope::execution, execution);
+        }
       }
     }
   }
