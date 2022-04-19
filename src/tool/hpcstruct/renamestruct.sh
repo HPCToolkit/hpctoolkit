@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 #  Script is invoked with two arguments, $1 = new path needed, $2 = structure-file
 
