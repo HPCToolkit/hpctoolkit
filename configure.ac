@@ -1898,6 +1898,7 @@ default_perfmon_prefix=no
 default_tbb_prefix=no
 default_xed_prefix=no
 default_xerces_prefix=no
+default_yamlcpp_prefix=no
 default_zlib_prefix=no
 default_valgrind_prefix=no
 
@@ -2009,6 +2010,9 @@ then
   fi
   if find_spack_pkg xerces-c ; then
     default_xerces_prefix="$spack_ans"
+  fi
+  if find_spack_pkg yaml-cpp ; then
+    default_yamlcpp_prefix="$spack_ans"
   fi
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
@@ -3528,6 +3532,64 @@ AC_SUBST([XERCES_LDFLAGS])
 AC_SUBST([XERCES_LDLIBS])
 AC_SUBST([XERCES_COPY])
 AC_SUBST([XERCES_LIB])
+
+
+#-------------------------------------------------
+# Check for YAML-cpp (YAML parser and emitter)
+#-------------------------------------------------
+
+YAMLCPP="$default_yamlcpp_prefix"
+
+AC_MSG_CHECKING([for YAML-cpp])
+
+AC_ARG_WITH([yaml-cpp],
+  [AS_HELP_STRING([--with-yaml-cpp=PATH],
+                  [path to YAML-cpp install directory])],
+  [if test $withval != no; then
+     YAMLCPP=${withval}
+   fi],
+  [])
+
+YAMLCPP_IFLAGS=
+YAMLCPP_LDFLAGS=
+YAMLCPP_LDLIBS=
+YAMLCPP_COPY=no
+
+case "$YAMLCPP" in
+  /* )
+    if test ! -f "${YAMLCPP}/include/yaml-cpp/yaml.h" ; then
+      AC_MSG_ERROR([unable to find yaml.h in: $YAMLCPP])
+    fi
+    YAMLCPP_IFLAGS="-I${YAMLCPP}/include"
+    YAMLCPP_LDLIBS="-lyaml-cpp"
+    for lib in $multilib_path ; do
+      if test -f "${YAMLCPP}/${lib}/libyaml-cpp.so" ; then
+        YAMLCPP_LDFLAGS="-L${YAMLCPP}/${lib}"
+        YAMLCPP_LIB="${YAMLCPP}/${lib}"
+	break
+      fi
+    done
+    if test "x$YAMLCPP_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libyaml-cpp.so in: $YAMLCPP])
+    fi
+    YAMLCPP_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([yaml-cpp directory must be absolute path: $YAMLCPP])
+    ;;
+esac
+
+AC_MSG_RESULT([$YAMLCPP])
+
+AC_SUBST([YAMLCPP])
+AC_SUBST([YAMLCPP_IFLAGS])
+AC_SUBST([YAMLCPP_LDFLAGS])
+AC_SUBST([YAMLCPP_LDLIBS])
+AC_SUBST([YAMLCPP_COPY])
+AC_SUBST([YAMLCPP_LIB])
 
 
 #-------------------------------------------------
@@ -5419,6 +5481,7 @@ if test "$OPT_HAVE_ROCM" = yes ; then
 fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
+AC_MSG_NOTICE([  yaml-cpp:     ${YAMLCPP}])
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`
