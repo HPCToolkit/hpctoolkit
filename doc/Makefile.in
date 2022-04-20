@@ -830,6 +830,7 @@ uninstall-am: uninstall-dist_loosedocsDATA
 
 .PRECIOUS: Makefile
 
+	METRICS.yaml
 
 #############################################################################
 # Other rules
