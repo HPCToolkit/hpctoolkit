@@ -163,7 +163,6 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	sources/libHPCprofile_la-hpcrun4.lo \
 	sinks/libHPCprofile_la-hpctracedb2.lo \
 	sinks/libHPCprofile_la-packed.lo \
-	sinks/libHPCprofile_la-experimentxml4.lo \
 	sinks/libHPCprofile_la-sparsedb.lo \
 	sinks/libHPCprofile_la-metricsyaml.lo \
 	sinks/libHPCprofile_la-metadb.lo \
@@ -577,7 +576,7 @@ MYSOURCES = \
 	\
 	sources/packed.cpp sources/hpcrun4.cpp \
 	\
-	sinks/hpctracedb2.cpp sinks/packed.cpp sinks/experimentxml4.cpp \
+	sinks/hpctracedb2.cpp sinks/packed.cpp \
 	sinks/sparsedb.cpp sinks/metricsyaml.cpp sinks/metadb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
@@ -723,8 +722,6 @@ sinks/libHPCprofile_la-hpctracedb2.lo: sinks/$(am__dirstamp) \
 	sinks/$(DEPDIR)/$(am__dirstamp)
 sinks/libHPCprofile_la-packed.lo: sinks/$(am__dirstamp) \
 	sinks/$(DEPDIR)/$(am__dirstamp)
-sinks/libHPCprofile_la-experimentxml4.lo: sinks/$(am__dirstamp) \
-	sinks/$(DEPDIR)/$(am__dirstamp)
 sinks/libHPCprofile_la-sparsedb.lo: sinks/$(am__dirstamp) \
 	sinks/$(DEPDIR)/$(am__dirstamp)
 sinks/libHPCprofile_la-metricsyaml.lo: sinks/$(am__dirstamp) \
@@ -793,7 +790,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-struct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_standalone_la-standalone.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-experimentxml4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-hpctracedb2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-metadb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-metricsyaml.Plo@am__quote@
@@ -1054,13 +1050,6 @@ sinks/libHPCprofile_la-packed.lo: sinks/packed.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/packed.cpp' object='sinks/libHPCprofile_la-packed.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_la-packed.lo `test -f 'sinks/packed.cpp' || echo '$(srcdir)/'`sinks/packed.cpp
-
-sinks/libHPCprofile_la-experimentxml4.lo: sinks/experimentxml4.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_la-experimentxml4.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_la-experimentxml4.Tpo -c -o sinks/libHPCprofile_la-experimentxml4.lo `test -f 'sinks/experimentxml4.cpp' || echo '$(srcdir)/'`sinks/experimentxml4.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sinks/$(DEPDIR)/libHPCprofile_la-experimentxml4.Tpo sinks/$(DEPDIR)/libHPCprofile_la-experimentxml4.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/experimentxml4.cpp' object='sinks/libHPCprofile_la-experimentxml4.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_la-experimentxml4.lo `test -f 'sinks/experimentxml4.cpp' || echo '$(srcdir)/'`sinks/experimentxml4.cpp
 
 sinks/libHPCprofile_la-sparsedb.lo: sinks/sparsedb.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_la-sparsedb.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_la-sparsedb.Tpo -c -o sinks/libHPCprofile_la-sparsedb.lo `test -f 'sinks/sparsedb.cpp' || echo '$(srcdir)/'`sinks/sparsedb.cpp
