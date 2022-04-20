@@ -1891,6 +1891,7 @@ default_perfmon_prefix=no
 default_tbb_prefix=no
 default_xed_prefix=no
 default_xerces_prefix=no
+default_yamlcpp_prefix=no
 default_zlib_prefix=no
 default_valgrind_prefix=no
 
@@ -2006,6 +2007,9 @@ then
   fi
   if find_spack_pkg xerces-c ; then
     default_xerces_prefix="$spack_ans"
+  fi
+  if find_spack_pkg yaml-cpp ; then
+    default_yamlcpp_prefix="$spack_ans"
   fi
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
@@ -3700,6 +3704,44 @@ AC_SUBST([XERCES_LDFLAGS])
 AC_SUBST([XERCES_LDLIBS])
 AC_SUBST([XERCES_COPY])
 AC_SUBST([XERCES_LIB])
+
+
+#-------------------------------------------------
+# Check for YAML-cpp (YAML parser and emitter)
+#-------------------------------------------------
+
+YAMLCPP="$default_yamlcpp_prefix"
+
+AC_MSG_CHECKING([for YAML-cpp])
+
+AC_ARG_WITH([yaml-cpp],
+  [AS_HELP_STRING([--with-yaml-cpp=PATH],
+                  [path to YAML-cpp install directory])],
+  [if test $withval != no; then
+     YAMLCPP=${withval}
+   fi],
+  [])
+
+YAMLCPP_IFLAGS="-I${YAMLCPP}/include"
+YAMLCPP_LDFLAGS="-L${YAMLCPP}/lib"
+YAMLCPP_LDLIBS="-lyaml-cpp"
+
+
+if test "$YAMLCPP" = no ; then
+  YAMLCPP_COPY=no
+else
+  YAMLCPP_COPY=yes
+  YAMLCPP_LIB="${YAMLCPP}/lib"
+  num_pkgs=`expr 1 + $num_pkgs`
+fi
+
+AC_MSG_RESULT([${YAMLCPP}])
+AC_SUBST([YAMLCPP])
+AC_SUBST([YAMLCPP_IFLAGS])
+AC_SUBST([YAMLCPP_LDFLAGS])
+AC_SUBST([YAMLCPP_LDLIBS])
+AC_SUBST([YAMLCPP_COPY])
+AC_SUBST([YAMLCPP_LIB])
 
 
 #-------------------------------------------------
@@ -5791,6 +5833,7 @@ if test "$OPT_HAVE_ROCM" = yes ; then
 fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
+AC_MSG_NOTICE([  yaml-cpp:     ${YAMLCPP}])
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

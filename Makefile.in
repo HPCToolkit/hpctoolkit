@@ -395,6 +395,12 @@ XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
+YAMLCPP = @YAMLCPP@
+YAMLCPP_COPY = @YAMLCPP_COPY@
+YAMLCPP_IFLAGS = @YAMLCPP_IFLAGS@
+YAMLCPP_LDFLAGS = @YAMLCPP_LDFLAGS@
+YAMLCPP_LDLIBS = @YAMLCPP_LDLIBS@
+YAMLCPP_LIB = @YAMLCPP_LIB@
 ZLIB_COPY = @ZLIB_COPY@
 ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
@@ -907,6 +913,7 @@ install-exec-local:
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)
 	@$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	@$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
+	@$(call copy-libs,$(YAMLCPP_COPY),$(YAMLCPP_LIB),libyaml-cpp.so*)
 	@$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
 
 #
