@@ -251,9 +251,20 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
       });
       size_t nValues = 0;
 
-      for (const auto& mx : accums->citerate()) {
-        const Metric& m = mx.first;
-        const auto& vv = mx.second;
+      auto iter = accums->citerate();
+      std::vector<std::reference_wrapper<
+          const std::pair<const util::reference_index<const Metric>, MetricAccumulator>>>
+          pairs;
+      pairs.reserve(accums->size());
+      for (const auto& mx : iter)
+        pairs.push_back(std::cref(mx));
+      std::sort(pairs.begin(), pairs.end(), [=](const auto& a, const auto& b) {
+        return a.get().first->userdata[src.identifier()].base()
+             < b.get().first->userdata[src.identifier()].base();
+      });
+      for (const auto& mx : pairs) {
+        const Metric& m = mx.get().first;
+        const auto& vv = mx.get().second;
         const auto& id = m.userdata[src.identifier()];
         for (MetricScope ms : m.scopes()) {
           if (auto v = vv.get(ms)) {
@@ -706,10 +717,22 @@ void SparseDB::write() {
               .startIndex = mvalsBuf.size() / FMT_PROFILEDB_SZ_MVal,
           });
         }
-        for (const auto& mx : stats.citerate()) {
-          const Metric& m = mx.first;
+
+        auto iter = stats.citerate();
+        std::vector<std::reference_wrapper<
+            const std::pair<const util::reference_index<const Metric>, StatisticAccumulator>>>
+            pairs;
+        pairs.reserve(stats.size());
+        for (const auto& mx : iter)
+          pairs.push_back(std::cref(mx));
+        std::sort(pairs.begin(), pairs.end(), [=](const auto& a, const auto& b) {
+          return a.get().first->userdata[src.identifier()].base()
+               < b.get().first->userdata[src.identifier()].base();
+        });
+        for (const auto& mx : pairs) {
+          const Metric& m = mx.get().first;
           const auto& id = m.userdata[src.identifier()];
-          const auto& vv = mx.second;
+          const auto& vv = mx.get().second;
           for (const auto& sp : m.partials()) {
             auto vvv = vv.get(sp);
             for (MetricScope ms : m.scopes()) {
