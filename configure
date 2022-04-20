@@ -726,6 +726,12 @@ ZLIB_LIB
 ZLIB_INC
 OPT_USE_ZLIB_FALSE
 OPT_USE_ZLIB_TRUE
+YAMLCPP_LIB
+YAMLCPP_COPY
+YAMLCPP_LDLIBS
+YAMLCPP_LDFLAGS
+YAMLCPP_IFLAGS
+YAMLCPP
 XERCES_LIB
 XERCES_COPY
 XERCES_LDLIBS
@@ -1047,6 +1053,7 @@ enable_kernel_blocking
 with_tbb
 with_xed
 with_xerces
+with_yaml_cpp
 with_zlib
 with_dyninst_type
 enable_back_end
@@ -1810,6 +1817,7 @@ Optional Packages:
   --with-tbb=PATH         path to intel tbb install directory
   --with-xed=PATH         path to intel xed install directory
   --with-xerces=PATH      path to xerces-c install directory
+  --with-yaml-cpp=PATH    path to YAML-cpp install directory
   --with-zlib=PATH        path to zlib install directory
   --with-dyninst-type=TYPE
                           temp option for dyninst version (old, libdw, cuda),
@@ -20325,6 +20333,7 @@ default_perfmon_prefix=no
 default_tbb_prefix=no
 default_xed_prefix=no
 default_xerces_prefix=no
+default_yamlcpp_prefix=no
 default_zlib_prefix=no
 default_valgrind_prefix=no
 
@@ -20442,6 +20451,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg xerces-c ; then
     default_xerces_prefix="$spack_ans"
+  fi
+  if find_spack_pkg yaml-cpp ; then
+    default_yamlcpp_prefix="$spack_ans"
   fi
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
@@ -22424,6 +22436,67 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${XERCES}" >&5
 $as_echo "${XERCES}" >&6; }
+
+
+
+
+
+
+
+
+#-------------------------------------------------
+# Check for YAML-cpp (YAML parser and emitter)
+#-------------------------------------------------
+
+YAMLCPP="$default_yamlcpp_prefix"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for YAML-cpp" >&5
+$as_echo_n "checking for YAML-cpp... " >&6; }
+
+
+# Check whether --with-yaml-cpp was given.
+if test "${with_yaml_cpp+set}" = set; then :
+  withval=$with_yaml_cpp; if test $withval != no; then
+     YAMLCPP=${withval}
+   fi
+fi
+
+
+YAMLCPP_IFLAGS=
+YAMLCPP_LDFLAGS=
+YAMLCPP_LDLIBS=
+YAMLCPP_COPY=no
+
+case "$YAMLCPP" in
+  /* )
+    if test ! -f "${YAMLCPP}/include/yaml-cpp/yaml.h" ; then
+      as_fn_error $? "unable to find yaml.h in: $YAMLCPP" "$LINENO" 5
+    fi
+    YAMLCPP_IFLAGS="-I${YAMLCPP}/include"
+    YAMLCPP_LDLIBS="-lyaml-cpp"
+    for lib in $multilib_path ; do
+      if test -f "${YAMLCPP}/${lib}/libyaml-cpp.so" ; then
+        YAMLCPP_LDFLAGS="-L${YAMLCPP}/${lib}"
+        YAMLCPP_LIB="${YAMLCPP}/${lib}"
+	break
+      fi
+    done
+    if test "x$YAMLCPP_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libyaml-cpp.so in: $YAMLCPP" "$LINENO" 5
+    fi
+    YAMLCPP_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "yaml-cpp directory must be absolute path: $YAMLCPP" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $YAMLCPP" >&5
+$as_echo "$YAMLCPP" >&6; }
+
 
 
 
@@ -27944,6 +28017,8 @@ fi
 $as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&5
 $as_echo "$as_me:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   yaml-cpp:     ${YAMLCPP}" >&5
+$as_echo "$as_me:   yaml-cpp:     ${YAMLCPP}" >&6;}
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

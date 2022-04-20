@@ -152,6 +152,7 @@ install-exec-local:
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)
 	@$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
+	@$(call copy-libs,$(YAMLCPP_COPY),$(YAMLCPP_LIB),libyaml-cpp.so*)
 	@$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
 
 #
