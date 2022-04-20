@@ -103,8 +103,7 @@ Output Options:
   -n, --title=NAME            Specify a title for the output database.
   -f, --format=FORMAT
                               Specify the database output format. One of:
-                               - `metadb`: new proposed database format.
-                               - `exml`: current/old database format.
+                               - `metadb`: sparse binary database format.
                               Default is `metadb`.
   -M (none|STAT[,STAT...])
                               Disable or enable generation of global
@@ -265,9 +264,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     case 'n': title = optarg; break;
     case 'f': {
       std::string form(optarg);
-      if (form == "exml")
-        format = Format::exml;
-      else if (form == "metadb")
+      if (form == "metadb")
         format = Format::metadb;
       else {
         std::cerr << "Unrecognized output format '" << form << "'!\n";

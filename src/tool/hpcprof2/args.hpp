@@ -151,9 +151,7 @@ public:
 
   /// Enum for possible output formats for profile data
   enum class Format {
-    // experiment.xml + profile.db + cct.db + thread.db, the current database format.
-    exml,
-    // meta.db + profile.db + cct.db + thread.db, the new proposed database format.
+    /// *.db + metrics.yaml, the current database format
     metadb,
   };
   /// Requested output format
