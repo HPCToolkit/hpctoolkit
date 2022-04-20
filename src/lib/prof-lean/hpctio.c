@@ -152,7 +152,13 @@ int hpctio_sys_rename(const char *oldpath, const char *newpath, hpctio_sys_t * s
     return sys->func_ptr->rename(oldpath, newpath, sys->params_ptr);
 }
 
-
+/*
+* check stat attributes of a path entry
+* return 0 on success, -1 on failure, errno set properly
+*/
+int hpctio_sys_stat(const char *path, struct stat * stbuf, hpctio_sys_t * sys){
+    return sys->func_ptr->stat(path, stbuf, sys->params_ptr);
+}
 
 
 ///////////////////////////////////////HPCTIO_OBJ FUNCTIONS///////////////////////////////////////////////

@@ -26,6 +26,7 @@ static void DFS_Final(hpctio_sys_params_t * params);
 static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
 static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p);
 static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_params_t * p);
+static int DFS_Stat(const char* path, struct stat * stbuf, hpctio_sys_params_t * p);
 
 static hpctio_obj_opt_t * DFS_Obj_Options(int wmode, int sizetype);
 static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
@@ -35,6 +36,7 @@ static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_p
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
+static void DFS_Readdir(const char * path, hpctio_sys_params_t * p);
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct
 typedef struct hpctio_dfs_params {
@@ -59,11 +61,13 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .mkdir = DFS_Mkdir,
     .access = DFS_Access,
     .rename = DFS_Rename,
+    .stat = DFS_Stat,
     .obj_options = DFS_Obj_Options,
     .open = DFS_Open,
     .close = DFS_Close,
     .append = DFS_Append,
-    .tell = DFS_Tell
+    .tell = DFS_Tell,
+    .readdir = DFS_Readdir
     
 
 
@@ -652,6 +656,38 @@ exit:
 }
 
 
+static int DFS_Stat(const char* path, struct stat * stbuf, hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+
+    dfs_obj_t * parent = NULL;
+    char * name = NULL;
+    char * dir_name = NULL;
+    int r;
+
+    r = parse_filename(path, &name, &dir_name);
+    CHECK(r, "Failed to parse path name %s with error code %d", path, r);
+
+    if(strcmp(dir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, dir_name, O_RDWR, &parent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
+    }
+
+    r = dfs_stat(dfs_p->dfs, parent, name, stbuf);
+
+exit:
+    if(name) free(name);
+    if(dir_name) free(dir_name);
+    if(parent) dfs_release(parent);
+    if(r){
+        errno = r;
+        r = -1;
+    }
+    return r;
+}
+
+
+
+
 static hpctio_obj_opt_t * DFS_Obj_Options(int wmode, int sizetype){
     hpctio_dfs_obj_opt_t * opt = (hpctio_dfs_obj_opt_t *) malloc(sizeof(hpctio_dfs_obj_opt_t));
     if(sizetype == HPCTIO_SMALL_F) 
@@ -780,3 +816,50 @@ static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt){
 }
 
 
+
+static void DFS_Readdir(const char * path, hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+
+    char * name = NULL;
+    char * dir_name = NULL;
+    dfs_obj_t * obj = NULL; 
+    dfs_obj_t * parent = NULL; 
+
+    int r = parse_filename(path, &name, &dir_name);
+    CHECK(r, "Failed to parse path %s with errno %d", path, r);
+
+    if(strcmp(dir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, dir_name, O_RDONLY, &parent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
+    }
+
+    r = dfs_open(dfs_p->dfs, parent, name, 0444 | S_IFDIR, O_RDONLY, OC_SX, 0, NULL, &obj);
+
+    daos_anchor_t anchor;
+    daos_anchor_init(&anchor, NULL);
+    uint32_t nr = 80;
+    struct dirent * dirs = malloc(nr * sizeof(struct dirent));
+    while (!daos_anchor_is_eof(&anchor)) {
+		r = dfs_readdir(dfs_p->dfs, obj,
+				 &anchor, &nr,
+				 dirs);
+		printf("r is %d the file is %s\n", r, dirs->d_name);
+
+        
+	}
+    daos_anchor_fini(&anchor);
+    free(dirs);
+
+
+exit:
+    if(name) free(name);
+    if(dir_name) free(dir_name);
+    if(parent) dfs_release(parent);
+    // if(r){
+    //     errno = r;
+    //     obj = NULL;
+    // }
+
+    // return (hpctio_obj_id_t *) obj;
+    
+}

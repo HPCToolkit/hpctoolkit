@@ -53,6 +53,9 @@
 #include "lib/profile/stdshim/filesystem.hpp"
 #include <functional>
 
+#include "lib/prof-lean/hpctio.h"
+
+
 namespace hpctoolkit {
 
 /// Argument parser front-end for hpcprof{,-mpi}.
@@ -140,8 +143,12 @@ public:
               cfvar(false) {};
   } stats;
 
+  /// I/O system for the input measurement input files
+  hpctio_sys_t * input_sys;
+
   /// Path for the root database directory, or output file
   stdshim::filesystem::path output;
+  hpctio_sys_t * output_sys;
 
   /// Whether to copy sources into the output database
   bool include_sources;

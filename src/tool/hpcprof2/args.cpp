@@ -138,6 +138,9 @@ Current Obsolete Options:
       --struct-id             Unsupported.
 )EOF";
 
+static bool isDirectory(const std::string &path, hpctio_sys_t * sys);
+static void directoryIterator(const std::string &path, hpctio_sys_t * sys);
+
 const bool string_starts_with(const std::string& a, const std::string& n) {
   auto it_n = n.begin();
   for(auto it = a.begin(); it != a.end() && it_n != n.end(); ++it, ++it_n) {
@@ -154,7 +157,7 @@ const bool string_ends_with(const std::string& a, const std::string& n) {
 }
 
 ProfArgs::ProfArgs(int argc, char* const argv[])
-  : title(), threads(0), output(),
+  : title(), threads(1), output(), output_sys(),
     include_sources(true), include_traces(true), include_thread_local(true),
     format(Format::metadb), dwarfMaxSize(100*1024*1024), valgrindUnclean(false) {
   int arg_includeSources = include_sources;
@@ -210,6 +213,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       // fallthrough
     case 'o':
       output = fs::path(optarg);
+      output_sys = hpctio_sys_initialize(output.c_str());
+      output = fs::path(hpctio_sys_cut_prefix(output.c_str(), output_sys));
       if(!output.has_filename()) output = output.parent_path();
       break;
     case 'Q':
@@ -405,7 +410,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         // Default to something semi-reasonable.
         output = "hpctoolkit-database";
         if(argc - optind == 1) {  // == only one input file argument
-          stdshim::filesystem::path input = argv[optind];
+          hpctio_sys_t * temp_input_sys = hpctio_sys_initialize(argv[optind]);
+          stdshim::filesystem::path input = hpctio_sys_cut_prefix(argv[optind], temp_input_sys);
           if(input.filename().empty()) input = input.parent_path();
 
           auto fn = input.filename().string();
@@ -447,6 +453,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     output = mpi::bcast(output.string(), 0);
   }
 
+  // Temporary: get I/O system for measurement inputs
+  input_sys = hpctio_sys_initialize(argv[optind]);
+  hpctio_sys_avail_display();
+
   // Gather up all the potential inputs, and distribute them across the ranks
   std::vector<std::pair<stdshim::filesystem::path, std::size_t>> files;
   {
@@ -455,15 +465,19 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       std::vector<std::vector<std::string>> allfiles(mpi::World::size());
       std::size_t peer = 0;
       for(int idx = optind; idx < argc; idx++) {
-        fs::path p(argv[idx]);
-        if(fs::is_directory(p)) {
+        fs::path p(hpctio_sys_cut_prefix(argv[idx], input_sys));
+        //if(fs::is_directory(p)) {
+        if(isDirectory(p, input_sys)){
+          directoryIterator(p, input_sys);
+          p = fs::path("m");
           for(const auto& de: fs::directory_iterator(p)) {
             allfiles[peer].emplace_back(de.path().string());
             peer = (peer + 1) % allfiles.size();
           }
           // Also check for a kernel_symbols/ directory for ksymsfiles.
           fs::path sp = p / "kernel_symbols";
-          if(fs::is_directory(sp))
+          //if(fs::is_directory(sp))
+          if(isDirectory(sp, input_sys))
             ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(std::move(sp)));
           // Also check for a structs/ directory for extra structfiles.
           sp = p / "structs";
@@ -686,4 +700,25 @@ ProfArgs::StructWarner::classify(Context& c, NestedScope& ns) noexcept {
     }
   }
   return std::nullopt;
+}
+
+
+//TEMP
+static bool isDirectory(const std::string &path, hpctio_sys_t * sys){
+  struct stat statbuf;
+  if(hpctio_sys_stat(path.c_str(), &statbuf, sys) != 0)
+    return 0;
+  return S_ISDIR(statbuf.st_mode);
+}
+
+static void directoryIterator(const std::string &path, hpctio_sys_t * sys){
+  printf("I am here hhhh and %d = %d \n", sys->func_ptr, &hpctio_sys_func_dfs);
+  if(sys->func_ptr == &hpctio_sys_func_posix){
+    //return fs::directory_iterator(path);
+    printf("I am here llll\n");
+  }else if(sys->func_ptr == &hpctio_sys_func_dfs){
+    printf("I am here\n");
+    sys->func_ptr->readdir(path.c_str(), sys->params_ptr);
+  }
+  
 }

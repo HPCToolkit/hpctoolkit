@@ -27,4 +27,6 @@ int hpctio_obj_close(hpctio_obj_t * obj);
 size_t hpctio_obj_append(const void * buf, size_t size, size_t nitems, hpctio_obj_t * obj);
 long int hpctio_obj_tell(hpctio_obj_t * obj);
 
+//int hpctio_obj_filesize(hpctio_obj_t * obj);
+
 #endif /* ifndef HPCTIO_OBJ_H */

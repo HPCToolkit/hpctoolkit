@@ -5,6 +5,11 @@
 #include <stddef.h>
 #include <sys/stat.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /*************************** FILE SYSTEM OBJECT RELATED STRUCTS ***************************/
 //file system objects options struct
 typedef struct hpctio_obj_opt {
@@ -37,6 +42,7 @@ typedef struct hpctio_sys_func {
   int (*mkdir)(const char *path, mode_t md, hpctio_sys_params_t * p);
   int (*access)(const char *path, int md, hpctio_sys_params_t * p);
   int (*rename)(const char *old_path, const char * new_path, hpctio_sys_params_t * p);
+  int (*stat)(const char* path, struct stat * stbuf, hpctio_sys_params_t * p);
 
   hpctio_obj_opt_t * (*obj_options)(int wrmode, int sizetype);
   hpctio_obj_id_t * (*open)(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
@@ -45,6 +51,8 @@ typedef struct hpctio_sys_func {
   // write only write at specific offset
   size_t (*append)(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
   long int (*tell)(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
+
+  void (*readdir)(const char* path, hpctio_sys_params_t * p);
 
 
 
@@ -85,5 +93,10 @@ char * hpctio_sys_realpath(const char * path, char * resolved_path, hpctio_sys_t
 int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys);
 int hpctio_sys_access(const char *path, int md, hpctio_sys_t * sys);
 int hpctio_sys_rename(const char *old_path, const char *new_path, hpctio_sys_t * sys);
+int hpctio_sys_stat(const char *path, struct stat * stbuf, hpctio_sys_t * sys);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* ifndef HPCTIO_H */

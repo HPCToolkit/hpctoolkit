@@ -18,6 +18,7 @@ static void POSIX_Final(hpctio_sys_params_t * params);
 static int POSIX_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
 static int POSIX_Access(const char *path, int md, hpctio_sys_params_t * p);
 static int POSIX_Rename(const char *oldpath, const char *newpath, hpctio_sys_params_t * p);
+static int POSIX_Stat(const char* path, struct stat * stbuf, hpctio_sys_params_t * p);
 
 static hpctio_obj_opt_t * POSIX_Obj_Options(int wmode, int sizetype);
 static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
@@ -42,11 +43,13 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .mkdir = POSIX_Mkdir,
   .access = POSIX_Access,
   .rename = POSIX_Rename,
+  .stat = POSIX_Stat,
   .obj_options = POSIX_Obj_Options,
   .open = POSIX_Open,
   .close = POSIX_Close,
   .append = POSIX_Append,
-  .tell = POSIX_Tell
+  .tell = POSIX_Tell,
+  .readdir = NULL
 
 
 };
@@ -108,6 +111,10 @@ static int POSIX_Rename(const char *oldpath, const char *newpath, hpctio_sys_par
   return rename(oldpath, newpath);
 }
 
+static int POSIX_Stat(const char* path, struct stat * stbuf, hpctio_sys_params_t * p){
+  return stat(path, stbuf);
+}
+
 
 static hpctio_obj_opt_t * POSIX_Obj_Options(int wmode, int sizetype){
   hpctio_posix_obj_opt_t  * opt = (hpctio_posix_obj_opt_t  *) malloc(sizeof(hpctio_posix_obj_opt_t ));
@@ -132,7 +139,7 @@ static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpc
 
   if(popt->wmode == HPCTIO_APPEND){
     obj->fd = fd;
-    obj->fs = fdopen(fd, "w+");
+    obj->fs = fdopen(fd, "w");
     r = (obj->fs == NULL);
     CHECK(r, "POSIX_Open failed to fdopen the file stream");
   }else{ // HPCTIO_WRITE_AT
