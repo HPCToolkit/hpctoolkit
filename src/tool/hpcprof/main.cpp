@@ -52,6 +52,7 @@
 #include "lib/profile/source.hpp"
 #include "lib/profile/sinks/experimentxml4.hpp"
 #include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/metricsyaml.hpp"
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
@@ -102,6 +103,7 @@ int main(int argc, char* const argv[]) {
                                                       tdb.get());
     pipelineB << std::move(tdb);
     pipelineB << make_unique_x<sinks::SparseDB>(args.output);
+    pipelineB << make_unique_x<sinks::MetricsYAML>(args.output);
     break;
   }
   }
