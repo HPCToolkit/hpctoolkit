@@ -1,5 +1,3 @@
-# -*-Mode: makefile;-*-
-
 ## * BeginRiceCopyright *****************************************************
 ##
 ## $HeadURL$
@@ -12,7 +10,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2022, Rice University
+## Copyright ((c)) 2022-2022, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,39 +42,32 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-# This Makefile integrates the smoke tests with automake's 'make
-# check'.  First, run configure, make, make install, then cd to this
-# directory and run:
-#
-#   make check
-#
-# Note:
-# 1. run-sort refers to the installed files (hpcrun, etc), so this
-# must come after 'make install'.
-#
-# 2. Automake refers to paths in the build tree, so you must have the
-# build tree expanded and run this from the build tree.  (This is why
-# it doesn't work with 'spack test run', those tests are run later,
-# after install.)
-#
-# 3. But it does work at spack install time, since the build directory
-# still exists.
-#
-#   spack install --test=root <pkg>
-#
-# ***************************************************************************
+from . import *
 
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+from pathlib import Path
 
-TESTS = run-sort unit.py
+rootdir = Path(__file__).parent
 
-check_PROGRAMS = sort
+def test_small_v4_0_meta():
+  f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'meta.db')
+  a = general_unpack(f)
+  assert type(a) is v4.MetaDB
+  assert a == v4.MetaDB(f)
 
-sort_SOURCES = sort.cpp
-sort_CXXFLAGS = -g -O @cxx_c11_flag@
+def test_small_v4_0_profile():
+  f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'profile.db')
+  a = general_unpack(f)
+  assert type(a) is v4.ProfileDB
+  assert a == v4.ProfileDB(f)
 
-clean-local:
-	rm -rf hpctoolkit-*-measurements hpctoolkit-*-database
-	rm -f *.hpcstruct
+def test_small_v4_0_cct():
+  f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'cct.db')
+  a = general_unpack(f)
+  assert type(a) is v4.ContextDB
+  assert a == v4.ContextDB(f)
 
+def test_small_v4_0_trace():
+  f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'trace.db')
+  a = general_unpack(f)
+  assert type(a) is v4.TraceDB
+  assert a == v4.TraceDB(f)

@@ -1,5 +1,3 @@
-# -*-Mode: makefile;-*-
-
 ## * BeginRiceCopyright *****************************************************
 ##
 ## $HeadURL$
@@ -12,7 +10,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2022, Rice University
+## Copyright ((c)) 2022-2022, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,39 +42,31 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-# This Makefile integrates the smoke tests with automake's 'make
-# check'.  First, run configure, make, make install, then cd to this
-# directory and run:
-#
-#   make check
-#
-# Note:
-# 1. run-sort refers to the installed files (hpcrun, etc), so this
-# must come after 'make install'.
-#
-# 2. Automake refers to paths in the build tree, so you must have the
-# build tree expanded and run this from the build tree.  (This is why
-# it doesn't work with 'spack test run', those tests are run later,
-# after install.)
-#
-# 3. But it does work at spack install time, since the build directory
-# still exists.
-#
-#   spack install --test=root <pkg>
-#
-# ***************************************************************************
+from . import *
 
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+from pathlib import Path
 
-TESTS = run-sort unit.py
+testdatadir = Path(__file__).parent.parent / 'testdata'
 
-check_PROGRAMS = sort
+def test_small_v4_0():
+  a = TraceDB(open(testdatadir/'small_v4.0'/'trace.db'))
 
-sort_SOURCES = sort.cpp
-sort_CXXFLAGS = -g -O @cxx_c11_flag@
+  b = TraceDB(
+    ctxTraces = {
+      'minTimestamp': 1650412082819499000, 'maxTimestamp': 1650412082820356000,
+      'traces': [
+        { 'profIndex': 1, 'trace': [
+          (1650412082819499000, 1),
+          (1650412082820356000, 38),
+        ]},
+      ],
+    }
+  )
 
-clean-local:
-	rm -rf hpctoolkit-*-measurements hpctoolkit-*-database
-	rm -f *.hpcstruct
+  assert str(a) == str(b)
+  assert a == b
 
+  assert 'object at 0x' not in repr(a)
+  c = eval(repr(a))
+  assert str(a) == str(c)
+  assert a == c

@@ -1,5 +1,3 @@
-# -*-Mode: makefile;-*-
-
 ## * BeginRiceCopyright *****************************************************
 ##
 ## $HeadURL$
@@ -12,7 +10,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2022, Rice University
+## Copyright ((c)) 2022-2022, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,39 +42,42 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-# This Makefile integrates the smoke tests with automake's 'make
-# check'.  First, run configure, make, make install, then cd to this
-# directory and run:
-#
-#   make check
-#
-# Note:
-# 1. run-sort refers to the installed files (hpcrun, etc), so this
-# must come after 'make install'.
-#
-# 2. Automake refers to paths in the build tree, so you must have the
-# build tree expanded and run this from the build tree.  (This is why
-# it doesn't work with 'spack test run', those tests are run later,
-# after install.)
-#
-# 3. But it does work at spack install time, since the build directory
-# still exists.
-#
-#   spack install --test=root <pkg>
-#
-# ***************************************************************************
+from ..._base import VersionedFormat
+from ..._util import read_ntstring, array_unpack, cached_property
 
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+from struct import Struct
 
-TESTS = run-sort unit.py
+@VersionedFormat.minimize
+class IdentifierNamesSection(VersionedFormat,
+    # Added in v4.0
+    _ppNames = (0, 0x00, 'Q'),
+    _nKinds = (0, 0x08, 'B'),
+  ):
+  """meta.db Hierarchical Identifier Names section."""
+  __slots__ = ['_names']
+  __ptr = Struct('<Q')
 
-check_PROGRAMS = sort
+  def _init_(self, *, names=[]):
+    super()._init_()
+    self.names = list(names)
 
-sort_SOURCES = sort.cpp
-sort_CXXFLAGS = -g -O @cxx_c11_flag@
+  @cached_property('_names')
+  @VersionedFormat.subunpack(list)
+  def names(self, version, src):
+    return [read_ntstring(src, p) for p, in
+            array_unpack(self.__ptr, self._nKinds, src, self._ppNames)]
 
-clean-local:
-	rm -rf hpctoolkit-*-measurements hpctoolkit-*-database
-	rm -f *.hpcstruct
+  def __eq__(self, other):
+    if not isinstance(other, IdentifierNamesSection): return NotImplemented
+    return self.names == other.names
 
+  def __repr__(self):
+    return f"{self.__class__.__name__}(names={self.names!r})"
+
+  def __str__(self):
+    return ("names:"
+            + ('\n' + '\n'.join(' - ' + n for n in self.names)
+               if hasattr(self, 'names') else " []")
+           )
+
+  pack, pack_into = None, None

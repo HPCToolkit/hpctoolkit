@@ -1,5 +1,3 @@
-# -*-Mode: makefile;-*-
-
 ## * BeginRiceCopyright *****************************************************
 ##
 ## $HeadURL$
@@ -12,7 +10,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2022, Rice University
+## Copyright ((c)) 2022-2022, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,39 +42,43 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-# This Makefile integrates the smoke tests with automake's 'make
-# check'.  First, run configure, make, make install, then cd to this
-# directory and run:
-#
-#   make check
-#
-# Note:
-# 1. run-sort refers to the installed files (hpcrun, etc), so this
-# must come after 'make install'.
-#
-# 2. Automake refers to paths in the build tree, so you must have the
-# build tree expanded and run this from the build tree.  (This is why
-# it doesn't work with 'spack test run', those tests are run later,
-# after install.)
-#
-# 3. But it does work at spack install time, since the build directory
-# still exists.
-#
-#   spack install --test=root <pkg>
-#
-# ***************************************************************************
+from ..._base import VersionedFormat
+from ..._util import cached_property, read_ntstring
 
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+import textwrap
 
-TESTS = run-sort unit.py
+@VersionedFormat.minimize
+class GeneralPropertiesSection(VersionedFormat,
+    # Added in v4.0
+    _pTitle = (0, 0x00, 'Q'),
+    _pDescription = (0, 0x08, 'Q'),
+  ):
+  """meta.db General Properties section."""
+  __slots__ = ['title', 'description']
 
-check_PROGRAMS = sort
+  def _init_(self, *, title, description):
+    super()._init_()
+    self.title = title
+    self.description = description
 
-sort_SOURCES = sort.cpp
-sort_CXXFLAGS = -g -O @cxx_c11_flag@
+  def unpack_from(self, version, src, **kwargs):
+    super().unpack_from(version, src, **kwargs)
+    self.title = read_ntstring(src, offset=self._pTitle)
+    self.description = read_ntstring(src, offset=self._pDescription)
 
-clean-local:
-	rm -rf hpctoolkit-*-measurements hpctoolkit-*-database
-	rm -f *.hpcstruct
+  def __eq__(self, other):
+    if not isinstance(other, GeneralPropertiesSection): return NotImplemented
+    return self.title == other.title and self.description == other.description
 
+  def __repr__(self):
+    return (f"{self.__class__.__name__}(title={self.title!r}, "
+            f"description={self.description!r})")
+
+  def __str__(self):
+    return (f"title: {self.title}\n"
+            f"description:"
+            + ('\n' + textwrap.indent(self.description, '  ')
+               if hasattr(self, 'description') else " None")
+           )
+
+  pack, pack_into = None, None
