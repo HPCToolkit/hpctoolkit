@@ -194,7 +194,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, cptd->trace_max_time_us);
 
   char traceDisorderStr[bufSZ];
-  snprintf(traceDisorderStr, bufSZ, "%"PRIu64, cptd->trace_expected_disorder);
+  snprintf(traceDisorderStr, bufSZ, "%u", cptd->trace_expected_disorder);
 
   //
   // ==== file hdr =====
@@ -366,7 +366,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
     while (curr != NULL) {
       TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-      ret = hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+      ret = hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
       metric_tbl = hpcrun_get_metric_tbl(&curr);
 
       if(ret != HPCFMT_OK){

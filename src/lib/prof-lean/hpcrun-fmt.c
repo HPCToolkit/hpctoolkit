@@ -1287,7 +1287,7 @@ int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm)
 }
 
 /* succeed: returns a metric ID; end of list: returns 0; error: returns -1 */
-int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, metric_aux_info_t* perf_info,double fmtVersion)
+int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, double fmtVersion)
 {
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
@@ -1298,7 +1298,7 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
   if(realoffset == sparse_fs->footer.met_tbl_end) return SF_END; // no more next metric
   if(realoffset > sparse_fs->footer.met_tbl_end)  return SF_ERR; 
   fseek(sparse_fs->file, realoffset, SEEK_SET);
-  HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(m, perf_info, sparse_fs->file, fmtVersion, malloc));
+  HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(m, sparse_fs->file, fmtVersion, malloc));
   sparse_fs->cur_metric_id += 1;
   sparse_fs->metric_bytes_read += (ftell(sparse_fs->file) - realoffset);
 

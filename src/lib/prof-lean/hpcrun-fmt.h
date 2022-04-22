@@ -774,7 +774,7 @@ int hpcrun_sparse_check_mode(hpcrun_sparse_file_t* sparse_fs, bool expected, con
 
 int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hdr);
 int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm);
-int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, metric_aux_info_t* perf_info,double fmtVersion);
+int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, double fmtVersion);
 int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_node_t* node);
 int hpcrun_sparse_read_idtuple_dxnry(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_idtuple_dxnry_t* dxnry);
 int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, id_tuple_t* id_tuple);
