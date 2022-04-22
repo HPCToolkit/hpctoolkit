@@ -54,7 +54,7 @@
 
 void hpcrun_files_set_directory();
 
-void hpcrun_files_set_executable(char *execname);   
+void hpcrun_files_set_executable(const char *execname);
 
 const char *hpcrun_files_executable_pathname();
 const char *hpcrun_files_executable_name();

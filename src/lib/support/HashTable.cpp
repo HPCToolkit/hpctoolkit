@@ -145,7 +145,7 @@ void HashTable::Create (const uint theEntrySize, uint initialSlots,
 
    if (!hashTableCreated)
      {
-       register unsigned int power = 0, i = 31;
+       unsigned int power = 0, i = 31;
   
        if (initialSlots < 8) initialSlots = 8;
    
@@ -496,7 +496,7 @@ void HashTable::Create (const uint theEntrySize, uint initialSlots)
 {
    if (!hashTableCreated)
      {
-       register unsigned int power = 0, i = 31;
+       unsigned int power = 0, i = 31;
   
        if (initialSlots < 8) initialSlots = 8;
    
@@ -694,7 +694,7 @@ int HashTable::QueryIndexSet (const void* entry, const bool addingEntry) const
 //
 void HashTable::OverflowIndexSet()
 {
-  register unsigned int i, initialIndex, finalIndex, size;
+  unsigned int i, initialIndex, finalIndex, size;
   char* cEntries = (char*)entries;
   
   if (indexSetSize < 4096)

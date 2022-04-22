@@ -95,7 +95,7 @@ static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
   "  hpcstruct [options] <measurement directory>\n"
-  "  hpcstruct [optiuons] <binary>\n";
+  "  hpcstruct [options] <binary>\n";
 
 
 static const char* usage_details =

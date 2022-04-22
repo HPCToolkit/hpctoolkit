@@ -115,7 +115,6 @@ MYLDADD = \
 	$(IGC_LDFLGS) \
 	$(HPCLIB_gettext) \
 	$(LZMA_LDFLAGS_DYN) \
-	$(MBEDTLS_LIBS) \
 	$(TBB_LFLAGS)
 
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf

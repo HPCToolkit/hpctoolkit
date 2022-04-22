@@ -29,7 +29,7 @@ Linux (64-bit) on x86_64, little-endian powerpc (power8 and 9) and ARM
 (aarch64).  Big endian powerpc is no longer supported.
 
 @item
-Cray XT/XE/XK/XC on x86_64 and Compute Node Linux.
+Cray on x86_64 and Compute Node Linux.
 @end enumerate
 
 @noindent
@@ -39,12 +39,13 @@ databases are platform-independent and it is common to run hpcrun on
 one machine and then view the results on another machine.
 
 We build HPCToolkit and its prerequisite libraries from source.
-HPCToolkit has some 15-20 prerequisites and we now use spack to build
-them.  It is possible to use spack to install all of hpctoolkit or
-build just the prerequisites and then build hpctoolkit with the
-traditional @code{configure ; make ; make install} method from
-autotools.  Developers will probably want to run @code{configure} and
-@code{make} manually, but both methods are supported.
+HPCToolkit has some 15-20 base prerequisites (more for cuda or rocm)
+and we now use spack to build them.  It is possible to use spack to
+install all of hpctoolkit or build just the prerequisites and then
+build hpctoolkit with the traditional @code{configure ; make ; make
+install} method from autotools.  Developers will probably want to run
+@code{configure} and @code{make} manually, but both methods are
+supported.
 
 Note: the old method of using hpctoolkit-externals to build the
 prerequisite libraries is now superseded by spack and is no longer
@@ -70,7 +71,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: October 19, 2021.
+Last revised: April 14, 2022.
 
 @c ------------------------------------------------------------
 
@@ -94,7 +95,7 @@ you couldn't compile anything.
 
 @item
 Cmake version 3.4 or later, perl version 5.x, and python version
-3.5 or later.  On systems that are missing these tools or have versions
+3.6 or later.  On systems that are missing these tools or have versions
 that are too old, you can use spack to build a later version.
 
 @item
@@ -107,11 +108,10 @@ packages if they are missing from your system.
 @end enumerate
 
 @noindent
-Hpcviewer and hpctraceviewer require Java version 8 or 11.  Starting
-with version 2021.01, the viewers now need Java 11 or later (but not
-15).  Up through 2020.12, the viewers need Java 8 (not later).  On
-Linux, the viewers also require GTK+ version 3.20 or later starting
-with 2021.01 and GTK+ version 2.x up through 2020.12.
+Hpcviewer and hpctraceviewer require Java 11 or later.  Spack can
+install Java, if needed.  On Linux, the viewers also require GTK+
+version 3.20 or later.  Older versions of the viewer use Java 8 and
+GTK+ 2.x.
 
 @c ------------------------------------------------------------
 
@@ -230,7 +230,7 @@ spack spec hpctoolkit@@master ^binutils@@2.34 ^boost@@1.72.0
 @section Clone Spack and HPCToolkit
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building almost 6,000 packages (and
+spack machinery and recipes for building over 6,300 packages (and
 growing).  You should also clone HPCToolkit for the
 @code{packages.yaml} file which is used to configure the spack build.
 
@@ -279,25 +279,7 @@ config:
 @noindent
 By default, spack installs module files inside the spack repository at
 @code{spack/share/spack}.  The syntax for resetting this is changing.
-In the old syntax, you put the top-level directory in
-@code{config.yaml} and enable the module type(s) in
-@code{modules.yaml}.
-
-@example
-config:
-  module_roots:
-    # normally, need only one of these
-    tcl:  /path/to/top-level/tcl-module/directory
-    lmod: /path/to/top-level/lmod-module/directory
-
-modules:
-  enable:
-   - tcl  (or lmod)
-@end example
-
-@noindent
-In the new syntax, the paths go in @code{modules.yaml}, and there is
-one extra step in the hierarchy (@code{default:}).
+In the new syntax, the paths go in @code{modules.yaml}.
 
 @example
 modules:
@@ -307,18 +289,23 @@ modules:
       tcl:  /path/to/top-level/tcl-module/directory
       lmod: /path/to/top-level/lmod-module/directory
     enable:
-     - tcl  (or lmod)
+      - tcl  (or lmod)
 @end example
 
 @noindent
-There are two other fields that you may want to set for your local
-system.
+There are a few other fields that you may want to set for your local
+system.  These are all in @code{config.yaml}.
 
 @enumerate
 @item
 @code{connect_timeout} -- some download sites, especially sourceforge
 are often slow to connect.  If you find that connections are timing out,
 then increase this time to 30 or 60 seconds (default is 10 seconds).
+
+@item
+@code{url_fetch_method} -- by default, spack uses a python library
+(urllib) to fetch source files.  If you have trouble downloading
+files, try changing this to @code{curl}.
 
 @item
 @code{build_jobs} -- by default, spack uses all available hardware
@@ -358,10 +345,12 @@ you can support multiple configurations from the same repository.  But
 then you must use @code{-C dir} with every spack command or else you
 will get inconsistent results.
 
-You can view the current configuration with @code{spack config}.
+You can view the current configuration and see where each entry comes
+from with @code{spack config}.
 
 @example
 spack [-C dir] config get config
+spack [-C dir] config blame config
 @end example
 
 @noindent
@@ -473,6 +462,12 @@ python:
 Note: as a special rule for python, use package name @code{python},
 even though the program name is python2 or python3.
 
+@noindent
+@b{Warning:} It is Ok to use spack externals for build utilities that
+exist on your system (cmake, perl, python).  However, we strongly
+recommend that you should rebuild all prereq packages that link code
+into hpctoolkit (dyninst, elfutils, etc).
+
 @subsection Micro-Architecture Targets
 
 Spack implements a hierarchy of micro-architecture targets, where
@@ -526,7 +521,8 @@ The 'concretizer' is the part of spack that converts a partial spec
 into a full spec with values for the version and variants of every
 package in the spec plus all dependencies.  The new concretizer for
 spack (clingo) is a third-party python library for solving answer set
-logic problems (eg, satisfiability).
+logic problems (eg, satisfiability).  Normally, this only needs to be
+set up once per machine, the first time you run spack.
 
 The easiest way to install clingo it to use spack's pre-built
 libraries.  These are available for Linux (x86_64, ppc64le, aarch64)
@@ -544,17 +540,6 @@ In @code{config.yaml}, set @code{concretizer} to @code{clingo}.
 @example
 config:
   concretizer: clingo
-@end example
-
-@noindent
-In @code{bootstrap.yaml}, disable @code{spack-install} to force spack
-to use a pre-built binary instead of building from source.
-
-@example
-bootstrap:
-  trusted:
-    github-actions: true
-    spack-install:  false
 @end example
 
 @noindent
@@ -760,9 +745,6 @@ of options, see @code{configure -h}.
 the compute nodes.
 
 @item
-@code{--enable-bgq} -- configure for Blue Gene/Q back end.
-
-@item
 @code{--enable-develop} -- compile with optimization turned off for
 debugging.
 
@@ -824,83 +806,74 @@ will need the @code{--with-cuda} option.
 
 @subsection ROCM
 
-Beginning with version 2021.02.01, HPCToolkit now supports profiling
-AMD GPU binaries through the HIP/ROCM interface.  This requires ROCM
-3.10 or later and also requires matching the HPCToolkit ROCM version
-to the version the application uses.
+HPCToolkit supports profiling AMD GPU binaries through the HIP/ROCM
+interface, and beginning with version 2022.04.15, we support building
+hpctoolkit plus rocm with a fully integrated spack build.  We require
+ROCM 4.5.x or later (prefer 5.x), and the ROCM version should match
+the version the application uses.  This is all very fluid and subject
+to change.
 
-The spack build with ROCM support requires a 2-step build.  First,
-build the ROCM prerequisites (hip, rocm-dbgapi and roctracer-dev), and
-second, specify them as spack externals packages and install
-hpctoolkit with @code{+rocm}.
-
-The easiest way is to install the AMD package for ROCM in @code{/opt}.
-Normally, this requires root access.  For example, suppose ROCM 4.0.0
-is installed in @code{/opt/rocm-4.0.0}.  In this case, edit
-@code{packages.yaml} or @code{spack.yaml} to specify the three spack
-packages.
+There are two ways to build HPCToolkit plus ROCM with spack.
+HPCToolkit uses four ROCM prerequisites (hip, hsa-rocr-dev,
+roctracer-dev and rocprofiler-dev).  If you have AMD's all-in-one ROCM
+package installed in @code{/opt}, then specify all four prereqs in
+@code{packages.yaml}.  For example, if ROCM 5.0.0 is installed at
+@code{/opt/rocm-5.0.0}, then you would use:
 
 @example
 packages:
   hip:
     externals:
-    - spec: hip@@4.0.0
-      prefix: /opt/rocm-4.0.0/hip
+    - spec: hip@@5.0.0
+      prefix: /opt/rocm-5.0.0
 
-  rocm-dbgapi:
+  hsa-rocr-dev:
     externals:
-    - spec: rocm-dbgapi@@4.0.0
-      prefix: /opt/rocm-4.0.0
+    - spec: hsa-rocr-dev@@5.0.0
+      prefix: /opt/rocm-5.0.0
 
   roctracer-dev:
     externals:
-    - spec: roctracer-dev@@4.0.0
-      prefix: /opt/rocm-4.0.0
+    - spec: roctracer-dev@@5.0.0
+      prefix: /opt/rocm-5.0.0
+
+  rocprofiler-dev:
+    externals:
+    - spec: rocprofiler-dev@@5.0.0
+      prefix: /opt/rocm-5.0.0
 @end example
 
 @noindent
-Then, build HPCToolkit with the @code{+rocm} variant.
+Currently, with AMD's directory layout, the hip and hsa-rocr-dev
+prefixes could be specified either as @code{/opt/rocm-5.0.0} or
+@code{/opt/rocm-5.0.0/hip} (and @code{/opt/rocm-5.0.0/hsa}).  But
+roctracer-dev and rocprofiler-dev require @code{/opt/rocm-5.0.0}.
+Also, the rocm packages do not support @code{spack external find}.
+But all this is fluid and subject to change.
+
+Alternatively, if ROCM is not installed in @code{/opt/rocm}, or if you
+want to build a different version, then omit the externals definitions
+in @code{packages.yaml} (but be prepared for spack to build an extra
+80-90 packages).  In either case, install hpctoolkit with:
 
 @example
 spack install hpctoolkit +rocm ...
 @end example
 
 @noindent
-Note: the hip prefix requires the hip subdirectory, but the other two
-use the top-level @code{/opt/rocm} prefix.  This is somewhat fluid and
-may change by system.
-
-If @code{/opt/rocm} is not available or is missing some of the pieces,
-then build the missing packages with spack and again add them to
-@code{packages.yaml}.  Note: you must build the packages one at a time
-as separate roots.  This will necessarily build some packages twice.
-For example:
-
-@example
-hip:
-  externals:
-  - spec: hip@@4.0.0
-    prefix: /home/krentel/spack/linux-rhel8-x86_64/gcc-8.3.1/hip-4.0.0-qzauqkhwrfmpa6j37cpzysfpgipvhkmj
-@end example
-
-@noindent
-Note: for now, you must use the 2-step build and specify the ROCM
-packages as spack externals, even if building them with spack.  There
-are two conflicts in the @code{spack spec} for an all-in-one build.
-Roctracer-dev requires python 2, but other packages require python 3,
-and rocm-dbgapi requires libelf but dyninst requires elfutils.
-Writing the packages as externals works around this problem.
-
 For developers building with autotools, use the following configure
-options.  If @code{/opt/rocm} is available, then use just the
-@code{--with-rocm} option.  Otherwise, use the three other options.
+options.  If @code{/opt/rocm} is available, then use the
+@code{--with-rocm} option.  Otherwise, use the other four options.
 
 @example
---with-rocm=/opt/rocm    (for all-in-one /opt/rocm)
+configure  \
+   --with-rocm=/opt/rocm \    (for all-in-one /opt/rocm)
 
---with-rocm-hip=/path/to/hip/install
---with-rocm-dbgapi=/path/to/rocm-dbgapi/install
---with-rocm-tracer=/path/to/roctracer-dev/install
+   --with-rocm-hip=/path/to/hip/prefix  \
+   --with-rocm-hsa=/path/to/hsa-rocr-dev/prefix  \
+   --with-rocm-tracer=/path/to/roctracer-dev/prefix  \
+   --with-rocm-profiler=/path/to/rocprofiler-dev/prefix  \
+   ...
 @end example
 
 @noindent
@@ -945,144 +918,12 @@ be available.
 
 @section Platform Specific Notes
 
-@subsection Blue Gene
-
-Support for Blue Gene/Q is now deprecated and versions 2020.03.01 and
-later will no longer build.  If you want to install HPCToolkit on Blue
-Gene, then use spack version 2019.12.28 or git commit 0d91fb34edb2
-with gcc 4.8.x and follow the directions below.  These directions will
-also work (without Blue Gene) for Red Hat 6.x (glibc 2.12 is too old
-to support current hpctoolkit).
-
-Blue Gene systems are being phased out, without a next generation
-replacement, but are still supported by hpctoolkit (for now).  Blue
-Gene normally comes with a Red Hat Enterprise Linux (RHEL) 6.x front
-end and the GNU gcc/g++ 4.4 compilers with are too old to support the
-latest version of hpctoolkit.
-
-Spack supports two architecture types on Blue Gene.  The front-end arch
-is @code{bgq-rhel6-ppc64} and the back-end arch is @code{bgq-cnk-ppc64}.
-Normally, it would matter whether we built for the front end or back
-end.  But for the GNU compilers on Blue Gene, both compilers are
-/usr/bin/gcc.  So, we just build for the default back end.
-
-There are two ways to build hpctoolkit for Blue Gene, depending on the
-version of the compiler and Dyninst.  The simple method uses the default
-GCC 4.4 compiler and Dyninst 9.3.2.  Edit these two entries in the
-@code{packages.yaml} file.
-
-@enumerate
-@item
-Set the dyninst version to @code{9.3.2}.
-
-@item
-Add @code{+bgq} to the libmonitor variants.
-@end enumerate
-
-@noindent
-Then, build hpctoolkit with @code{+bgq} turned on.  The @code{+bgq}
-variant adds MPI and hpcprof-mpi and supersedes the @code{+mpi}
-variant.
-
-@example
-spack install hpctoolkit +bgq
-@end example
-
-@noindent
-The advanced method involves building a new compiler (gcc 4.8 or 4.9)
-but allows using Dyninst 10.x.  This method requires TCL or Lmod
-modules and an MPI C++ compiler built for a compatible version of g++.
-Mira and vesta at ANL have softenv modules for +mpiwrapper-gcc and
-+bgqtoolchain-gcc484 but don't provide TCL or Lmod modules.
-
-First, use spack to build a new compiler.  Dyninst 10.x requires
-gcc@w{ }4.8 or later, but libmonitor requires the true back-end
-@code{powerpc64-bgq-linux-gcc} compiler which is version 4.4.  We
-settle on gcc 4.8.5 as a compromise between these two constraints.
-Edit @code{config.yaml} to set @code{module_roots} to a directory in
-which to install the modules and then build gcc.
-
-@example
-spack install gcc @@4.8.5
-@end example
-
-@noindent
-Assuming you have modules installed, then load the new gcc module and
-rerun @code{spack compiler find}.  This should add the new compiler to
-your @code{compilers.yaml} file (twice, for front and back end).  For
-example, on vulcan at LLNL,
-
-@example
-module use /path/to/modules/bgq-cnk-ppc64
-module load gcc-4.8.5-gcc-4.4.7-nzvjwva
-spack compiler find
-==> Added 2 new compilers to /g/g21/krentel1/.spack/bgq/compilers.yaml
-    gcc@@4.8.5  gcc@@4.8.5
-@end example
-
-@noindent
-Note: after running @code{spack compiler find}, you still need to add
-the modules field to the compiler entry in @code{compilers.yaml} as in
-the section on Compilers.
-
-Note: in the above example, we used gcc 4.4.7 to build gcc 4.8.5 (so
-the gcc-4.8.5 package is in the gcc-4.4.7 directory).  You could then
-use gcc 4.8.5 to rebuild 4.8.5, if you like, but this is not
-necessary.
-
-Finally, use the new compiler to build hpctoolkit with the new compiler.
-If you have modified the dyninst entry in @code{packages.yaml}, then
-reset the dyninst version to 10.1.0 (or later).
-
-@example
-spack install hpctoolkit +bgq %gcc@@4.8.5
-@end example
-
-@noindent
-If you don't have modules installed, then use @code{spack bootstrap}
-to build the environment-modules package.  Then, source the bash or
-csh script in the @code{Modules/init} directory to add the
-@code{module} function to your environment.  For example,
-
-@example
-spack bootstrap
-cd /path/to/environment-modules-4.2.4-rwtvlanuss35fxd3xuyldbfopt2m4ecs/init
-(bash)  . ./bash
-(csh)   source ./csh
-@end example
-
-@noindent
-Alternatively, you could try adding the module environment variables
-(PATH and LD_LIBRARY_PATH) manually, but then you may have to run
-spack install with @code{--dirty}.  The @code{--dirty} option tells
-spack not to erase LD_LIBRARY_PATH while building packages.
-
-@example
-spack install --dirty hpctoolkit +bgq %gcc@@4.8.5
-@end example
-
-@noindent
-For developers, if you are building hpctoolkit directly (outside of
-spack) but using spack prerequisites, then use a configure line
-similar to the following.
-
-@example
-configure  \
-    --prefix=/path/to/install/prefix  \
-    --with-spack=/path/to/bgq-cnk-ppc64/gcc-4.8.5  \
-    --enable-bgq  \
-    --enable-all-static  \
-    MPICXX=mpicxx
-@end example
-
-@c ------------------------------------------------------------
-
 @subsection Cray
 
-Cray systems, like Blue Gene, have separate front and back-end
-architecture types.  For example, on theta at ANL, the front-end arch
-is @code{cray-sles12-haswell} (SuSE Linux version 12 for haswell) and
-the back-end is @code{cray-cnl6-mic_knl} (Compute Node Linux for KNL).
+Cray systems have separate front and back-end architecture types.  For
+example, on theta at ANL, the front-end arch is
+@code{cray-sles15-haswell} (SuSE Linux version 15 for haswell) and the
+back-end is @code{cray-cnl7-mic_knl} (Compute Node Linux for KNL).
 
 Hpctoolkit needs to be built with the GNU Programming Environment and
 the front-end x86_64 compilers, plus the @code{CC} MPI C++ wrapper.
@@ -1107,18 +948,18 @@ spack compiler find /opt/gcc/8.3.0
 
 spack compiler list
 ==> Available compilers
--- gcc cnl6-any -------------------------------------------------
+-- gcc cnl7-any -------------------------------------------------
 gcc@@8.3.0  gcc@@8.1.0  gcc@@7.2.0  gcc@@6.3.0  gcc@@5.3.0
 gcc@@8.2.0  gcc@@7.3.0  gcc@@7.1.0  gcc@@6.1.0  gcc@@4.9.3
 
--- gcc sles12-x86_64 --------------------------------------------
+-- gcc sles15-x86_64 --------------------------------------------
 gcc@@8.3.0  gcc@@4.8
 @end example
 
 @noindent
 If spack identifies the compiler (as above), then great.  Note that we
-need spack to accept this as a front-end compiler (sles12-x86_64), not
-just for the back end (cnl6-any).  If spack doesn't find the compiler
+need spack to accept this as a front-end compiler (sles15-x86_64), not
+just for the back end (cnl7-any).  If spack doesn't find the compiler
 automatically, then you need to add it manually.  Edit
 @code{~/.spack/cray/compilers.yaml} and add an entry similer to the
 following (your versions may differ).
@@ -1132,7 +973,7 @@ following (your versions may differ).
     - gcc/8.3.0
     - craype/2.6.1
     - cray-mpich/7.7.10
-    operating_system: sles12
+    operating_system: sles15
     paths:
       cc:  /opt/gcc/8.3.0/bin/gcc
       cxx: /opt/gcc/8.3.0/bin/g++
@@ -1154,8 +995,8 @@ Phi back-end nodes (KNL, KNH, etc), add @code{~tm} to intel-tbb to
 disable transactional memory.
 
 Finally, build hpctoolkit with the front-end arch type (eg,
-cray-sles12-x86_64) and option @code{+cray}.  Normally, you can use OS
-type @code{fe} (front-end) in place of @code{sles12}.  As with Blue
+cray-sles15-x86_64) and option @code{+cray}.  Normally, you can use OS
+type @code{fe} (front-end) in place of @code{sles15}.  As with Blue
 Gene, the @code{+cray} option adds MPI and hpcprof-mpi and supersedes
 the @code{+mpi} variant.
 
@@ -1182,7 +1023,7 @@ similar to the following.
 @example
 configure  \
     --prefix=/path/to/install/prefix  \
-    --with-spack=/path/to/cray-sles12-x86_64/gcc-8.3.0  \
+    --with-spack=/path/to/cray-sles15-x86_64/gcc-8.3.0  \
     --enable-all-static  \
     MPICXX=CC
 @end example
@@ -1190,7 +1031,8 @@ configure  \
 @c ------------------------------------------------------------
 
 @section HPCToolkit GUI Interface (Hpcviewer)
-Since 2020.12 release, the HPCToolkit GUI interface provides both
+
+Since the 2020.12 release, the HPCToolkit GUI interface provides both
 profile and trace views in a single application, i.e. hpcviewer. Prior
 to that, each view was a separate program: hpcviewer to analyze the
 profile database, and hpctraceviewer to display the traces.

@@ -76,6 +76,7 @@
 // -----------------------------------------------------
 
 #define EVNAME_KERNEL_BLOCK     "BLOCKTIME"
+#define METRIC_NAME_BLOCKTIME   "BLOCKTIME (sec)"
 #define EVNAME_CONTEXT_SWITCHES "CNTXT_SWTCH"
 
 
@@ -93,6 +94,9 @@
 // usually each thread has the same metric index, so it's safe to make it global
 // for each thread (I hope).
 static int metric_blocking_index = -1;
+static kind_info_t *blocktime_kind;
+static event_custom_t event_kernel_blocking;
+
 
 static __thread u64          time_cs_out = 0;    // time when leaving the application process
 static __thread cct_node_t  *cct_kernel  = NULL; // cct of the last access to kernel
@@ -114,21 +118,29 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
     return;
   }
 
+  // compute the blocking time: current_time - time_last_cs_out 
+  // Linux kernel should give us time in nanosec (see the sched_clock()) so we need
+  // to convert it to sec by multiply it with 1e-09
+  const double SEC_PER_NANOSEC = 0.000000001;
+
   uint64_t delta = mmap_data->time - time_cs_out;
+  double   delta_in_sec = delta * SEC_PER_NANOSEC;
 
   // ----------------------------------------------------------------
   // blame the time spent in the kernel to the cct kernel
   // ----------------------------------------------------------------
 
   cct_metric_data_increment(metric_blocking_index, cct_kernel,
-      (cct_metric_data_t){.i = delta});
+      (cct_metric_data_t){.r = delta_in_sec});
 
   // ----------------------------------------------------------------
   // it's important to always count the number of samples for debugging purpose
   // ----------------------------------------------------------------
-
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->core_profile_trace_data.perf_event_info[metric_blocking_index].num_samples++;
+// fix issue #556: since we use blocktime metric kind, we don't have access to perf info
+//                 we don't need these 2 lines as they are used for debug purpose.
+//
+//  thread_data_t *td = hpcrun_get_thread_data();
+//  td->core_profile_trace_data.perf_event_info[metric_blocking_index].num_samples++;
 }
 
 /***********************************************************************
@@ -213,18 +225,20 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 static void
 register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
 {
+  blocktime_kind = hpcrun_metrics_new_kind();
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
   event_desc->metric_custom->metric_index = 
     hpcrun_set_new_metric_info_and_period(
-      kb_kind, EVNAME_KERNEL_BLOCK,
-      MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
+      blocktime_kind, METRIC_NAME_BLOCKTIME,
+      MetricFlags_ValFmt_Real, 1 /* period */, metric_property_none);
 
   event_desc->metric_custom->metric_desc = 
     hpcrun_id2metric_linked(event_desc->metric_custom->metric_index);  
 
   metric_blocking_index = event_desc->metric_custom->metric_index;
+
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------
@@ -259,6 +273,7 @@ register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
 
   event_desc->attr.context_switch = 1;
   event_desc->attr.sample_id_all = 1;
+  hpcrun_close_kind(blocktime_kind);
 }
 
 
@@ -268,18 +283,13 @@ register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
 
 void kernel_blocking_init()
 {
-  // unfortunately, the older version doesn't support context switch event properly
+  event_kernel_blocking.name         = EVNAME_KERNEL_BLOCK;
+  event_kernel_blocking.desc         = "Approximation of a thread's blocking time in the Linux kernel."
+                                       " This event is only available on Linux kernel 4.3 or newer.";
+  event_kernel_blocking.register_fn  = register_blocking;   // call backs
+  event_kernel_blocking.handler_fn   = NULL; 		// No call backs: we want all event to call us
+  event_kernel_blocking.metric_index = 0;   		// these fields to be defined later
+  event_kernel_blocking.metric_desc  = NULL; 	 	// these fields to be defined later
 
-  event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
-  event_kernel_blocking->name         = EVNAME_KERNEL_BLOCK;
-  event_kernel_blocking->desc         = "Approximation of a thread's blocking time."  
-					" This event requires another event (such as CYCLES) to profile with."  
-					" The unit time is hardware-dependent but mostly in microseconds."  
-					" This event is only available on Linux kernel 4.3 or newer.";
-  event_kernel_blocking->register_fn  = register_blocking;   // call backs
-  event_kernel_blocking->handler_fn   = NULL; 		// No call backs: we want all event to call us
-  event_kernel_blocking->metric_index = 0;   		// these fields to be defined later
-  event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
-
-  event_custom_register(event_kernel_blocking);
+  event_custom_register(&event_kernel_blocking);
 }

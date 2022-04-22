@@ -241,7 +241,7 @@ static void* main_upper_dl = (void*) (intptr_t) -1;
 static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
-static char execname[PATH_MAX] = {'\0'};
+static char execname[PATH_MAX + 1] = {'\0'};
 
 static int monitor_fini_process_how = 0;
 static atomic_int ms_init_started = ATOMIC_VAR_INIT(0);
@@ -319,13 +319,14 @@ get_process_name()
 // process name. Store in a local variable.
 //
 static void
-copy_execname(char* process_name)
+copy_execname(const char* process_name)
 {
-  char tmp[PATH_MAX] = {'\0'};
+  char tmp[PATH_MAX + 1] = {'\0'};
   char* rpath = realpath(process_name, tmp);
-  char* src = (rpath != NULL) ? rpath : process_name;
+  const char* src = (rpath != NULL) ? rpath : process_name;
 
-  strncpy(execname, src, sizeof(execname));
+  execname[sizeof(execname) - 1] = 0;
+  strncpy(execname, src, sizeof(execname) - 1);
 }
 
 //
@@ -970,7 +971,9 @@ monitor_init_process(int *argc, char **argv, void* data)
     // fnbounds must be after module_ignore_map
     fnbounds_init(process_name);
 #ifndef HPCRUN_STATIC_LINK
-    auditor_exports->mainlib_connected(get_saved_vdso_path());
+    if (!is_child) {
+      auditor_exports->mainlib_connected(get_saved_vdso_path());
+    }
 #endif
   }
   
@@ -993,6 +996,12 @@ monitor_at_main()
 static
 void  hpcrun_prepare_measurement_subsystem(bool is_child)
 {  
+  if (is_child) {
+    // reset flags so measurement system is fully initialized in a child
+    atomic_store(&ms_init_started, 0);
+    atomic_store(&ms_init_completed, 0);
+  }
+
   if (atomic_fetch_add(&ms_init_started, 1) == 0){
     hpcrun_registered_sources_init();
 
@@ -1212,14 +1221,14 @@ monitor_thread_pre_create(void)
   struct monitor_thread_info mti;
   monitor_get_new_thread_info(&mti);
   void *thread_pre_create_address = mti.mti_create_return_addr;
-
   if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
     return MONITOR_IGNORE_NEW_THREAD;
   }
-  bool is_child = false;
-  // outer initialization
-   hpcrun_prepare_measurement_subsystem(is_child);
 
+  bool is_child = false;
+
+  // outer initialization
+  hpcrun_prepare_measurement_subsystem(is_child);
 
   hpcrun_safe_enter();
   local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));

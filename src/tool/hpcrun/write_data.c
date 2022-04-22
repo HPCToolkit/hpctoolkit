@@ -182,7 +182,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   snprintf(tidStr, bufSZ, "%d", cptd->id);
 
   char hostidStr[bufSZ];
-  snprintf(hostidStr, bufSZ, "%lx", OSUtil_hostid());
+  snprintf(hostidStr, bufSZ, "%x", OSUtil_hostid());
 
   char pidStr[bufSZ];
   snprintf(pidStr, bufSZ, "%u", OSUtil_pid());

@@ -12,14 +12,14 @@
 #    3. any dir -- applies with 'spack -C dir' argument
 #
 #  There are three sections: (1) regular hpctoolkit dependency specs,
-#  (2) gpu and MPI specs, and (3) system build tools: cmake, perl,
+#  (2) GPU and MPI specs, and (3) system build tools: cmake, perl,
 #  python and GCC.
 #
 #  See also:
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: January 17, 2022.
+#  Last revised: April 14, 2022.
 #
 packages:
 
@@ -35,7 +35,7 @@ packages:
   #
   # all:
   #   target: [x86_64]
-  #   compiler: [gcc@8.3.1]
+  #   compiler: [gcc@8.5.0]
   #   providers:
   #     mpi: [openmpi]
 
@@ -69,7 +69,6 @@ packages:
   #
   # Use version 'master' for the latest snapshot from master.
   # Version 'develop' is for pre-release features.
-  # 2019.12.28 is the last version that runs on Blue Gene.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon (now default).
@@ -77,7 +76,7 @@ packages:
   # +cuda, +rocm for GPU support.
   #
   # hpctoolkit:
-  #   version:  [2022.01.15, master]
+  #   version:  [2022.04.15, master]
   #   variants: +mpi +papi +viewer
 
 
@@ -92,29 +91,32 @@ packages:
   # ~nls is used to avoid building gettext.
   #
   binutils:
-    version:  [2.36.1]
+    version:  [2.38]
     variants: +libiberty ~nls
 
 
   # boost -- used by dyninst and now in hpcstruct.
   #
-  # Dyninst requires >= 1.61.
-  #   1.66.0 is good for older versions of dyninst.
-  #   1.72.0 is good for recent dyninst.
+  # Dyninst requires >= 1.67.
+  #   1.72.0 is good for older versions of dyninst.
+  #   1.77.0 is good for recent dyninst.
   #   avoid 1.68.0, it breaks the build for hpctoolkit.
   #
   # +atomic, +chrono, etc are for dyninst.
   # +graph, +regex, etc are for toolkit proper.
-  # ~mpi, ~python, etc are to reduce prereqs.
   # ~debug is to build release (optimized) variant.
   # visibility=global is required for recent hpctoolkit.
+  #
+  # Note: boost now turns off all libraries by default and expects
+  # each package to add what it needs.  So, the best practice is to
+  # add everything that we use and not disable anything so as not to
+  # interfere with another package's needs.
   #
   boost:
     version:  [1.77.0]
     variants: >
       +atomic +chrono +date_time +filesystem +system +thread +timer
       +graph +regex +shared +multithreaded ~debug
-      ~mpi ~python ~iostreams ~numpy
       visibility=global
 
 
@@ -139,7 +141,7 @@ packages:
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [12.0.1, master]
+    version:  [12.1.0, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -201,7 +203,7 @@ packages:
   # +pic is needed to link with dyninst shared library.
   #
   libiberty:
-    version:  [2.33.1]
+    version:  [2.37]
     variants: +pic
 
 
@@ -240,11 +242,11 @@ packages:
   # +pic is required for linking with hpcrun.
   #
   libunwind:
-    version:  [1.5.0]
+    version:  [1.6.2]
     variants: +xz +pic
 
 
-  # mbedtls -- used in hpcrun for hash functions.
+  # mbedtls -- no longer used, this is for old hpctoolkit only
   #
   # Use a recent version >= 2.16.1.
   #
@@ -298,13 +300,13 @@ packages:
   # zlib -- used by binutils, elfutils and libdwarf to read compressed
   # sections.
   #
-  # Zlib development is stagnant and 1.2.9 and 1.2.10 are buggy, so
-  # 1.2.11 is the only recent version.
+  # Zlib development is stagnant and everything before 1.2.12 is
+  # deprecated due to security bugs, so use 1.2.12
   #
   # +optimize is to add -O2.
   #
   zlib:
-    version:  [1.2.11]
+    version:  [1.2.12]
     variants: +optimize +shared
 
 
@@ -334,34 +336,40 @@ packages:
 
   # rocm -- amd gpus, now in master
   #
-  # Requires: 3.10.0 or later, 4.x preferred.
+  # Requires: 4.5.x or later, 5.x is preferred
   #
   # If /opt/rocm is available, then the easiest solution is to use
-  # that.  In that case, specify hip, rocm-dbgapi and roctracer-dev as
-  # externals in packages.yaml.  For example, with /opt/rocm-4.0.0,
-  # use:
+  # that.  In that case, specify four prereqs (hip, hsa-rocr-dev,
+  # roctracer-dev, rocprofiler-dev) as externals in packages.yaml.
+  # For example, with /opt/rocm-5.0.0, use:
   #
+  # packages:
   #   hip:
   #     externals:
-  #     - spec: hip@4.0.0
-  #       prefix: /opt/rocm-4.0.0/hip
+  #     - spec: hip@5.0.0
+  #       prefix: /opt/rocm-5.0.0
   #
-  #   rocm-dbgapi:
+  #   hsa-rocr-dev:
   #     externals:
-  #     - spec: rocm-dbgapi@4.0.0
-  #       prefix: /opt/rocm-4.0.0
+  #     - spec: hsa-rocr-dev@5.0.0
+  #       prefix: /opt/rocm-5.0.0
   #
   #   roctracer-dev:
   #     externals:
-  #     - spec: roctracer-dev@4.0.0
-  #       prefix: /opt/rocm-4.0.0
+  #     - spec: roctracer-dev@5.0.0
+  #       prefix: /opt/rocm-5.0.0
   #
-  # Note: for /opt/rocm, the hip prefix is the hip subdirectory,
-  # for the other two, it is the /opt/rocm directory.
+  #   rocprofiler-dev:
+  #     externals:
+  #     - spec: rocprofiler-dev@5.0.0
+  #       prefix: /opt/rocm-5.0.0
   #
   # If ROCM is not already installed, then you can build it as part of
-  # hpctoolkit with the spec: hpctoolkit +rocm
-
+  # hpctoolkit.  In either case, build hpctoolkit with:
+  #
+  #   spack install hpctoolkit +rocm
+  #
+  # Note: this is all very fluid and subject to change.
 
   #------------------------------------------------------------
 
@@ -390,7 +398,7 @@ packages:
   # Note: Spack can now search for these packages itself.
   # For example:
   #
-  #   spack external cmake
+  #   spack external find cmake
   #
   # This puts an 'externals:' entry for cmake in ~/.spack/packages.yaml
   # if spack finds cmake on your PATH.  This works for cmake, perl,
@@ -399,7 +407,7 @@ packages:
 
   #------------------------------------------------------------
 
-  # We require cmake >= 3.4, perl >= 5.x and python >= 3.4.
+  # We require cmake >= 3.4, perl >= 5.x and python >= 3.6.
   # There are three ways to satisfy these requirements: a system
   # installed version (eg, /usr), a module or build from scratch.
   #
@@ -469,8 +477,7 @@ packages:
 
   #------------------------------------------------------------
 
-  # python -- we require python >= 3.4, but some rocm packages require
-  # python 2.7 (and need to be built separately).
+  # python -- we require python >= 3.6
 
   # Example for system python.  If you have both python2 and python3,
   # then specify them both as 'python' (a special rule for python).
@@ -505,4 +512,4 @@ packages:
   # This example is only for building a more recent compiler.
 
   # gcc:
-  #   version:  [7.4.0, 8.4.0]
+  #   version:  [8.5.0, 9.3.0, 10.3.0]

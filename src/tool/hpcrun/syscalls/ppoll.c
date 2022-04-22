@@ -78,6 +78,7 @@
 #include <monitor-exts/monitor_ext.h>
 
 #define BILLION  1000000000
+#define INIT_TIME(x) x.tv_sec = 0; x.tv_nsec = 0;
 
 typedef int ppoll_fn (struct pollfd *, nfds_t,
 		      const struct timespec *, const sigset_t *);
@@ -173,6 +174,10 @@ MONITOR_EXT_WRAP_NAME(ppoll)
   int init_errno = errno;
   int ret;
 
+  // sole purpose of the initialization below: suppress compiler warning about
+  // possible use of uninitialized end by tspec_add. (it is not)
+  INIT_TIME(end);
+
   //
   // update timeout only if non-NULL and > 0, otherwise just pass on
   // the original value.
@@ -231,6 +236,10 @@ MONITOR_EXT_WRAP_NAME(pselect)
   struct timespec end, now, my_timeout, *timeout_ptr;
   int init_errno = errno;
   int ret;
+
+  // sole purpose of the initialization below: suppress compiler warning about
+  // possible use of uninitialized end by tspec_add. (it is not)
+  INIT_TIME(end);
 
   //
   // update timeout only if non-NULL and > 0, otherwise just pass on
