@@ -42,9 +42,11 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
+import itertools
+
 class ObjectBimap(dict):
   """
-  One-to-one mapping between two distinct sets of objects. Does not require any
+  One-to-one bi-directional mapping between objects. Does not require any
   properties on the objects themselves (ie. key is identity).
   """
   __slots__ = ['_left']
@@ -58,13 +60,19 @@ class ObjectBimap(dict):
         assert self[k2] is k
 
   def __getitem__(self, key):
-    return super().__getitem__(id(key))
+    try:
+      return super().__getitem__(id(key))
+    except KeyError:
+      raise KeyError(key) from None
 
   def get(self, key, *args, **kwargs):
     return super().get(id(key), *args, **kwargs)
 
   def pop(self, key, *args, **kwargs):
-    return super().pop(id(key), *args, **kwargs)
+    try:
+      return super().pop(id(key), *args, **kwargs)
+    except KeyError:
+      raise KeyError(key) from None
 
   def __contains__(self, key):
     return super().__contains__(id(key))
@@ -125,7 +133,17 @@ class ObjectBimap(dict):
       x[k2] = self[k2]
     return x
 
-  __or__, __ror__, __ior__ = None, None, None
+  def __or__(self, other):
+    if not isinstance(other, ObjectBimap): raise TypeError(type(other))
+    return ObjectBimap(itertools.chain(iter(self), iter(other)))
+  __ror__ = None
+  def __ior__(self, other):
+    if not isinstance(other, ObjectBimap): raise TypeError(type(other))
+    for k, k2 in other:
+      self[k] = k2
+    return self
+  def update(self, other):
+    self |= other
 
   keys, values, items = None, None, None
-  fromkeys, popitem, update = None, None, None
+  fromkeys, popitem = None, None

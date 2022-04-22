@@ -43,3 +43,4 @@
 ## ******************************************************* EndRiceCopyright *
 
 from ._objbimap import ObjectBimap
+from ._match import MatchResult, match

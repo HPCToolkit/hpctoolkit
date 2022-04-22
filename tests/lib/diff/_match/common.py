@@ -42,80 +42,72 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-from ._objbimap import *
+from .._objbimap import ObjectBimap
 
-import pytest
-import re
+class MatchResult:
+  """Result of a matching operation"""
+  __slots__ = ['full', 'matches']
+  def __init__(self, full, matches=None):
+    if matches is None: matches = ObjectBimap()
+    self.full: bool = bool(full)
+    assert isinstance(matches, ObjectBimap)
+    self.matches: ObjectBimap = matches
 
-def test_adds_dels():
-  a, b, c = (object() for _ in range(3))
-  m = ObjectBimap()
+  @classmethod
+  def matchif(cls, a, b, cond=True):
+    return MatchResult(True, ObjectBimap(((a, b),))) if cond else MatchResult(False)
 
-  assert a not in m
+  def __bool__(self):
+    return self.full
 
-  m[a] = b
-  assert a in m and m[a] is b
-  assert b in m and m[b] is a
+  def __ior__(self, other):
+    if not isinstance(other, MatchResult): raise TypeError(type(other))
+    self.full = self.full and other.full
+    self.matches |= other.matches
+    return self
 
-  errAB = re.escape(f"Refusing to overwrite previous association for {a!r}: was {b!r}, request to be {c!r}")
-  errBA = re.escape(f"Refusing to overwrite previous association for {b!r}: was {a!r}, request to be {c!r}")
-  with pytest.raises(KeyError, match=errAB):
-    m[a] = c
-  with pytest.raises(KeyError, match=errAB):
-    m[c] = a
-  with pytest.raises(KeyError, match=errBA):
-    m[c] = b
+  def __or__(self, other):
+    if not isinstance(other, MatchResult): raise TypeError(type(other))
+    return MatchResult(self.full and other.full, self.matches | other.matches)
 
-  m[b] = a
-  assert a in m and m[a] is b
-  assert b in m and m[b] is a
+  def __repr__(self):
+    return f"{self.__class__.__name__}({self.full}, {self.matches!r})"
 
-  assert m.get(a) is b
-  assert m.get(c) is None
+def check_tyb(b, ty):
+  if not isinstance(b, ty):
+    raise TypeError(f"Cannot compare against {b!r}: expected an object of type {ty!r}")
 
-  m[c] = c
-  assert c in m
-  assert m[c] is c
+def cmp_id(a, b, /, mr):
+  assert isinstance(mr, MatchResult)
+  if a is b: return True
+  if a not in mr.matches: return False
+  if mr.matches[a] is b: return True
+  return False
 
-  del m[a]
-  assert a not in m and b not in m
-  with pytest.raises(KeyError, match=re.escape(repr(a))): m[a]
-  with pytest.raises(KeyError, match=re.escape(repr(b))): m[b]
+def merge_unordered(a, b, /, match, key=None) -> MatchResult:
+  """
+  Find matches between two sequences, which are considered unordered.
+  If `key` is given, it is used as a hint to assist with finding matches.
+  Returns an ObjectBimap with the matching objects.
+  """
+  if key is not None:
+    a, b = sorted(a, key=key), sorted(b, key=key)
+  else:
+    b = list(b)
+  out = MatchResult(True)
 
-  assert m.setdefault(c) is c
+  # TODO: Figure out a really clever algorithm to make this work better.
 
-  assert m.pop(c) is c
-  assert c not in m
+  # O(N^2) fallback pass:
+  for av in a:
+    for i,bv in enumerate(b):
+      m = match(av, bv)
+      if m:
+        out |= m
+        del b[i]
+        break
+    else:
+      out.full = False
+  out.full = len(b) == 0
 
-  assert m.setdefault(c, a) is a
-  assert m[c] is a
-
-  m2 = ObjectBimap([(a, b), (c, c)])
-  assert m2[a] is b and m2[c] is c
-
-def test_len_iter():
-  a, b, c, d, e, f = (object() for _ in range(6))
-  m = ObjectBimap()
-
-  assert len(m) == 0
-  m[a] = b
-  assert len(m) == 1
-  m[c] = d
-  assert len(m) == 2
-  m[e] = e
-  assert len(m) == 3
-  m[f] = f
-  assert len(m) == 4
-
-  l = list(m)
-  assert len(l) == 4
-  assert l == [(a,b), (c,d), (e,e), (f,f)]
-
-  m2 = m.copy()
-  assert m2[a] is b and m2[c] is d and m2[e] is e and m2[f] is f
-
-  m.clear()
-  assert len(m) == 0 and len(list(m)) == 0
-  m[b] = a
-  assert len(m) == 1 and len(list(m)) == 1
-  assert list(m) == [(b, a)]
+  return out
