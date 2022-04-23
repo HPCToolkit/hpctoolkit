@@ -2,7 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.hpp $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.hpp $
 // $Id: Args.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,67 +63,51 @@
 #ifndef Args_hpp
 #define Args_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/support/CmdLineParser.hpp"
 
 #include <iostream>
 #include <string>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
 class Args {
-public: 
-  Args(); 
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  ~Args();
 
   // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
+  void parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
+  void printVersion(std::ostream& os) const;
 
-  void
-  printUsage(std::ostream& os) const;
-  
+  void printUsage(std::ostream& os) const;
+
   // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
+  void printError(std::ostream& os, const char* msg) const;
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
+  void printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
+  void dump(std::ostream& os = std::cerr) const;
 
-  void
-  ddump() const;
+  void ddump() const;
 
 public:
   // Parsed Data: Command
   const std::string& getCmd() const;
 
   // Parsed Data: optional arguments
-  int mainPort;       // default: 21590
-  int xmlPort;        // default: 0
-  bool compression;   // default: true
+  int mainPort;      // default: 21590
+  int xmlPort;       // default: 0
+  bool compression;  // default: true
 
 private:
-  void
-  Ctor();
+  void Ctor();
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
-#endif // Args_hpp 
+#endif  // Args_hpp

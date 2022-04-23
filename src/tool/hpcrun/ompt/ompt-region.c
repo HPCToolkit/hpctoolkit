@@ -44,77 +44,30 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
-#include <assert.h>
-
-
-
-//*****************************************************************************
-// libmonitor
-//*****************************************************************************
-
-#include <monitor.h>
-
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/thread_data.h>
+#include "ompt-region.h"
 
 #include "ompt-callback.h"
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
 #include "ompt-queues.h"
-#include "ompt-region.h"
 #include "ompt-region-debug.h"
 #include "ompt-thread.h"
 
+#include "hpcrun/safe-sampling.h"
+#include "hpcrun/thread_data.h"
 
-
-//*****************************************************************************
-// variables
-//****************************************************************************/
+#include <assert.h>
+#include <monitor.h>
 
 // private freelist from which only thread owner can reused regions
 static __thread ompt_data_t* private_region_freelist_head = NULL;
 
+static ompt_region_data_t* ompt_region_acquire(void);
 
-//*****************************************************************************
-// forward declarations
-//*****************************************************************************
+static void ompt_region_release(ompt_region_data_t* r);
 
-static ompt_region_data_t * 
-ompt_region_acquire
-(
- void
-);
-
-static void
-ompt_region_release
-(
- ompt_region_data_t *r
-);
-
-
-//*****************************************************************************
-// private operations
-//*****************************************************************************
-
-static ompt_region_data_t *
-ompt_region_data_new
-(
- uint64_t region_id, 
- cct_node_t *call_path
-)
-{
+static ompt_region_data_t* ompt_region_data_new(uint64_t region_id, cct_node_t* call_path) {
   ompt_region_data_t* e = ompt_region_acquire();
 
   e->region_id = region_id;
@@ -130,35 +83,28 @@ ompt_region_data_new
   return e;
 }
 
-
-static void 
-ompt_parallel_begin_internal
-(
- ompt_data_t *parallel_data,
- int flags
-) 
-{
+static void ompt_parallel_begin_internal(ompt_data_t* parallel_data, int flags) {
   ompt_region_data_t* region_data = ompt_region_data_new(hpcrun_ompt_get_unique_id(), NULL);
   parallel_data->ptr = region_data;
 
   uint64_t region_id = region_data->region_id;
-  thread_data_t *td = hpcrun_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
 
   // old version
-//  ompt_data_t *parent_region_info = NULL;
-//  int team_size = 0;
-//  // FIXED: if we put 0 as previous, it would return the current parallel_data which is inside this function always different than NULL
-//  hpcrun_ompt_get_parallel_info(1, &parent_region_info, &team_size);
-//  if (parent_region_info == NULL) {
-//    // mark the master thread in the outermost region
-//    // (the one that unwinds to FENCE_MAIN)
-//    td->master = 1;
-//  }
+  //  ompt_data_t *parent_region_info = NULL;
+  //  int team_size = 0;
+  //  // FIXED: if we put 0 as previous, it would return the current parallel_data which is inside
+  //  this function always different than NULL hpcrun_ompt_get_parallel_info(1, &parent_region_info,
+  //  &team_size); if (parent_region_info == NULL) {
+  //    // mark the master thread in the outermost region
+  //    // (the one that unwinds to FENCE_MAIN)
+  //    td->master = 1;
+  //  }
 
   // FIXME vi3: check if this is right
   // the region has not been changed yet
   // that's why we say that the parent region is hpcrun_ompt_get_current_region_data
-  ompt_region_data_t *parent_region = hpcrun_ompt_get_current_region_data();
+  ompt_region_data_t* parent_region = hpcrun_ompt_get_current_region_data();
   if (!parent_region) {
     // mark the master thread in the outermost region
     // (the one that unwinds to FENCE_MAIN)
@@ -169,41 +115,36 @@ ompt_parallel_begin_internal
   }
 
   if (ompt_eager_context_p()) {
-     region_data->call_path =
-       ompt_parallel_begin_context(region_id, 
-				   flags & ompt_parallel_invoker_program);
+    region_data->call_path =
+        ompt_parallel_begin_context(region_id, flags & ompt_parallel_invoker_program);
   }
 }
 
-
-static void
-ompt_parallel_end_internal
-(
- ompt_data_t *parallel_data,    // data of parallel region
- int flags
-)
-{
+static void ompt_parallel_end_internal(
+    ompt_data_t* parallel_data,  // data of parallel region
+    int flags) {
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
 
-  if (!ompt_eager_context_p()){
-    // check if there is any thread registered that should be notified that region call path is available
-    ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
+  if (!ompt_eager_context_p()) {
+    // check if there is any thread registered that should be notified that region call path is
+    // available
+    ompt_notification_t* to_notify = (ompt_notification_t*)wfq_dequeue_public(&region_data->queue);
 
-    region_stack_el_t *stack_el = &region_stack[top_index + 1];
-    ompt_notification_t *notification = stack_el->notification;
+    region_stack_el_t* stack_el = &region_stack[top_index + 1];
+    ompt_notification_t* notification = stack_el->notification;
     if (notification->unresolved_cct) {
       ending_region = region_data;
-      ompt_region_context_lazy(region_data->region_id, ompt_scope_end,
-                               flags & ompt_parallel_invoker_program);
-      cct_node_t *prefix = region_data->call_path;
+      ompt_region_context_lazy(
+          region_data->region_id, ompt_scope_end, flags & ompt_parallel_invoker_program);
+      cct_node_t* prefix = region_data->call_path;
       // if combined this if branch with branch of next if
       // we will remove this line
       tmp_end_region_resolve(notification, prefix);
       ending_region = NULL;
     }
 
-    if (to_notify){
-      if (region_data->call_path == NULL){
+    if (to_notify) {
+      if (region_data->call_path == NULL) {
         // FIXME vi3: this is one big hack
         // different function is call for providing callpaths
         // FIXME vi3: also check if this add some ccts somewhere
@@ -213,8 +154,8 @@ ompt_parallel_end_internal
         // but do not insert them in any tree
         ending_region = region_data;
         // need to provide call path, because master did not take a sample inside region
-        ompt_region_context_lazy(region_data->region_id, ompt_scope_end,
-                                 flags & ompt_parallel_invoker_program);
+        ompt_region_context_lazy(
+            region_data->region_id, ompt_scope_end, flags & ompt_parallel_invoker_program);
         ending_region = NULL;
       }
 
@@ -245,19 +186,9 @@ ompt_parallel_end_internal
   hpcrun_get_thread_data()->region_id = 0;
 }
 
-
-
-static void
-ompt_parallel_begin
-(
- ompt_data_t *parent_task_data,
- const ompt_frame_t *parent_frame,
- ompt_data_t *parallel_data,
- unsigned int requested_team_size,
- int flags,
- const void *codeptr_ra
-)
-{
+static void ompt_parallel_begin(
+    ompt_data_t* parent_task_data, const ompt_frame_t* parent_frame, ompt_data_t* parallel_data,
+    unsigned int requested_team_size, int flags, const void* codeptr_ra) {
   hpcrun_safe_enter();
 
   ompt_parallel_begin_internal(parallel_data, flags);
@@ -265,16 +196,8 @@ ompt_parallel_begin
   hpcrun_safe_exit();
 }
 
-
-static void
-ompt_parallel_end
-(
- ompt_data_t *parallel_data,
- ompt_data_t *task_data,
- int flag,
- const void *codeptr_ra
-)
-{
+static void ompt_parallel_end(
+    ompt_data_t* parallel_data, ompt_data_t* task_data, int flag, const void* codeptr_ra) {
   hpcrun_safe_enter();
 
 #if 0
@@ -295,54 +218,40 @@ ompt_parallel_end
   hpcrun_safe_exit();
 }
 
-
-static void
-ompt_implicit_task_internal_begin
-(
- ompt_data_t *parallel_data,
- ompt_data_t *task_data,
- unsigned int team_size,
- unsigned int index
-)
-{
+static void ompt_implicit_task_internal_begin(
+    ompt_data_t* parallel_data, ompt_data_t* task_data, unsigned int team_size,
+    unsigned int index) {
   task_data->ptr = NULL;
 
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
 
   if (region_data == NULL) {
     // there are no parallel region callbacks for the initial task.
-    // region_data == NULL indicates that this is an initial task. 
+    // region_data == NULL indicates that this is an initial task.
     // do nothing for initial tasks.
     return;
   }
 
-  cct_node_t *prefix = region_data->call_path;
+  cct_node_t* prefix = region_data->call_path;
 
   task_data->ptr = prefix;
 
   if (!ompt_eager_context_p()) {
     // FIXME vi3: check if this is fine
     // add current region
-    add_region_and_ancestors_to_stack(region_data, index==0);
+    add_region_and_ancestors_to_stack(region_data, index == 0);
 
     // FIXME vi3: move this to add_region_and_ancestors_to_stack
     // Memoization process vi3:
-    if (index != 0){
+    if (index != 0) {
       not_master_region = region_data;
     }
   }
 }
 
-
-static void
-ompt_implicit_task_internal_end
-(
- ompt_data_t *parallel_data,
- ompt_data_t *task_data,
- unsigned int team_size,
- unsigned int index
-)
-{
+static void ompt_implicit_task_internal_end(
+    ompt_data_t* parallel_data, ompt_data_t* task_data, unsigned int team_size,
+    unsigned int index) {
   if (!ompt_eager_context_p()) {
     // the only thing we could do (certainly) here is to pop element from the stack
     // pop element from the stack
@@ -351,19 +260,10 @@ ompt_implicit_task_internal_end
   }
 }
 
-
-void
-ompt_implicit_task
-(
- ompt_scope_endpoint_t endpoint,
- ompt_data_t *parallel_data,
- ompt_data_t *task_data,
- unsigned int team_size,
- unsigned int index,
- int flags
-)
-{
-  if (flags == ompt_thread_initial && parallel_data == NULL)  {
+void ompt_implicit_task(
+    ompt_scope_endpoint_t endpoint, ompt_data_t* parallel_data, ompt_data_t* task_data,
+    unsigned int team_size, unsigned int index, int flags) {
+  if (flags == ompt_thread_initial && parallel_data == NULL) {
     // implicit task for implicit parallel region. nothing to do here.
     return;
   }
@@ -381,51 +281,26 @@ ompt_implicit_task
   hpcrun_safe_exit();
 }
 
-
-static ompt_region_data_t* 
-ompt_region_alloc
-(
- void
-)
-{
-  ompt_region_data_t* r = (ompt_region_data_t*) hpcrun_malloc(sizeof(ompt_region_data_t));
+static ompt_region_data_t* ompt_region_alloc(void) {
+  ompt_region_data_t* r = (ompt_region_data_t*)hpcrun_malloc(sizeof(ompt_region_data_t));
   return r;
 }
 
-
-static ompt_region_data_t* 
-ompt_region_freelist_get
-(
- void
-)
-{
+static ompt_region_data_t* ompt_region_freelist_get(void) {
   // FIXME vi3: should in this situation call OMPT_REGION_DATA_T_STAR / Notification / TRL_EL
   // FIXME vi3: I think that call to wfq_dequeue_private in this case should be thread safe
   // but check this one more time
-  ompt_region_data_t* r = 
-    (ompt_region_data_t*) wfq_dequeue_private(&public_region_freelist,
-					      OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
+  ompt_region_data_t* r = (ompt_region_data_t*)wfq_dequeue_private(
+      &public_region_freelist, OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
   return r;
 }
 
-
-static void
-ompt_region_freelist_put
-(
- ompt_region_data_t *r 
-)
-{
+static void ompt_region_freelist_put(ompt_region_data_t* r) {
   r->region_id = 0xdeadbeef;
   freelist_add_first(OMPT_BASE_T_STAR(r), OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
 }
 
-
-ompt_region_data_t*
-ompt_region_acquire
-(
- void
-)
-{
+ompt_region_data_t* ompt_region_acquire(void) {
   ompt_region_data_t* r = ompt_region_freelist_get();
   if (r == 0) {
     r = ompt_region_alloc();
@@ -434,59 +309,29 @@ ompt_region_acquire
   return r;
 }
 
-
-static void
-ompt_region_release
-(
- ompt_region_data_t *r
-)
-{
+static void ompt_region_release(ompt_region_data_t* r) {
   ompt_region_freelist_put(r);
 }
 
-void
-hpcrun_ompt_region_free
-(
- ompt_region_data_t *region_data
-)
-{
+void hpcrun_ompt_region_free(ompt_region_data_t* region_data) {
   region_data->region_id = 0xdeadbead;
   wfq_enqueue(OMPT_BASE_T_STAR(region_data), region_data->thread_freelist);
 }
 
-
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
 // initialize support for regions
-void
-ompt_regions_init
-(
- void
-)
-{
+void ompt_regions_init(void) {
   wfq_init(&public_region_freelist);
   ompt_region_debug_init();
 }
 
-void 
-ompt_parallel_region_register_callbacks
-(
- ompt_set_callback_t ompt_set_callback_fn
-)
-{
+void ompt_parallel_region_register_callbacks(ompt_set_callback_t ompt_set_callback_fn) {
   int retval;
-  retval = ompt_set_callback_fn(ompt_callback_parallel_begin,
-                    (ompt_callback_t)ompt_parallel_begin);
+  retval = ompt_set_callback_fn(ompt_callback_parallel_begin, (ompt_callback_t)ompt_parallel_begin);
   assert(ompt_event_may_occur(retval));
 
-  retval = ompt_set_callback_fn(ompt_callback_parallel_end,
-                    (ompt_callback_t)ompt_parallel_end);
+  retval = ompt_set_callback_fn(ompt_callback_parallel_end, (ompt_callback_t)ompt_parallel_end);
   assert(ompt_event_may_occur(retval));
 
-  retval = ompt_set_callback_fn(ompt_callback_implicit_task,
-                                (ompt_callback_t)ompt_implicit_task);
+  retval = ompt_set_callback_fn(ompt_callback_implicit_task, (ompt_callback_t)ompt_implicit_task);
   assert(ompt_event_may_occur(retval));
 }

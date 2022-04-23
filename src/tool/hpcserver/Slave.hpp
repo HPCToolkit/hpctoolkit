@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Slave.hpp $
-// $Id: Slave.hpp 4396 2013-11-11 22:04:35Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Slave.hpp
+// $ $Id: Slave.hpp 4396 2013-11-11 22:04:35Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Slave.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Slave.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,27 +63,22 @@
 #ifndef SLAVE_H_
 #define SLAVE_H_
 
-#include "SpaceTimeDataController.hpp"
 #include "MPICommunication.hpp"
+#include "SpaceTimeDataController.hpp"
 
+namespace TraceviewerServer {
 
-namespace TraceviewerServer
-{
+class Slave {
+public:
+  Slave();
+  virtual ~Slave();
+  void run();
 
-	class Slave
-	{
-	public:
-
-		Slave();
-		virtual ~Slave();
-		void run();
-
-	private:
-		SpaceTimeDataController* controller;
-		int getData(MPICommunication::CommandMessage*);
-		// Removes all sent messages from the queue
-		void cleanSent(list<MPICommunication::ResultBufferLocations*>& buffers, bool wait);
-	};
-
+private:
+  SpaceTimeDataController* controller;
+  int getData(MPICommunication::CommandMessage*);
+  // Removes all sent messages from the queue
+  void cleanSent(list<MPICommunication::ResultBufferLocations*>& buffers, bool wait);
+};
 } /* namespace TraceviewerServer */
 #endif /* SLAVE_H_ */

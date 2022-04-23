@@ -41,41 +41,20 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-
 #include "ompt-gpu-api.h"
+
 #include "ompt-activity-translate.h"
 
+#include "hpcrun/gpu/gpu-activity-process.h"
+#include "hpcrun/gpu/gpu-activity.h"
+#include "hpcrun/gpu/gpu-correlation-id-map.h"
+#include "hpcrun/gpu/gpu-monitoring-thread-api.h"
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-ompt_buffer_completion_notify
-(
- void
-)
-{
+void ompt_buffer_completion_notify(void) {
   gpu_monitoring_thread_activities_ready();
 }
 
-
-void
-ompt_activity_process
-(
- ompt_record_ompt_t *record
-)
-{
+void ompt_activity_process(ompt_record_ompt_t* record) {
   gpu_activity_t gpu_activity;
   uint64_t correlation_id;
   ompt_activity_translate(&gpu_activity, record, &correlation_id);

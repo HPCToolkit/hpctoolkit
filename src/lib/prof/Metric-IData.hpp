@@ -57,32 +57,18 @@
 //
 //***************************************************************************
 
-#ifndef prof_Prof_Metric_IData_hpp 
+#ifndef prof_Prof_Metric_IData_hpp
 #define prof_Prof_Metric_IData_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
 
-#include <iostream>
-
-#include <string>
-#include <vector>
-
-#include <typeinfo>
 #include <algorithm>
-
 #include <climits>
- 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/support/diagnostics.h>
-
-
-//*************************** Forward Declarations **************************
-
-
-//***************************************************************************
+#include <iostream>
+#include <string>
+#include <typeinfo>
+#include <vector>
 
 namespace Prof {
 namespace Metric {
@@ -99,30 +85,19 @@ namespace Metric {
 
 class IData {
 public:
-  
   typedef std::vector<double> MetricVec;
 
 public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
-  IData(size_t size = 0)
-  {
-    ensureMetricsSize(size);
-  }
+  IData(size_t size = 0) { ensureMetricsSize(size); }
 
-  virtual ~IData()
-  {
-  }
-  
-  IData(const IData& x)
-    : m_metrics(x.m_metrics)
-  {
-  }
-  
-  IData&
-  operator=(const IData& x)
-  {
+  virtual ~IData() {}
+
+  IData(const IData& x) : m_metrics(x.m_metrics) {}
+
+  IData& operator=(const IData& x) {
     m_metrics = x.m_metrics;
     return *this;
   }
@@ -133,10 +108,7 @@ public:
 
   static const uint npos = UINT_MAX;
 
-  bool
-  hasMetrics(uint mBegId = Metric::IData::npos,
-	     uint mEndId = Metric::IData::npos) const
-  {
+  bool hasMetrics(uint mBegId = Metric::IData::npos, uint mEndId = Metric::IData::npos) const {
     if (mBegId == IData::npos) {
       mBegId = 0;
     }
@@ -144,115 +116,77 @@ public:
 
     for (uint i = mBegId; i < mEndId; ++i) {
       if (hasMetric(i)) {
-	return true;
+        return true;
       }
     }
     return false;
   }
 
-  bool
-  hasMetric(size_t mId) const
-  { return (m_metrics[mId] != 0.0); }
+  bool hasMetric(size_t mId) const { return (m_metrics[mId] != 0.0); }
 
-  bool
-  hasMetricSlow(size_t mId) const
-  { return (mId < m_metrics.size() && hasMetric(mId)); }
+  bool hasMetricSlow(size_t mId) const { return (mId < m_metrics.size() && hasMetric(mId)); }
 
+  double metric(size_t mId) const { return m_metrics[mId]; }
 
-  double
-  metric(size_t mId) const
-  { return m_metrics[mId]; }
+  double& metric(size_t mId) { return m_metrics[mId]; }
 
-  double&
-  metric(size_t mId)
-  { return m_metrics[mId]; }
-
-
-  double
-  demandMetric(size_t mId, size_t size = 0) const
-  {
-    size_t sz = std::max(size, mId+1);
+  double demandMetric(size_t mId, size_t size = 0) const {
+    size_t sz = std::max(size, mId + 1);
     ensureMetricsSize(sz);
     return metric(mId);
   }
 
-  double&
-  demandMetric(size_t mId, size_t size = 0)
-  {
-    size_t sz = std::max(size, mId+1);
+  double& demandMetric(size_t mId, size_t size = 0) {
+    size_t sz = std::max(size, mId + 1);
     ensureMetricsSize(sz);
     return metric(mId);
   }
-
 
   // zeroMetrics: takes bounds of the form [mBegId, mEndId)
   // N.B.: does not have demandZeroMetrics() semantics
-  void
-  zeroMetrics(uint mBegId, uint mEndId)
-  {
+  void zeroMetrics(uint mBegId, uint mEndId) {
     for (uint i = mBegId; i < mEndId; ++i) {
       metric(i) = 0.0;
     }
   }
 
-
-  void
-  clearMetrics()
-  {
-    m_metrics.clear();;
+  void clearMetrics() {
+    m_metrics.clear();
+    ;
   }
 
   // ensureMetricsSize: ensures a vector of the requested size exists
-  void
-  ensureMetricsSize(size_t size) const
-  {
+  void ensureMetricsSize(size_t size) const {
     if (size > m_metrics.size())
-      m_metrics.resize(size, 0.0 /*value*/); // inserts at end
+      m_metrics.resize(size, 0.0 /*value*/);  // inserts at end
   }
 
-  void
-  insertMetricsBefore(size_t numMetrics) 
-  {
+  void insertMetricsBefore(size_t numMetrics) {
     m_metrics.insert(m_metrics.begin(), numMetrics, 0.0);
   }
-  
-  uint
-  numMetrics() const
-  { return m_metrics.size(); }
 
+  uint numMetrics() const { return m_metrics.size(); }
 
   // --------------------------------------------------------
-  // 
+  //
   // --------------------------------------------------------
-  
-  std::string
-  toStringMetrics(int oFlags = 0, const char* pfx = "") const;
 
+  std::string toStringMetrics(int oFlags = 0, const char* pfx = "") const;
 
   // [mBegId, mEndId)
-  std::ostream& 
-  writeMetricsXML(std::ostream& os,
-		  uint mBegId = Metric::IData::npos,
-		  uint mEndId = Metric::IData::npos,
-		  int oFlags = 0, const char* pfx = "") const;
-
+  std::ostream& writeMetricsXML(
+      std::ostream& os, uint mBegId = Metric::IData::npos, uint mEndId = Metric::IData::npos,
+      int oFlags = 0, const char* pfx = "") const;
 
   std::ostream&
-  dumpMetrics(std::ostream& os = std::cerr, int oFlags = 0,
-	      const char* pfx = "") const;
+  dumpMetrics(std::ostream& os = std::cerr, int oFlags = 0, const char* pfx = "") const;
 
-  void
-  ddumpMetrics() const;
+  void ddumpMetrics() const;
 
-  
 private:
   mutable MetricVec m_metrics;
 };
-
-//***************************************************************************
-
-} // namespace Metric
-} // namespace Prof
-
+}  // namespace Metric
+}  // namespace Prof
 
 #endif /* prof_Prof_Metric_IData_hpp */

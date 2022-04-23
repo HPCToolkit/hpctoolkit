@@ -60,39 +60,24 @@
 #ifndef PathFindMgr_hpp
 #define PathFindMgr_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
 
 #include <iostream>
 #include <map>
 #include <set>
+#include <stdint.h>
 #include <string>
 #include <vector>
 
-#include <stdint.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-// PathFindMgr
-//***************************************************************************
-
-class PathFindMgr
-{
+class PathFindMgr {
 public:
   static const int RecursivePathSfxLn = 2;
 
 public:
   PathFindMgr();
   ~PathFindMgr();
-  
-  
-  static PathFindMgr&
-  singleton();
 
+  static PathFindMgr& singleton();
 
   // pathfind - (recursively) search for file 'name' in given
   //   colon-separated (possibly recursive) pathlist.  If found,
@@ -125,30 +110,21 @@ public:
   //
   // The returned pointer points to an area that will be reused on subsequent
   // calls to this function, and must not be freed by the caller.
-  const char*
-  pathfind(const char* pathList, const char* name, const char* mode);
-  
-  
+  const char* pathfind(const char* pathList, const char* name, const char* mode);
+
   // Is this a valid recursive path of the form '.../path/\*' ?
-  static int
-  isRecursivePath(const char* path);
- 
+  static int isRecursivePath(const char* path);
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  std::string
-  toString(uint flags = 0) const;
-  
-  std::ostream&
-  dump(std::ostream& os, uint flags = 0, const char* pfx = "") const;
-  
-  void
-  ddump(uint flags = 0) const;
-  
+  std::string toString(uint flags = 0) const;
+
+  std::ostream& dump(std::ostream& os, uint flags = 0, const char* pfx = "") const;
+
+  void ddump(uint flags = 0) const;
 
 private:
-
   // Retreives the highest priority and closest matching real path to
   // "filePath" from 'm_cache', where priority is defined by how close
   // the real path is to the front of the vector of real paths.  If
@@ -192,9 +168,7 @@ private:
   //
   // @return:  A bool indicating whether 'filePath' was found in the list.
   //
-  bool
-  find(std::string& filePath);
-
+  bool find(std::string& filePath);
 
   // This method adds a file name and its associated real path to
   // 'm_cache'.  Paths are store according to the file it is
@@ -202,9 +176,7 @@ private:
   // vector associated with the file name.
   //
   // @param path: The path a file is located at.
-  void
-  insert(const std::string& path);
-
+  void insert(const std::string& path);
 
   // Scans the directory designated by 'path' and does one of two
   // things, depending on the value of 'recursionStack'.
@@ -224,17 +196,16 @@ private:
   //                       be cached. If it is recursive, a '*' will be
   //                       appended at the end.
   //
-  // @param seenPaths:     Set of paths already seen.  Used to avoid 
+  // @param seenPaths:     Set of paths already seen.  Used to avoid
   //                       cycles caused by symlinks.
   //
   // @param resultpathVec: If non-NULL and 'path' is recursive, all
   //                       sub-directories of 'path' will be added to
   //                       this vector, which is used in a LIFO manner.
-  std::string
-  scan(std::string& path, std::set<std::string>& seenPaths,
-       std::vector<std::string>* recursionStack = NULL);
+  std::string scan(
+      std::string& path, std::set<std::string>& seenPaths,
+      std::vector<std::string>* recursionStack = NULL);
 
- 
   // If the cache is full and a path cannot be found from the cache,
   // pathfind_slow is called to try to resolve the path. Searches
   // through all the directories in 'pathList', attempting to find
@@ -252,11 +223,9 @@ private:
   //
   // @param seenPaths: Set of paths already seen.  Used to avoid cycles caused
   //                   by symlinks.
-  const char*
-  pathfind_slow(const char* pathList, const char* name, const char* mode,
-		std::set<std::string>& seenPaths);
-  
-  
+  const char* pathfind_slow(
+      const char* pathList, const char* name, const char* mode, std::set<std::string>& seenPaths);
+
   // Resolves all '..' and '.' in 'path' in reference to itself. Does
   // NOT find the unique real path of 'path'. Returns how many '..'
   // are left in 'path'. Helps make sure more accurate results are
@@ -267,18 +236,16 @@ private:
   //
   // @param path: The file path to resolve.
   // @return:     The number of '..' in 'path' after it has been resolved.
-  int
-  resolve(std::string& path);
-  
+  int resolve(std::string& path);
 
 private:
-  typedef std::map<std::string, std::vector<std::string> > PathMap;
+  typedef std::map<std::string, std::vector<std::string>> PathMap;
 
   PathMap m_cache;
-  bool m_isPopulated; // cache has been populated
-  bool m_isFull;      // max size has been reached
+  bool m_isPopulated;  // cache has been populated
+  bool m_isFull;       // max size has been reached
 
-  static const uint64_t s_sizeMax = 20 * 1024 * 1024; // default is 20 MB
+  static const uint64_t s_sizeMax = 20 * 1024 * 1024;  // default is 20 MB
   uint64_t m_size;
 
   std::string m_pathfind_ans;

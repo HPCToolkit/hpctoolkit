@@ -54,58 +54,34 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
 //****************************************************************************
 
-//************************** System Include Files ****************************
-
-//************************** Open64 Include Files ***************************
-
-//*************************** User Include Files *****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
-
 #include "diagnostics.h"
 
-//****************************************************************************
+#include "include/gcc-attr.h"
+#include "include/uint.h"
 
 int DIAG_DBG_LVL_PUB = 0;
 
-void
-Diagnostics_SetDiagnosticFilterLevel(int lvl)
-{
+void Diagnostics_SetDiagnosticFilterLevel(int lvl) {
   DIAG_DBG_LVL_PUB = lvl;
 }
 
-
-int
-Diagnostics_GetDiagnosticFilterLevel()
-{
+int Diagnostics_GetDiagnosticFilterLevel() {
   return DIAG_DBG_LVL_PUB;
 }
 
-
-void
-Diagnostics_TheMostVisitedBreakpointInHistory(const char* GCC_ATTR_UNUSED filenm,
-					      uint GCC_ATTR_UNUSED lineno)
-{
+void Diagnostics_TheMostVisitedBreakpointInHistory(
+    const char* GCC_ATTR_UNUSED filenm, uint GCC_ATTR_UNUSED lineno) {
   // Prevent this routine from ever being inlined
   static uint count = 0;
   count++;
 }
 
-
-const char* DIAG_Unimplemented = 
-  "Unimplemented feature: ";
-const char* DIAG_UnexpectedInput = 
-  "Unexpected input: ";
-const char* DIAG_UnexpectedOpr = 
-  "Unexpected operator: ";
-
-
-//****************************************************************************
+const char* DIAG_Unimplemented = "Unimplemented feature: ";
+const char* DIAG_UnexpectedInput = "Unexpected input: ";
+const char* DIAG_UnexpectedOpr = "Unexpected operator: ";

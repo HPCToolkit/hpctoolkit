@@ -105,7 +105,6 @@ protected:
   // You should never create a ProfileSource directly
   ProfileSource() = default;
 };
-
-}
+}  // namespace hpctoolkit
 
 #endif  // HPCTOOLKIT_PROFILE_SOURCE_H

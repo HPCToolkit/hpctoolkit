@@ -57,13 +57,13 @@ namespace detail {
 struct Datatype;
 
 // Conversion from C++ types to MPI type handles.
-template<class T, typename std::enable_if<
-    std::is_arithmetic<T>::value && std::is_same<
-      typename std::remove_cv<typename std::remove_reference<T>::type>::type,
-      T>::value
-  >::type* = nullptr>
+template<
+    class T,
+    typename std::enable_if<
+        std::is_arithmetic<T>::value
+        && std::is_same<typename std::remove_cv<typename std::remove_reference<T>::type>::type, T>::
+            value>::type* = nullptr>
 const Datatype& asDatatype();
-
 }  // namespace detail
 
 /// Operation handle. Represents a single binary operation.
@@ -99,11 +99,11 @@ enum class Tag : int {
   // 0 is skipped
   ThreadAttributes_1 = 1,  // For attributes.cpp
 
-  SparseDB_1, SparseDB_2,  // For sinks/sparsedb.cpp
-  RankTree_1, RankTree_2,  // For hpcprof2-mpi/tree.cpp
+  SparseDB_1,
+  SparseDB_2,  // For sinks/sparsedb.cpp
+  RankTree_1,
+  RankTree_2,  // For hpcprof2-mpi/tree.cpp
 };
-
-
 }  // namespace hpctoolkit::mpi
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_CORE_H

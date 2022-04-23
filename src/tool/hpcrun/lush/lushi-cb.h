@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -63,15 +63,9 @@
 #ifndef lush_lush_cb_h
 #define lush_lush_cb_h
 
-//************************* System Include Files ****************************
-
-#include <stdlib.h>
-
-//*************************** User Include Files ****************************
-
 #include "lush-support-rt.h"
 
-//*************************** Forward Declarations **************************
+#include <stdlib.h>
 
 // **************************************************************************
 // A LUSH agent expects the following callbacks:
@@ -86,7 +80,7 @@ extern "C" {
 // ---------------------------------------------------------
 
 LUSHI_DECL(void*, LUSHCB_malloc, (size_t size));
-LUSHI_DECL(void,  LUSHCB_free, ());
+LUSHI_DECL(void, LUSHCB_free, ());
 
 // ---------------------------------------------------------
 // Facility for unwinding physical stack
@@ -100,13 +94,9 @@ typedef hpcrun_unw_cursor_t LUSHCB_cursor_t;
 //   > 0 : successfully advanced cursor to next frame
 //     0 : previous frame was the end of the unwind
 //   < 0 : error condition
-LUSHI_DECL(int, LUSHCB_step, (LUSHCB_cursor_t* cursor));
+LUSHI_DECL(int, LUSHCB_step, (LUSHCB_cursor_t * cursor));
 
-
-LUSHI_DECL(int, LUSHCB_loadmap_find, (void* addr, 
-				      char *module_name,
-				      void** start, 
-				      void** end));
+LUSHI_DECL(int, LUSHCB_loadmap_find, (void* addr, char* module_name, void** start, void** end));
 
 #ifdef __cplusplus
 }

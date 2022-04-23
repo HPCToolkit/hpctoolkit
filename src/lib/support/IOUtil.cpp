@@ -54,105 +54,72 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
 //****************************************************************************
 
-//************************** System Include Files ****************************
-
-#include <iostream>
-#include <fstream>
-
-//*************************** User Include Files *****************************
-
 #include "IOUtil.hpp"
+
 #include "diagnostics.h"
 
-//************************** Forward Declarations ****************************
-
-//****************************************************************************
-
-//****************************************************************************
-// IOUtil
-//****************************************************************************
+#include <fstream>
+#include <iostream>
 
 namespace IOUtil {
 
-
-std::istream*
-OpenIStream(const char* filenm)
-{
+std::istream* OpenIStream(const char* filenm) {
   if (!filenm || filenm[0] == '\0') {
     // Use cin
     return &std::cin;
-  } 
-  else {
+  } else {
     std::ifstream* ifs = new std::ifstream;
     try {
       OpenIFile(*ifs, filenm);
       return ifs;
-    }
-    catch (const Diagnostics::Exception& /*ex*/) {
+    } catch (const Diagnostics::Exception& /*ex*/) {
       delete ifs;
       throw;
     }
   }
 }
 
-
-std::ostream*
-OpenOStream(const char* filenm)
-{
+std::ostream* OpenOStream(const char* filenm) {
   if (!filenm || filenm[0] == '\0') {
     // Use cout
     return &std::cout;
-  } 
-  else {
+  } else {
     std::ofstream* ofs = new std::ofstream;
     try {
       OpenOFile(*ofs, filenm);
       return ofs;
-    }
-    catch (Diagnostics::Exception& /*ex*/) {
+    } catch (Diagnostics::Exception& /*ex*/) {
       delete ofs;
       throw;
     }
   }
 }
 
-
-void
-CloseStream(std::istream* s)
-{
+void CloseStream(std::istream* s) {
   if (s != &std::cin) {
     delete s;
   }
 }
 
-
-void
-CloseStream(std::ostream* s)
-{
+void CloseStream(std::ostream* s) {
   if (s != &std::cout) {
     delete s;
   }
 }
 
-
-void
-CloseStream(std::iostream* s)
-{
+void CloseStream(std::iostream* s) {
   if (s != &std::cin && s != &std::cout) {
     delete s;
   }
 }
 
-
-void
-OpenIFile(std::ifstream& fs, const char* filenm)
-{
+void OpenIFile(std::ifstream& fs, const char* filenm) {
   using namespace std;
 
   fs.open(filenm, ios::in);
@@ -161,10 +128,7 @@ OpenIFile(std::ifstream& fs, const char* filenm)
   }
 }
 
-
-void 
-OpenOFile(std::ofstream& fs, const char* filenm)
-{
+void OpenOFile(std::ofstream& fs, const char* filenm) {
   using namespace std;
 
   fs.open(filenm, ios::out | ios::trunc);
@@ -173,53 +137,39 @@ OpenOFile(std::ofstream& fs, const char* filenm)
   }
 }
 
-
-void
-CloseFile(std::fstream& fs)
-{
+void CloseFile(std::fstream& fs) {
   fs.close();
 }
 
-
-std::string 
-Get(std::istream& is, char end)
-{
+std::string Get(std::istream& is, char end) {
   static const int bufSz = 256;
   char buf[bufSz];
   std::string str;
-  
-  while ( (!is.eof() && !is.fail()) && is.peek() != end) {
+
+  while ((!is.eof() && !is.fail()) && is.peek() != end) {
     is.get(buf, bufSz, end);
     str += buf;
-  }  
+  }
 
   return str;
 }
 
-
-std::string 
-GetLine(std::istream& is, char end)
-{
+std::string GetLine(std::istream& is, char end) {
   std::string str = Get(is, end);
-  char c; is.get(c);  // eat up 'end'
+  char c;
+  is.get(c);  // eat up 'end'
   return str;
 }
 
-
-bool 
-Skip(std::istream& is, const char* s)
-{
+bool Skip(std::istream& is, const char* s) {
   DIAG_Assert(s, DIAG_UnexpectedInput);
   char c;
   for (int i = 0; s[i] != '\0'; i++) {
     is.get(c);
-    if (c != s[i]) { return false; }
+    if (c != s[i]) {
+      return false;
+    }
   }
   return true;
 }
-
-
-//****************************************************************************
-
-} // end of IOUtil namespace
-
+}  // namespace IOUtil

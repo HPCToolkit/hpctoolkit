@@ -78,8 +78,6 @@
 // Todo:
 //
 
-//***************************************************************************
-
 // To build an interactive, stand-alone client for testing:
 // (1) turn on this #if and (2) fetch copies of syserv-mesg.h
 // and fnbounds_file_header.h.
@@ -96,13 +94,13 @@
 #define EMSG(...)
 #define EEMSG(...)
 #define TMSG(...)
-#define SAMPLE_SOURCES(...)  zero_fcn()
-#define dup2(...)  zero_fcn()
+#define SAMPLE_SOURCES(...) zero_fcn()
+#define dup2(...)           zero_fcn()
 #define hpcrun_set_disabled()
-#define monitor_real_exit  exit
-#define monitor_real_fork  fork
-#define monitor_real_execve  execve
-#define monitor_sigaction(...)  0
+#define monitor_real_exit      exit
+#define monitor_real_fork      fork
+#define monitor_real_execve    execve
+#define monitor_sigaction(...) 0
 int zero_fcn(void) { return 0; }
 int verbose = 0;
 int serv_verbose = 0;
@@ -115,13 +113,6 @@ char	*outfile;
 
 #endif
 
-//***************************************************************************
-
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/wait.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -132,38 +123,40 @@ char	*outfile;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #if !defined(STAND_ALONE_CLIENT)
-#include <hpcfnbounds2/syserv-mesg.h>
+#include "audit/audit-api.h"
 #include "client.h"
 #include "disabled.h"
 #include "fnbounds_file_header.h"
+#include "hpcfnbounds2/syserv-mesg.h"
 #include "main.h"
 #include "messages.h"
-#include "sample_sources_all.h"
 #include "monitor.h"
-#include "audit/audit-api.h"
+#include "sample_sources_all.h"
 #else
-#include "syserv-mesg.h"
 #include "fnbounds_file_header.h"
+#include "syserv-mesg.h"
 #endif
 
 // Size to allocate for the stack of the server setup function, in KiB.
 #define SERVER_STACK_SIZE 1024
 
-#define SUCCESS   0
-#define FAILURE  -1
-#define END_OF_FILE  -2
+#define SUCCESS     0
+#define FAILURE     -1
+#define END_OF_FILE -2
 
-enum {
-  SYSERV_ACTIVE = 1,
-  SYSERV_INACTIVE
-};
+enum { SYSERV_ACTIVE = 1, SYSERV_INACTIVE };
 
 static int client_status = SYSERV_INACTIVE;
-static char *server;
-static char *server_stack;
+static char* server;
+static char* server_stack;
 
 static int fdout = -1;
 static int fdin = -1;
@@ -172,8 +165,8 @@ static pid_t my_pid;
 
 #if 0
 // Limit on memory use at which we restart the server in Meg.
-#define SERVER_MEM_LIMIT  140
-#define MIN_NUM_QUERIES   12
+#define SERVER_MEM_LIMIT 140
+#define MIN_NUM_QUERIES  12
 
 // rusage units are Kbytes.
 static long mem_limit = SERVER_MEM_LIMIT * 1024;
@@ -181,42 +174,28 @@ static int  num_queries = 0;
 static int  mem_warning = 0;
 #endif
 
-extern char **environ;
-
-
-//*****************************************************************
-// Miscellaneous helper function
-//*****************************************************************
+extern char** environ;
 
 // Returns: micro-seconds from start to now
-static long
-tdiff(struct timeval start, struct timeval now)
-{
+static long tdiff(struct timeval start, struct timeval now) {
   return 1000000 * (now.tv_sec - start.tv_sec) + (now.tv_usec - start.tv_usec);
 }
-
-
-//*****************************************************************
-// I/O helper functions
-//*****************************************************************
 
 // Automatically restart short reads over a pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-static int
-read_all(int fd, void *buf, size_t count)
-{
+static int read_all(int fd, void* buf, size_t count) {
   ssize_t ret;
   size_t len;
 
 #ifdef STAND_ALONE_CLIENT
-  if(verbose) {
+  if (verbose) {
     fprintf(stderr, "Client read_all, count = %ld bytes\n", count);
   }
 #endif
   len = 0;
   while (len < count) {
-    ret = read(fd, ((char *) buf) + len, count - len);
+    ret = read(fd, ((char*)buf) + len, count - len);
     if (ret < 0 && errno != EINTR) {
       return FAILURE;
     }
@@ -231,24 +210,21 @@ read_all(int fd, void *buf, size_t count)
   return SUCCESS;
 }
 
-
 // Automatically restart short writes over a pipe.
 // Returns: SUCCESS or FAILURE.
 //
-static int
-write_all(int fd, const void *buf, size_t count)
-{
+static int write_all(int fd, const void* buf, size_t count) {
   ssize_t ret;
   size_t len;
 
 #ifdef STAND_ALONE_CLIENT
-  if(verbose) {
+  if (verbose) {
     fprintf(stderr, "Client write_all, count = %ld bytes\n", count);
   }
 #endif
   len = 0;
   while (len < count) {
-    ret = write(fd, ((const char *) buf) + len, count - len);
+    ret = write(fd, ((const char*)buf) + len, count - len);
     if (ret < 0 && errno != EINTR) {
       return FAILURE;
     }
@@ -260,13 +236,10 @@ write_all(int fd, const void *buf, size_t count)
   return SUCCESS;
 }
 
-
 // Read a single syserv mesg from incoming pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-static int
-read_mesg(struct syserv_mesg *mesg)
-{
+static int read_mesg(struct syserv_mesg* mesg) {
   int ret;
 
   memset(mesg, 0, sizeof(*mesg));
@@ -275,7 +248,7 @@ read_mesg(struct syserv_mesg *mesg)
     ret = FAILURE;
   }
 #ifdef STAND_ALONE_CLIENT
-  if(verbose) {
+  if (verbose) {
     fprintf(stderr, "Client read message, type = %d, len = %ld\n", mesg->type, mesg->len);
   }
 #endif
@@ -283,13 +256,10 @@ read_mesg(struct syserv_mesg *mesg)
   return ret;
 }
 
-
 // Write a single syserv mesg to outgoing pipe.
 // Returns: SUCCESS or FAILURE.
 //
-static int
-write_mesg(int32_t type, int64_t len)
-{
+static int write_mesg(int32_t type, int64_t len) {
   struct syserv_mesg mesg;
 
   mesg.magic = SYSERV_MAGIC;
@@ -297,22 +267,15 @@ write_mesg(int32_t type, int64_t len)
   mesg.len = len;
 
 #ifdef STAND_ALONE_CLIENT
-  if(verbose) {
+  if (verbose) {
     fprintf(stderr, "Client write message, type = %d, len = %ld\n", type, len);
   }
 #endif
   return write_all(fdout, &mesg, sizeof(mesg));
 }
 
-
-//*****************************************************************
-// Mmap Helper Functions
-//*****************************************************************
-
 // Returns: 'size' rounded up to a multiple of the mmap page size.
-static size_t
-page_align(size_t size)
-{
+static size_t page_align(size_t size) {
   static size_t pagesize = 0;
 
   if (pagesize == 0) {
@@ -327,15 +290,12 @@ page_align(size_t size)
     }
   }
 
-  return ((size + pagesize - 1)/pagesize) * pagesize;
+  return ((size + pagesize - 1) / pagesize) * pagesize;
 }
-
 
 // Returns: address of anonymous mmap() region, else MAP_FAILED on
 // failure.
-static void *
-mmap_anon(size_t size)
-{
+static void* mmap_anon(size_t size) {
   int flags, prot;
 
   size = page_align(size);
@@ -349,34 +309,20 @@ mmap_anon(size_t size)
   return mmap(NULL, size, prot, flags, -1, 0);
 }
 
-
-//*****************************************************************
-// Signal Handler
-//*****************************************************************
-
 // Catch and ignore SIGPIPE so that if the server crashes it doesn't
 // also kill hpcrun.
 //
-static int
-hpcrun_sigpipe_handler(int sig, siginfo_t *info, void *context)
-{
+static int hpcrun_sigpipe_handler(int sig, siginfo_t* info, void* context) {
   TMSG(FNBOUNDS_CLIENT, "caught SIGPIPE: system server must have exited");
   return 0;
 }
-
-
-//*****************************************************************
-// Start and Stop the System Server
-//*****************************************************************
 
 // Launch the server lazily.
 
 // Close our file descriptors to the server.  If the server is still
 // alive, it will detect end-of-file on read() from the pipe.
 //
-static void
-shutdown_server(void)
-{
+static void shutdown_server(void) {
   auditor_exports->close(fdout);
   auditor_exports->close(fdin);
   fdout = -1;
@@ -386,9 +332,7 @@ shutdown_server(void)
   TMSG(FNBOUNDS_CLIENT, "syserv shutdown");
 }
 
-static int
-hpcfnbounds_grandchild(void* fds_vp)
-{
+static int hpcfnbounds_grandchild(void* fds_vp) {
   struct {
     int sendfd[2], recvfd[2];
   }* fds = fds_vp;
@@ -405,9 +349,9 @@ hpcfnbounds_grandchild(void* fds_vp)
   }
 
   // make the command line and exec
-  char *arglist[15];
+  char* arglist[15];
   char fdin_str[10], fdout_str[10];
-  sprintf(fdin_str,  "%d", fds->sendfd[0]);
+  sprintf(fdin_str, "%d", fds->sendfd[0]);
   sprintf(fdout_str, "%d", fds->recvfd[1]);
 
   int j = 0;
@@ -438,20 +382,18 @@ hpcfnbounds_grandchild(void* fds_vp)
   err(1, "hpcrun system server: exec(%s) failed", server);
 }
 
-static int
-hpcfnbounds_child(void* fds_vp) {
+static int hpcfnbounds_child(void* fds_vp) {
   // Clone the grandchild. We can share the memory space here since we're exiting soon.
   errno = 0;
-  pid_t grandchild_pid = auditor_exports->clone(hpcfnbounds_grandchild,
-    &server_stack[SERVER_STACK_SIZE * 1024], CLONE_UNTRACED | CLONE_VM, fds_vp);
+  pid_t grandchild_pid = auditor_exports->clone(
+      hpcfnbounds_grandchild, &server_stack[SERVER_STACK_SIZE * 1024], CLONE_UNTRACED | CLONE_VM,
+      fds_vp);
   // If the grandchild clone failed, pass the error back to the parent.
   return grandchild_pid < 0 ? errno != 0 ? errno : -1 : 0;
 }
 
 // Returns: 0 on success, else -1 on failure.
-static int
-launch_server(void)
-{
+static int launch_server(void) {
   struct {
     int sendfd[2], recvfd[2];
   } fds;
@@ -473,7 +415,7 @@ launch_server(void)
     return -1;
   }
 
-  if (hpcrun_is_initialized()){
+  if (hpcrun_is_initialized()) {
     // some sample sources need to be stopped in the parent, or else
     // they cause problems in the child.
     sampling_is_running = SAMPLE_SOURCES(started);
@@ -485,11 +427,11 @@ launch_server(void)
   // Give up a bit of our stack for the child shim. It doesn't need much.
   char child_stack[4 * 1024 * 2];
 
-  // Clone the child shim. With Glibc <2.24 there is a bug (https://sourceware.org/bugzilla/show_bug.cgi?id=18862)
-  // where this will reset the pthreads state in the parent if CLONE_VM is used.
-  // Clone the memory space to avoid feedback effects.
-  child_pid = auditor_exports->clone(hpcfnbounds_child,
-    &child_stack[4 * 1024], CLONE_UNTRACED, &fds);
+  // Clone the child shim. With Glibc <2.24 there is a bug
+  // (https://sourceware.org/bugzilla/show_bug.cgi?id=18862) where this will reset the pthreads
+  // state in the parent if CLONE_VM is used. Clone the memory space to avoid feedback effects.
+  child_pid =
+      auditor_exports->clone(hpcfnbounds_child, &child_stack[4 * 1024], CLONE_UNTRACED, &fds);
 
   if (child_pid < 0) {
     //
@@ -508,17 +450,19 @@ launch_server(void)
     EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: waitpid failed");
     return -1;
   }
-  if(!WIFEXITED(status)) {
+  if (!WIFEXITED(status)) {
     //
     // child died mysteriously
     //
-    if(WIFSIGNALED(status))
-      EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child shim died by signal %d", WTERMSIG(status));
+    if (WIFSIGNALED(status))
+      EMSG(
+          "FNBOUNDS_CLIENT ERROR: syserv launch failed: child shim died by signal %d",
+          WTERMSIG(status));
     else
       EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child shim died mysteriously");
     return -1;
   }
-  if(WEXITSTATUS(status) != 0) {
+  if (WEXITSTATUS(status) != 0) {
     //
     // child failed for some other reason
     //
@@ -536,7 +480,7 @@ launch_server(void)
   my_pid = getpid();
   client_status = SYSERV_ACTIVE;
 
-  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: ???", (int) child_pid);
+  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: ???", (int)child_pid);
 
   // Fnbounds talks first with a READY message
   struct syserv_mesg mesg;
@@ -545,7 +489,9 @@ launch_server(void)
     return -1;
   }
   if (mesg.type != SYSERV_READY) {
-    EMSG("FNBOUNDS_CLIENT ERROR: syserv gave bad initial message: expected %d, got %d", SYSERV_READY, mesg.type);
+    EMSG(
+        "FNBOUNDS_CLIENT ERROR: syserv gave bad initial message: expected %d, got %d", SYSERV_READY,
+        mesg.type);
     return -1;
   }
 
@@ -557,11 +503,8 @@ launch_server(void)
   return 0;
 }
 
-
 // Returns: 0 on success, else -1 on failure.
-int
-hpcrun_syserv_init(void)
-{
+int hpcrun_syserv_init(void) {
   server = getenv("HPCRUN_FNBOUNDS_CMD");
   if (server == NULL) {
     EMSG("FNBOUNDS_CLIENT ERROR: unable to get HPCRUN_FNBOUNDS_CMD");
@@ -607,17 +550,14 @@ hpcrun_syserv_init(void)
   // so exit.
   shutdown_server();
   EEMSG("hpcrun: unable to launch the hpcfnbounds server.\n"
-	"hpcrun: check that hpctoolkit is properly configured with dyninst\n"
-	"and its prereqs (boost, elfutils, libdwarf, bzip, libz, lzma).");
+        "hpcrun: check that hpctoolkit is properly configured with dyninst\n"
+        "and its prereqs (boost, elfutils, libdwarf, bzip, libz, lzma).");
   monitor_real_exit(1);
 
   return -1;
 }
 
-
-void
-hpcrun_syserv_fini(void)
-{
+void hpcrun_syserv_fini(void) {
   // don't tell the server to exit unless we're the process that
   // started it.
   if (client_status == SYSERV_ACTIVE && my_pid == getpid()) {
@@ -626,20 +566,13 @@ hpcrun_syserv_fini(void)
   shutdown_server();
 }
 
-
-//*****************************************************************
-// Query the System Server
-//*****************************************************************
-
 // Returns: pointer to array of void * and fills in the file header,
 // or else NULL on error.
 //
-void *
-hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
-{
+void* hpcrun_syserv_query(const char* fname, struct fnbounds_file_header* fh) {
   struct timeval start, now;
   struct syserv_mesg mesg;
-  void *addr;
+  void* addr;
 
   if (fname == NULL || fh == NULL) {
     EMSG("FNBOUNDS_CLIENT ERROR: passed NULL pointer to %s", __func__);
@@ -661,15 +594,13 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   // attempt to restart it before giving up.
   //
   size_t len = strlen(fname) + 1;
-  if (write_mesg(SYSERV_QUERY, len) != SUCCESS
-      || read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
-  {
+  if (write_mesg(SYSERV_QUERY, len) != SUCCESS || read_mesg(&mesg) != SUCCESS
+      || mesg.type != SYSERV_ACK) {
     TMSG(FNBOUNDS_CLIENT, "restart server");
     shutdown_server();
     launch_server();
-    if (write_mesg(SYSERV_QUERY, len) != SUCCESS
-	|| read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
-    {
+    if (write_mesg(SYSERV_QUERY, len) != SUCCESS || read_mesg(&mesg) != SUCCESS
+        || mesg.type != SYSERV_ACK) {
       EMSG("FNBOUNDS_CLIENT ERROR: unable to restart system server");
       shutdown_server();
       return NULL;
@@ -697,7 +628,7 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   // Mmap a region for the answer and read the array of addresses.
   // Note: mesg.len is the number of addrs, not bytes.
   //
-  size_t num_bytes = mesg.len * sizeof(void *);
+  size_t num_bytes = mesg.len * sizeof(void*);
   size_t mmap_size = page_align(num_bytes);
   addr = mmap_anon(mmap_size);
   if (addr == MAP_FAILED) {
@@ -735,11 +666,12 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     gettimeofday(&now, NULL);
   }
 
-  TMSG(FNBOUNDS_CLIENT, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
-       addr, (long) fh->num_entries, (long) fh->reference_offset,
-       (int) fh->is_relocatable);
-  TMSG(FNBOUNDS_CLIENT, "server memsize: %ld Meg,  time: %ld usec",
-       fnb_info.memsize / 1024, tdiff(start, now));
+  TMSG(
+      FNBOUNDS_CLIENT, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d", addr,
+      (long)fh->num_entries, (long)fh->reference_offset, (int)fh->is_relocatable);
+  TMSG(
+      FNBOUNDS_CLIENT, "server memsize: %ld Meg,  time: %ld usec", fnb_info.memsize / 1024,
+      tdiff(start, now));
 
 #if 0
   // Restart the server if it's done a minimum number of queries and
@@ -760,21 +692,14 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   return addr;
 }
 
-
-//*****************************************************************
-// Stand Alone Client
-//*****************************************************************
-
 #ifdef STAND_ALONE_CLIENT
 
-#define BUF_SIZE  2000
+#define BUF_SIZE 2000
 
-static void
-query_loop(void)
-{
+static void query_loop(void) {
   struct fnbounds_file_header fnb_hdr;
   char fname[BUF_SIZE];
-  void **addr;
+  void** addr;
   long k;
 
   for (;;) {
@@ -782,34 +707,31 @@ query_loop(void)
     if (fgets(fname, BUF_SIZE, stdin) == NULL) {
       break;
     }
-    char *new_line = strchr(fname, '\n');
+    char* new_line = strchr(fname, '\n');
     if (new_line != NULL) {
       *new_line = 0;
     }
 
-    addr = (void **) hpcrun_syserv_query(fname, &fnb_hdr);
+    addr = (void**)hpcrun_syserv_query(fname, &fnb_hdr);
 
     if (addr == NULL) {
       fprintf(outf, "Client error NULL return from hpcrun_syserv_query\n");
-    }
-    else {
+    } else {
       for (k = 0; k < fnb_hdr.num_entries; k++) {
-	fprintf(outf, "  %p\n", addr[k]);
+        fprintf(outf, "  %p\n", addr[k]);
       }
-      fprintf(outf, "num symbols = %ld, offset = 0x%lx, reloc = %d\n",
-	     fnb_hdr.num_entries, fnb_hdr.reference_offset,
-	     fnb_hdr.is_relocatable);
+      fprintf(
+          outf, "num symbols = %ld, offset = 0x%lx, reloc = %d\n", fnb_hdr.num_entries,
+          fnb_hdr.reference_offset, fnb_hdr.is_relocatable);
 
       if (munmap(addr, fnb_hdr.mmap_size) != 0) {
-	err(1, "munmap failed");
+        err(1, "munmap failed");
       }
     }
   }
 }
 
-int
-main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
   struct sigaction act;
   int i;
 
@@ -820,39 +742,37 @@ main(int argc, char *argv[])
     if (*argv[i] == '-') {
       // control arguments
       switch (argv[i][1]) {
-      case 'd':
-        noscan = 1;
-        break;
-      case 'V':
-        serv_verbose = 1;
-        break;
-      case 'v':
-        verbose = 1;
-        break;
+      case 'd': noscan = 1; break;
+      case 'V': serv_verbose = 1; break;
+      case 'v': verbose = 1; break;
       case 'o':
-        if ( (i+1) >= argc) {
-	  errx(1, "outfile must be specified; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
-	}
-	i++;
-	outfile = argv[i];
-	outf = fopen(outfile, "w");
-	if (outf == NULL) {
-	    errx(1,"outfile fopen failed; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
-	}
+        if ((i + 1) >= argc) {
+          errx(
+              1, "outfile must be specified; usage: client [-V} [-v] [-d] [-o outfile] "
+                 "/path/to/fnbounds");
+        }
+        i++;
+        outfile = argv[i];
+        outf = fopen(outfile, "w");
+        if (outf == NULL) {
+          errx(
+              1,
+              "outfile fopen failed; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+        }
         break;
       default:
-	errx(1, "unknown flag; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
-	break;
+        errx(1, "unknown flag; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+        break;
       }
     } else {
       // no - flag; must be the path to the server
       server = argv[i];
-      break;	// from argument loop
+      break;  // from argument loop
     }
   }
   // Make sure the server is non-NULL
-  if ( (server == NULL) || (strlen(server) == 0) ) {
-    errx(1,"NULL server name; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+  if ((server == NULL) || (strlen(server) == 0)) {
+    errx(1, "NULL server name; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
   }
 
   memset(&act, 0, sizeof(act));

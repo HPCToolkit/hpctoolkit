@@ -44,85 +44,60 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//************************ System Include Files ******************************
+#include <iostream>
+#include <sstream>
+#include <string>
 
-#include <iostream> 
 using std::cerr;
 using std::endl;
 
-#include <sstream>
-
-#include <string> 
-
 #ifdef NO_STD_CHEADERS
-# include <stdlib.h>
+#include <stdlib.h>
 #else
-# include <cstdlib>
-using std::atof; // For compatibility with non-std C headers
-using std::atoi;
-#endif
+#include <cstdlib>
 
-//************************* User Include Files *******************************
+using std::atof;  // For compatibility with non-std C headers
+using std::atoi;
+
+#endif
 
 #include "MathMLExprParser.hpp"
 #include "XercesUtil.hpp"
 
-#include <lib/prof/Metric-ADesc.hpp>
+#include "lib/prof/Metric-ADesc.hpp"
+#include "lib/support/NaN.h"
+#include "lib/support/StrUtil.hpp"
+#include "lib/support/Trace.hpp"
 
-#include <lib/support/NaN.h>
-#include <lib/support/Trace.hpp>
-#include <lib/support/StrUtil.hpp>
+#include <xercesc/util/XMLString.hpp>
 
-//************************ Xerces Include Files ******************************
-
-#include <xercesc/util/XMLString.hpp>         
 using XERCES_CPP_NAMESPACE::XMLString;
 
+static bool isOperatorNode(DOMNode* node);
+static bool isOperandNode(DOMNode* node);
 
-//************************ Forward Declarations ******************************
+MathMLExprParser::MathMLExprParser() {}
 
-static bool isOperatorNode(DOMNode *node);
-static bool isOperandNode(DOMNode *node);
+MathMLExprParser::~MathMLExprParser() {}
 
-//****************************************************************************
-
-
-//****************************************************************************
-//
-//****************************************************************************
-
-MathMLExprParser::MathMLExprParser()
-{
-}
-
-
-MathMLExprParser::~MathMLExprParser()
-{
-}
-
-
-Prof::Metric::AExpr* 
-MathMLExprParser::parse(DOMNode* mathMLExpr, 
-			const Prof::Metric::Mgr& mMgr)
-{
+Prof::Metric::AExpr* MathMLExprParser::parse(DOMNode* mathMLExpr, const Prof::Metric::Mgr& mMgr) {
   Prof::Metric::AExpr* exprTree = NULL;
 
   int exprs = 0;
 
-  DOMNode *child = mathMLExpr->getFirstChild();
+  DOMNode* child = mathMLExpr->getFirstChild();
   for (; child != NULL; child = child->getNextSibling()) {
     if (child->getNodeType() == DOMNode::TEXT_NODE) {
       // DTD ensures this can't contain anything but white space
       continue;
-    } 
-    else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
+    } else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
       continue;
     }
-    
+
     if (exprs == 1) {
       throw MathMLExprException("More than one MathML expression specified for COMPUTE");
     }
-    IFTRACE << child->getNodeType() << endl; 
+    IFTRACE << child->getNodeType() << endl;
     exprs++;
     exprTree = buildEvalTree(child, mMgr, false /*isNum*/);
   }
@@ -133,21 +108,17 @@ MathMLExprParser::parse(DOMNode* mathMLExpr,
   return exprTree;
 }
 
-
 // ----------------------------------------------------------------------
 // -- Prof::Metric::AExpr* buildEvalTree(DOMNode *node) --
 //   Build an Prof::Metric::AExpr object out of a DOMNode object.
 // -- params --
 //   node:    a DOMNode
 // -- exception --
-//   An exception of type MathMLExprException could be thrown.  If the 
+//   An exception of type MathMLExprException could be thrown.  If the
 // ----------------------------------------------------------------------
 
-Prof::Metric::AExpr* 
-MathMLExprParser::buildEvalTree(DOMNode *node, 
-				const Prof::Metric::Mgr& mMgr,
-				bool isNum) 
-{
+Prof::Metric::AExpr*
+MathMLExprParser::buildEvalTree(DOMNode* node, const Prof::Metric::Mgr& mMgr, bool isNum) {
   static const XMLCh* NUMBER = XMLString::transcode("cn");
   static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
 
@@ -167,185 +138,157 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
   const XMLCh* nodeValue = node->getNodeValue();
 
   switch (node->getNodeType()) {
-    
-  case DOMNode::TEXT_NODE:
-    {
-      Prof::Metric::AExpr* evalNode;
-      if (isNum) {  // is a number
-	std::string str = make_string(nodeValue);
-	IFTRACE << "str --" << str << "--" << endl; 
-	double val = StrUtil::toDbl(str.c_str());
-	evalNode = new Prof::Metric::Const(val);
-	IFTRACE << "number is --" << val << "--" << endl; 
-      }
-      else {           // is a variable
-	std::string str = make_string(nodeValue);
-	IFTRACE << "str --" << str << "--" << endl; 
+  case DOMNode::TEXT_NODE: {
+    Prof::Metric::AExpr* evalNode;
+    if (isNum) {  // is a number
+      std::string str = make_string(nodeValue);
+      IFTRACE << "str --" << str << "--" << endl;
+      double val = StrUtil::toDbl(str.c_str());
+      evalNode = new Prof::Metric::Const(val);
+      IFTRACE << "number is --" << val << "--" << endl;
+    } else {  // is a variable
+      std::string str = make_string(nodeValue);
+      IFTRACE << "str --" << str << "--" << endl;
 
-	const Prof::Metric::ADesc* m = mMgr.metric(str);
-	if (!m) {
-	  MathML_Throw("Undefined metric '" + str + "' encountered");
-	}
-
-	IFTRACE << "index --" << m->id() << "--" << endl;
-	evalNode = new Prof::Metric::Var(str, m->id());
+      const Prof::Metric::ADesc* m = mMgr.metric(str);
+      if (!m) {
+        MathML_Throw("Undefined metric '" + str + "' encountered");
       }
-      return evalNode;
+
+      IFTRACE << "index --" << m->id() << "--" << endl;
+      evalNode = new Prof::Metric::Var(str, m->id());
     }
-  
-  case DOMNode::ELEMENT_NODE: { // ignore all attributes
+    return evalNode;
+  }
+  case DOMNode::ELEMENT_NODE: {  // ignore all attributes
 
-    DOMNode *child = node->getFirstChild();
+    DOMNode* child = node->getFirstChild();
 
     // if it is an apply node
     if (XMLString::equals(nodeName, APPLY)) {
-      IFTRACE << nodeName << endl; 
+      IFTRACE << nodeName << endl;
 
       // find the node that could be the operator
       // if it is not, throw a "no operator" exception
-      DOMNode *op = child;
+      DOMNode* op = child;
       while (op != NULL && op->getNodeType() != DOMNode::ELEMENT_NODE)
-	op = op->getNextSibling();
+        op = op->getNextSibling();
       if (op == NULL || !isOperatorNode(op)) {
-	throw MathMLExprException("No operator");
-	return NULL;
+        throw MathMLExprException("No operator");
+        return NULL;
       }
 
       // if the operator is found
       int numChildren = 0;
       child = op;
       while ((child = child->getNextSibling()) != NULL) {
-	// could be some text between operands, ignore them
-	if (child->getNodeType() == DOMNode::TEXT_NODE) {
-	  continue;
-	} else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
-	  continue;
-	}
-	
-	if (isOperandNode(child))
-	  numChildren++;
-	else {
-	  throw MathMLExprException("Invalid expression");
-	  return NULL;
-	}
+        // could be some text between operands, ignore them
+        if (child->getNodeType() == DOMNode::TEXT_NODE) {
+          continue;
+        } else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
+          continue;
+        }
+
+        if (isOperandNode(child))
+          numChildren++;
+        else {
+          throw MathMLExprException("Invalid expression");
+          return NULL;
+        }
       }
-      IFTRACE << numChildren << " children" << endl; 
-      
+      IFTRACE << numChildren << " children" << endl;
+
       if (numChildren == 0) {
-	throw MathMLExprException("No operand");
-	return NULL;
+        throw MathMLExprException("No operand");
+        return NULL;
       }
 
       Prof::Metric::AExpr** nodes = new Prof::Metric::AExpr*[numChildren];
 
       child = op;
       for (int i = 0; i < numChildren; i++) {
-	do {
-	  child = child->getNextSibling();
-	} while (!isOperandNode(child));
-	IFTRACE << "child " << i << " " << child << endl; 
-	try {
-	  nodes[i] = buildEvalTree(child, mMgr, isNum);
-	}
-	catch (const MathMLExprException& /*ex*/) {
-	  for (int j = 0; j < i; j++)
-	    delete nodes[j];
-	  delete[] nodes;
-	  throw;
-	  return NULL;
-	}
+        do {
+          child = child->getNextSibling();
+        } while (!isOperandNode(child));
+        IFTRACE << "child " << i << " " << child << endl;
+        try {
+          nodes[i] = buildEvalTree(child, mMgr, isNum);
+        } catch (const MathMLExprException& /*ex*/) {
+          for (int j = 0; j < i; j++)
+            delete nodes[j];
+          delete[] nodes;
+          throw;
+          return NULL;
+        }
       }
 
       nodeName = op->getNodeName();
-      if (XMLString::equals(nodeName,SUBTRACTION) && numChildren <= 2) {
-	if (numChildren == 1)
-	  return new Prof::Metric::Neg(nodes[0]);
-	return new Prof::Metric::Minus(nodes[0], nodes[1]);
-      }
-      else if (XMLString::equals(nodeName,ADDITION)) {
-	return new Prof::Metric::Plus(nodes, numChildren);
-      }
-      else if (XMLString::equals(nodeName,MULTIPLICATION)) {
-	return new Prof::Metric::Times(nodes, numChildren);
-      }
-      else if (XMLString::equals(nodeName,DIVISION) && numChildren == 2) {
-	return new Prof::Metric::Divide(nodes[0], nodes[1]);
-      }
-      else if (XMLString::equals(nodeName,EXPONENTIATION) && numChildren == 2) {
-	return new Prof::Metric::Power(nodes[0], nodes[1]);
-      }
-      else if (XMLString::equals(nodeName,MAXML)) {
-	return new Prof::Metric::Max(nodes, numChildren);
-      }
-      else if (XMLString::equals(nodeName,MINML)) {
-	return new Prof::Metric::Min(nodes, numChildren);
-      }
-      else if (XMLString::equals(nodeName,MEAN)) {
-	return new Prof::Metric::Mean(nodes, numChildren);
-      }
-      else if (XMLString::equals(nodeName,STDDEV)) {
-	return new Prof::Metric::StdDev(nodes, numChildren);
-      }
-      else {
-	// otherwise, throw an exception and return NULL after the switch
-	for (int i = 0; i < numChildren; i++)
-	  delete nodes[i];
-	delete[] nodes;
-	throw MathMLExprException("Unknown operation");
+      if (XMLString::equals(nodeName, SUBTRACTION) && numChildren <= 2) {
+        if (numChildren == 1)
+          return new Prof::Metric::Neg(nodes[0]);
+        return new Prof::Metric::Minus(nodes[0], nodes[1]);
+      } else if (XMLString::equals(nodeName, ADDITION)) {
+        return new Prof::Metric::Plus(nodes, numChildren);
+      } else if (XMLString::equals(nodeName, MULTIPLICATION)) {
+        return new Prof::Metric::Times(nodes, numChildren);
+      } else if (XMLString::equals(nodeName, DIVISION) && numChildren == 2) {
+        return new Prof::Metric::Divide(nodes[0], nodes[1]);
+      } else if (XMLString::equals(nodeName, EXPONENTIATION) && numChildren == 2) {
+        return new Prof::Metric::Power(nodes[0], nodes[1]);
+      } else if (XMLString::equals(nodeName, MAXML)) {
+        return new Prof::Metric::Max(nodes, numChildren);
+      } else if (XMLString::equals(nodeName, MINML)) {
+        return new Prof::Metric::Min(nodes, numChildren);
+      } else if (XMLString::equals(nodeName, MEAN)) {
+        return new Prof::Metric::Mean(nodes, numChildren);
+      } else if (XMLString::equals(nodeName, STDDEV)) {
+        return new Prof::Metric::StdDev(nodes, numChildren);
+      } else {
+        // otherwise, throw an exception and return NULL after the switch
+        for (int i = 0; i < numChildren; i++)
+          delete nodes[i];
+        delete[] nodes;
+        throw MathMLExprException("Unknown operation");
       }
     }
 
-    if (XMLString::equals(nodeName,NUMBER)) {
-      IFTRACE << "--" << child << "--" << endl; 
+    if (XMLString::equals(nodeName, NUMBER)) {
+      IFTRACE << "--" << child << "--" << endl;
       Prof::Metric::AExpr* builtNode;
       try {
-	builtNode = buildEvalTree(child, mMgr, true /*isNum*/);
-	return builtNode;
-      }
-      catch (const MathMLExprException& /*ex*/) {
-	throw;
-      }
+        builtNode = buildEvalTree(child, mMgr, true /*isNum*/);
+        return builtNode;
+      } catch (const MathMLExprException& /*ex*/) { throw; }
     }
 
-    if (XMLString::equals(nodeName,IDENTIFIER)) {
-      IFTRACE << "--" << child << "--" << endl; 
+    if (XMLString::equals(nodeName, IDENTIFIER)) {
+      IFTRACE << "--" << child << "--" << endl;
       Prof::Metric::AExpr* builtNode;
       try {
-	builtNode = buildEvalTree(child, mMgr, false /*isNum*/);
-	return builtNode;
-      }
-      catch (const MathMLExprException& /*ex*/) {
-	throw;
-      }
+        builtNode = buildEvalTree(child, mMgr, false /*isNum*/);
+        return builtNode;
+      } catch (const MathMLExprException& /*ex*/) { throw; }
     }
 
-    IFTRACE << nodeName << endl; 
+    IFTRACE << nodeName << endl;
     throw MathMLExprException("Unknown node");
   }
-
-  case DOMNode::ENTITY_REFERENCE_NODE:
-    {
-      throw MathMLExprException("Entity -- not supported");
-    }
-  
-  case DOMNode::CDATA_SECTION_NODE:
-    {
-      throw MathMLExprException("CDATA -- not supported");
-    }
-  
-  case DOMNode::COMMENT_NODE:
-    {
-      //throw MathMLExprException("Comment -- not supported");
-      break;
-    }
-  
-  default:
-    throw MathMLExprException("Unknown -- not supported");
+  case DOMNode::ENTITY_REFERENCE_NODE: {
+    throw MathMLExprException("Entity -- not supported");
+  }
+  case DOMNode::CDATA_SECTION_NODE: {
+    throw MathMLExprException("CDATA -- not supported");
+  }
+  case DOMNode::COMMENT_NODE: {
+    // throw MathMLExprException("Comment -- not supported");
+    break;
   }
 
-  return NULL; // should not reach
-}
+  default: throw MathMLExprException("Unknown -- not supported");
+  }
 
+  return NULL;  // should not reach
+}
 
 #if 0
 std::string
@@ -364,7 +307,6 @@ MathMLExprParser::dump(std::ostream& os) const
 }
 #endif
 
-
 // ----------------------------------------------------------------------
 // -- bool isOperatorNode(DOMNode *node) --
 //   Tests whether a DOMNode is one of the operator nodes -- divide,
@@ -373,9 +315,7 @@ MathMLExprParser::dump(std::ostream& os) const
 //   node:       a DOMNode
 // ----------------------------------------------------------------------
 
-static bool 
-isOperatorNode(DOMNode *node) 
-{  
+static bool isOperatorNode(DOMNode* node) {
   static const XMLCh* DIVISION = XMLString::transcode("divide");
   static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
   static const XMLCh* ADDITION = XMLString::transcode("plus");
@@ -386,22 +326,21 @@ isOperatorNode(DOMNode *node)
 
   const XMLCh* nodeName = node->getNodeName();
 
-  return (XMLString::equals(nodeName,DIVISION) || XMLString::equals(nodeName,SUBTRACTION) ||
-	  XMLString::equals(nodeName,ADDITION) || XMLString::equals(nodeName,EXPONENTIATION) ||
-	  XMLString::equals(nodeName,MULTIPLICATION) || XMLString::equals(nodeName,MAXML) || 
-		XMLString::equals(nodeName,MINML));
+  return (
+      XMLString::equals(nodeName, DIVISION) || XMLString::equals(nodeName, SUBTRACTION)
+      || XMLString::equals(nodeName, ADDITION) || XMLString::equals(nodeName, EXPONENTIATION)
+      || XMLString::equals(nodeName, MULTIPLICATION) || XMLString::equals(nodeName, MAXML)
+      || XMLString::equals(nodeName, MINML));
 }
 
-static bool 
-isOperandNode(DOMNode *node) 
-{
+static bool isOperandNode(DOMNode* node) {
   static const XMLCh* APPLY = XMLString::transcode("apply");
   static const XMLCh* NUMBER = XMLString::transcode("cn");
   static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
 
   const XMLCh* nodeName = node->getNodeName();
 
-  return (XMLString::equals(nodeName,APPLY) ||
-	  XMLString::equals(nodeName,NUMBER) || XMLString::equals(nodeName,IDENTIFIER));
+  return (
+      XMLString::equals(nodeName, APPLY) || XMLString::equals(nodeName, NUMBER)
+      || XMLString::equals(nodeName, IDENTIFIER));
 }
-

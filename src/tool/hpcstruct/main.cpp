@@ -65,7 +65,7 @@
 //  directly by a user or invoked for a binary in a measurements directory.
 //  The latter case is distinguished by a "-M measurements-dir" argument,
 //  which should never be used directly by a user.
-//  
+//
 //  In either case, if a cache is specified, and the binary's structure
 //  file is found, it is copied to the output structure file.
 //  If no cache is specified, or the binary is not found in the cache,
@@ -74,42 +74,37 @@
 //  After generating the structure file, if a cache is specified, the
 //  structure file is entered into the cache.
 
-//****************************** Include Files ******************************
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
-#include <dlfcn.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <fstream>
-#include <string>
-#include <streambuf>
-#include <new>
-#include <vector>
-
-#include <string.h>
-#include <unistd.h>
-
-#include <include/gpu-binary.h>
-#include <include/hpctoolkit-config.h>
-
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
 
-#include <lib/banal/Struct.hpp>
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/cpuset_hwthreads.h>
-#include <lib/support/diagnostics.h>
-#include <lib/support/realpath.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/IOUtil.hpp>
-#include <lib/support/RealPathMgr.hpp>
+#include "include/gpu-binary.h"
+#include "include/hpctoolkit-config.h"
+#include "lib/banal/Struct.hpp"
+#include "lib/prof-lean/cpuset_hwthreads.h"
+#include "lib/prof-lean/hpcio.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/IOUtil.hpp"
+#include "lib/support/realpath.h"
+#include "lib/support/RealPathMgr.hpp"
+
+#include <dirent.h>
+#include <dlfcn.h>
+#include <fstream>
+#include <iostream>
+#include <new>
+#include <stdio.h>
+#include <stdlib.h>
+#include <streambuf>
+#include <string.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
+
+using std::cerr;
+using std::endl;
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>
@@ -117,49 +112,36 @@ using std::endl;
 
 #include "hpcstruct.hpp"
 
-#define PRINT_ERROR(mesg)  \
-  DIAG_EMsg(mesg << "\nTry 'hpcstruct --help' for more information.")
+#define PRINT_ERROR(mesg) DIAG_EMsg(mesg << "\nTry 'hpcstruct --help' for more information.")
 
 using namespace std;
 
-Args *global_args;
+Args* global_args;
 
 // Internal functions
 static int realmain(int argc, char* argv[]);
 
-
-//****************************** Main Program *******************************
-
-int
-main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   try {
     return realmain(argc, argv);
-  }
-  catch (const Diagnostics::Exception& x) {
+  } catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
+  } catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  } 
-  catch (const std::exception& x) {
+  } catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
-  } 
-  catch (...) {
+  } catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 }
 
-
 //=====================================================================================
 
-static int
-realmain(int argc, char* argv[])
-{
+static int realmain(int argc, char* argv[]) {
 #if 0
   fprintf(stderr, "DEBUG hpcstruct, argc = %d, pid = %d\n",
     argc, getpid() );
@@ -184,14 +166,14 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
   struct stat sb;
 
-  if ( stat(args.in_filenm.c_str(), &sb) != 0 ) {
+  if (stat(args.in_filenm.c_str(), &sb) != 0) {
     cerr << "ERROR -- input file " << args.in_filenm.c_str() << " does not exist" << endl;
     exit(1);
   }
 
   // See if the argument is a directory, or a single binary
   //
-  if ( S_ISDIR(sb.st_mode) ) {
+  if (S_ISDIR(sb.st_mode)) {
     // it's a directory
     // Make sure output file was not specified
     //
@@ -202,11 +184,10 @@ realmain(int argc, char* argv[])
     // Now process the measurements directory, passing it its stat result
     //
     doMeasurementsDir(args, &sb);
-
   } else {
     // Process a single binary, passing in its stat result
     //
-    doSingleBinary(args, &sb );
+    doSingleBinary(args, &sb);
   }
   return 0;
 }

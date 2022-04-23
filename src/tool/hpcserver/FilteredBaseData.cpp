@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.cpp $
-// $Id: FilteredBaseData.cpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.cpp
+// $ $Id: FilteredBaseData.cpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.cpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.cpp
+//   $
 //
 // Purpose:
 //   The highest level of the filtering implementation. Abstracts the filter
@@ -60,78 +63,69 @@
 //
 //***************************************************************************
 
+#include "FilteredBaseData.hpp"
+
+#include "DebugUtils.hpp"
 
 #include <assert.h>
 #include <iostream>
 
-
-#include "DebugUtils.hpp"
-#include "FilteredBaseData.hpp"
-
 namespace TraceviewerServer {
 FilteredBaseData::FilteredBaseData(string filename, int _headerSize) {
-	baseDataFile = new BaseDataFile(filename, _headerSize);
-	headerSize = _headerSize;
-	baseOffsets = baseDataFile->getOffsets();
-	//Filters are default, which is allow everything, so this will initialize the vector
-	filter();
-
+  baseDataFile = new BaseDataFile(filename, _headerSize);
+  headerSize = _headerSize;
+  baseOffsets = baseDataFile->getOffsets();
+  // Filters are default, which is allow everything, so this will initialize the vector
+  filter();
 }
 
 FilteredBaseData::~FilteredBaseData() {
-	delete baseDataFile;
+  delete baseDataFile;
 }
 
-void FilteredBaseData::setFilters(FilterSet _filter)
-{
-	DEBUGCOUT(1) << "setting filters" <<endl;
-	currentlyAppliedFilter = _filter;
-	filter();
+void FilteredBaseData::setFilters(FilterSet _filter) {
+  DEBUGCOUT(1) << "setting filters" << endl;
+  currentlyAppliedFilter = _filter;
+  filter();
 }
 
-void FilteredBaseData::filter()
-{
-	int numFiles = baseDataFile->getNumberOfFiles();
-	rankMapping.clear();
-	for (int i = 0; i < numFiles; i++) {
-		if (currentlyAppliedFilter.matches(baseDataFile->processIDs[i], baseDataFile->threadIDs[i])){
-			rankMapping.push_back(i);
-		}
-	}
+void FilteredBaseData::filter() {
+  int numFiles = baseDataFile->getNumberOfFiles();
+  rankMapping.clear();
+  for (int i = 0; i < numFiles; i++) {
+    if (currentlyAppliedFilter.matches(baseDataFile->processIDs[i], baseDataFile->threadIDs[i])) {
+      rankMapping.push_back(i);
+    }
+  }
 
-	DEBUGCOUT(1) << "Filtering matched " << rankMapping.size() << " out of "<<numFiles<<endl;
+  DEBUGCOUT(1) << "Filtering matched " << rankMapping.size() << " out of " << numFiles << endl;
 }
 
 FileOffset FilteredBaseData::getMinLoc(int pseudoRank) {
-	assert((unsigned int)pseudoRank < rankMapping.size());
-	return baseOffsets[rankMapping[pseudoRank]].start + headerSize;
+  assert((unsigned int)pseudoRank < rankMapping.size());
+  return baseOffsets[rankMapping[pseudoRank]].start + headerSize;
 }
 
-FileOffset FilteredBaseData::getMaxLoc(int pseudoRank){
-	assert((unsigned int)pseudoRank < rankMapping.size());
-	return baseOffsets[rankMapping[pseudoRank]].end;
+FileOffset FilteredBaseData::getMaxLoc(int pseudoRank) {
+  assert((unsigned int)pseudoRank < rankMapping.size());
+  return baseOffsets[rankMapping[pseudoRank]].end;
 }
 
-int64_t FilteredBaseData::getLong(FileOffset position)
-{
-	return baseDataFile->getMasterBuffer()->getLong(position);
+int64_t FilteredBaseData::getLong(FileOffset position) {
+  return baseDataFile->getMasterBuffer()->getLong(position);
 }
-int FilteredBaseData::getInt(FileOffset position)
-{
-	return baseDataFile->getMasterBuffer()->getInt(position);
+int FilteredBaseData::getInt(FileOffset position) {
+  return baseDataFile->getMasterBuffer()->getInt(position);
 }
 
-int FilteredBaseData::getNumberOfRanks()
-{
-	return rankMapping.size();
+int FilteredBaseData::getNumberOfRanks() {
+  return rankMapping.size();
 }
 
-int* FilteredBaseData::getProcessIDs()
-{
-	return baseDataFile->processIDs;
+int* FilteredBaseData::getProcessIDs() {
+  return baseDataFile->processIDs;
 }
-short* FilteredBaseData::getThreadIDs()
-{
-	return baseDataFile->threadIDs;
+short* FilteredBaseData::getThreadIDs() {
+  return baseDataFile->threadIDs;
 }
-}
+}  // namespace TraceviewerServer

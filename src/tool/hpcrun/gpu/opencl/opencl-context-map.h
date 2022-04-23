@@ -44,55 +44,16 @@
 #ifndef opencl_context_map_h
 #define opencl_context_map_h
 
-
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
 #include <stdint.h>
-
-
-
-//*****************************************************************************
-// type definitions 
-//*****************************************************************************
 
 typedef struct opencl_context_map_entry_t opencl_context_map_entry_t;
 
+opencl_context_map_entry_t* opencl_cl_context_map_lookup(uint64_t);
 
+uint32_t opencl_cl_context_map_update(uint64_t);
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
+void opencl_cl_context_map_delete(uint64_t);
 
-opencl_context_map_entry_t *
-opencl_cl_context_map_lookup
-(
- uint64_t
-);
-
-
-uint32_t
-opencl_cl_context_map_update
-(
- uint64_t
-);
-
-
-void
-opencl_cl_context_map_delete
-(
- uint64_t
-);
-
-
-uint32_t
-opencl_cl_context_map_entry_context_id_get
-(
- opencl_context_map_entry_t *entry
-);
-
+uint32_t opencl_cl_context_map_entry_context_id_get(opencl_context_map_entry_t* entry);
 
 #endif
-
-

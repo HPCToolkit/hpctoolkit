@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataCompressionLayer.hpp $
-// $Id: DataCompressionLayer.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataCompressionLayer.hpp
+// $ $Id: DataCompressionLayer.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataCompressionLayer.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataCompressionLayer.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -56,11 +59,11 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
-#include "zlib.h"
-#include <stdint.h>
-#include <cstdio>
-
 #include "ProgressBar.hpp"
+#include "zlib.h"
+
+#include <cstdio>
+#include <stdint.h>
 /*
  * CompressingDataSocketLayer.h
  *
@@ -71,47 +74,44 @@
 #ifndef COMPRESSINGDATASOCKETLAYER_H_
 #define COMPRESSINGDATASOCKETLAYER_H_
 
-namespace TraceviewerServer
-{
-#define BUFFER_SIZE 0x4000
-#define BUFFER_GROW_FACTOR 2 //Double buffer size each time it fills up
-	class DataCompressionLayer
-	{
-	public:
-		DataCompressionLayer();
-		//Advanced constructor:
-		DataCompressionLayer(z_stream customCompressor, ProgressBar* progMonitor);
+namespace TraceviewerServer {
+#define BUFFER_SIZE        0x4000
+#define BUFFER_GROW_FACTOR 2  // Double buffer size each time it fills up
+class DataCompressionLayer {
+public:
+  DataCompressionLayer();
+  // Advanced constructor:
+  DataCompressionLayer(z_stream customCompressor, ProgressBar* progMonitor);
 
-		virtual ~DataCompressionLayer();
-		void writeInt(int);
-		void writeLong(uint64_t);
-		void writeDouble(double);
-		void writeFile(FILE*);
-		void flush();
-		unsigned char* getOutputBuffer();
-		int getOutputLength();
+  virtual ~DataCompressionLayer();
+  void writeInt(int);
+  void writeLong(uint64_t);
+  void writeDouble(double);
+  void writeFile(FILE*);
+  void flush();
+  unsigned char* getOutputBuffer();
+  int getOutputLength();
 
-	private:
-		//Checks to make sure there is enough room in the buffer for count
-		//bytes. If there is not, it makes room by flushing the buffer.
-		void makeRoom(int count);
-		void softFlush(int flushType);
+private:
+  // Checks to make sure there is enough room in the buffer for count
+  // bytes. If there is not, it makes room by flushing the buffer.
+  void makeRoom(int count);
+  void softFlush(int flushType);
 
-		//Increment the progress bar if it isn't NULL
-		void pInc(unsigned int count);
+  // Increment the progress bar if it isn't NULL
+  void pInc(unsigned int count);
 
-		void growOutputBuffer();
+  void growOutputBuffer();
 
-		unsigned int bufferIndex;
-		z_stream compressor;
-		char* inBuf;
-		unsigned char* outBuf;
-		unsigned int posInCompBuffer;
+  unsigned int bufferIndex;
+  z_stream compressor;
+  char* inBuf;
+  unsigned char* outBuf;
+  unsigned int posInCompBuffer;
 
-		unsigned int outBufferCurrentSize;
+  unsigned int outBufferCurrentSize;
 
-		ProgressBar* progMonitor;
-	};
-
+  ProgressBar* progMonitor;
+};
 } /* namespace TraceviewerServer */
 #endif /* COMPRESSINGDATASOCKETLAYER_H_ */

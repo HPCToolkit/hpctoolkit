@@ -47,41 +47,26 @@
 #ifndef profxml_XercesErrorHandler_h
 #define profxml_XercesErrorHandler_h
 
-//************************ System Include Files ******************************
-
 #include <string>
-
-//*********************** Xerces Include Files *******************************
-
 #include <xercesc/sax/ErrorHandler.hpp>
 #include <xercesc/sax/SAXParseException.hpp>
 
-//************************* User Include Files *******************************
-
-//************************ Forward Declarations ******************************
-
-//****************************************************************************
-
 class XercesErrorHandler : public XERCES_CPP_NAMESPACE::ErrorHandler {
 public:
-  XercesErrorHandler(const std::string &_userFile, 
-		     const std::string &_tmpFile, 
-		     int _numPrefixLines, 
-		     bool _verbose) : 
-    userFile(_userFile), tmpFile(_tmpFile), 
-    numPrefixLines(_numPrefixLines), verbose(_verbose) {}; 
-  
+  XercesErrorHandler(
+      const std::string& _userFile, const std::string& _tmpFile, int _numPrefixLines, bool _verbose)
+      : userFile(_userFile), tmpFile(_tmpFile), numPrefixLines(_numPrefixLines),
+        verbose(_verbose){};
+
   // error handler interface
   void error(const XERCES_CPP_NAMESPACE::SAXParseException& e);
   void fatalError(const XERCES_CPP_NAMESPACE::SAXParseException& e);
   void warning(const XERCES_CPP_NAMESPACE::SAXParseException& e);
-  void resetErrors(){ };
-  static void report(std::ostream& estream, 
-		     const char* prefix, 
-		     const char* fileType, 
-		     const XERCES_CPP_NAMESPACE::SAXParseException& e, 
-		     const char* alternateFile = 0, 
-		     int numPrefixLines = 0);
+  void resetErrors(){};
+  static void report(
+      std::ostream& estream, const char* prefix, const char* fileType,
+      const XERCES_CPP_NAMESPACE::SAXParseException& e, const char* alternateFile = 0,
+      int numPrefixLines = 0);
 
 private:
   std::string userFile;

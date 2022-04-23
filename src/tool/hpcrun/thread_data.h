@@ -44,12 +44,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef THREAD_DATA_H
 #define THREAD_DATA_H
 
 // This is called "thread data", but it applies to process as well
 // (there is just 1 thread).
+
+#include "cct2metrics.h"
+#include "core_profile_trace_data.h"
+#include "epoch.h"
+#include "lush/lush-pthread.i"
+#include "newmem.h"
+#include "ompt/omp-tools.h"
+#include "sample_sources_registered.h"
+#include "unwind/common/backtrace.h"
+#include "unwind/common/uw_hash.h"
+
+#include "lib/prof-lean/hpcio-buffer.h"
+#include "lib/prof-lean/hpcio.h"
 
 #include <setjmp.h>
 #include <signal.h>
@@ -58,20 +70,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "sample_sources_registered.h"
-#include "newmem.h"
-#include "epoch.h"
-#include "cct2metrics.h"
-#include "core_profile_trace_data.h"
-#include "ompt/omp-tools.h"
-
-#include <lush/lush-pthread.i>
-#include <unwind/common/backtrace.h>
-#include <unwind/common/uw_hash.h>
-
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcio-buffer.h>
-
 typedef struct {
   sigjmp_buf jb;
 } sigjmp_buf_t;
@@ -79,21 +77,19 @@ typedef struct {
 typedef struct gpu_data_t {
   // True if this thread is at CuXXXXSynchronize.
   bool is_thread_at_cuda_sync;
-  // maintains state to account for overload potential  
+  // maintains state to account for overload potential
   uint8_t overload_state;
   // current active stream
   uint64_t active_stream;
   // last examined event
-  void * event_node;
+  void* event_node;
   // maintain the total number of threads (global: think shared
   // blaming) at synchronize (could be device/stream/...)
   uint64_t accum_num_sync_threads;
-	// holds the number of times the above accum_num_sync_threads
-	// is updated
+  // holds the number of times the above accum_num_sync_threads
+  // is updated
   uint64_t accum_num_samples;
 } gpu_data_t;
-
-
 
 /* ******
    TODO:
@@ -115,8 +111,8 @@ typedef struct gpu_data_t {
     thread_locks package
         (each of the 'lock' elements is true if this thread owns the lock.
          locks must be released in an exceptional situation)
-	fnbounds_lock   
-	splay_lock
+        fnbounds_lock
+        splay_lock
     sample source package
        event_set
        ss_state
@@ -136,36 +132,35 @@ typedef struct gpu_data_t {
        a few bools & integers. General purpose. Used for simulating error conditions.
  */
 
-
 typedef struct thread_data_t {
   // ----------------------------------------
   // support for blame shifting
   // ----------------------------------------
-  int idle;              // indicate whether the thread is idle
-  uint64_t blame_target; // a target for directed blame
+  int idle;               // indicate whether the thread is idle
+  uint64_t blame_target;  // a target for directed blame
 
   int last_synch_sample;
   int last_sample;
-  
-  int overhead; // indicate whether the thread is overhead
 
-  int lockwait; // if thread is in work & lockwait state, it is waiting for a lock
-  void *lockid; // pointer pointing to the lock
+  int overhead;  // indicate whether the thread is overhead
 
-  uint64_t region_id; // record the parallel region the thread is currently in
+  int lockwait;  // if thread is in work & lockwait state, it is waiting for a lock
+  void* lockid;  // pointer pointing to the lock
 
-  uint64_t outer_region_id; // record the outer-most region id the thread is currently in
-  cct_node_t* outer_region_context; // cct node associated with the outermost region
+  uint64_t region_id;  // record the parallel region the thread is currently in
 
-  int defer_flag; //whether should defer the context creation
+  uint64_t outer_region_id;          // record the outer-most region id the thread is currently in
+  cct_node_t* outer_region_context;  // cct node associated with the outermost region
 
-  cct_node_t *omp_task_context; // pass task context from elider to cct insertion
-  int master; // whether the thread is the master thread
-  int team_master; // whether the thread is the team master thread
- 
-  int defer_write; // whether should defer the write
+  int defer_flag;  // whether should defer the context creation
 
-  int reuse; // mark whether the td is ready for reuse
+  cct_node_t* omp_task_context;  // pass task context from elider to cct insertion
+  int master;                    // whether the thread is the master thread
+  int team_master;               // whether the thread is the team master thread
+
+  int defer_write;  // whether should defer the write
+
+  int reuse;  // mark whether the td is ready for reuse
 
   int add_to_pool;
 
@@ -176,15 +171,15 @@ typedef struct thread_data_t {
   // sample sources
   // ----------------------------------------
 
-  source_state_t* ss_state; // allocate at initialization time
-  source_info_t*  ss_info;  // allocate at initialization time
+  source_state_t* ss_state;  // allocate at initialization time
+  source_info_t* ss_info;    // allocate at initialization time
 
-  struct sigevent sigev;   // POSIX real-time timer
-  timer_t        timerid;
-  bool           timer_init;
+  struct sigevent sigev;  // POSIX real-time timer
+  timer_t timerid;
+  bool timer_init;
 
-  uint64_t       last_time_us; // microseconds
-   
+  uint64_t last_time_us;  // microseconds
+
   // ----------------------------------------
   // core_profile_trace_data contains the following
   // epoch: loadmap + cct + cct_ctxt
@@ -206,56 +201,55 @@ typedef struct thread_data_t {
   // +------------------------------------------------------------+
   // [new backtrace         )              [cached backtrace      )
   // +------------------------------------------------------------+
-  //                        ^              ^ 
+  //                        ^              ^
   //                        |              |
   //                    btbuf_cur       btbuf_sav
-  
+
   frame_t* btbuf_cur;  // current frame when actively constructing a backtrace
-  frame_t* btbuf_beg;  // beginning of the backtrace buffer 
+  frame_t* btbuf_beg;  // beginning of the backtrace buffer
                        // also, location of the innermost frame in
                        // newly recorded backtrace (although skipInner may
                        // adjust the portion of the backtrace that is recorded)
   frame_t* btbuf_end;  // end of the current backtrace buffer
   frame_t* btbuf_sav;  // innermost frame in cached backtrace
 
-
-  backtrace_t bt;     // backtrace used for unwinding
-  uw_hash_table_t *uw_hash_table;
+  backtrace_t bt;  // backtrace used for unwinding
+  uw_hash_table_t* uw_hash_table;
 
   // ----------------------------------------
   // trampoline
   // ----------------------------------------
-  bool    tramp_present;   // TRUE if a trampoline installed; FALSE otherwise
-  void*   tramp_retn_addr; // return address that the trampoline replaced
-  void*   tramp_loc;       // current (stack) location of the trampoline
-  size_t  cached_frame_count; // (sanity check) length of cached frame list
+  bool tramp_present;         // TRUE if a trampoline installed; FALSE otherwise
+  void* tramp_retn_addr;      // return address that the trampoline replaced
+  void* tramp_loc;            // current (stack) location of the trampoline
+  size_t cached_frame_count;  // (sanity check) length of cached frame list
 
-  frame_t* cached_bt_buf_beg;  // the begin of the cached backtrace buffer
+  frame_t* cached_bt_buf_beg;    // the begin of the cached backtrace buffer
   frame_t* cached_bt_frame_beg;  // the begin of cached frames
-  frame_t* cached_bt_buf_frame_end;  // the end of the cached backtrace buffer & end of cached frames
-  
-  frame_t* tramp_frame;       // (cached) frame assoc. w/ cur. trampoline loc.
-  cct_node_t* tramp_cct_node; // cct node associated with the trampoline
+  frame_t*
+      cached_bt_buf_frame_end;  // the end of the cached backtrace buffer & end of cached frames
 
-  uint32_t prev_dLCA; // distance to LCA in the CCT for the previous sample
-  uint32_t dLCA; // distance to LCA in the CCT
-  
+  frame_t* tramp_frame;        // (cached) frame assoc. w/ cur. trampoline loc.
+  cct_node_t* tramp_cct_node;  // cct node associated with the trampoline
+
+  uint32_t prev_dLCA;  // distance to LCA in the CCT for the previous sample
+  uint32_t dLCA;       // distance to LCA in the CCT
+
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------
-  sigjmp_buf_t     *current_jmp_buf;
-  sigjmp_buf_t     bad_interval;
-  sigjmp_buf_t     bad_unwind;
+  sigjmp_buf_t* current_jmp_buf;
+  sigjmp_buf_t bad_interval;
+  sigjmp_buf_t bad_unwind;
 
-  bool             deadlock_drop;
-  int              handling_sample;
-  int              fnbounds_lock;
+  bool deadlock_drop;
+  int handling_sample;
+  int fnbounds_lock;
 
   // ----------------------------------------
   // Logical unwinding
   // ----------------------------------------
-  lushPthr_t     pthr_metrics;
-
+  lushPthr_t pthr_metrics;
 
   // ----------------------------------------
   // debug stuff
@@ -273,121 +267,50 @@ typedef struct thread_data_t {
   // sample or else deadlock on the dlopen lock.
   bool inside_dlfcn;
 
-
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
 #endif
-  
-  uint64_t gpu_trace_prev_time;
- 
-} thread_data_t;
 
+  uint64_t gpu_trace_prev_time;
+} thread_data_t;
 
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;
 
+void hpcrun_init_pthread_key(void);
 
-void 
-hpcrun_init_pthread_key
-(
-  void
-);
+void hpcrun_set_thread0_data(void);
 
-
-void 
-hpcrun_set_thread0_data
-(
-  void
-);
-
-
-void 
-hpcrun_set_thread_data
-(
-  thread_data_t *td
-);
-
+void hpcrun_set_thread_data(thread_data_t* td);
 
 #define TD_GET(field) hpcrun_get_thread_data()->field
 
 extern thread_data_t* (*hpcrun_get_thread_data)(void);
-extern bool           (*hpcrun_td_avail)(void);
+extern bool (*hpcrun_td_avail)(void);
 extern thread_data_t* hpcrun_safe_get_td(void);
 extern thread_data_t* hpcrun_allocate_thread_data(int id);
 
+void hpcrun_unthreaded_data(void);
 
-void 
-hpcrun_unthreaded_data
-(
-  void
-);
+void hpcrun_threaded_data(void);
 
+void hpcrun_thread_init_mem_pool_once(
+    int id, cct_ctxt_t* thr_ctxt, bool has_trace, bool demand_new_thread);
 
-void 
-hpcrun_threaded_data
-(
-  void
-);
+void hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources);
 
+void hpcrun_cached_bt_adjust_size(size_t n);
 
-void 
-hpcrun_thread_init_mem_pool_once
-(
-  int id, 
-  cct_ctxt_t *thr_ctxt,
-  bool has_trace, 
-  bool demand_new_thread
-);
+frame_t* hpcrun_expand_btbuf(void);
 
+void hpcrun_ensure_btbuf_avail(void);
 
-void
-hpcrun_thread_data_init
-(
-  int id, 
-  cct_ctxt_t* thr_ctxt, 
-  int is_child, 
-  size_t n_sources
-);
+void hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt);
 
+void hpcrun_cached_bt_adjust_size(size_t n);
 
-void     
-hpcrun_cached_bt_adjust_size
-(
-  size_t n
-);
-
-
-frame_t* 
-hpcrun_expand_btbuf
-(
-  void
-);
-
-
-void
-hpcrun_ensure_btbuf_avail
-(
-  void
-);
-
-
-void
-hpcrun_thread_data_reuse_init
-(
-  cct_ctxt_t* thr_ctxt
-);
-
-
-void
-hpcrun_cached_bt_adjust_size
-(
-  size_t n
-);
-
-
-
-void hpcrun_id_tuple_cputhread(thread_data_t *td);
+void hpcrun_id_tuple_cputhread(thread_data_t* td);
 
 // utilities to match previous api
-#define hpcrun_get_thread_epoch()  TD_GET(core_profile_trace_data.epoch)
+#define hpcrun_get_thread_epoch() TD_GET(core_profile_trace_data.epoch)
 
-#endif // !defined(THREAD_DATA_H)
+#endif  // !defined(THREAD_DATA_H)

@@ -60,48 +60,31 @@
 #ifndef profxml_DocHandlerArgs
 #define profxml_DocHandlerArgs
 
-//************************ System Include Files ******************************
+#include "XercesSAX2.hpp"
+
+#include "lib/support/diagnostics.h"
+#include "lib/support/RealPathMgr.hpp"
 
 #include <string>
 
-//************************* User Include Files *******************************
-
-#include "XercesSAX2.hpp"
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/RealPathMgr.hpp>
-
-
-//************************ Forward Declarations ******************************
-
-//****************************************************************************
-
 class DocHandlerArgs {
 public:
-  DocHandlerArgs(const RealPathMgr* realpathMgr = NULL)
-    : m_realpathMgr(realpathMgr)
-  { }
-  
-  virtual ~DocHandlerArgs()
-  { }
-  
-  virtual std::string
-  realpath(const std::string& oldpath) const
-  {
+  DocHandlerArgs(const RealPathMgr* realpathMgr = NULL) : m_realpathMgr(realpathMgr) {}
+
+  virtual ~DocHandlerArgs() {}
+
+  virtual std::string realpath(const std::string& oldpath) const {
     if (m_realpathMgr) {
       std::string path = oldpath;
       m_realpathMgr->realpath(path);
       return path;
-    }
-    else {
+    } else {
       return oldpath;
     }
   }
-  
+
 private:
   const RealPathMgr* m_realpathMgr;
 };
-
-//****************************************************************************
 
 #endif  // profxml_DocHandlerArgs

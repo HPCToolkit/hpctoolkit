@@ -44,13 +44,7 @@
 #ifndef hpcrun_opencl_h
 #define hpcrun_opencl_h
 
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
 #define CL_TARGET_OPENCL_VERSION 220
 #include <CL/cl.h>
 
 #endif
-

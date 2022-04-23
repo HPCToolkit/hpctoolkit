@@ -57,70 +57,54 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_CallPath_CallPath_hpp 
+#ifndef Analysis_CallPath_CallPath_hpp
 #define Analysis_CallPath_CallPath_hpp
-
-//************************* System Include Files ****************************
-
-#include <iostream>
-#include <vector>
-#include <stack>
-#include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
 
 #include "Args.hpp"
 #include "Util.hpp"
 
-#include <lib/binutils/LM.hpp>
+#include "include/uint.h"
+#include "lib/binutils/LM.hpp"
+#include "lib/prof/CallPath-Profile.hpp"
+#include "lib/prof/Struct-Tree.hpp"
 
-#include <lib/prof/CallPath-Profile.hpp>
-#include <lib/prof/Struct-Tree.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
+#include <iostream>
+#include <stack>
+#include <string>
+#include <vector>
 
 namespace Analysis {
 
 namespace CallPath {
 
-extern std::ostream* dbgOs; // for parallel debugging
-
+extern std::ostream* dbgOs;  // for parallel debugging
 
 // ---------------------------------------------------------
 //
 // ---------------------------------------------------------
 
-Prof::CallPath::Profile*
-read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
-     int mergeTy, uint rFlags = 0, uint mrgFlags = 0);
+Prof::CallPath::Profile* read(
+    const Util::StringVec& profileFiles, const Util::UIntVec* groupMap, int mergeTy,
+    uint rFlags = 0, uint mrgFlags = 0);
 
-Prof::CallPath::Profile*
-read(const char* prof_fnm, uint groupId, uint rFlags = 0);
+Prof::CallPath::Profile* read(const char* prof_fnm, uint groupId, uint rFlags = 0);
 
 static inline Prof::CallPath::Profile*
-read(const std::string& prof_fnm, uint groupId, uint rFlags = 0)
-{
+read(const std::string& prof_fnm, uint groupId, uint rFlags = 0) {
   return read(prof_fnm.c_str(), groupId, rFlags);
 }
 
-
-void
-readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
-
+void readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 // overlayStaticStructure: In the CCT collected by hpcrun, call sites
 // (CCT::Call) and statements (CCT::Stmt) have no procedure frames.
 // Overlaying static structure creates frames for CCT::Call and
 // CCT::Stmt nodes.
-// 
+//
 // After static structure has been overlayed on the CCT, CCT::Stmt's
 // are still distinct by instruction pointer even if they map to the
 // same Struct::Stmt.  Currently,
@@ -134,54 +118,37 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 // - Every CCT::Call and CCT::Stmt is a descendant of a CCT::ProcFrm
 // - A CCT::Stmt node is always a leaf.
 
-void
-overlayStaticStructureMain(Prof::CallPath::Profile& prof,
-			   std::string agent, bool doNormalizeTy,
-                           bool printProgress);
+void overlayStaticStructureMain(
+    Prof::CallPath::Profile& prof, std::string agent, bool doNormalizeTy, bool printProgress);
 
 // lm is optional and may be NULL
-void 
-overlayStaticStructure(Prof::CallPath::Profile& prof,
-		       Prof::LoadMap::LM* loadmap_lm,
-		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm);
+void overlayStaticStructure(
+    Prof::CallPath::Profile& prof, Prof::LoadMap::LM* loadmap_lm, Prof::Struct::LM* lmStrct,
+    BinUtil::LM* lm);
 
 // specialty function for hpcprof-mpi
-void
-noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof);
+void noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof);
 
-void
-pruneBySummaryMetrics(Prof::CallPath::Profile& prof, uint8_t* prunedNodes);
+void pruneBySummaryMetrics(Prof::CallPath::Profile& prof, uint8_t* prunedNodes);
 
-void
-normalize(Prof::CallPath::Profile& prof, std::string agent, bool doNormalizeTy);
+void normalize(Prof::CallPath::Profile& prof, std::string agent, bool doNormalizeTy);
 
-void
-pruneStructTree(Prof::CallPath::Profile& prof);
-
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-void
-applyThreadMetricAgents(Prof::CallPath::Profile& prof, std::string agent);
-
-void
-applySummaryMetricAgents(Prof::CallPath::Profile& prof, std::string agent);
-
+void pruneStructTree(Prof::CallPath::Profile& prof);
 
 // ---------------------------------------------------------
 //
 // ---------------------------------------------------------
 
-void
-makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args);
+void applyThreadMetricAgents(Prof::CallPath::Profile& prof, std::string agent);
 
+void applySummaryMetricAgents(Prof::CallPath::Profile& prof, std::string agent);
 
-} // namespace CallPath
+// ---------------------------------------------------------
+//
+// ---------------------------------------------------------
 
-} // namespace Analysis
+void makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args);
+}  // namespace CallPath
+}  // namespace Analysis
 
-//****************************************************************************
-
-#endif // Analysis_CallPath_CallPath_hpp
+#endif  // Analysis_CallPath_CallPath_hpp

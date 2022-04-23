@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.hpp $
-// $Id: ProgressBar.hpp 4294 2013-07-11 00:15:53Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.hpp
+// $ $Id: ProgressBar.hpp 4294 2013-07-11 00:15:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,31 +63,33 @@
 #ifndef PROGRESSBAR_HPP_
 #define PROGRESSBAR_HPP_
 
-#include <string>
 #include <stdint.h>
+#include <string>
+
 using namespace std;
-namespace TraceviewerServer
-{
+
+namespace TraceviewerServer {
 class ProgressBar {
 private:
-typedef uint64_t ulong;
+  typedef uint64_t ulong;
 
-	static const int DEFAULT_TERMINAL_WIDTH = 80;
+  static const int DEFAULT_TERMINAL_WIDTH = 80;
 
-	int usableWidth;
-	int colsFilled;
-	ulong tasks;
-	int tasksComplete;
-	string label;
-	void update();
+  int usableWidth;
+  int colsFilled;
+  ulong tasks;
+  int tasksComplete;
+  string label;
+  void update();
+
 public:
-	ProgressBar(string name, ulong tasksToComplete);
+  ProgressBar(string name, ulong tasksToComplete);
 
-	void incrementProgress(ulong tasks);
-	/**Call every time a task is completed */
-	void incrementProgress();
+  void incrementProgress(ulong tasks);
+  /**Call every time a task is completed */
+  void incrementProgress();
 
-	virtual ~ProgressBar();
+  virtual ~ProgressBar();
 };
-}
+}  // namespace TraceviewerServer
 #endif /* PROGRESSBAR_HPP_ */

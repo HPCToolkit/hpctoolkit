@@ -44,37 +44,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*************************** System Include Files ***************************/
+#include <libgen.h>  // for dirname/basename
+#include <stdio.h>   // for FILENAME_MAX
 
-#include <stdio.h>  // for FILENAME_MAX
-#include <libgen.h> // for dirname/basename
-
-#define __USE_XOPEN_EXTENDED // for realpath()
+#define __USE_XOPEN_EXTENDED  // for realpath()
 #include <stdlib.h>
 
-#define __USE_XOPEN_EXTENDED // for strdup()
-#include <string.h>
-
-/**************************** User Include Files ****************************/
-
+#define __USE_XOPEN_EXTENDED  // for strdup()
 #include "findinstall.h"
 #include "pathfind.h"
 
-/*************************** Forward Declarations ***************************/
-
-/****************************************************************************/
+#include <string.h>
 
 /* findinstall
- *  
+ *
  * Note: This is a little trickier than a shell script launcher
  * because if cmd was invoked as 'foo' with the assumption that it
  * would be found using PATH, 'cmd' is _not_ a fully resolved a path,
  * but simply 'foo'.
-*/
-char*
-findinstall(const char* cmd, const char* base_cmd)
-{
-  static char rootdir[FILENAME_MAX]; // PATH_MAX
+ */
+char* findinstall(const char* cmd, const char* base_cmd) {
+  static char rootdir[FILENAME_MAX];  // PATH_MAX
   char *bindir, *rootdir_rel;
   char *cmd1 = NULL, *bindir_tmp = NULL;
 
@@ -90,31 +80,28 @@ findinstall(const char* cmd, const char* base_cmd)
   if (!cmd1) {
     cmd1 = (char*)cmd;
   }
-  
+
   /* given a command with a path, find the root installation directory */
   cmd1 = strdup(cmd1);
   bindir = dirname(cmd1);
   if (strcmp(bindir, ".") == 0) {
     rootdir_rel = "..";
-  } 
-  else {
+  } else {
     bindir_tmp = strdup(bindir);
     rootdir_rel = dirname(bindir_tmp);
-  }  
+  }
 
   // printf("%s // %s // %s\n", cmd, bindir, rootdir_rel);
-      
+
   if (realpath(rootdir_rel, rootdir) == NULL) {
     // fprintf(stderr, "%s: %s\n", cmd, strerror(errno));
     goto error;
   }
-  
+
   free(cmd1);
   free(bindir_tmp);
   return rootdir;
-  
- error:
+
+error:
   return NULL;
 }
-
-/****************************************************************************/

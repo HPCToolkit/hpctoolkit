@@ -47,20 +47,12 @@
 // stubs to override gprof support to avoid conflicts with hpcrun
 // NOTE: avoids core dump on ppc64le
 
-#include <monitor-exts/monitor_ext.h>
+#include "monitor-exts/monitor_ext.h"
 
-void
-MONITOR_EXT_WRAP_NAME(__monstartup) (void)
-{ }
+void MONITOR_EXT_WRAP_NAME(__monstartup)(void) {}
 
-void
-MONITOR_EXT_WRAP_NAME(_mcleanup) (void)
-{ }
+void MONITOR_EXT_WRAP_NAME(_mcleanup)(void) {}
 
-void
-MONITOR_EXT_WRAP_NAME(mcount) (void)
-{ }
+void MONITOR_EXT_WRAP_NAME(mcount)(void) {}
 
-void
-MONITOR_EXT_WRAP_NAME(_mcount) (void)
-{ }
+void MONITOR_EXT_WRAP_NAME(_mcount)(void) {}

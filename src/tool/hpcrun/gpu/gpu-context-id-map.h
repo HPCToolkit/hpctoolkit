@@ -44,99 +44,29 @@
 #ifndef gpu_context_id_map_h
 #define gpu_context_id_map_h
 
-
-
-//******************************************************************************
-// system includes
-//******************************************************************************
+#include "gpu-trace.h"
 
 #include <stdint.h>
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "gpu-trace.h"
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
 typedef struct gpu_context_id_map_entry_t gpu_context_id_map_entry_t;
 
+gpu_context_id_map_entry_t* gpu_context_id_map_lookup(uint32_t context_id);
 
+void gpu_context_id_map_context_delete(uint32_t context_id);
 
-//******************************************************************************
-// interface declarations
-//******************************************************************************
+void gpu_context_id_map_stream_delete(uint32_t context_id, uint32_t stream_id);
 
-gpu_context_id_map_entry_t *
-gpu_context_id_map_lookup
-(
- uint32_t context_id
-);
+void gpu_context_id_map_stream_process(
+    uint32_t device_id, uint32_t context_id, uint32_t stream_id, gpu_trace_fn_t fn,
+    gpu_trace_item_t* ti);
 
+void gpu_context_id_map_context_process(
+    uint32_t context_id, gpu_trace_fn_t fn, gpu_trace_item_t* ti);
 
-void
-gpu_context_id_map_context_delete
-(
- uint32_t context_id
-);
+void gpu_context_id_map_device_process(gpu_trace_fn_t fn, void* arg);
 
+void gpu_context_stream_map_signal_all(void);
 
-void
-gpu_context_id_map_stream_delete
-(
- uint32_t context_id,
- uint32_t stream_id
-);
-
-
-void
-gpu_context_id_map_stream_process
-(
- uint32_t device_id,
- uint32_t context_id,
- uint32_t stream_id,
- gpu_trace_fn_t fn,
- gpu_trace_item_t *ti
-);
-
-
-void
-gpu_context_id_map_context_process
-(
- uint32_t context_id,
- gpu_trace_fn_t fn,
- gpu_trace_item_t *ti
-);
-
-
-void
-gpu_context_id_map_device_process
-(
- gpu_trace_fn_t fn,
- void *arg
-);
-
-
-void
-gpu_context_stream_map_signal_all
-(
- void
-);
-
-void
-gpu_set_cpu_gpu_timestamp
-(
-  uint64_t t1,
-  uint64_t t2
-);
-
+void gpu_set_cpu_gpu_timestamp(uint64_t t1, uint64_t t2);
 
 #endif
-

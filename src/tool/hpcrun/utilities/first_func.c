@@ -45,7 +45,4 @@
 // ******************************************************* EndRiceCopyright *
 
 /* provided to figure out where libcsprof's .text section is */
-void
-hpcrun_first_func()
-{
-}
+void hpcrun_first_func() {}

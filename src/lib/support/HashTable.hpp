@@ -259,137 +259,119 @@
 #ifndef support_HashTable_hpp
 #define support_HashTable_hpp
 
-//************************** System Include Files ***************************
-
 #ifdef NO_STD_CHEADERS
-# include <stdarg.h>
+#include <stdarg.h>
 #else
-# include <cstdarg>
+#include <cstdarg>
 #endif
+
+#include "include/uint.h"
 
 #include <sys/types.h>
 
-//*************************** User Include Files ****************************
+extern uint IntegerHashFunct(const int value, const uint size);
+extern uint IntegerRehashHashFunct(const uint oldHashValue, const uint size);
+extern int IntegerEntryCompare(const int value1, const int value2);
 
-#include <include/uint.h>
-
-/******************* HashTable extern function prototypes ********************/
-
-extern uint IntegerHashFunct  (const int value, const uint size);
-extern uint IntegerRehashHashFunct  (const uint oldHashValue, const uint size);
-extern int IntegerEntryCompare  (const int value1, const int value2);
-
-extern uint StringHashFunct  (const void* entry, const uint size);
-extern uint StringRehashFunct  (const uint oldHashValue, const uint size);
-extern int StringEntryCompare  (const void* entry1, const void* entry2);
-
-/*********************** HashTable function prototypes ***********************/
+extern uint StringHashFunct(const void* entry, const uint size);
+extern uint StringRehashFunct(const uint oldHashValue, const uint size);
+extern int StringEntryCompare(const void* entry1, const void* entry2);
 
 typedef void (*AddEntryFunctPtr)(void*, void*, va_list);
-           /* void* entryCur, void* entryNew, va_list argList */
+/* void* entryCur, void* entryNew, va_list argList */
 
 typedef void (*DeleteEntryFunctPtr)(void*, va_list);
-           /* void* entry, va_list argList */
+/* void* entry, va_list argList */
 
 typedef uint (*HashFunctFunctPtr)(const void*, const uint);
-           /* void* entry, uint size */
+/* void* entry, uint size */
 
 typedef uint (*RehashFunctFunctPtr)(const uint, const uint);
-           /* uint oldHashValue, uint newSize */
+/* uint oldHashValue, uint newSize */
 
 typedef int (*EntryCompareFunctPtr)(const void*, const void*);
-           /* void* entry1, void* entry2 */
+/* void* entry1, void* entry2 */
 
 typedef void (*EntryCleanupFunctPtr)(void*);
-           /* void* entry */
+/* void* entry */
 
-
-/************************ HashTable class definitions ************************/
-
-class HashTable
-{
+class HashTable {
 public:
-  HashTable ();
-  virtual ~HashTable ();
-  
+  HashTable();
+  virtual ~HashTable();
+
   // Must be called after creating object
-  void Create (const uint entrySize, uint initialSize,
-	       HashFunctFunctPtr    const HashFunctCallback,
-	       RehashFunctFunctPtr  const RehashFunctCallback,
-	       EntryCompareFunctPtr const EntryCompareCallback,
-	       EntryCleanupFunctPtr const EntryCleanupCallback);
-  
+  void Create(
+      const uint entrySize, uint initialSize, HashFunctFunctPtr const HashFunctCallback,
+      RehashFunctFunctPtr const RehashFunctCallback,
+      EntryCompareFunctPtr const EntryCompareCallback,
+      EntryCleanupFunctPtr const EntryCleanupCallback);
+
   // Must be called before deleting object
-  void Destroy ();
-  
+  void Destroy();
+
   bool operator==(HashTable& rhsTab);
-  
-  void  AddEntry (void* entry, 
-		  AddEntryFunctPtr const AddEntryCallback = 0, ...);
-  void  DeleteEntry (void* entry, 
-		     DeleteEntryFunctPtr const DeleteEntryCallback = 0, ...);
-  void* QueryEntry (const void* entry) const;
-  int   GetEntryIndex (const void* entry) const;
-  void* GetEntryByIndex (const uint index) const;
-  uint  NumberOfEntries () const;
-  
-  void  Dump ();
-  
+
+  void AddEntry(void* entry, AddEntryFunctPtr const AddEntryCallback = 0, ...);
+  void DeleteEntry(void* entry, DeleteEntryFunctPtr const DeleteEntryCallback = 0, ...);
+  void* QueryEntry(const void* entry) const;
+  int GetEntryIndex(const void* entry) const;
+  void* GetEntryByIndex(const uint index) const;
+  uint NumberOfEntries() const;
+
+  void Dump();
+
   friend class HashTableIterator;
-  
+
 protected:
   // Must be called after creating object
-  void Create (const uint entrySize, uint initialSize);
-  
-  virtual uint HashFunct (const void* entry, const uint size);
-  virtual uint RehashFunct (const uint oldHashValue, const uint size);
-  virtual int  EntryCompare (const void* entry1, const void* entry2);
-  virtual void EntryCleanup (void* entry);
-  
-  HashTable& operator=(const HashTable &rhs);
-  
+  void Create(const uint entrySize, uint initialSize);
+
+  virtual uint HashFunct(const void* entry, const uint size);
+  virtual uint RehashFunct(const uint oldHashValue, const uint size);
+  virtual int EntryCompare(const void* entry1, const void* entry2);
+  virtual void EntryCleanup(void* entry);
+
+  HashTable& operator=(const HashTable& rhs);
+
 private:
-  const ulong id;                     // unique id for determining equality  
-  uint  numSlots;                     // number of distinct symbols
-  uint  nextSlot;                     // next available opening
-  uint  entrySize;                    // byte size of the entries
-  void* entries;                      // array of hash table entries
-  uint  indexSetSize;                 // size of sparse hash index set
-  int*  indexSet;                     // sparse hash index set
-  
+  const ulong id;     // unique id for determining equality
+  uint numSlots;      // number of distinct symbols
+  uint nextSlot;      // next available opening
+  uint entrySize;     // byte size of the entries
+  void* entries;      // array of hash table entries
+  uint indexSetSize;  // size of sparse hash index set
+  int* indexSet;      // sparse hash index set
+
   bool hashTableCreated;
-  
-  HashFunctFunctPtr    HashFunctCallback;
-  RehashFunctFunctPtr  RehashFunctCallback;
+
+  HashFunctFunctPtr HashFunctCallback;
+  RehashFunctFunctPtr RehashFunctCallback;
   EntryCompareFunctPtr EntryCompareCallback;
   EntryCleanupFunctPtr EntryCleanupCallback;
-  
-  int  QueryIndexSet (const void* entry, const bool expand) const;
-  void OverflowIndexSet ();
-  void OverflowEntries ();
-  
-  void FailureToCreateError () const;
-  void FailureToDestroyError () const;
+
+  int QueryIndexSet(const void* entry, const bool expand) const;
+  void OverflowIndexSet();
+  void OverflowEntries();
+
+  void FailureToCreateError() const;
+  void FailureToDestroyError() const;
 };
 
-/******************** HashTableIterator class definitions ********************/
-
-class HashTableIterator
-{
+class HashTableIterator {
 public:
   HashTableIterator(const HashTable* theHashTable);
   virtual ~HashTableIterator();
-  
-  void  operator ++(int);		// prefix 
+
+  void operator++(int);  // prefix
   void* Current() const;
-  void  Reset();
-  
+  void Reset();
+
 private:
   int currentEntryNumber;
   const HashTable* hashTable;
 };
 
-/****************************** HashTableSortedIterator **********************/
 #include "HashTableSortedIterator.hpp"
 
-#endif // support_HashTable_hpp
+#endif  // support_HashTable_hpp

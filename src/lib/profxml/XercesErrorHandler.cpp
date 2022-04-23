@@ -44,74 +44,46 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//************************ System Include Files ******************************
-
-#include <iostream> 
-using std::cout;
-using std::cerr;
-using std::endl;
-
-#include <string>
-using std::string;
-
-//*********************** Xerces Include Files *******************************
-
-#include <xercesc/sax/SAXParseException.hpp>
-using XERCES_CPP_NAMESPACE::SAXParseException;
-
-#include <xercesc/util/XMLString.hpp> 
-using XERCES_CPP_NAMESPACE::XMLString;
-
-
-//************************* User Include Files *******************************
-
 #include "XercesErrorHandler.hpp"
 
-const char *CONFIG = "CONFIGURATION";
+#include <iostream>
+#include <string>
+#include <xercesc/sax/SAXParseException.hpp>
+#include <xercesc/util/XMLString.hpp>
 
+using std::cerr;
+using std::cout;
+using std::endl;
+using std::string;
+using XERCES_CPP_NAMESPACE::SAXParseException;
+using XERCES_CPP_NAMESPACE::XMLString;
 
-//****************************************************************************
- 
-void 
-XercesErrorHandler::report(std::ostream& cerr, 
-			   const char* prefix, 
-			   const char* fileType, 
-			   const SAXParseException& e, 
-			   const char* alternateFile, 
-			   int prefixLines)
-{
-  const char* file = 
-    (alternateFile) ? alternateFile : XMLString::transcode(e.getSystemId());
+const char* CONFIG = "CONFIGURATION";
+
+void XercesErrorHandler::report(
+    std::ostream& cerr, const char* prefix, const char* fileType, const SAXParseException& e,
+    const char* alternateFile, int prefixLines) {
+  const char* file = (alternateFile) ? alternateFile : XMLString::transcode(e.getSystemId());
 
   cerr << prefix << ": processing " << fileType << " file \'" << file << "\'"
-       << " at line " << e.getLineNumber() - prefixLines
-       << ", character " << e.getColumnNumber() << ":" << endl << "\t"  
-       << "XML parser: " 
-       << XMLString::transcode(e.getMessage()) << "." << endl; 
+       << " at line " << e.getLineNumber() - prefixLines << ", character " << e.getColumnNumber()
+       << ":" << endl
+       << "\t"
+       << "XML parser: " << XMLString::transcode(e.getMessage()) << "." << endl;
 }
 
-
-void 
-XercesErrorHandler::error(const SAXParseException& e)
-{
+void XercesErrorHandler::error(const SAXParseException& e) {
   // TODO: ConfigParser_Throw(...)
-  report(cerr, "Xerces non-fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
+  report(cerr, "Xerces non-fatal error", CONFIG, e, userFile.c_str(), numPrefixLines);
 }
 
-
-void 
-XercesErrorHandler::fatalError(const SAXParseException& e)
-{
+void XercesErrorHandler::fatalError(const SAXParseException& e) {
   // TODO: ConfigParser_Throw(...)
-  report(cerr, "Xerces fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
-  throw e; 
+  report(cerr, "Xerces fatal error", CONFIG, e, userFile.c_str(), numPrefixLines);
+  throw e;
 }
 
-
-void 
-XercesErrorHandler::warning(const SAXParseException& e)
-{
+void XercesErrorHandler::warning(const SAXParseException& e) {
   // TODO: ConfigParser_Throw(...)
-  report(cerr, "Xerces warning", CONFIG, e, userFile.c_str(), numPrefixLines); 
+  report(cerr, "Xerces warning", CONFIG, e, userFile.c_str(), numPrefixLines);
 }
-

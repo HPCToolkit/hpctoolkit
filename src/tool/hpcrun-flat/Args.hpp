@@ -60,33 +60,25 @@
 #ifndef Args_hpp
 #define Args_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/support/CmdLineParser.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
 class Args {
 public:
   enum EventList_t {
-    LIST_NONE  = 0, // none
+    LIST_NONE = 0,  // none
     LIST_SHORT,     // 'short'
     LIST_LONG       // 'long'
   };
 
-public: 
-  Args(); 
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  ~Args();
 
   // Parse the command line
   void parse(int argc, const char* const argv[]);
@@ -94,7 +86,7 @@ public:
   // Version and Usage information
   void printVersion(std::ostream& os) const;
   void printUsage(std::ostream& os) const;
-  
+
   // Error
   void printError(std::ostream& os, const char* msg) const;
   void printError(std::ostream& os, const std::string& msg) const;
@@ -103,30 +95,30 @@ public:
   void dump(std::ostream& os = std::cerr) const;
   void ddump() const;
 
-public:  
+public:
   // Parsed Data: Command
   const std::string& getCmd() const;
 
   // Parsed Data: optional arguments
-  EventList_t listEvents; // default: LIST_NONE
-  bool        printPaths; // default: false
+  EventList_t listEvents;  // default: LIST_NONE
+  bool printPaths;         // default: false
 
   // Parsed Data: optional arguments
-  std::string profRecursive; // default: libhpcrun's default
-  std::string profThread;    // default: libhpcrun's default
-  std::string profEvents;    // default: libhpcrun default
-  std::string profOutput;    // default: libhpcrun default
-  std::string profPAPIFlag;  // default: libhpcrun default
+  std::string profRecursive;  // default: libhpcrun's default
+  std::string profThread;     // default: libhpcrun's default
+  std::string profEvents;     // default: libhpcrun default
+  std::string profOutput;     // default: libhpcrun default
+  std::string profPAPIFlag;   // default: libhpcrun default
 
   // Parsed Data:
   std::vector<std::string> profArgV;
-  
+
 private:
   void Ctor();
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
-#endif // Args_hpp
+#endif  // Args_hpp

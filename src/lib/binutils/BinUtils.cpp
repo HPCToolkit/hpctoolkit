@@ -44,46 +44,39 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <string>
-using std::string;
-
-#include <cstdlib> // for 'free'
-
-#include <lib/support-lean/demangle.h>
-#include <lib/support/ProcNameMgr.hpp>
-
 #include "BinUtils.hpp"
 
-//****************************************************************************
+#include "lib/support-lean/demangle.h"
+#include "lib/support/ProcNameMgr.hpp"
+
+#include <cstdlib>  // for 'free'
+#include <string>
+
+using std::string;
 
 namespace BinUtil {
 
-// 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName' 
+// 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName'
 // to attempt to demangle it.  If there is an error in demangling,
 // return 'name'; otherwise return the demangled version.
-string
-canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
-{
+string canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr) {
   if (name.empty()) {
-    return name; 
+    return name;
   }
 
   string bestname = demangleProcName(name.c_str());
   if (procNameMgr) {
     bestname = procNameMgr->canonicalize(bestname);
   }
-  
+
   return bestname;
 }
 
-
 // Returns the demangled function name (if possible) or the original name.
-string
-demangleProcName(const std::string& name)
-{
+string demangleProcName(const std::string& name) {
   string ans = name;
 
-  char *str = hpctoolkit_demangle(name.c_str());
+  char* str = hpctoolkit_demangle(name.c_str());
 
   if (str != NULL) {
     ans = str;
@@ -92,5 +85,4 @@ demangleProcName(const std::string& name)
 
   return ans;
 }
-
-} // namespace BinUtil
+}  // namespace BinUtil

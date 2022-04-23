@@ -51,23 +51,17 @@
 
 //----------------------------------------------------------------------
 
-#define _GNU_SOURCE  1
+#define _GNU_SOURCE 1
 
-#include <sys/types.h>
-#include <sys/syscall.h>
 #include <errno.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-void *
-hpcrun_real_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
-{
-  return (void *)
-    syscall((long) SYS_mmap, addr, len, prot, flags, fd, offset);
+void* hpcrun_real_mmap(void* addr, size_t len, int prot, int flags, int fd, off_t offset) {
+  return (void*)syscall((long)SYS_mmap, addr, len, prot, flags, fd, offset);
 }
 
-int
-hpcrun_real_munmap(void *addr, size_t len)
-{
-  return (int)
-    syscall((long) SYS_munmap, addr, len);
+int hpcrun_real_munmap(void* addr, size_t len) {
+  return (int)syscall((long)SYS_munmap, addr, len);
 }

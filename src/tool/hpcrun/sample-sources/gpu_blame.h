@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-gpu-blame-shift-proto/src/tool/hpcrun/sample-sources/gpu_blame.h $
-// $Id: itimer.c 3784 2012-05-10 22:35:51Z mc29 $
+// $HeadURL:
+// https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-gpu-blame-shift-proto/src/tool/hpcrun/sample-sources/gpu_blame.h
+// $ $Id: itimer.c 3784 2012-05-10 22:35:51Z mc29 $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -51,10 +52,11 @@
 
 #ifdef ENABLE_CUDA
 
-#include "gpu_blame-cuda-runtime-header.h"
 #include "gpu_blame-cuda-driver-header.h"
-#include <hpcrun/core_profile_trace_data.h>
-#include <hpcrun/main.h>
+#include "gpu_blame-cuda-runtime-header.h"
+
+#include "hpcrun/core_profile_trace_data.h"
+#include "hpcrun/main.h"
 
 //
 // Blame shiting interface
@@ -82,8 +84,8 @@ extern bool g_cpu_gpu_enabled;
 extern uint64_t g_active_threads;
 
 // Visible function declarations
-extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int  metric_incr);
-extern  void hpcrun_stream_finalize(void* st);
+extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int metric_incr);
+extern void hpcrun_stream_finalize(void* st);
 extern void hpcrun_set_gpu_proxy_present();
 
 #endif

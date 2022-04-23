@@ -57,105 +57,72 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
 #define __STDC_LIMIT_MACROS /* stdint; locate here for CentOS 5/gcc 4.1.2) */
 
-#include <iostream>
-using std::hex;
-using std::dec;
-
-#include <typeinfo>
-
-#include <string>
-using std::string;
-
-#include <map>
 #include <algorithm>
-#include <sstream>
-
+#include <cmath>  // abs
 #include <cstdio>
-#include <cstring> // strcmp
-#include <cmath> // abs
-
+#include <cstring>  // strcmp
+#include <iostream>
+#include <map>
+#include <sstream>
 #include <stdint.h>
+#include <string>
+#include <typeinfo>
 #include <unistd.h>
 
+using std::dec;
+using std::hex;
+using std::string;
+
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
-
-#include <alloca.h>
-#include <linux/limits.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "CallPath-Profile.hpp"
 #include "FileError.hpp"
+#include "LoadMap.hpp"
 #include "NameMappings.hpp"
 #include "Struct-Tree.hpp"
-#include "LoadMap.hpp"
 
-#include <lib/xml/xml.hpp>
+#include "include/gcc-attr.h"
+#include "include/uint.h"
+#include "lib/analysis/Util.hpp"
+#include "lib/prof-lean/hpcfmt.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
+#include "lib/prof-lean/hpcrun-metric.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/Logic.hpp"
+#include "lib/support/RealPathMgr.hpp"
+#include "lib/support/StrUtil.hpp"
+#include "lib/xml/xml.hpp"
+
+#include <alloca.h>
+#include <inttypes.h>
+#include <linux/limits.h>
+
 using namespace xml;
 
-#include <lib/analysis/Util.hpp>
-
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/hpcrun-metric.h>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/Logic.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/StrUtil.hpp>
-
-
-//*************************** Forward Declarations **************************
-
-// implementations of prof_abort will be separately defined for MPI and 
+// implementations of prof_abort will be separately defined for MPI and
 // non-MPI contexts
-extern void 
-prof_abort
-(
-  int error_code
-);
+extern void prof_abort(int error_code);
 
-
-
-//***************************************************************************
-// macros
-//***************************************************************************
-
-#define DBG 0
+#define DBG              0
 #define MAX_PREFIX_CHARS 64
-
-
-
-//***************************************************************************
-// Profile
-//***************************************************************************
 
 namespace Prof {
 
 // -------------------------------------------------------------------------
 // special variables to store mapping between the original and unique ID
-// this table is needed to avoid duplicate filenames that arise with alien 
+// this table is needed to avoid duplicate filenames that arise with alien
 // and loop nodes.
 // this variable will be used by getFileIdFromMap in CCT-Tree.cpp
 // ---------------------------------------------------
-std::map<uint, uint> m_mapFileIDs;      // map between file IDs
-std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
-std::map<uint, uint> m_mapLoadModuleIDs;      // map between load module IDs
+std::map<uint, uint> m_mapFileIDs;        // map between file IDs
+std::map<uint, uint> m_mapProcIDs;        // map between proc IDs
+std::map<uint, uint> m_mapLoadModuleIDs;  // map between load module IDs
 
 namespace CallPath {
 
-
-Profile::Profile(const std::string name)
-{
+Profile::Profile(const std::string name) {
   m_name = name;
   m_fmtVersion = 0.0;
   m_flags.bits = 0;
@@ -176,23 +143,20 @@ Profile::Profile(const std::string name)
   canonicalize();
 }
 
-
-Profile::~Profile()
-{
+Profile::~Profile() {
   delete m_mMgr;
   delete m_loadmap;
   delete m_cct;
   delete m_structure;
 }
 
-
-uint
-Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
-{
+uint Profile::merge(Profile& y, int mergeTy, uint mrgFlag) {
   Profile& x = (*this);
 
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
-  DIAG_Assert(y.m_fmtVersion == x.m_fmtVersion, "Error: cannot merge two different versions of measurement");
+  DIAG_Assert(
+      y.m_fmtVersion == x.m_fmtVersion,
+      "Error: cannot merge two different versions of measurement");
 
   // -------------------------------------------------------
   // merge name, flags, etc
@@ -201,56 +165,53 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   // Note: these values can be 'null' if the hpcrun-fmt data had no epochs
   if (x.m_fmtVersion == 0.0) {
     x.m_fmtVersion = y.m_fmtVersion;
-  }
-  else if (y.m_fmtVersion == 0.0) {
+  } else if (y.m_fmtVersion == 0.0) {
     y.m_fmtVersion = x.m_fmtVersion;
   }
 
   if (x.m_flags.bits == 0) {
     x.m_flags.bits = y.m_flags.bits;
-  }
-  else if (y.m_flags.bits == 0) {
+  } else if (y.m_flags.bits == 0) {
     y.m_flags.bits = x.m_flags.bits;
   }
 
   if (x.m_measurementGranularity == 0) {
     x.m_measurementGranularity = y.m_measurementGranularity;
-  }
-  else if (y.m_measurementGranularity == 0) {
+  } else if (y.m_measurementGranularity == 0) {
     y.m_measurementGranularity = x.m_measurementGranularity;
   }
 
-  DIAG_WMsgIf(x.m_fmtVersion != y.m_fmtVersion,
-	      "CallPath::Profile::merge(): ignoring incompatible versions: "
-	      << x.m_fmtVersion << " vs. " << y.m_fmtVersion);
-  DIAG_WMsgIf(x.m_flags.bits != y.m_flags.bits,
-	      "CallPath::Profile::merge(): ignoring incompatible flags: "
-	      << x.m_flags.bits << " vs. " << y.m_flags.bits);
-  DIAG_WMsgIf(x.m_measurementGranularity != y.m_measurementGranularity,
-	      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: " << x.m_measurementGranularity << " vs. " << y.m_measurementGranularity);
+  DIAG_WMsgIf(
+      x.m_fmtVersion != y.m_fmtVersion,
+      "CallPath::Profile::merge(): ignoring incompatible versions: " << x.m_fmtVersion << " vs. "
+                                                                     << y.m_fmtVersion);
+  DIAG_WMsgIf(
+      x.m_flags.bits != y.m_flags.bits, "CallPath::Profile::merge(): ignoring incompatible flags: "
+                                            << x.m_flags.bits << " vs. " << y.m_flags.bits);
+  DIAG_WMsgIf(
+      x.m_measurementGranularity != y.m_measurementGranularity,
+      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: "
+          << x.m_measurementGranularity << " vs. " << y.m_measurementGranularity);
 
   x.m_profileFileName = "";
 
   x.m_traceFileName = "";
-  x.m_traceFileNameSet.insert(y.m_traceFileNameSet.begin(),
-			      y.m_traceFileNameSet.end());
+  x.m_traceFileNameSet.insert(y.m_traceFileNameSet.begin(), y.m_traceFileNameSet.end());
   x.m_traceMinTime = std::min(x.m_traceMinTime, y.m_traceMinTime);
   x.m_traceMaxTime = std::max(x.m_traceMaxTime, y.m_traceMaxTime);
-
 
   // -------------------------------------------------------
   // merge metrics
   // -------------------------------------------------------
   uint x_newMetricBegIdx = 0;
   uint firstMergedMetric = mergeMetrics(y, mergeTy, x_newMetricBegIdx);
-  
+
   // -------------------------------------------------------
   // merge LoadMaps
   //
   // Post-INVARIANT: y's cct refers to x's LoadMap
   // -------------------------------------------------------
-  std::vector<LoadMap::MergeEffect>* mrgEffects1 =
-    x.m_loadmap->merge(*y.loadmap());
+  std::vector<LoadMap::MergeEffect>* mrgEffects1 = x.m_loadmap->merge(*y.loadmap());
   y.merge_fixCCT(mrgEffects1);
   delete mrgEffects1;
 
@@ -262,12 +223,13 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
     mrgFlag |= CCT::MrgFlg_PropagateEffects;
   }
 
-  CCT::MergeEffectList* mrgEffects2 =
-    x.cct()->merge(y.cct(), x_newMetricBegIdx, mrgFlag);
+  CCT::MergeEffectList* mrgEffects2 = x.cct()->merge(y.cct(), x_newMetricBegIdx, mrgFlag);
 
-  DIAG_Assert(Logic::implies(mrgEffects2 && !mrgEffects2->empty(),
-			     mrgFlag & CCT::MrgFlg_NormalizeTraceFileY),
-	      "CallPath::Profile::merge: there should only be CCT::MergeEffects when MrgFlg_NormalizeTraceFileY is passed");
+  DIAG_Assert(
+      Logic::implies(
+          mrgEffects2 && !mrgEffects2->empty(), mrgFlag & CCT::MrgFlg_NormalizeTraceFileY),
+      "CallPath::Profile::merge: there should only be CCT::MergeEffects when "
+      "MrgFlg_NormalizeTraceFileY is passed");
 
   y.merge_fixTrace(mrgEffects2);
   delete mrgEffects2;
@@ -275,22 +237,20 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   return firstMergedMetric;
 }
 
-
-uint
-Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
-{
+uint Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx) {
   Profile& x = (*this);
 
-  DIAG_Assert(x.m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
-	      "CallPath::Profile::merge(): incompatible metrics");
+  DIAG_Assert(
+      x.m_isMetricMgrVirtual == y.m_isMetricMgrVirtual,
+      "CallPath::Profile::merge(): incompatible metrics");
 
-  DIAG_MsgIf(0, "Profile::mergeMetrics: init\n"
-	     << "x: " << x.metricMgr()->toString("  ")
-	     << "y: " << y.metricMgr()->toString("  "));
+  DIAG_MsgIf(
+      0, "Profile::mergeMetrics: init\n"
+             << "x: " << x.metricMgr()->toString("  ") << "y: " << y.metricMgr()->toString("  "));
 
   uint yBeg_mapsTo_xIdx = 0;
 
-  x_newMetricBegIdx = 0; // first metric in y maps to (metricsMapTo)
+  x_newMetricBegIdx = 0;  // first metric in y maps to (metricsMapTo)
 
   // -------------------------------------------------------
   // Translate Merge_mergeMetricByName to a primitive merge type
@@ -310,17 +270,15 @@ Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
     yBeg_mapsTo_xIdx = x.metricMgr()->size();
 
     y_newMetricIdx = 0;
-  }
-  else if (mergeTy >= Merge_MergeMetricById) {
-    yBeg_mapsTo_xIdx = (uint)mergeTy; // [
-    
-    uint yEnd_mapsTo_xIdx = yBeg_mapsTo_xIdx + y.metricMgr()->size(); // )
-    if (! (x.metricMgr()->size() >= yEnd_mapsTo_xIdx) ) {
+  } else if (mergeTy >= Merge_MergeMetricById) {
+    yBeg_mapsTo_xIdx = (uint)mergeTy;  // [
+
+    uint yEnd_mapsTo_xIdx = yBeg_mapsTo_xIdx + y.metricMgr()->size();  // )
+    if (!(x.metricMgr()->size() >= yEnd_mapsTo_xIdx)) {
       uint overlapSz = x.metricMgr()->size() - yBeg_mapsTo_xIdx;
       y_newMetricIdx = overlapSz;
     }
-  }
-  else {
+  } else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
 
@@ -338,20 +296,17 @@ Profile::mergeMetrics(Profile& y, int mergeTy, uint& x_newMetricBegIdx)
   return yBeg_mapsTo_xIdx;
 }
 
-
-void
-Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
-{
+void Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects) {
   // early exit for trivial case
   if (!mrgEffects || mrgEffects->empty()) {
     return;
   }
 
   CCT::ANode* root = cct()->root();
-  
+
   for (CCT::ANodeIterator it(root); it.Current(); ++it) {
     CCT::ANode* n = it.current();
-    
+
     CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
     if (n_dyn) {
       lush_lip_t* lip = n_dyn->lip();
@@ -359,35 +314,31 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
       LoadMap::LMId_t lmId1, lmId2;
       lmId1 = n_dyn->lmId_real();
       lmId2 = (lip) ? lush_lip_getLMId(lip) : HPCRUN_PLACEHOLDER_LM;
-      
+
       for (uint i = 0; i < mrgEffects->size(); ++i) {
-	const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
-	if (chg.old_id == lmId1) {
-	  n_dyn->lmId_real(chg.new_id);
-	  if (lmId2 == HPCRUN_PLACEHOLDER_LM) {
-	    break; // quick exit in the common case
-	  }
-	}
-	if (chg.old_id == lmId2) {
-	  lush_lip_setLMId(lip, (uint16_t) chg.new_id);
-	}
+        const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
+        if (chg.old_id == lmId1) {
+          n_dyn->lmId_real(chg.new_id);
+          if (lmId2 == HPCRUN_PLACEHOLDER_LM) {
+            break;  // quick exit in the common case
+          }
+        }
+        if (chg.old_id == lmId2) {
+          lush_lip_setLMId(lip, (uint16_t)chg.new_id);
+        }
       }
     }
   }
 }
 
-
-void
-Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
-{
+void Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects) {
   typedef std::map<uint, uint> UIntToUIntMap;
 
   // early exit for trivial case
   if (m_traceFileName.empty()) {
     return;
-  }
-  else if (!mrgEffects || mrgEffects->empty()) {
-    return; // rely on Analysis::Util::copyTraceFiles() to copy orig file
+  } else if (!mrgEffects || mrgEffects->empty()) {
+    return;  // rely on Analysis::Util::copyTraceFiles() to copy orig file
   }
 
   // N.B.: We could build a map of old->new cpIds within
@@ -395,8 +346,8 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   // extensible.  There are no asymptotic problems with building the
   // following map for local use.
   UIntToUIntMap cpIdMap;
-  for (CCT::MergeEffectList::const_iterator it = mrgEffects->begin();
-       it != mrgEffects->end(); ++it) {
+  for (CCT::MergeEffectList::const_iterator it = mrgEffects->begin(); it != mrgEffects->end();
+       ++it) {
     const CCT::MergeEffect& effct = *it;
     cpIdMap.insert(std::make_pair(effct.old_cpId, effct.new_cpId));
   }
@@ -418,8 +369,8 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   if (!infs) {
     std::string errorString;
     hpcrun_getFileErrorString(inFnm, errorString);
-    DIAG_EMsg("failed to open trace file " << errorString << "; skip this one."); 
-    return; 
+    DIAG_EMsg("failed to open trace file " << errorString << "; skip this one.");
+    return;
   }
 
   ret = setvbuf(infs, infsBuf, _IOFBF, HPCIO_RWBufferSz);
@@ -430,26 +381,29 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   if (ret == HPCFMT_ERR) {
     std::string errorString;
     hpcrun_getFileErrorString(inFnm, errorString);
-    DIAG_EMsg("failed reading header from trace measurement file " << errorString << "; skip this one."); 
+    DIAG_EMsg(
+        "failed reading header from trace measurement file " << errorString << "; skip this one.");
     hpcio_fclose(infs);
     return;
   }
 
   const string& outFnm = traceFileNameTmp;
-  FILE* outfs = hpcio_fopen_w(outFnm.c_str(), 1/*overwrite*/);
+  FILE* outfs = hpcio_fopen_w(outFnm.c_str(), 1 /*overwrite*/);
   if (!outfs) {
     if (errno == EDQUOT) {
-      DIAG_EMsg("disk quota exceeded; unable to open trace result file  " << 
-		outFnm << "; aborting.");
+      DIAG_EMsg(
+          "disk quota exceeded; unable to open trace result file  " << outFnm << "; aborting.");
       hpcio_fclose(infs);
       prof_abort(-1);
     } else {
       std::string errorString;
       hpcrun_getFileErrorString(outFnm, errorString);
-      DIAG_EMsg("failed opening trace result file " << errorString << 
-		"when processing trace measurement file " << inFnm << "; skip this one.");
+      DIAG_EMsg(
+          "failed opening trace result file " << errorString
+                                              << "when processing trace measurement file " << inFnm
+                                              << "; skip this one.");
       hpcio_fclose(infs);
-      return; 
+      return;
     }
   }
 
@@ -457,22 +411,24 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   DIAG_AssertWarn(ret == 0, outFnm << ": Profile::merge_fixTrace: setvbuf!");
 
   ret = hpctrace_fmt_hdr_fwrite(hdr.flags, outfs);
-  if (ret == HPCFMT_ERR) goto badwrite;
+  if (ret == HPCFMT_ERR)
+    goto badwrite;
 
-  while ( !feof(infs) ) {
+  while (!feof(infs)) {
     // 1. Read trace record (exit on EOF)
     hpctrace_fmt_datum_t datum;
     ret = hpctrace_fmt_datum_fread(&datum, hdr.flags, infs);
     if (ret == HPCFMT_EOF) {
       break;
     } else if (ret == HPCFMT_ERR) {
-      DIAG_EMsg("failed reading a record from trace measurement file " << inFnm << "; skip this one.");
+      DIAG_EMsg(
+          "failed reading a record from trace measurement file " << inFnm << "; skip this one.");
       hpcio_fclose(infs);
       hpcio_fclose(outfs);
-      unlink(outFnm.c_str()); // delete incomplete output file
+      unlink(outFnm.c_str());  // delete incomplete output file
       return;
     }
-    
+
     // 2. Translate cct id
     uint cctId_old = datum.cpId;
     uint cctId_new = datum.cpId;
@@ -485,7 +441,8 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
 
     // 3. Write new trace record
     ret = hpctrace_fmt_datum_fwrite(&datum, hdr.flags, outfs);
-    if (ret == HPCFMT_ERR) goto badwrite;
+    if (ret == HPCFMT_ERR)
+      goto badwrite;
   }
 
   hpcio_fclose(infs);
@@ -495,28 +452,23 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   delete[] outfsBuf;
   return;
 
-badwrite:
-  {
-    std::string errorString;
-    hpcrun_getFileErrorString(outFnm, errorString);
-    DIAG_EMsg("failed writing trace result file " << errorString << "; aborting.");
-    hpcio_fclose(infs);
-    hpcio_fclose(outfs);
-    unlink(outFnm.c_str()); // delete incomplete output file
-    prof_abort(-1);
-  }
+badwrite : {
+  std::string errorString;
+  hpcrun_getFileErrorString(outFnm, errorString);
+  DIAG_EMsg("failed writing trace result file " << errorString << "; aborting.");
+  hpcio_fclose(infs);
+  hpcio_fclose(outfs);
+  unlink(outFnm.c_str());  // delete incomplete output file
+  prof_abort(-1);
 }
-
-
+}
 
 // ---------------------------------------------------
 // String comparison used for hash map
 // ---------------------------------------------------
 class StringCompare {
 public:
-  bool operator()(const std::string n1,  const std::string n2) const {
-    return n1.compare(n2)<0;
-  } 
+  bool operator()(const std::string n1, const std::string n2) const { return n1.compare(n2) < 0; }
 };
 
 // ---------------------------------------------------
@@ -524,47 +476,43 @@ public:
 // this hack is needed to avoid duplicate filenames
 // which occurs with alien nodes
 // ---------------------------------------------------
-static std::map<std::string, uint, StringCompare> m_mapFiles;       // map the filenames and the ID
-static std::map<std::string, uint, StringCompare> m_mapProcs;       // map the procedure names and the ID
-static std::map<std::string, uint, StringCompare> m_mapLoadModules; // map the load modules names and the ID
+static std::map<std::string, uint, StringCompare> m_mapFiles;  // map the filenames and the ID
+static std::map<std::string, uint, StringCompare> m_mapProcs;  // map the procedure names and the ID
+static std::map<std::string, uint, StringCompare>
+    m_mapLoadModules;  // map the load modules names and the ID
 
 // attempt to retrieve the filename of a node
 // if the node is an alien or a loop or a file, then we are guaranteed to
 // retrieve the current filename associated to the node.
 //
-// However, if the node is not of those types, we'll try to get 
+// However, if the node is not of those types, we'll try to get
 // the ancestor file of the node. This is not the proper way to get the
 // filename, but it's the closest we can get (AFAIK).
-static const char *
-getFileName(Struct::ANode* strct)
-{
-  const char *nm = NULL;
-  if (strct)
-  {
-    const std::type_info &tid = typeid(*strct);
+static const char* getFileName(Struct::ANode* strct) {
+  const char* nm = NULL;
+  if (strct) {
+    const std::type_info& tid = typeid(*strct);
 
     if (tid == typeid(Struct::Alien)) {
-	nm = static_cast<Struct::Alien*>(strct)->fileName().c_str();
+      nm = static_cast<Struct::Alien*>(strct)->fileName().c_str();
     } else if (tid == typeid(Struct::Loop)) {
-	nm = static_cast<Struct::Loop*>(strct)->fileName().c_str();
-    } else if (tid == typeid(Struct::File)){
-	nm = static_cast<Struct::File*>(strct)->name().c_str();
+      nm = static_cast<Struct::Loop*>(strct)->fileName().c_str();
+    } else if (tid == typeid(Struct::File)) {
+      nm = static_cast<Struct::File*>(strct)->name().c_str();
     } else {
-      	Prof::Struct::File *file = strct->ancestorFile();
-      	if (file) {
-	  nm = file->name().c_str();
-      	}
+      Prof::Struct::File* file = strct->ancestorFile();
+      if (file) {
+        nm = file->name().c_str();
+      }
     }
   }
   return nm;
 }
 
-static std::string
-getFilenameKey(Struct::LM *lm, const char *filename)
-{
+static std::string getFilenameKey(Struct::LM* lm, const char* filename) {
   std::string lm_name;
   if (lm) {
-    // use pretty_name for the key to unify different names of vmlinux 
+    // use pretty_name for the key to unify different names of vmlinux
     // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
     lm_name = Prof::LoadMap::LM::pretty_name(lm->name());
   } else {
@@ -576,11 +524,9 @@ getFilenameKey(Struct::LM *lm, const char *filename)
 }
 
 // writing XML dictionary in the header part of experiment.xml
-static void
-writeXML_help(std::ostream& os, const char* entry_nm,
-	      Struct::Tree* structure, const Struct::ANodeFilter* filter,
-	      int type, bool remove_redundancy)
-{
+static void writeXML_help(
+    std::ostream& os, const char* entry_nm, Struct::Tree* structure,
+    const Struct::ANodeFilter* filter, int type, bool remove_redundancy) {
   Struct::ANode* root = structure ? structure->root() : NULL;
   if (!root) {
     return;
@@ -595,18 +541,16 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 
     int type_procedure = 0;
 
-    if (type == 1) { // LoadModule
+    if (type == 1) {  // LoadModule
       pretty_filename = Prof::LoadMap::LM::pretty_name(strct->name());
-      nm = pretty_filename.c_str(); 
+      nm = pretty_filename.c_str();
       // check load module duplicates
       std::map<std::string, uint>::iterator it = m_mapLoadModules.find(nm);
 
-      if (it == m_mapLoadModules.end()) 
-      {
+      if (it == m_mapLoadModules.end()) {
         // the load module is not in dictionary. Add it into the map.
-         m_mapLoadModules[nm] = id;
-      } else 
-      {
+        m_mapLoadModules[nm] = id;
+      } else {
         // the same procedure name already exists, we need to reuse
         // the previous ID instead of the original one.
         //
@@ -615,8 +559,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         Prof::m_mapLoadModuleIDs[id] = it->second;
         continue;
       }
-    }
-    else if (type == 2) { // File
+    } else if (type == 2) {  // File
       pretty_filename = getFileName(strct);
       pretty_filename = Prof::LoadMap::LM::pretty_file_name(pretty_filename);
       nm = pretty_filename.c_str();
@@ -624,33 +567,27 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
       // ---------------------------------------
-      Struct::LM *lm = strct->ancestorLM();
-      std::string key = getFilenameKey(lm, nm); 
+      Struct::LM* lm = strct->ancestorLM();
+      std::string key = getFilenameKey(lm, nm);
 
       if (m_mapFiles.find(key) == m_mapFiles.end()) {
         //  the filename is not in the list. Add it.
         m_mapFiles[key] = id;
-
-      } else if ( nm != Prof::Struct::Tree::UnknownFileNm 
-          && nm[0] != '\0' )
-      {
+      } else if (nm != Prof::Struct::Tree::UnknownFileNm && nm[0] != '\0') {
         // WARNING: We do not allow redundancy unless for some specific files
         // For "unknown-file" and empty file (alien case), we allow duplicates
         // Otherwise we remove duplicate filename, and use the existing one.
-        uint id_orig   = m_mapFiles[key];
+        uint id_orig = m_mapFiles[key];
 
         // remember that this ID needs redirection to the existing ID
         Prof::m_mapFileIDs[id] = id_orig;
         continue;
       }
-    }
-    else if (type == 3) { // Proc
+    } else if (type == 3) {  // Proc
       pretty_filename = Prof::LoadMap::LM::pretty_file_name(strct->name());
       nm = normalize_name(pretty_filename.c_str(), type_procedure);
 
-      if (remove_redundancy && 
-          pretty_filename != Prof::Struct::Tree::UnknownProcNm)
-      {  
+      if (remove_redundancy && pretty_filename != Prof::Struct::Tree::UnknownProcNm) {
         // -------------------------------------------------------
         // avoid redundancy in XML procedure dictionary
         // a procedure can have the same name if they are from different
@@ -658,18 +595,18 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         // -------------------------------------------------------
         std::string completProcName;
 
-        Struct::LM *lm     = strct->ancestorLM();
+        Struct::LM* lm = strct->ancestorLM();
 
         // we need to allow the same function name from a different file
-        const char *fn = getFileName(strct);
-        std::string file_key = getFilenameKey(lm, fn); 
-        
+        const char* fn = getFileName(strct);
+        std::string file_key = getFilenameKey(lm, fn);
+
         completProcName.append(file_key);
         completProcName.append(":");
 
-        if ((strct->type() == Prof::Struct::ANode::TyAlien) &&
-            strct->name().compare("<inline>")==0) {
-          Prof::Struct::ANode *parent = strct->parent();
+        if ((strct->type() == Prof::Struct::ANode::TyAlien)
+            && strct->name().compare("<inline>") == 0) {
+          Prof::Struct::ANode* parent = strct->parent();
           if (parent) {
             char buffer[128];
             sprintf(buffer, "%d:", parent->id());
@@ -677,23 +614,20 @@ writeXML_help(std::ostream& os, const char* entry_nm,
           }
         }
 
-        const char *lnm;
+        const char* lnm;
 
         // a procedure name within the same file has to be unique.
-        // However, for codes compiled with GCC, binutils (or parseAPI) 
+        // However, for codes compiled with GCC, binutils (or parseAPI)
         // it's better to compare internally with the mangled names
-        Struct::Proc *proc = dynamic_cast<Struct::Proc *>(strct);
-        if (proc)
-        {
+        Struct::Proc* proc = dynamic_cast<Struct::Proc*>(strct);
+        if (proc) {
           if (proc->linkName().empty()) {
             // the proc has no mangled name
             lnm = pretty_filename.c_str();
-          } else
-          { // get the mangled name
+          } else {  // get the mangled name
             lnm = proc->linkName().c_str();
           }
-        } else
-        {
+        } else {
           lnm = strct->name().c_str();
         }
         completProcName.append(lnm);
@@ -702,12 +636,10 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         //
         std::map<std::string, uint>::iterator it = m_mapProcs.find(completProcName);
 
-        if (it == m_mapProcs.end()) 
-        {
+        if (it == m_mapProcs.end()) {
           // the proc is not in dictionary. Add it into the map.
           m_mapProcs[completProcName] = id;
-        } else 
-        {
+        } else {
           // the same procedure name already exists, we need to reuse
           // the previous ID instead of the original one.
           uint id_orig = m_mapProcs[completProcName];
@@ -721,47 +653,39 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       DIAG_Die(DIAG_UnexpectedInput);
     }
 
-    os << "    <" << entry_nm << " i" << MakeAttrNum(id)
-           << " n" << MakeAttrStr(nm);
+    os << "    <" << entry_nm << " i" << MakeAttrNum(id) << " n" << MakeAttrStr(nm);
 
     if (type_procedure != 0) {
-      os << " f" << MakeAttrNum(type_procedure); 
+      os << " f" << MakeAttrNum(type_procedure);
     }
 
-    if (type == 3) { // Procedure
-       Struct::ACodeNode *proc = dynamic_cast<Struct::ACodeNode *>(strct);
-	   if (proc) {
-	      const VMAIntervalSet &vma = proc->vmaSet();
-	      VMA addr = vma.begin()->beg();
-	      // print vma of procs for trace analysis
-	      os << " v=\"" << StrUtil::toStr(addr, 16) << "\"";
-	   }	
-	}
-  
+    if (type == 3) {  // Procedure
+      Struct::ACodeNode* proc = dynamic_cast<Struct::ACodeNode*>(strct);
+      if (proc) {
+        const VMAIntervalSet& vma = proc->vmaSet();
+        VMA addr = vma.begin()->beg();
+        // print vma of procs for trace analysis
+        os << " v=\"" << StrUtil::toStr(addr, 16) << "\"";
+      }
+    }
+
     os << "/>\n";
   }
 }
 
-
-static bool
-writeXML_FileFilter(const Struct::ANode& x, long GCC_ATTR_UNUSED type)
-{
-  return (typeid(x) == typeid(Struct::File) || typeid(x) == typeid(Struct::Alien) ||
-	  typeid(x) == typeid(Struct::Loop)); 
+static bool writeXML_FileFilter(const Struct::ANode& x, long GCC_ATTR_UNUSED type) {
+  return (
+      typeid(x) == typeid(Struct::File) || typeid(x) == typeid(Struct::Alien)
+      || typeid(x) == typeid(Struct::Loop));
 }
 
-
-static bool
-writeXML_ProcFilter(const Struct::ANode& x, long GCC_ATTR_UNUSED type)
-{
+static bool writeXML_ProcFilter(const Struct::ANode& x, long GCC_ATTR_UNUSED type) {
   return (typeid(x) == typeid(Struct::Proc) || typeid(x) == typeid(Struct::Alien));
 }
 
-
-std::ostream&
-Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
-		      uint oFlags, const char* GCC_ATTR_UNUSED pfx) const
-{
+std::ostream& Profile::writeXML_hdr(
+    std::ostream& os, uint metricBeg, uint metricEnd, uint oFlags,
+    const char* GCC_ATTR_UNUSED pfx) const {
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
 
@@ -777,21 +701,18 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     if (typeid(*m) == typeid(Metric::DerivedDesc)) {
       isDrvd = true;
       mDrvdExpr = static_cast<const Metric::DerivedDesc*>(m)->expr();
-    }
-    else if (typeid(*m) == typeid(Metric::DerivedIncrDesc)) {
+    } else if (typeid(*m) == typeid(Metric::DerivedIncrDesc)) {
       isDrvd = true;
       mDrvdExpr = static_cast<const Metric::DerivedIncrDesc*>(m)->expr();
     }
 
     // Metric
-    os << "    <Metric i" << MakeAttrNum(i)
-       << " n" << MakeAttrStr(m->name())
-       << " o" << MakeAttrNum(m->order())
-       << " v=\"" << m->toValueTyStringXML() << "\""
-       << " md=\"" << m->description()      << "\""
-       << " em=\"" << m->isMultiplexed()    << "\""
-       << " es=\"" << m->num_samples()      << "\""
-       << " ep=\"" << long(m->periodMean())       << "\""
+    os << "    <Metric i" << MakeAttrNum(i) << " n" << MakeAttrStr(m->name()) << " o"
+       << MakeAttrNum(m->order()) << " v=\"" << m->toValueTyStringXML() << "\""
+       << " md=\"" << m->description() << "\""
+       << " em=\"" << m->isMultiplexed() << "\""
+       << " es=\"" << m->num_samples() << "\""
+       << " ep=\"" << long(m->periodMean()) << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
     if (m->partner()) {
       os << " partner" << MakeAttrNum(m->partner()->id());
@@ -799,54 +720,50 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     if (!m->format().empty()) {
       os << " fmt" << MakeAttrStr(m->format());
     }
-    os << " show=\"" << m->visibility()  << "\""
+    os << " show=\"" << m->visibility() << "\""
        << " show-percent=\"" << ((m->doDispPercent()) ? "1" : "0") << "\""
        << ">\n";
 
     // MetricFormula
     if (!m->formula().empty()) {
-    	os << "      <MetricFormula t=\"view\""
-	   << " frm=\"" <<  m->formula() << "\"/>\n";
-    }
-    else if (isDrvd) {
-
+      os << "      <MetricFormula t=\"view\""
+         << " frm=\"" << m->formula() << "\"/>\n";
+    } else if (isDrvd) {
       // 0. retrieve combine formula (each DerivedIncrDesc corresponds
       // to an 'accumulator')
       string combineFrm;
       if (mDrvdExpr) {
-	combineFrm = mDrvdExpr->combineString1();
+        combineFrm = mDrvdExpr->combineString1();
 
-	for (uint k = 1; k < mDrvdExpr->numAccum(); ++k) {
-	  uint mId = mDrvdExpr->accumId(k);
-	  string frm = mDrvdExpr->combineString2();
-	  metricIdToFormula.insert(std::make_pair(mId, frm));
-	}
-      }
-      else {
-	// must represent accumulator 2
-	uint mId = m->id();
-	UIntToStringMap::iterator it = metricIdToFormula.find(mId);
-	DIAG_Assert((it != metricIdToFormula.end()), DIAG_UnexpectedInput);
-	combineFrm = it->second;
+        for (uint k = 1; k < mDrvdExpr->numAccum(); ++k) {
+          uint mId = mDrvdExpr->accumId(k);
+          string frm = mDrvdExpr->combineString2();
+          metricIdToFormula.insert(std::make_pair(mId, frm));
+        }
+      } else {
+        // must represent accumulator 2
+        uint mId = m->id();
+        UIntToStringMap::iterator it = metricIdToFormula.find(mId);
+        DIAG_Assert((it != metricIdToFormula.end()), DIAG_UnexpectedInput);
+        combineFrm = it->second;
       }
 
       // 1. MetricFormula: combine
       os << "      <MetricFormula t=\"combine\""
-	 << " frm=\"" << combineFrm << "\"/>\n";
+         << " frm=\"" << combineFrm << "\"/>\n";
 
       // 2. MetricFormula: finalize
       if (mDrvdExpr) {
-	os << "      <MetricFormula t=\"finalize\""
-	   << " frm=\"" << mDrvdExpr->finalizeString() << "\"/>\n";
+        os << "      <MetricFormula t=\"finalize\""
+           << " frm=\"" << mDrvdExpr->finalizeString() << "\"/>\n";
       }
     }
-    
+
     // Info
     os << "      <Info>"
-       << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
+       << "<NV n=\"units\" v=\"events\"/>";  // or "samples" m->isUnitsEvents()
 
-    const Metric::SampledDesc* mSmpl =
-      dynamic_cast<const Metric::SampledDesc*>(m);
+    const Metric::SampledDesc* mSmpl = dynamic_cast<const Metric::SampledDesc*>(m);
     if (mSmpl) {
       os << "<NV n=\"period\" v" << MakeAttrNum(mSmpl->period()) << "/>";
     }
@@ -862,17 +779,16 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   for (uint i = 0; i < m_mMgr->size(); i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
     if (m->hasDBInfo()) {
-      os << "    <MetricDB i" << MakeAttrNum(i)
-	 << " n" << MakeAttrStr(m->name())
-       	 << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
+      os << "    <MetricDB i" << MakeAttrNum(i) << " n" << MakeAttrStr(m->name()) << " t=\""
+         << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
       if (m->partner()) {
-         os << " partner" << MakeAttrNum(m->partner()->id());
+        os << " partner" << MakeAttrNum(m->partner()->id());
       }
       os << " db-glob=\"" << m->dbFileGlob() << "\""
-	 << " db-id=\"" << m->dbId() << "\""
-	 << " db-num-metrics=\"" << m->dbNumMetrics() << "\""
-	 << " db-header-sz=\"" << HPCMETRICDB_FMT_HeaderLen << "\""
-	 << "/>\n";
+         << " db-id=\"" << m->dbId() << "\""
+         << " db-num-metrics=\"" << m->dbNumMetrics() << "\""
+         << " db-header-sz=\"" << HPCMETRICDB_FMT_HeaderLen << "\""
+         << "/>\n";
     }
   }
   os << "  </MetricDBTable>\n";
@@ -886,9 +802,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
       unit_time_per_second = 1000000;
     }
     os << "  <TraceDBTable>\n";
-    os << "    <TraceDB i" << MakeAttrNum(0)
-       << " u=\"" << unit_time_per_second << "\""
-       << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
+    os << "    <TraceDB i" << MakeAttrNum(0) << " u=\"" << unit_time_per_second << "\""
+       << " db-glob=\""
+       << "*." << HPCRUN_TraceFnmSfx << "\""
        << " db-min-time=\"" << m_traceMinTime << "\""
        << " db-max-time=\"" << m_traceMaxTime << "\""
        << " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
@@ -900,9 +816,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   //
   // -------------------------------------------------------
   os << "  <LoadModuleTable>\n";
-  writeXML_help(os, "LoadModule", m_structure,
-		&Struct::ANodeTyFilter[Struct::ANode::TyLM], 1,
-		m_remove_redundancy);
+  writeXML_help(
+      os, "LoadModule", m_structure, &Struct::ANodeTyFilter[Struct::ANode::TyLM], 1,
+      m_remove_redundancy);
   os << "  </LoadModuleTable>\n";
 
   // -------------------------------------------------------
@@ -916,7 +832,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
-  if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
+  if (!(oFlags & CCT::Tree::OFlg_Debug)) {
     os << "  <ProcedureTable>\n";
     Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
     writeXML_help(os, "Procedure", m_structure, &filt2, 3, true /*m_remove_redundancy*/);
@@ -926,10 +842,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   return os;
 }
 
-
-std::ostream&
-Profile::dump(std::ostream& os) const
-{
+std::ostream& Profile::dump(std::ostream& os) const {
   os << m_name << std::endl;
 
   m_mMgr->dump(os);
@@ -942,34 +855,18 @@ Profile::dump(std::ostream& os) const
   return os;
 }
 
-
-void
-Profile::ddump() const
-{
+void Profile::ddump() const {
   dump();
 }
+}  // namespace CallPath
+}  // namespace Prof
 
-
-} // namespace CallPath
-
-} // namespace Prof
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
-cct_makeNode(Prof::CallPath::Profile& prof,
-	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags,
-	     const std::string& ctxtStr);
+static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*> cct_makeNode(
+    Prof::CallPath::Profile& prof, const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags,
+    const std::string& ctxtStr);
 
 static void
-fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
-		 epoch_flags_t flags);
-
-
-//***************************************************************************
+fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n, epoch_flags_t flags);
 
 namespace Prof {
 
@@ -977,9 +874,7 @@ namespace CallPath {
 
 const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
 
-Profile*
-Profile::make(uint rFlags)
-{
+Profile* Profile::make(uint rFlags) {
   Profile* prof = new Profile("[program-name]");
 
   if (rFlags & RFlg_VirtualMetrics) {
@@ -990,9 +885,9 @@ Profile::make(uint rFlags)
   return prof;
 }
 
-
-Profile*
-Profile::make(const char* fnm, uint rFlags, FILE* outfs, bool sm_easyToGrep) //YUMENG: last arg change to a struct of flags?
+Profile* Profile::make(
+    const char* fnm, uint rFlags, FILE* outfs,
+    bool sm_easyToGrep)  // YUMENG: last arg change to a struct of flags?
 {
   int ret;
 
@@ -1000,14 +895,11 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs, bool sm_easyToGrep) //Y
 
   if (!fs) {
     if (errno == ENOENT)
-      fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n",
-	      fnm);
+      fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n", fnm);
     else if (errno == EACCES)
-      fprintf(stderr, "ERROR: failed to open file '%s': file access denied\n",
-	      fnm);
+      fprintf(stderr, "ERROR: failed to open file '%s': file access denied\n", fnm);
     else
-      fprintf(stderr, "ERROR: failed to open file '%s': system failure\n",
-	      fnm);
+      fprintf(stderr, "ERROR: failed to open file '%s': system failure\n", fnm);
     prof_abort(-1);
   }
 
@@ -1015,12 +907,12 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs, bool sm_easyToGrep) //Y
   ret = setvbuf(fs, fsBuf, _IOFBF, HPCIO_RWBufferSz);
   DIAG_AssertWarn(ret == 0, "Profile::make: setvbuf!");
 
-  rFlags |= RFlg_HpcrunData; // TODO: for now assume an hpcrun file (verify!)
+  rFlags |= RFlg_HpcrunData;  // TODO: for now assume an hpcrun file (verify!)
 
   Profile* prof = NULL;
-  
+
   ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs, sm_easyToGrep);
-  
+
   hpcio_fclose(fs);
 
   delete[] fsBuf;
@@ -1028,27 +920,26 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs, bool sm_easyToGrep) //Y
   return prof;
 }
 
-
-int
-Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
-		   std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep)
-{
+int Profile::fmt_fread(
+    Profile*& prof, FILE* infs, uint rFlags, std::string ctxtStr, const char* filename, FILE* outfs,
+    bool sm_easyToGrep) {
   int ret;
-
 
   // ------------------------------------------------------------
   // footer - YUMENG
   // ------------------------------------------------------------
   hpcrun_fmt_footer_t footer;
-  fseek(infs, 0, SEEK_END); 
+  fseek(infs, 0, SEEK_END);
   size_t footer_position = ftell(infs) - SF_footer_SIZE;
-  fseek(infs, footer_position, SEEK_SET); 
+  fseek(infs, footer_position, SEEK_SET);
   ret = hpcrun_fmt_footer_fread(&footer, infs);
-  if(ret != HPCFMT_OK){
-    fprintf(stderr, "ERROR: error reading footer section in '%s', maybe it is not complete\n", filename);
+  if (ret != HPCFMT_OK) {
+    fprintf(
+        stderr, "ERROR: error reading footer section in '%s', maybe it is not complete\n",
+        filename);
     prof_abort(-1);
   }
-  if(getc(infs) != EOF){
+  if (getc(infs) != EOF) {
     fprintf(stderr, "ERROR: data exists after footer section in '%s'\n", filename);
     prof_abort(-1);
   }
@@ -1056,81 +947,84 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
   // hdr
   // ------------------------------------------------------------
-  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
-  fseek(infs, footer.hdr_start, SEEK_SET); 
+  // YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  fseek(infs, footer.hdr_start, SEEK_SET);
 
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
-    fprintf(stderr, "ERROR: error reading 'fmt-hdr' in '%s': either the file "
-	    "is not a profile or it is corrupted\n", filename);
+    fprintf(
+        stderr,
+        "ERROR: error reading 'fmt-hdr' in '%s': either the file "
+        "is not a profile or it is corrupted\n",
+        filename);
     prof_abort(-1);
   }
-  //YUMENG check if the ending position match the recorded in footer
-  if((uint64_t)ftell(infs) != footer.hdr_end){
-    fprintf(stderr, "ERROR: 'fmt-hdr' is succesfully read but the data seems off the recorded location in '%s'\n",
-     filename);
-     prof_abort(-1);
+  // YUMENG check if the ending position match the recorded in footer
+  if ((uint64_t)ftell(infs) != footer.hdr_end) {
+    fprintf(
+        stderr,
+        "ERROR: 'fmt-hdr' is succesfully read but the data seems off the recorded location in "
+        "'%s'\n",
+        filename);
+    prof_abort(-1);
   }
-  if ( !(hdr.version >= HPCRUN_FMT_Version_20) ) {
+  if (!(hdr.version >= HPCRUN_FMT_Version_20)) {
     DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");
   }
 
   if (outfs) {
-    if (Analysis::Util::option == Analysis::Util::Print_All) 
+    if (Analysis::Util::option == Analysis::Util::Print_All)
       hpcrun_fmt_hdr_fprint(&hdr, outfs);
   }
 
   // ------------------------------------------------------------
   // epoch: Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
-  
+
   prof = NULL;
 
-  //YUMENG: no epoch info needed
-  //uint num_epochs = 0;
-  //size_t file_cur = 0;
-  //while ( !feof(infs) && (file_cur != footer.footer_offset)) {
+  // YUMENG: no epoch info needed
+  // uint num_epochs = 0;
+  // size_t file_cur = 0;
+  // while ( !feof(infs) && (file_cur != footer.footer_offset)) {
 
-    Profile* myprof = NULL;
+  Profile* myprof = NULL;
 
-    //YUMENG: no epoch info needed    
-    //string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
-    //ctxtStr += ": " + myCtxtStr;
+  // YUMENG: no epoch info needed
+  // string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
+  // ctxtStr += ": " + myCtxtStr;
 
-    try {
-      ret = fmt_epoch_fread(myprof, infs, rFlags, hdr, footer, 
-			    ctxtStr, filename, outfs, sm_easyToGrep);
-      //if (ret == HPCFMT_EOF) {
-	    //  break; 
-      // }
-    }
-    catch (const Diagnostics::Exception& x) {
-      delete myprof;
-      DIAG_Throw("error reading " << ctxtStr << ": " << x.what());
-    }
+  try {
+    ret =
+        fmt_epoch_fread(myprof, infs, rFlags, hdr, footer, ctxtStr, filename, outfs, sm_easyToGrep);
+    // if (ret == HPCFMT_EOF) {
+    //   break;
+    // }
+  } catch (const Diagnostics::Exception& x) {
+    delete myprof;
+    DIAG_Throw("error reading " << ctxtStr << ": " << x.what());
+  }
 
-    if (! prof) {
-      prof = myprof;
-    }
-    else {
-      prof->merge(*myprof, Profile::Merge_MergeMetricById);
-    }
-   //YUMENG: no epoch info needed
-   //num_epochs++;
+  if (!prof) {
+    prof = myprof;
+  } else {
+    prof->merge(*myprof, Profile::Merge_MergeMetricById);
+  }
+  // YUMENG: no epoch info needed
+  // num_epochs++;
 
-   //footer print YUMENG
-   //file_cur = ftell(infs);
-   if(outfs){
-     if (Analysis::Util::option == Analysis::Util::Print_All)
-       hpcrun_fmt_footer_fprint(&footer, outfs, "  ");
-   }
+  // footer print YUMENG
+  // file_cur = ftell(infs);
+  if (outfs) {
+    if (Analysis::Util::option == Analysis::Util::Print_All)
+      hpcrun_fmt_footer_fprint(&footer, outfs, "  ");
+  }
 
   //}
 
-
   if (!prof) {
-    prof = make(rFlags); // make an empty profile
+    prof = make(rFlags);  // make an empty profile
   }
 
   prof->canonicalize(rFlags);
@@ -1142,8 +1036,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   if (outfs) {
     if (Analysis::Util::option == Analysis::Util::Print_All) {
-      //YUMENG: no epoch info needed
-      //fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
+      // YUMENG: no epoch info needed
+      // fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
       fprintf(outfs, "\n[You look fine today!]\n");
     }
   }
@@ -1153,13 +1047,10 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   return HPCFMT_OK;
 }
 
-
-int
-Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-			 const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
-			 std::string ctxtStr, const char* filename,
-			 FILE* outfs, bool sm_easyToGrep)
-{
+int Profile::fmt_epoch_fread(
+    Profile*& prof, FILE* infs, uint rFlags, const hpcrun_fmt_hdr_t& hdr,
+    const hpcrun_fmt_footer_t& footer, std::string ctxtStr, const char* filename, FILE* outfs,
+    bool sm_easyToGrep) {
   using namespace Prof;
 
   string profFileName = (filename) ? filename : "";
@@ -1170,7 +1061,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // Read epoch data
   // ------------------------------------------------------------
 
-//YUMENG: no epoch info
+// YUMENG: no epoch info
 #if 0
   // ----------------------------------------
   // epoch-hdr
@@ -1192,7 +1083,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ----------------------------------------
   // loadmap
   // ----------------------------------------
-  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  // YUMENG: file not consecutive anymore after making boundary multiple of 1024
   fseek(infs, footer.loadmap_start, SEEK_SET);
 
   loadmap_t loadmap_tbl;
@@ -1204,32 +1095,33 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'loadmap'");
   }
-  //YUMENG check if the ending position match the recorded in footer
-  if((uint64_t)ftell(infs) != footer.loadmap_end){
-    fprintf(stderr, "ERROR: 'loadmap' is succesfully read but the data seems off the recorded location in '%s'\n",
-     filename);
-     prof_abort(-1);
+  // YUMENG check if the ending position match the recorded in footer
+  if ((uint64_t)ftell(infs) != footer.loadmap_end) {
+    fprintf(
+        stderr,
+        "ERROR: 'loadmap' is succesfully read but the data seems off the recorded location in "
+        "'%s'\n",
+        filename);
+    prof_abort(-1);
   }
   if (outfs) {
     size_t gpubin_suffix_len = strlen("gpubin");
     if (Analysis::Util::option == Analysis::Util::Print_LoadModule_Only) {
       for (uint32_t i = 0; i < loadmap_tbl.len; i++) {
-
         loadmap_entry_t* x = &loadmap_tbl.lst[i];
-        
-	// make sure we eliminate the <vmlinux> and <vdso> load modules
-	// These modules have prefix '<' and hopefully it doesn't change
-	if ((x->name != NULL && x->name[0] != '<') && 
-            (x->flags & LOADMAP_ENTRY_ANALYZE)) {
 
-	  // for any gpubin, erase any kernel name hash following
-	  // "gpubin" in a load module name
-	  string name(x->name);
-	  size_t pos = name.find("gpubin.");
-	  if (pos != string::npos) name.erase(pos+gpubin_suffix_len);
+        // make sure we eliminate the <vmlinux> and <vdso> load modules
+        // These modules have prefix '<' and hopefully it doesn't change
+        if ((x->name != NULL && x->name[0] != '<') && (x->flags & LOADMAP_ENTRY_ANALYZE)) {
+          // for any gpubin, erase any kernel name hash following
+          // "gpubin" in a load module name
+          string name(x->name);
+          size_t pos = name.find("gpubin.");
+          if (pos != string::npos)
+            name.erase(pos + gpubin_suffix_len);
 
           fprintf(outfs, "%s\n", name.c_str());
-	}
+        }
       }
       // hack: case for hpcproftt with --lm option
       // by returning HPCFMT_EOF we force hpcproftt to exit the loop
@@ -1237,7 +1129,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
     hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
   }
-
 
   // ------------------------------------------------------------
   // Create Profile
@@ -1277,11 +1168,11 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string mpiRankStr, tidStr;
 
   // val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_jobId);
- 
+
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
-  } 
+  }
 
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_tid);
   if (val) {
@@ -1292,22 +1183,26 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // trace information
   // -------------------------
 
-  bool     haveTrace = false;
-  string   traceFileName;
+  bool haveTrace = false;
+  string traceFileName;
 
-  string   traceMinTimeStr, traceMaxTimeStr;
+  string traceMinTimeStr, traceMaxTimeStr;
   uint64_t traceMinTime = UINT64_MAX, traceMaxTime = 0;
 
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_traceMinTime);
   if (val) {
     traceMinTimeStr = val;
-    if (val[0] != '\0') { traceMinTime = StrUtil::toUInt64(traceMinTimeStr); }
+    if (val[0] != '\0') {
+      traceMinTime = StrUtil::toUInt64(traceMinTimeStr);
+    }
   }
 
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_traceMaxTime);
   if (val) {
     traceMaxTimeStr = val;
-    if (val[0] != '\0') { traceMaxTime = StrUtil::toUInt64(traceMaxTimeStr); }
+    if (val[0] != '\0') {
+      traceMaxTime = StrUtil::toUInt64(traceMaxTimeStr);
+    }
   }
 
   haveTrace = (traceMinTime != 0 && traceMaxTime != 0);
@@ -1321,20 +1216,19 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     traceFileName = profFileName;
     size_t ext_pos = traceFileName.find(ext_prof);
     if (ext_pos != string::npos) {
-      traceFileName.replace(traceFileName.begin() + ext_pos,
-			    traceFileName.end(), ext_trace);
+      traceFileName.replace(traceFileName.begin() + ext_pos, traceFileName.end(), ext_trace);
       // DIAG_Assert(FileUtil::isReadable(traceFileName));
     }
   }
 
   // -------------------------
-  // 
+  //
   // -------------------------
 
   // N.B.: We currently assume FmtEpoch_NV_virtualMetrics is set iff
   // we read from a memory buffer.  Possibly we need an explicit tag for this.
   bool isVirtualMetrics = false;
-  // YUMENG: needs to figure out the usage of this portion, cut right now due to missing of epoch 
+  // YUMENG: needs to figure out the usage of this portion, cut right now due to missing of epoch
 #if 0
   val = hpcfmt_nvpairList_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
   if (val && strcmp(val, "0") != 0) {
@@ -1350,9 +1244,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   prof = new Profile(progNm);
 
   prof->m_fmtVersion = hdr.version;
-  //YUMENG: no epoch info 
-  //prof->m_flags = ehdr.flags;
-  //prof->m_measurementGranularity = ehdr.measurementGranularity;
+  // YUMENG: no epoch info
+  // prof->m_flags = ehdr.flags;
+  // prof->m_measurementGranularity = ehdr.measurementGranularity;
 
   prof->m_profileFileName = profFileName;
 
@@ -1379,14 +1273,15 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
     LoadMap::LM* lm = new LoadMap::LM(nm);
     loadmap.lm_insert(lm);
-    
-    DIAG_Assert(lm->id() == i + 1, "Profile::fmt_epoch_fread: Currently expect load module id's to be in dense ascending order.");
+
+    DIAG_Assert(
+        lm->id() == i + 1, "Profile::fmt_epoch_fread: Currently expect load module id's to be in "
+                           "dense ascending order.");
   }
 
   DIAG_MsgIf(DBG, loadmap.toString());
 
-  std::vector<LoadMap::MergeEffect>* mrgEffect =
-    prof->loadmap()->merge(loadmap);
+  std::vector<LoadMap::MergeEffect>* mrgEffect = prof->loadmap()->merge(loadmap);
   DIAG_Assert(mrgEffect->empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
 
   hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
@@ -1397,23 +1292,25 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 #if 0
   fmt_cct_fread(*prof, infs, rFlags, metricTbl, ctxtStr, outfs);
-#else 
-  //YUMENG: no need to parse metricTbl for sparse format
-  //file not consecutive anymore after making boundary multiple of 1024
+#else
+  // YUMENG: no need to parse metricTbl for sparse format
+  // file not consecutive anymore after making boundary multiple of 1024
   fseek(infs, footer.cct_start, SEEK_SET);
   fmt_cct_fread(*prof, infs, rFlags, ctxtStr, outfs);
-  //check if the ending position match the recorded in footer
-  if((uint64_t)ftell(infs) != footer.cct_end){
-    fprintf(stderr, "ERROR: 'cct' is succesfully read but the data seems off the recorded location in '%s'\n",
-     filename);
-     prof_abort(-1);
+  // check if the ending position match the recorded in footer
+  if ((uint64_t)ftell(infs) != footer.cct_end) {
+    fprintf(
+        stderr,
+        "ERROR: 'cct' is succesfully read but the data seems off the recorded location in '%s'\n",
+        filename);
+    prof_abort(-1);
   }
 #endif
 
   // ----------------------------------------
   // metric-tbl
   // ----------------------------------------
-  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  // YUMENG: file not consecutive anymore after making boundary multiple of 1024
   fseek(infs, footer.met_tbl_start, SEEK_SET);
 
   metric_tbl_t metricTbl;
@@ -1422,18 +1319,20 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
-  //YUMENG check if the ending position match the recorded in footer
-  if((uint64_t)ftell(infs) != footer.met_tbl_end){
-    fprintf(stderr, "ERROR: 'metric-tbl' is succesfully read but the data seems off the recorded location in '%s'\n",
-     filename);
-     prof_abort(-1);
+  // YUMENG check if the ending position match the recorded in footer
+  if ((uint64_t)ftell(infs) != footer.met_tbl_end) {
+    fprintf(
+        stderr,
+        "ERROR: 'metric-tbl' is succesfully read but the data seems off the recorded location in "
+        "'%s'\n",
+        filename);
+    prof_abort(-1);
   }
   if (outfs) {
     hpcrun_fmt_metricTbl_fprint(&metricTbl, outfs);
   }
 
   const uint numMetricsSrc = metricTbl.len;
-
 
   // ----------------------------------------
   // make metric table
@@ -1442,27 +1341,24 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string m_sfx;
   if (!mpiRankStr.empty() && !tidStr.empty()) {
     m_sfx = "[" + mpiRankStr + "," + tidStr + "]";
-  }
-  else if (!mpiRankStr.empty()) {
+  } else if (!mpiRankStr.empty()) {
     m_sfx = "[" + mpiRankStr + "]";
-  }
-  else if (!tidStr.empty()) {
+  } else if (!tidStr.empty()) {
     m_sfx = "[" + tidStr + "]";
   }
 
   if (rFlags & RFlg_NoMetricSfx) {
     m_sfx = "";
-    //if (!tidStr.empty()) { m_sfx = "[" + tidStr + "]"; } // TODO:threads
+    // if (!tidStr.empty()) { m_sfx = "[" + tidStr + "]"; } // TODO:threads
   }
-
 
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     const metric_desc_t& mdesc = m_lst[i];
-    const metric_aux_info_t &current_aux_info = mdesc.aux_info;
+    const metric_aux_info_t& current_aux_info = mdesc.aux_info;
 
     // ----------------------------------------
-    // 
+    //
     // ----------------------------------------
     string nm = mdesc.name;
     string desc = mdesc.description;
@@ -1474,57 +1370,57 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     if (nm == HPCRUN_METRIC_RetCnt) {
       doMakeInclExcl = false;
     }
-    
-    DIAG_Assert(mdesc.flags.fields.ty == MetricFlags_Ty_Raw
-		|| mdesc.flags.fields.ty == MetricFlags_Ty_Final,
-		"Prof::CallPath::Profile::fmt_epoch_fread: unexpected metric type '"
-		<< mdesc.flags.fields.ty << "'");
 
-    DIAG_Assert(Logic::implies(mdesc.flags.fields.ty == MetricFlags_Ty_Final,
-			       !(rFlags & RFlg_MakeInclExcl)),
-		DIAG_UnexpectedInput);
-   
+    DIAG_Assert(
+        mdesc.flags.fields.ty == MetricFlags_Ty_Raw
+            || mdesc.flags.fields.ty == MetricFlags_Ty_Final,
+        "Prof::CallPath::Profile::fmt_epoch_fread: unexpected metric type '"
+            << mdesc.flags.fields.ty << "'");
+
+    DIAG_Assert(
+        Logic::implies(
+            mdesc.flags.fields.ty == MetricFlags_Ty_Final, !(rFlags & RFlg_MakeInclExcl)),
+        DIAG_UnexpectedInput);
+
     // ----------------------------------------
     // 1. Make 'regular'/'inclusive' metric descriptor
     // ----------------------------------------
- 
-    Metric::SampledDesc* m =
-      new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
-			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show, false,
-            mdesc.flags.fields.showPercent);
-    
+
+    Metric::SampledDesc* m = new Metric::SampledDesc(
+        nm, desc, mdesc.period, true /*isUnitsEvents*/, profFileName, profRelId, "HPCRUN",
+        mdesc.flags.fields.show, false, mdesc.flags.fields.showPercent);
+
     m->order((int)i);
 
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
-    }
-    else {
+    } else {
       if (nm == HPCRUN_METRIC_RetCnt) {
-	      m->type(Metric::ADesc::TyExcl);
-      }
-      else {
-      	m->type(Metric::ADesc::fromHPCRunMetricValTy(mdesc.flags.fields.valTy));
+        m->type(Metric::ADesc::TyExcl);
+      } else {
+        m->type(Metric::ADesc::fromHPCRunMetricValTy(mdesc.flags.fields.valTy));
       }
     }
     if (!m_sfx.empty()) {
       m->nameSfx(m_sfx);
     }
     m->flags(mdesc.flags);
-    
+
     // ----------------------------------------
     // 1b. Update the additional attributes
     // ----------------------------------------
 
-    Prof::Metric::SamplingType_t sampling_type = mdesc.is_frequency_metric ?
-        Prof::Metric::SamplingType_t::FREQUENCY : Prof::Metric::SamplingType_t::PERIOD;
+    Prof::Metric::SamplingType_t sampling_type = mdesc.is_frequency_metric
+                                                   ? Prof::Metric::SamplingType_t::FREQUENCY
+                                                   : Prof::Metric::SamplingType_t::PERIOD;
 
     m->sampling_type(sampling_type);
     m->isMultiplexed(current_aux_info.is_multiplexed);
-    m->periodMean   (current_aux_info.threshold_mean);
-    m->num_samples  (current_aux_info.num_samples);
+    m->periodMean(current_aux_info.threshold_mean);
+    m->num_samples(current_aux_info.num_samples);
 
-    m->formula      (mdesc.formula);
-    m->format       (mdesc.format);
+    m->formula(mdesc.formula);
+    m->format(mdesc.format);
 
     // ----------------------------------------
     // 1c. add to the list of metric
@@ -1536,27 +1432,24 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // 2. Make associated 'exclusive' descriptor, if applicable
     // ----------------------------------------
     if (doMakeInclExcl) {
-      Metric::SampledDesc* mSmpl =
-	new Metric::SampledDesc(nm, desc, mdesc.period,
-				true/*isUnitsEvents*/,
-				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show,
-        false, mdesc.flags.fields.showPercent);
+      Metric::SampledDesc* mSmpl = new Metric::SampledDesc(
+          nm, desc, mdesc.period, true /*isUnitsEvents*/, profFileName, profRelId, "HPCRUN",
+          mdesc.flags.fields.show, false, mdesc.flags.fields.showPercent);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
-	      mSmpl->nameSfx(m_sfx);
+        mSmpl->nameSfx(m_sfx);
       }
-      mSmpl->flags  (mdesc.flags);
+      mSmpl->flags(mdesc.flags);
       mSmpl->formula(mdesc.formula);
-      mSmpl->format (mdesc.format);
-      
+      mSmpl->format(mdesc.format);
+
       prof->metricMgr()->insert(mSmpl);
     }
   }
 
-  if (isVirtualMetrics || (rFlags & RFlg_VirtualMetrics) ) {
+  if (isVirtualMetrics || (rFlags & RFlg_VirtualMetrics)) {
     prof->isMetricMgrVirtual(true);
   }
-
 
   // ----------------------------------------
   // make metric DB info
@@ -1565,7 +1458,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // metric DB information:
   //   1. create when reading an actual data file
   //   2. preserve when reading a profile from a memory buffer
-  if ( !isVirtualMetrics ) {
+  if (!isVirtualMetrics) {
     // create metric db information
     Prof::Metric::Mgr* mMgr = prof->metricMgr();
     for (uint mId = 0; mId < mMgr->size(); ++mId) {
@@ -1585,10 +1478,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'id-tuple dxnry'");
   }
-  if((uint64_t)ftell(infs) != footer.idtpl_dxnry_end){
-    fprintf(stderr, "ERROR: 'id-tuple dxnry' is succesfully read but the data seems off the recorded location in '%s'\n",
-     filename);
-     prof_abort(-1);
+  if ((uint64_t)ftell(infs) != footer.idtpl_dxnry_end) {
+    fprintf(
+        stderr,
+        "ERROR: 'id-tuple dxnry' is succesfully read but the data seems off the recorded location "
+        "in '%s'\n",
+        filename);
+    prof_abort(-1);
   }
   hpcrun_fmt_idtuple_dxnry_fprint(&idtuple_dxnry, outfs);
   hpcrun_fmt_idtuple_dxnry_free(&idtuple_dxnry, free);
@@ -1596,30 +1492,32 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ----------------------------------------
   // cct_metrics_sparse_values - YUMENG
   // ----------------------------------------
-  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  // YUMENG: file not consecutive anymore after making boundary multiple of 1024
   fseek(infs, footer.sm_start, SEEK_SET);
 
   hpcrun_fmt_sparse_metrics_t sparse_metrics;
-  ret = hpcrun_fmt_sparse_metrics_fread(&sparse_metrics,infs);
+  ret = hpcrun_fmt_sparse_metrics_fread(&sparse_metrics, infs);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
-  //check if the ending position match the recorded in footer
-  if((uint64_t)ftell(infs) != footer.sm_end){
-    fprintf(stderr, "ERROR: 'sparse metrics' is succesfully read but the data seems off the recorded location in '%s'\n",
-     filename);
-     prof_abort(-1);
+  // check if the ending position match the recorded in footer
+  if ((uint64_t)ftell(infs) != footer.sm_end) {
+    fprintf(
+        stderr,
+        "ERROR: 'sparse metrics' is succesfully read but the data seems off the recorded location "
+        "in '%s'\n",
+        filename);
+    prof_abort(-1);
   }
-  hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs, &metricTbl, "  ", sm_easyToGrep);
+  hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics, outfs, &metricTbl, "  ", sm_easyToGrep);
   hpcrun_fmt_sparse_metrics_free(&sparse_metrics, free);
 
-  //YUMENG: no epoch info 
-  //hpcrun_fmt_epochHdr_free(&ehdr, free);
+  // YUMENG: no epoch info
+  // hpcrun_fmt_epochHdr_free(&ehdr, free);
   hpcrun_fmt_metricTbl_free(&metricTbl, free);
 
   return HPCFMT_OK;
 }
-
 
 #if 0
 int
@@ -1627,17 +1525,14 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		       const metric_tbl_t& metricTbl,
 		       std::string ctxtStr, FILE* outfs)
 #else
-//YUMENG: no need to parse metricTbl for sparse format
-int
-Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
-		       std::string ctxtStr, FILE* outfs)
+// YUMENG: no need to parse metricTbl for sparse format
+int Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags, std::string ctxtStr, FILE* outfs)
 #endif
 {
- 
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
   DIAG_Assert(infs, "Bad file descriptor!");
-  
+
   CCTIdToCCTNodeMap cctNodeMap;
 
   int ret = HPCFMT_ERR;
@@ -1656,13 +1551,13 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   }
 
   CCT::Tree* cct = prof.cct();
-  
+
   if (numNodes > 0) {
     delete cct->root();
     cct->root(NULL);
   }
 
-//YUMENG: No metric info
+// YUMENG: No metric info
 #if 0
   // N.B.: numMetricsSrc <= [numMetricsDst = prof.metricMgr()->size()]
   uint numMetricsSrc = metricTbl.len;
@@ -1674,7 +1569,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
   hpcrun_fmt_cct_node_t nodeFmt;
 
-//YUMENG: No metric info
+// YUMENG: No metric info
 #if 0
   nodeFmt.num_metrics = numMetricsSrc;
   nodeFmt.metrics = (numMetricsSrc > 0) ?
@@ -1695,14 +1590,12 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       DIAG_Throw("Error reading CCT node " << nodeFmt.id);
     }
     if (outfs) {
-
 #if 0
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
 				 &metricTbl, "  ");
 #else
-//YUMENG: No metric info
-      hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
-				  "  ");
+      // YUMENG: No metric info
+      hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags, "  ");
 #endif
     }
 
@@ -1729,7 +1622,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 #endif
 
-    int nodeId   = (int)nodeFmt.id;
+    int nodeId = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
 
     // Find parent of node
@@ -1737,10 +1630,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (parentId != HPCRUN_FMT_CCTNodeId_NULL) {
       CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(parentId);
       if (it != cctNodeMap.end()) {
-	      node_parent = it->second;
-      }
-      else {
-	      DIAG_Throw("Cannot find parent for CCT node " << nodeId);
+        node_parent = it->second;
+      } else {
+        DIAG_Throw("Cannot find parent for CCT node " << nodeId);
       }
     }
 
@@ -1758,8 +1650,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // Create node and link to parent
     // ----------------------------------------------------------
 
-    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
-      cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
+    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 = cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
     CCT::ADynNode* node = n2.first;
     CCT::ADynNode* node_sib = n2.second;
 
@@ -1769,19 +1660,21 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       // If 'node' is not the secondary root, perform sanity check
       if (!node->isSecondarySynthRoot()) {
         if (node->lmId_real() == HPCRUN_PLACEHOLDER_LM) {
-          DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
+          DIAG_WMsg(
+              2, ctxtStr << ": CCT (non-root) node " << nodeId
+                         << " has invalid normalized IP: " << node->nameDyn());
         }
       }
 
       node->link(node_parent);
       if (node_sib) {
-      	node_sib->link(node_parent);
+        node_sib->link(node_parent);
       }
-    }
-    else {
+    } else {
       DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
       DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
-      if (cct->empty()) cct->root(node);
+      if (cct->empty())
+        cct->root(node);
     }
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
@@ -1794,12 +1687,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   return HPCFMT_OK;
 }
 
-
-//***************************************************************************
-
-int
-Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags)
-{
+int Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags) {
   int ret;
 
   // ------------------------------------------------------------
@@ -1809,42 +1697,38 @@ Profile::fmt_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   string traceMinTimeStr = StrUtil::toStr(prof.m_traceMinTime);
   string traceMaxTimeStr = StrUtil::toStr(prof.m_traceMaxTime);
 
-  ret = hpcrun_fmt_hdr_fwrite(fs,
-			"TODO:hdr-name","TODO:hdr-value",
-			HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr.c_str(),
-			HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr.c_str(),
-			NULL);
-  if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+  ret = hpcrun_fmt_hdr_fwrite(
+      fs, "TODO:hdr-name", "TODO:hdr-value", HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr.c_str(),
+      HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr.c_str(), NULL);
+  if (ret == HPCFMT_ERR)
+    return HPCFMT_ERR;
 
   // ------------------------------------------------------------
   // epoch
   // ------------------------------------------------------------
   ret = fmt_epoch_fwrite(prof, fs, wFlags);
-  if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+  if (ret == HPCFMT_ERR)
+    return HPCFMT_ERR;
 
   return HPCFMT_OK;
 }
 
-
-int
-Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
-{
+int Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags) {
   int ret;
 
   // ------------------------------------------------------------
   // epoch-hdr
   // ------------------------------------------------------------
   const char* virtualMetrics = "0";
-  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_VirtualMetrics) ) {
+  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_VirtualMetrics)) {
     virtualMetrics = "1";
   }
- 
-  ret = hpcrun_fmt_epochHdr_fwrite(fs, prof.m_flags,
-			     prof.m_measurementGranularity,
-			     "TODO:epoch-name", "TODO:epoch-value",
-			     FmtEpoch_NV_virtualMetrics, virtualMetrics,
-			     NULL);
-  if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+
+  ret = hpcrun_fmt_epochHdr_fwrite(
+      fs, prof.m_flags, prof.m_measurementGranularity, "TODO:epoch-name", "TODO:epoch-value",
+      FmtEpoch_NV_virtualMetrics, virtualMetrics, NULL);
+  if (ret == HPCFMT_ERR)
+    return HPCFMT_ERR;
 
   // ------------------------------------------------------------
   // metric-tbl
@@ -1853,14 +1737,15 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   uint numMetrics = prof.metricMgr()->size();
 
   ret = hpcfmt_int4_fwrite(numMetrics, fs);
-  if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+  if (ret == HPCFMT_ERR)
+    return HPCFMT_ERR;
 
   for (uint i = 0; i < numMetrics; i++) {
     const Metric::ADesc* m = prof.metricMgr()->metric(i);
 
     string nmFmt = m->nameToFmt();
     const string& desc = m->description();
-    
+
     metric_desc_t mdesc = metricDesc_NULL;
     mdesc.flags = hpcrun_metricFlags_NULL;
 
@@ -1875,9 +1760,9 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.is_frequency_metric = false;
 
     ret = hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
-    if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+    if (ret == HPCFMT_ERR)
+      return HPCFMT_ERR;
   }
-
 
   // ------------------------------------------------------------
   // loadmap
@@ -1886,33 +1771,33 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   const LoadMap& loadmap = *(prof.loadmap());
 
   ret = hpcfmt_int4_fwrite(loadmap.size(), fs);
-  if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+  if (ret == HPCFMT_ERR)
+    return HPCFMT_ERR;
 
   for (LoadMap::LMId_t i = 1; i <= loadmap.size(); i++) {
     const LoadMap::LM* lm = loadmap.lm(i);
 
     loadmap_entry_t lm_entry;
-    lm_entry.id = (uint16_t) lm->id();
+    lm_entry.id = (uint16_t)lm->id();
     lm_entry.name = const_cast<char*>(lm->name().c_str());
-    lm_entry.flags = 0; // TODO:flags
-    
+    lm_entry.flags = 0;  // TODO:flags
+
     ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
-    if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+    if (ret == HPCFMT_ERR)
+      return HPCFMT_ERR;
   }
 
   // ------------------------------------------------------------
   // cct
   // ------------------------------------------------------------
   ret = fmt_cct_fwrite(prof, fs, wFlags);
-  if (ret == HPCFMT_ERR) return HPCFMT_ERR;
+  if (ret == HPCFMT_ERR)
+    return HPCFMT_ERR;
 
   return HPCFMT_OK;
 }
 
-
-int
-Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
-{
+int Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags) {
   int ret;
 
   // ------------------------------------------------------------
@@ -1922,55 +1807,52 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   // N.B.: This may not generate preorder ids because it is necessary
   // to retain certain trace ids.
   uint64_t numNodes = 0;
-  uint nodeId_next = 2; // cf. s_nextUniqueId
+  uint nodeId_next = 2;  // cf. s_nextUniqueId
   for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
     CCT::ANode* n = it.current();
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
 
     if (n_dyn && hpcrun_fmt_doRetainId(n_dyn->cpId())) {
       n->id(n_dyn->cpId());
-    }
-    else {
+    } else {
       n->id(nodeId_next);
       nodeId_next += 2;
     }
     numNodes++;
   }
-  
+
   // ------------------------------------------------------------
   // Write number of cct nodes
   // ------------------------------------------------------------
 
   ret = hpcfmt_int8_fwrite(numNodes, fs);
-  if (ret != HPCFMT_OK) return HPCFMT_ERR;
+  if (ret != HPCFMT_OK)
+    return HPCFMT_ERR;
 
   // ------------------------------------------------------------
   // Write each CCT node
   // ------------------------------------------------------------
 
   uint numMetrics = prof.metricMgr()->size();
-  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_VirtualMetrics) ) {
+  if (prof.isMetricMgrVirtual() || (wFlags & WFlg_VirtualMetrics)) {
     numMetrics = 0;
   }
 
   hpcrun_fmt_cct_node_t nodeFmt;
   nodeFmt.num_metrics = numMetrics;
-  nodeFmt.metrics =
-    (hpcrun_metricVal_t*) alloca(numMetrics * sizeof(hpcrun_metricVal_t));
+  nodeFmt.metrics = (hpcrun_metricVal_t*)alloca(numMetrics * sizeof(hpcrun_metricVal_t));
 
   for (CCT::ANodeIterator it(prof.cct()->root()); it.Current(); ++it) {
     CCT::ANode* n = it.current();
     fmt_cct_makeNode(nodeFmt, *n, prof.m_flags);
 
     ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
-    if (ret != HPCFMT_OK) return HPCFMT_ERR;
+    if (ret != HPCFMT_OK)
+      return HPCFMT_ERR;
   }
 
   return HPCFMT_OK;
 }
-
-
-//***************************************************************************
 
 // 1. Create a CCT::Root node for the CCT
 // 2. Normalize a CCT of the form [cf. CallPath::Profile::fmt_fwrite()]:
@@ -1984,9 +1866,7 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
 //      CCT::Root --> main        --> ...
 //               |
 //               \--> [CCT::Root] --> ...
-void
-Profile::canonicalize(uint rFlags)
-{
+void Profile::canonicalize(uint rFlags) {
   using namespace Prof;
 
   CCT::ANode* root = m_cct->root();
@@ -2050,21 +1930,20 @@ Profile::canonicalize(uint rFlags)
   // ------------------------------------------------------------
 
   CCT::ANode* rootNew = new CCT::Root(m_name);
-  
+
   if (splicePoint) {
     for (CCT::ANodeChildIterator it(splicePoint); it.Current(); /* */) {
       CCT::ANode* n = it.current();
-      it++; // advance iterator -- it is pointing at 'n'
+      it++;  // advance iterator -- it is pointing at 'n'
       n->unlink();
       n->link(rootNew);
     }
 
-    delete root; // N.B.: also deletes 'splicePoint'
-  }
-  else if (root) {
+    delete root;  // N.B.: also deletes 'splicePoint'
+  } else if (root) {
     root->link(rootNew);
   }
-  
+
   m_cct->root(rootNew);
 
   // ------------------------------------------------------------
@@ -2075,20 +1954,12 @@ Profile::canonicalize(uint rFlags)
     secondaryRoot->link(rootNew);
   }
 }
+}  // namespace CallPath
+}  // namespace Prof
 
-
-} // namespace CallPath
-
-} // namespace Prof
-
-
-//***************************************************************************
-
-static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*>
-cct_makeNode(Prof::CallPath::Profile& prof,
-	     const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags,
-	     const std::string& ctxtStr)
-{
+static std::pair<Prof::CCT::ADynNode*, Prof::CCT::ADynNode*> cct_makeNode(
+    Prof::CallPath::Profile& prof, const hpcrun_fmt_cct_node_t& nodeFmt, uint rFlags,
+    const std::string& ctxtStr) {
   using namespace Prof;
 
   const LoadMap& loadmap = *(prof.loadmap());
@@ -2118,17 +1989,16 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   LoadMap::LMId_t lmId = nodeFmt.lm_id;
 
-  VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
+  VMA lmIP = (VMA)nodeFmt.lm_ip;  // FIXME:tallent: Use ISA::convertVMAToOpVMA
   ushort opIdx = 0;
 
-  if (! (lmId <= loadmap.size() /*1-based*/) ) {
-    DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-	      << " has invalid load module: " << lmId);
+  if (!(lmId <= loadmap.size() /*1-based*/)) {
+    DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId << " has invalid load module: " << lmId);
     lmId = HPCRUN_PLACEHOLDER_LM;
   }
-  loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
+  loadmap.lm(lmId)->isUsed(true);  // ok if LoadMap::LMId_NULL
 
-  DIAG_MsgIf(0, "cct_makeNode(: "<< hex << lmIP << dec << ", " << lmId << ")");
+  DIAG_MsgIf(0, "cct_makeNode(: " << hex << lmIP << dec << ", " << lmId << ")");
 
   // ----------------------------------------
   // normalized lip
@@ -2141,20 +2011,21 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   if (lip) {
     LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
 
-    if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
-      DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-		<< " has invalid (logical) load module: " << lip_lmId);
+    if (!(lip_lmId <= loadmap.size() /*1-based*/)) {
+      DIAG_WMsg(
+          1,
+          ctxtStr << ": CCT node " << nodeId << " has invalid (logical) load module: " << lip_lmId);
       lip_lmId = HPCRUN_PLACEHOLDER_LM;
     }
-    loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
+    loadmap.lm(lip_lmId)->isUsed(true);  // ok if LoadMap::LMId_NULL
   }
 
   // ----------------------------------------
   // metrics
   // ----------------------------------------
 
-  bool doZeroMetrics = prof.isMetricMgrVirtual()
-    || (rFlags & Prof::CallPath::Profile::RFlg_VirtualMetrics);
+  bool doZeroMetrics =
+      prof.isMetricMgrVirtual() || (rFlags & Prof::CallPath::Profile::RFlg_VirtualMetrics);
 
   bool hasMetrics = false;
 
@@ -2174,12 +2045,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     double mval = 0;
     switch (mdesc->flags().fields.valFmt) {
-      case MetricFlags_ValFmt_Int:
-	      mval = (double)m.i; break;
-      case MetricFlags_ValFmt_Real:
-	      mval = m.r; break;
-      default:
-	      DIAG_Die(DIAG_UnexpectedInput);
+    case MetricFlags_ValFmt_Int: mval = (double)m.i; break;
+    case MetricFlags_ValFmt_Real: mval = m.r; break;
+    default: DIAG_Die(DIAG_UnexpectedInput);
     }
 
     metricData.metric(i_dst) = mval * (double)mdesc->period();
@@ -2189,13 +2057,12 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     }
 
     if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
-      if (adesc->type() == Prof::Metric::ADesc::TyNULL ||
-      adesc->type() == Prof::Metric::ADesc::TyExcl) {
+      if (adesc->type() == Prof::Metric::ADesc::TyNULL
+          || adesc->type() == Prof::Metric::ADesc::TyExcl) {
         i_src++;
       }
       // Prof::Metric::ADesc::TyIncl: reuse i_src
-    }
-    else {
+    } else {
       i_src++;
     }
   }
@@ -2217,8 +2084,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   Prof::CCT::ADynNode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip,
-		      metricData);
+    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip, metricData);
   }
 
   if (!isLeaf) {
@@ -2229,66 +2095,56 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
       uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
       Metric::IData metricData0(mSz);
-      
+
       lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
-			lipCopy, metricData0);
-    }
-    else {
-      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,
-			lip, metricData);
+      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx, lipCopy, metricData0);
+    } else {
+      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip, metricData);
     }
   }
 
   return std::make_pair(n, n_leaf);
 }
 
-
 static void
-fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
-		 epoch_flags_t flags)
-{
+fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n, epoch_flags_t flags) {
   n_fmt.id = (n.isLeaf()) ? -(n.id()) : n.id();
 
   n_fmt.id_parent = (n.parent()) ? n.parent()->id() : HPCRUN_FMT_CCTNodeId_NULL;
 
-  const Prof::CCT::ADynNode* n_dyn_p =
-    dynamic_cast<const Prof::CCT::ADynNode*>(&n);
+  const Prof::CCT::ADynNode* n_dyn_p = dynamic_cast<const Prof::CCT::ADynNode*>(&n);
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
-    n_fmt.lm_id   = HPCRUN_PLACEHOLDER_LM;
-    n_fmt.lm_ip   = 0;
+    n_fmt.lm_id = HPCRUN_PLACEHOLDER_LM;
+    n_fmt.lm_ip = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
-  }
-  else if (n_dyn_p) {
+  } else if (n_dyn_p) {
     const Prof::CCT::ADynNode& n_dyn = *n_dyn_p;
 
     if (flags.fields.isLogicalUnwind) {
       n_fmt.as_info = n_dyn.assocInfo();
     }
-    
-    n_fmt.lm_id = (uint16_t) n_dyn.lmId();
+
+    n_fmt.lm_id = (uint16_t)n_dyn.lmId();
     n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));
       if (n_dyn.lip()) {
-	memcpy(&n_fmt.lip, n_dyn.lip(), sizeof(lush_lip_t));
+        memcpy(&n_fmt.lip, n_dyn.lip(), sizeof(lush_lip_t));
       }
     }
 
     // Note: use n_fmt.num_metrics rather than n_dyn.numMetrics() to
     // support skipping the writing of metrics.
     for (uint i = 0; i < n_fmt.num_metrics; ++i) {
-      hpcrun_metricVal_t m; // C99: (hpcrun_metricVal_t){.r = n_dyn.metric(i)};
+      hpcrun_metricVal_t m;  // C99: (hpcrun_metricVal_t){.r = n_dyn.metric(i)};
       m.r = n_dyn.metric(i);
       n_fmt.metrics[i] = m;
     }
-  }
-  else {
+  } else {
     DIAG_Die("fmt_cct_makeNode: unknown CCT node type");
   }
 }
-

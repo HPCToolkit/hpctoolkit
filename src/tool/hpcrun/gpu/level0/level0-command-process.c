@@ -41,71 +41,45 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
 #include "level0-command-process.h"
-#include "level0-data-node.h"
+
 #include "level0-binary.h"
+#include "level0-data-node.h"
 #include "level0-kernel-module-map.h"
 
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-correlation-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-host-correlation-map.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/gpu/gpu-cct.h>
+#include "hpcrun/gpu/gpu-activity-channel.h"
+#include "hpcrun/gpu/gpu-activity-process.h"
+#include "hpcrun/gpu/gpu-application-thread-api.h"
+#include "hpcrun/gpu/gpu-cct.h"
+#include "hpcrun/gpu/gpu-correlation-channel.h"
+#include "hpcrun/gpu/gpu-correlation-id-map.h"
+#include "hpcrun/gpu/gpu-host-correlation-map.h"
+#include "hpcrun/gpu/gpu-metrics.h"
+#include "hpcrun/gpu/gpu-monitoring-thread-api.h"
+#include "hpcrun/gpu/gpu-op-placeholders.h"
+#include "hpcrun/safe-sampling.h"
 
-#include <hpcrun/safe-sampling.h>
-#include <lib/prof-lean/usec_time.h>
-#include <include/gpu-binary.h>
+#include "include/gpu-binary.h"
+#include "lib/prof-lean/usec_time.h"
 
-//*****************************************************************************
-// macro declarations
-//*****************************************************************************
 #define DEBUG 0
 
 #include "hpcrun/gpu/gpu-print.h"
 
-
 #define CPU_NANOTIME() (usec_time() * 1000)
 
-//*****************************************************************************
-// private operations
-//*****************************************************************************
-
 static void
-level0_kernel_translate
-(
-  gpu_activity_t* ga,
-  level0_data_node_t* c,
-  uint64_t start,
-  uint64_t end
-)
-{
+level0_kernel_translate(gpu_activity_t* ga, level0_data_node_t* c, uint64_t start, uint64_t end) {
   ga->kind = GPU_ACTIVITY_KERNEL;
   ga->details.kernel.correlation_id = (uint64_t)(c->event);
   gpu_interval_set(&ga->details.interval, start, end);
 }
 
 static void
-level0_memcpy_translate
-(
-  gpu_activity_t* ga,
-  level0_data_node_t* c,
-  uint64_t start,
-  uint64_t end
-)
-{
-  PRINT("level0_memcpy_translate: src_type %d, dst_type %d, size %u\n",
-    c->details.memcpy.src_type,
-    c->details.memcpy.dst_type,
-    c->details.memcpy.copy_size);
+level0_memcpy_translate(gpu_activity_t* ga, level0_data_node_t* c, uint64_t start, uint64_t end) {
+  PRINT(
+      "level0_memcpy_translate: src_type %d, dst_type %d, size %u\n", c->details.memcpy.src_type,
+      c->details.memcpy.dst_type, c->details.memcpy.copy_size);
 
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.bytes = c->details.memcpy.copy_size;
@@ -114,66 +88,39 @@ level0_memcpy_translate
   // Switch on memory src and dst types
   ga->details.memcpy.copyKind = GPU_MEMCPY_UNK;
   switch (c->details.memcpy.src_type) {
-    case ZE_MEMORY_TYPE_HOST: {
-      switch (c->details.memcpy.dst_type) {
-        case ZE_MEMORY_TYPE_HOST:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_H2H;
-          break;
-        case ZE_MEMORY_TYPE_DEVICE:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_H2D;
-          break;
-        case ZE_MEMORY_TYPE_SHARED:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_H2A;
-          break;
-        default:
-          break;
-      }
-      break;
+  case ZE_MEMORY_TYPE_HOST: {
+    switch (c->details.memcpy.dst_type) {
+    case ZE_MEMORY_TYPE_HOST: ga->details.memcpy.copyKind = GPU_MEMCPY_H2H; break;
+    case ZE_MEMORY_TYPE_DEVICE: ga->details.memcpy.copyKind = GPU_MEMCPY_H2D; break;
+    case ZE_MEMORY_TYPE_SHARED: ga->details.memcpy.copyKind = GPU_MEMCPY_H2A; break;
+    default: break;
     }
-    case ZE_MEMORY_TYPE_DEVICE: {
-      switch (c->details.memcpy.dst_type) {
-        case ZE_MEMORY_TYPE_HOST:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_D2H;
-          break;
-        case ZE_MEMORY_TYPE_DEVICE:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_D2D;
-          break;
-        case ZE_MEMORY_TYPE_SHARED:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_D2A;
-          break;
-        default:
-          break;
-      }
-      break;
+    break;
+  }
+  case ZE_MEMORY_TYPE_DEVICE: {
+    switch (c->details.memcpy.dst_type) {
+    case ZE_MEMORY_TYPE_HOST: ga->details.memcpy.copyKind = GPU_MEMCPY_D2H; break;
+    case ZE_MEMORY_TYPE_DEVICE: ga->details.memcpy.copyKind = GPU_MEMCPY_D2D; break;
+    case ZE_MEMORY_TYPE_SHARED: ga->details.memcpy.copyKind = GPU_MEMCPY_D2A; break;
+    default: break;
     }
-    case ZE_MEMORY_TYPE_SHARED: {
-      switch (c->details.memcpy.dst_type) {
-        case ZE_MEMORY_TYPE_HOST:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_A2H;
-          break;
-        case ZE_MEMORY_TYPE_DEVICE:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_A2D;
-          break;
-        case ZE_MEMORY_TYPE_SHARED:
-          ga->details.memcpy.copyKind = GPU_MEMCPY_A2A;
-          break;
-        default:
-          break;
-      }
-      break;
+    break;
+  }
+  case ZE_MEMORY_TYPE_SHARED: {
+    switch (c->details.memcpy.dst_type) {
+    case ZE_MEMORY_TYPE_HOST: ga->details.memcpy.copyKind = GPU_MEMCPY_A2H; break;
+    case ZE_MEMORY_TYPE_DEVICE: ga->details.memcpy.copyKind = GPU_MEMCPY_A2D; break;
+    case ZE_MEMORY_TYPE_SHARED: ga->details.memcpy.copyKind = GPU_MEMCPY_A2A; break;
+    default: break;
     }
-    default:
-      break;
+    break;
+  }
+  default: break;
   }
   gpu_interval_set(&ga->details.interval, start, end);
 }
 
-static uint32_t
-get_load_module
-(
-  ze_kernel_handle_t kernel
-)
-{
+static uint32_t get_load_module(ze_kernel_handle_t kernel) {
   // Step 1: get the string name for the kernel
   size_t name_size = 0;
   zeKernelGetName(kernel, &name_size, NULL);
@@ -182,11 +129,7 @@ get_load_module
 
   // Compute hash for the kernel name
   char kernel_name_hash[PATH_MAX];
-  gpu_binary_compute_hash_string(
-    kernel_name,
-    strlen(kernel_name),
-    kernel_name_hash
-  );
+  gpu_binary_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
   free(kernel_name);
 
   // Step 2: get the hash for the binary that contains the kernel
@@ -203,7 +146,7 @@ get_load_module
   // Step 4: find or create the load module
   uint32_t module_id = 0;
   hpcrun_loadmap_lock();
-  load_module_t *module = hpcrun_loadmap_findByName(load_module_name);
+  load_module_t* module = hpcrun_loadmap_findByName(load_module_name);
   if (module == NULL) {
     module_id = hpcrun_loadModule_add(load_module_name);
   } else {
@@ -214,48 +157,36 @@ get_load_module
   return module_id;
 }
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-
 // Expand this function to create GPU side cct
-void
-level0_command_begin
-(
-  level0_data_node_t* command_node
-)
-{
+void level0_command_begin(level0_data_node_t* command_node) {
   // Set up placeholder type
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   switch (command_node->type) {
-    case LEVEL0_KERNEL: {
-      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
-      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_trace);
-      break;
-    }
-    case LEVEL0_MEMCPY: {
-      ze_memory_type_t src_type = command_node->details.memcpy.src_type;
-      ze_memory_type_t dst_type = command_node->details.memcpy.dst_type;
-// TODO: Do we need to distinguish copyin and copyout placeholder?
-//       We already have host to host, host to device types to
-//       distinguish copyin and copyout
-//      if (src_type == ZE_MEMORY_TYPE_HOST && dst_type != ZE_MEMORY_TYPE_HOST) {
-//        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
-//      } else if (src_type != ZE_MEMORY_TYPE_HOST && dst_type == ZE_MEMORY_TYPE_HOST) {
-//        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
-//      } else {
-      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
-//      }
-      break;
-    }
-    default:
-      break;
+  case LEVEL0_KERNEL: {
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_trace);
+    break;
+  }
+  case LEVEL0_MEMCPY: {
+    ze_memory_type_t src_type = command_node->details.memcpy.src_type;
+    ze_memory_type_t dst_type = command_node->details.memcpy.dst_type;
+    // TODO: Do we need to distinguish copyin and copyout placeholder?
+    //       We already have host to host, host to device types to
+    //       distinguish copyin and copyout
+    //      if (src_type == ZE_MEMORY_TYPE_HOST && dst_type != ZE_MEMORY_TYPE_HOST) {
+    //        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
+    //      } else if (src_type != ZE_MEMORY_TYPE_HOST && dst_type == ZE_MEMORY_TYPE_HOST) {
+    //        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
+    //      } else {
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
+    //      }
+    break;
+  }
+  default: break;
   }
 
   uint64_t correlation_id = (uint64_t)(command_node->event);
-  cct_node_t *api_node =
-    gpu_application_thread_correlation_callback(correlation_id);
+  cct_node_t* api_node = gpu_application_thread_correlation_callback(correlation_id);
 
   gpu_op_ccts_t gpu_op_ccts;
   hpcrun_safe_enter();
@@ -266,10 +197,10 @@ level0_command_begin
     kernel_ip.lm_id = get_load_module(command_node->details.kernel.kernel);
     kernel_ip.lm_ip = 0;
 
-    cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+    cct_node_t* kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
     gpu_cct_insert(kernel_ph, kernel_ip);
 
-    cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+    cct_node_t* trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
     gpu_cct_insert(trace_ph, kernel_ip);
   }
 
@@ -282,28 +213,16 @@ level0_command_begin
   gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
 }
 
-void
-level0_command_end
-(
-  level0_data_node_t* command_node,
-  uint64_t start,
-  uint64_t end
-)
-{
+void level0_command_end(level0_data_node_t* command_node, uint64_t start, uint64_t end) {
   uint64_t correlation_id = (uint64_t)(command_node->event);
   gpu_monitoring_thread_activities_ready();
   gpu_activity_t gpu_activity;
   gpu_activity_t* ga = &gpu_activity;
   memset(ga, 0, sizeof(gpu_activity_t));
   switch (command_node->type) {
-    case LEVEL0_KERNEL:
-      level0_kernel_translate(ga, command_node, start, end);
-      break;
-    case LEVEL0_MEMCPY:
-      level0_memcpy_translate(ga, command_node, start, end);
-      break;
-    default:
-      break;
+  case LEVEL0_KERNEL: level0_kernel_translate(ga, command_node, start, end); break;
+  case LEVEL0_MEMCPY: level0_memcpy_translate(ga, command_node, start, end); break;
+  default: break;
   }
 
   cstack_ptr_set(&(ga->next), 0);

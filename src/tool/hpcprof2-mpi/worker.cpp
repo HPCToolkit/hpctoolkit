@@ -47,24 +47,25 @@
 #include "lib/profile/util/vgannotations.hpp"
 
 #include "tree.hpp"
-#include "../hpcprof2/args.hpp"
 
-#include "lib/profile/pipeline.hpp"
-#include "lib/profile/source.hpp"
-#include "lib/profile/packedids.hpp"
-#include "lib/profile/sinks/packed.hpp"
-#include "lib/profile/sinks/hpctracedb2.hpp"
-#include "lib/profile/sinks/sparsedb.hpp"
+#include "../hpcprof2/args.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
-#include "lib/profile/util/log.hpp"
 #include "lib/profile/mpi/all.hpp"
+#include "lib/profile/packedids.hpp"
+#include "lib/profile/pipeline.hpp"
+#include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/packed.hpp"
+#include "lib/profile/sinks/sparsedb.hpp"
+#include "lib/profile/source.hpp"
+#include "lib/profile/util/log.hpp"
 
-#include <mpi.h>
 #include <iostream>
+#include <mpi.h>
 
 using namespace hpctoolkit;
 using namespace hpctoolkit::literals;
+
 namespace fs = stdshim::filesystem;
 
 static constexpr unsigned int bits = std::numeric_limits<std::size_t>::digits;
@@ -74,8 +75,7 @@ static constexpr std::size_t rotl(std::size_t n, unsigned int c) noexcept {
   return (n << (mask & c)) | (n >> (-(mask & c)) & mask);
 }
 
-template<class T, class... Args>
-static std::unique_ptr<T> make_unique_x(Args&&... args) {
+template<class T, class... Args> static std::unique_ptr<T> make_unique_x(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
@@ -89,19 +89,21 @@ int rankN(ProfArgs&& args) {
   char end_arc;
 #endif
   ANNOTATE_HAPPENS_BEFORE(&start_arc);
-  #pragma omp parallel num_threads(args.threads)
+#pragma omp parallel num_threads(args.threads)
   {
     ANNOTATE_HAPPENS_AFTER(&start_arc);
     std::vector<std::unique_ptr<ProfileSource>> my_sources;
-    #pragma omp for schedule(dynamic) nowait
-    for(std::size_t i = 0; i < args.sources.size(); i++)
+#pragma omp for schedule(dynamic) nowait
+    for (std::size_t i = 0; i < args.sources.size(); i++)
       my_sources.emplace_back(ProfileSource::create_for(args.sources[i].second));
-    #pragma omp critical
-    for(auto& s: my_sources) pipelineB1 << std::move(s);
+#pragma omp critical
+    for (auto& s : my_sources)
+      pipelineB1 << std::move(s);
     ANNOTATE_HAPPENS_BEFORE(&end_arc);
   }
   ANNOTATE_HAPPENS_AFTER(&end_arc);
-  for(auto& sp: args.sources) pipelineB2 << std::move(sp.first);
+  for (auto& sp : args.sources)
+    pipelineB2 << std::move(sp.first);
 
   std::size_t threadIdOffset;
 
@@ -117,12 +119,10 @@ int rankN(ProfArgs&& args) {
     Receiver::append(pipelineB1, tree);
 
     struct ThreadIDUniquer : public ProfileSink {
-      ThreadIDUniquer(std::size_t& t) : threadIdOffset(t) {};
+      ThreadIDUniquer(std::size_t& t) : threadIdOffset(t){};
       ExtensionClass requires() const noexcept override { return {}; }
       DataClass accepts() const noexcept override { return data::threads; }
-      void notifyPipeline() noexcept override {
-        src.registerOrderedWrite();
-      }
+      void notifyPipeline() noexcept override { src.registerOrderedWrite(); }
       void write() override {
         auto mpiSem = src.enterOrderedWrite();
         threadIdOffset = mpi::exscan(src.threads().size(), mpi::Op::sum()).value();
@@ -150,7 +150,7 @@ int rankN(ProfArgs&& args) {
     // Thread ids can be gotten from the void, but we need to make sure they
     // are unique across ranks. Otherwise bad things happen.
     struct ThreadIDAdjuster : public ProfileFinalizer {
-      ThreadIDAdjuster(std::size_t t) : nextId((unsigned int)t) {};
+      ThreadIDAdjuster(std::size_t t) : nextId((unsigned int)t){};
       ExtensionClass provides() const noexcept override { return extensions::identifier; }
       ExtensionClass requires() const noexcept override { return {}; }
       std::optional<unsigned int> identify(const Thread&) noexcept override {
@@ -175,9 +175,9 @@ int rankN(ProfArgs&& args) {
     MetricReceiver::append(pipelineB2, tree, cmap, stash);
 
     // We only emit our part of the MetricDB and TraceDB.
-    switch(args.format) {
+    switch (args.format) {
     case ProfArgs::Format::sparse:
-      if(args.include_traces)
+      if (args.include_traces)
         pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output);
       pipelineB2 << make_unique_x<sinks::SparseDB>(args.output);
       break;
@@ -186,7 +186,7 @@ int rankN(ProfArgs&& args) {
     ProfilePipeline pipeline(std::move(pipelineB2), args.threads);
     pipeline.run();
 
-    if(args.valgrindUnclean) {
+    if (args.valgrindUnclean) {
       mpi::World::finalize();
       std::exit(0);
     }

@@ -49,7 +49,7 @@
 
 #include <stdio.h>
 
-typedef	enum DiscoverFnTy {
+typedef enum DiscoverFnTy {
   DiscoverFnTy_NULL = 0,
   DiscoverFnTy_Aggressive,
   DiscoverFnTy_Conservative,
@@ -70,4 +70,4 @@ void process_code_ranges();
 long num_function_entries(void);
 #endif
 
-#endif // code_ranges_hpp
+#endif  // code_ranges_hpp

@@ -53,6 +53,6 @@
 #define fnbounds_eh_frames_hpp
 
 void dwarf_eh_frame_info(int);
-void add_frame_addr(void *);
+void add_frame_addr(void*);
 
 #endif

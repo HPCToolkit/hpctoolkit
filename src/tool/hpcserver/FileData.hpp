@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FileData.hpp $
-// $Id: FileData.hpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FileData.hpp
+// $ $Id: FileData.hpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FileData.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FileData.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,14 +63,13 @@
 #ifndef FILEDATA_H_
 #define FILEDATA_H_
 #include <string>
-using namespace std;
-namespace TraceviewerServer
-{
-	struct FileData
-	{
-		string fileXML;
-		string fileTrace;
-	};
-}
-#endif
 
+using namespace std;
+
+namespace TraceviewerServer {
+struct FileData {
+  string fileXML;
+  string fileTrace;
+};
+}  // namespace TraceviewerServer
+#endif

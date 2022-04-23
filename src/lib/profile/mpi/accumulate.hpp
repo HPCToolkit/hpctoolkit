@@ -52,18 +52,16 @@
 #include <atomic>
 #include <memory>
 
-
 namespace hpctoolkit::mpi {
 
 namespace detail {
-  struct Win;
+struct Win;
 }  // namespace detail
 
 class SharedAccumulator {
 public:
   SharedAccumulator(Tag tag);
   ~SharedAccumulator();
-
 
   void initialize(std::uint64_t init);
   std::uint64_t fetch_add(std::uint64_t val);
@@ -72,8 +70,6 @@ private:
   std::atomic<std::uint64_t> atom;
   std::unique_ptr<detail::Win> detail;
 };
-
-
 }  // namespace hpctoolkit::mpi
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_ACCUMULATE_H

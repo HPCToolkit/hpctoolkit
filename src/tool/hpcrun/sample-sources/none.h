@@ -49,4 +49,4 @@
 
 extern void hpcrun_process_sample_source_none(void);
 
-#endif // SAMPLE_SOURCE_NONE_H
+#endif  // SAMPLE_SOURCE_NONE_H

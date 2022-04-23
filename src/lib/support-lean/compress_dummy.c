@@ -75,11 +75,10 @@ It returns:
    block at a time). Z_DEFAULT_COMPRESSION requests a default compromise
    between speed and compression (currently equivalent to level 6).
  */
-int compress_deflate(FILE *source, FILE *dest, int level)
-{
+int compress_deflate(FILE* source, FILE* dest, int level) {
   char buffer[CHUNK];
 
-  for(;;) {
+  for (;;) {
     ssize_t byteRead = read(source, buffer, sizeof(buffer));
 
     if (byteRead <= 0)
@@ -98,8 +97,6 @@ int compress_deflate(FILE *source, FILE *dest, int level)
      DECOMPRESS_IO_ERROR is there is an error reading or writing the file
      DECOMPRESS_NONE if decompression is not needed.
  */
-int
-compress_inflate(FILE *source, FILE *dest)
-{
+int compress_inflate(FILE* source, FILE* dest) {
   return COMPRESS_NONE;
 }

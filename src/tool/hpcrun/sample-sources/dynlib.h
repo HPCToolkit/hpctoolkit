@@ -47,37 +47,16 @@
 #ifndef __DYNLIB_H__
 #define __DYNLIB_H__
 
-//******************************************************************************
-// macros
-//******************************************************************************
-
 #define dynlib_open_check(retcode, handle, libname, flags) \
-  if (!retcode) retcode |= dynlib_open(handle, #libname, flags)
+  if (!retcode)                                            \
+  retcode |= dynlib_open(handle, #libname, flags)
 
 #define dynlib_sym_check(retcode, fn, handle, fname) \
-  if (!retcode) retcode |= dynlib_sym(fn, handle, #fname)
+  if (!retcode)                                      \
+  retcode |= dynlib_sym(fn, handle, #fname)
 
+int dynlib_open(void** handle, const char* libname, int flags);
 
+int dynlib_sym(void** fn, void* handle, const char* fname);
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-int
-dynlib_open
-(
-  void **handle,
-  const char *libname,
-  int flags
-);
-
-
-int 
-dynlib_sym
-(
-   void **fn,
-   void *handle,
-   const char *fname
-);
-
-#endif // __DYNLIB_H__
+#endif  // __DYNLIB_H__

@@ -47,18 +47,16 @@
 // This file defines the API for writing an hpcstruct file directly
 // from the TreeNode format.
 
-//***************************************************************************
-
 #ifndef Banal_Struct_Output_hpp
 #define Banal_Struct_Output_hpp
 
-#include <ostream>
-#include <string>
-
-#include <lib/support/StringTable.hpp>
-
 #include "Struct-Inline.hpp"
 #include "Struct-Skel.hpp"
+
+#include "lib/support/StringTable.hpp"
+
+#include <ostream>
+#include <string>
 
 namespace BAnal {
 namespace Output {
@@ -66,23 +64,20 @@ namespace Output {
 using namespace Struct;
 using namespace std;
 
-void printStructFileBegin(ostream *, ostream *, string);
-void printStructFileEnd(ostream *, ostream *);
+void printStructFileBegin(ostream*, ostream*, string);
+void printStructFileEnd(ostream*, ostream*);
 
-void printLoadModuleBegin(ostream *, string);
-void printLoadModuleEnd(ostream *);
+void printLoadModuleBegin(ostream*, string);
+void printLoadModuleEnd(ostream*);
 
-void printFileBegin(ostream *, FileInfo *);
-void printFileEnd(ostream *, FileInfo *);
+void printFileBegin(ostream*, FileInfo*);
+void printFileEnd(ostream*, FileInfo*);
 
-void earlyFormatProc(ostream *, FileInfo *, GroupInfo *, ProcInfo *,
-		     bool, HPC::StringTable & strTab);
+void earlyFormatProc(ostream*, FileInfo*, GroupInfo*, ProcInfo*, bool, HPC::StringTable& strTab);
 
-void finalPrintProc(ostream *, ostream *, string &, string &,
-		    FileInfo *, GroupInfo *, ProcInfo *);
+void finalPrintProc(ostream*, ostream*, string&, string&, FileInfo*, GroupInfo*, ProcInfo*);
 
 void setPrettyPrint(bool _pretty_print_output);
-
 }  // namespace Output
 }  // namespace BAnal
 

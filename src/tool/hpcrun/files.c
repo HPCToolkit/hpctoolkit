@@ -98,72 +98,48 @@
 // single random number of some length, again testing with O_EXCL and
 // using a different value if necessary.
 
+#include "files.h"
 
-//***************************************************************
-// global includes 
-//***************************************************************
+#include "disabled.h"
+#include "env.h"
+#include "loadmap.h"
+#include "messages.h"
+#include "sample_prob.h"
+#include "thread_data.h"
+
+#include "lib/prof-lean/crypto-hash.h"  // Calculate a hash for vdso
+#include "lib/prof-lean/spinlock.h"
+#include "lib/prof-lean/vdso.h"
+#include "lib/support-lean/OSUtil.h"
 
 #include <errno.h>   // errno
 #include <fcntl.h>   // open
 #include <limits.h>  // PATH_MAX
-#include <stdio.h>   // sprintf
-#include <stdlib.h>  // realpath
-#include <string.h>  // strerror
-#include <unistd.h>  // gethostid
+#include <stdbool.h>
+#include <stdio.h>      // sprintf
+#include <stdlib.h>     // realpath
+#include <string.h>     // strerror
+#include <sys/stat.h>   // stat
 #include <sys/time.h>   // gettimeofday
 #include <sys/types.h>  // struct stat
-#include <sys/stat.h>   // stat 
-#include <stdbool.h>
-
-
-//***************************************************************
-// local includes 
-//***************************************************************
-
-#include "env.h"
-#include "disabled.h"
-#include "files.h"
-#include "messages.h"
-#include "thread_data.h"
-#include "loadmap.h"
-#include "sample_prob.h"
-
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/vdso.h>
-#include <lib/prof-lean/crypto-hash.h> // Calculate a hash for vdso
-#include <lib/support-lean/OSUtil.h>
-
-
-//***************************************************************
-// macros
-//***************************************************************
+#include <unistd.h>     // gethostid
 
 // directory/progname-rank-thread-hostid-pid-gen.suffix
-#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-" HOSTID_FORMAT "-%u-%d.%s"
+#define FILENAME_TEMPLATE "%s/%s-%06u-%03d-" HOSTID_FORMAT "-%u-%d.%s"
 
-#define FILES_RANDOM_GEN  4
-#define FILES_MAX_GEN     11
+#define FILES_RANDOM_GEN 4
+#define FILES_MAX_GEN    11
 
-#define FILES_EARLY  0x1
-#define FILES_LATE   0x2
+#define FILES_EARLY 0x1
+#define FILES_LATE  0x2
 
 struct fileid {
-  int  done;
+  int done;
   unsigned int host;
-  int  gen;
+  int gen;
 };
 
-
-//***************************************************************
-// forward declarations 
-//***************************************************************
-
 static void hpcrun_rename_log_file_early(int rank);
-
-
-//***************************************************************
-// local data 
-//***************************************************************
 
 static char default_path[PATH_MAX + 1] = {'\0'};
 static char output_directory[PATH_MAX + 1] = {'\0'};
@@ -181,20 +157,15 @@ static int log_done = 0;
 static int log_rename_done = 0;
 static int log_rename_ret = 0;
 
-static int vdso_written = 0; // for coordination across fork
+static int vdso_written = 0;  // for coordination across fork
 
 char vdso_hash_str[HASH_LENGTH * 2];
-//***************************************************************
-// private operations
-//***************************************************************
 
 // In general, the external functions acquire the files lock and the
 // internal functions require that the lock is already held.
 
 // Reset the file ids on first use (pid 0) or after fork.
-static void
-hpcrun_files_init(void)
-{
+static void hpcrun_files_init(void) {
   pid_t cur_pid = getpid();
 
   if (mypid != cur_pid) {
@@ -209,7 +180,6 @@ hpcrun_files_init(void)
   }
 }
 
-
 // Replace "id" with the next unique id if possible.  Normally,
 // (hostid, pid, gen) works after one or two iterations.  To be extra
 // robust (eg, hostid is not unique), at some point, give up and pick
@@ -217,9 +187,7 @@ hpcrun_files_init(void)
 //
 // Returns: 0 on success, else -1 on failure.
 //
-static int
-hpcrun_files_next_id(struct fileid *id)
-{
+static int hpcrun_files_next_id(struct fileid* id) {
   struct timeval tv;
   int fd;
 
@@ -239,12 +207,11 @@ hpcrun_files_next_id(struct fileid *id)
     }
     gettimeofday(&tv, NULL);
     randval += (tv.tv_sec << 20) + tv.tv_usec;
-    id->host = (unsigned int) randval;
+    id->host = (unsigned int)randval;
   }
 
   return 0;
 }
-
 
 // Open the file with O_EXCL and try the next file id if it already
 // exists.  The log and trace files are opened early, the profile file
@@ -252,15 +219,13 @@ hpcrun_files_next_id(struct fileid *id)
 
 // Returns: file descriptor, else die on failure.
 //
-static int
-hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
-{
+static int hpcrun_open_file(int rank, int thread, const char* suffix, int flags) {
   char name[PATH_MAX + 1];
-  struct fileid *id;
+  struct fileid* id;
   int fd, ret;
 
   // If not recording data for this process, then open /dev/null.
-  if (! hpcrun_sample_prob_active()) {
+  if (!hpcrun_sample_prob_active()) {
     fd = open("/dev/null", O_WRONLY);
     return fd;
   }
@@ -268,8 +233,9 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
   id = (flags & FILES_EARLY) ? &earlyid : &lateid;
   for (;;) {
     errno = 0;
-    ret = snprintf(name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
-		   executable_name, rank, thread, id->host, mypid, id->gen, suffix);
+    ret = snprintf(
+        name, PATH_MAX, FILENAME_TEMPLATE, output_directory, executable_name, rank, thread,
+        id->host, mypid, id->gen, suffix);
     if (ret > PATH_MAX) {
       fd = -1;
       errno = ENAMETOOLONG;
@@ -295,13 +261,11 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
 
   // Failure to open is a fatal error.
   if (fd < 0) {
-    hpcrun_abort("hpctoolkit: unable to open %s file: '%s': %s",
-		 suffix, name, strerror(errno));
+    hpcrun_abort("hpctoolkit: unable to open %s file: '%s': %s", suffix, name, strerror(errno));
   }
 
   return fd;
 }
-
 
 // Rename the file from MPI rank 0 and early id to new rank and late
 // id (rename is always late).  Must hold the files lock.
@@ -311,14 +275,12 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
 // overwrites a previous file.
 //
 // Returns: 0 on success, else -1 on failure.
-static int
-hpcrun_rename_file(int rank, int thread, const char *suffix)
-{
+static int hpcrun_rename_file(int rank, int thread, const char* suffix) {
   char old_name[PATH_MAX + 1], new_name[PATH_MAX + 1];
   int ret;
 
   // Not recoding data for this process.
-  if (! hpcrun_sample_prob_active()) {
+  if (!hpcrun_sample_prob_active()) {
     return 0;
   }
 
@@ -327,8 +289,9 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
     return 0;
   }
 
-  ret = snprintf(old_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
-	         executable_name, 0, thread, earlyid.host, mypid, earlyid.gen, suffix);
+  ret = snprintf(
+      old_name, PATH_MAX, FILENAME_TEMPLATE, output_directory, executable_name, 0, thread,
+      earlyid.host, mypid, earlyid.gen, suffix);
   if (ret > PATH_MAX) {
     ret = -1;
     errno = ENAMETOOLONG;
@@ -337,8 +300,9 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
 
   for (;;) {
     errno = 0;
-    ret = snprintf(new_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
-		   executable_name, rank, thread, lateid.host, mypid, lateid.gen, suffix);
+    ret = snprintf(
+        new_name, PATH_MAX, FILENAME_TEMPLATE, output_directory, executable_name, rank, thread,
+        lateid.host, mypid, lateid.gen, suffix);
     if (ret > PATH_MAX) {
       ret = -1;
       errno = ENAMETOOLONG;
@@ -361,24 +325,19 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
 warn:
   // Failure to rename is a loud warning.
   if (ret < 0) {
-    EEMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
-	  suffix, old_name, new_name, strerror(errno));
-    EMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
-	 suffix, old_name, new_name, strerror(errno));
+    EEMSG(
+        "hpctoolkit: unable to rename %s file: '%s' -> '%s': %s", suffix, old_name, new_name,
+        strerror(errno));
+    EMSG(
+        "hpctoolkit: unable to rename %s file: '%s' -> '%s': %s", suffix, old_name, new_name,
+        strerror(errno));
   }
 
   return ret;
 }
 
-
-//***************************************************************
-// interface operations
-//***************************************************************
-
-const char*
-hpcrun_files_executable_pathname()
-{
-  if (strlen (executable_pathname) != 0 ) {
+const char* hpcrun_files_executable_pathname() {
+  if (strlen(executable_pathname) != 0) {
     return executable_pathname;
   }
 
@@ -388,30 +347,23 @@ hpcrun_files_executable_pathname()
   return load_name ? load_name : executable_name;
 }
 
-
-const char * 
-hpcrun_files_executable_name()
-{
+const char* hpcrun_files_executable_name() {
   return executable_name;
 }
 
-
-void 
-hpcrun_files_set_directory()
-{  
-  char *path = getenv(HPCRUN_OUT_PATH);
+void hpcrun_files_set_directory() {
+  char* path = getenv(HPCRUN_OUT_PATH);
 
   // compute path for default measurement directory
   if (path == NULL || strlen(path) == 0) {
-    const char *jid = OSUtil_jobid();
+    const char* jid = OSUtil_jobid();
     int pathlen;
 
     if (jid == NULL) {
-      pathlen = snprintf(default_path, PATH_MAX,
-                         "./hpctoolkit-%s-measurements", executable_name);
+      pathlen = snprintf(default_path, PATH_MAX, "./hpctoolkit-%s-measurements", executable_name);
     } else {
-      pathlen = snprintf(default_path, PATH_MAX,
-                         "./hpctoolkit-%s-measurements-%s", executable_name, jid);
+      pathlen =
+          snprintf(default_path, PATH_MAX, "./hpctoolkit-%s-measurements-%s", executable_name, jid);
     }
 
     if (pathlen == 0) {
@@ -424,8 +376,7 @@ hpcrun_files_set_directory()
 
   int ret = mkdir(path, 0755);
   if (ret != 0 && errno != EEXIST) {
-    hpcrun_abort("hpcrun: could not create output directory `%s': %s",
-		 path, strerror(errno));
+    hpcrun_abort("hpcrun: could not create output directory `%s': %s", path, strerror(errno));
   }
 
   char* rpath = realpath(path, output_directory);
@@ -434,31 +385,22 @@ hpcrun_files_set_directory()
   }
 }
 
-
-const char *
-hpcrun_files_output_directory()
-{
+const char* hpcrun_files_output_directory() {
   return output_directory;
 }
 
-
-void 
-hpcrun_files_set_executable(const char *execname)
-{
+void hpcrun_files_set_executable(const char* execname) {
   executable_name[sizeof(executable_name) - 1] = 0;
   strncpy(executable_name, basename(execname), sizeof(executable_name) - 1);
 
-  char *real =  realpath(execname, executable_pathname);
+  char* real = realpath(execname, executable_pathname);
   if (!real) {
     strncpy(executable_pathname, execname, sizeof(executable_pathname) - 1);
   }
 }
 
-
 // Returns: file descriptor for log file.
-int
-hpcrun_open_log_file(void)
-{
+int hpcrun_open_log_file(void) {
   int ret;
 
   spinlock_lock(&files_lock);
@@ -472,11 +414,8 @@ hpcrun_open_log_file(void)
   return ret;
 }
 
-
 // Returns: file descriptor for trace file.
-int
-hpcrun_open_trace_file(int thread)
-{
+int hpcrun_open_trace_file(int thread) {
   int ret;
 
   TMSG(TRACE, "Opening trace file for %d", thread);
@@ -493,9 +432,7 @@ hpcrun_open_trace_file(int thread)
 }
 
 // Returns: file descriptor for profile (hpcrun) file.
-int
-hpcrun_open_profile_file(int rank, int thread)
-{
+int hpcrun_open_profile_file(int rank, int thread) {
   int ret;
 
   spinlock_lock(&files_lock);
@@ -507,26 +444,20 @@ hpcrun_open_profile_file(int rank, int thread)
   return ret;
 }
 
-
 // Note: we use the log file as the lock for the file names, so we
 // need to rename the log file as the first late action.  Since this
 // is out of sequence, we save the return value and return it when the
 // log rename is actually called.  Must hold the files lock.
 //
-static void
-hpcrun_rename_log_file_early(int rank)
-{
+static void hpcrun_rename_log_file_early(int rank) {
   if (log_done && !log_rename_done) {
     log_rename_ret = hpcrun_rename_file(rank, 0, HPCRUN_LogFnmSfx);
     log_rename_done = 1;
   }
 }
 
-
 // Returns: 0 on success, else -1 on failure.
-int
-hpcrun_rename_log_file(int rank)
-{
+int hpcrun_rename_log_file(int rank) {
   spinlock_lock(&files_lock);
   hpcrun_rename_log_file_early(rank);
   spinlock_unlock(&files_lock);
@@ -534,11 +465,8 @@ hpcrun_rename_log_file(int rank)
   return log_rename_ret;
 }
 
-
 // Returns: 0 on success, else -1 on failure.
-int
-hpcrun_rename_trace_file(int rank, int thread)
-{
+int hpcrun_rename_trace_file(int rank, int thread) {
   int ret;
 
   TMSG(TRACE, "Renaming trace file for rank %d, thread %d", rank, thread);
@@ -554,82 +482,81 @@ hpcrun_rename_trace_file(int rank, int thread)
   return ret;
 }
 
-
 // Record the contents of a [vdso] file, if one exists. Die on failure.
-void
-hpcrun_save_vdso()
-{
+void hpcrun_save_vdso() {
   char name[PATH_MAX + 1];
   int fd;
   int error = 0;
 
   // don't try to write vdso file if measurement is disabled
-  if (hpcrun_get_disabled()) return;
+  if (hpcrun_get_disabled())
+    return;
 
   // don't need to try writing it again after a fork
-  if (vdso_written) return;
+  if (vdso_written)
+    return;
 
   // optimistically assume success; failure will cause an abort
   vdso_written = 1;
 
-  void *vdso_addr = vdso_segment_addr();
+  void* vdso_addr = vdso_segment_addr();
 
   // if there is a [vdso] to write
   if (vdso_addr) {
     size_t vdso_len = vdso_segment_len();
 
-  // Calculate a hash based on the contents of VDSO.
-  // We can distinguish different vdso on different compute nodes
-  unsigned char hash[HASH_LENGTH];  
-  unsigned int hash_len = crypto_hash_length();
-  crypto_hash_compute((const unsigned char*)vdso_addr, vdso_len, hash, hash_len);
-  size_t i;
-  for (i = 0; i < hash_len; ++i) {
-    sprintf(&vdso_hash_str[i*2], "%02x", hash[i]);
-  }
-  if (strlen(output_directory) + 6 + hash_len * 2 + 5 > PATH_MAX) {
-    fd = -1;
-    error = ENAMETOOLONG;
-    hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
-    return;
-  }
-  strcpy(name, output_directory);
-  strcat(name, "/vdso/");
-  mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  strcat(name, vdso_hash_str);
-  strcat(name, ".vdso");
-
-  // loop enables us to use break for unstructured control flow
-  for(;;) {
-    errno = 0;
-    fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-    if (errno == EEXIST) {
-      // another process already wrote [vdso]
-      set_saved_vdso_path(name);
+    // Calculate a hash based on the contents of VDSO.
+    // We can distinguish different vdso on different compute nodes
+    unsigned char hash[HASH_LENGTH];
+    unsigned int hash_len = crypto_hash_length();
+    crypto_hash_compute((const unsigned char*)vdso_addr, vdso_len, hash, hash_len);
+    size_t i;
+    for (i = 0; i < hash_len; ++i) {
+      sprintf(&vdso_hash_str[i * 2], "%02x", hash[i]);
+    }
+    if (strlen(output_directory) + 6 + hash_len * 2 + 5 > PATH_MAX) {
+      fd = -1;
+      error = ENAMETOOLONG;
+      hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
       return;
     }
-    if (fd >= 0) {
-      // my process is the designated writer of [vdso]
+    strcpy(name, output_directory);
+    strcat(name, "/vdso/");
+    mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    strcat(name, vdso_hash_str);
+    strcat(name, ".vdso");
 
-      if (write(fd, vdso_addr, vdso_len) != vdso_len) {
-	// write error; attempt to close file and
-        // jump to error reporting. no checking on close
-        // necessary. we are reporting an error anyway
-        error = errno;
-        close(fd);
-        break;
-      }
-      if (close(fd) == 0) {
+    // loop enables us to use break for unstructured control flow
+    for (;;) {
+      errno = 0;
+      fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+      if (errno == EEXIST) {
+        // another process already wrote [vdso]
         set_saved_vdso_path(name);
         return;
       }
-      error = errno;
-      // fall through to error reporting
-    }
-    break;
-  }
+      if (fd >= 0) {
+        // my process is the designated writer of [vdso]
 
-  // opening or writing [vdso] has failed. abort with error.
-  hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
+        if (write(fd, vdso_addr, vdso_len) != vdso_len) {
+          // write error; attempt to close file and
+          // jump to error reporting. no checking on close
+          // necessary. we are reporting an error anyway
+          error = errno;
+          close(fd);
+          break;
+        }
+        if (close(fd) == 0) {
+          set_saved_vdso_path(name);
+          return;
+        }
+        error = errno;
+        // fall through to error reporting
+      }
+      break;
+    }
+
+    // opening or writing [vdso] has failed. abort with error.
+    hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
   }
 }

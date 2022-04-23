@@ -47,62 +47,37 @@
 #ifndef isa_lean_x86_instruction_set_h
 #define isa_lean_x86_instruction_set_h
 
-//************************* System Include Files ****************************
-
 #include <stdbool.h>
-
-//************************** XED Include Files ******************************
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-# include <xed-interface.h>
+#include <xed-interface.h>
 
 #ifdef __cplusplus
 };
 #endif
 
-//*************************** User Include Files ****************************
-
-#include <include/hpctoolkit-config.h>
-
-//*************************** Forward Declarations **************************
+#include "include/hpctoolkit-config.h"
 
 //***************************************************************************
 // Laks: macro for detecting registers
 //
-#if defined (HOST_CPU_x86_64)		  
-#define X86_ISREG(REG) \
-static inline bool \
-x86_isReg_ ## REG  (xed_reg_enum_t reg) \
-{ 					\
-  return (				\
-	  reg == XED_REG_R ## REG  ||   \
-	  reg == XED_REG_E ## REG  ||   \
-	  reg == XED_REG_ ## REG  );	\
-} 
+#if defined(HOST_CPU_x86_64)
+#define X86_ISREG(REG)                                                               \
+  static inline bool x86_isReg_##REG(xed_reg_enum_t reg) {                           \
+    return (reg == XED_REG_R##REG || reg == XED_REG_E##REG || reg == XED_REG_##REG); \
+  }
 #else
-#define X86_ISREG(REG) \
-static inline bool \
-x86_isReg_ ## REG  (xed_reg_enum_t reg) \
-{ 					\
-  return (			        \
-	  reg == XED_REG_E ## REG  ||   \
-	  reg == XED_REG_ ## REG  );	\
-} 
+#define X86_ISREG(REG)                                      \
+  static inline bool x86_isReg_##REG(xed_reg_enum_t reg) {  \
+    return (reg == XED_REG_E##REG || reg == XED_REG_##REG); \
+  }
 #endif
 
-#define X86_ISREG_R(REG) 	 	\
-static inline bool 		 	\
-x86_isReg_R ## REG (xed_reg_enum_t reg) \
-{				 	\
-  return (reg == XED_REG_R ## REG ); 	\
-}
-
-//***************************************************************************
-// 
-//***************************************************************************
+#define X86_ISREG_R(REG) \
+  static inline bool x86_isReg_R##REG(xed_reg_enum_t reg) { return (reg == XED_REG_R##REG); }
 
 #ifdef __cplusplus
 extern "C" {
@@ -142,12 +117,8 @@ X86_ISREG_R(14)
 
 X86_ISREG_R(15)
 
-
-//***************************************************************************
-
 #ifdef __cplusplus
 };
 #endif
 
-
-#endif // isa_lean_x86_instruction_set_h
+#endif  // isa_lean_x86_instruction_set_h

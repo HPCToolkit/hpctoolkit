@@ -39,7 +39,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: elf-hash.c
@@ -49,10 +48,9 @@
 //
 //***************************************************************************
 
+#include "elf-hash.h"
 
-//******************************************************************************
-// system includes
-//******************************************************************************
+#include "crypto-hash.h"
 
 #include <fcntl.h>
 #include <stdlib.h>
@@ -61,29 +59,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "elf-hash.h"
-#include "crypto-hash.h"
-
-
-
-//******************************************************************************
-// internal functions
-//******************************************************************************
-
-static int
-elf_hash_compute
-(
- const char *filename,
- unsigned char *hash,
- unsigned int hash_length
-)
-{
+static int elf_hash_compute(const char* filename, unsigned char* hash, unsigned int hash_length) {
   struct stat statbuf;
   int status = -1;
 
@@ -93,13 +69,12 @@ elf_hash_compute
       // for speed, hash at most FILE_MAX_HASH_LENGTH data
       size_t flen = statbuf.st_size;
 
-      void * ANYWHERE = 0;
+      void* ANYWHERE = 0;
       off_t NO_OFFSET = 0;
-      void *data = mmap(ANYWHERE, flen, PROT_READ, MAP_SHARED, fd, NO_OFFSET);
+      void* data = mmap(ANYWHERE, flen, PROT_READ, MAP_SHARED, fd, NO_OFFSET);
       if (data) {
-	status = crypto_hash_compute((const unsigned char*) data, flen, hash,
-				     hash_length);
-	munmap(data, flen);
+        status = crypto_hash_compute((const unsigned char*)data, flen, hash, hash_length);
+        munmap(data, flen);
       }
       close(fd);
     }
@@ -108,44 +83,25 @@ elf_hash_compute
   return status;
 }
 
-
-static unsigned int
-elf_hash_length
-(
- void
-)
-{
+static unsigned int elf_hash_length(void) {
   return crypto_hash_length();
 }
 
-
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-char *
-elf_hash
-(
- const char *filename
-)
-{
-  char *hash_string = 0;
+char* elf_hash(const char* filename) {
+  char* hash_string = 0;
 
   unsigned int hash_length = elf_hash_length();
-  unsigned char *hash = (unsigned char *) malloc(hash_length);
+  unsigned char* hash = (unsigned char*)malloc(hash_length);
 
   if (hash) {
     memset(hash, 0, hash_length);
     if (elf_hash_compute(filename, hash, hash_length) == 0) {
       unsigned int hash_string_length = 1 + (hash_length << 1);
-      hash_string = (char *) malloc(hash_string_length);
-      *(hash_string + hash_string_length) = 0; // terminate the string
-      if (hash_string &&
-	  crypto_hash_to_hexstring(hash, hash_string,
-				   hash_string_length) != 0) {
-	free(hash_string);
-	hash_string = 0;
+      hash_string = (char*)malloc(hash_string_length);
+      *(hash_string + hash_string_length) = 0;  // terminate the string
+      if (hash_string && crypto_hash_to_hexstring(hash, hash_string, hash_string_length) != 0) {
+        free(hash_string);
+        hash_string = 0;
       }
     }
 
@@ -155,24 +111,12 @@ elf_hash
   return hash_string;
 }
 
-
-
-//******************************************************************************
-// unit test
-//******************************************************************************
-
 #ifdef UNIT_TEST
 
 #include <stdio.h>
 
-int
-main
-(
- int argc,
- char **argv
-)
-{
-  char *h = elf_hash("/bin/ls");
+int main(int argc, char** argv) {
+  char* h = elf_hash("/bin/ls");
   if (h) {
     printf("hash string: %s\n", h);
     free(h);

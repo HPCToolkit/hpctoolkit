@@ -73,7 +73,7 @@ void scatterv(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank
 /// into a single vector on the root rank. Only returns the result in the root.
 template<class T, std::void_t<decltype(detail::asDatatype<T>())>* = nullptr>
 std::optional<std::vector<T>> gather(T data, std::size_t root) {
-  if(World::rank() == root) {
+  if (World::rank() == root) {
     std::vector<T> result(World::size());
     result[root] = std::move(data);
     detail::gather_root(result.data(), 1, detail::asDatatype<T>(), root);
@@ -86,9 +86,8 @@ std::optional<std::vector<T>> gather(T data, std::size_t root) {
 
 /// Scatter operation. Copies the data for each rank from the root process
 /// to all other ranks. Returns the allocated data in each rank.
-template<class T, class A>
-T scatter(std::vector<T, A> data, std::size_t root) {
-  if(World::rank() == root) {
+template<class T, class A> T scatter(std::vector<T, A> data, std::size_t root) {
+  if (World::rank() == root) {
     assert(data.size() == World::size() && "Invalid data argument to mpi::scatter!");
     detail::scatter_root(data.data(), 1, detail::asDatatype<T>(), root);
     return std::move(data[root]);
@@ -100,23 +99,22 @@ T scatter(std::vector<T, A> data, std::size_t root) {
 }
 
 /// Gather operation. Variant to disable the usage of pointers.
-template<class T>
-std::optional<std::vector<T*>> gather(T*, std::size_t) = delete;
+template<class T> std::optional<std::vector<T*>> gather(T*, std::size_t) = delete;
 
 /// Scatter operation. Variant to disable the usage of pointers.
-template<class T, class A>
-T* scatter(std::vector<T*, A>, std::size_t) = delete;
+template<class T, class A> T* scatter(std::vector<T*, A>, std::size_t) = delete;
 
 /// Gather operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
 std::optional<std::vector<std::array<T, N>>> gather(std::array<T, N> data, std::size_t root) {
-  if(World::rank() == root) {
+  if (World::rank() == root) {
     std::vector<T> buffer(N * World::size());
-    for(std::size_t i = 0; i < N; i++) buffer[N*root + i] = std::move(data[i]);
+    for (std::size_t i = 0; i < N; i++)
+      buffer[N * root + i] = std::move(data[i]);
     detail::gather_root(buffer.data(), N, detail::asDatatype<T>(), root);
     std::vector<std::array<T, N>> result(World::size());
-    for(std::size_t r = 0, idx = 0; r < World::size(); r++)
-      for(std::size_t i = 0; i < N; i++, idx++)
+    for (std::size_t r = 0, idx = 0; r < World::size(); r++)
+      for (std::size_t i = 0; i < N; i++, idx++)
         result[r][i] = std::move(buffer[idx]);
     return std::move(result);
   }
@@ -128,16 +126,16 @@ std::optional<std::vector<std::array<T, N>>> gather(std::array<T, N> data, std::
 /// Scatter operation. Variant to allow for the usage of std::array.
 template<class T, class A, std::size_t N>
 std::array<T, N> scatter(std::vector<std::array<T, N>, A> data, std::size_t root) {
-  if(World::rank() == root) {
+  if (World::rank() == root) {
     assert(data.size() == World::size() && "Invalid data argument to mpi::scatter!");
     std::vector<T> buffer(N * World::size());
-    for(std::size_t r = 0, idx = 0; r < World::size(); r++)
-      for(std::size_t i = 0; i < N; i++, idx++)
+    for (std::size_t r = 0, idx = 0; r < World::size(); r++)
+      for (std::size_t i = 0; i < N; i++, idx++)
         buffer[idx] = std::move(data[r][i]);
     detail::scatter_root(buffer.data(), N, detail::asDatatype<T>(), root);
     std::array<T, N> result;
-    for(std::size_t i = 0; i < N; i++)
-      result[i] = std::move(buffer[N*root + i]);
+    for (std::size_t i = 0; i < N; i++)
+      result[i] = std::move(buffer[N * root + i]);
     return std::move(result);
   }
 
@@ -150,17 +148,18 @@ std::array<T, N> scatter(std::vector<std::array<T, N>, A> data, std::size_t root
 /// This allows for ranks to contribute different numbers of elements.
 template<class T>
 std::optional<std::vector<std::vector<T>>> gather(std::vector<T> data, std::size_t root) {
-  if(World::rank() == root) {
+  if (World::rank() == root) {
     auto cnts = gather((std::size_t)0, root);
     std::size_t total = 0;
-    for(std::size_t r = 0; r < World::size(); r++) total += (*cnts)[r];
+    for (std::size_t r = 0; r < World::size(); r++)
+      total += (*cnts)[r];
     std::vector<T> buffer(total);
     detail::gatherv_root(buffer.data(), cnts.value().data(), detail::asDatatype<T>(), root);
     std::vector<std::vector<T>> result(World::size());
     total = 0;
-    for(std::size_t r = 0; r < World::size(); r++) {
+    for (std::size_t r = 0; r < World::size(); r++) {
       result[r].reserve(cnts.value()[r]);
-      for(std::size_t i = 0; i < cnts.value()[r]; i++, total++)
+      for (std::size_t i = 0; i < cnts.value()[r]; i++, total++)
         result[r].emplace_back(std::move(buffer[total]));
     }
     result[root] = std::move(data);
@@ -174,20 +173,20 @@ std::optional<std::vector<std::vector<T>>> gather(std::vector<T> data, std::size
 
 /// Scatter operation. Variant to allow for the usage of std::vector.
 /// This allows for ranks to contribute different numbers of elements.
-template<class T>
-std::vector<T> scatter(std::vector<std::vector<T>> data, std::size_t root) {
-  if(World::rank() == root) {
+template<class T> std::vector<T> scatter(std::vector<std::vector<T>> data, std::size_t root) {
+  if (World::rank() == root) {
     assert(data.size() == World::size() && "Invalid data argument to mpi::scatter!");
     std::vector<std::size_t> cnts(World::size());
     cnts[root] = 0;
     std::vector<T> buffer;
     std::size_t totalsz = 0;
-    for(std::size_t r = 0; r < World::size(); r++)
+    for (std::size_t r = 0; r < World::size(); r++)
       totalsz += r == root ? 0 : (cnts[r] = data[r].size());
     buffer.reserve(totalsz);
-    for(std::size_t r = 0; r < World::size(); r++)
-      if(r != root)
-        for(auto& x: data[r]) buffer.emplace_back(std::move(x));
+    for (std::size_t r = 0; r < World::size(); r++)
+      if (r != root)
+        for (auto& x : data[r])
+          buffer.emplace_back(std::move(x));
     scatter(cnts, root);
     detail::scatterv_root(buffer.data(), cnts.data(), detail::asDatatype<T>(), root);
     return std::move(data[root]);
@@ -201,37 +200,40 @@ std::vector<T> scatter(std::vector<std::vector<T>> data, std::size_t root) {
 
 /// Gather operation. Variant to allow for the usage of std::string.
 template<class C, class T>
-std::optional<std::vector<std::basic_string<C,T>>> gather(std::basic_string<C,T> data, std::size_t root) {
+std::optional<std::vector<std::basic_string<C, T>>>
+gather(std::basic_string<C, T> data, std::size_t root) {
   auto output = gather(std::vector<C>{data.begin(), data.end()}, root);
-  if(!output) return {};
-  std::vector<std::basic_string<C,T>> result(World::size());
-  for(std::size_t r = 0; r < World::size(); r++)
-    result[r] = std::basic_string<C,T>{(*output)[r].data(), (*output)[r].size()};
+  if (!output)
+    return {};
+  std::vector<std::basic_string<C, T>> result(World::size());
+  for (std::size_t r = 0; r < World::size(); r++)
+    result[r] = std::basic_string<C, T>{(*output)[r].data(), (*output)[r].size()};
   return result;
 }
 
 /// Scatter operation. Variant to allow for the usage of std::string.
 template<class C, class T>
-std::basic_string<C,T> scatter(std::vector<std::basic_string<C,T>> data, std::size_t root) {
+std::basic_string<C, T> scatter(std::vector<std::basic_string<C, T>> data, std::size_t root) {
   assert(data.size() == World::size() && "Invalid data argument to mpi::scatter!");
   std::vector<std::vector<C>> vdata(World::size());
-  for(std::size_t r = 0; r < World::size(); r++)
+  for (std::size_t r = 0; r < World::size(); r++)
     vdata[r] = std::vector<C>{data[r].begin(), data[r].end()};
   auto result = scatter(vdata, root);
-  return std::basic_string<C,T>{result.data(), result.size()};
+  return std::basic_string<C, T>{result.data(), result.size()};
 }
 
 /// Gather operation. Variant to allow for the usage for std::vector<std::string>
 template<class C, class T>
-std::optional<std::vector<std::vector<std::basic_string<C,T>>>> gather(std::vector<std::basic_string<C,T>> data, std::size_t root) {
-  if(World::rank() == root) {
+std::optional<std::vector<std::vector<std::basic_string<C, T>>>>
+gather(std::vector<std::basic_string<C, T>> data, std::size_t root) {
+  if (World::rank() == root) {
     auto lengths = gather(std::vector<std::size_t>{}, root).value();
     auto strips = gather(std::vector<C>{}, root).value();
-    std::vector<std::vector<std::basic_string<C,T>>> result(World::size());
+    std::vector<std::vector<std::basic_string<C, T>>> result(World::size());
     result[root] = std::move(data);
-    for(std::size_t r = 0; r < World::size(); r++) {
+    for (std::size_t r = 0; r < World::size(); r++) {
       result[r].reserve(lengths[r].size());
-      for(std::size_t i = 0, idx = 0; i < lengths[r].size(); idx += lengths[r][i], i++)
+      for (std::size_t i = 0, idx = 0; i < lengths[r].size(); idx += lengths[r][i], i++)
         result[r].emplace_back(&strips[r][idx], lengths[r][i]);
     }
     return std::move(result);
@@ -239,13 +241,13 @@ std::optional<std::vector<std::vector<std::basic_string<C,T>>>> gather(std::vect
 
   std::vector<std::size_t> lengths(data.size());
   std::size_t totalsize = 0;
-  for(std::size_t i = 0; i < data.size(); i++)
+  for (std::size_t i = 0; i < data.size(); i++)
     totalsize += (lengths[i] = data[i].size());
   gather(std::move(lengths), root);
 
   std::vector<C> strip;
   strip.reserve(totalsize);
-  for(std::size_t i = 0; i < data.size(); i++)
+  for (std::size_t i = 0; i < data.size(); i++)
     strip.insert(strip.end(), data[i].begin(), data[i].end());
   gather(std::move(strip), root);
   return {};
@@ -253,21 +255,22 @@ std::optional<std::vector<std::vector<std::basic_string<C,T>>>> gather(std::vect
 
 /// Scatter operation. Variant to allow for the usage of std::vector<std::string>
 template<class C, class T>
-std::vector<std::basic_string<C,T>> scatter(std::vector<std::vector<std::basic_string<C,T>>> data, std::size_t root) {
-  if(World::rank() == root) {
+std::vector<std::basic_string<C, T>>
+scatter(std::vector<std::vector<std::basic_string<C, T>>> data, std::size_t root) {
+  if (World::rank() == root) {
     assert(data.size() == World::size() && "Invalid data argument to mpi::scatter!");
     std::vector<std::vector<std::size_t>> lengths(World::size());
     std::vector<std::vector<C>> strips(World::size());
-    for(std::size_t r = 0; r < World::size(); r++) {
-      if(r != root) {
+    for (std::size_t r = 0; r < World::size(); r++) {
+      if (r != root) {
         lengths[r].reserve(data[r].size());
         std::size_t totalsz = 0;
-        for(std::size_t i = 0; i < data[r].size(); i++) {
+        for (std::size_t i = 0; i < data[r].size(); i++) {
           lengths[r].push_back(data[r][i].size());
           totalsz += data[r][i].size();
         }
         strips[r].reserve(totalsz);
-        for(std::size_t i = 0; i < data[r].size(); i++)
+        for (std::size_t i = 0; i < data[r].size(); i++)
           strips[r].insert(strips[r].end(), data[r][i].begin(), data[r][i].end());
       }
     }
@@ -278,18 +281,18 @@ std::vector<std::basic_string<C,T>> scatter(std::vector<std::vector<std::basic_s
 
   auto lengths = scatter(std::vector<std::vector<std::size_t>>{}, root);
   auto strip = scatter(std::vector<std::vector<C>>{}, root);
-  std::vector<std::basic_string<C,T>> result;
+  std::vector<std::basic_string<C, T>> result;
   result.reserve(lengths.size());
-  for(std::size_t i = 0, idx = 0; i < lengths.size(); idx += lengths[i], i++)
+  for (std::size_t i = 0, idx = 0; i < lengths.size(); idx += lengths[i], i++)
     result.emplace_back(&strip[idx], lengths[i]);
   return result;
 }
 
 /// Scatter operation. Variant to allow skipping the first argument if you
 /// know you're not the root.
-template<class T>
-T scatter(std::size_t root) { return scatter(std::vector<T>{}, root); }
-
+template<class T> T scatter(std::size_t root) {
+  return scatter(std::vector<T>{}, root);
+}
 }  // namespace hpctoolkit::mpi
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_BCAST_H

@@ -41,32 +41,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <assert.h>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-trace-item.h>
-#include <hpcrun/gpu/gpu-context-id-map.h>
-#include <lib/prof-lean/stdatomic.h>
-
-#include "gpu-operation-item.h"
 #include "gpu-operation-item-process.h"
 
+#include "gpu-operation-item.h"
 
-//******************************************************************************
-// macros
-//******************************************************************************
+#include "hpcrun/cct/cct.h"
+#include "hpcrun/gpu/gpu-activity-channel.h"
+#include "hpcrun/gpu/gpu-activity.h"
+#include "hpcrun/gpu/gpu-context-id-map.h"
+#include "hpcrun/gpu/gpu-trace-item.h"
+
+#include "lib/prof-lean/stdatomic.h"
+
+#include <assert.h>
 
 #define UNIT_TEST 0
 
@@ -74,53 +61,26 @@
 
 #include "gpu-print.h"
 
-
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static void
-gpu_context_stream_trace
-(
- uint32_t device_id,
- uint32_t context_id,
- uint32_t stream_id,
- gpu_trace_item_t *ti
-)
-{
+static void gpu_context_stream_trace(
+    uint32_t device_id, uint32_t context_id, uint32_t stream_id, gpu_trace_item_t* ti) {
   gpu_context_id_map_stream_process(device_id, context_id, stream_id, gpu_trace_produce, ti);
 }
 
-
-
-//******************************************************************************
-// gpu operations process
-//******************************************************************************
-
-static void
-gpu_memcpy_process
-(
- gpu_operation_item_t *it
-)
-{
-  gpu_activity_t *activity = &it->activity;
-  gpu_activity_channel_t *channel = it->channel;
+static void gpu_memcpy_process(gpu_operation_item_t* it) {
+  gpu_activity_t* activity = &it->activity;
+  gpu_activity_channel_t* channel = it->channel;
 
   assert(activity->cct_node != NULL);
 
   gpu_trace_item_t entry_trace;
 
-  gpu_trace_item_produce(&entry_trace,
-                         activity->details.memcpy.submit_time,
-                         activity->details.memcpy.start,
-                         activity->details.memcpy.end,
-                         activity->cct_node);
+  gpu_trace_item_produce(
+      &entry_trace, activity->details.memcpy.submit_time, activity->details.memcpy.start,
+      activity->details.memcpy.end, activity->cct_node);
 
-  gpu_context_stream_trace(activity->details.memcpy.device_id,
-                           activity->details.memcpy.context_id,
-                           activity->details.memcpy.stream_id,
-                           &entry_trace);
+  gpu_context_stream_trace(
+      activity->details.memcpy.device_id, activity->details.memcpy.context_id,
+      activity->details.memcpy.stream_id, &entry_trace);
 
   gpu_activity_channel_produce(channel, activity);
 
@@ -129,28 +89,19 @@ gpu_memcpy_process
   PRINT("Memcpy copy bytes %lu\n", activity->details.memcpy.bytes);
 }
 
-
-static void
-gpu_kernel_process
-(
- gpu_operation_item_t *it
-)
-{
-  gpu_activity_t *activity = &it->activity;
-  gpu_activity_channel_t *channel = it->channel;
+static void gpu_kernel_process(gpu_operation_item_t* it) {
+  gpu_activity_t* activity = &it->activity;
+  gpu_activity_channel_t* channel = it->channel;
 
   gpu_trace_item_t entry_trace;
 
-  gpu_trace_item_produce(&entry_trace,
-                         activity->details.kernel.submit_time,
-                         activity->details.kernel.start,
-                         activity->details.kernel.end,
-                         activity->cct_node);
+  gpu_trace_item_produce(
+      &entry_trace, activity->details.kernel.submit_time, activity->details.kernel.start,
+      activity->details.kernel.end, activity->cct_node);
 
-  gpu_context_stream_trace(activity->details.kernel.device_id,
-                           activity->details.kernel.context_id,
-                           activity->details.kernel.stream_id,
-                           &entry_trace);
+  gpu_context_stream_trace(
+      activity->details.kernel.device_id, activity->details.kernel.context_id,
+      activity->details.kernel.stream_id, &entry_trace);
 
   gpu_activity_channel_produce(channel, activity);
 
@@ -158,14 +109,8 @@ gpu_kernel_process
   PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
 }
 
-
-static void
-gpu_flush_process
-(
- gpu_operation_item_t *it
-)
-{
-  gpu_activity_t *activity = &it->activity;
+static void gpu_flush_process(gpu_operation_item_t* it) {
+  gpu_activity_t* activity = &it->activity;
   // A special flush operation at the end of each thread
   // Set it false to indicate all previous activities have been processed
   if (atomic_load(activity->details.flush.wait)) {
@@ -173,49 +118,22 @@ gpu_flush_process
   }
 }
 
-
-static void
-gpu_unknown_process
-(
- gpu_operation_item_t *it
-)
-{
-  gpu_activity_t *activity = &it->activity;
-  gpu_activity_channel_t *channel = it->channel;
+static void gpu_unknown_process(gpu_operation_item_t* it) {
+  gpu_activity_t* activity = &it->activity;
+  gpu_activity_channel_t* channel = it->channel;
   gpu_activity_channel_produce(channel, activity);
 }
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-gpu_operation_item_process
-(
- gpu_operation_item_t *it
-)
-{
+void gpu_operation_item_process(gpu_operation_item_t* it) {
   switch (it->activity.kind) {
+  case GPU_ACTIVITY_MEMCPY: gpu_memcpy_process(it); break;
+  case GPU_ACTIVITY_KERNEL: gpu_kernel_process(it); break;
+  case GPU_ACTIVITY_FLUSH: gpu_flush_process(it); break;
 
-    case GPU_ACTIVITY_MEMCPY:
-      gpu_memcpy_process(it);
-      break;
-
-    case GPU_ACTIVITY_KERNEL:
-      gpu_kernel_process(it);
-      break;
-
-    case GPU_ACTIVITY_FLUSH:
-      gpu_flush_process(it);
-      break;
-
-    default:
-      gpu_unknown_process(it);
-      break;
+  default: gpu_unknown_process(it); break;
   }
 
   if (it->pending_operations) {
     atomic_fetch_add(it->pending_operations, -1);
   }
 }
-

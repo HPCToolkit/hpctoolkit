@@ -57,48 +57,34 @@
 //
 //***************************************************************************
 
-//************************ System Include Files ******************************
-
-#include <stdlib.h>
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
-#include <string>
-using std::string;
-
-#include <typeinfo>
-
-//************************ Xerces Include Files ******************************
-
-#include <xercesc/sax/ErrorHandler.hpp>
-
-#include <xercesc/util/XMLString.hpp>
-using XERCES_CPP_NAMESPACE::XMLString;
-
-//************************* User Include Files *******************************
-
 #include "PGMDocHandler.hpp"
+
+#include "XercesErrorHandler.hpp"
 #include "XercesSAX2.hpp"
 #include "XercesUtil.hpp"
-#include "XercesErrorHandler.hpp"
 
-#include <lib/isa/ISA.hpp>
-#include <lib/prof/Struct-Tree.hpp>
+#include "lib/isa/ISA.hpp"
+#include "lib/prof/Struct-Tree.hpp"
+#include "lib/support/diagnostics.h"
+#include "lib/support/SrcFile.hpp"
+#include "lib/support/StrUtil.hpp"
+#include "lib/support/Trace.hpp"
+
+#include <iostream>
+#include <stdlib.h>
+#include <string>
+#include <typeinfo>
+#include <xercesc/sax/ErrorHandler.hpp>
+#include <xercesc/util/XMLString.hpp>
+
+using std::cerr;
+using std::endl;
+using std::string;
+using XERCES_CPP_NAMESPACE::XMLString;
 using namespace Prof;
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
-#include <lib/support/StrUtil.hpp>
-#include <lib/support/Trace.hpp>
-
-//************************ Forward Declarations ******************************
 
 #define DBG 0
-
-//****************************************************************************
 
 // General parsing notes:
 //   - We assume a more restricted input than the PGM specification
@@ -199,50 +185,32 @@ using SrcFile::ln_NULL;
 //       F2
 //
 
-//****************************************************************************
+PGMDocHandler::PGMDocHandler(Doc_t ty, Struct::Tree* structure, DocHandlerArgs& args)
+    : m_docty(ty), m_args(args), m_structure(structure),
 
+      // element names
+      elemStructure(XMLString::transcode("HPCToolkitStructure")),
+      elemLM(XMLString::transcode("LM")), elemFile(XMLString::transcode("F")),
+      elemProc(XMLString::transcode("P")), elemAlien(XMLString::transcode("A")),
+      elemLoop(XMLString::transcode("L")), elemStmt(XMLString::transcode("S")),
+      elemCall(XMLString::transcode("C")), elemGroup(XMLString::transcode("G")),
 
-PGMDocHandler::PGMDocHandler(Doc_t ty,
-			     Struct::Tree* structure,
-			     DocHandlerArgs& args)
-  : m_docty(ty),
-    m_args(args),
-    m_structure(structure),
-
-    // element names
-    elemStructure(XMLString::transcode("HPCToolkitStructure")),
-    elemLM(XMLString::transcode("LM")),
-    elemFile(XMLString::transcode("F")),
-    elemProc(XMLString::transcode("P")),
-    elemAlien(XMLString::transcode("A")),
-    elemLoop(XMLString::transcode("L")),
-    elemStmt(XMLString::transcode("S")),
-    elemCall(XMLString::transcode("C")),
-    elemGroup(XMLString::transcode("G")),
-
-    // attribute names
-    attrVer(XMLString::transcode("version")),
-    attrId(XMLString::transcode("i")),
-    attrName(XMLString::transcode("n")),
-    attrFile(XMLString::transcode("f")),
-    attrLnName(XMLString::transcode("ln")),
-    attrLine(XMLString::transcode("l")),
-    attrVMA(XMLString::transcode("v")),
-    attrTarget(XMLString::transcode("t")),
-    attrDevice(XMLString::transcode("d"))
-{
+      // attribute names
+      attrVer(XMLString::transcode("version")), attrId(XMLString::transcode("i")),
+      attrName(XMLString::transcode("n")), attrFile(XMLString::transcode("f")),
+      attrLnName(XMLString::transcode("ln")), attrLine(XMLString::transcode("l")),
+      attrVMA(XMLString::transcode("v")), attrTarget(XMLString::transcode("t")),
+      attrDevice(XMLString::transcode("d")) {
   m_version = -1;
 
-  m_curLM   = NULL;
+  m_curLM = NULL;
   m_curFile = NULL;
   m_curProc = NULL;
 
   groupNestingLvl = 0;
 }
 
-
-PGMDocHandler::~PGMDocHandler()
-{
+PGMDocHandler::~PGMDocHandler() {
   // element names
   XMLString::release((XMLCh**)&elemStructure);
   XMLString::release((XMLCh**)&elemLM);
@@ -268,13 +236,9 @@ PGMDocHandler::~PGMDocHandler()
   DIAG_AssertWarn(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
 }
 
-
-void
-PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
-			    const XMLCh* const name,
-			    const XMLCh* const GCC_ATTR_UNUSED qname,
-			    const XERCES_CPP_NAMESPACE::Attributes& attributes)
-{
+void PGMDocHandler::startElement(
+    const XMLCh* const GCC_ATTR_UNUSED uri, const XMLCh* const name,
+    const XMLCh* const GCC_ATTR_UNUSED qname, const XERCES_CPP_NAMESPACE::Attributes& attributes) {
   Struct::ANode* curStrct = NULL;
 
   // Structure
@@ -284,7 +248,9 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
     m_version = ver;
     if (m_version < 4.5) {
-      PGM_Throw("Found file format version " << m_version << ": This format is outdated; please regenerate the file.");
+      PGM_Throw(
+          "Found file format version " << m_version
+                                       << ": This format is outdated; please regenerate the file.");
     }
 
     m_curRoot = m_structure->root();
@@ -295,7 +261,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
   // Load Module
   else if (XMLString::equals(name, elemLM)) {
-    string nm = getAttr(attributes, attrName); // must exist
+    string nm = getAttr(attributes, attrName);  // must exist
     DIAG_Assert(m_curRoot && !m_curLM, "Parse error!");
 
     nm = m_args.realpath(nm);
@@ -324,9 +290,9 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
   // Proc
   else if (XMLString::equals(name, elemProc)) {
-    string nm  = getAttr(attributes, attrName);   // must exist
-    string lnm = getAttr(attributes, attrLnName); // optional
-    string id  = getAttr(attributes, attrId); 	  // ID: must exist
+    string nm = getAttr(attributes, attrName);     // must exist
+    string lnm = getAttr(attributes, attrLnName);  // optional
+    string id = getAttr(attributes, attrId);       // ID: must exist
 
     SrcFile::ln begLn, endLn;
     getLineAttr(begLn, endLn, attributes);
@@ -334,42 +300,46 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     string vma = getAttr(attributes, attrVMA);
     string node_id = getAttr(attributes, attrId);
 
-    DIAG_Assert(m_curLM && m_curFile && !m_curProc, "Parse error: Support for nested procedures is disabled (cf. buildLMSkeleton())!");
+    DIAG_Assert(
+        m_curLM && m_curFile && !m_curProc,
+        "Parse error: Support for nested procedures is disabled (cf. buildLMSkeleton())!");
 
     // -----------------------------------------------------
     // Find/Create the procedure.
     // -----------------------------------------------------
 
-    //m_curProc = Struct::Proc::demand(m_curFile, procnm, line);
+    // m_curProc = Struct::Proc::demand(m_curFile, procnm, line);
 
     m_curProc = m_curFile->findProc(nm);
     if (m_curProc) {
       // STRUCTURE files usually have qualifying VMA information.
       // Assume that VMA information fully qualifies procedures.
-      if (m_docty == Doc_STRUCT
-	  && !m_curProc->vmaSet().empty() && !vma.empty()) {
-	m_curProc = NULL;
+      if (m_docty == Doc_STRUCT && !m_curProc->vmaSet().empty() && !vma.empty()) {
+        m_curProc = NULL;
       }
     }
 
     if (!m_curProc) {
       m_curProc = new Struct::Proc(nm, m_curFile, lnm, false, begLn, endLn);
       if (!vma.empty()) {
-	m_curProc->vmaSet().fromString(vma.c_str());
+        m_curProc->vmaSet().fromString(vma.c_str());
       }
       m_curProc->m_origId = atoi(node_id.c_str());
-    }
-    else {
+    } else {
       if (m_docty == Doc_STRUCT) {
-	// If a proc with the same name already exists, print a warning.
-	DIAG_Msg(0, "Warning: Found procedure '" << nm << "' multiple times within file '" << m_curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
+        // If a proc with the same name already exists, print a warning.
+        DIAG_Msg(
+            0, "Warning: Found procedure '"
+                   << nm << "' multiple times within file '" << m_curFile->name()
+                   << "'; information for this procedure will be aggregated. If you do not want "
+                      "this, edit the STRUCTURE file and adjust the names by hand.");
       }
     }
 
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << m_curProc->toStringMe());
 
     curStrct = m_curProc;
-    PGMDocHandler::idToProcMap[id] = (Prof::Struct::Proc*) m_curProc;
+    PGMDocHandler::idToProcMap[id] = (Prof::Struct::Proc*)m_curProc;
   }
 
   // Alien
@@ -377,8 +347,8 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     int numAttr = attributes.getLength();
     DIAG_Assert(0 <= numAttr && numAttr <= 6, DIAG_UnexpectedInput);
 
-    string nm  = getAttr(attributes, attrName);
-    string ln  = getAttr(attributes, attrLnName);
+    string nm = getAttr(attributes, attrName);
+    string ln = getAttr(attributes, attrLnName);
     string fnm = getAttr(attributes, attrFile);
     fnm = m_args.realpath(fnm);
 
@@ -387,7 +357,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
     Struct::Alien* alien = new Struct::Alien(parent, fnm, nm, nm, begLn, endLn);
-    alien->proc( idToProcMap[ln] );
+    alien->proc(idToProcMap[ln]);
 
     string node_id = getAttr(attributes, attrId);
     alien->m_origId = atoi(node_id.c_str());
@@ -399,7 +369,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
   // Loop
   else if (XMLString::equals(name, elemLoop)) {
-    DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has Proc, File, LM
+    DIAG_Assert(scopeStack.Depth() >= 3, "");  // at least has Proc, File, LM
 
     // both 'begin' and 'end' are implied (and can be in any order)
     int numAttr = attributes.getLength();
@@ -460,7 +430,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
   }
 
   // Call
-  else if ( XMLString::equals(name, elemCall)) {
+  else if (XMLString::equals(name, elemCall)) {
     int numAttr = attributes.getLength();
 
     // 'begin' is required but 'end' is implied (and can be in any order)
@@ -502,18 +472,16 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
   // Group
   else if (XMLString::equals(name, elemGroup)) {
-    string grpnm = getAttr(attributes, attrName); // must exist
+    string grpnm = getAttr(attributes, attrName);  // must exist
     DIAG_Assert(!grpnm.empty(), "");
 
-    Struct::ANode* parent = getCurrentScope(); // enclosing scope
-    Struct::Group* grpStrct
-      = Prof::Struct::Group::demand(m_curRoot, grpnm, parent);
+    Struct::ANode* parent = getCurrentScope();  // enclosing scope
+    Struct::Group* grpStrct = Prof::Struct::Group::demand(m_curRoot, grpnm, parent);
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << grpStrct->toStringMe());
 
     groupNestingLvl++;
     curStrct = grpStrct;
   }
-
 
   // -----------------------------------------------------------------
   //
@@ -529,13 +497,9 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
   pushCurrentScope(curStrct);
 }
 
-
-void
-PGMDocHandler::endElement(const XMLCh* const GCC_ATTR_UNUSED uri,
-			  const XMLCh* const name,
-			  const XMLCh* const GCC_ATTR_UNUSED qname)
-{
-
+void PGMDocHandler::endElement(
+    const XMLCh* const GCC_ATTR_UNUSED uri, const XMLCh* const name,
+    const XMLCh* const GCC_ATTR_UNUSED qname) {
   // Structure
   if (XMLString::equals(name, elemStructure)) {
     m_curRoot = NULL;
@@ -544,21 +508,27 @@ PGMDocHandler::endElement(const XMLCh* const GCC_ATTR_UNUSED uri,
   // Load Module
   else if (XMLString::equals(name, elemLM)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
     m_curLM = NULL;
   }
 
   // File
   else if (XMLString::equals(name, elemFile)) {
-    DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has LM
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    DIAG_Assert(scopeStack.Depth() >= 2, "");  // at least has LM
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
     m_curFile = NULL;
   }
 
   // Proc
   else if (XMLString::equals(name, elemProc)) {
-    DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has File, LM
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    DIAG_Assert(scopeStack.Depth() >= 3, "");  // at least has File, LM
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
     m_curProc = NULL;
   }
 
@@ -566,42 +536,49 @@ PGMDocHandler::endElement(const XMLCh* const GCC_ATTR_UNUSED uri,
   else if (XMLString::equals(name, elemAlien)) {
     // stack depth should be at least 4
     DIAG_Assert(scopeStack.Depth() >= 4, "");
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
   }
 
   // Loop
   else if (XMLString::equals(name, elemLoop)) {
     // stack depth should be at least 4
     DIAG_Assert(scopeStack.Depth() >= 4, "");
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
   }
 
   // Stmt
   else if (XMLString::equals(name, elemStmt)) {
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
   }
-  
+
   // Stmt
   else if (XMLString::equals(name, elemCall)) {
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
   }
 
   // Group
   else if (XMLString::equals(name, elemGroup)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
     DIAG_Assert(groupNestingLvl >= 1, "");
-    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) {
+      processGroupDocEndTag();
+    }
     groupNestingLvl--;
   }
 
   popCurrentScope();
 }
 
-
-void
-PGMDocHandler::getLineAttr(SrcFile::ln& begLn, SrcFile::ln& endLn,
-			   const XERCES_CPP_NAMESPACE::Attributes& attributes)
-{
+void PGMDocHandler::getLineAttr(
+    SrcFile::ln& begLn, SrcFile::ln& endLn, const XERCES_CPP_NAMESPACE::Attributes& attributes) {
   begLn = ln_NULL;
   endLn = ln_NULL;
 
@@ -613,10 +590,9 @@ PGMDocHandler::getLineAttr(SrcFile::ln& begLn, SrcFile::ln& endLn,
     size_t dashpos = lineStr.find_first_of('-');
     if (dashpos == std::string::npos) {
       begStr = lineStr;
-    }
-    else {
+    } else {
       begStr = lineStr.substr(0, dashpos);
-      endStr = lineStr.substr(dashpos+1);
+      endStr = lineStr.substr(dashpos + 1);
     }
   }
 
@@ -634,56 +610,41 @@ PGMDocHandler::getLineAttr(SrcFile::ln& begLn, SrcFile::ln& endLn,
   }
 }
 
-
 // ---------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------
 
-const char*
-PGMDocHandler::ToString(Doc_t m_docty)
-{
+const char* PGMDocHandler::ToString(Doc_t m_docty) {
   switch (m_docty) {
-    case Doc_NULL:   return "Document:NULL";
-    case Doc_STRUCT: return "Document:STRUCTURE";
-    case Doc_GROUP:  return "Document:GROUP";
-    default: DIAG_Die("Invalid Doc_t!");
+  case Doc_NULL: return "Document:NULL";
+  case Doc_STRUCT: return "Document:STRUCTURE";
+  case Doc_GROUP: return "Document:GROUP";
+  default: DIAG_Die("Invalid Doc_t!");
   }
 }
-
 
 // ---------------------------------------------------------------------------
 //  SAX2 ErrorHandler interface
 // ---------------------------------------------------------------------------
 
-void
-PGMDocHandler::error(const SAXParseException& e)
-{
+void PGMDocHandler::error(const SAXParseException& e) {
   XercesErrorHandler::report(cerr, "HPCStructure non-fatal error", ToString(m_docty), e);
 }
 
-
-void
-PGMDocHandler::fatalError(const SAXParseException& e)
-{
+void PGMDocHandler::fatalError(const SAXParseException& e) {
   XercesErrorHandler::report(cerr, "HPCStructure fatal error", ToString(m_docty), e);
   exit(1);
 }
 
-
-void
-PGMDocHandler::warning(const SAXParseException& e)
-{
+void PGMDocHandler::warning(const SAXParseException& e) {
   XercesErrorHandler::report(cerr, "HPCStructure warning", ToString(m_docty), e);
 }
-
 
 // ---------------------------------------------------------------------------
 //
 // ---------------------------------------------------------------------------
 
-Struct::File*
-PGMDocHandler::findCurrentFile()
-{
+Struct::File* PGMDocHandler::findCurrentFile() {
   for (unsigned int i = 0; i < scopeStack.Depth(); ++i) {
     Struct::ANode* s = getScope(i);
     if (typeid(*s) == typeid(Struct::File)) {
@@ -693,34 +654,27 @@ PGMDocHandler::findCurrentFile()
   return NULL;
 }
 
-
-uint
-PGMDocHandler::findEnclosingGroupScopeDepth()
-{
+uint PGMDocHandler::findEnclosingGroupScopeDepth() {
   for (uint i = 1; i < scopeStack.Depth(); ++i) {
     Struct::ANode* x = getScope(i);
     if (typeid(*x) == typeid(Struct::Group)) {
-      return i + 1; // depth is index + 1
+      return i + 1;  // depth is index + 1
     }
   }
   return 0;
 }
 
-
 // For processing the GROUP file
-void
-PGMDocHandler::processGroupDocEndTag()
-{
+void PGMDocHandler::processGroupDocEndTag() {
   StackEntry_t* top = getStackEntry(0);
 
   // If the top of the stack is a non-group leaf node or a nested
   // group node... (Note 'groupNestingLvl' has not been decremented yet)
-  if ( (groupNestingLvl >= 1 && top->IsNonGroupLeaf()) ||
-       (groupNestingLvl >= 2 && top->IsGroupScope()) ) {
-
+  if ((groupNestingLvl >= 1 && top->IsNonGroupLeaf())
+      || (groupNestingLvl >= 2 && top->IsGroupScope())) {
     // 1. Find enclosing GROUP node g (excluding the top of the stack)
     unsigned int enclGrpDepth = findEnclosingGroupScopeDepth();
-    DIAG_Assert(enclGrpDepth >= 2, ""); // must be found && not at top
+    DIAG_Assert(enclGrpDepth >= 2, "");  // must be found && not at top
     unsigned int enclGrpIdx = enclGrpDepth - 1;
 
     // 2. For each node between g (excluding g) to the node before
@@ -731,9 +685,9 @@ PGMDocHandler::processGroupDocEndTag()
       Struct::ANode* curNode = entry->getScope();
       Struct::ANode* shadowNode = entry->GetShadow();
       if (!shadowNode) {
-	shadowNode = curNode->clone();
-	shadowNode->link(parentNode);
-	entry->SetShadow(shadowNode);
+        shadowNode = curNode->clone();
+        shadowNode->link(parentNode);
+        entry->SetShadow(shadowNode);
       }
       parentNode = shadowNode;
     }
@@ -744,4 +698,3 @@ PGMDocHandler::processGroupDocEndTag()
     topNode->link(parentNode);
   }
 }
-

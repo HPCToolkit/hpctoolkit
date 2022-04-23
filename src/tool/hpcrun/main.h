@@ -69,12 +69,12 @@ extern char* hpcrun_get_execname(void);
 
 typedef void siglongjmp_fcn(sigjmp_buf, int);
 
-siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);
+siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
 
-typedef struct hpcrun_aux_cleanup_t  hpcrun_aux_cleanup_t;
+typedef struct hpcrun_aux_cleanup_t hpcrun_aux_cleanup_t;
 
-hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg);
-void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node);
+hpcrun_aux_cleanup_t* hpcrun_process_aux_cleanup_add(void (*func)(void*), void* arg);
+void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t* node);
 
 // ** HACK to accomodate PAPI-C w cuda component & gpu blame shifting
 

@@ -54,41 +54,33 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
-//   
+//
 //
 //****************************************************************************
 
 #ifndef support_CStrUtil
 #define support_CStrUtil
 
-/*************************** System Include Files ***************************/
+extern int STREQ(const char* x, const char* y);
 
-/**************************** User Include Files ****************************/
-
-/*************************** Forward Declarations ***************************/
-
-/****************************************************************************/
-
-extern int   STREQ(const char* x, const char* y);
-		  
-extern char* ssave(const char *const str);
-extern void  sfree(char* str);
-extern void  smove(char** old_str, char* new_str);
-extern char* nssave(int n, const char *const s1, ...);
-extern int   find(char s1[], char s2[]);
-extern int   char_count(char s1[], char s2[]);
-extern int   hash_string(const char* string, int size);
+extern char* ssave(const char* const str);
+extern void sfree(char* str);
+extern void smove(char** old_str, char* new_str);
+extern char* nssave(int n, const char* const s1, ...);
+extern int find(char s1[], char s2[]);
+extern int char_count(char s1[], char s2[]);
+extern int hash_string(const char* string, int size);
 extern char* strlower(char* string);
 extern char* strupper(char* string);
-extern char  to_lower(char c);
+extern char to_lower(char c);
 
 // Converts an integer to its ascii representation.
-extern void itoa  (long n, char a[]);
-extern void utoa  (unsigned long n, char a[]);
+extern void itoa(long n, char a[]);
+extern void utoa(unsigned long n, char a[]);
 
 // Converts an unsigned long (e.g. ptr) to its hex representation.
-extern void ultohex  (unsigned long n, char a[]);
+extern void ultohex(unsigned long n, char a[]);
 
 #endif

@@ -55,19 +55,21 @@
 using namespace hpctoolkit::util::log;
 using namespace detail;
 
-MessageBuffer::MessageBuffer(bool en)
-  : std::ostream(), enabled(en), sbuf(std::ios_base::out) {
-  if(enabled) this->init(&sbuf);
+MessageBuffer::MessageBuffer(bool en) : std::ostream(), enabled(en), sbuf(std::ios_base::out) {
+  if (enabled)
+    this->init(&sbuf);
 }
 MessageBuffer::MessageBuffer(MessageBuffer&& o)
-  : std::ostream(std::move(o)), enabled(o.enabled), sbuf(std::move(o.sbuf)) {
-  if(enabled) this->init(&sbuf);
+    : std::ostream(std::move(o)), enabled(o.enabled), sbuf(std::move(o.sbuf)) {
+  if (enabled)
+    this->init(&sbuf);
 }
 MessageBuffer& MessageBuffer::operator=(MessageBuffer&& o) {
   std::ostream::operator=(std::move(o));
   enabled = o.enabled;
   sbuf = std::move(o.sbuf);
-  if(enabled) this->init(&sbuf);
+  if (enabled)
+    this->init(&sbuf);
   return *this;
 }
 
@@ -86,32 +88,40 @@ void Settings::set(Settings s) {
   settings_set = true;
 }
 
-fatal::fatal() : detail::MessageBuffer(true) { (*this) << "FATAL: "; }
+fatal::fatal() : detail::MessageBuffer(true) {
+  (*this) << "FATAL: ";
+}
 fatal::~fatal() {
   (*this) << '\n';
   std::cerr << sbuf.str();
   std::abort();
 }
 
-error::error() : detail::MessageBuffer(Settings::get().error()) { (*this) << "ERROR: "; }
+error::error() : detail::MessageBuffer(Settings::get().error()) {
+  (*this) << "ERROR: ";
+}
 error::~error() {
-  if(!empty()) {
+  if (!empty()) {
     (*this) << '\n';
     std::cerr << sbuf.str();
   }
 }
 
-warning::warning() : detail::MessageBuffer(Settings::get().warning()) { (*this) << "WARNING: "; }
+warning::warning() : detail::MessageBuffer(Settings::get().warning()) {
+  (*this) << "WARNING: ";
+}
 warning::~warning() {
-  if(!empty()) {
+  if (!empty()) {
     (*this) << '\n';
     std::cerr << sbuf.str();
   }
 }
 
-info::info() : detail::MessageBuffer(Settings::get().info()) { (*this) << "INFO: "; }
+info::info() : detail::MessageBuffer(Settings::get().info()) {
+  (*this) << "INFO: ";
+}
 info::~info() {
-  if(!empty()) {
+  if (!empty()) {
     (*this) << '\n';
     std::cerr << sbuf.str();
   }
@@ -119,12 +129,12 @@ info::~info() {
 
 debug::debug(bool enable) : MessageBuffer(enable) {
   (*this) << "DEBUG";
-  if(mpi::World::size() > 0)
+  if (mpi::World::size() > 0)
     (*this) << " [" << mpi::World::rank() << "]";
   (*this) << ": ";
 }
 debug::~debug() {
-  if(!empty()) {
+  if (!empty()) {
     (*this) << '\n';
     std::cerr << sbuf.str();
   }

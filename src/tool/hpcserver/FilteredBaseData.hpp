@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.hpp $
-// $Id: FilteredBaseData.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.hpp
+// $ $Id: FilteredBaseData.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilteredBaseData.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,44 +63,42 @@
 #ifndef FILTEREDBASEDATA_HPP_
 #define FILTEREDBASEDATA_HPP_
 
-#include "ImageTraceAttributes.hpp"
 #include "BaseDataFile.hpp"
+#include "FileUtils.hpp"  //For FileOffset
 #include "FilterSet.hpp"
-#include "FileUtils.hpp"//For FileOffset
+#include "ImageTraceAttributes.hpp"
 
-#include <vector>
 #include <stdint.h>
+#include <vector>
 
 using std::vector;
-namespace TraceviewerServer
-{
-	class FilteredBaseData {
-	public:
-		FilteredBaseData(string filename, int _headerSize);
-		virtual ~FilteredBaseData();
 
-		void setFilters(FilterSet _filter);
+namespace TraceviewerServer {
+class FilteredBaseData {
+public:
+  FilteredBaseData(string filename, int _headerSize);
+  virtual ~FilteredBaseData();
 
-		FileOffset getMinLoc(int pseudoRank);
-		FileOffset getMaxLoc(int pseudoRank);
-		int64_t getLong(FileOffset position);
-		int getInt(FileOffset position);
-		int getNumberOfRanks();
-		int* getProcessIDs();
-		short* getThreadIDs();
-	private:
+  void setFilters(FilterSet _filter);
 
-		void filter();
+  FileOffset getMinLoc(int pseudoRank);
+  FileOffset getMaxLoc(int pseudoRank);
+  int64_t getLong(FileOffset position);
+  int getInt(FileOffset position);
+  int getNumberOfRanks();
+  int* getProcessIDs();
+  short* getThreadIDs();
 
-		BaseDataFile* baseDataFile;
-		OffsetPair* baseOffsets;
-		FilterSet currentlyAppliedFilter;
-		//Maps the pseudoranks the program asks for from the unfiltered
-		//pool to the real ranks from the filtered pool.
-		vector<int> rankMapping;
-		int headerSize;
-	};
+private:
+  void filter();
 
-
-}
+  BaseDataFile* baseDataFile;
+  OffsetPair* baseOffsets;
+  FilterSet currentlyAppliedFilter;
+  // Maps the pseudoranks the program asks for from the unfiltered
+  // pool to the real ranks from the filtered pool.
+  vector<int> rankMapping;
+  int headerSize;
+};
+}  // namespace TraceviewerServer
 #endif /* FILTEREDBASEDATA_HPP_ */

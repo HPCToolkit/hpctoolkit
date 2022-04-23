@@ -57,48 +57,31 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-
-#include <cstdarg>
-#include <cstring> // for 'memcpy'
-
-//*************************** User Include Files ****************************
-
-#include <include/gnu_dis-asm.h>
-
 #include "IA64ISA.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/gnu_dis-asm.h"
+#include "lib/support/diagnostics.h"
 
-//*************************** Forward Declarations ***************************
+#include <cstdarg>
+#include <cstring>  // for 'memcpy'
+#include <iostream>
 
-//****************************************************************************
+using std::ostream;
 
-static MachInsn*
-ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
-{
+static MachInsn* ConvertMIToOpMI(MachInsn* mi, ushort opIndex) {
   // Do not change; the GNU decoders depend upon these particular
   // offsets.  Note that the offsets do not actually match the IA64
   // template [5,41,41,41].
   DIAG_Assert(opIndex <= 2, "Programming Error");
-  return (MachInsn*)((MachInsnByte*)mi + (6 * opIndex)); // 0, 6, 12
+  return (MachInsn*)((MachInsnByte*)mi + (6 * opIndex));  // 0, 6, 12
 }
 
-
-static VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* GCC_ATTR_UNUSED insn_addr, VMA insn_vma)
-{
+static VMA GNUvma2vma(bfd_vma di_vma, MachInsn* GCC_ATTR_UNUSED insn_addr, VMA insn_vma) {
   VMA x = (VMA)di_vma + insn_vma;
   return x;
 }
 
-
-static void
-GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
-{
+static void GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di) {
   GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
 
   VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
@@ -106,21 +89,14 @@ GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
   *os << std::showbase << std::hex << x << std::dec;
 }
 
-
-//****************************************************************************
-// IA64ISA
-//****************************************************************************
-
-IA64ISA::IA64ISA()
-  : m_di(NULL), m_di_dis(NULL)
-{
+IA64ISA::IA64ISA() : m_di(NULL), m_di_dis(NULL) {
   // See 'dis-asm.h'
   m_di = new disassemble_info;
   init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
-  m_di->arch = bfd_arch_ia64;                //  bfd_get_arch (abfd);
+  m_di->arch = bfd_arch_ia64;  //  bfd_get_arch (abfd);
   m_di->endian = BFD_ENDIAN_LITTLE;
-  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
-  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
+  m_di->read_memory_func = GNUbu_read_memory;        // vs. 'buffer_read_memory'
+  m_di->print_address_func = GNUbu_print_addr_stub;  // vs. 'generic_print_addr'
 
   m_di_dis = new disassemble_info;
   init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
@@ -131,17 +107,12 @@ IA64ISA::IA64ISA()
   m_di_dis->print_address_func = GNUbu_print_addr;
 }
 
-
-IA64ISA::~IA64ISA()
-{
+IA64ISA::~IA64ISA() {
   delete m_di;
   delete m_di_dis;
 }
 
-
-ISA::InsnDesc
-IA64ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort GCC_ATTR_UNUSED sz)
-{
+ISA::InsnDesc IA64ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort GCC_ATTR_UNUSED sz) {
   MachInsn* gnuMI = ConvertMIToOpMI(mi, opIndex);
   InsnDesc d;
 
@@ -150,58 +121,41 @@ IA64ISA::getInsnDesc(MachInsn* mi, ushort opIndex, ushort GCC_ATTR_UNUSED sz)
     cacheSet(gnuMI, (ushort)size);
   }
 
-  switch(m_di->insn_type) {
-    case dis_noninsn:
-      d.set(InsnDesc::INVALID);
-      break;
-    case dis_branch:
-      if (m_di->target != 0) {
-        d.set(InsnDesc::BR_UN_COND_REL);
-      }
-      else {
-        d.set(InsnDesc::BR_UN_COND_IND);
-      }
-      break;
-    case dis_condbranch:
-      // N.B.: On the Itanium it is possible to have a one-bundle loop
-      // (where the third slot branches to the first slot)!
-      if (m_di->target != 0 || opIndex != 0) {
-        d.set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
-      }
-      else {
-        d.set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
-      }
-      break;
-    case dis_jsr:
-      if (m_di->target != 0) {
-        d.set(InsnDesc::SUBR_REL);
-      }
-      else {
-        d.set(InsnDesc::SUBR_IND);
-      }
-      break;
-    case dis_condjsr:
-      d.set(InsnDesc::OTHER);
-      break;
-    case dis_return:
-      d.set(InsnDesc::SUBR_RET);
-      break;
-    case dis_dref:
-    case dis_dref2:
-      d.set(InsnDesc::MEM_OTHER);
-      break;
-    default:
-      d.set(InsnDesc::OTHER);
-      break;
+  switch (m_di->insn_type) {
+  case dis_noninsn: d.set(InsnDesc::INVALID); break;
+  case dis_branch:
+    if (m_di->target != 0) {
+      d.set(InsnDesc::BR_UN_COND_REL);
+    } else {
+      d.set(InsnDesc::BR_UN_COND_IND);
+    }
+    break;
+  case dis_condbranch:
+    // N.B.: On the Itanium it is possible to have a one-bundle loop
+    // (where the third slot branches to the first slot)!
+    if (m_di->target != 0 || opIndex != 0) {
+      d.set(InsnDesc::INT_BR_COND_REL);  // arbitrarily choose int
+    } else {
+      d.set(InsnDesc::INT_BR_COND_IND);  // arbitrarily choose int
+    }
+    break;
+  case dis_jsr:
+    if (m_di->target != 0) {
+      d.set(InsnDesc::SUBR_REL);
+    } else {
+      d.set(InsnDesc::SUBR_IND);
+    }
+    break;
+  case dis_condjsr: d.set(InsnDesc::OTHER); break;
+  case dis_return: d.set(InsnDesc::SUBR_RET); break;
+  case dis_dref:
+  case dis_dref2: d.set(InsnDesc::MEM_OTHER); break;
+  default: d.set(InsnDesc::OTHER); break;
   }
   return d;
 }
 
-
-VMA
-IA64ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex,
-			  ushort GCC_ATTR_UNUSED sz)
-{
+VMA IA64ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort GCC_ATTR_UNUSED sz) {
   MachInsn* gnuMI = ConvertMIToOpMI(mi, opIndex);
 
   if (cacheLookup(gnuMI) == NULL) {
@@ -212,18 +166,14 @@ IA64ISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex,
   // The target field is only set on instructions with targets.
   // N.B.: On the Itanium it is possible to have a one-bundle loop
   // (where the third slot branches to the first slot)!
-  if (m_di->target != 0 || opIndex != 0)  {
+  if (m_di->target != 0 || opIndex != 0) {
     return GNUvma2vma(m_di->target, mi, vma);
-  }
-  else {
+  } else {
     return 0;
   }
 }
 
-
-ushort
-IA64ISA::getInsnNumOps(MachInsn* mi)
-{
+ushort IA64ISA::getInsnNumOps(MachInsn* mi) {
   // Because of the MLX template and data, we can't just return 3 here.
   if (cacheLookup(mi) == NULL) {
     int size = print_insn_ia64(PTR_TO_BFDVMA(mi), m_di);
@@ -233,11 +183,7 @@ IA64ISA::getInsnNumOps(MachInsn* mi)
   return (ushort)(m_di->target2);
 }
 
-
-void
-IA64ISA::decode(ostream& os, MachInsn* mi, VMA vma,
-		ushort GCC_ATTR_UNUSED opIndex)
-{
+void IA64ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex) {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;
 

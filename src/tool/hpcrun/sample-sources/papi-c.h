@@ -47,17 +47,7 @@
 #ifndef PAPI_C_H
 #define PAPI_C_H
 
-/******************************************************************************
- * local includes
- *****************************************************************************/
-
 #include "papi-c-extended-info.h"
-
-
-
-/******************************************************************************
- * type declarations 
- *****************************************************************************/
 
 typedef struct {
   bool inUse;
@@ -77,18 +67,11 @@ typedef struct {
   teardown_proc_t sync_teardown;
 } papi_component_info_t;
 
-
 typedef struct {
   int num_components;
   papi_component_info_t component_info[0];
 } papi_source_info_t;
 
+extern int get_component_event_set(papi_source_info_t* psi, int cidx);
 
-
-/******************************************************************************
- * external declarations 
- *****************************************************************************/
-
-extern int get_component_event_set(papi_source_info_t *psi, int cidx);
-
-#endif // PAPI_C_H
+#endif  // PAPI_C_H

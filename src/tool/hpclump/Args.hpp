@@ -60,27 +60,18 @@
 #ifndef Args_hpp
 #define Args_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/isa/ISATypes.hpp"
+#include "lib/support/CmdLineParser.hpp"
 
 #include <iostream>
 #include <string>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-#include <lib/isa/ISATypes.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
 class Args {
-public: 
-  Args(); 
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  ~Args();
 
   // parse the command line
   void parse(int argc, const char* const argv[]);
@@ -88,7 +79,7 @@ public:
   // Version and Usage information
   void printVersion(std::ostream& os) const;
   void printUsage(std::ostream& os) const;
-  
+
   // Error
   void printError(std::ostream& os, const char* msg) const;
   void printError(std::ostream& os, const std::string& msg) const;
@@ -97,7 +88,7 @@ public:
   void dump(std::ostream& os = std::cerr) const;
   void ddump() const;
 
-public:  
+public:
   // Parsed Data: Command
   const std::string& getCmd() const { return parser.getCmd(); }
 
@@ -106,8 +97,8 @@ public:
   bool dumpShort;
   bool dumpDecode;
   bool dumpOld;
-  VMA  loadVMA;
-  int  debugLevel;
+  VMA loadVMA;
+  int debugLevel;
 
   // Parsed Data: arguments
   std::string inputFile;
@@ -118,6 +109,6 @@ private:
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
 #endif /* Args_hpp */

@@ -44,33 +44,13 @@
 #ifndef level0_binary_h
 #define level0_binary_h
 
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void level0_binary_process(ze_module_handle_t module);
 
-void
-level0_binary_process
-(
-  ze_module_handle_t module
-);
+char* level0_module_handle_map_lookup(ze_module_handle_t module);
 
-char*
-level0_module_handle_map_lookup
-(
-  ze_module_handle_t module
-);
-
-void
-level0_module_handle_map_delete
-(
-  ze_module_handle_t module
-);
+void level0_module_handle_map_delete(ze_module_handle_t module);
 
 #endif

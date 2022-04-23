@@ -51,7 +51,7 @@
 //
 // Purpose:
 //   compute a cryptographic hash of a sequence of bytes. this is used
-//   to name information presented to hpcrun in memory (e.g. a GPU binary) 
+//   to name information presented to hpcrun in memory (e.g. a GPU binary)
 //   that needs to be saved for post-mortem analysis.
 //
 //***************************************************************************
@@ -65,81 +65,59 @@
 
 #define HASH_LENGTH MD5_HASH_NBYTES
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_hash_compute
 //
 // arguments:
-//   input:        
+//   input:
 //     pointer to a vector of bytes that will be crytographically hashed
-//   input_length:        
+//   input_length:
 //     length in bytes of the input
-//   hash:        
+//   hash:
 //     pointer to a vector of bytes of length >= crypto_hash_length()
 //
 // return value:
 //   0: success
 //   non-zero: failure
 //-----------------------------------------------------------------------------
-int 
-crypto_hash_compute
-(
-  const unsigned char *input,
-  size_t input_length,
-  unsigned char *hash,
-  unsigned int hash_length
-);
-
+int crypto_hash_compute(
+    const unsigned char* input, size_t input_length, unsigned char* hash, unsigned int hash_length);
 
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_hash_length
 //
 // arguments: none
 //
 // return value:
-//   number of bytes in the crytographic hash 
+//   number of bytes in the crytographic hash
 //-----------------------------------------------------------------------------
-unsigned int
-crypto_hash_length
-(
-  void
-);
-
+unsigned int crypto_hash_length(void);
 
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_hash_to_hexstring
 //
 // arguments:
-//   hash:        
+//   hash:
 //     pointer to crytographic hash computed by cryto_hash_compute
-//   hash_string: 
-//     pointer to character buffer where string equivalent of the hash code 
+//   hash_string:
+//     pointer to character buffer where string equivalent of the hash code
 //     will be written
-//   hash_string_length: 
+//   hash_string_length:
 //     length of the hash string must be > 2 * crypto_hash_length()
 //
 // return value:
 //   0: success
 //   non-zero: failure
 //-----------------------------------------------------------------------------
-int
-crypto_hash_to_hexstring
-(
-  unsigned char *hash,
-  char *hash_string,
-  unsigned int hash_string_length
-);
+int crypto_hash_to_hexstring(
+    unsigned char* hash, char* hash_string, unsigned int hash_string_length);
 
 #if defined(__cplusplus)
 }

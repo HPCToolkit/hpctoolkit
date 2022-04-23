@@ -44,60 +44,37 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//************************ System Include Files ******************************
-
-#include <iostream>
-
-#include <string>
-using std::string;
-
-#include <map>
-using std::map;
-
-#include <vector>
-using std::vector;
-
-#include <typeinfo>
-
-//************************* User Include Files *******************************
-
 #include "Metric-Mgr.hpp"
 
 #include "Flat-ProfileData.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/StrUtil.hpp>
+#include "lib/support/diagnostics.h"
+#include "lib/support/StrUtil.hpp"
 
+#include <iostream>
+#include <map>
+#include <string>
+#include <typeinfo>
+#include <vector>
 
-//************************ Forward Declarations ******************************
-
+using std::map;
+using std::string;
+using std::vector;
 
 namespace Prof {
 
 namespace Metric {
 
-//****************************************************************************
-//
-//****************************************************************************
+Mgr::Mgr() {}
 
-Mgr::Mgr()
-{
-}
-
-
-Mgr::~Mgr()
-{
+Mgr::~Mgr() {
   for (uint i = 0; i < m_metrics.size(); ++i) {
     delete m_metrics[i];
   }
 }
 
-//****************************************************************************
-
-void
-Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
-		    bool isUnitsEvents, bool doDispPercent)
-{
+void Mgr::makeRawMetrics(
+    const std::vector<std::string>& profileFiles, bool isUnitsEvents, bool doDispPercent) {
   // ------------------------------------------------------------
   // Create a Metric::SampledDesc for each event within each profile
   // ------------------------------------------------------------
@@ -107,8 +84,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
     Prof::Flat::ProfileData prof;
     try {
       prof.open(proffnm.c_str());
-    }
-    catch (...) {
+    } catch (...) {
       DIAG_EMsg("While reading '" << proffnm << "'");
       throw;
     }
@@ -118,7 +94,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
       const Metric::SampledDesc& mSmpl = *mdescs[j];
 
       bool isSortKey = (empty());
-      
+
       Metric::SampledDesc* m = new Metric::SampledDesc(mSmpl);
       m->isSortKey(isSortKey);
       m->doDispPercent(doDispPercent);
@@ -130,11 +106,8 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
   }
 }
 
-
-uint
-Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
-                        uint srcBegId, uint srcEndId)
-{
+uint Mgr::makeSummaryMetrics(
+    bool needAllStats, bool needMultiOccurance, uint srcBegId, uint srcEndId) {
   StringToADescVecMap nmToMetricMap;
 
   std::vector<Metric::ADescVec*> metricGroups;
@@ -161,10 +134,9 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
     if (it != nmToMetricMap.end()) {
       Metric::ADescVec& mvec = it->second;
       mvec.push_back(m);
-    }
-    else {
+    } else {
       std::pair<StringToADescVecMap::iterator, bool> ret =
-	nmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
+          nmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
       Metric::ADescVec* grp = &(ret.first->second);
       metricGroups.push_back(grp);
     }
@@ -180,18 +152,18 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
     if (mVec.size() >= threshold) {
       Metric::ADesc* m = mVec[0];
 
-      Metric::ADesc* mNew =	makeSummaryMetric("Sum",  m, mVec);
+      Metric::ADesc* mNew = makeSummaryMetric("Sum", m, mVec);
 
       if (needAllStats) {
-        makeSummaryMetric("Mean",   m, mVec);
+        makeSummaryMetric("Mean", m, mVec);
         makeSummaryMetric("StdDev", m, mVec);
-        makeSummaryMetric("CfVar",  m, mVec);
-        makeSummaryMetric("Min",    m, mVec);
-        makeSummaryMetric("Max",    m, mVec);
+        makeSummaryMetric("CfVar", m, mVec);
+        makeSummaryMetric("Min", m, mVec);
+        makeSummaryMetric("Max", m, mVec);
       }
 
       if (firstId == Mgr::npos) {
-	firstId = mNew->id();
+        firstId = mNew->id();
       }
     }
   }
@@ -201,41 +173,30 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
   return firstId;
 }
 
-void
-Mgr::mergePerfEventStatistics(Mgr *source)
-{
+void Mgr::mergePerfEventStatistics(Mgr* source) {
+  for (uint i = 0; i < source->size(); i++) {
+    Prof::Metric::ADesc* m = metric(i);
 
-
-  for (uint i=0; i<source->size(); i++) {
-
-    Prof::Metric::ADesc *m = metric(i);
-
-    uint64_t samples = m->num_samples() +
-        source->metric(i)->num_samples();
-    uint64_t period  = m->periodMean() +
-        source->metric(i)->periodMean();
+    uint64_t samples = m->num_samples() + source->metric(i)->num_samples();
+    uint64_t period = m->periodMean() + source->metric(i)->periodMean();
 
     m->num_samples(samples);
-    m->periodMean (period);
+    m->periodMean(period);
   }
 }
 
-void
-Mgr::mergePerfEventStatistics_finalize(int num_profiles)
-{
-  for (uint i=0; i<m_metrics.size(); i++) {
-    Prof::Metric::ADesc *m = metric(i);
+void Mgr::mergePerfEventStatistics_finalize(int num_profiles) {
+  for (uint i = 0; i < m_metrics.size(); i++) {
+    Prof::Metric::ADesc* m = metric(i);
 
     float period = m->periodMean();
-    float mean   = period / num_profiles;
+    float mean = period / num_profiles;
 
     m->periodMean(mean);
   }
 }
 
-uint
-Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
-{
+uint Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId) {
   if (srcBegId == Mgr::npos) {
     srcBegId = 0;
   }
@@ -248,32 +209,28 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
 
-    Metric::ADesc* mNew =
-      makeSummaryMetricIncr("Sum",  m);
+    Metric::ADesc* mNew = makeSummaryMetricIncr("Sum", m);
 
     if (needAllStats) {
-      makeSummaryMetricIncr("Mean",   m);
+      makeSummaryMetricIncr("Mean", m);
       makeSummaryMetricIncr("StdDev", m);
-      makeSummaryMetricIncr("CfVar",  m);
-      makeSummaryMetricIncr("Min",    m);
-      makeSummaryMetricIncr("Max",    m);
+      makeSummaryMetricIncr("CfVar", m);
+      makeSummaryMetricIncr("Min", m);
+      makeSummaryMetricIncr("Max", m);
     }
-    
+
     if (firstId == Mgr::npos) {
       firstId = mNew->id();
     }
   }
 
   computePartners();
- 
+
   return firstId;
 }
 
-
-Metric::DerivedDesc*
-Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
-		       const Metric::ADescVec& mOpands)
-{
+Metric::DerivedDesc* Mgr::makeSummaryMetric(
+    const string mDrvdTy, const Metric::ADesc* mSrc, const Metric::ADescVec& mOpands) {
   Metric::AExpr** opands = new Metric::AExpr*[mOpands.size()];
   for (uint i = 0; i < mOpands.size(); ++i) {
     Metric::ADesc* m = mOpands[i];
@@ -281,15 +238,16 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   }
 
   bool doDispPercent = true;
-  bool isPercent     = false;
-  int  visibility    = mSrc->visibility();
+  bool isPercent = false;
+  int visibility = mSrc->visibility();
 
-  int metric_order    = ORDER_ARTIFICIAL_METRIC;
+  int metric_order = ORDER_ARTIFICIAL_METRIC;
 
   // we copy only the formula if the expression operator is "Sum"
   string formula = "";
 
-  // change the metric's description into: XXX over rank/thread of (inclusive|exclusive) 'real_description'  
+  // change the metric's description into: XXX over rank/thread of (inclusive|exclusive)
+  // 'real_description'
   string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? "inclusive" : "exclusive");
   string description = " over rank/thread of " + metric_type;
 
@@ -301,81 +259,72 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     expr = new Metric::Plus(opands, mOpands.size());
 
     doDispPercent = mSrc->doDispPercent();
-    isPercent     = mSrc->isPercent();
+    isPercent = mSrc->isPercent();
 
-    formula       = mSrc->formula();
-    description   = "Sum" + description;
+    formula = mSrc->formula();
+    description = "Sum" + description;
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
-  }
-  else if (mDrvdTy.find("Mean", 0) == 0) {
+  } else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
     doDispPercent = false;
-    description   = "Mean" + description;
-  }
-  else if (mDrvdTy.find("StdDev", 0) == 0) {
+    description = "Mean" + description;
+  } else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDev(opands, mOpands.size());
     doDispPercent = false;
-    description   = "Standard deviation" + description;
-  }
-  else if (mDrvdTy.find("CfVar", 0) == 0) {
+    description = "Standard deviation" + description;
+  } else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
     doDispPercent = false;
-    description   = "Covariance" + description;
-  }
-  else if (mDrvdTy.find("%CfVar", 0) == 0) {
+    description = "Covariance" + description;
+  } else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDev(opands, mOpands.size());
     isPercent = true;
-    description   = "Percent covariance" + description;
-  }
-  else if (mDrvdTy.find("Min", 0) == 0) {
+    description = "Percent covariance" + description;
+  } else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, mOpands.size());
     doDispPercent = false;
-    description   = "Minimum" + description;
-  }
-  else if (mDrvdTy.find("Max", 0) == 0) {
+    description = "Minimum" + description;
+  } else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::Max(opands, mOpands.size());
     doDispPercent = false;
-    description   = "Maximum" + description;
-  }
-  else {
+    description = "Maximum" + description;
+  } else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
-  
+
   string mNmFmt = mSrc->nameToFmt();
   string mNmBase = mSrc->nameBase() + ":" + mDrvdTy;
   const string& mDesc = description + " '" + mSrc->description() + "'";
 
-  DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, visibility, true/*isSortKey*/,
-		    doDispPercent, isPercent);
+  DerivedDesc* m = new DerivedDesc(
+      mNmFmt, mDesc, expr, visibility, true /*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
-  m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
-  m->zeroDBInfo(); // clear
+  m->nameSfx("");   // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
+  m->zeroDBInfo();  // clear
 
   // copy some attributes from the source
-  m->periodMean   (mSrc->periodMean());
+  m->periodMean(mSrc->periodMean());
   m->sampling_type(mSrc->sampling_type());
-  m->num_samples  (mSrc->num_samples());
+  m->num_samples(mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
 
-  m->formula      (formula);
-  m->format       (mSrc->format());
-  m->order        (metric_order);
+  m->formula(formula);
+  m->format(mSrc->format());
+  m->order(metric_order);
 
   insert(m);
   expr->accumId(0, m->id());
 
   for (uint k = 1; k < expr->numAccum(); ++k) {
-    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
-    DerivedDesc* m2 =
-      new DerivedDesc(mNmFmt, mDesc, NULL/*expr*/, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
-		      false/*isSortKey*/, false/*doDispPercent*/,
-		      false/*isPercent*/);
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k + 1);
+    DerivedDesc* m2 = new DerivedDesc(
+        mNmFmt, mDesc, NULL /*expr*/, HPCRUN_FMT_METRIC_HIDE /*isVisible*/, false /*isSortKey*/,
+        false /*doDispPercent*/, false /*isPercent*/);
     m2->nameBase(m2NmBase);
-    m2->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
-    m2->zeroDBInfo(); // clear
+    m2->nameSfx("");   // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
+    m2->zeroDBInfo();  // clear
     m2->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
 
     insert(m2);
@@ -386,13 +335,12 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   if (expr->hasNumSrcVar()) {
     string m3NmBase = mNmBase + ":num-src";
     Metric::NumSource* m3Expr = new Metric::NumSource(mOpands.size());
-    DerivedDesc* m3 =
-      new DerivedDesc(mNmFmt, mDesc, m3Expr, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
-		      false/*isSortKey*/, false/*doDispPercent*/,
-		      false/*isPercent*/);
+    DerivedDesc* m3 = new DerivedDesc(
+        mNmFmt, mDesc, m3Expr, HPCRUN_FMT_METRIC_HIDE /*isVisible*/, false /*isSortKey*/,
+        false /*doDispPercent*/, false /*isPercent*/);
     m3->nameBase(m3NmBase);
-    m3->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
-    m3->zeroDBInfo(); // clear
+    m3->nameSfx("");   // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
+    m3->zeroDBInfo();  // clear
     m3->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
 
     insert(m3);
@@ -404,20 +352,19 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   return m;
 }
 
-
 Metric::DerivedIncrDesc*
-Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
-{
+Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc) {
   bool doDispPercent = true;
-  bool isPercent     = false;
-  int  visibility    = mSrc->visibility();
+  bool isPercent = false;
+  int visibility = mSrc->visibility();
 
-  int metric_order    = ORDER_ARTIFICIAL_METRIC;
+  int metric_order = ORDER_ARTIFICIAL_METRIC;
 
   // we copy only the formula if the expression operator is "Sum"
   std::string formula = "";
 
-  // change the metric's description into: XXX over rank/thread of (inclusive|exclusive) 'real_description'  
+  // change the metric's description into: XXX over rank/thread of (inclusive|exclusive)
+  // 'real_description'
   string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? "inclusive" : "exclusive");
   string description = " over rank/thread of " + metric_type;
 
@@ -429,79 +376,70 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
 
     doDispPercent = mSrc->doDispPercent();
-    isPercent     = mSrc->isPercent();
+    isPercent = mSrc->isPercent();
 
-    formula       = mSrc->formula();
-    description   = "Sum" + description;
+    formula = mSrc->formula();
+    description = "Sum" + description;
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
-  }
-  else if (mDrvdTy.find("Mean", 0) == 0) {
+  } else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
-    description   = "Mean" + description;
-  }
-  else if (mDrvdTy.find("StdDev", 0) == 0) {
+    description = "Mean" + description;
+  } else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDevIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
-    description   = "Standard deviation" + description;
-  }
-  else if (mDrvdTy.find("CfVar", 0) == 0) {
+    description = "Standard deviation" + description;
+  } else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVarIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
-    description   = "Covariance" + description;
-  }
-  else if (mDrvdTy.find("%CfVar", 0) == 0) {
+    description = "Covariance" + description;
+  } else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDevIncr(Metric::IData::npos, 0, mSrc->id());
     isPercent = true;
-    description   = "Percent covariance" + description;
-  }
-  else if (mDrvdTy.find("Min", 0) == 0) {
+    description = "Percent covariance" + description;
+  } else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::MinIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
-    description   = "Minimum" + description;
-  }
-  else if (mDrvdTy.find("Max", 0) == 0) {
+    description = "Minimum" + description;
+  } else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::MaxIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
-    description   = "Maximum" + description;
-  }
-  else {
+    description = "Maximum" + description;
+  } else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
-  
+
   string mNmFmt = mSrc->nameToFmt();
   string mNmBase = mSrc->nameBase() + ":" + mDrvdTy;
   const string& mDesc = description + " '" + mSrc->description() + "'";
 
-  DerivedIncrDesc* m =
-    new DerivedIncrDesc(mNmFmt, mDesc, expr, visibility,
-			true/*isSortKey*/, doDispPercent, isPercent);
+  DerivedIncrDesc* m = new DerivedIncrDesc(
+      mNmFmt, mDesc, expr, visibility, true /*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
-  m->zeroDBInfo(); // clear
+  m->zeroDBInfo();  // clear
 
   // copy some attributes from the source
-  m->periodMean   (mSrc->periodMean());
+  m->periodMean(mSrc->periodMean());
   m->sampling_type(mSrc->sampling_type());
-  m->num_samples  (mSrc->num_samples());
+  m->num_samples(mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
 
-  m->formula      (formula);
-  m->format       (mSrc->format());
-  m->order        (metric_order);
+  m->formula(formula);
+  m->format(mSrc->format());
+  m->order(metric_order);
 
   insert(m);
   expr->accumId(0, m->id());
 
   for (uint k = 1; k < expr->numAccum(); ++k) {
-    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
-    DerivedIncrDesc* m2 =
-      new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
-			  false/*isSortKey*/, false/*doDispPercent*/,
-			  false/*isPercent*/);
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k + 1);
+    DerivedIncrDesc* m2 = new DerivedIncrDesc(
+        mNmFmt, mDesc, NULL /*expr*/, HPCRUN_FMT_METRIC_HIDE /*isVisible*/, false /*isSortKey*/,
+        false /*doDispPercent*/, false /*isPercent*/);
     m2->nameBase(m2NmBase);
-    m2->zeroDBInfo(); // clear
+    m2->zeroDBInfo();  // clear
     m2->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
 
     insert(m2);
@@ -512,12 +450,11 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   if (expr->hasNumSrcVar()) {
     string m3NmBase = mNmBase + ":num-src";
     Metric::NumSourceIncr* m3Expr = new Metric::NumSourceIncr(0, mSrc->id());
-    DerivedIncrDesc* m3 =
-      new DerivedIncrDesc(mNmFmt, mDesc, m3Expr, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
-			  false/*isSortKey*/, false/*doDispPercent*/,
-			  false/*isPercent*/);
+    DerivedIncrDesc* m3 = new DerivedIncrDesc(
+        mNmFmt, mDesc, m3Expr, HPCRUN_FMT_METRIC_HIDE /*isVisible*/, false /*isSortKey*/,
+        false /*doDispPercent*/, false /*isPercent*/);
     m3->nameBase(m3NmBase);
-    m3->zeroDBInfo(); // clear
+    m3->zeroDBInfo();  // clear
     m3->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
 
     insert(m3);
@@ -529,12 +466,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   return m;
 }
 
-
-//****************************************************************************
-
-bool
-Mgr::insert(Metric::ADesc* m)
-{
+bool Mgr::insert(Metric::ADesc* m) {
   // 1. metric table
   uint id = m_metrics.size();
   m_metrics.push_back(m);
@@ -545,23 +477,17 @@ Mgr::insert(Metric::ADesc* m)
   return changed;
 }
 
-
-bool
-Mgr::insertIf(Metric::ADesc* m)
-{
+bool Mgr::insertIf(Metric::ADesc* m) {
   string nm = m->name();
   if (metric(nm)) {
-    return false; // already exists
+    return false;  // already exists
   }
 
   insert(m);
   return true;
 }
 
-
-Metric::ADesc*
-Mgr::findSortKey() const
-{
+Metric::ADesc* Mgr::findSortKey() const {
   Metric::ADesc* found = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
@@ -573,10 +499,7 @@ Mgr::findSortKey() const
   return found;
 }
 
-
-Metric::ADesc*
-Mgr::findFirstVisible() const
-{
+Metric::ADesc* Mgr::findFirstVisible() const {
   Metric::ADesc* found = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
@@ -588,12 +511,9 @@ Mgr::findFirstVisible() const
   return found;
 }
 
-
-Metric::ADesc*
-Mgr::findLastVisible() const
-{
+Metric::ADesc* Mgr::findLastVisible() const {
   Metric::ADesc* found = NULL;
-  for (int i = m_metrics.size() - 1; i >= 0; --i) { // i may be < 0
+  for (int i = m_metrics.size() - 1; i >= 0; --i) {  // i may be < 0
     Metric::ADesc* m = m_metrics[i];
     if (!m->isTemporary()) {
       found = m;
@@ -603,22 +523,16 @@ Mgr::findLastVisible() const
   return found;
 }
 
-
-bool
-Mgr::hasDerived() const
-{
+bool Mgr::hasDerived() const {
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
-    if (typeid(*m) == typeid(Prof::Metric::DerivedDesc) ||
-	typeid(*m) == typeid(Prof::Metric::DerivedIncrDesc)) {
+    if (typeid(*m) == typeid(Prof::Metric::DerivedDesc)
+        || typeid(*m) == typeid(Prof::Metric::DerivedIncrDesc)) {
       return true;
     }
   }
   return false;
 }
-
-
-//****************************************************************************
 
 // findGroup: see general comments in header.
 //
@@ -633,17 +547,17 @@ Mgr::hasDerived() const
 //      x: [2.a 2.b]  y: [1.a 1.b | 3.a 3.b]
 //
 // 2. All profile files in a group have the same set of metrics.
-// 
+//
 // While this simplifies things, because of groups, we still have to
 // merge profiles where only a subgroup of y matches a group in x.
 //   x: [1.a 1.b]  y: [1.a 1.b | 2.a 2.b]
-// 
-// 
+//
+//
 // *** N.B.: *** Assumptions (1) and (2) imply that either (a) y's
 // metrics fully match x's or (b) y's *first* metric subgroup fully
 // matches x's metrics.  It also enables us to use a metric's unique
 // name for a search.
-// 
+//
 //
 // TODO: Eventually, we cannot assume (2).  It will be possible for
 // a group to have different sets of metrics, which could lead to
@@ -658,9 +572,7 @@ Mgr::hasDerived() const
 // because the unique name in y may be different than the unique name
 // in x.
 //
-uint
-Mgr::findGroup(const Mgr& y) const
-{
+uint Mgr::findGroup(const Mgr& y) const {
   const Mgr* x = this;
 
   // -------------------------------------------------------
@@ -668,48 +580,48 @@ Mgr::findGroup(const Mgr& y) const
   // subgroup.
   // -------------------------------------------------------
 
-  uint y_grp_sz = 0; // open end boundary
+  uint y_grp_sz = 0;  // open end boundary
   if (y.size() > 0) {
-    y_grp_sz = 1; // metric 0 is first entry in 'y_grp'
+    y_grp_sz = 1;  // metric 0 is first entry in 'y_grp'
     const string& y_grp_pfx = y.metric(0)->namePfx();
 
     for (uint y_i = 1; y_i < y.size(); ++y_i) {
       const string& mPfx = y.metric(y_i)->namePfx();
       if (mPfx != y_grp_pfx) {
-	break;
+        break;
       }
       y_grp_sz++;
     }
   }
 
-  bool found = true; // optimistic
+  bool found = true;  // optimistic
 
   std::vector<uint> metricMap(y_grp_sz);
-  
+
   for (uint y_i = 0; y_i < y_grp_sz; ++y_i) {
     const Metric::ADesc* y_m = y.metric(y_i);
     string mNm = y_m->name();
     const Metric::ADesc* x_m = x->metric(mNm);
-    
+
     if (!x_m || (y_i > 0 && x_m->id() != (metricMap[y_i - 1] + 1))) {
       found = false;
       break;
     }
-    
+
     metricMap[y_i] = x_m->id();
   }
-  
+
   bool foundGrp = (found && !metricMap.empty());
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
 
   if (foundGrp) {
     // sanity check: either (x.size() == y_grp_sz) or the rest of x
     // matches the rest of y.
-    for (uint x_i = metricMap[y_grp_sz - 1] + 1, y_i = y_grp_sz;
-	 x_i < x->size() && y_i < y.size(); ++x_i, ++y_i) {
+    for (uint x_i = metricMap[y_grp_sz - 1] + 1, y_i = y_grp_sz; x_i < x->size() && y_i < y.size();
+         ++x_i, ++y_i) {
       DIAG_Assert(x->metric(x_i)->name() == y.metric(y_i)->name(), "");
     }
   }
@@ -717,12 +629,7 @@ Mgr::findGroup(const Mgr& y) const
   return (foundGrp) ? metricMap[0] : Mgr::npos;
 }
 
-
-//****************************************************************************
-
-void
-Mgr::recomputeMaps()
-{
+void Mgr::recomputeMaps() {
   // clear maps
   m_nuniqnmToMetricMap.clear();
   m_uniqnmToMetricMap.clear();
@@ -734,10 +641,7 @@ Mgr::recomputeMaps()
   }
 }
 
-
-void
-Mgr::computePartners()
-{
+void Mgr::computePartners() {
   StringToADescMap metricsIncl;
   StringToADescMap metricsExcl;
 
@@ -750,17 +654,18 @@ Mgr::computePartners()
 
     StringToADescMap* metricsMap = NULL;
     switch (m->type()) {
-      case ADesc::TyIncl: metricsMap = &metricsIncl; break;
-      case ADesc::TyExcl: metricsMap = &metricsExcl; break;
-      default: break;
+    case ADesc::TyIncl: metricsMap = &metricsIncl; break;
+    case ADesc::TyExcl: metricsMap = &metricsExcl; break;
+    default: break;
     }
-    
+
     if (metricsMap) {
-      DIAG_MsgIf(0, "Metric::Mgr::computePartners: insert: " << nm
-		 << " [" << m->name() << "]");
-      std::pair<StringToADescMap::iterator, bool> ret =
-	metricsMap->insert(make_pair(nm, m));
-      DIAG_Assert(ret.second, "Metric::Mgr::computePartners: Found duplicate entry inserting:\n\t" << m->toString() << "\nOther entry:\n\t" << ret.first->second->toString());
+      DIAG_MsgIf(0, "Metric::Mgr::computePartners: insert: " << nm << " [" << m->name() << "]");
+      std::pair<StringToADescMap::iterator, bool> ret = metricsMap->insert(make_pair(nm, m));
+      DIAG_Assert(
+          ret.second, "Metric::Mgr::computePartners: Found duplicate entry inserting:\n\t"
+                          << m->toString() << "\nOther entry:\n\t"
+                          << ret.first->second->toString());
     }
   }
 
@@ -773,29 +678,24 @@ Mgr::computePartners()
 
     StringToADescMap* metricsMap = NULL;
     switch (m->type()) {
-      case ADesc::TyIncl: metricsMap = &metricsExcl; break;
-      case ADesc::TyExcl: metricsMap = &metricsIncl; break;
-      default: break;
+    case ADesc::TyIncl: metricsMap = &metricsExcl; break;
+    case ADesc::TyExcl: metricsMap = &metricsIncl; break;
+    default: break;
     }
-    
+
     if (metricsMap) {
       StringToADescMap::iterator it = metricsMap->find(nm);
       if (it != metricsMap->end()) {
-	Metric::ADesc* partner = it->second;
-	m->partner(partner);
-	DIAG_MsgIf(0, "Metric::Mgr::computePartners: found: "
-		   << m->name() << " -> " << partner->name());
+        Metric::ADesc* partner = it->second;
+        m->partner(partner);
+        DIAG_MsgIf(
+            0, "Metric::Mgr::computePartners: found: " << m->name() << " -> " << partner->name());
       }
     }
   }
 }
 
-
-//****************************************************************************
-
-void
-Mgr::zeroDBInfo() const
-{
+void Mgr::zeroDBInfo() const {
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
     if (m->hasDBInfo()) {
@@ -804,21 +704,13 @@ Mgr::zeroDBInfo() const
   }
 }
 
-
-//****************************************************************************
-
-string
-Mgr::toString(const char* pfx) const
-{
+string Mgr::toString(const char* pfx) const {
   std::ostringstream os;
   dump(os, pfx);
   return os.str();
 }
 
-
-std::ostream&
-Mgr::dump(std::ostream& os, const char* pfx) const
-{
+std::ostream& Mgr::dump(std::ostream& os, const char* pfx) const {
   os << pfx << "[ metric table:" << std::endl;
   for (uint i = 0; i < m_metrics.size(); i++) {
     Metric::ADesc* m = m_metrics[i];
@@ -828,7 +720,7 @@ Mgr::dump(std::ostream& os, const char* pfx) const
 
   os << pfx << "[ unique-name-to-metric:" << std::endl;
   for (StringToADescMap::const_iterator it = m_uniqnmToMetricMap.begin();
-       it !=  m_uniqnmToMetricMap.end(); ++it) {
+       it != m_uniqnmToMetricMap.end(); ++it) {
     const string& nm = it->first;
     Metric::ADesc* m = it->second;
     os << pfx << "  " << nm << " -> " << m->toString() << std::endl;
@@ -838,22 +730,12 @@ Mgr::dump(std::ostream& os, const char* pfx) const
   return os;
 }
 
-
-void
-Mgr::ddump() const
-{
+void Mgr::ddump() const {
   dump(std::cerr);
   std::cerr.flush();
 }
 
-
-//****************************************************************************
-//
-//****************************************************************************
-
-bool
-Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
-{
+bool Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m) {
   bool isChanged = false;
 
   // 1. metric name to Metric::ADescVec table
@@ -870,23 +752,22 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
       sfx_new += ".";
     }
     sfx_new += StrUtil::toStr(qualifier);
-    
+
     m->nameSfx(sfx_new);
-    nm = m->name(); // update 'nm'
+    nm = m->name();  // update 'nm'
     isChanged = true;
 
     mvec.push_back(m);
-  }
-  else {
+  } else {
     m_nuniqnmToMetricMap.insert(make_pair(nm, Metric::ADescVec(1, m)));
   }
 
   // 2. unique name to Metric::ADesc table
-  std::pair<StringToADescMap::iterator, bool> ret =
-    m_uniqnmToMetricMap.insert(make_pair(nm, m));
-  DIAG_Assert(ret.second, "Metric::Mgr::insertInMapsAndMakeUniqueName: Found duplicate entry inserting:\n\t" << m->toString() << "\nOther entry:\n\t" << ret.first->second->toString());
+  std::pair<StringToADescMap::iterator, bool> ret = m_uniqnmToMetricMap.insert(make_pair(nm, m));
+  DIAG_Assert(
+      ret.second, "Metric::Mgr::insertInMapsAndMakeUniqueName: Found duplicate entry inserting:\n\t"
+                      << m->toString() << "\nOther entry:\n\t" << ret.first->second->toString());
 
-  
   // 3. profile file name to Metric::SampledDesc table
   Metric::SampledDesc* mSmpl = dynamic_cast<Metric::SampledDesc*>(m);
   if (mSmpl) {
@@ -895,18 +776,12 @@ Mgr::insertInMapsAndMakeUniqueName(Metric::ADesc* m)
     if (it1 != m_fnameToFMetricMap.end()) {
       Metric::ADescVec& mvec = it1->second;
       mvec.push_back(mSmpl);
-    }
-    else {
+    } else {
       m_fnameToFMetricMap.insert(make_pair(fnm, Metric::ADescVec(1, mSmpl)));
     }
   }
 
   return isChanged;
 }
-
-
-//****************************************************************************
-
-} // namespace Metric
-
-} // namespace Prof
+}  // namespace Metric
+}  // namespace Prof

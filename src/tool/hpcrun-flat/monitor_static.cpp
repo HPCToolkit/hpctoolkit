@@ -46,7 +46,7 @@
 
 /****************************************************************************
 //
-// File: 
+// File:
 //    $HeadURL$
 //
 // Purpose:
@@ -64,25 +64,19 @@
 
 #define USE_STATIC_CONSTRUCTOR 1
 
-/************************** System Include Files ****************************/
-
-#include <stdlib.h>
 #include <errno.h>
+#include <stdlib.h>
 /* #include <pthread.h> */
+
+#include "hpcrun.h"
+#include "monitor.h"
+#include "rtmap.h"
 
 #include <dlfcn.h>
 
-/**************************** User Include Files ****************************/
-
-#include "monitor.h"
-#include "hpcrun.h"
-#include "rtmap.h"
-
-/**************************** Forward Declarations **************************/
-
-/* 
+/*
    For profiling of statically linked apps:
-  
+
      - User must relink application, placing libhpcrun-static.o after
        all user code libraries/objects but before either libpthread or
        libc.
@@ -105,13 +99,8 @@
          libpthreads
        - hide the real routines
        - rename our entry points to the real names *so they are found
-         on the link line)	 
+         on the link line)
 */
-
-
-/****************************************************************************
- * Library initialization and finalization
- ****************************************************************************/
 
 #if USE_STATIC_CONSTRUCTOR
 
@@ -120,15 +109,15 @@
  */
 class Launcher {
 public:
-  Launcher()  { 
-    /* initialize */ 
+  Launcher() {
+    /* initialize */
     init_library();
     init_process();
   }
-  ~Launcher() { 
-    /* finalize */ 
+  ~Launcher() {
+    /* finalize */
     fini_process();
-    fini_library(); 
+    fini_library();
   }
 };
 
@@ -136,13 +125,10 @@ static Launcher mylauncher;
 
 #endif
 
-
 /*
  *  Library initialization
  */
-extern void 
-init_library_SPECIALIZED()
-{
+extern void init_library_SPECIALIZED() {
 #if USE_STATIC_CONSTRUCTOR
   hpcrun_cmd = hpcrun_get_cmd(opt_debug);
 
@@ -152,16 +138,11 @@ init_library_SPECIALIZED()
 #endif
 }
 
-
-/****************************************************************************
- * Intercepted routines 
- ****************************************************************************/
-
 #if !USE_STATIC_CONSTRUCTOR
 
 // FIXME: do not need real_libc_start_main as extern
 
-// __libc_start_main __BP___libc_start_main 
+// __libc_start_main __BP___libc_start_main
 // execv execvp execve
 // pthread_create pthread_self
 
@@ -170,54 +151,42 @@ init_library_SPECIALIZED()
  *  two different names depending on how the macro BP_SYM is defined.
  *    glibc-x/sysdeps/generic/libc-start.c
  */
-extern int 
-HPCRUNSTINTERCEPT__libc_start_main PARAMS_START_MAIN
-{
+extern int HPCRUNSTINTERCEPT__libc_start_main PARAMS_START_MAIN {
   hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
-
-extern int 
-HPCRUNSTINTERCEPT__BP___libc_start_main PARAMS_START_MAIN
-{
+extern int HPCRUNSTINTERCEPT__BP___libc_start_main PARAMS_START_MAIN {
   hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
-
-static int 
-hpcrun_libc_start_main PARAMS_START_MAIN
-{
+static int hpcrun_libc_start_main PARAMS_START_MAIN {
   MSG(stderr, "*** static: libc_start_main ***");
   setenv("HPCRUN_DEBUG", "1", 1);
-      
+
   /* squirrel away for later use */
-  hpcrun_cmd = ubp_av[0];  /* command is also in /proc/pid/cmdline */
+  hpcrun_cmd = ubp_av[0]; /* command is also in /proc/pid/cmdline */
   real_start_main_fini = fini;
 
   MSG(stderr, "*** static: A ***");
-  
+
   /* initialize profiling for process */
   init_library();
   init_process();
 
   MSG(stderr, "*** static: C ***");
-  
+
   /* launch the process */
   if (opt_debug >= 1) {
     MSG(stderr, "*** launching intercepted app: %s ***", hpcrun_cmd);
   }
 
-  __libc_start_main(main, argc, ubp_av, init, hpcrun_libc_start_main_fini, 
-		    rtld_fini, stack_end);
+  __libc_start_main(main, argc, ubp_av, init, hpcrun_libc_start_main_fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
-
-static void 
-hpcrun_libc_start_main_fini()
-{
+static void hpcrun_libc_start_main_fini() {
   if (real_start_main_fini) {
     (*real_start_main_fini)();
   }
@@ -228,24 +197,12 @@ hpcrun_libc_start_main_fini()
 
 #endif
 
-/****************************************************************************
- * Initialize profiling 
- ****************************************************************************/
-
-extern void 
-init_papi_for_process_SPECIALIZED()
-{
+extern void init_papi_for_process_SPECIALIZED() {
   if (opt_thread) {
     MSG(stderr, "FIXME: init_papi_for_process_SPECIALIZED.");
   }
 }
 
-/****************************************************************************/
-
-extern long
-hpcrun_gettid_SPECIALIZED()
-{
-  return 0; // FIXME
+extern long hpcrun_gettid_SPECIALIZED() {
+  return 0;  // FIXME
 }
-
-/****************************************************************************/

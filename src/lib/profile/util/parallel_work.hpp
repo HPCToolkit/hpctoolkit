@@ -50,8 +50,8 @@
 #include "vgannotations.hpp"
 
 #include <atomic>
-#include <limits>
 #include <functional>
+#include <limits>
 #include <thread>
 #include <vector>
 
@@ -59,7 +59,7 @@ namespace hpctoolkit::util {
 
 /// Helper structure for the results of a workshare contribution.
 struct WorkshareResult final {
-  WorkshareResult(bool a, bool b) : contributed(a), completed(b) {};
+  WorkshareResult(bool a, bool b) : contributed(a), completed(b){};
   ~WorkshareResult() = default;
 
   WorkshareResult(const WorkshareResult&) = default;
@@ -75,13 +75,12 @@ struct WorkshareResult final {
   /// Whether the request managed to contribute any work to the workshare.
   bool contributed : 1;
   /// Whether any work remains in the workshare for later calls.
-  bool completed : 1;
+  bool completed   : 1;
 };
 
 /// Parallel version of std::for_each, that allows for multiple threads to
 /// contribute their cycles at will and on a whim.
-template<class T>
-class ParallelForEach {
+template<class T> class ParallelForEach {
 public:
   ParallelForEach() = default;
   ~ParallelForEach() = default;
@@ -94,11 +93,13 @@ public:
   /// Fill the workqueue with work to be distributed among contributors,
   /// as well as set the action to perform on workitems and the blocking size.
   // MT: Externally Synchronized, Internally Synchronized with contribute().
-  void fill(std::vector<T> items, std::function<void(T&)> f = nullptr,
-            std::size_t bs = 0) noexcept {
+  void
+  fill(std::vector<T> items, std::function<void(T&)> f = nullptr, std::size_t bs = 0) noexcept {
     workitems = std::move(items);
-    if(f) action = f;
-    if(bs > 0) blockSize = bs;
+    if (f)
+      action = f;
+    if (bs > 0)
+      blockSize = bs;
     doneitemcnt.store(0, std::memory_order_relaxed);
     ANNOTATE_HAPPENS_BEFORE(&nextitem);
     nextitem.store(0, std::memory_order_release);
@@ -119,17 +120,19 @@ public:
   [[nodiscard]] WorkshareResult contribute() noexcept {
     auto val = nextitem.load(std::memory_order_acquire);
     ANNOTATE_HAPPENS_AFTER(&nextitem);
-    if(val == std::numeric_limits<std::size_t>::max()) return {false, false};
+    if (val == std::numeric_limits<std::size_t>::max())
+      return {false, false};
     std::size_t end;
     do {
-      if(val > workitems.size()) return {false, true};
-      end = std::min(val+blockSize, workitems.size());
-    } while(!nextitem.compare_exchange_weak(val, end,
-                                            std::memory_order_acquire,
-                                            std::memory_order_relaxed));
-    for(std::size_t i = val; i < end; ++i) action(workitems[i]);
+      if (val > workitems.size())
+        return {false, true};
+      end = std::min(val + blockSize, workitems.size());
+    } while (!nextitem.compare_exchange_weak(
+        val, end, std::memory_order_acquire, std::memory_order_relaxed));
+    for (std::size_t i = val; i < end; ++i)
+      action(workitems[i]);
     ANNOTATE_HAPPENS_BEFORE(&doneitemcnt);
-    doneitemcnt.fetch_add(end-val, std::memory_order_release);
+    doneitemcnt.fetch_add(end - val, std::memory_order_release);
     return {true, end >= workitems.size()};
   }
 
@@ -144,8 +147,9 @@ public:
     WorkshareResult res{false, false};
     do {
       res = contribute();
-      if(!res.contributed) std::this_thread::yield();
-    } while(!res.completed);
+      if (!res.contributed)
+        std::this_thread::yield();
+    } while (!res.completed);
   }
 
   struct wait_t {};
@@ -155,7 +159,7 @@ public:
   // MT: Internally Synchronized
   void contribute(wait_t) noexcept {
     contribute(loop());
-    while(doneitemcnt.load(std::memory_order_acquire) < workitems.size())
+    while (doneitemcnt.load(std::memory_order_acquire) < workitems.size())
       std::this_thread::yield();
     ANNOTATE_HAPPENS_AFTER(&doneitemcnt);
   }
@@ -184,11 +188,13 @@ public:
   /// Start the loop with work counting from 0 to `n`, as well as set the action
   /// and the blocking size.
   // MT: Externally Synchronized, Internally Synchronized with contribute().
-  void fill(std::size_t n, std::function<void(std::size_t)> f = nullptr,
-            std::size_t bs = 0) noexcept {
+  void
+  fill(std::size_t n, std::function<void(std::size_t)> f = nullptr, std::size_t bs = 0) noexcept {
     workitems = n;
-    if(f) action = f;
-    if(bs > 0) blockSize = bs;
+    if (f)
+      action = f;
+    if (bs > 0)
+      blockSize = bs;
     doneitemcnt.store(0, std::memory_order_relaxed);
     ANNOTATE_HAPPENS_BEFORE(&nextitem);
     nextitem.store(0, std::memory_order_release);
@@ -209,17 +215,19 @@ public:
   [[nodiscard]] WorkshareResult contribute() noexcept {
     auto val = nextitem.load(std::memory_order_acquire);
     ANNOTATE_HAPPENS_AFTER(&nextitem);
-    if(val == std::numeric_limits<std::size_t>::max()) return {false, false};
+    if (val == std::numeric_limits<std::size_t>::max())
+      return {false, false};
     std::size_t end;
     do {
-      if(val > workitems) return {false, true};
-      end = std::min(val+blockSize, workitems);
-    } while(!nextitem.compare_exchange_weak(val, end,
-                                            std::memory_order_acquire,
-                                            std::memory_order_relaxed));
-    for(std::size_t i = val; i < end; ++i) action(i);
+      if (val > workitems)
+        return {false, true};
+      end = std::min(val + blockSize, workitems);
+    } while (!nextitem.compare_exchange_weak(
+        val, end, std::memory_order_acquire, std::memory_order_relaxed));
+    for (std::size_t i = val; i < end; ++i)
+      action(i);
     ANNOTATE_HAPPENS_BEFORE(&doneitemcnt);
-    doneitemcnt.fetch_add(end-val, std::memory_order_release);
+    doneitemcnt.fetch_add(end - val, std::memory_order_release);
     return {true, end >= workitems};
   }
 
@@ -234,8 +242,9 @@ public:
     WorkshareResult res{false, false};
     do {
       res = contribute();
-      if(!res.contributed) std::this_thread::yield();
-    } while(!res.completed);
+      if (!res.contributed)
+        std::this_thread::yield();
+    } while (!res.completed);
   }
 
   struct wait_t {};
@@ -245,7 +254,7 @@ public:
   // MT: Internally Synchronized
   void contribute(wait_t) noexcept {
     contribute(loop());
-    while(doneitemcnt.load(std::memory_order_acquire) < workitems)
+    while (doneitemcnt.load(std::memory_order_acquire) < workitems)
       std::this_thread::yield();
     ANNOTATE_HAPPENS_AFTER(&doneitemcnt);
   }
@@ -261,8 +270,7 @@ private:
 /// Variant of ParallelForEach that allows for `reset()` to be called in
 /// parallel with `contribute()`. As such, this is only "complete" after
 /// `complete()` has been called (usually by the main thread).
-template<class T>
-class ResettableParallelForEach : protected ParallelForEach<T> {
+template<class T> class ResettableParallelForEach : protected ParallelForEach<T> {
 public:
   ResettableParallelForEach() = default;
   ~ResettableParallelForEach() = default;
@@ -288,16 +296,15 @@ public:
   /// Note that this still requires a call to `fill` if the workshare is empty
   /// (i.e. after construction or a call to `reset`).
   // MT: Internally Synchronized
-  void complete() noexcept {
-    completed.store(true, std::memory_order_release);
-  }
+  void complete() noexcept { completed.store(true, std::memory_order_release); }
 
   /// Contribute to the workshare by processing a block of items, if any are
   /// currently available. Returns the result of this request.
   // MT: Internally Synchronized
   [[nodiscard]] WorkshareResult contribute() noexcept {
     auto res = ParallelForEach<T>::contribute();
-    if(res.completed) res.completed = completed.load(std::memory_order_acquire);
+    if (res.completed)
+      res.completed = completed.load(std::memory_order_acquire);
     return res;
   }
 
@@ -334,8 +341,8 @@ public:
   ResettableParallelFor& operator=(const ResettableParallelFor&) = delete;
 
   using ParallelFor::fill;
-  using ParallelFor::wait;
   using ParallelFor::loop;
+  using ParallelFor::wait;
 
   /// Reset this workshare, allowing it to be filled and used again.
   /// Calls `contribute(wait_t)` internally.
@@ -349,16 +356,15 @@ public:
   /// Note that this still requires a call to `fill` if the workshare is empty
   /// (i.e. after construction or a call to `reset`).
   // MT: Internally Synchronized
-  void complete() noexcept {
-    completed.store(true, std::memory_order_release);
-  }
+  void complete() noexcept { completed.store(true, std::memory_order_release); }
 
   /// Contribute to the workshare by processing a block of items, if any are
   /// currently available. Returns the result of this request.
   // MT: Internally Synchronized
   [[nodiscard]] WorkshareResult contribute() noexcept {
     auto res = ParallelFor::contribute();
-    if(res.completed) res.completed = completed.load(std::memory_order_acquire);
+    if (res.completed)
+      res.completed = completed.load(std::memory_order_acquire);
     return res;
   }
 
@@ -382,7 +388,6 @@ public:
 private:
   std::atomic<bool> completed{false};
 };
-
-}
+}  // namespace hpctoolkit::util
 
 #endif  // HPCTOOLKIT_PROFILE_UTIL_ONCE_H

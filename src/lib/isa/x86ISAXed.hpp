@@ -60,23 +60,10 @@
 #ifndef isa_x86ISAXed_hpp
 #define isa_x86ISAXed_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "x86ISA.hpp"
 
-//*************************** Forward Declarations ***************************
-
-
-//****************************************************************************
-
-//***************************************************************************
-// x86ISAXed
-//***************************************************************************
+#include "include/gcc-attr.h"
+#include "include/uint.h"
 
 // 'x86ISA': Implements the x86 and x86-64 Instruction Set Architecture
 // See comments in 'ISA.h'
@@ -90,23 +77,11 @@ public:
   // Instructions:
   // --------------------------------------------------------
 
-  virtual ushort
-  getInsnSize(MachInsn* mi);
+  virtual ushort getInsnSize(MachInsn* mi);
 
-  virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual InsnDesc getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
-
-
+  virtual VMA getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
 };
-
-//****************************************************************************
-// "static" function to be used by generic x86ISA and x86ISA_xed
-//****************************************************************************
-
-
-//****************************************************************************
 
 #endif /* isa_x86ISAXed_hpp */

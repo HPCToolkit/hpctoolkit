@@ -42,63 +42,34 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: ElfHelper.cpp
 //
 // Purpose:
 //   implementation of a function that scans an elf file and returns a vector
-//   of sections 
+//   of sections
 //
 //***************************************************************************
-
-
-//******************************************************************************
-// system includes
-//******************************************************************************
 
 #include <err.h>
 #include <gelf.h>
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-// #include <lib/support/diagnostics.h>
+// #include "lib/support/diagnostics.h"
 
 #include "ElfHelper.hpp"
-#include "RelocateCubin.hpp"
 #include "Fatbin.hpp"
+#include "RelocateCubin.hpp"
 
-#include <Elf_X.h> // ensure EM_CUDA defined
+#include "include/hpctoolkit-config.h"
 
-#include <include/hpctoolkit-config.h>
-
-//******************************************************************************
-// macros
-//******************************************************************************
+#include <Elf_X.h>  // ensure EM_CUDA defined
 
 #ifndef NULL
 #define NULL 0
 #endif
 
-
-
-//******************************************************************************
-// interface functions 
-//******************************************************************************
-
-bool
-ElfFile::open
-(
- char *_memPtr,
- size_t _memLen,
- const std::string &_fileName
-)
-{
+bool ElfFile::open(char* _memPtr, size_t _memLen, const std::string& _fileName) {
   origPtr = _memPtr;
   memPtr = _memPtr;
   memLen = _memLen;
@@ -111,8 +82,8 @@ ElfFile::open
     return false;
   }
 
-  GElf_Ehdr ehdr_v; 
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+  GElf_Ehdr ehdr_v;
+  GElf_Ehdr* ehdr = gelf_getehdr(elf, &ehdr_v);
   if (!ehdr) {
     memPtr = 0;
     return false;
@@ -123,13 +94,13 @@ ElfFile::open
   if (ehdr->e_machine == EM_CUDA) {
     this->arch = ehdr->e_flags & 0xFF;
 #ifdef DYNINST_USE_CUDA
-    origPtr = (char *) malloc(memLen);
+    origPtr = (char*)malloc(memLen);
     memcpy(origPtr, memPtr, memLen);
     relocateCubin(memPtr, memLen, elf);
 
     if (getenv("HPCSTRUCT_CUBIN_RELOCATION")) {
       std::string newname = fileName + ".relocated";
-      FILE *f = fopen(newname.c_str(), "w");
+      FILE* f = fopen(newname.c_str(), "w");
       fwrite(getMemory(), getLength(), 1, f);
       fclose(f);
     }
@@ -143,69 +114,51 @@ ElfFile::open
   return result;
 }
 
-
-ElfFile::~ElfFile() 
-{
-  if (origPtr != memPtr && origPtr != 0) free(origPtr);
+ElfFile::~ElfFile() {
+  if (origPtr != memPtr && origPtr != 0)
+    free(origPtr);
   elf_end(elf);
 }
 
-
 // assemble a vector of pointers to each section in an elf binary
-ElfSectionVector *
-elfGetSectionVector
-(
- Elf *elf
-)
-{
-  ElfSectionVector *sections = new ElfSectionVector;
+ElfSectionVector* elfGetSectionVector(Elf* elf) {
+  ElfSectionVector* sections = new ElfSectionVector;
   bool nonempty = false;
   if (elf) {
-    Elf_Scn *scn = NULL;
+    Elf_Scn* scn = NULL;
     while ((scn = elf_nextscn(elf, scn)) != NULL) {
       sections->push_back(scn);
       nonempty = true;
     }
   }
-  if (nonempty) return sections;
+  if (nonempty)
+    return sections;
   else {
     delete sections;
     return NULL;
   }
 }
 
-
-char *
-elfSectionGetData
-(
- char *obj_ptr,
- GElf_Shdr *shdr
-)
-{
-  char *sectionData = obj_ptr + shdr->sh_offset;
+char* elfSectionGetData(char* obj_ptr, GElf_Shdr* shdr) {
+  char* sectionData = obj_ptr + shdr->sh_offset;
   return sectionData;
 }
 
-
-size_t
-ElfFile::getTextSection
-(
- char **text_section
-)
-{
+size_t ElfFile::getTextSection(char** text_section) {
   // start cfg generation
-  ElfSectionVector *sections = elfGetSectionVector(elf);
+  ElfSectionVector* sections = elfGetSectionVector(elf);
   GElf_Ehdr ehdr_v;
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+  GElf_Ehdr* ehdr = gelf_getehdr(elf, &ehdr_v);
 
   if (ehdr) {
     for (auto si = sections->begin(); si != sections->end(); si++) {
-      Elf_Scn *scn = *si;
+      Elf_Scn* scn = *si;
       GElf_Shdr shdr_v;
-      GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
-      if (!shdr) continue;
-      char *sectionData = elfSectionGetData(memPtr, shdr);
-      const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
+      GElf_Shdr* shdr = gelf_getshdr(scn, &shdr_v);
+      if (!shdr)
+        continue;
+      char* sectionData = elfSectionGetData(memPtr, shdr);
+      const char* section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
       if (strcmp(section_name, ".text") == 0) {
         // TODO(Aaron): can a intel GPU binary has two text sections?
         *text_section = sectionData;

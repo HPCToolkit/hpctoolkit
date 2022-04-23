@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.cpp $
-// $Id: DataOutputFileStream.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.cpp
+// $ $Id: DataOutputFileStream.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.cpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.cpp
+//   $
 //
 // Purpose:
 //   Provides some helpful methods for writing to a file, similar to DataSocketStream.
@@ -61,30 +64,20 @@
 #include "DataOutputFileStream.hpp"
 
 using namespace std;
-namespace TraceviewerServer
-{
-	DataOutputFileStream::DataOutputFileStream(const char* filename, openmode mode) :
-			ofstream(filename, mode)
-	{
 
-	}
+namespace TraceviewerServer {
+DataOutputFileStream::DataOutputFileStream(const char* filename, openmode mode)
+    : ofstream(filename, mode) {}
 
-	DataOutputFileStream::~DataOutputFileStream()
-	{
-
-	}
-	void DataOutputFileStream::writeInt(int toWrite)
-	{
-
-		char arrayform[4];
-		ByteUtilities::writeInt(arrayform, toWrite);
-		write(arrayform, 4);
-	}
-	void DataOutputFileStream::writeLong(Long toWrite)
-	{
-		char arrayform[8];
-		ByteUtilities::writeLong(arrayform, toWrite);
-		write(arrayform, 8);
-	}
-
+DataOutputFileStream::~DataOutputFileStream() {}
+void DataOutputFileStream::writeInt(int toWrite) {
+  char arrayform[4];
+  ByteUtilities::writeInt(arrayform, toWrite);
+  write(arrayform, 4);
+}
+void DataOutputFileStream::writeLong(Long toWrite) {
+  char arrayform[8];
+  ByteUtilities::writeLong(arrayform, toWrite);
+  write(arrayform, 8);
+}
 } /* namespace TraceviewerServer */

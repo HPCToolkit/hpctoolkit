@@ -47,71 +47,24 @@
 #ifndef linuxtimer_h
 #define linuxtimer_h
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
-#include <time.h>
-#include <stdbool.h>
 #include <signal.h>
+#include <stdbool.h>
+#include <time.h>
 
-
-
-//*****************************************************************************
-// type declarations
-//*****************************************************************************
-
-typedef struct { 
+typedef struct {
   struct sigevent sigev;
   timer_t timerid;
   clockid_t clock;
 } linuxtimer_t;
 
+int linuxtimer_create(linuxtimer_t* td, clockid_t clock, int signal);
 
+int linuxtimer_set(linuxtimer_t* td, time_t sec, long nsec, bool repeat);
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
+int linuxtimer_newsignal(void);
 
-int
-linuxtimer_create
-(
- linuxtimer_t *td,
- clockid_t clock,
- int signal
-);
+int linuxtimer_getsignal(linuxtimer_t* td);
 
-
-int
-linuxtimer_set
-(
- linuxtimer_t *td,
- time_t sec,
- long nsec,
- bool repeat
-);
-
-
-int
-linuxtimer_newsignal
-(
- void
-);
-
-
-int
-linuxtimer_getsignal
-(
- linuxtimer_t *td
-);
-
-
-int
-linuxtimer_delete
-(
- linuxtimer_t *td
-);
-
-
+int linuxtimer_delete(linuxtimer_t* td);
 
 #endif

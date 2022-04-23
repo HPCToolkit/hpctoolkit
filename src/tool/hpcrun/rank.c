@@ -62,32 +62,26 @@
 //
 //***************************************************************************
 
-#include <stdint.h>
-#include <monitor.h>
 #include "rank.h"
 
+#include <monitor.h>
+#include <stdint.h>
+
 struct jobinfo {
-  int  version;
-  int  hw_version;
-  int  npes;
-  int  pe;
+  int version;
+  int hw_version;
+  int npes;
+  int pe;
   long pad[20];
 };
 
-int dmapp_get_jobinfo(struct jobinfo *info);
+int dmapp_get_jobinfo(struct jobinfo* info);
 
 extern int32_t gasneti_mynode;
 
-
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
 // Returns: generalized rank, or else -1 if unknown or unavailable.
 //
-int
-hpcrun_get_rank(void)
-{
+int hpcrun_get_rank(void) {
   int rank;
 
   rank = monitor_mpi_comm_rank();
@@ -116,7 +110,7 @@ hpcrun_get_rank(void)
   // basically there's no hope for the dynamic case.
   //
 #ifdef HPCRUN_STATIC_LINK
-  rank = (int) gasneti_mynode;
+  rank = (int)gasneti_mynode;
   if (rank >= 0) {
     return rank;
   }

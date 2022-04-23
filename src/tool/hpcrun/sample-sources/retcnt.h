@@ -56,16 +56,8 @@
 #ifndef sample_source_retcnt_h
 #define sample_source_retcnt_h
 
-/******************************************************************************
- * local includes 
- *****************************************************************************/
-
 #include <cct/cct.h>
-
-/******************************************************************************
- * interface operations
- *****************************************************************************/
 
 void hpcrun_retcnt_inc(cct_node_t* node, int incr);
 
-#endif // sample_source_retcnt_h
+#endif  // sample_source_retcnt_h

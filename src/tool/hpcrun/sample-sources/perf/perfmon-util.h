@@ -41,19 +41,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef __PERFMON_UTIL_H__
 #define __PERFMON_UTIL_H__
 
+#include "perf-util.h"  // u64, u32 and perf_mmap_data_t
+
 #include <linux/perf_event.h>
-#include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 
 int pfmu_init();
 int pfmu_showEventList();
-int pfmu_isSupported(const char *eventname);
-int pfmu_getEventType(const char *eventname, u64 *code, u64 *type);
-int pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr);
-const char* pfmu_getEventDescription(const char *event_name);
+int pfmu_isSupported(const char* eventname);
+int pfmu_getEventType(const char* eventname, u64* code, u64* type);
+int pfmu_getEventAttribute(const char* eventname, struct perf_event_attr* event_attr);
+const char* pfmu_getEventDescription(const char* event_name);
 
 void pfmu_fini();
 

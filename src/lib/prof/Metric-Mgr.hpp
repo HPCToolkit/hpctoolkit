@@ -47,34 +47,23 @@
 #ifndef prof_Prof_Metric_Mgr_hpp
 #define prof_Prof_Metric_Mgr_hpp
 
-//************************ System Include Files ******************************
-
-#include <iostream>
-#include <string>
-#include <list>
-#include <vector>
-#include <map>
-
-#include <climits>
-
-//************************* User Include Files *******************************
-
-#include <include/uint.h>
-
 #include "Metric-ADesc.hpp"
 
-#include <lib/support/Unique.hpp>
+#include "include/uint.h"
+#include "lib/support/Unique.hpp"
 
-//************************ Forward Declarations ******************************
+#include <climits>
+#include <iostream>
+#include <list>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace Prof {
 
 namespace Metric {
 
-//****************************************************************************
-
-class Mgr
-  : public Unique // non copyable
+class Mgr : public Unique  // non copyable
 {
 public:
   typedef std::map<std::string, Metric::ADesc*> StringToADescMap;
@@ -88,75 +77,54 @@ public:
   // make raw metrics (N.B.: currently only for flat profiles)
   // ------------------------------------------------------------
 
-  void
-  makeRawMetrics(const std::vector<std::string>& profileFiles,
-		 bool isUnitsEvents = true,
-		 bool doDispPercent = true);
+  void makeRawMetrics(
+      const std::vector<std::string>& profileFiles, bool isUnitsEvents = true,
+      bool doDispPercent = true);
 
-  void
-  makeRawMetrics(const std::string& profileFile,
-		 bool isUnitsEvents = true,
-		 bool doDispPercent = true)
-  {
+  void makeRawMetrics(
+      const std::string& profileFile, bool isUnitsEvents = true, bool doDispPercent = true) {
     std::vector<std::string> vec(1, profileFile);
     makeRawMetrics(vec, isUnitsEvents, doDispPercent);
   }
-
 
   // ------------------------------------------------------------
   // make summary metrics: [srcBegId, srcEndId)
   // ------------------------------------------------------------
 
-  uint
-  makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
-		     uint srcBegId = Mgr::npos, uint srcEndId = Mgr::npos);
+  uint makeSummaryMetrics(
+      bool needAllStats, bool needMultiOccurance, uint srcBegId = Mgr::npos,
+      uint srcEndId = Mgr::npos);
 
   uint
-  makeSummaryMetricsIncr(bool needAllStats,
-			 uint srcBegId = Mgr::npos,
-                         uint srcEndId = Mgr::npos);
-
+  makeSummaryMetricsIncr(bool needAllStats, uint srcBegId = Mgr::npos, uint srcEndId = Mgr::npos);
 
   // ------------------------------------------------------------
   // The metric table
-  // 
+  //
   // INVARIANTS:
   // - All 'raw' metrics are independent of each other
   // - A metric's id is always within [0 size())
   // - A derived metric is dependent only upon 'prior' metrics,
   //   i.e. metrics with ids strictly less than its own.
-  //   
+  //
   // ------------------------------------------------------------
-  Metric::ADesc*
-  metric(uint i)
-  { return m_metrics[i]; }
+  Metric::ADesc* metric(uint i) { return m_metrics[i]; }
 
-  const Metric::ADesc*
-  metric(uint i) const
-  { return m_metrics[i]; }
+  const Metric::ADesc* metric(uint i) const { return m_metrics[i]; }
 
-  Metric::ADesc*
-  metric(const std::string& uniqNm)
-  {
+  Metric::ADesc* metric(const std::string& uniqNm) {
     StringToADescMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
 
-  const Metric::ADesc*
-  metric(const std::string& uniqNm) const
-  {
+  const Metric::ADesc* metric(const std::string& uniqNm) const {
     StringToADescMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
 
-  uint
-  size() const
-  { return m_metrics.size(); }
+  uint size() const { return m_metrics.size(); }
 
-  bool
-  empty() const
-  { return m_metrics.empty(); }
-
+  bool empty() const { return m_metrics.empty(); }
 
   // ------------------------------------------------------------
   // insert
@@ -166,37 +134,30 @@ public:
   // by qualifying it if necessary.  Returns true if the name was
   // modified, false otherwise.
   // NOTE: Assumes ownership of 'm'
-  bool
-  insert(Metric::ADesc* m);
+  bool insert(Metric::ADesc* m);
 
   // Given m, insert m into the tables if the metric name does not
   // exist.  Returns true if inserted (assuming ownership) and false
   // otherwise.
-  bool
-  insertIf(Metric::ADesc* m);
+  bool insertIf(Metric::ADesc* m);
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   // Return the (first) metric this has the sort-by attribute set
-  Metric::ADesc*
-  findSortKey() const;
+  Metric::ADesc* findSortKey() const;
 
   // Return the last metric that is visible
-  Metric::ADesc*
-  findFirstVisible() const;
+  Metric::ADesc* findFirstVisible() const;
 
   // Return the last metric that is visible
-  Metric::ADesc*
-  findLastVisible() const;
+  Metric::ADesc* findLastVisible() const;
 
-  bool
-  hasDerived() const;
-
+  bool hasDerived() const;
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
   static const uint npos = UINT_MAX;
@@ -205,69 +166,53 @@ public:
   //   correspond to those in 'y' (i.e., a mapping between 'y' and
   //   'x').  Returns the first index of the group if found; otherwise
   //   Mgr::npos.
-  uint
-  findGroup(const Mgr& y_mMgr) const;
+  uint findGroup(const Mgr& y_mMgr) const;
 
-  
   // ------------------------------------------------------------
   // helper maps/tables
   // ------------------------------------------------------------
 
-  const StringToADescVecMap&
-  fnameToFMetricMap() const
-  { return m_fnameToFMetricMap; }
+  const StringToADescVecMap& fnameToFMetricMap() const { return m_fnameToFMetricMap; }
 
-  void
-  recomputeMaps();
+  void recomputeMaps();
 
-  void
-  computePartners();
+  void computePartners();
 
   // specifically for merging the statistics of perf event metrics
   // it sums the statistics of the "source" into the correspondent metrics
   // this doesn't check if the metric is exactly the same or not
   // we assume the position of metrics in the source and target
   // are the same.
-  void
-  mergePerfEventStatistics(Mgr *source);
+  void mergePerfEventStatistics(Mgr* source);
 
-  void
-  mergePerfEventStatistics_finalize(int num_profiles);
+  void mergePerfEventStatistics_finalize(int num_profiles);
 
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
-  void
-  zeroDBInfo() const;
-  
+  void zeroDBInfo() const;
+
   // ------------------------------------------------------------
-  // 
+  //
   // ------------------------------------------------------------
 
-  std::string
-  toString(const char* pfx = "") const;
+  std::string toString(const char* pfx = "") const;
 
-  std::ostream&
-  dump(std::ostream& os = std::cerr, const char* pfx = "") const;
+  std::ostream& dump(std::ostream& os = std::cerr, const char* pfx = "") const;
 
-  void
-  ddump() const;
+  void ddump() const;
 
 public:
-
 private:
-  bool
-  insertInMapsAndMakeUniqueName(Metric::ADesc* m);
+  bool insertInMapsAndMakeUniqueName(Metric::ADesc* m);
 
-  Metric::DerivedDesc*
-  makeSummaryMetric(const std::string mDrvdTy, const Metric::ADesc* mSrc,
-		    const Metric::ADescVec& mOpands);
+  Metric::DerivedDesc* makeSummaryMetric(
+      const std::string mDrvdTy, const Metric::ADesc* mSrc, const Metric::ADescVec& mOpands);
 
   Metric::DerivedIncrDesc*
   makeSummaryMetricIncr(const std::string mDrvdTy, const Metric::ADesc* mSrc);
 
-  
 private:
   // the metric table
   Metric::ADescVec m_metrics;
@@ -282,14 +227,7 @@ private:
   // profile file name to Metric::SampledDesc table
   StringToADescVecMap m_fnameToFMetricMap;
 };
+}  // namespace Metric
+}  // namespace Prof
 
-//****************************************************************************
-
-} // namespace Metric
-
-} // namespace Prof
-
-
-//****************************************************************************
-
-#endif // prof_Prof_Metric_Mgr_hpp
+#endif  // prof_Prof_Metric_Mgr_hpp

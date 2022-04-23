@@ -44,38 +44,13 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//******************************************************************************
-// global includes
-//******************************************************************************
-
-#include <stdio.h> // import NULL
-#include <dlfcn.h>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <monitor.h>
-
 #include "dynlib.h"
 
+#include <dlfcn.h>
+#include <monitor.h>
+#include <stdio.h>  // import NULL
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-int
-dynlib_open
-(
-  void **handle,
-  const char *libname,
-  int flags
-)
-{
+int dynlib_open(void** handle, const char* libname, int flags) {
 #ifdef HPCRUN_STATIC_LINK
   int retval = 1;
 #else
@@ -86,20 +61,11 @@ dynlib_open
   return retval;
 }
 
-
-
-int 
-dynlib_sym
-(
-   void *handle,
-   const char *fname,
-   void **fn
-)
-{
+int dynlib_sym(void* handle, const char* fname, void** fn) {
 #ifdef HPCRUN_STATIC_LINK
   int retval = 1;
 #else
-  (void) dlerror(); // clear any error that may be pending
+  (void)dlerror();  // clear any error that may be pending
 
   *fn = dlsym(handle, fname);
   char* e = dlerror();

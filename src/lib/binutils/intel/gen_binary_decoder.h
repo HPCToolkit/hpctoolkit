@@ -1,3 +1,49 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2022, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 //==============================================================
 // Copyright © 2019 Intel Corporation
 //
@@ -7,10 +53,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,28 +70,22 @@
 #define PTI_SAMPLES_UTILS_GEN_BINARY_DECODER_H_
 
 #include <assert.h>
-
-#include <vector>
 #include <string>
-
-
+#include <vector>
 
 #ifdef ENABLE_IGC
 #include <iga/kv.hpp>
 
 #define MAX_STR_SIZE 1024
 
-using InstructionList = std::vector< std::pair<uint32_t, std::string> >;
+using InstructionList = std::vector<std::pair<uint32_t, std::string>>;
 
 class GenBinaryDecoder {
- public:
+public:
   GenBinaryDecoder(const std::vector<uint8_t>& binary, iga_gen_t arch)
-      : kernel_view_(arch, binary.data(), binary.size(),
-                     iga::SWSB_ENCODE_MODE::SingleDistPipe) {}
+      : kernel_view_(arch, binary.data(), binary.size(), iga::SWSB_ENCODE_MODE::SingleDistPipe) {}
 
-  bool IsValid() const {
-    return kernel_view_.decodeSucceeded();
-  }
+  bool IsValid() const { return kernel_view_.decodeSucceeded(); }
 
   InstructionList Disassemble() {
     if (!IsValid()) {
@@ -54,7 +94,7 @@ class GenBinaryDecoder {
 
     InstructionList instruction_list;
 
-    char text[MAX_STR_SIZE] = { 0 };
+    char text[MAX_STR_SIZE] = {0};
     int32_t offset = 0, size = 0;
     while (true) {
       size = kernel_view_.getInstSize(offset);
@@ -72,10 +112,10 @@ class GenBinaryDecoder {
     return instruction_list;
   }
 
- private:
+private:
   KernelView kernel_view_;
 };
 
-#endif // ENABLE_IGC
+#endif  // ENABLE_IGC
 
-#endif // PTI_SAMPLES_UTILS_GEN_BINARY_DECODER_H_
+#endif  // PTI_SAMPLES_UTILS_GEN_BINARY_DECODER_H_

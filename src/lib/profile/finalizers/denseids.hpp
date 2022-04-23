@@ -57,9 +57,7 @@ public:
   DenseIds();
   ~DenseIds() = default;
 
-  ExtensionClass provides() const noexcept override {
-    return ExtensionClass::identifier;
-  }
+  ExtensionClass provides() const noexcept override { return ExtensionClass::identifier; }
   ExtensionClass requires() const noexcept override { return {}; }
 
   std::optional<unsigned int> identify(const Module&) noexcept override;
@@ -75,7 +73,6 @@ private:
   std::atomic<unsigned int> ctx_id;
   std::atomic<unsigned int> t_id;
 };
-
-}
+}  // namespace hpctoolkit::finalizers
 
 #endif  // HPCTOOLKIT_PROFILE_FINALIZERS_DENSEIDS_H

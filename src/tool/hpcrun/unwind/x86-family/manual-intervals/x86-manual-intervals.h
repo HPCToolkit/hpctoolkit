@@ -51,18 +51,17 @@
 // macros
 //------------------------------------------------------------------------------
 
-#define FORALL_X86_INTERVAL_FIXUP_ROUTINES(MACRO) \
-        MACRO(x86_adjust_icc_variant_intervals) \
-        MACRO(x86_adjust_32bit_main_intervals) \
-        MACRO(x86_adjust_gcc_main64_intervals) \
-        MACRO(x86_adjust_intel_align32_intervals) \
-        MACRO(x86_adjust_intel_align64_intervals) \
-        MACRO(x86_adjust_intelmic_intervals) \
-        MACRO(x86_adjust_intel11_f90main_intervals) \
-        MACRO(x86_adjust_dl_runtime_resolve_unwind_intervals) \
-        MACRO(x86_adjust_pgi_mp_pexit_intervals) \
-        MACRO(x86_adjust_gcc_stack_intervals) \
-        MACRO(x86_fail_intervals)
-
+#define FORALL_X86_INTERVAL_FIXUP_ROUTINES(MACRO)       \
+  MACRO(x86_adjust_icc_variant_intervals)               \
+  MACRO(x86_adjust_32bit_main_intervals)                \
+  MACRO(x86_adjust_gcc_main64_intervals)                \
+  MACRO(x86_adjust_intel_align32_intervals)             \
+  MACRO(x86_adjust_intel_align64_intervals)             \
+  MACRO(x86_adjust_intelmic_intervals)                  \
+  MACRO(x86_adjust_intel11_f90main_intervals)           \
+  MACRO(x86_adjust_dl_runtime_resolve_unwind_intervals) \
+  MACRO(x86_adjust_pgi_mp_pexit_intervals)              \
+  MACRO(x86_adjust_gcc_stack_intervals)                 \
+  MACRO(x86_fail_intervals)
 
 #endif

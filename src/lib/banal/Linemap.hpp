@@ -50,17 +50,15 @@
 // The client (Struct.cpp) should use the classes LineMap and
 // LineRange.  Everything else is internal.
 
-//***************************************************************************
-
 #ifndef Banal_Linemap_hpp
 #define Banal_Linemap_hpp
 
-#include <include/uint.h>
-#include <lib/isa/ISATypes.hpp>
-#include <lib/support/StringTable.hpp>
-
 #include "dwarf.h"
 #include "libdwarf.h"
+
+#include "include/uint.h"
+#include "lib/isa/ISATypes.hpp"
+#include "lib/support/StringTable.hpp"
 
 #include <map>
 
@@ -85,7 +83,7 @@ public:
   }
 };
 
-typedef std::map <VMA, LineMapInfo> InternalLineMap;
+typedef std::map<VMA, LineMapInfo> InternalLineMap;
 
 //----------------------------------------------------------------------
 
@@ -93,26 +91,26 @@ typedef std::map <VMA, LineMapInfo> InternalLineMap;
 
 class LineRange {
 public:
-  VMA  start;
-  VMA  end;
-  const char *filenm;
+  VMA start;
+  VMA end;
+  const char* filenm;
   uint lineno;
 };
 
 class LineMap {
 private:
-  InternalLineMap   m_line_map;
-  HPC::StringTable  m_str_tab;
-  uint  m_empty_index;
+  InternalLineMap m_line_map;
+  HPC::StringTable m_str_tab;
+  uint m_empty_index;
 
   void do_line_map(Dwarf_Debug, Dwarf_Die);
   void do_comp_unit(Dwarf_Debug, int, int, long, long);
-  void do_dwarf(ElfFile *elf);
+  void do_dwarf(ElfFile* elf);
 
 public:
   LineMap();
-  void readFile(ElfFile *elf);
-  void getLineRange(VMA, LineRange &);
+  void readFile(ElfFile* elf);
+  void getLineRange(VMA, LineRange&);
 };
 
 #endif

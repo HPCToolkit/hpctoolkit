@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -63,22 +63,11 @@
 #ifndef support_StrUtil_hpp
 #define support_StrUtil_hpp
 
-//************************** System Include Files ****************************
-
-#include <iostream>
 #include <fstream>
+#include <inttypes.h>
+#include <iostream>
 #include <string>
 #include <vector>
-
-#include <inttypes.h>
-
-//*************************** User Include Files *****************************
-
-//************************** Forward Declarations ****************************
-
-//****************************************************************************
-// StrUtil
-//****************************************************************************
 
 namespace StrUtil {
 
@@ -92,14 +81,11 @@ namespace StrUtil {
 //
 // --------------------------------------------------------------------------
 
-void
-tokenize_char(const std::string& tokenstr, const char* delim,
-	      std::vector<std::string>& tokenvec);
+void tokenize_char(
+    const std::string& tokenstr, const char* delim, std::vector<std::string>& tokenvec);
 
-void
-tokenize_str(const std::string& tokenstr, const char* delim,
-	      std::vector<std::string>& tokenvec);
-
+void tokenize_str(
+    const std::string& tokenstr, const char* delim, std::vector<std::string>& tokenvec);
 
 // --------------------------------------------------------------------------
 // join: Given a vector of tokens 'tokenvec' and a delimiter 'delim',
@@ -108,9 +94,7 @@ tokenize_str(const std::string& tokenstr, const char* delim,
 // --------------------------------------------------------------------------
 
 std::string
-join(const std::vector<std::string>& tokenvec, const char* delim,
-     size_t begIdx, size_t endIdx);
-
+join(const std::vector<std::string>& tokenvec, const char* delim, size_t begIdx, size_t endIdx);
 
 // --------------------------------------------------------------------------
 // string -> numerical types
@@ -123,61 +107,40 @@ join(const std::vector<std::string>& tokenvec, const char* delim,
 //
 // --------------------------------------------------------------------------
 
-long
-toLong(const char* str, unsigned* endidx = NULL);
+long toLong(const char* str, unsigned* endidx = NULL);
 
-inline long
-toLong(const std::string& str, unsigned* endidx = NULL)
-{
+inline long toLong(const std::string& str, unsigned* endidx = NULL) {
   return toLong(str.c_str(), endidx);
 }
 
+uint64_t toUInt64(const char* str, unsigned* endidx = NULL);
 
-uint64_t
-toUInt64(const char* str, unsigned* endidx = NULL);
-
-inline uint64_t
-toUInt64(const std::string& str, unsigned* endidx = NULL)
-{
+inline uint64_t toUInt64(const std::string& str, unsigned* endidx = NULL) {
   return toUInt64(str.c_str(), endidx);
 }
 
+double toDbl(const char* str, unsigned* endidx = NULL);
 
-double
-toDbl(const char* str, unsigned* endidx = NULL);
-
-inline double
-toDbl(const std::string& str, unsigned* endidx = NULL)
-{
+inline double toDbl(const std::string& str, unsigned* endidx = NULL) {
   return toDbl(str.c_str(), endidx);
 }
-
 
 // --------------------------------------------------------------------------
 // numerical types -> string
 //   base: one of 10, 16
 // --------------------------------------------------------------------------
 
-std::string
-toStr(const int x, int base = 10);
+std::string toStr(const int x, int base = 10);
 
-std::string
-toStr(const unsigned x, int base = 10);
+std::string toStr(const unsigned x, int base = 10);
 
-std::string
-toStr(const int64_t x, int base = 10);
+std::string toStr(const int64_t x, int base = 10);
 
-std::string
-toStr(const uint64_t x, int base = 10);
+std::string toStr(const uint64_t x, int base = 10);
 
-std::string
-toStr(const void* x, int base = 16);
+std::string toStr(const void* x, int base = 16);
 
-std::string
-toStr(const double x, const char* format = "%.3f");
+std::string toStr(const double x, const char* format = "%.3f");
+}  // namespace StrUtil
 
-
-} // end of StrUtil namespace
-
-
-#endif // support_StrUtil_hpp
+#endif  // support_StrUtil_hpp

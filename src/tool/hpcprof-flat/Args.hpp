@@ -60,52 +60,35 @@
 #ifndef Args_hpp
 #define Args_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/analysis/Args.hpp"
+#include "lib/support/CmdLineParser.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/analysis/Args.hpp>
-
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-class Args
-  : public Analysis::Args {
-public: 
-  Args(); 
+class Args : public Analysis::Args {
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
+  virtual ~Args();
 
   // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
+  void parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
+  void printVersion(std::ostream& os) const;
 
-  void
-  printUsage(std::ostream& os) const;
-  
+  void printUsage(std::ostream& os) const;
+
   // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
+  void printError(std::ostream& os, const char* msg) const;
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
+  void printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  virtual void
-  dump(std::ostream& os = std::cerr) const;
+  virtual void dump(std::ostream& os = std::cerr) const;
 
 public:
   std::string hpcHome;
@@ -119,12 +102,12 @@ public:
 
 private:
   void Ctor();
-  void setHPCHome(); 
+  void setHPCHome();
 
 private:
   static const std::string HPCTOOLKIT;
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
-#endif // Args_hpp 
+#endif  // Args_hpp

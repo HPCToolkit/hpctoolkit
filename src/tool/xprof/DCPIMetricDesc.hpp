@@ -57,24 +57,13 @@
 //
 //***************************************************************************
 
-#ifndef DCPIMetricDesc_H 
+#ifndef DCPIMetricDesc_H
 #define DCPIMetricDesc_H
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/isa/ISATypes.hpp"
 
 #include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/isa/ISATypes.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-// DCPIMetricDesc
-//****************************************************************************
 
 // ----------------------------------------------------------
 
@@ -92,7 +81,7 @@
 //   Bit layout: <type><counter>
 //
 // The bits are set in such a way as to make certain common
-// ProfileMe-based queries simple and fast.  
+// ProfileMe-based queries simple and fast.
 
 // For example, given several 'DCPIMetricDesc', suppose we want to
 // find every ProfileMe metric that retired and was not mispredicted.
@@ -100,7 +89,7 @@
 // comparison with the 'DCPIMetricDesc' and the following query
 // expression:
 //   (DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T |
-//   DCPI_PM_TRAP_mispredict_F) 
+//   DCPI_PM_TRAP_mispredict_F)
 //
 // Because each attribute gets two bits (a true and a false bit) we
 // can easily find those metrics with certain attribute values.  Note
@@ -113,29 +102,29 @@
 // ProfileMe and 'regular' (traditional, non-ProfileMe metrics). (For
 // an actual metric, only one of these bits should be set.)
 
-#define DCPI_MTYPE_PM                 UINT64_C(0x0000000000000001)
-#define DCPI_MTYPE_RM                 UINT64_C(0x0000000000000002)
+#define DCPI_MTYPE_PM UINT64_C(0x0000000000000001)
+#define DCPI_MTYPE_RM UINT64_C(0x0000000000000002)
 
 // ----------------------------------------------------------
-  
+
 // ProfileMe counters (6 bits; bits 2-7): The counter name. (There are
 // three counters associated with each unique set of attributes^trap;
 // we view each counter as a separate metric.) (For an actual metric,
 // only one of these bits should be set.)
-#define DCPI_PM_CNTR_MASK             UINT64_C(0x00000000000000fc)
+#define DCPI_PM_CNTR_MASK UINT64_C(0x00000000000000fc)
 
-#define DCPI_PM_CNTR_count            UINT64_C(0x0000000000000004)
-#define DCPI_PM_CNTR_inflight         UINT64_C(0x0000000000000008)
-#define DCPI_PM_CNTR_retires          UINT64_C(0x0000000000000010)
-#define DCPI_PM_CNTR_retdelay         UINT64_C(0x0000000000000020)
-#define DCPI_PM_CNTR_bcmisses         UINT64_C(0x0000000000000040)
-#define DCPI_PM_CNTR_replays          UINT64_C(0x0000000000000080)
+#define DCPI_PM_CNTR_count    UINT64_C(0x0000000000000004)
+#define DCPI_PM_CNTR_inflight UINT64_C(0x0000000000000008)
+#define DCPI_PM_CNTR_retires  UINT64_C(0x0000000000000010)
+#define DCPI_PM_CNTR_retdelay UINT64_C(0x0000000000000020)
+#define DCPI_PM_CNTR_bcmisses UINT64_C(0x0000000000000040)
+#define DCPI_PM_CNTR_replays  UINT64_C(0x0000000000000080)
 
 // ProfileMe instruction attributes (22 bits; bits 8-29): Many
 // attribute bits may be set in any given sample.  Each attribute
 // takes two bits to represent its presence or absence.  (For an
 // actual metric, only one bit for each attribute should be set.)
-#define DCPI_PM_ATTR_MASK            UINT64_C(0x000000003fffff00)
+#define DCPI_PM_ATTR_MASK UINT64_C(0x000000003fffff00)
 
 #define DCPI_PM_ATTR_retired_T       UINT64_C(0x0000000000000100)
 #define DCPI_PM_ATTR_retired_F       UINT64_C(0x0000000000000200)
@@ -163,57 +152,56 @@
 // ProfileMe instruction traps (16 bits; bits 32-47): Exactly one trap
 // (or notrap, meaning none of the other traps) is set in any given
 // metric. (For an actual metric, only one trap bit should be set.)
-#define DCPI_PM_TRAP_MASK            UINT64_C(0x0000ffff00000000)
+#define DCPI_PM_TRAP_MASK UINT64_C(0x0000ffff00000000)
 
-#define DCPI_PM_TRAP_notrap          UINT64_C(0x0000000100000000)
-#define DCPI_PM_TRAP_mispredict      UINT64_C(0x0000000200000000)
-#define DCPI_PM_TRAP_replays         UINT64_C(0x0000000400000000)
-#define DCPI_PM_TRAP_unaligntrap     UINT64_C(0x0000000800000000)
-#define DCPI_PM_TRAP_dtbmiss         UINT64_C(0x0000001000000000)
-#define DCPI_PM_TRAP_dtb2miss3       UINT64_C(0x0000002000000000)
-#define DCPI_PM_TRAP_dtb2miss4       UINT64_C(0x0000004000000000)
-#define DCPI_PM_TRAP_itbmiss         UINT64_C(0x0000008000000000)
-#define DCPI_PM_TRAP_arithtrap       UINT64_C(0x0000010000000000)
-#define DCPI_PM_TRAP_fpdisabledtrap  UINT64_C(0x0000020000000000)
-#define DCPI_PM_TRAP_MT_FPCRtrap     UINT64_C(0x0000040000000000)
-#define DCPI_PM_TRAP_dfaulttrap      UINT64_C(0x0000080000000000)
-#define DCPI_PM_TRAP_iacvtrap        UINT64_C(0x0000100000000000)
-#define DCPI_PM_TRAP_OPCDECtrap      UINT64_C(0x0000200000000000)
-#define DCPI_PM_TRAP_interrupt       UINT64_C(0x0000400000000000)
-#define DCPI_PM_TRAP_mchktrap        UINT64_C(0x0000800000000000)
+#define DCPI_PM_TRAP_notrap         UINT64_C(0x0000000100000000)
+#define DCPI_PM_TRAP_mispredict     UINT64_C(0x0000000200000000)
+#define DCPI_PM_TRAP_replays        UINT64_C(0x0000000400000000)
+#define DCPI_PM_TRAP_unaligntrap    UINT64_C(0x0000000800000000)
+#define DCPI_PM_TRAP_dtbmiss        UINT64_C(0x0000001000000000)
+#define DCPI_PM_TRAP_dtb2miss3      UINT64_C(0x0000002000000000)
+#define DCPI_PM_TRAP_dtb2miss4      UINT64_C(0x0000004000000000)
+#define DCPI_PM_TRAP_itbmiss        UINT64_C(0x0000008000000000)
+#define DCPI_PM_TRAP_arithtrap      UINT64_C(0x0000010000000000)
+#define DCPI_PM_TRAP_fpdisabledtrap UINT64_C(0x0000020000000000)
+#define DCPI_PM_TRAP_MT_FPCRtrap    UINT64_C(0x0000040000000000)
+#define DCPI_PM_TRAP_dfaulttrap     UINT64_C(0x0000080000000000)
+#define DCPI_PM_TRAP_iacvtrap       UINT64_C(0x0000100000000000)
+#define DCPI_PM_TRAP_OPCDECtrap     UINT64_C(0x0000200000000000)
+#define DCPI_PM_TRAP_interrupt      UINT64_C(0x0000400000000000)
+#define DCPI_PM_TRAP_mchktrap       UINT64_C(0x0000800000000000)
 
 // The negative versions of these require setting every bit except the
 // referenced one.
-#define DCPI_PM_TRAP_trap          (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_notrap)
-#define DCPI_PM_TRAP_N_notrap      DCPI_PM_TRAP_trap
+#define DCPI_PM_TRAP_trap     (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_notrap)
+#define DCPI_PM_TRAP_N_notrap DCPI_PM_TRAP_trap
 
-#define DCPI_PM_TRAP_N_mispredict  (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_mispredict)
-#define DCPI_PM_TRAP_N_replays     (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_replays)
-#define DCPI_PM_TRAP_N_unaligntrap (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_unaligntrap)
-#define DCPI_PM_TRAP_N_dtbmiss     (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dtbmiss)
-#define DCPI_PM_TRAP_N_dtb2miss3   (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dtb2miss3)
-#define DCPI_PM_TRAP_N_dtb2miss4   (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dtb2miss4)
-#define DCPI_PM_TRAP_N_itbmiss     (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_itbmiss)
-#define DCPI_PM_TRAP_N_arithtrap   (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_arithtrap)
+#define DCPI_PM_TRAP_N_mispredict     (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_mispredict)
+#define DCPI_PM_TRAP_N_replays        (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_replays)
+#define DCPI_PM_TRAP_N_unaligntrap    (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_unaligntrap)
+#define DCPI_PM_TRAP_N_dtbmiss        (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dtbmiss)
+#define DCPI_PM_TRAP_N_dtb2miss3      (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dtb2miss3)
+#define DCPI_PM_TRAP_N_dtb2miss4      (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dtb2miss4)
+#define DCPI_PM_TRAP_N_itbmiss        (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_itbmiss)
+#define DCPI_PM_TRAP_N_arithtrap      (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_arithtrap)
 #define DCPI_PM_TRAP_N_fpdisabledtrap (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_fpdisabledtrap)
-#define DCPI_PM_TRAP_N_MT_FPCRtrap (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_MT_FPCRtrap)
-#define DCPI_PM_TRAP_N_dfaulttrap  (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dfaulttrap)
-#define DCPI_PM_TRAP_N_iacvtrap    (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_iacvtrap)
-#define DCPI_PM_TRAP_N_OPCDECtrap  (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_OPCDECtrap)
-#define DCPI_PM_TRAP_N_interrupt   (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_interrupt)
-#define DCPI_PM_TRAP_N_mchktrap    (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_mchktrap)
-
+#define DCPI_PM_TRAP_N_MT_FPCRtrap    (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_MT_FPCRtrap)
+#define DCPI_PM_TRAP_N_dfaulttrap     (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_dfaulttrap)
+#define DCPI_PM_TRAP_N_iacvtrap       (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_iacvtrap)
+#define DCPI_PM_TRAP_N_OPCDECtrap     (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_OPCDECtrap)
+#define DCPI_PM_TRAP_N_interrupt      (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_interrupt)
+#define DCPI_PM_TRAP_N_mchktrap       (DCPI_PM_TRAP_MASK & ~DCPI_PM_TRAP_mchktrap)
 
 // ----------------------------------------------------------
 
 // Non-ProfileMe (regular metric) event types supported on Alpha
 // 21264a+ (EV67+) processors (4 bits; bits 2-5)
-#define DCPI_RM_CNTR_MASK         UINT64_C(0x000000000000003c)
+#define DCPI_RM_CNTR_MASK UINT64_C(0x000000000000003c)
 
-#define DCPI_RM_cycles            UINT64_C(0x0000000000000004)
-#define DCPI_RM_retires           UINT64_C(0x0000000000000008)
-#define DCPI_RM_replaytrap        UINT64_C(0x0000000000000010)
-#define DCPI_RM_bmiss             UINT64_C(0x0000000000000020)
+#define DCPI_RM_cycles     UINT64_C(0x0000000000000004)
+#define DCPI_RM_retires    UINT64_C(0x0000000000000008)
+#define DCPI_RM_replaytrap UINT64_C(0x0000000000000010)
+#define DCPI_RM_bmiss      UINT64_C(0x0000000000000020)
 
 // ----------------------------------------------------------
 
@@ -227,14 +215,14 @@ public:
   // A 'DCPIMetricDesc' can be created using either the bit
   // definitions above or a string of the same format used in
   // 'dcpicat'.
-  DCPIMetricDesc(bitvec_t bv = 0) : bits(bv) { }
+  DCPIMetricDesc(bitvec_t bv = 0) : bits(bv) {}
   DCPIMetricDesc(const char* str);
   DCPIMetricDesc(const std::string& str);
-  virtual ~DCPIMetricDesc() { }
-  
+  virtual ~DCPIMetricDesc() {}
+
   DCPIMetricDesc(const DCPIMetricDesc& x) { *this = x; }
-  DCPIMetricDesc& operator=(const DCPIMetricDesc& x) { 
-    bits = x.bits; 
+  DCPIMetricDesc& operator=(const DCPIMetricDesc& x) {
+    bits = x.bits;
     return *this;
   }
 
@@ -246,35 +234,18 @@ public:
   bool IsValid() const { return bits != 0; }
 
   // IsSet: Tests to see if *all* the specified bits are set
-  bool IsSet(const bitvec_t bv) const {
-    return (bits & bv) == bv;
-  }
-  bool IsSet(const DCPIMetricDesc& m) const {
-    return (bits & m.bits) == m.bits; 
-  }
+  bool IsSet(const bitvec_t bv) const { return (bits & bv) == bv; }
+  bool IsSet(const DCPIMetricDesc& m) const { return (bits & m.bits) == m.bits; }
   // IsSetAny: Tests to see if *any* of the specified bits are set
-  bool IsSetAny(const bitvec_t bv) const {
-    return (bits & bv) != 0;
-  }
-  bool IsSetAny(const DCPIMetricDesc& m) const {
-    return (bits & m.bits) != 0; 
-  }
+  bool IsSetAny(const bitvec_t bv) const { return (bits & bv) != 0; }
+  bool IsSetAny(const DCPIMetricDesc& m) const { return (bits & m.bits) != 0; }
   // Set: Set all the specified bits
-  void Set(const bitvec_t bv) {
-    bits = bits | bv;
-  }
-  void Set(const DCPIMetricDesc& m) {
-    bits = bits | m.bits;
-  }
+  void Set(const bitvec_t bv) { bits = bits | bv; }
+  void Set(const DCPIMetricDesc& m) { bits = bits | m.bits; }
   // Unset: Clears all the specified bits
-  void Unset(const bitvec_t bv) {
-    bits = bits & ~bv;
-  }
-  void Unset(const DCPIMetricDesc& m) {
-    bits = bits & ~(m.bits);
-  }
-  
-  
+  void Unset(const bitvec_t bv) { bits = bits & ~bv; }
+  void Unset(const DCPIMetricDesc& m) { bits = bits & ~(m.bits); }
+
   void Dump(std::ostream& o = std::cerr);
   void DDump();
 
@@ -283,16 +254,16 @@ private:
 
 protected:
   bitvec_t bits;
-private:  
-};
 
+private:
+};
 
 // Convert a string describing a DCPI metric into a 'DCPIMetricDesc'.
 // The string should have the format used in 'dcpicat'.  The following
 // is a slightly modified format used by the DCPI tools (cf. ProfileMe
 // man page: man dcpiprofileme).
 //
-// Assumed format: 
+// Assumed format:
 //   string ::= ProfileMe_sample_set *
 //            | ProfileMe_counter *
 //            | ProfileMe_sample_set:ProfileMe_counter
@@ -309,17 +280,13 @@ private:
 //
 //   Note: trap can be used as a synonym for !notrap.
 //
-// Notes: 
+// Notes:
 //   * Note that by themselves these are invalid metrics.  However we
 //     allow the parsing of subexpressions that can be spliced together to
 //     form a valid event.
 //   + We do not support this.
-//  
+//
 
-DCPIMetricDesc
-String2DCPIMetricDesc(const char* str);
+DCPIMetricDesc String2DCPIMetricDesc(const char* str);
 
-//****************************************************************************
-
-#endif 
-
+#endif

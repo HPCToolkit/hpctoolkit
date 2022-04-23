@@ -62,13 +62,9 @@
 
 // correct for a missing header file in binutils 2.31.1
 
+#include "include/hpctoolkit-config.h"
+
 #include <string.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/hpctoolkit-config.h>
-
-//***************************************************************************
 
 /* binutils/bfd/bfd.h only correctly tests for GNU compilers */
 #define TRUE_FALSE_ALREADY_DEFINED
@@ -76,12 +72,10 @@
 #include <dis-asm.h>
 
 #if !defined(HAVE_HPC_GNUBINUTILS)
-# define dis_return 0xdeadbeef
+#define dis_return 0xdeadbeef
 #endif /* HAVE_HPC_GNUBINUTILS */
 
 /* Undo possibly mischevious macros in binutils/include/ansidecl.h */
 #undef inline
-
-//***************************************************************************
 
 #endif /* include_gnu_dis_asm_h */

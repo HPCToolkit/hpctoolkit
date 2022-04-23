@@ -60,28 +60,16 @@
 #ifndef BinUtil_Dbg_Proc_hpp
 #define BinUtil_Dbg_Proc_hpp
 
-//************************* System Include Files ****************************
-
-#include <string>
-#include <deque>
-#include <map>
-#include <iostream>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
 #include "VMAInterval.hpp"
 
-#include <lib/isa/ISATypes.hpp>
+#include "include/uint.h"
+#include "lib/isa/ISATypes.hpp"
+#include "lib/support/SrcFile.hpp"
 
-#include <lib/support/SrcFile.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-// LM (LoadModule)
-//***************************************************************************
+#include <deque>
+#include <iostream>
+#include <map>
+#include <string>
 
 namespace BinUtil {
 
@@ -93,36 +81,31 @@ namespace Dbg {
 
 class Proc {
 public:
-  Proc() 
-    : parent(NULL), parentVMA(0),
-      begVMA(0), endVMA(0), name(""), filenm(""), begLine(0)
-  { }
-  ~Proc() { }
+  Proc() : parent(NULL), parentVMA(0), begVMA(0), endVMA(0), name(""), filenm(""), begLine(0) {}
+  ~Proc() {}
 
-  Proc& operator=(const Proc& x) 
-  {
+  Proc& operator=(const Proc& x) {
     if (this != &x) {
-      parent    = x.parent;
+      parent = x.parent;
       parentVMA = x.parentVMA;
-      begVMA    = x.begVMA;
-      endVMA    = x.endVMA;
-      name      = x.name;
-      filenm    = x.filenm;
-      begLine   = x.begLine;
+      begVMA = x.begVMA;
+      endVMA = x.endVMA;
+      name = x.name;
+      filenm = x.filenm;
+      begLine = x.begLine;
     }
     return *this;
   }
-  
 
   // private:
   Proc* parent;
-  VMA   parentVMA;
-  
-  VMA begVMA; // begin VMA
-  VMA endVMA; // end VMA (at the end of the last insn)
+  VMA parentVMA;
+
+  VMA begVMA;  // begin VMA
+  VMA endVMA;  // end VMA (at the end of the last insn)
   std::string name, filenm;
   SrcFile::ln begLine;
-  
+
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
@@ -133,14 +116,8 @@ public:
   void ddump() const;
 
 private:
-
 };
+}  // namespace Dbg
+}  // namespace BinUtil
 
-  
-} // namespace Dbg
-
-} // namespace BinUtil
-
-//***************************************************************************
-
-#endif // BinUtil_Dbg_Proc_hpp
+#endif  // BinUtil_Dbg_Proc_hpp

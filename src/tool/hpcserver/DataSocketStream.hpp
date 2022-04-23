@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataSocketStream.hpp $
-// $Id: DataSocketStream.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataSocketStream.hpp
+// $ $Id: DataSocketStream.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataSocketStream.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataSocketStream.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -66,51 +69,49 @@
 #ifndef DATASOCKETSTREAM_H_
 #define DATASOCKETSTREAM_H_
 
-#include <string>
-#include <cstdio>
-
 #include "ByteUtilities.hpp"
 
-namespace TraceviewerServer
-{
-	using namespace std;
+#include <cstdio>
+#include <string>
 
-	typedef int SocketFD;
-	class DataSocketStream
-	{
-	public:
-		DataSocketStream(int, bool);
-		void acceptSocket();
-		DataSocketStream();
+namespace TraceviewerServer {
+using namespace std;
 
-		int getPort();
+typedef int SocketFD;
+class DataSocketStream {
+public:
+  DataSocketStream(int, bool);
+  void acceptSocket();
+  DataSocketStream();
 
-		virtual ~DataSocketStream();
+  int getPort();
 
-		virtual void writeInt(int);
-		virtual void writeLong(Long);
-		virtual void writeDouble(double);
-		virtual void writeRawData(char*, int);
-		virtual void writeString(string);
-		virtual void writeShort(short);
+  virtual ~DataSocketStream();
 
-		virtual void flush();
+  virtual void writeInt(int);
+  virtual void writeLong(Long);
+  virtual void writeDouble(double);
+  virtual void writeRawData(char*, int);
+  virtual void writeString(string);
+  virtual void writeShort(short);
 
-		int readInt();
-		Long readLong();
-		string readString();
-		double readDouble();
-		short readShort();
-		char readByte();
+  virtual void flush();
 
-		SocketFD getDescriptor();
-	private:
-		int port;
-		SocketFD socketDesc;
-		SocketFD unopenedSocketFD;
-		void checkForErrors(int);
-		FILE* file;
-	};
+  int readInt();
+  Long readLong();
+  string readString();
+  double readDouble();
+  short readShort();
+  char readByte();
 
+  SocketFD getDescriptor();
+
+private:
+  int port;
+  SocketFD socketDesc;
+  SocketFD unopenedSocketFD;
+  void checkForErrors(int);
+  FILE* file;
+};
 } /* namespace TraceviewerServer */
 #endif /* DATASOCKETSTREAM_H_ */

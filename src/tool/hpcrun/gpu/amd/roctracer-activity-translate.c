@@ -41,78 +41,36 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// macros
-//******************************************************************************
-
 #define TRACK_SYNCHRONIZATION 0
-#define DEBUG 0
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
+#define DEBUG                 0
 
 #include "roctracer-activity-translate.h"
-#include <hpcrun/gpu/gpu-print.h>
 
+#include "hpcrun/gpu/gpu-print.h"
 
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static void
-convert_kernel_launch
-(
- gpu_activity_t *ga,
- roctracer_record_t *activity
-)
-{
+static void convert_kernel_launch(gpu_activity_t* ga, roctracer_record_t* activity) {
   ga->kind = GPU_ACTIVITY_KERNEL;
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.kernel.correlation_id = activity->correlation_id;
 }
 
-
 static void
-convert_memcpy
-(
- gpu_activity_t *ga,
- roctracer_record_t *activity,
- gpu_memcpy_type_t kind
-)
-{
+convert_memcpy(gpu_activity_t* ga, roctracer_record_t* activity, gpu_memcpy_type_t kind) {
   ga->kind = GPU_ACTIVITY_MEMCPY;
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.memcpy.correlation_id = activity->correlation_id;
   ga->details.memcpy.copyKind = kind;
 }
 
-
-static void
-convert_memset
-(
- gpu_activity_t *ga,
- roctracer_record_t *activity
-)
-{
+static void convert_memset(gpu_activity_t* ga, roctracer_record_t* activity) {
   ga->kind = GPU_ACTIVITY_MEMSET;
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.memset.correlation_id = activity->correlation_id;
 }
 
-
 #if TRACK_SYNCHRONIZATION
 static void
-convert_sync
-(
- gpu_activity_t *ga,
- roctracer_record_t *activity,
- gpu_sync_type_t syncKind
-)
-{
+convert_sync(gpu_activity_t* ga, roctracer_record_t* activity, gpu_sync_type_t syncKind) {
   ga->kind = GPU_ACTIVITY_SYNCHRONIZATION;
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.synchronization.syncKind = syncKind;
@@ -120,30 +78,12 @@ convert_sync
 }
 #endif
 
-
-static void
-convert_unknown
-(
- gpu_activity_t *ga
-)
-{
+static void convert_unknown(gpu_activity_t* ga) {
   ga->kind = GPU_ACTIVITY_UNKNOWN;
 }
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-roctracer_activity_translate
-(
- gpu_activity_t *ga,
- roctracer_record_t *record
-)
-{
-  const char * name = roctracer_op_string(record->domain, record->op, record->kind);
+void roctracer_activity_translate(gpu_activity_t* ga, roctracer_record_t* record) {
+  const char* name = roctracer_op_string(record->domain, record->op, record->kind);
   memset(ga, 0, sizeof(gpu_activity_t));
 
   if (record->domain == ACTIVITY_DOMAIN_HIP_OPS) {
@@ -162,15 +102,18 @@ roctracer_activity_translate
       convert_memset(ga, record);
     } else {
       convert_unknown(ga);
-      PRINT("roctracer buffer event: Unhandled HIP OPS activity %s, duration %d\n", name, record->end_ns - record->begin_ns);      
+      PRINT(
+          "roctracer buffer event: Unhandled HIP OPS activity %s, duration %d\n", name,
+          record->end_ns - record->begin_ns);
     }
   } else if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
     // Ignore API tracing records
     convert_unknown(ga);
   } else {
     convert_unknown(ga);
-    PRINT("roctracer buffer enent: Unhandled activity %s, domain %u, op %u, kind %u\n", 
-      name, record->domain, record->op, record->kind);
+    PRINT(
+        "roctracer buffer enent: Unhandled activity %s, domain %u, op %u, kind %u\n", name,
+        record->domain, record->op, record->kind);
   }
   cstack_ptr_set(&(ga->next), 0);
 }

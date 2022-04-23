@@ -60,102 +60,60 @@
 #ifndef isa_x86ISA_hpp
 #define isa_x86ISA_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "ISA.hpp"
 
-//*************************** Forward Declarations ***************************
-
-
-//****************************************************************************
-
-//***************************************************************************
-// x86ISA
-//***************************************************************************
+#include "include/gcc-attr.h"
+#include "include/uint.h"
 
 // 'x86ISA': Implements the x86 and x86-64 Instruction Set Architecture
 // See comments in 'ISA.h'
 
 class x86ISA : public virtual ISA {
 public:
-  x86ISA()
-  {}
+  x86ISA() {}
 
-  virtual ~x86ISA()
-  {} 
+  virtual ~x86ISA() {}
 
   // --------------------------------------------------------
   // Instructions:
   // --------------------------------------------------------
 
-  virtual ushort
-  getInsnSize(MachInsn* mi) 
-  { return 0; }
- 
-  virtual ushort
-  getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
-  { return 1; }
+  virtual ushort getInsnSize(MachInsn* mi) { return 0; }
 
-  virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0) 
-  {
+  virtual ushort getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi) { return 1; }
+
+  virtual InsnDesc getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0) {
     InsnDesc d;
     return d;
   }
 
-  virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0) 
-  { return 0;  }
+  virtual VMA getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0) { return 0; }
 
-  virtual ushort
-  getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,
-		       ushort GCC_ATTR_UNUSED opIndex,
-		       ushort GCC_ATTR_UNUSED sz = 0)
-  { return 0; }
+  virtual ushort getInsnNumDelaySlots(
+      MachInsn* GCC_ATTR_UNUSED mi, ushort GCC_ATTR_UNUSED opIndex, ushort GCC_ATTR_UNUSED sz = 0) {
+    return 0;
+  }
 
-  virtual bool
-  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
-			  ushort GCC_ATTR_UNUSED opIndex1,
-			  ushort GCC_ATTR_UNUSED sz1,
-			  MachInsn* GCC_ATTR_UNUSED mi2,
-			  ushort GCC_ATTR_UNUSED opIndex2,
-			  ushort GCC_ATTR_UNUSED sz2) const
-  { return false; }
+  virtual bool isParallelWithSuccessor(
+      MachInsn* GCC_ATTR_UNUSED mi1, ushort GCC_ATTR_UNUSED opIndex1, ushort GCC_ATTR_UNUSED sz1,
+      MachInsn* GCC_ATTR_UNUSED mi2, ushort GCC_ATTR_UNUSED opIndex2,
+      ushort GCC_ATTR_UNUSED sz2) const {
+    return false;
+  }
 
-
-  virtual void 
-  decode(std::ostream&, MachInsn*, VMA, ushort)
-  {}
+  virtual void decode(std::ostream&, MachInsn*, VMA, ushort) {}
 
 private:
   // Should not be used
-  x86ISA(const x86ISA& GCC_ATTR_UNUSED x)
-  { }
+  x86ISA(const x86ISA& GCC_ATTR_UNUSED x) {}
 
-  x86ISA&
-  operator=(const x86ISA& GCC_ATTR_UNUSED x)
-  { return *this; }
-
+  x86ISA& operator=(const x86ISA& GCC_ATTR_UNUSED x) { return *this; }
 
 protected:
-
 };
 
-//****************************************************************************
-// "static" function to be used by generic x86ISA and x86ISA_xed
-//****************************************************************************
+VMA GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma);
 
-VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma);
-
-void
-GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di);
-
-//****************************************************************************
+void GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di);
 
 #endif /* isa_x86ISA_hpp */

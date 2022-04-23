@@ -57,34 +57,19 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::endl;
-using std::hex;
-using std::dec;
-
-//*************************** User Include Files ****************************
-
 #include "DCPIProfileMetric.hpp"
 
-//*************************** Forward Declarations ***************************
+#include <iostream>
 
-//****************************************************************************
-// DCPIProfileMetric
-//****************************************************************************
+using std::dec;
+using std::endl;
+using std::hex;
 
-void 
-DCPIProfileMetric::dump(std::ostream& o)
-{
+void DCPIProfileMetric::dump(std::ostream& o) {
   o << "'DCPIProfileMetric' --\n";
   PCProfileMetric::dump(o);
 }
 
-void
-DCPIProfileMetric::ddump()
-{
+void DCPIProfileMetric::ddump() {
   dump(std::cerr);
 }
-
-//****************************************************************************

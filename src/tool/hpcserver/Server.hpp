@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Server.hpp $
-// $Id: Server.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Server.hpp
+// $ $Id: Server.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Server.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Server.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -63,39 +66,33 @@
 #include "DataSocketStream.hpp"
 #include "SpaceTimeDataController.hpp"
 
+namespace TraceviewerServer {
+extern bool useCompression;
+extern int mainPortNumber;
+extern int xmlPortNumber;
+class Server {
+public:
+  Server();
+  virtual ~Server();
+  static int main(int argc, char* argv[]);
 
+private:
+  int runConnection(DataSocketStream*, DataSocketStream* xmlSocket);
+  void sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket);
 
-namespace TraceviewerServer
-{
-	extern bool useCompression;
-	extern int mainPortNumber;
-	extern int xmlPortNumber;
-	class Server
-	{
+  void parseInfo(DataSocketStream*);
+  SpaceTimeDataController* parseOpenDB(DataSocketStream*);
+  void filter(DataSocketStream*);
+  void getAndSendData(DataSocketStream*);
+  void sendXML(DataSocketStream*);
+  void sendDBOpenFailed(DataSocketStream*);
+  void checkProtocolVersions(DataSocketStream* receiver);
 
-	public:
-		Server();
-		virtual ~Server();
-		static int main(int argc, char *argv[]);
+  SpaceTimeDataController* controller;
 
-	private:
-		int runConnection(DataSocketStream*, DataSocketStream* xmlSocket);
-		void sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket);
-
-		void parseInfo(DataSocketStream*);
-		SpaceTimeDataController* parseOpenDB(DataSocketStream*);
-		void filter(DataSocketStream*);
-		void getAndSendData(DataSocketStream*);
-		void sendXML(DataSocketStream*);
-		void sendDBOpenFailed(DataSocketStream*);
-		void checkProtocolVersions(DataSocketStream* receiver);
-
-		SpaceTimeDataController* controller;
-
-		//Currently not really used, but pretty necessary for future extensions
-		int agreedUponProtocolVersion;
-		static const int SERVER_PROTOCOL_MAX_VERSION = 0x00010001;
-
-	};
-}/* namespace TraceviewerServer */
+  // Currently not really used, but pretty necessary for future extensions
+  int agreedUponProtocolVersion;
+  static const int SERVER_PROTOCOL_MAX_VERSION = 0x00010001;
+};
+} /* namespace TraceviewerServer */
 #endif /* Server_H_ */

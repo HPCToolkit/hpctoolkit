@@ -50,10 +50,9 @@
 
 #include "audit-api.h"
 
-#include <monitor.h>
-
 #include <dlfcn.h>
 #include <elf.h>
+#include <monitor.h>
 #include <pthread.h>
 #include <sched.h>
 #include <stddef.h>
@@ -93,11 +92,12 @@ static int (*real_dlclose)(void*) = NULL;
 
 // Scan the phdrs for an entry that looks like ours, and nab the DYNAMIC section
 static ElfW(Addr) self_baseaddr;
-static const ElfW(Dyn)* self_dynamic;
+static const ElfW(Dyn) * self_dynamic;
 static int self_scan_dl(struct dl_phdr_info* map, size_t sz, void* vp) {
-  if(map->dlpi_addr != self_baseaddr) return 0;
-  for(size_t i = 0; i < map->dlpi_phnum; i++) {
-    if(map->dlpi_phdr[i].p_type == PT_DYNAMIC) {
+  if (map->dlpi_addr != self_baseaddr)
+    return 0;
+  for (size_t i = 0; i < map->dlpi_phnum; i++) {
+    if (map->dlpi_phdr[i].p_type == PT_DYNAMIC) {
       self_dynamic = (const void*)map->dlpi_addr + map->dlpi_phdr[i].p_vaddr;
       return 1;
     }
@@ -108,7 +108,8 @@ static int self_scan_dl(struct dl_phdr_info* map, size_t sz, void* vp) {
 // Initialization can happen from multiple locations, but always looks like this:
 static bool initialized = false;
 void hpcrun_init_fake_auditor() {
-  if(initialized) return;
+  if (initialized)
+    return;
   initialized = true;
 
   pthread_mutexattr_t mattr;
@@ -133,34 +134,47 @@ void hpcrun_init_fake_auditor() {
   self_baseaddr = (uintptr_t)selfinfo.dli_fbase;
   dl_iterate_phdr(self_scan_dl, NULL);
   const char* strtab = NULL;
-  for(const ElfW(Dyn)* d = self_dynamic; d->d_tag != DT_NULL; d++) {
-    if(d->d_tag != DT_STRTAB) continue;
+  for (const ElfW(Dyn)* d = self_dynamic; d->d_tag != DT_NULL; d++) {
+    if (d->d_tag != DT_STRTAB)
+      continue;
     strtab = (const void*)d->d_un.d_ptr;
     break;
   }
-  if(strtab != NULL) {
-    for(const ElfW(Dyn)* d = self_dynamic; d->d_tag != DT_NULL; d++) {
-      if(d->d_tag != DT_NEEDED) continue;
-      void* lib = real_dlopen(&strtab[d->d_un.d_val], RTLD_LAZY|RTLD_NOLOAD);
-      if(!lib) continue;
+  if (strtab != NULL) {
+    for (const ElfW(Dyn)* d = self_dynamic; d->d_tag != DT_NULL; d++) {
+      if (d->d_tag != DT_NEEDED)
+        continue;
+      void* lib = real_dlopen(&strtab[d->d_un.d_val], RTLD_LAZY | RTLD_NOLOAD);
+      if (!lib)
+        continue;
       // Skip libmonitor, otherwise we'll spin out of control
-      if(!dlsym(lib, "monitor_initialize") && !dlsym(lib, "monitor_is_threaded")) {
-        if(!exports.pipe) exports.pipe = dlsym(lib, "pipe");
-        if(!exports.close) exports.close = dlsym(lib, "close");
-        if(!exports.waitpid) exports.waitpid = dlsym(lib, "waitpid");
-        if(!exports.clone) exports.clone = dlsym(lib, "clone");
-        if(!exports.execve) exports.execve = dlsym(lib, "execve");
+      if (!dlsym(lib, "monitor_initialize") && !dlsym(lib, "monitor_is_threaded")) {
+        if (!exports.pipe)
+          exports.pipe = dlsym(lib, "pipe");
+        if (!exports.close)
+          exports.close = dlsym(lib, "close");
+        if (!exports.waitpid)
+          exports.waitpid = dlsym(lib, "waitpid");
+        if (!exports.clone)
+          exports.clone = dlsym(lib, "clone");
+        if (!exports.execve)
+          exports.execve = dlsym(lib, "execve");
       }
       real_dlclose(lib);
     }
   }
 
   // If any exports are remaining, just link them into our best options
-  if(!exports.pipe) exports.pipe = pipe;
-  if(!exports.close) exports.close = close;
-  if(!exports.waitpid) exports.waitpid = waitpid;
-  if(!exports.clone) exports.clone = clone;
-  if(!exports.execve) exports.execve = monitor_real_execve;
+  if (!exports.pipe)
+    exports.pipe = pipe;
+  if (!exports.close)
+    exports.close = close;
+  if (!exports.waitpid)
+    exports.waitpid = waitpid;
+  if (!exports.clone)
+    exports.clone = clone;
+  if (!exports.execve)
+    exports.execve = monitor_real_execve;
 
   exports.mainlib_connected = mainlib_connected;
   exports.mainlib_disconnect = mainlib_disconnect;
@@ -173,26 +187,28 @@ void hpcrun_init_fake_auditor() {
   // TODO: Export to another file for sharing with auditor.c.
   {
     size_t envsz = 0;
-    for(char** e = environ; *e != NULL; e++) envsz++;
-    exports.pure_environ = malloc((envsz+1)*sizeof exports.pure_environ[0]);
+    for (char** e = environ; *e != NULL; e++)
+      envsz++;
+    exports.pure_environ = malloc((envsz + 1) * sizeof exports.pure_environ[0]);
     size_t idx = 0;
-    for(char** e = environ; *e != NULL; e++) {
-      if(strncmp(*e, "LD_PRELOAD=", 11) == 0) continue;
-      if(strncmp(*e, "LD_AUDIT=", 9) == 0) continue;
+    for (char** e = environ; *e != NULL; e++) {
+      if (strncmp(*e, "LD_PRELOAD=", 11) == 0)
+        continue;
+      if (strncmp(*e, "LD_AUDIT=", 9) == 0)
+        continue;
       exports.pure_environ[idx++] = *e;
     }
     exports.pure_environ[idx] = NULL;
   }
 
   // Attach to the rest of the world.
-  if(verbose)
+  if (verbose)
     fprintf(stderr, "[fake audit] Attaching to mainlib\n");
   hpcrun_auditor_attach(&exports, &hooks);
 }
 
 // The earliest we can do anything without LD_AUDIT is with the constructor
-__attribute__((constructor))
-static void hpcrun_constructor_init_fake_auditor() {
+__attribute__((constructor)) static void hpcrun_constructor_init_fake_auditor() {
   hpcrun_init_fake_auditor();
 }
 
@@ -204,28 +220,30 @@ struct update_shadow_args {
 };
 bool update_shadow() {
   pthread_mutex_lock(&shadow_lock);
-  for(shadow_map_entry_t* m = shadow_map; m != NULL; m = m->next)
+  for (shadow_map_entry_t* m = shadow_map; m != NULL; m = m->next)
     m->seen = false;
-  struct update_shadow_args args = {
-    .dirty = false
-  };
+  struct update_shadow_args args = {.dirty = false};
   dl_iterate_phdr(update_shadow_dl, &args);
-  if(args.dirty) {
-    for(shadow_map_entry_t* m = shadow_map, *p = NULL; m != NULL;
-        p = m, m = m ? m->next : shadow_map) {
-      if(!m->seen) {
-        if(verbose)
+  if (args.dirty) {
+    for (shadow_map_entry_t *m = shadow_map, *p = NULL; m != NULL;
+         p = m, m = m ? m->next : shadow_map) {
+      if (!m->seen) {
+        if (verbose)
           fprintf(stderr, "[fake audit] Delivering objclose for `%s'\n", m->entry.path);
         hooks.close(&m->entry);
-        if(p) p->next = m->next;
-        else shadow_map = m->next;
+        if (p)
+          p->next = m->next;
+        else
+          shadow_map = m->next;
         free(m);
         m = p;
-      } else if(m->new) {
-        if(verbose)
-          fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)" 
-		  " dl_info.dlpi_addr = %p\n", m->entry.path, m->entry.start, 
-		  m->entry.end, (void *)m->entry.dl_info.dlpi_addr);
+      } else if (m->new) {
+        if (verbose)
+          fprintf(
+              stderr,
+              "[fake audit] Delivering objopen for `%s' [%p, %p)"
+              " dl_info.dlpi_addr = %p\n",
+              m->entry.path, m->entry.start, m->entry.end, (void*)m->entry.dl_info.dlpi_addr);
         hooks.open(&m->entry);
         m->new = false;
       }
@@ -238,12 +256,11 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   struct update_shadow_args* args = args_vp;
   shadow_map_entry_t* entry;
   // Make sure we can actually use this entry
-  if(sz < offsetof(struct dl_phdr_info, dlpi_phnum)
-          + sizeof entry->entry.dl_info.dlpi_phnum)
+  if (sz < offsetof(struct dl_phdr_info, dlpi_phnum) + sizeof entry->entry.dl_info.dlpi_phnum)
     return 0;
   // First check whether we have this entry already
-  for(shadow_map_entry_t* m = shadow_map; m != NULL; m = m->next) {
-    if(m->addr == map->dlpi_addr) {
+  for (shadow_map_entry_t* m = shadow_map; m != NULL; m = m->next) {
+    if (m->addr == map->dlpi_addr) {
       m->seen = true;
       return 0;
     }
@@ -256,10 +273,11 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
 
   uintptr_t start = UINTPTR_MAX;
   uintptr_t end = 0;
-  for(size_t i = 0; i < map->dlpi_phnum; i++) {
-    if((map->dlpi_phdr[i].p_flags & PF_X) != 0 && map->dlpi_phdr[i].p_memsz > 0) {
-      if(map->dlpi_phdr[i].p_vaddr < start) start = map->dlpi_phdr[i].p_vaddr;
-      if(map->dlpi_phdr[i].p_vaddr + map->dlpi_phdr[i].p_memsz > end)
+  for (size_t i = 0; i < map->dlpi_phnum; i++) {
+    if ((map->dlpi_phdr[i].p_flags & PF_X) != 0 && map->dlpi_phdr[i].p_memsz > 0) {
+      if (map->dlpi_phdr[i].p_vaddr < start)
+        start = map->dlpi_phdr[i].p_vaddr;
+      if (map->dlpi_phdr[i].p_vaddr + map->dlpi_phdr[i].p_memsz > end)
         end = map->dlpi_phdr[i].p_vaddr + map->dlpi_phdr[i].p_memsz;
     }
   }
@@ -270,12 +288,12 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   entry->entry.path = NULL;
   if (map->dlpi_addr == getauxval(AT_SYSINFO_EHDR))
     entry->entry.path = realpath(vdso_path, NULL);
-  else if(map->dlpi_phdr == (void*)getauxval(AT_PHDR)) {
+  else if (map->dlpi_phdr == (void*)getauxval(AT_PHDR)) {
     entry->entry.path = realpath("/proc/self/exe", NULL);
-    if(entry->entry.path == NULL || strcmp(entry->entry.path, "/proc/self/exe") == 0)
+    if (entry->entry.path == NULL || strcmp(entry->entry.path, "/proc/self/exe") == 0)
       entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
   }
-  if(entry->entry.path == NULL)
+  if (entry->entry.path == NULL)
     entry->entry.path = realpath(map->dlpi_name, NULL);
 
   entry->entry.dl_info = *map;
@@ -302,34 +320,34 @@ void mainlib_disconnect() {
 
 // The remainder here is overloads for dl* that update as per the usual
 void* dlopen(const char* fn, int flags) {
-  if(!real_dlopen)
-    return ((void*(*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
+  if (!real_dlopen)
+    return ((void* (*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
   void* out = real_dlopen(fn, flags);
-  if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
-    if(verbose)
+  if (connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
+    if (verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
     hooks.stable(true);
   }
   return out;
 }
 void* dlmopen(Lmid_t lmid, const char* fn, int flags) {
-  if(!real_dlmopen)
-    return ((void*(*)(Lmid_t, const char*, int))dlsym(RTLD_NEXT, "dlmopen"))(lmid, fn, flags);
+  if (!real_dlmopen)
+    return ((void* (*)(Lmid_t, const char*, int))dlsym(RTLD_NEXT, "dlmopen"))(lmid, fn, flags);
   void* out = real_dlmopen(lmid, fn, flags);
   // TODO: Scan the (potentially newly created) link map for entries
-  if(connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
-    if(verbose)
+  if (connected && (flags & RTLD_NOLOAD) == 0 && update_shadow()) {
+    if (verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 1)\n");
     hooks.stable(true);
   }
   return out;
 }
 int dlclose(void* handle) {
-  if(!real_dlclose)
-    return ((int(*)(void*))dlsym(RTLD_NEXT, "dlclose"))(handle);
+  if (!real_dlclose)
+    return ((int (*)(void*))dlsym(RTLD_NEXT, "dlclose"))(handle);
   int out = real_dlclose(handle);
-  if(connected && update_shadow()) {
-    if(verbose)
+  if (connected && update_shadow()) {
+    if (verbose)
       fprintf(stderr, "[fake audit] Notifying stability (additive: 0)\n");
     hooks.stable(false);
   }

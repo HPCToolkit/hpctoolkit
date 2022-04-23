@@ -57,12 +57,9 @@ namespace hpctoolkit::mpi {
 
 namespace detail {
 // NOTE: These are in-place operations, for efficiency.
-void send(const void* data, std::size_t cnt, const Datatype&,
-          Tag tag, std::size_t dst);
-void recv(void* data, std::size_t cnt, const Datatype&,
-          Tag tag, std::size_t src);
-std::optional<std::size_t> recv_server(void* data, std::size_t cnt,
-    const Datatype&, Tag tag);
+void send(const void* data, std::size_t cnt, const Datatype&, Tag tag, std::size_t dst);
+void recv(void* data, std::size_t cnt, const Datatype&, Tag tag, std::size_t src);
+std::optional<std::size_t> recv_server(void* data, std::size_t cnt, const Datatype&, Tag tag);
 void cancel_server(const Datatype&, Tag tag);
 }  // namespace detail
 
@@ -72,34 +69,29 @@ void cancel_server(const Datatype&, Tag tag);
 
 /// Single send operation. Sends a message to a matching receive on another
 /// process within the team.
-template<class T>
-void send(const T& data, std::size_t dst, Tag tag) {
+template<class T> void send(const T& data, std::size_t dst, Tag tag) {
   detail::send(&data, 1, detail::asDatatype<T>(), tag, dst);
 }
 
 /// Single receive operation. Waits for and receives a message from a matching
 /// send on another process within the team. Returns the resulting value.
-template<class T>
-T receive(std::size_t src, Tag tag) {
+template<class T> T receive(std::size_t src, Tag tag) {
   T data;
   detail::recv(&data, 1, detail::asDatatype<T>(), tag, src);
   return data;
 }
 
 /// Single send operation. Variant to disable the usage of pointers.
-template<class T>
-void send(T*, std::size_t, Tag) = delete;
+template<class T> void send(T*, std::size_t, Tag) = delete;
 
 /// Single send operation. Variant to allow for the usage of std::vector.
-template<class T, class A>
-void send(const std::vector<T, A>& data, std::size_t dst, Tag tag) {
+template<class T, class A> void send(const std::vector<T, A>& data, std::size_t dst, Tag tag) {
   send(data.size(), dst, tag);
   detail::send(data.data(), data.size(), detail::asDatatype<T>(), tag, dst);
 }
 
 /// Single receive operation. Variant to allow for the usage of std::vector.
-template<class T>
-std::vector<T> receive_vector(std::size_t src, Tag tag) {
+template<class T> std::vector<T> receive_vector(std::size_t src, Tag tag) {
   auto sz = receive<std::size_t>(src, tag);
   std::vector<T> result(sz);
   detail::recv(result.data(), sz, detail::asDatatype<T>(), tag, src);
@@ -115,20 +107,17 @@ std::vector<T> receive_vector(std::size_t src, Tag tag) {
 ///       auto [payload, src] = *mesg;
 ///
 /// Returns both the payload and the sender, or an empty optional if canceled.
-template<class T>
-std::optional<std::pair<T, std::size_t>> receive_server(Tag tag) {
+template<class T> std::optional<std::pair<T, std::size_t>> receive_server(Tag tag) {
   T data;
-  if(auto src = detail::recv_server(&data, 1, detail::asDatatype<T>(), tag))
+  if (auto src = detail::recv_server(&data, 1, detail::asDatatype<T>(), tag))
     return std::make_pair(data, *src);
   return std::nullopt;
 }
 
 /// Cancel a concurrent receive_server call, with the matching tag and datatype.
-template<class T>
-void cancel_server(Tag tag) {
+template<class T> void cancel_server(Tag tag) {
   return detail::cancel_server(detail::asDatatype<T>(), tag);
 }
-
 }  // namespace hpctoolkit::mpi
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_ONE2ONE_H

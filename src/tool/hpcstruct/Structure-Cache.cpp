@@ -54,107 +54,79 @@
 //
 //***************************************************************************
 
-//***************************************************************************
-// global includes
-//***************************************************************************
+#include "Structure-Cache.hpp"
+
+#include "Args.hpp"
+
+#include "lib/prof-lean/elf-hash.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/Exception.hpp"
+#include "lib/support/FileUtil.hpp"
 
 #include <dirent.h>
 #include <fcntl.h>
 #include <linux/limits.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
-
-
-//***************************************************************************
-// local includes
-//***************************************************************************
-
-#include <lib/prof-lean/elf-hash.h>
-#include <lib/support/diagnostics.h>
-#include <lib/support/Exception.hpp>
-#include <lib/support/FileUtil.hpp>
-
-#include "Structure-Cache.hpp"
-#include "Args.hpp"
 
 using namespace std;
 
-//***************************************************************************
-// environment variable naming the structure cache; may be overriden from command line
-//***************************************************************************
-
 #define STRUCT_CACHE_ENV "HPCTOOLKIT_HPCSTRUCT_CACHE"
 
-
-
-//***************************************************************************
-// local operations
-//***************************************************************************
-
-typedef enum { PATH_READABLE, PATH_WRITEABLE, PATH_DIR_READABLE, PATH_DIR_WRITEABLE,
-        PATH_DIR_CREATED, PATH_ABSENT, PATH_ERROR } ckpath_ret_t;
-static  ckpath_ret_t ck_path ( const char *path, const char *caller );
-static  ckpath_ret_t mk_dirpath ( const char *path, const char *errortype, bool msg );
+typedef enum {
+  PATH_READABLE,
+  PATH_WRITEABLE,
+  PATH_DIR_READABLE,
+  PATH_DIR_WRITEABLE,
+  PATH_DIR_CREATED,
+  PATH_ABSENT,
+  PATH_ERROR
+} ckpath_ret_t;
+static ckpath_ret_t ck_path(const char* path, const char* caller);
+static ckpath_ret_t mk_dirpath(const char* path, const char* errortype, bool msg);
 
 // return value
 //   1: success
 //   0: failure
-static int
-path_accessible
-(
- const char *path,
- int access_flags
-)
-{
+static int path_accessible(const char* path, int access_flags) {
   int status = 0;
 
   int fd = open(path, access_flags | O_CLOEXEC);
   if (fd != -1) {
-    status = 1; // found!
-    close(fd); // cleanup
+    status = 1;  // found!
+    close(fd);   // cleanup
   }
 
   return status;
 }
 
 //  Examine a file-system path and return its state
-static ckpath_ret_t
-ck_path
-(
-   const char *path,
-   const char *caller
-)
-{
+static ckpath_ret_t ck_path(const char* path, const char* caller) {
   ckpath_ret_t ret;
 
   // See if it's there
   struct stat sb;
-  if (stat( path, &sb) == 0 ) {
-
+  if (stat(path, &sb) == 0) {
     // We know it's there
-    if ( S_ISDIR(sb.st_mode ) ) {
-
+    if (S_ISDIR(sb.st_mode)) {
       // It's a directory; is it writeable?
-      if ( access(path, O_RDWR) == 0 ) {
+      if (access(path, O_RDWR) == 0) {
         ret = PATH_DIR_WRITEABLE;
       } else {
         ret = PATH_DIR_READABLE;
       }
-
     } else {
-
-      // It's a file; is it writeable? 
-      if ( access(path, O_RDWR) == 0 ) {
+      // It's a file; is it writeable?
+      if (access(path, O_RDWR) == 0) {
         ret = PATH_WRITEABLE;
       } else {
         ret = PATH_READABLE;
       }
     }
-
   } else {
-   // It's just not there
+    // It's just not there
 
     ret = PATH_ABSENT;
   }
@@ -164,27 +136,21 @@ ck_path
     case PATH_READABLE:
       retname = "PATH_READABLE = ";
       break;
-
     case PATH_WRITEABLE:
       retname = "PATH_WRITEABLE = ";
       break;
-
     case PATH_DIR_READABLE:
       retname = "PATH_DIR_READABLE = ";
       break;
-
     case PATH_DIR_WRITEABLE:
       retname = "PATH_DIR_WRITEABLE = ";
       break;
-
     case PATH_DIR_CREATED:
       retname = "PATH_DIR_CREATED = ";
       break;
-
     case PATH_ABSENT:
       retname = "PATH_ABSENT = ";
       break;
-
     case PATH_ERROR:
       retname = "PATH_ERROR = ";
       break;
@@ -196,29 +162,21 @@ ck_path
   std::cerr << "DEBUG " <<caller <<"ck_path ( "<< path << " ) returns " << retname << ret << std::endl;
 #endif
   return ret;
- } 
-
+}
 
 //  Make or create a directory path
 //  Returns the same state enum as ck_path, above
-static ckpath_ret_t
-mk_dirpath
-(
- const char *path,
- const char *errortype,
- bool msg
-)
-{
+static ckpath_ret_t mk_dirpath(const char* path, const char* errortype, bool msg) {
   // First see if it's there
   ckpath_ret_t ret = ck_path(path, "mk_dirpath ");
-  if (ret != PATH_ABSENT ) {
-    return (ret );
+  if (ret != PATH_ABSENT) {
+    return (ret);
   }
 
   // path does not exist; create it
   try {
     FileUtil::mkdir(path);
-  } catch (Diagnostics::FatalException &e) {
+  } catch (Diagnostics::FatalException& e) {
     std::cerr << "ERROR: " << errortype << "\n    " << e.what() << std::endl;
     exit(1);
   }
@@ -226,34 +184,28 @@ mk_dirpath
   return PATH_DIR_CREATED;
 }
 
-
 // determine if there already exists a different hash entry for a file path
 //    Returns:
 // 1: replacement of existing entry needed
 // 0: no cleanup needed
 
-static char *
-hpcstruct_cache_needs_cleanup
-(
- std::string path,
- const char *hash
-)
-{
-  DIR *dir = opendir(path.c_str());
+static char* hpcstruct_cache_needs_cleanup(std::string path, const char* hash) {
+  DIR* dir = opendir(path.c_str());
 
   for (;;) {
-    struct dirent *d = readdir(dir);
+    struct dirent* d = readdir(dir);
 
-    if (d == 0) break;
+    if (d == 0)
+      break;
 
     // ignore "." and ".."
-    if ((strcmp(d->d_name, ".") == 0) ||
-	(strcmp(d->d_name, "..") == 0)) continue;
+    if ((strcmp(d->d_name, ".") == 0) || (strcmp(d->d_name, "..") == 0))
+      continue;
 
-    if (strcmp(hash, d->d_name) == 0) { // hash present; nothing to do
-      continue;	// Shouldn't this be "break;"  ??
+    if (strcmp(hash, d->d_name) == 0) {  // hash present; nothing to do
+      continue;                          // Shouldn't this be "break;"  ??
     } else {
-      char * ret = strdup(d->d_name);
+      char* ret = strdup(d->d_name);
       // something else present: cleanup needed
       closedir(dir);
       return ret;
@@ -265,18 +217,10 @@ hpcstruct_cache_needs_cleanup
   return NULL;
 }
 
+//  clean up cache entry being replaced
 
-//  clean up cache entry being replaced 
-
-static int
-hpcstruct_cache_cleanup
-(
- const char *cachedir,
- std::string path,
- const char *hash
-)
-{
-  if ( global_args->nocache == true) {
+static int hpcstruct_cache_cleanup(const char* cachedir, std::string path, const char* hash) {
+  if (global_args->nocache == true) {
 #if 0
     std::cerr << "DEBUG cache_cleanup nocache true, returning 0" << std::endl;
 #endif
@@ -287,7 +231,7 @@ hpcstruct_cache_cleanup
 
   if (oldhash != NULL) {
     // indicates the name of the replaced entry
-    // First, try to remove the directory 
+    // First, try to remove the directory
     std::string command("rm -rf ");
     command += path;
 #if 0
@@ -296,8 +240,8 @@ hpcstruct_cache_cleanup
     system(command.c_str());
 
     // check to see that it worked
-    ckpath_ret_t ret = ck_path ( path.c_str(), "cache_cleanup" );
-    if ( ret != PATH_ABSENT ) {
+    ckpath_ret_t ret = ck_path(path.c_str(), "cache_cleanup");
+    if (ret != PATH_ABSENT) {
       std::cerr << "ERROR: cache_cleanup of " << path.c_str() << " failed" << std::endl;
       exit(1);
     }
@@ -306,7 +250,7 @@ hpcstruct_cache_cleanup
     global_args->cache_stat = CACHE_ENTRY_REMOVED;
 
     // construct the name for the CACHE/FLAT directory entry
-    string fpath =  hpcstruct_cache_flat_entry(cachedir, oldhash );
+    string fpath = hpcstruct_cache_flat_entry(cachedir, oldhash);
 
     // Remove that entry
     command = "rm -f " + fpath;
@@ -317,8 +261,8 @@ hpcstruct_cache_cleanup
     system(command.c_str());
 
     // check to see that it worked
-    ret = ck_path ( fpath.c_str(), "cache_cleanup -- FLAT" );
-    if ( ret != PATH_ABSENT ) {
+    ret = ck_path(fpath.c_str(), "cache_cleanup -- FLAT");
+    if (ret != PATH_ABSENT) {
       std::cerr << "ERROR: cache_cleanup FLAT of " << fpath.c_str() << " failed" << std::endl;
       exit(1);
     }
@@ -330,74 +274,43 @@ hpcstruct_cache_cleanup
   return 0;
 }
 
-
-static bool
-empty_string
-(
- const char *s
-)
-{
+static bool empty_string(const char* s) {
   return s == 0 || *s == 0;
 }
 
-
-
-//***************************************************************************
-// interface operations
-//***************************************************************************
-
-bool
-hpcstruct_cache_find
-(
- const char *cached_entry
-)
-{
+bool hpcstruct_cache_find(const char* cached_entry) {
   bool ret = path_accessible(cached_entry, O_RDONLY);
-  if ( ret == false ) {
+  if (ret == false) {
     return ret;
   }
   return ret;
 }
 
-
-bool
-hpcstruct_cache_writable
-(
- const char *cache_dir
-)
-{
+bool hpcstruct_cache_writable(const char* cache_dir) {
   return access(cache_dir, O_RDWR) == 0;
 }
 
-
-char *
-hpcstruct_cache_hash
-(
- const char *binary_abspath
-)
-{
-  char *eh  = elf_hash(binary_abspath);
+char* hpcstruct_cache_hash(const char* binary_abspath) {
+  char* eh = elf_hash(binary_abspath);
   return eh;
 }
-
 
 // Ensure that the cache FLAT subdirectory is created and writeable
 //  Returns the path to the entry in the FLAT subdirectory for the input file
 //
-char *
-hpcstruct_cache_flat_entry
-(
- const char *cache_dir,
- const char *hash  // hash for elf file
-)
-{
+char* hpcstruct_cache_flat_entry(
+    const char* cache_dir,
+    const char* hash  // hash for elf file
+) {
   std::string path = cache_dir;
 
   path += "/FLAT";
 
-  ckpath_ret_t ret = mk_dirpath(path.c_str(), "Failed to create hpcstruct cache FLAT directory", true);
-  if ( (ret != PATH_DIR_CREATED) && (ret != PATH_DIR_WRITEABLE) ) {
-    std::cerr << "ERROR: FLAT directory " << path.c_str() << " access failed ;  returns " << ret << std::endl;
+  ckpath_ret_t ret =
+      mk_dirpath(path.c_str(), "Failed to create hpcstruct cache FLAT directory", true);
+  if ((ret != PATH_DIR_CREATED) && (ret != PATH_DIR_WRITEABLE)) {
+    std::cerr << "ERROR: FLAT directory " << path.c_str() << " access failed ;  returns " << ret
+              << std::endl;
     exit(1);
   }
 
@@ -408,26 +321,22 @@ hpcstruct_cache_flat_entry
   return strdup(path.c_str());
 }
 
-
 // Construct the path within the CACHE/PATH for the binary
 //
-char *
-hpcstruct_cache_path_directory
-(
- const char *cache_dir,
- const char *binary_abspath,
- const char *hash, // hash for elf file
- const char *suffix
-)
-{
+char* hpcstruct_cache_path_directory(
+    const char* cache_dir, const char* binary_abspath,
+    const char* hash,  // hash for elf file
+    const char* suffix) {
   std::string path = cache_dir;
 
   path += "/PATH";
 
   // early error for path prefix
-  ckpath_ret_t ret = mk_dirpath(path.c_str(), "Failed to create hpcstruct cache PATH directory", true);
-  if ( (ret != PATH_DIR_CREATED) && (ret != PATH_DIR_WRITEABLE) ) {
-    std::cerr << "ERROR: PATH directory " << path.c_str() << " access failed ;  returns " << ret << std::endl;
+  ckpath_ret_t ret =
+      mk_dirpath(path.c_str(), "Failed to create hpcstruct cache PATH directory", true);
+  if ((ret != PATH_DIR_CREATED) && (ret != PATH_DIR_WRITEABLE)) {
+    std::cerr << "ERROR: PATH directory " << path.c_str() << " access failed ;  returns " << ret
+              << std::endl;
     exit(1);
   }
 
@@ -437,7 +346,7 @@ hpcstruct_cache_path_directory
   mk_dirpath(path.c_str(), "Failed to create entry in hpcstruct cache directory", true);
 
   // discard any prior entries for path with a different hash
-  hpcstruct_cache_cleanup(cache_dir, path.c_str(), hash );
+  hpcstruct_cache_cleanup(cache_dir, path.c_str(), hash);
 
   // compute the full path to the new cache entry's directory
   path = path + '/' + hash;
@@ -449,14 +358,10 @@ hpcstruct_cache_path_directory
   return strdup(path.c_str());
 }
 
-
-char *
-hpcstruct_cache_path_link
-(
- const char *binary_abspath,
- const char *hash // hash for elf file
-)
-{
+char* hpcstruct_cache_path_link(
+    const char* binary_abspath,
+    const char* hash  // hash for elf file
+) {
   std::string path = "../PATH";
 
   path += binary_abspath;
@@ -465,14 +370,7 @@ hpcstruct_cache_path_link
   return strdup(path.c_str());
 }
 
-
-char *
-hpcstruct_cache_entry
-(
- const char *directory,
- const char *kind
-)
-{
+char* hpcstruct_cache_entry(const char* directory, const char* kind) {
   std::string path = directory;
 
   // compute the full path for the new cache entry
@@ -482,18 +380,11 @@ hpcstruct_cache_entry
   return strdup(path.c_str());
 }
 
-
 // Routine to examine arguments, and set up the cache directory
 // Returns the absolute path to the top-level cache directory
 //  Returns NULL if no cache directory was specified
 //
-char *
-setup_cache_dir
-(
- const char *cache_dir,
- Args *args
-)
-{
+char* setup_cache_dir(const char* cache_dir, Args* args) {
   global_args = args;
   static bool warn = true;
   char abspath[PATH_MAX];
@@ -503,16 +394,18 @@ setup_cache_dir
   if (empty_string(cache_dir)) {
     // cache directory is not explicit: consider environment variable value
     cache_dir = getenv(STRUCT_CACHE_ENV);
-    if (empty_string(cache_dir)) cache_dir = NULL;
+    if (empty_string(cache_dir))
+      cache_dir = NULL;
   }
   // invariant: if cache_dir was NULL or empty, it is now NULL
 
-  if ( (cache_dir == NULL) &&  (global_args->nocache == false) ) {
+  if ((cache_dir == NULL) && (global_args->nocache == false)) {
     // no cache directory specified,
     if (warn) {
-      DIAG_MsgIf_GENERIC
-	("ADVICE: ", warn, "See the usage message for how to use "
-	 "a structure cache to accelerate analysis of CPU and GPU binaries\n");
+      DIAG_MsgIf_GENERIC(
+          "ADVICE: ", warn,
+          "See the usage message for how to use "
+          "a structure cache to accelerate analysis of CPU and GPU binaries\n");
       warn = false;
     }
     return NULL;
@@ -529,21 +422,22 @@ setup_cache_dir
       created = true;
       // try to create the partial (or full) path as given in abspath
       ret = mk_dirpath(abspath, "Failed to create hpcstruct cache directory", true);
-      if ( ret == PATH_DIR_CREATED ) {
+      if (ret == PATH_DIR_CREATED) {
         // the path was created. now see if it's the full path to the cache directory
         continue;
       }
     } else {
       // attempt to create path failed for some other reason
-      std::cerr << "ERROR: Failed to create hpcstruct cache directory: " << strerror(errno) << std::endl;
+      std::cerr << "ERROR: Failed to create hpcstruct cache directory: " << strerror(errno)
+                << std::endl;
       exit(1);
     }
   }
 
-  if ( created == true ) {
-      std::cerr << "NOTE: created structure cache directory " << abspath << std::endl << std::endl;
+  if (created == true) {
+    std::cerr << "NOTE: created structure cache directory " << abspath << std::endl << std::endl;
   } else {
-     std::cerr << "NOTE: using structure cache directory " << abspath << std::endl << std::endl;
+    std::cerr << "NOTE: using structure cache directory " << abspath << std::endl << std::endl;
   }
 
   return strdup(abspath);

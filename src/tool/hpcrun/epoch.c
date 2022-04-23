@@ -44,46 +44,41 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-
-#include "env.h"
 #include "epoch.h"
+
+#include "cct/cct_bundle.h"
+#include "env.h"
+#include "hpcrun_return_codes.h"
 #include "loadmap.h"
+#include "messages/messages.h"
+#include "monitor.h"
 #include "name.h"
 #include "thread_data.h"
-#include "hpcrun_return_codes.h"
-#include "monitor.h"
-#include <trampoline/common/trampoline.h>
-#include <messages/messages.h>
-#include <cct/cct_bundle.h>
+#include "trampoline/common/trampoline.h"
 
-void
-hpcrun_reset_epoch(epoch_t* epoch)
-{
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void hpcrun_reset_epoch(epoch_t* epoch) {
   epoch->next = NULL;
   TD_GET(core_profile_trace_data.epoch) = epoch;
 }
 
-void
-hpcrun_epoch_init(cct_ctxt_t* ctxt)
-{
-  TMSG(EPOCH,"init");
-  thread_data_t* td    = hpcrun_get_thread_data();
-  epoch_t*       epoch = td->core_profile_trace_data.epoch;
+void hpcrun_epoch_init(cct_ctxt_t* ctxt) {
+  TMSG(EPOCH, "init");
+  thread_data_t* td = hpcrun_get_thread_data();
+  epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_cct_bundle_init(&(epoch->csdata), ctxt);
 
   epoch->loadmap = hpcrun_getLoadmap();
-  epoch->next  = NULL;
+  epoch->next = NULL;
 }
 
-epoch_t*
-hpcrun_check_for_new_loadmap(epoch_t* epoch)
-{
+epoch_t* hpcrun_check_for_new_loadmap(epoch_t* epoch) {
   /* ugh, nasty race condition here:
 
   1. shared library epoch has changed since the last profile
@@ -109,9 +104,9 @@ hpcrun_check_for_new_loadmap(epoch_t* epoch)
 
   hpcrun_loadmap_t* current = hpcrun_getLoadmap();
 
-  if(epoch->loadmap != current) {
+  if (epoch->loadmap != current) {
     TMSG(LOADMAP, "Need new loadmap!");
-    TMSG(MALLOC," -new_epoch-");
+    TMSG(MALLOC, " -new_epoch-");
     epoch_t* newepoch = hpcrun_malloc(sizeof(epoch_t));
 
     TMSG(EPOCH, "check_new_epoch creating new epoch (new loadmap/cct pair)...");
@@ -122,38 +117,35 @@ hpcrun_check_for_new_loadmap(epoch_t* epoch)
     hpcrun_trampoline_remove();
 
     newepoch->loadmap = current;
-    newepoch->next  = epoch;
+    newepoch->next = epoch;
 
     TD_GET(core_profile_trace_data.epoch) = newepoch;
     return newepoch;
-  }
-  else {
+  } else {
     return epoch;
   }
 }
 
-int
-hpcrun_epoch_fini(epoch_t *x){
-
-  TMSG(EPOCH,"--Fini");
+int hpcrun_epoch_fini(epoch_t* x) {
+  TMSG(EPOCH, "--Fini");
   return HPCRUN_OK;
 }
 
-void
-hpcrun_epoch_reset(void)
-{
+void hpcrun_epoch_reset(void) {
   //
   // create a new epoch list:
   //  preserve current loadmap
   //  re-init cct
   // reset epoch list for thread to point be a list consisting of only the new epoch
   //
-  TMSG(EPOCH_RESET,"--started");
-  epoch_t *epoch = hpcrun_get_thread_epoch();
-  epoch_t *newepoch = hpcrun_malloc(sizeof(epoch_t));
+  TMSG(EPOCH_RESET, "--started");
+  epoch_t* epoch = hpcrun_get_thread_epoch();
+  epoch_t* newepoch = hpcrun_malloc(sizeof(epoch_t));
   memcpy(newepoch, epoch, sizeof(epoch_t));
   TMSG(EPOCH_RESET, "check new loadmap = old loadmap = %d", newepoch->loadmap == epoch->loadmap);
-  hpcrun_cct_bundle_init(&(newepoch->csdata), newepoch->csdata_ctxt); // reset cct
+  hpcrun_cct_bundle_init(&(newepoch->csdata), newepoch->csdata_ctxt);  // reset cct
   hpcrun_reset_epoch(newepoch);
-  TMSG(EPOCH_RESET," ==> no new epoch for next sample = %d", newepoch->loadmap == hpcrun_getLoadmap());
+  TMSG(
+      EPOCH_RESET, " ==> no new epoch for next sample = %d",
+      newepoch->loadmap == hpcrun_getLoadmap());
 }

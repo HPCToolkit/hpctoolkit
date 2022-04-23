@@ -63,16 +63,13 @@
 #ifndef hpcrun_h
 #define hpcrun_h
 
-/************************** System Include Files ****************************/
+#include "lib/prof-lean/hpcrunflat-fmt.h"
 
 #include <stdio.h>
-#include <lib/prof-lean/hpcrunflat-fmt.h>
 
-/**************************** Forward Declarations **************************/
-
-/* 
+/*
    Options to the hpcrun preloaded library (passed via the environment):
-   
+
    Variable              Value
    ---------------------------------------------------------------------
    HPCRUN_RECURSIVE      0 for no; 1 for yes
@@ -84,34 +81,30 @@
    HPCRUN_DEBUG          positive integer
  */
 
-
 // tallent: temporarily create this
 #define HPCRUN_SICORTEX 0
 #if (HPCRUN_SICORTEX)
-# define HPCRUN_NAME "hpcex"
+#define HPCRUN_NAME "hpcex"
 #else
-# define HPCRUN_NAME "hpcrun-flat"
+#define HPCRUN_NAME "hpcrun-flat"
 #endif
 
-#define HPCRUN_LIB  "libhpcrun-flat.so"
+#define HPCRUN_LIB "libhpcrun-flat.so"
 
 typedef enum enum_hpc_threadprof_t {
   HPCRUN_THREADPROF_EACH = 0, /* separate profile for each thread */
 #define HPCRUN_THREADPROF_EACH_STR "0"
-  
-  HPCRUN_THREADPROF_ALL  = 1  /* combined profile for all thread */
-#define HPCRUN_THREADPROF_ALL_STR  "1"
-} hpc_threadprof_t;
 
+  HPCRUN_THREADPROF_ALL = 1 /* combined profile for all thread */
+#define HPCRUN_THREADPROF_ALL_STR "1"
+} hpc_threadprof_t;
 
 /* Special system supported events */
 
-#define HPCRUN_EVENT_WALLCLK_STR     "WALLCLOCK"
-#define HPCRUN_EVENT_WALLCLK_STRLN   9
+#define HPCRUN_EVENT_WALLCLK_STR   "WALLCLOCK"
+#define HPCRUN_EVENT_WALLCLK_STRLN 9
 
-#define HPCRUN_EVENT_FWALLCLK_STR    "FWALLCLOCK"
-#define HPCRUN_EVENT_FWALLCLK_STRLN  10
-
-/****************************************************************************/
+#define HPCRUN_EVENT_FWALLCLK_STR   "FWALLCLOCK"
+#define HPCRUN_EVENT_FWALLCLK_STRLN 10
 
 #endif

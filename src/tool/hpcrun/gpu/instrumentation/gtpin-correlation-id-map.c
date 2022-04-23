@@ -41,112 +41,66 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "gtpin-correlation-id-map.h"
+
+#include "hpcrun/gpu/gpu-activity-channel.h"
+#include "hpcrun/gpu/gpu-op-placeholders.h"
+#include "hpcrun/gpu/gpu-splay-allocator.h"
+
+#include "lib/prof-lean/spinlock.h"
+#include "lib/prof-lean/splay-uint64.h"
 
 #include <assert.h>
 #include <string.h>
-
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include <lib/prof-lean/splay-uint64.h>
-#include <lib/prof-lean/spinlock.h>
-
-#include "gtpin-correlation-id-map.h"
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-splay-allocator.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
 
 #define DEBUG 0
 
 #include "../gpu-print.h"
 
+#define st_insert typed_splay_insert(correlation_id)
 
-#define st_insert				\
-  typed_splay_insert(correlation_id)
+#define st_lookup typed_splay_lookup(correlation_id)
 
-#define st_lookup				\
-  typed_splay_lookup(correlation_id)
+#define st_delete typed_splay_delete(correlation_id)
 
-#define st_delete				\
-  typed_splay_delete(correlation_id)
+#define st_forall typed_splay_forall(correlation_id)
 
-#define st_forall				\
-  typed_splay_forall(correlation_id)
+#define st_count typed_splay_count(correlation_id)
 
-#define st_count				\
-  typed_splay_count(correlation_id)
+#define st_alloc(free_list) typed_splay_alloc(free_list, gtpin_correlation_id_map_entry_t)
 
-#define st_alloc(free_list)			\
-  typed_splay_alloc(free_list, gtpin_correlation_id_map_entry_t)
-
-#define st_free(free_list, node)		\
-  typed_splay_free(free_list, node)
-
-
-
-//*****************************************************************************
-// type declarations
-//*****************************************************************************
+#define st_free(free_list, node) typed_splay_free(free_list, node)
 
 #undef typed_splay_node
 #define typed_splay_node(correlation_id) gtpin_correlation_id_map_entry_t
 
 typedef struct typed_splay_node(correlation_id) {
-  struct typed_splay_node(correlation_id) *left;
-  struct typed_splay_node(correlation_id) *right;
-  uint64_t gtpin_correlation_id; // key
+  struct typed_splay_node(correlation_id) * left;
+  struct typed_splay_node(correlation_id) * right;
+  uint64_t gtpin_correlation_id;  // key
 
   gpu_op_ccts_t op_ccts;
-  gpu_activity_channel_t *activity_channel;
+  gpu_activity_channel_t* activity_channel;
   uint64_t submit_time;
-} typed_splay_node(correlation_id); 
+}
+typed_splay_node(correlation_id);
 
+static gtpin_correlation_id_map_entry_t* map_root = NULL;
 
-//******************************************************************************
-// local data
-//******************************************************************************
-
-static gtpin_correlation_id_map_entry_t *map_root = NULL;
-
-static gtpin_correlation_id_map_entry_t *free_list = NULL;
+static gtpin_correlation_id_map_entry_t* free_list = NULL;
 
 static spinlock_t gtpin_correlation_id_map_lock = SPINLOCK_UNLOCKED;
 
-//*****************************************************************************
-// private operations
-//*****************************************************************************
-
 typed_splay_impl(correlation_id)
 
-
-static gtpin_correlation_id_map_entry_t *
-gtpin_correlation_id_map_entry_alloc()
-{
+    static gtpin_correlation_id_map_entry_t* gtpin_correlation_id_map_entry_alloc() {
   return st_alloc(&free_list);
 }
 
-
-static gtpin_correlation_id_map_entry_t *
-gtpin_correlation_id_map_entry_new
-(
- uint64_t gtpin_correlation_id, 
- gpu_op_ccts_t *op_ccts,
- gpu_activity_channel_t *activity_channel,
- uint64_t submit_time
-)
-{
-  gtpin_correlation_id_map_entry_t *e = gtpin_correlation_id_map_entry_alloc();
+static gtpin_correlation_id_map_entry_t* gtpin_correlation_id_map_entry_new(
+    uint64_t gtpin_correlation_id, gpu_op_ccts_t* op_ccts, gpu_activity_channel_t* activity_channel,
+    uint64_t submit_time) {
+  gtpin_correlation_id_map_entry_t* e = gtpin_correlation_id_map_entry_alloc();
 
   e->gtpin_correlation_id = gtpin_correlation_id;
   e->op_ccts = *op_ccts;
@@ -156,47 +110,30 @@ gtpin_correlation_id_map_entry_new
   return e;
 }
 
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-gtpin_correlation_id_map_entry_t *
-gtpin_correlation_id_map_lookup
-(
- uint64_t gtpin_correlation_id
-)
-{
+gtpin_correlation_id_map_entry_t* gtpin_correlation_id_map_lookup(uint64_t gtpin_correlation_id) {
   spinlock_lock(&gtpin_correlation_id_map_lock);
 
   uint64_t correlation_id = gtpin_correlation_id;
-  gtpin_correlation_id_map_entry_t *result = st_lookup(&map_root, correlation_id);
+  gtpin_correlation_id_map_entry_t* result = st_lookup(&map_root, correlation_id);
 
   spinlock_unlock(&gtpin_correlation_id_map_lock);
 
   return result;
 }
 
-
-void
-gtpin_correlation_id_map_insert
-(
- uint64_t gtpin_correlation_id, 
- gpu_op_ccts_t *op_ccts,
- gpu_activity_channel_t *activity_channel,
- uint64_t submit_time
-)
-{
+void gtpin_correlation_id_map_insert(
+    uint64_t gtpin_correlation_id, gpu_op_ccts_t* op_ccts, gpu_activity_channel_t* activity_channel,
+    uint64_t submit_time) {
   spinlock_lock(&gtpin_correlation_id_map_lock);
 
-  gtpin_correlation_id_map_entry_t *entry = st_lookup(&map_root, gtpin_correlation_id);
+  gtpin_correlation_id_map_entry_t* entry = st_lookup(&map_root, gtpin_correlation_id);
   if (entry) {
     entry->op_ccts = *op_ccts;
     entry->activity_channel = activity_channel;
     entry->submit_time = submit_time;
   } else {
-    gtpin_correlation_id_map_entry_t *entry = 
-      gtpin_correlation_id_map_entry_new(gtpin_correlation_id, op_ccts, activity_channel, submit_time);
+    gtpin_correlation_id_map_entry_t* entry = gtpin_correlation_id_map_entry_new(
+        gtpin_correlation_id, op_ccts, activity_channel, submit_time);
 
     st_insert(&map_root, entry);
   }
@@ -204,61 +141,28 @@ gtpin_correlation_id_map_insert
   spinlock_unlock(&gtpin_correlation_id_map_lock);
 }
 
-
-void
-gtpin_correlation_id_map_delete
-(
- uint64_t gtpin_correlation_id
-)
-{
+void gtpin_correlation_id_map_delete(uint64_t gtpin_correlation_id) {
   spinlock_lock(&gtpin_correlation_id_map_lock);
 
-  gtpin_correlation_id_map_entry_t *node = st_delete(&map_root, gtpin_correlation_id);
+  gtpin_correlation_id_map_entry_t* node = st_delete(&map_root, gtpin_correlation_id);
   st_free(&free_list, node);
 
   spinlock_unlock(&gtpin_correlation_id_map_lock);
 }
 
-
-gpu_op_ccts_t
-gtpin_correlation_id_map_entry_op_ccts_get
-(
- gtpin_correlation_id_map_entry_t *entry
-)
-{
+gpu_op_ccts_t gtpin_correlation_id_map_entry_op_ccts_get(gtpin_correlation_id_map_entry_t* entry) {
   return entry->op_ccts;
 }
 
-
-gpu_activity_channel_t *
-gtpin_correlation_id_map_entry_activity_channel_get
-(
- gtpin_correlation_id_map_entry_t *entry
-)
-{
+gpu_activity_channel_t*
+gtpin_correlation_id_map_entry_activity_channel_get(gtpin_correlation_id_map_entry_t* entry) {
   return entry->activity_channel;
 }
 
-
-uint64_t
-gtpin_correlation_id_map_entry_submit_time_get
-(
- gtpin_correlation_id_map_entry_t *entry
-)
-{
-  return entry->submit_time; 
+uint64_t gtpin_correlation_id_map_entry_submit_time_get(gtpin_correlation_id_map_entry_t* entry) {
+  return entry->submit_time;
 }
 
-
-//*****************************************************************************
-// debugging code
-//*****************************************************************************
-
-uint64_t
-gtpin_correlation_id_map_count
-(
- void
-)
-{
+uint64_t gtpin_correlation_id_map_count(void) {
   return st_count(map_root);
 }

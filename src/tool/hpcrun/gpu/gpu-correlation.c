@@ -41,36 +41,20 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// macros
-//******************************************************************************
-
 #define UNIT_TEST 0
 
 #define DEBUG 0
 
-#include "gpu-print.h"
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
 #include "gpu-correlation.h"
+
+#include "gpu-channel-item-allocator.h"
 #include "gpu-correlation-channel.h"
 #include "gpu-op-placeholders.h"
-#include "gpu-channel-item-allocator.h"
+#include "gpu-print.h"
 
 #if UNIT_TEST == 0
 #include "gpu-host-correlation-map.h"
 #endif
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
 
 typedef struct gpu_correlation_t {
   s_element_t next;
@@ -82,66 +66,34 @@ typedef struct gpu_correlation_t {
   uint64_t cpu_submit_time;
 
   // where to report the activity
-  gpu_activity_channel_t *activity_channel;
+  gpu_activity_channel_t* activity_channel;
 } gpu_correlation_t;
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-gpu_correlation_produce
-(
- gpu_correlation_t *c,
- uint64_t host_correlation_id,
- gpu_op_ccts_t *gpu_op_ccts,
- uint64_t cpu_submit_time,
- gpu_activity_channel_t *activity_channel
-)
-{
+void gpu_correlation_produce(
+    gpu_correlation_t* c, uint64_t host_correlation_id, gpu_op_ccts_t* gpu_op_ccts,
+    uint64_t cpu_submit_time, gpu_activity_channel_t* activity_channel) {
   PRINT("Produce correlation id 0x%lx\n", host_correlation_id);
   c->host_correlation_id = host_correlation_id;
-  if (gpu_op_ccts) c->gpu_op_ccts = *gpu_op_ccts;
+  if (gpu_op_ccts)
+    c->gpu_op_ccts = *gpu_op_ccts;
   c->activity_channel = activity_channel;
   c->cpu_submit_time = cpu_submit_time;
 }
 
-
-void
-gpu_correlation_consume
-(
- gpu_correlation_t *c
-)
-{
+void gpu_correlation_consume(gpu_correlation_t* c) {
 #if UNIT_TEST
-    printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_correlation_id);
+  printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_correlation_id);
 #else
-    PRINT("Consume correlation id 0x%lx\n", c->host_correlation_id);
-    gpu_host_correlation_map_insert(c->host_correlation_id, &(c->gpu_op_ccts),
-      c->cpu_submit_time, c->activity_channel);
+  PRINT("Consume correlation id 0x%lx\n", c->host_correlation_id);
+  gpu_host_correlation_map_insert(
+      c->host_correlation_id, &(c->gpu_op_ccts), c->cpu_submit_time, c->activity_channel);
 #endif
 }
 
-
-gpu_correlation_t *
-gpu_correlation_alloc
-(
- gpu_correlation_channel_t *channel
-)
-{
+gpu_correlation_t* gpu_correlation_alloc(gpu_correlation_channel_t* channel) {
   return channel_item_alloc(channel, gpu_correlation_t);
 }
 
-
-void
-gpu_correlation_free
-(
- gpu_correlation_channel_t *channel,
- gpu_correlation_t *c
-)
-{
+void gpu_correlation_free(gpu_correlation_channel_t* channel, gpu_correlation_t* c) {
   channel_item_free(channel, c);
 }
-

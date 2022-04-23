@@ -44,36 +44,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*************************** System Include Files ***************************/
-
 #include <stdio.h>  // for FILENAME_MAX
 
-#define __USE_XOPEN_EXTENDED // realpath()
-#include <stdlib.h>
-
-/**************************** User Include Files ****************************/
-
+#define __USE_XOPEN_EXTENDED  // realpath()
 #include "realpath.h"
 
-/**************************** Forward Declarations **************************/
-
-/****************************************************************************/
+#include <stdlib.h>
 
 /*
- * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++. 
+ * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++.
  * This is a C wrapper for the standard routine so that it can be available
  * for C++ programs.
  *
  */
-const char*
-RealPath(const char* nm)
-{
-  static __thread char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
+const char* RealPath(const char* nm) {
+  static __thread char _RealPathBuf[FILENAME_MAX];  // PATH_MAX
 
   if (realpath(nm, _RealPathBuf) == NULL) {
     return nm; /* error; return orig string */
-  }
-  else {
+  } else {
     return _RealPathBuf; /* resolved name has been copied here */
   }
 }

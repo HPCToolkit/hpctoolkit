@@ -57,48 +57,31 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-
-#include <cstdarg>
-#include <cstring> // for 'memcpy'
-
-//*************************** User Include Files ****************************
-
-#include <include/gnu_dis-asm.h>
-
 #include "PowerISA.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/gnu_dis-asm.h"
+#include "lib/support/diagnostics.h"
 
-//*************************** Forward Declarations ***************************
+#include <cstdarg>
+#include <cstring>  // for 'memcpy'
+#include <iostream>
 
-static VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
-{
+using std::ostream;
+
+static VMA GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma) {
   // N.B.: The GNU decoders assume that the address of 'insn_addr' is
   // the actual the VMA in order to calculate VMA-relative targets.
   VMA x = (di_vma - PTR_TO_BFDVMA(insn_addr)) + insn_vma;
   return x;
 }
 
-
-static void
-GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
-{
+static void GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di) {
   GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
 
   VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
   ostream* os = (ostream*)di->stream;
   *os << std::showbase << std::hex << x << std::dec;
 }
-
-
-//****************************************************************************
-// PowerISA
-//****************************************************************************
 
 // Summary of interesting instructions:
 //
@@ -133,17 +116,15 @@ GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
 //   - CRAZY!   [XL] {blrl = brl ~[bclrl]: branch to link reg and link}
 //   - CRAZY!   [XL] {bclrl = b__lrl = bcrl: branch cond to link reg and link}
 
-PowerISA::PowerISA()
- : m_di(NULL), m_di_dis(NULL)
-{
+PowerISA::PowerISA() : m_di(NULL), m_di_dis(NULL) {
   // See 'dis-asm.h'
   m_di = new disassemble_info;
   init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
-  m_di->arch = bfd_arch_powerpc; // bfd_get_arch(abfd);
-  m_di->mach = bfd_mach_ppc64;   // bfd_get_mach(abfd)
+  m_di->arch = bfd_arch_powerpc;  // bfd_get_arch(abfd);
+  m_di->mach = bfd_mach_ppc64;    // bfd_get_mach(abfd)
   m_di->endian = BFD_ENDIAN_BIG;
-  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
-  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
+  m_di->read_memory_func = GNUbu_read_memory;        // vs. 'buffer_read_memory'
+  m_di->print_address_func = GNUbu_print_addr_stub;  // vs. 'generic_print_addr'
 
   m_di_dis = new disassemble_info;
   init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
@@ -155,18 +136,13 @@ PowerISA::PowerISA()
   m_di_dis->print_address_func = GNUbu_print_addr;
 }
 
-
-PowerISA::~PowerISA()
-{
+PowerISA::~PowerISA() {
   delete m_di;
   delete m_di_dis;
 }
 
-
 ISA::InsnDesc
-PowerISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
-		      ushort GCC_ATTR_UNUSED sz)
-{
+PowerISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex, ushort GCC_ATTR_UNUSED sz) {
   ISA::InsnDesc d;
 
   if (cacheLookup(mi) == NULL) {
@@ -180,56 +156,40 @@ PowerISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
   bool isIndirect = (m_di->target == 0) && (m_di->target2 == 0);
 
   switch (m_di->insn_type) {
-    case dis_noninsn:
-      d.set(InsnDesc::INVALID);
-      break;
-    case dis_branch:
-      if (isIndirect) {
-	d.set(InsnDesc::BR_UN_COND_IND);
-      }
-      else {
-	d.set(InsnDesc::BR_UN_COND_REL);
-      }
-      break;
-    case dis_condbranch:
-      if (isIndirect) {
-	d.set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
-      }
-      else {
-	d.set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
-      }
-      break;
-    case dis_jsr:
-      if (isIndirect) {
-	d.set(InsnDesc::SUBR_IND);
-      }
-      else {
-	d.set(InsnDesc::SUBR_REL);
-      }
-      break;
-    case dis_condjsr:
-      d.set(InsnDesc::OTHER);
-      break;
+  case dis_noninsn: d.set(InsnDesc::INVALID); break;
+  case dis_branch:
+    if (isIndirect) {
+      d.set(InsnDesc::BR_UN_COND_IND);
+    } else {
+      d.set(InsnDesc::BR_UN_COND_REL);
+    }
+    break;
+  case dis_condbranch:
+    if (isIndirect) {
+      d.set(InsnDesc::INT_BR_COND_IND);  // arbitrarily choose int
+    } else {
+      d.set(InsnDesc::INT_BR_COND_REL);  // arbitrarily choose int
+    }
+    break;
+  case dis_jsr:
+    if (isIndirect) {
+      d.set(InsnDesc::SUBR_IND);
+    } else {
+      d.set(InsnDesc::SUBR_REL);
+    }
+    break;
+  case dis_condjsr: d.set(InsnDesc::OTHER); break;
 #if defined(HAVE_HPC_GNUBINUTILS)
-    case dis_return:
-      d.set(InsnDesc::SUBR_RET);
-      break;
+  case dis_return: d.set(InsnDesc::SUBR_RET); break;
 #endif
-    case dis_dref:
-    case dis_dref2:
-      d.set(InsnDesc::MEM_OTHER);
-      break;
-    default:
-      d.set(InsnDesc::OTHER);
-      break;
+  case dis_dref:
+  case dis_dref2: d.set(InsnDesc::MEM_OTHER); break;
+  default: d.set(InsnDesc::OTHER); break;
   }
   return d;
 }
 
-
-VMA
-PowerISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
-{
+VMA PowerISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz) {
   // N.B.: The GNU decoders assume that the address of 'mi' is
   // actually the VMA in order to calculate VMA-relative targets.
 
@@ -245,37 +205,24 @@ PowerISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
     //   m_di->target2 is set to the absolute value for absolute targets
     if (m_di->target != 0) {
       return vma + m_di->target;
-    }
-    else {
+    } else {
       return m_di->target2;
     }
-  }
-  else {
+  } else {
     return 0;
   }
 }
 
-
-ushort
-PowerISA::getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,
-			       ushort GCC_ATTR_UNUSED opIndex,
-			       ushort GCC_ATTR_UNUSED sz)
-{
+ushort PowerISA::getInsnNumDelaySlots(
+    MachInsn* GCC_ATTR_UNUSED mi, ushort GCC_ATTR_UNUSED opIndex, ushort GCC_ATTR_UNUSED sz) {
   // POWER does not have an architectural delay slot
   return 0;
 }
 
-
-void
-PowerISA::decode(ostream& os, MachInsn* mi, VMA vma,
-		 ushort GCC_ATTR_UNUSED opIndex)
-{
+void PowerISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex) {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;
 
   m_di_dis->stream = (void*)&os;
   print_insn_big_powerpc(PTR_TO_BFDVMA(mi), m_di_dis);
 }
-
-
-//****************************************************************************

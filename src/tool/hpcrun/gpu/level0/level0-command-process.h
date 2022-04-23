@@ -41,38 +41,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef level0_command_process_h
 #define level0_command_process_h
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "level0-data-node.h"
 
 #include <stdint.h>
 
-//*****************************************************************************
-// local includes
-//*****************************************************************************
+void level0_command_begin(level0_data_node_t* command_node);
 
-#include "level0-data-node.h"
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-void
-level0_command_begin
-(
-  level0_data_node_t* command_node
-);
-
-void
-level0_command_end
-(
-  level0_data_node_t* command_node,
-  uint64_t start,
-  uint64_t end
-);
+void level0_command_end(level0_data_node_t* command_node, uint64_t start, uint64_t end);
 
 #endif

@@ -48,7 +48,7 @@
 #define CSPROF_NAME_H
 
 /******************************************************************************
- * File: name.h 
+ * File: name.h
  *
  * Purpose: maintain the name of the executable
  *
@@ -56,17 +56,9 @@
  *   28 October 2007 - created - John Mellor-Crummey
  *****************************************************************************/
 
-/******************************************************************************
- * macros 
- *****************************************************************************/
-
 #define UNKNOWN_MPI_RANK (-1)
 
-/******************************************************************************
- * interface functions
- *****************************************************************************/
-
-extern void hpcrun_set_executable_name(char *argv0);
-extern const char *hpcrun_get_executable_name();
+extern void hpcrun_set_executable_name(char* argv0);
+extern const char* hpcrun_get_executable_name();
 
 #endif

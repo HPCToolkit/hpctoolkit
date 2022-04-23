@@ -63,26 +63,23 @@
 
 #include <stdbool.h>
 
-
 // *****************************************************************************
 //    Local Includes
 // *****************************************************************************
 
-#include <hpcrun/thread_data.h>
+#include "hpcrun/thread_data.h"
+
 #include <cct/cct.h>
 
 // *****************************************************************************
 //    Constants
 // *****************************************************************************
 
-enum trampoline_constants {
-  CACHED_BACKTRACE_SIZE = 32
-};
+enum trampoline_constants { CACHED_BACKTRACE_SIZE = 32 };
 
 // *****************************************************************************
 //    Interface Functions
 // *****************************************************************************
-
 
 extern void hpcrun_init_trampoline_info(void);
 
@@ -101,4 +98,4 @@ extern bool hpcrun_trampoline_update(frame_t* stop_frame);
 
 extern void hpcrun_trampoline(void);
 extern void hpcrun_trampoline_end(void);
-#endif // trampoline_h
+#endif  // trampoline_h

@@ -132,22 +132,20 @@ public:
 
   /// Type for the user-value used for variables. Unsigned integer large enough
   /// to store a pointer or 64 bits of raw data.
-  using uservalue_t = std::conditional_t<
-    std::numeric_limits<std::uintptr_t>::digits < std::numeric_limits<std::uint64_t>::digits,
-    std::uint64_t, std::uintptr_t>;
+  using uservalue_t =
+      std::conditional_t < std::numeric_limits<std::uintptr_t>::digits<
+          std::numeric_limits<std::uint64_t>::digits, std::uint64_t, std::uintptr_t>;
 
   struct variable_t {};
   static constexpr variable_t variable = {};
 
   /// Constructor for constants.
-  constexpr Expression(double v) noexcept
-    : m_kind(Kind::constant), m_data(v) {};
+  constexpr Expression(double v) noexcept : m_kind(Kind::constant), m_data(v){};
   /// Constructor for sub-Expressions
-  constexpr Expression(const Expression* e) noexcept
-    : m_kind(Kind::subexpression), m_data(e) {};
+  constexpr Expression(const Expression* e) noexcept : m_kind(Kind::subexpression), m_data(e){};
   /// Constructor for variables. Defaults to the "single-variable" 0.
   constexpr Expression(variable_t, uservalue_t v = 0) noexcept
-    : m_kind(Kind::variable), m_data(v) {};
+      : m_kind(Kind::variable), m_data(v){};
   /// Constructor for operations.
   Expression(Kind, std::vector<Expression>);
 
@@ -177,12 +175,10 @@ public:
 
 private:
   // Wrapper around std::invoke that no-ops if the functions is a nullptr_t
-  template<class F, class... Args>
-  static void invoke(F&& f, Args&&... args) {
+  template<class F, class... Args> static void invoke(F&& f, Args&&... args) {
     return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
   }
-  template<class... Args>
-  static void invoke(std::nullptr_t, Args&&... args) {};
+  template<class... Args> static void invoke(std::nullptr_t, Args&&... args){};
 
 public:
   /// Iterate through the Expression tree, calling one of the given functions
@@ -193,31 +189,21 @@ public:
   // MT: Safe (const)
   template<class FC, class FE, class FV, class FO1, class FO2>
   std::enable_if_t<
-    (std::is_invocable_v<FC, double> || std::is_null_pointer_v<FC>)
-    && (std::is_invocable_v<FE, const Expression&> || std::is_null_pointer_v<FE>)
-    && (std::is_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)
-    && (std::is_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)
-    && (std::is_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>),
-  void> citerate(FC&& f_constant, FE&& f_subexpression, FV&& f_variable,
-                 FO1&& f_pre_op, FO2&& f_post_op) const noexcept(
-      (std::is_nothrow_invocable_v<FC, double> || std::is_null_pointer_v<FC>)
-      && (std::is_nothrow_invocable_v<FE, const Expression&> || std::is_null_pointer_v<FE>)
-      && (std::is_nothrow_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)
-      && (std::is_nothrow_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)
-      && (std::is_nothrow_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>))
-  {
-    switch(m_kind) {
-    case Kind::constant:
-      return invoke(f_constant, std::get<double>(m_data));
-    case Kind::subexpression:
-      return invoke(f_subexpression, *std::get<const Expression*>(m_data));
-    case Kind::variable:
-      return invoke(f_variable, std::get<uservalue_t>(m_data));
+      (std::is_invocable_v<FC, double> || std::is_null_pointer_v<FC>)&&(std::is_invocable_v<FE, const Expression&> || std::is_null_pointer_v<FE>)&&(
+          std::is_invocable_v<
+              FV,
+              uservalue_t> || std::is_null_pointer_v<FV>)&&(std::is_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)&&(std::is_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>),
+      void>
+  citerate(
+      FC&& f_constant, FE&& f_subexpression, FV&& f_variable, FO1&& f_pre_op, FO2&& f_post_op) const noexcept((std::is_nothrow_invocable_v<FC, double> || std::is_null_pointer_v<FC>)&&(std::is_nothrow_invocable_v<FE, const Expression&> || std::is_null_pointer_v<FE>)&&(std::is_nothrow_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)&&(std::is_nothrow_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)&&(std::is_nothrow_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>)) {
+    switch (m_kind) {
+    case Kind::constant: return invoke(f_constant, std::get<double>(m_data));
+    case Kind::subexpression: return invoke(f_subexpression, *std::get<const Expression*>(m_data));
+    case Kind::variable: return invoke(f_variable, std::get<uservalue_t>(m_data));
     default:  // All other cases are operations
       invoke(f_pre_op, *this);
-      for(const Expression& se: std::get<std::vector<Expression>>(m_data)) {
-        se.citerate(f_constant, f_subexpression, f_variable, f_pre_op,
-                    f_post_op);
+      for (const Expression& se : std::get<std::vector<Expression>>(m_data)) {
+        se.citerate(f_constant, f_subexpression, f_variable, f_pre_op, f_post_op);
       }
       return invoke(f_post_op, *this);
     }
@@ -228,28 +214,25 @@ public:
   // MT: Safe (const)
   template<class FC, class FV, class FO1, class FO2>
   std::enable_if_t<
-    (std::is_invocable_v<FC, double> || std::is_null_pointer_v<FC>)
-    && (std::is_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)
-    && (std::is_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)
-    && (std::is_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>),
-  void> citerate_all(FC&& f_constant, FV&& f_variable, FO1&& f_pre_op,
-                     FO2&& f_post_op) const noexcept(
-      (std::is_nothrow_invocable_v<FC, double> || std::is_null_pointer_v<FC>)
-      && (std::is_nothrow_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)
-      && (std::is_nothrow_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)
-      && (std::is_nothrow_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>))
-  {
-    switch(m_kind) {
-    case Kind::constant:
-      return invoke(f_constant, std::get<double>(m_data));
+      (std::is_invocable_v<FC, double> || std::is_null_pointer_v<FC>)&&(std::is_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)&&(
+          std::is_invocable_v<
+              FO1,
+              const Expression&> || std::is_null_pointer_v<FO1>)&&(std::is_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>),
+      void>
+  citerate_all(FC&& f_constant, FV&& f_variable, FO1&& f_pre_op, FO2&& f_post_op) const noexcept(
+      (std::is_nothrow_invocable_v<FC, double> || std::is_null_pointer_v<FC>)&&(std::is_nothrow_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)&&(
+          std::is_nothrow_invocable_v<
+              FO1,
+              const Expression&> || std::is_null_pointer_v<FO1>)&&(std::is_nothrow_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>)) {
+    switch (m_kind) {
+    case Kind::constant: return invoke(f_constant, std::get<double>(m_data));
     case Kind::subexpression:
-      return std::get<const Expression*>(m_data)->citerate_all(f_constant,
-          f_variable, f_pre_op, f_post_op);
-    case Kind::variable:
-      return invoke(f_variable, std::get<uservalue_t>(m_data));
+      return std::get<const Expression*>(m_data)->citerate_all(
+          f_constant, f_variable, f_pre_op, f_post_op);
+    case Kind::variable: return invoke(f_variable, std::get<uservalue_t>(m_data));
     default:  // All other cases are operations
       invoke(f_pre_op, *this);
-      for(const Expression& se: std::get<std::vector<Expression>>(m_data))
+      for (const Expression& se : std::get<std::vector<Expression>>(m_data))
         se.citerate_all(f_constant, f_variable, f_pre_op, f_post_op);
       return invoke(f_post_op, *this);
     }
@@ -264,19 +247,16 @@ public:
   /// for variables.
   // MT: Safe (const)
   template<class F>
-  std::enable_if_t<std::is_invocable_r_v<double, F, uservalue_t>,
-  double> evaluate(F&& f) const {
-    switch(m_kind) {
+  std::enable_if_t<std::is_invocable_r_v<double, F, uservalue_t>, double> evaluate(F&& f) const {
+    switch (m_kind) {
     case Kind::constant: return std::get<double>(m_data);
-    case Kind::subexpression:
-      return std::get<const Expression*>(m_data)->evaluate((F&)f);
-    case Kind::variable:
-      return std::invoke(f, std::get<uservalue_t>(m_data));
+    case Kind::subexpression: return std::get<const Expression*>(m_data)->evaluate((F&)f);
+    case Kind::variable: return std::invoke(f, std::get<uservalue_t>(m_data));
     default: {  // All other cases are operations
       const auto& args = std::get<std::vector<Expression>>(m_data);
       std::vector<double> arg_vs;
       arg_vs.reserve(args.size());
-      for(const Expression& a: args)
+      for (const Expression& a : args)
         arg_vs.push_back(a.evaluate(f));
       return evaluate(m_kind, arg_vs);
     }
@@ -290,8 +270,8 @@ public:
 
 private:
   template<class R, class F, class... Args>
-  static std::enable_if_t<std::is_invocable_r_v<std::optional<R>, F, Args...>,
-  std::optional<R>> invoke_optr(F&& f, Args&&... args) {
+  static std::enable_if_t<std::is_invocable_r_v<std::optional<R>, F, Args...>, std::optional<R>>
+  invoke_optr(F&& f, Args&&... args) {
     return std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
   }
   template<class R, class... Args>
@@ -299,53 +279,48 @@ private:
     return std::nullopt;
   }
 
-  template<class F>
-  std::optional<double> partial_evaluate(F&& f) const {
-    switch(m_kind) {
-    case Kind::constant:
-      return std::get<double>(m_data);
-    case Kind::subexpression:
-      return std::get<const Expression*>(m_data)->partial_evaluate(f);
-    case Kind::variable:
-      return invoke_optr<double>(f, std::get<uservalue_t>(m_data));
+  template<class F> std::optional<double> partial_evaluate(F&& f) const {
+    switch (m_kind) {
+    case Kind::constant: return std::get<double>(m_data);
+    case Kind::subexpression: return std::get<const Expression*>(m_data)->partial_evaluate(f);
+    case Kind::variable: return invoke_optr<double>(f, std::get<uservalue_t>(m_data));
     default: {  // All other cases are operations
       const auto& args = std::get<std::vector<Expression>>(m_data);
       std::vector<double> arg_vs;
       arg_vs.reserve(args.size());
-      for(const Expression& a: args) {
+      for (const Expression& a : args) {
         std::optional<double> v = a.partial_evaluate(f);
-        if(!v) return std::nullopt;
+        if (!v)
+          return std::nullopt;
         arg_vs.push_back(*v);
       }
       return evaluate(m_kind, arg_vs);
     }
     }
   }
-  template<class F>
-  std::optional<double> optimize_impl(F&& f) {
+  template<class F> std::optional<double> optimize_impl(F&& f) {
     std::optional<double> value;
-    switch(m_kind) {
+    switch (m_kind) {
     case Kind::constant:  // Already optimized, skip some control flow
       return std::get<double>(m_data);
     case Kind::subexpression:
       value = std::get<const Expression*>(m_data)->partial_evaluate(f);
       break;
-    case Kind::variable:
-      value = invoke_optr<double>(f, std::get<uservalue_t>(m_data));
-      break;
+    case Kind::variable: value = invoke_optr<double>(f, std::get<uservalue_t>(m_data)); break;
     default: {  // All other cases are operations
       auto& args = std::get<std::vector<Expression>>(m_data);
       std::vector<double> arg_vs;
       args.reserve(args.size());
-      for(Expression& a: args) {
+      for (Expression& a : args) {
         std::optional<double> v = a.optimize_impl(f);
-        if(!v) return std::nullopt;
+        if (!v)
+          return std::nullopt;
         arg_vs.push_back(*v);
       }
       value = evaluate(m_kind, arg_vs);
     }
     }
-    if(value) {
+    if (value) {
       m_kind = Kind::constant;
       m_data = *value;
     }
@@ -358,8 +333,7 @@ public:
   /// sub-Expression trees, but will cut the link if the subtree is constant.
   // MT: Safe (const)
   template<class F>
-  std::enable_if_t<std::is_invocable_r_v<double, F, uservalue_t>,
-  void> optimize(F&& f) {
+  std::enable_if_t<std::is_invocable_r_v<double, F, uservalue_t>, void> optimize(F&& f) {
     optimize_impl(std::forward<F>(f));
   }
 
@@ -371,8 +345,7 @@ private:
   // Kind of the Expression
   Kind m_kind;
   // Value or arguments for the Expression.
-  std::variant<double, uservalue_t, const Expression*,
-               std::vector<Expression>> m_data;
+  std::variant<double, uservalue_t, const Expression*, std::vector<Expression>> m_data;
 };
 
 /// Debug printing for Expressions
@@ -392,8 +365,7 @@ constexpr auto min = Expression::Kind::op_min;
 constexpr auto max = Expression::Kind::op_max;
 constexpr auto floor = Expression::Kind::op_floor;
 constexpr auto ceil = Expression::Kind::op_ceil;
-}
-
+}  // namespace literals::expression_ops
 }  // namespace hpctoolkit
 
 #endif  // HPCTOOLKIT_PROFILE_EXPRESSION_H

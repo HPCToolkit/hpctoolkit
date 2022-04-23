@@ -57,91 +57,45 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-using std::endl;
-
-#include <stdint.h>
-
-//*************************** User Include Files ****************************
-
 #include "CCT-Tree.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "lib/support/diagnostics.h"
 
-//*************************** Forward Declarations **************************
+#include <iostream>
+#include <stdint.h>
 
-//***************************************************************************
+using std::endl;
+using std::ostream;
 
 namespace Prof {
 
 namespace CCT {
 
-
-//***************************************************************************
-// ANodeFilter support
-//***************************************************************************
-
-bool
-HasANodeTy(const ANode& node, long type)
-{
+bool HasANodeTy(const ANode& node, long type) {
   return (type == ANode::TyANY || node.type() == ANode::IntToANodeType(type));
 }
 
-
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
-  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyRoot).c_str(),
-	      ANode::TyRoot),
-  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyProcFrm).c_str(),
-	      ANode::TyProcFrm),
-  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyProc).c_str(),
-	      ANode::TyProc),
-  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyLoop).c_str(),
-	      ANode::TyLoop),
-  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyStmt).c_str(),
-	      ANode::TyStmt),
-  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyCall).c_str(),
-	      ANode::TyCall),
-  ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyANY).c_str(),
-	      ANode::TyANY)
-};
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyRoot).c_str(), ANode::TyRoot),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyProcFrm).c_str(), ANode::TyProcFrm),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyProc).c_str(), ANode::TyProc),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyLoop).c_str(), ANode::TyLoop),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyStmt).c_str(), ANode::TyStmt),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyCall).c_str(), ANode::TyCall),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)};
 
-  
-//***************************************************************************
-// ANodeChildIterator
-//***************************************************************************
-
-
-//***************************************************************************
-// ANodeIterator
-//***************************************************************************
-
-
-//***************************************************************************
-// ANodeSortedIterator
-//***************************************************************************
-
-static int
-cmp(uint64_t x, uint64_t y)
-{
+static int cmp(uint64_t x, uint64_t y) {
   // compare without the possible overflow caused by (x - y)
   if (x == y) {
     return 0;
-  }
-  else if (x < y) {
+  } else if (x < y) {
     return -1;
-  }
-  else {
+  } else {
     return 1;
   }
 }
 
-
-static int
-cmpByDynInfoSpecial(const ADynNode* x_dyn, const ADynNode* y_dyn)
-{
+static int cmpByDynInfoSpecial(const ADynNode* x_dyn, const ADynNode* y_dyn) {
   // INVARIANT: x and y are non-NULL
 
   // 1. lm-id for physical or logical frames
@@ -161,54 +115,38 @@ cmpByDynInfoSpecial(const ADynNode* x_dyn, const ADynNode* y_dyn)
   return cmp_ip;
 }
 
-
-ANodeSortedIterator::
-ANodeSortedIterator(const ANode* node,
-		    ANodeSortedIterator::cmp_fptr_t compare_fn,
-		    const ANodeFilter* filterFunc,
-		    bool leavesOnly)
-{
+ANodeSortedIterator::ANodeSortedIterator(
+    const ANode* node, ANodeSortedIterator::cmp_fptr_t compare_fn, const ANodeFilter* filterFunc,
+    bool leavesOnly) {
   ANodeIterator it(node, filterFunc, leavesOnly);
   for (ANode* cur = NULL; (cur = it.current()); it++) {
-    scopes.Add((unsigned long) cur);
+    scopes.Add((unsigned long)cur);
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
 
-
-void
-ANodeSortedIterator::dumpAndReset(ostream& os)
-{
+void ANodeSortedIterator::dumpAndReset(ostream& os) {
   os << "ANodeSortedIterator: " << endl;
   while (current()) {
     os << current()->toStringMe() << endl;
     (*this)++;
-  } 
+  }
   reset();
 }
 
-
-int
-ANodeSortedIterator::cmpByName(const void* a, const void* b)
-{
+int ANodeSortedIterator::cmpByName(const void* a, const void* b) {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  return x->name().compare(y->name()); // strcmp(x, y)
+  return x->name().compare(y->name());  // strcmp(x, y)
 }
 
-
-int
-ANodeSortedIterator::cmpByLine(const void* a, const void* b)
-{
+int ANodeSortedIterator::cmpByLine(const void* a, const void* b) {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
   return ANodeLineComp(x, y);
 }
 
-
-int
-ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
-{
+int ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b) {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
 
@@ -219,7 +157,7 @@ ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
     }
 
     // INVARIANT: x != y, so never return 0
-    
+
     // 1. distinguish by structure ids
     uint x_id = x->structureId();
     uint y_id = y->structureId();
@@ -241,11 +179,10 @@ ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
     if (x_dyn && y_dyn) {
       int cmp_dyn = cmpByDynInfoSpecial(x_dyn, y_dyn);
       if (cmp_dyn != 0) {
-	return cmp_dyn;
+        return cmp_dyn;
       }
     }
-    
-    
+
     // 5. distinguish by id
     int cmp_id = (int)x->id() - (int)y->id();
     if (cmp_id != 0) {
@@ -258,30 +195,25 @@ ANodeSortedIterator::cmpByStructureInfo(const void* a, const void* b)
     if (x_parent != y_parent) {
       int cmp_ctxt = cmpByStructureInfo(&x_parent, &y_parent);
       if (cmp_ctxt != 0) {
-	return cmp_ctxt;
+        return cmp_ctxt;
       }
     }
     // *. Could compare childCount() and other aspects of children.
-    DIAG_Die("Prof::CCT::ANodeSortedIterator::cmpByStructureInfo: cannot compare:"
-		<< "\n\tx: " << x->toStringMe(Prof::CCT::Tree::OFlg_Debug)
-		<< "\n\ty: " << y->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+    DIAG_Die(
+        "Prof::CCT::ANodeSortedIterator::cmpByStructureInfo: cannot compare:"
+        << "\n\tx: " << x->toStringMe(Prof::CCT::Tree::OFlg_Debug)
+        << "\n\ty: " << y->toStringMe(Prof::CCT::Tree::OFlg_Debug));
     return 0;
-  }
-  else if (x) {
-    return 1; // x > y=NULL (only used for recursive case)
-  }
-  else if (y) {
-    return -1; // x=NULL < y (only used for recursive case)
-  }
-  else {
+  } else if (x) {
+    return 1;  // x > y=NULL (only used for recursive case)
+  } else if (y) {
+    return -1;  // x=NULL < y (only used for recursive case)
+  } else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
 }
 
-
-int
-ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
-{
+int ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b) {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
 
@@ -303,8 +235,7 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
   // 2. distinguish by structure ids
   uint x_id = x->structureId();
   uint y_id = y->structureId();
-  if (x_id != Prof::Struct::ANode::Id_NULL
-      && y_id != Prof::Struct::ANode::Id_NULL) {
+  if (x_id != Prof::Struct::ANode::Id_NULL && y_id != Prof::Struct::ANode::Id_NULL) {
     int cmp_sid = cmp(x_id, y_id);
     if (cmp_sid != 0) {
       return cmp_sid;
@@ -317,7 +248,6 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
     return cmp_ty;
   }
 
-
 #if 1
   // 4. distinguish by id
   int cmp_id = (int)x->id() - (int)y->id();
@@ -327,32 +257,22 @@ ANodeSortedIterator::cmpByDynInfo(const void* a, const void* b)
 #endif
 
   // *. Could compare childCount() and other aspects of children.
-  DIAG_Die("Prof::CCT::ANodeSortedIterator::cmpByDynInfo: cannot compare:"
-	   << "\n\tx: " << x->toStringMe(Prof::CCT::Tree::OFlg_Debug)
-	   << "\n\ty: " << y->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+  DIAG_Die(
+      "Prof::CCT::ANodeSortedIterator::cmpByDynInfo: cannot compare:"
+      << "\n\tx: " << x->toStringMe(Prof::CCT::Tree::OFlg_Debug)
+      << "\n\ty: " << y->toStringMe(Prof::CCT::Tree::OFlg_Debug));
 }
 
-
-//***************************************************************************
-// ANodeSortedChildIterator
-//***************************************************************************
-
-ANodeSortedChildIterator::
-ANodeSortedChildIterator(const ANode* node,
-			 ANodeSortedIterator::cmp_fptr_t compare_fn,
-			 const ANodeFilter* f)
-{
+ANodeSortedChildIterator::ANodeSortedChildIterator(
+    const ANode* node, ANodeSortedIterator::cmp_fptr_t compare_fn, const ANodeFilter* f) {
   ANodeChildIterator it(node, f);
   for (ANode* cur = NULL; (cur = it.current()); it++) {
-    scopes.Add((unsigned long) cur);
+    scopes.Add((unsigned long)cur);
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
 
-
-void
-ANodeSortedChildIterator::dumpAndReset(ostream& os)
-{
+void ANodeSortedChildIterator::dumpAndReset(ostream& os) {
   os << "ANodeSortedChildIterator: " << endl;
   while (current()) {
     os << current()->toStringMe() << endl;
@@ -360,9 +280,5 @@ ANodeSortedChildIterator::dumpAndReset(ostream& os)
   }
   reset();
 }
-
-//***************************************************************************
-
-} // namespace CCT
-
-} // namespace Prof
+}  // namespace CCT
+}  // namespace Prof

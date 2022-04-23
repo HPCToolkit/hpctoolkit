@@ -44,8 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <include/gcc-attr.h>
+#include "include/gcc-attr.h"
 
-static void GCC_ATTR_UNUSED
-useless()
-{ }
+static void GCC_ATTR_UNUSED useless() {}

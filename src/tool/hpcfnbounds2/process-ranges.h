@@ -51,9 +51,9 @@
 
 void process_range_init();
 
-void process_range(const char *name, long offset, void *vstart, void *vend,
-		   DiscoverFnTy fn_discovery);
+void process_range(
+    const char* name, long offset, void* vstart, void* vend, DiscoverFnTy fn_discovery);
 
-bool range_contains_control_flow(void *vstart, void *vend);
+bool range_contains_control_flow(void* vstart, void* vend);
 
-#endif // process_ranges_hpp
+#endif  // process_ranges_hpp

@@ -48,7 +48,6 @@
 #define HPCTOOLKIT_PROFILE_SINKS_PACKED_H
 
 #include "../sink.hpp"
-
 #include "../util/parallel_work.hpp"
 #include "../util/ref_wrappers.hpp"
 
@@ -67,9 +66,7 @@ public:
 
   // This Sink uses the unique identifiers to make associations. Subclasses
   // should take care to append this to their own overrides.
-  ExtensionClass requires() const noexcept override {
-    return ExtensionClass::identifier;
-  }
+  ExtensionClass requires() const noexcept override { return ExtensionClass::identifier; }
 
 protected:
   std::vector<std::reference_wrapper<const Metric>> metrics;
@@ -141,12 +138,12 @@ private:
 
   // Parallel workshares for the Context groups
   std::uint8_t* output = nullptr;
-  util::ParallelForEach<std::pair<std::size_t,
-      std::vector<std::reference_wrapper<const Context>>>> fePackMetrics;
+  util::ParallelForEach<std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>>
+      fePackMetrics;
 
-  void packMetricGroup(std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>&) noexcept;
+  void packMetricGroup(
+      std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>&) noexcept;
 };
-
-}
+}  // namespace hpctoolkit::sinks
 
 #endif  // HPCTOOLKIT_PROFILE_SINKS_PACKED_H

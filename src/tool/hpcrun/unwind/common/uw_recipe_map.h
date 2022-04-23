@@ -56,24 +56,19 @@
 
 typedef struct ilmstat_btuwi_pair_s ilmstat_btuwi_pair_t;
 
-void
-uw_recipe_map_init(void);
-
+void uw_recipe_map_init(void);
 
 /*
  * if addr is found in range in the map, return true and
  *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
  *   where the root of btuwi is the uwi_t for addr
  * else return false
- * 
- * NOTE: if using on-the-fly binary analysis, this attempts to build recipes for the 
+ *
+ * NOTE: if using on-the-fly binary analysis, this attempts to build recipes for the
  *       procedure enclosing addr
  */
-bool
-uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
+bool uw_recipe_map_lookup(void* addr, unwinder_t uw, unwindr_info_t* unwr_info);
 
+bool uw_recipe_map_lookup_noinsert(void* addr, unwinder_t uw, unwindr_info_t* unwr_info);
 
-bool
-uw_recipe_map_lookup_noinsert(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
-
-#endif  /* !_UW_RECIPE_MAP_H_ */
+#endif /* !_UW_RECIPE_MAP_H_ */

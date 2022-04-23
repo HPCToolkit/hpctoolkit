@@ -46,83 +46,69 @@
 
 #include "scope.hpp"
 
-#include "util/log.hpp"
-#include "module.hpp"
 #include "lexical.hpp"
+#include "module.hpp"
+#include "util/log.hpp"
 
 #include "lib/prof-lean/placeholders.h"
 
 #include <cassert>
 #include <cctype>
 #include <iomanip>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
 using namespace hpctoolkit;
 
-Scope::Scope() : ty(Type::unknown), data() {};
-Scope::Scope(const Module& m, uint64_t o)
-  : ty(Type::point), data(m, o) {};
-Scope::Scope(const Function& f) : ty(Type::function), data(f) {};
-Scope::Scope(loop_t, const File& s, uint64_t l)
-  : ty(Type::loop), data(s,l) {};
-Scope::Scope(const File& s, uint64_t l)
-  : ty(Type::line), data(s,l) {};
-Scope::Scope(placeholder_t, uint64_t v)
-  : ty(Type::placeholder), data(v) {};
-Scope::Scope(ProfilePipeline&) : ty(Type::global), data() {};
+Scope::Scope() : ty(Type::unknown), data(){};
+Scope::Scope(const Module& m, uint64_t o) : ty(Type::point), data(m, o){};
+Scope::Scope(const Function& f) : ty(Type::function), data(f){};
+Scope::Scope(loop_t, const File& s, uint64_t l) : ty(Type::loop), data(s, l){};
+Scope::Scope(const File& s, uint64_t l) : ty(Type::line), data(s, l){};
+Scope::Scope(placeholder_t, uint64_t v) : ty(Type::placeholder), data(v){};
+Scope::Scope(ProfilePipeline&) : ty(Type::global), data(){};
 
-NestedScope::NestedScope(Relation r, Scope s)
-  : m_relation(r), m_flat(std::move(s)) {
-  assert((m_relation != Relation::global || m_flat.type() == Scope::Type::global)
-         && "Relation::global should only every be used with the Scope::Type::global!");
+NestedScope::NestedScope(Relation r, Scope s) : m_relation(r), m_flat(std::move(s)) {
+  assert(
+      (m_relation != Relation::global || m_flat.type() == Scope::Type::global)
+      && "Relation::global should only every be used with the Scope::Type::global!");
 }
 
 std::pair<const Module&, uint64_t> Scope::point_data() const {
-  switch(ty) {
-  case Type::point:
-    return data.point;
-  default:
-    assert(false && "point_data is only valid on point Scopes!");
-    std::abort();
+  switch (ty) {
+  case Type::point: return data.point;
+  default: assert(false && "point_data is only valid on point Scopes!"); std::abort();
   }
 }
 
 const Function& Scope::function_data() const {
-  switch(ty) {
-  case Type::function:
-    return data.function;
-  default:
-    assert(false && "function_data is only valid on function Scopes!");
-    std::abort();
+  switch (ty) {
+  case Type::function: return data.function;
+  default: assert(false && "function_data is only valid on function Scopes!"); std::abort();
   }
 }
 
 std::pair<const File&, uint64_t> Scope::line_data() const {
-  switch(ty) {
+  switch (ty) {
   case Type::loop:
-  case Type::line:
-    return data.line;
-  default:
-    assert(false && "line_data is only valid on line Scopes!");
-    std::abort();
+  case Type::line: return data.line;
+  default: assert(false && "line_data is only valid on line Scopes!"); std::abort();
   }
 }
 
 uint64_t Scope::enumerated_data() const {
-  switch(ty) {
+  switch (ty) {
   case Type::placeholder: return data.enumerated;
-  default:
-    assert(false && "enumerated_data is only valid on placeholder Scopes!");
-    std::abort();
+  default: assert(false && "enumerated_data is only valid on placeholder Scopes!"); std::abort();
   }
 }
 
 std::string_view Scope::enumerated_pretty_name() const {
-  switch(ty) {
+  switch (ty) {
   case Type::placeholder: {
     const char* stdname = get_placeholder_name(data.enumerated);
-    if(stdname == NULL) return std::string_view();
+    if (stdname == NULL)
+      return std::string_view();
     return stdname;
   }
   default:
@@ -132,14 +118,16 @@ std::string_view Scope::enumerated_pretty_name() const {
 }
 
 std::string Scope::enumerated_fallback_name() const {
-  switch(ty) {
+  switch (ty) {
   case Type::placeholder: {
     std::ostringstream ss;
     ss << std::hex;
-    for(int shift = 56; shift >= 0; shift -= 8) {
+    for (int shift = 56; shift >= 0; shift -= 8) {
       unsigned char c = (unsigned char)((data.enumerated >> shift) & 0xff);
-      if(std::isprint(c)) ss << c;
-      else ss << '\\' << std::setw(2) << c;
+      if (std::isprint(c))
+        ss << c;
+      else
+        ss << '\\' << std::setw(2) << c;
     }
     return ss.str();
   }
@@ -150,31 +138,26 @@ std::string Scope::enumerated_fallback_name() const {
 }
 
 bool hpctoolkit::isCall(Relation r) noexcept {
-  switch(r) {
+  switch (r) {
   case Relation::global:
-  case Relation::enclosure:
-    return false;
+  case Relation::enclosure: return false;
   case Relation::call:
-  case Relation::inlined_call:
-    return true;
+  case Relation::inlined_call: return true;
   }
   std::abort();
 }
 
 bool Scope::operator==(const Scope& o) const noexcept {
-  if(ty != o.ty) return false;
-  switch(ty) {
+  if (ty != o.ty)
+    return false;
+  switch (ty) {
   case Type::unknown: return true;
   case Type::global: return true;
-  case Type::point:
-    return data.point == o.data.point;
-  case Type::function:
-    return data.function == o.data.function;
+  case Type::point: return data.point == o.data.point;
+  case Type::function: return data.function == o.data.function;
   case Type::loop:
-  case Type::line:
-    return data.line == o.data.line;
-  case Type::placeholder:
-    return data.enumerated == o.data.enumerated;
+  case Type::line: return data.line == o.data.line;
+  case Type::placeholder: return data.enumerated == o.data.enumerated;
   }
   assert(false && "Invalid ty while comparing Scopes!");
   std::abort();
@@ -184,26 +167,22 @@ bool NestedScope::operator==(const NestedScope& o) const noexcept {
 }
 
 bool Scope::operator<(const Scope& o) const noexcept {
-  if(ty != o.ty) return ty < o.ty;
-  switch(ty) {
+  if (ty != o.ty)
+    return ty < o.ty;
+  switch (ty) {
   case Type::unknown: return false;  // Always equal
-  case Type::global: return false;  // Always equal
-  case Type::point:
-    return data.point < o.data.point;
-  case Type::function:
-    return data.function < o.data.function;
+  case Type::global: return false;   // Always equal
+  case Type::point: return data.point < o.data.point;
+  case Type::function: return data.function < o.data.function;
   case Type::loop:
-  case Type::line:
-    return data.line < o.data.line;
-  case Type::placeholder:
-    return data.enumerated < o.data.enumerated;
+  case Type::line: return data.line < o.data.line;
+  case Type::placeholder: return data.enumerated < o.data.enumerated;
   }
   assert(false && "Invalid ty while comparing Scopes!");
   std::abort();
 }
 bool NestedScope::operator<(const NestedScope& o) const noexcept {
-  return m_relation != o.m_relation ? m_relation < o.m_relation
-                                    : m_flat < o.m_flat;
+  return m_relation != o.m_relation ? m_relation < o.m_relation : m_flat < o.m_flat;
 }
 
 // Hashes
@@ -213,8 +192,8 @@ static_assert(0 == (bits & (bits - 1)), "value to rotate must be a power of 2");
 static constexpr std::size_t rotl(std::size_t n, unsigned int c) noexcept {
   return (n << (mask & c)) | (n >> (-(mask & c)) & mask);
 }
-std::size_t std::hash<Scope>::operator()(const Scope &l) const noexcept {
-  switch(l.ty) {
+std::size_t std::hash<Scope>::operator()(const Scope& l) const noexcept {
+  switch (l.ty) {
   case Scope::Type::unknown: return 0x5;
   case Scope::Type::global: return 0x3;
   case Scope::Type::point: {
@@ -223,8 +202,7 @@ std::size_t std::hash<Scope>::operator()(const Scope &l) const noexcept {
     sponge = rotl(sponge ^ h_u64(l.data.point.offset), 3);
     return sponge;
   }
-  case Scope::Type::function:
-    return h_func(l.data.function.f);
+  case Scope::Type::function: return h_func(l.data.function.f);
   case Scope::Type::loop:
   case Scope::Type::line: {
     std::size_t sponge = l.ty == Scope::Type::loop ? 0x11 : 0x13;
@@ -232,8 +210,7 @@ std::size_t std::hash<Scope>::operator()(const Scope &l) const noexcept {
     sponge = rotl(sponge ^ h_u64(l.data.line.l), 3);
     return sponge;
   }
-  case Scope::Type::placeholder:
-    return rotl(0x15 ^ h_u64(l.data.enumerated), 1);
+  case Scope::Type::placeholder: return rotl(0x15 ^ h_u64(l.data.enumerated), 1);
   }
   return 0;  // unreachable
 };
@@ -253,7 +230,7 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
     std::ostringstream ss;
     const auto& f = s.function_data();
     ss << f.name();
-    if(auto src = f.sourceLocation())
+    if (auto src = f.sourceLocation())
       ss << "@/" << src->first.path().filename().string() << ":" << src->second;
     return ss.str();
   };
@@ -265,15 +242,15 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
   };
   auto enumerated_str = [&]() -> std::string {
     std::ostringstream ss;
-    ss << "0x" << std::hex << s.enumerated_data() << std::dec
-       << " '" << s.enumerated_fallback_name() << "'";
+    ss << "0x" << std::hex << s.enumerated_data() << std::dec << " '"
+       << s.enumerated_fallback_name() << "'";
     auto pretty = s.enumerated_pretty_name();
-    if(!pretty.empty())
+    if (!pretty.empty())
       ss << " \"" << pretty << "\"";
     return ss.str();
   };
 
-  switch(s.type()) {
+  switch (s.type()) {
   case Scope::Type::unknown: return os << "(unknown)";
   case Scope::Type::global: return os << "(global)";
   case Scope::Type::point: return os << "(point){" << point_str() << "}";
@@ -290,7 +267,7 @@ static const std::string rel_enclosure = "enclosure";
 static const std::string rel_pcall = "nominal call";
 static const std::string rel_icall = "inlined call";
 std::string_view hpctoolkit::stringify(Relation r) noexcept {
-  switch(r) {
+  switch (r) {
   case Relation::global: return rel_global;
   case Relation::enclosure: return rel_enclosure;
   case Relation::call: return rel_pcall;
@@ -304,7 +281,7 @@ std::ostream& std::operator<<(std::ostream& os, Relation r) noexcept {
 }
 
 std::ostream& std::operator<<(std::ostream& os, const NestedScope& ns) noexcept {
-  switch(ns.relation()) {
+  switch (ns.relation()) {
   case Relation::global: break;
   case Relation::enclosure: os << "(enclosed sub-Scope):"; break;
   case Relation::call: os << "(nominal call to):"; break;

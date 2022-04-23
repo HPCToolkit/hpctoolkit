@@ -57,64 +57,33 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-
-#include <cstdarg> 
-#include <cstring> // for 'memcpy'
-
-//*************************** User Include Files ****************************
-
-#include <include/gnu_dis-asm.h>
-
 #include "x86ISAXed.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/gnu_dis-asm.h"
+#include "lib/support/diagnostics.h"
 
+#include <cstdarg>
+#include <cstring>  // for 'memcpy'
+#include <iostream>
 
-//*************************** Global Variables ***************************
+using std::ostream;
 
-//*************************** cache decoder ***************************
+x86ISAXed::x86ISAXed(bool is_x86_64) {}
 
-//*************************** x86ISA ***************************
-
-x86ISAXed::x86ISAXed(bool is_x86_64)
-{
-}
-
-
-x86ISAXed::~x86ISAXed()
-{
-}
-
+x86ISAXed::~x86ISAXed() {}
 
 ISA::InsnDesc
-x86ISAXed::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
-                    ushort GCC_ATTR_UNUSED s)
-{
+x86ISAXed::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex, ushort GCC_ATTR_UNUSED s) {
   ISA::InsnDesc d;
 
   return d;
 }
 
-
-
-ushort
-x86ISAXed::getInsnSize(MachInsn* mi)
-{
+ushort x86ISAXed::getInsnSize(MachInsn* mi) {
   return 0;
 }
 
-
-VMA
-x86ISAXed::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex,
-                         ushort GCC_ATTR_UNUSED sz)
-{
+VMA x86ISAXed::getInsnTargetVMA(
+    MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex, ushort GCC_ATTR_UNUSED sz) {
   return 0;
 }
-
-
-//****************************************************************************
-

@@ -44,34 +44,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
+#include "sample_prob.h"
+
+#include "messages/messages.h"
+
+#include "lib/support-lean/OSUtil.h"
+
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include <messages/messages.h>
-#include <lib/support-lean/OSUtil.h>
-#include "sample_prob.h"
+#define HPCRUN_SAMPLE_PROB "HPCRUN_PROCESS_FRACTION"
+#define DEFAULT_PROB       0.1
 
-#define HPCRUN_SAMPLE_PROB  "HPCRUN_PROCESS_FRACTION"
-#define DEFAULT_PROB  0.1
-
-#define HASH_PRIME  2001001003
-#define HASH_GEN    4011
+#define HASH_PRIME 2001001003
+#define HASH_GEN   4011
 
 static int is_init = 0;
 static pid_t orig_pid = 0;
 static int sample_prob_ans = 1;
 
-static char *sample_prob_str = NULL;
+static char* sample_prob_str = NULL;
 static int prob_str_broken = 0;
 static int prob_str_mesg = 0;
-
 
 // -------------------------------------------------------------------
 // This file implements probability-based sampling.  All processes
@@ -87,13 +88,10 @@ static int prob_str_mesg = 0;
 // per-thread (for now).
 // -------------------------------------------------------------------
 
-
 // Accept 0.ddd as floating point or x/y as fraction.
 // Note: must delay printing any errors.
 //
-static float
-string_to_prob(char *str)
-{
+static float string_to_prob(char* str) {
   int x, y;
   float ans;
 
@@ -104,8 +102,7 @@ string_to_prob(char *str)
       prob_str_broken = 1;
       ans = DEFAULT_PROB;
     }
-  }
-  else {
+  } else {
     if (sscanf(str, "%f", &ans) < 1) {
       prob_str_broken = 1;
       ans = DEFAULT_PROB;
@@ -114,7 +111,6 @@ string_to_prob(char *str)
 
   return ans;
 }
-
 
 // Combine the hostid, the time of day in microseconds and
 // /dev/urandom (if available), run it through a hash function and
@@ -127,9 +123,7 @@ string_to_prob(char *str)
 // Anyway, the choice of seed is far more important than the hash
 // function here.
 //
-static float
-random_hash_prob(void)
-{
+static float random_hash_prob(void) {
   struct timeval tv;
   uint64_t a, b, x, rand;
   int fd;
@@ -143,8 +137,8 @@ random_hash_prob(void)
   }
 
   gettimeofday(&tv, NULL);
-  x = (((uint64_t) OSUtil_hostid()) << 24) + (tv.tv_usec << 4) + rand;
-  x = (x & ~(((uint64_t) 15) << 60)) % HASH_PRIME;
+  x = (((uint64_t)OSUtil_hostid()) << 24) + (tv.tv_usec << 4) + rand;
+  x = (x & ~(((uint64_t)15) << 60)) % HASH_PRIME;
 
   // Compute gen^x (mod prime).
   // Invariant: a * (b ^ x) = gen^(orig x) (mod prime).
@@ -153,7 +147,7 @@ random_hash_prob(void)
   while (x > 0) {
     if (x % 2 == 0) {
       b = (b * b) % HASH_PRIME;
-      x = x/2;
+      x = x / 2;
     } else {
       a = (a * b) % HASH_PRIME;
       x = x - 1;
@@ -163,10 +157,7 @@ random_hash_prob(void)
   return (float)a / (float)HASH_PRIME;
 }
 
-
-void
-hpcrun_sample_prob_init(void)
-{
+void hpcrun_sample_prob_init(void) {
   pid_t cur_pid;
 
   // For consistency, don't recompute the sample probability if the
@@ -181,23 +172,18 @@ hpcrun_sample_prob_init(void)
   sample_prob_str = getenv(HPCRUN_SAMPLE_PROB);
   if (sample_prob_str != NULL) {
     sample_prob_ans = (random_hash_prob() < string_to_prob(sample_prob_str));
-  }
-  else {
+  } else {
     sample_prob_ans = 1;
   }
   is_init = 1;
 }
 
-
-int
-hpcrun_sample_prob_active(void)
-{
-  if (! is_init) {
+int hpcrun_sample_prob_active(void) {
+  if (!is_init) {
     hpcrun_sample_prob_init();
   }
   return sample_prob_ans;
 }
-
 
 // We can't print messages while computing the sample probability
 // because that would trigger opening the log files and recomputing
@@ -205,12 +191,11 @@ hpcrun_sample_prob_active(void)
 // depend on the caller to call us again after the log files are
 // opened.
 //
-void
-hpcrun_sample_prob_mesg(void)
-{
-  if (prob_str_broken && (! prob_str_mesg) && sample_prob_ans) {
-    EMSG("malformed probability in %s (%s), using default value of %f",
-	 HPCRUN_SAMPLE_PROB, sample_prob_str, DEFAULT_PROB);
+void hpcrun_sample_prob_mesg(void) {
+  if (prob_str_broken && (!prob_str_mesg) && sample_prob_ans) {
+    EMSG(
+        "malformed probability in %s (%s), using default value of %f", HPCRUN_SAMPLE_PROB,
+        sample_prob_str, DEFAULT_PROB);
     prob_str_mesg = 1;
   }
 }

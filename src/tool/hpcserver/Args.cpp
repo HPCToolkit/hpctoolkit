@@ -2,7 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.cpp $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.cpp $
 // $Id: Args.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.cpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Args.cpp
+//   $
 //
 // Purpose:
 //   Parses the arguments from the command line
@@ -57,42 +60,34 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
-#include <string>
-using std::string;
-
-//*************************** User Include Files ****************************
-
-#include <include/hpctoolkit-config.h>
-
 #include "Args.hpp"
 
-#include <lib/analysis/Util.hpp>
+#include "include/hpctoolkit-config.h"
+#include "lib/analysis/Util.hpp"
+#include "lib/support/diagnostics.h"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/StrUtil.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/StrUtil.hpp>
+#include <iostream>
+#include <string>
 
-//*************************** Forward Declarations **************************
+using std::cerr;
+using std::endl;
+using std::string;
 
 // Cf. DIAG_Die.
-#define ARG_ERROR(streamArgs)                                        \
-  { std::ostringstream WeIrDnAmE;                                    \
-    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
-    printError(std::cerr, WeIrDnAmE.str());                          \
-    exit(1); }
+#define ARG_ERROR(streamArgs)                 \
+  {                                           \
+    std::ostringstream WeIrDnAmE;             \
+    WeIrDnAmE << streamArgs /*<< std::ends*/; \
+    printError(std::cerr, WeIrDnAmE.str());   \
+    exit(1);                                  \
+  }
 
-//***************************************************************************
+static const char* version_info =
+    "hpcserver version 0.9, protocol version 0.9. \n" HPCTOOLKIT_VERSION_STRING;
 
-static const char* version_info = "hpcserver version 0.9, protocol version 0.9. \n" HPCTOOLKIT_VERSION_STRING;
-
-static const char* usage_summary =
-"[options]\n";
+static const char* usage_summary = "[options]\n";
 
 static const char* usage_details = "\
 hpcserver is an optional component that works with hpctraceviewer to enable\n\
@@ -128,113 +123,75 @@ Options: General\n\
 //                     Verbose: generate progress messages to stderr at\n
 //                     verbosity level <n>. {1}\n
 
-#define CLP CmdLineParser
+#define CLP           CmdLineParser
 #define CLP_SEPARATOR "!!"
 
 static const int DEFAULT_PORT = 21590;
 
-
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  // General
-/*  { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },*/
-  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  'c' , "compression",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
-  {  'p' , "port",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
-  {  'x' , "xmlport",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
-  CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
+    // General
+    /*  { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
+         CLP::isOptArg_long },*/
+    {'V', "version", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL},
+    {'h', "help", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL},
+    {'c', "compression", CLP::ARG_REQ, CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long},
+    {'p', "port", CLP::ARG_REQ, CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long},
+    {'x', "xmlport", CLP::ARG_REQ, CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long},
+    CmdLineParser_OptArgDesc_NULL_MACRO  // SGI's compiler requires this version
 };
 
 #undef CLP
 
-
-//***************************************************************************
-// Args
-//***************************************************************************
-
-Args::Args()
-{
+Args::Args() {
   Ctor();
 }
 
-
-Args::Args(int argc, const char* const argv[])
-{
+Args::Args(int argc, const char* const argv[]) {
   Ctor();
   parse(argc, argv);
 }
 
-
-void
-Args::Ctor()
-{
+void Args::Ctor() {
   compression = true;
-  mainPort = DEFAULT_PORT;//21590
+  mainPort = DEFAULT_PORT;  // 21590
   xmlPort = 0;
 }
 
+Args::~Args() {}
 
-Args::~Args()
-{
-}
-
-
-void
-Args::printVersion(std::ostream& os) const
-{
+void Args::printVersion(std::ostream& os) const {
   os << getCmd() << ": " << version_info << endl;
 }
 
-
-void
-Args::printUsage(std::ostream& os) const
-{
-  os << "Usage: " << getCmd() << " " << usage_summary << endl
-     << usage_details << endl;
+void Args::printUsage(std::ostream& os) const {
+  os << "Usage: " << getCmd() << " " << usage_summary << endl << usage_details << endl;
 }
 
-
-void
-Args::printError(std::ostream& os, const char* msg) const
-{
+void Args::printError(std::ostream& os, const char* msg) const {
   os << getCmd() << ": " << msg << endl
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
-void
-Args::printError(std::ostream& os, const std::string& msg) const
-{
+void Args::printError(std::ostream& os, const std::string& msg) const {
   printError(os, msg.c_str());
 }
 
-
-const std::string&
-Args::getCmd() const
-{
+const std::string& Args::getCmd() const {
   return parser.getCmd();
 }
 
-
-void
-Args::parse(int argc, const char* const argv[])
-{
+void Args::parse(int argc, const char* const argv[]) {
   try {
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
     parser.parse(optArgs, argc, argv);
-    
+
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
-    
+
     // Special options that should be checked first
     if (parser.isOpt("help")) {
       printUsage(std::cerr);
@@ -247,8 +204,8 @@ Args::parse(int argc, const char* const argv[])
     /*if (parser.isOpt("verbose")) {
       int verb = 1;
       if (parser.isOptArg("verbose")) {
-	const string& arg = parser.getOptArg("verbose");
-	verb = (int)CmdLineParser::toLong(arg);
+        const string& arg = parser.getOptArg("verbose");
+        verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }*/
@@ -260,42 +217,31 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("port")) {
       const string& arg = parser.getOptArg("port");
-      mainPort = (int) CmdLineParser::toLong(arg);
+      mainPort = (int)CmdLineParser::toLong(arg);
       if (mainPort < 1024 && mainPort != 0)
-         	  ARG_ERROR("Ports must be greater than 1024.")
+        ARG_ERROR("Ports must be greater than 1024.")
     }
     if (parser.isOpt("xmlport")) {
       const string& arg = parser.getOptArg("xmlport");
-      xmlPort = (int) CmdLineParser::toLong(arg);
+      xmlPort = (int)CmdLineParser::toLong(arg);
       if (xmlPort < 1024 && xmlPort > 1)
-    	   ARG_ERROR("Ports must be greater than 1024.")
+        ARG_ERROR("Ports must be greater than 1024.")
     }
-  }
-  catch (const CmdLineParser::ParseError& x) {
+  } catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());
-  }
-  catch (const CmdLineParser::Exception& x) {
+  } catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
   }
 }
 
-
-void
-Args::dump(std::ostream& os) const
-{
+void Args::dump(std::ostream& os) const {
   os << "Args.cmd= " << getCmd() << endl;
 }
 
-
-void
-Args::ddump() const
-{
+void Args::ddump() const {
   dump(std::cerr);
 }
-
-
-//***************************************************************************
 
 #if 0
 void
@@ -321,4 +267,3 @@ Args::setHPCHome()
   hpcHome = home;
 }
 #endif
-

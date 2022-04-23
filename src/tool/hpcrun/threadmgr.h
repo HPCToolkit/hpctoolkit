@@ -45,10 +45,10 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// File: threadmgr.h 
+// File: threadmgr.h
 //
-// Purpose: 
-//   interface definitions for threadmgr, which maintains information 
+// Purpose:
+//   interface definitions for threadmgr, which maintains information
 //   about the number of live threads
 //******************************************************************************
 
@@ -57,17 +57,8 @@
 
 #include "thread_data.h"
 
-
-//******************************************************************************
-// constants
-//******************************************************************************
-
-#define OPTION_NO_COMPACT_THREAD  0
-#define OPTION_COMPACT_THREAD     1
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
+#define OPTION_NO_COMPACT_THREAD 0
+#define OPTION_COMPACT_THREAD    1
 
 void hpcrun_threadmgr_thread_new();
 
@@ -75,19 +66,16 @@ void hpcrun_threadmgr_thread_delete();
 
 int hpcrun_threadmgr_thread_count();
 
-bool
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread);
+bool hpcrun_threadMgr_data_get(
+    int id, cct_ctxt_t* thr_ctxt, thread_data_t** data, bool has_trace, bool demand_new_thread);
 
-void
-hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace);
+void hpcrun_threadMgr_non_compact_data_get(
+    int id, cct_ctxt_t* thr_ctxt, thread_data_t** data, bool has_trace);
 
-void
-hpcrun_threadMgr_data_put(epoch_t *epoch, thread_data_t *data, bool add_separator);
+void hpcrun_threadMgr_data_put(epoch_t* epoch, thread_data_t* data, bool add_separator);
 
-void
-hpcrun_threadMgr_data_fini(thread_data_t *td);
+void hpcrun_threadMgr_data_fini(thread_data_t* td);
 
-int
-hpcrun_threadMgr_compact_thread();
+int hpcrun_threadMgr_compact_thread();
 
 #endif

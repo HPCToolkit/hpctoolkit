@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //    $HeadURL$
 //
 // Purpose:
@@ -63,132 +63,89 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#include "hpcrun.h"
 
-#include <iostream>
-using std::ostream;
+#include "Args.hpp"
+#include "dlpapi.h"
+#include "hpcpapi.h" /* <papi.h>, etc. */
 
+#include "include/hpctoolkit-config.h"
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/findinstall.h"
+#include "lib/support/StrUtil.hpp"
+
+#include <errno.h>
 #include <iomanip>
-
-#include <string>
-using std::string;
-
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-
+#include <string>
 #include <sys/types.h> /* for wait() */
 #include <sys/wait.h>  /* for wait() */
 #include <unistd.h>    /* for getpid(), fork(), etc. */
 
-//*************************** User Include Files ****************************
-
-#include <include/hpctoolkit-config.h>
-#include <include/uint.h>
-
-#include "Args.hpp"
-#include "hpcpapi.h" /* <papi.h>, etc. */
-#include "dlpapi.h"
-#include "hpcrun.h"
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/findinstall.h>
-#include <lib/support/StrUtil.hpp>
-
-//*************************** Forward Declarations **************************
+using std::ostream;
+using std::string;
 
 #define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
 #define LD_PRELOAD      "LD_PRELOAD"
 
-//*************************** Forward Declarations **************************
+static int list_available_events(char* argv[], Args::EventList_t listType);
 
-static int
-list_available_events(char* argv[], Args::EventList_t listType);
+static void print_external_lib_paths();
 
-static void 
-print_external_lib_paths();
+static int launch_with_profiling(const char* installpath, const Args& args);
 
-static int
-launch_with_profiling(const char* installpath, const Args& args);
+static int prepare_ld_lib_path_for_papi();
 
-static int
-prepare_ld_lib_path_for_papi();
+static int prepend_to_ld_lib_path(const char* str);
 
-static int
-prepend_to_ld_lib_path(const char* str);
+static int prepend_to_ld_preload(const char* str);
 
-static int
-prepend_to_ld_preload(const char* str);
+static int real_main(int argc, char* argv[]);
 
-//***************************************************************************
-//
-//***************************************************************************
-
-static int
-real_main(int argc, char* argv[]);
-
-
-int
-main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   try {
     return real_main(argc, argv);
-  }
-  catch (const Diagnostics::Exception& x) {
+  } catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
+  } catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  } 
-  catch (const std::exception& x) {
+  } catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
-  } 
-  catch (...) {
+  } catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 }
 
-
-static int
-real_main(int argc, char* argv[])
-{
+static int real_main(int argc, char* argv[]) {
   int ret = 0;
   Args args(argc, argv);
-  
+
   if (args.listEvents != Args::LIST_NONE) {
     ret = list_available_events(argv, args.listEvents);
-  }
-  else if (args.printPaths) {
+  } else if (args.printPaths) {
     print_external_lib_paths();
-  }
-  else {
+  } else {
     // Launch and profile
     char* installpath = findinstall(argv[0], HPCRUN_NAME);
-    DIAG_Assert(installpath, "Cannot locate installation path for '"HPCRUN_NAME"'");
-    
+    DIAG_Assert(installpath, "Cannot locate installation path for '" HPCRUN_NAME "'");
+
     ret = launch_with_profiling(installpath, args);
     // only returns on error
   }
-  
+
   return ret;
 }
 
+static int prepare_env_for_profiling(const char* installpath, const Args& args);
 
-//***************************************************************************
-// Profile
-//***************************************************************************
-
-static int
-prepare_env_for_profiling(const char* installpath, const Args& args);
-
-
-static int
-launch_with_profiling(const char* installpath, const Args& args)
-{
+static int launch_with_profiling(const char* installpath, const Args& args) {
   pid_t pid;
   int status;
 
@@ -198,11 +155,11 @@ launch_with_profiling(const char* installpath, const Args& args)
     profArgV[i] = (char*)args.profArgV[i].c_str();
   }
   profArgV[args.profArgV.size()] = NULL;
-  
-  DIAG_Msg(1, HPCRUN_NAME" (pid " << getpid() << ") ==> " << profArgV[0]);
-  
+
+  DIAG_Msg(1, HPCRUN_NAME " (pid " << getpid() << ") ==> " << profArgV[0]);
+
   prepare_env_for_profiling(installpath, args);
-  
+
   // Fork and exec the command to profile
   if ((pid = fork()) == 0) {
     // Child process
@@ -212,16 +169,13 @@ launch_with_profiling(const char* installpath, const Args& args)
     }
     // never reached
   }
-  
+
   // Parent process
   wait(&status);
   return WEXITSTATUS(status);
 }
 
-
-static int
-prepare_env_for_profiling(const char* installpath, const Args& args)
-{  
+static int prepare_env_for_profiling(const char* installpath, const Args& args) {
   char buf[PATH_MAX] = "";
 
   // -------------------------------------------------------
@@ -229,7 +183,7 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
   // -------------------------------------------------------
 
   // To support multi-lib we pack LIB_LIBRARY_PATH with all versions
-  
+
   // LD_LIBRARY_PATH for libpapi (even though we link with libpapi,
   // this may be needed to resolve PAPI dependencies such as libpfm)
   prepare_ld_lib_path_for_papi();
@@ -247,14 +201,13 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
   // LD_LIBRARY_PATH for libmonitor (statically or dynamically determined)
 #ifdef HAVE_MONITOR
   const char* MON = HPC_MONITOR;
-  if (MON[0] == '/') { 
+  if (MON[0] == '/') {
     // statically determined
 #if defined(HAVE_OS_MULTILIB)
     prepend_to_ld_lib_path(HPC_MONITOR "/lib32/:" HPC_MONITOR "/lib64/");
 #endif
     prepend_to_ld_lib_path(HPC_MONITOR "/lib/");
-  }
-  else {
+  } else {
     // dynamically determined
 #if defined(HAVE_OS_MULTILIB)
     snprintf(buf, PATH_MAX, "%s/lib64/" HPC_MONITOR, installpath);
@@ -267,17 +220,15 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
   }
 #endif /* HAVE_MONITOR */
 
-  
   // -------------------------------------------------------
   // Prepare LD_PRELOAD
   // -------------------------------------------------------
 
   prepend_to_ld_preload(HPCRUN_LIB " " HPC_LIBMONITOR_SO);
-  
-  DIAG_Msg(1, HPCRUN_NAME" (pid " << getpid() << "): LD_LIBRARY_PATH=" << getenv(LD_LIBRARY_PATH));
-  DIAG_Msg(1, HPCRUN_NAME" (pid " << getpid() << "): LD_PRELOAD=" << getenv(LD_PRELOAD));
 
-  
+  DIAG_Msg(1, HPCRUN_NAME " (pid " << getpid() << "): LD_LIBRARY_PATH=" << getenv(LD_LIBRARY_PATH));
+  DIAG_Msg(1, HPCRUN_NAME " (pid " << getpid() << "): LD_PRELOAD=" << getenv(LD_PRELOAD));
+
   // -------------------------------------------------------
   // Prepare environment: Profiler options
   // -------------------------------------------------------
@@ -297,50 +248,38 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
   }
   if (!args.profOutput.empty()) {
     setenv("HPCRUN_OUTPUT", args.profOutput.c_str(), 1);
-    setenv("HPCRUN_OPTIONS", "DIR", 1); // hpcex extensions
+    setenv("HPCRUN_OPTIONS", "DIR", 1);  // hpcex extensions
   }
   if (!args.profPAPIFlag.empty()) {
     setenv("HPCRUN_EVENT_FLAG", args.profPAPIFlag.c_str(), 1);
   }
   DIAG_If(1) {
     string val = StrUtil::toStr(Diagnostics_GetDiagnosticFilterLevel());
-    setenv("HPCRUN_DEBUG",  val.c_str(), 1);
+    setenv("HPCRUN_DEBUG", val.c_str(), 1);
     setenv("MONITOR_DEBUG", val.c_str(), 1);
   }
   DIAG_If(1) {
     // PAPI_DEBUG=PROFILE | SUBSTRATE | THREADS | OVERFLOW
-    //setenv("PAPI_DEBUG",  "PROFILE, OVERFLOW, SUBSTRATE", 1);
+    // setenv("PAPI_DEBUG",  "PROFILE, OVERFLOW, SUBSTRATE", 1);
   }
   return 0;
 }
 
+static void list_available_events_helper(Args::EventList_t listType);
 
+static int check_and_prepare_env_for_eventlisting();
 
-//***************************************************************************
-// List profiling events
-//***************************************************************************
-
-static void
-list_available_events_helper(Args::EventList_t listType);
-
-static int
-check_and_prepare_env_for_eventlisting();
-
-static void
-init_papi(); 
-
+static void init_papi();
 
 /*
  *  List available events.
  */
-static int
-list_available_events(char* argv[], Args::EventList_t listType)
-{
+static int list_available_events(char* argv[], Args::EventList_t listType) {
   static const char* HPCRUN_TAG = "HPCRUN_SUPER_SECRET_TAG";
   char* envtag = NULL;
   pid_t pid;
   int status = 0;
-  
+
   // For a (security?) reason I do not understand, dlopen may *ignore*
   // a call to setenv() modifying LD_LIBRARY_PATH.  Thus we set the
   // environment (adding a special tag to prevent infinite recursion)
@@ -350,54 +289,54 @@ list_available_events(char* argv[], Args::EventList_t listType)
     // 1. No hpcrun tag: prepare env, add the tag and fork/exec
     status |= check_and_prepare_env_for_eventlisting();
     status |= setenv(HPCRUN_TAG, "1", 1);
-    if (status != 0) { 
+    if (status != 0) {
       DIAG_Throw("Error preparing environment.");
     }
-    
+
     // Fork and exec
     if ((pid = fork()) == 0) {
       // Child process
       const char* cmd = argv[0];
       if (execvp(cmd, argv) == -1) {
-	DIAG_Throw("Error exec'ing myself: " << strerror(errno));
+        DIAG_Throw("Error exec'ing myself: " << strerror(errno));
       }
       // never reached
     }
-    
+
     // Parent process
     wait(&status);
     return WEXITSTATUS(status);
-  }
-  else {
+  } else {
     // 2. List the events
     DIAG_Msg(1, "LD_LIBRARY_PATH=" << getenv(LD_LIBRARY_PATH));
     dlopen_papi();
-    list_available_events_helper(listType);    
+    list_available_events_helper(listType);
     dlclose_papi();
     return 0;
   }
 }
 
-
 /*
  *  List available system, PAPI and native events.  (Mostly based on
  *  PAPI's src/ctests/avail.c)
  */
-static void 
-list_available_events_helper(Args::EventList_t listType)
-{
+static void list_available_events_helper(Args::EventList_t listType) {
   using std::setfill;
   using std::setw;
 
-#define SEPARATOR_MAJOR setfill('=') << setw(77) << "" << "\n\n"
-#define SEPARATOR_MINOR setfill('-') << setw(77) << "" << "\n"
+#define SEPARATOR_MAJOR          \
+  setfill('=') << setw(77) << "" \
+               << "\n\n"
+#define SEPARATOR_MINOR          \
+  setfill('-') << setw(77) << "" \
+               << "\n"
 
   ostream& os = std::cout;
 
   if (listType == Args::LIST_NONE) {
     return;
   }
-  
+
   // -------------------------------------------------------
   // Ensure PAPI is initialized
   // -------------------------------------------------------
@@ -412,10 +351,8 @@ list_available_events_helper(Args::EventList_t listType)
   }
   os << "*** Hardware information ***\n";
   os << SEPARATOR_MINOR;
-  os << "Vendor string and code  : " 
-     << hwinfo->vendor_string << " (" << hwinfo->vendor <<")\n";
-  os << "Model string and code   : " 
-     << hwinfo->model_string << " (" << hwinfo->model << ")\n";
+  os << "Vendor string and code  : " << hwinfo->vendor_string << " (" << hwinfo->vendor << ")\n";
+  os << "Model string and code   : " << hwinfo->model_string << " (" << hwinfo->model << ")\n";
   os << "CPU Revision            : " << hwinfo->revision << "\n";
   os << "CPU Megahertz           : " << hwinfo->mhz << "\n";
   os << "CPU's in this Node      : " << hwinfo->ncpu << "\n";
@@ -440,11 +377,9 @@ list_available_events_helper(Args::EventList_t listType)
   os << SEPARATOR_MINOR;
   if (listType == Args::LIST_SHORT) {
     os << "Name\t\tDescription\n";
-  }
-  else if (listType == Args::LIST_LONG) {
+  } else if (listType == Args::LIST_LONG) {
     os << "Name\t     Profilable\tDescription (Implementation Note)\n";
-  }
-  else {
+  } else {
     DIAG_Die(DIAG_Unimplemented);
   }
   os << SEPARATOR_MINOR;
@@ -460,18 +395,16 @@ list_available_events_helper(Args::EventList_t listType)
       /* NOTE: Although clumsy, this test has official sanction. */
       const char* profilable = "Yes";
       if ((info.count > 1) && strcmp(info.derived, "DERIVED_CMPD") != 0) {
-	profilable = "No";
+        profilable = "No";
       }
-      
+
       if (listType == Args::LIST_SHORT) {
-	os << info.symbol << "\t" << info.long_descr << "\n";
-      } 
-      else if (listType == Args::LIST_LONG) {
-	os << info.symbol << "\t" << profilable << "\t" << info.long_descr
-	   << " (" << info.note << ")\n";
-      }
-      else {
-	DIAG_Die(DIAG_Unimplemented);
+        os << info.symbol << "\t" << info.long_descr << "\n";
+      } else if (listType == Args::LIST_LONG) {
+        os << info.symbol << "\t" << profilable << "\t" << info.long_descr << " (" << info.note
+           << ")\n";
+      } else {
+        DIAG_Die(DIAG_Unimplemented);
       }
       count++;
     }
@@ -486,117 +419,87 @@ list_available_events_helper(Args::EventList_t listType)
   /* PAPI does not always correctly return a vendor id */
   os << "*** Available native events ***\n";
   os << SEPARATOR_MINOR;
-  if (listType == Args::LIST_SHORT) { 
+  if (listType == Args::LIST_SHORT) {
     os << "Name\t\t\t\tDescription\n";
-  }
-  else if (listType == Args::LIST_LONG) { 
+  } else if (listType == Args::LIST_LONG) {
     os << "Name\t\t\t\tDescription\n";
-  }
-  else {
+  } else {
     DIAG_Die(DIAG_Unimplemented);
   }
   os << SEPARATOR_MINOR;
   os << std::left << setfill(' ');
-  
+
   i = PAPI_NATIVE_MASK;
   count = 0;
   do {
     PAPI_event_info_t info;
     if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
       const char* desc = (info.long_descr) ? info.long_descr : "";
-      
+
       if (listType == Args::LIST_SHORT || listType == Args::LIST_LONG) {
-	if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
-	  desc += strlen(info.symbol);
-	}
-	os << setw(31) << info.symbol << " " << desc << "\n";
-      }
-      else {
-	DIAG_Die(DIAG_Unimplemented);
+        if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
+          desc += strlen(info.symbol);
+        }
+        os << setw(31) << info.symbol << " " << desc << "\n";
+      } else {
+        DIAG_Die(DIAG_Unimplemented);
       }
       count++;
     }
   } while (dl_PAPI_enum_event(&i, PAPI_ENUM_EVENTS) == PAPI_OK);
-  
+
   os << "Total native events reported: " << count << "\n";
   os << SEPARATOR_MAJOR;
 }
 
-
-static int
-check_and_prepare_env_for_eventlisting()
-{
+static int check_and_prepare_env_for_eventlisting() {
   return prepare_ld_lib_path_for_papi();
 }
 
-
-static void
-init_papi() 
-{
+static void init_papi() {
   /* Initialize PAPI library */
   if (hpc_init_papi(dl_PAPI_is_initialized, dl_PAPI_library_init) != 0) {
     exit(-1); /* message already printed */
   }
 }
 
-
-//***************************************************************************
-// Misc
-//***************************************************************************
-
-static int
-prepare_ld_lib_path_for_papi()
-{
+static int prepare_ld_lib_path_for_papi() {
 #if defined(HAVE_OS_MULTILIB)
   prepend_to_ld_lib_path(HPC_PAPI "/lib32:" HPC_PAPI "/lib64");
 #endif
   return prepend_to_ld_lib_path(HPC_PAPI "/lib");
 }
 
-
-static void 
-print_external_lib_paths()
-{
-  DIAG_Msg(0, "Using PAPI installation: '"HPC_PAPI"'");
+static void print_external_lib_paths() {
+  DIAG_Msg(0, "Using PAPI installation: '" HPC_PAPI "'");
   const char* MON = HPC_MONITOR;
   if (MON[0] == '/') {
-    DIAG_Msg(0, "Using MONITOR installation: '"HPC_MONITOR"'\n");
+    DIAG_Msg(0, "Using MONITOR installation: '" HPC_MONITOR "'\n");
   }
 }
 
+static int prepend_to_env_var(const char* env_var, const char* str, char sep);
 
-static int
-prepend_to_env_var(const char* env_var, const char* str, char sep);
-
-static int
-prepend_to_ld_lib_path(const char* str)
-{
+static int prepend_to_ld_lib_path(const char* str) {
   return prepend_to_env_var(LD_LIBRARY_PATH, str, ':');
 }
 
-
-static int
-prepend_to_ld_preload(const char* str)
-{
+static int prepend_to_ld_preload(const char* str) {
   return prepend_to_env_var(LD_PRELOAD, str, ' ');
 }
 
-
-static int
-prepend_to_env_var(const char* env_var, const char* str, char sep)
-{
+static int prepend_to_env_var(const char* env_var, const char* str, char sep) {
   char newval[PATH_MAX] = "";
-  char *oldval;
+  char* oldval;
   int sz;
-  
+
   strncpy(newval, str, PATH_MAX);
   oldval = getenv(env_var);
   if (oldval) {
     sz = PATH_MAX - (strlen(newval) + 1); /* 'path:' */
     snprintf(newval + strlen(newval), sz, "%c%s", sep, oldval);
   }
-  newval[PATH_MAX-1] = '\0';
+  newval[PATH_MAX - 1] = '\0';
   setenv(env_var, newval, 1);
   return 0;
 }
-

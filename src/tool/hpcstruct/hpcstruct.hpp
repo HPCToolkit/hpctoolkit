@@ -47,11 +47,10 @@
 #ifndef hpcstruct_hpp
 #define hpcstruct_hpp
 
-
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
 
-void doSingleBinary( Args &args, struct stat *sb);
-void doMeasurementsDir ( Args &args, struct stat *sb);
+void doSingleBinary(Args& args, struct stat* sb);
+void doMeasurementsDir(Args& args, struct stat* sb);
 
-#endif //hpcstruct_hpp
+#endif  // hpcstruct_hpp

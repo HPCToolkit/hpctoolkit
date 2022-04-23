@@ -47,12 +47,12 @@
 #ifndef METRICS_H
 #define METRICS_H
 
-#include <sys/types.h>
-#include <stdbool.h>
+#include "lib/prof-lean/hpcfmt.h"
+#include "lib/prof-lean/hpcio.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
 
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include <stdbool.h>
+#include <sys/types.h>
 
 // tallent: I have moved flags into hpcfile_csprof.h.  The flags don't
 // really belong there but:
@@ -62,13 +62,13 @@
 //    xcsprof (hpcprof) and hpcfile can use it.  hpcfile at least
 //    satisfies this.
 
+#include "lib/prof-lean/hpcfmt.h"
+#include "lib/prof-lean/hpcio.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
+
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <assert.h>
-
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
 
 typedef hpcrun_metricVal_t cct_metric_data_t;
 
@@ -81,8 +81,8 @@ typedef void metric_upd_proc_t(int metric_id, metric_data_list_t* set, cct_metri
 
 typedef cct_metric_data_t (*metric_bin_fn)(cct_metric_data_t v1, cct_metric_data_t v2);
 
-//YUMENG
-struct metric_position_t{
+// YUMENG
+struct metric_position_t {
   uint16_t mid;
   uint64_t offset;
 };
@@ -113,11 +113,11 @@ typedef struct kind_info_t kind_info_t;
 
 kind_info_t* hpcrun_metrics_new_kind();
 
-void hpcrun_close_kind(kind_info_t *kind);
+void hpcrun_close_kind(kind_info_t* kind);
 
 void hpcrun_pre_allocate_metrics(size_t num);
 
-int hpcrun_get_num_metrics(kind_info_t *kind);
+int hpcrun_get_num_metrics(kind_info_t* kind);
 
 void hpcrun_metrics_data_finalize();
 
@@ -141,55 +141,53 @@ metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 
 metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
 
-int hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
-				    MetricFlags_ValFmt_t valFmt, size_t period,
-				    metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
+int hpcrun_set_new_metric_info_w_fn(
+    kind_info_t* kind, const char* name, MetricFlags_ValFmt_t valFmt, size_t period,
+    metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
-int hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
-		        const char *description,
-				MetricFlags_ValFmt_t valFmt, size_t period,
-				metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
+int hpcrun_set_new_metric_desc(
+    kind_info_t* kind, const char* name, const char* description, MetricFlags_ValFmt_t valFmt,
+    size_t period, metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
-int hpcrun_set_new_metric_desc_and_period(kind_info_t *kind, const char* name, const char *description,
-				      MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+int hpcrun_set_new_metric_desc_and_period(
+    kind_info_t* kind, const char* name, const char* description, MetricFlags_ValFmt_t valFmt,
+    size_t period, metric_desc_properties_t prop);
 
-int hpcrun_set_new_metric_info_and_period(kind_info_t *kind, const char* name,
-					  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+int hpcrun_set_new_metric_info_and_period(
+    kind_info_t* kind, const char* name, MetricFlags_ValFmt_t valFmt, size_t period,
+    metric_desc_properties_t prop);
 
-int hpcrun_set_new_metric_info(kind_info_t *kind, const char* name);
+int hpcrun_set_new_metric_info(kind_info_t* kind, const char* name);
 
 void hpcrun_set_metric_name(int metric_id, char* name);
 
 // metric set operations
 
 extern cct_metric_data_t* hpcrun_metric_set_loc(metric_data_list_t* rv, int id);
-extern void hpcrun_metric_std_set(int metric_id, metric_data_list_t* set,
-				  hpcrun_metricVal_t value);
-extern void hpcrun_metric_std_inc(int metric_id, metric_data_list_t* set,
-				  hpcrun_metricVal_t incr);
+extern void hpcrun_metric_std_set(int metric_id, metric_data_list_t* set, hpcrun_metricVal_t value);
+extern void hpcrun_metric_std_inc(int metric_id, metric_data_list_t* set, hpcrun_metricVal_t incr);
 extern metric_data_list_t* hpcrun_new_metric_data_list(int metric_id);
-extern metric_data_list_t* hpcrun_new_metric_data_list_kind(kind_info_t *kind);
-extern metric_data_list_t* hpcrun_new_metric_data_list_kind_final(kind_info_t *kind);
+extern metric_data_list_t* hpcrun_new_metric_data_list_kind(kind_info_t* kind);
+extern metric_data_list_t* hpcrun_new_metric_data_list_kind_final(kind_info_t* kind);
 
 //
 // copy a metric set
 //
-extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
-					 metric_data_list_t* list,
-					 int num_metrics);
+extern void
+hpcrun_metric_set_dense_copy(cct_metric_data_t* dest, metric_data_list_t* list, int num_metrics);
 
 //
 // make a sparse copy - YUMENG
 //
-//extern void datalist_display(metric_data_list_t *data_list);
+// extern void datalist_display(metric_data_list_t *data_list);
 
-extern uint64_t hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* metric_ids,
-					 metric_data_list_t* list, int initializing_offset);
+extern uint64_t hpcrun_metric_set_sparse_copy(
+    cct_metric_data_t* val, uint16_t* metric_ids, metric_data_list_t* list,
+    int initializing_offset);
 
 extern uint64_t hpcrun_metric_sparse_count(metric_data_list_t* list);
 
+extern metric_data_list_t*
+hpcrun_merge_cct_metrics(metric_data_list_t* dest, metric_data_list_t* source);
 
-
-extern metric_data_list_t *hpcrun_merge_cct_metrics(metric_data_list_t *dest, metric_data_list_t *source);
-
-#endif // METRICS_H
+#endif  // METRICS_H

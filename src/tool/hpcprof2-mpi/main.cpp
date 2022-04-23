@@ -45,11 +45,10 @@
 // ******************************************************* EndRiceCopyright *
 
 #include "../hpcprof2/args.hpp"
-
 #include "lib/profile/mpi/core.hpp"
 
-#include <mpi.h>
 #include <iostream>
+#include <mpi.h>
 
 std::mutex mpitex;
 
@@ -72,7 +71,7 @@ int main(int argc, char* const argv[]) {
   // It also helps ensure MPI_Finalize is called at the end like it should.
   // Any complex common bits are factored out into individual functions.
   int ret;
-  if(mpi::World::rank() == 0)
+  if (mpi::World::rank() == 0)
     ret = rank0(std::move(args));
   else
     ret = rankN(std::move(args));

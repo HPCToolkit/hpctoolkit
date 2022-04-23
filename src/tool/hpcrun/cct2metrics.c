@@ -1,18 +1,66 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2022, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 //
 // cct_node -> metrics map
 //
+#include "hpcrun/cct2metrics.h"
+
+#include "cct/cct.h"
+#include "memory/hpcrun-malloc.h"
+#include "messages/messages.h"
+
+#include "hpcrun/metrics.h"
+#include "hpcrun/thread_data.h"
+
+#include "lib/prof-lean/splay-macros.h"
+
 #include <stdbool.h>
-#include <string.h>
 #include <stdlib.h>
-
-#include <messages/messages.h>
-#include <memory/hpcrun-malloc.h>
-#include <hpcrun/metrics.h>
-#include <cct/cct.h>
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/thread_data.h>
-#include <lib/prof-lean/splay-macros.h>
-
+#include <string.h>
 
 //
 // ***** The splay tree node *****
@@ -27,14 +75,12 @@ struct cct2metrics_t {
   struct cct2metrics_t* left;
 };
 
-
-
 //
 // ******** Local Data ***********
 //
 // There is 1 cct2metric map per thread. The public
 // interface functions implicitly reference this map
-// 
+//
 
 #define THREAD_LOCAL_MAP() TD_GET(core_profile_trace_data.cct2metrics_map)
 
@@ -48,53 +94,44 @@ struct cct2metrics_t {
 // implicitly.
 // [Singleton pattern for GangOf4 enthusiasts]
 
-void
-hpcrun_cct2metrics_init(cct2metrics_t** map)
-{
+void hpcrun_cct2metrics_init(cct2metrics_t** map) {
   TMSG(CCT2METRICS, "Init, map = %p", *map);
   *map = NULL;
 }
 //
 // ******* Internal operations: **********
-// mapping implemented as a splay tree 
+// mapping implemented as a splay tree
 //
 
-void
-help_splay_tree_dump(cct2metrics_t* tree, int indent)
-{
-  if (! tree) return;
+void help_splay_tree_dump(cct2metrics_t* tree, int indent) {
+  if (!tree)
+    return;
 
-  help_splay_tree_dump(tree->right, indent+2);
+  help_splay_tree_dump(tree->right, indent + 2);
 
   char buf[300];
-  for (int i=0; i<indent; i++) buf[i] = ' ';
+  for (int i = 0; i < indent; i++)
+    buf[i] = ' ';
   buf[indent] = '\0';
-  snprintf(buf+indent, sizeof(buf)-(indent+1), "%p", tree->node);
+  snprintf(buf + indent, sizeof(buf) - (indent + 1), "%p", tree->node);
   TMSG(CCT2METRICS, "%s", buf);
 
-  help_splay_tree_dump(tree->left, indent+2);
+  help_splay_tree_dump(tree->left, indent + 2);
 }
 
-void
-splay_tree_dump(cct2metrics_t* map)
-{
+void splay_tree_dump(cct2metrics_t* map) {
   TMSG(CCT2METRICS, "Splay tree %p appears below", map);
   help_splay_tree_dump(map, 0);
 }
 
-
-static cct2metrics_t*
-splay(cct2metrics_t* map, cct_node_id_t node)
-{
+static cct2metrics_t* splay(cct2metrics_t* map, cct_node_id_t node) {
   TMSG(CCT2METRICS, "splay map = %p, node = %p", map, node);
   REGULAR_SPLAY_TREE(cct2metrics_t, map, node, node, left, right);
   TMSG(CCT2METRICS, "new map = %p, top node = %p", map, map->node);
   return map;
 }
 
-static cct2metrics_t*
-cct2metrics_new(cct_node_id_t node, metric_data_list_t* kind_metrics)
-{
+static cct2metrics_t* cct2metrics_new(cct_node_id_t node, metric_data_list_t* kind_metrics) {
   cct2metrics_t* rv = hpcrun_malloc(sizeof(cct2metrics_t));
   rv->node = node;
   rv->kind_metrics = kind_metrics;
@@ -111,9 +148,7 @@ cct2metrics_new(cct_node_id_t node, metric_data_list_t* kind_metrics)
 // create a metric set, and return it.
 //
 
-metric_data_list_t*
-hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id)
-{
+metric_data_list_t* hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id) {
   TMSG(CCT2METRICS, "REIFY: %p", cct_id);
   metric_data_list_t* rv = hpcrun_get_metric_data_list(cct_id);
   if (rv == NULL) {
@@ -129,11 +164,11 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id)
 }
 
 metric_data_list_t*
-hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id)
-{
-  cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
+hpcrun_get_metric_data_list_specific(cct2metrics_t** map, cct_node_id_t cct_id) {
+  cct2metrics_t* current_map = map ? *map : THREAD_LOCAL_MAP();
   TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, current_map);
-  if (! current_map) return NULL;
+  if (!current_map)
+    return NULL;
 
   current_map = splay(current_map, cct_id);
 
@@ -141,7 +176,6 @@ hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id)
     *map = current_map;
   else
     THREAD_LOCAL_MAP() = current_map;
-
 
   TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, current_map);
 
@@ -153,22 +187,20 @@ hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id)
   return NULL;
 }
 
-metric_data_list_t*
-hpcrun_get_metric_data_list(cct_node_id_t cct_id)
-{
+metric_data_list_t* hpcrun_get_metric_data_list(cct_node_id_t cct_id) {
   return hpcrun_get_metric_data_list_specific(NULL, cct_id);
 }
 
-metric_data_list_t *
-hpcrun_move_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t dest, cct_node_id_t source)
-{
+metric_data_list_t* hpcrun_move_metric_data_list_specific(
+    cct2metrics_t** map, cct_node_id_t dest, cct_node_id_t source) {
   if (dest == NULL || source == NULL) {
     return NULL;
   }
 
-  cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
+  cct2metrics_t* current_map = map ? *map : THREAD_LOCAL_MAP();
   TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", source, current_map);
-  if (! current_map) return NULL;
+  if (!current_map)
+    return NULL;
 
   if (map)
     *map = current_map;
@@ -178,61 +210,57 @@ hpcrun_move_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t dest, c
 
   if (current_map->node == source) {
     TMSG(CCT2METRICS, " -- found %p, returning metrics", current_map->node);
-    metric_data_list_t *metric_data_list = current_map->kind_metrics;
+    metric_data_list_t* metric_data_list = current_map->kind_metrics;
     current_map->kind_metrics = NULL;
-    cct2metrics_assoc(dest, metric_data_list); 
+    cct2metrics_assoc(dest, metric_data_list);
     return metric_data_list;
   }
   TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
   return NULL;
 }
 
-metric_data_list_t*
-hpcrun_move_metric_data_list(cct_node_id_t dest, cct_node_id_t source)
-{
+metric_data_list_t* hpcrun_move_metric_data_list(cct_node_id_t dest, cct_node_id_t source) {
   return hpcrun_move_metric_data_list_specific(NULL, dest, source);
 }
 
 //
 // associate a metric set with a cct node
 //
-void
-cct2metrics_assoc(cct_node_id_t node, metric_data_list_t* kind_metrics)
-{
+void cct2metrics_assoc(cct_node_id_t node, metric_data_list_t* kind_metrics) {
   cct2metrics_t* map = THREAD_LOCAL_MAP();
   TMSG(CCT2METRICS, "CCT2METRICS_ASSOC for %p, using map %p", node, map);
-  if (! map) {
+  if (!map) {
     map = cct2metrics_new(node, kind_metrics);
     TMSG(CCT2METRICS, " -- new map created: %p", map);
-  }
-  else {
+  } else {
     cct2metrics_t* new = cct2metrics_new(node, kind_metrics);
     map = splay(map, node);
-    TMSG(CCT2METRICS, " -- map after splay = %p,"
-         " node sought = %p, mapnode = %p", map, node, map->node);
+    TMSG(
+        CCT2METRICS,
+        " -- map after splay = %p,"
+        " node sought = %p, mapnode = %p",
+        map, node, map->node);
     if (map->node == node) {
       EMSG("CCT2METRICS map assoc invariant violated");
-    }
-    else {
+    } else {
       if (map->node < node) {
         TMSG(CCT2METRICS, " -- less-than insert %p < %p", map->node, node);
         new->left = map;
         new->right = map->right;
         map->right = NULL;
-      }
-      else {
+      } else {
         TMSG(CCT2METRICS, " -- greater-than insert %p > %p", map->node, node);
         new->left = map->left;
         new->right = map;
         map->left = NULL;
       }
       map = new;
-      TMSG(CCT2METRICS, " -- new map after insertion %p.(%p, %p)", map->node, map->left, map->right);
+      TMSG(
+          CCT2METRICS, " -- new map after insertion %p.(%p, %p)", map->node, map->left, map->right);
     }
   }
   THREAD_LOCAL_MAP() = map;
   TMSG(CCT2METRICS, "METRICS_ASSOC final, THREAD_LOCAL_MAP = %p", THREAD_LOCAL_MAP());
-  if (ENABLED(CCT2METRICS)) splay_tree_dump(THREAD_LOCAL_MAP());
+  if (ENABLED(CCT2METRICS))
+    splay_tree_dump(THREAD_LOCAL_MAP());
 }
-
-

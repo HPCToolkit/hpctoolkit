@@ -62,17 +62,13 @@
 
 #include <stdio.h>
 
-
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define COMPRESSION_LEVEL_DEFAULT 6
 
-enum compress_e {
-  COMPRESS_OK, COMPRESS_FAIL, COMPRESS_IO_ERROR, COMPRESS_NONE
-};
+enum compress_e { COMPRESS_OK, COMPRESS_FAIL, COMPRESS_IO_ERROR, COMPRESS_NONE };
 
 /* Compress from file source to file dest until EOF on source.
 It returns:
@@ -88,8 +84,7 @@ It returns:
    block at a time). Z_DEFAULT_COMPRESSION requests a default compromise
    between speed and compression (currently equivalent to level 6).
  */
-enum compress_e
-compress_deflate(FILE *source, FILE *dest, int level);
+enum compress_e compress_deflate(FILE* source, FILE* dest, int level);
 
 /* Decompress from file source to file dest until stream ends or EOF.
    It returns:
@@ -99,13 +94,10 @@ compress_deflate(FILE *source, FILE *dest, int level);
      COMPRESS_IO_ERROR is there is an error reading or writing the file
      COMPRESS_NONE if decompression is not needed.
  */
-enum compress_e
-compress_inflate(FILE *source, FILE *dest);
-
+enum compress_e compress_inflate(FILE* source, FILE* dest);
 
 #ifdef __cplusplus
 }
 #endif
 
-
-#endif // HPCTOOLKIT_COMPRESS_H
+#endif  // HPCTOOLKIT_COMPRESS_H

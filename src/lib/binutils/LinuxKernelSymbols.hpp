@@ -47,50 +47,39 @@
 #ifndef __LINUXKERNELSYMBOLS_HPP__
 #define __LINUXKERNELSYMBOLS_HPP__
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
 #include "SimpleSymbols.hpp"
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
 
 class LinuxKernelSymbols : public SimpleSymbols {
 public:
   LinuxKernelSymbols();
-  bool parse(const std::set<std::string> &directorySet, const char *pathname);
+  bool parse(const std::set<std::string>& directorySet, const char* pathname);
 };
 
-enum init_status_e {UNINITIALIZED, INITIALIZED};
+enum init_status_e { UNINITIALIZED, INITIALIZED };
 
 class LinuxKernelSymbolsFactory : public SimpleSymbolsFactory {
 public:
-  LinuxKernelSymbolsFactory():m_kernelSymbol(NULL), m_id(0), m_fileId(0),
-    m_id_status(UNINITIALIZED), m_fileId_status(UNINITIALIZED)
-  {}
+  LinuxKernelSymbolsFactory()
+      : m_kernelSymbol(NULL), m_id(0), m_fileId(0), m_id_status(UNINITIALIZED),
+        m_fileId_status(UNINITIALIZED) {}
   ~LinuxKernelSymbolsFactory() {
     if (m_kernelSymbol) {
       delete m_kernelSymbol;
     }
   }
 
-  const char *unified_name();
+  const char* unified_name();
 
-  bool match(const char *pathname);
-  SimpleSymbols *create();
-
+  bool match(const char* pathname);
+  SimpleSymbols* create();
 
 private:
-  LinuxKernelSymbols *m_kernelSymbol;
+  LinuxKernelSymbols* m_kernelSymbol;
   uint m_id;
   uint m_fileId;
 
   enum init_status_e m_id_status;
   enum init_status_e m_fileId_status;
 };
-     
+
 #endif

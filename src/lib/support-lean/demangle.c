@@ -52,24 +52,20 @@
 // Libiberty cplus_demangle() does many malloc()s, but does appear to
 // be reentrant and thread-safe.  But not signal safe.
 
-//***************************************************************************
+#include "lib/support-lean/demangle.h"
+
+#include "include/gnu_demangle.h"
 
 #include <string.h>
 
-#include <include/gnu_demangle.h>
-#include <lib/support-lean/demangle.h>
-
-#define DEMANGLE_FLAGS  (DMGL_PARAMS | DMGL_ANSI | DMGL_VERBOSE | DMGL_RET_DROP)
-
+#define DEMANGLE_FLAGS (DMGL_PARAMS | DMGL_ANSI | DMGL_VERBOSE | DMGL_RET_DROP)
 
 // Returns: malloc()ed string for the demangled name, or else NULL if
 // 'name' is not a mangled name.
 //
 // Note: the caller is resposible for calling free() on the result.
 //
-char *
-hpctoolkit_demangle(const char * name)
-{
+char* hpctoolkit_demangle(const char* name) {
   if (name == NULL) {
     return NULL;
   }

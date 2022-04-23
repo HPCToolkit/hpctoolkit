@@ -51,68 +51,35 @@
 //
 // Purpose:
 //   implementation of map from device id to device data structure
-//  
+//
 //***************************************************************************
-
-
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <assert.h>
-
-
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
-
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
 
 #include "ompt-device-map.h"
 
+#include "hpcrun/memory/hpcrun-malloc.h"
+#include "hpcrun/messages/messages.h"
 
-/******************************************************************************
- * type definitions 
- *****************************************************************************/
+#include "lib/prof-lean/spinlock.h"
+#include "lib/prof-lean/splay-macros.h"
+
+#include <assert.h>
 
 struct ompt_device_map_entry_s {
   uint64_t device_id;
   uint64_t refcnt;
-  ompt_device_t *device;
-  const char *type;
-  struct ompt_device_map_entry_s *left;
-  struct ompt_device_map_entry_s *right;
-}; 
+  ompt_device_t* device;
+  const char* type;
+  struct ompt_device_map_entry_s* left;
+  struct ompt_device_map_entry_s* right;
+};
 
-
-
-//*****************************************************************************
-// global data 
-//*****************************************************************************
-
-static ompt_device_map_entry_t *ompt_device_map_root = NULL;
+static ompt_device_map_entry_t* ompt_device_map_root = NULL;
 static spinlock_t ompt_device_map_lock = SPINLOCK_UNLOCKED;
 
-
-
-//*****************************************************************************
-// private operations
-//*****************************************************************************
-
-static ompt_device_map_entry_t *
-ompt_device_map_entry_new
-(
- uint64_t device_id, 
- ompt_device_t *device, 
- const char *type
-)
-{
-  ompt_device_map_entry_t *e;
-  e = (ompt_device_map_entry_t *)hpcrun_malloc(sizeof(ompt_device_map_entry_t));
+static ompt_device_map_entry_t*
+ompt_device_map_entry_new(uint64_t device_id, ompt_device_t* device, const char* type) {
+  ompt_device_map_entry_t* e;
+  e = (ompt_device_map_entry_t*)hpcrun_malloc(sizeof(ompt_device_map_entry_t));
   e->device_id = device_id;
   e->device = device;
   e->type = type;
@@ -123,51 +90,26 @@ ompt_device_map_entry_new
   return e;
 }
 
-
-static ompt_device_map_entry_t *
-ompt_device_map_splay
-(
- ompt_device_map_entry_t *root, 
- uint64_t key
-)
-{
+static ompt_device_map_entry_t* ompt_device_map_splay(ompt_device_map_entry_t* root, uint64_t key) {
   REGULAR_SPLAY_TREE(ompt_device_map_entry_s, root, key, device_id, left, right);
   return root;
 }
 
-
-static void
-ompt_device_map_delete_root
-(
- void
-)
-{
+static void ompt_device_map_delete_root(void) {
   TMSG(DEFER_CTXT, "device %d: delete", ompt_device_map_root->device_id);
 
   if (ompt_device_map_root->left == NULL) {
     ompt_device_map_root = ompt_device_map_root->right;
   } else {
-    ompt_device_map_root->left = 
-      ompt_device_map_splay(ompt_device_map_root->left, 
-			   ompt_device_map_root->device_id);
+    ompt_device_map_root->left =
+        ompt_device_map_splay(ompt_device_map_root->left, ompt_device_map_root->device_id);
     ompt_device_map_root->left->right = ompt_device_map_root->right;
     ompt_device_map_root = ompt_device_map_root->left;
   }
 }
 
-
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-ompt_device_map_entry_t *
-ompt_device_map_lookup
-(
- uint64_t id
-)
-{
-  ompt_device_map_entry_t *result = NULL;
+ompt_device_map_entry_t* ompt_device_map_lookup(uint64_t id) {
+  ompt_device_map_entry_t* result = NULL;
   spinlock_lock(&ompt_device_map_lock);
 
   ompt_device_map_root = ompt_device_map_splay(ompt_device_map_root, id);
@@ -181,16 +123,8 @@ ompt_device_map_lookup
   return result;
 }
 
-
-void
-ompt_device_map_insert
-(
- uint64_t device_id, 
- ompt_device_t *device, 
- const char *type
-)
-{
-  ompt_device_map_entry_t *entry = ompt_device_map_entry_new(device_id, device, type);
+void ompt_device_map_insert(uint64_t device_id, ompt_device_t* device, const char* type) {
+  ompt_device_map_entry_t* entry = ompt_device_map_entry_new(device_id, device, type);
 
   TMSG(DEFER_CTXT, "device map insert: id=0x%lx (record %p)", device_id, entry);
 
@@ -199,8 +133,7 @@ ompt_device_map_insert
   spinlock_lock(&ompt_device_map_lock);
 
   if (ompt_device_map_root != NULL) {
-    ompt_device_map_root = 
-      ompt_device_map_splay(ompt_device_map_root, device_id);
+    ompt_device_map_root = ompt_device_map_splay(ompt_device_map_root, device_id);
 
     if (device_id < ompt_device_map_root->device_id) {
       entry->left = ompt_device_map_root->left;
@@ -211,8 +144,8 @@ ompt_device_map_insert
       entry->right = ompt_device_map_root->right;
       ompt_device_map_root->right = NULL;
     } else {
-      // device_id already present: fatal error since a device_id 
-      //   should only be inserted once 
+      // device_id already present: fatal error since a device_id
+      //   should only be inserted once
       assert(0);
     }
   }
@@ -221,32 +154,23 @@ ompt_device_map_insert
   spinlock_unlock(&ompt_device_map_lock);
 }
 
-
 // return true if record found; false otherwise
-bool
-ompt_device_map_refcnt_update
-(
- uint64_t device_id, 
- int val
-)
-{
-  bool result = false; 
+bool ompt_device_map_refcnt_update(uint64_t device_id, int val) {
+  bool result = false;
 
-  TMSG(DEFER_CTXT, "device map refcnt_update: id=0x%lx (update %d)", 
-       device_id, val);
+  TMSG(DEFER_CTXT, "device map refcnt_update: id=0x%lx (update %d)", device_id, val);
 
   spinlock_lock(&ompt_device_map_lock);
   ompt_device_map_root = ompt_device_map_splay(ompt_device_map_root, device_id);
 
-  if (ompt_device_map_root && 
-      ompt_device_map_root->device_id == device_id) {
+  if (ompt_device_map_root && ompt_device_map_root->device_id == device_id) {
     uint64_t old = ompt_device_map_root->refcnt;
     ompt_device_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "device map refcnt_update: id=0x%lx (%ld --> %ld)",
-      device_id, old, ompt_device_map_root->refcnt);
+    TMSG(
+        DEFER_CTXT, "device map refcnt_update: id=0x%lx (%ld --> %ld)", device_id, old,
+        ompt_device_map_root->refcnt);
     if (ompt_device_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "device map refcnt_update: id=0x%lx (deleting)",
-        device_id);
+      TMSG(DEFER_CTXT, "device map refcnt_update: id=0x%lx (deleting)", device_id);
       ompt_device_map_delete_root();
     }
     result = true;
@@ -256,44 +180,19 @@ ompt_device_map_refcnt_update
   return result;
 }
 
-
-ompt_device_t *
-ompt_device_map_entry_device_get
-(
- ompt_device_map_entry_t *entry
-)
-{
+ompt_device_t* ompt_device_map_entry_device_get(ompt_device_map_entry_t* entry) {
   return entry->device;
 }
 
-
-
-//*****************************************************************************
-// debugging code
-//*****************************************************************************
-
-static int 
-ompt_device_map_count_helper
-(
- ompt_device_map_entry_t *entry
-) 
-{
+static int ompt_device_map_count_helper(ompt_device_map_entry_t* entry) {
   if (entry) {
-     int left = ompt_device_map_count_helper(entry->left);
-     int right = ompt_device_map_count_helper(entry->right);
-     return 1 + right + left; 
-  } 
+    int left = ompt_device_map_count_helper(entry->left);
+    int right = ompt_device_map_count_helper(entry->right);
+    return 1 + right + left;
+  }
   return 0;
 }
 
-
-int 
-ompt_device_map_count
-(
- void
-) 
-{
+int ompt_device_map_count(void) {
   return ompt_device_map_count_helper(ompt_device_map_root);
 }
-
-

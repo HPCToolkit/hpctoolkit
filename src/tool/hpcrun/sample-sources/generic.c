@@ -52,50 +52,41 @@
 //  additional sample sources to the hpctoolkit.
 //******************************************************************************
 
-
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <ucontext.h>
+#include <monitor.h>
 #include <pthread.h>
 #include <stdbool.h>
-
-/******************************************************************************
- * libmonitor
- *****************************************************************************/
-
-#include <monitor.h>
-
+#include <stdlib.h>
+#include <string.h>
+#include <ucontext.h>
+#include <unistd.h>
 
 // *****************************************************************************
 // local includes
 // *****************************************************************************
 
-#include "simple_oo.h"
-#include "sample_source_obj.h"
 #include "common.h"
+#include "sample_source_obj.h"
+#include "simple_oo.h"
 #include "ss-errno.h"
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <utilities/tokenize.h>
-#include <utilities/arch/context-pc.h>
-#include <messages/messages.h>
+#include "hpcrun/hpcrun_options.h"
+#include "hpcrun/hpcrun_stats.h"
+#include "hpcrun/metrics.h"
+#include "hpcrun/safe-sampling.h"
+#include "hpcrun/sample_event.h"
+#include "hpcrun/sample_sources_registered.h"
+#include "hpcrun/thread_data.h"
+
+#include "lib/prof-lean/hpcrun-fmt.h"
+
 #include <lush/lush-backtrace.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include <messages/messages.h>
+#include <utilities/arch/context-pc.h>
+#include <utilities/tokenize.h>
 
 // *****************************************************************************
 // (file) local variables
-// 
+//
 // *****************************************************************************
 
 //
@@ -108,7 +99,7 @@ static struct SOME_STRUCT ss_specific_data;
 //
 // Almost all sample sources have events. The local data below keeps track of
 // event info, and metric info.
-// 
+//
 // NOTE: some very unusual sample sources may not have any events. (see 'none' sample source)
 //       In this case, the event & metric tracking data structures can likely be dispensed with
 
@@ -121,15 +112,15 @@ static struct SOME_STRUCT ss_specific_data;
 // If you need dynamically sized event info, use hpcrun_malloc instead of regular malloc.
 //
 
-struct event_info { // Typical structure to hold event info
+struct event_info {  // Typical structure to hold event info
   int code;
   long thresh;
 };
 
-static int n_events = 0;                               // # events for this sample source
+static int n_events = 0;  // # events for this sample source
 static const int MAX_EVENTS = SAMPLE_SOURCE_SPECIFIC;
-static struct event_info local_event[MAX_EVENTS];      // event codes (derived from event names usually)
-static const long DEFAULT_THRESHOLD = 1000000L;  // sample source specific
+static struct event_info local_event[MAX_EVENTS];  // event codes (derived from event names usually)
+static const long DEFAULT_THRESHOLD = 1000000L;    // sample source specific
 
 //
 // Sample source events almost always get at least 1 metric slot.
@@ -144,7 +135,7 @@ static const long DEFAULT_THRESHOLD = 1000000L;  // sample source specific
 // NOTE 2: If a sample source has no events (highly unusual, but see 'none' sample source),
 //         then the data structures below are likely unnecessary
 
-int metrics [MAX_EVENTS] [MAX_METRICS];
+int metrics[MAX_EVENTS][MAX_METRICS];
 
 //***********************************************************
 // forward definitions:
@@ -153,20 +144,16 @@ int metrics [MAX_EVENTS] [MAX_METRICS];
 //   (further down in this file) for more info
 //***********************************************************
 
-static int
-generic_signal_handler(int sig, siginfo_t* siginfo, void* context);
+static int generic_signal_handler(int sig, siginfo_t* siginfo, void* context);
 
 //******************************************************************************
 //  The method definitions listed below are all required. They do not have to
 //  actually do anything (except where noted), but they must all be present.
 //******************************************************************************
 
-
 // ******* METHOD DEFINITIONS ***********
 
-static void
-METHOD_FN(init)
-{
+static void METHOD_FN(init) {
   //
   // This method covers LIBRARY init operations only.
   // Other init takes place in subsequent operations
@@ -186,9 +173,7 @@ METHOD_FN(init)
 // The 'thread_init' method is the hook to supply the additional initialization
 //
 
-static void
-METHOD_FN(thread_init)
-{
+static void METHOD_FN(thread_init) {
   // sample source thread init code here
 }
 
@@ -198,22 +183,15 @@ METHOD_FN(thread_init)
 // [ For example, PAPI source uses 'PAPI_register_thread' function ]
 //
 
-static void
-METHOD_FN(thread_init_action)
-{
-}
+static void METHOD_FN(thread_init_action) {}
 
-static void
-METHOD_FN(start)
-{
-
+static void METHOD_FN(start) {
   // The following test MUST appear in all start methods
 
-  if (! hpcrun_td_avail()){
-    return; // in the unlikely event that we are trying to start, but thread data is unavailable,
-            // assume that all sample source ops are suspended.
+  if (!hpcrun_td_avail()) {
+    return;  // in the unlikely event that we are trying to start, but thread data is unavailable,
+             // assume that all sample source ops are suspended.
   }
-
 
   // (Optional) Debug message
   //  You are not limited in any way here. You may liberally sprinkle various
@@ -231,7 +209,6 @@ METHOD_FN(start)
   // method or the 'process_event_list' method
   // examples:
   //  itimer uses a 'struct itimerval' local variable
-
 
   // if your sample source returns some success/fail status, then you can
   // test it here, and log an error message
@@ -251,14 +228,9 @@ METHOD_FN(start)
 // [ For example, PAPI source uses 'PAPI_unregister_thread' function ]
 //
 
-static void
-METHOD_FN(thread_fini_action)
-{
-}
+static void METHOD_FN(thread_fini_action) {}
 
-static void
-METHOD_FN(stop)
-{
+static void METHOD_FN(stop) {
   //
   // sample-source specific stopping code goes here
   //
@@ -279,15 +251,13 @@ METHOD_FN(stop)
   }
 
   // (Optional) debug message
-  TMSG(YOUR_MESSAGE_CLASS,"your stop message %p : %s", your_optional_arg1, your_optional_arg2);
+  TMSG(YOUR_MESSAGE_CLASS, "your stop message %p : %s", your_optional_arg1, your_optional_arg2);
 
   // This line must always appear at the end of a stop method
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
-static void
-METHOD_FN(shutdown)
-{
+static void METHOD_FN(shutdown) {
   //
   // Sample source specific shutdown code goes here
   //
@@ -297,13 +267,11 @@ METHOD_FN(shutdown)
 
   // These lines must always appear at the end of a shutdown method
 
-  METHOD_CALL(self, stop); // make sure stop has been called
+  METHOD_CALL(self, stop);  // make sure stop has been called
   self->state = UNINIT;
 }
 
-static bool
-METHOD_FN(supports_event, const char *ev_str)
-{
+static bool METHOD_FN(supports_event, const char* ev_str) {
   //
   // The event string argument contains the event specifications from
   // the command line.
@@ -314,12 +282,10 @@ METHOD_FN(supports_event, const char *ev_str)
   // For simple event specs, a call to "hpcrun_ev_is" is sufficient. (see below)
   // For a more involved check on events, see papi.c
 
-  return hpcrun_ev_is(ev_str,"YOUR_SOURCE");
+  return hpcrun_ev_is(ev_str, "YOUR_SOURCE");
 }
- 
-static void
-METHOD_FN(process_event_list, int lush_metrics)
-{
+
+static void METHOD_FN(process_event_list, int lush_metrics) {
   // The lush_metrics argument is always passed in.
   // If your sample source does not support lush, then ignore this argument
   // in your event_list_processing.
@@ -340,14 +306,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // fetch the event string for the sample source
   char* _p = METHOD_CALL(self, get_event_str);
-  
 
   //  ** You MAY BE able to pre-allocate metrics for your sample source **
   //  if so, you should do that before the main event processing loop
   //
   //  Example of preallocation:
   //  hpcrun_pre_allocate_metrics(1 + lush_metrics);
-  
+
   //
   // EVENT: for each event in the event spec
   //
@@ -364,10 +329,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     //
     // (The amt of processing may be very small (i.e. itimer) or more involved (i.e. papi)
 
-    local_event[n_events].code   = YOUR_NAME_TO_CODE(event);
+    local_event[n_events].code = YOUR_NAME_TO_CODE(event);
     local_event[n_events].thresh = thresh;
 
-    kind_info_t *metric_kind = hpcrun_metrics_new_kind();
+    kind_info_t* metric_kind = hpcrun_metrics_new_kind();
 
     // for each event, process metrics for that event
     // If there is only 1 metric for each event, then the loop is unnecessary
@@ -375,19 +340,19 @@ METHOD_FN(process_event_list, int lush_metrics)
     // **NOTE: EVERY sample source that has metrics MUST have file (local) storage
     //         to track the metric ids.
     //
-    for (int i=0; i < NUM_METRICS_FOR_EVENT(event); i++) {
+    for (int i = 0; i < NUM_METRICS_FOR_EVENT(event); i++) {
       int metric_id;
-      const char *name = NAME_FOR_EVENT_METRIC(event, i);
-      
+      const char* name = NAME_FOR_EVENT_METRIC(event, i);
+
       if (METRIC_IS_STANDARD) {
-      // For a standard updating metric (add some counts at each sample time), use
-      // hpcrun_set_metric_info_and_period routine, as shown below
-      //
+        // For a standard updating metric (add some counts at each sample time), use
+        // hpcrun_set_metric_info_and_period routine, as shown below
+        //
         metric_id = hpcrun_set_new_metric_info_and_period(
-          metric_kind, name, HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
-          thresh, metric_property_none);
-      }
-      else { // NON STANDARD METRIC
+            metric_kind, name,
+            HPCRUN_MetricFlag_Async,  // This is the correct flag value for almost all events
+            thresh, metric_property_none);
+      } else {  // NON STANDARD METRIC
         // For a metric that updates in a NON standard fashion, use
         // hpcrun_set_metric_info_w_fn, and pass the updating function as the last argument
         //
@@ -401,14 +366,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   // NOTE: some lush-aware event list processing may need to be done here ...
 }
 
-static void
-METHOD_FN(finalize_event_list)
-{
-}
+static void METHOD_FN(finalize_event_list) {}
 
-static void
-METHOD_FN(gen_event_set, int lush_metrics)
-{
+static void METHOD_FN(gen_event_set, int lush_metrics) {
   // The lush_metrics argument is always passed in.
   // If your sample source does not support lush, then ignore this argument
   // in your gen_event_set processing.
@@ -430,9 +390,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   monitor_sigaction(HPCRUN_GENERIC_SIGNAL, &generic_signal_handler, 0, NULL);
 }
 
-static void
-METHOD_FN(display_events)
-{
+static void METHOD_FN(display_events) {
   //
   // This method displays descriptive text about the sample source
   // This text is printed whenever the '-L' argument is given to hpcrun
@@ -446,11 +404,6 @@ METHOD_FN(display_events)
   printf("\n");
 }
 
-
-//***************************************************************************
-// object
-//***************************************************************************
-
 //
 // To integrate a sample source into the simple object system in hpcrun,
 // #define ss_name to whatever you want your sample source to be named.
@@ -463,12 +416,12 @@ METHOD_FN(display_events)
 //
 
 #define ss_name generic
-#define ss_cls SS_HARDWARE
+#define ss_cls  SS_HARDWARE
 
 #include "ss_obj.h"
 
 //******************************************************************************
-// private operations 
+// private operations
 // *****************************************************************************
 
 //
@@ -476,24 +429,21 @@ METHOD_FN(display_events)
 // Typically, the event trigger is a unix signal, so a unix signal handler must be installed
 //
 // ***** ALL sample source event handlers MUST pass a proper (unix) context ****
-// 
+//
 // NOTE: PAPI does NOT use a standard unix signal handler.
 //
 // The example handler below is a standard unix signal handler.
 // See papi for an event handler that is NOT a standard unix signal handler
-// 
-static int
-generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
-{
+//
+static int generic_signal_handler(int sig, siginfo_t* siginfo, void* context) {
   HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);
-  if (! hpcrun_safe_enter_async(pc)) {
+  if (!hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
-  }
-  else {
+  } else {
     //
     // Determine which events caused this sample
     //
@@ -512,7 +462,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
         // call hpcrun_sample_callpath with context, metric_id, & datum.
         // The last 2 arguments to hpcrun_sample_callpath are always 0
         //
-        hpcrun_sample_callpath(context, metric_id, datum, 0/*skipInner*/, 0/*isSync*/, NULL);
+        hpcrun_sample_callpath(context, metric_id, datum, 0 /*skipInner*/, 0 /*isSync*/, NULL);
       }
     }
   }
@@ -521,7 +471,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
   if (hpcrun_is_sampling_disabled()) {
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
-    return 0; // tell monitor that the signal has been handled
+    return 0;  // tell monitor that the signal has been handled
   }
 
   //
@@ -537,7 +487,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
   //
   // If the sigprocmask must be manipulated to ensure continuing samples, then
   // be sure to use monitor_real_sigprocmask.
-  // 
+  //
   // You do NOT normally have to do this. This manipulation is only called for
   // if the regular signal handling mechanism is buggy.
   //
@@ -548,7 +498,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
-  return 0; // tell monitor that the signal has been handled
+  return 0;  // tell monitor that the signal has been handled
 }
 
 //
@@ -558,8 +508,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
 //
 // replaces the metric data with the average of the datum and the previous entry
 //
-void
-generic_special_metric_update_proc(int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum)
-{
+void generic_special_metric_update_proc(
+    int metric_id, cct_metric_data_t* loc, cct_metric_data_t datum) {
   loc->i = (loc->i + datum) / 2;
 }

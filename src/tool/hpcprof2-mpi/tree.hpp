@@ -44,9 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "lib/profile/pipeline.hpp"
 #include "lib/profile/sinks/packed.hpp"
 #include "lib/profile/sources/packed.hpp"
-#include "lib/profile/pipeline.hpp"
 
 #include <vector>
 
@@ -88,9 +88,7 @@ public:
   Receiver(std::size_t);
   ~Receiver() = default;
 
-  std::pair<bool, bool> requiresOrderedRegions() const noexcept override {
-    return {true, false};
-  }
+  std::pair<bool, bool> requiresOrderedRegions() const noexcept override { return {true, false}; }
   hpctoolkit::DataClass provides() const noexcept override {
     using namespace hpctoolkit::literals;
     return data::references + data::attributes + data::contexts;
@@ -131,16 +129,15 @@ public:
   MetricReceiver(std::size_t, ctx_map_t&, const std::vector<std::uint8_t>&);
   ~MetricReceiver() = default;
 
-  std::pair<bool, bool> requiresOrderedRegions() const noexcept override {
-    return {false, true};
-  }
+  std::pair<bool, bool> requiresOrderedRegions() const noexcept override { return {false, true}; }
   hpctoolkit::DataClass provides() const noexcept override;
   hpctoolkit::DataClass finalizeRequest(const hpctoolkit::DataClass& d) const noexcept override;
   void read(const hpctoolkit::DataClass& d) override;
 
   static void append(hpctoolkit::ProfilePipeline::Settings&, RankTree&, ctx_map_t&);
-  static void append(hpctoolkit::ProfilePipeline::Settings&, RankTree&, ctx_map_t&,
-                     const std::vector<std::uint8_t>&);
+  static void append(
+      hpctoolkit::ProfilePipeline::Settings&, RankTree&, ctx_map_t&,
+      const std::vector<std::uint8_t>&);
 
 private:
   ctx_map_t& cmap;

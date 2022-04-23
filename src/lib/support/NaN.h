@@ -47,13 +47,9 @@
 #ifndef support_NaN_h
 #define support_NaN_h
 
-//*************************** User Include Files ****************************
-
 #if !defined(__cplusplus)
 #include <stdbool.h>
 #endif
-
-//****************************************************************************
 
 extern const double c_FP_NAN_d;
 
@@ -68,6 +64,5 @@ bool c_isinf_d(double x);
 #if defined(__cplusplus)
 }
 #endif
-
 
 #endif /* support_NaN_h */

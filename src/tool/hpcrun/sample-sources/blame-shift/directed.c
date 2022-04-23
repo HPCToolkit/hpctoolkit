@@ -48,38 +48,19 @@
 // directed blame shifting for locks, critical sections, ...
 //
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
+#include "hpcrun/sample-sources/blame-shift/directed.h"
 
-#include <ucontext.h>
-
-
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
+#include "hpcrun/cct/cct.h"
+#include "hpcrun/safe-sampling.h"
+#include "hpcrun/sample-sources/blame-shift/blame-map.h"
+#include "hpcrun/sample-sources/blame-shift/metric_info.h"
+#include "hpcrun/sample_event.h"
 
 #include <hpctoolkit.h>
+#include <ucontext.h>
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-
-#include <hpcrun/sample-sources/blame-shift/blame-map.h>
-#include <hpcrun/sample-sources/blame-shift/directed.h>
-#include <hpcrun/sample-sources/blame-shift/metric_info.h>
-
-
-
-/******************************************************************************
- * interface operations for clients 
- *****************************************************************************/
-
-void
-directed_blame_accept(void *arg, uint64_t obj)
-{
-  directed_blame_info_t *bi = (directed_blame_info_t *) arg;
+void directed_blame_accept(void* arg, uint64_t obj) {
+  directed_blame_info_t* bi = (directed_blame_info_t*)arg;
 
   if (hpctoolkit_sampling_is_active()) {
     uint64_t blame = blame_map_get_blame(bi->blame_table, obj);
@@ -96,23 +77,19 @@ directed_blame_accept(void *arg, uint64_t obj)
   }
 }
 
-
-void 
-directed_blame_sample(void *arg, int metric_id, cct_node_t *node, 
-                      int metric_incr)
-{
-  directed_blame_info_t *bi = (directed_blame_info_t *) arg;
+void directed_blame_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr) {
+  directed_blame_info_t* bi = (directed_blame_info_t*)arg;
   int metric_period;
 
-  if (!metric_is_timebase(metric_id, &metric_period)) return;
+  if (!metric_is_timebase(metric_id, &metric_period))
+    return;
 
   uint64_t obj_to_blame = bi->get_blame_target();
   if (obj_to_blame) {
-    uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
-    blame_map_add_blame(bi->blame_table, obj_to_blame, metric_value); 
+    uint32_t metric_value = (uint32_t)(metric_period * metric_incr);
+    blame_map_add_blame(bi->blame_table, obj_to_blame, metric_value);
     if (bi->wait_metric_id) {
-      cct_metric_data_increment(bi->wait_metric_id, node, 
-                                (cct_metric_data_t){.i = metric_value});
+      cct_metric_data_increment(bi->wait_metric_id, node, (cct_metric_data_t){.i = metric_value});
     }
   }
 }

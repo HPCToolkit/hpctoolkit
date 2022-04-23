@@ -47,21 +47,12 @@
 #ifndef dylib_h
 #define dylib_h
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
-//*****************************************************************************
-// 
-//*****************************************************************************
-
-int dylib_find_module_containing_addr(void *addr, 
-				      // output parameters
-				      char *module_name,
-				      void **start, 
-				      void **end);
+int dylib_find_module_containing_addr(
+    void* addr,
+    // output parameters
+    char* module_name, void** start, void** end);
 
 #endif

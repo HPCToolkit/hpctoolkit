@@ -72,17 +72,12 @@
 // interface that works in all cases and uses the fast assembler code
 // where possible.
 
-//***************************************************************************
-
 #ifndef include_big_endian_h
 #define include_big_endian_h
 
-#include <stdint.h>
-#include <include/hpctoolkit-config.h>
+#include "include/hpctoolkit-config.h"
 
-//**************************************************
-// Internal helper functions
-//**************************************************
+#include <stdint.h>
 
 #ifdef USE_SYSTEM_BYTESWAP
 
@@ -91,9 +86,9 @@
 // If <byteswap.h> exists, then it contains assembler code for the
 // fastest way to swap bytes.  We expect this to be the normal case.
 
-#define _raw_byte_swap_16(x)  bswap_16(x)
-#define _raw_byte_swap_32(x)  bswap_32(x)
-#define _raw_byte_swap_64(x)  bswap_64(x)
+#define _raw_byte_swap_16(x) bswap_16(x)
+#define _raw_byte_swap_32(x) bswap_32(x)
+#define _raw_byte_swap_64(x) bswap_64(x)
 
 #else
 
@@ -101,56 +96,44 @@
 // (krentel) can find.  This is much faster than a loop of shifts (too
 // serial).
 
-#define _raw_byte_swap_16(x)  \
-  ( (((x) & 0xff00) >> 8)     \
-  | (((x) & 0x00ff) << 8) )
+#define _raw_byte_swap_16(x) ((((x)&0xff00) >> 8) | (((x)&0x00ff) << 8))
 
-#define _raw_byte_swap_32(x)    \
-  ( (((x) & 0xff000000) >> 24)  \
-  | (((x) & 0x00ff0000) >> 8)   \
-  | (((x) & 0x0000ff00) << 8)   \
-  | (((x) & 0x000000ff) << 24) )
+#define _raw_byte_swap_32(x)                                                    \
+  ((((x)&0xff000000) >> 24) | (((x)&0x00ff0000) >> 8) | (((x)&0x0000ff00) << 8) \
+   | (((x)&0x000000ff) << 24))
 
-#define _raw_byte_swap_64(x)  \
-  ( (((x) & 0xff00000000000000) >> 56)  \
-  | (((x) & 0x00ff000000000000) >> 40)  \
-  | (((x) & 0x0000ff0000000000) >> 24)  \
-  | (((x) & 0x000000ff00000000) >> 8)   \
-  | (((x) & 0x00000000ff000000) << 8)   \
-  | (((x) & 0x0000000000ff0000) << 24)  \
-  | (((x) & 0x000000000000ff00) << 40)  \
-  | (((x) & 0x00000000000000ff) << 56) )
+#define _raw_byte_swap_64(x)                                            \
+  ((((x)&0xff00000000000000) >> 56) | (((x)&0x00ff000000000000) >> 40)  \
+   | (((x)&0x0000ff0000000000) >> 24) | (((x)&0x000000ff00000000) >> 8) \
+   | (((x)&0x00000000ff000000) << 8) | (((x)&0x0000000000ff0000) << 24) \
+   | (((x)&0x000000000000ff00) << 40) | (((x)&0x00000000000000ff) << 56))
 
 #endif
-
-//**************************************************
-// Interface functions
-//**************************************************
 
 #ifdef HOST_BIG_ENDIAN
 
 // On a big endian machine, the conversion functions are the identity
 // function.
 
-#define host_to_be_16(x)  ((uint16_t) (x))
-#define host_to_be_32(x)  ((uint32_t) (x))
-#define host_to_be_64(x)  ((uint64_t) (x))
+#define host_to_be_16(x) ((uint16_t)(x))
+#define host_to_be_32(x) ((uint32_t)(x))
+#define host_to_be_64(x) ((uint64_t)(x))
 
 #else
 
 // On a little endian machine, we actually swap the bytes.
 
-#define host_to_be_16(x)  _raw_byte_swap_16((uint16_t) (x))
-#define host_to_be_32(x)  _raw_byte_swap_32((uint32_t) (x))
-#define host_to_be_64(x)  _raw_byte_swap_64((uint64_t) (x))
+#define host_to_be_16(x) _raw_byte_swap_16((uint16_t)(x))
+#define host_to_be_32(x) _raw_byte_swap_32((uint32_t)(x))
+#define host_to_be_64(x) _raw_byte_swap_64((uint64_t)(x))
 
 #endif
 
 // And in all cases, the conversion from big endian back to host order
 // is the same as from host to big endian.
 
-#define be_to_host_16(x)  host_to_be_16(x)
-#define be_to_host_32(x)  host_to_be_32(x)
-#define be_to_host_64(x)  host_to_be_64(x)
+#define be_to_host_16(x) host_to_be_16(x)
+#define be_to_host_32(x) host_to_be_32(x)
+#define be_to_host_64(x) host_to_be_64(x)
 
 #endif  // include_big_endian_h

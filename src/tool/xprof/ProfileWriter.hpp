@@ -57,36 +57,23 @@
 //
 //***************************************************************************
 
-#ifndef ProfileWriter_H 
+#ifndef ProfileWriter_H
 #define ProfileWriter_H
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/binutils/LM.hpp"
 
 #include <fstream>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/binutils/LM.hpp>
-
-//*************************** Forward Declarations ***************************
-
 class DerivedProfile;
 
-//****************************************************************************
-
-class ProfileWriter
-{
+class ProfileWriter {
 public:
-  static void WriteProfile(std::ostream& os, DerivedProfile* profData,
-			   binutils::LM* lm);
-  
+  static void WriteProfile(std::ostream& os, DerivedProfile* profData, binutils::LM* lm);
+
 private:
   static void DumpProfileHeader(std::ostream& os);
   static void DumpProfileFooter(std::ostream& os);
 };
 
-//****************************************************************************
-
-#endif 
+#endif

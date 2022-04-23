@@ -57,48 +57,25 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <algorithm>
-#include <string>
-using std::string;
-
-#include <cstring>
-
-//*************************** User Include Files ****************************
-
 #include "PathReplacementMgr.hpp"
 
-//*************************** Forward Declarations **************************
+#include <algorithm>
+#include <cstring>
+#include <string>
 
-//***************************************************************************
-
-//***************************************************************************
-// PathReplacementMgr
-//***************************************************************************
+using std::string;
 
 static PathReplacementMgr s_singleton;
 
-PathReplacementMgr::PathReplacementMgr()
-{
-}
+PathReplacementMgr::PathReplacementMgr() {}
 
+PathReplacementMgr::~PathReplacementMgr() {}
 
-PathReplacementMgr::~PathReplacementMgr()
-{
-}
-
-
-PathReplacementMgr&
-PathReplacementMgr::singleton()
-{
+PathReplacementMgr& PathReplacementMgr::singleton() {
   return s_singleton;
 }
 
-
-string
-PathReplacementMgr::replace(const string& path) const
-{
+string PathReplacementMgr::replace(const string& path) const {
   for (size_t i = 0; i < m_pathReplacement.size(); i++) {
     const StringPair& x = m_pathReplacement[i];
     const string& x_old = x.first;
@@ -116,26 +93,18 @@ PathReplacementMgr::replace(const string& path) const
   return path;
 }
 
-
-// Comparison function we use to sort 'pathReplacment' according to the first 
+// Comparison function we use to sort 'pathReplacment' according to the first
 // values of the pair, which is the old partial path.
 //
 // @param a: The first pair object to compare.
 // @param b: The second pair object to compare.
 // return:   A bool indicatin if a.first.size() < b.first.size().
-static bool
-compare_as_strings(const PathReplacementMgr::StringPair& a,
-		   const PathReplacementMgr::StringPair& b)
-{
+static bool compare_as_strings(
+    const PathReplacementMgr::StringPair& a, const PathReplacementMgr::StringPair& b) {
   return a.first.size() > b.first.size();
 }
 
-
-void
-PathReplacementMgr::addPath(const string& oldPath, const string& newPath)
-{
+void PathReplacementMgr::addPath(const string& oldPath, const string& newPath) {
   m_pathReplacement.push_back(StringPair(oldPath, newPath));
-  std::stable_sort(m_pathReplacement.begin(), m_pathReplacement.end(),
-		   compare_as_strings);
+  std::stable_sort(m_pathReplacement.begin(), m_pathReplacement.end(), compare_as_strings);
 }
-

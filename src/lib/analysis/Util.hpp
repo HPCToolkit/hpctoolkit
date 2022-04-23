@@ -57,29 +57,18 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Util_hpp 
+#ifndef Analysis_Util_hpp
 #define Analysis_Util_hpp
-
-//************************* System Include Files ****************************
-
-#include <string>
-
-#include <vector>
-#include <set>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
 
 #include "Args.hpp"
 
-#include <lib/prof/CallPath-Profile.hpp>
+#include "include/uint.h"
+#include "lib/prof/CallPath-Profile.hpp"
+#include "lib/prof/Struct-Tree.hpp"
 
-#include <lib/prof/Struct-Tree.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
+#include <set>
+#include <string>
+#include <vector>
 
 namespace Analysis {
 
@@ -95,16 +84,14 @@ enum ProfType_t {
   ProfType_CallpathMetricDB,
   ProfType_CallpathTrace,
   ProfType_Flat,
-  ProfType_SparseDBtmp, //YUMENG: for development purpose only, check the output files from prof2 first round
-  ProfType_SparseDBthread, //YUMENG
-  ProfType_SparseDBcct, //YUMENG
-  ProfType_TraceDB //YUMENG
+  ProfType_SparseDBtmp,  // YUMENG: for development purpose only, check the output files from prof2
+                         // first round
+  ProfType_SparseDBthread,  // YUMENG
+  ProfType_SparseDBcct,     // YUMENG
+  ProfType_TraceDB          // YUMENG
 };
 
-
-ProfType_t
-getProfileType(const std::string& filenm);
-
+ProfType_t getProfileType(const std::string& filenm);
 
 // --------------------------------------------------------------------------
 //
@@ -115,20 +102,17 @@ typedef std::vector<uint> UIntVec;
 
 class NormalizeProfileArgs_t {
 public:
-  NormalizeProfileArgs_t()
-  {
+  NormalizeProfileArgs_t() {
     paths = new StringVec;
     pathLenMax = 0;
     groupMap = new UIntVec;
-    groupMax = 0; // 1-based group numbering
+    groupMax = 0;  // 1-based group numbering
   }
 
-  ~NormalizeProfileArgs_t()
-  { /* no delete b/c no deep copy constructor */ }
+  ~NormalizeProfileArgs_t() { /* no delete b/c no deep copy constructor */
+  }
 
-  void
-  destroy()
-  {
+  void destroy() {
     delete paths;
     paths = NULL;
     delete groupMap;
@@ -137,63 +121,46 @@ public:
 
 public:
   StringVec* paths;
-  uint       pathLenMax;
+  uint pathLenMax;
 
   UIntVec* groupMap;
-  uint     groupMax; // 1-based group numbering
+  uint groupMax;  // 1-based group numbering
 };
 
-
-NormalizeProfileArgs_t
-normalizeProfileArgs(const StringVec& inPaths);
-
+NormalizeProfileArgs_t normalizeProfileArgs(const StringVec& inPaths);
 
 // --------------------------------------------------------------------------
 //
 // --------------------------------------------------------------------------
 
-int
-parseReplacePath(const std::string& arg);
-
+int parseReplacePath(const std::string& arg);
 
 // --------------------------------------------------------------------------
 //
 // --------------------------------------------------------------------------
 
-Prof::Struct::ACodeNode*
-demandStructure(VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, 
-		bool useStruct, const std::string* unknownProcNm = NULL);
-
+Prof::Struct::ACodeNode* demandStructure(
+    VMA vma, Prof::Struct::LM* lmStrct, BinUtil::LM* lm, bool useStruct,
+    const std::string* unknownProcNm = NULL);
 
 // --------------------------------------------------------------------------
 //
 // --------------------------------------------------------------------------
 
-void 
-copySourceFiles(Prof::Struct::Root* structure,
-		const Analysis::PathTupleVec& pathVec,
-		const std::string& dstDir);
+void copySourceFiles(
+    Prof::Struct::Root* structure, const Analysis::PathTupleVec& pathVec,
+    const std::string& dstDir);
 
-void
-copyTraceFiles(const std::string& dstDir,
-	       const std::set<std::string>& srcFiles);
-
+void copyTraceFiles(const std::string& dstDir, const std::set<std::string>& srcFiles);
 
 // --------------------------------------------------------------------------
 // Output options
 // --------------------------------------------------------------------------
 
-enum OutputOption_t {
-   Print_All,
-   Print_LoadModule_Only
-};
+enum OutputOption_t { Print_All, Print_LoadModule_Only };
 
 extern OutputOption_t option;
+}  // namespace Util
+}  // namespace Analysis
 
-} // namespace Util
-
-} // namespace Analysis
-
-//****************************************************************************
-
-#endif // Analysis_Util_hpp
+#endif  // Analysis_Util_hpp

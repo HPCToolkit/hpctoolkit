@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.hpp $
-// $Id: BaseDataFile.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.hpp
+// $ $Id: BaseDataFile.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,42 +63,42 @@
 #ifndef BASEDATAFILE_H_
 #define BASEDATAFILE_H_
 
-using namespace std;
+#include "FileUtils.hpp"  // For FileOffset
+#include "LargeByteBuffer.hpp"
 
 #include <string>
 
-#include "FileUtils.hpp" // For FileOffset
-#include "LargeByteBuffer.hpp"
+using namespace std;
 
 namespace TraceviewerServer {
 
 struct OffsetPair {
-	FileOffset start;
-	FileOffset end;
+  FileOffset start;
+  FileOffset end;
 };
 
 class BaseDataFile {
 public:
-	BaseDataFile(string filename, int headerSize);
-	virtual ~BaseDataFile();
-	int getNumberOfFiles();
-	OffsetPair* getOffsets();
-	LargeByteBuffer* getMasterBuffer();
-	void setData(string, int);
+  BaseDataFile(string filename, int headerSize);
+  virtual ~BaseDataFile();
+  int getNumberOfFiles();
+  OffsetPair* getOffsets();
+  LargeByteBuffer* getMasterBuffer();
+  void setData(string, int);
 
-	bool isMultiProcess();
-	bool isMultiThreading();
-	bool isHybrid();
+  bool isMultiProcess();
+  bool isMultiThreading();
+  bool isHybrid();
 
-	int* processIDs;
-	short* threadIDs;
+  int* processIDs;
+  short* threadIDs;
+
 private:
-	int type; // Default is Constants::MULTI_PROCESSES | Constants::MULTI_THREADING;
-	LargeByteBuffer* masterBuff;
-	int numFiles;
+  int type;  // Default is Constants::MULTI_PROCESSES | Constants::MULTI_THREADING;
+  LargeByteBuffer* masterBuff;
+  int numFiles;
 
-	OffsetPair* offsets;
+  OffsetPair* offsets;
 };
-
 } /* namespace TraceviewerServer */
 #endif /* BASEDATAFILE_H_ */

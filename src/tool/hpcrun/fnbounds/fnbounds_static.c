@@ -44,26 +44,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*********************************************************************
-// system includes
-//*********************************************************************
+#include "fnbounds_file_header.h"
+#include "fnbounds_interface.h"
 
 #include <assert.h>
-
-//*********************************************************************
-// local includes
-//*********************************************************************
-
-#include "fnbounds_interface.h"
-#include "fnbounds_file_header.h"
-
-#include <loadmap.h>
 #include <files.h>
-
-//*********************************************************************
+#include <loadmap.h>
 
 //-------------------------------------------------------------------------
-// the external variables below will be defined in a 
+// the external variables below will be defined in a
 // machine-generated file
 //-------------------------------------------------------------------------
 
@@ -72,7 +61,7 @@
 extern unsigned long hpcrun_nm_addrs[];
 extern unsigned long hpcrun_nm_addrs_len;
 extern unsigned long hpcrun_reference_offset;
-extern int           hpcrun_is_relocatable;
+extern int hpcrun_is_relocatable;
 
 //-------------------------------------------------------------------------
 // local data
@@ -80,16 +69,12 @@ extern int           hpcrun_is_relocatable;
 
 static load_module_t* fnbounds_executable_dso = NULL;
 
-
-
 //-------------------------------------------------------------------------
 // interface functions
 //-------------------------------------------------------------------------
-int
-fnbounds_init(const char *executable_name)
-{
-  void *lm_beg_fn = (void*)hpcrun_nm_addrs[0];
-  void *lm_end_fn = (void*)hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
+int fnbounds_init(const char* executable_name) {
+  void* lm_beg_fn = (void*)hpcrun_nm_addrs[0];
+  void* lm_end_fn = (void*)hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
   long lm_size = lm_end_fn - lm_beg_fn;
 
   struct fnbounds_file_header fh;
@@ -98,60 +83,37 @@ fnbounds_init(const char *executable_name)
   fh.is_relocatable = hpcrun_is_relocatable;
   fh.mmap_size = 0;
 
-  dso_info_t *dso =
-    hpcrun_dso_make(executable_name, (void*)hpcrun_nm_addrs, 
-		    &fh, lm_beg_fn, lm_end_fn, lm_size);
+  dso_info_t* dso =
+      hpcrun_dso_make(executable_name, (void*)hpcrun_nm_addrs, &fh, lm_beg_fn, lm_end_fn, lm_size);
   fnbounds_executable_dso = hpcrun_loadmap_map(dso);
   hpcrun_loadModule_flags_set(fnbounds_executable_dso, LOADMAP_ENTRY_ANALYZE);
 
   return 0;
 }
 
-
-fnbounds_table_t
-fnbounds_fetch_executable_table(void)
-{
-  return (fnbounds_table_t)
-    { .table = (void**) hpcrun_nm_addrs, .len = hpcrun_nm_addrs_len};
+fnbounds_table_t fnbounds_fetch_executable_table(void) {
+  return (fnbounds_table_t){.table = (void**)hpcrun_nm_addrs, .len = hpcrun_nm_addrs_len};
 }
 
-
-int
-fnbounds_query(void *pc)
-{
+int fnbounds_query(void* pc) {
   assert(0);
   return 0;
 }
 
-
-int
-fnbounds_add(char *module_name, void *start, void *end)
-{
+int fnbounds_add(char* module_name, void* start, void* end) {
   assert(0);
   return 0;
 }
 
-
-bool
-fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
-{
+bool fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm) {
   load_module_t* lm_ = fnbounds_executable_dso;
-  int ret = fnbounds_table_lookup((void*)hpcrun_nm_addrs, hpcrun_nm_addrs_len,
-				  ip, start, end);
+  int ret = fnbounds_table_lookup((void*)hpcrun_nm_addrs, hpcrun_nm_addrs_len, ip, start, end);
   if (lm) {
     *lm = lm_;
   }
   return (ret == 0);
 }
 
+void fnbounds_fini() {}
 
-void 
-fnbounds_fini()
-{
-}
-
-
-void
-fnbounds_release_lock(void)
-{
-}
+void fnbounds_release_lock(void) {}

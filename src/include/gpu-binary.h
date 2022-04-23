@@ -44,56 +44,26 @@
 #ifndef gpu_binary_h
 #define gpu_binary_h
 
-//*****************************************************************************
-// macros
-//*****************************************************************************
+#define GPU_BINARY_NAME "gpubin"
 
-#define GPU_BINARY_NAME           "gpubin"
-
-#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
-#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
-
-//******************************************************************************
-// system include
-//******************************************************************************
+#define GPU_BINARY_SUFFIX    "." GPU_BINARY_NAME
+#define GPU_BINARY_DIRECTORY GPU_BINARY_NAME "s"
 
 #include <stdbool.h>
 #include <stddef.h>
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-bool
-gpu_binary_store
-(
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
-);
+bool gpu_binary_store(const char* file_name, const void* binary, size_t binary_size);
 
-void
-gpu_binary_path_generate
-(
-  const char *file_name,
-  char *path
-);
+void gpu_binary_path_generate(const char* file_name, char* path);
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-);
+size_t gpu_binary_compute_hash_string(const char* mem_ptr, size_t mem_size, char* name);
 
 #if defined(__cplusplus)
 }
 #endif
 
 #endif
-

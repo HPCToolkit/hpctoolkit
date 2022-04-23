@@ -56,37 +56,25 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <stdio.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-
-#include <sys/stat.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-
-#include "hpcio.h"
-#include "hpcio-buffer.h"
-#include "hpcfmt.h"
-#include "hpcrun-fmt.h"
 #include "tracedb.h"
 
+#include "hpcfmt.h"
+#include "hpcio-buffer.h"
+#include "hpcio.h"
+#include "hpcrun-fmt.h"
 
-//***************************************************************************
+#include "include/gcc-attr.h"
 
-//***************************************************************************
-// tracedb hdr
-//***************************************************************************
-int 
-tracedb_hdr_fwrite(tracedb_hdr_t* hdr,FILE* fs)
-{
-  fwrite(HPCTRACEDB_FMT_Magic, 1, HPCTRACEDB_FMT_MagicLen,   fs);
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int tracedb_hdr_fwrite(tracedb_hdr_t* hdr, FILE* fs) {
+  fwrite(HPCTRACEDB_FMT_Magic, 1, HPCTRACEDB_FMT_MagicLen, fs);
   uint8_t versionMajor = HPCTRACEDB_FMT_VersionMajor;
   uint8_t versionMinor = HPCTRACEDB_FMT_VersionMinor;
   fwrite(&versionMajor, 1, 1, fs);
@@ -101,10 +89,8 @@ tracedb_hdr_fwrite(tracedb_hdr_t* hdr,FILE* fs)
   return HPCFMT_OK;
 }
 
-char*
-tracedb_hdr_swrite(tracedb_hdr_t* hdr, char* buf)
-{
-  buf = memcpy(buf, HPCTRACEDB_FMT_Magic, HPCTRACEDB_FMT_MagicLen)+HPCTRACEDB_FMT_MagicLen;
+char* tracedb_hdr_swrite(tracedb_hdr_t* hdr, char* buf) {
+  buf = memcpy(buf, HPCTRACEDB_FMT_Magic, HPCTRACEDB_FMT_MagicLen) + HPCTRACEDB_FMT_MagicLen;
   *(buf++) = HPCTRACEDB_FMT_VersionMajor;
   *(buf++) = HPCTRACEDB_FMT_VersionMinor;
 
@@ -116,9 +102,7 @@ tracedb_hdr_swrite(tracedb_hdr_t* hdr, char* buf)
   return buf;
 }
 
-int
-tracedb_hdr_fread(tracedb_hdr_t* hdr, FILE* infs)
-{
+int tracedb_hdr_fread(tracedb_hdr_t* hdr, FILE* infs) {
   char tag[HPCTRACEDB_FMT_MagicLen + 1];
 
   int nr = fread(tag, 1, HPCTRACEDB_FMT_MagicLen, infs);
@@ -148,9 +132,7 @@ tracedb_hdr_fread(tracedb_hdr_t* hdr, FILE* infs)
   return HPCFMT_OK;
 }
 
-int
-tracedb_hdr_fprint(tracedb_hdr_t* hdr, FILE* fs)
-{
+int tracedb_hdr_fprint(tracedb_hdr_t* hdr, FILE* fs) {
   fprintf(fs, "%s\n", HPCTRACEDB_FMT_Magic);
 
   fprintf(fs, "[hdr:\n");
@@ -164,24 +146,16 @@ tracedb_hdr_fprint(tracedb_hdr_t* hdr, FILE* fs)
   return HPCFMT_OK;
 }
 
-//***************************************************************************
-// trace_hdr_t
-//***************************************************************************
-int 
-trace_hdr_fwrite(trace_hdr_t x, FILE* fs)
-{
-  
+int trace_hdr_fwrite(trace_hdr_t x, FILE* fs) {
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x.prof_info_idx, fs));
   HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x.trace_idx, fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x.start, fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x.end, fs));
- 
+
   return HPCFMT_OK;
 }
 
-char*
-trace_hdr_swrite(trace_hdr_t x, char* buf)
-{
+char* trace_hdr_swrite(trace_hdr_t x, char* buf) {
   buf = hpcfmt_int4_swrite(x.prof_info_idx, buf);
   buf = hpcfmt_int2_swrite(x.trace_idx, buf);
   buf = hpcfmt_int8_swrite(x.start, buf);
@@ -189,10 +163,7 @@ trace_hdr_swrite(trace_hdr_t x, char* buf)
   return buf;
 }
 
-int
-trace_hdr_fread(trace_hdr_t* x, FILE* fs)
-{
-
+int trace_hdr_fread(trace_hdr_t* x, FILE* fs) {
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->prof_info_idx), fs));
   HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(x->trace_idx), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->start), fs));
@@ -201,31 +172,23 @@ trace_hdr_fread(trace_hdr_t* x, FILE* fs)
   return HPCFMT_OK;
 }
 
-int 
-trace_hdr_fprint(trace_hdr_t x, int i, FILE* fs)
-{
-
-  fprintf(fs,"  %d[(prof_info_idx: %d) (trace_idx: %d) (start: %ld) (end: %ld)]\n", 
-    i, x.prof_info_idx, x.trace_idx, x.start, x.end);
+int trace_hdr_fprint(trace_hdr_t x, int i, FILE* fs) {
+  fprintf(
+      fs, "  %d[(prof_info_idx: %d) (trace_idx: %d) (start: %ld) (end: %ld)]\n", i, x.prof_info_idx,
+      x.trace_idx, x.start, x.end);
 
   return HPCFMT_OK;
 }
 
-
-
-int 
-trace_hdrs_fwrite(uint32_t num_t,trace_hdr_t* x, FILE* fs)
-{
+int trace_hdrs_fwrite(uint32_t num_t, trace_hdr_t* x, FILE* fs) {
   for (uint32_t i = 0; i < num_t; ++i) {
     trace_hdr_fwrite(x[i], fs);
   }
   return HPCFMT_OK;
 }
 
-int 
-trace_hdrs_fread(trace_hdr_t** x, uint32_t num_t,FILE* fs)
-{
-  trace_hdr_t * trace_hdrs = (trace_hdr_t *) malloc(num_t * sizeof(trace_hdr_t));
+int trace_hdrs_fread(trace_hdr_t** x, uint32_t num_t, FILE* fs) {
+  trace_hdr_t* trace_hdrs = (trace_hdr_t*)malloc(num_t * sizeof(trace_hdr_t));
 
   for (uint32_t i = 0; i < num_t; ++i) {
     trace_hdr_fread(&(trace_hdrs[i]), fs);
@@ -235,59 +198,47 @@ trace_hdrs_fread(trace_hdr_t** x, uint32_t num_t,FILE* fs)
   return HPCFMT_OK;
 }
 
-int 
-trace_hdrs_fprint(uint32_t num_t,trace_hdr_t* x, FILE* fs)
-{
-  fprintf(fs,"[Trace hdrs for %d traces\n", num_t);
+int trace_hdrs_fprint(uint32_t num_t, trace_hdr_t* x, FILE* fs) {
+  fprintf(fs, "[Trace hdrs for %d traces\n", num_t);
 
   for (uint32_t i = 0; i < num_t; ++i) {
     trace_hdr_fprint(x[i], i, fs);
   }
-  fprintf(fs,"]\n");
+  fprintf(fs, "]\n");
   return HPCFMT_OK;
 }
 
-void 
-trace_hdrs_free(trace_hdr_t** x)
-{
+void trace_hdrs_free(trace_hdr_t** x) {
   free(*x);
   *x = NULL;
 }
 
+int tracedb_data_fread(
+    hpctrace_fmt_datum_t** x, uint64_t num_datum, hpctrace_hdr_flags_t flags, FILE* fs) {
+  *x = (hpctrace_fmt_datum_t*)malloc(num_datum * sizeof(hpctrace_fmt_datum_t));
 
-//***************************************************************************
-// hpctrace_fmt_datum_t in tracedb (for one profile's trace)
-//***************************************************************************
-int
-tracedb_data_fread(hpctrace_fmt_datum_t** x, uint64_t num_datum, hpctrace_hdr_flags_t flags,FILE* fs)
-{
-  *x = (hpctrace_fmt_datum_t *) malloc(num_datum * sizeof(hpctrace_fmt_datum_t));
-  
   for (uint64_t i = 0; i < num_datum; ++i) {
-    hpctrace_fmt_datum_fread(*x+i, flags, fs);
+    hpctrace_fmt_datum_fread(*x + i, flags, fs);
   }
 
   //*x = trace_data;
   return HPCFMT_OK;
-
 }
 
-int
-tracedb_data_fprint(hpctrace_fmt_datum_t* x, uint64_t num_datum, uint32_t prof_info_idx, hpctrace_hdr_flags_t flags,FILE* fs)
-{
-  fprintf(fs,"[Trace %d:\n", prof_info_idx);
+int tracedb_data_fprint(
+    hpctrace_fmt_datum_t* x, uint64_t num_datum, uint32_t prof_info_idx, hpctrace_hdr_flags_t flags,
+    FILE* fs) {
+  fprintf(fs, "[Trace %d:\n", prof_info_idx);
 
   for (uint64_t i = 0; i < num_datum; ++i) {
     printf("  ");
     hpctrace_fmt_datum_fprint(&(x[i]), flags, fs);
   }
-  fprintf(fs,"]\n");
+  fprintf(fs, "]\n");
   return HPCFMT_OK;
 }
 
-void
-tracedb_data_free(hpctrace_fmt_datum_t** x)
-{
+void tracedb_data_free(hpctrace_fmt_datum_t** x) {
   free(*x);
   *x = NULL;
 }

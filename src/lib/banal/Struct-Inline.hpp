@@ -62,22 +62,19 @@
 // proc) call site and nodes contain a map of subtrees and a list of
 // terminal statements.
 
-//***************************************************************************
-
 #ifndef Banal_Struct_Inline_hpp
 #define Banal_Struct_Inline_hpp
 
+#include "lib/isa/ISATypes.hpp"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/RealPathMgr.hpp"
+#include "lib/support/SrcFile.hpp"
+#include "lib/support/StringTable.hpp"
+
+#include <Function.h>
 #include <list>
 #include <map>
-
-#include <lib/isa/ISATypes.hpp>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/SrcFile.hpp>
-#include <lib/support/StringTable.hpp>
-
 #include <Symtab.h>
-#include <Function.h>
 
 class ElfFile;
 
@@ -95,44 +92,40 @@ class StmtMap;
 class LoopInfo;
 class TreeNode;
 
-typedef list <InlineNode> InlineSeqn;
-typedef list <FLPIndex> FLPSeqn;
-typedef list <LoopInfo *> LoopList;
-typedef map  <FLPIndex, TreeNode *, FLPCompare> NodeMap;
-
+typedef list<InlineNode> InlineSeqn;
+typedef list<FLPIndex> FLPSeqn;
+typedef list<LoopInfo*> LoopList;
+typedef map<FLPIndex, TreeNode*, FLPCompare> NodeMap;
 
 // File, proc (pretty), line we get from Symtab inline call sites.
 class InlineNode {
 private:
-  std::string  m_filenm;
-  std::string  m_prettynm;
-  SrcFile::ln  m_lineno;
+  std::string m_filenm;
+  std::string m_prettynm;
+  SrcFile::ln m_lineno;
 
 public:
-  InlineNode(std::string &file, std::string &pretty, SrcFile::ln line)
-  {
+  InlineNode(std::string& file, std::string& pretty, SrcFile::ln line) {
     m_filenm = file;
     m_prettynm = pretty;
     m_lineno = line;
   }
 
-  std::string & getFileName() { return m_filenm; }
-  std::string & getPrettyName() { return m_prettynm; }
+  std::string& getFileName() { return m_filenm; }
+  std::string& getPrettyName() { return m_prettynm; }
   SrcFile::ln getLineNum() { return m_lineno; }
 };
-
 
 // 3-tuple of indices for file, line, proc (pretty).
 class FLPIndex {
 public:
-  long  file_index;
-  long  base_index;
-  long  line_num;
-  long  pretty_index;
+  long file_index;
+  long base_index;
+  long line_num;
+  long pretty_index;
 
   // constructor by index
-  FLPIndex(long file, long base, long line, long pretty)
-  {
+  FLPIndex(long file, long base, long line, long pretty) {
     file_index = file;
     base_index = base;
     line_num = line;
@@ -140,44 +133,45 @@ public:
   }
 
   // constructor by InlineNode strings
-  FLPIndex(HPC::StringTable & strTab, InlineNode & node)
-  {
-    string & fname = node.getFileName();
+  FLPIndex(HPC::StringTable& strTab, InlineNode& node) {
+    string& fname = node.getFileName();
 
     file_index = strTab.str2index(fname);
     base_index = strTab.str2index(FileUtil::basename(fname.c_str()));
-    line_num = (long) node.getLineNum();
+    line_num = (long)node.getLineNum();
     pretty_index = strTab.str2index(node.getPrettyName());
   }
 
-  bool operator == (const FLPIndex rhs) const
-  {
-    return file_index == rhs.file_index
-      && line_num == rhs.line_num
-      && pretty_index == rhs.pretty_index;
+  bool operator==(const FLPIndex rhs) const {
+    return file_index == rhs.file_index && line_num == rhs.line_num
+        && pretty_index == rhs.pretty_index;
   }
 
-  bool operator != (const FLPIndex rhs) const
-  {
-    return ! (*this == rhs);
-  }
+  bool operator!=(const FLPIndex rhs) const { return !(*this == rhs); }
 };
-
 
 // Compare (file, line, proc) indices lexigraphically.
 class FLPCompare {
 public:
-  bool operator() (const FLPIndex t1, const FLPIndex t2) const
-  {
-    if (t1.file_index < t2.file_index) { return true; }
-    if (t1.file_index > t2.file_index) { return false; }
-    if (t1.line_num < t2.line_num) { return true; }
-    if (t1.line_num > t2.line_num) { return false; }
-    if (t1.pretty_index < t2.pretty_index) { return true; }
+  bool operator()(const FLPIndex t1, const FLPIndex t2) const {
+    if (t1.file_index < t2.file_index) {
+      return true;
+    }
+    if (t1.file_index > t2.file_index) {
+      return false;
+    }
+    if (t1.line_num < t2.line_num) {
+      return true;
+    }
+    if (t1.line_num > t2.line_num) {
+      return false;
+    }
+    if (t1.pretty_index < t2.pretty_index) {
+      return true;
+    }
     return false;
   }
 };
-
 
 // Info for one terminal statement (vma) in the inline tree.  Now used
 // for multiple, consecutive instructions, all with the same file and
@@ -187,23 +181,22 @@ public:
 //
 class StmtInfo {
 public:
-  VMA   vma;
-  int   len;
-  long  file_index;
-  long  base_index;
-  long  line_num;
+  VMA vma;
+  int len;
+  long file_index;
+  long base_index;
+  long line_num;
 
   // call instructions
-  VMA   target;
-  bool  is_call;
-  bool  is_sink;
+  VMA target;
+  bool is_call;
+  bool is_sink;
   std::string device;
 
   // constructor by index
-  StmtInfo(VMA vm, int ln, long file, long base, long line,
-	   const std::string & device_tag,
-	   bool call = false, bool sink = false, VMA targ = 0)
-  {
+  StmtInfo(
+      VMA vm, int ln, long file, long base, long line, const std::string& device_tag,
+      bool call = false, bool sink = false, VMA targ = 0) {
     vma = vm;
     len = ln;
     file_index = file;
@@ -216,11 +209,9 @@ public:
   }
 
   // constructor by string name
-  StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
-	   const std::string & filenm, long line,
-	   const std::string & device_tag,
-	   bool call = false, bool sink = false, VMA targ = 0)
-  {
+  StmtInfo(
+      HPC::StringTable& strTab, VMA vm, int ln, const std::string& filenm, long line,
+      const std::string& device_tag, bool call = false, bool sink = false, VMA targ = 0) {
     vma = vm;
     len = ln;
     file_index = strTab.str2index(filenm);
@@ -233,12 +224,8 @@ public:
   }
 
   // returns: true if vma is contained within this range
-  bool member(VMA x)
-  {
-    return vma <= x && x < vma + len;
-  }
+  bool member(VMA x) { return vma <= x && x < vma + len; }
 };
-
 
 // Map of vma ranges and their file and line info.
 //
@@ -247,50 +234,44 @@ public:
 // and line and may contain multiple instructions, and we compact
 // adjacent ranges with identical attributes into one interval.
 //
-class StmtMap : public std::map <VMA, StmtInfo *> {
+class StmtMap : public std::map<VMA, StmtInfo*> {
 public:
-
   // returns: pointer to StmtInfo that contains vma, else NULL
-  StmtInfo * findStmt(VMA vma)
-  {
+  StmtInfo* findStmt(VMA vma) {
     auto it = this->upper_bound(vma);
 
     if (it == this->begin()) {
       return NULL;
     }
     --it;
-    StmtInfo * sinfo = it->second;
+    StmtInfo* sinfo = it->second;
 
     return (sinfo->member(vma)) ? sinfo : NULL;
   }
 
   // returns: true if vma is contained within some range in the map
-  bool member(VMA vma)
-  {
-    return findStmt(vma) != NULL;
-  }
+  bool member(VMA vma) { return findStmt(vma) != NULL; }
 
   // insert one statement range into the map
-  void insert(StmtInfo *);
+  void insert(StmtInfo*);
 };
-
 
 // Info for one loop scope in the inline tree.  Note: 'node' is the
 // TreeNode containing the loop vma without the FLP path above it.
 class LoopInfo {
 public:
-  TreeNode *node;
-  FLPSeqn   path;
-  std::string  name;
-  VMA   entry_vma;
-  long  file_index;
-  long  base_index;
-  long  line_num;
-  bool  irred;
+  TreeNode* node;
+  FLPSeqn path;
+  std::string name;
+  VMA entry_vma;
+  long file_index;
+  long base_index;
+  long line_num;
+  bool irred;
 
-  LoopInfo(TreeNode *nd, FLPSeqn &pth, const std::string &nm, VMA vma,
-	   long file, long base, long line, bool ir = false)
-  {
+  LoopInfo(
+      TreeNode* nd, FLPSeqn& pth, const std::string& nm, VMA vma, long file, long base, long line,
+      bool ir = false) {
     node = nd;
     path = pth;
     name = nm;
@@ -302,21 +283,18 @@ public:
   }
 
   // delete the subtree 'node' in ~TreeNode(), not here.
-  ~LoopInfo() {
-  }
+  ~LoopInfo() {}
 };
-
 
 // One node in the inline tree.
 class TreeNode {
 public:
-  NodeMap  nodeMap;
-  StmtMap  stmtMap;
+  NodeMap nodeMap;
+  StmtMap stmtMap;
   LoopList loopList;
-  long  file_index;
+  long file_index;
 
-  TreeNode(long file = 0)
-  {
+  TreeNode(long file = 0) {
     nodeMap.clear();
     stmtMap.clear();
     loopList.clear();
@@ -325,17 +303,14 @@ public:
 
   // shallow delete: erase the maps, but don't delete their contents.
   // we use this when the elements are copies from other trees.
-  void
-  clear()
-  {
+  void clear() {
     nodeMap.clear();
     stmtMap.clear();
     loopList.clear();
   }
 
   // recursively delete the stmts and subtrees
-  ~TreeNode()
-  {
+  ~TreeNode() {
     for (StmtMap::iterator sit = stmtMap.begin(); sit != stmtMap.end(); ++sit) {
       delete sit->second;
     }
@@ -353,31 +328,23 @@ public:
   }
 };
 
-//***************************************************************************
-
-Symtab * openSymtab(ElfFile *elfFile);
+Symtab* openSymtab(ElfFile* elfFile);
 bool closeSymtab();
 
-bool analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr *);
+bool analyzeAddr(InlineSeqn& nodelist, VMA addr, RealPathMgr*);
 
-void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr *,
-              VMA vma, int len, string & filenm, SrcFile::ln line,
-              std::string & device, bool is_call = false, bool is_sink = false,
-              VMA target = 0);
+void addStmtToTree(
+    TreeNode* root, HPC::StringTable& strTab, RealPathMgr*, VMA vma, int len, string& filenm,
+    SrcFile::ln line, std::string& device, bool is_call = false, bool is_sink = false,
+    VMA target = 0);
 
-void
-mergeInlineStmts(TreeNode * dest, TreeNode * src);
+void mergeInlineStmts(TreeNode* dest, TreeNode* src);
 
-void
-mergeInlineEdge(TreeNode * dest, FLPIndex flp, TreeNode * src);
+void mergeInlineEdge(TreeNode* dest, FLPIndex flp, TreeNode* src);
 
-void
-mergeInlineTree(TreeNode * dest, TreeNode * src);
+void mergeInlineTree(TreeNode* dest, TreeNode* src);
 
-void
-mergeInlineLoop(TreeNode * dest, FLPSeqn & path, LoopInfo * info);
-
+void mergeInlineLoop(TreeNode* dest, FLPSeqn& path, LoopInfo* info);
 }  // namespace Inline
 
 #endif

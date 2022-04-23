@@ -46,7 +46,7 @@
 
 /****************************************************************************
 //
-// File: 
+// File:
 //    $HeadURL$
 //
 // Purpose:
@@ -60,17 +60,11 @@
 //
 *****************************************************************************/
 
-/************************** System Include Files ****************************/
-
-#include <unistd.h>
-#include <stdio.h>
-#include <dlfcn.h>
-
-/**************************** User Include Files ****************************/
-
 #include "dlpapi.h"
 
-/**************************** Forward Declarations **************************/
+#include <dlfcn.h>
+#include <stdio.h>
+#include <unistd.h>
 
 dl_PAPI_is_initialized_t dl_PAPI_is_initialized = NULL;
 
@@ -88,21 +82,16 @@ dl_PAPI_enum_event_t dl_PAPI_enum_event = NULL;
 
 static void* libpapi = NULL;
 
-/****************************************************************************/
-
 static void handle_any_dlerror();
 
 /* X is the routine name as called from C (i.e. not a string) */
-#define CALL_DLSYM(X) \
-    dl_ ## X = (dl_ ## X ## _t)dlsym(libpapi, #X)
+#define CALL_DLSYM(X) dl_##X = (dl_##X##_t)dlsym(libpapi, #X)
 
-int
-dlopen_papi()
-{
+int dlopen_papi() {
   /* Open PAPI lib */
   libpapi = dlopen(HPC_LIBPAPI_SO, RTLD_LAZY);
   handle_any_dlerror();
-  
+
   /* Initialize entry points */
   CALL_DLSYM(PAPI_is_initialized);
   handle_any_dlerror();
@@ -121,7 +110,7 @@ dlopen_papi()
 
   CALL_DLSYM(PAPI_query_event);
   handle_any_dlerror();
-  
+
   CALL_DLSYM(PAPI_enum_event);
   handle_any_dlerror();
 
@@ -130,25 +119,17 @@ dlopen_papi()
 
 #undef CALL_DLSYM
 
-int 
-dlclose_papi()
-{
+int dlclose_papi() {
   dlclose(libpapi);
   handle_any_dlerror();
   return 0;
 }
 
-
-static void
-handle_any_dlerror()
-{
+static void handle_any_dlerror() {
   /* Note: We assume dlsym() or something similar has just been called! */
-  char *error;
+  char* error;
   if ((error = dlerror()) != NULL) {
-    fprintf(stderr, "%s\n", error); 
+    fprintf(stderr, "%s\n", error);
     exit(1);
   }
 }
-
-
-/****************************************************************************/

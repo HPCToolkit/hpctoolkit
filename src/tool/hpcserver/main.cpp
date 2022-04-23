@@ -2,7 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/main.cpp $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/main.cpp $
 // $Id: main.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/main.cpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/main.cpp
+//   $
 //
 // Purpose:
 //   The entry point for the server regardless of how it is being run.
@@ -57,35 +60,31 @@
 //
 //***************************************************************************
 
-#include "Server.hpp"
+#include "Args.hpp"
 #include "Communication.hpp"
 #include "Constants.hpp"
-#include "Args.hpp"
 #include "DebugUtils.hpp"
+#include "Server.hpp"
 
 using namespace std;
 
-int main(int argc, char *argv[])
-{
-	if (!TraceviewerServer::Communication::basicInit(argc, argv))
-		return 0;
+int main(int argc, char* argv[]) {
+  if (!TraceviewerServer::Communication::basicInit(argc, argv))
+    return 0;
 
-	Args args(argc, argv);
-	TraceviewerServer::useCompression = args.compression;
-	TraceviewerServer::xmlPortNumber = args.xmlPort;
-	TraceviewerServer::mainPortNumber = args.mainPort;
+  Args args(argc, argv);
+  TraceviewerServer::useCompression = args.compression;
+  TraceviewerServer::xmlPortNumber = args.xmlPort;
+  TraceviewerServer::mainPortNumber = args.mainPort;
 
-	try
-	{
-		TraceviewerServer::Communication::run();
-	}
-	catch (TraceviewerServer::ErrorCode& e)
-	{//We had some sort of error. If it hasn't been handled by this point, we just close.
-		DEBUGCOUT(1) << "Error on closing was " << hex << e << endl;
-	}
+  try {
+    TraceviewerServer::Communication::run();
+  } catch (TraceviewerServer::ErrorCode& e) {  // We had some sort of error. If it hasn't been
+                                               // handled by this point, we just close.
+    DEBUGCOUT(1) << "Error on closing was " << hex << e << endl;
+  }
 
+  TraceviewerServer::Communication::closeServer();
 
-	TraceviewerServer::Communication::closeServer();
-
-	return 0;
+  return 0;
 }

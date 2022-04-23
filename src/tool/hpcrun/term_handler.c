@@ -44,54 +44,31 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-// system include files 
-//***************************************************************************
+#include "term_handler.h"
 
-#include <sys/types.h>
-#include <stddef.h>
-#include <ucontext.h>
-#include <signal.h>
-
-
-//***************************************************************************
-// libmonitor include files
-//***************************************************************************
+#include "messages/messages.h"
+#include "utilities/arch/context-pc.h"
 
 #include <monitor.h>
+#include <signal.h>
+#include <stddef.h>
+#include <sys/types.h>
+#include <ucontext.h>
 
-
-//***************************************************************************
-// user include files 
-//***************************************************************************
-
-#include "term_handler.h"
-#include <messages/messages.h>
-#include <utilities/arch/context-pc.h>
-
-
-//***************************************************************************
-// catch SIGTERM
-//***************************************************************************
-
-static int
-hpcrun_term_handler(int sig, siginfo_t* siginfo, void* context)
-{
-   void* pc = hpcrun_context_pc(context);
-   EEMSG("hpcrun_term_handler: aborting execution on SIGTERM,"
-	 " context pc = %p\n", pc);
-   monitor_real_abort();
-   return 0;
+static int hpcrun_term_handler(int sig, siginfo_t* siginfo, void* context) {
+  void* pc = hpcrun_context_pc(context);
+  EEMSG(
+      "hpcrun_term_handler: aborting execution on SIGTERM,"
+      " context pc = %p\n",
+      pc);
+  monitor_real_abort();
+  return 0;
 }
 
-
-int
-hpcrun_setup_term()
-{
+int hpcrun_setup_term() {
   int ret = monitor_sigaction(SIGTERM, &hpcrun_term_handler, 0, NULL);
   if (ret != 0) {
-    EMSG("hpcrun_setup_term: unable to install SIGTERM handler", 
-	 __FILE__, __LINE__);
+    EMSG("hpcrun_setup_term: unable to install SIGTERM handler", __FILE__, __LINE__);
   }
 
   return ret;

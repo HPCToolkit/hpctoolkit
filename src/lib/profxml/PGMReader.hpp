@@ -60,39 +60,25 @@
 #ifndef _profxml_PGMReader_
 #define _profxml_PGMReader_
 
-//************************ System Include Files ******************************
+#include "DocHandlerArgs.hpp"
+#include "PGMDocHandler.hpp"
+
+#include "lib/prof/Struct-Tree.hpp"
 
 #include <vector>
-
-//************************* User Include Files *******************************
-
-#include "PGMDocHandler.hpp"
-#include "DocHandlerArgs.hpp"
-
-#include <lib/prof/Struct-Tree.hpp>
-
-//************************ Forward Declarations ******************************
 
 namespace Prof {
 
 namespace Struct {
 
-void
-readStructure(Tree& structure, 
-	      const std::vector<std::string>& structureFiles,
-	      PGMDocHandler::Doc_t docty, 
-	      DocHandlerArgs& docargs);
+void readStructure(
+    Tree& structure, const std::vector<std::string>& structureFiles, PGMDocHandler::Doc_t docty,
+    DocHandlerArgs& docargs);
 
-void
-read_PGM(Tree& structure,
-	 const char* filenm,
-	 PGMDocHandler::Doc_t docty,
-	 DocHandlerArgs& docHandlerArgs);
-
-} // namespace Struct
-
-} // namespace Prof
-
-//****************************************************************************
+void read_PGM(
+    Tree& structure, const char* filenm, PGMDocHandler::Doc_t docty,
+    DocHandlerArgs& docHandlerArgs);
+}  // namespace Struct
+}  // namespace Prof
 
 #endif  // _profxml_PGMReader_

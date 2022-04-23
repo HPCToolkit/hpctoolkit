@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Communication.hpp $
-// $Id: Communication.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Communication.hpp
+// $ $Id: Communication.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Communication.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Communication.hpp
+//   $
 //
 // Purpose:
 //    Abstracts the MPI/No-MPI differences away.
@@ -57,40 +60,35 @@
 //
 //***************************************************************************
 
-
 #ifndef COMMUNICATION_H_
 #define COMMUNICATION_H_
 
-#include <string>
-
-#include "TimeCPID.hpp" //For Time
-#include "ProgressBar.hpp"
-#include "SpaceTimeDataController.hpp"
 #include "DataSocketStream.hpp"
 #include "Filter.hpp"
+#include "ProgressBar.hpp"
+#include "SpaceTimeDataController.hpp"
+#include "TimeCPID.hpp"  //For Time
 
-namespace TraceviewerServer
-{
-enum ServerType {
-	NONE_EXIT_IMMEDIATELY = 0,
-	MASTER = 1,
-	SLAVE = 2
-};
+#include <string>
+
+namespace TraceviewerServer {
+enum ServerType { NONE_EXIT_IMMEDIATELY = 0, MASTER = 1, SLAVE = 2 };
 
 class Communication {
 public:
+  static void sendParseInfo(Time minBegTime, Time maxEndTime, int headerSize);
+  static void sendParseOpenDB(string pathToDB);
+  static void sendStartGetData(
+      SpaceTimeDataController* contr, int processStart, int processEnd, Time timeStart,
+      Time timeEnd, int verticalResolution, int horizontalResolution);
+  static void
+  sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller);
+  static void sendStartFilter(int count, bool excludeMatches);
+  static void sendFilter(BinaryRepresentationOfFilter filt);
 
-	static void sendParseInfo(Time minBegTime, Time maxEndTime, int headerSize);
-	static void sendParseOpenDB(string pathToDB);
-	static void sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,
-			Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution);
-	static void sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller);
-	static void sendStartFilter(int count, bool excludeMatches);
-	static void sendFilter(BinaryRepresentationOfFilter filt);
-
-	static bool basicInit(int argc, char** argv);
-	static void run();
-	static void closeServer();
+  static bool basicInit(int argc, char** argv);
+  static void run();
+  static void closeServer();
 };
-}
+}  // namespace TraceviewerServer
 #endif /* COMMUNICATION_H_ */

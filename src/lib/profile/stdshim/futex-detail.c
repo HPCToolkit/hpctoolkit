@@ -51,12 +51,12 @@
 
 // Now I ask, do we have futexes or not?
 #ifdef HAVE_FUTEX_H
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <linux/futex.h>
-#include <sys/time.h>
 #include <errno.h>
 #include <limits.h>
+#include <linux/futex.h>
+#include <sys/syscall.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 void hpctoolkit_futex_wait(const uint32_t* word, uint32_t val) {
   syscall(SYS_futex, word, FUTEX_WAIT_PRIVATE, val, NULL, NULL, 0);

@@ -47,31 +47,16 @@
 #ifndef __SIMPLESYMBOLSFACTORIES__
 #define __SIMPLESYMBOLSFACTORIES__
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
 #include "SimpleSymbols.hpp"
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
 
 class SimpleSymbolsFactories {
 public:
   SimpleSymbolsFactories();
-  SimpleSymbolsFactory *find(const char *pathname);
+  SimpleSymbolsFactory* find(const char* pathname);
+
 private:
-  struct SimpleSymbolsFactoriesRepr *R;
+  struct SimpleSymbolsFactoriesRepr* R;
 };
-
-
-
-//******************************************************************************
-// global variables
-//******************************************************************************
 
 extern SimpleSymbolsFactories simpleSymbolsFactories;
 

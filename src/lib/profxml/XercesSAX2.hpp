@@ -47,31 +47,18 @@
 #ifndef _profxml_XercesSAX2_
 #define _profxml_XercesSAX2_
 
-//************************ System Include Files ******************************
-
 #include <string>
-
-//************************* Xerces Include Files *****************************
-
+#include <xercesc/sax/ErrorHandler.hpp>
+#include <xercesc/sax/SAXParseException.hpp>
+#include <xercesc/sax2/Attributes.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
 #include <xercesc/sax2/SAX2XMLReader.hpp>
 #include <xercesc/sax2/XMLReaderFactory.hpp>
+
 using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
+using XERCES_CPP_NAMESPACE::SAXException;
+using XERCES_CPP_NAMESPACE::SAXParseException;
 using XERCES_CPP_NAMESPACE::XMLReaderFactory;
 using XERCES_CPP_NAMESPACE::XMLUni;
-using XERCES_CPP_NAMESPACE::SAXException;
-
-#include <xercesc/sax2/DefaultHandler.hpp>
-#include <xercesc/sax2/Attributes.hpp>
-
-#include <xercesc/sax/SAXParseException.hpp>
-using XERCES_CPP_NAMESPACE::SAXParseException;
-
-#include <xercesc/sax/ErrorHandler.hpp>
-
-//************************* User Include Files *******************************
-
-//************************ Forward Declarations ******************************
 
 #endif

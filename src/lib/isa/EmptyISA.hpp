@@ -57,56 +57,41 @@
 // The alternative would be to walk through the code and add #ifdef
 // and tests for NULL as needed.  But this is probably simpler.
 
-//***************************************************************************
-
 #ifndef isa_EmptyISA_hpp
 #define isa_EmptyISA_hpp
 
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "ISA.hpp"
+
+#include "include/gcc-attr.h"
+#include "include/uint.h"
 
 class EmptyISA : public ISA {
 public:
-  EmptyISA() { }
+  EmptyISA() {}
 
-  virtual ~EmptyISA() { }
+  virtual ~EmptyISA() {}
 
-  virtual ushort
-  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
-  { return 4; }
+  virtual ushort getInsnSize(MachInsn* GCC_ATTR_UNUSED mi) { return 4; }
 
-  virtual ushort
-  getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
-  { return 1; }
+  virtual ushort getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi) { return 1; }
 
-  virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0)
-  {
+  virtual InsnDesc getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0) {
     ISA::InsnDesc d;
     return d;
   }
 
-  virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0)
-  { return 0; }
+  virtual VMA getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0) { return 0; }
 
-  virtual ushort
-  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
-  { return 0; }
+  virtual ushort getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0) { return 0; }
 
-  virtual bool
-  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
-                          ushort GCC_ATTR_UNUSED opIndex1,
-                          ushort GCC_ATTR_UNUSED sz1,
-                          MachInsn* GCC_ATTR_UNUSED mi2,
-                          ushort GCC_ATTR_UNUSED opIndex2,
-                          ushort GCC_ATTR_UNUSED sz2) const
-  { return false; }
+  virtual bool isParallelWithSuccessor(
+      MachInsn* GCC_ATTR_UNUSED mi1, ushort GCC_ATTR_UNUSED opIndex1, ushort GCC_ATTR_UNUSED sz1,
+      MachInsn* GCC_ATTR_UNUSED mi2, ushort GCC_ATTR_UNUSED opIndex2,
+      ushort GCC_ATTR_UNUSED sz2) const {
+    return false;
+  }
 
-  virtual void
-  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex) { }
+  virtual void decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex) {}
 };
 
 #endif  // isa_EmptyISA_hpp

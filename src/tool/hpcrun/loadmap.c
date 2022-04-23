@@ -44,52 +44,46 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <libgen.h>
-#include <sys/time.h>
+#include "loadmap.h"
 
 #include "cct.h"
-#include "loadmap.h"
-#include "fnbounds_interface.h"
-#include "fnbounds_file_header.h"
-#include "hpcrun_stats.h"
-#include "sample_event.h"
 #include "epoch.h"
+#include "fnbounds_file_header.h"
+#include "fnbounds_interface.h"
+#include "hpcrun_stats.h"
+#include "messages/messages.h"
+#include "sample_event.h"
 
-#include <messages/messages.h>
+#include "lib/prof-lean/hpcfmt.h"
+#include "lib/prof-lean/spinlock.h"
 
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/spinlock.h>
+#include <libgen.h>
+#include <sys/time.h>
 
 #define LOADMAP_DEBUG 0
 
 #define UW_RECIPE_MAP_DEBUG 0
 
-static hpcrun_loadmap_t  s_loadmap;
+static hpcrun_loadmap_t s_loadmap;
 static hpcrun_loadmap_t* s_loadmap_ptr = NULL;
 
 static dso_info_t* s_dso_free_list = NULL;
 
-
 /* locking functions to ensure that loadmaps are consistent */
 static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
 
-static loadmap_notify_t *notification_recipients = NULL;
+static loadmap_notify_t* notification_recipients = NULL;
 
-static void hpcrun_loadModule_flags_init(load_module_t *lm);
+static void hpcrun_loadModule_flags_init(load_module_t* lm);
 
-void
-hpcrun_loadmap_notify_register(loadmap_notify_t *n)
-{
+void hpcrun_loadmap_notify_register(loadmap_notify_t* n) {
   n->next = notification_recipients;
   notification_recipients = n;
 }
 
-
-static void
-hpcrun_loadmap_notify_map(load_module_t* lm)
-{
-  loadmap_notify_t * n = notification_recipients;
-  while (n) { 
+static void hpcrun_loadmap_notify_map(load_module_t* lm) {
+  loadmap_notify_t* n = notification_recipients;
+  while (n) {
     if (n->map) {
       n->map(lm);
     }
@@ -97,11 +91,8 @@ hpcrun_loadmap_notify_map(load_module_t* lm)
   }
 }
 
-
-static void
-hpcrun_loadmap_notify_unmap(load_module_t* lm)
-{
-  loadmap_notify_t * n = notification_recipients;
+static void hpcrun_loadmap_notify_unmap(load_module_t* lm) {
+  loadmap_notify_t* n = notification_recipients;
   while (n) {
     if (n->unmap) {
       n->unmap(lm);
@@ -110,14 +101,7 @@ hpcrun_loadmap_notify_unmap(load_module_t* lm)
   }
 }
 
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-dso_info_t*
-hpcrun_dso_new()
-{
+dso_info_t* hpcrun_dso_new() {
   dso_info_t* x = NULL;
 
   if (s_dso_free_list) {
@@ -126,28 +110,24 @@ hpcrun_dso_new()
     if (s_dso_free_list) {
       s_dso_free_list->prev = NULL;
     }
-    x->next = NULL; // prev should already be NULL
-  }
-  else {
+    x->next = NULL;  // prev should already be NULL
+  } else {
     TMSG(DSO, " hpcrun_dso_new");
-    x = (dso_info_t*) hpcrun_malloc(sizeof(dso_info_t));
+    x = (dso_info_t*)hpcrun_malloc(sizeof(dso_info_t));
   }
 
   return x;
 }
 
-
-dso_info_t*
-hpcrun_dso_make(const char* name, void** table,
-		struct fnbounds_file_header* fh,
-		void* startaddr, void* endaddr, unsigned long map_size)
-{
+dso_info_t* hpcrun_dso_make(
+    const char* name, void** table, struct fnbounds_file_header* fh, void* startaddr, void* endaddr,
+    unsigned long map_size) {
   dso_info_t* x = hpcrun_dso_new();
-  
-  TMSG(DSO," hpcrun_dso_make for module %s", name);
+
+  TMSG(DSO, " hpcrun_dso_make for module %s", name);
 
   int namelen = strlen(name) + 1;
-  x->name = (char*) malloc(namelen);
+  x->name = (char*)malloc(namelen);
   strcpy(x->name, name);
 
   x->table = table;
@@ -172,48 +152,32 @@ hpcrun_dso_make(const char* name, void** table,
   x->next = NULL;
   x->prev = NULL;
 
-  TMSG(DSO, "new dso: start = %p, end = %p, name = %s",
-       startaddr, endaddr, name);
+  TMSG(DSO, "new dso: start = %p, end = %p, name = %s", startaddr, endaddr, name);
 
   return x;
 }
 
-
-//***************************************************************************
-
-void
-hpcrun_dsoList_dump(dso_info_t* dl_list)
-{
+void hpcrun_dsoList_dump(dso_info_t* dl_list) {
   for (dso_info_t* x = dl_list; (x); x = x->next) {
     hpcrun_dso_dump(x);
   }
 }
 
-
-void
-hpcrun_dso_dump(dso_info_t* x)
-{
-  printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%ld, relocatable=%d]\n",
-	 x->start_addr, x->end_addr, x->name, 
-         x, x->table, x->nsymbols, x->is_relocatable);
+void hpcrun_dso_dump(dso_info_t* x) {
+  printf(
+      "%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%ld, relocatable=%d]\n", x->start_addr,
+      x->end_addr, x->name, x, x->table, x->nsymbols, x->is_relocatable);
 }
 
+load_module_t* hpcrun_loadModule_new(const char* name) {
+  load_module_t* x = (load_module_t*)hpcrun_malloc(sizeof(load_module_t));
 
-//***************************************************************************
-// 
-//***************************************************************************
+  // memset(x, 0, sizeof(*x));
 
-load_module_t*
-hpcrun_loadModule_new(const char* name)
-{
-  load_module_t* x = (load_module_t*) hpcrun_malloc(sizeof(load_module_t));
-
-  //memset(x, 0, sizeof(*x));
-
-  x->id = ++(s_loadmap_ptr->size); // largest id = size
+  x->id = ++(s_loadmap_ptr->size);  // largest id = size
 
   int namelen = strlen(name) + 1;
-  x->name = (char*) hpcrun_malloc(namelen);
+  x->name = (char*)hpcrun_malloc(namelen);
   strcpy(x->name, name);
 
   x->dso_info = NULL;
@@ -226,38 +190,19 @@ hpcrun_loadModule_new(const char* name)
   return x;
 }
 
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-void
-hpcrun_loadmap_lock() 
-{
+void hpcrun_loadmap_lock() {
   spinlock_lock(&loadmap_lock);
 }
 
-
-void
-hpcrun_loadmap_unlock()
-{
+void hpcrun_loadmap_unlock() {
   spinlock_unlock(&loadmap_lock);
 }
 
-
-int
-hpcrun_loadmap_isLocked()
-{
+int hpcrun_loadmap_isLocked() {
   return spinlock_is_locked(&loadmap_lock);
 }
 
-
-//***************************************************************************
-
-hpcrun_loadmap_t*
-hpcrun_loadmap_new()
-{
+hpcrun_loadmap_t* hpcrun_loadmap_new() {
   TMSG(LOADMAP, " --NEW");
   hpcrun_loadmap_t* x = hpcrun_malloc(sizeof(hpcrun_loadmap_t));
   if (x == NULL) {
@@ -266,17 +211,14 @@ hpcrun_loadmap_new()
   }
 
   hpcrun_loadmap_init(x);
-  
+
   return x;
 }
 
-
-void
-hpcrun_loadmap_init(hpcrun_loadmap_t* x)
-{
+void hpcrun_loadmap_init(hpcrun_loadmap_t* x) {
   TMSG(LOADMAP, "init");
   memset(x, 0, sizeof(*x));
-  
+
   x->lm_head = NULL;
   x->lm_end = NULL;
   x->size = 0;
@@ -285,35 +227,32 @@ hpcrun_loadmap_init(hpcrun_loadmap_t* x)
 //
 // debugging operation, print loadmap in reverse order
 //
-void
-hpcrun_loadmap_print(hpcrun_loadmap_t* loadmap)
-{
+void hpcrun_loadmap_print(hpcrun_loadmap_t* loadmap) {
   for (load_module_t* lm = loadmap->lm_end; lm; lm = lm->prev) {
     printf("%u  %s\n", lm->id, lm->name);
   }
 }
 
-//***************************************************************************
-
-load_module_t*
-hpcrun_loadmap_findByAddr(void* begin, void* end)
-{
+load_module_t* hpcrun_loadmap_findByAddr(void* begin, void* end) {
   // don't waste effort on an obviously invalid address
-  if (begin == 0) return NULL; 
+  if (begin == 0)
+    return NULL;
 
   TMSG(LOADMAP, "find by address %p -- %p", begin, end);
 
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     TMSG(LOADMAP, "\tload module %s", x->name);
     if (x->dso_info) {
-      TMSG(LOADMAP, "\t\t [%lx, %lx) table [%lx, %lx)", 
-	   (uintptr_t) x->dso_info->start_addr,
-	   (uintptr_t) x->dso_info->end_addr,
-	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[0] + 
-				  x->dso_info->start_to_ref_dist) : -1),
-	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[x->dso_info->nsymbols -1] +
-				  x->dso_info->start_to_ref_dist) : -1)
-	   );
+      TMSG(
+          LOADMAP, "\t\t [%lx, %lx) table [%lx, %lx)", (uintptr_t)x->dso_info->start_addr,
+          (uintptr_t)x->dso_info->end_addr,
+          ((uintptr_t)x->dso_info->table
+               ? ((uintptr_t)x->dso_info->table[0] + x->dso_info->start_to_ref_dist)
+               : -1),
+          ((uintptr_t)x->dso_info->table
+               ? ((uintptr_t)x->dso_info->table[x->dso_info->nsymbols - 1]
+                  + x->dso_info->start_to_ref_dist)
+               : -1));
       if (x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
         TMSG(LOADMAP, "       --->%s", x->name);
         hpcrun_loadModule_flags_set(x, LOADMAP_ENTRY_ANALYZE);
@@ -325,10 +264,7 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
   return NULL;
 }
 
-
-load_module_t*
-hpcrun_loadmap_findByName(const char* name)
-{
+load_module_t* hpcrun_loadmap_findByName(const char* name) {
   TMSG(LOADMAP, "find by name: %s", name);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     if (strcmp(x->name, name) == 0) {
@@ -340,9 +276,7 @@ hpcrun_loadmap_findByName(const char* name)
   return NULL;
 }
 
-load_module_t*
-hpcrun_loadmap_findById(uint16_t id)
-{
+load_module_t* hpcrun_loadmap_findById(uint16_t id) {
   TMSG(LOADMAP, "find by id %d", id);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     if (x->id == id) {
@@ -354,12 +288,10 @@ hpcrun_loadmap_findById(uint16_t id)
   return NULL;
 }
 
-const char*
-hpcrun_loadmap_findLoadName(const char* name)
-{
+const char* hpcrun_loadmap_findLoadName(const char* name) {
   TMSG(LOADMAP, "find load name: %s", name);
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
-    char *bn = basename(x->name);
+    char* bn = basename(x->name);
     if (bn && strcmp(bn, name) == 0) {
       TMSG(LOADMAP, "       --->%s", x->name);
       return x->name;
@@ -369,12 +301,7 @@ hpcrun_loadmap_findLoadName(const char* name)
   return NULL;
 }
 
-
-//***************************************************************************
-
-static void
-hpcrun_loadmap_pushFront(load_module_t* lm)
-{
+static void hpcrun_loadmap_pushFront(load_module_t* lm) {
   TMSG(LOADMAP, "push front: %s", lm->name);
   // link 'm' at the head of the list of loaded modules
   if (s_loadmap_ptr->lm_head) {
@@ -383,8 +310,7 @@ hpcrun_loadmap_pushFront(load_module_t* lm)
     lm->next = s_loadmap_ptr->lm_head;
     lm->prev = NULL;
     s_loadmap_ptr->lm_head = lm;
-  }
-  else {
+  } else {
     TMSG(LOADMAP, " ->First entry");
     s_loadmap_ptr->lm_head = lm;
     s_loadmap_ptr->lm_end = lm;
@@ -392,7 +318,6 @@ hpcrun_loadmap_pushFront(load_module_t* lm)
     lm->prev = NULL;
   }
 }
-
 
 #if 0
 // Pushes 'lm' to the end of the current loadmap. Should only occur
@@ -428,10 +353,7 @@ hpcrun_loadmap_moveToBack(load_module_t* lm)
 }
 #endif
 
-
-static void
-hpcrun_loadmap_dump_dl_phdr_info(struct dl_phdr_info *x)
-{
+static void hpcrun_loadmap_dump_dl_phdr_info(struct dl_phdr_info* x) {
   fprintf(stderr, "\t phdr_info %p\n", x);
   if (x) {
     fprintf(stderr, "\t\t dlpi_addr 0x%lx\n", x->dlpi_addr);
@@ -444,10 +366,7 @@ hpcrun_loadmap_dump_dl_phdr_info(struct dl_phdr_info *x)
   }
 }
 
-
-static void
-hpcrun_loadmap_dump_dso_info_t(dso_info_t* x)
-{
+static void hpcrun_loadmap_dump_dso_info_t(dso_info_t* x) {
   fprintf(stderr, "\t dso_info_t %p\n", x);
   if (x) {
     fprintf(stderr, "\t\t name %s\n", x->name);
@@ -459,10 +378,7 @@ hpcrun_loadmap_dump_dso_info_t(dso_info_t* x)
   }
 }
 
-
-static void
-hpcrun_loadmap_dump_load_module_t(load_module_t* x)
-{
+static void hpcrun_loadmap_dump_load_module_t(load_module_t* x) {
   fprintf(stderr, "load_module_t %p\n", x);
   fprintf(stderr, "\t id %d\n", x->id);
   fprintf(stderr, "\t name %s\n", x->name);
@@ -472,10 +388,7 @@ hpcrun_loadmap_dump_load_module_t(load_module_t* x)
   fprintf(stderr, "\t prev %p\n", x->prev);
 }
 
-
-load_module_t*
-hpcrun_loadmap_map(dso_info_t* dso)
-{
+load_module_t* hpcrun_loadmap_map(dso_info_t* dso) {
   const char* msg = "";
 
   TMSG(LOADMAP, "map in dso %s", dso->name);
@@ -490,41 +403,38 @@ hpcrun_loadmap_map(dso_info_t* dso)
       TMSG(LOADMAP, " !! Internal consistency check fires !!");
       hpcrun_loadmap_unmap(lm);
       lm->dso_info = dso;
-    }
-    else {
-      EMSG("hpcrun_loadmap_map(): attempt to both map dso '%s' and place it on the free list!", dso->name);
+    } else {
+      EMSG(
+          "hpcrun_loadmap_map(): attempt to both map dso '%s' and place it on the free list!",
+          dso->name);
     }
     msg = "(reuse)";
-  }
-  else {
-	lm = hpcrun_loadModule_new(dso->name);
-	lm->dso_info = dso;
-	hpcrun_loadmap_pushFront(lm);
+  } else {
+    lm = hpcrun_loadModule_new(dso->name);
+    lm->dso_info = dso;
+    hpcrun_loadmap_pushFront(lm);
 
 #if UW_RECIPE_MAP_DEBUG
-        fprintf(stderr, "hpcrun_loadmap_map: '%s' start=%p end=%p\n", 
-                dso->name, lm->dso_info->start_addr, lm->dso_info->end_addr);
+    fprintf(
+        stderr, "hpcrun_loadmap_map: '%s' start=%p end=%p\n", dso->name, lm->dso_info->start_addr,
+        lm->dso_info->end_addr);
 #endif
-
   }
 
   hpcrun_loadmap_notify_map(lm);
 
-  TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
-       dso->name, s_loadmap_ptr->size, msg);
+  TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s", dso->name, s_loadmap_ptr->size, msg);
 
   return lm;
 }
 
-
-void
-hpcrun_loadmap_unmap(load_module_t* lm)
-{
-  TMSG(LOADMAP,"hpcrun_loadmap_unmap: '%s'", lm->name);
+void hpcrun_loadmap_unmap(load_module_t* lm) {
+  TMSG(LOADMAP, "hpcrun_loadmap_unmap: '%s'", lm->name);
 
   dso_info_t* old_dso = lm->dso_info;
 
-  if (old_dso == NULL) return; // nothing to do!  
+  if (old_dso == NULL)
+    return;  // nothing to do!
 
   // need to notify unmap clients before setting dso_info to NULL
   hpcrun_loadmap_notify_unmap(lm);
@@ -538,7 +448,7 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   //   list.  If we want to enable, this, we could have
   //   hpcrun_loadmap_findByName() begin its search from the end
   //   of the list.
-  //hpcrun_loadmap_moveToBack(lm);
+  // hpcrun_loadmap_moveToBack(lm);
 
   // add old_dso to the head of the s_dso_free_list
   old_dso->next = s_dso_free_list;
@@ -550,60 +460,41 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   TMSG(LOADMAP, "Deleting unw intervals");
 
 #if LOADMAP_DEBUG
-  assert((uintptr_t)(old_dso->end_addr) < UINTPTR_MAX) ;
+  assert((uintptr_t)(old_dso->end_addr) < UINTPTR_MAX);
 #endif
 
 #if UW_RECIPE_MAP_DEBUG
-  fprintf(stderr, "hpcrun_loadmap_unmap: '%s' start=%p end=%p\n", 
-          lm->name, old_dso->start_addr, old_dso->end_addr);
+  fprintf(
+      stderr, "hpcrun_loadmap_unmap: '%s' start=%p end=%p\n", lm->name, old_dso->start_addr,
+      old_dso->end_addr);
 #endif
 }
 
-
-// used only to add a load module for the kernel 
-uint16_t 
-hpcrun_loadModule_add(const char* name)
-{
-  load_module_t *lm = hpcrun_loadModule_new(name);
+// used only to add a load module for the kernel
+uint16_t hpcrun_loadModule_add(const char* name) {
+  load_module_t* lm = hpcrun_loadModule_new(name);
   hpcrun_loadmap_pushFront(lm);
   return lm->id;
 }
 
-
-static void
-hpcrun_loadModule_flags_init(load_module_t *lm)
-{
+static void hpcrun_loadModule_flags_init(load_module_t* lm) {
   atomic_store(&(lm->flags), 0);
 }
 
-
-void
-hpcrun_loadModule_flags_set(load_module_t *lm, int flag)
-{
+void hpcrun_loadModule_flags_set(load_module_t* lm, int flag) {
   atomic_fetch_or(&(lm->flags), flag);
 }
 
-
-int
-hpcrun_loadModule_flags_get(load_module_t *lm)
-{
+int hpcrun_loadModule_flags_get(load_module_t* lm) {
   return atomic_load(&(lm->flags));
 }
 
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-void
-hpcrun_initLoadmap()
-{
+void hpcrun_initLoadmap() {
   // all processes (initial and forked processes)
-  notification_recipients = NULL; 
+  notification_recipients = NULL;
 
   // initial process only
-  if (s_loadmap_ptr == NULL) { 
-
+  if (s_loadmap_ptr == NULL) {
     // initialize load map itself
     s_loadmap_ptr = &s_loadmap;
     hpcrun_loadmap_init(s_loadmap_ptr);
@@ -613,35 +504,25 @@ hpcrun_initLoadmap()
   }
 }
 
-
-hpcrun_loadmap_t*
-hpcrun_getLoadmap()
-{
+hpcrun_loadmap_t* hpcrun_getLoadmap() {
   return s_loadmap_ptr;
 }
 
-
-int
-hpcrun_loadmap_iterate
-(
-  int (*cb)(struct dl_phdr_info * info, size_t size, void* data),
-  void *data
-)
-{  
+int hpcrun_loadmap_iterate(
+    int (*cb)(struct dl_phdr_info* info, size_t size, void* data), void* data) {
   int ret = 0;
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     // Skip load modules that do not have a valid dl_phdr_info structure
-    if (x->phdr_info.dlpi_phdr == NULL) continue;
+    if (x->phdr_info.dlpi_phdr == NULL)
+      continue;
     ret = cb(&(x->phdr_info), sizeof(struct dl_phdr_info), data);
-    if (ret != 0) return ret;    
-  }  
+    if (ret != 0)
+      return ret;
+  }
   return ret;
 }
 
-
-void
-hpcrun_loadmap_dump()
-{
+void hpcrun_loadmap_dump() {
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     hpcrun_loadmap_dump_load_module_t(x);
   }

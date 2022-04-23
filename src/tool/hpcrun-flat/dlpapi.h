@@ -63,13 +63,7 @@
 #ifndef dlpapi_h
 #define dlpapi_h
 
-/************************** System Include Files ****************************/
-
-/**************************** User Include Files ****************************/
-
 #include "hpcpapi.h"
-
-/**************************** Forward Declarations **************************/
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,7 +75,6 @@ extern "C" {
 
 extern int dlopen_papi();
 extern int dlclose_papi();
-
 
 /* PAPI entry points */
 
@@ -109,7 +102,5 @@ extern dl_PAPI_enum_event_t dl_PAPI_enum_event;
 #ifdef __cplusplus
 }
 #endif
-
-/****************************************************************************/
 
 #endif /* dlpapi_h */

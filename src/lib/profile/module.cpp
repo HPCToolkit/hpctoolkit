@@ -46,29 +46,27 @@
 
 #include "module.hpp"
 
-#include "lib/support-lean/demangle.h"
 #include "pipeline.hpp"
 
-#include <elfutils/libdw.h>
-#include <dwarf.h>
+#include "lib/support-lean/demangle.h"
 
+#include <algorithm>
+#include <dwarf.h>
+#include <elfutils/libdw.h>
+#include <limits>
 #include <stdexcept>
 #include <unordered_map>
-#include <limits>
-#include <algorithm>
 extern "C" {
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 }
 
 using namespace hpctoolkit;
 
-Module::Module(ud_t::struct_t& rs)
-  : userdata(rs, std::cref(*this)) {}
+Module::Module(ud_t::struct_t& rs) : userdata(rs, std::cref(*this)) {}
 Module::Module(Module&& m)
-  : userdata(std::move(m.userdata), std::cref(*this)),
-    u_path(std::move(m.u_path)) {}
+    : userdata(std::move(m.userdata), std::cref(*this)), u_path(std::move(m.u_path)) {}
 Module::Module(ud_t::struct_t& rs, stdshim::filesystem::path p)
-  : userdata(rs, std::cref(*this)), u_path(std::move(p)) {}
+    : userdata(rs, std::cref(*this)), u_path(std::move(p)) {}

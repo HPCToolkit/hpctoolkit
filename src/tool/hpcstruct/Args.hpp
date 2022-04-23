@@ -60,53 +60,47 @@
 #ifndef Args_hpp
 #define Args_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/support/CmdLineParser.hpp"
 
 #include <iostream>
 #include <string>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-typedef enum { CACHE_DISABLED, CACHE_ENABLED, CACHE_NOT_NAMED, CACHE_ENTRY_COPIED, CACHE_ENTRY_COPIED_RENAME, CACHE_ENTRY_ADDED,
-        CACHE_ENTRY_ADDED_RENAME, CACHE_ENTRY_REPLACED, CACHE_ENTRY_REMOVED } cachestat_t;
-
-//***************************************************************************
+typedef enum {
+  CACHE_DISABLED,
+  CACHE_ENABLED,
+  CACHE_NOT_NAMED,
+  CACHE_ENTRY_COPIED,
+  CACHE_ENTRY_COPIED_RENAME,
+  CACHE_ENTRY_ADDED,
+  CACHE_ENTRY_ADDED_RENAME,
+  CACHE_ENTRY_REPLACED,
+  CACHE_ENTRY_REMOVED
+} cachestat_t;
 
 class Args {
-public: 
-  Args(); 
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  ~Args();
 
   // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
+  void parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
+  void printVersion(std::ostream& os) const;
 
-  void
-  printUsage(std::ostream& os) const;
-  
+  void printUsage(std::ostream& os) const;
+
   // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
+  void printError(std::ostream& os, const char* msg) const;
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
+  void printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
+  void dump(std::ostream& os = std::cerr) const;
 
-  void
-  ddump() const;
+  void ddump() const;
 
 public:
   // Parsed Data: Command
@@ -117,22 +111,22 @@ public:
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
-  long parallel_analysis_threshold; 
-  bool analyze_cpu_binaries ;     // default: true
-  bool analyze_gpu_binaries ;     // default: true
+  long parallel_analysis_threshold;
+  bool analyze_cpu_binaries;  // default: true
+  bool analyze_gpu_binaries;  // default: true
   bool compute_gpu_cfg;
   std::string meas_dir;
-  bool is_from_makefile;	// set true if -M argument is seen
-  cachestat_t cache_stat;	// reflects cache interactions for the binary
+  bool is_from_makefile;   // set true if -M argument is seen
+  cachestat_t cache_stat;  // reflects cache interactions for the binary
 
   // Parsed Data: optional arguments
-  std::string searchPathStr;          // default: "."
+  std::string searchPathStr;  // default: "."
   std::string dbgProcGlob;
 
-  bool pretty_print_output;       // default: false
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-  bool nocache;                   // default: false
+  bool pretty_print_output;  // default: false
+  bool useBinutils;          // default: false
+  bool show_gaps;            // default: false
+  bool nocache;              // default: false
 
   // Parsed Data: arguments
   std::string in_filenm;
@@ -140,14 +134,13 @@ public:
   std::string cache_directory;
 
 private:
-  void
-  Ctor();
+  void Ctor();
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
-extern Args *global_args;
+extern Args* global_args;
 
-#endif // Args_hpp 
+#endif  // Args_hpp

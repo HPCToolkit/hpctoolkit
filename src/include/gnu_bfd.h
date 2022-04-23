@@ -50,14 +50,12 @@
 // Files that want to use <bfd.h> and <bfdlink.h> should probably
 // include this file instead.
 
-//***************************************************************************
-
 #ifndef gnu_bfd_h
 #define gnu_bfd_h
 
 // bfd.h (incorrectly) assumes that config.h has already been included
 #ifndef PACKAGE
-#define PACKAGE  "hpctoolkit"
+#define PACKAGE "hpctoolkit"
 #endif
 
 /* binutils/bfd/bfd.h only correctly tests for GNU compilers */

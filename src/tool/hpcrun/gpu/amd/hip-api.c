@@ -51,123 +51,62 @@
 //
 //***************************************************************************
 
-
-//*****************************************************************************
-// system include files
-//*****************************************************************************
-
 #include <dlfcn.h>
 #include <stdio.h>
-#include <string.h>    // memset
+#include <string.h>  // memset
 
 // #include <roctracer_hip.h>
-#include <hip/hip_runtime.h>
-
-//*****************************************************************************
-// local include files
-//*****************************************************************************
-
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/messages/messages.h>
-
 #include "hip-api.h"
 
+#include "hpcrun/messages/messages.h"
+#include "hpcrun/sample-sources/libdl.h"
 
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
+#include <hip/hip_runtime.h>
 
 #define HIP_FN_NAME(f) DYN_FN_NAME(f)
 
-#define HIP_FN(fn, args) \
-  static hipError_t (*HIP_FN_NAME(fn)) args
+#define HIP_FN(fn, args) static hipError_t(*HIP_FN_NAME(fn)) args
 
-#define HPCRUN_HIP_API_CALL(fn, args)                              \
-{                                                                   \
-  hipError_t error_result = HIP_FN_NAME(fn) args;		    \
-  if (error_result != hipSuccess) {				    \
-    ETMSG(CUDA, "hip api %s returned %d", #fn, (int) error_result);    \
-    exit(-1);							    \
-  }								    \
-}
+#define HPCRUN_HIP_API_CALL(fn, args)                                \
+  {                                                                  \
+    hipError_t error_result = HIP_FN_NAME(fn) args;                  \
+    if (error_result != hipSuccess) {                                \
+      ETMSG(CUDA, "hip api %s returned %d", #fn, (int)error_result); \
+      exit(-1);                                                      \
+    }                                                                \
+  }
 
-#define FORALL_HIP_ROUTINES(macro)             \
-  macro(hipDeviceSynchronize)                  \
-  macro(hipDeviceGetAttribute)                 \
-  macro(hipCtxGetCurrent)
-
-//******************************************************************************
-// static data
-//******************************************************************************
+#define FORALL_HIP_ROUTINES(macro) \
+  macro(hipDeviceSynchronize) macro(hipDeviceGetAttribute) macro(hipCtxGetCurrent)
 
 #ifndef HPCRUN_STATIC_LINK
-HIP_FN
-(
- hipDeviceSynchronize,
-( void )
-);
+HIP_FN(hipDeviceSynchronize, (void));
 
-HIP_FN
-(
- hipDeviceGetAttribute,
- (
- int *pi,
- hipDeviceAttribute_t attrib,
- int dev
- )
-);
+HIP_FN(hipDeviceGetAttribute, (int* pi, hipDeviceAttribute_t attrib, int dev));
 
-HIP_FN
-(
- hipCtxGetCurrent,
- (
- hipCtx_t *ctx
- )
-);
+HIP_FN(hipCtxGetCurrent, (hipCtx_t * ctx));
 
 #endif
 
-//******************************************************************************
-// private operations
-//******************************************************************************
-//TODO: Copied from cuda-api.c - check if works for hip
+// TODO: Copied from cuda-api.c - check if works for hip
 #ifndef HPCRUN_STATIC_LINK
-static int
-hip_device_sm_blocks_query
-(
- int major,
- int minor
-)
-{
-  switch(major) {
-    case 7:
-    case 6:
-      return 32;
-    default:
-      // TODO(Keren): add more devices
-      return 8;
+static int hip_device_sm_blocks_query(int major, int minor) {
+  switch (major) {
+  case 7:
+  case 6: return 32;
+  default:
+    // TODO(Keren): add more devices
+    return 8;
   }
 }
 #endif
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-int
-hip_bind
-(
-void
-)
-{
+int hip_bind(void) {
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   CHK_DLOPEN(hip, "libamdhip64.so", RTLD_NOW | RTLD_GLOBAL);
 
-#define HIP_BIND(fn) \
-  CHK_DLSYM(hip, fn);
+#define HIP_BIND(fn) CHK_DLSYM(hip, fn);
 
   FORALL_HIP_ROUTINES(HIP_BIND)
 #undef CUPTI_BIND
@@ -175,15 +114,10 @@ void
   return 0;
 #else
   return -1;
-#endif // ! HPCRUN_STATIC_LINK
+#endif  // ! HPCRUN_STATIC_LINK
 }
 
-int
-hip_context
-(
- hipCtx_t *ctx
-)
-{
+int hip_context(hipCtx_t* ctx) {
 #ifndef HPCRUN_STATIC_LINK
   HPCRUN_HIP_API_CALL(hipCtxGetCurrent, (ctx));
   return 0;
@@ -192,43 +126,38 @@ hip_context
 #endif
 }
 
-int
-hip_device_property_query
-(
- int device_id,
- hip_device_property_t *property
-)
-{
+int hip_device_property_query(int device_id, hip_device_property_t* property) {
 #ifndef HPCRUN_STATIC_LINK
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&property->sm_count, hipDeviceAttributeMultiprocessorCount, device_id));
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute,
+      (&property->sm_count, hipDeviceAttributeMultiprocessorCount, device_id));
 
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&property->sm_clock_rate, hipDeviceAttributeClockRate, device_id));
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute, (&property->sm_clock_rate, hipDeviceAttributeClockRate, device_id));
 
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&property->sm_shared_memory,
-                       hipDeviceAttributeMaxSharedMemoryPerMultiprocessor, device_id));
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute,
+      (&property->sm_shared_memory, hipDeviceAttributeMaxSharedMemoryPerMultiprocessor, device_id));
 
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&property->sm_registers,
-                       hipDeviceAttributeMaxRegistersPerBlock, device_id));//CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute, (&property->sm_registers, hipDeviceAttributeMaxRegistersPerBlock,
+                              device_id));  // CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR
 
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&property->sm_threads, hipDeviceAttributeMaxThreadsPerMultiProcessor,
-                       device_id));
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute,
+      (&property->sm_threads, hipDeviceAttributeMaxThreadsPerMultiProcessor, device_id));
 
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&property->num_threads_per_warp, hipDeviceAttributeWarpSize,
-                       device_id));
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute,
+      (&property->num_threads_per_warp, hipDeviceAttributeWarpSize, device_id));
 
   int major = 0, minor = 0;
 
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&major, hipDeviceAttributeComputeCapabilityMajor, device_id));
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute, (&major, hipDeviceAttributeComputeCapabilityMajor, device_id));
 
-  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
-                       (&minor, hipDeviceAttributeComputeCapabilityMinor, device_id));
+  HPCRUN_HIP_API_CALL(
+      hipDeviceGetAttribute, (&minor, hipDeviceAttributeComputeCapabilityMinor, device_id));
 
   property->sm_blocks = hip_device_sm_blocks_query(major, minor);
 
@@ -238,12 +167,9 @@ hip_device_property_query
 #endif
 }
 
-int
-hip_dev_sync
-()
-{
+int hip_dev_sync() {
 #ifndef HPCRUN_STATIC_LINK
-  HPCRUN_HIP_API_CALL(hipDeviceSynchronize, () );
+  HPCRUN_HIP_API_CALL(hipDeviceSynchronize, ());
   return 0;
 #else
   return -1;

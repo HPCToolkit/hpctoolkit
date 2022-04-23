@@ -54,15 +54,13 @@
 // We now use cplus_demangle() from libiberty again.  It has better
 // options for custom demangling than abi::__cxa_demangle().
 
-//***************************************************************************
-
 #ifndef gnu_demangle_h
 #define gnu_demangle_h
 
 // libiberty (incorrectly) assumes that HAVE_DECL_BASENAME has been
 // set from config.h
 #ifndef HAVE_DECL_BASENAME
-#define HAVE_DECL_BASENAME  1
+#define HAVE_DECL_BASENAME 1
 #endif
 
 #include <libiberty/demangle.h>

@@ -57,44 +57,24 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#include "DCPIProfile.hpp"
 
 #include <iostream>
 
-//*************************** User Include Files ****************************
-
-#include "DCPIProfile.hpp"
-
-//*************************** Forward Declarations ***************************
-
+using std::dec;
 using std::endl;
 using std::hex;
-using std::dec;
-
-//****************************************************************************
-// DCPIProfile
-//****************************************************************************
 
 DCPIProfile::DCPIProfile(ISA* isa_, unsigned int sz)
-  : PCProfile(isa_, sz), pmmode(DCPIProfile::PM_NONE)
-{
-}
+    : PCProfile(isa_, sz), pmmode(DCPIProfile::PM_NONE) {}
 
-DCPIProfile::~DCPIProfile()
-{
-}
+DCPIProfile::~DCPIProfile() {}
 
-void 
-DCPIProfile::dump(std::ostream& o)
-{
+void DCPIProfile::dump(std::ostream& o) {
   o << "'DCPIProfile' --\n";
   PCProfile::dump(o);
 }
 
-void 
-DCPIProfile::ddump()
-{
+void DCPIProfile::ddump() {
   dump(std::cerr);
 }
-
-//****************************************************************************

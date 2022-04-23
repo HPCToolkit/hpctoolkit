@@ -47,11 +47,11 @@
 #ifndef HPCTOOLKIT_PROFILE_LEXICAL_H
 #define HPCTOOLKIT_PROFILE_LEXICAL_H
 
-#include "util/uniqable.hpp"
+#include "stdshim/filesystem.hpp"
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
+#include "util/uniqable.hpp"
 
-#include "stdshim/filesystem.hpp"
 #include <string>
 #include <string_view>
 
@@ -87,9 +87,7 @@ private:
   File(ud_t::struct_t& rs, stdshim::filesystem::path p);
 
   friend class util::uniqued<File>;
-  util::uniqable_key<stdshim::filesystem::path>& uniqable_key() {
-    return u_path;
-  }
+  util::uniqable_key<stdshim::filesystem::path>& uniqable_key() { return u_path; }
 };
 
 /// High-level application Function(-like construct), within a particular
@@ -101,13 +99,12 @@ class Function {
 public:
   /// Functions can be constructed with some or all of their pieces.
   /// The arguments follow the available getter methods.
-  explicit Function(const Module& mod)
-    : Function(mod, std::nullopt) {};
+  explicit Function(const Module& mod) : Function(mod, std::nullopt){};
   Function(const Module& mod, std::optional<uint64_t> offset)
-    : Function(mod, offset, std::string()) {};
+      : Function(mod, offset, std::string()){};
   Function(const Module&, std::optional<uint64_t>, std::string);
   Function(const Module& mod, std::string name, const File& file, uint64_t line)
-    : Function(mod, std::nullopt, std::move(name), file, line) {};
+      : Function(mod, std::nullopt, std::move(name), file, line){};
   Function(const Module&, std::optional<uint64_t>, std::string, const File&, uint64_t);
 
   ~Function() = default;
@@ -148,7 +145,8 @@ public:
   /// If unknown, returns std::nullopt.
   // MT: Safe (const)
   std::optional<std::pair<const File&, uint64_t>> sourceLocation() const noexcept {
-    if(!m_file) return std::nullopt;
+    if (!m_file)
+      return std::nullopt;
     return std::pair<const File&, uint64_t>(*m_file, m_line);
   }
 
@@ -173,7 +171,6 @@ private:
   util::optional_ref<const File> m_file;
   uint64_t m_line;
 };
-
 }  // namespace hpctoolkit
 
 #endif  // HPCTOOLKIT_PROFILE_LEXICAL_H

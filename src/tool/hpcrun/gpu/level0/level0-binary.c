@@ -41,85 +41,44 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "level0-handle-map.h"
 
-#include <stdlib.h>
-#include <limits.h>
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
+#include "include/gpu-binary.h"
+#include "lib/prof-lean/crypto-hash.h"
+#include "lib/prof-lean/spinlock.h"
 
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
+#include <limits.h>
+#include <stdlib.h>
 
-#include "level0-handle-map.h"
-#include "lib/prof-lean/spinlock.h"
-#include "lib/prof-lean/crypto-hash.h"
-#include "include/gpu-binary.h"
+static level0_handle_map_entry_t* module_map_root = NULL;
 
-//******************************************************************************
-// local variables
-//******************************************************************************
-
-static level0_handle_map_entry_t *module_map_root = NULL;
-
-static level0_handle_map_entry_t *module_free_list = NULL;
+static level0_handle_map_entry_t* module_free_list = NULL;
 
 static spinlock_t module_lock = SPINLOCK_UNLOCKED;
 
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-void
-level0_module_handle_map_insert
-(
-  ze_module_handle_t module,
-  char* hash_buf
-)
-{
+void level0_module_handle_map_insert(ze_module_handle_t module, char* hash_buf) {
   spinlock_lock(&module_lock);
 
   uint64_t key = (uint64_t)module;
-  level0_handle_map_entry_t *entry =
-    level0_handle_map_entry_new(&module_free_list, key, (level0_data_node_t*)hash_buf);
+  level0_handle_map_entry_t* entry =
+      level0_handle_map_entry_new(&module_free_list, key, (level0_data_node_t*)hash_buf);
   level0_handle_map_insert(&module_map_root, entry);
 
   spinlock_unlock(&module_lock);
 }
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-level0_binary_process
-(
-  ze_module_handle_t module
-)
-{
+void level0_binary_process(ze_module_handle_t module) {
   // Get the debug binary
   size_t size;
-  zetModuleGetDebugInfo(
-    module,
-    ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
-    &size,
-    NULL
-  );
+  zetModuleGetDebugInfo(module, ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF, &size, NULL);
 
-  uint8_t* buf = (uint8_t*) malloc(size);
-  zetModuleGetDebugInfo(
-    module,
-    ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
-    &size,
-    buf
-  );
+  uint8_t* buf = (uint8_t*)malloc(size);
+  zetModuleGetDebugInfo(module, ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF, &size, buf);
 
   // Generate a hash for the binary
-  char *hash_buf = (char*)malloc(HASH_LENGTH * 2);
+  char* hash_buf = (char*)malloc(HASH_LENGTH * 2);
   gpu_binary_compute_hash_string((const char*)buf, size, hash_buf);
 
   // Prepare to a file path to write down the binary
@@ -133,36 +92,21 @@ level0_binary_process
   level0_module_handle_map_insert(module, hash_buf);
 }
 
-char*
-level0_module_handle_map_lookup
-(
-  ze_module_handle_t module
-)
-{
+char* level0_module_handle_map_lookup(ze_module_handle_t module) {
   spinlock_lock(&module_lock);
 
   uint64_t key = (uint64_t)module;
-  level0_handle_map_entry_t *entry =
-    level0_handle_map_lookup(&module_map_root, key);
-  char *result = (char*) (*level0_handle_map_entry_data_get(entry));
+  level0_handle_map_entry_t* entry = level0_handle_map_lookup(&module_map_root, key);
+  char* result = (char*)(*level0_handle_map_entry_data_get(entry));
   spinlock_unlock(&module_lock);
   return result;
 }
 
-void
-level0_module_handle_map_delete
-(
-  ze_module_handle_t module
-)
-{
+void level0_module_handle_map_delete(ze_module_handle_t module) {
   spinlock_lock(&module_lock);
 
   uint64_t key = (uint64_t)module;
-  level0_handle_map_delete(
-    &module_map_root,
-    &module_free_list,
-    key
-  );
+  level0_handle_map_delete(&module_map_root, &module_free_list, key);
 
   spinlock_unlock(&module_lock);
 }

@@ -57,129 +57,68 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::hex;
-using std::dec;
-using std::showbase;
-
-#include <sstream>
-
-#include <string>
-using std::string;
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-
 #include "Insn.hpp"
 
-//*************************** Forward Declarations ***************************
+#include "include/gcc-attr.h"
 
-//****************************************************************************
+#include <iostream>
+#include <sstream>
+#include <string>
 
-//****************************************************************************
-// Instruction
-//****************************************************************************
+using std::dec;
+using std::hex;
+using std::showbase;
+using std::string;
 
-void
-BinUtil::Insn::dump(std::ostream& o, int GCC_ATTR_UNUSED flags,
-		    const char* pre) const
-{
+void BinUtil::Insn::dump(std::ostream& o, int GCC_ATTR_UNUSED flags, const char* pre) const {
   string p(pre);
   VMA target = targetVMA(m_vma);
 
-  o << showbase 
-    << p << hex << m_vma << dec << ": " << desc().toString();
+  o << showbase << p << hex << m_vma << dec << ": " << desc().toString();
 
-  if (target != 0 || opIndex() != 0) { 
-    o << " <" << hex << target << dec << "> "; 
-  }
-  else { 
-    o << " "; 
+  if (target != 0 || opIndex() != 0) {
+    o << " <" << hex << target << dec << "> ";
+  } else {
+    o << " ";
   }
 
   dumpme(o, p.c_str());
   o << "\n";
 }
 
-
-string
-BinUtil::Insn::toString(int flags, const char* pre) const
-{
+string BinUtil::Insn::toString(int flags, const char* pre) const {
   std::ostringstream os;
   dump(os, flags, pre);
   return os.str();
 }
 
-
-void
-BinUtil::Insn::ddump() const
-{
+void BinUtil::Insn::ddump() const {
   dump(std::cerr);
 }
 
-
-void
-BinUtil::Insn::dumpme(std::ostream& GCC_ATTR_UNUSED o,
-		      const char* GCC_ATTR_UNUSED pre) const
-{
+void BinUtil::Insn::dumpme(std::ostream& GCC_ATTR_UNUSED o, const char* GCC_ATTR_UNUSED pre) const {
 }
 
-
-//***************************************************************************
-// CISCInsn
-//***************************************************************************
-
-void
-BinUtil::CISCInsn::dump(std::ostream& o, int flags, const char* pre) const
-{
+void BinUtil::CISCInsn::dump(std::ostream& o, int flags, const char* pre) const {
   Insn::dump(o, flags, pre);
 }
 
-
-void
-BinUtil::CISCInsn::dumpme(std::ostream& o,
-			  const char* GCC_ATTR_UNUSED pre) const
-{
+void BinUtil::CISCInsn::dumpme(std::ostream& o, const char* GCC_ATTR_UNUSED pre) const {
   o << "(CISC sz:" << size() << ")";
 }
 
-
-//***************************************************************************
-// RISCInsn
-//***************************************************************************
-
-void
-BinUtil::RISCInsn::dump(std::ostream& o, int flags, const char* pre) const
-{
+void BinUtil::RISCInsn::dump(std::ostream& o, int flags, const char* pre) const {
   Insn::dump(o, flags, pre);
 }
 
-
-void
-BinUtil::RISCInsn::dumpme(std::ostream& o,
-			  const char* GCC_ATTR_UNUSED pre) const
-{
+void BinUtil::RISCInsn::dumpme(std::ostream& o, const char* GCC_ATTR_UNUSED pre) const {
   o << "(RISC)";
 }
 
-
-//***************************************************************************
-// VLIWInsn
-//***************************************************************************
-
-void
-BinUtil::VLIWInsn::dump(std::ostream& o, int flags, const char* pre) const
-{
+void BinUtil::VLIWInsn::dump(std::ostream& o, int flags, const char* pre) const {
   Insn::dump(o, flags, pre);
 }
 
-
-void
-BinUtil::VLIWInsn::dumpme(std::ostream& o,
-			  const char* GCC_ATTR_UNUSED pre) const
-{
+void BinUtil::VLIWInsn::dumpme(std::ostream& o, const char* GCC_ATTR_UNUSED pre) const {
   o << "(VLIW opIdx:" << opIndex() << ")";
 }

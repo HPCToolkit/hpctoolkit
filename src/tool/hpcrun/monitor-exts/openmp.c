@@ -50,20 +50,18 @@
 #include <messages/messages.h>
 #include <monitor-exts/monitor_ext.h>
 
-typedef void *mp_init_fcn(void);
-static mp_init_fcn *real_mp_init = NULL;
+typedef void* mp_init_fcn(void);
+static mp_init_fcn* real_mp_init = NULL;
 
 #ifdef HPCRUN_STATIC_LINK
-extern mp_init_fcn  __real__mp_init;
+extern mp_init_fcn __real__mp_init;
 #endif
 
 // The PGI OpenMP compiler does some strange things with their thread
 // stacks.  We use _mp_init() as our test for this and then adjust the
 // unwind heuristics if found.
 
-void *
-MONITOR_EXT_WRAP_NAME(_mp_init)(void)
-{
+void* MONITOR_EXT_WRAP_NAME(_mp_init)(void) {
   MONITOR_EXT_GET_NAME_WRAP(real_mp_init, _mp_init);
 
   ENABLE(OMP_SKIP_MSB);

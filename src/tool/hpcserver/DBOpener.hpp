@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DBOpener.hpp $
-// $Id: DBOpener.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DBOpener.hpp
+// $ $Id: DBOpener.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DBOpener.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DBOpener.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -59,28 +62,26 @@
 
 #ifndef LOCALDBOPENER_H_
 #define LOCALDBOPENER_H_
-#include <string>
-#include "SpaceTimeDataController.hpp"
-#include "FileData.hpp"
 #include "Constants.hpp"
+#include "FileData.hpp"
+#include "SpaceTimeDataController.hpp"
+
+#include <string>
 
 using namespace std;
-namespace TraceviewerServer
-{
 
-	class DBOpener
-	{
-	public:
-		DBOpener();
-		virtual ~DBOpener();
+namespace TraceviewerServer {
 
-		SpaceTimeDataController* openDbAndCreateStdc(string);
-	private:
-		static const unsigned int MIN_TRACE_SIZE = 32 + 8 + 24
-				+ SIZE_OF_TRACE_RECORD * 2;
-		static bool verifyDatabase(string, FileData*);
+class DBOpener {
+public:
+  DBOpener();
+  virtual ~DBOpener();
 
-	};
+  SpaceTimeDataController* openDbAndCreateStdc(string);
 
+private:
+  static const unsigned int MIN_TRACE_SIZE = 32 + 8 + 24 + SIZE_OF_TRACE_RECORD * 2;
+  static bool verifyDatabase(string, FileData*);
+};
 } /* namespace TraceviewerServer */
 #endif /* LOCALDBOPENER_H_ */

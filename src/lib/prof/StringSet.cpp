@@ -58,35 +58,17 @@
 //
 //***************************************************************************
 
-//***************************************************************************
-// system include files
-//***************************************************************************
+#include "StringSet.hpp"
+
+#include "lib/prof-lean/hpcfmt.h"
 
 #include <iostream>
 
-
-
-//***************************************************************************
-// local include files
-//***************************************************************************
-
-#include "StringSet.hpp"
-#include <lib/prof-lean/hpcfmt.h>
-
-
-
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
-int
-StringSet::fmt_fread
-(
- StringSet* &stringSet,  // result set read from stream
- FILE* infs                    // input file stream
-)
-{
-  int result; 
+int StringSet::fmt_fread(
+    StringSet*& stringSet,  // result set read from stream
+    FILE* infs              // input file stream
+) {
+  int result;
 
   stringSet = new StringSet;
 
@@ -96,16 +78,18 @@ StringSet::fmt_fread
   uint64_t size = 0;
 
   result = hpcfmt_int8_fread(&size, infs);
-  if (result != HPCFMT_OK) return result;
+  if (result != HPCFMT_OK)
+    return result;
 
   // ------------------------------------------------------------------
   // read strings in string set
   // ------------------------------------------------------------------
   for (size_t i = 0; i < size; i++) {
-    char *cstr = NULL;
+    char* cstr = NULL;
 
     int result = hpcfmt_str_fread(&cstr, infs, malloc);
-    if (result != HPCFMT_OK) return result;
+    if (result != HPCFMT_OK)
+      return result;
 
     std::string str = cstr;
     free(cstr);
@@ -116,14 +100,10 @@ StringSet::fmt_fread
   return HPCFMT_OK;
 }
 
-
-int
-StringSet::fmt_fwrite
-(
- const StringSet& stringSet,  // input set to write to stream
- FILE* outfs                        // output file stream
-)
-{
+int StringSet::fmt_fwrite(
+    const StringSet& stringSet,  // input set to write to stream
+    FILE* outfs                  // output file stream
+) {
   int result;
 
   // ------------------------------------------------------------------
@@ -132,26 +112,22 @@ StringSet::fmt_fwrite
   uint64_t size = stringSet.size();
 
   result = hpcfmt_int8_fwrite(size, outfs);
-  if (result != HPCFMT_OK) return HPCFMT_ERR;
+  if (result != HPCFMT_OK)
+    return HPCFMT_ERR;
 
   // ------------------------------------------------------------------
   // write strings in string set
   // ------------------------------------------------------------------
   for (auto s = stringSet.begin(); s != stringSet.end(); s++) {
     result = hpcfmt_str_fwrite((*s).c_str(), outfs);
-    if (result != HPCFMT_OK) return HPCFMT_ERR;
+    if (result != HPCFMT_OK)
+      return HPCFMT_ERR;
   }
 
   return HPCFMT_OK;
 }
 
-
-void
-StringSet::dump
-(
- void
-)
-{
+void StringSet::dump(void) {
   // ------------------------------------------------------------------
   // dump strings in string set
   // ------------------------------------------------------------------
@@ -159,5 +135,4 @@ StringSet::dump
   for (auto s = begin(); s != end(); s++) {
     std::cerr << "\t" << *s << std::endl;
   }
-
 }

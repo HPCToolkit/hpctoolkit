@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -63,17 +63,11 @@
 #ifndef support_diagnostics_h
 #define support_diagnostics_h
 
-//************************** System Include Files ****************************
-
 #if defined(__cplusplus)
-# include <cstdlib>
+#include <cstdlib>
 #else
-# include <stdlib.h>
+#include <stdlib.h>
 #endif
-
-//*************************** User Include Files *****************************
-
-//************************** Forward Declarations ****************************
 
 #if defined(__cplusplus)
 #define DIAG_EXTERN extern "C"
@@ -88,25 +82,17 @@
 #define DIAG_DBG_LVL 0
 
 // Public debugging level: stuff that a few users may find interesting [0-9]
-extern int DIAG_DBG_LVL_PUB; // default: 0
+extern int DIAG_DBG_LVL_PUB;  // default: 0
 
-DIAG_EXTERN void
-Diagnostics_SetDiagnosticFilterLevel(int lvl);
+DIAG_EXTERN void Diagnostics_SetDiagnosticFilterLevel(int lvl);
 
-DIAG_EXTERN int
-Diagnostics_GetDiagnosticFilterLevel();
+DIAG_EXTERN int Diagnostics_GetDiagnosticFilterLevel();
 
 // This routine is called before an error that stops execution.  It is
 // especially useful for use with debuggers that do not have good
 // exception support.
 DIAG_EXTERN void
-Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm, 
-					      unsigned int lineno);
-
-
-//****************************************************************************
-// Diagnostic macros
-//****************************************************************************
+Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm, unsigned int lineno);
 
 // DIAG_MsgIf: Print a message if the expression is true
 
@@ -142,9 +128,9 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 #if defined(__cplusplus)
 
-#include <sstream>
-
 #include "Exception.hpp"
+
+#include <sstream>
 
 #define DIAG_CERR std::cout
 #define DIAG_ENDL std::endl /*<< std::flush*/
@@ -154,76 +140,71 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 // a message string.  Example:
 //   if (...) DIAG_EMsg("bad val: '" << v << "'")
 
-#define DIAG_MsgIf_GENERIC(tag, ifexpr, streamArgs)		    \
-  if (ifexpr) {                                                     \
-    DIAG_CERR << tag << streamArgs << DIAG_ENDL; }
-
-
-#define DIAG_MsgIf(ifexpr, streamArgs)                              \
-  DIAG_MsgIf_GENERIC("msg: ", ifexpr, streamArgs)
-
-#define DIAG_MsgIfCtd(ifexpr, streamArgs)                           \
-  DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
-
-#define DIAG_Msg(level, streamArgs)                                 \
-  DIAG_MsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
-
-#define DIAG_MsgCtd(level, streamArgs)                              \
-  DIAG_MsgIfCtd((level <= DIAG_DBG_LVL_PUB), streamArgs)
-
-
-#define DIAG_DevMsgIf(ifexpr, streamArgs)		            \
-  DIAG_MsgIf_GENERIC("msg*: ", ifexpr, streamArgs)
-
-#define DIAG_DevMsgIfCtd(ifexpr, streamArgs)		            \
-  DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
-
-#define DIAG_DevMsg(level, streamArgs)                              \
-  if (level <= DIAG_DBG_LVL) {                                      \
-    DIAG_CERR << "msg* [" << level << "]: " << streamArgs << DIAG_ENDL; }
-
-
-#define DIAG_WMsgIf(ifexpr, streamArgs)                              \
-  DIAG_MsgIf_GENERIC("WARNING: ", ifexpr, streamArgs)
-
-#define DIAG_WMsgIfCtd(ifexpr, streamArgs)                           \
-  DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
-
-#define DIAG_WMsg(level, streamArgs)                                 \
-  DIAG_WMsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
-
-#define DIAG_EMsg(streamArgs)                                       \
-  DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL              
-
-#define DIAG_DevEMsg(streamArgs)                                       \
-  { DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL;              \
-    if (DIAG_DBG_LVL_PUB) {                                         \
-      DIAG_CERR << "\t[" << __FILE__ << ":" << __LINE__ << "]" << DIAG_ENDL; } \
+#define DIAG_MsgIf_GENERIC(tag, ifexpr, streamArgs) \
+  if (ifexpr) {                                     \
+    DIAG_CERR << tag << streamArgs << DIAG_ENDL;    \
   }
 
-#define DIAG_Assert(expr, streamArgs)                               \
-  if (!(expr)) DIAG_Throw(streamArgs)
+#define DIAG_MsgIf(ifexpr, streamArgs) DIAG_MsgIf_GENERIC("msg: ", ifexpr, streamArgs)
 
-#define DIAG_AssertWarn(expr, streamArgs)                           \
-  if (!(expr)) DIAG_EMsg(streamArgs)
+#define DIAG_MsgIfCtd(ifexpr, streamArgs) DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
 
-// (Equivalent to DIAG_Throw.)
-#define DIAG_Die(streamArgs)                                        \
+#define DIAG_Msg(level, streamArgs) DIAG_MsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
+
+#define DIAG_MsgCtd(level, streamArgs) DIAG_MsgIfCtd((level <= DIAG_DBG_LVL_PUB), streamArgs)
+
+#define DIAG_DevMsgIf(ifexpr, streamArgs) DIAG_MsgIf_GENERIC("msg*: ", ifexpr, streamArgs)
+
+#define DIAG_DevMsgIfCtd(ifexpr, streamArgs) DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
+
+#define DIAG_DevMsg(level, streamArgs)                                  \
+  if (level <= DIAG_DBG_LVL) {                                          \
+    DIAG_CERR << "msg* [" << level << "]: " << streamArgs << DIAG_ENDL; \
+  }
+
+#define DIAG_WMsgIf(ifexpr, streamArgs) DIAG_MsgIf_GENERIC("WARNING: ", ifexpr, streamArgs)
+
+#define DIAG_WMsgIfCtd(ifexpr, streamArgs) DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
+
+#define DIAG_WMsg(level, streamArgs) DIAG_WMsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
+
+#define DIAG_EMsg(streamArgs) DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL
+
+#define DIAG_DevEMsg(streamArgs)                                             \
+  {                                                                          \
+    DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL;                       \
+    if (DIAG_DBG_LVL_PUB) {                                                  \
+      DIAG_CERR << "\t[" << __FILE__ << ":" << __LINE__ << "]" << DIAG_ENDL; \
+    }                                                                        \
+  }
+
+#define DIAG_Assert(expr, streamArgs) \
+  if (!(expr))                        \
   DIAG_Throw(streamArgs)
 
-// (Equivalent to DIAG_Die.) Based on Jean Utke's code in xaifBooster.
-#define DIAG_Throw(streamArgs)                                      \
-  { std::ostringstream WeIrDnAmE;                                   \
-    WeIrDnAmE << streamArgs /*<< std::ends*/;                       \
-    throw Diagnostics::FatalException(WeIrDnAmE.str(), __FILE__, __LINE__); }
+#define DIAG_AssertWarn(expr, streamArgs) \
+  if (!(expr))                            \
+  DIAG_EMsg(streamArgs)
 
-#define DIAG_ThrowX(ExceptionClass, streamArgs)                     \
-  { std::ostringstream WeIrDnAmE;                                   \
-    WeIrDnAmE << streamArgs /*<< std::ends*/;                       \
-    throw ExceptionClass(WeIrDnAmE.str(), __FILE__, __LINE__); }
+// (Equivalent to DIAG_Throw.)
+#define DIAG_Die(streamArgs) DIAG_Throw(streamArgs)
+
+// (Equivalent to DIAG_Die.) Based on Jean Utke's code in xaifBooster.
+#define DIAG_Throw(streamArgs)                                              \
+  {                                                                         \
+    std::ostringstream WeIrDnAmE;                                           \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                               \
+    throw Diagnostics::FatalException(WeIrDnAmE.str(), __FILE__, __LINE__); \
+  }
+
+#define DIAG_ThrowX(ExceptionClass, streamArgs)                \
+  {                                                            \
+    std::ostringstream WeIrDnAmE;                              \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                  \
+    throw ExceptionClass(WeIrDnAmE.str(), __FILE__, __LINE__); \
+  }
 
 #endif
-
 
 // ---------------------------------------------------------------------------
 // C diagnostics
@@ -233,52 +214,59 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 #include <stdio.h>
 
-#define DIAG_MsgIf(ifexpr, ...)                                     \
-  if (ifexpr) {                                                     \
-    fputs("msg: ", stdout);                                         \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
-
-#define DIAG_Msg(level, ...)                                        \
-  if (level <= DIAG_DBG_LVL_PUB) {                                  \
-    fprintf(stdout, "msg [%d]: ", level);                   \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
-
-#define DIAG_DevMsg(level, ...)                                     \
-  if (level <= DIAG_DBG_LVL) {                                      \
-    fprintf(stdout, "msg* [%d]: ", level);                  \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
-
-#define DIAG_EMsg(...)                                              \
-  { fputs("ERROR: ", stdout);                                       \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout);              \
+#define DIAG_MsgIf(ifexpr, ...)   \
+  if (ifexpr) {                   \
+    fputs("msg: ", stdout);       \
+    fprintf(stdout, __VA_ARGS__); \
+    fputs("\n", stdout);          \
   }
 
-#define DIAG_DevEMsg(...)                                              \
-  { fputs("ERROR: ", stdout);                                       \
-    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout);              \
-    if (DIAG_DBG_LVL_PUB) {                                         \
-      fprintf(stdout, "\t[%s:%d]\n", __FILE__, __LINE__); }         \
+#define DIAG_Msg(level, ...)              \
+  if (level <= DIAG_DBG_LVL_PUB) {        \
+    fprintf(stdout, "msg [%d]: ", level); \
+    fprintf(stdout, __VA_ARGS__);         \
+    fputs("\n", stdout);                  \
+  }
+
+#define DIAG_DevMsg(level, ...)            \
+  if (level <= DIAG_DBG_LVL) {             \
+    fprintf(stdout, "msg* [%d]: ", level); \
+    fprintf(stdout, __VA_ARGS__);          \
+    fputs("\n", stdout);                   \
+  }
+
+#define DIAG_EMsg(...)            \
+  {                               \
+    fputs("ERROR: ", stdout);     \
+    fprintf(stdout, __VA_ARGS__); \
+    fputs("\n", stdout);          \
+  }
+
+#define DIAG_DevEMsg(...)                                 \
+  {                                                       \
+    fputs("ERROR: ", stdout);                             \
+    fprintf(stdout, __VA_ARGS__);                         \
+    fputs("\n", stdout);                                  \
+    if (DIAG_DBG_LVL_PUB) {                               \
+      fprintf(stdout, "\t[%s:%d]\n", __FILE__, __LINE__); \
+    }                                                     \
   }
 
 //#define DIAG_Assert(expr, ...) // cf. Open64's FmtAssert
 
 //#define DIAG_AssertWarn(expr, ...)
 
-#define DIAG_Die(...)                                               \
-  DIAG_EMsg(__VA_ARGS__);                                           \
-  { Diagnostics_TheMostVisitedBreakpointInHistory(__FILE__, __LINE__); exit(1); }
+#define DIAG_Die(...)                                                  \
+  DIAG_EMsg(__VA_ARGS__);                                              \
+  {                                                                    \
+    Diagnostics_TheMostVisitedBreakpointInHistory(__FILE__, __LINE__); \
+    exit(1);                                                           \
+  }
 
 #endif
-
-
-//****************************************************************************
-// 
-//****************************************************************************
 
 extern const char* DIAG_Unimplemented;
 extern const char* DIAG_UnexpectedInput;
 extern const char* DIAG_UnexpectedOpr;
 
-
 #endif /* support_diagnostics_h */
-

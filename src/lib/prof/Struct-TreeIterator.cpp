@@ -57,169 +57,100 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-using std::endl;
-
-
-//*************************** User Include Files ****************************
-
 #include "Struct-Tree.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "lib/support/diagnostics.h"
 
-//*************************** Forward Declarations **************************
+#include <iostream>
 
-//***************************************************************************
+using std::endl;
+using std::ostream;
 
 namespace Prof {
 
 namespace Struct {
 
-
-//***************************************************************************
-// ANodeFilter support
-//***************************************************************************
-
-bool
-HasANodeTy(const ANode& node, long type)
-{
+bool HasANodeTy(const ANode& node, long type) {
   return (type == ANode::TyANY || node.type() == ANode::IntToANodeTy(type));
 }
 
-
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
-  ANodeFilter(HasANodeTy, 
-	      ANode::ANodeTyToName(ANode::TyRoot).c_str(), ANode::TyRoot),
-  ANodeFilter(HasANodeTy, 
-	      ANode::ANodeTyToName(ANode::TyGroup).c_str(), ANode::TyGroup),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyLM).c_str(), ANode::TyLM),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyFile).c_str(), ANode::TyFile),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyProc).c_str(), ANode::TyProc),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyAlien).c_str(), ANode::TyAlien),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyLoop).c_str(), ANode::TyLoop),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyStmt).c_str(), ANode::TyStmt),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyRef).c_str(), ANode::TyRef),
-  ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
-};
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyRoot).c_str(), ANode::TyRoot),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyGroup).c_str(), ANode::TyGroup),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyLM).c_str(), ANode::TyLM),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyFile).c_str(), ANode::TyFile),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyProc).c_str(), ANode::TyProc),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyAlien).c_str(), ANode::TyAlien),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyLoop).c_str(), ANode::TyLoop),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyStmt).c_str(), ANode::TyStmt),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyRef).c_str(), ANode::TyRef),
+    ANodeFilter(HasANodeTy, ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)};
 
-  
-//***************************************************************************
-// ANodeChildIterator
-//***************************************************************************
-
-
-//***************************************************************************
-// ANodeIterator
-//***************************************************************************
-
-
-//***************************************************************************
-// ANodeSortedIterator
-//***************************************************************************
-
-ANodeSortedIterator::
-ANodeSortedIterator(const ANode* node,
-		    ANodeSortedIterator::cmp_fptr_t compare_fn,
-		    const ANodeFilter* filterFunc,
-		    bool leavesOnly)
-{
+ANodeSortedIterator::ANodeSortedIterator(
+    const ANode* node, ANodeSortedIterator::cmp_fptr_t compare_fn, const ANodeFilter* filterFunc,
+    bool leavesOnly) {
   ANodeIterator it(node, filterFunc, leavesOnly);
   for (ANode* cur = NULL; (cur = it.current()); it++) {
-    scopes.Add((unsigned long) cur);
+    scopes.Add((unsigned long)cur);
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
 
-
-void
-ANodeSortedIterator::dumpAndReset(ostream& os)
-{
+void ANodeSortedIterator::dumpAndReset(ostream& os) {
   os << "ANodeSortedIterator: " << endl;
   while (current()) {
     os << current()->toString() << endl;
     (*this)++;
-  } 
+  }
   reset();
 }
 
-
-int
-ANodeSortedIterator::cmpByName(const void* a, const void* b)
-{
+int ANodeSortedIterator::cmpByName(const void* a, const void* b) {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
-  return x->name().compare(y->name()); // strcmp(x, y)
+  return x->name().compare(y->name());  // strcmp(x, y)
 }
 
-
-int
-ANodeSortedIterator::cmpByLine(const void* a, const void* b)
-{
+int ANodeSortedIterator::cmpByLine(const void* a, const void* b) {
   // WARNING: this assumes it will only see ACodeNodes!
   ACodeNode* x = (*(ACodeNode**)a);
   ACodeNode* y = (*(ACodeNode**)b);
   return ACodeNode::compare(x, y);
 }
 
-
-int
-ANodeSortedIterator::cmpById(const void* a, const void* b)
-{
+int ANodeSortedIterator::cmpById(const void* a, const void* b) {
   ANode* x = (*(ANode**)a);
   ANode* y = (*(ANode**)b);
   return (x->id() - y->id());
 }
 
-
 int ANodeSortedIterator::cmpByMetric_mId = -1;
 
-int 
-ANodeSortedIterator::cmpByMetric_fn(const void* a, const void *b)
-{
-  ANode* x = *(ANode**) a;
-  ANode* y = *(ANode**) b;
+int ANodeSortedIterator::cmpByMetric_fn(const void* a, const void* b) {
+  ANode* x = *(ANode**)a;
+  ANode* y = *(ANode**)b;
 
   double vx = x->hasMetric(cmpByMetric_mId) ? x->metric(cmpByMetric_mId) : 0.0;
   double vy = y->hasMetric(cmpByMetric_mId) ? y->metric(cmpByMetric_mId) : 0.0;
   double difference = vy - vx;
-  
-  if (difference < 0) return -1;	
-  else if (difference > 0) return 1;	
+
+  if (difference < 0)
+    return -1;
+  else if (difference > 0)
+    return 1;
   return 0;
 }
 
-
-//***************************************************************************
-// ANodeSortedChildIterator
-//***************************************************************************
-
-ANodeSortedChildIterator::
-ANodeSortedChildIterator(const ANode* node,
-			 ANodeSortedIterator::cmp_fptr_t compare_fn,
-			 const ANodeFilter* f)
-{
+ANodeSortedChildIterator::ANodeSortedChildIterator(
+    const ANode* node, ANodeSortedIterator::cmp_fptr_t compare_fn, const ANodeFilter* f) {
   ANodeChildIterator it(node, f);
   for (ANode* cur = NULL; (cur = it.current()); it++) {
-    scopes.Add((unsigned long) cur);
+    scopes.Add((unsigned long)cur);
   }
   ptrSetIt = new WordSetSortedIterator(&scopes, compare_fn);
 }
 
-
-void
-ANodeSortedChildIterator::dumpAndReset(ostream& os)
-{
+void ANodeSortedChildIterator::dumpAndReset(ostream& os) {
   os << "ANodeSortedChildIterator: " << endl;
   while (current()) {
     os << current()->toString() << endl;
@@ -227,9 +158,5 @@ ANodeSortedChildIterator::dumpAndReset(ostream& os)
   }
   reset();
 }
-
-//***************************************************************************
-
-} // namespace Struct
-
-} // namespace Prof
+}  // namespace Struct
+}  // namespace Prof

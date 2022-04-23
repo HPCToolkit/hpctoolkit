@@ -48,47 +48,34 @@
 // directed blame shifting for locks, critical sections, ...
 //
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <ucontext.h>
-#include <pthread.h>
-#include <string.h>
-#include <dlfcn.h>
-#include <stdbool.h>
-
-
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
-
-#include "simple_oo.h"
-#include "sample_source_obj.h"
-#include "common.h"
 #include "pthread-blame.h"
-#include <sample-sources/blame-shift/blame-shift.h>
-#include <sample-sources/blame-shift/blame-map.h>
 
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/metrics.h>
+#include "common.h"
+#include "sample_source_obj.h"
+#include "simple_oo.h"
 
-#include <hpcrun/hpctoolkit.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/cct/cct.h>
+#include "hpcrun/cct/cct.h"
+#include "hpcrun/cct2metrics.h"
+#include "hpcrun/hpctoolkit.h"
+#include "hpcrun/metrics.h"
+#include "hpcrun/safe-sampling.h"
+#include "hpcrun/sample_event.h"
+#include "hpcrun/thread_data.h"
+
+#include <dlfcn.h>
 #include <messages/messages.h>
-
+#include <pthread.h>
+#include <sample-sources/blame-shift/blame-map.h>
+#include <sample-sources/blame-shift/blame-shift.h>
+#include <stdbool.h>
+#include <string.h>
+#include <ucontext.h>
 
 // *****************************************************************************
 // macros
 // *****************************************************************************
 
 #define SKIP_ONE_FRAME 1
-
-
 
 // *****************************************************************************
 // type definitions
@@ -100,13 +87,10 @@ typedef enum {
   Blocked,
 } state_t;
 
-
 typedef struct {
   uint64_t target;
   state_t state;
 } blame_t;
-
-
 
 // *****************************************************************************
 // static local variables
@@ -126,7 +110,7 @@ static bool metric_id_set = false;
 
 typedef struct dbg_t {
   struct timeval tv;
-  char l[4]; // "add" or "get"
+  char l[4];  // "add" or "get"
   uint32_t amt;
   uint64_t obj;
 } dbg_t;
@@ -136,42 +120,26 @@ typedef struct dbg_tr_t {
   dbg_t trace[3000];
 } dbg_tr_t;
 
-
-
 // *****************************************************************************
 // thread local variables
 // *****************************************************************************
 static __thread blame_t pthread_blame = {0, Running};
 
-
-
-/***************************************************************************
- * private operations
- ***************************************************************************/
-
-static inline
-uint64_t
-get_blame_target(void)
-{
+static inline uint64_t get_blame_target(void) {
   return pthread_blame.target;
 }
 
-
-static inline
-char*
-state2str(state_t s)
-{
-  if (s == Running) return "Running";
-  if (s == Spinning) return "Spinning";
-  if (s == Blocked) return "Blocked";
+static inline char* state2str(state_t s) {
+  if (s == Running)
+    return "Running";
+  if (s == Spinning)
+    return "Spinning";
+  if (s == Blocked)
+    return "Blocked";
   return "????";
 }
 
-
-static inline
-int
-get_blame_metric_id(void)
-{
+static inline int get_blame_metric_id(void) {
   return (metric_id_set) ? blame_metric_id : -1;
 }
 
@@ -179,113 +147,88 @@ get_blame_metric_id(void)
  | transfer directed blame as appropriate for a sample
  --------------------------------------------------------------------------*/
 
-static inline
-void
-add_blame(uint64_t obj, uint32_t value)
-{
-  if (! pthread_blame_table) {
+static inline void add_blame(uint64_t obj, uint32_t value) {
+  if (!pthread_blame_table) {
     EMSG("Attempted to add pthread blame before initialization");
     return;
   }
   blame_map_add_blame(pthread_blame_table, obj, value);
 }
 
-
-static inline
-uint64_t
-get_blame(uint64_t obj)
-{
-  if (! pthread_blame_table) {
+static inline uint64_t get_blame(uint64_t obj) {
+  if (!pthread_blame_table) {
     EMSG("Attempted to fetch pthread blame before initialization");
     return 0;
   }
   return blame_map_get_blame(pthread_blame_table, obj);
 }
 
-
-static void 
-process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr)
-{
+static void
+process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr) {
   TMSG(LOCKWAIT, "Processing directed blame");
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
- 
+
 #ifdef LOCKWAIT_FIX
-  // Only blame shift idleness for time and cycle metrics. 
-  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
+  // Only blame shift idleness for time and cycle metrics.
+  if (!(metric_desc->properties.time | metric_desc->properties.cycles))
     return;
-#endif // LOCKWAIT_FIX
-  
-  uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
+#endif  // LOCKWAIT_FIX
+
+  uint32_t metric_value = (uint32_t)(metric_desc->period * metric_incr);
 
   uint64_t obj_to_blame = get_blame_target();
-  if(obj_to_blame) {
+  if (obj_to_blame) {
     TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_incr, obj_to_blame);
     add_blame(obj_to_blame, metric_value);
     // update appropriate wait metric as well
     int wait_metric = (pthread_blame.state == Blocked) ? blockwait_metric_id : spinwait_metric_id;
-    TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",
-	 metric_incr, state2str(pthread_blame.state),
-	 hpcrun_cct_persistent_id(node));
+    TMSG(
+        LOCKWAIT, "about to add %d to %s-waiting in node %d", metric_incr,
+        state2str(pthread_blame.state), hpcrun_cct_persistent_id(node));
     metric_data_list_t* metrics = hpcrun_reify_metric_set(node, metric_id);
-    hpcrun_metric_std_inc(wait_metric,
-			  metrics,
-			  (cct_metric_data_t) {.i = metric_incr});
+    hpcrun_metric_std_inc(wait_metric, metrics, (cct_metric_data_t){.i = metric_incr});
   }
 }
-
-
 
 // ******************************************************************************
 //  public interface to local variables
 // ******************************************************************************
 
-bool
-pthread_blame_lockwait_enabled(void)
-{
+bool pthread_blame_lockwait_enabled(void) {
   return lockwait_enabled;
 }
 
 //
 // public blame manipulation functions
 //
-void
-pthread_directed_blame_shift_blocked_start(void* obj)
-{
-  TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
-       &pthread_blame, (uintptr_t) obj);
-  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
-                             .state   = Blocked};
+void pthread_directed_blame_shift_blocked_start(void* obj) {
+  TMSG(
+      LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d", &pthread_blame,
+      (uintptr_t)obj);
+  pthread_blame = (blame_t){.target = (uint64_t)(uintptr_t)obj, .state = Blocked};
 }
 
-void
-pthread_directed_blame_shift_spin_start(void* obj)
-{
-  TMSG(LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d",
-       &pthread_blame, (uintptr_t) obj);
-  pthread_blame = (blame_t) {.target = (uint64_t)(uintptr_t)obj,
-                             .state   = Spinning};
+void pthread_directed_blame_shift_spin_start(void* obj) {
+  TMSG(
+      LOCKWAIT, "Start directed blaming using blame structure %x, for obj %d", &pthread_blame,
+      (uintptr_t)obj);
+  pthread_blame = (blame_t){.target = (uint64_t)(uintptr_t)obj, .state = Spinning};
 }
 
-void
-pthread_directed_blame_shift_end(void)
-{
-  pthread_blame = (blame_t) {.target = 0, .state = Running};
-  TMSG(LOCKWAIT, "End directed blaming for blame structure %x",
-       &pthread_blame);
+void pthread_directed_blame_shift_end(void) {
+  pthread_blame = (blame_t){.target = 0, .state = Running};
+  TMSG(LOCKWAIT, "End directed blaming for blame structure %x", &pthread_blame);
 }
 
-void
-pthread_directed_blame_accept(void* obj)
-{
-  uint64_t blame = get_blame((uint64_t) (uintptr_t) obj);
+void pthread_directed_blame_accept(void* obj) {
+  uint64_t blame = get_blame((uint64_t)(uintptr_t)obj);
   TMSG(LOCKWAIT, "Blame obj %d accepting %d units of blame", obj, blame);
   if (blame && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, get_blame_metric_id(), 
-	(hpcrun_metricVal_t) {.i=blame}, 
-        SKIP_ONE_FRAME, 1, NULL);
+    hpcrun_sample_callpath(
+        &uc, get_blame_metric_id(), (hpcrun_metricVal_t){.i = blame}, SKIP_ONE_FRAME, 1, NULL);
     hpcrun_safe_exit();
   }
 }
@@ -294,69 +237,40 @@ pthread_directed_blame_accept(void* obj)
  | sample source methods
  --------------------------------------------------------------------------*/
 
-static void
-METHOD_FN(init)
-{
+static void METHOD_FN(init) {
   self->state = INIT;
 }
 
+static void METHOD_FN(thread_init) {}
 
-static void
-METHOD_FN(thread_init)
-{
-}
+static void METHOD_FN(thread_init_action) {}
 
-
-static void
-METHOD_FN(thread_init_action)
-{
-}
-
-
-static void
-METHOD_FN(start)
-{
+static void METHOD_FN(start) {
   lockwait_enabled = true;
   TMSG(LOCKWAIT, "pthread blame ss STARTED, blame table = %x", pthread_blame_table);
 }
 
+static void METHOD_FN(thread_fini_action) {}
 
-static void
-METHOD_FN(thread_fini_action)
-{
-}
+static void METHOD_FN(stop) {}
 
-
-static void
-METHOD_FN(stop)
-{
-}
-
-static void
-METHOD_FN(shutdown)
-{
+static void METHOD_FN(shutdown) {
   self->state = UNINIT;
   lockwait_enabled = false;
 }
 
-
-static bool
-METHOD_FN(supports_event,const char *ev_str)
-{
+static bool METHOD_FN(supports_event, const char* ev_str) {
   return (strstr(ev_str, PTHREAD_EVENT_NAME) != NULL);
 }
 
- 
-static void
-METHOD_FN(process_event_list, int lush_metrics)
-{
+static void METHOD_FN(process_event_list, int lush_metrics) {
   bs_entry.fn = process_directed_blame_for_sample;
   bs_entry.arg = NULL;
   bs_entry.next = NULL;
 
   blame_shift_register(&bs_entry);
 
-  kind_info_t *pthr_kind = hpcrun_metrics_new_kind();
+  kind_info_t* pthr_kind = hpcrun_metrics_new_kind();
   blame_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLAME_METRIC);
   blockwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLOCKWAIT_METRIC);
   spinwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_SPINWAIT_METRIC);
@@ -364,34 +278,26 @@ METHOD_FN(process_event_list, int lush_metrics)
   metric_id_set = true;
 
   // create & initialize blame table (once per process)
-  if (! pthread_blame_table) pthread_blame_table = blame_map_new();
+  if (!pthread_blame_table)
+    pthread_blame_table = blame_map_new();
 }
 
-static void
-METHOD_FN(finalize_event_list)
-{
-}
+static void METHOD_FN(finalize_event_list) {}
 
-static void
-METHOD_FN(gen_event_set,int lush_metrics)
-{
-}
+static void METHOD_FN(gen_event_set, int lush_metrics) {}
 
-
-static void
-METHOD_FN(display_events)
-{
+static void METHOD_FN(display_events) {
   printf("===========================================================================\n");
   printf("Available directed blame shifting preset events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\tShift the blame for waiting for a lock to the lock holder.\n"
-	 "\t\tOnly suitable for threaded programs.\n",
-	 PTHREAD_EVENT_NAME);
+  printf(
+      "%s\tShift the blame for waiting for a lock to the lock holder.\n"
+      "\t\tOnly suitable for threaded programs.\n",
+      PTHREAD_EVENT_NAME);
   printf("\n");
 }
-
 
 /*--------------------------------------------------------------------------
  | sample source object
@@ -399,8 +305,8 @@ METHOD_FN(display_events)
 
 #include <stdio.h>
 
-#define ss_name directed_blame
-#define ss_cls SS_SOFTWARE
-#define ss_sort_order  90
+#define ss_name       directed_blame
+#define ss_cls        SS_SOFTWARE
+#define ss_sort_order 90
 
 #include "ss_obj.h"

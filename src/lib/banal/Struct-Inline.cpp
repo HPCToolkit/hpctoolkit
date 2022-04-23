@@ -74,52 +74,44 @@
 // especially if we rewrite the inline support directly from libdwarf
 // (which is cross platform).
 
-//***************************************************************************
-
-#include <string.h>
-
-#include <list>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <lib/binutils/BinUtils.hpp>
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileNameMap.hpp>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/StringTable.hpp>
-#include <lib/support/dictionary.h>
-
 #include "Struct-Inline.hpp"
 
-#include <Module.h>
-#include <Symtab.h>
+#include "lib/binutils/BinUtils.hpp"
+#include "lib/binutils/ElfHelper.hpp"
+#include "lib/support/diagnostics.h"
+#include "lib/support/dictionary.h"
+#include "lib/support/FileNameMap.hpp"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/RealPathMgr.hpp"
+#include "lib/support/StringTable.hpp"
+
 #include <Function.h>
+#include <list>
+#include <Module.h>
+#include <set>
+#include <string.h>
+#include <string>
+#include <Symtab.h>
+#include <utility>
+#include <vector>
 
 using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace std;
 
 // FIXME: uses a single static buffer.
-static Symtab *the_symtab = NULL;
+static Symtab* the_symtab = NULL;
 
-#define DEBUG_INLINE_SEQNS  0
-
-//***************************************************************************
+#define DEBUG_INLINE_SEQNS 0
 
 namespace Inline {
 
 // These functions return true on success.
-Symtab *
-openSymtab(ElfFile *elfFile)
-{
-  bool ret = Symtab::openFile(the_symtab, elfFile->getMemory(),
-			      elfFile->getLength(), elfFile->getFileName());
+Symtab* openSymtab(ElfFile* elfFile) {
+  bool ret = Symtab::openFile(
+      the_symtab, elfFile->getMemory(), elfFile->getLength(), elfFile->getFileName());
 
-  if (! ret || the_symtab == NULL) {
+  if (!ret || the_symtab == NULL) {
     DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
     the_symtab = NULL;
     return NULL;
@@ -131,9 +123,7 @@ openSymtab(ElfFile *elfFile)
   return the_symtab;
 }
 
-bool
-closeSymtab()
-{
+bool closeSymtab() {
   bool ret = false;
 
   if (the_symtab != NULL) {
@@ -144,15 +134,11 @@ closeSymtab()
   return ret;
 }
 
-//***************************************************************************
-
 // Returns nodelist as a list of InlineNodes for the inlined sequence
 // at VMA addr.  The front of the list is the outermost frame, back is
 // innermost.
 //
-bool
-analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
-{
+bool analyzeAddr(InlineSeqn& nodelist, VMA addr, RealPathMgr* realPath) {
   FunctionBase *func, *parent;
   bool ret = false;
 
@@ -161,8 +147,7 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
   }
   nodelist.clear();
 
-  if (the_symtab->getContainingInlinedFunction(addr, func) && func != NULL)
-  {
+  if (the_symtab->getContainingInlinedFunction(addr, func) && func != NULL) {
     ret = true;
 
     parent = func->getInlinedParent();
@@ -170,23 +155,23 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
       //
       // func is inlined iff it has a parent
       //
-      InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
-      pair <string, Offset> callsite = ifunc->getCallsite();
+      InlinedFunction* ifunc = static_cast<InlinedFunction*>(func);
+      pair<string, Offset> callsite = ifunc->getCallsite();
       string filenm = callsite.first;
-      if (filenm != "") { realPath->realpath(filenm); }
+      if (filenm != "") {
+        realPath->realpath(filenm);
+      }
       long lineno = callsite.second;
 
       // symtab does not provide mangled and pretty names for
       // inlined functions, so we have to decide this ourselves
       string procnm = func->getName();
-      string prettynm =
-	  (procnm == "") ? UNKNOWN_PROC : BinUtil::demangleProcName(procnm);
+      string prettynm = (procnm == "") ? UNKNOWN_PROC : BinUtil::demangleProcName(procnm);
 
 #if DEBUG_INLINE_SEQNS
-      cout << "\n0x" << hex << addr << dec
-	   << "  l=" << lineno << "  file:  " << filenm << "\n"
-	   << "0x" << hex << addr << "  symtab:  " << procnm << "\n"
-	   << "0x" << addr << dec << "  demang:  " << prettynm << "\n";
+      cout << "\n0x" << hex << addr << dec << "  l=" << lineno << "  file:  " << filenm << "\n"
+           << "0x" << hex << addr << "  symtab:  " << procnm << "\n"
+           << "0x" << addr << dec << "  demang:  " << prettynm << "\n";
 #endif
 
       nodelist.push_front(InlineNode(filenm, prettynm, lineno));
@@ -199,8 +184,6 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
   return ret;
 }
 
-//***************************************************************************
-
 // Insert one statement range into the map.
 //
 // Note: we pass the stmt info in 'sinfo', but we don't link sinfo
@@ -209,22 +192,20 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
 // Note: call stmts never merge with adjacent stmts.  They are always
 // a single instruction.
 //
-void
-StmtMap::insert(StmtInfo * sinfo)
-{
+void StmtMap::insert(StmtInfo* sinfo) {
   if (sinfo == NULL) {
     return;
   }
 
-  VMA  vma = sinfo->vma;
-  VMA  end_vma = vma + sinfo->len;
+  VMA vma = sinfo->vma;
+  VMA end_vma = vma + sinfo->len;
   long file = sinfo->file_index;
   long base = sinfo->base_index;
   long line = sinfo->line_num;
 
-  StmtInfo * info = NULL;
-  StmtInfo * left = NULL;
-  StmtInfo * right = NULL;
+  StmtInfo* info = NULL;
+  StmtInfo* left = NULL;
+  StmtInfo* right = NULL;
   VMA left_end = 0;
 
   // fixme: this is the single interval implementation (for now).
@@ -235,7 +216,8 @@ StmtMap::insert(StmtInfo * sinfo)
   auto sit = this->upper_bound(vma);
 
   if (sit != this->begin()) {
-    auto it = sit;  --it;
+    auto it = sit;
+    --it;
     left = it->second;
     left_end = left->vma + left->len;
   }
@@ -246,44 +228,39 @@ StmtMap::insert(StmtInfo * sinfo)
   // compare vma with stmt to the left
   if (left == NULL || left_end < vma) {
     // intervals don't overlap, insert new one
-    info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
-			sinfo->is_call, sinfo->is_sink, sinfo->target);
+    info = new StmtInfo(
+        vma, end_vma - vma, file, base, line, sinfo->device, sinfo->is_call, sinfo->is_sink,
+        sinfo->target);
     (*this)[vma] = info;
-  }
-  else if (left->base_index == base && left->line_num == line
-	   && !left->is_call && !sinfo->is_call)
-  {
+  } else if (
+      left->base_index == base && left->line_num == line && !left->is_call && !sinfo->is_call) {
     // intervals overlap and match file and line (and not calls).
     // merge with left stmt
     end_vma = std::max(end_vma, left_end);
     left->len = end_vma - left->vma;
     info = left;
-  }
-  else {
+  } else {
     // intervals overlap but don't match file and line
     // truncate interval to start at left_end and insert
     if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
       vma = left_end;
-      info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
-			  sinfo->is_call, sinfo->is_sink, sinfo->target);
+      info = new StmtInfo(
+          vma, end_vma - vma, file, base, line, sinfo->device, sinfo->is_call, sinfo->is_sink,
+          sinfo->target);
       (*this)[vma] = info;
     }
   }
 
   // compare interval with stmt to the right
-  if (info != NULL && right != NULL && end_vma >= right->vma)
-  {
-    if (right->base_index == base && right->line_num == line
-	&& !info->is_call && !right->is_call)
-    {
+  if (info != NULL && right != NULL && end_vma >= right->vma) {
+    if (right->base_index == base && right->line_num == line && !info->is_call && !right->is_call) {
       // intervals overlap and match file and line (and not calls).
       // merge with right stmt
       end_vma = right->vma + right->len;
       info->len = end_vma - info->vma;
       this->erase(sit);
       delete right;
-    }
-    else {
+    } else {
       // intervals overlap but don't match file and line
       // truncate info at right vma
       info->len = right->vma - info->vma;
@@ -291,18 +268,14 @@ StmtMap::insert(StmtInfo * sinfo)
   }
 }
 
-//***************************************************************************
-
 // Add one terminal statement to the inline tree and merge with
 // adjacent stmts if their file and line match.
 //
-void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath, 
-              VMA vma, int len, string & filenm, SrcFile::ln line, 
-              string & device, bool is_call, bool is_sink, VMA target)
-{
+void addStmtToTree(
+    TreeNode* root, HPC::StringTable& strTab, RealPathMgr* realPath, VMA vma, int len,
+    string& filenm, SrcFile::ln line, string& device, bool is_call, bool is_sink, VMA target) {
   InlineSeqn path;
-  TreeNode *node;
+  TreeNode* node;
 
   analyzeAddr(path, vma, realPath);
 
@@ -314,10 +287,9 @@ addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath
 
     if (nit != node->nodeMap.end()) {
       node = nit->second;
-    }
-    else {
+    } else {
       // add new node with edge 'flp'
-      TreeNode *child = new TreeNode();
+      TreeNode* child = new TreeNode();
       node->nodeMap[flp] = child;
       node = child;
     }
@@ -331,14 +303,11 @@ addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath
   node->stmtMap.insert(&info);
 }
 
-
 // Merge the StmtInfo nodes from the 'src' node to 'dest' and delete
 // them from src.  If there are duplicate statement vma's, then we
 // keep the original.
 //
-void
-mergeInlineStmts(TreeNode * dest, TreeNode * src)
-{
+void mergeInlineStmts(TreeNode* dest, TreeNode* src) {
   if (src == dest) {
     return;
   }
@@ -349,13 +318,10 @@ mergeInlineStmts(TreeNode * dest, TreeNode * src)
   src->stmtMap.clear();
 }
 
-
 // Merge the edge 'flp' and tree 'src' into 'dest' tree.  Delete any
 // leftover nodes from src that are not linked into dest.
 //
-void
-mergeInlineEdge(TreeNode * dest, FLPIndex flp, TreeNode * src)
-{
+void mergeInlineEdge(TreeNode* dest, FLPIndex flp, TreeNode* src) {
   auto dit = dest->nodeMap.find(flp);
 
   // if flp not in dest, then attach and done
@@ -368,14 +334,11 @@ mergeInlineEdge(TreeNode * dest, FLPIndex flp, TreeNode * src)
   mergeInlineTree(dit->second, src);
 }
 
-
 // Merge the tree 'src' into 'dest' tree.  Merge the statements, then
 // iterate through src's subtrees.  Delete any leftover nodes from src
 // that are not linked into dest.
 //
-void
-mergeInlineTree(TreeNode * dest, TreeNode * src)
-{
+void mergeInlineTree(TreeNode* dest, TreeNode* src) {
   if (src == dest) {
     return;
   }
@@ -399,12 +362,9 @@ mergeInlineTree(TreeNode * dest, TreeNode * src)
   delete src;
 }
 
-
 // Merge the detached loop 'info' into tree 'dest'.  If dest is a
 // detached loop, then 'path' is the FLP path above it.
-void
-mergeInlineLoop(TreeNode * dest, FLPSeqn & path, LoopInfo * info)
-{
+void mergeInlineLoop(TreeNode* dest, FLPSeqn& path, LoopInfo* info) {
   // follow source and dest paths and remove any common prefix.
   auto dit = path.begin();
   auto sit = info->path.begin();
@@ -418,12 +378,11 @@ mergeInlineLoop(TreeNode * dest, FLPSeqn & path, LoopInfo * info)
   while (sit != info->path.end()) {
     FLPIndex flp = *sit;
     auto nit = dest->nodeMap.find(flp);
-    TreeNode *node;
+    TreeNode* node;
 
     if (nit != dest->nodeMap.end()) {
       node = nit->second;
-    }
-    else {
+    } else {
       node = new TreeNode();
       dest->nodeMap[flp] = node;
     }
@@ -434,5 +393,4 @@ mergeInlineLoop(TreeNode * dest, FLPSeqn & path, LoopInfo * info)
 
   dest->loopList.push_back(info);
 }
-
 }  // namespace Inline

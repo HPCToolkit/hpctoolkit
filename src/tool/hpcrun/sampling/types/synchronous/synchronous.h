@@ -53,23 +53,19 @@
 
 #if defined(OSF) && defined(__DECC)
 
-static inline void
-hpcrun_fetch_stack_pointer(void **stack_pointer_loc)
-{
-    asm("stq sp, 0(v0)", stack_pointer_loc);
+static inline void hpcrun_fetch_stack_pointer(void** stack_pointer_loc) {
+  asm("stq sp, 0(v0)", stack_pointer_loc);
 }
 
 /* is this procedure general enough to be moved outside #if? */
-static inline void
-hpcrun_take_synchronous_sample(unsigned int sample_count)
-{
-    void *ra_loc;
-    hpcrun_state_t *state = hpcrun_get_state();
+static inline void hpcrun_take_synchronous_sample(unsigned int sample_count) {
+  void* ra_loc;
+  hpcrun_state_t* state = hpcrun_get_state();
 
-    hpcrun_undo_swizzled_data(state, NULL);
-    hpcrun_fetch_stack_pointer(&ra_loc);
-    hpcrun_take_sample(sample_count);
-    hpcrun_swizzle_location(state, ra_loc);
+  hpcrun_undo_swizzled_data(state, NULL);
+  hpcrun_fetch_stack_pointer(&ra_loc);
+  hpcrun_take_sample(sample_count);
+  hpcrun_swizzle_location(state, ra_loc);
 }
 
 #endif

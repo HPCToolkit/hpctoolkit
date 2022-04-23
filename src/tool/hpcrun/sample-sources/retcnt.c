@@ -48,49 +48,31 @@
 // RETCNT sample source simple oo interface
 //
 
-
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <assert.h>
-
-
-/******************************************************************************
- * libmonitor
- *****************************************************************************/
-
-#include <monitor.h>
-
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
-
-#include "simple_oo.h"
-#include "sample_source_obj.h"
 #include "common.h"
+#include "sample_source_obj.h"
+#include "simple_oo.h"
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/thread_data.h>
-#include <utilities/tokenize.h>
+#include "hpcrun/hpcrun_options.h"
+#include "hpcrun/metrics.h"
+#include "hpcrun/sample_event.h"
+#include "hpcrun/sample_sources_registered.h"
+#include "hpcrun/thread_data.h"
+
+#include <assert.h>
 #include <cct/cct.h>
+#include <monitor.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <utilities/tokenize.h>
 
-#if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)
+#if defined(HOST_CPU_x86_64) || defined(HOST_CPU_PPC)
+
+#include "lib/prof-lean/hpcrun-metric.h"
 
 #include <messages/messages.h>
 
-#include <lib/prof-lean/hpcrun-metric.h>
-
 extern void hpcrun_set_retain_recursion_mode(bool mode);
-
-//***************************************************************************
 
 // ******** Local Constants ****************
 
@@ -105,69 +87,49 @@ static const int RETCNT_EVENT = 0;
 //
 static const int IRRELEVANT = 0;
 
-
 // ******* METHOD DEFINITIONS ***********
 
-static void
-METHOD_FN(init)
-{
+static void METHOD_FN(init) {
   self->state = INIT;
 }
 
-static void
-METHOD_FN(thread_init)
-{
+static void METHOD_FN(thread_init) {
   TMSG(RETCNT_CTL, "thread init (no action needed)");
 }
 
-static void
-METHOD_FN(thread_init_action)
-{
+static void METHOD_FN(thread_init_action) {
   TMSG(RETCNT_CTL, "thread action (noop)");
 }
 
-static void
-METHOD_FN(start)
-{
-  TMSG(RETCNT_CTL,"starting " HPCRUN_METRIC_RetCnt);
+static void METHOD_FN(start) {
+  TMSG(RETCNT_CTL, "starting " HPCRUN_METRIC_RetCnt);
 
   TD_GET(ss_state)[self->sel_idx] = START;
 }
 
-static void
-METHOD_FN(thread_fini_action)
-{
+static void METHOD_FN(thread_fini_action) {
   TMSG(RETCNT_CTL, "thread fini (no action needed");
 }
 
-static void
-METHOD_FN(stop)
-{
-  TMSG(RETCNT_CTL,"stopping " HPCRUN_METRIC_RetCnt);
+static void METHOD_FN(stop) {
+  TMSG(RETCNT_CTL, "stopping " HPCRUN_METRIC_RetCnt);
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
-static void
-METHOD_FN(shutdown)
-{
-  METHOD_CALL(self,stop); // make sure stop has been called
+static void METHOD_FN(shutdown) {
+  METHOD_CALL(self, stop);  // make sure stop has been called
   self->state = UNINIT;
 }
 
-static bool
-METHOD_FN(supports_event,const char *ev_str)
-{
+static bool METHOD_FN(supports_event, const char* ev_str) {
   return hpcrun_ev_is(ev_str, HPCRUN_METRIC_RetCnt);
 }
- 
 
-static void
-METHOD_FN(process_event_list, int lush_metrics)
-{
+static void METHOD_FN(process_event_list, int lush_metrics) {
   TMSG(RETCNT_CTL, "Setting up return counts(trampolines)");
 
   // FIXME: MetricFlags_Ty_Final
-  kind_info_t *ret_kind = hpcrun_metrics_new_kind();
+  kind_info_t* ret_kind = hpcrun_metrics_new_kind();
   int metric_id = hpcrun_set_new_metric_info(ret_kind, HPCRUN_METRIC_RetCnt);
   hpcrun_close_kind(ret_kind);
 
@@ -178,39 +140,33 @@ METHOD_FN(process_event_list, int lush_metrics)
   ENABLE(USE_TRAMP);
 }
 
-static void
-METHOD_FN(finalize_event_list)
-{
-}
+static void METHOD_FN(finalize_event_list) {}
 
 //
 // Event sets not truly relevant for this sample source,
 //
-static void
-METHOD_FN(gen_event_set,int lush_metrics)
-{
+static void METHOD_FN(gen_event_set, int lush_metrics) {
   TMSG(REC_COMPRESS, "RETCNT event ==> retain recursion");
-  hpcrun_set_retain_recursion_mode(true); // make sure all recursion elements are retained
-                                          // whenever RETCNT is used.
+  hpcrun_set_retain_recursion_mode(true);  // make sure all recursion elements are retained
+                                           // whenever RETCNT is used.
 }
 
-static void
-METHOD_FN(display_events)
-{
+static void METHOD_FN(display_events) {
   printf("===========================================================================\n");
   printf("Available return-count events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tEach time a procedure returns, the return count for that\n"
-	 "\t\tprocedure is incremented\n" 
-         "(experimental feature, x86 only)\n", HPCRUN_METRIC_RetCnt);
+  printf(
+      "%s\t\tEach time a procedure returns, the return count for that\n"
+      "\t\tprocedure is incremented\n"
+      "(experimental feature, x86 only)\n",
+      HPCRUN_METRIC_RetCnt);
   printf("\n");
 }
 
-
-#define ss_name retcnt
-#define ss_cls SS_SOFTWARE
+#define ss_name       retcnt
+#define ss_cls        SS_SOFTWARE
 #define ss_sort_order 100
 
 #include "ss_obj.h"
@@ -226,24 +182,18 @@ METHOD_FN(display_events)
 //        is separate from the sample source code.
 //        Consequently, the interaction with metrics must be done procedurally
 
-void
-hpcrun_retcnt_inc(cct_node_t* node, int incr)
-{
+void hpcrun_retcnt_inc(cct_node_t* node, int incr) {
   int metric_id = hpcrun_event2metric(&_retcnt_obj, RETCNT_EVENT);
 
-  if (metric_id == -1) return;
-  
+  if (metric_id == -1)
+    return;
+
   TMSG(TRAMP, "Increment retcnt (metric id = %d), by %d", metric_id, incr);
-  cct_metric_data_increment(metric_id,
-			    node,
-			    (cct_metric_data_t){.i = incr});
+  cct_metric_data_increment(metric_id, node, (cct_metric_data_t){.i = incr});
 }
 
 #else
 
-void
-hpcrun_retcnt_inc(cct_node_t* node, int incr)
-{
-}
+void hpcrun_retcnt_inc(cct_node_t* node, int incr) {}
 
 #endif

@@ -67,12 +67,6 @@
 
 #include "ElfHelper.hpp"
 
-bool
-relocateCubin
-(
- char *cubin_ptr,
- size_t cubin_size,
- Elf *cubin_elf
-);
+bool relocateCubin(char* cubin_ptr, size_t cubin_size, Elf* cubin_elf);
 
 #endif

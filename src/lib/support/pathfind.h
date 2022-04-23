@@ -66,19 +66,14 @@
  *
  */
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern char*
-pathfind(const char* pathList,
-	 const char* name,
-	 const char* mode);
+extern char* pathfind(const char* pathList, const char* name, const char* mode);
 
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

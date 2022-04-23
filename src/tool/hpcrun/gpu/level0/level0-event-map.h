@@ -41,41 +41,18 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef level0_event_map_h
 #define level0_event_map_h
 
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
 #include "level0-data-node.h"
+
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
 
+level0_data_node_t* level0_event_map_lookup(ze_event_handle_t event_handle);
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
+void level0_event_map_insert(ze_event_handle_t event_handle, level0_data_node_t* new_entry);
 
-level0_data_node_t*
-level0_event_map_lookup
-(
- ze_event_handle_t event_handle
-);
-
-void
-level0_event_map_insert
-(
- ze_event_handle_t event_handle,
- level0_data_node_t* new_entry
-);
-
-void
-level0_event_map_delete
-(
- ze_event_handle_t event_handle
-);
+void level0_event_map_delete(ze_event_handle_t event_handle);
 
 #endif

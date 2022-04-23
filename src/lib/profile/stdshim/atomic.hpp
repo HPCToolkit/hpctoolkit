@@ -72,6 +72,7 @@ namespace hpctoolkit::stdshim {
 #ifdef HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
 // If we have C++20, atomics are just atomics.
 template<class T>
+
 using atomic = std::atomic<T>;
 
 #else  // !HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
@@ -83,7 +84,7 @@ namespace detail {
 class atomic_uint32 : public std::atomic<std::uint32_t> {
 public:
   atomic_uint32() noexcept = default;
-  constexpr atomic_uint32(std::uint32_t v) : std::atomic<std::uint32_t>(v) {};
+  constexpr atomic_uint32(std::uint32_t v) : std::atomic<std::uint32_t>(v){};
   atomic_uint32(const atomic_uint32&) = delete;
 
   /// Compare the current value with that given and atomically block.
@@ -110,15 +111,20 @@ private:
 };
 
 // This detail provides all the common (non-Integral) bits for an atomic template.
-template<class T>
-class atomic_nonint : private atomic_uint32 {
+template<class T> class atomic_nonint : private atomic_uint32 {
 public:
   atomic_nonint() noexcept = default;
-  constexpr atomic_nonint(T v) noexcept : atomic_uint32(static_cast<std::uint32_t>(v)) {};
+  constexpr atomic_nonint(T v) noexcept : atomic_uint32(static_cast<std::uint32_t>(v)){};
   atomic_nonint(const atomic_nonint&) = delete;
 
-  T operator=(T v) noexcept { store(v); return v; }
-  T operator=(T v) volatile noexcept { store(v); return v; }
+  T operator=(T v) noexcept {
+    store(v);
+    return v;
+  }
+  T operator=(T v) volatile noexcept {
+    store(v);
+    return v;
+  }
   atomic_nonint& operator=(const atomic_nonint&) = delete;
   atomic_nonint& operator=(const atomic_nonint&) volatile = delete;
 
@@ -154,7 +160,8 @@ public:
     e = static_cast<T>(ex);
     return res;
   }
-  bool compare_exchange_weak(T& e, T d, std::memory_order s, std::memory_order f) volatile noexcept {
+  bool
+  compare_exchange_weak(T& e, T d, std::memory_order s, std::memory_order f) volatile noexcept {
     std::uint32_t ex = static_cast<std::uint32_t>(e);
     bool res = atomic_uint32::compare_exchange_weak(ex, static_cast<std::uint32_t>(d), s, f);
     e = static_cast<T>(ex);
@@ -167,7 +174,8 @@ public:
     e = static_cast<T>(ex);
     return res;
   }
-  bool compare_exchange_weak(T& e, T d, std::memory_order o = std::memory_order_seq_cst) volatile noexcept {
+  bool compare_exchange_weak(
+      T& e, T d, std::memory_order o = std::memory_order_seq_cst) volatile noexcept {
     std::uint32_t ex = static_cast<std::uint32_t>(e);
     bool res = atomic_uint32::compare_exchange_weak(ex, static_cast<std::uint32_t>(d), o);
     e = static_cast<T>(ex);
@@ -180,20 +188,23 @@ public:
     e = static_cast<T>(ex);
     return res;
   }
-  bool compare_exchange_strong(T& e, T d, std::memory_order s, std::memory_order f) volatile noexcept {
+  bool
+  compare_exchange_strong(T& e, T d, std::memory_order s, std::memory_order f) volatile noexcept {
     std::uint32_t ex = static_cast<std::uint32_t>(e);
     bool res = atomic_uint32::compare_exchange_weak(ex, static_cast<std::uint32_t>(d), s, f);
     e = static_cast<T>(ex);
     return res;
   }
 
-  bool compare_exchange_strong(T& e, T d, std::memory_order o = std::memory_order_seq_cst) noexcept {
+  bool
+  compare_exchange_strong(T& e, T d, std::memory_order o = std::memory_order_seq_cst) noexcept {
     std::uint32_t ex = static_cast<std::uint32_t>(e);
     bool res = atomic_uint32::compare_exchange_weak(ex, static_cast<std::uint32_t>(d), o);
     e = static_cast<T>(ex);
     return res;
   }
-  bool compare_exchange_strong(T& e, T d, std::memory_order o = std::memory_order_seq_cst) volatile noexcept {
+  bool compare_exchange_strong(
+      T& e, T d, std::memory_order o = std::memory_order_seq_cst) volatile noexcept {
     std::uint32_t ex = static_cast<std::uint32_t>(e);
     bool res = atomic_uint32::compare_exchange_weak(ex, static_cast<std::uint32_t>(d), o);
     e = static_cast<T>(ex);
@@ -207,16 +218,15 @@ public:
     atomic_uint32::wait(static_cast<std::uint32_t>(v), o);
   }
 
-  using atomic_uint32::notify_one;
   using atomic_uint32::notify_all;
+  using atomic_uint32::notify_one;
 };
 
 // This detail appends the special Integral functions
-template<class T>
-class atomic_int : public atomic_nonint<T> {
+template<class T> class atomic_int : public atomic_nonint<T> {
 public:
   atomic_int() noexcept = default;
-  constexpr atomic_int(T v) noexcept : atomic_nonint<T>(v) {};
+  constexpr atomic_int(T v) noexcept : atomic_nonint<T>(v){};
   atomic_int(const atomic_int&) = delete;
 
   T fetch_add(T v, std::memory_order o = std::memory_order_seq_cst) noexcept {
@@ -279,34 +289,38 @@ public:
 // underlying uint32_t.
 template<class T, bool> struct is_futex_int_helper : std::false_type {};
 template<class T>
-struct is_futex_int_helper<T, true> : std::integral_constant<bool,
-  std::numeric_limits<T>::radix == 2
-  && (std::numeric_limits<T>::digits + std::is_signed<T>::value ? 1 : 0) <= 32>
-  {};
+struct is_futex_int_helper<T, true>
+    : std::integral_constant<
+          bool, std::numeric_limits<T>::radix == 2
+                    && (std::numeric_limits<T>::digits + std::is_signed<T>::value ? 1 : 0) <= 32> {
+};
 template<class T>
+
 using is_futex_int = is_futex_int_helper<T, std::is_integral<T>::value>;
 
 // Enumeration types are also allowed if their underlying type is small.
 template<class T, bool> struct is_futex_enum_helper : std::false_type {};
 template<class T>
-struct is_futex_enum_helper<T, true>
-  : is_futex_int<typename std::underlying_type<T>::type> {};
+struct is_futex_enum_helper<T, true> : is_futex_int<typename std::underlying_type<T>::type> {};
 template<class T>
-using is_futex_enum = is_futex_enum_helper<T, std::is_enum<T>::value>;
 
+using is_futex_enum = is_futex_enum_helper<T, std::is_enum<T>::value>;
 }  // namespace detail
 
 // Stitch together all the details. If we don't have a wrapper, use a normal atomic.
 template<class T>
-using atomic = typename std::conditional<std::is_same<T, std::uint32_t>::value,
-  detail::atomic_uint32, typename std::conditional<detail::is_futex_int<T>::value,
-  detail::atomic_int<T>, typename std::conditional<detail::is_futex_enum<T>::value,
-  detail::atomic_nonint<T>,
-  std::atomic<T>
-  >::type>::type>::type;
+
+using atomic = typename std::conditional<
+    std::is_same<T, std::uint32_t>::value,
+
+    detail::atomic_uint32,
+    typename std::conditional<
+        detail::is_futex_int<T>::value, detail::atomic_int<T>,
+        typename std::conditional<
+            detail::is_futex_enum<T>::value, detail::atomic_nonint<T>,
+            std::atomic<T>>::type>::type>::type;
 
 #endif  // HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
-
 }  // namespace hpctoolkit::stdshim
 
 #endif  // HPCTOOLKIT_STDSHIM_ATOMIC_H

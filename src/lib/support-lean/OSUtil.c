@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -60,53 +60,35 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <sys/types.h> // getpid()
-
-#include <stdio.h> // snprintf
+#include <stdint.h>
+#include <stdio.h>  // snprintf
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
+#include <sys/types.h>  // getpid()
 
-#define __USE_XOPEN_EXTENDED // for gethostid()
+#define __USE_XOPEN_EXTENDED  // for gethostid()
+#include "OSUtil.h"
+
+#include "include/linux_info.h"
+#include "lib/prof-lean/stdatomic.h"
+
 #include <unistd.h>
 
-//*************************** User Include Files ****************************
+#define KERNEL_NAME_FORMAT "%s." HOSTID_FORMAT
 
-#include "OSUtil.h"
-#include <include/linux_info.h>
-#include <lib/prof-lean/stdatomic.h>
-
-//*************************** macros **************************
-
-#define KERNEL_NAME_FORMAT    "%s." HOSTID_FORMAT
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-uint
-OSUtil_pid()
-{
+uint OSUtil_pid() {
   pid_t pid = getpid();
   return (uint)pid;
 }
 
-
-const char*
-OSUtil_jobid()
-{
+const char* OSUtil_jobid() {
   char* jid = NULL;
- 
+
   // LSF
   jid = getenv("LSB_JOBID");
   if (jid) {
     return jid;
   }
-
 
   // Cobalt
   jid = getenv("COBALT_JOBID");
@@ -135,10 +117,7 @@ OSUtil_jobid()
   return jid;
 }
 
-
-uint32_t
-OSUtil_hostid()
-{
+uint32_t OSUtil_hostid() {
   // NOTE: ATOMIC_VAR_INIT is going away in C2x (was depreciated in C17).
   // Default (zero) initialization is explicitly valid, so use that.
   static atomic_uint_fast32_t cache;
@@ -148,15 +127,16 @@ OSUtil_hostid()
     // On many 64-bit systems `long == int64_t`, so the value out of gethostid()
     // may be sign-extended from the 32-bit hostid. This cast smashes out the
     // higher-order bits and makes it unsigned so it won't be sign-extended later.
-    uint_fast32_t myresult = (uint32_t) gethostid();
+    uint_fast32_t myresult = (uint32_t)gethostid();
 
     // We don't want to call gethostid() again in case it gives a different
     // result (happens sometimes on systems with bad network setups). So if it
     // gave 0, remap to something not 0. Like 1.
-    if (myresult == 0) myresult = UINT32_C(1);
+    if (myresult == 0)
+      myresult = UINT32_C(1);
 
     // Only the cache value needs to be synchronized, relaxed mem order is fine.
-    if(atomic_compare_exchange_strong(&cache, &result, myresult)) {
+    if (atomic_compare_exchange_strong(&cache, &result, myresult)) {
       result = myresult;
     }
   }
@@ -164,21 +144,15 @@ OSUtil_hostid()
   return result;
 }
 
-int
-OSUtil_setCustomKernelName(char *buffer, size_t max_chars)
-{
-  int n = snprintf(buffer, max_chars, KERNEL_NAME_FORMAT,
-           LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
+int OSUtil_setCustomKernelName(char* buffer, size_t max_chars) {
+  int n = snprintf(buffer, max_chars, KERNEL_NAME_FORMAT, LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
 
   return n;
 }
 
-
-int
-OSUtil_setCustomKernelNameWrap(char *buffer, size_t max_chars)
-{
-  int n = snprintf(buffer, max_chars, "<" KERNEL_NAME_FORMAT ">",
-           LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
+int OSUtil_setCustomKernelNameWrap(char* buffer, size_t max_chars) {
+  int n = snprintf(
+      buffer, max_chars, "<" KERNEL_NAME_FORMAT ">", LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
 
   return n;
 }

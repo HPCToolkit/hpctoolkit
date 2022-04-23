@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ImageTraceAttributes.hpp $
-// $Id: ImageTraceAttributes.hpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ImageTraceAttributes.hpp
+// $ $Id: ImageTraceAttributes.hpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ImageTraceAttributes.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ImageTraceAttributes.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -59,16 +62,14 @@
 
 #ifndef IMAGETRACEATTRIBUTES_H_
 #define IMAGETRACEATTRIBUTES_H_
-namespace TraceviewerServer
-{
-	struct ImageTraceAttributes
-	{
-		long begTime, endTime;
-		int begProcess, endProcess;
-		int numPixelsH, numPixelsV;
-		int numPixelsDepthV;
+namespace TraceviewerServer {
+struct ImageTraceAttributes {
+  long begTime, endTime;
+  int begProcess, endProcess;
+  int numPixelsH, numPixelsV;
+  int numPixelsDepthV;
 
-		int lineNum;
-	};
-}
+  int lineNum;
+};
+}  // namespace TraceviewerServer
 #endif /* IMAGETRACEATTRIBUTES_H_ */

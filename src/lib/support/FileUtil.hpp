@@ -45,20 +45,11 @@
 // ******************************************************* EndRiceCopyright *
 
 #ifndef support_FileUtil_hpp
-#define support_FileUtil_hpp 
-
-//************************* System Include Files ****************************
-
-#include <string>
-#include <vector>
+#define support_FileUtil_hpp
 
 #include <fnmatch.h>
-
-//*************************** User Include Files ****************************
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
+#include <string>
+#include <vector>
 
 namespace FileUtil {
 
@@ -67,41 +58,27 @@ namespace FileUtil {
 // ---------------------------------------------------------
 
 // 'basename': returns the 'fname.ext' component of '/path/fname.ext'
-extern std::string
-basename(const char* fname);
+extern std::string basename(const char* fname);
 
-inline std::string
-basename(const std::string& fname)
-{
+inline std::string basename(const std::string& fname) {
   return basename(fname.c_str());
 }
 
-
 // 'rmSuffix': returns the 'fname' component of 'fname.ext'
-extern std::string
-rmSuffix(const char* fname);
+extern std::string rmSuffix(const char* fname);
 
-inline std::string
-rmSuffix(const std::string& fname)
-{
+inline std::string rmSuffix(const std::string& fname) {
   return rmSuffix(fname.c_str());
 }
 
-
 // 'dirname': returns the '/path' component of "/path/fname.ext"
-extern std::string
-dirname(const char* fname); 
+extern std::string dirname(const char* fname);
 
-inline std::string
-dirname(const std::string& fname)
-{
+inline std::string dirname(const std::string& fname) {
   return dirname(fname.c_str());
 }
 
-
-static inline bool
-fnmatch(const std::string pattern, const char* string, int flags = 0)
-{
+static inline bool fnmatch(const std::string pattern, const char* string, int flags = 0) {
   int fnd = ::fnmatch(pattern.c_str(), string, flags);
   return (fnd == 0);
 #if 0
@@ -114,42 +91,27 @@ fnmatch(const std::string pattern, const char* string, int flags = 0)
 #endif
 }
 
-
-bool
-fnmatch(const std::vector<std::string>& patternVec, 
-	const char* string, 
-	int flags = 0);
-  
+bool fnmatch(const std::vector<std::string>& patternVec, const char* string, int flags = 0);
 
 // ---------------------------------------------------------
 // file tests
 // ---------------------------------------------------------
 
-extern bool
-isReadable(const char* path);
+extern bool isReadable(const char* path);
 
-inline bool
-isReadable(const std::string& path)
-{
+inline bool isReadable(const std::string& path) {
   return isReadable(path.c_str());
 }
 
+bool isDir(const char* path);
 
-bool
-isDir(const char* path);
-
-inline bool
-isDir(const std::string& path)
-{
+inline bool isDir(const std::string& path) {
   return isDir(path.c_str());
 }
 
-
 // count how often char appears in file
 // return that number or -1 upon failure to open file for reading
-extern int
-countChar(const char* file, char c);
-
+extern int countChar(const char* file, char c);
 
 // ---------------------------------------------------------
 // file operations
@@ -157,62 +119,39 @@ countChar(const char* file, char c);
 
 // copy: takes a NULL terminated list of file name and appends these
 // files into destFile.
-extern void
-copy(const char* destFile, ...);
+extern void copy(const char* destFile, ...);
 
-inline void
-copy(const std::string& dst, const std::string& src)
-{
+inline void copy(const std::string& dst, const std::string& src) {
   copy(dst.c_str(), src.c_str(), NULL);
 }
 
+void move(const char* dst, const char* src);
 
-void
-move(const char* dst, const char* src);
-
-inline void
-move(const std::string& dst, const std::string& src)
-{
+inline void move(const std::string& dst, const std::string& src) {
   move(dst.c_str(), src.c_str());
 }
 
-
-
-// deletes fname (unlink) 
-extern int
-remove(const char* fname);
-
+// deletes fname (unlink)
+extern int remove(const char* fname);
 
 // mkdir: makes 'dir' (including all intermediate directories)
-extern int
-mkdir(const char* dir);
+extern int mkdir(const char* dir);
 
-inline void
-mkdir(const std::string& dir)
-{
+inline void mkdir(const std::string& dir) {
   FileUtil::mkdir(dir.c_str());
 }
 
+// mkdirUnique:
+std::pair<std::string, bool> mkdirUnique(const char* dirnm);
 
-// mkdirUnique: 
-std::pair<std::string, bool>
-mkdirUnique(const char* dirnm);
-
-inline std::pair<std::string, bool>
-mkdirUnique(const std::string& dirnm)
-{
+inline std::pair<std::string, bool> mkdirUnique(const std::string& dirnm) {
   return mkdirUnique(dirnm.c_str());
 }
 
-
-// retuns a name that can safely be used for a temporary file 
-// in a static variable, which is overwritten with each call to 
+// retuns a name that can safely be used for a temporary file
+// in a static variable, which is overwritten with each call to
 // tmpname
-extern const char*
-tmpname();
+extern const char* tmpname();
+}  // namespace FileUtil
 
-
-} // end of FileUtil namespace
-
-
-#endif // support_FileUtil_hpp
+#endif  // support_FileUtil_hpp

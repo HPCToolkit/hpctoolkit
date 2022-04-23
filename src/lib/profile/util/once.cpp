@@ -44,10 +44,11 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "once.hpp"
+
 #include "vgannotations.hpp"
 
 #include "../util/log.hpp"
-#include "once.hpp"
 
 #include <cassert>
 #include <stdexcept>
@@ -56,7 +57,7 @@
 
 using namespace hpctoolkit::util;
 
-Once::Once() : callerId(), promise(), future(promise.get_future()) {};
+Once::Once() : callerId(), promise(), future(promise.get_future()){};
 
 Once::Caller::~Caller() {
   ANNOTATE_HAPPENS_BEFORE(&once);
@@ -66,51 +67,49 @@ Once::Caller::~Caller() {
 
 Once::Caller Once::signal() {
   std::thread::id old;
-  auto ok = callerId.compare_exchange_strong(old, std::this_thread::get_id(),
-                                             std::memory_order_acquire,
-                                             std::memory_order_relaxed);
+  auto ok = callerId.compare_exchange_strong(
+      old, std::this_thread::get_id(), std::memory_order_acquire, std::memory_order_relaxed);
   assert(ok && "Once cannot be signal()'d more than once!");
   return Caller(*this);
 }
 
 void Once::wait() const {
-  assert(callerId.load(std::memory_order_relaxed) != std::this_thread::get_id()
-         && "Single-thread deadlock detected on Once!");
+  assert(
+      callerId.load(std::memory_order_relaxed) != std::this_thread::get_id()
+      && "Single-thread deadlock detected on Once!");
   future.wait();
   ANNOTATE_HAPPENS_AFTER(this);
 }
 
-void hpctoolkit::util::call_once_detail(std::once_flag& flag,
-                                            const std::function<void(void)>& f) {
-  std::call_once(flag, [&]{
+void hpctoolkit::util::call_once_detail(std::once_flag& flag, const std::function<void(void)>& f) {
+  std::call_once(flag, [&] {
     f();
     ANNOTATE_HAPPENS_BEFORE(&flag);
   });
   ANNOTATE_HAPPENS_AFTER(&flag);
 }
 
-OnceFlag::OnceFlag() : status(Status::initial) {};
+OnceFlag::OnceFlag() : status(Status::initial){};
 
 void OnceFlag::call_detail(bool block, const std::function<void(void)>& f) {
   Status s = status.load(std::memory_order_acquire);
-  while(true) {
-    switch(s) {
-    case Status::completed:
-      ANNOTATE_HAPPENS_AFTER(&status);
-      return;  // Nothing more we can add.
+  while (true) {
+    switch (s) {
+    case Status::completed: ANNOTATE_HAPPENS_AFTER(&status); return;  // Nothing more we can add.
     case Status::inprogress:
-      if(!block) return;  // Its getting there.
+      if (!block)
+        return;  // Its getting there.
       status.wait(s, std::memory_order_relaxed);
       s = status.load(std::memory_order_acquire);
       break;
     case Status::initial:
-      if(status.compare_exchange_weak(s, Status::inprogress, std::memory_order_acquire)) {
+      if (status.compare_exchange_weak(s, Status::inprogress, std::memory_order_acquire)) {
         try {
           f();
           ANNOTATE_HAPPENS_BEFORE(&status);
           status.exchange(Status::completed, std::memory_order_release);
           status.notify_all();
-        } catch(...) {
+        } catch (...) {
           status.exchange(Status::initial, std::memory_order_release);
           status.notify_all();
           throw;
@@ -124,7 +123,7 @@ void OnceFlag::call_detail(bool block, const std::function<void(void)>& f) {
 
 bool OnceFlag::query() {
   Status s = status.load(std::memory_order_relaxed);
-  while(s == Status::inprogress) {
+  while (s == Status::inprogress) {
     status.wait(s, std::memory_order_relaxed);
     s = status.load(std::memory_order_relaxed);
   }

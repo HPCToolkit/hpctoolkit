@@ -57,84 +57,37 @@
 //
 //***************************************************************************
 
-//**************************** MPI Include Files ****************************
-
-#include <mpi.h>
-
-//************************* System Include Files ****************************
-
-#include <iostream>
-
-#include <string>
-using std::string;
-
-#include <algorithm>
-
-#include <stdint.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
 #include "ParallelAnalysis.hpp"
 
-#include <lib/analysis/CallPath.hpp>
-#include <lib/analysis/Util.hpp>
+#include "include/uint.h"
+#include "lib/analysis/CallPath.hpp"
+#include "lib/analysis/Util.hpp"
+#include "lib/support/diagnostics.h"
+#include "lib/support/StrUtil.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/StrUtil.hpp>
+#include <algorithm>
+#include <iostream>
+#include <mpi.h>
+#include <stdint.h>
+#include <string>
 
-
-//*************************** Forward Declarations **************************
+using std::string;
 
 #define DBG_CCT_MERGE 0
 
-//***************************************************************************
-
-
 namespace ParallelAnalysis {
 
-//***************************************************************************
-// forward declarations
-//***************************************************************************
+static void packStringSet(const StringSet& profile, uint8_t** buffer, size_t* bufferSz);
 
-static void
-packStringSet(const StringSet& profile,
-		 uint8_t** buffer, size_t* bufferSz);
+static StringSet* unpackStringSet(uint8_t* buffer, size_t bufferSz);
 
-static StringSet*
-unpackStringSet(uint8_t* buffer, size_t bufferSz);
-
-//***************************************************************************
-// private functions
-//***************************************************************************
-
-static void 
-broadcast_sizet
-(
-  size_t &size, 
-  MPI_Comm comm
-)
-{ 
+static void broadcast_sizet(size_t& size, MPI_Comm comm) {
   long size_l = size;
   MPI_Bcast(&size_l, 1, MPI_LONG, 0, comm);
   size = size_l;
-} 
+}
 
-
-
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
-void
-broadcast
-(
-  Prof::CallPath::Profile*& profile,
-  int myRank, 
-  MPI_Comm comm
-)
-{
+void broadcast(Prof::CallPath::Profile*& profile, int myRank, MPI_Comm comm) {
   size_t size = 0;
   uint8_t* buf = NULL;
 
@@ -145,7 +98,7 @@ broadcast
   broadcast_sizet(size, comm);
 
   if (myRank != 0) {
-    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
+    buf = (uint8_t*)malloc(size * sizeof(uint8_t));
   }
 
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
@@ -157,14 +110,7 @@ broadcast
   free(buf);
 }
 
-void
-broadcast
-(
-  StringSet &stringSet,
-  int myRank, 
-  MPI_Comm comm
-)
-{
+void broadcast(StringSet& stringSet, int myRank, MPI_Comm comm) {
   size_t size = 0;
   uint8_t* buf = NULL;
 
@@ -175,13 +121,13 @@ broadcast
   broadcast_sizet(size, comm);
 
   if (myRank != 0) {
-    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
+    buf = (uint8_t*)malloc(size * sizeof(uint8_t));
   }
 
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
 
   if (myRank != 0) {
-    StringSet *rhs = unpackStringSet(buf, size);
+    StringSet* rhs = unpackStringSet(buf, size);
     stringSet += *rhs;
     delete rhs;
   }
@@ -189,11 +135,7 @@ broadcast
   free(buf);
 }
 
-
-void
-packSend(Prof::CallPath::Profile* profile,
-	 int dest, int myRank, MPI_Comm comm)
-{
+void packSend(Prof::CallPath::Profile* profile, int dest, int myRank, MPI_Comm comm) {
   uint8_t* profileBuf = NULL;
   size_t profileBufSz = 0;
   packProfile(*profile, &profileBuf, &profileBufSz);
@@ -201,10 +143,7 @@ packSend(Prof::CallPath::Profile* profile,
   free(profileBuf);
 }
 
-void
-recvMerge(Prof::CallPath::Profile* profile,
-	  int src, int myRank, MPI_Comm comm)
-{
+void recvMerge(Prof::CallPath::Profile* profile, int src, int myRank, MPI_Comm comm) {
   // probe src
   MPI_Status mpistat;
   MPI_Probe(src, src, comm, &mpistat);
@@ -212,10 +151,9 @@ recvMerge(Prof::CallPath::Profile* profile,
   MPI_Get_count(&mpistat, MPI_BYTE, &profileBufSz);
 
   // receive profile from src
-  uint8_t *profileBuf = new uint8_t[profileBufSz];
+  uint8_t* profileBuf = new uint8_t[profileBufSz];
   MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, src, src, comm, &mpistat);
-  Prof::CallPath::Profile* new_profile =
-    unpackProfile(profileBuf, (size_t)profileBufSz);
+  Prof::CallPath::Profile* new_profile = unpackProfile(profileBuf, (size_t)profileBufSz);
   delete[] profileBuf;
 
   if (DBG_CCT_MERGE) {
@@ -224,7 +162,7 @@ recvMerge(Prof::CallPath::Profile* profile,
     DIAG_DevMsgIf(1, profile->metricMgr()->toString(pfx0.c_str()));
     DIAG_DevMsgIf(1, new_profile->metricMgr()->toString(pfx1.c_str()));
   }
-    
+
   int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
   profile->merge(*new_profile, mergeTy);
 
@@ -232,58 +170,44 @@ recvMerge(Prof::CallPath::Profile* profile,
   profile->metricMgr()->mergePerfEventStatistics(new_profile->metricMgr());
 
   if (DBG_CCT_MERGE) {
-    string pfx = ("[" + StrUtil::toStr(src)
-		  + " => " + StrUtil::toStr(myRank) + "]");
+    string pfx = ("[" + StrUtil::toStr(src) + " => " + StrUtil::toStr(myRank) + "]");
     DIAG_DevMsgIf(1, profile->metricMgr()->toString(pfx.c_str()));
   }
 
   delete new_profile;
 }
 
-void
-packSend(std::pair<Prof::CallPath::Profile*,
-	                ParallelAnalysis::PackedMetrics*> data,
-	 int dest, int myRank, MPI_Comm comm)
-{
+void packSend(
+    std::pair<Prof::CallPath::Profile*, ParallelAnalysis::PackedMetrics*> data, int dest,
+    int myRank, MPI_Comm comm) {
   Prof::CallPath::Profile* profile = data.first;
   ParallelAnalysis::PackedMetrics* packedMetrics = data.second;
   packMetrics(*profile, *packedMetrics);
-  MPI_Send(packedMetrics->data(), packedMetrics->dataSize(),
-	   MPI_DOUBLE, dest, myRank, comm);
+  MPI_Send(packedMetrics->data(), packedMetrics->dataSize(), MPI_DOUBLE, dest, myRank, comm);
 }
 
-void
-recvMerge(std::pair<Prof::CallPath::Profile*,
-	  ParallelAnalysis::PackedMetrics*> data,
-	  int src, int myRank, MPI_Comm comm)
-{
+void recvMerge(
+    std::pair<Prof::CallPath::Profile*, ParallelAnalysis::PackedMetrics*> data, int src, int myRank,
+    MPI_Comm comm) {
   Prof::CallPath::Profile* profile = data.first;
   ParallelAnalysis::PackedMetrics* packedMetrics = data.second;
 
   // receive new metric data from src
   MPI_Status mpistat;
-  MPI_Recv(packedMetrics->data(), packedMetrics->dataSize(),
-	   MPI_DOUBLE, src, src, comm, &mpistat);
+  MPI_Recv(packedMetrics->data(), packedMetrics->dataSize(), MPI_DOUBLE, src, src, comm, &mpistat);
   DIAG_Assert(packedMetrics->verify(), DIAG_UnexpectedInput);
   unpackMetrics(*profile, *packedMetrics);
 }
 
-void
-packSend(StringSet *stringSet,
-	 int dest, int myRank, MPI_Comm comm)
-{
+void packSend(StringSet* stringSet, int dest, int myRank, MPI_Comm comm) {
   uint8_t* stringSetBuf = NULL;
   size_t stringSetBufSz = 0;
   packStringSet(*stringSet, &stringSetBuf, &stringSetBufSz);
-  MPI_Send(stringSetBuf, (int)stringSetBufSz, MPI_BYTE, 
-	   dest, myRank, comm);
+  MPI_Send(stringSetBuf, (int)stringSetBufSz, MPI_BYTE, dest, myRank, comm);
   free(stringSetBuf);
 }
 
-void
-recvMerge(StringSet *stringSet,
-	  int src, int myRank, MPI_Comm comm)
-{
+void recvMerge(StringSet* stringSet, int src, int myRank, MPI_Comm comm) {
   // determine size of incoming packed directory set from src
   MPI_Status mpistat;
   MPI_Probe(src, src, comm, &mpistat);
@@ -291,23 +215,15 @@ recvMerge(StringSet *stringSet,
   MPI_Get_count(&mpistat, MPI_BYTE, &stringSetBufSz);
 
   // receive new stringSet from src
-  uint8_t *stringSetBuf = new uint8_t[stringSetBufSz];
-  MPI_Recv(stringSetBuf, stringSetBufSz, MPI_BYTE, 
-	   src, src, comm, &mpistat);
-  StringSet *new_stringSet =
-    unpackStringSet(stringSetBuf, (size_t) stringSetBufSz);
+  uint8_t* stringSetBuf = new uint8_t[stringSetBufSz];
+  MPI_Recv(stringSetBuf, stringSetBufSz, MPI_BYTE, src, src, comm, &mpistat);
+  StringSet* new_stringSet = unpackStringSet(stringSetBuf, (size_t)stringSetBufSz);
   delete[] stringSetBuf;
   *stringSet += *new_stringSet;
   delete new_stringSet;
 }
 
-
-//***************************************************************************
-
-void
-packProfile(const Prof::CallPath::Profile& profile,
-	    uint8_t** buffer, size_t* bufferSz)
-{
+void packProfile(const Prof::CallPath::Profile& profile, uint8_t** buffer, size_t* bufferSz) {
   // open_memstream: mallocs buffer and sets bufferSz
   FILE* fs = open_memstream((char**)buffer, bufferSz);
 
@@ -317,30 +233,19 @@ packProfile(const Prof::CallPath::Profile& profile,
   fclose(fs);
 }
 
-
-Prof::CallPath::Profile*
-unpackProfile(uint8_t* buffer, size_t bufferSz)
-{
+Prof::CallPath::Profile* unpackProfile(uint8_t* buffer, size_t bufferSz) {
   FILE* fs = fmemopen(buffer, bufferSz, "r");
 
   Prof::CallPath::Profile* prof = NULL;
   uint rFlags = Prof::CallPath::Profile::RFlg_VirtualMetrics;
-  Prof::CallPath::Profile::fmt_fread(prof, fs, rFlags,
-				     "(ParallelAnalysis::unpackProfile)",
-				     NULL, NULL, false);
+  Prof::CallPath::Profile::fmt_fread(
+      prof, fs, rFlags, "(ParallelAnalysis::unpackProfile)", NULL, NULL, false);
 
   fclose(fs);
   return prof;
 }
 
-
-
-//***************************************************************************
-
-static void
-packStringSet(const StringSet& stringSet,
-	      uint8_t** buffer, size_t* bufferSz)
-{
+static void packStringSet(const StringSet& stringSet, uint8_t** buffer, size_t* bufferSz) {
   // open_memstream: malloc buffer and sets bufferSz
   FILE* fs = open_memstream((char**)buffer, bufferSz);
 
@@ -349,10 +254,7 @@ packStringSet(const StringSet& stringSet,
   fclose(fs);
 }
 
-
-static StringSet*
-unpackStringSet(uint8_t* buffer, size_t bufferSz)
-{
+static StringSet* unpackStringSet(uint8_t* buffer, size_t bufferSz) {
   FILE* fs = fmemopen(buffer, bufferSz, "r");
 
   StringSet* stringSet = NULL;
@@ -364,13 +266,8 @@ unpackStringSet(uint8_t* buffer, size_t bufferSz)
   return stringSet;
 }
 
-
-//***************************************************************************
-
-void
-packMetrics(const Prof::CallPath::Profile& profile,
-	    ParallelAnalysis::PackedMetrics& packedMetrics)
-{
+void packMetrics(
+    const Prof::CallPath::Profile& profile, ParallelAnalysis::PackedMetrics& packedMetrics) {
   Prof::CCT::Tree& cct = *profile.cct();
 
   // pack derived metrics [mDrvdBeg, mDrvdEnd) from 'profile' into
@@ -389,11 +286,8 @@ packMetrics(const Prof::CallPath::Profile& profile,
   }
 }
 
-
-void
-unpackMetrics(Prof::CallPath::Profile& profile,
-	      const ParallelAnalysis::PackedMetrics& packedMetrics)
-{
+void unpackMetrics(
+    Prof::CallPath::Profile& profile, const ParallelAnalysis::PackedMetrics& packedMetrics) {
   Prof::CCT::Tree& cct = *profile.cct();
 
   // 1. unpack 'packedMetrics' into temporary derived metrics [mBegId,
@@ -414,12 +308,7 @@ unpackMetrics(Prof::CallPath::Profile& profile,
   //    values in [mBegId, mEndId)
   uint mDrvdBeg = packedMetrics.mDrvdBegId();
   uint mDrvdEnd = packedMetrics.mDrvdEndId();
-  cct.root()->computeMetricsIncr(*profile.metricMgr(), mDrvdBeg, mDrvdEnd,
-				 Prof::Metric::AExprIncr::FnCombine);
+  cct.root()->computeMetricsIncr(
+      *profile.metricMgr(), mDrvdBeg, mDrvdEnd, Prof::Metric::AExprIncr::FnCombine);
 }
-
-
-
-//***************************************************************************
-
-} // namespace ParallelAnalysis
+}  // namespace ParallelAnalysis

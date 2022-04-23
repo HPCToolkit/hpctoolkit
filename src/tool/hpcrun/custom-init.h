@@ -49,4 +49,4 @@
 
 void hpcrun_do_custom_init(void);
 
-#endif //CUSTOM_INIT_H
+#endif  // CUSTOM_INIT_H

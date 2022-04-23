@@ -60,36 +60,21 @@
 #ifndef BAnal_StructSimple_hpp
 #define BAnal_StructSimple_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h> 
-
-#include <lib/prof/Struct-Tree.hpp>
-
-#include <lib/binutils/LM.hpp>
-
-#include <lib/support/SrcFile.hpp>
-
-
-//*************************** Forward Declarations ***************************
+#include "include/uint.h"
+#include "lib/binutils/LM.hpp"
+#include "lib/prof/Struct-Tree.hpp"
+#include "lib/support/SrcFile.hpp"
 
 namespace BAnal {
 
 namespace Struct {
 
-  // NOTE: Since hpcprof/hpcprof-flat only invoke this routine we keep
-  // it separate.  Invoking the full structure recovery pulls in a
-  // bunch of other stuff as well as OA, etc.
+// NOTE: Since hpcprof/hpcprof-flat only invoke this routine we keep
+// it separate.  Invoking the full structure recovery pulls in a
+// bunch of other stuff as well as OA, etc.
 
-  Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
+Prof::Struct::Stmt* makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
+}  // namespace Struct
+}  // namespace BAnal
 
-} // namespace Struct
-
-} // namespace BAnal
-
-//****************************************************************************
-
-#endif // BAnal_StructSimple_hpp
+#endif  // BAnal_StructSimple_hpp

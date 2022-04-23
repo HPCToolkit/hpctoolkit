@@ -57,27 +57,16 @@
 //
 //***************************************************************************
 
-#ifndef DCPIProfileMetric_H 
+#ifndef DCPIProfileMetric_H
 #define DCPIProfileMetric_H
 
-//************************* System Include Files ****************************
+#include "DCPIProfileFilter.hpp"
+#include "PCProfile.hpp"
+
+#include "include/uint.h"
+#include "lib/isa/ISATypes.hpp"
 
 #include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include "PCProfile.hpp"
-#include "DCPIProfileFilter.hpp"
-
-#include <lib/isa/ISATypes.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-// DCPIProfileMetric
-//****************************************************************************
 
 // 'DCPIProfileMetric' extensions to 'PCProfileMetric' for precisely
 // representing DCPI metrics.
@@ -85,39 +74,31 @@ class DCPIProfileMetric : public PCProfileMetric {
 public:
   // A metric can be created from a 'DCPIMetricDesc' or a string that
   // will be used to create a 'DCPIMetricDesc'.
-  DCPIProfileMetric(ISA* isa_) : PCProfileMetric(isa_) { }
+  DCPIProfileMetric(ISA* isa_) : PCProfileMetric(isa_) {}
 
-  DCPIProfileMetric(ISA* isa_, const char* name) 
-    : PCProfileMetric(isa_), desc(name) { }
+  DCPIProfileMetric(ISA* isa_, const char* name) : PCProfileMetric(isa_), desc(name) {}
 
-  DCPIProfileMetric(ISA* isa_, const std::string& name) 
-    : PCProfileMetric(isa_), desc(name) { }
+  DCPIProfileMetric(ISA* isa_, const std::string& name) : PCProfileMetric(isa_), desc(name) {}
 
-  DCPIProfileMetric(ISA* isa_, const DCPIMetricDesc& x) 
-    : PCProfileMetric(isa_), desc(x) { }
+  DCPIProfileMetric(ISA* isa_, const DCPIMetricDesc& x) : PCProfileMetric(isa_), desc(x) {}
 
-  ~DCPIProfileMetric() { }
-  
-  // GetDCPIDesc: 
+  ~DCPIProfileMetric() {}
+
+  // GetDCPIDesc:
   const DCPIMetricDesc& GetDCPIDesc() const { return desc; }
-  void SetDCPIDesc(const DCPIMetricDesc& x) { 
-    desc = x; 
-  }
-  
+  void SetDCPIDesc(const DCPIMetricDesc& x) { desc = x; }
+
   void dump(std::ostream& o = std::cerr);
   void ddump();
-  
+
 private:
-  // Should not be used  
+  // Should not be used
   DCPIProfileMetric(const DCPIProfileMetric& m);
   DCPIProfileMetric& operator=(const DCPIProfileMetric& m) { return *this; }
-  
+
 protected:
-private:  
+private:
   DCPIMetricDesc desc;
 };
 
-//****************************************************************************
-
-#endif 
-
+#endif

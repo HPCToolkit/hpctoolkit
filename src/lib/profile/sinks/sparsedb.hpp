@@ -47,18 +47,16 @@
 #define HPCTOOLKIT_PROF2MPI_SPARSE_H
 #ifdef HPCTOOLKIT_PROF2MPI_SPARSE_H
 
-#include <lib/profile/sink.hpp>
-#include <lib/profile/stdshim/filesystem.hpp>
-#include <lib/profile/util/once.hpp>
-#include <lib/profile/util/locked_unordered.hpp>
-#include <lib/profile/util/file.hpp>
-#include <lib/profile/mpi/all.hpp>
-
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/id-tuple.h>
-#include <lib/prof/pms-format.h>
-#include <lib/prof/cms-format.h>
-
+#include "lib/prof-lean/hpcrun-fmt.h"
+#include "lib/prof-lean/id-tuple.h"
+#include "lib/prof/cms-format.h"
+#include "lib/prof/pms-format.h"
+#include "lib/profile/mpi/all.hpp"
+#include "lib/profile/sink.hpp"
+#include "lib/profile/stdshim/filesystem.hpp"
+#include "lib/profile/util/file.hpp"
+#include "lib/profile/util/locked_unordered.hpp"
+#include "lib/profile/util/once.hpp"
 
 #include <vector>
 
@@ -99,14 +97,14 @@ private:
   };
   struct udThread {
     pms_profile_info_t info = {
-      .prof_info_idx = (uint32_t)-1,
-      .num_vals = (uint64_t)-1,
-      .num_nzctxs = (uint32_t)-1,
-      .offset = (uint64_t)-1,
-      .id_tuple_ptr = (uint64_t)-1,
-      .metadata_ptr = 0,
-      .spare_one = 0,
-      .spare_two = 0,
+        .prof_info_idx = (uint32_t)-1,
+        .num_vals = (uint64_t)-1,
+        .num_nzctxs = (uint32_t)-1,
+        .offset = (uint64_t)-1,
+        .id_tuple_ptr = (uint64_t)-1,
+        .metadata_ptr = 0,
+        .spare_one = 0,
+        .spare_two = 0,
     };
   };
   struct {
@@ -144,8 +142,7 @@ private:
     // concatinating the two given blobs. The final offset of the blob will be
     // saved to `offset` after flush() has been called.
     // MT: Internally Synchronized
-    void write(const std::vector<char>& mvBlob, const std::vector<char>& ciBlob,
-               uint64_t& offset);
+    void write(const std::vector<char>& mvBlob, const std::vector<char>& ciBlob, uint64_t& offset);
 
     // Flush the buffers and write everything out to the file.
     // MT: Internally Synchronized
@@ -193,25 +190,23 @@ private:
   // prof_info for the summary profile
   // Filled during the Threads wavefront
   pms_profile_info_t summary_info = {
-    .prof_info_idx = 0,
-    .num_vals = (uint64_t)-1,
-    .num_nzctxs = (uint32_t)-1,
-    .offset = (uint64_t)-1,
-    .id_tuple_ptr = (uint64_t)-1,
-    .metadata_ptr = 0,
-    .spare_one = 0,
-    .spare_two = 0,
+      .prof_info_idx = 0,
+      .num_vals = (uint64_t)-1,
+      .num_nzctxs = (uint32_t)-1,
+      .offset = (uint64_t)-1,
+      .id_tuple_ptr = (uint64_t)-1,
+      .metadata_ptr = 0,
+      .spare_one = 0,
+      .spare_two = 0,
   };
 
   // Parallel workshares for the various parallel operations
-  hpctoolkit::util::ParallelForEach<
-      std::reference_wrapper<const pms_profile_info_t>> forEachProfileInfo;
+  hpctoolkit::util::ParallelForEach<std::reference_wrapper<const pms_profile_info_t>>
+      forEachProfileInfo;
   hpctoolkit::util::ParallelFor forProfilesParse;
   hpctoolkit::util::ResettableParallelFor forProfilesLoad;
-  hpctoolkit::util::ResettableParallelForEach<
-      std::pair<uint32_t, uint32_t>> forEachContextRange;
+  hpctoolkit::util::ResettableParallelForEach<std::pair<uint32_t, uint32_t>> forEachContextRange;
 };
-
-}
+}  // namespace hpctoolkit::sinks
 
 #endif  // HPCTOOLKIT_PROF2MPI_SPARSE_H

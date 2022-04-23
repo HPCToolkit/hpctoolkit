@@ -41,34 +41,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "gpu-correlation-channel-set.h"
 #include "gpu-monitoring-thread-api.h"
 
+#include "gpu-correlation-channel-set.h"
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-gpu_monitoring_thread_activities_ready
-(
- void
-)
-{
+void gpu_monitoring_thread_activities_ready(void) {
   gpu_correlation_channel_set_consume_with_idx(0);
 }
 
-void
-gpu_monitoring_thread_activities_ready_with_idx
-(
- int idx
-)
-{
+void gpu_monitoring_thread_activities_ready_with_idx(int idx) {
   gpu_correlation_channel_set_consume_with_idx(idx);
 }
-

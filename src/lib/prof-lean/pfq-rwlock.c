@@ -63,38 +63,29 @@
 //
 //******************************************************************************
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "hpctoolkit-config.h"
 #include "pfq-rwlock.h"
 
-//******************************************************************************
-// macros
-//******************************************************************************
+#include "hpctoolkit-config.h"
 
 #define READER_INCREMENT 0x100
 
-#define PHASE_BIT        0x001
-#define WRITER_PRESENT   0x002
+#define PHASE_BIT      0x001
+#define WRITER_PRESENT 0x002
 
-#define WRITER_MASK      (PHASE_BIT | WRITER_PRESENT)
-#define TICKET_MASK      ~(WRITER_MASK)
+#define WRITER_MASK (PHASE_BIT | WRITER_PRESENT)
+#define TICKET_MASK ~(WRITER_MASK)
 
 //------------------------------------------------------------------
 // define a macro to point to the low-order byte of an integer type
-// in a way that will work on both big-endian and little-endian 
+// in a way that will work on both big-endian and little-endian
 // processors
 //------------------------------------------------------------------
 #ifdef HOST_BIG_ENDIAN
-#define LSB_PTR(p) (((unsigned char *) p) + (sizeof(*p) - 1))
+#define LSB_PTR(p) (((unsigned char*)p) + (sizeof(*p) - 1))
 #endif
 
 #ifdef HOST_LITTLE_ENDIAN
-#define LSB_PTR(p) ((unsigned char *) p)
+#define LSB_PTR(p) ((unsigned char*)p)
 #endif
 
 #ifndef LSB_PTR
@@ -102,13 +93,7 @@
        "use --enable-endian to force configuration"
 #endif
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-pfq_rwlock_init(pfq_rwlock_t *l)
-{
+void pfq_rwlock_init(pfq_rwlock_t* l) {
   atomic_init(&l->rin, 0);
   atomic_init(&l->rout, 0);
   atomic_init(&l->last, 0);
@@ -118,21 +103,17 @@ pfq_rwlock_init(pfq_rwlock_t *l)
   l->whead = mcs_nil;
 }
 
-void
-pfq_rwlock_read_lock(pfq_rwlock_t *l)
-{
+void pfq_rwlock_read_lock(pfq_rwlock_t* l) {
   uint32_t ticket = atomic_fetch_add_explicit(&l->rin, READER_INCREMENT, memory_order_acq_rel);
 
   if (ticket & WRITER_PRESENT) {
     uint32_t phase = ticket & PHASE_BIT;
-    while (atomic_load_explicit(&l->writer_blocking_readers[phase].bit, memory_order_acquire));
+    while (atomic_load_explicit(&l->writer_blocking_readers[phase].bit, memory_order_acquire))
+      ;
   }
 }
 
-
-void
-pfq_rwlock_read_unlock(pfq_rwlock_t *l)
-{
+void pfq_rwlock_read_unlock(pfq_rwlock_t* l) {
   uint32_t ticket = atomic_fetch_add_explicit(&l->rout, READER_INCREMENT, memory_order_acq_rel);
 
   if (ticket & WRITER_PRESENT) {
@@ -144,10 +125,7 @@ pfq_rwlock_read_unlock(pfq_rwlock_t *l)
   }
 }
 
-
-void
-pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
-{
+void pfq_rwlock_write_lock(pfq_rwlock_t* l, pfq_rwlock_node_t* me) {
   //--------------------------------------------------------------------
   // use MCS lock to enforce mutual exclusion with other writers
   //--------------------------------------------------------------------
@@ -167,7 +145,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set writer_blocking_readers to block any readers in the next batch
   //--------------------------------------------------------------------
   uint32_t phase = atomic_load_explicit(&l->rin, memory_order_relaxed) & PHASE_BIT;
-  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release); 
+  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release);
 
   //----------------------------------------------------------------------------
   // store to writer_blocking_headers bit must complete before incrementing rin
@@ -196,7 +174,8 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // if any reads are active, wait for last reader to signal me
   //--------------------------------------------------------------------
   if (in != out) {
-    while (atomic_load_explicit(&me->blocked, memory_order_acquire));
+    while (atomic_load_explicit(&me->blocked, memory_order_acquire))
+      ;
     // wait for active reads to drain
 
     //--------------------------------------------------------------------------
@@ -206,15 +185,12 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   }
 }
 
-
-void
-pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
-{
+void pfq_rwlock_write_unlock(pfq_rwlock_t* l, pfq_rwlock_node_t* me) {
   //--------------------------------------------------------------------
   // toggle phase and clear WRITER_PRESENT in rin. No synch issues
   // since there are no concurrent updates of the low-order byte
   //--------------------------------------------------------------------
-  unsigned char *lsb = LSB_PTR(&l->rin);
+  unsigned char* lsb = LSB_PTR(&l->rin);
   uint32_t phase = *lsb & PHASE_BIT;
   *lsb ^= WRITER_MASK;
 

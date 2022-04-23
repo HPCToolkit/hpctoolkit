@@ -47,71 +47,26 @@
 //   cuda-device-map.h
 //
 // Purpose:
-//   interface definitions for map that enables one to look up device 
+//   interface definitions for map that enables one to look up device
 //   properties given a device id
-//  
+//
 //***************************************************************************
 
 #ifndef cuda_device_map_h
 #define cuda_device_map_h
 
-
-
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "cuda-api.h"
 
 #include <stdint.h>
 
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include "cuda-api.h"
-
-
-
-//*****************************************************************************
-// type definitions 
-//*****************************************************************************
-
 typedef struct cuda_device_map_entry_t cuda_device_map_entry_t;
 
+cuda_device_map_entry_t* cuda_device_map_lookup(uint32_t id);
 
+void cuda_device_map_insert(uint32_t device);
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
+void cuda_device_map_delete(uint32_t device);
 
-cuda_device_map_entry_t *
-cuda_device_map_lookup
-(
- uint32_t id
-);
-
-
-void
-cuda_device_map_insert
-(
- uint32_t device
-);
-
-
-void
-cuda_device_map_delete
-(
- uint32_t device
-);
-
-
-cuda_device_property_t *
-cuda_device_map_entry_device_property_get
-(
- cuda_device_map_entry_t *entry
-);
-
-
+cuda_device_property_t* cuda_device_map_entry_device_property_get(cuda_device_map_entry_t* entry);
 
 #endif

@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Filter.hpp $
-// $Id: Filter.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Filter.hpp
+// $ $Id: Filter.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Filter.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/Filter.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -65,58 +68,60 @@
 
 #ifndef FILTER_HPP_
 #define FILTER_HPP_
-namespace TraceviewerServer
-{
+namespace TraceviewerServer {
 class Range {
-		int min;
-		int max;
-		int stride;
-	public:
-		Range(){//Default range matches nothing
-			min = 0;
-			max = 0;
-			stride = 1;
-		}
-		bool matches (int i){
-			if (i < min) return false;
-			if (i > max) return false;
-			return ((i-min)%stride)==0;
-		}
-		Range(int _min, int _max, int _stride){
-			min = _min;
-			max = _max;
-			stride = _stride;
-		}
+  int min;
+  int max;
+  int stride;
+
+public:
+  Range() {  // Default range matches nothing
+    min = 0;
+    max = 0;
+    stride = 1;
+  }
+  bool matches(int i) {
+    if (i < min)
+      return false;
+    if (i > max)
+      return false;
+    return ((i - min) % stride) == 0;
+  }
+  Range(int _min, int _max, int _stride) {
+    min = _min;
+    max = _max;
+    stride = _stride;
+  }
 };
 
-struct BinaryRepresentationOfFilter{
-	int processMin;
-	int processMax;
-	int processStride;
-	int threadMin;
-	int threadMax;
-	int threadStride;
+struct BinaryRepresentationOfFilter {
+  int processMin;
+  int processMax;
+  int processStride;
+  int threadMin;
+  int threadMax;
+  int threadStride;
 };
 
 class Filter {
 public:
-	Filter() {
-	}
-	Filter(Range _process, Range _thread){
-		process = _process;
-		thread = _thread;
-	}
-	Filter (BinaryRepresentationOfFilter tocopy) {
-		process = Range(tocopy.processMin, tocopy.processMax, tocopy.processStride);
-		thread = Range(tocopy.threadMin, tocopy.threadMax, tocopy.threadStride);
-	}
-	bool matches (int processNum, int threadNum){
-		return (process.matches(processNum) && thread.matches(threadNum));
-	}
+  Filter() {}
+  Filter(Range _process, Range _thread) {
+    process = _process;
+    thread = _thread;
+  }
+  Filter(BinaryRepresentationOfFilter tocopy) {
+    process = Range(tocopy.processMin, tocopy.processMax, tocopy.processStride);
+    thread = Range(tocopy.threadMin, tocopy.threadMax, tocopy.threadStride);
+  }
+  bool matches(int processNum, int threadNum) {
+    return (process.matches(processNum) && thread.matches(threadNum));
+  }
+
 private:
-	Range process;
-	Range thread;
-} ;
-}
+  Range process;
+  Range thread;
+};
+}  // namespace TraceviewerServer
 
 #endif /* FILTER_HPP_ */

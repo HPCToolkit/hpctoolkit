@@ -56,8 +56,7 @@ namespace hpctoolkit::mpi {
 
 namespace detail {
 // NOTE: These are in-place operations, for efficiency.
-void reduce(void* data, std::size_t cnt, const Datatype&,
-            std::size_t rootRank, const Op&);
+void reduce(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank, const Op&);
 void allreduce(void* data, std::size_t cnt, const Datatype&, const Op&);
 }  // namespace detail
 
@@ -79,12 +78,10 @@ T allreduce(T data, const Op& op) {
 }
 
 /// Reduction operation. Variant to disable the usage of pointers.
-template<class T>
-T* reduce(T*, std::size_t, const Op&) = delete;
+template<class T> T* reduce(T*, std::size_t, const Op&) = delete;
 
 /// Broadcast reduction operation. Variant to disable the usage of pointers.
-template<class T>
-T* allreduce(T*, const Op&) = delete;
+template<class T> T* allreduce(T*, const Op&) = delete;
 
 /// Reduction operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
@@ -94,8 +91,7 @@ std::array<T, N> reduce(std::array<T, N> data, std::size_t root, const Op& op) {
 }
 
 /// Broadcast reduction operation. Variant to allow for the usage of std::array.
-template<class T, std::size_t N>
-std::array<T, N> allreduce(std::array<T, N> data, const Op& op) {
+template<class T, std::size_t N> std::array<T, N> allreduce(std::array<T, N> data, const Op& op) {
   detail::allreduce(data.data(), N, detail::asDatatype<T>(), op);
   return data;
 }
@@ -110,12 +106,10 @@ std::vector<T, A> reduce(std::vector<T, A> data, std::size_t root, const Op& op)
 
 /// Broadcast reduction operation. Variant to allow for the usage of std::vector.
 /// Note that the size of `data` on every rank must be the same.
-template<class T, class A>
-std::vector<T, A> allreduce(std::vector<T, A> data, const Op& op) {
+template<class T, class A> std::vector<T, A> allreduce(std::vector<T, A> data, const Op& op) {
   detail::allreduce(data.data(), data.size(), detail::asDatatype<T>(), op);
   return data;
 }
-
 }  // namespace hpctoolkit::mpi
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_REDUCE_H

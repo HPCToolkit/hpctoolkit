@@ -60,25 +60,17 @@
 #ifndef Args_h
 #define Args_h
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/support/CmdLineParser.hpp"
 
 #include <iostream>
 #include <string>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
 class Args {
-public: 
-  Args(); 
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  ~Args();
 
   // Parse the command line
   void Parse(int argc, const char* const argv[]);
@@ -86,7 +78,7 @@ public:
   // Version and Usage information
   void PrintVersion(std::ostream& os) const;
   void PrintUsage(std::ostream& os) const;
-  
+
   // Error
   void PrintError(std::ostream& os, const char* msg) const;
   void PrintError(std::ostream& os, const std::string& msg) const;
@@ -95,19 +87,19 @@ public:
   void Dump(std::ostream& os = std::cerr) const;
   void DDump() const;
 
-public:  
+public:
   // Parsed Data: Command
   const std::string& getCmd() const { return parser.getCmd(); }
 
   // Parsed Data: optional arguments
-  unsigned int listAvailableMetrics; // 0: no, 1: short, 2: long. 0 is default
+  unsigned int listAvailableMetrics;  // 0: no, 1: short, 2: long. 0 is default
   std::string metricList;
   std::string excludeMList;
-  bool outputRawMetrics;     // default: false
+  bool outputRawMetrics;  // default: false
 
   // Parsed Data: arguments
-  std::string progFile; // binary that was profiled
-  std::string profFile; // profiling output for 'progFile'
+  std::string progFile;  // binary that was profiled
+  std::string profFile;  // profiling output for 'progFile'
 
 private:
   void Ctor();
@@ -115,6 +107,6 @@ private:
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
 #endif

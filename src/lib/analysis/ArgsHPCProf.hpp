@@ -60,85 +60,59 @@
 #ifndef Analysis_ArgsHPCProf_hpp
 #define Analysis_ArgsHPCProf_hpp
 
-//************************* System Include Files ****************************
+#include "Args.hpp"
+
+#include "include/uint.h"
+#include "lib/support/CmdLineParser.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include "Args.hpp"
-
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
 namespace Analysis {
 
-enum class AppType {APP_HPCPROF, APP_HPCPROF_MPI};
+enum class AppType { APP_HPCPROF, APP_HPCPROF_MPI };
 
-class ArgsHPCProf
-  : public Analysis::Args
-{
+class ArgsHPCProf : public Analysis::Args {
 public:
-  ArgsHPCProf(); 
+  ArgsHPCProf();
   virtual ~ArgsHPCProf();
 
   // Parse the command line
-  virtual void
-  parse(int argc, const char* const argv[], AppType type);
+  virtual void parse(int argc, const char* const argv[], AppType type);
 
   // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
+  void printVersion(std::ostream& os) const;
 
-  void
-  printUsage(std::ostream& os, AppType type) const;
+  void printUsage(std::ostream& os, AppType type) const;
 
-  void
-  printUsageProf(std::ostream& os) const;
+  void printUsageProf(std::ostream& os) const;
 
-  void
-  printUsageProfMPI(std::ostream& os) const;
+  void printUsageProfMPI(std::ostream& os) const;
 
   // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
+  void printError(std::ostream& os, const char* msg) const;
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
+  void printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  virtual void
-  dump(std::ostream& os = std::cerr) const;
+  virtual void dump(std::ostream& os = std::cerr) const;
 
 public:
   // Parsed Data: Command
-  virtual const std::string
-  getCmd() const = 0;
+  virtual const std::string getCmd() const = 0;
 
 protected:
-  bool
-  parseArg_norm(const std::string& value, const char* errTag);
+  bool parseArg_norm(const std::string& value, const char* errTag);
 
-  void
-  parseArg_metric(const std::string& value, const char* errTag);
+  void parseArg_metric(const std::string& value, const char* errTag);
 
-  
-  static std::string
-  makeDBDirName(const std::string& profileArg);
+  static std::string makeDBDirName(const std::string& profileArg);
 
 protected:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
 };
+}  // namespace Analysis
 
-} // namespace Analysis
-
-
-#endif // Analysis_ArgsHPCProf_hpp 
+#endif  // Analysis_ArgsHPCProf_hpp

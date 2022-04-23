@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DebugUtils.hpp $
-// $Id: DebugUtils.hpp 4317 2013-07-25 16:32:22Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DebugUtils.hpp
+// $ $Id: DebugUtils.hpp 4317 2013-07-25 16:32:22Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DebugUtils.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DebugUtils.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -57,28 +60,29 @@
 //
 //***************************************************************************
 
-
 #ifndef DEBUGUTILS_HPP_
 #define DEBUGUTILS_HPP_
 
-#include <sys/time.h>
 #include <iostream>
+#include <sys/time.h>
+
 using namespace std;
 
 #ifndef DEBUG
 #define DEBUG 0
 #endif
 
-#define DEBUGCOUT(a) if (DEBUG > (a))\
-						cout
+#define DEBUGCOUT(a) \
+  if (DEBUG > (a))   \
+  cout
 
-#define LOGTIMESTAMPEDMSG(msg) \
-{\
-	timeval t; \
-	t.tv_sec = 0; t.tv_usec = 0; \
-	gettimeofday(&t, NULL); \
-	clog << t.tv_sec*1000000 + t.tv_usec<<"\t" << msg << endl;\
-}
-
+#define LOGTIMESTAMPEDMSG(msg)                                     \
+  {                                                                \
+    timeval t;                                                     \
+    t.tv_sec = 0;                                                  \
+    t.tv_usec = 0;                                                 \
+    gettimeofday(&t, NULL);                                        \
+    clog << t.tv_sec * 1000000 + t.tv_usec << "\t" << msg << endl; \
+  }
 
 #endif /* DEBUGUTILS_HPP_ */

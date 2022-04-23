@@ -48,58 +48,34 @@
 // StackableIterator.C
 //
 //   a base set of functionality for iterators that can be used with the
-//   IteratorStack abstraction to traverse nested structures 
+//   IteratorStack abstraction to traverse nested structures
 //
-// Author: John Mellor-Crummey                                
+// Author: John Mellor-Crummey
 //
 // Creation Date: October 1993
 //
 // Modification History:
-//   see StackableIterator.h 
-// 
+//   see StackableIterator.h
+//
 //***************************************************************************
-
-//************************** System Include Files ***************************
-
-#include <typeinfo>
-
-//*************************** User Include Files ****************************
 
 #include "StackableIterator.hpp"
 
-//*************************** Forward Declarations **************************
+#include <typeinfo>
 
-//***************************************************************************
+StackableIterator::StackableIterator() {}
 
-//***************************************************************************
-// class StackableIterator interface operations
-//***************************************************************************
+StackableIterator::~StackableIterator() {}
 
-StackableIterator::StackableIterator()  
-{
-  
-}
-
-
-StackableIterator::~StackableIterator()
-{
-}
-
-
-void StackableIterator::operator++(int)
-{
+void StackableIterator::operator++(int) {
   this->operator++();
 }
 
-
-bool StackableIterator::IsValid() const
-{
+bool StackableIterator::IsValid() const {
   return (this->CurrentUpCall() != 0);
 }
 
-
-void StackableIterator::Dump() 
-{
+void StackableIterator::Dump() {
 #if 0
   dumpHandler.Dump("[%s %x; current = %x]\n", typeid(this).name(), this, 
 		   CurrentUpCall());
@@ -107,12 +83,4 @@ void StackableIterator::Dump()
 #endif
 }
 
-
-void StackableIterator::DumpUpCall() 
-{
-}
-
-
-
-
-
+void StackableIterator::DumpUpCall() {}

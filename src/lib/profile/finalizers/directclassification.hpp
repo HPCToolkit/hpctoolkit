@@ -48,7 +48,6 @@
 #define HPCTOOLKIT_PROFILE_FINALIZERS_DIRECTCLASSIFICATION_H
 
 #include "../finalizer.hpp"
-
 #include "../util/range_map.hpp"
 
 #include <map>
@@ -80,9 +79,9 @@ private:
 
     // Storage for DWARF linemap data
     using line = std::pair<util::reference_index<const File>, uint64_t>;
-    util::range_map<uint64_t, std::optional<line>,
-                    util::range_merge::truthy<void,
-                      util::range_merge::min<>>> lines;
+    util::range_map<
+        uint64_t, std::optional<line>, util::range_merge::truthy<void, util::range_merge::min<>>>
+        lines;
 
     // Storage for ELF symbols
     std::multimap<util::interval<uint64_t>, Function> symbols;
@@ -94,7 +93,6 @@ private:
   bool fullDwarf(void* dw, const Module&, udModule&);
   bool symtab(void* elf, const Module&, udModule&);
 };
-
-}
+}  // namespace hpctoolkit::finalizers
 
 #endif  // HPCTOOLKIT_PROFILE_FINALIZERS_DIRECTCLASSIFICATION_H

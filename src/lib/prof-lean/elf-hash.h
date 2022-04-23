@@ -39,7 +39,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: elf-hash.h
@@ -56,8 +55,6 @@
 extern "C" {
 #endif
 
-
-
 //-----------------------------------------------------------------------------
 // function:
 //   elf_hash
@@ -69,16 +66,10 @@ extern "C" {
 //   success: hash string
 //   failure: NULL
 //-----------------------------------------------------------------------------
-char *
-elf_hash
-(
- const char *filename
-);
-
+char* elf_hash(const char* filename);
 
 #ifdef __cplusplus
 };
 #endif
-
 
 #endif

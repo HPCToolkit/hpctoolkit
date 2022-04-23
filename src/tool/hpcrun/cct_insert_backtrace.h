@@ -47,12 +47,12 @@
 #ifndef CCT_INSERT_BACKTRACE_H
 #define CCT_INSERT_BACKTRACE_H
 
-#include <cct/cct_bundle.h>
-#include <cct/cct.h>
-#include <unwind/common/backtrace.h>
+#include "cct/cct.h"
+#include "cct/cct_bundle.h"
 #include "metrics.h"
+#include "unwind/common/backtrace.h"
 
-typedef  cct_node_t *(*hpcrun_kernel_callpath_t)(cct_node_t *path, void *data_aux);
+typedef cct_node_t* (*hpcrun_kernel_callpath_t)(cct_node_t* path, void* data_aux);
 
 //
 // interface routines
@@ -71,35 +71,32 @@ typedef  cct_node_t *(*hpcrun_kernel_callpath_t)(cct_node_t *path, void *data_au
 //              ^ path_end                        ^ path_beg
 //              ^ bt_beg                                       ^ bt_end
 //
-extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
+extern cct_node_t*
+hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
 
-extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_node_t* cct,
-							int metric_id,
-							frame_t* path_beg, frame_t* path_end,
-							cct_metric_data_t datum, void *data);
+extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(
+    cct_node_t* cct, int metric_id, frame_t* path_beg, frame_t* path_end, cct_metric_data_t datum,
+    void* data);
 
-extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, 
-backtrace_info_t *bt,
+extern cct_node_t* hpcrun_cct_record_backtrace(
+    cct_bundle_t* bndl, bool partial, backtrace_info_t* bt,
 #if 0
 bool thread_stop,
 					       frame_t* bt_beg, frame_t* bt_last,
 #endif
-					       bool tramp_found);
+    bool tramp_found);
 
-extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, 
-backtrace_info_t *bt,
+extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(
+    cct_bundle_t* bndl, bool partial, backtrace_info_t* bt,
 #if 0
 bool thread_stop,
 							frame_t* bt_beg, frame_t* bt_last,
 #endif
-				bool tramp_found,
-	                        int metricId, hpcrun_metricVal_t metricIncr,
-				void *data);
+    bool tramp_found, int metricId, hpcrun_metricVal_t metricIncr, void* data);
 
-extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
-	int metricId, hpcrun_metricVal_t metricIncr,
-	int skipInner, int isSync, void *data);
-
+extern cct_node_t* hpcrun_backtrace2cct(
+    cct_bundle_t* cct, ucontext_t* context, int metricId, hpcrun_metricVal_t metricIncr,
+    int skipInner, int isSync, void* data);
 
 extern void hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp);
 
@@ -108,4 +105,4 @@ extern void hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp);
 //   simulates errors to test partial unwind capability
 //
 
-#endif // CCT_INSERT_BACKTRACE_H
+#endif  // CCT_INSERT_BACKTRACE_H

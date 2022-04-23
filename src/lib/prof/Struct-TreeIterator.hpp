@@ -60,50 +60,31 @@
 #ifndef prof_Prof_Struct_TreeIterator_hpp
 #define prof_Prof_Struct_TreeIterator_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
 
 #include <iostream>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-//NOTE: included by Struct-Tree.hpp
+// NOTE: included by Struct-Tree.hpp
 //#include "Struct-Tree.hpp"
 
-#include <lib/support/NonUniformDegreeTree.hpp>
-#include <lib/support/WordSet.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
+#include "lib/support/NonUniformDegreeTree.hpp"
+#include "lib/support/WordSet.hpp"
 
 namespace Prof {
 
 namespace Struct {
 
-//***************************************************************************
-// ANodeFilter
-//***************************************************************************
-
 typedef bool (*ANodeFilterFct)(const ANode& x, long addArg);
 
 class ANodeFilter {
 public:
-  ANodeFilter(ANodeFilterFct f, const char* n, long a) 
-    : fct(f), m_name(n), arg(a) 
-  { }
-  
-  virtual ~ANodeFilter()
-  { }
+  ANodeFilter(ANodeFilterFct f, const char* n, long a) : fct(f), m_name(n), arg(a) {}
 
-  bool
-  apply(const ANode& s) const
-  { return fct(s, arg); }
+  virtual ~ANodeFilter() {}
 
-  const char*
-  name() const
-  { return m_name; }
+  bool apply(const ANode& s) const { return fct(s, arg); }
+
+  const char* name() const { return m_name; }
 
 private:
   const ANodeFilterFct fct;
@@ -112,11 +93,10 @@ private:
 };
 
 // HasANodeTy(s,tp) == ((tp == ANY) || (s.Type() == tp));
-extern bool HasANodeTy(const ANode &sinfo, long type);
+extern bool HasANodeTy(const ANode& sinfo, long type);
 
 // ANodeTyFilter[tp].Apply(s) == HasANodeTy(s,tp)
 extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
-
 
 //*****************************************************************************
 // ANodeChildIterator: Iterates over all children of a ANode that pass
@@ -134,54 +114,37 @@ extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 //              until the last node is removed
 
 class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
-public: 
-
+public:
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
   ANodeChildIterator(const ANode* root, const ANodeFilter* filter = NULL)
-    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false), 
-      m_filter(filter)
-  { }
+      : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/ false), m_filter(filter) {}
 
+  ANode* current() const { return static_cast<ANode*>(Current()); }
 
-  ANode*
-  current() const 
-  { return static_cast<ANode*>(Current()); }
-
-
-  virtual NonUniformDegreeTreeNode*
-  Current() const
-  {
+  virtual NonUniformDegreeTreeNode* Current() const {
     NonUniformDegreeTreeNode* x_base = NULL;
-    while ( (x_base = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
+    while ((x_base = NonUniformDegreeTreeNodeChildIterator::Current())) {
       ANode* x = static_cast<ANode*>(x_base);
       if ((m_filter == NULL) || m_filter->apply(*x)) {
-	break;
+        break;
       }
       const_cast<ANodeChildIterator*>(this)->operator++();
     }
     return x_base;
   }
-  
-private: 
-  const ANodeFilter* m_filter; 
-};
 
+private:
+  const ANodeFilter* m_filter;
+};
 
 class ACodeNodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
-public: 
+public:
   ACodeNodeChildIterator(const ACodeNode* root)
-    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false)
-  { }
+      : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/ false) {}
 
-  ACodeNode*
-  current() const 
-  { 
-    return dynamic_cast<ACodeNode*>(Current()); 
-  }
-
+  ACodeNode* current() const { return dynamic_cast<ACodeNode*>(Current()); }
 };
-
 
 //***************************************************************************
 // ANodeIterator: Iterates over all ANodes in the tree
@@ -192,44 +155,35 @@ public:
 //***************************************************************************
 
 class ANodeIterator : public NonUniformDegreeTreeIterator {
-public: 
+public:
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
-  ANodeIterator(const ANode* root,
-		const ANodeFilter* filter = NULL,
-		bool leavesOnly = false,
-		TraversalOrder torder = PreOrder)
-    : NonUniformDegreeTreeIterator(root, torder, 
-				   ((leavesOnly) 
-				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
-				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
-      m_filter(filter)
-  { }
+  ANodeIterator(
+      const ANode* root, const ANodeFilter* filter = NULL, bool leavesOnly = false,
+      TraversalOrder torder = PreOrder)
+      : NonUniformDegreeTreeIterator(
+          root, torder,
+          ((leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
+                        : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
+        m_filter(filter) {}
 
+  ANode* current() const { return static_cast<ANode*>(Current()); }
 
-  ANode*
-  current() const
-  { return static_cast<ANode*>(Current()); }
-
-
-  virtual NonUniformDegreeTreeNode*
-  Current() const
-  {
+  virtual NonUniformDegreeTreeNode* Current() const {
     NonUniformDegreeTreeNode* x_base = NULL;
-    while ( (x_base = NonUniformDegreeTreeIterator::Current()) ) {
+    while ((x_base = NonUniformDegreeTreeIterator::Current())) {
       ANode* x = static_cast<ANode*>(x_base);
       if ((m_filter == NULL) || m_filter->apply(*x)) {
-	break;
+        break;
       }
       const_cast<ANodeIterator*>(this)->operator++();
-    } 
+    }
     return x_base;
   }
 
-private: 
+private:
   const ANodeFilter* m_filter;
-};  
-
+};
 
 //*****************************************************************************
 // ANodeSortedIterator
@@ -240,36 +194,27 @@ private:
 class ANodeSortedIterator {
 public:
   // return -1, 0, or 1 for x < y, x = y, or x > y, respectively
-  typedef int (*cmp_fptr_t) (const void* x, const void* y);
+  typedef int (*cmp_fptr_t)(const void* x, const void* y);
 
   static int cmpByName(const void* x, const void* y);
   static int cmpByLine(const void* x, const void* y);
   static int cmpById(const void* x, const void* y);
 
-  static cmp_fptr_t 
-  cmpByMetric(uint mId)
-  {
+  static cmp_fptr_t cmpByMetric(uint mId) {
     cmpByMetric_mId = mId;
     return cmpByMetric_fn;
   }
   static int cmpByMetric_fn(const void* x, const void* y);
-  static int cmpByMetric_mId; // need a fuctor/closure to avoid this
+  static int cmpByMetric_mId;  // need a fuctor/closure to avoid this
 
+public:
+  ANodeSortedIterator(
+      const ANode* node, cmp_fptr_t compare_fn, const ANodeFilter* filterFunc = NULL,
+      bool leavesOnly = true);
 
-public: 
-  ANodeSortedIterator(const ANode* node,
-		      cmp_fptr_t compare_fn,
-		      const ANodeFilter* filterFunc = NULL,
-		      bool leavesOnly = true);
+  ~ANodeSortedIterator() { delete ptrSetIt; }
 
-  ~ANodeSortedIterator()
-  {
-    delete ptrSetIt;
-  }
-
-  ANode*
-  current() const
-  {
+  ANode* current() const {
     ANode* x = NULL;
     if (ptrSetIt->Current()) {
       x = reinterpret_cast<ANode*>(*ptrSetIt->Current());
@@ -277,41 +222,26 @@ public:
     return x;
   }
 
-  void
-  operator++(int)
-  {
-    (*ptrSetIt)++;
-  }
+  void operator++(int) { (*ptrSetIt)++; }
 
-  void
-  reset()
-  {
-    ptrSetIt->Reset();
-  }
+  void reset() { ptrSetIt->Reset(); }
 
-  void
-  dumpAndReset(std::ostream &os = std::cerr);
+  void dumpAndReset(std::ostream& os = std::cerr);
 
 private:
   WordSet scopes;
   WordSetSortedIterator* ptrSetIt;
 };
-
 
 class ANodeSortedChildIterator {
-public: 
-  ANodeSortedChildIterator(const ANode* root,
-			   ANodeSortedIterator::cmp_fptr_t compare_fn,
-			   const ANodeFilter* filterFunc = NULL);
+public:
+  ANodeSortedChildIterator(
+      const ANode* root, ANodeSortedIterator::cmp_fptr_t compare_fn,
+      const ANodeFilter* filterFunc = NULL);
 
-  ~ANodeSortedChildIterator()
-  {
-    delete ptrSetIt;
-  }
+  ~ANodeSortedChildIterator() { delete ptrSetIt; }
 
-  ANode*
-  current() const
-  {
+  ANode* current() const {
     ANode* x = NULL;
     if (ptrSetIt->Current()) {
       x = reinterpret_cast<ANode*>(*ptrSetIt->Current());
@@ -319,29 +249,17 @@ public:
     return x;
   }
 
-  void
-  operator++(int)
-  { (*ptrSetIt)++; }
+  void operator++(int) { (*ptrSetIt)++; }
 
-  void
-  reset()
-  {
-    ptrSetIt->Reset();
-  }
+  void reset() { ptrSetIt->Reset(); }
 
-  void
-  dumpAndReset(std::ostream &os = std::cerr);
+  void dumpAndReset(std::ostream& os = std::cerr);
 
 private:
   WordSet scopes;
   WordSetSortedIterator* ptrSetIt;
 };
-
-
-} // namespace Struct
-
-} // namespace Prof
-
-//***************************************************************************
+}  // namespace Struct
+}  // namespace Prof
 
 #endif /* prof_Prof_Struct_TreeIterator_hpp */

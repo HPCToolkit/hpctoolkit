@@ -48,9 +48,9 @@
 #define HPCTOOLKIT_PROFILE_SOURCES_HPCRUN4_H
 
 #include "../source.hpp"
+#include "../stdshim/filesystem.hpp"
 
 #include <memory>
-#include "../stdshim/filesystem.hpp"
 
 // Forward declaration of a structure.
 extern "C" typedef struct hpcrun_sparse_file hpcrun_sparse_file_t;
@@ -94,12 +94,12 @@ private:
   stdshim::filesystem::path path;
 
   struct metric_t {
-    metric_t(Metric& metric) : metric(metric) {};
+    metric_t(Metric& metric) : metric(metric){};
     Metric& metric;
     // If true, the Metric applies to the relation instead of the full Context
     bool isRelation : 1;
     // If true, the values should be interpreted as ints instead of floats
-    bool isInt : 1;
+    bool isInt      : 1;
   };
 
   // ID to Metric mapping.
@@ -111,15 +111,17 @@ private:
   // Simple single Context.
   struct singleCtx_t {
     singleCtx_t(util::optional_ref<Context> par, std::pair<Context&, Context&> ctxs)
-      : par(par), rel(ctxs.first), full(ctxs.second) {};
+        : par(par), rel(ctxs.first), full(ctxs.second){};
     singleCtx_t(util::optional_ref<Context> par, Context& rel, Context& full)
-      : par(par), rel(rel), full(full) {};
+        : par(par), rel(rel), full(full){};
     util::optional_ref<Context> par;  ///< Parent Context
-    Context& rel;  ///< Context referring to the Relation
-    Context& full;  ///< Full nested Context
+    Context& rel;                     ///< Context referring to the Relation
+    Context& full;                    ///< Full nested Context
   };
   // Inlined Reconstruction (eg. GPU PC sampling in serialized mode).
-  struct reconstructedCtx_t { ContextReconstruction& ctx; };
+  struct reconstructedCtx_t {
+    ContextReconstruction& ctx;
+  };
   // Reference to an outlined range tree, GPU context node. Has no metrics.
   // first.par is the root, first.rel is the entry-Context.
   using refRangeContext_t = std::pair<const singleCtx_t&, PerThreadTemporary&>;
@@ -128,23 +130,21 @@ private:
   // Outlined range tree root. Has no metrics, never actually represented.
   using outlinedRangeRoot_t = int;
   // Outlined range tree, GPU context node. Has no metrics.
-  struct outlinedRangeContext_t { PerThreadTemporary& thread; };
+  struct outlinedRangeContext_t {
+    PerThreadTemporary& thread;
+  };
   // Outlined range tree, range node. Has no metrics.
   using outlinedRange_t = std::pair<PerThreadTemporary&, uint64_t>;
   // Outlined range tree, sample node. Has instruction-level metrics.
   using outlinedRangeSample_t = std::pair<const outlinedRange_t&, ContextFlowGraph&>;
 
   // ID to Context-like mapping.
-  std::unordered_map<unsigned int, std::variant<
-      singleCtx_t,
-      reconstructedCtx_t,
-      refRangeContext_t,
-      refRange_t,
-      outlinedRangeRoot_t,
-      outlinedRangeContext_t,
-      outlinedRange_t,
-      outlinedRangeSample_t
-    >> nodes;
+  std::unordered_map<
+      unsigned int,
+      std::variant<
+          singleCtx_t, reconstructedCtx_t, refRangeContext_t, refRange_t, outlinedRangeRoot_t,
+          outlinedRangeContext_t, outlinedRange_t, outlinedRangeSample_t>>
+      nodes;
 
   // Path to the tracefile, and offset of the actual data blob.
   stdshim::filesystem::path tracepath;
@@ -155,7 +155,6 @@ private:
   friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&);
   Hpcrun4(const stdshim::filesystem::path&);
 };
-
-}
+}  // namespace hpctoolkit::sources
 
 #endif  // HPCTOOLKIT_PROFILE_SOURCES_HPCRUN4_H

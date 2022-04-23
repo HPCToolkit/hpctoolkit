@@ -57,51 +57,31 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-
-#include <string>
-using std::string;
-
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "CCT-Merge.hpp"
 
 #include "CCT-Tree.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/gcc-attr.h"
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
 
+#include <iostream>
+#include <string>
 
-//*************************** Forward Declarations ***************************
-
-//***************************************************************************
-
+using std::string;
 
 namespace Prof {
 
 namespace CCT {
 
-//***************************************************************************
-// MergeContext
-//***************************************************************************
-
 MergeContext::MergeContext(Tree* cct, bool doTrackCPIds)
-  : m_cct(cct), m_mrgFlag(0), m_isTrackingCPIds(doTrackCPIds)
-{
+    : m_cct(cct), m_mrgFlag(0), m_isTrackingCPIds(doTrackCPIds) {
   if (isTrackingCPIds()) {
     fillCPIdSet(cct);
   }
 }
 
-
-void
-MergeContext::fillCPIdSet(Tree* cct)
-{
+void MergeContext::fillCPIdSet(Tree* cct) {
   for (ANodeIterator it(cct->root()); it.Current(); ++it) {
     ANode* n = it.current();
     ADynNode* n_dyn = dynamic_cast<ADynNode*>(n);
@@ -112,45 +92,27 @@ MergeContext::fillCPIdSet(Tree* cct)
   }
 }
 
-
-//***************************************************************************
-// MergeEffect
-//***************************************************************************
-
-string
-MergeEffect::toString(const char* pfx) const
-{
+string MergeEffect::toString(const char* pfx) const {
   std::ostringstream os;
   dump(os, pfx);
   return os.str();
 }
 
-
-std::ostream&
-MergeEffect::dump(std::ostream& os, const char* GCC_ATTR_UNUSED pfx) const
-{
+std::ostream& MergeEffect::dump(std::ostream& os, const char* GCC_ATTR_UNUSED pfx) const {
   os << old_cpId << " => " << new_cpId;
   return os;
 }
 
-
-string
-MergeEffect::toString(const MergeEffectList& effctLst,
-			     const char* pfx)
-{
+string MergeEffect::toString(const MergeEffectList& effctLst, const char* pfx) {
   std::ostringstream os;
   dump(effctLst, os, pfx);
   return os.str();
 }
 
-
 std::ostream&
-MergeEffect::dump(const MergeEffectList& effctLst,
-			 std::ostream& os, const char* pfx)
-{
+MergeEffect::dump(const MergeEffectList& effctLst, std::ostream& os, const char* pfx) {
   os << "{ ";
-  for (MergeEffectList::const_iterator it = effctLst.begin();
-       it != effctLst.end(); ++it) {
+  for (MergeEffectList::const_iterator it = effctLst.begin(); it != effctLst.end(); ++it) {
     const MergeEffect& effct = *it;
     os << "[ ";
     effct.dump(os, pfx);
@@ -159,9 +121,5 @@ MergeEffect::dump(const MergeEffectList& effctLst,
   os << "}";
   return os;
 }
-
-
-} // namespace CCT
-
-} // namespace Prof
-
+}  // namespace CCT
+}  // namespace Prof

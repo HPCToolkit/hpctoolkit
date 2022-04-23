@@ -47,56 +47,36 @@
 // Purpose:
 //   Common code for abandoning an unwind via a longjump to the (thread-local) jmpbuf
 
-//*************************************************************************
-//   System Includes
-//*************************************************************************
-
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <stdbool.h>
-
-#include <setjmp.h>
-
-
-//*************************************************************************
-//   Local Includes
-//*************************************************************************
-#include <messages/messages.h>
-#include <unwind/common/backtrace.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/main.h>
-
 #include "unw-throw.h"
 
-//*************************************************************************
-//   Interface functions
-//*************************************************************************
+#include "hpcrun/main.h"
+#include "hpcrun/thread_data.h"
 
-//****************************************************************************
-//   Local data 
-//****************************************************************************
+#include <inttypes.h>
+#include <messages/messages.h>
+#include <setjmp.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unwind/common/backtrace.h>
 
 static int DEBUG_NO_LONGJMP = 0;
 
 //
 // Actually drop a sample, as opposed to recording a partial unwind
 //
-void
-hpcrun_unw_drop(void)
-{
+void hpcrun_unw_drop(void) {
   thread_data_t* td = hpcrun_get_thread_data();
-  td->btbuf_cur = td->btbuf_beg; // flush any collected backtrace frames
+  td->btbuf_cur = td->btbuf_beg;  // flush any collected backtrace frames
 
-  sigjmp_buf_t *it = &(td->bad_unwind);
+  sigjmp_buf_t* it = &(td->bad_unwind);
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
-void
-hpcrun_unw_throw(void)
-{
-  if (DEBUG_NO_LONGJMP) return;
+void hpcrun_unw_throw(void) {
+  if (DEBUG_NO_LONGJMP)
+    return;
 
   if (hpcrun_below_pmsg_threshold()) {
     hpcrun_bt_dump(TD_GET(btbuf_cur), "PARTIAL");
@@ -104,6 +84,6 @@ hpcrun_unw_throw(void)
 
   hpcrun_up_pmsg_count();
 
-  sigjmp_buf_t *it = &(TD_GET(bad_unwind));
+  sigjmp_buf_t* it = &(TD_GET(bad_unwind));
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }

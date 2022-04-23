@@ -44,20 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//************************ System Include Files ******************************
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
-#include <string>
-using std::string;
-
-//************************ Xerces Include Files ******************************
-
-//************************* User Include Files *******************************
-
 #include "XercesSAX2.hpp"
 
-//****************************************************************************
-
+#include <iostream>
+#include <string>

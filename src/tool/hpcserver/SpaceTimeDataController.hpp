@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/SpaceTimeDataController.hpp $
-// $Id: SpaceTimeDataController.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/SpaceTimeDataController.hpp
+// $ $Id: SpaceTimeDataController.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/SpaceTimeDataController.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/SpaceTimeDataController.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -59,58 +62,54 @@
 #ifndef SpaceTimeDataController_H_
 #define SpaceTimeDataController_H_
 #include "FileData.hpp"
-#include "ImageTraceAttributes.hpp"
-#include "ProcessTimeline.hpp"
 #include "FilteredBaseData.hpp"
 #include "FilterSet.hpp"
+#include "ImageTraceAttributes.hpp"
+#include "ProcessTimeline.hpp"
 #include "TimeCPID.hpp"
 
 #include <string>
 
-namespace TraceviewerServer
-{
+namespace TraceviewerServer {
 
-	class SpaceTimeDataController
-	{
-	public:
+class SpaceTimeDataController {
+public:
+  SpaceTimeDataController(FileData*);
+  virtual ~SpaceTimeDataController();
+  void setInfo(Time, Time, int);
+  ProcessTimeline* getNextTrace();
+  void addNextTrace(ProcessTimeline*);
+  void fillTraces();
+  ProcessTimeline* fillTrace(bool);
+  void applyFilters(FilterSet filters);
+  // The number of processes in the database, independent of the current display size
+  int getNumRanks();
 
-		SpaceTimeDataController(FileData*);
-		virtual ~SpaceTimeDataController();
-		void setInfo(Time, Time, int);
-		ProcessTimeline* getNextTrace();
-		void addNextTrace(ProcessTimeline*);
-		void fillTraces();
-		ProcessTimeline* fillTrace(bool);
-		void applyFilters(FilterSet filters);
-		//The number of processes in the database, independent of the current display size
-		int getNumRanks();
+  int* getValuesXProcessID();
+  short* getValuesXThreadID();
 
-		 int* getValuesXProcessID();
-		 short* getValuesXThreadID();
+  std::string getExperimentXML();
+  ImageTraceAttributes* attributes;
+  ProcessTimeline** traces;
+  int tracesLength;
 
-		std::string getExperimentXML();
-		ImageTraceAttributes* attributes;
-		ProcessTimeline** traces;
-		int tracesLength;
-	private:
-		void resetTraces();
-		void deleteTraces();
+private:
+  void resetTraces();
+  void deleteTraces();
 
-		FilteredBaseData* dataTrace;
-		int headerSize;
+  FilteredBaseData* dataTrace;
+  int headerSize;
 
-		// The minimum beginning and maximum ending time stamp across all traces (in microseconds).
-		Time maxEndTime, minBegTime;
+  // The minimum beginning and maximum ending time stamp across all traces (in microseconds).
+  Time maxEndTime, minBegTime;
 
-		int height;
-		string experimentXML;
-		string fileTrace;
+  int height;
+  string experimentXML;
+  string fileTrace;
 
-		bool tracesInitialized;
+  bool tracesInitialized;
 
-		static const int DEFAULT_HEADER_SIZE = 24;
-
-	};
-
+  static const int DEFAULT_HEADER_SIZE = 24;
+};
 } /* namespace TraceviewerServer */
 #endif /* SpaceTimeDataController_H_ */

@@ -73,7 +73,7 @@
 
 //
 // objects follow the prototype below:
-// 
+//
 // typedef struct _obj_s {
 //
 //  METHOD_DEF(void,m1,void);    // defines method m1(void)
@@ -84,6 +84,6 @@
 
 // NOTEME: gcc specific use of ##__VA_ARGS__ (necessary for methods w no aux args)
 
-#define METHOD_CALL(obj,meth,...) (obj)->meth((obj), ##__VA_ARGS__)
+#define METHOD_CALL(obj, meth, ...) (obj)->meth((obj), ##__VA_ARGS__)
 
-#endif // SIMPLE_OO_H
+#endif  // SIMPLE_OO_H

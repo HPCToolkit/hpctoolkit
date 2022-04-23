@@ -49,13 +49,6 @@
 
 #include "binarytree_uwi.h"
 
-//***************************************************************************
-// external interface
-//***************************************************************************
+btuwi_status_t build_intervals(char* ins, unsigned int len, unwinder_t uw);
 
-btuwi_status_t
-build_intervals(char  *ins, unsigned int len, unwinder_t uw);
-
-//***************************************************************************
-
-#endif // unwind_interval_h
+#endif  // unwind_interval_h

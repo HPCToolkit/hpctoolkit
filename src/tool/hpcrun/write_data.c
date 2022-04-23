@@ -44,68 +44,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "write_data.h"
 
+#include "backtrace.h"
+#include "cct/cct_bundle.h"
+#include "cct_bundle.h"
+#include "epoch.h"
+#include "files.h"
+#include "fname_max.h"
+#include "hpcrun_return_codes.h"
+#include "loadmap.h"
+#include "lush/lush-backtrace.h"
+#include "messages/messages.h"
+#include "rank.h"
+#include "sample_prob.h"
+#include "thread_data.h"
+
+#include "lib/prof-lean/hpcfmt.h"
+#include "lib/prof-lean/hpcio.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
+#include "lib/support-lean/OSUtil.h"
+
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <setjmp.h>
 #include <unistd.h>
 
+static epoch_flags_t epoch_flags = {.bits = 0};
 
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include "fname_max.h"
-#include "backtrace.h"
-#include "files.h"
-#include "epoch.h"
-#include "rank.h"
-#include "thread_data.h"
-#include "cct_bundle.h"
-#include "hpcrun_return_codes.h"
-#include "write_data.h"
-#include "loadmap.h"
-#include "sample_prob.h"
-#include "cct/cct_bundle.h"
-
-#include <messages/messages.h>
-
-#include <lush/lush-backtrace.h>
-
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-
-#include <lib/support-lean/OSUtil.h>
-
-
-//*****************************************************************************
-// structs and types
-//*****************************************************************************
-
-static epoch_flags_t epoch_flags = {
-  .bits = 0
-};
-
-//YUMENG: no epoch info needed
+// YUMENG: no epoch info needed
 #if 0
 static const uint64_t default_measurement_granularity = 1;
 #endif
 
-//*****************************************************************************
-// macro
-//*****************************************************************************
 #define MULTIPLE_1024(v) (v + 1023) & ~1023
-
-
-//*****************************************************************************
-// local utilities
-//*****************************************************************************
-
 
 //***************************************************************************
 //
@@ -143,9 +115,7 @@ static const uint64_t default_measurement_granularity = 1;
 //
 //***************************************************************************
 
-static FILE *
-lazy_open_data_file(core_profile_trace_data_t * cptd)
-{
+static FILE* lazy_open_data_file(core_profile_trace_data_t* cptd) {
   FILE* fs = cptd->hpcrun_file;
   if (fs) {
     return fs;
@@ -155,7 +125,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   if (rank < 0) {
     rank = 0;
   }
-  
+
   int fd = hpcrun_open_profile_file(rank, cptd->id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {
@@ -164,10 +134,10 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   }
   cptd->hpcrun_file = fs;
 
-  if (! hpcrun_sample_prob_active())
+  if (!hpcrun_sample_prob_active())
     return fs;
 
-  const uint bufSZ = 32; // sufficient to hold a 64-bit integer in base 10
+  const uint bufSZ = 32;  // sufficient to hold a 64-bit integer in base 10
 
   const char* jobIdStr = OSUtil_jobid();
   if (!jobIdStr) {
@@ -188,10 +158,10 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   snprintf(pidStr, bufSZ, "%u", OSUtil_pid());
 
   char traceMinTimeStr[bufSZ];
-  snprintf(traceMinTimeStr, bufSZ, "%"PRIu64, cptd->trace_min_time_us);
+  snprintf(traceMinTimeStr, bufSZ, "%" PRIu64, cptd->trace_min_time_us);
 
   char traceMaxTimeStr[bufSZ];
-  snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, cptd->trace_max_time_us);
+  snprintf(traceMaxTimeStr, bufSZ, "%" PRIu64, cptd->trace_max_time_us);
 
   char traceDisorderStr[bufSZ];
   snprintf(traceDisorderStr, bufSZ, "%u", cptd->trace_expected_disorder);
@@ -200,43 +170,35 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   // ==== file hdr =====
   //
 
-  TMSG(DATA_WRITE,"writing file header");
-  hpcrun_fmt_hdr_fwrite(fs,
-                        HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(),
-                        HPCRUN_FMT_NV_progPath, hpcrun_files_executable_pathname(),
-			                  HPCRUN_FMT_NV_envPath, getenv("PATH"),
-                        HPCRUN_FMT_NV_jobId, jobIdStr,
-                        HPCRUN_FMT_NV_mpiRank, mpiRankStr,
-                        HPCRUN_FMT_NV_tid, tidStr,
-                        HPCRUN_FMT_NV_hostid, hostidStr,
-                        HPCRUN_FMT_NV_pid, pidStr,
-                        HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr,
-                        HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr,
-                        HPCRUN_FMT_NV_traceDisorder,
-                          cptd->trace_is_ordered ? "0" : traceDisorderStr,
-                        NULL);
-  
+  TMSG(DATA_WRITE, "writing file header");
+  hpcrun_fmt_hdr_fwrite(
+      fs, HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(), HPCRUN_FMT_NV_progPath,
+      hpcrun_files_executable_pathname(), HPCRUN_FMT_NV_envPath, getenv("PATH"),
+      HPCRUN_FMT_NV_jobId, jobIdStr, HPCRUN_FMT_NV_mpiRank, mpiRankStr, HPCRUN_FMT_NV_tid, tidStr,
+      HPCRUN_FMT_NV_hostid, hostidStr, HPCRUN_FMT_NV_pid, pidStr, HPCRUN_FMT_NV_traceMinTime,
+      traceMinTimeStr, HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr, HPCRUN_FMT_NV_traceDisorder,
+      cptd->trace_is_ordered ? "0" : traceDisorderStr, NULL);
+
   return fs;
 }
 
-//YUMENG: add footer
-static int
-write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_fmt_footer_t* footer)
-{
-  //YUMENG: no epoch info needed
-  //uint32_t num_epochs = 0;
+// YUMENG: add footer
+static int write_epochs(
+    FILE* fs, core_profile_trace_data_t* cptd, epoch_t* epoch, hpcrun_fmt_footer_t* footer) {
+  // YUMENG: no epoch info needed
+  // uint32_t num_epochs = 0;
 
-  if (! hpcrun_sample_prob_active())
+  if (!hpcrun_sample_prob_active())
     return HPCRUN_OK;
 
   //
-  // === # epochs === 
+  // === # epochs ===
   //
 
   epoch_t* current_epoch = epoch;
   int ret;
 
-//YUMENG: no epoch info needed
+// YUMENG: no epoch info needed
 #if 0
   for(epoch_t* s = current_epoch; s; s = s->next) {
     num_epochs++;
@@ -250,8 +212,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
   // for each epoch ...
   //
 
-  for(epoch_t* s = current_epoch; s; s = s->next) {
-
+  for (epoch_t* s = current_epoch; s; s = s->next) {
 #if 0
     if (ENABLED(SKIP_WRITE_EMPTY_EPOCH)){
       if (hpcrun_empty_cct_bundle(&(s->csdata))){
@@ -261,7 +222,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     }
 #endif
 
-//YUMENG: no epoch info needed
+// YUMENG: no epoch info needed
 #if 0
     //
     //  == epoch header ==
@@ -285,71 +246,71 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     //
     // == load map ==
     //
-    //YUMENG
-    if(footer) footer->loadmap_start = ftell(fs); 
+    // YUMENG
+    if (footer)
+      footer->loadmap_start = ftell(fs);
 
     TMSG(DATA_WRITE, "Preparing to write loadmap");
 
     hpcrun_loadmap_t* current_loadmap = s->loadmap;
-    
+
     hpcfmt_int4_fwrite(current_loadmap->size, fs);
 
     // N.B.: Write in reverse order to obtain nicely ascending LM ids.
-    for (load_module_t* lm_src = current_loadmap->lm_end;
-	 (lm_src); lm_src = lm_src->prev) {
+    for (load_module_t* lm_src = current_loadmap->lm_end; (lm_src); lm_src = lm_src->prev) {
       loadmap_entry_t lm_entry;
       lm_entry.id = lm_src->id;
       lm_entry.name = lm_src->name;
       lm_entry.flags = hpcrun_loadModule_flags_get(lm_src);
-      
+
       ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
-      if(ret != HPCFMT_OK){
+      if (ret != HPCFMT_OK) {
         TMSG(DATA_WRITE, "Error writing loadmap entry");
         goto write_error;
       }
     }
 
-    //YUMENG: set footer  
-    if(footer) {
+    // YUMENG: set footer
+    if (footer) {
       footer->loadmap_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->loadmap_end), SEEK_SET);
     }
-    
-    TMSG(DATA_WRITE, "Done writing loadmap");
 
+    TMSG(DATA_WRITE, "Done writing loadmap");
 
     //
     // == cct ==
     //
 
-    cct_bundle_t* cct      = &(s->csdata);
-  #if 0
+    cct_bundle_t* cct = &(s->csdata);
+#if 0
     int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map);
-  #else
-    //YUMENG: set up sparse_metrics and walk through cct
-    //footer
-    if(footer) footer->cct_start = ftell(fs); 
- 
-    //initialize the sparse_metrics
+#else
+    // YUMENG: set up sparse_metrics and walk through cct
+    // footer
+    if (footer)
+      footer->cct_start = ftell(fs);
+
+    // initialize the sparse_metrics
     hpcrun_fmt_sparse_metrics_t sparse_metrics;
     sparse_metrics.id_tuple = cptd->id_tuple;
 
-    //assign value to sparse metrics while writing cct info
+    // assign value to sparse metrics while writing cct info
     ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map, &sparse_metrics);
 
-    //footer
-    if(footer) {
+    // footer
+    if (footer) {
       footer->cct_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->cct_end), SEEK_SET);
     }
 
-  #endif
-    
-    if(ret != HPCRUN_OK) {
+#endif
+
+    if (ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx or collecting sparse metrics", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
       goto write_error;
-    }else {
+    } else {
       TMSG(DATA_WRITE, "saved cct data to hpcrun file and recorded profile data as sparse metrics");
     }
 
@@ -357,11 +318,12 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     //
     // == metrics ==
     //
-    //YUMENG: footer
-    if(footer) footer->met_tbl_start = ftell(fs);
+    // YUMENG: footer
+    if (footer)
+      footer->met_tbl_start = ftell(fs);
 
-    kind_info_t *curr = NULL;
-    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
+    kind_info_t* curr = NULL;
+    metric_desc_p_tbl_t* metric_tbl = hpcrun_get_metric_tbl(&curr);
 
     hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
     while (curr != NULL) {
@@ -369,29 +331,30 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
       ret = hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
       metric_tbl = hpcrun_get_metric_tbl(&curr);
 
-      if(ret != HPCFMT_OK){
+      if (ret != HPCFMT_OK) {
         TMSG(DATA_WRITE, "Error writing metric-tbl");
         goto write_error;
       }
     }
 
-    //YUMENG: footer
-    if(footer) {
+    // YUMENG: footer
+    if (footer) {
       footer->met_tbl_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->met_tbl_end), SEEK_SET);
     }
 
     TMSG(DATA_WRITE, "Done writing metric tbl");
-#endif    
+#endif
 
     //
     // == id-tuple dictionary ==
     //
-    if(footer) footer->idtpl_dxnry_start = ftell(fs); 
+    if (footer)
+      footer->idtpl_dxnry_start = ftell(fs);
 
     hpcrun_fmt_idtuple_dxnry_fwrite(fs);
 
-    if(footer) {
+    if (footer) {
       footer->idtpl_dxnry_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->idtpl_dxnry_end), SEEK_SET);
     }
@@ -400,19 +363,20 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     // ==  sparse_metrics == YUMENG
     //
 
-    //footer
-    if(footer) footer->sm_start = ftell(fs);
+    // footer
+    if (footer)
+      footer->sm_start = ftell(fs);
 
-    ret = hpcrun_fmt_sparse_metrics_fwrite(&sparse_metrics,fs);
-    if(ret != HPCFMT_OK){
+    ret = hpcrun_fmt_sparse_metrics_fwrite(&sparse_metrics, fs);
+    if (ret != HPCFMT_OK) {
       TMSG(DATA_WRITE, "Error writing sparse metrics data");
       goto write_error;
     }
 
-    if(footer) {
+    if (footer) {
       footer->sm_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->sm_end), SEEK_SET);
-      //record for footer section
+      // record for footer section
       footer->footer_start = ftell(fs);
     }
 
@@ -421,10 +385,10 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     //
     // == footer == YUMENG
     //
-    if(s->next == NULL){
+    if (s->next == NULL) {
       footer->HPCRUNsm = HPCRUNsm;
       ret = hpcrun_fmt_footer_fwrite(footer, fs);
-      if(ret != HPCFMT_OK){
+      if (ret != HPCFMT_OK) {
         TMSG(DATA_WRITE, "Error writing footer");
         goto write_error;
       }
@@ -433,54 +397,50 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     TMSG(DATA_WRITE, "Done writing footer");
 
     current_loadmap++;
+  }  // epoch loop
 
-  } // epoch loop
+  return HPCRUN_OK;
 
-  return HPCRUN_OK; 
-  
-  write_error:
-    EMSG("could not save profile data to hpcrun file");
-    perror("write_profile_data");
-    return HPCRUN_ERR; 
+write_error:
+  EMSG("could not save profile data to hpcrun file");
+  perror("write_profile_data");
+  return HPCRUN_ERR;
 }
 
-void
-hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
-{
-  FILE *fs = lazy_open_data_file(cptd);
+void hpcrun_flush_epochs(core_profile_trace_data_t* cptd) {
+  FILE* fs = lazy_open_data_file(cptd);
   if (fs == NULL)
     return;
 
-  write_epochs(fs, cptd, cptd->epoch,NULL);
+  write_epochs(fs, cptd, cptd->epoch, NULL);
   hpcrun_epoch_reset();
 }
 
-int
-hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
-{
-  if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
+int hpcrun_write_profile_data(core_profile_trace_data_t* cptd) {
+  if (cptd->scale_fn)
+    cptd->scale_fn((void*)cptd);
 
-  //YUMENG: set up footer
-  //size_t footer[SF_FOOTER_LENGTH];
-  //footer[SF_FOOTER_hdr] = 0;
+  // YUMENG: set up footer
+  // size_t footer[SF_FOOTER_LENGTH];
+  // footer[SF_FOOTER_hdr] = 0;
   hpcrun_fmt_footer_t footer;
   footer.hdr_start = 0;
 
-  TMSG(DATA_WRITE,"Writing hpcrun profile data");
+  TMSG(DATA_WRITE, "Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(cptd);
 
-  //YUMENG: set footer
+  // YUMENG: set footer
   footer.hdr_end = ftell(fs);
   fseek(fs, MULTIPLE_1024(footer.hdr_end), SEEK_SET);
-  
+
   if (fs == NULL)
     return HPCRUN_ERR;
 
   write_epochs(fs, cptd, cptd->epoch, &footer);
 
-  TMSG(DATA_WRITE,"closing file");
+  TMSG(DATA_WRITE, "closing file");
   hpcio_fclose(fs);
-  TMSG(DATA_WRITE,"Done!");
+  TMSG(DATA_WRITE, "Done!");
 
   return HPCRUN_OK;
 }
@@ -488,8 +448,6 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 //
 // DEBUG: fetch and print current loadmap
 //
-void
-hpcrun_dbg_print_current_loadmap(void)
-{
+void hpcrun_dbg_print_current_loadmap(void) {
   hpcrun_loadmap_print(hpcrun_get_thread_epoch()->loadmap);
 }

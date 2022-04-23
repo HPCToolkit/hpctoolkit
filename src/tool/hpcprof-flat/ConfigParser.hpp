@@ -47,37 +47,21 @@
 #ifndef ConfigParser_hpp
 #define ConfigParser_hpp
 
-//************************ System Include Files ******************************
+#include "lib/analysis/Args.hpp"
+#include "lib/prof/Metric-Mgr.hpp"
+#include "lib/profxml/XercesErrorHandler.hpp"
+#include "lib/support/diagnostics.h"
 
 #include <string>
-
-//*********************** Xerces Include Files *******************************
-
+#include <xercesc/dom/DOMNode.hpp>
 #include <xercesc/parsers/XercesDOMParser.hpp>
-using XERCES_CPP_NAMESPACE::XercesDOMParser;
 
-#include <xercesc/dom/DOMNode.hpp> 
 using XERCES_CPP_NAMESPACE::DOMNode;
-
-//************************* User Include Files *******************************
-
-#include <lib/analysis/Args.hpp>
-
-#include <lib/prof/Metric-Mgr.hpp>
-
-#include <lib/profxml/XercesErrorHandler.hpp>
-
-#include <lib/support/diagnostics.h>
-
-//************************ Forward Declarations ******************************
-
-//****************************************************************************
-// 
-//***************************************************************************
+using XERCES_CPP_NAMESPACE::XercesDOMParser;
 
 class ConfigParser {
 public:
-  ConfigParser(const std::string& inputFile, XercesErrorHandler &errHndlr);
+  ConfigParser(const std::string& inputFile, XercesErrorHandler& errHndlr);
   ~ConfigParser();
 
   void parse(Analysis::Args& args, Prof::Metric::Mgr& metricMgr);
@@ -87,24 +71,18 @@ private:
   DOMNode* m_doc;
 };
 
-
-//***************************************************************************
-
 #define ConfigParser_Throw(streamArgs) DIAG_ThrowX(ConfigParserException, streamArgs)
 
 class ConfigParserException : public Diagnostics::Exception {
 public:
-  ConfigParserException(const std::string x,
-		      const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-    { }
-  
-  virtual std::string message() const { 
+  ConfigParserException(const std::string x, const char* filenm = NULL, unsigned int lineno = 0)
+      : Diagnostics::Exception(x, filenm, lineno) {}
+
+  virtual std::string message() const {
     return "CONFIGURATION file error [ConfigParserException]: " + what();
   }
 
 private:
 };
-
 
 #endif /* ConfigParser_hpp */

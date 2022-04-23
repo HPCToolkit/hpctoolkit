@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -63,65 +63,53 @@
 #ifndef prof_lean_spinlock_h
 #define prof_lean_spinlock_h
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stddef.h>
-
 #include "stdatomic.h"
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 //
 // Simple spin lock.
 //
 
 typedef struct spinlock_s {
-	atomic_long thelock;
+  atomic_long thelock;
 } spinlock_t;
 
 #define SPINLOCK_UNLOCKED_VALUE (-1L)
-#define SPINLOCK_LOCKED_VALUE (1L)
-#define INITIALIZE_SPINLOCK(x) { .thelock = ATOMIC_VAR_INIT(x) }
+#define SPINLOCK_LOCKED_VALUE   (1L)
+#define INITIALIZE_SPINLOCK(x) \
+  { .thelock = ATOMIC_VAR_INIT(x) }
 
 #define SPINLOCK_UNLOCKED INITIALIZE_SPINLOCK(SPINLOCK_UNLOCKED_VALUE)
-#define SPINLOCK_LOCKED INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
+#define SPINLOCK_LOCKED   INITIALIZE_SPINLOCK(SPINLOCK_LOCKED_VALUE)
 
-
-static inline void
-spinlock_init(spinlock_t *l)
-{
+static inline void spinlock_init(spinlock_t* l) {
   atomic_init(&l->thelock, SPINLOCK_UNLOCKED_VALUE);
 }
 
-static inline
-void 
-spinlock_unlock(spinlock_t *l)
-{
+static inline void spinlock_unlock(spinlock_t* l) {
   atomic_store_explicit(&l->thelock, SPINLOCK_UNLOCKED_VALUE, memory_order_release);
 }
 
-
-static inline
-bool 
-spinlock_is_locked(spinlock_t *l)
-{
+static inline bool spinlock_is_locked(spinlock_t* l) {
   return (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE);
 }
 
-static inline
-void 
-spinlock_lock(spinlock_t *l)
-{
+static inline void spinlock_lock(spinlock_t* l) {
   /* test-and-set lock */
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
-  while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
-						memory_order_acquire, memory_order_relaxed)) {
+  while (!atomic_compare_exchange_weak_explicit(
+      &l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE, memory_order_acquire,
+      memory_order_relaxed)) {
     old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
 }
 
-
 // deadlock avoiding lock primitives:
 //
-// test-and-test-and-set lock acquisition, but make a bounded 
+// test-and-test-and-set lock acquisition, but make a bounded
 // number of attempts to get lock.
 // to be signature compatible, this locking function takes a "locked" value, but does
 // not use it.
@@ -129,19 +117,17 @@ spinlock_lock(spinlock_t *l)
 //
 // NOTE: this lock is still released with spinlock_unlock operation
 //
-static inline
-bool
-limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
-{
+static inline bool limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val) {
   if (limit == 0) {
     spinlock_lock(l);
     return true;
   }
 
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
-  while (limit-- > 0 &&
-	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
-						memory_order_acquire, memory_order_relaxed)) {
+  while (limit-- > 0
+         && !atomic_compare_exchange_weak_explicit(
+             &l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE, memory_order_acquire,
+             memory_order_relaxed)) {
     old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
   return (limit + 1 > 0);
@@ -156,13 +142,10 @@ limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 //
 // NOTE: this lock is still released with spinlock_unlock operation
 //
-static inline
-bool
-hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
-{
+static inline bool hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val) {
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
-  while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
-						memory_order_acquire, memory_order_relaxed)) {
+  while (!atomic_compare_exchange_weak_explicit(
+      &l->thelock, &old_lockval, locked_val, memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
     if (old_lockval == locked_val)
@@ -176,7 +159,7 @@ hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 // hwt_limit_spinlock_lock uses the CAS primitive, but prevents deadlock
 // by checking the locked value to see if this (hardware) thread has already
 // acquired the lock. This spinlock *also* uses the iteration limit
-// from the limit spinlock. 
+// from the limit spinlock.
 
 // The hwt technique covers priority inversion deadlock
 // in a way that is most friendly to high priority threads.
@@ -186,17 +169,14 @@ hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 //
 // NOTE: this lock is still released with spinlock_unlock operation
 //
-static inline
-bool
-hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
-{
+static inline bool hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val) {
   if (limit == 0)
     return hwt_cas_spinlock_lock(l, limit, locked_val);
 
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
-  while (limit-- > 0 &&
-	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
-						memory_order_acquire, memory_order_relaxed)) {
+  while (limit-- > 0
+         && !atomic_compare_exchange_weak_explicit(
+             &l->thelock, &old_lockval, locked_val, memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
     if (old_lockval == locked_val)
@@ -205,4 +185,4 @@ hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
   }
   return (limit + 1 > 0);
 }
-#endif // prof_lean_spinlock_h
+#endif  // prof_lean_spinlock_h

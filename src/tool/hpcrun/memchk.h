@@ -49,15 +49,13 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-static inline bool
-memchk(const char *buf,char v,size_t len)
-{
-  for(int i=0;i < len;i++){
-    if (*(buf++) != v){
+static inline bool memchk(const char* buf, char v, size_t len) {
+  for (int i = 0; i < len; i++) {
+    if (*(buf++) != v) {
       return false;
     }
   }
   return true;
 }
 
-#endif // MEMCHK_H
+#endif  // MEMCHK_H

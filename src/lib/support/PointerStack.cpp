@@ -45,9 +45,9 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
-// 
-// PointerStack.C: 
-// 
+//
+// PointerStack.C:
+//
 // Author:  John Mellor-Crummey                               October 1993
 //
 // rjf	2-21-98 Replaced previous versions of PointerStack with
@@ -55,63 +55,38 @@
 //		to avoid using templates when building runtime libraries
 //		on machines on which the compiler itself does not run.
 
-//***************************************************************************
+#include "PointerStack.hpp"
 
-//************************** System Include Files ***************************
+#include "include/uint.h"
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include "PointerStack.hpp" 
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-PointerStack::PointerStack(unsigned int initialSize)
-{
+PointerStack::PointerStack(unsigned int initialSize) {
   theStack = new void*[initialSize];
-  topElement = -1; // initially empty
-  lastSlot = initialSize -1;
+  topElement = -1;  // initially empty
+  lastSlot = initialSize - 1;
 }
 
-
-PointerStack::~PointerStack()
-{
+PointerStack::~PointerStack() {
   delete[] theStack;
 }
 
-void
-PointerStack::ExtendAndPush(void *item) {
-  
-  int size = lastSlot + 1; 
-  int newsize; 
-  if( size < 256 ) {
+void PointerStack::ExtendAndPush(void* item) {
+  int size = lastSlot + 1;
+  int newsize;
+  if (size < 256) {
     newsize = 256;
-  }
-  else {
-    newsize = size * 2 ;  // Grow it fast to avoid reallocs.
+  } else {
+    newsize = size * 2;  // Grow it fast to avoid reallocs.
   }
 
   // Create a new stack and copy the old one
   void** newStack = new void*[newsize];
-  for (int i = 0; i <= topElement; i++) { newStack[i] = theStack[i]; }
-  delete[] theStack; 
+  for (int i = 0; i <= topElement; i++) {
+    newStack[i] = theStack[i];
+  }
+  delete[] theStack;
   theStack = newStack;
-  lastSlot = newsize - 1; // recalibrate 'lastSlot'
+  lastSlot = newsize - 1;  // recalibrate 'lastSlot'
 
   // Finally do the push.
   theStack[++topElement] = item;
 }
-
-
-
-
-
-
-
-
-
-
-

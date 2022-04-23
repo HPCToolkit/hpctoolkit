@@ -48,75 +48,49 @@
 // itimer sample source simple oo interface
 //
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
+#include "include/hpctoolkit-config.h"
 
+#include <assert.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-
-#include <signal.h>
-#include <sys/time.h>           /* setitimer() */
-#include <ucontext.h>           /* struct ucontext */
+#include <sys/time.h> /* setitimer() */
 #include <time.h>
+#include <ucontext.h> /* struct ucontext */
 #include <unistd.h>
-
-#include <include/hpctoolkit-config.h>
 #ifdef ENABLE_CLOCK_REALTIME
 #include <sys/syscall.h>
 #endif
 
-
-/******************************************************************************
- * libmonitor
- *****************************************************************************/
-
-#include <monitor.h>
-
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
-
-#include "sample_source_obj.h"
 #include "common.h"
-#include "sample-filters.h"
 #include "itimer.h"
+#include "sample-filters.h"
+#include "sample_source_obj.h"
 #include "ss-errno.h"
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
+#include "hpcrun/hpcrun_options.h"
+#include "hpcrun/hpcrun_stats.h"
+#include "hpcrun/main.h"
+#include "hpcrun/metrics.h"
+#include "hpcrun/ompt/ompt-region.h"
+#include "hpcrun/safe-sampling.h"
+#include "hpcrun/sample_event.h"
+#include "hpcrun/sample_sources_registered.h"
+#include "hpcrun/thread_data.h"
+#include "hpcrun/trace.h"
 
-#include <hpcrun/main.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/ompt/ompt-region.h>
-#include <hpcrun/trace.h>
+#include "lib/support-lean/timer.h"
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
-
-#include <utilities/tokenize.h>
-#include <utilities/arch/context-pc.h>
-
-#include <unwind/common/unwind.h>
-
-#include <lib/support-lean/timer.h>
-
+#include <monitor.h>
 #include <sample-sources/blame-shift/blame-shift.h>
-
-
-
-/******************************************************************************
- * macros
- *****************************************************************************/
+#include <unwind/common/unwind.h>
+#include <utilities/arch/context-pc.h>
+#include <utilities/tokenize.h>
 
 // Note: it's not clear if CLOCK_THREAD_CPUTIME_ID or
 // CLOCK_PROCESS_CPUTIME_ID is a better clock for CPUTIME.  The docs
@@ -124,57 +98,41 @@
 // SIGEV_THREAD_ID is also thread-specific and it seems that THREAD is
 // limited by the kernel Hz rate.
 
-#define IDLE_METRIC_NAME     "idleness (sec)"
+#define IDLE_METRIC_NAME "idleness (sec)"
 
-#define REALTIME_EVENT_NAME   "REALTIME"
-#define REALTIME_METRIC_NAME  "REALTIME (sec)"
-#define REALTIME_SIGNAL       (SIGRTMIN + 3)
+#define REALTIME_EVENT_NAME  "REALTIME"
+#define REALTIME_METRIC_NAME "REALTIME (sec)"
+#define REALTIME_SIGNAL      (SIGRTMIN + 3)
 
-#define REALTIME_CLOCK_TYPE     CLOCK_REALTIME
-#define REALTIME_NOTIFY_METHOD  SIGEV_THREAD_ID
+#define REALTIME_CLOCK_TYPE    CLOCK_REALTIME
+#define REALTIME_NOTIFY_METHOD SIGEV_THREAD_ID
 
-#define CPUTIME_EVENT_NAME    "CPUTIME"
-#define CPUTIME_METRIC_NAME   "CPUTIME (sec)"
-#define CPUTIME_CLOCK_TYPE     CLOCK_THREAD_CPUTIME_ID
+#define CPUTIME_EVENT_NAME  "CPUTIME"
+#define CPUTIME_METRIC_NAME "CPUTIME (sec)"
+#define CPUTIME_CLOCK_TYPE  CLOCK_THREAD_CPUTIME_ID
 
 // the man pages cite sigev_notify_thread_id in struct sigevent,
 // but often the only name is a hidden union name.
 #ifndef sigev_notify_thread_id
-#define sigev_notify_thread_id  _sigev_un._tid
+#define sigev_notify_thread_id _sigev_un._tid
 #endif
 
 #define sample_period 1
 
-#define DEFAULT_PERIOD  5000L
-
-
-/******************************************************************************
- * local constants
- *****************************************************************************/
+#define DEFAULT_PERIOD 5000L
 
 enum _local_const {
-  ITIMER_EVENT = 0    // itimer has only 1 event
+  ITIMER_EVENT = 0  // itimer has only 1 event
 };
 
-
-/******************************************************************************
- * forward declarations 
- *****************************************************************************/
-
-static int
-itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
-
-
-/******************************************************************************
- * local variables
- *****************************************************************************/
+static int itimer_signal_handler(int sig, siginfo_t* siginfo, void* context);
 
 static bool use_realtime = false;
 static bool use_cputime = false;
 
-static char *the_event_name = "unknown";
-static char *the_metric_name = "unknown";
-static int   the_signal_num = 0;
+static char* the_event_name = "unknown";
+static char* the_metric_name = "unknown";
+static int the_signal_num = 0;
 
 static long period = DEFAULT_PERIOD;
 
@@ -192,25 +150,18 @@ static __thread bool wallclock_ok = false;
 // * public helper function
 // ****************************************************************************
 
-void hpcrun_itimer_wallclock_ok(bool flag)
-{
+void hpcrun_itimer_wallclock_ok(bool flag) {
   wallclock_ok = flag;
 }
-
-/******************************************************************************
- * internal helper functions
- *****************************************************************************/
 
 // Helper functions return the result of the syscall, so 0 on success,
 // or else -1 on failure.  We handle errors in the caller.
 
-static int
-hpcrun_create_real_timer(thread_data_t *td)
-{
+static int hpcrun_create_real_timer(thread_data_t* td) {
   int ret = 0;
 
 #ifdef ENABLE_CLOCK_REALTIME
-  if (! td->timer_init) {
+  if (!td->timer_init) {
     memset(&td->sigev, 0, sizeof(td->sigev));
     td->sigev.sigev_notify = REALTIME_NOTIFY_METHOD;
     td->sigev.sigev_signo = REALTIME_SIGNAL;
@@ -233,9 +184,7 @@ hpcrun_create_real_timer(thread_data_t *td)
   return ret;
 }
 
-static int
-hpcrun_delete_real_timer(thread_data_t *td)
-{
+static int hpcrun_delete_real_timer(thread_data_t* td) {
   int ret = 0;
 
 #ifdef ENABLE_CLOCK_REALTIME
@@ -249,27 +198,25 @@ hpcrun_delete_real_timer(thread_data_t *td)
   return ret;
 }
 
-// While handling a sample, the shutdown signal handler may asynchronously 
-// delete a thread's timer and set it to NULL. Calling timer_settime on a 
+// While handling a sample, the shutdown signal handler may asynchronously
+// delete a thread's timer and set it to NULL. Calling timer_settime on a
 // deleted timer will return an error. Calling timer_settime on a NULL
-// timer will SEGV. For that reason, calling timer_settime(td->timerid, ...) 
-// is unsafe as td->timerid can be set to NULL immediately before it is 
-// loaded as an argument.  To avoid a SEGV, copy the timer into a local 
-// variable, test it, and only call timer_settime with a non-NULL timer. 
-static int
-hpcrun_settime(thread_data_t *td, struct itimerspec *spec)
-{
-  if (!td->timer_init) return -1; // fail: timer not initialized
+// timer will SEGV. For that reason, calling timer_settime(td->timerid, ...)
+// is unsafe as td->timerid can be set to NULL immediately before it is
+// loaded as an argument.  To avoid a SEGV, copy the timer into a local
+// variable, test it, and only call timer_settime with a non-NULL timer.
+static int hpcrun_settime(thread_data_t* td, struct itimerspec* spec) {
+  if (!td->timer_init)
+    return -1;  // fail: timer not initialized
 
   timer_t mytimer = td->timerid;
-  if (mytimer == NULL) return -1; // fail: timer deleted
+  if (mytimer == NULL)
+    return -1;  // fail: timer deleted
 
   return timer_settime(mytimer, 0, spec, NULL);
 }
 
-static int
-hpcrun_start_timer(thread_data_t *td)
-{
+static int hpcrun_start_timer(thread_data_t* td) {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
     return hpcrun_settime(td, &itspec_start);
@@ -280,9 +227,7 @@ hpcrun_start_timer(thread_data_t *td)
   return -1;
 }
 
-static int
-hpcrun_stop_timer(thread_data_t *td)
-{
+static int hpcrun_stop_timer(thread_data_t* td) {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
     int ret = hpcrun_settime(td, &itspec_stop);
@@ -290,7 +235,8 @@ hpcrun_stop_timer(thread_data_t *td)
     // If timer is invalid, it is not active; treat it as stopped
     // and ignore any error code that may have been returned by
     // hpcrun_settime
-    if ((!td->timer_init) || (!td->timerid)) return 0;
+    if ((!td->timer_init) || (!td->timerid))
+      return 0;
 
     return ret;
   }
@@ -304,28 +250,24 @@ hpcrun_stop_timer(thread_data_t *td)
 // without messages in the case that we are interrupting our own code.
 // safe = 1 if not inside our code, so ok to print debug messages
 //
-static void
-hpcrun_restart_timer(sample_source_t *self, int safe)
-{
+static void hpcrun_restart_timer(sample_source_t* self, int safe) {
   int ret;
 
   // if thread data is unavailable, assume that all sample source ops
   // are suspended.
-  if (! hpcrun_td_avail()) {
+  if (!hpcrun_td_avail()) {
     if (safe) {
       TMSG(ITIMER_CTL, "Thread data unavailable ==> sampling suspended");
     }
     return;
   }
-  thread_data_t *td = hpcrun_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
 
   if (safe) {
-    TMSG(ITIMER_HANDLER, "starting %s: value = (%d,%d), interval = (%d,%d)",
-	 the_event_name,
-	 itval_start.it_value.tv_sec,
-	 itval_start.it_value.tv_usec,
-	 itval_start.it_interval.tv_sec,
-	 itval_start.it_interval.tv_usec);
+    TMSG(
+        ITIMER_HANDLER, "starting %s: value = (%d,%d), interval = (%d,%d)", the_event_name,
+        itval_start.it_value.tv_sec, itval_start.it_value.tv_usec, itval_start.it_interval.tv_sec,
+        itval_start.it_interval.tv_usec);
   }
 
   ret = hpcrun_start_timer(td);
@@ -357,46 +299,33 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   }
 
   if (ret != 0) {
-    EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal") );
+    EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal"));
     monitor_real_abort();
   }
 
   TD_GET(ss_state)[self->sel_idx] = START;
 }
 
-
-/******************************************************************************
- * method definitions
- *****************************************************************************/
-
-static void
-METHOD_FN(init)
-{
+static void METHOD_FN(init) {
   TMSG(ITIMER_CTL, "init");
   blame_shift_source_register(bs_type_timer);
   self->state = INIT;
 }
 
-static void
-METHOD_FN(thread_init)
-{
+static void METHOD_FN(thread_init) {
   TMSG(ITIMER_CTL, "thread init");
 }
 
-static void
-METHOD_FN(thread_init_action)
-{
+static void METHOD_FN(thread_init_action) {
   TMSG(ITIMER_CTL, "thread init action");
 }
 
-static void
-METHOD_FN(start)
-{
+static void METHOD_FN(start) {
   TMSG(ITIMER_CTL, "start %s", the_event_name);
 
   // the realtime clock needs an extra step to create the timer
   if (use_realtime || use_cputime) {
-    thread_data_t *td = hpcrun_get_thread_data();
+    thread_data_t* td = hpcrun_get_thread_data();
     if (hpcrun_create_real_timer(td) != 0) {
       EEMSG("Unable to create the timer for %s", the_event_name);
       hpcrun_ssfail_start(the_event_name);
@@ -410,32 +339,28 @@ METHOD_FN(start)
   hpcrun_restart_timer(self, 1);
 }
 
-static void
-METHOD_FN(thread_fini_action)
-{
+static void METHOD_FN(thread_fini_action) {
   TMSG(ITIMER_CTL, "thread fini action");
 
   // Delete the realtime timer to avoid a timer leak.
   if (use_realtime || use_cputime) {
-    thread_data_t *td = hpcrun_get_thread_data();
+    thread_data_t* td = hpcrun_get_thread_data();
     hpcrun_delete_real_timer(td);
   }
 }
 
-static void
-METHOD_FN(stop)
-{
+static void METHOD_FN(stop) {
   TMSG(ITIMER_CTL, "stop %s", the_event_name);
 
-  // We have observed thread-centric profiling signals 
-  // (e.g., REALTIME) being delivered to a thread even after 
+  // We have observed thread-centric profiling signals
+  // (e.g., REALTIME) being delivered to a thread even after
   // we have stopped the thread's timer.  During thread
-  // finalization, this can cause a catastrophic error. 
-  // For that reason, we always block the thread's timer 
-  // signal when stopping. 
+  // finalization, this can cause a catastrophic error.
+  // For that reason, we always block the thread's timer
+  // signal when stopping.
   monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
 
-  thread_data_t *td = hpcrun_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
   int rc = hpcrun_stop_timer(td);
   if (rc != 0) {
     EMSG("stop %s failed, errno: %d", the_event_name, errno);
@@ -444,25 +369,18 @@ METHOD_FN(stop)
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
-static void
-METHOD_FN(shutdown)
-{
-  METHOD_CALL(self, stop); // make sure stop has been called
+static void METHOD_FN(shutdown) {
+  METHOD_CALL(self, stop);  // make sure stop has been called
   TMSG(ITIMER_CTL, "shutdown %s", the_event_name);
   self->state = UNINIT;
 }
 
-static bool
-METHOD_FN(supports_event, const char *ev_str)
-{
-  return hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME)
-    || hpcrun_ev_is(ev_str, REALTIME_EVENT_NAME);
+static bool METHOD_FN(supports_event, const char* ev_str) {
+  return hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME) || hpcrun_ev_is(ev_str, REALTIME_EVENT_NAME);
 }
- 
-static void
-METHOD_FN(process_event_list, int lush_metrics)
-{
-  char name[1024]; // local buffer needed for extract_ev_threshold
+
+static void METHOD_FN(process_event_list, int lush_metrics) {
+  char name[1024];  // local buffer needed for extract_ev_threshold
 
   TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
 
@@ -472,7 +390,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
 
-  TMSG(ITIMER_CTL,"checking event spec = %s",event);
+  TMSG(ITIMER_CTL, "checking event spec = %s", event);
 
   if (hpcrun_ev_is(event, REALTIME_EVENT_NAME)) {
 #ifdef ENABLE_CLOCK_REALTIME
@@ -507,19 +425,20 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD) == THRESH_FREQ) {
     // if the event is specified with a frequency,
     // we convert frequency to period
-    period = (long) (1000000.0 / period);
+    period = (long)(1000000.0 / period);
   }
 
   // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);
-  TMSG(OPTIONS,"Linux timer period set to %ld",period);
+  TMSG(OPTIONS, "Linux timer period set to %ld", period);
 
   // set up file local variables for sample source control
   int seconds = period / 1000000;
   int microseconds = period % 1000000;
 
-  TMSG(ITIMER_CTL, "init %s sample_period = %ld, seconds = %d, usec = %d",
-       the_event_name, period, seconds, microseconds);
+  TMSG(
+      ITIMER_CTL, "init %s sample_period = %ld, seconds = %d, usec = %d", the_event_name, period,
+      seconds, microseconds);
 
   itval_start.it_value.tv_sec = seconds;
   itval_start.it_value.tv_usec = microseconds;
@@ -539,20 +458,16 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
-  
 
   // set metric information in metric table
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
-  kind_info_t *timer_kind = hpcrun_metrics_new_kind();
-  int metric_id =
-    hpcrun_set_new_metric_info_and_period(timer_kind, the_metric_name, MetricFlags_ValFmt_Real,
-					  sample_period, metric_property_time);
+  kind_info_t* timer_kind = hpcrun_metrics_new_kind();
+  int metric_id = hpcrun_set_new_metric_info_and_period(
+      timer_kind, the_metric_name, MetricFlags_ValFmt_Real, sample_period, metric_property_time);
   METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
-    int mid_idleness = 
-      hpcrun_set_new_metric_info_and_period(timer_kind, IDLE_METRIC_NAME,
-					    MetricFlags_ValFmt_Real,
-					    sample_period, metric_property_time);
+    int mid_idleness = hpcrun_set_new_metric_info_and_period(
+        timer_kind, IDLE_METRIC_NAME, MetricFlags_ValFmt_Real, sample_period, metric_property_time);
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
   }
@@ -565,42 +480,37 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 }
 
-static void
-METHOD_FN(finalize_event_list)
-{
-}
+static void METHOD_FN(finalize_event_list) {}
 
 //
 // There is only 1 event for itimer, hence the event "set" is always the same.
 // The signal setup, however, is done here.
 //
-static void
-METHOD_FN(gen_event_set, int lush_metrics)
-{
+static void METHOD_FN(gen_event_set, int lush_metrics) {
   monitor_sigaction(the_signal_num, &itimer_signal_handler, 0, NULL);
 }
 
-static void
-METHOD_FN(display_events)
-{
+static void METHOD_FN(display_events) {
   printf("===========================================================================\n");
   printf("Available Timer events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\tReal clock time used by the thread in microseconds.\n"
-	 "\t\tBased on the CLOCK_REALTIME timer with the SIGEV_THREAD_ID\n"
-	 "\t\textension.  Includes time blocked in the kernel, and may\n"
-	 "\t\tbreak the invocation of some syscalls that are sensitive to EINTR.\n",
-	 REALTIME_EVENT_NAME);
+  printf(
+      "%s\tReal clock time used by the thread in microseconds.\n"
+      "\t\tBased on the CLOCK_REALTIME timer with the SIGEV_THREAD_ID\n"
+      "\t\textension.  Includes time blocked in the kernel, and may\n"
+      "\t\tbreak the invocation of some syscalls that are sensitive to EINTR.\n",
+      REALTIME_EVENT_NAME);
 #ifndef ENABLE_CLOCK_REALTIME
   printf("\t\tNot available on this system.\n");
 #endif
   printf("\n");
-  printf("%s  \tCPU clock time used by the thread in microseconds.  Based\n"
-	 "\t\ton the CLOCK_THREAD_CPUTIME_ID timer with the SIGEV_THREAD_ID\n"
-	 "\t\textension.\n",
-	 CPUTIME_EVENT_NAME);
+  printf(
+      "%s  \tCPU clock time used by the thread in microseconds.  Based\n"
+      "\t\ton the CLOCK_THREAD_CPUTIME_ID timer with the SIGEV_THREAD_ID\n"
+      "\t\textension.\n",
+      CPUTIME_EVENT_NAME);
 #ifndef ENABLE_CLOCK_CPUTIME
   printf("\t\tNot available on this system.\n");
 #endif
@@ -609,29 +519,17 @@ METHOD_FN(display_events)
   printf("\n");
 }
 
-
-/***************************************************************************
- * object
- ***************************************************************************/
-
-#define ss_name itimer
-#define ss_cls SS_HARDWARE
-#define ss_sort_order  20
+#define ss_name       itimer
+#define ss_cls        SS_HARDWARE
+#define ss_sort_order 20
 
 #include "ss_obj.h"
 
-
-/******************************************************************************
- * private operations 
- *****************************************************************************/
-
-static int
-itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
-{
+static int itimer_signal_handler(int sig, siginfo_t* siginfo, void* context) {
   HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
 
   static bool metrics_finalized = false;
-  sample_source_t *self = &_itimer_obj;
+  sample_source_t* self = &_itimer_obj;
 
   // if sampling is suppressed for this thread, restart timer, & exit
   if (hpcrun_suppress_sample() || sample_filters_apply()) {
@@ -640,25 +538,25 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
-    return 0; // tell monitor that the signal has been handled
+    return 0;  // tell monitor that the signal has been handled
   }
 
   // If we got a wallclock signal not meant for our thread, then drop the sample
-  if (! wallclock_ok) {
+  if (!wallclock_ok) {
     EMSG("Received Linux timer signal, but thread not initialized");
   }
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);
-  if (! hpcrun_safe_enter_async(pc)) {
+  if (!hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
-    if (! hpcrun_is_sampling_disabled()) {
+    if (!hpcrun_is_sampling_disabled()) {
       hpcrun_restart_timer(self, 0);
     }
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
-    return 0; // tell monitor that the signal has been handled
+    return 0;  // tell monitor that the signal has been handled
   }
 
   // Ensure metrics are finalized.
@@ -667,9 +565,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     metrics_finalized = true;
   }
 
-  TMSG(ITIMER_HANDLER,"Itimer sample event");
+  TMSG(ITIMER_HANDLER, "Itimer sample event");
 
-  uint64_t metric_incr = 1; // default: one time unit
+  uint64_t metric_incr = 1;  // default: one time unit
 
   // get the current time for the appropriate clock
   uint64_t cur_time_us = 0;
@@ -682,36 +580,34 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
 
   if (ret != 0) {
-    EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal") );
+    EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal"));
     monitor_real_abort();
   }
   // compute the difference between it and the previous event on this thread
   metric_incr = cur_time_us - TD_GET(last_time_us);
 
   // convert microseconds to seconds
-  hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
+  hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6};
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
 
   sampling_info_t info = {
-    .sample_clock = 0,
-    .sample_data = NULL,
-    .sampling_period = period * 1000,
-    .is_time_based_metric = 1
-  };
+      .sample_clock = 0,
+      .sample_data = NULL,
+      .sampling_period = period * 1000,
+      .is_time_based_metric = 1};
 
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
-					    0/*skipInner*/, 0/*isSync*/, &info);
+  sample_val_t sv = hpcrun_sample_callpath(
+      context, metric_id, metric_delta, 0 /*skipInner*/, 0 /*isSync*/, &info);
 
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
-  if(sv.sample_node) {
+  if (sv.sample_node) {
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);
   }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No Linux timer restart due to disabled sampling");
-  }
-  else {
+  } else {
     hpcrun_restart_timer(self, 1);
   }
 
@@ -719,5 +615,5 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
-  return 0; // tell monitor that the signal has been handled
+  return 0;  // tell monitor that the signal has been handled
 }

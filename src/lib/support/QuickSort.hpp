@@ -96,37 +96,28 @@
 #ifndef QuickSort_h
 #define QuickSort_h
 
-//************************** System Include Files ***************************
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-/************************ QuickSort function prototypes **********************/
+#include "include/uint.h"
 
 typedef int (*EntryCompareFunctPtr)(const void*, const void*);
 
-/************************** QuickSort class definition ***********************/
+class QuickSort {
+public:
+  QuickSort();
+  virtual ~QuickSort();
 
-class QuickSort
-{
-  public:
-    QuickSort ();
-    virtual ~QuickSort ();
+  void Create(void** UserArrayPtr, const EntryCompareFunctPtr _CompareFunct);
+  void Destroy();
 
-    void Create (void** UserArrayPtr, const EntryCompareFunctPtr _CompareFunct);
-    void Destroy ();
+  void Sort(const int minEntryIndex, const int maxEntryIndex);
 
-    void Sort (const int minEntryIndex, const int maxEntryIndex);
+private:
+  void** ArrayPtr;
+  EntryCompareFunctPtr CompareFunct;
 
-  private:
-    void** ArrayPtr;                 
-    EntryCompareFunctPtr CompareFunct;   
+  bool QuickSortCreated;
 
-    bool QuickSortCreated;         
-
-    void Swap (int a, int b);
-    int  Partition (const int min, const int max, const int q);
+  void Swap(int a, int b);
+  int Partition(const int min, const int max, const int q);
 };
 
 #endif

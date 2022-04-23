@@ -45,19 +45,7 @@
 #define gpu_trace_h
 
 #include <stdbool.h>
-
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
 #include <stdint.h>
-
-
-
-//******************************************************************************
-// forward declarations
-//******************************************************************************
 
 typedef struct cct_node_t cct_node_t;
 
@@ -69,109 +57,34 @@ typedef struct gpu_trace_t gpu_trace_t;
 
 typedef struct gpu_trace_item_t gpu_trace_item_t;
 
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef void (*gpu_trace_fn_t)
-(
- gpu_trace_t *trace,
- gpu_trace_item_t *ti
-);
-
+typedef void (*gpu_trace_fn_t)(gpu_trace_t* trace, gpu_trace_item_t* ti);
 
 typedef struct gpu_tag_t {
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
-}gpu_tag_t;
+} gpu_tag_t;
 
+void gpu_trace_init(void);
 
+void gpu_trace_fini(void* arg, int how);
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void* gpu_trace_record(void* args);
 
-void
-gpu_trace_init
-(
- void
-);
+gpu_trace_t* gpu_trace_create(uint32_t device_id, uint32_t context_id, uint32_t stream_id);
 
+void gpu_trace_produce(gpu_trace_t* t, gpu_trace_item_t* ti);
 
-void
-gpu_trace_fini
-(
- void *arg,
- int how
-);
+void gpu_trace_signal_consumer(gpu_trace_t* t);
 
+void consume_one_trace_item(
+    thread_data_t* td, cct_node_t* call_path, uint64_t start_time, uint64_t end_time,
+    cct_node_t* no_activity);
 
-void *
-gpu_trace_record
-(
- void *args
-);
+cct_node_t* gpu_trace_cct_no_activity(thread_data_t* td);
 
+thread_data_t* gpu_trace_stream_acquire(gpu_tag_t tag);
 
-gpu_trace_t *
-gpu_trace_create
-(
- uint32_t device_id,
- uint32_t context_id,
- uint32_t stream_id
-);
+void gpu_trace_stream_release(gpu_trace_channel_t* channel);
 
-
-void
-gpu_trace_produce
-(
- gpu_trace_t *t,
- gpu_trace_item_t *ti
-);
-
-
-void
-gpu_trace_signal_consumer
-(
- gpu_trace_t *t
-);
-
-
-void
-consume_one_trace_item
-(
-thread_data_t* td,
-cct_node_t *call_path,
-uint64_t start_time,
-uint64_t end_time,
-cct_node_t *no_activity
-);
-
-
-cct_node_t *
-gpu_trace_cct_no_activity
-(
- thread_data_t* td
-);
-
-
-thread_data_t *
-gpu_trace_stream_acquire
-(
- gpu_tag_t tag
-);
-
-
-void
-gpu_trace_stream_release
-(
- gpu_trace_channel_t *channel
-);
-
-
-
-
-#endif 
+#endif

@@ -60,19 +60,17 @@
 #include "Structure-Cache.hpp"
 
 #include "lib/prof-lean/hpcio.h"
-#include "lib/support/IOUtil.hpp"
 #include "lib/support/FileUtil.hpp"
+#include "lib/support/IOUtil.hpp"
 
+#include <cstring>
 #include <ostream>
 #include <string>
-#include <cstring>
 #include <unistd.h>
 
 class FileOutputStream {
 public:
-  FileOutputStream() : stream(0), buffer(0), use_cache(false),
-		       is_cached(false) {
-  };
+  FileOutputStream() : stream(0), buffer(0), use_cache(false), is_cached(false){};
 
   // init is called to set up the output for writing the structure file
   //    The first parameter is the directory under CACHE/PATH into which the cache'd structure file
@@ -89,8 +87,9 @@ public:
   //    When the cache is used, the output stream points to the cache'd structure file
   //    When it is not used, the output stream points to the actual output file.
   //
-  void init(const char *cache_path_directory, const char *cache_flat_directory, const char *kind,
-	    const char *result) {
+  void init(
+      const char* cache_path_directory, const char* cache_flat_directory, const char* kind,
+      const char* result) {
     name = strdup(result);
     if (cache_path_directory && cache_path_directory[0] != 0) {
       use_cache = true;
@@ -115,22 +114,24 @@ public:
   bool needed() {
     bool needed = false;
     if (!name.empty()) {
-      if (use_cache && (hpcstruct_cache_find(flat_name.c_str()) ||
-			hpcstruct_cache_find(stream_name.c_str()))) {
-	is_cached = true;
-	if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
+      if (use_cache
+          && (hpcstruct_cache_find(flat_name.c_str())
+              || hpcstruct_cache_find(stream_name.c_str()))) {
+        is_cached = true;
+        if ((global_args->cache_stat != CACHE_DISABLED)
+            && (global_args->cache_stat != CACHE_NOT_NAMED)) {
           global_args->cache_stat = CACHE_ENTRY_COPIED;
         }
       } else {
-	needed = true;
+        needed = true;
 #if 0
         std::cerr << "DEBUG needed set true, found cachestat = " << global_args->cache_stat << std::endl;
 #endif
-	if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
-          if ( global_args->cache_stat == CACHE_ENTRY_REMOVED ) {
+        if ((global_args->cache_stat != CACHE_DISABLED)
+            && (global_args->cache_stat != CACHE_NOT_NAMED)) {
+          if (global_args->cache_stat == CACHE_ENTRY_REMOVED) {
             // A previous entry at that path was removed
             global_args->cache_stat = CACHE_ENTRY_REPLACED;
-
           } else {
             // No previous entry existed
             global_args->cache_stat = CACHE_ENTRY_ADDED;
@@ -146,32 +147,34 @@ public:
 
   // finalize closes the output stream
   void finalize(int error) {
-    if (stream) IOUtil::CloseStream(stream);
-    if (buffer) delete[] buffer;
+    if (stream)
+      IOUtil::CloseStream(stream);
+    if (buffer)
+      delete[] buffer;
     if (!name.empty()) {
       if (error) {
-	unlink(name.c_str());
+        unlink(name.c_str());
       } else {
-	if (use_cache) {
-	  if (hpcstruct_cache_find(flat_name.c_str())) {
-	    FileUtil::copy(name, flat_name);
-	  } else {
-	    FileUtil::copy(name, stream_name);
-	  }
-	}
+        if (use_cache) {
+          if (hpcstruct_cache_find(flat_name.c_str())) {
+            FileUtil::copy(name, flat_name);
+          } else {
+            FileUtil::copy(name, stream_name);
+          }
+        }
       }
     }
   };
 
-  std::ostream *getStream() { return stream; };
-  std::string &getName() { return name; };
+  std::ostream* getStream() { return stream; };
+  std::string& getName() { return name; };
 
 private:
-  std::ostream *stream;
+  std::ostream* stream;
   std::string name;
   std::string stream_name;
   std::string flat_name;
-  char *buffer;
+  char* buffer;
   bool use_cache;
   bool is_cached;
 };

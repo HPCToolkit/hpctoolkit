@@ -41,62 +41,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef gpu_operation_multiplexer_h
 #define gpu_operation_multiplexer_h
 
-#include <hpcrun/thread_data.h>
 #include "gpu-operation-channel.h"
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
+#include "hpcrun/thread_data.h"
+
 typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef struct gpu_activity_t gpu_activity_t;
 
-//******************************************************************************
-// local variables
-//******************************************************************************
+bool gpu_operation_multiplexer_my_channel_initialized(void);
 
+void gpu_operation_multiplexer_my_channel_init(void);
 
-//******************************************************************************
-// private operations
-//******************************************************************************
+void gpu_operation_multiplexer_fini(void);
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-
-bool
-gpu_operation_multiplexer_my_channel_initialized
-(
- void
-);
-
-
-void
-gpu_operation_multiplexer_my_channel_init
-(
- void
-);
-
-
-void
-gpu_operation_multiplexer_fini
-(
- void
-);
-
-
-void
-gpu_operation_multiplexer_push
-(
- gpu_activity_channel_t *initiator_channel,
- atomic_int *initiator_pending_operations,
- gpu_activity_t *gpu_activity
-);
-
+void gpu_operation_multiplexer_push(
+    gpu_activity_channel_t* initiator_channel, atomic_int* initiator_pending_operations,
+    gpu_activity_t* gpu_activity);
 
 #endif

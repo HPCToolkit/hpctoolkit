@@ -47,15 +47,14 @@
 #ifdef CRAYXT_CATAMOUNT_TARGET
 #include <catamount/data.h>
 
-long int gethostid(void){
+long int gethostid(void) {
   return _my_pnid;
 }
 
 #else
 #include "name.h"
 
-long gethostid(void)
-{
+long gethostid(void) {
   return hpcrun_get_mpirank();
 }
 #endif

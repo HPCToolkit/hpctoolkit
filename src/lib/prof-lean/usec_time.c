@@ -42,56 +42,28 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-
 //******************************************************************************
 //
 // File:
 //   $HeadURL$
 //
 // Purpose:
-//   Implement a function that returns the time of day in microseconds as a 
+//   Implement a function that returns the time of day in microseconds as a
 //   long integer.
 //
 //******************************************************************************
 
-
-
-//******************************************************************************
-// global includes
-//******************************************************************************
+#include "usec_time.h"
 
 #include <assert.h>
 #include <sys/time.h>
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "usec_time.h"
-
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
-
 #define USEC_PER_SEC 1000000
 
-
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
 // return the time of day in microseconds as a long integer
-unsigned long 
-usec_time()  
-{
+unsigned long usec_time() {
   struct timeval tv;
   int retval = gettimeofday(&tv, 0);
   assert(retval == 0);
   return tv.tv_usec + USEC_PER_SEC * tv.tv_sec;
-} 
+}

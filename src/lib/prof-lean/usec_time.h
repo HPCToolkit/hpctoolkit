@@ -42,15 +42,13 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-
 //******************************************************************************
 //
 // File:
 //   $HeadURL$
 //
 // Purpose:
-//   Define the interface for a function that returns the time of day in 
+//   Define the interface for a function that returns the time of day in
 //   microseconds as a long integer.
 //
 //******************************************************************************
@@ -58,11 +56,7 @@
 #ifndef __usec_time_h__
 #define __usec_time_h__
 
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
 // return the time of day in microseconds as a long integer
 unsigned long usec_time();
 
-#endif  
+#endif

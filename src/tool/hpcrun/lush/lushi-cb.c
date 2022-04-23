@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -60,21 +60,14 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-
-//*************************** User Include Files ****************************
-
 #include "lushi-cb.h"
+
 #include "dylib.h"
 
+#include <errno.h>
 #include <messages/messages.h>
-
-//*************************** Forward Declarations **************************
-
+#include <stdlib.h>
+#include <string.h>
 
 // **************************************************************************
 // Interface for 'heap memory' allocation
@@ -83,13 +76,8 @@
 // **************************************************************************
 // Facility for unwinding physical stack
 // **************************************************************************
- 
-int
-LUSHCB_loadmap_find(void* addr, 
-		    char* module_name,
-		    void** start, 
-		    void** end)
-{
+
+int LUSHCB_loadmap_find(void* addr, char* module_name, void** start, void** end) {
   int r = 0;
 #ifdef HPCRUN_STATIC_LINK
   EMSG("LUSHCB_loadmap_find: HPCRUN_STATIC_LINK not implemented");
@@ -98,4 +86,3 @@ LUSHCB_loadmap_find(void* addr,
 #endif
   return r;
 }
-

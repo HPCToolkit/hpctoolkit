@@ -47,7 +47,6 @@
 #ifndef TERM_HANDLER_H
 #define TERM_HANDLER_H
 
-int
-hpcrun_setup_term();
+int hpcrun_setup_term();
 
 #endif

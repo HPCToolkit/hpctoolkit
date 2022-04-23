@@ -50,60 +50,46 @@
 //
 //***************************************************************************
 
-//************************ System Include Files ******************************
-
-#include <iostream>
-using std::endl;
-
-#include <sstream>
-#include <string>
-#include <algorithm>
-
-#include <cmath>
-#include <cfloat>
-
-//************************* User Include Files *******************************
-
-#include <include/uint.h>
-
 #include "Metric-AExpr.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/NaN.h>
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/NaN.h"
 
-//************************ Forward Declarations ******************************
+#include <algorithm>
+#include <cfloat>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+using std::endl;
 
 #define AEXPR_DO_CHECK 0
 #if (AEXPR_DO_CHECK)
-# define AEXPR_CHECK(x) if (!isok(x)) { return c_FP_NAN_d; }
+#define AEXPR_CHECK(x) \
+  if (!isok(x)) {      \
+    return c_FP_NAN_d; \
+  }
 #else
-# define AEXPR_CHECK(x)
+#define AEXPR_CHECK(x)
 #endif
-
-
-//****************************************************************************
 
 namespace Prof {
 
 namespace Metric {
 
-
 // ----------------------------------------------------------------------
 // class AExpr
 // ----------------------------------------------------------------------
 
-std::string
-AExpr::toString() const
-{
+std::string AExpr::toString() const {
   std::ostringstream os;
   dump(os);
   return os.str();
 }
 
-
-void
-AExpr::dump_opands(std::ostream& os, AExpr** opands, uint sz, const char* sep)
-{
+void AExpr::dump_opands(std::ostream& os, AExpr** opands, uint sz, const char* sep) {
   for (uint i = 0; i < sz; ++i) {
     opands[i]->dumpMe(os);
     if (i < (sz - 1)) {
@@ -112,62 +98,47 @@ AExpr::dump_opands(std::ostream& os, AExpr** opands, uint sz, const char* sep)
   }
 }
 
-
 // ----------------------------------------------------------------------
 // class Const
 // ----------------------------------------------------------------------
 
-std::ostream&
-Const::dumpMe(std::ostream& os) const
-{
+std::ostream& Const::dumpMe(std::ostream& os) const {
   os << m_c;
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class Neg
 // ----------------------------------------------------------------------
 
-double
-Neg::eval(const Metric::IData& mdata) const
-{
+double Neg::eval(const Metric::IData& mdata) const {
   double z = m_expr->eval(mdata);
 
   AEXPR_CHECK(z);
   return -z;
 }
 
-
-std::ostream&
-Neg::dumpMe(std::ostream& os) const
-{
+std::ostream& Neg::dumpMe(std::ostream& os) const {
   os << "-(";
   m_expr->dumpMe(os);
   os << ")";
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class Var
 // ----------------------------------------------------------------------
 
-std::ostream&
-Var::dumpMe(std::ostream& os) const
-{
+std::ostream& Var::dumpMe(std::ostream& os) const {
   os << m_name;
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class Power
 // ----------------------------------------------------------------------
 
-double
-Power::eval(const Metric::IData& mdata) const
-{
+double Power::eval(const Metric::IData& mdata) const {
   double b = m_base->eval(mdata);
   double e = m_exponent->eval(mdata);
   double z = pow(b, e);
@@ -176,10 +147,7 @@ Power::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-Power::dumpMe(std::ostream& os) const
-{
+std::ostream& Power::dumpMe(std::ostream& os) const {
   os << "(";
   m_base->dumpMe(os);
   os << "**";
@@ -188,14 +156,11 @@ Power::dumpMe(std::ostream& os) const
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class Divide
 // ----------------------------------------------------------------------
 
-double
-Divide::eval(const Metric::IData& mdata) const
-{
+double Divide::eval(const Metric::IData& mdata) const {
   double n = m_numerator->eval(mdata);
   double d = m_denominator->eval(mdata);
 
@@ -208,10 +173,7 @@ Divide::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-Divide::dumpMe(std::ostream& os) const
-{
+std::ostream& Divide::dumpMe(std::ostream& os) const {
   os << "(";
   m_numerator->dumpMe(os);
   os << " / ";
@@ -220,14 +182,11 @@ Divide::dumpMe(std::ostream& os) const
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class Minus
 // ----------------------------------------------------------------------
 
-double
-Minus::eval(const Metric::IData& mdata) const
-{
+double Minus::eval(const Metric::IData& mdata) const {
   double m = m_minuend->eval(mdata);
   double s = m_subtrahend->eval(mdata);
   double z = (m - s);
@@ -236,67 +195,56 @@ Minus::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-Minus::dumpMe(std::ostream& os) const
-{
+std::ostream& Minus::dumpMe(std::ostream& os) const {
   os << "(";
   m_minuend->dumpMe(os);
   os << " - ";
-  m_subtrahend->dumpMe(os); os << ")";
+  m_subtrahend->dumpMe(os);
+  os << ")";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class Plus
 // ----------------------------------------------------------------------
 
-Plus::~Plus()
-{
+Plus::~Plus() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-Plus::eval(const Metric::IData& mdata) const
-{
+double Plus::eval(const Metric::IData& mdata) const {
   double z = evalSum(mdata, m_opands, m_sz);
 
   AEXPR_CHECK(z);
   return z;
 }
 
-
-std::ostream&
-Plus::dumpMe(std::ostream& os) const
-{
-  if (m_sz > 1) { os << "("; }
+std::ostream& Plus::dumpMe(std::ostream& os) const {
+  if (m_sz > 1) {
+    os << "(";
+  }
   dump_opands(os, m_opands, m_sz, " + ");
-  if (m_sz > 1) { os << ")"; }
+  if (m_sz > 1) {
+    os << ")";
+  }
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class Times
 // ----------------------------------------------------------------------
 
-Times::~Times()
-{
+Times::~Times() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-Times::eval(const Metric::IData& mdata) const
-{
+double Times::eval(const Metric::IData& mdata) const {
   double z = 1.0;
   for (uint i = 0; i < m_sz; ++i) {
     double x = m_opands[i]->eval(mdata);
@@ -307,33 +255,29 @@ Times::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-Times::dumpMe(std::ostream& os) const
-{
-  if (m_sz > 1) { os << "("; }
+std::ostream& Times::dumpMe(std::ostream& os) const {
+  if (m_sz > 1) {
+    os << "(";
+  }
   dump_opands(os, m_opands, m_sz, " * ");
-  if (m_sz > 1) { os << ")"; }
+  if (m_sz > 1) {
+    os << ")";
+  }
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class Max
 // ----------------------------------------------------------------------
 
-Max::~Max()
-{
+Max::~Max() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-Max::eval(const Metric::IData& mdata) const
-{
+double Max::eval(const Metric::IData& mdata) const {
   double z = m_opands[0]->eval(mdata);
   for (uint i = 1; i < m_sz; ++i) {
     double x = m_opands[i]->eval(mdata);
@@ -344,33 +288,25 @@ Max::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-Max::dumpMe(std::ostream& os) const
-{
+std::ostream& Max::dumpMe(std::ostream& os) const {
   os << "max(";
   dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class Min
 // ----------------------------------------------------------------------
 
-Min::~Min()
-{
+Min::~Min() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-Min::eval(const Metric::IData& mdata) const
-{
+double Min::eval(const Metric::IData& mdata) const {
   double z = DBL_MAX;
   for (uint i = 0; i < m_sz; ++i) {
     double x = m_opands[i]->eval(mdata);
@@ -379,72 +315,58 @@ Min::eval(const Metric::IData& mdata) const
     }
   }
 
-  if (z == DBL_MAX) { z = DBL_MIN; }
+  if (z == DBL_MAX) {
+    z = DBL_MIN;
+  }
 
   AEXPR_CHECK(z);
   return z;
 }
 
-
-std::ostream&
-Min::dumpMe(std::ostream& os) const
-{
+std::ostream& Min::dumpMe(std::ostream& os) const {
   os << "min(";
   dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class Mean
 // ----------------------------------------------------------------------
 
-Mean::~Mean()
-{
+Mean::~Mean() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-Mean::eval(const Metric::IData& mdata) const
-{
+double Mean::eval(const Metric::IData& mdata) const {
   double z = evalMean(mdata, m_opands, m_sz);
 
   AEXPR_CHECK(z);
   return z;
 }
 
-
-std::ostream&
-Mean::dumpMe(std::ostream& os) const
-{
+std::ostream& Mean::dumpMe(std::ostream& os) const {
   os << "mean(";
   dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class StdDev
 // ----------------------------------------------------------------------
 
-StdDev::~StdDev()
-{
+StdDev::~StdDev() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-StdDev::eval(const Metric::IData& mdata) const
-{
+double StdDev::eval(const Metric::IData& mdata) const {
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double z = sqrt(v_m.first);
 
@@ -452,35 +374,27 @@ StdDev::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-StdDev::dumpMe(std::ostream& os) const
-{
+std::ostream& StdDev::dumpMe(std::ostream& os) const {
   os << "stddev(";
   dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class CoefVar
 // ----------------------------------------------------------------------
 
-CoefVar::~CoefVar()
-{
+CoefVar::~CoefVar() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-CoefVar::eval(const Metric::IData& mdata) const
-{
+double CoefVar::eval(const Metric::IData& mdata) const {
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
-  double sdev = sqrt(v_m.first); // always non-negative
+  double sdev = sqrt(v_m.first);  // always non-negative
   double mean = v_m.second;
   double z = 0.0;
   if (mean > hpc_epsilon) {
@@ -491,35 +405,27 @@ CoefVar::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-CoefVar::dumpMe(std::ostream& os) const
-{
+std::ostream& CoefVar::dumpMe(std::ostream& os) const {
   os << "coefvar(";
   dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class RStdDev
 // ----------------------------------------------------------------------
 
-RStdDev::~RStdDev()
-{
+RStdDev::~RStdDev() {
   for (uint i = 0; i < m_sz; ++i) {
     delete m_opands[i];
   }
   delete[] m_opands;
 }
 
-
-double
-RStdDev::eval(const Metric::IData& mdata) const
-{
+double RStdDev::eval(const Metric::IData& mdata) const {
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
-  double sdev = sqrt(v_m.first); // always non-negative
+  double sdev = sqrt(v_m.first);  // always non-negative
   double mean = v_m.second;
   double z = 0.0;
   if (mean > hpc_epsilon) {
@@ -530,32 +436,20 @@ RStdDev::eval(const Metric::IData& mdata) const
   return z;
 }
 
-
-std::ostream&
-RStdDev::dumpMe(std::ostream& os) const
-{
+std::ostream& RStdDev::dumpMe(std::ostream& os) const {
   os << "r-stddev(";
   dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
 }
 
-
 // ----------------------------------------------------------------------
 // class NumSource
 // ----------------------------------------------------------------------
 
-std::ostream&
-NumSource::dumpMe(std::ostream& os) const
-{
+std::ostream& NumSource::dumpMe(std::ostream& os) const {
   os << "num-src()";
   return os;
 }
-
-
-//****************************************************************************
-
-
-} // namespace Metric
-
-} // namespace Prof
+}  // namespace Metric
+}  // namespace Prof

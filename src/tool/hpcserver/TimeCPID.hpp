@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TimeCPID.hpp $
-// $Id: TimeCPID.hpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TimeCPID.hpp
+// $ $Id: TimeCPID.hpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TimeCPID.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TimeCPID.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -57,28 +60,21 @@
 //
 //***************************************************************************
 
-
 #ifndef TIMECPID_H_
 #define TIMECPID_H_
 
 #include <stdint.h>
 
-namespace TraceviewerServer
-{
-	typedef uint64_t Time;
-	struct TimeCPID
-	{
-	public:
-
-		Time timestamp;
-		int cpid;
-		TimeCPID(Time _timestamp, int _cpid)
-		{
-			timestamp = _timestamp;
-			cpid = _cpid;
-		}
-
-	};
-
+namespace TraceviewerServer {
+typedef uint64_t Time;
+struct TimeCPID {
+public:
+  Time timestamp;
+  int cpid;
+  TimeCPID(Time _timestamp, int _cpid) {
+    timestamp = _timestamp;
+    cpid = _cpid;
+  }
+};
 } /* namespace TraceviewerServer */
 #endif /* TIMECPID_H_ */

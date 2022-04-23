@@ -57,28 +57,17 @@
  *                                                                            *
  *****************************************************************************/
 
-//************************** System Include Files ***************************
-
-#include <iostream>
-
-//*************************** User Include Files ****************************
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
 #include "HashTable.hpp"
 #include "QuickSort.hpp"
 
-/*************** HashTableSortedIterator public member functions *************/
+#include <iostream>
 
 //
 //
-HashTableSortedIterator::HashTableSortedIterator(const HashTable* theHashTable,
-						 EntryCompareFunctPtr const _EntryCompare)
-{
-  sortedEntries = (void **) NULL;
-  hashTable = (HashTable*) theHashTable;
+HashTableSortedIterator::HashTableSortedIterator(
+    const HashTable* theHashTable, EntryCompareFunctPtr const _EntryCompare) {
+  sortedEntries = (void**)NULL;
+  hashTable = (HashTable*)theHashTable;
   EntryCompare = _EntryCompare;
 
   HashTableSortedIterator::Reset();
@@ -88,66 +77,59 @@ HashTableSortedIterator::HashTableSortedIterator(const HashTable* theHashTable,
 
 //
 //
-HashTableSortedIterator::~HashTableSortedIterator ()
-{
-  if (sortedEntries) delete [] sortedEntries;
+HashTableSortedIterator::~HashTableSortedIterator() {
+  if (sortedEntries)
+    delete[] sortedEntries;
 
   return;
 }
 
 //
 //
-void HashTableSortedIterator::operator ++(int)
-{
+void HashTableSortedIterator::operator++(int) {
   currentEntryNumber++;
   return;
 }
 
-bool HashTableSortedIterator::IsValid() const
-{
+bool HashTableSortedIterator::IsValid() const {
   return (currentEntryNumber < numberOfSortedEntries);
 }
 
 //
 //
-void* HashTableSortedIterator::Current () const
-{
-  if (currentEntryNumber < numberOfSortedEntries)
-    {
-      if (sortedEntries) return (void*)sortedEntries[currentEntryNumber];
-      else               return (void*)NULL;
-    }
-  else
-    {
+void* HashTableSortedIterator::Current() const {
+  if (currentEntryNumber < numberOfSortedEntries) {
+    if (sortedEntries)
+      return (void*)sortedEntries[currentEntryNumber];
+    else
       return (void*)NULL;
-    }
+  } else {
+    return (void*)NULL;
+  }
 }
 
 //
 //
-void HashTableSortedIterator::Reset ()
-{
-  HashTableIterator  anIterator(hashTable);
-  QuickSort          localQuickSort;
+void HashTableSortedIterator::Reset() {
+  HashTableIterator anIterator(hashTable);
+  QuickSort localQuickSort;
 
   currentEntryNumber = 0;
 
-  if (sortedEntries) delete [] sortedEntries;
+  if (sortedEntries)
+    delete[] sortedEntries;
 
   numberOfSortedEntries = hashTable->NumberOfEntries();
 
-  sortedEntries = new  void* [numberOfSortedEntries];
+  sortedEntries = new void*[numberOfSortedEntries];
 
-  for (int i = 0; i < numberOfSortedEntries; i++, anIterator++)
-    {
-       sortedEntries[i] = anIterator.Current();
-    }
+  for (int i = 0; i < numberOfSortedEntries; i++, anIterator++) {
+    sortedEntries[i] = anIterator.Current();
+  }
 
   localQuickSort.Create(sortedEntries, EntryCompare);
-  localQuickSort.Sort(0, numberOfSortedEntries-1);
+  localQuickSort.Sort(0, numberOfSortedEntries - 1);
   localQuickSort.Destroy();
 
   return;
 }
-
-

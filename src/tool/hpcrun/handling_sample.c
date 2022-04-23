@@ -44,45 +44,34 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <stdlib.h>
-#include <assert.h>
-#include "thread_data.h"
-
 #include "handling_sample.h"
 
-#include <messages/messages.h>
+#include "messages/messages.h"
+#include "thread_data.h"
+
+#include <assert.h>
+#include <stdlib.h>
 
 //
 // id specifically passed in, since id has not been set yet!!
 //
-void
-hpcrun_init_handling_sample(thread_data_t *td, int in, int id)
-{
-  TMSG(HANDLING_SAMPLE,"INIT called f thread %d", id);
+void hpcrun_init_handling_sample(thread_data_t* td, int in, int id) {
+  TMSG(HANDLING_SAMPLE, "INIT called f thread %d", id);
   td->handling_sample = in;
 }
 
-
-void
-hpcrun_set_handling_sample(thread_data_t *td)
-{
+void hpcrun_set_handling_sample(thread_data_t* td) {
   assert(td->handling_sample == 0);
 
   td->handling_sample = 0xDEADBEEF;
 }
 
-
-void
-hpcrun_clear_handling_sample(thread_data_t *td)
-{
+void hpcrun_clear_handling_sample(thread_data_t* td) {
   assert(td->handling_sample == 0xDEADBEEF);
 
   td->handling_sample = 0;
 }
 
-
-int
-hpcrun_is_handling_sample(void)
-{
+int hpcrun_is_handling_sample(void) {
   return (TD_GET(handling_sample) == 0xDEADBEEF);
 }

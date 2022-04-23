@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.hpp $
-// $Id: DataOutputFileStream.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.hpp
+// $ $Id: DataOutputFileStream.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/DataOutputFileStream.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -67,20 +70,19 @@
 
 #ifndef DATAOUTPUTFILESTREAM_H_
 #define DATAOUTPUTFILESTREAM_H_
-#include <fstream>
 #include "ByteUtilities.hpp"
-namespace TraceviewerServer
-{
-	using namespace std;
-	class DataOutputFileStream: public ofstream
-	{
-	public:
-		DataOutputFileStream(const char*, openmode mode = ios_base::binary | ios_base::out);
-		virtual ~DataOutputFileStream();
-		void writeInt(int);
-		void writeLong(Long);
-	private:
-	};
 
+#include <fstream>
+namespace TraceviewerServer {
+using namespace std;
+class DataOutputFileStream : public ofstream {
+public:
+  DataOutputFileStream(const char*, openmode mode = ios_base::binary | ios_base::out);
+  virtual ~DataOutputFileStream();
+  void writeInt(int);
+  void writeLong(Long);
+
+private:
+};
 } /* namespace TraceviewerServer */
 #endif /* DATAOUTPUTFILESTREAM_H_ */

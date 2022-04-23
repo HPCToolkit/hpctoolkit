@@ -44,39 +44,34 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "fileout.hpp"
+#include "hpcstruct.hpp"
+
+#include "include/gpu-binary.h"
+#include "lib/banal/Struct.hpp"
+#include "lib/prof-lean/hpcio.h"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/IOUtil.hpp"
+#include "lib/support/realpath.h"
+#include "lib/support/RealPathMgr.hpp"
+
 #include <dirent.h>
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
 #include <dlfcn.h>
+#include <fstream>
+#include <iostream>
+#include <new>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fstream>
-#include <string>
 #include <streambuf>
-#include <new>
+#include <string.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <vector>
 
-#include <string.h>
-#include <unistd.h>
-
-#include <string.h>
-
-#include <include/gpu-binary.h>
-#include "hpcstruct.hpp"
-#include <lib/banal/Struct.hpp>
-#include <lib/prof-lean/hpcio.h>
-#include <lib/support/realpath.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/IOUtil.hpp>
-
-#include "fileout.hpp"
-
-#include <lib/support/RealPathMgr.hpp>
+using std::cerr;
+using std::endl;
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>
@@ -84,18 +79,10 @@ using std::endl;
 
 using namespace std;
 
-
 //=====================================================================================
 //***************** Function for processing a Single Binary ***************************
 
-void
-doSingleBinary
-(
- Args &args,
- struct stat *sb
-)
-{
-
+void doSingleBinary(Args& args, struct stat* sb) {
   // ------------------------------------------------------------
   // Set Parameters on how to run the actual BAnal processing
   // ------------------------------------------------------------
@@ -112,7 +99,7 @@ doSingleBinary
   //
 
   jobs_struct = (args.jobs_struct >= 1) ? args.jobs_struct : args.jobs;
-  jobs_parse  = (args.jobs_parse >= 1)  ? args.jobs_parse  : args.jobs;
+  jobs_parse = (args.jobs_parse >= 1) ? args.jobs_parse : args.jobs;
 
 #ifndef ENABLE_OPENMP_SYMTAB
   jobs_symtab = 1;
@@ -130,10 +117,10 @@ doSingleBinary
 
   BAnal::Struct::Options opts;
 
-  opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
-	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
-	   args.compute_gpu_cfg, args.parallel_analysis_threshold,
-	   args.pretty_print_output);
+  opts.set(
+      args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time, args.analyze_cpu_binaries,
+      args.analyze_gpu_binaries, args.compute_gpu_cfg, args.parallel_analysis_threshold,
+      args.pretty_print_output);
   if (args.show_gaps && args.out_filenm == "-") {
     DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
     exit(1);
@@ -141,7 +128,7 @@ doSingleBinary
 
   // Now that we've set the BAnal options, we can force jobs to be non-zero
   //
-  if (args.jobs == 0 ){
+  if (args.jobs == 0) {
     args.jobs = 1;
   }
 
@@ -161,11 +148,10 @@ doSingleBinary
   if (args.nocache) {
     // the user intentionally turned off the cache
     args.cache_stat = CACHE_DISABLED;
-
-  }  else {
+  } else {
     //  using the cache; first open/create the directory
     //
-    char *path = setup_cache_dir(args.cache_directory.c_str(), &args);
+    char* path = setup_cache_dir(args.cache_directory.c_str(), &args);
 
     if (path) {
       // We have either opened or created the cache directory; path is its absolute path.
@@ -177,7 +163,7 @@ doSingleBinary
 #endif
 
       // Compute a hash of the binary at the input absolute path
-      char *hash = hpcstruct_cache_hash(binary_abspath.c_str());
+      char* hash = hpcstruct_cache_hash(binary_abspath.c_str());
 
       //  If it's a gpu binary and the user requested the cfg, set a suffix
       string suffix = "";
@@ -186,11 +172,11 @@ doSingleBinary
       }
 
       // Compute the path in the cache for that binary
-      cache_path_directory = hpcstruct_cache_path_directory(cache_directory.c_str(),
-           binary_abspath.c_str(), hash, suffix.c_str() );
+      cache_path_directory = hpcstruct_cache_path_directory(
+          cache_directory.c_str(), binary_abspath.c_str(), hash, suffix.c_str());
 
       // Compute the path for the entry in the FLAT subdirectory of the cache
-      cache_flat_entry = hpcstruct_cache_flat_entry(cache_directory.c_str(), hash );
+      cache_flat_entry = hpcstruct_cache_flat_entry(cache_directory.c_str(), hash);
 
       string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
       symlink(cache_path_link.c_str(), cache_flat_entry.c_str());
@@ -199,7 +185,6 @@ doSingleBinary
       cerr << "DEBUG symlinked " << cache_path_link.c_str() << " to " << cache_flat_entry.c_str() << endl;
       cerr << "DEBUG state now = "  << args.cache_stat << endl;
 #endif
-
     } else {
       //
       // the user did not specify a cache directory
@@ -211,43 +196,44 @@ doSingleBinary
   cerr << "DEBUG singleApplicationBinary  -- cache setup done" << args.in_filenm.c_str() << endl;
 #endif
 
-  std::string hpcstruct_path =
-    (args.out_filenm == "-") ? "" : RealPath(args.out_filenm.c_str());
+  std::string hpcstruct_path = (args.out_filenm == "-") ? "" : RealPath(args.out_filenm.c_str());
 
   FileOutputStream gaps;
   FileOutputStream hpcstruct;
 
   string structure_name = "hpcstruct";
 
-  if (gpu_binary && args.compute_gpu_cfg) structure_name += "+gpucfg";
+  if (gpu_binary && args.compute_gpu_cfg)
+    structure_name += "+gpucfg";
 
   // set sequential or parallel mode
   std::string mode = "sequential";
-  if (args.jobs > 1 ) {
+  if (args.jobs > 1) {
     mode = "parallel";
   }
 
   // If this invocation was not from a Makefile, write a message to the user
-  if ( args.is_from_makefile != true ) {
-
+  if (args.is_from_makefile != true) {
     // Direct invocation, write a starting message
-    if (gpu_binary == true ) {
-      std::cerr << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
-        << "] analysis of " "GPU binary "
-        << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << ")" << std::endl;
+    if (gpu_binary == true) {
+      std::cerr << " begin " << mode.c_str()
+                << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+                << "] analysis of "
+                   "GPU binary "
+                << args.in_filenm.c_str() << " (size = " << sb->st_size
+                << ", threads = " << args.jobs << ")" << std::endl;
     } else {
-      std::cerr << " begin " << mode.c_str() << " analysis of CPU binary "
-        << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << ")" << std::endl;
+      std::cerr << " begin " << mode.c_str() << " analysis of CPU binary " << args.in_filenm.c_str()
+                << " (size = " << sb->st_size << ", threads = " << args.jobs << ")" << std::endl;
     }
   }
 
   // Initialize the output stream for the hpcstruct file
   //  Cacheing is embedded in this call
   //
-  hpcstruct.init(cache_path_directory.c_str(), cache_flat_entry.c_str(),
-		 structure_name.c_str(), hpcstruct_path.c_str());
+  hpcstruct.init(
+      cache_path_directory.c_str(), cache_flat_entry.c_str(), structure_name.c_str(),
+      hpcstruct_path.c_str());
 
 #if 0
   std::cerr << "DEBUG hpcinit, path_dir " << cache_path_directory.c_str() << std::endl
@@ -260,10 +246,8 @@ doSingleBinary
   if (args.show_gaps) {
     // yes, initialize for that output
     //
-    std::string gaps_path =
-      std::string(hpcstruct_path) + std::string(".gaps");
-    gaps.init(cache_path_directory.c_str(), cache_flat_entry.c_str(), "gaps",
-	      gaps_path.c_str());
+    std::string gaps_path = std::string(hpcstruct_path) + std::string(".gaps");
+    gaps.init(cache_path_directory.c_str(), cache_flat_entry.c_str(), "gaps", gaps_path.c_str());
   }
 
 #if 0
@@ -276,12 +260,10 @@ doSingleBinary
     hpcstruct.open();
     gaps.open();
     try {
-      BAnal::Struct::makeStructure(args.in_filenm, hpcstruct.getStream(),
-				   gaps.getStream(), gaps.getName(),
-				   args.searchPathStr, opts);
-    } catch (int n) {
-      error = n;
-    }
+      BAnal::Struct::makeStructure(
+          args.in_filenm, hpcstruct.getStream(), gaps.getStream(), gaps.getName(),
+          args.searchPathStr, opts);
+    } catch (int n) { error = n; }
   }
 
   hpcstruct.finalize(error);
@@ -289,9 +271,10 @@ doSingleBinary
 
   // if a cache is in use, ensure that the module path in the new .struct file is correct.
   //
-  if (use_cache == true ) {
-    string checkname_cmd = string("/bin/sh ") + string(HPCTOOLKIT_INSTALL_PREFIX) + "/libexec/hpctoolkit/renamestruct.sh "
-        + args.in_filenm.c_str() + " " + hpcstruct_path.c_str();
+  if (use_cache == true) {
+    string checkname_cmd = string("/bin/sh ") + string(HPCTOOLKIT_INSTALL_PREFIX)
+                         + "/libexec/hpctoolkit/renamestruct.sh " + args.in_filenm.c_str() + " "
+                         + hpcstruct_path.c_str();
 
 #if 0
     cerr << "DEBUG singleApplicationBinary : checkname_cmd  = " << checkname_cmd.c_str() << endl;
@@ -300,26 +283,25 @@ doSingleBinary
     // Invoke the renamestuct shell script from the installation library
     //    Script is invoked with two arguments, $1 = path needed, $2 = structure-file
     //
-    int retstat = system( checkname_cmd.c_str() );
+    int retstat = system(checkname_cmd.c_str());
 
     int renamestat = -1;
 
-    if ( WIFEXITED(retstat) == true ) {
+    if (WIFEXITED(retstat) == true) {
       // a normal exit
-      renamestat = WEXITSTATUS (retstat);
-      if (renamestat == 1 ) {
-        //The names were really updated
-        if ( args.cache_stat == CACHE_ENTRY_ADDED ) {
+      renamestat = WEXITSTATUS(retstat);
+      if (renamestat == 1) {
+        // The names were really updated
+        if (args.cache_stat == CACHE_ENTRY_ADDED) {
           args.cache_stat = CACHE_ENTRY_ADDED_RENAME;
-        } else if ( args.cache_stat == CACHE_ENTRY_COPIED ) {
+        } else if (args.cache_stat == CACHE_ENTRY_COPIED) {
           args.cache_stat = CACHE_ENTRY_COPIED_RENAME;
         }
 
 #if 0
     cerr << "DEBUG singleApplicationBinary : checkname_cmd replaced names in struct file " << endl;
 #endif
-      
-      } else if (renamestat == 0 ) {
+      } else if (renamestat == 0) {
 #if 0
         cerr << "DEBUG singleApplicationBinary : checkname_cmd did not need to replace names in struct file " << endl;
 #endif
@@ -328,67 +310,55 @@ doSingleBinary
         cerr << "DEBUG singleApplicationBinary : checkname_cmd returned = " << renamestat << endl;
 #endif
       }
-
     } else {
       // Not a normal exit -- a serious error
       DIAG_EMsg("Running renamepath to fix lines in structure files failed.");
       exit(1);
     }
-
   }  // if (use_cache == true)
 
   // Set cache usage status string
-  const char * cache_stat_str;
-  switch( args.cache_stat ) {
-    case CACHE_NOT_NAMED:
-      cache_stat_str = " (Cache not specified)";
-      break;
-    case CACHE_DISABLED:
-      cache_stat_str = " (Cache disabled by user)";
-      break;
-    case CACHE_ENABLED:
-      cache_stat_str = " (Cache enabled XXX )";  // Intermediate state, should never be seen
-      break;
-    case CACHE_ENTRY_COPIED:
-      cache_stat_str =  " (Copied from cache)";
-      break;
-    case CACHE_ENTRY_COPIED_RENAME:
-      cache_stat_str =  " (Copied from cache +)";
-      break;
-    case CACHE_ENTRY_ADDED:
-      cache_stat_str =  " (Added to cache)";
-      break;
-    case CACHE_ENTRY_ADDED_RENAME:
-      cache_stat_str =  " (Added to cache + XXX)";  // Should never happen
-      break;
-    case CACHE_ENTRY_REPLACED:
-      cache_stat_str =  " (Replaced in cache)";
-      break;
-    case CACHE_ENTRY_REMOVED:
-      cache_stat_str =  " (Removed from cache XXX)";  //Intermediate state, should never be seen
-      break;
-    default:
-      cache_stat_str = " (?? unknown XXX)";
-      break;
+  const char* cache_stat_str;
+  switch (args.cache_stat) {
+  case CACHE_NOT_NAMED: cache_stat_str = " (Cache not specified)"; break;
+  case CACHE_DISABLED: cache_stat_str = " (Cache disabled by user)"; break;
+  case CACHE_ENABLED:
+    cache_stat_str = " (Cache enabled XXX )";  // Intermediate state, should never be seen
+    break;
+  case CACHE_ENTRY_COPIED: cache_stat_str = " (Copied from cache)"; break;
+  case CACHE_ENTRY_COPIED_RENAME: cache_stat_str = " (Copied from cache +)"; break;
+  case CACHE_ENTRY_ADDED: cache_stat_str = " (Added to cache)"; break;
+  case CACHE_ENTRY_ADDED_RENAME:
+    cache_stat_str = " (Added to cache + XXX)";  // Should never happen
+    break;
+  case CACHE_ENTRY_REPLACED: cache_stat_str = " (Replaced in cache)"; break;
+  case CACHE_ENTRY_REMOVED:
+    cache_stat_str = " (Removed from cache XXX)";  // Intermediate state, should never be seen
+    break;
+  default: cache_stat_str = " (?? unknown XXX)"; break;
   }
   //
-  if ( args.is_from_makefile != true ) {
+  if (args.is_from_makefile != true) {
     // If this invocation was not from a Makefile, write a message to the user
     //
-    if (gpu_binary == true ) {
-      std::cerr << "   end " << mode.c_str() << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
-        << "] analysis of " "GPU binary "
-        << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
+    if (gpu_binary == true) {
+      std::cerr << "   end " << mode.c_str()
+                << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+                << "] analysis of "
+                   "GPU binary "
+                << args.in_filenm.c_str() << cache_stat_str << std::endl
+                << std::endl;
     } else {
-      std::cerr << "   end " << mode.c_str() << " analysis of CPU binary "
-        << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
+      std::cerr << "   end " << mode.c_str() << " analysis of CPU binary " << args.in_filenm.c_str()
+                << cache_stat_str << std::endl
+                << std::endl;
     }
-
   } else {
     // if from a Makefile, write the key line to be read by script
     //
     cerr << "CACHESTAT " << cache_stat_str << std::endl;
   }
 
-  if (error) exit(error);
+  if (error)
+    exit(error);
 }

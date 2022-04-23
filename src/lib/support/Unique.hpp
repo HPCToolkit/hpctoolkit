@@ -71,7 +71,6 @@
 #ifndef support_Unique_h
 #define support_Unique_h
 
-
 // ************************* System Include Files ***************************
 
 #include <set>
@@ -79,7 +78,7 @@
 
 // ************************** User Include Files ****************************
 
-#include <include/uint.h>
+#include "include/uint.h"
 
 // ************************* Variable Definitions ***************************
 
@@ -101,54 +100,45 @@
 //     09/24/96 - dbaker - Creation (adapted from Memento).
 //
 // **************************************************************************
-class Unique
-{
-  protected:
+class Unique {
+protected:
+  // Special Class Members
 
-    // Special Class Members
+  Unique();
+  // Default constructor.
 
-      Unique();
-        // Default constructor.
+  Unique(const char* theClassName);
+  // Constructor for singleton object.
 
-      Unique(const char* theClassName);
-        // Constructor for singleton object.
+  virtual ~Unique();
+  // Destructor.
 
-      virtual ~Unique();
-        // Destructor.
+private:
+  static std::set<std::string> classNameSet;
+  // Where the set of class names are stored.
 
+  Unique(const Unique& mo);
+  // Copy constructor (explicitly not allowed).
+  // has not implemetationm since compiler should complain
+  // about inaccessability
+  Unique& operator=(const Unique& mo);
+  // Assignment operator (explicitly not allowed).
+  // has not implemetationm, ...
 
-  private:
-
-      static std::set<std::string> classNameSet;
-        // Where the set of class names are stored.
-
-      Unique(const Unique& mo);
-        // Copy constructor (explicitly not allowed).
-        // has not implemetationm since compiler should complain 
-        // about inaccessability 
-      Unique& operator=(const Unique& mo);
-        // Assignment operator (explicitly not allowed).
-        // has not implemetationm, ...
-
-      std::string className;
-        // Saved class name or ""
-
+  std::string className;
+  // Saved class name or ""
 };
 
 // ********************** Extern Function Prototypes ************************
 
 // Unique object equality.
-inline bool operator==(const Unique& u1, const Unique& u2)
-{
-    return (&u1 == &u2);
+inline bool operator==(const Unique& u1, const Unique& u2) {
+  return (&u1 == &u2);
 }
-
 
 // Unique object inequality.
-inline bool operator!=(const Unique& u1, const Unique& u2)
-{
-    return !(u1 == u2);
+inline bool operator!=(const Unique& u1, const Unique& u2) {
+  return !(u1 == u2);
 }
-
 
 #endif /* support_Unique_h */

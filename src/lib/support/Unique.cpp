@@ -65,12 +65,12 @@
 // *************************** User Include Files ****************************
 
 #include "Unique.hpp"
+
 #include "diagnostics.h"
 
 // ************************** Variable Definitions ***************************
 
 std::set<std::string> Unique::classNameSet;  // Set of saved class names.
-
 
 // ***************************************************************************
 //
@@ -82,11 +82,7 @@ std::set<std::string> Unique::classNameSet;  // Set of saved class names.
 //
 // ***************************************************************************
 
-Unique::Unique(): className()
-{
-}
-
-
+Unique::Unique() : className() {}
 
 // ***************************************************************************
 //
@@ -101,17 +97,13 @@ Unique::Unique(): className()
 //
 // ***************************************************************************
 
-Unique::Unique(const char* theClassName)
-  : className((theClassName) ? theClassName : "")
-{
-  if (classNameSet.count(className) != 0) { 
+Unique::Unique(const char* theClassName) : className((theClassName) ? theClassName : "") {
+  if (classNameSet.count(className) != 0) {
     DIAG_Die("Trying to create another " + className + " instance");
-  }
-  else {
-    classNameSet.insert(className); 
+  } else {
+    classNameSet.insert(className);
   }
 }
-
 
 // ***************************************************************************
 //
@@ -129,10 +121,8 @@ Unique::Unique(const char* theClassName)
 //
 // ***************************************************************************
 
-Unique::~Unique()
-{
-    if (className.length() > 0)
-    {// remove the className from the master set
-        classNameSet.erase(className);
-    }
+Unique::~Unique() {
+  if (className.length() > 0) {  // remove the className from the master set
+    classNameSet.erase(className);
+  }
 }

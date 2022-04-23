@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.cpp $
-// $Id: ProgressBar.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.cpp
+// $ $Id: ProgressBar.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.cpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProgressBar.cpp
+//   $
 //
 // Purpose:
 //   Shows progress for long-running tasks. In the single-threaded version, this
@@ -58,65 +61,62 @@
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
-#include <sys/ioctl.h>
-#include <unistd.h>
-#include <cstdio>
-
 #include "ProgressBar.hpp"
+
 #include "DebugUtils.hpp"
 
-namespace TraceviewerServer
-{
+#include <cstdio>
+#include <sys/ioctl.h>
+#include <unistd.h>
+
+namespace TraceviewerServer {
 ProgressBar::ProgressBar(string name, ulong tasksToComplete) {
+  tasks = tasksToComplete;
+  tasksComplete = 0;
+  colsFilled = 0;
+  label = name;
+  struct winsize w;
+  int ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+  if (ret == -1 || w.ws_col == 0)
+    w.ws_col = DEFAULT_TERMINAL_WIDTH;
+  usableWidth = w.ws_col - 10 - name.length();
+  DEBUGCOUT(2) << "Usable width: " << usableWidth << endl;
 
-
-	tasks = tasksToComplete;
-	tasksComplete = 0;
-	colsFilled = 0;
-	label = name;
-	struct winsize w;
-	int ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-	if (ret == -1 || w.ws_col == 0)
-		w.ws_col = DEFAULT_TERMINAL_WIDTH;
-	usableWidth = w.ws_col - 10 - name.length();
-	DEBUGCOUT(2) << "Usable width: " << usableWidth << endl;
-
-	update();
+  update();
 }
-void ProgressBar::incrementProgress(ulong tasks){
-	tasksComplete += tasks;
-	update();
+void ProgressBar::incrementProgress(ulong tasks) {
+  tasksComplete += tasks;
+  update();
 }
 
-void ProgressBar::incrementProgress(){
-	tasksComplete++;
-	update();
+void ProgressBar::incrementProgress() {
+  tasksComplete++;
+  update();
 }
 
 void ProgressBar::update() {
+  int percentage = (int)((100ULL * tasksComplete) / tasks);
+  int newColsFilled = (percentage * usableWidth) / 100;
+  if (colsFilled != newColsFilled) {
+    // Changed enough that we should do an update
+    colsFilled = newColsFilled;
 
-	int percentage = (int)((100ULL*tasksComplete)/tasks);
-	int newColsFilled = (percentage * usableWidth) / 100;
-	if (colsFilled != newColsFilled){
-		//Changed enough that we should do an update
-		colsFilled = newColsFilled;
-
-		putchar('\r');
-		printf("%s: %3d%% [",label.c_str(), percentage);
-		int i = 0;
-		for (; i < colsFilled; i++) {
-			putchar('=');
-		}
-		putchar('>');
-		for (; i < usableWidth; i++) {
-			putchar(' ');
-		}
-		putchar(']');
-		fflush(stdout);
-	}
+    putchar('\r');
+    printf("%s: %3d%% [", label.c_str(), percentage);
+    int i = 0;
+    for (; i < colsFilled; i++) {
+      putchar('=');
+    }
+    putchar('>');
+    for (; i < usableWidth; i++) {
+      putchar(' ');
+    }
+    putchar(']');
+    fflush(stdout);
+  }
 }
 
 ProgressBar::~ProgressBar() {
-	putchar('\n');
+  putchar('\n');
 }
-}
+}  // namespace TraceviewerServer

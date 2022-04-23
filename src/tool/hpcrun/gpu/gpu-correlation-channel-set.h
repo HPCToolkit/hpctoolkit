@@ -44,45 +44,12 @@
 #ifndef gpu_correlation_channel_set_h
 #define gpu_correlation_channel_set_h
 
-
-
-//******************************************************************************
-// forward type declarations
-//******************************************************************************
-
 typedef struct gpu_correlation_channel_t gpu_correlation_channel_t;
 
+typedef void (*gpu_correlation_channel_fn_t)(gpu_correlation_channel_t* channel);
 
+void gpu_correlation_channel_set_insert_with_idx(int idx, gpu_correlation_channel_t* channel);
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef void (*gpu_correlation_channel_fn_t)
-(
- gpu_correlation_channel_t *channel
-);
-
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-gpu_correlation_channel_set_insert_with_idx
-(
- int idx,
- gpu_correlation_channel_t *channel
-);
-
-
-void
-gpu_correlation_channel_set_consume_with_idx
-(
- int idx
-);
-
-
+void gpu_correlation_channel_set_consume_with_idx(int idx);
 
 #endif

@@ -41,38 +41,21 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// system includes
-//******************************************************************************
+#include "include/gpu-binary.h"
 
+#include "hpcrun/files.h"
+
+#include "lib/prof-lean/crypto-hash.h"
+
+#include <errno.h>         // errno
+#include <fcntl.h>         // open
+#include <linux/limits.h>  // PATH_MAX
 #include <stdio.h>
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
 #include <sys/stat.h>  // mkdir
 #include <sys/types.h>
 #include <unistd.h>
-#include <linux/limits.h>  // PATH_MAX
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <include/gpu-binary.h>
-#include <hpcrun/files.h>
-#include <lib/prof-lean/crypto-hash.h>
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-bool
-gpu_binary_store
-(
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
-)
-{
+bool gpu_binary_store(const char* file_name, const void* binary, size_t binary_size) {
   int fd;
   errno = 0;
   fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
@@ -96,13 +79,7 @@ gpu_binary_store
   }
 }
 
-void
-gpu_binary_path_generate
-(
-  const char *file_name,
-  char *path
-)
-{
+void gpu_binary_path_generate(const char* file_name, char* path) {
   size_t used = 0;
   used += sprintf(&path[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
@@ -111,17 +88,10 @@ gpu_binary_path_generate
   used += sprintf(&path[used], "%s", GPU_BINARY_SUFFIX);
 }
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-)
-{
+size_t gpu_binary_compute_hash_string(const char* mem_ptr, size_t mem_size, char* name) {
   // Compute hash for mem_ptr with mem_size
   unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+  crypto_hash_compute((const unsigned char*)mem_ptr, mem_size, hash, HASH_LENGTH);
 
   size_t i;
   size_t used = 0;

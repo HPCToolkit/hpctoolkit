@@ -44,66 +44,51 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "sample_event.h"
 
-#include <setjmp.h>
-#include <string.h>
-
-//*************************** User Include Files ****************************
-
-#include <unwind/common/backtrace.h>
-#include <cct/cct.h>
-#include "hpcrun_stats.h"
-#include "hpcrun-malloc.h"
-#include "fnbounds_interface.h"
-#include "main.h"
-#include "metrics_types.h"
+#include "cct/cct.h"
 #include "cct2metrics.h"
-#include "metrics.h"
-#include "segv_handler.h"
+#include "cct_insert_backtrace.h"
 #include "epoch.h"
+#include "fnbounds_interface.h"
+#include "handling_sample.h"
+#include "hpcrun-malloc.h"
+#include "hpcrun_stats.h"
+#include "main.h"
+#include "messages/messages.h"
+#include "metrics.h"
+#include "metrics_types.h"
+#include "sample_sources_all.h"
+#include "segv_handler.h"
+#include "start-stop.h"
 #include "thread_data.h"
 #include "trace.h"
-#include "handling_sample.h"
 #include "unwind.h"
-#include <utilities/arch/context-pc.h>
-#include "hpcrun-malloc.h"
-#include "sample_event.h"
-#include "sample_sources_all.h"
-#include "start-stop.h"
+#include "unwind/common/backtrace.h"
+#include "utilities/arch/context-pc.h"
 #include "uw_recipe_map.h"
 #include "validate_return_addr.h"
 #include "write_data.h"
-#include "cct_insert_backtrace.h"
-#include "utilities/arch/context-pc.h"
+
+#include "lib/prof-lean/hpcrun-fmt.h"
 
 #include <monitor.h>
-
-#include <messages/messages.h>
-
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include <setjmp.h>
+#include <string.h>
 
 #define HPCRUN_DEBUG_TRACING 0
-
-//*************************** Forward Declarations **************************
-
-
-//***************************************************************************
-
-//************************* Local helper routines ***************************
 
 // ------------------------------------------------------------
 // recover from SEGVs and partial unwinds
 // ------------------------------------------------------------
 
-static void
-hpcrun_cleanup_partial_unwind(void)
-{
+static void hpcrun_cleanup_partial_unwind(void) {
   thread_data_t* td = hpcrun_get_thread_data();
   sigjmp_buf_t* it = &(td->bad_unwind);
 
-  memset((void *)it->jb, '\0', sizeof(it->jb));
+  memset((void*)it->jb, '\0', sizeof(it->jb));
 
-  if ( ! td->deadlock_drop)
+  if (!td->deadlock_drop)
     hpcrun_stats_num_samples_dropped_inc();
 
   hpcrun_up_pmsg_count();
@@ -113,27 +98,22 @@ hpcrun_cleanup_partial_unwind(void)
   }
 }
 
-
-static cct_node_t*
-record_partial_unwind(
-  cct_bundle_t* cct, frame_t* bt_beg,
-  frame_t* bt_last, int metricId,
-  hpcrun_metricVal_t metricIncr,
-  int skipInner, void *data)
-{
-  if (ENABLED(NO_PARTIAL_UNW)){
+static cct_node_t* record_partial_unwind(
+    cct_bundle_t* cct, frame_t* bt_beg, frame_t* bt_last, int metricId,
+    hpcrun_metricVal_t metricIncr, int skipInner, void* data) {
+  if (ENABLED(NO_PARTIAL_UNW)) {
     return NULL;
   }
 
   if (bt_last < bt_beg)
     bt_last = bt_beg;
-  
+
   bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
 
   backtrace_info_t bt;
 
   bt.begin = bt_beg;
-  bt.last =  bt_last;
+  bt.last = bt_last;
   bt.fence = FENCE_BAD;
   bt.has_tramp = false;
   bt.n_trolls = 0;
@@ -141,31 +121,23 @@ record_partial_unwind(
 
   TMSG(PARTIAL_UNW, "recording partial unwind from segv");
   hpcrun_stats_num_samples_partial_inc();
-  return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
-//					      false, bt_beg, bt_last,
-					      false, metricId, metricIncr, data);
+  return hpcrun_cct_record_backtrace_w_metric(
+      cct, true, &bt,
+      //					      false, bt_beg, bt_last,
+      false, metricId, metricIncr, data);
 }
-
-
-
-//***************************************************************************
 
 bool private_hpcrun_sampling_disabled = false;
 
-void
-hpcrun_drop_sample(void)
-{
+void hpcrun_drop_sample(void) {
   TMSG(DROP, "dropping sample");
-  sigjmp_buf_t *it = &(TD_GET(bad_unwind));
+  sigjmp_buf_t* it = &(TD_GET(bad_unwind));
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
-
-sample_val_t
-hpcrun_sample_callpath(void* context, int metricId,
-		       hpcrun_metricVal_t metricIncr,
-		       int skipInner, int isSync, sampling_info_t *data)
-{
+sample_val_t hpcrun_sample_callpath(
+    void* context, int metricId, hpcrun_metricVal_t metricIncr, int skipInner, int isSync,
+    sampling_info_t* data) {
   uint64_t sampling_period = 0;
   int is_time_based_metric = 0;
   if (data != NULL) {
@@ -177,7 +149,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   hpcrun_sample_val_init(&ret);
 
   // if monitor_block_shootdown() returns a non-zero value
-  // a thread is waiting to exit. if so, we can skip 
+  // a thread is waiting to exit. if so, we can skip
   // recording an asynchronous sample; however, synchronous
   // unwinds can't be skipped because the caller is
   // expecting a call path.
@@ -197,7 +169,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   hpcrun_stats_num_samples_total_inc();
 
   if (!isSync && hpcrun_is_sampling_disabled()) {
-    TMSG(SAMPLE,"global suspension");
+    TMSG(SAMPLE, "global suspension");
     hpcrun_all_sources_stop();
     monitor_unblock_shootdown();
     return ret;
@@ -206,9 +178,9 @@ hpcrun_sample_callpath(void* context, int metricId,
   TMSG(SAMPLE_CALLPATH, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
 
-  thread_data_t* td   = hpcrun_get_thread_data();
-  sigjmp_buf_t* it    = &(td->bad_unwind);
-  sigjmp_buf_t* old   = td->current_jmp_buf;
+  thread_data_t* td = hpcrun_get_thread_data();
+  sigjmp_buf_t* it = &(td->bad_unwind);
+  sigjmp_buf_t* old = td->current_jmp_buf;
   td->current_jmp_buf = it;
 
   cct_node_t* node = NULL;
@@ -227,27 +199,27 @@ hpcrun_sample_callpath(void* context, int metricId,
       void* pc = hpcrun_context_pc(context);
 
       TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
-      TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
+      TMSG(
+          SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %" PRIu64 "", metricIncr);
 
       /* check to see if shared library loadmap (of current epoch) has changed out from under us */
       epoch = hpcrun_check_for_new_loadmap(epoch);
 
-      void *data_aux = NULL;
+      void* data_aux = NULL;
       if (data != NULL)
         data_aux = data->sample_data;
 
-      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, metricId,
-                                   metricIncr, skipInner, isSync, data_aux);
+      node = hpcrun_backtrace2cct(
+          &(epoch->csdata), context, metricId, metricIncr, skipInner, isSync, data_aux);
 
       if (ENABLED(DUMP_BACKTRACES)) {
         hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
       }
     }
-  }
-  else {  // Partial unwind case
+  } else {  // Partial unwind case
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
-    node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-        metricId, metricIncr, skipInner, NULL);
+    node = record_partial_unwind(
+        cct, td->btbuf_beg, td->btbuf_cur - 1, metricId, metricIncr, skipInner, NULL);
     hpcrun_cleanup_partial_unwind();
   }
   td->current_jmp_buf = old;
@@ -258,7 +230,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   ret.sample_node = node;
 
-  cct_addr_t *addr = hpcrun_cct_addr(node);
+  cct_addr_t* addr = hpcrun_cct_addr(node);
   ip_normalized_t leaf_ip = addr->ip_norm;
 
   if (ip_normalized_eq(&leaf_ip, &(td->btbuf_beg->ip_norm))) {
@@ -284,7 +256,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     leaf_ip = td->btbuf_beg->the_function;
   }
 
-  bool trace_ok = ! td->deadlock_drop;
+  bool trace_ok = !td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive() && !isSync && is_time_based_metric > 0) {
     TMSG(TRACE, "Sample event encountered");
@@ -293,14 +265,14 @@ hpcrun_sample_callpath(void* context, int metricId,
     memset(&frm, 0, sizeof(cct_addr_t));
     frm.ip_norm = leaf_ip;
 
-    TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
-    cct_node_t* func_proxy =
-      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm, true);
+    TMSG(TRACE, "parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
+    cct_node_t* func_proxy = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm, true);
 
     ret.trace_node = func_proxy;
 
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
-    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA, sampling_period);
+    hpcrun_trace_append(
+        &td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA, sampling_period);
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
@@ -310,7 +282,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     hpcrun_reclaim_freeable_mem();
   }
 
-  TMSG(SAMPLE_CALLPATH,"done w sample, return %p", ret.sample_node);
+  TMSG(SAMPLE_CALLPATH, "done w sample, return %p", ret.sample_node);
   monitor_unblock_shootdown();
 
   return ret;
@@ -318,29 +290,26 @@ hpcrun_sample_callpath(void* context, int metricId,
 
 static int const PTHREAD_CTXT_SKIP_INNER = 1;
 
-cct_node_t*
-hpcrun_gen_thread_ctxt(void* context)
-{
+cct_node_t* hpcrun_gen_thread_ctxt(void* context) {
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
     return NULL;
   }
 
   if (hpcrun_is_sampling_disabled()) {
-    TMSG(THREAD_CTXT,"global suspension");
+    TMSG(THREAD_CTXT, "global suspension");
     hpcrun_all_sources_stop();
     monitor_unblock_shootdown();
     return NULL;
   }
 
-
-  thread_data_t* td   = hpcrun_get_thread_data();
-  sigjmp_buf_t* it    = &(td->bad_unwind);
-  sigjmp_buf_t* old   = td->current_jmp_buf;
+  thread_data_t* td = hpcrun_get_thread_data();
+  sigjmp_buf_t* it = &(td->bad_unwind);
+  sigjmp_buf_t* old = td->current_jmp_buf;
   td->current_jmp_buf = it;
 
-  cct_node_t* node  = NULL;
-  epoch_t* epoch    = td->core_profile_trace_data.epoch;
+  cct_node_t* node = NULL;
+  epoch_t* epoch = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
 
@@ -353,9 +322,8 @@ hpcrun_gen_thread_ctxt(void* context)
 
   if (ljmp == 0) {
     if (epoch != NULL) {
-      if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,
-          PTHREAD_CTXT_SKIP_INNER)) {
-        hpcrun_clear_handling_sample(td); // restore state
+      if (!hpcrun_generate_backtrace_no_trampoline(&bt, context, PTHREAD_CTXT_SKIP_INNER)) {
+        hpcrun_clear_handling_sample(td);  // restore state
         EMSG("Internal error: unable to obtain backtrace for pthread context");
         return NULL;
       }
@@ -364,12 +332,11 @@ hpcrun_gen_thread_ctxt(void* context)
     // If this backtrace is generated from sampling in a thread,
     // take off the top 'monitor_pthread_main' node
     //
-    if ((epoch->csdata).ctxt && ! bt.has_tramp && (bt.fence == FENCE_THREAD)) {
+    if ((epoch->csdata).ctxt && !bt.has_tramp && (bt.fence == FENCE_THREAD)) {
       TMSG(THREAD_CTXT, "Thread correction, back off outermost backtrace entry");
       bt.last--;
     }
-    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt,
-        bt.has_tramp);
+    node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt, bt.has_tramp);
   }
   // restore back the sigjmp
   td->current_jmp_buf = old;
@@ -389,9 +356,8 @@ hpcrun_gen_thread_ctxt(void* context)
     hpcrun_reclaim_freeable_mem();
   }
 
-  TMSG(THREAD,"done w pthread ctxt");
+  TMSG(THREAD, "done w pthread ctxt");
   monitor_unblock_shootdown();
 
   return node;
 }
-

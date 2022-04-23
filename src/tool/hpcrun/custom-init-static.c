@@ -54,29 +54,28 @@
 // system includes
 // *********************************************
 
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <inttypes.h>
 #include <dlfcn.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 // *********************************************
 // local includes
 // *********************************************
 
 #include "custom-init.h"
+#include "messages/messages.h"
+
 #include <monitor.h>
-#include <messages/messages.h>
 
 // *********************************************
 // interface functions
 // *********************************************
 
-void
-hpcrun_do_custom_init(void)
-{
+void hpcrun_do_custom_init(void) {
   if (ENABLED(CUSTOM_INIT)) {
-    TMSG(CUSTOM_INIT," -- not implemented for static case");
+    TMSG(CUSTOM_INIT, " -- not implemented for static case");
   }
 }

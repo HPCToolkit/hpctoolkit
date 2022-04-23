@@ -51,76 +51,50 @@
 //
 //***************************************************************************
 
+#include "cuda-api.h"
 
-//*****************************************************************************
-// system include files
-//*****************************************************************************
-
-#include <dlfcn.h>
-#include <stdio.h>
-#include <string.h>    // memset
+#include "hpcrun/messages/messages.h"
+#include "hpcrun/sample-sources/libdl.h"
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-
-
-
-//*****************************************************************************
-// local include files
-//*****************************************************************************
-
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/messages/messages.h>
-
-#include "cuda-api.h"
-
-
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
+#include <dlfcn.h>
+#include <stdio.h>
+#include <string.h>  // memset
 
 #define CUDA_FN_NAME(f) DYN_FN_NAME(f)
 
-#define CUDA_FN(fn, args) \
-  static CUresult (*CUDA_FN_NAME(fn)) args
+#define CUDA_FN(fn, args) static CUresult(*CUDA_FN_NAME(fn)) args
 
+#define CUDA_RUNTIME_FN(fn, args) static cudaError_t(*CUDA_FN_NAME(fn)) args
 
-#define CUDA_RUNTIME_FN(fn, args) \
-  static cudaError_t (*CUDA_FN_NAME(fn)) args
+#define HPCRUN_CUDA_API_CALL(fn, args)                                \
+  {                                                                   \
+    CUresult error_result = CUDA_FN_NAME(fn) args;                    \
+    if (error_result != CUDA_SUCCESS) {                               \
+      ETMSG(CUDA, "cuda api %s returned %d", #fn, (int)error_result); \
+      exit(-1);                                                       \
+    }                                                                 \
+  }
 
-#define HPCRUN_CUDA_API_CALL(fn, args)                              \
-{                                                                   \
-  CUresult error_result = CUDA_FN_NAME(fn) args;		    \
-  if (error_result != CUDA_SUCCESS) {				    \
-    ETMSG(CUDA, "cuda api %s returned %d", #fn,                     \
-          (int) error_result);                                      \
-    exit(-1);							    \
-  }								    \
-}
-
-
-#define HPCRUN_CUDA_RUNTIME_CALL(fn, args)                          \
-{                                                                   \
-  cudaError_t error_result = CUDA_FN_NAME(fn) args;		    \
-  if (error_result != cudaSuccess) {				    \
-    ETMSG(CUDA, "cuda runtime %s returned %d", #fn,                 \
-          (int) error_result);                                      \
-    exit(-1);							    \
-  }								    \
-}
-
+#define HPCRUN_CUDA_RUNTIME_CALL(fn, args)                                \
+  {                                                                       \
+    cudaError_t error_result = CUDA_FN_NAME(fn) args;                     \
+    if (error_result != cudaSuccess) {                                    \
+      ETMSG(CUDA, "cuda runtime %s returned %d", #fn, (int)error_result); \
+      exit(-1);                                                           \
+    }                                                                     \
+  }
 
 //----------------------------------------------------------------------
 // device capability
 //----------------------------------------------------------------------
 
-#define COMPUTE_MAJOR_TURING 	7
-#define COMPUTE_MINOR_TURING 	5
+#define COMPUTE_MAJOR_TURING 7
+#define COMPUTE_MINOR_TURING 5
 
-#define DEVICE_IS_TURING(major, minor)      \
+#define DEVICE_IS_TURING(major, minor) \
   ((major == COMPUTE_MAJOR_TURING) && (minor == COMPUTE_MINOR_TURING))
-
 
 //----------------------------------------------------------------------
 // runtime version
@@ -131,67 +105,21 @@
 // according to https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART____VERSION.html,
 // CUDA encodes the runtime version number as (1000 * major + 10 * minor)
 
-#define RUNTIME_MAJOR_VERSION(rt_version) (rt_version / 1000) 
-#define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10) 
-
-
-//******************************************************************************
-// static data
-//******************************************************************************
+#define RUNTIME_MAJOR_VERSION(rt_version) (rt_version / 1000)
+#define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10)
 
 #ifndef HPCRUN_STATIC_LINK
-CUDA_FN
-(
- cuDeviceGetAttribute,
- (
-  int* pi,
-  CUdevice_attribute attrib,
-  CUdevice dev
- )
-);
+CUDA_FN(cuDeviceGetAttribute, (int* pi, CUdevice_attribute attrib, CUdevice dev));
 
+CUDA_FN(cuCtxGetCurrent, (CUcontext * ctx));
 
-CUDA_FN
-(
- cuCtxGetCurrent,
- (
-  CUcontext *ctx
- )
-);
+CUDA_RUNTIME_FN(cudaGetDevice, (int* device_id));
 
-
-CUDA_RUNTIME_FN
-(
- cudaGetDevice,
- (
-  int *device_id
- )
-);
-
-
-CUDA_RUNTIME_FN
-(
- cudaRuntimeGetVersion,
- ( 
-  int* runtimeVersion
- )
-);
+CUDA_RUNTIME_FN(cudaRuntimeGetVersion, (int* runtimeVersion));
 
 #endif
 
-
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-
-int
-cuda_bind
-(
-  void
-)
-{
+int cuda_bind(void) {
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
@@ -207,22 +135,14 @@ cuda_bind
   return DYNAMIC_BINDING_STATUS_OK;
 #else
   return DYNAMIC_BINDING_STATUS_ERROR;
-#endif // ! HPCRUN_STATIC_LINK
+#endif  // ! HPCRUN_STATIC_LINK
 }
 
-
 #ifndef HPCRUN_STATIC_LINK
-static int
-cuda_device_sm_blocks_query
-(
- int major,
- int minor
-)
-{
-  switch(major) {
+static int cuda_device_sm_blocks_query(int major, int minor) {
+  switch (major) {
   case 7:
-  case 6:
-    return 32;
+  case 6: return 32;
   default:
     // TODO(Keren): add more devices
     return 8;
@@ -230,23 +150,14 @@ cuda_device_sm_blocks_query
 }
 #endif
 
-
-
 // returns 0 on success
-static int
-cuda_device_compute_capability
-(
-  int device_id,
-  int *major,
-  int *minor
-)
-{
+static int cuda_device_compute_capability(int device_id, int* major, int* minor) {
 #ifndef HPCRUN_STATIC_LINK
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute, (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute, (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   return 0;
 #else
@@ -254,14 +165,8 @@ cuda_device_compute_capability
 #endif
 }
 
-
 // returns 0 on success
-static int 
-cuda_device_id
-(
-  int *device_id
-)
-{
+static int cuda_device_id(int* device_id) {
 #ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_RUNTIME_CALL(cudaGetDevice, (device_id));
   return 0;
@@ -270,14 +175,8 @@ cuda_device_id
 #endif
 }
 
-
 // returns 0 on success
-static int
-cuda_runtime_version
-(
-  int *rt_version
-)
-{
+static int cuda_runtime_version(int* rt_version) {
 #ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
   return 0;
@@ -286,19 +185,7 @@ cuda_runtime_version
 #endif
 }
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-
-int
-cuda_context
-(
- CUcontext *ctx
-)
-{
+int cuda_context(CUcontext* ctx) {
 #ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
   return 0;
@@ -307,43 +194,38 @@ cuda_context
 #endif
 }
 
-int
-cuda_device_property_query
-(
- int device_id,
- cuda_device_property_t *property
-)
-{
+int cuda_device_property_query(int device_id, cuda_device_property_t* property) {
 #ifndef HPCRUN_STATIC_LINK
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute,
+      (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_clock_rate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute, (&property->sm_clock_rate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_shared_memory,
-     CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute, (&property->sm_shared_memory,
+                             CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_registers,
-     CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute,
+      (&property->sm_registers, CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_threads, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR,
-     device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute,
+      (&property->sm_threads, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->num_threads_per_warp, CU_DEVICE_ATTRIBUTE_WARP_SIZE,
-     device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute,
+      (&property->num_threads_per_warp, CU_DEVICE_ATTRIBUTE_WARP_SIZE, device_id));
 
   int major = 0, minor = 0;
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute, (&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+  HPCRUN_CUDA_API_CALL(
+      cuDeviceGetAttribute, (&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
 
@@ -353,31 +235,29 @@ cuda_device_property_query
 #endif
 }
 
-
 // return 0 on success
-int
-cuda_global_pc_sampling_required
-(
-  int *required
-)
-{
+int cuda_global_pc_sampling_required(int* required) {
   int device_id;
-  if (cuda_device_id(&device_id)) return -1;
+  if (cuda_device_id(&device_id))
+    return -1;
 
   int dev_major, dev_minor;
-  if (cuda_device_compute_capability(device_id, &dev_major, &dev_minor)) return -1;
+  if (cuda_device_compute_capability(device_id, &dev_major, &dev_minor))
+    return -1;
 
   int rt_version;
-  if (cuda_runtime_version(&rt_version)) return -1;
+  if (cuda_runtime_version(&rt_version))
+    return -1;
 
 #ifdef DEBUG
-  printf("cuda_global_pc_sampling_required: "
-         "device major = %d minor = %d cuda major = %d\n", 
-         dev_major, dev_minor, RUNTIME_MAJOR_VERSION(rt_version));
+  printf(
+      "cuda_global_pc_sampling_required: "
+      "device major = %d minor = %d cuda major = %d\n",
+      dev_major, dev_minor, RUNTIME_MAJOR_VERSION(rt_version));
 #endif
 
-  *required = ((DEVICE_IS_TURING(dev_major, dev_minor)) && 
-               (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
+  *required =
+      ((DEVICE_IS_TURING(dev_major, dev_minor)) && (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
 
   return 0;
 }

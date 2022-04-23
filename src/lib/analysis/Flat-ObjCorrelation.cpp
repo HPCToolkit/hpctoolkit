@@ -57,98 +57,69 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#include "Flat-ObjCorrelation.hpp"
 
-#include <iostream>
-using std::ostream;
+#include "TextUtil.hpp"
+
+#include "lib/binutils/Insn.hpp"
+#include "lib/binutils/LM.hpp"
+#include "lib/binutils/Proc.hpp"
+#include "lib/binutils/Seg.hpp"
+#include "lib/binutils/VMAInterval.hpp"
+#include "lib/prof/Flat-ProfileData.hpp"
+#include "lib/support/diagnostics.h"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/StrUtil.hpp"
 
 #include <iomanip>
-
+#include <iostream>
 #include <string>
-using std::string;
-
 #include <vector>
-using std::vector;
 
-//*************************** User Include Files ****************************
-
-#include "Flat-ObjCorrelation.hpp"
-#include "TextUtil.hpp"
 using Analysis::TextUtil::ColumnFormatter;
-
-#include <lib/prof/Flat-ProfileData.hpp>
-
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/Seg.hpp>
-#include <lib/binutils/Proc.hpp>
-#include <lib/binutils/Insn.hpp>
-#include <lib/binutils/VMAInterval.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/StrUtil.hpp> 
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
+using std::ostream;
+using std::string;
+using std::vector;
 
 namespace Analysis {
 
 namespace Flat {
 
-
-//****************************************************************************
-//
-//****************************************************************************
-
 class MetricCursor {
 public:
-  MetricCursor(const Prof::Metric::Mgr& metricMgr,
-	       const Prof::Flat::LM& proflm, 
-	       const BinUtil::LM& lm);
+  MetricCursor(
+      const Prof::Metric::Mgr& metricMgr, const Prof::Flat::LM& proflm, const BinUtil::LM& lm);
   ~MetricCursor();
-  
-  const vector<const Prof::Flat::EventData*>& 
-  metricDescs() const {
-    return m_metricDescs; 
-  }
-  const vector<uint64_t>& 
-  metricTots() const {
-    return m_metricTots; 
-  }
+
+  const vector<const Prof::Flat::EventData*>& metricDescs() const { return m_metricDescs; }
+  const vector<uint64_t>& metricTots() const { return m_metricTots; }
 
   // Assumptions:
   //   - vma's are unrelocated
   //   - over successsive calls, VMA ranges are ascending
   // Result is stored is metricValAtVMA()
-  const vector<uint64_t>& 
-  computeMetricForVMA(VMA vma) {
+  const vector<uint64_t>& computeMetricForVMA(VMA vma) {
     return computeMetricVals(VMAInterval(vma, vma + 1), true);
   }
 
   // Assumptions:
   //   - same as above
   //   - vmaint: [beg_vma, end_vma), where vmaint is a region
-  const vector<uint64_t>& 
-  computeMetricVals(const VMAInterval vmaint, bool advanceIndices);
+  const vector<uint64_t>& computeMetricVals(const VMAInterval vmaint, bool advanceIndices);
 
-  const vector<uint64_t>& 
-  metricValAtVMA() const { return m_metricValAtVMA; }
+  const vector<uint64_t>& metricValAtVMA() const { return m_metricValAtVMA; }
 
-  static bool 
-  hasNonZeroMetricVal(const vector<uint64_t>& metricVal) {
+  static bool hasNonZeroMetricVal(const vector<uint64_t>& metricVal) {
     return hasMetricValGE(metricVal, 1);
   }
 
-  static bool 
-  hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val);
+  static bool hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val);
 
 private:
   VMA unrelocate(VMA vma) const {
     VMA ur_vma = (m_doUnrelocate) ? (vma - m_loadAddr) : vma;
     return ur_vma;
   }
-
 
 private:
   bool m_doUnrelocate;
@@ -161,14 +132,11 @@ private:
   vector<uint64_t> m_metricValAtVMA;
 };
 
-
-MetricCursor::MetricCursor(const Prof::Metric::Mgr& metricMgr,
-			   const Prof::Flat::LM& proflm, 
-			   const BinUtil::LM& lm)
-{
+MetricCursor::MetricCursor(
+    const Prof::Metric::Mgr& metricMgr, const Prof::Flat::LM& proflm, const BinUtil::LM& lm) {
   m_loadAddr = (VMA)proflm.load_addr();
   m_doUnrelocate = lm.doUnrelocate(m_loadAddr);
-  
+
   // --------------------------------------------------------
   // Find all metrics for load module and compute totals for each metric
   // For now we have one metric per sampled event.
@@ -178,8 +146,7 @@ MetricCursor::MetricCursor(const Prof::Metric::Mgr& metricMgr,
 
   for (uint i = 0; i < metricMgr.size(); ++i) {
     const Prof::Metric::ADesc* m = metricMgr.metric(i);
-    const Prof::Metric::SampledDesc* mm =
-      dynamic_cast<const Prof::Metric::SampledDesc*>(m);
+    const Prof::Metric::SampledDesc* mm = dynamic_cast<const Prof::Metric::SampledDesc*>(m);
     if (mm) {
       uint mIdx = (uint)StrUtil::toUInt64(mm->profileRelId());
       const Prof::Flat::EventData& profevent = proflm.event(mIdx);
@@ -208,16 +175,10 @@ MetricCursor::MetricCursor(const Prof::Metric::Mgr& metricMgr,
   m_metricValAtVMA.resize(m_metricDescs.size());
 }
 
-
-MetricCursor::~MetricCursor()
-{
-}
-
+MetricCursor::~MetricCursor() {}
 
 const vector<uint64_t>&
-MetricCursor::computeMetricVals(const VMAInterval vmaint,
-				bool advanceCounters)
-{
+MetricCursor::computeMetricVals(const VMAInterval vmaint, bool advanceCounters) {
   // NOTE: An instruction may overlap multiple buckets.  However,
   // because only the bucket corresponding to the beginning of the
   // instruction is charged, we only have to consult one bucket.
@@ -231,7 +192,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
   // For each event, determine if a count exists at vma_beg
   for (uint i = 0; i < m_metricDescs.size(); ++i) {
     const Prof::Flat::EventData& profevent = *(m_metricDescs[i]);
-    
+
     // advance ith bucket until it arrives at vmaint region:
     //   (bucket overlaps beg_vma) || (bucket is beyond beg_vma)
     for (uint& j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
@@ -239,13 +200,13 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = unrelocate(ev_vma);
       VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
-      
-      if ((ev_ur_vma <= vmaint.beg() && vmaint.beg() < ev_ur_vma_ub) 
-	  || (ev_ur_vma > vmaint.beg())) {
-	break;
+
+      if ((ev_ur_vma <= vmaint.beg() && vmaint.beg() < ev_ur_vma_ub)
+          || (ev_ur_vma > vmaint.beg())) {
+        break;
       }
     }
-    
+
     // count until bucket moves beyond vmaint region
     // INVARIANT: upon entry, bucket overlaps or is beyond region
     for (uint j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
@@ -255,19 +216,18 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
       VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
 
       if (ev_ur_vma >= vmaint.end()) {
-	// bucket is now beyond region
-	break;
-      }
-      else {
-	// bucket overlaps region (by INVARIANT)
-	uint32_t count = evdat.second;
-	m_metricValAtVMA[i] += count;
-	
-	// if the vmaint region extends beyond the current bucket,
-	// advance bucket
-	if (advanceCounters && (vmaint.end() > ev_ur_vma_ub)) {
-	  m_curMetricIdx[i]++;
-	}
+        // bucket is now beyond region
+        break;
+      } else {
+        // bucket overlaps region (by INVARIANT)
+        uint32_t count = evdat.second;
+        m_metricValAtVMA[i] += count;
+
+        // if the vmaint region extends beyond the current bucket,
+        // advance bucket
+        if (advanceCounters && (vmaint.end() > ev_ur_vma_ub)) {
+          m_curMetricIdx[i]++;
+        }
       }
     }
   }
@@ -275,10 +235,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
   return m_metricValAtVMA;
 }
 
-
-bool 
-MetricCursor::hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val)
-{
+bool MetricCursor::hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val) {
   for (uint i = 0; i < metricVal.size(); ++i) {
     if (metricVal[i] >= val) {
       return true;
@@ -287,40 +244,24 @@ MetricCursor::hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val)
   return false;
 }
 
+static void writeMetricVals(
+    ColumnFormatter& colFmt, const vector<uint64_t>& metricVal, const vector<uint64_t>& metricTot,
+    ColumnFormatter::Flag flg = ColumnFormatter::Flag_NULL);
 
-//****************************************************************************
-//
-//****************************************************************************
+static void correlateWithObject_LM(
+    const Prof::Metric::Mgr& metricMgr, const Prof::Flat::LM& proflm, const BinUtil::LM& lm,
+    // ----------------------------------------------
+    std::ostream& os, bool srcCode, const std::vector<std::string>& procPruneGlobs,
+    uint64_t procPruneThreshold);
 
-static void
-writeMetricVals(ColumnFormatter& colFmt,
-		const vector<uint64_t>& metricVal,
-		const vector<uint64_t>& metricTot,
-		ColumnFormatter::Flag flg = ColumnFormatter::Flag_NULL);
-
-static void
-correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
-		       const Prof::Flat::LM& proflm, 
-		       const BinUtil::LM& lm,
-		       // ----------------------------------------------
-		       std::ostream& os, 
-		       bool srcCode,
-		       const std::vector<std::string>& procPruneGlobs,
-		       uint64_t procPruneThreshold);
-
-
-void
-correlateWithObject(const Prof::Metric::Mgr& metricMgr,
-		    // ----------------------------------------------
-		    std::ostream& os, 
-		    bool srcCode,
-		    const std::vector<std::string>& procPruneGlobs,
-		    uint64_t procPruneThreshold)
-{
+void correlateWithObject(
+    const Prof::Metric::Mgr& metricMgr,
+    // ----------------------------------------------
+    std::ostream& os, bool srcCode, const std::vector<std::string>& procPruneGlobs,
+    uint64_t procPruneThreshold) {
   using Prof::Metric::Mgr;
 
-  const Mgr::StringToADescVecMap& fnameToFMetricMap = 
-    metricMgr.fnameToFMetricMap();
+  const Mgr::StringToADescVecMap& fnameToFMetricMap = metricMgr.fnameToFMetricMap();
   DIAG_Assert(fnameToFMetricMap.size() == 1, DIAG_UnexpectedInput);
 
   const string& profileFile = fnameToFMetricMap.begin()->first;
@@ -328,8 +269,7 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
   Prof::Flat::ProfileData prof;
   try {
     prof.openread(profileFile.c_str());
-  }
-  catch (...) {
+  } catch (...) {
     DIAG_EMsg("While reading '" << profileFile << "'");
     throw;
   }
@@ -337,10 +277,9 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
   // --------------------------------------------------------
   // For each load module, dump metrics and object code instructions
   // --------------------------------------------------------
-  for (Prof::Flat::ProfileData::const_iterator it = prof.begin();
-       it != prof.end(); ++it) {
+  for (Prof::Flat::ProfileData::const_iterator it = prof.begin(); it != prof.end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;
-    
+
     // 1. Open and read the load module
     BinUtil::LM* lm = new BinUtil::LM();
     try {
@@ -348,31 +287,24 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
 
       std::set<std::string> dir;  // empty set of measurement directories
       lm->read(dir, BinUtil::LM::ReadFlg_ALL);
-    } 
-    catch (...) {
+    } catch (...) {
       DIAG_EMsg("While reading " << proflm->name());
       throw;
     }
-    
-    correlateWithObject_LM(metricMgr, *proflm, *lm, 
-			   os, srcCode, procPruneGlobs, procPruneThreshold);
+
+    correlateWithObject_LM(
+        metricMgr, *proflm, *lm, os, srcCode, procPruneGlobs, procPruneThreshold);
     delete lm;
   }
 }
 
-
-void
-correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr, 
-		       const Prof::Flat::LM& proflm, 
-		       const BinUtil::LM& lm,
-		       // ----------------------------------------------
-		       ostream& os, 
-		       bool srcCode,
-		       const std::vector<std::string>& procPruneGlobs,
-		       uint64_t procPruneThreshold)
-{
+void correlateWithObject_LM(
+    const Prof::Metric::Mgr& metricMgr, const Prof::Flat::LM& proflm, const BinUtil::LM& lm,
+    // ----------------------------------------------
+    ostream& os, bool srcCode, const std::vector<std::string>& procPruneGlobs,
+    uint64_t procPruneThreshold) {
   // INVARIANT: metricMgr only contains metrics related to 'proflm'
-  
+
   MetricCursor metricCursor(metricMgr, proflm, lm);
   ColumnFormatter colFmt(metricMgr, os, 2, 0);
 
@@ -387,21 +319,19 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
      << std::setfill('-') << std::setw(77) << "-" << std::endl;
 
   const vector<uint64_t>& metricTots = metricCursor.metricTots();
-  
+
   os << std::endl;
   colFmt.genColHeaderSummary();
   os << std::endl
      << "Metric summary for load module (totals):\n"
      << "  ";
-  writeMetricVals(colFmt, metricTots, metricTots, 
-		  ColumnFormatter::Flag_ForceVal);
+  writeMetricVals(colFmt, metricTots, metricTots, ColumnFormatter::Flag_ForceVal);
 
   // --------------------------------------------------------
   // 1. For each procedure in the load module
   // --------------------------------------------------------
-  
-  for (BinUtil::LM::ProcMap::const_iterator it = lm.procs().begin();
-       it != lm.procs().end(); ++it) {
+
+  for (BinUtil::LM::ProcMap::const_iterator it = lm.procs().begin(); it != lm.procs().end(); ++it) {
     const BinUtil::Proc* p = it->second;
 
     // obtain name (and prune if necessary)
@@ -409,13 +339,12 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     if (hasProcGlobs && !FileUtil::fnmatch(procPruneGlobs, bestName.c_str())) {
       continue;
     }
-     
+
     BinUtil::Insn* endInsn = p->endInsn();
     VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
 
     // obtain counts (and prune if necessary)
-    const vector<uint64_t> metricTotsProc = 
-      metricCursor.computeMetricVals(procint, false);
+    const vector<uint64_t> metricTotsProc = metricCursor.computeMetricVals(procint, false);
     if (!metricCursor.hasMetricValGE(metricTotsProc, procPruneThreshold)) {
       continue;
     }
@@ -424,7 +353,8 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     // Metric summary for procedure
     // --------------------------------------------------------
 
-    os << std::endl << std::endl
+    os << std::endl
+       << std::endl
        << "Procedure: " << p->name() << " (" << bestName << ")\n"
        << std::setfill('-') << std::setw(60) << "-" << std::endl;
 
@@ -433,18 +363,15 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     os << std::endl
        << "Metric summary for procedure (percents relative to load module):\n"
        << "  ";
-    writeMetricVals(colFmt, metricTotsProc, metricTots, 
-		    ColumnFormatter::Flag_ForceVal);
+    writeMetricVals(colFmt, metricTotsProc, metricTots, ColumnFormatter::Flag_ForceVal);
     os << std::endl << "  ";
-    writeMetricVals(colFmt, metricTotsProc, metricTots,
-		    ColumnFormatter::Flag_ForcePct);
+    writeMetricVals(colFmt, metricTotsProc, metricTots, ColumnFormatter::Flag_ForcePct);
     os << std::endl;
 
     // --------------------------------------------------------
     // Metric summary for instructions
     // --------------------------------------------------------
-    os << std::endl
-       << "Metric details for procedure (percents relative to procedure):\n";
+    os << std::endl << "Metric details for procedure (percents relative to procedure):\n";
 
     string the_file;
     SrcFile::ln the_line = SrcFile::ln_NULL;
@@ -455,30 +382,28 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
       VMA opVMA = BinUtil::LM::isa->convertVMAToOpVMA(vma, insn->opIndex());
 
       // 1. Collect metric annotations
-      const vector<uint64_t>& metricValVMA = 
-	metricCursor.computeMetricForVMA(opVMA);
+      const vector<uint64_t>& metricValVMA = metricCursor.computeMetricForVMA(opVMA);
 
       // 2. Print source line information (if necessary)
       if (srcCode) {
-	string func, file;
-	SrcFile::ln line;
-	p->findSrcCodeInfo(vma, insn->opIndex(), func, file, line);
-	
-	if (file != the_file || line != the_line) {
-	  the_file = file;
-	  the_line = line;
-	  os << the_file << ":" << the_line << std::endl;
-	}
+        string func, file;
+        SrcFile::ln line;
+        p->findSrcCodeInfo(vma, insn->opIndex(), func, file, line);
+
+        if (file != the_file || line != the_line) {
+          the_file = file;
+          the_line = line;
+          os << the_file << ":" << the_line << std::endl;
+        }
       }
-	
+
       // 3. Print annotated instruction
       os << std::hex << opVMA << std::dec << ": ";
 
       if (metricCursor.hasNonZeroMetricVal(metricValVMA)) {
-	writeMetricVals(colFmt, metricValVMA, metricTotsProc);
-      }
-      else {
-	colFmt.genBlankCols();
+        writeMetricVals(colFmt, metricValVMA, metricTotsProc);
+      } else {
+        colFmt.genBlankCols();
       }
 
       insn->decode(os);
@@ -489,19 +414,12 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
   os << std::endl << std::endl;
 }
 
-
-static void
-writeMetricVals(ColumnFormatter& colFmt,
-		const vector<uint64_t>& metricVal,
-		const vector<uint64_t>& metricTot,
-		ColumnFormatter::Flag flg)
-{
+static void writeMetricVals(
+    ColumnFormatter& colFmt, const vector<uint64_t>& metricVal, const vector<uint64_t>& metricTot,
+    ColumnFormatter::Flag flg) {
   for (uint i = 0; i < metricVal.size(); ++i) {
     colFmt.genCol(i, (double)metricVal[i], (double)metricTot[i], flg);
   }
 }
-
-
-} // namespace Flat
-
-} // namespace Analysis
+}  // namespace Flat
+}  // namespace Analysis

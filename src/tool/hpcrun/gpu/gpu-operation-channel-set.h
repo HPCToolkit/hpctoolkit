@@ -41,67 +41,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef gpu_operation_channel_set_h
 #define gpu_operation_channel_set_h
 
 #include "gpu-operation-item.h"
 
-//******************************************************************************
-// forward type declarations
-//******************************************************************************
-
 typedef struct gpu_operation_channel_t gpu_operation_channel_t;
 
-//typedef struct gpu_operation_channel_fn_t gpu_operation_channel_fn_t;
+// typedef struct gpu_operation_channel_fn_t gpu_operation_channel_fn_t;
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
+typedef void (*gpu_operation_channel_fn_t)(gpu_operation_channel_t* channel);
 
-typedef void (*gpu_operation_channel_fn_t)
-(
- gpu_operation_channel_t *channel
-);
+void gpu_operation_channel_set_alloc(int size);
 
+void gpu_operation_channel_set_insert(gpu_operation_channel_t* channel, int set_index);
 
+void gpu_operation_channel_set_process(int channel_num);
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void gpu_operation_channel_set_await(int channel_num);
 
-void
-gpu_operation_channel_set_alloc(int size);
-
-
-void
-gpu_operation_channel_set_insert
-(
- gpu_operation_channel_t *channel,
- int set_index
-);
-
-
-void
-gpu_operation_channel_set_process
-(
- int channel_num
-);
-
-
-void
-gpu_operation_channel_set_await
-(
- int channel_num
-);
-
-
-void
-gpu_operation_channel_set_notify
-(
- int channel_num
-);
-
-
+void gpu_operation_channel_set_notify(int channel_num);
 
 #endif

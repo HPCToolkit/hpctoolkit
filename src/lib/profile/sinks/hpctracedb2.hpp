@@ -48,7 +48,6 @@
 #define HPCTOOLKIT_PROFILE_SINKS_HPCTRACEDB2_H
 
 #include "../sink.hpp"
-
 #include "../util/file.hpp"
 
 #include <chrono>
@@ -81,8 +80,10 @@ public:
 
   void notifyWavefront(DataClass) override;
   void notifyThread(const Thread&) override;
-  void notifyTimepoints(const Thread&, const std::vector<
-    std::pair<std::chrono::nanoseconds, std::reference_wrapper<const Context>>>&) override;
+  void notifyTimepoints(
+      const Thread&,
+      const std::vector<
+          std::pair<std::chrono::nanoseconds, std::reference_wrapper<const Context>>>&) override;
   void notifyCtxTimepointRewindStart(const Thread&) override;
   void notifyThreadFinal(const PerThreadTemporary&) override;
 
@@ -110,7 +111,7 @@ private:
 
   class udContext {
   public:
-    udContext(const Context&, HPCTraceDB2& tdb) : uds(tdb.uds), used(false) {};
+    udContext(const Context&, HPCTraceDB2& tdb) : uds(tdb.uds), used(false){};
     ~udContext() = default;
 
     struct uds& uds;
@@ -138,25 +139,20 @@ private:
     Thread::ud_t::typed_member_t<udThread> thread;
   } uds;
 
-
-  //***************************************************************************
-  // trace_hdr
-  //***************************************************************************
-  #define INVALID_HDR    -1
-  #define MULTIPLE_8(v) ((v + 7) & ~7)
+//***************************************************************************
+// trace_hdr
+//***************************************************************************
+#define INVALID_HDR   -1
+#define MULTIPLE_8(v) ((v + 7) & ~7)
 
   uint64_t trace_hdrs_size;
 
-  uint64_t getTotalNumTraces(); 
+  uint64_t getTotalNumTraces();
   std::vector<uint64_t> calcStartEnd();
   void assignHdrs(const std::vector<uint64_t>& trace_offs);
 
-  template <typename T>
-  void exscan(std::vector<T>& data);
-
-
+  template<typename T> void exscan(std::vector<T>& data);
 };
-
-}
+}  // namespace hpctoolkit::sinks
 
 #endif  // HPCTOOLKIT_PROFILE_SINKS_HPCTRACEDB2_H

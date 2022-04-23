@@ -49,26 +49,17 @@
 //   unwind.h
 //
 // Purpose:
-//   interface to the stack-unwinding primitives. 
+//   interface to the stack-unwinding primitives.
 //
 //***************************************************************************
 
 #ifndef unwind_h
 #define unwind_h
 
-//***************************************************************************
-// system include files
-//***************************************************************************
+#include "hpcrun/utilities/ip-normalized.h"
 
 #include <ucontext.h>
-
-
-//***************************************************************************
-// local include files
-//***************************************************************************
-
-#include <unwind/common/unw-datatypes.h> 
-#include <hpcrun/utilities/ip-normalized.h>
+#include <unwind/common/unw-datatypes.h>
 
 //***************************************************************************
 //
@@ -84,35 +75,26 @@
 // hpcrun_unw_init
 // ----------------------------------------------------------
 
-void
-hpcrun_unw_init();
-
+void hpcrun_unw_init();
 
 // ----------------------------------------------------------
 // hpcrun_unw_get_ip_reg
 // ----------------------------------------------------------
 
-int
-hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, 
-			   ip_normalized_t* reg_value);
+int hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value);
 
-int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value);
+int hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value);
 
-
-void*
-hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c);
+void* hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c);
 
 // ----------------------------------------------------------
 // hpcrun_unw_init_cursor
 // ----------------------------------------------------------
 
-void
-hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
-
+void hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
 
 // ----------------------------------------------------------
-// hpcrun_unw_step: 
+// hpcrun_unw_step:
 //   Given a cursor, step the cursor to the next (less deeply
 //   nested) frame.  Conforms to the semantics of libunwind's
 //   hpcrun_unw_step.  In particular, returns:
@@ -123,16 +105,13 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
 
 typedef enum {
   STEP_ERROR = -1,
-  STEP_STOP  = 0,
-  STEP_OK    = 1,
+  STEP_STOP = 0,
+  STEP_OK = 1,
   STEP_TROLL = 2,
   STEP_STOP_WEAK = 3
 } step_state;
 
-
-step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* c, int *steps_taken);
-
+step_state hpcrun_unw_step(hpcrun_unw_cursor_t* c, int* steps_taken);
 
 //***************************************************************************
 //
@@ -150,7 +129,4 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* c, int *steps_taken);
 
 // FIXME: tallent: move stack trolling code here
 
-
-//***************************************************************************
-
-#endif // unwind_h
+#endif  // unwind_h

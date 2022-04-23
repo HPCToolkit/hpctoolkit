@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -60,30 +60,19 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <stdlib.h>
-#include <stdbool.h>
-
-#include <string.h>
-
-#include <assert.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/min-max.h>
-
 #include "agent-pthread.h"
 
-#include <thread_data.h>       // N.B.: outside of LUSHI interface
-#include <lush/lush-pthread.h> // N.B.: outside of LUSHI interface
+#include "include/min-max.h"
+#include "lib/prof-lean/atomic.h"  // N.B.: outside of LUSHI interface
 
-#include <lib/prof-lean/atomic.h> // N.B.: outside of LUSHI interface
+#include <assert.h>
+#include <lush/lush-pthread.h>  // N.B.: outside of LUSHI interface
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <thread_data.h>  // N.B.: outside of LUSHI interface
 
-//*************************** Forward Declarations **************************
-
-#define LUSHCB_DECL(FN) \
- LUSH ## FN ## _fn_t  FN
+#define LUSHCB_DECL(FN) LUSH##FN##_fn_t FN
 
 LUSHCB_DECL(CB_malloc);
 LUSHCB_DECL(CB_free);
@@ -99,136 +88,92 @@ static lush_agentid_t MY_lush_aid;
 // Initialization/Finalization
 // **************************************************************************
 
-extern int
-LUSHI_init(int argc, char** argv,
-	   lush_agentid_t           aid,
-	   LUSHCB_malloc_fn_t       malloc_fn,
-	   LUSHCB_free_fn_t         free_fn,
-	   LUSHCB_step_fn_t         step_fn,
-	   LUSHCB_loadmap_find_fn_t loadmap_fn)
-{
+extern int LUSHI_init(
+    int argc, char** argv, lush_agentid_t aid, LUSHCB_malloc_fn_t malloc_fn,
+    LUSHCB_free_fn_t free_fn, LUSHCB_step_fn_t step_fn, LUSHCB_loadmap_find_fn_t loadmap_fn) {
   MY_lush_aid = aid;
 
-  CB_malloc       = malloc_fn;
-  CB_free         = free_fn;
-  CB_step         = step_fn;
+  CB_malloc = malloc_fn;
+  CB_free = free_fn;
+  CB_step = step_fn;
   CB_loadmap_find = loadmap_fn;
 
   return 0;
 }
 
-
-extern int 
-LUSHI_fini()
-{
+extern int LUSHI_fini() {
   return 0;
 }
 
-
-extern char* 
-LUSHI_strerror(int code)
-{
-  return ""; // STUB
+extern char* LUSHI_strerror(int code) {
+  return "";  // STUB
 }
-
 
 // **************************************************************************
 // Maintaining Responsibility for Code/Frame-space
 // **************************************************************************
 
-extern int 
-LUSHI_reg_dlopen()
-{
-  return 0; // FIXME: coordinate with dylib stuff
+extern int LUSHI_reg_dlopen() {
+  return 0;  // FIXME: coordinate with dylib stuff
 }
 
-
-extern bool 
-LUSHI_ismycode(void* addr)
-{
+extern bool LUSHI_ismycode(void* addr) {
   // NOTE: Currently, this does not prevent our LUSHI_do_backtrace
   // from being called, but it may not be quite right in the context
   // of multiple agents.
-  return false; // force LUSH to use the identity logical unwind
+  return false;  // force LUSH to use the identity logical unwind
 }
 
-
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
-extern lush_step_t
-LUSHI_step_bichord(lush_cursor_t* cursor)
-{
+extern lush_step_t LUSHI_step_bichord(lush_cursor_t* cursor) {
   assert(0 && "LUSHI_step_bichord: should never be called");
   return LUSH_STEP_ERROR;
 }
 
-
-extern lush_step_t
-LUSHI_step_pnote(lush_cursor_t* cursor)
-{
+extern lush_step_t LUSHI_step_pnote(lush_cursor_t* cursor) {
   assert(0 && "LUSHI_step_pnote: should never be called");
   return LUSH_STEP_ERROR;
 }
 
-
-extern lush_step_t
-LUSHI_step_lnote(lush_cursor_t* cursor)
-{
+extern lush_step_t LUSHI_step_lnote(lush_cursor_t* cursor) {
   assert(0 && "LUSHI_step_lnote: should never be called");
   return LUSH_STEP_ERROR;
 }
 
-
-extern int 
-LUSHI_set_active_frame_marker(/*ctxt, cb*/)
-{
-  return 0; // STUB
+extern int LUSHI_set_active_frame_marker(/*ctxt, cb*/) {
+  return 0;  // STUB
 }
-
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
-extern int
-LUSHI_lip_destroy(lush_lip_t* lip)
-{
-  return 0; // STUB
+extern int LUSHI_lip_destroy(lush_lip_t* lip) {
+  return 0;  // STUB
 }
 
-
-extern int 
-LUSHI_lip_eq(lush_lip_t* lip)
-{
-  return 0; // STUB
+extern int LUSHI_lip_eq(lush_lip_t* lip) {
+  return 0;  // STUB
 }
 
-
-extern int
-LUSHI_lip_read()
-{
-  return 0; // STUB
+extern int LUSHI_lip_read() {
+  return 0;  // STUB
 }
 
-
-extern int
-LUSHI_lip_write()
-{
-  return 0; // STUB
+extern int LUSHI_lip_write() {
+  return 0;  // STUB
 }
-
 
 // **************************************************************************
 // Metrics
 // **************************************************************************
 
-extern bool
-LUSHI_do_metric(uint64_t incrMetricIn,
-		bool* doMetric, bool* doMetricIdleness,
-		uint64_t* incrMetric, double* incrMetricIdleness)
-{
+extern bool LUSHI_do_metric(
+    uint64_t incrMetricIn, bool* doMetric, bool* doMetricIdleness, uint64_t* incrMetric,
+    double* incrMetricIdleness) {
   lushPthr_t* pthr = &TD_GET(pthr_metrics);
   bool isWorking = pthr->is_working;
 
@@ -242,10 +187,10 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     pthr->idleness = 0;
 #elif (LUSH_PTHR_FN_TY == 2)
     bool is_working_lock = lushPthr_isWorking_lock(pthr);
-    
-    double num_working      = *(pthr->ps_num_working);
+
+    double num_working = *(pthr->ps_num_working);
     double num_working_lock = *(pthr->ps_num_working_lock);
-    double num_idle_cond    = MAX(0, *(pthr->ps_num_idle_cond)); // timing!
+    double num_idle_cond = MAX(0, *(pthr->ps_num_idle_cond));  // timing!
 
     // INVARIANT: Since this thread is working, it is either working
     // while locked or it is working as 'other' (within a condition
@@ -257,10 +202,9 @@ LUSHI_do_metric(uint64_t incrMetricIn,
       // -----------------------------------------------------
       double num_idle = (*(pthr->ps_num_threads) - num_working);
       double num_idle_lock = MAX(0, num_idle - num_idle_cond);
-      num_working_lock = MAX(1, num_working_lock); // timing windows
+      num_working_lock = MAX(1, num_working_lock);  // timing windows
       idleness = (num_idle_lock / num_working_lock);
-    }
-    else {
+    } else {
       // -----------------------------------------------------
       // is_working_cond() || is_working : num_idle_cond / num_working_othr
       // -----------------------------------------------------
@@ -281,10 +225,9 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *incrMetricIdleness = pthr->idleness;
     pthr->idleness = 0;
 #else
-#  error "agent-pthread.c!"
+#error "agent-pthread.c!"
 #endif
-  }
-  else {
+  } else {
 #if (LUSH_PTHR_FN_TY == 1)
     *doMetric = true;
     *doMetricIdleness = true;
@@ -303,7 +246,7 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     *doMetric = false;
     *doMetricIdleness = false;
 #else
-#  error "agent-pthread.c!"
+#error "agent-pthread.c!"
 #endif
   }
   return *doMetric;

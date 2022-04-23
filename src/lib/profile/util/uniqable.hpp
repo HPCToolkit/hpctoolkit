@@ -48,13 +48,13 @@
 #define HPCTOOLKIT_PROFILE_UTIL_UNIQABLE_H
 
 #include <functional>
-#include <memory>
 #include <iterator>
-#include <utility>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 
 /// \file
 /// Helper header for writing manageable "uniqable" objects. A common trait
@@ -79,21 +79,19 @@
 namespace hpctoolkit::util {
 
 namespace {
-  template<template<typename...> class, typename...>
-  struct is_instantiation : public std::false_type {};
+template<template<typename...> class, typename...>
+struct is_instantiation : public std::false_type {};
 
-  template<template<typename...> class U, typename... T>
-  struct is_instantiation<U, U<T...>> : public std::true_type {};
-}
+template<template<typename...> class U, typename... T>
+struct is_instantiation<U, U<T...>> : public std::true_type {};
+}  // namespace
 
 template<class, class> class locked_unordered_set;
 
 // Wrapper that inserts a `const` into the stack.
-template<class T>
-class uniqable_key {
+template<class T> class uniqable_key {
 public:
-  template<class... Args>
-  uniqable_key(Args&&... args) : real(std::forward<Args>(args)...) {};
+  template<class... Args> uniqable_key(Args&&... args) : real(std::forward<Args>(args)...){};
   ~uniqable_key() = default;
 
   using type = T;
@@ -106,26 +104,25 @@ private:
 };
 
 namespace {
-  template<class> struct is_ukey_ref : public std::false_type {};
-  template<class T>
-  struct is_ukey_ref<uniqable_key<T>&> : public std::true_type {};
-}
+template<class> struct is_ukey_ref : public std::false_type {};
+template<class T> struct is_ukey_ref<uniqable_key<T>&> : public std::true_type {};
+}  // namespace
 
 // SFINAE checker for uniqable.
 template<class T>
+
 using is_uniqable = typename is_ukey_ref<
-    decltype(std::declval<T>().uniqable_key())
-  >::value;
+
+    decltype(std::declval<T>().uniqable_key())>::value;
 
 // Wrapper to let the STL handle the internals by uniqable_key rather than by
 // direct value, as well as to insert a `mutable` into the stack.
-template<class T> //, typename std::enable_if<is_uniqable<T>::value, int>::type = 0>
+template<class T>  //, typename std::enable_if<is_uniqable<T>::value, int>::type = 0>
 class uniqued {
 public:
-  uniqued(const uniqued& o) : real(o.real) {};
-  uniqued(uniqued&& o) : real(std::move(o.real)) {};
-  template<class... Args>
-  uniqued(Args&&... args) : real(std::forward<Args>(args)...) {};
+  uniqued(const uniqued& o) : real(o.real){};
+  uniqued(uniqued&& o) : real(std::move(o.real)){};
+  template<class... Args> uniqued(Args&&... args) : real(std::forward<Args>(args)...){};
   ~uniqued() = default;
 
   using type = T;
@@ -148,52 +145,50 @@ public:
 
 // A simple class to add ::at and ::operator[] support to sets, for unique'd
 // objects (to make the interface more... conveient).
-template<class Set>
-class maplike : public Set {
+template<class Set> class maplike : public Set {
 private:
   using wrapped_type = typename Set::value_type::type;
 
 public:
-  template<class... Args>
-  maplike(Args&&... args) : Set(std::forward<Args>(args)...) {};
+  template<class... Args> maplike(Args&&... args) : Set(std::forward<Args>(args)...){};
   ~maplike() = default;
 
   wrapped_type& at(const wrapped_type& k) {
     auto it = Set::find(k);
-    if(it == Set::end()) throw std::out_of_range("Invalid key in maplike set!");
+    if (it == Set::end())
+      throw std::out_of_range("Invalid key in maplike set!");
     return *it;
   }
   const wrapped_type& at(const wrapped_type& k) const {
     auto it = Set::find(k);
-    if(it == Set::end()) throw std::out_of_range("Invalid key in maplike set!");
+    if (it == Set::end())
+      throw std::out_of_range("Invalid key in maplike set!");
     return *it;
   }
 
-  wrapped_type& operator[](const wrapped_type& k) {
-    return *Set::emplace(k).first;
-  }
-  wrapped_type& operator[](wrapped_type&& k) {
-    return *Set::emplace(k).first;
-  }
+  wrapped_type& operator[](const wrapped_type& k) { return *Set::emplace(k).first; }
+  wrapped_type& operator[](wrapped_type&& k) { return *Set::emplace(k).first; }
 };
 
 // Convenience templates for when you want to use maplike and uniqued.
 template<template<class...> class T, class U, class... A>
+
 using uniqued_maplike = maplike<T<uniqued<U>, A...>>;
 
 template<class U, class... A>
+
 using uniqued_set = uniqued_maplike<std::set, U, A...>;
 
 template<class U, class... A>
+
 using unordered_uniqued_set = uniqued_maplike<std::unordered_set, U, A...>;
 
 template<class U, class... A>
+
 using locked_unordered_uniqued_set = uniqued_maplike<util::locked_unordered_set, U, A...>;
+}  // namespace hpctoolkit::util
 
-}
-
-template<class T>
-class std::hash<hpctoolkit::util::uniqued<T>> {
+template<class T> class std::hash<hpctoolkit::util::uniqued<T>> {
 private:
   using u_type = typename hpctoolkit::util::uniqued<T>;
   using k_type = typename u_type::key_type;

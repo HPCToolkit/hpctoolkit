@@ -57,30 +57,18 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-
-#include <cstdarg>
-#include <cstring> // for 'memcpy'
-
-//*************************** User Include Files ****************************
-
-#include <include/gnu_dis-asm.h>
-
 #include "x86ISA.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/gnu_dis-asm.h"
+#include "lib/support/diagnostics.h"
 
-//*************************** macros ***************************
+#include <cstdarg>
+#include <cstring>  // for 'memcpy'
+#include <iostream>
 
+using std::ostream;
 
-
-//*************************** Forward Declarations ***************************
-void
-GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di)
-{
+void GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di) {
   GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
 
   VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
@@ -88,22 +76,15 @@ GNU_print_addr(bfd_vma di_vma, struct disassemble_info* di)
   *os << std::showbase << std::hex << x << std::dec;
 }
 
-
-VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
-{
+VMA GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma) {
   // N.B.: The GNU decoders expect that the address of the 'mi' is
   // actually the VMA.  Furthermore for 32-bit x86 decoding, only
   // the lower 32 bits of 'mi' are valid.
 
   static const bfd_vma M32 = 0xffffffff;
-  //VMA t = (m_is_x86_64) ?
-  //  ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma :
-  //  ((m_di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
+  // VMA t = (m_is_x86_64) ?
+  //   ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma :
+  //   ((m_di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
   VMA x = ((di_vma & M32) - (PTR_TO_BFDVMA(insn_addr) & M32)) + (bfd_vma)insn_vma;
   return x;
 }
-
-
-
-//****************************************************************************

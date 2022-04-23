@@ -51,7 +51,7 @@
 //
 // Purpose:
 //    An interface to and implementation of privately managed dynamic
-//    memory. This interface enables the profiler to allocate storage  
+//    memory. This interface enables the profiler to allocate storage
 //    when recording a profile sample inside malloc.
 //
 //***************************************************************************
@@ -59,30 +59,23 @@
 #ifndef hpcrun_malloc_h
 #define hpcrun_malloc_h
 
-
-//************************* System Include Files ****************************
+#include "include/hpctoolkit-config.h"
 
 #include <stddef.h>
-
-#include <include/hpctoolkit-config.h>
-
-//*************************** User Include Files ****************************
-
-//*************************** Forward Declarations **************************
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 //---------------------------------------------------------------------------
-// Function: hpcrun_malloc 
+// Function: hpcrun_malloc
 //
-// Purpose: return a pointer to a block of memory of the *exact* size 
-//      (in bytes) requested.  If there is insufficient memory, an attempt 
-//      will be made to allocate more.  If this is not possible, an error 
+// Purpose: return a pointer to a block of memory of the *exact* size
+//      (in bytes) requested.  If there is insufficient memory, an attempt
+//      will be made to allocate more.  If this is not possible, an error
 //      is printed and the program is terminated.
-// 
-// NOTE: This memory cannot be freed! 
+//
+// NOTE: This memory cannot be freed!
 //---------------------------------------------------------------------------
 void* hpcrun_malloc(size_t size);
 void* hpcrun_malloc_freeable(size_t size);
@@ -96,4 +89,4 @@ void hpcrun_memory_summary(void);
 } /* extern "C" */
 #endif
 
-#endif // CSPROF_MALLOC_H
+#endif  // CSPROF_MALLOC_H

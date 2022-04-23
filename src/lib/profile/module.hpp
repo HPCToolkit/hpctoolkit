@@ -48,11 +48,11 @@
 #define HPCTOOLKIT_PROFILE_MODULE_H
 
 #include "scope.hpp"
-#include "util/ragged_vector.hpp"
+#include "stdshim/filesystem.hpp"
 #include "util/locked_unordered.hpp"
 #include "util/once.hpp"
+#include "util/ragged_vector.hpp"
 
-#include "stdshim/filesystem.hpp"
 #include <forward_list>
 #include <future>
 #include <map>
@@ -81,11 +81,8 @@ private:
   util::uniqable_key<stdshim::filesystem::path> u_path;
 
   friend class util::uniqued<Module>;
-  util::uniqable_key<stdshim::filesystem::path>& uniqable_key() {
-    return u_path;
-  }
+  util::uniqable_key<stdshim::filesystem::path>& uniqable_key() { return u_path; }
 };
-
-}
+}  // namespace hpctoolkit
 
 #endif  // HPCTOOLKIT_PROFILE_MODULE_H

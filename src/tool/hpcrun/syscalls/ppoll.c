@@ -54,14 +54,8 @@
 //  otherwise, just pass on the original value.
 //
 
-//******************************************************************************
-// system includes, typedefs
-//******************************************************************************
+#define _GNU_SOURCE 1
 
-#define _GNU_SOURCE  1
-
-#include <sys/types.h>
-#include <sys/select.h>
 #include <assert.h>
 #include <errno.h>
 #include <poll.h>
@@ -69,6 +63,8 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/select.h>
+#include <sys/types.h>
 #include <time.h>
 
 #ifndef HPCRUN_STATIC_LINK
@@ -77,47 +73,38 @@
 
 #include <monitor-exts/monitor_ext.h>
 
-#define BILLION  1000000000
-#define INIT_TIME(x) x.tv_sec = 0; x.tv_nsec = 0;
+#define BILLION 1000000000
+#define INIT_TIME(x) \
+  x.tv_sec = 0;      \
+  x.tv_nsec = 0;
 
-typedef int ppoll_fn (struct pollfd *, nfds_t,
-		      const struct timespec *, const sigset_t *);
+typedef int ppoll_fn(struct pollfd*, nfds_t, const struct timespec*, const sigset_t*);
 
-typedef int pselect_fn (int, fd_set *, fd_set *, fd_set *,
-			const struct timespec *, const sigset_t *);
+typedef int pselect_fn(int, fd_set*, fd_set*, fd_set*, const struct timespec*, const sigset_t*);
 
 #ifdef HPCRUN_STATIC_LINK
-extern ppoll_fn    __real_ppoll;
-extern pselect_fn  __real_pselect;
+extern ppoll_fn __real_ppoll;
+extern pselect_fn __real_pselect;
 #endif
 
-static ppoll_fn   *real_ppoll = NULL;
-static pselect_fn *real_pselect = NULL;
+static ppoll_fn* real_ppoll = NULL;
+static pselect_fn* real_pselect = NULL;
 
-
-//******************************************************************************
-// local operations
-//******************************************************************************
-
-static void
-find_ppoll(void)
-{
+static void find_ppoll(void) {
 #ifdef HPCRUN_STATIC_LINK
   real_ppoll = __real_ppoll;
 #else
-  real_ppoll = (ppoll_fn *) dlsym(RTLD_NEXT, "ppoll");
+  real_ppoll = (ppoll_fn*)dlsym(RTLD_NEXT, "ppoll");
 #endif
 
   assert(real_ppoll);
 }
 
-static void
-find_pselect(void)
-{
+static void find_pselect(void) {
 #ifdef HPCRUN_STATIC_LINK
   real_pselect = __real_pselect;
 #else
-  real_pselect = (pselect_fn *) dlsym(RTLD_NEXT, "pselect");
+  real_pselect = (pselect_fn*)dlsym(RTLD_NEXT, "pselect");
 #endif
 
   assert(real_pselect);
@@ -131,9 +118,8 @@ find_pselect(void)
 // Returns: ans <-- a + b
 //
 static inline void
-tspec_add(struct timespec *ans, const struct timespec *a, const struct timespec *b)
-{
-  ans->tv_sec  = a->tv_sec + b->tv_sec;
+tspec_add(struct timespec* ans, const struct timespec* a, const struct timespec* b) {
+  ans->tv_sec = a->tv_sec + b->tv_sec;
   ans->tv_nsec = a->tv_nsec + b->tv_nsec;
 
   if (ans->tv_nsec >= BILLION) {
@@ -146,9 +132,8 @@ tspec_add(struct timespec *ans, const struct timespec *a, const struct timespec 
 // Returns: ans <-- a - b
 //
 static inline void
-tspec_sub(struct timespec *ans, const struct timespec *a, const struct timespec *b)
-{
-  ans->tv_sec  = a->tv_sec - b->tv_sec;
+tspec_sub(struct timespec* ans, const struct timespec* a, const struct timespec* b) {
+  ans->tv_sec = a->tv_sec - b->tv_sec;
   ans->tv_nsec = a->tv_nsec - b->tv_nsec;
 
   if (ans->tv_nsec < 0) {
@@ -157,16 +142,8 @@ tspec_sub(struct timespec *ans, const struct timespec *a, const struct timespec 
   }
 }
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-int
-MONITOR_EXT_WRAP_NAME(ppoll)
-  (struct pollfd *fds, nfds_t nfds,
-   const struct timespec *init_timeout, const sigset_t *sigmask)
-{
+int MONITOR_EXT_WRAP_NAME(ppoll)(
+    struct pollfd* fds, nfds_t nfds, const struct timespec* init_timeout, const sigset_t* sigmask) {
   static pthread_once_t initialized = PTHREAD_ONCE_INIT;
   pthread_once(&initialized, find_ppoll);
 
@@ -182,23 +159,23 @@ MONITOR_EXT_WRAP_NAME(ppoll)
   // update timeout only if non-NULL and > 0, otherwise just pass on
   // the original value.
   //
-  int update_timeout = (init_timeout != NULL) &&
-      (init_timeout->tv_sec > 0 || (init_timeout->tv_sec == 0 && init_timeout->tv_nsec > 0));
+  int update_timeout =
+      (init_timeout != NULL)
+      && (init_timeout->tv_sec > 0 || (init_timeout->tv_sec == 0 && init_timeout->tv_nsec > 0));
 
   if (update_timeout) {
     clock_gettime(CLOCK_REALTIME, &now);
     tspec_add(&end, &now, init_timeout);
     my_timeout = *init_timeout;
     timeout_ptr = &my_timeout;
-  }
-  else {
-    timeout_ptr = (struct timespec *) init_timeout;
+  } else {
+    timeout_ptr = (struct timespec*)init_timeout;
   }
 
   for (;;) {
-    ret = (* real_ppoll) (fds, nfds, timeout_ptr, sigmask);
+    ret = (*real_ppoll)(fds, nfds, timeout_ptr, sigmask);
 
-    if (! (ret < 0 && errno == EINTR)) {
+    if (!(ret < 0 && errno == EINTR)) {
       // normal (non-signal) return
       break;
     }
@@ -214,8 +191,8 @@ MONITOR_EXT_WRAP_NAME(ppoll)
       // zero so the kernel sets ret and errno correctly.
       //
       if (my_timeout.tv_sec < 0 || my_timeout.tv_nsec < 0) {
-	my_timeout.tv_sec = 0;
-	my_timeout.tv_nsec = 0;
+        my_timeout.tv_sec = 0;
+        my_timeout.tv_nsec = 0;
       }
     }
   }
@@ -225,11 +202,9 @@ MONITOR_EXT_WRAP_NAME(ppoll)
 
 //----------------------------------------------------------------------
 
-int
-MONITOR_EXT_WRAP_NAME(pselect)
-  (int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
-   const struct timespec *init_timeout, const sigset_t *sigmask)
-{
+int MONITOR_EXT_WRAP_NAME(pselect)(
+    int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
+    const struct timespec* init_timeout, const sigset_t* sigmask) {
   static pthread_once_t initialized = PTHREAD_ONCE_INIT;
   pthread_once(&initialized, find_pselect);
 
@@ -245,23 +220,23 @@ MONITOR_EXT_WRAP_NAME(pselect)
   // update timeout only if non-NULL and > 0, otherwise just pass on
   // the original value.
   //
-  int update_timeout = (init_timeout != NULL) &&
-      (init_timeout->tv_sec > 0 || (init_timeout->tv_sec == 0 && init_timeout->tv_nsec > 0));
+  int update_timeout =
+      (init_timeout != NULL)
+      && (init_timeout->tv_sec > 0 || (init_timeout->tv_sec == 0 && init_timeout->tv_nsec > 0));
 
   if (update_timeout) {
     clock_gettime(CLOCK_REALTIME, &now);
     tspec_add(&end, &now, init_timeout);
     my_timeout = *init_timeout;
     timeout_ptr = &my_timeout;
-  }
-  else {
-    timeout_ptr = (struct timespec *) init_timeout;
+  } else {
+    timeout_ptr = (struct timespec*)init_timeout;
   }
 
   for (;;) {
-    ret = (* real_pselect) (nfds, readfds, writefds, exceptfds, timeout_ptr, sigmask);
+    ret = (*real_pselect)(nfds, readfds, writefds, exceptfds, timeout_ptr, sigmask);
 
-    if (! (ret < 0 && errno == EINTR)) {
+    if (!(ret < 0 && errno == EINTR)) {
       // normal (non-signal) return
       break;
     }
@@ -277,8 +252,8 @@ MONITOR_EXT_WRAP_NAME(pselect)
       // zero so the kernel sets ret and errno correctly.
       //
       if (my_timeout.tv_sec < 0 || my_timeout.tv_nsec < 0) {
-	my_timeout.tv_sec = 0;
-	my_timeout.tv_nsec = 0;
+        my_timeout.tv_sec = 0;
+        my_timeout.tv_nsec = 0;
       }
     }
   }

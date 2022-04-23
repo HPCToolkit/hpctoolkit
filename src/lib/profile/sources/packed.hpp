@@ -47,8 +47,8 @@
 #ifndef HPCTOOLKIT_PROFILE_SOURCES_PACKED_H
 #define HPCTOOLKIT_PROFILE_SOURCES_PACKED_H
 
-#include "../source.hpp"
 #include "../sink.hpp"
+#include "../source.hpp"
 #include "../util/locked_unordered.hpp"
 
 namespace hpctoolkit::sources {
@@ -90,13 +90,11 @@ public:
   /// Helper Sink to fill the identifier to Context table.
   class ContextTracker : public ProfileSink {
   public:
-    ContextTracker(ctx_map_t& t) : target(t) {};
+    ContextTracker(ctx_map_t& t) : target(t){};
     ~ContextTracker() = default;
 
     DataClass accepts() const noexcept override { return DataClass::contexts; }
-    ExtensionClass requires() const noexcept override {
-      return ExtensionClass::identifier;
-    }
+    ExtensionClass requires() const noexcept override { return ExtensionClass::identifier; }
 
     void write() override;
 
@@ -110,7 +108,6 @@ private:
   std::vector<std::reference_wrapper<Metric>> metrics;
   std::vector<std::reference_wrapper<Module>> modules;
 };
-
-}
+}  // namespace hpctoolkit::sources
 
 #endif  // HPCTOOLKIT_PROFILE_SOURCES_PACKED_H

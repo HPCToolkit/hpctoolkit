@@ -57,37 +57,25 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::ostream;
-
-#include <cstdarg>
-#include <cstring> // for 'memcpy'
-
-//*************************** User Include Files ****************************
-
-#include <include/gnu_dis-asm.h>
-
 #include "SparcISA.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/gnu_dis-asm.h"
+#include "lib/support/diagnostics.h"
 
-//*************************** Forward Declarations ***************************
+#include <cstdarg>
+#include <cstring>  // for 'memcpy'
+#include <iostream>
 
-static VMA
-GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
-{
+using std::ostream;
+
+static VMA GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma) {
   // N.B.: The GNU decoders assume that the address of 'insn_addr' is
   // the actual the VMA in order to calculate VMA-relative targets.
   VMA x = (di_vma - PTR_TO_BFDVMA(insn_addr)) + insn_vma;
   return x;
 }
 
-
-static void
-GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
-{
+static void GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di) {
   GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
 
   VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
@@ -95,22 +83,15 @@ GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
   *os << std::showbase << std::hex << x << std::dec;
 }
 
-
-//****************************************************************************
-// SparcISA
-//****************************************************************************
-
-SparcISA::SparcISA()
- : m_di(NULL), m_di_dis(NULL)
-{
+SparcISA::SparcISA() : m_di(NULL), m_di_dis(NULL) {
   // See 'dis-asm.h'
   m_di = new disassemble_info;
   init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
-  m_di->arch = bfd_arch_sparc;    // bfd_get_arch (abfd);
-  m_di->mach = bfd_mach_sparc_v9; // bfd_get_mach(abfd)
+  m_di->arch = bfd_arch_sparc;     // bfd_get_arch (abfd);
+  m_di->mach = bfd_mach_sparc_v9;  // bfd_get_mach(abfd)
   m_di->endian = BFD_ENDIAN_BIG;
-  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
-  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
+  m_di->read_memory_func = GNUbu_read_memory;        // vs. 'buffer_read_memory'
+  m_di->print_address_func = GNUbu_print_addr_stub;  // vs. 'generic_print_addr'
 
   m_di_dis = new disassemble_info;
   init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
@@ -122,18 +103,13 @@ SparcISA::SparcISA()
   m_di_dis->print_address_func = GNUbu_print_addr;
 }
 
-
-SparcISA::~SparcISA()
-{
+SparcISA::~SparcISA() {
   delete m_di;
   delete m_di_dis;
 }
 
-
 ISA::InsnDesc
-SparcISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
-		      ushort GCC_ATTR_UNUSED sz)
-{
+SparcISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex, ushort GCC_ATTR_UNUSED sz) {
   ISA::InsnDesc d;
 
   if (cacheLookup(mi) == NULL) {
@@ -149,57 +125,41 @@ SparcISA::getInsnDesc(MachInsn* mi, ushort GCC_ATTR_UNUSED opIndex,
   // in the case of a register indirect jump.  We need some way to
   // distinguish because of the way GNU calculates PC-relative
   // targets.
-  bool isPCRel = (m_di->target2 == 0); // FIXME: binutils needs fixing
+  bool isPCRel = (m_di->target2 == 0);  // FIXME: binutils needs fixing
 
   switch (m_di->insn_type) {
-    case dis_noninsn:
-      d.set(InsnDesc::INVALID);
-      break;
-    case dis_branch:
-      if (m_di->target != 0 && isPCRel) {
-	d.set(InsnDesc::BR_UN_COND_REL);
-      }
-      else {
-	d.set(InsnDesc::BR_UN_COND_IND);
-      }
-      break;
-    case dis_condbranch:
-      if (m_di->target != 0 && isPCRel) {
-	d.set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
-      }
-      else {
-	d.set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
-      }
-      break;
-    case dis_jsr:
-      if (m_di->target != 0 && isPCRel) {
-	d.set(InsnDesc::SUBR_REL);
-      }
-      else {
-	d.set(InsnDesc::SUBR_IND);
-      }
-      break;
-    case dis_condjsr:
-      d.set(InsnDesc::OTHER);
-      break;
-    case dis_return:
-      d.set(InsnDesc::SUBR_RET);
-      break;
-    case dis_dref:
-    case dis_dref2:
-      d.set(InsnDesc::MEM_OTHER);
-      break;
-    default:
-      d.set(InsnDesc::OTHER);
-      break;
+  case dis_noninsn: d.set(InsnDesc::INVALID); break;
+  case dis_branch:
+    if (m_di->target != 0 && isPCRel) {
+      d.set(InsnDesc::BR_UN_COND_REL);
+    } else {
+      d.set(InsnDesc::BR_UN_COND_IND);
+    }
+    break;
+  case dis_condbranch:
+    if (m_di->target != 0 && isPCRel) {
+      d.set(InsnDesc::INT_BR_COND_REL);  // arbitrarily choose int
+    } else {
+      d.set(InsnDesc::INT_BR_COND_IND);  // arbitrarily choose int
+    }
+    break;
+  case dis_jsr:
+    if (m_di->target != 0 && isPCRel) {
+      d.set(InsnDesc::SUBR_REL);
+    } else {
+      d.set(InsnDesc::SUBR_IND);
+    }
+    break;
+  case dis_condjsr: d.set(InsnDesc::OTHER); break;
+  case dis_return: d.set(InsnDesc::SUBR_RET); break;
+  case dis_dref:
+  case dis_dref2: d.set(InsnDesc::MEM_OTHER); break;
+  default: d.set(InsnDesc::OTHER); break;
   }
   return d;
 }
 
-
-VMA
-SparcISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
-{
+VMA SparcISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz) {
   // N.B.: The GNU decoders assume that the address of 'mi' is
   // actually the VMA in order to calculate VMA-relative targets.
 
@@ -211,17 +171,13 @@ SparcISA::getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
   ISA::InsnDesc d = getInsnDesc(mi, opIndex, sz);
   if (d.isBrRel() || d.isSubrRel()) {
     return GNUvma2vma(m_di->target, mi, vma);
-  }
-  else {
+  } else {
     // return m_di->target; // return the results of sethi instruction chains
     return 0;
   }
 }
 
-
-ushort
-SparcISA::getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
-{
+ushort SparcISA::getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz) {
   // SPARC branch instructions have an architectural delay slot of one
   // instruction, but in certain cases it can effectively be zero.  If
   // the annul bit is set in the case of an unconditional
@@ -238,23 +194,15 @@ SparcISA::getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
   ISA::InsnDesc d = getInsnDesc(mi, opIndex, sz);
   if (d.isBr() || d.isSubr() || d.isSubrRet()) {
     return 1;
-  }
-  else {
+  } else {
     return 0;
   }
 }
 
-
-void
-SparcISA::decode(ostream& os, MachInsn* mi, VMA vma,
-		 ushort GCC_ATTR_UNUSED opIndex)
-{
+void SparcISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort GCC_ATTR_UNUSED opIndex) {
   m_dis_data.insn_addr = mi;
   m_dis_data.insn_vma = vma;
 
   m_di_dis->stream = (void*)&os;
   print_insn_sparc(PTR_TO_BFDVMA(mi), m_di_dis);
 }
-
-
-//****************************************************************************

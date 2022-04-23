@@ -48,7 +48,7 @@
 #define _HPCRUN_SAMPLE_PROB_
 
 void hpcrun_sample_prob_init(void);
-int  hpcrun_sample_prob_active(void);
+int hpcrun_sample_prob_active(void);
 void hpcrun_sample_prob_mesg(void);
 
-#endif // _HPCRUN_SAMPLE_PROB_
+#endif  // _HPCRUN_SAMPLE_PROB_

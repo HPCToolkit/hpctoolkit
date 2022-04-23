@@ -48,10 +48,9 @@
 #define HPCTOOLKIT_PROFILE_FINALIZERS_KERNELSYMS_H
 
 #include "../finalizer.hpp"
-
+#include "../stdshim/filesystem.hpp"
 #include "../util/range_map.hpp"
 
-#include "../stdshim/filesystem.hpp"
 #include <map>
 
 namespace hpctoolkit::finalizers {
@@ -79,7 +78,6 @@ private:
   Module::ud_t::typed_member_t<udModule> ud;
   void load(const Module&, udModule&) noexcept;
 };
-
-}
+}  // namespace hpctoolkit::finalizers
 
 #endif  // HPCTOOLKIT_PROFILE_FINALIZERS_KERNELSYMS_H

@@ -41,93 +41,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef gpu_trace_demultiplexer_h
 #define gpu_trace_demultiplexer_h
 
-
 #include <pthread.h>
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
 
 typedef struct gpu_trace_channel_set_t gpu_trace_channel_set_t;
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 typedef struct gpu_trace_t gpu_trace_t;
 
+void* gpu_trace_channel_set_get_ptr(gpu_trace_channel_set_t* channel_set);
 
+pthread_t gpu_trace_channel_set_get_thread(gpu_trace_channel_set_t* channel_set);
 
-//******************************************************************************
-// local variables
-//******************************************************************************
+uint32_t gpu_trace_channel_set_get_channel_num(gpu_trace_channel_set_t* channel_set);
 
+pthread_t gpu_trace_demultiplexer_push(gpu_trace_channel_t* trace_channel);
 
-//******************************************************************************
-// private operations
-//******************************************************************************
+void gpu_trace_demultiplexer_notify(void);
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-
-void *
-gpu_trace_channel_set_get_ptr
-(
- gpu_trace_channel_set_t *channel_set
-);
-
-
-pthread_t
-gpu_trace_channel_set_get_thread
-(
- gpu_trace_channel_set_t *channel_set
-);
-
-
-uint32_t
-gpu_trace_channel_set_get_channel_num
-(
- gpu_trace_channel_set_t *channel_set
-);
-
-
-pthread_t
-gpu_trace_demultiplexer_push
-(
- gpu_trace_channel_t *trace_channel
-);
-
-
-void
-gpu_trace_demultiplexer_notify
-(
- void
-);
-
-
-void
-gpu_trace_demultiplexer_release
-(
- void
-);
-
-
+void gpu_trace_demultiplexer_release(void);
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-

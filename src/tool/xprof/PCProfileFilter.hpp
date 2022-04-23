@@ -57,24 +57,16 @@
 //
 //***************************************************************************
 
-#ifndef PCProfileFilter_H 
+#ifndef PCProfileFilter_H
 #define PCProfileFilter_H
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/binutils/LM.hpp"
+#include "lib/isa/ISA.hpp"
 
-#include <vector>
 #include <list>
 #include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/isa/ISA.hpp>
-
-#include <lib/binutils/LM.hpp>
-
-//*************************** Forward Declarations ***************************
+#include <vector>
 
 class PCProfileFilter;
 class MetricFilter;
@@ -86,52 +78,45 @@ public:
   typedef std::list<PCProfileFilter*> Base;
 
 public:
-  PCProfileFilterList() { }
+  PCProfileFilterList() {}
   virtual ~PCProfileFilterList() { clear(); }
-  virtual void clear() { Base::clear(); } // does not delte contents
-  void destroyContents();  // deletes contents
+  virtual void clear() { Base::clear(); }  // does not delte contents
+  void destroyContents();                  // deletes contents
 };
 
-
 class PCProfileMetric;
-
-//****************************************************************************
-// PCProfileFilter
-//****************************************************************************
 
 // 'PCProfileFilter' is a filter that implicitly defines a derived
 // metric (e.g. 'ProfileMetric') by specifing some combination of raw
 // metrics and pcs from a 'PCProfile'.
 // Currently, filters are strictly divided between metric and pc filters.
-class PCProfileFilter
-{
+class PCProfileFilter {
 public:
   // PCProfileFilter: assumes ownership of the MetricFilter and PCFilter.
-  PCProfileFilter(MetricFilter* x = NULL, PCFilter* y = NULL)
-    : mfilt(x), pcfilt(y) { }
+  PCProfileFilter(MetricFilter* x = NULL, PCFilter* y = NULL) : mfilt(x), pcfilt(y) {}
   virtual ~PCProfileFilter();
 
   // Name, Description: The name and a description of what this filter
   // computes.
-  const std::string& GetName()        const { return name; }
+  const std::string& GetName() const { return name; }
   const std::string& GetDescription() const { return description; }
 
-  void SetName(const char* s)          { name = (s) ? s : ""; }
-  void SetDescription(const char* s)   { description = (s) ? s : ""; }
+  void SetName(const char* s) { name = (s) ? s : ""; }
+  void SetDescription(const char* s) { description = (s) ? s : ""; }
 
   // Access to the various sub-filters.  (These intentionally return
   // non-const pointers!)
   MetricFilter* GetMetricFilter() const { return mfilt; }
   PCFilter* GetPCFilter() const { return pcfilt; }
-  
+
   void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
-  
+  void DDump();
+
 private:
-  // Should not be used 
-  PCProfileFilter(const PCProfileFilter& p) { }
+  // Should not be used
+  PCProfileFilter(const PCProfileFilter& p) {}
   PCProfileFilter& operator=(const PCProfileFilter& p) { return *this; }
-  
+
 protected:
 private:
   std::string name;
@@ -141,38 +126,28 @@ private:
   PCFilter* pcfilt;
 };
 
-
-//****************************************************************************
-// MetricFilter
-//****************************************************************************
-
 // MetricFilter: An abstract base class providing an interface for
 // standard and user-defined metric filters.  A MetricFilter divides
-// metrics into two sets sets, 'in' and 'out'. 
+// metrics into two sets sets, 'in' and 'out'.
 class MetricFilter {
 public:
-  MetricFilter() { }
-  virtual ~MetricFilter() { }
-  
+  MetricFilter() {}
+  virtual ~MetricFilter() {}
+
   // Returns true if 'm' is within the 'in' set; false otherwise.
   virtual bool operator()(const PCProfileMetric* m) = 0;
 
 private:
 };
 
-
-//****************************************************************************
-// PCFilter
-//****************************************************************************
-
 // PCFilter: An abstract base class providing an interface for
 // standard and user-defined PC filters.  A PCFilter divides
-// PC into two sets sets, 'in' and 'out'. 
+// PC into two sets sets, 'in' and 'out'.
 class PCFilter {
 public:
-  PCFilter() { }
-  virtual ~PCFilter() { }
-  
+  PCFilter() {}
+  virtual ~PCFilter() {}
+
   // Returns true if the operation at 'pc' and 'opIndex' is within the
   // 'in' set; false otherwise.
   virtual bool operator()(VMA pc, ushort opIndex) = 0;
@@ -180,17 +155,11 @@ public:
 private:
 };
 
-
-//****************************************************************************
-// InsnClassExpr
-//****************************************************************************
-
-
-#define INSN_CLASS_ALL      0x00000001 /* cannot be part of disjunction! */
-#define INSN_CLASS_FLOP     0x00000002
-#define INSN_CLASS_INTOP    0x00000004
-#define INSN_CLASS_MEMOP    0x00000008
-#define INSN_CLASS_OTHER    0x00000010
+#define INSN_CLASS_ALL   0x00000001 /* cannot be part of disjunction! */
+#define INSN_CLASS_FLOP  0x00000002
+#define INSN_CLASS_INTOP 0x00000004
+#define INSN_CLASS_MEMOP 0x00000008
+#define INSN_CLASS_OTHER 0x00000010
 
 // InsnClassExpr: A common 'PCFilter' will be an instruction class
 // filter (cf. 'InsnFilter').  This represent a disjunctive expression
@@ -199,15 +168,15 @@ private:
 class InsnClassExpr {
 public:
   typedef uint32_t bitvec_t;
-    
+
 public:
   // A 'InsnClassExpr' can be created using the bit definitions above.
-  InsnClassExpr(bitvec_t bv = 0) : bits(bv) { }
-  virtual ~InsnClassExpr() { }
-  
+  InsnClassExpr(bitvec_t bv = 0) : bits(bv) {}
+  virtual ~InsnClassExpr() {}
+
   InsnClassExpr(const InsnClassExpr& x) { *this = x; }
-  InsnClassExpr& operator=(const InsnClassExpr& x) { 
-    bits = x.bits; 
+  InsnClassExpr& operator=(const InsnClassExpr& x) {
+    bits = x.bits;
     return *this;
   }
 
@@ -218,78 +187,51 @@ public:
     if (IsSet(INSN_CLASS_ALL)) {
       return true;
     } else {
-      return IsSet(bv); // only one bit (= class) in 'bv' is set
+      return IsSet(bv);  // only one bit (= class) in 'bv' is set
     }
   }
 
   // IsValid: If no bits are set, this must be an invalid expression
   bool IsValid() const { return bits != 0; }
-  
+
   // IsSet: Tests to see if all the specified bits are set
-  bool IsSet(const bitvec_t bv) const {
-    return (bits & bv) == bv;
-  }
-  bool IsSet(const InsnClassExpr& m) const {
-    return (bits & m.bits) == m.bits; 
-  }
+  bool IsSet(const bitvec_t bv) const { return (bits & bv) == bv; }
+  bool IsSet(const InsnClassExpr& m) const { return (bits & m.bits) == m.bits; }
   // IsSetAny: Tests to see if *any* of the specified bits are set
-  bool IsSetAny(const bitvec_t bv) const {
-    return (bits & bv) != 0;
-  }
-  bool IsSetAny(const InsnClassExpr& m) const {
-    return (bits & m.bits) != 0; 
-  }
+  bool IsSetAny(const bitvec_t bv) const { return (bits & bv) != 0; }
+  bool IsSetAny(const InsnClassExpr& m) const { return (bits & m.bits) != 0; }
   // Set: Set all the specified bits
-  void Set(const bitvec_t bv) {
-    bits = bits | bv;
-  }
-  void Set(const InsnClassExpr& m) {
-    bits = bits | m.bits;
-  }
+  void Set(const bitvec_t bv) { bits = bits | bv; }
+  void Set(const InsnClassExpr& m) { bits = bits | m.bits; }
   // Unset: Clears all the specified bits
-  void Unset(const bitvec_t bv) {
-    bits = bits & ~bv;
-  }
-  void Unset(const InsnClassExpr& m) {
-    bits = bits & ~(m.bits);
-  }
-  
+  void Unset(const bitvec_t bv) { bits = bits & ~bv; }
+  void Unset(const InsnClassExpr& m) { bits = bits & ~(m.bits); }
+
   void Dump(std::ostream& o = std::cerr);
   void DDump();
-  
+
 private:
-  
 protected:
-private:  
+private:
   bitvec_t bits;
 };
 
-
 // ConvertInsnDesc: Converts an InsnDesc to one of the above classes
-InsnClassExpr::bitvec_t 
-ConvertToInsnClass(ISA::InsnDesc d);
-
-
-//****************************************************************************
-// InsnFilter
-//****************************************************************************
+InsnClassExpr::bitvec_t ConvertToInsnClass(ISA::InsnDesc d);
 
 // InsnFilter: Divides PCs into two sets by Alpha instruction class.
 class InsnFilter : public PCFilter {
 public:
   InsnFilter(InsnClassExpr expr_, binutils::LM* lm_);
   virtual ~InsnFilter();
-  
+
   // Returns true if the operation at 'pc' and 'opIndex' satisfies
   // 'expr'; false otherwise.
   virtual bool operator()(VMA pc, ushort opIndex);
-  
+
 private:
   InsnClassExpr expr;
-  binutils::LM* lm; // we do not own
+  binutils::LM* lm;  // we do not own
 };
 
-
-//****************************************************************************
-
-#endif 
+#endif

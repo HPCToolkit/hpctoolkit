@@ -53,7 +53,7 @@ extern "C" {
 
 void hpctoolkit_sampling_start(void);
 void hpctoolkit_sampling_stop(void);
-int  hpctoolkit_sampling_is_active(void);
+int hpctoolkit_sampling_is_active(void);
 
 #ifdef __cplusplus
 }

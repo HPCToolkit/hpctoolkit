@@ -59,18 +59,15 @@
 
 //----------------------------------------------------------------------
 
-#define _GNU_SOURCE  1
+#define _GNU_SOURCE 1
 
-#include <sys/types.h>
-#include <link.h>
 #include "loadmap.h"
 
-int
-hpcrun_real_dl_iterate_phdr (
-  int (*callback) (struct dl_phdr_info * info, size_t size, void * data),
-  void *data
-)
-{
+#include <link.h>
+#include <sys/types.h>
+
+int hpcrun_real_dl_iterate_phdr(
+    int (*callback)(struct dl_phdr_info* info, size_t size, void* data), void* data) {
 #ifdef HPCRUN_STATIC_LINK
   // statically, we have no replacement, so call the real version
   return dl_iterate_phdr(callback, data);

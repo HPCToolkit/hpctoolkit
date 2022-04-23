@@ -63,13 +63,10 @@ extern "C" {
  *
  */
 
-extern char*
-findinstall(const char* cmd, const char* base_cmd);
-        
+extern char* findinstall(const char* cmd, const char* base_cmd);
 
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

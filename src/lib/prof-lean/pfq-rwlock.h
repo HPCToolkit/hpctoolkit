@@ -66,36 +66,13 @@
 #ifndef __pfq_rwlock_h__
 #define __pfq_rwlock_h__
 
-
-
-//******************************************************************************
-// global includes
-//******************************************************************************
+#include "mcs-lock.h"
 
 #include <inttypes.h>
 #include <stdbool.h>
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "mcs-lock.h"
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
-
 // align a variable at the start of a cache line
 #define cache_aligned __attribute__((aligned(128)))
-
-
-
-//******************************************************************************
-// types
-//******************************************************************************
 
 typedef mcs_node_t pfq_rwlock_node_t;
 
@@ -107,33 +84,26 @@ typedef struct {
   //----------------------------------------------------------------------------
   // reader management
   //----------------------------------------------------------------------------
-  atomic_uint_least32_t rin cache_aligned;  // = 0
+  atomic_uint_least32_t rin cache_aligned;   // = 0
   atomic_uint_least32_t rout cache_aligned;  // = 0
   atomic_uint_least32_t last cache_aligned;  // = WRITER_PRESENT
-  bigbool writer_blocking_readers[2]; // false
+  bigbool writer_blocking_readers[2];        // false
 
   //----------------------------------------------------------------------------
   // writer management
   //----------------------------------------------------------------------------
-  mcs_lock_t wtail cache_aligned;  // init
-  mcs_node_t *whead cache_aligned;  // null
-
+  mcs_lock_t wtail cache_aligned;   // init
+  mcs_node_t* whead cache_aligned;  // null
 } pfq_rwlock_t;
 
+void pfq_rwlock_init(pfq_rwlock_t* l);
 
+void pfq_rwlock_read_lock(pfq_rwlock_t* l);
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void pfq_rwlock_read_unlock(pfq_rwlock_t* l);
 
-void pfq_rwlock_init(pfq_rwlock_t *l);
+void pfq_rwlock_write_lock(pfq_rwlock_t* l, pfq_rwlock_node_t* me);
 
-void pfq_rwlock_read_lock(pfq_rwlock_t *l);
-
-void pfq_rwlock_read_unlock(pfq_rwlock_t *l);
-
-void pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
-
-void pfq_rwlock_write_unlock(pfq_rwlock_t *l, pfq_rwlock_node_t *me);
+void pfq_rwlock_write_unlock(pfq_rwlock_t* l, pfq_rwlock_node_t* me);
 
 #endif

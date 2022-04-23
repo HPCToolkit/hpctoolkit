@@ -41,7 +41,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //******************************************************************************
 // Description:
 //   Read fields from a ompt_record_ompt_t and assign to a
@@ -52,84 +51,36 @@
 //   shared by worker threads.
 //******************************************************************************
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/cct/cct_addr.h>
-#include <hpcrun/utilities/ip-normalized.h>
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-function-id-map.h>
-#include <hpcrun/gpu/gpu-host-correlation-map.h>
-
-
 #include "ompt-activity-translate.h"
 
+#include "hpcrun/cct/cct.h"
+#include "hpcrun/cct/cct_addr.h"
+#include "hpcrun/gpu/gpu-activity.h"
+#include "hpcrun/gpu/gpu-correlation-id-map.h"
+#include "hpcrun/gpu/gpu-function-id-map.h"
+#include "hpcrun/gpu/gpu-host-correlation-map.h"
+#include "hpcrun/utilities/ip-normalized.h"
 
-//******************************************************************************
-// macros
-//******************************************************************************
-
-
-
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static void
-convert_unknown
-(
- gpu_activity_t *ga,
- ompt_record_ompt_t *r,
- uint64_t *cid_ptr
-)
-{
+static void convert_unknown(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
   ga->kind = GPU_ACTIVITY_UNKNOWN;
   *cid_ptr = 0;
 }
 
-
-static void
-convert_ptrop
-(
- gpu_activity_t *ga,
- ompt_record_ompt_t *r,
- uint64_t *cid_ptr
-)
-{
+static void convert_ptrop(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
   ga->kind = GPU_ACTIVITY_UNKNOWN;
   *cid_ptr = 0;
 }
 
-
-static void
-convert_target
-(
- gpu_activity_t *ga,
- ompt_record_ompt_t *r,
- uint64_t *cid_ptr
-)
-{
-  ompt_record_target_t *t __attribute__((unused)) = &r->record.target;
+static void convert_target(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
+  ompt_record_target_t* t __attribute__((unused)) = &r->record.target;
 
   ga->kind = GPU_ACTIVITY_UNKNOWN;
   *cid_ptr = 0;
 }
 
-
 static void
-convert_memory
-(
-  gpu_activity_t *ga,
-  ompt_record_ompt_t *r,
-  gpu_mem_op_t mem_op,
-  uint64_t *cid_ptr
-)
-{
-  ompt_record_target_data_op_t *d = &r->record.target_data_op;
+convert_memory(gpu_activity_t* ga, ompt_record_ompt_t* r, gpu_mem_op_t mem_op, uint64_t* cid_ptr) {
+  ompt_record_target_data_op_t* d = &r->record.target_data_op;
 
   ga->kind = GPU_ACTIVITY_MEMORY;
   ga->details.memory.memKind = GPU_MEM_UNKNOWN;
@@ -140,61 +91,27 @@ convert_memory
   ga->details.memory.bytes = d->bytes;
 }
 
-
-static void
-convert_alloc
-(
-  gpu_activity_t *ga,
-  ompt_record_ompt_t *r,
-  uint64_t *cid_ptr
-)
-{
+static void convert_alloc(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
   convert_memory(ga, r, GPU_MEM_OP_ALLOC, cid_ptr);
 }
 
-
-static void
-convert_delete
-(
-  gpu_activity_t *ga,
-  ompt_record_ompt_t *r,
-  uint64_t *cid_ptr
-)
-{
+static void convert_delete(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
   convert_memory(ga, r, GPU_MEM_OP_DELETE, cid_ptr);
 }
 
-
-static gpu_memcpy_type_t
-convert_memcpy_type
-(
- ompt_target_data_op_t kind
-)
-{
+static gpu_memcpy_type_t convert_memcpy_type(ompt_target_data_op_t kind) {
   switch (kind) {
   case ompt_target_data_transfer_to_device_async:
-  case ompt_target_data_transfer_to_device:
-    return GPU_MEMCPY_H2D;
-
+  case ompt_target_data_transfer_to_device: return GPU_MEMCPY_H2D;
   case ompt_target_data_transfer_from_device_async:
-  case ompt_target_data_transfer_from_device:
-    return GPU_MEMCPY_D2H;
+  case ompt_target_data_transfer_from_device: return GPU_MEMCPY_D2H;
 
-  default:
-    return GPU_MEMCPY_UNK;
+  default: return GPU_MEMCPY_UNK;
   }
 }
 
-
-static void
-convert_memcpy
-(
- gpu_activity_t *ga,
- ompt_record_ompt_t *r,
- uint64_t *cid_ptr
-)
-{
-  ompt_record_target_data_op_t *d = &r->record.target_data_op;
+static void convert_memcpy(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
+  ompt_record_target_data_op_t* d = &r->record.target_data_op;
 
   ga->kind = GPU_ACTIVITY_MEMCPY;
 
@@ -205,57 +122,27 @@ convert_memcpy
   ga->details.memcpy.copyKind = convert_memcpy_type(d->optype);
 }
 
+static void convert_target_data_op(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
+  ompt_record_target_data_op_t* d = &r->record.target_data_op;
 
-static void
-convert_target_data_op
-(
- gpu_activity_t *ga,
- ompt_record_ompt_t *r,
- uint64_t *cid_ptr
-)
-{
-  ompt_record_target_data_op_t *d = &r->record.target_data_op;
-
-  switch(d->optype) {
-
+  switch (d->optype) {
   case ompt_target_data_transfer_to_device:
-  case ompt_target_data_transfer_from_device:
-    convert_memcpy(ga, r, cid_ptr);
-    break;
-
+  case ompt_target_data_transfer_from_device: convert_memcpy(ga, r, cid_ptr); break;
   case ompt_target_data_alloc_async:
-  case ompt_target_data_alloc:
-    convert_alloc(ga, r, cid_ptr);
-    break;
-
+  case ompt_target_data_alloc: convert_alloc(ga, r, cid_ptr); break;
   case ompt_target_data_delete_async:
-  case ompt_target_data_delete:
-    convert_delete(ga, r, cid_ptr);
-    break;
-
+  case ompt_target_data_delete: convert_delete(ga, r, cid_ptr); break;
   case ompt_target_data_associate:
-  case ompt_target_data_disassociate:
-    convert_ptrop(ga, r, cid_ptr);
-    break;
+  case ompt_target_data_disassociate: convert_ptrop(ga, r, cid_ptr); break;
 
-  default:
-    convert_unknown(ga, r, cid_ptr);
-    break;
+  default: convert_unknown(ga, r, cid_ptr); break;
   }
 
   gpu_interval_set(&ga->details.interval, r->time, d->end_time);
 }
 
-
-void
-convert_target_submit
-(
- gpu_activity_t *ga,
- ompt_record_ompt_t *r,
- uint64_t *cid_ptr
-)
-{
-  ompt_record_target_kernel_t *k = &r->record.target_kernel;
+void convert_target_submit(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
+  ompt_record_target_kernel_t* k = &r->record.target_kernel;
 
   ga->kind = GPU_ACTIVITY_KERNEL;
   ga->details.kernel.correlation_id = k->host_op_id;
@@ -264,46 +151,18 @@ convert_target_submit
   gpu_interval_set(&ga->details.interval, r->time, k->end_time);
 }
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-ompt_activity_translate
-(
- gpu_activity_t *ga,
- ompt_record_ompt_t *r,
- uint64_t *cid_ptr
-)
-{
+void ompt_activity_translate(gpu_activity_t* ga, ompt_record_ompt_t* r, uint64_t* cid_ptr) {
   memset(ga, 0, sizeof(gpu_activity_t));
   switch (r->type) {
-
   case ompt_callback_target:
-  case ompt_callback_target_emi:
-
-    convert_target(ga,r, cid_ptr);
-    break;
-
+  case ompt_callback_target_emi: convert_target(ga, r, cid_ptr); break;
   case ompt_callback_target_data_op:
-  case ompt_callback_target_data_op_emi:
-
-    convert_target_data_op(ga,r, cid_ptr);
-    break;
-
+  case ompt_callback_target_data_op_emi: convert_target_data_op(ga, r, cid_ptr); break;
   case ompt_callback_target_submit:
-  case ompt_callback_target_submit_emi:
+  case ompt_callback_target_submit_emi: convert_target_submit(ga, r, cid_ptr); break;
 
-    convert_target_submit(ga,r, cid_ptr);
-    break;
-
-  default:
-    convert_unknown(ga, r, cid_ptr);
-    break;
+  default: convert_unknown(ga, r, cid_ptr); break;
   }
-
 
   cstack_ptr_set(&(ga->next), 0);
 }

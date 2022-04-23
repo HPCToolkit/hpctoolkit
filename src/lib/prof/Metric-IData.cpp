@@ -57,52 +57,30 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-
-#include <string>
-using std::string;
-
-#include <typeinfo>
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "Metric-IData.hpp"
 
-#include <lib/xml/xml.hpp>
+#include "include/gcc-attr.h"
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
+#include "lib/xml/xml.hpp"
 
-#include <lib/support/diagnostics.h>
+#include <iostream>
+#include <string>
+#include <typeinfo>
 
-//*************************** Forward Declarations **************************
-
-
-//***************************************************************************
+using std::string;
 
 namespace Prof {
 namespace Metric {
 
-
-//***************************************************************************
-// IData
-//***************************************************************************
-
-std::string
-IData::toStringMetrics(int oFlags, const char* pfx) const
-{
+std::string IData::toStringMetrics(int oFlags, const char* pfx) const {
   std::ostringstream os;
   dumpMetrics(os, oFlags, pfx);
   return os.str();
 }
 
-
-std::ostream&
-IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
-		       int GCC_ATTR_UNUSED oFlags, const char* pfx) const
-{
+std::ostream& IData::writeMetricsXML(
+    std::ostream& os, uint mBegId, uint mEndId, int GCC_ATTR_UNUSED oFlags, const char* pfx) const {
   bool wasMetricWritten = false;
 
   if (mBegId == IData::npos) {
@@ -114,8 +92,8 @@ IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
     if (hasMetric(i)) {
       double m = metric(i);
       os << ((!wasMetricWritten) ? pfx : "");
-      os << "<M " << "n" << xml::MakeAttrNum(i) 
-	 << " v" << xml::MakeAttrNum(m) << "/>";
+      os << "<M "
+         << "n" << xml::MakeAttrNum(i) << " v" << xml::MakeAttrNum(m) << "/>";
       wasMetricWritten = true;
     }
   }
@@ -123,24 +101,13 @@ IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
   return os;
 }
 
-
-std::ostream&
-IData::dumpMetrics(std::ostream& os, int GCC_ATTR_UNUSED oFlags,
-		   const char* GCC_ATTR_UNUSED pfx) const
-{
+std::ostream& IData::dumpMetrics(
+    std::ostream& os, int GCC_ATTR_UNUSED oFlags, const char* GCC_ATTR_UNUSED pfx) const {
   return os;
 }
 
-
-void
-IData::ddumpMetrics() const
-{
+void IData::ddumpMetrics() const {
   dumpMetrics();
 }
-
-
-//***************************************************************************
-
-} // namespace Metric
-} // namespace Prof
-
+}  // namespace Metric
+}  // namespace Prof

@@ -48,27 +48,20 @@
 // System Includes
 // ******************************************************************************
 
-#include <stdlib.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <ucontext.h>
 
 // ******************************************************************************
 // Local Includes
 // ******************************************************************************
 
-#include <utilities/arch/mcontext.h>
 #include <utilities/arch/context-pc.h>
+#include <utilities/arch/mcontext.h>
 
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
-
-void *
-hpcrun_context_pc(void *context)
-{
+void* hpcrun_context_pc(void* context) {
   ucontext_t* ctxt = (ucontext_t*)context;
   return ucontext_pc(ctxt);
 }

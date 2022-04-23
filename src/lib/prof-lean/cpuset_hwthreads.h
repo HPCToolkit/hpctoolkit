@@ -44,7 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef cpuset_hwthreads_h
 #define cpuset_hwthreads_h
 
@@ -52,22 +51,13 @@
 extern "C" {
 #endif
 
-//******************************************************************************
-// public operations
-//******************************************************************************
-
 //------------------------------------------------------------------------------
 //   Function cpuset_hwthreads
 //   Purpose:
 //     return the number of hardware threads available to this process
 //     return 1 if no other value can be computed
 //------------------------------------------------------------------------------
-unsigned int 
-cpuset_hwthreads
-(
-  void
-);
-
+unsigned int cpuset_hwthreads(void);
 
 #if defined(__cplusplus)
 } /* extern "C" */

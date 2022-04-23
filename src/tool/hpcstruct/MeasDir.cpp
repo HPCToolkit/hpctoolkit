@@ -44,64 +44,51 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "hpcstruct.hpp"
+
+#include "include/gpu-binary.h"
+#include "lib/prof-lean/cpuset_hwthreads.h"
+#include "lib/prof-lean/hpcio.h"
+#include "lib/support/FileUtil.hpp"
+#include "lib/support/IOUtil.hpp"
+#include "lib/support/realpath.h"
+#include "lib/support/RealPathMgr.hpp"
+
 #include <dirent.h>
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
 #include <dlfcn.h>
+#include <fstream>
+#include <iostream>
+#include <new>
 #include <stdio.h>
 #include <stdlib.h>
-#include <fstream>
-#include <string>
 #include <streambuf>
-#include <new>
+#include <string.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <vector>
 
-#include <string.h>
-#include <unistd.h>
-
-#include <string.h>
-
-#include <include/gpu-binary.h>
-#include "hpcstruct.hpp"
-#include <lib/prof-lean/hpcio.h>
-#include <lib/prof-lean/cpuset_hwthreads.h>
-#include <lib/support/realpath.h>
-#include <lib/support/FileUtil.hpp>
-#include <lib/support/IOUtil.hpp>
-
-#include <lib/support/RealPathMgr.hpp>
-
+using std::cerr;
+using std::endl;
 using namespace std;
 
 // Function prototypes
-static void create_structs_directory ( string &structs_dir);
-static void open_makefile ( string &makefile_name, fstream &makefile);
-static void verify_measurements_directory(string &measurements_dir);
+static void create_structs_directory(string& structs_dir);
+static void open_makefile(string& makefile_name, fstream& makefile);
+static void verify_measurements_directory(string& measurements_dir);
 
 // Contents of Makefile to be generated for the directory
 static const char* analysis_makefile =
 #include "pmake.h"
-;
-
+    ;
 
 //
 // For a measurements directory, write a Makefile and launch hpcstruct
 // to analyze CPU and GPU binaries associated with the measurements
 //
 
-
-void
-doMeasurementsDir
-(
- Args &args,
- struct stat *sb
-)
-{
+void doMeasurementsDir(Args& args, struct stat* sb) {
   std::string measurements_dir = RealPath(args.in_filenm.c_str());
 
   verify_measurements_directory(measurements_dir);
@@ -109,7 +96,7 @@ doMeasurementsDir
   //
   // Put hpctoolkit on PATH
   //
-  char *path = getenv("PATH");
+  char* path = getenv("PATH");
   string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
 
   // Assume that nvdisasm is on the user's path; if not BAnal will complain
@@ -118,11 +105,9 @@ doMeasurementsDir
 
   // Construct full paths for hpcproftt and hpcstruct
   //
-  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
-    + "/libexec/hpctoolkit/hpcproftt";
+  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/libexec/hpctoolkit/hpcproftt";
 
-  string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
-    + "/bin/hpcstruct";
+  string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin/hpcstruct";
 
   //
   // Write Makefile and launch analysis.
@@ -139,10 +124,10 @@ doMeasurementsDir
   unsigned int pthreads;
   unsigned int jobs;
 
-  if (args.jobs == 0) { // not specified
+  if (args.jobs == 0) {  // not specified
     // Set the default: half the number of CPUs
     unsigned int hwthreads = cpuset_hwthreads();
-    jobs = std::max(hwthreads/2, 1U);
+    jobs = std::max(hwthreads / 2, 1U);
     pthreads = std::min(jobs, 16U);
   } else {
     jobs = args.jobs;
@@ -154,14 +139,12 @@ doMeasurementsDir
   // Initialize the structure cache, if specified
   //
   if (!args.nocache) {
-    char *cpath = NULL;
+    char* cpath = NULL;
 
     // Find or create the actual cache directory
     try {
       cpath = setup_cache_dir(args.cache_directory.c_str(), &args);
-    } catch(const Diagnostics::FatalException &e) {
-      exit(1);
-    };
+    } catch (const Diagnostics::FatalException& e) { exit(1); };
 
     // How can cpath still be NULL???
     if (cpath) {
@@ -170,8 +153,8 @@ doMeasurementsDir
       // check that the cache is writable
       //
       if (!hpcstruct_cache_writable(cpath)) {
-	DIAG_EMsg("hpcstruct cache directory " << cpath << " not writable");
-	exit(1);
+        DIAG_EMsg("hpcstruct cache directory " << cpath << " not writable");
+        exit(1);
       }
     }
   }
@@ -183,23 +166,24 @@ doMeasurementsDir
   int small_threads = (jobs == 1) ? 1 : 2;
 
   // Write the header with definitions to the makefile
-  makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
- 	   << "GPUBIN_CFG = "   << gpucfg << "\n"
-	   << "CPU_ANALYZE = "  << args.analyze_cpu_binaries << "\n"
-	   << "GPU_ANALYZE = "  << args.analyze_gpu_binaries << "\n"
-	   << "PAR_SIZE = "     << args.parallel_analysis_threshold << "\n"
-	   << "JOBS = "         << jobs << "\n"
-	   << "SJOBS = "        << small_jobs << "\n"
-	   << "STHREADS = "     << small_threads << "\n"
-	   << "LJOBS = "        << jobs/pthreads << "\n"
-	   << "LTHREADS = "     << pthreads << "\n"
-	   << "PROFTT = "       << hpcproftt_path << "\n"
-	   << "STRUCT= "        << hpcstruct_path << "\n";
+  makefile << "MEAS_DIR =  " << measurements_dir << "\n"
+           << "GPUBIN_CFG = " << gpucfg << "\n"
+           << "CPU_ANALYZE = " << args.analyze_cpu_binaries << "\n"
+           << "GPU_ANALYZE = " << args.analyze_gpu_binaries << "\n"
+           << "PAR_SIZE = " << args.parallel_analysis_threshold << "\n"
+           << "JOBS = " << jobs << "\n"
+           << "SJOBS = " << small_jobs << "\n"
+           << "STHREADS = " << small_threads << "\n"
+           << "LJOBS = " << jobs / pthreads << "\n"
+           << "LTHREADS = " << pthreads << "\n"
+           << "PROFTT = " << hpcproftt_path << "\n"
+           << "STRUCT= " << hpcstruct_path << "\n";
 
   if (!cache_path.empty()) {
-    makefile << "CACHE= "       << cache_path << "\n";
+    makefile << "CACHE= " << cache_path << "\n";
   } else {
-    makefile << "CACHE= " << "\n";
+    makefile << "CACHE= "
+             << "\n";
   }
 
   makefile << analysis_makefile << endl;
@@ -207,15 +191,17 @@ doMeasurementsDir
   makefile.close();
 
   // Construct the make command to invoke it
-  string make_cmd = string("make -C ") + structs_dir + " -k --silent "
-      + " --no-print-directory all";
+  string make_cmd =
+      string("make -C ") + structs_dir + " -k --silent " + " --no-print-directory all";
 
   // Describe the parallelism and concurrency used
-  cout << "NOTE: Using a pool of " << jobs << " threads to analyze binaries in a measurement directory" << endl;
-  cout << "NOTE: Analyzing each large binary of >= " << args.parallel_analysis_threshold << " bytes in parallel using " << pthreads
-       << " threads" << endl;
-  cout << "NOTE: Analyzing each small binary using " << small_threads <<
-    " thread" << ((small_threads > 1) ? "s" : "") <<  "\n" << endl;
+  cout << "NOTE: Using a pool of " << jobs
+       << " threads to analyze binaries in a measurement directory" << endl;
+  cout << "NOTE: Analyzing each large binary of >= " << args.parallel_analysis_threshold
+       << " bytes in parallel using " << pthreads << " threads" << endl;
+  cout << "NOTE: Analyzing each small binary using " << small_threads << " thread"
+       << ((small_threads > 1) ? "s" : "") << "\n"
+       << endl;
 
   // Run the make command
   //
@@ -231,7 +217,7 @@ doMeasurementsDir
   exit(0);
 }
 
-// Routine to verify that given measurements directory 
+// Routine to verify that given measurements directory
 // (1) is readable
 // (2) contains measurement files
 //
@@ -240,37 +226,32 @@ doMeasurementsDir
 // It is never invoked for a single binary without the "-M" argument
 //
 
-void
-verify_measurements_directory
-(
-  string &measurements_dir
-)
-{
-  DIR *dir = opendir(measurements_dir.c_str());
-  
+void verify_measurements_directory(string& measurements_dir) {
+  DIR* dir = opendir(measurements_dir.c_str());
+
   if (dir != NULL) {
-    struct dirent *ent;
+    struct dirent* ent;
     bool has_hpcrun = false;
     while ((ent = readdir(dir)) != NULL) {
       string file_name(ent->d_name);
       if (file_name.find(".hpcrun") != string::npos) {
         has_hpcrun = true;
-	break;
+        break;
       }
     }
     closedir(dir);
     if (!has_hpcrun) {
-      DIAG_EMsg("Measurements directory " << measurements_dir <<
-                "does not contain any .hpcrun measurement files ");
+      DIAG_EMsg(
+          "Measurements directory " << measurements_dir
+                                    << "does not contain any .hpcrun measurement files ");
       exit(1);
     }
   } else {
-    DIAG_EMsg("Unable to open measurements directory " << measurements_dir 
-              << ": " << strerror(errno));
+    DIAG_EMsg(
+        "Unable to open measurements directory " << measurements_dir << ": " << strerror(errno));
     exit(1);
   }
 }
-
 
 #if 0
 // check if measurements directory contains a GPU binary 
@@ -303,34 +284,21 @@ check_gpubin
 
 // Invoked for a measurements-directory handling to ensure
 //  that it has a subdirectory for structure files
-static void
-create_structs_directory
-(
-  string &structs_dir
-)
-{
+static void create_structs_directory(string& structs_dir) {
   int result_dir = mkdir(structs_dir.c_str(), 0755);
 
   if (result_dir != 0 && errno != EEXIST) {
-    DIAG_EMsg("Unable to create results directory " << structs_dir 
-              << ": " << strerror(errno));
+    DIAG_EMsg("Unable to create results directory " << structs_dir << ": " << strerror(errno));
     exit(1);
   }
 }
 
 // Open the Makefile to create it.
-static void
-open_makefile
-(
-  string &makefile_name,
-  fstream &makefile
-)
-{
+static void open_makefile(string& makefile_name, fstream& makefile) {
   makefile.open(makefile_name, fstream::out | fstream::trunc);
 
-  if (! makefile.is_open()) {
+  if (!makefile.is_open()) {
     DIAG_EMsg("Unable to write file: " << makefile_name);
     exit(1);
   }
 }
-

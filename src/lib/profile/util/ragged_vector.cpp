@@ -47,5 +47,3 @@
 #include "ragged_vector.hpp"
 
 #include <stdexcept>
-
-using namespace hpctoolkit::util;

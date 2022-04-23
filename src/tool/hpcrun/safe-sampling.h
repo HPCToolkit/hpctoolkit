@@ -84,7 +84,7 @@
 //    ret = real_function(...);
 //    hpcrun_safe_enter();
 //
-// 5. Be sure to #include <safe-sampling.h> in any file using these
+// 5. Be sure to #include "safe-sampling.h" in any file using these
 // functions or else you'll get 'undefined reference' at runtime.
 //
 // 6. Technically, we don't need atomic test and set here.  There is
@@ -100,10 +100,9 @@
 #ifndef _HPCRUN_SAFE_SAMPLING_H_
 #define _HPCRUN_SAFE_SAMPLING_H_
 
-#include <hpcrun/main.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trampoline/common/trampoline.h>
-
+#include "hpcrun/main.h"
+#include "hpcrun/thread_data.h"
+#include "hpcrun/trampoline/common/trampoline.h"
 
 // Use hpcrun_safe_enter() at entry into our code in a synchronous
 // override.  If unsafe (false), then call the real function and
@@ -115,13 +114,11 @@
 //
 // Returns: true if safe, ie, not already inside our code.
 //
-static inline int
-hpcrun_safe_enter(void)
-{
-  thread_data_t *td;
+static inline int hpcrun_safe_enter(void) {
+  thread_data_t* td;
   int prev;
 
-  if (! hpcrun_is_initialized() || ! hpcrun_td_avail()) {
+  if (!hpcrun_is_initialized() || !hpcrun_td_avail()) {
     return 0;
   }
   td = hpcrun_get_thread_data();
@@ -130,7 +127,6 @@ hpcrun_safe_enter(void)
 
   return (prev == 0);
 }
-
 
 // Use hpcrun_safe_enter_async() at entry into our code in an async
 // interrupt.  If unsafe (false), then restart the next interrupt and
@@ -141,14 +137,11 @@ hpcrun_safe_enter(void)
 //
 // Returns: true if safe, ie, not already inside our code.
 //
-static inline int
-hpcrun_safe_enter_async(void *pc)
-{
-  thread_data_t *td;
+static inline int hpcrun_safe_enter_async(void* pc) {
+  thread_data_t* td;
   int prev;
 
-  if (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc)
-      || ! hpcrun_td_avail()) {
+  if (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc) || !hpcrun_td_avail()) {
     return 0;
   }
 
@@ -159,18 +152,14 @@ hpcrun_safe_enter_async(void *pc)
   return (prev == 0);
 }
 
-
 // Use hpcrun_safe_exit() at return from our code back to the
 // application.  But call this only if the previous safe enter
 // returned true.
 //
-static inline void
-hpcrun_safe_exit(void)
-{
-  thread_data_t *td = hpcrun_get_thread_data();
+static inline void hpcrun_safe_exit(void) {
+  thread_data_t* td = hpcrun_get_thread_data();
 
   td->inside_hpcrun = 0;
 }
-
 
 #endif  // _HPCRUN_SAFE_SAMPLING_H_

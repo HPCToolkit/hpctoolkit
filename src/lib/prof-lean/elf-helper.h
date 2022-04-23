@@ -39,15 +39,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: elf-helper.h
 //
 // Purpose:
-//   interface to query ELF binary information and hide the details about 
+//   interface to query ELF binary information and hide the details about
 //   extended number
-//   
+//
 //***************************************************************************
 
 #ifndef ELF_HELPER_H
@@ -59,35 +58,22 @@
 extern "C" {
 #endif
 
-
 typedef struct elf_helper {
-  Elf * elf;
+  Elf* elf;
   size_t section_string_index;
   Elf_Scn* symtab_section;
-  Elf_Data *symtab_data;
+  Elf_Data* symtab_data;
   Elf_Scn* symtab_shndx_section;
-  Elf_Data *symtab_shndx_data;  
+  Elf_Data* symtab_shndx_data;
 } elf_helper_t;
 
-void
-elf_helper_initialize
-(
-  Elf *elf,
-  elf_helper_t* eh
-);
+void elf_helper_initialize(Elf* elf, elf_helper_t* eh);
 
 GElf_Sym*
-elf_helper_get_symbol
-(
-  elf_helper_t* eh,
-  int index,
-  GElf_Sym* sym_ptr,
-  int* section_index_ptr
-);
+elf_helper_get_symbol(elf_helper_t* eh, int index, GElf_Sym* sym_ptr, int* section_index_ptr);
 
 #ifdef __cplusplus
 };
 #endif
-
 
 #endif

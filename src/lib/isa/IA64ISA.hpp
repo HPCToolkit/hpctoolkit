@@ -60,22 +60,12 @@
 #ifndef isa_IA64ISA_hpp
 #define isa_IA64ISA_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-#include <include/gnu_bfd.h>
-#include <include/gnu_dis-asm.h> // gnu binutils
-
 #include "ISA.hpp"
 
-//*************************** Forward Declarations ***************************
-
-//***************************************************************************
-// IA64ISA
-//***************************************************************************
+#include "include/gcc-attr.h"
+#include "include/gnu_bfd.h"
+#include "include/gnu_dis-asm.h"  // gnu binutils
+#include "include/uint.h"
 
 // 'IA64ISA': Implements the IA-64 Instruction Set Architecture.
 
@@ -89,62 +79,49 @@ public:
   // Instructions:
   // --------------------------------------------------------
 
-  virtual ushort
-  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
-  { return 16; /* Each IA64 VLIW packet is 16 bytes long. */ }
-
-  virtual ushort
-  getInsnNumOps(MachInsn *mi);
-
-  virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
-
-  virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
-
-  virtual ushort
-  getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,
-		       ushort GCC_ATTR_UNUSED opIndex,
-		       ushort GCC_ATTR_UNUSED sz = 0)
-  { return 0; }
-
-  virtual bool
-  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
-			  ushort GCC_ATTR_UNUSED opIndex1,
-			  ushort GCC_ATTR_UNUSED sz1,
-			  MachInsn* GCC_ATTR_UNUSED mi2,
-			  ushort GCC_ATTR_UNUSED opIndex2,
-			  ushort GCC_ATTR_UNUSED sz2) const
-  { return false; /* FIXME */ }
-
-  virtual VMA
-  convertVMAToOpVMA(VMA vma, ushort opIndex) const
-  {
-    // This is identical to the GNU scheme for now.  Note that the
-    // offsets do not actually match the IA64 template [5,41,41,41].
-    //BriefAssertion(opIndex <= 2 && "Programming Error");
-    return (vma + 6 * opIndex); // 0, 6, 12
+  virtual ushort getInsnSize(MachInsn* GCC_ATTR_UNUSED mi) {
+    return 16; /* Each IA64 VLIW packet is 16 bytes long. */
   }
 
-  virtual VMA
-  convertOpVMAToVMA(VMA opvma, ushort& opIndex) const
-  {
+  virtual ushort getInsnNumOps(MachInsn* mi);
+
+  virtual InsnDesc getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+
+  virtual VMA getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
+
+  virtual ushort getInsnNumDelaySlots(
+      MachInsn* GCC_ATTR_UNUSED mi, ushort GCC_ATTR_UNUSED opIndex, ushort GCC_ATTR_UNUSED sz = 0) {
+    return 0;
+  }
+
+  virtual bool isParallelWithSuccessor(
+      MachInsn* GCC_ATTR_UNUSED mi1, ushort GCC_ATTR_UNUSED opIndex1, ushort GCC_ATTR_UNUSED sz1,
+      MachInsn* GCC_ATTR_UNUSED mi2, ushort GCC_ATTR_UNUSED opIndex2,
+      ushort GCC_ATTR_UNUSED sz2) const {
+    return false; /* FIXME */
+  }
+
+  virtual VMA convertVMAToOpVMA(VMA vma, ushort opIndex) const {
+    // This is identical to the GNU scheme for now.  Note that the
+    // offsets do not actually match the IA64 template [5,41,41,41].
+    // BriefAssertion(opIndex <= 2 && "Programming Error");
+    return (vma + 6 * opIndex);  // 0, 6, 12
+  }
+
+  virtual VMA convertOpVMAToVMA(VMA opvma, ushort& opIndex) const {
     // See above comments
-    ushort offset = (opvma & 0xf); // 0, 6, 12
+    ushort offset = (opvma & 0xf);  // 0, 6, 12
     opIndex = (ushort)(offset / 6);
     return (opvma - offset);
   }
 
-  virtual void
-  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
+  virtual void decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
 private:
   // Should not be used
-  IA64ISA(const IA64ISA& GCC_ATTR_UNUSED x)
-  { }
-  
-  IA64ISA& operator=(const IA64ISA& GCC_ATTR_UNUSED x)
-  { return *this; }
+  IA64ISA(const IA64ISA& GCC_ATTR_UNUSED x) {}
+
+  IA64ISA& operator=(const IA64ISA& GCC_ATTR_UNUSED x) { return *this; }
 
 protected:
 private:
@@ -152,7 +129,5 @@ private:
   struct disassemble_info* m_di_dis;
   GNUbu_disdata m_dis_data;
 };
-
-//****************************************************************************
 
 #endif /* isa_IA64ISA_hpp */

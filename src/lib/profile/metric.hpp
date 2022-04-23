@@ -50,15 +50,14 @@
 #include "accumulators.hpp"
 #include "attributes.hpp"
 #include "expression.hpp"
-
 #include "util/locked_unordered.hpp"
-#include "util/uniqable.hpp"
 #include "util/ragged_vector.hpp"
+#include "util/uniqable.hpp"
 
 #include <atomic>
 #include <bitset>
-#include <iosfwd>
 #include <functional>
+#include <iosfwd>
 #include <optional>
 #include <variant>
 #include <vector>
@@ -152,7 +151,7 @@ private:
   friend class StatisticAccumulator;
   StatisticPartial() = default;
   StatisticPartial(Expression a, Statistic::combination_t c, std::size_t idx)
-    : m_accum(std::move(a)), m_combin(std::move(c)), m_idx(idx) {};
+      : m_accum(std::move(a)), m_combin(std::move(c)), m_idx(idx){};
 };
 
 /// Metrics represent something that is measured at execution.
@@ -164,8 +163,8 @@ public:
   /// every StatisticPartial and MetricScope.
   class Identifier final {
   public:
-    explicit Identifier(const Metric& metric) : metric(metric), value(-1) {};
-    Identifier(const Metric& metric, unsigned int v) : metric(metric), value(v) {};
+    explicit Identifier(const Metric& metric) : metric(metric), value(-1){};
+    Identifier(const Metric& metric, unsigned int v) : metric(metric), value(v){};
     ~Identifier() = default;
 
     Identifier(Identifier&&) = default;
@@ -181,7 +180,10 @@ public:
     /// that no other Metric's Identifier has a base index within the range
     ///     [value, value + metric.partials().size() * metric.scopes().count() )
     // MT: Externally Synchronized
-    Identifier& operator=(unsigned int v) noexcept { value = v; return *this; }
+    Identifier& operator=(unsigned int v) noexcept {
+      value = v;
+      return *this;
+    }
 
     /// Get the base index for this Identifier.
     // MT: Safe (const)
@@ -213,9 +215,7 @@ public:
     /// identifiers for other Metrics. May overlap with identifiers for
     /// StatisticPartials or the whole Metric.
     // MT: Safe (const)
-    unsigned int getFor(MetricScope ms) const noexcept {
-      return value + static_cast<int>(ms);
-    }
+    unsigned int getFor(MetricScope ms) const noexcept { return value + static_cast<int>(ms); }
 
   private:
     const Metric& metric;
@@ -225,9 +225,7 @@ public:
   /// Structure to be used for creating new Metrics. Encapsulates a number of
   /// smaller settings into a convienent structure.
   struct Settings {
-    Settings()
-      : scopes(MetricScopeSet::all), visibility(visibility_t::shownByDefault)
-      {};
+    Settings() : scopes(MetricScopeSet::all), visibility(visibility_t::shownByDefault){};
     Settings(std::string n, std::string d) : Settings() {
       name = std::move(n);
       description = std::move(d);
@@ -246,28 +244,22 @@ public:
     MetricScopeSet scopes;
 
     // Metrics can have multiple visibilities depending on their needs.
-    enum class visibility_t {
-      shownByDefault, hiddenByDefault, invisible
-    } visibility;
+    enum class visibility_t { shownByDefault, hiddenByDefault, invisible } visibility;
 
-    bool operator==(const Settings& o) const noexcept {
-      return name == o.name;
-    }
+    bool operator==(const Settings& o) const noexcept { return name == o.name; }
   };
 
   /// Eventually the set of requested Statistics will be more general, but for
   /// now we just use an explicit bitfield.
   struct Statistics final {
-    Statistics()
-      : sum(false), mean(false), min(false), max(false), stddev(false),
-        cfvar(false) {};
+    Statistics() : sum(false), mean(false), min(false), max(false), stddev(false), cfvar(false){};
 
-    bool sum : 1;
-    bool mean : 1;
-    bool min : 1;
-    bool max : 1;
+    bool sum    : 1;
+    bool mean   : 1;
+    bool min    : 1;
+    bool max    : 1;
     bool stddev : 1;
-    bool cfvar : 1;
+    bool cfvar  : 1;
   };
 
   const std::string& name() const noexcept { return u_settings().name; }
@@ -293,7 +285,8 @@ public:
   /// Obtain a pointer to the Thread-local Accumulator for a particular Context.
   /// Returns `nullptr` if no metric data exists for the given Context.
   // MT: Safe (const), Unstable (before notifyThreadFinal)
-  util::optional_ref<const MetricAccumulator> getFor(const PerThreadTemporary&, const Context& c) const noexcept;
+  util::optional_ref<const MetricAccumulator>
+  getFor(const PerThreadTemporary&, const Context& c) const noexcept;
 
   Metric(Metric&& m);
 
@@ -301,7 +294,7 @@ public:
   /// Useful for limiting access to a Metric for various purposes.
   class StatsAccess final {
   public:
-    StatsAccess(Metric& m) : m(m) {};
+    StatsAccess(Metric& m) : m(m){};
 
     /// Request the given standard Statistics to be added to the referenced Metric.
     // MT: Internally Synchronized
@@ -352,14 +345,11 @@ public:
   ExtraStatistic(const ExtraStatistic&) = delete;
 
   struct MetricPartialRef final {
-    MetricPartialRef(const Metric& m, std::size_t i)
-      : metric(m), partialIdx(i) {};
+    MetricPartialRef(const Metric& m, std::size_t i) : metric(m), partialIdx(i){};
     const Metric& metric;
     std::size_t partialIdx;
 
-    const StatisticPartial& partial() const noexcept {
-      return metric.partials()[partialIdx];
-    }
+    const StatisticPartial& partial() const noexcept { return metric.partials()[partialIdx]; }
 
     bool operator==(const MetricPartialRef& o) const noexcept {
       return &metric == &o.metric && partialIdx == o.partialIdx;
@@ -374,9 +364,8 @@ public:
   /// The Settings for an ExtraStatistic are much like those for standard
   /// Metrics, with a few additions.
   struct Settings : public Metric::Settings {
-    Settings() : Metric::Settings(), showPercent(true) {};
-    Settings(Metric::Settings&& s)
-      : Metric::Settings(std::move(s)), showPercent(true) {};
+    Settings() : Metric::Settings(), showPercent(true){};
+    Settings(Metric::Settings&& s) : Metric::Settings(std::move(s)), showPercent(true){};
 
     Settings(Settings&& o) = default;
     Settings(const Settings&) = default;
@@ -410,7 +399,9 @@ public:
 
   /// Get whether this Statistic should be presented by default.
   // MT: Safe (const)
-  bool visibleByDefault() const noexcept { return u_settings().visibility == Settings::visibility_t::shownByDefault; }
+  bool visibleByDefault() const noexcept {
+    return u_settings().visibility == Settings::visibility_t::shownByDefault;
+  }
 
 private:
   util::uniqable_key<Settings> u_settings;
@@ -421,20 +412,17 @@ private:
   friend class util::uniqued<ExtraStatistic>;
   util::uniqable_key<Settings>& uniqable_key() { return u_settings; }
 };
-
-}
+}  // namespace hpctoolkit
 
 namespace std {
-  using namespace hpctoolkit;
-  template<> struct hash<Metric::Settings> {
-    std::size_t operator()(const Metric::Settings&) const noexcept;
-  };
-  template<> struct hash<ExtraStatistic::Settings> {
-    std::hash<Metric::Settings> h;
-    std::size_t operator()(const ExtraStatistic::Settings& s) const noexcept {
-      return h(s);
-    }
-  };
-}
+using namespace hpctoolkit;
+template<> struct hash<Metric::Settings> {
+  std::size_t operator()(const Metric::Settings&) const noexcept;
+};
+template<> struct hash<ExtraStatistic::Settings> {
+  std::hash<Metric::Settings> h;
+  std::size_t operator()(const ExtraStatistic::Settings& s) const noexcept { return h(s); }
+};
+}  // namespace std
 
 #endif  // HPCTOOLKIT_PROFILE_METRIC_H

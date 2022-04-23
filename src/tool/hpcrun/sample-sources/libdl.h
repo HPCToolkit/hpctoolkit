@@ -50,53 +50,36 @@
 //   libdl.h
 //
 // Purpose:
-//   simple wrappers that facilitate using dlopen and dlsym to dynamically 
+//   simple wrappers that facilitate using dlopen and dlsym to dynamically
 //   bind symbols for use by hpcrun sample sources.
-//  
+//
 //***************************************************************************
 
 #ifndef _HPCTOOLKIT_LIBDL_H_
 #define _HPCTOOLKIT_LIBDL_H_
 
-//*****************************************************************************
-// system include files
-//*****************************************************************************
-
 #include <dlfcn.h>
-
-
-
-//*****************************************************************************
-// local include files
-//*****************************************************************************
-
 #include <monitor.h>
-
-
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
-
 
 #define DYNAMIC_BINDING_STATUS_UNINIT -1
 #define DYNAMIC_BINDING_STATUS_ERROR  -1
-#define DYNAMIC_BINDING_STATUS_OK      0
+#define DYNAMIC_BINDING_STATUS_OK     0
 
-#define DYN_FN_NAME(f) f ## _fn
+#define DYN_FN_NAME(f) f##_fn
 
-#define CHK_DLOPEN(h, lib, flags)					\
-  void* h = dlopen(lib, flags);						\
-  if (!h) {								\
-    return DYNAMIC_BINDING_STATUS_ERROR;				\
-  }                                                   
-  
-#define CHK_DLSYM(h, fn) {						\
-    dlerror();								\
-    DYN_FN_NAME(fn) = dlsym(h, #fn);					\
-    if (DYN_FN_NAME(fn) == 0) {						\
-      return DYNAMIC_BINDING_STATUS_ERROR;				\
-    }									\
+#define CHK_DLOPEN(h, lib, flags)        \
+  void* h = dlopen(lib, flags);          \
+  if (!h) {                              \
+    return DYNAMIC_BINDING_STATUS_ERROR; \
+  }
+
+#define CHK_DLSYM(h, fn)                   \
+  {                                        \
+    dlerror();                             \
+    DYN_FN_NAME(fn) = dlsym(h, #fn);       \
+    if (DYN_FN_NAME(fn) == 0) {            \
+      return DYNAMIC_BINDING_STATUS_ERROR; \
+    }                                      \
   }
 
 #endif

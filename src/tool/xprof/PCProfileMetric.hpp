@@ -57,43 +57,31 @@
 //
 //***************************************************************************
 
-#ifndef PCProfileMetric_H 
+#ifndef PCProfileMetric_H
 #define PCProfileMetric_H
-
-//************************* System Include Files ****************************
 
 #include <map>
 #include <set>
-
 #include <string>
 
 #ifdef NO_STD_CHEADERS
-# include <limits.h>
+#include <limits.h>
 #else
-# include <climits>
+#include <climits>
 #endif
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
 
 #include "PCProfileFilter.hpp"
 
-#include <lib/isa/ISA.hpp>
+#include "include/uint.h"
+#include "lib/isa/ISA.hpp"
 
-//*************************** Forward Declarations ***************************
-
-// 'PCProfileDatum' holds a single profile count or statistic. 
-typedef ulong PCProfileDatum; 
+// 'PCProfileDatum' holds a single profile count or statistic.
+typedef ulong PCProfileDatum;
 #define PCProfileDatum_NIL 0 /* no data is present */
 
-typedef std::set<VMA>        PCSet;
-typedef PCSet::iterator       PCSetIt;
+typedef std::set<VMA> PCSet;
+typedef PCSet::iterator PCSetIt;
 typedef PCSet::const_iterator PCSetCIt;
-
-//****************************************************************************
-// PCProfileMetric
-//****************************************************************************
 
 // 'PCProfileMetric' defines a profiling metric and all raw data
 // resulting from one profiling run in a [pc->datum] map.  Since
@@ -106,50 +94,49 @@ typedef PCSet::const_iterator PCSetCIt;
 // this, a metric contains a pointer to an appropriate ISA.  (Creaters
 // of a 'PCProfileMetric' should therefore use ISA::convertVMAToOpVMA to
 // generate the 'operation VMAs'.)  see: 'PCProfileMetric_MapIterator'
-class PCProfileMetric
-{
+class PCProfileMetric {
 private:
-  typedef std::map<VMA, PCProfileDatum>        PCToPCProfileDatumMap;
-  typedef PCToPCProfileDatumMap::value_type     PCToPCProfileDatumMapVal;
-  typedef PCToPCProfileDatumMap::iterator       PCToPCProfileDatumMapIt;
+  typedef std::map<VMA, PCProfileDatum> PCToPCProfileDatumMap;
+  typedef PCToPCProfileDatumMap::value_type PCToPCProfileDatumMapVal;
+  typedef PCToPCProfileDatumMap::iterator PCToPCProfileDatumMapIt;
   typedef PCToPCProfileDatumMap::const_iterator PCToPCProfileDatumMapCIt;
 
 public:
   // Constructor: the ISA is *reference counted*
   PCProfileMetric(ISA* isa_);
   virtual ~PCProfileMetric();
-  
+
   // Name, Description: The metric name and a description
   // TotalCount: The sum of all raw data for this metric
   // Period: The sampling period (whether event or instruction based)
   // TxtStart, TxtSz: Beginning of the text segment and the text segment size
-  const std::string& GetName()        const { return name; }
+  const std::string& GetName() const { return name; }
   const std::string& GetDescription() const { return description; }
 
-  PCProfileDatum GetTotalCount()  const { return total; }
-  ulong          GetPeriod()      const { return period; }
-  VMA            GetTxtStart()    const { return txtStart; }
-  VMA            GetTxtSz()       const { return txtSz; }
-  
-  void SetName(const char* s)          { name = s; }
-  void SetName(const std::string& s)   { name = s; }
+  PCProfileDatum GetTotalCount() const { return total; }
+  ulong GetPeriod() const { return period; }
+  VMA GetTxtStart() const { return txtStart; }
+  VMA GetTxtSz() const { return txtSz; }
 
-  void SetDescription(const char* s)        { description = s; }
+  void SetName(const char* s) { name = s; }
+  void SetName(const std::string& s) { name = s; }
+
+  void SetDescription(const char* s) { description = s; }
   void SetDescription(const std::string& s) { description = s; }
 
   void SetTotalCount(PCProfileDatum d) { total = d; }
-  void SetPeriod(ulong p)              { period = p; }
-  void SetTxtStart(VMA a)             { txtStart = a; }
-  void SetTxtSz(VMA a)                { txtSz = a; }
+  void SetPeriod(ulong p) { period = p; }
+  void SetTxtStart(VMA a) { txtStart = a; }
+  void SetTxtSz(VMA a) { txtSz = a; }
 
   // 'GetSz': The number of entries (note: this is not necessarily the
   // number of instructions or PC values in the text segment).
   unsigned int GetSz() const { return map.size(); }
-  
+
   // 'GetISA': Note: A user must call ISA::attach() if this is more
   // than a momentary reference!
   ISA* GetISA() const { return isa; }
-  
+
   // find/insert by PC value (GetTxtStart() <= PC <= GetTxtStart()+GetTxtSz())
   // 'Find': return datum for 'pc'; PCProfileDatum_NIL if not found.
   // (Note that this means one cannot distinguish between a dataset
@@ -159,13 +146,16 @@ public:
   PCProfileDatum Find(VMA pc, ushort opIndex) const {
     VMA oppc = isa->convertVMAToOpVMA(pc, opIndex);
     PCToPCProfileDatumMapCIt it = map.find(oppc);
-    if (it == map.end()) { return PCProfileDatum_NIL; } 
-    else { return ((*it).second); }
+    if (it == map.end()) {
+      return PCProfileDatum_NIL;
+    } else {
+      return ((*it).second);
+    }
   }
   void Insert(VMA pc, ushort opIndex, PCProfileDatum& d) {
     VMA oppc = isa->convertVMAToOpVMA(pc, opIndex);
     if (d != PCProfileDatum_NIL) {
-      map.insert(PCToPCProfileDatumMapVal(oppc, d)); // do not add duplicates!
+      map.insert(PCToPCProfileDatumMapVal(oppc, d));  // do not add duplicates!
     }
   }
 
@@ -175,61 +165,56 @@ public:
   PCSet* Filter(PCFilter* filter) const;
 
   void dump(std::ostream& o = std::cerr);
-  void ddump(); 
+  void ddump();
 
 private:
-  // Should not be used  
-  PCProfileMetric(const PCProfileMetric& m) { }
+  // Should not be used
+  PCProfileMetric(const PCProfileMetric& m) {}
   PCProfileMetric& operator=(const PCProfileMetric& m) { return *this; }
-  
+
   friend class PCProfileMetric_MapIterator;
-  
+
 protected:
-private:  
+private:
   std::string name;
   std::string description;
-  
-  PCProfileDatum total;    // sum across all pc values recorded for this event
-  ulong          period;   // sampling period
-  VMA           txtStart; // beginning of text segment 
-  VMA           txtSz;    // size of text segment
 
-  ISA* isa;                // we do not own; points to containing set  
-  PCToPCProfileDatumMap map; // map of sampling data
+  PCProfileDatum total;  // sum across all pc values recorded for this event
+  ulong period;          // sampling period
+  VMA txtStart;          // beginning of text segment
+  VMA txtSz;             // size of text segment
+
+  ISA* isa;                   // we do not own; points to containing set
+  PCToPCProfileDatumMap map;  // map of sampling data
 };
-
 
 // 'PCProfileMetric_MapIterator' iterates over the [pc->datum] map of a
 // 'PCProfileMetric'.  Because data values of 0 (PCProfileDatum_NIL)
 // are not explicitly stored, they will not appear in the iteration.
-class PCProfileMetric_MapIterator
-{
+class PCProfileMetric_MapIterator {
 public:
-  PCProfileMetric_MapIterator(const PCProfileMetric& x) : m(x) {
-    Reset();
-  }
-  virtual ~PCProfileMetric_MapIterator() { }
+  PCProfileMetric_MapIterator(const PCProfileMetric& x) : m(x) { Reset(); }
+  virtual ~PCProfileMetric_MapIterator() {}
 
   // Note: This is the 'operation PC' and may not actually be the true
   // PC!  cf. ISA::ConvertOpPCToPC(...).
-  VMA            CurrentSrc()    { return (*it).first; }
+  VMA CurrentSrc() { return (*it).first; }
   PCProfileDatum CurrentTarget() { return (*it).second; }
 
-  void operator++()    { it++; } // prefix
-  void operator++(int) { ++it; } // postfix
+  void operator++() { it++; }     // prefix
+  void operator++(int) { ++it; }  // postfix
 
-  bool IsValid() const { return it != m.map.end(); } 
+  bool IsValid() const { return it != m.map.end(); }
   bool IsEmpty() const { return it == m.map.end(); }
-  
+
   // Reset and prepare for iteration again
-  void Reset()  { it = m.map.begin(); }
-  
+  void Reset() { it = m.map.begin(); }
+
 private:
-  // Should not be used  
+  // Should not be used
   PCProfileMetric_MapIterator();
   PCProfileMetric_MapIterator(const PCProfileMetric_MapIterator& x);
-  PCProfileMetric_MapIterator& operator=(const PCProfileMetric_MapIterator& x) 
-    { return *this; }
+  PCProfileMetric_MapIterator& operator=(const PCProfileMetric_MapIterator& x) { return *this; }
 
 protected:
 private:
@@ -237,8 +222,4 @@ private:
   PCProfileMetric::PCToPCProfileDatumMapCIt it;
 };
 
-
-//****************************************************************************
-
-#endif 
-
+#endif

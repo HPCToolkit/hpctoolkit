@@ -57,107 +57,87 @@
 //
 //***************************************************************************
 
-#ifndef DCPIProfile_H 
+#ifndef DCPIProfile_H
 #define DCPIProfile_H
 
-//************************* System Include Files ****************************
-
-#include <vector>
-#include <map>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include "PCProfile.hpp"
-#include "DCPIProfileMetric.hpp"
 #include "DCPIProfileFilter.hpp"
+#include "DCPIProfileMetric.hpp"
+#include "PCProfile.hpp"
 
-#include <lib/isa/ISATypes.hpp>
+#include "include/uint.h"
+#include "lib/isa/ISATypes.hpp"
 
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-// DCPIProfile
-//****************************************************************************
+#include <map>
+#include <vector>
 
 // 'DCPIProfile' extensions to 'PCProfile' for representing data
 // resulting from DEC/Compaq/HP DCPI profiles (including ProfileMe).
-class DCPIProfile : public PCProfile
-{
-public: 
+class DCPIProfile : public PCProfile {
+public:
   enum PMMode {
-    PM_NONE, // No ProfileMe events
-    PM0,     // ProfileMe mode 0
-    PM1,     // ProfileMe mode 1
-    PM2,     // ProfileMe mode 2
-    PM3      // ProfileMe mode 3
+    PM_NONE,  // No ProfileMe events
+    PM0,      // ProfileMe mode 0
+    PM1,      // ProfileMe mode 1
+    PM2,      // ProfileMe mode 2
+    PM3       // ProfileMe mode 3
   };
 
 public:
   DCPIProfile(ISA* isa_, unsigned int sz = 256);
   virtual ~DCPIProfile();
- 
+
   // Access to 'DCPIProfileMetric' (includes casts)
-  const DCPIProfileMetric* DCPIGetMetric(unsigned int i) const { 
-    return dynamic_cast<const DCPIProfileMetric*>(Index(i)); 
+  const DCPIProfileMetric* DCPIGetMetric(unsigned int i) const {
+    return dynamic_cast<const DCPIProfileMetric*>(Index(i));
   }
   void SetDCPIMetric(unsigned int i, DCPIProfileMetric* m) { Assign(i, m); }
- 
+
   PMMode GetPMMode() const { return pmmode; }
   void SetPMMode(PMMode x) { pmmode = x; }
 
   void dump(std::ostream& o = std::cerr);
-  void ddump(); 
-  
+  void ddump();
+
 private:
-  // Should not be used 
+  // Should not be used
   DCPIProfile(const DCPIProfile& p);
   DCPIProfile& operator=(const DCPIProfile& p) { return *this; }
-  
+
   friend class DCPIProfileMetricSetIterator;
-  
+
 protected:
 private:
-  PMMode pmmode; 
+  PMMode pmmode;
 };
 
 // 'DCPIProfileMetricSetIterator' iterates over all 'DCPIProfileMetric'
 // within a 'DCPIProfile'.
-class DCPIProfileMetricSetIterator
-{
+class DCPIProfileMetricSetIterator {
 public:
-  DCPIProfileMetricSetIterator(const DCPIProfile& x) 
-    : p(x), it(x) { }
-  virtual ~DCPIProfileMetricSetIterator() { }
-  
-  DCPIProfileMetric* Current() { 
-    return dynamic_cast<DCPIProfileMetric*>(it.Current()); 
-  }
-  
-  void operator++()    { it++; } // prefix
-  void operator++(int) { ++it; } // postfix
-  
+  DCPIProfileMetricSetIterator(const DCPIProfile& x) : p(x), it(x) {}
+  virtual ~DCPIProfileMetricSetIterator() {}
+
+  DCPIProfileMetric* Current() { return dynamic_cast<DCPIProfileMetric*>(it.Current()); }
+
+  void operator++() { it++; }     // prefix
+  void operator++(int) { ++it; }  // postfix
+
   bool IsValid() const { return it.IsValid(); }
   bool IsEmpty() const { return it.IsEmpty(); }
-  
+
   // Reset and prepare for iteration again
-  void Reset()  { it.Reset(); }
-  
+  void Reset() { it.Reset(); }
+
 private:
-  // Should not be used  
+  // Should not be used
   DCPIProfileMetricSetIterator();
   DCPIProfileMetricSetIterator(const DCPIProfileMetricSetIterator& x);
-  DCPIProfileMetricSetIterator& operator=(const DCPIProfileMetricSetIterator& x) 
-    { return *this; }
-  
+  DCPIProfileMetricSetIterator& operator=(const DCPIProfileMetricSetIterator& x) { return *this; }
+
 protected:
 private:
   const DCPIProfile& p;
   PCProfileMetricSetIterator it;
 };
 
-//****************************************************************************
-
-#endif 
-
+#endif

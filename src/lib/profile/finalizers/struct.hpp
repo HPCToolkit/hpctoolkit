@@ -48,7 +48,6 @@
 #define HPCTOOLKIT_PROFILE_FINALIZERS_STRUCT_H
 
 #include "../finalizer.hpp"
-
 #include "../util/range_map.hpp"
 
 #include <deque>
@@ -67,9 +66,7 @@ public:
   ~StructFile();
 
   void notifyPipeline() noexcept override;
-  ExtensionClass provides() const noexcept override {
-    return ExtensionClass::classification;
-  }
+  ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
   ExtensionClass requires() const noexcept override { return {}; }
 
   std::optional<std::pair<util::optional_ref<Context>, Context&>>
@@ -86,12 +83,15 @@ private:
     // Trie of Scopes, for efficiently storing nested Scopes
     std::deque<trienode> trie;
     // Bounds-map (instruction -> nested Scope and top Function)
-    std::map<util::interval<uint64_t>, std::pair<
-        std::reference_wrapper<const trienode>,
-        std::reference_wrapper<const Function>>> leaves;
+    std::map<
+        util::interval<uint64_t>,
+        std::pair<std::reference_wrapper<const trienode>, std::reference_wrapper<const Function>>>
+        leaves;
     // Reversed call graph (callee Function -> caller instruction and top Function)
-    std::unordered_multimap<util::reference_index<const Function>,
-        std::pair<uint64_t, std::reference_wrapper<const Function>>> rcg;
+    std::unordered_multimap<
+        util::reference_index<const Function>,
+        std::pair<uint64_t, std::reference_wrapper<const Function>>>
+        rcg;
   };
   friend class hpctoolkit::finalizers::detail::StructFileParser;
 
@@ -101,10 +101,10 @@ private:
 
   // Structfiles can have data on multiple load modules (LM tags), this maps
   // each binary path with the properly initialized Parser for that tag.
-  std::unordered_map<stdshim::filesystem::path,
-                     std::unique_ptr<finalizers::detail::StructFileParser>> lms;
+  std::unordered_map<
+      stdshim::filesystem::path, std::unique_ptr<finalizers::detail::StructFileParser>>
+      lms;
 };
-
-}
+}  // namespace hpctoolkit::finalizers
 
 #endif  // HPCTOOLKIT_PROFILE_FINALIZERS_STRUCT_H

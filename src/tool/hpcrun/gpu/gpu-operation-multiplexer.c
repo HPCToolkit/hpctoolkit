@@ -41,75 +41,53 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "hpcrun/control-knob.h"
 
-#include <hpcrun/control-knob.h>
-#include <lib/prof-lean/stdatomic.h>
+#include "lib/prof-lean/stdatomic.h"
+
 #include <pthread.h>
-
 
 #define DEBUG 0
 
-#include "gpu-operation-multiplexer.h"
-#include "gpu-activity.h"
 #include "gpu-activity-channel.h"
 #include "gpu-activity-process.h"
+#include "gpu-activity.h"
 #include "gpu-monitoring-thread-api.h"
 #include "gpu-operation-channel-set.h"
-#include "gpu-trace.h"
+#include "gpu-operation-multiplexer.h"
 #include "gpu-print.h"
+#include "gpu-trace.h"
 #include "monitor.h"
 
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef void *(*pthread_start_routine_t)(void *);
-
-//******************************************************************************
-// local variables
-//******************************************************************************
+typedef void* (*pthread_start_routine_t)(void*);
 
 static _Atomic(bool) stop_operation_flag;
 static _Atomic(bool) gpu_trace_finished = ATOMIC_VAR_INIT(true);
 
 static atomic_uint operation_channels_count;
 static __thread uint32_t my_operation_channel_id = -1;
-static __thread gpu_operation_channel_t *gpu_operation_channel = NULL;
+static __thread gpu_operation_channel_t* gpu_operation_channel = NULL;
 static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
 
-
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static void
-gpu_init_operation_channel(){
+static void gpu_init_operation_channel() {
   // Create operation channel
   my_operation_channel_id = atomic_fetch_add(&operation_channels_count, 1);
   gpu_operation_channel = gpu_operation_channel_get();
   gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_channel_id);
 }
 
-
 // OpenCL Monitoring thread
-static void *
-gpu_operation_record
-(
- void
-)
-{
+static void* gpu_operation_record(void) {
   int current_operation_channels_count;
 
-  while (!atomic_load(&stop_operation_flag)){
+  while (!atomic_load(&stop_operation_flag)) {
     current_operation_channels_count = atomic_load(&operation_channels_count);
     gpu_operation_channel_set_process(current_operation_channels_count);
   }
 
   current_operation_channels_count = atomic_load(&operation_channels_count);
   gpu_operation_channel_set_process(current_operation_channels_count);
-  
+
   // even if this is not normal exit, gpu-trace-fini will behave as if it is a normal exit
   gpu_trace_fini(NULL, MONITOR_EXIT_NORMAL);
   atomic_store(&gpu_trace_finished, true);
@@ -117,13 +95,7 @@ gpu_operation_record
   return NULL;
 }
 
-
-static void
-gpu_operation_multiplexer_create
-(
- void
-)
-{
+static void gpu_operation_multiplexer_create(void) {
   pthread_t thread;
   atomic_store(&stop_operation_flag, false);
   atomic_store(&gpu_trace_finished, false);
@@ -136,67 +108,40 @@ gpu_operation_multiplexer_create
 
   monitor_disable_new_threads();
   // Create monitor thread
-  pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_operation_record,
-                 NULL);
+  pthread_create(&thread, NULL, (pthread_start_routine_t)gpu_operation_record, NULL);
   monitor_enable_new_threads();
 }
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-bool
-gpu_operation_multiplexer_my_channel_initialized
-(
- void
-)
-{
+bool gpu_operation_multiplexer_my_channel_initialized(void) {
   return (my_operation_channel_id != -1);
 }
 
-
-void
-gpu_operation_multiplexer_my_channel_init
-(
- void
-)
-{
+void gpu_operation_multiplexer_my_channel_init(void) {
   pthread_once(&is_initialized, gpu_operation_multiplexer_create);
   gpu_init_operation_channel();
 }
 
-
-void
-gpu_operation_multiplexer_fini
-(
- void
-)
-{
+void gpu_operation_multiplexer_fini(void) {
   PRINT("gpu_operation_multiplexer_fini called\n");
 
   atomic_store(&stop_operation_flag, true);
 
   gpu_operation_channel_set_notify(atomic_load(&operation_channels_count));
 
-  while (!atomic_load(&gpu_trace_finished));
+  while (!atomic_load(&gpu_trace_finished))
+    ;
 }
 
-
-void
-gpu_operation_multiplexer_push
-(
- gpu_activity_channel_t *initiator_channel,
- atomic_int *initiator_pending_operations,
- gpu_activity_t *gpu_activity
-)
-{
+void gpu_operation_multiplexer_push(
+    gpu_activity_channel_t* initiator_channel, atomic_int* initiator_pending_operations,
+    gpu_activity_t* gpu_activity) {
   if (gpu_operation_multiplexer_my_channel_initialized() == false) {
     gpu_operation_multiplexer_my_channel_init();
   }
 
-  gpu_operation_item_t item = {.channel=initiator_channel,
-    .pending_operations=initiator_pending_operations, .activity=*gpu_activity};
+  gpu_operation_item_t item = {
+      .channel = initiator_channel,
+      .pending_operations = initiator_pending_operations,
+      .activity = *gpu_activity};
   gpu_operation_channel_produce(gpu_operation_channel, &item);
 }

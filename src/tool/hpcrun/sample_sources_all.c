@@ -48,114 +48,76 @@
 // The sample sources data structure
 //
 
-//*******************************************************************
-// System includes
-//*******************************************************************
+#include "sample_sources_all.h"
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-
-//*******************************************************************
-// Local Includes
-//*******************************************************************
+#include "messages/messages.h"
+#include "sample-sources/common.h"
+#include "sample-sources/sample_source_obj.h"
+#include "sample-sources/simple_oo.h"
+#include "sample_sources_registered.h"
+#include "thread_data.h"
+#include "utilities/tokenize.h"
 
 #include <monitor.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "sample_sources_all.h"
-#include "sample_sources_registered.h"
+#define THREAD_DOINIT     0
+#define THREAD_NOSAMPLING 1
+#define THREAD_SAMPLING   2
 
-#include "thread_data.h"
-#include <sample-sources/simple_oo.h>
-#include <sample-sources/sample_source_obj.h>
-#include <sample-sources/common.h>
-#include <utilities/tokenize.h>
-#include <messages/messages.h>
+#define _AS0(n, necessary)                                              \
+  void hpcrun_all_sources_##n(void) {                                   \
+    if (necessary) {                                                    \
+      if (ignore_this_thread())                                         \
+        return;                                                         \
+    }                                                                   \
+    TMSG(SS_ALL, "calling function %s", __func__);                      \
+    for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
+      TMSG(SS_ALL, "sample source (%s) method call: %s", ss->name, #n); \
+      METHOD_CALL(ss, n);                                               \
+    }                                                                   \
+  }
 
+#define _AS1(n, t, arg)                                                 \
+  void hpcrun_all_sources_##n(t arg) {                                  \
+    for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
+      METHOD_CALL(ss, n, arg);                                          \
+    }                                                                   \
+  }
 
-
-//*******************************************************************
-// Macros
-//*******************************************************************
-
-#define THREAD_DOINIT           0
-#define THREAD_NOSAMPLING       1
-#define THREAD_SAMPLING         2
-
-//*******************************************************************
-// Function Defining Macros
-//*******************************************************************
-
-#define _AS0(n, necessary)					     \
-void                                                                 \
-hpcrun_all_sources_ ##n(void)                                        \
-{								     \
- if (necessary) { if (ignore_this_thread()) return; }                \
-  TMSG(SS_ALL, "calling function %s", __func__);                     \
-  for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
-    TMSG(SS_ALL,"sample source (%s) method call: %s",	             \
-	 ss->name, #n);            				     \
-    METHOD_CALL(ss, n);           				     \
-  }								     \
-}
-
-#define _AS1(n,t,arg) \
-void                                                                 \
-hpcrun_all_sources_ ##n(t arg)                                       \
-{								     \
-  for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
-    METHOD_CALL(ss, n, arg);			                     \
-  }								     \
-}
-
-#define _ASB(n)							     \
-bool								     \
-hpcrun_all_sources_ ##n(void)					     \
-{								     \
-  TMSG(SS_ALL, "checking %d sources",n_sources);		     \
-  for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
-    if (! METHOD_CALL(ss, n)) {			                     \
-      TMSG(SS_ALL, "%s not started",ss->name);                       \
-      return false;						     \
-    }								     \
-  }								     \
-  return true;							     \
-}
+#define _ASB(n)                                                         \
+  bool hpcrun_all_sources_##n(void) {                                   \
+    TMSG(SS_ALL, "checking %d sources", n_sources);                     \
+    for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
+      if (!METHOD_CALL(ss, n)) {                                        \
+        TMSG(SS_ALL, "%s not started", ss->name);                       \
+        return false;                                                   \
+      }                                                                 \
+    }                                                                   \
+    return true;                                                        \
+  }
 
 //
 // END Function Defining Macros
 //
 
-
-
-//*******************************************************************
-// Local variables
-//*******************************************************************
-
 static sample_source_t* sample_sources = NULL;
-static sample_source_t** ss_insert     = &sample_sources;
+static sample_source_t** ss_insert = &sample_sources;
 static size_t n_sources = 0;
 
 static __thread int ignore_thread = THREAD_DOINIT;
 
-
-
-//*******************************************************************
-// private functions 
-//*******************************************************************
-
-static int
-ignore_this_thread()
-{
+static int ignore_this_thread() {
   if (ignore_thread == THREAD_DOINIT) {
     ignore_thread = THREAD_SAMPLING;
 
-    char *string = getenv("HPCRUN_IGNORE_THREAD");
+    char* string = getenv("HPCRUN_IGNORE_THREAD");
     if (string) {
-
-      // eliminate special cases by adding comma delimiters at front and back 
+      // eliminate special cases by adding comma delimiters at front and back
       char all_str[1024];
-      sprintf(all_str, ",%s,", string); 
+      sprintf(all_str, ",%s,", string);
 
       int myid = monitor_get_thread_num();
       char myid_str[20];
@@ -163,22 +125,15 @@ ignore_this_thread()
 
       if (strstr(all_str, myid_str)) {
         ignore_thread = THREAD_NOSAMPLING;
-	TMSG(IGNORE, "Thread %d ignore sampling", myid);
+        TMSG(IGNORE, "Thread %d ignore sampling", myid);
       }
     }
   }
   return ignore_thread == THREAD_NOSAMPLING;
 }
 
-//*******************************************************************
-// Interface functions
-//*******************************************************************
-
-
-sample_source_t*
-hpcrun_fetch_source_by_name(const char* src)
-{
-  for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel){
+sample_source_t* hpcrun_fetch_source_by_name(const char* src) {
+  for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) {
     if (strcmp(ss->name, src) == 0) {
       return ss;
     }
@@ -186,10 +141,8 @@ hpcrun_fetch_source_by_name(const char* src)
   return NULL;
 }
 
-bool
-hpcrun_check_named_source(const char* src)
-{
-  for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel){
+bool hpcrun_check_named_source(const char* src) {
+  for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) {
     if (strcmp(ss->name, src) == 0) {
       return true;
     }
@@ -197,61 +150,49 @@ hpcrun_check_named_source(const char* src)
   return false;
 }
 
-static bool
-in_sources(sample_source_t* ss_in)
-{
-  for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel){
+static bool in_sources(sample_source_t* ss_in) {
+  for (sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) {
     if (ss == ss_in)
       return true;
   }
   return false;
 }
 
-
-static void
-add_source(sample_source_t* ss)
-{
+static void add_source(sample_source_t* ss) {
   TMSG(SS_ALL, "%s", ss->name);
   if (in_sources(ss)) {
     return;
   }
   *ss_insert = ss;
   ss->next_sel = NULL;
-  ss_insert    = &(ss->next_sel);
-  ss->sel_idx  = n_sources++;
+  ss_insert = &(ss->next_sel);
+  ss->sel_idx = n_sources++;
   TMSG(SS_ALL, "Sample source %s has selection index %d", ss->name, ss->sel_idx);
   TMSG(SS_ALL, "# sources now = %d", n_sources);
 }
 
-
 //
 // Return the number of -selected- sample sources
 //
-size_t
-hpcrun_get_num_sample_sources(void)
-{
+size_t hpcrun_get_num_sample_sources(void) {
   return n_sources;
 }
 
-void
-hpcrun_sample_sources_from_eventlist(char* evl)
-{
+void hpcrun_sample_sources_from_eventlist(char* evl) {
   if (evl == NULL) {
     hpcrun_ssfail_none();
   }
 
-  TMSG(EVENTS,"evl (before processing) = |%s|",evl);
+  TMSG(EVENTS, "evl (before processing) = |%s|", evl);
 
-  for(char *event = start_tok(evl); more_tok(); event = next_tok()){
-    sample_source_t *s;
+  for (char* event = start_tok(evl); more_tok(); event = next_tok()) {
+    sample_source_t* s;
     if (strcasecmp(event, "LIST") == 0) {
       hpcrun_display_avail_events();
-    }
-    else if ( (s = hpcrun_source_can_process(event)) ){
+    } else if ((s = hpcrun_source_can_process(event))) {
       add_source(s);
       METHOD_CALL(s, add_event, event);
-    }
-    else {
+    } else {
       hpcrun_ssfail_unknown(event);
     }
   }

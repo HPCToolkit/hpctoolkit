@@ -82,41 +82,26 @@
 #ifndef support_HashTableSortedIterator_hpp
 #define support_HashTableSortedIterator_hpp
 
-
-//************************** System Include Files ***************************
-
-//*************************** User Include Files ****************************
-
 #include "HashTable.hpp"
 
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-/***************** HashTableSortedIterator class definitions *****************/
-
-class HashTableSortedIterator
-{
+class HashTableSortedIterator {
 public:
-  HashTableSortedIterator(const HashTable* theHashTable,
-			  EntryCompareFunctPtr const _EntryCompare);
+  HashTableSortedIterator(const HashTable* theHashTable, EntryCompareFunctPtr const _EntryCompare);
   virtual ~HashTableSortedIterator();
-  
-  void  operator ++(int);
+
+  void operator++(int);
   bool IsValid() const;
   void* Current() const;
-  void  Reset();
-  
-private:
-  int    currentEntryNumber;
-  int    numberOfSortedEntries;
-  void** sortedEntries;
-  
-  const HashTable* hashTable;
-  
-  EntryCompareFunctPtr EntryCompare;
+  void Reset();
 
+private:
+  int currentEntryNumber;
+  int numberOfSortedEntries;
+  void** sortedEntries;
+
+  const HashTable* hashTable;
+
+  EntryCompareFunctPtr EntryCompare;
 };
 
-#endif // support_HashTableSortedIterator_hpp
-
+#endif  // support_HashTableSortedIterator_hpp

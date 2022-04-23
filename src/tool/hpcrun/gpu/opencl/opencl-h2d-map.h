@@ -44,107 +44,30 @@
 #ifndef opencl_h2d_map_h
 #define opencl_h2d_map_h
 
-
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "opencl-memory-manager.h"
 
 #include <stdint.h>
 
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include "opencl-memory-manager.h"
-
-
-
-//*****************************************************************************
-// type definitions 
-//*****************************************************************************
-
 typedef struct opencl_h2d_map_entry_t opencl_h2d_map_entry_t;
 
+typedef void (*opencl_splay_fn_t)(opencl_h2d_map_entry_t*, splay_visit_t, void*);
 
-typedef void (*opencl_splay_fn_t)
-(
-	opencl_h2d_map_entry_t *,
-	splay_visit_t,
-	void *
-);
+opencl_h2d_map_entry_t* opencl_h2d_map_lookup(uint64_t);
 
+void opencl_h2d_map_insert(uint64_t, uint64_t, size_t, opencl_object_t*);
 
+void opencl_h2d_map_delete(uint64_t);
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
+uint64_t opencl_h2d_map_entry_buffer_id_get(opencl_h2d_map_entry_t* entry);
 
-opencl_h2d_map_entry_t *
-opencl_h2d_map_lookup
-(
- uint64_t
-);
+uint64_t opencl_h2d_map_entry_correlation_get(opencl_h2d_map_entry_t*);
 
+size_t opencl_h2d_map_entry_size_get(opencl_h2d_map_entry_t*);
 
-void
-opencl_h2d_map_insert
-(
- uint64_t, 
- uint64_t, 
- size_t,
- opencl_object_t *
-);
+opencl_object_t* opencl_h2d_map_entry_callback_info_get(opencl_h2d_map_entry_t* entry);
 
+void opencl_update_ccts_for_h2d_nodes(opencl_splay_fn_t fn);
 
-void
-opencl_h2d_map_delete
-(
- uint64_t
-);
-
-
-uint64_t
-opencl_h2d_map_entry_buffer_id_get
-(
- opencl_h2d_map_entry_t *entry
-);
-
-
-uint64_t
-opencl_h2d_map_entry_correlation_get
-(
- opencl_h2d_map_entry_t *
-);
-
-
-size_t
-opencl_h2d_map_entry_size_get
-(
- opencl_h2d_map_entry_t *
-);
-
-
-opencl_object_t *
-opencl_h2d_map_entry_callback_info_get
-(
- opencl_h2d_map_entry_t *entry
-);
-
-
-void
-opencl_update_ccts_for_h2d_nodes
-(
- opencl_splay_fn_t fn	
-);
-
-
-uint64_t
-opencl_h2d_map_count
-(
- void
-);
+uint64_t opencl_h2d_map_count(void);
 
 #endif
-

@@ -44,91 +44,34 @@
 #ifndef gpu_operation_item_h
 #define gpu_operation_item_h
 
+#include "gpu-activity.h"
 
+#include "hpcrun/utilities/ip-normalized.h"
 
-//******************************************************************************
-// system includes
-//******************************************************************************
+#include "lib/prof-lean/stacks.h"
 
 #include <stdint.h>
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <lib/prof-lean/stacks.h>
-#include <hpcrun/utilities/ip-normalized.h>
-
-#include "gpu-activity.h"
-
-
-
-//******************************************************************************
-// forward declarations
-//******************************************************************************
-
 typedef struct gpu_operation_channel_t gpu_operation_channel_t;
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
 
 typedef struct gpu_operation_item_t {
   s_element_t next;
-  gpu_activity_channel_t *channel;
+  gpu_activity_channel_t* channel;
   gpu_activity_t activity;
-  atomic_int *pending_operations;
-  atomic_bool *flush;
+  atomic_int* pending_operations;
+  atomic_bool* flush;
 } gpu_operation_item_t;
 
+typedef void (*gpu_operation_channel_fn_t)(gpu_operation_channel_t* channel);
 
-typedef void (*gpu_operation_channel_fn_t)
-(
- gpu_operation_channel_t *channel
-);
+typedef void (*gpu_operation_item_fn_t)(gpu_operation_item_t* it);
 
-typedef void (*gpu_operation_item_fn_t)
-(
- gpu_operation_item_t *it
-);
+void gpu_operation_item_consume(gpu_operation_item_fn_t ap_fn, gpu_operation_item_t* it);
 
-//******************************************************************************
-// interface functions
-//******************************************************************************
+gpu_operation_item_t* gpu_operation_item_alloc(gpu_operation_channel_t* channel);
 
-void
-gpu_operation_item_consume
-(
- gpu_operation_item_fn_t ap_fn,
- gpu_operation_item_t *it
-);
+void gpu_operation_item_free(gpu_operation_channel_t* channel, gpu_operation_item_t* a);
 
-
-gpu_operation_item_t *
-gpu_operation_item_alloc
-(
- gpu_operation_channel_t *channel
-);
-
-
-void
-gpu_operation_item_free
-(
- gpu_operation_channel_t *channel,
- gpu_operation_item_t *a
-);
-
-
-void
-gpu_operation_item_dump
-(
- gpu_operation_item_t *it
-);
-
-
+void gpu_operation_item_dump(gpu_operation_item_t* it);
 
 #endif

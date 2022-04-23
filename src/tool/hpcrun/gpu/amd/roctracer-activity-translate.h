@@ -44,18 +44,10 @@
 #ifndef roctracer_activity_translate_h
 #define roctracer_activity_translate_h
 
+#include "hpcrun/gpu/gpu-activity.h"
 
-#include <hpcrun/gpu/gpu-activity.h>
 #include <roctracer_hip.h>
 
-
-void
-roctracer_activity_translate
-(
- gpu_activity_t *entry,
- roctracer_record_t *record     
-);
-
-
+void roctracer_activity_translate(gpu_activity_t* entry, roctracer_record_t* record);
 
 #endif

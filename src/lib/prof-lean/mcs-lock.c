@@ -57,25 +57,9 @@
 //   http://doi.acm.org/10.1145/103727.103729
 //******************************************************************************
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
 #include "mcs-lock.h"
 
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-mcs_lock(mcs_lock_t *l, mcs_node_t *me)
-{
+void mcs_lock(mcs_lock_t* l, mcs_node_t* me) {
   //--------------------------------------------------------------------
   // initialize my queue node
   //--------------------------------------------------------------------
@@ -88,8 +72,7 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
   // note: the rel aspect of the ordering below ensures that
   // initialization of me->next completes before anyone sees my node
   //--------------------------------------------------------------------
-  mcs_node_t *predecessor =
-    atomic_exchange_explicit(&l->tail, me, memory_order_acq_rel);
+  mcs_node_t* predecessor = atomic_exchange_explicit(&l->tail, me, memory_order_acq_rel);
 
   //--------------------------------------------------------------------
   // if I have a predecessor, wait until it signals me
@@ -113,14 +96,12 @@ mcs_lock(mcs_lock_t *l, mcs_node_t *me)
     //       critical section will not occur until after blocked is
     //       cleared
     //------------------------------------------------------------------
-    while (atomic_load_explicit(&me->blocked, memory_order_acquire));
+    while (atomic_load_explicit(&me->blocked, memory_order_acquire))
+      ;
   }
 }
 
-
-bool
-mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
-{
+bool mcs_trylock(mcs_lock_t* l, mcs_node_t* me) {
   //--------------------------------------------------------------------
   // initialize my queue node
   //--------------------------------------------------------------------
@@ -134,18 +115,13 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
   // (2) acq: any accesses after the exchange can't begin until after
   //     the exchange completes.
   //--------------------------------------------------------------------
-  mcs_node_t *oldme = mcs_nil;
-  return
-    atomic_compare_exchange_strong_explicit(&l->tail, &oldme, me,
-					    memory_order_acq_rel,
-					    memory_order_relaxed);
+  mcs_node_t* oldme = mcs_nil;
+  return atomic_compare_exchange_strong_explicit(
+      &l->tail, &oldme, me, memory_order_acq_rel, memory_order_relaxed);
 }
 
-
-void
-mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
-{
-  mcs_node_t *successor = atomic_load_explicit(&me->next, memory_order_acquire);
+void mcs_unlock(mcs_lock_t* l, mcs_node_t* me) {
+  mcs_node_t* successor = atomic_load_explicit(&me->next, memory_order_acquire);
 
   if (successor == mcs_nil) {
     //--------------------------------------------------------------------
@@ -158,11 +134,10 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     //       above the exchange must complete before the exchange if the
     //       exchange unlinks me from the tail of the queue
     //--------------------------------------------------------------------
-    mcs_node_t *oldme = me;
+    mcs_node_t* oldme = me;
 
-    if (atomic_compare_exchange_strong_explicit(&l->tail, &oldme, mcs_nil,
-						memory_order_release,
-						memory_order_relaxed)) {
+    if (atomic_compare_exchange_strong_explicit(
+            &l->tail, &oldme, mcs_nil, memory_order_release, memory_order_relaxed)) {
       //------------------------------------------------------------------
       // I removed myself from the queue; I will never have a
       // successor, so I'm done
@@ -174,7 +149,8 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     // another thread is writing me->next to define itself as our successor;
     // wait for it to finish that
     //------------------------------------------------------------------
-    while (mcs_nil == (successor = atomic_load_explicit(&me->next, memory_order_acquire)));
+    while (mcs_nil == (successor = atomic_load_explicit(&me->next, memory_order_acquire)))
+      ;
   }
 
   atomic_store_explicit(&successor->blocked, false, memory_order_release);

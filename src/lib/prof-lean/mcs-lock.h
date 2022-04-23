@@ -57,61 +57,32 @@
 //   http://doi.acm.org/10.1145/103727.103729
 //***************************************************************************
 
-
-
 #ifndef _mcs_lock_h_
 #define _mcs_lock_h_
 
-//******************************************************************************
-// global includes
-//******************************************************************************
-
 #include "stdatomic.h"
+
 #include <stdbool.h>
-
-
-//******************************************************************************
-// types
-//******************************************************************************
 
 typedef struct mcs_node_s {
   _Atomic(struct mcs_node_s*) next;
   atomic_bool blocked;
 } mcs_node_t;
 
-
 typedef struct {
-  _Atomic(mcs_node_t *) tail;
+  _Atomic(mcs_node_t*) tail;
 } mcs_lock_t;
 
+#define mcs_nil (struct mcs_node_s*)0
 
-
-//******************************************************************************
-// constants
-//******************************************************************************
-
-#define mcs_nil (struct mcs_node_s*) 0
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-static inline void
-mcs_init(mcs_lock_t *l)
-{
+static inline void mcs_init(mcs_lock_t* l) {
   atomic_init(&l->tail, mcs_nil);
 }
 
+void mcs_lock(mcs_lock_t* l, mcs_node_t* me);
 
-void
-mcs_lock(mcs_lock_t *l, mcs_node_t *me);
+bool mcs_trylock(mcs_lock_t* l, mcs_node_t* me);
 
-
-bool
-mcs_trylock(mcs_lock_t *l, mcs_node_t *me);
-
-
-void
-mcs_unlock(mcs_lock_t *l, mcs_node_t *me);
+void mcs_unlock(mcs_lock_t* l, mcs_node_t* me);
 
 #endif

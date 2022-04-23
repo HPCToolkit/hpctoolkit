@@ -60,26 +60,15 @@
 #ifndef RealPathMgr_hpp
 #define RealPathMgr_hpp
 
-//************************* System Include Files ****************************
-
-#include <string>
-#include <map>
-#include <iostream>
-
-#include <cctype>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
 #include "PathFindMgr.hpp"
 #include "PathReplacementMgr.hpp"
 
-//*************************** Forward Declarations **************************
+#include "include/uint.h"
 
-//***************************************************************************
-// RealPathMgr
-//***************************************************************************
-
+#include <cctype>
+#include <iostream>
+#include <map>
+#include <string>
 
 // --------------------------------------------------------------------------
 // 'RealPathMgr'
@@ -90,10 +79,9 @@ public:
   RealPathMgr();
   ~RealPathMgr();
 
-  RealPathMgr(PathFindMgr *, PathReplacementMgr *);
+  RealPathMgr(PathFindMgr*, PathReplacementMgr*);
 
-  static RealPathMgr&
-  singleton();
+  static RealPathMgr& singleton();
 
   // -------------------------------------------------------
   //
@@ -103,14 +91,9 @@ public:
   // and return true.  Return true if 'fnm' is as fully resolved as it
   // can be (which does not necessarily mean it exists); otherwise
   // return false.
-  bool
-  realpath(std::string& pathNm) const;
-  
-  
-  const std::string&
-  searchPaths() const
-  { return m_searchPaths; }
-  
+  bool realpath(std::string& pathNm) const;
+
+  const std::string& searchPaths() const { return m_searchPaths; }
 
   // Given 'sPaths', each individual search path is ripped from the
   // string and has RealPath() applied to it before it is added to
@@ -121,35 +104,26 @@ public:
   //                (meaning a '/*' is tacked on the end) or non-recursive
   //                properties and paths are separated by a ":"
   //
-  void
-  searchPaths(const std::string& sPaths);
-  
+  void searchPaths(const std::string& sPaths);
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  std::string
-  toString(uint flags = 0) const;
+  std::string toString(uint flags = 0) const;
 
   // flags = -1: compressed dump / 0: normal dump / 1: extra info
-  std::ostream&
-  dump(std::ostream& os, uint flags = 0, const char* pfx = "") const;
+  std::ostream& dump(std::ostream& os, uint flags = 0, const char* pfx = "") const;
 
-  void
-  ddump(uint flags = 0) const;
-
+  void ddump(uint flags = 0) const;
 
 private:
   typedef std::map<std::string, std::string> MyMap;
 
-  PathFindMgr * m_pathFindMgr;
-  PathReplacementMgr * m_pathReplaceMgr;
+  PathFindMgr* m_pathFindMgr;
+  PathReplacementMgr* m_pathReplaceMgr;
 
   std::string m_searchPaths;
   mutable MyMap m_cache;
 };
 
-
-//***************************************************************************
-
-#endif // RealPathMgr_hpp
+#endif  // RealPathMgr_hpp

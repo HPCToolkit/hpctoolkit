@@ -47,19 +47,12 @@
 #ifndef x86_unwind_analysis_h
 #define x86_unwind_analysis_h
 
-//************************** XED Include Files ******************************
-
-#include <xed-interface.h>
-
-//*************************** User Include Files ****************************
-
 #include "x86-unwind-interval.h"
 
 #include <memory/hpcrun-malloc.h>
+#include <xed-interface.h>
 
-//***************************************************************************
-
-extern void *x86_get_branch_target(void *ins,xed_decoded_inst_t *xptr);
+extern void* x86_get_branch_target(void* ins, xed_decoded_inst_t* xptr);
 
 #define FIX_INTERVALS_AT_RETURN
 

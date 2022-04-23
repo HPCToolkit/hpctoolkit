@@ -44,47 +44,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//***************************************************************************
-// system include files
-//***************************************************************************
-
-#include <stdbool.h>
-
-#include <sys/types.h>
-#include <ucontext.h>
-
-
-//***************************************************************************
-// local include files
-//***************************************************************************
-
-#include "unwind.h"
-
 #include "backtrace.h"
 #include "epoch.h"
 #include "monitor.h"
 #include "sample_event.h"
+#include "unwind.h"
 
 #include <messages/messages.h>
-
-//***************************************************************************
-// 
-//***************************************************************************
-
+#include <stdbool.h>
+#include <sys/types.h>
+#include <ucontext.h>
 
 #if (HPC_UNW_LITE)
-static int 
-hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
-{
+static int hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context) {
   // special trivial case: size == 0 (N.B.: permit size < 0)
   if (size <= 0) {
     return 0;
   }
 
   // INVARIANT: 'size' > 0; 'buffer' is non-empty; 'context' is non-NULL
-  if ( !(size > 0 && buffer && context) ) {
-    return -1; // error
+  if (!(size > 0 && buffer && context)) {
+    return -1;  // error
   }
 
   hpcrun_unw_init();
@@ -97,11 +77,12 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
   while (my_size < size) {
     int ret;
 
-    void *ip = 0;
+    void* ip = 0;
     ret = hpcrun_unw_get_ip_reg(&cursor, &ip);
-    if (ret < 0) { /* ignore error */ }
+    if (ret < 0) { /* ignore error */
+    }
 
-    buffer[my_size] = ip; // my_size < size
+    buffer[my_size] = ip;  // my_size < size
     my_size++;
 
     ret = hpcrun_unw_step(&cursor, first_step);
@@ -111,16 +92,13 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
     }
     first_step = 0;
   }
-  
+
   return my_size;
 }
 #endif
 
-
 #if (HPC_UNW_LITE)
-static int
-test_backtrace_lite(ucontext_t* context)
-{
+static int test_backtrace_lite(ucontext_t* context) {
   const int bufsz = 100;
 
   void* buffer[bufsz];
@@ -133,8 +111,3 @@ test_backtrace_lite(ucontext_t* context)
   return sz;
 }
 #endif
-
-
-//***************************************************************************
-// 
-//***************************************************************************

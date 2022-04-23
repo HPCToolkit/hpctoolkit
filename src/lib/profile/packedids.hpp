@@ -47,8 +47,8 @@
 #ifndef HPCTOOLKIT_PROFILE_PACKEDIDS_H
 #define HPCTOOLKIT_PROFILE_PACKEDIDS_H
 
-#include "sink.hpp"
 #include "finalizer.hpp"
+#include "sink.hpp"
 #include "sources/packed.hpp"
 
 namespace hpctoolkit {
@@ -61,9 +61,7 @@ public:
   DataClass accepts() const noexcept override {
     return DataClass::references + DataClass::contexts + DataClass::attributes;
   }
-  ExtensionClass requires() const noexcept override {
-    return ExtensionClass::identifier;
-  }
+  ExtensionClass requires() const noexcept override { return ExtensionClass::identifier; }
   DataClass wavefronts() const noexcept override {
     return DataClass::references + DataClass::contexts + DataClass::attributes;
   }
@@ -71,7 +69,7 @@ public:
   void notifyPipeline() noexcept override;
   void notifyContextExpansion(const Context&, Scope, const Context&) override;
   void notifyWavefront(DataClass) override;
-  void write() override {};
+  void write() override{};
 
 protected:
   virtual void notifyPacked(std::vector<uint8_t>&&) = 0;
@@ -79,7 +77,7 @@ protected:
 private:
   std::atomic<std::size_t> stripcnt;
   struct ctxonce {
-    ctxonce(const Context&, IdPacker&) {};
+    ctxonce(const Context&, IdPacker&){};
     util::locked_unordered_set<Scope> seen;
   };
   Context::ud_t::typed_member_t<ctxonce> udOnce;
@@ -116,7 +114,6 @@ private:
 
   std::unordered_map<std::string, unsigned int> metmap;
 };
-
-}
+}  // namespace hpctoolkit
 
 #endif  // HPCTOOLKIT_PROFILE_PACKEDIDS_H

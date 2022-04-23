@@ -44,76 +44,23 @@
 #ifndef gpu_trace_channel_h
 #define gpu_trace_channel_h
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "gpu-trace.h"
 #include "gpu-trace-item.h"
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
+#include "gpu-trace.h"
 
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
+thread_data_t* gpu_trace_channel_get_td(gpu_trace_channel_t* ch);
 
+int gpu_trace_channel_get_stream_id(gpu_trace_channel_t* ch);
 
-//******************************************************************************
-// interface operations 
-//******************************************************************************
+gpu_trace_channel_t* gpu_trace_channel_alloc(gpu_tag_t tag);
 
-thread_data_t *
-gpu_trace_channel_get_td
-(
- gpu_trace_channel_t *ch
-);
+void gpu_trace_channel_produce(gpu_trace_channel_t* channel, gpu_trace_item_t* ti);
 
+void gpu_trace_channel_consume(gpu_trace_channel_t* channel);
 
-int
-gpu_trace_channel_get_stream_id
-(
- gpu_trace_channel_t *ch
-);
+void gpu_trace_channel_await(gpu_trace_channel_t* channel);
 
-
-gpu_trace_channel_t *
-gpu_trace_channel_alloc
-(
- gpu_tag_t tag
-);
-
-
-void
-gpu_trace_channel_produce
-(
- gpu_trace_channel_t *channel,
- gpu_trace_item_t *ti
-);
-
-
-void
-gpu_trace_channel_consume
-(
- gpu_trace_channel_t *channel
-);
-
-
-void
-gpu_trace_channel_await
-(
- gpu_trace_channel_t *channel
-);
-
-
-void
-gpu_trace_channel_signal_consumer
-(
- gpu_trace_channel_t *trace_channel
-);
-
-
+void gpu_trace_channel_signal_consumer(gpu_trace_channel_t* trace_channel);
 
 #endif

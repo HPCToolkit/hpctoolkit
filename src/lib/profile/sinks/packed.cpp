@@ -56,8 +56,9 @@ using namespace sinks;
 // Helpers for packing various things.
 static void pack(std::vector<std::uint8_t>& out, const std::string& s) noexcept {
   out.reserve(out.size() + s.size() + 1);  // Allocate the space early
-  for(auto c: s) {
-    if(c == '\0') c = '?';
+  for (auto c : s) {
+    if (c == '\0')
+      c = '?';
     out.push_back(c);
   }
   out.push_back('\0');
@@ -71,35 +72,40 @@ static std::uint8_t* pack(std::uint8_t* out, const std::uint8_t v) noexcept {
 }
 static void pack(std::vector<std::uint8_t>& out, const std::uint16_t v) noexcept {
   // Little-endian order. Just in case the compiler can optimize it away.
-  for(int shift = 0; shift < 16; shift += 8)
+  for (int shift = 0; shift < 16; shift += 8)
     out.push_back((v >> shift) & 0xff);
 }
 static void pack(std::vector<std::uint8_t>& out, const std::uint64_t v) noexcept {
   // Little-endian order. Just in case the compiler can optimize it away.
-  for(int shift = 0; shift < 64; shift += 8)
+  for (int shift = 0; shift < 64; shift += 8)
     out.push_back((v >> shift) & 0xff);
 }
 static std::uint8_t* pack(std::uint8_t* out, const std::uint64_t v) noexcept {
   // Little-endian order. Just in case the compiler can optimize it away.
-  for(int shift = 0x00; shift < 0x40; shift += 0x08)
+  for (int shift = 0x00; shift < 0x40; shift += 0x08)
     *(out++) = (v >> shift) & 0xff;
   return out;
 }
 static void pack(std::vector<std::uint8_t>& out, const double v) noexcept {
   // Assumes doubles are compatible across systems
-  union { double d; std::uint64_t u; } x;
+  union {
+    double d;
+    std::uint64_t u;
+  } x;
   x.d = v;
   pack(out, x.u);
 }
 static std::uint8_t* pack(std::uint8_t* out, const double v) noexcept {
   // Assumes doubles are compatible across systems
-  union { double d; std::uint64_t u; } x;
+  union {
+    double d;
+    std::uint64_t u;
+  } x;
   x.d = v;
   return pack(out, x.u);
 }
 
-Packed::Packed()
-  : metrics(), moduleIDs() {};
+Packed::Packed() : metrics(), moduleIDs(){};
 
 void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   // Format: [job or magic] [name] [path] [env cnt] ([env key] [env val]...)
@@ -108,12 +114,12 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   pack(out, attr.name().value_or(""));
   pack(out, attr.path() ? attr.path()->string() : "");
   pack(out, (std::uint64_t)attr.environment().size());
-  for(const auto& kv: attr.environment()) {
+  for (const auto& kv : attr.environment()) {
     pack(out, kv.first);
     pack(out, kv.second);
   }
   pack(out, (std::uint64_t)attr.idtupleNames().size());
-  for(const auto& kv: attr.idtupleNames()) {
+  for (const auto& kv : attr.idtupleNames()) {
     pack(out, (std::uint16_t)kv.first);
     pack(out, kv.second);
   }
@@ -123,7 +129,7 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   metrics.clear();
   pack(out, src.metrics().size());
   std::unordered_map<const Metric*, size_t> metids;
-  for(const Metric& m: src.metrics().citerate()) {
+  for (const Metric& m : src.metrics().citerate()) {
     metids.emplace(&m, metrics.size());
     metrics.emplace_back(m);
     pack(out, m.name());
@@ -131,15 +137,16 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   }
 
   // TODO: Add [scopes] to the below
-  // Format: [cnt] ([estat name] [estat description] [cnt] ([isString ? 1 : 0] ([string] | [metric id])...)...)
+  // Format: [cnt] ([estat name] [estat description] [cnt] ([isString ? 1 : 0] ([string] | [metric
+  // id])...)...)
   pack(out, src.extraStatistics().size());
-  for(const ExtraStatistic& es: src.extraStatistics().citerate()) {
+  for (const ExtraStatistic& es : src.extraStatistics().citerate()) {
     pack(out, es.name());
     pack(out, es.description());
     const auto& form = es.formula();
     pack(out, form.size());
-    for(const auto& e: form) {
-      if(std::holds_alternative<std::string>(e)) {
+    for (const auto& e : form) {
+      if (std::holds_alternative<std::string>(e)) {
         pack(out, (std::uint8_t)1);
         pack(out, std::get<std::string>(e));
       } else {
@@ -150,8 +157,8 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
     }
   }
 
-  auto [min, max] = src.timepointBounds().value_or(std::make_pair(
-      std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
+  auto [min, max] = src.timepointBounds().value_or(
+      std::make_pair(std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
   pack(out, (std::uint64_t)min.count());
   pack(out, (std::uint64_t)max.count());
 }
@@ -160,44 +167,41 @@ void Packed::packReferences(std::vector<std::uint8_t>& out) noexcept {
   // Format: [cnt] ([module path]...)
   moduleIDs.clear();
   pack(out, src.modules().size());
-  for(const Module& m: src.modules().citerate()) {
+  for (const Module& m : src.modules().citerate()) {
     moduleIDs.emplace(&m, moduleIDs.size());
     pack(out, m.path().string());
   }
 }
 
 void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
-  src.contexts().citerate([&](const Context& c){
-    if(c.scope().relation() != Relation::global
-       && c.scope().relation() != Relation::call) {
-      util::log::fatal{} << "sinks::Packed does not support non-physical calling Context!";
-    }
-    pack(out, (std::uint64_t)c.scope().flat().type());
-    switch(c.scope().flat().type()) {
-    case Scope::Type::point: {
-      // Format: <type> [module id] [offset] children... [sentinel]
-      auto mo = c.scope().flat().point_data();
-      pack(out, moduleIDs.at(&mo.first));
-      pack(out, mo.second);
-      break;
-    }
-    case Scope::Type::placeholder:
-      // Format: <type> [placeholder] children... [sentinel]
-      pack(out, (uint64_t)c.scope().flat().enumerated_data());
-      break;
-    case Scope::Type::unknown:
-    case Scope::Type::global:
-      // Format: <type> children... [sentinel]
-      break;
-    case Scope::Type::function:
-    case Scope::Type::loop:
-    case Scope::Type::line:
-      assert(false && "Unhandled Scope type in Packed!");
-      std::abort();
-    }
-  }, [&](const Context& c){
-    pack(out, (std::uint64_t)0xFEF1F0F3ULL << 32);
-  });
+  src.contexts().citerate(
+      [&](const Context& c) {
+        if (c.scope().relation() != Relation::global && c.scope().relation() != Relation::call) {
+          util::log::fatal{} << "sinks::Packed does not support non-physical calling Context!";
+        }
+        pack(out, (std::uint64_t)c.scope().flat().type());
+        switch (c.scope().flat().type()) {
+        case Scope::Type::point: {
+          // Format: <type> [module id] [offset] children... [sentinel]
+          auto mo = c.scope().flat().point_data();
+          pack(out, moduleIDs.at(&mo.first));
+          pack(out, mo.second);
+          break;
+        }
+        case Scope::Type::placeholder:
+          // Format: <type> [placeholder] children... [sentinel]
+          pack(out, (uint64_t)c.scope().flat().enumerated_data());
+          break;
+        case Scope::Type::unknown:
+        case Scope::Type::global:
+          // Format: <type> children... [sentinel]
+          break;
+        case Scope::Type::function:
+        case Scope::Type::loop:
+        case Scope::Type::line: assert(false && "Unhandled Scope type in Packed!"); std::abort();
+        }
+      },
+      [&](const Context& c) { pack(out, (std::uint64_t)0xFEF1F0F3ULL << 32); });
 }
 
 void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
@@ -205,53 +209,58 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   auto start = out.size();
   std::uint64_t cnt = 0;
   pack(out, cnt);
-  src.contexts().citerate([&](const Context& c){
-    pack(out, (std::uint64_t)c.userdata[src.identifier()]);
-    for(const Metric& m: metrics) {
-      pack(out, c.data().metricUsageFor(m).toInt());
+  src.contexts().citerate(
+      [&](const Context& c) {
+        pack(out, (std::uint64_t)c.userdata[src.identifier()]);
+        for (const Metric& m : metrics) {
+          pack(out, c.data().metricUsageFor(m).toInt());
 
-      for(const auto& p: m.partials()) {
-        if(auto v = m.getFor(c)) {
-          pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
-          pack(out, (double)v->get(p).get(MetricScope::function).value_or(0));
-          pack(out, (double)v->get(p).get(MetricScope::execution).value_or(0));
-        } else {
-          pack(out, (double)0);
-          pack(out, (double)0);
-          pack(out, (double)0);
+          for (const auto& p : m.partials()) {
+            if (auto v = m.getFor(c)) {
+              pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
+              pack(out, (double)v->get(p).get(MetricScope::function).value_or(0));
+              pack(out, (double)v->get(p).get(MetricScope::execution).value_or(0));
+            } else {
+              pack(out, (double)0);
+              pack(out, (double)0);
+              pack(out, (double)0);
+            }
+          }
         }
-      }
-    }
-    cnt++;
-  }, nullptr);
+        cnt++;
+      },
+      nullptr);
   // Skip back and overwrite the beginning.
   std::vector<std::uint8_t> tmp;
   pack(tmp, cnt);
-  for(const auto b: tmp) out[start++] = b;
+  for (const auto b : tmp)
+    out[start++] = b;
 }
 
 ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)
     : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0) {}
 
 void ParallelPacked::notifyPipeline() noexcept {
-  if(doContexts || doMetrics) {
+  if (doContexts || doMetrics) {
     groupLocks = std::vector<std::mutex>(src.teamSize() * 5);
-    if(doMetrics) packMetricsGroups = decltype(packMetricsGroups)(groupLocks.size());
+    if (doMetrics)
+      packMetricsGroups = decltype(packMetricsGroups)(groupLocks.size());
   }
 }
 
 void ParallelPacked::notifyContext(const Context& ctx) {
-  if(doContexts || doMetrics) {
+  if (doContexts || doMetrics) {
     auto idx = ctxCnt.fetch_add(1, std::memory_order_relaxed) % groupLocks.size();
     std::unique_lock<std::mutex> l(groupLocks[idx]);
-    if(doMetrics) packMetricsGroups[idx].push_back(ctx);
+    if (doMetrics)
+      packMetricsGroups[idx].push_back(ctx);
   }
 }
 
 void ParallelPacked::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   Packed::packAttributes(out);
   bytesPerCtx = 8;
-  for(const Metric& m: metrics)
+  for (const Metric& m : metrics)
     bytesPerCtx += sizeof(MetricScopeSet::int_type) + m.partials().size() * 3 * 8;
 }
 
@@ -271,14 +280,13 @@ void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   std::vector<std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>> workitems;
   workitems.reserve(packMetricsGroups.size());
   std::size_t prev = 0;
-  for(auto& g: packMetricsGroups) {
+  for (auto& g : packMetricsGroups) {
     auto sz = g.size();
     workitems.emplace_back(prev, std::move(g));
     prev += sz;
   }
 
-  fePackMetrics.fill(std::move(workitems),
-                     [this](auto& group){ packMetricGroup(group); });
+  fePackMetrics.fill(std::move(workitems), [this](auto& group) { packMetricGroup(group); });
   packMetricsGroups.clear();
   fePackMetrics.contribute(fePackMetrics.wait());
   output = nullptr;
@@ -288,15 +296,16 @@ util::WorkshareResult ParallelPacked::helpPackMetrics() noexcept {
   return fePackMetrics.contribute();
 }
 
-void ParallelPacked::packMetricGroup(std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>& task) noexcept {
+void ParallelPacked::packMetricGroup(
+    std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>& task) noexcept {
   std::uint8_t* out = output + task.first * bytesPerCtx;
-  for(const Context& c: std::move(task.second)) {
+  for (const Context& c : std::move(task.second)) {
     out = pack(out, (std::uint64_t)c.userdata[src.identifier()]);
-    for(const Metric& m: metrics) {
+    for (const Metric& m : metrics) {
       out = pack(out, c.data().metricUsageFor(m).toInt());
 
-      for(const auto& p: m.partials()) {
-        if(auto v = m.getFor(c)) {
+      for (const auto& p : m.partials()) {
+        if (auto v = m.getFor(c)) {
           out = pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
           out = pack(out, (double)v->get(p).get(MetricScope::function).value_or(0));
           out = pack(out, (double)v->get(p).get(MetricScope::execution).value_or(0));

@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.hpp $
-// $Id: ProcessTimeline.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.hpp
+// $ $Id: ProcessTimeline.hpp 4307 2013-07-18 17:04:52Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -59,36 +62,33 @@
 
 #ifndef PROCESSTIMELINE_H_
 #define PROCESSTIMELINE_H_
-#include "TraceDataByRank.hpp"
 #include "ImageTraceAttributes.hpp"
-#include "TimeCPID.hpp" // for Time
-namespace TraceviewerServer
-{
+#include "TimeCPID.hpp"  // for Time
+#include "TraceDataByRank.hpp"
+namespace TraceviewerServer {
 
-	class ProcessTimeline
-	{
+class ProcessTimeline {
+public:
+  ProcessTimeline();
+  ProcessTimeline(
+      ImageTraceAttributes attrib, int _lineNum, FilteredBaseData* _dataTrace, Time _startingTime,
+      int _headerSize);
+  virtual ~ProcessTimeline();
+  int line();
+  void readInData();
+  TraceDataByRank* data;
 
-	public:
-		ProcessTimeline();
-		ProcessTimeline(ImageTraceAttributes attrib, int _lineNum, FilteredBaseData* _dataTrace,
-				Time _startingTime, int _headerSize);
-		virtual ~ProcessTimeline();
-		int line();
-		void readInData();
-		TraceDataByRank* data;
-	private:
-		int lineNumToProcessNum(int line);
-		/** This ProcessTimeline's line number. */
-		int lineNum;
-		/** The initial time in view. */
-		Time startingTime;
-		/** The range of time in view. */
-		Time timeRange;
-		/** The amount of time that each pixel on the screen correlates to. */
-		double pixelLength;
-		ImageTraceAttributes attributes;
-
-	};
-
+private:
+  int lineNumToProcessNum(int line);
+  /** This ProcessTimeline's line number. */
+  int lineNum;
+  /** The initial time in view. */
+  Time startingTime;
+  /** The range of time in view. */
+  Time timeRange;
+  /** The amount of time that each pixel on the screen correlates to. */
+  double pixelLength;
+  ImageTraceAttributes attributes;
+};
 } /* namespace TraceviewerServer */
 #endif /* PROCESSTIMELINE_H_ */

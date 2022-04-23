@@ -44,101 +44,33 @@
 #ifndef rocprofiler_api_h
 #define rocprofiler_api_h
 
-//******************************************************************************
-// global includes
-//******************************************************************************
-
 #include <stdint.h>
 
-
-
-//******************************************************************************
-// macro definitions
-//******************************************************************************
-
-#define ROCTRACER_CHANNEL_IDX 0
+#define ROCTRACER_CHANNEL_IDX   0
 #define ROCPROFILER_CHANNEL_IDX 1
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void rocprofiler_start_kernel(uint64_t correlation_id);
 
-void
-rocprofiler_start_kernel
-(
- uint64_t correlation_id
-);
+void rocprofiler_stop_kernel(void);
 
+void rocprofiler_init(void);
 
-void
-rocprofiler_stop_kernel
-(
- void
-);
+void rocprofiler_fini(void* args, int how);
 
+int rocprofiler_bind(void);
 
-void
-rocprofiler_init
-(
- void
-);
+void rocprofiler_wait_context_callback(void);
 
+int rocprofiler_total_counters(void);
 
-void
-rocprofiler_fini
-(
- void *args,
- int how
-);
+const char* rocprofiler_counter_name(int idx);
 
+const char* rocprofiler_counter_description(int idx);
 
-int
-rocprofiler_bind
-(
-  void
-);
+int rocprofiler_match_event(const char* ev_str);
 
-void
-rocprofiler_wait_context_callback
-(
-  void
-);
+void rocprofiler_finalize_event_list(void);
 
-int
-rocprofiler_total_counters
-(
-  void
-);
-
-const char*
-rocprofiler_counter_name
-(
-  int idx
-);
-
-const char*
-rocprofiler_counter_description
-(
-  int idx
-);
-
-int
-rocprofiler_match_event
-(
-  const char *ev_str
-);
-
-void
-rocprofiler_finalize_event_list
-(
-  void
-);
-
-void
-rocprofiler_uri_setup
-(
-  void
-);
-
+void rocprofiler_uri_setup(void);
 
 #endif

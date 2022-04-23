@@ -57,28 +57,16 @@
 //
 //***************************************************************************
 
-#ifndef prof_Prof_Metric_IDBExpr_hpp 
+#ifndef prof_Prof_Metric_IDBExpr_hpp
 #define prof_Prof_Metric_IDBExpr_hpp
 
-//************************* System Include Files ****************************
+#include "include/gcc-attr.h"
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/StrUtil.hpp"
 
 #include <iostream>
-
 #include <string>
- 
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/StrUtil.hpp>
-
-
-//*************************** Forward Declarations **************************
-
-
-//***************************************************************************
 
 namespace Prof {
 
@@ -98,16 +86,11 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
-  IDBExpr()
-  { }
+  IDBExpr() {}
 
-  virtual ~IDBExpr()
-  { }
+  virtual ~IDBExpr() {}
 
-  IDBExpr&
-  operator=(const IDBExpr& GCC_ATTR_UNUSED x)
-  { return *this; }
-
+  IDBExpr& operator=(const IDBExpr& GCC_ATTR_UNUSED x) { return *this; }
 
   // --------------------------------------------------------
   // Formulas to compute Flat and Callers view
@@ -116,92 +99,64 @@ public:
   // initialize: [Flat|Callers]-accum is initialized from CCT-accum
 
   // combineString1: [Flat|Callers]-accum x cct-accum -> [Flat|Callers]-accum
-  virtual std::string
-  combineString1() const = 0;
+  virtual std::string combineString1() const = 0;
 
   // combineString2: [Flat|Callers]-accum x cct-accum -> [Flat|Callers]-accum
-  virtual std::string
-  combineString2() const = 0;
+  virtual std::string combineString2() const = 0;
 
   // finalizeString: accumulator-list -> output
-  virtual std::string
-  finalizeString() const = 0;
-
+  virtual std::string finalizeString() const = 0;
 
   // --------------------------------------------------------
   // Commonly used standard deviation formulas
   // --------------------------------------------------------
 
-  std::string
-  combineString1Min() const
-  {
+  std::string combineString1Min() const {
     std::string a = accumStr(0);
     std::string z = "min(" + a + ", " + a + ")";
     return z;
   }
 
-  std::string
-  finalizeStringMin() const
-  { return accumStr(0); }
+  std::string finalizeStringMin() const { return accumStr(0); }
 
-
-  std::string
-  combineString1Max() const
-  {
+  std::string combineString1Max() const {
     std::string a = accumStr(0);
     std::string z = "max(" + a + ", " + a + ")";
     return z;
   }
 
-  std::string
-  finalizeStringMax() const
-  { return accumStr(0); }
+  std::string finalizeStringMax() const { return accumStr(0); }
 
-
-  std::string
-  combineString1StdDev() const
-  {
+  std::string combineString1StdDev() const {
     std::string a1 = accumStr(0);
-    std::string z1 = "sum(" + a1 + ", " + a1 + ")"; // running sum
+    std::string z1 = "sum(" + a1 + ", " + a1 + ")";  // running sum
     return z1;
   }
 
-  std::string
-  combineString2StdDev() const
-  {
+  std::string combineString2StdDev() const {
     std::string a2 = accumStr(1);
-    std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
+    std::string z2 = "sum(" + a2 + ", " + a2 + ")";  // running sum of squares
     return z2;
   }
 
-
-  std::string
-  combineString1Sum() const
-  {
+  std::string combineString1Sum() const {
     std::string a = accumStr(0);
     std::string z = "sum(" + a + ", " + a + ")";
     return z;
   }
 
-  std::string
-  finalizeStringSum() const
-  { return accumStr(0); }
+  std::string finalizeStringSum() const { return accumStr(0); }
 
-
-  std::string
-  combineString1Mean() const
-  {
+  std::string combineString1Mean() const {
     std::string a = accumStr(0);
     std::string z = "sum(" + a + ", " + a + ")";
     return z;
   }
 
-  std::string
-  finalizeStringMean() const
-  {
+  std::string finalizeStringMean() const {
     // Laks hack: for callers view and flat view, it would be
     // more accurate if we divide the sum with the aggregate
-    // since the num of callers view and flat view will be 
+    // since the num of callers view and flat view will be
     // accumulated
     std::string n = numSrcStr();
     std::string a = accumStr(0);
@@ -209,17 +164,14 @@ public:
     return z;
   }
 
-
-  std::string
-  finalizeStringStdDev(std::string* meanRet = NULL) const
-  {
+  std::string finalizeStringStdDev(std::string* meanRet = NULL) const {
     std::string n = numSrcStr();
     std::string a1 = accumStr(0);  // running sum
-    std::string a2 = accumStr(1); // running sum of squares
+    std::string a2 = accumStr(1);  // running sum of squares
 
     std::string mean = a1 + " / " + n;
-    std::string z1 = "pow(" + mean + ", 2)"; // (mean)^2
-    std::string z2 = "(" + a2 + " / " + n  + ")";      // (sum of squares)/n
+    std::string z1 = "pow(" + mean + ", 2)";      // (mean)^2
+    std::string z2 = "(" + a2 + " / " + n + ")";  // (sum of squares)/n
     std::string sdev = "sqrt(" + z2 + " - " + z1 + ")";
 
     if (meanRet) {
@@ -228,114 +180,75 @@ public:
     return sdev;
   }
 
-
-  std::string
-  finalizeStringCoefVar() const
-  {
+  std::string finalizeStringCoefVar() const {
     std::string mean;
     std::string sdev = finalizeStringStdDev(&mean);
     std::string z = sdev + " / (" + mean + ")";
     return z;
   }
 
-
-  std::string
-  finalizeStringRStdDev() const
-  {
+  std::string finalizeStringRStdDev() const {
     std::string mean;
     std::string sdev = finalizeStringStdDev(&mean);
     std::string z = sdev + "* 100 / (" + mean + ")";
     return z;
   }
 
-
-  std::string
-  combineString1NumSource() const
-  {
+  std::string combineString1NumSource() const {
     std::string a = accumStr(0);
     // laks: avoid accumulation of NumSrc for callers view and flat view
     // std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
-    return a; // originally: z;
+    return a;  // originally: z;
   }
 
-  std::string
-  finalizeStringNumSource() const
-  { return accumStr(0); }
-
+  std::string finalizeStringNumSource() const { return accumStr(0); }
 
   // --------------------------------------------------------
   // Primitives for building formulas
   // --------------------------------------------------------
 
-  virtual uint
-  accumId(int) const = 0;
+  virtual uint accumId(int) const = 0;
 
-  std::string
-  accumStr(int i) const
-  { return "$"+ StrUtil::toStr(accumId(i)); }
-
+  std::string accumStr(int i) const { return "$" + StrUtil::toStr(accumId(i)); }
 
   // --------------------------------------------------------
   // Primitives for building formulas
   // --------------------------------------------------------
 
-  virtual uint
-  numAccum() const = 0;
-
+  virtual uint numAccum() const = 0;
 
   // --------------------------------------------------------
   // Primitives for building formulas
   // --------------------------------------------------------
 
-  virtual bool
-  hasNumSrcVar() const = 0;
+  virtual bool hasNumSrcVar() const = 0;
 
-  std::string
-  numSrcStr() const
-  { return (hasNumSrcVar()) ? numSrcVarStr() : numSrcFxdStr(); }
+  std::string numSrcStr() const { return (hasNumSrcVar()) ? numSrcVarStr() : numSrcFxdStr(); }
 
+  virtual uint numSrcFxd() const = 0;
 
-  virtual uint
-  numSrcFxd() const = 0;
+  std::string numSrcFxdStr() const { return StrUtil::toStr(numSrcFxd()); }
 
-  std::string
-  numSrcFxdStr() const
-  { return StrUtil::toStr(numSrcFxd()); }
+  virtual uint numSrcVarId() const = 0;
 
-
-  virtual uint
-  numSrcVarId() const = 0;
-
-  std::string
-  numSrcVarStr() const
-  { return "$" + StrUtil::toStr(numSrcVarId()); }
-
+  std::string numSrcVarStr() const { return "$" + StrUtil::toStr(numSrcVarId()); }
 
   // --------------------------------------------------------
-  // 
+  //
   // --------------------------------------------------------
 
-  virtual std::string
-  toString() const;
+  virtual std::string toString() const;
 
+  virtual std::ostream& dump(std::ostream& os = std::cout) const { return os; }
 
-  virtual std::ostream&
-  dump(std::ostream& os = std::cout) const
-  { return os; }
+  void ddump() const;
 
-  void
-  ddump() const;
-  
 protected:
-  enum {maxAccums = 2};
+  enum { maxAccums = 2 };
+
 private:
 };
-
-//***************************************************************************
-
-} // namespace Metric
-
-} // namespace Prof
-
+}  // namespace Metric
+}  // namespace Prof
 
 #endif /* prof_Prof_Metric_IDBExpr_hpp */

@@ -57,37 +57,19 @@
 //
 //***************************************************************************
 
-#ifndef binutils_BinUtils_hpp 
+#ifndef binutils_BinUtils_hpp
 #define binutils_BinUtils_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/support/ProcNameMgr.hpp"
 
 #include <string>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/support/ProcNameMgr.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
-
 namespace BinUtil {
 
+std::string canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr = NULL);
 
-std::string
-canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr = NULL);
+std::string demangleProcName(const std::string& name);
+}  // namespace BinUtil
 
-
-std::string
-demangleProcName(const std::string& name);
-
-
-} // namespace BinUtil
-
-
-//****************************************************************************
-
-#endif // binutils_BinUtils_hpp
+#endif  // binutils_BinUtils_hpp

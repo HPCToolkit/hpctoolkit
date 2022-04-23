@@ -47,19 +47,12 @@
 #ifndef UNWINR_INFO_H
 #define UNWINR_INFO_H
 
-//************************* System Include Files ****************************
-
-#include <inttypes.h>
-
-//*************************** User Include Files ****************************
-
 #include "binarytree_uwi.h"
-#include <hpcrun/loadmap.h>
 #include "interval_t.h"
 
-//******************************************************************************
-// type
-//******************************************************************************
+#include "hpcrun/loadmap.h"
+
+#include <inttypes.h>
 
 /**
  * So far, we have used NEVER to indicate regions of the address space
@@ -89,19 +82,16 @@
  *    All other threads that need them will wait until the FORTHCOMING
  *    intervals are computed, added to the skiplist node and published by
  *    marking the node READY.
-*/
+ */
 
 // Tree status
-typedef enum {
-  NEVER, DEFERRED, FORTHCOMING, READY
-} tree_stat_t;
+typedef enum { NEVER, DEFERRED, FORTHCOMING, READY } tree_stat_t;
 
 typedef struct unwindr_info_s {
   interval_t interval;
-  load_module_t *lm;
+  load_module_t* lm;
   tree_stat_t treestat;
-  bitree_uwi_t *btuwi;
+  bitree_uwi_t* btuwi;
 } unwindr_info_t;
-
 
 #endif

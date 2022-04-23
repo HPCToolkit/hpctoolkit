@@ -44,31 +44,13 @@
 #ifndef opencl_activity_translate_h
 #define opencl_activity_translate_h
 
+#include "hpcrun/gpu/gpu-activity.h"
 
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <hpcrun/gpu/gpu-activity.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-
-
-
-//*************************** Forward Declarations **************************
+#include "lib/prof-lean/hpcrun-opencl.h"
 
 typedef struct opencl_object_t opencl_object_t;
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-opencl_activity_translate
-(
-  gpu_activity_t *ga,
-  opencl_object_t *cb_data,
-  gpu_interval_t interval
-);
+void opencl_activity_translate(
+    gpu_activity_t* ga, opencl_object_t* cb_data, gpu_interval_t interval);
 
 #endif  //_OPENCL_ACTIVITY_TRANSLATE_H_

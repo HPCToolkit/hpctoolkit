@@ -47,9 +47,8 @@
 #ifndef HPCTOOLKIT_PROFILE_UTIL_LZMASTREAM_H
 #define HPCTOOLKIT_PROFILE_UTIL_LZMASTREAM_H
 
-#include <lzma.h>
-
 #include <istream>
+#include <lzma.h>
 #include <streambuf>
 #include <type_traits>
 
@@ -76,18 +75,17 @@ namespace detail {
 class lzmastream_base {
 protected:
   lzmastreambuf zbuf;
-  lzmastream_base(std::streambuf* buf) : zbuf(buf) {};
+  lzmastream_base(std::streambuf* buf) : zbuf(buf){};
 };
-}
+}  // namespace detail
 
 /// Simple std::istream that passes bits through lzmastreambuf
 class ilzmastream : virtual detail::lzmastream_base, public std::istream {
 public:
   explicit ilzmastream(std::streambuf* buf)
-    : detail::lzmastream_base(buf), std::ios(&zbuf), std::istream(&zbuf) {};
+      : detail::lzmastream_base(buf), std::ios(&zbuf), std::istream(&zbuf){};
   ~ilzmastream() = default;
 };
-
-}
+}  // namespace hpctoolkit::util
 
 #endif  // HPCTOOLKIT_PROFILE_UTIL_LZMASTREAM_H

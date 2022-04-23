@@ -62,11 +62,9 @@ extern void progBarTest();
 extern void compressionTest();
 extern void lruTest();
 
-int main(int argc, char** argv)
-{
-	lruTest();
-	compressionTest();
-	progBarTest();
-	filterTest();
+int main(int argc, char** argv) {
+  lruTest();
+  compressionTest();
+  progBarTest();
+  filterTest();
 }
-

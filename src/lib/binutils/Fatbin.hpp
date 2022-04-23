@@ -42,7 +42,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: Fatbin.hpp
@@ -56,35 +55,12 @@
 #ifndef __Fatbin_hpp__
 #define __Fatbin_hpp__
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
 #include "ElfHelper.hpp"
 
+bool findCubins(ElfFile* elfFile, ElfFileVector* elfFileVector);
 
+bool isCubin(Elf* elf);
 
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-bool
-findCubins
-(
- ElfFile *elfFile,
- ElfFileVector *elfFileVector
-);
-
-
-bool
-isCubin(Elf *elf);
-
-
-void
-writeElfFile
-(
- ElfFile *elfFile,
- const char *suffix
-);
+void writeElfFile(ElfFile* elfFile, const char* suffix);
 
 #endif

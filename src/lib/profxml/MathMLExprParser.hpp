@@ -54,25 +54,14 @@
 #ifndef profxml_MathMLExprParser_hpp
 #define profxml_MathMLExprParser_hpp
 
-//************************ System Include Files ******************************
+#include "lib/prof/Metric-AExpr.hpp"
+#include "lib/prof/Metric-Mgr.hpp"
 
 #include <iostream>
 #include <string>
-
-//************************ Xerces Include Files ******************************
-
 #include <xercesc/dom/DOMNode.hpp>
+
 using XERCES_CPP_NAMESPACE::DOMNode;
-
-//************************* User Include Files *******************************
-
-#include <lib/prof/Metric-AExpr.hpp>
-#include <lib/prof/Metric-Mgr.hpp>
-
-//************************ Forward Declarations ******************************
-
-//****************************************************************************
-
 
 // ----------------------------------------------------------------------
 //
@@ -106,10 +95,8 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 //
 // ----------------------------------------------------------------------
 
-class MathMLExprParser
-{
+class MathMLExprParser {
 public:
-
   MathMLExprParser();
   ~MathMLExprParser();
 
@@ -122,10 +109,8 @@ public:
   //   MathMLExprParserException could be thrown due to invalid or unsupported
   //   MathML expressions.
   // ------------------------------------------------------------
-  static Prof::Metric::AExpr* 
-  parse(DOMNode* mathMLExpr, 
-	const Prof::Metric::Mgr& mMgr);
-  
+  static Prof::Metric::AExpr* parse(DOMNode* mathMLExpr, const Prof::Metric::Mgr& mMgr);
+
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -135,13 +120,9 @@ public:
 #endif
 
 private:
-  static Prof::Metric::AExpr* 
-  buildEvalTree(DOMNode *node,
-		const Prof::Metric::Mgr& mMgr,
-		bool isNum);
+  static Prof::Metric::AExpr*
+  buildEvalTree(DOMNode* node, const Prof::Metric::Mgr& mMgr, bool isNum);
 };
-
-
 
 // ----------------------------------------------------------------------
 // class MathMLException
@@ -153,18 +134,12 @@ private:
 
 class MathMLExprException : public Diagnostics::Exception {
 public:
-  MathMLExprException(const std::string x,
-		      const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-    { }
+  MathMLExprException(const std::string x, const char* filenm = NULL, unsigned int lineno = 0)
+      : Diagnostics::Exception(x, filenm, lineno) {}
 
-  virtual std::string message() const { 
-    return "Math ML Exception: " + what();
-  }
-  
+  virtual std::string message() const { return "Math ML Exception: " + what(); }
+
 private:
 };
-
-
 
 #endif /* profxml_MathMLExprParser_hpp */

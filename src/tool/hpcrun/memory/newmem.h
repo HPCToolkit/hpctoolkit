@@ -55,15 +55,15 @@
 #define _HPCRUN_NEWMEM_H_
 
 struct hpcrun_meminfo {
-  void *mi_start;
-  void *mi_low;
-  void *mi_high;
-  long  mi_size;
+  void* mi_start;
+  void* mi_low;
+  void* mi_high;
+  long mi_size;
 };
 
 typedef struct hpcrun_meminfo hpcrun_meminfo_t;
 
-void hpcrun_make_memstore(hpcrun_meminfo_t *mi);
+void hpcrun_make_memstore(hpcrun_meminfo_t* mi);
 int get_mem_low(void);
 
 #endif

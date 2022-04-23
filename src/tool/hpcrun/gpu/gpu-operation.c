@@ -41,80 +41,31 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
 #include <assert.h>
-
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
 
 #define UNIT_TEST 0
 
 #define DEBUG 0
 
-#include "gpu-print.h"
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
 #include "gpu-activity.h"
 #include "gpu-channel-item-allocator.h"
-#include "gpu-operation.h"
 #include "gpu-operation-channel.h"
+#include "gpu-operation.h"
+#include "gpu-print.h"
 
-
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-void
-gpu_operation_dump
-(
- gpu_operation_item_t *it
-)
-{
+void gpu_operation_dump(gpu_operation_item_t* it) {
   PRINT("gpu operation item: activity_channel %p, activity = %p\n", it->channel, it->activity);
 }
 
-
-void
-gpu_operation_item_consume
-(
- gpu_operation_item_fn_t ap_fn,
- gpu_operation_item_t *it,
-)
-{
+void gpu_operation_item_consume(gpu_operation_item_fn_t ap_fn, gpu_operation_item_t* it, ) {
   gpu_context_activity_dump(&it->activity, "CONSUME");
   ap_fn(it);
 }
 
-
-gpu_operation_item_t *
-gpu_operation_alloc
-(
- gpu_operation_channel_t *channel
-)
-{
+gpu_operation_item_t* gpu_operation_alloc(gpu_operation_channel_t* channel) {
   return channel_item_alloc(channel, gpu_operation_item_t);
 }
 
-
-void
-gpu_operation_free
-(
- gpu_operation_channel_t *channel,
- gpu_operation_item_t *it
-)
-{
+void gpu_operation_free(gpu_operation_channel_t* channel, gpu_operation_item_t* it) {
   channel_item_free(channel, it);
 }

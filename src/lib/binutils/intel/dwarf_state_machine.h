@@ -1,3 +1,49 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2022, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 //==============================================================
 // Copyright © 2019 Intel Corporation
 //
@@ -7,10 +53,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,7 +65,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 // =============================================================
-
 
 #ifndef PTI_SAMPLES_UTILS_DWARF_STATE_MACHINE_H_
 #define PTI_SAMPLES_UTILS_DWARF_STATE_MACHINE_H_
@@ -30,7 +75,8 @@
 #include <assert.h>
 
 using DwarfLineInfo =
-  std::vector< std::pair<uint64_t, std::pair<uint32_t, uint32_t> > >;
+
+    std::vector<std::pair<uint64_t, std::pair<uint32_t, uint32_t>>>;
 
 struct DwarfState {
   uint64_t address;
@@ -40,9 +86,8 @@ struct DwarfState {
 };
 
 class DwarfStateMachine {
- public:
-  DwarfStateMachine(const uint8_t* data, uint32_t size,
-                    const Dwarf32Header* header)
+public:
+  DwarfStateMachine(const uint8_t* data, uint32_t size, const Dwarf32Header* header)
       : data_(data), size_(size), header_(header) {
     assert(data_ != nullptr);
     assert(size_ > 0);
@@ -66,7 +111,7 @@ class DwarfStateMachine {
     return line_info_;
   }
 
- private:
+private:
   const uint8_t* RunSpecial(const uint8_t* ptr) {
     assert(*ptr >= header_->opcode_base);
 
@@ -91,68 +136,67 @@ class DwarfStateMachine {
     assert(ptr < data_ + size_);
 
     switch (opcode) {
-      case DW_LNS_COPY: {
-        UpdateLineInfo();
-        break;
-      }
-      case DW_LNS_ADVANCE_PC: {
-        uint32_t operation_advance = 0;
-        bool done = false;
-        ptr = utils::leb128::Decode32(ptr, operation_advance, done);
-        assert(done);
-        assert(ptr < data_ + size_);
-        UpdateAddress(operation_advance);
-        UpdateOperation(operation_advance);
-        break;
-      }
-      case DW_LNS_ADVANCE_LINE: {
-        int32_t line = 0;
-        bool done = false;
-        ptr = utils::leb128::Decode32(ptr, line, done);
-        assert(done);
-        assert(ptr < data_ + size_);
-        state_.line += line;
-        break;
-      }
-      case DW_LNS_SET_FILE: {
-        uint32_t file = 0;
-        bool done = false;
-        ptr = utils::leb128::Decode32(ptr, file, done);
-        assert(done);
-        assert(ptr < data_ + size_);
-        state_.file = file;
-        break;
-      }
-      case DW_LNS_SET_COLUMN: {
-        uint32_t column = 0;
-        bool done = false;
-        ptr = utils::leb128::Decode32(ptr, column, done);
-        assert(done);
-        assert(ptr < data_ + size_);
-        break;
-      }
-      case DW_LNS_NEGATE_STMT:
-      case DW_LNS_SET_BASIC_BLOCK:
-          break;
-      case DW_LNS_CONST_ADD_PC: {
-        uint8_t adjusted_opcode = 255 - header_->opcode_base;
-        uint8_t operation_advance = adjusted_opcode / header_->line_range;
-        UpdateAddress(operation_advance);
-        UpdateOperation(operation_advance);
-        break;
-      }
-      case DW_LNS_FIXED_ADVANCE_PC: {
-        uint16_t advance = *((uint16_t*)ptr);
-        ptr += sizeof(uint16_t);
-        assert(ptr < data_ + size_);
-        state_.address += advance;
-        state_.operation = 0;
-        break;
-      }
-      default: {
-        assert(0); // Not supported
-        break;
-      }
+    case DW_LNS_COPY: {
+      UpdateLineInfo();
+      break;
+    }
+    case DW_LNS_ADVANCE_PC: {
+      uint32_t operation_advance = 0;
+      bool done = false;
+      ptr = utils::leb128::Decode32(ptr, operation_advance, done);
+      assert(done);
+      assert(ptr < data_ + size_);
+      UpdateAddress(operation_advance);
+      UpdateOperation(operation_advance);
+      break;
+    }
+    case DW_LNS_ADVANCE_LINE: {
+      int32_t line = 0;
+      bool done = false;
+      ptr = utils::leb128::Decode32(ptr, line, done);
+      assert(done);
+      assert(ptr < data_ + size_);
+      state_.line += line;
+      break;
+    }
+    case DW_LNS_SET_FILE: {
+      uint32_t file = 0;
+      bool done = false;
+      ptr = utils::leb128::Decode32(ptr, file, done);
+      assert(done);
+      assert(ptr < data_ + size_);
+      state_.file = file;
+      break;
+    }
+    case DW_LNS_SET_COLUMN: {
+      uint32_t column = 0;
+      bool done = false;
+      ptr = utils::leb128::Decode32(ptr, column, done);
+      assert(done);
+      assert(ptr < data_ + size_);
+      break;
+    }
+    case DW_LNS_NEGATE_STMT:
+    case DW_LNS_SET_BASIC_BLOCK: break;
+    case DW_LNS_CONST_ADD_PC: {
+      uint8_t adjusted_opcode = 255 - header_->opcode_base;
+      uint8_t operation_advance = adjusted_opcode / header_->line_range;
+      UpdateAddress(operation_advance);
+      UpdateOperation(operation_advance);
+      break;
+    }
+    case DW_LNS_FIXED_ADVANCE_PC: {
+      uint16_t advance = *((uint16_t*)ptr);
+      ptr += sizeof(uint16_t);
+      assert(ptr < data_ + size_);
+      state_.address += advance;
+      state_.operation = 0;
+      break;
+    }
+    default: {
+      assert(0);  // Not supported
+      break;
+    }
     }
 
     return ptr;
@@ -173,57 +217,54 @@ class DwarfStateMachine {
     assert(ptr <= data_ + size_);
 
     switch (opcode) {
-      case DW_LNS_END_SEQUENCE: {
-        assert(ptr == data_ + size_);
-        UpdateLineInfo();
-        break;
-      }
-      case DW_LNE_SET_ADDRESS: {
-        uint64_t address = *((const uint64_t*)ptr);
-        assert(size - 1 == sizeof(uint64_t));
-        ptr += sizeof(uint64_t);
-        assert(ptr < data_ + size_);
-        state_.address = address;
-        break;
-      }
-      default: {
-        assert(0); // Not supported
-        break;
-      }
+    case DW_LNS_END_SEQUENCE: {
+      assert(ptr == data_ + size_);
+      UpdateLineInfo();
+      break;
+    }
+    case DW_LNE_SET_ADDRESS: {
+      uint64_t address = *((const uint64_t*)ptr);
+      assert(size - 1 == sizeof(uint64_t));
+      ptr += sizeof(uint64_t);
+      assert(ptr < data_ + size_);
+      state_.address = address;
+      break;
+    }
+    default: {
+      assert(0);  // Not supported
+      break;
+    }
     }
 
     return ptr;
   }
 
   void UpdateAddress(uint32_t operation_advance) {
-    state_.address += header_->minimum_instruction_length *
-                      ((state_.operation + operation_advance) /
-                      header_->maximum_operations_per_instruction);
+    state_.address +=
+        header_->minimum_instruction_length
+        * ((state_.operation + operation_advance) / header_->maximum_operations_per_instruction);
   }
 
   void UpdateOperation(uint32_t operation_advance) {
-    state_.operation = (state_.operation + operation_advance) %
-                       header_->maximum_operations_per_instruction;
+    state_.operation =
+        (state_.operation + operation_advance) % header_->maximum_operations_per_instruction;
   }
 
   void UpdateLine(uint32_t adjusted_opcode) {
-    state_.line += header_->line_base +
-                   (adjusted_opcode % header_->line_range);
+    state_.line += header_->line_base + (adjusted_opcode % header_->line_range);
   }
 
   void UpdateLineInfo() {
-    line_info_.push_back(
-      std::make_pair(state_.address,
-                     std::make_pair(state_.file, state_.line)));
+    line_info_.push_back(std::make_pair(state_.address, std::make_pair(state_.file, state_.line)));
   }
 
 private:
   const uint8_t* data_ = nullptr;
-  uint32_t size_ = 0;    
+  uint32_t size_ = 0;
   const Dwarf32Header* header_ = nullptr;
 
-  DwarfState state_ = { 0, 0, 1, 1 };
+  DwarfState state_ = {0, 0, 1, 1};
   DwarfLineInfo line_info_;
 };
 
-#endif // PTI_SAMPLES_UTILS_DWARF_STATE_MACHINE_H_
+#endif  // PTI_SAMPLES_UTILS_DWARF_STATE_MACHINE_H_

@@ -48,25 +48,13 @@
 //
 // Purpose:
 //   interface definitions for wrapper around NVIDIA CUDA layer
-//  
+//
 //***************************************************************************
 
 #ifndef cuda_api_h
 #define cuda_api_h
 
-
-
-//*****************************************************************************
-// nvidia includes
-//*****************************************************************************
-
 #include <cuda.h>
-
-
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
 
 typedef struct cuda_device_property {
   int sm_count;
@@ -78,42 +66,16 @@ typedef struct cuda_device_property {
   int num_threads_per_warp;
 } cuda_device_property_t;
 
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
+// returns 0 on success
+int cuda_bind(void);
 
 // returns 0 on success
-int 
-cuda_bind
-(
- void
-);
-
+int cuda_context(CUcontext* ctx);
 
 // returns 0 on success
-int
-cuda_context
-(
- CUcontext *ctx
-);
-
+int cuda_device_property_query(int device_id, cuda_device_property_t* property);
 
 // returns 0 on success
-int 
-cuda_device_property_query
-(
- int device_id, 
- cuda_device_property_t *property
-);
-
-
-// returns 0 on success
-int
-cuda_global_pc_sampling_required
-(
-  int *required
-);
-
+int cuda_global_pc_sampling_required(int* required);
 
 #endif

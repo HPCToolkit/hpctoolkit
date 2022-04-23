@@ -44,34 +44,18 @@
 #ifndef OPENCL_MEMORY_MANAGER_H
 #define OPENCL_MEMORY_MANAGER_H
 
+#include "hpcrun/gpu/gpu-activity.h"
 
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <lib/prof-lean/bistack.h>
-#include <lib/prof-lean/stdatomic.h>
-#include <hpcrun/gpu/gpu-activity.h>
-
-
-
-//************************ Forward Declarations ******************************
+#include "lib/prof-lean/bistack.h"
+#include "lib/prof-lean/stdatomic.h"
 
 typedef struct cct_node_t cct_node_t;
 
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-//This must be the same as gpu_activity_kind_t
-//typedef enum {
-//  GPU_ACTIVITY_KERNEL                     = 1,
-//  GPU_ACTIVITY_MEMCPY                     = 2
-//} gpu_activity_kind_t;
-
+// This must be the same as gpu_activity_kind_t
+// typedef enum {
+//   GPU_ACTIVITY_KERNEL                     = 1,
+//   GPU_ACTIVITY_MEMCPY                     = 2
+// } gpu_activity_kind_t;
 
 typedef struct opencl_object_channel_t opencl_object_channel_t;
 
@@ -81,14 +65,12 @@ typedef struct cl_basic_callback_t {
   uint32_t correlation_id;
   gpu_activity_kind_t kind;
   gpu_memcpy_type_t type;
-  cct_node_t *cct_node;
+  cct_node_t* cct_node;
 } cl_basic_callback_t;
-
 
 typedef struct cl_kernel_callback_t {
   uint32_t correlation_id;
 } cl_kernel_callback_t;
-
 
 typedef struct cl_memcpy_callback_t {
   uint32_t correlation_id;
@@ -98,13 +80,11 @@ typedef struct cl_memcpy_callback_t {
   size_t size;
 } cl_memcpy_callback_t;
 
-
 typedef struct cl_memory_callback_t {
   uint32_t correlation_id;
   gpu_mem_type_t type;
   size_t size;
 } cl_memory_callback_t;
-
 
 typedef struct opencl_object_details_t {
   union {
@@ -112,47 +92,26 @@ typedef struct opencl_object_details_t {
     cl_memcpy_callback_t cpy_cb;
     cl_memory_callback_t mem_cb;
   };
-  gpu_activity_channel_t *initiator_channel;
+  gpu_activity_channel_t* initiator_channel;
   uint32_t context_id;
   uint32_t stream_id;
-  cct_node_t *cct_node;
+  cct_node_t* cct_node;
   uint64_t submit_time;
 } opencl_object_details_t;
 
-
 typedef struct opencl_object_t {
   s_element_ptr_t next;
-  opencl_object_channel_t *channel;
+  opencl_object_channel_t* channel;
   gpu_activity_kind_t kind;
   bool internal_event;
   opencl_object_details_t details;
-  atomic_int *pending_operations;
+  atomic_int* pending_operations;
 } opencl_object_t;
 
+opencl_object_t* opencl_malloc(void);
 
+opencl_object_t* opencl_malloc_kind(gpu_activity_kind_t kind);
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void opencl_free(opencl_object_t*);
 
-opencl_object_t *
-opencl_malloc
-(
- void
-);
-
-
-opencl_object_t *
-opencl_malloc_kind
-(
- gpu_activity_kind_t kind
-);
-
-
-void
-opencl_free
-(
- opencl_object_t *
-);
-
-#endif  //OPENCL_MEMORY_MANAGER_H
+#endif  // OPENCL_MEMORY_MANAGER_H

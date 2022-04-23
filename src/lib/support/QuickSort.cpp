@@ -44,37 +44,28 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//************************** System Include Files ***************************
-
 #ifdef NO_STD_CHEADERS
-# include <stdlib.h>
+#include <stdlib.h>
 #else
-# include <cstdlib> // for 'rand'
-using namespace std; // For compatibility with non-std C headers
+#include <cstdlib>  // for 'rand'
+
+using namespace std;  // For compatibility with non-std C headers
+
 #endif
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
 
 #include "QuickSort.hpp"
 
-//*************************** Forward Declarations **************************
+#include "include/uint.h"
 
-//***************************************************************************
-
-QuickSort::QuickSort ()
-{
+QuickSort::QuickSort() {
   return;
 }
 
-QuickSort::~QuickSort ()
-{
+QuickSort::~QuickSort() {
   return;
 }
 
-void QuickSort::Create (void** UserArrayPtr, const EntryCompareFunctPtr _CompareFunct)
-{
+void QuickSort::Create(void** UserArrayPtr, const EntryCompareFunctPtr _CompareFunct) {
   ArrayPtr = UserArrayPtr;
   CompareFunct = _CompareFunct;
 
@@ -83,66 +74,56 @@ void QuickSort::Create (void** UserArrayPtr, const EntryCompareFunctPtr _Compare
   return;
 }
 
-void QuickSort::Destroy ()
-{
+void QuickSort::Destroy() {
   QuickSortCreated = false;
 
   return;
 }
 
-void QuickSort::Swap (int a, int b)
-{
-  if (QuickSortCreated)
-    {
-      void* hold;
-      hold = ArrayPtr[a];
-      ArrayPtr[a] = ArrayPtr[b];
-      ArrayPtr[b] = hold;
-    }
+void QuickSort::Swap(int a, int b) {
+  if (QuickSortCreated) {
+    void* hold;
+    hold = ArrayPtr[a];
+    ArrayPtr[a] = ArrayPtr[b];
+    ArrayPtr[b] = hold;
+  }
 
   return;
 }
 
-int QuickSort::Partition (const int min, const int max, const int q)
-{
-  if (QuickSortCreated)
-    {
-      Swap (min, q);
-      void* x = ArrayPtr[min];
-      int j = min - 1;
-      int k = max + 1;
-      bool ExitFlag = false;
-      while (!ExitFlag)
-        {
-          do
-            k--;
-          while ((CompareFunct (ArrayPtr[k], x) > 0) && (k>min));
-          do
-            j++;
-          while ((CompareFunct (ArrayPtr[j], x) < 0) && (j<max));
-          if (j < k)
-             Swap (j, k);
-           else
-            ExitFlag = true;
-        }
-      return k;
+int QuickSort::Partition(const int min, const int max, const int q) {
+  if (QuickSortCreated) {
+    Swap(min, q);
+    void* x = ArrayPtr[min];
+    int j = min - 1;
+    int k = max + 1;
+    bool ExitFlag = false;
+    while (!ExitFlag) {
+      do
+        k--;
+      while ((CompareFunct(ArrayPtr[k], x) > 0) && (k > min));
+      do
+        j++;
+      while ((CompareFunct(ArrayPtr[j], x) < 0) && (j < max));
+      if (j < k)
+        Swap(j, k);
+      else
+        ExitFlag = true;
     }
-  else return 0;
+    return k;
+  } else
+    return 0;
 }
 
-void QuickSort::Sort (const int minEntryIndex, const int maxEntryIndex)
-{
-  if (QuickSortCreated)
-    {
-      if (minEntryIndex < maxEntryIndex)
-        {
-          int index = rand () % (maxEntryIndex-minEntryIndex+1) + minEntryIndex;
-          int mid = Partition (minEntryIndex, maxEntryIndex, index);
-          Sort (minEntryIndex, mid);
-          Sort (mid+1, maxEntryIndex);
-        }
+void QuickSort::Sort(const int minEntryIndex, const int maxEntryIndex) {
+  if (QuickSortCreated) {
+    if (minEntryIndex < maxEntryIndex) {
+      int index = rand() % (maxEntryIndex - minEntryIndex + 1) + minEntryIndex;
+      int mid = Partition(minEntryIndex, maxEntryIndex, index);
+      Sort(minEntryIndex, mid);
+      Sort(mid + 1, maxEntryIndex);
     }
- 
+  }
+
   return;
 }
-

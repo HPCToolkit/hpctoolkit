@@ -42,7 +42,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: InputFile.hpp
@@ -54,49 +53,32 @@
 //
 //***************************************************************************
 
-
 #ifndef __InputFile_hpp__
 #define __InputFile_hpp__
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
 #include <string>
-
-
-
-//******************************************************************************
-// forward declarations 
-//******************************************************************************
 
 class ElfFileVector;
 
-
-
-//******************************************************************************
-// type definitions
-//******************************************************************************
-
-typedef enum InputFileErrorType_t { 
-  InputFileError_WarningNothrow, 
-  InputFileError_Warning, 
-  InputFileError_Error 
+typedef enum InputFileErrorType_t {
+  InputFileError_WarningNothrow,
+  InputFileError_Warning,
+  InputFileError_Error
 } InputFileErrorType_t;
-
 
 class InputFile {
 public:
   InputFile() { filevector = 0; }
   ~InputFile();
-  bool openFile(std::string &filename, InputFileErrorType_t errType);
+  bool openFile(std::string& filename, InputFileErrorType_t errType);
 
-  std::string &fileName() { return filename; }
-  const char *CfileName() { return filename.c_str(); }
-  ElfFileVector *fileVector() { return filevector; }
+  std::string& fileName() { return filename; }
+  const char* CfileName() { return filename.c_str(); }
+  ElfFileVector* fileVector() { return filevector; }
+
 private:
   std::string filename;
-  ElfFileVector *filevector;
+  ElfFileVector* filevector;
 };
 
 #endif

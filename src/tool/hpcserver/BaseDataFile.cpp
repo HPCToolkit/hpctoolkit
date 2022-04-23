@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.cpp $
-// $Id: BaseDataFile.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.cpp
+// $ $Id: BaseDataFile.cpp 4291 2013-07-09 22:25:53Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.cpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/BaseDataFile.cpp
+//   $
 //
 // Purpose:
 //   Another level of abstraction for the data from the file.
@@ -58,132 +61,104 @@
 //***************************************************************************
 
 #include "BaseDataFile.hpp"
+
 #include "Constants.hpp"
 #include "DebugUtils.hpp"
 
 using namespace std;
 
-namespace TraceviewerServer
-{
+namespace TraceviewerServer {
 //-----------------------------------------------------------
 // Global variables
 //-----------------------------------------------------------
 
+BaseDataFile::BaseDataFile(string _filename, int _headerSize) {
+  DEBUGCOUT(1) << "Setting Data File: " << _filename << endl;
 
+  if (_filename != "") {
+    setData(_filename, _headerSize);
+  }
+}
 
+int BaseDataFile::getNumberOfFiles() {
+  return numFiles;
+}
 
-	BaseDataFile::BaseDataFile(string _filename, int _headerSize)
-	{
+OffsetPair* BaseDataFile::getOffsets() {
+  return offsets;
+}
 
-		DEBUGCOUT(1) << "Setting Data File: " << _filename << endl;
+LargeByteBuffer* BaseDataFile::getMasterBuffer() {
+  return masterBuff;
+}
 
-		if (_filename != "")
-		{
-			setData(_filename, _headerSize);
-		}
+/***
+ * set the data to the specified file
+ */
+void BaseDataFile::setData(string filename, int headerSize) {
+  masterBuff = new LargeByteBuffer(filename, headerSize);
 
-	}
+  FileOffset currentPos = 0;
+  type = masterBuff->getInt(currentPos);
+  currentPos += SIZEOF_INT;
+  numFiles = masterBuff->getInt(currentPos);
+  currentPos += SIZEOF_INT;
 
-	int BaseDataFile::getNumberOfFiles()
-	{
-		return numFiles;
-	}
+  processIDs = new int[numFiles];
+  threadIDs = new short[numFiles];
+  offsets = new OffsetPair[numFiles];
 
-	OffsetPair* BaseDataFile::getOffsets()
-	{
-		return offsets;
-	}
+  offsets[numFiles - 1].end = masterBuff->size() - SIZE_OF_TRACE_RECORD - SIZEOF_END_OF_FILE_MARKER;
+  // get the procs and threads IDs and build the table that maps rank to file position
+  for (int i = 0; i < numFiles; i++) {
+    int proc_id = masterBuff->getInt(currentPos);
+    currentPos += SIZEOF_INT;
+    int thread_id = masterBuff->getInt(currentPos);
+    currentPos += SIZEOF_INT;
 
-	LargeByteBuffer* BaseDataFile::getMasterBuffer()
-	{
-		return masterBuff;
-	}
+    offsets[i].start = masterBuff->getLong(currentPos);
+    // offset.end is the position of the last trace record that is a part of that line
+    if (i > 0)
+      offsets[i - 1].end = offsets[i].start - SIZE_OF_TRACE_RECORD;
+    currentPos += SIZEOF_LONG;
 
-	/***
-	 * set the data to the specified file
-	 */
-	void BaseDataFile::setData(string filename, int headerSize)
-	{
-		masterBuff = new LargeByteBuffer(filename, headerSize);
+    //--------------------------------------------------------------------
+    // adding list of x-axis
+    //--------------------------------------------------------------------
 
-		FileOffset currentPos = 0;
-		type = masterBuff->getInt(currentPos);
-		currentPos += SIZEOF_INT;
-		numFiles = masterBuff->getInt(currentPos);
-		currentPos += SIZEOF_INT;
+    if (isHybrid()) {
+      processIDs[i] = proc_id;
+      threadIDs[i] = thread_id;
+    } else if (isMultiProcess()) {
+      processIDs[i] = proc_id;
+      threadIDs[i] = -1;
+    } else {
+      // If the application is neither hybrid nor multiproc nor multithreads,
+      // we just print whatever the order of file name alphabetically
+      // this is not the ideal solution, but we cannot trust the value of proc_id and thread_id
+      processIDs[i] = i;
+      threadIDs[i] = -1;
+    }
+  }
+}
 
-		processIDs = new int[numFiles];
-		threadIDs = new short[numFiles];
-		offsets = new OffsetPair[numFiles];
+// Check if the application is a multi-processing program (like MPI)
+bool BaseDataFile::isMultiProcess() {
+  return (type & MULTI_PROCESSES) != 0;
+}
+// Check if the application is a multi-threading program (OpenMP for instance)
+bool BaseDataFile::isMultiThreading() {
+  return (type & MULTI_THREADING) != 0;
+}
+// Check if the application is a hybrid program (MPI+OpenMP)
+bool BaseDataFile::isHybrid() {
+  return (isMultiProcess() && isMultiThreading());
+}
 
-
-
-		offsets[numFiles-1].end	= masterBuff->size()- SIZE_OF_TRACE_RECORD - SIZEOF_END_OF_FILE_MARKER;
-		// get the procs and threads IDs and build the table that maps rank to file position
-		for (int i = 0; i < numFiles; i++)
-		{
-			 int proc_id = masterBuff->getInt(currentPos);
-			currentPos += SIZEOF_INT;
-			 int thread_id = masterBuff->getInt(currentPos);
-			currentPos += SIZEOF_INT;
-
-			offsets[i].start = masterBuff->getLong(currentPos);
-			//offset.end is the position of the last trace record that is a part of that line
-			if (i > 0)
-				offsets[i-1].end = offsets[i].start - SIZE_OF_TRACE_RECORD;
-			currentPos += SIZEOF_LONG;
-
-
-			//--------------------------------------------------------------------
-			// adding list of x-axis
-			//--------------------------------------------------------------------
-
-
-			if (isHybrid())
-			{
-				processIDs[i] = proc_id;
-				threadIDs[i] = thread_id;
-			}
-			else if (isMultiProcess())
-			{
-				processIDs[i] = proc_id;
-				threadIDs[i] = -1;
-			}
-			else
-			{
-				// If the application is neither hybrid nor multiproc nor multithreads,
-				// we just print whatever the order of file name alphabetically
-				// this is not the ideal solution, but we cannot trust the value of proc_id and thread_id
-				processIDs[i] = i;
-				threadIDs[i] = -1;
-			}
-
-		}
-	}
-
-//Check if the application is a multi-processing program (like MPI)
-	bool BaseDataFile::isMultiProcess()
-	{
-		return (type & MULTI_PROCESSES) != 0;
-	}
-//Check if the application is a multi-threading program (OpenMP for instance)
-	bool BaseDataFile::isMultiThreading()
-	{
-		return (type & MULTI_THREADING) != 0;
-	}
-//Check if the application is a hybrid program (MPI+OpenMP)
-	bool BaseDataFile::isHybrid()
-	{
-		return (isMultiProcess() && isMultiThreading());
-
-	}
-
-	BaseDataFile::~BaseDataFile()
-	{
-		delete(masterBuff);
-		delete[] processIDs;
-		delete[] threadIDs;
-		delete[] offsets;
-	}
-
+BaseDataFile::~BaseDataFile() {
+  delete (masterBuff);
+  delete[] processIDs;
+  delete[] threadIDs;
+  delete[] offsets;
+}
 } /* namespace TraceviewerServer */

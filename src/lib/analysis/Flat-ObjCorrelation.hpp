@@ -57,45 +57,32 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Flat_ObjCorrelation_hpp 
+#ifndef Analysis_Flat_ObjCorrelation_hpp
 #define Analysis_Flat_ObjCorrelation_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/prof/Metric-Mgr.hpp"
 
 #include <string>
 #include <vector>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h> 
-
-#include <lib/prof/Metric-Mgr.hpp> 
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
 
 namespace Analysis {
 
 namespace Flat {
 
-  // Given a flat profile file, correlate metrics for the events contained
-  // therein with the object code instructions
-  void
-  correlateWithObject(const Prof::Metric::Mgr& metricMgr,
-		      // ----------------------------------------------
-		      std::ostream& os, 
-		      // show source code lines
-		      bool srcCode,
-		      // show procs that match one of the globs
-		      const std::vector<std::string>& procPruneGlobs,
-		      // show procs with at least one metric total >= threshold
-		      uint64_t procPruneThreshold);
+// Given a flat profile file, correlate metrics for the events contained
+// therein with the object code instructions
+void correlateWithObject(
+    const Prof::Metric::Mgr& metricMgr,
+    // ----------------------------------------------
+    std::ostream& os,
+    // show source code lines
+    bool srcCode,
+    // show procs that match one of the globs
+    const std::vector<std::string>& procPruneGlobs,
+    // show procs with at least one metric total >= threshold
+    uint64_t procPruneThreshold);
+}  // namespace Flat
+}  // namespace Analysis
 
-} // namespace Flat
-
-} // namespace Analysis
-
-//****************************************************************************
-
-#endif // Analysis_Flat_ObjCorrelation_hpp
+#endif  // Analysis_Flat_ObjCorrelation_hpp

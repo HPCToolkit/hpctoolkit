@@ -60,16 +60,8 @@
 #ifndef isa_ISATypes_hpp
 #define isa_ISATypes_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <include/gnu_bfd.h> // for 'bfd_vma'
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
+#include "include/gnu_bfd.h"  // for 'bfd_vma'
+#include "include/uint.h"
 
 // Architectural datatypes:
 
@@ -77,9 +69,9 @@
 // advantage of 'bfd_vma' so we don't have to mess with differently
 // sized address spaces.  (0 is the null value)
 typedef bfd_vma VMA;
-typedef bfd_signed_vma VMASigned; // useful for offsets
+typedef bfd_signed_vma VMASigned;  // useful for offsets
 
-#define VMA_MAX ( ~((bfd_vma)(0)) )
+#define VMA_MAX (~((bfd_vma)(0)))
 
 // MachInsn* can point to (non-)variable length instructions (or
 // instruction words) and should not be dereferenced.  To examine the
@@ -94,11 +86,8 @@ typedef unsigned char MachInsnByte;
 #define PTR_TO_BFDVMA(x)         ((bfd_vma)(uintptr_t)(x))
 #define BFDVMA_TO_PTR(x, totype) ((totype)(uintptr_t)(x))
 
-#define PTR_TO_VMA(x)          PTR_TO_BFDVMA(x)
-#define VMA_TO_PTR(x, totype)  BFDVMA_TO_PTR(x, totype)
-
-
-//****************************************************************************
+#define PTR_TO_VMA(x)         PTR_TO_BFDVMA(x)
+#define VMA_TO_PTR(x, totype) BFDVMA_TO_PTR(x, totype)
 
 #if 0
 struct lt_VMA {

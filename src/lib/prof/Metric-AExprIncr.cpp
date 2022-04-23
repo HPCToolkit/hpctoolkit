@@ -50,155 +50,116 @@
 //
 // ----------------------------------------------------------------------
 
-//************************ System Include Files ******************************
-
-#include <iostream> 
-using std::endl;
-
-#include <sstream>
-#include <string>
-#include <algorithm>
-
-#include <cmath>
-
-//************************* User Include Files *******************************
-
-#include <include/uint.h>
-
 #include "Metric-AExprIncr.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/NaN.h>
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/NaN.h"
 
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <string>
 
-//************************ Forward Declarations ******************************
+using std::endl;
 
 #define AEXPR_DO_CHECK 0
 #if (AEXPR_DO_CHECK)
-# define AEXPR_CHECK(x) if (!isok(x)) { return c_FP_NAN_d; }
+#define AEXPR_CHECK(x) \
+  if (!isok(x)) {      \
+    return c_FP_NAN_d; \
+  }
 #else
-# define AEXPR_CHECK(x) 
+#define AEXPR_CHECK(x)
 #endif
 
-//static double epsilon = 0.000001;
-
-//****************************************************************************
+// static double epsilon = 0.000001;
 
 namespace Prof {
 
 namespace Metric {
 
-
 // ----------------------------------------------------------------------
 // class AExprIncr
 // ----------------------------------------------------------------------
 
-std::string
-AExprIncr::toString() const
-{
+std::string AExprIncr::toString() const {
   std::ostringstream os;
   dump(os);
   return os.str();
 }
 
-
 // ----------------------------------------------------------------------
 // class MinIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-MinIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& MinIncr::dumpMe(std::ostream& os) const {
   os << "min()";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class MaxIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-MaxIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& MaxIncr::dumpMe(std::ostream& os) const {
   os << "max()";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class SumIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-SumIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& SumIncr::dumpMe(std::ostream& os) const {
   os << "sum()";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class MeanIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-MeanIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& MeanIncr::dumpMe(std::ostream& os) const {
   os << "mean()";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class StdDevIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-StdDevIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& StdDevIncr::dumpMe(std::ostream& os) const {
   os << "stddev()";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class CoefVarIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-CoefVarIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& CoefVarIncr::dumpMe(std::ostream& os) const {
   os << "coefvar()";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class RStdDevIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-RStdDevIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& RStdDevIncr::dumpMe(std::ostream& os) const {
   os << "r-stddev()";
   return os;
 }
-
 
 // ----------------------------------------------------------------------
 // class NumSourceIncr
 // ----------------------------------------------------------------------
 
-std::ostream&
-NumSourceIncr::dumpMe(std::ostream& os) const
-{
+std::ostream& NumSourceIncr::dumpMe(std::ostream& os) const {
   os << "num-sources()";
   return os;
 }
-
-//****************************************************************************
-
-} // namespace Metric
-
-} // namespace Prof
+}  // namespace Metric
+}  // namespace Prof

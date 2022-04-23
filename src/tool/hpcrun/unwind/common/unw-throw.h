@@ -50,4 +50,4 @@
 extern void hpcrun_unw_throw(void);
 extern void hpcrun_unw_drop(void);
 
-#endif // UNW_THROW_H
+#endif  // UNW_THROW_H

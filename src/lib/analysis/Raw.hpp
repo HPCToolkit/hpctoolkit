@@ -57,74 +57,50 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Raw_Raw_hpp 
+#ifndef Analysis_Raw_Raw_hpp
 #define Analysis_Raw_Raw_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
+#include "lib/prof-lean/id-tuple.h"
+#include "lib/prof-lean/tracedb.h"
+#include "lib/prof/cms-format.h"
+#include "lib/prof/pms-format.h"
 
 #include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h> 
-#include <lib/prof-lean/hpcrun-fmt.h> 
-#include <lib/prof-lean/id-tuple.h>
-#include <lib/prof-lean/tracedb.h>
-#include <lib/prof/pms-format.h> 
-#include <lib/prof/cms-format.h>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
 
 namespace Analysis {
 
 namespace Raw {
 
-void 
-writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep);
-//YUMENG: second arg: if more flags, maybe build a struct to include all flags and pass the struct around
+void writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep);
+// YUMENG: second arg: if more flags, maybe build a struct to include all flags and pass the struct
+// around
 
-void
-writeAsText_callpath(/*destination,*/ const char* filenm, bool sm_easyToGrep);
+void writeAsText_callpath(/*destination,*/ const char* filenm, bool sm_easyToGrep);
 
-void
-writeAsText_sparseDBtmp(const char* filenm, bool sm_easyToGrep); 
+void writeAsText_sparseDBtmp(const char* filenm, bool sm_easyToGrep);
 
-bool 
-profileInfoOffsets_sorter(pms_profile_info_t const& lhs, pms_profile_info_t const& rhs);
+bool profileInfoOffsets_sorter(pms_profile_info_t const& lhs, pms_profile_info_t const& rhs);
 
-bool 
-traceHdr_sorter(trace_hdr_t const& lhs, trace_hdr_t const& rhs);
+bool traceHdr_sorter(trace_hdr_t const& lhs, trace_hdr_t const& rhs);
 
-void
-sortProfileInfo_onOffsets(pms_profile_info_t* x, uint32_t num_prof);
+void sortProfileInfo_onOffsets(pms_profile_info_t* x, uint32_t num_prof);
 
-void
-sortTraceHdrs_onStarts(trace_hdr_t* x, uint32_t num_t);
+void sortTraceHdrs_onStarts(trace_hdr_t* x, uint32_t num_t);
 
-void
-writeAsText_sparseDBthread(const char* filenm, bool sm_easyToGrep);
+void writeAsText_sparseDBthread(const char* filenm, bool sm_easyToGrep);
 
-void
-writeAsText_sparseDBcct(const char* filenm, bool sm_easyToGrep); 
+void writeAsText_sparseDBcct(const char* filenm, bool sm_easyToGrep);
 
-void
-writeAsText_tracedb(const char* filenm);
+void writeAsText_tracedb(const char* filenm);
 
-void
-writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
+void writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
 
-void
-writeAsText_callpathTrace(/*destination,*/ const char* filenm);
+void writeAsText_callpathTrace(/*destination,*/ const char* filenm);
 
-void
-writeAsText_flat(/*destination,*/ const char* filenm);
+void writeAsText_flat(/*destination,*/ const char* filenm);
+}  // namespace Raw
+}  // namespace Analysis
 
-} // namespace Raw
-
-} // namespace Analysis
-
-//****************************************************************************
-
-#endif // Analysis_Raw_Raw_hpp
+#endif  // Analysis_Raw_Raw_hpp

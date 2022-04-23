@@ -60,82 +60,55 @@
 #ifndef isa_AlphaISA_hpp
 #define isa_AlphaISA_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "ISA.hpp"
 
-//*************************** Forward Declarations ***************************
-
-//***************************************************************************
-// AlphaISA
-//***************************************************************************
+#include "include/gcc-attr.h"
+#include "include/uint.h"
 
 // 'AlphaISA': Implements the Alpha Instruction Set Architecture.
 // See 'ISA.h' for comments on the interface
 
 class AlphaISA : public ISA {
 public:
-  AlphaISA()
-  { }
+  AlphaISA() {}
 
-  virtual ~AlphaISA()
-  { }
+  virtual ~AlphaISA() {}
 
   // --------------------------------------------------------
   // Instructions:
   // --------------------------------------------------------
 
-  virtual ushort
-  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
-  { return MINSN_SIZE; }
+  virtual ushort getInsnSize(MachInsn* GCC_ATTR_UNUSED mi) { return MINSN_SIZE; }
 
-  virtual ushort
-  getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
-  { return 1; }
+  virtual ushort getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi) { return 1; }
 
-  virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual InsnDesc getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
+  virtual VMA getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
 
-  virtual ushort
-  getInsnNumDelaySlots(MachInsn* GCC_ATTR_UNUSED mi,
-		       ushort GCC_ATTR_UNUSED opIndex,
-		       GCC_ATTR_UNUSED ushort sz = 0)
-  { return 0; /* The Alpha has no instruction-specified delay slots. */ }
+  virtual ushort getInsnNumDelaySlots(
+      MachInsn* GCC_ATTR_UNUSED mi, ushort GCC_ATTR_UNUSED opIndex, GCC_ATTR_UNUSED ushort sz = 0) {
+    return 0; /* The Alpha has no instruction-specified delay slots. */
+  }
 
-  virtual bool
-  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
-			  ushort GCC_ATTR_UNUSED opIndex1,
-			  ushort GCC_ATTR_UNUSED sz1,
-			  MachInsn* GCC_ATTR_UNUSED mi2,
-			  ushort GCC_ATTR_UNUSED opIndex2,
-			  ushort GCC_ATTR_UNUSED sz2) const
-  { return false; }
+  virtual bool isParallelWithSuccessor(
+      MachInsn* GCC_ATTR_UNUSED mi1, ushort GCC_ATTR_UNUSED opIndex1, ushort GCC_ATTR_UNUSED sz1,
+      MachInsn* GCC_ATTR_UNUSED mi2, ushort GCC_ATTR_UNUSED opIndex2,
+      ushort GCC_ATTR_UNUSED sz2) const {
+    return false;
+  }
 
-  virtual void
-  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
+  virtual void decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
 private:
   // Should not be used
-  AlphaISA(const AlphaISA& GCC_ATTR_UNUSED x)
-  { }
-  
-  AlphaISA&
-  operator=(const AlphaISA& GCC_ATTR_UNUSED x)
-  { return *this; }
+  AlphaISA(const AlphaISA& GCC_ATTR_UNUSED x) {}
+
+  AlphaISA& operator=(const AlphaISA& GCC_ATTR_UNUSED x) { return *this; }
 
 protected:
 private:
-  static const ushort MINSN_SIZE = 4; // machine instruction size in bytes
+  static const ushort MINSN_SIZE = 4;  // machine instruction size in bytes
 };
-
-//****************************************************************************
 
 #endif /* isa_AlphaISA_hpp */

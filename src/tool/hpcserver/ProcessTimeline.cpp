@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.cpp $
-// $Id: ProcessTimeline.cpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.cpp
+// $ $Id: ProcessTimeline.cpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.cpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/ProcessTimeline.cpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -59,43 +62,38 @@
 
 #include "ProcessTimeline.hpp"
 
-namespace TraceviewerServer
-{
+namespace TraceviewerServer {
 
-	ProcessTimeline::ProcessTimeline(ImageTraceAttributes attrib, int _lineNum, FilteredBaseData* _dataTrace,
-			Time _startingTime, int _headerSize)
-	{
-		lineNum = _lineNum;
+ProcessTimeline::ProcessTimeline(
+    ImageTraceAttributes attrib, int _lineNum, FilteredBaseData* _dataTrace, Time _startingTime,
+    int _headerSize) {
+  lineNum = _lineNum;
 
-		timeRange = (attrib.endTime - attrib.begTime) ;
-		startingTime = _startingTime;
+  timeRange = (attrib.endTime - attrib.begTime);
+  startingTime = _startingTime;
 
-		pixelLength = timeRange / (double) attrib.numPixelsH;
+  pixelLength = timeRange / (double)attrib.numPixelsH;
 
-		attributes = attrib;
-		data = new TraceDataByRank(_dataTrace, lineNumToProcessNum(_lineNum), attrib.numPixelsH, _headerSize);
-	}
-	int ProcessTimeline::lineNumToProcessNum(int line) {
-		int numTimelinesToPaint = attributes.endProcess - attributes.begProcess;
-		if (numTimelinesToPaint > attributes.numPixelsV)
-			return attributes.begProcess
-					+ (line * numTimelinesToPaint) / (attributes.numPixelsV);
-		else
-			return attributes.begProcess + line;
-	}
-	void ProcessTimeline::readInData()
-	{
-		data->getData(startingTime, timeRange, pixelLength);
-	}
+  attributes = attrib;
+  data = new TraceDataByRank(
+      _dataTrace, lineNumToProcessNum(_lineNum), attrib.numPixelsH, _headerSize);
+}
+int ProcessTimeline::lineNumToProcessNum(int line) {
+  int numTimelinesToPaint = attributes.endProcess - attributes.begProcess;
+  if (numTimelinesToPaint > attributes.numPixelsV)
+    return attributes.begProcess + (line * numTimelinesToPaint) / (attributes.numPixelsV);
+  else
+    return attributes.begProcess + line;
+}
+void ProcessTimeline::readInData() {
+  data->getData(startingTime, timeRange, pixelLength);
+}
 
-	int ProcessTimeline::line()
-	{
-		return lineNum;
-	}
+int ProcessTimeline::line() {
+  return lineNum;
+}
 
-	ProcessTimeline::~ProcessTimeline()
-	{
-		delete data;
-	}
-
+ProcessTimeline::~ProcessTimeline() {
+  delete data;
+}
 } /* namespace TraceviewerServer */

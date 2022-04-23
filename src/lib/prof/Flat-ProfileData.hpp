@@ -63,38 +63,24 @@
 #ifndef prof_Prof_Flat_ProfileData_hpp
 #define prof_Prof_Flat_ProfileData_hpp
 
-//************************* System Include Files ****************************
-
-#include <vector>
-#include <map>
-#include <string>
-#include <utility>
-
-#include <cstdlib>
-#include <cstdio>
-
-#include <sys/time.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "Metric-ADesc.hpp"
 
-#include <lib/isa/ISATypes.hpp>
+#include "include/gcc-attr.h"
+#include "include/uint.h"
+#include "lib/isa/ISATypes.hpp"
+#include "lib/support/diagnostics.h"
 
-#include <lib/support/diagnostics.h>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
+#include <cstdio>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <sys/time.h>
+#include <utility>
+#include <vector>
 
 namespace Prof {
 
 namespace Flat {
-
 
 //***************************************************************************
 // Basic format for the hpcprof data file:
@@ -115,16 +101,13 @@ class LM;
 //
 //---------------------------------------------------------------------------
 
-class ProfileData
-  : public std::multimap<std::string, LM*> {
+class ProfileData : public std::multimap<std::string, LM*> {
 public:
   ProfileData(const char* filename = NULL);
   ~ProfileData();
-  
-  const std::string&
-  name() const
-  { return m_name; }
-  
+
+  const std::string& name() const { return m_name; }
+
   // -------------------------------------------------------
   // LM: iterator, find/insert, etc
   // -------------------------------------------------------
@@ -133,9 +116,7 @@ public:
   // -------------------------------------------------------
   // Metrics
   // -------------------------------------------------------
-  const Metric::SampledDescVec&
-  mdescs()
-  { return m_mdescs; }
+  const Metric::SampledDescVec& mdescs() { return m_mdescs; }
 
   // -------------------------------------------------------
   // open/read: Throws an exception on an error!
@@ -148,41 +129,31 @@ public:
   //
   // NOTE: in either case, fnm may be supplied by constructor
 
-  void
-  openread(const char* filename = NULL);
- 
-  void
-  open(const char* filename = NULL);
+  void openread(const char* filename = NULL);
 
-  void
-  read();
+  void open(const char* filename = NULL);
+
+  void read();
 
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
-  
-  void
-  dump(std::ostream& o = std::cerr, const char* pre = "") const;
+
+  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
 
 private:
   ProfileData(const ProfileData& x);
 
-  ProfileData&
-  operator=(const ProfileData& GCC_ATTR_UNUSED x)
-  { return *this; }
+  ProfileData& operator=(const ProfileData& GCC_ATTR_UNUSED x) { return *this; }
 
-  void
-  read_metrics();
+  void read_metrics();
   void mdescs(LM* proflm);
 
-  static FILE*
-  fopen(const char* filename);
+  static FILE* fopen(const char* filename);
 
-  static void
-  read_header(FILE* fs);
+  static void read_header(FILE* fs);
 
-  static uint
-  read_lm_count(FILE* fs);
+  static uint read_lm_count(FILE* fs);
 
 private:
   std::string m_name;
@@ -192,78 +163,53 @@ private:
   FILE* m_fs;
 };
 
-
-//***************************************************************************
-
 typedef uint32_t bucketsz_t;
 
 // <VMA, count>
 typedef std::pair<VMA, bucketsz_t> Datum;
-
-
-//***************************************************************************
 
 // EventData: contains event description and profiling data
 class EventData {
 public:
   EventData();
   ~EventData();
-  
-  const Metric::SampledDesc&
-  mdesc() const
-  { return m_mdesc; }
 
-  Metric::SampledDesc&
-  mdesc()
-  { return m_mdesc; }
+  const Metric::SampledDesc& mdesc() const { return m_mdesc; }
 
-  int
-  bucket_size() const
-  { return sizeof(bucketsz_t); }
+  Metric::SampledDesc& mdesc() { return m_mdesc; }
 
-  uint
-  outofrange() const
-  { return m_outofrange; }
+  int bucket_size() const { return sizeof(bucketsz_t); }
 
-  uint
-  overflow() const
-  { return m_overflow; }
+  uint outofrange() const { return m_outofrange; }
+
+  uint overflow() const { return m_overflow; }
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
-  
+
   // 0 based indexing
-  uint
-  num_data() const
-  { return m_sparsevec.size(); }
+  uint num_data() const { return m_sparsevec.size(); }
 
   // <VMA, count> where VMA is a *relocated* VMA
-  const Datum&
-  datum(uint i) const
-  { return m_sparsevec[i]; }
-  
+  const Datum& datum(uint i) const { return m_sparsevec[i]; }
+
   // -------------------------------------------------------
   // read: Throws an exception on an error!
   // -------------------------------------------------------
-  void
-  read(FILE*, uint64_t load_addr);
-  
+  void read(FILE*, uint64_t load_addr);
+
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
-  void
-  dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  
+  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+
 private:
   Metric::SampledDesc m_mdesc;
   uint m_outofrange;
   uint m_overflow;
   std::vector<Datum> m_sparsevec;
 };
-
-
-//***************************************************************************
 
 //---------------------------------------------------------------------------
 // LM: represents flat profile information for a load module
@@ -276,69 +222,43 @@ public:
   LM();
   ~LM();
 
-  const std::string&
-  name() const
-  { return m_name; }
+  const std::string& name() const { return m_name; }
 
-  uint64_t
-  load_addr() const
-  { return m_load_addr; }
-  
+  uint64_t load_addr() const { return m_load_addr; }
+
   // 0 based indexing
-  uint
-  num_events() const
-  { return m_eventvec.size(); }
+  uint num_events() const { return m_eventvec.size(); }
 
-  const EventData&
-  event(uint i) const
-  { return m_eventvec[i]; }
-
+  const EventData& event(uint i) const { return m_eventvec[i]; }
 
   // -------------------------------------------------------
   // read: Throws an exception on an error!
   // -------------------------------------------------------
-  void
-  read(FILE*, const char* filename = NULL);
+  void read(FILE*, const char* filename = NULL);
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
-  void
-  dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  
+  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+
 private:
-  std::string m_name;            // module name
-  uint64_t m_load_addr;          // load offset during runtime
-  std::vector<EventData> m_eventvec; // events
+  std::string m_name;                 // module name
+  uint64_t m_load_addr;               // load offset during runtime
+  std::vector<EventData> m_eventvec;  // events
 };
-
-
-//***************************************************************************
-// Exception
-//***************************************************************************
 
 #define PROFFLAT_Throw(streamArgs) DIAG_ThrowX(Prof::Flat::Exception, streamArgs)
 
 class Exception : public Diagnostics::Exception {
 public:
   Exception(const std::string x, const char* filenm = NULL, uint lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-  { }
-  
-  virtual std::string
-  message() const
-  { return "[Prof::Flat]: " + what(); }
+      : Diagnostics::Exception(x, filenm, lineno) {}
+
+  virtual std::string message() const { return "[Prof::Flat]: " + what(); }
 
 private:
 };
-
-//***************************************************************************
-
-} // namespace Flat
-
-} // namespace Prof
-
-
-//***************************************************************************
+}  // namespace Flat
+}  // namespace Prof
 
 #endif /* prof_Prof_Flat_ProfileData_hpp */

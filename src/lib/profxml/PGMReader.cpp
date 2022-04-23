@@ -57,35 +57,24 @@
 //
 //***************************************************************************
 
-//************************ System Include Files ******************************
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <iostream> 
-using std::cerr;
-using std::endl;
-
-#include <string>
-using std::string;
-
-//************************* User Include Files *******************************
-
 #include "PGMReader.hpp"
+
 #include "XercesUtil.hpp"
 
-//*********************** Xerces Include Files *******************************
-
+#include <errno.h>
+#include <fcntl.h>
+#include <iostream>
+#include <string.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <xercesc/util/XMLString.hpp>
+
+using std::cerr;
+using std::endl;
+using std::string;
 using XERCES_CPP_NAMESPACE::XMLString;
-
-//************************ Forward Declarations ******************************
-
-//****************************************************************************
 
 namespace Prof {
 
@@ -98,17 +87,15 @@ namespace Struct {
 // FIXME: better to check for DOCTYPE tag:
 // <!DOCTYPE HPCToolkitStructure
 //
-#define BUF_SIZE  10
-static int
-xmlSanityCheck(const char *filenm, string & docType)
-{
+#define BUF_SIZE 10
+static int xmlSanityCheck(const char* filenm, string& docType) {
   char buf[BUF_SIZE];
 
   int fd = open(filenm, O_RDONLY);
 
   if (fd < 0) {
-    cerr << "WARNING: Unable to open " << docType << " file: '" << filenm << "': "
-	 << strerror(errno) << endl;
+    cerr << "WARNING: Unable to open " << docType << " file: '" << filenm
+         << "': " << strerror(errno) << endl;
     return 1;
   }
 
@@ -116,14 +103,14 @@ xmlSanityCheck(const char *filenm, string & docType)
   ssize_t ret = read(fd, buf, 5);
 
   if (ret < 0) {
-    cerr << "WARNING: Unable to read " << docType << " file: '" << filenm << "': "
-	 << strerror(errno) << endl;
+    cerr << "WARNING: Unable to read " << docType << " file: '" << filenm
+         << "': " << strerror(errno) << endl;
     return 1;
   }
 
   if (strncasecmp(buf, "<?xml", 5) != 0) {
     cerr << "WARNING: Unable to parse " << docType << " file: '" << filenm << "': "
-	 << "not an xml file" << endl;
+         << "not an xml file" << endl;
     return 1;
   }
 
@@ -132,14 +119,12 @@ xmlSanityCheck(const char *filenm, string & docType)
   return 0;
 }
 
-
-void
-readStructure(Struct::Tree& structure, 
-	      const std::vector<string>& structureFiles,
-	      PGMDocHandler::Doc_t docty, 
-	      DocHandlerArgs& docargs)
-{
-  if (structureFiles.empty()) { return; }
+void readStructure(
+    Struct::Tree& structure, const std::vector<string>& structureFiles, PGMDocHandler::Doc_t docty,
+    DocHandlerArgs& docargs) {
+  if (structureFiles.empty()) {
+    return;
+  }
 
   InitXerces();
 
@@ -151,13 +136,9 @@ readStructure(Struct::Tree& structure,
   FiniXerces();
 }
 
-
-void
-read_PGM(Struct::Tree& structure,
-	 const char* filenm,
-	 PGMDocHandler::Doc_t docty,
-	 DocHandlerArgs& docHandlerArgs)
-{
+void read_PGM(
+    Struct::Tree& structure, const char* filenm, PGMDocHandler::Doc_t docty,
+    DocHandlerArgs& docHandlerArgs) {
   if (!filenm || filenm[0] == '\0') {
     return;
   }
@@ -165,50 +146,39 @@ read_PGM(Struct::Tree& structure,
   string fpath = filenm;
   string docType = PGMDocHandler::ToString(docty);
 
-
   if (!fpath.empty()) {
     if (xmlSanityCheck(filenm, docType)) {
       return;
     }
     try {
       SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
-      
+
       parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
       parser->setFeature(XMLUni::fgXercesDynamic, true);
       parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-      
-      PGMDocHandler* handler = new PGMDocHandler(docty, &structure, 
-						 docHandlerArgs);
+
+      PGMDocHandler* handler = new PGMDocHandler(docty, &structure, docHandlerArgs);
       parser->setContentHandler(handler);
       parser->setErrorHandler(handler);
-	  
+
       parser->parse(fpath.c_str());
 
       if (parser->getErrorCount() > 0) {
-	DIAG_Throw("ignoring " << fpath << " because of previously reported parse errors.");
+        DIAG_Throw("ignoring " << fpath << " because of previously reported parse errors.");
       }
       delete handler;
       delete parser;
-    }
-    catch (const SAXException& x) {
-      DIAG_Throw("parsing '" << fpath << "'" << 
-		 XMLString::transcode(x.getMessage()));
-    }
-    catch (const PGMException& x) {
+    } catch (const SAXException& x) {
+      DIAG_Throw("parsing '" << fpath << "'" << XMLString::transcode(x.getMessage()));
+    } catch (const PGMException& x) {
       DIAG_Throw("reading '" << fpath << "'" << x.message());
-    }
-    catch (...) {
+    } catch (...) {
       DIAG_EMsg("While processing '" << fpath << "'...");
       throw;
     };
-  } 
-  else {
-    DIAG_Throw("Could not open " << PGMDocHandler::ToString(docty) 
-	       << " file '" << filenm << "'.");
+  } else {
+    DIAG_Throw("Could not open " << PGMDocHandler::ToString(docty) << " file '" << filenm << "'.");
   }
 }
-
-
-} // namespace Util
-
-} // namespace Analysis
+}  // namespace Struct
+}  // namespace Prof

@@ -57,65 +57,38 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <typeinfo>
-#include <string>
-using std::string;
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-
-#include <sstream>
-
-//*************************** User Include Files ****************************
-
-#include <include/gnu_bfd.h>
-
 #include "Dbg-Proc.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/gnu_bfd.h"
+#include "lib/support/diagnostics.h"
 
-//*************************** Forward Declarations **************************
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <typeinfo>
 
-//***************************************************************************
+using std::cerr;
+using std::dec;
+using std::endl;
+using std::hex;
+using std::string;
 
-//***************************************************************************
-// Proc
-//***************************************************************************
-
-std::string
-BinUtil::Dbg::Proc::toString() const
-{
+std::string BinUtil::Dbg::Proc::toString() const {
   std::ostringstream os;
   dump(os);
   return os.str();
 }
 
-
-std::ostream&
-BinUtil::Dbg::Proc::dump(std::ostream& os) const
-{
+std::ostream& BinUtil::Dbg::Proc::dump(std::ostream& os) const {
   os << "{Dbg::Proc: \n";
-  os << "  " << name 
-     << " [0x" << hex << begVMA << "-0x" << endVMA << dec << "]" 
-     << " --> parentVMA: 0x" 
-     << hex << parentVMA << " [" << parent << dec << "]\n";
+  os << "  " << name << " [0x" << hex << begVMA << "-0x" << endVMA << dec << "]"
+     << " --> parentVMA: 0x" << hex << parentVMA << " [" << parent << dec << "]\n";
   os << "  {" << filenm << "}:" << begLine << "\n";
   os << "}\n";
   os.flush();
   return os;
 }
 
-
-void
-BinUtil::Dbg::Proc::ddump() const
-{
+void BinUtil::Dbg::Proc::ddump() const {
   dump(std::cerr);
 }
-
-
-//***************************************************************************

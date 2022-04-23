@@ -48,26 +48,30 @@
 #include <string>
 #include <vector>
 
+
+
 using namespace std;
+
 #endif
-#include <sys/types.h>
+#include "code-ranges.h"
+
 #include <inttypes.h>
 #include <stdbool.h>
-#include "code-ranges.h"
+#include <sys/types.h>
 
 int c_mode(void);
 
 void function_entries_reinit();
 
-void add_function_entry(void *address, const char *comment, bool isglobal, int call_count);
-void add_stripped_function_entry(void *function_entry, int call_count);
-bool contains_function_entry(void *address);
+void add_function_entry(void* address, const char* comment, bool isglobal, int call_count);
+void add_stripped_function_entry(void* function_entry, int call_count);
+bool contains_function_entry(void* address);
 
-void add_protected_range(void *start, void *end);
-int  is_possible_fn(void *addr);
-int  inside_protected_range(void *addr);
+void add_protected_range(void* start, void* end);
+int is_possible_fn(void* addr);
+int inside_protected_range(void* addr);
 
-void entries_in_range(void *start, void *end, void **result);
-bool query_function_entry(void *addr);
+void entries_in_range(void* start, void* end, void** result);
+bool query_function_entry(void* addr);
 
 void dump_reachable_functions();

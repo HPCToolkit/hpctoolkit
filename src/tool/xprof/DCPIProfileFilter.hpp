@@ -57,37 +57,22 @@
 //
 //***************************************************************************
 
-#ifndef DCPIProfileFilter_H 
+#ifndef DCPIProfileFilter_H
 #define DCPIProfileFilter_H
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include "PCProfileFilter.hpp"
 #include "DCPIMetricDesc.hpp"
+#include "PCProfileFilter.hpp"
 
-#include <lib/isa/ISATypes.hpp>
-
-#include <lib/binutils/LM.hpp>
-
-//*************************** Forward Declarations ***************************
+#include "include/uint.h"
+#include "lib/binutils/LM.hpp"
+#include "lib/isa/ISATypes.hpp"
 
 class DCPIMetricFilter;
-
-//****************************************************************************
 
 // GetPredefinedDCPIFilter: Given a metric name, returns a DCPI filter
 // if available, or NULL.  The user is responsible for unallocating
 // the returned object.
-PCProfileFilter* 
-GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm);
-
-//****************************************************************************
-// DCPIMetricExpr
-//****************************************************************************
+PCProfileFilter* GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm);
 
 // 'DCPIMetricExpr' extensions to 'DCPIMetricDesc' for representing
 // DCPI metric query expressions.  DCPIMetricDesc bits should be used
@@ -102,12 +87,12 @@ GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm);
 // DCPIMetricDesc bits for more information on bits and their
 // meanings.
 //
-// Non-ProfileMe expressions: <type> && <counter> 
+// Non-ProfileMe expressions: <type> && <counter>
 //
 // A conjuction between <type> and <counter> subexpressions.  <type>
 // must be DCPI_MTYPE_RM.  One and only one counter should be referenced
 // within <counter>.  E.g.:
-//   valid:   DCPI_MTYPE_RM | DCPI_RM_cycles 
+//   valid:   DCPI_MTYPE_RM | DCPI_RM_cycles
 //   invalid: DCPI_MTYPE_RM | DCPI_RM_cycles | DCPI_RM_retires
 //
 // ProfileMe expressions: <type> && <counter> && <attribute> && <trap>
@@ -123,22 +108,18 @@ GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm);
 //   valid: DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
 class DCPIMetricExpr : public DCPIMetricDesc {
 public:
-  DCPIMetricExpr(DCPIMetricDesc::bitvec_t bv)
-    : DCPIMetricDesc(bv) { }
-  ~DCPIMetricExpr() { }
+  DCPIMetricExpr(DCPIMetricDesc::bitvec_t bv) : DCPIMetricDesc(bv) {}
+  ~DCPIMetricExpr() {}
 
   DCPIMetricExpr(const DCPIMetricExpr& x) { *this = x; }
-  DCPIMetricExpr& operator=(const DCPIMetricExpr& x)
-  {
+  DCPIMetricExpr& operator=(const DCPIMetricExpr& x) {
     DCPIMetricDesc::operator=(x);
     return *this;
   }
-  
+
   // IsSatisfied: Test to see if this query expression is satisfied by
   // the DCPI metric 'm'.
-  bool IsSatisfied(const DCPIMetricDesc::bitvec_t bv) {
-    return IsSatisfied(DCPIMetricDesc(bv));
-  }
+  bool IsSatisfied(const DCPIMetricDesc::bitvec_t bv) { return IsSatisfied(DCPIMetricDesc(bv)); }
   bool IsSatisfied(const DCPIMetricDesc& m) {
     // FIXME: This works for now, but it is technically incorrect
     // becuase regular metrics do not have the <trap> subexpression.
@@ -146,29 +127,24 @@ public:
     // The <trap> subexpression is a disjuction, so we test it separately
     bool expr = m.IsSet(bits & ~DCPI_PM_TRAP_MASK);
     bitvec_t trapbv = bits & DCPI_PM_TRAP_MASK;
-    if (trapbv != 0) { 
+    if (trapbv != 0) {
       return expr && m.IsSetAny(trapbv);
     } else {
       return expr;
     }
   }
-  
+
 protected:
-private:  
-
+private:
 };
-
-//****************************************************************************
-// DCPIMetricFilter
-//****************************************************************************
 
 // DCPIMetricFilter: A DCPIMetricFilter divides metrics into two sets
 // sets, 'in' and 'out'.
 class DCPIMetricFilter : public MetricFilter {
 public:
-  DCPIMetricFilter(DCPIMetricExpr expr_) : expr(expr_) { }
-  virtual ~DCPIMetricFilter() { }
-  
+  DCPIMetricFilter(DCPIMetricExpr expr_) : expr(expr_) {}
+  virtual ~DCPIMetricFilter() {}
+
   // Returns true if 'm' satisfies 'expr'; false otherwise.
   virtual bool operator()(const PCProfileMetric* m);
 
@@ -176,22 +152,17 @@ private:
   DCPIMetricExpr expr;
 };
 
-//****************************************************************************
-// PredefinedDCPIMetricTable
-//****************************************************************************
-
 class PredefinedDCPIMetricTable {
 public:
-
   struct Entry {
-    const char* name; 
+    const char* name;
     const char* description;
-    
-    uint32_t avail; // condition that must be true for metric to be available
-    const char* availStr; // optional extension to above condition
-    
-    DCPIMetricExpr mexpr; // the metric filter expr
-    InsnClassExpr iexpr;  // the instruction filter expr
+
+    uint32_t avail;        // condition that must be true for metric to be available
+    const char* availStr;  // optional extension to above condition
+
+    DCPIMetricExpr mexpr;  // the metric filter expr
+    InsnClassExpr iexpr;   // the instruction filter expr
   };
 
   // Note: these availability tags refer to the raw DCPI metrics (not
@@ -199,33 +170,30 @@ public:
   // nice and we know they only need to fit in 32 bits.)  RM should
   // never be used at the same time as PM0-PM3.
   enum AvailTag {
-    RM  = 0x00000001, // the given non ProfileMe (regular) metric must be available
-    PM0 = 0x00000002, // ProfileMe mode 0
-    PM1 = 0x00000004, // ProfileMe mode 1
-    PM2 = 0x00000008, // ProfileMe mode 2
-    PM3 = 0x00000010  // ProfileMe mode 3
+    RM = 0x00000001,   // the given non ProfileMe (regular) metric must be available
+    PM0 = 0x00000002,  // ProfileMe mode 0
+    PM1 = 0x00000004,  // ProfileMe mode 1
+    PM2 = 0x00000008,  // ProfileMe mode 2
+    PM3 = 0x00000010   // ProfileMe mode 3
   };
 
 public:
-  PredefinedDCPIMetricTable() { }
-  ~PredefinedDCPIMetricTable() { }
+  PredefinedDCPIMetricTable() {}
+  ~PredefinedDCPIMetricTable() {}
 
   static Entry* FindEntry(const char* token);
   static Entry* Index(unsigned int i);
   static unsigned int GetSize() { return size; }
 
 private:
-  // Should not be used 
-  PredefinedDCPIMetricTable(const PredefinedDCPIMetricTable& p) { }
+  // Should not be used
+  PredefinedDCPIMetricTable(const PredefinedDCPIMetricTable& p) {}
   PredefinedDCPIMetricTable& operator=(const PredefinedDCPIMetricTable& p) { return *this; }
-  
+
 private:
   static Entry table[];
   static unsigned int size;
   static bool sorted;
 };
 
-//****************************************************************************
-
 #endif
-

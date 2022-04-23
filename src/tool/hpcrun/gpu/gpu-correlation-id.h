@@ -44,27 +44,11 @@
 #ifndef gpu_correlation_id_h
 #define gpu_correlation_id_h
 
-
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
 #include <stdint.h>
 
-//we use this for our activity that should be ignored
+// we use this for our activity that should be ignored
 #define IGNORE_CORR_ID (~0ULL)
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-uint64_t
-gpu_correlation_id
-(
- void
-);
-
-
+uint64_t gpu_correlation_id(void);
 
 #endif

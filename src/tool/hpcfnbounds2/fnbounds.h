@@ -48,71 +48,72 @@
 #ifndef _FNBOUNDS_FNBOUNDS_H_
 #define _FNBOUNDS_FNBOUNDS_H_
 
+#include "code-ranges.h"
 
-#include	<sys/types.h>
-#include	<stdio.h>
-#include	<stdlib.h>
-#include	<unistd.h>
-#include	<fcntl.h>
-#include	<string.h>
-#include	<sys/errno.h>
-#include	<sys/mman.h>
-#include	<elf.h>
-#include	<libelf.h>
-#include	<gelf.h>
-#include 	<dwarf.h>
-#include	<sys/auxv.h>
-#include	"code-ranges.h"
+#include <dwarf.h>
+#include <elf.h>
+#include <fcntl.h>
+#include <gelf.h>
+#include <libelf.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/auxv.h>
+#include <sys/errno.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 // Local typedefs
 typedef struct Function {
-  uint64_t	fadd;
-  char	*fnam;
-  char	*src;
+  uint64_t fadd;
+  char* fnam;
+  char* src;
   uint8_t fr_fnam;
 } Function_t;
 
 // prototypes
-char	*get_funclist(char *);
-char	*process_vdso();
-char	*process_mapped_header(Elf *e);
-void	print_funcs();
-void	write_cc_funcs();
-void	add_function(uint64_t, char *, char *, uint8_t);
-int	func_cmp(const void *a, const void *b);
-void	usage();
-void	cleanup();
+char* get_funclist(char*);
+char* process_vdso();
+char* process_mapped_header(Elf* e);
+void print_funcs();
+void write_cc_funcs();
+void add_function(uint64_t, char*, char*, uint8_t);
+int func_cmp(const void* a, const void* b);
+void usage();
+void cleanup();
 
 // Methods for the various sources of functions
-void	disable_sources(char *);
-uint64_t	dynsymread(Elf *e, GElf_Shdr sh);
-uint64_t	symtabread(Elf *e, GElf_Shdr sh);
-uint64_t  symsecread(Elf *e, GElf_Shdr sechdr, char *src);
+void disable_sources(char*);
+uint64_t dynsymread(Elf* e, GElf_Shdr sh);
+uint64_t symtabread(Elf* e, GElf_Shdr sh);
+uint64_t symsecread(Elf* e, GElf_Shdr sechdr, char* src);
 
 // Flags governing which sources are processed
-extern	int	dynsymread_f;
-extern	int	symtabread_f;
-extern	int	ehframeread_f;
-extern	int	pltscan_f;
-extern	int	pltsecscan_f;
-extern	int	initscan_f;
-extern	int	textscan_f;
-extern	int	finiscan_f;
-extern	int	altinstr_replacementscan_f;
+extern int dynsymread_f;
+extern int symtabread_f;
+extern int ehframeread_f;
+extern int pltscan_f;
+extern int pltsecscan_f;
+extern int initscan_f;
+extern int textscan_f;
+extern int finiscan_f;
+extern int altinstr_replacementscan_f;
 
 // void	init_server(DiscoverFnTy, int, int);
 
-extern	int	server_mode;
-extern	int	verbose;
-extern	int	scan_code;
-extern	int	no_dwarf;;
-extern	int	is_dotso;
-extern  uint64_t refOffset;
-extern	char	*xname;
+extern int server_mode;
+extern int verbose;
+extern int scan_code;
+extern int no_dwarf;
+;
+extern int is_dotso;
+extern uint64_t refOffset;
+extern char* xname;
 
-extern	int	outputmode;
-#define	OM_TEXT 0
-#define	OM_CC 1
+extern int outputmode;
+#define OM_TEXT 0
+#define OM_CC   1
 
 // unified string pointers to contain function types
 
@@ -127,36 +128,35 @@ extern const char __f_[];
 extern const char __a_[];
 extern const char __e_[];
 
-#define SC_FNTYPE_NONE      ((char *)__null_)
-#define SC_FNTYPE_PLT       ((char *)__p_)
-#define SC_FNTYPE_PLTSEC    ((char *)__q_)
-#define SC_FNTYPE_SYMTAB    ((char *)__s_)
-#define SC_FNTYPE_DYNSYM    ((char *)__d_)
-#define SC_FNTYPE_INIT      ((char *)__i_)
-#define SC_FNTYPE_TEXT      ((char *)__t_)
-#define SC_FNTYPE_FINI      ((char *)__f_)
-#define SC_FNTYPE_ALTINSTR  ((char *)__a_)
-#define SC_FNTYPE_EH_FRAME  ((char *)__e_)
+#define SC_FNTYPE_NONE     ((char*)__null_)
+#define SC_FNTYPE_PLT      ((char*)__p_)
+#define SC_FNTYPE_PLTSEC   ((char*)__q_)
+#define SC_FNTYPE_SYMTAB   ((char*)__s_)
+#define SC_FNTYPE_DYNSYM   ((char*)__d_)
+#define SC_FNTYPE_INIT     ((char*)__i_)
+#define SC_FNTYPE_TEXT     ((char*)__t_)
+#define SC_FNTYPE_FINI     ((char*)__f_)
+#define SC_FNTYPE_ALTINSTR ((char*)__a_)
+#define SC_FNTYPE_EH_FRAME ((char*)__e_)
 
 // for the fr_fnam flag, if fnam should be freed
-#define FR_YES	(1)
-#define FR_NO	(0)
+#define FR_YES (1)
+#define FR_NO  (0)
 
-// Defines 
-#define MAX_FUNC          (65536)
-#define TB_SIZE		        (512)
-#define MAX_SYM_SIZE	    (TB_SIZE)
-#define SC_SKIP		        (0)
-#define SC_DONE		        (1)
+// Defines
+#define MAX_FUNC     (65536)
+#define TB_SIZE      (512)
+#define MAX_SYM_SIZE (TB_SIZE)
+#define SC_SKIP      (0)
+#define SC_DONE      (1)
 
-
-extern	Function_t *farray;
-extern	size_t     maxfunc;
-extern	size_t     nfunc;
+extern Function_t* farray;
+extern size_t maxfunc;
+extern size_t nfunc;
 
 // Debug print routines
-void	print_elf_header64(GElf_Ehdr *elf_header);
-void	print_program_headers64(Elf *e);
-void	print_section_headers64(Elf *e);
+void print_elf_header64(GElf_Ehdr* elf_header);
+void print_program_headers64(Elf* e);
+void print_section_headers64(Elf* e);
 
 #endif  // _FNBOUNDS_FNBOUNDS_H_

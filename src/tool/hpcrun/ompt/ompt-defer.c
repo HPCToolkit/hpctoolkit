@@ -44,146 +44,102 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
 #include <assert.h>
-
-
-
-//*****************************************************************************
-// libmonitor
-//*****************************************************************************
-
 #include <monitor.h>
 
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
 // johnmc merge
 #if 0
 #include "ompt-parallel-region-map.h"
 #endif
 
-#include <lib/prof-lean/placeholders.h>
-
-#include <hpcrun/unresolved.h>
-#include <hpcrun/utilities/timer.h>
-
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
 #include "ompt-queues.h"
-#include "ompt-region.h"
 #include "ompt-region-debug.h"
+#include "ompt-region.h"
 #include "ompt-thread.h"
 
+#include "hpcrun/unresolved.h"
+#include "hpcrun/utilities/timer.h"
 
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
+#include "lib/prof-lean/placeholders.h"
 
 #define DEFER_DEBUGGING 0
 
-
-
-//*****************************************************************************
-// private operations
-//*****************************************************************************
-
 //
 // TODO: add trace correction info here
-// FIXME: merge metrics belongs in a different file. it is not specific to 
+// FIXME: merge metrics belongs in a different file. it is not specific to
 // OpenMP
 //
-static void
-merge_metrics
-(
- cct_node_t *a, 
- cct_node_t *b, 
- merge_op_arg_t arg
-)
-{
+static void merge_metrics(cct_node_t* a, cct_node_t* b, merge_op_arg_t arg) {
   // if nodes a and b are the same, no need to merge
-  if (a == b) return;
+  if (a == b)
+    return;
 
   metric_data_list_t* mset_a = hpcrun_get_metric_data_list(a);
   metric_data_list_t* mset_b = hpcrun_get_metric_data_list(b);
 
-  if (!mset_a || !mset_b) return;
+  if (!mset_a || !mset_b)
+    return;
 
   int num_kind_metrics = hpcrun_get_num_kind_metrics();
   for (int i = 0; i < num_kind_metrics; i++) {
-    cct_metric_data_t *mdata_a = hpcrun_metric_set_loc(mset_a, i);
-    cct_metric_data_t *mdata_b = hpcrun_metric_set_loc(mset_b, i);
+    cct_metric_data_t* mdata_a = hpcrun_metric_set_loc(mset_a, i);
+    cct_metric_data_t* mdata_b = hpcrun_metric_set_loc(mset_b, i);
 
     // FIXME: this test depends upon dense metric sets. sparse metrics
     //        should ensure that node a has the result
-    if (!mdata_a || !mdata_b) continue;
+    if (!mdata_a || !mdata_b)
+      continue;
 
-    metric_desc_t *mdesc = hpcrun_id2metric(i);
-    switch(mdesc->flags.fields.valFmt) {
-    case MetricFlags_ValFmt_Int:  mdata_a->i += mdata_b->i; break;
+    metric_desc_t* mdesc = hpcrun_id2metric(i);
+    switch (mdesc->flags.fields.valFmt) {
+    case MetricFlags_ValFmt_Int: mdata_a->i += mdata_b->i; break;
     case MetricFlags_ValFmt_Real: mdata_a->r += mdata_b->r; break;
-    default:
-      TMSG(DEFER_CTXT, "in merge_op: what's the metric type");
-      monitor_real_exit(1);
+    default: TMSG(DEFER_CTXT, "in merge_op: what's the metric type"); monitor_real_exit(1);
     }
   }
 }
 
-
-static void
-deferred_resolution_breakpoint
-(
-)
-{
+static void deferred_resolution_breakpoint() {
   // set a breakpoint here to identify problematic cases
 }
 
-
-static void
-omp_resolve
-(
- cct_node_t* cct, 
- cct_op_arg_t a, 
- size_t l
-)
-{
-  cct_node_t *prefix;
-  thread_data_t *td = (thread_data_t *)a;
+static void omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l) {
+  cct_node_t* prefix;
+  thread_data_t* td = (thread_data_t*)a;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
 
   TMSG(DEFER_CTXT, "omp_resolve: try to resolve region 0x%lx", my_region_id);
   uint64_t partial_region_id = 0;
   prefix = hpcrun_region_lookup(my_region_id);
   if (prefix) {
-    TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx to 0x%lx", my_region_id, is_partial_resolve(prefix));
+    TMSG(
+        DEFER_CTXT, "omp_resolve: resolve region 0x%lx to 0x%lx", my_region_id,
+        is_partial_resolve(prefix));
     // delete cct from its original parent before merging
     hpcrun_cct_delete_self(cct);
-    TMSG(DEFER_CTXT, "omp_resolve: delete from the tbd region 0x%lx", hpcrun_cct_addr(cct)->ip_norm.lm_ip);
+    TMSG(
+        DEFER_CTXT, "omp_resolve: delete from the tbd region 0x%lx",
+        hpcrun_cct_addr(cct)->ip_norm.lm_ip);
 
     partial_region_id = is_partial_resolve(prefix);
 
     if (partial_region_id == 0) {
 #if 1
-      cct_node_t *root = ompt_region_root(prefix);
-      prefix = hpcrun_cct_insert_path_return_leaf(root,  prefix);
+      cct_node_t* root = ompt_region_root(prefix);
+      prefix = hpcrun_cct_insert_path_return_leaf(root, prefix);
 #else
-      prefix = hpcrun_cct_insert_path_return_leaf
-	((td->core_profile_trace_data.epoch->csdata).tree_root, prefix);
+      prefix = hpcrun_cct_insert_path_return_leaf(
+          (td->core_profile_trace_data.epoch->csdata).tree_root, prefix);
 #endif
-    }
-    else {
-      prefix = hpcrun_cct_insert_path_return_leaf
-	((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
+    } else {
+      prefix = hpcrun_cct_insert_path_return_leaf(
+          (td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
 
-      //FIXME: Get region_data_t and update refcnt
-//      ompt_region_map_refcnt_update(partial_region_id, 1L);
+      // FIXME: Get region_data_t and update refcnt
+      //      ompt_region_map_refcnt_update(partial_region_id, 1L);
 
       TMSG(DEFER_CTXT, "omp_resolve: get partial resolution to 0x%lx\n", partial_region_id);
     }
@@ -192,58 +148,38 @@ omp_resolve
     // will have the unified view for parallel regions (this only works for GOMP)
     if (td->team_master) {
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
-    }
-    else {
+    } else {
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
       // must delete it when not used considering the performance
       TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx", my_region_id);
 
-      //ompt_region_map_refcnt_update(my_region_id, -1L);
+      // ompt_region_map_refcnt_update(my_region_id, -1L);
     }
   }
 }
 
-
-static void
-omp_resolve_and_free
-(
- cct_node_t* cct, 
- cct_op_arg_t a, 
- size_t l
-)
-{
+static void omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l) {
   omp_resolve(cct, a, l);
 }
 
-
-int
-need_defer_cntxt
-(
- void
-)
-{
-  if (ENABLED(OMPT_LOCAL_VIEW)) return 0;
+int need_defer_cntxt(void) {
+  if (ENABLED(OMPT_LOCAL_VIEW))
+    return 0;
 
   // master thread does not need to defer the context
   if ((hpcrun_ompt_get_parallel_info_id(0) > 0) && !TD_GET(master)) {
-    thread_data_t *td = hpcrun_get_thread_data();
+    thread_data_t* td = hpcrun_get_thread_data();
     td->defer_flag = 1;
     return 1;
   }
   return 0;
 }
 
-
-uint64_t
-is_partial_resolve
-(
- cct_node_t *prefix
-)
-{
-  //go up the path to check whether there is a node with UNRESOLVED tag
-  cct_node_t *node = prefix;
+uint64_t is_partial_resolve(cct_node_t* prefix) {
+  // go up the path to check whether there is a node with UNRESOLVED tag
+  cct_node_t* node = prefix;
   while (node) {
-    cct_addr_t *addr = hpcrun_cct_addr(node);
+    cct_addr_t* addr = hpcrun_cct_addr(node);
     if (IS_UNRESOLVED_ROOT(addr))
       return (uint64_t)(addr->ip_norm.lm_ip);
     node = hpcrun_cct_parent(node);
@@ -251,33 +187,27 @@ is_partial_resolve
   return 0;
 }
 
-
 //-----------------------------------------------------------------------------
 // Function: resolve_cntxt
-// 
-// Purpose: 
+//
+// Purpose:
 //   resolve contexts of parallel regions.
 //
 // Description:
-// (1) Compute the outer-most region id; only the outer-most region needs to be 
+// (1) Compute the outer-most region id; only the outer-most region needs to be
 //     resolved
-// (2) If the thread has a current region id that is different from its previous 
+// (2) If the thread has a current region id that is different from its previous
 //     one; and the previous region id is non-zero, resolve the previous region.
 //     The previous region id is recorded in td->region_id.
 // (3) If the thread has a current region id that is different from its previous
-//     one; and the current region id is non-zero, add a slot into the 
+//     one; and the current region id is non-zero, add a slot into the
 //     unresolved tree indexed by the current region_id
 // (4) Update td->region_id to be the current region id
 
-void 
-resolve_cntxt
-(
- void
-)
-{
+void resolve_cntxt(void) {
   return;
   cct_node_t* tbd_cct = (hpcrun_get_thread_epoch()->csdata).unresolved_root;
-  thread_data_t *td = hpcrun_get_thread_data();
+  thread_data_t* td = hpcrun_get_thread_data();
 
   //---------------------------------------------------------------------------
   // step 1:
@@ -302,7 +232,7 @@ resolve_cntxt
       // forget the previously memoized outermost parallel region.
       td->outer_region_id = 0;
     } else {
-      outer_region_id = td->outer_region_id; // outer region for submaster
+      outer_region_id = td->outer_region_id;  // outer region for submaster
     }
   }
 
@@ -312,8 +242,11 @@ resolve_cntxt
     outer_region_id = innermost_region_id;
   }
 
-  TMSG(DEFER_CTXT, "resolve_cntxt: outermost region id is 0x%lx, "
-       "innermost region id is 0x%lx", outer_region_id, innermost_region_id);
+  TMSG(
+      DEFER_CTXT,
+      "resolve_cntxt: outermost region id is 0x%lx, "
+      "innermost region id is 0x%lx",
+      outer_region_id, innermost_region_id);
 
   //---------------------------------------------------------------------------
   // step 2:
@@ -343,17 +276,15 @@ resolve_cntxt
     // solution: consider such sample not in openmp region (need no
     // defer cntxt)
 
-
     // FIXME: Accomodate to region_data_t
     // FIXME: Focus on this
     // (ADDR2(UNRESOLVED, get from region_data)
     // watch for monitoring variables
 
-//    if (ompt_region_map_refcnt_update(outer_region_id, 1L))
-//      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
-//    else
-//      outer_region_id = 0;
-
+    //    if (ompt_region_map_refcnt_update(outer_region_id, 1L))
+    //      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
+    //    else
+    //      outer_region_id = 0;
   }
 
 #ifdef DEBUG_DEFER
@@ -370,61 +301,45 @@ resolve_cntxt
 #ifdef DEBUG_DEFER
   // debugging code
   if (innermost_region_id) {
-    ompt_region_map_entry_t *record = ompt_region_map_lookup(innermost_region_id);
+    ompt_region_map_entry_t* record = ompt_region_map_lookup(innermost_region_id);
     if (!record || (ompt_region_map_entry_refcnt_get(record) == 0)) {
-      EMSG("no record found innermost_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ",
-	   innermost_region_id, initial_td_region, td->region_id);
+      EMSG(
+          "no record found innermost_region_id=0x%lx initial_td_region_id=0x%lx "
+          "td->region_id=0x%lx ",
+          innermost_region_id, initial_td_region, td->region_id);
     }
   }
 #endif
 }
 
-
-void
-resolve_cntxt_fini
-(
- thread_data_t *td
-)
-{
-  //printf("Resolving for thread... region = %d\n", td->region_id);
-  //printf("Root children = %p\n", td->core_profile_trace_data.epoch->csdata.unresolved_root->children);
-  hpcrun_cct_walkset(td->core_profile_trace_data.epoch->csdata.unresolved_root,
-                     omp_resolve_and_free, td);
+void resolve_cntxt_fini(thread_data_t* td) {
+  // printf("Resolving for thread... region = %d\n", td->region_id);
+  // printf("Root children = %p\n",
+  // td->core_profile_trace_data.epoch->csdata.unresolved_root->children);
+  hpcrun_cct_walkset(
+      td->core_profile_trace_data.epoch->csdata.unresolved_root, omp_resolve_and_free, td);
 }
 
-
-cct_node_t *
-hpcrun_region_lookup
-(
- uint64_t id
-)
-{
-  cct_node_t *result = NULL;
+cct_node_t* hpcrun_region_lookup(uint64_t id) {
+  cct_node_t* result = NULL;
 
   // FIXME: Find another way to get infor about parallel region
 
-//  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
-//  if (record) {
-//    result = ompt_region_map_entry_callpath_get(record);
-//  }
+  //  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
+  //  if (record) {
+  //    result = ompt_region_map_entry_callpath_get(record);
+  //  }
 
   return result;
 }
 
 // added by vi3
 
-
-
 // FIXME: move this function at better place
 
-int 
-get_stack_index
-(
- ompt_region_data_t *region_data
-)
-{
+int get_stack_index(ompt_region_data_t* region_data) {
   int i;
-  for (i = top_index; i>=0; i--) {
+  for (i = top_index; i >= 0; i--) {
     if (region_stack[i].notification->region_data->region_id == region_data->region_id) {
       return i;
     }
@@ -440,14 +355,8 @@ get_stack_index
  *     r9 (thread 123) -> r10
  * */
 
-
-ompt_notification_t*
-help_notification_alloc
-(
- ompt_region_data_t *region_data
-)
-{
-  ompt_notification_t *notification = hpcrun_ompt_notification_alloc();
+ompt_notification_t* help_notification_alloc(ompt_region_data_t* region_data) {
+  ompt_notification_t* notification = hpcrun_ompt_notification_alloc();
   notification->region_data = region_data;
   notification->region_id = region_data->region_id;
   notification->threads_queue = &threads_queue;
@@ -455,17 +364,10 @@ help_notification_alloc
   return notification;
 }
 
-
-void
-swap_and_free
-(
- ompt_region_data_t* region_data
-)
-{
-
+void swap_and_free(ompt_region_data_t* region_data) {
   int depth = region_data->depth;
-  ompt_notification_t *notification;
-  region_stack_el_t *stack_element;
+  ompt_notification_t* notification;
+  region_stack_el_t* stack_element;
 
   // If notification at depth index of the stack
   // does not have initialize next pointer, that means
@@ -493,23 +395,15 @@ swap_and_free
   // and this condition does not check thath
   //    if (OMPT_BASE_T_GET_NEXT(notification) == NULL
   //        && wfq_get_next(OMPT_BASE_T_STAR(notification)) == NULL) {
-
 }
 
-void
-add_region_and_ancestors_to_stack
-(
- ompt_region_data_t *region_data, 
- bool team_master
-)
-{
-
+void add_region_and_ancestors_to_stack(ompt_region_data_t* region_data, bool team_master) {
   if (!region_data) {
     // printf("*******************This is also possible. ompt-defer.c:394");
     return;
   }
 
-  ompt_region_data_t *current = region_data;
+  ompt_region_data_t* current = region_data;
   int level = 0;
   int depth;
 
@@ -518,8 +412,8 @@ add_region_and_ancestors_to_stack
   while (current) {
     depth = current->depth;
     // found region which is on the stack
-    if (depth <= top_index &&
-        region_stack[depth].notification->region_data->region_id == current->region_id) {
+    if (depth <= top_index
+        && region_stack[depth].notification->region_data->region_id == current->region_id) {
       break;
     }
     swap_and_free(current);
@@ -534,39 +428,28 @@ add_region_and_ancestors_to_stack
   // then thread could only be master of the region_data, but not to its ancestors.
   // Values of argument team_master says if the thread is the master of region_data
   region_stack[top_index].team_master = team_master;
-
 }
 
-
-cct_node_t*
-add_pseudo_cct
-(
- ompt_region_data_t* region_data
-)
-{
+cct_node_t* add_pseudo_cct(ompt_region_data_t* region_data) {
   // should add cct inside the tree
   cct_node_t* new;
   if (top_index == 0) {
     // this is the first parallel region add pseudo cct
     // which corresponds to the region as a child of thread root
-    new = hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).thread_root,
-                                 &(ADDR2(UNRESOLVED, region_data->region_id)), true);
+    new = hpcrun_cct_insert_addr(
+        (hpcrun_get_thread_epoch()->csdata).thread_root,
+        &(ADDR2(UNRESOLVED, region_data->region_id)), true);
   } else {
     // add cct as a child of a previous pseudo cct
-    new = hpcrun_cct_insert_addr(region_stack[top_index - 1].notification->unresolved_cct,
-                                 &(ADDR2(UNRESOLVED, region_data->region_id)), true);
+    new = hpcrun_cct_insert_addr(
+        region_stack[top_index - 1].notification->unresolved_cct,
+        &(ADDR2(UNRESOLVED, region_data->region_id)), true);
   }
 
   return new;
 }
 
-
-void
-register_to_region
-(
- ompt_notification_t* notification
-)
-{
+void register_to_region(ompt_notification_t* notification) {
   ompt_region_data_t* region_data = notification->region_data;
 
   ompt_region_debug_notify_needed(notification);
@@ -581,27 +464,16 @@ register_to_region
   unresolved_cnt++;
 }
 
-ompt_notification_t*
-add_notification_to_stack
-(
- ompt_region_data_t* region_data
-)
-{
-    ompt_notification_t* notification = help_notification_alloc(region_data);
-    notification->region_data = region_data;
-    notification->threads_queue = &threads_queue;
-    // push to stack
-    push_region_stack(notification, 0, 0);
-    return notification;
+ompt_notification_t* add_notification_to_stack(ompt_region_data_t* region_data) {
+  ompt_notification_t* notification = help_notification_alloc(region_data);
+  notification->region_data = region_data;
+  notification->threads_queue = &threads_queue;
+  // push to stack
+  push_region_stack(notification, 0, 0);
+  return notification;
 }
 
-
-void
-register_if_not_master
-(
- ompt_notification_t *notification
-)
-{
+void register_if_not_master(ompt_notification_t* notification) {
   if (notification && not_master_region == notification->region_data) {
     register_to_region(notification);
     // should memoize the cct for not_master_region
@@ -609,13 +481,7 @@ register_if_not_master
   }
 }
 
-
-int
-get_took_sample_parent_index
-(
- void
-)
-{
+int get_took_sample_parent_index(void) {
   int i;
   for (i = top_index; i >= 0; i--) {
     if (region_stack[i].took_sample) {
@@ -625,13 +491,7 @@ get_took_sample_parent_index
   return -1;
 }
 
-
-void
-register_to_all_regions
-(
- void
-)
-{
+void register_to_all_regions(void) {
   // find ancestor on the stack in which we took a sample
   // a go until the top of the stack
   int start_register_index = get_took_sample_parent_index() + 1;
@@ -639,10 +499,10 @@ register_to_all_regions
   // mark that all descendants of previously mentioned ancestor took a sample
   // for all descendants where thread is not the master in, register for descendant callpath
   int i;
-  region_stack_el_t *current_el;
-  cct_node_t *parent_cct;
-  cct_node_t *new_cct;
-  for (i = start_register_index; i <=top_index; i++) {
+  region_stack_el_t* current_el;
+  cct_node_t* parent_cct;
+  cct_node_t* new_cct;
+  for (i = start_register_index; i <= top_index; i++) {
     current_el = &region_stack[i];
     // mark that we took sample
     current_el->took_sample = true;
@@ -652,74 +512,60 @@ register_to_all_regions
       // add unresolved cct at some place underneath thread root
       // find parent of new_cct
       parent_cct = (i == 0) ? hpcrun_get_thread_epoch()->csdata.thread_root
-              : region_stack[i-1].notification->unresolved_cct;
+                            : region_stack[i - 1].notification->unresolved_cct;
 
       if (current_el->notification->region_data->region_id == 0) {
-	deferred_resolution_breakpoint();
+        deferred_resolution_breakpoint();
       }
       // insert cct as child of the parent_cct
-      new_cct =
-              hpcrun_cct_insert_addr(parent_cct,
-                                     &(ADDR2(UNRESOLVED, current_el->notification->region_data->region_id)), true);
+      new_cct = hpcrun_cct_insert_addr(
+          parent_cct, &(ADDR2(UNRESOLVED, current_el->notification->region_data->region_id)), true);
       // remebmer cct
       current_el->notification->unresolved_cct = new_cct;
 
       cct_not_master_region = current_el->notification->unresolved_cct;
-
     }
   }
-
-
 }
 
-
 // insert a path to the root and return the path in the root
-cct_node_t*
-hpcrun_cct_insert_path_return_leaf_tmp
-(
- cct_node_t *root,
- cct_node_t *path
-)
-{
-    if (!path) return root;
-    cct_node_t *parent = hpcrun_cct_parent(path);
-    if (parent) {
-      root = hpcrun_cct_insert_path_return_leaf_tmp(root, parent);
-    }
-    return hpcrun_cct_insert_addr(root, hpcrun_cct_addr(path), true);
+cct_node_t* hpcrun_cct_insert_path_return_leaf_tmp(cct_node_t* root, cct_node_t* path) {
+  if (!path)
+    return root;
+  cct_node_t* parent = hpcrun_cct_parent(path);
+  if (parent) {
+    root = hpcrun_cct_insert_path_return_leaf_tmp(root, parent);
+  }
+  return hpcrun_cct_insert_addr(root, hpcrun_cct_addr(path), true);
 }
 
 // return one if a notification was processed
-int
-try_resolve_one_region_context
-(
- void
-)
-{
-  ompt_notification_t *old_head = NULL;
+int try_resolve_one_region_context(void) {
+  ompt_notification_t* old_head = NULL;
 
-  old_head = (ompt_notification_t*) 
-    wfq_dequeue_private(&threads_queue, OMPT_BASE_T_STAR_STAR(private_threads_queue));
+  old_head = (ompt_notification_t*)wfq_dequeue_private(
+      &threads_queue, OMPT_BASE_T_STAR_STAR(private_threads_queue));
 
-  if (!old_head) return 0;
+  if (!old_head)
+    return 0;
 
   unresolved_cnt--;
 
   // region to resolve
-  ompt_region_data_t *region_data = old_head->region_data;
+  ompt_region_data_t* region_data = old_head->region_data;
 
   ompt_region_debug_notify_received(old_head);
 
   // ================================== resolving part
-  cct_node_t *unresolved_cct = old_head->unresolved_cct;
-  cct_node_t *parent_unresolved_cct = hpcrun_cct_parent(unresolved_cct);
+  cct_node_t* unresolved_cct = old_head->unresolved_cct;
+  cct_node_t* parent_unresolved_cct = hpcrun_cct_parent(unresolved_cct);
 
   if (parent_unresolved_cct == NULL || region_data->call_path == NULL) {
     deferred_resolution_breakpoint();
   } else {
     // prefix should be put between unresolved_cct and parent_unresolved_cct
-    cct_node_t *prefix = NULL;
-    cct_node_t *region_call_path = region_data->call_path;
+    cct_node_t* prefix = NULL;
+    cct_node_t* region_call_path = region_data->call_path;
 
     // FIXME: why hpcrun_cct_insert_path_return_leaf ignores top cct of the path
     // when had this condtion, once infinity happen
@@ -747,8 +593,8 @@ try_resolve_one_region_context
   // free notification
   hpcrun_ompt_notification_free(old_head);
 
-  // check if the notification needs to be forwarded 
-  ompt_notification_t* next = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
+  // check if the notification needs to be forwarded
+  ompt_notification_t* next = (ompt_notification_t*)wfq_dequeue_public(&region_data->queue);
   if (next) {
     wfq_enqueue(OMPT_BASE_T_STAR(next), next->threads_queue);
   } else {
@@ -759,43 +605,23 @@ try_resolve_one_region_context
   return 1;
 }
 
-
-void
-update_unresolved_node
-(
- cct_node_t* n, 
- cct_op_arg_t arg, 
- size_t level
-)
-{
-  cct_addr_t *addr = hpcrun_cct_addr(n);
+void update_unresolved_node(cct_node_t* n, cct_op_arg_t arg, size_t level) {
+  cct_addr_t* addr = hpcrun_cct_addr(n);
 
   // Note: GCC7 statically evaluates this as false and dead code
   // eliminates the body without the cast on UNRESOLVED
-  if (addr->ip_norm.lm_id == (uint16_t) UNRESOLVED) { 
+  if (addr->ip_norm.lm_id == (uint16_t)UNRESOLVED) {
     addr->ip_norm = get_placeholder_norm(hpcrun_placeholder_ompt_region_unresolved);
   }
 }
 
-
-void
-update_any_unresolved_regions
-(
- cct_node_t* root 
-)
-{
-  void *no_arg = 0;
+void update_any_unresolved_regions(cct_node_t* root) {
+  void* no_arg = 0;
   hpcrun_cct_walkset(root, update_unresolved_node, no_arg);
 }
 
-
-void
-mark_remaining_unresolved_regions
-(
- void
-)
-{
-  thread_data_t* td   = hpcrun_get_thread_data();
+void mark_remaining_unresolved_regions(void) {
+  thread_data_t* td = hpcrun_get_thread_data();
   cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
 
   // look for unresolved nodes anywhere we might find them
@@ -805,36 +631,30 @@ mark_remaining_unresolved_regions
   update_any_unresolved_regions(cct->unresolved_root);
 }
 
-
-void 
-ompt_resolve_region_contexts
-(
- int is_process
-)
-{
+void ompt_resolve_region_contexts(int is_process) {
   struct timespec start_time;
 
   size_t i = 0;
   timer_start(&start_time);
 
   // attempt to resolve all remaining regions
-  for(;;i++) {
-
+  for (;; i++) {
     // if all regions resolved, we are done
-    if (unresolved_cnt == 0) break; 
+    if (unresolved_cnt == 0)
+      break;
 
     // poll for a notification to resolve a region context
     try_resolve_one_region_context();
 
     // infrequently check for a timeout
     if (i % 1000) {
-      
       // there are cases where not all region contexts can be
       // resolved. for instance, a user may initiate termination with
       // a Cntrl-C in the middle of a parallel region. if we have
       // tried to resolve region contexts for three seconds, that
       // should be enough. terminate after three seconds.
-      if (timer_elapsed(&start_time) > 3.0) break;
+      if (timer_elapsed(&start_time) > 3.0)
+        break;
     }
   }
 
@@ -847,7 +667,7 @@ ompt_resolve_region_contexts
   if (unresolved_cnt != 0 && hpcrun_ompt_region_check()) {
     // hang to let debugger attach
     volatile int x;
-    for(;;) {
+    for (;;) {
       x++;
     };
   }
@@ -855,51 +675,36 @@ ompt_resolve_region_contexts
   // FIXME vi3: find all memory leaks
 }
 
-
-void 
-ompt_resolve_region_contexts_poll
-(
- void
-)
-{
+void ompt_resolve_region_contexts_poll(void) {
   // if there are any unresolved contexts
   if (unresolved_cnt) {
     // attempt to resolve contexts by consuming any notifications that
     // are currently pending.
-    while (try_resolve_one_region_context());
+    while (try_resolve_one_region_context())
+      ;
   };
 }
 
-
 #if 1
-cct_node_t *
-top_cct
-(
- cct_node_t *current_cct
-)
-{  
+cct_node_t* top_cct(cct_node_t* current_cct) {
   if (!current_cct)
     return NULL;
 
-  cct_node_t *temp = current_cct;
+  cct_node_t* temp = current_cct;
   // FIXME: optimize this
-  while(hpcrun_cct_parent(temp)) {
-      temp = hpcrun_cct_parent(temp);
+  while (hpcrun_cct_parent(temp)) {
+    temp = hpcrun_cct_parent(temp);
   }
   return temp;
 }
 #else
 // return the top node in a call path
-cct_node_t *
-top_cct
-(
- cct_node_t *node
-)
-{
+cct_node_t* top_cct(cct_node_t* node) {
   if (node) {
     for (;;) {
-      cct_node_t *next = hpcrun_cct_parent(node);
-      if (next == NULL) break;
+      cct_node_t* next = hpcrun_cct_parent(node);
+      if (next == NULL)
+        break;
       node = next;
     }
   }
@@ -907,41 +712,23 @@ top_cct
 }
 #endif
 
-
-#define UINT64_T(value) (uint64_t)value
+#define UINT64_T(value) (uint64_t) value
 
 // first_frame_above
-frame_t*
-first_frame_above
-(
- frame_t *start, 
- frame_t *end, 
- uint64_t frame_address, 
- int *index
-)
-{
-  frame_t *it;
-  for(it = start; it <= end; it++, (*index)++) {
+frame_t* first_frame_above(frame_t* start, frame_t* end, uint64_t frame_address, int* index) {
+  frame_t* it;
+  for (it = start; it <= end; it++, (*index)++) {
     // FIXME: exit frame of current should be the same as enter_frame.ptr of previous frane
-    if (UINT64_T(it->cursor.sp) >= frame_address){
+    if (UINT64_T(it->cursor.sp) >= frame_address) {
       return it;
     }
   }
   return NULL;
 }
 
-
 // first_frame_below
-frame_t*
-first_frame_below
-(
- frame_t *start, 
- frame_t *end, 
- uint64_t frame_address, 
- int *index
-)
-{
-  frame_t *it = first_frame_above(start, end, frame_address, index);
+frame_t* first_frame_below(frame_t* start, frame_t* end, uint64_t frame_address, int* index) {
+  frame_t* it = first_frame_above(start, end, frame_address, index);
   if (!it) {
     return NULL;
   }
@@ -951,7 +738,7 @@ first_frame_below
   (*index)--;
 
   if (frame_address > UINT64_T(it->cursor.sp)) {
-    //printf("***********first_frame_below********Inside user code\n");
+    // printf("***********first_frame_below********Inside user code\n");
   } else if (frame_address == UINT64_T(it)) {
     // printf("***********first_frame_below********The same address\n");
   } else {
@@ -961,21 +748,14 @@ first_frame_below
   return it;
 }
 
-
-cct_node_t*
-get_cct_from_prefix
-(
- cct_node_t* cct, 
- int index
-)
-{
+cct_node_t* get_cct_from_prefix(cct_node_t* cct, int index) {
   if (!cct)
     return NULL;
 
   // FIXME: this is just a temporary solution
   cct_node_t* current = cct;
   int current_index = 0;
-  while(current) {
+  while (current) {
     if (current_index == index) {
       return current;
     }
@@ -985,33 +765,26 @@ get_cct_from_prefix
   return NULL;
 }
 
-
-cct_node_t*
-copy_prefix
-(
- cct_node_t* top, 
- cct_node_t* bottom
-)
-{
+cct_node_t* copy_prefix(cct_node_t* top, cct_node_t* bottom) {
   // FIXME: vi3 do we need to copy? find the best way to copy callpath
   // previous implementation
   // return bottom;
 
   // direct manipulation with cct nodes, which is probably not good way to solve this
 
-  if (!bottom || !top){
+  if (!bottom || !top) {
     return NULL;
   }
 
-  cct_node_t *prefix_bottom = hpcrun_cct_copy_just_addr(bottom);
+  cct_node_t* prefix_bottom = hpcrun_cct_copy_just_addr(bottom);
   // it is possible that just one node is call path between regions
   if (top == bottom) {
     return prefix_bottom;
   }
 
-  cct_node_t *it = hpcrun_cct_parent(bottom);
-  cct_node_t *child = NULL;
-  cct_node_t *parent = prefix_bottom;
+  cct_node_t* it = hpcrun_cct_parent(bottom);
+  cct_node_t* child = NULL;
+  cct_node_t* parent = prefix_bottom;
 
   while (it) {
     child = parent;
@@ -1026,20 +799,13 @@ copy_prefix
   }
 
   return NULL;
-
 }
-
 
 // Check whether we found the outermost region in which current thread is the master
 // returns -1 when there is no regions
 // returns 0 if the region is not the outermost region of which current thread is master
 // returns 1 when the region is the outermost region of which current thread is master
-int
-is_outermost_region_thread_is_master
-(
- int stack_index
-)
-{
+int is_outermost_region_thread_is_master(int stack_index) {
   // no regions
   if (is_empty_region_stack())
     return -1;
@@ -1048,89 +814,68 @@ is_outermost_region_thread_is_master
     return 1;
 
   // thread is not the master, and region that is upper on the stack is not_master_region
-  if (!TD_GET(master) && stack_index && region_stack[stack_index - 1].notification->region_data == not_master_region){
+  if (!TD_GET(master) && stack_index
+      && region_stack[stack_index - 1].notification->region_data == not_master_region) {
     return 1;
   }
 
   return 0;
 }
 
-
 #if DEFER_DEBUGGING
 
-void
-print_prefix_info
-(
- char *message, 
- cct_node_t *prefix, 
- ompt_region_data_t *region_data, 
- int stack_index, 
- backtrace_info_t *bt, 
- cct_node_t *cct
-)
-{
-    // prefix length
-    int len_prefix = 0;
-    cct_node_t *tmp_top = NULL;
-    cct_node_t *tmp_bottom = NULL;
-    cct_node_t *tmp = NULL;
-    tmp_bottom = prefix;
-    tmp = prefix;
-    while (tmp) {
-      len_prefix++;
-      tmp_top = tmp;
-      tmp = hpcrun_cct_parent(tmp);
-    }
-    // number of frames
-    int len_bt = 0;
-    frame_t *bt_inner = bt->begin;
-    frame_t *bt_outer = bt->last;
-    // frame iterator
-    frame_t *it = bt_inner;
-    while(it <= bt_outer) {
-      len_bt++;
-      it++;
-    }
+void print_prefix_info(
+    char* message, cct_node_t* prefix, ompt_region_data_t* region_data, int stack_index,
+    backtrace_info_t* bt, cct_node_t* cct) {
+  // prefix length
+  int len_prefix = 0;
+  cct_node_t* tmp_top = NULL;
+  cct_node_t* tmp_bottom = NULL;
+  cct_node_t* tmp = NULL;
+  tmp_bottom = prefix;
+  tmp = prefix;
+  while (tmp) {
+    len_prefix++;
+    tmp_top = tmp;
+    tmp = hpcrun_cct_parent(tmp);
+  }
+  // number of frames
+  int len_bt = 0;
+  frame_t* bt_inner = bt->begin;
+  frame_t* bt_outer = bt->last;
+  // frame iterator
+  frame_t* it = bt_inner;
+  while (it <= bt_outer) {
+    len_bt++;
+    it++;
+  }
 
-    // number of cct nodes
-    int len_cct = 0;
-    cct_node_t *current = cct;
-    while (current) {
-      len_cct++;
-      current = hpcrun_cct_parent(current);
-    }
+  // number of cct nodes
+  int len_cct = 0;
+  cct_node_t* current = cct;
+  while (current) {
+    len_cct++;
+    current = hpcrun_cct_parent(current);
+  }
 }
 
 #endif
 
-
 // check if the thread cannot resolved region because of reasons mentioned below
-static int
-dont_resolve_region
-(
- ompt_notification_t *current_notification
-)
-{
+static int dont_resolve_region(ompt_notification_t* current_notification) {
   // if current notification is null, or the thread is not the master
   // or the path is already resolved
-  return !current_notification
-         || current_notification->region_data == not_master_region
-         || current_notification->region_data->call_path != NULL;
+  return !current_notification || current_notification->region_data == not_master_region
+      || current_notification->region_data->call_path != NULL;
 }
 
-int
-prefix_length
-(
- cct_node_t *bottom_prefix, 
- cct_node_t *top_prefix
-)
-{
+int prefix_length(cct_node_t* bottom_prefix, cct_node_t* top_prefix) {
   int len = 0;
-  cct_node_t *current = bottom_prefix;
+  cct_node_t* current = bottom_prefix;
   while (current) {
     len++;
     if (current == top_prefix) {
-          break;
+      break;
     }
     current = hpcrun_cct_parent(current);
   }
@@ -1138,13 +883,7 @@ prefix_length
   return len;
 }
 
-void
-provide_callpath_for_regions_if_needed
-(
- backtrace_info_t *bt, 
- cct_node_t *cct
-)
-{
+void provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct) {
   if (bt->partial_unwind) {
     deferred_resolution_breakpoint();
   }
@@ -1155,27 +894,27 @@ provide_callpath_for_regions_if_needed
   }
 
   // if thread is not the master of the region, or the region is resolved, then just return
-  ompt_notification_t *current_notification = top_region_stack()->notification;
+  ompt_notification_t* current_notification = top_region_stack()->notification;
   if (dont_resolve_region(current_notification)) {
     return;
   }
 
   int index = 0;
-  ompt_frame_t *current_frame = hpcrun_ompt_get_task_frame(0);
+  ompt_frame_t* current_frame = hpcrun_ompt_get_task_frame(0);
   if (!current_frame) {
     return;
   }
-  frame_t *bt_inner = bt->begin;
-  frame_t *bt_outer = bt->last;
+  frame_t* bt_inner = bt->begin;
+  frame_t* bt_outer = bt->last;
   // frame iterator
-  frame_t *it = bt_inner;
+  frame_t* it = bt_inner;
 
-  cct_node_t *bottom_prefix = NULL;
-  cct_node_t *top_prefix = NULL;
-  cct_node_t *prefix = NULL;
+  cct_node_t* bottom_prefix = NULL;
+  cct_node_t* top_prefix = NULL;
+  cct_node_t* prefix = NULL;
 
   if (UINT64_T(current_frame->enter_frame.ptr) == 0
-    && UINT64_T(current_frame->exit_frame.ptr) != 0) {
+      && UINT64_T(current_frame->exit_frame.ptr) != 0) {
     // thread take a sample inside user code of the parallel region
     // this region is the the innermost
 
@@ -1184,29 +923,32 @@ provide_callpath_for_regions_if_needed
       return;
     }
     // this happened
-  } else if (UINT64_T(current_frame->enter_frame.ptr) <= UINT64_T(bt_inner->cursor.sp)
-             && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_frame.ptr)) { // FIXME should put =
+  } else if (
+      UINT64_T(current_frame->enter_frame.ptr) <= UINT64_T(bt_inner->cursor.sp)
+      && UINT64_T(bt_inner->cursor.sp)
+             <= UINT64_T(current_frame->exit_frame.ptr)) {  // FIXME should put =
     // thread take a simple in the region which is not the innermost
     // all innermost regions have been finished
 
     it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
     if (it == NULL) {
-        // this happened once for the thread da it is not TD_GET(master)
+      // this happened once for the thread da it is not TD_GET(master)
 
-        return;
+      return;
     }
     // this happened
   } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->enter_frame.ptr)) {
     // take a sample inside the runtime
     return;
-  } else if (UINT64_T(current_frame->enter_frame.ptr) == 0
-             && UINT64_T(current_frame->exit_frame.ptr) == 0) {
+  } else if (
+      UINT64_T(current_frame->enter_frame.ptr) == 0
+      && UINT64_T(current_frame->exit_frame.ptr) == 0) {
     // FIXME: check what this means
     // this happened
     return;
-  } else if (UINT64_T(current_frame->exit_frame.ptr) == 0
-             && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
-
+  } else if (
+      UINT64_T(current_frame->exit_frame.ptr) == 0
+      && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
     // FIXME vi3: this happened in the first region when master not took sample
 
     bottom_prefix = get_cct_from_prefix(cct, index);
@@ -1225,10 +967,8 @@ provide_callpath_for_regions_if_needed
     return;
   }
 
-
   int frame_level = 0;
   int stack_index = top_index;
-
 
   // at the beginning of the loop we should be one frame above the end_frame
   // which means that we are inside user code of the parent region or the initial implicit task
@@ -1246,7 +986,6 @@ provide_callpath_for_regions_if_needed
     // but let's check that
     if (UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
       // this happened
-
     } else {
       // do nothing for now
       return;
@@ -1264,7 +1003,7 @@ provide_callpath_for_regions_if_needed
       top_prefix = top_cct(bottom_prefix);
       prefix = copy_prefix(top_prefix, bottom_prefix);
       if (!prefix) {
-	deferred_resolution_breakpoint();
+        deferred_resolution_breakpoint();
         return;
       }
       current_notification->region_data->call_path = prefix;
@@ -1275,17 +1014,15 @@ provide_callpath_for_regions_if_needed
     // should find one frame below exit_frame.ptr
     it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
     // FIXME: vi3 What is this commented?
-    //top_prefix = get_cct_from_prefix(cct, TD_GET(master) ? index + 1 : index);
-
+    // top_prefix = get_cct_from_prefix(cct, TD_GET(master) ? index + 1 : index);
 
     top_prefix = get_cct_from_prefix(cct, index);
     // FIXME: unresolved should not be top_prefix, get its child,
     // I think that this happens when the thread is not initial master
-    if (hpcrun_cct_addr(top_prefix)->ip_norm.lm_id == (uint16_t) UNRESOLVED) {
+    if (hpcrun_cct_addr(top_prefix)->ip_norm.lm_id == (uint16_t)UNRESOLVED) {
       // index - 1 is the index of child of the top_prefix
       top_prefix = get_cct_from_prefix(cct, index - 1);
     }
-
 
     prefix = copy_prefix(top_prefix, bottom_prefix);
     if (!prefix) {
@@ -1294,7 +1031,7 @@ provide_callpath_for_regions_if_needed
     }
 
     current_notification->region_data->call_path = prefix;
-    //print_prefix_info("", prefix, current_notification->region_data, stack_index, bt, cct);
+    // print_prefix_info("", prefix, current_notification->region_data, stack_index, bt, cct);
 
     // next thing to do is to get parent region notification from stack
     stack_index--;
@@ -1308,108 +1045,90 @@ provide_callpath_for_regions_if_needed
     }
     // go to parent region frame and do everything again
     it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
+  }
+}
 
-
+void provide_callpath_for_end_of_the_region(backtrace_info_t* bt, cct_node_t* cct) {
+  if (bt->partial_unwind) {
+    deferred_resolution_breakpoint();
   }
 
-}
+  int index = 0;
+  ompt_frame_t* current_frame = hpcrun_ompt_get_task_frame(0);
+  if (!current_frame) {
+    return;
+  }
+  frame_t* bt_inner = bt->begin;
+  frame_t* bt_outer = bt->last;
+  // frame iterator
+  frame_t* it = bt_inner;
 
+  cct_node_t* bottom_prefix = NULL;
+  cct_node_t* top_prefix = NULL;
+  cct_node_t* prefix = NULL;
 
-void
-provide_callpath_for_end_of_the_region
-(
- backtrace_info_t *bt, 
- cct_node_t *cct
-)
-{
-    if (bt->partial_unwind) {
-      deferred_resolution_breakpoint();
+  if (UINT64_T(current_frame->enter_frame.ptr) == 0
+      && UINT64_T(current_frame->exit_frame.ptr) != 0) {
+    // thread take a sample inside user code of the parallel region
+    // this region is the the innermost
+  } else if (
+      UINT64_T(current_frame->enter_frame.ptr) <= UINT64_T(bt_inner->cursor.sp)
+      && UINT64_T(bt_inner->cursor.sp)
+             <= UINT64_T(current_frame->exit_frame.ptr)) {  // FIXME should put =
+    // thread take a simple in the region which is not the innermost
+    // all innermost regions have been finished
+
+    bottom_prefix = get_cct_from_prefix(cct, index);
+    it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
+    top_prefix = get_cct_from_prefix(cct, index);
+
+    // FIXME: unresolved should not be top_prefix, get its child,
+    // I think that this happens when the thread is not initial master
+    if (hpcrun_cct_addr(top_prefix)->ip_norm.lm_id == (uint16_t)UNRESOLVED) {
+      // index - 1 is the index of child of the top_prefix
+      top_prefix = get_cct_from_prefix(cct, index - 1);
     }
 
-    int index = 0;
-    ompt_frame_t *current_frame = hpcrun_ompt_get_task_frame(0);
-    if (!current_frame) {
+    prefix = copy_prefix(top_prefix, bottom_prefix);
+    if (!prefix) {
+      deferred_resolution_breakpoint();
       return;
     }
-    frame_t *bt_inner = bt->begin;
-    frame_t *bt_outer = bt->last;
-    // frame iterator
-    frame_t *it = bt_inner;
+    ending_region->call_path = prefix;
+  } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->enter_frame.ptr)) {
+    // take a sample inside the runtime
+  } else if (
+      UINT64_T(current_frame->enter_frame.ptr) == 0
+      && UINT64_T(current_frame->exit_frame.ptr) == 0) {
+    // FIXME: check what this means
+    // Note: this happens
+    deferred_resolution_breakpoint();
+  } else if (
+      UINT64_T(current_frame->exit_frame.ptr) == 0
+      && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
+    // FIXME vi3: this happened in the first region when master not took sample
 
+    bottom_prefix = get_cct_from_prefix(cct, index);
+    top_prefix = top_cct(cct);
 
-    cct_node_t *bottom_prefix = NULL;
-    cct_node_t *top_prefix = NULL;
-    cct_node_t *prefix = NULL;
-
-    if (UINT64_T(current_frame->enter_frame.ptr) == 0
-        && UINT64_T(current_frame->exit_frame.ptr) != 0) {
-        // thread take a sample inside user code of the parallel region
-        // this region is the the innermost
-    } else if (UINT64_T(current_frame->enter_frame.ptr) <= UINT64_T(bt_inner->cursor.sp)
-               && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_frame.ptr)) { // FIXME should put =
-        // thread take a simple in the region which is not the innermost
-        // all innermost regions have been finished
-
-        bottom_prefix = get_cct_from_prefix(cct, index);
-        it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
-        top_prefix = get_cct_from_prefix(cct, index);
-
-        // FIXME: unresolved should not be top_prefix, get its child,
-        // I think that this happens when the thread is not initial master
-        if (hpcrun_cct_addr(top_prefix)->ip_norm.lm_id == (uint16_t) UNRESOLVED) {
-            // index - 1 is the index of child of the top_prefix
-            top_prefix = get_cct_from_prefix(cct, index - 1);
-        }
-
-        prefix = copy_prefix(top_prefix, bottom_prefix);
-        if (!prefix) {
-	  deferred_resolution_breakpoint();
-	  return;
-        }
-        ending_region->call_path = prefix;
-
-
-    } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->enter_frame.ptr)) {
-        // take a sample inside the runtime
-    } else if (UINT64_T(current_frame->enter_frame.ptr) == 0
-               && UINT64_T(current_frame->exit_frame.ptr) == 0) {
-        // FIXME: check what this means
-        // Note: this happens
-	deferred_resolution_breakpoint();
-    } else if (UINT64_T(current_frame->exit_frame.ptr) == 0
-               && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
-
-        // FIXME vi3: this happened in the first region when master not took sample
-
-        bottom_prefix = get_cct_from_prefix(cct, index);
-        top_prefix = top_cct(cct);
-
-        // copy prefix
-        prefix = copy_prefix(top_prefix, bottom_prefix);
-        if (!prefix) {
-	  deferred_resolution_breakpoint();
-          return;
-        }
-
-        ending_region->call_path = prefix;
-
-        return;
-
-    } else {
-      // a case has not been covered
+    // copy prefix
+    prefix = copy_prefix(top_prefix, bottom_prefix);
+    if (!prefix) {
       deferred_resolution_breakpoint();
+      return;
     }
+
+    ending_region->call_path = prefix;
+
+    return;
+  } else {
+    // a case has not been covered
+    deferred_resolution_breakpoint();
+  }
 }
 
-
-void
-tmp_end_region_resolve
-(
- ompt_notification_t *notification, 
- cct_node_t* prefix
-)
-{
-  cct_node_t *unresolved_cct = notification->unresolved_cct;
+void tmp_end_region_resolve(ompt_notification_t* notification, cct_node_t* prefix) {
+  cct_node_t* unresolved_cct = notification->unresolved_cct;
 
   if (prefix == NULL) {
     deferred_resolution_breakpoint();

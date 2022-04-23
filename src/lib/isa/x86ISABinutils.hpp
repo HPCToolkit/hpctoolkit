@@ -60,24 +60,12 @@
 #ifndef isa_x86ISABinutils_hpp
 #define isa_x86ISABinutils_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "x86ISA.hpp"
 
-//*************************** Forward Declarations ***************************
+#include "include/gcc-attr.h"
+#include "include/uint.h"
 
 struct disassemble_info;
-
-//****************************************************************************
-
-//***************************************************************************
-// x86ISABinutils
-//***************************************************************************
 
 // 'x86ISABinutils': Implements the x86 and x86-64 Instruction Set Architecture
 //			using GNU Binutils to crack the binary
@@ -92,29 +80,19 @@ public:
   // Instructions:
   // --------------------------------------------------------
 
-  virtual ushort
-  getInsnSize(MachInsn* mi);
+  virtual ushort getInsnSize(MachInsn* mi);
 
-  virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual InsnDesc getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
+  virtual VMA getInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
 
-  virtual void
-  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
-
+  virtual void decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
 private:
   bool m_is_x86_64;
   struct disassemble_info* m_di;
   struct disassemble_info* m_di_dis;
   GNUbu_disdata m_dis_data;
-
 };
-
-
-
-//****************************************************************************
 
 #endif /* isa_x86ISABinutils_hpp */

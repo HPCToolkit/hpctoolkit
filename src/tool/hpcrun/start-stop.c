@@ -67,23 +67,17 @@
 //
 //***************************************************************************
 
-#include <stdlib.h>
+#include "start-stop.h"
 
 #include "env.h"
 #include "sample_sources_all.h"
-#include "start-stop.h"
+
+#include <stdlib.h>
 
 static int sampling_is_active = 1;
 static int dont_reinit = 0;
 
-
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
-void
-hpcrun_start_stop_internal_init(void)
-{
+void hpcrun_start_stop_internal_init(void) {
   // Make sure we don't run init twice.  This is for the case that the
   // application turns sampling on/off and then forks.  We want to
   // preserve the state across fork and not reset it in the child.
@@ -91,39 +85,29 @@ hpcrun_start_stop_internal_init(void)
     return;
   }
 
-  sampling_is_active = ! hpcrun_get_env_bool("HPCRUN_DELAY_SAMPLING");
+  sampling_is_active = !hpcrun_get_env_bool("HPCRUN_DELAY_SAMPLING");
   dont_reinit = 1;
 }
 
-
-int
-hpctoolkit_sampling_is_active(void)
-{
+int hpctoolkit_sampling_is_active(void) {
   return sampling_is_active;
 }
 
-
-void
-hpctoolkit_sampling_start(void)
-{
+void hpctoolkit_sampling_start(void) {
   sampling_is_active = 1;
   dont_reinit = 1;
-  if (! SAMPLE_SOURCES(started)) {
+  if (!SAMPLE_SOURCES(started)) {
     SAMPLE_SOURCES(start);
   }
 }
 
-
-void
-hpctoolkit_sampling_stop(void)
-{
+void hpctoolkit_sampling_stop(void) {
   sampling_is_active = 0;
   dont_reinit = 1;
   if (SAMPLE_SOURCES(started)) {
     SAMPLE_SOURCES(stop);
   }
 }
-
 
 // Fortran aliases
 
@@ -132,8 +116,8 @@ hpctoolkit_sampling_stop(void)
 // hpctoolkit_sampling_start() and _stop() are void->void, so they're
 // a special case.
 
-void hpctoolkit_sampling_start_ (void) __attribute__ ((alias ("hpctoolkit_sampling_start")));
-void hpctoolkit_sampling_start__(void) __attribute__ ((alias ("hpctoolkit_sampling_start")));
+void hpctoolkit_sampling_start_(void) __attribute__((alias("hpctoolkit_sampling_start")));
+void hpctoolkit_sampling_start__(void) __attribute__((alias("hpctoolkit_sampling_start")));
 
-void hpctoolkit_sampling_stop_ (void) __attribute__ ((alias ("hpctoolkit_sampling_stop")));
-void hpctoolkit_sampling_stop__(void) __attribute__ ((alias ("hpctoolkit_sampling_stop")));
+void hpctoolkit_sampling_stop_(void) __attribute__((alias("hpctoolkit_sampling_stop")));
+void hpctoolkit_sampling_stop__(void) __attribute__((alias("hpctoolkit_sampling_stop")));

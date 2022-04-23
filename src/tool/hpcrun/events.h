@@ -48,7 +48,7 @@
 
 /****************************************************************************
 //
-// File: 
+// File:
 //    events.h
 //
 // Purpose:
@@ -62,34 +62,32 @@
 //
 //    Adapted from parts of The Visual Profiler by Curtis L. Janssen
 //    (events.h).
-//    
+//
 *****************************************************************************/
 
 #ifndef _event_h
 #define _event_h
 
 typedef struct papi_event {
-  int code;                 /* PAPI event code */
-  const char *name;         /* PAPI event name */
-  const char *description;  /* Event description */
+  int code;                /* PAPI event code */
+  const char* name;        /* PAPI event name */
+  const char* description; /* Event description */
 } papi_event_t;
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-  extern papi_event_t hpcrun_event_table[];
-  
-  const papi_event_t *hpcrun_event_by_name(const char *name);
-  const papi_event_t *hpcrun_event_by_code(int code);
-  
-  void hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
-  void hpcrun_write_event(FILE* fs, const papi_event_t* e);
+extern papi_event_t hpcrun_event_table[];
+
+const papi_event_t* hpcrun_event_by_name(const char* name);
+const papi_event_t* hpcrun_event_by_code(int code);
+
+void hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
+void hpcrun_write_event(FILE* fs, const papi_event_t* e);
 
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

@@ -45,122 +45,75 @@
 // ******************************************************* EndRiceCopyright *
 
 //*****************************************************************************
-// File: messages-async.c 
+// File: messages-async.c
 //
 // Description:
 //   This half of the messaging system must be async-signal safe.
-//   Namely, it must be safe to call these operations from within signal 
-//   handlers. Operations in this file may not directly or indirectly 
+//   Namely, it must be safe to call these operations from within signal
+//   handlers. Operations in this file may not directly or indirectly
 //   allocate memory using malloc. They may not call functions that
-//   acquire locks that may be already held by the application code or 
+//   acquire locks that may be already held by the application code or
 //   functions that may be called during synchronous profiler operations
 //   that may be interrupted by asynchronous profiler operations.
 //
 // History:
-//   19 July 2009 
-//     created by partitioning pmsg.c into messages-sync.c and 
+//   19 July 2009
+//     created by partitioning pmsg.c into messages-sync.c and
 //     messages-async.c
 //
 //*****************************************************************************
 
-
-
-//*****************************************************************************
-// global includes 
-//*****************************************************************************
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-
-
-//*****************************************************************************
-// local includes 
-//*****************************************************************************
-
 #include "disabled.h"
+#include "fmt.h"
 #include "messages.h"
 #include "messages.i"
-#include "fmt.h"
 #include "sample_event.h"
 #include "sample_prob.h"
 #include "thread_data.h"
 #include "thread_use.h"
 
-
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define DEBUG_PMSG_ASYNC 0
 
-//*****************************************************************************
-// constants
-//*****************************************************************************
-
-static const unsigned int msg_limit = 5000; // limit log file lines
-
-//*****************************************************************************
-// global variables
-//*****************************************************************************
+static const unsigned int msg_limit = 5000;  // limit log file lines
 
 spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 
-//*****************************************************************************
-// (file) local variables
-//*****************************************************************************
-
 static unsigned int msgs_out = 0;
-static bool check_limit = true;    // by default, limit messages
+static bool check_limit = true;  // by default, limit messages
 
-//*****************************************************************************
-// forward declarations
-//*****************************************************************************
+static void create_msg(
+    char* buf, size_t buflen, bool add_thread_id, const char* tag, const char* fmt,
+    va_list_box* box);
 
-static void create_msg(char *buf, size_t buflen, bool add_thread_id, 
-		       const char *tag, const char *fmt, va_list_box* box);
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-void
-hpcrun_emsg_valist(const char *fmt, va_list_box* box)
-{
+void hpcrun_emsg_valist(const char* fmt, va_list_box* box) {
   hpcrun_write_msg_to_log(false, false, NULL, fmt, box);
 }
 
-
-void
-hpcrun_emsg(const char *fmt,...)
-{
+void hpcrun_emsg(const char* fmt, ...) {
   va_list_box box;
   va_list_box_start(box, fmt);
   hpcrun_write_msg_to_log(false, true, NULL, fmt, &box);
 }
 
-void
-hpcrun_pmsg(const char *tag, const char *fmt, ...)
-{
+void hpcrun_pmsg(const char* tag, const char* fmt, ...) {
 #ifdef SINGLE_THREAD_LOGGING
-  if ( getenv("OT") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
+  if (getenv("OT") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
     return;
   }
-#endif // SINGLE_THREAD_LOGGING
+#endif  // SINGLE_THREAD_LOGGING
   va_list_box box;
   va_list_box_start(box, fmt);
   hpcrun_write_msg_to_log(false, true, tag, fmt, &box);
 }
 
-
 // like pmsg, except echo message to stderr when flag is set
-void
-hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
-		   const char *fmt ,...)
-{
-  if (debug_flag_get(flag) == 0){
+void hpcrun_pmsg_stderr(
+    bool echo_stderr, pmsg_category flag, const char* tag, const char* fmt, ...) {
+  if (debug_flag_get(flag) == 0) {
     return;
   }
   va_list_box box;
@@ -168,13 +121,10 @@ hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
   hpcrun_write_msg_to_log(echo_stderr, true, tag, fmt, &box);
 }
 
-
 // like nmsg, except echo message to stderr when flag is set
-void
-hpcrun_nmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
-		   const char *fmt ,...)
-{
-  if (debug_flag_get(flag) == 0){
+void hpcrun_nmsg_stderr(
+    bool echo_stderr, pmsg_category flag, const char* tag, const char* fmt, ...) {
+  if (debug_flag_get(flag) == 0) {
     return;
   }
   va_list_box box;
@@ -182,11 +132,8 @@ hpcrun_nmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
   hpcrun_write_msg_to_log(echo_stderr, false, tag, fmt, &box);
 }
 
-
-void
-hpcrun_nmsg(pmsg_category flag, const char* tag, const char* fmt, ...)
-{
-  if (debug_flag_get(flag) == 0){
+void hpcrun_nmsg(pmsg_category flag, const char* tag, const char* fmt, ...) {
+  if (debug_flag_get(flag) == 0) {
     return;
   }
   va_list_box box;
@@ -194,10 +141,7 @@ hpcrun_nmsg(pmsg_category flag, const char* tag, const char* fmt, ...)
   hpcrun_write_msg_to_log(false, false, tag, fmt, &box);
 }
 
-
-void
-hpcrun_amsg(const char *fmt,...)
-{
+void hpcrun_amsg(const char* fmt, ...) {
   va_list_box box;
   va_list_box_start(box, fmt);
   bool save = check_limit;
@@ -206,34 +150,26 @@ hpcrun_amsg(const char *fmt,...)
   check_limit = save;
 }
 
-
-
-//*****************************************************************************
-// interface operations (within message subsystem) 
-//*****************************************************************************
-
-void
-hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id,
-			const char *tag,
-			const char *fmt, va_list_box* box)
-{
+void hpcrun_write_msg_to_log(
+    bool echo_stderr, bool add_thread_id, const char* tag, const char* fmt, va_list_box* box) {
   char buf[MSG_BUF_SIZE];
 
-  if ((hpcrun_get_disabled() && (! echo_stderr))
-      || (! hpcrun_sample_prob_active())) {
+  if ((hpcrun_get_disabled() && (!echo_stderr)) || (!hpcrun_sample_prob_active())) {
     return;
   }
 
   create_msg(&buf[0], sizeof(buf), add_thread_id, tag, fmt, box);
   va_list_boxp_end(box);
 
-  if (echo_stderr){
+  if (echo_stderr) {
     write(2, buf, strlen(buf));
   }
 
-  if (check_limit && (msgs_out > msg_limit)) return;
+  if (check_limit && (msgs_out > msg_limit))
+    return;
 
-  if (hpcrun_get_disabled()) return;
+  if (hpcrun_get_disabled())
+    return;
 
   spinlock_lock(&pmsg_lock);
 
@@ -245,38 +181,28 @@ hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id,
   spinlock_unlock(&pmsg_lock);
 }
 
-
-//*****************************************************************************
-// private operations
-//*****************************************************************************
-
-static char*
-safely_get_tid_str(char* buf, size_t len)
-{
+static char* safely_get_tid_str(char* buf, size_t len) {
 #ifndef USE_GCC_THREAD
   thread_data_t* td = hpcrun_safe_get_td();
   if (td) {
     hpcrun_msg_ns(buf, len, "%d", (td->core_profile_trace_data).id);
-  }
-  else {
+  } else {
     strncpy(buf, "??", len);
   }
-#else // USE_GCC_THREAD
+#else   // USE_GCC_THREAD
   extern __thread monitor_tid;
   if (monitor_tid != -1) {
     hpcrun_msg_ns(buf, len, "%d", monitor_tid);
-  }
-  else {
+  } else {
     strncpy(buf, "??", len);
   }
-#endif // USE_GCC_THREAD
+#endif  // USE_GCC_THREAD
   return buf;
 }
 
-static void
-create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
-	   const char *fmt, va_list_box* box)
-{
+static void create_msg(
+    char* buf, size_t buflen, bool add_thread_id, const char* tag, const char* fmt,
+    va_list_box* box) {
   char fstr[MSG_BUF_SIZE];
 
   fstr[0] = '\0';
@@ -285,9 +211,9 @@ create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
     if (hpcrun_using_threads_p()) {
       // tmp_id = TD_GET(core_profile_trace_data.id);
       char tmp[6] = {};
-      hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, %s]: ", getpid(), safely_get_tid_str(tmp, sizeof(tmp)));
-    }
-    else {
+      hpcrun_msg_ns(
+          fstr, sizeof(fstr), "[%d, %s]: ", getpid(), safely_get_tid_str(tmp, sizeof(tmp)));
+    } else {
       hpcrun_msg_ns(fstr, sizeof(fstr), "[%d, N]: ", getpid());
     }
   }
@@ -302,18 +228,14 @@ create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
   }
 
   strncat(fstr, fmt, MSG_BUF_SIZE - strlen(fstr) - 5);
-  strcat(fstr,"\n");
+  strcat(fstr, "\n");
 
   hpcrun_msg_vns(buf, buflen - 2, fstr, box);
 }
 
-void
-unlimit_msgs(void)
-{
+void unlimit_msgs(void) {
   check_limit = false;
 }
-void
-limit_msgs(void)
-{
+void limit_msgs(void) {
   check_limit = true;
 }

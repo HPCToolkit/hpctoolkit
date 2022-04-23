@@ -42,7 +42,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: RelocateCubin.cpp
@@ -63,95 +62,60 @@
 //
 //***************************************************************************
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <assert.h>
-#include <string.h>
-#include <algorithm>
-#include <iostream>
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
+#include "RelocateCubin.hpp"
 
 #include "ElfHelper.hpp"
-#include "RelocateCubin.hpp"
 
 #include "lib/prof-lean/elf-helper.h"
 
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
+#include <algorithm>
+#include <assert.h>
+#include <iostream>
+#include <string.h>
 
 #define DEBUG_LINE_SECTION_NAME ".debug_line"
 
 #define DEBUG_INFO_SECTION_NAME ".debug_info"
 
-#define CASESTR(n) case n: return #n
-#define section_index(n) (n-1)
+#define CASESTR(n) \
+  case n:          \
+    return #n
+#define section_index(n) (n - 1)
 
 #define DEBUG_CUBIN_RELOCATION 0
-
 
 //---------------------------------------------------------
 // NVIDIA CUDA line map relocation types
 //   type name gleaned using cuobjdump
 //   value gleaned by examining binaries
 //---------------------------------------------------------
-#define R_NV_32                 0x01
-#define R_NV_64                 0x02
-#define R_NV_G32                0x03
-#define R_NV_G64                0x04
+#define R_NV_32  0x01
+#define R_NV_64  0x02
+#define R_NV_G32 0x03
+#define R_NV_G64 0x04
 
 #define RELOC_32(x) (x == R_NV_32 || x == R_NV_G32)
 #define RELOC_64(x) (x == R_NV_64 || x == R_NV_G64)
 
-
-
-//******************************************************************************
-// type definitions
-//******************************************************************************
-
-typedef std::vector<Elf_Scn *> Elf_SectionVector;
+typedef std::vector<Elf_Scn*> Elf_SectionVector;
 typedef std::vector<Elf64_Addr> Elf_SymbolVector;
 typedef std::vector<int64_t> Elf_SymbolSectionIndexVector;
 
-
-
-//******************************************************************************
-// private functions
-//******************************************************************************
-
-static size_t
-sectionOffset
-(
- Elf_SectionVector *sections,
- unsigned sindex
-)
-{
+static size_t sectionOffset(Elf_SectionVector* sections, unsigned sindex) {
   // if section index is out of range, return 0
-  if (sections->size() < sindex) return 0;
+  if (sections->size() < sindex)
+    return 0;
 
   GElf_Shdr shdr;
-  if (!gelf_getshdr((*sections)[sindex], &shdr)) return 0;
+  if (!gelf_getshdr((*sections)[sindex], &shdr))
+    return 0;
 
   return shdr.sh_offset;
 }
 
-
 #if DEBUG_CUBIN_RELOCATION
-static const char *
-binding_name
-(
- GElf_Sym *s
-)
-{
-  switch(GELF_ST_BIND(s->st_info)){
+static const char* binding_name(GElf_Sym* s) {
+  switch (GELF_ST_BIND(s->st_info)) {
     CASESTR(STB_LOCAL);
     CASESTR(STB_GLOBAL);
     CASESTR(STB_WEAK);
@@ -160,32 +124,21 @@ binding_name
 }
 #endif
 
-
 // properly size the relocation update to an address based on the
 // relocation type
-static void
-applyRelocation(void *addr, unsigned rel_type, uint64_t rel_value)
-{
+static void applyRelocation(void* addr, unsigned rel_type, uint64_t rel_value) {
   if (RELOC_64(rel_type)) {
-    uint64_t *addr64 = (uint64_t *) addr;
+    uint64_t* addr64 = (uint64_t*)addr;
     *addr64 = rel_value;
   } else if (RELOC_32(rel_type)) {
-    uint32_t *addr32 = (uint32_t *) addr;
+    uint32_t* addr32 = (uint32_t*)addr;
     *addr32 = rel_value;
   } else {
     assert(0);
   }
 }
 
-
-static void
-applyRELrelocation
-(
- char *line_map,
- Elf_SymbolVector *symbol_values,
- GElf_Rel *rel
-)
-{
+static void applyRELrelocation(char* line_map, Elf_SymbolVector* symbol_values, GElf_Rel* rel) {
   // get the symbol that is the basis for the relocation
   unsigned sym_index = GELF_R_SYM(rel->r_info);
 
@@ -196,22 +149,15 @@ applyRELrelocation
   unsigned sym_value = (*symbol_values)[sym_index];
 
   // compute address where a relocation needs to be applied
-  void *addr = (void *)(line_map + rel->r_offset);
+  void* addr = (void*)(line_map + rel->r_offset);
 
   // update the address based on the symbol value associated with the
   // relocation entry.
   applyRelocation(addr, rel_type, sym_value);
 }
 
-
 static void
-applyRELArelocation
-(
- char *debug_info,
- Elf_SymbolVector *symbol_values,
- GElf_Rela *rela
-)
-{
+applyRELArelocation(char* debug_info, Elf_SymbolVector* symbol_values, GElf_Rela* rela) {
   // get the symbol that is the basis for the relocation
   unsigned sym_index = GELF_R_SYM(rela->r_info);
 
@@ -222,82 +168,61 @@ applyRELArelocation
   unsigned sym_value = (*symbol_values)[sym_index];
 
   // compute the address where a relocation needs to be applied
-  void *addr = (unsigned long *) (debug_info + rela->r_offset);
+  void* addr = (unsigned long*)(debug_info + rela->r_offset);
 
   // update the address in based on the symbol value and addend in the
   // relocation entry
   applyRelocation(addr, rel_type, sym_value + rela->r_addend);
 }
 
-
-static void
-applyRELrelocations
-(
- Elf_SymbolVector *symbol_values,
- char *line_map,
- int n_relocations,
- Elf_Data *relocations_data
-)
-{
+static void applyRELrelocations(
+    Elf_SymbolVector* symbol_values, char* line_map, int n_relocations,
+    Elf_Data* relocations_data) {
   //----------------------------------------------------------------
   // apply each line map relocation
   //----------------------------------------------------------------
   for (int i = 0; i < n_relocations; i++) {
     GElf_Rel rel_v;
-    GElf_Rel *rel = gelf_getrel(relocations_data, i, &rel_v);
+    GElf_Rel* rel = gelf_getrel(relocations_data, i, &rel_v);
     applyRELrelocation(line_map, symbol_values, rel);
   }
 }
 
-
-static void
-applyRELArelocations
-(
- Elf_SymbolVector *symbol_values,
- char *debug_info,
- int n_relocations,
- Elf_Data *relocations_data
-)
-{
+static void applyRELArelocations(
+    Elf_SymbolVector* symbol_values, char* debug_info, int n_relocations,
+    Elf_Data* relocations_data) {
   //----------------------------------------------------------------
   // apply each debug info relocation
   //----------------------------------------------------------------
   for (int i = 0; i < n_relocations; i++) {
     GElf_Rela rela_v;
-    GElf_Rela *rela = gelf_getrela(relocations_data, i, &rela_v);
+    GElf_Rela* rela = gelf_getrela(relocations_data, i, &rela_v);
     applyRELArelocation(debug_info, symbol_values, rela);
   }
 }
 
-
 // if the cubin contains a line map section and a matching line map relocations
 // section, apply the relocations to the line map
-static void
-relocateLineMap
-(
- char *cubin_ptr,
- Elf *elf,
- Elf_SectionVector *sections,
- Elf_SymbolVector *symbol_values,
- elf_helper_t* eh
-)
-{
+static void relocateLineMap(
+    char* cubin_ptr, Elf* elf, Elf_SectionVector* sections, Elf_SymbolVector* symbol_values,
+    elf_helper_t* eh) {
   GElf_Ehdr ehdr_v;
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+  GElf_Ehdr* ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
     unsigned line_map_scn_index;
-    char *line_map = NULL;
+    char* line_map = NULL;
 
     //-------------------------------------------------------------
     // scan through the sections to locate a line map, if any
     //-------------------------------------------------------------
     int index = 0;
     for (auto si = sections->begin(); si != sections->end(); si++, index++) {
-      Elf_Scn *scn = *si;
+      Elf_Scn* scn = *si;
       GElf_Shdr shdr;
-      if (!gelf_getshdr(scn, &shdr)) continue;
+      if (!gelf_getshdr(scn, &shdr))
+        continue;
       if (shdr.sh_type == SHT_PROGBITS) {
-        const char *section_name = elf_strptr(elf, eh->section_string_index, shdr.sh_name);
+        const char* section_name = elf_strptr(elf, eh->section_string_index, shdr.sh_name);
         if (strcmp(section_name, DEBUG_LINE_SECTION_NAME) == 0) {
           // remember the index of line map section. we need this index to find
           // the corresponding relocation section.
@@ -319,17 +244,17 @@ relocateLineMap
     if (line_map) {
       int index = 0;
       for (auto si = sections->begin(); si != sections->end(); si++, index++) {
-        Elf_Scn *scn = *si;
+        Elf_Scn* scn = *si;
         GElf_Shdr shdr;
-        if (!gelf_getshdr(scn, &shdr)) continue;
-        if (shdr.sh_type == SHT_REL || shdr.sh_type == SHT_RELA)  {
+        if (!gelf_getshdr(scn, &shdr))
+          continue;
+        if (shdr.sh_type == SHT_REL || shdr.sh_type == SHT_RELA) {
           if (section_index(shdr.sh_info) == line_map_scn_index) {
             // We may find either REL relocation or RELA relocation
             // the relocation section refers to the line map section
 #if DEBUG_CUBIN_RELOCATION
             std::cout << "line map relocations section name: "
-              << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
-              << std::endl;
+                      << elf_strptr(elf, eh->section_string_index, shdr.sh_name) << std::endl;
 #endif
             //-----------------------------------------------------
             // invariant: have a line map and its relocations.
@@ -343,13 +268,11 @@ relocateLineMap
               std::cout << "n_relocations: " << n_relocations << std::endl;
 #endif
               if (n_relocations > 0) {
-                Elf_Data *relocations_data = elf_getdata(scn, NULL);
+                Elf_Data* relocations_data = elf_getdata(scn, NULL);
                 if (shdr.sh_type == SHT_RELA) {
-                  applyRELArelocations(symbol_values, line_map,
-                    n_relocations, relocations_data);
+                  applyRELArelocations(symbol_values, line_map, n_relocations, relocations_data);
                 } else {
-                  applyRELrelocations(symbol_values, line_map,
-                    n_relocations, relocations_data);
+                  applyRELrelocations(symbol_values, line_map, n_relocations, relocations_data);
                 }
               }
             }
@@ -361,35 +284,28 @@ relocateLineMap
   }
 }
 
-
 // if the cubin contains a line map section and a matching line map relocations
 // section, apply the relocations to the line map
-static void
-relocateDebugInfo
-(
- char *cubin_ptr,
- Elf *elf,
- Elf_SectionVector *sections,
- Elf_SymbolVector *symbol_values,
- elf_helper_t* eh
-)
-{
+static void relocateDebugInfo(
+    char* cubin_ptr, Elf* elf, Elf_SectionVector* sections, Elf_SymbolVector* symbol_values,
+    elf_helper_t* eh) {
   GElf_Ehdr ehdr_v;
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+  GElf_Ehdr* ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
     unsigned debug_info_scn_index;
-    char *debug_info = NULL;
+    char* debug_info = NULL;
 
     //-------------------------------------------------------------
     // scan through the sections to locate debug info, if any
     //-------------------------------------------------------------
     int index = 0;
     for (auto si = sections->begin(); si != sections->end(); si++, index++) {
-      Elf_Scn *scn = *si;
+      Elf_Scn* scn = *si;
       GElf_Shdr shdr;
-      if (!gelf_getshdr(scn, &shdr)) continue;
+      if (!gelf_getshdr(scn, &shdr))
+        continue;
       if (shdr.sh_type == SHT_PROGBITS) {
-        const char *section_name = elf_strptr(elf, eh->section_string_index, shdr.sh_name);
+        const char* section_name = elf_strptr(elf, eh->section_string_index, shdr.sh_name);
         if (strcmp(section_name, DEBUG_INFO_SECTION_NAME) == 0) {
           // remember the index of line map section. we need this index to find
           // the corresponding relocation section.
@@ -411,16 +327,16 @@ relocateDebugInfo
     if (debug_info) {
       int index = 0;
       for (auto si = sections->begin(); si != sections->end(); si++, index++) {
-        Elf_Scn *scn = *si;
+        Elf_Scn* scn = *si;
         GElf_Shdr shdr;
-        if (!gelf_getshdr(scn, &shdr)) continue;
-        if (shdr.sh_type == SHT_RELA)  {
+        if (!gelf_getshdr(scn, &shdr))
+          continue;
+        if (shdr.sh_type == SHT_RELA) {
           if (section_index(shdr.sh_info) == debug_info_scn_index) {
             // the relocation section refers to the line map section
 #if DEBUG_CUBIN_RELOCATION
             std::cout << "debug info relocations section name: "
-              << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
-              << std::endl;
+                      << elf_strptr(elf, eh->section_string_index, shdr.sh_name) << std::endl;
 #endif
             //-----------------------------------------------------
             // invariant: have debug info and its relocations.
@@ -431,9 +347,8 @@ relocateDebugInfo
             if (shdr.sh_entsize > 0) {
               int n_relocations = shdr.sh_size / shdr.sh_entsize;
               if (n_relocations > 0) {
-                Elf_Data *relocations_data = elf_getdata(scn, NULL);
-                applyRELArelocations(symbol_values, debug_info,
-                  n_relocations, relocations_data);
+                Elf_Data* relocations_data = elf_getdata(scn, NULL);
+                applyRELArelocations(symbol_values, debug_info, n_relocations, relocations_data);
               }
             }
             return;
@@ -444,62 +359,52 @@ relocateDebugInfo
   }
 }
 
-
-static Elf_SymbolVector *
-relocateSymbolsHelper
-(
- Elf *elf,
- GElf_Ehdr *ehdr,
- GElf_Shdr *shdr,
- Elf_SectionVector *sections,
- Elf_Scn *scn,
- elf_helper_t *eh
-)
-{
-  Elf_SymbolVector *symbol_values = NULL;
+static Elf_SymbolVector* relocateSymbolsHelper(
+    Elf* elf, GElf_Ehdr* ehdr, GElf_Shdr* shdr, Elf_SectionVector* sections, Elf_Scn* scn,
+    elf_helper_t* eh) {
+  Elf_SymbolVector* symbol_values = NULL;
   Elf_SymbolSectionIndexVector* symbol_section_index = NULL;
   int nsymbols = 0;
-  assert (shdr->sh_type == SHT_SYMTAB);
-  if (shdr->sh_entsize > 0) { // avoid divide by 0
+  assert(shdr->sh_type == SHT_SYMTAB);
+  if (shdr->sh_entsize > 0) {  // avoid divide by 0
     nsymbols = shdr->sh_size / shdr->sh_entsize;
   }
-  if (nsymbols <= 0) return NULL;
+  if (nsymbols <= 0)
+    return NULL;
 
-  Elf_Data *datap = elf_getdata(scn, NULL);
+  Elf_Data* datap = elf_getdata(scn, NULL);
 
   if (datap) {
     symbol_values = new Elf_SymbolVector(nsymbols);
     symbol_section_index = new Elf_SymbolSectionIndexVector(nsymbols);
     // Update symbol offsets
     for (int i = 0; i < nsymbols; i++) {
-      GElf_Sym sym;      
+      GElf_Sym sym;
       int section_index;
-      GElf_Sym *symp;
+      GElf_Sym* symp;
       symp = elf_helper_get_symbol(eh, i, &sym, &section_index);
       (*symbol_section_index)[i] = section_index;
-      if (symp) { // symbol properly read
+      if (symp) {  // symbol properly read
         int symtype = GELF_ST_TYPE(sym.st_info);
-        if (sym.st_shndx == SHN_UNDEF) continue;
-        switch(symtype) {
-          case STT_FUNC:
-            {
-              int64_t s_offset = sectionOffset(sections, section_index(section_index));
-              Elf64_Addr addr_signed = sym.st_value;
+        if (sym.st_shndx == SHN_UNDEF)
+          continue;
+        switch (symtype) {
+        case STT_FUNC: {
+          int64_t s_offset = sectionOffset(sections, section_index(section_index));
+          Elf64_Addr addr_signed = sym.st_value;
 #if DEBUG_CUBIN_RELOCATION
-              std::cout << "elf symbol " << elf_strptr(elf, shdr->sh_link, sym.st_name)
-                << " value=0x" << std::hex << addr_signed
-                << " binding=" << binding_name(&sym)
-                << " section=" << std::dec << section_index(section_index)
-                << " section offset=0x" << std::hex << s_offset
-                << std::endl;
+          std::cout << "elf symbol " << elf_strptr(elf, shdr->sh_link, sym.st_name) << " value=0x"
+                    << std::hex << addr_signed << " binding=" << binding_name(&sym)
+                    << " section=" << std::dec << section_index(section_index)
+                    << " section offset=0x" << std::hex << s_offset << std::endl;
 #endif
-              // update each function symbol's offset to match the new offset of the
-              // text section that contains it.
-              sym.st_value = (Elf64_Addr) s_offset + addr_signed;
-              gelf_update_sym(datap, i, &sym);
-              (*symbol_values)[i] = s_offset + addr_signed;              
-            }
-          default: break;
+          // update each function symbol's offset to match the new offset of the
+          // text section that contains it.
+          sym.st_value = (Elf64_Addr)s_offset + addr_signed;
+          gelf_update_sym(datap, i, &sym);
+          (*symbol_values)[i] = s_offset + addr_signed;
+        }
+        default: break;
         }
       }
     }
@@ -508,8 +413,8 @@ relocateSymbolsHelper
     // Update functions that can find a corresponding entry in the section table
     for (int i = 0; i < nsymbols; i++) {
       GElf_Sym sym;
-      GElf_Sym *symp = gelf_getsym(datap, i, &sym);
-      if (symp) { // symbol properly read
+      GElf_Sym* symp = gelf_getsym(datap, i, &sym);
+      if (symp) {  // symbol properly read
         int symtype = GELF_ST_TYPE(sym.st_info);
         int symbind = GELF_ST_BIND(sym.st_info);
         // Global functions might be overlapped with local functions or weak functions
@@ -522,9 +427,10 @@ relocateSymbolsHelper
           std::vector<int64_t> offsets;
           for (int j = 0; j < nsymbols; ++j) {
             GElf_Sym nsym;
-            GElf_Sym *nsymp = gelf_getsym(datap, j, &nsym);
+            GElf_Sym* nsymp = gelf_getsym(datap, j, &nsym);
             if (nsymp) {
-              if (GELF_ST_TYPE(nsym.st_info) == STT_FUNC && (*symbol_section_index)[i] == (*symbol_section_index)[j]) {
+              if (GELF_ST_TYPE(nsym.st_info) == STT_FUNC
+                  && (*symbol_section_index)[i] == (*symbol_section_index)[j]) {
                 offsets.push_back((*symbol_values)[j]);
               }
             }
@@ -537,66 +443,52 @@ relocateSymbolsHelper
         }
       }
     }
-    delete symbol_section_index;    
+    delete symbol_section_index;
   }
   return symbol_values;
 }
 
-
-static Elf_SymbolVector *
-relocateSymbols
-(
-  Elf *elf,
-  Elf_SectionVector *sections,
-  elf_helper_t* eh
-)
-{
-  Elf_SymbolVector *symbol_values = NULL;
+static Elf_SymbolVector* relocateSymbols(Elf* elf, Elf_SectionVector* sections, elf_helper_t* eh) {
+  Elf_SymbolVector* symbol_values = NULL;
   GElf_Ehdr ehdr_v;
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+  GElf_Ehdr* ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
     for (auto si = sections->begin(); si != sections->end(); si++) {
-      Elf_Scn *scn = *si;
+      Elf_Scn* scn = *si;
       GElf_Shdr shdr;
-      if (!gelf_getshdr(scn, &shdr)) continue;
+      if (!gelf_getshdr(scn, &shdr))
+        continue;
       if (shdr.sh_type == SHT_SYMTAB) {
 #if DEBUG_CUBIN_RELOCATION
-        std::cout << "relocating symbols in section " << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
-          << std::endl;
+        std::cout << "relocating symbols in section "
+                  << elf_strptr(elf, eh->section_string_index, shdr.sh_name) << std::endl;
 #endif
         symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn, eh);
-        break; // AFAIK, there can only be one symbol table
+        break;  // AFAIK, there can only be one symbol table
       }
     }
   }
   return symbol_values;
 }
 
-
 // cubin text segments all start at offset 0 and are thus overlapping.
 // relocate each segment of type SHT_PROGBITS (a program text
 // or data segment) so that it begins at its offset in the
 // cubin. when this function returns, text segments no longer overlap.
-static void
-relocateProgramDataSegments
-(
-  Elf *elf,
-  Elf_SectionVector *sections,
-  elf_helper_t* eh
-)
-{
+static void relocateProgramDataSegments(Elf* elf, Elf_SectionVector* sections, elf_helper_t* eh) {
   GElf_Ehdr ehdr_v;
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+  GElf_Ehdr* ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
     for (auto si = sections->begin(); si != sections->end(); si++) {
-      Elf_Scn *scn = *si;
+      Elf_Scn* scn = *si;
       GElf_Shdr shdr;
-      if (!gelf_getshdr(scn, &shdr)) continue;
+      if (!gelf_getshdr(scn, &shdr))
+        continue;
       if (shdr.sh_type == SHT_PROGBITS) {
 #if DEBUG_CUBIN_RELOCATION
-        std::cout << "relocating section " << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
-        << " to " << std::hex << shdr.sh_offset << std::dec
-          << std::endl;
+        std::cout << "relocating section "
+                  << elf_strptr(elf, eh->section_string_index, shdr.sh_name) << " to " << std::hex
+                  << shdr.sh_offset << std::dec << std::endl;
 #endif
         // update a segment so it's starting address matches its offset in the
         // cubin.
@@ -607,29 +499,16 @@ relocateProgramDataSegments
   }
 }
 
-
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-bool
-relocateCubin
-(
- char *cubin_ptr,
- size_t cubin_size,
- Elf *cubin_elf
-)
-{
+bool relocateCubin(char* cubin_ptr, size_t cubin_size, Elf* cubin_elf) {
   bool success = false;
 
   elf_helper_t eh;
-  elf_helper_initialize(cubin_elf, &eh);  
+  elf_helper_initialize(cubin_elf, &eh);
 
-  Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
+  Elf_SectionVector* sections = elfGetSectionVector(cubin_elf);
   if (sections) {
     relocateProgramDataSegments(cubin_elf, sections, &eh);
-    Elf_SymbolVector *symbol_values = relocateSymbols(cubin_elf, sections, &eh);
+    Elf_SymbolVector* symbol_values = relocateSymbols(cubin_elf, sections, &eh);
     if (symbol_values) {
       relocateLineMap(cubin_ptr, cubin_elf, sections, symbol_values, &eh);
       relocateDebugInfo(cubin_ptr, cubin_elf, sections, symbol_values, &eh);

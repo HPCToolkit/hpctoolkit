@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -64,25 +64,12 @@
 #ifndef prof_lean_BalancedTree_h
 #define prof_lean_BalancedTree_h
 
-//************************* System Include Files ****************************
-
-#include <stddef.h>
-#include <stdbool.h>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
 #include "pfq-rwlock.h"
 
+#include "include/uint.h"
 
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-//***************************************************************************
-// 
-//***************************************************************************
+#include <stdbool.h>
+#include <stddef.h>
 
 typedef void* (*BalancedTree_alloc_fn_t)(size_t);
 
@@ -90,12 +77,9 @@ typedef enum {
 
   BalancedTreeColor_RED,
   BalancedTreeColor_BLACK
-
 } BalancedTreeColor_t;
 
-
-typedef struct BalancedTreeNode
-{
+typedef struct BalancedTreeNode {
   // node structure
   struct BalancedTreeNode* parent;
   struct BalancedTreeNode* left;
@@ -105,56 +89,34 @@ typedef struct BalancedTreeNode
   // node data
   void* key;
   void* data;
-
 } BalancedTreeNode_t;
 
-
-
 static inline BalancedTreeNode_t*
-BalancedTreeNode_alloc(BalancedTree_alloc_fn_t alloc, size_t dataSz)
-{
+BalancedTreeNode_alloc(BalancedTree_alloc_fn_t alloc, size_t dataSz) {
   BalancedTreeNode_t* x = alloc(sizeof(BalancedTreeNode_t));
   x->data = alloc(dataSz);
   return x;
 }
 
+void BalancedTreeNode_init(BalancedTreeNode_t* x, void* key, BalancedTreeNode_t* parent);
 
-void
-BalancedTreeNode_init(BalancedTreeNode_t* x,
-		      void* key, BalancedTreeNode_t* parent);
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-typedef struct BalancedTree
-{
+typedef struct BalancedTree {
   BalancedTreeNode_t* root;
   uint size;
 
   BalancedTree_alloc_fn_t allocFn;
-  size_t nodeDataSz; // size of BalancedTreeNode_t.data
+  size_t nodeDataSz;  // size of BalancedTreeNode_t.data
 
   pfq_rwlock_t rwlock;
 } BalancedTree_t;
 
+void BalancedTree_init(BalancedTree_t* tree, BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz);
 
-void 
-BalancedTree_init(BalancedTree_t* tree, 
-		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz);
-
-
-static inline uint
-BalancedTree_size(BalancedTree_t* tree)
-{
+static inline uint BalancedTree_size(BalancedTree_t* tree) {
   return tree->size;
 }
 
-
-static inline BalancedTreeNode_t*
-BalancedTree_find(BalancedTree_t* tree, void* key)
-{
+static inline BalancedTreeNode_t* BalancedTree_find(BalancedTree_t* tree, void* key) {
   pfq_rwlock_read_lock(&tree->rwlock);
   BalancedTreeNode_t* curr = tree->root;
   while (curr != NULL && curr->key != key) {
@@ -167,12 +129,9 @@ BalancedTree_find(BalancedTree_t* tree, void* key)
   return curr;
 }
 
-
 // BalancedTree_insert: Insert `key' into `tree' (if it does not
 // already exist).  Returns the node containing the key, which may
 // have already existed or be newly allocated.
-BalancedTreeNode_t*
-BalancedTree_insert(BalancedTree_t* tree, void* key);
-
+BalancedTreeNode_t* BalancedTree_insert(BalancedTree_t* tree, void* key);
 
 #endif /* prof_lean_BalancedTree_h */

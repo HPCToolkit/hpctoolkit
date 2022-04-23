@@ -52,37 +52,29 @@
 // nodes, but not loops or full inline sequences.  The tree is built
 // incrementally only for vma's for which we take a sample.
 
-//***************************************************************************
+#include "StructSimple.hpp"
+
+#include "lib/binutils/Insn.hpp"
+#include "lib/binutils/LM.hpp"
+#include "lib/binutils/Proc.hpp"
+#include "lib/prof/Struct-Tree.hpp"
+#include "lib/support/dictionary.h"
+#include "lib/support/FileUtil.hpp"
 
 #include <iostream>
 #include <sstream>
 #include <string>
 
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/Proc.hpp>
-#include <lib/binutils/Insn.hpp>
-
-#include <lib/prof/Struct-Tree.hpp>
-
-#include <lib/support/dictionary.h>
-#include <lib/support/FileUtil.hpp>
-
-#include "StructSimple.hpp"
-
 using namespace std;
 
-#define DEBUG_STRUCT_SIMPLE  0
-
-//****************************************************************************
+#define DEBUG_STRUCT_SIMPLE 0
 
 //
 // makeStructureSimple -- make a Prof::Struct::Stmt node and path up
 // to lmStruct for vma.
 //
-Prof::Struct::Stmt *
-BAnal::Struct::makeStructureSimple(Prof::Struct::LM * lmStruct,
-				   BinUtil::LM * lm, VMA vma)
-{
+Prof::Struct::Stmt*
+BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStruct, BinUtil::LM* lm, VMA vma) {
   //
   // begin address for proc containing vma, and proc and file name
   //
@@ -90,7 +82,7 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM * lmStruct,
   SrcFile::ln proc_line = 0;
   VMA proc_vma = vma;
 
-  BinUtil::Proc * bproc = lm->findProc(vma);
+  BinUtil::Proc* bproc = lm->findProc(vma);
 
   if (bproc != NULL) {
     proc_vma = bproc->begVMA();
@@ -100,26 +92,23 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM * lmStruct,
   }
 
   if (proc_filenm.empty()) {
-    proc_filenm = string(UNKNOWN_FILE)
-        + " [" + FileUtil::basename(lm->name().c_str()) + "]";
+    proc_filenm = string(UNKNOWN_FILE) + " [" + FileUtil::basename(lm->name().c_str()) + "]";
   }
 
-  if (! linknm.empty()) {
+  if (!linknm.empty()) {
     prettynm = BinUtil::demangleProcName(linknm);
-  }
-  else {
+  } else {
     stringstream buf;
 
-    buf << UNKNOWN_PROC << " 0x" << hex << proc_vma << dec
-	<< " [" << FileUtil::basename(lm->name().c_str()) << "]";
+    buf << UNKNOWN_PROC << " 0x" << hex << proc_vma << dec << " ["
+        << FileUtil::basename(lm->name().c_str()) << "]";
     prettynm = buf.str();
   }
 
-  Prof::Struct::File * fileStruct =
-    Prof::Struct::File::demand(lmStruct, proc_filenm);
+  Prof::Struct::File* fileStruct = Prof::Struct::File::demand(lmStruct, proc_filenm);
 
-  Prof::Struct::Proc * procStruct =
-    Prof::Struct::Proc::demand(fileStruct, prettynm, linknm, proc_line, proc_line);
+  Prof::Struct::Proc* procStruct =
+      Prof::Struct::Proc::demand(fileStruct, prettynm, linknm, proc_line, proc_line);
 
   //
   // file and line for vma (stmt), and end vma
@@ -130,22 +119,20 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM * lmStruct,
 
   lm->findSrcCodeInfo(vma, 0, stmt_procnm, stmt_filenm, stmt_line);
 
-  BinUtil::Insn * insn = lm->findInsn(vma, 0);
+  BinUtil::Insn* insn = lm->findInsn(vma, 0);
   if (insn) {
     end_vma = insn->endVMA();
   }
 
-  Prof::Struct::Stmt * stmt = NULL;
+  Prof::Struct::Stmt* stmt = NULL;
 
   // stmts with known file and line that differs from proc need a
   // guard alien
-  if ((! stmt_filenm.empty()) && stmt_line != 0
-      && (stmt_filenm != proc_filenm || stmt_line < proc_line))
-  {
-    Prof::Struct::Alien * alien = procStruct->demandGuardAlien(stmt_filenm, stmt_line);
+  if ((!stmt_filenm.empty()) && stmt_line != 0
+      && (stmt_filenm != proc_filenm || stmt_line < proc_line)) {
+    Prof::Struct::Alien* alien = procStruct->demandGuardAlien(stmt_filenm, stmt_line);
     stmt = alien->demandStmt(stmt_line, vma, end_vma);
-  }
-  else {
+  } else {
     stmt = procStruct->demandStmtSimple(stmt_line, vma, end_vma);
   }
 

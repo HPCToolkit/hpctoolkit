@@ -47,37 +47,39 @@
 #include "lib/profile/util/vgannotations.hpp"
 
 #include "tree.hpp"
-#include "../hpcprof2/args.hpp"
 
-#include "lib/profile/pipeline.hpp"
+#include "../hpcprof2/args.hpp"
+#include "lib/profile/finalizers/denseids.hpp"
+#include "lib/profile/finalizers/directclassification.hpp"
+#include "lib/profile/mpi/all.hpp"
 #include "lib/profile/packedids.hpp"
-#include "lib/profile/source.hpp"
-#include "lib/profile/sources/packed.hpp"
+#include "lib/profile/pipeline.hpp"
 #include "lib/profile/sinks/experimentxml4.hpp"
 #include "lib/profile/sinks/hpctracedb2.hpp"
 #include "lib/profile/sinks/sparsedb.hpp"
-#include "lib/profile/finalizers/denseids.hpp"
-#include "lib/profile/finalizers/directclassification.hpp"
+#include "lib/profile/source.hpp"
+#include "lib/profile/sources/packed.hpp"
 #include "lib/profile/util/log.hpp"
-#include "lib/profile/mpi/all.hpp"
 
 #include <iostream>
 #include <stack>
 
 using namespace hpctoolkit;
 using namespace hpctoolkit::literals;
+
 namespace fs = stdshim::filesystem;
 
-template<class T, class... Args>
-static std::unique_ptr<T> make_unique_x(Args&&... args) {
+template<class T, class... Args> static std::unique_ptr<T> make_unique_x(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 int rank0(ProfArgs&& args) {
   // We only have one Pipeline, this is its builder.
   ProfilePipeline::Settings pipelineB;
-  for(auto& sp: args.sources) pipelineB << std::move(sp.first);
-  for(auto& sp: args.ksyms) pipelineB << std::move(sp);
+  for (auto& sp : args.sources)
+    pipelineB << std::move(sp.first);
+  for (auto& sp : args.ksyms)
+    pipelineB << std::move(sp);
 
   // Set up our reduction tree with our fellow peers
   RankTree tree{std::max<std::size_t>(args.threads, 2)};
@@ -90,7 +92,8 @@ int rank0(ProfArgs&& args) {
   pipelineB << se;
 
   // Load in the Finalizers for Structfiles.
-  for(auto& sp: args.structs) pipelineB << std::move(sp.first);
+  for (auto& sp : args.structs)
+    pipelineB << std::move(sp.first);
   ProfArgs::StructWarner sw(args);
   pipelineB << sw;
 
@@ -114,11 +117,10 @@ int rank0(ProfArgs&& args) {
     DataClass accepts() const noexcept override { return DataClass::threads; }
     ExtensionClass requires() const noexcept override { return {}; }
     DataClass wavefronts() const noexcept override { return DataClass::threads; }
-    void notifyPipeline() noexcept override {
-      src.registerOrderedWavefront();
-    }
+    void notifyPipeline() noexcept override { src.registerOrderedWavefront(); }
     void notifyWavefront(DataClass wave) override {
-      if(!wave.hasThreads()) return;
+      if (!wave.hasThreads())
+        return;
       auto mpiSem = src.enterOrderedWavefront();
       mpi::exscan(src.threads().size(), mpi::Op::sum());
     }
@@ -130,14 +132,14 @@ int rank0(ProfArgs&& args) {
   struct Detector : public ProfileSource {
     DataClass provides() const noexcept override { return DataClass::ctxTimepoints; }
     DataClass finalizeRequest(const DataClass& d) const noexcept override { return d; }
-    void read(const DataClass&) override {};
+    void read(const DataClass&) override{};
     bool needsTimepoints() const { return sink.limit().hasCtxTimepoints(); }
   } detector;
   pipelineB << detector;
 
   // When everything is ready, ship off the block to the workers.
   struct Sender : public IdPacker {
-    Sender(Detector& d) : detector(d) {};
+    Sender(Detector& d) : detector(d){};
     void notifyPipeline() noexcept override {
       IdPacker::notifyPipeline();
       src.registerOrderedWavefront();
@@ -162,13 +164,12 @@ int rank0(ProfArgs&& args) {
   MetricReceiver::append(pipelineB, tree, cmap);
 
   // Finally, eventually we get to actually write stuff out.
-  switch(args.format) {
+  switch (args.format) {
   case ProfArgs::Format::sparse: {
     std::unique_ptr<sinks::HPCTraceDB2> tdb;
-    if(args.include_traces)
+    if (args.include_traces)
       tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
-    pipelineB << make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
-                                                      tdb.get());
+    pipelineB << make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources, tdb.get());
     pipelineB << std::move(tdb);
     pipelineB << make_unique_x<sinks::SparseDB>(args.output);
     break;
@@ -179,7 +180,7 @@ int rank0(ProfArgs&& args) {
   ProfilePipeline pipeline(std::move(pipelineB), args.threads);
   pipeline.run();
 
-  if(args.valgrindUnclean) {
+  if (args.valgrindUnclean) {
     mpi::World::finalize();
     std::exit(0);
   }

@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -63,63 +63,34 @@
 #ifndef support_lean_OSUtil_h
 #define support_lean_OSUtil_h
 
-//***************************************************************************
-// system include files
-//***************************************************************************
+#include "include/uint.h"
 
-#include <stddef.h>
 #include <inttypes.h>
-
-
-//***************************************************************************
-// user include files
-//***************************************************************************
-
-#include <include/uint.h>
-
-
-
-//***************************************************************************
-// macros
-//***************************************************************************
+#include <stddef.h>
 
 #define HOSTID_FORMAT "%08" PRIx32
-
-
-
-//***************************************************************************
-// forward declarations
-//***************************************************************************
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-uint
-OSUtil_pid();
+uint OSUtil_pid();
 
-const char*
-OSUtil_jobid();
+const char* OSUtil_jobid();
 
-uint32_t
-OSUtil_hostid();
+uint32_t OSUtil_hostid();
 
 // set the buffer into the customized kernel name
 // @param buffer: (in/out) the buffer to store the new name
 // @param max_chars: the number of maximum characters the buffer can store
 // @return the number of characters copied.
-int
-OSUtil_setCustomKernelName(char *buffer, size_t max_chars);
+int OSUtil_setCustomKernelName(char* buffer, size_t max_chars);
 
 // similar to above, but with fake name symbol < and >
-int
-OSUtil_setCustomKernelNameWrap(char *buffer, size_t max_chars);
+int OSUtil_setCustomKernelNameWrap(char* buffer, size_t max_chars);
 
 #ifdef __cplusplus
 }
 #endif
-
-
-//***************************************************************************
 
 #endif /* support_lean_OSUtil_h */

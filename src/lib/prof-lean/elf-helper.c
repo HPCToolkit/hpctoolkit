@@ -39,62 +39,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
 // File: elf-helper.c
 //
 // Purpose:
-//   interface implementation for querying ELF binary information and 
+//   interface implementation for querying ELF binary information and
 //   hiding the details about extended number
-//   
+//
 //***************************************************************************
-
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <libelf.h>
-#include <gelf.h>
-#include <stddef.h>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
 
 #include "elf-helper.h"
 
-//******************************************************************************
-// interface functions
-//******************************************************************************
+#include <gelf.h>
+#include <libelf.h>
+#include <stddef.h>
 
-
-void
-elf_helper_initialize
-(
-  Elf *elf,
-  elf_helper_t* eh
-)
-{
+void elf_helper_initialize(Elf* elf, elf_helper_t* eh) {
   eh->elf = elf;
   elf_getshdrstrndx(elf, &(eh->section_string_index));
   eh->symtab_section = NULL;
   eh->symtab_data = NULL;
   eh->symtab_shndx_section = NULL;
   eh->symtab_shndx_data = NULL;
-  
+
   // Find .symtab and .symtab_shndx
-  Elf_Scn *scn = NULL;  
+  Elf_Scn* scn = NULL;
   while ((scn = elf_nextscn(elf, scn)) != NULL) {
     GElf_Shdr shdr;
-    if (!gelf_getshdr(scn, &shdr)) continue;
+    if (!gelf_getshdr(scn, &shdr))
+      continue;
     if (shdr.sh_type == SHT_SYMTAB_SHNDX) {
       // If .symtab_shndx section exists, we need extended numbering
       // for section index of a symbol
-      eh->symtab_shndx_section = scn;    
+      eh->symtab_shndx_section = scn;
       eh->symtab_shndx_data = elf_getdata(scn, NULL);
     }
     if (shdr.sh_type == SHT_SYMTAB) {
@@ -104,16 +82,8 @@ elf_helper_initialize
   }
 }
 
-
 GElf_Sym*
-elf_helper_get_symbol
-(
-  elf_helper_t* eh,
-  int index,
-  GElf_Sym* sym_ptr,
-  int* section_index_ptr
-)
-{
+elf_helper_get_symbol(elf_helper_t* eh, int index, GElf_Sym* sym_ptr, int* section_index_ptr) {
   GElf_Sym* symp;
   Elf32_Word xndx;
   if (eh->symtab_shndx_data != NULL) {
@@ -130,6 +100,3 @@ elf_helper_get_symbol
   }
   return symp;
 }
-
-
-      

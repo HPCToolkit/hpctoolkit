@@ -49,8 +49,6 @@
 // hpcstruct and hpcprof.  All cases wanting to do demangling should
 // use this file.
 
-//***************************************************************************
-
 #ifndef support_lean_demangle_h
 #define support_lean_demangle_h
 
@@ -61,7 +59,7 @@ extern "C" {
 // Returns: malloc()ed string for the demangled name, or else NULL.
 // Note: the caller is resposible for calling free() on the result.
 //
-char * hpctoolkit_demangle(const char *);
+char* hpctoolkit_demangle(const char*);
 
 #if defined(__cplusplus)
 }

@@ -46,19 +46,17 @@
 
 /* a driver for programs that are going to manually call into the library */
 
-#include <libunwind.h>
-
 #include "state.h"
 #include "structs.h"
 
-void
-hpcrun_record_sample(unsigned long amount)
-{
-  hpcrun_state_t *state = hpcrun_get_state();
+#include <libunwind.h>
+
+void hpcrun_record_sample(unsigned long amount) {
+  hpcrun_state_t* state = hpcrun_get_state();
   unw_context_t ctx;
   unw_cursor_t frame;
 
-  if(state != NULL) {
+  if (state != NULL) {
     /* force insertion from the root */
     state->treenode = NULL;
     state->bufstk = state->bufend;
@@ -67,45 +65,30 @@ hpcrun_record_sample(unsigned long amount)
     /* FIXME: error checking */
     unw_get_context(&ctx);
     unw_init_local(&frame, &ctx);
-    unw_step(&frame);		/* step out into our caller */
+    unw_step(&frame); /* step out into our caller */
 
     hpcrun_sample_callstack_from_frame(state, amount, &frame);
   }
 }
 
-void
-hpcrun_driver_init(hpcrun_state_t *state, hpcrun_options_t *options)
-{
-}
+void hpcrun_driver_init(hpcrun_state_t* state, hpcrun_options_t* options) {}
 
-void
-hpcrun_driver_fini(hpcrun_state_t *state, hpcrun_options_t *options)
-{
-}
+void hpcrun_driver_fini(hpcrun_state_t* state, hpcrun_options_t* options) {}
 
 #ifdef CSPROF_THREADS
-void
-hpcrun_driver_thread_init(hpcrun_state_t *state)
-{
-    /* no support required */
+void hpcrun_driver_thread_init(hpcrun_state_t* state) {
+  /* no support required */
 }
 
-void
-hpcrun_driver_thread_fini(hpcrun_state_t *state)
-{
-    /* no support required */
+void hpcrun_driver_thread_fini(hpcrun_state_t* state) {
+  /* no support required */
 }
 #endif
 
-void
-hpcrun_driver_suspend(hpcrun_state_t *state)
-{
-    /* no support required */
+void hpcrun_driver_suspend(hpcrun_state_t* state) {
+  /* no support required */
 }
 
-void
-hpcrun_driver_resume(hpcrun_state_t *state)
-{
-    /* no support required */
+void hpcrun_driver_resume(hpcrun_state_t* state) {
+  /* no support required */
 }
-

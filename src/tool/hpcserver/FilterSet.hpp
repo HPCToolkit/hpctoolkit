@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilterSet.hpp $
-// $Id: FilterSet.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilterSet.hpp
+// $ $Id: FilterSet.hpp 4286 2013-07-09 19:03:59Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilterSet.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/FilterSet.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,34 +63,29 @@
 #ifndef FILTERSET_HPP_
 #define FILTERSET_HPP_
 #include "Filter.hpp"
+
 #include <vector>
 
 using namespace std;
-namespace TraceviewerServer
-{
-class FilterSet{
-	vector<Filter> filters;
-	bool excludeMatched;
-public:
-	FilterSet(bool _excludeMatched){
-		excludeMatched = _excludeMatched;
-	}
-	FilterSet(){
-		excludeMatched = true;
-	}
-	void add(Filter toAdd){
-		filters.push_back(toAdd);
-	}
-	bool matches(int proc, int thread) {
-		bool matchedSoFar = true;
-		vector<Filter>::iterator it;
-		for(it = filters.begin(); it != filters.end(); ++it) {
-			matchedSoFar &= (it->matches(proc, thread)^excludeMatched);
-		}
-		return matchedSoFar;
-	}
-};
-}
 
+namespace TraceviewerServer {
+class FilterSet {
+  vector<Filter> filters;
+  bool excludeMatched;
+
+public:
+  FilterSet(bool _excludeMatched) { excludeMatched = _excludeMatched; }
+  FilterSet() { excludeMatched = true; }
+  void add(Filter toAdd) { filters.push_back(toAdd); }
+  bool matches(int proc, int thread) {
+    bool matchedSoFar = true;
+    vector<Filter>::iterator it;
+    for (it = filters.begin(); it != filters.end(); ++it) {
+      matchedSoFar &= (it->matches(proc, thread) ^ excludeMatched);
+    }
+    return matchedSoFar;
+  }
+};
+}  // namespace TraceviewerServer
 
 #endif /* FILTERSET_HPP_ */

@@ -47,10 +47,10 @@
 #ifndef AUDIT_AUDITAPI_H
 #define AUDIT_AUDITAPI_H
 
+#include "include/hpctoolkit-config.h"
+
 #include <link.h>
 #include <stdbool.h>
-
-#include "include/hpctoolkit-config.h"
 
 // The entirety of this file only makes sense in the dynamic case, so
 // error if someone tries to use it in the static case.

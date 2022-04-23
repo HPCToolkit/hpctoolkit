@@ -44,57 +44,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
-#include <dlfcn.h>
-
-
-
-//*****************************************************************************
-// libmonitor
-//*****************************************************************************
-
-#include <monitor.h>
-
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include <lib/prof-lean/spinlock.h>
-
-#include <hpcrun/trace.h>
-#include <hpcrun/write_data.h>
-
-#include "ompt-defer.h"
 #include "ompt-defer-write.h"
 
+#include "ompt-defer.h"
 
+#include "hpcrun/trace.h"
+#include "hpcrun/write_data.h"
 
-//*****************************************************************************
-// global variables
-//*****************************************************************************
+#include "lib/prof-lean/spinlock.h"
 
-static struct entry_t *unresolved_list = NULL;
+#include <dlfcn.h>
+#include <monitor.h>
+
+static struct entry_t* unresolved_list = NULL;
 
 static spinlock_t unresolved_list_lock = SPINLOCK_UNLOCKED;
 
-
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-struct entry_t *
-new_dw_entry
-(
- void
-)
-{
-  struct entry_t *entry = NULL;
+struct entry_t* new_dw_entry(void) {
+  struct entry_t* entry = NULL;
 
   entry = (struct entry_t*)hpcrun_malloc(sizeof(struct entry_t));
   entry->prev = entry->next = NULL;
@@ -103,15 +70,9 @@ new_dw_entry
   return entry;
 }
 
-
-void
-insert_dw_entry
-(
- struct entry_t* entry
-)
-{
+void insert_dw_entry(struct entry_t* entry) {
   spinlock_lock(&unresolved_list_lock);
-  if(!unresolved_list) {
+  if (!unresolved_list) {
     unresolved_list = entry;
     spinlock_unlock(&unresolved_list_lock);
     return;
@@ -123,38 +84,27 @@ insert_dw_entry
   spinlock_unlock(&unresolved_list_lock);
 }
 
-
-void 
-add_defer_td
-(
- thread_data_t *td
-)
-{
-  struct entry_t *entry = new_dw_entry();
+void add_defer_td(thread_data_t* td) {
+  struct entry_t* entry = new_dw_entry();
   entry->td = td;
   insert_dw_entry(entry);
 }
 
-
-void
-write_other_td
-(
- void
-)
-{
+void write_other_td(void) {
   spinlock_lock(&unresolved_list_lock);
-  struct entry_t *entry = unresolved_list;
+  struct entry_t* entry = unresolved_list;
   spinlock_unlock(&unresolved_list_lock);
-  while(entry) {
-    if(entry->flag) {
+  while (entry) {
+    if (entry->flag) {
       entry = entry->next;
       continue;
     }
     entry->flag = true;
-    thread_data_t *td = hpcrun_get_thread_data();
+    thread_data_t* td = hpcrun_get_thread_data();
     cct2metrics_t* store_cct2metrics_map = td->core_profile_trace_data.cct2metrics_map;
-    td->core_profile_trace_data.cct2metrics_map = entry->td->core_profile_trace_data.cct2metrics_map;
-    if(entry->td->defer_flag) {
+    td->core_profile_trace_data.cct2metrics_map =
+        entry->td->core_profile_trace_data.cct2metrics_map;
+    if (entry->td->defer_flag) {
       TMSG(DEFER_CTXT, "write another td with id %d", entry->td->core_profile_trace_data.id);
       resolve_cntxt_fini(entry->td);
     }

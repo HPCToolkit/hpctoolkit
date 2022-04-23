@@ -44,34 +44,32 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <string.h>
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
+
+#include <string.h>
 
 #define X86_FAIL_INTERVALS_DEBUG 1
 
 static char fail_signature[] = {
-  0xc3,                         // retq
-  0xc3,                         // retq
-  0xc3,                         // retq
-  0xc3,                         // retq
-  0xc3                          // retq
+    0xc3,  // retq
+    0xc3,  // retq
+    0xc3,  // retq
+    0xc3,  // retq
+    0xc3   // retq
 };
 
-
-int
-x86_fail_intervals(char *ins, int len, btuwi_status_t *stat)
-{
-#ifdef X86_FAIL_INTERVALS_DEBUG 
+int x86_fail_intervals(char* ins, int len, btuwi_status_t* stat) {
+#ifdef X86_FAIL_INTERVALS_DEBUG
   int siglen = sizeof(fail_signature);
 
-  if (len > siglen && strncmp((char *) fail_signature, ins, siglen) == 0) {
-    // signature matched 
-    char *null = 0;
+  if (len > siglen && strncmp((char*)fail_signature, ins, siglen) == 0) {
+    // signature matched
+    char* null = 0;
 
-    *null = 0; // cause a SEGV by storing to the null pointer
+    *null = 0;  // cause a SEGV by storing to the null pointer
   }
- 
+
 #endif
   return 0;
 }

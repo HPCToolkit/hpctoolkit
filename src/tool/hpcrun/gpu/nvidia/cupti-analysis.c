@@ -41,41 +41,20 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "cupti-analysis.h"
+
+#include "cuda-device-map.h"
+
+#include "hpcrun/gpu/gpu-correlation-id-map.h"
+#include "hpcrun/messages/messages.h"
 
 #include <stdint.h>
 
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/messages/messages.h>
-
-#include "cupti-analysis.h"
-#include "cuda-device-map.h"
-
-
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
-
-#define MIN2(m1, m2) m1 > m2 ? m2 : m1
-#define MIN3(m1, m2, m3) m1 > m2 ? (MIN2(m2, m3)) : (MIN2(m1, m3))
+#define MIN2(m1, m2)         m1 > m2 ? m2 : m1
+#define MIN3(m1, m2, m3)     m1 > m2 ? (MIN2(m2, m3)) : (MIN2(m1, m3))
 #define MIN4(m1, m2, m3, m4) m1 > m2 ? (MIN3(m2, m3, m4)) : (MIN3(m1, m3, m4))
 
 #define UPPER_DIV(a, b) a == 0 ? 0 : (a - 1) / b + 1
-
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
 
 //------------------------------------------------------------------------------
 // Theoretical occupancy = active_warps_per_sm / max_active_warps_per_sm
@@ -83,23 +62,14 @@
 // A Performance Analysis Framework for Exploiting GPU Microarchitectural Capability
 //------------------------------------------------------------------------------
 
-void
-cupti_occupancy_analyze
-(
- CUpti_ActivityKernel4 *kernel,
- uint32_t *active_warps_per_sm,
- uint32_t *max_active_warps_per_sm,
- uint32_t *thread_registers,
- uint32_t *block_threads,
- uint32_t *block_shared_memory
-)
-{
+void cupti_occupancy_analyze(
+    CUpti_ActivityKernel4* kernel, uint32_t* active_warps_per_sm, uint32_t* max_active_warps_per_sm,
+    uint32_t* thread_registers, uint32_t* block_threads, uint32_t* block_shared_memory) {
   *active_warps_per_sm = 0;
   *max_active_warps_per_sm = 0;
-  cuda_device_map_entry_t *device = cuda_device_map_lookup(kernel->deviceId);
+  cuda_device_map_entry_t* device = cuda_device_map_lookup(kernel->deviceId);
   if (device != NULL) {
-    cuda_device_property_t *device_property =
-      cuda_device_map_entry_device_property_get(device);
+    cuda_device_property_t* device_property = cuda_device_map_entry_device_property_get(device);
 
     uint32_t num_threads_per_warp = device_property->num_threads_per_warp;
     uint32_t sm_threads = device_property->sm_threads;
@@ -116,12 +86,12 @@ cupti_occupancy_analyze
     uint32_t max_blocks_by_registers = sm_registers / block_registers;
 
     uint32_t max_blocks_by_shared_memory =
-      (*block_shared_memory == 0) ?  UINT32_MAX : sm_shared_memory / *block_shared_memory;
+        (*block_shared_memory == 0) ? UINT32_MAX : sm_shared_memory / *block_shared_memory;
 
     *max_active_warps_per_sm = sm_threads / num_threads_per_warp;
 
-    uint32_t active_blocks = MIN4(max_blocks_by_threads, max_blocks_by_registers,
-      max_blocks_by_shared_memory, sm_blocks);
+    uint32_t active_blocks = MIN4(
+        max_blocks_by_threads, max_blocks_by_registers, max_blocks_by_shared_memory, sm_blocks);
 
     *active_warps_per_sm = active_blocks * (UPPER_DIV(*block_threads, num_threads_per_warp));
 
@@ -138,7 +108,6 @@ cupti_occupancy_analyze
   }
 }
 
-
 //------------------------------------------------------------------------------
 // Two facts:
 // 1. SMs are profiled simultaneously, which means the total number
@@ -152,28 +121,21 @@ cupti_occupancy_analyze
 // total_samples / (clock_rate * kernel_runtime * #SM / sample_rate).
 //------------------------------------------------------------------------------
 
-void
-cupti_sm_efficiency_analyze
-(
- CUpti_ActivityPCSamplingRecordInfo *pc_sampling_record_info,
- uint64_t *total_samples,
- uint64_t *full_sm_samples
-)
-{
+void cupti_sm_efficiency_analyze(
+    CUpti_ActivityPCSamplingRecordInfo* pc_sampling_record_info, uint64_t* total_samples,
+    uint64_t* full_sm_samples) {
   *total_samples = 0;
   *full_sm_samples = 0;
   // correlation_id->device_id
-  gpu_correlation_id_map_entry_t *corr =
-    gpu_correlation_id_map_lookup(pc_sampling_record_info->correlationId);
+  gpu_correlation_id_map_entry_t* corr =
+      gpu_correlation_id_map_lookup(pc_sampling_record_info->correlationId);
   if (corr != NULL) {
     uint32_t device_id = gpu_correlation_id_map_entry_device_id_get(corr);
     uint64_t start = gpu_correlation_id_map_entry_start_get(corr);
     uint64_t end = gpu_correlation_id_map_entry_end_get(corr);
-    cuda_device_map_entry_t *device =
-      cuda_device_map_lookup(device_id);
+    cuda_device_map_entry_t* device = cuda_device_map_lookup(device_id);
     if (device != NULL) {
-      cuda_device_property_t *device_property =
-        cuda_device_map_entry_device_property_get(device);
+      cuda_device_property_t* device_property = cuda_device_map_entry_device_property_get(device);
 
       uint64_t sample_period_in_cycles = pc_sampling_record_info->samplingPeriodInCycles;
       // khz to hz to hz/ns
@@ -182,7 +144,8 @@ cupti_sm_efficiency_analyze
       // ns
       uint64_t kernel_time = end - start;
       *total_samples = pc_sampling_record_info->totalSamples;
-      *full_sm_samples = ((uint64_t)(core_clock_rate * kernel_time) / sample_period_in_cycles) * num_multiprocessors;
+      *full_sm_samples = ((uint64_t)(core_clock_rate * kernel_time) / sample_period_in_cycles)
+                       * num_multiprocessors;
       TMSG(CUDA_CUBIN, "sample_period_in_cycles %lu", sample_period_in_cycles);
       TMSG(CUDA_CUBIN, "core_clock_rate %lf", core_clock_rate);
       TMSG(CUDA_CUBIN, "num_multiprocessors %lu", num_multiprocessors);

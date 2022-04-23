@@ -60,53 +60,34 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#include "Flat-ProfileData.hpp"
 
-#include <iostream>
-#include <string>
-
-#include <sys/stat.h>
+#include "lib/prof-lean/hpcio.h"
+#include "lib/prof-lean/hpcrunflat-fmt.h"
+#include "lib/support/diagnostics.h"
+#include "lib/support/Logic.hpp"
+#include "lib/support/RealPathMgr.hpp"
+#include "lib/support/StrUtil.hpp"
 
 #include <cstdio>
 #include <cstring>
-
-//*************************** User Include Files ****************************
-
-#include "Flat-ProfileData.hpp"
-
-#include <lib/prof-lean/hpcrunflat-fmt.h>
-#include <lib/prof-lean/hpcio.h>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/Logic.hpp>
-#include <lib/support/RealPathMgr.hpp>
-#include <lib/support/StrUtil.hpp>
-
-//*************************** Forward Declarations **************************
+#include <iostream>
+#include <string>
+#include <sys/stat.h>
 
 //#define PROFREADER_TEST
 
 using namespace std;
 
-static int
-read_string(FILE *fp, std::string& str);
-
-
-//***************************************************************************
+static int read_string(FILE* fp, std::string& str);
 
 namespace Prof {
 
 namespace Flat {
 
+ProfileData::ProfileData(const char* filename) : m_name((filename) ? filename : ""), m_fs(NULL) {}
 
-ProfileData::ProfileData(const char* filename)
-  : m_name((filename) ? filename : ""), m_fs(NULL)
-{
-}
-
-
-ProfileData::~ProfileData()
-{
+ProfileData::~ProfileData() {
   if (m_fs) {
     fclose(m_fs);
   }
@@ -117,18 +98,16 @@ ProfileData::~ProfileData()
   }
   clear();
 
-  for (Metric::SampledDescVec::iterator it = m_mdescs.begin();
-       it != m_mdescs.end(); ++it) {
+  for (Metric::SampledDescVec::iterator it = m_mdescs.begin(); it != m_mdescs.end(); ++it) {
     delete (*it);
   }
   m_mdescs.clear();
 }
 
-
-void
-ProfileData::openread(const char* filename)
-{
-  DIAG_Assert(Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename), "Cannot open a different file!");
+void ProfileData::openread(const char* filename) {
+  DIAG_Assert(
+      Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename),
+      "Cannot open a different file!");
   if (m_name.empty() && filename) {
     m_name = filename;
   }
@@ -144,11 +123,10 @@ ProfileData::openread(const char* filename)
   mdescs(it->second);
 }
 
-
-void
-ProfileData::open(const char* filename)
-{
-  DIAG_Assert(Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename), "Cannot open a different file!");
+void ProfileData::open(const char* filename) {
+  DIAG_Assert(
+      Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename),
+      "Cannot open a different file!");
   if (m_name.empty() && filename) {
     m_name = filename;
   }
@@ -158,15 +136,12 @@ ProfileData::open(const char* filename)
 
   // Gather metrics
   read_metrics();
-  fseek(m_fs, 0L, SEEK_SET); // rewind
+  fseek(m_fs, 0L, SEEK_SET);  // rewind
 
   // NOT YET READ
 }
 
-
-void
-ProfileData::read()
-{
+void ProfileData::read() {
   // INVARIANT: at least one LM must exist in a profile.
 
   DIAG_Assert(m_fs, "No open file stream!");
@@ -181,7 +156,7 @@ ProfileData::read()
   // -------------------------------------------------------
   uint count = read_lm_count(m_fs);
   DIAG_Assert(count > 0, "At least one LM must exist in a profile!");
-  
+
   for (uint i = 0; i < count; ++i) {
     LM* proflm = new LM();
     proflm->read(m_fs, m_name.c_str());
@@ -192,10 +167,7 @@ ProfileData::read()
   m_fs = NULL;
 }
 
-
-void
-ProfileData::read_metrics()
-{
+void ProfileData::read_metrics() {
   // ASSUMES: Each LM has the *same* set of metrics
 
   DIAG_Assert(m_fs, "No open file stream!");
@@ -222,10 +194,7 @@ ProfileData::read_metrics()
   delete proflm;
 }
 
-
-void
-ProfileData::mdescs(LM* proflm)
-{
+void ProfileData::mdescs(LM* proflm) {
   // ASSUMES: Each LM has the *same* set of metrics
 
   uint sz = proflm->num_events();
@@ -238,10 +207,7 @@ ProfileData::mdescs(LM* proflm)
   }
 }
 
-
-FILE*
-ProfileData::fopen(const char* filename)
-{
+FILE* ProfileData::fopen(const char* filename) {
   struct stat statbuf;
   int ret = stat(filename, &statbuf);
   if (ret != 0) {
@@ -256,10 +222,7 @@ ProfileData::fopen(const char* filename)
   return fs;
 }
 
-
-void
-ProfileData::read_header(FILE* fs)
-{
+void ProfileData::read_header(FILE* fs) {
   char magic_str[HPCRUNFLAT_FMT_MagicLen];
   char version[HPCRUNFLAT_VersionLen];
   char endian;
@@ -270,21 +233,19 @@ ProfileData::read_header(FILE* fs)
   if (sz != HPCRUNFLAT_FMT_MagicLen) {
     PROFFLAT_Throw("Error reading <header>.");
   }
-  
+
   sz = fread((char*)version, 1, HPCRUNFLAT_VersionLen, fs);
   if (sz != HPCRUNFLAT_VersionLen) {
     PROFFLAT_Throw("Error reading <header>.");
   }
-  
+
   if ((c = fgetc(fs)) == EOF) {
     PROFFLAT_Throw("Error reading <header>.");
   }
   endian = (char)c;
-  
 
   // sanity check header
-  if (strncmp(magic_str, HPCRUNFLAT_FMT_Magic,
-	      HPCRUNFLAT_FMT_MagicLen) != 0) {
+  if (strncmp(magic_str, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) != 0) {
     PROFFLAT_Throw("Error reading <header>: bad magic string.");
   }
   if (strncmp(version, HPCRUNFLAT_Version, HPCRUNFLAT_VersionLen) != 0) {
@@ -295,24 +256,18 @@ ProfileData::read_header(FILE* fs)
   }
 }
 
-
-uint
-ProfileData::read_lm_count(FILE* fs)
-{
+uint ProfileData::read_lm_count(FILE* fs) {
   uint32_t count;
 
   size_t sz = hpcio_le4_fread(&count, fs);
   if (sz != sizeof(count)) {
     PROFFLAT_Throw("Error reading <loadmodule_list>.");
   }
- 
+
   return count;
 }
 
-
-void
-ProfileData::dump(std::ostream& o, const char* pre) const
-{
+void ProfileData::dump(std::ostream& o, const char* pre) const {
   string p = pre;
   string p1 = p + "  ";
 
@@ -326,22 +281,11 @@ ProfileData::dump(std::ostream& o, const char* pre) const
   o << p << "--- End ProfileData Dump ---" << endl;
 }
 
+LM::LM() {}
 
-//***************************************************************************
+LM::~LM() {}
 
-LM::LM()
-{
-}
-
-
-LM::~LM()
-{
-}
-
-
-void
-LM::read(FILE *fs, const char* filename)
-{
+void LM::read(FILE* fs, const char* filename) {
   size_t sz;
 
   // -------------------------------------------------------
@@ -351,14 +295,13 @@ LM::read(FILE *fs, const char* filename)
     PROFFLAT_Throw("Error reading <loadmodule_name>.");
   }
   RealPathMgr::singleton().realpath(m_name);
-  
+
   sz = hpcio_le8_fread(&m_load_addr, fs);
   if (sz != sizeof(m_load_addr)) {
     PROFFLAT_Throw("Error reading <loadmodule_loadoffset>.");
   }
 
-  DIAG_Msg(5, "Reading: " << m_name << " loaded at 0x"
-	   << hex << m_load_addr << dec);
+  DIAG_Msg(5, "Reading: " << m_name << " loaded at 0x" << hex << m_load_addr << dec);
 
   // -------------------------------------------------------
   // <loadmodule_eventcount>
@@ -369,7 +312,7 @@ LM::read(FILE *fs, const char* filename)
     PROFFLAT_Throw("Error reading <loadmodule_eventcount>.");
   }
   m_eventvec.resize(count);
-  
+
   // -------------------------------------------------------
   // Event data
   // -------------------------------------------------------
@@ -386,44 +329,28 @@ LM::read(FILE *fs, const char* filename)
   }
 }
 
-
-void
-LM::dump(std::ostream& o, const char* pre) const
-{
+void LM::dump(std::ostream& o, const char* pre) const {
   string p = pre;
   string p1 = p + "  ";
 
-  o << p << "{ LM: " << m_name << ", loadAddr: 0x" << hex
-    << m_load_addr << dec << " }" << endl;
-  
+  o << p << "{ LM: " << m_name << ", loadAddr: 0x" << hex << m_load_addr << dec << " }" << endl;
+
   for (uint i = 0; i < num_events(); ++i) {
     const EventData& profevent = event(i);
     profevent.dump(o, p1.c_str());
   }
 }
 
+EventData::EventData() {}
 
-//***************************************************************************
+EventData::~EventData() {}
 
-
-EventData::EventData()
-{
-}
-
-
-EventData::~EventData()
-{
-}
-
-
-void
-EventData::read(FILE *fs, uint64_t load_addr)
-{
+void EventData::read(FILE* fs, uint64_t load_addr) {
   size_t sz;
-  
+
   std::string name, desc;
   uint64_t period;
-  
+
   // -------------------------------------------------------
   // <event_x_name> <event_x_description> <event_x_period>
   // -------------------------------------------------------
@@ -433,17 +360,16 @@ EventData::read(FILE *fs, uint64_t load_addr)
   if (read_string(fs, desc) != 0) {
     PROFFLAT_Throw("Error reading <event_x_description>.");
   }
-  
+
   sz = hpcio_le8_fread(&period, fs);
   if (sz != sizeof(period)) {
     PROFFLAT_Throw("Error reading <event_x_period>.");
   }
-  
+
   m_mdesc.nameBase(name);
   m_mdesc.description(desc);
   m_mdesc.period(period);
-  //m_mdesc.flags();
-
+  // m_mdesc.flags();
 
   // -------------------------------------------------------
   // <event_x_data>
@@ -451,9 +377,9 @@ EventData::read(FILE *fs, uint64_t load_addr)
   m_sparsevec.clear();
   m_outofrange = 0;
   m_overflow = 0;
-  
+
   // <histogram_non_zero_bucket_count>
-  uint64_t ndat;    // number of profile entries
+  uint64_t ndat;  // number of profile entries
   sz = hpcio_le8_fread(&ndat, fs);
   if (sz != sizeof(ndat)) {
     PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_count>.");
@@ -467,54 +393,40 @@ EventData::read(FILE *fs, uint64_t load_addr)
   uint32_t count;   // profile count
   uint64_t offset;  // offset from load address
   for (uint i = 0; i < ndat; ++i) {
-    sz = hpcio_le4_fread(&count, fs);        // count
+    sz = hpcio_le4_fread(&count, fs);  // count
     if (sz != sizeof(count)) {
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_value>.");
     }
 
-    sz = hpcio_le8_fread(&offset, fs);       // offset
+    sz = hpcio_le8_fread(&offset, fs);  // offset
     if (sz != sizeof(offset)) {
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_offset>.");
     }
     DIAG_Msg(7, "    " << i << ": (" << count << ", " << offset << ")");
-    
+
     VMA pc = load_addr + offset;
     m_sparsevec[i] = make_pair(pc, count);
   }
 }
 
-
-void
-EventData::dump(std::ostream& o, const char* pre) const
-{
+void EventData::dump(std::ostream& o, const char* pre) const {
   string p = pre;
   string p1 = p + "  ";
 
-  o << p << "{ EventData: " << mdesc().name()
-    << ", period: " << mdesc().period()
-    << ", outofrange: " << outofrange()
-    << ", overflow: " << overflow()
-    << " }" << endl;
-  
+  o << p << "{ EventData: " << mdesc().name() << ", period: " << mdesc().period()
+    << ", outofrange: " << outofrange() << ", overflow: " << overflow() << " }" << endl;
+
   for (uint i = 0; i < num_data(); ++i) {
     const Datum& dat = datum(i);
-    o << p1 << "{ 0x" << hex << dat.first << ": " << dec
-      << dat.second << " }" << endl;
+    o << p1 << "{ 0x" << hex << dat.first << ": " << dec << dat.second << " }" << endl;
   }
 }
+}  // namespace Flat
+}  // namespace Prof
 
-} // namespace Flat
-
-} // namespace Prof
-
-
-//***************************************************************************
-
-static int
-read_string(FILE *fs, std::string& str)
-{
+static int read_string(FILE* fs, std::string& str) {
   size_t sz;
-  uint32_t len; // string length
+  uint32_t len;  // string length
   int c;
 
   // <string_length> <string_without_terminator>
@@ -522,7 +434,7 @@ read_string(FILE *fs, std::string& str)
   if (sz != sizeof(len)) {
     return 1;
   }
-  
+
   str.resize(len);
   for (uint n = 0; n < len; ++n) {
     if ((c = fgetc(fs)) == EOF) {
@@ -534,13 +446,9 @@ read_string(FILE *fs, std::string& str)
   return 0;
 }
 
-
-//***************************************************************************
-
 #ifdef PROFREADER_TEST
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
   std::string filename = argv[1];
   ProfileData f;
 
@@ -548,8 +456,7 @@ int main(int argc, char **argv)
 
   if (ret == 0) {
     cerr << "successfully read file!";
-  }
-  else {
+  } else {
     cerr << "error reading file!";
   }
 
@@ -558,5 +465,3 @@ int main(int argc, char **argv)
 }
 
 #endif
-
-//***************************************************************************

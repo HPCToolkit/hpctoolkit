@@ -44,67 +44,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "linuxtimer.h"
 
 #include <signal.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/syscall.h>
-
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include "linuxtimer.h"
-
-
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
+#include <unistd.h>
 
 // the man pages cite sigev_notify_thread_id in struct sigevent,
 // but often the only name is a hidden union name.
 #ifndef sigev_notify_thread_id
-#define sigev_notify_thread_id  _sigev_un._tid
+#define sigev_notify_thread_id _sigev_un._tid
 #endif
 
-
-
-//*****************************************************************************
-// private operations
-//*****************************************************************************
-
-static void
-timespec_set
-(
- struct timespec *time,
- time_t sec,
- long nsec
-)
-{
+static void timespec_set(struct timespec* time, time_t sec, long nsec) {
   time->tv_sec = sec;
   time->tv_nsec = nsec;
 }
 
-
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-int
-linuxtimer_create
-(
- linuxtimer_t *td,
- clockid_t clock,
- int signal
-)
-{
+int linuxtimer_create(linuxtimer_t* td, clockid_t clock, int signal) {
   memset(&td->sigev, 0, sizeof(td->sigev));
 
   td->sigev.sigev_notify = SIGEV_THREAD_ID;
@@ -114,42 +72,22 @@ linuxtimer_create
 
   int ret = timer_create(clock, &td->sigev, &td->timerid);
 
-  if (ret) td->timerid = NULL;
+  if (ret)
+    td->timerid = NULL;
 
   return ret;
 }
 
-
-int
-linuxtimer_newsignal
-(
- void
-)
-{
+int linuxtimer_newsignal(void) {
   // avoid signal conflict with papi (2), itimer (3), perf (4)
-  return SIGRTMIN + 5; 
+  return SIGRTMIN + 5;
 }
 
-
-int
-linuxtimer_getsignal
-(
- linuxtimer_t *td
-)
-{
+int linuxtimer_getsignal(linuxtimer_t* td) {
   return td->sigev.sigev_signo;
 }
 
-
-int
-linuxtimer_set
-(
- linuxtimer_t *td,
- time_t sec,
- long nsec,
- bool repeat
-)
-{
+int linuxtimer_set(linuxtimer_t* td, time_t sec, long nsec, bool repeat) {
   struct itimerspec when;
 
   timespec_set(&when.it_value, sec, nsec);
@@ -161,16 +99,9 @@ linuxtimer_set
   return ret;
 }
 
-
-int
-linuxtimer_delete
-(
- linuxtimer_t *td
-)
-{
+int linuxtimer_delete(linuxtimer_t* td) {
   int ret = timer_delete(td->timerid);
   td->timerid = NULL;
 
   return ret;
 }
-

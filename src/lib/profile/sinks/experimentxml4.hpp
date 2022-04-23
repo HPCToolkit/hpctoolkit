@@ -48,12 +48,12 @@
 #define HPCTOOLKIT_PROFILE_SINKS_ExperimentXML4_H
 
 #include "../sink.hpp"
+#include "../stdshim/filesystem.hpp"
 
 #include <atomic>
-#include <fstream>
 #include <cstdio>
+#include <fstream>
 #include <mutex>
-#include "../stdshim/filesystem.hpp"
 
 namespace hpctoolkit::sinks {
 
@@ -79,7 +79,8 @@ public:
   ExtensionClass requires() const noexcept override {
     using namespace hpctoolkit::literals::extensions;
     Class ret = classification + identifier;
-    if(include_sources) ret += resolvedPath;
+    if (include_sources)
+      ret += resolvedPath;
     return ret;
   }
 
@@ -128,8 +129,8 @@ private:
 
   struct Proc {
     Proc() = default;
-    Proc(unsigned int i) : id(i), tag(), done(false) {};
-    Proc(const Proc& o) : id(o.id), tag(o.tag), done(false) {};
+    Proc(unsigned int i) : id(i), tag(), done(false){};
+    Proc(const Proc& o) : id(o.id), tag(o.tag), done(false){};
 
     unsigned int id;
     std::string tag;
@@ -203,7 +204,6 @@ private:
     const auto& operator()(Metric::ud_t&) const noexcept { return metric; }
   } ud;
 };
-
-}
+}  // namespace hpctoolkit::sinks
 
 #endif  // HPCTOOLKIT_PROFILE_SINKS_ExperimentXML4_H

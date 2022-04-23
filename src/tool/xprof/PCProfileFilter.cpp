@@ -57,73 +57,44 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#include "PCProfileFilter.hpp"
+
+#include "lib/binutils/Insn.hpp"
 
 #include <iostream>
 
-//*************************** User Include Files ****************************
-
-#include "PCProfileFilter.hpp"
-
-#include <lib/binutils/Insn.hpp>
-
-//*************************** Forward Declarations ***************************
-
+using std::dec;
 using std::endl;
 using std::hex;
-using std::dec;
 
-
-//****************************************************************************
-// PCProfileFilter
-//****************************************************************************
-
-PCProfileFilter::~PCProfileFilter()
-{
+PCProfileFilter::~PCProfileFilter() {
   delete mfilt;
   delete pcfilt;
 }
 
-void 
-PCProfileFilter::Dump(std::ostream& o)
-{
-}
+void PCProfileFilter::Dump(std::ostream& o) {}
 
-void 
-PCProfileFilter::DDump()
-{
+void PCProfileFilter::DDump() {
   Dump(std::cerr);
 }
 
-//****************************************************************************
-// InsnClassExpr
-//****************************************************************************
-
-InsnClassExpr::bitvec_t 
-ConvertToInsnClass(ISA::InsnDesc d)
-{
-  if (d.isFP()) { return INSN_CLASS_FLOP; }
-  else if (d.isMemOp()) { return INSN_CLASS_MEMOP; }
-  else if (d.isIntOp()) { return INSN_CLASS_INTOP; }
-  else { return INSN_CLASS_OTHER; }
+InsnClassExpr::bitvec_t ConvertToInsnClass(ISA::InsnDesc d) {
+  if (d.isFP()) {
+    return INSN_CLASS_FLOP;
+  } else if (d.isMemOp()) {
+    return INSN_CLASS_MEMOP;
+  } else if (d.isIntOp()) {
+    return INSN_CLASS_INTOP;
+  } else {
+    return INSN_CLASS_OTHER;
+  }
 }
 
-//****************************************************************************
-// InsnFilter
-//****************************************************************************
+InsnFilter::InsnFilter(InsnClassExpr expr_, binutils::LM* lm_) : expr(expr_), lm(lm_) {}
 
-InsnFilter::InsnFilter(InsnClassExpr expr_, binutils::LM* lm_)
-  : expr(expr_), lm(lm_)
-{
-}
+InsnFilter::~InsnFilter() {}
 
-InsnFilter::~InsnFilter()
-{
-}
-
-bool 
-InsnFilter::operator()(VMA pc, ushort opIndex)
-{
+bool InsnFilter::operator()(VMA pc, ushort opIndex) {
   binutils::Insn* insn = lm->findInsn(pc, opIndex);
   if (!insn) {
     return false;
@@ -132,13 +103,9 @@ InsnFilter::operator()(VMA pc, ushort opIndex)
   return (expr.IsSatisfied(ConvertToInsnClass(insn->desc())));
 }
 
-//****************************************************************************
-// PCProfileFilterList
-//****************************************************************************
-
-void 
-PCProfileFilterList::destroyContents() 
-{
-  for (iterator it = begin(); it != end(); ++it) { delete (*it); }
+void PCProfileFilterList::destroyContents() {
+  for (iterator it = begin(); it != end(); ++it) {
+    delete (*it);
+  }
   clear();
 }

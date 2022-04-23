@@ -42,53 +42,34 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//***************************************************************************
-
-
 #ifdef ENABLE_IGC
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <iostream>
-#include <string>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <libelf.h>
-
-#include <Symtab.h>
-#include <CodeSource.h>
-#include <CodeObject.h>
-
-#include <iga/kv.hpp>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/support/diagnostics.h>
-
-#include "DotCFG.hpp"
-#include "GPUCFGFactory.hpp"
-#include "GPUFunction.hpp"
-#include "GPUBlock.hpp"
-#include "GPUCodeSource.hpp"
 #include "ReadIntelCFG.hpp"
 
-//******************************************************************************
-// macros
-//******************************************************************************
+#include "DotCFG.hpp"
+#include "GPUBlock.hpp"
+#include "GPUCFGFactory.hpp"
+#include "GPUCodeSource.hpp"
+#include "GPUFunction.hpp"
+
+#include "lib/binutils/ElfHelper.hpp"
+#include "lib/support/diagnostics.h"
+
+#include <CodeObject.h>
+#include <CodeSource.h>
+#include <fcntl.h>
+#include <iga/kv.hpp>
+#include <iostream>
+#include <libelf.h>
+#include <string>
+#include <Symtab.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define DEBUG 0
 
-#define MAX_STR_SIZE 1024
+#define MAX_STR_SIZE                 1024
 #define INTEL_GPU_DEBUG_SECTION_NAME "Intel(R) OpenCL Device Debug"
 
 using namespace Dyninst;
@@ -96,68 +77,55 @@ using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
 
-static void 
-addCustomFunctionObject
-(
- const std::string &func_obj_name,
- Symtab *symtab
-)
-{
-  Region *reg = NULL;
+static void addCustomFunctionObject(const std::string& func_obj_name, Symtab* symtab) {
+  Region* reg = NULL;
   bool status = symtab->findRegion(reg, ".text");
   assert(status == true);
 
   unsigned long reg_size = reg->getMemSize();
-  Symbol *custom_symbol = new Symbol(
-      func_obj_name, 
-      SymtabAPI::Symbol::ST_FUNCTION, // SymbolType
-      Symbol::SL_LOCAL, //SymbolLinkage
-      SymtabAPI::Symbol::SV_DEFAULT, //SymbolVisibility
-      0, //Offset,
-      NULL, //Module *module 
-      reg, //Region *r
-      reg_size, //unsigned s
-      false, //bool d
-      false, //bool a
-      -1, //int index
-      -1, //int strindex
-      false //bool cs
+  Symbol* custom_symbol = new Symbol(
+      func_obj_name,
+      SymtabAPI::Symbol::ST_FUNCTION,  // SymbolType
+      Symbol::SL_LOCAL,                // SymbolLinkage
+      SymtabAPI::Symbol::SV_DEFAULT,   // SymbolVisibility
+      0,                               // Offset,
+      NULL,                            // Module *module
+      reg,                             // Region *r
+      reg_size,                        // unsigned s
+      false,                           // bool d
+      false,                           // bool a
+      -1,                              // int index
+      -1,                              // int strindex
+      false                            // bool cs
   );
 
-  //adding the custom symbol into the symtab object
-  status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
+  // adding the custom symbol into the symtab object
+  status = symtab->addSymbol(custom_symbol);  //(Symbol *newsym)
   assert(status == true);
 }
 
-
-static void
-parseIntelCFG
-(
- char *text_section,
- int text_section_size,
- GPUParse::Function &function
-)
-{
+static void parseIntelCFG(char* text_section, int text_section_size, GPUParse::Function& function) {
   KernelView kv(IGA_GEN9, text_section, text_section_size, iga::SWSB_ENCODE_MODE::SingleDistPipe);
-  std::map<int, GPUParse::Block *> block_offset_map;
+  std::map<int, GPUParse::Block*> block_offset_map;
 
   int offset = 0;
   int block_id = 0;
 
   // Construct basic blocks
   while (offset < text_section_size) {
-    auto *block = new GPUParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id)); 
+    auto* block =
+        new GPUParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id));
     block_id++;
 
     function.blocks.push_back(block);
     block_offset_map[offset] = block;
 
     auto size = kv.getInstSize(offset);
-    auto *inst = new GPUParse::IntelInst(offset, size);
+    auto* inst = new GPUParse::IntelInst(offset, size);
     block->insts.push_back(inst);
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
-      offset += size;  
+      offset += size;
       size = kv.getInstSize(offset);
       if (size == 0) {
         // this is a weird edge case, what to do?
@@ -173,14 +141,14 @@ parseIntelCFG
     }
     offset += size;
   }
-  
+
   using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
 
   // Construct targets
   std::array<int, KV_MAX_TARGETS_PER_INSTRUCTION + 1> jump_targets;
   for (size_t i = 0; i < function.blocks.size(); ++i) {
-    auto *block = function.blocks[i];
-    auto *inst = block->insts.back();
+    auto* block = function.blocks[i];
+    auto* inst = block->insts.back();
     size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
 
     if (i != function.blocks.size() - 1) {
@@ -201,8 +169,8 @@ parseIntelCFG
     }
 
     for (size_t j = 0; j < jump_targets_count; j++) {
-      auto *target_block = block_offset_map.at(jump_targets[j]);
-      
+      auto* target_block = block_offset_map.at(jump_targets[j]);
+
       TargetType type = TargetType::COND_TAKEN;
       if (inst->is_call) {
         // XXX(Keren): since we parse each instruction individually,
@@ -215,7 +183,7 @@ parseIntelCFG
 
       // Jump
       bool added = false;
-      for (auto *target : block->targets) {
+      for (auto* target : block->targets) {
         if (target->block == target_block) {
           added = true;
         }
@@ -230,22 +198,23 @@ parseIntelCFG
     // Instruction buffer
     char inst_str[MAX_STR_SIZE];
 
-    for (auto *block : function.blocks) {
+    for (auto* block : function.blocks) {
       std::cout << std::hex;
-      std::cout << block->name << ": [" << block->insts.front()->offset << ", " << block->insts.back()->offset << "]" << std::endl;
+      std::cout << block->name << ": [" << block->insts.front()->offset << ", "
+                << block->insts.back()->offset << "]" << std::endl;
 
-      for (auto *inst : block->insts) {
+      for (auto* inst : block->insts) {
         size_t n = kv.getInstSyntax(inst->offset, NULL, 0);
         assert(n < MAX_STR_SIZE);
 
         inst_str[n] = '\0';
-        auto fmt_opts = IGA_FORMATTING_OPTS_DEFAULT; // see iga.h
+        auto fmt_opts = IGA_FORMATTING_OPTS_DEFAULT;  // see iga.h
         kv.getInstSyntax(inst->offset, inst_str, n, fmt_opts);
 
         std::cout << std::hex << inst->offset << std::dec << inst_str << std::endl;
       }
 
-      for (auto *target : block->targets) {
+      for (auto* target : block->targets) {
         std::cout << "\t" << block->name << "->" << target->block->name << std::endl;
       }
       std::cout << std::dec;
@@ -253,28 +222,20 @@ parseIntelCFG
   }
 }
 
-
-bool
-readIntelCFG
-(
- const std::string &search_path,
- ElfFile *elfFile,
- Dyninst::SymtabAPI::Symtab *the_symtab, 
- bool cfg_wanted,
- Dyninst::ParseAPI::CodeSource **code_src, 
- Dyninst::ParseAPI::CodeObject **code_obj
-)
-{
+bool readIntelCFG(
+    const std::string& search_path, ElfFile* elfFile, Dyninst::SymtabAPI::Symtab* the_symtab,
+    bool cfg_wanted, Dyninst::ParseAPI::CodeSource** code_src,
+    Dyninst::ParseAPI::CodeObject** code_obj) {
   // An Intel GPU binary for a kernel does not contain a function symbol for the kernel
   // in its symbol table. Without a function symbol in the symbol table, Dyninst will not
   // associate line map entries with addresses in the kernel. To cope with this defect of
   // binaries for Intel GPU kernels, we add a function symbol for the kernel to its Dyninst
-  // symbol table.	
+  // symbol table.
   auto function_name = elfFile->getGPUKernelName();
-  addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
+  addCustomFunctionObject(function_name, the_symtab);  // adds a dummy function object
 
   if (cfg_wanted) {
-    char *text_section = NULL;
+    char* text_section = NULL;
     auto text_section_size = elfFile->getTextSection(&text_section);
     if (text_section_size == 0) {
       *code_src = new SymtabCodeSource(the_symtab);
@@ -285,10 +246,10 @@ readIntelCFG
 
     GPUParse::Function function(0, function_name);
     parseIntelCFG(text_section, text_section_size, function);
-    std::vector<GPUParse::Function *> functions = {&function};
+    std::vector<GPUParse::Function*> functions = {&function};
 
-    CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-    *code_src = new GPUCodeSource(functions, the_symtab); 
+    CFGFactory* cfg_fact = new GPUCFGFactory(functions);
+    *code_src = new GPUCodeSource(functions, the_symtab);
     *code_obj = new CodeObject(*code_src, cfg_fact);
     (*code_obj)->parse();
 
@@ -301,5 +262,4 @@ readIntelCFG
   return false;
 }
 
-
-#endif // ENABLE_IGC
+#endif  // ENABLE_IGC

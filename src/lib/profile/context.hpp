@@ -49,9 +49,8 @@
 
 #include "accumulators.hpp"
 #include "attributes.hpp"
-
-#include "util/locked_unordered.hpp"
 #include "scope.hpp"
+#include "util/locked_unordered.hpp"
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
 #include "util/uniqable.hpp"
@@ -109,10 +108,10 @@ public:
   /// Iterate over the Context sub-tree rooted at this Context. The given
   /// functions are called before and after every Context.
   // MT: Safe (const), Unstable (before `contexts` wavefront)
-  void iterate(const std::function<void(Context&)>& pre,
-               const std::function<void(Context&)>& post);
-  void citerate(const std::function<void(const Context&)>& pre,
-                const std::function<void(const Context&)>& post) const;
+  void iterate(const std::function<void(Context&)>& pre, const std::function<void(Context&)>& post);
+  void citerate(
+      const std::function<void(const Context&)>& pre,
+      const std::function<void(const Context&)>& post) const;
 
 private:
   std::unique_ptr<children_t> children_p;
@@ -218,35 +217,38 @@ private:
   /// Also determine which Templates have entry calls at all, for interiorFactors.
   // MT: Safe (const)
   std::pair<std::vector<double>, std::vector<bool>> rescalingFactors(
-    const util::locked_unordered_map<util::reference_index<const Context>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&) const;
+      const util::locked_unordered_map<
+          util::reference_index<const Context>,
+          util::locked_unordered_map<util::reference_index<const Metric>, MetricAccumulator>>&)
+      const;
 
   /// Variant that allows for STL maps instead of the locked wrappers.
   // MT: Safe (const)
-  std::vector<double> rescalingFactors(
-    const std::unordered_map<util::reference_index<const Context>,
-      std::unordered_map<util::reference_index<const Metric>,
-        double>>&) const;
+  std::vector<double>
+  rescalingFactors(const std::unordered_map<
+                   util::reference_index<const Context>,
+                   std::unordered_map<util::reference_index<const Metric>, double>>&) const;
 
   /// Internal implementation template for rescalingFactors.
   // MT: Safe (const)
   template<class T, class F1, class F2, class F3>
-  std::pair<std::vector<double>, std::vector<bool>> rescalingFactors_impl(
-      const F1&, const F2&, const F3&) const;
+  std::pair<std::vector<double>, std::vector<bool>>
+  rescalingFactors_impl(const F1&, const F2&, const F3&) const;
 
   /// From the given data, calculate the interior factors for each Template
   /// within the main FlowGraph, as instantiated here.
   // MT: Safe (const)
   std::vector<double> interiorFactors(
-    const util::locked_unordered_map<util::reference_index<const ContextReconstruction>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&, const std::vector<bool>&) const;
+      const util::locked_unordered_map<
+          util::reference_index<const ContextReconstruction>,
+          util::locked_unordered_map<util::reference_index<const Metric>, MetricAccumulator>>&,
+      const std::vector<bool>&) const;
 
   friend class ProfilePipeline;
   ContextReconstruction(Context&, ContextFlowGraph&);
-  void instantiate(const std::function<Context&(Context&, const Scope&)>&,
-                   const std::function<ContextReconstruction&(const Scope&)>&);
+  void instantiate(
+      const std::function<Context&(Context&, const Scope&)>&,
+      const std::function<ContextReconstruction&(const Scope&)>&);
 
   friend class util::uniqued<ContextReconstruction>;
   auto& uniqable_key() { return u_graph; }
@@ -293,7 +295,7 @@ public:
   ContextFlowGraph(const ContextFlowGraph&) = delete;
   ContextFlowGraph(ContextFlowGraph&&);
   ContextFlowGraph& operator=(const ContextFlowGraph&) = delete;
-  ContextFlowGraph& operator=(ContextFlowGraph&&) = delete;\
+  ContextFlowGraph& operator=(ContextFlowGraph&&) = delete;
 
   /// Scope used to generate this FlowGraph. Metric values originate from
   /// samples taken at this Scope, and then are redistributed.
@@ -316,8 +318,7 @@ public:
   /// MetricHandling::exteriorLogical for the rescaling factors.
   class Template final {
   public:
-    Template(Scope entry, std::vector<Scope> path)
-      : m_entry(entry), m_path(std::move(path)) {};
+    Template(Scope entry, std::vector<Scope> path) : m_entry(entry), m_path(std::move(path)){};
 
     Template(const Template&) = default;
     Template(Template&&) = default;
@@ -344,8 +345,8 @@ public:
     ///     factor = 1
     ///     valid = set(t for t in templates() if pcalls(t.entry()) > 0)
     ///     for idx = n...0:
-    ///       factor *= calls(path()[idx]) / sum(calls(q) for q in set(t.path()[idx] for t in siblings))
-    ///       valid = set(t for t in valid if t.path()[idx] == p)
+    ///       factor *= calls(path()[idx]) / sum(calls(q) for q in set(t.path()[idx] for t in
+    ///       siblings)) valid = set(t for t in valid if t.path()[idx] == p)
     /// where calls(x) is the number of calls attributed to the sibling
     /// Reconstruction or FlowGraph x, and pcalls(c) is the number of (sampled)
     /// "entry" calls attributed to Context c.
@@ -454,15 +455,14 @@ private:
   /// efficiency, only the given set of Reconstructions will be considered.
   // MT: Safe (const)
   std::pair<
-    std::unordered_map<util::reference_index<const ContextReconstruction>,
-                       std::vector<double>>,
-    std::vector<bool>
-  > exteriorFactors(
-    const std::unordered_set<
-      util::reference_index<const ContextReconstruction>>& reconsts,
-    const util::locked_unordered_map<util::reference_index<const Context>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&) const;
+      std::unordered_map<util::reference_index<const ContextReconstruction>, std::vector<double>>,
+      std::vector<bool>>
+  exteriorFactors(
+      const std::unordered_set<util::reference_index<const ContextReconstruction>>& reconsts,
+      const util::locked_unordered_map<
+          util::reference_index<const Context>,
+          util::locked_unordered_map<util::reference_index<const Metric>, MetricAccumulator>>&)
+      const;
 
   /// From the given data, calculate the interior factors for each Template
   /// within the FlowGraph, using values attributed to top-level Scopes.
@@ -470,14 +470,15 @@ private:
   /// The metric values given are local to a reconstruction group.
   // MT: Safe (const)
   std::vector<double> interiorFactors(
-    const util::locked_unordered_map<util::reference_index<const ContextFlowGraph>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>>&, const std::vector<bool>&) const;
+      const util::locked_unordered_map<
+          util::reference_index<const ContextFlowGraph>,
+          util::locked_unordered_map<util::reference_index<const Metric>, MetricAccumulator>>&,
+      const std::vector<bool>&) const;
 
   /// Internal implementation template for interiorFactors.
   template<class T, class F1, class F2, class F3>
-  std::vector<double> interiorFactors_impl(const F1&, const F2&, const F3&,
-      const std::vector<bool>&) const;
+  std::vector<double>
+  interiorFactors_impl(const F1&, const F2&, const F3&, const std::vector<bool>&) const;
 
   friend class ProfilePipeline;
   ContextFlowGraph(Scope);
@@ -500,7 +501,6 @@ private:
   friend class util::uniqued<ContextFlowGraph>;
   auto& uniqable_key() { return u_scope; }
 };
+}  // namespace hpctoolkit
 
-}
-
-#endif // HPCTOOLKIT_PROFILE_CONTEXT_H
+#endif  // HPCTOOLKIT_PROFILE_CONTEXT_H

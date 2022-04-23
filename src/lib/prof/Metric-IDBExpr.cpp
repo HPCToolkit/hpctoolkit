@@ -50,44 +50,27 @@
 //
 //***************************************************************************
 
-//************************ System Include Files ******************************
-
-#include <iostream>
-
-#include <string>
-
-//************************* User Include Files *******************************
-
-#include <include/uint.h>
-
 #include "Metric-IDBExpr.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "include/uint.h"
+#include "lib/support/diagnostics.h"
 
-//************************ Forward Declarations ******************************
-
-//****************************************************************************
+#include <iostream>
+#include <string>
 
 namespace Prof {
 
 namespace Metric {
 
-std::string
-IDBExpr::toString() const
-{
+std::string IDBExpr::toString() const {
   std::ostringstream os;
   dump(os);
   return os.str();
 }
 
-
-void
-IDBExpr::ddump() const
-{
+void IDBExpr::ddump() const {
   dump(std::cerr);
   std::cerr.flush();
 }
-
-} // namespace Metric
-
-} // namespace Prof
+}  // namespace Metric
+}  // namespace Prof

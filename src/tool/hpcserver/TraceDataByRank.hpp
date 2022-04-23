@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TraceDataByRank.hpp $
-// $Id: TraceDataByRank.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TraceDataByRank.hpp
+// $ $Id: TraceDataByRank.hpp 4283 2013-07-02 20:13:13Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TraceDataByRank.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/TraceDataByRank.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,45 +63,42 @@
 #ifndef TRACEDATABYRANKLOCAL_H_
 #define TRACEDATABYRANKLOCAL_H_
 
+#include "FileUtils.hpp"  //FileOffset
+#include "FilteredBaseData.hpp"
+#include "TimeCPID.hpp"
+
 #include <vector>
 
-#include "TimeCPID.hpp"
-#include "FilteredBaseData.hpp"
-#include "FileUtils.hpp"//FileOffset
+namespace TraceviewerServer {
 
-namespace TraceviewerServer
-{
+class TraceDataByRank {
+public:
+  TraceDataByRank(FilteredBaseData*, int, int, int);
+  virtual ~TraceDataByRank();
 
-	class TraceDataByRank
-	{
-	public:
+  void getData(Time timeStart, Time timeRange, double pixelLength);
+  int sampleTimeLine(
+      FileOffset minLoc, FileOffset maxLoc, int startPixel, int endPixel, int minIndex,
+      double pixelLength, Time startingTime);
+  FileOffset findTimeInInterval(Time time, FileOffset l_boundOffset, FileOffset r_boundOffset);
 
-		TraceDataByRank(FilteredBaseData*, int, int, int);
-		virtual ~TraceDataByRank();
+  vector<TimeCPID>* listCPID;
+  int rank;
 
-		void getData(Time timeStart, Time timeRange, double pixelLength);
-		int sampleTimeLine(FileOffset minLoc, FileOffset maxLoc, int startPixel, int endPixel, int minIndex, double pixelLength, Time startingTime);
-		FileOffset findTimeInInterval(Time time, FileOffset l_boundOffset, FileOffset r_boundOffset);
+private:
+  FilteredBaseData* data;
 
+  FileOffset minloc;
+  FileOffset maxloc;
+  int numPixelsH;
 
+  FileOffset getAbsoluteLocation(FileOffset);
 
-		vector<TimeCPID>* listCPID;
-		int rank;
-	private:
-		FilteredBaseData* data;
-
-		FileOffset minloc;
-		FileOffset maxloc;
-		int numPixelsH;
-
-		FileOffset getAbsoluteLocation(FileOffset);
-
-		FileOffset getRelativeLocation(FileOffset);
-		void addSample(unsigned int, TimeCPID);
-		TimeCPID getData(FileOffset);
-		Long getNumberOfRecords(FileOffset, FileOffset);
-		void postProcess();
-	};
-
+  FileOffset getRelativeLocation(FileOffset);
+  void addSample(unsigned int, TimeCPID);
+  TimeCPID getData(FileOffset);
+  Long getNumberOfRecords(FileOffset, FileOffset);
+  void postProcess();
+};
 } /* namespace TraceviewerServer */
 #endif /* TRACEDATABYRANKLOCAL_H_ */

@@ -44,72 +44,44 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//************************ System Include Files ******************************
-
-#include <string>
-using std::string;
-
-//************************ Xerces Include Files ******************************
-
-#include <xercesc/sax2/DefaultHandler.hpp>
-using XERCES_CPP_NAMESPACE::DefaultHandler;
-
-#include <xercesc/sax2/Attributes.hpp>
-using XERCES_CPP_NAMESPACE::Attributes;
-
-#include <xercesc/util/PlatformUtils.hpp>        
-using XERCES_CPP_NAMESPACE::XMLPlatformUtils;
-
-#include <xercesc/util/XMLException.hpp>
-using XERCES_CPP_NAMESPACE::XMLException;
-
-#include <xercesc/util/XMLString.hpp>        
-using XERCES_CPP_NAMESPACE::XMLString;
-
-//************************* User Include Files *******************************
-
 #include "XercesUtil.hpp"
 
-#include <lib/support/diagnostics.h>
+#include "lib/support/diagnostics.h"
 
-//****************************************************************************
+#include <string>
+#include <xercesc/sax2/Attributes.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
+#include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/util/XMLException.hpp>
+#include <xercesc/util/XMLString.hpp>
 
-void 
-InitXerces()
-{
+using std::string;
+using XERCES_CPP_NAMESPACE::Attributes;
+using XERCES_CPP_NAMESPACE::DefaultHandler;
+using XERCES_CPP_NAMESPACE::XMLException;
+using XERCES_CPP_NAMESPACE::XMLPlatformUtils;
+using XERCES_CPP_NAMESPACE::XMLString;
+
+void InitXerces() {
   DIAG_Msg(3, "Initializing XML: ...");
   try {
     XMLPlatformUtils::Initialize();
-  } 
-  catch (const XMLException& x) {
-    DIAG_Throw("Unable to initialize XML processor: " 
-	       << XMLString::transcode(x.getMessage()));
+  } catch (const XMLException& x) {
+    DIAG_Throw("Unable to initialize XML processor: " << XMLString::transcode(x.getMessage()));
   }
 }
 
-
-void
-FiniXerces()
-{
+void FiniXerces() {
   DIAG_Msg(3, "Finalizing XML: ...");
   XMLPlatformUtils::Terminate();
 }
 
-
-//****************************************************************************
-
-string 
-getAttr(const Attributes& attributes, int i) 
-{
-  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i);
+string getAttr(const Attributes& attributes, int i) {
+  const XMLCh* const xmlStr = attributes.getValue((unsigned int)i);
   return make_string(xmlStr);
 }
 
-
-string 
-getAttr(const Attributes& attributes, const XMLCh* const name)
-{
+string getAttr(const Attributes& attributes, const XMLCh* const name) {
   const XMLCh* const xmlStr = attributes.getValue(name);
   return make_string(xmlStr);
 }
-

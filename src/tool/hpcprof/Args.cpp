@@ -57,50 +57,32 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
-#include <string>
-using std::string;
-
-//*************************** User Include Files ****************************
-
 #include "Args.hpp"
 
-//*************************** Forward Declarations **************************
+#include <iostream>
+#include <string>
+
+using std::cerr;
+using std::endl;
+using std::string;
 
 // Cf. DIAG_Die.
-#define ARG_ERROR(streamArgs)                                        \
-  { std::ostringstream WeIrDnAmE;                                    \
-    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
-    printError(std::cerr, WeIrDnAmE.str());                          \
-    exit(1); }
+#define ARG_ERROR(streamArgs)                 \
+  {                                           \
+    std::ostringstream WeIrDnAmE;             \
+    WeIrDnAmE << streamArgs /*<< std::ends*/; \
+    printError(std::cerr, WeIrDnAmE.str());   \
+    exit(1);                                  \
+  }
 
-//***************************************************************************
-
-
-//***************************************************************************
-// Args
-//***************************************************************************
-
-Args::Args()
-{
+Args::Args() {
   hpcprof_isMetricArg = false;
   hpcprof_forceMetrics = false;
 }
 
+Args::~Args() {}
 
-Args::~Args()
-{
-}
-
-
-void
-Args::parse(int argc, const char* const argv[])
-{
+void Args::parse(int argc, const char* const argv[]) {
   ArgsHPCProf::parse(argc, argv, Analysis::AppType::APP_HPCPROF);
 
   if (parser.isOpt("metric")) {
@@ -115,12 +97,8 @@ Args::parse(int argc, const char* const argv[])
   db_makeMetricDB = false;
 }
 
-
-const std::string
-Args::getCmd() const
-{
+const std::string Args::getCmd() const {
   // avoid error messages with: <path>/hpcprof-mpi
   static string cmd = "hpcprof";
-  return cmd; // parser.getCmd();
+  return cmd;  // parser.getCmd();
 }
-

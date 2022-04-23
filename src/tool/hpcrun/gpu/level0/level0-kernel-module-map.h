@@ -44,34 +44,13 @@
 #ifndef level0_kernel_module_map_h
 #define level0_kernel_module_map_h
 
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void level0_kernel_module_map_insert(ze_kernel_handle_t kernel, ze_module_handle_t module);
 
-void
-level0_kernel_module_map_insert
-(
-  ze_kernel_handle_t kernel,
-  ze_module_handle_t module
-);
+ze_module_handle_t level0_kernel_module_map_lookup(ze_kernel_handle_t kernel);
 
-ze_module_handle_t
-level0_kernel_module_map_lookup
-(
-  ze_kernel_handle_t kernel
-);
-
-void
-level0_kernel_module_map_delete
-(
-  ze_kernel_handle_t kernel
-);
+void level0_kernel_module_map_delete(ze_kernel_handle_t kernel);
 
 #endif

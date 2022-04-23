@@ -60,24 +60,12 @@
 #ifndef isa_SparcISA_hpp
 #define isa_SparcISA_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-#include <include/uint.h>
-
 #include "ISA.hpp"
 
-//*************************** Forward Declarations ***************************
+#include "include/gcc-attr.h"
+#include "include/uint.h"
 
 struct disassemble_info;
-
-//****************************************************************************
-
-//***************************************************************************
-// SparcISA
-//***************************************************************************
 
 // 'SparcISA': Implements the SPARC Instruction Set Architecture.
 
@@ -90,52 +78,37 @@ public:
   // Instructions:
   // --------------------------------------------------------
 
-  virtual ushort
-  getInsnSize(MachInsn* GCC_ATTR_UNUSED mi)
-  { return MINSN_SIZE; }
+  virtual ushort getInsnSize(MachInsn* GCC_ATTR_UNUSED mi) { return MINSN_SIZE; }
 
-  virtual ushort
-  getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi)
-  { return 1; }
+  virtual ushort getInsnNumOps(MachInsn* GCC_ATTR_UNUSED mi) { return 1; }
 
-  virtual InsnDesc
-  getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual InsnDesc getInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual VMA
-  getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
+  virtual VMA getInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
 
-  virtual ushort
-  getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual ushort getInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual bool
-  isParallelWithSuccessor(MachInsn* GCC_ATTR_UNUSED mi1,
-			  ushort GCC_ATTR_UNUSED opIndex1,
-			  ushort GCC_ATTR_UNUSED sz1,
-			  MachInsn* GCC_ATTR_UNUSED mi2,
-			  ushort GCC_ATTR_UNUSED opIndex2,
-			  ushort GCC_ATTR_UNUSED sz2) const
-  { return false; }
+  virtual bool isParallelWithSuccessor(
+      MachInsn* GCC_ATTR_UNUSED mi1, ushort GCC_ATTR_UNUSED opIndex1, ushort GCC_ATTR_UNUSED sz1,
+      MachInsn* GCC_ATTR_UNUSED mi2, ushort GCC_ATTR_UNUSED opIndex2,
+      ushort GCC_ATTR_UNUSED sz2) const {
+    return false;
+  }
 
-  virtual void
-  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
+  virtual void decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
 private:
   // Should not be used
-  SparcISA(const SparcISA& GCC_ATTR_UNUSED x)
-  { }
+  SparcISA(const SparcISA& GCC_ATTR_UNUSED x) {}
 
-  SparcISA&
-  operator=(const SparcISA& GCC_ATTR_UNUSED x)
-  { return *this; }
+  SparcISA& operator=(const SparcISA& GCC_ATTR_UNUSED x) { return *this; }
 
 protected:
 private:
-  static const ushort MINSN_SIZE = 4; // machine instruction size in bytes
+  static const ushort MINSN_SIZE = 4;  // machine instruction size in bytes
   struct disassemble_info* m_di;
   struct disassemble_info* m_di_dis;
   GNUbu_disdata m_dis_data;
 };
-
-//****************************************************************************
 
 #endif /* isa_SparcISA_hpp */

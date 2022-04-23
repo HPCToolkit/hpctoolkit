@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/LargeByteBuffer.hpp $
-// $Id: LargeByteBuffer.hpp 4336 2013-08-01 23:00:49Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/LargeByteBuffer.hpp
+// $ $Id: LargeByteBuffer.hpp 4336 2013-08-01 23:00:49Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/LargeByteBuffer.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/LargeByteBuffer.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,34 +63,31 @@
 #ifndef LARGEBYTEBUFFER_H_
 #define LARGEBYTEBUFFER_H_
 
-#include "VersatileMemoryPage.hpp"
 #include "ByteUtilities.hpp"
-#include "FileUtils.hpp" //For FileOffset
+#include "FileUtils.hpp"  //For FileOffset
 #include "LRUList.hpp"
+#include "VersatileMemoryPage.hpp"
 
+#include <stdint.h>
 #include <string>
 #include <vector>
-#include <stdint.h>
 
-namespace TraceviewerServer
-{
+namespace TraceviewerServer {
 
-	class LargeByteBuffer
-	{
-	public:
-		LargeByteBuffer(std::string, int);
-		virtual ~LargeByteBuffer();
-		FileOffset size();
-		Long getLong(FileOffset);
-		int getInt(FileOffset);
-	private:
-		static uint64_t lcm(uint64_t, uint64_t);
-		static uint64_t getRamSize();
-		vector<VersatileMemoryPage> masterBuffer;
-		int numPages;
-		LRUList<VersatileMemoryPage>* pageManagementList;
+class LargeByteBuffer {
+public:
+  LargeByteBuffer(std::string, int);
+  virtual ~LargeByteBuffer();
+  FileOffset size();
+  Long getLong(FileOffset);
+  int getInt(FileOffset);
 
-	};
-
+private:
+  static uint64_t lcm(uint64_t, uint64_t);
+  static uint64_t getRamSize();
+  vector<VersatileMemoryPage> masterBuffer;
+  int numPages;
+  LRUList<VersatileMemoryPage>* pageManagementList;
+};
 } /* namespace TraceviewerServer */
 #endif /* LARGEBYTEBUFFER_H_ */

@@ -57,28 +57,16 @@
 //
 //***************************************************************************
 
-//***************************************************************************
-// local include files
-//***************************************************************************
+#include "lib/prof-lean/hpcfmt.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
 
-#include <lib/prof-lean/hpcfmt.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-
-
-
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
-int
-main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
   int ret;
   if (argc < 2) {
     fprintf(stderr, "usage: %s <filename>\n", argv[0]);
     exit(-1);
   }
-  char *fileName = argv[1];
+  char* fileName = argv[1];
   char* infsBuf = new char[HPCIO_RWBufferSz];
 
   FILE* infs = hpcio_fopen_r(fileName);
@@ -103,16 +91,15 @@ main(int argc, char **argv)
     exit(-1);
   }
 
-  // read and dump trace records until EOF 
-  while ( !feof(infs) ) {
+  // read and dump trace records until EOF
+  while (!feof(infs)) {
     hpctrace_fmt_datum_t datum;
 
     ret = hpctrace_fmt_datum_fread(&datum, hdr.flags, infs);
 
     if (ret == HPCFMT_EOF) {
       break;
-    }
-    else if (ret == HPCFMT_ERR) {
+    } else if (ret == HPCFMT_ERR) {
       fprintf(stderr, "%s: error reading trace file %s\n", argv[0], fileName);
       exit(-1);
     }

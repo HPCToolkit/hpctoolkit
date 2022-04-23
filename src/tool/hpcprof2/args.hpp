@@ -47,10 +47,10 @@
 #ifndef HPCTOOLKIT_PROF2_ARGS_H
 #define HPCTOOLKIT_PROF2_ARGS_H
 
-#include "lib/profile/source.hpp"
 #include "lib/profile/finalizer.hpp"
-
+#include "lib/profile/source.hpp"
 #include "lib/profile/stdshim/filesystem.hpp"
+
 #include <functional>
 
 namespace hpctoolkit {
@@ -74,7 +74,7 @@ public:
   /// Struct file warning Finalizer
   class StructWarner final : public ProfileFinalizer {
   public:
-    StructWarner(ProfArgs& a) : args(a) {};
+    StructWarner(ProfArgs& a) : args(a){};
     ~StructWarner() = default;
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
@@ -95,12 +95,10 @@ public:
   /// Statistics adding Transformer
   class StatisticsExtender final : public ProfileFinalizer {
   public:
-    StatisticsExtender(ProfArgs& a) : args(a) {};
+    StatisticsExtender(ProfArgs& a) : args(a){};
     ~StatisticsExtender() = default;
 
-    ExtensionClass provides() const noexcept override {
-      return ExtensionClass::statistics;
-    }
+    ExtensionClass provides() const noexcept override { return ExtensionClass::statistics; }
     ExtensionClass requires() const noexcept override { return {}; }
 
     void appendStatistics(const Metric&, Metric::StatsAccess) noexcept override;
@@ -112,7 +110,7 @@ public:
   /// Path prefix expansion Finalizer
   class Prefixer final : public ProfileFinalizer {
   public:
-    Prefixer(ProfArgs& a) : args(a) {};
+    Prefixer(ProfArgs& a) : args(a){};
     ~Prefixer() = default;
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::resolvedPath; }
@@ -129,15 +127,14 @@ public:
 
   /// Summary Statistics to include in the output
   struct Stats final {
-    bool sum : 1;
-    bool mean : 1;
-    bool min : 1;
-    bool max : 1;
+    bool sum    : 1;
+    bool mean   : 1;
+    bool min    : 1;
+    bool max    : 1;
     bool stddev : 1;
-    bool cfvar : 1;
+    bool cfvar  : 1;
 
-    Stats() : sum(true), mean(false), min(false), max(false), stddev(false),
-              cfvar(false) {};
+    Stats() : sum(true), mean(false), min(false), max(false), stddev(false), cfvar(false){};
   } stats;
 
   /// Path for the root database directory, or output file
@@ -169,7 +166,6 @@ public:
 private:
   std::unordered_map<stdshim::filesystem::path, std::vector<stdshim::filesystem::path>> structheads;
 };
-
-}
+}  // namespace hpctoolkit
 
 #endif  // HPCTOOLKIT_PROF2_ARGS_H

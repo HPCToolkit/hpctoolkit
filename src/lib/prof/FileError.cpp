@@ -54,49 +54,26 @@
 //
 // Description:
 //   Handle error reporting for hpcprof and hpcprof-mpi
-//   
 //
-//***************************************************************************
-
-//***************************************************************************
-// global includes
-//***************************************************************************
-
-#include <linux/limits.h>
-#include <string.h>
-
-#include <sstream>
-#include <iostream>
-
-
-
-//***************************************************************************
-// local includes
+//
 //***************************************************************************
 
 #include "FileError.hpp"
 
+#include <iostream>
+#include <linux/limits.h>
+#include <sstream>
+#include <string.h>
 
-
-//***************************************************************************
-// interface operations
-//***************************************************************************
-
-void
-hpcrun_getFileErrorString
-(
-  const std::string &fnm, 
-  std::string &errorString
-)
-{
+void hpcrun_getFileErrorString(const std::string& fnm, std::string& errorString) {
   char pathbuf[PATH_MAX];
   char errbuf[1024];
 
-  // grab the error string for the open failure before calling getcwd, 
-  // which may overwrite errno 
-  char *err = strerror_r(errno, errbuf, sizeof(errbuf));
+  // grab the error string for the open failure before calling getcwd,
+  // which may overwrite errno
+  char* err = strerror_r(errno, errbuf, sizeof(errbuf));
 
-  const char *path = realpath(fnm.c_str(), pathbuf);
+  const char* path = realpath(fnm.c_str(), pathbuf);
   if (path == NULL) {
     path = fnm.c_str();
   }

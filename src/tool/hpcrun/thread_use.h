@@ -47,15 +47,10 @@
 #ifndef thread_use_h
 #define thread_use_h
 
-//******************************************************************************
-// system include files
-//******************************************************************************
-
-#include <stdbool.h>
 #include <inttypes.h>
-
+#include <stdbool.h>
 
 void hpcrun_set_using_threads(bool flag);
 bool hpcrun_using_threads_p();
 
-#endif // thread_use_h
+#endif  // thread_use_h

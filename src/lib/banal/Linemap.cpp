@@ -64,55 +64,50 @@
 //
 // 6. replace binutils line map in makeStructureSimple.
 
-//***************************************************************************
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <err.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <algorithm>
-#include <iostream>
-#include <iomanip>
-#include <ostream>
-#include <string>
-#include <map>
-#include <vector>
-
-#include <include/uint.h>
-#include <lib/isa/ISATypes.hpp>
-#include <lib/binutils/ElfHelper.hpp>
-#include <lib/support/StringTable.hpp>
-
 #include "Linemap.hpp"
 
 #include "dwarf.h"
 #include "libdwarf.h"
 
+#include "include/uint.h"
+#include "lib/binutils/ElfHelper.hpp"
+#include "lib/isa/ISATypes.hpp"
+#include "lib/support/StringTable.hpp"
+
+#include <algorithm>
+#include <err.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <iomanip>
+#include <iostream>
+#include <limits.h>
+#include <map>
+#include <ostream>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <vector>
+
 using namespace std;
 
-#define DEBUG_RAW_LINE_MAP   0
-#define DEBUG_FULL_LINE_MAP  0
+#define DEBUG_RAW_LINE_MAP  0
+#define DEBUG_FULL_LINE_MAP 0
 
 //----------------------------------------------------------------------
 
 // Add line map info for one comp unit.
 //
-void
-LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
-{
-  Dwarf_Line *linebuf;
+void LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die) {
+  Dwarf_Line* linebuf;
   Dwarf_Signed count;
   Dwarf_Signed file_count;
   Dwarf_Error dw_error;
-  char **file_names;
+  char** file_names;
   int ret, n;
 
   ret = dwarf_srclines(dw_die, &linebuf, &count, &dw_error);
@@ -128,7 +123,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
   }
 
   // make map of dwarf src file index to m_str_tab index
-  vector <uint> fileVec;
+  vector<uint> fileVec;
   fileVec.resize(file_count);
 
   for (n = 0; n < file_count; n++) {
@@ -136,7 +131,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
   }
 
   // create unsigned copy of count to avoid type errors in the loop
-  Dwarf_Unsigned ufile_count = (Dwarf_Unsigned) file_count; 
+  Dwarf_Unsigned ufile_count = (Dwarf_Unsigned)file_count;
 
   for (n = 0; n < count; n++) {
     Dwarf_Addr addr;
@@ -174,10 +169,8 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
     cout << "0x" << hex << addr << dec;
     if (is_end) {
       cout << "    (end)\n";
-    }
-    else {
-      cout << "  " << setw(6) << lineno
-	   << "    " << m_str_tab.index2str(file_index) << "\n";
+    } else {
+      cout << "  " << setw(6) << lineno << "    " << m_str_tab.index2str(file_index) << "\n";
     }
 #endif
 
@@ -185,15 +178,14 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
       is_end = 1;
     }
 
-    if (lineno > 0 && ! is_end) {
+    if (lineno > 0 && !is_end) {
       // always insert a valid entry
       m_line_map[addr] = LineMapInfo(file_index, lineno);
-    }
-    else {
+    } else {
       // don't overwrite a valid entry with empty info
       auto it = m_line_map.find(addr);
       if (it == m_line_map.end()) {
-	m_line_map[addr] = LineMapInfo(m_empty_index, 0);
+        m_line_map[addr] = LineMapInfo(m_empty_index, 0);
       }
     }
   }
@@ -208,9 +200,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
 
 //----------------------------------------------------------------------
 
-void
-LineMap::do_comp_unit(Dwarf_Debug dw_dbg, int num, int vers, long hdr_len, long hdr_off)
-{
+void LineMap::do_comp_unit(Dwarf_Debug dw_dbg, int num, int vers, long hdr_len, long hdr_off) {
   Dwarf_Die dw_die;
   Dwarf_Error dw_error;
   int ret;
@@ -225,33 +215,30 @@ LineMap::do_comp_unit(Dwarf_Debug dw_dbg, int num, int vers, long hdr_len, long 
 
 //----------------------------------------------------------------------
 
-void
-LineMap::do_dwarf(ElfFile *elfFile)
-{
+void LineMap::do_dwarf(ElfFile* elfFile) {
   Dwarf_Debug dw_dbg;
   Dwarf_Error dw_error;
   Dwarf_Unsigned cu_hdr_len;
-  Dwarf_Half     cu_vers;
+  Dwarf_Half cu_vers;
   Dwarf_Unsigned cu_hdr_off;
   int num, ret;
 
   ret = dwarf_elf_init(elfFile->getElf(), DW_DLC_READ, NULL, NULL, &dw_dbg, &dw_error);
   if (ret == DW_DLV_NO_ENTRY) {
     errx(1, "no debug section in file: %s", elfFile->getFileName().c_str());
-  }
-  else if (ret != DW_DLV_OK) {
+  } else if (ret != DW_DLV_OK) {
     errx(1, "dwarf_init failed");
   }
 
   // iterate over comp units
   for (num = 0;; num++) {
-    ret = dwarf_next_cu_header_d(dw_dbg, 1, &cu_hdr_len, &cu_vers, NULL, NULL,
-		NULL, NULL, NULL, NULL, &cu_hdr_off, NULL, &dw_error);
+    ret = dwarf_next_cu_header_d(
+        dw_dbg, 1, &cu_hdr_len, &cu_vers, NULL, NULL, NULL, NULL, NULL, NULL, &cu_hdr_off, NULL,
+        &dw_error);
 
     if (ret == DW_DLV_NO_ENTRY) {
       break;
-    }
-    else if (ret !=  DW_DLV_OK) {
+    } else if (ret != DW_DLV_OK) {
       errx(1, "dwarf_next_cu_header_d failed");
     }
 
@@ -272,8 +259,7 @@ LineMap::do_dwarf(ElfFile *elfFile)
 
 // Initialize empty line map.
 //
-LineMap::LineMap()
-{
+LineMap::LineMap() {
   // put sentinels at each end, so we don't have to deal with
   // map.begin() and end().
   m_empty_index = m_str_tab.str2index("");
@@ -281,31 +267,24 @@ LineMap::LineMap()
   m_line_map[VMA_MAX] = LineMapInfo(m_empty_index, 0);
 }
 
-
 // Read one file and put into InternalLineMap.
 //
-void
-LineMap::readFile(ElfFile *elfFile)
-{
+void LineMap::readFile(ElfFile* elfFile) {
   do_dwarf(elfFile);
 
 #if DEBUG_FULL_LINE_MAP
   cout << "\nfull line map:\n\n";
 
   for (auto it = m_line_map.begin(); it != m_line_map.end(); ++it) {
-    cout << "0x" << hex << it->first << dec
-	 << "  " << setw(6) << it->second.line
-	 << "    " << m_str_tab.index2str(it->second.file) << "\n";
+    cout << "0x" << hex << it->first << dec << "  " << setw(6) << it->second.line << "    "
+         << m_str_tab.index2str(it->second.file) << "\n";
   }
 #endif
 }
 
-
 // Fill in LineRange object for one VMA.
 //
-void
-LineMap::getLineRange(VMA vma, LineRange & lr)
-{
+void LineMap::getLineRange(VMA vma, LineRange& lr) {
   // using sentinels, we know both it and --it are real objects, not
   // map.begin() or end().
   auto it = m_line_map.upper_bound(vma);

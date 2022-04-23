@@ -49,48 +49,49 @@
 
 #include "ref_wrappers.hpp"
 
+#include "../stdshim/shared_mutex.hpp"
+
+#include <mutex>
+#include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
-#include <mutex>
-#include <type_traits>
-#include <stdexcept>
-#include "../stdshim/shared_mutex.hpp"
 
 namespace hpctoolkit::util {
 
 namespace {
-  template<class...> struct sfinae_true : std::true_type {};
+template<class...> struct sfinae_true : std::true_type {};
 
-  // C++20 Concepts for dummies (C++11)
-  template<class M> static auto SharedMutex_helper(int)
-    -> sfinae_true<decltype(std::declval<M>().lock_shared()),
-                   decltype(std::declval<M>().try_lock_shared()),
-                   decltype(std::declval<M>().unlock_shared())>;
-  template<class M> static auto SharedMutex_helper(long)
-    -> std::false_type;
-  template<class M> struct SharedMutex : decltype(SharedMutex_helper<M>((int)0)) {};
+// C++20 Concepts for dummies (C++11)
+template<class M>
+static auto SharedMutex_helper(int) -> sfinae_true<
+    decltype(std::declval<M>().lock_shared()), decltype(std::declval<M>().try_lock_shared()),
+    decltype(std::declval<M>().unlock_shared())>;
+template<class M> static auto SharedMutex_helper(long) -> std::false_type;
+template<class M> struct SharedMutex : decltype(SharedMutex_helper<M>((int)0)) {};
 
-  // Sanity check that everything is working as designed
-  static_assert(SharedMutex<stdshim::shared_mutex>::value);
-  static_assert(!SharedMutex<std::mutex>::value);
+// Sanity check that everything is working as designed
+static_assert(SharedMutex<stdshim::shared_mutex>::value);
+static_assert(!SharedMutex<std::mutex>::value);
 
-  // Helper: expands to the most read-friendly lock supported by a mutex.
-  template<class M> using su_lock = typename std::conditional<
+// Helper: expands to the most read-friendly lock supported by a mutex.
+template<class M>
+using su_lock = typename std::conditional<
     SharedMutex<M>::value, std::shared_lock<M>, std::unique_lock<M>>::type;
-}
+}  // namespace
 
 /// A simple parallel wrapper around a std::unordered_map.
-template<class K, class V, class M = stdshim::shared_mutex,
-         class H = std::hash<K>, class E = std::equal_to<K>>
+template<
+    class K, class V, class M = stdshim::shared_mutex, class H = std::hash<K>,
+    class E = std::equal_to<K>>
 class locked_unordered_map {
 protected:
   using real_t = std::unordered_map<K, V, H, E>;
 
 public:
   locked_unordered_map() = default;
-  locked_unordered_map(std::initializer_list<typename real_t::value_type> it)
-    : real(it) {};
-  locked_unordered_map(locked_unordered_map&& o) : real(std::move(o.real)) {};
+  locked_unordered_map(std::initializer_list<typename real_t::value_type> it) : real(it){};
+  locked_unordered_map(locked_unordered_map&& o) : real(std::move(o.real)){};
   ~locked_unordered_map() = default;
 
   locked_unordered_map& operator=(locked_unordered_map&& o) {
@@ -123,31 +124,29 @@ public:
   // MT: Internally Synchronized
   const V& at(const K& k) const {
     auto r = find(k);
-    if(!r) throw std::out_of_range("Attempt to at() a nonexistent key!");
+    if (!r)
+      throw std::out_of_range("Attempt to at() a nonexistent key!");
     return *r;
   }
 
   /// Insert an entry into the map, if it didn't already exist.
   // MT: Internally Synchronized
-  std::pair<V&,bool> insert(const typename real_t::value_type& v) {
+  std::pair<V&, bool> insert(const typename real_t::value_type& v) {
     return opget(su_lock<M>(lock), v.first, v.second);
   }
 
   /// Add a new pair to the map, if it didn't already exist.
   // MT: Internally Synchronized
-  template<class... Args>
-  std::pair<V&,bool> emplace(Args&&... args) {
+  template<class... Args> std::pair<V&, bool> emplace(Args&&... args) {
     typename real_t::value_type v(std::forward<Args>(args)...);
     return opget(su_lock<M>(lock), std::move(v.first), std::move(v.second));
   }
 
   // Add a new element to the map, if the key was not found before.
-  template<class... Args>
-  std::pair<V&,bool> try_emplace(const K& k, Args&&... args) {
+  template<class... Args> std::pair<V&, bool> try_emplace(const K& k, Args&&... args) {
     return opget(su_lock<M>(lock), k, std::forward<Args>(args)...);
   }
-  template<class... Args>
-  std::pair<V&,bool> try_emplace(K&& k, Args&&... args) {
+  template<class... Args> std::pair<V&, bool> try_emplace(K&& k, Args&&... args) {
     return opget(su_lock<M>(lock), std::move(k), std::forward<Args>(args)...);
   }
 
@@ -170,21 +169,23 @@ private:
   public:
     iterator begin() const noexcept { return from.real.begin(); }
     iterator end() const noexcept { return from.real.end(); }
+
   private:
     friend class locked_unordered_map;
     locked_unordered_map& from;
     std::unique_lock<M> lk;
-    iteration(locked_unordered_map& m) : from(m), lk(m.lock) {};
+    iteration(locked_unordered_map& m) : from(m), lk(m.lock){};
   };
   class const_iteration {
   public:
     const_iterator begin() const noexcept { return from.real.begin(); }
     const_iterator end() const noexcept { return from.real.end(); }
+
   private:
     friend class locked_unordered_map;
     const locked_unordered_map& from;
     su_lock<M> lk;
-    const_iteration(const locked_unordered_map& m) : from(m), lk(m.lock) {};
+    const_iteration(const locked_unordered_map& m) : from(m), lk(m.lock){};
   };
 
 public:
@@ -195,9 +196,7 @@ public:
 
   /// Get the size of the map.
   // MT: Externally Synchronized
-  size_type size() const noexcept {
-    return real.size();
-  }
+  size_type size() const noexcept { return real.size(); }
 
 protected:
   mutable M lock;
@@ -206,9 +205,9 @@ protected:
 private:
   template<class KA, class... Args>
   std::pair<V&, bool> opget(std::unique_lock<M>&&, KA&& k, Args&&... args) {
-    auto x = real.emplace(std::piecewise_construct,
-                          std::forward_as_tuple(std::forward<KA>(k)),
-                          std::forward_as_tuple(std::forward<Args>(args)...));
+    auto x = real.emplace(
+        std::piecewise_construct, std::forward_as_tuple(std::forward<KA>(k)),
+        std::forward_as_tuple(std::forward<Args>(args)...));
     return {x.first->second, x.second};
   }
   template<class Mtx, class KA, class... Args>
@@ -216,26 +215,28 @@ private:
     {
       std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
-      if(x != real.end()) return {x->second, false};
+      if (x != real.end())
+        return {x->second, false};
     }
     return opget(std::unique_lock<Mtx>(lock), std::forward<KA>(k), std::forward<Args>(args)...);
   }
 
   optional_ref<V> opget_r(su_lock<M>&&, K k) {
     auto x = real.find(std::move(k));
-    if(x == real.end()) return std::nullopt;
+    if (x == real.end())
+      return std::nullopt;
     return x->second;
   }
   optional_ref<const V> opget_r(su_lock<M>&&, K k) const {
     auto x = real.find(std::move(k));
-    if(x == real.end()) return std::nullopt;
+    if (x == real.end())
+      return std::nullopt;
     return x->second;
   }
 };
 
 /// A simple parallel wrapper around a std::unordered_set.
-template<class K, class M = stdshim::shared_mutex>
-class locked_unordered_set {
+template<class K, class M = stdshim::shared_mutex> class locked_unordered_set {
 protected:
   using real_t = std::unordered_set<K>;
 
@@ -249,15 +250,13 @@ public:
 
   /// Insert a new element into the set, returning a reference.
   // MT: Internally Synchronized
-  template<class... Args>
-  std::pair<const K&, bool> emplace(Args&&... args) {
+  template<class... Args> std::pair<const K&, bool> emplace(Args&&... args) {
     return opget(K(std::forward<Args>(args)...), su_lock<M>(lock));
   }
 
   /// Variant of emplace() that strips the second argument.
   // MT: Internally Synchronized
-  template<class... Args>
-  const K& ensure(Args&&... args) {
+  template<class... Args> const K& ensure(Args&&... args) {
     return *emplace(std::forward<Args>(args)...).first;
   }
 
@@ -287,21 +286,23 @@ private:
   public:
     iterator begin() const noexcept { return from.real.begin(); }
     iterator end() const noexcept { return from.real.end(); }
+
   private:
     friend class locked_unordered_set;
     locked_unordered_set& from;
     std::unique_lock<M> lk;
-    iteration(locked_unordered_set& m) : from(m), lk(m.lock) {};
+    iteration(locked_unordered_set& m) : from(m), lk(m.lock){};
   };
   class const_iteration {
   public:
     const_iterator begin() const noexcept { return from.real.begin(); }
     const_iterator end() const noexcept { return from.real.end(); }
+
   private:
     friend class locked_unordered_set;
     const locked_unordered_set& from;
     su_lock<M> lk;
-    const_iteration(const locked_unordered_set& m) : from(m), lk(m.lock) {};
+    const_iteration(const locked_unordered_set& m) : from(m), lk(m.lock){};
   };
 
 public:
@@ -319,33 +320,28 @@ private:
     auto x = real.emplace(std::move(k));
     return {*x.first, x.second};
   }
-  template<class Mtx>
-  std::pair<const K&, bool> opget(const K& k, std::shared_lock<Mtx>&& l) {
+  template<class Mtx> std::pair<const K&, bool> opget(const K& k, std::shared_lock<Mtx>&& l) {
     {
       std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
-      if(x != real.end()) return {*x, false};
+      if (x != real.end())
+        return {*x, false};
     }
     return opget(k, std::unique_lock<Mtx>(lock));
   }
-  template<class Mtx>
-  std::pair<const K&, bool> opget(K&& k, std::shared_lock<Mtx>&& l) {
+  template<class Mtx> std::pair<const K&, bool> opget(K&& k, std::shared_lock<Mtx>&& l) {
     {
       std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
-      if(x != real.end()) return {*x, false};
+      if (x != real.end())
+        return {*x, false};
     }
     return opget(std::move(k), std::unique_lock<Mtx>(lock));
   }
 
-  iterator opget_r(const K& k, su_lock<M>&&) {
-    return real.find(k);
-  }
-  const_iterator opget_r(const K& k, su_lock<M>&&) const {
-    return real.find(k);
-  }
+  iterator opget_r(const K& k, su_lock<M>&&) { return real.find(k); }
+  const_iterator opget_r(const K& k, su_lock<M>&&) const { return real.find(k); }
 };
-
-}
+}  // namespace hpctoolkit::util
 
 #endif  // HPCTOOLKIT_PROFILE_UTIL_LOCKED_UNORDERED_H

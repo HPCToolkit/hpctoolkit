@@ -41,21 +41,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// local includes
-//******************************************************************************
+#include "hpcrun/cct/cct.h"
+#include "hpcrun/utilities/ip-normalized.h"
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/utilities/ip-normalized.h>
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-gpu_cct_insert
-(
- cct_node_t *cct_node,
- ip_normalized_t ip
-);
-
+void gpu_cct_insert(cct_node_t* cct_node, ip_normalized_t ip);

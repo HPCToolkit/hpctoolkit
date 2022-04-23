@@ -44,27 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//******************************************************************************
-// system include files
-//******************************************************************************
-
 #define _GNU_SOURCE
-#include <pthread.h>
-
-
-
-//******************************************************************************
-// local include files
-//******************************************************************************
-
 #include "cpuset_hwthreads.h"
 
-
-
-//******************************************************************************
-// public operations
-//******************************************************************************
+#include <pthread.h>
 
 //------------------------------------------------------------------------------
 //   Function cpuset_hwthreads
@@ -72,12 +55,7 @@
 //     return the number of hardware threads available to this process
 //     return 1 if no other value can be computed
 //------------------------------------------------------------------------------
-unsigned int 
-cpuset_hwthreads
-(
-  void
-)
-{  
+unsigned int cpuset_hwthreads(void) {
   int processors = 1;
   pthread_t thread = pthread_self();
 
@@ -89,7 +67,8 @@ cpuset_hwthreads
   if (err == 0) {
     int j;
     for (j = 0; j < CPU_SETSIZE; j++)
-      if (CPU_ISSET(j, &cpuset)) processors++;
+      if (CPU_ISSET(j, &cpuset))
+        processors++;
   }
 
   return processors;

@@ -1,3 +1,49 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2022, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 //==============================================================
 // Copyright © 2019 Intel Corporation
 //
@@ -7,10 +53,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,20 +70,17 @@
 #define PTI_SAMPLES_UTILS_ZE_UTILS_H_
 
 #include <assert.h>
-#include <string.h>
-
-#include <string>
-#include <vector>
-
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
+#include <string.h>
+#include <string>
+#include <vector>
 
 namespace utils {
 namespace ze {
 
-inline void GetIntelDeviceAndDriver(ze_device_type_t type,
-                                    ze_device_handle_t& device,
-                                    ze_driver_handle_t& driver) {
+inline void GetIntelDeviceAndDriver(
+    ze_device_type_t type, ze_device_handle_t& device, ze_driver_handle_t& driver) {
   ze_result_t status = ZE_RESULT_SUCCESS;
 
   uint32_t driver_count = 0;
@@ -54,7 +97,7 @@ inline void GetIntelDeviceAndDriver(ze_device_type_t type,
     uint32_t device_count = 0;
     status = zeDeviceGet(driver_list[i], &device_count, nullptr);
     if (status != ZE_RESULT_SUCCESS || device_count == 0) {
-        continue;
+      continue;
     }
 
     std::vector<ze_device_handle_t> device_list(device_count, nullptr);
@@ -121,10 +164,9 @@ static int GetMetricId(zet_metric_group_handle_t group, std::string name) {
 }
 
 static zet_metric_group_handle_t FindMetricGroup(
-    ze_device_handle_t device, std::string name,
-    zet_metric_group_sampling_type_t type) {
+    ze_device_handle_t device, std::string name, zet_metric_group_sampling_type_t type) {
   assert(device != nullptr);
-  
+
   ze_result_t status = ZE_RESULT_SUCCESS;
   uint32_t group_count = 0;
   status = zetMetricGroupGet(device, &group_count, nullptr);
@@ -152,8 +194,7 @@ static zet_metric_group_handle_t FindMetricGroup(
 
   return target;
 }
+}  // namespace ze
+}  // namespace utils
 
-} // namespace ze
-} // namespace utils
-
-#endif // PTI_SAMPLES_UTILS_ZE_UTILS_H_
+#endif  // PTI_SAMPLES_UTILS_ZE_UTILS_H_

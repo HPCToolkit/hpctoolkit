@@ -44,41 +44,18 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/******************************************************************************
- * include files
- *****************************************************************************/
-
 #include "x86-decoder.h"
 
-
-
-/******************************************************************************
- * global variables 
- *****************************************************************************/
 xed_control_t x86_decoder_settings;
 
-
-
-/******************************************************************************
- * local variables 
- *****************************************************************************/
-
 static xed_state_t xed_machine_state =
-#if defined (HOST_CPU_x86_64)
- { XED_MACHINE_MODE_LONG_64,  
-   XED_ADDRESS_WIDTH_64b };
+#if defined(HOST_CPU_x86_64)
+    {XED_MACHINE_MODE_LONG_64, XED_ADDRESS_WIDTH_64b};
 #else
- { XED_MACHINE_MODE_LONG_COMPAT_32,
-   XED_ADDRESS_WIDTH_32b };
+    {XED_MACHINE_MODE_LONG_COMPAT_32, XED_ADDRESS_WIDTH_32b};
 #endif
 
-
-/******************************************************************************
- * interface operations 
- *****************************************************************************/
-
-void x86_family_decoder_init()
-{
+void x86_family_decoder_init() {
   x86_decoder_settings.xed_settings = xed_machine_state;
 
   xed_tables_init();

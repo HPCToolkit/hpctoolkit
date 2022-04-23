@@ -57,52 +57,40 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::cerr;
-using std::endl;
-
-#include <string>
-using std::string;
-
-#include <cstring> // strlen
-
-#include <dirent.h> 
-#include <sys/types.h> 
-
-//*************************** User Include Files ****************************
-
-#include <include/hpctoolkit-config.h>
-
 #include "Args.hpp"
 
-#include <lib/analysis/Util.hpp>
+#include "include/hpctoolkit-config.h"
+#include "lib/analysis/Util.hpp"
+#include "lib/support/diagnostics.h"
+#include "lib/support/StrUtil.hpp"
+#include "lib/support/Trace.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/Trace.hpp>
-#include <lib/support/StrUtil.hpp>
+#include <cstring>  // strlen
+#include <dirent.h>
+#include <iostream>
+#include <string>
+#include <sys/types.h>
 
-//*************************** Forward Declarations **************************
+using std::cerr;
+using std::endl;
+using std::string;
 
 // Cf. DIAG_Die.
-#define ARG_ERROR(streamArgs)                                        \
-  { std::ostringstream WeIrDnAmE;                                    \
-    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
-    printError(std::cerr, WeIrDnAmE.str());                          \
-    exit(1); }
+#define ARG_ERROR(streamArgs)                 \
+  {                                           \
+    std::ostringstream WeIrDnAmE;             \
+    WeIrDnAmE << streamArgs /*<< std::ends*/; \
+    printError(std::cerr, WeIrDnAmE.str());   \
+    exit(1);                                  \
+  }
 
-//***************************************************************************
-
-const string Args::HPCTOOLKIT = "HPCTOOLKIT"; 
+const string Args::HPCTOOLKIT = "HPCTOOLKIT";
 
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
-static const char* usage_summary1 =
-"[output-options] [correlation-options] <profile-file>...";
+static const char* usage_summary1 = "[output-options] [correlation-options] <profile-file>...";
 
-static const char* usage_summary2 =
-"[output-options] --config <config-file>\n";
+static const char* usage_summary2 = "[output-options] --config <config-file>\n";
 
 static const char* usage_details = "\
 hpcprof-flat correlates flat profiling metrics with static source code\n\
@@ -152,7 +140,7 @@ Options: Source Structure Correlation:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./"Analysis_DB_DIR"}\n\
+                       {./" Analysis_DB_DIR "}\n\
   --src [yes|no], --source [yes|no]\n\
                        Whether to copy source code files into Experiment\n\
                        database. {yes} By default, hpcprof-flat copies source\n\
@@ -168,7 +156,7 @@ output filename <file> (located within the Experiment database). The output\n\
 is sparse in the sense that it ignores program areas without profiling\n\
 information. (Set <file> to '-' to write to stdout.)\n\
   -x [<file>], --experiment [<file>]\n\
-                       Default. ExperimentXML format. {"Analysis_OUT_DB_EXPERIMENT"}\n\
+                       Default. ExperimentXML format. {" Analysis_OUT_DB_EXPERIMENT "}\n\
                        NOTE: To disable, set <file> to 'no'.\n";
 
 // FIXME: tallent: do we want this?
@@ -176,172 +164,125 @@ information. (Set <file> to '-' to write to stdout.)\n\
 //                     Includes flat scope tree and loops. Useful for\n
 //                     downstream external tools.\n";
 
-
-#define CLP CmdLineParser
+#define CLP           CmdLineParser
 #define CLP_SEPARATOR "!!!"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  // Config-file-mode
-  {  0 , "config",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
+    // Config-file-mode
+    {0, "config", CLP::ARG_REQ, CLP::DUPOPT_CLOB, NULL, NULL},
 
-  // Source structure correlation options
-  {  0 , "name",            CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
-     NULL },
-  {  0 , "title",           CLP::ARG_REQ,  CLP::DUPOPT_CLOB, CLP_SEPARATOR,
-     NULL },
+    // Source structure correlation options
+    {0, "name", CLP::ARG_REQ, CLP::DUPOPT_CLOB, CLP_SEPARATOR, NULL},
+    {0, "title", CLP::ARG_REQ, CLP::DUPOPT_CLOB, CLP_SEPARATOR, NULL},
 
-  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
-     NULL },
-  { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
-     NULL },
-  { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
-     NULL},
+    {'I', "include", CLP::ARG_REQ, CLP::DUPOPT_CAT, CLP_SEPARATOR, NULL},
+    {'S', "structure", CLP::ARG_REQ, CLP::DUPOPT_CAT, CLP_SEPARATOR, NULL},
+    {'R', "replace-path", CLP::ARG_REQ, CLP::DUPOPT_CAT, CLP_SEPARATOR, NULL},
 
-  // Output options
-  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
-     NULL },
+    // Output options
+    {'o', "output", CLP::ARG_REQ, CLP::DUPOPT_CLOB, NULL, NULL},
+    {0, "db", CLP::ARG_REQ, CLP::DUPOPT_CLOB, NULL, NULL},
 
-  {  0 , "src",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "source",          CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
+    {0, "src", CLP::ARG_OPT, CLP::DUPOPT_CLOB, NULL, NULL},
+    {0, "source", CLP::ARG_OPT, CLP::DUPOPT_CLOB, NULL, NULL},
 
-  // Output formats
-  { 'x', "experiment",      CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "csv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
+    // Output formats
+    {'x', "experiment", CLP::ARG_OPT, CLP::DUPOPT_CLOB, NULL, NULL},
+    {0, "csv", CLP::ARG_OPT, CLP::DUPOPT_CLOB, NULL, NULL},
 
-  // General
-  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
-  { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
-     CLP::isOptArg_long },
-  CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
+    // General
+    {'v', "verbose", CLP::ARG_OPT, CLP::DUPOPT_CLOB, NULL, CLP::isOptArg_long},
+    {'V', "version", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL},
+    {'h', "help", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL},
+    {0, "debug", CLP::ARG_OPT, CLP::DUPOPT_CLOB, NULL,  // hidden
+     CLP::isOptArg_long},
+    CmdLineParser_OptArgDesc_NULL_MACRO  // SGI's compiler requires this version
 };
 
 #undef CLP
 
-
-//***************************************************************************
-// Args
-//***************************************************************************
-
-Args::Args()
-{
+Args::Args() {
   Ctor();
 }
 
-
-Args::Args(int argc, const char* const argv[])
-{
+Args::Args(int argc, const char* const argv[]) {
   Ctor();
   parse(argc, argv);
 }
 
-
-void
-Args::Ctor()
-{
-  setHPCHome(); 
+void Args::Ctor() {
+  setHPCHome();
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   configurationFileMode = false;
-  
+
   // Analysis::ArgsA
   profflat_computeFinalMetricValues = true;
 }
 
+Args::~Args() {}
 
-Args::~Args()
-{
-}
-
-
-void 
-Args::printVersion(std::ostream& os) const
-{
+void Args::printVersion(std::ostream& os) const {
   os << getCmd() << ": " << version_info << endl;
 }
 
-
-void 
-Args::printUsage(std::ostream& os) const
-{
+void Args::printUsage(std::ostream& os) const {
   os << "Usage: \n"
      << "  " << getCmd() << " " << usage_summary1 << endl
      << "  " << getCmd() << " " << usage_summary2 << endl
      << usage_details << endl;
-} 
+}
 
-
-void 
-Args::printError(std::ostream& os, const char* msg) const
-{
+void Args::printError(std::ostream& os, const char* msg) const {
   os << getCmd() << ": " << msg << endl
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
-void 
-Args::printError(std::ostream& os, const std::string& msg) const
-{
+void Args::printError(std::ostream& os, const std::string& msg) const {
   printError(os, msg.c_str());
 }
 
-
-const std::string& 
-Args::getCmd() const
-{ 
+const std::string& Args::getCmd() const {
   // avoid error messages with: .../bin/hpcprof-flat-bin
   static string cmd = "hpcprof-flat";
-  return cmd; // parser.getCmd(); 
+  return cmd;  // parser.getCmd();
 }
 
-
-void
-Args::parse(int argc, const char* const argv[])
-{
+void Args::parse(int argc, const char* const argv[]) {
   try {
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
     parser.parse(optArgs, argc, argv);
-    
+
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
-    
+
     // Special options that should be checked first
     if (parser.isOpt("debug")) {
       int dbg = 1;
       if (parser.isOptArg("debug")) {
-	const string& arg = parser.getOptArg("debug");
-	dbg = (int)CmdLineParser::toLong(arg);
+        const string& arg = parser.getOptArg("debug");
+        dbg = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(dbg);
       trace = dbg;
     }
-    if (parser.isOpt("help")) { 
-      printUsage(std::cerr); 
+    if (parser.isOpt("help")) {
+      printUsage(std::cerr);
       exit(1);
     }
-    if (parser.isOpt("version")) { 
+    if (parser.isOpt("version")) {
       printVersion(std::cerr);
       exit(1);
     }
     if (parser.isOpt("verbose")) {
       int verb = 1;
       if (parser.isOptArg("verbose")) {
-	const string& arg = parser.getOptArg("verbose");
-	verb = (int)CmdLineParser::toLong(arg);
+        const string& arg = parser.getOptArg("verbose");
+        verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
@@ -353,7 +294,7 @@ Args::parse(int argc, const char* const argv[])
     configurationFileMode = (!configurationFile.empty());
 
     if (!configurationFileMode) {
-      out_db_config = "config.xml"; // Analysis::Args
+      out_db_config = "config.xml";  // Analysis::Args
     }
 
     // Check for other options: Correlation options
@@ -368,33 +309,31 @@ Args::parse(int argc, const char* const argv[])
 
       std::vector<std::string> searchPaths;
       StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);
-      
+
       for (uint i = 0; i < searchPaths.size(); ++i) {
-	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], 
-						     Analysis::DefaultPathTupleTarget));
+        searchPathTpls.push_back(
+            Analysis::PathTuple(searchPaths[i], Analysis::DefaultPathTupleTarget));
       }
     }
     if (parser.isOpt("structure")) {
       string str = parser.getOptArg("structure");
       StrUtil::tokenize_str(str, CLP_SEPARATOR, structureFiles);
     }
-    
+
     if (parser.isOpt("replace-path")) {
       string arg = parser.getOptArg("replace-path");
-      
+
       std::vector<std::string> replacePaths;
-      StrUtil::tokenize_str(arg,CLP_SEPARATOR, replacePaths);
-      
+      StrUtil::tokenize_str(arg, CLP_SEPARATOR, replacePaths);
+
       for (uint i = 0; i < replacePaths.size(); ++i) {
-	int occurancesOfEquals = 
-	  Analysis::Util::parseReplacePath(replacePaths[i]);
-	
-	if (occurancesOfEquals > 1) {
-	  ARG_ERROR("Too many occurances of \'=\'; make sure to escape any \'=\' in your paths");
-	}
-	else if(occurancesOfEquals == 0) {
-	  ARG_ERROR("The \'=\' between the old path and new path is missing");
-	}
+        int occurancesOfEquals = Analysis::Util::parseReplacePath(replacePaths[i]);
+
+        if (occurancesOfEquals > 1) {
+          ARG_ERROR("Too many occurances of \'=\'; make sure to escape any \'=\' in your paths");
+        } else if (occurancesOfEquals == 0) {
+          ARG_ERROR("The \'=\' between the old path and new path is missing");
+        }
       }
     }
 
@@ -408,8 +347,11 @@ Args::parse(int argc, const char* const argv[])
 
     if (parser.isOpt("source") || parser.isOpt("src")) {
       string opt;
-      if (parser.isOptArg("source"))   { opt = parser.getOptArg("source"); }
-      else if (parser.isOptArg("src")) { opt = parser.getOptArg("src"); }
+      if (parser.isOptArg("source")) {
+        opt = parser.getOptArg("source");
+      } else if (parser.isOptArg("src")) {
+        opt = parser.getOptArg("src");
+      }
       db_copySrcFiles = (opt != "no");
     }
 
@@ -417,80 +359,68 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("experiment")) {
       out_db_experiment = Analysis_OUT_DB_EXPERIMENT;
       if (parser.isOptArg("experiment")) {
-	out_db_experiment = parser.getOptArg("experiment");
+        out_db_experiment = parser.getOptArg("experiment");
       }
-      if (out_db_experiment == "no") { // special case
-	out_db_experiment = "";
+      if (out_db_experiment == "no") {  // special case
+        out_db_experiment = "";
       }
     }
     if (parser.isOpt("csv")) {
       out_db_csv = Analysis_OUT_DB_CSV;
       if (parser.isOptArg("csv")) {
-	out_db_csv = parser.getOptArg("csv");
+        out_db_csv = parser.getOptArg("csv");
       }
       db_copySrcFiles = false;
     }
-    
+
     // Check for required arguments
     uint numArgs = parser.getNumArgs();
     if (configurationFileMode) {
       if (numArgs != 0) {
-	ARG_ERROR("Incorrect number of arguments!");
+        ARG_ERROR("Incorrect number of arguments!");
       }
-    }
-    else {
-      if ( !(numArgs >= 1) ) {
-	ARG_ERROR("Incorrect number of arguments!");
+    } else {
+      if (!(numArgs >= 1)) {
+        ARG_ERROR("Incorrect number of arguments!");
       }
 
       profileFiles.resize(numArgs);
       for (uint i = 0; i < numArgs; ++i) {
-	profileFiles[i] = parser.getArg(i);
+        profileFiles[i] = parser.getArg(i);
       }
     }
-
-  }
-  catch (const CmdLineParser::ParseError& x) {
+  } catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());
-  }
-  catch (const CmdLineParser::Exception& x) {
+  } catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
   }
 }
 
-
-void 
-Args::dump(std::ostream& os) const
-{
-  os << "Args.cmd= " << getCmd() << endl; 
-  os << "Args.hpcHome= " << hpcHome << endl; 
-  os << "::trace " << ::trace << endl; 
+void Args::dump(std::ostream& os) const {
+  os << "Args.cmd= " << getCmd() << endl;
+  os << "Args.hpcHome= " << hpcHome << endl;
+  os << "::trace " << ::trace << endl;
   Analysis::Args::dump(os);
 }
 
-
-//***************************************************************************
-
-void 
-Args::setHPCHome() 
-{
-  char * home = getenv(HPCTOOLKIT.c_str()); 
+void Args::setHPCHome() {
+  char* home = getenv(HPCTOOLKIT.c_str());
   if (home == NULL) {
-    cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
-	 << endl; 
-    exit(1); 
-  } 
-   
-  // chop of trailing slashes 
-  int len = strlen(home); 
-  if (home[len-1] == '/') home[--len] = 0; 
-   
-  DIR *fp = opendir(home); 
+    cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable." << endl;
+    exit(1);
+  }
+
+  // chop of trailing slashes
+  int len = strlen(home);
+  if (home[len - 1] == '/')
+    home[--len] = 0;
+
+  DIR* fp = opendir(home);
   if (fp == NULL) {
-    cerr << "Error: " << home << " is not a directory" << endl; 
-    exit(1); 
-  } 
-  closedir(fp); 
-  hpcHome = home; 
-} 
+    cerr << "Error: " << home << " is not a directory" << endl;
+    exit(1);
+  }
+  closedir(fp);
+  hpcHome = home;
+}

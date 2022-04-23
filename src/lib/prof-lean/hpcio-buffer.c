@@ -73,131 +73,89 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#include "hpcio-buffer.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "hpcfmt.h"
+#include "spinlock.h"
+
+#include "include/min-max.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-
-//*************************** User Include Files ****************************
-
-#include "hpcfmt.h"
-#include "hpcio-buffer.h"
-#include "spinlock.h"
-#include <include/min-max.h>
-
-#define HPCIO_OUTBUF_MAGIC  0x494F4246
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
+#define HPCIO_OUTBUF_MAGIC 0x494F4246
 
 typedef struct hpcio_outbuf_s {
-  struct hpcio_outbuf_s *next;
+  struct hpcio_outbuf_s* next;
   uint32_t magic;
-  void  *buf_start;
+  void* buf_start;
   size_t buf_size;
   size_t in_use;
-  int  fd;
-  int  flags;
+  int fd;
+  int flags;
   char use_lock;
   spinlock_t lock;
 } hpcio_outbuf_t;
 
-
-
-//***************************************************************************
-// variables
-//***************************************************************************
-
 static spinlock_t freelist_lock = SPINLOCK_UNLOCKED;
-static hpcio_outbuf_t *freelist = 0;
+static hpcio_outbuf_t* freelist = 0;
 
-
-
-//*************************** Private Functions *****************************
-
-static hpcio_outbuf_t *
-freelist_dequeue
-(
-  void
-)
-{
-   hpcio_outbuf_t *ob = 0; 
-   spinlock_lock(&freelist_lock);
-   if (freelist) {
-     ob = freelist;
-     freelist = ob->next;
-   }
-   spinlock_unlock(&freelist_lock);
-   return ob;
+static hpcio_outbuf_t* freelist_dequeue(void) {
+  hpcio_outbuf_t* ob = 0;
+  spinlock_lock(&freelist_lock);
+  if (freelist) {
+    ob = freelist;
+    freelist = ob->next;
+  }
+  spinlock_unlock(&freelist_lock);
+  return ob;
 }
 
-
-static hpcio_outbuf_t *
-outbuf_alloc
-(
-  allocator_t alloc
-)
-{
-  hpcio_outbuf_t *ob = freelist_dequeue();
+static hpcio_outbuf_t* outbuf_alloc(allocator_t alloc) {
+  hpcio_outbuf_t* ob = freelist_dequeue();
   if (ob == 0) {
-    ob = (hpcio_outbuf_t *) alloc(sizeof(hpcio_outbuf_t));
+    ob = (hpcio_outbuf_t*)alloc(sizeof(hpcio_outbuf_t));
   }
   return ob;
 }
 
-
-static void
-outbuf_free
-(
-  hpcio_outbuf_t *ob
-)
-{
-   spinlock_lock(&freelist_lock);
-   ob->next = freelist;
-   freelist = ob;
-   spinlock_unlock(&freelist_lock);
+static void outbuf_free(hpcio_outbuf_t* ob) {
+  spinlock_lock(&freelist_lock);
+  ob->next = freelist;
+  freelist = ob;
+  spinlock_unlock(&freelist_lock);
 }
-
 
 // Try to write() the entire outbuf.
 //
 // Returns: HPCFMT_OK if the entire buffer was successfully written,
 // else HPCFMT_ERR.
 //
-static int
-outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
-{
+static int outbuf_flush_buffer(hpcio_outbuf_t* outbuf) {
   ssize_t amt_done, ret;
 
   amt_done = 0;
   while (amt_done < outbuf->in_use) {
     errno = 0;
-    ret = write(outbuf->fd, outbuf->buf_start + amt_done,
-		outbuf->in_use - amt_done);
+    ret = write(outbuf->fd, outbuf->buf_start + amt_done, outbuf->in_use - amt_done);
 
     // Check for short writes.  Note: EINTR is not failure.
     if (ret > 0 || (ret == 0 && errno == EINTR)) {
       // progress, continue
       amt_done += ret;
-    }
-    else {
+    } else {
       // hard failure
       // FIXME: should do better than copy to begin of buffer.
       // However, this case is rare, it probably will continue to fail
       // and I want to rethink this case anyway.  So, this will do for
       // now. (krentel)
       if (amt_done > 0) {
-	memmove(outbuf->buf_start, outbuf->buf_start + amt_done,
-		outbuf->in_use - amt_done);
-	outbuf->in_use = amt_done;
+        memmove(outbuf->buf_start, outbuf->buf_start + amt_done, outbuf->in_use - amt_done);
+        outbuf->in_use = amt_done;
       }
       return HPCFMT_ERR;
     }
@@ -208,32 +166,21 @@ outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
   return HPCFMT_OK;
 }
 
-
-//*************************** Interface Functions ***************************
-
 // Attach the file descriptor to the buffer, initialize and fill in
 // the outbuf struct.  The client supplies the buffer and fd.
 //
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 //
-int
-hpcio_outbuf_attach
-(
-  hpcio_outbuf_t **outbuf_ptr /* out */, 
-  int fd,
-  void *buf_start, 
-  size_t buf_size, 
-  int flags,
-  allocator_t alloc
-)
-{
+int hpcio_outbuf_attach(
+    hpcio_outbuf_t** outbuf_ptr /* out */, int fd, void* buf_start, size_t buf_size, int flags,
+    allocator_t alloc) {
   // Attach fills in the outbuf struct, so there is no magic number
   // and locks don't exist.
   if (outbuf_ptr == NULL || fd < 0 || buf_start == NULL || buf_size == 0) {
     return HPCFMT_ERR;
   }
 
-  hpcio_outbuf_t *outbuf = outbuf_alloc(alloc);
+  hpcio_outbuf_t* outbuf = outbuf_alloc(alloc);
 
   outbuf->next = NULL;
   outbuf->magic = HPCIO_OUTBUF_MAGIC;
@@ -250,14 +197,11 @@ hpcio_outbuf_attach
   return HPCFMT_OK;
 }
 
-
 // Copy data to the outbuf and flush if necessary.
 //
 // Returns: number of bytes copied, or else -1 on bad buffer.
 //
-ssize_t
-hpcio_outbuf_write(hpcio_outbuf_t *outbuf, const void *data, size_t size)
-{
+ssize_t hpcio_outbuf_write(hpcio_outbuf_t* outbuf, const void* data, size_t size) {
   size_t amt, amt_done;
 
   if (outbuf == NULL || outbuf->magic != HPCIO_OUTBUF_MAGIC) {
@@ -273,8 +217,8 @@ hpcio_outbuf_write(hpcio_outbuf_t *outbuf, const void *data, size_t size)
     if (size > outbuf->buf_size - outbuf->in_use) {
       outbuf_flush_buffer(outbuf);
       if (outbuf->in_use == outbuf->buf_size) {
-	// flush failed, no space
-	break;
+        // flush failed, no space
+        break;
       }
     }
 
@@ -291,14 +235,11 @@ hpcio_outbuf_write(hpcio_outbuf_t *outbuf, const void *data, size_t size)
   return amt_done;
 }
 
-
 // Flush the outbuf to the kernel via write().
 //
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 //
-int
-hpcio_outbuf_flush(hpcio_outbuf_t *outbuf)
-{
+int hpcio_outbuf_flush(hpcio_outbuf_t* outbuf) {
   if (outbuf == NULL || outbuf->magic != HPCIO_OUTBUF_MAGIC) {
     return HPCFMT_ERR;
   }
@@ -314,19 +255,16 @@ hpcio_outbuf_flush(hpcio_outbuf_t *outbuf)
   return ret;
 }
 
-
 // Flush the outbuf and close() the file descriptor.  Note: the client
 // must explicitly call close at the end of the process.  There is no
 // auto close.
 //
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 //
-int
-hpcio_outbuf_close(hpcio_outbuf_t **outbuf_ptr)
-{
+int hpcio_outbuf_close(hpcio_outbuf_t** outbuf_ptr) {
   int ret = HPCFMT_OK;
 
-  hpcio_outbuf_t *outbuf = *outbuf_ptr;
+  hpcio_outbuf_t* outbuf = *outbuf_ptr;
 
   if (outbuf == NULL || outbuf->magic != HPCIO_OUTBUF_MAGIC) {
     return HPCFMT_ERR;
@@ -335,13 +273,11 @@ hpcio_outbuf_close(hpcio_outbuf_t **outbuf_ptr)
     spinlock_lock(&outbuf->lock);
   }
 
-  if (outbuf_flush_buffer(outbuf) == HPCFMT_OK
-      && close(outbuf->fd) == 0) {
+  if (outbuf_flush_buffer(outbuf) == HPCFMT_OK && close(outbuf->fd) == 0) {
     // flush and close both succeed
     outbuf->magic = 0;
     outbuf->fd = -1;
-  }
-  else {
+  } else {
     ret = HPCFMT_ERR;
   }
 

@@ -46,8 +46,8 @@
 
 #include "source.hpp"
 
-#include "util/log.hpp"
 #include "sources/hpcrun4.hpp"
+#include "util/log.hpp"
 
 #include <stdexcept>
 
@@ -57,13 +57,16 @@ std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesyst
   // All we do is go down the list and try every file-based source.
   std::unique_ptr<ProfileSource> r;
   r.reset(new sources::Hpcrun4(p));
-  if(r->valid()) return r;
+  if (r->valid())
+    return r;
 
   // Unrecognized or unsupported format
   return nullptr;
 }
 
-bool ProfileSource::valid() const noexcept { return true; }
+bool ProfileSource::valid() const noexcept {
+  return true;
+}
 std::pair<bool, bool> ProfileSource::requiresOrderedRegions() const noexcept {
   return {false, false};
 }

@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 //
 // This software was produced with support in part from the Defense Advanced
-// Research Projects Agency (DARPA) through AFRL Contract FA8650-09-C-1915. 
+// Research Projects Agency (DARPA) through AFRL Contract FA8650-09-C-1915.
 // Nothing in this work should be construed as reflecting the official policy or
 // position of the Defense Department, the United States government, or
 // Rice University.
@@ -67,86 +67,59 @@
 //
 //***************************************************************************
 
-//************************************************
-// system includes
-//************************************************
-
 #define UNW_LOCAL_ONLY
 
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <stdbool.h>
+#include "hpcrun/hpcrun_stats.h"
 
-#include <ucontext.h>
-
-#include <include/hpctoolkit-config.h>
-
-//************************************************
-// external includes
-//************************************************
-
-#include <monitor.h>
-#include <libunwind.h>
-
-//************************************************
-// local includes
-//************************************************
+#include "include/hpctoolkit-config.h"
 
 #include <fnbounds/fnbounds_interface.h>
+#include <inttypes.h>
+#include <libunwind.h>
 #include <messages/messages.h>
-#include <hpcrun/hpcrun_stats.h>
+#include <monitor.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <ucontext.h>
+#include <unwind/common/binarytree_uwi.h>
+#include <unwind/common/libunw_intervals.h>
 #include <unwind/common/unw-datatypes.h>
 #include <unwind/common/unwind.h>
 #include <unwind/common/uw_recipe_map.h>
-#include <unwind/common/binarytree_uwi.h>
-#include <unwind/common/libunw_intervals.h>
 #include <utilities/arch/context-pc.h>
-
-//************************************************
-// interface functions
-//************************************************
 
 // ----------------------------------------------------------
 // hpcrun_unw_init
 // ----------------------------------------------------------
 
-void
-hpcrun_unw_init(void)
-{
+void hpcrun_unw_init(void) {
   static bool msg_sent = false;
   if (msg_sent == false) {
-    TMSG(NU, "hpcrun_unw_init from libunw_unwind.c" );
+    TMSG(NU, "hpcrun_unw_init from libunw_unwind.c");
     msg_sent = true;
   }
   uw_recipe_map_init();
 }
 
-
 // ----------------------------------------------------------
 // hpcrun_unw_get_ip_reg
 // ----------------------------------------------------------
 
-int
-hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* cursor, void** val)
-{
+int hpcrun_unw_get_ip_reg(hpcrun_unw_cursor_t* cursor, void** val) {
   unw_word_t tmp;
   int rv = unw_get_reg(&(cursor->uc), UNW_REG_IP, &tmp);
-  *val = (void*) tmp;
+  *val = (void*)tmp;
   return rv;
 }
 
-int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* cursor, void** val)
-{
+int hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* cursor, void** val) {
   *val = cursor->pc_unnorm;
   return 0;
 }
 
-int
-hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* cursor, ip_normalized_t* val)
-{
+int hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* cursor, ip_normalized_t* val) {
   *val = cursor->pc_norm;
   return 0;
 }
@@ -155,9 +128,7 @@ hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* cursor, ip_normalized_t* val)
 // hpcrun_unw_get_ra_loc (no trampolines yet)
 // ----------------------------------------------------------
 
-void*
-hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c)
-{
+void* hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c) {
   return NULL;
 }
 
@@ -169,24 +140,20 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c)
 // unw_cursor_t.  The other fields in hpcrun_unw_cursor_t are unused,
 // except for pc_norm and pc_unnorm.
 //
-void
-hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
-{
+void hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context) {
   libunw_unw_init_cursor(cursor, context);
 }
 
-step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken)
-{
+step_state hpcrun_unw_step(hpcrun_unw_cursor_t* cursor, int* steps_taken) {
   static bool msg_sent = false;
   if (msg_sent == false) {
-    TMSG(NU, "hpcrun_unw_step from libunw_unwind.c" );
+    TMSG(NU, "hpcrun_unw_step from libunw_unwind.c");
     msg_sent = true;
   }
   step_state state = STEP_ERROR;
   state = libunw_unw_step(cursor, steps_taken);
   if (state == STEP_ERROR) {
-    unw_cursor_t *unw_cursor = &(cursor->uc);
+    unw_cursor_t* unw_cursor = &(cursor->uc);
     if (unw_step(unw_cursor)) {
       state = STEP_OK;
       libunw_finalize_cursor(cursor, *steps_taken > 0);
@@ -195,14 +162,10 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken)
   return state;
 }
 
-btuwi_status_t
-build_intervals(char  *ins, unsigned int len, unwinder_t uw)
-{
+btuwi_status_t build_intervals(char* ins, unsigned int len, unwinder_t uw) {
   return libunw_build_intervals(ins, len);
 }
 
-void
-uw_recipe_tostr(void *uwr, char str[], unwinder_t uw)
-{
+void uw_recipe_tostr(void* uwr, char str[], unwinder_t uw) {
   return libunw_uw_recipe_tostr(uwr, str);
 }

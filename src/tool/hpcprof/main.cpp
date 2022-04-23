@@ -57,74 +57,47 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-#include <fstream>
-
-#include <string>
-using std::string;
-
-#include <vector>
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-
 #include "Args.hpp"
 
-#include <lib/analysis/CallPath-CudaCFG.hpp>
-#include <lib/analysis/CallPath.hpp>
-#include <lib/analysis/Util.hpp>
+#include "include/gcc-attr.h"
+#include "lib/analysis/CallPath-CudaCFG.hpp"
+#include "lib/analysis/CallPath.hpp"
+#include "lib/analysis/Util.hpp"
+#include "lib/support/diagnostics.h"
+#include "lib/support/RealPathMgr.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/RealPathMgr.hpp>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
 
+using std::string;
 
-//*************************** Forward Declarations ***************************
+static int realmain(int argc, char* const* argv);
 
-static int
-realmain(int argc, char* const* argv);
+static void makeMetrics(
+    Prof::CallPath::Profile& prof, const Analysis::Args& args,
+    const Analysis::Util::NormalizeProfileArgs_t& nArgs);
 
-static void
-makeMetrics(Prof::CallPath::Profile& prof,
-	    const Analysis::Args& args,
-	    const Analysis::Util::NormalizeProfileArgs_t& nArgs);
-
-
-//****************************************************************************
-
-void 
-prof_abort
-(
-  int error_code
-)
-{
+void prof_abort(int error_code) {
   exit(error_code);
 }
 
-
-int 
-main(int argc, char* const* argv) 
-{
+int main(int argc, char* const* argv) {
   int ret;
 
   try {
     ret = realmain(argc, argv);
-  }
-  catch (const Diagnostics::Exception& x) {
+  } catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
+  } catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  }
-  catch (const std::exception& x) {
+  } catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
-  } 
-  catch (...) {
+  } catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
@@ -132,17 +105,14 @@ main(int argc, char* const* argv)
   return ret;
 }
 
-
-static int
-realmain(int argc, char* const* argv) 
-{
+static int realmain(int argc, char* const* argv) {
   Args args;
   args.parse(argc, argv);
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
 
   Analysis::Util::NormalizeProfileArgs_t nArgs =
-    Analysis::Util::normalizeProfileArgs(args.profileFiles);
+      Analysis::Util::normalizeProfileArgs(args.profileFiles);
 
   // ------------------------------------------------------------
   // 0. Special checks
@@ -150,14 +120,17 @@ realmain(int argc, char* const* argv)
 
   if (nArgs.paths->size() == 0) {
     std::cerr << "ERROR: command line directories"
-      " contain no .hpcrun files; no database generated\n";
+                 " contain no .hpcrun files; no database generated\n";
     exit(-1);
   }
 
-  if (Analysis::Args::MetricFlg_isThread(args.prof_metrics)
-      && nArgs.paths->size() > 16
+  if (Analysis::Args::MetricFlg_isThread(args.prof_metrics) && nArgs.paths->size() > 16
       && !args.hpcprof_forceMetrics) {
-    DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force-metric option.");
+    DIAG_Throw(
+        "You have requested thread-level metrics for "
+        << nArgs.paths->size()
+        << " profile files.  Because this may result in an unusable database, to continue you must "
+           "use the --force-metric option.");
   }
 
   // ------------------------------------------------------------
@@ -165,8 +138,7 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
-  Analysis::Util::UIntVec* groupMap =
-    (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
+  Analysis::Util::UIntVec* groupMap = (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   uint rFlags = 0;
   if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
@@ -175,10 +147,9 @@ realmain(int argc, char* const* argv)
   uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
 
   Prof::CallPath::Profile* prof =
-    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags, mrgFlags);
+      Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags, mrgFlags);
 
   prof->disable_redundancy(args.remove_redundancy);
-
 
   // -------------------------------------------------------
   // 0. Make empty Experiment database (ensure file system works)
@@ -198,11 +169,11 @@ realmain(int argc, char* const* argv)
 
   bool printProgress = true;
 
-  Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
-						 args.doNormalizeTy, printProgress);
+  Analysis::CallPath::overlayStaticStructureMain(
+      *prof, args.agent, args.doNormalizeTy, printProgress);
 
   Analysis::CallPath::transformCudaCFGMain(*prof);
-  
+
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
   // -------------------------------------------------------
@@ -223,7 +194,7 @@ realmain(int argc, char* const* argv)
 
   if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
     // Apply after all CCT pruning/normalization is completed.
-    //TODO: Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
+    // TODO: Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
   }
 
   prof->cct()->makeDensePreorderIds();
@@ -250,7 +221,6 @@ realmain(int argc, char* const* argv)
 
   Analysis::CallPath::makeDatabase(*prof, args);
 
-
   // -------------------------------------------------------
   // Cleanup
   // -------------------------------------------------------
@@ -261,14 +231,9 @@ realmain(int argc, char* const* argv)
   return 0;
 }
 
-
-//****************************************************************************
-
-static void
-makeMetrics(Prof::CallPath::Profile& prof,
-	    const Analysis::Args& args,
-	    const Analysis::Util::NormalizeProfileArgs_t& GCC_ATTR_UNUSED nArgs)
-{
+static void makeMetrics(
+    Prof::CallPath::Profile& prof, const Analysis::Args& args,
+    const Analysis::Util::NormalizeProfileArgs_t& GCC_ATTR_UNUSED nArgs) {
   Prof::Metric::Mgr& mMgr = *prof.metricMgr();
 
   Prof::CCT::ANode* cctRoot = prof.cct()->root();
@@ -277,18 +242,15 @@ makeMetrics(Prof::CallPath::Profile& prof,
   // create derived metrics
   // -------------------------------------------------------
   uint numSrc = mMgr.size();
-  uint mSrcBeg = 0, mSrcEnd = numSrc; // [ )
+  uint mSrcBeg = 0, mSrcEnd = numSrc;  // [ )
 
-  uint mDrvdBeg = 0, mDrvdEnd = 0; // [ )
-  
+  uint mDrvdBeg = 0, mDrvdEnd = 0;  // [ )
+
   bool needAllStats =
-    Analysis::Args::MetricFlg_isSet(args.prof_metrics,
-				    Analysis::Args::MetricFlg_StatsAll);
-  bool needMultiOccurance =
-    Analysis::Args::MetricFlg_isThread(args.prof_metrics);
+      Analysis::Args::MetricFlg_isSet(args.prof_metrics, Analysis::Args::MetricFlg_StatsAll);
+  bool needMultiOccurance = Analysis::Args::MetricFlg_isThread(args.prof_metrics);
 
-  mDrvdBeg = mMgr.makeSummaryMetrics(needAllStats, needMultiOccurance,
-                                     mSrcBeg, mSrcEnd);
+  mDrvdBeg = mMgr.makeSummaryMetrics(needAllStats, needMultiOccurance, mSrcBeg, mSrcEnd);
   if (mDrvdBeg != Prof::Metric::Mgr::npos) {
     mDrvdEnd = mMgr.size();
   }
@@ -310,22 +272,20 @@ makeMetrics(Prof::CallPath::Profile& prof,
   for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
     Prof::Metric::ADesc* m = mMgr.metric(mId);
     if (m->type() == Prof::Metric::ADesc::TyIncl) {
-      ivalsetIncl.insert(VMAInterval(mId, mId + 1)); // [ )
+      ivalsetIncl.insert(VMAInterval(mId, mId + 1));  // [ )
+    } else if (m->type() == Prof::Metric::ADesc::TyExcl) {
+      ivalsetExcl.insert(VMAInterval(mId, mId + 1));  // [ )
     }
-    else if (m->type() == Prof::Metric::ADesc::TyExcl) {
-      ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
-    }
-    m->computedType(Prof::Metric::ADesc::ComputedTy_Final); // proleptic
+    m->computedType(Prof::Metric::ADesc::ComputedTy_Final);  // proleptic
   }
 
   cctRoot->aggregateMetricsIncl(ivalsetIncl);
   cctRoot->aggregateMetricsExcl(ivalsetExcl);
 
-
   // -------------------------------------------------------
   // compute derived metrics
   // -------------------------------------------------------
-  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd, /*doFinal*/false);
+  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd, /*doFinal*/ false);
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgr.metric(i);

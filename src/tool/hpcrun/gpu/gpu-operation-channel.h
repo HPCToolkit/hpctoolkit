@@ -44,61 +44,20 @@
 #ifndef gpu_operation_channel_h
 #define gpu_operation_channel_h
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <lib/prof-lean/bichannel.h>
-
-
-
-//******************************************************************************
-// forward type declarations
-//******************************************************************************
+#include "lib/prof-lean/bichannel.h"
 
 typedef struct gpu_operation_item_t gpu_operation_item_t;
 
 typedef struct gpu_operation_channel_t gpu_operation_channel_t;
 
+gpu_operation_channel_t* gpu_operation_channel_get(void);
 
+void gpu_operation_channel_produce(gpu_operation_channel_t* channel, gpu_operation_item_t* it);
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+void gpu_operation_channel_consume(gpu_operation_channel_t* channel);
 
-gpu_operation_channel_t *
-gpu_operation_channel_get
-(
- void
-);
+void gpu_operation_channel_await(gpu_operation_channel_t* channel);
 
-
-void
-gpu_operation_channel_produce
-(
- gpu_operation_channel_t *channel,
- gpu_operation_item_t *it
-);
-
-
-void
-gpu_operation_channel_consume
-(
- gpu_operation_channel_t *channel
-);
-
-
-void
-gpu_operation_channel_await
-(
- gpu_operation_channel_t *channel
-);
-
-
-void
-gpu_operation_channel_signal_consumer
-(
- gpu_operation_channel_t *channel
-);
+void gpu_operation_channel_signal_consumer(gpu_operation_channel_t* channel);
 
 #endif

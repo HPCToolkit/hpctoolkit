@@ -44,34 +44,10 @@
 #ifndef cupti_gpu_api_h
 #define cupti_gpu_api_h
 
-
-
-//******************************************************************************
-// nvidia includes
-//******************************************************************************
-
 #include <cupti_activity.h>
 
+void cupti_buffer_completion_notify(void);
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-cupti_buffer_completion_notify
-(
- void
-);
-
-
-void
-cupti_activity_process
-(
- CUpti_Activity *cupti_activity
-);
-
-
+void cupti_activity_process(CUpti_Activity* cupti_activity);
 
 #endif

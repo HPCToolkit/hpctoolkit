@@ -51,22 +51,20 @@
 // The Inline Tree Node classes below ProcInfo: TreeNode, LoopInfo and
 // StmtInfo are in Struct-Inline.hpp.
 
-//***************************************************************************
-
 #ifndef BAnal_Struct_Skel_hpp
 #define BAnal_Struct_Skel_hpp
 
+#include "Struct-Inline.hpp"
+
+#include "lib/binutils/VMAInterval.hpp"
+#include "lib/isa/ISATypes.hpp"
+
+#include <CFG.h>
+#include <Function.h>
 #include <list>
 #include <map>
 #include <string>
-
-#include <CFG.h>
 #include <Symtab.h>
-#include <Function.h>
-
-#include <lib/isa/ISATypes.hpp>
-#include <lib/binutils/VMAInterval.hpp>
-#include "Struct-Inline.hpp"
 
 namespace BAnal {
 namespace Struct {
@@ -79,10 +77,9 @@ class FileInfo;
 class GroupInfo;
 class ProcInfo;
 
-typedef map <string, FileInfo *> FileMap;
-typedef map <VMA, GroupInfo *> GroupMap;
-typedef map <VMA, ProcInfo *> ProcMap;
-
+typedef map<string, FileInfo*> FileMap;
+typedef map<VMA, GroupInfo*> GroupMap;
+typedef map<VMA, ProcInfo*> ProcMap;
 
 // FileInfo and FileMap are the top-level classes for files and
 // procedures.  A FileInfo object contains the procs that belong to
@@ -92,16 +89,14 @@ typedef map <VMA, ProcInfo *> ProcMap;
 //
 class FileInfo {
 public:
-  string  fileName;
+  string fileName;
   GroupMap groupMap;
 
-  FileInfo(string nm)
-  {
+  FileInfo(string nm) {
     fileName = nm;
     groupMap.clear();
   }
 };
-
 
 // GroupInfo contains the subset of procs that belong to one binutils
 // group as determined by the SymtabAPI::Function.  Normally, this
@@ -116,15 +111,14 @@ public:
 //
 class GroupInfo {
 public:
-  SymtabAPI::Function * sym_func;
-  VMA  start;
-  VMA  end;
+  SymtabAPI::Function* sym_func;
+  VMA start;
+  VMA end;
   ProcMap procMap;
   VMAIntervalSet gapSet;
-  bool  alt_file;
+  bool alt_file;
 
-  GroupInfo(SymtabAPI::Function * sf, VMA st, VMA en, bool alt = false)
-  {
+  GroupInfo(SymtabAPI::Function* sf, VMA st, VMA en, bool alt = false) {
     sym_func = sf;
     start = st;
     end = en;
@@ -133,7 +127,6 @@ public:
     alt_file = alt;
   }
 };
-
 
 // Info on one ParseAPI Function and Tree Node for one <P> tag as
 // determined by the func's entry address.
@@ -145,18 +138,18 @@ public:
 //
 class ProcInfo {
 public:
-  ParseAPI::Function * func;
-  TreeNode * root;
-  string  linkName;
-  string  prettyName;
-  long  line_num;
-  VMA   entry_vma;
-  unsigned symbol_index; 
-  bool  gap_only;
+  ParseAPI::Function* func;
+  TreeNode* root;
+  string linkName;
+  string prettyName;
+  long line_num;
+  VMA entry_vma;
+  unsigned symbol_index;
+  bool gap_only;
 
-  ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string ln, string pn,
-	   long l, unsigned symindex = 0, bool gap = false)
-  {
+  ProcInfo(
+      ParseAPI::Function* fn, TreeNode* rt, string ln, string pn, long l, unsigned symindex = 0,
+      bool gap = false) {
     func = fn;
     root = rt;
     linkName = ln;
@@ -167,8 +160,7 @@ public:
     gap_only = gap;
   }
 };
+}  // namespace Struct
+}  // namespace BAnal
 
-} // namespace Struct
-} // namespace BAnal
-
-#endif // BAnal_Struct_Skel_hpp
+#endif  // BAnal_Struct_Skel_hpp

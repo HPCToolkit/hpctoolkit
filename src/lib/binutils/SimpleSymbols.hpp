@@ -47,45 +47,34 @@
 #ifndef __SIMPLESYMBOLS__
 #define __SIMPLESYMBOLS__
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <string>
-#include <stdint.h>
 #include <set>
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
+#include <stdint.h>
+#include <string>
 
 typedef enum {
   SimpleSymbolBinding_Unknown = 0,
-  SimpleSymbolBinding_Other   = 1,
-  SimpleSymbolBinding_Local   = 2,
-  SimpleSymbolBinding_Weak    = 3,
-  SimpleSymbolBinding_Global  = 4,
+  SimpleSymbolBinding_Other = 1,
+  SimpleSymbolBinding_Local = 2,
+  SimpleSymbolBinding_Weak = 3,
+  SimpleSymbolBinding_Global = 4,
 } SimpleSymbolBinding;
-
 
 typedef enum {
   SimpleSymbolKind_Function = 0,
-  SimpleSymbolKind_Data     = 1,
-  SimpleSymbolKind_Unknown  = 2,
-  SimpleSymbolKind_Other    = 3,
+  SimpleSymbolKind_Data = 1,
+  SimpleSymbolKind_Unknown = 2,
+  SimpleSymbolKind_Other = 3,
 } SimpleSymbolKind;
-
 
 class SimpleSymbol {
 public:
-  SimpleSymbol(uint64_t __addr, SimpleSymbolKind __kind,
-	SimpleSymbolBinding __binding, const char *__name);
+  SimpleSymbol(
+      uint64_t __addr, SimpleSymbolKind __kind, SimpleSymbolBinding __binding, const char* __name);
 
   uint64_t addr() const { return _addr; };
   SimpleSymbolKind kind() const { return _kind; };
   SimpleSymbolBinding binding() const { return _binding; };
-  const std::string &name() const { return _name; };
+  const std::string& name() const { return _name; };
 
   void setName(std::string __name) { _name = __name; }
   void setBinding(SimpleSymbolBinding __binding) { _binding = __binding; }
@@ -100,23 +89,15 @@ private:
   std::string _name;
 };
 
-
 // SimpleSymbolsCoalesceCallback must yield its result in left
-typedef void
-(SimpleSymbolsCoalesceCallback)
-(
-  SimpleSymbol *left,
-  const SimpleSymbol *right
-);
-
+typedef void(SimpleSymbolsCoalesceCallback)(SimpleSymbol* left, const SimpleSymbol* right);
 
 // a useful coalescing callback
 SimpleSymbolsCoalesceCallback chooseHighestBinding;
 
-
 class SimpleSymbols {
 public:
-  SimpleSymbols(const char *name);
+  SimpleSymbols(const char* name);
   virtual ~SimpleSymbols() {}
 
   const std::string& name();
@@ -124,18 +105,17 @@ public:
   // simply add the element as presented. there is no attempt to incrementally
   // coalesce symbols with the same address. use the coalesce method after
   // all insertions if symbols at the same address should be pruned.
-  void add(uint64_t addr, SimpleSymbolKind kind, SimpleSymbolBinding binding,
-           const char *name);
+  void add(uint64_t addr, SimpleSymbolKind kind, SimpleSymbolBinding binding, const char* name);
 
   // note: the internal representation is a vector and find causes the
   // vector to be sorted. don't find while still inserting! insert
   // and coalesce at the end to avoid O(n^2) cost.
-  SimpleSymbol *find(uint64_t vma);
+  SimpleSymbol* find(uint64_t vma);
 
   // wrapper around find to support name query only
-  bool findEnclosingFunction(uint64_t vma, std::string &fnName);
+  bool findEnclosingFunction(uint64_t vma, std::string& fnName);
 
-  virtual bool parse(const std::set<std::string> &directorySet, const char *pathname) = 0;
+  virtual bool parse(const std::set<std::string>& directorySet, const char* pathname) = 0;
 
   // invoke the coalesce method to collapse a pair of symbols at the same
   // address into one. for n symbols at the same address, there will be
@@ -149,14 +129,13 @@ public:
 private:
   void sort();
 
-  struct SimpleSymbolsRepr *R;
+  struct SimpleSymbolsRepr* R;
 };
-
 
 class SimpleSymbolsFactory {
 public:
-  virtual bool match(const char *pathname) = 0;
-  virtual SimpleSymbols *create() = 0;
+  virtual bool match(const char* pathname) = 0;
+  virtual SimpleSymbols* create() = 0;
 };
 
 #endif

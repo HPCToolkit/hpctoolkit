@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -63,33 +63,20 @@
 #ifndef lush_agents_agent_cilk_h
 #define lush_agents_agent_cilk_h
 
-//************************* System Include Files ****************************
-
-#include <stdlib.h>
-#include <stdint.h>
-#include <stdbool.h>
-
-//*************************** Cilk Include Files ****************************
-
-#include <cilk/cilk.h>          /* Cilk (installed) */
 #include <cilk/cilk-internal.h> /* Cilk (not installed) */
-
-//*************************** User Include Files ****************************
-
-#include <lush/lushi.h>
+#include <cilk/cilk.h>          /* Cilk (installed) */
 #include <lush/lushi-cb.h>
-
-//*************************** Forward Declarations **************************
+#include <lush/lushi.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-//*************************** Forward Declarations **************************
-
-
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 typedef union cilk_ip cilk_ip_t;
@@ -99,7 +86,7 @@ union cilk_ip {
   // LUSH type
   // ------------------------------------------------------------
   lush_lip_t official_lip;
-  
+
   // ------------------------------------------------------------
   // superimposed with:
   // ------------------------------------------------------------
@@ -110,49 +97,40 @@ union cilk_ip {
   } u;
 };
 
-
-static inline void 
-cilk_ip_set(cilk_ip_t* x, ip_normalized_t ip /*uint32_t status*/)
-{
+static inline void cilk_ip_set(cilk_ip_t* x, ip_normalized_t ip /*uint32_t status*/) {
   lush_lip_setLMId(&(x->official_lip), (uint64_t)ip.lm_id);
   lush_lip_setLMIP(&(x->official_lip), (uint64_t)ip.lm_ip);
-  //x->u.status = status;
+  // x->u.status = status;
 }
 
-
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
-typedef enum unw_ty_e  unw_ty_t;
- 
+typedef enum unw_ty_e unw_ty_t;
+
 enum unw_ty_e {
-  UnwTy_NULL    = 0,
+  UnwTy_NULL = 0,
   UnwTy_Master,  // master (non-worker thread)
 
-  UnwTy_WorkerLcl, // worker: user context is fully on local stack
-  UnwTy_Worker     // worker: user context is partially on cactus stack
+  UnwTy_WorkerLcl,  // worker: user context is fully on local stack
+  UnwTy_Worker      // worker: user context is partially on cactus stack
 };
 
-static inline bool 
-unw_ty_is_master(unw_ty_t ty) 
-{
+static inline bool unw_ty_is_master(unw_ty_t ty) {
   return (ty == UnwTy_Master);
 }
 
-static inline bool 
-unw_ty_is_worker(unw_ty_t ty) 
-{
+static inline bool unw_ty_is_worker(unw_ty_t ty) {
   return ((ty == UnwTy_WorkerLcl) || (ty == UnwTy_Worker));
 }
 
-
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 typedef enum unw_seg_e unw_seg_t;
@@ -160,26 +138,24 @@ typedef enum unw_seg_e unw_seg_t;
 enum unw_seg_e {
   // Segments of a Cilk physical stack
   // NOTE: ordering is important (inner to outer contexts)
-  UnwSeg_NULL   = 0,
+  UnwSeg_NULL = 0,
   UnwSeg_CilkRT,    // Cilk runtime support
   UnwSeg_User,      // User code
   UnwSeg_CilkSched  // Cilk scheduler
 };
 
-
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 typedef enum unw_flg_e unw_flg_t;
 
 enum unw_flg_e {
-  UnwFlg_NULL       = 0x00,
-  UnwFlg_SeenUser   = 0x01, // user code has been seen (inter)
-  UnwFlg_HaveLCtxt  = 0x02, // logical context has been obtained (inter)
-  UnwFlg_BegLNote   = 0x04, // past beginning note of an lchord
+  UnwFlg_NULL = 0x00,
+  UnwFlg_SeenUser = 0x01,   // user code has been seen (inter)
+  UnwFlg_HaveLCtxt = 0x02,  // logical context has been obtained (inter)
+  UnwFlg_BegLNote = 0x04,   // past beginning note of an lchord
 };
-
 
 // **************************************************************************
 
@@ -198,74 +174,56 @@ union cilk_cursor {
     // ---------------------------------
     // inter-bichord data (valid for the whole of one logical unwind)
     // ---------------------------------
-    unw_ty_t  ty      : 8; // type of current unwind
-    unw_seg_t prev_seg: 8; // ty of prev bi-chord
-    unw_flg_t flg     : 8; // unwind flags
-    unsigned  xxx     : 8; // UNUSED
+    unw_ty_t ty        : 8;  // type of current unwind
+    unw_seg_t prev_seg : 8;  // ty of prev bi-chord
+    unw_flg_t flg      : 8;  // unwind flags
+    unsigned xxx       : 8;  // UNUSED
     CilkWorkerState* cilk_worker_state;
-    Closure*         cilk_closure; // modified during traversal
-    
+    Closure* cilk_closure;  // modified during traversal
+
     // ---------------------------------
     // intra-bichord data (valid for only one bichord)
     // ---------------------------------
-    void* ref_ip;                // reference physical ip (unnormalized)
-    ip_normalized_t ref_ip_norm; // reference physical ip (normalized)
-
+    void* ref_ip;                 // reference physical ip (unnormalized)
+    ip_normalized_t ref_ip_norm;  // reference physical ip (normalized)
   } u;
 };
 
-
-static inline bool
-csr_is_flag(cilk_cursor_t* csr, unw_flg_t flg)
-{
+static inline bool csr_is_flag(cilk_cursor_t* csr, unw_flg_t flg) {
   return (csr->u.flg & flg);
 }
 
-static inline void
-csr_set_flag(cilk_cursor_t* csr, unw_flg_t flg)
-{
+static inline void csr_set_flag(cilk_cursor_t* csr, unw_flg_t flg) {
   csr->u.flg = (csr->u.flg | flg);
 }
 
-static inline void
-csr_unset_flag(cilk_cursor_t* csr, unw_flg_t flg)
-{
+static inline void csr_unset_flag(cilk_cursor_t* csr, unw_flg_t flg) {
   csr->u.flg = (csr->u.flg & ~flg);
 }
-
 
 // NOTE: Local work (innermost) is pushed and popped from the BOTTOM
 //   or the TAIL of the deque while thieves steal from the TOP or HEAD
 //   (outermost).
-static inline Closure* 
-CILKWS_CL_DEQ_TOP(CilkWorkerState* x)
-{
-  return x->context->Cilk_RO_params->deques[x->self].top; // outermost!
+static inline Closure* CILKWS_CL_DEQ_TOP(CilkWorkerState* x) {
+  return x->context->Cilk_RO_params->deques[x->self].top;  // outermost!
 }
 
-static inline Closure* 
-CILKWS_CL_DEQ_BOT(CilkWorkerState* x)
-{
-  return x->context->Cilk_RO_params->deques[x->self].bottom; // innermost!
+static inline Closure* CILKWS_CL_DEQ_BOT(CilkWorkerState* x) {
+  return x->context->Cilk_RO_params->deques[x->self].bottom;  // innermost!
 }
 
-static inline volatile CilkStackFrame** 
-CILKWS_FRAME_DEQ_HEAD(CilkWorkerState* x)
-{
-  return x->cache.head; // outermost!
+static inline volatile CilkStackFrame** CILKWS_FRAME_DEQ_HEAD(CilkWorkerState* x) {
+  return x->cache.head;  // outermost!
 }
 
-static inline volatile CilkStackFrame** 
-CILKWS_FRAME_DEQ_TAIL(CilkWorkerState* x)
-{
-  return x->cache.tail; // innermost!
+static inline volatile CilkStackFrame** CILKWS_FRAME_DEQ_TAIL(CilkWorkerState* x) {
+  return x->cache.tail;  // innermost!
 }
 
 static inline void* /* void (*) () */
 CILKFRM_PROC(CilkStackFrame* x) {
   return x->sig[0].inlet;
 }
-
 
 // **************************************************************************
 

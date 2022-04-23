@@ -57,41 +57,31 @@
 //
 //***************************************************************************
 
-#ifndef ProfileReader_H 
+#ifndef ProfileReader_H
 #define ProfileReader_H
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
 
-#include <iostream>
 #include <fstream>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-//*************************** Forward Declarations ***************************
+#include <iostream>
 
 class PCProfile;
 class DCPIProfile;
 
-//****************************************************************************
-
 // 'ProfileReader' is just a helpful container for all
 // profile-file-reading-functions.  It has no state and need not be
 // instantiated by a user.
-class ProfileReader
-{
+class ProfileReader {
 public:
   static PCProfile* ReadProfileFile(const char* profFile /* FIXME: type */);
 
-private: 
+private:
   // These functions should only be called by `ReadProfileFile'
 
   // ------------------------------------------------------------------------
   //  DCPI (Alpha/OSF1)
   // ------------------------------------------------------------------------
   static DCPIProfile* ReadProfileFile_DCPICat(std::istream& pFile);
-  
 };
 
-#endif 
+#endif

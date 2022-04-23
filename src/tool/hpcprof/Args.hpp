@@ -60,42 +60,29 @@
 #ifndef Args_hpp
 #define Args_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/analysis/ArgsHPCProf.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/analysis/ArgsHPCProf.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-class Args
-  : public Analysis::ArgsHPCProf {
-public: 
+class Args : public Analysis::ArgsHPCProf {
+public:
   Args();
   virtual ~Args();
 
   // Parse the command line
-  virtual void
-  parse(int argc, const char* const argv[]);
+  virtual void parse(int argc, const char* const argv[]);
 
 public:
   // Parsed Data: Command
-  virtual const std::string
-  getCmd() const;
+  virtual const std::string getCmd() const;
 
 public:
   // Parsed Data
   bool hpcprof_isMetricArg;
   bool hpcprof_forceMetrics;
+};
 
-}; 
-
-#endif // Args_hpp 
+#endif  // Args_hpp

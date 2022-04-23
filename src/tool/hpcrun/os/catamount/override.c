@@ -45,15 +45,13 @@
 // ******************************************************* EndRiceCopyright *
 
 #include <assert.h>
+#include <messages/messages.h>
 #include <signal.h>
 #include <stdlib.h>
 
-#include <messages/messages.h>
-
-extern void *__real_calloc(size_t nmemb, size_t size);
-extern void *__real_malloc(size_t size);
-extern void *__real_realloc(void *ptr, size_t size);
-
+extern void* __real_calloc(size_t nmemb, size_t size);
+extern void* __real_malloc(size_t size);
+extern void* __real_realloc(void* ptr, size_t size);
 
 #if 0
 extern int __real_sigprocmask(int, const sigset_t *, sigset_t *);
@@ -74,11 +72,11 @@ sig_t __wrap_signal(int sig, sig_t func){
 }
 #endif
 
-void *__wrap_calloc(size_t nmemb, size_t size){
-  return __real_calloc(nmemb,size);
+void* __wrap_calloc(size_t nmemb, size_t size) {
+  return __real_calloc(nmemb, size);
 }
-void *__wrap_realloc(void *ptr, size_t size){
-  return __real_realloc(ptr,size);
+void* __wrap_realloc(void* ptr, size_t size) {
+  return __real_realloc(ptr, size);
 }
 
 /* override various functions here */
@@ -86,12 +84,12 @@ void *__wrap_realloc(void *ptr, size_t size){
 int _hpcrun_in_malloc = 0;
 int hpcrun_need_more = 0;
 
-void *__wrap_malloc(size_t s){
-  void *alloc;
+void* __wrap_malloc(size_t s) {
+  void* alloc;
 
   _hpcrun_in_malloc = 1;
   alloc = __real_malloc(s);
-  if (hpcrun_need_more){
+  if (hpcrun_need_more) {
     assert(0);
     /* alloc more space here */
     hpcrun_need_more = 0;
@@ -100,7 +98,7 @@ void *__wrap_malloc(size_t s){
   return alloc;
 }
 
-void *__wrap_pthread_create(void *dc){
+void* __wrap_pthread_create(void* dc) {
   EMSG("Called pthread_create!!");
   assert(0);
 }

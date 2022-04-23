@@ -51,81 +51,58 @@
 //
 // Purpose:
 //   compute a cryptographic hash of a sequence of bytes. this is used
-//   to name information presented to hpcrun in memory (e.g. a GPU binary) 
+//   to name information presented to hpcrun in memory (e.g. a GPU binary)
 //   that needs to be saved for post-mortem analysis.
 //
 //***************************************************************************
 
+#include "crypto-hash.h"
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "md5.h"
 
 #include <assert.h>
 #include <string.h>
 
-#include "md5.h"
-#include "crypto-hash.h"
+#define LOWER_NIBBLE_MASK (0x0f)
+#define UPPER_NIBBLE(c)   ((c >> 4) & LOWER_NIBBLE_MASK)
+#define LOWER_NIBBLE(c)   (c & LOWER_NIBBLE_MASK)
 
-
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
-
- 
-
-#define LOWER_NIBBLE_MASK 	(0x0f)
-#define UPPER_NIBBLE(c) 	((c >> 4) & LOWER_NIBBLE_MASK)
-#define LOWER_NIBBLE(c) 	(c  & LOWER_NIBBLE_MASK)
-
-#define HEX_TO_ASCII(c) ((c > 9) ?  'a' + (c - 10) : ('0' + c))
-
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
+#define HEX_TO_ASCII(c) ((c > 9) ? 'a' + (c - 10) : ('0' + c))
 
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_hash_compute
 //
 // arguments:
-//   input:        
+//   input:
 //     pointer to a vector of bytes that will be crytographically hashed
-//   input_length:        
+//   input_length:
 //     length in bytes of the input
-//   hash:        
+//   hash:
 //     pointer to a vector of bytes of length >= crypto_hash_length()
 //
 // return value:
 //   0: success
 //   non-zero: failure
 //-----------------------------------------------------------------------------
-int
-crypto_hash_compute
-(
-  const unsigned char *input, 
-  size_t input_length,
-  unsigned char *hash,
-  unsigned int hash_length
-)
-{
+int crypto_hash_compute(
+    const unsigned char* input, size_t input_length, unsigned char* hash,
+    unsigned int hash_length) {
   struct md5_context context;
   struct md5_digest digest;
 
   if (hash_length > HASH_LENGTH) {
-    // failure: caller not prepared to accept a hash of at least the length 
+    // failure: caller not prepared to accept a hash of at least the length
     // that we will provide
     return -1;
   }
 
   // zero the hash result
-  memset(hash, 0, hash_length); 
+  memset(hash, 0, hash_length);
 
   // compute an MD5 hash of input
   md5_init(&context);
-  md5_update(&context, input, (unsigned int) input_length);
+  md5_update(&context, input, (unsigned int)input_length);
   md5_finalize(&context, &digest);
 
   memcpy(hash, &digest, hash_length);
@@ -133,51 +110,38 @@ crypto_hash_compute
   return 0;
 }
 
-
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_hash_length
 //
 // arguments: none
 //
 // return value:
-//   number of bytes in the crytographic hash 
+//   number of bytes in the crytographic hash
 //-----------------------------------------------------------------------------
-unsigned int
-crypto_hash_length
-(
-  void
-)
-{
+unsigned int crypto_hash_length(void) {
   return HASH_LENGTH;
 }
 
-
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_hash_to_hexstring
 //
 // arguments:
-//   hash:        
+//   hash:
 //     pointer to crytographic hash computed by cryto_hash_compute
-//   hash_string: 
-//     pointer to character buffer where string equivalent of the hash code 
+//   hash_string:
+//     pointer to character buffer where string equivalent of the hash code
 //     will be written
-//   hash_string_length: 
+//   hash_string_length:
 //     length of the hash string must be > 2 * crypto_hash_length()
 //
 // return value:
 //   0: success
 //   non-zero: failure
 //-----------------------------------------------------------------------------
-int
-crypto_hash_to_hexstring
-(
-  unsigned char *hash,
-  char *hash_string,
-  unsigned int hash_string_length
-)
-{
+int crypto_hash_to_hexstring(
+    unsigned char* hash, char* hash_string, unsigned int hash_string_length) {
   int hex_digits = HASH_LENGTH << 1;
   if (hash_string_length < hex_digits + 1) {
     return -1;
@@ -185,7 +149,7 @@ crypto_hash_to_hexstring
 
   int chars = HASH_LENGTH;
   while (chars-- > 0) {
-    unsigned char val_u = UPPER_NIBBLE(*hash); 
+    unsigned char val_u = UPPER_NIBBLE(*hash);
     *hash_string++ = HEX_TO_ASCII(val_u);
 
     unsigned char val_l = LOWER_NIBBLE(*hash);
@@ -196,12 +160,6 @@ crypto_hash_to_hexstring
 
   return 0;
 }
-
-
-
-//******************************************************************************
-// unit test
-//******************************************************************************
 
 // To run the crypto/md5 unit test, change #if to 1 and compile as:
 //
@@ -214,10 +172,10 @@ crypto_hash_to_hexstring
 
 #if 0
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 int

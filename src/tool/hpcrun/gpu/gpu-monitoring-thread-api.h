@@ -44,25 +44,8 @@
 #ifndef gpu_monitoring_thread_api_h
 #define gpu_monitoring_thread_api_h
 
+void gpu_monitoring_thread_activities_ready(void);
 
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-gpu_monitoring_thread_activities_ready
-(
- void
-);
-
-
-void
-gpu_monitoring_thread_activities_ready_with_idx
-(
- int idx
-);
-
-
+void gpu_monitoring_thread_activities_ready_with_idx(int idx);
 
 #endif

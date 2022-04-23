@@ -44,67 +44,45 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-// system includes
-//***************************************************************************
+#include "hpcrun/metrics.h"
+#include "hpcrun/thread_data.h"
 
+#include <messages/messages.h>
+#include <sample-sources/common.h>
+#include <sample-sources/ga.h>
+#include <sample-sources/sample_source_obj.h>
+#include <sample-sources/simple_oo.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-
-
-//***************************************************************************
-// local includes
-//***************************************************************************
-
-#include <sample-sources/simple_oo.h>
-#include <sample-sources/sample_source_obj.h>
-#include <sample-sources/common.h>
-#include <sample-sources/ga.h>
-
-#include <hpcrun/metrics.h>
-#include <hpcrun/thread_data.h>
-#include <messages/messages.h>
 #include <utilities/tokenize.h>
-
-
-//***************************************************************************
-// local variables
-//***************************************************************************
 
 const static long periodDefault = 293;
 
 uint64_t hpcrun_ga_period = 0;
 
-int hpcrun_ga_metricId_onesidedOp    = -1;
-int hpcrun_ga_metricId_collectiveOp  = -1;
-int hpcrun_ga_metricId_latency       = -1;
+int hpcrun_ga_metricId_onesidedOp = -1;
+int hpcrun_ga_metricId_collectiveOp = -1;
+int hpcrun_ga_metricId_latency = -1;
 int hpcrun_ga_metricId_latencyExcess = -1;
-int hpcrun_ga_metricId_bytesXfr      = -1;
+int hpcrun_ga_metricId_bytesXfr = -1;
 
 #if (GA_DataCentric_Prototype)
 int hpcrun_ga_metricId_dataTblIdx_next = -1;
-int hpcrun_ga_metricId_dataTblIdx_max  = -1; // exclusive upper bound
+int hpcrun_ga_metricId_dataTblIdx_max = -1;  // exclusive upper bound
 
 hpcrun_ga_metricId_dataDesc_t hpcrun_ga_metricId_dataTbl[hpcrun_ga_metricId_dataTblSz];
-#endif // GA_DataCentric_Prototype
+#endif  // GA_DataCentric_Prototype
 
-
-//***************************************************************************
-// method definitions
-//***************************************************************************
-
-static void
-METHOD_FN(init)
-{
+static void METHOD_FN(init) {
   TMSG(GA, "init");
   self->state = INIT;
 
-  hpcrun_ga_metricId_onesidedOp    = -1;
-  hpcrun_ga_metricId_collectiveOp  = -1;
-  hpcrun_ga_metricId_latency       = -1;
+  hpcrun_ga_metricId_onesidedOp = -1;
+  hpcrun_ga_metricId_collectiveOp = -1;
+  hpcrun_ga_metricId_latency = -1;
   hpcrun_ga_metricId_latencyExcess = -1;
-  hpcrun_ga_metricId_bytesXfr      = -1;
+  hpcrun_ga_metricId_bytesXfr = -1;
 
 #if (GA_DataCentric_Prototype)
   hpcrun_ga_metricId_dataTblIdx_next = 0;
@@ -112,78 +90,53 @@ METHOD_FN(init)
 #endif
 }
 
-
-static void
-METHOD_FN(thread_init)
-{
+static void METHOD_FN(thread_init) {
   TMSG(GA, "thread init (no-op)");
 }
 
-
-static void
-METHOD_FN(thread_init_action)
-{
+static void METHOD_FN(thread_init_action) {
   TMSG(GA, "thread init action (no-op)");
 }
 
-
-static void
-METHOD_FN(start)
-{
+static void METHOD_FN(start) {
   TMSG(GA, "starting GA sample source");
   TD_GET(ss_state)[self->sel_idx] = START;
 }
 
-
-static void
-METHOD_FN(thread_fini_action)
-{
+static void METHOD_FN(thread_fini_action) {
   TMSG(GA, "thread fini action (no-op)");
 }
 
-
-static void
-METHOD_FN(stop)
-{
+static void METHOD_FN(stop) {
   TMSG(GA, "stopping GA sample source");
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
-
-static void
-METHOD_FN(shutdown)
-{
+static void METHOD_FN(shutdown) {
   TMSG(GA, "shutdown GA sample source");
   METHOD_CALL(self, stop);
   self->state = UNINIT;
 }
 
-
-static bool
-METHOD_FN(supports_event, const char *ev_str)
-{
+static bool METHOD_FN(supports_event, const char* ev_str) {
   // FIXME: this message comes too early and goes to stderr instead of
   // the log file.
   // TMSG(GA, "test support event: %s", ev_str);
   return hpcrun_ev_is(ev_str, "GA");
 }
 
-
-static void
-METHOD_FN(process_event_list, int lush_metrics)
-{
+static void METHOD_FN(process_event_list, int lush_metrics) {
   TMSG(GA, "create GA metrics");
 
   char* evStr = METHOD_CALL(self, get_event_str);
 
   hpcrun_ga_period = periodDefault;
   char evName[32];
-  hpcrun_extract_ev_thresh(evStr, sizeof(evName), evName,
-			   (long*)&hpcrun_ga_period, periodDefault);
-  
-  TMSG(GA, "GA: %s sampling period: %"PRIu64, evName, hpcrun_ga_period);
+  hpcrun_extract_ev_thresh(evStr, sizeof(evName), evName, (long*)&hpcrun_ga_period, periodDefault);
 
-  kind_info_t *ga_kind = hpcrun_metrics_new_kind();
+  TMSG(GA, "GA: %s sampling period: %" PRIu64, evName, hpcrun_ga_period);
+
+  kind_info_t* ga_kind = hpcrun_metrics_new_kind();
   // number of one-sided operations
   hpcrun_ga_metricId_onesidedOp = hpcrun_set_new_metric_info(ga_kind, "1-sided op");
 
@@ -191,12 +144,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_ga_metricId_collectiveOp = hpcrun_set_new_metric_info(ga_kind, "collective op");
 
   // exposed latency
-  hpcrun_ga_metricId_latency =
-    hpcrun_set_new_metric_info_and_period(ga_kind, "latency (us)",
-					  MetricFlags_ValFmt_Real, 1, metric_property_none);
+  hpcrun_ga_metricId_latency = hpcrun_set_new_metric_info_and_period(
+      ga_kind, "latency (us)", MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // exposed excess latency
-  //hpcrun_ga_metricId_latencyExcess = hpcrun_set_new_metric_info("exs lat (us)");
+  // hpcrun_ga_metricId_latencyExcess = hpcrun_set_new_metric_info("exs lat (us)");
 
   hpcrun_ga_metricId_bytesXfr = hpcrun_set_new_metric_info(ga_kind, "bytes xfr");
 
@@ -211,21 +163,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_close_kind(ga_kind);
 }
 
-static void
-METHOD_FN(finalize_event_list)
-{
-}
+static void METHOD_FN(finalize_event_list) {}
 
-static void
-METHOD_FN(gen_event_set, int lush_metrics)
-{
+static void METHOD_FN(gen_event_set, int lush_metrics) {
   TMSG(GA, "gen event set (no-op)");
 }
 
-
-static void
-METHOD_FN(display_events)
-{
+static void METHOD_FN(display_events) {
   printf("===========================================================================\n");
   printf("Available Global Arrays events\n");
   printf("===========================================================================\n");
@@ -236,29 +180,17 @@ METHOD_FN(display_events)
   printf("\n");
 }
 
-
-//***************************************************************************
-// object
-//***************************************************************************
-
 // sync class is "SS_SOFTWARE" so that both synchronous and
 // asynchronous sampling is possible
 
-#define ss_name ga
-#define ss_cls SS_SOFTWARE
-#define ss_sort_order  110
+#define ss_name       ga
+#define ss_cls        SS_SOFTWARE
+#define ss_sort_order 110
 
 #include "ss_obj.h"
 
-
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
 #if (GA_DataCentric_Prototype)
-int
-hpcrun_ga_dataIdx_new(const char* name)
-{
+int hpcrun_ga_dataIdx_new(const char* name) {
   if (hpcrun_ga_metricId_dataTblIdx_next < hpcrun_ga_metricId_dataTblIdx_max) {
     int idx = hpcrun_ga_metricId_dataTblIdx_next;
     hpcrun_ga_metricId_dataTblIdx_next++;
@@ -270,9 +202,8 @@ hpcrun_ga_dataIdx_new(const char* name)
     TMSG(GA, "hpcrun_ga_dataIdx_new: %s -> metric %d", name, desc->metricId);
 
     return idx;
-  }
-  else {
+  } else {
     return -1;
   }
 }
-#endif // GA_DataCentric_Prototype
+#endif  // GA_DataCentric_Prototype

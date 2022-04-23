@@ -45,103 +45,68 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// File: threadmgr.c: 
+// File: threadmgr.c:
 // Purpose: maintain information about the number of live threads
 //******************************************************************************
 
-
-
-//******************************************************************************
-// system include files 
-//******************************************************************************
-
-#include <stdint.h>
-#include <stdlib.h>
-
-#include <pthread.h>
-#include <sys/sysinfo.h>
-
-//******************************************************************************
-// local include files 
-//******************************************************************************
 #include "threadmgr.h"
-#include "thread_data.h"
-#include "write_data.h"
-#include "trace.h"
+
 #include "sample_sources_all.h"
+#include "thread_data.h"
+#include "trace.h"
+#include "write_data.h"
 
-#include <lib/prof-lean/stdatomic.h>
-#include <lib/prof-lean/spinlock.h>
-
-#include <include/queue.h>
+#include "include/queue.h"
+#include "lib/prof-lean/spinlock.h"
+#include "lib/prof-lean/stdatomic.h"
 
 #include <monitor.h>
-
-//******************************************************************************
-// macro
-//******************************************************************************
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <sys/sysinfo.h>
 
 #define HPCRUN_OPTION_MERGE_THREAD "HPCRUN_MERGE_THREADS"
-#define HPCRUN_THREADS_DEBUG 0
-
-//******************************************************************************
-// data structure
-//******************************************************************************
+#define HPCRUN_THREADS_DEBUG       0
 
 typedef struct thread_list_s {
-  thread_data_t *thread_data;
+  thread_data_t* thread_data;
   SLIST_ENTRY(thread_list_s) entries;
 } thread_list_t;
 
-//******************************************************************************
-// private data
-//******************************************************************************
-static atomic_int_least32_t threadmgr_active_threads = ATOMIC_VAR_INIT(1); // one for the process main thread
+static atomic_int_least32_t threadmgr_active_threads =
+    ATOMIC_VAR_INIT(1);  // one for the process main thread
 
-static atomic_int_least32_t threadmgr_num_threads = ATOMIC_VAR_INIT(1); // number of logical threads
+static atomic_int_least32_t threadmgr_num_threads =
+    ATOMIC_VAR_INIT(1);  // number of logical threads
 
 #if HPCRUN_THREADS_DEBUG
-static atomic_int_least32_t threadmgr_tot_threads = ATOMIC_VAR_INIT(1); // number of total threads
+static atomic_int_least32_t threadmgr_tot_threads = ATOMIC_VAR_INIT(1);  // number of total threads
 #endif
 
-static SLIST_HEAD(thread_list_head, thread_list_s) list_thread_head =
-    SLIST_HEAD_INITIALIZER(thread_list_head);
+static SLIST_HEAD(thread_list_head, thread_list_s)
+    list_thread_head = SLIST_HEAD_INITIALIZER(thread_list_head);
 
 static spinlock_t threaddata_lock = SPINLOCK_UNLOCKED;
 
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static void
-adjust_thread_count(int32_t val)
-{
-	atomic_fetch_add_explicit(&threadmgr_active_threads, val, memory_order_relaxed);
+static void adjust_thread_count(int32_t val) {
+  atomic_fetch_add_explicit(&threadmgr_active_threads, val, memory_order_relaxed);
 }
 
-static int32_t
-adjust_num_logical_threads(int32_t val)
-{
+static int32_t adjust_num_logical_threads(int32_t val) {
   return atomic_fetch_add_explicit(&threadmgr_num_threads, val, memory_order_relaxed);
 }
 
-
-static int32_t
-get_num_logical_threads()
-{
+static int32_t get_num_logical_threads() {
   return atomic_load_explicit(&threadmgr_num_threads, memory_order_relaxed);
 }
 
-static bool
-is_compact_thread()
-{
+static bool is_compact_thread() {
   return hpcrun_threadMgr_compact_thread() == OPTION_COMPACT_THREAD;
 }
 
-static thread_data_t *
-allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace)
-{
-  thread_data_t *data = hpcrun_allocate_thread_data(id);
+static thread_data_t* allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace) {
+  thread_data_t* data = hpcrun_allocate_thread_data(id);
 
   // we need to immediately set the thread data here since the following statements
   // under the hood, will call get_thread_data()
@@ -157,33 +122,28 @@ allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace)
   // ----------------------------------------
   // set up initial 'epoch'
   // ----------------------------------------
-  TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+  TMSG(EPOCH, "process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(thr_ctxt);
 
   // ----------------------------------------
   // opening trace file
   // ----------------------------------------
   if (has_trace) {
-  	hpcrun_trace_open(&(data->core_profile_trace_data));
+    hpcrun_trace_open(&(data->core_profile_trace_data));
   }
 
   return data;
 }
 
-static void
-finalize_thread_data(core_profile_trace_data_t *current_data)
-{
-  hpcrun_write_profile_data( current_data );
-  hpcrun_trace_close( current_data );
+static void finalize_thread_data(core_profile_trace_data_t* current_data) {
+  hpcrun_write_profile_data(current_data);
+  hpcrun_trace_close(current_data);
 }
 
-
-static thread_list_t *
-grab_thread_data()
-{
+static thread_list_t* grab_thread_data() {
   spinlock_lock(&threaddata_lock);
 
-  thread_list_t *item = NULL;
+  thread_list_t* item = NULL;
 
   if (!SLIST_EMPTY(&list_thread_head)) {
     item = SLIST_FIRST(&list_thread_head);
@@ -195,17 +155,15 @@ grab_thread_data()
   return item;
 }
 
-
-static void*
-finalize_all_thread_data(void *arg)
-{
-  thread_list_t *data = (thread_list_t *) arg;
+static void* finalize_all_thread_data(void* arg) {
+  thread_list_t* data = (thread_list_t*)arg;
 
   while (data != NULL) {
-    core_profile_trace_data_t *cptd = &data->thread_data->core_profile_trace_data;
-    hpcrun_set_thread_data(data->thread_data); //YUMENG: added to make sure writer can hpcrun_malloc(pretend I am this thread)
+    core_profile_trace_data_t* cptd = &data->thread_data->core_profile_trace_data;
+    hpcrun_set_thread_data(data->thread_data);  // YUMENG: added to make sure writer can
+                                                // hpcrun_malloc(pretend I am this thread)
     finalize_thread_data(cptd);
-    
+
     TMSG(PROCESS, "%d: write thread data", cptd->id);
 
     data = grab_thread_data();
@@ -213,28 +171,16 @@ finalize_all_thread_data(void *arg)
   return NULL;
 }
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-hpcrun_threadmgr_thread_new()
-{
-	adjust_thread_count(1);
+void hpcrun_threadmgr_thread_new() {
+  adjust_thread_count(1);
 }
 
-
-void 
-hpcrun_threadmgr_thread_delete()
-{
-	adjust_thread_count(-1);
+void hpcrun_threadmgr_thread_delete() {
+  adjust_thread_count(-1);
 }
 
-
-int 
-hpcrun_threadmgr_thread_count()
-{
-	return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
+int hpcrun_threadmgr_thread_count() {
+  return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
 }
 
 /**
@@ -243,16 +189,14 @@ hpcrun_threadmgr_thread_count()
  *  OPTION_COMPACT_THREAD : (default) compact thread is required
  *  OPTION_NO_COMPACT_THREAD : do not compact the threads
  **/
-int
-hpcrun_threadMgr_compact_thread()
-{
+int hpcrun_threadMgr_compact_thread() {
   static int compact_thread = -1;
 
   if (compact_thread >= 0) {
     return compact_thread;
   }
 
-  char *env_option = getenv(HPCRUN_OPTION_MERGE_THREAD);
+  char* env_option = getenv(HPCRUN_OPTION_MERGE_THREAD);
   if (env_option) {
     compact_thread = atoi(env_option);
     EMSG("hpcrun compact thread: %d", compact_thread);
@@ -261,7 +205,6 @@ hpcrun_threadMgr_compact_thread()
   }
   return compact_thread;
 }
-
 
 /***
  * get pointer of thread local data
@@ -276,9 +219,8 @@ hpcrun_threadMgr_compact_thread()
  *
  *   Side effect: Overwrites pthread_specific data
  *****/
-bool
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread)
-{
+bool hpcrun_threadMgr_data_get(
+    int id, cct_ctxt_t* thr_ctxt, thread_data_t** data, bool has_trace, bool demand_new_thread) {
   // -----------------------------------------------------------------
   // if we don't want coalesce threads, just allocate it and return
   // -----------------------------------------------------------------
@@ -293,12 +235,11 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bo
   //  we need to allocate a new one.
   // -----------------------------------------------------------------
 
-  thread_list_t *item = grab_thread_data();
+  thread_list_t* item = grab_thread_data();
   *data = item ? item->thread_data : NULL;
   bool need_to_allocate = (*data == NULL);
 
   if (need_to_allocate) {
-
     adjust_num_logical_threads(1);
     *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
   }
@@ -310,21 +251,17 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bo
   return need_to_allocate;
 }
 
-void
-hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace)
-{
-    adjust_num_logical_threads(1);
-    *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
+void hpcrun_threadMgr_non_compact_data_get(
+    int id, cct_ctxt_t* thr_ctxt, thread_data_t** data, bool has_trace) {
+  adjust_num_logical_threads(1);
+  *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
 
 #if HPCRUN_THREADS_DEBUG
-    atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);
+  atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);
 #endif
 }
 
-void
-hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separator)
-{
-
+void hpcrun_threadMgr_data_put(epoch_t* epoch, thread_data_t* data, bool add_separator) {
   // ---------------------------------------------------------------------
   // case 1: non-compact threads:
   //  if it's in non-compact thread, we write the profile data,
@@ -332,9 +269,8 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separat
   // ---------------------------------------------------------------------
 
   if (hpcrun_threadMgr_compact_thread() == OPTION_NO_COMPACT_THREAD) {
-
-    hpcrun_write_profile_data( &data->core_profile_trace_data );
-    hpcrun_trace_close( &data->core_profile_trace_data );
+    hpcrun_write_profile_data(&data->core_profile_trace_data);
+    hpcrun_trace_close(&data->core_profile_trace_data);
 
     return;
   }
@@ -349,10 +285,9 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separat
   // step 1: get the dummy node that marks the end of the thread trace
 
   if (add_separator) {
-    cct_node_t *node  = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
+    cct_node_t* node = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
     if (node) {
-      hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 
-			  HPCTRACE_FMT_DLCA_NULL, 0);
+      hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, HPCTRACE_FMT_DLCA_NULL, 0);
     }
   }
 
@@ -361,8 +296,8 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separat
   // Temporary solution
   spinlock_lock(&threaddata_lock);
 
-  thread_list_t *list_item = (thread_list_t *) hpcrun_malloc(sizeof(thread_list_t));
-  list_item->thread_data   = data;
+  thread_list_t* list_item = (thread_list_t*)hpcrun_malloc(sizeof(thread_list_t));
+  list_item->thread_data = data;
   SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
 
   spinlock_unlock(&threaddata_lock);
@@ -370,13 +305,10 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separat
   TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }
 
-
-void
-hpcrun_threadMgr_data_fini(thread_data_t *td)
-{
-  int num_cores   = get_nprocs();
+void hpcrun_threadMgr_data_fini(thread_data_t* td) {
+  int num_cores = get_nprocs();
   int num_log_thr = get_num_logical_threads();
-  int max_iter    = num_cores < num_log_thr ? num_cores : num_log_thr;
+  int max_iter = num_cores < num_log_thr ? num_cores : num_log_thr;
   int num_threads = 0;
 
   // -----------------------------------------------------------------
@@ -399,14 +331,13 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-  for (int i=0; !SLIST_EMPTY(&list_thread_head) && i < max_iter; i++)
-  {
-    thread_list_t * item = grab_thread_data();
+  for (int i = 0; !SLIST_EMPTY(&list_thread_head) && i < max_iter; i++) {
+    thread_list_t* item = grab_thread_data();
 
-    int rc = pthread_create( &threads[i], &attr, finalize_all_thread_data,
-                             (void*) item);
+    int rc = pthread_create(&threads[i], &attr, finalize_all_thread_data, (void*)item);
     if (rc) {
-      EMSG("Error cannot create thread %d with return code: %d",
+      EMSG(
+          "Error cannot create thread %d with return code: %d",
           (item ? item->thread_data->core_profile_trace_data.id : -1), rc);
       break;
     }
@@ -418,9 +349,9 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
   // -----------------------------------------------------------------
 
   pthread_attr_destroy(&attr);
-  void *status;
+  void* status;
 
-  for(int i=0; i<num_threads; i++) {
+  for (int i = 0; i < num_threads; i++) {
     int rc = pthread_join(threads[i], &status);
     if (rc) {
       EMSG("Error: return code from pthread_join: %d for thread #%d", rc, i);
@@ -440,7 +371,6 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
   // -----------------------------------------------------------------
 
   if (td && td->core_profile_trace_data.id == 0) {
-
     finalize_thread_data(&td->core_profile_trace_data);
 
     TMSG(PROCESS, "%d: write thread data, finally", td->core_profile_trace_data.id);
@@ -450,5 +380,3 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
   EMSG("Total threads: %d, logical threads: %d", tot_threads, num_threads);
 #endif
 }
-
-

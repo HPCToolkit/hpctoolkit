@@ -47,16 +47,8 @@
 #ifndef unwind_cfg_h
 #define unwind_cfg_h
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-//*************************** Forward Declarations **************************
-
 #define HPC_UNW_LITE 0
 #define HPC_UNW_MSG  1
-
-//***************************************************************************
 
 // HPC_UNW_LITE: When this is set, we assume unwinding must work in a
 // very restricted environment such as a SEGV handler.  Performance is
@@ -77,19 +69,15 @@
 // - We cannot use the fnbounds server
 //
 // - We cannot rely on a SEGV handler to correct unwinding mistakes
-// 
+//
 // - We may wish to avoid the 'pmsg' message printing library
 
-
 #if (HPC_UNW_LITE)
-#  define HPC_IF_UNW_LITE(x)   x
-#  define HPC_IFNO_UNW_LITE(x) /* remove */
+#define HPC_IF_UNW_LITE(x)   x
+#define HPC_IFNO_UNW_LITE(x) /* remove */
 #else
-#  define HPC_IF_UNW_LITE(x)   /* remove */
-#  define HPC_IFNO_UNW_LITE(x) x
+#define HPC_IF_UNW_LITE(x)   /* remove */
+#define HPC_IFNO_UNW_LITE(x) x
 #endif
 
-
-//***************************************************************************
-
-#endif // unwind_cfg_h
+#endif  // unwind_cfg_h

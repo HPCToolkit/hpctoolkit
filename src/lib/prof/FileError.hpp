@@ -54,23 +54,10 @@
 //
 // Description:
 //   Handle error reporting for hpcprof and hpcprof-mpi
-//   
+//
 //
 //***************************************************************************
 
-//***************************************************************************
-// global includes
-//***************************************************************************
 #include <string>
 
-
-
-//***************************************************************************
-// interface operations
-//***************************************************************************
-void
-hpcrun_getFileErrorString
-(
-  const std::string &fnm, 
-  std::string &errorString
-);
+void hpcrun_getFileErrorString(const std::string& fnm, std::string& errorString);

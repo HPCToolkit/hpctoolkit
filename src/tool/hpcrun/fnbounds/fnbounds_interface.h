@@ -44,41 +44,26 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//*********************************************************************
-// local includes
-//*********************************************************************
-
 #include <loadmap.h>
 
-//*********************************************************************
-
-int
-fnbounds_init(const char *executable_name);
+int fnbounds_init(const char* executable_name);
 
 // fnbounds_enclosing_addr(): Given an instruction pointer (IP) 'ip',
 // return the bounds [start, end) of the function that contains 'ip'.
 // Also return the load module that contains 'ip' to make
 // normalization easy.  All IPs are *unnormalized.*
-bool
-fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm);
+bool fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm);
 
 load_module_t*
-fnbounds_map_dso(const char *module_name, void *start, void *end, struct dl_phdr_info*);
+fnbounds_map_dso(const char* module_name, void* start, void* end, struct dl_phdr_info*);
 
-void
-fnbounds_fini();
+void fnbounds_fini();
 
-void
-fnbounds_release_lock(void);
-
+void fnbounds_release_lock(void);
 
 // fnbounds_table_lookup(): Given an instruction pointer (IP) 'ip',
 // return the bounds [start, end) of the function that contains 'ip'.
 // All IPs are *normalized.*
-int
-fnbounds_table_lookup(void **table, int length, void *ip,
-		      void **start, void **end);
-
+int fnbounds_table_lookup(void** table, int length, void* ip, void** start, void** end);
 
 #include "fnbounds_table_interface.h"

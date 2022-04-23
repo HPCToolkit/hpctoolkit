@@ -70,9 +70,14 @@
 //
 //***************************************************************************
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include "server.h"
+
+#include "code-ranges.h"
+#include "fnbounds.h"
+#include "function-entries.h"
+#include "process-ranges.h"
+#include "syserv-mesg.h"
+
 #include <err.h>
 #include <errno.h>
 #include <setjmp.h>
@@ -81,45 +86,38 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-#include "fnbounds.h"
-#include "code-ranges.h"
-#include "function-entries.h"
-#include "process-ranges.h"
+#define ADDR_SIZE       (256 * 1024)
+#define INIT_INBUF_SIZE 2000
 
-#include "server.h"
-#include "syserv-mesg.h"
-
-#define ADDR_SIZE   (256 * 1024)
-#define INIT_INBUF_SIZE    2000
-
-#define SUCCESS   0
-#define FAILURE  -1
-#define END_OF_FILE  -2
+#define SUCCESS     0
+#define FAILURE     -1
+#define END_OF_FILE -2
 
 static int fdin;
 static int fdout;
 
-static uint64_t  addr_buf[ADDR_SIZE];
-static long  num_addrs;
-static long  total_num_addrs;
+static uint64_t addr_buf[ADDR_SIZE];
+static long num_addrs;
+static long total_num_addrs;
 
-static char *inbuf;
-static long  inbuf_size;
+static char* inbuf;
+static long inbuf_size;
 
 static struct syserv_fnbounds_info fnb_info;
 
 static int jmpbuf_ok = 0;
 static sigjmp_buf jmpbuf;
 
-// 
+//
 // Although init_server only returns 0 for now (errors don't interrupt)
 // we could return 1 in case of a problem
 //
-uint64_t 
-init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
-{
+uint64_t init_server(DiscoverFnTy fn_discovery, int fd1, int fd2) {
   struct syserv_mesg mesg;
 
   fdin = fd1;
@@ -129,7 +127,7 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   // fprintf(stderr, "FNB2: Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
 
   inbuf_size = INIT_INBUF_SIZE;
-  inbuf = (char *) malloc(inbuf_size);
+  inbuf = (char*)malloc(inbuf_size);
   if (inbuf == NULL) {
     err(1, "malloc for inbuf failed");
   }
@@ -171,23 +169,16 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   // if we've finished, return
   //
   return 0;
-//   exit(0);
+  //   exit(0);
 }
 
-
-//*****************************************************************
-// fnbounds server
-//*****************************************************************
-
-void
-do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
-{
-  char *ret;
+void do_query(DiscoverFnTy fn_discovery, struct syserv_mesg* mesg) {
+  char* ret;
   int ret2;
   // Make sure the buffer is big enough to hold the name string
   if (mesg->len > inbuf_size) {
     inbuf_size += mesg->len;
-    inbuf = (char *) realloc(inbuf, inbuf_size);
+    inbuf = (char*)realloc(inbuf, inbuf_size);
     if (inbuf == NULL) {
       err(1, "realloc for inbuf failed");
     }
@@ -200,11 +191,11 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
   }
 
   if (verbose) {
-    fprintf(stderr, "FNB2: begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
+    fprintf(stderr, "FNB2: begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf);
   }
   ret = get_funclist(inbuf);
-  if ( ret != NULL) {
-    fprintf(stderr, "\nFNB2: Server failure processing %s: %s\n", inbuf, ret );
+  if (ret != NULL) {
+    fprintf(stderr, "\nFNB2: Server failure processing %s: %s\n", inbuf, ret);
 
     // send the error message to the server
     int rets = write_mesg(SYSERV_ERR, 0);
@@ -215,53 +206,49 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
   return;
 }
 
-
-
 // Send the list of functions to the client
-void
-send_funcs ()
-{
+void send_funcs() {
   int ret;
   int i;
 
   // count the number of unique addresses to send
   int np = 0;
-  uint64_t lastaddr = (uint64_t) -1;
-  for (i=0; i<nfunc; i ++) {
-    if (farray[i].fadd != lastaddr ){
-      np ++;
+  uint64_t lastaddr = (uint64_t)-1;
+  for (i = 0; i < nfunc; i++) {
+    if (farray[i].fadd != lastaddr) {
+      np++;
       lastaddr = farray[i].fadd;
     }
   }
   if (verbose) {
-    fprintf(stderr, "FNB2: %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
+    fprintf(stderr, "FNB2: %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf);
   }
 
   // send the OK mesg with the count of addresses
-  ret = write_mesg(SYSERV_OK, np+1);
+  ret = write_mesg(SYSERV_OK, np + 1);
   if (ret != SUCCESS) {
     errx(1, "Server write to fdout failed");
   }
 
   // Now go through the list, and add each unique address
   // see if buffer needs to be flushed
-  lastaddr = (uint64_t) -1;
+  lastaddr = (uint64_t)-1;
   num_addrs = 0;
 
-  for (i=0; i<nfunc; i ++) {
-    if (farray[i].fadd == lastaddr ){
+  for (i = 0; i < nfunc; i++) {
+    if (farray[i].fadd == lastaddr) {
       continue;
     }
     lastaddr = farray[i].fadd;
     if (num_addrs >= ADDR_SIZE) {
-      ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
+      ret = write_all(fdout, addr_buf, num_addrs * sizeof(void*));
       if (ret != SUCCESS) {
         errx(1, "Server write_all to fdout failed");
 #if DEBUG
       } else {
         if (verbose) {
-          fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void *) );
-	}
+          fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void*));
+        }
 #endif
       }
       num_addrs = 0;
@@ -273,13 +260,13 @@ send_funcs ()
   }
   // we've done the full list, check for buffer filled by the last entry
   if (num_addrs >= ADDR_SIZE) {
-    ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
+    ret = write_all(fdout, addr_buf, num_addrs * sizeof(void*));
     if (ret != SUCCESS) {
       errx(1, "Server write_all to fdout failed");
 #if DEBUG
     } else {
       if (verbose) {
-        fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void *) );
+        fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void*));
       }
 #endif
     }
@@ -287,17 +274,17 @@ send_funcs ()
   }
 
   // add a zero at the end
-  addr_buf[num_addrs] = (uint64_t) 0;
-  num_addrs ++;
+  addr_buf[num_addrs] = (uint64_t)0;
+  num_addrs++;
 
   // flush the buffer
-  ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
+  ret = write_all(fdout, addr_buf, num_addrs * sizeof(void*));
   if (ret != SUCCESS) {
     errx(1, "Server flush write_all to fdout failed");
 #if DEBUG
   } else {
     if (verbose) {
-      fprintf(stderr, "FNB2: Server flush write_all %ld bytes\n", num_addrs * sizeof(void *) );
+      fprintf(stderr, "FNB2: Server flush write_all %ld bytes\n", num_addrs * sizeof(void*));
     }
 #endif
   }
@@ -321,28 +308,22 @@ send_funcs ()
   } else {
 #if DEBUG
     if (verbose) {
-      fprintf(stderr, "FNB2: Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
+      fprintf(stderr, "FNB2: Server fnb_info write_all %ld bytes\n", sizeof(fnb_info));
     }
 #endif
   }
 }
 
-//*****************************************************************
-// I/O helper functions
-//*****************************************************************
-
 // Automatically restart short reads over a pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-int
-read_all(int fd, void *buf, size_t count)
-{
+int read_all(int fd, void* buf, size_t count) {
   ssize_t ret;
   size_t len;
 
   len = 0;
   while (len < count) {
-    ret = read(fd, ((char *) buf) + len, count - len);
+    ret = read(fd, ((char*)buf) + len, count - len);
     if (ret < 0 && errno != EINTR) {
       return FAILURE;
     }
@@ -357,19 +338,16 @@ read_all(int fd, void *buf, size_t count)
   return SUCCESS;
 }
 
-
 // Automatically restart short writes over a pipe.
 // Returns: SUCCESS or FAILURE.
 //
-int
-write_all(int fd, const void *buf, size_t count)
-{
+int write_all(int fd, const void* buf, size_t count) {
   ssize_t ret;
   size_t len;
 
   len = 0;
   while (len < count) {
-    ret = write(fd, ((const char *) buf) + len, count - len);
+    ret = write(fd, ((const char*)buf) + len, count - len);
     if (ret < 0 && errno != EINTR) {
       return FAILURE;
     }
@@ -381,13 +359,10 @@ write_all(int fd, const void *buf, size_t count)
   return SUCCESS;
 }
 
-
 // Read a single syserv mesg from incoming pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-int
-read_mesg(struct syserv_mesg *mesg)
-{
+int read_mesg(struct syserv_mesg* mesg) {
   int ret;
 
   memset(mesg, 0, sizeof(*mesg));
@@ -397,21 +372,17 @@ read_mesg(struct syserv_mesg *mesg)
   }
 #if DEBUG
   if (verbose) {
-	fprintf(stderr, "FNB2: Server read  message, type = %d, len = %ld\n",
-	    mesg->type, mesg->len);
+    fprintf(stderr, "FNB2: Server read  message, type = %d, len = %ld\n", mesg->type, mesg->len);
   }
 #endif
 
   return ret;
 }
 
-
 // Write a single syserv mesg to outgoing pipe.
 // Returns: SUCCESS or FAILURE.
 //
-int
-write_mesg(int32_t type, int64_t len)
-{
+int write_mesg(int32_t type, int64_t len) {
   struct syserv_mesg mesg;
 
   mesg.magic = SYSERV_MAGIC;
@@ -420,21 +391,13 @@ write_mesg(int32_t type, int64_t len)
 
 #if DEBUG
   if (verbose) {
-	fprintf(stderr, "FNB2: Server write  message, type = %d, len = %ld\n",
-	    type, len);
+    fprintf(stderr, "FNB2: Server write  message, type = %d, len = %ld\n", type, len);
   }
 #endif
   return write_all(fdout, &mesg, sizeof(mesg));
 }
 
-
-//*****************************************************************
-// signal handlers
-//*****************************************************************
-
-void
-signal_handler(int sig)
-{
+void signal_handler(int sig) {
   // SIGPIPE means that hpcrun has exited, probably prematurely.
   if (sig == SIGPIPE) {
     errx(0, "hpcrun has prematurely exited");
@@ -447,11 +410,8 @@ signal_handler(int sig)
   errx(1, "got signal outside sigsetjmp: %d", sig);
 }
 
-
 // Catch segfaults, abort and SIGPIPE.
-void
-signal_handler_init(void)
-{
+void signal_handler_init(void) {
   struct sigaction act;
 
   act.sa_handler = signal_handler;
@@ -473,4 +433,3 @@ signal_handler_init(void)
     err(1, "sigaction failed on SIGPIPE");
   }
 }
-

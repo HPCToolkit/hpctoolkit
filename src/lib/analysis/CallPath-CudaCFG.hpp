@@ -57,47 +57,35 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_CallPath_CallPath_CudaCFG_hpp 
+#ifndef Analysis_CallPath_CallPath_CudaCFG_hpp
 #define Analysis_CallPath_CallPath_CudaCFG_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/binutils/LM.hpp"
+#include "lib/prof/CallPath-Profile.hpp"
+#include "lib/prof/Struct-Tree.hpp"
 
 #include <iostream>
-#include <vector>
 #include <stack>
 #include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/binutils/LM.hpp>
-
-#include <lib/prof/CallPath-Profile.hpp>
-#include <lib/prof/Struct-Tree.hpp>
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
+#include <vector>
 
 namespace Analysis {
 
 namespace CallPath {
 
-void
-transformCudaCFGMain(Prof::CallPath::Profile &prof);
-
+void transformCudaCFGMain(Prof::CallPath::Profile& prof);
 
 // Directed edge
 struct CCTEdge {
-  Prof::CCT::ANode *from;
-  Prof::CCT::ANode *to;
+  Prof::CCT::ANode* from;
+  Prof::CCT::ANode* to;
 
-  CCTEdge(Prof::CCT::ANode *from, Prof::CCT::ANode *to) : from(from), to(to) {}
+  CCTEdge(Prof::CCT::ANode* from, Prof::CCT::ANode* to) : from(from), to(to) {}
 
-  bool operator < (const CCTEdge &other) const {
+  bool operator<(const CCTEdge& other) const {
     if (this->from < other.from) {
-      return true; 
+      return true;
     } else if ((this->from == other.from) && (this->to < other.to)) {
       return true;
     }
@@ -105,63 +93,50 @@ struct CCTEdge {
   }
 };
 
-
 class CCTGraph {
- public:
-  typedef std::map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > NeighborNodeMap;
+public:
+  typedef std::map<Prof::CCT::ANode*, std::vector<Prof::CCT::ANode*>> NeighborNodeMap;
 
- public:
+public:
   CCTGraph() {}
 
-  std::set<CCTEdge>::iterator edgeBegin() {
-    return _edges.begin();
-  }
+  std::set<CCTEdge>::iterator edgeBegin() { return _edges.begin(); }
 
-  std::set<CCTEdge>::iterator edgeEnd() {
-    return _edges.end();
-  }
+  std::set<CCTEdge>::iterator edgeEnd() { return _edges.end(); }
 
-  std::set<Prof::CCT::ANode *>::iterator nodeBegin() {
-    return _nodes.begin();
-  }
+  std::set<Prof::CCT::ANode*>::iterator nodeBegin() { return _nodes.begin(); }
 
-  std::set<Prof::CCT::ANode *>::iterator nodeEnd() {
-    return _nodes.end();
-  }
+  std::set<Prof::CCT::ANode*>::iterator nodeEnd() { return _nodes.end(); }
 
-  NeighborNodeMap::iterator incoming_nodes(Prof::CCT::ANode *node) {
+  NeighborNodeMap::iterator incoming_nodes(Prof::CCT::ANode* node) {
     return _incoming_nodes.find(node);
   }
 
-  NeighborNodeMap::iterator incoming_nodes_end() {
-    return _incoming_nodes.end();
-  }
+  NeighborNodeMap::iterator incoming_nodes_end() { return _incoming_nodes.end(); }
 
-  size_t outgoing_nodes_size(Prof::CCT::ANode *node) {
-    auto iter = _outgoing_nodes.find(node); 
+  size_t outgoing_nodes_size(Prof::CCT::ANode* node) {
+    auto iter = _outgoing_nodes.find(node);
     if (iter == _outgoing_nodes.end()) {
       return 0;
     }
     return _outgoing_nodes[node].size();
   }
 
-  size_t incoming_nodes_size(Prof::CCT::ANode *node) {
-    auto iter = _incoming_nodes.find(node); 
+  size_t incoming_nodes_size(Prof::CCT::ANode* node) {
+    auto iter = _incoming_nodes.find(node);
     if (iter == _incoming_nodes.end()) {
       return 0;
     }
     return _incoming_nodes[node].size();
   }
 
-  NeighborNodeMap::iterator outgoing_nodes(Prof::CCT::ANode *node) {
+  NeighborNodeMap::iterator outgoing_nodes(Prof::CCT::ANode* node) {
     return _outgoing_nodes.find(node);
   }
-  
-  NeighborNodeMap::iterator outgoing_nodes_end() {
-    return _outgoing_nodes.end();
-  }
- 
-  void addEdge(Prof::CCT::ANode *from, Prof::CCT::ANode *to) {
+
+  NeighborNodeMap::iterator outgoing_nodes_end() { return _outgoing_nodes.end(); }
+
+  void addEdge(Prof::CCT::ANode* from, Prof::CCT::ANode* to) {
     if (_nodes.find(from) == _nodes.end()) {
       _nodes.insert(from);
     }
@@ -178,25 +153,21 @@ class CCTGraph {
     }
   }
 
-  void addNode(Prof::CCT::ANode *node) {
+  void addNode(Prof::CCT::ANode* node) {
     if (_nodes.find(node) != _nodes.end()) {
       _nodes.insert(node);
     }
   }
 
-  size_t size() {
-    return _nodes.size();
-  }  
+  size_t size() { return _nodes.size(); }
 
- private:
+private:
   NeighborNodeMap _incoming_nodes;
   NeighborNodeMap _outgoing_nodes;
   std::set<CCTEdge> _edges;
-  std::set<Prof::CCT::ANode *> _nodes;
+  std::set<Prof::CCT::ANode*> _nodes;
 };
-
-}  // CallPath
-
-}  // Analysis
+}  // namespace CallPath
+}  // namespace Analysis
 
 #endif  // Analysis_CallPath_CallPath_CudaCFG_hpp

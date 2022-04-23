@@ -85,46 +85,41 @@
  * blind to the other cores.
  */
 
-#include <sys/types.h>
 #include <signal.h>
+#include <spi/kernel_interface.h>
+#include <spi/UPC.h>
+#include <spi/UPC_Events.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <spi/UPC.h>
-#include <spi/UPC_Events.h>
-#include <spi/kernel_interface.h>
+#include <sys/types.h>
 #undef INIT
 
-#include <monitor.h>
-
-#include "simple_oo.h"
-#include "sample_source_obj.h"
 #include "common.h"
+#include "sample_source_obj.h"
+#include "simple_oo.h"
 #include "ss-errno.h"
- 
-#include <hpcrun/main.h>
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/metrics.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/thread_data.h>
+
+#include "hpcrun/hpcrun_options.h"
+#include "hpcrun/hpcrun_stats.h"
+#include "hpcrun/main.h"
+#include "hpcrun/metrics.h"
+#include "hpcrun/safe-sampling.h"
+#include "hpcrun/sample_event.h"
+#include "hpcrun/sample_sources_registered.h"
+#include "hpcrun/thread_data.h"
+
+#include "lib/prof-lean/hpcrun-fmt.h"
+
+#include <lush/lush-backtrace.h>
+#include <messages/messages.h>
+#include <monitor.h>
 #include <utilities/tokenize.h>
 
-#include <messages/messages.h>
-#include <lush/lush-backtrace.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-
-/******************************************************************************
- * local variables
- *****************************************************************************/
-
 // FIXME: there is no good way for sighandler to find self.
-static sample_source_t *myself = NULL;
+static sample_source_t* myself = NULL;
 
-#define DEFAULT_THRESHOLD  1000000L
+#define DEFAULT_THRESHOLD 1000000L
 
 //----------------------------------------------------------------------
 // Helper functions
@@ -137,16 +132,13 @@ static sample_source_t *myself = NULL;
  *
  * Returns: BGP event code, or -1 on failure.
  */
-#define EVENT_NAME_SIZE  (BGP_UPC_MAXIMUM_LENGTH_EVENT_NAME + 50)
-static int
-bgp_event_name_to_code(const char *name)
-{
+#define EVENT_NAME_SIZE (BGP_UPC_MAXIMUM_LENGTH_EVENT_NAME + 50)
+static int bgp_event_name_to_code(const char* name) {
   char buf[EVENT_NAME_SIZE];
   int ev;
 
   for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
-    if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, buf) >= 0
-	&& strcmp(name, buf) == 0) {
+    if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, buf) >= 0 && strcmp(name, buf) == 0) {
       return ev;
     }
   }
@@ -161,10 +153,8 @@ bgp_event_name_to_code(const char *name)
  *    name                      description
  *    BGP_PU0_JPIPE_ADD_SUB     P0 CPU:  Add/Sub in J-pipe
  */
-static char *
-trim_event_desc(char *desc)
-{
-  char *new;
+static char* trim_event_desc(char* desc) {
+  char* new;
 
   new = strchr(desc, ':');
   if (new == NULL) {
@@ -180,21 +170,17 @@ trim_event_desc(char *desc)
 // Method functions and signal handler
 //----------------------------------------------------------------------
 
-static int
-hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
-{
+static int hpcrun_upc_handler(int sig, siginfo_t* info, void* context) {
   HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
 
   int64_t counter, threshold;
   int ev, k;
 
-  
-
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample()) {
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
-    return 0; // tell monitor that the signal has been handled
+    return 0;  // tell monitor that the signal has been handled
   }
 
   BGP_UPC_Stop();
@@ -203,7 +189,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
   // and return and avoid any MSG.
   // FIXME: NULL is bogus here and should be the program counter.
   int safe = hpcrun_safe_enter_async(NULL);
-  if (! safe) {
+  if (!safe) {
     hpcrun_stats_num_samples_blocked_async_inc();
   }
 
@@ -213,15 +199,14 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     threshold = myself->evl.events[k].thresh;
     if (counter >= threshold) {
       if (safe) {
-	hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
-			       1, 0, 0, NULL);
+        hpcrun_sample_callpath(context, myself->evl.events[k].metric_id, 1, 0, 0, NULL);
       }
       BGP_UPC_Set_Counter_Value(ev, 0);
       BGP_UPC_Set_Counter_Threshold_Value(ev, threshold);
     }
   }
 
-  if (! hpcrun_is_sampling_disabled()) {
+  if (!hpcrun_is_sampling_disabled()) {
     BGP_UPC_Start(0);
   }
 
@@ -231,14 +216,12 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 
   HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
-  return 0; // tell monitor that the signal has been handled
+  return 0;  // tell monitor that the signal has been handled
 }
 
 // Note: Must run BGP_UPC_Initialize() in every process,
 // and set every node to Mode 0 (to count on cores 0 and 1).
-static void
-METHOD_FN(init)
-{
+static void METHOD_FN(init) {
   BGP_UPC_Initialize();
   if (Kernel_PhysicalProcessorID() == 0) {
     BGP_UPC_Initialize_Counter_Config(BGP_UPC_MODE_0, BGP_UPC_CFG_EDGE_DEFAULT);
@@ -247,20 +230,11 @@ METHOD_FN(init)
   TMSG(UPC, "BGP_UPC_Initialize");
 }
 
-static void
-METHOD_FN(thread_init)
-{
-}
+static void METHOD_FN(thread_init) {}
 
-static void
-METHOD_FN(thread_init_action)
-{
-}
+static void METHOD_FN(thread_init_action) {}
 
-
-static bool
-METHOD_FN(supports_event, const char *ev_str)
-{
+static bool METHOD_FN(supports_event, const char* ev_str) {
   char buf[EVENT_NAME_SIZE];
   long threshold;
 
@@ -272,10 +246,8 @@ METHOD_FN(supports_event, const char *ev_str)
   return bgp_event_name_to_code(buf) != -1;
 }
 
-static void
-METHOD_FN(process_event_list, int lush_metrics)
-{
-  char *event;
+static void METHOD_FN(process_event_list, int lush_metrics) {
+  char* event;
   char name[EVENT_NAME_SIZE];
   long threshold;
   int k, code, metric_id, nevents;
@@ -284,8 +256,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_extract_ev_thresh(event, EVENT_NAME_SIZE, name, &threshold, DEFAULT_THRESHOLD);
     code = bgp_event_name_to_code(name);
     if (code < 0) {
-      EMSG("unexpected failure in UPC process_event_list(): "
-	   "unable to find code for event %s", event);
+      EMSG(
+          "unexpected failure in UPC process_event_list(): "
+          "unable to find code for event %s",
+          event);
       hpcrun_ssfail_unsupported("UPC", event);
     }
     METHOD_CALL(self, store_event, code, threshold);
@@ -294,27 +268,22 @@ METHOD_FN(process_event_list, int lush_metrics)
   nevents = self->evl.nevents;
   hpcrun_pre_allocate_metrics(nevents);
 
-  kind_info_t *upc_kind = hpcrun_metrics_new_kind();
+  kind_info_t* upc_kind = hpcrun_metrics_new_kind();
 
   for (k = 0; k < nevents; k++) {
     code = self->evl.events[k].event;
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
-    metric_id = 
-      hpcrun_set_new_metric_info_and_period(upc_kind, strdup(name),
-        MetricFlags_ValFmt_Int, threshold, metric_property_none);
+    metric_id = hpcrun_set_new_metric_info_and_period(
+        upc_kind, strdup(name), MetricFlags_ValFmt_Int, threshold, metric_property_none);
     self->evl.events[k].metric_id = metric_id;
-    TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
-	 name, code, threshold, metric_id);
+    TMSG(UPC, "add event %s(%d), threshold %ld, metric %d", name, code, threshold, metric_id);
   }
 
   hpcrun_close_kind(upc_kind);
 }
 
-static void
-METHOD_FN(finalize_event_list)
-{
-}
+static void METHOD_FN(finalize_event_list) {}
 
 /*
  * On BG/P, all UPC interrupts go to core 0, so we sample core 0 and
@@ -322,15 +291,13 @@ METHOD_FN(finalize_event_list)
  * node, but leave in the soft failure in case something unexpected
  * happens.
  */
-static void
-METHOD_FN(gen_event_set, int lush_metrics)
-{
+static void METHOD_FN(gen_event_set, int lush_metrics) {
   char name[EVENT_NAME_SIZE];
   int k, ev, ret;
 
   if (Kernel_PhysicalProcessorID() != 0) {
     EMSG("Warning: unable to sample in this process/thread "
-	 "due to BlueGene hardware limitations (not core 0).");
+         "due to BlueGene hardware limitations (not core 0).");
     return;
   }
 
@@ -341,17 +308,16 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ret = BGP_UPC_Set_Counter_Value(ev, 0);
     if (ret < 0) {
       EMSG("Warning: unable to sample on this node "
-	   "due to BlueGene hardware limitations.");
+           "due to BlueGene hardware limitations.");
       return;
     }
     ret = BGP_UPC_Set_Counter_Threshold_Value(ev, self->evl.events[k].thresh);
     if (ret < 0) {
       EMSG("Warning: unable to sample on this node "
-	   "due to BlueGene hardware limitations.");
+           "due to BlueGene hardware limitations.");
       return;
     }
-    TMSG(UPC, "monitor event %s(%d), threshold %ld",
-	 name, ev, self->evl.events[k].thresh);
+    TMSG(UPC, "monitor event %s(%d), threshold %ld", name, ev, self->evl.events[k].thresh);
   }
 
   myself = self;
@@ -363,9 +329,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   TMSG(UPC, "installed signal handler for SIGXCPU");
 }
 
-static void
-METHOD_FN(start)
-{
+static void METHOD_FN(start) {
   if (Kernel_PhysicalProcessorID() != 0)
     return;
 
@@ -376,14 +340,9 @@ METHOD_FN(start)
   TMSG(UPC, "BGP_UPC_Start on core 0");
 }
 
-static void
-METHOD_FN(thread_fini_action)
-{
-}
+static void METHOD_FN(thread_fini_action) {}
 
-static void
-METHOD_FN(stop)
-{
+static void METHOD_FN(stop) {
   if (Kernel_PhysicalProcessorID() != 0)
     return;
 
@@ -392,9 +351,7 @@ METHOD_FN(stop)
   TMSG(UPC, "BGP_UPC_Stop on core 0");
 }
 
-static void
-METHOD_FN(shutdown)
-{
+static void METHOD_FN(shutdown) {
   if (Kernel_PhysicalProcessorID() != 0)
     return;
 
@@ -403,9 +360,7 @@ METHOD_FN(shutdown)
   TMSG(UPC, "shutdown on core 0");
 }
 
-static void
-METHOD_FN(display_events)
-{
+static void METHOD_FN(display_events) {
   char name[EVENT_NAME_SIZE];
   char desc[2048];
   int ev, num_total;
@@ -419,8 +374,7 @@ METHOD_FN(display_events)
   num_total = 0;
   for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
     if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, name) >= 0
-	&& BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
-	&& strstr(name, "PU0") != NULL) {
+        && BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0 && strstr(name, "PU0") != NULL) {
       printf("%-35s\t%s\n", name, trim_event_desc(desc));
       num_total++;
     }
@@ -437,8 +391,7 @@ METHOD_FN(display_events)
   num_total = 0;
   for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
     if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, name) >= 0
-	&& BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
-	&& strstr(name, "PU0") == NULL) {
+        && BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0 && strstr(name, "PU0") == NULL) {
       printf("%-35s\t%s\n", name, trim_event_desc(desc));
       num_total++;
     }
@@ -447,8 +400,7 @@ METHOD_FN(display_events)
   printf("\n");
 }
 
-
 #define ss_name upc
-#define ss_cls SS_HARDWARE
+#define ss_cls  SS_HARDWARE
 
 #include "ss_obj.h"

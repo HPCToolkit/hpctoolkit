@@ -1,3 +1,49 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2022, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 //==============================================================
 // Copyright © 2019 Intel Corporation
 //
@@ -7,10 +53,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,18 +69,17 @@
 #ifndef PTI_SAMPLES_UTILS_DWARF_PARSER_H_
 #define PTI_SAMPLES_UTILS_DWARF_PARSER_H_
 
+#include "dwarf_state_machine.h"
+
 #include <assert.h>
 #include <string.h>
-
 #include <string>
 #include <vector>
 
-#include "dwarf_state_machine.h"
-
-using LineInfo = std::vector< std::pair<uint32_t, uint32_t> >;
+using LineInfo = std::vector<std::pair<uint32_t, uint32_t>>;
 
 class DwarfParser {
- public:
+public:
   DwarfParser(const uint8_t* data, uint32_t size) : data_(data), size_(size) {}
 
   bool IsValid() const {
@@ -42,8 +87,7 @@ class DwarfParser {
       return false;
     }
 
-    const Dwarf32Header* header =
-      reinterpret_cast<const Dwarf32Header*>(data_);
+    const Dwarf32Header* header = reinterpret_cast<const Dwarf32Header*>(data_);
     if (header->version != DWARF_VERSION) {
       return false;
     }
@@ -62,7 +106,7 @@ class DwarfParser {
 
   LineInfo GetLineInfo(uint32_t file_id) const {
     assert(file_id > 0);
-    
+
     if (!IsValid()) {
       return LineInfo();
     }
@@ -70,19 +114,19 @@ class DwarfParser {
     const uint8_t* ptr = ProcessHeader(nullptr);
     assert(ptr < data_ + size_);
     const uint8_t* line_number_program = ptr;
-    uint32_t line_number_program_size =
-      static_cast<uint32_t>(data_ + size_ - line_number_program);
-    DwarfLineInfo line_info =
-      DwarfStateMachine(line_number_program, line_number_program_size,
-                        reinterpret_cast<const Dwarf32Header*>(data_)).Run();
+    uint32_t line_number_program_size = static_cast<uint32_t>(data_ + size_ - line_number_program);
+    DwarfLineInfo line_info = DwarfStateMachine(
+                                  line_number_program, line_number_program_size,
+                                  reinterpret_cast<const Dwarf32Header*>(data_))
+                                  .Run();
     if (line_info.size() == 0) {
-      return LineInfo();    
+      return LineInfo();
     }
 
     return ProcessLineInfo(line_info, file_id);
   }
 
- private:
+private:
   const uint8_t* ProcessHeader(std::vector<std::string>* file_names) const {
     const uint8_t* ptr = data_;
     const Dwarf32Header* header = reinterpret_cast<const Dwarf32Header*>(ptr);
@@ -149,12 +193,12 @@ class DwarfParser {
       line = item.second.second;
       result.push_back(std::make_pair(address, line));
     }
-    
+
     return result;
-}
+  }
 
   const uint8_t* data_;
   uint32_t size_;
 };
 
-#endif // PTI_SAMPLES_UTILS_DWARF_PARSER_H_
+#endif  // PTI_SAMPLES_UTILS_DWARF_PARSER_H_

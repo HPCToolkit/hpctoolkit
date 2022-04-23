@@ -47,17 +47,17 @@
 #ifndef SAMPLE_SOURCE_H
 #define SAMPLE_SOURCE_H
 
-#include <stdbool.h>
-
 #include "simple_oo.h"
+
+#include <stdbool.h>
 
 // OO macros for sample_sources
 
-#define METHOD_DEF(retn,name,...) retn (*name)(struct sample_source_t* self, ##__VA_ARGS__)
+#define METHOD_DEF(retn, name, ...) retn (*name)(struct sample_source_t * self, ##__VA_ARGS__)
 
 // abbreviation macro for common case of void methods
-#define VMETHOD_DEF(name,...) METHOD_DEF(void,name, ##__VA_ARGS__)
-#define METHOD_FN(n,...) n(sample_source_t *self, ##__VA_ARGS__)
+#define VMETHOD_DEF(name, ...) METHOD_DEF(void, name, ##__VA_ARGS__)
+#define METHOD_FN(n, ...)      n(sample_source_t* self, ##__VA_ARGS__)
 
 #include "evlist.h"
 
@@ -65,22 +65,16 @@
 // UNINIT and INIT refer to the source
 //  START and STOP are on a per-thread basis
 
-typedef enum {
-  UNINIT,
-  INIT,
-  START,
-  STOP,
-  HARD_STOP
-} source_state_t;
+typedef enum { UNINIT, INIT, START, STOP, HARD_STOP } source_state_t;
 
 typedef struct {
   void* ptr;
 } source_info_t;
 
 typedef enum {
-  SS_HARDWARE,    // use sample counters or other hardware.
-                  // NOTE: *Currently limited to only 1 hardware class sample source*
-  SS_SOFTWARE     // software-based, e.g. synchronous samples.
+  SS_HARDWARE,  // use sample counters or other hardware.
+                // NOTE: *Currently limited to only 1 hardware class sample source*
+  SS_SOFTWARE   // software-based, e.g. synchronous samples.
 } ss_class_t;
 
 typedef struct sample_source_t {
@@ -108,16 +102,14 @@ typedef struct sample_source_t {
   VMETHOD_DEF(display_events);
 
   // data
-  evlist_t       	  evl;       	 // event list
-  int               sel_idx;     // selection index of sample source
-  const char*    	  name;      	 // text name of sample source
-  source_state_t 	  state;     	 // state of sample source: limited to UNINIT or INIT
-  ss_class_t     	  cls;       	 // kind of sample source: see ss_class_t typedef at top of file
-  int                     sort_order;    // registered list order: low to high
-  struct sample_source_t* next_reg;      // simple linked list of REGISTERED sample source objects
-  struct sample_source_t* next_sel;      // simple linked list of SELECTED   sample source objects
-  
+  evlist_t evl;                      // event list
+  int sel_idx;                       // selection index of sample source
+  const char* name;                  // text name of sample source
+  source_state_t state;              // state of sample source: limited to UNINIT or INIT
+  ss_class_t cls;                    // kind of sample source: see ss_class_t typedef at top of file
+  int sort_order;                    // registered list order: low to high
+  struct sample_source_t* next_reg;  // simple linked list of REGISTERED sample source objects
+  struct sample_source_t* next_sel;  // simple linked list of SELECTED   sample source objects
 } sample_source_t;
 
-
-#endif // SAMPLE_SOURCE_H
+#endif  // SAMPLE_SOURCE_H

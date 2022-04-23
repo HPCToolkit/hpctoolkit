@@ -57,41 +57,27 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-using std::endl;
-using std::hex;
-using std::dec;
-
-#include <string>
-using std::string;
-
-//*************************** User Include Files ****************************
-
 #include "PCProfileMetric.hpp"
 
-//*************************** Forward Declarations ***************************
+#include <iostream>
+#include <string>
 
-//****************************************************************************
-// PCProfileMetric
-//****************************************************************************
+using std::dec;
+using std::endl;
+using std::hex;
+using std::string;
 
 PCProfileMetric::PCProfileMetric(ISA* isa_)
-  : total(0), period (0), txtStart(0), txtSz(0), isa(isa_)
-{ 
-  /* map does not need to be initialized */ 
+    : total(0), period(0), txtStart(0), txtSz(0), isa(isa_) {
+  /* map does not need to be initialized */
   isa->attach();
 }
 
-PCProfileMetric::~PCProfileMetric() 
-{ 
+PCProfileMetric::~PCProfileMetric() {
   isa->detach();
 }
 
-void 
-PCProfileMetric::dump(std::ostream& o)
-{
+void PCProfileMetric::dump(std::ostream& o) {
   o << "'PCProfileMetric' --\n";
   o << "  name: " << name << "\n";
   o << "  textStart (hex): " << hex << txtStart << dec << "\n";
@@ -102,8 +88,10 @@ PCProfileMetric::dump(std::ostream& o)
   PCProfileDatum d = 0;
   unsigned int printed = 0;
   for (PCToPCProfileDatumMapIt it = map.begin(); it != map.end(); ++it) {
-    if (printed != 0) { o << ", "; }
-    pc = (*it).first - txtStart; // actually, the offset
+    if (printed != 0) {
+      o << ", ";
+    }
+    pc = (*it).first - txtStart;  // actually, the offset
     d = (*it).second;
     o << "(" << hex << pc << dec << ", " << d << ")";
     printed++;
@@ -111,9 +99,6 @@ PCProfileMetric::dump(std::ostream& o)
   o << "]" << endl;
 }
 
-void
-PCProfileMetric::ddump()
-{
+void PCProfileMetric::ddump() {
   dump(std::cerr);
 }
-

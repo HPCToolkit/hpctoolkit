@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -63,68 +63,42 @@
 #ifndef support_Logic_hpp
 #define support_Logic_hpp
 
-//************************** System Include Files ****************************
+#include "include/uint.h"
 
-#include <iostream>
 #include <fstream>
-#include <string>
-
 #include <inttypes.h>
-
-//*************************** User Include Files *****************************
-
-#include <include/uint.h>
-
-//************************** Forward Declarations ****************************
-
-//****************************************************************************
-// Logic
-//****************************************************************************
+#include <iostream>
+#include <string>
 
 namespace Logic {
 
 // --------------------------------------------------------------------------
-// 
+//
 // --------------------------------------------------------------------------
 
 // equiv: returns (p <-> q)
 //   p <-> q == (p && q) || (!p && !q)
-inline bool
-equiv(bool p, bool q)
-{
+inline bool equiv(bool p, bool q) {
   return ((p && q) || (!p && !q));
 }
 
 // declaration to remove Intel compiler warning
-template <typename T>
-bool
-equiv(T p, T q);
+template<typename T> bool equiv(T p, T q);
 
-template <typename T>
-bool
-equiv(T p, T q)
-{
+template<typename T> bool equiv(T p, T q) {
   return ((p && q) || (!p && !q));
 }
 
-
 // implies: returns (p -> q)
 //   p -> q == !p || q
-inline bool
-implies(bool p, bool q)
-{
+inline bool implies(bool p, bool q) {
   return (!p || q);
 }
 
 // declaration to remove Intel compiler warning
-template <typename T>
-bool
-implies(T p, T q);
+template<typename T> bool implies(T p, T q);
 
-template <typename T>
-bool
-implies(T p, T q)
-{
+template<typename T> bool implies(T p, T q) {
   return (!p || q);
 }
 
@@ -137,9 +111,6 @@ implies<bool>(bool p, bool q)
   return (!p || q);
 }
 #endif
+}  // namespace Logic
 
-
-} // namespace Logic
-
-
-#endif // support_Logic_hpp
+#endif  // support_Logic_hpp

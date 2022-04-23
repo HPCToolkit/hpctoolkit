@@ -69,8 +69,7 @@ public:
   MessageBuffer& operator=(const MessageBuffer&) = delete;
 
   // Attempts to output are disabled if the entire Message is disabled.
-  template<class A>
-  std::ostream& operator<<(A a) {
+  template<class A> std::ostream& operator<<(A a) {
     return enabled ? (*(std::ostream*)this << std::forward<A>(a)) : *this;
   }
 
@@ -81,7 +80,7 @@ protected:
   // Check whether this message is empty or not (i.e. has been moved from)
   bool empty() noexcept;
 };
-}
+}  // namespace detail
 
 /// Structure for logging settings. Makes it easier to change and set up.
 class Settings final {
@@ -94,20 +93,29 @@ public:
   static inline constexpr none_t none = {};
 
   /// Initialize with all or none of the message types enabled
-  Settings(all_t) : bits(~decltype(bits)(0)) {};
-  Settings(none_t) : bits(0) {};
+  Settings(all_t) : bits(~decltype(bits)(0)){};
+  Settings(none_t) : bits(0){};
 
   /// Full initialization
   Settings(bool v_error, bool v_warning, bool v_info)
-    : bits((v_error ? 1 : 0) | (v_warning ? 2 : 0) | (v_info ? 4 : 0)) {}
+      : bits((v_error ? 1 : 0) | (v_warning ? 2 : 0) | (v_info ? 4 : 0)) {}
 
   /// Bitwise operators
   friend Settings operator&(Settings a, Settings b) noexcept { return a.bits & b.bits; }
-  Settings& operator&=(Settings o) noexcept { bits &= o.bits; return *this; }
+  Settings& operator&=(Settings o) noexcept {
+    bits &= o.bits;
+    return *this;
+  }
   friend Settings operator|(Settings a, Settings b) noexcept { return a.bits | b.bits; }
-  Settings& operator|=(Settings o) noexcept { bits |= o.bits; return *this; }
+  Settings& operator|=(Settings o) noexcept {
+    bits |= o.bits;
+    return *this;
+  }
   friend Settings operator^(Settings a, Settings b) noexcept { return a.bits ^ b.bits; }
-  Settings& operator^=(Settings o) noexcept { bits ^= o.bits; return *this; }
+  Settings& operator^=(Settings o) noexcept {
+    bits ^= o.bits;
+    return *this;
+  }
   friend Settings operator~(Settings a) noexcept { return ~a.bits; }
 
   /// Get or set the current Settings used for logging.
@@ -122,7 +130,7 @@ public:
   auto info() { return bits[2]; }
 
 private:
-  Settings(std::bitset<3> bits) : bits(bits) {};
+  Settings(std::bitset<3> bits) : bits(bits){};
 
   std::bitset<3> bits;
 };
@@ -188,7 +196,6 @@ struct debug final : public detail::MessageBuffer {
   debug& operator=(debug&&) = default;
   debug& operator=(const debug&) = delete;
 };
-
-}
+}  // namespace hpctoolkit::util::log
 
 #endif  // HPCTOOLKIT_PROFILE_UTIL_LOG_H

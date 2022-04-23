@@ -57,35 +57,19 @@
 //
 //***************************************************************************
 
-
 #ifndef String_Set_hpp
 #define String_Set_hpp
-
-//***************************************************************************
-// system include files
-//***************************************************************************
 
 #include <set>
 #include <string>
 
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
-
-class StringSet: public std::set<std::string> {
+class StringSet : public std::set<std::string> {
 public:
-  void operator+=(const StringSet &rhs) {
-    this->insert(rhs.begin(), rhs.end());
-  };
+  void operator+=(const StringSet& rhs) { this->insert(rhs.begin(), rhs.end()); };
 
+  static int fmt_fread(StringSet*& stringSet, FILE* infs);
 
-  static int
-  fmt_fread(StringSet* &stringSet, FILE* infs); 
-
-  static int
-  fmt_fwrite(const StringSet& stringSet, FILE* outfs);
+  static int fmt_fwrite(const StringSet& stringSet, FILE* outfs);
 
   void dump(void);
 };

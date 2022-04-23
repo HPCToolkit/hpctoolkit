@@ -60,30 +60,16 @@
 //
 //   S (1 bit)   E (15 bits)   F (112 bits)
 
-//************************ System Include Files ******************************
-
-#include <math.h> // C99: FP_NAN, isnan, isinf
-
-//*************************** User Include Files ****************************
-
 #include "NaN.h"
 
-//*************************** Forward Declarations ***************************
+#include <math.h>  // C99: FP_NAN, isnan, isinf
 
 const double c_FP_NAN_d = FP_NAN;
 
-//****************************************************************************
-
-bool
-c_isnan_d(double x)
-{
+bool c_isnan_d(double x) {
   return isnan(x);
 }
 
-
-bool
-c_isinf_d(double x)
-{
+bool c_isinf_d(double x) {
   return isinf(x);
 }
-

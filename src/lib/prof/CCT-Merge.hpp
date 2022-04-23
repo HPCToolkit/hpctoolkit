@@ -57,83 +57,47 @@
 //
 //***************************************************************************
 
-#ifndef prof_Prof_CCT_Merge_hpp 
+#ifndef prof_Prof_CCT_Merge_hpp
 #define prof_Prof_CCT_Merge_hpp
 
-//************************* System Include Files ****************************
+#include "include/uint.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
+#include "lib/support/diagnostics.h"
 
 #include <iostream>
-
-#include <string>
-#include <vector>
 #include <list>
 #include <set>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/prof-lean/hpcrun-fmt.h>
-
-#include <lib/support/diagnostics.h>
-
-
-//*************************** Forward Declarations ***************************
-
-
-//***************************************************************************
-// MergeEffect, MergeEffectList
-//***************************************************************************
+#include <string>
+#include <vector>
 
 namespace Prof {
 
 namespace CCT {
 
 struct MergeEffect {
-  MergeEffect()
-    : old_cpId(HPCRUN_FMT_CCTNodeId_NULL), new_cpId(HPCRUN_FMT_CCTNodeId_NULL)
-  { }
-  
-  MergeEffect(uint old_, uint new_) : old_cpId(old_), new_cpId(new_)
-  { }
-  
-  bool
-  isNoop()
-  {
-    return (old_cpId == HPCRUN_FMT_CCTNodeId_NULL &&
-	      new_cpId == HPCRUN_FMT_CCTNodeId_NULL);
+  MergeEffect() : old_cpId(HPCRUN_FMT_CCTNodeId_NULL), new_cpId(HPCRUN_FMT_CCTNodeId_NULL) {}
+
+  MergeEffect(uint old_, uint new_) : old_cpId(old_), new_cpId(new_) {}
+
+  bool isNoop() {
+    return (old_cpId == HPCRUN_FMT_CCTNodeId_NULL && new_cpId == HPCRUN_FMT_CCTNodeId_NULL);
   }
 
-  std::string
-  toString(const char* pfx = "") const;
+  std::string toString(const char* pfx = "") const;
 
-  std::ostream&
-  dump(std::ostream& os = std::cerr, const char* pfx = "") const;
+  std::ostream& dump(std::ostream& os = std::cerr, const char* pfx = "") const;
 
-
-  static std::string
-  toString(const std::list<MergeEffect>& effctLst,
-	   const char* pfx = "");
+  static std::string toString(const std::list<MergeEffect>& effctLst, const char* pfx = "");
 
   static std::ostream&
-  dump(const std::list<CCT::MergeEffect>& effctLst,
-       std::ostream& os, const char* pfx = "");
+  dump(const std::list<CCT::MergeEffect>& effctLst, std::ostream& os, const char* pfx = "");
 
   uint old_cpId /*within y*/, new_cpId /*within y*/;
 };
 
-
 typedef std::list<MergeEffect> MergeEffectList;
-
-
-} // namespace CCT
-
-} // namespace Prof
-
-
-//***************************************************************************
-// MergeContext
-//***************************************************************************
+}  // namespace CCT
+}  // namespace Prof
 
 namespace Prof {
 
@@ -149,18 +113,17 @@ enum {
 
   // Instruct a merge function to only perform tree merges; tree
   // inserts are simply skipped and considered benign operations.
-  MrgFlg_CCTMergeOnly        = (1 << 1),
+  MrgFlg_CCTMergeOnly = (1 << 1),
 
   // Instruct a merge function to only perform tree merges; tree
   // inserts are considered errors and throw an exception.
-  MrgFlg_AssertCCTMergeOnly  = (1 << 2),
-  
+  MrgFlg_AssertCCTMergeOnly = (1 << 2),
+
   // -------------------------------------------------------
   // *Private* CCT Merge flags
   // -------------------------------------------------------
-  MrgFlg_PropagateEffects    = (1 << 3)
+  MrgFlg_PropagateEffects = (1 << 3)
 };
-
 
 class MergeContext {
 public:
@@ -170,93 +133,65 @@ public:
   MergeContext(Tree* cct, bool doTrackCPIds);
 
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
-  void
-  flags(uint mrgFlag)
-  { m_mrgFlag = mrgFlag; }
+  void flags(uint mrgFlag) { m_mrgFlag = mrgFlag; }
 
-  uint
-  flags() const
-  { return m_mrgFlag; }
+  uint flags() const { return m_mrgFlag; }
 
-  bool
-  doPropagateEffects()
-  { return (m_mrgFlag & MrgFlg_PropagateEffects); }
-
+  bool doPropagateEffects() { return (m_mrgFlag & MrgFlg_PropagateEffects); }
 
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
-  bool
-  isTrackingCPIds() const
-  { return m_isTrackingCPIds; }
+  bool isTrackingCPIds() const { return m_isTrackingCPIds; }
 
-
-  bool
-  isConflict_cpId(uint cpId) const
-  {
-    return (cpId != HPCRUN_FMT_CCTNodeId_NULL
-	    && m_cpIdSet.find(cpId) != m_cpIdSet.end());
+  bool isConflict_cpId(uint cpId) const {
+    return (cpId != HPCRUN_FMT_CCTNodeId_NULL && m_cpIdSet.find(cpId) != m_cpIdSet.end());
   }
 
-
   struct pair {
-    pair(uint cpId_, MergeEffect effect_) 
-      : cpId(cpId_), effect(effect_)
-    { }
-    
+    pair(uint cpId_, MergeEffect effect_) : cpId(cpId_), effect(effect_) {}
+
     uint cpId;
     MergeEffect effect;
   };
 
-
   // returns the (possibly) new CPId and a MergeEffect
-  MergeContext::pair
-  ensureUniqueCPId(uint curId)
-  {
+  MergeContext::pair ensureUniqueCPId(uint curId) {
     uint newId = curId;
     MergeEffect effct;
 
     if (isConflict_cpId(curId)) {
       newId = makeCPId();
-      
+
       if (doPropagateEffects()) {
-	effct.old_cpId = curId;
-	effct.new_cpId = newId;
+        effct.old_cpId = curId;
+        effct.new_cpId = newId;
       }
-    }
-    else {
+    } else {
       noteCPId(curId);
     }
 
     return MergeContext::pair(newId, effct);
   }
 
-
-  void
-  noteCPId(uint cpId)
-  {
+  void noteCPId(uint cpId) {
     if (cpId != HPCRUN_FMT_CCTNodeId_NULL) {
       std::pair<CPIdSet::iterator, bool> ret = m_cpIdSet.insert(cpId);
       DIAG_Assert(ret.second, "MergeContext::noteCPId: conflicting cp-ids!");
     }
   }
 
-
-  uint
-  makeCPId()
-  {
+  uint makeCPId() {
     uint newId = *(m_cpIdSet.rbegin()) + 2;
     std::pair<CPIdSet::iterator, bool> ret = m_cpIdSet.insert(newId);
-    DIAG_Assert(hpcrun_fmt_doRetainId(newId) && ret.second,
-		"MergeContext::makeCPId: error!");
+    DIAG_Assert(hpcrun_fmt_doRetainId(newId) && ret.second, "MergeContext::makeCPId: error!");
     return newId;
   }
 
 private:
-  void
-  fillCPIdSet(Tree* cct);
+  void fillCPIdSet(Tree* cct);
 
 private:
   const Tree* m_cct;
@@ -266,12 +201,7 @@ private:
   bool m_isTrackingCPIds;
   CPIdSet m_cpIdSet;
 };
-
-} // namespace CCT
-
-} // namespace Prof
-
-
-//***************************************************************************
+}  // namespace CCT
+}  // namespace Prof
 
 #endif /* prof_Prof_CCT_Merge_hpp */

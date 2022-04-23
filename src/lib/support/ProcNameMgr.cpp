@@ -57,26 +57,13 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <string>
-using std::string;
-
-
-//*************************** User Include Files ****************************
-
 #include "ProcNameMgr.hpp"
 
 #include "diagnostics.h"
 
+#include <string>
 
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-//***************************************************************************
-// ProcNameMgr
-//***************************************************************************
+using std::string;
 
 // Canonicalize C++ templates and overloading: Compute a 'generic'
 // name for a templated function type:
@@ -95,16 +82,12 @@ using std::string;
 //   Templates may have multiple nested < >, but have at least one pair
 //   Excluding function pointer types, functions have at most one pair of ( )
 
-std::string 
-ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
-{
-  size_t posLangle = name.find_first_of('<'); // returns valid pos or npos
+std::string ProcNameMgr::canonicalizeCppTemplate(const std::string& name) {
+  size_t posLangle = name.find_first_of('<');  // returns valid pos or npos
 
   // Ensure we have a name of the form: "...<..." but not "...<<..."
-  if ((0 < posLangle && posLangle < (name.length() - 1))
-      && name[posLangle+1] != '<') {
-
-    string x = name.substr(0, posLangle /*len*/); // exclude '<'
+  if ((0 < posLangle && posLangle < (name.length() - 1)) && name[posLangle + 1] != '<') {
+    string x = name.substr(0, posLangle /*len*/);  // exclude '<'
 
     int nesting = 0;
     for (uint i = posLangle; i < name.size(); i++) {
@@ -112,28 +95,22 @@ ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
 
       bool save_c = (nesting == 0);
       if (c == '<') {
-	nesting++;
-      }
-      else if (c == '>') {
-	nesting--;
+        nesting++;
+      } else if (c == '>') {
+        nesting--;
       }
       save_c = (save_c || (nesting == 0));
 
       if (save_c) {
-	x += c;
+        x += c;
       }
     }
-    
+
     return x;
   }
-  
+
   return name;
 }
-
-
-//***************************************************************************
-// CilkNameMgr
-//***************************************************************************
 
 const string CilkNameMgr::cilkmain = "cilk_main";
 
@@ -143,15 +120,14 @@ const string CilkNameMgr::cilkmain = "cilk_main";
 //   import: _cilk_<x>_import
 //   export: mt_<x>
 
-const string CilkNameMgr::s_procSlow_pfx   = "_cilk_";
-const string CilkNameMgr::s_procSlow_sfx   = "_slow";
+const string CilkNameMgr::s_procSlow_pfx = "_cilk_";
+const string CilkNameMgr::s_procSlow_sfx = "_slow";
 
 const string CilkNameMgr::s_procImport_pfx = "_cilk_";
 const string CilkNameMgr::s_procImport_sfx = "_import";
 
 const string CilkNameMgr::s_procExport_pfx = "mt_";
 const string CilkNameMgr::s_procExport_sfx = "";
-
 
 // Cilk 'outlines' an inlet <x> within a procedure <proc>, creating
 // three specializations:
@@ -168,20 +144,15 @@ const string CilkNameMgr::s_inletFast_sfx = "_inlet_fast";
 const string CilkNameMgr::s_inletSlow_pfx = "_cilk_";
 const string CilkNameMgr::s_inletSlow_sfx = "_inlet_slow";
 
-
-string
-CilkNameMgr::canonicalize(const string& name)
-{
+string CilkNameMgr::canonicalize(const string& name) {
   // ------------------------------------------------------------
   // inlets: must test before procedures because of _slow suffix
   // ------------------------------------------------------------
   if (isGenerated(name, s_inletNorm_pfx, s_inletNorm_sfx)) {
     return basename(name, s_inletNorm_pfx, s_inletNorm_sfx);
-  }
-  else if (isGenerated(name, s_inletFast_pfx, s_inletFast_sfx)) {
+  } else if (isGenerated(name, s_inletFast_pfx, s_inletFast_sfx)) {
     return basename(name, s_inletFast_pfx, s_inletFast_sfx);
-  }
-  else if (isGenerated(name, s_inletSlow_pfx, s_inletSlow_sfx)) {
+  } else if (isGenerated(name, s_inletSlow_pfx, s_inletSlow_sfx)) {
     return basename(name, s_inletSlow_pfx, s_inletSlow_sfx);
   }
 
@@ -190,11 +161,9 @@ CilkNameMgr::canonicalize(const string& name)
   // ------------------------------------------------------------
   else if (isGenerated(name, s_procSlow_pfx, s_procSlow_sfx)) {
     return basename(name, s_procSlow_pfx, s_procSlow_sfx);
-  }
-  else if (isGenerated(name, s_procImport_pfx, s_procImport_sfx)) {
+  } else if (isGenerated(name, s_procImport_pfx, s_procImport_sfx)) {
     return basename(name, s_procImport_pfx, s_procImport_sfx);
-  }
-  else if (isGenerated(name, s_procExport_pfx, s_procExport_sfx)) {
+  } else if (isGenerated(name, s_procExport_pfx, s_procExport_sfx)) {
     return basename(name, s_procExport_pfx, s_procExport_sfx);
   }
 
@@ -213,8 +182,3 @@ CilkNameMgr::canonicalize(const string& name)
     return name;
   }
 }
-
-
-//***************************************************************************
-
-

@@ -44,9 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef __MEMLEAK_OVERRIDES_H__
 #define __MEMLEAK_OVERRIDES_H__
 
 #endif
-

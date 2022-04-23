@@ -44,64 +44,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// system includes
-//******************************************************************************
+#include "SimpleSymbolsFactories.hpp"
+
+#include "LinuxKernelSymbols.hpp"
 
 #include <vector>
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "SimpleSymbolsFactories.hpp"
-#include "LinuxKernelSymbols.hpp"
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-struct  SimpleSymbolsFactoriesRepr {
-  std::vector<SimpleSymbolsFactory *> factories;
+struct SimpleSymbolsFactoriesRepr {
+  std::vector<SimpleSymbolsFactory*> factories;
 };
-
-
-
-//******************************************************************************
-// global data
-//******************************************************************************
 
 SimpleSymbolsFactories simpleSymbolsFactories;
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-SimpleSymbolsFactories::SimpleSymbolsFactories
-(
- void
-)
-{
-  R = new struct SimpleSymbolsFactoriesRepr; 
+SimpleSymbolsFactories::SimpleSymbolsFactories(void) {
+  R = new struct SimpleSymbolsFactoriesRepr;
   R->factories.push_back(new LinuxKernelSymbolsFactory);
 }
 
-
-SimpleSymbolsFactory *
-SimpleSymbolsFactories::find
-(
- const char *pathname
-)
-{
-  for (auto it = R->factories.begin();
-       it != R->factories.end(); ++it) {
-    if ((*it)->match(pathname)) return *it;
+SimpleSymbolsFactory* SimpleSymbolsFactories::find(const char* pathname) {
+  for (auto it = R->factories.begin(); it != R->factories.end(); ++it) {
+    if ((*it)->match(pathname))
+      return *it;
   }
   return NULL;
 }

@@ -45,7 +45,4 @@
 // ******************************************************* EndRiceCopyright *
 
 /* provided to figure out where libcsprof's .text section ends */
-void
-hpcrun_last_func()
-{
-}
+void hpcrun_last_func() {}

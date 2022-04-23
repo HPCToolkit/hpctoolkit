@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/VersatileMemoryPage.hpp $
-// $Id: VersatileMemoryPage.hpp 4373 2013-10-03 03:51:56Z felipet1326@gmail.com $
+// $HeadURL:
+// https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/VersatileMemoryPage.hpp
+// $ $Id: VersatileMemoryPage.hpp 4373 2013-10-03 03:51:56Z felipet1326@gmail.com $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -47,7 +48,9 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL: https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/VersatileMemoryPage.hpp $
+//   $HeadURL:
+//   https://hpctoolkit.googlecode.com/svn/branches/hpctoolkit-hpcserver/src/tool/hpcserver/VersatileMemoryPage.hpp
+//   $
 //
 // Purpose:
 //   [The purpose of this file]
@@ -60,44 +63,44 @@
 #ifndef VERSATILEMEMORYPAGE_H_
 #define VERSATILEMEMORYPAGE_H_
 
-
-#include <sys/mman.h>
-#include "FileUtils.hpp" //FileOffset
+#include "FileUtils.hpp"  //FileOffset
 #include "LRUList.hpp"
 
+#include <sys/mman.h>
+
 using namespace std;
-namespace TraceviewerServer
-{
 
-	class VersatileMemoryPage
-	{
-	public:
-		VersatileMemoryPage();
-		VersatileMemoryPage(FileOffset, int, FileDescriptor, LRUList<VersatileMemoryPage>* pageManagementList);
-		virtual ~VersatileMemoryPage();
-		static void setMaxPages(int);
-		char* get();
-	private:
-		void mapPage();
-		void unmapPage();
+namespace TraceviewerServer {
 
-		FileOffset startPoint;
-		int size;
-		char* page;
-		int index;
-		FileDescriptor file;
+class VersatileMemoryPage {
+public:
+  VersatileMemoryPage();
+  VersatileMemoryPage(
+      FileOffset, int, FileDescriptor, LRUList<VersatileMemoryPage>* pageManagementList);
+  virtual ~VersatileMemoryPage();
+  static void setMaxPages(int);
+  char* get();
 
-		bool isMapped;
-		LRUList<VersatileMemoryPage>* mostRecentlyUsed;
+private:
+  void mapPage();
+  void unmapPage();
 
-		// Use MAP_POPULATE if available
+  FileOffset startPoint;
+  int size;
+  char* page;
+  int index;
+  FileDescriptor file;
+
+  bool isMapped;
+  LRUList<VersatileMemoryPage>* mostRecentlyUsed;
+
+  // Use MAP_POPULATE if available
 #ifdef MAP_POPULATE
-		static const int MAP_FLAGS = MAP_SHARED | MAP_POPULATE;
+  static const int MAP_FLAGS = MAP_SHARED | MAP_POPULATE;
 #else
-		static const int MAP_FLAGS = MAP_SHARED
+  static const int MAP_FLAGS = MAP_SHARED
 #endif
-		static const int MAP_PROT = PROT_READ;
-	};
-
+  static const int MAP_PROT = PROT_READ;
+};
 } /* namespace TraceviewerServer */
 #endif /* VERSATILEMEMORYPAGE_H_ */

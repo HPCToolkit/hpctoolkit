@@ -50,4 +50,4 @@
 // selected by -I to accommodate different data types for different unwinders
 #include "unw-datatypes-specific.h"
 
-#endif // UNWIND_DATATYPE_H
+#endif  // UNWIND_DATATYPE_H

@@ -41,31 +41,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 #ifndef level0_data_node_h
 #define level0_data_node_h
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
-#include <stdint.h>
-
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
+#include <stdint.h>
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef enum level0_command_type {
-  LEVEL0_KERNEL,
-  LEVEL0_MEMCPY
-} level0_command_type_t;
+typedef enum level0_command_type { LEVEL0_KERNEL, LEVEL0_MEMCPY } level0_command_type_t;
 
 typedef struct level0_kernel_entry {
   ze_kernel_handle_t kernel;
@@ -87,29 +70,13 @@ typedef struct level0_data_node {
   ze_event_handle_t event;
   ze_event_pool_handle_t event_pool;
   level0_detail_entry_t details;
-  struct level0_data_node *next;
+  struct level0_data_node* next;
 } level0_data_node_t;
 
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-level0_data_node_t*
-level0_data_node_new
-(
-);
+level0_data_node_t* level0_data_node_new();
 
 // Return a node for the linked list to the free list
-void
-level0_data_node_return_free_list
-(
-  level0_data_node_t* node
-);
+void level0_data_node_return_free_list(level0_data_node_t* node);
 
-void
-level0_data_list_free
-(
- level0_data_node_t* head
-);
+void level0_data_list_free(level0_data_node_t* head);
 #endif

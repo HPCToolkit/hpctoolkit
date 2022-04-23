@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -63,74 +63,61 @@
 #ifndef include_uint_h
 #define include_uint_h
 
-//*************************** User Include Files ****************************
-
-#include <include/hpctoolkit-config.h>
-
-//****************************************************************************
+#include "include/hpctoolkit-config.h"
 
 // A sanity check that should probably just be in configure (FIXME)
 #if !defined(SIZEOF_VOIDP)
-# error "configure.ac should have defined SIZEOF_VOIDP using AC_CHECK_SIZEOF."
+#error "configure.ac should have defined SIZEOF_VOIDP using AC_CHECK_SIZEOF."
 #endif
-
 
 #if 0
 
 #if defined(__cplusplus)
-# include <cstddef> // for 'NULL'
+#include <cstddef>  // for 'NULL'
 #else
-# include <stddef.h>
+#include <stddef.h>
 #endif
 
 #endif
-
-//****************************************************************************
-// Convenient unsigned types
-//****************************************************************************
 
 #ifdef HAVE_SYS_TYPES_H
-# include <sys/types.h>
+#include <sys/types.h>
 #endif
 #ifdef HAVE_INTTYPES_H
-# include <inttypes.h>
+#include <inttypes.h>
 #endif
 #ifdef HAVE_STDINT_H
-# include <stdint.h>
+#include <stdint.h>
 #endif
-
 
 #if defined(__cplusplus)
 
-# if !defined(HAVE_USHORT)
-  typedef    unsigned short int    ushort;
-# endif
+#if !defined(HAVE_USHORT)
+typedef unsigned short int ushort;
+#endif
 
-# if !defined(HAVE_UINT)
-  typedef    unsigned int          uint;
-# endif
+#if !defined(HAVE_UINT)
+typedef unsigned int uint;
+#endif
 
-# if !defined(HAVE_ULONG)
-  typedef    unsigned long int     ulong;
-# endif
+#if !defined(HAVE_ULONG)
+typedef unsigned long int ulong;
+#endif
 
 #else
 
-# if !defined(HAVE_USHORT_LANG_C)
-  typedef    unsigned short int    ushort;
-# endif
-
-# if !defined(HAVE_UINT_LANG_C)
-  typedef    unsigned int          uint;
-# endif
-
-# if !defined(HAVE_ULONG_LANG_C)
-  typedef    unsigned long int     ulong;
-# endif
-
+#if !defined(HAVE_USHORT_LANG_C)
+typedef unsigned short int ushort;
 #endif
 
+#if !defined(HAVE_UINT_LANG_C)
+typedef unsigned int uint;
+#endif
 
-//***************************************************************************
+#if !defined(HAVE_ULONG_LANG_C)
+typedef unsigned long int ulong;
+#endif
+
+#endif
 
 #endif /* include_uint_h */

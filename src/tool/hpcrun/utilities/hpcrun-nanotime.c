@@ -44,37 +44,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
+#include "hpcrun-nanotime.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <time.h>
 
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include "hpcrun-nanotime.h"
-
-
-
-//*****************************************************************************
-// macros
-//*****************************************************************************
-
 #define NS_PER_SEC 1000000000
 
-
-//*****************************************************************************
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-uint64_t
-hpcrun_nanotime()
-{
+uint64_t hpcrun_nanotime() {
   struct timespec now;
 
   int res = clock_gettime(CLOCK_REALTIME, &now);
@@ -87,24 +65,18 @@ hpcrun_nanotime()
   return now_ns;
 }
 
-
-int32_t
-hpcrun_nanosleep
-(
-  uint32_t nsec
-)
-{
-  struct timespec time_wait = {.tv_sec=0, .tv_nsec=nsec};
-  struct timespec time_rem = {.tv_sec=0, .tv_nsec=0};
+int32_t hpcrun_nanosleep(uint32_t nsec) {
+  struct timespec time_wait = {.tv_sec = 0, .tv_nsec = nsec};
+  struct timespec time_rem = {.tv_sec = 0, .tv_nsec = 0};
   int32_t ret;
-  
-  for(;;){
+
+  for (;;) {
     ret = nanosleep(&time_wait, &time_rem);
-    if (! (ret < 0 && errno == EINTR)){
+    if (!(ret < 0 && errno == EINTR)) {
       // normal non-signal return
       break;
     }
-  time_wait = time_rem;
+    time_wait = time_rem;
   }
 
   return ret;
