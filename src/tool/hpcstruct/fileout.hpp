@@ -57,6 +57,17 @@
 //
 //***************************************************************************
 
+#include "Structure-Cache.hpp"
+
+#include "lib/prof-lean/hpcio.h"
+#include "lib/support/IOUtil.hpp"
+#include "lib/support/FileUtil.hpp"
+
+#include <ostream>
+#include <string>
+#include <cstring>
+#include <unistd.h>
+
 class FileOutputStream {
 public:
   FileOutputStream() : stream(0), buffer(0), use_cache(false),
