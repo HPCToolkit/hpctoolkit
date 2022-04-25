@@ -197,3 +197,49 @@ def test_metricsSec():
   assert m.matches[a] is b
   assert m.matches[m_foo] is m_foo
   assert m_bar not in m.matches
+
+def test_contextSec():
+  foo = Function(name='foo')
+  bar = Function(name='bar')
+  no_match = MatchResult(True)
+
+  a = ContextTreeSection(roots=[
+    { 'ctxId': 1, 'relation': 'call', 'lexicalType': 'function', 'function': foo,
+      'children': [
+        { 'ctxId': 2, 'relation': 'lexical', 'lexicalType': 'function', 'function': bar },
+      ]
+    },
+  ])
+  m = match_contextSec(a, a, modules=no_match, files=no_match, functions=no_match)
+  assert m
+  assert m.matches[a] is a
+  assert m.matches[a.roots[0]] is a.roots[0]
+  assert m.matches[a.roots[0].children[0]] is a.roots[0].children[0]
+
+  b = ContextTreeSection(roots=[
+    {'ctxId': 2, 'relation': 'call', 'lexicalType': 'function', 'function': foo},
+    {'ctxId': 3, 'relation': 'call', 'lexicalType': 'function', 'function': bar},
+  ])
+  m = match_contextSec(a, b, modules=no_match, files=no_match, functions=no_match)
+  assert not m
+  assert m.matches[a] is b
+  assert m.matches[a.roots[0]] is b.roots[0]
+  assert a.roots[0].children[0] not in m.matches
+  assert b.roots[1] not in m.matches
+
+  c = ContextTreeSection(roots=[
+    { 'ctxId': 2, 'relation': 'call', 'lexicalType': 'function', 'function': bar,
+      'children': [
+        { 'ctxId': 4, 'relation': 'lexical', 'lexicalType': 'function', 'function': bar },
+      ],
+    },
+    { 'ctxId': 3, 'relation': 'call', 'lexicalType': 'function', 'function': foo},
+  ])
+  m = match_contextSec(a, c, modules=no_match, files=no_match, functions=no_match)
+  assert not m
+  assert m.matches[a] is c
+  assert m.matches[a.roots[0]] is c.roots[1]
+  assert a.roots[0].children[0] not in m.matches
+  assert c.roots[0] not in m.matches
+  assert c.roots[0].children[0] not in m.matches
+

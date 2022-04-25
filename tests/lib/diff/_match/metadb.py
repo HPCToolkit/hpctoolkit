@@ -63,7 +63,7 @@ def match_metadb(a: MetaDB, b: MetaDB) -> MatchResult:
   out |= match_modulesSec(a.modules, b.modules)
   out |= match_filesSec(a.files, b.files)
   out |= match_functionsSec(a.functions, b.functions, modules=out, files=out)
-  out |= match_contextSec(a.context, b.context)
+  out |= match_contextSec(a.context, b.context, modules=out, files=out, functions=out)
   return out
 
 @match.register
@@ -127,7 +127,7 @@ def match_file(a: SourceFile, b: SourceFile) -> MatchResult:
 
 @match.register
 def match_functionsSec(a: FunctionsSection, b: FunctionsSection, /, *,
-                       modules, files) -> MatchResult:
+                       modules: MatchResult, files: MatchResult) -> MatchResult:
   if not isinstance(modules, MatchResult): raise TypeError(type(modules))
   if not isinstance(files, MatchResult): raise TypeError(type(files))
   check_tyb(b, FunctionsSection)
@@ -136,7 +136,7 @@ def match_functionsSec(a: FunctionsSection, b: FunctionsSection, /, *,
           | merge_unordered(a.functions, b.functions, match=f))
 
 @match.register
-def match_function(a: Function, b: Function, /, *, modules, files) -> MatchResult:
+def match_function(a: Function, b: Function, /, *, modules: MatchResult, files: MatchResult) -> MatchResult:
   check_tyb(b, Function)
   if not isinstance(modules, MatchResult): raise TypeError(type(modules))
   if not isinstance(files, MatchResult): raise TypeError(type(files))
@@ -146,7 +146,27 @@ def match_function(a: Function, b: Function, /, *, modules, files) -> MatchResul
       and cmp_id(a.file, b.file, files) and a.line == b.line)
 
 @match.register
-def match_contextSec(a: ContextTreeSection, b: ContextTreeSection) -> MatchResult:
+def match_contextSec(a: ContextTreeSection, b: ContextTreeSection, /, *,
+                     modules: MatchResult, files: MatchResult, functions: MatchResult) -> MatchResult:
   check_tyb(b, ContextTreeSection)
-  # TODO
-  return MatchResult.matchif(a, b)
+  if not isinstance(modules, MatchResult): raise TypeError(type(modules))
+  if not isinstance(files, MatchResult): raise TypeError(type(files))
+  if not isinstance(functions, MatchResult): raise TypeError(type(functions))
+  def match1(a: Context, b: Context) -> MatchResult:
+    return MatchResult.matchif(a, b,
+        a.relation == b.relation and a.lexicalType == b.lexicalType
+        and cmp_id(a.function, b.function, functions)
+        and cmp_id(a.file, b.file, files) and a.line == b.line
+        and cmp_id(a.module, b.module, modules) and a.offset == b.offset)
+
+  out = MatchResult.matchif(a, b)
+
+  # Hunt down perfect matches between the context trees
+  def perfect_match(a: Context, b: Context) -> MatchResult:
+    out = match1(a, b)
+    if out: out |= merge_unordered(a.children, b.children, perfect_match)
+    return out
+  out |= merge_unordered(a.roots, b.roots, perfect_match)
+
+  return out
+
