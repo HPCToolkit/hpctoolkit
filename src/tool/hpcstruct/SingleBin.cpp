@@ -89,6 +89,45 @@ using namespace std;
 //=====================================================================================
 //***************** Function for processing a Single Binary ***************************
 
+static void replace_lmname(std::string& line, const std::string& newname) {
+  if(line.find("<LM") == std::string::npos) return;
+
+  // Find the n=" and the corresponding "
+  auto first = line.find("n=\"");
+  if(first == std::string::npos) return;
+  first += 3;
+  auto last = line.find("\"", first);
+  if(last == std::string::npos) return;
+
+  // If the old filename ends in .gpubin.<hash>, don't remove the hash since
+  // it's required for proper operation in Intel cases.
+  {
+    auto tail = line.find(".gpubin.");
+    if(tail != std::string::npos) {
+      tail += 7;  // ie. the . after gpubin
+
+      // Check that there's a hash and it's all hex until the end
+      if(tail < last) {
+        bool all_hex = true;
+        for(auto i = tail+1; i < last; i++) {
+          if(!(('0' <= line[i] && line[i] <= '9')
+               || ('a' <= line[i] && line[i] <= 'f'))) {
+            all_hex = false;
+            break;
+          }
+        }
+
+        if(all_hex) {
+          // Pull last back to the tail
+          last = tail;
+        }
+      }
+    }
+  }
+
+  line.replace(first, last-first, newname);
+}
+
 void
 doSingleBinary
 (
@@ -154,7 +193,6 @@ doSingleBinary
   cerr << "DEBUG singleApplicationBinary  -- cache setup started" << args.cache_directory.c_str() << endl;
 #endif
 
-  bool use_cache = false;
   string cache_path_directory;
   string cache_flat_entry;
   string cache_directory;
@@ -204,7 +242,6 @@ doSingleBinary
 
       string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
       symlink(cache_path_link.c_str(), cache_flat_entry.c_str());
-      use_cache = true;
 #if 0
       cerr << "DEBUG symlinked " << cache_path_link.c_str() << " to " << cache_flat_entry.c_str() << endl;
       cerr << "DEBUG state now = "  << args.cache_stat << endl;
@@ -294,58 +331,23 @@ doSingleBinary
     }
   }
 
+  // If we're pulling from the cache, ensure the module path in the new file is correct
+  if(!error) {
+    auto cache = hpcstruct.cached();
+    if(!cache.empty()) {
+      std::ifstream infs(cache);
+      std::ofstream outfs(hpcstruct_path);
+
+      // Slurp, adjust and output lines one at a time
+      for(std::string line; std::getline(infs, line); ) {
+        replace_lmname(line, args.in_filenm);
+        outfs << line << "\n";
+      }
+    }
+  }
+
   hpcstruct.finalize(error);
   gaps.finalize(error);
-
-  // if a cache is in use, ensure that the module path in the new .struct file is correct.
-  //
-  if (error == 0 && use_cache == true) {
-    string checkname_cmd = string("/bin/sh ") + string(HPCTOOLKIT_INSTALL_PREFIX) + "/libexec/hpctoolkit/renamestruct.sh "
-        + args.in_filenm.c_str() + " " + hpcstruct_path.c_str();
-
-#if 0
-    cerr << "DEBUG singleApplicationBinary : checkname_cmd  = " << checkname_cmd.c_str() << endl;
-#endif
-
-    // Invoke the renamestuct shell script from the installation library
-    //    Script is invoked with two arguments, $1 = path needed, $2 = structure-file
-    //
-    int retstat = system( checkname_cmd.c_str() );
-
-    int renamestat = -1;
-
-    if ( WIFEXITED(retstat) == true ) {
-      // a normal exit
-      renamestat = WEXITSTATUS (retstat);
-      if (renamestat == 1 ) {
-        //The names were really updated
-        if ( args.cache_stat == CACHE_ENTRY_ADDED ) {
-          args.cache_stat = CACHE_ENTRY_ADDED_RENAME;
-        } else if ( args.cache_stat == CACHE_ENTRY_COPIED ) {
-          args.cache_stat = CACHE_ENTRY_COPIED_RENAME;
-        }
-
-#if 0
-    cerr << "DEBUG singleApplicationBinary : checkname_cmd replaced names in struct file " << endl;
-#endif
-
-      } else if (renamestat == 0 ) {
-#if 0
-        cerr << "DEBUG singleApplicationBinary : checkname_cmd did not need to replace names in struct file " << endl;
-#endif
-      } else {
-#if 0
-        cerr << "DEBUG singleApplicationBinary : checkname_cmd returned = " << renamestat << endl;
-#endif
-      }
-
-    } else {
-      // Not a normal exit -- a serious error
-      DIAG_EMsg("Running renamepath to fix lines in structure files failed.");
-      exit(1);
-    }
-
-  }  // if (error == 0 && use_cache == true)
 
   // Set cache usage status string
   const char * cache_stat_str;
