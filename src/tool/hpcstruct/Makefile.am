@@ -127,16 +127,10 @@ endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-GENHEADERS = \
-	usage.h
-
 #----------------------------------------------------------------------
 
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
-
-noinst_HEADERS = $(GENHEADERS)
-BUILT_SOURCES = $(GENHEADERS)
 
 bin_SCRIPTS = hpcstruct
 pkglibexec_SCRIPTS = dotgraph
@@ -153,13 +147,6 @@ dotgraph_bin_LDFLAGS  = $(MYLDFLAGS)
 dotgraph_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
-#############################################################################
-# Other rules
-#############################################################################
-
-%.h : $(srcdir)/%.txt
-	$(srcdir)/stringify.sh < $<  > $@
-
 
 #############################################################################
 # Common rules

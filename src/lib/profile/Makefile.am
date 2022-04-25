@@ -70,9 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-sinks/FORMATS.md.inc: $(srcdir)/../../../doc/FORMATS.md $(srcdir)/../../tool/hpcstruct/stringify.sh
+sinks/FORMATS.md.inc: $(srcdir)/../../../doc/FORMATS.md $(srcdir)/stringify.sh
 	echo -n "static const char FORMATS_md[] = " > $@
-	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
+	$(srcdir)/stringify.sh < $< >> $@
 	echo ';' >> $@
 
 noinst_HEADERS = sinks/FORMATS.md.inc
