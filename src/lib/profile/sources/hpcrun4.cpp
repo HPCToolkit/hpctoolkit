@@ -424,7 +424,12 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             util::log::info{} << "Invalid lm_id: " << n.lm_id;
             return false;
           }
+#define JOHNMC 1
+#if JOHNMC
+          scope = Scope(mod_it->second, n.lm_ip - ((n.lm_ip == 0) ? 0 : 1));
+#else
           scope = Scope(mod_it->second, n.lm_ip);
+#endif
         }
 
         if(!n.unwound) {
