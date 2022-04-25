@@ -121,8 +121,6 @@ public:
   bool analyze_cpu_binaries ;     // default: true
   bool analyze_gpu_binaries ;     // default: true
   bool compute_gpu_cfg;
-  std::string meas_dir;
-  bool is_from_makefile;	// set true if -M argument is seen
   cachestat_t cache_stat;	// reflects cache interactions for the binary
 
   // Parsed Data: optional arguments

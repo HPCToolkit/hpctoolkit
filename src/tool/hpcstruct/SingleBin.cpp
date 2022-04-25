@@ -199,9 +199,6 @@ doSingleBinary
   // Make sure the file is readable
   if ( access(binary_abspath.c_str(), R_OK) != 0 ) {
     cerr << "ERROR -- input file " << args.in_filenm.c_str() << " is not readable" << endl;
-    if ( args.is_from_makefile == true ) {
-      cerr << "CACHESTAT (Input file is not readable) " << endl;
-    }
     exit(1);
   }
 
@@ -251,20 +248,16 @@ doSingleBinary
     mode = "parallel";
   }
 
-  // If this invocation was not from a Makefile, write a message to the user
-  if ( args.is_from_makefile != true ) {
-
-    // Direct invocation, write a starting message
-    if (gpu_binary == true ) {
-      std::cout << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
-        << "] analysis of " "GPU binary "
-        << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << ")" << std::endl;
-    } else {
-      std::cout << " begin " << mode.c_str() << " analysis of CPU binary "
-        << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << ")" << std::endl;
-    }
+  // Direct invocation, write a starting message
+  if (gpu_binary == true ) {
+    std::cout << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      << "] analysis of " "GPU binary "
+      << args.in_filenm.c_str() << " (size = " << sb->st_size
+      << ", threads = " << args.jobs << ")" << std::endl;
+  } else {
+    std::cout << " begin " << mode.c_str() << " analysis of CPU binary "
+      << args.in_filenm.c_str() << " (size = " << sb->st_size
+      << ", threads = " << args.jobs << ")" << std::endl;
   }
 
   // Initialize the output stream for the hpcstruct file
@@ -361,22 +354,15 @@ doSingleBinary
       break;
   }
   //
-  if ( args.is_from_makefile != true ) {
-    // If this invocation was not from a Makefile, write a message to the user
-    //
-    if (gpu_binary == true ) {
-      std::cout << "   end " << mode.c_str() << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
-        << "] analysis of " "GPU binary "
-        << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
-    } else {
-      std::cout << "   end " << mode.c_str() << " analysis of CPU binary "
-        << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
-    }
-
+  // If this invocation was not from a Makefile, write a message to the user
+  //
+  if (gpu_binary == true ) {
+    std::cout << "   end " << mode.c_str() << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      << "] analysis of " "GPU binary "
+      << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
   } else {
-    // if from a Makefile, write the key line to be read by script
-    //
-    cerr << "CACHESTAT " << cache_stat_str << std::endl;
+    std::cout << "   end " << mode.c_str() << " analysis of CPU binary "
+      << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
   }
 
   if (error) exit(error);

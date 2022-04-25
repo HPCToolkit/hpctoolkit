@@ -114,9 +114,3 @@ Options: Developers only
   --show-gaps          Feature to show unclaimed vma ranges (gaps)
                        in the control-flow graph.
   --time               Display stats on hpcstruct's time and space usage.
-
-Options: Internal use only
-  -M <measurement-dir> Indicates that hpcstruct was invoked by a
-                       script used to process measurement directory
-                       <measurement-dir>. This information is used to
-                       control messages.

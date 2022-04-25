@@ -123,7 +123,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'c',  "cache",        CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
   {  0 ,  "nocache",      CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "pretty-print", CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
-  { 'M',  "meas_dir",     CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
 
   // Structure recovery options
   {  0 ,  "gpucfg",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
@@ -190,8 +189,6 @@ Args::Ctor()
   show_gaps = false;
   nocache = false;
   compute_gpu_cfg = false;
-  meas_dir = "";
-  is_from_makefile = false;
   cache_stat = CACHE_DISABLED;
   pretty_print_output = false;
 }
@@ -347,14 +344,6 @@ Args::parse(int argc, const char* const argv[])
       analyze_cpu_binaries = yes;
     }
 
-    if (parser.isOpt("meas_dir")) {
-      const string & arg = parser.getOptArg("meas_dir");
-      meas_dir = arg.c_str();
-      is_from_makefile = true;
-#if 0
-      fprintf(stderr, "DEBUG meas_dir = %s; is_from_makefile set to true\n", meas_dir.c_str() );
-#endif
-    }
     if (parser.isOpt("time")) {
       show_time = true;
     }
