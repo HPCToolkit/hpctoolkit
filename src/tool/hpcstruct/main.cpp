@@ -179,6 +179,15 @@ realmain(int argc, char* argv[])
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
 
+  std::string cache;
+  if(args.nocache) {
+    args.cache_stat = CACHE_DISABLED;
+  } else {
+    const char* path = setup_cache_dir(args.cache_directory.c_str(), &args);
+    args.cache_stat = path != NULL ? CACHE_ENABLED : CACHE_NOT_NAMED;
+    if(path != NULL) cache = path;
+  }
+
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze entire directory
   // ------------------------------------------------------------
@@ -201,12 +210,12 @@ realmain(int argc, char* argv[])
     }
     // Now process the measurements directory, passing it its stat result
     //
-    doMeasurementsDir(args, &sb);
+    doMeasurementsDir(args, cache, &sb);
 
   } else {
     // Process a single binary, passing in its stat result
     //
-    doSingleBinary(args, &sb );
+    doSingleBinary(args, cache, &sb);
   }
   return 0;
 }

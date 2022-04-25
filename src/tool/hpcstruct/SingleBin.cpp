@@ -131,6 +131,7 @@ void
 doSingleBinary
 (
  Args &args,
+ const std::string& cache,
  struct stat *sb
 )
 {
@@ -194,7 +195,6 @@ doSingleBinary
 
   string cache_path_directory;
   string cache_flat_entry;
-  string cache_directory;
 
   // Make sure the file is readable
   if ( access(binary_abspath.c_str(), R_OK) != 0 ) {
@@ -205,52 +205,30 @@ doSingleBinary
     exit(1);
   }
 
-  if (args.nocache) {
-    // the user intentionally turned off the cache
-    args.cache_stat = CACHE_DISABLED;
+  if (!cache.empty()) {
+    // Compute a hash of the binary at the input absolute path
+    char *hash = hpcstruct_cache_hash(binary_abspath.c_str());
 
-  }  else {
-    //  using the cache; first open/create the directory
-    //
-    char *path = setup_cache_dir(args.cache_directory.c_str(), &args);
-
-    if (path) {
-      // We have either opened or created the cache directory; path is its absolute path.
-      cache_directory = path;
-      args.cache_stat = CACHE_ENABLED;
-#if 0
-      cerr << "DEBUG singleApplicationBinary  -- setup_cache_dir path = " << path
-        <<" setting state to CACHE_ENABLED = " << CACHE_ENABLED << endl;
-#endif
-
-      // Compute a hash of the binary at the input absolute path
-      char *hash = hpcstruct_cache_hash(binary_abspath.c_str());
-
-      //  If it's a gpu binary and the user requested the cfg, set a suffix
-      string suffix = "";
-      if (gpu_binary && args.compute_gpu_cfg) {
-        suffix = "+gpucfg";
-      }
-
-      // Compute the path in the cache for that binary
-      cache_path_directory = hpcstruct_cache_path_directory(cache_directory.c_str(),
-           binary_abspath.c_str(), hash, suffix.c_str() );
-
-      // Compute the path for the entry in the FLAT subdirectory of the cache
-      cache_flat_entry = hpcstruct_cache_flat_entry(cache_directory.c_str(), hash );
-
-      string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
-      symlink(cache_path_link.c_str(), cache_flat_entry.c_str());
-#if 0
-      cerr << "DEBUG symlinked " << cache_path_link.c_str() << " to " << cache_flat_entry.c_str() << endl;
-      cerr << "DEBUG state now = "  << args.cache_stat << endl;
-#endif
-
-    } else {
-      //
-      // the user did not specify a cache directory
-      args.cache_stat = CACHE_NOT_NAMED;
+    //  If it's a gpu binary and the user requested the cfg, set a suffix
+    string suffix = "";
+    if (gpu_binary && args.compute_gpu_cfg) {
+      suffix = "+gpucfg";
     }
+
+    // Compute the path in the cache for that binary
+    cache_path_directory = hpcstruct_cache_path_directory(cache.c_str(),
+         binary_abspath.c_str(), hash, suffix.c_str() );
+
+    // Compute the path for the entry in the FLAT subdirectory of the cache
+    cache_flat_entry = hpcstruct_cache_flat_entry(cache.c_str(), hash );
+
+    string cache_path_link = hpcstruct_cache_path_link(binary_abspath.c_str(), hash);
+    symlink(cache_path_link.c_str(), cache_flat_entry.c_str());
+#if 0
+    cerr << "DEBUG symlinked " << cache_path_link.c_str() << " to " << cache_flat_entry.c_str() << endl;
+    cerr << "DEBUG state now = "  << args.cache_stat << endl;
+#endif
+
   }
 
 #if 0

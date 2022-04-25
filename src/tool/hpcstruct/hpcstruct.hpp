@@ -51,7 +51,7 @@
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
 
-void doSingleBinary( Args &args, struct stat *sb);
-void doMeasurementsDir ( Args &args, struct stat *sb);
+void doSingleBinary( Args &args, const std::string& cache, struct stat *sb);
+void doMeasurementsDir ( Args &args, const std::string& cache, struct stat *sb);
 
 #endif //hpcstruct_hpp

@@ -99,6 +99,7 @@ void
 doMeasurementsDir
 (
  Args &args,
+ const std::string& cache,
  struct stat *sb
 )
 {
@@ -149,33 +150,6 @@ doMeasurementsDir
     pthreads = jobs;
   }
 
-  string cache_path;
-
-  // Initialize the structure cache, if specified
-  //
-  if (!args.nocache) {
-    char *cpath = NULL;
-
-    // Find or create the actual cache directory
-    try {
-      cpath = setup_cache_dir(args.cache_directory.c_str(), &args);
-    } catch(const Diagnostics::FatalException &e) {
-      exit(1);
-    };
-
-    // How can cpath still be NULL???
-    if (cpath) {
-      cache_path = cpath;
-      //
-      // check that the cache is writable
-      //
-      if (!hpcstruct_cache_writable(cpath)) {
-	DIAG_EMsg("hpcstruct cache directory " << cpath << " not writable");
-	exit(1);
-      }
-    }
-  }
-
   string gpucfg = args.compute_gpu_cfg ? "yes" : "no";
 
   // two threads per small binary unless concurrency is 1
@@ -196,11 +170,7 @@ doMeasurementsDir
 	   << "PROFTT = "       << hpcproftt_path << "\n"
 	   << "STRUCT= "        << hpcstruct_path << "\n";
 
-  if (!cache_path.empty()) {
-    makefile << "CACHE= "       << cache_path << "\n";
-  } else {
-    makefile << "CACHE= " << "\n";
-  }
+  makefile << "CACHE= "       << cache << "\n";
 
   makefile << analysis_makefile << endl;
 
