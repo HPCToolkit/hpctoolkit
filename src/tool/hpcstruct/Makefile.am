@@ -139,7 +139,7 @@ noinst_HEADERS = $(GENHEADERS)
 BUILT_SOURCES = $(GENHEADERS)
 
 bin_SCRIPTS = hpcstruct
-pkglibexec_SCRIPTS = dotgraph renamestruct.sh
+pkglibexec_SCRIPTS = dotgraph
 pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
