@@ -92,6 +92,7 @@ using std::endl;
 #include <streambuf>
 #include <new>
 #include <vector>
+#include <string_view>
 
 #include <string.h>
 #include <unistd.h>
@@ -183,9 +184,15 @@ realmain(int argc, char* argv[])
   if(args.nocache) {
     args.cache_stat = CACHE_DISABLED;
   } else {
-    const char* path = setup_cache_dir(args.cache_directory.c_str(), &args);
+    bool created;
+    char* path = setup_cache_dir(args.cache_directory.c_str(), &args, created);
     args.cache_stat = path != NULL ? CACHE_ENABLED : CACHE_NOT_NAMED;
-    if(path != NULL) cache = path;
+    if(path != NULL) {
+      cache = path;
+      free(path);
+      std::cerr << "NOTE: " << (created ? "created" : "using")
+                << " structure cache directory " << cache << "\n\n";
+    }
   }
 
   // ------------------------------------------------------------
@@ -215,7 +222,86 @@ realmain(int argc, char* argv[])
   } else {
     // Process a single binary, passing in its stat result
     //
+    printBeginProcess(args, MODE_STANDARD, &sb);
     doSingleBinary(args, cache, &sb);
+    printEndProcess(args, MODE_CONCURRENT);
   }
   return 0;
 }
+
+bool isGpuBinary(const Args& args) {
+  return args.in_filenm.find(GPU_BINARY_SUFFIX) != string::npos;
+}
+
+static const std::string_view modestr(const Args& args, Mode mode) {
+  if(args.cacheonly) return "cached";
+  switch(mode) {
+  case MODE_STANDARD: return args.jobs > 1 ? "parallel" : "sequential";
+  case MODE_CONCURRENT: return "concurrent";
+  }
+  std::abort();
+}
+
+void printBeginProcess(const Args& args, Mode mode, struct stat* sb) {
+  if(isGpuBinary(args)) {
+    std::cerr << " begin " << modestr(args, mode)
+      << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      << "] analysis of " "GPU binary "
+      << args.in_filenm << " (size = " << sb->st_size
+      << ", threads = " << args.jobs << ")\n";
+  } else {
+    std::cerr << " begin " << modestr(args, mode)
+      << " analysis of CPU binary "
+      << args.in_filenm << " (size = " << sb->st_size
+      << ", threads = " << args.jobs << ")\n";
+  }
+}
+
+void printEndProcess(const Args& args, Mode mode) {
+  // Set cache usage status string
+  const char * cache_stat_str;
+  switch( args.cache_stat ) {
+    case CACHE_NOT_NAMED:
+      cache_stat_str = " (Cache not specified)";
+      break;
+    case CACHE_DISABLED:
+      cache_stat_str = " (Cache disabled by user)";
+      break;
+    case CACHE_ENABLED:
+      cache_stat_str = " (Cache enabled XXX )";  // Intermediate state, should never be seen
+      break;
+    case CACHE_ENTRY_COPIED:
+      cache_stat_str =  " (Copied from cache)";
+      break;
+    case CACHE_ENTRY_COPIED_RENAME:
+      cache_stat_str =  " (Copied from cache +)";
+      break;
+    case CACHE_ENTRY_ADDED:
+      cache_stat_str =  " (Added to cache)";
+      break;
+    case CACHE_ENTRY_ADDED_RENAME:
+      cache_stat_str =  " (Added to cache + XXX)";  // Should never happen
+      break;
+    case CACHE_ENTRY_REPLACED:
+      cache_stat_str =  " (Replaced in cache)";
+      break;
+    case CACHE_ENTRY_REMOVED:
+      cache_stat_str =  " (Removed from cache XXX)";  //Intermediate state, should never be seen
+      break;
+    default:
+      cache_stat_str = " (?? unknown XXX)";
+      break;
+  }
+
+  if(isGpuBinary(args)) {
+    std::cerr << "   end " << modestr(args, mode)
+      << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      << "] analysis of GPU binary "
+      << args.in_filenm << cache_stat_str << "\n";
+  } else {
+    std::cerr << "   end " << modestr(args, mode)
+      << " analysis of CPU binary "
+      << args.in_filenm << cache_stat_str << "\n";
+  }
+}
+

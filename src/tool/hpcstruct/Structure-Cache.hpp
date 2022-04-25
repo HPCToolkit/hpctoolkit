@@ -102,7 +102,8 @@ char *
 setup_cache_dir
 (
  const char *cache_dir,
- Args *args
+ Args *args,
+ bool& created
 );
 
 

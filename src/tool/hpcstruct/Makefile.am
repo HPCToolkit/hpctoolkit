@@ -92,7 +92,8 @@ MYCXXFLAGS = \
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
-	-ldl
+	-ldl \
+	-lstdc++fs
 
 MYLDADD = \
 	@HOST_HPCSTRUCT_LDFLAGS@ \
@@ -127,7 +128,6 @@ endif
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 GENHEADERS = \
-	pmake.h \
 	usage.h
 
 #----------------------------------------------------------------------

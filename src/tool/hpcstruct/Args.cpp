@@ -188,6 +188,7 @@ Args::Ctor()
   searchPathStr = ".";
   show_gaps = false;
   nocache = false;
+  cacheonly = false;
   compute_gpu_cfg = false;
   cache_stat = CACHE_DISABLED;
   pretty_print_output = false;

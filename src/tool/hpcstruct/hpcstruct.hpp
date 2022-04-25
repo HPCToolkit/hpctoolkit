@@ -51,6 +51,12 @@
 #include "Args.hpp"
 #include "Structure-Cache.hpp"
 
+enum Mode { MODE_STANDARD, MODE_CONCURRENT };
+
+bool isGpuBinary(const Args&);
+void printBeginProcess(const Args&, Mode mode, struct stat*);
+void printEndProcess(const Args&, Mode mode);
+
 void doSingleBinary( Args &args, const std::string& cache, struct stat *sb);
 void doMeasurementsDir ( Args &args, const std::string& cache, struct stat *sb);
 

@@ -101,7 +101,7 @@ static void replace_lmname(std::string& line, const std::string& newname) {
   // If the old filename ends in .gpubin.<hash>, don't remove the hash since
   // it's required for proper operation in Intel cases.
   {
-    auto tail = line.find(".gpubin.");
+    auto tail = line.find(GPU_BINARY_SUFFIX ".");
     if(tail != std::string::npos) {
       tail += 7;  // ie. the . after gpubin
 
@@ -185,7 +185,7 @@ doSingleBinary
     args.jobs = 1;
   }
 
-  bool gpu_binary = args.in_filenm.find(GPU_BINARY_SUFFIX) != string::npos;
+  bool gpu_binary = isGpuBinary(args);
 
   string binary_abspath = RealPath(args.in_filenm.c_str());
 #if 0
@@ -242,24 +242,6 @@ doSingleBinary
 
   if (gpu_binary && args.compute_gpu_cfg) structure_name += "+gpucfg";
 
-  // set sequential or parallel mode
-  std::string mode = "sequential";
-  if (args.jobs > 1 ) {
-    mode = "parallel";
-  }
-
-  // Direct invocation, write a starting message
-  if (gpu_binary == true ) {
-    std::cout << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
-      << "] analysis of " "GPU binary "
-      << args.in_filenm.c_str() << " (size = " << sb->st_size
-      << ", threads = " << args.jobs << ")" << std::endl;
-  } else {
-    std::cout << " begin " << mode.c_str() << " analysis of CPU binary "
-      << args.in_filenm.c_str() << " (size = " << sb->st_size
-      << ", threads = " << args.jobs << ")" << std::endl;
-  }
-
   // Initialize the output stream for the hpcstruct file
   //  Cacheing is embedded in this call
   //
@@ -290,14 +272,18 @@ doSingleBinary
   int error = 0;
 
   if (hpcstruct.needed() || gaps.needed()) {
-    hpcstruct.open();
-    gaps.open();
-    try {
-      BAnal::Struct::makeStructure(args.in_filenm, hpcstruct.getStream(),
-				   gaps.getStream(), gaps.getName(),
-				   args.searchPathStr, opts);
-    } catch (int n) {
-      error = n;
+    if(args.cacheonly) {
+      error = 1;
+    } else {
+      hpcstruct.open();
+      gaps.open();
+      try {
+        BAnal::Struct::makeStructure(args.in_filenm, hpcstruct.getStream(),
+				     gaps.getStream(), gaps.getName(),
+				     args.searchPathStr, opts);
+      } catch (int n) {
+        error = n;
+      }
     }
   }
 
@@ -318,52 +304,6 @@ doSingleBinary
 
   hpcstruct.finalize(error);
   gaps.finalize(error);
-
-  // Set cache usage status string
-  const char * cache_stat_str;
-  switch( args.cache_stat ) {
-    case CACHE_NOT_NAMED:
-      cache_stat_str = " (Cache not specified)";
-      break;
-    case CACHE_DISABLED:
-      cache_stat_str = " (Cache disabled by user)";
-      break;
-    case CACHE_ENABLED:
-      cache_stat_str = " (Cache enabled XXX )";  // Intermediate state, should never be seen
-      break;
-    case CACHE_ENTRY_COPIED:
-      cache_stat_str =  " (Copied from cache)";
-      break;
-    case CACHE_ENTRY_COPIED_RENAME:
-      cache_stat_str =  " (Copied from cache +)";
-      break;
-    case CACHE_ENTRY_ADDED:
-      cache_stat_str =  " (Added to cache)";
-      break;
-    case CACHE_ENTRY_ADDED_RENAME:
-      cache_stat_str =  " (Added to cache + XXX)";  // Should never happen
-      break;
-    case CACHE_ENTRY_REPLACED:
-      cache_stat_str =  " (Replaced in cache)";
-      break;
-    case CACHE_ENTRY_REMOVED:
-      cache_stat_str =  " (Removed from cache XXX)";  //Intermediate state, should never be seen
-      break;
-    default:
-      cache_stat_str = " (?? unknown XXX)";
-      break;
-  }
-  //
-  // If this invocation was not from a Makefile, write a message to the user
-  //
-  if (gpu_binary == true ) {
-    std::cout << "   end " << mode.c_str() << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
-      << "] analysis of " "GPU binary "
-      << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
-  } else {
-    std::cout << "   end " << mode.c_str() << " analysis of CPU binary "
-      << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
-  }
 
   if (error) exit(error);
 }

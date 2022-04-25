@@ -566,14 +566,15 @@ char *
 setup_cache_dir
 (
  const char *cache_dir,
- Args *args
+ Args *args,
+ bool& created
 )
 {
   global_args = args;
   static bool warn = true;
   char abspath[PATH_MAX];
   ckpath_ret_t ret;
-  bool created = false;
+  created = false;
 
   if (empty_string(cache_dir)) {
     // cache directory is not explicit: consider environment variable value
@@ -613,12 +614,6 @@ setup_cache_dir
       std::cerr << "ERROR: Failed to create hpcstruct cache directory: " << strerror(errno) << std::endl;
       exit(1);
     }
-  }
-
-  if ( created == true ) {
-      std::cout << "INFO: Created structure cache directory " << abspath << std::endl << std::endl;
-  } else {
-     std::cout << "INFO: Using structure cache directory " << abspath << std::endl << std::endl;
   }
 
   return strdup(abspath);

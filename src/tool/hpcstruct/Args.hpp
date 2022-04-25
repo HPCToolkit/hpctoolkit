@@ -73,7 +73,7 @@
 //*************************** Forward Declarations **************************
 
 typedef enum { CACHE_DISABLED, CACHE_ENABLED, CACHE_NOT_NAMED, CACHE_ENTRY_COPIED, CACHE_ENTRY_COPIED_RENAME, CACHE_ENTRY_ADDED,
-        CACHE_ENTRY_ADDED_RENAME, CACHE_ENTRY_REPLACED, CACHE_ENTRY_REMOVED } cachestat_t;
+        CACHE_ENTRY_ADDED_RENAME, CACHE_ENTRY_REPLACED, CACHE_ENTRY_REMOVED, CACHE_MAXENUM } cachestat_t;
 
 //***************************************************************************
 
@@ -131,6 +131,7 @@ public:
   bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false
   bool nocache;                   // default: false
+  bool cacheonly;                 // default: false
 
   // Parsed Data: arguments
   std::string in_filenm;
