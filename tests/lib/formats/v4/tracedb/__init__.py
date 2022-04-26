@@ -45,16 +45,18 @@
 from ..._base import VersionedFormat, FileHeader
 from ..._util import (cached_property, unpack, array_unpack, VersionedBitFlags,
                       isomorphic_seq)
+from ..metadb import MetaDB, Context
+from ..profiledb import ProfileDB, ProfileInfo
 
-from collections import namedtuple
 from struct import Struct
+import collections.abc
 import itertools
 import textwrap
 
 __all__ = [
   'TraceDB',
   # v4.0
-  'ContextTraceHeadersSection', 'ContextTraceHeader', 'ContextTraceElement',
+  'ContextTraceHeadersSection', 'ContextTraceHeader',
 ]
 
 def tsfmt(ts):
@@ -68,17 +70,26 @@ class TraceDB(FileHeader,
     CtxTraces = (0,),
   ):
   """The trace.db file format."""
-  __slots__ = ['_ctxTraces']
+  __slots__ = ['_metadb', '_profiledb', '_ctxTraces']
 
-  def _init_(self, *, ctxTraces):
+  def _init_(self, *, metadb, profiledb, ctxTraces):
     super()._init_()
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    if not isinstance(profiledb, ProfileDB): raise TypeError(type(profiledb))
+    self._metadb, self._profiledb = metadb, profiledb
     self.ctxTraces = (ctxTraces if isinstance(ctxTraces, ContextTraceHeadersSection)
-                      else ContextTraceHeadersSection(**ctxTraces))
+                      else ContextTraceHeadersSection(metadb=self._metadb, profiledb=self._profiledb, **ctxTraces))
+
+  def unpack_from(self, *args, metadb, profiledb, **kwargs):
+    super().unpack_from(*args, **kwargs)
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    if not isinstance(profiledb, ProfileDB): raise TypeError(type(profiledb))
+    self._metadb, self._profiledb = metadb, profiledb
 
   @cached_property('_ctxTraces')
-  @VersionedFormat.subunpack(lambda: ContextTraceHeadersSection())
+  @VersionedFormat.subunpack(lambda: ContextTraceHeadersSection(metadb=self._metadb, profiledb=self._profiledb))
   def ctxTraces(self, *args):
-    return ContextTraceHeadersSection(*args, offset=self._pCtxTraces)
+    return ContextTraceHeadersSection(*args, metadb=self._metadb, profiledb=self._profiledb, offset=self._pCtxTraces)
 
   def identical(self, other):
     if not isinstance(other, TraceDB): raise TypeError(type(other))
@@ -106,19 +117,30 @@ class ContextTraceHeadersSection(VersionedFormat,
     maxTimestamp = (0, 0x18, 'Q'),
   ):
   """trace.db Context Trace Headers section."""
-  __slots__ = ['_traces']
+  __slots__ = ['_metadb', '_profiledb', '_traces']
 
-  def _init_(self, *, traces=[], minTimestamp, maxTimestamp):
+  def _init_(self, *, metadb, profiledb, traces=[], minTimestamp, maxTimestamp):
     super()._init_()
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    if not isinstance(profiledb, ProfileDB): raise TypeError(type(profiledb))
+    self._metadb, self._profiledb = metadb, profiledb
     self.minTimestamp = minTimestamp.__index__()
     self.maxTimestamp = maxTimestamp.__index__()
-    self.traces = [t if isinstance(t, ContextTraceHeader) else ContextTraceHeader(**t)
+    self.traces = [t if isinstance(t, ContextTraceHeader) else
+                   ContextTraceHeader(metadb=self._metadb, profiledb=self._profiledb, **t)
                    for t in traces]
+
+  def unpack_from(self, *args, metadb, profiledb, **kwargs):
+    super().unpack_from(*args, **kwargs)
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    if not isinstance(profiledb, ProfileDB): raise TypeError(type(profiledb))
+    self._metadb, self._profiledb = metadb, profiledb
 
   @cached_property('_traces')
   @VersionedFormat.subunpack(list)
   def traces(self, *args):
-    return [ContextTraceHeader(*args, offset=self._pTraces + i*self._szTrace)
+    return [ContextTraceHeader(*args, metadb=self._metadb, profiledb=self._profiledb,
+                               offset=self._pTraces + i*self._szTrace)
             for i in range(self._nTraces)]
 
   def identical(self, other):
@@ -127,7 +149,7 @@ class ContextTraceHeadersSection(VersionedFormat,
             and self.maxTimestamp == other.maxTimestamp
             and isomorphic_seq(self.traces, other.traces,
                                lambda a,b: a.identical(b),
-                               key=lambda t: t.profIndex))
+                               key=lambda t: t._profIndex))
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(traces={self.traces!r}, "
@@ -146,44 +168,99 @@ class ContextTraceHeadersSection(VersionedFormat,
 @VersionedFormat.minimize
 class ContextTraceHeader(VersionedFormat,
     # Added in v4.0
-    profIndex = (0, 0x00, 'L'),
+    _profIndex = (0, 0x00, 'L'),
     _pStart = (0, 0x08, 'Q'),
     _pEnd = (0, 0x10, 'Q'),
   ):
   """Header for a single trace of Contexts."""
-  __slots__ = ['_trace']
+  __slots__ = ['_metadb', '_profiledb', '_profile', '_trace']
   __elem = Struct('<QL')  # timestamp, ctxId
 
-  def _init_(self, *, profIndex, trace=[]):
+  def _init_(self, *, metadb, profiledb, profile, trace=[]):
     super()._init_()
-    self.profIndex = profIndex.__index__()
-    self.trace = [ContextTraceElement(ts.__index__(), ctx.__index__())
-                  for ts, ctx in trace]
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    if not isinstance(profiledb, ProfileDB): raise TypeError(type(profiledb))
+    self._metadb, self._profiledb = metadb, profiledb
+    self.profile = profile
+    self.trace = [ContextTraceElement(ts.__index__(), ctx) for ts, ctx in trace]
+
+  def unpack_from(self, *args, metadb, profiledb, **kwargs):
+    super().unpack_from(*args, **kwargs)
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    if not isinstance(profiledb, ProfileDB): raise TypeError(type(profiledb))
+    self._metadb, self._profiledb = metadb, profiledb
+
+  @cached_property('_profile')
+  def profile(self):
+    return self._profiledb.profiles.profiles[self._profIndex]
+  @profile.setter
+  def profile(self, profile):
+    if not isinstance(profile, ProfileInfo): raise TypeError(type(profile))
+    self._profIndex = self._profiledb.profiles.profiles.index(profile)
+    self._profile = profile
 
   @cached_property('_trace')
   @VersionedFormat.subunpack(list)
   def trace(self, version, src):
-    return [ContextTraceElement(ts, ctx) for ts,ctx in
+    byCtxId = self._metadb.context.byCtxId()
+    return [ContextTraceElement(ts, byCtxId[ctxId]) for ts,ctxId in
             array_unpack(self.__elem, (self._pEnd-self._pStart) // 0x0c, src,
                          offset=self._pStart)]
 
   def identical(self, other):
     if not isinstance(other, ContextTraceHeader): raise TypeError(type(other))
-    return self.profIndex == other.profIndex and self.trace == other.trace
+    return (self.profile.identical(other.profile)
+            and len(self.trace) == len(other.trace)
+            and all(a.timestamp == b.timestamp for a,b in zip(self.trace, other.trace))
+            and all(a.ctxId == b.ctxId for a,b in zip(self.trace, other.trace)))
 
   def __repr__(self):
-    return (f"{self.__class__.__name__}(profIndex={self.profIndex!r}, "
+    return (f"{self.__class__.__name__}(profile={self.profile!r}, "
             f"trace={self.trace!r})")
 
   def __str__(self):
     if len(self.trace) > 0:
-      frag = (f" {tsfmt(self.trace[0][0])}\n"
-              + '\n'.join(f"  context #{ctxId:d} @ +{tsfmt(ts - self.trace[0][0])}"
-                          for ts, ctxId in self.trace))
+      frag = (f"{tsfmt(self.trace[0][0])}\n"
+              + '\n'.join(f"  context #{ctx.ctxId:d} @ +{tsfmt(ts - self.trace[0][0])}"
+                          for ts, ctx in self.trace))
     else:
-      frag = " []"
-    return f"context trace for profile #{self.profIndex:d}: {frag}"
+      frag = "[]"
+    return f"context trace for profile {self.profile.shorthand} #{self._profIndex:d}: {frag}"
 
   pack, pack_info = None, None
 
-ContextTraceElement = namedtuple('ContextTraceElement', 'timestamp ctxId')
+class ContextTraceElement(collections.abc.Sequence):
+  __slots__ = ['_timestamp', '_ctx']
+
+  def __init__(self, timestamp, ctx):
+    self.timestamp = timestamp
+    self.ctx = ctx
+
+  def __getitem__(self, i):
+    if not hasattr(i, '__index__'): raise TypeError(type(i))
+    ii = i.__index__()
+    if ii == 0: return self._timestamp
+    if ii == 1: return self._ctx
+    raise IndexError(i)
+
+  def __len__(self): return 2
+
+  def __hash__(self):
+    return hash(tuple(self.timestamp, self.ctx))
+
+  @property
+  def timestamp(self): return self._timestamp
+  @timestamp.setter
+  def timestamp(self, v):
+    if not hasattr(v, '__index__'): raise ValueError(v)
+    self._timestamp = v
+
+  @property
+  def ctx(self): return self._ctx
+  @ctx.setter
+  def ctx(self, v):
+    if not isinstance(v, Context): raise TypeError(type(v))
+    self._ctx = v
+
+  @property
+  def ctxId(self): return self.ctx.ctxId

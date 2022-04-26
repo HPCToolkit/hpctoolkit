@@ -43,21 +43,28 @@
 ## ******************************************************* EndRiceCopyright *
 
 from . import *
+from ..metadb import MetaDB
+from ..profiledb import ProfileDB
 
 from pathlib import Path
 
 testdatadir = Path(__file__).parent.parent / 'testdata'
 
 def test_small_v4_0():
-  a = TraceDB(open(testdatadir/'small_v4.0'/'trace.db'))
+  metadb = MetaDB(open(testdatadir/'small_v4.0'/'meta.db'))
+  C = metadb.context.byCtxId()
+  profiledb = ProfileDB(open(testdatadir/'small_v4.0'/'profile.db'), metadb=metadb)
+  P = profiledb.profiles.profiles
 
-  b = TraceDB(
+  a = TraceDB(open(testdatadir/'small_v4.0'/'trace.db'), metadb=metadb, profiledb=profiledb)
+
+  b = TraceDB(metadb=metadb, profiledb=profiledb,
     ctxTraces = {
       'minTimestamp': 1650412082819499000, 'maxTimestamp': 1650412082820356000,
       'traces': [
-        { 'profIndex': 1, 'trace': [
-          (1650412082819499000, 1),
-          (1650412082820356000, 38),
+        { 'profile': P[1], 'trace': [
+          (1650412082819499000, C[1]),
+          (1650412082820356000, C[38]),
         ]},
       ],
     }
@@ -65,8 +72,3 @@ def test_small_v4_0():
 
   assert str(a) == str(b)
   assert a.identical(b)
-
-  assert 'object at 0x' not in repr(a)
-  c = eval(repr(a))
-  assert str(a) == str(c)
-  assert a.identical(c)

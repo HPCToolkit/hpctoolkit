@@ -69,6 +69,7 @@ def test_small_v4_0_cct():
   assert type(a) is v4.ContextDB
   assert a.identical(v4.ContextDB(f))
 
+@pytest.mark.xfail  # TODO: Need to rethink how general_unpack works
 def test_small_v4_0_trace():
   f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'trace.db')
   a = general_unpack(f)
