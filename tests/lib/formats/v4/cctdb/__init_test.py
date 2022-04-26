@@ -43,27 +43,35 @@
 ## ******************************************************* EndRiceCopyright *
 
 from . import *
+from ..metadb import MetaDB
+from ..profiledb import ProfileDB
 
 from pathlib import Path
 
 testdatadir = Path(__file__).parent.parent / 'testdata'
 
 def test_small_v4_0():
-  a = ContextDB(open(testdatadir/'small_v4.0'/'cct.db'))
+  metadb = MetaDB(open(testdatadir/'small_v4.0'/'meta.db'))
+  C = metadb.context.byCtxId()
+  M = metadb.metrics.byPropMetricId()
+  profiledb = ProfileDB(open(testdatadir/'small_v4.0'/'profile.db'), metadb=metadb)
+  P = profiledb.profiles.profiles
+
+  a = ContextDB(open(testdatadir/'small_v4.0'/'cct.db'), metadb=metadb, profiledb=profiledb)
 
   zero = {'valueBlock': {}}
 
-  m_1 = {2: {1: 152}, 17: {1: 1}}
-  m_2i = {2: {1: 76}, 17: {1: 1}}
-  m_2e = m_2i | {1: {1: 76}}
-  m_3i = {17: {1: 1}}
-  m_3e = {16: {1: 1}, 17: {1: 1}}
-  m_4i = {2: {1: 76}}
-  m_4e = m_4i | {1: {1: 75}}
-  m_5i = {2: {1: 1}}
-  m_5e = m_5i | {1: {1: 1}}
+  m_1 = {M[2]: {P[1]: 152}, M[17]: {P[1]: 1}}
+  m_2i = {M[2]: {P[1]: 76}, M[17]: {P[1]: 1}}
+  m_2e = m_2i | {M[1]: {P[1]: 76}}
+  m_3i = {M[17]: {P[1]: 1}}
+  m_3e = {M[16]: {P[1]: 1}, M[17]: {P[1]: 1}}
+  m_4i = {M[2]: {P[1]: 76}}
+  m_4e = m_4i | {M[1]: {P[1]: 75}}
+  m_5i = {M[2]: {P[1]: 1}}
+  m_5e = m_5i | {M[1]: {P[1]: 1}}
 
-  b = ContextDB(
+  b = ContextDB(metadb=metadb, profiledb=profiledb,
     ctxs = {
       'ctxs': [
         {'valueBlock': m_1},
@@ -95,8 +103,3 @@ def test_small_v4_0():
 
   assert str(a) == str(b)
   assert a.identical(b)
-
-  assert 'object at 0x' not in repr(a)
-  c = eval(repr(a))
-  assert str(a) == str(c)
-  assert a.identical(c)

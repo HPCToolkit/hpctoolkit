@@ -56,7 +56,6 @@ __all__ = [
   'ProfileDB',
   # v4.0
   'ProfileInfoSection', 'ProfileInfo', 'IdentifierElement',
-  'ProfileSparseValueBlock',
 ]
 
 @VersionedFormat.minimize
@@ -210,9 +209,13 @@ class ProfileInfo(VersionedFormat,
     return (f"{self.__class__.__name__}(idTuple={self.idTuple!r}, "
             f"valueBlock={self.valueBlock!r})")
 
+  @property
+  def shorthand(self):
+    return (' '.join(str(e) for e in self.idTuple)
+            if self.idTuple is not self.__SUMMARY else "SUMMARY")
+
   def __str__(self):
-    return ("profile: "
-            + (' '.join(str(e) for e in self.idTuple) if self.idTuple is not self.__SUMMARY else "SUMMARY") + "\n"
+    return (f"profile: {self.shorthand}\n"
             "valueBlock: "
             + ('\n' + textwrap.indent(str(self.valueBlock), '  ')
                if len(self.valueBlock) > 0 else " {}")
@@ -324,16 +327,16 @@ class ProfileSparseValueBlock(collections.abc.MutableMapping):
     else: raise KeyError(ctx)
 
   def __iter__(self):
-    return itertools.chain(self._real, (self._byCtxId[ctxId] for ctxId in self._ctxIndices))
+    return itertools.chain(self._real, list(self._byCtxId[ctxId] for ctxId in self._ctxIndices))
 
   def __len__(self):
     return len(self._real) + len(self._ctxIndices)
 
   def __str__(self):
-    return '\n'.join(f"context #{k.ctxId:d}:"
-                     + ("\n" + '\n'.join(textwrap.indent(str(self[k]), '  '))
-                        if len(self[k]) > 0 else " {}")
-                     for k in sorted(self, key=lambda k: k.ctxId))
+    return '\n'.join(f"context #{c.ctxId:d}:"
+                     + ("\n" + '\n'.join(textwrap.indent(str(b), '  '))
+                        if len(b) > 0 else " {}")
+                     for c,b in sorted(self.items(), key=lambda x: x[0].ctxId))
 
 
 class NonSummaryProfileValues(collections.abc.MutableMapping):
@@ -346,23 +349,21 @@ class NonSummaryProfileValues(collections.abc.MutableMapping):
       self[k] = v
 
   @staticmethod
-  def __check_key(key):
-    if not isinstance(key, tuple): raise TypeError(type(key))
-    if len(key) != 2: raise ValueError(key)
-    if not isinstance(key[0], MetricDescription): raise TypeError(type(key[0]))
-    if not isinstance(key[1], PropagationScope): raise TypeError(type(key[1]))
+  def _key(key):
+    met, scope = key
+    if not isinstance(met, MetricDescription): raise TypeError(type(met))
+    if scope not in met.scopes: raise ValueError(key)
+    if not isinstance(scope, PropagationScope): raise TypeError(type(scope))
+    return (met, scope)
 
   def __getitem__(self, key):
-    self.__check_key(key)
-    return self._real[key]
+    return self._real[self._key(key)]
 
   def __setitem__(self, key, value):
-    self.__check_key(key)
-    self._real[key] = float(value)
+    self._real[self._key(key)] = float(value)
 
   def __delitem__(self, key):
-    self.__check_key(key)
-    del self._real[key]
+    del self._real[self._key(key)]
 
   def __iter__(self): return iter(self._real)
   def __len__(self): return len(self._real)
@@ -385,24 +386,23 @@ class SummaryProfileValues(collections.abc.MutableMapping):
       self[k] = v
 
   @staticmethod
-  def __check_key(key):
-    if not isinstance(key, tuple): raise TypeError(type(key))
-    if len(key) != 3: raise ValueError(key)
-    if not isinstance(key[0], MetricDescription): raise TypeError(type(key[0]))
-    if not isinstance(key[1], PropagationScope): raise TypeError(type(key[1]))
-    if not isinstance(key[2], SummaryStatistic): raise TypeError(type(key[2]))
+  def _key(key):
+    met, scope, stat = key
+    if not isinstance(met, MetricDescription): raise TypeError(type(met))
+    if scope not in met.scopes: raise ValueError(key)
+    if not isinstance(scope, PropagationScope): raise TypeError(type(scope))
+    if stat not in scope.summaries: raise ValueError(key)
+    if not isinstance(stat, SummaryStatistic): raise TypeError(type(stat))
+    return (met, scope, stat)
 
   def __getitem__(self, key):
-    self.__check_key(key)
-    return self._real[key]
+    return self._real[self._key(key)]
 
   def __setitem__(self, key, value):
-    self.__check_key(key)
-    self._real[key] = float(value)
+    self._real[self._key(key)] = float(value)
 
   def __delitem__(self, key):
-    self.__check_key(key)
-    del self._real[key]
+    del self._real[self._key(key)]
 
   def __iter__(self): return iter(self._real)
   def __len__(self): return len(self._real)

@@ -62,6 +62,7 @@ def test_small_v4_0_profile():
   assert type(a) is v4.ProfileDB
   assert a.identical(v4.ProfileDB(f))
 
+@pytest.mark.xfail  # TODO: Need to rethink how general_unpack works
 def test_small_v4_0_cct():
   f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'cct.db')
   a = general_unpack(f)
