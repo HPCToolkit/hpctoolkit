@@ -84,6 +84,12 @@ typedef struct hpctio_posix_fd {
     }                                                \
 }    
 
+#define CHECK_NOMSG(r, ...)                           \
+{                                                    \
+    if(r != 0) {                                     \
+        goto exit;                                   \
+    }                                                \
+} 
 
 
 
@@ -135,8 +141,14 @@ static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpc
     fd = open(path, flags);
   }
   r = (fd < 0);
-  CHECK(r, "POSIX_Open failed to open the file descriptor for file %s", path);
-
+  if(r){
+    if(errno == EEXIST){
+      CHECK_NOMSG(r);
+    }else{
+      CHECK(r, "POSIX_Open failed to open the file descriptor for file %s with errno", path, errno);
+    }
+  }
+  
   if(popt->wmode == HPCTIO_APPEND){
     obj->fd = fd;
     obj->fs = fdopen(fd, "w");
