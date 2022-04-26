@@ -61,14 +61,14 @@ class LoadModulesSection(VersionedFormat,
 
   def _init_(self, *, modules=[]):
     super()._init_()
-    self.modules = [m if isinstance(m, LoadModule) else LoadModule(**m)
-                    for m in modules]
+    self.modules = {m if isinstance(m, LoadModule) else LoadModule(**m)
+                    for m in modules}
 
   @cached_property('_modules')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def modules(self, *args):
-    return [LoadModule(*args, offset=self._pModules + i*self._szModule)
-            for i in range(self._nModules)]
+    return {LoadModule(*args, offset=self._pModules + i*self._szModule)
+            for i in range(self._nModules)}
 
   def identical(self, other):
     if not isinstance(other, LoadModulesSection): raise TypeError(type(other))

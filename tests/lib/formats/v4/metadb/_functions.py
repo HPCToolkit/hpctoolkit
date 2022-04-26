@@ -65,8 +65,8 @@ class FunctionsSection(VersionedFormat,
 
   def _init_(self, *, functions=[]):
     super()._init_()
-    self.functions = [f if isinstance(f, Function) else Function(**f)
-                      for f in functions]
+    self.functions = {f if isinstance(f, Function) else Function(**f)
+                      for f in functions}
 
   def unpack_from(self, version, src, /, *args, lmSec=None, sfSec=None, **kwargs):
     if not isinstance(lmSec, LoadModulesSection):
@@ -78,10 +78,10 @@ class FunctionsSection(VersionedFormat,
     super().unpack_from(version, src, *args, **kwargs)
 
   @cached_property('_functions')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def functions(self, *args):
-    r = [Function(*args, offset=self._pFunctions + i*self._szFunction)
-         for i in range(self._nFunctions)]
+    r = {Function(*args, offset=self._pFunctions + i*self._szFunction)
+         for i in range(self._nFunctions)}
     for f in r: f._lmTable, f._sfTable = self._lmTable, self._sfTable
     return r
 

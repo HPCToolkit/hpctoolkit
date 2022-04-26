@@ -61,14 +61,14 @@ class SourceFilesSection(VersionedFormat,
 
   def _init_(self, *, files=[]):
     super()._init_()
-    self.files = [f if isinstance(f, SourceFile) else SourceFile(**f)
-                  for f in files]
+    self.files = {f if isinstance(f, SourceFile) else SourceFile(**f)
+                  for f in files}
 
   @cached_property('_files')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def files(self, *args):
-    return [SourceFile(*args, offset=self._pFiles + i*self._szFile)
-            for i in range(self._nFiles)]
+    return {SourceFile(*args, offset=self._pFiles + i*self._szFile)
+            for i in range(self._nFiles)}
 
   def identical(self, other):
     if not isinstance(other, SourceFilesSection): raise TypeError(type(other))

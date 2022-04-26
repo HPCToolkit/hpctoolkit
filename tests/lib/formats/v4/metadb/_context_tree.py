@@ -55,11 +55,12 @@ import os.path
 import textwrap
 
 def _parse_contexts(version, src, *, size, offset):
-  out = []
+  out = set()
   maxoffset = offset + size
   while offset < maxoffset:
-    out.append(Context(version, src, offset=offset))
-    offset += out[-1]._total_size
+    new = Context(version, src, offset=offset)
+    out.add(new)
+    offset += new._total_size
   return out
 
 
@@ -74,8 +75,8 @@ class ContextTreeSection(VersionedFormat,
 
   def _init_(self, *, roots=[]):
     super()._init_()
-    self.roots = [c if isinstance(c, Context) else Context(**c)
-                  for c in roots]
+    self.roots = {c if isinstance(c, Context) else Context(**c)
+                  for c in roots}
 
   def unpack_from(self, version, src, /, *args, lmSec, sfSec, fSec, **kwargs):
     if not isinstance(lmSec, LoadModulesSection):
@@ -90,7 +91,7 @@ class ContextTreeSection(VersionedFormat,
     super().unpack_from(version, src, *args, **kwargs)
 
   @cached_property('_roots')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def roots(self, *args):
     r = _parse_contexts(*args, size=self._szRoots, offset=self._pRoots)
     for c in r:
@@ -166,8 +167,8 @@ class Context(VersionedFormat,
   def _init_(self, *, children=[], ctxId, flags=set(), relation, lexicalType,
                function=None, file=None, line=None, module=None, offset=None):
     super()._init_()
-    self.children = [c if isinstance(c, Context) else Context(**c)
-                     for c in children]
+    self.children = {c if isinstance(c, Context) else Context(**c)
+                     for c in children}
     self.ctxId = ctxId.__index__()
     self.relation = relation
     self.lexicalType = lexicalType
@@ -256,7 +257,7 @@ class Context(VersionedFormat,
     return 0x18 + self._nFlexWords * 8
 
   @cached_property('_children')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def children(self, *args):
     r = _parse_contexts(*args, offset=self._pChildren, size=self._szChildren)
     if hasattr(self, '_lmTable'):

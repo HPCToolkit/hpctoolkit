@@ -63,14 +63,14 @@ class PerformanceMetricsSection(VersionedFormat,
 
   def _init_(self, *, metrics=[]):
     super()._init_()
-    self.metrics = [m if isinstance(m, MetricDescription) else MetricDescription(**m)
-                    for m in metrics]
+    self.metrics = {m if isinstance(m, MetricDescription) else MetricDescription(**m)
+                    for m in metrics}
 
   @cached_property('_metrics')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def metrics(self, *args):
-    r = [MetricDescription(*args, offset=self._pMetrics + i*self._szMetric)
-         for i in range(self._nMetrics)]
+    r = {MetricDescription(*args, offset=self._pMetrics + i*self._szMetric)
+         for i in range(self._nMetrics)}
     for m in r: m._szScope, m._szSummary = self._szScope, self._szSummary
     return r
 
@@ -105,18 +105,18 @@ class MetricDescription(VersionedFormat,
   def _init_(self, *, name, scopes=[]):
     super()._init_()
     self.name = name
-    self.scopes = [p if isinstance(p, PropagationScope) else PropagationScope(**p)
-                   for p in scopes]
+    self.scopes = {p if isinstance(p, PropagationScope) else PropagationScope(**p)
+                   for p in scopes}
 
   def unpack_from(self, version, src, /, *args, **kwargs):
     super().unpack_from(version, src, **kwargs)
     self.name = read_ntstring(src, self._pName)
 
   @cached_property('_scopes')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def scopes(self, *args):
-    r = [PropagationScope(*args, offset=self._pScopes + i*self._szScope)
-         for i in range(self._nScopes)]
+    r = {PropagationScope(*args, offset=self._pScopes + i*self._szScope)
+         for i in range(self._nScopes)}
     for p in r: p._szSummary = self._szSummary
     return r
 
@@ -157,18 +157,18 @@ class PropagationScope(VersionedFormat,
     super()._init_()
     self.scope = scope
     self.propMetricId = propMetricId.__index__()
-    self.summaries = [s if isinstance(s, SummaryStatistic) else SummaryStatistic(**s)
-                      for s in summaries]
+    self.summaries = {s if isinstance(s, SummaryStatistic) else SummaryStatistic(**s)
+                      for s in summaries}
 
   def unpack_from(self, version, src, /, *args, **kwargs):
     super().unpack_from(version, src, *args, **kwargs)
     self.scope = read_ntstring(src, self._pScope)
 
   @cached_property('_summaries')
-  @VersionedFormat.subunpack(list)
+  @VersionedFormat.subunpack(set)
   def summaries(self, *args):
-    return [SummaryStatistic(*args, offset=self._pSummaries + i*self._szSummary)
-            for i in range(self._nSummaries)]
+    return {SummaryStatistic(*args, offset=self._pSummaries + i*self._szSummary)
+            for i in range(self._nSummaries)}
 
   def identical(self, other):
     if not isinstance(other, PropagationScope): raise TypeError(type(other))
