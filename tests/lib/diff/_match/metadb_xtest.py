@@ -117,26 +117,25 @@ def test_filesSec():
 def test_functionsSec():
   lm_foo, sf_foo = LoadModule(path='foo.so'), SourceFile(path='foo.c')
   lm_bar, sf_bar = LoadModule(path='bar.so'), SourceFile(path='bar.c')
-  no_match = MatchResult(True)
-  lm_match = MatchResult(True, ObjectBimap(((lm_foo, lm_bar),)))
-  sf_match = MatchResult(True, ObjectBimap(((sf_foo, sf_bar),)))
+  lm_match = MatchResult.match(lm_foo, lm_bar)
+  sf_match = MatchResult.match(sf_foo, sf_bar)
 
   foo = Function(name='foo', module=lm_foo, offset=0x10, file=sf_foo, line=10)
   barfoo = Function(name='foo', module=lm_bar, offset=0x10, file=sf_bar, line=10)
   bar = Function(name='bar', module=lm_bar, offset=0x20, file=sf_bar, line=20)
 
-  assert match_function(foo, foo, modules=no_match, files=no_match)
+  assert match_function(foo, foo, modules=MatchResult.empty(), files=MatchResult.empty())
   assert match_function(foo, barfoo, modules=lm_match, files=sf_match)
   assert not match_function(foo, bar, modules=lm_match, files=sf_match)
 
   a = FunctionsSection(functions=[foo])
-  m = match_functionsSec(a, a, modules=no_match, files=no_match)
+  m = match_functionsSec(a, a, modules=MatchResult.empty(), files=MatchResult.empty())
   assert m
   assert m.matches[a] is a
   assert m.matches[foo] is foo
 
   b = FunctionsSection(functions=[foo, bar])
-  m = match_functionsSec(a, b, modules=no_match, files=no_match)
+  m = match_functionsSec(a, b, modules=MatchResult.empty(), files=MatchResult.empty())
   assert not m
   assert m.matches[a] is b
   assert m.matches[foo] is foo
@@ -201,7 +200,6 @@ def test_metricsSec():
 def test_contextSec():
   foo = Function(name='foo')
   bar = Function(name='bar')
-  no_match = MatchResult(True)
 
   a = ContextTreeSection(roots=[
     { 'ctxId': 1, 'relation': 'call', 'lexicalType': 'function', 'function': foo,
@@ -210,7 +208,7 @@ def test_contextSec():
       ]
     },
   ])
-  m = match_contextSec(a, a, modules=no_match, files=no_match, functions=no_match)
+  m = match_contextSec(a, a, modules=MatchResult.empty(), files=MatchResult.empty(), functions=MatchResult.empty())
   assert m
   assert m.matches[a] is a
   assert m.matches[a.roots[0]] is a.roots[0]
@@ -220,7 +218,7 @@ def test_contextSec():
     {'ctxId': 2, 'relation': 'call', 'lexicalType': 'function', 'function': foo},
     {'ctxId': 3, 'relation': 'call', 'lexicalType': 'function', 'function': bar},
   ])
-  m = match_contextSec(a, b, modules=no_match, files=no_match, functions=no_match)
+  m = match_contextSec(a, b, modules=MatchResult.empty(), files=MatchResult.empty(), functions=MatchResult.empty())
   assert not m
   assert m.matches[a] is b
   assert m.matches[a.roots[0]] is b.roots[0]
@@ -235,7 +233,7 @@ def test_contextSec():
     },
     { 'ctxId': 3, 'relation': 'call', 'lexicalType': 'function', 'function': foo},
   ])
-  m = match_contextSec(a, c, modules=no_match, files=no_match, functions=no_match)
+  m = match_contextSec(a, c, modules=MatchResult.empty(), files=MatchResult.empty(), functions=MatchResult.empty())
   assert not m
   assert m.matches[a] is c
   assert m.matches[a.roots[0]] is c.roots[1]

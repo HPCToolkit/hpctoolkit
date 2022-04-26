@@ -46,16 +46,25 @@ from .._objbimap import ObjectBimap
 
 class MatchResult:
   """Result of a matching operation"""
-  __slots__ = ['full', 'matches']
-  def __init__(self, full, matches=None):
+  __slots__ = ['full', 'a', 'b', 'matches']
+  def __init__(self, full, a, b, matches=None):
     if matches is None: matches = ObjectBimap()
     self.full: bool = bool(full)
+    self.a, self.b = a, b
     assert isinstance(matches, ObjectBimap)
     self.matches: ObjectBimap = matches
 
   @classmethod
-  def matchif(cls, a, b, cond=True):
-    return MatchResult(True, ObjectBimap(((a, b),))) if cond else MatchResult(False)
+  def empty(cls):
+    return cls(True, None, None)
+
+  @classmethod
+  def matchif(cls, a, b, cond):
+    return MatchResult(cond, a, b, ObjectBimap(((a, b),)) if cond else None)
+
+  @classmethod
+  def match(cls, a, b):
+    return cls.matchif(a, b, True)
 
   def __bool__(self):
     return self.full
@@ -77,6 +86,12 @@ def check_tyb(b, ty):
   if not isinstance(b, ty):
     raise TypeError(f"Cannot compare against {b!r}: expected an object of type {ty!r}")
 
+def check_tym(m, ty=None):
+  if not isinstance(m, MatchResult): raise TypeError(type(m))
+  if ty is not None:
+    if not isinstance(m.a, ty): raise TypeError(type(m.a))
+    if not isinstance(m.b, ty): raise TypeError(type(m.b))
+
 def cmp_id(a, b, /, mr):
   assert isinstance(mr, MatchResult)
   if a is b: return True
@@ -94,7 +109,7 @@ def merge_unordered(a, b, /, match, key=None) -> MatchResult:
     a, b = sorted(a, key=key), sorted(b, key=key)
   else:
     b = list(b)
-  out = MatchResult(True)
+  out = MatchResult.empty()
 
   # TODO: Figure out a really clever algorithm to make this work better.
 

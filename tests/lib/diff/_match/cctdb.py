@@ -42,24 +42,26 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-from .common import MatchResult
-from .metadb import match as metadb_match
-from .profiledb import match as profiledb_match
-from .cctdb import match as cctdb_match
-from .tracedb import match as tracedb_match
+from .common import *
+from ...formats.v4.cctdb import *
 
 from functools import singledispatch
 
 @singledispatch
-def match(a, b, **kwargs) -> MatchResult:
-  """
-  Compare two format objects and identify similarities between them.
-  Returns a MatchResult with information about the matches found.
+def match(a, b): raise NotImplementedError
 
-  Keyword arguments vary between types, see overloads for details.
+@match.register
+def match_cctdb(a: ContextDB, b: ContextDB, /, *, metadb) -> MatchResult:
   """
-  raise TypeError(f"Matching not supported between objects of type {type(a)!r}")
+  Compare two ContextDB objects and find similarities. See match().
+  """
+  check_tyb(b, ContextDB)
+  if not isinstance(metadb, MatchResult): raise TypeError(type(metadb))
+  out = MatchResult.matchif(a, b, a.minorVersion == b.minorVersion)
+  out |= match_ctxInfosSec(a.ctxs, b.ctxs)
+  return out
 
-for match in [metadb_match, profiledb_match, cctdb_match, tracedb_match]:
-  for ty,fun in match.registry.items():
-    match.register(ty, fun)
+@match.register
+def match_ctxInfosSec(a: ContextInfoSection, b: ContextInfoSection) -> MatchResult:
+  check_tyb(b, ContextInfoSection)
+  return MatchResult.matchif(a, b)

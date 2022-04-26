@@ -81,7 +81,7 @@ def match_idNamesSec(a: IdentifierNamesSection, b: IdentifierNamesSection) -> Ma
 @match.register
 def match_metricsSec(a: PerformanceMetricsSection, b: PerformanceMetricsSection) -> MatchResult:
   check_tyb(b, PerformanceMetricsSection)
-  return (MatchResult.matchif(a, b)
+  return (MatchResult.match(a, b)
           | merge_unordered(a.metrics, b.metrics, match_metricDes))
 
 @match.register
@@ -104,7 +104,7 @@ def match_summaryStat(a: SummaryStatistic, b: SummaryStatistic) -> MatchResult:
 @match.register
 def match_modulesSec(a: LoadModulesSection, b: LoadModulesSection) -> MatchResult:
   check_tyb(b, LoadModulesSection)
-  return (MatchResult.matchif(a, b)
+  return (MatchResult.match(a, b)
           | merge_unordered(a.modules, b.modules, match=match_module))
 
 @match.register
@@ -116,7 +116,7 @@ def match_module(a: LoadModule, b: LoadModule) -> MatchResult:
 @match.register
 def match_filesSec(a: SourceFilesSection, b: SourceFilesSection) -> MatchResult:
   check_tyb(b, SourceFilesSection)
-  return (MatchResult.matchif(a, b)
+  return (MatchResult.match(a, b)
           | merge_unordered(a.files, b.files, match=match_file))
 
 @match.register
@@ -132,7 +132,7 @@ def match_functionsSec(a: FunctionsSection, b: FunctionsSection, /, *,
   if not isinstance(files, MatchResult): raise TypeError(type(files))
   check_tyb(b, FunctionsSection)
   f = lambda a, b: match_function(a, b, modules=modules, files=files)
-  return (MatchResult.matchif(a, b)
+  return (MatchResult.match(a, b)
           | merge_unordered(a.functions, b.functions, match=f))
 
 @match.register
@@ -159,7 +159,7 @@ def match_contextSec(a: ContextTreeSection, b: ContextTreeSection, /, *,
         and cmp_id(a.file, b.file, files) and a.line == b.line
         and cmp_id(a.module, b.module, modules) and a.offset == b.offset)
 
-  out = MatchResult.matchif(a, b)
+  out = MatchResult.match(a, b)
 
   # Hunt down perfect matches between the context trees
   def perfect_match(a: Context, b: Context) -> MatchResult:

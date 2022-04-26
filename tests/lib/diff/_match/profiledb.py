@@ -42,24 +42,44 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-from .common import MatchResult
-from .metadb import match as metadb_match
-from .profiledb import match as profiledb_match
-from .cctdb import match as cctdb_match
-from .tracedb import match as tracedb_match
+from .common import *
+from ...formats.v4 import MetaDB
+from ...formats.v4.profiledb import *
 
 from functools import singledispatch
 
 @singledispatch
-def match(a, b, **kwargs) -> MatchResult:
-  """
-  Compare two format objects and identify similarities between them.
-  Returns a MatchResult with information about the matches found.
+def match(a, b): raise NotImplementedError
 
-  Keyword arguments vary between types, see overloads for details.
+@match.register
+def match_profiledb(a: ProfileDB, b: ProfileDB, /, *,
+                    metadb: MatchResult) -> MatchResult:
   """
-  raise TypeError(f"Matching not supported between objects of type {type(a)!r}")
+  Compare two ProfileDB objects and find similarities. See match().
+  """
+  check_tyb(b, ProfileDB)
+  check_tym(metadb, MetaDB)
+  out = MatchResult.matchif(a, b, a.minorVersion == b.minorVersion)
+  out |= match_profilesSec(a.profiles, b.profiles, metadb=metadb)
+  return out
 
-for match in [metadb_match, profiledb_match, cctdb_match, tracedb_match]:
-  for ty,fun in match.registry.items():
-    match.register(ty, fun)
+@match.register
+def match_profilesSec(a: ProfileInfoSection, b: ProfileInfoSection, /, *,
+                      metadb: MatchResult) -> MatchResult:
+  check_tyb(b, ProfileInfoSection)
+  check_tym(metadb, MetaDB)
+  f = lambda a, b: match_profile(a, b, metadb=metadb)
+  return (MatchResult.match(a, b)
+          | merge_unordered(a.profiles, b.profiles, match=match_profile))
+
+@match.register
+def match_profile(a: ProfileInfo, b: ProfileInfo, /, *,
+                  metadb: MatchResult) -> MatchResult:
+  check_tyb(b, ProfileInfo)
+  check_tym(metadb, MetaDB)
+  out = MatchResult.matchif(a, b, a.idTuple == b.idTuple)
+  if out:
+    # Also add matches within the ValueBlock
+    out.matches[a.valueBlock] = b.valueBlock
+
+  return out

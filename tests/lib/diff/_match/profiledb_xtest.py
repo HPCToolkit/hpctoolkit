@@ -42,24 +42,42 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-from .common import MatchResult
-from .metadb import match as metadb_match
-from .profiledb import match as profiledb_match
-from .cctdb import match as cctdb_match
-from .tracedb import match as tracedb_match
+from .profiledb import *
 
-from functools import singledispatch
+def test_profiledb():
+  a = ProfileDB(profiles = {'profiles': []})
+  sections = {'profiles'}
 
-@singledispatch
-def match(a, b, **kwargs) -> MatchResult:
-  """
-  Compare two format objects and identify similarities between them.
-  Returns a MatchResult with information about the matches found.
+  m = match_profiledb(a, a)
+  assert m and m.matches[a] is a
+  for n in sections:
+    assert m.matches[getattr(a, n)] is getattr(a, n)
 
-  Keyword arguments vary between types, see overloads for details.
-  """
-  raise TypeError(f"Matching not supported between objects of type {type(a)!r}")
+  b = ProfileDB(profiles = {'profiles': []})
+  m = match_profiledb(a, b)
+  assert m and m.matches[a] is b
+  for n in sections:
+    assert m.matches[getattr(a, n)] is getattr(b, n)
 
-for match in [metadb_match, profiledb_match, cctdb_match, tracedb_match]:
-  for ty,fun in match.registry.items():
-    match.register(ty, fun)
+def test_profilesSec():
+  foo = ProfileInfo(idTuple=[
+    {'kind': 1, 'flags': ['isPhysical'], 'logicalId': 0, 'physicalId': 0x12},
+  ])
+  bar = ProfileInfo(idTuple=[
+    {'kind': 1, 'flags': ['isPhysical'], 'logicalId': 0, 'physicalId': 0x20},
+  ])
+
+  assert match_profile(foo, foo)
+  assert not match_profile(foo, bar)
+
+  a = ProfileInfoSection(profiles=[foo])
+  m = match_profilesSec(a, a)
+  assert m
+  assert m.matches[foo] is foo
+
+  b = ProfileInfoSection(profiles=[foo, bar])
+  m = match_profilesSec(a, b)
+  assert not m
+  assert m.matches[foo] is foo
+  assert bar not in m.matches
+
