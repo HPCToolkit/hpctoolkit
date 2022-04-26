@@ -119,8 +119,7 @@ MYSOURCES = \
 	formats/metadb.h formats/metadb.c \
 	formats/profiledb.h formats/profiledb.c \
 	formats/cctdb.h formats/cctdb.c \
-	formats/tracedb.h formats/tracedb.c
-	tracedb.h tracedb.c \
+	formats/tracedb.h formats/tracedb.c \
 	hpctio.h hpctio.c hpctio_dfs.c hpctio_posix.c \
 	hpctio_obj.h \
 	hpcfmt2.h hpcfmt2.c \

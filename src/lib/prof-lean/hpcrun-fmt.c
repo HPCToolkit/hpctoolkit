@@ -404,9 +404,9 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, hpctio_obj_t* fobj)
 
   HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->is_frequency_metric, fobj));
 
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(aux_info->is_multiplexed, fobj));
-  HPCFMT_ThrowIfError(hpcfmt_real8_fwrite2(aux_info->threshold_mean, fobj));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(aux_info->num_samples, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite2(x->aux_info.is_multiplexed, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_real8_fwrite2(x->aux_info.threshold_mean, fobj));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite2(x->aux_info.num_samples, fobj));
 
   return HPCFMT_OK;
 }
