@@ -44,8 +44,11 @@
 
 from ..._base import VersionedFormat, FileHeader
 from ..._util import cached_property, unpack, array_unpack, VersionedBitFlags
+from ..metadb import (MetaDB, ContextTreeSection, Context, MetricDescription,
+                      PropagationScope, SummaryStatistic)
 
 from struct import Struct
+import collections.abc
 import itertools
 import textwrap
 
@@ -57,18 +60,25 @@ class ProfileDB(FileHeader,
     IdTuples = (0,),
   ):
   """The profile.db file format."""
-  __slots__ = ['_profiles']
+  __slots__ = ['_metadb', '_profiles']
 
-  def _init_(self, *, profiles=None):
+  def _init_(self, *, metadb, profiles=None):
     super()._init_()
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    self._metadb = metadb
     if profiles is not None:
       self.profiles = profiles if isinstance(profiles, ProfileInfoSection) \
-                      else ProfileInfoSection(**profiles)
+                      else ProfileInfoSection(metadb=self._metadb, **profiles)
+
+  def unpack_from(self, *args, metadb, **kwargs):
+    super().unpack_from(*args, **kwargs)
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    self._metadb = metadb
 
   @cached_property('_profiles')
-  @VersionedFormat.subunpack(lambda: ProfileInfoSection())
+  @VersionedFormat.subunpack(lambda: ProfileInfoSection(metadb=self._metadb))
   def profiles(self, *args):
-    return ProfileInfoSection(*args, offset=self._pProfileInfos)
+    return ProfileInfoSection(*args, metadb=self._metadb, offset=self._pProfileInfos)
 
   def identical(self, other):
     if not isinstance(other, ProfileDB): raise TypeError(type(other))
@@ -94,18 +104,25 @@ class ProfileInfoSection(VersionedFormat,
     _szProfile = (0, 0x0c, 'B'),
   ):
   """Section containing header metadata for the profiles in this database."""
-  __slots__ = ['_profiles']
+  __slots__ = ['_metadb', '_profiles']
 
-  def _init_(self, *, profiles=None):
+  def _init_(self, *, metadb, profiles=None):
     super()._init_()
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    self._metadb = metadb
     if profiles is not None:
-      self.profiles = [p if isinstance(p, ProfileInfo) else ProfileInfo(**p)
+      self.profiles = [p if isinstance(p, ProfileInfo) else ProfileInfo(metadb=self._metadb, **p)
                        for p in profiles]
+
+  def unpack_from(self, *args, metadb, **kwargs):
+    super().unpack_from(*args, **kwargs)
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    self._metadb = metadb
 
   @cached_property('_profiles')
   @VersionedFormat.subunpack(list)
   def profiles(self, *args):
-    return [ProfileInfo(*args, offset=self._pProfiles + i*self._szProfile)
+    return [ProfileInfo(*args, metadb=self._metadb, offset=self._pProfiles + i*self._szProfile)
             for i in range(self._nProfiles)]
 
   def identical(self, other):
@@ -140,17 +157,28 @@ class ProfileInfo(VersionedFormat,
   __slots__ = ['idTuple', 'valueBlock']
   __vb_ctxIndex = Struct('<LQ')  # ctxId, startIndex
 
-  def _init_(self, *, idTuple, valueBlock={}):
+  def _valueBlockKwargs(self, metadb):
+    return {
+      'innerclass': SummaryProfileValues if self.idTuple is self.__SUMMARY else NonSummaryProfileValues,
+      'byCtxId': metadb.context.byCtxId(),
+      'byMetricId': metadb.metrics.byStatMetricId() if self.idTuple is self.__SUMMARY else metadb.metrics.byPropMetricId(),
+    }
+
+  def _init_(self, *, metadb, idTuple, valueBlock={}):
     super()._init_()
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+
     if isinstance(idTuple, str) and idTuple.lower() == 'summary':
       self.idTuple = self.__SUMMARY
     else:
       self.idTuple = tuple(e if isinstance(e, IdentifierElement) else IdentifierElement(**e)
                            for e in idTuple)
-    self.valueBlock = ProfileSparseValueBlock(valueBlock)
+    self.valueBlock = ProfileSparseValueBlock(valueBlock, **self._valueBlockKwargs(metadb))
 
-  def unpack_from(self, version, src, /, *args, **kwargs):
+  def unpack_from(self, version, src, /, *args, metadb, **kwargs):
     super().unpack_from(version, src, *args, **kwargs)
+    if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+
     if self._pIdTuple == 0:
       self.idTuple = self.__SUMMARY
     else:
@@ -158,9 +186,9 @@ class ProfileInfo(VersionedFormat,
       self.idTuple = tuple(IdentifierElement(version, src, offset=self._pIdTuple+8+i*0x10)
                            for i in range(nIds))
 
-    self.valueBlock = ProfileSparseValueBlock.lazy(
+    self.valueBlock = ProfileSparseValueBlock(lazy=(
         array_unpack(self.__vb_ctxIndex, self._vb_nCtxs, src, offset=self._vb_pCtxIndices),
-        src, self._vb_nValues, self._vb_pValues)
+        src, self._vb_nValues, self._vb_pValues), **self._valueBlockKwargs(metadb))
 
   def identical(self, other):
     if not isinstance(other, ProfileInfo): raise TypeError(type(other))
@@ -229,72 +257,153 @@ class IdentifierElement(VersionedFormat,
     return f"{self.kind:d}.{flags}[{self.logicalId:d}/{self.physicalId:x}]"
 
 
-class ProfileSparseValueBlock(dict):
+class ProfileSparseValueBlock(collections.abc.MutableMapping):
   """Lazily-loaded block of sparse values, profile.db variant."""
-  __slots__ = ['_ctxIndices', '_src', '_pValues']
+  __slots__ = ['_real', '_innerclass', '_byCtxId', '_byMetricId',
+               '_ctxIndices', '_src', '_pValues']
   __value = Struct('<Hd')  # metricID, value
 
-  def __init__(self, initial=None):
+  def __init__(self, initial=None, *, innerclass, byCtxId, byMetricId, lazy=None):
     super().__init__()
+    self._real = {}
+    self._innerclass = innerclass
+    self._byCtxId, self._byMetricId = byCtxId, byMetricId
+    self._ctxIndices = {}
+
     if initial is not None:
-      for k,v in (initial.items() if isinstance(initial, dict) else initial):
+      for k,v in (initial.items() if isinstance(initial, collections.abc.Mapping) else initial):
         self[k] = v
 
-  @classmethod
-  def lazy(cls, ctxIndices, src, nValues, pValues):
-    out = cls()
-    out._src, out._pValues = src, pValues.__index__()
+    if lazy is not None:
+      ctxIndices, self._src, nValues, pValues = lazy
+      self._pValues = pValues.__index__()
 
-    out._ctxIndices = {}
-    last = None
-    for c, i in ctxIndices:
+      last = None
+      for c, i in ctxIndices:
+        if last is not None:
+          lc,li = last
+          self._ctxIndices[lc] = (li, i - li)
+        last = (c, i)
       if last is not None:
-        lc,li = last
-        out._ctxIndices[lc] = (li, i - li)
-      last = (c, i)
-    if last is not None:
-      c, i = last
-      out._ctxIndices[c] = (i, nValues.__index__() - i)
+        c, i = last
+        self._ctxIndices[c] = (i, nValues.__index__() - i)
 
-    return out
+  def __getitem__(self, ctx):
+    if not isinstance(ctx, Context) and not isinstance(ctx, ContextTreeSection):
+      raise TypeError(type(ctx))
+    if ctx in self._real: return self._real[ctx]
+    if ctx.ctxId not in self._ctxIndices: raise KeyError(ctx)
 
-  def now(self):
-    if not hasattr(self, '_ctxIndices'): return
-    for ctxId in list(self._ctxIndices):
-      self.__missing__(ctxId)
-    return self
+    # Load the missing block
+    index, cnt = self._ctxIndices[ctx.ctxId]
+    del self._ctxIndices[ctx.ctxId]
+    block = self._innerclass((self._byMetricId[m], v) for m,v in
+        array_unpack(self.__value, cnt, self._src, offset=self._pValues + self.__value.size*index))
+    self._real[ctx] = block
+    return block
 
-  def __missing__(self, ctxId):
-    if not hasattr(self, '_ctxIndices'):
-      raise IndexError()
+  def __setitem__(self, ctx, block):
+    if not isinstance(ctx, Context) and not isinstance(ctx, ContextTreeSection):
+      raise TypeError(type(ctx))
+    if not isinstance(block, self._innerclass): block = self._innerclass(block)
+    self._real[ctx] = block
+    if ctx.ctxId in self._ctxIndices: del self._ctxIndices[ctx.ctxId]
 
-    index, cnt = self._ctxIndices[ctxId]
-    del self._ctxIndices[ctxId]
-    values = dict(array_unpack(self.__value, cnt, self._src, offset=self._pValues + self.__value.size*index))
-    super().__setitem__(ctxId, values)
-    return values
-
-  def __delitem__(self, key):
-    if hasattr(self, '_ctxIndices') and key in self._ctxIndices:
-      del self._ctxIndices[key]
-    return super().__delitem__(key)
+  def __delitem__(self, ctx):
+    if not isinstance(ctx, Context) and not isinstance(ctx, ContextTreeSection):
+      raise TypeError(type(ctx))
+    if ctx in self._real: del self._real[ctx]
+    elif ctx.ctxId in self._ctxIndices: del self._ctxIndices[ctx.ctxId]
+    else: raise KeyError(ctx)
 
   def __iter__(self):
-    if hasattr(self, '_ctxIndices'):
-      return itertools.chain(super().__iter__(), iter(self._ctxIndices))
-    return super().__iter__()
+    return itertools.chain(self._real, (self._byCtxId[ctxId] for ctxId in self._ctxIndices))
 
   def __len__(self):
-    return super().__len__() + len(getattr(self, '_ctxIndices', []))
-
-  def __eq__(self, other):
-    if not isinstance(other, ProfileSparseValueBlock): raise TypeError(type(other))
-    self.now()
-    return super().__eq__(other.now())
+    return len(self._real) + len(self._ctxIndices)
 
   def __str__(self):
-    return '\n'.join(f"context #{k:d}:"
-                     + ("\n" + '\n'.join(f"  metric {kk:d}: {vv:f}"
-                                         for kk,vv in sorted(self[k].items()))
+    return '\n'.join(f"context #{k.ctxId:d}:"
+                     + ("\n" + '\n'.join(textwrap.indent(str(self[k]), '  '))
                         if len(self[k]) > 0 else " {}")
-                     for k in sorted(self))
+                     for k in sorted(self, key=lambda k: k.ctxId))
+
+
+class NonSummaryProfileValues(collections.abc.MutableMapping):
+  """Metric-value mapping for non-summary profiles"""
+  __slots__ = ['_real']
+
+  def __init__(self, initial=None):
+    self._real = {}
+    for k,v in (initial.items() if isinstance(initial, collections.abc.Mapping) else initial):
+      self[k] = v
+
+  @staticmethod
+  def __check_key(key):
+    if not isinstance(key, tuple): raise TypeError(type(key))
+    if len(key) != 2: raise ValueError(key)
+    if not isinstance(key[0], MetricDescription): raise TypeError(type(key[0]))
+    if not isinstance(key[1], PropagationScope): raise TypeError(type(key[1]))
+
+  def __getitem__(self, key):
+    self.__check_key(key)
+    return self._real[key]
+
+  def __setitem__(self, key, value):
+    self.__check_key(key)
+    self._real[key] = float(value)
+
+  def __delitem__(self, key):
+    self.__check_key(key)
+    del self._real[key]
+
+  def __iter__(self): return iter(self._real)
+  def __len__(self): return len(self._real)
+
+  def __repr__(self):
+    return f"{self.__class__.__name__}({self._real!r})"
+
+  def __str__(self):
+    return '\n'.join(f"metric {m.name}/{p.scope} #{p.propMetricId}: {v}"
+                     for (m,p),v in sorted(self.items(), key=lambda x: x[0][1].propMetricId))
+
+
+class SummaryProfileValues(collections.abc.MutableMapping):
+  """Metric-value mapping for summary profiles"""
+  __slots__ = ['_real']
+
+  def __init__(self, initial=None):
+    self._real = {}
+    for k,v in (initial.items() if isinstance(initial, collections.abc.Mapping) else initial):
+      self[k] = v
+
+  @staticmethod
+  def __check_key(key):
+    if not isinstance(key, tuple): raise TypeError(type(key))
+    if len(key) != 3: raise ValueError(key)
+    if not isinstance(key[0], MetricDescription): raise TypeError(type(key[0]))
+    if not isinstance(key[1], PropagationScope): raise TypeError(type(key[1]))
+    if not isinstance(key[2], SummaryStatistic): raise TypeError(type(key[2]))
+
+  def __getitem__(self, key):
+    self.__check_key(key)
+    return self._real[key]
+
+  def __setitem__(self, key, value):
+    self.__check_key(key)
+    self._real[key] = float(value)
+
+  def __delitem__(self, key):
+    self.__check_key(key)
+    del self._real[key]
+
+  def __iter__(self): return iter(self._real)
+  def __len__(self): return len(self._real)
+
+  def __repr__(self):
+    return f"{self.__class__.__name__}({self._real!r})"
+
+  def __str__(self):
+    return '\n'.join(f"statistic {m.name}/{p.scope}/{s.combine}({s.formula}) #{s.statMetricId}: {v}"
+                     for (m,p,s),v in sorted(self.items(), key=lambda x: x[0][2].statMetricId))
+

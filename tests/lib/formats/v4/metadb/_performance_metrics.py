@@ -74,6 +74,12 @@ class PerformanceMetricsSection(VersionedFormat,
     for m in r: m._szScope, m._szSummary = self._szScope, self._szSummary
     return r
 
+  def byPropMetricId(self):
+    return {p.propMetricId: (m, p) for m in self.metrics for p in m.scopes}
+  def byStatMetricId(self):
+    return {s.statMetricId: (m, p, s) for m in self.metrics for p in m.scopes
+            for s in p.summaries}
+
   def identical(self, other):
     if not isinstance(other, PerformanceMetricsSection): raise TypeError(type(other))
     return isomorphic_seq(self.metrics, other.metrics,

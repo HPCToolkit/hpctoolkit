@@ -98,8 +98,11 @@ class ContextTreeSection(VersionedFormat,
       c._lmTable, c._sfTable, c._fTable = self._lmTable, self._sfTable, self._fTable
     return r
 
-  def byId(self):
-    out = {}
+  @property
+  def ctxId(self): return 0
+
+  def byCtxId(self):
+    out = {0: self}
     q = list(self.roots)
     while len(q) > 0:
       c = q.pop()
