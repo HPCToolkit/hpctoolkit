@@ -70,9 +70,9 @@ class ProfileDB(FileHeader,
   def profiles(self, *args):
     return ProfileInfoSection(*args, offset=self._pProfileInfos)
 
-  def __eq__(self, other):
-    if not isinstance(other, ProfileDB): return NotImplemented
-    return self.profiles == other.profiles
+  def identical(self, other):
+    if not isinstance(other, ProfileDB): raise TypeError(type(other))
+    return self.profiles.identical(other.profiles)
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(profiles={self.profiles!r})")
@@ -108,9 +108,10 @@ class ProfileInfoSection(VersionedFormat,
     return [ProfileInfo(*args, offset=self._pProfiles + i*self._szProfile)
             for i in range(self._nProfiles)]
 
-  def __eq__(self, other):
-    if not isinstance(other, ProfileInfoSection): return NotImplemented
-    return self.profiles == other.profiles
+  def identical(self, other):
+    if not isinstance(other, ProfileInfoSection): raise TypeError(type(other))
+    return (len(self.profiles) == len(other.profiles)
+            and all(a.identical(b) for a,b in zip(self.profiles, other.profiles)))
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(profiles={self.profiles!r})")
@@ -161,9 +162,14 @@ class ProfileInfo(VersionedFormat,
         array_unpack(self.__vb_ctxIndex, self._vb_nCtxs, src, offset=self._vb_pCtxIndices),
         src, self._vb_nValues, self._vb_pValues)
 
-  def __eq__(self, other):
-    if not isinstance(other, ProfileInfo): return NotImplemented
-    return self.idTuple == other.idTuple and self.valueBlock == other.valueBlock
+  def identical(self, other):
+    if not isinstance(other, ProfileInfo): raise TypeError(type(other))
+    def idtuple_cmp(a, b):
+      if a is self.__SUMMARY: return b is self.__SUMMARY
+      if b is self.__SUMMARY: return False
+      return len(a) == len(b) and all(x.identical(y) for x,y in zip(a,b))
+    return (idtuple_cmp(self.idTuple, other.idTuple)
+            and self.valueBlock == other.valueBlock)
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(idTuple={self.idTuple!r}, "
@@ -207,10 +213,10 @@ class IdentifierElement(VersionedFormat,
     super().unpack_from(version, src, **kwargs)
     self.flags = self.__flags.unpack(version, self._flags)
 
-  def __eq__(self, other):
-    if not isinstance(other, IdentifierElement): return NotImplemented
-    return self.kind == other.kind and self.flags == other.flags \
-           and self.logicalId == other.logicalId and self.physicalId == other.physicalId
+  def identical(self, other):
+    if not isinstance(other, IdentifierElement): raise TypeError(type(other))
+    return (self.kind == other.kind and self.flags == other.flags
+            and self.logicalId == other.logicalId and self.physicalId == other.physicalId)
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(kind={self.kind!r}, "
@@ -282,7 +288,7 @@ class ProfileSparseValueBlock(dict):
     return super().__len__() + len(getattr(self, '_ctxIndices', []))
 
   def __eq__(self, other):
-    if not isinstance(other, ProfileSparseValueBlock): return NotImplemented
+    if not isinstance(other, ProfileSparseValueBlock): raise TypeError(type(other))
     self.now()
     return super().__eq__(other.now())
 

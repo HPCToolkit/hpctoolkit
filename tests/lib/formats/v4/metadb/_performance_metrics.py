@@ -74,9 +74,10 @@ class PerformanceMetricsSection(VersionedFormat,
     for m in r: m._szScope, m._szSummary = self._szScope, self._szSummary
     return r
 
-  def __eq__(self, other):
-    if not isinstance(other, PerformanceMetricsSection): return NotImplemented
-    return isomorphic_seq(self.metrics, other.metrics, key=lambda m: m.name)
+  def identical(self, other):
+    if not isinstance(other, PerformanceMetricsSection): raise TypeError(type(other))
+    return isomorphic_seq(self.metrics, other.metrics,
+                          lambda a,b: a.identical(b), key=lambda m: m.name)
 
   def __repr__(self):
     return f"PerformanceMetricsSection(metrics={self.metrics!r})"
@@ -119,10 +120,11 @@ class MetricDescription(VersionedFormat,
     for p in r: p._szSummary = self._szSummary
     return r
 
-  def __eq__(self, other):
-    if not isinstance(other, MetricDescription): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, MetricDescription): raise TypeError(type(other))
     return (self.name == other.name
             and isomorphic_seq(self.scopes, other.scopes,
+                               lambda a,b: a.identical(b),
                                key=lambda s: s.scope))
 
   def __repr__(self):
@@ -168,10 +170,11 @@ class PropagationScope(VersionedFormat,
     return [SummaryStatistic(*args, offset=self._pSummaries + i*self._szSummary)
             for i in range(self._nSummaries)]
 
-  def __eq__(self, other):
-    if not isinstance(other, PropagationScope): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, PropagationScope): raise TypeError(type(other))
     return (self.scope == other.scope and self.propMetricId == other.propMetricId
             and isomorphic_seq(self.summaries, other.summaries,
+                               lambda a,b: a.identical(b),
                                key=lambda s: (s.formula, s.combine)))
 
   def __repr__(self):
@@ -226,8 +229,8 @@ class SummaryStatistic(VersionedFormat,
   @combine.deleter
   def combine(self): del self._combine
 
-  def __eq__(self, other):
-    if not isinstance(other, SummaryStatistic): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, SummaryStatistic): raise TypeError(type(other))
     return self.formula == other.formula and self.combine == other.combine \
            and self.statMetricId == other.statMetricId
 

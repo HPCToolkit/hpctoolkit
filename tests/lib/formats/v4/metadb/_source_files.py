@@ -70,9 +70,9 @@ class SourceFilesSection(VersionedFormat,
     return [SourceFile(*args, offset=self._pFiles + i*self._szFile)
             for i in range(self._nFiles)]
 
-  def __eq__(self, other):
-    if not isinstance(other, SourceFilesSection): return NotImplemented
-    return isomorphic_seq(self.files, other.files,
+  def identical(self, other):
+    if not isinstance(other, SourceFilesSection): raise TypeError(type(other))
+    return isomorphic_seq(self.files, other.files, lambda a,b: a.identical(b),
                           key=lambda f: f.path)
 
   def __repr__(self):
@@ -113,8 +113,8 @@ class SourceFile(VersionedFormat,
     self.path = read_ntstring(src, self._pPath)
     self.flags = self.__flags.unpack(version, self._flags)
 
-  def __eq__(self, other):
-    if not isinstance(other, SourceFile): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, SourceFile): raise TypeError(type(other))
     return self.path == other.path and self.flags == other.flags
 
   def __repr__(self):

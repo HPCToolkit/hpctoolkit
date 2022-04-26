@@ -226,7 +226,7 @@ def read_ntstring(src, offset=0):
   return bits.decode('utf-8')
 
 
-def isomorphic_seq(a, b, eq=operator.eq, key=None):
+def isomorphic_seq(a, b, /, eq, key=None):
   """
   Determine if two sequences (lists) are isomorphic or not, based on the given
   equality function `eq`. If `key` is given, the inputs are first sorted via

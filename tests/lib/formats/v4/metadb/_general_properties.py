@@ -66,8 +66,8 @@ class GeneralPropertiesSection(VersionedFormat,
     self.title = read_ntstring(src, offset=self._pTitle)
     self.description = read_ntstring(src, offset=self._pDescription)
 
-  def __eq__(self, other):
-    if not isinstance(other, GeneralPropertiesSection): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, GeneralPropertiesSection): raise TypeError(type(other))
     return self.title == other.title and self.description == other.description
 
   def __repr__(self):

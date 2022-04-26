@@ -94,9 +94,9 @@ def test_small_v4_0():
   )
 
   assert str(a) == str(b)
-  assert a == b
+  assert a.identical(b)
 
   assert 'object at 0x' not in repr(a)
   c = eval(repr(a))
   assert str(a) == str(c)
-  assert a == c
+  assert a.identical(c)

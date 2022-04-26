@@ -85,10 +85,10 @@ class FunctionsSection(VersionedFormat,
     for f in r: f._lmTable, f._sfTable = self._lmTable, self._sfTable
     return r
 
-  def __eq__(self, other):
-    if not isinstance(other, FunctionsSection): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, FunctionsSection): raise TypeError(type(other))
     return isomorphic_seq(self.functions, other.functions,
-                          key=lambda f: f.name)
+                          lambda a,b: a.identical(b), key=lambda f: f.name)
 
   def __repr__(self):
     return f"FunctionsSection(functions={self.functions!r})"
@@ -161,10 +161,15 @@ class Function(VersionedFormat,
   def srcloc(self):
     return (self.file, self.line) if self.file is not None else None
 
-  def __eq__(self, other):
-    if not isinstance(other, Function): return NotImplemented
-    return self.name == other.name and self.point == other.point \
-           and self.srcloc == other.srcloc and self.flags == other.flags
+  def identical(self, other):
+    if not isinstance(other, Function): raise TypeError(type(other))
+    def cmp(a, x, b, y):
+      if a is None: return b is None
+      if b is None: return False
+      return a.identical(b) and x == y
+    return (self.name == other.name and self.flags == other.flags
+            and cmp(self.module, self.offset, other.module, other.offset)
+            and cmp(self.file, self.line, other.file, other.line))
 
   def __repr__(self):
     return (f"Function(name={self.name!r}, "

@@ -52,22 +52,22 @@ def test_small_v4_0_meta():
   f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'meta.db')
   a = general_unpack(f)
   assert type(a) is v4.MetaDB
-  assert a == v4.MetaDB(f)
+  assert a.identical(v4.MetaDB(f))
 
 def test_small_v4_0_profile():
   f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'profile.db')
   a = general_unpack(f)
   assert type(a) is v4.ProfileDB
-  assert a == v4.ProfileDB(f)
+  assert a.identical(v4.ProfileDB(f))
 
 def test_small_v4_0_cct():
   f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'cct.db')
   a = general_unpack(f)
   assert type(a) is v4.ContextDB
-  assert a == v4.ContextDB(f)
+  assert a.identical(v4.ContextDB(f))
 
 def test_small_v4_0_trace():
   f = open(rootdir/'v4'/'testdata'/'small_v4.0'/'trace.db')
   a = general_unpack(f)
   assert type(a) is v4.TraceDB
-  assert a == v4.TraceDB(f)
+  assert a.identical(v4.TraceDB(f))

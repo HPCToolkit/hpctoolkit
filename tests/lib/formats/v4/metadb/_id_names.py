@@ -67,8 +67,8 @@ class IdentifierNamesSection(VersionedFormat,
     return [read_ntstring(src, p) for p, in
             array_unpack(self.__ptr, self._nKinds, src, self._ppNames)]
 
-  def __eq__(self, other):
-    if not isinstance(other, IdentifierNamesSection): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, IdentifierNamesSection): raise TypeError(type(other))
     return self.names == other.names
 
   def __repr__(self):

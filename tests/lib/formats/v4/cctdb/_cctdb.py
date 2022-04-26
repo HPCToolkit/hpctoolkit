@@ -69,9 +69,9 @@ class ContextDB(FileHeader,
   def ctxs(self, *args):
     return ContextInfoSection(*args, offset=self._pCtxInfos)
 
-  def __eq__(self, other):
-    if not isinstance(other, ContextDB): return NotImplemented
-    return self.ctxs == other.ctxs
+  def identical(self, other):
+    if not isinstance(other, ContextDB): raise TypeError(type(other))
+    return self.ctxs.identical(other.ctxs)
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(ctxs={self.ctxs!r})")
@@ -107,9 +107,10 @@ class ContextInfoSection(VersionedFormat,
     return [ContextInfo(*args, offset=self._pCtxs + i*self._szCtx)
             for i in range(self._nCtxs)]
 
-  def __eq__(self, other):
-    if not isinstance(other, ContextInfoSection): return NotImplemented
-    return self.ctxs == other.ctxs
+  def identical(self, other):
+    if not isinstance(other, ContextInfoSection): raise TypeError(type(other))
+    return (len(self.ctxs) == len(other.ctxs)
+            and all(a.identical(b) for a,b in zip(self.ctxs, other.ctxs)))
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(ctxs={self.ctxs!r})")
@@ -147,8 +148,8 @@ class ContextInfo(VersionedFormat,
         array_unpack(self.__vb_metricIndex, self._vb_nMetrics, src, offset=self._vb_pMetricIndices),
         src, self._vb_nValues, self._vb_pValues)
 
-  def __eq__(self, other):
-    if not isinstance(other, ContextInfo): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, ContextInfo): raise TypeError(type(other))
     return self.valueBlock == other.valueBlock
 
   def __repr__(self):
@@ -223,7 +224,7 @@ class ContextSparseValueBlock(dict):
     return super().__len__() + len(getattr(self, '_metricIndices', []))
 
   def __eq__(self, other):
-    if not isinstance(other, ContextSparseValueBlock): return NotImplemented
+    if not isinstance(other, ContextSparseValueBlock): raise TypeError(type(other))
     self.now()
     return super().__eq__(other.now())
 

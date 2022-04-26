@@ -127,15 +127,15 @@ class MetaDB(FileHeader,
     return FunctionsSection(*args, offset=self._pFunctions,
                                    lmSec=self.modules, sfSec=self.files)
 
-  def __eq__(self, other):
-    if not isinstance(other, MetaDB): return NotImplemented
-    return (self.general == other.general
-            and self.idNames == other.idNames
-            and self.metrics == other.metrics
-            and self.context == other.context
-            and self.modules == other.modules
-            and self.files == other.files
-            and self.functions == other.functions)
+  def identical(self, other):
+    if not isinstance(other, MetaDB): raise TypeError(type(other))
+    return (self.general.identical(other.general)
+            and self.idNames.identical(other.idNames)
+            and self.metrics.identical(other.metrics)
+            and self.context.identical(other.context)
+            and self.modules.identical(other.modules)
+            and self.files.identical(other.files)
+            and self.functions.identical(other.functions))
 
   def __repr__(self):
     return (f"{self.__class__.__name__}("

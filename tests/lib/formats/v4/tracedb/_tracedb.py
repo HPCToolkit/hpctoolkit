@@ -74,9 +74,9 @@ class TraceDB(FileHeader,
   def ctxTraces(self, *args):
     return ContextTraceHeadersSection(*args, offset=self._pCtxTraces)
 
-  def __eq__(self, other):
-    if not isinstance(other, TraceDB): return NotImplemented
-    return self.ctxTraces == other.ctxTraces
+  def identical(self, other):
+    if not isinstance(other, TraceDB): raise TypeError(type(other))
+    return self.ctxTraces.identical(other.ctxTraces)
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(ctxTraces={self.ctxTraces!r})")
@@ -115,12 +115,13 @@ class ContextTraceHeadersSection(VersionedFormat,
     return [ContextTraceHeader(*args, offset=self._pTraces + i*self._szTrace)
             for i in range(self._nTraces)]
 
-  def __eq__(self, other):
-    if not isinstance(other, ContextTraceHeadersSection): return NotImplemented
-    return self.minTimestamp == other.minTimestamp \
-           and self.maxTimestamp == other.maxTimestamp \
-           and isomorphic_seq(self.traces, other.traces,
-                              key=lambda t: t.profIndex)
+  def identical(self, other):
+    if not isinstance(other, ContextTraceHeadersSection): raise TypeError(type(other))
+    return (self.minTimestamp == other.minTimestamp
+            and self.maxTimestamp == other.maxTimestamp
+            and isomorphic_seq(self.traces, other.traces,
+                               lambda a,b: a.identical(b),
+                               key=lambda t: t.profIndex))
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(traces={self.traces!r}, "
@@ -160,8 +161,8 @@ class ContextTraceHeader(VersionedFormat,
             array_unpack(self.__elem, (self._pEnd-self._pStart) // 0x0c, src,
                          offset=self._pStart)]
 
-  def __eq__(self, other):
-    if not isinstance(other, ContextTraceHeader): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, ContextTraceHeader): raise TypeError(type(other))
     return self.profIndex == other.profIndex and self.trace == other.trace
 
   def __repr__(self):

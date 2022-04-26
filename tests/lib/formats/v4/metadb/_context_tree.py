@@ -97,9 +97,18 @@ class ContextTreeSection(VersionedFormat,
       c._lmTable, c._sfTable, c._fTable = self._lmTable, self._sfTable, self._fTable
     return r
 
-  def __eq__(self, other):
-    if not isinstance(other, ContextTreeSection): return NotImplemented
-    return isomorphic_seq(self.roots, other.roots,
+  def byId(self):
+    out = {}
+    q = list(self.roots)
+    while len(q) > 0:
+      c = q.pop()
+      out[c.ctxId] = c
+      q.extend(c.children)
+    return out
+
+  def identical(self, other):
+    if not isinstance(other, ContextTreeSection): raise TypeError(type(other))
+    return isomorphic_seq(self.roots, other.roots, lambda a,b: a.identical(b),
                           key=lambda c: (c.ctxId, c.relation, c.lexicalType))
 
   def __repr__(self):
@@ -298,13 +307,19 @@ class Context(VersionedFormat,
   def point(self):
     return (self.module, self.offset) if self.module is not None else None
 
-  def __eq__(self, other):
-    if not isinstance(other, Context): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, Context): raise TypeError(type(other))
+    def cmp(a, x, b, y):
+      if a is None: return b is None
+      if b is None: return False
+      return a.identical(b) and x == y
     return (self.ctxId == other.ctxId and self.relation == other.relation
             and self.lexicalType == other.lexicalType and self.flags == other.flags
-            and self.function == other.function and self.srcloc == other.srcloc
-            and self.point == other.point and isomorphic_seq(
-                self.children, other.children,
+            and cmp(self.function, None, other.function, None)
+            and cmp(self.file, self.line, other.file, other.line)
+            and cmp(self.module, self.offset, other.module, other.offset)
+            and isomorphic_seq(
+                self.children, other.children, lambda a,b: a.identical(b),
                 key=lambda c: (c.ctxId, c.relation, c.lexicalType)))
 
   def __repr__(self):

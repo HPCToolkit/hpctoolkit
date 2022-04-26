@@ -70,9 +70,10 @@ class LoadModulesSection(VersionedFormat,
     return [LoadModule(*args, offset=self._pModules + i*self._szModule)
             for i in range(self._nModules)]
 
-  def __eq__(self, other):
-    if not isinstance(other, LoadModulesSection): return NotImplemented
-    return isomorphic_seq(self.modules, other.modules, key=lambda m: m.path)
+  def identical(self, other):
+    if not isinstance(other, LoadModulesSection): raise TypeError(type(other))
+    return isomorphic_seq(self.modules, other.modules,
+                          lambda a,b: a.identical(b), key=lambda m: m.path)
 
   def __repr__(self):
     return f"LoadModulesSection(modules={self.modules!r})"
@@ -108,8 +109,8 @@ class LoadModule(VersionedFormat,
     self.path = read_ntstring(src, self._pPath)
     self.flags = self.__flags.unpack(version, self._flags)
 
-  def __eq__(self, other):
-    if not isinstance(other, LoadModule): return NotImplemented
+  def identical(self, other):
+    if not isinstance(other, LoadModule): raise TypeError(type(other))
     return self.path == other.path and self.flags == other.flags
 
   def __repr__(self):
