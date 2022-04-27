@@ -344,8 +344,11 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             nodes.emplace(id, singleCtx_t({}, g, g));
           } else {
             // It seems like we should handle root_partial here as well, but a
-            // snippet in hpcrun/cct/cct.c stitches root_partial as a child of
-            // the root_primary. So we handle it later.
+            // snippet in hpcrun/cct/cct_bundle.c stitches root_partial as a
+            // child of the root_primary. So we handle it later.
+
+            // Same for no_activity, which could/should also be a root but isn't
+            // because of code in the same file.
 
             // All other cases are an error. Special case here for a slightly
             // nicer error message
@@ -408,11 +411,25 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         Scope scope;
         if(n.lm_id == HPCRUN_PLACEHOLDER_LM && n.unwound) {
           switch(n.lm_ip) {
-          case hpcrun_placeholder_unnormalized_ip:
           case hpcrun_placeholder_root_partial:  // Because hpcrun stitches here
+            if(&par != &(Context&)sink.global()) {
+              util::log::info{} << "Encountered <partial root> that wasn't a child of <primary root>!";
+              return false;
+            }
+          case hpcrun_placeholder_unnormalized_ip:
             // Maps to (unknown) instead of a placeholder
             scope = Scope();
             break;
+          case hpcrun_placeholder_no_activity: {  // Because hpcrun stitches here
+            // Maps to (global) instead of a placeholder. Parent must be (global).
+            Context& g = sink.global();
+            if(&par != &g) {
+              util::log::info{} << "Encountered <partial root> that wasn't a child of <primary root>!";
+              return false;
+            }
+            nodes.emplace(id, singleCtx_t({}, g, g));
+            continue;  // Skip to the next context
+          }
           case hpcrun_placeholder_root_primary:
             util::log::info{} << "Encountered <primary root> that wasn't a root!";
             return false;
