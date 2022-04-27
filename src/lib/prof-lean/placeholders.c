@@ -58,8 +58,6 @@
 // local variables
 //*****************************************************************************
 
-static const char phname_no_activity[] = "<no activity>";
-
 static const char phname_program_root[] = "<program root>";
 static const char phname_thread_root[]  = "<thread root>";
 
@@ -96,14 +94,13 @@ get_placeholder_name(uint64_t placeholder) {
   case hpcrun_placeholder_unnormalized_ip:
   case hpcrun_placeholder_root_primary:
   case hpcrun_placeholder_root_partial:
-    // These three are special cases among the special cases
+  case hpcrun_placeholder_no_activity:
+    // These are special cases among the special cases
     return NULL;
   case hpcrun_placeholder_fence_main:
     return phname_program_root;
   case hpcrun_placeholder_fence_thread:
     return phname_thread_root;
-  case hpcrun_placeholder_no_activity:
-    return phname_no_activity;
   case hpcrun_placeholder_ompt_idle_state:
     return phname_omp_idle;
   case hpcrun_placeholder_ompt_overhead_state:
