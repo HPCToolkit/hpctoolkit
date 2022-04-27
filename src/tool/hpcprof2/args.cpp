@@ -63,6 +63,7 @@
 #include <iomanip>
 #include <omp.h>
 #include <random>
+#include <unistd.h>
 
 using namespace hpctoolkit;
 namespace fs = stdshim::filesystem;
@@ -140,6 +141,7 @@ Current Obsolete Options:
 
 static bool isDirectory(const std::string &path, hpctio_sys_t * sys);
 static void directoryIterator(const std::string &path, hpctio_sys_t * sys);
+static bool exists(const std::string &path, hpctio_sys_t * sys);
 
 const bool string_starts_with(const std::string& a, const std::string& n) {
   auto it_n = n.begin();
@@ -212,9 +214,9 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       arg_overwriteOutput = 1;
       // fallthrough
     case 'o':
-      output = fs::path(optarg);
-      output_sys = hpctio_sys_initialize(output.c_str());
-      output = fs::path(hpctio_sys_cut_prefix(output.c_str(), output_sys));
+      //output = fs::path(optarg);
+      output_sys = hpctio_sys_initialize(optarg);
+      output = fs::path(hpctio_sys_cut_prefix(optarg, output_sys));
       if(!output.has_filename()) output = output.parent_path();
       break;
     case 'Q':
@@ -424,12 +426,12 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         util::log::warning{} << "Output database argument not given, defaulting"
           " to `" << output.string() << "'";
       }
-      if(stdshim::filesystem::exists(output)) {
+      if(exists(output, output_sys)) {
         if(arg_overwriteOutput == 0) {
           // The output must not exist beforehand, otherwise we will munge the
           // path until it doesn't exist anymore.
           // There's a potential for races here, which we don't attempt to fix;
-          // the user should be explicit about their outputs.
+          // the user should be explicit about their outputs.ff
           auto fbase = output.filename().string();
           output = output.parent_path();
 
@@ -440,7 +442,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
             ss.str("");
             ss << fbase << "-" << std::hex << std::setfill('0') << std::setw(8)
                << rand(gen);
-          } while(stdshim::filesystem::exists(output / ss.str()));
+          } while(exists(output / ss.str(), output_sys));
           util::log::warning{} << "Output database `" << (output/fbase).string()
             << "' exists, outputting to `" << (output/ss.str()).string() << "'";
           output /= ss.str();
@@ -454,8 +456,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   }
 
   // Temporary: get I/O system for measurement inputs
-  input_sys = hpctio_sys_initialize(argv[optind]);
-  hpctio_sys_avail_display();
+ // input_sys = hpctio_sys_initialize(argv[optind]);
+ // hpctio_sys_avail_display();
 
   // Gather up all the potential inputs, and distribute them across the ranks
   std::vector<std::pair<stdshim::filesystem::path, std::size_t>> files;
@@ -465,19 +467,20 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       std::vector<std::vector<std::string>> allfiles(mpi::World::size());
       std::size_t peer = 0;
       for(int idx = optind; idx < argc; idx++) {
-        fs::path p(hpctio_sys_cut_prefix(argv[idx], input_sys));
-        //if(fs::is_directory(p)) {
-        if(isDirectory(p, input_sys)){
-          directoryIterator(p, input_sys);
-          p = fs::path("m");
+        //fs::path p(hpctio_sys_cut_prefix(argv[idx], input_sys));
+        fs::path p(argv[idx]);
+        if(fs::is_directory(p)) {
+        //if(isDirectory(p, input_sys)){
+          // directoryIterator(p, input_sys);
+          // p = fs::path("m");
           for(const auto& de: fs::directory_iterator(p)) {
             allfiles[peer].emplace_back(de.path().string());
             peer = (peer + 1) % allfiles.size();
           }
           // Also check for a kernel_symbols/ directory for ksymsfiles.
           fs::path sp = p / "kernel_symbols";
-          //if(fs::is_directory(sp))
-          if(isDirectory(sp, input_sys))
+          if(fs::is_directory(sp))
+          // if(isDirectory(sp, input_sys))
             ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(std::move(sp)));
           // Also check for a structs/ directory for extra structfiles.
           sp = p / "structs";
@@ -704,6 +707,21 @@ ProfArgs::StructWarner::classify(Context& c, NestedScope& ns) noexcept {
 
 
 //TEMP
+static bool exists(const std::string &path, hpctio_sys_t * sys){
+  if(sys->func_ptr == &hpctio_sys_func_posix){
+    return stdshim::filesystem::exists(path);
+  }else if(sys->func_ptr == &hpctio_sys_func_dfs){
+    int ret = hpctio_sys_access(path.c_str(), F_OK, sys);
+
+    if(ret == -1 && errno == ENOENT) return false;
+    if(ret == -1){
+      util::log::warning{} << "Error occurs when checking if " << path.c_str() 
+      << " already exists, with errno: " << errno << ", so we assumed it exists to move forward.";
+    }
+    return true;
+  }
+}
+
 static bool isDirectory(const std::string &path, hpctio_sys_t * sys){
   struct stat statbuf;
   if(hpctio_sys_stat(path.c_str(), &statbuf, sys) != 0)
