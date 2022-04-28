@@ -142,6 +142,7 @@ Current Obsolete Options:
 static bool isDirectory(const std::string &path, hpctio_sys_t * sys);
 static void directoryIterator(const std::string &path, hpctio_sys_t * sys);
 static bool exists(const std::string &path, hpctio_sys_t * sys);
+static bool removeAll(const std::string &path, hpctio_sys_t * sys);
 
 const bool string_starts_with(const std::string& a, const std::string& n) {
   auto it_n = n.begin();
@@ -448,7 +449,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           output /= ss.str();
         } else {
           // The output should be overwritten, so we first remove it.
-          stdshim::filesystem::remove_all(output);
+          removeAll(output, output_sys);
         }
       }
     }
@@ -720,7 +721,18 @@ static bool exists(const std::string &path, hpctio_sys_t * sys){
     }
     return true;
   }
+  return true;
 }
+
+static bool removeAll(const std::string &path, hpctio_sys_t * sys){
+  if(sys->func_ptr == &hpctio_sys_func_posix){
+    return stdshim::filesystem::remove_all(path);
+  }else if(sys->func_ptr == &hpctio_sys_func_dfs){
+    int ret = hpctio_sys_remove(path.c_str(), sys);
+    return ret == 0 ? true : false;
+  }
+  return false;
+} 
 
 static bool isDirectory(const std::string &path, hpctio_sys_t * sys){
   struct stat statbuf;

@@ -135,6 +135,15 @@ int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys){
     return sys->func_ptr->mkdir(path, md, sys->params_ptr);
 }
 
+/*
+* Deletes a file/object with a path name
+* return 0 on success, -1 on failure, errno set properly
+*/
+int hpctio_sys_remove(const char *path, hpctio_sys_t * sys){
+    int r = sys->func_ptr->remove(path, sys->params_ptr);  
+    return r;
+}
+
 
 /*
 * check access permissions on a file/object
@@ -198,7 +207,6 @@ int hpctio_obj_close(hpctio_obj_t * obj){
     } 
     return r;
 }
-
 
 
 /*

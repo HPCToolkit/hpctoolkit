@@ -79,11 +79,14 @@ static constexpr uint64_t align(uint64_t v, uint8_t a) {
 // SparseDB common bits
 //
 
-SparseDB::SparseDB(stdshim::filesystem::path dir) {
+SparseDB::SparseDB(stdshim::filesystem::path dir, hpctio_sys_t * sys) {
   if(dir.empty())
     util::log::fatal{} << "SparseDB doesn't allow for dry runs!";
   else
-    stdshim::filesystem::create_directory(dir);
+    //stdshim::filesystem::create_directory(dir);
+    hpctio_sys_mkdir(dir.c_str(), 0777, sys);
+  
+  output_sys = sys;
 
   pmf = util::File(dir / "profile.db", true);
   cmf = util::File(dir / "cct.db", true);

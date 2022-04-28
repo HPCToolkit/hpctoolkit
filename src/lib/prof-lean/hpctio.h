@@ -40,6 +40,7 @@ typedef struct hpctio_sys_func {
   void (*finalize)(hpctio_sys_params_t * params);
 
   int (*mkdir)(const char *path, mode_t md, hpctio_sys_params_t * p);
+  int (*remove)(const char *path, hpctio_sys_params_t * p);
   int (*access)(const char *path, int md, hpctio_sys_params_t * p);
   int (*rename)(const char *old_path, const char * new_path, hpctio_sys_params_t * p);
   int (*stat)(const char* path, struct stat * stbuf, hpctio_sys_params_t * p);
@@ -91,6 +92,7 @@ char * hpctio_sys_cut_prefix(const char * path, hpctio_sys_t * sys);
 char * hpctio_sys_realpath(const char * path, char * resolved_path, hpctio_sys_t * sys);
 
 int hpctio_sys_mkdir(const char *path, mode_t md, hpctio_sys_t * sys);
+int hpctio_sys_remove(const char *path, hpctio_sys_t * sys);
 int hpctio_sys_access(const char *path, int md, hpctio_sys_t * sys);
 int hpctio_sys_rename(const char *old_path, const char *new_path, hpctio_sys_t * sys);
 int hpctio_sys_stat(const char *path, struct stat * stbuf, hpctio_sys_t * sys);

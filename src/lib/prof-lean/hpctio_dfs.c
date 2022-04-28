@@ -24,6 +24,7 @@ static char * DFS_Realpath(const char * path, char * resolved_path);
 static void DFS_Init(hpctio_sys_params_t * params);
 static void DFS_Final(hpctio_sys_params_t * params);
 static int DFS_Mkdir(const char *path, mode_t md, hpctio_sys_params_t * p);
+static int DFS_Remove(const char * path, hpctio_sys_params_t * p);
 static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p);
 static int DFS_Rename(const char *oldpath, const char *newpath, hpctio_sys_params_t * p);
 static int DFS_Stat(const char* path, struct stat * stbuf, hpctio_sys_params_t * p);
@@ -31,7 +32,6 @@ static int DFS_Stat(const char* path, struct stat * stbuf, hpctio_sys_params_t *
 static hpctio_obj_opt_t * DFS_Obj_Options(int wmode, int sizetype);
 static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
-
 
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
@@ -59,6 +59,7 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .initialize = DFS_Init,
     .finalize   = DFS_Final,
     .mkdir = DFS_Mkdir,
+    .remove = DFS_Remove,
     .access = DFS_Access,
     .rename = DFS_Rename,
     .stat = DFS_Stat,
@@ -584,6 +585,39 @@ exit:
     
 }
 
+
+
+static int DFS_Remove(const char * path, hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+
+    char * name = NULL;
+    char * dir_name = NULL;
+    dfs_obj_t * parent = NULL; 
+
+    int r = parse_filename(path, &name, &dir_name);
+    CHECK(r, "Failed to parse path %s with errno %d", path, r);
+
+    if(strcmp(dir_name, "/.") != 0){
+        r = dfs_lookup(dfs_p->dfs, dir_name, O_RDWR, &parent, NULL, NULL);
+        CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
+    }
+
+    // set force to true: remove dir even if non-empty
+    r = dfs_remove(dfs_p->dfs, parent, name, true, NULL);
+
+exit:
+    if(name) free(name);
+    if(dir_name) free(dir_name);
+    if(parent) dfs_release(parent);
+    if(r){
+        errno = r;
+        r = -1;
+    }
+
+    return r;
+}
+
+
 static int DFS_Access(const char *path, int md, hpctio_sys_params_t * p){
     hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
 
@@ -768,6 +802,7 @@ exit:
     }
     return r;
 }
+
 
 
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){

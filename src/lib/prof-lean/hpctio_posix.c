@@ -24,7 +24,6 @@ static hpctio_obj_opt_t * POSIX_Obj_Options(int wmode, int sizetype);
 static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
-
 static size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static long int POSIX_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
@@ -41,6 +40,7 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .initialize = POSIX_Init,
   .finalize   = POSIX_Final,
   .mkdir = POSIX_Mkdir,
+  .remove = NULL, // daos remove can force to remove all, hard to mimic the same behavior in posix, and no need for now
   .access = POSIX_Access,
   .rename = POSIX_Rename,
   .stat = POSIX_Stat,
@@ -145,7 +145,7 @@ static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpc
     if(errno == EEXIST){
       CHECK_NOMSG(r);
     }else{
-      CHECK(r, "POSIX_Open failed to open the file descriptor for file %s with errno", path, errno);
+      CHECK(r, "POSIX_Open failed to open the file descriptor for file %s with errno %d", path, errno);
     }
   }
   
@@ -186,6 +186,7 @@ static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys
 exit:
   return r;
 }
+
 
 static size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
   hpctio_posix_obj_opt_t * popt = (hpctio_posix_obj_opt_t *) opt;

@@ -55,6 +55,8 @@
 #include "lib/profile/mpi/all.hpp"
 
 #include "lib/prof-lean/formats/profiledb.h"
+#include "lib/prof-lean/hpctio.h"
+#include "lib/prof-lean/hpctio_obj.h"
 
 #include <vector>
 
@@ -62,7 +64,7 @@ namespace hpctoolkit::sinks {
 
 class SparseDB : public hpctoolkit::ProfileSink {
 public:
-  SparseDB(hpctoolkit::stdshim::filesystem::path);
+  SparseDB(hpctoolkit::stdshim::filesystem::path, hpctio_sys_t *);
   ~SparseDB() = default;
 
   void write() override;
@@ -172,6 +174,9 @@ private:
   // Paths and Files
   std::optional<hpctoolkit::util::File> pmf;
   std::optional<hpctoolkit::util::File> cmf;
+
+  // I/O systems
+  hpctio_sys_t * output_sys;
 
   // All the contexts we know about, sorted by identifier.
   // Filled during the Contexts wavefront
