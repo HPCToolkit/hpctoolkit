@@ -45,11 +45,8 @@
 // local includes
 //*****************************************************************************
 
-#include <level_zero/ze_api.h>
-#include <level_zero/zet_api.h>
-
-#include "level0-handle-map.h"
 #include "level0-command-queue-map.h"
+#include "level0-handle-map.h"
 #include "lib/prof-lean/spinlock.h"
 
 #include <stdio.h>

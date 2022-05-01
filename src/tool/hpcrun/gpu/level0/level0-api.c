@@ -72,8 +72,6 @@
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 
-#include <level_zero/ze_api.h>
-
 //******************************************************************************
 // macros
 //******************************************************************************

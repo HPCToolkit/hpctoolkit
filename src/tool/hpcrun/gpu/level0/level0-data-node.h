@@ -55,8 +55,7 @@
 // local includes
 //*****************************************************************************
 
-#include <level_zero/ze_api.h>
-#include <level_zero/zet_api.h>
+#include "level0-api.h"
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
