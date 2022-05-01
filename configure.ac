@@ -5053,15 +5053,15 @@ AC_MSG_CHECKING([for gtpin])
 
 case "$GTPIN" in
   /* )
-    if test ! -f "${GTPIN}/Profilers/Include/gtpin.h" ; then
+    if test ! -f "${GTPIN}/Include/gtpin.h" ; then
       AC_MSG_ERROR([unable to find gtpin.h in: $GTPIN])
     fi
-    OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
+    OPT_GTPIN_IFLAGS="-I${GTPIN}/Include -I${GTPIN}/Include/ged/intel64/"
 
-    if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
+    if test -f "${GTPIN}/Lib/intel64/libgtpin.so" ; then
       # OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
-      OPT_GTPIN_LDFLAGS="-Wl,-rpath=${GTPIN}/Profilers/Lib/intel64"
-      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
+      OPT_GTPIN_LDFLAGS="-Wl,-rpath=${GTPIN}/Lib/intel64"
+      OPT_GTPIN_LIBDIR="${GTPIN}/Lib/intel64"
     fi
 
     if test "x$OPT_GTPIN_LDFLAGS" = x ; then
