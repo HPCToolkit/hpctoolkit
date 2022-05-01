@@ -71,8 +71,6 @@
 
 #define OPENMP_TARGET "gpu=openmp"
 
-static device_finalizer_fn_entry_t device_finalizer_shutdown;
-static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 
 //******************************************************************************

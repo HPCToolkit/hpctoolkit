@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2022.01.15-master],
+AC_INIT([hpctoolkit], [2022.04.15-master],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -1129,8 +1129,7 @@ AC_SUBST([cxx_c11_flag])
 
 #-------------------------------------------------
 
-# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.  It is not used by hpcfnbounds2.
+# Find location of libstdc++.
 #
 # Try --print-file-name first.  If that doesn't work, then try ldd.
 # If --print-file-name works, then its answer is more reliable because
@@ -1882,12 +1881,10 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
-default_libdwarf_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
-default_mbedtls_prefix=no
 default_memkind_prefix=no
 default_papi_prefix=no
 default_perfmon_prefix=no
@@ -1902,7 +1899,6 @@ if test "$use_externals" = yes ; then
   default_boost_prefix="$ext_boost_prefix"
   default_dyninst_prefix="$ext_symtabAPI_prefix"
   default_elfutils_prefix="$ext_libelf_prefix"
-  default_libdwarf_prefix="$ext_libdwarf_prefix"
   default_libmonitor_prefix="$ext_libmonitor_prefix"
   default_libunwind_prefix="$ext_libunwind_prefix"
   if test "x$ext_lzma_prefix" != x ; then
@@ -1981,9 +1977,6 @@ then
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
   fi
-  if find_spack_pkg libdwarf ; then
-    default_libdwarf_prefix="$spack_ans"
-  fi
   if find_spack_pkg libiberty ; then
     default_libiberty_prefix="$spack_ans"
   fi
@@ -1995,9 +1988,6 @@ then
   fi
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
-  fi
-  if find_spack_pkg mbedtls ; then
-    default_mbedtls_prefix="$spack_ans"
   fi
   if find_spack_pkg memkind ; then
     default_memkind_prefix="$spack_ans"
@@ -2441,30 +2431,30 @@ AC_MSG_CHECKING([for elfutils])
 LIBELF_INC=no
 LIBELF_LIB=no
 LIBELF_COPY=no
-elf_has_libdw=no
 
 case "$LIBELF" in
   /* )
     if test ! -f "${LIBELF}/include/libelf.h" \
-        && test ! -f "${LIBELF}/include/libelf/libelf.h"
+	&& test ! -f "${LIBELF}/include/libelf/libelf.h"
     then
       AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
     fi
+    if test ! -f "${LIBELF}/include/elfutils/libdw.h"; then
+      AC_MSG_ERROR([unable to find libdw.h in: $LIBELF])
+    fi
     LIBELF_INC="${LIBELF}/include"
     for lib in $multilib_path ; do
-      if test -f "${LIBELF}/${lib}/libelf.so" ; then
+      if test -f "${LIBELF}/${lib}/libelf.so" \
+	 && test -f "${LIBELF}/${lib}/libdw.so"
+      then
         LIBELF_LIB="${LIBELF}/${lib}"
 	break
       fi
     done
     if test "$LIBELF_LIB" = no ; then
-      AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
+      AC_MSG_ERROR([unable to find libelf.so or libdw.so in: $LIBELF])
     fi
     LIBELF_COPY=yes
-
-    if test -f "${LIBELF_LIB}/libdw.so" ; then
-      elf_has_libdw=yes
-    fi
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -2479,46 +2469,6 @@ AC_MSG_RESULT([$LIBELF])
 AC_SUBST([LIBELF_INC])
 AC_SUBST([LIBELF_LIB])
 AC_SUBST([LIBELF_COPY])
-
-#-------------------------------------------------
-# Option: --with-libdwarf=PATH
-#-------------------------------------------------
-
-LIBDWARF="$default_libdwarf_prefix"
-
-AC_ARG_WITH([libdwarf],
-  [AS_HELP_STRING([--with-libdwarf=PATH],
-  	    [path to libdwarf install directory])],
-  [LIBDWARF="$withval"],
-  [])
-
-AC_MSG_CHECKING([for libdwarf])
-
-case "${LIBDWARF}" in
-  /* )
-    if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
-    else
-        AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
-    fi
-    LIBDWARF_COPY=yes
-    num_pkgs=`expr 1 + $num_pkgs`
-    ;;
-  no )
-    LIBDWARF_COPY=no
-    ;;
-  * )
-    AC_MSG_ERROR([libdwarf directory must be absolute path: $LIBDWARF])
-    ;;
-esac
-
-LIBDWARF_LIB="${LIBDWARF}/lib"
-LIBDWARF_INC="${LIBDWARF}/include"
-
-AC_MSG_RESULT([$LIBDWARF])
-
-AC_SUBST([LIBDWARF_LIB])
-AC_SUBST([LIBDWARF_INC])
-AC_SUBST([LIBDWARF_COPY])
 
 
 #-------------------------------------------------
@@ -2928,97 +2878,6 @@ AC_SUBST([LZMA_COPY])
 AC_SUBST([LZMA_LIB_DIR])
 
 AM_CONDITIONAL(OPT_LZMA_STATIC, [test "$lzma_static" = yes])
-
-
-#-------------------------------------------------
-# Option: --with-mbedtls=PATH
-#-------------------------------------------------
-
-# mbedtls is a lightweight library that includes libmbedcrypto.a for
-# computing md5 and SHA sums for buffers in memory.
-#
-# Note: we require libmbedcrypto.a to be compiled with -fPIC.
-
-MBEDTLS="$default_mbedtls_prefix"
-MBEDTLS_IFLAGS=
-MBEDTLS_LIBS=
-MBEDTLS_LIB=
-
-AC_ARG_WITH([mbedtls],
-  [AS_HELP_STRING([--with-mbedtls=PATH],
-      [path to mbedtls install directory])],
-  [MBEDTLS="$withval"],
-  [])
-
-AC_MSG_CHECKING([for mbedtls])
-
-case "$MBEDTLS" in
-  /* )
-    if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
-      AC_MSG_ERROR([unable to find md5.h in: $MBEDTLS])
-    fi
-    MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
-    for lib in $multilib_path ; do
-      if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
-	MBEDTLS_LIB="${MBEDTLS}/lib"
-        MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
-	break
-      fi
-    done
-    if test "x$MBEDTLS_LIBS" = x ; then
-      AC_MSG_ERROR([unable to find libmbedcrypto.a in: $MBEDTLS])
-    fi
-    num_pkgs=`expr 1 + $num_pkgs`
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([mbedtls directory must be absolute path: $MBEDTLS])
-    ;;
-esac
-
-AC_MSG_RESULT([$MBEDTLS])
-
-#
-# Test if libmbedcrypto.a was compiled with -fPIC
-#
-case "$MBEDTLS" in
-  /* )
-    AC_MSG_CHECKING([if libmbedcrypto.a was compiled with -fPIC])
-
-    ORIG_CFLAGS="$CFLAGS"
-    ORIG_LIBS="$LIBS"
-    CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
-    LIBS="$MBEDTLS_LIBS"
-
-    AC_LANG_PUSH([C])
-    AC_LINK_IFELSE([
-    AC_LANG_SOURCE([[
-#include <sys/types.h>
-#include "mbedtls/md5.h"
-void
-my_md5_hash(char *buf, size_t len)
-{
-    mbedtls_md5_context ctx;
-    mbedtls_md5_init(&ctx);
-    mbedtls_md5_update(&ctx, buf, len);
-}
-]])], [mbed_fpic=yes], [mbed_fpic=no])
-
-    AC_MSG_RESULT([$mbed_fpic])
-    AC_LANG_POP
-    CFLAGS="$ORIG_CFLAGS"
-    LIBS="$ORIG_LIBS"
-
-    if test "$mbed_fpic" != yes ; then
-      AC_MSG_ERROR([libmbedcrypto.a must be compiled with -fPIC])
-    fi
-    ;;
-esac
-
-AC_SUBST([MBEDTLS_LIB])
-AC_SUBST([MBEDTLS_IFLAGS])
-AC_SUBST([MBEDTLS_LIBS])
 
 
 #-------------------------------------------------
@@ -4012,41 +3871,6 @@ fi
 
 #-------------------------------------------------
 
-# Test if dyninst was built with libdw or libdwarf.
-#
-# There is not a good compile or link test for this, so we fall back
-# on ldd.  But note: ldd only works for dynamic libraries and doesn't
-# work cross-platform.
-
-use_libdw=no
-
-if test "$DYNINST" != no ; then
-  AC_MSG_CHECKING([if dyninst built with libdw.so])
-
-  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$dyn_dwarf" ; then
-    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
-    if test $? -eq 0 ; then
-       use_libdw=yes
-    fi
-  fi
-
-  AC_MSG_RESULT([$use_libdw])
-
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  if test "$use_libdw" = yes
-  then dyninst_features="$dyninst_features libdw"
-  else dyninst_features="$dyninst_features libdwarf"
-  fi
-fi
-
-#-------------------------------------------------
-
 # Test if dyninst supports cuda.
 
 use_cuda=no
@@ -4159,8 +3983,7 @@ CXXFLAGS="$ORIG_CXXFLAGS"
 # Temporary option to identify version of dyninst, only necessary if
 # the above tests produce the wrong answer.
 #
-#  old = orig version from externals
-#  libdw = uses libdw instead of libdwarf, but not cuda
+#  libdw = uses libdw, but does not support cuda
 #  cuda = uses libdw and supports cuda
 
 dyninst_type=unset
@@ -4174,7 +3997,6 @@ AC_ARG_WITH([dyninst-type],
 
 if test "$dyninst_type" != unset ; then
   case "$dyninst_type" in
-    old )   use_libdw=no ;  use_cuda=no ;;
     libdw ) use_libdw=yes ; use_cuda=no ;;
     cuda )  use_libdw=yes ; use_cuda=yes ;;
     * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
@@ -4183,25 +4005,9 @@ if test "$dyninst_type" != unset ; then
   AC_MSG_NOTICE([override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda])
 fi
 
-AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
-AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
-
-if test "$use_libdw" = yes ; then
-  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
-fi
-
 if test "$use_cuda" = yes ; then
   AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
 fi
-
-#-------------------------------------------------
-
-if test "$use_libdw" = yes && test "$elf_has_libdw" != yes ; then
-  AC_MSG_WARN([dyninst uses libdw but elfutils is missing libdw])
-  AC_MSG_WARN([dyninst:  $DYNINST])
-  AC_MSG_WARN([elfutils: $LIBELF])
-fi
-
 
 #----------------------------------------------------------------------------
 # Options
@@ -4270,7 +4076,7 @@ enable_hpcrun_mesg=yes
 if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
-elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
+elif test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$DYNINST" = no || \
      test "$no_xed_for_hpcrun" = yes || test "$libunwind_exists" = no
 then
@@ -4384,7 +4190,7 @@ AC_ARG_ENABLE([openmp],
   [enable_openmp="$parse_openmp"])
 
 if test "x$enable_openmp" != xyes ; then
-  AC_MSG_NOTICE([disable openmp support in hpcstruct and hpcfnbounds])
+  AC_MSG_NOTICE([disable openmp support in hpcstruct])
   parse_openmp=no
   symtab_openmp=no
 fi
@@ -4982,7 +4788,6 @@ AC_SUBST([OPT_IGC])
 AC_SUBST([OPT_IGC_IFLAGS])
 AC_SUBST([OPT_IGC_LDFLAGS])
 
-
 #-------------------------------------------------
 # Option: --with-metrics-discovery=PATH
 #-------------------------------------------------
@@ -5032,7 +4837,6 @@ AC_MSG_RESULT([$METRICS_DISCOVERY])
 AC_SUBST([OPT_METRICS_DISCOVERY])
 AC_SUBST([OPT_METRICS_DISCOVERY_IFLAGS])
 AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
-
 
 #-------------------------------------------------
 # Option: --with-gtpin=PATH
@@ -5090,23 +4894,23 @@ AC_SUBST([OPT_GTPIN_LIBDIR])
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
-# Can specify ROCM with all-in-one ROCM + HIP directory (normally
-# /opt/rocm), or with spack packages: hip, rocm-dbgapi, roctracer-dev,
-# or partially with /opt/rocm plus a subset of spack packages.
+# Can specify ROCM with all-in-one ROCM directory (normally
+# /opt/rocm), or with spack packages: hip, roctracer-dev,
+# rocprofiler-dev, and hsa-rocr-dev or partially with 
+# /opt/rocm plus a subset of spack packages.
 #
 # Note: may use both --with-rocm plus specific rocm package(s).
 # In this case, the specific overrides the general.
 
 ROCM=
 ROCM_HIP=
-ROCM_DBGAPI=
 ROCM_TRACER=
 ROCM_PROFILER=
 ROCM_HSA=
 
 AC_ARG_WITH([rocm],
   AS_HELP_STRING([--with-rocm=PATH],
-      [path to full ROCM + HIP install directory]),
+      [path to full ROCM install directory]),
   [ROCM="$withval"], [])
 
 AC_ARG_WITH([rocm-hip],
@@ -5114,10 +4918,10 @@ AC_ARG_WITH([rocm-hip],
       [path to hip install directory]),
   [ROCM_HIP="$withval"], [])
 
-AC_ARG_WITH([rocm-dbgapi],
-  AS_HELP_STRING([--with-rocm-dbgapi=PATH],
-      [path to rocm-dbgapi install directory]),
-  [ROCM_DBGAPI="$withval"], [])
+AC_ARG_WITH([rocm-hsa],
+  AS_HELP_STRING([--with-rocm-hsa=PATH],
+      [path to hsa-rocr-dev install directory]),
+  [ROCM_HSA="$withval"], [])
 
 AC_ARG_WITH([rocm-tracer],
   AS_HELP_STRING([--with-rocm-tracer=PATH],
@@ -5129,29 +4933,27 @@ AC_ARG_WITH([rocm-profiler],
       [path to rocprofiler-dev install directory]),
   [ROCM_PROFILER="$withval"], [])
 
-AC_ARG_WITH([rocm-hsa],
-  AS_HELP_STRING([--with-rocm-hsa=PATH],
-      [path to hsa-dev install directory]),
-  [ROCM_HSA="$withval"], [])
-
-
-
+ROCM_IFLAGS=
 ROCM_HIP_IFLAGS=
-ROCM_DBGAPI_IFLAGS=
 ROCM_TRACER_IFLAGS=
 ROCM_PROFILER_IFLAGS=
 ROCM_HSA_IFLAGS=
 
 ROCM_HIP_LD_DIR=
-ROCM_DBGAPI_LD_DIR=
 ROCM_TRACER_LD_DIR=
 ROCM_PROFILER_LD_DIR=
 ROCM_HSA_LD_DIR=
 
+ROCM_HIP_INC_MESG=
 ROCM_HIP_MESG=
-ROCM_DBGAPI_MESG=
+
+ROCM_TRACER_INC_MESG=
 ROCM_TRACER_MESG=
+
+ROCM_PROFILER_INC_MESG=
 ROCM_PROFILER_MESG=
+
+ROCM_HSA_INC_MESG=
 ROCM_HSA_MESG=
 
 require_rocm=no
@@ -5166,11 +4968,17 @@ case "$ROCM" in
     require_rocm=yes
     found=no
 
+    # ROCM
+    if test -f "$ROCM/include/rocm_version.h" ; then
+      AC_MSG_NOTICE([found $ROCM/rocm_version.h])
+      ROCM_IFLAGS="-I$ROCM/include"
+      ROCM_MESG="$ROCM"
+    fi
+
     # HIP
-    if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
-      AC_MSG_NOTICE([found $ROCM/hip/include/hip/hip_runtime.h])
-      ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
-      ROCM_HIP_MESG="$ROCM/hip"
+    if test -f "$ROCM/include/hip/hip_runtime.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/hip/hip_runtime.h])
+      ROCM_HIP_INC_MESG="$ROCM/hip"
       found=yes
     fi
     if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
@@ -5180,25 +4988,11 @@ case "$ROCM" in
       found=yes
     fi
 
-    # AMD-DBGAPI
-    if test -f "$ROCM/include/amd-dbgapi.h" ; then
-      AC_MSG_NOTICE([found $ROCM/include/amd-dbgapi.h])
-      ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
-      ROCM_DBGAPI_MESG="$ROCM"
-      found=yes
-    fi
-    if test -f "$ROCM/lib/librocm-dbgapi.so" ; then
-      AC_MSG_NOTICE([found $ROCM/lib/librocm-dbgapi.so])
-      ROCM_DBGAPI_LD_DIR="$ROCM/lib"
-      ROCM_DBGAPI_MESG="$ROCM"
-      found=yes
-    fi
-
     # ROCTRACER
-    if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
-      AC_MSG_NOTICE([found $ROCM/roctracer/include/roctracer_hip.h])
-      ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
-      ROCM_TRACER_MESG="$ROCM/roctracer"
+    if test -f "$ROCM/include/roctracer/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/roctracer/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM/include/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM/roctracer"
       found=yes
     fi
     if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
@@ -5209,10 +5003,9 @@ case "$ROCM" in
     fi
 
     # ROCPROFILER
-    if test -f "$ROCM/rocprofiler/include/rocprofiler.h" ; then
-      AC_MSG_NOTICE([found $ROCM/rocprofiler/include/rocprofiler.h])
-      ROCM_PROFILER_IFLAGS="-I$ROCM/rocprofiler/include"
-      ROCM_PROFILER_MESG="$ROCM/rocprofiler"
+    if test -f "$ROCM/include/rocprofiler/rocprofiler.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/rocprofiler/rocprofiler.h])
+      ROCM_PROFILER_INC_MESG="$ROCM/rocprofiler"
       found=yes
     fi
     if test -f "$ROCM/rocprofiler/lib/librocprofiler64.so" ; then
@@ -5223,10 +5016,10 @@ case "$ROCM" in
     fi
 
     # HSA
-    if test -f "$ROCM/hsa/include/hsa/hsa.h" ; then
-      AC_MSG_NOTICE([found $ROCM/hsa/include/hsa/hsa.h])
-      ROCM_HSA_IFLAGS="-I$ROCM/hsa/include/hsa"
-      ROCM_HSA_MESG="$ROCM/hsa"
+    if test -f "$ROCM/include/hsa/hsa.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/hsa/hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM/include/hsa"
+      ROCM_HSA_INC_MESG="$ROCM/hsa"
       found=yes
     fi
     if test -f "$ROCM/hsa/lib/libhsa-runtime64.so" ; then
@@ -5257,7 +5050,7 @@ case "$ROCM_HIP" in
     if test -f "$ROCM_HIP/include/hip/hip_runtime.h" ; then
       AC_MSG_NOTICE([found $ROCM_HIP/include/hip/hip_runtime.h])
       ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
-      ROCM_HIP_MESG="$ROCM_HIP"
+      ROCM_HIP_INC_MESG="$ROCM_HIP"
       found=yes
     fi
     if test -f "$ROCM_HIP/lib/libamdhip64.so" ; then
@@ -5275,32 +5068,6 @@ case "$ROCM_HIP" in
     ;;
 esac
 
-case "$ROCM_DBGAPI" in
-  /* )
-    require_rocm=yes
-    found=no
-
-    if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
-      AC_MSG_NOTICE([found $ROCM_DBGAPI/include/amd-dbgapi.h])
-      ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
-      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
-      found=yes
-    fi
-    if test -f "$ROCM_DBGAPI/lib/librocm-dbgapi.so" ; then
-      AC_MSG_NOTICE([found $ROCM_DBGAPI/lib/librocm-dbgapi.so])
-      ROCM_DBGAPI_LD_DIR="$ROCM_DBGAPI/lib"
-      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
-      found=yes
-    fi
-    if test "$found" = no ; then
-      AC_MSG_WARN([found nothing useful in $ROCM_DBGAPI])
-    fi
-    ;;
-  * )
-    ROCM_DBGAPI=no
-    ;;
-esac
-
 case "$ROCM_TRACER" in
   /* )
     require_rocm=yes
@@ -5309,7 +5076,7 @@ case "$ROCM_TRACER" in
     if test -f "$ROCM_TRACER/roctracer/include/roctracer_hip.h" ; then
       AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/include/roctracer_hip.h])
       ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
-      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      ROCM_TRACER_INC_MESG="$ROCM_TRACER/roctracer"
       found=yes
     fi
     if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
@@ -5332,16 +5099,16 @@ case "$ROCM_PROFILER" in
     require_rocm=yes
     found=no
 
-    if test -f "$ROCM_PROFILER/rocprofiler/include/rocprofiler.h" ; then
-      AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/include/rocprofiler.h])
-      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/rocprofiler/include"
-      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+    if test -f "$ROCM_PROFILER/include/rocprofiler/rocprofiler.h" ; then
+      AC_MSG_NOTICE([found $ROCM_PROFILER/include/rocprofiler/rocprofiler.h])
+      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/include"
+      ROCM_PROFILER_INC_MESG="$ROCM_PROFILER"
       found=yes
     fi
     if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
       AC_MSG_NOTICE([found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so])
       ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
-      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi
     if test "$found" = no ; then
@@ -5361,7 +5128,7 @@ case "$ROCM_HSA" in
     if test -f "$ROCM_HSA/include/hsa/hsa.h" ; then
       AC_MSG_NOTICE([found $ROCM_HSA/include/hsa/hsa.h])
       ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
-      ROCM_HSA_MESG="$ROCM_HSA"
+      ROCM_HSA_INC_MESG="$ROCM_HSA"
       found=yes
     fi
     if test -f "$ROCM_HSA/lib/libhsa-runtime64.so" ; then
@@ -5386,27 +5153,21 @@ OPT_HAVE_ROCM=no
 
 if test "$require_rocm" = yes
 then
-  if test "x$ROCM_HIP_IFLAGS" = x ; then
+  if test "x$ROCM_HIP_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find hip_runtime.h])
   fi
-  if test "x$ROCM_DBGAPI_IFLAGS" = x ; then
-    AC_MSG_ERROR([unable to find amd-dbgapi.h])
-  fi
-  if test "x$ROCM_TRACER_IFLAGS" = x ; then
+  if test "x$ROCM_TRACER_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find roctracer_hip.h])
   fi
-  if test "x$ROCM_PROFILER_IFLAGS" = x ; then
+  if test "x$ROCM_PROFILER_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find rocprofiler.h])
   fi
-  if test "x$ROCM_HSA_IFLAGS" = x ; then
+  if test "x$ROCM_HSA_INC_MESG" = x ; then
     AC_MSG_ERROR([unable to find hsa.h])
   fi
 
   if test "x$ROCM_HIP_LD_DIR" = x ; then
     AC_MSG_ERROR([unable to find libamdhip64.so])
-  fi
-  if test "x$ROCM_DBGAPI_LD_DIR" = x ; then
-    AC_MSG_ERROR([unable to find librocm-dbgapi.so])
   fi
   if test "x$ROCM_TRACER_LD_DIR" = x ; then
     AC_MSG_ERROR([unable to find libroctracer64.so])
@@ -5419,8 +5180,8 @@ then
   fi
 
   OPT_HAVE_ROCM=yes
-  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS"
-  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS $ROCM_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
 fi
 
 #
@@ -5440,12 +5201,12 @@ if test "$OPT_HAVE_ROCM" = yes ; then
   else
     rocm_version="${rocm_major}.${rocm_minor}"
 
-    # Require 3.10 or 4.0 or greater.
-    if ( test $rocm_major -eq 3 && test $rocm_minor -ge 10 )  \
-       || test $rocm_major -ge 4
+    # Require 4.5 or 5.0 or greater.
+    if ( test $rocm_major -eq 4 && test $rocm_minor -ge 5 )  \
+       || test $rocm_major -ge 5
     then :
     else
-      AC_MSG_ERROR([rocm version $rocm_version is too old, use 3.10.0 or later])
+      AC_MSG_ERROR([rocm version $rocm_version is too old, use 5.0 or later])
     fi
   fi
   rocm_mesg="yes, version: $rocm_version"
@@ -5704,7 +5465,6 @@ AC_CONFIG_FILES([ \
   src/extern/libunwind/Makefile \
   src/extern/lzma/Makefile \
   src/tool/Makefile \
-  src/tool/hpcfnbounds/Makefile \
   src/tool/hpcfnbounds2/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
@@ -5747,8 +5507,6 @@ AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcsummary],
   [chmod +x src/tool/hpcrun/scripts/hpcsummary])
-AC_CONFIG_FILES([src/tool/hpcfnbounds/hpcfnbounds],
-  [chmod +x src/tool/hpcfnbounds/hpcfnbounds])
 AC_CONFIG_FILES([src/tool/hpcprof/hpcprof],
   [chmod +x src/tool/hpcprof/hpcprof])
 AC_CONFIG_FILES([src/tool/hpcprof-mpi/hpcprof-mpi],
@@ -5842,12 +5600,10 @@ AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
 AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
-AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
-AC_MSG_NOTICE([  mbedtls:      ${MBEDTLS}])
 AC_MSG_NOTICE([  memkind:      ${MEMKIND}])
 AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
@@ -5861,14 +5617,13 @@ AC_MSG_NOTICE([  igc:          ${IGC}])
 AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
 AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
-AC_MSG_NOTICE([  papi-c-rocm: ${use_papi_c_rocm}])
+AC_MSG_NOTICE([  papi-c-rocm:  ${use_papi_c_rocm}])
 AC_MSG_NOTICE([  rocm:         ${rocm_mesg}])
 if test "$OPT_HAVE_ROCM" = yes ; then
   AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])
-  AC_MSG_NOTICE([  rocm dbgapi:  $ROCM_DBGAPI_MESG])
-  AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
-  AC_MSG_NOTICE([  rocm profiler:$ROCM_PROFILER_MESG])
   AC_MSG_NOTICE([  rocm hsa:     $ROCM_HSA_MESG])
+  AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
+  AC_MSG_NOTICE([  rocm profiler: $ROCM_PROFILER_MESG])
 fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
@@ -5912,7 +5667,7 @@ if test "$warn_no_perfmon" = yes ; then
   AC_MSG_WARN([Mnemonic names will not be available for perf events.])
 fi
 
-if test "x$with_spack" = xno && test "$num_pkgs" -lt 7 ; then
+if test "x$with_spack" = xno && test "$num_pkgs" -lt 6 ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using --with-spack.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])

@@ -23,7 +23,7 @@ Description:
   multiple measurement directories can copy previously generated
   structure files from the cache rather than regenerating the
   information.  A cache may be specified either on the command line
-  (see the -C option, below) or by setting the
+  (see the -c option, below) or by setting the
   HPCTOOLKIT_HPCSTRUCT_CACHE environment variable.  If a cache is
   specified, hpcstruct emits a message for each binary processed
   saying 'Added to cache', 'Replaced in cache', 'Copied from cache',

@@ -70,19 +70,12 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-LIBDWARF_INC = @LIBDWARF_INC@
-LIBDWARF_LIB = @LIBDWARF_LIB@
-
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
-if OPT_DYNINST_LIBDW
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
-else
-MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
-endif
 
 if OPT_ENABLE_IGC
 IGC_LDFLGS = @OPT_IGC_LDFLAGS@
@@ -110,7 +103,6 @@ MYLDADD = \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
 	$(IGC_LDFLGS) \
-	$(MBEDTLS_LIBS) \
 	@LZMA_LDFLAGS_STAT@ \
 	@BINUTILS_LIBS@ \
 	$(HPCLIB_gettext) \

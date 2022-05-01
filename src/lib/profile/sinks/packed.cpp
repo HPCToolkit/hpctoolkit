@@ -252,7 +252,7 @@ void ParallelPacked::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   Packed::packAttributes(out);
   bytesPerCtx = 8;
   for(const Metric& m: metrics)
-    bytesPerCtx += m.partials().size() * 3 * 8;
+    bytesPerCtx += sizeof(MetricScopeSet::int_type) + m.partials().size() * 3 * 8;
 }
 
 void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {

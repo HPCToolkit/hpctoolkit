@@ -84,7 +84,6 @@ endif
 if OPT_ENABLE_HPCRUN
   SUBDIRS += \
 	hpcrun \
-	hpcfnbounds \
 	hpcfnbounds2
 endif
 

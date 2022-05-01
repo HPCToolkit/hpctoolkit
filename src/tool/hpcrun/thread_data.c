@@ -355,11 +355,6 @@ core_profile_trace_data_init
   cptd->trace_outbuf = NULL;
 
   // ----------------------------------------
-  // perf event support
-  // ----------------------------------------
-  cptd->perf_event_info   = NULL;
-
-  // ----------------------------------------
   // ???
   // ----------------------------------------
   cptd->scale_fn = NULL;

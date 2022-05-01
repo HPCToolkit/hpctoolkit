@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 #  Script is invoked with two arguments, $1 = new path needed, $2 = structure-file
 
@@ -11,8 +11,8 @@ oldname=`grep "<LM" $2  | head -1 | awk '{print $3}' | sed '/n="/s///' | sed '/g
 
 #  Check to see if  the two names match 
 if [ "$oldname" ==  "$1" ] ; then
-    #  they match, we're done
-    # @echo DEBUG Pathname matched
+    # they match, we're done
+    # echo DEBUG Pathname matched
     exit 0
 fi
 
@@ -20,13 +20,13 @@ fi
 # First, make sure neither name has a pipe character in it
 err=`echo $oldname | grep "|" | wc -l ` 
 if [ $err -ne 0 ]; then
-    @echo "The original filename in the struct file has an embedded pipe character; not rewriting"
+    echo "The original filename in the struct file has an embedded pipe character; not rewriting"
     exit -1
 fi
 
 err=`echo $1 | grep "|" | wc -l ` 
 if [ $err -ne 0 ]; then
-    @echo "The new filename for the struct file has an embedded pipe character; not rewriting"
+    echo "The new filename for the struct file has an embedded pipe character; not rewriting"
     exit -1
 fi
 

@@ -96,10 +96,10 @@
 
 
 //*****************************************************************************
-// global variables 
+// macros
 //*****************************************************************************
 
-FILE *log_file;
+#define STDERR_FD 2
 
 
 //*****************************************************************************
@@ -119,7 +119,7 @@ static int global_msg_count = 0;
 //-------------------------------------
 static int const threshold = 500;
 
-static int log_file_fd = 2;   // initially log_file is stderr
+static int log_file_fd = STDERR_FD;
 
 //*****************************************************************************
 // forward declarations 
@@ -138,8 +138,7 @@ messages_init()
 
   spinlock_init(&pmsg_lock); // initialize lock for async operations
 
-  log_file    = stderr;
-  log_file_fd = 2;      // std unix stderr
+  log_file_fd = STDERR_FD;      // std unix stderr
 }
 
 
@@ -151,14 +150,14 @@ messages_logfile_create()
   // open log file
   if (getenv("HPCRUN_LOG_STDERR") != NULL) {
     // HPCRUN_LOG_STDERR variable set ==> log goes to stderr
-    log_file_fd = 2;
+    log_file_fd = STDERR_FD;
   }
   else {
     // Normal case of opening .log file.
     log_file_fd = hpcrun_open_log_file();
   }
   if (log_file_fd == -1) {
-    log_file_fd = 2; // cannot open log_file ==> revert to stderr
+    log_file_fd = STDERR_FD; // cannot open log_file ==> revert to stderr
   }
 }
 
@@ -168,12 +167,15 @@ messages_fini(void)
 {
   if (hpcrun_get_disabled()) return;
 
-  if (log_file_fd != 2) {
+  if (log_file_fd != STDERR_FD) {
     int rv = close(log_file_fd);
     if (rv) {
-      char *mesg = "hpctoolkit warning: unable to access log file "
-                   "(maybe application closed the file descriptor)\n";
-      write(2, mesg, strlen(mesg));
+      char executable[PATH_MAX];
+      char *exec = realpath("/proc/self/exe", executable);
+      unsigned long pid = (unsigned long) getpid();
+
+      STDERR_MSG("hpctoolkit warning: executable '%s' (pid=%ld) "
+	      "prematurely closed hpctoolkit's log file", exec, pid);
     }
     //----------------------------------------------------------------------
     // if this is an execution of an MPI program, we opened the log file 
@@ -214,7 +216,7 @@ hpcrun_abort_w_info(void (*info)(void), const char *fmt, ...)
 
   va_list_box box;
 
-  if (log_file != stderr) {
+  if (log_file_fd != STDERR_FD) {
     va_list_box_start(box, fmt);
     hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
   }
@@ -222,7 +224,7 @@ hpcrun_abort_w_info(void (*info)(void), const char *fmt, ...)
   char buf[1024] = "";
   va_list_box_start(box, fmt);
   hpcrun_msg_vns(buf, sizeof(buf), fstr, &box);
-  write(2, buf, strlen(buf));
+  write(STDERR_FD, buf, strlen(buf));
   va_list_box_end(box);
   info();
   monitor_real_exit(-1);
@@ -243,10 +245,10 @@ hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt, ...)
   char buf[2048] = "";
   va_list_box_start(box, fmt);
   hpcrun_msg_vns(buf, sizeof(buf), fstr, &box);
-  write(2, buf, strlen(buf));
+  write(STDERR_FD, buf, strlen(buf));
   va_list_box_end(box);
 
-  if (copy_to_log && log_file != stderr){
+  if (copy_to_log && log_file_fd != STDERR_FD){
     va_list_box_start(box, fmt);
     hpcrun_write_msg_to_log(false, false, NULL, fmt, &box);
   }

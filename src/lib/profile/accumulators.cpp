@@ -97,6 +97,9 @@ StatisticAccumulator::StatisticAccumulator(const Metric& m)
 
 void StatisticAccumulator::PartialRef::add(MetricScope s, double v) noexcept {
   assert(v > 0 && "Attempt to add 0 value to a Partial!");
+#ifndef NDEBUG
+  added = true;
+#endif
   switch(s) {
   case MetricScope::point: atomic_op(partial.point, v, statpart.combinator()); return;
   case MetricScope::function: atomic_op(partial.function, v, statpart.combinator()); return;
