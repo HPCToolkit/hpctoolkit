@@ -60,7 +60,7 @@ public:
   ~HPCTraceDB2() = default;
 
   /// Constructor, with a reference to the output database directory.
-  HPCTraceDB2(const stdshim::filesystem::path&);
+  HPCTraceDB2(const stdshim::filesystem::path&, hpctio_sys_t *);
 
   /// Write out as much data as possible. See ProfileSink::write.
   void write() override;

@@ -179,7 +179,7 @@ int rankN(ProfArgs&& args) {
     case ProfArgs::Format::metadb:
       pipelineB2 << make_unique_x<sinks::SparseDB>(args.output, args.output_sys);
       if(args.include_traces)
-        pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output);
+        pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output, args.output_sys);
       break;
     }
 

@@ -71,10 +71,11 @@ static constexpr uint64_t align(uint64_t v, uint8_t a) {
   return (v + a - 1) / a * a;
 }
 
-HPCTraceDB2::HPCTraceDB2(const stdshim::filesystem::path& dir) {
+HPCTraceDB2::HPCTraceDB2(const stdshim::filesystem::path& dir, hpctio_sys_t * sys) {
   if(!dir.empty()) {
-    stdshim::filesystem::create_directory(dir);
-    tracefile = util::File(dir / "trace.db", NULL, true);
+    //stdshim::filesystem::create_directory(dir);
+    hpctio_sys_mkdir(dir.c_str(), 0777, sys);
+    tracefile = util::File(dir / "trace.db", sys, true);
   } else {
     util::log::info() << "TraceDB issuing a dry run!";
   }

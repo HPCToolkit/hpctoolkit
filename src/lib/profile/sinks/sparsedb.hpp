@@ -175,8 +175,6 @@ private:
   std::optional<hpctoolkit::util::File> pmf;
   std::optional<hpctoolkit::util::File> cmf;
 
-  // I/O systems
-  hpctio_sys_t * output_sys;
 
   // All the contexts we know about, sorted by identifier.
   // Filled during the Contexts wavefront

@@ -100,7 +100,7 @@ int main(int argc, char* const argv[]) {
               << make_unique_x<sinks::SparseDB>(args.output, args.output_sys)
               << make_unique_x<sinks::MetricsYAML>(args.output);
     if(args.include_traces)
-      pipelineB << make_unique_x<sinks::HPCTraceDB2>(args.output);
+      pipelineB << make_unique_x<sinks::HPCTraceDB2>(args.output, args.output_sys);
     break;
   }
   }
