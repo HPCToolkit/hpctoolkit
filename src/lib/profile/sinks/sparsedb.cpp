@@ -88,8 +88,8 @@ SparseDB::SparseDB(stdshim::filesystem::path dir, hpctio_sys_t * sys) {
   
   output_sys = sys;
 
-  pmf = util::File(dir / "profile.db", true);
-  cmf = util::File(dir / "cct.db", true);
+  pmf = util::File(dir / "profile.db", output_sys, true);
+  cmf = util::File(dir / "cct.db", output_sys, true);
 
   // Dump the FORMATS.md file
   try {

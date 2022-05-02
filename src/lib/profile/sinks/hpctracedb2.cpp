@@ -74,7 +74,7 @@ static constexpr uint64_t align(uint64_t v, uint8_t a) {
 HPCTraceDB2::HPCTraceDB2(const stdshim::filesystem::path& dir) {
   if(!dir.empty()) {
     stdshim::filesystem::create_directory(dir);
-    tracefile = util::File(dir / "trace.db", true);
+    tracefile = util::File(dir / "trace.db", NULL, true);
   } else {
     util::log::info() << "TraceDB issuing a dry run!";
   }

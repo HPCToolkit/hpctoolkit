@@ -25,6 +25,8 @@ static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpc
 static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
 static size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+static size_t POSIX_Writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+static size_t POSIX_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p);
 static long int POSIX_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
@@ -48,6 +50,8 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .open = POSIX_Open,
   .close = POSIX_Close,
   .append = POSIX_Append,
+  .writeat = POSIX_Writeat,
+  .readat = POSIX_Readat,
   .tell = POSIX_Tell,
   .readdir = NULL
 
@@ -203,6 +207,33 @@ exit:
   }
   
 }
+
+
+static size_t POSIX_Writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+  hpctio_posix_obj_opt_t * popt = (hpctio_posix_obj_opt_t *) opt;
+  CHECK((popt->wmode != HPCTIO_WRITE_AT),  "POSIX - Writing_at to a file without HPCTIO_WRITE_AT mode is not allowed");
+
+  hpctio_posix_fd_t * pfd = (hpctio_posix_fd_t *) obj;
+  size_t s = pwrite(pfd->fd, buf, count, offset);
+
+exit:
+  if(popt->wmode != HPCTIO_WRITE_AT){
+    return -1;
+  }else{
+    return s == count ? s : -1;
+  }
+}
+
+static size_t POSIX_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p){
+  hpctio_posix_fd_t * pfd = (hpctio_posix_fd_t *) obj;
+  size_t s = pread(pfd->fd, buf, count, offset);
+
+exit:
+  return s == count ? s : -1;
+}
+
+
+
 
 static long int POSIX_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt){
   hpctio_posix_fd_t * pfd = (hpctio_posix_fd_t *) obj;

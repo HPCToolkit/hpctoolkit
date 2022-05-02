@@ -48,6 +48,8 @@
 #define HPCTOOLKIT_PROFILE_UTIL_FILE_H
 
 #include "../stdshim/filesystem.hpp"
+#include "lib/prof-lean/hpctio.h"
+#include "lib/prof-lean/hpctio_obj.h"
 #include <functional>
 #include <ios>
 #include <memory>
@@ -67,7 +69,7 @@ public:
   /// Create a File for the given path. May delay the creation of the file until
   /// synchronize().
   /// If `create` is true and the file already exists, it will be cleared.
-  File(stdshim::filesystem::path, bool create) noexcept;
+  File(stdshim::filesystem::path, hpctio_sys_t *, bool create) noexcept;
   ~File();
 
   File(const File&) = delete;

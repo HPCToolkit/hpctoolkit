@@ -34,6 +34,8 @@ static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpcti
 static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+static size_t DFS_Writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p);
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
 static void DFS_Readdir(const char * path, hpctio_sys_params_t * p);
@@ -67,6 +69,8 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .open = DFS_Open,
     .close = DFS_Close,
     .append = DFS_Append,
+    .writeat = DFS_Writeat,
+    .readat = DFS_Readat,
     .tell = DFS_Tell,
     .readdir = DFS_Readdir
     
@@ -453,7 +457,7 @@ static int real_write(const void * buf, size_t len, daos_off_t off, dfs_t * dfs,
     sgl.sg_iovs = &iov;
     
     int r = dfs_write(dfs, obj, &sgl, off, NULL);
-    CHECK(r, "DFS - failed to dfs_write with errno %d", r);
+    CHECK(r, "DFS - Failed to dfs_write with errno %d", r);
 
 exit:
     if(r){
@@ -835,8 +839,54 @@ static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_ob
     }
 
 exit:
+if(dfs_opt->wmode != HPCTIO_APPEND) return -1;
     return r;
 }
+
+
+static size_t DFS_Writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+    hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
+    CHECK((dfs_opt->wmode != HPCTIO_WRITE_AT),  "DFS - Writing_at to a file without HPCTIO_WRITE_AT mode is not allowed");
+
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+    dfs_obj_t * dobj = (dfs_obj_t *) obj;
+    int r = real_write(buf, count, (daos_off_t) offset, dfs_p->dfs, dobj);
+
+
+exit:
+    if(dfs_opt->wmode != HPCTIO_WRITE_AT) return -1;
+    return r;
+}
+
+
+static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p){
+    hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+    dfs_obj_t * dobj = (dfs_obj_t *) obj;
+
+    d_iov_t iov;
+    d_sg_list_t sgl;
+    sgl.sg_nr = 1;
+    sgl.sg_nr_out = 0;
+    d_iov_set(&iov, buf, count);
+    sgl.sg_iovs = &iov;
+
+    daos_size_t read_size;
+    int r = dfs_read(dfs_p->dfs, dobj, &sgl, (daos_off_t) offset, &read_size, NULL);
+    CHECK(r, "DFS - Failed to dfs_read with errno %d\n", r);
+    CHECK(read_size != count, "The read length is %lld, not equal to the requested length %lld\n", read_size, count);
+
+exit:
+    if(r){
+        errno = r;
+        r = -1;
+    }else{
+        r = read_size;
+    }
+    return r;
+
+}
+
+
 
 
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt){

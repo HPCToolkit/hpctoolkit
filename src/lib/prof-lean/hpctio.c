@@ -8,7 +8,6 @@
 #include "hpctio_obj.h"
 
 
-
 ///////////////////////////////////////HPCTIO_SYS FUNCTIONS///////////////////////////////////////////////
 
 // define global I/O constants
@@ -215,6 +214,24 @@ int hpctio_obj_close(hpctio_obj_t * obj){
 */
 size_t hpctio_obj_append(const void * buf, size_t size, size_t nitems, hpctio_obj_t * obj){
     return obj->sys_ptr->func_ptr->append(buf, size, nitems, obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);
+}
+
+
+/*
+* Writeat to a file 
+* return the number of elements written if succeed, -1  on failure with errno set
+*/
+size_t hpctio_obj_writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_t * obj){
+    return obj->sys_ptr->func_ptr->writeat(buf, count, offset, obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);
+}
+
+
+/*
+* Readat to a file 
+* return the number of elements written if succeed, -1  on failure with errno set
+*/
+size_t hpctio_obj_readat(void * buf, size_t count, uint64_t offset, hpctio_obj_t * obj){
+    return obj->sys_ptr->func_ptr->readat(buf, count, offset, obj->oh, obj->sys_ptr->params_ptr);
 }
 
 

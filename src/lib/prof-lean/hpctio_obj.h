@@ -3,6 +3,10 @@
 
 #include "hpctio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*************************** FILE SYSTEM OBJECT STRUCTS ***************************/
 typedef struct hpctio_obj{
     // pointer to file system objects
@@ -24,9 +28,17 @@ typedef struct hpctio_obj{
 /*************************** FILE SYSTEM OBJECT FUNCTIONS ***************************/
 hpctio_obj_t * hpctio_obj_open(const char *path, int flags, mode_t md, int wmode, int sizetype, hpctio_sys_t * sys);
 int hpctio_obj_close(hpctio_obj_t * obj);
+
 size_t hpctio_obj_append(const void * buf, size_t size, size_t nitems, hpctio_obj_t * obj);
+size_t hpctio_obj_writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_t * obj);
+size_t hpctio_obj_readat(void * buf, size_t count, uint64_t offset, hpctio_obj_t * obj);
+
 long int hpctio_obj_tell(hpctio_obj_t * obj);
 
 //int hpctio_obj_filesize(hpctio_obj_t * obj);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* ifndef HPCTIO_OBJ_H */
