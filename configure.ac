@@ -4750,8 +4750,8 @@ case "$IGC" in
     fi
     OPT_IGC_IFLAGS="-DENABLE_IGC -I${IGC}/include"
 
-    IGC_LDFLAGS =
-    IGA_LDFLAGS =
+    IGC_LDFLAGS=""
+    IGA_LDFLAGS=""
 
     for lib in $multilib_path ; do
       if test -f "${IGC}/${lib}/libigc.so" ; then
