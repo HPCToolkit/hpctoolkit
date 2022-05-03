@@ -1881,6 +1881,7 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
+default_gtpin_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
@@ -1976,6 +1977,9 @@ then
   fi
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-gtpin ; then
+    default_gtpin_prefix="$spack_ans"
   fi
   if find_spack_pkg libiberty ; then
     default_libiberty_prefix="$spack_ans"
@@ -4842,7 +4846,8 @@ AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
 # Option: --with-gtpin=PATH
 #-------------------------------------------------
 
-GTPIN=no
+GTPIN="$default_gtpin_prefix"
+
 OPT_HAVE_GTPIN=no
 OPT_GTPIN_IFLAGS=
 OPT_GTPIN_LDFLAGS=
