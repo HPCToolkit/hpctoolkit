@@ -228,6 +228,8 @@ static __thread bool hpcrun_thread_suppress_sample = true;
 
 static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
+static bool hpcrun_process_event_list = true;
+static bool hpcrun_identify_sample_sources = true;
 static bool hpcrun_dlopen_forced = false;
 static bool safe_to_sync_sample = false;
 static void* main_addr = NULL;
@@ -542,16 +544,17 @@ hpcrun_init_internal(bool is_child)
   //       no need to do it twice.
   //
 
-  if (! is_child) {
+  if (hpcrun_process_event_list) {
     SAMPLE_SOURCES(process_event_list, lush_metrics);
     SAMPLE_SOURCES(finalize_event_list);
     hpcrun_metrics_data_finalize();
+    hpcrun_process_event_list = false;
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
   // Check whether tracing is enabled and metrics suitable for tracing are specified
   if (hpcrun_trace_isactive() && hpcrun_has_trace_metric() == 0) {
-    fprintf(stderr, "Error: Tracing is specified at the command line without a sutable metric for tracing.\n");
+    fprintf(stderr, "Error: Tracing is specified at the command line without a suitable metric for tracing.\n");
     fprintf(stderr, "\tCPU tracing is only meaningful when a time based metric is given, such as REALTIME, CPUTIME, and CYCLES\n");
     fprintf(stderr, "\tGPU tracing is always meaningful.\n");
     monitor_real_exit(1);
@@ -1020,8 +1023,9 @@ void  hpcrun_prepare_measurement_subsystem(bool is_child)
 
     char* s = getenv(HPCRUN_EVENT_LIST);
 
-    if (! is_child) {
+    if (hpcrun_identify_sample_sources) {
       hpcrun_sample_sources_from_eventlist(s);
+      hpcrun_identify_sample_sources = false;
     }
 
     hpcrun_set_abort_timeout();
