@@ -225,7 +225,7 @@ doMeasurementsDir
   }
 
   // Write a blank line
-  std::cerr << std::endl;
+  std::cout << std::endl;
 
   // and exit
   exit(0);
