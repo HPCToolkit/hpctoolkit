@@ -232,12 +232,12 @@ doSingleBinary
 
     // Direct invocation, write a starting message
     if (gpu_binary == true ) {
-      std::cerr << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      std::cout << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
         << "] analysis of " "GPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
 	<< ", threads = " << args.jobs << ")" << std::endl;
     } else {
-      std::cerr << " begin " << mode.c_str() << " analysis of CPU binary "
+      std::cout << " begin " << mode.c_str() << " analysis of CPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
 	<< ", threads = " << args.jobs << ")" << std::endl;
     }
@@ -376,11 +376,11 @@ doSingleBinary
     // If this invocation was not from a Makefile, write a message to the user
     //
     if (gpu_binary == true ) {
-      std::cerr << "   end " << mode.c_str() << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
+      std::cout << "   end " << mode.c_str() << " [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
         << "] analysis of " "GPU binary "
         << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
     } else {
-      std::cerr << "   end " << mode.c_str() << " analysis of CPU binary "
+      std::cout << "   end " << mode.c_str() << " analysis of CPU binary "
         << args.in_filenm.c_str() << cache_stat_str << std::endl << std::endl ;
     }
 
