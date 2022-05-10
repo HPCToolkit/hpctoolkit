@@ -3523,13 +3523,8 @@ AC_SUBST([TBB_COPY])
 # Option: --with-xed=PATH
 #-------------------------------------------------
 
-# Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
-# hpclink requires .a, and fnbounds, etc can use either.  hpcprof-mpi
-# requires .a, but only if fully static (Cray).
-#
-# We support both old XED (2013) with single .a + fPIC and new (2015)
-# XED with separate .so and .a without fPIC, so we test if .a can link
-# into a shared library.
+# Now require static (.a) archive + fPIC for all cases in order to
+# hide the xed symbols.
 
 XED2_INC=
 XED2_LIB_DIR=no
@@ -3559,12 +3554,11 @@ case "$XED2" in
     if test ! -f "${XED2}/include/xed-interface.h" ; then
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
-    if test ! -f "${XED2}/lib/libxed.so" && test ! -f "${XED2}/lib/libxed.a" ; then
+    if test ! -f "${XED2}/lib/libxed.a" ; then
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
     XED2_INC="${XED2}/include"
     XED2_LIB_DIR="${XED2}/lib"
-    XED2_COPY=yes
     xed2_avail=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
@@ -3610,55 +3604,19 @@ int my_xed_init(void)
     CFLAGS="$ORIG_CFLAGS"
     LIBS="$ORIG_LIBS"
   fi
+
   #
-  # default lib flags: .so if exists, else .a
+  # now require .a archive + fPIC for both hpcrun and hpclink
   #
-  if test -f "${XED2}/lib/libxed.so" ; then
-    XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
-  elif test -f "${XED2}/lib/libxed.a" ; then
-    XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
-  else
-    AC_MSG_ERROR([unable to find libxed.so or libxed.a])
+  if test "$xed2_static_fpic" = no ; then
+    AC_MSG_ERROR([libxed.a must be compiled with -fPIC])
   fi
-  #
-  # hpcrun: .so, or .a + fPIC, else fail
-  #
-  if test -f "${XED2}/lib/libxed.so" ; then
-    XED2_HPCRUN_LIBS="-L${XED2}/lib -lxed"
-  elif test "$xed2_static_fpic" = yes ; then
-    XED2_HPCRUN_LIBS="${XED2}/lib/libxed.a"
-  else
-    AC_MSG_WARN([unable to build hpcrun: no libxed with -fPIC])
-    no_xed_for_hpcrun=yes
-  fi
-  #
-  # hpclink: .a only (with or without -fPIC)
-  #
-  if test -f "${XED2}/lib/libxed.a" ; then
-    XED2_HPCLINK_LIBS="${XED2}/lib/libxed.a"
-  else
-    AC_MSG_WARN([unable to build hpclink: no static libxed.a])
-    no_xed_for_hpclink=yes
-  fi
-  #
-  # hpcprof-mpi: same as hpclink if fully static, else default
-  #
-  echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
-  if test $? = 0 ; then
-    XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
-  else
-    XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
-  fi
-  #
-  # add libirc.a, if exists for k1om
-  #
-  if test -f "${XED2}/lib/libirc.a" ; then
-    XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
-    XED2_HPCRUN_LIBS="${XED2_HPCRUN_LIBS} ${XED2}/lib/libirc.a"
-    XED2_HPCLINK_LIBS="${XED2_HPCLINK_LIBS} ${XED2}/lib/libirc.a"
-    XED2_PROF_MPI_LIBS="${XED2_PROF_MPI_LIBS} ${XED2}/lib/libirc.a"
-  fi
-  AC_MSG_NOTICE([xed2 lib flags: $XED2_LIB_FLAGS])
+  XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+  XED2_HPCRUN_LIBS="${XED2}/lib/libxed.a"
+  XED2_HPCLINK_LIBS="${XED2}/lib/libxed.a"
+  XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
+
+  AC_MSG_NOTICE([xed2 hpcrun libs: $XED2_HPCRUN_LIBS])
 fi
 
 AC_SUBST([XED2_INC])
@@ -5904,6 +5862,13 @@ fi
 if test "x$with_spack" = xno && test "$num_pkgs" -lt 7 ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using --with-spack.])
+  AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
+  AC_MSG_WARN([this is probably an error.  Rerun configure with:])
+  AC_MSG_WARN([  --with-spack=/path/to/spack/install/gcc-x.y.z])
+
+elif test "$OPT_ENABLE_HPCRUN" != yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Missing prerequisites for building hpcrun.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
   AC_MSG_WARN([this is probably an error.  Rerun configure with:])
   AC_MSG_WARN([  --with-spack=/path/to/spack/install/gcc-x.y.z])
