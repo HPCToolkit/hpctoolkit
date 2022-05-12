@@ -50,11 +50,8 @@
 
 #include "hip-api.h"
 #include "rocm-binary-processing.h"
-#include "tool_state.h"
 
 #include <roctracer_hip.h>
-
-#include <hpcrun/gpu-monitors.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -76,6 +73,8 @@
 
 
 #include "rocprofiler-api.h"
+
+#include <hsa.h>
 
 //******************************************************************************
 // macros
@@ -292,12 +291,6 @@ roctracer_subscriber_callback
  void* arg
 )
 {
-  if (is_tool_active()) {
-//    TMSG(ROCM, "PAPI correlation callback");
-//    gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
-    return;
-  }
-
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   bool is_valid_op = false;
   bool is_kernel_op = false;
@@ -448,6 +441,12 @@ roctracer_subscriber_callback
 
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
+    uint64_t hsa_timestamp;
+    hsa_system_get_info(HSA_SYSTEM_INFO_TIMESTAMP, &hsa_timestamp);
+
+    // We align CPU & GPU timestamps
+    gpu_set_cpu_gpu_timestamp(cpu_submit_time, hsa_timestamp);
+
     //gpu_monitors_apply(api_node, gpu_monitor_type_enter);
 
     gpu_correlation_channel_produce_with_idx(ROCTRACER_CHANNEL_IDX, correlation_id, &gpu_op_ccts, cpu_submit_time);
@@ -484,6 +483,20 @@ roctracer_activity_process
  roctracer_record_t* roctracer_record
 )
 {
+  // As of April 4th, 2022, enabling rocprofiler
+  // causes roctracer to generate a dubious GPU kernel record.
+  // The dubious GPU kernel record has a very small start timestamp,
+  // causing a huge duration.
+  // We drop roctracer records when the user collects
+  // AMD GPU hardware counters.
+  //
+  // In rocm-5.1, rocprof does not collect HIP GPU traces and
+  // hardware counters at the same time. It is unclear whether
+  // this is a fundamental limitation of rocm or not.
+  //
+  // Therefore, at this point, it is safer to simply drop roctracer records
+  // when using rocprofiler
+  if (collect_counter) return;
   gpu_activity_t gpu_activity;
   roctracer_activity_translate(&gpu_activity, roctracer_record);
   if (gpu_correlation_id_map_lookup(roctracer_record->correlation_id) == NULL) {

@@ -45,6 +45,14 @@
 #define rocprofiler_api_h
 
 //******************************************************************************
+// global includes
+//******************************************************************************
+
+#include <stdint.h>
+
+
+
+//******************************************************************************
 // macro definitions
 //******************************************************************************
 
@@ -58,14 +66,14 @@
 void
 rocprofiler_start_kernel
 (
-  uint64_t
+ uint64_t correlation_id
 );
 
 
 void
 rocprofiler_stop_kernel
 (
-	void
+ void
 );
 
 
@@ -105,19 +113,19 @@ rocprofiler_total_counters
 const char*
 rocprofiler_counter_name
 (
-  int
+  int idx
 );
 
 const char*
 rocprofiler_counter_description
 (
-  int
+  int idx
 );
 
 int
 rocprofiler_match_event
 (
-  const char*
+  const char *ev_str
 );
 
 void

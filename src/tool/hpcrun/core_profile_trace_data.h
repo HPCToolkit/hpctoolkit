@@ -44,12 +44,6 @@ typedef struct core_profile_trace_data_t {
   void* trace_buffer;
   hpcio_outbuf_t *trace_outbuf;
 
-  // ----------------------------------------
-  // Perf support
-  // ----------------------------------------
-
-  metric_aux_info_t *perf_event_info;
-
 } core_profile_trace_data_t;
 
 

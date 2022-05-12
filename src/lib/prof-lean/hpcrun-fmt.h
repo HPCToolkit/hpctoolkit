@@ -387,7 +387,9 @@ typedef struct metric_desc_t {
   char* formula;
   char* format;
 
+  // Additional perf events info
   bool is_frequency_metric;
+  metric_aux_info_t aux_info;
 } metric_desc_t;
 
 extern const metric_desc_t metricDesc_NULL;
@@ -402,28 +404,28 @@ typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metr
 
 
 extern int
-hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_info, FILE* in,
+hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
 			   double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
 
 extern int
-hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, metric_aux_info_t *aux_info, FILE* out);
+hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
 
 extern void
 hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 extern int
-hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* infs,
+hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
 			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs);
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
 
 extern int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs, const char* pre, uint32_t id);
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre, uint32_t id);
 
 extern void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
@@ -772,7 +774,7 @@ int hpcrun_sparse_check_mode(hpcrun_sparse_file_t* sparse_fs, bool expected, con
 
 int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hdr);
 int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm);
-int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, metric_aux_info_t* perf_info,double fmtVersion);
+int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, double fmtVersion);
 int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_node_t* node);
 int hpcrun_sparse_read_idtuple_dxnry(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_idtuple_dxnry_t* dxnry);
 int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, id_tuple_t* id_tuple);

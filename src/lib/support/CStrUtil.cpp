@@ -121,7 +121,7 @@ smove(char **old, char *fresh)
  *                to the null that terminates s1.
  */
 static char*
-strcpye(register char* s1, register char* s2)
+strcpye(char* s1, char* s2)
 {
   while ( (*s1++ = *s2++) );
   return --s1;
@@ -215,9 +215,9 @@ char_count(char s1[], char s2[])
 
 
 int
-hash_string(register const char* string, int size)
+hash_string(const char* string, int size)
 {
-  register unsigned int result = 0;
+  unsigned int result = 0;
 
   if (*string == '\0')
     return result;  /* no content */

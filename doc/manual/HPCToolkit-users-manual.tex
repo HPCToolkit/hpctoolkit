@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2022.03.15}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2022.04.15}
 %\subtitle{}
 
 \author{John Mellor-Crummey,\\
@@ -136,7 +136,7 @@ Keren Zhou\\
 Rice University\\
 }
 
-\date{February 26, 2022}
+\date{April 15, 2022}
 
 \maketitle
 
@@ -1284,13 +1284,67 @@ This is why we need the application to call \mytt{MPI_Comm_rank()} with communic
  \vspace{2ex}
 }
 
-HPCToolkit includes an implementation of the OpenMP 5.0 Tools API known as OMPT. The OMPT interface enables HPCToolkit to extract enough information to reconstruct user-level calling contexts from implementation-level measurements.
+HPCToolkit includes an implementation of the OpenMP 5.0 Tools API
+known as OMPT. The OMPT interface enables HPCToolkit to extract
+enough information to reconstruct user-level calling contexts from
+implementation-level measurements.
 
-Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes. Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight OpenMP Runtime) and Intel's OpenMP runtime provide emerging support for OMPT. At present, support in these implementations is known to be incomplete, especially with respect to offloading computation onto TARGET devices.
+Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes.
+Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight
+OpenMP Runtime) and Intel's OpenMP runtime provide emerging support
+for OMPT. At present, support in these implementations is known to
+be incomplete, especially with respect to offloading computation
+onto TARGET devices.
 
-If an interaction between HPCToolkit's support for the OMPT interface and an OpenMP runtime causes problems, OMPT support may be disabled when using HPCToolkit by setting  OpenMP environment variable {\tt OMP\_TOOL} to {\tt disabled}.
+If an interaction between HPCToolkit's support for the OMPT interface
+and an OpenMP runtime causes problems, OMPT support may be disabled
+when using HPCToolkit by setting  OpenMP environment variable {\tt
+OMP\_TOOL} to {\tt disabled}.
 
+\section{Monitoring OpenMP TARGET Offloading}
 
+\subsection{NVIDIA GPUs}
+To our knowledge, NVIDIA's OpenMP {\tt nvc++} compiler and its
+runtime lack OMPT support. Without OMPT support, HPCToolkit
+separates performance information for the OpenMP master thread from
+other OpenMP threads (and any other threads that may be present at
+runtime, such as MPI helper threads). Performance of the master thread is
+attributed to \verb|<program root>|; the performance of all other threads
+is attributed to \verb|<thread root>|. While this is not as convenient
+as the high-level unified call stack constructed using the OMPT interface,
+this approach can be used to analyze performance data for OpenMP programs
+compiled with NVIDIA's compilers using HPCToolkit. However, it will be
+harder to understand this separate presentation of master thread vs.\ all others.
+
+LLVM-generated code for say v12.0 or later have good host-side OMPT
+support in the runtime. HPCToolkit manages to do a good job associating
+the performance of kernels with the CPU calling contexts in which
+they are launched by hiding all NVIDIA library frames in the call
+stack, which are stripped code anyway. Patches to add OMPT support
+to LLVM OpenMP are pending; they haven't been accepted yet.
+
+\subsection{AMD GPUs}
+AMD's ROCm 5.1 release contains support for monitoring
+the offloading of computations to AMD GPUs using OpenMP Target.
+This monitoring is not enabled by default;
+it must be enabled by passing {\tt -e gpu=openmp} to \hpcrun{}.
+
+For OpenMP code compiled with {\tt amdclang} or {\tt amdclang++},
+the {\tt -e gpu=openmp} option will cause HPCToolkit to use the
+OMPT interface to monitor GPU operations, such as kernel execution,
+and data copies.  With no other options, it will profile these
+operations and attribute them to the OpenMP TARGET directives that
+caused the operations to be initiated. Adding a {\tt -t} option
+will cause \hpcrun{} to trace the GPU operations.
+
+At present, OpenMP code compiled with Cray's {\tt cc} or {\tt CC}
+compilers generates code that runs atop AMD's ROCm 4 runtime, which
+lacks OMPT support. As a result, GPU operations offloaded with HSA
+(as they seem to be) are invisible to HPCToolkit.
+
+\subsection{Intel GPUs}
+Intel's latest runtime in OneAPI has support for the OMPT tools interface.
+We have no experience with this implementation at present.
 
 
 % ***************************************************************************
@@ -1836,7 +1890,7 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
-\section{Launching \hpcviewer{} is very slow on Windows}
+\subsection{Launching \hpcviewer{} is very slow on Windows}
 
 There is a known issue that Windows Defender significantly slow down Java-based applications.
 See the github issue at \url{https://github.com/microsoft/java-wdb/issues/9}.
@@ -1855,11 +1909,11 @@ A temporary solution is to add \hpcviewer{} in the Windows' exclusion list:
 % ===========================================================================
 % ===========================================================================
 
-\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
+\subsection{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
 
-\hpcviewer{} has only been tested on Java 11. If you are running an older or newer version of Java than Java 11, obtain a version of Java 11 from \url{https://adoptopenjdk.net}.
+\hpcviewer{} has mainly been tested on Java 11. If you are running an older than Java 11 or newer than Java 17, obtain a version of Java 11 or 17 from \url{https://adoptopenjdk.net} or \url{https://adoptium.net/}.
 
-If your system has multiple versions of Java and Java 11 is not the newest version, you need to set Java 11 as the default JVM:
+If your system has multiple versions of Java and Java 11 is not the newest version, you need to set Java 11 as the default JVM. On MacOS, you need to exclude older Java as follows:
 
 \begin{enumerate}
 \item Leave all JDKs at their default location (usually under \texttt{/Library/Java/JavaVirtualMachines}). The system will pick the highest version by default.
@@ -1875,14 +1929,16 @@ If you encounter this problem, we recommend that you edit the
 \texttt{hpcviewer.ini}
 file which is located in HPCToolkit installation directory to reduce the
 Java heap size.
-By default, the content of the file on \verb|ppc64le| is as follows:
+By default, the content of the file on Linux \verb|x86| is as follows:
 \begin{verbatim}
--consoleLog
+-startup
+plugins/org.eclipse.equinox.launcher_1.6.200.v20210416-2027.jar
+--launcher.library
+plugins/org.eclipse.equinox.launcher.gtk.linux.x86_64_1.2.200.v20210429-1609
 -clearPersistedState
 -vmargs
--Dosgi.locking=none
--Dosgi.requiredJavaVersion=1.8
 -Xmx2048m
+-Dosgi.locking=none
 \end{verbatim}
 You can decrease the maximum size of the Java heap from 2048MB to 1GB
  by changing the {\tt Xmx} specification in the \texttt{hpcviewer.ini} file as follows:

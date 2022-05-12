@@ -227,8 +227,9 @@ parse_amd_gpu_binary_uri
   amd_gpu_binary_t *bin
 )
 {
+  char *mutable_uri = strdup(uri);
   // File URI example: file:///home/users/coe0173/HIP-Examples/HIP-Examples-Applications/FloydWarshall/FloydWarshall#offset=26589&size=31088
-  char* filepath = (char*)uri + strlen("file://");
+  char* filepath = mutable_uri + strlen("file://");
   char* filepath_end = filepath;
 
   // filepath is seperated by either # or ?
@@ -263,12 +264,12 @@ parse_amd_gpu_binary_uri
   int rfd = open(filepath, O_RDONLY);
   if (rfd < 0) {
     PRINT("\tcannot open the file specified in the file URI\n");
-	return;
+    goto finish;
   }
 
   if (lseek(rfd, offset, SEEK_SET) < 0) {
     PRINT("\tcannot seek to the offset\n");
-	return;
+    goto finish;
   }
 
   bin->size = size;
@@ -277,7 +278,8 @@ parse_amd_gpu_binary_uri
   if (read_bytes != size) {
     PRINT("\tfail to read file, read %d\n", read_bytes);
     perror(NULL);
-    return;
+    if (bin->buf) free(bin->buf);
+    goto finish;
   }
 
   // We write down this GPU binary if necessary.
@@ -286,7 +288,11 @@ parse_amd_gpu_binary_uri
 
   bin->amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
   bin->load_module_unused = true;
+
+finish:
+  free(mutable_uri);
 }
+
 
 static int
 file_uri_exists
@@ -396,7 +402,7 @@ rocm_binary_function_lookup
 void
 rocm_binary_uri_add
 (
-  const char* uri
+  const char *uri
 )
 {
   spinlock_lock(&rocm_binary_list_lock);

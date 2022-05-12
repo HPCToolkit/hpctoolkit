@@ -299,7 +299,6 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	tool_state.c			\
 	sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c   \
 	sample-sources/blame-shift/directed.c    \
@@ -330,7 +329,6 @@ MY_BASE_FILES =				\
 	control-knob.c   \
 	control-knob.h   \
 	device-finalizers.c \
-	gpu-monitors.c		\
 	device-initializers.c \
 	module-ignore-map.c \
 	threadmgr.c			\
@@ -526,11 +524,6 @@ endif
 if OPT_PAPI_CUPTI
     MY_PAPI_FILES += sample-sources/papi-c-cupti.c
 endif
-
-if OPT_PAPI_ROCM
-    MY_PAPI_FILES += sample-sources/papi-c-rocm.c
-endif
-
 
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia.c	\
@@ -885,7 +878,6 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_la_LIBADD =  \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
-	$(MBEDTLS_LIBS)  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
 
@@ -900,7 +892,6 @@ libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
 	$(PERFMON_LDFLAGS_STAT)  \
-	$(MBEDTLS_LIBS)  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
 

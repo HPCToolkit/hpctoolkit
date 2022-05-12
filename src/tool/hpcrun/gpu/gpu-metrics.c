@@ -65,6 +65,8 @@
 // macros
 //*****************************************************************************
 
+#define TRACK_NVLINK 0
+
 #define FORMAT_DISPLAY_PERCENTAGE     "%6.2f %%"
 #define FORMAT_DISPLAY_INT            "%6.0f"
 
@@ -89,7 +91,7 @@
   macro(INTEL_OPTIMIZATION, 15) \
   macro(BLAME_SHIFT, 16)  \
   macro(GPU_UTILIZATION, 17) \
-  macro(CTR, 18) \
+  macro(CTR, 18)
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -679,6 +681,7 @@ gpu_metrics_attribute_counter
   free(c->values);
 }
 
+#if TRACK_NVLINK
 static void
 gpu_metrics_attribute_link
 (
@@ -713,6 +716,7 @@ gpu_activity_t *activity
 
 
 }
+#endif
 
 static void
 metrics_attribute_intel_optimization
@@ -1121,14 +1125,14 @@ gpu_metrics_GXFER_enable
 void
 )
 {
-//#undef CURRENT_METRIC
-//#define CURRENT_METRIC GXFER
+#undef CURRENT_METRIC
+#define CURRENT_METRIC GXFER
 
-	//INITIALIZE_METRIC_KIND();
+  INITIALIZE_METRIC_KIND();
 
-	//FORALL_GXFER(INITIALIZE_SCALAR_METRIC_INT)
+  FORALL_GXFER(INITIALIZE_SCALAR_METRIC_INT)
 
-	//FINALIZE_METRIC_KIND();
+  FINALIZE_METRIC_KIND();
 }
 
 

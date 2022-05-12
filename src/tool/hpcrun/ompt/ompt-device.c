@@ -63,6 +63,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/messages/messages.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
@@ -81,6 +82,8 @@
 #include "gpu/gpu-trace.h"
 
 #include "gpu/ompt/ompt-gpu-api.h"
+
+#include "monitor.h"
 
 
 
@@ -407,9 +410,9 @@ ompt_finalize_shutdown
 
   ompt_device_entry_t *e = device_list;
   while (e) {
-    PRINT("ompt_finalize_flush flush id=%d device=%p\n",
+    PRINT("ompt_stop_trace id=%d device=%p\n",
 	  e->device_id, e->device);
-    ompt_stop_trace(e->device);
+    if (ompt_stop_trace) ompt_stop_trace(e->device);
     e = e->next;
   }
   ompt_shutdown_complete = 1;
@@ -478,12 +481,18 @@ ompt_buffer_complete
 void
 ompt_trace_configure(ompt_device_t *device)
 {
+  // ignore tooling threads created while enabling a device
+  monitor_disable_new_threads();
+
   // indicate desired monitoring
   ompt_set_trace_ompt(device, 1, 0);
 
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_buffer_request,
 		   ompt_buffer_complete);
+
+  // resume thread tracking
+  monitor_enable_new_threads();
 }
 
 
@@ -496,9 +505,13 @@ ompt_device_initialize(int device_num,
 {
   PRINT("ompt_device_initialize->%s, %d\n", type, device_num);
 
-  ompt_bind_names(lookup);
+  if (lookup) {
+    ompt_bind_names(lookup);
 
-  ompt_trace_configure(device);
+    ompt_trace_configure(device);
+  } else {
+    EEMSG("WARNING: OMPT GPU monitoring not supported by vendor runtime");
+  }
 
   device_list_insert(device_num, device);
   ompt_device_map_insert(device_num, device, type);
@@ -629,14 +642,11 @@ ompt_data_op_callback_emi
   size_t bytes,
   const void *codeptr_ra
 )
-{                 
-  if (endpoint == ompt_scope_end) return;
+{
+  if (endpoint == ompt_scope_begin) {
+    *host_op_id = gpu_correlation_id();
+  }
 
-  ompt_need_flush = true;
-
-  uint64_t op_id = *host_op_id = gpu_correlation_id();
-
-  PRINT("ompt_data_op enter->target_id 0x%lx\n", target_data->value);
   enum hpcrun_placeholder op = hpcrun_placeholder_ompt_tgt_none;
   switch (optype) {
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
@@ -651,8 +661,7 @@ ompt_data_op_callback_emi
       break;
   }
 
-  hpcrun_ompt_op_id_notify(endpoint, op_id, get_placeholder_norm(op));
-  PRINT("ompt_data_op exit->target_id 0x%lx\n", target_data->value);
+  hpcrun_ompt_op_id_notify(endpoint, *host_op_id, get_placeholder_norm(op));
 }
 
 
@@ -665,17 +674,16 @@ ompt_submit_callback_emi
  unsigned int requested_num_teams
 )
 {
-  PRINT("ompt_submit_callback enter->target_id 0x%lx\n", target_data->value);
-
   if (endpoint == ompt_scope_begin) {
     *host_op_id = gpu_correlation_id();
-    hpcrun_ompt_op_id_notify(endpoint, *host_op_id,
-      get_placeholder_norm(hpcrun_placeholder_ompt_tgt_kernel));
-
-    ompt_need_flush = true;
   }
 
-  PRINT("ompt_submit_callback exit->target_id 0x%lx\n", target_data->value);
+  PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);
+
+  hpcrun_ompt_op_id_notify(endpoint, *host_op_id,
+			   get_placeholder_norm(hpcrun_placeholder_ompt_tgt_kernel));
+
+  PRINT("ompt_submit_callback exit->target_id %" PRIu64 "\n", target_id);
 }
 
 

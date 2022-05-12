@@ -90,7 +90,6 @@
 // global variables
 //*****************************************************************************
 
-extern FILE *log_file;
 extern spinlock_t pmsg_lock;
 
 

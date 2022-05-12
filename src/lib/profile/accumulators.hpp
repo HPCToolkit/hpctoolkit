@@ -308,6 +308,10 @@ public:
     PartialRef(PartialRef&&) = default;
     PartialRef& operator=(PartialRef&&) = default;
 
+    ~PartialRef() {
+      assert(added && "Created a PartialRef but did not add any value!");
+    }
+
     /// Add some value to this particular Partial, for a particular MetricScope.
     // MT: Internally Synchronized
     void add(MetricScope, double) noexcept;
@@ -321,6 +325,9 @@ public:
     PartialRef(Partial& p, const StatisticPartial& sp)
       : partial(p), statpart(sp) {};
 
+#ifndef NDEBUG
+    bool added = false;
+#endif
     Partial& partial;
     const StatisticPartial& statpart;
   };

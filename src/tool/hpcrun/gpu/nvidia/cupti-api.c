@@ -158,7 +158,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/main.h> // hpcrun_force_dlopen
 #include <hpcrun/safe-sampling.h>
-#include <hpcrun/gpu-monitors.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
@@ -182,8 +181,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "cupti-gpu-api.h"
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
-
-#include "tool_state.h"
 
 //#include "sample_sources_all.h"
 
@@ -803,23 +800,6 @@ cupti_func_ip_resolve
 }
 
 static void
-cupti_gpu_monitors_apply_enter(cct_node_t *cct_node)
-{
-  cupti_correlation_id_push(IGNORE_CORR_ID);
-  // gpu_monitors_apply( cct_node, gpu_monitor_type_enter);
-  cupti_correlation_id_pop();
-}
-
-
-static void
-cupti_gpu_monitors_apply_exit()
-{
-  cupti_correlation_id_push(IGNORE_CORR_ID);
-  // gpu_monitors_apply( NULL, gpu_monitor_type_exit);
-  cupti_correlation_id_pop();
-}
-
-static void
 cupti_subscriber_callback
 (
  void *userdata,
@@ -828,11 +808,6 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
-
-	if (is_tool_active()) {
-		return;
-	}
-
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -1055,16 +1030,10 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-
-        cupti_gpu_monitors_apply_enter(api_node);
-
-				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
-          cpu_submit_time);
+        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
-        cupti_gpu_monitors_apply_exit();
-
         uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
@@ -1216,15 +1185,10 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-        cupti_gpu_monitors_apply_enter(cupti_kernel_ph);
-
-				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
-          cpu_submit_time);
+	gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
-
-        cupti_gpu_monitors_apply_exit();
         // Exit an CUDA runtime api
         cupti_runtime_api_flag_unset();
 

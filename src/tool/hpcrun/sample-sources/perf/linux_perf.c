@@ -542,8 +542,8 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // ----------------------------------------------------------------------------
   // set additional information for the metric description
   // ----------------------------------------------------------------------------
-  thread_data_t *td = hpcrun_get_thread_data();
-  metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[current->event->perf_metric_id]);
+  metric_desc_t *m = hpcrun_id2metric_linked(current->event->hpcrun_metric_id);
+  metric_aux_info_t *info_aux = &m->aux_info;
 
   // check if this event is multiplexed. we need to notify the user that a multiplexed
   //  event is not accurate at all.
@@ -962,7 +962,6 @@ METHOD_FN(gen_event_set, int lush_metrics)
   TMSG(LINUX_PERF, "gen_event_set");
 
   int nevents 	  = (self->evl).nevents;
-  int num_metrics = hpcrun_get_num_metrics(lnux_kind);
 
   // -------------------------------------------------------------------------
   // TODO: we need to fix this allocation.
@@ -972,15 +971,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   // a list of event information, private for each thread
   event_thread_t  *event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
 
-  // allocate and initialize perf_event additional metric info
-
-  size_t mem_metrics_size = num_metrics * sizeof(metric_aux_info_t);
-  metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
-  memset(aux_info, 0, mem_metrics_size);
-
   thread_data_t* td = hpcrun_get_thread_data();
-
-  td->core_profile_trace_data.perf_event_info = aux_info;
   td->ss_info[self->sel_idx].ptr = event_thread;
 
   // Initialize the requested events
