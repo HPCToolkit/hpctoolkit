@@ -217,6 +217,14 @@ Options to consider only when hpcrun causes an application to fail:
                        it is believed that the rewriting is causing the
                        application to fail.
 
+  --auditor-static-tls-size <size>
+                       By default, hpcrun uses LD_AUDIT to track dynamic library
+                       operations. When using an auditor, a bug in glibc causes
+                       the size of the static TLS block to be severely underestimated.
+                       By default, hpcrun will add 64KB to the static TLS to
+                       avoid this. This option can be used to adjust this amount,
+                       or can be "none" to disable the tuning completely.
+
   --default-memkind    By default, hpcrun uses its own copy of libmemkind.so. It
                        does so to sidestep a Glibc bug that causes programs to SEGV
                        when loading libraries with properties commonly
@@ -296,6 +304,7 @@ gtpin_libdir=
 namespace_default=multiple
 namespace_multiple=
 namespace_single=
+audit_static_tls_size=65536  # 64K
 
 # All versions of glibc currently have a bug handling R_X86_64_TLSDESC
 # relocations when LD_AUDIT is used. This bug causes programs to crash
@@ -530,6 +539,16 @@ do
             unset HPCRUN_AUDIT_FAKE_AUDITOR
             ;;
 
+        --auditor-static-tls-size )
+            case "$1" in
+            '') die "missing argument for $arg" ;;
+            none) audit_static_tls_size= ;;
+            *[!0-9]*) die "invalid value for $arg: $1" ;;
+            *) audit_static_tls_size="$1" ;;
+            esac
+            shift
+            ;;
+
         --default-memkind )
             use_memkind=no
             ;;
@@ -719,8 +738,13 @@ if test -z "${LD_PRELOAD}"; then unset LD_PRELOAD; fi
 
 if test -n "${audit_list}"; then
   LD_AUDIT="${audit_list}${LD_AUDIT:+:${LD_AUDIT}}"
+  # Only set GLIBC_TUNABLES if we load any auditors
+  if test -n "${audit_static_tls_size}"; then
+    GLIBC_TUNABLES="glibc.rtld.optional_static_tls=${audit_static_tls_size}${GLIBC_TUNABLES:+:${GLIBC_TUNABLES}}"
+  fi
 fi
 if test -z "${LD_AUDIT}"; then unset LD_AUDIT; fi
+if test -z "${GLIBC_TUNABLES}"; then unset GLIBC_TUNABLES; fi
 
-export LD_LIBRARY_PATH LD_PRELOAD LD_AUDIT
+export LD_LIBRARY_PATH LD_PRELOAD LD_AUDIT GLIBC_TUNABLES
 exec "$@"
