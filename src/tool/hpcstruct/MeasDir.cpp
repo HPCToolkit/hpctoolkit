@@ -261,7 +261,7 @@ verify_measurements_directory
     closedir(dir);
     if (!has_hpcrun) {
       DIAG_EMsg("Measurements directory " << measurements_dir <<
-                "does not contain any .hpcrun measurement files ");
+                " does not contain any .hpcrun measurement files ");
       exit(1);
     }
   } else {
