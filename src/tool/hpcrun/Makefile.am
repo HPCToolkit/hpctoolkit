@@ -873,6 +873,11 @@ libhpcrun_o_LDADD =  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
 
+if HOST_CPU_X86_FAMILY
+libhpcrun_la_LIBADD += $(XED2_HPCRUN_LIBS)
+libhpcrun_o_LDADD += $(XED2_HPCRUN_LIBS)
+endif
+
 
 #-----------------------------------------------------------
 # whirled peas
@@ -933,7 +938,6 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
   libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -1040,7 +1044,6 @@ endif
 if UNW_X86
   UNW_SOURCE_FILES = $(UNW_X86_FILES)
   UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
-  UNW_DYNAMIC_LD_FLAGS = $(XED2_HPCRUN_LIBS)
   UNW_STATIC_LD_FLAGS =  $(XED2_HPCLINK_LIBS)
 endif
 
