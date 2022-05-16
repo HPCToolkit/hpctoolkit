@@ -491,11 +491,12 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
 	gpu/gpu-correlation-id-map.c gpu/gpu-event-id-map.c \
-	gpu/gpu-function-id-map.c gpu/gpu-host-correlation-map.c \
-	gpu/gpu-metrics.c gpu/gpu-monitoring.c \
-	gpu/gpu-monitoring-thread-api.c gpu/gpu-op-placeholders.c \
-	gpu/gpu-operation-item.c gpu/gpu-operation-item-process.c \
-	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
+	gpu/gpu-flush-alarm.c gpu/gpu-function-id-map.c \
+	gpu/gpu-host-correlation-map.c gpu/gpu-metrics.c \
+	gpu/gpu-monitoring.c gpu/gpu-monitoring-thread-api.c \
+	gpu/gpu-op-placeholders.c gpu/gpu-operation-item.c \
+	gpu/gpu-operation-item-process.c gpu/gpu-operation-channel.c \
+	gpu/gpu-operation-channel-set.c \
 	gpu/gpu-operation-multiplexer.c gpu/gpu-splay-allocator.c \
 	gpu/gpu-stream-id-map.c gpu/gpu-trace.c \
 	gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
@@ -669,6 +670,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	gpu/libhpcrun_la-gpu-correlation-id.lo \
 	gpu/libhpcrun_la-gpu-correlation-id-map.lo \
 	gpu/libhpcrun_la-gpu-event-id-map.lo \
+	gpu/libhpcrun_la-gpu-flush-alarm.lo \
 	gpu/libhpcrun_la-gpu-function-id-map.lo \
 	gpu/libhpcrun_la-gpu-host-correlation-map.lo \
 	gpu/libhpcrun_la-gpu-metrics.lo \
@@ -997,11 +999,12 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
 	gpu/gpu-correlation-id-map.c gpu/gpu-event-id-map.c \
-	gpu/gpu-function-id-map.c gpu/gpu-host-correlation-map.c \
-	gpu/gpu-metrics.c gpu/gpu-monitoring.c \
-	gpu/gpu-monitoring-thread-api.c gpu/gpu-op-placeholders.c \
-	gpu/gpu-operation-item.c gpu/gpu-operation-item-process.c \
-	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
+	gpu/gpu-flush-alarm.c gpu/gpu-function-id-map.c \
+	gpu/gpu-host-correlation-map.c gpu/gpu-metrics.c \
+	gpu/gpu-monitoring.c gpu/gpu-monitoring-thread-api.c \
+	gpu/gpu-op-placeholders.c gpu/gpu-operation-item.c \
+	gpu/gpu-operation-item-process.c gpu/gpu-operation-channel.c \
+	gpu/gpu-operation-channel-set.c \
 	gpu/gpu-operation-multiplexer.c gpu/gpu-splay-allocator.c \
 	gpu/gpu-stream-id-map.c gpu/gpu-trace.c \
 	gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
@@ -1167,6 +1170,7 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-correlation-id.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-correlation-id-map.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-event-id-map.$(OBJEXT) \
+	gpu/libhpcrun_o-gpu-flush-alarm.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-function-id-map.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-host-correlation-map.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-metrics.$(OBJEXT) \
@@ -1930,11 +1934,12 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
 	gpu/gpu-correlation-id-map.c gpu/gpu-event-id-map.c \
-	gpu/gpu-function-id-map.c gpu/gpu-host-correlation-map.c \
-	gpu/gpu-metrics.c gpu/gpu-monitoring.c \
-	gpu/gpu-monitoring-thread-api.c gpu/gpu-op-placeholders.c \
-	gpu/gpu-operation-item.c gpu/gpu-operation-item-process.c \
-	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
+	gpu/gpu-flush-alarm.c gpu/gpu-function-id-map.c \
+	gpu/gpu-host-correlation-map.c gpu/gpu-metrics.c \
+	gpu/gpu-monitoring.c gpu/gpu-monitoring-thread-api.c \
+	gpu/gpu-op-placeholders.c gpu/gpu-operation-item.c \
+	gpu/gpu-operation-item-process.c gpu/gpu-operation-channel.c \
+	gpu/gpu-operation-channel-set.c \
 	gpu/gpu-operation-multiplexer.c gpu/gpu-splay-allocator.c \
 	gpu/gpu-stream-id-map.c gpu/gpu-trace.c \
 	gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
@@ -2739,6 +2744,8 @@ gpu/libhpcrun_la-gpu-correlation-id-map.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-event-id-map.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libhpcrun_la-gpu-flush-alarm.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-function-id-map.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-host-correlation-map.lo: gpu/$(am__dirstamp) \
@@ -3464,6 +3471,8 @@ gpu/libhpcrun_o-gpu-correlation-id-map.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_o-gpu-event-id-map.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libhpcrun_o-gpu-flush-alarm.$(OBJEXT): gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_o-gpu-function-id-map.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_o-gpu-host-correlation-map.$(OBJEXT):  \
@@ -4029,6 +4038,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-correlation-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-correlation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-event-id-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-flush-alarm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-function-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-host-correlation-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-metrics.Plo@am__quote@
@@ -4061,6 +4071,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-correlation-id.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-correlation.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-event-id-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-flush-alarm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-function-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-host-correlation-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-metrics.Po@am__quote@
@@ -5175,6 +5186,13 @@ gpu/libhpcrun_la-gpu-event-id-map.lo: gpu/gpu-event-id-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-event-id-map.c' object='gpu/libhpcrun_la-gpu-event-id-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-event-id-map.lo `test -f 'gpu/gpu-event-id-map.c' || echo '$(srcdir)/'`gpu/gpu-event-id-map.c
+
+gpu/libhpcrun_la-gpu-flush-alarm.lo: gpu/gpu-flush-alarm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_la-gpu-flush-alarm.lo -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_la-gpu-flush-alarm.Tpo -c -o gpu/libhpcrun_la-gpu-flush-alarm.lo `test -f 'gpu/gpu-flush-alarm.c' || echo '$(srcdir)/'`gpu/gpu-flush-alarm.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_la-gpu-flush-alarm.Tpo gpu/$(DEPDIR)/libhpcrun_la-gpu-flush-alarm.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-flush-alarm.c' object='gpu/libhpcrun_la-gpu-flush-alarm.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-flush-alarm.lo `test -f 'gpu/gpu-flush-alarm.c' || echo '$(srcdir)/'`gpu/gpu-flush-alarm.c
 
 gpu/libhpcrun_la-gpu-function-id-map.lo: gpu/gpu-function-id-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_la-gpu-function-id-map.lo -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_la-gpu-function-id-map.Tpo -c -o gpu/libhpcrun_la-gpu-function-id-map.lo `test -f 'gpu/gpu-function-id-map.c' || echo '$(srcdir)/'`gpu/gpu-function-id-map.c
@@ -7450,6 +7468,20 @@ gpu/libhpcrun_o-gpu-event-id-map.obj: gpu/gpu-event-id-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-event-id-map.c' object='gpu/libhpcrun_o-gpu-event-id-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-event-id-map.obj `if test -f 'gpu/gpu-event-id-map.c'; then $(CYGPATH_W) 'gpu/gpu-event-id-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-event-id-map.c'; fi`
+
+gpu/libhpcrun_o-gpu-flush-alarm.o: gpu/gpu-flush-alarm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-flush-alarm.o -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-flush-alarm.Tpo -c -o gpu/libhpcrun_o-gpu-flush-alarm.o `test -f 'gpu/gpu-flush-alarm.c' || echo '$(srcdir)/'`gpu/gpu-flush-alarm.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-flush-alarm.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-flush-alarm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-flush-alarm.c' object='gpu/libhpcrun_o-gpu-flush-alarm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-flush-alarm.o `test -f 'gpu/gpu-flush-alarm.c' || echo '$(srcdir)/'`gpu/gpu-flush-alarm.c
+
+gpu/libhpcrun_o-gpu-flush-alarm.obj: gpu/gpu-flush-alarm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-flush-alarm.obj -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-flush-alarm.Tpo -c -o gpu/libhpcrun_o-gpu-flush-alarm.obj `if test -f 'gpu/gpu-flush-alarm.c'; then $(CYGPATH_W) 'gpu/gpu-flush-alarm.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-flush-alarm.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-flush-alarm.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-flush-alarm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-flush-alarm.c' object='gpu/libhpcrun_o-gpu-flush-alarm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-flush-alarm.obj `if test -f 'gpu/gpu-flush-alarm.c'; then $(CYGPATH_W) 'gpu/gpu-flush-alarm.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-flush-alarm.c'; fi`
 
 gpu/libhpcrun_o-gpu-function-id-map.o: gpu/gpu-function-id-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-function-id-map.o -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-function-id-map.Tpo -c -o gpu/libhpcrun_o-gpu-function-id-map.o `test -f 'gpu/gpu-function-id-map.c' || echo '$(srcdir)/'`gpu/gpu-function-id-map.c

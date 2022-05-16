@@ -78,8 +78,11 @@
 // macros
 //******************************************************************************
 #define DEBUG 0
-
 #include "hpcrun/gpu/gpu-print.h"
+
+#define GPU_FLUSH_ALARM_ENABLED 1
+#define GPU_FLUSH_ALARM_TEST_ENABLED 0
+#include "hpcrun/gpu/gpu-flush-alarm.h"
 
 #define FORALL_LEVEL0_ROUTINES(macro)			\
   macro(zeInit)   \
@@ -1205,7 +1208,15 @@ level0_fini
  int how
 )
 {
-  gpu_operation_multiplexer_fini();
+  if (!GPU_FLUSH_ALARM_FIRED()) {
+    GPU_FLUSH_ALARM_SET("hpcrun: warning: some Level 0 events not marked"
+			" complete; some GPU event data may be lost.");
+
+    gpu_operation_multiplexer_fini();
+
+    GPU_FLUSH_ALARM_TEST();
+    GPU_FLUSH_ALARM_CLEAR();
+  }
 }
 
 void

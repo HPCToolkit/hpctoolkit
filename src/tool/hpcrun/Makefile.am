@@ -371,6 +371,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation-id.c	\
 	gpu/gpu-correlation-id-map.c 	\
 	gpu/gpu-event-id-map.c \
+	gpu/gpu-flush-alarm.c \
 	gpu/gpu-function-id-map.c \
 	gpu/gpu-host-correlation-map.c 	\
 	gpu/gpu-metrics.c 		\
