@@ -230,6 +230,7 @@ static hpcrun_options_t opts;
 static bool hpcrun_is_initialized_private = false;
 static bool hpcrun_process_event_list = true;
 static bool hpcrun_identify_sample_sources = true;
+static bool hpcrun_module_ignore_map_uninitialized = true;
 static bool hpcrun_dlopen_forced = false;
 static bool safe_to_sync_sample = false;
 static void* main_addr = NULL;
@@ -903,8 +904,7 @@ hpcrun_wait()
 // hpcrun initialization ( process control via libmonitor)
 //***************************************************************************
 
-static
-void  hpcrun_prepare_measurement_subsystem(bool is_child);
+void hpcrun_prepare_measurement_subsystem(bool is_child);
 
 void*
 monitor_init_process(int *argc, char **argv, void* data)
@@ -971,6 +971,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
     // init callbacks for each device //Module_ignore_map is here
     hpcrun_initializer_init();
+    hpcrun_module_ignore_map_uninitialized = false;
 
     // fnbounds must be after module_ignore_map
     fnbounds_init(process_name);
@@ -997,8 +998,7 @@ monitor_at_main()
 }
 
 
-static
-void  hpcrun_prepare_measurement_subsystem(bool is_child)
+void hpcrun_prepare_measurement_subsystem(bool is_child)
 {  
   if (is_child) {
     // reset flags so measurement system is fully initialized in a child
@@ -1211,7 +1211,7 @@ monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
-  if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
+  if (hpcrun_module_ignore_map_uninitialized || hpcrun_get_disabled()) {
     return MONITOR_IGNORE_NEW_THREAD;
   }
 

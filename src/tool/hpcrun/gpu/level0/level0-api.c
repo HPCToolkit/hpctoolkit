@@ -64,6 +64,8 @@
 #include "level0-fence-map.h"
 #include "level0-command-queue-map.h"
 
+#include <utilities/linuxtimer.h>
+
 #include <hpcrun/main.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -822,6 +824,11 @@ hpcrun_zeInit
   ze_init_flag_t flag
 )
 {
+  // openmp programs can invoke zeInit in constructor
+  // before  the measurement subsystem has been initialized
+  // force initialization here
+  hpcrun_prepare_measurement_subsystem(false);
+
   // Entry action
   // Execute the real level0 API
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeInit,(flag));
