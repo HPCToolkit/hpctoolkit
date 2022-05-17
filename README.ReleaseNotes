@@ -1,4 +1,16 @@
 ----------------------------------------
+HPCToolkit 2022.05.15
+----------------------------------------
+
+Bugfixes since 2022.04.15
+
+- hide the symbols from XED, this avoid a problem interfering with
+  symbols from Intel gtpin
+- fix a typo in renamestruct.sh script
+- fix a problem with fork() on Cray
+
+
+----------------------------------------
 HPCToolkit 2022.04.15
 ----------------------------------------
 
