@@ -131,7 +131,7 @@ typedef enum {
 
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* c, int *steps_taken);
+hpcrun_unw_step(hpcrun_unw_cursor_t* c);
 
 
 //***************************************************************************

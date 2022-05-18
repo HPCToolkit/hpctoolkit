@@ -415,20 +415,14 @@ hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
 }
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
+hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   step_state unw_res;
-  int decrement_pc = 0;
 
   static bool msg_sent = false;
   if (msg_sent == false) {
     TMSG(NU, "hpcrun_unw_step from x86_unwind.c" );
     msg_sent = true;
-  }
-
-  if ((*steps_taken)++ > 0 && cursor->pc_unnorm != 0) {
-    DECREMENT_PC(cursor->pc_unnorm);
-    decrement_pc = 1;
   }
 
   if (cursor->libunw_status == LIBUNW_READY) {
@@ -461,13 +455,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
         return STEP_OK;
     
     if (unw_res == STEP_OK) {
-      libunw_finalize_cursor(cursor, decrement_pc);
+      libunw_finalize_cursor(cursor, 1);
     }
 
     if (unw_res == STEP_STOP || unw_res == STEP_OK) {
       return unw_res;
     }
-    bool found = uw_recipe_map_lookup(((char *)pc) - decrement_pc, NATIVE_UNWINDER, &cursor->unwr_info);
+    bool found = uw_recipe_map_lookup((char *)pc - (pc > 0 ? 1 : 0), NATIVE_UNWINDER, &cursor->unwr_info);
 
     if (!found) {
       EMSG("hpcrun_unw_step: cursor could NOT build an interval for last libunwind pc = %p",
