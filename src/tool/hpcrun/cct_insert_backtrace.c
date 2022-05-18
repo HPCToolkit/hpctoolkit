@@ -124,11 +124,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
       cct_addr_t tmp = 
 	(cct_addr_t) {.as_info = path_beg->as_info, 
 		      .ip_norm = path_beg->ip_norm, 
-#if JOHNMC
-		      .lip = path_beg->lip - ((path_beg->ip_norm.lm_id == 0 || path_beg == path_end) ? 0 : 1)};
-#else
 		      .lip = path_beg->lip};
-#endif
       TMSG(BT_INSERT, "inserting addr (%d, %p)", tmp.ip_norm.lm_id, tmp.ip_norm.lm_ip);
       cct = hpcrun_cct_insert_addr(cct, &tmp, true);
     }
