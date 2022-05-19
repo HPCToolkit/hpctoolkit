@@ -291,7 +291,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 //
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
+hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   // current frame
   void*  pc = cursor->pc_unnorm;
@@ -367,9 +367,11 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
        EMSG("bad register-based unwind at pc: %p, sp: %p", pc, sp);
        return STEP_ERROR;
     }
+    if (nxt_pc > 0) nxt_pc -= 1;  // Move to caller
     ra_loc = cursor->ra_loc;
   } else if (UWI_RECIPE(intvl)->ra_ty == RATy_SPRel) {
     nxt_pc = getNxtPCFromSP(nxt_sp);
+    if (nxt_pc > 0) nxt_pc -= 1;  // Move to caller
     ra_loc = (void*)getNxtPCLocFromSP(nxt_sp);
   }
   else {
@@ -382,7 +384,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  bool found = uw_recipe_map_lookup(nxt_pc - 1, NATIVE_UNWINDER, &(cursor->unwr_info));
+  bool found = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	nxt_intvl = cursor->unwr_info.btuwi;
   }
@@ -406,6 +408,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 		bool found2 = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
 		if (found2) {
 		  nxt_intvl = cursor->unwr_info.btuwi;
+		  if (nxt_pc > 0) nxt_pc -= 1; // Move to caller
 		}
 	  }
 	}
