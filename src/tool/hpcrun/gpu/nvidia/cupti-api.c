@@ -184,6 +184,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
 #include <hpcrun/thread_data.h>
+#include <hpcrun/tool_state.h>
 
 #include "cuda-api.h"
 #include "cupti-api.h"
@@ -1414,6 +1415,10 @@ cupti_subscriber_callback_cuda
  const void *cb_info
 )
 {
+  if (is_tool_active()) {
+    return;
+  }
+
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     cupti_resource_subscriber_callback(userdata, domain, cb_id, cb_info);
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
@@ -1446,6 +1451,10 @@ cupti_subscriber_callback_cuda
  const void *cb_info
 )
 {
+  if (is_tool_active()) {
+    return;
+  }
+
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
