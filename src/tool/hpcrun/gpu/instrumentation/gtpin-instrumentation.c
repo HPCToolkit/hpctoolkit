@@ -196,7 +196,7 @@ createKernelNode
       gtpin_correlation_id_map_insert(correlation_id, &gtpin_gpu_op_ccts, activity_channel, cpu_submit_time);
     }
   } else {
-    cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
+    cct_node_t *api_node = gpu_application_thread_correlation_callback();
 
     gpu_op_ccts_t gpu_op_ccts;
     gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;

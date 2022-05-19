@@ -139,7 +139,6 @@ static const char *IGNORE_FNS[] = {
   "hsa_init",                  // amd hsa runtime
   "hpcrun_malloc"              // hpcrun library
 };
-
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
 

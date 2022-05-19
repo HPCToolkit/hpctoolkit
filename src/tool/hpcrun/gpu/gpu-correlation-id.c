@@ -65,9 +65,8 @@
 // private data
 //******************************************************************************
 
-static atomic_long gpu_correlation_id_value = 
-  ATOMIC_VAR_INIT(0x8000000000000001);
-
+static atomic_ullong gpu_correlation_id_value = 
+  ATOMIC_VAR_INIT(GPU_CORRELATION_ID_START);
 
 
 //******************************************************************************

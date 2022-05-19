@@ -95,8 +95,8 @@
 
 
 #define SECONDS_UNTIL_WAKEUP 1
-
-
+// 0.001s
+#define NANO_SECONDS_UNTIL_WAKEUP 999999
 
 //******************************************************************************
 // type declarations
@@ -108,8 +108,6 @@ typedef struct gpu_operation_channel_t {
   pthread_cond_t cond;
   uint64_t count;
 } gpu_operation_channel_t;
-
-
 
 //******************************************************************************
 // local data
@@ -150,7 +148,6 @@ void
   memset(channel, 0, sizeof(gpu_operation_channel_t));
 
   channel_init(channel);
-
 
   pthread_mutex_init(&channel->mutex, NULL);
   pthread_cond_init(&channel->cond, NULL);
@@ -198,7 +195,6 @@ gpu_operation_channel_produce
   channel_push(channel, bichannel_direction_forward, new_item);
 
   gpu_operation_channel_signal_consumer_when_full(channel);
-
 }
 
 
@@ -208,7 +204,6 @@ gpu_operation_channel_consume
  gpu_operation_channel_t *channel
 )
 {
-
   // steal elements previously pushed by the producer
   channel_steal(channel, bichannel_direction_forward);
 
@@ -236,23 +231,26 @@ gpu_operation_channel_consume
 void
 gpu_operation_channel_await
 (
-gpu_operation_channel_t *channel
+ gpu_operation_channel_t *channel
 )
 {
   struct timespec time;
   clock_gettime(CLOCK_REALTIME, &time); // get current time
-  time.tv_sec += SECONDS_UNTIL_WAKEUP;
+  time.tv_sec = 0;
+  time.tv_nsec = NANO_SECONDS_UNTIL_WAKEUP;
 
   // wait for a signal or for a few seconds. periodically waking
   // up avoids missing a signal.
+  pthread_mutex_lock(&channel->mutex);
   pthread_cond_timedwait(&channel->cond, &channel->mutex, &time);
+  pthread_mutex_unlock(&channel->mutex);
 }
 
 
 void
 gpu_operation_channel_signal_consumer
 (
-gpu_operation_channel_t *channel
+ gpu_operation_channel_t *channel
 )
 {
   pthread_cond_signal(&channel->cond);

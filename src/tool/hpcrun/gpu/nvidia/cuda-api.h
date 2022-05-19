@@ -54,15 +54,16 @@
 #ifndef cuda_api_h
 #define cuda_api_h
 
-
-
 //*****************************************************************************
 // nvidia includes
 //*****************************************************************************
 
 #include <cuda.h>
+#include <cuda_runtime.h>
+#include <stdbool.h>
 
-
+#define HPCTOOLKIT_CUDA_SUCCESS 0
+#define HPCTOOLKIT_CUDA_FAIL -1
 
 //*****************************************************************************
 // interface operations
@@ -79,11 +80,31 @@ typedef struct cuda_device_property {
 } cuda_device_property_t;
 
 
+// DRIVER_UPDATE_CHECK(Keren): reverse engineered
+typedef struct {
+  uint32_t unknown_field1[4];
+  uint32_t function_index;
+  uint32_t unknown_field2[3];
+  CUmodule cumod;
+} hpctoolkit_cufunc_st_t;
+
+
+typedef struct {
+  uint32_t cubin_id;
+} hpctoolkit_cumod_st_t;
+
+
+typedef struct {
+  uint32_t unknown_field1[25];
+  uint32_t context_id;
+} hpctoolkit_cuctx_st_t;
+
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
 
 // returns 0 on success
+
 int 
 cuda_bind
 (
@@ -91,15 +112,6 @@ cuda_bind
 );
 
 
-// returns 0 on success
-int
-cuda_context
-(
- CUcontext *ctx
-);
-
-
-// returns 0 on success
 int 
 cuda_device_property_query
 (
@@ -108,12 +120,105 @@ cuda_device_property_query
 );
 
 
-// returns 0 on success
+int
+cuda_sync_yield
+(
+ void
+);
+
+
 int
 cuda_global_pc_sampling_required
 (
-  int *required
+ int *required
 );
 
+
+int
+cuda_context_sync
+(
+ CUcontext ctx
+);
+
+
+int
+cuda_context_get
+(
+ CUcontext *ctx
+);
+
+
+int
+cuda_context_set
+(
+ CUcontext ctx
+);
+
+
+//*****************************************************************************
+// CUDA API operations
+//*****************************************************************************
+//
+// returns 0 on success
+
+cudaError_t
+hpcrun_cudaLaunchKernel
+(
+ const void *func,
+ dim3 gridDim,
+ dim3 blockDim,
+ void **args,
+ size_t sharedMem,
+ cudaStream_t stream
+);
+
+cudaError_t
+hpcrun_cudaMemcpy
+(
+ void *dst,
+ const void *src,
+ size_t count,
+ enum cudaMemcpyKind kind
+);
+
+CUresult
+hpcrun_cuLaunchKernel
+(
+ CUfunction f,
+ unsigned int gridDimX,
+ unsigned int gridDimY,
+ unsigned int gridDimZ,
+ unsigned int blockDimX,
+ unsigned int blockDimY,
+ unsigned int blockDimZ,
+ unsigned int sharedMemBytes,
+ CUstream hStream,
+ void **kernelParams,
+ void **extra
+);
+
+CUresult
+hpcrun_cuMemcpy
+(
+ CUdeviceptr dst,
+ CUdeviceptr src,
+ size_t ByteCount
+);
+
+CUresult
+hpcrun_cuMemcpyHtoD_v2
+(
+ CUdeviceptr dstDevice,
+ const void *srcHost,
+ size_t ByteCount
+);
+
+CUresult
+hpcrun_cuMemcpyDtoH_v2
+(
+ void *dstHost,
+ CUdeviceptr srcDevice,
+ size_t ByteCount
+);
 
 #endif

@@ -55,6 +55,12 @@
 //we use this for our activity that should be ignored
 #define IGNORE_CORR_ID (~0ULL)
 
+#define GPU_CORRELATION_ID_START 0x8000000000000001
+
+#define GPU_CORRELATION_ID_MASK 0x7FFFFFFFFFFFFFFF
+
+#define GPU_CORRELATION_ID_UNMASK(x) (x & GPU_CORRELATION_ID_MASK)
+
 //******************************************************************************
 // interface operations
 //******************************************************************************

@@ -4559,6 +4559,27 @@ AC_SUBST([OPT_CUDA_IFLAGS])
 AC_SUBST([OPT_CUDA_LDFLAGS])
 
 #-------------------------------------------------
+# enable-new-cupti
+#-------------------------------------------------
+
+OPT_ENABLE_NEW_CUPTI=no
+
+AC_MSG_CHECKING([for new-cupti])
+
+AC_ARG_ENABLE([new_cupti],
+  AS_HELP_STRING([--enable-new-cupti],
+                 [Use new cupti api]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_NEW_CUPTI="yes" ;;
+     no)  OPT_ENABLE_NEW_CUPTI="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-new-cupti]) ;;
+   esac],
+  [OPT_ENABLE_NEW_CUPTI=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_NEW_CUPTI}])
+AM_CONDITIONAL(OPT_ENABLE_NEW_CUPTI, test "${OPT_ENABLE_NEW_CUPTI}" = "yes")
+
+#-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 
@@ -4991,6 +5012,7 @@ case "$GTPIN" in
       OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
     fi
 
+
     if test "x$OPT_GTPIN_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
     fi
@@ -5010,7 +5032,6 @@ AC_MSG_RESULT([$GTPIN])
 AC_SUBST([OPT_GTPIN])
 AC_SUBST([OPT_GTPIN_IFLAGS])
 AC_SUBST([OPT_GTPIN_LDFLAGS])
-
 
 #-------------------------------------------------
 # Option: --with-rocm=PATH

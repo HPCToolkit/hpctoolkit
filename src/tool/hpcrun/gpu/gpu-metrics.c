@@ -74,10 +74,11 @@
   macro(GMEM, 0)  \
   macro(GMSET, 1)  \
   macro(GPU_INST_STALL, 2)  \
-  macro(GXCOPY, 3)  \
-  macro(GSYNC, 4)  \
-  macro(GGMEM, 5)  \
-  macro(GLMEM, 6)
+  macro(GPU_INST_STALL2, 3)  \
+  macro(GXCOPY, 4)  \
+  macro(GSYNC, 5)  \
+  macro(GGMEM, 6)  \
+  macro(GLMEM, 7)
 
 
 #define FORALL_SCALAR_METRIC_KINDS(macro)  \
@@ -314,6 +315,49 @@ gpu_metrics_attribute_pc_sampling
 
 
 static void
+gpu_metrics_attribute_pc_sampling2
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_pc_sampling2_t *sinfo = &(activity->details.pc_sampling2);
+  cct_node_t *cct_node = activity->cct_node;
+
+  // frequencly is handled already 
+  uint64_t inst_count = sinfo->samples;
+
+  metric_data_list_t *inst_metric = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
+
+  // instruction execution metric
+  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_ALL), 
+           inst_count);
+
+  if (sinfo->stallReason != GPU_INST_STALL2_INVALID) {
+    int stall_summary_metric_index = 
+      METRIC_ID(GPU_INST_STALL2)[GPU_INST_STALL_ANY];
+
+    int stall_kind_metric_index = METRIC_ID(GPU_INST_STALL2)[sinfo->stallReason];
+
+    metric_data_list_t *stall_metrics = 
+      hpcrun_reify_metric_set(cct_node, stall_kind_metric_index);
+
+    uint64_t stall_count = sinfo->latencySamples;
+
+    if (sinfo->stallReason != GPU_INST_STALL2_NONE) {
+      // stall summary metric
+      gpu_metrics_attribute_metric_int(stall_metrics, 
+               stall_summary_metric_index, stall_count);
+    }
+
+    // stall reason specific metric
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+             stall_kind_metric_index, stall_count);
+  }
+}
+
+
+static void
 gpu_metrics_attribute_pc_sampling_info
 (
  gpu_activity_t *activity
@@ -425,6 +469,55 @@ gpu_metrics_attribute_memset
 }
 
 
+// Interface function, used on nvidia gpus when only pc sampling is used
+void
+gpu_metrics_attribute_kernel_count
+(
+ cct_node_t *cct_node,
+ uint64_t sampled_count,
+ uint64_t count
+)
+{
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+
+  // number of sampled kernel launches
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_SAMPLED_COUNT), sampled_count);
+  // number of kernel launches
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), count);
+}
+
+
+uint64_t
+gpu_metrics_get_kernel_count
+(
+ cct_node_t *cct_node
+)
+{
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+
+  hpcrun_metricVal_t val = hpcrun_metric_std_get(METRIC_ID(GPU_KINFO_COUNT), metrics);
+
+  return val.i;
+}
+
+
+uint64_t
+gpu_metrics_get_kernel_sampled_count
+(
+ cct_node_t *cct_node
+)
+{
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+
+  hpcrun_metricVal_t val = hpcrun_metric_std_get(METRIC_ID(GPU_KINFO_SAMPLED_COUNT), metrics);
+
+  return val.i;
+}
+
+
 static void
 gpu_metrics_attribute_kernel
 (
@@ -517,7 +610,6 @@ gpu_metrics_attribute_synchronization
   gpu_metrics_attribute_metric_time_interval(cct_node,
                METRIC_ID(GPU_TIME_OP),
                (gpu_interval_t *) s);
-
 
   int count_metric_index = METRIC_ID(GSYNC)[GPU_SYNC_COUNT];
   
@@ -681,6 +773,10 @@ gpu_metrics_attribute
 
   case GPU_ACTIVITY_PC_SAMPLING_INFO:
     gpu_metrics_attribute_pc_sampling_info(activity);
+    break;
+
+  case GPU_ACTIVITY_PC_SAMPLING2:
+    gpu_metrics_attribute_pc_sampling2(activity);
     break;
 
   case GPU_ACTIVITY_MEMCPY:
@@ -969,6 +1065,7 @@ gpu_metrics_GPU_INST_STALL_enable
   FINALIZE_METRIC_KIND();
 }
 
+
 void
 gpu_metrics_GPU_CTR_enable
 (
@@ -1004,6 +1101,28 @@ void
   INITIALIZE_METRIC_KIND();
 
   FORALL_GXFER(INITIALIZE_SCALAR_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_GPU_INST_STALL2_enable
+(
+ void
+)
+{
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GPU_INST_STALL2
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GPU_INST_STALL2(INITIALIZE_INDEXED_METRIC_INT)
+
+  FORALL_GPU_INST_STALL2(HIDE_INDEXED_METRIC);
+
+  SET_DISPLAY_INDEXED_METRIC(GPU_INST_STALL_ANY, GPU_INST_STALL_ANY, 
+           HPCRUN_FMT_METRIC_SHOW);
 
   FINALIZE_METRIC_KIND();
 }

@@ -99,6 +99,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
   bundle->unresolved_root = hpcrun_cct_top_new(UNRESOLVED_ROOT, 0);
+  bundle->gpu_range_root = NULL;
 }
 
 //
@@ -117,27 +118,33 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
 {
   if (!fs) { return HPCRUN_ERR; }
 
-  cct_node_t* final = bndl->tree_root;
-  cct_node_t* partial_insert = final;
+  cct_node_t *top = bndl->top;
 
+  if (bndl->gpu_range_root != NULL) {
+    // Keren: This is a special GPU range tree.
+    top = bndl->gpu_range_root;
+  } else {
+    // Keren: Normal CPU thread tree, adding resolved and partial roots
+    cct_node_t* final = bndl->tree_root;
+    cct_node_t* partial_insert = final;
 
-  //
-  // attach partial unwinds at appointed slot
-  //
-  hpcrun_cct_insert_node(partial_insert, bndl->partial_unw_root);
+    //
+    // attach partial unwinds at appointed slot
+    //
+    hpcrun_cct_insert_node(partial_insert, bndl->partial_unw_root);
 
-  //
-  // attach unresolved root
-  //
-  // FIXME: show UNRESOLVED TREE
-//  hpcrun_cct_insert_node(partial_insert, bndl->unresolved_root);
-
+    //
+    // attach unresolved root
+    //
+    // FIXME: show UNRESOLVED TREE
+    //  hpcrun_cct_insert_node(partial_insert, bndl->unresolved_root);
+  }
   // write out newly constructed cct
 #if 0
   return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags);
 #else 
 //YUMENG: add sparse_metrics to collect metric values and info
-  return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags, sparse_metrics);
+  return hpcrun_cct_fwrite(cct2metrics_map, top, fs, flags, sparse_metrics);
 #endif
 }
 

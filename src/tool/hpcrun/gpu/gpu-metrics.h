@@ -147,6 +147,51 @@ GPU_XFER_XRCV_COUNT              			 = 5
         "GPU memory set: count")
 
 
+#define FORALL_GPU_INST_STALL2(macro)	\
+  macro(GPU_INST_METRIC_NAME ":STL_ANY", GPU_INST_STALL_ANY,	\
+	"GPU instruction stalls: any") \
+  macro(GPU_INST_METRIC_NAME ":STL_BARR", GPU_INST_STALL2_BARRIER, \
+  "GPU instruction stalls: await completion of memory barriers") \
+  macro(GPU_INST_METRIC_NAME ":STL_BRANCH", GPU_INST_STALL2_BRANCH, \
+  "GPU instruction stalls: await solving branch instructions") \
+  macro(GPU_INST_METRIC_NAME ":STL_DISP", GPU_INST_STALL2_DISPATCH, \
+  "GPU instruction stalls: await dispatch") \
+  macro(GPU_INST_METRIC_NAME ":STL_MSTR", GPU_INST_STALL2_MEM_DRAIN, \
+  "GPU instruction stalls: await completion of memory store instructions") \
+  macro(GPU_INST_METRIC_NAME ":STL_CMEM", GPU_INST_STALL2_CMEM,	\
+	"GPU instruction stalls: await completion of constant memory access")	\
+  macro(GPU_INST_METRIC_NAME ":STL_MTHR", GPU_INST_STALL2_MEM_THROTTLE,	\
+	"GPU instruction stalls: global/local memory request queue full") \
+  macro(GPU_INST_METRIC_NAME ":STL_MDEP", GPU_INST_STALL2_MEM_DEP, \
+  "GPU instruction stalls: await satisfaction of memory instruction " \
+	"input dependence") \
+  macro(GPU_INST_METRIC_NAME ":STL_FTHR", GPU_INST_STALL2_FIX_THROTTLE, \
+  "GPU instruction stalls: await completion of fixed latency instruction") \
+  macro(GPU_INST_METRIC_NAME ":STL_SYNC", GPU_INST_STALL2_SYNC, \
+  "GPU instruction stalls: await completion of sibling warps") \
+  macro(GPU_INST_METRIC_NAME ":STL_VTHR", GPU_INST_STALL2_VAR_THROTTLE, \
+  "GPU instruction stalls: await completion of variable latency instruction") \
+  macro(GPU_INST_METRIC_NAME ":STL_MISC", GPU_INST_STALL2_MISC, \
+  "GPU instruction stalls: misc") \
+  macro(GPU_INST_METRIC_NAME ":STL_IFET", GPU_INST_STALL2_IFETCH, \
+  "GPU instruction stalls: await availability of next "	\
+	"instruction (fetch or branch delay)") \
+  macro(GPU_INST_METRIC_NAME ":STL_NSEL", GPU_INST_STALL2_NOT_SELECTED, \
+  "GPU instruction stalls: not selected for issue but ready)")  \
+  macro(GPU_INST_METRIC_NAME ":STL_NONE", GPU_INST_STALL2_NONE,	\
+	"GPU instruction stalls: no stall")	\
+  macro(GPU_INST_METRIC_NAME ":STL_VDEP", GPU_INST_STALL2_VAR_DEP, \
+  "GPU instruction stalls: await satisfaction of variable latency instruction " \
+	"input dependence") \
+  macro(GPU_INST_METRIC_NAME ":STL_SLEP", GPU_INST_STALL2_SLEEP, \
+  "GPU instruction stalls: all threads in a warp are blocked or yield") \
+  macro(GPU_INST_METRIC_NAME ":STL_TTHR", GPU_INST_STALL2_TEX_THROTTLE, \
+  "GPU instruction stalls: await completion of texture instruction") \
+  macro(GPU_INST_METRIC_NAME ":STL_FDEP", GPU_INST_STALL2_FIX_DEP, \
+  "GPU instruction stalls: await satisfaction of fixed latency instruction " \
+	"input dependence")
+
+
 #define FORALL_GPU_INST_STALL(macro)					\
   macro(GPU_INST_METRIC_NAME ":STL_ANY",     GPU_INST_STALL_ANY,	\
 	"GPU instruction stalls: any")					\
@@ -330,10 +375,12 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	"GPU kernel: thread register count")				\
   macro("GKER:BLK_THR",           GPU_KINFO_BLK_THREADS,		\
 	"GPU kernel: thread count")					\
-  macro("GKER:BLK_SM (B)",            GPU_KINFO_BLK_SMEM,		\
+  macro("GKER:BLK_SM (B)",        GPU_KINFO_BLK_SMEM,		\
 	"GPU kernel: block local memory (bytes)")			\
-  macro("GKER:BLKS",            GPU_KINFO_BLKS,		\
+  macro("GKER:BLKS",              GPU_KINFO_BLKS,		\
 	"GPU kernel: block count")			\
+  macro("GKER:SAMPLED_COUNT",     GPU_KINFO_SAMPLED_COUNT,  			\
+	"GPU kernel: sampled launch count (only used in continuous pc sampling)")					\
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\
   macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
@@ -468,6 +515,13 @@ gpu_metrics_GPU_INST_STALL_enable
 );
 
 
+void
+gpu_metrics_GPU_INST_STALL2_enable
+(
+ void
+);
+
+
 // record NVIDIA GPU instruction sampling statistics
 void
 gpu_metrics_GSAMP_enable
@@ -543,7 +597,25 @@ gpu_metrics_attribute
  gpu_activity_t *activity
 );
 
+void
+gpu_metrics_attribute_kernel_count
+(
+ cct_node_t *cct_node,
+ uint64_t sampled_count,
+ uint64_t count
+);
 
+uint64_t
+gpu_metrics_get_kernel_count
+(
+ cct_node_t *cct_node
+);
+
+uint64_t
+gpu_metrics_get_kernel_sampled_count
+(
+ cct_node_t *cct_node
+);
 
 #endif
 

@@ -130,7 +130,7 @@ cubin_hash_map_delete_root
  void
 )
 {
-  TMSG(DEFER_CTXT, "cubin_id %d: delete", cubin_hash_map_root->cubin_id);
+  TMSG(CUDA_CUBIN, "cubin_id %d: delete", cubin_hash_map_root->cubin_id);
 
   if (cubin_hash_map_root->left == NULL) {
     cubin_hash_map_root = cubin_hash_map_root->right;
@@ -165,7 +165,7 @@ cubin_hash_map_lookup
 
   spinlock_unlock(&cubin_hash_map_lock);
 
-  TMSG(DEFER_CTXT, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
+  TMSG(CUDA_CUBIN, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
   return result;
 }
 

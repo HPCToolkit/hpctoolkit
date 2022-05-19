@@ -51,8 +51,9 @@
 //******************************************************************************
 
 #include <cupti.h>
+#include <stdbool.h>
 
-
+#include <hpcrun/cct/cct.h>
 
 //******************************************************************************
 // constants
@@ -89,6 +90,8 @@ typedef enum {
 } cupti_set_status_t;
 
 
+#define CUPTI_PC_SAMPLING_PERIOD_NULL -1
+
 //******************************************************************************
 // interface functions
 //******************************************************************************
@@ -113,6 +116,24 @@ cupti_buffer_alloc
  uint8_t **buffer, 
  size_t *buffer_size, 
  size_t *maxNumRecords
+);
+
+
+void
+cupti_callback_enable
+(
+ CUpti_SubscriberHandle subscriber,
+ CUpti_CallbackId cbid,
+ CUpti_CallbackDomain domain
+);
+
+
+void
+cupti_callback_disable
+(
+ CUpti_SubscriberHandle subscriber,
+ CUpti_CallbackId cbid,
+ CUpti_CallbackDomain domain
 );
 
 
@@ -162,7 +183,7 @@ cupti_pc_sampling_disable
 cupti_set_status_t 
 cupti_monitoring_set
 (
- const  CUpti_ActivityKind activity_kinds[],
+ const CUpti_ActivityKind activity_kinds[],
  bool enable
 );
 
@@ -173,6 +194,7 @@ cupti_device_timestamp_get
  CUcontext context,
  uint64_t *time
 );
+
 
 void cupti_activity_timestamp_get
 (
@@ -249,6 +271,7 @@ cupti_buffer_completion_callback
 void
 cupti_load_callback_cuda
 (
+ CUcontext context,
  uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
@@ -258,6 +281,7 @@ cupti_load_callback_cuda
 void
 cupti_unload_callback_cuda
 (
+ CUcontext context,
  uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
@@ -301,15 +325,29 @@ cupti_device_init
 // cupti status
 //******************************************************************************
 
-void
-cupti_stop_flag_set
+bool
+cupti_thread_activity_flag_get
 (
  void
 );
 
 
 void
-cupti_stop_flag_unset
+cupti_thread_activity_flag_set
+(
+ void
+);
+
+
+void
+cupti_thread_activity_flag_unset
+(
+ void
+);
+
+
+bool
+cupti_runtime_api_flag_get
 (
  void
 );
@@ -329,6 +367,34 @@ cupti_runtime_api_flag_set
 );
 
 
+cct_node_t *
+cupti_kernel_ph_get
+(
+ void
+);
+
+
+void
+cupti_kernel_ph_set
+(
+ cct_node_t *node
+);
+
+
+cct_node_t *
+cupti_trace_ph_get
+(
+ void
+);
+
+
+void
+cupti_trace_ph_set
+(
+ cct_node_t *node
+);
+
+
 void
 cupti_correlation_id_push
 (
@@ -343,5 +409,90 @@ cupti_correlation_id_pop
 );
 
 
+const char *
+cupti_path
+(
+ void
+);
+
+
+uint64_t
+cupti_runtime_correlation_id_get
+(
+ void
+);
+
+
+void
+cupti_runtime_correlation_id_set
+(
+ uint64_t
+);
+
+
+uint64_t
+cupti_driver_correlation_id_get
+(
+ void
+);
+
+
+void
+cupti_driver_correlation_id_set
+(
+ uint64_t correlation_id
+);
+
+
+void
+cupti_fast_unwind_set
+(
+ bool fast_unwind
+);
+
+
+bool
+cupti_fast_unwind_get
+(
+);
+
+
+void
+cupti_correlation_threshold_set
+(
+ int32_t
+);
+
+
+int32_t
+cupti_correlation_threshold_get
+(
+);
+
+
+void
+cupti_backoff_base_set
+(
+ int32_t backoff_base
+);
+
+
+int32_t
+cupti_backoff_base_get
+(
+);
+
+
+void
+cupti_sync_yield_set
+(
+ bool sync_yield
+);
+
+
+bool
+cupti_sync_yield_get
+(
+);
 
 #endif

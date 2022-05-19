@@ -81,8 +81,7 @@ typedef struct gpu_operation_item_t {
   s_element_t next;
   gpu_activity_channel_t *channel;
   gpu_activity_t activity;
-  atomic_int *pending_operations;
-  atomic_bool *flush;
+  atomic_uint *pending_operations;
 } gpu_operation_item_t;
 
 

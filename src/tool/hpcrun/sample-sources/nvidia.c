@@ -2,8 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/papi.c $
-// $Id: papi.c 3328 2010-1/2-23 23:39:09Z tallent $
+// $HeadURL:
+// https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/nvidia.c $
+// $Id: nvidia.c 3328 2010-1/2-23 23:39:09Z tallent $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -70,30 +71,32 @@
 // local includes
 //******************************************************************************
 
-#include "libdl.h"
-
-#include "simple_oo.h"
-#include "sample_source_obj.h"
-#include "common.h"
-#include "nvidia.h"
-
 #include <hpcrun/control-knob.h>
-
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring.h>
-
+#include <hpcrun/gpu/gpu-range.h>
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/nvidia/cuda-api.h>
 #include <hpcrun/gpu/nvidia/cupti-api.h>
 
-#include <hpcrun/messages/messages.h>
+#include "common.h"
+#include "libdl.h"
+#include "nvidia.h"
+#include "sample_source_obj.h"
+#include "simple_oo.h"
+
+#ifdef NEW_CUPTI
+#include <hpcrun/gpu/nvidia/cupti-cct-trie.h>
+#include <hpcrun/gpu/nvidia/cupti-pc-sampling-api.h>
+#include <hpcrun/gpu/nvidia/cupti-range.h>
+#endif
+
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/messages/messages.h>
 #include <hpcrun/sample_sources_registered.h>
-#include <hpcrun/utilities/tokenize.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
-
-
+#include <hpcrun/utilities/tokenize.h>
 
 /******************************************************************************
  * macros
@@ -102,6 +105,8 @@
 #define NVIDIA_CUDA "gpu=nvidia"
 #define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc"
 #define NVIDIA_CUDA_NV_LINK "nvlink"
+
+
 
 
 /******************************************************************************
@@ -113,18 +118,15 @@ static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
-
 // default trace all the activities
 // -1: disabled, >0: x ms per activity
 // static long trace_frequency = -1;
 static long trace_frequency = -1;
 static long trace_frequency_default = -1;
 
-
 // -1: disabled, 5-31: 2^frequency
 static long pc_sampling_frequency = -1;
 static long pc_sampling_frequency_default = 12;
-
 
 static int cupti_enabled_activities = 0;
 
@@ -147,8 +149,8 @@ data_motion_explicit_activities[] = {
   CUPTI_ACTIVITY_KIND_MEMCPY2,
   CUPTI_ACTIVITY_KIND_MEMCPY,
   CUPTI_ACTIVITY_KIND_MEMSET,
-// FIXME(keren): memory activity does not have a correlation id
-// CUPTI_ACTIVITY_KIND_MEMORY,
+  // FIXME(keren): memory activity does not have a correlation id
+  // CUPTI_ACTIVITY_KIND_MEMORY,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -164,19 +166,20 @@ CUpti_ActivityKind
 kernel_invocation_activities[] = {
   CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL,
   // CUPTI currently provides host side time stamps for synchronization.
-  //CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
+  // CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
 
 CUpti_ActivityKind
 kernel_execution_activities[] = {
+  // CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_CONTEXT,
   CUPTI_ACTIVITY_KIND_FUNCTION,
-// FIXME(keren): cupti does not allow the following activities to be profiled with pc sampling
-// CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
-// CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
-// CUPTI_ACTIVITY_KIND_BRANCH,
+  // FIXME(keren): cupti does not allow the following activities to be profiled with pc sampling
+  // CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
+  // CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
+  // CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -210,10 +213,9 @@ typedef enum cupti_activities_flags {
   CUPTI_KERNEL_INVOCATION    = 4,
   CUPTI_KERNEL_EXECUTION     = 8,
   CUPTI_DRIVER               = 16,
-  CUPTI_RUNTIME	             = 32,
-  CUPTI_OVERHEAD	     = 64
+  CUPTI_RUNTIME              = 32,
+  CUPTI_OVERHEAD             = 64
 } cupti_activities_flags_t;
-
 
 int
 cupti_pc_sampling_frequency_get()
@@ -221,13 +223,11 @@ cupti_pc_sampling_frequency_get()
   return pc_sampling_frequency;
 }
 
-
 int
 cupti_trace_frequency_get()
 {
   return trace_frequency;
 }
-
 
 void
 cupti_enable_activities
@@ -246,16 +246,15 @@ cupti_enable_activities
     macro(CUPTI_RUNTIME, runtime_activities)                            \
     macro(CUPTI_OVERHEAD, overhead_activities)
 
-  #define CUPTI_SET_ACTIVITIES(activity_kind, activity)  \
-    if (cupti_enabled_activities & activity_kind) {      \
-      cupti_monitoring_set(activity, true);     \
+  #define CUPTI_SET_ACTIVITIES(activity_kind, activity) \
+    if (cupti_enabled_activities & activity_kind) {     \
+      cupti_monitoring_set(activity, true);             \
     }
 
   FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES)
 
   TMSG(CUPTI, "Exit cupti_enable_activities");
 }
-
 
 //******************************************************************************
 // interface operations
@@ -269,6 +268,28 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
   control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
+#ifdef NEW_CUPTI
+  // Fixed (even) range sampling only, sync after HPCRUN_CUDA_RANGE_INTERVAL kernels
+  control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
+  // Context sensitive and trie range sampling, 1/HPCRUN_CUDA_RANGE_SAMPLING_PERIOD probability 
+  // to profile an unsampled kernel
+  control_knob_register("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD",
+                        CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD_STR, ck_int);
+  // Profile with dynamic probabiltiy to prevent over sampling
+  control_knob_register("HPCRUN_CUDA_RANGE_DYNAMIC_PERIOD", "FALSE", ck_string);
+  // SERIAL(default), EVEN, CONTEXT_SENSITIVE, TRIE
+  control_knob_register("HPCRUN_CUDA_RANGE_MODE", "SERIAL", ck_string);
+  // Compress a trie path if it is longer than HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD
+  // XXX(Keren): do not use this knob for now
+  control_knob_register("HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD",
+                        CUPTI_CCT_TRIE_COMPRESS_THRESHOLD_STR, ck_int);
+  // Enable memoization-based fast unwinding
+  control_knob_register("HPCRUN_CUDA_FAST_UNWIND", "FALSE", ck_string);
+  control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "4", ck_int);
+  control_knob_register("HPCRUN_CUDA_BACKOFF_BASE", "4", ck_int);
+  // Specify cudaDeviceSynchronize() policy
+  control_knob_register("HPCRUN_CUDA_SYNC_YIELD", "FALSE", ck_string);
+#endif
 
   // Reset cupti flags
   cupti_device_init();
@@ -288,6 +309,7 @@ METHOD_FN(thread_init_action)
 {
   TMSG(CUDA, "thread_init_action");
 }
+
 static void
 METHOD_FN(start)
 {
@@ -315,13 +337,12 @@ METHOD_FN(shutdown)
   self->state = UNINIT;
 }
 
-
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING)
-																							|| hpcrun_ev_is(ev_str, NVIDIA_CUDA_NV_LINK);
+    || hpcrun_ev_is(ev_str, NVIDIA_CUDA_NV_LINK);
 #else
   return false;
 #endif
@@ -346,7 +367,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 {
   int nevents = (self->evl).nevents;
 
-  TMSG(CUDA,"nevents = %d", nevents);
+  TMSG(CUDA, "nevents = %d", nevents);
   hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
 
   // Fetch the event string for the sample source
@@ -356,29 +377,70 @@ METHOD_FN(process_event_list, int lush_metrics)
   long int frequency = 0;
   int frequency_default = -1;
 
+  // Init random number generator
+  srand(time(0));
+
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
 
-	for (; event != NULL; event = next_tok()) {
-		if (hpcrun_ev_is(event, NVIDIA_CUDA)) {
-			trace_frequency =
-			(frequency == frequency_default) ? trace_frequency_default : frequency;
-			gpu_monitoring_trace_sample_frequency_set(trace_frequency);
-		} else if (hpcrun_ev_is(event, NVIDIA_CUDA_PC_SAMPLING)) {
-			pc_sampling_frequency = (frequency == frequency_default) ?
-															pc_sampling_frequency_default : frequency;
+  for (; event != NULL; event = next_tok()) {
+    if (hpcrun_ev_is(event, NVIDIA_CUDA)) {
+      trace_frequency =
+      (frequency == frequency_default) ? trace_frequency_default : frequency;
+      gpu_monitoring_trace_sample_frequency_set(trace_frequency);
 
-			gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
+      // Set enabling activities
+      cupti_enabled_activities |= CUPTI_DRIVER;
+      cupti_enabled_activities |= CUPTI_RUNTIME;
+      cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+      cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+      cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+      cupti_enabled_activities |= CUPTI_OVERHEAD;
+    } else if (hpcrun_ev_is(event, NVIDIA_CUDA_PC_SAMPLING)) {
+      pc_sampling_frequency = (frequency == frequency_default) ?
+        pc_sampling_frequency_default : frequency;
+      gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
 
-			gpu_metrics_GPU_INST_enable(); // instruction counts
+      gpu_metrics_GPU_INST_enable();  // instruction counts
 
-			gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
+#ifdef NEW_CUPTI
+      gpu_metrics_GPU_INST_STALL2_enable();  // stall metrics
 
-    gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
-    
-    // pc sampling cannot be on with concurrent kernels
-    kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
-    }	else if (hpcrun_ev_is(event, NVIDIA_CUDA_NV_LINK)) {
+      // XXX(Keren): We cannot compute GPU utilization unless in serialized mode
+#else
+      gpu_metrics_GPU_INST_STALL_enable();  // stall metrics
+
+      gpu_metrics_GSAMP_enable();  // GPU utilization from sampling
+#endif
+
+#ifdef NEW_CUPTI
+      char *range_mode = NULL;
+      if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_MODE", &range_mode) != 0) {
+        monitor_real_exit(-1);
+      }
+
+      int interval = CUPTI_RANGE_DEFAULT_INTERVAL;
+      if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &interval) != 0) {
+        monitor_real_exit(-1);
+      }
+
+      int sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
+      if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", &sampling_period) != 0) {
+        monitor_real_exit(-1);
+      }
+
+      char *dynamic_period = NULL;
+      if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_DYNAMIC_PERIOD", &dynamic_period) != 0)
+        monitor_real_exit(-1);
+
+      char *sync_yield = NULL;
+      if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
+        monitor_real_exit(-1);
+
+      bool enable_dynamic_period = strcmp(dynamic_period, "TRUE") == 0;
+      cupti_range_config(range_mode, interval, sampling_period, enable_dynamic_period);
+#endif
+    } else if (hpcrun_ev_is(event, NVIDIA_CUDA_NV_LINK)) {
       gpu_metrics_GXFER_enable();
     }
   }
@@ -396,16 +458,21 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
     monitor_real_exit(-1);
   }
+
+#ifdef NEW_CUPTI
+  if (cupti_pc_sampling_bind() != DYNAMIC_BINDING_STATUS_OK) {
+    EEMSG("hpcrun: unable to bind to new NVIDIA CUPTI library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+#endif
 #endif
 
   // Register hpcrun callbacks
   device_finalizer_flush.fn = cupti_device_flush;
-  device_finalizer_register(device_finalizer_type_flush,
-			    &device_finalizer_flush);
+  device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
 
   device_finalizer_shutdown.fn = cupti_device_shutdown;
-  device_finalizer_register(device_finalizer_type_shutdown,
-			    &device_finalizer_shutdown);
+  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
   // Get control knobs
   int device_buffer_size;
@@ -433,35 +500,62 @@ METHOD_FN(process_event_list, int lush_metrics)
     kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
   }
 
-  cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+#ifdef NEW_CUPTI
+  char *fast_unwind;
+  if (control_knob_value_get_string("HPCRUN_CUDA_FAST_UNWIND", &fast_unwind) != 0)
+    monitor_real_exit(-1);
+  
+  int correlation_threshold;
+  if (control_knob_value_get_int("HPCRUN_CUDA_CORRELATION_THRESHOLD", &correlation_threshold) != 0)
+    monitor_real_exit(-1);
+
+  int backoff_base;
+  if (control_knob_value_get_int("HPCRUN_CUDA_BACKOFF_BASE", &backoff_base) != 0)
+    monitor_real_exit(-1);
+
+  char *sync_yield;
+  if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
+    monitor_real_exit(-1);
+
+  cupti_fast_unwind_set(strcmp(fast_unwind, "TRUE") == 0);
+
+  cupti_correlation_threshold_set(correlation_threshold);
+
+  cupti_backoff_base_set(backoff_base);
+
+  cupti_sync_yield_set(strcmp(sync_yield, "TRUE") == 0);
+
+  TMSG(CUDA, "Fast unwind %d", fast_unwind);
+  TMSG(CUDA, "Correlation threshold %d", correlation_threshold);
+  TMSG(CUDA, "Backoff base %d", backoff_base);
+  TMSG(CUDA, "Sync yield %d", sync_yield);
+#endif
 
   // Register cupti callbacks
   cupti_init();
   cupti_callbacks_subscribe();
-  cupti_start();
 
-  // Set enabling activities
-  cupti_enabled_activities |= CUPTI_DRIVER;
-  cupti_enabled_activities |= CUPTI_RUNTIME;
-  cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
-  cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
-  cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
-  cupti_enabled_activities |= CUPTI_OVERHEAD;
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    cupti_start();
+    cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+  }
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
   device_finalizer_register(device_finalizer_type_shutdown,
-			    &device_trace_finalizer_shutdown);
+                            &device_trace_finalizer_shutdown);
 }
 
 static void
 METHOD_FN(finalize_event_list)
 {
-  cupti_enable_activities();
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    cupti_enable_activities();
+  }
 }
 
 static void
-METHOD_FN(gen_event_set,int lush_metrics)
+METHOD_FN(gen_event_set, int lush_metrics)
 {
 }
 
@@ -474,21 +568,20 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tComprehensive operation-level monitoring on an NVIDIA GPU.\n"
-	 "\t\tCollect timing information on GPU kernel invocations,\n"
-	 "\t\tmemory copies (implicit and explicit), driver and runtime\n"
-	 "\t\tactivity, and overhead.\n",
-	 NVIDIA_CUDA);
+         "\t\tCollect timing information on GPU kernel invocations,\n"
+         "\t\tmemory copies (implicit and explicit), driver and runtime\n"
+         "\t\tactivity, and overhead.\n",
+         NVIDIA_CUDA);
   printf("\n");
   printf("%s\tComprehensive monitoring on an NVIDIA GPU as described above\n"
-	 "\t\twith the addition of PC sampling. PC sampling attributes\n"
-	 "\t\tSTALL reasons to individual GPU instructions. PC sampling also\n"
-	 "\t\trecords aggregate statistics about the TOTAL number of samples measured,\n"
-	 "\t\tthe number of samples EXPECTED, and the number of samples DROPPED.\n"
-	 "\t\tGPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
-	 NVIDIA_CUDA_PC_SAMPLING);
+         "\t\twith the addition of PC sampling. PC sampling attributes\n"
+         "\t\tSTALL reasons to individual GPU instructions. PC sampling also\n"
+         "\t\trecords aggregate statistics about the TOTAL number of samples measured,\n"
+         "\t\tthe number of samples EXPECTED, and the number of samples DROPPED.\n"
+         "\t\tGPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
+         NVIDIA_CUDA_PC_SAMPLING);
   printf("\n");
 }
-
 
 //******************************************************************************
 // object

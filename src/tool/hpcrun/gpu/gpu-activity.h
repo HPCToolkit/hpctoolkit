@@ -80,7 +80,7 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef enum {    
   GPU_ACTIVITY_UNKNOWN                 = 0,
   GPU_ACTIVITY_KERNEL                  = 1,
-  GPU_ACTIVITY_KERNEL_BLOCK             = 2,  
+  GPU_ACTIVITY_KERNEL_BLOCK            = 2,  
   GPU_ACTIVITY_MEMCPY                  = 3,
   GPU_ACTIVITY_MEMCPY2                 = 4,
   GPU_ACTIVITY_MEMSET                  = 5,
@@ -96,7 +96,10 @@ typedef enum {
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
   GPU_ACTIVITY_FLUSH                   = 17,
-  GPU_ACTIVITY_COUNTER                 = 18
+  GPU_ACTIVITY_PC_SAMPLING2            = 18,
+  GPU_ACTIVITY_PC_SAMPLING_INFO2       = 19,
+  GPU_ACTIVITY_RANGE                   = 20,
+  GPU_ACTIVITY_COUNTER                 = 21
 } gpu_activity_kind_t;
 
 
@@ -168,6 +171,29 @@ typedef enum {
 
 
 typedef enum {
+  GPU_INST_STALL2_BARRIER       = 1,
+  GPU_INST_STALL2_BRANCH        = 2,
+  GPU_INST_STALL2_DISPATCH      = 3,
+  GPU_INST_STALL2_MEM_DRAIN     = 4,
+  GPU_INST_STALL2_CMEM          = 5,
+  GPU_INST_STALL2_MEM_THROTTLE  = 6,
+  GPU_INST_STALL2_MEM_DEP       = 7,
+  GPU_INST_STALL2_FIX_THROTTLE  = 8,
+  GPU_INST_STALL2_SYNC          = 9,
+  GPU_INST_STALL2_VAR_THROTTLE  = 10,
+  GPU_INST_STALL2_MISC          = 11,
+  GPU_INST_STALL2_IFETCH        = 12,
+  GPU_INST_STALL2_NOT_SELECTED  = 13,
+  GPU_INST_STALL2_NONE          = 14,
+  GPU_INST_STALL2_VAR_DEP       = 15,
+  GPU_INST_STALL2_SLEEP         = 16,
+  GPU_INST_STALL2_TEX_THROTTLE  = 17,
+  GPU_INST_STALL2_FIX_DEP       = 18,
+  GPU_INST_STALL2_INVALID       = 19
+} gpu_inst_stall2_t;
+
+
+typedef enum {
   GPU_MEM_ARRAY           = 0,
   GPU_MEM_DEVICE          = 1,
   GPU_MEM_MANAGED         = 2,
@@ -197,6 +223,15 @@ typedef struct gpu_pc_sampling_t {
 } gpu_pc_sampling_t;
 
 
+typedef struct gpu_pc_sampling2_t {
+  uint64_t host_correlation_id;
+  ip_normalized_t pc;
+  uint64_t samples;
+  uint64_t latencySamples;
+  gpu_inst_stall2_t stallReason;    
+} gpu_pc_sampling2_t;
+
+
 typedef struct gpu_pc_sampling_info_t {
   uint64_t correlation_id;
   uint64_t droppedSamples;
@@ -204,6 +239,37 @@ typedef struct gpu_pc_sampling_info_t {
   uint64_t totalSamples;
   uint64_t fullSMSamples;
 } gpu_pc_sampling_info_t;
+
+
+typedef struct gpu_activity_t gpu_activity_t;
+
+typedef void (*gpu_pc_sampling2_translate_fn_t)
+(
+ void *pc_sampling_data,
+ uint64_t total_num_pcs,
+ uint32_t period,
+ uint32_t range_id,
+ cct_node_t *cct_node  // range node or api node
+);
+
+
+typedef void (*gpu_pc_sampling2_free_fn_t)
+(
+ void *pc_sampling_data
+);
+
+
+typedef struct gpu_pc_sampling_info2_t {
+  uint32_t context_id;
+  uint64_t droppedSamples;
+  uint64_t samplingPeriodInCycles;
+  uint64_t totalSamples;
+  uint64_t totalNumPcs;
+  void *pc_sampling_data;
+  gpu_pc_sampling2_translate_fn_t translate;
+  gpu_pc_sampling2_free_fn_t free;
+} gpu_pc_sampling_info2_t;
+
 
 // a special flush record to notify all operations have been consumed
 typedef struct gpu_flush_t {
@@ -257,6 +323,7 @@ typedef struct gpu_memset_t {
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
+  uint64_t submit_time;
   gpu_mem_type_t memKind;
 } gpu_memset_t;
 
@@ -296,6 +363,7 @@ typedef struct gpu_cdpkernel_t {
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
+  uint64_t submit_time;
 } gpu_cdpkernel_t;
 
 
@@ -347,6 +415,7 @@ typedef struct gpu_synchronization_t {
   uint32_t context_id;
   uint32_t stream_id;
   uint32_t event_id;
+  uint64_t submit_time;
   gpu_sync_type_t syncKind;
 } gpu_synchronization_t;
 
@@ -387,7 +456,9 @@ typedef struct gpu_activity_details_t {
        for processing each activity kind.
      */
     gpu_pc_sampling_t pc_sampling;
+    gpu_pc_sampling2_t pc_sampling2;
     gpu_pc_sampling_info_t pc_sampling_info;
+    gpu_pc_sampling_info2_t pc_sampling_info2;
     gpu_memcpy_t memcpy;
     gpu_memory_t memory;
     gpu_memset_t memset;
@@ -422,6 +493,7 @@ typedef struct gpu_activity_t {
   gpu_activity_kind_t kind;
   gpu_activity_details_t details;
   cct_node_t *cct_node;
+  uint32_t range_id;
 } gpu_activity_t;
 
 

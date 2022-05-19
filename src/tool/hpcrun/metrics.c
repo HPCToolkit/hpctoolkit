@@ -461,6 +461,20 @@ hpcrun_metric_set_loc(metric_data_list_t *rv, int id)
 }
 
 
+hpcrun_metricVal_t
+hpcrun_metric_std_get(int metric_id, metric_data_list_t* set) {
+  hpcrun_metricVal_t val = { .i = 0, .r = 0 };
+  metric_desc_t* minfo = metric_data[metric_id].desc;
+  if (!minfo) {
+    return val;
+  }
+
+  hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
+  val = *loc;
+
+  return val;
+}
+
 void
 hpcrun_metric_std(int metric_id, metric_data_list_t* set,
 		  char operation, hpcrun_metricVal_t val)

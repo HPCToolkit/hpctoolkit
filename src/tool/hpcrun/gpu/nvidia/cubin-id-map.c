@@ -138,7 +138,7 @@ cubin_id_map_splay(cubin_id_map_entry_t *root, uint32_t key)
 static void
 cubin_id_map_delete_root()
 {
-  TMSG(DEFER_CTXT, "cubin_id %d: delete", cubin_id_map_root->cubin_id);
+  TMSG(CUDA_CUBIN, "cubin_id %d: delete", cubin_id_map_root->cubin_id);
 
   if (cubin_id_map_root->left == NULL) {
     cubin_id_map_root = cubin_id_map_root->right;
@@ -192,7 +192,7 @@ cubin_id_map_lookup
     result = hash_entry->entry;
   }
 
-  TMSG(DEFER_CTXT, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
+  TMSG(CUDA_CUBIN, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
   return result;
 }
 
@@ -213,8 +213,8 @@ cubin_id_map_insert
 
     if (cubin_id < cubin_id_map_root->cubin_id) {
       cubin_id_map_entry_t *entry =
-	cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
-      TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
+        cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
+      TMSG(CUDA_CUBIN, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
       entry->left = cubin_id_map_root->left;
       entry->right = cubin_id_map_root;
@@ -222,8 +222,8 @@ cubin_id_map_insert
       cubin_id_map_root = entry;
     } else if (cubin_id > cubin_id_map_root->cubin_id) {
       cubin_id_map_entry_t *entry =
-	cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
-      TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
+        cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
+      TMSG(CUDA_CUBIN, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
       entry->left = cubin_id_map_root;
       entry->right = cubin_id_map_root->right;
@@ -284,7 +284,7 @@ cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   ip_normalized_t ip;
-  TMSG(CUDA_CUBIN, "cubin_id %d", cubin_id);
+  TMSG(CUDA_CUBIN, "cubin_id %u", cubin_id);
   if (entry != NULL) {
     uint32_t hpctoolkit_module_id = cubin_id_map_entry_hpctoolkit_id_get(entry);
     TMSG(CUDA_CUBIN, "get hpctoolkit_module_id %d", hpctoolkit_module_id);

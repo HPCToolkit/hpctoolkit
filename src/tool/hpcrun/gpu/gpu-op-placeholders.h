@@ -82,6 +82,7 @@ typedef enum gpu_placeholder_type_t {
 
 typedef uint32_t gpu_op_placeholder_flags_t;
 
+typedef struct cct_node_t cct_node_t;
 
 typedef struct gpu_op_ccts_t {
   cct_node_t *ccts[gpu_placeholder_type_count];

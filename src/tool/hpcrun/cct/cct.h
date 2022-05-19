@@ -175,6 +175,14 @@ extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr, boo
 extern cct_node_t* hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip);
 
 //
+// Insert a node representing the range where GPU operations happened
+extern cct_node_t* hpcrun_cct_insert_range(cct_node_t* node, uintptr_t lm_ip);
+
+//
+// Insert a node representing the context that GPU operations used
+extern cct_node_t* hpcrun_cct_insert_context(cct_node_t* node, uintptr_t lm_ip);
+
+//
 // 2nd fundamental mutator: mark a node as "terminal". That is,
 //   it is the last node of a path
 //

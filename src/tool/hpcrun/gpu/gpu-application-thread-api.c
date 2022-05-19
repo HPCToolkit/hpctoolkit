@@ -82,11 +82,8 @@ gpu_application_thread_process_activities
 cct_node_t *
 gpu_application_thread_correlation_callback
 (
- uint64_t correlation_id
 )
 {
-  PRINT("enter gpu_correlation_callback %u\n", correlation_id);
-
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   int zero_metric_id = 0; // nothing to see here
 

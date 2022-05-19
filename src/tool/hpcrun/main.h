@@ -82,4 +82,14 @@ extern void special_cuda_ctxt_actions(bool enable);
 
 extern bool hpcrun_suppress_sample();
 
+// We still want to monitor helper threads created by hpcrun to ensure they will be called at libmonitor callbacks.
+// For example, the operation thread for cupti pc sampling is responsible for writting a special range profile at
+// the thread termination callback.
+
+// This function ensures that all threads created by the current thread will be monitored by libmonitor
+extern void hpcrun_thread_monitor_force_on();
+
+// This function turns off force monitoring so that only threads not ignored by monitor_ignore_map will be monitored
+extern void hpcrun_thread_monitor_force_off();
+
 #endif  // ! main_h

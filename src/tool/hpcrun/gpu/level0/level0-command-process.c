@@ -254,8 +254,7 @@ level0_command_begin
   }
 
   uint64_t correlation_id = (uint64_t)(command_node->event);
-  cct_node_t *api_node =
-    gpu_application_thread_correlation_callback(correlation_id);
+  cct_node_t *api_node = gpu_application_thread_correlation_callback();
 
   gpu_op_ccts_t gpu_op_ccts;
   hpcrun_safe_enter();

@@ -71,10 +71,12 @@
 
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/messages/messages.h>
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample_event.h>
+#include <hpcrun/cct/cct.h>
 
 #include "cuda-api.h"
-
-
+#include "cupti-api.h"
 
 //*****************************************************************************
 // macros
@@ -160,6 +162,94 @@ CUDA_FN
 );
 
 
+CUDA_FN
+(
+ cuCtxSetCurrent,
+ (
+  CUcontext context
+ )
+);
+
+
+CUDA_FN
+(
+ cuCtxSetCurrent,
+ (
+  CUcontext context
+ )
+);
+
+
+CUDA_FN
+(
+ cuCtxSynchronize,
+ (
+  void
+ )
+);
+
+
+CUDA_FN
+(
+ cuLaunchKernel,
+ (
+  CUfunction f,
+  unsigned int gridDimX,
+  unsigned int gridDimY,
+  unsigned int gridDimZ,
+  unsigned int blockDimX,
+  unsigned int blockDimY,
+  unsigned int blockDimZ,
+  unsigned int sharedMemBytes,
+  CUstream hStream,
+  void** kernelParams,
+  void** extra
+ )
+);
+
+
+CUDA_FN
+(
+ cuMemcpy,
+ (
+  CUdeviceptr dst,
+  CUdeviceptr src,
+  size_t ByteCount
+ )
+);
+
+
+CUDA_FN
+(
+ cuMemcpyHtoD_v2,
+ (
+  CUdeviceptr dstDevice,
+  const void *srcHost,
+  size_t ByteCount
+ )
+);
+
+
+CUDA_FN
+(
+ cuMemcpyDtoH_v2,
+ (
+  void *dstHost,
+  CUdeviceptr srcDevice,
+  size_t ByteCount
+ )
+);
+
+
+CUDA_RUNTIME_FN
+(
+ cudaSetDeviceFlags,
+ (
+  int flags
+ )
+);
+
+
 CUDA_RUNTIME_FN
 (
  cudaGetDevice,
@@ -177,6 +267,32 @@ CUDA_RUNTIME_FN
  )
 );
 
+
+CUDA_RUNTIME_FN
+(
+ cudaLaunchKernel,
+ (
+  const void *func,
+  dim3 gridDim,
+  dim3 blockDim,
+  void **args,
+  size_t sharedMem,
+  cudaStream_t stream
+ )
+);
+
+
+CUDA_RUNTIME_FN
+(
+ cudaMemcpy,
+ (
+  void *dst,
+  const void *src,
+  size_t count,
+  enum cudaMemcpyKind kind
+ )
+);
+
 #endif
 
 
@@ -189,7 +305,7 @@ CUDA_RUNTIME_FN
 int
 cuda_bind
 (
-  void
+ void
 )
 {
 #ifndef HPCRUN_STATIC_LINK
@@ -198,11 +314,20 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute);
   CHK_DLSYM(cuda, cuCtxGetCurrent);
+  CHK_DLSYM(cuda, cuCtxSetCurrent);
+  CHK_DLSYM(cuda, cuCtxSynchronize);
+  CHK_DLSYM(cuda, cuLaunchKernel);
+  CHK_DLSYM(cuda, cuMemcpy);
+  CHK_DLSYM(cuda, cuMemcpyHtoD_v2);
+  CHK_DLSYM(cuda, cuMemcpyDtoH_v2);
 
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cudart, cudaGetDevice);
+  CHK_DLSYM(cudart, cudaSetDeviceFlags);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
+  CHK_DLSYM(cudart, cudaLaunchKernel);
+  CHK_DLSYM(cudart, cudaMemcpy);
 
   return DYNAMIC_BINDING_STATUS_OK;
 #else
@@ -242,15 +367,33 @@ cuda_device_compute_capability
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  tool_enter();
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+  tool_exit();
 
-  return 0;
+  return HPCTOOLKIT_CUDA_SUCCESS;
 #else
-  return -1;
+  return HPCTOOLKIT_CUDA_FAIL;
+#endif
+}
+
+
+int
+cuda_sync_yield
+(
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  tool_enter();
+  HPCRUN_CUDA_RUNTIME_CALL(cudaSetDeviceFlags, (cudaDeviceScheduleYield));
+  tool_exit();
+  return HPCTOOLKIT_CUDA_SUCCESS;
+#else
+  return HPCTOOLKIT_CUDA_FAIL;
 #endif
 }
 
@@ -263,10 +406,12 @@ cuda_device_id
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  tool_enter();
   HPCRUN_CUDA_RUNTIME_CALL(cudaGetDevice, (device_id));
-  return 0;
+  tool_exit();
+  return HPCTOOLKIT_CUDA_SUCCESS;
 #else
-  return -1;
+  return HPCTOOLKIT_CUDA_FAIL;
 #endif
 }
 
@@ -279,10 +424,12 @@ cuda_runtime_version
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  tool_enter();
   HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
-  return 0;
+  tool_exit();
+  return HPCTOOLKIT_CUDA_SUCCESS;
 #else
-  return -1;
+  return HPCTOOLKIT_CUDA_FAIL;
 #endif
 }
 
@@ -294,16 +441,18 @@ cuda_runtime_version
 
 
 int
-cuda_context
+cuda_context_get
 (
  CUcontext *ctx
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  tool_enter();
   HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
-  return 0;
+  tool_exit();
+  return HPCTOOLKIT_CUDA_SUCCESS;
 #else
-  return -1;
+  return HPCTOOLKIT_CUDA_FAIL;
 #endif
 }
 
@@ -315,6 +464,8 @@ cuda_device_property_query
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  tool_enter();
+
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
@@ -347,14 +498,15 @@ cuda_device_property_query
 
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
 
-  return 0;
+  tool_exit();
+
+  return HPCTOOLKIT_CUDA_SUCCESS;
 #else
-  return -1;
+  return HPCTOOLKIT_CUDA_FAIL;
 #endif
 }
 
 
-// return 0 on success
 int
 cuda_global_pc_sampling_required
 (
@@ -362,13 +514,13 @@ cuda_global_pc_sampling_required
 )
 {
   int device_id;
-  if (cuda_device_id(&device_id)) return -1;
+  if (cuda_device_id(&device_id)) return HPCTOOLKIT_CUDA_FAIL;
 
   int dev_major, dev_minor;
-  if (cuda_device_compute_capability(device_id, &dev_major, &dev_minor)) return -1;
+  if (cuda_device_compute_capability(device_id, &dev_major, &dev_minor)) return HPCTOOLKIT_CUDA_FAIL;
 
   int rt_version;
-  if (cuda_runtime_version(&rt_version)) return -1;
+  if (cuda_runtime_version(&rt_version)) return HPCTOOLKIT_CUDA_FAIL;
 
 #ifdef DEBUG
   printf("cuda_global_pc_sampling_required: "
@@ -379,5 +531,148 @@ cuda_global_pc_sampling_required
   *required = ((DEVICE_IS_TURING(dev_major, dev_minor)) && 
                (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
 
-  return 0;
+  return HPCTOOLKIT_CUDA_SUCCESS;
+}
+
+
+int
+cuda_context_sync
+(
+ CUcontext ctx
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  tool_enter();
+  HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
+  tool_exit();
+  return HPCTOOLKIT_CUDA_SUCCESS;
+#else
+  return HPCTOOLKIT_CUDA_FAIL;
+#endif
+}
+
+
+int
+cuda_context_set
+(
+ CUcontext ctx
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  tool_enter();
+  HPCRUN_CUDA_API_CALL(cuCtxSetCurrent, (ctx));  
+  tool_exit();
+  return HPCTOOLKIT_CUDA_SUCCESS;
+#else
+  return HPCTOOLKIT_CUDA_FAIL;
+#endif
+}
+
+
+cudaError_t
+hpcrun_cudaLaunchKernel
+(
+ const void *func,
+ dim3 gridDim,
+ dim3 blockDim,
+ void **args,
+ size_t sharedMem,
+ cudaStream_t stream
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cudaLaunchKernel_fn(func, gridDim, blockDim, args, sharedMem, stream);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+cudaError_t
+hpcrun_cudaMemcpy
+(
+ void *dst,
+ const void *src,
+ size_t count,
+ enum cudaMemcpyKind kind
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cudaMemcpy_fn(dst, src, count, kind);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuLaunchKernel
+(
+ CUfunction f,
+ unsigned int gridDimX,
+ unsigned int gridDimY,
+ unsigned int gridDimZ,
+ unsigned int blockDimX,
+ unsigned int blockDimY,
+ unsigned int blockDimZ,
+ unsigned int sharedMemBytes,
+ CUstream hStream,
+ void **kernelParams,
+ void **extra
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuLaunchKernel_fn(f, gridDimX, gridDimZ, gridDimZ,
+      blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuMemcpy
+(
+ CUdeviceptr dst,
+ CUdeviceptr src,
+ size_t ByteCount
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuMemcpy_fn(dst, src, ByteCount);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuMemcpyHtoD_v2
+(
+ CUdeviceptr dstDevice,
+ const void *srcHost,
+ size_t ByteCount
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuMemcpyHtoD_v2_fn(dstDevice, srcHost, ByteCount);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuMemcpyDtoH_v2
+(
+ void *dstHost,
+ CUdeviceptr srcDevice,
+ size_t ByteCount
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuMemcpyDtoH_v2_fn(dstHost, srcDevice, ByteCount);
+#else
+  return CUDA_SUCCESS;
+#endif
 }

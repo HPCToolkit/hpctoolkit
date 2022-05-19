@@ -537,9 +537,7 @@ ompt_device_load(int device_num,
 {
   PRINT("ompt_device_load->%s, %d\n", filename, device_num);
 
-#if 0 // FIXME
-  cupti_load_callback_cuda(module_id, host_addr, bytes);
-#endif
+  cupti_load_callback_cuda(NULL, module_id, host_addr, bytes);
 }
 
 

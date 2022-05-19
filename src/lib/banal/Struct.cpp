@@ -117,6 +117,7 @@
 #include "Struct-Skel.hpp"
 
 #include "gpu/ReadCudaCFG.hpp"
+#include "gpu/DotCFG.hpp"
 
 
 #ifdef ENABLE_IGC
@@ -1021,7 +1022,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
   if (cuda_arch > 0) {
     // TODO(Keren): Use the same method below and remove magic numbers for instruction length
     // mod->getSourceLines(svec, next + cubin_size);
-    int len = (cuda_arch >= 70) ? 16 : 8;
+    int len = GPUParse::get_cuda_inst_size(cuda_arch);
 
     StatementVector tmp;
 
