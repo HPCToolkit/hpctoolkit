@@ -452,11 +452,12 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       } else {  // Double A, inlined function. Gives the called function, like P
         if(!top.file) throw std::logic_error("Double-<A> without an implicit f= attribute!");
         auto fpath = xmlstr(attr.getValue(XMLStr("f")));
+        auto& file = fpath.empty() ? *top.file : sink.file(std::move(fpath));
         auto& func = ud.funcs.emplace_back(m, std::nullopt,
-            xmlstr(attr.getValue(XMLStr("n"))),
-            fpath.empty() ? *top.file : sink.file(std::move(fpath)),
+            xmlstr(attr.getValue(XMLStr("n"))), file,
             std::stoll(xmlstr(attr.getValue(XMLStr("l")))));
         auto& next = stack.emplace(top, 'B');
+        next.file = file;
         ud.trie.push_back({{Scope(*top.file, top.a_line), Relation::inlined_call}, top.node});
         ud.trie.push_back({{Scope(func), Relation::enclosure}, &ud.trie.back()});
         next.node = &ud.trie.back();
