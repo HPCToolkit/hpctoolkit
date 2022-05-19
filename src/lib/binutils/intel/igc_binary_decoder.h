@@ -50,6 +50,9 @@ typedef enum {
     IGFX_GEN11LP_CORE    = 16,  //Gen11 LP Family
     IGFX_GEN12_CORE      = 17,  //Gen12 Family
     IGFX_GEN12LP_CORE    = 18,  //Gen12 LP Family
+    IGFX_XE_HP_CORE      = 0x0c05,  //XE_HP family
+    IGFX_XE_HPG_CORE     = 0x0c07,  // XE_HPG Family
+    IGFX_XE_HPC_CORE     = 0x0c08,  // XE_HPC Family
     IGFX_MAX_CORE,              //Max Family, for lookup table
 
     IGFX_GENNEXT_CORE          = 0x7ffffffe,  //GenNext
@@ -120,18 +123,24 @@ class IgcBinaryDecoder {
 
   static iga_gen_t GetArch(uint32_t device) {
     switch (device) {
-      case IGFX_GEN8_CORE:
-        return IGA_GEN8;
-      case IGFX_GEN9_CORE:
-        return IGA_GEN9p5;
-      case IGFX_GEN11_CORE:
-      case IGFX_GEN11LP_CORE:
-        return IGA_GEN11;
-      case IGFX_GEN12_CORE:
-      case IGFX_GEN12LP_CORE:
-        return IGA_GEN12p1;
-      default:
-        break;
+    case IGFX_GEN8_CORE:
+      return IGA_GEN8;
+    case IGFX_GEN9_CORE:
+      return IGA_GEN9p5;
+    case IGFX_GEN11_CORE:
+    case IGFX_GEN11LP_CORE:
+      return IGA_GEN11;
+    case IGFX_GEN12_CORE:
+    case IGFX_GEN12LP_CORE:
+      return IGA_GEN12p1;
+    case IGFX_XE_HP_CORE: 
+      return IGA_XE_HP;
+    case IGFX_XE_HPG_CORE:
+      return IGA_XE_HPG;
+    case IGFX_XE_HPC_CORE:
+      return IGA_XE_HPC;
+    default:
+      break;
     }
     return IGA_GEN_INVALID;
   }
