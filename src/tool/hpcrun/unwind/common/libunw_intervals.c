@@ -253,18 +253,17 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 bool
 libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor, int decrement_pc)
 {
-  char *pc = libunw_cursor_get_pc(cursor);
-  cursor->pc_unnorm = pc;
+  cursor->pc_unnorm = libunw_cursor_get_pc(cursor);
+  if (decrement_pc && cursor->pc_unnorm > 0) cursor->pc_unnorm -= 1;
 
   cursor->sp = libunw_cursor_get_sp(cursor);
   cursor->bp = libunw_cursor_get_bp(cursor);
   cursor->ra_loc = libunw_cursor_get_ra_loc(cursor);
 
-  if (decrement_pc) pc--;
-  bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, DWARF_UNWINDER, &cursor->unwr_info);
 
   compute_normalized_ips(cursor);
-  TMSG(UNW, "unw_step: advance pc: %p\n", pc);
+  TMSG(UNW, "unw_step: advance pc: %p\n", cursor->pc_unnorm);
   cursor->libunw_status = found ? LIBUNW_READY : LIBUNW_UNAVAIL;
   
 #if DEBUG_LIBUNWIND_INTERFACE
@@ -432,11 +431,11 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
 // ---------------------------------------------------------
 
 step_state
-libunw_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken)
+libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   step_state result = libunw_take_step(cursor);
   if (result != STEP_ERROR) {
-    libunw_finalize_cursor(cursor, *steps_taken > 0);
+    libunw_finalize_cursor(cursor, 1);
   }
 
 #if DEBUG_LIBUNWIND_INTERFACE

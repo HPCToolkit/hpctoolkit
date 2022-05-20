@@ -61,21 +61,28 @@
 #include "level0-data-node.h"
 #include "level0-binary.h"
 #include "level0-kernel-module-map.h"
+#include "level0-fence-map.h"
+#include "level0-command-queue-map.h"
+
+#include <utilities/linuxtimer.h>
 
 #include <hpcrun/main.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
-
-#include <level_zero/ze_api.h>
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 
 //******************************************************************************
 // macros
 //******************************************************************************
 #define DEBUG 0
-
 #include "hpcrun/gpu/gpu-print.h"
+
+#define GPU_FLUSH_ALARM_ENABLED 1
+#define GPU_FLUSH_ALARM_TEST_ENABLED 0
+#include "hpcrun/gpu/gpu-flush-alarm.h"
 
 #define FORALL_LEVEL0_ROUTINES(macro)			\
   macro(zeInit)   \
@@ -100,7 +107,10 @@
   macro(zeModuleCreate) \
   macro(zeModuleDestroy) \
   macro(zeKernelCreate) \
-  macro(zeKernelDestroy)
+  macro(zeKernelDestroy) \
+  macro(zeFenceDestroy) \
+  macro(zeFenceReset) \
+  macro(zeCommandQueueSynchronize)
 
 #define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -116,6 +126,8 @@
 // Assume one driver and one device.
 ze_driver_handle_t hDriver = NULL;
 ze_device_handle_t hDevice = NULL;
+
+static bool gtpin_instrumentation = false;
 
 //----------------------------------------------------------
 // level0 function pointers for late binding
@@ -350,6 +362,31 @@ LEVEL0_FN
   )
 );
 
+LEVEL0_FN
+(
+  zeFenceDestroy,
+  (
+    ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
+  )
+);
+
+LEVEL0_FN
+(
+  zeFenceReset,
+  (
+    ze_fence_handle_t hFence        //  [in] handle of the fence
+  )
+);
+
+LEVEL0_FN
+(
+  zeCommandQueueSynchronize,
+  (
+    ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
+    uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
+  )
+);
+
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -369,6 +406,10 @@ level0_check_result
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_DEVICE_LOST);
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_ENUMERATION);
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_NULL_HANDLE);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SYNCHRONIZATION_OBJECT);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SIZE);
+    LEVEL0_ERROR_CASE(ZE_RESULT_NOT_READY);
     default:
       fprintf(stderr, " unknown return code");
   }
@@ -739,6 +780,43 @@ level0_process_immediate_command_list
   }
 }
 
+static void
+level0_attribute_fence
+(
+  ze_fence_handle_t hFence
+)
+{
+  if (hFence == NULL) return;
+
+  level0_fence_data_t * data = level0_fence_map_lookup(hFence);
+  if (data == NULL) return;
+
+  for (int i = 0; i < data->num; ++i) {
+    level0_command_list_reset_entry(data->list[i]);
+  }
+
+  level0_fence_map_delete(hFence);
+}
+
+static void
+level0_attribute_command_queue
+(
+  ze_command_queue_handle_t command_queue
+)
+{
+  if (command_queue == NULL) return;
+
+  level0_command_queue_data_t * data = level0_command_queue_map_lookup(command_queue);
+  if (data == NULL) return;
+
+  for (int i = 0; i < data->num; ++i) {
+    level0_command_list_reset_entry(data->list[i]);
+  }
+
+  level0_command_queue_map_delete(command_queue);
+}
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -749,6 +827,11 @@ hpcrun_zeInit
   ze_init_flag_t flag
 )
 {
+  // openmp programs can invoke zeInit in constructor
+  // before  the measurement subsystem has been initialized
+  // force initialization here
+  hpcrun_prepare_measurement_subsystem(false);
+
   // Entry action
   // Execute the real level0 API
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeInit,(flag));
@@ -771,7 +854,7 @@ hpcrun_zeCommandListAppendLaunchKernel
                                                   ///< on before launching
 )
 {
-  PRINT("Enter zeCommandListAppendLaunchKernel wrapper\n");
+  PRINT("Enter zeCommandListAppendLaunchKernel wrapper: command list %p\n", hCommandList);
   // Entry action:
   // We need to create a new event for querying time stamps
   // if the user appends the kernel with an empty event parameter
@@ -802,7 +885,7 @@ hpcrun_zeCommandListAppendMemoryCopy
                                                   ///< on before launching
 )
 {
-  PRINT("Enter zeCommandListAppendMemoryCopy wrapper\n");
+  PRINT("Enter zeCommandListAppendMemoryCopy wrapper: command list %p\n", hCommandList);
   // Entry action:
   // We need to create a new event for querying time stamps
   // if the user appends the kernel with an empty event parameter
@@ -863,6 +946,7 @@ hpcrun_zeCommandListDestroy
   ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
 )
 {
+  PRINT("Enter zeCommandListDestroy wrapper: command list %p\n", hCommandList);
   // Entry action
   level0_command_list_destroy_entry(hCommandList);
   // Execute the real level0 API
@@ -878,6 +962,7 @@ hpcrun_zeCommandListReset
   ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
 )
 {
+  PRINT("Enter zeCommandListReset wrapper: command list %p\n", hCommandList);
   // Entry action
   level0_command_list_reset_entry(hCommandList);
   // Execute the real level0 API
@@ -896,9 +981,12 @@ hpcrun_zeCommandQueueExecuteCommandLists
   ze_fence_handle_t hFence                        ///< [in][optional] handle of the fence to signal on completion
 )
 {
-  PRINT("Enter zeCommandQueueExecuteCommandLists wrapper\n");
+  PRINT("Enter zeCommandQueueExecuteCommandLists wrapper: command queue %p, fence %p\n",
+    hCommandQueue, hFence);
   // Entry action
   level0_command_queue_execute_command_list_entry(numCommandLists, phCommandLists);
+  level0_fence_map_insert(hFence, numCommandLists, phCommandLists);
+  level0_command_queue_map_insert(hCommandQueue, numCommandLists, phCommandLists);
   // Execute the real level0 API
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandQueueExecuteCommandLists,
     (hCommandQueue, numCommandLists, phCommandLists, hFence));
@@ -975,10 +1063,18 @@ hpcrun_zeModuleCreate
   ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
 )
 {
-  // TODO: do we want to append "-g" to desc->pBuildFlags
-  // to force building with debug information?
+  char compile_flags[128] = {0};
+  ze_module_desc_t new_desc = *desc;
+  if (new_desc.format == ZE_MODULE_FORMAT_IL_SPIRV) {
+    // if the module is created through SPIRV IR,
+    // it will go through JIT compilation, and we can append
+    // the -g flag to add debug information
+    strcpy(compile_flags, desc->pBuildFlags);
+    strcat(compile_flags, " -g");
+    new_desc.pBuildFlags = compile_flags;
+  }
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeModuleCreate,
-    (hContext, hDevice, desc, phModule, phBuildLog));
+    (hContext, hDevice, &new_desc, phModule, phBuildLog));
   PRINT("hpcrun_zeModuleCreate: module handle %p\n", *phModule);
   // Exit action
   level0_binary_process(*phModule);
@@ -1031,6 +1127,43 @@ hpcrun_zeKernelDestroy
   return ret;
 }
 
+ze_result_t
+hpcrun_zeFenceDestroy
+(
+  ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
+)
+{
+  PRINT("Enter zeFenceDestroy wrapper: fence %p\n", hFence);
+  level0_attribute_fence(hFence);
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeFenceDestroy, (hFence));
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeFenceReset
+(
+  ze_fence_handle_t hFence       //  [in] handle of the fence
+)
+{
+  PRINT("Enter zeFenceReset wrapper: fence %p\n", hFence);
+  level0_attribute_fence(hFence);
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeFenceReset, (hFence));
+  return ret;
+}
+
+ze_result_t
+hpcrun_zeCommandQueueSynchronize
+(
+  ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
+  uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
+)
+{
+  PRINT("Enter zeCommandQueueSynchronize wrapper: commmand queue %p\n", hCommandQueue);
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandQueueSynchronize, (hCommandQueue, timeout));
+  level0_attribute_command_queue(hCommandQueue);
+  return ret;
+}
+
 int
 level0_bind
 (
@@ -1059,10 +1192,13 @@ level0_bind
 void
 level0_init
 (
- void
+ bool enable_instrumentation
 )
 {
-
+  gtpin_instrumentation = enable_instrumentation;
+  if (gtpin_instrumentation) {
+    gtpin_enable_profiling();
+  }
 }
 
 void
@@ -1072,5 +1208,38 @@ level0_fini
  int how
 )
 {
+  if (!GPU_FLUSH_ALARM_FIRED()) {
+    GPU_FLUSH_ALARM_SET("hpcrun: warning: some Level 0 events not marked"
+			" complete; some GPU event data may be lost.");
+
+    gpu_operation_multiplexer_fini();
+
+    GPU_FLUSH_ALARM_TEST();
+    GPU_FLUSH_ALARM_CLEAR();
+  }
+}
+
+void
+level0_flush
+(
+ void *args,
+ int how
+)
+{
+  level0_flush_and_wait();
+
+  // Wait until my activities are drained
+  if (how == MONITOR_EXIT_NORMAL) level0_wait_for_self_pending_operations();
+
+  // Now I can attribute activities
   gpu_application_thread_process_activities();
+}
+
+bool
+level0_gtpin_enabled
+(
+  void
+)
+{
+  return gtpin_instrumentation;
 }

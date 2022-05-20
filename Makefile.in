@@ -333,6 +333,7 @@ OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_GTPIN = @OPT_GTPIN@
 OPT_GTPIN_IFLAGS = @OPT_GTPIN_IFLAGS@
+OPT_GTPIN_LDFLAGS = @OPT_GTPIN_LDFLAGS@
 OPT_GTPIN_LIBDIR = @OPT_GTPIN_LIBDIR@
 OPT_IGC = @OPT_IGC@
 OPT_IGC_IFLAGS = @OPT_IGC_IFLAGS@
@@ -905,7 +906,6 @@ install-exec-local:
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)
-	@$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	@$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 	@$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
 

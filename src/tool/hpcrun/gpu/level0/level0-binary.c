@@ -52,9 +52,7 @@
 // local includes
 //*****************************************************************************
 
-#include <level_zero/ze_api.h>
-#include <level_zero/zet_api.h>
-
+#include "level0-binary.h"
 #include "level0-handle-map.h"
 #include "lib/prof-lean/spinlock.h"
 #include "lib/prof-lean/crypto-hash.h"

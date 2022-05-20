@@ -41,93 +41,138 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+//
+// File:
+//   gpu-flush-alarm.c
+//
+// Purpose:
+//   manage an alarm that goes off in if gpu operation finalization doesn't
+//   properly finish. this allows measurement data already received to be
+//   recorded and the application to finish instead of hanging forever.
+//
+//***************************************************************************
+
+
 //******************************************************************************
 // system includes
 //******************************************************************************
 
-#include <stdio.h>
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
-#include <sys/stat.h>  // mkdir
-#include <sys/types.h>
-#include <unistd.h>
-#include <linux/limits.h>  // PATH_MAX
+#include <pthread.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include <include/gpu-binary.h>
-#include <hpcrun/files.h>
-#include <hpcrun/messages/messages.h>
-#include <lib/prof-lean/crypto-hash.h>
+#include "gpu-flush-alarm.h"
+#include <monitor.h>
+#include <messages/messages.h>
+#include <utilities/linuxtimer.h>
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define GPU_FLUSH_ALARM_TIMEOUT_SECONDS 4
+
+
+//******************************************************************************
+// global variables
+//******************************************************************************
+
+__thread jmp_buf gpu_flush_alarm_jump_buf;
+
+
+
+//******************************************************************************
+// local variables
+//******************************************************************************
+
+// declaring these variables thread local will mean that multiple
+// flush alarms can be active at the same time.
+
+static __thread const char *gpu_flush_alarm_msg;
+static __thread linuxtimer_t gpu_flush_alarm_timer;
+
+static pthread_once_t gpu_flush_alarm_initialized = PTHREAD_ONCE_INIT;
+static int gpu_flush_alarm_signal;
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+static int
+gpu_flush_alarm_handler
+(
+ int sig,
+ siginfo_t* siginfo,
+ void* context
+)
+{
+  STDERR_MSG(gpu_flush_alarm_msg);
+  longjmp(gpu_flush_alarm_jump_buf, 1);
+  return 0; /* keep compiler happy, but can't get here */
+}
+
+
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-bool
-gpu_binary_store
+void
+gpu_flush_alarm_init
 (
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
 )
 {
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, binary, binary_size) != binary_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
+  gpu_flush_alarm_signal = linuxtimer_newsignal();
+}
+
+
+void
+gpu_flush_alarm_set
+(
+ const char *client_msg
+)
+{
+  pthread_once(&gpu_flush_alarm_initialized, gpu_flush_alarm_init); 
+
+  gpu_flush_alarm_msg = client_msg;
+
+  linuxtimer_create(&gpu_flush_alarm_timer, CLOCK_REALTIME,
+		    gpu_flush_alarm_signal);	
+
+  monitor_sigaction(linuxtimer_getsignal(&gpu_flush_alarm_timer),
+		    &gpu_flush_alarm_handler, 0, NULL);
+
+  linuxtimer_set(&gpu_flush_alarm_timer, GPU_FLUSH_ALARM_TIMEOUT_SECONDS, 0, 0);
+}
+
+
+void
+gpu_flush_alarm_clear
+(
+ void
+)
+{
+  linuxtimer_set(&gpu_flush_alarm_timer, 0, 0, 0);
+  linuxtimer_delete(&gpu_flush_alarm_timer);
 }
 
 void
-gpu_binary_path_generate
+gpu_flush_alarm_test
 (
-  const char *file_name,
-  char *path
+ void
 )
 {
-  size_t used = 0;
-  used += sprintf(&path[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
-  mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&path[used], "%s", file_name);
-  used += sprintf(&path[used], "%s", GPU_BINARY_SUFFIX);
+  sleep(20);
 }
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-)
-{
-  // Compute hash for mem_ptr with mem_size
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
 
-  size_t i;
-  size_t used = 0;
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&name[used], "%02x", hash[i]);
-  }
-  return used;
-}
+
+

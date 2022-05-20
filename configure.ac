@@ -1881,6 +1881,7 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
+default_gtpin_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
@@ -1976,6 +1977,9 @@ then
   fi
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-gtpin ; then
+    default_gtpin_prefix="$spack_ans"
   fi
   if find_spack_pkg libiberty ; then
     default_libiberty_prefix="$spack_ans"
@@ -3505,13 +3509,8 @@ AC_SUBST([TBB_COPY])
 # Option: --with-xed=PATH
 #-------------------------------------------------
 
-# Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
-# hpclink requires .a, and fnbounds, etc can use either.  hpcprof-mpi
-# requires .a, but only if fully static (Cray).
-#
-# We support both old XED (2013) with single .a + fPIC and new (2015)
-# XED with separate .so and .a without fPIC, so we test if .a can link
-# into a shared library.
+# Now require static (.a) archive + fPIC for all cases in order to
+# hide the xed symbols.
 
 XED2_INC=
 XED2_LIB_DIR=no
@@ -3541,12 +3540,11 @@ case "$XED2" in
     if test ! -f "${XED2}/include/xed-interface.h" ; then
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
-    if test ! -f "${XED2}/lib/libxed.so" && test ! -f "${XED2}/lib/libxed.a" ; then
+    if test ! -f "${XED2}/lib/libxed.a" ; then
       AC_MSG_ERROR([invalid xed2 directory: $XED2])
     fi
     XED2_INC="${XED2}/include"
     XED2_LIB_DIR="${XED2}/lib"
-    XED2_COPY=yes
     xed2_avail=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
@@ -3592,55 +3590,19 @@ int my_xed_init(void)
     CFLAGS="$ORIG_CFLAGS"
     LIBS="$ORIG_LIBS"
   fi
+
   #
-  # default lib flags: .so if exists, else .a
+  # now require .a archive + fPIC for both hpcrun and hpclink
   #
-  if test -f "${XED2}/lib/libxed.so" ; then
-    XED2_LIB_FLAGS="-L${XED2}/lib -lxed"
-  elif test -f "${XED2}/lib/libxed.a" ; then
-    XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
-  else
-    AC_MSG_ERROR([unable to find libxed.so or libxed.a])
+  if test "$xed2_static_fpic" = no ; then
+    AC_MSG_ERROR([libxed.a must be compiled with -fPIC])
   fi
-  #
-  # hpcrun: .so, or .a + fPIC, else fail
-  #
-  if test -f "${XED2}/lib/libxed.so" ; then
-    XED2_HPCRUN_LIBS="-L${XED2}/lib -lxed"
-  elif test "$xed2_static_fpic" = yes ; then
-    XED2_HPCRUN_LIBS="${XED2}/lib/libxed.a"
-  else
-    AC_MSG_WARN([unable to build hpcrun: no libxed with -fPIC])
-    no_xed_for_hpcrun=yes
-  fi
-  #
-  # hpclink: .a only (with or without -fPIC)
-  #
-  if test -f "${XED2}/lib/libxed.a" ; then
-    XED2_HPCLINK_LIBS="${XED2}/lib/libxed.a"
-  else
-    AC_MSG_WARN([unable to build hpclink: no static libxed.a])
-    no_xed_for_hpclink=yes
-  fi
-  #
-  # hpcprof-mpi: same as hpclink if fully static, else default
-  #
-  echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
-  if test $? = 0 ; then
-    XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
-  else
-    XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
-  fi
-  #
-  # add libirc.a, if exists for k1om
-  #
-  if test -f "${XED2}/lib/libirc.a" ; then
-    XED2_LIB_FLAGS="${XED2_LIB_FLAGS} ${XED2}/lib/libirc.a"
-    XED2_HPCRUN_LIBS="${XED2_HPCRUN_LIBS} ${XED2}/lib/libirc.a"
-    XED2_HPCLINK_LIBS="${XED2_HPCLINK_LIBS} ${XED2}/lib/libirc.a"
-    XED2_PROF_MPI_LIBS="${XED2_PROF_MPI_LIBS} ${XED2}/lib/libirc.a"
-  fi
-  AC_MSG_NOTICE([xed2 lib flags: $XED2_LIB_FLAGS])
+  XED2_LIB_FLAGS="${XED2}/lib/libxed.a"
+  XED2_HPCRUN_LIBS="${XED2}/lib/libxed.a"
+  XED2_HPCLINK_LIBS="${XED2}/lib/libxed.a"
+  XED2_PROF_MPI_LIBS="$XED2_LIB_FLAGS"
+
+  AC_MSG_NOTICE([xed2 hpcrun libs: $XED2_HPCRUN_LIBS])
 fi
 
 AC_SUBST([XED2_INC])
@@ -4693,10 +4655,10 @@ AC_MSG_CHECKING([for opencl])
 
 case "$OPENCL" in
   /* )
-    if test ! -f "${OPENCL}/include/CL/cl.h" ; then
+    if test ! -f "${OPENCL}/CL/cl.h" ; then
       AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
     else
-      OPT_OPENCL_IFLAGS="-I${OPENCL}/include"
+      OPT_OPENCL_IFLAGS="-I${OPENCL}"
       OPT_HAVE_OPENCL=yes
     fi
     ;;
@@ -4747,10 +4709,9 @@ case "$IGC" in
     fi
     OPT_IGC_IFLAGS="-DENABLE_IGC -I${IGC}/include"
 
-    IGC_LDFLAGS =
-    IGA_LDFLAGS =
+    IGC_LDFLAGS=""
+    IGA_LDFLAGS=""
 
-    AC_MSG_NOTICE([IGC: multilib_path is ${multilib_path}])
     for lib in $multilib_path ; do
       if test -f "${IGC}/${lib}/libigc.so" ; then
         IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
@@ -4841,15 +4802,15 @@ AC_SUBST([OPT_METRICS_DISCOVERY])
 AC_SUBST([OPT_METRICS_DISCOVERY_IFLAGS])
 AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
 
-
 #-------------------------------------------------
 # Option: --with-gtpin=PATH
 #-------------------------------------------------
 
-GTPIN=no
+GTPIN="$default_gtpin_prefix"
+
 OPT_HAVE_GTPIN=no
 OPT_GTPIN_IFLAGS=
-OPT_GTPIN_LIBDIR=
+OPT_GTPIN_LDFLAGS=
 
 AC_ARG_WITH([gtpin],
   [AS_HELP_STRING([--with-gtpin=PATH],
@@ -4861,15 +4822,18 @@ AC_MSG_CHECKING([for gtpin])
 
 case "$GTPIN" in
   /* )
-    if test ! -f "${GTPIN}/Profilers/Include/gtpin.h" ; then
+    if test ! -f "${GTPIN}/Include/gtpin.h" ; then
       AC_MSG_ERROR([unable to find gtpin.h in: $GTPIN])
     fi
-    OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
+    OPT_GTPIN_IFLAGS="-I${GTPIN}/Include -I${GTPIN}/Include/ged/intel64/"
 
-    if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
-      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
+    if test -f "${GTPIN}/Lib/intel64/libgtpin.so" ; then
+      # OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+      OPT_GTPIN_LDFLAGS="-Wl,-rpath=${GTPIN}/Lib/intel64"
+      OPT_GTPIN_LIBDIR="${GTPIN}/Lib/intel64"
     fi
-    if test "x$OPT_GTPIN_LIBDIR" = x ; then
+
+    if test "x$OPT_GTPIN_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
     fi
     OPT_HAVE_GTPIN=yes
@@ -4887,6 +4851,7 @@ AC_MSG_RESULT([$GTPIN])
 
 AC_SUBST([OPT_GTPIN])
 AC_SUBST([OPT_GTPIN_IFLAGS])
+AC_SUBST([OPT_GTPIN_LDFLAGS])
 AC_SUBST([OPT_GTPIN_LIBDIR])
 
 
@@ -5671,6 +5636,13 @@ fi
 if test "x$with_spack" = xno && test "$num_pkgs" -lt 6 ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using --with-spack.])
+  AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
+  AC_MSG_WARN([this is probably an error.  Rerun configure with:])
+  AC_MSG_WARN([  --with-spack=/path/to/spack/install/gcc-x.y.z])
+
+elif test "$OPT_ENABLE_HPCRUN" != yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Missing prerequisites for building hpcrun.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
   AC_MSG_WARN([this is probably an error.  Rerun configure with:])
   AC_MSG_WARN([  --with-spack=/path/to/spack/install/gcc-x.y.z])

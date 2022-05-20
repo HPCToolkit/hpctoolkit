@@ -45,8 +45,8 @@
 // local includes
 //*****************************************************************************
 
+#include "level0-command-queue-map.h"
 #include "level0-handle-map.h"
-#include "level0-kernel-module-map.h"
 #include "lib/prof-lean/spinlock.h"
 
 #include <stdio.h>
@@ -55,63 +55,101 @@
 // local variables
 //******************************************************************************
 
-static level0_handle_map_entry_t *kernel_module_map_root = NULL;
+static level0_handle_map_entry_t *command_queue_map_root = NULL;
 
-static level0_handle_map_entry_t *kernel_module_free_list = NULL;
+static level0_handle_map_entry_t *command_queue_free_list = NULL;
 
-static spinlock_t kernel_module_lock = SPINLOCK_UNLOCKED;
+static spinlock_t command_queue_lock = SPINLOCK_UNLOCKED;
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
 void
-level0_kernel_module_map_insert
+level0_command_queue_map_insert
 (
-  ze_kernel_handle_t kernel,
-  ze_module_handle_t module
+  ze_command_queue_handle_t hcommand_queue,
+  uint32_t numCommandLists,
+  ze_command_list_handle_t* phCommandLists
 )
 {
-  spinlock_lock(&kernel_module_lock);
-  uint64_t key = (uint64_t)kernel;
-  level0_handle_map_entry_t *entry =
-    level0_handle_map_entry_new(&kernel_module_free_list, key, (level0_data_node_t*)module);
-  level0_handle_map_insert(&kernel_module_map_root, entry);
+  if (hcommand_queue == NULL) return;
+  level0_command_queue_data_t* existing = level0_command_queue_map_lookup(hcommand_queue);
 
-  spinlock_unlock(&kernel_module_lock);
+  // Create level0 command_queue data node
+  level0_command_queue_data_t* data = (level0_command_queue_data_t*) malloc(sizeof(level0_command_queue_data_t));
+  data->num = numCommandLists;
+  // We need to combine existing command list with the current one
+  if (existing != NULL) data->num += existing->num;
+  data->list = (ze_command_list_handle_t*) malloc(sizeof(ze_command_list_handle_t) * data->num);
+  for (int i = 0; i < numCommandLists; ++i) {
+    data->list[i] = phCommandLists[i];
+  }
+  if (existing != NULL) {
+    for (int i = 0; i < existing->num; ++i) {
+      data->list[i + numCommandLists] = existing->list[i];
+    }
+    level0_command_queue_map_delete(hcommand_queue);
+  }
+
+  spinlock_lock(&command_queue_lock);
+  uint64_t key = (uint64_t)hcommand_queue;
+
+  // Insert the command_queue-data pair
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_entry_new(&command_queue_free_list, key, (level0_data_node_t*)data);
+  level0_handle_map_insert(&command_queue_map_root, entry);
+
+  spinlock_unlock(&command_queue_lock);
 }
 
-ze_module_handle_t
-level0_kernel_module_map_lookup
+level0_command_queue_data_t*
+level0_command_queue_map_lookup
 (
-  ze_kernel_handle_t kernel
+  ze_command_queue_handle_t hcommand_queue
 )
 {
-  spinlock_lock(&kernel_module_lock);
+  spinlock_lock(&command_queue_lock);
 
-  uint64_t key = (uint64_t)kernel;
+  uint64_t key = (uint64_t)hcommand_queue;
   level0_handle_map_entry_t *entry =
-    level0_handle_map_lookup(&kernel_module_map_root, key);
-  ze_module_handle_t result =
-    (ze_module_handle_t) (*level0_handle_map_entry_data_get(entry));
+    level0_handle_map_lookup(&command_queue_map_root, key);
+  level0_command_queue_data_t* result = NULL;
+  if (entry != NULL) result =
+    (level0_command_queue_data_t*) (*level0_handle_map_entry_data_get(entry));
 
-  spinlock_unlock(&kernel_module_lock);
+  spinlock_unlock(&command_queue_lock);
   return result;
 }
 
 void
-level0_kernel_module_map_delete
+level0_command_queue_map_delete
 (
-  ze_kernel_handle_t kernel
+  ze_command_queue_handle_t hcommand_queue
 )
 {
-  spinlock_lock(&kernel_module_lock);
-  uint64_t key = (uint64_t)kernel;
+  spinlock_lock(&command_queue_lock);
+  uint64_t key = (uint64_t)hcommand_queue;
+
+  // First look up and free the data node
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_lookup(&command_queue_map_root, key);
+
+  // It is possible that the applicatio will first
+  // do a command_queue reset and then a command_queue destory
+  if (entry != NULL) {
+    level0_command_queue_data_t* result =
+        (level0_command_queue_data_t*) (*level0_handle_map_entry_data_get(entry));
+    free(result->list);
+    free(result);
+  }
+
+  // delete the entry
   level0_handle_map_delete(
-    &kernel_module_map_root,
-    &kernel_module_free_list,
+    &command_queue_map_root,
+    &command_queue_free_list,
     key
   );
 
-  spinlock_unlock(&kernel_module_lock);
+  spinlock_unlock(&command_queue_lock);
 }

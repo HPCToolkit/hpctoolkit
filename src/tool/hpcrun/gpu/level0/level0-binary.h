@@ -48,8 +48,7 @@
 // local includes
 //*****************************************************************************
 
-#include <level_zero/ze_api.h>
-#include <level_zero/zet_api.h>
+#include "level0-api.h"
 
 //******************************************************************************
 // interface operations

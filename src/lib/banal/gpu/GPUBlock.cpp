@@ -28,6 +28,7 @@ appendOperandstoInst
  InstructionAPI::Instruction& instruction
 )
 {
+#if 0 // intel::PR and intel::GPR are not defined -- johnmc
   // Instruction predicate flags
     int pred = 0;// single pred register;
     if (inst->inst_stat->predicate_flag ==
@@ -88,6 +89,9 @@ appendOperandstoInst
 
 #if DEBUG
   std::cout << std::endl;
+#endif
+#else
+      abort();
 #endif
 }
 

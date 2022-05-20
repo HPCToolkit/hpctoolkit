@@ -41,93 +41,102 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+//
+// File:
+//   gpu-flush-alarm.h
+//
+// Purpose:
+//   manage an alarm that goes off in if gpu operation finalization doesn't
+//   properly finish. this allows measurement data already received to be
+//   recorded and the application to finish instead of hanging forever.
+//
+//***************************************************************************
+
+#ifndef __gpu_flush_alarm__
+#define __gpu_flush_alarm__
+
 //******************************************************************************
 // system includes
 //******************************************************************************
 
-#include <stdio.h>
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
-#include <sys/stat.h>  // mkdir
-#include <sys/types.h>
-#include <unistd.h>
-#include <linux/limits.h>  // PATH_MAX
+#include <setjmp.h>
+
+
 
 //******************************************************************************
-// local includes
+// macros
 //******************************************************************************
 
-#include <include/gpu-binary.h>
-#include <hpcrun/files.h>
-#include <hpcrun/messages/messages.h>
-#include <lib/prof-lean/crypto-hash.h>
+#if GPU_FLUSH_ALARM_ENABLED
 
+//----------------------------------------------
+// flush alarm enabled
+//----------------------------------------------
+#define GPU_FLUSH_ALARM_SET(msg)		\
+  gpu_flush_alarm_set(msg)
+#define GPU_FLUSH_ALARM_CLEAR()			\
+  gpu_flush_alarm_init()
+#define GPU_FLUSH_ALARM_FIRED()			\
+  setjmp(gpu_flush_alarm_jump_buf)
+
+#else
+
+//----------------------------------------------
+// flush alarm disabled
+//----------------------------------------------
+#define GPU_FLUSH_ALARM_INIT()
+#define GPU_FLUSH_ALARM_SET()
+#define GPU_FLUSH_ALARM_CLEAR()
+#define GPU_FLUSH_ALARM_FIRED() 0
+#define GPU_FLUSH_ALARM_FINI()
+
+#endif
+
+#if GPU_FLUSH_ALARM_TEST_ENABLED
+#define GPU_FLUSH_ALARM_TEST()			\
+  gpu_flush_alarm_test()
+#else
+#define GPU_FLUSH_ALARM_TEST()
+#endif
+
+
+  
 //******************************************************************************
-// interface operations
+// global variable external declarations
 //******************************************************************************
 
-bool
-gpu_binary_store
-(
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
-)
-{
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, binary, binary_size) != binary_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
+extern __thread jmp_buf gpu_flush_alarm_jump_buf;
+
+
 
 void
-gpu_binary_path_generate
+gpu_flush_alarm_init
 (
-  const char *file_name,
-  char *path
-)
-{
-  size_t used = 0;
-  used += sprintf(&path[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
-  mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&path[used], "%s", file_name);
-  used += sprintf(&path[used], "%s", GPU_BINARY_SUFFIX);
-}
+ void
+);
 
-size_t
-gpu_binary_compute_hash_string
+
+void
+gpu_flush_alarm_set
 (
- const char *mem_ptr,
- size_t mem_size,
- char *name
-)
-{
-  // Compute hash for mem_ptr with mem_size
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+ const char *client_msg
+);
 
-  size_t i;
-  size_t used = 0;
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&name[used], "%02x", hash[i]);
-  }
-  return used;
-}
+
+void
+gpu_flush_alarm_clear
+(
+ void
+);
+
+
+void
+gpu_flush_alarm_test
+(
+ void
+);
+
+
+
+#endif

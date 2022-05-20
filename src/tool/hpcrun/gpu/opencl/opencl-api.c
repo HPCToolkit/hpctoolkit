@@ -994,8 +994,8 @@ opencl_api_initialize
   thread_data_t* td   = hpcrun_get_thread_data();
   td->application_thread_0 = true;
 
-  gtpin_enable_profiling();
   if (instrumentation) {
+    gtpin_enable_profiling();
     gtpin_enable_instrumentation();
   }
   atomic_store(&correlation_id_counter, 0);

@@ -52,8 +52,11 @@
 // local includes
 //*****************************************************************************
 
+
 #include "level0-command-list-map.h"
 #include "lib/prof-lean/spinlock.h"
+
+#include <hpcrun/gpu/gpu-activity-channel.h>
 
 //*****************************************************************************
 // macros
@@ -163,6 +166,8 @@ level0_commandlist_alloc_kernel
   list_entry->details.kernel.kernel = kernel;
   list_entry->event = event;
   list_entry->event_pool = event_pool;
+  list_entry->initiator_channel = gpu_activity_channel_get();
+  list_entry->cct_node = NULL;
   list_entry->next = NULL;
   return list_entry;
 }
@@ -184,6 +189,8 @@ level0_commandlist_alloc_memcpy
   list_entry->details.memcpy.copy_size = copy_size;
   list_entry->event = event;
   list_entry->event_pool = event_pool;
+  list_entry->initiator_channel = gpu_activity_channel_get();
+  list_entry->cct_node = NULL;
   list_entry->next = NULL;
   return list_entry;
 }

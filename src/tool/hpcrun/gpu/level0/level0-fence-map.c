@@ -41,93 +41,105 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// system includes
-//******************************************************************************
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include "level0-fence-map.h"
+#include "level0-handle-map.h"
+#include "lib/prof-lean/spinlock.h"
 
 #include <stdio.h>
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
-#include <sys/stat.h>  // mkdir
-#include <sys/types.h>
-#include <unistd.h>
-#include <linux/limits.h>  // PATH_MAX
 
 //******************************************************************************
-// local includes
+// local variables
 //******************************************************************************
 
-#include <include/gpu-binary.h>
-#include <hpcrun/files.h>
-#include <hpcrun/messages/messages.h>
-#include <lib/prof-lean/crypto-hash.h>
+static level0_handle_map_entry_t *fence_map_root = NULL;
+
+static level0_handle_map_entry_t *fence_free_list = NULL;
+
+static spinlock_t fence_lock = SPINLOCK_UNLOCKED;
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-bool
-gpu_binary_store
+void
+level0_fence_map_insert
 (
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
+  ze_fence_handle_t hFence,
+  uint32_t numCommandLists,
+  ze_command_list_handle_t* phCommandLists
 )
 {
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
+  if (hFence == NULL) return;
+  spinlock_lock(&fence_lock);
+  uint64_t key = (uint64_t)hFence;
+
+  // Create level0 fence data node
+  level0_fence_data_t* data = (level0_fence_data_t*) malloc(sizeof(level0_fence_data_t));
+  data->num = numCommandLists;
+  data->list = (ze_command_list_handle_t*) malloc(sizeof(ze_command_list_handle_t) * numCommandLists);
+  for (int i = 0; i < numCommandLists; ++i) {
+    data->list[i] = phCommandLists[i];
   }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, binary, binary_size) != binary_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
+
+  // Insert the fence-data pair
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_entry_new(&fence_free_list, key, (level0_data_node_t*)data);
+  level0_handle_map_insert(&fence_map_root, entry);
+
+  spinlock_unlock(&fence_lock);
+}
+
+level0_fence_data_t*
+level0_fence_map_lookup
+(
+  ze_fence_handle_t hFence
+)
+{
+  spinlock_lock(&fence_lock);
+
+  uint64_t key = (uint64_t)hFence;
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_lookup(&fence_map_root, key);
+  level0_fence_data_t* result = NULL;
+  if (entry != NULL) result =
+    (level0_fence_data_t*) (*level0_handle_map_entry_data_get(entry));
+
+  spinlock_unlock(&fence_lock);
+  return result;
 }
 
 void
-gpu_binary_path_generate
+level0_fence_map_delete
 (
-  const char *file_name,
-  char *path
+  ze_fence_handle_t hFence
 )
 {
-  size_t used = 0;
-  used += sprintf(&path[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
-  mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&path[used], "%s", file_name);
-  used += sprintf(&path[used], "%s", GPU_BINARY_SUFFIX);
-}
+  spinlock_lock(&fence_lock);
+  uint64_t key = (uint64_t)hFence;
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-)
-{
-  // Compute hash for mem_ptr with mem_size
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+  // First look up and free the data node
+  level0_handle_map_entry_t *entry =
+    level0_handle_map_lookup(&fence_map_root, key);
 
-  size_t i;
-  size_t used = 0;
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&name[used], "%02x", hash[i]);
+  // It is possible that the applicatio will first
+  // do a fence reset and then a fence destory
+  if (entry != NULL) {
+    level0_fence_data_t* result =
+        (level0_fence_data_t*) (*level0_handle_map_entry_data_get(entry));
+    free(result->list);
+    free(result);
   }
-  return used;
+
+  // delete the entry
+  level0_handle_map_delete(
+    &fence_map_root,
+    &fence_free_list,
+    key
+  );
+
+  spinlock_unlock(&fence_lock);
 }

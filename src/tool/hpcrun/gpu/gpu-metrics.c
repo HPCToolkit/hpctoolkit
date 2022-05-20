@@ -472,10 +472,10 @@ gpu_metrics_attribute_kernel
   gpu_kernel_t *k = &(activity->details.kernel);
   cct_node_t *cct_node = activity->cct_node;
 
-  if (METRIC_KIND(KINFO)) {
-    metric_data_list_t *metrics = 
-      hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
+  if (METRIC_KIND(KINFO)) {
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM_ACUMU), 
              k->staticSharedMemory);
 
@@ -502,10 +502,10 @@ gpu_metrics_attribute_kernel
 
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLKS_ACUMU), 
              k->blocks);
-
-    // number of kernel launches
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
+
+  // number of kernel launches
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
 
   // kernel execution time
   gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER),

@@ -374,6 +374,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation-id.c	\
 	gpu/gpu-correlation-id-map.c 	\
 	gpu/gpu-event-id-map.c \
+	gpu/gpu-flush-alarm.c \
 	gpu/gpu-function-id-map.c \
 	gpu/gpu-host-correlation-map.c 	\
 	gpu/gpu-metrics.c 		\
@@ -593,7 +594,9 @@ MY_LEVEL0_FILES=\
 	gpu/level0/level0-data-node.c \
 	gpu/level0/level0-event-map.c \
 	gpu/level0/level0-handle-map.c \
-	gpu/level0/level0-kernel-module-map.c
+	gpu/level0/level0-kernel-module-map.c \
+	gpu/level0/level0-fence-map.c \
+	gpu/level0/level0-command-queue-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
 libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
@@ -886,7 +889,8 @@ libhpcrun_la_LDFLAGS +=  \
 	-lpthread -lrt  \
 	-L$(LIBELF_LIB) -lelf  \
 	$(PERFMON_LDFLAGS_DYN)  \
-	$(OPT_ROCM_LDFLAGS)
+	$(OPT_ROCM_LDFLAGS) \
+	$(OPT_GTPIN_LDFLAGS)
 
 libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \
@@ -894,6 +898,11 @@ libhpcrun_o_LDADD =  \
 	$(PERFMON_LDFLAGS_STAT)  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
+
+if HOST_CPU_X86_FAMILY
+libhpcrun_la_LIBADD += $(XED2_HPCRUN_LIBS)
+libhpcrun_o_LDADD += $(XED2_HPCRUN_LIBS)
+endif
 
 
 #-----------------------------------------------------------
@@ -955,7 +964,6 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
   libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -1062,7 +1070,6 @@ endif
 if UNW_X86
   UNW_SOURCE_FILES = $(UNW_X86_FILES)
   UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
-  UNW_DYNAMIC_LD_FLAGS = $(XED2_HPCRUN_LIBS)
   UNW_STATIC_LD_FLAGS =  $(XED2_HPCLINK_LIBS)
 endif
 

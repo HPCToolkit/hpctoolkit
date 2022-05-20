@@ -415,10 +415,9 @@ hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
 }
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
+hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   step_state unw_res;
-  int decrement_pc = 0;
 
   static bool msg_sent = false;
   if (msg_sent == false) {
@@ -426,48 +425,27 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
     msg_sent = true;
   }
 
-  if ((*steps_taken)++ > 0 && cursor->pc_unnorm != 0) {
-    DECREMENT_PC(cursor->pc_unnorm);
-    decrement_pc = 1;
-  }
-
   if (cursor->libunw_status == LIBUNW_READY) {
-    unw_res = libunw_take_step(cursor);
-    // libunw_take_step() only updates PC.
-    // Here, we need to update bp, sp, ra_loc.
-    void *pc, *bp, *sp;
-    unw_save_loc_t ip_loc;
-    unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
-    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
-    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    
-    /** libunwind version after Mar 6, 2018 
-     * (commission 7f04c2032f1a2328072f3a3733abf74a72188458)
-     * is needed to get location of IP.
-     */
-    unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
+    void** prev_sp = cursor->sp;
 
-    // invariant: unwind must move x86 stack pointer 
-    if (sp <= (void *) cursor->sp) {
-      cursor->libunw_status = LIBUNW_UNAVAIL;
-      unw_res = STEP_ERROR;
+    unw_res = libunw_unw_step(cursor);
+
+    if (unw_res > STEP_STOP) {
+      // Invariant: unwind must move x86 stack pointer (up, since stacks grow down)
+      if (prev_sp >= cursor->sp) {
+        cursor->libunw_status = LIBUNW_UNAVAIL;
+        unw_res = STEP_ERROR;
+      }
     }
-    else
-     save_registers(cursor, pc, bp, sp, 
-            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : 0);
-    
+
     // if PC is trampoline, must skip libunw_find_step() to avoid trolling.
     if (hpcrun_trampoline_at_entry(cursor->pc_unnorm))
-        return STEP_OK;
-    
-    if (unw_res == STEP_OK) {
-      libunw_finalize_cursor(cursor, decrement_pc);
-    }
+      return STEP_OK;
 
-    if (unw_res == STEP_STOP || unw_res == STEP_OK) {
+    if (unw_res >= STEP_STOP)
       return unw_res;
-    }
-    bool found = uw_recipe_map_lookup(((char *)pc) - decrement_pc, NATIVE_UNWINDER, &cursor->unwr_info);
+
+    bool found = uw_recipe_map_lookup((void *)cursor->pc_unnorm - (cursor->pc_unnorm > 0 ? 1 : 0), NATIVE_UNWINDER, &cursor->unwr_info);
 
     if (!found) {
       EMSG("hpcrun_unw_step: cursor could NOT build an interval for last libunwind pc = %p",

@@ -75,4 +75,16 @@ level0_command_end
   uint64_t end
 );
 
+void
+level0_flush_and_wait
+(
+  void
+);
+
+void
+level0_wait_for_self_pending_operations
+(
+  void
+);
+
 #endif

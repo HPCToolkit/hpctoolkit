@@ -52,7 +52,7 @@
 // interface operations
 //******************************************************************************
 
-void
+cct_node_t *
 gpu_cct_insert
 (
  cct_node_t *cct_node,

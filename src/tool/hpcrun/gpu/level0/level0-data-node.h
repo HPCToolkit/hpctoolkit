@@ -55,8 +55,11 @@
 // local includes
 //*****************************************************************************
 
-#include <level_zero/ze_api.h>
-#include <level_zero/zet_api.h>
+#include "level0-api.h"
+
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/gpu/gpu-activity-channel.h>
+#include <lib/prof-lean/stdatomic.h>
 
 //******************************************************************************
 // type declarations
@@ -86,6 +89,11 @@ typedef struct level0_data_node {
   level0_command_type_t type;
   ze_event_handle_t event;
   ze_event_pool_handle_t event_pool;
+  gpu_activity_channel_t *initiator_channel;
+  cct_node_t *cct_node;
+  cct_node_t *kernel;
+  atomic_int *pending_operations;
+  uint64_t submit_time;
   level0_detail_entry_t details;
   struct level0_data_node *next;
 } level0_data_node_t;
