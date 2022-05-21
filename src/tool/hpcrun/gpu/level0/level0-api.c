@@ -1198,6 +1198,7 @@ level0_init
   gtpin_instrumentation = enable_instrumentation;
   if (gtpin_instrumentation) {
     gtpin_enable_profiling();
+    gtpin_count_enable();
   }
 }
 

@@ -996,7 +996,6 @@ opencl_api_initialize
 
   if (instrumentation) {
     gtpin_enable_profiling();
-    gtpin_enable_instrumentation();
   }
   atomic_store(&correlation_id_counter, 0);
   atomic_store(&opencl_pending_operations, 0);
