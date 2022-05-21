@@ -4991,7 +4991,6 @@ case "$GTPIN" in
       OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
     fi
 
-
     if test "x$OPT_GTPIN_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
     fi
@@ -5011,6 +5010,7 @@ AC_MSG_RESULT([$GTPIN])
 AC_SUBST([OPT_GTPIN])
 AC_SUBST([OPT_GTPIN_IFLAGS])
 AC_SUBST([OPT_GTPIN_LDFLAGS])
+
 
 #-------------------------------------------------
 # Option: --with-rocm=PATH

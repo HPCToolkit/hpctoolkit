@@ -679,8 +679,6 @@ OPT_CUPTI_IFLAGS
 OPT_CUPTI
 OPT_ENABLE_CUPTI_FALSE
 OPT_ENABLE_CUPTI_TRUE
-OPT_ENABLE_NEW_CUPTI_FALSE
-OPT_ENABLE_NEW_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
 OPT_CUDA_IFLAGS
 OPT_ENABLE_CUDA_FALSE
@@ -1062,7 +1060,6 @@ with_cilk
 enable_lush_pthreads
 enable_xop
 with_cuda
-enable_new_cupti
 with_cupti
 with_opencl
 with_igc
@@ -1775,7 +1772,6 @@ Optional Features:
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-xop            include support for decoding AMD XOP instructions,
                           x86-64 only (default no)
-  --enable-new-cupti      Use new cupti api
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
   --enable-devtools       Build development tools (enable debugging)
@@ -23682,38 +23678,6 @@ _ACEOF
 
 
 #-------------------------------------------------
-# enable-new-cupti
-#-------------------------------------------------
-
-OPT_ENABLE_NEW_CUPTI=no
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for new-cupti" >&5
-$as_echo_n "checking for new-cupti... " >&6; }
-
-# Check whether --enable-new_cupti was given.
-if test "${enable_new_cupti+set}" = set; then :
-  enableval=$enable_new_cupti; case "${enableval}" in
-     yes) OPT_ENABLE_NEW_CUPTI="yes" ;;
-     no)  OPT_ENABLE_NEW_CUPTI="no" ;;
-     *) as_fn_error $? "bad value ${enableval} for --enable-new-cupti" "$LINENO" 5 ;;
-   esac
-else
-  OPT_ENABLE_NEW_CUPTI=no
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_NEW_CUPTI}" >&5
-$as_echo "${OPT_ENABLE_NEW_CUPTI}" >&6; }
- if test "${OPT_ENABLE_NEW_CUPTI}" = "yes"; then
-  OPT_ENABLE_NEW_CUPTI_TRUE=
-  OPT_ENABLE_NEW_CUPTI_FALSE='#'
-else
-  OPT_ENABLE_NEW_CUPTI_TRUE='#'
-  OPT_ENABLE_NEW_CUPTI_FALSE=
-fi
-
-
-#-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 
@@ -24058,6 +24022,7 @@ $as_echo "$GTPIN" >&6; }
 
 
 
+
 #-------------------------------------------------
 # Option: --with-igc=PATH
 #-------------------------------------------------
@@ -24247,6 +24212,7 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTPIN" >&5
 $as_echo "$GTPIN" >&6; }
+
 
 
 
@@ -25251,10 +25217,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUDA\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_ENABLE_NEW_CUPTI_TRUE}" && test -z "${OPT_ENABLE_NEW_CUPTI_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_NEW_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUPTI_TRUE}" && test -z "${OPT_ENABLE_CUPTI_FALSE}"; then

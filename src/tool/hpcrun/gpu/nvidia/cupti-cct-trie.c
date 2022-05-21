@@ -41,10 +41,17 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+// XXX(Keren): trie path compression is not enabled for now
+// Use LZ to compress a trie path
+//#define ENABLE_LZ
+
 #include "cupti-cct-trie.h"
 
 #include <stdio.h>
+
+#ifdef ENABLE_LZ
 #include <zlib.h>
+#endif
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/messages/messages.h>
@@ -56,10 +63,6 @@
 #include "../gpu-metrics.h"
 #include "../gpu-range.h"
 #include "../gpu-op-placeholders.h"
-
-// XXX(Keren): trie path compression is not enabled for now
-// Use LZ to compress a trie path
-//#define ENABLE_LZ
 
 typedef struct cupti_cct_trie_trace_s {
   cct_node_t **keys;

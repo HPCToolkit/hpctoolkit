@@ -2,10 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL:
-// https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/nvidia.c $
-// $Id: nvidia.c 3328 2010-1/2-23 23:39:09Z tallent $
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -71,6 +67,13 @@
 // local includes
 //******************************************************************************
 
+#include "libdl.h"
+
+#include "simple_oo.h"
+#include "sample_source_obj.h"
+#include "common.h"
+#include "nvidia.h"
+
 #include <hpcrun/control-knob.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring.h>
@@ -78,12 +81,6 @@
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/nvidia/cuda-api.h>
 #include <hpcrun/gpu/nvidia/cupti-api.h>
-
-#include "common.h"
-#include "libdl.h"
-#include "nvidia.h"
-#include "sample_source_obj.h"
-#include "simple_oo.h"
 
 #include <hpcrun/gpu/nvidia/cupti-cct-trie.h>
 #include <hpcrun/gpu/nvidia/cupti-pc-sampling-api.h>
@@ -630,7 +627,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+  if (cupti_version == 1 || hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
     cupti_enable_activities();
   }
 }

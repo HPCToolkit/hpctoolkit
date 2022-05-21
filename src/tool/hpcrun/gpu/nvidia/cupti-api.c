@@ -575,7 +575,7 @@ CUPTI_FN
 //******************************************************************************
 
 #ifndef HPCRUN_STATIC_LINK
-int
+static int
 cuda_path
 (
  struct dl_phdr_info *info,
@@ -618,7 +618,7 @@ library_path_resolves(const char *buffer)
 }
 
 
-const char *
+static const char *
 cupti_path
 (
  void

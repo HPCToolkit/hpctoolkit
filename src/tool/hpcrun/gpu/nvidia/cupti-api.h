@@ -410,13 +410,6 @@ cupti_correlation_id_pop
 );
 
 
-const char *
-cupti_path
-(
- void
-);
-
-
 uint64_t
 cupti_runtime_correlation_id_get
 (
