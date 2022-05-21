@@ -28,5 +28,6 @@ int cupti_pc_sampling_frequency_get();
 
 int cupti_trace_frequency_get();
 
+int cupti_version_get();
 
 #endif

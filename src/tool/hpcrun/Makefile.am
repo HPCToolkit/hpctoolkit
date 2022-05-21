@@ -522,11 +522,8 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-activity-translate.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\
-	gpu/nvidia/cupti-gpu-api.c
-endif
-
-if OPT_ENABLE_NEW_CUPTI
-MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
+	gpu/nvidia/cupti-gpu-api.c \
+  gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-pc-sampling-data.c \
 	gpu/nvidia/cupti-context-map.c \
 	gpu/nvidia/cupti-subscribers.c \
@@ -538,6 +535,7 @@ MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-cct-map.c \
 	gpu/nvidia/cupti-range-thread-list.c
 endif
+
 
 if OPT_ENABLE_OPENCL
 MY_OPENCL_FILES = \
@@ -1013,18 +1011,11 @@ endif
 if OPT_ENABLE_CUPTI
   libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
   libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
-  libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+  libhpcrun_la_CFLAGS += -I$(ZLIB_INC)
+  libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS) -I$(ZLIB_INC)
+  libhpcrun_la_LDFLAGS  += -L$(ZLIB_LIB) -lz
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
-
-if OPT_ENABLE_NEW_CUPTI
-  libhpcrun_la_SOURCES  += $(MY_NEW_CUPTI_FILES)
-  libhpcrun_o_SOURCES   += $(MY_NEW_CUPTI_FILES)
-  libhpcrun_la_CFLAGS += -DNEW_CUPTI -I$(ZLIB_INC)
-  libhpcrun_la_CPPFLAGS += -DNEW_CUPTI -I$(ZLIB_INC)
-  libhpcrun_la_LDFLAGS  += -L$(ZLIB_LIB) -lz
-endif
-
 endif
 
 if OPT_PAPI_CUPTI

@@ -85,11 +85,9 @@
 #include "sample_source_obj.h"
 #include "simple_oo.h"
 
-#ifdef NEW_CUPTI
 #include <hpcrun/gpu/nvidia/cupti-cct-trie.h>
 #include <hpcrun/gpu/nvidia/cupti-pc-sampling-api.h>
 #include <hpcrun/gpu/nvidia/cupti-range.h>
-#endif
 
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/messages/messages.h>
@@ -130,8 +128,20 @@ static long pc_sampling_frequency_default = 12;
 
 static int cupti_enabled_activities = 0;
 
+// switch between cupti runtimes (1 or 2), by default cupti_version=1
+static int cupti_version = 1;
+
 // event name, which is nvidia-cuda
 static char nvidia_name[128];
+
+// APIs with different implementations between versions
+typedef struct cupti_apis {
+  void (*device_flush)(void *args, int how);
+  void (*device_shutdown)(void *args, int how);
+  void (*callbacks_subscribe)(void);
+} cupti_apis_t;
+
+static cupti_apis_t hpctoolkit_cupti_apis;
 
 //******************************************************************************
 // constants
@@ -229,7 +239,13 @@ cupti_trace_frequency_get()
   return trace_frequency;
 }
 
-void
+int
+cupti_version_get()
+{
+  return cupti_version;
+}
+
+static void
 cupti_enable_activities
 (
 )
@@ -256,6 +272,103 @@ cupti_enable_activities
   TMSG(CUPTI, "Exit cupti_enable_activities");
 }
 
+
+static void
+cupti_range_enable
+(
+)
+{
+  char *range_mode = NULL;
+  if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_MODE", &range_mode) != 0) {
+    monitor_real_exit(-1);
+  }
+
+  int interval = CUPTI_RANGE_DEFAULT_INTERVAL;
+  if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &interval) != 0) {
+    monitor_real_exit(-1);
+  }
+
+  int sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
+  if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", &sampling_period) != 0) {
+    monitor_real_exit(-1);
+  }
+
+  char *dynamic_period = NULL;
+  if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_DYNAMIC_PERIOD", &dynamic_period) != 0)
+    monitor_real_exit(-1);
+
+  char *sync_yield = NULL;
+  if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
+    monitor_real_exit(-1);
+
+  TMSG(CUPTI, "CUPTI range mode %s, interval %d, sampling period %d, dynamic period %d", range_mode, interval, sampling_period, dynamic_period);
+
+  bool enable_dynamic_period = strcmp(dynamic_period, "TRUE") == 0;
+  cupti_range_config(range_mode, interval, sampling_period, enable_dynamic_period);
+}
+
+
+static void
+cupti_fast_unwind_enable
+(
+)
+{
+  char *fast_unwind;
+  if (control_knob_value_get_string("HPCRUN_CUDA_FAST_UNWIND", &fast_unwind) != 0)
+    monitor_real_exit(-1);
+  
+  int correlation_threshold;
+  if (control_knob_value_get_int("HPCRUN_CUDA_CORRELATION_THRESHOLD", &correlation_threshold) != 0)
+    monitor_real_exit(-1);
+
+  int backoff_base;
+  if (control_knob_value_get_int("HPCRUN_CUDA_BACKOFF_BASE", &backoff_base) != 0)
+    monitor_real_exit(-1);
+
+  char *sync_yield;
+  if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
+    monitor_real_exit(-1);
+
+  cupti_fast_unwind_set(strcmp(fast_unwind, "TRUE") == 0);
+
+  cupti_correlation_threshold_set(correlation_threshold);
+
+  cupti_backoff_base_set(backoff_base);
+
+  cupti_sync_yield_set(strcmp(sync_yield, "TRUE") == 0);
+
+  TMSG(CUPTI, "Fast unwind %d", fast_unwind);
+  TMSG(CUPTI, "Correlation threshold %d", correlation_threshold);
+  TMSG(CUPTI, "Backoff base %d", backoff_base);
+  TMSG(CUPTI, "Sync yield %d", sync_yield);
+}
+
+
+static void
+cupti_version_set
+(
+)
+{
+  char *new_cupti_str = NULL;
+  if (control_knob_value_get_string("HPCRUN_CUDA_NEW_CUPTI", &new_cupti_str) != 0)
+    monitor_real_exit(-1);
+  
+  if (strcmp(new_cupti_str, "TRUE") == 0) {
+    cupti_version = 2;
+
+    hpctoolkit_cupti_apis.device_flush = cupti_device_flush2;
+    hpctoolkit_cupti_apis.device_shutdown = cupti_device_shutdown2;
+    hpctoolkit_cupti_apis.callbacks_subscribe = cupti_callbacks_subscribe2;
+  } else {
+    cupti_version = 1;
+
+    hpctoolkit_cupti_apis.device_flush = cupti_device_flush;
+    hpctoolkit_cupti_apis.device_shutdown = cupti_device_shutdown;
+    hpctoolkit_cupti_apis.callbacks_subscribe = cupti_callbacks_subscribe;
+  }
+}
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -268,7 +381,9 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
   control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
-#ifdef NEW_CUPTI
+
+  // The main switch for enabling NEW CUPTI, by default we enter the old CUPTI path
+  control_knob_register("HPCRUN_CUDA_NEW_CUPTI", "FALSE", ck_string);
   // Fixed (even) range sampling only, sync after HPCRUN_CUDA_RANGE_INTERVAL kernels
   control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
   // Context sensitive and trie range sampling, 1/HPCRUN_CUDA_RANGE_SAMPLING_PERIOD probability 
@@ -280,16 +395,17 @@ METHOD_FN(init)
   // SERIAL(default), EVEN, CONTEXT_SENSITIVE, TRIE
   control_knob_register("HPCRUN_CUDA_RANGE_MODE", "SERIAL", ck_string);
   // Compress a trie path if it is longer than HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD
-  // XXX(Keren): do not use this knob for now
+  // XXX(Keren): experimental only
   control_knob_register("HPCRUN_CUDA_RANGE_COMPRESS_THRESHOLD",
                         CUPTI_CCT_TRIE_COMPRESS_THRESHOLD_STR, ck_int);
   // Enable memoization-based fast unwinding
   control_knob_register("HPCRUN_CUDA_FAST_UNWIND", "FALSE", ck_string);
+  // Backoff check is void after HPCRUN_CUDA_CORRELATION_THRESHOLD tries
   control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "4", ck_int);
+  // Slow path is entered with probability 1/HPCRUN_CUDA_BACKOFF_BASE^backoff,
   control_knob_register("HPCRUN_CUDA_BACKOFF_BASE", "4", ck_int);
   // Specify cudaDeviceSynchronize() policy
   control_knob_register("HPCRUN_CUDA_SYNC_YIELD", "FALSE", ck_string);
-#endif
 
   // Reset cupti flags
   cupti_device_init();
@@ -377,8 +493,10 @@ METHOD_FN(process_event_list, int lush_metrics)
   long int frequency = 0;
   int frequency_default = -1;
 
-  // Init random number generator
+  // Init random number generators
   srand(time(0));
+
+  cupti_version_set();
 
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
@@ -389,13 +507,17 @@ METHOD_FN(process_event_list, int lush_metrics)
       (frequency == frequency_default) ? trace_frequency_default : frequency;
       gpu_monitoring_trace_sample_frequency_set(trace_frequency);
 
-      // Set enabling activities
-      cupti_enabled_activities |= CUPTI_DRIVER;
-      cupti_enabled_activities |= CUPTI_RUNTIME;
-      cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
-      cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
-      cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
-      cupti_enabled_activities |= CUPTI_OVERHEAD;
+      if (cupti_version == 2) {
+        // Using the new API, we separate coarse-grained profiling from fine-grained profiling.
+        // Coarse-grained metrics are collected with NVIDIA_CUDA, fine-grained metrics are collected
+        // with NVIDIA_CUDA_PC_SAMPLING
+        cupti_enabled_activities |= CUPTI_DRIVER;
+        cupti_enabled_activities |= CUPTI_RUNTIME;
+        cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+        cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+        cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+        cupti_enabled_activities |= CUPTI_OVERHEAD;
+      }
     } else if (hpcrun_ev_is(event, NVIDIA_CUDA_PC_SAMPLING)) {
       pc_sampling_frequency = (frequency == frequency_default) ?
         pc_sampling_frequency_default : frequency;
@@ -403,46 +525,32 @@ METHOD_FN(process_event_list, int lush_metrics)
 
       gpu_metrics_GPU_INST_enable();  // instruction counts
 
-#ifdef NEW_CUPTI
-      gpu_metrics_GPU_INST_STALL2_enable();  // stall metrics
+      if (cupti_version == 2) {
+        gpu_metrics_GPU_INST_STALL2_enable();  // stall metrics
+        
+        // XXX(Keren): We cannot compute GPU utilization since GPU kernel activities are not collected
+        // gpu_metrics_GSAMP_enable();  // GPU utilization from sampling
+        
+        // Range profiling enabled for collecting pc samples
+        cupti_range_enable();
+      } else {
+        gpu_metrics_GPU_INST_STALL_enable();  // stall metrics
 
-      // XXX(Keren): We cannot compute GPU utilization unless in serialized mode
-#else
-      gpu_metrics_GPU_INST_STALL_enable();  // stall metrics
-
-      gpu_metrics_GSAMP_enable();  // GPU utilization from sampling
-#endif
-
-#ifdef NEW_CUPTI
-      char *range_mode = NULL;
-      if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_MODE", &range_mode) != 0) {
-        monitor_real_exit(-1);
+        gpu_metrics_GSAMP_enable();  // GPU utilization from sampling
       }
-
-      int interval = CUPTI_RANGE_DEFAULT_INTERVAL;
-      if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &interval) != 0) {
-        monitor_real_exit(-1);
-      }
-
-      int sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
-      if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", &sampling_period) != 0) {
-        monitor_real_exit(-1);
-      }
-
-      char *dynamic_period = NULL;
-      if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_DYNAMIC_PERIOD", &dynamic_period) != 0)
-        monitor_real_exit(-1);
-
-      char *sync_yield = NULL;
-      if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
-        monitor_real_exit(-1);
-
-      bool enable_dynamic_period = strcmp(dynamic_period, "TRUE") == 0;
-      cupti_range_config(range_mode, interval, sampling_period, enable_dynamic_period);
-#endif
     } else if (hpcrun_ev_is(event, NVIDIA_CUDA_NV_LINK)) {
       gpu_metrics_GXFER_enable();
     }
+  }
+
+  if (cupti_version == 1) {
+    // Using the old API, NVIDIA_CUDA_PC_SAMPLING collects with coarse- and fine- grained metrics.
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
+    cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+    cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+    cupti_enabled_activities |= CUPTI_OVERHEAD;
   }
 
   gpu_metrics_default_enable();
@@ -459,19 +567,19 @@ METHOD_FN(process_event_list, int lush_metrics)
     monitor_real_exit(-1);
   }
 
-#ifdef NEW_CUPTI
-  if (cupti_pc_sampling_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to new NVIDIA CUPTI library %s\n", dlerror());
-    monitor_real_exit(-1);
+  if (cupti_version == 2) {
+    if (cupti_pc_sampling_bind() != DYNAMIC_BINDING_STATUS_OK) {
+      EEMSG("hpcrun: unable to bind to new NVIDIA CUPTI library %s\n", dlerror());
+      monitor_real_exit(-1);
+    }
   }
-#endif
 #endif
 
   // Register hpcrun callbacks
-  device_finalizer_flush.fn = cupti_device_flush;
+  device_finalizer_flush.fn = hpctoolkit_cupti_apis.device_flush;
   device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
 
-  device_finalizer_shutdown.fn = cupti_device_shutdown;
+  device_finalizer_shutdown.fn = hpctoolkit_cupti_apis.device_shutdown;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
   // Get control knobs
@@ -500,40 +608,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
   }
 
-#ifdef NEW_CUPTI
-  char *fast_unwind;
-  if (control_knob_value_get_string("HPCRUN_CUDA_FAST_UNWIND", &fast_unwind) != 0)
-    monitor_real_exit(-1);
-  
-  int correlation_threshold;
-  if (control_knob_value_get_int("HPCRUN_CUDA_CORRELATION_THRESHOLD", &correlation_threshold) != 0)
-    monitor_real_exit(-1);
-
-  int backoff_base;
-  if (control_knob_value_get_int("HPCRUN_CUDA_BACKOFF_BASE", &backoff_base) != 0)
-    monitor_real_exit(-1);
-
-  char *sync_yield;
-  if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
-    monitor_real_exit(-1);
-
-  cupti_fast_unwind_set(strcmp(fast_unwind, "TRUE") == 0);
-
-  cupti_correlation_threshold_set(correlation_threshold);
-
-  cupti_backoff_base_set(backoff_base);
-
-  cupti_sync_yield_set(strcmp(sync_yield, "TRUE") == 0);
-
-  TMSG(CUDA, "Fast unwind %d", fast_unwind);
-  TMSG(CUDA, "Correlation threshold %d", correlation_threshold);
-  TMSG(CUDA, "Backoff base %d", backoff_base);
-  TMSG(CUDA, "Sync yield %d", sync_yield);
-#endif
+  if (cupti_version == 2) {
+    cupti_fast_unwind_enable();
+  }
 
   // Register cupti callbacks
   cupti_init();
-  cupti_callbacks_subscribe();
+  hpctoolkit_cupti_apis.callbacks_subscribe();
 
   if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
     cupti_start();

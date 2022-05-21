@@ -460,7 +460,7 @@ cupti_range_config
  bool dynamic_period
 )
 {
-  TMSG(CUPTI, "Enter cupti_range_config mode %s, interval %d, sampling period %d, dynamic period %d", mode_str, interval, sampling_period, dynamic_period);
+  TMSG(CUPTI, "Enter cupti_range_config");
 
   gpu_range_enable();
 

@@ -71,13 +71,9 @@
 
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/messages/messages.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
 #include <hpcrun/tool_state.h>
-#include <hpcrun/cct/cct.h>
 
 #include "cuda-api.h"
-#include "cupti-api.h"
 
 //*****************************************************************************
 // macros

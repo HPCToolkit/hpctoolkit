@@ -91,6 +91,7 @@ typedef enum {
 
 
 #define CUPTI_PC_SAMPLING_PERIOD_NULL -1
+#define CUPTI_CORRELATION_ID_NULL 0
 
 //******************************************************************************
 // interface functions
@@ -493,6 +494,34 @@ cupti_sync_yield_set
 bool
 cupti_sync_yield_get
 (
+);
+
+
+void
+cupti_callbacks_subscribe2
+(
+);
+
+
+void
+cupti_callbacks_unsubscribe2
+(
+);
+
+
+void
+cupti_device_flush2
+(
+ void *args,
+ int how
+);
+
+
+void
+cupti_device_shutdown2
+(
+ void *args,
+ int how
 );
 
 #endif

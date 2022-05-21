@@ -75,6 +75,9 @@
 #define st_forall				\
   typed_splay_forall(cct)
 
+#define st_delete				\
+  typed_splay_delete(cct)
+
 #define st_count				\
   typed_splay_count(cct)
 

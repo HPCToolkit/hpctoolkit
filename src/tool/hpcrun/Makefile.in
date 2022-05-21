@@ -271,50 +271,47 @@ host_triplet = @host@
 @OPT_PAPI_DYNAMIC_TRUE@am__append_102 = -DHPCRUN_SS_PAPI
 @OPT_ENABLE_CUPTI_TRUE@am__append_103 = $(MY_CUPTI_FILES)
 @OPT_ENABLE_CUPTI_TRUE@am__append_104 = $(MY_CUPTI_FILES)
-@OPT_ENABLE_CUPTI_TRUE@am__append_105 = $(CUPTI_INC_FLGS)
-@OPT_ENABLE_CUPTI_TRUE@am__append_106 = -DHPCRUN_SS_NVIDIA
-@OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__append_107 = $(MY_NEW_CUPTI_FILES)
-@OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__append_108 = $(MY_NEW_CUPTI_FILES)
-@OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__append_109 = -DNEW_CUPTI -I$(ZLIB_INC)
-@OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__append_110 = -DNEW_CUPTI -I$(ZLIB_INC)
-@OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__append_111 = -L$(ZLIB_LIB) -lz
-@OPT_PAPI_CUPTI_TRUE@am__append_112 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_113 = -DHPCRUN_SS_PAPI_C_CUPTI
-@OPT_PAPI_ROCM_TRUE@am__append_114 = $(ROCM_INC_FLGS)
-@OPT_PAPI_ROCM_TRUE@am__append_115 = -DHPCRUN_SS_PAPI_C_ROCM
-@OPT_PAPI_STATIC_TRUE@am__append_116 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_117 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_118 = $(OPT_PAPI_LIBS_STAT)
-@OPT_PAPI_STATIC_TRUE@am__append_119 = -DHPCRUN_SS_PAPI
-@OPT_ENABLE_UPC_TRUE@am__append_120 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_121 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_122 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_123 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_124 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_125 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_126 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUPTI_TRUE@am__append_105 = -I$(ZLIB_INC)
+@OPT_ENABLE_CUPTI_TRUE@am__append_106 = $(CUPTI_INC_FLGS) -I$(ZLIB_INC)
+@OPT_ENABLE_CUPTI_TRUE@am__append_107 = -L$(ZLIB_LIB) -lz
+@OPT_ENABLE_CUPTI_TRUE@am__append_108 = -DHPCRUN_SS_NVIDIA
+@OPT_PAPI_CUPTI_TRUE@am__append_109 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_110 = -DHPCRUN_SS_PAPI_C_CUPTI
+@OPT_PAPI_ROCM_TRUE@am__append_111 = $(ROCM_INC_FLGS)
+@OPT_PAPI_ROCM_TRUE@am__append_112 = -DHPCRUN_SS_PAPI_C_ROCM
+@OPT_PAPI_STATIC_TRUE@am__append_113 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_114 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_115 = $(OPT_PAPI_LIBS_STAT)
+@OPT_PAPI_STATIC_TRUE@am__append_116 = -DHPCRUN_SS_PAPI
+@OPT_ENABLE_UPC_TRUE@am__append_117 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_118 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_119 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_120 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_121 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_122 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_123 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_124 = $(MY_CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_125 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_126 = $(OPT_CUDA_IFLAGS)
 @OPT_ENABLE_CUDA_TRUE@am__append_127 = $(MY_CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_128 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_129 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_130 = $(MY_CUDA_FILES)
-@OPT_ENABLE_ROCM_TRUE@am__append_131 = $(MY_ROCM_FILES)
-@OPT_ENABLE_ROCM_TRUE@am__append_132 = -DENABLE_ROCM
-@OPT_ENABLE_ROCM_TRUE@am__append_133 = $(ROCM_INC_FLGS)
-@OPT_ENABLE_ROCM_TRUE@am__append_134 = -DHPCRUN_SS_AMD
-@OPT_ENABLE_LEVEL0_TRUE@am__append_135 = $(MY_LEVEL0_FILES)
-@OPT_ENABLE_LEVEL0_TRUE@am__append_136 = -DENABLE_LEVEL0
-@OPT_ENABLE_LEVEL0_TRUE@am__append_137 = $(OPT_LEVEL0_IFLAGS)
-@OPT_ENABLE_LEVEL0_TRUE@am__append_138 = -DHPCRUN_SS_LEVEL0
-@OPT_ENABLE_OPENCL_TRUE@am__append_139 = $(MY_OPENCL_FILES)
-@OPT_ENABLE_OPENCL_TRUE@am__append_140 = -DENABLE_OPENCL
-@OPT_ENABLE_OPENCL_TRUE@am__append_141 = $(OPT_OPENCL_IFLAGS)
-@OPT_ENABLE_OPENCL_TRUE@am__append_142 = -DHPCRUN_SS_OPENCL
-@OPT_ENABLE_GTPIN_TRUE@am__append_143 = $(MY_GTPIN_FILES)
-@OPT_ENABLE_GTPIN_TRUE@am__append_144 = -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
-@OPT_ENABLE_GTPIN_TRUE@am__append_145 = $(OPT_GTPIN_IFLAGS)
-@OPT_ENABLE_GTPIN_TRUE@am__append_146 = -DHPCRUN_SS_GTPIN
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_147 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_148 = libagent-pthread.la \
+@OPT_ENABLE_ROCM_TRUE@am__append_128 = $(MY_ROCM_FILES)
+@OPT_ENABLE_ROCM_TRUE@am__append_129 = -DENABLE_ROCM
+@OPT_ENABLE_ROCM_TRUE@am__append_130 = $(ROCM_INC_FLGS)
+@OPT_ENABLE_ROCM_TRUE@am__append_131 = -DHPCRUN_SS_AMD
+@OPT_ENABLE_LEVEL0_TRUE@am__append_132 = $(MY_LEVEL0_FILES)
+@OPT_ENABLE_LEVEL0_TRUE@am__append_133 = -DENABLE_LEVEL0
+@OPT_ENABLE_LEVEL0_TRUE@am__append_134 = $(OPT_LEVEL0_IFLAGS)
+@OPT_ENABLE_LEVEL0_TRUE@am__append_135 = -DHPCRUN_SS_LEVEL0
+@OPT_ENABLE_OPENCL_TRUE@am__append_136 = $(MY_OPENCL_FILES)
+@OPT_ENABLE_OPENCL_TRUE@am__append_137 = -DENABLE_OPENCL
+@OPT_ENABLE_OPENCL_TRUE@am__append_138 = $(OPT_OPENCL_IFLAGS)
+@OPT_ENABLE_OPENCL_TRUE@am__append_139 = -DHPCRUN_SS_OPENCL
+@OPT_ENABLE_GTPIN_TRUE@am__append_140 = $(MY_GTPIN_FILES)
+@OPT_ENABLE_GTPIN_TRUE@am__append_141 = -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
+@OPT_ENABLE_GTPIN_TRUE@am__append_142 = $(OPT_GTPIN_IFLAGS)
+@OPT_ENABLE_GTPIN_TRUE@am__append_143 = -DHPCRUN_SS_GTPIN
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_144 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_145 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -764,24 +761,23 @@ am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-analysis.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-api.lo \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-gpu-api.lo
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-gpu-api.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-pc-sampling-api.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-pc-sampling-data.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-context-map.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-subscribers.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-range.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-unwind-map.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-crc-map.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-ip-norm-map.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-cct-trie.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-cct-map.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-range-thread-list.lo
 @OPT_ENABLE_CUPTI_TRUE@am__objects_32 = $(am__objects_31)
-@OPT_ENABLE_NEW_CUPTI_TRUE@am__objects_33 = gpu/nvidia/libhpcrun_la-cupti-pc-sampling-api.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-pc-sampling-data.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-context-map.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-subscribers.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-range.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-unwind-map.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-crc-map.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-ip-norm-map.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-cct-trie.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-cct-map.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-range-thread-list.lo
-@OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__objects_34 = $(am__objects_33)
-am__objects_35 = sample-sources/libhpcrun_la-upc.lo
-@OPT_ENABLE_UPC_TRUE@am__objects_36 = $(am__objects_35)
-am__objects_37 =
-@OPT_ENABLE_ROCM_TRUE@am__objects_38 =  \
+am__objects_33 = sample-sources/libhpcrun_la-upc.lo
+@OPT_ENABLE_UPC_TRUE@am__objects_34 = $(am__objects_33)
+am__objects_35 =
+@OPT_ENABLE_ROCM_TRUE@am__objects_36 =  \
 @OPT_ENABLE_ROCM_TRUE@	sample-sources/libhpcrun_la-amd.lo \
 @OPT_ENABLE_ROCM_TRUE@	sample-sources/libhpcrun_la-amd-rocprofiler.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-hip-api.lo \
@@ -789,8 +785,8 @@ am__objects_37 =
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-api.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocprofiler-api.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocm-binary-processing.lo
-@OPT_ENABLE_ROCM_TRUE@am__objects_39 = $(am__objects_38)
-@OPT_ENABLE_LEVEL0_TRUE@am__objects_40 =  \
+@OPT_ENABLE_ROCM_TRUE@am__objects_37 = $(am__objects_36)
+@OPT_ENABLE_LEVEL0_TRUE@am__objects_38 =  \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/libhpcrun_la-level0.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-api.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-binary.lo \
@@ -801,8 +797,8 @@ am__objects_37 =
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-event-map.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-handle-map.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-kernel-module-map.lo
-@OPT_ENABLE_LEVEL0_TRUE@am__objects_41 = $(am__objects_40)
-@OPT_ENABLE_OPENCL_TRUE@am__objects_42 =  \
+@OPT_ENABLE_LEVEL0_TRUE@am__objects_39 = $(am__objects_38)
+@OPT_ENABLE_OPENCL_TRUE@am__objects_40 =  \
 @OPT_ENABLE_OPENCL_TRUE@	sample-sources/libhpcrun_la-opencl.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-api.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-memory-manager.lo \
@@ -810,28 +806,28 @@ am__objects_37 =
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-h2d-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-queue-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-context-map.lo
-@OPT_ENABLE_OPENCL_TRUE@am__objects_43 = $(am__objects_42)
-@OPT_ENABLE_GTPIN_TRUE@am__objects_44 = gpu/instrumentation/libhpcrun_la-kernel-data-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@am__objects_41 = $(am__objects_40)
+@OPT_ENABLE_GTPIN_TRUE@am__objects_42 = gpu/instrumentation/libhpcrun_la-kernel-data-map.lo \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-gtpin-correlation-id-map.lo
-@OPT_ENABLE_GTPIN_TRUE@am__objects_45 = $(am__objects_44)
-am__objects_46 = unwind/common/libhpcrun_la-backtrace.lo \
+@OPT_ENABLE_GTPIN_TRUE@am__objects_43 = $(am__objects_42)
+am__objects_44 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
-am__objects_47 = $(am__objects_46) \
+am__objects_45 = $(am__objects_44) \
 	unwind/common/libhpcrun_la-binarytree_uwi.lo \
 	unwind/common/libhpcrun_la-interval_t.lo \
 	unwind/common/libhpcrun_la-libunw_intervals.lo \
 	unwind/common/libhpcrun_la-stack_troll.lo \
 	unwind/common/libhpcrun_la-uw_hash.lo \
 	unwind/common/libhpcrun_la-uw_recipe_map.lo
-am__objects_48 = $(am__objects_47) \
+am__objects_46 = $(am__objects_45) \
 	unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-am__objects_49 = $(am__objects_47) \
+am__objects_47 = $(am__objects_45) \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind.lo \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind-interval.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-am__objects_50 = $(am__objects_47) \
+am__objects_48 = $(am__objects_45) \
 	unwind/x86-family/libhpcrun_la-x86-all.lo \
 	unwind/x86-family/libhpcrun_la-amd-xop.lo \
 	unwind/x86-family/libhpcrun_la-x86-cold-path.lo \
@@ -851,16 +847,16 @@ am__objects_50 = $(am__objects_47) \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_51 = $(am__objects_50)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_51 = $(am__objects_49)
-@UNW_LIBUNW_TRUE@am__objects_51 = $(am__objects_48)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_49 = $(am__objects_48)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_49 = $(am__objects_47)
+@UNW_LIBUNW_TRUE@am__objects_49 = $(am__objects_46)
 am_libhpcrun_la_OBJECTS = $(am__objects_14) $(am__objects_15) \
 	$(am__objects_17) $(am__objects_19) $(am__objects_21) \
 	$(am__objects_23) $(am__objects_25) $(am__objects_27) \
 	$(am__objects_30) $(am__objects_32) $(am__objects_34) \
-	$(am__objects_36) $(am__objects_37) $(am__objects_39) \
-	$(am__objects_41) $(am__objects_43) $(am__objects_45) \
-	$(am__objects_51) utilities/libhpcrun_la-last_func.lo
+	$(am__objects_35) $(am__objects_37) $(am__objects_39) \
+	$(am__objects_41) $(am__objects_43) $(am__objects_49) \
+	utilities/libhpcrun_la-last_func.lo
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
 libhpcrun_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_la_CFLAGS) \
@@ -1102,19 +1098,19 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
-@HOST_CPU_PPC_TRUE@am__objects_52 = trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT)
-@HOST_CPU_PPC_FALSE@am__objects_53 = trampoline/common/libhpcrun_o-trampoline_lazy.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_54 = sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_50 = trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT)
+@HOST_CPU_PPC_FALSE@am__objects_51 = trampoline/common/libhpcrun_o-trampoline_lazy.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_52 = sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_event_open.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf-util.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_mmap.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_skid.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_55 = sample-sources/perf/libhpcrun_o-perfmon-util.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_56 = sample-sources/perf/libhpcrun_o-perfmon-util-dummy.$(OBJEXT)
-@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_57 = sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT)
-@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_58 = sample-sources/perf/libhpcrun_o-kernel_blocking_stub.$(OBJEXT)
-am__objects_59 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_53 = sample-sources/perf/libhpcrun_o-perfmon-util.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_54 = sample-sources/perf/libhpcrun_o-perfmon-util-dummy.$(OBJEXT)
+@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_55 = sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT)
+@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_56 = sample-sources/perf/libhpcrun_o-kernel_blocking_stub.$(OBJEXT)
+am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-closure-registry.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
@@ -1240,28 +1236,28 @@ am__objects_59 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	utilities/libhpcrun_o-linuxtimer.$(OBJEXT) \
 	utilities/libhpcrun_o-timer.$(OBJEXT) \
 	utilities/libhpcrun_o-tokenize.$(OBJEXT) \
-	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_52) \
-	$(am__objects_53) $(am__objects_54) $(am__objects_55) \
-	$(am__objects_56) $(am__objects_57) $(am__objects_58)
-am__objects_60 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
+	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_50) \
+	$(am__objects_51) $(am__objects_52) $(am__objects_53) \
+	$(am__objects_54) $(am__objects_55) $(am__objects_56)
+am__objects_58 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
-am__objects_61 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-@HOST_CPU_MIPS_TRUE@am__objects_62 = $(am__objects_61)
-am__objects_63 = trampoline/ppc64/libhpcrun_o-ppc64-tramp.$(OBJEXT) \
+am__objects_59 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
+@HOST_CPU_MIPS_TRUE@am__objects_60 = $(am__objects_59)
+am__objects_61 = trampoline/ppc64/libhpcrun_o-ppc64-tramp.$(OBJEXT) \
 	utilities/arch/ppc64/libhpcrun_o-ppc64-context-pc.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_64 = $(am__objects_63)
-am__objects_65 =  \
+@HOST_CPU_PPC_TRUE@am__objects_62 = $(am__objects_61)
+am__objects_63 =  \
 	trampoline/x86-family/libhpcrun_o-x86-tramp.$(OBJEXT) \
 	utilities/arch/x86-family/libhpcrun_o-x86-context-pc.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_66 = $(am__objects_65)
-am__objects_67 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_64 = $(am__objects_63)
+am__objects_65 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
 	utilities/arch/ia64/libhpcrun_o-ia64-context-pc.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_68 = $(am__objects_67)
-am__objects_69 =  \
+@HOST_CPU_IA64_TRUE@am__objects_66 = $(am__objects_65)
+am__objects_67 =  \
 	trampoline/aarch64/libhpcrun_o-aarch64-tramp.$(OBJEXT) \
 	utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT)
-@HOST_CPU_AARCH64_TRUE@am__objects_70 = $(am__objects_69)
-@OPT_ENABLE_CUPTI_TRUE@am__objects_71 = sample-sources/libhpcrun_o-nvidia.$(OBJEXT) \
+@HOST_CPU_AARCH64_TRUE@am__objects_68 = $(am__objects_67)
+@OPT_ENABLE_CUPTI_TRUE@am__objects_69 = sample-sources/libhpcrun_o-nvidia.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-hash-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-id-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-symbols.$(OBJEXT) \
@@ -1270,46 +1266,45 @@ am__objects_69 =  \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-activity-translate.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-analysis.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-api.$(OBJEXT) \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-gpu-api.$(OBJEXT)
-@OPT_ENABLE_CUPTI_TRUE@am__objects_72 = $(am__objects_71)
-@OPT_ENABLE_NEW_CUPTI_TRUE@am__objects_73 = gpu/nvidia/libhpcrun_o-cupti-pc-sampling-api.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-pc-sampling-data.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-context-map.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-subscribers.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-range.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-unwind-map.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-crc-map.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-ip-norm-map.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-cct-trie.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-cct-map.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-range-thread-list.$(OBJEXT)
-@OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__objects_74 = $(am__objects_73)
-@OPT_PAPI_CUPTI_TRUE@am__objects_75 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
-@OPT_PAPI_COMPONENT_FALSE@am__objects_76 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_75)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_76 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-gpu-api.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-pc-sampling-api.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-pc-sampling-data.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-context-map.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-subscribers.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-range.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-unwind-map.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-crc-map.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-ip-norm-map.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-cct-trie.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-cct-map.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-range-thread-list.$(OBJEXT)
+@OPT_ENABLE_CUPTI_TRUE@am__objects_70 = $(am__objects_69)
+@OPT_PAPI_CUPTI_TRUE@am__objects_71 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
+@OPT_PAPI_COMPONENT_FALSE@am__objects_72 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_71)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_72 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_o-papi-c-extended-info.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_75)
-@OPT_PAPI_STATIC_TRUE@am__objects_77 = $(am__objects_76)
-am__objects_78 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
-@OPT_ENABLE_UPC_TRUE@am__objects_79 = $(am__objects_78)
-am__objects_80 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_71)
+@OPT_PAPI_STATIC_TRUE@am__objects_73 = $(am__objects_72)
+am__objects_74 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
+@OPT_ENABLE_UPC_TRUE@am__objects_75 = $(am__objects_74)
+am__objects_76 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
 	unwind/common/libhpcrun_o-unw-throw.$(OBJEXT)
-am__objects_81 = $(am__objects_80) \
+am__objects_77 = $(am__objects_76) \
 	unwind/common/libhpcrun_o-binarytree_uwi.$(OBJEXT) \
 	unwind/common/libhpcrun_o-interval_t.$(OBJEXT) \
 	unwind/common/libhpcrun_o-libunw_intervals.$(OBJEXT) \
 	unwind/common/libhpcrun_o-stack_troll.$(OBJEXT) \
 	unwind/common/libhpcrun_o-uw_hash.$(OBJEXT) \
 	unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT)
-am__objects_82 = $(am__objects_81) \
+am__objects_78 = $(am__objects_77) \
 	unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_83 = $(am__objects_81) \
+am__objects_79 = $(am__objects_77) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind.$(OBJEXT) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind-interval.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_84 = $(am__objects_81) \
+am__objects_80 = $(am__objects_77) \
 	unwind/x86-family/libhpcrun_o-x86-all.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-amd-xop.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-cold-path.$(OBJEXT) \
@@ -1329,15 +1324,14 @@ am__objects_84 = $(am__objects_81) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_85 = $(am__objects_84)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_85 = $(am__objects_83)
-@UNW_LIBUNW_TRUE@am__objects_85 = $(am__objects_82)
-am_libhpcrun_o_OBJECTS = $(am__objects_59) $(am__objects_60) \
-	$(am__objects_62) $(am__objects_64) $(am__objects_66) \
-	$(am__objects_68) $(am__objects_70) $(am__objects_72) \
-	$(am__objects_74) $(am__objects_77) $(am__objects_79) \
-	$(am__objects_37) $(am__objects_85) \
-	utilities/libhpcrun_o-last_func.$(OBJEXT)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_81 = $(am__objects_80)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_81 = $(am__objects_79)
+@UNW_LIBUNW_TRUE@am__objects_81 = $(am__objects_78)
+am_libhpcrun_o_OBJECTS = $(am__objects_57) $(am__objects_58) \
+	$(am__objects_60) $(am__objects_62) $(am__objects_64) \
+	$(am__objects_66) $(am__objects_68) $(am__objects_70) \
+	$(am__objects_73) $(am__objects_75) $(am__objects_35) \
+	$(am__objects_81) utilities/libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) \
 @HOST_CPU_X86_FAMILY_TRUE@	$(am__DEPENDENCIES_1)
@@ -1840,7 +1834,7 @@ pkglibexec_SCRIPTS = $(am__append_1)
 include_HEADERS = $(am__append_2)
 pkglib_LIBRARIES = $(am__append_5)
 pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_17) \
-	$(am__append_18) $(am__append_147) $(am__append_148)
+	$(am__append_18) $(am__append_144) $(am__append_145)
 BUILT_SOURCES = $(am__append_22)
 CLEANFILES = $(am__append_23)
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@noinst_LTLIBRARIES = libhpcrun.la
@@ -1930,9 +1924,9 @@ UNW_MIPS_INCLUDE_DIRS = \
 UNW_MIPS_LD_FLAGS = 
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 -DLOCAL_BUILD=1 \
 	-D__HIP_PLATFORM_HCC__=1 $(am__append_11) $(am__append_19) \
-	$(am__append_102) $(am__append_106) $(am__append_113) \
-	$(am__append_115) $(am__append_119) $(am__append_134) \
-	$(am__append_138) $(am__append_142) $(am__append_146)
+	$(am__append_102) $(am__append_108) $(am__append_110) \
+	$(am__append_112) $(am__append_116) $(am__append_131) \
+	$(am__append_135) $(am__append_139) $(am__append_143)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -2043,19 +2037,18 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-activity-translate.c	\
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-analysis.c		\
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-api.c			\
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-gpu-api.c
-
-@OPT_ENABLE_NEW_CUPTI_TRUE@MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-pc-sampling-data.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-context-map.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-subscribers.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-range.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-unwind-map.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cubin-crc-map.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-ip-norm-map.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-cct-trie.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-cct-map.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-range-thread-list.c
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-gpu-api.c \
+@OPT_ENABLE_CUPTI_TRUE@  gpu/nvidia/cupti-pc-sampling-api.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-pc-sampling-data.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-context-map.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-subscribers.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-range.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-unwind-map.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-crc-map.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-ip-norm-map.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-cct-trie.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-cct-map.c \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-range-thread-list.c
 
 @OPT_ENABLE_OPENCL_TRUE@MY_OPENCL_FILES = \
 @OPT_ENABLE_OPENCL_TRUE@  sample-sources/opencl.c \
@@ -2137,10 +2130,10 @@ MY_AARCH64_INCLUDE_DIRS = \
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_26) $(am__append_27) $(am__append_40) \
 	$(am__append_55) $(am__append_71) $(am__append_84) \
-	$(am__append_99) $(am__append_103) $(am__append_107) \
-	$(am__append_120) $(am__append_127) $(am__append_131) \
-	$(am__append_135) $(am__append_139) $(am__append_143) \
-	$(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_99) $(am__append_103) $(am__append_117) \
+	$(am__append_124) $(am__append_128) $(am__append_132) \
+	$(am__append_136) $(am__append_140) $(UNW_SOURCE_FILES) \
+	utilities/last_func.c
 libhpcrun_fake_audit_la_SOURCES = \
 	audit/fake-auditor.c
 
@@ -2150,8 +2143,8 @@ libhpcrun_audit_la_SOURCES = \
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_28) $(am__append_41) $(am__append_56) \
 	$(am__append_72) $(am__append_85) $(am__append_104) \
-	$(am__append_108) $(am__append_116) $(am__append_121) \
-	$(am__append_130) $(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_113) $(am__append_118) $(am__append_127) \
+	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
 
@@ -2197,11 +2190,10 @@ libhpctoolkit_a_SOURCES = \
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_20) $(am__append_29) $(am__append_42) \
 	$(am__append_57) $(am__append_73) $(am__append_86) \
-	$(am__append_100) $(am__append_105) $(am__append_110) \
-	$(am__append_112) $(am__append_114) $(am__append_122) \
-	$(am__append_125) $(am__append_128) $(am__append_132) \
-	$(am__append_136) $(am__append_140) $(am__append_144) \
-	$(UNW_INCLUDE_DIRS)
+	$(am__append_100) $(am__append_106) $(am__append_109) \
+	$(am__append_111) $(am__append_119) $(am__append_122) \
+	$(am__append_125) $(am__append_129) $(am__append_133) \
+	$(am__append_137) $(am__append_141) $(UNW_INCLUDE_DIRS)
 libhpcrun_fake_audit_la_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -2213,8 +2205,8 @@ libhpcrun_audit_la_CPPFLAGS = \
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_21) $(am__append_30) \
 	$(am__append_43) $(am__append_58) $(am__append_74) \
-	$(am__append_87) $(am__append_117) $(am__append_123) \
-	$(am__append_126) $(UNW_INCLUDE_DIRS)
+	$(am__append_87) $(am__append_114) $(am__append_120) \
+	$(am__append_123) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -2271,8 +2263,8 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	$(am__append_109) $(am__append_129) $(am__append_133) \
-	$(am__append_137) $(am__append_141) $(am__append_145) \
+	$(am__append_105) $(am__append_126) $(am__append_130) \
+	$(am__append_134) $(am__append_138) $(am__append_142) \
 	$(GOTCHA_IFLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_fake_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -2307,8 +2299,8 @@ OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt -L$(LIBELF_LIB) -lelf $(PERFMON_LDFLAGS_DYN) \
-	$(OPT_ROCM_LDFLAGS) $(am__append_101) $(am__append_111) \
-	$(am__append_124) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
+	$(OPT_ROCM_LDFLAGS) $(am__append_101) $(am__append_107) \
+	$(am__append_121) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
@@ -2329,7 +2321,7 @@ libhpcrun_la_LIBADD = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
 	$(OUR_LIBUNWIND_A) $(OUR_LZMA_A) $(am__append_24)
 libhpcrun_o_LDADD = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
 	$(PERFMON_LDFLAGS_STAT) $(OUR_LIBUNWIND_A) $(OUR_LZMA_A) \
-	$(am__append_25) $(am__append_118) $(UNW_STATIC_LD_FLAGS)
+	$(am__append_25) $(am__append_115) $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_70) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
