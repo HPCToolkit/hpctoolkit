@@ -61,7 +61,7 @@
 // macros
 //******************************************************************************
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define str(t) #t
 #define xstr(t) str(t)
@@ -75,79 +75,64 @@
 #define HPCRUN_GTPIN_CALL(fn, args) (GTPIN_FN_NAME(fn) args)
 
 #ifdef GTPIN_KNOB_AVAILABLE
-#define FORALL_GTPIN_ROUTINES(macro) \
-  macro(GTPin_BBLHead)		     \
-  macro(GTPin_BBLNext)		     \
-  macro(GTPin_BBLValid)		     \
-  				     \
-  macro(GTPin_InsHead)		     \
-  macro(GTPin_InsTail)		     \
-  macro(GTPin_InsValid)		     \
-  macro(GTPin_InsOffset)	     \
-  macro(GTPin_InsNext)		     \
-  macro(GTPin_InsPrev)         \
-  macro(GTPin_InsDisasm)       \
-  macro(GTPin_InsGetExecSize)   \
-  macro(GTPin_InsIsFlagModifier)    \
-  macro(GTPin_InsGED)   \
-  macro(GTPin_InsIsChangingIP)     \
-  macro(GTPin_InsIsEOT) \
-  				     \
-  macro(GTPin_OnKernelBuild)	     \
-  macro(GTPin_OnKernelRun)	     \
-  macro(GTPin_OnKernelComplete)	     \
-  macro(GTPIN_Start)		     \
-				     \
-  macro(GTPin_KernelExec_GetKernel)  \
-				     \
-  macro(GTPin_KernelProfilingActive) \
-  macro(GTPin_KernelGetName)	     \
-  macro(GTPin_KernelGetSIMD)    \
-  				     \
-  macro(GTPin_OpcodeprofInstrument)  \
-  macro(GTPin_LatencyInstrumentPre)   \
-  macro(GTPin_LatencyInstrumentPost_Mem)    \
-  macro(GTPin_SimdProfInstrument)   \
-  macro(GTPin_InsGetExecMask)   \
-  macro(GTPin_InsGetPredArgs)   \
-  macro(GTPin_InsIsMaskEnabled)   \
-  macro(GTPin_LatencyAvailableRegInstrument)    \
-  				     \
-  macro(GTPin_GetElf)		     \
-  				     \
-  macro(GTPin_MemSampleLength)	     \
-  macro(GTPin_MemClaim)		     \
-  macro(GTPin_MemRead)
+
+// Knobs available
+#define KNOB_FNS(macro)	 \
+  macro(KNOB_FindArg)	 \
+  macro(KNOB_AddValue)
+
 #else
-#define FORALL_GTPIN_ROUTINES(macro) \
-  macro(GTPin_BBLHead)		     \
-  macro(GTPin_BBLNext)		     \
-  macro(GTPin_BBLValid)		     \
-  				     \
-  macro(GTPin_InsHead)		     \
-  macro(GTPin_InsTail)		     \
-  macro(GTPin_InsValid)		     \
-  macro(GTPin_InsOffset)	     \
-  macro(GTPin_InsNext)		     \
-  				     \
-  macro(GTPin_OnKernelBuild)	     \
-  macro(GTPin_OnKernelRun)	     \
-  macro(GTPin_OnKernelComplete)	     \
-  macro(GTPIN_Start)		     \
-				     \
-  macro(GTPin_KernelExec_GetKernel)  \
-				     \
-  macro(GTPin_KernelProfilingActive) \
-  macro(GTPin_KernelGetName)	     \
-  				     \
-  macro(GTPin_OpcodeprofInstrument)  \
-  				     \
-  macro(GTPin_GetElf)		     \
-  				     \
-  macro(GTPin_MemSampleLength)	     \
-  macro(GTPin_MemClaim)		     \
-  macro(GTPin_MemRead)
+
+// Knobs unavailable
+#define KNOB_FNS(macro)
+
 #endif
+
+#define FORALL_GTPIN_ROUTINES(macro)		\
+  KNOB_FNS(macro)				\
+  macro(GTPin_BBLHead)				\
+  macro(GTPin_BBLNext)				\
+  macro(GTPin_BBLValid)				\
+						\
+  macro(GTPin_InsHead)				\
+  macro(GTPin_InsTail)				\
+  macro(GTPin_InsValid)				\
+  macro(GTPin_InsOffset)			\
+  macro(GTPin_InsNext)				\
+  macro(GTPin_InsPrev)				\
+  macro(GTPin_InsDisasm)			\
+  macro(GTPin_InsGetExecSize)			\
+  macro(GTPin_InsIsFlagModifier)		\
+  macro(GTPin_InsGED)				\
+  macro(GTPin_InsIsChangingIP)			\
+  macro(GTPin_InsIsEOT)				\
+						\
+  macro(GTPin_OnKernelBuild)			\
+  macro(GTPin_OnKernelRun)			\
+  macro(GTPin_OnKernelComplete)			\
+  macro(GTPIN_Start)				\
+						\
+  macro(GTPin_KernelExec_GetKernel)		\
+  macro(GTPin_KernelProfilingActive)		\
+  macro(GTPin_KernelGetName)			\
+  macro(GTPin_KernelGetSIMD)			\
+						\
+  macro(GTPin_OpcodeprofInstrument)		\
+						\
+  macro(GTPin_LatencyInstrumentPre)		\
+  macro(GTPin_LatencyInstrumentPost_Mem)	\
+  macro(GTPin_LatencyAvailableRegInstrument)    \
+						\
+  macro(GTPin_SimdProfInstrument)		\
+  macro(GTPin_InsGetExecMask)			\
+  macro(GTPin_InsGetPredArgs)			\
+  macro(GTPin_InsIsMaskEnabled)			\
+						\
+  macro(GTPin_GetElf)				\
+						\
+  macro(GTPin_MemSampleLength)			\
+  macro(GTPin_MemClaim)				\
+  macro(GTPin_MemRead)
 
 #if DEBUG
 #define IF_DEBUG(x) x
