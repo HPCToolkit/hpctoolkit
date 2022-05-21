@@ -291,25 +291,25 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	"GPU time: synchronization (seconds)")
 
 // gpu instruction count
-#define FORALL_GPU_INST(macro)			\
-  macro(GPU_INST_METRIC_NAME ": EXC_CNT", GPU_INST_EXEC_COUNT,	\
-	"GPU instruction/basic-block execution count")  \
-  macro(GPU_INST_METRIC_NAME ": SIMD_ACT", GPU_INST_ACT_SIMD_LANES,	\
-	"GPU active simd lanes")  \
-  macro(GPU_INST_METRIC_NAME ": SIMD_WST", GPU_INST_WASTE_SIMD_LANES,	\
-	"GPU wasted simd lanes")  \
+#define FORALL_GPU_INST(macro)						\
+  macro(GPU_INST_METRIC_NAME, GPU_INST_ALL,				\
+	"GPU instructions executed")					\
   macro(GPU_INST_METRIC_NAME ": SIMD_TOT", GPU_INST_TOT_SIMD_LANES,	\
-	"GPU total simd lanes")   \
+	"GPU total SIMD lanes")   \
+  macro(GPU_INST_METRIC_NAME ": SIMD_ACT", GPU_INST_ACT_SIMD_LANES,	\
+	"GPU active SIMD lanes")  \
+  macro(GPU_INST_METRIC_NAME ": SIMD_WST", GPU_INST_WASTE_SIMD_LANES,	\
+	"GPU wasted SIMD lanes")  \
   macro(GPU_INST_METRIC_NAME ": SIMD_SLS", GPU_INST_SCALAR_SIMD_LOSS,	\
-	"GPU simd lanes lost due to scalar instructions")   \
-  macro(GPU_INST_METRIC_NAME ": LAT(cycles)", GPU_INST_LATENCY,	\
-	"GPU instruction latency")  \
-  macro(GPU_INST_METRIC_NAME ": LAT_COV(cycles)", GPU_INST_COVERED_LATENCY,	\
-	"GPU covered latency")  \
-  macro(GPU_INST_METRIC_NAME ": LAT_UCV(cycles)", GPU_INST_UNCOVERED_LATENCY,	\
-	"GPU uncovered latency")   \
+	"GPU SIMD lanes lost due to scalar instructions")   \
+  macro(GPU_INST_METRIC_NAME ": LAT_CYC", GPU_INST_LATENCY,	\
+	"GPU instruction latency (cycles)")  \
+  macro(GPU_INST_METRIC_NAME ": LAT_COV", GPU_INST_COVERED_LATENCY,	\
+	"GPU covered latency (cycles)")  \
+  macro(GPU_INST_METRIC_NAME ": LAT_UCV", GPU_INST_UNCOVERED_LATENCY,	\
+	"GPU uncovered latency (cycles)")   \
   macro(GPU_INST_METRIC_NAME ": LAT_THR", GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY,	\
-	"GPU threads for covering latency (1 + U/C)")
+	"GPU threads needed to cover latency (1 + UCV/COV)")
 
 
 // gpu kernel characteristics

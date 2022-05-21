@@ -236,11 +236,21 @@ name ## _metric_kind
   idle_metric->format  = FORMAT_DISPLAY_PERCENTAGE
 
 
-#define THREADS_TO_COVER_LATENCY_FORMULA() \
+// NOTE: to ensure that this metric is 0 if no latency is measured, rather than computing it as:
+//     1 + (uncovered_latency/covered_latency)
+// instead, compute it as: 
+//     (covered_latency/covered_latency) + (uncovered_latency/covered_latency) 
+// when covered_latency is present (as it would be with any latency measurement), the first term will
+// be 1 as expected. when no latency measurements are available, the first term will be 0, causing the
+// metric to be unavailable
+#define THREADS_TO_COVER_LATENCY_FORMULA()				\
   hpcrun_set_display(METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY), HPCRUN_FMT_METRIC_SHOW); \
   thrds_to_cover_latency_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY)); \
   thrds_to_cover_latency_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
   sprintf(thrds_to_cover_latency_formula, "1 + (#%d/#%d)", METRIC_ID(GPU_INST_UNCOVERED_LATENCY), METRIC_ID(GPU_INST_COVERED_LATENCY)); \
+  sprintf(thrds_to_cover_latency_formula, "(#%d/#%d) + (#%d/#%d)",	\
+	  METRIC_ID(GPU_INST_COVERED_LATENCY), METRIC_ID(GPU_INST_COVERED_LATENCY), \
+	  METRIC_ID(GPU_INST_UNCOVERED_LATENCY), METRIC_ID(GPU_INST_COVERED_LATENCY)); \
   thrds_to_cover_latency_metric->formula = thrds_to_cover_latency_formula; \
   thrds_to_cover_latency_metric->format  = FORMAT_DISPLAY_INT
 
@@ -321,10 +331,10 @@ gpu_metrics_attribute_pc_sampling
   uint64_t inst_count = sinfo->samples * sample_period;
 
   metric_data_list_t *inst_metric = 
-    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_EXEC_COUNT));
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
 
   // instruction execution metric
-  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_EXEC_COUNT), 
+  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_ALL), 
            inst_count);
 
   if (sinfo->stallReason != GPU_INST_STALL_INVALID) {
@@ -527,7 +537,7 @@ gpu_metrics_attribute_kernel_block
   cct_node_t *cct_node = activity->cct_node;
 
   metric_data_list_t *metrics = 
-    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_EXEC_COUNT));
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
 
   // avg count of cycles taken by ALU to execute an instruction
   int ALU_cycles = 1;
@@ -535,7 +545,7 @@ gpu_metrics_attribute_kernel_block
   if (b->instruction) {
     // calculations at instruction level
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_LATENCY), b->latency);
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXEC_COUNT), b->execution_count);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ALL), b->execution_count);
     uint64_t covered_latency = (b->latency <= 0) ? 0: (ALU_cycles * b->execution_count);
     if (b->latency < covered_latency) {
       covered_latency = b->latency;
