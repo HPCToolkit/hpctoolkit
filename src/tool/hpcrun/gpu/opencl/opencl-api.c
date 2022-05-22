@@ -70,6 +70,7 @@
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
+#include "include/gpu-binary.h"
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
@@ -81,6 +82,7 @@
 #include <hpcrun/files.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <lib/prof-lean/crypto-hash.h>
+#include <lib/prof-lean/elf-extract.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-uint64.h>
@@ -109,6 +111,7 @@
 
 #define FORALL_OPENCL_ROUTINES(macro)  \
   macro(clBuildProgram)  \
+  macro(clGetProgramInfo)  \
   macro(clCreateContext)  \
   macro(clCreateCommandQueue)  \
   macro(clCreateCommandQueueWithProperties)  \
@@ -206,6 +209,19 @@ OPENCL_FN
    const char* options,
    void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
    void* user_data
+  )
+);
+
+
+OPENCL_FN
+(
+  clGetProgramInfo,
+  (
+   cl_program program,
+   cl_program_info param_name,
+   size_t param_value_size,
+   void *param_value,
+   size_t *param_value_size_ret
   )
 );
 
@@ -458,6 +474,164 @@ OPENCL_FN
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static void
+opencl_write_debug_binary
+(
+ unsigned char *binary,
+ size_t size
+)
+{
+
+  unsigned char *section;
+  size_t section_size;
+
+#define INTEL_CL_DEBUG_SECTION_NAME "Intel(R) OpenCL Device Debug"
+  if (elf_section_info(binary, size, INTEL_CL_DEBUG_SECTION_NAME, &section, &section_size)) {
+    uint8_t* buf = section;
+    size_t size = section_size;
+
+    // generate a hash for the binary
+    char *hash_buf = (char*)malloc(HASH_LENGTH * 2);
+    gpu_binary_compute_hash_string((const char*)buf, size, hash_buf);
+
+    // compute the file path to write the binary
+    char path[PATH_MAX];
+    gpu_binary_path_generate(hash_buf, path);
+
+    // record the binary
+    gpu_binary_store(path, buf, size);
+
+    // ensure the binary is entered in the the loadmap for analysis
+    hpcrun_loadmap_lock();
+    load_module_t *module = hpcrun_loadmap_findByName(path);
+    if (module == NULL) {
+      uint32_t module_id = hpcrun_loadModule_add(path);
+      load_module_t *lm = hpcrun_loadmap_findById(module_id);
+      hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
+    } 
+    hpcrun_loadmap_unlock();
+
+    free(hash_buf);
+  }
+}
+
+
+static cl_int
+cl_get_program_info
+(
+ cl_program program,
+ cl_program_info param_name,
+ size_t param_value_size,
+ void *param_value,
+ size_t *param_value_size_ret
+)
+{
+  cl_int ret =
+    HPCRUN_OPENCL_CALL
+    (clGetProgramInfo,
+     (program, param_name, param_value_size, param_value, param_value_size_ret));
+
+  return ret;
+}
+
+
+static cl_uint
+opencl_device_count
+(
+ cl_program program
+)
+{
+  cl_uint num_devices;
+
+  cl_int ret = cl_get_program_info(program, CL_PROGRAM_NUM_DEVICES,
+				   sizeof(cl_uint), &num_devices, 0);
+
+  if (ret != CL_SUCCESS) num_devices = 0;
+
+  return num_devices;
+}
+
+
+static cl_uint
+opencl_binary_sizes
+(
+ cl_program program,
+ cl_int device_count,
+ size_t *binary_sizes
+)
+{
+  cl_int ret = cl_get_program_info(program, CL_PROGRAM_BINARY_SIZES,
+				   device_count * sizeof(size_t), binary_sizes, 0); 
+  return ret;
+}
+
+
+static bool
+opencl_binaries
+(
+ cl_program program,
+ cl_uint *_num_devices,
+ unsigned char ***_binaries,
+ size_t **_binary_sizes
+)
+{
+  // variable initializations needed for error handling
+  cl_uint i = 0;
+  unsigned char **binaries = 0;
+  size_t *binary_sizes = 0;
+
+  cl_uint num_devices = opencl_device_count(program);
+
+  if (num_devices > 0) {
+    binary_sizes = (size_t *) malloc(sizeof(size_t) * num_devices);
+
+    if (binary_sizes == 0) goto no_binary_sizes;
+
+    cl_uint ret_code = opencl_binary_sizes(program, num_devices, binary_sizes);
+    if (ret_code == CL_SUCCESS) {
+      binaries = (unsigned char **) malloc(sizeof(size_t) * num_devices);
+      if (binaries == 0) goto no_binaries;
+
+      for(i = 0; i < num_devices; i++){
+	if (binary_sizes[i] > 0) {
+	  binaries[i] = (unsigned char *) malloc(binary_sizes[i]);
+	  if (binaries[i] == 0) goto not_all_binaries;
+	} else {
+	  binaries[i] = 0;
+	}
+      }
+    }
+  }
+
+  cl_int ret = cl_get_program_info(program, CL_PROGRAM_BINARIES,
+				   num_devices * sizeof(unsigned char *), binaries, 0);
+
+  if (ret != CL_SUCCESS) goto error;
+
+  *_num_devices = num_devices;
+  *_binaries = binaries;
+  *_binary_sizes = binary_sizes;
+
+  return true;
+
+ error:
+  i = num_devices - 1;
+
+ not_all_binaries:
+  for(; i >= 0; i--){
+    if (binaries[i]) free(binaries[i]);
+  }
+  if (binaries) free(binaries);
+
+ no_binaries:
+  if (binary_sizes) free(binary_sizes);
+
+ no_binary_sizes:
+
+  return false;
+}
+
 
 static uint32_t
 getCorrelationId
@@ -1033,6 +1207,23 @@ hpcrun_clBuildProgram
 			options_with_debug_flags, clBuildProgramCallback,
 			user_data));
   free(options_with_debug_flags);
+
+  {
+    cl_uint num_devices;
+    unsigned char **binaries;
+    size_t *binary_sizes;
+    if (opencl_binaries(program, &num_devices, &binaries, &binary_sizes)) {
+      for (cl_uint i = 0; i < num_devices; i++) {
+	if (binary_sizes[i] > 0) {
+	  opencl_write_debug_binary(binaries[i], binary_sizes[i]);
+	  free(binaries[i]);
+	}
+      }
+      free(binary_sizes);
+      free(binaries);
+    }
+  }
+
   return ret;
 }
 #endif // ENABLE_GTPIN

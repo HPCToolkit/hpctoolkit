@@ -110,6 +110,7 @@ MYSOURCES = \
 	vdso.h vdso.c \
 	randomizer.h randomizer.c \
 	splay-uint64.h splay-uint64.c \
+	elf-extract.h elf-extract.c \
 	elf-helper.h elf-helper.c elf-hash.h elf-hash.c \
 	\
 	id-tuple.h id-tuple.c \
