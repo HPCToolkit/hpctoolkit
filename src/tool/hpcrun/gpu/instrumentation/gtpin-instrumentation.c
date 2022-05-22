@@ -260,6 +260,8 @@ findOrAddKernelModule
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
 			     (kernel, 0, NULL, &kernel_name_len));
 
+  assert(status == GTPINTOOL_STATUS_SUCCESS);
+
   char kernel_name[kernel_name_len];
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
 			     (kernel, kernel_name_len, kernel_name, NULL));
@@ -732,8 +734,6 @@ onKernelBuild
   return; // stub
 #endif
 
-  GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
-
   assert(kernel_data_map_lookup((uint64_t)kernel) == 0);
 
   kernel_data_t kernel_data;
@@ -854,7 +854,7 @@ onKernelRun
   ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %"PRIu64"", (uint64_t)kernelExec);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
-  HPCRUN_GTPIN_CALL(GTPin_KernelProfilingActive,(kernelExec, 1)); // where is return value?
+  status = HPCRUN_GTPIN_CALL(GTPin_KernelProfilingActive,(kernelExec, 1));
   ASSERT_GTPIN_STATUS(status);
 
   createKernelNode((uint64_t)kernelExec);

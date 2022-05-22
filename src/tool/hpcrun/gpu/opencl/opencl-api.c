@@ -1202,7 +1202,6 @@ hpcrun_clEnqueueNDRangeKernel
   opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL);
   INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue, module_id))
 
-  opencl_subscriber_callback(kernel_info);
 
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
@@ -1215,6 +1214,8 @@ hpcrun_clEnqueueNDRangeKernel
     isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
     areKernelParamsAliased(ocl_kernel, module_id);
   }
+
+  opencl_subscriber_callback(kernel_info);
 
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_kernel_prologue(*eventp, module_id);
