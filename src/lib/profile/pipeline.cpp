@@ -462,7 +462,7 @@ void ProfilePipeline::run() {
       std::unique_lock<std::mutex> l(attrsLock);
       if(timepointBounds) {
         timepointBounds->first = std::min(timepointBounds->first, localTimepointBounds->first);
-        timepointBounds->second = std::min(timepointBounds->second, localTimepointBounds->second);
+        timepointBounds->second = std::max(timepointBounds->second, localTimepointBounds->second);
       } else
         timepointBounds = localTimepointBounds;
     }
