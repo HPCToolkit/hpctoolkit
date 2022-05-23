@@ -54,6 +54,8 @@
 #include "include/hpctoolkit-config.h"
 #include "lib/profile/mpi/all.hpp"
 
+#include "lib/prof-lean/cpuset_hwthreads.h"
+
 #include <cassert>
 #include <getopt.h>
 #include <iostream>
@@ -151,7 +153,7 @@ const bool string_ends_with(const std::string& a, const std::string& n) {
 }
 
 ProfArgs::ProfArgs(int argc, char* const argv[])
-  : title(), threads(1), output(),
+  : title(), threads(0), output(),
     include_sources(true), include_traces(true), include_thread_local(true),
     format(Format::sparse), dwarfMaxSize(100*1024*1024), valgrindUnclean(false) {
   int arg_includeSources = include_sources;
@@ -214,11 +216,12 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       break;
     case 'j': {
       std::size_t pos;
-      threads = std::stoi(optarg, &pos, 10);
-      if(pos == 0 || optarg[pos] != '\0') {
+      int in_threads = std::stoi(optarg, &pos, 10);
+      if(pos == 0 || optarg[pos] != '\0' || in_threads < 0) {
         std::cerr << "Invalid thread number '" << optarg << "'!\n";
         std::exit(2);
       }
+      threads = in_threads;
       break;
     }
     case 'S': {
@@ -380,6 +383,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   include_sources = arg_includeSources;
   include_traces = arg_includeTraces;
   valgrindUnclean = arg_valgrindUnclean;
+
+  if(threads == 0) {
+    threads = cpuset_hwthreads();
+  }
 
   if(quiet > 0) {
     logSettings = util::log::Settings::none;

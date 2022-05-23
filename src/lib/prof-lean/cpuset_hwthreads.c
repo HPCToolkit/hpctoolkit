@@ -77,20 +77,12 @@ cpuset_hwthreads
 (
   void
 )
-{  
-  int processors = 1;
-  pthread_t thread = pthread_self();
-
+{
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
 
-  int err = pthread_getaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
+  if(pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) == 0)
+    return CPU_COUNT(&cpuset);
 
-  if (err == 0) {
-    int j;
-    for (j = 0; j < CPU_SETSIZE; j++)
-      if (CPU_ISSET(j, &cpuset)) processors++;
-  }
-
-  return processors;
+  return 1;
 }
