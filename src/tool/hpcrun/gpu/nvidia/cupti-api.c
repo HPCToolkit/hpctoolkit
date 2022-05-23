@@ -944,7 +944,6 @@ cupti_subscriber_callback_cuda
     //gpu_operation_multiplexer_my_channel_init();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-		PRINT("\nDriver API:  -----------------%s\n", cd->functionName );
 
     bool ompt_runtime_api_flag = ompt_runtime_status_get();
 
@@ -1153,7 +1152,6 @@ cupti_subscriber_callback_cuda
     //gpu_operation_multiplexer_my_channel_init();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
-		PRINT("\nRuntime API:  -----------------%s\n", cd->functionName );
 
     bool is_valid_op = false;
     bool is_kernel_op = false;
@@ -2076,12 +2074,12 @@ cupti_resource_subscriber_callback
     DISPATCH_CALLBACK(cupti_unload_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
   } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
     TMSG(CUPTI, "Context %p created", rd->context);
+    if (cupti_sync_yield_get()) {
+      cuda_sync_yield();
+    }
     if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
       cupti_pc_sampling_enable2(rd->context);
       cupti_pc_sampling_config(rd->context, pc_sampling_frequency);
-    }
-    if (cupti_sync_yield_get()) {
-      cuda_sync_yield();
     }
   } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
     TMSG(CUPTI, "Context %lu destroyed", rd->context);
@@ -2137,7 +2135,7 @@ cupti_unwind
     start_time = get_timestamp();
   }
 
-  if (cupti_fast_unwind_get()) {
+  if (!cupti_fast_unwind_get()) {
     // Slow path to generate a cct
     cct_node_t *node = cupti_correlation_callback();
 
@@ -2590,8 +2588,8 @@ cupti_device_flush2
 
   cupti_range_thread_last();
 
-  TMSG(CUPTI_CCT, "CUPTI unwind time: %.2f\n", unwind_time / 1000000000.0);
-  TMSG(CUPTI_CCT, "CUPTI Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu\n",
+  TMSG(CUPTI_CCT, "CUPTI unwind time: %.2f", unwind_time / 1000000000.0);
+  TMSG(CUPTI_CCT, "CUPTI Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu",
     total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds);
   if (debug_flag_get(DBG_PREFIX(CUPTI_CCT))) {
     cupti_cct_map_stats();
