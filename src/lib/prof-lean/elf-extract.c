@@ -58,7 +58,7 @@
 #include <libelf.h>
 #include <gelf.h>
 #include <stddef.h>
-#include <stdio.h>
+#include <string.h>
 
 
 
