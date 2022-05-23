@@ -2126,7 +2126,7 @@ static cct_node_t *
 cupti_unwind
 (
  gpu_op_placeholder_flags_t flags,
- long rsp, 
+ uint64_t rbp, 
  void *args
 )
 {
@@ -2149,7 +2149,7 @@ cupti_unwind
 
   // Fast path to generate a cct
   unwind_key_t unwind_key;
-  unwind_key.stack_length = rsp;
+  unwind_key.stack_length = rbp;
   unwind_key.prev_kernel = cupti_prev_kernel_node;
   unwind_key.prev_prev_kernel = cupti_prev_prev_kernel_node;
   unwind_key.prev_api = cupti_prev_api_node;
@@ -2223,11 +2223,10 @@ cupti_api_node_get
 {
   // Query key for the unwind map
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-  // XXX(Keren): Add stack length fetch for POWER and ARM
-  // Power: rl
-  // ARM: SP
-  register long rsp asm("rsp");
-  cct_node_t *api_node = cupti_unwind(flags, rsp, *(CUfunction *)(cd->functionParams));
+  // Getting a frame pointer instead of a stack pointer is fine because we are in cupti routines.
+  // As long as the call sites in user code are different, the current frame pointers will be different.
+  volatile uint64_t rbp = (uint64_t)__builtin_frame_address(0);
+  cct_node_t *api_node = cupti_unwind(flags, rbp, *(CUfunction *)(cd->functionParams));
   
   // Update prev indicators
   if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
