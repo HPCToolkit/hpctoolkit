@@ -298,7 +298,7 @@ cupti_range_enable
   if (control_knob_value_get_string("HPCRUN_CUDA_SYNC_YIELD", &sync_yield) != 0)
     monitor_real_exit(-1);
 
-  TMSG(CUPTI, "CUPTI range mode %s, interval %d, sampling period %d, dynamic period %d", range_mode, interval, sampling_period, dynamic_period);
+  TMSG(CUPTI, "CUPTI range mode %s, interval %d, sampling period %d, dynamic period %s", range_mode, interval, sampling_period, dynamic_period);
 
   bool enable_dynamic_period = strcmp(dynamic_period, "TRUE") == 0;
   cupti_range_config(range_mode, interval, sampling_period, enable_dynamic_period);
@@ -334,10 +334,10 @@ cupti_fast_unwind_enable
 
   cupti_sync_yield_set(strcmp(sync_yield, "TRUE") == 0);
 
-  TMSG(CUPTI, "Fast unwind %d", fast_unwind);
+  TMSG(CUPTI, "Fast unwind %s", fast_unwind);
   TMSG(CUPTI, "Correlation threshold %d", correlation_threshold);
   TMSG(CUPTI, "Backoff base %d", backoff_base);
-  TMSG(CUPTI, "Sync yield %d", sync_yield);
+  TMSG(CUPTI, "Sync yield %s", sync_yield);
 }
 
 

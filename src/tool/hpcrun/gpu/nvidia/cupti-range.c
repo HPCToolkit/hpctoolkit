@@ -496,7 +496,7 @@ cupti_range_config
     cupti_range_mode = CUPTI_RANGE_MODE_TRIE;
   } else if (strcmp(mode_str, "CONTEXT_SENSITIVE") == 0) {
     cupti_range_mode = CUPTI_RANGE_MODE_CONTEXT_SENSITIVE;
-  } else if (strcmp(mode_str, "SERIAL") == 0) {
+  } else {
     cupti_range_mode = CUPTI_RANGE_MODE_SERIAL;
   }
 

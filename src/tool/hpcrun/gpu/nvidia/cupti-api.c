@@ -618,7 +618,7 @@ library_path_resolves(const char *buffer)
 }
 
 
-static const char *
+const char *
 cupti_path
 (
  void
@@ -928,9 +928,6 @@ cupti_subscriber_callback_cuda
       int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
       if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
         cupti_pc_sampling_enable(rd->context, pc_sampling_frequency);
-      }
-      if (cupti_sync_yield_get()) {
-        cuda_sync_yield();
       }
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
       TMSG(CUPTI, "Context %lu destroyed", rd->context);
@@ -2079,6 +2076,9 @@ cupti_resource_subscriber_callback
       cupti_pc_sampling_enable2(rd->context);
       cupti_pc_sampling_config(rd->context, pc_sampling_frequency);
     }
+    if (cupti_sync_yield_get()) {
+      cuda_sync_yield();
+    }
   } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
     TMSG(CUPTI, "Context %lu destroyed", rd->context);
     if (pc_sampling_frequency != CUPTI_PC_SAMPLING_PERIOD_NULL) {
@@ -2534,14 +2534,14 @@ cupti_callbacks_subscribe2
 
   cupti_subscribers_driver_kernel_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_runtime_kernel_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
+  cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
 
   if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
     cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
-    cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
   }
 }
 
@@ -2559,14 +2559,14 @@ cupti_callbacks_unsubscribe2
 
   cupti_subscribers_driver_kernel_callbacks_subscribe(0, cupti_subscriber);
   cupti_subscribers_runtime_kernel_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_resource_module_subscribe(0, cupti_subscriber);
+  cupti_subscribers_resource_context_subscribe(0, cupti_subscriber);
 
   if (cupti_pc_sampling_frequency_get() == CUPTI_PC_SAMPLING_PERIOD_NULL) {
     cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(0, cupti_subscriber);
     cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(0, cupti_subscriber);
     cupti_subscribers_driver_memcpy_callbacks_subscribe(0, cupti_subscriber);
     cupti_subscribers_runtime_memcpy_callbacks_subscribe(0, cupti_subscriber);
-    cupti_subscribers_resource_module_subscribe(0, cupti_subscriber);
-    cupti_subscribers_resource_context_subscribe(0, cupti_subscriber);
   }
 }
 
@@ -2578,7 +2578,7 @@ cupti_device_flush2
  int how
 )
 {
-  TMSG(CUPTI, "Enter cupti_device_flush");
+  TMSG(CUPTI, "Enter cupti_device_flush2");
 
   cupti_activity_flush();
 
@@ -2592,6 +2592,8 @@ cupti_device_flush2
   if (debug_flag_get(DBG_PREFIX(CUPTI_CCT))) {
     cupti_cct_map_stats();
   }
+
+  TMSG(CUPTI, "Exit cupti_device_flush2");
 }
 
 

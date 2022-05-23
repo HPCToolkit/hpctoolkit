@@ -203,6 +203,13 @@ void cupti_activity_timestamp_get
 );
 
 
+const char *
+cupti_path
+(
+ void
+);
+
+
 void 
 cupti_init
 (
