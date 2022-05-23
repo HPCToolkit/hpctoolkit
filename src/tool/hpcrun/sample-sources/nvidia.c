@@ -534,6 +534,9 @@ METHOD_FN(process_event_list, int lush_metrics)
         gpu_metrics_GPU_INST_STALL_enable();  // stall metrics
 
         gpu_metrics_GSAMP_enable();  // GPU utilization from sampling
+
+        // PC sampling cannot be with concurrent kernels
+        kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
       }
     } else if (hpcrun_ev_is(event, NVIDIA_CUDA_NV_LINK)) {
       gpu_metrics_GXFER_enable();
@@ -613,7 +616,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_init();
   hpctoolkit_cupti_apis.callbacks_subscribe();
 
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+  if (cupti_version == 1 || hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
     cupti_start();
     cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
   }

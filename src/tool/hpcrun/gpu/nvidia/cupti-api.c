@@ -338,6 +338,7 @@ static __thread uint64_t cupti_runtime_correlation_id = 0;
 static __thread uint64_t cupti_driver_correlation_id = 0;
 
 static bool cupti_correlation_enabled = false;
+static bool cupti_pc_sampling_enabled = false;
 
 static cupti_correlation_callback_t cupti_correlation_callback =
   cupti_correlation_callback_dummy;
@@ -1652,15 +1653,15 @@ cupti_pc_sampling_enable
   int retval = cuda_global_pc_sampling_required(&required);
 
   if (retval == 0) { // only turn something on if success determining mode
-
+    cupti_pc_sampling_enabled = true;
     if (!required) {
       HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
 
       HPCRUN_CUPTI_CALL(cuptiActivityEnableContext,
                         (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
-     } else {
+    } else {
       HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
-     }
+    }
   }
 
   TMSG(CUPTI, "Exit cupti_pc_sampling_enable");
@@ -1673,8 +1674,11 @@ cupti_pc_sampling_disable
  CUcontext context
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiActivityDisableContext,
-                   (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+  if (cupti_pc_sampling_enabled) {
+    HPCRUN_CUPTI_CALL(cuptiActivityDisableContext,
+                     (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+    cupti_pc_sampling_enabled = false;
+  }
 }
 
 
