@@ -113,6 +113,8 @@ public:
   bool has(MetricScope s) const noexcept { return base::operator[](static_cast<size_t>(s)); }
   auto operator[](MetricScope s) noexcept { return base::operator[](static_cast<size_t>(s)); }
 
+  using base::size;
+
   MetricScopeSet operator|(const MetricScopeSet& o) { return (base)*this | (base)o; }
   MetricScopeSet operator+(const MetricScopeSet& o) { return (base)*this | (base)o; }
   MetricScopeSet operator&(const MetricScopeSet& o) { return (base)*this & (base)o; }
