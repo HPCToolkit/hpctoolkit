@@ -43,7 +43,8 @@
 ## ******************************************************* EndRiceCopyright *
 
 from ..._base import VersionedFormat
-from ..._util import unpack, cached_property, VersionedBitFlags, isomorphic_seq
+from ..._util import (unpack, cached_property, VersionedBitFlags, isomorphic_seq,
+                      read_ntstring)
 
 from ._load_modules import LoadModulesSection, LoadModule
 from ._source_files import SourceFilesSection, SourceFile
@@ -67,16 +68,17 @@ def _parse_contexts(version, src, *, size, offset):
 @VersionedFormat.minimize
 class ContextTreeSection(VersionedFormat,
     # Added in v4.0
-    _szRoots = (0, 0x00, 'Q'),
-    _pRoots = (0, 0x08, 'Q'),
+    _pEntryPoints = (0, 0x00, 'Q'),
+    _nEntryPoints = (0, 0x08, 'H'),
+    _szEntryPoint = (0, 0x0a, 'B'),
   ):
   """meta.db Context Tree section."""
-  __slots__ = ['_lmTable', '_sfTable', '_fTable', '_roots']
+  __slots__ = ['_lmTable', '_sfTable', '_fTable', '_entryPoints']
 
-  def _init_(self, *, roots=[]):
+  def _init_(self, *, entryPoints=[]):
     super()._init_()
-    self.roots = {c if isinstance(c, Context) else Context(**c)
-                  for c in roots}
+    self.entryPoints = {ep if isinstance(ep, EntryPoint) else EntryPoint(**ep)
+                        for ep in entryPoints}
 
   def unpack_from(self, version, src, /, *args, lmSec, sfSec, fSec, **kwargs):
     if not isinstance(lmSec, LoadModulesSection):
@@ -90,12 +92,13 @@ class ContextTreeSection(VersionedFormat,
     self._fTable = {f._srcoffset: f for f in fSec.functions if hasattr(f, '_srcoffset')}
     super().unpack_from(version, src, *args, **kwargs)
 
-  @cached_property('_roots')
+  @cached_property('_entryPoints')
   @VersionedFormat.subunpack(set)
-  def roots(self, *args):
-    r = _parse_contexts(*args, size=self._szRoots, offset=self._pRoots)
-    for c in r:
-      c._lmTable, c._sfTable, c._fTable = self._lmTable, self._sfTable, self._fTable
+  def entryPoints(self, *args):
+    r = {EntryPoint(*args, offset=self._pEntryPoints + i*self._szEntryPoint)
+         for i in range(self._nEntryPoints)}
+    for ep in r:
+      ep._lmTable, ep._sfTable, ep._fTable = self._lmTable, self._sfTable, self._fTable
     return r
 
   @property
@@ -103,7 +106,7 @@ class ContextTreeSection(VersionedFormat,
 
   def byCtxId(self):
     out = {0: self}
-    q = list(self.roots)
+    q = list(self.entryPoints)
     while len(q) > 0:
       c = q.pop()
       out[c.ctxId] = c
@@ -112,17 +115,89 @@ class ContextTreeSection(VersionedFormat,
 
   def identical(self, other):
     if not isinstance(other, ContextTreeSection): raise TypeError(type(other))
-    return isomorphic_seq(self.roots, other.roots, lambda a,b: a.identical(b),
-                          key=lambda c: (c.ctxId, c.relation, c.lexicalType))
+    return isomorphic_seq(self.entryPoints, other.entryPoints,
+                          lambda a,b: a.identical(b),
+                          key=lambda ep: ep.entryPoint)
 
   def __repr__(self):
-    return f"ContextTreeSection(roots={self.roots!r})"
+    return f"ContextTreeSection(entryPoints={self.entryPoints!r})"
 
   def __str__(self):
-    return ("roots:"
+    return ("entry points:"
             + ('\n' + '\n'.join(textwrap.indent(str(c), ' ')
-                   for c in sorted(self.roots, key=lambda c: c.ctxId))
-               if len(self.roots) > 0 else " []")
+                   for c in sorted(self.entryPoints, key=lambda ep: ep.ctxId))
+               if len(self.entryPoints) > 0 else " []")
+           )
+
+  pack, pack_into = None, None
+
+
+@VersionedFormat.minimize
+class EntryPoint(VersionedFormat,
+    # Added in v4.0
+    _szChildren = (0, 0x00, 'Q'),
+    _pChildren = (0, 0x08, 'Q'),
+    ctxId = (0, 0x10, 'L'),
+    _entryPoint = (0, 0x14, 'H'),
+    _pPrettyName = (0, 0x18, 'Q'),
+  ):
+  """meta.db Context Tree section."""
+  __slots__ = ['_lmTable', '_sfTable', '_fTable', '_children', 'prettyName']
+
+  def _init_(self, *, entryPoint, prettyName, ctxId, children=[]):
+    super()._init_()
+    self.entryPoint = entryPoint
+    self.prettyName = prettyName
+    self.ctxId = ctxId.__index__()
+    self.children = {c if isinstance(c, Context) else Context(**c)
+                     for c in children}
+
+  def unpack_from(self, version, src, *args, **kwargs):
+    super().unpack_from(version, src, *args, **kwargs)
+    self.prettyName = read_ntstring(src, self._pPrettyName)
+
+  @enum.unique
+  class __EntryPoint(enum.IntEnum):
+    # Added in v4.0
+    unknown_entry = 0
+    main_thread = 1
+    application_thread = 2
+
+  @property
+  def entryPoint(self): return self.__EntryPoint(self._entryPoint).name
+  @entryPoint.setter
+  def entryPoint(self, v): self._entryPoint = self.__EntryPoint[v].value
+  @entryPoint.deleter
+  def entryPoint(self): del self._entryPoint
+
+  @cached_property('_children')
+  @VersionedFormat.subunpack(set)
+  def children(self, *args):
+    r = _parse_contexts(*args, size=self._szChildren, offset=self._pChildren)
+    for c in r:
+      c._lmTable, c._sfTable, c._fTable = self._lmTable, self._sfTable, self._fTable
+    return r
+
+  def identical(self, other):
+    if not isinstance(other, EntryPoint): raise TypeError(type(other))
+    return (self.entryPoint == other.entryPoint and self.prettyName == other.prettyName
+            and isomorphic_seq(self.children, other.children,
+                               lambda a,b: a.identical(b),
+                               key=lambda c: (c.ctxId, c.relation, c.lexicalType)))
+
+  def __repr__(self):
+    return (f"{self.__class__.__name__}("
+            f"entryPoint={self.entryPoint!r}, "
+            f"prettyName={self.prettyName!r}, "
+            f"children={self.children!r})")
+
+  def __str__(self):
+    return (f"entryPoint: {self.entryPoint}\n"
+            f"prettyName: {self.prettyName}\n"
+            "children:"
+            + ('\n' + '\n'.join(textwrap.indent(str(c), ' ')
+                   for c in sorted(self.children, key=lambda c: c.ctxId))
+               if len(self.children) > 0 else " []")
            )
 
   pack, pack_into = None, None
@@ -138,8 +213,10 @@ class Context(VersionedFormat,
     _relation = (0, 0x15, 'B'),
     _lexicalType = (0, 0x16, 'B'),
     _nFlexWords = (0, 0x17, 'B'),
+    propagation = (0, 0x18, 'H'),
   ):
   """Description for a calling (or otherwise) context."""
+  __flex_offset = 0x20
 
   __flags = VersionedBitFlags(
     # Added in v4.0
@@ -168,6 +245,7 @@ class Context(VersionedFormat,
   ]
 
   def _init_(self, *, children=[], ctxId, flags=set(), relation, lexicalType,
+               propagation=0,
                function=None, file=None, line=None, module=None, offset=None):
     super()._init_()
     self.children = {c if isinstance(c, Context) else Context(**c)
@@ -175,6 +253,7 @@ class Context(VersionedFormat,
     self.ctxId = ctxId.__index__()
     self.relation = relation
     self.lexicalType = lexicalType
+    self.propagation = propagation.__index__()
     self.flags = self.__flags.normalize(float('inf'), flags)
 
     self.function = None
@@ -252,12 +331,12 @@ class Context(VersionedFormat,
           code, name = b
           form += code
           names.append(name)
-    for n,v in zip(names, unpack(struct.Struct(form), src, offset=offset+0x18)):
+    for n,v in zip(names, unpack(struct.Struct(form), src, offset=offset+self.__flex_offset)):
       setattr(self, n, v)
 
   @property
   def _total_size(self):
-    return 0x18 + self._nFlexWords * 8
+    return self.__flex_offset + self._nFlexWords * 8
 
   @cached_property('_children')
   @VersionedFormat.subunpack(set)
@@ -319,6 +398,7 @@ class Context(VersionedFormat,
       return a.identical(b) and x == y
     return (self.ctxId == other.ctxId and self.relation == other.relation
             and self.lexicalType == other.lexicalType and self.flags == other.flags
+            and self.propagation == other.propagation
             and cmp(self.function, None, other.function, None)
             and cmp(self.file, self.line, other.file, other.line)
             and cmp(self.module, self.offset, other.module, other.offset)
@@ -328,7 +408,7 @@ class Context(VersionedFormat,
 
   def __repr__(self):
     return (f"Context(ctxId={self.ctxId!r}, "
-            f"relation={self.relation!r}, "
+            f"relation={self.relation!r}, propagation={self.propagation!r}"
             f"lexicalType={self.lexicalType!r}, "
             f"flags={self.flags!r}, "
             f"function={self.function!r}, "
@@ -337,7 +417,7 @@ class Context(VersionedFormat,
             f"children={self.children!r})")
 
   def __str__(self):
-    return (f"-{self.relation}> {self.lexicalType} #{self.ctxId:d}:\n"
+    return (f"-{self.relation}/0x{self.propagation:x}> {self.lexicalType} #{self.ctxId:d}:\n"
             + (f" function: {self.function.name}\n"
                + textwrap.indent(str(self.function), '  ') + "\n"
                if self.function is not None else "")

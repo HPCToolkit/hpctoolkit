@@ -61,42 +61,30 @@ def test_small_v4_0():
 
   zero = {'valueBlock': {}}
 
-  m_1 = {M[2]: {P[1]: 152}, M[17]: {P[1]: 1}}
-  m_2i = {M[2]: {P[1]: 76}, M[17]: {P[1]: 1}}
-  m_2e = m_2i | {M[1]: {P[1]: 76}}
-  m_3i = {M[17]: {P[1]: 1}}
-  m_3e = {M[16]: {P[1]: 1}, M[17]: {P[1]: 1}}
-  m_4i = {M[2]: {P[1]: 76}}
-  m_4e = m_4i | {M[1]: {P[1]: 75}}
-  m_5i = {M[2]: {P[1]: 1}}
-  m_5e = m_5i | {M[1]: {P[1]: 1}}
+  m_1i = {M[17]: {P[1]: 3}}
+  m_2e = {M[16]: {P[1]: 1}, M[17]: {P[1]: 1}}
+  m_3i = {M[17]: {P[1]: 2}}
+  m_3e = m_3i | {M[16]: {P[1]: 2}}
 
   b = ContextDB(metadb=metadb, profiledb=profiledb,
     ctxs = {
       'ctxs': [
-        {'valueBlock': m_1},
+        {'valueBlock': m_1i},
+        {'valueBlock': m_1i},
+        {'valueBlock': m_1i},
+        {'valueBlock': m_1i},
         zero,
-        {'valueBlock': m_1},
-        {'valueBlock': m_1},
-        {'valueBlock': m_2i},
-        zero,
+        {'valueBlock': m_2e},
         {'valueBlock': m_2e},
         {'valueBlock': m_2e},
         zero, zero, zero, zero,
-        ] + [{'valueBlock': m_3i}, zero]*13 + [
+        {'valueBlock': m_3i},
+        {'valueBlock': m_3i},
+        zero,
         {'valueBlock': m_3e},
-        zero,
-        {'valueBlock': m_4i},
-        zero,
-        {'valueBlock': m_4i},
-        {'valueBlock': m_4i},
-        zero,
-        {'valueBlock': m_4e},
-        {'valueBlock': m_4e},
-        zero, zero,
-        ] + [{'valueBlock': m_5i}, zero]*10 + [
-        {'valueBlock': m_5e},
-        zero, zero, zero, zero,
+        {'valueBlock': m_3e},
+        {'valueBlock': m_3e},
+        zero, zero, zero, zero, zero,
       ],
     }
   )

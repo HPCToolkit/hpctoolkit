@@ -45,7 +45,7 @@
 from ..._base import VersionedFormat, FileHeader
 from ..._util import cached_property, unpack, array_unpack, VersionedBitFlags
 from ..metadb import (MetaDB, ContextTreeSection, Context, MetricDescription,
-                      PropagationScope, SummaryStatistic)
+                      PropagationScope, PropagationScopeInstance, SummaryStatistic)
 from ..profiledb import ProfileDB, ProfileInfo
 
 from struct import Struct
@@ -235,11 +235,11 @@ class ContextSparseValueBlock(collections.abc.MutableMapping):
 
   @staticmethod
   def _key(key):
-    met, scope = key
+    met, scopeInst = key
     if not isinstance(met, MetricDescription): raise TypeError(type(met))
-    if scope not in met.scopes: raise ValueError(key)
-    if not isinstance(scope, PropagationScope): raise TypeError(type(scope))
-    return (met, scope)
+    if scopeInst not in met.scopeInsts: raise ValueError(key)
+    if not isinstance(scopeInst, PropagationScopeInstance): raise TypeError(type(scopeInst))
+    return (met, scopeInst)
 
   def __getitem__(self, key):
     key = self._key(key)
@@ -276,8 +276,8 @@ class ContextSparseValueBlock(collections.abc.MutableMapping):
     return len(self._real) + len(self._metricIndices)
 
   def __str__(self):
-    return '\n'.join(f"metric {m.name}/{p.scope} #{p.propMetricId}:"
-                     + ("\n" + '\n'.join(textwrap.indent(str(b), '  '))
+    return '\n'.join(f"metric {m.name}/{p.scope.name} #{p.propMetricId}:"
+                     + ("\n" + textwrap.indent(str(b), '  ')
                         if len(b) > 0 else " {}")
                      for (m,p),b in sorted(self.items(), key=lambda x: x[0][1].propMetricId))
 

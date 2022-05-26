@@ -51,37 +51,25 @@ testdatadir = Path(__file__).parent.parent / 'testdata'
 def test_small_v4_0():
   a = MetaDB(open(testdatadir/'small_v4.0'/'meta.db'))
 
+  execution = PropagationScope(name='execution', type='execution')
+  function = PropagationScope(name='function', type='transitive', propagationIndex=0)
+  point = PropagationScope(name='point', type='point')
+
+  foo_c = { 'path': 'src/tmp/foo.c', 'flags': ['copied'], }
+  foo_exe = { 'path': '/tmp/foo', }
+
   main = { 'name': 'main',
-           'module': { 'path': '/tmp/foo', }, 'offset': 0x1187,
-           'file': { 'path': '/tmp/foo.c', }, 'line': 15,
+           'module': foo_exe, 'offset': 0x1183,
+           'file': foo_c, 'line': 12,
          }
   foo  = { 'name': 'foo',
-           'module': { 'path': '/tmp/foo', }, 'offset': 0x1129,
-           'file': { 'path': '/tmp/foo.c', }, 'line': 6,
+           'module': foo_exe, 'offset': 0x1129,
+           'file': foo_c, 'line': 3,
          }
   bar  = { 'name': 'bar',
-           'module': { 'path': '/tmp/foo', }, 'offset': 0x1176,
-           'file': { 'path': '/tmp/foo.c', }, 'line': 11,
+           'module': foo_exe, 'offset': 0x1172,
+           'file': foo_c, 'line': 8,
          }
-  _stext = { 'name': '_stext [vmlinux]',
-             'module': { 'path': '<vmlinux.007f0101>', }, 'offset': 0xffffffffa7800000,
-           }
-
-  x_children = []
-  for id in reversed(range(12, 39, 2)):
-    x_children = [{
-      'relation': 'call', 'lexicalType': 'function', 'ctxId': id,
-      'function': _stext,
-      'children': x_children,
-    }]
-  y_children = []
-  for id in reversed(range(49, 70, 2)):
-    y_children = [{
-      'relation': 'call', 'lexicalType': 'function', 'ctxId': id,
-      'function': _stext,
-      'children': y_children,
-    }]
-
 
   b = MetaDB(
     general = {
@@ -93,130 +81,177 @@ def test_small_v4_0():
                 'GPUSTREAM', 'CORE'],
     },
     metrics = {
+      'scopes': [execution, function, point],
       'metrics': [
         { 'name': 'cycles',
-          'scopes': [
-            { 'scope': 'point', 'propMetricId': 15,
-              'summaries': [
-                 {'formula': '$$',     'combine': 'sum', 'statMetricId': 18},
-                 {'formula': '($$^2)', 'combine': 'sum', 'statMetricId': 21},
-                 {'formula': '1',      'combine': 'sum', 'statMetricId': 15},
-                 {'formula': '$$',     'combine': 'min', 'statMetricId': 24},
-                 {'formula': '$$',     'combine': 'max', 'statMetricId': 27},
-              ],
+          'scopeInsts': [
+            { 'propMetricId': 17, 'scope': execution, },
+            { 'propMetricId': 16, 'scope': function, },
+            { 'propMetricId': 15, 'scope': point, },
+          ],
+          'summaries': [
+            { 'statMetricId': 29,
+              'scope': execution, 'formula': '$$', 'combine': 'max',
             },
-            { 'scope': 'function', 'propMetricId': 16,
-              'summaries': [
-                 {'formula': '$$',     'combine': 'sum', 'statMetricId': 19},
-                 {'formula': '($$^2)', 'combine': 'sum', 'statMetricId': 22},
-                 {'formula': '1',      'combine': 'sum', 'statMetricId': 16},
-                 {'formula': '$$',     'combine': 'min', 'statMetricId': 25},
-                 {'formula': '$$',     'combine': 'max', 'statMetricId': 28},
-              ],
+            { 'statMetricId': 26,
+              'scope': execution, 'formula': '$$', 'combine': 'min',
             },
-            { 'scope': 'execution', 'propMetricId': 17,
-              'summaries': [
-                 {'formula': '$$',     'combine': 'sum', 'statMetricId': 20},
-                 {'formula': '($$^2)', 'combine': 'sum', 'statMetricId': 23},
-                 {'formula': '1',      'combine': 'sum', 'statMetricId': 17},
-                 {'formula': '$$',     'combine': 'min', 'statMetricId': 26},
-                 {'formula': '$$',     'combine': 'max', 'statMetricId': 29},
-              ],
+            { 'statMetricId': 20,
+              'scope': execution, 'formula': '$$', 'combine': 'sum',
+            },
+            { 'statMetricId': 23,
+              'scope': execution, 'formula': '($$^2)', 'combine': 'sum',
+            },
+            { 'statMetricId': 17,
+              'scope': execution, 'formula': '1', 'combine': 'sum',
+            },
+
+            { 'statMetricId': 28,
+              'scope': function, 'formula': '$$', 'combine': 'max',
+            },
+            { 'statMetricId': 25,
+              'scope': function, 'formula': '$$', 'combine': 'min',
+            },
+            { 'statMetricId': 19,
+              'scope': function, 'formula': '$$', 'combine': 'sum',
+            },
+            { 'statMetricId': 22,
+              'scope': function, 'formula': '($$^2)', 'combine': 'sum',
+            },
+            { 'statMetricId': 16,
+              'scope': function, 'formula': '1', 'combine': 'sum',
+            },
+
+            { 'statMetricId': 27,
+              'scope': point, 'formula': '$$', 'combine': 'max',
+            },
+            { 'statMetricId': 24,
+              'scope': point, 'formula': '$$', 'combine': 'min',
+            },
+            { 'statMetricId': 18,
+              'scope': point, 'formula': '$$', 'combine': 'sum',
+            },
+            { 'statMetricId': 21,
+              'scope': point, 'formula': '($$^2)', 'combine': 'sum',
+            },
+            { 'statMetricId': 15,
+              'scope': point, 'formula': '1', 'combine': 'sum',
             },
           ],
         },
         { 'name': 'instructions',
-          'scopes': [
-            { 'scope': 'point', 'propMetricId': 0,
-              'summaries': [
-                 {'formula': '$$',     'combine': 'sum', 'statMetricId': 3},
-                 {'formula': '($$^2)', 'combine': 'sum', 'statMetricId': 6},
-                 {'formula': '1',      'combine': 'sum', 'statMetricId': 0},
-                 {'formula': '$$',     'combine': 'min', 'statMetricId': 9},
-                 {'formula': '$$',     'combine': 'max', 'statMetricId': 12},
-              ],
+          'scopeInsts': [
+            { 'propMetricId': 2, 'scope': execution, },
+            { 'propMetricId': 1, 'scope': function, },
+            { 'propMetricId': 0, 'scope': point, },
+          ],
+          'summaries': [
+            { 'statMetricId': 14,
+              'scope': execution, 'formula': '$$', 'combine': 'max',
             },
-            { 'scope': 'function', 'propMetricId': 1,
-              'summaries': [
-                 {'formula': '$$',     'combine': 'sum', 'statMetricId': 4},
-                 {'formula': '($$^2)', 'combine': 'sum', 'statMetricId': 7},
-                 {'formula': '1',      'combine': 'sum', 'statMetricId': 1},
-                 {'formula': '$$',     'combine': 'min', 'statMetricId': 10},
-                 {'formula': '$$',     'combine': 'max', 'statMetricId': 13},
-              ],
+            { 'statMetricId': 11,
+              'scope': execution, 'formula': '$$', 'combine': 'min',
             },
-            { 'scope': 'execution', 'propMetricId': 2,
-              'summaries': [
-                 {'formula': '$$',     'combine': 'sum', 'statMetricId': 5},
-                 {'formula': '($$^2)', 'combine': 'sum', 'statMetricId': 8},
-                 {'formula': '1',      'combine': 'sum', 'statMetricId': 2},
-                 {'formula': '$$',     'combine': 'min', 'statMetricId': 11},
-                 {'formula': '$$',     'combine': 'max', 'statMetricId': 14},
-              ],
+            { 'statMetricId': 5,
+              'scope': execution, 'formula': '$$', 'combine': 'sum',
+            },
+            { 'statMetricId': 8,
+              'scope': execution, 'formula': '($$^2)', 'combine': 'sum',
+            },
+            { 'statMetricId': 2,
+              'scope': execution, 'formula': '1', 'combine': 'sum',
+            },
+
+            { 'statMetricId': 13,
+              'scope': function, 'formula': '$$', 'combine': 'max',
+            },
+            { 'statMetricId': 10,
+              'scope': function, 'formula': '$$', 'combine': 'min',
+            },
+            { 'statMetricId': 4,
+              'scope': function, 'formula': '$$', 'combine': 'sum',
+            },
+            { 'statMetricId': 7,
+              'scope': function, 'formula': '($$^2)', 'combine': 'sum',
+            },
+            { 'statMetricId': 1,
+              'scope': function, 'formula': '1', 'combine': 'sum',
+            },
+
+            { 'statMetricId': 12,
+              'scope': point, 'formula': '$$', 'combine': 'max',
+            },
+            { 'statMetricId': 9,
+              'scope': point, 'formula': '$$', 'combine': 'min',
+            },
+            { 'statMetricId': 3,
+              'scope': point, 'formula': '$$', 'combine': 'sum',
+            },
+            { 'statMetricId': 6,
+              'scope': point, 'formula': '($$^2)', 'combine': 'sum',
+            },
+            { 'statMetricId': 0,
+              'scope': point, 'formula': '1', 'combine': 'sum',
             },
           ],
         },
       ],
     },
     modules = {
-      'modules': [
-        { 'path': '/tmp/foo', },
-        { 'path': '<vmlinux.007f0101>', },
-      ],
+      'modules': [foo_exe],
     },
     files = {
-      'files': [
-        { 'path': '/tmp/foo.c', },
-      ],
+      'files': [foo_c],
     },
     functions = {
-      'functions': [
-        { 'name': '<program root>', },
-        { 'name': '<no activity>', },
-        main, foo, bar, _stext,
-      ],
+      'functions': [main, foo, bar],
     },
     context = {
-      'roots': [
-        { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 73, },
-        { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 1,
-          'function': { 'name': '<no activity>', },
-        },
-        { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 2,
-          'function': { 'name': '<program root>', },
+      'entryPoints': [
+        { 'entryPoint': 'unknown_entry', 'prettyName': 'unknown entry', 'ctxId': 7 },
+        { 'entryPoint': 'main_thread', 'prettyName': 'main thread', 'ctxId': 1,
           'children': [
-            { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 3,
+            { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 2,
               'function': main,
               'children': [
-                { 'relation': 'lexical', 'lexicalType': 'line', 'ctxId': 4,
-                  'file': { 'path': '/tmp/foo.c', }, 'line': 17,
+                { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'line', 'ctxId': 3,
+                  'file': foo_c, 'line': 13,
                   'children': [
-                    { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 6,
+                    { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 5,
                       'function': foo,
                       'children': [
-                        { 'relation': 'lexical', 'lexicalType': 'line', 'ctxId': 7,
-                          'file': { 'path': '/tmp/foo.c', }, 'line': 8,
-                          'children': x_children,
+                        { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'loop', 'ctxId': 6,
+                          'file': foo_c, 'line': 5,
+                          'children': [
+                            { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'line', 'ctxId': 7,
+                              'file': foo_c, 'line': 5,
+                            },
+                          ],
+                        },
+                        { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'line', 'ctxId': 9,
+                          'file': foo_c, 'line': 3,
                         },
                       ],
                     },
-                  ],
-                },
-                { 'relation': 'lexical', 'lexicalType': 'line', 'ctxId': 40,
-                  'file': { 'path': '/tmp/foo.c', }, 'line': 18,
-                  'children': [
-                    { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 42,
+                    { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 12,
                       'function': bar,
                       'children': [
-                        { 'relation': 'lexical', 'lexicalType': 'line', 'ctxId': 43,
-                          'file': { 'path': '/tmp/foo.c', }, 'line': 13,
+                        { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'line', 'ctxId': 13,
+                          'file': foo_c, 'line': 9,
                           'children': [
-                            { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 45,
+                            { 'relation': 'call', 'lexicalType': 'function', 'ctxId': 15,
                               'function': foo,
                               'children': [
-                                { 'relation': 'lexical', 'lexicalType': 'line', 'ctxId': 46,
-                                  'file': { 'path': '/tmp/foo.c', }, 'line': 8,
-                                  'children': y_children,
+                                { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'loop', 'ctxId': 16,
+                                  'file': foo_c, 'line': 5,
+                                  'children': [
+                                    { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'line', 'ctxId': 17,
+                                      'file': foo_c, 'line': 5,
+                                    },
+                                  ],
+                                },
+                                { 'relation': 'lexical', 'propagation': 1, 'lexicalType': 'line', 'ctxId': 20,
+                                  'file': foo_c, 'line': 3,
                                 },
                               ],
                             },
@@ -237,8 +272,3 @@ def test_small_v4_0():
   assert str(a) == str(b)
   assert a.context.identical(b.context)
   assert a.identical(b)
-
-  assert 'object at 0x' not in repr(a)
-  c = eval(repr(a))
-  assert str(a) == str(c)
-  assert a.identical(c)

@@ -60,11 +60,12 @@ def test_small_v4_0():
 
   b = TraceDB(metadb=metadb, profiledb=profiledb,
     ctxTraces = {
-      'minTimestamp': 1650412082819499000, 'maxTimestamp': 1650412082820356000,
+      'minTimestamp': 1653584306341182000, 'maxTimestamp': 1653584307040958000,
       'traces': [
         { 'profile': P[1], 'trace': [
-          (1650412082819499000, C[1]),
-          (1650412082820356000, C[38]),
+          (1653584306574615000, C[9]),
+          (1653584306807783000, C[20]),
+          (1653584307040958000, C[20]),
         ]},
       ],
     }

@@ -44,8 +44,9 @@
 
 from ..._base import VersionedFormat, FileHeader
 from ..._util import cached_property, unpack, array_unpack, VersionedBitFlags
-from ..metadb import (MetaDB, ContextTreeSection, Context, MetricDescription,
-                      PropagationScope, SummaryStatistic)
+from ..metadb import (MetaDB, ContextTreeSection, EntryPoint, Context,
+                      MetricDescription, PropagationScopeInstance,
+                      SummaryStatistic)
 
 from struct import Struct
 import collections.abc
@@ -82,7 +83,7 @@ class ProfileDB(FileHeader,
     self._metadb = metadb
 
   @cached_property('_profiles')
-  @VersionedFormat.subunpack(lambda: ProfileInfoSection(metadb=self._metadb))
+  @VersionedFormat.subunpack(lambda self: ProfileInfoSection(metadb=self._metadb), method=True)
   def profiles(self, *args):
     return ProfileInfoSection(*args, metadb=self._metadb, offset=self._pProfileInfos)
 
@@ -299,7 +300,8 @@ class ProfileSparseValueBlock(collections.abc.MutableMapping):
         self._ctxIndices[c] = (i, nValues.__index__() - i)
 
   def __getitem__(self, ctx):
-    if not isinstance(ctx, Context) and not isinstance(ctx, ContextTreeSection):
+    if (not isinstance(ctx, Context) and not isinstance(ctx, EntryPoint)
+        and not isinstance(ctx, ContextTreeSection)):
       raise TypeError(type(ctx))
     if ctx in self._real: return self._real[ctx]
     if ctx.ctxId not in self._ctxIndices: raise KeyError(ctx)
@@ -313,14 +315,16 @@ class ProfileSparseValueBlock(collections.abc.MutableMapping):
     return block
 
   def __setitem__(self, ctx, block):
-    if not isinstance(ctx, Context) and not isinstance(ctx, ContextTreeSection):
+    if (not isinstance(ctx, Context) and not isinstance(ctx, EntryPoint)
+        and not isinstance(ctx, ContextTreeSection)):
       raise TypeError(type(ctx))
     if not isinstance(block, self._innerclass): block = self._innerclass(block)
     self._real[ctx] = block
     if ctx.ctxId in self._ctxIndices: del self._ctxIndices[ctx.ctxId]
 
   def __delitem__(self, ctx):
-    if not isinstance(ctx, Context) and not isinstance(ctx, ContextTreeSection):
+    if (not isinstance(ctx, Context) and not isinstance(ctx, EntryPoint)
+        and not isinstance(ctx, ContextTreeSection)):
       raise TypeError(type(ctx))
     if ctx in self._real: del self._real[ctx]
     elif ctx.ctxId in self._ctxIndices: del self._ctxIndices[ctx.ctxId]
@@ -334,7 +338,7 @@ class ProfileSparseValueBlock(collections.abc.MutableMapping):
 
   def __str__(self):
     return '\n'.join(f"context #{c.ctxId:d}:"
-                     + ("\n" + '\n'.join(textwrap.indent(str(b), '  '))
+                     + ("\n" + textwrap.indent(str(b), '  ')
                         if len(b) > 0 else " {}")
                      for c,b in sorted(self.items(), key=lambda x: x[0].ctxId))
 
@@ -350,11 +354,11 @@ class NonSummaryProfileValues(collections.abc.MutableMapping):
 
   @staticmethod
   def _key(key):
-    met, scope = key
+    met, scopeInst = key
     if not isinstance(met, MetricDescription): raise TypeError(type(met))
-    if scope not in met.scopes: raise ValueError(key)
-    if not isinstance(scope, PropagationScope): raise TypeError(type(scope))
-    return (met, scope)
+    if scopeInst not in met.scopeInsts: raise ValueError(key)
+    if not isinstance(scopeInst, PropagationScopeInstance): raise TypeError(type(scopeInst))
+    return (met, scopeInst)
 
   def __getitem__(self, key):
     return self._real[self._key(key)]
@@ -372,7 +376,7 @@ class NonSummaryProfileValues(collections.abc.MutableMapping):
     return f"{self.__class__.__name__}({self._real!r})"
 
   def __str__(self):
-    return '\n'.join(f"metric {m.name}/{p.scope} #{p.propMetricId}: {v}"
+    return '\n'.join(f"metric {m.name}/{p.scope.name} #{p.propMetricId}: {v}"
                      for (m,p),v in sorted(self.items(), key=lambda x: x[0][1].propMetricId))
 
 
@@ -387,13 +391,11 @@ class SummaryProfileValues(collections.abc.MutableMapping):
 
   @staticmethod
   def _key(key):
-    met, scope, stat = key
+    met, stat = key
     if not isinstance(met, MetricDescription): raise TypeError(type(met))
-    if scope not in met.scopes: raise ValueError(key)
-    if not isinstance(scope, PropagationScope): raise TypeError(type(scope))
-    if stat not in scope.summaries: raise ValueError(key)
+    if stat not in met.summaries: raise ValueError(key)
     if not isinstance(stat, SummaryStatistic): raise TypeError(type(stat))
-    return (met, scope, stat)
+    return (met, stat)
 
   def __getitem__(self, key):
     return self._real[self._key(key)]
@@ -411,6 +413,6 @@ class SummaryProfileValues(collections.abc.MutableMapping):
     return f"{self.__class__.__name__}({self._real!r})"
 
   def __str__(self):
-    return '\n'.join(f"statistic {m.name}/{p.scope}/{s.combine}({s.formula}) #{s.statMetricId}: {v}"
-                     for (m,p,s),v in sorted(self.items(), key=lambda x: x[0][2].statMetricId))
+    return '\n'.join(f"statistic {m.name}/{s.scope.name}/{s.combine}({s.formula}) #{s.statMetricId}: {v}"
+                     for (m,s),v in sorted(self.items(), key=lambda x: x[0][1].statMetricId))
 

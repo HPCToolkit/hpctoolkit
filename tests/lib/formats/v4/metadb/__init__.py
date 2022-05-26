@@ -42,13 +42,14 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-from ._context_tree import ContextTreeSection, Context
+from ._context_tree import ContextTreeSection, EntryPoint, Context
 from ._functions import FunctionsSection, Function
 from ._general_properties import GeneralPropertiesSection
 from ._id_names import IdentifierNamesSection
 from ._load_modules import LoadModulesSection, LoadModule
 from ._performance_metrics import (PerformanceMetricsSection, MetricDescription,
-                                   PropagationScope, SummaryStatistic)
+                                   PropagationScopeInstance, SummaryStatistic,
+                                   PropagationScope)
 from ._source_files import SourceFilesSection, SourceFile
 
 from ..._base import VersionedFormat, FileHeader
@@ -60,9 +61,9 @@ __all__ = [
   # v4.0
   'GeneralPropertiesSection',
   'IdentifierNamesSection',
-  'PerformanceMetricsSection', 'MetricDescription', 'PropagationScope',
-  'SummaryStatistic',
-  'ContextTreeSection', 'Context',
+  'PerformanceMetricsSection', 'MetricDescription', 'PropagationScopeInstance',
+  'SummaryStatistic', 'PropagationScope',
+  'ContextTreeSection', 'EntryPoint', 'Context',
   'LoadModulesSection', 'LoadModule',
   'SourceFilesSection', 'SourceFile',
   'FunctionsSection', 'Function',

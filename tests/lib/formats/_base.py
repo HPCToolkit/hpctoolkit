@@ -81,7 +81,6 @@ class VersionedFormat:
   def __init__(self, *args, **kwargs):
     if len(args) > 0:
       self.unpack_from(*args, **kwargs)
-      self.__unpackVersionSrc = args[0], args[1]
     else:
       self._init_(**kwargs)
 
@@ -105,15 +104,19 @@ class VersionedFormat:
   def unpack_from(self, version, src, /, offset=0):
     for k,v in self.__vstruct.unpack_from(version, src, offset=offset).items():
       setattr(self, k, v)
+    self.__unpackVersionSrc = version, src
 
   @staticmethod
-  def subunpack(default_func):
+  def subunpack(default_func, *, method=False):
     def apply(func):
       def final(self, *args, **kwargs):
         try:
           args = self.__unpackVersionSrc
         except AttributeError:
-          return default_func()
+          if method:
+            return default_func(self)
+          else:
+            return default_func()
         else:
           return func(self, *args, **kwargs)
       return final
