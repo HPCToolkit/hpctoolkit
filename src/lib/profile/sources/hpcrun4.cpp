@@ -254,6 +254,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       } else {
         metric_t met(sink.metric(settings));
 
+        met.factor = m.period;
+
         if(m.flags.fields.valFmt == MetricFlags_ValFmt_Real) met.isInt = false;
         else if(m.flags.fields.valFmt == MetricFlags_ValFmt_Int) met.isInt = true;
         else {
@@ -530,7 +532,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       std::optional<ProfilePipeline::Source::AccumulatorsRef> faccum;
       while(mid > 0) {
         const auto& x = metrics.at(mid);
-        double v = x.isInt ? (double)val.i : val.r;
+        double v = (x.isInt ? (double)val.i : val.r) * x.factor;
         if(x.isRelation) {
           if(!raccum) {
             if(auto* p_x = std::get_if<singleCtx_t>(&node_it->second)) {

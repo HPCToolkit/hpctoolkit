@@ -96,6 +96,8 @@ private:
   struct metric_t {
     metric_t(Metric& metric) : metric(metric) {};
     Metric& metric;
+    // Multiplicitive factor applied to all metric values before injection
+    uint64_t factor = 1;
     // If true, the Metric applies to the relation instead of the full Context
     bool isRelation : 1;
     // If true, the values should be interpreted as ints instead of floats
