@@ -76,6 +76,7 @@
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
+#include <hpcrun/gpu/gpu-instrumentation.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
@@ -262,7 +263,7 @@ findOrAddKernelModule
 
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-  char kernel_name[kernel_name_len];
+  char *kernel_name = (char *) malloc(kernel_name_len+1);
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
 			     (kernel, kernel_name_len, kernel_name, NULL));
   
@@ -287,6 +288,7 @@ findOrAddKernelModule
   gpu_binary_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
 
   char path[PATH_MAX];
+  memset(path, 0, PATH_MAX);
   gpu_binary_path_generate(file_name, path);
 
   // Write the GPU binary if it doesn't exist
@@ -295,6 +297,7 @@ findOrAddKernelModule
   spinlock_unlock(&files_lock);
 
   free(kernel_elf);
+  free(kernel_name);
 
   // extend the GPU binary name with the kernel hash
   // for the module name
@@ -1016,6 +1019,31 @@ onKernelComplete
 //******************************************************************************
 // interface operations
 //******************************************************************************
+void
+gtpin_instrumentation_options
+(
+ gpu_instrumentation_t *inst_options
+)
+{
+  bool enabled = false;
+  if (inst_options->count_instructions) {
+    count_knob = true;
+    enabled = true;
+  }
+  if (inst_options->attribute_latency) {
+    latency_knob = true;
+    enabled = true;
+  }
+  if (inst_options->analyze_simd) {
+    simd_knob = true;
+    enabled = true;
+  }
+  if (enabled) {
+    gtpin_enable_profiling();
+  }
+}
+
+
 void
 gtpin_enable_profiling
 (

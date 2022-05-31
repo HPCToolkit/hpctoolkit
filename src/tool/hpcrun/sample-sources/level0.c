@@ -88,6 +88,7 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
+#include <hpcrun/gpu/gpu-instrumentation.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -128,7 +129,7 @@ static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
 static char event_name[128];
 
-static bool enable_instrumentation = false;
+static gpu_instrumentation_t level0_instrumentation_options;
 
 
 //******************************************************************************
@@ -189,7 +190,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, LEVEL0) || hpcrun_ev_is(ev_str, LEVEL0_INST);
+  return strncmp(ev_str, LEVEL0, strlen(LEVEL0)) == 0; 
 #else
   return false;
 #endif
@@ -214,11 +215,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(event_name), event_name,
     &th, NO_THRESHOLD);
 
-  if (hpcrun_ev_is(event_name, LEVEL0_INST)) {
-    gpu_metrics_GPU_INST_enable();
-#if 1
-    enable_instrumentation = true;
-#endif
+  gpu_instrumentation_options_set(event_name, LEVEL0, &level0_instrumentation_options);
+  if (gpu_instrumentation_enabled(&level0_instrumentation_options)) {
+     gpu_metrics_GPU_INST_enable();
   }
 }
 
@@ -231,7 +230,8 @@ METHOD_FN(finalize_event_list)
     monitor_real_exit(-1);
   }
 #endif
-  level0_init(enable_instrumentation);
+
+  level0_init(&level0_instrumentation_options);
 
   // Init records
   gpu_trace_init();

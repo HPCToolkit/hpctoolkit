@@ -388,7 +388,7 @@ do
 			preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
 		    namespace_default=single_if_auditing ;;
 
-		gpu=level0,inst) gtpin_libdir="${gtpin_lib_path}"
+		gpu=level0,inst*) gtpin_libdir="${gtpin_lib_path}"
 		    export ZET_ENABLE_API_TRACING_EXP=1
 		    export ZET_ENABLE_PROGRAM_INSTRUMENTATION=1
 		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"

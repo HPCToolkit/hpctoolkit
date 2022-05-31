@@ -59,6 +59,8 @@
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
 
+#include <gpu/gpu-instrumentation.h>
+
 
 
 //******************************************************************************
@@ -216,7 +218,7 @@ hpcrun_zeCommandQueueSynchronize
 void
 level0_init
 (
- bool enable_instrumentation
+ gpu_instrumentation_t *inst_options
 );
 
 void

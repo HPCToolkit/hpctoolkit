@@ -1192,13 +1192,12 @@ level0_bind
 void
 level0_init
 (
- bool enable_instrumentation
+ gpu_instrumentation_t *inst_options
 )
 {
-  gtpin_instrumentation = enable_instrumentation;
-  if (gtpin_instrumentation) {
-    gtpin_enable_profiling();
-    gtpin_count_enable();
+  if (gpu_instrumentation_enabled(inst_options)) {
+    gtpin_instrumentation = true;
+    gtpin_instrumentation_options(inst_options);
   }
 }
 

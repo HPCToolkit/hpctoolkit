@@ -377,6 +377,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-flush-alarm.c \
 	gpu/gpu-function-id-map.c \
 	gpu/gpu-host-correlation-map.c 	\
+	gpu/gpu-instrumentation.c 	\
 	gpu/gpu-metrics.c 		\
 	gpu/gpu-monitoring.c 		\
 	gpu/gpu-monitoring-thread-api.c \
