@@ -18255,6 +18255,7 @@ USE_LIBUNW=no
 # FIXME: This should probably be split into separate CPU and OS
 # sections.
 
+HOST_CPU=
 HOST_OS=
 HOST_CPU_MIPS=no
 HOST_CPU_PPC=no
@@ -18269,6 +18270,7 @@ case "${host}" in
   i386*-*-linux* | i686*-*-linux*)
     # __i386 && __linux
     HOST_OS="Linux"
+    HOST_CPU=x86
     HOST_CPU_X86=yes
     HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
@@ -18288,8 +18290,10 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
 
 $as_echo "#define HOST_CPU_x86 1" >>confdefs.h
 
+      HOST_CPU=x86
     else
       HOST_CPU_X86_64=yes
+      HOST_CPU=x86_64
 
 $as_echo "#define HOST_CPU_x86_64 1" >>confdefs.h
 
@@ -18329,6 +18333,7 @@ $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
   powerpc64*-*-linux* | powerpc-*-linux*)
     # []
     HOST_OS="Linux"
+    HOST_CPU=ppc64le
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
 
@@ -18374,6 +18379,7 @@ $as_echo "#define HOST_CPU_x86 1" >>confdefs.h
 
     else
       HOST_CPU_X86_64=yes
+      HOST_CPU=x86_64
 
 $as_echo "#define HOST_CPU_x86_64 1" >>confdefs.h
 
@@ -18420,6 +18426,7 @@ $as_echo "#define HOST_OS_TRU64 1" >>confdefs.h
   aarch64*linux* )
     HOST_OS="Linux"
     HOST_CPU_AARCH64=yes
+    HOST_CPU=aarch64
     UNWINDER=libunw
 
 $as_echo "#define HOST_OS_LINUX 1" >>confdefs.h
@@ -23861,22 +23868,28 @@ case "$IGC" in
     IGC_LDFLAGS=""
     IGA_LDFLAGS=""
 
-    for lib in $multilib_path ; do
-      if test -f "${IGC}/${lib}/libigc.so" ; then
-        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
-        break
-      fi
+    for ml in $multilib_path ; do
+      for lib in ${ml} ${ml}/${HOST_CPU}-linux-gnu ; do
+        if test -f "${IGC}/${lib}/libigc.so" ; then
+          IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+          break
+        fi
+      done
     done
+
     if test "x$IGC_LDFLAGS" = x ; then
       as_fn_error $? "unable to find libigc.so in: $IGC" "$LINENO" 5
     fi
 
-    for lib in $multilib_path ; do
-      if test -f "${IGC}/${lib}/libiga64.so" ; then
-        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
-        break
-      fi
+    for ml in $multilib_path ; do
+      for lib in $ml ${ml}/${HOST_CPU}-linux-gnu ; do
+        if test -f "${IGC}/${lib}/libiga64.so" ; then
+          IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+          break
+        fi
+      done
     done
+
     if test "x$IGA_LDFLAGS" = x ; then
       as_fn_error $? "unable to find libiga.so in: $IGC" "$LINENO" 5
     fi

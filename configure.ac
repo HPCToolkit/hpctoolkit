@@ -486,6 +486,7 @@ USE_LIBUNW=no
 # FIXME: This should probably be split into separate CPU and OS
 # sections.
 
+HOST_CPU=
 HOST_OS=
 HOST_CPU_MIPS=no
 HOST_CPU_PPC=no
@@ -500,6 +501,7 @@ case "${host}" in
   i386*-*-linux* | i686*-*-linux*)
     # __i386 && __linux
     HOST_OS="Linux"
+    HOST_CPU=x86
     HOST_CPU_X86=yes
     HOST_CPU_X86_FAMILY=yes
     UNWINDER=x86-family
@@ -513,8 +515,10 @@ case "${host}" in
     if test "${host_sizeof_voidp}" = "4"; then
       HOST_CPU_X86=yes
       AC_DEFINE([HOST_CPU_x86], [1], [HOST CPU: x86 (32-bit)])
+      HOST_CPU=x86
     else
       HOST_CPU_X86_64=yes
+      HOST_CPU=x86_64
       AC_DEFINE([HOST_CPU_x86_64], [1], [HOST CPU: x86-64])
     fi
     HOST_CPU_X86_FAMILY=yes
@@ -543,6 +547,7 @@ case "${host}" in
   powerpc64*-*-linux* | powerpc-*-linux*)
     # []
     HOST_OS="Linux"
+    HOST_CPU=ppc64le
     HOST_CPU_PPC=yes
     UNWINDER=ppc64
     AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
@@ -574,6 +579,7 @@ case "${host}" in
       AC_DEFINE([HOST_CPU_x86], [1], [HOST CPU: x86 (32-bit)])
     else
       HOST_CPU_X86_64=yes
+      HOST_CPU=x86_64
       AC_DEFINE([HOST_CPU_x86_64], [1], [HOST CPU: x86-64])
     fi
     HOST_CPU_X86_FAMILY=yes
@@ -610,6 +616,7 @@ case "${host}" in
   aarch64*linux* )
     HOST_OS="Linux"
     HOST_CPU_AARCH64=yes
+    HOST_CPU=aarch64
     UNWINDER=libunw
     AC_DEFINE([HOST_OS_LINUX], [1], [HOST OS: Linux])
     AC_DEFINE([HOST_CPU_ARM64], [1], [HOST CPU: ARM 64 (aarch64])
@@ -4712,22 +4719,28 @@ case "$IGC" in
     IGC_LDFLAGS=""
     IGA_LDFLAGS=""
 
-    for lib in $multilib_path ; do
-      if test -f "${IGC}/${lib}/libigc.so" ; then
-        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
-        break
-      fi
+    for ml in $multilib_path ; do
+      for lib in ${ml} ${ml}/${HOST_CPU}-linux-gnu ; do
+        if test -f "${IGC}/${lib}/libigc.so" ; then
+          IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+          break
+        fi
+      done
     done
+
     if test "x$IGC_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libigc.so in: $IGC])
     fi
 
-    for lib in $multilib_path ; do
-      if test -f "${IGC}/${lib}/libiga64.so" ; then
-        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
-        break
-      fi
+    for ml in $multilib_path ; do
+      for lib in $ml ${ml}/${HOST_CPU}-linux-gnu ; do
+        if test -f "${IGC}/${lib}/libiga64.so" ; then
+          IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+          break
+        fi
+      done
     done
+
     if test "x$IGA_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libiga.so in: $IGC])
     fi
