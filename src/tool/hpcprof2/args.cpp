@@ -507,6 +507,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     char end_arc;
   #endif
 
+    std::mutex sources_lock;
     const fs::path profileext = std::string(".")+HPCRUN_ProfileFnmSfx;
 
     ANNOTATE_HAPPENS_BEFORE(&start_arc);
@@ -526,8 +527,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
               "as a measurement profile but does not appear to be one";
         }
       }
-      #pragma omp critical
-      for(auto& sp: my_sources) sources.emplace_back(std::move(sp));
+      {
+        std::unique_lock<std::mutex> l(sources_lock);
+        for(auto& sp: my_sources) sources.emplace_back(std::move(sp));
+      }
       ANNOTATE_HAPPENS_BEFORE(&end_arc);
     }
     ANNOTATE_HAPPENS_AFTER(&end_arc);

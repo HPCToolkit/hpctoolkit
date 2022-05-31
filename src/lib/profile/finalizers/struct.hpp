@@ -52,6 +52,7 @@
 #include "../util/range_map.hpp"
 
 #include <deque>
+#include <mutex>
 #include <map>
 
 namespace hpctoolkit::finalizers {
@@ -101,6 +102,7 @@ private:
 
   // Structfiles can have data on multiple load modules (LM tags), this maps
   // each binary path with the properly initialized Parser for that tag.
+  std::mutex lms_lock;
   std::unordered_map<stdshim::filesystem::path,
                      std::unique_ptr<finalizers::detail::StructFileParser>> lms;
 };

@@ -269,16 +269,20 @@ std::vector<stdshim::filesystem::path> StructFile::forPaths() const {
 }
 
 void StructFile::load(const Module& m, udModule& ud) noexcept {
-  auto it = lms.find(m.path());
-  if(it == lms.end()) it = lms.find(m.userdata[sink.resolvedPath()]);
-  if(it == lms.end()) return;  // We got nothing
+  std::unique_ptr<StructFileParser> parser;
+  {
+    std::unique_lock<std::mutex> l(lms_lock);
+    auto it = lms.find(m.path());
+    if(it == lms.end()) it = lms.find(m.userdata[sink.resolvedPath()]);
+    if(it == lms.end()) return;  // We got nothing
+    parser = std::move(it->second);
+    lms.erase(it);
+  }
 
   // TODO: Check if this is the only StructFile for this Module.
 
-  if(!it->second->parse(sink, m, ud))
+  if(!parser->parse(sink, m, ud))
     util::log::error{} << "Error while parsing Structfile " << path.string();
-
-  lms.erase(it);
 }
 
 StructFileParser::StructFileParser(const stdshim::filesystem::path& path) noexcept

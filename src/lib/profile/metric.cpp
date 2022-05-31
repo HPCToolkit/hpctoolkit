@@ -44,6 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "util/vgannotations.hpp"
+
 #include "metric.hpp"
 
 #include "context.hpp"
@@ -133,9 +135,15 @@ Metric::Metric(ud_t::struct_t& rs, Settings s)
     m_frozen(false) {};
 
 std::unique_lock<std::mutex> Metric::StatsAccess::synchronize() {
-  if(m.m_frozen.load(std::memory_order_acquire)) return {};
+  if(m.m_frozen.load(std::memory_order_acquire)) {
+    ANNOTATE_HAPPENS_AFTER(&m.m_frozen);
+    return {};
+  }
   std::unique_lock<std::mutex> l{m.m_frozen_lock};
-  if(m.m_frozen.load(std::memory_order_relaxed)) return {};
+  if(m.m_frozen.load(std::memory_order_relaxed)) {
+    ANNOTATE_HAPPENS_AFTER(&m.m_frozen);
+    return {};
+  }
   return l;
 }
 
@@ -179,9 +187,15 @@ std::size_t Metric::StatsAccess::requestSumPartial() {
 }
 
 bool Metric::freeze() {
-  if(m_frozen.load(std::memory_order_acquire)) return false;
+  if(m_frozen.load(std::memory_order_acquire)) {
+    ANNOTATE_HAPPENS_AFTER(&m_frozen);
+    return false;
+  }
   std::unique_lock<std::mutex> l{m_frozen_lock};
-  if(m_frozen.load(std::memory_order_relaxed)) return false;
+  if(m_frozen.load(std::memory_order_relaxed)) {
+    ANNOTATE_HAPPENS_AFTER(&m_frozen);
+    return false;
+  }
 
   const Statistics& ss = m_thawed_stats;
 
@@ -258,6 +272,7 @@ bool Metric::freeze() {
     m_stats.push_back({"Max", false, {Expression::variable, maxIdx},
                        u_settings().visibility == Settings::visibility_t::shownByDefault});
 
+  ANNOTATE_HAPPENS_BEFORE(&m_frozen);
   m_frozen.store(true, std::memory_order_release);
   return true;
 }
