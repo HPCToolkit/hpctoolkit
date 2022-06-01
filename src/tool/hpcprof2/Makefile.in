@@ -145,8 +145,7 @@ am_hpcprof2_OBJECTS = $(am__objects_1)
 hpcprof2_OBJECTS = $(am_hpcprof2_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(HPCLIB_Profile) $(HPCLIB_ProfileStandalone) \
-	$(HPCLIB_ProfLean) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
-	$(HPCLIB_Binutils)
+	$(HPCLIB_ProfLean) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1)
 hpcprof2_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -543,8 +542,7 @@ MYLDADD = \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
 	@BOOST_LFLAGS@ \
-	@HOST_HPCPROF_LDFLAGS@ \
-	$(HPCLIB_Binutils)
+	@HOST_HPCPROF_LDFLAGS@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcprof2_SOURCES = $(MYSOURCES)

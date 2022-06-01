@@ -102,15 +102,6 @@
 #define PRINT(...)
 #endif
 
-// TODO:
-// We will need to refactor this code to make the NUM_FNS a variable
-// and the table of functions to be looked up can be a linked list,
-// where any GPU can indicate that its functions should be added to
-// the module ignore map when that type of GPU is being monitored.
-
-#define NUM_FNS 10
-
-
 
 //***************************************************************************
 // type declarations
@@ -128,6 +119,12 @@ typedef struct module_ignore_entry {
 //***************************************************************************
 
 
+// TODO:
+// We will need to refactor this code to make the NUM_FNS a variable
+// and the table of functions to be looked up can be a linked list,
+// where any GPU can indicate that its functions should be added to
+// the module ignore map when that type of GPU is being monitored.
+
 static const char *IGNORE_FNS[] = {
   "cuLaunchKernel",
   "cudaLaunchKernel",
@@ -141,6 +138,8 @@ static const char *IGNORE_FNS[] = {
   "clIcdGetPlatformIDsKHR",    // libigdrcl.so(intel opencl)
   "zeKernelCreate"             // libze_intel_gpu.so (intel L0) ISSUE: not getting ignored
 };
+
+#define NUM_FNS (sizeof IGNORE_FNS / sizeof IGNORE_FNS[0])
 
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;

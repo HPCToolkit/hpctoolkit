@@ -133,7 +133,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Output options
   { 'o', "output",        CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
-  { 0, "du-graph",        CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL, NULL },
 
   // General
   { 'v', "verbose",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
@@ -325,7 +324,6 @@ Args::parse(int argc, const char* const argv[])
       if (!yes && !no) ARG_ERROR("gpucfg argument must be 'yes' or 'no'.");
       compute_gpu_cfg = yes;
     }
-
 
     if (parser.isOpt("gpu")) {
       const string & arg = parser.getOptArg("gpu");
