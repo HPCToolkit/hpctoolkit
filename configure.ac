@@ -4823,7 +4823,6 @@ GTPIN="$default_gtpin_prefix"
 
 OPT_HAVE_GTPIN=no
 OPT_GTPIN_IFLAGS=
-OPT_GTPIN_LDFLAGS=
 
 AC_ARG_WITH([gtpin],
   [AS_HELP_STRING([--with-gtpin=PATH],
@@ -4841,12 +4840,10 @@ case "$GTPIN" in
     OPT_GTPIN_IFLAGS="-I${GTPIN}/Include -I${GTPIN}/Include/ged/intel64/"
 
     if test -f "${GTPIN}/Lib/intel64/libgtpin.so" ; then
-      # OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
-      OPT_GTPIN_LDFLAGS="-Wl,-rpath=${GTPIN}/Lib/intel64"
       OPT_GTPIN_LIBDIR="${GTPIN}/Lib/intel64"
     fi
 
-    if test "x$OPT_GTPIN_LDFLAGS" = x ; then
+    if test "x$OPT_GTPIN_LIBDIR" = x ; then
       AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
     fi
     OPT_HAVE_GTPIN=yes
@@ -4864,7 +4861,6 @@ AC_MSG_RESULT([$GTPIN])
 
 AC_SUBST([OPT_GTPIN])
 AC_SUBST([OPT_GTPIN_IFLAGS])
-AC_SUBST([OPT_GTPIN_LDFLAGS])
 AC_SUBST([OPT_GTPIN_LIBDIR])
 
 
