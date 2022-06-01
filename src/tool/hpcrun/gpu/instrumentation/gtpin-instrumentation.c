@@ -96,7 +96,7 @@
 // macros
 //******************************************************************************
 
-// #define STUB
+#define STUB 0
 
 
 //******************************************************************************
@@ -149,13 +149,6 @@ static bool count_knob = false;
 
 static SimdSectionNode *SimdSectionNode_free_list = NULL;
 static SimdGroupNode *SimdGroupNode_free_list = NULL;
-
-#if 0
-static __thread uint64_t gtpin_correlation_id = 0;
-static __thread uint64_t gtpin_cpu_submit_time = 0;
-static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
-static __thread bool gtpin_first = true;
-#endif
 
 // variables for instruction latency distribution
 // for GEN9
@@ -733,8 +726,8 @@ onKernelBuild
  void *v
 )
 {
-#ifdef STUB
-  return; // stub
+#if STUB
+  return;
 #endif
 
   assert(kernel_data_map_lookup((uint64_t)kernel) == 0);
@@ -850,8 +843,8 @@ onKernelRun
  void *v
 )
 {
-#ifdef STUB
-  return; // stub
+#if STUB
+  return;
 #endif
 
   ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %"PRIu64"", (uint64_t)kernelExec);
@@ -871,8 +864,8 @@ onKernelComplete
  void *v
 )
 {
-#ifdef STUB
-  return; // stub
+#if STUB
+  return;
 #endif
 
   // FIXME: johnmc thinks this is unsafe to use kernel pointer as correlation id
