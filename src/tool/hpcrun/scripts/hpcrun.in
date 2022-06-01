@@ -376,17 +376,9 @@ do
              export ROCP_TOOL_LIB=libhpcrun.so
              export ROCP_METRICS=@ROCM_PROFILER_LD_DIR@/metrics.xml
 			 export ROCP_HSA_INTERCEPT=1;;
-		gpu=opencl)	 gtpin_libdir="${gtpin_lib_path}"
+		gpu=opencl*|intel_gpu_util)	 gtpin_libdir="${gtpin_lib_path}"
 			preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
 			namespace_default=single_if_auditing ;;
-
-		gpu=opencl,inst*) gtpin_libdir="${gtpin_lib_path}"
-			preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
-		    namespace_default=single_if_auditing ;;
-
-		intel_gpu_util) gtpin_libdir="${gtpin_lib_path}"
-			preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
-		    namespace_default=single_if_auditing ;;
 
 		gpu=level0,inst*) gtpin_libdir="${gtpin_lib_path}"
 		    export ZET_ENABLE_API_TRACING_EXP=1
