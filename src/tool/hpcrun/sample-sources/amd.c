@@ -211,7 +211,7 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available AMD GPU events\n");
+  printf("Available events for monitoring HIP on AMD GPUs\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");

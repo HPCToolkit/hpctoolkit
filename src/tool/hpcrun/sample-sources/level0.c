@@ -113,7 +113,6 @@
 //******************************************************************************
 
 #define LEVEL0 "gpu=level0"
-#define LEVEL0_INST "gpu=level0,inst"
 
 #define NO_THRESHOLD  1L
 
@@ -254,19 +253,24 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available Level0 GPU events\n");
+  printf("Available events for monitoring GPU operations atop Intel's Level Zero \n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tProfile time of GPU operations initiated\n"
-	 "\t\tusing Intel's Level0 runtime.\n",
-	 LEVEL0);
-  printf("\n");
-  printf("%s\t\tProfile time of GPU operations initiated\n"
-	 "\t\tusing Intel's Level0 runtime. Collect instruction\n",
-	 "\t\tcounts for GPU kernels using GT-Pin.\n"
-	 LEVEL0_INST);
-  printf("\n");
+  printf("gpu=level0\tOperation-level monitoring for GPU-accelerated applications\n"
+	 "\t\trunning atop Intel's Level Zero runtime. Collect timing \n"
+	 "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
+	 "\n");
+  printf("gpu=level0,inst=<comma-separated list of options>\n"
+	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
+	 "\t\trunning atop Intel's Level Zero runtime. Collect timing\n"
+	 "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
+	 "\t\tWhen running on Intel GPUs, use optional instrumentation\n"
+	 "\t\twithin GPU kernels to collect one or more of the following:\n"
+	 "\t\t  count:   count how many times each GPU instruction executes\n"
+	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
+	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
+	 "\n");
 }
 
 

@@ -169,11 +169,11 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available AMD GPU events\n");
+  printf("Available events for monitoring OpenMP offloading on AMD GPUs \n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tOperation-level monitoring of OpenMP offloading.\n"
+  printf("%s\tOperation-level monitoring of OpenMP offloading.\n"
 	 "\t\tCollect timing information on GPU kernel invocations,\n"
 	 "\t\tmemory copies, etc.\n",
 	 OPENMP_TARGET);

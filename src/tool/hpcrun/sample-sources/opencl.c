@@ -263,29 +263,27 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available OPENCL GPU events\n");
+  printf("Available events for monitoring GPU operations atop OpenCL\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\tOperation-level monitoring for opencl on a GPU.\n"
-    "\t\tCollect timing information on GPU kernel invocations,\n"
-    "\t\tmemory copies, etc.\n",
-    GPU_STRING);
-  printf("\n");
+  printf("gpu=opencl\tOperation-level monitoring for OpenCL on a CPU or GPU.\n"
+	 "\t\tCollect timing information for GPU kernel invocations,\n"
+	 "\t\tmemory copies, etc.\n"
+	 "\n");
 
-  printf("%1$s%2$s\n\t\tIntel GPU instrumentation(for opencl, dpcpp).\n"
-    "\t\tCollect instrumentation results on GPU kernel.\n"
-    "\t\tAvailable instrumentation support (tokens in brackets are to be passed as options):\n"
-    "\t\t1. Execution Count(count): Counts the no. of GPU instructions executed\n"
-    "\t\t2. Latency(latency): Execution cycles taken up by GPU instructions\n"
-    "\t\t3. SIMD Lanes(simd): SIMD lanes used by GPU instructions\n"
-    "\t\te.g. %1$s%3$s,%4$s enables %3$s and %4$s instrumentation\n"
-    "\t\te.g. %1$s%3$s,%4$s,%5$s enables %3$s, %4$s and %5$s instrumentation\n"
-    "\t\tIf %6$s is passed(default mode), %3$s and %4$s instrumentation is turned on\n",
-    INSTRUMENTATION_PREFIX, "<comma-separated instrumentation options>",
-    EXECUTION_COUNT, LATENCY, SIMD, DEFAULT_INSTRUMENTATION);
-  printf("\n");
+  printf("gpu=opencl,inst=<comma-separated list of options>\n"
+	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
+	 "\t\trunning on an Intel GPU atop Intel's OpenCL runtime. Collect\n"
+	 "\t\ttiming information for GPU kernel invocations, memory copies, etc.\n"
+	 "\t\tUse optional instrumentation within GPU kernels to collect\n"
+	 "\t\tone or more of the following:\n"
+	 "\t\t  count:   count how many times each GPU instruction executes\n"
+	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
+	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
+	 "\n");
 
+#if 0
   printf("%s\tIntel Optimization suggestions.\n"
     "\t\tprovides oneapi optimization suggestions from the optimization guide.\n"
     "\t\tTo use it, pass '-e %s -e %s' to your hpcrun command\n",
@@ -297,6 +295,7 @@ METHOD_FN(display_events)
     "\t\tTo use it, pass '-e %s' to your hpcrun command\n",
     ENABLE_INTEL_GPU_UTILIZATION, GPU_STRING, ENABLE_INTEL_GPU_UTILIZATION);
   printf("\n");
+#endif
 }
 
 
