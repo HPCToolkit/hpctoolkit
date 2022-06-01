@@ -155,7 +155,7 @@ public:
   /// Enum for possible output formats for profile data
   enum class Format {
     // experiment.xml + sparse thing, the current database format.
-    sparse
+    sparse,
   };
   /// Requested output format
   Format format;
