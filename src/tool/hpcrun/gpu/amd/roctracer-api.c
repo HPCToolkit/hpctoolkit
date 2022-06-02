@@ -67,6 +67,9 @@
 #include <hpcrun/sample-sources/libdl.h>
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+#include <monitor.h>
+
+
 
 
 #include "rocprofiler-api.h"

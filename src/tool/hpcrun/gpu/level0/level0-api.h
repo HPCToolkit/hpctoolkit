@@ -45,10 +45,23 @@
 #define level0_api_h
 
 //******************************************************************************
+// global includes
+//******************************************************************************
+
+#include <stdbool.h>
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
 #include <level_zero/ze_api.h>
+#include <level_zero/zet_api.h>
+
+#include <gpu/gpu-instrumentation.h>
+
+
 
 //******************************************************************************
 // interface operations
@@ -153,12 +166,60 @@ hpcrun_zeEventHostReset
   ze_event_handle_t hEvent                        ///< [in] handle of the event
 );
 
+ze_result_t
+hpcrun_zeModuleCreate
+(
+  ze_context_handle_t hContext,                // [in] handle of the context object
+  ze_device_handle_t hDevice,                  // [in] handle of the device
+  const ze_module_desc_t *desc,                // [in] pointer to module descriptor
+  ze_module_handle_t *phModule,                // [out] pointer to handle of module object created
+  ze_module_build_log_handle_t *phBuildLog     // [out][optional] pointer to handle of module’s build log.
+);
+
+ze_result_t
+hpcrun_zeModuleDestroy
+(
+  ze_module_handle_t hModule       // [in][release] handle of the module
+);
+
+ze_result_t
+hpcrun_zeKernelCreate
+(
+  ze_module_handle_t hModule,          // [in] handle of the module
+  const ze_kernel_desc_t *desc,        // [in] pointer to kernel descriptor
+  ze_kernel_handle_t *phKernel         // [out] handle of the Function object
+);
+
+ze_result_t
+hpcrun_zeKernelDestroy
+(
+  ze_kernel_handle_t hKernel      // [in][release] handle of the kernel object
+);
+
+ze_result_t
+hpcrun_zeFenceDestroy
+(
+  ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
+);
+
+ze_result_t
+hpcrun_zeFenceReset
+(
+  ze_fence_handle_t hFence       //  [in] handle of the fence
+);
+
+ze_result_t
+hpcrun_zeCommandQueueSynchronize
+(
+  ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
+  uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
+);
+
 void
 level0_init
 (
- void
+ gpu_instrumentation_t *inst_options
 );
-
 
 void
 level0_fini
@@ -167,9 +228,21 @@ level0_fini
  int how
 );
 
+void
+level0_flush
+(
+ void *args,
+ int how
+);
 
 int
 level0_bind
+(
+  void
+);
+
+bool
+level0_gtpin_enabled
 (
   void
 );

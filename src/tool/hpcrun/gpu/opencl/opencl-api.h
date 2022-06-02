@@ -67,15 +67,15 @@ typedef struct opencl_object_t opencl_object_t;
 cl_basic_callback_t
 opencl_cb_basic_get
 (
- opencl_object_t *cb_data
+ opencl_object_t *
 );
 
 
 void
 opencl_cb_basic_print
 (
- cl_basic_callback_t cb_basic,
- char *title
+ cl_basic_callback_t,
+ char *
 );
 
 
@@ -89,7 +89,7 @@ opencl_initialize_correlation_id
 void
 opencl_subscriber_callback
 (
- opencl_object_t *cb_info
+ opencl_object_t *
 );
 
 
@@ -141,6 +141,14 @@ opencl_bind
 );
 
 
+uint64_t
+get_numeric_hash_id_for_string
+(
+ const char *,
+ size_t
+);
+
+
 void
 opencl_instrumentation_enable
 (
@@ -149,18 +157,74 @@ opencl_instrumentation_enable
 
 
 void
+opencl_optimization_check_enable
+(
+ void
+);
+
+
+void
+opencl_blame_shifting_enable
+(
+ void
+);
+
+
+void
+opencl_instrumentation_simd_enable
+(
+ void
+);
+
+
+void
+opencl_instrumentation_latency_enable
+(
+ void
+);
+
+
+void
+opencl_instrumentation_count_enable
+(
+ void
+);
+
+
+void
+set_gpu_utilization_flag
+(
+ void
+);
+
+
+bool
+get_gpu_utilization_flag
+(
+ void
+);
+
+
+cct_node_t*
+place_cct_under_opencl_kernel
+(
+  uint32_t
+);
+
+
+void
 opencl_api_thread_finalize
 (
- void *args,
- int how
+ void *,
+ int
 );
 
 
 void
 opencl_api_process_finalize
 (
- void *args,
- int how
+ void *,
+ int
 );
 
 

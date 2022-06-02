@@ -291,9 +291,25 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	"GPU time: synchronization (seconds)")
 
 // gpu instruction count
-#define FORALL_GPU_INST(macro)			\
-  macro(GPU_INST_METRIC_NAME, GPU_INST_ALL,	\
-	"GPU instructions executed")
+#define FORALL_GPU_INST(macro)						\
+  macro(GPU_INST_METRIC_NAME, GPU_INST_ALL,				\
+	"GPU instructions executed")					\
+  macro(GPU_INST_METRIC_NAME ": SIMD_TOT", GPU_INST_TOT_SIMD_LANES,	\
+	"GPU total SIMD lanes")   \
+  macro(GPU_INST_METRIC_NAME ": SIMD_ACT", GPU_INST_ACT_SIMD_LANES,	\
+	"GPU active SIMD lanes")  \
+  macro(GPU_INST_METRIC_NAME ": SIMD_WST", GPU_INST_WASTE_SIMD_LANES,	\
+	"GPU wasted SIMD lanes")  \
+  macro(GPU_INST_METRIC_NAME ": SIMD_SLS", GPU_INST_SCALAR_SIMD_LOSS,	\
+	"GPU SIMD lanes lost due to scalar instructions")   \
+  macro(GPU_INST_METRIC_NAME ": LAT_CYC", GPU_INST_LATENCY,	\
+	"GPU instruction latency (cycles)")  \
+  macro(GPU_INST_METRIC_NAME ": LAT_COV", GPU_INST_COVERED_LATENCY,	\
+	"GPU covered latency (cycles)")  \
+  macro(GPU_INST_METRIC_NAME ": LAT_UCV", GPU_INST_UNCOVERED_LATENCY,	\
+	"GPU uncovered latency (cycles)")   \
+  macro(GPU_INST_METRIC_NAME ": LAT_THR", GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY,	\
+	"GPU threads needed to cover latency (1 + UCV/COV)")
 
 
 // gpu kernel characteristics
@@ -337,7 +353,7 @@ GPU_XFER_XRCV_COUNT              			 = 5
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\
   macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
-	"GPU kernel: theoretical occupancy (FGP_ACT / FGP_MAX)")          \
+	"GPU kernel: theoretical occupancy (FGP_ACT / FGP_MAX)")
 
 // gpu implicit copy
 #define FORALL_GICOPY(macro)					\
@@ -411,6 +427,51 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	"GPU kernel: launch count received")
 
 
+// intel optimization metrics
+#define FORALL_INTEL_OPTIMIZATION(macro)					\
+    macro("INORDER_QUEUE:COUNT",                INORDER_QUEUE,		\
+	  "count of inorder GPU queues/streams (enable out-of-order execution to run kernels in parallel)")				\
+  macro("GKER_MULTIPLE_CONTEXTS:COUNT",                KERNEL_TO_MULTIPLE_CONTEXTS,		\
+	"count of kernel executions on multiple contexts (each context will JIT the kernel)")        \
+  macro("GKER_PARAMS_NOT_ALIASED:COUNT",                KERNEL_PARAMS_NOT_ALIASED,		\
+	"count of kernel invocations with non-aliased parameters (add directive for enabling code-reordering optimization)")        \
+  macro("GKER_PARAMS_ALIASED:COUNT",                KERNEL_PARAMS_ALIASED,		\
+	"count of kernel invocations with aliased parameters")        \
+  macro("SINGLE_DEVICE_USE_AOT_COMPILATION",                SINGLE_DEVICE_USE_AOT_COMPILATION,		\
+	"since a single device is being used, use AOT for saving time JITing kernels: bool")        \
+  macro("OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL",                OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL,		\
+	"kernel output is input for another kernel. Try merging kernels to avoid sending redundant data to GPU: bool")        \
+  macro("UNUSED_DEVICES:COUNT",                UNUSED_DEVICES,		\
+	"all avaiable devices are not getting utilized. Offload computations to all devices to reduce total application execution time: count")
+
+
+// blame-shifting metrics
+#define FORALL_BLAME_SHIFT(macro)					\
+  macro("CPU_IDLE (sec)",              CPU_IDLE,		\
+	"CPU_IDLE time (seconds)")  \
+  macro("GPU_IDLE_CAUSE (sec)",               GPU_IDLE_CAUSE,			\
+	"GPU_IDLE_CAUSE time (seconds)")			\
+  macro("CPU_IDLE_CAUSE (sec)",              CPU_IDLE_CAUSE,		\
+	"CPU_IDLE_CAUSE time (seconds)")
+
+
+// gpu-utilization metrics
+#define FORALL_GPU_UTILIZATION(macro)					\
+  macro("EU_ACTIVE",              EU_ACT,		"")  \
+  macro("EU_STALL",              EU_STL,		"")	 \
+  macro("EU_IDLE",             EU_IDLE,		"")  \
+  macro("GPU_UTIL_DENOMINATOR",              GPU_UTIL_DENOMINATOR,		\
+	"this is a helper metric that increments the metric value by 100 for the corresponding CCT. This can be denominator to the above three \
+  to metrics to get the \% of GPU utilization")  \
+  macro("EU_ACT (%)",              EU_ACT_PERCENT,		\
+	"The percentage of time in which the Execution Units were active")    \
+  macro("EU_STL (%)",              EU_STL_PERCENT,		\
+	"The percentage of time in which the Execution Units were stalled")    \
+  macro("EU_IDLE (%)",              EU_IDLE_PERCENT,		\
+	"The percentage of time in which the Execution Units were idle")
+
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -481,6 +542,22 @@ gpu_metrics_GXFER_enable
 void
 );
 
+// record blame-shifting metrics
+void
+gpu_metrics_BLAME_SHIFT_enable
+(
+ void
+);
+
+
+void
+gpu_metrics_gpu_utilization_enable
+(
+ void
+);
+
+
+
 //--------------------------------------------------
 // record global memory access statistics
 //--------------------------------------------------
@@ -530,6 +607,15 @@ gpu_metrics_GPU_CTR_enable
   const char**
 );
 
+//--------------------------------------------------
+// intel optimization metrics
+//--------------------------------------------------
+
+void
+gpu_metrics_INTEL_OPTIMIZATION_enable
+(
+ void
+);
 
 
 //--------------------------------------------------

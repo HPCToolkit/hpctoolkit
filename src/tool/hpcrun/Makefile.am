@@ -167,6 +167,8 @@ CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 ROCM_INC_FLGS = @OPT_ROCM_IFLAGS@
 
 OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
+OCL_BH_IFLAGS = @OPT_OCL_BH_IFLAGS@
+OCL_BH_LDFLGS = @OPT_OCL_BH_LDFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
@@ -317,6 +319,7 @@ MY_BASE_FILES =				\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	sample-sources/sample-filters.c \
+  sample-sources/cpu_gpu_idle.c	\
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
@@ -371,8 +374,10 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation-id.c	\
 	gpu/gpu-correlation-id-map.c 	\
 	gpu/gpu-event-id-map.c \
+	gpu/gpu-flush-alarm.c \
 	gpu/gpu-function-id-map.c \
 	gpu/gpu-host-correlation-map.c 	\
+	gpu/gpu-instrumentation.c 	\
 	gpu/gpu-metrics.c 		\
 	gpu/gpu-monitoring.c 		\
 	gpu/gpu-monitoring-thread-api.c \
@@ -421,7 +426,17 @@ MY_BASE_FILES =				\
 	utilities/linuxtimer.c		\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c
+	utilities/unlink.h utilities/unlink.c \
+	\
+	gpu/blame-shifting/blame.c \
+	gpu/blame-shifting/blame-helper.c \
+	gpu/blame-shifting/blame-queue-map.c	\
+	gpu/blame-shifting/blame-kernel-map.c	\
+	gpu/blame-shifting/active-kernels-map.c \
+	gpu/blame-shifting/blame-kernel-cleanup-map.c \
+	\
+	gpu/opencl/intel/papi/papi-kernel-map.c	\
+	gpu/opencl/intel/papi/papi-metric-collector.c
 
 # 	gpu/gpu-api.c
 #	trampoline/common/trampoline.c
@@ -499,9 +514,11 @@ MY_AARCH64_FILES = \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 if OPT_PAPI_COMPONENT
+MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_INTEL
 MY_PAPI_FILES = \
     sample-sources/papi-c.c \
-    sample-sources/papi-c-extended-info.c
+    sample-sources/papi-c-extended-info.c \
+	sample-sources/papi-c-intel.c
 else
     MY_PAPI_FILES = sample-sources/papi.c
 endif
@@ -531,17 +548,27 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-activity-translate.c \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
-	gpu/opencl/opencl-context-map.c
+	gpu/opencl/opencl-context-map.c \
+	gpu/opencl/intel/optimization-check.c \
+	gpu/opencl/opencl-kernel-loadmap-map.c \
+	gpu/opencl/intel/maps/queue-context-map.c \
+	gpu/opencl/intel/maps/kernel-context-map.c	\
+	gpu/opencl/intel/maps/kernel-param-map.c	\
+	gpu/opencl/intel/maps/buffer-map.c	\
+	gpu/opencl/intel/maps/device-map.c	\
+	gpu/blame-shifting/opencl/opencl-blame.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
 libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
 libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
+libhpcrun_opencl_la_LDFLAGS   += $(OPT_OCL_BH_LDFLAGS)
 endif
 
 if OPT_ENABLE_GTPIN
 MY_GTPIN_FILES = \
 	gpu/instrumentation/kernel-data-map.c \
+	gpu/instrumentation/simdgroup-map.c \
 	gpu/instrumentation/gtpin-instrumentation.c \
 	gpu/instrumentation/gtpin-correlation-id-map.c
 endif
@@ -568,7 +595,9 @@ MY_LEVEL0_FILES=\
 	gpu/level0/level0-data-node.c \
 	gpu/level0/level0-event-map.c \
 	gpu/level0/level0-handle-map.c \
-	gpu/level0/level0-kernel-module-map.c
+	gpu/level0/level0-kernel-module-map.c \
+	gpu/level0/level0-fence-map.c \
+	gpu/level0/level0-command-queue-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
 libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
@@ -1077,6 +1106,7 @@ endif
 if OPT_ENABLE_OPENCL
   libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_OPENCL
+  libhpcrun_la_CPPFLAGS += $(OPT_OCL_BH_IFLAGS)
   libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL

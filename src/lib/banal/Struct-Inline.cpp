@@ -125,8 +125,13 @@ openSymtab(ElfFile *elfFile)
     return NULL;
   }
 
-  the_symtab->parseTypesNow();
-  the_symtab->parseFunctionRanges();
+  // For Intel GPU binaries, We need to delay
+  // the parsing of inlining information as we need
+  // to manually inject symbols to the symtab object
+  if (!elfFile->isIntelGPUFile()) {
+    the_symtab->parseTypesNow();
+    the_symtab->parseFunctionRanges();
+  }
 
   return the_symtab;
 }

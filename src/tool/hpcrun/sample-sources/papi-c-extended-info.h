@@ -7,6 +7,7 @@ typedef void (*finalize_event_set_proc_t)(void);
 typedef void (*setup_proc_t)(void);
 typedef void (*teardown_proc_t)(void);
 typedef void (*start_proc_t)(void);
+typedef void (*read_proc_t)(long long *values);
 typedef void (*stop_proc_t)(void);
 typedef bool (*pred_proc_t)(const char* name);
 
@@ -18,6 +19,7 @@ typedef struct sync_info_list_t {
   const setup_proc_t sync_setup;
   const teardown_proc_t sync_teardown;
   const start_proc_t sync_start;
+  const read_proc_t read;
   const stop_proc_t sync_stop;
   const bool process_only;
   struct sync_info_list_t* next;

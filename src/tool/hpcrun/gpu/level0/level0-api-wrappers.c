@@ -235,3 +235,31 @@ zeKernelDestroy
 {
   return hpcrun_zeKernelDestroy(hKernel);
 }
+
+ze_result_t
+zeFenceDestroy
+(
+  ze_fence_handle_t hFence        // [in][release] handle of fence object to destroy
+)
+{
+  return hpcrun_zeFenceDestroy(hFence);
+}
+
+ze_result_t
+zeFenceReset
+(
+  ze_fence_handle_t hFence       //  [in] handle of the fence
+)
+{
+  return hpcrun_zeFenceReset(hFence);
+}
+
+ze_result_t
+zeCommandQueueSynchronize
+(
+  ze_command_queue_handle_t hCommandQueue,   // [in] handle of the command queue
+  uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
+)
+{
+  return hpcrun_zeCommandQueueSynchronize(hCommandQueue, timeout);
+}

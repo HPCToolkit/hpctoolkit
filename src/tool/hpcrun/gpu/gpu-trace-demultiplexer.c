@@ -56,7 +56,6 @@
 
 #include <monitor.h>
 
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -97,13 +96,11 @@ gpu_trace_channel_set_create
   new_channel_set->next = NULL;
   new_channel_set->channel_set_ptr = gpu_trace_channel_set_alloc(streams_per_thread);
   atomic_store(&new_channel_set->channel_index, 0);
-
   monitor_disable_new_threads();
   // Create tracing thread
   pthread_create(&new_channel_set->thread, NULL, (pthread_start_routine_t) gpu_trace_record,
                  new_channel_set);
   monitor_enable_new_threads();
-
   return new_channel_set;
 }
 

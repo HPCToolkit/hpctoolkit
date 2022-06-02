@@ -146,6 +146,10 @@ vdso_segment_len
       elf_size = ehdr.e_shoff + ehdr.e_shentsize * section_count;
     }
   }
+
+  // free any resources allocated by elf_memory
+  elf_end(vdso_elf);
+
   if (elf_size > 0)
     return vdso_length = elf_size;
   else

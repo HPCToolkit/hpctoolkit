@@ -86,8 +86,12 @@
   macro(GPU_INST, 9)  \
   macro(GTIMES, 10)  \
   macro(KINFO, 12)  \
-  macro(GSAMP, 13) \
-  macro(GXFER, 14)
+  macro(GSAMP, 13)  \
+  macro(GXFER, 14) \
+  macro(INTEL_OPTIMIZATION, 15) \
+  macro(BLAME_SHIFT, 16)  \
+  macro(GPU_UTILIZATION, 17) \
+  macro(CTR, 18)
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -205,6 +209,50 @@ name ## _metric_kind
   sprintf(reg_formula, "100*(#%d/#%d)", METRIC_ID(GPU_KINFO_FGP_ACT_ACUMU), METRIC_ID(GPU_KINFO_FGP_MAX_ACUMU)); \
   reg_metric->formula = reg_formula; \
   reg_metric->format  = FORMAT_DISPLAY_PERCENTAGE
+
+
+#define GPU_UTILIZATION_FORMULA() \
+  hpcrun_set_display(METRIC_ID(EU_ACT), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(EU_STL), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(EU_IDLE), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(GPU_UTIL_DENOMINATOR), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_percent(METRIC_ID(EU_ACT_PERCENT), 0); \
+  hpcrun_set_percent(METRIC_ID(EU_STL_PERCENT), 0); \
+  hpcrun_set_percent(METRIC_ID(EU_IDLE_PERCENT), 0); \
+  active_metric  = hpcrun_id2metric_linked(METRIC_ID(EU_ACT_PERCENT)); \
+  stalled_metric  = hpcrun_id2metric_linked(METRIC_ID(EU_STL_PERCENT)); \
+  idle_metric  = hpcrun_id2metric_linked(METRIC_ID(EU_IDLE_PERCENT)); \
+  active_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  stall_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  idle_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(active_formula, "100*(#%d/#%d)", METRIC_ID(EU_ACT), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  sprintf(stall_formula, "100*(#%d/#%d)", METRIC_ID(EU_STL), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  sprintf(idle_formula, "100*(#%d/#%d)", METRIC_ID(EU_IDLE), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  active_metric->formula = active_formula; \
+  stalled_metric->formula = stall_formula; \
+  idle_metric->formula = idle_formula; \
+  active_metric->format  = FORMAT_DISPLAY_PERCENTAGE; \
+  stalled_metric->format  = FORMAT_DISPLAY_PERCENTAGE; \
+  idle_metric->format  = FORMAT_DISPLAY_PERCENTAGE
+
+
+// NOTE: to ensure that this metric is 0 if no latency is measured, rather than computing it as:
+//     1 + (uncovered_latency/covered_latency)
+// instead, compute it as: 
+//     (covered_latency/covered_latency) + (uncovered_latency/covered_latency) 
+// when covered_latency is present (as it would be with any latency measurement), the first term will
+// be 1 as expected. when no latency measurements are available, the first term will be 0, causing the
+// metric to be unavailable
+#define THREADS_TO_COVER_LATENCY_FORMULA()				\
+  hpcrun_set_display(METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY), HPCRUN_FMT_METRIC_SHOW); \
+  thrds_to_cover_latency_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY)); \
+  thrds_to_cover_latency_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(thrds_to_cover_latency_formula, "1 + (#%d/#%d)", METRIC_ID(GPU_INST_UNCOVERED_LATENCY), METRIC_ID(GPU_INST_COVERED_LATENCY)); \
+  sprintf(thrds_to_cover_latency_formula, "(#%d/#%d) + (#%d/#%d)",	\
+	  METRIC_ID(GPU_INST_COVERED_LATENCY), METRIC_ID(GPU_INST_COVERED_LATENCY), \
+	  METRIC_ID(GPU_INST_UNCOVERED_LATENCY), METRIC_ID(GPU_INST_COVERED_LATENCY)); \
+  thrds_to_cover_latency_metric->formula = thrds_to_cover_latency_formula; \
+  thrds_to_cover_latency_metric->format  = FORMAT_DISPLAY_INT
 
 
 
@@ -434,10 +482,10 @@ gpu_metrics_attribute_kernel
   gpu_kernel_t *k = &(activity->details.kernel);
   cct_node_t *cct_node = activity->cct_node;
 
-  if (METRIC_KIND(KINFO)) {
-    metric_data_list_t *metrics = 
-      hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
+  if (METRIC_KIND(KINFO)) {
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM_ACUMU), 
              k->staticSharedMemory);
 
@@ -464,10 +512,10 @@ gpu_metrics_attribute_kernel
 
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLKS_ACUMU), 
              k->blocks);
-
-    // number of kernel launches
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
+
+  // number of kernel launches
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
 
   // kernel execution time
   gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER),
@@ -491,7 +539,27 @@ gpu_metrics_attribute_kernel_block
   metric_data_list_t *metrics = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ALL), b->execution_count);
+  // avg count of cycles taken by ALU to execute an instruction
+  int ALU_cycles = 1;
+
+  if (b->instruction) {
+    // calculations at instruction level
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_LATENCY), b->latency);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ALL), b->execution_count);
+    uint64_t covered_latency = (b->latency <= 0) ? 0: (ALU_cycles * b->execution_count);
+    if (b->latency < covered_latency) {
+      covered_latency = b->latency;
+    }
+    uint64_t uncovered_latency = (b->latency <= 0) ? 0: (b->latency - covered_latency);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_COVERED_LATENCY), covered_latency);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_UNCOVERED_LATENCY), uncovered_latency);
+  } else {
+    // calculations at basic block level
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ACT_SIMD_LANES), b->active_simd_lanes);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_TOT_SIMD_LANES), b->total_simd_lanes);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_WASTE_SIMD_LANES), b->total_simd_lanes - b->active_simd_lanes);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_SCALAR_SIMD_LOSS), b->scalar_simd_loss);
+  }
 }
 
 
@@ -660,6 +728,57 @@ gpu_activity_t *activity
 }
 #endif
 
+static void
+metrics_attribute_intel_optimization
+(
+ gpu_activity_t *activity
+)
+{
+  intel_optimization_t *i = &(activity->details.intel_optimization);
+  cct_node_t *cct_node = activity->cct_node;
+
+  int metric_id = METRIC_ID(INORDER_QUEUE) + i->intelOptKind;
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, metric_id);
+
+  gpu_metrics_attribute_metric_int(metrics, metric_id, i->val);
+}
+
+
+static void
+gpu_metrics_attribute_blame_shift
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_blame_shift_t *bs = &(activity->details.blame_shift);
+  cct_node_t *cct_node = activity->cct_node;
+
+  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(CPU_IDLE));
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(CPU_IDLE), bs->cpu_idle_time);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_IDLE_CAUSE), bs->gpu_idle_cause_time);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(CPU_IDLE_CAUSE), bs->cpu_idle_cause_time);
+}
+
+
+static void
+gpu_metrics_attribute_gpu_utilization
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_utilization_t *gpu_info = &(activity->details.gpu_utilization_info);
+  cct_node_t *cct_node = activity->cct_node;
+
+  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(EU_ACT));
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(EU_ACT), gpu_info->active);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(EU_STL), gpu_info->stalled);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(EU_IDLE), gpu_info->idle);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_UTIL_DENOMINATOR), 100);
+}
+
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -722,6 +841,19 @@ gpu_metrics_attribute
   case GPU_ACTIVITY_COUNTER:
     gpu_metrics_attribute_counter(activity);
     break;
+
+  case GPU_ACTIVITY_INTEL_OPTIMIZATION:
+    metrics_attribute_intel_optimization(activity);
+    break;
+
+  case GPU_ACTIVITY_BLAME_SHIFT:
+    gpu_metrics_attribute_blame_shift(activity);
+    break;
+
+  case GPU_ACTIVITY_INTEL_GPU_UTILIZATION:
+    gpu_metrics_attribute_gpu_utilization(activity);
+    break;
+
   default:
     break;
   }
@@ -893,6 +1025,10 @@ gpu_metrics_GPU_INST_enable
   FORALL_GPU_INST(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
+
+  metric_desc_t *thrds_to_cover_latency_metric;
+  char *thrds_to_cover_latency_formula;
+  THREADS_TO_COVER_LATENCY_FORMULA();
 }
 
 
@@ -969,6 +1105,7 @@ gpu_metrics_GPU_INST_STALL_enable
   FINALIZE_METRIC_KIND();
 }
 
+
 void
 gpu_metrics_GPU_CTR_enable
 (
@@ -1006,4 +1143,54 @@ void
   FORALL_GXFER(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_INTEL_OPTIMIZATION_enable
+(
+ void
+)
+{
+  #undef CURRENT_METRIC
+  #define CURRENT_METRIC INTEL_OPTIMIZATION
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_INTEL_OPTIMIZATION(INITIALIZE_SCALAR_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+
+void
+gpu_metrics_BLAME_SHIFT_enable
+(
+ void
+)
+{
+  #undef CURRENT_METRIC
+  #define CURRENT_METRIC BLAME_SHIFT
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_BLAME_SHIFT(INITIALIZE_SCALAR_METRIC_REAL)
+}
+
+
+void
+gpu_metrics_gpu_utilization_enable
+(
+ void
+)
+{
+  #undef CURRENT_METRIC
+  #define CURRENT_METRIC GPU_UTILIZATION
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GPU_UTILIZATION(INITIALIZE_SCALAR_METRIC_INT)
+
+  metric_desc_t *active_metric, *stalled_metric, *idle_metric;
+  char *active_formula, *stall_formula, *idle_formula;
+  GPU_UTILIZATION_FORMULA();
 }

@@ -82,4 +82,6 @@ extern void special_cuda_ctxt_actions(bool enable);
 
 extern bool hpcrun_suppress_sample();
 
+extern void hpcrun_prepare_measurement_subsystem(bool is_child);
+
 #endif  // ! main_h

@@ -45,17 +45,65 @@
 #define gpu_instrumentation_gtpin_instrumentation_h
 
 //******************************************************************************
+// global includes
+//******************************************************************************
+
+#include <stdbool.h>
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
+
+#include "simdgroup-map.h"
+
+
+
+//******************************************************************************
+// type definitions
+//******************************************************************************
+
+typedef struct gpu_op_ccts_t gpu_op_ccts_t;
+
+
+typedef struct LatencyDataInternal
+{
+    uint32_t _freq;    ///< Kernel frequency
+    uint32_t _cycles;  ///< Total number of cycles
+    uint32_t _skipped; ///< Total number of skipped cycles
+    uint32_t _pad;     ///< Padding
+} LatencyDataInternal;
+
+
+typedef struct SimdGroupNode {
+  uint64_t key;
+  simdgroup_map_entry_t *entry;
+  GTPinMem mem_simd;
+  uint32_t instCount;
+  struct SimdGroupNode *next;
+} SimdGroupNode;
+
+
+typedef struct SimdSectionNode {
+  SimdGroupNode *groupHead;
+  struct SimdSectionNode *next;
+} SimdSectionNode;
+
+
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-typedef struct gpu_op_ccts_t gpu_op_ccts_t;
-
 void
 gtpin_enable_profiling
+(
+ void
+);
+
+
+bool
+gtpin_enabled
 (
  void
 );
@@ -67,5 +115,32 @@ gtpin_produce_runtime_callstack
  gpu_op_ccts_t *
 );
 
+
+void
+gtpin_enable_instrumentation
+(
+ void
+);
+
+
+void
+gtpin_simd_enable
+(
+ void
+);
+
+
+void
+gtpin_latency_enable
+(
+ void
+);
+
+
+void
+gtpin_count_enable
+(
+ void
+);
 
 #endif

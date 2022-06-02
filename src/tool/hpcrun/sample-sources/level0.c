@@ -88,6 +88,7 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
+#include <hpcrun/gpu/gpu-instrumentation.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -113,8 +114,22 @@
 
 #define LEVEL0 "gpu=level0"
 
+#define NO_THRESHOLD  1L
+
+
+
+//******************************************************************************
+// local variables
+//******************************************************************************
+
+static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
-static device_finalizer_fn_entry_t device_finalizer_trace;
+//static device_finalizer_fn_entry_t device_finalizer_trace;
+
+static char event_name[128];
+
+static gpu_instrumentation_t level0_instrumentation_options;
+
 
 //******************************************************************************
 // interface operations
@@ -174,7 +189,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, LEVEL0);
+  return strncmp(ev_str, LEVEL0, strlen(LEVEL0)) == 0; 
 #else
   return false;
 #endif
@@ -185,10 +200,24 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
+#if 0
   int nevents = (self->evl).nevents;
+#endif
+
   hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
   gpu_metrics_default_enable();
-  TMSG(CUDA,"nevents = %d", nevents);
+  gpu_metrics_KINFO_enable();
+
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+  long th;
+  hpcrun_extract_ev_thresh(event, sizeof(event_name), event_name,
+    &th, NO_THRESHOLD);
+
+  gpu_instrumentation_options_set(event_name, LEVEL0, &level0_instrumentation_options);
+  if (gpu_instrumentation_enabled(&level0_instrumentation_options)) {
+     gpu_metrics_GPU_INST_enable();
+  }
 }
 
 static void
@@ -200,16 +229,17 @@ METHOD_FN(finalize_event_list)
     monitor_real_exit(-1);
   }
 #endif
-  level0_init();
+
+  level0_init(&level0_instrumentation_options);
 
   // Init records
   gpu_trace_init();
 
+  device_finalizer_flush.fn = level0_flush;
+  device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
+
   device_finalizer_shutdown.fn = level0_fini;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
-
-  device_finalizer_trace.fn = gpu_trace_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_trace);
 }
 
 
@@ -223,15 +253,24 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available Level0 GPU events\n");
+  printf("Available events for monitoring GPU operations atop Intel's Level Zero \n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tOperation-level monitoring on an Intel GPU.\n"
-	 "\t\tCollect timing information on GPU kernel invocations,\n"
-	 "\t\tmemory copies, etc.\n",
-	 LEVEL0);
-  printf("\n");
+  printf("gpu=level0\tOperation-level monitoring for GPU-accelerated applications\n"
+	 "\t\trunning atop Intel's Level Zero runtime. Collect timing \n"
+	 "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
+	 "\n");
+  printf("gpu=level0,inst=<comma-separated list of options>\n"
+	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
+	 "\t\trunning atop Intel's Level Zero runtime. Collect timing\n"
+	 "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
+	 "\t\tWhen running on Intel GPUs, use optional instrumentation\n"
+	 "\t\twithin GPU kernels to collect one or more of the following:\n"
+	 "\t\t  count:   count how many times each GPU instruction executes\n"
+	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
+	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
+	 "\n");
 }
 
 

@@ -469,11 +469,11 @@ static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available NVIDIA GPU events\n");
+  printf("Available events for monitoring CUDA on NVIDIA GPUs\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\tComprehensive operation-level monitoring on an NVIDIA GPU.\n"
+  printf("%s\tComprehensive operation-level monitoring of CUDA on NVIDIA GPUs.\n"
 	 "\t\tCollect timing information on GPU kernel invocations,\n"
 	 "\t\tmemory copies (implicit and explicit), driver and runtime\n"
 	 "\t\tactivity, and overhead.\n",

@@ -59,6 +59,7 @@
 
 #include <include/gpu-binary.h>
 #include <hpcrun/files.h>
+#include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/crypto-hash.h>
 
 //******************************************************************************

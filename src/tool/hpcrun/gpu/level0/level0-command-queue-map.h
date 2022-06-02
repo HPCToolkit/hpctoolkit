@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-gpu-blame-shift-proto/src/tool/hpcrun/sample-sources/gpu_blame.h $
-// $Id: itimer.c 3784 2012-05-10 22:35:51Z mc29 $
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -42,49 +39,48 @@
 // or otherwise) arising in any way out of the use of this software, even
 // if advised of the possibility of such damage.
 //
-// **
+// ******************************************************* EndRiceCopyright *
 
-#ifndef __GPU_BLAME_H__
-#define __GPU_BLAME_H__
-#include <cuda.h>
-#include <cuda_runtime.h>
+#ifndef level0_command_queue_map_h
+#define level0_command_queue_map_h
 
-#ifdef ENABLE_CUDA
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
-#include "gpu_blame-cuda-runtime-header.h"
-#include "gpu_blame-cuda-driver-header.h"
-#include <hpcrun/core_profile_trace_data.h>
-#include <hpcrun/main.h>
+#include "level0-api.h"
 
-//
-// Blame shiting interface
-//
-#define MAX_STREAMS (500)
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
-// Visible types
+typedef struct {
+  uint32_t num;
+  ze_command_list_handle_t* list;
+} level0_command_queue_data_t;
 
-// CPU GPU blame metrics
-extern int cpu_idle_metric_id;
-extern int gpu_time_metric_id;
-extern int cpu_idle_cause_metric_id;
-extern int gpu_idle_metric_id;
-extern int gpu_overload_potential_metric_id;
-extern int stream_special_metric_id;
-extern int h_to_h_data_xfer_metric_id;
-extern int h_to_d_data_xfer_metric_id;
-extern int d_to_d_data_xfer_metric_id;
-extern int d_to_h_data_xfer_metric_id;
-extern int uva_data_xfer_metric_id;
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
-extern bool g_cpu_gpu_enabled;
+void
+level0_command_queue_map_insert
+(
+  ze_command_queue_handle_t hcommand_queue,
+  uint32_t numCommandLists,
+  ze_command_list_handle_t* phCommandLists
+);
 
-// num threads in the process
-extern uint64_t g_active_threads;
+level0_command_queue_data_t*
+level0_command_queue_map_lookup
+(
+  ze_command_queue_handle_t hcommand_queue
+);
 
-// Visible function declarations
-extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int  metric_incr);
-extern  void hpcrun_stream_finalize(void* st);
-extern void hpcrun_set_gpu_proxy_present();
+void
+level0_command_queue_map_delete
+(
+  ze_command_queue_handle_t hcommand_queue
+);
 
-#endif
 #endif

@@ -264,7 +264,12 @@ hpcrun_threaded_data
   void
 )
 {
+#if 0
+  // this assertion isn't true for when a threaded process forks and the child then creates a thread
+  // GNU bash, version 4.4.23(1)-release (x86_64-suse-linux-gnu) does this.
   assert(hpcrun_get_thread_data == &hpcrun_get_thread_data_local);
+#endif
+
   hpcrun_get_thread_data = &hpcrun_get_thread_data_specific;
   hpcrun_td_avail        = &hpcrun_get_thread_data_specific_avail;
 }
@@ -375,6 +380,7 @@ hpcrun_thread_data_init
   size_t n_sources
 )
 {
+  hpcrun_meminfo_t memstore;
   thread_data_t* td = hpcrun_get_thread_data();
 
   // ----------------------------------------
@@ -385,8 +391,14 @@ hpcrun_thread_data_init
   // memstore so we can reuse it in the child after fork.  This must
   // come first.
   td->inside_hpcrun = 1;
+  memstore = td->memstore;
   memset(td, 0xfe, sizeof(thread_data_t));
   td->inside_hpcrun = 1;
+  td->memstore = memstore;
+  hpcrun_make_memstore(&td->memstore);
+  td->mem_low = 0;
+  mem_pool_initialized = true;
+
 
   // ----------------------------------------
   // normalized thread id (monitor-generated)
@@ -504,6 +516,11 @@ hpcrun_thread_data_init
   // gpu trace line support
   // ----------------------------------------
   td->gpu_trace_prev_time = 0;
+
+  // ----------------------------------------
+  // blame-shifting
+  // ----------------------------------------
+  td->application_thread_0 = false;
 
 #ifdef ENABLE_CUDA
   gpu_data_init(&(td->gpu_data));

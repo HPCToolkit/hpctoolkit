@@ -96,7 +96,10 @@ typedef enum {
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
   GPU_ACTIVITY_FLUSH                   = 17,
-  GPU_ACTIVITY_COUNTER                 = 18
+  GPU_ACTIVITY_COUNTER                 = 18,
+  GPU_ACTIVITY_INTEL_OPTIMIZATION      = 19,
+  GPU_ACTIVITY_BLAME_SHIFT             = 20,
+  GPU_ACTIVITY_INTEL_GPU_UTILIZATION   = 21
 } gpu_activity_kind_t;
 
 
@@ -178,6 +181,17 @@ typedef enum {
   GPU_MEM_UNKNOWN         = 7,
   GPU_MEM_COUNT           = 8
 } gpu_mem_type_t;
+
+
+typedef enum {
+  INORDER_QUEUE                                   = 0,
+  KERNEL_TO_MULTIPLE_CONTEXTS     = 1,
+  KERNEL_PARAMS_NOT_ALIASED                       = 2,
+  KERNEL_PARAMS_ALIASED                           = 3,
+  SINGLE_DEVICE_USE_AOT_COMPILATION               = 4,
+  OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL        = 5,
+  UNUSED_DEVICES                                  = 6
+} intel_optimization_type_t;
 
 
 typedef enum {
@@ -283,8 +297,14 @@ typedef struct gpu_kernel_t {
 
 
 typedef struct gpu_kernel_block_t {
+  bool instruction;
   uint64_t external_id;
+  uint32_t bb_instruction_count;
   uint64_t execution_count;
+  uint64_t latency;
+  uint64_t active_simd_lanes;
+  uint64_t total_simd_lanes;
+  uint64_t scalar_simd_loss;
   ip_normalized_t pc;
 } gpu_kernel_block_t;
 
@@ -340,6 +360,13 @@ typedef struct gpu_branch_t {
 } gpu_branch_t;
 
 
+typedef struct gpu_blame_shift_t {
+  double cpu_idle_time;
+  double gpu_idle_cause_time;
+  double cpu_idle_cause_time;
+} gpu_blame_shift_t;
+
+
 typedef struct gpu_synchronization_t {
   uint64_t start;
   uint64_t end;
@@ -381,6 +408,19 @@ typedef struct gpu_instruction_t {
 } gpu_instruction_t;
 
 
+typedef struct intel_optimization_t {
+  uint32_t val;
+  intel_optimization_type_t intelOptKind;
+} intel_optimization_t;
+
+
+typedef struct gpu_utilization_t {
+  uint8_t active;
+  uint8_t stalled;
+  uint8_t idle;
+} gpu_utilization_t;
+
+
 typedef struct gpu_activity_details_t { 
   union {
     /* Each field stores the complete information needed
@@ -403,6 +443,9 @@ typedef struct gpu_activity_details_t {
     gpu_host_correlation_t correlation;
     gpu_flush_t flush;
     gpu_counter_t counters;
+    intel_optimization_t intel_optimization;
+    gpu_blame_shift_t blame_shift;
+    gpu_utilization_t gpu_utilization_info;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 
