@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- -*- coding: utf-8 -*- -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -45,32 +45,35 @@ th {
 
 <h1>Training Videos and Slides</h1>
 
-<h2>November 2021 (Supercomputing '21 Tutorial)</h2>
+<h2>November 2021 (Supercomputing '21 Tutorial)
+  [<a href=
+https://www.youtube.com/playlist?list=PLACYjs9oX_DVZJP0d5iAAc35YNtLs0lJR>Youtube Playlist</a>]
+</h2>
 <ul>
 <li>Introduction to HPCToolkit
-[<a href=https://youtu.be/nPc5PdiI-vk>Youtube</a> (13:22)] 
+[<a href=https://youtu.be/nPc5PdiI-vk>Youtube</a> (13:22)]
 [<a href=http://www.hpctoolkit.org/pubs/2021-11-SC21-Tutorial-HPCToolkit-Intro.pdf>Slides</a>]
 </li>
 <li>Sampling-based Performance Analysis with HPCToolkit
-[<a href=https://youtu.be/WKQrGX60GAI>Youtube</a> (23:09)] 
+[<a href=https://youtu.be/WKQrGX60GAI>Youtube</a> (23:09)]
 [<a href=http://www.hpctoolkit.org/pubs/2021-11-SC21-Tutorial-HPCToolkit-Sampling.pdf>Slides</a>]
 </li>
 <li>Identifying Scalability Bottlenecks with HPCToolkit
-[<a href=https://youtu.be/17aWzzp6ntg>Youtube</a> (19:27)] 
+[<a href=https://youtu.be/17aWzzp6ntg>Youtube</a> (19:27)]
 [<a href=http://www.hpctoolkit.org/pubs/2021-11-SC21-Tutorial-HPCToolkit-Scalability.pdf>Slides</a>]
 </li>
 <li>Analyzing GPU-accelerated Applications with HPCToolkit
-[<a href=https://youtu.be/vixa3hGDuGg>Youtube</a> (23:59)] 
+[<a href=https://youtu.be/vixa3hGDuGg>Youtube</a> (23:59)]
 [<a href=http://www.hpctoolkit.org/pubs/2021-11-SC21-Tutorial-HPCToolkit-GPU.pdf>Slides</a>]
 </li>
 </ul>
 <h2>March 2021 (NERSC/ORNL Tutorial)</h2>
 <ul>
 <li>Using HPCToolkit to Measure and Analyze the Performance of GPU-accelerated Applications
-[<a href=https://youtu.be/HqiJb9Q1XFQ>Youtube</a> (1:27:35)] 
+[<a href=https://youtu.be/HqiJb9Q1XFQ>Youtube</a> (1:27:35)]
 [<a href=https://www.nersc.gov/assets/Uploads/HPCToolkit-NERSC-Tutorial-GPU-Tools-Overview.pdf>Slides</a>]
 <li>Analyzing GPU-accelerated Applications Using HPCToolkit
-[<a href=https://youtu.be/k8s5pocs94M>Youtube</a> (34:02)] 
+[<a href=https://youtu.be/k8s5pocs94M>Youtube</a> (34:02)]
 [<a href=https://www.nersc.gov/assets/Uploads/HPCToolkit-NERSC-Tutorial-GPU-Examples.pdf>Slides</a>]
 <li>HPCToolkit Graphical User Interface
 [<a href=https://youtu.be/c1lablPBLEg>Youtube</a> (35:03)]
@@ -83,7 +86,7 @@ th {
 
 <!-- ********************************************************************** -->
 
-<p>[<span class="lastupdated">Page last updated: 2021/06/12</span>]
+<p>[<span class="lastupdated">Page last updated: 2022/06/01</span>]
 </p>
 
 <!-- ********************************************************************** -->
