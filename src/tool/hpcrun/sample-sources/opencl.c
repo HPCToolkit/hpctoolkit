@@ -67,8 +67,10 @@
 
 
 //******************************************************************************
-// type declarations
+// macros
 //******************************************************************************
+
+#define ENABLE_OPENCL_MONITORING 0
 
 #define GPU_STRING "gpu=opencl"
 #define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
@@ -82,8 +84,6 @@
 #define ENABLE_INTEL_GPU_UTILIZATION "intel_gpu_util"
 #define NO_THRESHOLD  1L
 
-static device_finalizer_fn_entry_t device_finalizer_flush;
-static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
 
 //******************************************************************************
@@ -91,6 +91,9 @@ static device_finalizer_fn_entry_t device_finalizer_shutdown;
 //******************************************************************************
 
 static char opencl_name[128];
+
+static device_finalizer_fn_entry_t device_finalizer_flush;
+static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
 
 
@@ -152,16 +155,20 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  #ifndef HPCRUN_STATIC_LINK
+#if ENABLE_OPENCL_MONITORING
+#ifndef HPCRUN_STATIC_LINK
   return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION)
                                            || strstr(ev_str, INSTRUMENTATION_PREFIX)
                                            || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)
                                            || hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
                                            || hpcrun_ev_is(ev_str, ENABLE_INTEL_GPU_UTILIZATION)
          );
-  #else
+#else
   return false;
-  #endif
+#endif
+#else
+  return false;
+#endif
 }
 
 
@@ -262,6 +269,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+#if ENABLE_OPENCL_MONITORING
   printf("===========================================================================\n");
   printf("Available events for monitoring GPU operations atop OpenCL\n");
   printf("===========================================================================\n");
@@ -295,6 +303,9 @@ METHOD_FN(display_events)
     "\t\tTo use it, pass '-e %s' to your hpcrun command\n",
     ENABLE_INTEL_GPU_UTILIZATION, GPU_STRING, ENABLE_INTEL_GPU_UTILIZATION);
   printf("\n");
+#endif
+#else
+  return;
 #endif
 }
 
