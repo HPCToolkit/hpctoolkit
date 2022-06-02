@@ -118,5 +118,8 @@ SAMPLE_SOURCE_DECL_MACRO(level0)
 SAMPLE_SOURCE_DECL_MACRO(opencl)
 #endif
 #endif
+
+#ifdef HPCRUN_CPU_GPU_IDLE
 SAMPLE_SOURCE_DECL_MACRO(cpu_gpu_idle)
+#endif
 

@@ -474,23 +474,23 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/pthread-blame.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c sample-sources/sample-filters.c \
-	sample-sources/cpu_gpu_idle.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
-	gpu/gpu-binary.c gpu/gpu-cct.c \
-	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
-	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c gpu/gpu-binary.c \
+	gpu/gpu-cct.c gpu/gpu-channel-item-allocator.c \
+	gpu/gpu-context-id-map.c gpu/gpu-correlation.c \
+	gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
 	gpu/gpu-correlation-id-map.c gpu/gpu-event-id-map.c \
 	gpu/gpu-flush-alarm.c gpu/gpu-function-id-map.c \
@@ -656,7 +656,6 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/libhpcrun_la-sync.lo \
 	libhpcrun_la-sample_sources_registered.lo \
 	sample-sources/libhpcrun_la-sample-filters.lo \
-	sample-sources/libhpcrun_la-cpu_gpu_idle.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-thread_finalize.lo \
@@ -1020,23 +1019,23 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/pthread-blame.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c sample-sources/sample-filters.c \
-	sample-sources/cpu_gpu_idle.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
-	gpu/gpu-binary.c gpu/gpu-cct.c \
-	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
-	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c gpu/gpu-binary.c \
+	gpu/gpu-cct.c gpu/gpu-channel-item-allocator.c \
+	gpu/gpu-context-id-map.c gpu/gpu-correlation.c \
+	gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
 	gpu/gpu-correlation-id-map.c gpu/gpu-event-id-map.c \
 	gpu/gpu-flush-alarm.c gpu/gpu-function-id-map.c \
@@ -1175,7 +1174,6 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	sample-sources/libhpcrun_o-sample-filters.$(OBJEXT) \
-	sample-sources/libhpcrun_o-cpu_gpu_idle.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-start-stop.$(OBJEXT) \
 	libhpcrun_o-term_handler.$(OBJEXT) \
@@ -1977,23 +1975,23 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/pthread-blame.c sample-sources/none.c \
 	sample-sources/retcnt.c sample-sources/sync.c \
 	sample_sources_registered.c sample-sources/sample-filters.c \
-	sample-sources/cpu_gpu_idle.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
-	gpu/gpu-binary.c gpu/gpu-cct.c \
-	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
-	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c gpu/gpu-binary.c \
+	gpu/gpu-cct.c gpu/gpu-channel-item-allocator.c \
+	gpu/gpu-context-id-map.c gpu/gpu-correlation.c \
+	gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
 	gpu/gpu-correlation-id-map.c gpu/gpu-event-id-map.c \
 	gpu/gpu-flush-alarm.c gpu/gpu-function-id-map.c \
@@ -2732,9 +2730,6 @@ sample-sources/libhpcrun_la-retcnt.lo: sample-sources/$(am__dirstamp) \
 sample-sources/libhpcrun_la-sync.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-sample-filters.lo:  \
-	sample-sources/$(am__dirstamp) \
-	sample-sources/$(DEPDIR)/$(am__dirstamp)
-sample-sources/libhpcrun_la-cpu_gpu_idle.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 cct/$(am__dirstamp):
@@ -3578,9 +3573,6 @@ sample-sources/libhpcrun_o-sync.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-sample-filters.$(OBJEXT):  \
-	sample-sources/$(am__dirstamp) \
-	sample-sources/$(DEPDIR)/$(am__dirstamp)
-sample-sources/libhpcrun_o-cpu_gpu_idle.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 cct/libhpcrun_o-cct_bundle.$(OBJEXT): cct/$(am__dirstamp) \
@@ -4437,7 +4429,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-amd-rocprofiler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-amd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-exclude.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
@@ -4465,7 +4456,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_la-memleak-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memleak-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-common.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-ga.Po@am__quote@
@@ -5113,13 +5103,6 @@ sample-sources/libhpcrun_la-sample-filters.lo: sample-sources/sample-filters.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/sample-filters.c' object='sample-sources/libhpcrun_la-sample-filters.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-sample-filters.lo `test -f 'sample-sources/sample-filters.c' || echo '$(srcdir)/'`sample-sources/sample-filters.c
-
-sample-sources/libhpcrun_la-cpu_gpu_idle.lo: sample-sources/cpu_gpu_idle.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-cpu_gpu_idle.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Tpo -c -o sample-sources/libhpcrun_la-cpu_gpu_idle.lo `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Tpo sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/cpu_gpu_idle.c' object='sample-sources/libhpcrun_la-cpu_gpu_idle.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-cpu_gpu_idle.lo `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
 
 libhpcrun_la-segv_handler.lo: segv_handler.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-segv_handler.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-segv_handler.Tpo -c -o libhpcrun_la-segv_handler.lo `test -f 'segv_handler.c' || echo '$(srcdir)/'`segv_handler.c
@@ -7220,20 +7203,6 @@ sample-sources/libhpcrun_o-sample-filters.obj: sample-sources/sample-filters.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/sample-filters.c' object='sample-sources/libhpcrun_o-sample-filters.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-sample-filters.obj `if test -f 'sample-sources/sample-filters.c'; then $(CYGPATH_W) 'sample-sources/sample-filters.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/sample-filters.c'; fi`
-
-sample-sources/libhpcrun_o-cpu_gpu_idle.o: sample-sources/cpu_gpu_idle.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-cpu_gpu_idle.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.o `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/cpu_gpu_idle.c' object='sample-sources/libhpcrun_o-cpu_gpu_idle.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.o `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
-
-sample-sources/libhpcrun_o-cpu_gpu_idle.obj: sample-sources/cpu_gpu_idle.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-cpu_gpu_idle.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.obj `if test -f 'sample-sources/cpu_gpu_idle.c'; then $(CYGPATH_W) 'sample-sources/cpu_gpu_idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/cpu_gpu_idle.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/cpu_gpu_idle.c' object='sample-sources/libhpcrun_o-cpu_gpu_idle.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.obj `if test -f 'sample-sources/cpu_gpu_idle.c'; then $(CYGPATH_W) 'sample-sources/cpu_gpu_idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/cpu_gpu_idle.c'; fi`
 
 libhpcrun_o-segv_handler.o: segv_handler.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-segv_handler.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-segv_handler.Tpo -c -o libhpcrun_o-segv_handler.o `test -f 'segv_handler.c' || echo '$(srcdir)/'`segv_handler.c
