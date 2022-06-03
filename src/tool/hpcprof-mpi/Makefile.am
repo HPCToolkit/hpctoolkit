@@ -98,6 +98,9 @@ MYLDFLAGS = \
 	@LZMA_PROF_MPI_LIBS@ \
 	-L@LIBELF_LIB@ -ldw -lelf
 
+LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT = \
+	-Wl,--disable-new-dtags -Wl,-rpath='@HPCRUN_LIBCXX_PATH@'
+
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Profile) \
@@ -128,7 +131,7 @@ bin_PROGRAMS = hpcprof-mpi
 hpcprof_mpi_SOURCES  = $(MYSOURCES)
 hpcprof_mpi_CFLAGS   = $(MYCFLAGS)
 hpcprof_mpi_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_mpi_LDFLAGS  = $(MYLDFLAGS)
+hpcprof_mpi_LDFLAGS  = $(MYLDFLAGS) $(LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT)
 hpcprof_mpi_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
