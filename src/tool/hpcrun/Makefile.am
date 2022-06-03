@@ -432,7 +432,6 @@ MY_BASE_FILES =				\
 	gpu/blame-shifting/blame-queue-map.c	\
 	gpu/blame-shifting/blame-kernel-map.c	\
 	gpu/blame-shifting/active-kernels-map.c \
-	gpu/blame-shifting/blame-kernel-cleanup-map.c \
 	\
 	gpu/opencl/intel/papi/papi-kernel-map.c	\
 	gpu/opencl/intel/papi/papi-metric-collector.c
@@ -555,6 +554,7 @@ MY_OPENCL_FILES = \
 	gpu/opencl/intel/maps/kernel-param-map.c	\
 	gpu/opencl/intel/maps/buffer-map.c	\
 	gpu/opencl/intel/maps/device-map.c	\
+	gpu/blame-shifting/blame-kernel-cleanup-map.c \
 	gpu/blame-shifting/opencl/opencl-blame.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
