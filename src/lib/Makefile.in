@@ -96,13 +96,10 @@ host_triplet = @host@
 @OPT_BUILD_LIB_ALL_TRUE@	analysis \
 @OPT_BUILD_LIB_ALL_TRUE@	banal \
 @OPT_BUILD_LIB_ALL_TRUE@	binutils \
-@OPT_BUILD_LIB_ALL_TRUE@	isa \
 @OPT_BUILD_LIB_ALL_TRUE@	prof \
 @OPT_BUILD_LIB_ALL_TRUE@	profile \
-@OPT_BUILD_LIB_ALL_TRUE@	profxml \
 @OPT_BUILD_LIB_ALL_TRUE@	xml \
-@OPT_BUILD_LIB_ALL_TRUE@	support \
-@OPT_BUILD_LIB_ALL_TRUE@	stubs-gcc_s
+@OPT_BUILD_LIB_ALL_TRUE@	support
 
 subdir = src/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -174,8 +171,8 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = prof-lean support-lean analysis banal binutils isa prof \
-	profile profxml xml support stubs-gcc_s
+DIST_SUBDIRS = prof-lean support-lean analysis banal binutils prof \
+	profile xml support
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/config/mkinstalldirs
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -213,8 +210,6 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
-BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
 BOOST_IFLAGS = @BOOST_IFLAGS@
@@ -280,6 +275,8 @@ LDFLAGS = @LDFLAGS@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
+LIBIBERTY_IFLAGS = @LIBIBERTY_IFLAGS@
+LIBIBERTY_LIBS = @LIBIBERTY_LIBS@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@

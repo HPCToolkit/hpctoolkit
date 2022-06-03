@@ -84,7 +84,6 @@ MYSOURCES = main.cpp Args.cpp Structure-Cache.cpp SingleBin.cpp MeasDir.cpp
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	@BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS)  \
 	$(DYNINST_IFLAGS) \
 	-I$(LIBELF_INC)  \
@@ -99,11 +98,9 @@ MYLDADD = \
 	@HOST_HPCSTRUCT_LDFLAGS@ \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal) \
-	$(HPCLIB_Banal_Simple) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ProfLean) \
-	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
@@ -111,9 +108,7 @@ MYLDADD = \
 	$(DYNINST_LFLAGS) \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
-	@BINUTILS_LIBS@ \
 	$(IGC_LDFLGS) \
-	$(HPCLIB_gettext) \
 	$(LZMA_LDFLAGS_DYN) \
 	$(TBB_LFLAGS)
 

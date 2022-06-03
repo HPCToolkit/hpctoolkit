@@ -63,8 +63,6 @@ using std::string;
 
 #include <lib/analysis/Util.hpp>
 
-#include <lib/analysis/Flat-SrcCorrelation.hpp>
-#include <lib/analysis/Flat-ObjCorrelation.hpp>
 #include <lib/analysis/Raw.hpp>
 
 #include <lib/support/diagnostics.h>

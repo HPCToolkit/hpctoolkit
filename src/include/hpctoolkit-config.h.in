@@ -1,8 +1,5 @@
 /* src/include/hpctoolkit-config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* binutils version 2.34 or later */
-#undef BINUTILS_234
-
 /* "Cuda install prefix" */
 #undef CUDA_INSTALL_PREFIX
 

@@ -50,7 +50,6 @@ include $(top_srcdir)/src/Makeinclude.config
 
 #----------------------------------------------------------------------
 
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BOOST_IFLAGS = @BOOST_IFLAGS@
 DYNINST_IFLAGS = @DYNINST_IFLAGS@
 LIBELF_INC = @LIBELF_INC@
@@ -78,12 +77,9 @@ MYSOURCES = \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
 
-SIMPLE_SRCS = StructSimple.cpp
-
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	$(BINUTILS_IFLAGS)  \
 	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
@@ -101,7 +97,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 pkglibexecdir = @my_pkglibexecdir@
 
-noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
+noinst_LTLIBRARIES = libHPCbanal.la
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
@@ -110,10 +106,6 @@ libHPCbanal_la_LIBADD   = $(MYLIBADD)
 if OPT_ENABLE_OPENMP
 libHPCbanal_la_CXXFLAGS += $(OPENMP_FLAG)
 endif
-
-libHPCbanal_simple_la_SOURCES  = $(SIMPLE_SRCS)
-libHPCbanal_simple_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCbanal_simple_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

@@ -75,9 +75,6 @@
 
 #include <include/uint.h>
 
-#include "Metric-IData.hpp"
-
-#include <lib/isa/ISA.hpp>
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -248,8 +245,7 @@ class Ref;
 // ---------------------------------------------------------
 // ANode: The base node for a program scope tree
 // ---------------------------------------------------------
-class ANode: public NonUniformDegreeTreeNode,
-	     public Metric::IData {
+class ANode: public NonUniformDegreeTreeNode {
 public:
   enum ANodeTy {
     TyRoot = 0,
@@ -283,7 +279,6 @@ public:
   // --------------------------------------------------------
   ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent),
-      Metric::IData(),
       m_type(ty),
       m_visible(true)
   {
@@ -313,7 +308,6 @@ protected:
   {
     if (this != &x) {
       NonUniformDegreeTreeNode::zeroLinks();
-      Metric::IData::operator=(x);
       m_type    = x.m_type;
       m_id      = x.m_id;
       m_visible = x.m_visible;
@@ -441,27 +435,6 @@ public:
   ACodeNode*
   ACodeNodeParent() const;
 
-
-  // --------------------------------------------------------
-  // Metrics (cf. CCT::ANode)
-  // --------------------------------------------------------
-
-  // aggregates metrics from children. [mBegId, mEndId) forms an
-  // inclusive interval for batch processing.  In particular, 'raw'
-  // metrics are independent of all other raw metrics.
-  void
-  aggregateMetrics(uint mBegId, uint mEndId);
-
-  void
-  aggregateMetrics(uint mBegId)
-  { aggregateMetrics(mBegId, mBegId + 1); }
-
-
-  // pruneByMetrics: recursively prunes all (children) of the current
-  // node for which hasMetrics() is false.
-  void
-  pruneByMetrics();
-
 public:
 
   // --------------------------------------------------------
@@ -538,19 +511,6 @@ public:
 
   void
   ddumpXML() const;
-
-  // --------------------------------------------------------
-  // Other output
-  // --------------------------------------------------------
-
-  void
-  CSV_DumpSelf(const Root &root, std::ostream& os = std::cout) const;
-
-  virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout,
-	   const char* file_name = NULL,
-	   const char* proc_name = NULL,
-	   int lLevel = 0) const;
 
   // --------------------------------------------------------
   // debugging
@@ -801,11 +761,6 @@ public:
   virtual std::string
   XMLVMAIntervals(uint oFlags) const;
 
-  virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout,
-	   const char* file_name = NULL, const char* proc_name = NULL,
-	   int lLevel = 0) const;
-
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
@@ -948,9 +903,6 @@ public:
   virtual std::ostream&
   writeXML(std::ostream& os = std::cout, uint oFlags = 0,
 	   const char* pre = "") const;
-
-  void
-  CSV_TreeDump(std::ostream& os = std::cout) const;
 
   // --------------------------------------------------------
   // debugging
@@ -1373,11 +1325,6 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
-  virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout,
-	   const char* file_name = NULL, const char* proc_name = NULL,
-	   int lLevel = 0) const;
-
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
 	 const char* pre = "") const;
@@ -1526,11 +1473,6 @@ public:
   virtual std::string
   toXML(uint oFlags = 0) const;
 
-  virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout,
-	   const char* file_name = NULL, const char* proc_name = NULL,
-	   int lLevel = 0) const;
-
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
 	 const char* pre = "") const;
@@ -1652,11 +1594,6 @@ public:
 
   virtual std::string
   toXML(uint oFlags = 0) const;
-
-  virtual void
-  CSV_dump(const Root &root, std::ostream& os = std::cout,
-	   const char* file_name = NULL, const char* proc_name = NULL,
-	   int lLevel = 0) const;
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,

@@ -140,7 +140,7 @@ am__objects_1 = hpctracedump-main.$(OBJEXT)
 am_hpctracedump_OBJECTS = $(am__objects_1)
 hpctracedump_OBJECTS = $(am_hpctracedump_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_ProfLean) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) $(HPCLIB_gettext)
+	$(HPCLIB_SupportLean)
 hpctracedump_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -229,8 +229,6 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
-BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
 BOOST_IFLAGS = @BOOST_IFLAGS@
@@ -296,6 +294,8 @@ LDFLAGS = @LDFLAGS@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
+LIBIBERTY_IFLAGS = @LIBIBERTY_IFLAGS@
+LIBIBERTY_LIBS = @LIBIBERTY_LIBS@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
@@ -493,15 +493,11 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 #   HPCLIB_SupportLean:
 HPCLIB_Analysis = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPCLIB_Banal = $(top_builddir)/src/lib/banal/libHPCbanal.la
-HPCLIB_Banal_Simple = $(top_builddir)/src/lib/banal/libHPCbanal_simple.la
 HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_Profile = $(top_builddir)/src/lib/profile/libHPCprofile.la
 HPCLIB_ProfileStandalone = $(top_builddir)/src/lib/profile/libHPCprofile_standalone.la
-HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
-HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
-HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
@@ -516,8 +512,8 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = \
 	main.cpp
 
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@
 
@@ -525,9 +521,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext)
+	$(HPCLIB_SupportLean)
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpctracedump_SOURCES = $(MYSOURCES)

@@ -95,9 +95,7 @@ host_triplet = @host@
 @OPT_BUILD_TOOL_ALL_TRUE@am__append_1 = \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcstruct \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcprof \
-@OPT_BUILD_TOOL_ALL_TRUE@	hpcprof2 \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcproftt \
-@OPT_BUILD_TOOL_ALL_TRUE@	hpclump \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpctracedump
 
 @OPT_BUILD_TOOL_ALL_TRUE@@OPT_ENABLE_HPCSERVER_TRUE@am__append_2 = hpcserver
@@ -105,7 +103,7 @@ host_triplet = @host@
 @OPT_ENABLE_HPCRUN_TRUE@	hpcrun \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds2
 
-@OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi hpcprof2-mpi
+@OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi
 @OPT_ENABLE_HPCSERVER_TRUE@@OPT_ENABLE_MPI_TRUE@am__append_5 = hpcserver/mpi
 subdir = src/tool
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -177,9 +175,8 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = hpcstruct hpcprof hpcprof2 hpcproftt hpclump \
-	hpctracedump hpcserver hpcrun hpcfnbounds2 hpcprof-mpi \
-	hpcprof2-mpi hpcserver/mpi
+DIST_SUBDIRS = hpcstruct hpcprof hpcproftt hpctracedump hpcserver \
+	hpcrun hpcfnbounds2 hpcprof-mpi hpcserver/mpi
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/config/mkinstalldirs
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -217,8 +214,6 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
-BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
 BOOST_IFLAGS = @BOOST_IFLAGS@
@@ -284,6 +279,8 @@ LDFLAGS = @LDFLAGS@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
+LIBIBERTY_IFLAGS = @LIBIBERTY_IFLAGS@
+LIBIBERTY_LIBS = @LIBIBERTY_LIBS@
 LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@

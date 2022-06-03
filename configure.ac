@@ -1882,7 +1882,6 @@ AC_MSG_NOTICE([spack directory: $with_spack])
 #  2. --with-spack
 #  3. --with-externals
 
-default_binutils_prefix=no
 default_boost_prefix=no
 default_bzip_prefix=no
 default_cuda_prefix=no
@@ -1903,7 +1902,6 @@ default_zlib_prefix=no
 default_valgrind_prefix=no
 
 if test "$use_externals" = yes ; then
-  default_binutils_prefix="$ext_binutils_prefix"
   default_boost_prefix="$ext_boost_prefix"
   default_dyninst_prefix="$ext_symtabAPI_prefix"
   default_elfutils_prefix="$ext_libelf_prefix"
@@ -1967,9 +1965,6 @@ if test "$with_spack" != no
 then
   AC_MSG_NOTICE([checking spack packages ...])
 
-  if find_spack_pkg binutils ; then
-    default_binutils_prefix="$spack_ans"
-  fi
   if find_spack_pkg boost ; then
     default_boost_prefix="$spack_ans"
   fi
@@ -2098,135 +2093,7 @@ case "$host_wordsize" in
 esac
 
 
-#-------------------------------------------------
-# Option: --with-binutils=PATH
-#-------------------------------------------------
-
 num_pkgs=0
-
-# Binutils uses four main libraries: libbfd.a, libopcodes.a,
-# libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
-# The first two must be in the binutils package, but the last two may
-# be in binutils or separate (libiberty and zlib).
-#
-# Note: we no longer use binutils to crack instructions, so we don't
-# need libopcodes anymore, not on any platform.
-
-BINUTILS="$default_binutils_prefix"
-
-AC_ARG_WITH([binutils],
-  [AS_HELP_STRING([--with-binutils=PATH],
-      [path to binutils install directory])],
-  [BINUTILS="$withval"],
-  [])
-
-BINUTILS_IFLAGS=
-BINUTILS_LIBS=
-binutils_has_libiberty=no
-binutils_has_libz=no
-
-AC_MSG_CHECKING([for binutils])
-
-case "$BINUTILS" in
-  /* )
-    # bfd.h must exist
-    if test -f "${BINUTILS}/include/bfd.h" ; then
-      BINUTILS_IFLAGS="-I${BINUTILS}/include"
-    else
-      AC_MSG_ERROR([unable to find bfd.h in: $BINUTILS])
-    fi
-
-    # libbfd.a must be in binutils
-    for lib in $multilib_path fail ; do
-      file="${BINUTILS}/${lib}/libbfd.a"
-      if test -f "$file" ; then
-        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
-	break
-      elif test "$lib" = fail ; then
-        AC_MSG_ERROR([unable to find libbfd.a in: $BINUTILS])
-      fi
-    done
-
-    # libiberty.a may be here or may be in libiberty
-    for lib in $multilib_path ; do
-      file="${BINUTILS}/${lib}/libiberty.a"
-      if test -f "$file" ; then
-        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
-	binutils_has_libiberty=yes
-	break
-      fi
-    done
-
-    # libz.a may be here or may be in zlib
-    for lib in $multilib_path ; do
-      file="${BINUTILS}/${lib}/libz.a"
-      if test -f "$file" ; then
-        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
-	binutils_has_libz=yes
-	break
-      fi
-    done
-    num_pkgs=`expr 1 + $num_pkgs`
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([binutils directory must be absolute path])
-    ;;
-esac
-
-AC_MSG_RESULT([$BINUTILS])
-
-binlibs=
-for lib in $BINUTILS_LIBS ; do
-  binlibs="$binlibs `basename $lib`"
-done
-
-AC_MSG_NOTICE([binutils libs: $binlibs])
-
-# FIXME: libbfd requires -ldl unless plugins are disabled (default is
-# enabled).  But we could test for this.
-
-BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
-
-AC_SUBST([BINUTILS_IFLAGS])
-AC_SUBST([BINUTILS_LIBS])
-
-#-------------------------------------------------
-
-# Test for binutils 2.34 or later.  The signature of
-# bfd_section_vma(), etc dropped the first argument.
-# up to 2.33.1:  #define bfd_section_vma(bfd, ptr) ((ptr)->vma)
-# after 2.34:    bfd_section_vma (const asection *sec)
-
-ORIG_CFLAGS="$CFLAGS"
-CFLAGS="$HOST_CFLAGS  $BINUTILS_IFLAGS"
-
-AC_LANG_PUSH([C])
-
-AC_MSG_CHECKING([if binutils version 2.34 or later])
-
-AC_COMPILE_IFELSE([
-AC_LANG_SOURCE([[
-#define PACKAGE "hpctoolkit"
-#include <bfd.h>
-unsigned long
-get_vma(asection * asec)
-{
-    return bfd_section_vma(asec);
-}
-]])], [binutils_234=yes], [binutils_234=no])
-
-AC_MSG_RESULT([$binutils_234])
-
-AC_LANG_POP
-
-CFLAGS="$ORIG_CFLAGS"
-
-if test "$binutils_234" = yes ; then
-  AC_DEFINE(BINUTILS_234, 1, [binutils version 2.34 or later])
-fi
-
 
 #-------------------------------------------------
 # Option: --with-boost=PATH
@@ -2486,52 +2353,47 @@ AC_SUBST([LIBELF_COPY])
 # Option: --with-libiberty=PATH
 #-------------------------------------------------
 
-# This is only used if binutils doesn't have libiberty.a.
-
 LIBIBERTY="$default_libiberty_prefix"
 
 AC_ARG_WITH([libiberty],
   [AS_HELP_STRING([--with-libiberty=PATH],
-      [path to libiberty install directory (only needed if binutils
-       does not contain libiberty.a)])],
+      [path to libiberty install directory])],
   [LIBIBERTY="$withval"],
   [])
 
-if test "$BINUTILS" = no || test "$binutils_has_libiberty" = yes
-then
-  AC_MSG_NOTICE([skipping libiberty for binutils])
-  LIBIBERTY=no
-else
-  AC_MSG_CHECKING([for libiberty.a for binutils])
+AC_MSG_CHECKING([for libiberty.a])
 
-  found_libiberty=no
-  case "$LIBIBERTY" in
-    /* )
-      # demangle.h must exist
-      if test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
-        BINUTILS_IFLAGS="${BINUTILS_IFLAGS} -I${LIBIBERTY}/include"
-      else
-        AC_MSG_ERROR([unable to find libiberty/demangle.h in: $LIBIBERTY])
+found_libiberty=no
+case "$LIBIBERTY" in
+  /* )
+    # demangle.h must exist
+    if test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
+      LIBIBERTY_IFLAGS="-I${LIBIBERTY}/include"
+    else
+      AC_MSG_ERROR([unable to find libiberty/demangle.h in: $LIBIBERTY])
+    fi
+
+    for lib in $multilib_path ; do
+      file="${LIBIBERTY}/${lib}/libiberty.a"
+      if test -f "$file" ; then
+        LIBIBERTY_LIBS="$file"
+	found_libiberty=yes
+	break
       fi
+    done
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+esac
 
-      for lib in $multilib_path ; do
-        file="${LIBIBERTY}/${lib}/libiberty.a"
-	if test -f "$file" ; then
-          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
-	  found_libiberty=yes
-	  break
-	fi
-      done
-      num_pkgs=`expr 1 + $num_pkgs`
-      ;;
-  esac
+AC_MSG_RESULT([$found_libiberty])
 
-  AC_MSG_RESULT([$found_libiberty])
-
-  if test "$found_libiberty" != yes ; then
-    AC_MSG_ERROR([unable to find libiberty.a in binutils or libiberty])
-  fi
+if test "$found_libiberty" != yes ; then
+  AC_MSG_ERROR([unable to find libiberty.a])
 fi
+
+AC_SUBST([LIBIBERTY_IFLAGS])
+AC_SUBST([LIBIBERTY_LIBS])
+
 
 
 #-------------------------------------------------
@@ -3719,34 +3581,6 @@ case "$ZLIB" in
 esac
 
 AC_MSG_RESULT([$ZLIB])
-
-# If binutils doesn't include libz.a, then try here.
-if test "$BINUTILS" = no || test "$binutils_has_libz" = yes
-then
-  AC_MSG_NOTICE([skipping libz for binutils])
-else
-  AC_MSG_CHECKING([for libz.a for binutils])
-
-  found_libz=no
-  case "$ZLIB" in
-    /* )
-      for lib in $multilib_path ; do
-        file="${ZLIB}/${lib}/libz.a"
-	if test -f "$file" ; then
-          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
-	  found_libz=yes
-	  break
-	fi
-      done
-      ;;
-  esac
-
-  AC_MSG_RESULT([$found_libz])
-
-  if test "$found_libz" != yes ; then
-    AC_MSG_ERROR([unable to find libz.a in binutils or zlib])
-  fi
-fi
 
 AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
 
@@ -5440,32 +5274,22 @@ AC_CONFIG_FILES([ \
   src/extern/lzma/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds2/Makefile \
-  src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
-  src/tool/hpcprof2/Makefile \
-  src/tool/hpcprof2-mpi/Makefile \
-  src/tool/hpcprof-flat/Makefile \
   src/tool/hpcproftt/Makefile \
   src/tool/hpcrun/Makefile \
   src/tool/hpcrun/utilities/bgq-cnk/Makefile \
-  src/tool/hpcrun-flat/Makefile \
   src/tool/hpcserver/Makefile \
   src/tool/hpcserver/mpi/Makefile \
   src/tool/hpcstruct/Makefile \
   src/tool/hpctracedump/Makefile \
-  src/tool/misc/Makefile \
-  src/tool/xprof/Makefile \
   src/lib/Makefile \
   src/lib/analysis/Makefile \
   src/lib/banal/Makefile \
   src/lib/binutils/Makefile \
-  src/lib/isa/Makefile \
   src/lib/prof/Makefile \
   src/lib/profile/Makefile \
-  src/lib/profxml/Makefile \
   src/lib/prof-lean/Makefile \
-  src/lib/stubs-gcc_s/Makefile \
   src/lib/support/Makefile \
   src/lib/support-lean/Makefile \
   src/lib/xml/Makefile \
@@ -5481,12 +5305,6 @@ AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpclink],
   [chmod +x src/tool/hpcrun/scripts/hpclink])
 AC_CONFIG_FILES([src/tool/hpcrun/scripts/hpcsummary],
   [chmod +x src/tool/hpcrun/scripts/hpcsummary])
-AC_CONFIG_FILES([src/tool/hpcprof/hpcprof],
-  [chmod +x src/tool/hpcprof/hpcprof])
-AC_CONFIG_FILES([src/tool/hpcprof-mpi/hpcprof-mpi],
-  [chmod +x src/tool/hpcprof-mpi/hpcprof-mpi])
-AC_CONFIG_FILES([src/tool/hpcprof-flat/hpcprof-flat],
-  [chmod +x src/tool/hpcprof-flat/hpcprof-flat])
 AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
 AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
@@ -5568,7 +5386,6 @@ AC_MSG_NOTICE([  MPICXX:    '${MPICXX}'])
 AC_MSG_NOTICE([  MPIF77:    '${MPIF77}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
-AC_MSG_NOTICE([  binutils:     ${BINUTILS}])
 AC_MSG_NOTICE([  boost:        ${BOOST}])
 AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])

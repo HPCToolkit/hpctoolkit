@@ -71,9 +71,7 @@ if OPT_BUILD_TOOL_ALL
 SUBDIRS += \
 	hpcstruct \
 	hpcprof \
-	hpcprof2 \
 	hpcproftt \
-	hpclump \
 	hpctracedump
 
 if OPT_ENABLE_HPCSERVER
@@ -89,7 +87,6 @@ endif
 
 if OPT_ENABLE_MPI
   SUBDIRS += hpcprof-mpi
-  SUBDIRS += hpcprof2-mpi
 
 if OPT_ENABLE_HPCSERVER
   SUBDIRS += hpcserver/mpi

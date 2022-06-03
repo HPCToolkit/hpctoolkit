@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2022, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -70,6 +70,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+EXT_LIBS = lib/hpctoolkit/ext-libs
+
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
@@ -78,44 +80,39 @@ XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 
 MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp \
-	ParallelAnalysis.hpp ParallelAnalysis.cpp
+	main.cpp master.cpp worker.cpp tree.cpp \
+	mpi.cpp ../hpcprof/args.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BOOST_IFLAGS@ \
+             @VALGRIND_IFLAGS@ -std=gnu++17
 
 
 MYLDFLAGS = \
+	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
+	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
+	-lstdc++fs \
 	@HPCPROFMPI_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
 	@XERCES_LDFLAGS@ \
-	@LZMA_PROF_MPI_LIBS@ 
+	@LZMA_PROF_MPI_LIBS@ \
+	-L@LIBELF_LIB@ -ldw -lelf
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal_Simple) \
-	$(HPCLIB_ProfXML) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
+	$(HPCLIB_Profile) \
 	$(HPCLIB_ProfLean) \
-	$(HPCLIB_ISA) \
-	$(MY_LIB_XED) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
 	@LZMA_PROF_MPI_LIBS@ \
 	@XERCES_LDLIBS@ \
-	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext) \
+	@LIBIBERTY_LIBS@ \
+	@BOOST_LFLAGS@ \
 	@HOST_HPCPROF_LDFLAGS@
 
-if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_PROF_MPI_LIBS)
-else
-MY_LIB_XED =
+if OPT_ENABLE_OPENMP
+MYCFLAGS += $(OPENMP_FLAG)
+MYCXXFLAGS += $(OPENMP_FLAG)
 endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
@@ -124,26 +121,17 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
-
 CXX = $(MPICXX)
 
-bin_SCRIPTS = hpcprof-mpi
+bin_PROGRAMS = hpcprof-mpi
 
-pkglibexec_PROGRAMS = hpcprof-mpi-bin
-
-hpcprof_mpi_bin_SOURCES  = $(MYSOURCES)
-hpcprof_mpi_bin_CFLAGS   = $(MYCFLAGS)
-hpcprof_mpi_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_mpi_bin_LDFLAGS  = $(MYLDFLAGS)
-hpcprof_mpi_bin_LDADD    = $(MYLDADD)
+hpcprof_mpi_SOURCES  = $(MYSOURCES)
+hpcprof_mpi_CFLAGS   = $(MYCFLAGS)
+hpcprof_mpi_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_mpi_LDFLAGS  = $(MYLDFLAGS)
+hpcprof_mpi_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
-
-install-exec-hook:
-	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcprof-mpi-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcprof-mpi$(EXEEXT))
-
 
 #############################################################################
 # Common rules

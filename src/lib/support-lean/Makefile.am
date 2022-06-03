@@ -66,7 +66,7 @@ AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
+LIBIBERTY_IFLAGS = @LIBIBERTY_IFLAGS@
 
 #############################################################################
 # Local settings
@@ -78,7 +78,7 @@ MYSOURCES = \
 	compress_lzma.c  \
 	demangle.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(BINUTILS_IFLAGS) $(LZMA_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(LIBIBERTY_IFLAGS) $(LZMA_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

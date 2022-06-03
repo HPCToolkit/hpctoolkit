@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2019-2022, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,291 +44,75 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
+#include "lib/profile/util/vgannotations.hpp"
 
-//************************* System Include Files ****************************
+#include "args.hpp"
+
+#include "lib/profile/pipeline.hpp"
+#include "lib/profile/source.hpp"
+#include "lib/profile/sinks/experimentxml4.hpp"
+#include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/sparsedb.hpp"
+#include "lib/profile/finalizers/denseids.hpp"
+#include "lib/profile/finalizers/directclassification.hpp"
 
 #include <iostream>
-#include <fstream>
 
-#include <string>
-using std::string;
+using namespace hpctoolkit;
+namespace fs = stdshim::filesystem;
 
-#include <vector>
-
-//*************************** User Include Files ****************************
-
-#include <include/gcc-attr.h>
-
-#include "Args.hpp"
-
-#include <lib/analysis/CallPath-CudaCFG.hpp>
-#include <lib/analysis/CallPath.hpp>
-#include <lib/analysis/Util.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/RealPathMgr.hpp>
-
-
-//*************************** Forward Declarations ***************************
-
-static int
-realmain(int argc, char* const* argv);
-
-static void
-makeMetrics(Prof::CallPath::Profile& prof,
-	    const Analysis::Args& args,
-	    const Analysis::Util::NormalizeProfileArgs_t& nArgs);
-
-
-//****************************************************************************
-
-void 
-prof_abort
-(
-  int error_code
-)
-{
-  exit(error_code);
+template<class T, class... Args>
+static std::unique_ptr<T> make_unique_x(Args&&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
+int main(int argc, char* const argv[]) {
+  // Read in the arguments.
+  ProfArgs args(argc, argv);
 
-int 
-main(int argc, char* const* argv) 
-{
-  int ret;
+  // Get the main core of the Pipeline set up.
+  ProfilePipeline::Settings pipelineB;
+  for(auto& sp : args.sources) pipelineB << std::move(sp.first);
+  for(auto& sp : args.ksyms) pipelineB << std::move(sp);
+  for(auto& sp : args.structs) pipelineB << std::move(sp.first);
+  ProfArgs::StructWarner sw(args);
+  pipelineB << sw;
+  ProfArgs::StatisticsExtender se(args);
+  pipelineB << se;
 
-  try {
-    ret = realmain(argc, argv);
+  // Provide Ids for things from the void
+  finalizers::DenseIds dids;
+  pipelineB << dids;
+
+  // Make sure the files are searched for as they should be
+  ProfArgs::Prefixer pr(args);
+  pipelineB << pr;
+
+  // Insert the proper Finalizer for drawing data directly from the Modules.
+  // This is used as a fallback if the Structfiles aren't available.
+  finalizers::DirectClassification dc(args.dwarfMaxSize);
+  pipelineB << dc;
+
+  switch(args.format) {
+  case ProfArgs::Format::sparse: {
+    std::unique_ptr<sinks::HPCTraceDB2> tdb;
+    if(args.include_traces)
+      tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
+    pipelineB << make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
+                                                      tdb.get());
+    pipelineB << std::move(tdb);
+    pipelineB << make_unique_x<sinks::SparseDB>(args.output);
+    break;
   }
-  catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg(x.message());
-    exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
-    DIAG_EMsg("[std::bad_alloc] " << x.what());
-    exit(1);
-  }
-  catch (const std::exception& x) {
-    DIAG_EMsg("[std::exception] " << x.what());
-    exit(1);
-  } 
-  catch (...) {
-    DIAG_EMsg("Unknown exception encountered!");
-    exit(2);
-  }
-
-  return ret;
-}
-
-
-static int
-realmain(int argc, char* const* argv) 
-{
-  Args args;
-  args.parse(argc, argv);
-
-  RealPathMgr::singleton().searchPaths(args.searchPathStr());
-
-  Analysis::Util::NormalizeProfileArgs_t nArgs =
-    Analysis::Util::normalizeProfileArgs(args.profileFiles);
-
-  // ------------------------------------------------------------
-  // 0. Special checks
-  // ------------------------------------------------------------
-
-  if (nArgs.paths->size() == 0) {
-    std::cerr << "ERROR: command line directories"
-      " contain no .hpcrun files; no database generated\n";
-    exit(-1);
   }
 
-  if (Analysis::Args::MetricFlg_isThread(args.prof_metrics)
-      && nArgs.paths->size() > 16
-      && !args.hpcprof_forceMetrics) {
-    DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force-metric option.");
-  }
+  // Create the Pipeline, let the fun begin.
+  ProfilePipeline pipeline(std::move(pipelineB), args.threads);
 
-  // ------------------------------------------------------------
-  // 1a. Create canonical CCT // Normalize trace files
-  // ------------------------------------------------------------
+  // Drain the Pipeline, and make everything happen.
+  pipeline.run();
 
-  int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
-  Analysis::Util::UIntVec* groupMap =
-    (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
-
-  uint rFlags = 0;
-  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
-    rFlags |= Prof::CallPath::Profile::RFlg_MakeInclExcl;
-  }
-  uint mrgFlags = (Prof::CCT::MrgFlg_NormalizeTraceFileY);
-
-  Prof::CallPath::Profile* prof =
-    Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags, mrgFlags);
-
-  prof->disable_redundancy(args.remove_redundancy);
-
-
-  // -------------------------------------------------------
-  // 0. Make empty Experiment database (ensure file system works)
-  // -------------------------------------------------------
-
-  args.makeDatabaseDir();
-
-  // ------------------------------------------------------------
-  // 1b. Add static structure to canonical CCT
-  // ------------------------------------------------------------
-
-  Prof::Struct::Tree* structure = new Prof::Struct::Tree("");
-  if (!args.structureFiles.empty()) {
-    Analysis::CallPath::readStructure(structure, args);
-  }
-  prof->structure(structure);
-
-  bool printProgress = true;
-
-  Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
-						 args.doNormalizeTy, printProgress);
-
-  Analysis::CallPath::transformCudaCFGMain(*prof);
-  
-  // -------------------------------------------------------
-  // 2a. Create summary metrics for canonical CCT
-  // -------------------------------------------------------
-
-  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
-    makeMetrics(*prof, args, nArgs);
-  }
-
-  // -------------------------------------------------------
-  // 2b. Prune and normalize canonical CCT
-  // -------------------------------------------------------
-
-  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
-    Analysis::CallPath::pruneBySummaryMetrics(*prof, NULL);
-  }
-
-  Analysis::CallPath::normalize(*prof, args.agent, args.doNormalizeTy);
-
-  if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
-    // Apply after all CCT pruning/normalization is completed.
-    //TODO: Analysis::CallPath::applySummaryMetricAgents(*prof, args.agent);
-  }
-
-  prof->cct()->makeDensePreorderIds();
-
-  // -------------------------------------------------------
-  // 2c. Create thread-level metric DB
-  // -------------------------------------------------------
-  // Currently we use --metric=thread as a proxy for the metric database
-
-  // ------------------------------------------------------------
-  // 3. Generate Experiment database
-  //    INVARIANT: database dir already exists
-  // ------------------------------------------------------------
-
-  Analysis::CallPath::pruneStructTree(*prof);
-
-  if (args.title.empty()) {
-    args.title = prof->name();
-  }
-
-  if (!args.db_makeMetricDB) {
-    prof->metricMgr()->zeroDBInfo();
-  }
-
-  Analysis::CallPath::makeDatabase(*prof, args);
-
-
-  // -------------------------------------------------------
-  // Cleanup
-  // -------------------------------------------------------
-  nArgs.destroy();
-
-  delete prof;
+  if(args.valgrindUnclean) std::exit(0);  // Skips local cleanup of pipeline
 
   return 0;
-}
-
-
-//****************************************************************************
-
-static void
-makeMetrics(Prof::CallPath::Profile& prof,
-	    const Analysis::Args& args,
-	    const Analysis::Util::NormalizeProfileArgs_t& GCC_ATTR_UNUSED nArgs)
-{
-  Prof::Metric::Mgr& mMgr = *prof.metricMgr();
-
-  Prof::CCT::ANode* cctRoot = prof.cct()->root();
-
-  // -------------------------------------------------------
-  // create derived metrics
-  // -------------------------------------------------------
-  uint numSrc = mMgr.size();
-  uint mSrcBeg = 0, mSrcEnd = numSrc; // [ )
-
-  uint mDrvdBeg = 0, mDrvdEnd = 0; // [ )
-  
-  bool needAllStats =
-    Analysis::Args::MetricFlg_isSet(args.prof_metrics,
-				    Analysis::Args::MetricFlg_StatsAll);
-  bool needMultiOccurance =
-    Analysis::Args::MetricFlg_isThread(args.prof_metrics);
-
-  mDrvdBeg = mMgr.makeSummaryMetrics(needAllStats, needMultiOccurance,
-                                     mSrcBeg, mSrcEnd);
-  if (mDrvdBeg != Prof::Metric::Mgr::npos) {
-    mDrvdEnd = mMgr.size();
-  }
-
-  if (!Analysis::Args::MetricFlg_isThread(args.prof_metrics)) {
-    for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
-      Prof::Metric::ADesc* m = mMgr.metric(mId);
-      m->visibility(HPCRUN_FMT_METRIC_HIDE);
-    }
-  }
-
-  // -------------------------------------------------------
-  // aggregate sampled metrics (in batch)
-  // -------------------------------------------------------
-
-  VMAIntervalSet ivalsetIncl;
-  VMAIntervalSet ivalsetExcl;
-
-  for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
-    Prof::Metric::ADesc* m = mMgr.metric(mId);
-    if (m->type() == Prof::Metric::ADesc::TyIncl) {
-      ivalsetIncl.insert(VMAInterval(mId, mId + 1)); // [ )
-    }
-    else if (m->type() == Prof::Metric::ADesc::TyExcl) {
-      ivalsetExcl.insert(VMAInterval(mId, mId + 1)); // [ )
-    }
-    m->computedType(Prof::Metric::ADesc::ComputedTy_Final); // proleptic
-  }
-
-  cctRoot->aggregateMetricsIncl(ivalsetIncl);
-  cctRoot->aggregateMetricsExcl(ivalsetExcl);
-
-
-  // -------------------------------------------------------
-  // compute derived metrics
-  // -------------------------------------------------------
-  cctRoot->computeMetrics(mMgr, mDrvdBeg, mDrvdEnd, /*doFinal*/false);
-
-  for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
-    Prof::Metric::ADesc* m = mMgr.metric(i);
-    m->computedType(Prof::Metric::ADesc::ComputedTy_NonFinal);
-  }
 }

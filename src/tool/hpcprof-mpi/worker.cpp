@@ -47,7 +47,7 @@
 #include "lib/profile/util/vgannotations.hpp"
 
 #include "tree.hpp"
-#include "../hpcprof2/args.hpp"
+#include "../hpcprof/args.hpp"
 
 #include "lib/profile/pipeline.hpp"
 #include "lib/profile/source.hpp"

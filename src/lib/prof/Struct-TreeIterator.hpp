@@ -246,16 +246,6 @@ public:
   static int cmpByLine(const void* x, const void* y);
   static int cmpById(const void* x, const void* y);
 
-  static cmp_fptr_t 
-  cmpByMetric(uint mId)
-  {
-    cmpByMetric_mId = mId;
-    return cmpByMetric_fn;
-  }
-  static int cmpByMetric_fn(const void* x, const void* y);
-  static int cmpByMetric_mId; // need a fuctor/closure to avoid this
-
-
 public: 
   ANodeSortedIterator(const ANode* node,
 		      cmp_fptr_t compare_fn,

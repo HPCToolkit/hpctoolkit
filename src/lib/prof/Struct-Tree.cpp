@@ -80,7 +80,6 @@ using std::string;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
-#include "LoadMap.hpp"
 #include "Struct-Tree.hpp"
 
 #include <lib/xml/xml.hpp>
@@ -772,50 +771,6 @@ ACodeNode*
 ANode::ancestorProcCtxt() const
 {
   return dynamic_cast<ACodeNode*>(ancestor(TyProc, TyAlien));
-}
-
-
-//***************************************************************************
-// Metrics
-//***************************************************************************
-
-void
-ANode::aggregateMetrics(uint mBegId, uint mEndId)
-{
-  if ( !(mBegId < mEndId) ) {
-    return; // short circuit
-  }
-
-  const ANode* root = this;
-  ANodeIterator it(root, NULL/*filter*/, false/*leavesOnly*/,
-		   IteratorStack::PostOrder);
-  for (ANode* n = NULL; (n = it.current()); ++it) {
-    ANode* n_parent = n->parent();
-    if (n != root) {
-      for (uint mId = mBegId; mId < mEndId; ++mId) {
-	double mVal = n->demandMetric(mId, mEndId/*size*/);
-	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
-      }
-    }
-  }
-}
-
-
-void
-ANode::pruneByMetrics()
-{
-  for (ANodeChildIterator it(this); it.Current(); /* */) {
-    ANode* x = it.current();
-    it++; // advance iterator -- it is pointing at 'x'
-
-    if (x->hasMetrics()) {
-      x->pruneByMetrics();
-    }
-    else {
-      x->unlink(); // unlink 'x' from tree
-      delete x;
-    }
-  }
 }
 
 
@@ -1658,9 +1613,7 @@ bool
 ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
 {
   bool doTag = isVisible();
-  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly) ?
-		    isLeaf() && hasMetrics() : hasMetrics());
-  bool isXMLLeaf = isLeaf() && !doMetrics;
+  bool isXMLLeaf = isLeaf();
 
   // 1. Write element name
   if (doTag) {
@@ -1672,12 +1625,6 @@ ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
     }
   }
 
-  // 2. Write associated metrics
-  if (doMetrics) {
-    writeMetricsXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
-    os << "\n";
-  }
- 
   return !isXMLLeaf; // whether to execute writeXML_post()
 }
 
@@ -1771,124 +1718,6 @@ LM::writeXML(ostream& os, uint oFlags, const char* pre) const
 
 
 //***************************************************************************
-// ANode, etc: CSV output
-//***************************************************************************
-
-void
-ANode::CSV_DumpSelf(const Root& root, ostream& os) const
-{
-  char temp[32];
-  for (uint i = 0; i < numMetrics(); i++) {
-    double val = (hasMetric(i) ? metric(i) : 0);
-    os << "," << val;
-#if 0
-    // FIXME: tallent: Conversioon from static perf-table to MetricDescMgr
-    const PerfMetric& metric = IndexToPerfDataInfo(i);
-    bool percent = metric.Percent();
-#else
-    bool percent = true;
-#endif
-
-    if (percent) {
-      double percVal = val / root.metric(i) * 100;
-      sprintf(temp, "%5.2lf", percVal);
-      os << "," << temp;
-    }
-  }
-  os << endl;
-}
-
-
-void
-ANode::CSV_dump(const Root& root, ostream& os,
-		const char* GCC_ATTR_UNUSED file_name,
-		const char* GCC_ATTR_UNUSED proc_name,
-		int GCC_ATTR_UNUSED lLevel) const
-{
-  // print file name, routine name, start and end line, loop level
-  os << name() << ",,,,";
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.current(); it++) {
-    it.current()->CSV_dump(root, os);
-  }
-}
-
-
-void
-File::CSV_dump(const Root& root, ostream& os,
-	       const char* GCC_ATTR_UNUSED file_name,
-	       const char* GCC_ATTR_UNUSED proc_name,
-	       int GCC_ATTR_UNUSED lLevel) const
-{
-  // print file name, routine name, start and end line, loop level
-  os << baseName() << ",," << m_begLn << "," << m_endLn << ",";
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByName);
-       it.current(); it++) {
-    it.current()->CSV_dump(root, os, baseName().c_str());
-  }
-}
-
-
-void
-Proc::CSV_dump(const Root& root, ostream& os,
-	       const char* file_name,
-	       const char* GCC_ATTR_UNUSED proc_name,
-	       int GCC_ATTR_UNUSED lLevel) const
-{
-  // print file name, routine name, start and end line, loop level
-  os << file_name << "," << name() << "," << m_begLn << "," << m_endLn
-     << ",0";
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.current(); it++) {
-    it.current()->CSV_dump(root, os, file_name, name().c_str(), 1);
-  }
-}
-
-
-void
-Alien::CSV_dump(const Root& GCC_ATTR_UNUSED root, ostream& GCC_ATTR_UNUSED os,
-		const char* GCC_ATTR_UNUSED file_name,
-		const char* GCC_ATTR_UNUSED proc_name,
-		int GCC_ATTR_UNUSED lLevel) const
-{
-  DIAG_Die(DIAG_Unimplemented);
-}
-
-
-void
-ACodeNode::CSV_dump(const Root& root, ostream& os,
-		    const char* file_name, const char* proc_name,
-		    int lLevel) const
-{
-  ANodeTy myANodeTy = this->type();
-  // do not display info for single lines
-  if (myANodeTy == TyStmt)
-    return;
-  // print file name, routine name, start and end line, loop level
-  os << (file_name ? file_name : name().c_str()) << ","
-     << (proc_name ? proc_name : "") << ","
-     << m_begLn << "," << m_endLn << ",";
-  if (lLevel)
-    os << lLevel;
-  CSV_DumpSelf(root, os);
-  for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
-       it.current(); it++) {
-    it.current()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
-  }
-}
-
-
-void
-Root::CSV_TreeDump(ostream& os) const
-{
-  ANode::CSV_dump(*this, os);
-}
-
-
-//***************************************************************************
 // ANode, etc: Output and Debugging support
 //***************************************************************************
 
@@ -1926,17 +1755,6 @@ ANode::dump(ostream& os, uint oFlags, const char* pre) const
 
   dumpme(os, oFlags, pre);
 
-  for (uint i = 0; i < numMetrics(); i++) {
-    os << i << " = " ;
-    if (hasMetric(i)) {
-      os << metric(i);
-    }
-    else {
-      os << "UNDEF";
-    }
-    os << "; ";
-  }
- 
   for (ANodeChildIterator it(this); it.Current(); it++) {
     it.current()->dump(os, oFlags, prefix.c_str());
   }

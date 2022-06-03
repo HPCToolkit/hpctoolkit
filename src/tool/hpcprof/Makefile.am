@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2022, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -71,54 +71,45 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+EXT_LIBS = lib/hpctoolkit/ext-libs
+
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
-
-XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
-
-if OPT_ENABLE_IGC
-IGC_LDFLGS = @OPT_IGC_LDFLAGS@
-endif
 
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 
 MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp
+	main.cpp args.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@ \
+	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ -std=gnu++17
 
 MYLDFLAGS = \
+	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
+	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
+	-lstdc++fs \
 	@HOST_CXXFLAGS@ \
 	@XERCES_LDFLAGS@ \
-	@LZMA_LDFLAGS_DYN@
+	@LZMA_LDFLAGS_DYN@ \
+    -L@LIBELF_LIB@ -ldw -lelf
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal_Simple) \
-	$(HPCLIB_ProfXML) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
+	$(HPCLIB_Profile) \
+	$(HPCLIB_ProfileStandalone) \
 	$(HPCLIB_ProfLean) \
-	$(HPCLIB_ISA) \
-	$(MY_LIB_XED) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
-	$(IGC_LDFLGS) \
 	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
-	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext) \
+	@LIBIBERTY_LIBS@ \
+	@BOOST_LFLAGS@ \
 	@HOST_HPCPROF_LDFLAGS@
 
-if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_LIB_FLAGS)
-else
-MY_LIB_XED =
+if OPT_ENABLE_OPENMP
+MYCFLAGS += $(OPENMP_FLAG)
+MYCXXFLAGS += $(OPENMP_FLAG)
 endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
@@ -127,24 +118,15 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
+bin_PROGRAMS = hpcprof
 
-bin_SCRIPTS = hpcprof
-
-pkglibexec_PROGRAMS = hpcprof-bin
-
-hpcprof_bin_SOURCES  = $(MYSOURCES)
-hpcprof_bin_CFLAGS   = $(MYCFLAGS)
-hpcprof_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_bin_LDFLAGS  = $(MYLDFLAGS)
-hpcprof_bin_LDADD    = $(MYLDADD)
+hpcprof_SOURCES  = $(MYSOURCES)
+hpcprof_CFLAGS   = $(MYCFLAGS)
+hpcprof_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_LDFLAGS  = $(MYLDFLAGS)
+hpcprof_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
-
-install-exec-hook:
-	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcprof-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcprof$(EXEEXT))
-
 
 #############################################################################
 # Common rules
