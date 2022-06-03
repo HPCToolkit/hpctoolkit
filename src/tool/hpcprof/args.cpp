@@ -634,7 +634,7 @@ static std::pair<bool, fs::path> remove_prefix(const fs::path& path, const fs::p
   return {true, rem};
 }
 
-static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path>& prefixes,
+static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path, stdshim::hash_path>& prefixes,
                                       const fs::path& p) noexcept {
   std::error_code ec;
   for(const auto& ft: prefixes) {

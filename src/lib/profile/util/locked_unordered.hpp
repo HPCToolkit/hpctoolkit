@@ -234,10 +234,11 @@ private:
 };
 
 /// A simple parallel wrapper around a std::unordered_set.
-template<class K, class M = stdshim::shared_mutex>
+template<class K, class M = stdshim::shared_mutex, class H = std::hash<K>,
+         class E = std::equal_to<K>>
 class locked_unordered_set {
 protected:
-  using real_t = std::unordered_set<K>;
+  using real_t = std::unordered_set<K, H, E>;
 
 public:
   locked_unordered_set() = default;

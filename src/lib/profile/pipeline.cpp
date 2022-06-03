@@ -974,12 +974,14 @@ Sink::timepointBounds() {
   return pipe->timepointBounds;
 }
 
-const util::locked_unordered_uniqued_set<Module>& Sink::modules() {
+const util::locked_unordered_uniqued_set<Module, stdshim::shared_mutex,
+    util::uniqued_hash<stdshim::hash_path>>& Sink::modules() {
   assert(dataLimit.hasReferences() && "Sink did not register for `references` absorption!");
   return pipe->mods;
 }
 
-const util::locked_unordered_uniqued_set<File>& Sink::files() {
+const util::locked_unordered_uniqued_set<File, stdshim::shared_mutex,
+    util::uniqued_hash<stdshim::hash_path>>& Sink::files() {
   assert(dataLimit.hasReferences() && "Sink did not register for `references` absorption!");
   return pipe->files;
 }

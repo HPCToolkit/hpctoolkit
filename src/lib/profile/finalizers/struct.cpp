@@ -445,7 +445,8 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
         // we just ignore it and continue on.
         auto callee = xmlstr(attr.getValue(XMLStr("t")));
         if(!callee.empty())
-          tmp_rcg.push_back({std::stoll(callee, nullptr, 16), {callerInst, *top.func}});
+          tmp_rcg.push_back({(uint64_t)std::stoll(callee, nullptr, 16),
+                             {callerInst, *top.func}});
       }
     } else if(ename == "A") {
       if(top.tag != 'A') {  // First A, gives the caller line.

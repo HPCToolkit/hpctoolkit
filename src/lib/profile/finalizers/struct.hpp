@@ -104,7 +104,7 @@ private:
   // each binary path with the properly initialized Parser for that tag.
   std::mutex lms_lock;
   std::unordered_map<stdshim::filesystem::path,
-                     std::unique_ptr<finalizers::detail::StructFileParser>> lms;
+      std::unique_ptr<finalizers::detail::StructFileParser>, stdshim::hash_path> lms;
 };
 
 }

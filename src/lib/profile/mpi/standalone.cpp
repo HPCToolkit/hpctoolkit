@@ -56,7 +56,7 @@ template<class T, typename std::enable_if<
     std::is_arithmetic<T>::value && std::is_same<
       typename std::remove_cv<typename std::remove_reference<T>::type>::type,
       T>::value
-  >::type* = nullptr>
+  >::type*>
 const Datatype& detail::asDatatype() { return type; }
 template const Datatype& detail::asDatatype<char>();
 template const Datatype& detail::asDatatype<int8_t>();

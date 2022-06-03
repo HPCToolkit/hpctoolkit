@@ -90,7 +90,8 @@ public:
   std::string title;
 
   /// Path prefix transformation pairs
-  std::unordered_map<stdshim::filesystem::path, stdshim::filesystem::path> prefixes;
+  std::unordered_map<stdshim::filesystem::path, stdshim::filesystem::path,
+                     stdshim::hash_path> prefixes;
 
   /// Statistics adding Transformer
   class StatisticsExtender final : public ProfileFinalizer {
@@ -167,7 +168,8 @@ public:
   bool valgrindUnclean;
 
 private:
-  std::unordered_map<stdshim::filesystem::path, std::vector<stdshim::filesystem::path>> structheads;
+  std::unordered_map<stdshim::filesystem::path, std::vector<stdshim::filesystem::path>,
+                     stdshim::hash_path> structheads;
 };
 
 }

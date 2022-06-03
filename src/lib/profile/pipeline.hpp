@@ -533,8 +533,10 @@ public:
     const ProfileAttributes& attributes();
     std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
       timepointBounds();
-    const util::locked_unordered_uniqued_set<Module>& modules();
-    const util::locked_unordered_uniqued_set<File>& files();
+    const util::locked_unordered_uniqued_set<Module, stdshim::shared_mutex,
+        util::uniqued_hash<stdshim::hash_path>>& modules();
+    const util::locked_unordered_uniqued_set<File, stdshim::shared_mutex,
+        util::uniqued_hash<stdshim::hash_path>>& files();
     const util::locked_unordered_uniqued_set<Metric>& metrics();
     const util::locked_unordered_uniqued_set<ExtraStatistic>& extraStatistics();
     const Context& contexts();
@@ -610,8 +612,10 @@ private:
   std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
     timepointBounds;
   util::locked_unordered_set<std::unique_ptr<Thread>> threads;
-  util::locked_unordered_uniqued_set<Module> mods;
-  util::locked_unordered_uniqued_set<File> files;
+  util::locked_unordered_uniqued_set<Module, stdshim::shared_mutex,
+      util::uniqued_hash<stdshim::hash_path>> mods;
+  util::locked_unordered_uniqued_set<File, stdshim::shared_mutex,
+      util::uniqued_hash<stdshim::hash_path>> files;
   util::locked_unordered_uniqued_set<Metric> mets;
   util::locked_unordered_uniqued_set<ExtraStatistic> estats;
   std::unique_ptr<Context> cct;

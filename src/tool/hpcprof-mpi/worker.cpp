@@ -60,6 +60,7 @@
 #include "lib/profile/util/log.hpp"
 #include "lib/profile/mpi/all.hpp"
 
+#include "lib/profile/stdshim/filesystem.hpp"
 #include <mpi.h>
 #include <iostream>
 

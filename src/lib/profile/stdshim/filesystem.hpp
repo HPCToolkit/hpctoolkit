@@ -139,17 +139,15 @@ namespace filesystem {
 #error HPCToolkit requires C++17 std::filesystem support!
 #endif  // HPCTOOLKIT_STDSHIM_STD_HAS_filesystem
 
-// For some reason both the STL and Boost don't specialize std::hash for
-// filesystem::path, even though there's a function for that very purpose.
-// Technically its illegal to do this... but it should be fine, right?
-namespace std {
-  using hpctoolkit::stdshim::filesystem::hash_value;
-  using hpctoolkit::stdshim::filesystem::path;
-  template<> struct hash<path> {
-    std::size_t operator()(const path& p) const noexcept {
-      return hash_value(p);
-    }
-  };
-}
+// C++17 was released without a specialization for std::hash<filesystem::path>.
+// This was added back later (GCC 12), so we can't define the specialization
+// ourselves. So instead we define the common hash callable.
+namespace hpctoolkit::stdshim {
+struct hash_path {
+  std::size_t operator()(const filesystem::path& p) const noexcept {
+    return filesystem::hash_value(p);
+  }
+};
+}  // namespace hpctoolkit::stdshim
 
 #endif  // HPCTOOLKIT_STDSHIM_FILESYSTEM_H

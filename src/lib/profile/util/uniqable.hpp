@@ -86,7 +86,7 @@ namespace {
   struct is_instantiation<U, U<T...>> : public std::true_type {};
 }
 
-template<class, class> class locked_unordered_set;
+template<class, class, class, class> class locked_unordered_set;
 
 // Wrapper that inserts a `const` into the stack.
 template<class T>
@@ -129,21 +129,30 @@ public:
   ~uniqued() = default;
 
   using type = T;
+  using key_type = typename std::decay<decltype(std::declval<T>().uniqable_key())>::type::type;
 
   // Various conversion operators. Allows automatic or x() syntax.
   T& operator()() const { return real; }
   operator T&() const { return real; }
 
 private:
-  friend class std::hash<uniqued>;
+  template<class> friend class uniqued_hash;
   mutable T real;
-  using key_type = typename std::decay<decltype(std::declval<T>().uniqable_key())>::type::type;
 
   const key_type& _u_key() const { return real.uniqable_key(); }
 
 public:
   bool operator==(const uniqued& o) const { return _u_key() == o._u_key(); }
   bool operator<(const uniqued& o) const { return _u_key() < o._u_key(); }
+};
+
+// Template class to make a hash callable to support an uniqued argument.
+template<class T>
+struct uniqued_hash : public T {
+  template<class U>
+  std::size_t operator()(const uniqued<U>& v) const noexcept {
+    return T::operator()(v._u_key());
+  }
 };
 
 // A simple class to add ::at and ::operator[] support to sets, for unique'd
@@ -193,14 +202,7 @@ using locked_unordered_uniqued_set = uniqued_maplike<util::locked_unordered_set,
 }
 
 template<class T>
-class std::hash<hpctoolkit::util::uniqued<T>> {
-private:
-  using u_type = typename hpctoolkit::util::uniqued<T>;
-  using k_type = typename u_type::key_type;
-  std::hash<k_type> real;
-
-public:
-  std::size_t operator()(const u_type& v) const { return real(v._u_key()); }
-};
+struct std::hash<hpctoolkit::util::uniqued<T>>
+  : hpctoolkit::util::uniqued_hash<std::hash<typename hpctoolkit::util::uniqued<T>::key_type>> {};
 
 #endif  // HPCTOOLKIT_PROFILE_UTIL_UNIQUABLE_H
