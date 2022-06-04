@@ -98,6 +98,8 @@
 
 #define STUB 0
 
+#define GTPIN_KNOB_AVAILABLE 1
+
 
 //******************************************************************************
 // hpctoolkit's interface to gtpin
@@ -169,28 +171,6 @@ static __thread gtpin_correlation_data_t* tail = NULL;
 //******************************************************************************
 
 // FIXME the asserts in this file should be replaced by fatal error messages
-
-#ifdef GTPIN_KNOB_AVAILABLE
-static void
-knobAddBool
-(
- const char *name,
- bool value
-)
-{
-  GTPinKnob knob = HPCRUN_GTPIN_CALL(KNOB_FindArg, (name));
-  assert(knob != NULL);
-
-  KnobValue knob_value;
-  knob_value.value._bool = value;
-  knob_value.type = KNOB_TYPE_BOOL;
-
-  KNOB_STATUS status = 
-    HPCRUN_GTPIN_CALL(KNOB_AddValue, (knob, &knob_value));
-  assert(status == KNOB_STATUS_SUCCESS);
-}
-#endif
-
 
 void
 initializeInstrumentation
@@ -1046,8 +1026,9 @@ gtpin_enable_profiling
   ETMSG(OPENCL, "inside enableProfiling");
   initializeInstrumentation();
 
-#ifdef GTPIN_KNOB_AVAILABLE
-  knobAddBool("silent_warnings", true);
+#if GTPIN_KNOB_AVAILABLE
+  gtpin_knob_bool("silent_warnings", true);
+  gtpin_knob_bool("no_empty_profile_dir", true);
 #endif
 
   // Use opencl/level zero runtime stack

@@ -65,7 +65,9 @@
 
 #define str(t) #t
 #define xstr(t) str(t)
-#define gtpin_path() /* xstr(GTPIN_LIBDIR) "/" */ "libgtpin.so"
+#define gtpin_path() "libgtpin.so"
+
+#define gtpin_knob_path() "libhpcrun_gtpin_knob.so"
 
 #define GTPIN_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -74,22 +76,10 @@
 
 #define HPCRUN_GTPIN_CALL(fn, args) (GTPIN_FN_NAME(fn) args)
 
-#ifdef GTPIN_KNOB_AVAILABLE
-
-// Knobs available
-#define KNOB_FNS(macro)	 \
-  macro(KNOB_FindArg)	 \
-  macro(KNOB_AddValue)
-
-#else
-
-// Knobs unavailable
-#define KNOB_FNS(macro)
-
-#endif
+#define FORALL_GTPIN_KNOB_ROUTINES(macro)	\
+  macro(gtpin_knob_bool)
 
 #define FORALL_GTPIN_ROUTINES(macro)		\
-  KNOB_FNS(macro)				\
   macro(GTPin_BBLHead)				\
   macro(GTPin_BBLNext)				\
   macro(GTPin_BBLValid)				\
@@ -147,27 +137,15 @@
 // local data
 //******************************************************************************
 
-#ifdef GTPIN_KNOB_AVAILABLE
 GTPIN_FN
 (
- GTPinKnob, 
- KNOB_FindArg,
+ bool,
+ gtpin_knob_bool,
  (
-  const char *name
+  const char *name,
+  bool value
  )
 );
-
-
-GTPIN_FN
-(
- KNOB_STATUS,
- KNOB_AddValue, 
- (
-  GTPinKnob knob, 
-  KnobValue *knob_value
- )
-);
-#endif
 
 
 GTPIN_FN
@@ -559,18 +537,30 @@ gtpin_bind
 {
 #ifndef HPCRUN_STATIC_LINK  
   // dynamic libraries only availabile in non-static case
-  hpcrun_force_dlopen(true);
-  CHK_DLOPEN(gtpin, gtpin_path(), RTLD_NOW | RTLD_GLOBAL);
-  hpcrun_force_dlopen(false);
-  
+
 #define GTPIN_BIND(fn)        \
   IF_DEBUG(EEMSG("Trying to bind %s", xstr(fn));) \
   CHK_DLSYM(gtpin, fn); \
   IF_DEBUG(EEMSG("Bound %s", xstr(fn));)
+
+  {
+    hpcrun_force_dlopen(true);
+    CHK_DLOPEN(gtpin, gtpin_path(), RTLD_NOW | RTLD_GLOBAL);
+    hpcrun_force_dlopen(false);
+
+    FORALL_GTPIN_ROUTINES(GTPIN_BIND);
+  }
+
   
-  FORALL_GTPIN_ROUTINES(GTPIN_BIND)
+  // dynamic libraries only availabile in non-static case
+  {
+    hpcrun_force_dlopen(true);
+    CHK_DLOPEN(gtpin, gtpin_knob_path(), RTLD_NOW | RTLD_GLOBAL);
+    hpcrun_force_dlopen(false);
+
+    FORALL_GTPIN_KNOB_ROUTINES(GTPIN_BIND);
+  }
     
-#undef GTPIN_BIND
     
   return 0;
 #else
