@@ -170,7 +170,7 @@ host_triplet = @host@
 @OPT_PAPI_COMPONENT_TRUE@am__append_16 = -DHPCRUN_SS_PAPI_C_INTEL
 @OPT_PAPI_CUPTI_TRUE@am__append_17 = sample-sources/papi-c-cupti.c
 @OPT_ENABLE_OPENCL_TRUE@am__append_18 = libhpcrun_opencl.la
-@OPT_ENABLE_GTPIN_TRUE@am__append_19 = libhpcrun_gtpin_knob.la
+@OPT_ENABLE_GTPIN_TRUE@am__append_19 = libhpcrun_gtpin_cxx.la
 @OPT_ENABLE_LEVEL0_TRUE@am__append_20 = libhpcrun_level0.la
 
 #
@@ -936,17 +936,16 @@ libhpcrun_gprof_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(libhpcrun_gprof_la_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_gprof_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
-libhpcrun_gtpin_knob_la_LIBADD =
-am__libhpcrun_gtpin_knob_la_SOURCES_DIST =  \
+libhpcrun_gtpin_cxx_la_LIBADD =
+am__libhpcrun_gtpin_cxx_la_SOURCES_DIST =  \
 	gpu/instrumentation/gtpin-knob.cpp
-@OPT_ENABLE_GTPIN_TRUE@am_libhpcrun_gtpin_knob_la_OBJECTS = gpu/instrumentation/libhpcrun_gtpin_knob_la-gtpin-knob.lo
-libhpcrun_gtpin_knob_la_OBJECTS =  \
-	$(am_libhpcrun_gtpin_knob_la_OBJECTS)
-libhpcrun_gtpin_knob_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+@OPT_ENABLE_GTPIN_TRUE@am_libhpcrun_gtpin_cxx_la_OBJECTS = gpu/instrumentation/libhpcrun_gtpin_cxx_la-gtpin-knob.lo
+libhpcrun_gtpin_cxx_la_OBJECTS = $(am_libhpcrun_gtpin_cxx_la_OBJECTS)
+libhpcrun_gtpin_cxx_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(AM_CXXFLAGS) $(CXXFLAGS) $(libhpcrun_gtpin_knob_la_LDFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS) $(libhpcrun_gtpin_cxx_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-@OPT_ENABLE_GTPIN_TRUE@am_libhpcrun_gtpin_knob_la_rpath = -rpath \
+@OPT_ENABLE_GTPIN_TRUE@am_libhpcrun_gtpin_cxx_la_rpath = -rpath \
 @OPT_ENABLE_GTPIN_TRUE@	$(pkglibdir)
 libhpcrun_io_la_LIBADD =
 am_libhpcrun_io_la_OBJECTS =  \
@@ -1467,7 +1466,7 @@ SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_audit_la_SOURCES) $(libhpcrun_dlmopen_la_SOURCES) \
 	$(libhpcrun_fake_audit_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
 	$(libhpcrun_gprof_la_SOURCES) \
-	$(libhpcrun_gtpin_knob_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
+	$(libhpcrun_gtpin_cxx_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
 	$(libhpcrun_level0_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
 	$(libhpcrun_mpi_la_SOURCES) $(libhpcrun_opencl_la_SOURCES) \
 	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
@@ -1485,7 +1484,7 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_dlmopen_la_SOURCES) \
 	$(libhpcrun_fake_audit_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
 	$(libhpcrun_gprof_la_SOURCES) \
-	$(am__libhpcrun_gtpin_knob_la_SOURCES_DIST) \
+	$(am__libhpcrun_gtpin_cxx_la_SOURCES_DIST) \
 	$(libhpcrun_io_la_SOURCES) \
 	$(am__libhpcrun_level0_la_SOURCES_DIST) \
 	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
@@ -2134,9 +2133,9 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/gtpin-instrumentation.c \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/gtpin-correlation-id-map.c
 
-@OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_knob_la_CPPFLAGS = $(OPT_GTPIN_IFLAGS)
-@OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_knob_la_SOURCES = gpu/instrumentation/gtpin-knob.cpp
-@OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_knob_la_LDFLAGS =  \
+@OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_cxx_la_CPPFLAGS = $(OPT_GTPIN_IFLAGS)
+@OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_cxx_la_SOURCES = gpu/instrumentation/gtpin-knob.cpp
+@OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_cxx_la_LDFLAGS =  \
 @OPT_ENABLE_GTPIN_TRUE@	-Wl,-Bsymbolic -L$(OPT_GTPIN_LIBDIR) \
 @OPT_ENABLE_GTPIN_TRUE@	-Wl,-rpath=$(OPT_GTPIN_LIBDIR) -lgtpin
 @OPT_ENABLE_ROCM_TRUE@MY_ROCM_FILES = \
@@ -3497,12 +3496,12 @@ libhpcrun_ga.la: $(libhpcrun_ga_la_OBJECTS) $(libhpcrun_ga_la_DEPENDENCIES) $(EX
 
 libhpcrun_gprof.la: $(libhpcrun_gprof_la_OBJECTS) $(libhpcrun_gprof_la_DEPENDENCIES) $(EXTRA_libhpcrun_gprof_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_gprof_la_LINK) $(am_libhpcrun_gprof_la_rpath) $(libhpcrun_gprof_la_OBJECTS) $(libhpcrun_gprof_la_LIBADD) $(LIBS)
-gpu/instrumentation/libhpcrun_gtpin_knob_la-gtpin-knob.lo:  \
+gpu/instrumentation/libhpcrun_gtpin_cxx_la-gtpin-knob.lo:  \
 	gpu/instrumentation/$(am__dirstamp) \
 	gpu/instrumentation/$(DEPDIR)/$(am__dirstamp)
 
-libhpcrun_gtpin_knob.la: $(libhpcrun_gtpin_knob_la_OBJECTS) $(libhpcrun_gtpin_knob_la_DEPENDENCIES) $(EXTRA_libhpcrun_gtpin_knob_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libhpcrun_gtpin_knob_la_LINK) $(am_libhpcrun_gtpin_knob_la_rpath) $(libhpcrun_gtpin_knob_la_OBJECTS) $(libhpcrun_gtpin_knob_la_LIBADD) $(LIBS)
+libhpcrun_gtpin_cxx.la: $(libhpcrun_gtpin_cxx_la_OBJECTS) $(libhpcrun_gtpin_cxx_la_DEPENDENCIES) $(EXTRA_libhpcrun_gtpin_cxx_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(libhpcrun_gtpin_cxx_la_LINK) $(am_libhpcrun_gtpin_cxx_la_rpath) $(libhpcrun_gtpin_cxx_la_OBJECTS) $(libhpcrun_gtpin_cxx_la_LIBADD) $(LIBS)
 sample-sources/libhpcrun_io_la-io-over.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -4349,7 +4348,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/opencl/$(DEPDIR)/libhpcrun_la-opencl-blame.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_knob_la-gtpin-knob.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_cxx_la-gtpin-knob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-correlation-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Plo@am__quote@
@@ -9603,12 +9602,12 @@ utilities/libhpcrun_o-last_func.obj: utilities/last_func.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-gpu/instrumentation/libhpcrun_gtpin_knob_la-gtpin-knob.lo: gpu/instrumentation/gtpin-knob.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_knob_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gpu/instrumentation/libhpcrun_gtpin_knob_la-gtpin-knob.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_knob_la-gtpin-knob.Tpo -c -o gpu/instrumentation/libhpcrun_gtpin_knob_la-gtpin-knob.lo `test -f 'gpu/instrumentation/gtpin-knob.cpp' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-knob.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_knob_la-gtpin-knob.Tpo gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_knob_la-gtpin-knob.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/instrumentation/gtpin-knob.cpp' object='gpu/instrumentation/libhpcrun_gtpin_knob_la-gtpin-knob.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/instrumentation/libhpcrun_gtpin_cxx_la-gtpin-knob.lo: gpu/instrumentation/gtpin-knob.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT gpu/instrumentation/libhpcrun_gtpin_cxx_la-gtpin-knob.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_cxx_la-gtpin-knob.Tpo -c -o gpu/instrumentation/libhpcrun_gtpin_cxx_la-gtpin-knob.lo `test -f 'gpu/instrumentation/gtpin-knob.cpp' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-knob.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_cxx_la-gtpin-knob.Tpo gpu/instrumentation/$(DEPDIR)/libhpcrun_gtpin_cxx_la-gtpin-knob.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/instrumentation/gtpin-knob.cpp' object='gpu/instrumentation/libhpcrun_gtpin_cxx_la-gtpin-knob.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_knob_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gpu/instrumentation/libhpcrun_gtpin_knob_la-gtpin-knob.lo `test -f 'gpu/instrumentation/gtpin-knob.cpp' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-knob.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o gpu/instrumentation/libhpcrun_gtpin_cxx_la-gtpin-knob.lo `test -f 'gpu/instrumentation/gtpin-knob.cpp' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-knob.cpp
 
 .s.o:
 	$(AM_V_CCAS)$(CCASCOMPILE) -c -o $@ $<

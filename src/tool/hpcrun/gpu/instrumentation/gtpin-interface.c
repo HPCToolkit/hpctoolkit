@@ -67,7 +67,7 @@
 #define xstr(t) str(t)
 #define gtpin_path() "libgtpin.so"
 
-#define gtpin_knob_path() "libhpcrun_gtpin_knob.so"
+#define gtpin_cxx_path() "libhpcrun_gtpin_cxx.so"
 
 #define GTPIN_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -76,7 +76,7 @@
 
 #define HPCRUN_GTPIN_CALL(fn, args) (GTPIN_FN_NAME(fn) args)
 
-#define FORALL_GTPIN_KNOB_ROUTINES(macro)	\
+#define FORALL_GTPIN_CXX_ROUTINES(macro)	\
   macro(gtpin_knob_bool)
 
 #define FORALL_GTPIN_ROUTINES(macro)		\
@@ -551,14 +551,12 @@ gtpin_bind
     FORALL_GTPIN_ROUTINES(GTPIN_BIND);
   }
 
-  
-  // dynamic libraries only availabile in non-static case
   {
     hpcrun_force_dlopen(true);
-    CHK_DLOPEN(gtpin, gtpin_knob_path(), RTLD_NOW | RTLD_GLOBAL);
+    CHK_DLOPEN(gtpin, gtpin_cxx_path(), RTLD_NOW | RTLD_GLOBAL);
     hpcrun_force_dlopen(false);
 
-    FORALL_GTPIN_KNOB_ROUTINES(GTPIN_BIND);
+    FORALL_GTPIN_CXX_ROUTINES(GTPIN_BIND);
   }
     
     
