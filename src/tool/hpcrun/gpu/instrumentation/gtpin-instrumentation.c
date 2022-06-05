@@ -203,8 +203,6 @@ initializeInstrumentation
 	  "for instrumentation of GPU binaries");
     exit(1);
   }
-  head.next = NULL;
-  tail = &head;
 }
 
 
@@ -219,6 +217,12 @@ createKernelNode
   if (gtpin_use_runtime_callstack) {
     // allocate a new node and put it into the thread local list
     gtpin_correlation_data_t* data = (gtpin_correlation_data_t*) malloc(sizeof(gtpin_correlation_data_t));
+
+    if (tail == 0) {
+      // lazy initialization of correlation list so it will be initialized for each thread
+      head.next = NULL;
+      tail = &head;
+    }
     data->correlation_id = correlation_id;
     data->cpu_submit_time = cpu_submit_time;
     data->next = NULL;
