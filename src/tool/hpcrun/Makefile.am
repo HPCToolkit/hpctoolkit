@@ -570,6 +570,12 @@ MY_GTPIN_FILES = \
 	gpu/instrumentation/simdgroup-map.c \
 	gpu/instrumentation/gtpin-instrumentation.c \
 	gpu/instrumentation/gtpin-correlation-id-map.c
+
+pkglib_LTLIBRARIES += libhpcrun_gtpin_cxx.la
+libhpcrun_gtpin_cxx_la_CPPFLAGS  = $(OPT_GTPIN_IFLAGS)
+libhpcrun_gtpin_cxx_la_SOURCES   = gpu/instrumentation/gtpin-knob.cpp
+libhpcrun_gtpin_cxx_la_LDFLAGS   = -Wl,-Bsymbolic
+libhpcrun_gtpin_cxx_la_LDFLAGS   += -L$(OPT_GTPIN_LIBDIR) -Wl,-rpath=$(OPT_GTPIN_LIBDIR) -lgtpin
 endif
 
 if OPT_ENABLE_ROCM
