@@ -130,13 +130,6 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
       return a.userdata[src.identifier()] < b.userdata[src.identifier()];
     });
 
-  // The code in this Sink depends on dense Context identifiers
-  // TODO: Review this dependency and remove whenever possible
-  assert(std::adjacent_find(contexts.begin(), contexts.end(),
-    [this](const Context& a, const Context& b) -> bool{
-      return a.userdata[src.identifier()] + 1 != b.userdata[src.identifier()];
-    }) == contexts.end());
-
   // Synchronize the profile.db across the ranks
   pmf->synchronize();
 
@@ -231,7 +224,7 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
   // Allocate the blobs needed for the final output
   std::vector<char> mvalsBuf;
   std::vector<char> cidxsBuf;
-  cidxsBuf.reserve((contexts.size() + 1) * FMT_PROFILEDB_SZ_CIdx);
+  cidxsBuf.reserve(contexts.size() * FMT_PROFILEDB_SZ_CIdx);
 
   // Helper functions to insert ctx_id/idx pairs and metric/value pairs
   const auto addCIdx = [&](const fmt_profiledb_cIdx_t idx) {
@@ -247,7 +240,6 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
 
   // Now stitch together each Context's results
   for(const Context& c: contexts) {
-    if(MetaDB::elide(c)) continue;
     if(auto accums = tt.accumulatorsFor(c)) {
       // Add the ctx_id/idx pair for this Context
       addCIdx({
@@ -546,7 +538,7 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
     assert(align(ctxOffsets[ctx_id] + newsz, 4) == ctxOffsets[ctx_id+1]
            && "Final layout doesn't match precalculated ctx_off!");
     buf.reserve(buf.size() + newsz);
-
+    
     // Concatinate the prof_idx/value pairs, in bytes form, in metric order
     for(const auto& [mid, pvbuf]: valuebufs)
       buf.insert(buf.end(), pvbuf.begin(), pvbuf.end());
@@ -607,33 +599,28 @@ void SparseDB::write() {
   fHdr.pCtxInfo = align(FMT_CCTDB_SZ_FHdr, 8);
   fmt_cctdb_ctxInfoSHdr_t ci_sHdr;
   ci_sHdr.pCtxs = align(fHdr.pCtxInfo + FMT_CCTDB_SZ_CtxInfoSHdr, 8);
-  ci_sHdr.nCtxs = mpi::bcast(contexts.size(), 0);
+  ci_sHdr.nCtxs = mpi::bcast((contexts.back().get().userdata[src.identifier()] + 1), 0);
   fHdr.szCtxInfo = ci_sHdr.pCtxs + ci_sHdr.nCtxs * FMT_CCTDB_SZ_CtxInfo - fHdr.pCtxInfo;
 
   // Lay out the cct.db metric data, in terms of offsets for every context
-  // First figure out the byte counts for each context's blob
+  // First figure out the byte counts for each potential context's blob
   std::vector<uint64_t> ctxOffsets(ci_sHdr.nCtxs + 1, 0);
   for(const Context& c: contexts) {
     const auto i = c.userdata[src.identifier()];
-    assert(&c == &contexts[i].get());
     auto& udc = c.userdata[ud];
     ctxOffsets[i] = udc.nValues.load(std::memory_order_relaxed) * FMT_CCTDB_SZ_PVal;
 
     // Rank 0 has the final number of metric/idx pairs
     if(mpi::World::rank() == 0) {
-      if(MetaDB::elide(c)) {
-        udc.nMetrics = 0;
-      } else {
-        const auto& use = c.data().metricUsage();
-        auto iter = use.citerate();
-        udc.nMetrics = std::accumulate(iter.begin(), iter.end(), (uint16_t)0,
-          [](uint16_t out, const auto& mu) -> uint16_t {
-            MetricScopeSet use = mu.second;
-            assert((mu.first->scopes() & use) == use && "Inconsistent Metric value usage data!");
-            return out + use.count();
-          });
-        ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;
-      }
+      const auto& use = c.data().metricUsage();
+      auto iter = use.citerate();
+      udc.nMetrics = std::accumulate(iter.begin(), iter.end(), (uint16_t)0,
+        [](uint16_t out, const auto& mu) -> uint16_t {
+          MetricScopeSet use = mu.second;
+          assert((mu.first->scopes() & use) == use && "Inconsistent Metric value usage data!");
+          return out + use.count();
+        });
+      ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;      
     }
   }
   // All-reduce to get the total size for every context
@@ -642,7 +629,7 @@ void SparseDB::write() {
   const auto ctxStart = align(fHdr.pCtxInfo + fHdr.szCtxInfo, 4);
   stdshim::transform_exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
     ctxStart, std::plus<>{},
-    [](uint64_t sz){ return align(sz, 4); });
+    [](uint64_t sz){ return align(sz, 4); });  
 
   // Divide the contexts into ranges of easily distributable sizes
   std::vector<uint32_t> ctxRanges;
@@ -725,7 +712,6 @@ void SparseDB::write() {
 
       // Now stitch together each Context's results
       for(const Context& c: contexts) {
-        if(MetaDB::elide(c)) continue;
         const auto& stats = c.data().statistics();
         if(stats.size() > 0) {
           addCIdx({
@@ -804,14 +790,31 @@ void SparseDB::write() {
 
       std::vector<char> buf(ci_sHdr.nCtxs * FMT_CCTDB_SZ_CtxInfo);
       char* cur = buf.data();
-      for(uint32_t i = 0; i < ci_sHdr.nCtxs; i++) {
-        fmt_cctdb_ctxInfo_t ci;
-        ci.valueBlock.nMetrics = contexts[i].get().userdata[ud].nMetrics;
-        ci.valueBlock.nValues = (ctxOffsets[i+1] - ctxOffsets[i] - ci.valueBlock.nMetrics * FMT_CCTDB_SZ_MIdx) / FMT_CCTDB_SZ_PVal;
-        ci.valueBlock.pValues = ctxOffsets[i];
-        ci.valueBlock.pMetricIndices = ci.valueBlock.pValues + ci.valueBlock.nValues * FMT_CCTDB_SZ_PVal;
-        fmt_cctdb_ctxInfo_write(cur, &ci);
+      uint ctxid = 0;
+      for(const Context& c: contexts) {
+        const auto i = c.userdata[src.identifier()];
+
+        // write context info for all the never-exist contexts before context i
+        while(ctxid < i){
+          fmt_cctdb_ctxInfo_t ci;
+          ci.valueBlock.nMetrics = 0;
+          ci.valueBlock.nValues = 0;
+          ci.valueBlock.pValues = ctxOffsets[ctxid];
+          ci.valueBlock.pMetricIndices = ci.valueBlock.pValues;
+          fmt_cctdb_ctxInfo_write(cur, &ci);
+          cur += FMT_CCTDB_SZ_CtxInfo;
+          ctxid++;
+        }
+        
+        // write context info for context i
+        fmt_cctdb_ctxInfo_t cii;
+        cii.valueBlock.nMetrics = c.userdata[ud].nMetrics;
+        cii.valueBlock.nValues = (ctxOffsets[i+1] - ctxOffsets[i] - cii.valueBlock.nMetrics * FMT_CCTDB_SZ_MIdx) / FMT_CCTDB_SZ_PVal;
+        cii.valueBlock.pValues = ctxOffsets[i];
+        cii.valueBlock.pMetricIndices = cii.valueBlock.pValues + cii.valueBlock.nValues * FMT_CCTDB_SZ_PVal;
+        fmt_cctdb_ctxInfo_write(cur, &cii);
         cur += FMT_CCTDB_SZ_CtxInfo;
+        ctxid++;
       }
       cmfi.writeat(ci_sHdr.pCtxs, buf.size(), buf.data());
     }
