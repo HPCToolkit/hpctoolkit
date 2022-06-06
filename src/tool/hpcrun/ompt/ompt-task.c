@@ -83,25 +83,44 @@ ompt_task_begin_internal
  ompt_data_t* task_data
 )
 {
+  bool unwind_here = false;
   thread_data_t *td = hpcrun_get_thread_data();
 
   td->overhead ++;
 
   // record the task creation context into task structure (in omp runtime)
   cct_node_t *cct_node = NULL;
-  if (ompt_task_full_context_p()){
-    ucontext_t uc; 
-    getcontext(&uc);
-
-    hpcrun_metricVal_t zero_metric_incr_metricVal;
-    zero_metric_incr_metricVal.i = 0;
-    cct_node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr_metricVal, 1, 1, NULL).sample_node;
+  if (ompt_task_full_context_p()) {
+    unwind_here = true;
   } else {
     ompt_data_t *parallel_info = NULL;
     int team_size = 0;
     hpcrun_ompt_get_parallel_info(0, &parallel_info, &team_size);
     ompt_region_data_t* region_data = (ompt_region_data_t*) parallel_info->ptr;
-    cct_node = region_data->call_path;
+
+    if (region_data) {
+      // has enclosing parallel region with initialized parallel_data:
+      // the task context is the region callpath
+      cct_node = region_data->call_path;
+    } else {
+      // has enclosing parallel region with uninitialized parallel_data:
+      // this happens when a task is created for a target nowait when only
+      // enclosed by the implicit parallel region for the implicit task, for
+      // which the value of parallel_data is NULL (specifically, it has a
+      // parallel data pointer, but there was no parallel begin so the data
+      // is uninitialized
+      unwind_here = true;
+    }
+  }
+
+  if (unwind_here) {
+    ucontext_t uc; 
+    getcontext(&uc);
+
+    hpcrun_metricVal_t zero_metric_incr_metricVal;
+    zero_metric_incr_metricVal.i = 0;
+    cct_node = hpcrun_sample_callpath
+      (&uc, 0, zero_metric_incr_metricVal, 1, 1, NULL).sample_node;
   }
 
   task_data->ptr = cct_node;
