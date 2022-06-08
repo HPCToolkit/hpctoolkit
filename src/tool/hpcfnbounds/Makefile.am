@@ -77,13 +77,13 @@ MYLDFLAGS = \
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
-pkglibexec_PROGRAMS = hpcfnbounds2
+pkglibexec_PROGRAMS = hpcfnbounds
 
-hpcfnbounds2_SOURCES  = $(MYSOURCES)
-hpcfnbounds2_CPPFLAGS = $(MYCPPFLAGS)
-hpcfnbounds2_CFLAGS   = $(MYCFLAGS)
-hpcfnbounds2_LDADD    = $(MYLDADD)
-hpcfnbounds2_LDFLAGS  = $(MYLDFLAGS)
+hpcfnbounds_SOURCES  = $(MYSOURCES)
+hpcfnbounds_CPPFLAGS = $(MYCPPFLAGS)
+hpcfnbounds_CFLAGS   = $(MYCFLAGS)
+hpcfnbounds_LDADD    = $(MYLDADD)
+hpcfnbounds_LDFLAGS  = $(MYLDFLAGS)
 
 #----------------------------------------------------------------------
 
