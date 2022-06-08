@@ -109,7 +109,7 @@ main(int argc, char **argv, char **envp)
   for (i = 1; i < argc; i ++) {
     if ( strcmp (*p, "-V") == 0 || strcmp (*p, "--version") == 0 ) {
       // print version and exit
-      hpctoolkit_print_version("hpcfnbounds2");
+      hpctoolkit_print_version("hpcfnbounds");
       exit(0);
     }
     if( strncmp (*p, "-v", 2) == 0 ) {
@@ -117,14 +117,14 @@ main(int argc, char **argv, char **envp)
       char *type = *p+2;
       if ( (strcmp(type, "") == 0) || (strcmp (type, "1") == 0 ) ) {
         verbose = 1;
-        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds2, verbose mode\n" );
+        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds, verbose mode\n" );
       } else if (strcmp (type,"2") == 0 ) {
         verbose = 2;
-        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds2, extended verbose mode\n" );
+        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds, extended verbose mode\n" );
       } else {
         verbose = 2;
         fprintf (stderr, "\nFNB2: unexpected verbose parameter `%s'\n", type);
-        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds2, extended verbose mode\n" );
+        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds, extended verbose mode\n" );
       }
       p++;
       continue;
@@ -170,7 +170,7 @@ main(int argc, char **argv, char **envp)
       // code to inialize as a server  "-s <infd> <outfd>"
       if ((i+2) > argc) {
         // argument count is wrong
-        fprintf (stderr, "FNB2: hpcfnbounds2 server invocation too few arguments\n" );
+        fprintf (stderr, "FNB2: hpcfnbounds server invocation too few arguments\n" );
         exit(1);
       }
      p++;

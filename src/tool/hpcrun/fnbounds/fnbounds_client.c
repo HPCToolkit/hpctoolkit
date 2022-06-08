@@ -135,7 +135,7 @@ char	*outfile;
 #include <unistd.h>
 
 #if !defined(STAND_ALONE_CLIENT)
-#include <hpcfnbounds2/syserv-mesg.h>
+#include <hpcfnbounds/syserv-mesg.h>
 #include "client.h"
 #include "disabled.h"
 #include "fnbounds_file_header.h"
