@@ -95,6 +95,7 @@ static long next_index;
 static long gaps_line;
 static bool pretty_print_output;
 
+
 static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
   ;
