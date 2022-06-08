@@ -682,6 +682,11 @@ makeStructure(string filename,
       cuda_arch = 0;
       cubin_size = 0;
     }
+    if (cuda_file || intel_file) {
+      // for GPU code, report call sites in structure output to support
+      // static call graph reconstruction
+      Output::enableCallTags();
+    }
 
     if (opts.show_time) {
       printTime("parse: ", &tv_symtab, &ru_symtab, &tv_parse, &ru_parse);

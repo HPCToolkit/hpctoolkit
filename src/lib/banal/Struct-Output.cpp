@@ -95,12 +95,28 @@ static long next_index;
 static long gaps_line;
 static bool pretty_print_output;
 
+
 static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
   ;
 
 // temp options for call <C> tags, target (t) field, and device (d) field
-#define ENABLE_CALL_TAGS     1
+
+// <C> call tags are used to report call instructions separately instead
+// of merging them into an enclosing statement with other instructions.
+// The purpose of call tags is to provide a foundation for static call graph
+// reconstruction. Existing code for static call graph reconstruction only
+// applies to GPU binaries. Therefore, when we are analyzing GPU binaries,
+// we specifically request call tags.
+//
+// We turn call tags off by default for CPU binaries for two reasons.  First,
+// they are of no use: there is no code to use call tags to reconstruct
+// static call graphs for CPU code. Second, hpcprof is unhappy with call
+// sites that reference addresses that are not reported as separate functions.
+// For CPU binaries, calls to addresses that are not reported as functions can
+// occur with nested functions because hpcstruct does not report them
+// separately.
+static bool enable_call_tags = false;
 #define ENABLE_TARGET_FIELD  1
 #define ENABLE_DEVICE_FIELD  1
 
@@ -656,7 +672,7 @@ doStmtList(ostream * os, int depth, TreeNode * node)
   for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
     StmtInfo * sinfo = sit->second;
 
-    if (sinfo->is_call && ENABLE_CALL_TAGS) {
+    if (sinfo->is_call && enable_call_tags) {
       callVec.push_back(sinfo);
     }
     else {
@@ -842,6 +858,12 @@ found_file:
   if (scope.line_num == max_line) {
     scope.line_num = 0;
   }
+}
+
+void
+enableCallTags()
+{
+  enable_call_tags = true;
 }
 
 }  // namespace Output
