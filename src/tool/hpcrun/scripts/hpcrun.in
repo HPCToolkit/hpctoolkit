@@ -160,12 +160,6 @@ Options: Profiling (Defaults shown in curly brackets {})
                        (of all threads) with probability <frac>; <frac> is a
                        real number (0.10) or a fraction (1/10) between 0 and 1.
 
-  -fnb <path>, --fnbounds <path>
-                       Use <path> as alternate hpcfnbounds command.
-                       (mostly for developers)
-  -js <num>, --jobs-symtab <num>
-                       Deprecated, now a no-op.
-
   -m, --merge-threads  Merge non-overlapped threads into one virtual thread.
                        This option is to reduce the number of generated
                        profile and trace files as each thread generates its own
@@ -418,13 +412,6 @@ do
 
 	-t | --trace )
 	    export HPCRUN_TRACE=1
-	    ;;
-
-	# --------------------------------------------------
-
-	-fnb | --fnbounds )
-	    HPCRUN_FNBOUNDS_CMD="$1"
-	    shift
 	    ;;
 
 	# --------------------------------------------------
@@ -695,13 +682,13 @@ fi
 # Allow fnbounds command relative to hpcfnbounds_dir.
 case "$HPCRUN_FNBOUNDS_CMD" in
     /* ) ;;
-    '' ) HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds2" ;;
+    '' ) HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds" ;;
     * )  HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/$HPCRUN_FNBOUNDS_CMD" ;;
 esac
 
 if test ! -x "$HPCRUN_FNBOUNDS_CMD" ; then
     echo "bad HPCRUN_FNBOUNDS_CMD command: $HPCRUN_FNBOUNDS_CMD" >&2
-    HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds2"
+    HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
 fi
 export HPCRUN_FNBOUNDS_CMD
 
