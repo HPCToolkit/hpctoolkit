@@ -418,7 +418,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           }
           output = input.parent_path() / fn;
         }
-        util::log::warning{} << "Output database argument not given, defaulting"
+        util::log::info{} << "Output database argument not given, defaulting"
           " to `" << output.string() << "'";
       }
       if(stdshim::filesystem::exists(output)) {
@@ -438,7 +438,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
             ss << fbase << "-" << std::hex << std::setfill('0') << std::setw(8)
                << rand(gen);
           } while(stdshim::filesystem::exists(output / ss.str()));
-          util::log::warning{} << "Output database `" << (output/fbase).string()
+          util::log::info{} << "Output database `" << (output/fbase).string()
             << "' exists, outputting to `" << (output/ss.str()).string() << "'";
           output /= ss.str();
         } else {
