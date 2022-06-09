@@ -83,6 +83,8 @@ void finalPrintProc(ostream *, ostream *, string &, string &,
 
 void setPrettyPrint(bool _pretty_print_output);
 
+void enableCallTags();
+
 }  // namespace Output
 }  // namespace BAnal
 
