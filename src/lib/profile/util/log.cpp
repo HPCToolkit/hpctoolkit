@@ -109,6 +109,14 @@ warning::~warning() {
   }
 }
 
+argsinfo::argsinfo() : detail::MessageBuffer(true) { (*this) << "INFO: "; }
+argsinfo::~argsinfo() {
+  if(!empty()) {
+    (*this) << '\n';
+    std::cerr << sbuf.str();
+  }
+}
+
 info::info() : detail::MessageBuffer(Settings::get().info()) { (*this) << "INFO: "; }
 info::~info() {
   if(!empty()) {
