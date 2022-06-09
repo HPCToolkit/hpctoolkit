@@ -541,9 +541,9 @@ setup_cache_dir
   }
 
   if ( created == true ) {
-      std::cout << "NOTE: created structure cache directory " << abspath << std::endl << std::endl;
+      std::cout << "INFO: Created structure cache directory " << abspath << std::endl << std::endl;
   } else {
-     std::cout << "NOTE: using structure cache directory " << abspath << std::endl << std::endl;
+     std::cout << "INFO: Using structure cache directory " << abspath << std::endl << std::endl;
   }
 
   return strdup(abspath);

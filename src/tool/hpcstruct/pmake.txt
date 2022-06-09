@@ -163,10 +163,10 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		# echo DEBUG: hpcstruct for analysis of CPU binary $$cpubin_name returned
 
 		# See if there is anything to worry about in the warnings file
-		#  suppress any ADVICE, NOTE, DEBUG, and CACHESTAT lines and any blank lines;
+		#  suppress any ADVICE, INFO, DEBUG, and CACHESTAT lines and any blank lines;
 		#  it's an error if anything remains
                 #
-		errs=`sed 's/^$//NOTE/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
+		errs=`sed 's/^$//INFO/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v INFO | grep -v ADVICE | wc -l`
 
 		# echo DEBUG errs = XX $$errs XX
 		if [ $${errs} -eq 1 ] ; then
@@ -212,10 +212,10 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 		# echo debug: hpcstruct for analysis of GPU binary $$gpubin_name returned
 
 		# See if there is anything to worry about in the warnings file
-		#  suppress any ADVICE, NOTE, DEBUG, and CACHESTAT lines and any blank lines;
+		#  suppress any ADVICE, INFO, DEBUG, and CACHESTAT lines and any blank lines;
 		#  it's an error if anything remains
 		#
-		errs=`sed 's/^$//NOTE/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v NOTE | grep -v ADVICE | wc -l`
+		errs=`sed 's/^$//INFO/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v INFO | grep -v ADVICE | wc -l`
 		# echo DEBUG errs = XX $$errs XX
 
 		if [ $${errs} -eq 1 ] ; then
