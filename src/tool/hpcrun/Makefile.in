@@ -522,8 +522,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/blame-shifting/blame-queue-map.c \
 	gpu/blame-shifting/blame-kernel-map.c \
 	gpu/blame-shifting/active-kernels-map.c \
-	gpu/opencl/intel/papi/papi-kernel-map.c \
-	gpu/opencl/intel/papi/papi-metric-collector.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -547,8 +545,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/arch/ia64/ia64-context-pc.c \
 	trampoline/aarch64/aarch64-tramp.c \
 	utilities/arch/libunwind/libunwind-context-pc.c \
-	sample-sources/papi.c sample-sources/papi-c-cupti.c \
-	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
+	sample-sources/papi.c gpu/opencl/intel/papi/papi-kernel-map.c \
+	gpu/opencl/intel/papi/papi-metric-collector.c \
+	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
+	sample-sources/papi-c-extended-info.c \
 	sample-sources/papi-c-intel.c sample-sources/nvidia.c \
 	gpu/nvidia/cubin-hash-map.c gpu/nvidia/cubin-id-map.c \
 	gpu/nvidia/cubin-symbols.c gpu/nvidia/cuda-api.c \
@@ -741,8 +741,6 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo \
 	gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo \
 	gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo \
-	gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo \
-	gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo \
 	$(am__objects_7) $(am__objects_8) $(am__objects_9) \
 	$(am__objects_10) $(am__objects_11) $(am__objects_12) \
 	$(am__objects_13)
@@ -770,10 +768,14 @@ am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_PAPI_CUPTI_TRUE@am__objects_28 = sample-sources/libhpcrun_la-papi-c-cupti.lo
 @OPT_PAPI_COMPONENT_FALSE@am__objects_29 =  \
 @OPT_PAPI_COMPONENT_FALSE@	sample-sources/libhpcrun_la-papi.lo \
+@OPT_PAPI_COMPONENT_FALSE@	gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo \
+@OPT_PAPI_COMPONENT_FALSE@	gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo \
 @OPT_PAPI_COMPONENT_FALSE@	$(am__objects_28)
 @OPT_PAPI_COMPONENT_TRUE@am__objects_29 = sample-sources/libhpcrun_la-papi-c.lo \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_la-papi-c-extended-info.lo \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_la-papi-c-intel.lo \
+@OPT_PAPI_COMPONENT_TRUE@	gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo \
+@OPT_PAPI_COMPONENT_TRUE@	gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__objects_28)
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_30 = $(am__objects_29)
 @OPT_ENABLE_CUPTI_TRUE@am__objects_31 =  \
@@ -1078,8 +1080,6 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/blame-shifting/blame-queue-map.c \
 	gpu/blame-shifting/blame-kernel-map.c \
 	gpu/blame-shifting/active-kernels-map.c \
-	gpu/opencl/intel/papi/papi-kernel-map.c \
-	gpu/opencl/intel/papi/papi-metric-collector.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -1108,6 +1108,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-activity-translate.c \
 	gpu/nvidia/cupti-analysis.c gpu/nvidia/cupti-api.c \
 	gpu/nvidia/cupti-gpu-api.c sample-sources/papi.c \
+	gpu/opencl/intel/papi/papi-kernel-map.c \
+	gpu/opencl/intel/papi/papi-metric-collector.c \
 	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
 	sample-sources/papi-c-extended-info.c \
 	sample-sources/papi-c-intel.c sample-sources/upc.c \
@@ -1281,8 +1283,6 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	gpu/blame-shifting/libhpcrun_o-blame-queue-map.$(OBJEXT) \
 	gpu/blame-shifting/libhpcrun_o-blame-kernel-map.$(OBJEXT) \
 	gpu/blame-shifting/libhpcrun_o-active-kernels-map.$(OBJEXT) \
-	gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.$(OBJEXT) \
-	gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.$(OBJEXT) \
 	$(am__objects_50) $(am__objects_51) $(am__objects_52) \
 	$(am__objects_53) $(am__objects_54) $(am__objects_55) \
 	$(am__objects_56)
@@ -1317,10 +1317,14 @@ am__objects_67 =  \
 @OPT_ENABLE_CUPTI_TRUE@am__objects_70 = $(am__objects_69)
 @OPT_PAPI_CUPTI_TRUE@am__objects_71 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
 @OPT_PAPI_COMPONENT_FALSE@am__objects_72 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_FALSE@	gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_FALSE@	gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_FALSE@	$(am__objects_71)
 @OPT_PAPI_COMPONENT_TRUE@am__objects_72 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_o-papi-c-extended-info.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_o-papi-c-intel.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__objects_71)
 @OPT_PAPI_STATIC_TRUE@am__objects_73 = $(am__objects_72)
 am__objects_74 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
@@ -2049,9 +2053,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	gpu/blame-shifting/blame.c gpu/blame-shifting/blame-helper.c \
 	gpu/blame-shifting/blame-queue-map.c \
 	gpu/blame-shifting/blame-kernel-map.c \
-	gpu/blame-shifting/active-kernels-map.c \
-	gpu/opencl/intel/papi/papi-kernel-map.c \
-	gpu/opencl/intel/papi/papi-metric-collector.c $(am__append_8) \
+	gpu/blame-shifting/active-kernels-map.c $(am__append_8) \
 	$(am__append_9) $(am__append_10) $(am__append_12) \
 	$(am__append_13) $(am__append_14) $(am__append_15)
 MY_DYNAMIC_FILES = \
@@ -2089,10 +2091,14 @@ MY_AARCH64_FILES = \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 @OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c \
+@OPT_PAPI_COMPONENT_FALSE@	gpu/opencl/intel/papi/papi-kernel-map.c \
+@OPT_PAPI_COMPONENT_FALSE@	gpu/opencl/intel/papi/papi-metric-collector.c \
 @OPT_PAPI_COMPONENT_FALSE@	$(am__append_17)
 @OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-intel.c \
+@OPT_PAPI_COMPONENT_TRUE@	gpu/opencl/intel/papi/papi-kernel-map.c \
+@OPT_PAPI_COMPONENT_TRUE@	gpu/opencl/intel/papi/papi-metric-collector.c \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_17)
 @OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = sample-sources/nvidia.c	\
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-hash-map.c		\
@@ -2997,18 +3003,6 @@ gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo:  \
 gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo:  \
 	gpu/blame-shifting/$(am__dirstamp) \
 	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
-gpu/opencl/intel/papi/$(am__dirstamp):
-	@$(MKDIR_P) gpu/opencl/intel/papi
-	@: > gpu/opencl/intel/papi/$(am__dirstamp)
-gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) gpu/opencl/intel/papi/$(DEPDIR)
-	@: > gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
-gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo:  \
-	gpu/opencl/intel/papi/$(am__dirstamp) \
-	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
-gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo:  \
-	gpu/opencl/intel/papi/$(am__dirstamp) \
-	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/$(am__dirstamp):
 	@$(MKDIR_P) trampoline/common
 	@: > trampoline/common/$(am__dirstamp)
@@ -3154,6 +3148,18 @@ utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo:  \
 	utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-papi.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/papi/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl/intel/papi
+	@: > gpu/opencl/intel/papi/$(am__dirstamp)
+gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl/intel/papi/$(DEPDIR)
+	@: > gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo:  \
+	gpu/opencl/intel/papi/$(am__dirstamp) \
+	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo:  \
+	gpu/opencl/intel/papi/$(am__dirstamp) \
+	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-papi-c-cupti.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -3787,12 +3793,6 @@ gpu/blame-shifting/libhpcrun_o-blame-kernel-map.$(OBJEXT):  \
 gpu/blame-shifting/libhpcrun_o-active-kernels-map.$(OBJEXT):  \
 	gpu/blame-shifting/$(am__dirstamp) \
 	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
-gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.$(OBJEXT):  \
-	gpu/opencl/intel/papi/$(am__dirstamp) \
-	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
-gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.$(OBJEXT):  \
-	gpu/opencl/intel/papi/$(am__dirstamp) \
-	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT):  \
 	trampoline/common/$(am__dirstamp) \
 	trampoline/common/$(DEPDIR)/$(am__dirstamp)
@@ -3890,6 +3890,12 @@ gpu/nvidia/libhpcrun_o-cupti-gpu-api.$(OBJEXT):  \
 sample-sources/libhpcrun_o-papi.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.$(OBJEXT):  \
+	gpu/opencl/intel/papi/$(am__dirstamp) \
+	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.$(OBJEXT):  \
+	gpu/opencl/intel/papi/$(am__dirstamp) \
+	gpu/opencl/intel/papi/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -5826,20 +5832,6 @@ gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo: gpu/blame-shifting/active
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo `test -f 'gpu/blame-shifting/active-kernels-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/active-kernels-map.c
 
-gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo: gpu/opencl/intel/papi/papi-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-kernel-map.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-kernel-map.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-kernel-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-kernel-map.c' object='gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
-
-gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo: gpu/opencl/intel/papi/papi-metric-collector.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-metric-collector.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-metric-collector.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-metric-collector.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-metric-collector.c' object='gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
-
 trampoline/common/libhpcrun_la-trampoline_eager.lo: trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_la-trampoline_eager.lo -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_la-trampoline_eager.lo `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Plo
@@ -6007,6 +5999,20 @@ sample-sources/libhpcrun_la-papi.lo: sample-sources/papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/papi.c' object='sample-sources/libhpcrun_la-papi.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-papi.lo `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
+
+gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo: gpu/opencl/intel/papi/papi-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-kernel-map.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-kernel-map.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-kernel-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-kernel-map.c' object='gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-kernel-map.lo `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
+
+gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo: gpu/opencl/intel/papi/papi-metric-collector.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-metric-collector.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-metric-collector.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_la-papi-metric-collector.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-metric-collector.c' object='gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_la-papi-metric-collector.lo `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
 
 sample-sources/libhpcrun_la-papi-c-cupti.lo: sample-sources/papi-c-cupti.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-papi-c-cupti.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-papi-c-cupti.Tpo -c -o sample-sources/libhpcrun_la-papi-c-cupti.lo `test -f 'sample-sources/papi-c-cupti.c' || echo '$(srcdir)/'`sample-sources/papi-c-cupti.c
@@ -8612,34 +8618,6 @@ gpu/blame-shifting/libhpcrun_o-active-kernels-map.obj: gpu/blame-shifting/active
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-active-kernels-map.obj `if test -f 'gpu/blame-shifting/active-kernels-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/active-kernels-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/active-kernels-map.c'; fi`
 
-gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o: gpu/opencl/intel/papi/papi-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-kernel-map.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
-
-gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj: gpu/opencl/intel/papi/papi-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj `if test -f 'gpu/opencl/intel/papi/papi-kernel-map.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-kernel-map.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-kernel-map.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj `if test -f 'gpu/opencl/intel/papi/papi-kernel-map.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-kernel-map.c'; fi`
-
-gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o: gpu/opencl/intel/papi/papi-metric-collector.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-metric-collector.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
-
-gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj: gpu/opencl/intel/papi/papi-metric-collector.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj `if test -f 'gpu/opencl/intel/papi/papi-metric-collector.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-metric-collector.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-metric-collector.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-metric-collector.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj `if test -f 'gpu/opencl/intel/papi/papi-metric-collector.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-metric-collector.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-metric-collector.c'; fi`
-
 trampoline/common/libhpcrun_o-trampoline_eager.o: trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline_eager.o -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_o-trampoline_eager.o `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Po
@@ -9073,6 +9051,34 @@ sample-sources/libhpcrun_o-papi.obj: sample-sources/papi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/papi.c' object='sample-sources/libhpcrun_o-papi.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-papi.obj `if test -f 'sample-sources/papi.c'; then $(CYGPATH_W) 'sample-sources/papi.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/papi.c'; fi`
+
+gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o: gpu/opencl/intel/papi/papi-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-kernel-map.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.o `test -f 'gpu/opencl/intel/papi/papi-kernel-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-kernel-map.c
+
+gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj: gpu/opencl/intel/papi/papi-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj `if test -f 'gpu/opencl/intel/papi/papi-kernel-map.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-kernel-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-kernel-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-kernel-map.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-kernel-map.obj `if test -f 'gpu/opencl/intel/papi/papi-kernel-map.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-kernel-map.c'; fi`
+
+gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o: gpu/opencl/intel/papi/papi-metric-collector.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-metric-collector.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.o `test -f 'gpu/opencl/intel/papi/papi-metric-collector.c' || echo '$(srcdir)/'`gpu/opencl/intel/papi/papi-metric-collector.c
+
+gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj: gpu/opencl/intel/papi/papi-metric-collector.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj -MD -MP -MF gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj `if test -f 'gpu/opencl/intel/papi/papi-metric-collector.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-metric-collector.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-metric-collector.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Tpo gpu/opencl/intel/papi/$(DEPDIR)/libhpcrun_o-papi-metric-collector.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/papi/papi-metric-collector.c' object='gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/papi/libhpcrun_o-papi-metric-collector.obj `if test -f 'gpu/opencl/intel/papi/papi-metric-collector.c'; then $(CYGPATH_W) 'gpu/opencl/intel/papi/papi-metric-collector.c'; else $(CYGPATH_W) '$(srcdir)/gpu/opencl/intel/papi/papi-metric-collector.c'; fi`
 
 sample-sources/libhpcrun_o-papi-c-cupti.o: sample-sources/papi-c-cupti.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-papi-c-cupti.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-papi-c-cupti.Tpo -c -o sample-sources/libhpcrun_o-papi-c-cupti.o `test -f 'sample-sources/papi-c-cupti.c' || echo '$(srcdir)/'`sample-sources/papi-c-cupti.c

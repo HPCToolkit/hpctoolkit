@@ -431,10 +431,7 @@ MY_BASE_FILES =				\
 	gpu/blame-shifting/blame-helper.c \
 	gpu/blame-shifting/blame-queue-map.c	\
 	gpu/blame-shifting/blame-kernel-map.c	\
-	gpu/blame-shifting/active-kernels-map.c \
-	\
-	gpu/opencl/intel/papi/papi-kernel-map.c	\
-	gpu/opencl/intel/papi/papi-metric-collector.c
+	gpu/blame-shifting/active-kernels-map.c
 
 # 	gpu/gpu-api.c
 #	trampoline/common/trampoline.c
@@ -520,6 +517,10 @@ MY_PAPI_FILES = \
 else
     MY_PAPI_FILES = sample-sources/papi.c
 endif
+
+MY_PAPI_FILES += \
+	gpu/opencl/intel/papi/papi-kernel-map.c	\
+	gpu/opencl/intel/papi/papi-metric-collector.c
 
 if OPT_PAPI_CUPTI
     MY_PAPI_FILES += sample-sources/papi-c-cupti.c
