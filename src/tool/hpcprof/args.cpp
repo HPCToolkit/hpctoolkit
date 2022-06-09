@@ -397,9 +397,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
 
   if(dryRun) {
     output = fs::path();
-    util::log::info{} << "Dry run enabled, final output will be skipped.";
+    util::log::argsinfo{} << "Dry run enabled, final output will be skipped.";
   } else {
     if(mpi::World::rank() == 0) {
+      enum { EXPLICIT, DEFAULTED, SUFFIXED } state = EXPLICIT;
       if(output.empty()) {
         // Default to something semi-reasonable.
         output = "hpctoolkit-database";
@@ -414,8 +415,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
             output = input.parent_path() / (fn + "-database");
           }
         }
-        util::log::info{} << "Output database argument not given, defaulting"
-          " to `" << output.string() << "'";
+        state = DEFAULTED;
       }
       if(stdshim::filesystem::exists(output)) {
         if(arg_overwriteOutput == 0) {
@@ -424,7 +424,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           // There's a potential for races here, which we don't attempt to fix;
           // the user should be explicit about their outputs.
           auto fbase = output.filename().string();
-          output = output.parent_path();
+          auto dir = output.parent_path();
 
           std::minstd_rand gen(std::random_device{}());
           std::uniform_int_distribution<uint32_t> rand;
@@ -433,14 +433,25 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
             ss.str("");
             ss << fbase << "-" << std::hex << std::setfill('0') << std::setw(8)
                << rand(gen);
-          } while(stdshim::filesystem::exists(output / ss.str()));
-          util::log::info{} << "Output database `" << (output/fbase).string()
-            << "' exists, outputting to `" << (output/ss.str()).string() << "'";
-          output /= ss.str();
+            output = dir / ss.str();
+          } while(stdshim::filesystem::exists(output));
+          state = SUFFIXED;
         } else {
           // The output should be overwritten, so we first remove it.
           stdshim::filesystem::remove_all(output);
         }
+      }
+
+      switch(state) {
+      case EXPLICIT: break;
+      case DEFAULTED:
+        util::log::argsinfo{} << "Defaulting output to "
+                              << (output/"").native();
+        break;
+      case SUFFIXED:
+        util::log::argsinfo{} << "Database exists, outputting to "
+                              << (output/"").native();
+        break;
       }
     }
     output = mpi::bcast(output.string(), 0);
