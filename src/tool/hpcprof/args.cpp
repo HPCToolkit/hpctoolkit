@@ -144,13 +144,6 @@ const bool string_starts_with(const std::string& a, const std::string& n) {
   }
   return it_n == n.end();
 }
-const bool string_ends_with(const std::string& a, const std::string& n) {
-  auto it_n = n.rbegin();
-  for(auto it = a.rbegin(); it != a.rend() && it_n != n.rend(); ++it, ++it_n) {
-    if(*it != *it_n) return false;
-  }
-  return it_n == n.rend();
-}
 
 ProfArgs::ProfArgs(int argc, char* const argv[])
   : title(), threads(0), output(),
@@ -407,12 +400,23 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           stdshim::filesystem::path input = argv[optind];
           if(input.filename().empty()) input = input.parent_path();
 
+          bool adjusted = false;
           auto fn = input.filename().string();
           if(string_starts_with(fn, "hpctoolkit-")) {
-            if(string_ends_with(fn, "-measurements"))
-              fn = fn.substr(0, fn.size() - 13);
-            output = input.parent_path() / (fn + "-database");
+            auto tail = fn.rfind("-measurements");
+            // Matches hpctoolkit-.*-measurements(-\d*)?
+            if(tail >= fn.size() - 13 || (fn[tail+13] == '-'
+               && std::all_of(&fn[tail+14], &fn.back(),
+                 [](const char& c){ return std::isdigit(c, std::locale::classic()); }))) {
+              fn.replace(tail+1, 12, "database");
+              adjusted = true;
+            }
           }
+          if(!adjusted) {
+            // Fall back to just <measdir>-database
+            fn += "-database";
+          }
+          output = input.parent_path() / fn;
         }
         util::log::warning{} << "Output database argument not given, defaulting"
           " to `" << output.string() << "'";
