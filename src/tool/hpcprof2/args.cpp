@@ -716,8 +716,8 @@ static bool exists(const std::string &path, hpctio_sys_t * sys){
 
     if(ret == -1 && errno == ENOENT) return false;
     if(ret == -1){
-      util::log::warning{} << "Error occurs when checking if " << path.c_str() 
-      << " already exists, with errno: " << errno << ", so we assumed it exists to move forward.";
+      util::log::fatal{} << "Error occurs when checking if " << path.c_str() 
+      << " already exists, with errno: " << strerror(errno);
     }
     return true;
   }
