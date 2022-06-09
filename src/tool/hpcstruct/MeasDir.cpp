@@ -211,10 +211,10 @@ doMeasurementsDir
       + " --no-print-directory all";
 
   // Describe the parallelism and concurrency used
-  cout << "NOTE: Using a pool of " << jobs << " threads to analyze binaries in a measurement directory" << endl;
-  cout << "NOTE: Analyzing each large binary of >= " << args.parallel_analysis_threshold << " bytes in parallel using " << pthreads
+  cout << "INFO: Using a pool of " << jobs << " threads to analyze binaries in a measurement directory" << endl;
+  cout << "INFO: Analyzing each large binary of >= " << args.parallel_analysis_threshold << " bytes in parallel using " << pthreads
        << " threads" << endl;
-  cout << "NOTE: Analyzing each small binary using " << small_threads <<
+  cout << "INFO: Analyzing each small binary using " << small_threads <<
     " thread" << ((small_threads > 1) ? "s" : "") <<  "\n" << endl;
 
   // Run the make command
