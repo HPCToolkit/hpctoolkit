@@ -400,7 +400,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     util::log::argsinfo{} << "Dry run enabled, final output will be skipped.";
   } else {
     if(mpi::World::rank() == 0) {
-      enum { EXPLICIT, DEFAULTED, SUFFIXED } state = EXPLICIT;
+      enum { EXPLICIT, DEFAULT, DEFAULT_SUFFIXED, EXPLICIT_SUFFIXED } state = EXPLICIT;
       if(output.empty()) {
         // Default to something semi-reasonable.
         output = "hpctoolkit-database";
@@ -415,7 +415,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
             output = input.parent_path() / (fn + "-database");
           }
         }
-        state = DEFAULTED;
+        state = DEFAULT;
       }
       if(stdshim::filesystem::exists(output)) {
         if(arg_overwriteOutput == 0) {
@@ -435,7 +435,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
                << rand(gen);
             output = dir / ss.str();
           } while(stdshim::filesystem::exists(output));
-          state = SUFFIXED;
+          if (state == DEFAULT) state = DEFAULT_SUFFIXED;
+          else state = EXPLICIT_SUFFIXED;
         } else {
           // The output should be overwritten, so we first remove it.
           stdshim::filesystem::remove_all(output);
@@ -444,12 +445,16 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
 
       switch(state) {
       case EXPLICIT: break;
-      case DEFAULTED:
-        util::log::argsinfo{} << "Defaulting output to "
+      case DEFAULT:
+        util::log::argsinfo{} << "Writing analysis results to default database "
                               << (output/"").native();
         break;
-      case SUFFIXED:
-        util::log::argsinfo{} << "Database exists, outputting to "
+      case DEFAULT_SUFFIXED:
+        util::log::argsinfo{} << "Default database exists; writing analysis results to "
+                              << (output/"").native();
+        break;
+      case EXPLICIT_SUFFIXED:
+        util::log::argsinfo{} << "Specified database exists; writing analysis results to "
                               << (output/"").native();
         break;
       }
