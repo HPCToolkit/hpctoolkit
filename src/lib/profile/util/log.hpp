@@ -164,6 +164,18 @@ struct warning final : public detail::MessageBuffer {
   warning& operator=(const warning&) = delete;
 };
 
+/// Args-info message buffer. To describe how the arguments were interpreted in
+/// context. Always output to explain what's happening to the user.
+struct argsinfo final : public detail::MessageBuffer {
+  argsinfo();
+  ~argsinfo();
+
+  argsinfo(argsinfo&&) = default;
+  argsinfo(const argsinfo&) = delete;
+  argsinfo& operator=(argsinfo&&) = default;
+  argsinfo& operator=(const argsinfo&) = delete;
+};
+
 /// Info message buffer. To describe what's going on when its going on, for
 /// the curious observer. Not for developers, that's what debug is for.
 struct info final : public detail::MessageBuffer {
