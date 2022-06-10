@@ -140,7 +140,7 @@ Current Obsolete Options:
 )EOF";
 
 static bool isDirectory(const std::string &path, hpctio_sys_t * sys);
-static void directoryIterator(const std::string &path, hpctio_sys_t * sys);
+static std::vector<std::string> directoryEntries(const std::string &path, hpctio_sys_t * sys);
 static bool exists(const std::string &path, hpctio_sys_t * sys);
 static bool removeAll(const std::string &path, hpctio_sys_t * sys);
 
@@ -456,8 +456,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     output = mpi::bcast(output.string(), 0);
   }
 
-  // Temporary: get I/O system for measurement inputs
- // input_sys = hpctio_sys_initialize(argv[optind]);
+  // Get I/O system for measurement inputs
+  input_sys = hpctio_sys_initialize(argv[optind]);
  // hpctio_sys_avail_display();
 
   // Gather up all the potential inputs, and distribute them across the ranks
@@ -468,7 +468,13 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       std::vector<std::vector<std::string>> allfiles(mpi::World::size());
       std::size_t peer = 0;
       for(int idx = optind; idx < argc; idx++) {
-        //fs::path p(hpctio_sys_cut_prefix(argv[idx], input_sys));
+        fs::path p1(hpctio_sys_cut_prefix(argv[idx], input_sys));
+        if(isDirectory(p1, input_sys)){
+          for(auto& et : directoryEntries(p1, input_sys)){
+            printf("%s\n", et.c_str());
+          }
+        }
+      
         fs::path p(argv[idx]);
         if(fs::is_directory(p)) {
         //if(isDirectory(p, input_sys)){
@@ -741,14 +747,21 @@ static bool isDirectory(const std::string &path, hpctio_sys_t * sys){
   return S_ISDIR(statbuf.st_mode);
 }
 
-static void directoryIterator(const std::string &path, hpctio_sys_t * sys){
-  printf("I am here hhhh and %d = %d \n", sys->func_ptr, &hpctio_sys_func_dfs);
+static std::vector<std::string> directoryEntries(const std::string &path, hpctio_sys_t * sys){
+  std::vector<std::string> entries; 
   if(sys->func_ptr == &hpctio_sys_func_posix){
-    //return fs::directory_iterator(path);
-    printf("I am here llll\n");
+    for(const auto& de: fs::directory_iterator(path)) {
+      entries.emplace_back(de.path().string());
+    }
   }else if(sys->func_ptr == &hpctio_sys_func_dfs){
-    printf("I am here\n");
-    sys->func_ptr->readdir(path.c_str(), sys->params_ptr);
+    char** ent = (char **)malloc(sizeof(char*));
+    int num = sys->func_ptr->readdir(path.c_str(), &ent, sys->params_ptr);
+    for(int i = 0; i < num; i++){
+      entries.emplace_back(std::string(ent[i]));
+      free(ent[i]);
+    }
+    free(ent);
   }
-  
+  return entries;
 }
+

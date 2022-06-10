@@ -55,7 +55,7 @@ typedef struct hpctio_sys_func {
   size_t (*readat)(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p);
   long int (*tell)(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
-  void (*readdir)(const char* path, hpctio_sys_params_t * p);
+  int (*readdir)(const char* path, char *** entries, hpctio_sys_params_t * p);
 
 
 
@@ -98,6 +98,8 @@ int hpctio_sys_remove(const char *path, hpctio_sys_t * sys);
 int hpctio_sys_access(const char *path, int md, hpctio_sys_t * sys);
 int hpctio_sys_rename(const char *old_path, const char *new_path, hpctio_sys_t * sys);
 int hpctio_sys_stat(const char *path, struct stat * stbuf, hpctio_sys_t * sys);
+int hpctio_sys_readdir(const char* path, char *** entries, hpctio_sys_t * sys);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

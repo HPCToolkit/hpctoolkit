@@ -168,6 +168,14 @@ int hpctio_sys_stat(const char *path, struct stat * stbuf, hpctio_sys_t * sys){
     return sys->func_ptr->stat(path, stbuf, sys->params_ptr);
 }
 
+/*
+* return a list of entries in a directory 
+* return entries name in second argument, number of entries as output
+*/
+int hpctio_sys_readdir(const char* path, char *** entries, hpctio_sys_t * sys){
+    return sys->func_ptr->readdir(path, entries, sys->params_ptr);
+}
+
 
 ///////////////////////////////////////HPCTIO_OBJ FUNCTIONS///////////////////////////////////////////////
 /*

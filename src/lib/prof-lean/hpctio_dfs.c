@@ -38,7 +38,7 @@ static size_t DFS_Writeat(const void * buf, size_t count, uint64_t offset, hpcti
 static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p);
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
-static void DFS_Readdir(const char * path, hpctio_sys_params_t * p);
+static int DFS_Readdir(const char * path, char *** entries, hpctio_sys_params_t * p);
 /*************************** FILE SYSTEM STRUCTS ***************************/
 //file system parameters struct
 typedef struct hpctio_dfs_params {
@@ -873,7 +873,7 @@ static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_i
     daos_size_t read_size;
     int r = dfs_read(dfs_p->dfs, dobj, &sgl, (daos_off_t) offset, &read_size, NULL);
     CHECK(r, "DFS - Failed to dfs_read with errno %d\n", r);
-    CHECK(read_size != count, "The read length is %lld, not equal to the requested length %lld\n", read_size, count);
+    CHECK((read_size != count), "The read length is %ld, not equal to the requested length %ld\n", read_size, count);
 
 exit:
     if(r){
@@ -902,13 +902,14 @@ static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt){
 
 
 
-static void DFS_Readdir(const char * path, hpctio_sys_params_t * p){
+static int DFS_Readdir(const char * path, char *** entries, hpctio_sys_params_t * p){
     hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
 
     char * name = NULL;
     char * dir_name = NULL;
     dfs_obj_t * obj = NULL; 
     dfs_obj_t * parent = NULL; 
+    int total = 0;
 
     int r = parse_filename(path, &name, &dir_name);
     CHECK(r, "Failed to parse path %s with errno %d", path, r);
@@ -918,33 +919,30 @@ static void DFS_Readdir(const char * path, hpctio_sys_params_t * p){
         CHECK(r, "Failed to look up the directory from DFS %s with errno %d", dir_name, r);
     }
 
-    r = dfs_open(dfs_p->dfs, parent, name, 0444 | S_IFDIR, O_RDONLY, OC_SX, 0, NULL, &obj);
+    r = dfs_open(dfs_p->dfs, parent, name, 0444 | S_IFDIR, O_RDONLY, 0, 0, NULL, &obj);
 
     daos_anchor_t anchor;
     daos_anchor_init(&anchor, NULL);
-    uint32_t nr = 80;
-    struct dirent * dirs = malloc(nr * sizeof(struct dirent));
+    uint32_t nr = 16; //read directory batch size
+    struct dirent * des = malloc(nr * sizeof(struct dirent));
     while (!daos_anchor_is_eof(&anchor)) {
-		r = dfs_readdir(dfs_p->dfs, obj,
-				 &anchor, &nr,
-				 dirs);
-		printf("r is %d the file is %s\n", r, dirs->d_name);
+		r = dfs_readdir(dfs_p->dfs, obj, &anchor, &nr, des);
+        CHECK(r, "Failed to dfs_readdir the directory %s with error %s", dir_name, strerror(r));
+        if(!nr) continue;
 
-        
+        *entries = (char **) realloc(*entries, (total + nr) * sizeof(char *));
+        for(int i = 0; i < nr; i++){
+            (*entries)[total + i] = (char *)malloc(strlen(des[i].d_name) + 1);
+            strcpy((*entries)[total + i], des[i].d_name);
+        }
+        total += nr;
 	}
     daos_anchor_fini(&anchor);
-    free(dirs);
-
+    free(des);
 
 exit:
     if(name) free(name);
     if(dir_name) free(dir_name);
     if(parent) dfs_release(parent);
-    // if(r){
-    //     errno = r;
-    //     obj = NULL;
-    // }
-
-    // return (hpctio_obj_id_t *) obj;
-    
+    return total;
 }
