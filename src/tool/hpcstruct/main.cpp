@@ -185,7 +185,7 @@ realmain(int argc, char* argv[])
   struct stat sb;
 
   if ( stat(args.in_filenm.c_str(), &sb) != 0 ) {
-    cerr << "ERROR -- input file " << args.in_filenm.c_str() << " does not exist" << endl;
+    cerr << "ERROR: input argument " << args.in_filenm.c_str() << " is not a file or HPCToolkit measurement directory." << endl;
     exit(1);
   }
 
@@ -196,7 +196,7 @@ realmain(int argc, char* argv[])
     // Make sure output file was not specified
     //
     if (!args.out_filenm.empty()) {
-      DIAG_EMsg("Outfile file may not be specified when analyzing a measurement directory.");
+      DIAG_EMsg("Outfile file may not be specified when analyzing an HPCToolkit measurement directory.");
       exit(1);
     }
     // Now process the measurements directory, passing it its stat result
