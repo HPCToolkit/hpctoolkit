@@ -292,7 +292,41 @@ build_intervals(char *ins, unsigned int len, unwinder_t uw)
 {
   if (uw == NATIVE_UNWINDER)
     return x86_build_intervals(ins, len, 0);
-  return libunw_build_intervals(ins, len);
+
+  btuwi_status_t btuwi_stat = libunw_build_intervals(ins, len);
+
+  if (btuwi_stat.error != 0) {
+    //*****************************************************************
+    //*****************************************************************
+    // Support for Intel Control-flow Enforcement Technology (CET),
+    // which may mark a branch target with the 'endbr64' instruction.
+    //
+    // With Intel's compilers, we sometimes encounter routines marked
+    // with endbr64 that have symbols at an address 4 bytes less than
+    // where DWARF FDEs begin for the function. This disrupts their
+    // lookup with libunwind. For that reason, we consider adjusting
+    // the starting address of a function. For routines that are
+    // longer than an 'endbr64' instruction, see if their first
+    // instruction is an 'endbr64'.  If so, adjust the start of the
+    // routine to after the instruction so libunwind can find the FDE
+    // for the routine.
+    //------------------------------------------------------------------
+    if (len > 4) {
+      static char cet_endbr64 [] = { 0xf3, 0x0f, 0x1e, 0xfa };// endbr64
+      if (strncmp(cet_endbr64, (char *) ins, 4) == 0) {
+	// invariant: ins is a branch target of CET
+	ins += 4; // skip past the endbr64
+	len -= 4; // maintain the end of the interval, relative to ins
+	// try building intervals from FDEs again with the start
+	// address after the endbr64
+	btuwi_stat = libunw_build_intervals(ins, len);
+      }
+    }
+    //*****************************************************************
+    //*****************************************************************
+  }
+
+  return btuwi_stat;
 }
 
 
