@@ -4496,22 +4496,22 @@ AC_MSG_CHECKING([for opencl])
 
 case "$OPENCL" in
   /* )
-    if test ! -f "${OPENCL}/CL/cl.h" ; then
-      AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
+    if test ! -f "${OPENCL}/include/CL/cl.h" ; then
+      AC_MSG_ERROR([unable to find CL/cl.h in: ${OPENCL}/include])
     else
-      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_OPENCL_IFLAGS="-I${OPENCL}/include"
       OPT_HAVE_OPENCL=yes
     fi
     ;;
   no )
     ;;
   * )
-    AC_MSG_ERROR([opencl header path must be absolute: $OPENCL])
+    AC_MSG_ERROR([opencl header path must be absolute: ${OPENCL}])
     ;;
 esac
 
 if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
-  AC_MSG_ERROR([use --with-opencl to provide path/location of opencl headers])
+  AC_MSG_ERROR([use --with-opencl to provide path to OpenCL-Headers installation])
 fi
 
 if test "$OPT_HAVE_OPENCL" = yes ; then
