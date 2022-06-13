@@ -1069,7 +1069,7 @@ hpcrun_zeModuleCreate
     // if the module is created through SPIRV IR,
     // it will go through JIT compilation, and we can append
     // the -g flag to add debug information
-    strcpy(compile_flags, desc->pBuildFlags);
+    if (desc->pBuildFlags) strcpy(compile_flags, desc->pBuildFlags);
     strcat(compile_flags, " -g");
     new_desc.pBuildFlags = compile_flags;
   }
