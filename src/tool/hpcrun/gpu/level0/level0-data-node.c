@@ -58,7 +58,7 @@
 // local data
 //******************************************************************************
 
-static level0_data_node_t *free_list = NULL;
+static __thread level0_data_node_t *free_list = NULL;
 
 //*****************************************************************************
 // interface operations
