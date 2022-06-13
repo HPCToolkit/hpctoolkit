@@ -1117,6 +1117,35 @@ hpcrun_fmt_footer_fread(hpcrun_fmt_footer_t* x, FILE* fs)
 }
 
 int
+hpcrun_fmt_footer_fread2(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj, size_t off);
+{
+  char * buf = (char *)malloc(SF_footer_SIZE);
+  int r = hpctio_obj_readat(buf, SF_footer_SIZE, off, fobj);
+  if(r != SF_footer_SIZE) return HPCFMT_ERR;
+
+  x->hdr_start = fmt_u64_read(buf+0x00);
+  x->hdr_end = fmt_u64_read(buf+0x08);
+  x->loadmap_start = fmt_u64_read(buf+0x10);
+  x->loadmap_end = fmt_u64_read(buf+0x18);
+  x->cct_start = fmt_u64_read(buf+0x20);
+  x->cct_end = fmt_u64_read(buf+0x28);
+  x->met_tbl_start = fmt_u64_read(buf+0x30);
+  x->met_tbl_end = fmt_u64_read(buf+0x38);
+  x->idtpl_dxnry_start = fmt_u64_read(buf+0x40);
+  x->idtpl_dxnry_end = fmt_u64_read(buf+0x48);
+  x->sm_start = fmt_u64_read(buf+0x50);
+  x->sm_end = fmt_u64_read(buf+0x58);
+  x->footer_start = fmt_u64_read(buf+0x60);
+  x->HPCRUNsm = fmt_u64_read(buf+0x68);
+
+  if(x->HPCRUNsm != HPCRUNsm){
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+int
 hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "[footer:\n");
@@ -1145,16 +1174,14 @@ hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre)
 // File sections in order:
 // hdr, loadmap, ccts, metric-tbl, sparse metrics, footer
 //***************************************************************************
-hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, size_t end_pos)//, hpctio_sys_t * sys)
+hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, size_t end_pos, hpctio_sys_t * sys)
 {
-  FILE* fs = hpcio_fopen_r(path);
-  // hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, NULL, HPCTIO_SMALL_F, sys);
-  // if(!fobj) return NULL;
+  hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, NULL, HPCTIO_SMALL_F, sys);
+  if(!fobj) return NULL;
 
   hpcrun_sparse_file_t* sparse_fs = (hpcrun_sparse_file_t*) malloc(sizeof(hpcrun_sparse_file_t));
-  // sparse_fs->fobj = fobj;
-  // sparse_fs->input_sys = sys;
-  sparse_fs->file = fs;
+  sparse_fs->fobj = fobj;
+  sparse_fs->input_sys = sys;
   sparse_fs->mode = OPENED;
   sparse_fs->cur_pos = start_pos;
   sparse_fs->start_pos = start_pos;
@@ -1168,20 +1195,29 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, siz
                                        //(block = a chunk containing value and metric id pairs for one cct node)
 
   //initialize footer
+  int ret = 0;
   if(end_pos == 0) {
-    fseek(fs, 0, SEEK_END);
-    sparse_fs->end_pos = end_pos = ftell(fs);
+    struct stat * st = (struct stat *)malloc(sizeof(struct stat));
+    ret = hpctio_sys_stat(path, st, sparse_fs->input_sys);
+    if(ret){
+      hpctio_obj_close(sparse_fs->fobj);
+      free(sparse_fs);
+      free(st);
+      return NULL;
+    }
+    sparse_fs->end_pos = end_pos = st->st_size;
+    free(st);
   }
   size_t footer_position = end_pos - SF_footer_SIZE;
-  fseek(fs, footer_position, SEEK_SET);
-  int ret = hpcrun_fmt_footer_fread(&(sparse_fs->footer), fs);
+  int ret = hpcrun_fmt_footer_fread2(&(sparse_fs->footer), fobj, footer_position);
   if(ret != HPCFMT_OK){
-    hpcio_fclose(fs);
+    hpctio_obj_close(sparse_fs->fobj);
     free(sparse_fs);
     return NULL;
   }
   hpcrun_sparse_footer_update_w_start(&(sparse_fs->footer), start_pos); //temp
-  fseek(fs, sparse_fs->footer.hdr_start, SEEK_SET); 
+  sparse_fs->cur_pos = sparse_fs->footer.hdr_start;
+
 
   return sparse_fs;
 }
@@ -1208,14 +1244,13 @@ void hpcrun_sparse_footer_update_w_start(hpcrun_fmt_footer_t *f, size_t start_po
   
 }
 
-/* succeed: return 0; fail: return 1; */
+/* succeed: return 0; fail: return -1; */
 int hpcrun_sparse_pause(hpcrun_sparse_file_t* sparse_fs)
 {
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  sparse_fs->cur_pos = ftell(sparse_fs->file);
-  ret = hpcio_fclose(sparse_fs->file);
+  ret = hpctio_obj_close(sparse_fs->fobj);
   if(!ret) sparse_fs->mode = PAUSED;
   return ret;
 }
@@ -1226,20 +1261,19 @@ int hpcrun_sparse_resume(hpcrun_sparse_file_t* sparse_fs, const char* path)
   int ret = hpcrun_sparse_check_mode(sparse_fs, PAUSED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  FILE* fs = hpcio_fopen_r(path);
-  if(!fs) return SF_FAIL;
+  hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, NULL, HPCTIO_SMALL_F, sparse_fs->input_sys);
+  if(!fobj) return SF_FAIL;
   if((sparse_fs->cur_pos < sparse_fs->start_pos)
     ||(sparse_fs->cur_pos >= sparse_fs->end_pos))
     return SF_ERR;
-  sparse_fs->file = fs;
-  fseek(fs, sparse_fs->cur_pos, SEEK_SET);
+  sparse_fs->fobj = fobj;
   sparse_fs->mode = OPENED;
   return SF_SUCCEED;
 }
 
 void hpcrun_sparse_close(hpcrun_sparse_file_t* sparse_fs)
 {
-  if(sparse_fs->mode == OPENED) hpcio_fclose(sparse_fs->file);
+  if(sparse_fs->mode == OPENED) hpctio_obj_close(sparse_fs->fobj);
   free(sparse_fs);
 }
 

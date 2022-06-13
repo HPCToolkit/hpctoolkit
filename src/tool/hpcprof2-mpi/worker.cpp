@@ -95,7 +95,7 @@ int rankN(ProfArgs&& args) {
     std::vector<std::unique_ptr<ProfileSource>> my_sources;
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t i = 0; i < args.sources.size(); i++)
-      my_sources.emplace_back(ProfileSource::create_for(args.sources[i].second));
+      my_sources.emplace_back(ProfileSource::create_for(args.sources[i].second, args.input_sys));
     #pragma omp critical
     for(auto& s: my_sources) pipelineB1 << std::move(s);
     ANNOTATE_HAPPENS_BEFORE(&end_arc);

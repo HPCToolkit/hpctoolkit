@@ -49,6 +49,8 @@
 #include "../util/log.hpp"
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/prof-lean/placeholders.h"
+#include "lib/prof-lean/hpctio.h"
+#include "lib/prof-lean/hpctio_obj.h"
 
 // TODO: Remove and change this once new-cupti is finalized
 #define HPCRUN_GPU_ROOT_NODE 65533
@@ -58,9 +60,9 @@
 using namespace hpctoolkit;
 using namespace sources;
 
-Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
+Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, hpctio_sys_t * input_sys)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
-    thread(nullptr), path(fn),
+    thread(nullptr), path(fn), input_sys(input_sys),
     tracepath(fn.parent_path() / fn.stem().concat(".hpctrace")) {
   // Try to open up the file. Errors handled inside somewhere.
   file = hpcrun_sparse_open(path.c_str(), 0, 0);

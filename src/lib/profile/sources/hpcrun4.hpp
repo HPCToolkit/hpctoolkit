@@ -51,6 +51,7 @@
 
 #include <memory>
 #include "../stdshim/filesystem.hpp"
+#include "../../prof-lean/hpctio.h"
 
 // Forward declaration of a structure.
 extern "C" typedef struct hpcrun_sparse_file hpcrun_sparse_file_t;
@@ -92,6 +93,9 @@ private:
   // The actual file. Details for reading handled in prof-lean.
   hpcrun_sparse_file_t* file;
   stdshim::filesystem::path path;
+
+  // The I/O system for the file
+  hpctio_sys_t * input_sys;
 
   struct metric_t {
     metric_t(Metric& metric) : metric(metric) {};
@@ -154,8 +158,8 @@ private:
   bool trace_sort;
 
   // We're all friends here.
-  friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&);
-  Hpcrun4(const stdshim::filesystem::path&);
+  friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&, hpctio_sys_t *);
+  Hpcrun4(const stdshim::filesystem::path&, hpctio_sys_t *);
 };
 
 }

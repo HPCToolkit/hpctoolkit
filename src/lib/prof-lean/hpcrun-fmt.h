@@ -79,6 +79,7 @@
 #include "hpcio-buffer.h"
 #include "hpcfmt.h"
 #include "id-tuple.h"
+#include "hpctio.h"
 #include "hpctio_obj.h"
 
 #include "lush/lush-support.h"
@@ -708,6 +709,9 @@ int
 hpcrun_fmt_footer_fread(hpcrun_fmt_footer_t* x, FILE* fs);
 
 int
+hpcrun_fmt_footer_fread2(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj, size_t off);
+
+int
 hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre);
 
 
@@ -738,7 +742,7 @@ static const int SF_cct_node_idx_SIZE     = 8;
 
 typedef struct hpcrun_sparse_file {
   hpctio_obj_t * fobj;
-  FILE* file;
+  //FILE* file;
   hpctio_sys_t * input_sys;
   hpcrun_fmt_footer_t footer;
 
@@ -769,7 +773,7 @@ typedef struct hpcrun_sparse_file {
 
 void hpcrun_sparse_footer_update_w_start(hpcrun_fmt_footer_t *f, size_t start_pos);
 
-hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, size_t end_pos);
+hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, size_t end_pos, hpctio_sys_t * sys);
 int hpcrun_sparse_pause(hpcrun_sparse_file_t* sparse_fs);
 int hpcrun_sparse_resume(hpcrun_sparse_file_t* sparse_fs, const char* path);
 void hpcrun_sparse_close(hpcrun_sparse_file_t* sparse_fs);

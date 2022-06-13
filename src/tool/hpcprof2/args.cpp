@@ -458,7 +458,6 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
 
   // Get I/O system for measurement inputs
   input_sys = hpctio_sys_initialize(argv[optind]);
- // hpctio_sys_avail_display();
 
   // Gather up all the potential inputs, and distribute them across the ranks
   std::vector<std::pair<stdshim::filesystem::path, std::size_t>> files;
@@ -468,37 +467,47 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       std::vector<std::vector<std::string>> allfiles(mpi::World::size());
       std::size_t peer = 0;
       for(int idx = optind; idx < argc; idx++) {
-        fs::path p1(hpctio_sys_cut_prefix(argv[idx], input_sys));
-        if(isDirectory(p1, input_sys)){
-          for(auto& et : directoryEntries(p1, input_sys)){
-            printf("%s\n", et.c_str());
-          }
-        }
-      
-        fs::path p(argv[idx]);
-        if(fs::is_directory(p)) {
-        //if(isDirectory(p, input_sys)){
-          // directoryIterator(p, input_sys);
-          // p = fs::path("m");
-          for(const auto& de: fs::directory_iterator(p)) {
-            allfiles[peer].emplace_back(de.path().string());
+        //fs::path p(argv[idx]);
+        //if(fs::is_directory(p)) {
+          //for(const auto& de: fs::directory_iterator(p)) {
+          //  allfiles[peer].emplace_back(de.path().string());
+          //  peer = (peer + 1) % allfiles.size();
+          //}
+        fs::path p(hpctio_sys_cut_prefix(argv[idx], input_sys));
+        if(isDirectory(p, input_sys)){
+          for(const auto& de : directoryEntries(p, input_sys)){
+            printf("%s\n", de);
+            allfiles[peer].emplace_back(de);
             peer = (peer + 1) % allfiles.size();
           }
+
           // Also check for a kernel_symbols/ directory for ksymsfiles.
           fs::path sp = p / "kernel_symbols";
-          if(fs::is_directory(sp))
-          // if(isDirectory(sp, input_sys))
+          //if(fs::is_directory(sp))
+          if(isDirectory(sp, input_sys))
             ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(std::move(sp)));
+
           // Also check for a structs/ directory for extra structfiles.
           sp = p / "structs";
-          if(fs::exists(sp)) {
-            for(const auto& de: fs::directory_iterator(sp)) {
+          // if(fs::exists(sp)) {
+          //   for(const auto& de: fs::directory_iterator(sp)) {
+          //     std::unique_ptr<ProfileFinalizer> c;
+          //     if(de.path().extension() != ".hpcstruct") continue;
+          //     try {
+          //       c.reset(new finalizers::StructFile(de));
+          //     } catch(...) { continue; }
+          //     ProfArgs::structs.emplace_back(std::move(c), de);
+          //   }
+          // }
+          if(exists(sp, input_sys)) {
+            for(const auto& de: directoryEntries(sp)) {
               std::unique_ptr<ProfileFinalizer> c;
-              if(de.path().extension() != ".hpcstruct") continue;
+              fs::path dep(de);
+              if(dep.extension() != ".hpcstruct") continue;
               try {
-                c.reset(new finalizers::StructFile(de));
+                c.reset(new finalizers::StructFile(dep));
               } catch(...) { continue; }
-              ProfArgs::structs.emplace_back(std::move(c), de);
+              ProfArgs::structs.emplace_back(std::move(c), dep);
             }
           }
         } else {
@@ -543,7 +552,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       #pragma omp for schedule(dynamic) nowait
       for(std::size_t i = 0; i < files.size(); i++) {
         auto pg = std::move(files[i]);
-        auto s = ProfileSource::create_for(pg.first);
+        auto s = ProfileSource::create_for(pg.first, input_sys);
         if(s) {
           my_sources.emplace_back(std::move(s), std::move(pg.first));
           cnts_a[pg.second].fetch_add(1, std::memory_order_relaxed);
@@ -633,7 +642,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   // Add the inputs newly allocated to us to our set
   for(auto& p_s: extra) {
     stdshim::filesystem::path p = std::move(p_s);
-    auto s = ProfileSource::create_for(p);
+    auto s = ProfileSource::create_for(p, input_sys);
     if(!s) util::log::fatal{} << "Input " << p << " has changed on disk, please let it stablize before continuing!";
     sources.emplace_back(std::move(s), std::move(p));
   }
@@ -757,7 +766,7 @@ static std::vector<std::string> directoryEntries(const std::string &path, hpctio
     char** ent = (char **)malloc(sizeof(char*));
     int num = sys->func_ptr->readdir(path.c_str(), &ent, sys->params_ptr);
     for(int i = 0; i < num; i++){
-      entries.emplace_back(std::string(ent[i]));
+      entries.emplace_back(path / std::string(ent[i]));
       free(ent[i]);
     }
     free(ent);
