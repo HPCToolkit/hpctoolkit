@@ -4488,7 +4488,7 @@ OPT_OPENCL_IFLAGS=
 
 AC_ARG_WITH([opencl],
   [AS_HELP_STRING([--with-opencl=PATH],
-      [path to opencl headers])],
+      [path to OpenCL install prefix; uses only include subdirectory for headers])],
   [OPENCL="$withval"],
   [])
 
@@ -4511,7 +4511,7 @@ case "$OPENCL" in
 esac
 
 if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
-  AC_MSG_ERROR([use --with-opencl to provide path to OpenCL-Headers installation])
+  AC_MSG_ERROR([use --with-opencl to provide a path to OpenCL install prefix; note: uses only include subdirectory for headers])
 fi
 
 if test "$OPT_HAVE_OPENCL" = yes ; then
