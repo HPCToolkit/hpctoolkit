@@ -1815,7 +1815,8 @@ Optional Packages:
   --with-cuda=PATH        path to cuda install directory
   --with-cupti=PATH       path to cupti install directory, default is from
                           cuda
-  --with-opencl=PATH      path to opencl headers
+  --with-opencl=PATH      path to OpenCL install prefix; uses only include
+                          subdirectory for headers
   --with-igc=PATH         path to igc install directory
   --with-metrics-discovery=PATH
                           path to metrics-discovery install directory
@@ -23615,7 +23616,7 @@ case "$OPENCL" in
 esac
 
 if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
-  as_fn_error $? "use --with-opencl to provide path to OpenCL-Headers installation" "$LINENO" 5
+  as_fn_error $? "use --with-opencl to provide a path to OpenCL install prefix; note: uses only include subdirectory for headers" "$LINENO" 5
 fi
 
 if test "$OPT_HAVE_OPENCL" = yes ; then
