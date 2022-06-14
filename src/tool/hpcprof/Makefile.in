@@ -244,7 +244,7 @@ CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
-CXX11_FLAG = @CXX11_FLAG@
+CXX17_FLAG = @CXX17_FLAG@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
@@ -427,7 +427,7 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
-cxx_c11_flag = @cxx_c11_flag@
+cxx17_flag = @cxx17_flag@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -514,7 +514,7 @@ MYSOURCES = \
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ \
 	$(am__append_1)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@ \
-	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ -std=gnu++17 $(am__append_2)
+	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ $(am__append_2)
 MYLDFLAGS = \
 	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
 	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \

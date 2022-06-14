@@ -74,7 +74,7 @@ TESTS = run-sort
 check_PROGRAMS = sort
 
 sort_SOURCES = sort.cpp
-sort_CXXFLAGS = -g -O @cxx_c11_flag@
+sort_CXXFLAGS = -g -O @cxx17_flag@
 
 clean-local:
 	rm -rf hpctoolkit-*-measurements hpctoolkit-*-database

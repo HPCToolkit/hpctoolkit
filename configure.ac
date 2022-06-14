@@ -1073,66 +1073,78 @@ AC_SUBST([HPCLINK_CC])
 
 
 #-------------------------------------------------
-# CXXFLAGS for std C++11
+# CXXFLAGS for std C++17
 #-------------------------------------------------
 
-# Find a CXX flag for standard C++11 and add to CXXFLAGS if needed.
-# We use some C++11 features (auto) in the parseAPI code in
-# src/lib/banal.  Unfortunately, due to include files, we pretty much
-# need this everywhere for C++ code.
+# Find a CXX flag for standard C++17 and add to CXXFLAGS if needed.
 
-AC_ARG_VAR([CXX11_FLAG],
-  [CXX flag for C++11 standard, normally only needed for non-GNU CXX])
+AC_ARG_VAR([CXX17_FLAG],
+  [CXX flag for C++17 standard, normally only needed for non-GNU CXX])
 
-c11_list='argvar none -std=c++11 -std=c++0x -std=gnu++0x'
-cxx_c11_avail=no
-cxx_c11_flag=
+cxx17_list='argvar -std=c++17 -std=c++1z argvar_none'
+cxx17_avail=no
+cxx17_flag=
 
 ORIG_CXXFLAGS="$CXXFLAGS"
 AC_LANG_PUSH([C++])
 
-AC_MSG_CHECKING([for CXX flag for C++11])
+AC_MSG_CHECKING([for CXX flag for C++17])
 
-for opt in $c11_list
+for opt in $cxx17_list
 do
   case "$opt" in
-    argvar ) flag="$CXX11_FLAG" ;;
-    none )   flag=  ;;
-    * )      flag="$opt" ;;
+    argvar )
+      # If CXX17_FLAG is set and is not "none", try it.
+      if test -z "$CXX17_FLAG" || test "$CXX17_FLAG" = "none"; then continue; fi
+      flag="$CXX17_FLAG"
+      ;;
+    argvar_none )
+      # If CXX17_FLAG=none, try without any flag
+      if test "$CXX17_FLAG" != "none"; then continue; fi
+      flag=""
+      ;;
+    * )
+      flag="$opt"
+      ;;
   esac
   CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
   AC_COMPILE_IFELSE([
   AC_LANG_SOURCE([[
-#include <list>
-int mylen(std::list <int> lst)
-{
-  int ans = 0;
-  for (auto it = lst.begin(); it != lst.end(); it++) {
-    ans += 1;
+#include <string>
+#include <string_view>
+#include <optional>
+static inline constexpr bool activate = true;
+int main() {
+  std::string x = "Hello";
+  std::string_view y;
+  if(std::optional<std::string> z = x; z) {
+    if constexpr (activate) {
+      y = x;
+    }
   }
-  return ans;
 }
 ]])], [ans=yes], [ans=no])
   if test "$ans" = yes ; then
-    cxx_c11_avail=yes
-    cxx_c11_flag="$flag"
+    cxx17_avail=yes
+    cxx17_flag="$flag"
     break
   fi
 done
 
-AC_MSG_RESULT([$cxx_c11_flag])
+AC_MSG_RESULT([$cxx17_flag])
 
 AC_LANG_POP
 
-if test "$cxx_c11_avail" = no ; then
-  AC_MSG_WARN([unable to find CXXFLAGS for std C++11])
-  AC_MSG_ERROR([set the CXX11_FLAG variable and rerun configure])
+if test "$cxx17_avail" = no ; then
+  AC_MSG_WARN([unable to find CXXFLAGS for std C++17])
+  AC_MSG_ERROR([set the CXX17_FLAG variable and rerun configure])
+  AC_MSG_ERROR([if no flag is needed, set CXX17_FLAG=' ' and rerun configure])
 fi
 
 CXXFLAGS="$ORIG_CXXFLAGS"
-HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
+HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx17_flag"
 
-AC_SUBST([cxx_c11_flag])
+AC_SUBST([cxx17_flag])
 
 #-------------------------------------------------
 
@@ -5389,7 +5401,7 @@ AC_MSG_NOTICE([  C++ compiler: $CXX_VERSION])
 AC_MSG_NOTICE([  Path:      $CXX_PATH])
 AC_MSG_NOTICE([  CXX:       '${CXX}'])
 AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
-AC_MSG_NOTICE([  C++11:     '${cxx_c11_flag}'])
+AC_MSG_NOTICE([  C++17:     '${cxx17_flag}'])
 AC_MSG_NOTICE([  OpenMP:    '${OPENMP_FLAG}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
 AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
