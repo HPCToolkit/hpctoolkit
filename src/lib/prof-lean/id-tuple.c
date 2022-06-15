@@ -194,6 +194,26 @@ id_tuple_fread(id_tuple_t* x, FILE* fs)
     return HPCFMT_OK;
 }
 
+size_t 
+id_tuple_fread2(id_tuple_t* x, hpctio_obj_t* fobj, size_t off)
+{
+    HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&(x->length), fobj, off));
+    off += 2;
+
+    char buf[x->length * 18];
+    int r = hpctio_obj_readat(buf, sizeof buf, off, fobj);
+    if(r != sizeof buf) return HPCFMT_ERR;
+
+    x->ids = (pms_id_t *) malloc(x->length * sizeof(pms_id_t)); 
+    for (uint j = 0; j < x->length; ++j) {
+      x->ids[j].kind = fmt_be_u16_read(buf+(j*18));
+      x->ids[j].physical_index = fmt_be_u64_read(buf+(j*18)+0x02);
+      x->ids[j].logical_index = fmt_be_u64_read(buf+(j*18)+0x0a); 
+    }
+    return (off+2+(x->length * 18));
+}
+
+
 int 
 id_tuple_fprint(id_tuple_t* x, FILE* fs)
 {

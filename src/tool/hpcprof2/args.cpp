@@ -476,7 +476,6 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         fs::path p(hpctio_sys_cut_prefix(argv[idx], input_sys));
         if(isDirectory(p, input_sys)){
           for(const auto& de : directoryEntries(p, input_sys)){
-            printf("%s\n", de);
             allfiles[peer].emplace_back(de);
             peer = (peer + 1) % allfiles.size();
           }
@@ -500,7 +499,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           //   }
           // }
           if(exists(sp, input_sys)) {
-            for(const auto& de: directoryEntries(sp)) {
+            for(const auto& de: directoryEntries(sp, input_sys)) {
               std::unique_ptr<ProfileFinalizer> c;
               fs::path dep(de);
               if(dep.extension() != ".hpcstruct") continue;
@@ -528,6 +527,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       else files.emplace_back(std::move(p), arg);
     }
   }
+
 
   // Every rank tests its allocated set of inputs, and the total number of
   // successes per group is summed.
@@ -574,6 +574,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   cnts = mpi::allreduce(std::move(cnts), mpi::Op::sum());
   std::size_t totalcnt = 0;
   for(auto c: cnts) totalcnt += c;
+
 
   // If there are any arguments missing successes, rank 0 exits early
   if(mpi::World::rank() == 0) {
@@ -766,7 +767,7 @@ static std::vector<std::string> directoryEntries(const std::string &path, hpctio
     char** ent = (char **)malloc(sizeof(char*));
     int num = sys->func_ptr->readdir(path.c_str(), &ent, sys->params_ptr);
     for(int i = 0; i < num; i++){
-      entries.emplace_back(path / std::string(ent[i]));
+      entries.emplace_back(path + "/" + std::string(ent[i]));
       free(ent[i]);
     }
     free(ent);

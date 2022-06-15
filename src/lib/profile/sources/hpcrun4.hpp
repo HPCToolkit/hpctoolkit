@@ -50,6 +50,7 @@
 #include "../source.hpp"
 
 #include <memory>
+#include <fcntl.h>
 #include "../stdshim/filesystem.hpp"
 #include "../../prof-lean/hpctio.h"
 
@@ -155,6 +156,7 @@ private:
   // Path to the tracefile, and offset of the actual data blob.
   stdshim::filesystem::path tracepath;
   long trace_off;
+  long trace_end;
   bool trace_sort;
 
   // We're all friends here.

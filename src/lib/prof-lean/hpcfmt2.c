@@ -87,30 +87,21 @@
 //***************************************************************************
 
 int
-hpcfmt_str_fread2(char** str, FILE* infs, hpcfmt_alloc_fn alloc)
+hpcfmt_str_fread2(char** str, hpctio_obj_t * fobj,  hpcfmt_alloc_fn alloc, size_t off)
 {
   uint32_t len;
-  char* buf = NULL;
-
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&len, infs));
-  if (alloc) {
-    buf = (char*) alloc(len+1);
-  }
-  if (!buf) {
-    return HPCFMT_ERR;
-  }
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread2(&len, fobj, off));
   
-  for (int i = 0; i < len; i++) {
-    int c = fgetc(infs);
-    if (c == EOF) {
-      return HPCFMT_ERR;
-    }
-    buf[i] = (char) c;
-  }
-  buf[len] = '\0';
+  char * str_buf = NULL;
+  if(alloc) str_buf = (char *) alloc(len + 1);
+  if(!str_buf) return HPCFMT_ERR;
 
-  *str = buf;
-  return HPCFMT_OK;
+  int r = hpctio_obj_readat(str_buf, len, off+4, fobj);
+  if (r != len) return HPCFMT_ERR;
+  str_buf[len] = '\0';
+  *str = str_buf;
+
+  return 4+len;
 }
 
 
@@ -144,9 +135,9 @@ hpcfmt_str_free2(const char* str, hpcfmt_free_fn dealloc)
 
 
 int
-hpcfmt_fread2(void *data, size_t size, FILE *infs)
+hpcfmt_fread2(void *data, size_t size, hpctio_obj_t *in, size_t off)
 {
-	size_t bytes = fread(data, sizeof(char), size, infs);
+	size_t bytes = hpctio_obj_readat(data, size, off, in);
 	if (bytes == size) {
 			return HPCFMT_OK;
 	}
@@ -216,12 +207,14 @@ hpcfmt_nvpairs_vfwrite2(hpctio_obj_t* out, va_list args)
 
 
 int
-hpcfmt_nvpair_fread2(hpcfmt_nvpair_t* inp, FILE* infs, hpcfmt_alloc_fn alloc)
+hpcfmt_nvpair_fread2(hpcfmt_nvpair_t* inp, hpctio_obj_t * fobj, hpcfmt_alloc_fn alloc, size_t off)
 {
-  hpcfmt_str_fread(&(inp->name), infs, alloc);
-  hpcfmt_str_fread(&(inp->val), infs, alloc);
+  int nm_sz = hpcfmt_str_fread2(&(inp->name), fobj, alloc, off);
+  if(nm_sz == HPCFMT_ERR) return HPCFMT_ERR;
+  int val_sz = hpcfmt_str_fread2(&(inp->val), fobj, alloc, off + nm_sz);
+  if(val_sz == HPCFMT_ERR) return HPCFMT_ERR;
 
-  return HPCFMT_OK;
+  return nm_sz + val_sz;
 }
 
 
@@ -237,18 +230,23 @@ hpcfmt_nvpair_fprint2(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre)
 // 
 //***************************************************************************
 
-int
+size_t
 hpcfmt_nvpairList_fread2(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
-			FILE* infs, hpcfmt_alloc_fn alloc)
+			hpctio_obj_t * fobj, hpcfmt_alloc_fn alloc, size_t off)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(nvps->len), infs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread2(&(nvps->len), fobj, off));
   if (alloc != NULL) {
     nvps->lst = (hpcfmt_nvpair_t*) alloc(nvps->len * sizeof(hpcfmt_nvpair_t));
   }
+
+  off += 4;
+  int sz = 0;
   for (uint32_t i = 0; i < nvps->len; i++) {
-    hpcfmt_nvpair_fread(&nvps->lst[i], infs, alloc);
+    sz = hpcfmt_nvpair_fread2(&nvps->lst[i], fobj, alloc, off);
+    if(sz == HPCFMT_ERR) return HPCFMT_ERR;
+    off += sz;
   }
-  return HPCFMT_OK;
+  return off;
 }
 
 

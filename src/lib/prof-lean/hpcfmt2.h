@@ -73,6 +73,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <inttypes.h>
+#include <string.h>
 
 
 //*************************** User Include Files ****************************
@@ -94,62 +95,95 @@ extern "C" {
 // Generic reader/writer primitives
 //***************************************************************************
 
-int hpcfmt_fread2(void *data, size_t size, FILE *infs);
+int hpcfmt_fread2(void *data, size_t size, hpctio_obj_t *in, size_t off);
 
 int hpcfmt_fwrite2(void *data, size_t size, hpctio_obj_t *out);
 
 
+// Operations for u16 (uint16_t)
+static inline uint16_t fmt_be_u16_read(const char v[sizeof(uint16_t)]) {
+  uint16_t o;
+  memcpy(&o, v, sizeof(uint16_t));
+  return be16toh(o);
+}
+
+// Operations for u32 (uint32_t)
+static inline uint32_t fmt_be_u32_read(const char v[sizeof(uint32_t)]) {
+  uint32_t o;
+  memcpy(&o, v, sizeof(uint32_t));
+  return be32toh(o);
+}
+
+// Operations for u64 (uint64_t)
+static inline uint64_t fmt_be_u64_read(const char v[sizeof(uint64_t)]) {
+  uint64_t o;
+  memcpy(&o, v, sizeof(uint64_t));
+  return be64toh(o);
+}
+
+// Operations for f64 (double)
+static inline double fmt_be_f64_read(const char v[sizeof(double)]) {
+  uint64_t vv = fmt_be_u64_read(v);
+  double o;
+  memcpy(&o, &vv, sizeof(double));
+  return o;
+}
+
+
 static inline int
-hpcfmt_int2_fread2(uint16_t* val, FILE* infs)
+hpcfmt_int2_fread2(uint16_t* val, hpctio_obj_t * fobj, size_t off)
 {
-  size_t sz = hpcio_be2_fread(val, infs);
-  if ( sz != sizeof(uint16_t) ) {
-    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
+  char buf[2];
+  if(hpctio_obj_readat(buf, 2, off, fobj) != 2){
+    return HPCFMT_ERR;
+  }
+  *val = fmt_be_u16_read(buf);
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_int4_fread2(uint32_t* val, hpctio_obj_t * fobj, size_t off)
+{
+  char buf[4];
+  if(hpctio_obj_readat(buf, 4, off, fobj) != 4){
+    return HPCFMT_ERR;
+  }
+  *val = fmt_be_u32_read(buf);
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_int8_fread2(uint64_t* val, hpctio_obj_t * fobj, size_t off)
+{
+  char buf[8];
+  if(hpctio_obj_readat(buf, 8, off, fobj) != 8){
+    return HPCFMT_ERR;
+  }
+  *val = fmt_be_u64_read(buf);
+  return HPCFMT_OK;
+}
+
+
+static inline int
+hpcfmt_intX_fread2(uint8_t* val, size_t size, hpctio_obj_t * fobj, size_t off)
+{
+  if(hpctio_obj_readat(val, size, off, fobj) != size){
+    return HPCFMT_ERR;
   }
   return HPCFMT_OK;
 }
 
 
 static inline int
-hpcfmt_int4_fread2(uint32_t* val, FILE* infs)
+hpcfmt_real8_fread2(double* val, hpctio_obj_t * fobj, size_t off)
 {
-  size_t sz = hpcio_be4_fread(val, infs);
-  if ( sz != sizeof(uint32_t) ) {
-    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
+  char buf[8];
+  if(hpctio_obj_readat(buf, 8, off, fobj) != 8){
+    return HPCFMT_ERR;
   }
-  return HPCFMT_OK;
-}
-
-
-static inline int
-hpcfmt_int8_fread2(uint64_t* val, FILE* infs)
-{
-  size_t sz = hpcio_be8_fread(val, infs);
-  if ( sz != sizeof(uint64_t) ) {
-    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
-  }
-  return HPCFMT_OK;
-}
-
-
-static inline int
-hpcfmt_intX_fread2(uint8_t* val, size_t size, FILE* infs)
-{
-  size_t sz = hpcio_beX_fread(val, size, infs);
-  if (sz != size) {
-    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
-  }
-  return HPCFMT_OK;
-}
-
-
-static inline int
-hpcfmt_real8_fread2(double* val, FILE* infs)
-{
-  size_t sz = hpcio_be8_fread((uint64_t*)val, infs);
-  if ( sz != sizeof(double) ) {
-    return (sz == 0 && feof(infs)) ? HPCFMT_EOF : HPCFMT_ERR;
-  }
+  *val = fmt_be_f64_read(buf);
   return HPCFMT_OK;
 }
 
@@ -239,7 +273,7 @@ hpcfmt_real8_fwrite2(double val, hpctio_obj_t* out)
 //***************************************************************************
 
 int 
-hpcfmt_str_fread2(char** str, FILE* infs, hpcfmt_alloc_fn alloc);
+hpcfmt_str_fread2(char** str, hpctio_obj_t * fobj, hpcfmt_alloc_fn alloc, size_t off);
 
 int 
 hpcfmt_str_fwrite2(const char* str, hpctio_obj_t* out);
@@ -266,7 +300,7 @@ int
 hpcfmt_nvpairs_vfwrite2(hpctio_obj_t* out, va_list args);
 
 int
-hpcfmt_nvpair_fread2(hpcfmt_nvpair_t* inp, FILE* infs, hpcfmt_alloc_fn alloc);
+hpcfmt_nvpair_fread2(hpcfmt_nvpair_t* inp, hpctio_obj_t * fobj, hpcfmt_alloc_fn alloc, size_t off);
 
 int
 hpcfmt_nvpair_fprint2(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre);
@@ -276,9 +310,9 @@ hpcfmt_nvpair_fprint2(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre);
 // List of hpcfmt_nvpair_t 
 //***************************************************************************
 
-int
+size_t
 hpcfmt_nvpairList_fread2(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
-			FILE* infs, hpcfmt_alloc_fn alloc);
+			hpctio_obj_t * fobj, hpcfmt_alloc_fn alloc, size_t off);
 
 int
 hpcfmt_nvpairList_fprint2(const HPCFMT_List(hpcfmt_nvpair_t)* nvps,

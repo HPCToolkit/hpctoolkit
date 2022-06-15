@@ -873,8 +873,7 @@ static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_i
     daos_size_t read_size;
     int r = dfs_read(dfs_p->dfs, dobj, &sgl, (daos_off_t) offset, &read_size, NULL);
     CHECK(r, "DFS - Failed to dfs_read with errno %d\n", r);
-    CHECK((read_size != count), "The read length is %ld, not equal to the requested length %ld\n", read_size, count);
-
+    
 exit:
     if(r){
         errno = r;

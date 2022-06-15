@@ -22,6 +22,7 @@ typedef struct hpctio_obj{
 /*************************** FILE SYSTEM OBJECT WRITING MODES ***************************/
 #define HPCTIO_WRITE_AT  0 
 #define HPCTIO_APPEND    1 
+#define HPCTIO_RDONLY    2 
 
 #define HPCTIO_LARGE_F   0
 #define HPCTIO_SMALL_F   1

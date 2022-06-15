@@ -65,7 +65,7 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, hpctio_sys_t * input_sys)
     thread(nullptr), path(fn), input_sys(input_sys),
     tracepath(fn.parent_path() / fn.stem().concat(".hpctrace")) {
   // Try to open up the file. Errors handled inside somewhere.
-  file = hpcrun_sparse_open(path.c_str(), 0, 0);
+  file = hpcrun_sparse_open(path.c_str(), 0, 0, input_sys);
   if(file == nullptr) {
     fileValid = false;
     return;
@@ -169,32 +169,39 @@ DataClass Hpcrun4::finalizeRequest(const DataClass& d) const noexcept {
 }
 
 bool Hpcrun4::setupTrace(unsigned int traceDisorder) noexcept {
-  std::FILE* file = std::fopen(tracepath.c_str(), "rb");
-  if(!file) return false;
+  hpctio_obj_t * fobj = hpctio_obj_open(tracepath.c_str(), O_RDONLY, 0444, HPCTIO_RDONLY, 0, input_sys);
+  if(!fobj) return false;
+
   // Read in the file header.
   hpctrace_fmt_hdr_t thdr;
-  if(hpctrace_fmt_hdr_fread(&thdr, file) != HPCFMT_OK) {
-    std::fclose(file);
+  trace_off = hpctrace_fmt_hdr_fread2(&thdr, fobj, 0);
+  if(trace_off == HPCFMT_ERR) {
+    hpctio_obj_close(fobj);
     return false;
   }
-  if(thdr.version != 1.01) { std::fclose(file); return false; }
+  if(thdr.version != 1.01) { hpctio_obj_close(fobj); return false; }
   if(HPCTRACE_HDR_FLAGS_GET_BIT(thdr.flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
-    std::fclose(file);
+    hpctio_obj_close(fobj);
     return false;
   }
-  // The file is now placed right at the start of the data.
-  trace_off = std::ftell(file);
 
   // Count the number of timepoints in the file, and save it for later.
-  std::fseek(file, 0, SEEK_END);
-  auto trace_end = std::ftell(file);
+  struct stat * st = (struct stat *)malloc(sizeof(struct stat));
+  int ret = hpctio_sys_stat(tracepath.c_str(), st, input_sys);
+  if(ret){
+    hpctio_obj_close(fobj);
+    free(st);
+    return false;
+  }
+  trace_end = st->st_size;
+  free(st);
   if((trace_end - trace_off) % (8+4) != 0) {
-    std::fclose(file);
+    hpctio_obj_close(fobj);
     return false;
   }
   tattrs.ctxTimepointStats((trace_end - trace_off) / (8+4), traceDisorder);
 
-  std::fclose(file);
+  hpctio_obj_close(fobj);
   return true;
 }
 
@@ -590,13 +597,13 @@ bool Hpcrun4::realread(const DataClass& needed) try {
   if(needed.hasCtxTimepoints() && !tracepath.empty()) {
     assert(thread);
 
-    std::FILE* f = std::fopen(tracepath.c_str(), "rb");
-    std::fseek(f, trace_off, SEEK_SET);
+    hpctio_obj_t * fobj = hpctio_obj_open(tracepath.c_str(), O_RDONLY, 0444, HPCTIO_RDONLY, 0, input_sys);
     hpctrace_fmt_datum_t tpoint;
+    long cur_off = trace_off;
     while(1) {
-      int err = hpctrace_fmt_datum_fread(&tpoint, {0}, f);
-      if(err == HPCFMT_EOF) break;
-      else if(err != HPCFMT_OK) {
+      cur_off = hpctrace_fmt_datum_fread2(&tpoint, {0}, fobj, cur_off);
+      if(cur_off == trace_end) break;
+      else if(cur_off == HPCFMT_ERR) {
         util::log::info{} << "Error reading trace datum from "
                           << tracepath.filename().string();
         return false;
@@ -610,13 +617,13 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             break;  // 'Round the loop
           case ProfilePipeline::Source::TimepointStatus::rewindStart:
             // Put the cursor back at the beginning
-            std::fseek(f, trace_off, SEEK_SET);
+            cur_off = trace_off;
             break;
           }
         }
       }
     }
-    std::fclose(f);
+    hpctio_obj_close(fobj);
   }
   return true;
 } catch(std::exception& e) {

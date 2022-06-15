@@ -142,6 +142,9 @@ typedef struct hpcrun_fmt_hdr_t {
 extern int
 hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc);
 
+size_t
+hpcrun_fmt_hdr_fread2(hpcrun_fmt_hdr_t* hdr, hpctio_obj_t* fobj, hpcfmt_alloc_fn alloc, size_t off);
+
 extern int
 hpcrun_fmt_hdr_fwrite(hpctio_obj_t * fobj, ...);
 
@@ -423,6 +426,10 @@ extern int
 hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
 			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
+extern size_t
+hpcrun_fmt_metricDesc_fread2(metric_desc_t* x, hpctio_obj_t * fobj,
+			    double fmtVersion, hpcfmt_alloc_fn alloc, size_t off);
+
 extern int
 hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, hpctio_obj_t* out);
 
@@ -488,6 +495,10 @@ hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
 extern int
 hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* infs,
 			      hpcfmt_alloc_fn alloc);
+
+extern size_t
+hpcrun_fmt_loadmapEntry_fread2(loadmap_entry_t* x, hpctio_obj_t* fobj,
+			      hpcfmt_alloc_fn alloc, size_t off);
 
 extern int
 hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, hpctio_obj_t* out);
@@ -562,6 +573,10 @@ extern int
 hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 			  epoch_flags_t flags, FILE* fs);
 
+extern size_t
+hpcrun_fmt_cct_node_fread2(hpcrun_fmt_cct_node_t* x,
+			  epoch_flags_t flags, hpctio_obj_t * fobj, size_t off);
+
 extern int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 			   epoch_flags_t flags, hpctio_obj_t* fobj);
@@ -584,6 +599,10 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 
 extern int
 hpcrun_fmt_lip_fread(lush_lip_t* x, FILE* fs);
+
+extern size_t
+hpcrun_fmt_lip_fread2(lush_lip_t* x, hpctio_obj_t* fobj, size_t off);
+
 
 extern int
 hpcrun_fmt_lip_fwrite(lush_lip_t* x, hpctio_obj_t* fobj);
@@ -622,6 +641,9 @@ typedef struct hpcrun_fmt_idtuple_dxnry_t
 
 extern int
 hpcrun_fmt_idtuple_dxnry_fread(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* infs, hpcfmt_alloc_fn alloc);
+
+extern size_t
+hpcrun_fmt_idtuple_dxnry_fread2(hpcrun_fmt_idtuple_dxnry_t* dxnry, hpctio_obj_t* fobj, hpcfmt_alloc_fn alloc, size_t off);
 
 extern int
 hpcrun_fmt_idtuple_dxnry_fwrite(hpctio_obj_t* out);
@@ -728,6 +750,7 @@ static const int SF_FAIL    = 1;
 static const int SF_ERR     = -1;
 
 static const int SF_footer_SIZE           = 7 * 16; 
+static const int SF_hdr_SIZE              = HPCRUN_FMT_MagicLen + HPCRUN_FMT_VersionLen + HPCRUN_FMT_EndianLen;
 static const int SF_num_lm_SIZE           = 4; 
 static const int SF_num_metric_SIZE       = 4;
 static const int SF_num_cct_SIZE          = 8;
@@ -862,6 +885,9 @@ int
 hpctrace_fmt_hdr_fread(hpctrace_fmt_hdr_t* hdr, FILE* infs);
 
 int
+hpctrace_fmt_hdr_fread2(hpctrace_fmt_hdr_t* hdr, hpctio_obj_t* in, size_t off);
+
+int
 hpctrace_fmt_hdr_outbuf(hpctrace_hdr_flags_t flags, hpcio_outbuf_t* outbuf);
 
 // N.B.: not async safe
@@ -920,6 +946,10 @@ typedef struct hpctrace_fmt_datum_t {
 int
 hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			 FILE* fs);
+
+int
+hpctrace_fmt_datum_fread2(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
+			 hpctio_obj_t * fobj, size_t off);
 
 int
 hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,

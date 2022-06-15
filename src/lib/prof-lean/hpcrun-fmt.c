@@ -86,6 +86,7 @@
 #include "hpcrun-fmt.h"
 #include "placeholders.h"
 #include "id-tuple.h"
+#include "hpctio.h"
 #include "hpctio_obj.h"
 
 //***************************************************************************
@@ -124,6 +125,30 @@ hpcrun_fmt_hdr_fread(hpcrun_fmt_hdr_t* hdr, FILE* infs, hpcfmt_alloc_fn alloc)
   hpcfmt_nvpairList_fread(&(hdr->nvps), infs, alloc);
 
   return HPCFMT_OK;
+}
+
+size_t
+hpcrun_fmt_hdr_fread2(hpcrun_fmt_hdr_t* hdr, hpctio_obj_t* fobj, hpcfmt_alloc_fn alloc, size_t off)
+{
+  char buf[SF_hdr_SIZE];
+  int nr = hpctio_obj_readat(buf, SF_hdr_SIZE, off, fobj);
+  if (nr != SF_hdr_SIZE) {
+    return HPCFMT_ERR;
+  }
+
+  if(memcmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) != 0){
+    return HPCFMT_ERR;
+  }
+
+  memcpy(hdr->versionStr, buf+HPCRUN_FMT_MagicLen, HPCRUN_FMT_VersionLen);
+  hdr->versionStr[HPCRUN_FMT_VersionLen] = '\0';
+  hdr->version = atof(hdr->versionStr);
+
+  hdr->endian = buf[HPCRUN_FMT_MagicLen + HPCRUN_FMT_VersionLen];
+
+  size_t new_off = hpcfmt_nvpairList_fread2(&(hdr->nvps), fobj, alloc, off+SF_hdr_SIZE);
+
+  return new_off;
 }
 
 
@@ -392,6 +417,60 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
 }
 
 
+size_t
+hpcrun_fmt_metricDesc_fread2(metric_desc_t* x, hpctio_obj_t * fobj,
+			    double GCC_ATTR_UNUSED fmtVersion,
+			    hpcfmt_alloc_fn alloc, size_t off)
+{
+  off += hpcfmt_str_fread2(&(x->name), fobj, alloc, off);
+  off += hpcfmt_str_fread2(&(x->description), fobj, alloc, off);
+  HPCFMT_ThrowIfError(hpcfmt_intX_fread2(x->flags.bits, sizeof(x->flags), fobj, off));
+  off += sizeof(x->flags);
+
+  // FIXME: tallent: temporarily support old non-portable convention
+  if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw
+	   || x->flags.fields.ty == MetricFlags_Ty_Final)
+       || x->flags.fields.unused1 != 0) {
+    off -= sizeof(x->flags);
+
+    hpcrun_metricFlags_XXX_t x_flags_old;
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&(x_flags_old.bits[0]), fobj, off));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&(x_flags_old.bits[1]), fobj, off + 8));
+    off += 16;
+
+    x->flags.bits_big[0] = 0;
+    x->flags.bits_big[1] = 0;
+
+    x->flags.fields.ty          = x_flags_old.fields.ty;
+    x->flags.fields.valTy       = x_flags_old.fields.valTy;
+    x->flags.fields.valFmt      = x_flags_old.fields.valFmt;
+    x->flags.fields.partner     = (uint16_t) x_flags_old.fields.partner;
+    x->flags.fields.show        = x_flags_old.fields.show;
+    x->flags.fields.showPercent = x_flags_old.fields.showPercent;
+  }
+
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&(x->period), fobj, off));
+  off += 8;
+  off += hpcfmt_str_fread2(&(x->formula), fobj, alloc, off);
+  off += hpcfmt_str_fread2(&(x->format), fobj, alloc, off);
+
+  char buf[20];
+  int ret = hpctio_obj_readat(buf, 20, off, fobj);
+  if(ret != 20) return HPCFMT_ERR;
+  x->is_frequency_metric = fmt_be_u16_read(buf);
+  x->aux_info.is_multiplexed = fmt_be_u16_read(buf+0x02);
+  x->aux_info.threshold_mean = fmt_be_f64_read(buf+0x04);
+  x->aux_info.num_samples = fmt_be_u64_read(buf+0x0c);
+  off += 20;
+
+  // These two aren't written into the hpcrun file; hence manually set them.
+  x->properties.time = 0;
+  x->properties.cycles = 0;
+
+  return off;
+}
+
+
 int
 hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, hpctio_obj_t* fobj)
 {
@@ -579,13 +658,22 @@ int
 hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* fs,
 			      hpcfmt_alloc_fn alloc)
 {
-  //int ret = 10;
   HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(x->id), fs));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
-  //ret += (strlen(x->name) + 4);
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->flags), fs));
   return HPCFMT_OK;
-  //return ret;
+}
+
+
+size_t
+hpcrun_fmt_loadmapEntry_fread2(loadmap_entry_t* x, hpctio_obj_t* fobj,
+			      hpcfmt_alloc_fn alloc, size_t off)
+{
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&(x->id), fobj, off));
+  size_t sz = hpcfmt_str_fread2(&(x->name), fobj, alloc, off+2);
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&(x->flags), fobj, off+2+sz));
+  return (off+2+sz+8);
+
 }
 
 
@@ -641,17 +729,42 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fread(&x->lip, fs);
   }
-  /* YUMENG: no need for sparse metrics
-  for (int i = 0; i < x->num_metrics; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->metrics[i].bits, fs));
-  }
-  */
 
   uint8_t cct_flags;
   _Static_assert(sizeof cct_flags == 1, "uint8_t > char?");
   HPCFMT_ThrowIfError(hpcfmt_fread(&cct_flags, sizeof cct_flags, fs));
   x->unwound = cct_flags & HPCFMT_CCT_FLAG_UNWOUND;
   return HPCFMT_OK;
+}
+
+ size_t
+hpcrun_fmt_cct_node_fread2(hpcrun_fmt_cct_node_t* x,
+			  epoch_flags_t flags, hpctio_obj_t * fobj, size_t off)
+{
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread2(&x->id, fobj, off));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread2(&x->id_parent, fobj, off + 4));
+  off += 8;
+
+  x->as_info = lush_assoc_info_NULL;
+  if (flags.fields.isLogicalUnwind) {
+    HPCFMT_ThrowIfError(hpcfmt_int4_fread2(&x->as_info.bits, fobj, off));
+    off += 4;
+  }
+
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&x->lm_id, fobj, off));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&x->lm_ip, fobj, off + 2));
+  off += 10;
+
+  lush_lip_init(&x->lip);
+  if (flags.fields.isLogicalUnwind) {
+    off = hpcrun_fmt_lip_fread2(&x->lip, fobj, off);
+  }
+
+  uint8_t cct_flags;
+  _Static_assert(sizeof cct_flags == 1, "uint8_t > char?");
+  HPCFMT_ThrowIfError(hpcfmt_fread2(&cct_flags, sizeof cct_flags, fobj, off));
+  x->unwound = cct_flags & HPCFMT_CCT_FLAG_UNWOUND;
+  return (off + sizeof cct_flags);
 }
 
 
@@ -774,6 +887,19 @@ hpcrun_fmt_lip_fread(lush_lip_t* x, FILE* fs)
   return HPCFMT_OK;
 }
 
+size_t
+hpcrun_fmt_lip_fread2(lush_lip_t* x, hpctio_obj_t* fobj, size_t off)
+{
+  char buf[LUSH_LIP_DATA8_SZ * 8];
+  int r = hpctio_obj_readat(buf, sizeof buf, off, fobj);
+  if(r != sizeof buf) return HPCFMT_ERR;
+  for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
+    x->data8[i] = fmt_be_u64_read(buf+i*0x08);
+  }
+
+  return sizeof buf;
+}
+
 
 int
 hpcrun_fmt_lip_fwrite(lush_lip_t* x, hpctio_obj_t* fobj)
@@ -816,6 +942,25 @@ hpcrun_fmt_idtuple_dxnry_fread(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* infs, hp
     hpcfmt_str_fread(&(inp->kindStr), infs, alloc);
   }
   return HPCFMT_OK;
+}
+
+size_t
+hpcrun_fmt_idtuple_dxnry_fread2(hpcrun_fmt_idtuple_dxnry_t* dxnry, hpctio_obj_t* fobj, hpcfmt_alloc_fn alloc, size_t off)
+{
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&(dxnry->num_entries), fobj, off));
+  off += 2;
+
+  if (alloc != NULL) {
+    dxnry->dictionary = (hpcrun_fmt_idtuple_dxnry_entry_t*) alloc(dxnry->num_entries * sizeof(hpcrun_fmt_idtuple_dxnry_entry_t));
+  }
+
+  for (uint16_t i = 0; i < dxnry->num_entries; i++) {
+    hpcrun_fmt_idtuple_dxnry_entry_t* inp = &(dxnry->dictionary[i]);
+    HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&(inp->kind), fobj, off));
+    off += 2;
+    off += hpcfmt_str_fread2(&(inp->kindStr), fobj, alloc, off);
+  }
+  return off;
 }
 
 
@@ -1117,26 +1262,26 @@ hpcrun_fmt_footer_fread(hpcrun_fmt_footer_t* x, FILE* fs)
 }
 
 int
-hpcrun_fmt_footer_fread2(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj, size_t off);
+hpcrun_fmt_footer_fread2(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj, size_t off)
 {
   char * buf = (char *)malloc(SF_footer_SIZE);
   int r = hpctio_obj_readat(buf, SF_footer_SIZE, off, fobj);
   if(r != SF_footer_SIZE) return HPCFMT_ERR;
 
-  x->hdr_start = fmt_u64_read(buf+0x00);
-  x->hdr_end = fmt_u64_read(buf+0x08);
-  x->loadmap_start = fmt_u64_read(buf+0x10);
-  x->loadmap_end = fmt_u64_read(buf+0x18);
-  x->cct_start = fmt_u64_read(buf+0x20);
-  x->cct_end = fmt_u64_read(buf+0x28);
-  x->met_tbl_start = fmt_u64_read(buf+0x30);
-  x->met_tbl_end = fmt_u64_read(buf+0x38);
-  x->idtpl_dxnry_start = fmt_u64_read(buf+0x40);
-  x->idtpl_dxnry_end = fmt_u64_read(buf+0x48);
-  x->sm_start = fmt_u64_read(buf+0x50);
-  x->sm_end = fmt_u64_read(buf+0x58);
-  x->footer_start = fmt_u64_read(buf+0x60);
-  x->HPCRUNsm = fmt_u64_read(buf+0x68);
+  x->hdr_start = fmt_be_u64_read(buf+0x00);
+  x->hdr_end = fmt_be_u64_read(buf+0x08);
+  x->loadmap_start = fmt_be_u64_read(buf+0x10);
+  x->loadmap_end = fmt_be_u64_read(buf+0x18);
+  x->cct_start = fmt_be_u64_read(buf+0x20);
+  x->cct_end = fmt_be_u64_read(buf+0x28);
+  x->met_tbl_start = fmt_be_u64_read(buf+0x30);
+  x->met_tbl_end = fmt_be_u64_read(buf+0x38);
+  x->idtpl_dxnry_start = fmt_be_u64_read(buf+0x40);
+  x->idtpl_dxnry_end = fmt_be_u64_read(buf+0x48);
+  x->sm_start = fmt_be_u64_read(buf+0x50);
+  x->sm_end = fmt_be_u64_read(buf+0x58);
+  x->footer_start = fmt_be_u64_read(buf+0x60);
+  x->HPCRUNsm = fmt_be_u64_read(buf+0x68);
 
   if(x->HPCRUNsm != HPCRUNsm){
     return HPCFMT_ERR;
@@ -1176,7 +1321,7 @@ hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre)
 //***************************************************************************
 hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, size_t end_pos, hpctio_sys_t * sys)
 {
-  hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, NULL, HPCTIO_SMALL_F, sys);
+  hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, HPCTIO_RDONLY, 0, sys);
   if(!fobj) return NULL;
 
   hpcrun_sparse_file_t* sparse_fs = (hpcrun_sparse_file_t*) malloc(sizeof(hpcrun_sparse_file_t));
@@ -1209,7 +1354,7 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, siz
     free(st);
   }
   size_t footer_position = end_pos - SF_footer_SIZE;
-  int ret = hpcrun_fmt_footer_fread2(&(sparse_fs->footer), fobj, footer_position);
+  ret = hpcrun_fmt_footer_fread2(&(sparse_fs->footer), fobj, footer_position);
   if(ret != HPCFMT_OK){
     hpctio_obj_close(sparse_fs->fobj);
     free(sparse_fs);
@@ -1261,7 +1406,7 @@ int hpcrun_sparse_resume(hpcrun_sparse_file_t* sparse_fs, const char* path)
   int ret = hpcrun_sparse_check_mode(sparse_fs, PAUSED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, NULL, HPCTIO_SMALL_F, sparse_fs->input_sys);
+  hpctio_obj_t * fobj = hpctio_obj_open(path, O_RDONLY, 0444, HPCTIO_RDONLY, 0, sparse_fs->input_sys);
   if(!fobj) return SF_FAIL;
   if((sparse_fs->cur_pos < sparse_fs->start_pos)
     ||(sparse_fs->cur_pos >= sparse_fs->end_pos))
@@ -1295,10 +1440,11 @@ int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hd
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  fseek(sparse_fs->file, sparse_fs->footer.hdr_start, SEEK_SET);
-  ret = hpcrun_fmt_hdr_fread(hdr, sparse_fs->file, malloc);
-  if(ret != HPCFMT_OK) return SF_ERR;
-  if(ftell(sparse_fs->file) != sparse_fs->footer.hdr_end) return SF_ERR;
+  ret = hpcrun_fmt_hdr_fread2(hdr, sparse_fs->fobj, malloc, sparse_fs->footer.hdr_start);
+  if(ret == HPCFMT_ERR) return SF_ERR;
+  if(ret != sparse_fs->footer.hdr_end) return SF_ERR;
+
+  sparse_fs->cur_pos = sparse_fs->footer.hdr_end;
   return SF_SUCCEED;
 }
 
@@ -1313,10 +1459,11 @@ int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm)
   size_t realoffset = sparse_fs->footer.loadmap_start + sparse_fs->lm_bytes_read;
   if(realoffset == sparse_fs->footer.loadmap_end) return SF_END; // no more next lm
   if(realoffset > sparse_fs->footer.loadmap_end)  return SF_ERR;
-  fseek(sparse_fs->file, realoffset, SEEK_SET);
-  HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fread(lm, sparse_fs->file, malloc));
-  sparse_fs->lm_bytes_read += ftell(sparse_fs->file) - realoffset;
+  size_t newoffset = hpcrun_fmt_loadmapEntry_fread2(lm, sparse_fs->fobj, malloc, realoffset);
+  if(newoffset == HPCFMT_ERR) return SF_ERR;
+  sparse_fs->lm_bytes_read += newoffset - realoffset;
 
+  sparse_fs->cur_pos = newoffset;
   return (lm) ? lm->id : SF_ERR;
 }
 
@@ -1331,11 +1478,12 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
   size_t realoffset = sparse_fs->footer.met_tbl_start + sparse_fs->metric_bytes_read;
   if(realoffset == sparse_fs->footer.met_tbl_end) return SF_END; // no more next metric
   if(realoffset > sparse_fs->footer.met_tbl_end)  return SF_ERR; 
-  fseek(sparse_fs->file, realoffset, SEEK_SET);
-  HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(m, sparse_fs->file, fmtVersion, malloc));
+  size_t newoffset = hpcrun_fmt_metricDesc_fread2(m, sparse_fs->fobj, fmtVersion, malloc, realoffset);
+  if(newoffset == HPCFMT_ERR) return SF_ERR;
   sparse_fs->cur_metric_id += 1;
-  sparse_fs->metric_bytes_read += (ftell(sparse_fs->file) - realoffset);
+  sparse_fs->metric_bytes_read += (newoffset - realoffset);
 
+  sparse_fs->cur_pos = newoffset;
   return sparse_fs->cur_metric_id;
 }
 
@@ -1347,17 +1495,17 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   
   //first time initialization
   if(sparse_fs->cct_nodes_read == 0){ 
-    fseek(sparse_fs->file, sparse_fs->footer.cct_start, SEEK_SET);
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&sparse_fs->num_cct_nodes, sparse_fs->file));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&sparse_fs->num_cct_nodes, sparse_fs->fobj, sparse_fs->footer.cct_start));
   }
   if(sparse_fs->cct_nodes_read == sparse_fs->num_cct_nodes) return SF_END;
 
   size_t realoffset = sparse_fs->footer.cct_start + (SF_cct_node_SIZE * sparse_fs->cct_nodes_read) + SF_num_cct_SIZE; 
   if(realoffset > sparse_fs->footer.cct_end) return SF_ERR;
-  fseek(sparse_fs->file, realoffset, SEEK_SET);
   epoch_flags_t fake = {0};//need to remove in the future
-  HPCFMT_ThrowIfError(hpcrun_fmt_cct_node_fread(node, fake, sparse_fs->file));
+  size_t newoffset = hpcrun_fmt_cct_node_fread2(node, fake, sparse_fs->fobj, realoffset);
   sparse_fs->cct_nodes_read ++;
+
+  sparse_fs->cur_pos = newoffset;
   return node->id;
 }
 
@@ -1367,10 +1515,11 @@ int hpcrun_sparse_read_idtuple_dxnry(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  fseek(sparse_fs->file, sparse_fs->footer.idtpl_dxnry_start, SEEK_SET);
-  ret = hpcrun_fmt_idtuple_dxnry_fread(dxnry, sparse_fs->file, malloc);
-  if(ret != HPCFMT_OK) return SF_ERR;
-  if(ftell(sparse_fs->file) != sparse_fs->footer.idtpl_dxnry_end) return SF_ERR;
+  ret = hpcrun_fmt_idtuple_dxnry_fread2(dxnry, sparse_fs->fobj, malloc, sparse_fs->footer.idtpl_dxnry_start);
+  if(ret == HPCFMT_ERR) return SF_ERR;
+  if(ret != sparse_fs->footer.idtpl_dxnry_end) return SF_ERR;
+
+  sparse_fs->cur_pos = sparse_fs->footer.idtpl_dxnry_end;
   return SF_SUCCEED;
 }
 
@@ -1380,11 +1529,11 @@ int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, id_tuple_t* id_
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  fseek(sparse_fs->file, sparse_fs->footer.sm_start, SEEK_SET);
-  ret = id_tuple_fread(id_tuple, sparse_fs->file);
+  ret = id_tuple_fread2(id_tuple, sparse_fs->fobj, sparse_fs->footer.sm_start);
   if(id_tuple->length == 0) return SF_ERR;
-  if(ret != HPCFMT_OK) return SF_ERR;
+  if(ret == HPCFMT_ERR) return SF_ERR;
 
+  sparse_fs->cur_pos = ret;
   return SF_SUCCEED;
 }
 
@@ -1398,14 +1547,15 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
   //first time initialization 
   if(sparse_fs->sm_block_touched == 0){
     int id_tuple_size;
-    uint16_t id_tuple_length;
-    fseek(sparse_fs->file, sparse_fs->footer.sm_start, SEEK_SET);
-    HPCFMT_ThrowIfError(hpcfmt_int2_fread(&id_tuple_length, sparse_fs->file));
+    uint16_t id_tuple_length;  
+    HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&id_tuple_length, sparse_fs->fobj, sparse_fs->footer.sm_start));
     id_tuple_size = PMS_id_tuple_len_SIZE + PMS_id_SIZE * id_tuple_length;
-    fseek(sparse_fs->file, (sparse_fs->footer.sm_start + id_tuple_size), SEEK_SET);
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(sparse_fs->num_nzval),sparse_fs->file));
-    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(sparse_fs->num_nz_cct_nodes),sparse_fs->file));
-    sparse_fs->val_mid_offset     = sparse_fs->footer.sm_start + id_tuple_size + SF_num_val_SIZE + SF_num_nz_cct_node_SIZE;
+    char buf[12];
+    ret = hpctio_obj_readat(buf, 12, (sparse_fs->footer.sm_start + id_tuple_size), sparse_fs->fobj);
+    if(ret != 12) return SF_ERR;
+    sparse_fs->num_nzval = fmt_be_u64_read(buf);
+    sparse_fs->num_nz_cct_nodes = fmt_be_u32_read(buf+0x08);
+    sparse_fs->val_mid_offset = sparse_fs->footer.sm_start + id_tuple_size + SF_num_val_SIZE + SF_num_nz_cct_node_SIZE;
     sparse_fs->cct_node_id_idx_offset = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * sparse_fs->num_nzval; 
   }
   if(sparse_fs->sm_block_touched == sparse_fs->num_nz_cct_nodes) return SF_END; //no more cct block
@@ -1413,22 +1563,20 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
   //read the first val_metricID pair position related to this cct
   size_t realoffset = sparse_fs->cct_node_id_idx_offset + (SF_cct_node_id_SIZE + SF_cct_node_idx_SIZE) * sparse_fs->sm_block_touched;
   if(realoffset > sparse_fs->footer.sm_end) return SF_ERR;
-  fseek(sparse_fs->file, realoffset, SEEK_SET);
-  size_t val_mid_idx;
-  uint32_t cct_node_id;
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&cct_node_id,sparse_fs->file));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&val_mid_idx,sparse_fs->file));
-
+  char buf[24];
+  ret = hpctio_obj_readat(buf, 24, realoffset, sparse_fs->fobj);
+  if(ret != 24) return SF_ERR;
+  uint32_t cct_node_id = fmt_be_u32_read(buf);
+  size_t val_mid_idx = fmt_be_u64_read(buf+0x04);
+  
   //set up records for this current block
   sparse_fs->cur_block_start = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * val_mid_idx;
-  fseek(sparse_fs->file, SF_cct_node_id_SIZE, SEEK_CUR);
-  uint64_t next_block_start_idx;
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&next_block_start_idx,sparse_fs->file));
+  uint64_t next_block_start_idx = fmt_be_u64_read(buf+0x10);
   sparse_fs->cur_block_end = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * next_block_start_idx;
   sparse_fs->sm_block_touched++;
 
   //seek to the first val_metricID place
-  fseek(sparse_fs->file,(sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * val_mid_idx), SEEK_SET); 
+  sparse_fs->cur_pos = (sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * val_mid_idx);
 
   return cct_node_id;
 }
@@ -1444,7 +1592,7 @@ int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t
     fprintf(stderr, "ERROR: hpcrun_sparse_next_entry(...) has to be called after hpcrun_sparse_next_block(...) to set up entry point.\n");
     return SF_ERR;
   }
-  size_t cur_pos = ftell(sparse_fs->file);
+  size_t cur_pos = sparse_fs->cur_pos;
   size_t cur_block_start_pos = sparse_fs->cur_block_start;
   size_t cur_block_end_pos   = sparse_fs->cur_block_end;
   if(cur_pos > sparse_fs->footer.sm_end || cur_block_start_pos > sparse_fs->footer.sm_end || cur_block_end_pos > sparse_fs->footer.sm_end) return SF_ERR;
@@ -1454,11 +1602,14 @@ int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t
   }
   if(cur_pos == cur_block_end_pos) return SF_END; 
 
-  uint16_t mid;
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(val->bits),sparse_fs->file));
-  HPCFMT_ThrowIfError(hpcfmt_int2_fread(&mid,sparse_fs->file));
+  char buf[10];
+  ret = hpctio_obj_readat(buf, 10, sparse_fs->cur_pos, sparse_fs->fobj);
+  if(ret != 10) return SF_ERR;
+  val->bits = fmt_be_u64_read(buf);
+  uint16_t mid = fmt_be_u16_read(buf+0x08);
   mid ++; //match the metric id in metricTbl(starting as 1), it was recorded starting as 0
-
+  sparse_fs->cur_pos += 10;
+  
   return mid;
 }
 
@@ -1508,6 +1659,35 @@ hpctrace_fmt_hdr_fread(hpctrace_fmt_hdr_t* hdr, FILE* infs)
   }
 
   return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_hdr_fread2(hpctrace_fmt_hdr_t* hdr, hpctio_obj_t* in, size_t off)
+{
+  char buf[HPCTRACE_FMT_HeaderLen]; 
+  int nr = hpctio_obj_readat(buf, HPCTRACE_FMT_HeaderLen, off, in);
+  if (nr != HPCTRACE_FMT_HeaderLen) {
+    return HPCFMT_ERR;
+  }
+
+  if(memcmp(buf, HPCTRACE_FMT_Magic, HPCTRACE_FMT_MagicLen) != 0){
+    return HPCFMT_ERR;
+  }
+
+  memcpy(hdr->versionStr, buf+HPCTRACE_FMT_MagicLen, HPCTRACE_FMT_VersionLen);
+  hdr->versionStr[HPCTRACE_FMT_VersionLen] = '\0';
+  hdr->version = atof(hdr->versionStr);
+
+  hdr->endian = buf[HPCTRACE_FMT_MagicLen + HPCTRACE_FMT_VersionLen];
+
+  hdr->flags = hpctrace_hdr_flags_NULL;
+  if (hdr->version > 1.0) {
+    hdr->flags = fmt_be_u64_read(buf+HPCTRACE_FMT_HeaderLen-HPCTRACE_FMT_FlagsLen);
+    return HPCTRACE_FMT_HeaderLen;
+  }
+
+  return HPCTRACE_FMT_HeaderLen - HPCTRACE_FMT_FlagsLen;
 }
 
 
@@ -1602,6 +1782,31 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
   }
 
   return HPCFMT_OK;
+}
+
+
+int
+hpctrace_fmt_datum_fread2(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
+			 hpctio_obj_t * fobj, size_t off)
+{
+  int ret = HPCFMT_OK;
+
+  char buf[12];
+  ret = hpctio_obj_readat(buf, 12, off, fobj);
+  if(ret != 12) return HPCFMT_ERR;
+  x->comp = fmt_be_u64_read(buf);
+  x->cpId = fmt_be_u32_read(buf+0x08);
+  off += 12;
+
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
+    HPCFMT_ThrowIfError(hpcfmt_int4_fread2(&(x->metricId), fobj, off));
+    off += 4;
+  }
+  else {
+    x->metricId = HPCTRACE_FMT_MetricId_NULL;
+  }
+
+  return off;
 }
 
 

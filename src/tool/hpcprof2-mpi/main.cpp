@@ -67,6 +67,7 @@ int main(int argc, char* const argv[]) {
   // Read in the arguments.
   ProfArgs args(argc, argv);
 
+
   // Because rank 0 is acts so differently from the others, its easier to
   // split the program into two copies that handle their own bits.
   // It also helps ensure MPI_Finalize is called at the end like it should.
@@ -76,6 +77,7 @@ int main(int argc, char* const argv[]) {
     ret = rank0(std::move(args));
   else
     ret = rankN(std::move(args));
+
 
   // Clean up and close up.
   mpi::World::finalize();

@@ -48,6 +48,7 @@
 #define HPCTOOLKIT_PROFILE_SOURCE_H
 
 #include "pipeline.hpp"
+#include "../prof-lean/hpctio.h"
 
 namespace hpctoolkit {
 
@@ -63,7 +64,7 @@ public:
   /// Instantiates the proper Source for the given arguments. In time more
   /// overloadings may be added that will handle more interesting cases.
   // MT: Internally Synchronized
-  static std::unique_ptr<ProfileSource> create_for(const stdshim::filesystem::path&);
+  static std::unique_ptr<ProfileSource> create_for(const stdshim::filesystem::path&, hpctio_sys_t * sys);
 
   /// Most format errors from a Source can be handled within the Source itself,
   /// but if errors happen during construction callers (create_for) will want to

@@ -194,6 +194,9 @@ id_tuple_fwrite2(id_tuple_t* x, hpctio_obj_t* fobj);
 int 
 id_tuple_fread(id_tuple_t* x, FILE* fs);
 
+size_t 
+id_tuple_fread2(id_tuple_t* x, hpctio_obj_t* fobj, size_t off);
+
 int 
 id_tuple_fprint(id_tuple_t* x, FILE* fs);
 
