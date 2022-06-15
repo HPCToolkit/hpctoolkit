@@ -27506,8 +27506,8 @@ $as_echo "$as_me:   zlib:         ${ZLIB}" >&6;}
 $as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cupti:        ${CUPTI}" >&5
 $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   opencl:        ${OPENCL}" >&5
-$as_echo "$as_me:   opencl:        ${OPENCL}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   opencl:       ${OPENCL}" >&5
+$as_echo "$as_me:   opencl:       ${OPENCL}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   igc:          ${IGC}" >&5
 $as_echo "$as_me:   igc:          ${IGC}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   gtpin:        ${GTPIN}" >&5
