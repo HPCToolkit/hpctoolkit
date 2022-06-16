@@ -72,7 +72,10 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
+
+#ifdef ENABLE_GTPIN
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
+#endif
 
 //******************************************************************************
 // macros
@@ -1196,8 +1199,10 @@ level0_init
 )
 {
   if (gpu_instrumentation_enabled(inst_options)) {
+#ifdef ENABLE_GTPIN
     gtpin_instrumentation = true;
     gtpin_instrumentation_options(inst_options);
+#endif
   }
 }
 

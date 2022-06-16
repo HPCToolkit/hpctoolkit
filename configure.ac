@@ -1980,9 +1980,6 @@ then
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
   fi
-  if find_spack_pkg intel-gtpin ; then
-    default_gtpin_prefix="$spack_ans"
-  fi
   if find_spack_pkg libiberty ; then
     default_libiberty_prefix="$spack_ans"
   fi

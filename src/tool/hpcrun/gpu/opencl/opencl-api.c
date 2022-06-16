@@ -74,7 +74,9 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#ifdef ENABLE_GTPIN
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
+#endif
 #include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -1092,10 +1094,12 @@ opencl_subscriber_callback
   obj->details.initiator_channel = gpu_activity_channel_get();
   obj->details.submit_time = CPU_NANOTIME();
 
+#ifdef ENABLE_GTPIN
   if (obj->kind == GPU_ACTIVITY_KERNEL && instrumentation) {
     // Callback to produce gtpin correlation
     gtpin_produce_runtime_callstack(&gpu_op_ccts);
   }
+#endif
 }
 
 

@@ -280,6 +280,7 @@ METHOD_FN(display_events)
 	 "\t\tmemory copies, etc.\n"
 	 "\n");
 
+#ifdef ENABLE_GTPIN
   printf("gpu=opencl,inst=<comma-separated list of options>\n"
 	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
 	 "\t\trunning on an Intel GPU atop Intel's OpenCL runtime. Collect\n"
@@ -290,6 +291,7 @@ METHOD_FN(display_events)
 	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
 	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
 	 "\n");
+#endif
 
 #if 0
   printf("%s\tIntel Optimization suggestions.\n"
