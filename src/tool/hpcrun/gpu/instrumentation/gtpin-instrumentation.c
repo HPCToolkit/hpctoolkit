@@ -81,8 +81,11 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+
+#if 0
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/gpu/opencl/opencl-kernel-loadmap-map.h>
+#endif
 
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
@@ -295,7 +298,10 @@ findOrAddKernelModule
   }
   hpcrun_loadmap_unlock();
   uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, (size_t)kernel_name_len);
+
+#if 0
   opencl_kernel_loadmap_map_insert(kernel_name_id, module_id);
+#endif
 
   return module_id;
 }
