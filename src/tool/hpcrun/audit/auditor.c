@@ -589,13 +589,18 @@ static void mainlib_connected(const char* vdso_path) {
     buffer_head = obj->next;
     obj->prev = obj->next = NULL;
 
-    if(obj->isVDSO) foundVDSO = true;
+    if(obj->isVDSO) {
+      foundVDSO = true;
+      if(obj->entry.path == NULL)
+        obj->entry.path = (char*)vdso_path;
+    }
 
     // Finalize and notify
     complete_object(obj);
-    if(verbose)
+    if(verbose) {
       fprintf(stderr, "[audit] Delivering buffered objopen for `%s'\n",
-              obj->entry.map->l_name);
+              obj->entry.path);
+    }
     hooks.open(&obj->entry);
   }
   buffer_tail = NULL;
