@@ -104,6 +104,7 @@ gpu_instrumentation_options_set
   if (len > match_len) {
     ostr = opt + match_len;
 
+#ifdef ENABLE_GTPIN
     // match comma separator
     if (*ostr != ',') {
       fprintf(stderr, "hpcrun ERROR: while parsing GPU instrumentation knobs, expected ',' separator but found '%s'\n", ostr);
@@ -149,6 +150,13 @@ gpu_instrumentation_options_set
       fprintf(stderr, "hpcrun ERROR: unexpected text encountered parsing GPU instrumentation knobs '%s'\n", ostr);
       exit(-1);
     }
+#else
+    if (*ostr) {
+      fprintf(stderr, "hpcrun ERROR: unexpected text encountered parsing GPU"
+	      " setting '%s'\n", ostr);
+      exit(-1);
+    }
+#endif
   }
 
 #if DEBUG
