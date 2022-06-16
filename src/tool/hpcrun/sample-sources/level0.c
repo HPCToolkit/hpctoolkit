@@ -261,6 +261,7 @@ METHOD_FN(display_events)
 	 "\t\trunning atop Intel's Level Zero runtime. Collect timing \n"
 	 "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
 	 "\n");
+#ifdef ENABLE_GTPIN
   printf("gpu=level0,inst=<comma-separated list of options>\n"
 	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
 	 "\t\trunning atop Intel's Level Zero runtime. Collect timing\n"
@@ -271,6 +272,7 @@ METHOD_FN(display_events)
 	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
 	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
 	 "\n");
+#endif
 }
 
 
