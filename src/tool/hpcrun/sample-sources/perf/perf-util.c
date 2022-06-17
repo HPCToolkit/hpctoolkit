@@ -193,10 +193,8 @@ perf_get_kernel_lm_id()
         char buffer[MAX_BUFFER_LINUX_KERNEL];
         OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
         perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
-
       } else {
         perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
-
       }
     }
     spinlock_unlock(&perf_lock);
@@ -326,10 +324,11 @@ perf_util_kernel_syms_avail()
 void
 perf_util_init()
 {
-  // perf_kernel_lm_id must be set for each process. here, we clear it 
-  // because it is too early to allocate a load module. it will be set 
-  // later, exactly once per process if ksym_status == PERF_AVAILABLE.
-  perf_kernel_lm_id = 0; 
+  // perf_kernel_lm_id must be set for each process. 
+  // We shouldn't reset its value here because perf_util_init
+  // is called everytime a child is forked.
+  // Let the variable set in the declaration.
+  // perf_kernel_lm_id = 0; 
 
   // if kernel symbols are available, we will attempt to collect kernel
   // callchains and add them to our call paths
