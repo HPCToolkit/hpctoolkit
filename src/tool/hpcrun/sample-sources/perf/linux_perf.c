@@ -216,6 +216,8 @@ static kind_info_t *lnux_kind;
 static int hpcrun_cycles_metric_id = -1;
 static uint64_t hpcrun_cycles_cmd_period = 0;
 
+static sigset_t sig_mask;
+
 //******************************************************************************
 // private operations 
 //******************************************************************************
@@ -359,7 +361,6 @@ perf_init()
   perf_mmap_init();
 
   // initialize sigset to contain PERF_SIGNAL 
-  sigset_t sig_mask;
   sigemptyset(&sig_mask);
   sigaddset(&sig_mask, PERF_SIGNAL);
 
@@ -640,8 +641,6 @@ static void
 METHOD_FN(thread_init)
 {
   TMSG(LINUX_PERF, "%d: thread init", self->sel_idx);
-
-  TMSG(LINUX_PERF, "%d: thread init OK", self->sel_idx);
 }
 
 
@@ -652,8 +651,6 @@ static void
 METHOD_FN(thread_init_action)
 {
   TMSG(LINUX_PERF, "%d: thread init action", self->sel_idx);
-
-  TMSG(LINUX_PERF, "%d: thread init action OK", self->sel_idx);
 }
 
 
@@ -676,6 +673,11 @@ METHOD_FN(start)
          self->sel_idx);
     return;
   }
+
+  // Since we block a thread's timer signal when stopping, we
+  // must unblock it when starting.
+  monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
+
 
   int nevents        = (self->evl).nevents;
   event_thread_t *et = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
@@ -730,6 +732,14 @@ METHOD_FN(stop)
          self->sel_idx);
     return;
   }
+
+  // We have observed thread-centric profiling signals 
+  // (e.g., REALTIME) being delivered to a thread even after 
+  // we have stopped the thread's timer.  During thread
+  // finalization, this can cause a catastrophic error. 
+  // For that reason, we always block the thread's timer 
+  // signal when stopping. 
+  monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents  = (self->evl).nevents;
