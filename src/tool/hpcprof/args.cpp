@@ -406,9 +406,9 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           if(string_starts_with(fn, "hpctoolkit-")) {
             auto tail = fn.rfind("-measurements");
             // Matches hpctoolkit-.*-measurements(-\d*)?
-            if(tail >= fn.size() - 13 || (fn[tail+13] == '-'
+            if(tail != std::string::npos && (tail >= fn.size() - 13 || (fn[tail+13] == '-'
                && std::all_of(&fn[tail+14], &fn.back(),
-                 [](const char& c){ return std::isdigit(c, std::locale::classic()); }))) {
+                 [](const char& c){ return std::isdigit(c, std::locale::classic()); })))) {
               fn.replace(tail+1, 12, "database");
               adjusted = true;
             }
