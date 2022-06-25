@@ -44,5 +44,13 @@ case "$libexec_dir" in
     * )  libexec_dir="${HPCTOOLKIT}/${libexec_dir}" ;;
 esac
 
+#------------------------------------------------------------
+# Ensure that the stack for each worker thread is the same
+# size as the stack of the master thread. This will avoid
+# having a multi-threaded execution run out of stack when a
+# single-threaded execution would not.
+#------------------------------------------------------------
+export OMP_STACKSIZE=`ulimit -s`k
+
 export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
 exec "${libexec_dir}/${binary_name}" "$@"
