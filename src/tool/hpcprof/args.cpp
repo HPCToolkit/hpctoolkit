@@ -543,8 +543,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           my_sources.emplace_back(std::move(s), std::move(pg.first));
           cnts_a[pg.second].fetch_add(1, std::memory_order_relaxed);
         } else if(pg.first.extension() == profileext) {
-          util::log::warning{} << pg.first.filename().string() << " is named "
-              "as a measurement profile but does not appear to be one";
+          util::log::warning{} << pg.first.string() <<
+            " does not contain a valid measurement profile";
         }
       }
       {

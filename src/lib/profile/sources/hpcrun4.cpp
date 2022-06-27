@@ -199,7 +199,7 @@ bool Hpcrun4::setupTrace(unsigned int traceDisorder) noexcept {
 void Hpcrun4::read(const DataClass& needed) {
   if(!fileValid) return;  // We don't have anything more to say
   if(!realread(needed)) {
-    util::log::error{} << "Error while parsing measurement profile " << path.filename().string();
+    util::log::error{} << "Error while parsing measurement profile " << path.string();
     fileValid = false;
   }
 }
