@@ -189,7 +189,10 @@ static __thread bool opencl_api_flag = false;
 
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 
-static bool instrumentation = false;
+#ifdef ENABLE_GTPIN
+static bool gtpin_instrumentation = false;
+#endif
+
 static bool optimization_check = false;
 static bool ENABLE_BLAME_SHIFTING = false;
 
@@ -508,7 +511,7 @@ opencl_write_debug_binary
     hpcrun_loadmap_lock();
     load_module_t *module = hpcrun_loadmap_findByName(path);
     if (module == NULL) {
-      uint32_t module_id = hpcrun_loadModule_add(path);
+      uint16_t module_id = hpcrun_loadModule_add(path);
       load_module_t *lm = hpcrun_loadmap_findById(module_id);
       hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
     } 
@@ -1079,7 +1082,8 @@ opencl_subscriber_callback
   cct_node_t *cct_ph = gpu_op_ccts_get(&gpu_op_ccts, placeholder_type);
   hpcrun_safe_exit();
 
-  if (obj->kind == GPU_ACTIVITY_KERNEL && (hpcrun_cct_children(cct_ph) == NULL)) {
+  if (obj->details.module_id != LOADMAP_INVALID_MODULE_ID &&
+    obj->kind == GPU_ACTIVITY_KERNEL && (hpcrun_cct_children(cct_ph) == NULL)) {
     ip_normalized_t kernel_ip;
     kernel_ip.lm_id = (uint16_t) obj->details.module_id;
     kernel_ip.lm_ip = 0;  // offset=0
@@ -1095,7 +1099,7 @@ opencl_subscriber_callback
   obj->details.submit_time = CPU_NANOTIME();
 
 #ifdef ENABLE_GTPIN
-  if (obj->kind == GPU_ACTIVITY_KERNEL && instrumentation) {
+  if (obj->kind == GPU_ACTIVITY_KERNEL && gtpin_instrumentation) {
     // Callback to produce gtpin correlation
     gtpin_produce_runtime_callstack(&gpu_op_ccts);
   }
@@ -1160,7 +1164,7 @@ opencl_timing_info_get
 void
 opencl_api_initialize
 (
- void
+ gpu_instrumentation_t *inst_options
 )
 {
   ETMSG(OPENCL, "CL_TARGET_OPENCL_VERSION: %d", CL_TARGET_OPENCL_VERSION);
@@ -1172,18 +1176,19 @@ opencl_api_initialize
   thread_data_t* td   = hpcrun_get_thread_data();
   td->application_thread_0 = true;
 
-  if (instrumentation) {
-    gtpin_enable_profiling();
+  if (gpu_instrumentation_enabled(inst_options)) {
+#ifdef ENABLE_GTPIN
+    gtpin_instrumentation = true;
+    gtpin_instrumentation_options(inst_options);
+#endif
   }
+
   atomic_store(&correlation_id_counter, 0);
   atomic_store(&opencl_pending_operations, 0);
   atomic_store(&opencl_h2d_pending_operations, 0);
 }
 
 
-//#ifdef ENABLE_GTPIN
-#if 1
-// one downside of this appproach is that we may override the callback provided by user
 cl_int
 hpcrun_clBuildProgram
 (
@@ -1204,7 +1209,10 @@ hpcrun_clBuildProgram
   if (len_options != 0) {
     strncat(options_with_debug_flags, options, len_options);
   }
+  #if 0
+  // intel only options
   strcat(options_with_debug_flags, LINE_TABLE_FLAG);
+  #endif
   cl_int ret =
     HPCRUN_OPENCL_CALL(clBuildProgram,
 		       (program, num_devices, device_list,
@@ -1230,7 +1238,6 @@ hpcrun_clBuildProgram
 
   return ret;
 }
-#endif // ENABLE_GTPIN
 
 
 cl_context
@@ -1374,7 +1381,11 @@ getKernelModuleId
   assert(status == CL_SUCCESS);
   uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, kernel_name_size);
   opencl_kernel_loadmap_map_entry_t *e = opencl_kernel_loadmap_map_lookup(kernel_name_id);
-  return opencl_kernel_loadmap_map_entry_module_id_get(e);
+  uint32_t module_id = LOADMAP_INVALID_MODULE_ID;
+  if (e) {
+    module_id = opencl_kernel_loadmap_map_entry_module_id_get(e);
+  }
+  return module_id;
 }
 
 
@@ -1782,15 +1793,6 @@ hpcrun_clFinish
 }
 
 
-void
-opencl_instrumentation_enable
-(
- void
-)
-{
-  instrumentation = true;
-}
-
 
 void
 opencl_optimization_check_enable
@@ -1811,36 +1813,6 @@ opencl_blame_shifting_enable
 {
   ENABLE_BLAME_SHIFTING = true;
 	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
-}
-
-
-void
-opencl_instrumentation_simd_enable
-(
- void
-)
-{
-  gtpin_simd_enable();
-}
-
-
-void
-opencl_instrumentation_latency_enable
-(
- void
-)
-{
-  gtpin_latency_enable();
-}
-
-
-void
-opencl_instrumentation_count_enable
-(
- void
-)
-{
-  gtpin_count_enable();
 }
 
 

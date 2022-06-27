@@ -49,6 +49,7 @@
 //******************************************************************************
 
 #include <hpcrun/gpu/gpu-activity.h>
+#include <hpcrun/gpu/gpu-instrumentation.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include "opencl-memory-manager.h"
 
@@ -130,7 +131,7 @@ clSetEventCallback_wrapper
 void
 opencl_api_initialize
 (
- void
+ gpu_instrumentation_t *inst_options
 );
 
 
@@ -149,12 +150,6 @@ get_numeric_hash_id_for_string
 );
 
 
-void
-opencl_instrumentation_enable
-(
- void
-);
-
 
 void
 opencl_optimization_check_enable
@@ -165,27 +160,6 @@ opencl_optimization_check_enable
 
 void
 opencl_blame_shifting_enable
-(
- void
-);
-
-
-void
-opencl_instrumentation_simd_enable
-(
- void
-);
-
-
-void
-opencl_instrumentation_latency_enable
-(
- void
-);
-
-
-void
-opencl_instrumentation_count_enable
 (
  void
 );
