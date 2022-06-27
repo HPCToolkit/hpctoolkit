@@ -295,6 +295,8 @@ gpu_trace_stream_acquire
 
   thread_data_t *td = NULL;
 
+  atomic_fetch_add(&active_streams_counter, 1);
+
   int id = gpu_trace_stream_id();
 
   // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
@@ -372,7 +374,6 @@ gpu_trace_record
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
 
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
-  atomic_fetch_add(&active_streams_counter, 1);
 
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
