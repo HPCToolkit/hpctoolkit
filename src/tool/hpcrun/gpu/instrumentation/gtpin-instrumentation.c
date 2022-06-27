@@ -1086,32 +1086,3 @@ gtpin_produce_runtime_callstack
   free(data);
 }
 
-
-void
-gtpin_simd_enable
-(
- void
-)
-{
-  simd_knob = true;
-}
-
-
-void
-gtpin_latency_enable
-(
- void
-)
-{
-  latency_knob = true;
-}
-
-
-void
-gtpin_count_enable
-(
- void
-)
-{
-  count_knob = true;
-}
