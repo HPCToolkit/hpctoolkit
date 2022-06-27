@@ -373,7 +373,7 @@ gpu_trace_record
 {
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
 
-  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, false, true);
 
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
