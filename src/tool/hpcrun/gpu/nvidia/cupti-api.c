@@ -1293,7 +1293,7 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
-  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, false, true);
 
   // handle notifications
   cupti_buffer_completion_notify();

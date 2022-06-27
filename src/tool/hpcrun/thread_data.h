@@ -72,6 +72,8 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
 
+#define TOOL_THREAD_ID (-1)
+
 typedef struct {
   sigjmp_buf jb;
 } sigjmp_buf_t;
