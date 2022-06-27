@@ -297,7 +297,7 @@ rocprofiler_context_handler
   void* arg
 )
 {
-  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, false, true);
 
   // This wait-loop is taken from rocprofiler example.
   // It is strange that the rocprofiler thread will have to

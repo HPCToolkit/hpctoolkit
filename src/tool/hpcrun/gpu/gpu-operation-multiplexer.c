@@ -102,7 +102,7 @@ gpu_operation_record
 {
   int current_operation_channels_count;
   
-  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, false, true);
 
   while (!atomic_load(&stop_operation_flag)){
     current_operation_channels_count = atomic_load(&operation_channels_count);

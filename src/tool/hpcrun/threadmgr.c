@@ -173,8 +173,10 @@ allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace)
 static void
 finalize_thread_data(core_profile_trace_data_t *current_data)
 {
-  hpcrun_write_profile_data( current_data );
-  hpcrun_trace_close( current_data );
+  if (current_data->id != TOOL_THREAD_ID) {
+    hpcrun_write_profile_data( current_data );
+    hpcrun_trace_close( current_data );
+  }
 }
 
 
@@ -348,7 +350,7 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separat
 
   // step 1: get the dummy node that marks the end of the thread trace
 
-  if (add_separator) {
+  if (add_separator && data->core_profile_trace_data.id != TOOL_THREAD_ID) {
     cct_node_t *node  = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
     if (node) {
       hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 
