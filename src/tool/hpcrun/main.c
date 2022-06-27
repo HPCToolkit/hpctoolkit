@@ -740,9 +740,6 @@ hpcrun_fini_internal()
     int is_process = 1;
     thread_finalize(is_process);
 
-// FIXME: this isn't in master-gpu-trace. how is it managed?
-    // stream_tracing_fini();
-
     // assign id tuple for main thread
     thread_data_t* td = hpcrun_get_thread_data();
     hpcrun_id_tuple_cputhread(td);
