@@ -173,7 +173,7 @@ am__can_run_installinfo = \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 am__dist_doc_DATA_DIST = README.md README.Acknowledgments \
-	README.Install README.License README.ReleaseNotes
+	README.Install README.ReleaseNotes LICENSE
 DATA = $(dist_doc_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -476,8 +476,8 @@ MYDATA = \
 	README.md \
 	README.Acknowledgments \
 	README.Install \
-	README.License \
-	README.ReleaseNotes
+	README.ReleaseNotes \
+	LICENSE
 
 MYSCRIPTS = \
 	config/hpcguess \

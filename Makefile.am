@@ -68,8 +68,8 @@ MYDATA = \
 	README.md \
 	README.Acknowledgments \
 	README.Install \
-	README.License \
-	README.ReleaseNotes
+	README.ReleaseNotes \
+	LICENSE
 
 MYSCRIPTS = \
 	config/hpcguess \
