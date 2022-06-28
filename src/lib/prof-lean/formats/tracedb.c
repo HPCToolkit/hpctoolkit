@@ -101,6 +101,7 @@ void fmt_tracedb_ctxTraceSHdr_write(char d[FMT_TRACEDB_SZ_CtxTraceSHdr], const f
   fmt_u64_write(d+0x00, hdr->pTraces);
   fmt_u32_write(d+0x08, hdr->nTraces);
   d[0x0c] = FMT_TRACEDB_SZ_CtxTrace;
+  memset(d+0x0d, 0, 3);
   fmt_u64_write(d+0x10, hdr->minTimestamp);
   fmt_u64_write(d+0x18, hdr->maxTimestamp);
 }
@@ -112,8 +113,10 @@ void fmt_tracedb_ctxTrace_read(fmt_tracedb_ctxTrace_t* cth, const char d[FMT_TRA
 }
 void fmt_tracedb_ctxTrace_write(char d[FMT_TRACEDB_SZ_CtxTrace], const fmt_tracedb_ctxTrace_t* cth) {
   fmt_u32_write(d+0x00, cth->profIndex);
+  memset(d+0x04, 0, 4);
   fmt_u64_write(d+0x08, cth->pStart);
   fmt_u64_write(d+0x10, cth->pEnd);
+  memset(d+0x18, 0, FMT_TRACEDB_SZ_CtxTrace - 0x18);
 }
 
 void fmt_tracedb_ctxSample_read(fmt_tracedb_ctxSample_t* elem, const char d[FMT_TRACEDB_SZ_CtxSample]) {

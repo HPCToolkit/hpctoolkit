@@ -111,7 +111,9 @@ void fmt_cctdb_ctxInfo_write(char d[FMT_CCTDB_SZ_CtxInfo], const fmt_cctdb_ctxIn
   fmt_u64_write(d+0x00, ci->valueBlock.nValues);
   fmt_u64_write(d+0x08, ci->valueBlock.pValues);
   fmt_u16_write(d+0x10, ci->valueBlock.nMetrics);
+  memset(d+0x12, 0, 6);
   fmt_u64_write(d+0x18, ci->valueBlock.pMetricIndices);
+  memset(d+0x20, 0, FMT_CCTDB_SZ_CtxInfo - 0x20);
 }
 
 void fmt_cctdb_pVal_read(fmt_cctdb_pVal_t* val, const char d[FMT_CCTDB_SZ_PVal]) {
