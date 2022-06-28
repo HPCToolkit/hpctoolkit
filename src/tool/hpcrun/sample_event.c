@@ -286,7 +286,8 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
-  if (trace_ok && hpcrun_trace_isactive() && !isSync && is_time_based_metric > 0) {
+  if (trace_ok && hpcrun_trace_isactive() && !isSync && is_time_based_metric > 0 &&
+    td->core_profile_trace_data.id != TOOL_THREAD_ID) {
     TMSG(TRACE, "Sample event encountered");
 
     cct_addr_t frm;

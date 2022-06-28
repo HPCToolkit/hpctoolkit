@@ -396,7 +396,6 @@ MY_BASE_FILES =				\
 	\
 	gpu/ompt/ompt-gpu-api.c 			\
 	gpu/ompt/ompt-activity-translate.c 		\
-	sample-sources/openmp-target.c                  \
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
@@ -583,6 +582,7 @@ if OPT_ENABLE_ROCM
 MY_ROCM_FILES =\
 	sample-sources/amd.c \
 	sample-sources/amd-rocprofiler.c \
+	sample-sources/openmp-target.c \
 	gpu/amd/hip-api.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c \

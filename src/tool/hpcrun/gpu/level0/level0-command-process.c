@@ -62,7 +62,10 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-cct.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
+
+#ifdef ENABLE_GTPIN
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
+#endif
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
@@ -304,10 +307,12 @@ level0_command_begin
   // Generate host side operation timestamp
   command_node->submit_time = hpcrun_nanotime();
 
+#ifdef ENABLE_GTPIN
   if (command_node->type == LEVEL0_KERNEL && level0_gtpin_enabled()) {
     // Callback to produce gtpin correlation
     gtpin_produce_runtime_callstack(&gpu_op_ccts);
   }
+#endif
 }
 
 void

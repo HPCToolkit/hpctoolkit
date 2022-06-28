@@ -72,7 +72,7 @@
 
 #define ENABLE_OPENCL_MONITORING 0
 
-#define GPU_STRING "gpu=opencl"
+#define OPENCL_OPTION "gpu=opencl"
 #define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
 #define ENABLE_OPENCL_BLAME_SHIFTING "opencl-blame"
 #define DEFAULT_INSTRUMENTATION "gpu=opencl,inst"
@@ -90,10 +90,12 @@
 // local variables
 //******************************************************************************
 
-static char opencl_name[128];
+static char event_name[128];
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
+
+static gpu_instrumentation_t opencl_instrumentation_options;
 
 
 
@@ -155,14 +157,18 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#if ENABLE_OPENCL_MONITORING
+#if ENABLE_OPENCL
 #ifndef HPCRUN_STATIC_LINK
-  return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION)
+  return hpcrun_ev_is(ev_str, OPENCL_OPTION);
+#if 0
+  return strncmp(ev_str, OPENCL_OPTION, strlen(OPENCL_OPTION)) == 0; 
+  return (hpcrun_ev_is(ev_str, OPENCL) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION)
                                            || strstr(ev_str, INSTRUMENTATION_PREFIX)
                                            || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)
                                            || hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
                                            || hpcrun_ev_is(ev_str, ENABLE_INTEL_GPU_UTILIZATION)
          );
+#endif
 #else
   return false;
 #endif
@@ -175,68 +181,45 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-  int nevents = (self->evl).nevents;
-  TMSG(OPENCL,"nevents = %d", nevents);
+  hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
   gpu_metrics_default_enable();
   gpu_metrics_KINFO_enable();
-  hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
+
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+  long th;
+  hpcrun_extract_ev_thresh(event, sizeof(event_name), event_name,
+    &th, NO_THRESHOLD);
+
+  gpu_instrumentation_options_set(event_name, OPENCL_OPTION, &opencl_instrumentation_options);
+  if (gpu_instrumentation_enabled(&opencl_instrumentation_options)) {
+     gpu_metrics_GPU_INST_enable();
+  }
+
+#if 0
+  int nevents = (self->evl).nevents;
+  TMSG(OPENCL,"nevents = %d", nevents);
 
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     long th;
-    hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
+    hpcrun_extract_ev_thresh(event, sizeof(event_name), event_name,
       &th, NO_THRESHOLD);
 
-    if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
-    } else if (hpcrun_ev_is(opencl_name, DEFAULT_INSTRUMENTATION)) {
-      opencl_instrumentation_latency_enable();
-      opencl_instrumentation_count_enable();
-      gpu_metrics_GPU_INST_enable();
-      opencl_instrumentation_enable();
-    } else if (strstr(opencl_name, INSTRUMENTATION_PREFIX)) {
-
-      int suffix_length = strlen(opencl_name) - strlen(INSTRUMENTATION_PREFIX);
-      char instrumentation_suffix[suffix_length + 1];
-      strncpy(instrumentation_suffix, opencl_name + strlen(INSTRUMENTATION_PREFIX), suffix_length);
-      instrumentation_suffix[suffix_length] = 0;
-
-      bool validInst = false;
-      char *inst = strtok(instrumentation_suffix, ",");
-      while(inst) {
-          if (strstr(inst, SIMD)) {
-            validInst = true;
-            opencl_instrumentation_simd_enable();
-            // we need to enable insertion of count probes for calculating total available SIMD lanes 
-            opencl_instrumentation_count_enable();
-          } else if (strstr(inst, LATENCY)) {
-            validInst = true;
-            opencl_instrumentation_latency_enable();
-          } else if (strstr(inst, EXECUTION_COUNT)) {
-            validInst = true;
-            opencl_instrumentation_count_enable();
-          } else {
-            EEMSG("hpcrun: Unrecognized Intel GPU instrumentation knob\n");
-          }
-          inst = strtok(NULL, ",");
-      }
-
-			if (validInst) {
-        gpu_metrics_GPU_INST_enable();
-        opencl_instrumentation_enable();
-      }
-		} else if (hpcrun_ev_is(opencl_name, INTEL_OPTIMIZATION_CHECK)) {
+    if (hpcrun_ev_is(opencl_name, INTEL_OPTIMIZATION_CHECK)) {
       opencl_optimization_check_enable();
       gpu_metrics_INTEL_OPTIMIZATION_enable();
-    } else if (hpcrun_ev_is(opencl_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
+    } else if (hpcrun_ev_is(event_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
 			opencl_blame_shifting_enable();
-		} else if (hpcrun_ev_is(opencl_name, ENABLE_INTEL_GPU_UTILIZATION)) {
+		} else if (hpcrun_ev_is(event_name, ENABLE_INTEL_GPU_UTILIZATION)) {
       // papi metric collection for OpenCL
       intel_papi_setup();
       gpu_metrics_gpu_utilization_enable();
       set_gpu_utilization_flag();
     }
   }
+#endif
 }
 
 
@@ -249,7 +232,7 @@ METHOD_FN(finalize_event_list)
     monitor_real_exit(-1);
   }
   #endif
-  opencl_api_initialize();
+  opencl_api_initialize(&opencl_instrumentation_options);
 
   device_finalizer_flush.fn = opencl_api_thread_finalize;
   device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
@@ -269,7 +252,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-#if ENABLE_OPENCL_MONITORING
+#if ENABLE_OPENCL
   printf("===========================================================================\n");
   printf("Available events for monitoring GPU operations atop OpenCL\n");
   printf("===========================================================================\n");
@@ -280,6 +263,12 @@ METHOD_FN(display_events)
 	 "\t\tmemory copies, etc.\n"
 	 "\n");
 
+#if 0
+// these options can't be enabled without further work.
+// GTPin_getElf is currently returns something much different for
+// Level 0 vs. OpenCL. Fixing it isn't worth the effort until
+// zeBinary becomes the standard across both.
+#ifdef ENABLE_GTPIN
   printf("gpu=opencl,inst=<comma-separated list of options>\n"
 	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
 	 "\t\trunning on an Intel GPU atop Intel's OpenCL runtime. Collect\n"
@@ -290,18 +279,18 @@ METHOD_FN(display_events)
 	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
 	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
 	 "\n");
+#endif
 
-#if 0
   printf("%s\tIntel Optimization suggestions.\n"
     "\t\tprovides oneapi optimization suggestions from the optimization guide.\n"
     "\t\tTo use it, pass '-e %s -e %s' to your hpcrun command\n",
-    INTEL_OPTIMIZATION_CHECK, GPU_STRING, INTEL_OPTIMIZATION_CHECK);
+    INTEL_OPTIMIZATION_CHECK, OPENCL_OPTION, INTEL_OPTIMIZATION_CHECK);
   printf("\n");
 
   printf("%s\tIntel GPU utilization metrics.\n"
     "\t\tprovides GPU active, stalled and idle times for kernel executions.\n"
     "\t\tTo use it, pass '-e %s' to your hpcrun command\n",
-    ENABLE_INTEL_GPU_UTILIZATION, GPU_STRING, ENABLE_INTEL_GPU_UTILIZATION);
+    ENABLE_INTEL_GPU_UTILIZATION, OPENCL_OPTION, ENABLE_INTEL_GPU_UTILIZATION);
   printf("\n");
 #endif
 #else

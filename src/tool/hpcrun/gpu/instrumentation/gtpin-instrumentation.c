@@ -81,8 +81,11 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+
+#if 0
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/gpu/opencl/opencl-kernel-loadmap-map.h>
+#endif
 
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
@@ -295,7 +298,10 @@ findOrAddKernelModule
   }
   hpcrun_loadmap_unlock();
   uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, (size_t)kernel_name_len);
+
+#if 0
   opencl_kernel_loadmap_map_insert(kernel_name_id, module_id);
+#endif
 
   return module_id;
 }
@@ -866,7 +872,7 @@ onKernelComplete
     return;
   }
   
-  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, false, true);
 
   gpu_activity_channel_t *activity_channel = gtpin_correlation_id_map_entry_activity_channel_get(entry);
   gpu_op_ccts_t gpu_op_ccts = gtpin_correlation_id_map_entry_op_ccts_get(entry);
@@ -1080,32 +1086,3 @@ gtpin_produce_runtime_callstack
   free(data);
 }
 
-
-void
-gtpin_simd_enable
-(
- void
-)
-{
-  simd_knob = true;
-}
-
-
-void
-gtpin_latency_enable
-(
- void
-)
-{
-  latency_knob = true;
-}
-
-
-void
-gtpin_count_enable
-(
- void
-)
-{
-  count_knob = true;
-}
