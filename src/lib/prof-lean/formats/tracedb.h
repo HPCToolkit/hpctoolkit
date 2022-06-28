@@ -70,7 +70,7 @@ extern const char fmt_tracedb_footer[8];
 //
 
 /// Size of the trace.db file header in serialized form
-enum { FMT_TRACEDB_SZ_FHdr = 0x30 };
+enum { FMT_TRACEDB_SZ_FHdr = 0x20 };
 
 /// trace.db file header, names match FORMATS.md
 typedef struct fmt_tracedb_fHdr_t {

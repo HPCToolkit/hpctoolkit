@@ -118,10 +118,12 @@ void fmt_profiledb_profInfo_write(char d[FMT_PROFILEDB_SZ_ProfInfo], const fmt_p
   fmt_u64_write(d+0x00, pi->valueBlock.nValues);
   fmt_u64_write(d+0x08, pi->valueBlock.pValues);
   fmt_u32_write(d+0x10, pi->valueBlock.nCtxs);
+  memset(d+0x14, 0, 4);
   fmt_u64_write(d+0x18, pi->valueBlock.pCtxIndices);
   fmt_u64_write(d+0x20, pi->pIdTuple);
   fmt_u32_write(d+0x28, (pi->isSummary ? 0x1 : 0) |
                         0);
+  memset(d+0x2c, 0, FMT_PROFILEDB_SZ_ProfInfo - 0x2c);
 }
 
 void fmt_profiledb_mVal_read(fmt_profiledb_mVal_t* mv, const char d[FMT_PROFILEDB_SZ_MVal]) {
@@ -147,6 +149,7 @@ void fmt_profiledb_idTupleHdr_read(fmt_profiledb_idTupleHdr_t* hdr, const char d
 }
 void fmt_profiledb_idTupleHdr_write(char d[FMT_PROFILEDB_SZ_IdTupleHdr], const fmt_profiledb_idTupleHdr_t* hdr) {
   fmt_u16_write(d+0x00, hdr->nIds);
+  memset(d+0x02, 0, FMT_PROFILEDB_SZ_IdTupleHdr - 0x02);
 }
 
 void fmt_profiledb_idTupleElem_read(fmt_profiledb_idTupleElem_t* elem, const char d[FMT_PROFILEDB_SZ_IdTupleElem]) {
@@ -157,8 +160,9 @@ void fmt_profiledb_idTupleElem_read(fmt_profiledb_idTupleElem_t* elem, const cha
 }
 void fmt_profiledb_idTupleElem_write(char d[FMT_PROFILEDB_SZ_IdTupleElem], const fmt_profiledb_idTupleElem_t* elem) {
   d[0x00] = elem->kind;
-  d[0x02] = 0
-    | (elem->isPhysical ? 0x1 : 0);
+  d[0x01] = 0;  // gap
+  d[0x02] = (elem->isPhysical ? 0x1 : 0) |
+            0;
   fmt_u32_write(d+0x04, elem->logicalId);
   fmt_u64_write(d+0x08, elem->physicalId);
 }

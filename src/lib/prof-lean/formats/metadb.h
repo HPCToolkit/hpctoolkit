@@ -118,7 +118,7 @@ void fmt_metadb_generalSHdr_write(char[FMT_METADB_SZ_GeneralSHdr], const fmt_met
 //
 
 /// meta.db Hierarchical Identifier Names section header
-enum { FMT_METADB_SZ_IdNamesSHdr = 0x10 };
+enum { FMT_METADB_SZ_IdNamesSHdr = 0x09 };
 typedef struct fmt_metadb_idNamesSHdr_t {
   uint64_t ppNames;
   uint8_t nKinds;
@@ -292,7 +292,7 @@ void fmt_metadb_functionSpec_write(char[FMT_METADB_SZ_FunctionSpec], const fmt_m
 //
 
 // meta.db Context Tree section header
-enum { FMT_METADB_SZ_ContextsSHdr = 0x10 };
+enum { FMT_METADB_SZ_ContextsSHdr = 0x0b };
 typedef struct fmt_metadb_contextsSHdr_t {
   uint64_t pEntryPoints;
   uint16_t nEntryPoints;
