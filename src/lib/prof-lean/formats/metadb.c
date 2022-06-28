@@ -153,7 +153,7 @@ void fmt_metadb_metricsSHdr_write(char d[FMT_METADB_SZ_MetricsSHdr], const fmt_m
   d[0x0c] = FMT_METADB_SZ_MetricDesc;
   d[0x0d] = FMT_METADB_SZ_PropScopeInst;
   d[0x0e] = FMT_METADB_SZ_SummaryStat;
-
+  d[0x0f] = 0;  // gap
   fmt_u64_write(d+0x10, mhdr->pScopes);
   fmt_u16_write(d+0x18, mhdr->nScopes);
   d[0x1a] = FMT_METADB_SZ_PropScope;
@@ -172,6 +172,7 @@ void fmt_metadb_metricDesc_write(char d[FMT_METADB_SZ_MetricDesc], const fmt_met
   fmt_u64_write(d+0x10, md->pSummaries);
   fmt_u16_write(d+0x18, md->nScopeInsts);
   fmt_u16_write(d+0x1a, md->nSummaries);
+  memset(d+0x1c, 0, FMT_METADB_SZ_MetricDesc - 0x1c);
 }
 
 void fmt_metadb_propScopeInst_read(fmt_metadb_propScopeInst_t* psi, const char d[FMT_METADB_SZ_PropScopeInst]) {
@@ -181,6 +182,7 @@ void fmt_metadb_propScopeInst_read(fmt_metadb_propScopeInst_t* psi, const char d
 void fmt_metadb_propScopeInst_write(char d[FMT_METADB_SZ_PropScopeInst], const fmt_metadb_propScopeInst_t* psi) {
   fmt_u64_write(d+0x00, psi->pScope);
   fmt_u16_write(d+0x08, psi->propMetricId);
+  memset(d+0x0a, 0, FMT_METADB_SZ_PropScopeInst - 0x0a);
 }
 
 void fmt_metadb_summaryStat_read(fmt_metadb_summaryStat_t* ss, const char d[FMT_METADB_SZ_SummaryStat]) {
@@ -193,7 +195,9 @@ void fmt_metadb_summaryStat_write(char d[FMT_METADB_SZ_SummaryStat], const fmt_m
   fmt_u64_write(d+0x00, ss->pScope);
   fmt_u64_write(d+0x08, ss->pFormula);
   d[0x10] = ss->combine;
+  d[0x11] = 0;  // gap
   fmt_u16_write(d+0x12, ss->statMetricId);
+  memset(d+0x14, 0, FMT_METADB_SZ_SummaryStat - 0x14);
 }
 
 void fmt_metadb_propScope_read(fmt_metadb_propScope_t* ps, const char d[FMT_METADB_SZ_PropScope]) {
@@ -205,6 +209,7 @@ void fmt_metadb_propScope_write(char d[FMT_METADB_SZ_PropScope], const fmt_metad
   fmt_u64_write(d+0x00, ps->pScopeName);
   d[0x08] = ps->type;
   d[0x09] = ps->propagationIndex;
+  memset(d+0x0a, 0, FMT_METADB_SZ_PropScope - 0x01);
 }
 
 void fmt_metadb_modulesSHdr_read(fmt_metadb_modulesSHdr_t* mhdr, const char d[FMT_METADB_SZ_ModulesSHdr]) {
@@ -222,7 +227,10 @@ void fmt_metadb_moduleSpec_read(fmt_metadb_moduleSpec_t* lms, const char d[FMT_M
   lms->pPath = fmt_u64_read(d+0x08);
 }
 void fmt_metadb_moduleSpec_write(char d[FMT_METADB_SZ_ModuleSpec], const fmt_metadb_moduleSpec_t* lms) {
+  fmt_u32_write(d+0x00, 0);
+  memset(d+0x04, 0, 4);
   fmt_u64_write(d+0x08, lms->pPath);
+  memset(d+0x10, 0, FMT_METADB_SZ_ModuleSpec - 0x10);
 }
 
 void fmt_metadb_filesSHdr_read(fmt_metadb_filesSHdr_t* fhdr, const char d[FMT_METADB_SZ_FilesSHdr]) {
@@ -241,12 +249,11 @@ void fmt_metadb_fileSpec_read(fmt_metadb_fileSpec_t* sfs, const char d[FMT_METAD
   sfs->pPath = fmt_u64_read(d+0x08);
 }
 void fmt_metadb_fileSpec_write(char d[FMT_METADB_SZ_FileSpec], const fmt_metadb_fileSpec_t* sfs) {
-  d[0x00] = (sfs->copied ? 0x1 : 0) |
-            0;
-  d[0x01] = 0;
-  d[0x02] = 0;
-  d[0x03] = 0;
+  fmt_u32_write(d+0x00, (sfs->copied ? 0x1 : 0) |
+                        0);
+  memset(d+0x04, 0, 4);
   fmt_u64_write(d+0x08, sfs->pPath);
+  memset(d+0x10, 0, FMT_METADB_SZ_FileSpec - 0x10);
 }
 
 void fmt_metadb_functionsSHdr_read(fmt_metadb_functionsSHdr_t* fhdr, const char d[FMT_METADB_SZ_FunctionsSHdr]) {
@@ -273,6 +280,7 @@ void fmt_metadb_functionSpec_write(char d[FMT_METADB_SZ_FunctionSpec], const fmt
   fmt_u64_write(d+0x10, fs->offset);
   fmt_u64_write(d+0x18, fs->pFile);
   fmt_u32_write(d+0x20, fs->line);
+  memset(d+0x28, 0, FMT_METADB_SZ_FunctionSpec - 0x28);
 }
 
 void fmt_metadb_contextsSHdr_read(fmt_metadb_contextsSHdr_t* chdr, const char d[FMT_METADB_SZ_ContextsSHdr]) {
@@ -284,6 +292,7 @@ void fmt_metadb_contextsSHdr_write(char d[FMT_METADB_SZ_ContextsSHdr], const fmt
   fmt_u64_write(d+0x00, chdr->pEntryPoints);
   fmt_u16_write(d+0x08, chdr->nEntryPoints);
   d[0x0a] = FMT_METADB_SZ_EntryPoint;
+  // No alignment gap, not an array
 }
 
 void fmt_metadb_entryPoint_read(fmt_metadb_entryPoint_t* ep, const char d[FMT_METADB_SZ_EntryPoint]) {
@@ -299,6 +308,7 @@ void fmt_metadb_entryPoint_write(char d[FMT_METADB_SZ_EntryPoint], const fmt_met
   fmt_u32_write(d+0x10, ep->ctxId);
   fmt_u16_write(d+0x14, ep->entryPoint);
   fmt_u64_write(d+0x18, ep->pPrettyName);
+  memset(d+0x20, 0, FMT_METADB_SZ_EntryPoint - 0x20);
 }
 
 bool fmt_metadb_context_read(fmt_metadb_context_t* ctx, const char* d) {
@@ -348,7 +358,9 @@ size_t fmt_metadb_context_write(char* d, const fmt_metadb_context_t* ctx) {
   d[0x14] = 0;
   d[0x15] = ctx->relation;
   d[0x16] = ctx->lexicalType;
+  // nFlexWords written later
   fmt_u16_write(d+0x18, ctx->propagation);
+  memset(d+0x1a, 0, FMT_METADB_MINSZ_Context - 0x1a);
 
   // NOTE: At the moment, there is only one flex sub-field smaller than u64, so
   // we can just count in words.
@@ -364,6 +376,7 @@ size_t fmt_metadb_context_write(char* d, const fmt_metadb_context_t* ctx) {
     d[0x14] |= 0x2;  // hasSrcLine
     fmt_u64_write(d+0x20+nwords*8, ctx->pFile);
     fmt_u32_write(d+0x20+(nwords+1)*8, ctx->line);
+    memset(d+0x20+(nwords+1)*8+4, 0, 4);
     nwords += 2;
   }
 
