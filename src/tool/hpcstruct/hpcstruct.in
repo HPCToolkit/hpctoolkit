@@ -44,13 +44,54 @@ case "$libexec_dir" in
     * )  libexec_dir="${HPCTOOLKIT}/${libexec_dir}" ;;
 esac
 
+die()
+{
+    cat <<EOF 1>&2
+hpcstruct: $*
+use 'hpcstruct -h' for a summary of options
+EOF
+    exit 1
+}
+
+# Return success (0) if $1 is not empty and not the next option.
+non_empty()
+{
+    case "x$1" in
+        x | x-* ) return 1 ;;
+        * ) return 0 ;;
+    esac
+}
+
+stacksize=""
+args=""
+while test "x$1" != x
+do
+    arg="$1" ; shift
+
+    case "$arg" in
+
+        -s | --stack )
+            non_empty "$1" || die "missing argument for $arg"
+            stacksize=$1
+            shift
+            ;;
+
+        * )
+           args="$args $arg"
+            ;;
+    esac
+done
+
 #------------------------------------------------------------
 # Ensure that the stack for each worker thread is the same
 # size as the stack of the master thread. This will avoid
 # having a multi-threaded execution run out of stack when a
 # single-threaded execution would not.
 #------------------------------------------------------------
-export OMP_STACKSIZE=`ulimit -s`k
-
+if test "x$stacksize" != x; then
+  export OMP_STACKSIZE=$stacksize
+elif test "x$OMP_STACKSIZE" == x; then
+  export OMP_STACKSIZE=8M
+fi
 export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
-exec "${libexec_dir}/${binary_name}" "$@"
+exec "${libexec_dir}/${binary_name}" "$args"
