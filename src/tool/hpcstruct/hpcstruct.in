@@ -83,10 +83,10 @@ do
 done
 
 #------------------------------------------------------------
-# Ensure that the stack for each worker thread is the same
-# size as the stack of the master thread. This will avoid
-# having a multi-threaded execution run out of stack when a
-# single-threaded execution would not.
+# 3 strategies to set OMP_STACKSIZE, in order of priority
+# 1. -s argument
+# 2. use existing value of OMP_STACKSIZE, if any
+# 3. default OMP_STACKSIZE to 8M (8MB)
 #------------------------------------------------------------
 if test "x$stacksize" != x; then
   export OMP_STACKSIZE=$stacksize
