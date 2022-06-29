@@ -79,6 +79,14 @@ Options: Override parallelism defaults
                        <psize> bytes as large. hpcstruct will use more
                        OpenMP threads to analyze large binaries than
                        it uses to analyze small binaries.  {100000000}
+  -s <v>, --stack <v>  Set the stack size for OpenMP worker threads to <v>.
+                       <v> is a positive number optionally followed by
+                       a suffix: B (bytes), K (kilobytes), M (megabytes),
+                       or G (gigabytes). Without a suffix, <v> will be
+                       interpreted as kilobytes. One can also control the
+                       stack size by setting the OMP_STACKSIZE environment
+                       variable. A '-s <v>' option takes precedence,
+                       followed by OMP_STACKSIZE. {8M}
 
 Options: Override structure recovery defaults
   --cpu <yes/no>       Analyze CPU binaries referenced by a measurements
