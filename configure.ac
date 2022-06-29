@@ -5035,19 +5035,22 @@ AC_SUBST([ROCM_PROFILER_LD_DIR])
 #-------------------------------------------------
 
 OPT_LEVEL0=
-OPT_LEVEL0_INCPATH=
-OPT_LEVEL0_LDFLAGS=
-OPT_LEVEL0_LIBPATH=
+OPT_LEVEL0_IFLAGS=
 
 AC_ARG_WITH([level0],
   AS_HELP_STRING([--with-level0=PATH],
                  [use given Level Zero installation (absolute path) with hpcrun (default is NO)]),
   [if test $withval != no; then
-     OPT_HAVE_LEVEL0=yes
      if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
        AC_MSG_ERROR([--with-level0 requires absolute path as argument; given '${withval}'])
      fi
      OPT_LEVEL0=${withval}
+     if test -f "${OPT_LEVEL0}/include/level_zero/ze_api.h" ; then
+       OPT_HAVE_LEVEL0=yes
+     else
+       AC_MSG_ERROR([unable to find level_zero/ze_api.h in: ${OPT_LEVEL0}/include])
+       OPT_LEVEL0=
+     fi
    fi])
 
 if test "$OPT_HAVE_LEVEL0" = "yes" ; then
@@ -5057,9 +5060,8 @@ fi
 
 AM_CONDITIONAL([OPT_ENABLE_LEVEL0], [test "$OPT_HAVE_LEVEL0" = yes])
 
-AC_SUBST([OPT_LEVEL0])
 AC_SUBST([OPT_LEVEL0_IFLAGS])
-AC_SUBST([OPT_LEVEL0_LDFLAGS])
+
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -5402,6 +5404,7 @@ AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  opencl:       ${OPENCL}])
+AC_MSG_NOTICE([  level0:       ${OPT_LEVEL0}])
 AC_MSG_NOTICE([  igc:          ${IGC}])
 AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
 AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])

@@ -646,9 +646,7 @@ OPT_ENABLE_VG_ANNOTATIONS_TRUE
 VALGRIND_IFLAGS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
-OPT_LEVEL0_LDFLAGS
 OPT_LEVEL0_IFLAGS
-OPT_LEVEL0
 OPT_ENABLE_LEVEL0_FALSE
 OPT_ENABLE_LEVEL0_TRUE
 ROCM_PROFILER_LD_DIR
@@ -24223,19 +24221,22 @@ fi
 #-------------------------------------------------
 
 OPT_LEVEL0=
-OPT_LEVEL0_INCPATH=
-OPT_LEVEL0_LDFLAGS=
-OPT_LEVEL0_LIBPATH=
+OPT_LEVEL0_IFLAGS=
 
 
 # Check whether --with-level0 was given.
 if test "${with_level0+set}" = set; then :
   withval=$with_level0; if test $withval != no; then
-     OPT_HAVE_LEVEL0=yes
      if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
        as_fn_error $? "--with-level0 requires absolute path as argument; given '${withval}'" "$LINENO" 5
      fi
      OPT_LEVEL0=${withval}
+     if test -f "${OPT_LEVEL0}/include/level_zero/ze_api.h" ; then
+       OPT_HAVE_LEVEL0=yes
+     else
+       as_fn_error $? "unable to find level_zero/ze_api.h in: ${OPT_LEVEL0}/include" "$LINENO" 5
+       OPT_LEVEL0=
+     fi
    fi
 fi
 
@@ -24254,7 +24255,6 @@ else
   OPT_ENABLE_LEVEL0_TRUE='#'
   OPT_ENABLE_LEVEL0_FALSE=
 fi
-
 
 
 
@@ -27505,6 +27505,8 @@ $as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
 $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   opencl:       ${OPENCL}" >&5
 $as_echo "$as_me:   opencl:       ${OPENCL}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   level0:       ${OPT_LEVEL0}" >&5
+$as_echo "$as_me:   level0:       ${OPT_LEVEL0}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   igc:          ${IGC}" >&5
 $as_echo "$as_me:   igc:          ${IGC}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   gtpin:        ${GTPIN}" >&5
