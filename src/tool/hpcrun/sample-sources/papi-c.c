@@ -286,7 +286,18 @@ METHOD_FN(thread_init)
   TMSG(PAPI, "thread init");
   if (papi_unavail) { return; }
 
-  int retval = PAPI_thread_init(pthread_self);
+  // Need to call PAPI_library_init before calling PAPI_thread_init
+  // Somehow, when a process is forked, the child process doesn't
+  // inherit PAPI library init and thus we have to explicitly call it
+  // here. 
+  int retval = PAPI_library_init(PAPI_VER_CURRENT);
+  TMSG(PAPI_C,"PAPI_library_init = %d", retval);
+  if (retval < 0) {
+    EEMSG("PAPI_library_init NOT ok, retval = %d", retval);
+    monitor_real_abort();
+  }
+
+  retval = PAPI_thread_init(pthread_self);
   if (retval != PAPI_OK) {
     EEMSG("PAPI_thread_init NOT ok, retval = %d", retval);
     monitor_real_abort();
