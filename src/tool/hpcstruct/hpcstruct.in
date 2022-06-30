@@ -94,4 +94,4 @@ elif test "x$OMP_STACKSIZE" == x; then
   export OMP_STACKSIZE=8M
 fi
 export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
-exec "${libexec_dir}/${binary_name}" "$args"
+exec "${libexec_dir}/${binary_name}" $args
