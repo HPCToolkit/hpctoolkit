@@ -326,10 +326,11 @@ perf_util_kernel_syms_avail()
 void
 perf_util_init()
 {
-  // perf_kernel_lm_id must be set for each process. here, we clear it 
-  // because it is too early to allocate a load module. it will be set 
-  // later, exactly once per process if ksym_status == PERF_AVAILABLE.
-  perf_kernel_lm_id = 0; 
+  // perf_kernel_lm_id must be set for each process.
+  // We shouldn't reset its value here because perf_util_init
+  // is called everytime a child is forked.
+  // Let the variable set in the declaration.
+  // perf_kernel_lm_id = 0; 
 
   // if kernel symbols are available, we will attempt to collect kernel
   // callchains and add them to our call paths
