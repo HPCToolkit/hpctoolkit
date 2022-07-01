@@ -60,7 +60,19 @@
 #include <include/gpu-binary.h>
 #include <hpcrun/files.h>
 #include <hpcrun/messages/messages.h>
+#include <hpcrun/loadmap.h>
 #include <lib/prof-lean/crypto-hash.h>
+#include <lib/prof-lean/spinlock.h>
+
+
+
+//******************************************************************************
+// static data
+//******************************************************************************
+
+static spinlock_t binary_store_lock = SPINLOCK_UNLOCKED;
+
+
 
 //******************************************************************************
 // interface operations
@@ -74,27 +86,35 @@ gpu_binary_store
   size_t binary_size
 )
 {
+   // Write a file if does not exist
+  bool result;
   int fd;
   errno = 0;
+
+  spinlock_lock(&binary_store_lock);
+
   fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
   if (errno == EEXIST) {
     close(fd);
-    return true;
-  }
-  if (fd >= 0) {
+    result = true;
+  } else if (fd >= 0) {
     // Success
     if (write(fd, binary, binary_size) != binary_size) {
       close(fd);
-      return false;
+      result = false;
     } else {
       close(fd);
-      return true;
+      result = true;
     }
   } else {
     // Failure to open is a fatal error.
     hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
+    result = false;
   }
+
+  spinlock_unlock(&binary_store_lock);
+
+  return result;
 }
 
 void
@@ -130,4 +150,44 @@ gpu_binary_compute_hash_string
     used += sprintf(&name[used], "%02x", hash[i]);
   }
   return used;
+}
+
+
+bool
+gpu_binary_save
+(
+ const char *mem_ptr,
+ size_t mem_size,
+ bool mark_used,
+ uint32_t *loadmap_module_id
+)
+{
+  // Generate a hash for the binary
+  char *hash_buf = (char*)malloc(HASH_LENGTH * 2);
+  gpu_binary_compute_hash_string(mem_ptr, mem_size, hash_buf);
+
+  // Prepare to a file path to write down the binary
+  char device_file[PATH_MAX];
+  gpu_binary_path_generate(hash_buf, device_file);
+
+  // Write down the binary and free the space
+  bool written = gpu_binary_store(device_file, mem_ptr, mem_size);
+
+  if (written) {
+    load_module_t *module = NULL;
+    hpcrun_loadmap_lock();
+    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
+      *loadmap_module_id = hpcrun_loadModule_add(device_file);
+      module = hpcrun_loadmap_findById(*loadmap_module_id );
+      if (mark_used) hpcrun_loadModule_flags_set(module, LOADMAP_ENTRY_ANALYZE);
+    } else {
+      *loadmap_module_id = module->id;
+      if (mark_used) {
+        hpcrun_loadModule_flags_set(module, LOADMAP_ENTRY_ANALYZE);
+      }
+    }
+    hpcrun_loadmap_unlock();
+  }
+
+  return written;
 }
