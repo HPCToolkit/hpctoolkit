@@ -158,10 +158,15 @@ class ProfileInfo(VersionedFormat,
     _vb_nCtxs = (0, 0x10, 'L'),
     _vb_pCtxIndices = (0, 0x18, 'Q'),
     _pIdTuple = (0, 0x20, 'Q'),
+    _flags = (0, 0x28, 'L'),
   ):
   """Information on a single profile."""
+  __flags = VersionedBitFlags(
+    # Added in v4.0
+    isSummary = (0, 0),
+  )
   __SUMMARY = 'SUMMARY'
-  __slots__ = ['idTuple', 'valueBlock']
+  __slots__ = ['idTuple', 'valueBlock', 'flags']
   __vb_ctxIndex = Struct('<LQ')  # ctxId, startIndex
 
   def _valueBlockKwargs(self, metadb):
@@ -171,9 +176,10 @@ class ProfileInfo(VersionedFormat,
       'byMetricId': metadb.metrics.byStatMetricId() if self.idTuple is self.__SUMMARY else metadb.metrics.byPropMetricId(),
     }
 
-  def _init_(self, *, metadb, idTuple, valueBlock={}):
+  def _init_(self, *, metadb, idTuple, flags=set(), valueBlock={}):
     super()._init_()
     if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    self.flags = self.__flags.normalize(float('inf'), flags)
 
     if isinstance(idTuple, str) and idTuple.lower() == 'summary':
       self.idTuple = self.__SUMMARY
@@ -185,6 +191,7 @@ class ProfileInfo(VersionedFormat,
   def unpack_from(self, version, src, /, *args, metadb, **kwargs):
     super().unpack_from(version, src, *args, **kwargs)
     if not isinstance(metadb, MetaDB): raise TypeError(type(metadb))
+    self.flags = self.__flags.unpack(version, self._flags)
 
     if self._pIdTuple == 0:
       self.idTuple = self.__SUMMARY
@@ -203,12 +210,12 @@ class ProfileInfo(VersionedFormat,
       if a is self.__SUMMARY: return b is self.__SUMMARY
       if b is self.__SUMMARY: return False
       return len(a) == len(b) and all(x.identical(y) for x,y in zip(a,b))
-    return (idtuple_cmp(self.idTuple, other.idTuple)
+    return (idtuple_cmp(self.idTuple, other.idTuple) and self.flags == other.flags
             and self.valueBlock == other.valueBlock)
 
   def __repr__(self):
     return (f"{self.__class__.__name__}(idTuple={self.idTuple!r}, "
-            f"valueBlock={self.valueBlock!r})")
+            f"valueBlock={self.valueBlock!r}, flags={self.flags!r})")
 
   @property
   def shorthand(self):
@@ -217,6 +224,10 @@ class ProfileInfo(VersionedFormat,
 
   def __str__(self):
     return (f"profile: {self.shorthand}\n"
+            "flags:"
+            + ('\n' + '\n'.join(' - '+textwrap.indent(str(s), '   ')[3:]
+                                for s in sorted(self.flags))
+               if len(self.flags) > 0 else " []") + "\n"
             "valueBlock: "
             + ('\n' + textwrap.indent(str(self.valueBlock), '  ')
                if len(self.valueBlock) > 0 else " {}")
@@ -331,7 +342,7 @@ class ProfileSparseValueBlock(collections.abc.MutableMapping):
     else: raise KeyError(ctx)
 
   def __iter__(self):
-    return itertools.chain(self._real, list(self._byCtxId[ctxId] for ctxId in self._ctxIndices))
+    return itertools.chain(self._real, list(self._byCtxId[ctxId] for ctxId in self._ctxIndices if ctxId in self._byCtxId))
 
   def __len__(self):
     return len(self._real) + len(self._ctxIndices)

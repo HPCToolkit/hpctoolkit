@@ -20,5 +20,5 @@ int main() {
   # Events are tuned to generate 2-3 cycles samples. Check logs to verify.
   $ hpcrun -o m.foo -e cycles@1000000000 -e instructions@100000000000 -t /tmp/foo
   $ hpcstruct m.foo
-  $ hpcprof2 -o d.foo m.foo -M stats
+  $ hpcprof -o d.foo m.foo -M stats
 */

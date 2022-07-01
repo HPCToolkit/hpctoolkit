@@ -61,10 +61,12 @@ def test_small_v4_0():
 
   zero = {'valueBlock': {}}
 
-  m_1i = {M[17]: {P[1]: 3}}
-  m_2e = {M[16]: {P[1]: 1}, M[17]: {P[1]: 1}}
-  m_3i = {M[17]: {P[1]: 2}}
-  m_3e = m_3i | {M[16]: {P[1]: 2}}
+  m_1i = {M[17]: {P[1]: 3000000000}}
+  m_2i = {M[17]: {P[1]: 1000000000}}
+  m_2e = m_2i | {M[16]: {P[1]: 1000000000}}
+  m_2p = m_2e | {M[15]: {P[1]: 1000000000}}
+  m_3i = {M[17]: {P[1]: 2000000000}}
+  m_3e = m_3i | {M[16]: {P[1]: 2000000000}}
 
   b = ContextDB(metadb=metadb, profiledb=profiledb,
     ctxs = {
@@ -73,18 +75,22 @@ def test_small_v4_0():
         {'valueBlock': m_1i},
         {'valueBlock': m_1i},
         {'valueBlock': m_1i},
-        zero,
+        {'valueBlock': m_2i},
         {'valueBlock': m_2e},
         {'valueBlock': m_2e},
         {'valueBlock': m_2e},
-        zero, zero, zero, zero,
+        {'valueBlock': m_2p},
+        zero, zero,
         {'valueBlock': m_3i},
         {'valueBlock': m_3i},
-        zero,
+        {'valueBlock': m_3i},
+        {'valueBlock': m_3i},
         {'valueBlock': m_3e},
         {'valueBlock': m_3e},
         {'valueBlock': m_3e},
-        zero, zero, zero, zero, zero,
+        {'valueBlock': m_2p},
+        {'valueBlock': m_2p},
+        zero, zero, zero,
       ],
     }
   )
