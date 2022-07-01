@@ -59,6 +59,9 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+
+
 
 //******************************************************************************
 // interface operations
@@ -89,6 +92,16 @@ gpu_binary_compute_hash_string
  const char *mem_ptr,
  size_t mem_size,
  char *name
+);
+
+
+bool
+gpu_binary_save
+(
+ const char *mem_ptr,
+ size_t mem_size,
+ bool mark_used,
+ uint32_t *loadmap_module_id
 );
 
 #if defined(__cplusplus)

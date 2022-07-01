@@ -71,6 +71,8 @@
 #include "ompt-device-map.h"
 #include "ompt-device.h"
 
+#include <include/gpu-binary.h>
+
 #include "gpu/gpu-op-placeholders.h"
 #include "gpu/gpu-application-thread-api.h"
 #include "gpu/gpu-correlation-channel.h"
@@ -537,9 +539,9 @@ ompt_device_load(int device_num,
 {
   PRINT("ompt_device_load->%s, %d\n", filename, device_num);
 
-#if 0 // FIXME
-  cupti_load_callback_cuda(module_id, host_addr, bytes);
-#endif
+  uint32_t loadmap_module_id;
+  bool mark_used = true;
+  gpu_binary_save(host_addr, bytes, mark_used, &loadmap_module_id);
 }
 
 
