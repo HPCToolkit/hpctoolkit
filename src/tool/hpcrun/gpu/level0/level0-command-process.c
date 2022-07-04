@@ -217,7 +217,7 @@ get_load_module
 
   // Step 4: find or create the load module
   bool mark_used = true;
-  uint32_t module_id = gen_binary_loadmap_insert(load_module_name, mark_used);
+  uint32_t module_id = gpu_binary_loadmap_insert(load_module_name, mark_used);
 
   return module_id;
 }

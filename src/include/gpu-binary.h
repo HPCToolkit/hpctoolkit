@@ -96,7 +96,7 @@ gpu_binary_compute_hash_string
 
 // returns the loadmap id
 uint32_t
-gen_binary_loadmap_insert
+gpu_binary_loadmap_insert
 (
   const char *device_file,
   bool mark_used

@@ -153,7 +153,7 @@ gpu_binary_compute_hash_string
 }
 
 uint32_t
-gen_binary_loadmap_insert
+gpu_binary_loadmap_insert
 (
   const char *device_file,
   bool mark_used
@@ -199,7 +199,7 @@ gpu_binary_save
   bool written = gpu_binary_store(device_file, mem_ptr, mem_size);
 
   if (written) {
-    *loadmap_module_id = gen_binary_loadmap_insert(device_file, mark_used);
+    *loadmap_module_id = gpu_binary_loadmap_insert(device_file, mark_used);
   }
 
   return written;
