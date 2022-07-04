@@ -357,25 +357,26 @@ lookup_amd_function
   nip.lm_id = 0;
   nip.lm_ip = 0;
 
-  for (amd_gpu_binary_t* bin = binary_list; bin != NULL; bin = bin->next) {
-    amd_function_table_t* ft = &(bin->function_table);
+  for (amd_gpu_binary_t *bin = binary_list; bin != NULL; bin = bin->next) {
+    amd_function_table_t *ft = &(bin->function_table);
     for (size_t i = 0; i < ft->size; ++i) {
       if (strcmp(kernel_name, ft->names[i]) == 0) {
         nip.lm_id = bin->amd_gpu_module_id;
         nip.lm_ip = (uintptr_t)(ft->addrs[i]);
-	if (bin->load_module_unused) {
-	  hpcrun_loadmap_lock();
-	  load_module_t *lm = hpcrun_loadmap_findById(nip.lm_id);
-	  if (lm) {
-	    hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
-	    bin->load_module_unused = false;
-	  }
-	  hpcrun_loadmap_unlock();
-	}
+        if (bin->load_module_unused) {
+          hpcrun_loadmap_lock();
+          load_module_t *lm = hpcrun_loadmap_findById(nip.lm_id);
+          if (lm) {
+            hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
+            bin->load_module_unused = false;
+          }
+          hpcrun_loadmap_unlock();
+        }
         return nip;
       }
     }
   }
+
   return nip;
 }
 

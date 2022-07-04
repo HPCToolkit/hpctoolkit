@@ -496,28 +496,9 @@ opencl_write_debug_binary
     uint8_t* buf = section;
     size_t size = section_size;
 
-    // generate a hash for the binary
-    char *hash_buf = (char*)malloc(HASH_LENGTH * 2);
-    gpu_binary_compute_hash_string((const char*)buf, size, hash_buf);
-
-    // compute the file path to write the binary
-    char path[PATH_MAX];
-    gpu_binary_path_generate(hash_buf, path);
-
-    // record the binary
-    gpu_binary_store(path, buf, size);
-
-    // ensure the binary is entered in the the loadmap for analysis
-    hpcrun_loadmap_lock();
-    load_module_t *module = hpcrun_loadmap_findByName(path);
-    if (module == NULL) {
-      uint16_t module_id = hpcrun_loadModule_add(path);
-      load_module_t *lm = hpcrun_loadmap_findById(module_id);
-      hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
-    } 
-    hpcrun_loadmap_unlock();
-
-    free(hash_buf);
+    uint32_t loadmap_module_id;
+    bool mark_used = true;
+    gpu_binary_save(buf, section_size, mark_used, &loadmap_module_id);
   }
 }
 
