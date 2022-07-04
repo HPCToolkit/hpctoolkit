@@ -216,18 +216,9 @@ get_load_module
   strcat(load_module_name, kernel_name_hash);
 
   // Step 4: find or create the load module
-  uint32_t module_id = 0;
-  hpcrun_loadmap_lock();
-  load_module_t *module = hpcrun_loadmap_findByName(load_module_name);
-  if (module == NULL) {
-    module_id = hpcrun_loadModule_add(load_module_name);
-    load_module_t *lm = hpcrun_loadmap_findById(module_id);
-    hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
-  } else {
-    // Find module
-    module_id = module->id;
-  }
-  hpcrun_loadmap_unlock();
+  bool mark_used = true;
+  uint32_t module_id = gen_binary_loadmap_insert(load_module_name, mark_used);
+
   return module_id;
 }
 
