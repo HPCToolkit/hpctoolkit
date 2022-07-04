@@ -179,7 +179,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
-#include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 
 //#include "sample_sources_all.h"
@@ -321,7 +320,9 @@ cupti_correlation_callback_dummy
 // static data
 //******************************************************************************
 
+#if 0
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+#endif
 
 static __thread bool cupti_stop_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
@@ -722,53 +723,17 @@ cupti_load_callback_cuda
  size_t cubin_size
 )
 {
-  // Compute hash for cubin and store it into a map
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin_id);
-  unsigned char *hash;
-  unsigned int hash_len;
+  uint32_t loadmap_module_id;
+  bool mark_used = false;
+  gpu_binary_save(cubin, cubin_size, mark_used, &loadmap_module_id);
+
+  TMSG(CUPTI, "cubin_id %d -> loadmap_module_id %d", cubin_id, loadmap_module_id);
+
+  cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   if (entry == NULL) {
-    cubin_hash_map_insert(cubin_id, cubin, cubin_size);
-    entry = cubin_hash_map_lookup(cubin_id);
-  }
-  hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
-
-  // Create file name
-  char file_name[PATH_MAX];
-  char hash_string[PATH_MAX];
-  size_t used = 0;
-  size_t i;
-  for (i = 0; i < hash_len; ++i) {
-    used += sprintf(&hash_string[used], "%02x", hash[i]);
-  }
-
-  // Create full path for the CUBIN
-  gpu_binary_path_generate(hash_string, file_name);
-
-  // Write a file if does not exist
-  bool file_flag;
-  spinlock_lock(&files_lock);
-  file_flag = gpu_binary_store(file_name, cubin, cubin_size);
-  spinlock_unlock(&files_lock);
-
-  if (file_flag) {
-    char device_file[PATH_MAX];
-    sprintf(device_file, "%s", file_name);
-    uint32_t hpctoolkit_module_id;
-    load_module_t *module = NULL;
-    hpcrun_loadmap_lock();
-    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
-      hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
-    } else {
-      hpctoolkit_module_id = module->id;
-    }
-    hpcrun_loadmap_unlock();
-    TMSG(CUPTI, "cubin_id %d -> hpctoolkit_module_id %d", cubin_id, hpctoolkit_module_id);
-    cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
-    if (entry == NULL) {
-      Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
-      cubin_id_map_insert(cubin_id, hpctoolkit_module_id, vector);
-    }
-  }
+    Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
+    cubin_id_map_insert(cubin_id, loadmap_module_id, vector);
+  } 
 }
 
 
