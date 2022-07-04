@@ -527,7 +527,6 @@ endif
 
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia.c	\
-	gpu/nvidia/cubin-hash-map.c		\
 	gpu/nvidia/cubin-id-map.c		\
 	gpu/nvidia/cubin-symbols.c		\
 	gpu/nvidia/cuda-api.c			\
