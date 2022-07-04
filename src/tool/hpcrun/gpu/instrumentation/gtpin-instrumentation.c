@@ -144,8 +144,6 @@ typedef struct gtpin_correlation_data {
 // local data
 //******************************************************************************
 
-static spinlock_t files_lock = SPINLOCK_UNLOCKED;
-
 static bool gtpin_use_runtime_callstack = false;
 
 static bool simd_knob = false;
@@ -283,7 +281,7 @@ findOrAddKernelModule
   strncat(path, kernel_name_hash, strlen(kernel_name_hash));
 
   bool mark_used = true;
-  uint32_t module_id = gen_binary_loadmap_insert(path, mark_used);
+  uint32_t module_id = gpu_binary_loadmap_insert(path, mark_used);
 
 #if 0
   opencl_kernel_loadmap_map_insert(kernel_name_id, module_id);
