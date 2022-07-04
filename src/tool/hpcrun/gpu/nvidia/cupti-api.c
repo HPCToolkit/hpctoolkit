@@ -152,8 +152,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 
 #include <include/gpu-binary.h>
 
-#include <lib/prof-lean/spinlock.h>
-
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/main.h> // hpcrun_force_dlopen
@@ -319,10 +317,6 @@ cupti_correlation_callback_dummy
 //******************************************************************************
 // static data
 //******************************************************************************
-
-#if 0
-static spinlock_t files_lock = SPINLOCK_UNLOCKED;
-#endif
 
 static __thread bool cupti_stop_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
