@@ -152,6 +152,31 @@ gpu_binary_compute_hash_string
   return used;
 }
 
+uint32_t
+gen_binary_loadmap_insert
+(
+  const char *device_file,
+  bool mark_used
+)
+{
+  uint32_t loadmap_module_id;
+  load_module_t *module = NULL;
+
+  hpcrun_loadmap_lock();
+  if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
+    loadmap_module_id = hpcrun_loadModule_add(device_file);
+    module = hpcrun_loadmap_findById(loadmap_module_id);
+  } else {
+    loadmap_module_id = module->id;
+  }
+  if (mark_used) {
+    hpcrun_loadModule_flags_set(module, LOADMAP_ENTRY_ANALYZE);
+  }
+  hpcrun_loadmap_unlock();
+
+  return loadmap_module_id;
+}
+
 
 bool
 gpu_binary_save
@@ -174,19 +199,7 @@ gpu_binary_save
   bool written = gpu_binary_store(device_file, mem_ptr, mem_size);
 
   if (written) {
-    load_module_t *module = NULL;
-    hpcrun_loadmap_lock();
-    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
-      *loadmap_module_id = hpcrun_loadModule_add(device_file);
-      module = hpcrun_loadmap_findById(*loadmap_module_id );
-      if (mark_used) hpcrun_loadModule_flags_set(module, LOADMAP_ENTRY_ANALYZE);
-    } else {
-      *loadmap_module_id = module->id;
-      if (mark_used) {
-        hpcrun_loadModule_flags_set(module, LOADMAP_ENTRY_ANALYZE);
-      }
-    }
-    hpcrun_loadmap_unlock();
+    *loadmap_module_id = gen_binary_loadmap_insert(device_file, mark_used);
   }
 
   return written;
