@@ -87,9 +87,6 @@
 #include <hpcrun/gpu/opencl/opencl-kernel-loadmap-map.h>
 #endif
 
-#include <lib/prof-lean/crypto-hash.h>
-#include <lib/prof-lean/spinlock.h>
-
 #include "gtpin-correlation-id-map.h"
 #include "gtpin-instrumentation.h"
 #include "kernel-data.h"
