@@ -852,7 +852,7 @@ onKernelComplete
     return;
   }
   
-  hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, false, true);
+  hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, HPCRUN_NO_TRACE, true);
 
   gpu_activity_channel_t *activity_channel = gtpin_correlation_id_map_entry_activity_channel_get(entry);
   gpu_op_ccts_t gpu_op_ccts = gtpin_correlation_id_map_entry_op_ccts_get(entry);

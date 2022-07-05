@@ -58,6 +58,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "trace.h"
 #include "sample_sources_registered.h"
 #include "newmem.h"
 #include "epoch.h"
@@ -347,7 +348,7 @@ hpcrun_thread_init_mem_pool_once
 (
   int id, 
   cct_ctxt_t *thr_ctxt,
-  bool has_trace, 
+  hpcrun_trace_type_t trace,
   bool demand_new_thread
 );
 

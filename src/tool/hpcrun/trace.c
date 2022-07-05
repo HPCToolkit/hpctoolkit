@@ -128,7 +128,7 @@ hpcrun_trace_init()
 }
 
 void
-hpcrun_trace_open(core_profile_trace_data_t * cptd)
+hpcrun_trace_open(core_profile_trace_data_t * cptd, hpcrun_trace_type_t type)
 {
   if (hpcrun_get_disabled()) {
     tracing = 0;
@@ -167,6 +167,19 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
 #else
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
 #endif
+
+    switch(type) {
+    case HPCRUN_SAMPLE_TRACE:
+      HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_CALL_TRACE_BIT_POS, 0);
+      break;
+    case HPCRUN_CALL_TRACE:
+      HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_CALL_TRACE_BIT_POS, 1);
+      break;
+    case HPCRUN_NO_TRACE:
+    default:
+      assert(false && "Invalid trace type!");
+      // TODO: hpcrun_terminate()
+    }
     
     ret = hpctrace_fmt_hdr_outbuf(flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");

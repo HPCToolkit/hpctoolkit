@@ -280,7 +280,7 @@ hpcrun_thread_init_mem_pool_once
 (
   int id, 
   cct_ctxt_t *thr_ctxt,
-  bool has_trace, 
+  hpcrun_trace_type_t trace,
   bool demand_new_thread
 )
 { 
@@ -288,7 +288,7 @@ hpcrun_thread_init_mem_pool_once
 
   if (mem_pool_initialized == false){
     hpcrun_mmap_init();
-    hpcrun_threadMgr_data_get(id, thr_ctxt, &td, has_trace, demand_new_thread);
+    hpcrun_threadMgr_data_get(id, thr_ctxt, &td, trace, demand_new_thread);
     hpcrun_set_thread_data(td);
   }
 }
