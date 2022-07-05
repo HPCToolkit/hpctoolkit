@@ -484,7 +484,7 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_trace_init(); // this must go after thread initialization
 
-  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
+  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)), HPCRUN_SAMPLE_TRACE);
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -792,7 +792,8 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
-  hpcrun_thread_init_mem_pool_once(id, thr_ctxt, has_trace, demand_new_thread);
+  hpcrun_thread_init_mem_pool_once(id, thr_ctxt,
+    has_trace ? HPCRUN_SAMPLE_TRACE : HPCRUN_NO_TRACE, demand_new_thread);
   
   hpcrun_get_thread_data()->inside_hpcrun = 1;
   

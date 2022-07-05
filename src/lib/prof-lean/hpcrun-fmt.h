@@ -811,6 +811,7 @@ typedef struct hpctrace_hdr_flags_bitfield {
 // Substitute bit fields with macros
 #define HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS 0U
 #define HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS 1U
+#define HPCTRACE_HDR_FLAGS_CALL_TRACE_BIT_POS 2U
 
 #define HPCTRACE_HDR_FLAGS_GET_BIT(flag, pos) \
   ((flag >> pos) & 1U)

@@ -139,7 +139,7 @@ is_compact_thread()
 }
 
 static thread_data_t *
-allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace)
+allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, hpcrun_trace_type_t trace)
 {
   thread_data_t *data = hpcrun_allocate_thread_data(id);
 
@@ -163,8 +163,8 @@ allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace)
   // ----------------------------------------
   // opening trace file
   // ----------------------------------------
-  if (has_trace) {
-  	hpcrun_trace_open(&(data->core_profile_trace_data));
+  if(trace != HPCRUN_NO_TRACE) {
+    hpcrun_trace_open(&(data->core_profile_trace_data), trace);
   }
 
   return data;
@@ -279,14 +279,14 @@ hpcrun_threadMgr_compact_thread()
  *   Side effect: Overwrites pthread_specific data
  *****/
 bool
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread)
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, hpcrun_trace_type_t trace, bool demand_new_thread)
 {
   // -----------------------------------------------------------------
   // if we don't want coalesce threads, just allocate it and return
   // -----------------------------------------------------------------
 
   if (!is_compact_thread() || demand_new_thread) {
-    *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
+    *data = allocate_and_init_thread_data(id, thr_ctxt, trace);
     return true;
   }
 
@@ -302,7 +302,7 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bo
   if (need_to_allocate) {
 
     adjust_num_logical_threads(1);
-    *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
+    *data = allocate_and_init_thread_data(id, thr_ctxt, trace);
   }
 
 #if HPCRUN_THREADS_DEBUG
@@ -313,10 +313,10 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bo
 }
 
 void
-hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace)
+hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, hpcrun_trace_type_t trace)
 {
     adjust_num_logical_threads(1);
-    *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
+    *data = allocate_and_init_thread_data(id, thr_ctxt, trace);
 
 #if HPCRUN_THREADS_DEBUG
     atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);

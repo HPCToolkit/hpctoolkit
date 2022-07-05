@@ -56,6 +56,7 @@
 #define _threadmgr_h_
 
 #include "thread_data.h"
+#include "trace.h"
 
 
 //******************************************************************************
@@ -76,10 +77,10 @@ void hpcrun_threadmgr_thread_delete();
 int hpcrun_threadmgr_thread_count();
 
 bool
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread);
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, hpcrun_trace_type_t trace, bool demand_new_thread);
 
 void
-hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace);
+hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, hpcrun_trace_type_t trace);
 
 void
 hpcrun_threadMgr_data_put(epoch_t *epoch, thread_data_t *data, bool add_separator);
