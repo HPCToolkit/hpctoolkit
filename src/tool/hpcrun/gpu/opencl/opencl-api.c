@@ -493,12 +493,9 @@ opencl_write_debug_binary
 
 #define INTEL_CL_DEBUG_SECTION_NAME "Intel(R) OpenCL Device Debug"
   if (elf_section_info(binary, size, INTEL_CL_DEBUG_SECTION_NAME, &section, &section_size)) {
-    uint8_t* buf = section;
-    size_t size = section_size;
-
+    const char *buf = (const char *) section; // avoid warning; all bits will be written
     uint32_t loadmap_module_id;
-    bool mark_used = true;
-    gpu_binary_save(buf, section_size, mark_used, &loadmap_module_id);
+    gpu_binary_save(buf, section_size, true /* mark_used */, &loadmap_module_id);
   }
 }
 

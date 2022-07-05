@@ -188,7 +188,7 @@ gpu_binary_save
 )
 {
   // Generate a hash for the binary
-  char *hash_buf = (char*)malloc(HASH_LENGTH * 2);
+  char hash_buf[HASH_LENGTH * 2];
   gpu_binary_compute_hash_string(mem_ptr, mem_size, hash_buf);
 
   // Prepare to a file path to write down the binary

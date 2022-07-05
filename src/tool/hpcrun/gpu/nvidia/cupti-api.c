@@ -718,8 +718,7 @@ cupti_load_callback_cuda
 )
 {
   uint32_t loadmap_module_id;
-  bool mark_used = false;
-  gpu_binary_save(cubin, cubin_size, mark_used, &loadmap_module_id);
+  gpu_binary_save(cubin, cubin_size, false /* mark_used */, &loadmap_module_id);
 
   TMSG(CUPTI, "cubin_id %d -> loadmap_module_id %d", cubin_id, loadmap_module_id);
 
