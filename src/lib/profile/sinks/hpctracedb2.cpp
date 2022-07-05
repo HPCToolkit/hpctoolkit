@@ -152,11 +152,23 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
     auto id = cache.lookup(c, [&](util::reference_index<const Context> c){
       // HACK to work around experiment.xml. If this Context is a point and
       // its parent is a line, emit a trace point for the line instead.
-      if(c->scope().relation() == Relation::enclosure
-         && c->scope().flat().type() == Scope::Type::point) {
-        if(auto pc = c->direct_parent()) {
-          if(pc->scope().flat().type() == Scope::Type::line)
-            c = *pc;
+      if(c->scope().flat().type() == Scope::Type::point) {
+        if(c->scope().relation() == Relation::enclosure) {
+          if(auto pc = c->direct_parent()) {
+            if(pc->scope().flat().type() == Scope::Type::line)
+              c = *pc;
+          }
+        }
+      }
+      // HACK to work around experiment.xml. If this Context is not a line,
+      // emit a trace point for a child line instead, if available.
+      else if(c->scope().flat().type() != Scope::Type::line) {
+        for(const Context& cc: c->children().citerate()) {
+          if(cc.scope().relation() == Relation::enclosure
+             && cc.scope().flat().type() == Scope::Type::line) {
+            c = cc;
+            break;
+          }
         }
       }
       return c.get().userdata[src.identifier()];

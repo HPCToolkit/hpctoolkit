@@ -88,6 +88,7 @@ private:
   // Tracefile setup and arrangements.
   bool setupTrace(unsigned int) noexcept;
   PerThreadTemporary* thread;
+  bool callTrace;
 
   // The actual file. Details for reading handled in prof-lean.
   hpcrun_sparse_file_t* file;
