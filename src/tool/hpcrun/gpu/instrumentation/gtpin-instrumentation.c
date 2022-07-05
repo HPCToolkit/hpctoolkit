@@ -277,8 +277,7 @@ findOrAddKernelModule
   strcat(path, ".");
   strncat(path, kernel_name_hash, strlen(kernel_name_hash));
 
-  bool mark_used = true;
-  uint32_t module_id = gpu_binary_loadmap_insert(path, mark_used);
+  uint32_t module_id = gpu_binary_loadmap_insert(path, true /* mark_used */);
 
 #if 0
   opencl_kernel_loadmap_map_insert(kernel_name_id, module_id);

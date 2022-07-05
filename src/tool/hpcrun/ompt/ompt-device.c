@@ -540,8 +540,7 @@ ompt_device_load(int device_num,
   PRINT("ompt_device_load->%s, %d\n", filename, device_num);
 
   uint32_t loadmap_module_id;
-  bool mark_used = true;
-  gpu_binary_save(host_addr, bytes, mark_used, &loadmap_module_id);
+  gpu_binary_save(host_addr, bytes, true /* mark_used */, &loadmap_module_id);
 }
 
 
