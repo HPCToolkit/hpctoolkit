@@ -180,6 +180,7 @@ bool Hpcrun4::setupTrace(unsigned int traceDisorder) noexcept {
     std::fclose(file);
     return false;
   }
+  callTrace = HPCTRACE_HDR_FLAGS_GET_BIT(thdr.flags, HPCTRACE_HDR_FLAGS_CALL_TRACE_BIT_POS);
   // The file is now placed right at the start of the data.
   trace_off = std::ftell(file);
 
@@ -585,7 +586,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       auto it = nodes.find(tpoint.cpId);
       if(it != nodes.end()) {
         if(auto* p_x = std::get_if<singleCtx_t>(&it->second)) {
-          switch(sink.timepoint(*thread, p_x->full,
+          switch(sink.timepoint(*thread, callTrace ? p_x->rel : p_x->full,
               std::chrono::nanoseconds(HPCTRACE_FMT_GET_TIME(tpoint.comp)))) {
           case ProfilePipeline::Source::TimepointStatus::next:
             break;  // 'Round the loop
