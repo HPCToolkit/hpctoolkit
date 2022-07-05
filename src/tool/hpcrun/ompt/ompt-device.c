@@ -228,10 +228,6 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
 
     gpu_application_thread_process_activities();
 
-#if 0
-    ompt_correlation_id_push(host_op_id);
-#endif
-
     gpu_op_ccts_t gpu_op_ccts;
     memset(&gpu_op_ccts, 0, sizeof(gpu_op_ccts_t));
 
@@ -256,10 +252,6 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     PRINT("exit ompt runtime op %lu\n", host_op_id);
     // Enter a runtime api
     ompt_runtime_api_flag = false;
-#if 0
-    // Pop the id and make a notification
-    ompt_correlation_id_pop();
-#endif
     // Clear kernel status
     trace_node = NULL;
   }
@@ -548,7 +540,7 @@ void
 ompt_device_unload(int device_num,
                    uint64_t module_id)
 {
-  //cubin_id_map_delete(module_id);
+  // nothing necessary: the module remains in the loadmap
 }
 
 
@@ -588,14 +580,6 @@ ompt_target_callback_emi
   target_data->value = gpu_correlation_id();
   PRINT("ompt_target_callback->target_id 0x%lx\n", target_data->value);
 
-  // XXX(Keren): Do not use openmp callbacks to consume and produce records
-  // HPCToolkit always subscribes its own cupti callback
-  //
-  //cupti_stop_flag_set();
-  //cupti_correlation_channel_init();
-  //cupti_activity_channel_init();
-  //cupti_correlation_channel_consume();
-
   // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   int zero_metric_id = 0; // nothing to see here
@@ -604,7 +588,7 @@ ompt_target_callback_emi
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead++;
-  // NOTE(keren): hpcrun_safe_enter prevent self interruption
+
   hpcrun_safe_enter();
 
   int skip_this_frame = 1; // omit this procedure frame on the call path
