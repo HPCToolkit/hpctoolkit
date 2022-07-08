@@ -97,6 +97,7 @@ typedef enum { PATH_READABLE, PATH_WRITEABLE, PATH_DIR_READABLE, PATH_DIR_WRITEA
         PATH_DIR_CREATED, PATH_ABSENT, PATH_ERROR } ckpath_ret_t;
 static  ckpath_ret_t ck_path ( const char *path, const char *caller );
 static  ckpath_ret_t mk_dirpath ( const char *path, const char *errortype, bool msg );
+static bool check_cache_file (char *path);
 
 // return value
 //   1: success
@@ -240,31 +241,101 @@ hpcstruct_cache_needs_cleanup
 )
 {
   DIR *dir = opendir(path.c_str());
+  char *ret = NULL;
 
   for (;;) {
     struct dirent *d = readdir(dir);
 
-    if (d == 0) break;
+    if (d == NULL) break;
 
     // ignore "." and ".."
     if ((strcmp(d->d_name, ".") == 0) ||
 	(strcmp(d->d_name, "..") == 0)) continue;
 
-    if (strcmp(hash, d->d_name) == 0) { // hash present; nothing to do
-      continue;	// Shouldn't this be "break;"  ??
+    if (strcmp(hash, d->d_name) == 0) {
+      // file is present; make sure it is properly formatted
+      char fname[4096];
+      sprintf (fname, "%s/%s/hpcstruct", path.c_str(),  d->d_name );
+      bool rck = check_cache_file (fname);
+      if ( rck == false ) {
+        // an improperly formatted file is present
+        fprintf (stderr, "  file %s is not a correctly formatted cache file\n", fname );
+
+	// set the name of incorrect file to be returned for replacement
+        ret = strdup(d->d_name);
+	break;
+
+      } else {
+        // fprintf (stderr, "  file %s is a correctly formatted cache file\n", fname );
+        continue;	// Shouldn't this be "break;"  ??
+      }
+
     } else {
-      char * ret = strdup(d->d_name);
-      // something else present: cleanup needed
-      closedir(dir);
-      return ret;
+      ret = strdup(d->d_name);
+      break;
     }
   }
 
   closedir(dir);
 
-  return NULL;
+  return ret;
 }
 
+// Routine to check that the cache'd file is correctly formatted
+//  Returns true if the last line of the file is <</HPCToolkitStructure>
+//  returns false on any error, or if the line does not match
+static bool
+check_cache_file (char *path)
+{
+  // The file exists and is readable;  check to see if it is corrupted
+  //   That is, if the last line in the file is NOT "</HPCToolkitStructure>"
+  int fd = open(path, O_RDONLY | O_CLOEXEC);
+  if ( fd < 0 ) {
+    fprintf( stderr, "  file %s, open failed; returns %d err= %s\n", path, fd, strerror(errno) );
+    return false;
+  }
+
+  struct stat statbuf;
+  int retval = fstat (fd, &statbuf);
+  if (retval != 0)  {
+    // fstat of file failed
+    fprintf( stderr, "  file %s, fstat failed: returns %d -- %s\n", path, retval, strerror(errno) );
+    return false;
+  }
+
+  // compute pointer to last line, if it is the correct string
+  off_t stringsize = strlen ("</HPCToolkitStructure>");
+  off_t offset = statbuf.st_size - stringsize -1;
+  if (offset < stringsize-1 ) {  // room for <HPCToolkitStructure> as well
+    // file is not long enough to be correct
+    fprintf( stderr, "  file %s too short, offset to last line, if correct, = %ld;  stringsize = %ld\n", path, offset, stringsize );
+    return false;
+  }
+
+  off_t offret = lseek(fd, offset, SEEK_SET);
+  if (offret != offset ) {
+    // seek to position failed
+    fprintf( stderr, "  file %s, lssek to %ld failed: returns %ld -- %s\n", path, offset, offret, strerror(errno) );
+    return false;
+  }
+  char readbuf[stringsize + 1 ];
+  ssize_t len = read (fd, &readbuf, stringsize);
+  if (len != stringsize ) {
+    // read of last line failed
+    fprintf( stderr, "  file %s, read last line at %ld failed: returns %ld, not %ld -- %s\n",
+        path, offset, len, stringsize, strerror(errno) );
+    return false;
+  }
+  readbuf[stringsize] = (char)0;
+  if ( strcmp (readbuf, "</HPCToolkitStructure>" ) != 0 ) {
+    // last line is not right
+    fprintf(stderr, "  file %s, last line = \"%s\" does not match </HPCToolkitStructure> \n", path, readbuf);
+    return false;
+  }
+  // It is properly formatted
+  // fprintf(stderr, "  file %s, last line = \"%s\" matches </HPCToolkitStructure> \n", path, readbuf);
+  return true;
+}
 
 //  clean up cache entry being replaced 
 
