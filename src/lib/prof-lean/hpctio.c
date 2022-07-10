@@ -233,13 +233,21 @@ size_t hpctio_obj_writeat(const void * buf, size_t count, uint64_t offset, hpcti
     return obj->sys_ptr->func_ptr->writeat(buf, count, offset, obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);
 }
 
+/*
+* Prefetch a block of data from a file and store it in a read buffer
+* return 0 if succeed, -1  on failure
+*/
+int hpctio_obj_prefetch(uint64_t startoff, uint64_t endoff, hpctio_obj_t * obj){
+   return obj->sys_ptr->func_ptr->prefetch(startoff, endoff, obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);
+}
+
 
 /*
 * Readat to a file 
 * return the number of elements written if succeed, -1  on failure with errno set
 */
 size_t hpctio_obj_readat(void * buf, size_t count, uint64_t offset, hpctio_obj_t * obj){
-    return obj->sys_ptr->func_ptr->readat(buf, count, offset, obj->oh, obj->sys_ptr->params_ptr);
+    return obj->sys_ptr->func_ptr->readat(buf, count, offset, obj->oh, obj->opt_ptr, obj->sys_ptr->params_ptr);
 }
 
 

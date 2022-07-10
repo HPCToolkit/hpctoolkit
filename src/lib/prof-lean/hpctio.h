@@ -52,7 +52,8 @@ typedef struct hpctio_sys_func {
   // write only write at specific offset
   size_t (*append)(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
   size_t (*writeat)(const void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
-  size_t (*readat)(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p);
+  int (*prefetch)(uint64_t startoff, uint64_t endoff, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+  size_t (*readat)(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
   long int (*tell)(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
   int (*readdir)(const char* path, char *** entries, hpctio_sys_params_t * p);

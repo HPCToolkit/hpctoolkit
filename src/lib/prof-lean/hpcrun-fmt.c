@@ -1268,6 +1268,11 @@ hpcrun_fmt_footer_fread2(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj, size_t off)
   int r = hpctio_obj_readat(buf, SF_footer_SIZE, off, fobj);
   if(r != SF_footer_SIZE) return HPCFMT_ERR;
 
+  x->HPCRUNsm = fmt_be_u64_read(buf+0x68);
+  if(x->HPCRUNsm != HPCRUNsm){
+    return HPCFMT_ERR;
+  }
+
   x->hdr_start = fmt_be_u64_read(buf+0x00);
   x->hdr_end = fmt_be_u64_read(buf+0x08);
   x->loadmap_start = fmt_be_u64_read(buf+0x10);
@@ -1281,11 +1286,6 @@ hpcrun_fmt_footer_fread2(hpcrun_fmt_footer_t* x, hpctio_obj_t* fobj, size_t off)
   x->sm_start = fmt_be_u64_read(buf+0x50);
   x->sm_end = fmt_be_u64_read(buf+0x58);
   x->footer_start = fmt_be_u64_read(buf+0x60);
-  x->HPCRUNsm = fmt_be_u64_read(buf+0x68);
-
-  if(x->HPCRUNsm != HPCRUNsm){
-    return HPCFMT_ERR;
-  }
 
   return HPCFMT_OK;
 }
@@ -1354,6 +1354,7 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, siz
     free(st);
   }
   size_t footer_position = end_pos - SF_footer_SIZE;
+  hpctio_obj_prefetch(footer_position, end_pos, fobj); 
   ret = hpcrun_fmt_footer_fread2(&(sparse_fs->footer), fobj, footer_position);
   if(ret != HPCFMT_OK){
     hpctio_obj_close(sparse_fs->fobj);
@@ -1440,6 +1441,7 @@ int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hd
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
+  hpctio_obj_prefetch(sparse_fs->footer.hdr_start, sparse_fs->footer.hdr_end, sparse_fs->fobj);
   ret = hpcrun_fmt_hdr_fread2(hdr, sparse_fs->fobj, malloc, sparse_fs->footer.hdr_start);
   if(ret == HPCFMT_ERR) return SF_ERR;
   if(ret != sparse_fs->footer.hdr_end) return SF_ERR;
@@ -1454,7 +1456,10 @@ int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm)
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  if(sparse_fs->lm_bytes_read == 0) sparse_fs->lm_bytes_read = SF_num_lm_SIZE; //the first lm should skip the info about number of lms
+  if(sparse_fs->lm_bytes_read == 0){
+    hpctio_obj_prefetch(sparse_fs->footer.loadmap_start, sparse_fs->footer.loadmap_end, sparse_fs->fobj);
+    sparse_fs->lm_bytes_read = SF_num_lm_SIZE; //the first lm should skip the info about number of lms
+  }
 
   size_t realoffset = sparse_fs->footer.loadmap_start + sparse_fs->lm_bytes_read;
   if(realoffset == sparse_fs->footer.loadmap_end) return SF_END; // no more next lm
@@ -1473,7 +1478,10 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  if(sparse_fs->metric_bytes_read == 0) sparse_fs->metric_bytes_read = SF_num_metric_SIZE; //the first metric should skip the info about number of metrics
+  if(sparse_fs->metric_bytes_read == 0) {
+    hpctio_obj_prefetch(sparse_fs->footer.met_tbl_start, sparse_fs->footer.met_tbl_end, sparse_fs->fobj);
+    sparse_fs->metric_bytes_read = SF_num_metric_SIZE; //the first metric should skip the info about number of metrics
+  }
 
   size_t realoffset = sparse_fs->footer.met_tbl_start + sparse_fs->metric_bytes_read;
   if(realoffset == sparse_fs->footer.met_tbl_end) return SF_END; // no more next metric
@@ -1495,6 +1503,7 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   
   //first time initialization
   if(sparse_fs->cct_nodes_read == 0){ 
+    hpctio_obj_prefetch(sparse_fs->footer.cct_start, sparse_fs->footer.cct_end, sparse_fs->fobj);
     HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&sparse_fs->num_cct_nodes, sparse_fs->fobj, sparse_fs->footer.cct_start));
   }
   if(sparse_fs->cct_nodes_read == sparse_fs->num_cct_nodes) return SF_END;
@@ -1515,6 +1524,7 @@ int hpcrun_sparse_read_idtuple_dxnry(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
+  hpctio_obj_prefetch(sparse_fs->footer.idtpl_dxnry_start, sparse_fs->footer.idtpl_dxnry_end, sparse_fs->fobj);
   ret = hpcrun_fmt_idtuple_dxnry_fread2(dxnry, sparse_fs->fobj, malloc, sparse_fs->footer.idtpl_dxnry_start);
   if(ret == HPCFMT_ERR) return SF_ERR;
   if(ret != sparse_fs->footer.idtpl_dxnry_end) return SF_ERR;
@@ -1529,6 +1539,7 @@ int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, id_tuple_t* id_
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
+  hpctio_obj_prefetch(sparse_fs->footer.sm_start, sparse_fs->footer.sm_start+146, sparse_fs->fobj);
   ret = id_tuple_fread2(id_tuple, sparse_fs->fobj, sparse_fs->footer.sm_start);
   if(id_tuple->length == 0) return SF_ERR;
   if(ret == HPCFMT_ERR) return SF_ERR;
@@ -1546,6 +1557,7 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
 
   //first time initialization 
   if(sparse_fs->sm_block_touched == 0){
+    hpctio_obj_prefetch(sparse_fs->footer.sm_start, sparse_fs->footer.sm_end, sparse_fs->fobj);
     int id_tuple_size;
     uint16_t id_tuple_length;  
     HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&id_tuple_length, sparse_fs->fobj, sparse_fs->footer.sm_start));

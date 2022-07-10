@@ -26,7 +26,8 @@ static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys
 
 static size_t POSIX_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static size_t POSIX_Writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
-static size_t POSIX_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p);
+static int POSIX_Prefetch(uint64_t startoff, uint64_t endoff, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+static size_t POSIX_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj,  hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static long int POSIX_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
 /*************************** FILE SYSTEM STRUCTS ***************************/
@@ -51,6 +52,7 @@ hpctio_sys_func_t hpctio_sys_func_posix = {
   .close = POSIX_Close,
   .append = POSIX_Append,
   .writeat = POSIX_Writeat,
+  .prefetch = POSIX_Prefetch,
   .readat = POSIX_Readat,
   .tell = POSIX_Tell,
   .readdir = NULL
@@ -68,6 +70,11 @@ hpctio_sys_t hpctio_sys_posix = {
 typedef struct hpctio_posix_obj_opt {
   //TODO: Lustre varaibles here
   int wmode;
+
+  char * rdbuf;
+  uint64_t rdbuf_start;
+  uint64_t rdbuf_end;
+  int rdbuf_active;
 }hpctio_posix_obj_opt_t;
 
 //file system object struct
@@ -129,6 +136,8 @@ static int POSIX_Stat(const char* path, struct stat * stbuf, hpctio_sys_params_t
 static hpctio_obj_opt_t * POSIX_Obj_Options(int wmode, int sizetype){
   hpctio_posix_obj_opt_t  * opt = (hpctio_posix_obj_opt_t  *) malloc(sizeof(hpctio_posix_obj_opt_t ));
   opt->wmode = wmode;
+  opt->rdbuf_active = 0;
+  opt->rdbuf = NULL;
   return (hpctio_obj_opt_t *)opt;
 }
 
@@ -173,6 +182,7 @@ exit:
 
 static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
   hpctio_posix_fd_t * pobj = (hpctio_posix_fd_t *) obj;
+  hpctio_posix_obj_opt_t * popt = (hpctio_posix_obj_opt_t *)opt;
   int r;
 
   if(pobj->fs){
@@ -188,6 +198,12 @@ static int POSIX_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys
   free(pobj);
 
 exit:
+  if(popt->rdbuf){
+    free(popt->rdbuf);
+    popt->rdbuf = NULL;
+    popt->rdbuf_active = 0;
+  }
+
   return r;
 }
 
@@ -224,11 +240,42 @@ exit:
   }
 }
 
-static size_t POSIX_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p){
-  hpctio_posix_fd_t * pfd = (hpctio_posix_fd_t *) obj;
-  size_t s = pread(pfd->fd, buf, count, offset);
+static int POSIX_Prefetch(uint64_t startoff, uint64_t endoff, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+    hpctio_posix_obj_opt_t * p_opt = (hpctio_posix_obj_opt_t *) opt;
+    
+    size_t sz = endoff - startoff;
+    if(p_opt->rdbuf){
+        p_opt->rdbuf = (char *)realloc(p_opt->rdbuf, sz);
+    }else{
+        p_opt->rdbuf = (char *)malloc(sz);
+    }
 
-exit:
+    size_t r = 0;
+    if(p_opt->rdbuf) r = POSIX_Readat(p_opt->rdbuf, sz, startoff, obj, opt, p);
+    if(r == sz) {
+        p_opt->rdbuf_active = 1;
+        p_opt->rdbuf_start = startoff;
+        p_opt->rdbuf_end = endoff;
+        return 0;
+    }else{
+        p_opt->rdbuf_active = 0;
+        return -1;
+    }
+
+}
+
+
+static size_t POSIX_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+  hpctio_posix_fd_t * pfd = (hpctio_posix_fd_t *) obj;
+  hpctio_posix_obj_opt_t * p_opt = (hpctio_posix_obj_opt_t *) opt;
+
+  if(p_opt->rdbuf_active && p_opt->rdbuf_start <= offset && (offset + count) <= p_opt->rdbuf_end){
+      uint64_t newoff = offset - p_opt->rdbuf_start;
+      memcpy(buf, (const char *)(p_opt->rdbuf+newoff), count);
+      return count;
+  }
+
+  size_t s = pread(pfd->fd, buf, count, offset);
   return s == count ? s : -1;
 }
 

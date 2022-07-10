@@ -58,7 +58,7 @@ std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesyst
   std::unique_ptr<ProfileSource> r;
   r.reset(new sources::Hpcrun4(p, input_sys));
   if(r->valid()) return r;
-
+  
   // Unrecognized or unsupported format
   return nullptr;
 }

@@ -52,10 +52,12 @@
 #include "source.hpp"
 #include "sink.hpp"
 #include "finalizer.hpp"
+#include "mpi/all.hpp"
 
 #include <iomanip>
 #include <stdexcept>
 #include <limits>
+#include "omp.h"
 
 using namespace hpctoolkit;
 using Settings = ProfilePipeline::Settings;
@@ -318,6 +320,7 @@ void ProfilePipeline::complete(PerThreadTemporary&& tt, std::optional<std::pair<
 }
 
 void ProfilePipeline::run() {
+
 #if ENABLE_VG_ANNOTATIONS == 1
   char start_arc;
   char barrier_arc;
@@ -422,8 +425,8 @@ void ProfilePipeline::run() {
         sl.lastWave = true;
         DataClass req = (sources[i]().finalizeRequest(scheduled - scheduledWaves)
                          - sources[i].read) & sources[i].dataLimit;
-        sources[i].read |= req;
-        if(req.hasAny()) sources[i]().read(req);
+        sources[i].read |= req; 
+        if(req.hasAny()) sources[i]().read(req);        
       }
 
       // Complete the threads unit to this Source in particular
@@ -438,6 +441,7 @@ void ProfilePipeline::run() {
     // Make sure everything has been read before we handle the merged threads
     ANNOTATE_HAPPENS_BEFORE(&barrier_arc);
     #pragma omp barrier
+    if((mpi::World::rank() == 0) && omp_get_thread_num() == 0) printf("Finished reading\n");
     ANNOTATE_HAPPENS_AFTER(&barrier_arc);
 
     // One thread fills allMergedThreads from the mergedThreads map, all others
@@ -508,6 +512,7 @@ void ProfilePipeline::run() {
     ANNOTATE_HAPPENS_BEFORE(&end_arc);
   }
   ANNOTATE_HAPPENS_AFTER(&end_arc);
+
 }
 
 Source::Source() : pipe(nullptr), finalizeContexts(false) {};

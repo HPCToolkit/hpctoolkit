@@ -11,6 +11,7 @@
 
 #include "hpctio.h"
 #include "hpctio_obj.h"
+#include "hpcfmt2.h"
 
 static int daos_init_count;
 static pthread_once_t real_daos_inited;
@@ -35,7 +36,8 @@ static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_p
 
 static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static size_t DFS_Writeat(const void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
-static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p);
+static int DFS_Prefetch(uint64_t startoff, uint64_t endoff, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
+static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj,  hpctio_obj_opt_t * opt, hpctio_sys_params_t * p);
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt);
 
 static int DFS_Readdir(const char * path, char *** entries, hpctio_sys_params_t * p);
@@ -70,6 +72,7 @@ hpctio_sys_func_t hpctio_sys_func_dfs = {
     .close = DFS_Close,
     .append = DFS_Append,
     .writeat = DFS_Writeat,
+    .prefetch = DFS_Prefetch,
     .readat = DFS_Readat,
     .tell = DFS_Tell,
     .readdir = DFS_Readdir
@@ -86,9 +89,15 @@ typedef struct hpctio_dfs_obj_opt {
 
   int wmode;
   long file_size;
-  int buffer_size;
-  int buffer_capacity;
-  char * buffer;
+
+  int wrtbuf_size;
+  int wrtbuf_capacity;
+  char * wrtbuf;
+
+  char * rdbuf;
+  uint64_t rdbuf_start;
+  uint64_t rdbuf_end;
+  int rdbuf_active;
 }hpctio_dfs_obj_opt_t;
 
 //use dfs_obj_t directly as dfs version of hpctio_obj_id_t 
@@ -734,7 +743,10 @@ static hpctio_obj_opt_t * DFS_Obj_Options(int wmode, int sizetype){
         opt->oc = OC_EC_2P1GX; //on Aurora, it should be OC_EC_16P2GX
     
     opt->wmode = wmode;
-    opt->buffer_capacity = 1024 * 1024;
+    opt->wrtbuf_capacity = 1024 * 1024;
+    opt->wrtbuf = NULL;
+    opt->rdbuf_active = 0;
+    opt->rdbuf = NULL;
     return (hpctio_obj_opt_t *)opt;
 }
 
@@ -759,8 +771,8 @@ static hpctio_obj_id_t * DFS_Open(const char * path, int flags, mode_t md, hpcti
 
     if(dfs_opt->wmode == HPCTIO_APPEND){
         dfs_opt->file_size = 0;
-        dfs_opt->buffer_size = 0;
-        dfs_opt->buffer = (char *) malloc(dfs_opt->buffer_capacity); 
+        dfs_opt->wrtbuf_size = 0;
+        dfs_opt->wrtbuf = (char *) malloc(dfs_opt->wrtbuf_capacity); 
     }
 
 exit:
@@ -783,23 +795,27 @@ static int DFS_Close(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_p
     int r;
 
     // check if any data remain in the buffer to be flushed
-    if((dfs_opt->wmode == HPCTIO_APPEND) && (dfs_opt->buffer_size > 0)){
-        r = real_write(dfs_opt->buffer, dfs_opt->buffer_size, dfs_opt->file_size, dfs_p->dfs, dobj);
-        if(r == dfs_opt->buffer_size){
-            dfs_opt->buffer_size = 0;
+    if((dfs_opt->wmode == HPCTIO_APPEND) && (dfs_opt->wrtbuf_size > 0)){
+        r = real_write(dfs_opt->wrtbuf, dfs_opt->wrtbuf_size, dfs_opt->file_size, dfs_p->dfs, dobj);
+        if(r == dfs_opt->wrtbuf_size){
+            dfs_opt->wrtbuf_size = 0;
             dfs_opt->file_size += r;
         }
-        CHECK((r == -1), "Failed to flush the buffer during DFS_Close() the file object");
-    }
-
-    if(dfs_opt->wmode == HPCTIO_APPEND){
-        free(dfs_opt->buffer);
-        dfs_opt->buffer = NULL;
+        CHECK((r == -1), "Failed to flush the write buffer during DFS_Close() the file object");
     }
 
     r = dfs_release(dobj);
 
 exit:
+    if(dfs_opt->wrtbuf){
+        free(dfs_opt->wrtbuf);
+        dfs_opt->wrtbuf = NULL;
+    }
+    if(dfs_opt->rdbuf){
+        free(dfs_opt->rdbuf);
+        dfs_opt->rdbuf = NULL;
+        dfs_opt->rdbuf_active = 0;
+    }
     if(r && (r != -1)){
         errno = r;
         r = -1;
@@ -817,24 +833,24 @@ static size_t DFS_Append(const void * buf, size_t size, size_t nitems, hpctio_ob
     dfs_obj_t * dobj = (dfs_obj_t *) obj;
     int r;
 
-    if((dfs_opt->buffer_size + size*nitems) >= dfs_opt->buffer_capacity){
-        r = real_write(dfs_opt->buffer, dfs_opt->buffer_size, dfs_opt->file_size, dfs_p->dfs, dobj);
-        if(r == dfs_opt->buffer_size){
-            dfs_opt->buffer_size = 0;
+    if((dfs_opt->wrtbuf_size + size*nitems) >= dfs_opt->wrtbuf_capacity){
+        r = real_write(dfs_opt->wrtbuf, dfs_opt->wrtbuf_size, dfs_opt->file_size, dfs_p->dfs, dobj);
+        if(r == dfs_opt->wrtbuf_size){
+            dfs_opt->wrtbuf_size = 0;
             dfs_opt->file_size += r;
         }
         CHECK((r == -1), "Failed to flush the buffer during DFS_Append() the file object");
     }
 
-    if(size*nitems >= dfs_opt->buffer_capacity){
+    if(size*nitems >= dfs_opt->wrtbuf_capacity){
         r = real_write(buf, size*nitems, dfs_opt->file_size, dfs_p->dfs, dobj);
         if(r == size*nitems){
             dfs_opt->file_size += r;
         }
         CHECK((r == -1), "Failed to write the large data directly during DFS_Close() the file object");
     }else{
-        memmove(&(dfs_opt->buffer[dfs_opt->buffer_size]), buf, size * nitems);
-        dfs_opt->buffer_size += size * nitems;
+        memmove(&(dfs_opt->wrtbuf[dfs_opt->wrtbuf_size]), buf, size * nitems);
+        dfs_opt->wrtbuf_size += size * nitems;
         r = size * nitems;
     }
 
@@ -859,9 +875,40 @@ exit:
 }
 
 
-static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_sys_params_t * p){
+static int DFS_Prefetch(uint64_t startoff, uint64_t endoff, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
+    hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
+    
+    size_t sz = endoff - startoff;
+    if(dfs_opt->rdbuf){
+        dfs_opt->rdbuf = (char *)realloc(dfs_opt->rdbuf, sz);
+    }else{
+        dfs_opt->rdbuf = (char *)malloc(sz);
+    }
+
+    size_t r = 0;
+    if(dfs_opt->rdbuf) r = DFS_Readat(dfs_opt->rdbuf, sz, startoff, obj, opt, p);
+    if(r == sz) {
+        dfs_opt->rdbuf_active = 1;
+        dfs_opt->rdbuf_start = startoff;
+        dfs_opt->rdbuf_end = endoff;
+        return 0;
+    }else{
+        dfs_opt->rdbuf_active = 0;
+        return -1;
+    }
+}
+
+
+static size_t DFS_Readat(void * buf, size_t count, uint64_t offset, hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt, hpctio_sys_params_t * p){
     hpctio_dfs_params_t * dfs_p = (hpctio_dfs_params_t *) p;
+    hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
     dfs_obj_t * dobj = (dfs_obj_t *) obj;
+
+    if(dfs_opt->rdbuf_active && dfs_opt->rdbuf_start <= offset && (offset + count) <= dfs_opt->rdbuf_end){
+        uint64_t newoff = offset - dfs_opt->rdbuf_start;
+        memcpy(buf, (const char *)(dfs_opt->rdbuf+newoff), count);
+        return count;
+    }
 
     d_iov_t iov;
     d_sg_list_t sgl;
@@ -887,12 +934,12 @@ exit:
 
 
 
-
+// can only work with append mode, not on read buffer either
 static long int DFS_Tell(hpctio_obj_id_t * obj, hpctio_obj_opt_t * opt){
     hpctio_dfs_obj_opt_t * dfs_opt = (hpctio_dfs_obj_opt_t *) opt;
 
     if(dfs_opt->wmode == HPCTIO_APPEND){
-        return (dfs_opt->file_size + dfs_opt->buffer_size);
+        return (dfs_opt->file_size + dfs_opt->wrtbuf_size);
     }else{ //HPCTIO_WRITE_AT or error
         return -1;
     }

@@ -70,10 +70,12 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, hpctio_sys_t * input_sys)
     fileValid = false;
     return;
   }
+  
   // We still need to check the header before we know for certain whether
   // this is the right version. A hassle, I know.
   hpcrun_fmt_hdr_t hdr;
   if(hpcrun_sparse_read_hdr(file, &hdr) != 0) {
+    printf("here maybe\n");
     hpcrun_sparse_close(file);
     fileValid = false;
     return;
