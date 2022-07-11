@@ -600,6 +600,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     assert(thread);
 
     hpctio_obj_t * fobj = hpctio_obj_open(tracepath.c_str(), O_RDONLY, 0444, HPCTIO_RDONLY, 0, input_sys);
+    hpctio_obj_prefetch(trace_off, trace_end, fobj);
     hpctrace_fmt_datum_t tpoint;
     long cur_off = trace_off;
     while(1) {
