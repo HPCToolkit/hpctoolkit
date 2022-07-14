@@ -167,6 +167,10 @@ hpcrun_safe_enter_async(void *pc)
 static inline void
 hpcrun_safe_exit(void)
 {
+  if (! hpcrun_is_initialized() || ! hpcrun_td_avail()) {
+    return 0;
+  }
+
   thread_data_t *td = hpcrun_get_thread_data();
 
   td->inside_hpcrun = 0;
