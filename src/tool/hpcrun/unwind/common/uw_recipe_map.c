@@ -588,15 +588,18 @@ uw_recipe_map_notify_unmap(load_module_t* lm)
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
     uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end, uw);
 
-  thread_data_t *td = hpcrun_get_thread_data();
+  if (hpcrun_td_avail()) {
+    thread_data_t *td = hpcrun_get_thread_data();
 
-  // we need to confirm that the hashtable is allocated. if we are
-  // exiting very early (e.g. when a metric is not recognized), which
-  // means that hpcrun_init_internal has not yet been called, the hash
-  // table has not yet been allocated.
-  if (td->uw_hash_table) uw_hash_delete_range(td->uw_hash_table, start, end);
+    // we need to confirm that the hashtable is allocated. if we are
+    // exiting very early (e.g. when a metric is not recognized), which
+    // means that hpcrun_init_internal has not yet been called, the hash
+    // table has not yet been allocated.
+    if (td->uw_hash_table) uw_hash_delete_range(td->uw_hash_table, start, end);
+  }
 
   uw_recipe_map_report_and_dump("*** unmap: after poisoning", start, end);
+
 }
 
 static void
