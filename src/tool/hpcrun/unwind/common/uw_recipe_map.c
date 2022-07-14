@@ -599,7 +599,6 @@ uw_recipe_map_notify_unmap(load_module_t* lm)
   }
 
   uw_recipe_map_report_and_dump("*** unmap: after poisoning", start, end);
-
 }
 
 static void
