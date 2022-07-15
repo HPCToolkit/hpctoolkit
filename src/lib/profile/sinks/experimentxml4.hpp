@@ -78,9 +78,7 @@ public:
 
   ExtensionClass requires() const noexcept override {
     using namespace hpctoolkit::literals::extensions;
-    Class ret = classification + identifier;
-    if(include_sources) ret += resolvedPath;
-    return ret;
+    return classification + identifier + resolvedPath;
   }
 
   void notifyPipeline() noexcept override;
