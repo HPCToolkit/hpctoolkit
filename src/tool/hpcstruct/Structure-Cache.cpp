@@ -448,6 +448,10 @@ hpcstruct_cache_hash
 )
 {
   char *eh  = elf_hash(binary_abspath);
+
+  // handle NULL
+  if (eh == 0) return strdup("");
+
   return eh;
 }
 
