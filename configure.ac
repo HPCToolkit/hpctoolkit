@@ -3615,6 +3615,65 @@ AC_SUBST([XED2_COPY])
 
 
 #-------------------------------------------------
+# Option: --with-daos=PATH
+#-------------------------------------------------
+
+DAOS_INC=
+DAOS_LIB_DIR=no
+DAOS_LIB_FLAGS=
+
+DAOS="no"
+
+AC_ARG_WITH([daos],
+  [AS_HELP_STRING([--with-daos=PATH],
+  	    [path to intel daos install directory])],
+  [DAOS="$withval"],
+  [])
+
+# initial test that include and lib files exist
+
+AC_MSG_CHECKING([for daos])
+
+daos_avail=no
+case "$DAOS" in
+  /* )
+    if test ! -f "${DAOS}/include/daos.h" ; then
+      AC_MSG_ERROR([invalid daos directory: $DAOS])
+    fi
+    for lib in $multilib_path ; do
+      if test -f "${DAOS}/${lib}/libdaos.so" ; then
+        DAOS_LIB_DIR="${DAOS}/${lib}"
+        break
+      fi
+    done
+    if test "x$DAOS_LIB_DIR" = x; then
+      AC_MSG_ERROR([invalid daos directory: $DAOS])
+    fi
+    DAOS_INC="${DAOS}/include"
+    DAOS_LIB_FLAGS="-L$DAOS_LIB_DIR -ldaos -ldfs -luuid"
+    daos_avail=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([daos directory must be absolute path: $DAOS])
+    ;;
+esac
+
+AC_MSG_RESULT([$DAOS])
+
+AM_CONDITIONAL([OPT_ENABLE_DAOS], [test "$daos_avail" = yes])
+
+if test "$daos_avail" = yes ; then
+  AC_DEFINE([OPT_ENABLE_DAOS], [1], [Have support for daos])
+fi
+
+AC_SUBST([DAOS_INC])
+AC_SUBST([DAOS_LIB_DIR])
+AC_SUBST([DAOS_LIB_FLAGS])
+
+
+#-------------------------------------------------
 # Check for Xerces-C (XML parser)
 #-------------------------------------------------
 
@@ -5812,6 +5871,7 @@ fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
 AC_MSG_NOTICE([  yaml-cpp:     ${YAMLCPP}])
+AC_MSG_NOTICE([  daos:         ${DAOS}])
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

@@ -24,7 +24,7 @@ static int hpctio_sys_count = 1;
 * create a new one and insert it into hpctio_sys_avail if not already existed
 */
 hpctio_sys_t * hpctio_sys_initialize(const char * path){
-    // DAOS:
+#if OPT_ENABLE_DAOS
     if(strncmp(hpctio_daos_prefix, path, strlen(hpctio_daos_prefix)) == 0){
         // check if already initialized
         for(int i = 0; i < hpctio_sys_count; i++){
@@ -51,10 +51,12 @@ hpctio_sys_t * hpctio_sys_initialize(const char * path){
         // return the new object
         return new_sys;
 
-    }else{
-        //return the posix one
-        return hpctio_sys_avail[0];
     }
+#endif
+
+    //return the posix one
+    return hpctio_sys_avail[0];
+    
 }
 
 
@@ -95,10 +97,13 @@ void hpctio_sys_avail_display(){
     for(int i = 0; i < hpctio_sys_count; i++){
         hpctio_sys_t * sys = hpctio_sys_avail[i];
         printf("Object %d - %ld:\n", i, (intptr_t)sys);
+        #if OPT_ENABLE_DAOS
         if(sys->func_ptr == &hpctio_sys_func_dfs){
             printf("File system: DAOS\n");
             hpctio_sys_func_dfs.display_params(sys->params_ptr);
-        }else if(sys->func_ptr == &hpctio_sys_func_posix){
+        }else 
+        #endif
+        if(sys->func_ptr == &hpctio_sys_func_posix){
             printf("File system: POSIX\n");
             printf("No parameters for POSIX\n");
         }else{

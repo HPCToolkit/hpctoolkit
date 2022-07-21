@@ -121,17 +121,13 @@ MYLDADD_LIBHPCRUN_PRELOAD = \
 	-ldl \
 	@OPT_PAPI_LDFLAGS@ \
 	-lpthread \
-	-ldfs \
-	-ldaos \
-	-luuid
+	@DAOS_LIB_FLAGS@
 
 MYLDADD_LIBHPCRUN_STATIC = \
 	$(HPCLIB_ProfLean) \
 	@OPT_PAPI_LDFLAGS@ \
 	-lpthread \
-	-ldfs \
-	-ldaos \
-	-luuid
+	@DAOS_LIB_FLAGS@
 
 
 MYCLEAN = @HOST_LIBTREPOSITORY@

@@ -87,9 +87,7 @@ MYLDADD = \
 	@BINUTILS_LIBS@ \
 	$(HPCLIB_gettext) \
 	-lpthread \
-	-ldfs \
-	-ldaos \
-	-luuid
+	@DAOS_LIB_FLAGS@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

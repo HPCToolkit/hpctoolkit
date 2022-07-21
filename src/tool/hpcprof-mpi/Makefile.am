@@ -112,9 +112,7 @@ MYLDADD = \
 	$(HPCLIB_gettext) \
 	@HOST_HPCPROF_LDFLAGS@ \
 	-lpthread \
-	-ldfs \
-	-ldaos \
-	-luuid
+	@DAOS_LIB_FLAGS@
 
 if HOST_CPU_X86_FAMILY
 MY_LIB_XED = $(XED2_PROF_MPI_LIBS)

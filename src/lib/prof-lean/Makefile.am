@@ -120,12 +120,17 @@ MYSOURCES = \
 	formats/profiledb.h formats/profiledb.c \
 	formats/cctdb.h formats/cctdb.c \
 	formats/tracedb.h formats/tracedb.c \
-	hpctio.h hpctio.c hpctio_dfs.c hpctio_posix.c \
+	hpctio.h hpctio.c hpctio_posix.c \
 	hpctio_obj.h \
 	hpcfmt2.h hpcfmt2.c \
 	hpcio2.h hpcio2.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC) 
+
+if OPT_ENABLE_DAOS
+  MYSOURCES += hpctio_dfs.c
+  MYCFLAGS += -I@DAOS_INC@
+endif
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

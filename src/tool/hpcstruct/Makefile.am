@@ -117,9 +117,7 @@ MYLDADD = \
 	$(LZMA_LDFLAGS_DYN) \
 	$(TBB_LFLAGS) \
 	-lpthread \
-	-ldfs \
-	-ldaos \
-	-luuid
+	@DAOS_LIB_FLAGS@
 
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 

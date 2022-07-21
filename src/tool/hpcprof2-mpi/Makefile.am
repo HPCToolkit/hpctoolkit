@@ -112,9 +112,7 @@ MYLDADD = \
 	@BOOST_LFLAGS@ \
 	@HOST_HPCPROF_LDFLAGS@ \
 	-lpthread \
-	-ldfs \
-	-ldaos \
-	-luuid
+	@DAOS_LIB_FLAGS@
 
 if OPT_ENABLE_OPENMP
 MYCFLAGS += $(OPENMP_FLAG)

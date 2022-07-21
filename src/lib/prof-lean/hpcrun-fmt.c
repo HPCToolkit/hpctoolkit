@@ -1414,6 +1414,10 @@ int hpcrun_sparse_resume(hpcrun_sparse_file_t* sparse_fs, const char* path)
     return SF_ERR;
   sparse_fs->fobj = fobj;
   sparse_fs->mode = OPENED;
+
+  //Temp
+  hpctio_obj_prefetch(sparse_fs->footer.loadmap_start, sparse_fs->footer.sm_end, sparse_fs->fobj);
+    
   return SF_SUCCEED;
 }
 
@@ -1457,7 +1461,7 @@ int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm)
   if(ret != SF_SUCCEED) return SF_ERR;
 
   if(sparse_fs->lm_bytes_read == 0){
-    hpctio_obj_prefetch(sparse_fs->footer.loadmap_start, sparse_fs->footer.loadmap_end, sparse_fs->fobj);
+    // hpctio_obj_prefetch(sparse_fs->footer.loadmap_start, sparse_fs->footer.loadmap_end, sparse_fs->fobj);
     sparse_fs->lm_bytes_read = SF_num_lm_SIZE; //the first lm should skip the info about number of lms
   }
 
@@ -1479,7 +1483,7 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
   if(ret != SF_SUCCEED) return SF_ERR;
 
   if(sparse_fs->metric_bytes_read == 0) {
-    hpctio_obj_prefetch(sparse_fs->footer.met_tbl_start, sparse_fs->footer.met_tbl_end, sparse_fs->fobj);
+    // hpctio_obj_prefetch(sparse_fs->footer.met_tbl_start, sparse_fs->footer.met_tbl_end, sparse_fs->fobj);
     sparse_fs->metric_bytes_read = SF_num_metric_SIZE; //the first metric should skip the info about number of metrics
   }
 
@@ -1503,7 +1507,7 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   
   //first time initialization
   if(sparse_fs->cct_nodes_read == 0){ 
-    hpctio_obj_prefetch(sparse_fs->footer.cct_start, sparse_fs->footer.cct_end, sparse_fs->fobj);
+    // hpctio_obj_prefetch(sparse_fs->footer.cct_start, sparse_fs->footer.cct_end, sparse_fs->fobj);
     HPCFMT_ThrowIfError(hpcfmt_int8_fread2(&sparse_fs->num_cct_nodes, sparse_fs->fobj, sparse_fs->footer.cct_start));
   }
   if(sparse_fs->cct_nodes_read == sparse_fs->num_cct_nodes) return SF_END;
@@ -1557,7 +1561,7 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
 
   //first time initialization 
   if(sparse_fs->sm_block_touched == 0){
-    hpctio_obj_prefetch(sparse_fs->footer.sm_start, sparse_fs->footer.sm_end, sparse_fs->fobj);
+    // hpctio_obj_prefetch(sparse_fs->footer.sm_start, sparse_fs->footer.sm_end, sparse_fs->fobj);
     int id_tuple_size;
     uint16_t id_tuple_length;  
     HPCFMT_ThrowIfError(hpcfmt_int2_fread2(&id_tuple_length, sparse_fs->fobj, sparse_fs->footer.sm_start));

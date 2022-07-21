@@ -738,6 +738,11 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
+DAOS_LIB_FLAGS
+DAOS_LIB_DIR
+DAOS_INC
+OPT_ENABLE_DAOS_FALSE
+OPT_ENABLE_DAOS_TRUE
 XED2_COPY
 XED2_PROF_MPI_LIBS
 XED2_HPCLINK_LIBS
@@ -1052,6 +1057,7 @@ enable_perf_events
 enable_kernel_blocking
 with_tbb
 with_xed
+with_daos
 with_xerces
 with_yaml_cpp
 with_zlib
@@ -1816,6 +1822,7 @@ Optional Packages:
   --with-perfmon=PATH     path to perfmon2 (libpfm4) install directory
   --with-tbb=PATH         path to intel tbb install directory
   --with-xed=PATH         path to intel xed install directory
+  --with-daos=PATH        path to intel daos install directory
   --with-xerces=PATH      path to xerces-c install directory
   --with-yaml-cpp=PATH    path to YAML-cpp install directory
   --with-zlib=PATH        path to zlib install directory
@@ -22392,6 +22399,77 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-daos=PATH
+#-------------------------------------------------
+
+DAOS_INC=
+DAOS_LIB_DIR=no
+DAOS_LIB_FLAGS=
+
+DAOS="no"
+
+
+# Check whether --with-daos was given.
+if test "${with_daos+set}" = set; then :
+  withval=$with_daos; DAOS="$withval"
+fi
+
+
+# initial test that include and lib files exist
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for daos" >&5
+$as_echo_n "checking for daos... " >&6; }
+
+daos_avail=no
+case "$DAOS" in
+  /* )
+    if test ! -f "${DAOS}/include/daos.h" ; then
+      as_fn_error $? "invalid daos directory: $DAOS" "$LINENO" 5
+    fi
+    for lib in $multilib_path ; do
+      if test -f "${DAOS}/${lib}/libdaos.so" ; then
+        DAOS_LIB_DIR="${DAOS}/${lib}"
+        break
+      fi
+    done
+    if test "x$DAOS_LIB_DIR" = x; then
+      as_fn_error $? "invalid daos directory: $DAOS" "$LINENO" 5
+    fi
+    DAOS_INC="${DAOS}/include"
+    DAOS_LIB_FLAGS="-L$DAOS_LIB_DIR -ldaos -ldfs -luuid"
+    daos_avail=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "daos directory must be absolute path: $DAOS" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $DAOS" >&5
+$as_echo "$DAOS" >&6; }
+
+ if test "$daos_avail" = yes; then
+  OPT_ENABLE_DAOS_TRUE=
+  OPT_ENABLE_DAOS_FALSE='#'
+else
+  OPT_ENABLE_DAOS_TRUE='#'
+  OPT_ENABLE_DAOS_FALSE=
+fi
+
+
+if test "$daos_avail" = yes ; then
+
+$as_echo "#define OPT_ENABLE_DAOS 1" >>confdefs.h
+
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # Check for Xerces-C (XML parser)
 #-------------------------------------------------
 
@@ -25228,6 +25306,10 @@ if test -z "${OPT_PAPI_ROCM_TRUE}" && test -z "${OPT_PAPI_ROCM_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_ROCM\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_ENABLE_DAOS_TRUE}" && test -z "${OPT_ENABLE_DAOS_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_DAOS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -28018,6 +28100,8 @@ $as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}
 $as_echo "$as_me:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   yaml-cpp:     ${YAMLCPP}" >&5
 $as_echo "$as_me:   yaml-cpp:     ${YAMLCPP}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   daos:         ${DAOS}" >&5
+$as_echo "$as_me:   daos:         ${DAOS}" >&6;}
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

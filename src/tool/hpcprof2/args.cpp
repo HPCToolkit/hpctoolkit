@@ -727,7 +727,7 @@ ProfArgs::StructWarner::classify(Context& c, NestedScope& ns) noexcept {
 static bool exists(const std::string &path, hpctio_sys_t * sys){
   if(sys->func_ptr == &hpctio_sys_func_posix){
     return stdshim::filesystem::exists(path);
-  }else if(sys->func_ptr == &hpctio_sys_func_dfs){
+  }else{
     int ret = hpctio_sys_access(path.c_str(), F_OK, sys);
 
     if(ret == -1 && errno == ENOENT) return false;
@@ -743,7 +743,7 @@ static bool exists(const std::string &path, hpctio_sys_t * sys){
 static bool removeAll(const std::string &path, hpctio_sys_t * sys){
   if(sys->func_ptr == &hpctio_sys_func_posix){
     return stdshim::filesystem::remove_all(path);
-  }else if(sys->func_ptr == &hpctio_sys_func_dfs){
+  }else{
     int ret = hpctio_sys_remove(path.c_str(), sys);
     return ret == 0 ? true : false;
   }
@@ -763,7 +763,7 @@ static std::vector<std::string> directoryEntries(const std::string &path, hpctio
     for(const auto& de: fs::directory_iterator(path)) {
       entries.emplace_back(de.path().string());
     }
-  }else if(sys->func_ptr == &hpctio_sys_func_dfs){
+  }else{
     char** ent = (char **)malloc(sizeof(char*));
     int num = sys->func_ptr->readdir(path.c_str(), &ent, sys->params_ptr);
     for(int i = 0; i < num; i++){

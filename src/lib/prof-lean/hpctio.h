@@ -1,9 +1,10 @@
 #ifndef HPCTIO_H
 #define HPCTIO_H
 
-#include <mpi.h>
 #include <stddef.h>
 #include <sys/stat.h>
+#include <stdint.h>
+#include "hpctoolkit-config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,7 +65,9 @@ typedef struct hpctio_sys_func {
 
 } hpctio_sys_func_t;
 
+#if OPT_ENABLE_DAOS
 extern hpctio_sys_func_t hpctio_sys_func_dfs;
+#endif
 extern hpctio_sys_func_t hpctio_sys_func_posix;
 
 //file system struct

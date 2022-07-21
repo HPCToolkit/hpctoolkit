@@ -168,6 +168,9 @@
 /* Standard C headers */
 #undef NO_STD_CHEADERS
 
+/* Have support for daos */
+#undef OPT_ENABLE_DAOS
+
 /* Have support for cuda */
 #undef OPT_HAVE_CUDA
 

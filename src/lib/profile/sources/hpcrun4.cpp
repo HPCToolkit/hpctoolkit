@@ -75,7 +75,6 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, hpctio_sys_t * input_sys)
   // this is the right version. A hassle, I know.
   hpcrun_fmt_hdr_t hdr;
   if(hpcrun_sparse_read_hdr(file, &hdr) != 0) {
-    printf("here maybe\n");
     hpcrun_sparse_close(file);
     fileValid = false;
     return;
@@ -600,10 +599,17 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     assert(thread);
 
     hpctio_obj_t * fobj = hpctio_obj_open(tracepath.c_str(), O_RDONLY, 0444, HPCTIO_RDONLY, 0, input_sys);
-    hpctio_obj_prefetch(trace_off, trace_end, fobj);
+    // hpctio_obj_prefetch(trace_off, trace_end, fobj);
     hpctrace_fmt_datum_t tpoint;
     long cur_off = trace_off;
+    long buf_off = 0;
+    long buf_end = 0;
     while(1) {
+      if((cur_off < buf_off) || (cur_off + 16 > buf_end)){
+        buf_off = cur_off;
+        buf_end = ((buf_off + 1024 * 1024) <= trace_end) ? buf_off + 1024 * 1024 : trace_end;
+        hpctio_obj_prefetch(buf_off, buf_end, fobj);
+      }
       cur_off = hpctrace_fmt_datum_fread2(&tpoint, {0}, fobj, cur_off);
       if(cur_off == trace_end) break;
       else if(cur_off == HPCFMT_ERR) {
