@@ -117,6 +117,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@OPT_ENABLE_LUSTRE_TRUE@am__append_1 = -llustreapi
 pkglibexec_PROGRAMS = hpctracedump$(EXEEXT)
 subdir = src/tool/hpctracedump
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -139,9 +140,10 @@ PROGRAMS = $(pkglibexec_PROGRAMS)
 am__objects_1 = hpctracedump-main.$(OBJEXT)
 am_hpctracedump_OBJECTS = $(am__objects_1)
 hpctracedump_OBJECTS = $(am_hpctracedump_OBJECTS)
-am__DEPENDENCIES_1 = $(HPCLIB_ProfLean) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) $(HPCLIB_gettext)
-hpctracedump_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(HPCLIB_ProfLean) $(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) $(HPCLIB_gettext) $(am__DEPENDENCIES_1)
+hpctracedump_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -530,16 +532,9 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext) \
-	-lpthread \
-	@DAOS_LIB_FLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_ProfLean) $(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) @BINUTILS_LIBS@ $(HPCLIB_gettext) \
+	-lpthread @DAOS_LIB_FLAGS@ $(am__append_1)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpctracedump_SOURCES = $(MYSOURCES)
 hpctracedump_CFLAGS = $(MYCFLAGS)

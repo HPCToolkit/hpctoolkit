@@ -118,6 +118,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@OPT_ENABLE_LUSTRE_TRUE@am__append_1 = -llustreapi
 pkglibexec_PROGRAMS = hpcprof-mpi-bin$(EXEEXT)
 subdir = src/tool/hpcprof-mpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -148,7 +149,7 @@ am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
-	$(am__DEPENDENCIES_1) $(HPCLIB_gettext)
+	$(am__DEPENDENCIES_1) $(HPCLIB_gettext) $(am__DEPENDENCIES_1)
 hpcprof_mpi_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -592,28 +593,14 @@ MYLDFLAGS = \
 	@XERCES_LDFLAGS@ \
 	@LZMA_PROF_MPI_LIBS@ 
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal_Simple) \
-	$(HPCLIB_ProfXML) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_ISA) \
-	$(MY_LIB_XED) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	$(MY_ELF_DWARF) \
-	@LZMA_PROF_MPI_LIBS@ \
-	@XERCES_LDLIBS@ \
-	@BINUTILS_LIBS@ \
-	$(HPCLIB_gettext) \
-	@HOST_HPCPROF_LDFLAGS@ \
-	-lpthread \
-	@DAOS_LIB_FLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) \
+	$(HPCLIB_Banal_Simple) $(HPCLIB_ProfXML) $(HPCLIB_Prof) \
+	$(HPCLIB_Binutils) $(HPCLIB_ProfLean) $(HPCLIB_ISA) \
+	$(MY_LIB_XED) $(HPCLIB_XML) $(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) $(MY_ELF_DWARF) @LZMA_PROF_MPI_LIBS@ \
+	@XERCES_LDLIBS@ @BINUTILS_LIBS@ $(HPCLIB_gettext) \
+	@HOST_HPCPROF_LDFLAGS@ -lpthread @DAOS_LIB_FLAGS@ \
+	$(am__append_1)
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_PROF_MPI_LIBS)
 MYCLEAN = @HOST_LIBTREPOSITORY@

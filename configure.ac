@@ -3674,6 +3674,44 @@ AC_SUBST([DAOS_LIB_FLAGS])
 
 
 #-------------------------------------------------
+# Option: --with-lustre=PATH
+#-------------------------------------------------
+
+AC_ARG_WITH([lustre],
+  [AS_HELP_STRING([--with-lustre],
+  	    [support configurable Lustre striping values @<:@default=no@:>@])],
+  [],
+  [with_lustre=no])
+
+# check header files exist
+
+AC_MSG_CHECKING([for lustre])
+AS_IF([test "x$with_lustre" = xyes ], [
+        AC_CHECK_HEADERS([linux/lustre/lustre_user.h lustre/lustre_user.h], [AC_DEFINE([HAVE_LUSTRE_USER], [1], [Lustre user API available in some shape or form])], [
+                if test "x$with_lustre" != xno -a \
+                        "x$ac_cv_header_linux_lustre_lustre_user_h" = "xno" -a \
+                        "x$ac_cv_header_lustre_lustre_user_h" = "xno" ; then
+                        AC_MSG_ERROR([--with-lustre was given, <lustre/lustre_user.h> not found])
+                fi
+        ])
+        AC_CHECK_HEADERS([linux/lustre/lustreapi.h lustre/lustreapi.h],
+		            [AC_DEFINE([HAVE_LUSTRE_LUSTREAPI], [1], [Lustre user API available in some shape or form])], [
+                if test "x$with_lustre" != xno -a \
+                        "x$ac_cv_header_linux_lustre_lustreapi_h" = "xno" -a \
+                        "x$ac_cv_header_lustre_lustreapi_h" = "xno" ; then
+                        AC_MSG_ERROR([--with-lustre was given, <lustre/lustreapi.h> not found])
+                fi
+        ])
+])
+AC_MSG_RESULT([$with_lustre])
+
+AM_CONDITIONAL([OPT_ENABLE_LUSTRE], [test x$with_lustre = xyes])
+AM_COND_IF([OPT_ENABLE_LUSTRE],[
+        AC_DEFINE([OPT_ENABLE_LUSTRE], [1], [Build wth LUSTRE backend])
+])
+
+
+#-------------------------------------------------
 # Check for Xerces-C (XML parser)
 #-------------------------------------------------
 
@@ -5872,6 +5910,7 @@ AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
 AC_MSG_NOTICE([  yaml-cpp:     ${YAMLCPP}])
 AC_MSG_NOTICE([  daos:         ${DAOS}])
+AC_MSG_NOTICE([  lustre:       ${with_lustre}])
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

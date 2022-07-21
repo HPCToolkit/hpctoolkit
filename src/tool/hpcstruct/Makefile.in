@@ -116,7 +116,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
+@OPT_ENABLE_LUSTRE_TRUE@am__append_1 = -llustreapi
+@OPT_ENABLE_OPENMP_TRUE@am__append_2 = $(OPENMP_FLAG)
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT) dotgraph-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -148,7 +149,8 @@ am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(HPCLIB_gettext) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 dotgraph_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -571,35 +573,18 @@ SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 MYSOURCES = main.cpp Args.cpp Structure-Cache.cpp SingleBin.cpp MeasDir.cpp
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS) $(DYNINST_IFLAGS) -I$(LIBELF_INC) \
-	$(IGC_IFLAGS) $(TBB_IFLAGS) $(am__append_1)
+	$(IGC_IFLAGS) $(TBB_IFLAGS) $(am__append_2)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	-ldl
 
-MYLDADD = \
-	@HOST_HPCSTRUCT_LDFLAGS@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal) \
-	$(HPCLIB_Banal_Simple) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_ISA) \
-	$(MY_LIB_XED) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	$(DYNINST_LFLAGS) \
-	$(BOOST_LFLAGS) \
-	$(MY_ELF_DWARF) \
-	@BINUTILS_LIBS@ \
-	$(IGC_LDFLGS) \
-	$(HPCLIB_gettext) \
-	$(LZMA_LDFLAGS_DYN) \
-	$(TBB_LFLAGS) \
-	-lpthread \
-	@DAOS_LIB_FLAGS@
-
+MYLDADD = @HOST_HPCSTRUCT_LDFLAGS@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(MY_LIB_XED) $(HPCLIB_XML) \
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(DYNINST_LFLAGS) \
+	$(BOOST_LFLAGS) $(MY_ELF_DWARF) @BINUTILS_LIBS@ $(IGC_LDFLGS) \
+	$(HPCLIB_gettext) $(LZMA_LDFLAGS_DYN) $(TBB_LFLAGS) -lpthread \
+	@DAOS_LIB_FLAGS@ $(am__append_1)
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB_FLAGS)

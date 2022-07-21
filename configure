@@ -738,6 +738,8 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
+OPT_ENABLE_LUSTRE_FALSE
+OPT_ENABLE_LUSTRE_TRUE
 DAOS_LIB_FLAGS
 DAOS_LIB_DIR
 DAOS_INC
@@ -1058,6 +1060,7 @@ enable_kernel_blocking
 with_tbb
 with_xed
 with_daos
+with_lustre
 with_xerces
 with_yaml_cpp
 with_zlib
@@ -1823,6 +1826,8 @@ Optional Packages:
   --with-tbb=PATH         path to intel tbb install directory
   --with-xed=PATH         path to intel xed install directory
   --with-daos=PATH        path to intel daos install directory
+  --with-lustre           support configurable Lustre striping values
+                          [default=no]
   --with-xerces=PATH      path to xerces-c install directory
   --with-yaml-cpp=PATH    path to YAML-cpp install directory
   --with-zlib=PATH        path to zlib install directory
@@ -22470,6 +22475,93 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-lustre=PATH
+#-------------------------------------------------
+
+
+# Check whether --with-lustre was given.
+if test "${with_lustre+set}" = set; then :
+  withval=$with_lustre;
+else
+  with_lustre=no
+fi
+
+
+# check header files exist
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for lustre" >&5
+$as_echo_n "checking for lustre... " >&6; }
+if test "x$with_lustre" = xyes ; then :
+
+        for ac_header in linux/lustre/lustre_user.h lustre/lustre_user.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+$as_echo "#define HAVE_LUSTRE_USER 1" >>confdefs.h
+
+else
+
+                if test "x$with_lustre" != xno -a \
+                        "x$ac_cv_header_linux_lustre_lustre_user_h" = "xno" -a \
+                        "x$ac_cv_header_lustre_lustre_user_h" = "xno" ; then
+                        as_fn_error $? "--with-lustre was given, <lustre/lustre_user.h> not found" "$LINENO" 5
+                fi
+
+fi
+
+done
+
+        for ac_header in linux/lustre/lustreapi.h lustre/lustreapi.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+$as_echo "#define HAVE_LUSTRE_LUSTREAPI 1" >>confdefs.h
+
+else
+
+                if test "x$with_lustre" != xno -a \
+                        "x$ac_cv_header_linux_lustre_lustreapi_h" = "xno" -a \
+                        "x$ac_cv_header_lustre_lustreapi_h" = "xno" ; then
+                        as_fn_error $? "--with-lustre was given, <lustre/lustreapi.h> not found" "$LINENO" 5
+                fi
+
+fi
+
+done
+
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_lustre" >&5
+$as_echo "$with_lustre" >&6; }
+
+ if test x$with_lustre = xyes; then
+  OPT_ENABLE_LUSTRE_TRUE=
+  OPT_ENABLE_LUSTRE_FALSE='#'
+else
+  OPT_ENABLE_LUSTRE_TRUE='#'
+  OPT_ENABLE_LUSTRE_FALSE=
+fi
+
+if test -z "$OPT_ENABLE_LUSTRE_TRUE"; then :
+
+
+$as_echo "#define OPT_ENABLE_LUSTRE 1" >>confdefs.h
+
+
+fi
+
+
+#-------------------------------------------------
 # Check for Xerces-C (XML parser)
 #-------------------------------------------------
 
@@ -25310,6 +25402,10 @@ if test -z "${OPT_ENABLE_DAOS_TRUE}" && test -z "${OPT_ENABLE_DAOS_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_DAOS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_ENABLE_LUSTRE_TRUE}" && test -z "${OPT_ENABLE_LUSTRE_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_LUSTRE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -28102,6 +28198,8 @@ $as_echo "$as_me:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&6;}
 $as_echo "$as_me:   yaml-cpp:     ${YAMLCPP}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   daos:         ${DAOS}" >&5
 $as_echo "$as_me:   daos:         ${DAOS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   lustre:       ${with_lustre}" >&5
+$as_echo "$as_me:   lustre:       ${with_lustre}" >&6;}
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

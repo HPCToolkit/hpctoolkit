@@ -119,8 +119,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
+@OPT_ENABLE_LUSTRE_TRUE@am__append_1 = -llustreapi
 @OPT_ENABLE_OPENMP_TRUE@am__append_2 = $(OPENMP_FLAG)
+@OPT_ENABLE_OPENMP_TRUE@am__append_3 = $(OPENMP_FLAG)
 bin_PROGRAMS = hpcprof2-mpi$(EXEEXT)
 subdir = src/tool/hpcprof2-mpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -149,7 +150,8 @@ am_hpcprof2_mpi_OBJECTS = $(am__objects_1)
 hpcprof2_mpi_OBJECTS = $(am_hpcprof2_mpi_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(HPCLIB_Profile) $(HPCLIB_ProfLean) \
-	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1)
+	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 hpcprof2_mpi_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -536,9 +538,9 @@ MYSOURCES = \
 	mpi.cpp ../hpcprof2/args.cpp
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	@VALGRIND_IFLAGS@ $(am__append_1)
+	@VALGRIND_IFLAGS@ $(am__append_2)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ -std=gnu++17 $(am__append_2)
+	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ -std=gnu++17 $(am__append_3)
 MYLDFLAGS = \
 	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
 	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
@@ -550,21 +552,11 @@ MYLDFLAGS = \
 	@YAMLCPP_LDFLAGS@ \
 	-L@LIBELF_LIB@ -ldw -lelf
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Profile) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_SupportLean) \
-	$(MY_ELF_DWARF) \
-	@LZMA_PROF_MPI_LIBS@ \
-	@XERCES_LDLIBS@ \
-	@BINUTILS_LIBS@ \
-	@YAMLCPP_LDLIBS@ \
-	@BOOST_LFLAGS@ \
-	@HOST_HPCPROF_LDFLAGS@ \
-	-lpthread \
-	@DAOS_LIB_FLAGS@
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Profile) $(HPCLIB_ProfLean) \
+	$(HPCLIB_SupportLean) $(MY_ELF_DWARF) @LZMA_PROF_MPI_LIBS@ \
+	@XERCES_LDLIBS@ @BINUTILS_LIBS@ @YAMLCPP_LDLIBS@ \
+	@BOOST_LFLAGS@ @HOST_HPCPROF_LDFLAGS@ -lpthread \
+	@DAOS_LIB_FLAGS@ $(am__append_1)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcprof2_mpi_SOURCES = $(MYSOURCES)
 hpcprof2_mpi_CFLAGS = $(MYCFLAGS)

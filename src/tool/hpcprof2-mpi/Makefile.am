@@ -114,6 +114,10 @@ MYLDADD = \
 	-lpthread \
 	@DAOS_LIB_FLAGS@
 
+if OPT_ENABLE_LUSTRE
+    MYLDADD += -llustreapi
+endif
+
 if OPT_ENABLE_OPENMP
 MYCFLAGS += $(OPENMP_FLAG)
 MYCXXFLAGS += $(OPENMP_FLAG)

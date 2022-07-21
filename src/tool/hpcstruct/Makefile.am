@@ -119,6 +119,10 @@ MYLDADD = \
 	-lpthread \
 	@DAOS_LIB_FLAGS@
 
+if OPT_ENABLE_LUSTRE
+    MYLDADD += -llustreapi
+endif
+
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 
 if OPT_ENABLE_OPENMP

@@ -54,6 +54,24 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the <linux/lustre/lustreapi.h> header file. */
+#undef HAVE_LINUX_LUSTRE_LUSTREAPI_H
+
+/* Define to 1 if you have the <linux/lustre/lustre_user.h> header file. */
+#undef HAVE_LINUX_LUSTRE_LUSTRE_USER_H
+
+/* Lustre user API available in some shape or form */
+#undef HAVE_LUSTRE_LUSTREAPI
+
+/* Define to 1 if you have the <lustre/lustreapi.h> header file. */
+#undef HAVE_LUSTRE_LUSTREAPI_H
+
+/* Define to 1 if you have the <lustre/lustre_user.h> header file. */
+#undef HAVE_LUSTRE_LUSTRE_USER_H
+
+/* Lustre user API available in some shape or form */
+#undef HAVE_LUSTRE_USER
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
@@ -170,6 +188,9 @@
 
 /* Have support for daos */
 #undef OPT_ENABLE_DAOS
+
+/* Build wth LUSTRE backend */
+#undef OPT_ENABLE_LUSTRE
 
 /* Have support for cuda */
 #undef OPT_HAVE_CUDA

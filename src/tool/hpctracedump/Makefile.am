@@ -89,6 +89,10 @@ MYLDADD = \
 	-lpthread \
 	@DAOS_LIB_FLAGS@
 
+if OPT_ENABLE_LUSTRE
+    MYLDADD += -llustreapi
+endif
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
