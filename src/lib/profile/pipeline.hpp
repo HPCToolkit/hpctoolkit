@@ -229,6 +229,9 @@ private:
     std::forward_list<PerThreadTemporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
     bool lastWave = false;
+#ifndef NDEBUG
+    DataClass disabled;
+#endif
 
     std::pair<bool, bool> orderedRegions;
     util::Once orderedPrewaveRegionDepOnce;

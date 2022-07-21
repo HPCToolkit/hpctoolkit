@@ -397,6 +397,9 @@ void ProfilePipeline::run() {
             if(sources[i].read.allOf(scheduledWaves & sources[i].dataLimit))
               sources[i].wavesComplete.signal();
           }
+          // Now that the Source has read all of what we requested, we disallow
+          // any further output of what we just read.
+          sourceLocals[i].disabled |= req;
         }
         if(countdowns[idx].fetch_sub(1, std::memory_order_acq_rel)-1 == 0) {
           for(SinkEntry& e: sinks) notify(e, d);
@@ -424,6 +427,7 @@ void ProfilePipeline::run() {
                          - sources[i].read) & sources[i].dataLimit;
         sources[i].read |= req;
         if(req.hasAny()) sources[i]().read(req);
+        sl.disabled |= req;
       }
 
       // Complete the threads unit to this Source in particular
@@ -551,14 +555,21 @@ util::Once::Caller Source::enterOrderedPostwaveRegion() {
   return slocal->orderedPostwaveRegionDepOnce.signal();
 }
 
+#define SRC_ASSERT_LIMITS(DS) do { \
+  assert(dataLimit.has(DataClass:: DS) && "Source did not register for `" #DS "` emission!"); \
+  assert(pipe->scheduled.has(DataClass:: DS) && "`" #DS "` are not scheduled for this Pipeline!"); \
+  if(slocal != nullptr) \
+    assert(!slocal->disabled.has(DataClass:: DS) && "Attempt to emit `" #DS "` after Source has already read(`" #DS "`)!"); \
+} while(0)
+
 void Source::attributes(const ProfileAttributes& as) {
-  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
+  SRC_ASSERT_LIMITS(attributes);
   std::unique_lock<std::mutex> l(pipe->attrsLock);
   pipe->attrs.merge(as);
 }
 
 void Source::timepointBounds(std::chrono::nanoseconds min, std::chrono::nanoseconds max) {
-  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
+  SRC_ASSERT_LIMITS(attributes);
   std::unique_lock<std::mutex> l(pipe->attrsLock);
   if(pipe->timepointBounds) {
     pipe->timepointBounds->first = std::min(min, pipe->timepointBounds->first);
@@ -568,7 +579,7 @@ void Source::timepointBounds(std::chrono::nanoseconds min, std::chrono::nanoseco
 }
 
 Module& Source::module(const stdshim::filesystem::path& p) {
-  assert(limit().hasReferences() && "Source did not register for `references` emission!");
+  SRC_ASSERT_LIMITS(references);
   auto x = pipe->mods.emplace(pipe->structs.module, p);
   auto r = &x.first();
   if(x.second) {
@@ -581,7 +592,7 @@ Module& Source::module(const stdshim::filesystem::path& p) {
 }
 
 File& Source::file(const stdshim::filesystem::path& p) {
-  assert(limit().hasReferences() && "Source did not register for `references` emission!");
+  SRC_ASSERT_LIMITS(references);
   auto x = pipe->files.emplace(pipe->structs.file, p);
   auto r = &x.first();
   if(x.second) {
@@ -594,7 +605,7 @@ File& Source::file(const stdshim::filesystem::path& p) {
 }
 
 Metric& Source::metric(Metric::Settings s) {
-  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
+  SRC_ASSERT_LIMITS(attributes);
   auto x = pipe->mets.emplace(pipe->structs.metric, std::move(s));
   slocal->thawedMetrics.insert(&x.first());
   for(ProfileFinalizer& f: pipe->finalizers.statistics)
@@ -603,7 +614,7 @@ Metric& Source::metric(Metric::Settings s) {
 }
 
 ExtraStatistic& Source::extraStatistic(ExtraStatistic::Settings s) {
-  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
+  SRC_ASSERT_LIMITS(attributes);
   auto x = pipe->estats.emplace(std::move(s));
   if(x.second) {
     for(auto& s: pipe->sinks) {
@@ -631,7 +642,7 @@ void Source::notifyContext(Context& c) {
   c.userdata.initialize();
 }
 std::pair<Context&, Context&> Source::context(Context& p, const NestedScope& ns) {
-  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
+  SRC_ASSERT_LIMITS(contexts);
   util::optional_ref<Context> res_rel;
   std::reference_wrapper<Context> res_flat = p;
   NestedScope res_ns = ns;
@@ -660,7 +671,7 @@ std::pair<Context&, Context&> Source::context(Context& p, const NestedScope& ns)
 }
 
 util::optional_ref<ContextFlowGraph> Source::contextFlowGraph(const Scope& s) {
-  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
+  SRC_ASSERT_LIMITS(contexts);
   std::pair<const util::uniqued<ContextFlowGraph>&, bool> x = pipe->cgraphs.emplace(s);
   ContextFlowGraph& fg = x.first();
   if(x.second) {
@@ -677,7 +688,7 @@ util::optional_ref<ContextFlowGraph> Source::contextFlowGraph(const Scope& s) {
 }
 
 ContextReconstruction& Source::contextReconstruction(ContextFlowGraph& g, Context& r) {
-  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
+  SRC_ASSERT_LIMITS(contexts);
   assert(!g.empty() && "FlowGraph obtained when it shouldn't have been?");
   auto x = r.reconsts_p->emplace(r, g);
   ContextReconstruction& rc = x.first;
@@ -714,6 +725,7 @@ void Source::addToReconstructionGroup(ContextFlowGraph& g, PerThreadTemporary& t
 }
 
 void Source::addToReconstructionGroup(Context& r, const Scope& entry, PerThreadTemporary& t, uint64_t gid) {
+  SRC_ASSERT_LIMITS(contexts);
   auto& group = t.r_groups[gid];
   std::unique_lock<std::mutex> l(group.lock);
   auto [it, first] = group.c_entries[entry].insert(r);
@@ -728,25 +740,25 @@ void Source::addToReconstructionGroup(Context& r, const Scope& entry, PerThreadT
 }
 
 Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, Context& c) {
-  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  SRC_ASSERT_LIMITS(metrics);
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   return AccumulatorsRef(t.c_data[c]);
 }
 
 Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, ContextReconstruction& cr) {
-  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  SRC_ASSERT_LIMITS(metrics);
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   return AccumulatorsRef(t.r_data[cr]);
 }
 
 Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, uint64_t g, Context& c) {
-  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  SRC_ASSERT_LIMITS(metrics);
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   return AccumulatorsRef(t.r_groups[g].c_data[c]);
 }
 
 Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, uint64_t g, ContextFlowGraph& cfg) {
-  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  SRC_ASSERT_LIMITS(metrics);
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   auto& group = t.r_groups[g];
 #ifndef NDEBUG
@@ -785,7 +797,7 @@ PerThreadTemporary& Source::setup(PerThreadTemporary& tt) {
 }
 
 PerThreadTemporary& Source::thread(ThreadAttributes o) {
-  assert(limit().hasThreads() && "Source did not register for `threads` emission!");
+  SRC_ASSERT_LIMITS(threads);
   assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
   auto& t = newThread(std::move(o));
   slocal->threads.emplace_front(PerThreadTemporary(t));
@@ -793,7 +805,7 @@ PerThreadTemporary& Source::thread(ThreadAttributes o) {
 }
 
 PerThreadTemporary& Source::mergedThread(ThreadAttributes o) {
-  assert(limit().hasThreads() && "Source did not register for `threads` emission!");
+  SRC_ASSERT_LIMITS(threads);
   assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
   {
     std::shared_lock<std::shared_mutex> l(pipe->mergedThreadsLock);
@@ -876,7 +888,7 @@ Source::TimepointStatus Source::timepoint(PerThreadTemporary& tt, PerThreadTempo
 }
 
 Source::TimepointStatus Source::timepoint(PerThreadTemporary& tt, Context& c, std::chrono::nanoseconds tm) {
-  assert(limit().hasCtxTimepoints() && "Source did not register for `ctxTimepoints` emission!");
+  SRC_ASSERT_LIMITS(ctxTimepoints);
   assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   return timepoint(tt, tt.ctxTpData, {tm, c}, DataClass::ctxTimepoints,
     [&](ProfileSink& s) { s.notifyCtxTimepointRewindStart(tt.thread()); },
@@ -884,7 +896,7 @@ Source::TimepointStatus Source::timepoint(PerThreadTemporary& tt, Context& c, st
 }
 
 Source::TimepointStatus Source::timepoint(PerThreadTemporary& tt, Metric& m, double v, std::chrono::nanoseconds tm) {
-  assert(limit().hasMetricTimepoints() && "Source did not register for `ctxTimepoints` emission!");
+  SRC_ASSERT_LIMITS(ctxTimepoints);
   assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   auto x = tt.metricTpData.try_emplace(m);
   auto& tpd = x.first;
