@@ -39,6 +39,7 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
+#include "display.h"
 
 #include <hpcrun/control-knob.h>
 #include <hpcrun/device-finalizers.h>
@@ -184,19 +185,21 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-  // We need to query rocprofiler to get a list of supported rocprofiler counters
+  // initialize rocprofiler so that it assembles a list of supported hardware
+  // counters
   rocprofiler_init();
 
+  // extract and print information about available rocprofiler hardware counters
   int total_counters = rocprofiler_total_counters();
-  printf("===========================================================================\n");
-  printf("Available AMD GPU hardware counter events\n");
-  printf("===========================================================================\n");
-  printf("Name\t\tDescription\n");
-  printf("---------------------------------------------------------------------------\n");
-  for (int i = 0; i < total_counters; ++i) {
-    printf("%s::%s\t\t%s\n", AMD_ROCPROFILER_PREFIX, rocprofiler_counter_name(i), rocprofiler_counter_description(i));
+  if (total_counters > 0) {
+    display_header(stdout, "AMD GPU hardware counter events");
+    display_header_event(stdout);
+    for (int i = 0; i < total_counters; ++i) {
+      char event_name[1024];
+      sprintf(event_name, "%s::%s", AMD_ROCPROFILER_PREFIX, rocprofiler_counter_name(i));
+      display_event_info(stdout, event_name, rocprofiler_counter_description(i));
+    }
   }
-  printf("\n");
 }
 
 

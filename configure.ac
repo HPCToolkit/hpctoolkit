@@ -5132,7 +5132,6 @@ ROCM_HSA_IFLAGS=
 
 ROCM_HIP_LD_DIR=
 ROCM_TRACER_LD_DIR=
-ROCM_PROFILER_LD_DIR=
 ROCM_HSA_LD_DIR=
 
 ROCM_HIP_INC_MESG=
@@ -5143,6 +5142,7 @@ ROCM_TRACER_MESG=
 
 ROCM_PROFILER_INC_MESG=
 ROCM_PROFILER_MESG=
+ROCM_PROFILER_METRICS=
 
 ROCM_HSA_INC_MESG=
 ROCM_HSA_MESG=
@@ -5204,6 +5204,12 @@ case "$ROCM" in
       ROCM_PROFILER_LD_DIR="$ROCM/rocprofiler/lib"
       ROCM_PROFILER_MESG="$ROCM/rocprofiler"
       found=yes
+    fi
+    if test -f "$ROCM/rocprofiler/lib/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM/rocprofiler/lib/metrics.xml"
+    fi
+    if test -f "$ROCM/lib/rocprofiler/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM/lib/rocprofiler/metrics.xml"
     fi
 
     # HSA
@@ -5302,6 +5308,14 @@ case "$ROCM_PROFILER" in
       ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi
+
+    if test -f "$ROCM_PROFILER/rocprofiler/lib/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM_PROFILER/rocprofiler/lib/metrics.xml"
+    fi
+    if test -f "$ROCM_PROFILER/lib/rocprofiler/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM_PROFILER/lib/rocprofiler/metrics.xml"
+    fi
+
     if test "$found" = no ; then
       AC_MSG_WARN([found nothing useful in $ROCM_PROFILER])
     fi
@@ -5413,7 +5427,7 @@ AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
 
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LD_LIB_PATH])
-AC_SUBST([ROCM_PROFILER_LD_DIR])
+AC_SUBST([ROCM_PROFILER_METRICS])
 
 
 #-------------------------------------------------

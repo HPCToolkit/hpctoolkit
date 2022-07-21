@@ -651,7 +651,7 @@ OPT_LEVEL0_IFLAGS
 OPT_LEVEL0
 OPT_ENABLE_LEVEL0_FALSE
 OPT_ENABLE_LEVEL0_TRUE
-ROCM_PROFILER_LD_DIR
+ROCM_PROFILER_METRICS
 OPT_ROCM_LD_LIB_PATH
 OPT_ROCM_IFLAGS
 OPT_ENABLE_ROCM_FALSE
@@ -24359,7 +24359,6 @@ ROCM_HSA_IFLAGS=
 
 ROCM_HIP_LD_DIR=
 ROCM_TRACER_LD_DIR=
-ROCM_PROFILER_LD_DIR=
 ROCM_HSA_LD_DIR=
 
 ROCM_HIP_INC_MESG=
@@ -24370,6 +24369,7 @@ ROCM_TRACER_MESG=
 
 ROCM_PROFILER_INC_MESG=
 ROCM_PROFILER_MESG=
+ROCM_PROFILER_METRICS=
 
 ROCM_HSA_INC_MESG=
 ROCM_HSA_MESG=
@@ -24439,6 +24439,12 @@ $as_echo "$as_me: found $ROCM/rocprofiler/lib/librocprofiler64.so" >&6;}
       ROCM_PROFILER_LD_DIR="$ROCM/rocprofiler/lib"
       ROCM_PROFILER_MESG="$ROCM/rocprofiler"
       found=yes
+    fi
+    if test -f "$ROCM/rocprofiler/lib/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM/rocprofiler/lib/metrics.xml"
+    fi
+    if test -f "$ROCM/lib/rocprofiler/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM/lib/rocprofiler/metrics.xml"
     fi
 
     # HSA
@@ -24548,6 +24554,14 @@ $as_echo "$as_me: found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" >&6;
       ROCM_PROFILER_MESG="$ROCM_PROFILER"
       found=yes
     fi
+
+    if test -f "$ROCM_PROFILER/rocprofiler/lib/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM_PROFILER/rocprofiler/lib/metrics.xml"
+    fi
+    if test -f "$ROCM_PROFILER/lib/rocprofiler/metrics.xml" ; then
+      ROCM_PROFILER_METRICS="$ROCM_PROFILER/lib/rocprofiler/metrics.xml"
+    fi
+
     if test "$found" = no ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_PROFILER" >&5
 $as_echo "$as_me: WARNING: found nothing useful in $ROCM_PROFILER" >&2;}
