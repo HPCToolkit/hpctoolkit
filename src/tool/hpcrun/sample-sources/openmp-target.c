@@ -168,16 +168,19 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+#if 0
+  // this gets turned on automatically if there is target OMPT support
   printf("===========================================================================\n");
   printf("Available AMD GPU events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tOperation-level monitoring of OpenMP offloading.\n"
+  printf("%s\tOperation-level monitoring of OpenMP offloading.\n"
 	 "\t\tCollect timing information on GPU kernel invocations,\n"
 	 "\t\tmemory copies, etc.\n",
 	 OPENMP_TARGET);
   printf("\n");
+#endif
 }
 
 
