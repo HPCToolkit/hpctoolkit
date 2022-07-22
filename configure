@@ -738,6 +738,8 @@ XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
+LUSTRE_LIB_FLAGS
+LUSTRE_LIB_DIR
 OPT_ENABLE_LUSTRE_FALSE
 OPT_ENABLE_LUSTRE_TRUE
 DAOS_LIB_FLAGS
@@ -22478,6 +22480,9 @@ fi
 # Option: --with-lustre=PATH
 #-------------------------------------------------
 
+LUSTRE_LIB_DIR=no
+LUSTRE_LIB_FLAGS=
+
 
 # Check whether --with-lustre was given.
 if test "${with_lustre+set}" = set; then :
@@ -22487,64 +22492,39 @@ else
 fi
 
 
-# check header files exist
+# initial test that include and lib files exist
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for lustre" >&5
 $as_echo_n "checking for lustre... " >&6; }
+
+lustre_avail=no
 if test "x$with_lustre" = xyes ; then :
 
-        for ac_header in linux/lustre/lustre_user.h lustre/lustre_user.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
-if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
-_ACEOF
+    if test ! -f "/usr/include/lustre/lustre_user.h" && test ! -f "/usr/include/linux/lustre/lustre_user.h"; then
+      as_fn_error $? "--with-lustre was given, <lustre/lustre_user.h> not found" "$LINENO" 5
+    fi
+    if test ! -f "/usr/include/lustre/lustreapi.h" && test ! -f "/usr/include/linux/lustre/lustreapi.h"; then
+      as_fn_error $? "--with-lustre was given, <lustre/lustreapi.h> not found" "$LINENO" 5
+    fi
+    for lib in $multilib_path ; do
+      if test -f "/usr/${lib}/liblustreapi.so" ; then
+        LUSTRE_LIB_DIR="/usr/${lib}"
+        break
+      fi
+    done
+    if test "x$LUSTRE_LIB_DIR" = x; then
+      as_fn_error $? "lustre library not found" "$LINENO" 5
+    fi
 
-$as_echo "#define HAVE_LUSTRE_USER 1" >>confdefs.h
-
-else
-
-                if test "x$with_lustre" != xno -a \
-                        "x$ac_cv_header_linux_lustre_lustre_user_h" = "xno" -a \
-                        "x$ac_cv_header_lustre_lustre_user_h" = "xno" ; then
-                        as_fn_error $? "--with-lustre was given, <lustre/lustre_user.h> not found" "$LINENO" 5
-                fi
-
-fi
-
-done
-
-        for ac_header in linux/lustre/lustreapi.h lustre/lustreapi.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_cxx_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
-if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
-_ACEOF
-
-$as_echo "#define HAVE_LUSTRE_LUSTREAPI 1" >>confdefs.h
-
-else
-
-                if test "x$with_lustre" != xno -a \
-                        "x$ac_cv_header_linux_lustre_lustreapi_h" = "xno" -a \
-                        "x$ac_cv_header_lustre_lustreapi_h" = "xno" ; then
-                        as_fn_error $? "--with-lustre was given, <lustre/lustreapi.h> not found" "$LINENO" 5
-                fi
+    LUSTRE_LIB_FLAGS="-L$LUSTRE_LIB_DIR -llustreapi"
+    lustre_avail=yes
 
 fi
 
-done
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $lustre_avail" >&5
+$as_echo "$lustre_avail" >&6; }
 
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_lustre" >&5
-$as_echo "$with_lustre" >&6; }
-
- if test x$with_lustre = xyes; then
+ if test "$lustre_avail" = yes; then
   OPT_ENABLE_LUSTRE_TRUE=
   OPT_ENABLE_LUSTRE_FALSE='#'
 else
@@ -22552,13 +22532,13 @@ else
   OPT_ENABLE_LUSTRE_FALSE=
 fi
 
-if test -z "$OPT_ENABLE_LUSTRE_TRUE"; then :
-
+if test "$lustre_avail" = yes ; then
 
 $as_echo "#define OPT_ENABLE_LUSTRE 1" >>confdefs.h
 
-
 fi
+
+
 
 
 #-------------------------------------------------

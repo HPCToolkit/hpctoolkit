@@ -59,7 +59,7 @@ enable_hard_errors=yes
 while test $# -gt 1; do
  arg=${1%=*}
  val=${1#*=}
- if [ $arg = $val ]; then
+ if [ $arg == $val ]; then
    val=$2
    shift
  fi
@@ -75,7 +75,7 @@ while test $# -gt 1; do
   --) break;;
   -*) usage_error "invalid option: '$1'";;
   esac
-  [ $arg != $val ] && shift
+  [[ $arg != $val ]] && shift
 done
 
 missing_opts=

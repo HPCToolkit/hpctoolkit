@@ -120,7 +120,7 @@ MYLDADD = \
 	@DAOS_LIB_FLAGS@
 
 if OPT_ENABLE_LUSTRE
-    MYLDADD += -llustreapi
+    MYLDADD += @LUSTRE_LIB_FLAGS@
 endif
 
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf

@@ -3677,39 +3677,50 @@ AC_SUBST([DAOS_LIB_FLAGS])
 # Option: --with-lustre=PATH
 #-------------------------------------------------
 
+LUSTRE_LIB_DIR=no
+LUSTRE_LIB_FLAGS=
+
 AC_ARG_WITH([lustre],
   [AS_HELP_STRING([--with-lustre],
   	    [support configurable Lustre striping values @<:@default=no@:>@])],
   [],
   [with_lustre=no])
 
-# check header files exist
+# initial test that include and lib files exist
 
 AC_MSG_CHECKING([for lustre])
+
+lustre_avail=no
 AS_IF([test "x$with_lustre" = xyes ], [
-        AC_CHECK_HEADERS([linux/lustre/lustre_user.h lustre/lustre_user.h], [AC_DEFINE([HAVE_LUSTRE_USER], [1], [Lustre user API available in some shape or form])], [
-                if test "x$with_lustre" != xno -a \
-                        "x$ac_cv_header_linux_lustre_lustre_user_h" = "xno" -a \
-                        "x$ac_cv_header_lustre_lustre_user_h" = "xno" ; then
-                        AC_MSG_ERROR([--with-lustre was given, <lustre/lustre_user.h> not found])
-                fi
-        ])
-        AC_CHECK_HEADERS([linux/lustre/lustreapi.h lustre/lustreapi.h],
-		            [AC_DEFINE([HAVE_LUSTRE_LUSTREAPI], [1], [Lustre user API available in some shape or form])], [
-                if test "x$with_lustre" != xno -a \
-                        "x$ac_cv_header_linux_lustre_lustreapi_h" = "xno" -a \
-                        "x$ac_cv_header_lustre_lustreapi_h" = "xno" ; then
-                        AC_MSG_ERROR([--with-lustre was given, <lustre/lustreapi.h> not found])
-                fi
-        ])
-])
-AC_MSG_RESULT([$with_lustre])
-
-AM_CONDITIONAL([OPT_ENABLE_LUSTRE], [test x$with_lustre = xyes])
-AM_COND_IF([OPT_ENABLE_LUSTRE],[
-        AC_DEFINE([OPT_ENABLE_LUSTRE], [1], [Build wth LUSTRE backend])
+    if test ! -f "/usr/include/lustre/lustre_user.h" && test ! -f "/usr/include/linux/lustre/lustre_user.h"; then
+      AC_MSG_ERROR([--with-lustre was given, <lustre/lustre_user.h> not found])
+    fi
+    if test ! -f "/usr/include/lustre/lustreapi.h" && test ! -f "/usr/include/linux/lustre/lustreapi.h"; then
+      AC_MSG_ERROR([--with-lustre was given, <lustre/lustreapi.h> not found])
+    fi
+    for lib in $multilib_path ; do
+      if test -f "/usr/${lib}/liblustreapi.so" ; then
+        LUSTRE_LIB_DIR="/usr/${lib}"
+        break
+      fi
+    done
+    if test "x$LUSTRE_LIB_DIR" = x; then
+      AC_MSG_ERROR([lustre library not found])
+    fi
+    
+    LUSTRE_LIB_FLAGS="-L$LUSTRE_LIB_DIR -llustreapi"
+    lustre_avail=yes
 ])
 
+AC_MSG_RESULT([$lustre_avail])
+
+AM_CONDITIONAL([OPT_ENABLE_LUSTRE], [test "$lustre_avail" = yes])
+if test "$lustre_avail" = yes ; then
+  AC_DEFINE([OPT_ENABLE_LUSTRE], [1], [Have support for lustre])
+fi
+
+AC_SUBST([LUSTRE_LIB_DIR])
+AC_SUBST([LUSTRE_LIB_FLAGS])
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
