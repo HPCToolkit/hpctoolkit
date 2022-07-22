@@ -6,6 +6,12 @@
 #include <fcntl.h>
 #include <string.h>
 
+#ifdef HAVE_LINUX_LUSTRE_USER_H
+#  include <linux/lustre/lustre_user.h>
+#elif defined(HAVE_LUSTRE_USER_H)
+#  include <lustre/lustre_user.h>
+#endif
+
 #include "hpctio.h"
 #include "hpctio_obj.h"
 
