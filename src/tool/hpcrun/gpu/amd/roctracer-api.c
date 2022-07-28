@@ -602,6 +602,7 @@ roctracer_init
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HSA_API, roctracer_subscriber_callback, NULL));
   // Enable HIP activity tracing
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_API, NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_OPS, NULL));
 
   // Enable PC sampling
   //HPCRUN_ROCTRACER_CALL(roctracer_enable_op_activity, (ACTIVITY_DOMAIN_HSA_OPS, HSA_OP_ID_PCSAMPLE));
@@ -636,6 +637,7 @@ roctracer_fini
 {
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_HIP_API));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HIP_API));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HIP_OPS));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HSA_OPS));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_KFD_API));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_ROCTX));
