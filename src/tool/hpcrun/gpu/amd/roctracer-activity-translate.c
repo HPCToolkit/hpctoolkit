@@ -73,6 +73,8 @@ convert_kernel_launch
   ga->kind = GPU_ACTIVITY_KERNEL;
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.kernel.correlation_id = activity->correlation_id;
+  ga->details.kernel.context_id = activity->device_id;
+  ga->details.kernel.stream_id = activity->queue_id;
 }
 
 
@@ -88,6 +90,8 @@ convert_memcpy
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.memcpy.correlation_id = activity->correlation_id;
   ga->details.memcpy.copyKind = kind;
+  ga->details.memcpy.context_id = activity->device_id;
+  ga->details.memcpy.stream_id = activity->queue_id;
 }
 
 
@@ -101,6 +105,8 @@ convert_memset
   ga->kind = GPU_ACTIVITY_MEMSET;
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.memset.correlation_id = activity->correlation_id;
+  ga->details.memset.context_id = activity->device_id;
+  ga->details.memset.stream_id = activity->queue_id;
 }
 
 
@@ -117,6 +123,8 @@ convert_sync
   gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.synchronization.syncKind = syncKind;
   ga->details.synchronization.correlation_id = activity->correlation_id;
+  ga->details.synchronization.context_id = activity->device_id;
+  ga->details.synchronization.stream_id = activity->queue_id;
 }
 #endif
 
@@ -145,6 +153,14 @@ roctracer_activity_translate
 {
   const char * name = roctracer_op_string(record->domain, record->op, record->kind);
   memset(ga, 0, sizeof(gpu_activity_t));
+
+  // HACK HACK HACK
+  // decrease end timestamp to avoid abutting events
+  // compensate for hpcviewer's arbitrary rendering of zero-length intervals
+  // HACK HACK HACK
+  if (record->end_ns - record->begin_ns > 1) {
+    record->end_ns--;
+  }
 
   if (record->domain == ACTIVITY_DOMAIN_HIP_OPS) {
     // TODO: I cannot find the corresponding enum in AMD toolchain
