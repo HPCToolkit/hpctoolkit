@@ -612,6 +612,7 @@ roctracer_init
 )
 {
   HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HIP_API, NULL));
+
   // Allocating tracing pool
   roctracer_properties_t properties;
   memset(&properties, 0, sizeof(roctracer_properties_t));
@@ -622,14 +623,17 @@ roctracer_init
   // Enable HIP API callbacks
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HIP_API, roctracer_subscriber_callback, NULL));
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HSA_API, roctracer_subscriber_callback, NULL));
+
   // Enable HIP activity tracing
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_API, NULL));
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_OPS, NULL));
 
   // Enable PC sampling
-  //HPCRUN_ROCTRACER_CALL(roctracer_enable_op_activity, (ACTIVITY_DOMAIN_HSA_OPS, HSA_OP_ID_PCSAMPLE));
+  // HPCRUN_ROCTRACER_CALL(roctracer_enable_op_activity, (ACTIVITY_DOMAIN_HSA_OPS, HSA_OP_ID_PCSAMPLE));
+
   // Enable KFD API tracing
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_KFD_API, roctracer_subscriber_callback, NULL));
+
   // Enable rocTX
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_ROCTX, roctracer_subscriber_callback, NULL));
 
@@ -657,12 +661,27 @@ roctracer_fini
  int how
 )
 {
-  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_HIP_API));
-  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HIP_API));
-  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HIP_OPS));
-  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HSA_OPS));
-  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_KFD_API));
+  // Disable the roctracer infrastructure, in reverse order from the enables
+  // Do we tear down the URI?
+
+  // Disable rocTX
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_ROCTX));
+
+  // Disable KFD API tracing
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_KFD_API));
+
+  // Disable PC sampling
+  // HPCRUN_ROCTRACER_CALL(roctracer_disable_op_activity, (ACTIVITY_DOMAIN_HSA_OPS, HSA_OP_ID_PCSAMPLE));
+
+  // Disable HIP activity tracing
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HIP_OPS));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HIP_API));
+
+  // Disable HIP API callbacks
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_HSA_API));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_HIP_API));
+
+  // Do we deallocate the tracing pool?
 
   roctracer_flush(args, how);
 }
