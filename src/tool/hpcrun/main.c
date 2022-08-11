@@ -175,6 +175,9 @@ extern void hpcrun_dump_intervals(void* addr);
 // local data types. Primarily for passing data between pre_PHASE, PHASE, and post_PHASE
 //***************************************************************************
 
+// Technically, these expose a data race if multiple threads call
+// fork() or pthread_create() concurrently.
+
 typedef struct local_thread_data_t {
   cct_ctxt_t* thr_ctxt;
 } local_thread_data_t;
@@ -182,6 +185,7 @@ typedef struct local_thread_data_t {
 typedef struct fork_data_t {
   int flag;
   bool is_child;
+  bool was_running;
 } fork_data_t;
 
 
@@ -551,6 +555,11 @@ hpcrun_init_internal(bool is_child)
     hpcrun_metrics_data_finalize();
     hpcrun_process_event_list = false;
   }
+
+  // Treat every process as threaded.  Note: SAMPLE_SOURCES only
+  // applies to sources in use, so must come after process event list.
+  SAMPLE_SOURCES(thread_init);
+
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
   // Check whether tracing is enabled and metrics suitable for tracing are specified
@@ -765,13 +774,12 @@ hpcrun_fini_internal()
 extern __thread monitor_tid;
 #endif // USE_GCC_THREAD
 
-void
+static void
 hpcrun_init_thread_support()
 {
   hpcrun_init_pthread_key();
   hpcrun_set_thread0_data();
   hpcrun_threaded_data();
-  SAMPLE_SOURCES(thread_init);
 }
 
 // DEBUG support
@@ -908,6 +916,7 @@ void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
   const char* process_name;
+  bool is_child = data && ((fork_data_t *) data)->is_child;
 
   hpcrun_thread_suppress_sample = false;
 
@@ -935,8 +944,6 @@ monitor_init_process(int *argc, char **argv, void* data)
   copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
-  TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
-
   // We initialize the load map and fnbounds before registering sample source.
   // This is because sample source init (such as PAPI)  may dlopen other libraries,
   // which will trigger our library monitoring code and fnbound queries
@@ -950,9 +957,6 @@ monitor_init_process(int *argc, char **argv, void* data)
   // We need to initialize messages related functions and set up measurement directory,
   // so that we can write vdso and prevent fnbounds print messages to the terminal.
   messages_init();
-
-  fork_data_t* fork_data = (fork_data_t*) data;
-  bool is_child = data && fork_data->is_child;
 
   if (!hpcrun_get_disabled()) {
     hpcrun_files_set_directory();
@@ -979,10 +983,12 @@ monitor_init_process(int *argc, char **argv, void* data)
     }
 #endif
   }
-  
-  if (is_child){
-    hpcrun_prepare_measurement_subsystem(is_child);
-  }
+
+  TMSG(PROCESS, "init process: pid: %d  parent: %d  fork-child: %d",
+       (int) getpid(), (int) getppid(), (int) is_child);
+  TMSG(PROCESS, "name: %s", process_name);
+
+  hpcrun_prepare_measurement_subsystem(is_child);
 
   return data;
 }
@@ -997,14 +1003,20 @@ monitor_at_main()
 
 
 void hpcrun_prepare_measurement_subsystem(bool is_child)
-{  
+{
+  TMSG(PROCESS, "prepare measurement subsystem");
+
   if (is_child) {
     // reset flags so measurement system is fully initialized in a child
     atomic_store(&ms_init_started, 0);
     atomic_store(&ms_init_completed, 0);
+
+    // child has new pid, so restart from scratch
+    SAMPLE_SOURCES(shutdown);
   }
 
   if (atomic_fetch_add(&ms_init_started, 1) == 0){
+    TMSG(PROCESS, "init all sample sources");
     hpcrun_registered_sources_init();
 
     hpcrun_do_custom_init();
@@ -1034,8 +1046,6 @@ void hpcrun_prepare_measurement_subsystem(bool is_child)
     TMSG(PROCESS,"hpcrun outer initialization");
 
     hpcrun_sample_prob_mesg();
-
-    TMSG(PROCESS, "I am a %s process parent");
 
     hpcrun_init_internal(is_child);
 
@@ -1111,15 +1121,18 @@ monitor_pre_fork(void)
 
   hpcrun_safe_enter();
 
-  TMSG(PRE_FORK,"pre_fork call");
+  TMSG(FORK, "pre_fork call");
 
+  memset(&from_fork, 0, sizeof(from_fork));
+
+  // stop the current thread, leave others alone (no shutdown)
   if (SAMPLE_SOURCES(started)) {
-    TMSG(PRE_FORK,"sources shutdown");
+    TMSG(FORK, "sources stop");
     SAMPLE_SOURCES(stop);
-    SAMPLE_SOURCES(shutdown);
+    from_fork.was_running = true;
   }
 
-  TMSG(PRE_FORK,"finished pre_fork call");
+  TMSG(FORK, "finished pre_fork call");
   from_fork.is_child = true;
 
   hpcrun_safe_exit();
@@ -1136,16 +1149,15 @@ monitor_post_fork(pid_t child, void* data)
   }
   hpcrun_safe_enter();
 
-  TMSG(POST_FORK,"Post fork call");
+  TMSG(FORK, "Post fork call");
 
-  if (!SAMPLE_SOURCES(started)){
-    TMSG(POST_FORK,"sample sources re-init+re-start");
-    SAMPLE_SOURCES(init);
-    SAMPLE_SOURCES(gen_event_set,0); // FIXME: pass lush_metrics here somehow
+  if (data == NULL || ((fork_data_t *) data)->was_running) {
+    TMSG(FORK, "sample sources restart");
     SAMPLE_SOURCES(start);
   }
 
-  TMSG(POST_FORK,"Finished post fork");
+  TMSG(FORK, "Finished post fork");
+
   hpcrun_safe_exit();
 }
 
@@ -1198,11 +1210,8 @@ monitor_init_mpi(int *argc, char ***argv)
 // thread control (via libmonitor)
 //***************************************************************************
 
-void
-monitor_init_thread_support(void)
-{
-}
-
+// Now treat all programs as threaded and always run thread_init after
+// library init and before start.
 
 void*
 monitor_thread_pre_create(void)

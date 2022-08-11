@@ -236,7 +236,7 @@ METHOD_FN(init)
   //
   monitor_disable_new_threads();
   if (disable_papi_cuda) {
-    TMSG(PAPI_C, "Will disable PAPI cuda component (if component is active)");
+    TMSG(PAPI, "Will disable PAPI cuda component (if component is active)");
     int cidx = PAPI_get_component_index("cuda");
     if (cidx) {
       int res = PAPI_disable_component(cidx);
@@ -251,8 +251,8 @@ METHOD_FN(init)
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
   monitor_enable_new_threads();
 
-  TMSG(PAPI_C,"PAPI_library_init = %d", ret);
-  TMSG(PAPI_C,"PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
+  TMSG(PAPI, "PAPI_library_init = %d", ret);
+  TMSG(PAPI, "PAPI_VER_CURRENT =  %d", PAPI_VER_CURRENT);
 
   // Delay reporting PAPI_library_init() errors.  This allows running
   // with other events if PAPI is not available.
