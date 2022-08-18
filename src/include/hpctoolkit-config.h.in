@@ -54,18 +54,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Have support for lustre */
-#undef HAVE_LINUX_LUSTREAPI_H
-
-/* Have support for lustre */
-#undef HAVE_LINUX_LUSTRE_USER_H
-
-/* Have support for lustre */
-#undef HAVE_LUSTREAPI_H
-
-/* Have support for lustre */
-#undef HAVE_LUSTRE_USER_H
-
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 

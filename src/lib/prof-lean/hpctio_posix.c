@@ -5,15 +5,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
-
-#ifdef HAVE_LINUX_LUSTRE_USER_H
-#  include <linux/lustre/lustre_user.h>
-#elif defined(HAVE_LUSTRE_USER_H)
-#  include <lustre/lustre_user.h>
-#endif
+#include <sys/ioctl.h>
 
 #include "hpctio.h"
 #include "hpctio_obj.h"
+
+#ifdef OPT_ENABLE_LUSTRE
+#  include <lustre/lustre_user.h>
+#endif
 
 
 /************************** PROTOTYPES *****************************/
@@ -75,13 +74,17 @@ hpctio_sys_t hpctio_sys_posix = {
 /*************************** FILE SYSTEM OBJECT STRUCTS ***************************/
 //file system objects options struct
 typedef struct hpctio_posix_obj_opt {
-  //TODO: Lustre varaibles here
   int wmode;
 
   char * rdbuf;
   uint64_t rdbuf_start;
   uint64_t rdbuf_end;
   int rdbuf_active;
+
+#ifdef OPT_ENABLE_LUSTRE
+  uint32_t lustre_stripe_size;
+  uint16_t lustre_stripe_count;
+#endif
 }hpctio_posix_obj_opt_t;
 
 //file system object struct
@@ -145,6 +148,17 @@ static hpctio_obj_opt_t * POSIX_Obj_Options(int wmode, int sizetype){
   opt->wmode = wmode;
   opt->rdbuf_active = 0;
   opt->rdbuf = NULL;
+
+#ifdef OPT_ENABLE_LUSTRE
+  if(sizetype == HPCTIO_SMALL_F){
+    opt->lustre_stripe_count = 1;
+    opt->lustre_stripe_size = 1024 * 1024;
+  }else if(sizetype == HPCTIO_LARGE_F){
+    opt->lustre_stripe_count = 48; //recommended on Theta
+    opt->lustre_stripe_size = 8 * 1024 * 1024;
+  }
+#endif
+
   return (hpctio_obj_opt_t *)opt;
 }
 
@@ -155,19 +169,65 @@ static hpctio_obj_id_t * POSIX_Open(const char * path, int flags, mode_t md, hpc
   int r = 0;
 
   int fd;
-  if(md){
-    fd = open(path, flags, md);
-  }else{
-    fd = open(path, flags);
-  }
-  r = (fd < 0);
-  if(r){
-    if(errno == EEXIST){
-      CHECK_NOMSG(r);
+#ifdef OPT_ENABLE_LUSTRE
+/* Add a #define for FASYNC if not available, as it forms part of
+ * the Lustre O_LOV_DELAY_CREATE definition. */
+#ifndef FASYNC
+#define FASYNC          00020000   /* fcntl, for BSD compatibility */
+#endif
+  int nflags = flags | O_CREAT;
+  if(nflags == flags){ //create file
+    flags |= O_EXCL | O_LOV_DELAY_CREATE; // cannot set striping info on pre-existing files
+
+    struct lov_user_md opts = { 0 };
+    /* Setup Lustre IOCTL striping pattern structure */
+    opts.lmm_magic = LOV_USER_MAGIC;
+    opts.lmm_stripe_size = popt->lustre_stripe_size;
+    opts.lmm_stripe_count = popt->lustre_stripe_count;
+
+    if(md){
+      fd = open(path, flags, md);
     }else{
-      CHECK(r, "POSIX_Open failed to open the file descriptor for file %s with errno %d", path, errno);
+      fd = open(path, flags);
     }
+    if(fd < 0){
+      if(errno == EEXIST){
+        CHECK_NOMSG(1);
+      }else{
+        CHECK(1, "POSIX_Open failed to open the file descriptor for file %s with errno %d", path, errno);
+      }
+    }
+
+    if (ioctl(fd, LL_IOC_LOV_SETSTRIPE, &opts)) {
+      char *errmsg = "stripe already set";
+      if (errno != EEXIST && errno != EALREADY)
+              errmsg = strerror(errno);
+      CHECK(1, "Error on ioctl for '%s' (%d): %s\n", path, fd, errmsg);
+    }
+  } else{
+#endif/* OPT_ENABLE_LUSTRE */
+
+    if(md){
+      fd = open(path, flags, md);
+    }else{
+      fd = open(path, flags);
+    }
+    if(fd < 0){
+      if(errno == EEXIST){
+        CHECK_NOMSG(1);
+      }else{
+        CHECK(1, "POSIX_Open failed to open the file descriptor for file %s with errno %d", path, errno);
+      }
+    }
+
+#ifdef OPT_ENABLE_LUSTRE
   }
+
+  // int lustre_ioctl_flags = LL_FILE_IGNORE_LOCK;
+  // if (ioctl(fd, LL_IOC_SETFLAGS, &lustre_ioctl_flags) == -1) {
+  //   CHECK(1, "ioctl(%d, LL_IOC_SETFLAGS, ...) failed: %s", fd, strerror(errno));
+  // }
+#endif /* OPT_ENABLE_LUSTRE */
   
   if(popt->wmode == HPCTIO_APPEND){
     obj->fd = fd;

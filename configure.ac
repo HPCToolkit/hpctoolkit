@@ -3692,24 +3692,16 @@ AC_MSG_CHECKING([for lustre])
 
 lustre_avail=no
 AS_IF([test "x$with_lustre" = xyes ], [
-    if test -f "/usr/include/linux/lustre/lustre_user.h"; then
-      AC_DEFINE([HAVE_LINUX_LUSTRE_USER_H], [1], [Have support for lustre])
-    else 
-      if test -f "/usr/include/lustre/lustre_user.h"; then
-        AC_DEFINE([HAVE_LUSTRE_USER_H], [1], [Have support for lustre])
-      else
-        AC_MSG_ERROR([--with-lustre was given, <lustre/lustre_user.h> not found])
-      fi
+    if test ! -f "/usr/include/linux/lustre/lustre_user.h" && \ 
+       test ! -f "/usr/include/lustre/lustre_user.h";
+    then
+      AC_MSG_ERROR([--with-lustre was given, <lustre_user.h> not found])
     fi
 
-    if test -f "/usr/include/linux/lustre/lustreapi.h"; then
-      AC_DEFINE([HAVE_LINUX_LUSTREAPI_H], [1], [Have support for lustre])
-    else 
-      if test -f "/usr/include/lustre/lustreapi.h"; then
-        AC_DEFINE([HAVE_LUSTREAPI_H], [1], [Have support for lustre])
-      else
-        AC_MSG_ERROR([--with-lustre was given, <lustre/lustreapi.h> not found])
-      fi
+    if test ! -f "/usr/include/linux/lustre/lustreapi.h" && \ 
+       test ! -f "/usr/include/lustre/lustreapi.h";
+    then
+      AC_MSG_ERROR([--with-lustre was given, <lustreapi.h> not found])
     fi
 
     for lib in $multilib_path ; do
@@ -3723,7 +3715,7 @@ AS_IF([test "x$with_lustre" = xyes ], [
       AC_MSG_ERROR([lustre library not found])
     fi
     
-    LUSTRE_LIB_FLAGS="-L$LUSTRE_LIB_DIR -llustreapi"
+    LUSTRE_LIB_FLAGS="-L$LUSTRE_LIB_DIR"
     lustre_avail=yes
 ])
 

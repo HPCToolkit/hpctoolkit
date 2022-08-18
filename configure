@@ -22500,32 +22500,16 @@ $as_echo_n "checking for lustre... " >&6; }
 lustre_avail=no
 if test "x$with_lustre" = xyes ; then :
 
-    if test -f "/usr/include/linux/lustre/lustre_user.h"; then
-
-$as_echo "#define HAVE_LINUX_LUSTRE_USER_H 1" >>confdefs.h
-
-    else
-      if test -f "/usr/include/lustre/lustre_user.h"; then
-
-$as_echo "#define HAVE_LUSTRE_USER_H 1" >>confdefs.h
-
-      else
-        as_fn_error $? "--with-lustre was given, <lustre/lustre_user.h> not found" "$LINENO" 5
-      fi
+    if test ! -f "/usr/include/linux/lustre/lustre_user.h" && \
+       test ! -f "/usr/include/lustre/lustre_user.h";
+    then
+      as_fn_error $? "--with-lustre was given, <lustre_user.h> not found" "$LINENO" 5
     fi
 
-    if test -f "/usr/include/linux/lustre/lustreapi.h"; then
-
-$as_echo "#define HAVE_LINUX_LUSTREAPI_H 1" >>confdefs.h
-
-    else
-      if test -f "/usr/include/lustre/lustreapi.h"; then
-
-$as_echo "#define HAVE_LUSTREAPI_H 1" >>confdefs.h
-
-      else
-        as_fn_error $? "--with-lustre was given, <lustre/lustreapi.h> not found" "$LINENO" 5
-      fi
+    if test ! -f "/usr/include/linux/lustre/lustreapi.h" && \
+       test ! -f "/usr/include/lustre/lustreapi.h";
+    then
+      as_fn_error $? "--with-lustre was given, <lustreapi.h> not found" "$LINENO" 5
     fi
 
     for lib in $multilib_path ; do
@@ -22539,7 +22523,7 @@ $as_echo "#define HAVE_LUSTREAPI_H 1" >>confdefs.h
       as_fn_error $? "lustre library not found" "$LINENO" 5
     fi
 
-    LUSTRE_LIB_FLAGS="-L$LUSTRE_LIB_DIR -llustreapi"
+    LUSTRE_LIB_FLAGS="-L$LUSTRE_LIB_DIR"
     lustre_avail=yes
 
 fi

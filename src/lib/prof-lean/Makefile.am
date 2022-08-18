@@ -132,6 +132,7 @@ if OPT_ENABLE_DAOS
   MYCFLAGS += -I@DAOS_INC@
 endif
 
+
 if IS_HOST_AR
   MYAR = @HOST_AR@
 else
