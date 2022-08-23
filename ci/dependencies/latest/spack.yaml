@@ -50,6 +50,11 @@ spack:
   # MPI
   - openmpi
 
+  # Special dependencies for the tests2 suite
+  - 'python @3.10:'
+  - 'meson @0.62.2:'
+  - py-pytest
+
   - $target_specific
 
   view:

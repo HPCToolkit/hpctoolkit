@@ -1,0 +1,1 @@
+tests2/data/meas/*.tar.xz filter=lfs diff=lfs merge=lfs -text
