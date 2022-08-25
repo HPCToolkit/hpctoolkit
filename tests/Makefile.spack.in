@@ -17,7 +17,7 @@
 # around an issue in spack test.
 # CXX = @CXX@
 
-CXXFLAGS = -g -O @cxx_c11_flag@
+CXXFLAGS = -g -O @cxx17_flag@
 
 PROGS = sort
 

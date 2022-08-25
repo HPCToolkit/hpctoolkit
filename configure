@@ -838,8 +838,8 @@ OPT_ENABLE_MPI_TRUE
 MPICXX
 OPENMP_FLAG
 HPCRUN_LIBCXX_PATH
-cxx_c11_flag
-CXX11_FLAG
+cxx17_flag
+CXX17_FLAG
 HPCLINK_CC
 ans
 HOST_CPU_AARCH64
@@ -1092,7 +1092,7 @@ CCAS
 CCASFLAGS
 LD
 OBJCOPY
-CXX11_FLAG
+CXX17_FLAG
 MPICXX
 MPICC
 MPIF77
@@ -1853,7 +1853,7 @@ Some influential environment variables:
               suitable program
   OBJCOPY     the objcopy program, only needed if autotools fails to find a
               suitable program
-  CXX11_FLAG  CXX flag for C++11 standard, normally only needed for non-GNU
+  CXX17_FLAG  CXX flag for C++17 standard, normally only needed for non-GNU
               CXX
   MPICXX      MPI C++ compiler for hpcprof-mpi
   MPICC       MPI C compiler for MPI wrapper support
@@ -19267,19 +19267,16 @@ $as_echo "$as_me: hpclink compiler: $HPCLINK_CC" >&6;}
 
 
 #-------------------------------------------------
-# CXXFLAGS for std C++11
+# CXXFLAGS for std C++17
 #-------------------------------------------------
 
-# Find a CXX flag for standard C++11 and add to CXXFLAGS if needed.
-# We use some C++11 features (auto) in the parseAPI code in
-# src/lib/banal.  Unfortunately, due to include files, we pretty much
-# need this everywhere for C++ code.
+# Find a CXX flag for standard C++17 and add to CXXFLAGS if needed.
 
 
 
-c11_list='argvar none -std=c++11 -std=c++0x -std=gnu++0x'
-cxx_c11_avail=no
-cxx_c11_flag=
+cxx17_list='argvar -std=c++17 -std=c++1z argvar_none'
+cxx17_avail=no
+cxx17_flag=
 
 ORIG_CXXFLAGS="$CXXFLAGS"
 ac_ext=cpp
@@ -19289,29 +19286,43 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CXX flag for C++11" >&5
-$as_echo_n "checking for CXX flag for C++11... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CXX flag for C++17" >&5
+$as_echo_n "checking for CXX flag for C++17... " >&6; }
 
-for opt in $c11_list
+for opt in $cxx17_list
 do
   case "$opt" in
-    argvar ) flag="$CXX11_FLAG" ;;
-    none )   flag=  ;;
-    * )      flag="$opt" ;;
+    argvar )
+      # If CXX17_FLAG is set and is not "none", try it.
+      if test -z "$CXX17_FLAG" || test "$CXX17_FLAG" = "none"; then continue; fi
+      flag="$CXX17_FLAG"
+      ;;
+    argvar_none )
+      # If CXX17_FLAG=none, try without any flag
+      if test "$CXX17_FLAG" != "none"; then continue; fi
+      flag=""
+      ;;
+    * )
+      flag="$opt"
+      ;;
   esac
   CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 
-#include <list>
-int mylen(std::list <int> lst)
-{
-  int ans = 0;
-  for (auto it = lst.begin(); it != lst.end(); it++) {
-    ans += 1;
+#include <string>
+#include <string_view>
+#include <optional>
+static inline constexpr bool activate = true;
+int main() {
+  std::string x = "Hello";
+  std::string_view y;
+  if(std::optional<std::string> z = x; z) {
+    if constexpr (activate) {
+      y = x;
+    }
   }
-  return ans;
 }
 
 _ACEOF
@@ -19322,14 +19333,14 @@ else
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   if test "$ans" = yes ; then
-    cxx_c11_avail=yes
-    cxx_c11_flag="$flag"
+    cxx17_avail=yes
+    cxx17_flag="$flag"
     break
   fi
 done
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cxx_c11_flag" >&5
-$as_echo "$cxx_c11_flag" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $cxx17_flag" >&5
+$as_echo "$cxx17_flag" >&6; }
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -19338,14 +19349,15 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
-if test "$cxx_c11_avail" = no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find CXXFLAGS for std C++11" >&5
-$as_echo "$as_me: WARNING: unable to find CXXFLAGS for std C++11" >&2;}
-  as_fn_error $? "set the CXX11_FLAG variable and rerun configure" "$LINENO" 5
+if test "$cxx17_avail" = no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find CXXFLAGS for std C++17" >&5
+$as_echo "$as_me: WARNING: unable to find CXXFLAGS for std C++17" >&2;}
+  as_fn_error $? "set the CXX17_FLAG variable and rerun configure" "$LINENO" 5
+  as_fn_error $? "if no flag is needed, set CXX17_FLAG=' ' and rerun configure" "$LINENO" 5
 fi
 
 CXXFLAGS="$ORIG_CXXFLAGS"
-HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
+HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx17_flag"
 
 
 
@@ -27461,8 +27473,8 @@ $as_echo "$as_me:   Path:      $CXX_PATH" >&6;}
 $as_echo "$as_me:   CXX:       '${CXX}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'" >&5
 $as_echo "$as_me:   CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   C++11:     '${cxx_c11_flag}'" >&5
-$as_echo "$as_me:   C++11:     '${cxx_c11_flag}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   C++17:     '${cxx17_flag}'" >&5
+$as_echo "$as_me:   C++17:     '${cxx17_flag}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   OpenMP:    '${OPENMP_FLAG}'" >&5
 $as_echo "$as_me:   OpenMP:    '${OPENMP_FLAG}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCAS:      '${CCAS}'" >&5
