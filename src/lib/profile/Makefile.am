@@ -74,9 +74,13 @@ sinks/FORMATS.md.inc: $(srcdir)/../../../doc/FORMATS.md $(srcdir)/../../tool/hpc
 	echo -n "static const char FORMATS_md[] = " > $@
 	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
 	echo ';' >> $@
+sinks/METRICS.yaml.inc: $(srcdir)/../../../doc/METRICS.yaml $(srcdir)/../../tool/hpcstruct/stringify.sh
+	echo -n "static const char METRICS_yaml[] = " > $@
+	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
+	echo ';' >> $@
 
-noinst_HEADERS = sinks/FORMATS.md.inc
-BUILT_SOURCES = sinks/FORMATS.md.inc
+noinst_HEADERS = sinks/FORMATS.md.inc sinks/METRICS.yaml.inc
+BUILT_SOURCES = sinks/FORMATS.md.inc sinks/METRICS.yaml.inc
 
 MYSOURCES = \
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
@@ -92,8 +96,8 @@ MYSOURCES = \
 	\
 	sources/packed.cpp sources/hpcrun4.cpp \
 	\
-	sinks/hpctracedb2.cpp sinks/packed.cpp sinks/experimentxml4.cpp \
-	sinks/sparsedb.cpp \
+	sinks/hpctracedb2.cpp sinks/packed.cpp \
+	sinks/sparsedb.cpp sinks/metricsyaml.cpp sinks/metadb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
 	finalizers/denseids.cpp finalizers/kernelsyms.cpp
@@ -104,7 +108,7 @@ MYSTANDALONESOURCES = mpi/standalone.cpp
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@ -I@LIBELF_INC@ \
              @LZMA_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ @XERCES_IFLAGS@ \
-             @LZMA_IFLAGS@ -I@LIBELF_INC@
+             @LZMA_IFLAGS@ -I@LIBELF_INC@ @YAMLCPP_IFLAGS@
 
 if OPT_ENABLE_OPENMP
 MYCFLAGS += $(OPENMP_FLAG)

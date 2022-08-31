@@ -75,7 +75,6 @@
 #include "../prof-lean/hpcio.h"
 #include "../prof-lean/hpcio-buffer.h"
 #include "../prof-lean/hpcfmt.h"
-#include "../prof-lean/hpcrun-fmt.h"
 
 
 

@@ -48,13 +48,14 @@
 
 #include "sparsedb.hpp"
 
+#include "metadb.hpp"
+
 #include "../mpi/all.hpp"
 #include "../util/log.hpp"
 
-#include <lib/prof/cms-format.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/id-tuple.h>
-#include <lib/prof/pms-format.h>
+#include "lib/prof-lean/formats/profiledb.h"
+#include "lib/prof-lean/formats/cctdb.h"
 
 #include "../stdshim/numeric.hpp"
 #include <cassert>
@@ -70,182 +71,8 @@
 using namespace hpctoolkit;
 using namespace hpctoolkit::sinks;
 
-static uint64_t align(uint64_t v, uint8_t a) {
+static constexpr uint64_t align(uint64_t v, uint8_t a) {
   return (v + a - 1) / a * a;
-}
-
-static uint32_t readAsByte4(util::File::Instance& fh, uint64_t off) {
-  uint32_t v = 0;
-  int shift = 0, num_reads = 0;
-  char input[4];
-
-  fh.readat(off, 4, input);
-
-  for (shift = 24; shift >= 0; shift -= 8) {
-    v |= ((uint32_t)(input[num_reads] & 0xff) << shift);
-    num_reads++;
-  }
-
-  return v;
-}
-
-static uint16_t interpretByte2(const char *input) {
-  uint16_t v = 0;
-  int shift = 0, num_reads = 0;
-
-  for (shift = 8; shift >= 0; shift -= 8) {
-    v |= ((uint16_t)(input[num_reads] & 0xff) << shift);
-    num_reads++;
-  }
-
-  return v;
-}
-static uint32_t interpretByte4(const char *input) {
-  uint32_t v = 0;
-  int shift = 0, num_reads = 0;
-
-  for (shift = 24; shift >= 0; shift -= 8) {
-    v |= ((uint32_t)(input[num_reads] & 0xff) << shift);
-    num_reads++;
-  }
-
-  return v;
-}
-static uint64_t interpretByte8(const char *input) {
-  uint64_t v = 0;
-  int shift = 0, num_reads = 0;
-
-  for (shift = 56; shift >= 0; shift -= 8) {
-    v |= ((uint64_t)(input[num_reads] & 0xff) << shift);
-    num_reads++;
-  }
-
-  return v;
-}
-
-static char* insertByte2(char* bytes, uint16_t val) {
-  int shift = 0, num_writes = 0;
-
-  for (shift = 8; shift >= 0; shift -= 8) {
-    bytes[num_writes] = (val >> shift) & 0xff;
-    num_writes++;
-  }
-  return bytes + 2;
-}
-static char* insertByte4(char* bytes, uint32_t val) {
-  int shift = 0, num_writes = 0;
-
-  for (shift = 24; shift >= 0; shift -= 8) {
-    bytes[num_writes] = (val >> shift) & 0xff;
-    num_writes++;
-  }
-  return bytes + 4;
-}
-static char* insertByte8(char* bytes, uint64_t val) {
-  int shift = 0, num_writes = 0;
-
-  for (shift = 56; shift >= 0; shift -= 8) {
-    bytes[num_writes] = (val >> shift) & 0xff;
-    num_writes++;
-  }
-  return bytes + 8;
-}
-
-static std::array<char, PMS_real_hdr_SIZE> composeProfHdr(uint32_t nProf,
-    uint64_t profInfoPtr, uint64_t profInfoSize, uint64_t idTuplesPtr,
-    uint64_t idTuplesSize) {
-  std::array<char, PMS_real_hdr_SIZE> out;
-  char* cur = out.data();
-  cur = std::copy(HPCPROFILESPARSE_FMT_Magic, HPCPROFILESPARSE_FMT_Magic + HPCPROFILESPARSE_FMT_MagicLen,
-                  cur);
-  *(cur++) = HPCPROFILESPARSE_FMT_VersionMajor;
-  *(cur++) = HPCPROFILESPARSE_FMT_VersionMinor;
-
-  cur = insertByte4(cur, nProf);
-  cur = insertByte2(cur, HPCPROFILESPARSE_FMT_NumSec);
-  cur = insertByte8(cur, profInfoSize);
-  cur = insertByte8(cur, profInfoPtr);
-  cur = insertByte8(cur, idTuplesSize);
-  cur = insertByte8(cur, idTuplesPtr);
-  return out;
-}
-
-static size_t sizeofIdTuple(const id_tuple_t& tuple) {
-  return PMS_id_tuple_len_SIZE + tuple.length * PMS_id_SIZE;
-}
-
-static char* insertIdTuple(char* cur, const id_tuple_t& tuple) {
-  cur = insertByte2(cur, (uint16_t)tuple.length);
-  for(unsigned int i = 0; i < tuple.length; i++) {
-    const auto& id = tuple.ids[i];
-    cur = insertByte2(cur, id.kind);
-    cur = insertByte8(cur, id.physical_index);
-    cur = insertByte8(cur, id.logical_index);
-  }
-  return cur;
-}
-
-static std::array<char, PMS_prof_info_SIZE> composeProfInfo(const pms_profile_info_t& pi) {
-  std::array<char, PMS_prof_info_SIZE> buf;
-  char* cur = buf.data();
-
-  cur = insertByte8(cur, pi.id_tuple_ptr);
-  cur = insertByte8(cur, pi.metadata_ptr);
-  cur = insertByte8(cur, pi.spare_one);
-  cur = insertByte8(cur, pi.spare_two);
-  cur = insertByte8(cur, pi.num_vals);
-  cur = insertByte4(cur, pi.num_nzctxs);
-  cur = insertByte8(cur, pi.offset);
-  return buf;
-}
-
-static char* insertCiPair(char* cur, uint32_t ctx, uint64_t idx) {
-  cur = insertByte4(cur, ctx);
-  cur = insertByte8(cur, idx);
-  return cur;
-}
-
-static char* insertMvPair(char* cur, uint16_t metric, double value) {
-  hpcrun_metricVal_t v;
-  v.r = value;
-  cur = insertByte8(cur, v.bits);
-  cur = insertByte2(cur, metric);
-  return cur;
-}
-
-static pms_profile_info_t parseProfInfo(const char *input) {
-  pms_profile_info_t pi;
-  pi.id_tuple_ptr = interpretByte8(input);
-  pi.metadata_ptr = interpretByte8(input + PMS_id_tuple_ptr_SIZE);
-  pi.spare_one    = interpretByte8(input + PMS_id_tuple_ptr_SIZE + PMS_metadata_ptr_SIZE);
-  pi.spare_two    = interpretByte8(input + PMS_id_tuple_ptr_SIZE + PMS_metadata_ptr_SIZE + PMS_spare_one_SIZE);
-  pi.num_vals     = interpretByte8(input + PMS_ptrs_SIZE);
-  pi.num_nzctxs   = interpretByte4(input + PMS_ptrs_SIZE + PMS_num_val_SIZE);
-  pi.offset       = interpretByte8(input + PMS_ptrs_SIZE + PMS_num_val_SIZE + PMS_num_nzctx_SIZE);
-  return pi;
-}
-
-static std::array<char, CMS_real_hdr_SIZE> composeCtxHdr(uint32_t ctxcnt) {
-  std::array<char, CMS_real_hdr_SIZE> out;
-  char* cur = out.data();
-  cur = std::copy(HPCCCTSPARSE_FMT_Magic, HPCCCTSPARSE_FMT_Magic + HPCCCTSPARSE_FMT_MagicLen,
-                  cur);
-  *(cur++) = HPCCCTSPARSE_FMT_VersionMajor;
-  *(cur++) = HPCCCTSPARSE_FMT_VersionMinor;
-
-  cur = insertByte4(cur, ctxcnt);  // num_ctx
-  cur = insertByte2(cur, HPCCCTSPARSE_FMT_NumSec);  // num_sec
-  cur = insertByte8(cur, ctxcnt * CMS_ctx_info_SIZE);  // ci_size
-  cur = insertByte8(cur, CMS_hdr_SIZE);  // ci_ptr
-  return out;
-}
-
-static char* insertCtxInfo(char* cur, cms_ctx_info_t ci) {
-  cur = insertByte4(cur, ci.ctx_id);
-  cur = insertByte8(cur, ci.num_vals);
-  cur = insertByte2(cur, ci.num_nzmids);
-  cur = insertByte8(cur, ci.offset);
-  return cur;
 }
 
 //
@@ -270,7 +97,7 @@ SparseDB::SparseDB(stdshim::filesystem::path dir) {
 }
 
 util::WorkshareResult SparseDB::help() {
-  auto res = forEachProfileInfo.contribute();
+  auto res = forEachThread.contribute();
   if(!res.completed) return res;
   res = forProfilesParse.contribute();
   if(!res.completed) return res;
@@ -285,6 +112,8 @@ void SparseDB::notifyPipeline() noexcept {
   ud.thread = ss.thread.add_default<udThread>();
 }
 
+static constexpr auto pProfileInfos = align(FMT_PROFILEDB_SZ_FHdr, 8);
+static constexpr auto pProfiles = pProfileInfos + align(FMT_PROFILEDB_SZ_ProfInfoSHdr, 8);
 
 void SparseDB::notifyWavefront(DataClass d) noexcept {
   if(!d.hasContexts() || !d.hasThreads()) return;
@@ -301,13 +130,6 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
       return a.userdata[src.identifier()] < b.userdata[src.identifier()];
     });
 
-  // The code in this Sink depends on dense Context identifiers
-  // TODO: Review this dependency and remove whenever possible
-  assert(std::adjacent_find(contexts.begin(), contexts.end(),
-    [this](const Context& a, const Context& b) -> bool{
-      return a.userdata[src.identifier()] + 1 != b.userdata[src.identifier()];
-    }) == contexts.end());
-
   // Synchronize the profile.db across the ranks
   pmf->synchronize();
 
@@ -316,36 +138,19 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
   if(mpi::World::rank() == 0) myNProf++;  // Counting the summary profile
   auto nProf = mpi::allreduce(myNProf, mpi::Op::sum());
 
-  // Allocate space for the profile infos section
-  uint64_t profInfosSize = nProf * PMS_prof_info_SIZE;
+  // Start laying out the profile.db file format
+  fmt_profiledb_fHdr_t fhdr;
+  fmt_profiledb_profInfoSHdr_t pi_sHdr;
+  fhdr.pProfileInfos = pProfileInfos;
+  pi_sHdr.pProfiles = pProfiles;
+  pi_sHdr.nProfiles = nProf;
+  fhdr.szProfileInfos = pi_sHdr.pProfiles + pi_sHdr.nProfiles * FMT_PROFILEDB_SZ_ProfInfo
+                        - fhdr.pProfileInfos;
+  fhdr.pIdTuples = align(fhdr.pProfileInfos + fhdr.szProfileInfos, 8);
 
   // Write out our part of the id tuples section, and figure out its final size
-  uint64_t idTuplesPtr = PMS_hdr_SIZE + align(profInfosSize, 8);
-  uint64_t idTuplesSize;
   {
     std::vector<char> buf;
-    if(mpi::World::rank() == 0){
-      // Rank 0 handles the summary profile('s id tuple)
-      pms_id_t sumId = {
-        .kind = IDTUPLE_SUMMARY,
-        .physical_index = 0,
-        .logical_index = 0,
-      };
-      id_tuple_t idt = {
-        .length = 1,
-        .ids_length = 1,
-        .ids = &sumId,
-      };
-
-      // Append to the end of the blob
-      auto oldsz = buf.size();
-      buf.resize(oldsz + sizeofIdTuple(idt), 0);
-      insertIdTuple(&buf[oldsz], idt);
-
-      // Save the local offset in the pointer field
-      summary_info.id_tuple_ptr = oldsz;
-    }
-
     // Threads within each block are sorted by identifier. TODO: Remove this
     std::vector<std::reference_wrapper<const Thread>> threads;
     threads.reserve(src.threads().size());
@@ -357,44 +162,59 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
 
     // Construct id tuples for each Thread in turn
     for(const Thread& t: threads) {
-      // Id tuple for t
-      id_tuple_t idt = {
-        .length = (uint16_t)t.attributes.idTuple().size(),
-        .ids_length = (uint16_t)t.attributes.idTuple().size(),
-        .ids = const_cast<pms_id_t*>(t.attributes.idTuple().data()),
+      // Convert and append the id tuple to the end of this here
+      const auto oldsz = buf.size();
+      buf.resize(oldsz + FMT_PROFILEDB_SZ_IdTuple(t.attributes.idTuple().size()), 0);
+      fmt_profiledb_idTupleHdr_t hdr = {
+        .nIds = (uint16_t)t.attributes.idTuple().size(),
       };
+      fmt_profiledb_idTupleHdr_write(&buf[oldsz], &hdr);
 
-      // Append to the end of the blob
-      auto oldsz = buf.size();
-      buf.resize(oldsz + sizeofIdTuple(idt), 0);
-      insertIdTuple(&buf[oldsz], idt);
+      char* cur = &buf[oldsz + FMT_PROFILEDB_SZ_IdTupleHdr];
+      for(const auto& id: t.attributes.idTuple()) {
+        fmt_profiledb_idTupleElem_t elem = {
+          .kind = (uint8_t)IDTUPLE_GET_KIND(id.kind),
+          .isPhysical = IDTUPLE_GET_INTERPRET(id.kind) == IDTUPLE_IDS_BOTH_VALID,
+          .logicalId = (uint32_t)id.logical_index,
+          .physicalId = id.physical_index,
+        };
+        fmt_profiledb_idTupleElem_write(cur, &elem);
+        cur += FMT_PROFILEDB_SZ_IdTupleElem;
+      }
 
       // Save the local offset in the pointers
-      t.userdata[ud].info.id_tuple_ptr = oldsz;
+      t.userdata[ud].info.pIdTuple = oldsz;
     }
 
     // Determine the offset of our blob, update the pointers and write it out.
     uint64_t offset = mpi::exscan<uint64_t>(buf.size(), mpi::Op::sum()).value_or(0);
-    summary_info.id_tuple_ptr += idTuplesPtr + offset;
     for(const auto& t: src.threads().citerate())
-      t->userdata[ud].info.id_tuple_ptr += idTuplesPtr + offset;
+      t->userdata[ud].info.pIdTuple += fhdr.pIdTuples + offset;
     auto fhi = pmf->open(true, false);
-    fhi.writeat(idTuplesPtr + offset, buf.size(), buf.data());
+    fhi.writeat(fhdr.pIdTuples + offset, buf.size(), buf.data());
 
     // Set the section size based on the sizes everyone contributes
     // Rank 0 handles the file header, so only Rank 0 needs to know
-    idTuplesSize = mpi::reduce(buf.size(), 0, mpi::Op::sum());
+    fhdr.szIdTuples = mpi::reduce(buf.size(), 0, mpi::Op::sum());
   }
 
-  // Rank 0 writes out the final file header
+  // Rank 0 writes out the final file header and section headers
   if(mpi::World::rank() == 0) {
-    auto buf = composeProfHdr(nProf, PMS_hdr_SIZE, profInfosSize, idTuplesPtr,
-        idTuplesSize);
-    pmf->open(true, false).writeat(0, buf.size(), buf.data());
+    auto pmfi = pmf->open(true, false);
+    {
+      char buf[FMT_PROFILEDB_SZ_FHdr];
+      fmt_profiledb_fHdr_write(buf, &fhdr);
+      pmfi.writeat(0, sizeof buf, buf);
+    }
+    {
+      char buf[FMT_PROFILEDB_SZ_ProfInfoSHdr];
+      fmt_profiledb_profInfoSHdr_write(buf, &pi_sHdr);
+      pmfi.writeat(fhdr.pProfileInfos, sizeof buf, buf);
+    }
   }
 
   // Set up the double-buffered output for profile data
-  profDataOut.initialize(*pmf, idTuplesPtr + align(idTuplesSize, 8));
+  profDataOut.initialize(*pmf, fhdr.pIdTuples + fhdr.szIdTuples);
 }
 
 void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
@@ -402,72 +222,67 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
   wavefrontDone.wait();
 
   // Allocate the blobs needed for the final output
-  std::vector<char> mvPairsBuf;
-  std::vector<char> ciPairsBuf;
-  ciPairsBuf.reserve((contexts.size() + 1) * PMS_ctx_pair_SIZE);
+  std::vector<char> mvalsBuf;
+  std::vector<char> cidxsBuf;
+  cidxsBuf.reserve(contexts.size() * FMT_PROFILEDB_SZ_CIdx);
 
   // Helper functions to insert ctx_id/idx pairs and metric/value pairs
-  const auto addCiPair = [&](uint32_t ctxId, uint64_t index) {
-    auto oldsz = ciPairsBuf.size();
-    ciPairsBuf.resize(oldsz + PMS_ctx_pair_SIZE, 0);
-    insertCiPair(&ciPairsBuf[oldsz], ctxId, index);
+  const auto addCIdx = [&](const fmt_profiledb_cIdx_t idx) {
+    auto oldsz = cidxsBuf.size();
+    cidxsBuf.resize(oldsz + FMT_PROFILEDB_SZ_CIdx, 0);
+    fmt_profiledb_cIdx_write(&cidxsBuf[oldsz], &idx);
   };
-  const auto addMvPair = [&](uint16_t metric, double value) {
-    auto oldsz = mvPairsBuf.size();
-    mvPairsBuf.resize(oldsz + PMS_vm_pair_SIZE, 0);
-    insertMvPair(&mvPairsBuf[oldsz], metric, value);
+  const auto addMVal = [&](const fmt_profiledb_mVal_t val) {
+    auto oldsz = mvalsBuf.size();
+    mvalsBuf.resize(oldsz + FMT_PROFILEDB_SZ_MVal, 0);
+    fmt_profiledb_mVal_write(&mvalsBuf[oldsz], &val);
   };
 
   // Now stitch together each Context's results
   for(const Context& c: contexts) {
     if(auto accums = tt.accumulatorsFor(c)) {
       // Add the ctx_id/idx pair for this Context
-      addCiPair(c.userdata[src.identifier()], mvPairsBuf.size() / PMS_vm_pair_SIZE);
+      addCIdx({
+        .ctxId = c.userdata[src.identifier()],
+        .startIndex = mvalsBuf.size() / FMT_PROFILEDB_SZ_MVal,
+      });
       size_t nValues = 0;
 
-      for(const auto& mx: accums->citerate()) {
-        const Metric& m = mx.first;
-        const auto& vv = mx.second;
-        if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
-          util::log::fatal{} << "Metric isn't function/execution!";
+      auto iter = accums->citerate();
+      std::vector<std::reference_wrapper<const
+          std::pair<const util::reference_index<const Metric>, MetricAccumulator>>> pairs;
+      pairs.reserve(accums->size());
+      for(const auto& mx: iter) pairs.push_back(std::cref(mx));
+      std::sort(pairs.begin(), pairs.end(), [=](const auto& a, const auto& b){
+        return a.get().first->userdata[src.identifier()].base()
+               < b.get().first->userdata[src.identifier()].base();
+      });
+      for(const auto& mx: pairs) {
+        const Metric& m = mx.get().first;
+        const auto& vv = mx.get().second;
         const auto& id = m.userdata[src.identifier()];
-        if(auto vex = vv.get(MetricScope::function)) {
-          addMvPair(id.getFor(MetricScope::function), *vex);
-          nValues++;
-          // HACK conditional to work around experiment.xml. Line Scopes are
-          // emitted as leaves (<S>), so they should have no extra inclusive cost.
-          if(c.scope().flat().type() == Scope::Type::line) {
-            addMvPair(id.getFor(MetricScope::execution), *vex);
-            nValues++;
-          }
-        }
-        // HACK conditional to work around experiment.xml. Line Scopes are
-        // emitted as leaves (<S>), so they should have no extra inclusive cost.
-        if(c.scope().flat().type() != Scope::Type::line) {
-          if(auto vinc = vv.get(MetricScope::execution)) {
-            addMvPair(id.getFor(MetricScope::execution), *vinc);
+        for(MetricScope ms: m.scopes()) {
+          if(auto v = vv.get(ms)) {
+            addMVal({
+              .metricId = (uint16_t)id.getFor(ms),
+              .value = *v,
+            });
             nValues++;
           }
         }
       }
       c.userdata[ud].nValues.fetch_add(nValues, std::memory_order_relaxed);
-      // HACK conditional to support the above HACKs. Its now possible (although
-      // hopefully rare) for a Context to have no metric values.
-      if(nValues == 0)
-        ciPairsBuf.resize(ciPairsBuf.size() - PMS_ctx_pair_SIZE);
     }
   }
 
-  //Add the extra ctx id and offset pair, to mark the end of ctx
-  addCiPair(LastNodeEnd, mvPairsBuf.size() / PMS_vm_pair_SIZE);
-
   // Build prof_info
   auto& pi = t.userdata[ud].info;
-  pi.prof_info_idx = t.userdata[src.identifier()] + 1;
-  pi.num_vals = mvPairsBuf.size() / PMS_vm_pair_SIZE;
-  pi.num_nzctxs = ciPairsBuf.size() / PMS_ctx_pair_SIZE - 1;
+  pi.isSummary = false;
+  pi.valueBlock.nValues = mvalsBuf.size() / FMT_PROFILEDB_SZ_MVal;
+  pi.valueBlock.nCtxs = cidxsBuf.size() / FMT_PROFILEDB_SZ_CIdx;
 
-  profDataOut.write(mvPairsBuf, ciPairsBuf, pi.offset);
+  profDataOut.write(std::move(mvalsBuf), pi.valueBlock.pValues,
+                    std::move(cidxsBuf), pi.valueBlock.pCtxIndices);
 }
 
 SparseDB::DoubleBufferedOutput::DoubleBufferedOutput()
@@ -476,15 +291,18 @@ SparseDB::DoubleBufferedOutput::DoubleBufferedOutput()
 void SparseDB::DoubleBufferedOutput::initialize(util::File& outfile,
                                                 uint64_t startOffset) {
   file = outfile;
-  pos.initialize(startOffset);
+  // We ensure all blobs are 4-aligned in the final output.
+  pos.initialize(align(startOffset, 4));
 }
 
 uint64_t SparseDB::DoubleBufferedOutput::allocate(uint64_t size) {
-  return pos.fetch_add(size);
+  // We ensure all blobs are 4-aligned in the final output.
+  return pos.fetch_add(align(size, 4));
 }
 
-void SparseDB::DoubleBufferedOutput::write(const std::vector<char>& mvBlob,
-    const std::vector<char>& ciBlob, uint64_t& offset) {
+void SparseDB::DoubleBufferedOutput::write(
+    const std::vector<char>& mvBlob, uint64_t& mvOffset,
+    const std::vector<char>& ciBlob, uint64_t& ciOffset) {
   assert(file);
 
   // Lock up the top-level state and inner Buffer
@@ -492,17 +310,23 @@ void SparseDB::DoubleBufferedOutput::write(const std::vector<char>& mvBlob,
   Buffer& buf = bufs[currentBuf];
   std::unique_lock<std::mutex> lowl(buf.lowlock);
 
+  // Lay out the Buffer first, recording relative offsets to be updated later
+  mvOffset = align(buf.blob.size(), 2);
+  ciOffset = align(mvOffset + mvBlob.size(), 4);
+  buf.toUpdate.push_back(mvOffset);
+  buf.toUpdate.push_back(ciOffset);
+
   // If the Buffer will be full after our addition, we'll have to flush it
   // afterwards. Let other threads progress in this case by rotating buffers.
-  bool needsFlush = buf.blob.size() + mvBlob.size() + ciBlob.size() >= Buffer::bufferSize;
+  bool needsFlush = ciOffset + ciBlob.size() >= Buffer::bufferSize;
   if(needsFlush)
     currentBuf = (currentBuf + 1) % bufs.size();
   topl.unlock();  // Let other threads progress in the other Buffer now
 
-  // Record the relative offset and append our new bytes to our Buffer
-  offset = buf.blob.size();
-  buf.toUpdate.push_back(offset);
+  // Append our new bytes to our Buffer
+  buf.blob.resize(mvOffset, 0);
   buf.blob.insert(buf.blob.end(), mvBlob.begin(), mvBlob.end());
+  buf.blob.resize(ciOffset, 0);
   buf.blob.insert(buf.blob.end(), ciBlob.begin(), ciBlob.end());
 
   if(needsFlush) buf.flush(*file, allocate(buf.blob.size()));
@@ -533,25 +357,26 @@ void SparseDB::DoubleBufferedOutput::flush() {
 
 // Read all the ctx_id/idx pairs for a profile from the profile.db
 static std::vector<std::pair<uint32_t, uint64_t>> readProfileCtxPairs(
-    const util::File& pmf, const pms_profile_info_t& pi) {
-  if(pi.num_nzctxs == 0) {
+    const util::File& pmf, const fmt_profiledb_profInfo_t& pi) {
+  if(pi.valueBlock.nCtxs == 0) {
     // No data in this profile, skip
     return {};
   }
 
   // Read the whole chunk of ctx_id/idx pairs
   auto pmfi = pmf.open(false, false);
-  std::vector<char> buf((pi.num_nzctxs + 1) * PMS_ctx_pair_SIZE);
-  pmfi.readat(pi.offset + pi.num_vals * PMS_vm_pair_SIZE, buf.size(), buf.data());
+  std::vector<char> buf(pi.valueBlock.nCtxs * FMT_PROFILEDB_SZ_CIdx);
+  pmfi.readat(pi.valueBlock.pCtxIndices, buf.size(), buf.data());
 
   // Parse and save in the output
   std::vector<std::pair<uint32_t, uint64_t>> prof_ctx_pairs;
-  prof_ctx_pairs.reserve(pi.num_nzctxs + 1);
-  for(uint32_t i = 0; i < pi.num_nzctxs + 1; i++) {
-    const char* cur = &buf[i * PMS_ctx_pair_SIZE];
-    prof_ctx_pairs.emplace_back(interpretByte4(cur),
-                                interpretByte8(cur + PMS_ctx_id_SIZE));
+  prof_ctx_pairs.reserve(pi.valueBlock.nCtxs + 1);
+  for(uint32_t i = 0; i < pi.valueBlock.nCtxs; i++) {
+    fmt_profiledb_cIdx_t idx;
+    fmt_profiledb_cIdx_read(&idx, &buf[i * FMT_PROFILEDB_SZ_CIdx]);
+    prof_ctx_pairs.emplace_back(idx.ctxId, idx.startIndex);
   }
+  prof_ctx_pairs.push_back({std::numeric_limits<uint32_t>::max(), pi.valueBlock.nValues});
   return prof_ctx_pairs;
 }
 
@@ -622,11 +447,11 @@ ProfileMetricData::ProfileMetricData(uint32_t firstCtx, uint32_t lastCtx,
   }
 
   // Read the blob of data containing all our pairs
-  mvBlob.resize((last->second - first->second) * PMS_vm_pair_SIZE);
+  mvBlob.resize((last->second - first->second) * FMT_PROFILEDB_SZ_MVal);
   assert(!mvBlob.empty());
 
   auto pmfi = pmf.open(false, false);
-  pmfi.readat(offset + first->second * PMS_vm_pair_SIZE,
+  pmfi.readat(offset + first->second * FMT_PROFILEDB_SZ_MVal,
               mvBlob.size(), mvBlob.data());
 }
 
@@ -679,18 +504,22 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
 
       // Fill cmb with metric/value pairs for this context, from the top profile
       const ProfileMetricData& profile = heap.back().second;
-      const char* cur = &profile.mvBlob[(curPair.second - profile.first->second) * PMS_vm_pair_SIZE];
+      const char* cur = &profile.mvBlob[(curPair.second - profile.first->second) * FMT_PROFILEDB_SZ_MVal];
       for(uint64_t i = 0, e = heap.back().first->second - curPair.second;
-          i < e; i++, cur += PMS_vm_pair_SIZE) {
+          i < e; i++, cur += FMT_PROFILEDB_SZ_MVal) {
         allpvs++;
-        const uint16_t mid = interpretByte2(cur + PMS_val_SIZE);
-        auto& subbuf = valuebufs.try_emplace(mid).first->second;
+        fmt_profiledb_mVal_t val;
+        fmt_profiledb_mVal_read(&val, cur);
+        auto& subbuf = valuebufs.try_emplace(val.metricId).first->second;
+        fmt_cctdb_pVal_t outval = {
+          .profIndex = profile.index,
+          .value = val.value,
+        };
 
         // Write in this prof_idx/value pair, in bytes.
-        // Values are represented the same so they can just be copied.
-        subbuf.reserve(subbuf.size() + CMS_val_prof_idx_pair_SIZE);
-        subbuf.insert(subbuf.end(), cur, cur + PMS_val_SIZE);
-        insertByte4(&*subbuf.insert(subbuf.end(), CMS_prof_idx_SIZE, 0), profile.index);
+        auto oldsz = subbuf.size();
+        subbuf.resize(oldsz + FMT_CCTDB_SZ_PVal, 0);
+        fmt_cctdb_pVal_write(&subbuf[oldsz], &outval);
       }
 
       // If the updated entry is still in range, push it back into the heap.
@@ -702,36 +531,39 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
     }
 
     // Allocate enough space in buf for all the bits we want.
-    const auto newsz = allpvs * CMS_val_prof_idx_pair_SIZE
-                       + (valuebufs.size()+1) * CMS_m_pair_SIZE;
-    assert(ctxOffsets[ctx_id] + newsz == ctxOffsets[ctx_id+1]
+    buf.resize(align(buf.size(), 4));
+    assert(align(ctxOffsets[ctx_id], 4) == ctxOffsets[ctx_id]
+           && "Final layout is not sufficiently aligned!");
+    const auto newsz = allpvs * FMT_CCTDB_SZ_PVal + valuebufs.size() * FMT_CCTDB_SZ_MIdx;
+    assert(align(ctxOffsets[ctx_id] + newsz, 4) == ctxOffsets[ctx_id+1]
            && "Final layout doesn't match precalculated ctx_off!");
     buf.reserve(buf.size() + newsz);
-
+    
     // Concatinate the prof_idx/value pairs, in bytes form, in metric order
     for(const auto& [mid, pvbuf]: valuebufs)
       buf.insert(buf.end(), pvbuf.begin(), pvbuf.end());
 
     // Construct the metric_id/idx pairs for this context, in bytes
     {
-      char* cur = &*buf.insert(buf.end(), (valuebufs.size()+1) * CMS_m_pair_SIZE, 0);
+      auto oldsz = buf.size();
+      buf.resize(oldsz + valuebufs.size() * FMT_CCTDB_SZ_MIdx);
+      char* cur = &buf[oldsz];
       uint64_t pvs = 0;
       for(const auto& [mid, pvbuf]: valuebufs) {
-        cur = insertByte2(cur, mid);
-        cur = insertByte8(cur, pvs);
-        pvs += pvbuf.size() / CMS_val_prof_idx_pair_SIZE;
+        fmt_cctdb_mIdx_t idx = {
+          .metricId = mid,
+          .startIndex = pvs,
+        };
+        fmt_cctdb_mIdx_write(cur, &idx);
+        cur += FMT_CCTDB_SZ_MIdx;
+        pvs += pvbuf.size() / FMT_CCTDB_SZ_PVal;
       }
       assert(pvs == allpvs);
-
-      // Last entry is always LastMidEnd
-      cur = insertByte2(cur, LastMidEnd);
-      cur = insertByte8(cur, pvs);
     }
   }
 
   // Write out the whole blob of data where it belongs in the file
   if(buf.empty()) return;
-  assert(firstCtxId != LastNodeEnd);
   auto cmfi = cmf.open(true, true);
   cmfi.writeat(ctxOffsets[firstCtxId], buf.size(), buf.data());
 }
@@ -744,58 +576,60 @@ void SparseDB::write() {
 
   // Now that the profile infos are up-to-date, write them all in parallel
   {
-    std::vector<std::reference_wrapper<const pms_profile_info_t>> prof_infos;
-    prof_infos.reserve(src.threads().size());
+    std::vector<std::reference_wrapper<const Thread>> threads;
+    threads.reserve(src.threads().size());
     for(const auto& t: src.threads().citerate())
-      prof_infos.push_back(t->userdata[ud].info);
+      threads.push_back(*t);
 
-    forEachProfileInfo.fill(std::move(prof_infos), [&](const pms_profile_info_t& pi){
-      auto buf = composeProfInfo(pi);
-      auto fhi = pmf->open(true, false);
-      fhi.writeat(PMS_hdr_SIZE + pi.prof_info_idx * PMS_prof_info_SIZE,
-                  buf.size(), buf.data());
+    forEachThread.fill(std::move(threads), [&](const Thread& t){
+      auto& pi = t.userdata[ud].info;
+      const auto idx = t.userdata[src.identifier()] + 1;
+
+      char buf[FMT_PROFILEDB_SZ_ProfInfo];
+      fmt_profiledb_profInfo_write(buf, &pi);
+
+      pmf->open(true, false).writeat(pProfiles + FMT_PROFILEDB_SZ_ProfInfo * idx,
+                                     sizeof buf, buf);
     });
-    forEachProfileInfo.contribute(forEachProfileInfo.wait());
+    forEachThread.contribute(forEachThread.wait());
   }
 
-  // Lay out the cct.db metric data section, in terms of offsets for every context
-  auto ctxcnt = mpi::bcast(contexts.size(), 0);
-  std::vector<uint64_t> ctxOffsets(ctxcnt + 1, 0);
+  // Lay out the main parts of the cct.db file
+  fmt_cctdb_fHdr_t fHdr;
+  fHdr.pCtxInfo = align(FMT_CCTDB_SZ_FHdr, 8);
+  fmt_cctdb_ctxInfoSHdr_t ci_sHdr;
+  ci_sHdr.pCtxs = align(fHdr.pCtxInfo + FMT_CCTDB_SZ_CtxInfoSHdr, 8);
+  ci_sHdr.nCtxs = mpi::bcast((contexts.back().get().userdata[src.identifier()] + 1), 0);
+  fHdr.szCtxInfo = ci_sHdr.pCtxs + ci_sHdr.nCtxs * FMT_CCTDB_SZ_CtxInfo - fHdr.pCtxInfo;
+
+  // Lay out the cct.db metric data, in terms of offsets for every context
+  // First figure out the byte counts for each potential context's blob
+  std::vector<uint64_t> ctxOffsets(ci_sHdr.nCtxs + 1, 0);
   for(const Context& c: contexts) {
     const auto i = c.userdata[src.identifier()];
-    assert(&c == &contexts[i].get());
     auto& udc = c.userdata[ud];
-    ctxOffsets[i] = udc.nValues.load(std::memory_order_relaxed)
-                    * CMS_val_prof_idx_pair_SIZE;
+    ctxOffsets[i] = udc.nValues.load(std::memory_order_relaxed) * FMT_CCTDB_SZ_PVal;
 
     // Rank 0 has the final number of metric/idx pairs
     if(mpi::World::rank() == 0) {
       const auto& use = c.data().metricUsage();
       auto iter = use.citerate();
-      bool isLine = c.scope().flat().type() == Scope::Type::line;
       udc.nMetrics = std::accumulate(iter.begin(), iter.end(), (uint16_t)0,
-        [isLine](uint16_t out, const auto& mu) -> uint16_t {
+        [](uint16_t out, const auto& mu) -> uint16_t {
           MetricScopeSet use = mu.second;
           assert((mu.first->scopes() & use) == use && "Inconsistent Metric value usage data!");
-          // HACK conditional to work around experiment.xml. See above.
-          if(isLine) {
-            if(use.has(MetricScope::function)) out += 2;
-          } else {
-            if(use.has(MetricScope::function)) out++;
-            if(use.has(MetricScope::execution)) out++;
-          }
-          return out;
+          return out + use.count();
         });
-      if(udc.nMetrics > 0)
-        ctxOffsets[i] += (udc.nMetrics + 1) * CMS_m_pair_SIZE;
+      ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;      
     }
   }
-  // Exclusive scan to get offsets. Rank 0 adds the initial offset for the section
-  const uint64_t ctxStart = align(ctxcnt * CMS_ctx_info_SIZE, 8) + CMS_hdr_SIZE;
-  stdshim::exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
-      mpi::World::rank() == 0 ? ctxStart : 0);
-  // All-reduce the offsets to get global offsets incorporating everyone
+  // All-reduce to get the total size for every context
   ctxOffsets = mpi::allreduce(ctxOffsets, mpi::Op::sum());
+  // Exclusive-scan the sizes to get the offsets, adjusting for 4-alignment
+  const auto ctxStart = align(fHdr.pCtxInfo + fHdr.szCtxInfo, 4);
+  stdshim::transform_exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
+    ctxStart, std::plus<>{},
+    [](uint64_t sz){ return align(sz, 4); });  
 
   // Divide the contexts into ranges of easily distributable sizes
   std::vector<uint32_t> ctxRanges;
@@ -804,7 +638,7 @@ void SparseDB::write() {
     const uint64_t limit = std::min<uint64_t>(1024ULL*1024*1024*3,
         (ctxOffsets.back() - ctxStart) / (3 * mpi::World::size()));
     uint64_t cursize = 0;
-    for(size_t i = 0; i < ctxcnt; i++) {
+    for(size_t i = 0; i < ci_sHdr.nCtxs; i++) {
       const uint64_t size = ctxOffsets[i+1] - ctxOffsets[i];
       if(cursize + size > limit) {
         ctxRanges.push_back(i);
@@ -812,7 +646,7 @@ void SparseDB::write() {
       }
       cursize += size;
     }
-    ctxRanges.push_back(ctxcnt);
+    ctxRanges.push_back(ci_sHdr.nCtxs);
   }
 
   // We use a SharedAccumulator to dynamically distribute context ranges across
@@ -827,95 +661,115 @@ void SparseDB::write() {
   std::deque<ProfileIndexData> profiles;
   {
     auto fi = pmf->open(false, false);
-    uint32_t nProf = readAsByte4(fi, HPCPROFILESPARSE_FMT_MagicLen + HPCPROFILESPARSE_FMT_VersionLen);
+    fmt_profiledb_profInfoSHdr_t piSHdr;
+    {
+      char buf[FMT_PROFILEDB_SZ_ProfInfoSHdr];
+      fi.readat(pProfileInfos, sizeof buf, buf);
+      fmt_profiledb_profInfoSHdr_read(&piSHdr, buf);
+    }
 
-    // Read the whole section in, skipping over the index 0 summary profile
-    std::vector<char> buf((nProf-1) * PMS_prof_info_SIZE);
-    fi.readat(PMS_hdr_SIZE + PMS_prof_info_SIZE, buf.size(), buf.data());
+    // Read the whole section in
+    std::vector<char> buf(piSHdr.nProfiles * FMT_PROFILEDB_SZ_ProfInfo);
+    fi.readat(piSHdr.pProfiles, buf.size(), buf.data());
 
     // Load the data we need from the profile.db, in parallel
-    profiles = std::deque<ProfileIndexData>(nProf - 1);
-    forProfilesParse.fill(profiles.size(), [this, &buf, &profiles](size_t i){
-      auto pi = parseProfInfo(&buf[i * PMS_prof_info_SIZE]);
-      profiles[i] = {
-        .offset = pi.offset,
-        .index = (uint32_t)(i + 1),
+    profiles = std::deque<ProfileIndexData>(piSHdr.nProfiles);
+    std::atomic<size_t> next(0);
+    forProfilesParse.fill(profiles.size(), [this, &buf, &profiles, &next](size_t i){
+      fmt_profiledb_profInfo_t pi;
+      fmt_profiledb_profInfo_read(&pi, &buf[i * FMT_PROFILEDB_SZ_ProfInfo]);
+      if(pi.isSummary)
+        return;
+      profiles[next.fetch_add(1, std::memory_order_relaxed)] = {
+        .offset = pi.valueBlock.pValues,
+        .index = (uint32_t)i,
         .ctxPairs = readProfileCtxPairs(*pmf, pi),
       };
     });
     forProfilesParse.contribute(forProfilesParse.wait());
+    profiles.resize(next.load(std::memory_order_relaxed));
   }
 
   if(mpi::World::rank() == 0) {
     // Rank 0 is in charge of writing out the summary profile in profile.db
     {
       // Allocate the blobs needed for the final output
-      std::vector<char> mvPairsBuf;
-      std::vector<char> ciPairsBuf;
-      ciPairsBuf.reserve((contexts.size() + 1) * PMS_ctx_pair_SIZE);
+      std::vector<char> mvalsBuf;
+      std::vector<char> cidxsBuf;
+      cidxsBuf.reserve(contexts.size() * FMT_PROFILEDB_SZ_CIdx);
 
       // Helper functions to insert ctx_id/idx pairs and metric/value pairs
-      const auto addCiPair = [&](uint32_t ctxId, uint64_t index) {
-        auto oldsz = ciPairsBuf.size();
-        ciPairsBuf.resize(oldsz + PMS_ctx_pair_SIZE, 0);
-        insertCiPair(&ciPairsBuf[oldsz], ctxId, index);
+      const auto addCIdx = [&](const fmt_profiledb_cIdx_t idx) {
+        auto oldsz = cidxsBuf.size();
+        cidxsBuf.resize(oldsz + FMT_PROFILEDB_SZ_CIdx, 0);
+        fmt_profiledb_cIdx_write(&cidxsBuf[oldsz], &idx);
       };
-      const auto addMvPair = [&](uint16_t metric, double value) {
-        auto oldsz = mvPairsBuf.size();
-        mvPairsBuf.resize(oldsz + PMS_vm_pair_SIZE, 0);
-        insertMvPair(&mvPairsBuf[oldsz], metric, value);
+      const auto addMVal = [&](const fmt_profiledb_mVal_t val) {
+        auto oldsz = mvalsBuf.size();
+        mvalsBuf.resize(oldsz + FMT_PROFILEDB_SZ_MVal, 0);
+        fmt_profiledb_mVal_write(&mvalsBuf[oldsz], &val);
       };
 
       // Now stitch together each Context's results
       for(const Context& c: contexts) {
         const auto& stats = c.data().statistics();
-        if(stats.size() > 0)
-          addCiPair(c.userdata[src.identifier()], mvPairsBuf.size() / PMS_vm_pair_SIZE);
-        for(const auto& mx: stats.citerate()) {
-          const Metric& m = mx.first;
-          if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
-            util::log::fatal{} << "Metric isn't function/execution!";
+        if(stats.size() > 0) {
+          addCIdx({
+            .ctxId = c.userdata[src.identifier()],
+            .startIndex = mvalsBuf.size() / FMT_PROFILEDB_SZ_MVal,
+          });
+        }
+
+        auto iter = stats.citerate();
+        std::vector<std::reference_wrapper<const
+            std::pair<const util::reference_index<const Metric>, StatisticAccumulator>>> pairs;
+        pairs.reserve(stats.size());
+        for(const auto& mx: iter) pairs.push_back(std::cref(mx));
+        std::sort(pairs.begin(), pairs.end(), [=](const auto& a, const auto& b){
+          return a.get().first->userdata[src.identifier()].base()
+                 < b.get().first->userdata[src.identifier()].base();
+        });
+        for(const auto& mx: pairs) {
+          const Metric& m = mx.get().first;
           const auto& id = m.userdata[src.identifier()];
-          const auto& vv = mx.second;
+          const auto& vv = mx.get().second;
           for(const auto& sp: m.partials()) {
-            if(auto vex = vv.get(sp).get(MetricScope::function)) {
-              addMvPair(id.getFor(sp, MetricScope::function), *vex);
-              // HACK conditional to work around experiment.xml. Line Scopes are
-              // emitted as leaves (<S>), so they should have no extra inclusive cost.
-              if(c.scope().flat().type() == Scope::Type::line)
-                addMvPair(id.getFor(sp, MetricScope::execution), *vex);
-            }
-            // HACK conditional to work around experiment.xml. Line Scopes are
-            // emitted as leaves (<S>), so they should have no extra inclusive cost.
-            if(c.scope().flat().type() != Scope::Type::line) {
-              if(auto vinc = vv.get(sp).get(MetricScope::execution))
-                addMvPair(id.getFor(sp, MetricScope::execution), *vinc);
+            auto vvv = vv.get(sp);
+            for(MetricScope ms: m.scopes()) {
+              if(auto v = vvv.get(ms)) {
+                addMVal({
+                  .metricId = (uint16_t)id.getFor(sp, ms),
+                  .value = *v,
+                });
+              }
             }
           }
         }
       }
 
-      // Add the extra ctx id and offset pair, to mark the end of ctx
-      addCiPair(LastNodeEnd, mvPairsBuf.size() / PMS_vm_pair_SIZE);
-
       // Build prof_info
-      summary_info.num_vals = mvPairsBuf.size() / PMS_vm_pair_SIZE;
-      summary_info.num_nzctxs = ciPairsBuf.size() / PMS_ctx_pair_SIZE - 1;
+      fmt_profiledb_profInfo_t summary_info;
+      summary_info.isSummary = true;
+      summary_info.pIdTuple = 0;
+      summary_info.valueBlock.nValues = mvalsBuf.size() / FMT_PROFILEDB_SZ_MVal;
+      summary_info.valueBlock.nCtxs = cidxsBuf.size() / FMT_PROFILEDB_SZ_CIdx;
 
       // Write the summary profile out and make sure it makes it to disk
-      profDataOut.write(std::move(mvPairsBuf), std::move(ciPairsBuf),
-                        summary_info.offset);
+      profDataOut.write(std::move(mvalsBuf), summary_info.valueBlock.pValues,
+                        std::move(cidxsBuf), summary_info.valueBlock.pCtxIndices);
       profDataOut.flush();
 
       // Write the summary info, which is always profile index 0
       auto pmfi = pmf->open(true, false);
-      auto buf = composeProfInfo(summary_info);
-      pmfi.writeat(PMS_hdr_SIZE, buf.size(), buf.data());
+      {
+        char buf[FMT_PROFILEDB_SZ_ProfInfo];
+        fmt_profiledb_profInfo_write(buf, &summary_info);
+        pmfi.writeat(pProfiles, sizeof buf, buf);
+      }
 
       // Write out the footer to indicate that profile.db is complete
-      auto footer_val = PROFDBft;
-      uint64_t footer_off = profDataOut.allocate(sizeof(footer_val));
-      pmfi.writeat(footer_off, sizeof(footer_val), &footer_val);
+      pmfi.writeat(profDataOut.allocate(sizeof fmt_profiledb_footer),
+                   sizeof fmt_profiledb_footer, fmt_profiledb_footer);
     }
 
     // Rank 0 is also in charge of writing the header and context info sections
@@ -923,21 +777,46 @@ void SparseDB::write() {
     {
       auto cmfi = cmf->open(true, true);
 
-      auto hdr = composeCtxHdr(ctxcnt);
-      cmfi.writeat(0, hdr.size(), hdr.data());
-
-      std::vector<char> buf(ctxcnt * CMS_ctx_info_SIZE);
-      char* cur = buf.data();
-      for(uint32_t i = 0; i < ctxcnt; i++) {
-        uint16_t nMetrics = contexts[i].get().userdata[ud].nMetrics;
-        uint64_t nVals = nMetrics == 0 ? 0 :
-          (ctxOffsets[i+1] - ctxOffsets[i] - (nMetrics + 1) * CMS_m_pair_SIZE) / CMS_val_prof_idx_pair_SIZE;
-        cur = insertCtxInfo(cur, {
-          .ctx_id = i, .num_vals = nVals, .num_nzmids = nMetrics,
-          .offset = ctxOffsets[i],
-        });
+      {
+        char buf[FMT_CCTDB_SZ_FHdr];
+        fmt_cctdb_fHdr_write(buf, &fHdr);
+        cmfi.writeat(0, sizeof buf, buf);
       }
-      cmfi.writeat(CMS_hdr_SIZE, buf.size(), buf.data());
+      {
+        char buf[FMT_CCTDB_SZ_CtxInfoSHdr];
+        fmt_cctdb_ctxInfoSHdr_write(buf, &ci_sHdr);
+        cmfi.writeat(fHdr.pCtxInfo, sizeof buf, buf);
+      }
+
+      std::vector<char> buf(ci_sHdr.nCtxs * FMT_CCTDB_SZ_CtxInfo);
+      char* cur = buf.data();
+      uint ctxid = 0;
+      for(const Context& c: contexts) {
+        const auto i = c.userdata[src.identifier()];
+
+        // write context info for all the never-exist contexts before context i
+        while(ctxid < i){
+          fmt_cctdb_ctxInfo_t ci;
+          ci.valueBlock.nMetrics = 0;
+          ci.valueBlock.nValues = 0;
+          ci.valueBlock.pValues = ctxOffsets[ctxid];
+          ci.valueBlock.pMetricIndices = ci.valueBlock.pValues;
+          fmt_cctdb_ctxInfo_write(cur, &ci);
+          cur += FMT_CCTDB_SZ_CtxInfo;
+          ctxid++;
+        }
+        
+        // write context info for context i
+        fmt_cctdb_ctxInfo_t cii;
+        cii.valueBlock.nMetrics = c.userdata[ud].nMetrics;
+        cii.valueBlock.nValues = (ctxOffsets[i+1] - ctxOffsets[i] - cii.valueBlock.nMetrics * FMT_CCTDB_SZ_MIdx) / FMT_CCTDB_SZ_PVal;
+        cii.valueBlock.pValues = ctxOffsets[i];
+        cii.valueBlock.pMetricIndices = cii.valueBlock.pValues + cii.valueBlock.nValues * FMT_CCTDB_SZ_PVal;
+        fmt_cctdb_ctxInfo_write(cur, &cii);
+        cur += FMT_CCTDB_SZ_CtxInfo;
+        ctxid++;
+      }
+      cmfi.writeat(ci_sHdr.pCtxs, buf.size(), buf.data());
     }
   }
 
@@ -1005,8 +884,7 @@ void SparseDB::write() {
   // writes have completed. If the footer isn't there, the file isn't complete.
   mpi::barrier();
   if(mpi::World::rank() + 1 == mpi::World::size()) {
-    const uint64_t footer = CCTDBftr;
-    auto cmfi = cmf->open(true, false);
-    cmfi.writeat(ctxOffsets.back(), sizeof footer, &footer);
+    cmf->open(true, false).writeat(ctxOffsets.back(),
+                                   sizeof fmt_cctdb_footer, fmt_cctdb_footer);
   }
 }

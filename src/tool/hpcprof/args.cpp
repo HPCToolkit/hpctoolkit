@@ -55,6 +55,7 @@
 #include "lib/profile/mpi/all.hpp"
 
 #include "lib/prof-lean/cpuset_hwthreads.h"
+#include "lib/prof-lean/hpcrun-fmt.h"
 
 #include <cassert>
 #include <getopt.h>
@@ -103,9 +104,9 @@ Input Options:
 Output Options:
   -n, --title=NAME            Specify a title for the output database.
   -f, --format=FORMAT
-                              Specify the database output format.
-                              Default is `exmldb` for the usual format,
-                              using `sparse` outputs in the new sparse format.
+                              Specify the database output format. One of:
+                               - `metadb`: sparse binary database format.
+                              Default is `metadb`.
   -M (none|STAT[,STAT...])
                               Disable or enable generation of global
                               statistics. STAT is one of the following:
@@ -148,7 +149,7 @@ const bool string_starts_with(const std::string& a, const std::string& n) {
 ProfArgs::ProfArgs(int argc, char* const argv[])
   : title(), threads(0), output(),
     include_sources(true), include_traces(true), include_thread_local(true),
-    format(Format::sparse), dwarfMaxSize(100*1024*1024), valgrindUnclean(false) {
+    format(Format::metadb), dwarfMaxSize(100*1024*1024), valgrindUnclean(false) {
   int arg_includeSources = include_sources;
   int arg_includeTraces = include_traces;
   int arg_overwriteOutput = 0;
@@ -266,7 +267,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       break;
     case 'f': {
       std::string form(optarg);
-      if(form == "sparse") format = Format::sparse;
+      if(form == "metadb") format = Format::metadb;
       else {
         std::cerr << "Unrecognized output format '" << form << "'!\n";
         std::exit(2);
