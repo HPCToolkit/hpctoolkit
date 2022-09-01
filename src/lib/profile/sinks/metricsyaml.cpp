@@ -574,13 +574,13 @@ void MetricsYAML::standard(std::ostream& os) {
   Emitter out(os);
   out << BeginMap << Key << "version" << Value << 0;
 
-  std::unordered_map<std::string_view, const Metric&> mets;
+  std::vector<std::reference_wrapper<const Metric>> mets;
   mets.reserve(src.metrics().size());
 
   // Before doing anything else, make sure we have access to all the inputs
   out << Key << "inputs" << BeginSeq;
   for(const Metric& m: src.metrics().citerate()) {
-    mets.insert({m.name(), m});
+    mets.emplace_back(m);
     const auto f = [&](MetricScope s) {
       if(!m.scopes().has(s)) return false;
       for(const auto& p: m.partials()) {
@@ -599,40 +599,24 @@ void MetricsYAML::standard(std::ostream& os) {
   }
   out << EndSeq;
 
-  // Filter the metrics into top-level roots early, so we can control the order
-  // Internally each constructor only takes the Metrics it can handle
-  GPU gpu(mets);
-  CPU cpu(mets);
+  // Sort the metrics in the order we want to present them in the end
+  std::sort(mets.begin(), mets.end(), [](const Metric& a, const Metric& b) -> bool {
+    if(a.orderId() && b.orderId() && a.orderId().value() != b.orderId().value())
+      return a.orderId().value() < b.orderId().value();
+    return a.name() < b.name();
+  });
 
-  // Emit all the roots, in the order we want in general
-  out << Key << "roots" << Value << BeginSeq;
-  cpu.dump(out);
-  gpu.dump(out);
-  if(!mets.empty()) {
-    // Whatever's left gets emitted "raw".
-    out << BeginMap
-        << Key << "name" << Value << "Uncatagorized"
-        << Key << "description" << Value << "Metrics that are unrecognized or don't belong well anywhere else."
-        << Key << "variants" << Value << BeginMap;
-    // Figure out the Statistics that the children have
-    std::vector<std::string_view> variants;
-    for(const auto& [n,m]: mets) {
-      for(const auto& s: m.statistics()) {
-        if(std::find(variants.begin(), variants.end(), s.suffix()) == variants.end())
-          variants.push_back(s.suffix());
-      }
+  for(const Metric& m: mets) {
+    if(m.orderId()) {
+      util::log::debug{true} << "Metric " << m.name() << " has id " << m.orderId().value();
+    } else {
+      util::log::debug{true} << "Metric " << m.name() << " has no order id";
     }
-    for(const auto& v: variants) {
-      out << Key << std::string(v) << Value << BeginMap
-            << Key << "render" << Value << "hidden"
-          << EndMap;
-    }
-    out << EndMap
-        << Key << "children" << Value << BeginSeq;
-    for(const auto& [n,m]: mets) rawLeaf(out, m);
-    out << EndSeq
-        << EndMap;
   }
+
+  // Emit all the metrics without any hierarchy, in order
+  out << Key << "roots" << Value << BeginSeq;
+  for(const Metric& m: mets) rawLeaf(out, m);
   out << EndSeq;
 
   // Close it off
