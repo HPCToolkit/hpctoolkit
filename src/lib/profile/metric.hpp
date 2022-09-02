@@ -250,6 +250,10 @@ public:
       shownByDefault, hiddenByDefault, invisible
     } visibility;
 
+    // Metrics may have an ordering id assigned to them by the Sources. This
+    // number has no semantic meaning but may be of use for human presentation.
+    std::optional<unsigned int> orderId;
+
     bool operator==(const Settings& o) const noexcept {
       return name == o.name;
     }
@@ -274,6 +278,7 @@ public:
   const std::string& description() const noexcept { return u_settings().description; }
   MetricScopeSet scopes() const noexcept { return u_settings().scopes; }
   Settings::visibility_t visibility() const noexcept { return u_settings().visibility; }
+  std::optional<unsigned int> orderId() const noexcept { return u_settings().orderId; }
 
   mutable ud_t userdata;
 

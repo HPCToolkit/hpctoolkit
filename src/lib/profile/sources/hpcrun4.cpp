@@ -225,6 +225,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     std::vector<std::pair<std::string, ExtraStatistic::Settings>> estats;
     while((id = hpcrun_sparse_next_metric(file, &m, 4.0)) > 0) {
       Metric::Settings settings{m.name, m.description};
+      settings.orderId = id;
       switch(m.flags.fields.show) {
       case HPCRUN_FMT_METRIC_SHOW: break;  // Default
       case HPCRUN_FMT_METRIC_HIDE:
