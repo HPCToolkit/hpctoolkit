@@ -606,14 +606,6 @@ void MetricsYAML::standard(std::ostream& os) {
     return a.name() < b.name();
   });
 
-  for(const Metric& m: mets) {
-    if(m.orderId()) {
-      util::log::debug{true} << "Metric " << m.name() << " has id " << m.orderId().value();
-    } else {
-      util::log::debug{true} << "Metric " << m.name() << " has no order id";
-    }
-  }
-
   // Emit all the metrics without any hierarchy, in order
   out << Key << "roots" << Value << BeginSeq;
   for(const Metric& m: mets) rawLeaf(out, m);
