@@ -1,0 +1,117 @@
+spack:
+  view: false
+
+  # Use packages from the public buildcache whenever possible
+  mirrors:
+    base: 's3://spack-binaries/hpctoolkit'
+    tmp-pr: 's3://spack-binaries-prs/pr32327_hpctoolkit-stack-final'
+    develop: 's3://spack-binaries/develop'
+
+  gitlab-ci:
+    # The build-jobs don't need a clone of this repo, they use artifacts
+    variables:
+      GIT_STRATEGY: none
+
+    service-job-attributes:
+      tags: [docker, linux/amd64]
+      image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+      before_script:
+      - if test "$CI_JOB_NAME" = no-specs-to-rebuild; then exit 0; fi
+      # Hotfix SPACK_CHECKOUT_VERSION, because it tends to be borked
+      - echo "$SPACK_CHECKOUT_VERSION"
+      - if (echo "$SPACK_CHECKOUT_VERSION" | grep -oE '[0-9a-f]{32}' > sha);
+        then export SPACK_CHECKOUT_VERSION=`cat sha`;
+        fi
+      - rm sha
+      # Pull Spack from our cache, updating if needed
+      - if ! [ -d .spack.git ]; then
+         git clone --depth=30 --single-branch --no-tags --branch=develop
+            --bare https://github.com/spack/spack.git .spack.git;
+        fi
+      - if ! git -C .spack.git cat-file -e "$SPACK_CHECKOUT_VERSION"'^{commit}'; then
+          git -C .spack.git fetch --verbose origin develop:develop;
+        fi
+      - git clone --shared --branch=develop .spack.git .spack
+      - git -C .spack checkout --detach "$SPACK_CHECKOUT_VERSION"
+      - export SPACK_ROOT="`realpath .spack`"
+      - source .spack/share/spack/setup-env.sh
+
+    before_script:
+    # Hotfix SPACK_CHECKOUT_VERSION, because it tends to be borked
+    - echo "$SPACK_CHECKOUT_VERSION"
+    - if (echo "$SPACK_CHECKOUT_VERSION" | grep -oE '[0-9a-f]{32}' > sha);
+      then export SPACK_CHECKOUT_VERSION=`cat sha`;
+      fi
+    - rm sha
+    # Pull Spack from our cache, updating if needed
+    - if ! [ -d .spack.git ]; then
+        git clone --depth=30 --single-branch --no-tags --branch=develop
+          --bare https://github.com/spack/spack.git .spack.git;
+      fi
+    - if ! git -C .spack.git cat-file -e "$SPACK_CHECKOUT_VERSION"'^{commit}'; then
+        git -C .spack.git fetch --verbose origin develop:develop;
+      fi
+    - git clone --shared --branch=develop .spack.git .spack
+    - git -C .spack checkout --detach "$SPACK_CHECKOUT_VERSION"
+
+    # Apply PR #32136: Local cache for buildcache files
+    # Provides a clean mechanism to cache binaries locally, significantly reducing network I/O
+    # See https://github.com/spack/spack/pull/32136
+    - curl -L https://github.com/spack/spack/pull/32136.patch | git -C .spack apply -3 - || git reset --hard
+
+    # Load Spack into this environment
+    - export SPACK_ROOT="`realpath .spack`"
+    - source .spack/share/spack/setup-env.sh
+
+    # Manually update the buildcache indices to speed up `spack install`.
+    # See https://github.com/spack/spack/pull/32137
+    - spack buildcache list > /dev/null
+    # Configure the local binary cache to cache binaries
+    - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
+    script:
+    - spack config --scope site add config:install_tree:padded_length:512
+    - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
+    # We should do `spack buildcache keys -it` here... but doing that makes `spack ci rebuild`
+    # try to install without --no-check-signature, which we don't want. Ugh.
+    # It would be much nicer if Spack had per-mirror keys.
+    - spack -d ci rebuild
+
+    mappings:
+    - match: ['os=centos7 target=:x86_64_v3']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/centos7:amd64
+        tags: [docker, linux/amd64]
+    - match: ['os=fedora36 target=:x86_64_v3']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/fedora36:amd64
+        tags: [docker, linux/amd64]
+    - match: ['os=fedora36 target=:graviton']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/fedora36:arm64
+        tags: [docker, linux/arm64]
+    - match: ['os=opensuse_leap15 target=:x86_64_v3']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/leap15:amd64
+        tags: [docker, linux/amd64]
+    - match: ['os=almalinux8 target=:x86_64_v3']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:amd64
+        tags: [docker, linux/amd64]
+        variables:
+          CI_OS: almalinux8
+    - match: ['os=almalinux8 target=:graviton']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:arm64
+        tags: [docker, linux/arm64]
+        variables:
+          CI_OS: almalinux8
+    - match: ['os=ubuntu20.04 target=:x86_64_v3']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+        tags: [docker, linux/amd64]
+    - match: ['os=ubuntu20.04 target=:graviton']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:arm64
+        tags: [docker, linux/arm64]
+
+  # The next line will provide specs: as generated by fuse.py

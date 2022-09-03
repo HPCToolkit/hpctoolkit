@@ -1,0 +1,18 @@
+--with-libmonitor=${PWD}/../view-unified/
+--with-papi=${PWD}/../view-papi/
+--with-perfmon=${PWD}/../view-perfmon/
+--with-boost=${PWD}/../view-unified/
+--with-libiberty=${PWD}/../view-unified/
+--with-elfutils=${PWD}/../view-unified/
+--with-dyninst=${PWD}/../view-unified/
+--with-tbb=${PWD}/../view-unified/
+--with-bzip=${PWD}/../view-unified/
+--with-lzma=${PWD}/../view-unified/
+--with-zlib=${PWD}/../view-unified/
+--with-libunwind=${PWD}/../view-unified/
+--with-xerces=${PWD}/../view-unified/
+--with-xed=${PWD}/../view-unified/
+--with-memkind=${PWD}/../view-unified/
+--with-opencl=${PWD}/../view-unified/
+--with-yaml-cpp=${PWD}/../view-unified/
+MPICXX=${PWD}/../view-unified/bin/mpicxx ENV{OMPI_CC}=${CC} ENV{OMPI_CXX}=${CXX}
