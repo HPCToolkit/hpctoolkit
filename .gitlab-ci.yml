@@ -1,0 +1,521 @@
+# Only spawn workflows for MRs or protected branches
+workflow:
+  rules:
+  - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_PROTECTED != "true"
+    when: never
+  - when: always
+
+
+stages:
+- validate
+- dependencies
+- test
+- lint
+
+
+include:
+# Jobs for building all the dependencies with Spack
+- local: ci/dependencies/.gitlab-ci.yml
+
+
+variables:
+  # Add a transfer progress bar for artifacts
+  TRANSFER_METER_FREQUENCY: 2s
+
+  # Use fastzip to package caches and artifacts
+  FF_USE_FASTZIP: 'true'
+  ARTIFACT_COMPRESSION_LEVEL: default
+  CACHE_COMPRESSION_LEVEL: fastest
+
+
+default:
+  # Most jobs can be interrupted and should be retried if failed for mysterious reasons
+  interruptible: true
+  retry:
+    max: 2
+    when:
+    - unknown_failure
+    - api_failure
+    - runner_system_failure
+
+  # By default, use a Docker runner with a late-model CI image
+  tags: [docker]
+  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
+
+
+# Pre-commit linting passes must pass for the pipeline to succeed
+precommit:
+  stage: lint
+  tags: [docker, linux/amd64]
+  image: registry.gitlab.com/hpctoolkit/ci-images/selfcheck:amd64
+  needs: []
+  cache:
+    key: precommit
+    paths:
+    - .pc-cache/
+  script:
+  - mkdir -p .pc-cache/ ~/.cache/
+  - ln -s $(realpath .pc-cache/) ~/.cache/pre-commit
+  - pre-commit run --all-files || { git diff | tee fixup.patch && exit 1; }
+  artifacts:
+    paths:
+    - fixup.patch
+
+
+# The Autogoo for the HEAD commit (at least) must be in-sync before we build
+autoreconf:
+  stage: validate
+  tags: [docker, linux/amd64]
+  image: registry.gitlab.com/hpctoolkit/ci-images/hpct-devtools:amd64
+  needs: []
+  script:
+  - ./autogen > autogen.log
+  - git status --porcelain=v1 --untracked-files no > changes || exit $?
+  - |
+    if test -s changes; then
+      echo "== CHANGES DETECTED, running git diff..."
+      git diff | tee fixup.patch
+      echo "== AUTOGOO OUT-OF-SYNC, see patch above and in fixup.patch for details"
+      exit 1
+    fi
+  artifacts:
+    paths:
+    - autogen.log
+    - fixup.patch
+
+
+# Also check that the Autogoo is in-sync for all commits that will be merged,
+# but only if merged results pipelines are enabled.
+autoreconf check:
+  stage: lint
+  tags: [docker, linux/amd64]
+  image: registry.gitlab.com/hpctoolkit/ci-images/hpct-devtools:amd64
+  needs:
+  - autoreconf
+
+  variables:
+    GIT_DEPTH: 100
+  rules:
+  - if: $CI_MERGE_REQUEST_TARGET_BRANCH_SHA
+  script:
+  - TARG="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_TARGET_BRANCH_SHA)"
+  - SRC="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA)"
+  - MERGE="$(git show --no-patch --pretty=reference HEAD)"
+  - echo "Checking commit range $TARG..$SRC + $MERGE"
+  - git rev-list --topo-order --reverse HEAD ^"$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" > revs
+  - |
+    while read rev; do
+      echo
+      echo "== Checking $(git show --no-patch --pretty=reference $rev)" | tee -a autogen.log
+      git checkout "$rev" || exit $?
+      ./autogen >> autogen.log || exit $?
+      git status --porcelain=v1 --untracked-files no > changes || exit $?
+      if test -s changes; then
+        echo "== CHANGES DETECTED, running git diff..."
+        git diff | tee fixup.patch
+        echo "== AUTOGOO OUT-OF-SYNC, see patch above and in fixup.patch for details"
+        echo "== First noticed desynchronization in commit:"
+        git show --no-patch --pretty=medium $rev
+        exit 1
+      fi
+    done < revs
+  artifacts:
+    paths:
+    - autogen.log
+    - fixup.patch
+
+# Many jobs require Spack to function. This is the common setup pieces.
+# Note that Spack may shift SHA's between jobs.
+.spack:
+  cache: &cache_spack
+    key: spack
+    when: always
+    paths: [.spack.git]
+  before_script:
+  - echo -e "\e[0Ksection_start:`date +%s`:spack_clone_init[collapsed=true]\r\e[0KSpack update and initialization"
+  - # Save network by caching the Spack repository locally
+    - |
+      if ! [ -d .spack.git ]; then
+        git clone --depth=10 --single-branch --no-tags \
+          --branch=develop --bare https://github.com/spack/spack.git .spack.git
+      fi
+    - git -C .spack.git fetch --verbose origin develop:develop
+    # Clone as an actual instance of Spack
+    - export SPACK_ROOT=$(realpath `mktemp -d .spack.XXXX`)
+    - git clone --shared --branch=develop .spack.git $SPACK_ROOT
+
+    # Apply PR #32136: Local cache for buildcache files
+    # Provides a clean mechanism to cache binaries locally, significantly reducing network I/O
+    # See https://github.com/spack/spack/pull/32136
+    - curl -L https://github.com/spack/spack/pull/32136.patch > x.patch
+    - git -C $SPACK_ROOT apply -3 - < x.patch || git -C $SPACK_ROOT reset --hard
+    - rm x.patch
+
+    # Load Spack into this environment
+    - source $SPACK_ROOT/share/spack/setup-env.sh
+  - echo -e "\e[0Ksection_end:`date +%s`:spack_clone_init\r\e[0K"
+
+# Build jobs require a working Spack with access to the buildcache. This (very long) job handles all
+# the common setup pieces that go into that.
+.buildcache-job:
+  cache:
+  - !reference [.spack, cache]
+  - key: bcjob-$CI_JOB_IMAGE
+    when: always
+    paths:
+    - .apt-cache/
+    - .pip-cache/
+    - .spack-bincache/
+  - key: bcjob-$CI_JOB_IMAGE-$JOB_CC
+    when: always
+    paths:
+    - .ccache/
+
+  before_script:
+  # Python 3.6 has a hiccup with Unicode output, it doesn't consider the POSIX locale UTF-8 which
+  # tends to break things. >=3.7 has better coersion support, but until then we need to set this.
+  - export PYTHONIOENCODING=utf-8
+
+  # Make sure we have the basic set of utilities required to launch Spack and build stuff
+  - ci/scripts/ensure-present.sh git curl cc file patchelf python3 py:boto3 py:clingo ${JOB_CC:+ccache}
+
+  # Unpack and instantiate Spack here
+  - !reference [.spack, before_script]
+
+  - echo -e "\e[0Ksection_start:`date +%s`:spack_buildcache_config[collapsed=true]\r\e[0KSpack buildcache configuration"
+  - # Add the upstream buildcaches as sources of packages, from the merged-cache environment
+    - spack -e ci/dependencies/merged-cache/ config get mirrors | tee mirrors.yaml
+    - spack config --scope site add --file mirrors.yaml
+    - rm mirrors.yaml
+    - spack buildcache keys --install --trust
+    # Add our project buildcache as a source of packages, manually
+    - spack mirror add --s3-access-key-id $AWS_ACCESS_KEY_ID --s3-access-key-secret $AWS_SECRET_ACCESS_KEY main $BUILDCACHE_MIRROR_URL
+    # Manually update the buildcache indices to speed up `spack install`.
+    # See https://github.com/spack/spack/pull/32137
+    - spack buildcache list > /dev/null
+    # Configure the local binary cache to cache binaries
+    - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
+    # Make sure Spack has a GCC available. Oddly enough, this command will run `spack compiler find` internally,
+    # but only if needed.
+    - spack compiler info gcc
+  - echo -e "\e[0Ksection_end:`date +%s`:spack_buildcache_config\r\e[0K"
+
+  - if test -n "$JOB_CC"; then
+  - - echo -e "\e[0Ksection_start:`date +%s`:ccache_init[collapsed=true]\r\e[0KCompiler and ccache initialization"
+    # Derive the CC/CXX from the JOB_CC shorthand
+    - |
+      test -z "$JOB_CC" || case "$JOB_CC" in
+      # Rocky/Fedora/SUSE form, which don't ship multiple GCCs
+      gcc=*)
+        export CC=gcc CXX=g++
+        ;;
+      # Debian/Ubuntu form, which ships multiple GCCs
+      gcc-*)
+        export CC=gcc-"${JOB_CC##gcc-}" CXX=g++-"${JOB_CC##gcc-}"
+        ;;
+      *)
+        echo "Invalid compiler shorthand: $JOB_CC"
+        exit 1
+        ;;
+      esac
+    - test -z "$JOB_CC" || "$CC" --version
+    - test -z "$JOB_CC" || "$CXX" --version
+    # Initialize ccache
+    - export CCACHE_DIR="$(realpath .ccache/)" CCACHE_BASEDIR="$CI_PROJECT_DIR"
+    - ccache --zero-stats
+    # Replace CC/CXX with ccache'd versions
+    - mkdir .ccache-bin/
+    - test -z "$JOB_CC" || { ln -s "$(command -pv ccache)" .ccache-bin/"$CC" && export CC="$(realpath .ccache-bin)/$CC"; }
+    - test -z "$JOB_CC" || { ln -s "$(command -pv ccache)" .ccache-bin/"$CXX" && export CXX="$(realpath .ccache-bin)/$CXX"; }
+    # Guess the number of processors based on the CI_RUNNER_TAGS
+    # TODO: Eventually add better tags to make this easier to do. Or switch to Ninja.
+    - |
+      if grep -q "linux/arm64" <<<"$CI_RUNNER_TAGS"
+      then jobs=4
+      else jobs=16
+      fi
+      echo "Using $jobs jobs for builds"
+
+    - echo -e "\e[0Ksection_end:`date +%s`:ccache_init\r\e[0K"
+  - fi
+
+  - echo -e "\e[0Ksection_start:`date +%s`:spack_install[collapsed=true]\r\e[0KSpack environment unpacking"
+  - - os="$(spack arch --operating-system)"
+    - |
+      case "$(spack arch --generic-target)" in
+      x86_64*) arch=amd64; ;;
+      aarch64) arch=arm64; ;;
+      ppc64le) arch=ppc64le; ;;
+      *) echo "Unknown generic target: $(spack arch --generic-target)"; exit 1; ;;
+      esac
+    # Install the environments requested by this job
+    - |
+      install() {
+        spack -e ci/dependencies/"$1"/c/$os/$arch/ install --cache-only --fail-fast --only-concrete --no-check-signature \
+        && spack env activate --sh ci/dependencies/"$1"/c/$os/$arch/ > env-"$1".sh \
+        && cat env-"$1".sh
+      }
+    - test -z "$JOB_ENV_MINIMUM$JOB_ENV_ALL" || install minimum
+    - test -z "$JOB_ENV_LATEST$JOB_ENV_ALL" || install latest
+  - echo -e "\e[0Ksection_end:`date +%s`:spack_install\r\e[0K"
+
+  after_script:
+  # Report statistics on how much ccache helped in this job
+  - ccache --show-stats
+
+# Build many versions of the codebase, to ensure all the various compilations work
+'buildmany.amd64: [*]':
+  stage: test
+  extends: .buildcache-job
+  tags: [docker, linux/$ARCH]
+  image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
+  variables:
+    ARCH: amd64
+    JOB_ENV_ALL: '1'
+  parallel:
+    matrix:
+    - IMAGE: leap15
+      JOB_CC: gcc=7
+
+    - IMAGE: almalinux8
+      JOB_CC: gcc=8
+
+    - IMAGE: centos7
+      JOB_CC: gcc=8
+
+    - IMAGE: ubuntu20.04
+      JOB_CC: [gcc-9, gcc-10, gcc-11.3.0]
+
+    - IMAGE: fedora36
+      JOB_CC: gcc=12
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - concretize_deps.amd64
+  - build_deps.amd64
+
+  script:
+  # Run the build script for a wide sweep of configurations. Use some Python to help.
+  # The matrix of configurations is chosen to test cases that are most likely to trigger
+  # configuration or compile errors, by enabling all features and removing one at a time.
+  # The exception is the variant `+~debug`, which is always swept completely.
+  - >-
+    (source env-latest.sh && ci/scripts/buildmany.py $(spack location -e)/config/general
+    -j $jobs -o logs/ -p latest_
+    -s '+mpi +papi +opencl ~cuda~rocm~level0'
+    -s '~mpi +papi +opencl ~cuda~rocm~level0'
+    -s '+mpi ~papi +opencl ~cuda~rocm~level0'
+    -s '+mpi +papi ~opencl ~cuda~rocm~level0'
+    )
+  - >-
+    (source env-minimum.sh && ci/scripts/buildmany.py $(spack location -e)/config/general
+    -j $jobs -o logs/ -p minimum_
+    -s '+mpi +papi +opencl ~cuda~rocm~level0'
+    -s '~mpi +papi +opencl ~cuda~rocm~level0'
+    -s '+mpi ~papi +opencl ~cuda~rocm~level0'
+    -s '+mpi +papi ~opencl ~cuda~rocm~level0'
+    )
+
+  artifacts:
+    paths:
+    - logs/
+    when: always
+
+
+'buildmany.arm64: [*]':
+  extends: 'buildmany.amd64: [*]'
+  variables:
+    ARCH: arm64
+  parallel:
+    matrix:
+    - IMAGE: almalinux8
+      JOB_CC: gcc=8
+
+    # - IMAGE: ubuntu20.04
+    #   JOB_CC: [gcc-9, gcc-10]
+
+    - IMAGE: fedora36
+      JOB_CC: gcc=12
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - concretize_deps.arm64
+  - build_deps.arm64
+
+
+'buildmany.amd64: [+cuda]':
+  extends: .buildcache-job
+  image: nvcr.io/nvidia/cuda:$CUDA-devel-ubuntu20.04
+  tags: [docker, linux/amd64]
+  variables:
+    JOB_CC: gcc-9
+    JOB_ENV_ALL: '1'
+  parallel:
+    matrix:
+    - CUDA: [11.7.1]
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - concretize_deps.amd64
+  - build_deps.amd64
+
+  script:
+  # Pull CUDA from the image itself
+  - echo '--with-cuda=/usr/local/cuda' > img-config
+  # Run the build script for a wide sweep of configurations. Use some Python to help.
+  # See the `buildmany: [~gpus]` script for details on this design
+  - >-
+    (source env-latest.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    -j $jobs -o logs/ -p latest_
+    -s '+mpi +papi +opencl +cuda~rocm~level0'
+    -s '~mpi +papi +opencl +cuda~rocm~level0'
+    -s '+mpi ~papi +opencl +cuda~rocm~level0'
+    -s '+mpi +papi ~opencl +cuda~rocm~level0'
+    )
+  - >-
+    (source env-minimum.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    -j $jobs -o logs/ -p minimum_
+    -s '+mpi +papi +opencl +cuda~rocm~level0'
+    -s '~mpi +papi +opencl +cuda~rocm~level0'
+    -s '+mpi ~papi +opencl +cuda~rocm~level0'
+    -s '+mpi +papi ~opencl +cuda~rocm~level0'
+    )
+
+  artifacts:
+    paths:
+    - logs/
+    when: always
+
+
+'buildmany.amd64: [+rocm]':
+  extends: .buildcache-job
+  image: docker.io/rocm/dev-ubuntu-20.04:$ROCM
+  tags: [docker, linux/amd64]
+  variables:
+    JOB_CC: gcc-9
+    JOB_ENV_ALL: '1'
+  parallel:
+    matrix:
+    - ROCM: [5.2.3]
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - concretize_deps.amd64
+  - build_deps.amd64
+
+  script:
+  # Pull ROCm from the image itself
+  - echo '--with-rocm=/opt/rocm' > img-config
+  # Run the build script for a wide sweep of configurations. Use some Python to help.
+  # See the `buildmany: [~gpus]` script for details on this design
+  - >-
+    (source env-latest.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    -j $jobs -o logs/ -p latest_
+    -s '+mpi +papi +opencl ~cuda+rocm~level0'
+    -s '~mpi +papi +opencl ~cuda+rocm~level0'
+    -s '+mpi ~papi +opencl ~cuda+rocm~level0'
+    -s '+mpi +papi ~opencl ~cuda+rocm~level0'
+    )
+
+  - >-
+    (source env-minimum.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    -j $jobs -o logs/ -p minimum_
+    -s '+mpi +papi +opencl ~cuda+rocm~level0'
+    -s '~mpi +papi +opencl ~cuda+rocm~level0'
+    -s '+mpi ~papi +opencl ~cuda+rocm~level0'
+    -s '+mpi +papi ~opencl ~cuda+rocm~level0'
+    )
+
+  artifacts:
+    paths:
+    - logs/
+    when: always
+
+
+'buildmany.amd64: [+level0]':
+  extends: .buildcache-job
+  image: docker.io/intel/oneapi-basekit:$ONEAPI-devel-ubuntu20.04
+  tags: [docker, linux/amd64]
+  variables:
+    JOB_CC: gcc-9
+    JOB_ENV_ALL: '1'
+  parallel:
+    matrix:
+    - ONEAPI: ['2022.2']
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - concretize_deps.amd64
+  - build_deps.amd64
+
+  script:
+  # Pull Level 0 (part of OneAPI) from the image itself
+  - echo '--with-level0=/usr' > img-config
+  # Run the build script for a wide sweep of configurations. Use some Python to help.
+  # See the `buildmany: [~gpus]` script for details on this design
+  - >-
+    (source env-latest.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    -j $jobs -o logs/ -p latest_
+    -s '+mpi +papi +opencl ~cuda~rocm+level0'
+    -s '~mpi +papi +opencl ~cuda~rocm+level0'
+    -s '+mpi ~papi +opencl ~cuda~rocm+level0'
+    -s '+mpi +papi ~opencl ~cuda~rocm+level0'
+    )
+  - >-
+    (source env-minimum.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    -j $jobs -o logs/ -p minimum_
+    -s '+mpi +papi +opencl ~cuda~rocm+level0'
+    -s '~mpi +papi +opencl ~cuda~rocm+level0'
+    -s '+mpi ~papi +opencl ~cuda~rocm+level0'
+    -s '+mpi +papi ~opencl ~cuda~rocm+level0'
+    )
+
+  artifacts:
+    paths:
+    - logs/
+    when: always
+
+
+# Build single versions of the codebase and run unit tests through `make check`
+check.amd64:
+  stage: test
+  extends: .buildcache-job
+  tags: [docker, linux/$ARCH]
+  image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
+  variables:
+    ARCH: amd64
+    JOB_ENV_LATEST: '1'
+  parallel:
+    matrix:
+    - IMAGE: ubuntu20.04
+      JOB_CC: gcc-10
+      SPEC:
+      - +mpi +debug +papi ~opencl ~cuda ~rocm ~level0
+      - +mpi +debug ~papi ~opencl ~cuda ~rocm ~level0
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - concretize_deps.amd64
+  - build_deps.amd64
+
+  script:
+  # Run the build script for the configuration of interest. Use some Python to help.
+  - >-
+    (source env-latest.sh && ci/scripts/buildone.py $(spack location -e)/config/general
+    -j $jobs -o logs/ -p latest_ -s "$SPEC")
+  # Tarball the HPCToolkit install for later stages
+  - tar -C / -cvzf hpctoolkit_install.$CI_ARCH.tar.gz opt/hpctoolkit/
+
+  artifacts:
+    paths:
+    - logs/
+    - hpctoolkit_install.*.tar.gz
+    when: always

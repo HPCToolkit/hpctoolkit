@@ -1,0 +1,81 @@
+default_language_version:
+  python: python3
+
+repos:
+- repo: meta
+  hooks:
+  # Check that hooks listed actually do something
+  - id: check-hooks-apply
+  # Check that any excludes do indeed exclude something
+  - id: check-useless-excludes
+
+- repo: https://github.com/psf/black
+  rev: '22.6.0'
+  hooks:
+  # Blacken all Python code, except allow slightly longer line lengths
+  - id: black
+    args: ['--line-length=100', '--target-version=py36']
+    # These files are Python 2, and probably unused but we have them anyway
+    exclude: '^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$'
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.3.0
+  hooks:
+  # Remove trailing whitespace
+  - id: trailing-whitespace
+    # XXX: Only enabled in CI files for now due to large numbers of failures
+    files: ^(\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|ci/)
+  # All files must end in a single newline (or be perfectly empty)
+  - id: end-of-file-fixer
+    # XXX: Only enabled in CI files for now due to large numbers of failures
+    files: ^(\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|ci/)
+  # Remove the UTF8 BOM from the start of any files
+  - id: fix-byte-order-marker
+  # Use UNIX-style line endings (LF)
+  - id: mixed-line-ending
+    args: [--fix=lf]
+    # XXX: Exclude files in doc/ that use CRLF endings
+    exclude: doc/www/.*\.html(\.in)?
+  # Ensure all executable scripts have a shebang
+  - id: check-executables-have-shebangs
+  # Ensure large files (>=500KB) are never added outside of LFS
+  - id: check-added-large-files
+  # Ensure conflict markers are never committed anywhere
+  - id: check-merge-conflict
+  # Ensure files do not differ only in case (problematic on some filesystems)
+  - id: check-case-conflict
+  # Reminder to always work in a branch separate from the main two
+  - id: no-commit-to-branch
+    args: [--branch, master, --branch, develop]
+
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.3.0
+  hooks:
+  # Scan for secrets that should never appear in the repo itself
+  - id: detect-secrets
+    exclude: |
+      (?x)^(
+        configure |    # Some of the tight M4 looks like secret keywords
+        doc/www/software-instructions.html    # Some of the tags in here are high-entropy
+      )$
+
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.8.0.4
+  hooks: []
+  # Find common errors in shell scripts using shellcheck
+  # XXX: Disabled for now due to large numbers of failures
+  # - id: shellcheck
+
+- repo: https://github.com/python-jsonschema/check-jsonschema
+  rev: '0.17.1'
+  hooks:
+  # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
+  - id: check-gitlab-ci
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.1.0
+  hooks:
+  # Identify common spelling mistakes in code and comments
+  - id: codespell
+    # XXX: Only enabled in CI files for now
+    files: ^(\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|ci/)
