@@ -101,7 +101,7 @@ class ManifestResult(AbstractStatusResult):
 
     @property
     def flawless(self):
-        return not self and not self.warnings and self.n_unexpected == 0
+        return self and not self.warnings and self.n_unexpected == 0
 
     def summary(self):
         if self.n_uninstalled > 0:
