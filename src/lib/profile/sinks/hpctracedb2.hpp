@@ -52,6 +52,7 @@
 #include "../util/file.hpp"
 
 #include <chrono>
+#include <shared_mutex>
 
 namespace hpctoolkit::sinks {
 
@@ -95,8 +96,6 @@ private:
   size_t totalNumTraces;
   uint64_t footerPos;
 
-  util::Once threadsReady;
-
   struct uds;
 
   class traceHdr {
@@ -133,12 +132,19 @@ private:
     char* cursor = buffer.data();
     uint64_t tmcntr = 0;
     bool lastWasBlank = true;
+
+    std::shared_mutex prebuffer_lock;
+    bool prebuffer_done = false;
+    bool hdr_prebuffered = false;
+    std::vector<char> prebuffer;
   };
 
   struct uds {
     Context::ud_t::typed_member_t<udContext> context;
     Thread::ud_t::typed_member_t<udThread> thread;
   } uds;
+
+  void writeHdrFor(udThread&, util::File::Instance&);
 
 
   //***************************************************************************
