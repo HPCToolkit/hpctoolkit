@@ -313,8 +313,9 @@ void ProfilePipeline::complete(PerThreadTemporary&& tt, std::optional<std::pair<
 
   // Finish off the Thread's metrics and let the Sinks know
   tt.finalize();
+  std::shared_ptr<PerThreadTemporary> ttptr = std::make_shared<PerThreadTemporary>(std::move(tt));
   for(auto& s: sinks)
-    if(s.dataLimit.hasThreads()) s().notifyThreadFinal(tt);
+    if(s.dataLimit.hasThreads()) s().notifyThreadFinal(ttptr);
 }
 
 void ProfilePipeline::run() {

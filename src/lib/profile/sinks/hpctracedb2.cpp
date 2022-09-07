@@ -209,8 +209,8 @@ void HPCTraceDB2::notifyCtxTimepointRewindStart(const Thread& t) {
     ud.prebuffer.clear();
 }
 
-void HPCTraceDB2::notifyThreadFinal(const PerThreadTemporary& tt) {
-  auto& ud = tt.thread().userdata[uds.thread];
+void HPCTraceDB2::notifyThreadFinal(std::shared_ptr<const PerThreadTemporary> tt) {
+  auto& ud = tt->thread().userdata[uds.thread];
   util::File::Instance inst;
   if(ud.inst) {
     inst = std::move(ud.inst.value());

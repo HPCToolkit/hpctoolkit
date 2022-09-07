@@ -86,7 +86,7 @@ public:
   void notifyPipeline() noexcept override;
 
   void notifyWavefront(hpctoolkit::DataClass) noexcept override;
-  void notifyThreadFinal(const hpctoolkit::PerThreadTemporary&) override;
+  void notifyThreadFinal(std::shared_ptr<const hpctoolkit::PerThreadTemporary>) override;
 
 private:
   struct udContext {
@@ -103,8 +103,13 @@ private:
     const auto& operator()(hpctoolkit::Thread::ud_t&) const noexcept { return thread; }
   } ud;
 
-  // Once that signals when the Contexts/Threads wavefront has passed
-  hpctoolkit::util::Once wavefrontDone;
+  // Pre-buffer of Threads that have completed but need to wait before output
+  std::shared_mutex prebuffer_lock;
+  bool prebuffer_done = false;
+  std::vector<std::shared_ptr<const PerThreadTemporary>> prebuffer;
+
+  // Process a Thread and output it's results
+  void process(std::shared_ptr<const hpctoolkit::PerThreadTemporary>);
 
   // Double-buffered concurrent output for profile data, synchronized across
   // multiple MPI ranks.

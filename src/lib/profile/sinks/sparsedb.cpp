@@ -118,7 +118,6 @@ static constexpr auto pProfiles = pProfileInfos + align(FMT_PROFILEDB_SZ_ProfInf
 void SparseDB::notifyWavefront(DataClass d) noexcept {
   if(!d.hasContexts() || !d.hasThreads()) return;
   auto mpiSem = src.enterOrderedWavefront();
-  auto sig = wavefrontDone.signal();
 
   // Fill contexts with the sorted list of Contexts
   assert(contexts.empty());
@@ -215,11 +214,32 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
 
   // Set up the double-buffered output for profile data
   profDataOut.initialize(*pmf, fhdr.pIdTuples + fhdr.szIdTuples);
+
+  // Drain the prebuffer and process the waiting Threads
+  std::unique_lock<std::shared_mutex> l(prebuffer_lock);
+  auto prebuffer_l = std::move(prebuffer);
+  prebuffer_done = true;
+  l.unlock();
+
+  for(auto& tt: prebuffer_l) process(std::move(tt));
 }
 
-void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
-  const auto& t = tt.thread();
-  wavefrontDone.wait();
+void SparseDB::notifyThreadFinal(std::shared_ptr<const PerThreadTemporary> tt) {
+  {
+    std::shared_lock<std::shared_mutex> l(prebuffer_lock);
+    if(prebuffer_done)
+      return process(std::move(tt));
+  }
+
+  std::unique_lock<std::shared_mutex> l(prebuffer_lock);
+  if(prebuffer_done)
+    return process(std::move(tt));
+
+  prebuffer.emplace_back(std::move(tt));
+}
+
+void SparseDB::process(std::shared_ptr<const PerThreadTemporary> tt) {
+  const auto& t = tt->thread();
 
   // Allocate the blobs needed for the final output
   std::vector<char> mvalsBuf;
@@ -240,7 +260,7 @@ void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
 
   // Now stitch together each Context's results
   for(const Context& c: contexts) {
-    if(auto accums = tt.accumulatorsFor(c)) {
+    if(auto accums = tt->accumulatorsFor(c)) {
       // Add the ctx_id/idx pair for this Context
       addCIdx({
         .ctxId = c.userdata[src.identifier()],

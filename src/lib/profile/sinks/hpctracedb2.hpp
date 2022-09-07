@@ -85,7 +85,7 @@ public:
   void notifyTimepoints(const Thread&, const std::vector<
     std::pair<std::chrono::nanoseconds, std::reference_wrapper<const Context>>>&) override;
   void notifyCtxTimepointRewindStart(const Thread&) override;
-  void notifyThreadFinal(const PerThreadTemporary&) override;
+  void notifyThreadFinal(std::shared_ptr<const PerThreadTemporary>) override;
 
   /// Return the tag for the experiment.xml, or an empty string if empty.
   std::string exmlTag();
