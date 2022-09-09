@@ -98,13 +98,35 @@ generate_deps.amd64:
   - python3 ci/dependencies/merged-cache/fuse.py
     ci/dependencies/{minimum,latest}/c/{almalinux8,centos7,fedora36,opensuse_leap15,ubuntu20.04}/amd64/
   - &generate_pipeline
+    # Add the series of mirrors that the main jobs are expected to pull from
+    - >-
+      test "$CI_COMMIT_REF_PROTECTED" = "true"
+      && SBCACHE_ROOT=protected
+      || SBCACHE_ROOT=nonprotected
+    - >-
+      test -n "$CI_MERGE_REQUEST_IID"
+      && SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}"
+      || SBCACHE_DIR="$CI_COMMIT_REF_SLUG"
+    - >-
+      spack mirror add --scope site
+      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
+      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
+      destination "$SBCACHE_BASEURL/$SBCACHE_ROOT/$SBCACHE_DIR"
+    - >-
+      test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
+      && spack mirror add --scope site
+      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
+      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
+      main-target "$SBCACHE_BASEURL/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      || true
+    - spack mirror list
     # Generate (and then adjust) the single pipeline
     - spack env activate --without-view ci/dependencies/merged-cache/
     - >-
       spack ci generate
       --optimize
       --check-index-only
-      --buildcache-destination $BUILDCACHE_MIRROR_URL
+      --buildcache-destination "$SBCACHE_BASEURL/$SBCACHE_ROOT/$SBCACHE_DIR"
       --artifacts-root spack-ci-artifacts
       --output-file spack-ci-artifacts/ci.yml
     # We need to adjust the pipeline manually to fill in parts that aren't able to be set otherwise.

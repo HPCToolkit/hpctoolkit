@@ -3,8 +3,8 @@ spack:
 
   # Use packages from the public buildcache whenever possible
   mirrors:
-    base: 's3://spack-binaries/hpctoolkit'
-    tmp-pr: 's3://spack-binaries-prs/pr32327_hpctoolkit-stack-final'
+    base: 's3://spack-binaries/develop/hpctoolkit'
+    tmp-pr: 's3://spack-binaries-prs/pr32327_hpctoolkit-stack-final/hpctoolkit'
     develop: 's3://spack-binaries/develop'
 
   gitlab-ci:
@@ -63,14 +63,38 @@ spack:
     - export SPACK_ROOT="`realpath .spack`"
     - source .spack/share/spack/setup-env.sh
 
-    # Manually update the buildcache indices to speed up `spack install`.
-    # See https://github.com/spack/spack/pull/32137
-    - spack buildcache list > /dev/null
+    # Copy the AWS authentication flags into the Spack mirror config. Implements the principle of
+    # least privilege.
+    - >-
+      test "$CI_COMMIT_REF_PROTECTED" = "true"
+      && SBCACHE_ROOT=protected
+      || SBCACHE_ROOT=nonprotected
+    - >-
+      test -n "$CI_MERGE_REQUEST_IID"
+      && SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}"
+      || SBCACHE_DIR="$CI_COMMIT_REF_SLUG"
+    - >-
+      spack mirror add --scope site
+      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
+      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
+      destination "$SBCACHE_BASEURL/$SBCACHE_ROOT/$SBCACHE_DIR"
+    - >-
+      test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
+      && spack mirror add --scope site
+      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
+      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
+      main-target "$SBCACHE_BASEURL/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      || true
+    - unset SBCACHE_ROOT SBCACHE_DIR
+
     # Configure the local binary cache to cache binaries
     - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
     script:
     - spack config --scope site add config:install_tree:padded_length:512
     - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
+    # Manually update the buildcache indices to speed up `spack install`.
+    # See https://github.com/spack/spack/pull/32137
+    - spack buildcache list > /dev/null
     # We should do `spack buildcache keys -it` here... but doing that makes `spack ci rebuild`
     # try to install without --no-check-signature, which we don't want. Ugh.
     # It would be much nicer if Spack had per-mirror keys.

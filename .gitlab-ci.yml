@@ -190,8 +190,30 @@ autoreconf check:
     - spack config --scope site add --file mirrors.yaml
     - rm mirrors.yaml
     - spack buildcache keys --install --trust
-    # Add our project buildcache as a source of packages, manually
-    - spack mirror add --s3-access-key-id $AWS_ACCESS_KEY_ID --s3-access-key-secret $AWS_SECRET_ACCESS_KEY main $BUILDCACHE_MIRROR_URL
+    # Add the ref-specific buildcache as a source of packages, manually
+    - >-
+      test "$CI_COMMIT_REF_PROTECTED" = "true"
+      && SBCACHE_ROOT=protected
+      || SBCACHE_ROOT=nonprotected
+    - >-
+      test -n "$CI_MERGE_REQUEST_IID"
+      && SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}"
+      || SBCACHE_DIR="$CI_COMMIT_REF_SLUG"
+    - >-
+      spack mirror add --scope site
+      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
+      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
+      main "$SBCACHE_BASEURL/$SBCACHE_ROOT/$SBCACHE_DIR"
+    # For merge request pipelines targeting a protected branch, also add the target's buildcache
+    - >-
+      test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
+      && spack mirror add --scope site
+      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
+      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
+      main-target "$SBCACHE_BASEURL/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      || true
+    - unset SBCACHE_ROOT SBCACHE_DIR
+    - spack mirror list
     # Manually update the buildcache indices to speed up `spack install`.
     # See https://github.com/spack/spack/pull/32137
     - spack buildcache list > /dev/null
