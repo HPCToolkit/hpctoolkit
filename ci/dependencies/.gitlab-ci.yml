@@ -111,13 +111,13 @@ generate_deps.amd64:
       spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      destination "$SBCACHE_BASEURL/$SBCACHE_ROOT/$SBCACHE_DIR"
+      destination "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
     - >-
       test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
       && spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      main-target "$SBCACHE_BASEURL/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      main-target "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
       || true
     - spack mirror list
     # Generate (and then adjust) the single pipeline
@@ -126,7 +126,7 @@ generate_deps.amd64:
       spack ci generate
       --optimize
       --check-index-only
-      --buildcache-destination "$SBCACHE_BASEURL/$SBCACHE_ROOT/$SBCACHE_DIR"
+      --buildcache-destination "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
       --artifacts-root spack-ci-artifacts
       --output-file spack-ci-artifacts/ci.yml
     # We need to adjust the pipeline manually to fill in parts that aren't able to be set otherwise.

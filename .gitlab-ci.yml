@@ -149,9 +149,15 @@ autoreconf check:
     # Apply PR #32136: Local cache for buildcache files
     # Provides a clean mechanism to cache binaries locally, significantly reducing network I/O
     # See https://github.com/spack/spack/pull/32136
-    - curl -L https://github.com/spack/spack/pull/32136.patch > x.patch
-    - git -C $SPACK_ROOT apply -3 - < x.patch || git -C $SPACK_ROOT reset --hard
-    - rm x.patch
+    - curl -L https://github.com/spack/spack/pull/32136.patch > pr32136.patch
+    - git -C $SPACK_ROOT apply -3 - < pr32136.patch || git -C $SPACK_ROOT reset --hard
+
+    # Apply PR #32583: Silly idea to speed up relocation
+    # Removes some painfully slow relocation logic, signficantly speeding up buildcache unpacking
+    - curl -L https://github.com/spack/spack/pull/32583.patch > pr32583.patch
+    - git -C $SPACK_ROOT apply -3 - < pr32583.patch || { git -C $SPACK_ROOT reset --hard; git -C $SPACK_ROOT apply -3 - < pr32136.patch || git -C $SPACK_ROOT reset --hard; }
+
+    - rm pr32136.patch pr32583.patch
 
     # Load Spack into this environment
     - source $SPACK_ROOT/share/spack/setup-env.sh
@@ -179,7 +185,7 @@ autoreconf check:
   - export PYTHONIOENCODING=utf-8
 
   # Make sure we have the basic set of utilities required to launch Spack and build stuff
-  - ci/scripts/ensure-present.sh git curl cc file patchelf python3 py:boto3 py:clingo ${JOB_CC:+ccache}
+  - ci/scripts/ensure-present.sh make git curl cc file patchelf python3 py:boto3 py:clingo ${JOB_CC:+ccache}
 
   # Unpack and instantiate Spack here
   - !reference [.spack, before_script]
@@ -203,14 +209,14 @@ autoreconf check:
       spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      main "$SBCACHE_BASEURL/$SBCACHE_ROOT/$SBCACHE_DIR"
+      main "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
     # For merge request pipelines targeting a protected branch, also add the target's buildcache
     - >-
       test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
       && spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      main-target "$SBCACHE_BASEURL/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      main-target "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
       || true
     - unset SBCACHE_ROOT SBCACHE_DIR
     - spack mirror list
@@ -273,19 +279,20 @@ autoreconf check:
       *) echo "Unknown generic target: $(spack arch --generic-target)"; exit 1; ;;
       esac
     # Install the environments requested by this job
+    - if test -n "$JOB_ENV_MINIMUM$JOB_ENV_ALL"; then env_minimum=ci/dependencies/minimum/c/$os/$arch/; spack -e $env_minimum env depfile >> env.make; fi
+    - if test -n "$JOB_ENV_LATEST$JOB_ENV_ALL"; then env_latest=ci/dependencies/latest/c/$os/$arch/; spack -e $env_latest env depfile >> env.make; fi
+    - spack config add config:db_lock_timeout:120
     - |
-      install() {
-        spack -e ci/dependencies/"$1"/c/$os/$arch/ install --cache-only --fail-fast --only-concrete --no-check-signature \
-        && spack env activate --sh ci/dependencies/"$1"/c/$os/$arch/ > env-"$1".sh \
-        && cat env-"$1".sh
-      }
-    - test -z "$JOB_ENV_MINIMUM$JOB_ENV_ALL" || install minimum
-    - test -z "$JOB_ENV_LATEST$JOB_ENV_ALL" || install latest
+      if test -e env.make; then
+        make -j4 -f env.make -k SPACK_INSTALL_FLAGS='--cache-only --no-check-signature' \
+        || make -j2 -f env.make -k SPACK_INSTALL_FLAGS='--cache-only --no-check-signature' \
+        || make -j1 -f env.make SPACK_INSTALL_FLAGS='--cache-only --no-check-signature'
+      fi
   - echo -e "\e[0Ksection_end:`date +%s`:spack_install\r\e[0K"
 
   after_script:
   # Report statistics on how much ccache helped in this job
-  - ccache --show-stats
+  - CCACHE_DIR="$(realpath .ccache/)" ccache --show-stats
 
 # Build many versions of the codebase, to ensure all the various compilations work
 'buildmany.amd64: [*]':
@@ -325,7 +332,7 @@ autoreconf check:
   # configuration or compile errors, by enabling all features and removing one at a time.
   # The exception is the variant `+~debug`, which is always swept completely.
   - >-
-    (source env-latest.sh && ci/scripts/buildmany.py $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl ~cuda~rocm~level0'
     -s '~mpi +papi +opencl ~cuda~rocm~level0'
@@ -333,7 +340,7 @@ autoreconf check:
     -s '+mpi +papi ~opencl ~cuda~rocm~level0'
     )
   - >-
-    (source env-minimum.sh && ci/scripts/buildmany.py $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl ~cuda~rocm~level0'
     -s '~mpi +papi +opencl ~cuda~rocm~level0'
@@ -392,7 +399,7 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (source env-latest.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py img-config $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl +cuda~rocm~level0'
     -s '~mpi +papi +opencl +cuda~rocm~level0'
@@ -400,7 +407,7 @@ autoreconf check:
     -s '+mpi +papi ~opencl +cuda~rocm~level0'
     )
   - >-
-    (source env-minimum.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py img-config $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl +cuda~rocm~level0'
     -s '~mpi +papi +opencl +cuda~rocm~level0'
@@ -437,16 +444,15 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (source env-latest.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py img-config $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl ~cuda+rocm~level0'
     -s '~mpi +papi +opencl ~cuda+rocm~level0'
     -s '+mpi ~papi +opencl ~cuda+rocm~level0'
     -s '+mpi +papi ~opencl ~cuda+rocm~level0'
     )
-
   - >-
-    (source env-minimum.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py img-config $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl ~cuda+rocm~level0'
     -s '~mpi +papi +opencl ~cuda+rocm~level0'
@@ -483,7 +489,7 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (source env-latest.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py img-config $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl ~cuda~rocm+level0'
     -s '~mpi +papi +opencl ~cuda~rocm+level0'
@@ -491,7 +497,7 @@ autoreconf check:
     -s '+mpi +papi ~opencl ~cuda~rocm+level0'
     )
   - >-
-    (source env-minimum.sh && ci/scripts/buildmany.py img-config $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py img-config $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl ~cuda~rocm+level0'
     -s '~mpi +papi +opencl ~cuda~rocm+level0'
@@ -531,7 +537,7 @@ check.amd64:
   script:
   # Run the build script for the configuration of interest. Use some Python to help.
   - >-
-    (source env-latest.sh && ci/scripts/buildone.py $(spack location -e)/config/general
+    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildone.py $env_latest/config/general
     -j $jobs -o logs/ -p latest_ -s "$SPEC")
   # Tarball the HPCToolkit install for later stages
   - tar -C / -cvzf hpctoolkit_install.$CI_ARCH.tar.gz opt/hpctoolkit/
