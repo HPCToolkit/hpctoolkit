@@ -57,7 +57,7 @@ ubuntu:20.04)
     py:*)
       python3 -c "import pip" &>/dev/null || apt_packages+=("python3-pip")
       ;;
-    git|gcc-9|g++-9|ccache|file|patchelf|python3|curl)
+    git|gcc-9|g++-9|ccache|file|patchelf|python3|curl|make)
       apt_packages+=("$prog")
       ;;
     *)
