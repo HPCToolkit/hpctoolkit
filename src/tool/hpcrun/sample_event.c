@@ -50,6 +50,7 @@
 
 //*************************** User Include Files ****************************
 
+#include <lib/prof-lean/placeholders.h>
 #include <unwind/common/backtrace.h>
 #include <cct/cct.h>
 #include "hpcrun_stats.h"
@@ -261,7 +262,9 @@ hpcrun_sample_callpath(void* context, int metricId,
   cct_addr_t *addr = hpcrun_cct_addr(node);
   ip_normalized_t leaf_ip = addr->ip_norm;
 
-  if (ip_normalized_eq(&leaf_ip, &(td->btbuf_beg->ip_norm))) {
+  if (is_placeholder(leaf_ip)) {
+    // placeholders shouldn't be adjusted
+  } else if (ip_normalized_eq(&leaf_ip, &(td->btbuf_beg->ip_norm))) {
     // the call chain sampled has as its leaf an instruction in a user
     // procedure. we know this because leaf_ip matches the first entry
     // in the backtrace buffer.  samples in kernel space yield a
