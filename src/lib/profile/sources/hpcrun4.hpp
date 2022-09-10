@@ -149,6 +149,9 @@ private:
       outlinedRangeSample_t
     >> nodes;
 
+  // Flag for whether we've warned about top-level context demotion
+  bool warned_top_demotion = false;
+
   // Path to the tracefile, and offset of the actual data blob.
   stdshim::filesystem::path tracepath;
   long trace_off;

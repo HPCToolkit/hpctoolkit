@@ -333,6 +333,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     }
   }
   if(needed.hasContexts()) {
+    Context& global = sink.global();
+
     int id;
     hpcrun_fmt_cct_node_t n;
     while((id = hpcrun_sparse_next_context(file, &n)) > 0) {
@@ -341,8 +343,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {
           if(n.lm_ip == hpcrun_placeholder_root_primary) {
             // Primary root, for normal "full" unwinds. Maps to (global).
-            auto& g = sink.global();
-            nodes.emplace(id, singleCtx_t({}, g, g));
+            nodes.emplace(id, singleCtx_t({}, global, global));
           } else {
             // It seems like we should handle root_partial here as well, but a
             // snippet in hpcrun/cct/cct_bundle.c stitches root_partial as a
@@ -398,7 +399,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       const auto& par = par_it->second;
       if(const auto* p_x = std::get_if<singleCtx_t>(&par)) {
-        Context& par = p_x->full;
+        std::reference_wrapper<Context> par = p_x->full;
         if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
           // This is a reference to an outlined range tree, rooted at grandpar.
           // The relation is the "entry" to here.
@@ -413,29 +414,45 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         if(n.lm_id == HPCRUN_PLACEHOLDER_LM && n.unwound) {
           switch(n.lm_ip) {
           case hpcrun_placeholder_root_partial:  // Because hpcrun stitches here
-            if(&par != &(Context&)sink.global()) {
+            if(&par.get() != &global) {
               util::log::info{} << "Encountered <partial root> that wasn't a child of <primary root>!";
               return false;
             }
+            // fallthrough
           case hpcrun_placeholder_unnormalized_ip:
             // Maps to (unknown) instead of a placeholder
             scope = Scope();
             break;
           case hpcrun_placeholder_no_activity: {  // Because hpcrun stitches here
             // Maps to (global) instead of a placeholder. Parent must be (global).
-            Context& g = sink.global();
-            if(&par != &g) {
+            if(&par.get() != &global) {
               util::log::info{} << "Encountered <partial root> that wasn't a child of <primary root>!";
               return false;
             }
-            nodes.emplace(id, singleCtx_t({}, g, g));
+            nodes.emplace(id, singleCtx_t({}, global, global));
             continue;  // Skip to the next context
           }
           case hpcrun_placeholder_root_primary:
             util::log::info{} << "Encountered <primary root> that wasn't a root!";
             return false;
+
+          // Only certain placeholders can be used as the top-level Context (just below (global)).
+          // Check for these first, and then warn if we see anything else.
+          case hpcrun_placeholder_fence_main:
+          case hpcrun_placeholder_fence_thread:
+            scope = Scope(Scope::placeholder, n.lm_ip);
+            break;
           default:
             scope = Scope(Scope::placeholder, n.lm_ip);
+            if(&par.get() == &global) {
+              if(!warned_top_demotion) {
+                util::log::warning() << "Demoting invalid top-level Contexts to <partial call paths> in "
+                    << path.filename().string();
+                warned_top_demotion = true;
+              }
+              par = sink.context(global, {Relation::call, Scope()}).second;
+              util::log::info() << "Demoted invalid top-level cct (id " << id << "): " << scope;
+            }
             break;
           }
         } else {
@@ -445,6 +462,17 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             return false;
           }
           scope = Scope(mod_it->second, n.lm_ip);
+
+          // Instruction Contexts cannot be a top-level Context
+          if(&par.get() == &global) {
+            if(!warned_top_demotion) {
+              util::log::warning() << "Demoting invalid top-level Contexts to <partial call paths> in "
+                  << path.filename().string();
+              warned_top_demotion = true;
+            }
+            par = sink.context(global, {Relation::call, Scope()}).second;
+            util::log::info() << "Demoted invalid top-level cct (id " << id << "): " << scope;
+          }
         }
 
         if(!n.unwound) {
@@ -459,11 +487,11 @@ bool Hpcrun4::realread(const DataClass& needed) try {
               << scope.point_data().first.path().string();
             auto& unk = sink.context(par, {Relation::call, Scope()}).second;
             auto pnt = sink.context(unk, {Relation::call, scope});
-            nodes.emplace(id, singleCtx_t(par, pnt));
+            nodes.emplace(id, singleCtx_t(par.get(), pnt));
           }
         } else {
           // Simple straightforward Context
-          nodes.emplace(id, singleCtx_t(par,
+          nodes.emplace(id, singleCtx_t(par.get(),
               sink.context(par, {Relation::call, scope})));
         }
       } else if(std::holds_alternative<reconstructedCtx_t>(par)) {
@@ -516,7 +544,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           // some data. Map to (global) -> (unknown) -> (point) and throw an error.
           util::log::error{} << "Missing required CFG data for binary: "
             << mod_it->second.path().string();
-          auto& unk = sink.context(sink.global(), {Relation::call, Scope()}).second;
+          auto& unk = sink.context(global, {Relation::call, Scope()}).second;
           auto pnt = sink.context(unk, {Relation::call, scope});
           nodes.emplace(id, singleCtx_t(unk, pnt));
         }
