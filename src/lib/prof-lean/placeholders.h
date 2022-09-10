@@ -127,6 +127,8 @@ const char *get_placeholder_name(uint64_t placeholder);
 // In hpcrun, get the normalized ip for a placeholder
 #define get_placeholder_norm(PH) ((ip_normalized_t){HPCRUN_PLACEHOLDER_LM, PH})
 
+#define is_placeholder(ip) ((ip).lm_id == HPCRUN_PLACEHOLDER_LM)
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
