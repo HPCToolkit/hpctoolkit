@@ -56,6 +56,7 @@ def _make(
     assert builddir.is_dir()
 
     if logdir is not None:
+        logdir = Path(logdir)
         if split_stderr:
             out_log = open(logdir / (logprefix + ".stdout.log"), "w")
             err_log = open(logdir / (logprefix + ".stderr.log"), "w")
@@ -91,10 +92,19 @@ def install(builddir, cfg: Configuration, *, jobs=1, logprefix="install", **kwar
     return _make(builddir, cfg, "install", jobs=jobs, logprefix=logprefix, **kwargs)
 
 
-def test(builddir, cfg: Configuration, *, jobs=16, logprefix="test", **kwargs):
+def test(builddir, cfg: Configuration, *, jobs=16, logprefix="test", logdir=None, **kwargs):
     """Run build-time tests for the configured build directory, possibly redirecting logs.
     Returns True if the test *running* was successful."""
-    return _make(builddir, cfg, "check", jobs=jobs, logprefix=logprefix, **kwargs)
+    ok = _make(builddir, cfg, "check", jobs=jobs, logprefix=logprefix, logdir=logdir, **kwargs)
+    if logdir is not None:
+        testlogdir = Path(logdir) / logprefix
+        testlogdir.mkdir()
+        testsdir = builddir / "tests"
+        for log in testsdir.rglob("*.log"):
+            rlog = log.relative_to(testsdir)
+            (testlogdir / rlog.parent).mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(log, testlogdir / rlog)
+    return ok
 
 
 class CompileResult(AbstractStatusResult):

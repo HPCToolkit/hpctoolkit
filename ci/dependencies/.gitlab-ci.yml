@@ -62,8 +62,10 @@ concretize_deps.amd64:
   - mkdir -p ci/dependencies/latest/c/$OS/$ARCH/ && cp -r ci/dependencies/latest/{spack.yaml,config} ci/dependencies/latest/c/$OS/$ARCH/
   # Concretize each of the environments in turn, into subdirectories named by the OS and ARCH
   - spack buildcache list > /dev/null  # Manually update the buildcache index to make the concretization faster
-  - spack -e ci/dependencies/minimum/c/$OS/$ARCH/ -d concretize --reuse
-  - spack -e ci/dependencies/latest/c/$OS/$ARCH/ -d concretize --reuse
+  - >-
+    ci/scripts/all_at_once.py 1
+    "spack -e ci/dependencies/minimum/c/$OS/$ARCH/ -d concretize --reuse"
+    "spack -e ci/dependencies/latest/c/$OS/$ARCH/ -d concretize --reuse"
 
   artifacts:
     paths:
@@ -75,9 +77,9 @@ concretize_deps.arm64:
     ARCH: arm64
   parallel:
     matrix:
-    - IMAGE:
-      - almalinux8
-      - fedora36
+    # - IMAGE:
+    #   - almalinux8
+    #   - fedora36
     - IMAGE: ubuntu20.04
       CI_SPACK_CC: gcc@9
 
@@ -149,14 +151,15 @@ generate_deps.arm64:
   stage: dependencies
   extends: .spack
   needs:
-  - 'concretize_deps.arm64: [almalinux8]'
-  - 'concretize_deps.arm64: [fedora36]'
+  # - 'concretize_deps.arm64: [almalinux8]'
+  # - 'concretize_deps.arm64: [fedora36]'
   - 'concretize_deps.arm64: [ubuntu20.04, gcc@9]'
 
   script:
   # Fuse the now-concrete environments into one
   - python3 ci/dependencies/merged-cache/fuse.py
-    ci/dependencies/{minimum,latest}/c/{almalinux8,fedora36,ubuntu20.04}/arm64/
+    ci/dependencies/{minimum,latest}/c/ubuntu20.04/arm64/
+    # ci/dependencies/{minimum,latest}/c/{almalinux8,fedora36,ubuntu20.04}/arm64/
   - *generate_pipeline
 
   artifacts: *pipeline_artifacts
