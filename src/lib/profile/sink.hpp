@@ -52,6 +52,7 @@
 #include "util/parallel_work.hpp"
 
 #include <chrono>
+#include <memory>
 
 namespace hpctoolkit {
 
@@ -144,7 +145,7 @@ public:
 
   /// Notify the Sink that a Thread has finished.
   // MT: Internally Synchronized
-  virtual void notifyThreadFinal(const PerThreadTemporary&);
+  virtual void notifyThreadFinal(std::shared_ptr<const PerThreadTemporary>);
 
 protected:
   /// You should never create a base ProfileSink. Use a subclass.

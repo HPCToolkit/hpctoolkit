@@ -88,14 +88,12 @@ static constexpr uint64_t ctx_pTraces = align(pCtxTraces + FMT_TRACEDB_SZ_CtxTra
 
 void HPCTraceDB2::notifyWavefront(DataClass d){
   if(!d.hasThreads()) return;
-  auto wd_sem = threadsReady.signal();
+
   util::File::Instance traceinst;
   {
     auto mpiSem = src.enterOrderedWavefront();
-    if(tracefile) {
-      tracefile->synchronize();
+    if(tracefile)
       traceinst = tracefile->open(true, true);
-    }
 
     totalNumTraces = getTotalNumTraces();
 
@@ -104,37 +102,58 @@ void HPCTraceDB2::notifyWavefront(DataClass d){
     assignHdrs(calcStartEnd());
   }
 
-  // Write out the headers for threads that have no timepoints
-  for(const auto& t : src.threads().iterate()) {
-    const auto& hdr = t->userdata[uds.thread].hdr;
-    if(hdr.start == hdr.end && tracefile) {
-      fmt_tracedb_ctxTrace_t thdr = {
-        .profIndex = hdr.prof_info_idx,
-        .pStart = hdr.start,
-        .pEnd = hdr.end,
-      };
-      char buf[FMT_TRACEDB_SZ_CtxTrace];
-      fmt_tracedb_ctxTrace_write(buf, &thdr);
-      traceinst.writeat(ctx_pTraces + (hdr.prof_info_idx - 1) * FMT_TRACEDB_SZ_CtxTrace,
-                        sizeof buf, buf);
-    }
+  // Update all the Threads, if we have data for them already
+  for(const auto& t : src.threads().citerate()) {
+    auto& ud = t->userdata[uds.thread];
+
+    // Drain the prebuffer. We extract the prebuffer first to minimize the
+    // critical section and allow notifyTimepoints to continue.
+    std::unique_lock<std::shared_mutex> l(ud.prebuffer_lock);
+    auto prebuffer = std::move(ud.prebuffer);
+    ud.prebuffer_done = true;
+    l.unlock();
+
+    traceinst.writeat(ud.hdr.start, prebuffer);
+    if(ud.hdr_prebuffered)
+      writeHdrFor(ud, traceinst);
   }
 }
 
 void HPCTraceDB2::notifyThread(const Thread& t) {
-  t.userdata[uds.thread].has_trace = false; 
+  (void)t.userdata[uds.thread];
 }
 
 void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
     std::pair<std::chrono::nanoseconds, std::reference_wrapper<const Context>>>& tps) {
   assert(!tps.empty());
 
-  threadsReady.wait();
   auto& ud = t.userdata[uds.thread];
   if(!ud.has_trace) {
     has_traces.exchange(true, std::memory_order_relaxed);
     ud.has_trace = true;
     if(tracefile) ud.inst = tracefile->open(true, true);
+  }
+
+  // If we're getting timepoints before the Threads wavefront, we don't know
+  // where we need to write yet. So buffer in the "prebuffer" until we know.
+  std::unique_lock<std::shared_mutex> l;
+  char* prebuffer_cursor = nullptr;
+  {
+    bool done;
+    {
+      std::shared_lock<std::shared_mutex> l(ud.prebuffer_lock);
+      done = ud.prebuffer_done;
+    }
+    if(!done) {
+      l = std::unique_lock<std::shared_mutex>(ud.prebuffer_lock);
+      if(ud.prebuffer_done) {
+        l.unlock();
+      } else {
+        auto oldsz = ud.prebuffer.size();
+        ud.prebuffer.resize(oldsz + tps.size() * FMT_TRACEDB_SZ_CtxSample);
+        prebuffer_cursor = &ud.prebuffer[oldsz];
+      }
+    }
   }
 
   util::linear_lru_cache<util::reference_index<const Context>, unsigned int,
@@ -160,14 +179,19 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
       .ctxId = id,
     };
     if(ud.inst) {
-      if(ud.cursor == ud.buffer.data())
-        ud.off = ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample;
-      assert(ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample < ud.hdr.end);
-      fmt_tracedb_ctxSample_write(ud.cursor, &datum);
-      ud.cursor += FMT_TRACEDB_SZ_CtxSample;
-      if(ud.cursor == &ud.buffer[ud.buffer.size()]) {
-        ud.inst->writeat(ud.off, ud.buffer);
-        ud.cursor = ud.buffer.data();
+      if(prebuffer_cursor != nullptr) {
+        fmt_tracedb_ctxSample_write(prebuffer_cursor, &datum);
+        prebuffer_cursor += FMT_TRACEDB_SZ_CtxSample;
+      } else {
+        if(ud.cursor == ud.buffer.data())
+          ud.off = ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample;
+        assert(ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample < ud.hdr.end);
+        fmt_tracedb_ctxSample_write(ud.cursor, &datum);
+        ud.cursor += FMT_TRACEDB_SZ_CtxSample;
+        if(ud.cursor == &ud.buffer[ud.buffer.size()]) {
+          ud.inst->writeat(ud.off, ud.buffer);
+          ud.cursor = ud.buffer.data();
+        }
       }
       ud.tmcntr++;
     }
@@ -179,37 +203,71 @@ void HPCTraceDB2::notifyCtxTimepointRewindStart(const Thread& t) {
   ud.cursor = ud.buffer.data();
   ud.off = -1;
   ud.tmcntr = 0;
+
+  std::unique_lock<std::shared_mutex> l(ud.prebuffer_lock);
+  if(!ud.prebuffer_done)
+    ud.prebuffer.clear();
 }
 
-void HPCTraceDB2::notifyThreadFinal(const PerThreadTemporary& tt) {
-  auto& ud = tt.thread().userdata[uds.thread];
+void HPCTraceDB2::notifyThreadFinal(std::shared_ptr<const PerThreadTemporary> tt) {
+  auto& ud = tt->thread().userdata[uds.thread];
+  util::File::Instance inst;
   if(ud.inst) {
-    if(ud.cursor != ud.buffer.data())
-      ud.inst->writeat(ud.off, ud.cursor - ud.buffer.data(), ud.buffer.data());
-
-    //write the hdr
-    auto new_end = ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample;
-    assert(new_end <= ud.hdr.end);
-    ud.hdr.end = new_end;
-    fmt_tracedb_ctxTrace_t hdr = {
-      .profIndex = ud.hdr.prof_info_idx,
-      .pStart = ud.hdr.start,
-      .pEnd = ud.hdr.end,
-    };
-    assert((hdr.pStart != (uint64_t)INVALID_HDR) | (hdr.pEnd != (uint64_t)INVALID_HDR));
-    char buf[FMT_TRACEDB_SZ_CtxTrace];
-    fmt_tracedb_ctxTrace_write(buf, &hdr);
-    ud.inst->writeat(ctx_pTraces + (ud.hdr.prof_info_idx - 1) * FMT_TRACEDB_SZ_CtxTrace,
-                     sizeof buf, buf);
-
-    ud.inst = std::nullopt;
+    inst = std::move(ud.inst.value());
+  } else if(tracefile) {
+    inst = tracefile->open(true, true);
   }
+
+  // Write any timepoints that are still in the buffer
+  //
+  // NB: If the timepoints were prebuffered, they are in prebuffer instead of
+  // buffer, so this condition evaluates false.
+  if(ud.cursor != ud.buffer.data())
+    inst.writeat(ud.off, ud.cursor - ud.buffer.data(), ud.buffer.data());
+
+  // Check if the prebuffer is done. If it isn't, defer the header write until then
+  {
+    bool prebuffer_done;
+    {
+      std::shared_lock<std::shared_mutex> l(ud.prebuffer_lock);
+      prebuffer_done = ud.prebuffer_done;
+    }
+    if(!prebuffer_done) {
+      std::unique_lock<std::shared_mutex> l(ud.prebuffer_lock);
+      if(!ud.prebuffer_done) {
+        ud.hdr_prebuffered = true;
+        return;
+      }
+    }
+  }
+
+  // Write the trace header for this thread
+  writeHdrFor(ud, inst);
+}
+
+void HPCTraceDB2::writeHdrFor(udThread& ud, util::File::Instance& inst) {
+  auto new_end = ud.hdr.start + ud.tmcntr * FMT_TRACEDB_SZ_CtxSample;
+  assert(new_end <= ud.hdr.end);
+  ud.hdr.end = new_end;
+  fmt_tracedb_ctxTrace_t hdr = {
+    .profIndex = ud.hdr.prof_info_idx,
+    .pStart = ud.hdr.start,
+    .pEnd = ud.hdr.end,
+  };
+  assert((hdr.pStart != (uint64_t)INVALID_HDR) | (hdr.pEnd != (uint64_t)INVALID_HDR));
+  char buf[FMT_TRACEDB_SZ_CtxTrace];
+  fmt_tracedb_ctxTrace_write(buf, &hdr);
+  inst.writeat(ctx_pTraces + (ud.hdr.prof_info_idx - 1) * FMT_TRACEDB_SZ_CtxTrace,
+               sizeof buf, buf);
 }
 
 void HPCTraceDB2::notifyPipeline() noexcept {
   auto& ss = src.structs();
   uds.thread = ss.thread.add<udThread>(std::ref(*this));
   src.registerOrderedWavefront();
+
+  if(tracefile)
+    tracefile->synchronize();
 }
 
 std::string HPCTraceDB2::exmlTag() {

@@ -80,4 +80,4 @@ void ProfileSink::notifyCtxTimepointRewindStart(const Thread&) {};
 void ProfileSink::notifyTimepoints(const Thread& t, const Metric&, const std::vector<
   std::pair<std::chrono::nanoseconds, double>>&) {};
 void ProfileSink::notifyMetricTimepointRewindStart(const Thread&, const Metric&) {};
-void ProfileSink::notifyThreadFinal(const PerThreadTemporary&) {};
+void ProfileSink::notifyThreadFinal(std::shared_ptr<const PerThreadTemporary>) {};
