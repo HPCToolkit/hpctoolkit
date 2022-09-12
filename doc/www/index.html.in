@@ -124,7 +124,7 @@ In this project, the goal is to extend HPCToolkit with improved capabilities for
 
 <h2> License</h2>
 <p>HPCToolkit is released under the 3-clause
-  <a href="README.License">BSD license</a> and is available on
+  <a href="LICENSE">BSD license</a> and is available on
   <a href="https://github.com/HPCToolkit">GitHub/HPCToolkit</a>.
 </p>
 

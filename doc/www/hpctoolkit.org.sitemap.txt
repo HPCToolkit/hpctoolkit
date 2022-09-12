@@ -31,7 +31,7 @@ http://hpctoolkit.org/overview.html
 http://hpctoolkit.org/examples.html
 http://hpctoolkit.org/manual/HPCToolkit-users-manual.pdf
 http://hpctoolkit.org/info-people.html
-http://hpctoolkit.org/README.License
+http://hpctoolkit.org/LICENSE
 http://hpctoolkit.org/documentation.html
 http://hpctoolkit.org/info-contact.html
 http://hpctoolkit.org/README.ReleaseNotes
