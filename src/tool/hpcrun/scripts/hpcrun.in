@@ -25,6 +25,26 @@ memkind_libdir='@MEMKIND_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
 
+#------------------------------------------------------------
+# On Cray Slingshot 11 systems, there is not yet complete
+# support for demand paging on the Cassini NIC. As a result,
+# when using pinned memory with Cray MPI, fork and system
+# aren't allowed to return because forking a process using
+# pinned memory is unsupported. As a result, libmonitor can't
+# wrap system as it always has. Since tracing processes
+# initiated with system is not typically needed, turn off
+# libmonitor's support for following processes through a call
+# to system. If you need this, use --follow-system.
+#------------------------------------------------------------
+
+export MONITOR_NO_SYSTEM_OVERRIDE=1
+
+#------------------------------------------------------------
+# LD_AUDIT is crippled on Arm systems until at least
+# glibc 2.35. On Arm systems, emulate LD_AUDIT support at 
+# present to avoid failures due to LD_AUDIT bugs.
+#------------------------------------------------------------
+
 if test $host_arm = "yes"; then
     export HPCRUN_AUDIT_FAKE_AUDITOR=1
 fi
@@ -185,6 +205,8 @@ Options: Profiling (Defaults shown in curly brackets {})
 
   -nu, --no-unwind     Disable unwinding and collect a flat profile of leaf
                        procedures only instead of full calling contexts.
+
+  --follow-system      Also monitor any child processes spawned using glibc's "system".
 
 
 Options to consider only when hpcrun causes an application to fail:
@@ -477,6 +499,12 @@ do
 
 	--disable-gprof )
 	    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gprof.so"
+	    ;;
+
+	# --------------------------------------------------
+
+	--follow-system )
+            unset MONITOR_NO_SYSTEM_OVERRIDE
 	    ;;
 
 	# --------------------------------------------------
