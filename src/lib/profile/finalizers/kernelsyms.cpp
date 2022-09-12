@@ -152,8 +152,9 @@ void KernelSymbols::load(const Module& m, udModule& ud) noexcept {
     // Make sure this is consistent before continuing along
     ud.symbols.make_consistent();
   } catch(std::exception& e) {
-    util::log::info{} << "Exception caught while parsing symbols data from "
+    util::log::warning{} << "Exception caught while parsing symbols data from "
       << syms << " for " << name << "\n"
          "  what(): " << e.what();
+    ud.symbols.clear();
   }
 }
