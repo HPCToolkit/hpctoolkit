@@ -57,7 +57,7 @@
 namespace hpctoolkit::finalizers {
 
 // Some Modules (in particular Linux kernels) don't have symbol tables in the
-// ELF format, instead they need to be pulled from
+// ELF format, instead they need to be pulled from an nm-like dump saved in the measurements.
 class KernelSymbols final : public ProfileFinalizer {
 public:
   // `path` is the path to the directory containing symbol listings
@@ -71,8 +71,12 @@ public:
   classify(Context&, NestedScope&) noexcept override;
 
 private:
+  struct first final {
+    void operator()(Function&, const Function&) const noexcept {}
+  };
+
   struct udModule final {
-    util::range_map<uint64_t, Function, util::range_merge::always_throw<>> symbols;
+    util::range_map<uint64_t, Function, first> symbols;
   };
 
   stdshim::filesystem::path root;
