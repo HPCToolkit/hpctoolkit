@@ -13,8 +13,8 @@ spack:
       GIT_STRATEGY: none
 
     service-job-attributes:
-      tags: [docker, linux/amd64]
-      image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+      tags: [docker]
+      image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
       before_script:
       - if test "$CI_JOB_NAME" = no-specs-to-rebuild; then exit 0; fi
       # Hotfix SPACK_CHECKOUT_VERSION, because it tends to be borked

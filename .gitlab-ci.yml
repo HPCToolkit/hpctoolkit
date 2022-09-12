@@ -257,15 +257,10 @@ autoreconf check:
     - mkdir .ccache-bin/
     - test -z "$JOB_CC" || { ln -s "$(command -pv ccache)" .ccache-bin/"$CC" && export CC="$(realpath .ccache-bin)/$CC"; }
     - test -z "$JOB_CC" || { ln -s "$(command -pv ccache)" .ccache-bin/"$CXX" && export CXX="$(realpath .ccache-bin)/$CXX"; }
-    # Guess the number of processors based on the CI_RUNNER_TAGS
-    # TODO: Eventually add better tags to make this easier to do. Or switch to Ninja.
-    - |
-      if grep -q "linux/arm64" <<<"$CI_RUNNER_TAGS"
-      then jobs=4
-      else jobs=16
-      fi
-      echo "Using $jobs jobs for builds"
-
+    # Decide on a number of workers based on the number of available processors
+    - jobs=$(ci/scripts/nproc.py $CI_NPROC)
+    - if [ "$jobs" -le 2 ]; then (( jobs = jobs + 1 )); fi
+    - echo "Using $jobs jobs for builds"
     - echo -e "\e[0Ksection_end:`date +%s`:ccache_init\r\e[0K"
   - fi
 
@@ -279,15 +274,18 @@ autoreconf check:
       *) echo "Unknown generic target: $(spack arch --generic-target)"; exit 1; ;;
       esac
     # Install the environments requested by this job
-    - if test -n "$JOB_ENV_MINIMUM$JOB_ENV_ALL"; then env_minimum=ci/dependencies/minimum/c/$os/$arch/; spack -e $env_minimum env depfile >> env.make; fi
-    - if test -n "$JOB_ENV_LATEST$JOB_ENV_ALL"; then env_latest=ci/dependencies/latest/c/$os/$arch/; spack -e $env_latest env depfile >> env.make; fi
-    - spack config add config:db_lock_timeout:120
-    - |
-      if test -e env.make; then
-        make -j4 -f env.make -k SPACK_INSTALL_FLAGS='--cache-only --no-check-signature' \
-        || make -j2 -f env.make -k SPACK_INSTALL_FLAGS='--cache-only --no-check-signature' \
-        || make -j1 -f env.make SPACK_INSTALL_FLAGS='--cache-only --no-check-signature'
-      fi
+    - >-
+      test -z "$JOB_ENV_MINIMUM" || {
+      env_minimum=ci/dependencies/minimum/c/$os/$arch/;
+      spack -e $env_minimum install --cache-only --no-check-signature --fail-fast
+      && spack env activate --sh $env_minimum > $env_minimum/load.sh
+      && cat $env_minimum/load.sh; }
+    - >-
+      test -z "$JOB_ENV_LATEST" || {
+      env_latest=ci/dependencies/latest/c/$os/$arch/;
+      spack -e $env_latest install --cache-only --no-check-signature --fail-fast
+      && spack env activate --sh $env_latest > $env_latest/load.sh
+      && cat $env_latest/load.sh; }
   - echo -e "\e[0Ksection_end:`date +%s`:spack_install\r\e[0K"
 
   after_script:
@@ -302,7 +300,8 @@ autoreconf check:
   image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
   variables:
     ARCH: amd64
-    JOB_ENV_ALL: '1'
+    JOB_ENV_LATEST: '1'
+    JOB_ENV_MINIMUM: '1'
   parallel:
     matrix:
     - IMAGE: leap15
@@ -332,49 +331,26 @@ autoreconf check:
   # configuration or compile errors, by enabling all features and removing one at a time.
   # The exception is the variant `+~debug`, which is always swept completely.
   - >-
-    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py $env_latest/config/general
+    (source $env_latest/load.sh && ci/scripts/buildmany.py $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl ~cuda~rocm~level0'
     -s '~mpi +papi +opencl ~cuda~rocm~level0'
     -s '+mpi ~papi +opencl ~cuda~rocm~level0'
     -s '+mpi +papi ~opencl ~cuda~rocm~level0'
-    )
+    ) || exit $?
   - >-
-    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py $env_minimum/config/general
+    (source $env_minimum/load.sh && ci/scripts/buildmany.py $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl ~cuda~rocm~level0'
     -s '~mpi +papi +opencl ~cuda~rocm~level0'
     -s '+mpi ~papi +opencl ~cuda~rocm~level0'
     -s '+mpi +papi ~opencl ~cuda~rocm~level0'
-    )
+    ) || exit $?
 
   artifacts:
     paths:
     - logs/
     when: always
-
-
-'buildmany.arm64: [*]':
-  extends: 'buildmany.amd64: [*]'
-  variables:
-    ARCH: arm64
-  parallel:
-    matrix:
-    - IMAGE: almalinux8
-      JOB_CC: gcc=8
-
-    # - IMAGE: ubuntu20.04
-    #   JOB_CC: [gcc-9, gcc-10]
-
-    - IMAGE: fedora36
-      JOB_CC: gcc=12
-
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - concretize_deps.arm64
-  - build_deps.arm64
-
 
 'buildmany.amd64: [+cuda]':
   extends: .buildcache-job
@@ -382,7 +358,8 @@ autoreconf check:
   tags: [docker, linux/amd64]
   variables:
     JOB_CC: gcc-9
-    JOB_ENV_ALL: '1'
+    JOB_ENV_LATEST: '1'
+    JOB_ENV_MINIMUM: '1'
   parallel:
     matrix:
     - CUDA: [11.7.1]
@@ -399,21 +376,21 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py img-config $env_latest/config/general
+    (source $env_latest/load.sh && ci/scripts/buildmany.py img-config $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl +cuda~rocm~level0'
     -s '~mpi +papi +opencl +cuda~rocm~level0'
     -s '+mpi ~papi +opencl +cuda~rocm~level0'
     -s '+mpi +papi ~opencl +cuda~rocm~level0'
-    )
+    ) || exit $?
   - >-
-    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py img-config $env_minimum/config/general
+    (source $env_minimum/load.sh && ci/scripts/buildmany.py img-config $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl +cuda~rocm~level0'
     -s '~mpi +papi +opencl +cuda~rocm~level0'
     -s '+mpi ~papi +opencl +cuda~rocm~level0'
     -s '+mpi +papi ~opencl +cuda~rocm~level0'
-    )
+    ) || exit $?
 
   artifacts:
     paths:
@@ -427,7 +404,8 @@ autoreconf check:
   tags: [docker, linux/amd64]
   variables:
     JOB_CC: gcc-9
-    JOB_ENV_ALL: '1'
+    JOB_ENV_LATEST: '1'
+    JOB_ENV_MINIMUM: '1'
   parallel:
     matrix:
     - ROCM: [5.2.3]
@@ -444,21 +422,21 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py img-config $env_latest/config/general
+    (source $env_latest/load.sh && ci/scripts/buildmany.py img-config $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl ~cuda+rocm~level0'
     -s '~mpi +papi +opencl ~cuda+rocm~level0'
     -s '+mpi ~papi +opencl ~cuda+rocm~level0'
     -s '+mpi +papi ~opencl ~cuda+rocm~level0'
-    )
+    ) || exit $?
   - >-
-    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py img-config $env_minimum/config/general
+    (source $env_minimum/load.sh && ci/scripts/buildmany.py img-config $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl ~cuda+rocm~level0'
     -s '~mpi +papi +opencl ~cuda+rocm~level0'
     -s '+mpi ~papi +opencl ~cuda+rocm~level0'
     -s '+mpi +papi ~opencl ~cuda+rocm~level0'
-    )
+    ) || exit $?
 
   artifacts:
     paths:
@@ -472,7 +450,8 @@ autoreconf check:
   tags: [docker, linux/amd64]
   variables:
     JOB_CC: gcc-9
-    JOB_ENV_ALL: '1'
+    JOB_ENV_LATEST: '1'
+    JOB_ENV_MINIMUM: '1'
   parallel:
     matrix:
     - ONEAPI: ['2022.2']
@@ -489,21 +468,21 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildmany.py img-config $env_latest/config/general
+    (source $env_latest/load.sh && ci/scripts/buildmany.py img-config $env_latest/config/general
     -j $jobs -o logs/ -p latest_
     -s '+mpi +papi +opencl ~cuda~rocm+level0'
     -s '~mpi +papi +opencl ~cuda~rocm+level0'
     -s '+mpi ~papi +opencl ~cuda~rocm+level0'
     -s '+mpi +papi ~opencl ~cuda~rocm+level0'
-    )
+    ) || exit $?
   - >-
-    (eval $(spack env activate --sh $env_minimum) && ci/scripts/buildmany.py img-config $env_minimum/config/general
+    (source $env_minimum/load.sh && ci/scripts/buildmany.py img-config $env_minimum/config/general
     -j $jobs -o logs/ -p minimum_
     -s '+mpi +papi +opencl ~cuda~rocm+level0'
     -s '~mpi +papi +opencl ~cuda~rocm+level0'
     -s '+mpi ~papi +opencl ~cuda~rocm+level0'
     -s '+mpi +papi ~opencl ~cuda~rocm+level0'
-    )
+    ) || exit $?
 
   artifacts:
     paths:
@@ -537,8 +516,8 @@ check.amd64:
   script:
   # Run the build script for the configuration of interest. Use some Python to help.
   - >-
-    (eval $(spack env activate --sh $env_latest) && ci/scripts/buildone.py $env_latest/config/general
-    -j $jobs -o logs/ -p latest_ -s "$SPEC")
+    (source $env_latest/load.sh && ci/scripts/makecheck.py $env_latest/config/general
+    -j $jobs -o logs/ -p latest_ -s "$SPEC" $EXTRA_ARGS) || exit $?
   # Tarball the HPCToolkit install for later stages
   - tar -C / -cvzf hpctoolkit_install.$CI_ARCH.tar.gz opt/hpctoolkit/
 
@@ -547,3 +526,18 @@ check.amd64:
     - logs/
     - hpctoolkit_install.*.tar.gz
     when: always
+
+check.arm64:
+  extends: check.amd64
+  variables:
+    ARCH: arm64
+    EXTRA_ARGS: '--check-fail-code 33'
+
+  allow_failure:
+    exit_codes: 33
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - concretize_deps.arm64
+  - build_deps.arm64

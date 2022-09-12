@@ -12,7 +12,7 @@ from common.logs import colorize, FgColor, section, dump_file, print_header, pri
 from common import buildsys
 
 parser = argparse.ArgumentParser(
-    description="Build a single HPCToolkit and make sure it compiles.",
+    description="Build a single HPCToolkit and make sure it compiles and tests pass.",
     epilog="""\
 The output from this program is summarized to only include warnings or errors, and is wrapped in
 collapsible sections to allow for easy viewing from the GitLab UI.
@@ -45,6 +45,11 @@ parser.add_argument(
     default=[],
     help="Variant-spec (Spack +~ format) to build and check",
 )
+parser.add_argument(
+    "--check-fail-code",
+    type=int,
+    help="Failure code to use if make check fails",
+)
 args = parser.parse_args()
 del parser
 
@@ -54,8 +59,10 @@ depscfg = DependencyConfiguration.from_files(*args.configs)
 class BuildStepFailure(Exception):
     "Failure in one of the build steps"
 
-    def __init__(self, step):
+    def __init__(self, step, code=None):
+        assert code is None or code.__index__() > 0
         self.step = step
+        self.code = code
 
 
 def build(**variant):
@@ -126,7 +133,7 @@ def build(**variant):
                 ok = buildsys.test(builddir, cfg, logdir=logdir)
                 dump_file(logdir / "test.stderr.log")
                 if not ok:
-                    raise BuildStepFailure("make check")
+                    raise BuildStepFailure("make check", args.check_fail_code)
 
             finally:
                 if builddir.exists():
@@ -137,8 +144,10 @@ def build(**variant):
         with colorize(FgColor.error):
             print(f" [\u274c] Build failed in {fail.step}")
             print_results(*results, prefix="     - ")
+            if fail.code is not None:
+                print(f"Exiting with code {fail.code}")
         sys.stdout.flush()
-        return False
+        return fail.code if fail.code is not None else 1
 
     # Successful build, give a short summary of how well it did
     if any(not r.flawless for r in results):
@@ -149,7 +158,7 @@ def build(**variant):
         with colorize(FgColor.flawless):
             print(f" [\u2714] Build successful with no detected flaws")
     sys.stdout.flush()
-    return True
+    return 0
 
 
-sys.exit(0 if build(**args.spec) else 1)
+sys.exit(build(**args.spec))
