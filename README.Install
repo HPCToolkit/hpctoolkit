@@ -9,6 +9,7 @@ Installing HPCToolkit with Spack
 6 Packages.yaml
 6.1 External Packages
 6.2 Micro-Architecture Targets
+6.3 Require, Reuse and Fresh
 7 Bootstrapping Clingo
 8 Compilers and compilers.yaml
 9 Spack Install
@@ -49,9 +50,10 @@ supported.
   2. Cray on x86_64 and Compute Node Linux.
 
 We provide binary distributions for hpcviewer and hpctraceviewer on
-Linux (x86_64, ppc64/le and aarch64), Windows and MacOS. HPCToolkit
-databases are platform-independent and it is common to run hpcrun on one
-machine and then view the results on another machine.
+Linux (x86_64, ppc64/le and aarch64), Windows (x86_64) and MacOS
+(x86_64, M1 and M2).  HPCToolkit databases are platform-independent and
+it is common to run hpcrun on one machine and then view the results on
+another machine.
 
    We build HPCToolkit and its prerequisite libraries from source.
 HPCToolkit has some 15-20 base prerequisites (more for cuda or rocm) and
@@ -79,16 +81,16 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: April 14, 2022.
+Last revised: September 12, 2022.
 
 2 Prerequisites
 ===============
 
 Building HPCToolkit requires the following prerequisites.
 
-  1. The GNU gcc and g++ compilers version 7.3 or later.  On systems
-     with older compilers, you can use spack to build a later version of
-     gcc.
+  1. The GNU gcc and g++ compilers version 8.x or later with support for
+     C++17.  On systems with older compilers, you can use spack to build
+     a later version of gcc.
 
   2. GNU glibc version 2.16 or later.  Note: Red Hat 6.x uses glibc 2.12
      which is too old.
@@ -110,8 +112,7 @@ Building HPCToolkit requires the following prerequisites.
 
 Hpcviewer and hpctraceviewer require Java 11 or later.  Spack can
 install Java, if needed.  On Linux, the viewers also require GTK+
-version 3.20 or later.  Older versions of the viewer use Java 8 and GTK+
-2.x.
+version 3.20 or later.
 
 3 Spack Notation
 ================
@@ -125,13 +126,13 @@ both on the command line and in config files.
      the available versions and variants for a package.  In most cases,
      spaces are optional between elements of a spec.  For example:
 
-          boost@1.66.0    dyninst @10.1.0    hpctoolkit @master
+          boost@1.77.0    dyninst @12.1.0    hpctoolkit @master
 
   2. '+', '-', '~' specify boolean (on/off) variants.  Note: '-' (dash)
      and '~' (tilde) both mean 'off'.  Use dash after a space and tilde
      after a non-space.  For example:
 
-          elfutils+bzip2~nls    elfutils +bzip2 -nls    elfutils@0.176 +bzip2~nls
+          elfutils+bzip2~nls    elfutils +bzip2 -nls    elfutils@0.186 +bzip2~nls
 
   3. 'name=value' specifies a non-boolean variant, for example:
 
@@ -139,7 +140,7 @@ both on the command line and in config files.
 
   4. '%' specifies the build compiler and its version, for example:
 
-          hpctoolkit@master %gcc@7.3.0
+          hpctoolkit@master %gcc@8.5.0
 
   5. 'cflags', 'cxxflags', 'fflags', 'cppflags', 'ldflags' and 'ldlibs'
      are special name/value variants for compiler flags.  These are
@@ -152,12 +153,12 @@ both on the command line and in config files.
      package is a full spec and may include its own version, variants,
      etc.  For example:
 
-          hpctoolkit@master ^dyninst@10.1.0+openmp
+          hpctoolkit@master ^dyninst@12.1.0+openmp
 
   7. 'arch', 'platform', 'os' and 'target' are special options for the
      system architecture and machine type.  Platform is normally
      'linux', or else 'cray' (or even 'darwin').  OS is the Linux
-     distribution, 'rhel7', 'sles15', etc, and target is the machine
+     distribution, 'rhel8', 'sles15', etc, and target is the machine
      type, 'x86_64', 'ppc64le', etc.  Arch is a triple of platform, os
      and target separated by dashes.
 
@@ -180,7 +181,7 @@ both on the command line and in config files.
 
           spack arch --known-targets
 
-When writing a spec (for 'spack install' or other), spack will fully
+When writing a spec (for 'spack spec, install', etc), spack will fully
 resolve all possible choices for the package and all of its dependencies
 and create a unique hash value for that exact configuration.  This
 process is called 'concretization.'  To see how spack would concretize a
@@ -194,12 +195,13 @@ spec, use 'spack spec'.
 ============================
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building over 6,300 packages (and
+spack machinery and recipes for building over 6,500 packages (and
 growing).  You should also clone HPCToolkit for the 'packages.yaml' file
-which is used to configure the spack build.
+which is used to configure the spack build.  Note: hpctoolkit has now
+moved to GitLab.
 
      git clone https://github.com/spack/spack.git
-     git clone https://github.com/hpctoolkit/hpctoolkit.git
+     git clone https://gitlab.com/hpctoolkit/hpctoolkit.git
 
 After cloning, add the 'spack/bin' directory to your PATH, or else
 source the spack 'setup-env' script.
@@ -421,6 +423,44 @@ Dependencies'.
      <https://spack.readthedocs.io/en/latest/build_settings.html>
      <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
 
+6.3 Require, Reuse and Fresh
+----------------------------
+
+It is important to understand that specifications in 'packages.yaml' are
+only preferences, not requirements.  There are other choices that spack
+ranks higher.  In particular, spack will prefer to reuse an existing
+package that doesn't conform to 'packages.yaml' rather than rebuild a
+newer version.
+
+   For example, suppose you previously installed hpctoolkit with dyninst
+12.1.0.  Then, some months later, you update your spack repo and want to
+install a new hpctoolkit with dyninst 12.2.0.  By default, spack will
+prefer to reuse the old 12.1.0 rather than rebuild the new version.
+
+   The solution is to use 'require:' to force spack to build the new
+version.
+
+     packages:
+       dyninst:
+         require: "@12.2.0"
+
+Note:
+
+  1. The value for 'require:' is a full spec (so include '@' for
+     version) and supersedes both version and variants.
+
+  2. The value for 'require:' should be a singleton spec (not a list)
+     and should be quoted.
+
+By default, spack install uses '--reuse' which prefers reusing an
+already installed package.  You can change this with '--fresh' which
+prefers to rebuild the latest version of a package.  But '--reuse' and
+'--fresh' apply to all package versions.  The advantage of 'require:' is
+that you can selectively choose the version and variants on a package by
+package basis.
+
+     <https://spack.readthedocs.io/en/latest/build_settings.html#package-requirements>
+
 7 Bootstrapping Clingo
 ======================
 
@@ -483,9 +523,9 @@ all the packages.
 8 Compilers and compilers.yaml
 ==============================
 
-Building HPCToolkit requires GNU gcc/g++ version 7.3 or later.  By
-default, spack uses the latest available version of gcc, but you can
-specify a different compiler, if one is available.
+Building HPCToolkit requires GNU gcc/g++ version 8.x or later with C++17
+support.  By default, spack uses the latest available version of gcc,
+but you can specify a different compiler, if one is available.
 
    Spack uses a separate file, 'compilers.yaml' to store information
 about available compilers.  This file is normally in your home directory
@@ -860,9 +900,9 @@ to that, each view was a separate program: hpcviewer to analyze the
 profile database, and hpctraceviewer to display the traces.
 
    We provide binary distributions for hpcviewer on Linux (x86_64,
-ppc64le and aarch64), Windows and MacOS (x86_64 and M1).  HPCToolkit
-databases are platform-independent and it is common to run hpcrun on one
-machine and then view the results on another machine.
+ppc64le and aarch64), Windows (x86_64) and MacOS (x86_64, M1 and M2).
+HPCToolkit databases are platform-independent and it is common to run
+hpcrun on one machine and then view the results on another machine.
 
    Starting with 2021.01, the viewer now requires Java 11 or later, plus
 GTK+ 3.20 or later on Linux.  Older viewers, up through 2020.12, require
