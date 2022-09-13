@@ -34,9 +34,10 @@ Cray on x86_64 and Compute Node Linux.
 
 @noindent
 We provide binary distributions for hpcviewer and hpctraceviewer on
-Linux (x86_64, ppc64/le and aarch64), Windows and MacOS.  HPCToolkit
-databases are platform-independent and it is common to run hpcrun on
-one machine and then view the results on another machine.
+Linux (x86_64, ppc64/le and aarch64), Windows (x86_64) and MacOS
+(x86_64, M1 and M2).  HPCToolkit databases are platform-independent and it
+is common to run hpcrun on one machine and then view the results on
+another machine.
 
 We build HPCToolkit and its prerequisite libraries from source.
 HPCToolkit has some 15-20 base prerequisites (more for cuda or rocm)
@@ -71,7 +72,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: April 14, 2022.
+Last revised: September 12, 2022.
 
 @c ------------------------------------------------------------
 
@@ -81,8 +82,9 @@ Building HPCToolkit requires the following prerequisites.
 
 @enumerate
 @item
-The GNU gcc and g++ compilers version 7.3 or later.  On systems with
-older compilers, you can use spack to build a later version of gcc.
+The GNU gcc and g++ compilers version 8.x or later with support for
+C++17.  On systems with older compilers, you can use spack to build a
+later version of gcc.
 
 @item
 GNU glibc version 2.16 or later.  Note: Red Hat 6.x uses glibc 2.12
@@ -110,8 +112,7 @@ packages if they are missing from your system.
 @noindent
 Hpcviewer and hpctraceviewer require Java 11 or later.  Spack can
 install Java, if needed.  On Linux, the viewers also require GTK+
-version 3.20 or later.  Older versions of the viewer use Java 8 and
-GTK+ 2.x.
+version 3.20 or later.
 
 @c ------------------------------------------------------------
 
@@ -129,7 +130,7 @@ the available versions and variants for a package.  In most cases,
 spaces are optional between elements of a spec.  For example:
 
 @example
-boost@@1.66.0    dyninst @@10.1.0    hpctoolkit @@master
+boost@@1.77.0    dyninst @@12.1.0    hpctoolkit @@master
 @end example
 
 @item
@@ -138,7 +139,7 @@ boost@@1.66.0    dyninst @@10.1.0    hpctoolkit @@master
 and tilde after a non-space.  For example:
 
 @example
-elfutils+bzip2~nls    elfutils +bzip2 -nls    elfutils@@0.176 +bzip2~nls
+elfutils+bzip2~nls    elfutils +bzip2 -nls    elfutils@@0.186 +bzip2~nls
 @end example
 
 @item
@@ -152,7 +153,7 @@ dyninst+openmp build_type=RelWithDebInfo    xerces-c@@3.2.2 transcoder=iconv
 '%' specifies the build compiler and its version, for example:
 
 @example
-hpctoolkit@@master %gcc@@7.3.0
+hpctoolkit@@master %gcc@@8.5.0
 @end example
 
 @item
@@ -171,14 +172,14 @@ a full spec and may include its own version, variants, etc.  For
 example:
 
 @example
-hpctoolkit@@master ^dyninst@@10.1.0+openmp
+hpctoolkit@@master ^dyninst@@12.1.0+openmp
 @end example
 
 @item
 'arch', 'platform', 'os' and 'target' are special options for the
 system architecture and machine type.  Platform is normally 'linux',
 or else 'cray' (or even 'darwin').  OS is the Linux distribution,
-'rhel7', 'sles15', etc, and target is the machine type, 'x86_64',
+'rhel8', 'sles15', etc, and target is the machine type, 'x86_64',
 'ppc64le', etc.  Arch is a triple of platform, os and target separated
 by dashes.
 
@@ -211,7 +212,7 @@ spack arch --known-targets
 @end enumerate
 
 @noindent
-When writing a spec (for @code{spack install} or other), spack will
+When writing a spec (for @code{spack spec, install}, etc), spack will
 fully resolve all possible choices for the package and all of its
 dependencies and create a unique hash value for that exact
 configuration.  This process is called 'concretization.'  To see how
@@ -230,13 +231,14 @@ spack spec hpctoolkit@@master ^binutils@@2.34 ^boost@@1.72.0
 @section Clone Spack and HPCToolkit
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building over 6,300 packages (and
+spack machinery and recipes for building over 6,500 packages (and
 growing).  You should also clone HPCToolkit for the
 @code{packages.yaml} file which is used to configure the spack build.
+Note: hpctoolkit has now moved to GitLab.
 
 @example
 git clone https://github.com/spack/spack.git
-git clone https://github.com/hpctoolkit/hpctoolkit.git
+git clone https://gitlab.com/hpctoolkit/hpctoolkit.git
 @end example
 
 @noindent
@@ -515,6 +517,56 @@ Dependencies'.
 @uref{https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies}
 @end example
 
+@subsection Require, Reuse and Fresh
+
+It is important to understand that specifications in
+@code{packages.yaml} are only preferences, not requirements.  There
+are other choices that spack ranks higher.  In particular, spack will
+prefer to reuse an existing package that doesn't conform to
+@code{packages.yaml} rather than rebuild a newer version.
+
+For example, suppose you previously installed hpctoolkit with dyninst
+12.1.0.  Then, some months later, you update your spack repo and want
+to install a new hpctoolkit with dyninst 12.2.0.  By default, spack
+will prefer to reuse the old 12.1.0 rather than rebuild the new
+version.
+
+The solution is to use @code{require:} to force spack to build the new
+version.
+
+@example
+packages:
+  dyninst:
+    require: "@@12.2.0"
+@end example
+
+@noindent
+Note:
+
+@enumerate
+@item
+The value for @code{require:} is a full spec (so include @code{@@} for
+version) and supersedes both version and variants.
+
+@item
+The value for @code{require:} should be a singleton spec (not a list)
+and should be quoted.
+@end enumerate
+
+@noindent
+By default, spack install uses @code{--reuse} which prefers reusing an
+already installed package.  You can change this with @code{--fresh}
+which prefers to rebuild the latest version of a package.  But
+@code{--reuse} and @code{--fresh} apply to all package versions.  The
+advantage of @code{require:} is that you can selectively choose the
+version and variants on a package by package basis.
+
+@example
+@uref{https://spack.readthedocs.io/en/latest/build_settings.html#package-requirements}
+@end example
+
+@c ------------------------------------------------------------
+
 @section Bootstrapping Clingo
 
 The 'concretizer' is the part of spack that converts a partial spec
@@ -591,9 +643,9 @@ minutes to install all the packages.
 
 @section Compilers and compilers.yaml
 
-Building HPCToolkit requires GNU gcc/g++ version 7.3 or later.  By
-default, spack uses the latest available version of gcc, but you can
-specify a different compiler, if one is available.
+Building HPCToolkit requires GNU gcc/g++ version 8.x or later with
+C++17 support.  By default, spack uses the latest available version of
+gcc, but you can specify a different compiler, if one is available.
 
 Spack uses a separate file, @code{compilers.yaml} to store information
 about available compilers.  This file is normally in your home directory
@@ -1038,9 +1090,9 @@ to that, each view was a separate program: hpcviewer to analyze the
 profile database, and hpctraceviewer to display the traces.
 
 We provide binary distributions for hpcviewer on Linux (x86_64,
-ppc64le and aarch64), Windows and MacOS (x86_64 and M1).  HPCToolkit
-databases are platform-independent and it is common to run hpcrun on
-one machine and then view the results on another machine.
+ppc64le and aarch64), Windows (x86_64) and MacOS (x86_64, M1 and M2).
+HPCToolkit databases are platform-independent and it is common to run
+hpcrun on one machine and then view the results on another machine.
 
 Starting with 2021.01, the viewer now requires Java 11 or later,
 plus GTK+ 3.20 or later on Linux.  Older viewers, up through
