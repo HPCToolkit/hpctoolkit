@@ -114,6 +114,7 @@ static YAML::Emitter& operator<<(YAML::Emitter& e, const MetricScope ms) {
   switch(ms) {
   case MetricScope::point: return e << "point";
   case MetricScope::function: return e << "function";
+  case MetricScope::lex_aware: return e << "lex_aware";
   case MetricScope::execution: return e << "execution";
   }
   std::abort();
@@ -186,11 +187,16 @@ static void rawLeafVariants(YAML::Emitter& out, const Metric& m) {
           << Flow << BeginSeq << "number";
     if(s.showPercent()) out << "percent";
     out << EndSeq
-        << Key << "formula" << Value << BeginMap;
-    rawFormula(out, m, s, MetricScope::execution, "inclusive");
-    if(!rawFormula(out, m, s, MetricScope::function, "exclusive"))
-      rawFormula(out, m, s, MetricScope::point, "point");
+        << Key << "formula" << Value << BeginMap
+        << Key << "inclusive" << Value << BeginMap;
+    rawFormula(out, m, s, MetricScope::execution, "standard");
     out << EndMap
+        << Key << "exclusive" << Value << BeginMap;
+    rawFormula(out, m, s, MetricScope::lex_aware, "custom");
+    if(!rawFormula(out, m, s, MetricScope::function, "standard"))
+      rawFormula(out, m, s, MetricScope::point, "standard");
+    out << EndMap
+        << EndMap
         << EndMap;
   }
   out << EndMap;
@@ -594,6 +600,7 @@ void MetricsYAML::standard(std::ostream& os) {
       return true;
     };
     f(MetricScope::execution);
+    f(MetricScope::lex_aware);
     if(!f(MetricScope::function))
       f(MetricScope::point);
   }

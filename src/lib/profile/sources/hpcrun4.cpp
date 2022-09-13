@@ -226,6 +226,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     while((id = hpcrun_sparse_next_metric(file, &m, 4.0)) > 0) {
       Metric::Settings settings{m.name, m.description};
       settings.orderId = id;
+      settings.scopes = {MetricScope::execution, MetricScope::lex_aware, MetricScope::function, MetricScope::point};
       switch(m.flags.fields.show) {
       case HPCRUN_FMT_METRIC_SHOW: break;  // Default
       case HPCRUN_FMT_METRIC_HIDE:
@@ -237,7 +238,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         settings.scopes &= {MetricScope::execution, MetricScope::point};
         break;
       case HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE:
-        settings.scopes &= {MetricScope::function, MetricScope::point};
+        settings.scopes &= {MetricScope::lex_aware, MetricScope::function, MetricScope::point};
         break;
       case HPCRUN_FMT_METRIC_INVISIBLE:
         settings.visibility = Metric::Settings::visibility_t::invisible;
