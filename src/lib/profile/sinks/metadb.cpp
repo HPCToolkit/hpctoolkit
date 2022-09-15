@@ -391,14 +391,18 @@ void MetaDB::write() try {
         scope.pScopeName = str("point");
         scope.type = FMT_METADB_SCOPETYPE_Point;
         break;
-      case MetricScope::execution:
-        scope.pScopeName = str("execution");
-        scope.type = FMT_METADB_SCOPETYPE_Execution;
-        break;
       case MetricScope::function:
         scope.pScopeName = str("function");
         scope.type = FMT_METADB_SCOPETYPE_Transitive;
         scope.propagationIndex = 0;
+        break;
+      case MetricScope::lex_aware:
+        scope.pScopeName = str("lex_aware");
+        scope.type = FMT_METADB_SCOPETYPE_Custom;
+        break;
+      case MetricScope::execution:
+        scope.pScopeName = str("execution");
+        scope.type = FMT_METADB_SCOPETYPE_Execution;
         break;
       }
       char buf[FMT_METADB_SZ_PropScope];

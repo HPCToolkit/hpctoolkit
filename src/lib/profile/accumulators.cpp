@@ -56,12 +56,14 @@ using namespace hpctoolkit;
 
 static const std::string ms_point = "point";
 static const std::string ms_function = "function";
+static const std::string ms_lex_aware = "lex_aware";
 static const std::string ms_execution = "execution";
 
 const std::string& hpctoolkit::stringify(MetricScope ms) {
   switch(ms) {
   case MetricScope::point: return ms_point;
   case MetricScope::function: return ms_function;
+  case MetricScope::lex_aware: return ms_lex_aware;
   case MetricScope::execution: return ms_execution;
   }
   std::abort();
@@ -103,6 +105,12 @@ void StatisticAccumulator::PartialRef::add(MetricScope s, double v) noexcept {
   switch(s) {
   case MetricScope::point: atomic_op(partial.point, v, statpart.combinator()); return;
   case MetricScope::function: atomic_op(partial.function, v, statpart.combinator()); return;
+  // TODO: This is probably completely wrong, but this part of the interface needs
+  // to be redesigned to fix it and it only affects hpcprof-mpi. So ignore the
+  // errors for now.
+  case MetricScope::lex_aware:
+    atomic_op(partial.isLoop ? partial.function_noloops : partial.function, v, statpart.combinator());
+    return;
   case MetricScope::execution: atomic_op(partial.execution, v, statpart.combinator()); return;
   }
   assert(false && "Invalid MetricScope!");
@@ -125,32 +133,16 @@ static std::optional<double> opt0(double d) {
   return d == 0 ? std::optional<double>{} : d;
 }
 
-std::optional<double> StatisticAccumulator::PartialRef::get(MetricScope s) const noexcept {
-  partial.validate();
+std::optional<double> StatisticAccumulator::Partial::get(MetricScope s) const noexcept {
   switch(s) {
-  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
-  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
+  case MetricScope::point: return opt0(point.load(std::memory_order_relaxed));
+  case MetricScope::function: return opt0(function.load(std::memory_order_relaxed));
+  case MetricScope::lex_aware: return opt0(isLoop ? function_noloops.load(std::memory_order_relaxed)
+                                           : function.load(std::memory_order_relaxed));
+  case MetricScope::execution: return opt0(execution.load(std::memory_order_relaxed));
   };
   assert(false && "Invalid MetricScope!");
   std::abort();
-}
-std::optional<double> StatisticAccumulator::PartialCRef::get(MetricScope s) const noexcept {
-  partial.validate();
-  switch(s) {
-  case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
-  case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
-  case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
-  };
-  assert(false && "Invalid MetricScope!");
-  std::abort();
-}
-
-void StatisticAccumulator::Partial::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0
-          || function.load(std::memory_order_relaxed) != 0
-          || execution.load(std::memory_order_relaxed) != 0)
-    && "Attempt to access a StatisticAccumulator with 0 value!");
 }
 
 util::optional_ref<const StatisticAccumulator> Metric::getFor(const Context& c) const noexcept {
@@ -158,27 +150,20 @@ util::optional_ref<const StatisticAccumulator> Metric::getFor(const Context& c) 
 }
 
 std::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
-  validate();
   switch(s) {
   case MetricScope::point: return opt0(point.load(std::memory_order_relaxed));
   case MetricScope::function: return opt0(function);
+  case MetricScope::lex_aware: return opt0(isLoop ? function_noloops : function);
   case MetricScope::execution: return opt0(execution);
   }
   assert(false && "Invalid MetricScope!");
   std::abort();
 }
 
-void MetricAccumulator::validate() const noexcept {
-  assert((point.load(std::memory_order_relaxed) != 0
-          || function != 0 || execution != 0)
-    && "Attempt to access a MetricAccumulator with 0 value!");
-}
-
 MetricScopeSet MetricAccumulator::getNonZero() const noexcept {
   MetricScopeSet out;
-  if(point.load(std::memory_order_relaxed) != 0) out |= MetricScope::point;
-  if(function != 0) out |= MetricScope::function;
-  if(execution != 0) out |= MetricScope::execution;
+  for(MetricScope ms: MetricScopeSet(MetricScopeSet::all))
+    if(get(ms)) out |= ms;
   return out;
 }
 
@@ -369,19 +354,29 @@ void PerThreadTemporary::finalize() noexcept {
 
     const Context& c = stack.top().ctx;
     md_t& data = c_data[c];
+
+    const bool isLoop = c.scope().flat().type() == Scope::Type::loop;
+
     // Handle the internal propagation first, so we don't get mixed up.
     for(auto& mx: data.iterate()) {
+      mx.second.isLoop = isLoop;
       mx.second.execution = mx.second.function
+                          = mx.second.function_noloops
                           = mx.second.point.load(std::memory_order_relaxed);
     }
 
     // Go through our children and sum into our bits
     for(std::size_t i = 0; i < stack.top().submds.size(); i++) {
       const auto& sub = stack.top().submds[i];
-      const bool pullfunc = !isCall(sub.first.get().scope().relation());
+      const bool pullFunc = !isCall(sub.first.get().scope().relation());
+      const bool pullNoLoops = sub.first.get().scope().flat().type() != Scope::Type::loop;
       for(const auto& mx: sub.second.get().citerate()) {
         auto& accum = data[mx.first];
-        if(pullfunc) accum.function += mx.second.function;
+        if(pullFunc) {
+          accum.function += mx.second.function;
+          if(pullNoLoops)
+            accum.function_noloops += mx.second.function_noloops;
+        }
         accum.execution += mx.second.execution;
       }
     }
@@ -396,8 +391,11 @@ void PerThreadTemporary::finalize() noexcept {
       for(size_t i = 0; i < mx.first->partials().size(); i++) {
         auto& partial = mx.first->partials()[i];
         auto& atomics = accum.partials[i];
+        if(atomics.isLoop.load(std::memory_order_relaxed) != isLoop)
+          atomics.isLoop.store(isLoop, std::memory_order_relaxed);
         atomic_op(atomics.point, partial.m_accum.evaluate(mx.second.point.load(std::memory_order_relaxed)), partial.combinator());
         atomic_op(atomics.function, partial.m_accum.evaluate(mx.second.function), partial.combinator());
+        atomic_op(atomics.function_noloops, partial.m_accum.evaluate(mx.second.function_noloops), partial.combinator());
         atomic_op(atomics.execution, partial.m_accum.evaluate(mx.second.execution), partial.combinator());
       }
     }

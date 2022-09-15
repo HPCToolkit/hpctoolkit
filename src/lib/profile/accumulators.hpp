@@ -76,10 +76,14 @@ enum class MetricScope : size_t {
   point,
 
   /// Encapsulates the current Context and any descendants not connected by a
-  /// function-type Scope. This represents the cost of a function outside of
-  /// any child function calls.
-  /// Called "exclusive" in the Viewer.
+  /// call-type Relation (call or inlined_call). This represents the cost of a
+  /// function call ignoring any child function calls.
   function,
+
+  /// Identical to function, but on a Type::loop Scope does not include any
+  /// descendents below a child Type::loop Scope.
+  /// Called "exclusive" in the Viewer.
+  lex_aware,
 
   /// Encapsulates the current Context and all descendants. This represents
   /// the entire execution spawned by a single source code construct, and is
@@ -93,9 +97,9 @@ std::ostream& operator<<(std::ostream&, MetricScope);
 const std::string& stringify(MetricScope);
 
 /// Bitset-like object used as a set of Scope values.
-class MetricScopeSet final : private std::bitset<3> {
+class MetricScopeSet final : private std::bitset<4> {
 private:
-  using base = std::bitset<3>;
+  using base = std::bitset<4>;
   MetricScopeSet(const base& b) : base(b) {};
 public:
   using int_type = uint8_t;
@@ -177,7 +181,7 @@ public:
 /// Accumulator structure for the data implicitly bound to a Thread and Context.
 class MetricAccumulator final {
 public:
-  MetricAccumulator() : point(0), function(0), execution(0) {};
+  MetricAccumulator() = default;
 
   MetricAccumulator(const MetricAccumulator&) = delete;
   MetricAccumulator& operator=(const MetricAccumulator&) = delete;
@@ -193,13 +197,15 @@ public:
   std::optional<double> get(MetricScope) const noexcept;
 
 private:
-  void validate() const noexcept;
   MetricScopeSet getNonZero() const noexcept;
 
+  bool isLoop;
+
   friend class PerThreadTemporary;
-  std::atomic<double> point;
-  double function;
-  double execution;
+  std::atomic<double> point = 0;
+  double function = 0;
+  double function_noloops = 0;
+  double execution = 0;
 };
 
 /// Accumulators and other related fields local to a Thread.
@@ -285,20 +291,24 @@ private:
   /// bound implicitly to a particular Statistic::Partial.
   class Partial final {
   public:
-    Partial() : point(0), function(0), execution(0) {};
+    Partial() = default;
+    ~Partial() = default;
 
     Partial(const Partial&) = delete;
     Partial& operator=(const Partial&) = delete;
     Partial(Partial&&) = default;
     Partial& operator=(Partial&&) = delete;
+
   private:
-    void validate() const noexcept;
+    std::optional<double> get(MetricScope) const noexcept;
 
     friend class StatisticAccumulator;
     friend class PerThreadTemporary;
-    std::atomic<double> point;
-    std::atomic<double> function;
-    std::atomic<double> execution;
+    std::atomic<bool> isLoop = false;
+    std::atomic<double> point = 0;
+    std::atomic<double> function = 0;
+    std::atomic<double> function_noloops = 0;
+    std::atomic<double> execution = 0;
   };
 
 public:
@@ -320,7 +330,9 @@ public:
 
     /// Get this Partial's accumulation, for a particular MetricScope.
     // MT: Safe (const), Unstable (before `metrics` wavefront)
-    std::optional<double> get(MetricScope) const noexcept;
+    std::optional<double> get(MetricScope ms) const noexcept {
+      return partial.get(ms);
+    }
 
   private:
     friend class StatisticAccumulator;
@@ -344,7 +356,9 @@ public:
 
     /// Get this Partial's accumulation, for a particular MetricScope.
     // MT: Safe (const), Unstable (before `metrics` wavefront)
-    std::optional<double> get(MetricScope) const noexcept;
+    std::optional<double> get(MetricScope ms) const noexcept {
+      return partial.get(ms);
+    }
 
   private:
     friend class StatisticAccumulator;
@@ -355,7 +369,8 @@ public:
     const StatisticPartial& statpart;
   };
 
-  StatisticAccumulator(const Metric&);
+  explicit StatisticAccumulator(const Metric&);
+  ~StatisticAccumulator() = default;
 
   StatisticAccumulator(const StatisticAccumulator&) = delete;
   StatisticAccumulator& operator=(const StatisticAccumulator&) = delete;
