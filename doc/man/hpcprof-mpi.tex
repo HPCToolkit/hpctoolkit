@@ -139,6 +139,14 @@ If you can locate a copy of the source code for the library, you can unpack
 it anywhere and provide a -R option that maps the prefix of the build
 directory to the prefix of the directory where you unpacked a copy of the library sources.
 
+\item[\OptArg{--only-exe}{filename}]
+Only include measurements for executables with the given filename. This option may be
+given multiple times to indicate multiple executables to include.
+\medskip
+Use this option when the application is measured through a wrapper script
+(e.g. \texttt{hpcrun script.sh}) and you don't want to include the shell used to run the script in the
+resulting performance database.
+
 \end{Description}
 
 \subsection{Options: Metrics}
