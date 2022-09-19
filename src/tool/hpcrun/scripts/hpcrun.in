@@ -32,7 +32,7 @@ prog_name=hpcrun
 # aren't allowed to return because forking a process using
 # pinned memory is unsupported. As a result, libmonitor can't
 # wrap system as it always has. Instead, we simply invoke
-# glibc system directly instead of using monitor's
+# glibc system directly instead of using libmonitor's
 # reimplementation.
 #------------------------------------------------------------
 
