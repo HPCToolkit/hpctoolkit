@@ -49,6 +49,7 @@
 #include "args.hpp"
 
 #include "lib/profile/source.hpp"
+#include "lib/profile/sources/hpcrun4.hpp"
 #include "lib/profile/finalizers/kernelsyms.hpp"
 #include "lib/profile/finalizers/struct.hpp"
 #include "include/hpctoolkit-config.h"
@@ -100,6 +101,10 @@ Input Options:
                               Replace path prefixes when searching for source
                               files and binaries. Use `\=' to escape `=', use
                               `\\' to escape `\'.
+  --only-exe EXE
+                              Only include measurements for executables with
+                              the given basename (EXE). Can be repeated to
+                              include multiple executables.
 
 Output Options:
   -n, --title=NAME            Specify a title for the output database.
@@ -160,6 +165,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     {"metric-db", required_argument, NULL, 0},
     {"no-thread-local", no_argument, NULL, 0},
     {"dwarf-max-size", required_argument, NULL, 0},
+    {"only-exe", required_argument, NULL, 0},
     // The rest can be in any order
     {"help", no_argument, NULL, 'h'},
     {"verbose", no_argument, NULL, 'v'},
@@ -179,6 +185,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   bool seenNoThreadLocal = false;
   bool seenMetricDB = false;
   bool dryRun = false;
+
+  std::unordered_set<std::string> only_exes;
 
   int quiet = 0;
   util::log::Settings logSettings(true, true, false);
@@ -364,7 +372,11 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           }
           dwarfMaxSize = std::floor(limit * factor);
         }
+        break;
       }
+      case 4:  // --only-exe
+        only_exes.emplace(optarg);
+        break;
       }
       break;
     default:
@@ -540,6 +552,12 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       for(std::size_t i = 0; i < files.size(); i++) {
         auto pg = std::move(files[i]);
         auto s = ProfileSource::create_for(pg.first);
+        if(!only_exes.empty()) {
+          if(auto* r4 = dynamic_cast<hpctoolkit::sources::Hpcrun4*>(s.get()); r4 != nullptr) {
+            if(only_exes.count(r4->exe_basename()) == 0)
+              continue;
+          }
+        }
         if(s) {
           my_sources.emplace_back(std::move(s), std::move(pg.first));
           cnts_a[pg.second].fetch_add(1, std::memory_order_relaxed);

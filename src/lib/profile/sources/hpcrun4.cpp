@@ -145,6 +145,13 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
 
 bool Hpcrun4::valid() const noexcept { return fileValid; }
 
+std::string Hpcrun4::exe_basename() const {
+  if(auto path = attrs.path()) {
+    return path->filename().string();
+  }
+  return std::string();
+}
+
 Hpcrun4::~Hpcrun4() {
   if(fileValid) hpcrun_sparse_close(file);
 }
