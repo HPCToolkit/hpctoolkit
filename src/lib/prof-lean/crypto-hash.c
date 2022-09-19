@@ -96,7 +96,7 @@
 //   input_length:        
 //     length in bytes of the input
 //   hash:        
-//     pointer to a vector of bytes of length >= crypto_hash_length()
+//     pointer to a vector of bytes of length >= CRYPTO_HASH_LENGTH
 //
 // return value:
 //   0: success
@@ -114,7 +114,7 @@ crypto_hash_compute
   struct md5_context context;
   struct md5_digest digest;
 
-  if (hash_length > HASH_LENGTH) {
+  if (hash_length < CRYPTO_HASH_LENGTH) {
     // failure: caller not prepared to accept a hash of at least the length 
     // that we will provide
     return -1;
@@ -128,28 +128,9 @@ crypto_hash_compute
   md5_update(&context, input, (unsigned int) input_length);
   md5_finalize(&context, &digest);
 
-  memcpy(hash, &digest, hash_length);
+  memcpy(hash, &digest, CRYPTO_HASH_LENGTH);
 
   return 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// function: 
-//   crypto_hash_length
-//
-// arguments: none
-//
-// return value:
-//   number of bytes in the crytographic hash 
-//-----------------------------------------------------------------------------
-unsigned int
-crypto_hash_length
-(
-  void
-)
-{
-  return HASH_LENGTH;
 }
 
 
@@ -164,7 +145,7 @@ crypto_hash_length
 //     pointer to character buffer where string equivalent of the hash code 
 //     will be written
 //   hash_string_length: 
-//     length of the hash string must be > 2 * crypto_hash_length()
+//     length of the hash string must be >= CRYPTO_HASH_STRING_LENGTH
 //
 // return value:
 //   0: success
@@ -173,17 +154,16 @@ crypto_hash_length
 int
 crypto_hash_to_hexstring
 (
-  unsigned char *hash,
+  const unsigned char *hash,
   char *hash_string,
   unsigned int hash_string_length
 )
 {
-  int hex_digits = HASH_LENGTH << 1;
-  if (hash_string_length < hex_digits + 1) {
+  if (hash_string_length < CRYPTO_HASH_STRING_LENGTH) {
     return -1;
   }
 
-  int chars = HASH_LENGTH;
+  int chars = CRYPTO_HASH_LENGTH;
   while (chars-- > 0) {
     unsigned char val_u = UPPER_NIBBLE(*hash); 
     *hash_string++ = HEX_TO_ASCII(val_u);
@@ -193,6 +173,48 @@ crypto_hash_to_hexstring
     hash++;
   }
   *hash_string++ = 0;
+
+  return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// function:
+//   crypto_compute_hash_string
+//
+// arguments:
+//   data:
+//     pointer to data to hash
+//   data_size:
+//     length of data in bytes
+//   hash_string:
+//     pointer to result string from hashing data bytes
+//   hash_string_length:
+//     length of the hash string must be >= CRYPTO_HASH_STRING_LENGTH
+//
+// return value:
+//   0: success
+//   non-zero: failure
+//-----------------------------------------------------------------------------
+int
+crypto_compute_hash_string
+(
+ const unsigned char *data,
+ size_t data_size,
+ char *hash_string,
+ unsigned int hash_string_length
+)
+{
+  if (hash_string_length < CRYPTO_HASH_STRING_LENGTH) {
+    return -1;
+  }
+
+  // Compute hash for data
+  unsigned char hash[CRYPTO_HASH_LENGTH];
+  crypto_hash_compute(data, data_size, hash, CRYPTO_HASH_LENGTH);
+
+  // Turn hash into string
+  crypto_hash_to_hexstring(hash, hash_string, CRYPTO_HASH_STRING_LENGTH);
 
   return 0;
 }
@@ -212,7 +234,7 @@ crypto_hash_to_hexstring
 // Results should match the output of /usr/bin/md5sum.
 //
 
-#if 0
+#ifdef UNIT_TEST
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -223,18 +245,13 @@ crypto_hash_to_hexstring
 int
 main(int argc, char **argv)
 {
-  if (argc < 2) {
-     printf("usage: %s <filename>\n", argv[0]);
-     exit(-1);
-  }
-
-  const char *filename = argv[1];
+  const char *filename = "/bin/ls";
 
   // check that the specified file is present
   struct stat statbuf;
   int stat_result = stat(filename, &statbuf);
   if (stat_result != 0) {
-    printf("%s: stat failed %d\n", argv[0], stat_result);
+    printf("stat(%s) failed = %d\n", filename, stat_result);
     exit(-1);
   }
   size_t filesize = statbuf.st_size;
@@ -244,32 +261,146 @@ main(int argc, char **argv)
 
   // read a file to hash
   FILE *file = fopen(filename, "r");
-  size_t read_result = fread(filebuf, 1, filesize, file);
-  if (read_result != filesize) {
-    printf("%s: read failed. expected %ld bytes, got %ld bytes\n", 
-	   argv[0], filesize, read_result);
+  if (file == 0) {
+    printf("fopen(%s) failed.\n", filename);
     exit(-1);
   }
 
-  // allocate space for hash
-  int hash_len = crypto_hash_length();
-  unsigned char *hash = (unsigned char *) malloc(hash_len);
+  size_t read_result = fread(filebuf, 1, filesize, file);
+  if (read_result != filesize) {
+    printf("read(%s) failed. expected %ld bytes, got %ld bytes\n", 
+	   filename, filesize, read_result);
+    exit(-1);
+  }
+
+  fclose(file);
+
+  // allocate space for the hash
+  unsigned char hash[CRYPTO_HASH_LENGTH];
+  int crypto_result;
+
+  // short buffer test
+  crypto_result = crypto_hash_compute(filebuf, filesize, hash, CRYPTO_HASH_LENGTH - 1);
+  if (crypto_result) {
+    printf("crypto_hash_compute - success - detected a short hash buffer\n");
+  } else {
+    printf("crypto_hash_compute - fail - didn't detect short hash buffer\n");
+    exit(-1);
+  }
 
   // compute hash
-  int crypto_result = crypto_hash_compute(filebuf, filesize, hash, hash_len);
-  if (crypto_result) {
-    printf("%s: crypto_hash_compute failed. returned %d bytes\n", 
-	   argv[0], filesize, crypto_result);
+  crypto_result = crypto_hash_compute(filebuf, filesize, hash, CRYPTO_HASH_LENGTH);
+  if (crypto_result == 0) {
+    printf("crypto_hash_compute - success - with right-sized hash buffer\n");
+  } else {
+    printf("crypto_hash_compute - fail - with right-sized hash buffer\n");
+    exit(-1);
+  }
+
+  unsigned char long_hash[CRYPTO_HASH_LENGTH];
+
+  // long buffer test
+  crypto_result = crypto_hash_compute(filebuf, filesize, long_hash, sizeof(long_hash));
+  if (crypto_result == 0) {
+    printf("crypto_hash_compute - success - with long hash buffer\n");
+  } else {
+    printf("crypto_hash_compute - fail - with long hash buffer\n");
     exit(-1);
   }
 
   // allocate space for ASCII version of hash 
-  int hash_strlen = hash_len << 1 + 1;
-  char buffer[hash_strlen];
+  char buffer[CRYPTO_HASH_STRING_LENGTH];
 
-  // compute ASCII version of hash and dump it
-  crypto_hash_to_hexstring(hash, buffer, hash_strlen);
-  printf("%s  (test) %s\n", buffer, filename);
+  // initialize buffer with recognizable output
+  memset(buffer, '+', sizeof(buffer));
+
+  // compute ASCII version of hash with short buffer
+  crypto_result = crypto_hash_to_hexstring(hash, buffer, sizeof(buffer) - 1);
+  if (crypto_result) {
+    printf("crypto_hash_to_hexstring - success - detected short string buffer\n");
+  } else {
+    printf("crypto_hash_to_hexstring - fail - didn't short string buffer\n");
+    exit(-1);
+  }
+
+  // initialize buffer with recognizable output
+  memset(buffer, '+', sizeof(buffer));
+
+  // compute ASCII version of hash with right-sized buffer
+  crypto_result = crypto_hash_to_hexstring(hash, buffer, sizeof(buffer));
+   if (crypto_result == 0) {
+     printf("crypto_hash_to_hexstring - success - with right-sized buffer\n");
+  } else {
+    printf("crypto_hash_to_hexstring - fail - with right-sized buffer\n");
+    exit(-1);
+  }
+
+  char long_buffer[CRYPTO_HASH_STRING_LENGTH+10];
+  memset(long_buffer, '-', sizeof(long_buffer));
+
+  // compute ASCII version of hash with long buffer
+  crypto_result = crypto_hash_to_hexstring(hash, long_buffer, sizeof(long_buffer));
+  if (crypto_result == 0) {
+    printf("crypto_hash_to_hexstring - success - with long string buffer\n");
+  } else {
+    printf("crypto_hash_to_hexstring - fail - with long string buffer\n");
+    exit(-1);
+  }
+
+   // compare string from right-sized buffer vs. long buffer
+  if (strcmp(buffer, long_buffer) == 0) {
+    printf("crypto_hash_to_hexstring - success - consistent output with long buffer\n");
+  } else {
+    printf("crypto_hash_to_hexstring - fail - inconsistent output with long buffer: %s vs. %s\n", 
+	    buffer, long_buffer);
+    exit(-1);
+  }
+
+  {
+    char short_buffer[CRYPTO_HASH_STRING_LENGTH-1];
+    char perfect_buffer[CRYPTO_HASH_STRING_LENGTH];
+    char long_buffer[CRYPTO_HASH_STRING_LENGTH+10];
+    memset(short_buffer, '-', sizeof(short_buffer));
+    memset(perfect_buffer, '-', sizeof(perfect_buffer));
+    memset(long_buffer, '=', sizeof(long_buffer));
+
+    int s_len = crypto_compute_hash_string(filebuf, filesize, short_buffer, sizeof(short_buffer));
+    int p_len = crypto_compute_hash_string(filebuf, filesize, perfect_buffer, sizeof(perfect_buffer));
+    int l_len = crypto_compute_hash_string(filebuf, filesize, long_buffer, sizeof(long_buffer));
+
+    if (s_len == 0) {
+      printf("crypto_compute_hash_string - fail - didn't detect short string buffer\n");
+      exit(-1);
+    } else {
+      printf("crypto_compute_hash_string - success - detected short string buffer\n");
+    }
+
+    if (p_len) {
+      printf("crypto_compute_hash_string - fail - with right-sized string buffer\n");
+      exit(-1);
+    } else {
+      printf("crypto_compute_hash_string - success - with right-sized string buffer\n");
+    }
+
+    if (l_len) {
+      printf("crypto_compute_hash_string - fail - with long string buffer\n");
+      exit(-1);
+    } else {
+      printf("crypto_compute_hash_string - success - with long string buffer\n");
+    }
+
+    if (strcmp(perfect_buffer, long_buffer) == 0) {
+      printf("crypto_compute_hash_string - success - consistent output with long buffer\n");
+    } else {
+      printf("crypto_compute_hash_string - fail - inconsistent output "
+        "with long buffer: %s vs. %s\n", perfect_buffer, long_buffer);
+      exit(-1);
+    }
+  }
+
+  free(filebuf);
+
+  printf("hash string: %s %s\n", buffer, filename);
 
   return 0;
 }

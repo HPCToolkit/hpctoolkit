@@ -82,6 +82,8 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
+#include <prof-lean/crypto-hash.h>
+
 #if 0
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/gpu/opencl/opencl-kernel-loadmap-map.h>
@@ -254,13 +256,13 @@ findOrAddKernelModule
   ASSERT_GTPIN_STATUS(status);
 
   // Create file name
-  char file_name[PATH_MAX];
-  memset(file_name, 0, PATH_MAX);
-  gpu_binary_compute_hash_string(kernel_elf, kernel_elf_size, file_name);
+  char file_name[CRYPTO_HASH_STRING_LENGTH];
+  memset(file_name, 0, CRYPTO_HASH_STRING_LENGTH);
+  crypto_compute_hash_string(kernel_elf, kernel_elf_size, file_name);
 
   // Compute hash for the kernel name
-  char kernel_name_hash[PATH_MAX];
-  gpu_binary_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
+  char kernel_name_hash[CRYPTO_HASH_STRING_LENGTH];
+  crypto_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash);
 
   char path[PATH_MAX];
   memset(path, 0, PATH_MAX);

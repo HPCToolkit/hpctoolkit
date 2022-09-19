@@ -61,7 +61,9 @@
 
 #define MD5_HASH_NBYTES 16
 
-#define HASH_LENGTH MD5_HASH_NBYTES
+#define CRYPTO_HASH_LENGTH MD5_HASH_NBYTES
+
+#define CRYPTO_HASH_STRING_LENGTH (1 + (CRYPTO_HASH_LENGTH << 1))
 
 //*****************************************************************************
 // interface operations
@@ -100,22 +102,6 @@ crypto_hash_compute
 
 //-----------------------------------------------------------------------------
 // function: 
-//   crypto_hash_length
-//
-// arguments: none
-//
-// return value:
-//   number of bytes in the crytographic hash 
-//-----------------------------------------------------------------------------
-unsigned int
-crypto_hash_length
-(
-  void
-);
-
-
-//-----------------------------------------------------------------------------
-// function: 
 //   crypto_hash_to_hexstring
 //
 // arguments:
@@ -134,10 +120,39 @@ crypto_hash_length
 int
 crypto_hash_to_hexstring
 (
-  unsigned char *hash,
+  const unsigned char *hash,
   char *hash_string,
   unsigned int hash_string_length
 );
+
+
+//-----------------------------------------------------------------------------
+// function:
+//   crypto_compute_hash_string
+//
+// arguments:
+//   data:
+//     pointer to data to hash
+//   data_size:
+//     length of data in bytes
+//   hash_string:
+//     pointer to result string from hashing data bytes
+//   hash_string_length:
+//     length of the hash string must be >= CRYPTO_HASH_STRING_LENGTH
+//
+// return value:
+//   0: success
+//   non-zero: failure
+//-----------------------------------------------------------------------------
+int
+crypto_compute_hash_string
+(
+ const unsigned char *data,
+ size_t data_size,
+ char *hash_string,
+ unsigned int hash_string_length
+);
+
 
 #if defined(__cplusplus)
 }
