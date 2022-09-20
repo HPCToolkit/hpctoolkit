@@ -31,10 +31,9 @@ prog_name=hpcrun
 # when using pinned memory with Cray MPI, fork and system
 # aren't allowed to return because forking a process using
 # pinned memory is unsupported. As a result, libmonitor can't
-# wrap system as it always has. Since tracing processes
-# initiated with system is not typically needed, turn off
-# libmonitor's support for following processes through a call
-# to system. If you need this, use --follow-system.
+# wrap system as it always has. Instead, we simply invoke
+# glibc system directly instead of using libmonitor's
+# reimplementation.
 #------------------------------------------------------------
 
 export MONITOR_NO_SYSTEM_OVERRIDE=1
@@ -205,8 +204,6 @@ Options: Profiling (Defaults shown in curly brackets {})
 
   -nu, --no-unwind     Disable unwinding and collect a flat profile of leaf
                        procedures only instead of full calling contexts.
-
-  --follow-system      Also monitor any child processes spawned using glibc's "system".
 
 
 Options to consider only when hpcrun causes an application to fail:
@@ -499,12 +496,6 @@ do
 
 	--disable-gprof )
 	    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gprof.so"
-	    ;;
-
-	# --------------------------------------------------
-
-	--follow-system )
-            unset MONITOR_NO_SYSTEM_OVERRIDE
 	    ;;
 
 	# --------------------------------------------------
