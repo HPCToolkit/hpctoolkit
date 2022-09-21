@@ -54,9 +54,10 @@
 
 #include "level0-binary.h"
 #include "level0-handle-map.h"
-#include "lib/prof-lean/spinlock.h"
 #include "lib/prof-lean/crypto-hash.h"
-#include "include/gpu-binary.h"
+#include "lib/prof-lean/spinlock.h"
+
+
 
 //******************************************************************************
 // local variables
@@ -117,16 +118,8 @@ level0_binary_process
   );
 
   // Generate a hash for the binary
-  char *hash_buf = (char*)malloc(HASH_LENGTH * 2);
-  gpu_binary_compute_hash_string((const char*)buf, size, hash_buf);
-
-  // Prepare to a file path to write down the binary
-  char path[PATH_MAX];
-  gpu_binary_path_generate(hash_buf, path);
-
-  // Write down the binary and free the space
-  gpu_binary_store(path, buf, size);
-  free(buf);
+  char *hash_buf = (char *) malloc(CRYPTO_HASH_STRING_LENGTH);
+  crypto_compute_hash_string(buf, size, hash_buf, CRYPTO_HASH_STRING_LENGTH);
 
   level0_module_handle_map_insert(module, hash_buf);
 }

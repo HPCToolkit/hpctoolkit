@@ -183,7 +183,7 @@ static int log_rename_ret = 0;
 
 static int vdso_written = 0; // for coordination across fork
 
-char vdso_hash_str[HASH_LENGTH * 2];
+char vdso_hash_str[CRYPTO_HASH_STRING_LENGTH];
 //***************************************************************
 // private operations
 //***************************************************************
@@ -572,7 +572,7 @@ hpcrun_save_vdso()
   // optimistically assume success; failure will cause an abort
   vdso_written = 1;
 
-  void *vdso_addr = vdso_segment_addr();
+  const unsigned char *vdso_addr = (const unsigned char*) vdso_segment_addr();
 
   // if there is a [vdso] to write
   if (vdso_addr) {
@@ -580,14 +580,9 @@ hpcrun_save_vdso()
 
   // Calculate a hash based on the contents of VDSO.
   // We can distinguish different vdso on different compute nodes
-  unsigned char hash[HASH_LENGTH];  
-  unsigned int hash_len = crypto_hash_length();
-  crypto_hash_compute((const unsigned char*)vdso_addr, vdso_len, hash, hash_len);
-  size_t i;
-  for (i = 0; i < hash_len; ++i) {
-    sprintf(&vdso_hash_str[i*2], "%02x", hash[i]);
-  }
-  if (strlen(output_directory) + 6 + hash_len * 2 + 5 > PATH_MAX) {
+  crypto_compute_hash_string(vdso_addr, vdso_len, vdso_hash_str, CRYPTO_HASH_STRING_LENGTH);
+
+  if (strlen(output_directory) + 6 + CRYPTO_HASH_STRING_LENGTH + 5 > PATH_MAX) {
     fd = -1;
     error = ENAMETOOLONG;
     hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));

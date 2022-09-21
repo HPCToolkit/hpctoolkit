@@ -132,25 +132,6 @@ gpu_binary_path_generate
   used += sprintf(&path[used], "%s", GPU_BINARY_SUFFIX);
 }
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-)
-{
-  // Compute hash for mem_ptr with mem_size
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
-
-  size_t i;
-  size_t used = 0;
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&name[used], "%02x", hash[i]);
-  }
-  return used;
-}
 
 uint32_t
 gpu_binary_loadmap_insert
@@ -188,8 +169,9 @@ gpu_binary_save
 )
 {
   // Generate a hash for the binary
-  char hash_buf[HASH_LENGTH * 2];
-  gpu_binary_compute_hash_string(mem_ptr, mem_size, hash_buf);
+  char hash_buf[CRYPTO_HASH_STRING_LENGTH];
+  crypto_compute_hash_string(mem_ptr, mem_size, hash_buf,
+    CRYPTO_HASH_STRING_LENGTH);
 
   // Prepare to a file path to write down the binary
   char device_file[PATH_MAX];

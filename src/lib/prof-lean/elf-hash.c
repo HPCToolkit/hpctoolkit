@@ -80,8 +80,8 @@ static int
 elf_hash_compute
 (
  const char *filename,
- unsigned char *hash,
- unsigned int hash_length
+ char *hash_string,
+ unsigned int hash_string_len
 )
 {
   struct stat statbuf;
@@ -91,31 +91,22 @@ elf_hash_compute
     int fd = open(filename, O_RDONLY | O_CLOEXEC);
     if (fd != -1) {
       // for speed, hash at most FILE_MAX_HASH_LENGTH data
-      size_t flen = statbuf.st_size;
+      size_t data_len = statbuf.st_size;
 
       void * ANYWHERE = 0;
       off_t NO_OFFSET = 0;
-      void *data = mmap(ANYWHERE, flen, PROT_READ, MAP_SHARED, fd, NO_OFFSET);
+      void *data = mmap(ANYWHERE, data_len, PROT_READ, MAP_SHARED, fd,
+			NO_OFFSET);
       if (data) {
-	status = crypto_hash_compute((const unsigned char*) data, flen, hash,
-				     hash_length);
-	munmap(data, flen);
+        status = crypto_compute_hash_string(data, data_len, hash_string,
+					    hash_string_len);
+        munmap(data, data_len);
       }
       close(fd);
     }
   }
 
   return status;
-}
-
-
-static unsigned int
-elf_hash_length
-(
- void
-)
-{
-  return crypto_hash_length();
 }
 
 
@@ -130,26 +121,11 @@ elf_hash
  const char *filename
 )
 {
-  char *hash_string = 0;
+  char *hash_string = (char *) malloc(CRYPTO_HASH_STRING_LENGTH);
 
-  unsigned int hash_length = elf_hash_length();
-  unsigned char *hash = (unsigned char *) malloc(hash_length);
-
-  if (hash) {
-    memset(hash, 0, hash_length);
-    if (elf_hash_compute(filename, hash, hash_length) == 0) {
-      unsigned int hash_string_length = 1 + (hash_length << 1);
-      hash_string = (char *) malloc(hash_string_length);
-      *(hash_string + hash_string_length) = 0; // terminate the string
-      if (hash_string &&
-	  crypto_hash_to_hexstring(hash, hash_string,
-				   hash_string_length) != 0) {
-	free(hash_string);
-	hash_string = 0;
-      }
-    }
-
-    free(hash);
+  if (elf_hash_compute(filename, hash_string, CRYPTO_HASH_STRING_LENGTH) != 0) {
+    free(hash_string);
+    hash_string = 0;
   }
 
   return hash_string;
@@ -165,6 +141,8 @@ elf_hash
 
 #include <stdio.h>
 
+#define FILENAME "/bin/ls"
+
 int
 main
 (
@@ -172,9 +150,9 @@ main
  char **argv
 )
 {
-  char *h = elf_hash("/bin/ls");
+  char *h = elf_hash(FILENAME);
   if (h) {
-    printf("hash string: %s\n", h);
+    printf("hash string: %s %s\n", h, FILENAME);
     free(h);
     return 0;
   }

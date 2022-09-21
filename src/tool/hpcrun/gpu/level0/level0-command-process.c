@@ -69,9 +69,11 @@
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+#include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/usec_time.h>
-#include <include/gpu-binary.h>
+
+
 
 //*****************************************************************************
 // macro declarations
@@ -195,13 +197,10 @@ get_load_module
   char* kernel_name = malloc(name_size);
   zeKernelGetName(kernel, &name_size, kernel_name);
 
-  // Compute hash for the kernel name
-  char kernel_name_hash[PATH_MAX];
-  gpu_binary_compute_hash_string(
-    kernel_name,
-    strlen(kernel_name),
-    kernel_name_hash
-  );
+  // Compute hash string for the kernel name
+  char kernel_name_hash[CRYPTO_HASH_STRING_LENGTH];
+  crypto_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash, CRYPTO_HASH_STRING_LENGTH);
+
   free(kernel_name);
 
   // Step 2: get the hash for the binary that contains the kernel

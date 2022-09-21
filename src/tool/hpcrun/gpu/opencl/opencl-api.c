@@ -1740,12 +1740,12 @@ get_numeric_hash_id_for_string
 )
 {
   // Compute hash for mem_ptr with mem_size
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+  unsigned char hash[CRYPTO_HASH_LENGTH];
+  crypto_compute_hash(mem_ptr, mem_size, hash, CRYPTO_HASH_LENGTH);
   
   size_t i;
   uint64_t num_hash = 0;
-  for (i = 0; i < HASH_LENGTH; ++i) {
+  for (i = 0; i < CRYPTO_HASH_LENGTH; ++i) {
     num_hash += ((uint64_t)pow(hash[i], i+1) % 0xFFFFFFFF);
   }
   return num_hash;

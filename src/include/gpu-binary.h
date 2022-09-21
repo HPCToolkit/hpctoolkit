@@ -86,14 +86,6 @@ gpu_binary_path_generate
   char *path
 );
 
-size_t
-gpu_binary_compute_hash_string
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-);
-
 
 // returns the loadmap id
 uint32_t
