@@ -80,7 +80,7 @@ static int
 elf_hash_compute
 (
  const char *filename,
- unsigned char *hash_string,
+ char *hash_string,
  unsigned int hash_string_len
 )
 {
@@ -95,10 +95,11 @@ elf_hash_compute
 
       void * ANYWHERE = 0;
       off_t NO_OFFSET = 0;
-      unsigned char *data = 
-        (unsigned char *) mmap(ANYWHERE, data_len, PROT_READ, MAP_SHARED, fd, NO_OFFSET);
+      void *data = mmap(ANYWHERE, data_len, PROT_READ, MAP_SHARED, fd,
+			NO_OFFSET);
       if (data) {
-        status = crypto_compute_hash_string(data, data_len, hash_string, hash_string_len);
+        status = crypto_compute_hash_string(data, data_len, hash_string,
+					    hash_string_len);
         munmap(data, data_len);
       }
       close(fd);
