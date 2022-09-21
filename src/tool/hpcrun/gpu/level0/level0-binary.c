@@ -119,8 +119,7 @@ level0_binary_process
 
   // Generate a hash for the binary
   char *hash_buf = (char *) malloc(CRYPTO_HASH_STRING_LENGTH);
-  crypto_compute_hash_string((const unsigned char *) buf, size, hash_buf,
-				 CRYPTO_HASH_STRING_LENGTH);
+  crypto_compute_hash_string(buf, size, hash_buf, CRYPTO_HASH_STRING_LENGTH);
 
   level0_module_handle_map_insert(module, hash_buf);
 }

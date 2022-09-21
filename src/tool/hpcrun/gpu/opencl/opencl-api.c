@@ -1741,7 +1741,7 @@ get_numeric_hash_id_for_string
 {
   // Compute hash for mem_ptr with mem_size
   unsigned char hash[CRYPTO_HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, CRYPTO_HASH_LENGTH);
+  crypto_hash_compute(mem_ptr, mem_size, hash, CRYPTO_HASH_LENGTH);
   
   size_t i;
   uint64_t num_hash = 0;

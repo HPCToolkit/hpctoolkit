@@ -76,7 +76,7 @@ extern "C" {
 
 //-----------------------------------------------------------------------------
 // function: 
-//   crypto_hash_compute
+//   crypto_compute_hash
 //
 // arguments:
 //   input:        
@@ -91,10 +91,10 @@ extern "C" {
 //   non-zero: failure
 //-----------------------------------------------------------------------------
 int 
-crypto_hash_compute
+crypto_compute_hash
 (
-  const unsigned char *input,
-  size_t input_length,
+  const void *input,
+  size_t input_bytes,
   unsigned char *hash,
   unsigned int hash_length
 );
@@ -147,8 +147,8 @@ crypto_hash_to_hexstring
 int
 crypto_compute_hash_string
 (
- const unsigned char *data,
- size_t data_size,
+ const void *data,
+ size_t data_bytes,
  char *hash_string,
  unsigned int hash_string_length
 );

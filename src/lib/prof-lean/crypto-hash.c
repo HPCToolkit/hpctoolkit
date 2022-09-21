@@ -88,7 +88,7 @@
 
 //-----------------------------------------------------------------------------
 // function: 
-//   crypto_hash_compute
+//   crypto_compute_hash
 //
 // arguments:
 //   input:        
@@ -103,10 +103,10 @@
 //   non-zero: failure
 //-----------------------------------------------------------------------------
 int
-crypto_hash_compute
+crypto_compute_hash
 (
-  const unsigned char *input, 
-  size_t input_length,
+  const void *data, 
+  size_t data_bytes,
   unsigned char *hash,
   unsigned int hash_length
 )
@@ -125,7 +125,7 @@ crypto_hash_compute
 
   // compute an MD5 hash of input
   md5_init(&context);
-  md5_update(&context, input, (unsigned int) input_length);
+  md5_update(&context, data, (unsigned int) data_bytes);
   md5_finalize(&context, &digest);
 
   memcpy(hash, &digest, CRYPTO_HASH_LENGTH);
@@ -199,8 +199,8 @@ crypto_hash_to_hexstring
 int
 crypto_compute_hash_string
 (
- const unsigned char *data,
- size_t data_size,
+ const void *data,
+ size_t data_bytes,
  char *hash_string,
  unsigned int hash_string_length
 )
@@ -211,7 +211,7 @@ crypto_compute_hash_string
 
   // Compute hash for data
   unsigned char hash[CRYPTO_HASH_LENGTH];
-  crypto_hash_compute(data, data_size, hash, CRYPTO_HASH_LENGTH);
+  crypto_compute_hash(data, data_bytes, hash, CRYPTO_HASH_LENGTH);
 
   // Turn hash into string
   crypto_hash_to_hexstring(hash, hash_string, CRYPTO_HASH_STRING_LENGTH);
@@ -280,31 +280,31 @@ main(int argc, char **argv)
   int crypto_result;
 
   // short buffer test
-  crypto_result = crypto_hash_compute(filebuf, filesize, hash, CRYPTO_HASH_LENGTH - 1);
+  crypto_result = crypto_compute_hash(filebuf, filesize, hash, CRYPTO_HASH_LENGTH - 1);
   if (crypto_result) {
-    printf("crypto_hash_compute - success - detected a short hash buffer\n");
+    printf("crypto_compute_hash - success - detected a short hash buffer\n");
   } else {
-    printf("crypto_hash_compute - fail - didn't detect short hash buffer\n");
+    printf("crypto_compute_hash - fail - didn't detect short hash buffer\n");
     exit(-1);
   }
 
   // compute hash
-  crypto_result = crypto_hash_compute(filebuf, filesize, hash, CRYPTO_HASH_LENGTH);
+  crypto_result = crpyto_compute_hash(filebuf, filesize, hash, CRYPTO_HASH_LENGTH);
   if (crypto_result == 0) {
-    printf("crypto_hash_compute - success - with right-sized hash buffer\n");
+    printf("crpyto_compute_hash - success - with right-sized hash buffer\n");
   } else {
-    printf("crypto_hash_compute - fail - with right-sized hash buffer\n");
+    printf("crpyto_compute_hash - fail - with right-sized hash buffer\n");
     exit(-1);
   }
 
   unsigned char long_hash[CRYPTO_HASH_LENGTH];
 
   // long buffer test
-  crypto_result = crypto_hash_compute(filebuf, filesize, long_hash, sizeof(long_hash));
+  crypto_result = crpyto_compute_hash(filebuf, filesize, long_hash, sizeof(long_hash));
   if (crypto_result == 0) {
-    printf("crypto_hash_compute - success - with long hash buffer\n");
+    printf("crpyto_compute_hash - success - with long hash buffer\n");
   } else {
-    printf("crypto_hash_compute - fail - with long hash buffer\n");
+    printf("crpyto_compute_hash - fail - with long hash buffer\n");
     exit(-1);
   }
 

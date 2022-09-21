@@ -129,29 +129,6 @@ opencl_elf_section_type
 }
 
 
-#ifdef ENABLE_IGC
-static size_t
-computeHash
-(
- const char *mem_ptr,
- size_t mem_size,
- char *name
-)
-{
-  // Compute hash for the binary
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
-
-  size_t i;
-  size_t used = 0;
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&name[used], "%02x", hash[i]);
-  }
-  return used;
-}
-#endif 
-
-
 
 //******************************************************************************
 // interface operations
@@ -192,10 +169,13 @@ findIntelGPUBins
       memcpy(kernel_buffer, ptr, kernel_size);
 
       // Compute hash for the kernel name
-      char kernel_name_hash[PATH_MAX];
-      computeHash(kernel_name.c_str(), kernel_name.size(), kernel_name_hash);
+      char kernel_name_hash[CRYPTO_HASH_STRING_LENGTH];
+      crypto_compute_hash_string(kernel_name.c_str(),
+				 kernel_name.size(), 
+				 kernel_name_hash, sizeof(kernel_name_hash));
 
-      std::string real_kernel_name = file_name + "." + std::string((char *)kernel_name_hash);
+      std::string real_kernel_name =
+	file_name + "." + std::string((char *)kernel_name_hash);
 
       auto elf_file = new ElfFile;
       if (elf_file->open(kernel_buffer, kernel_size, real_kernel_name)) {
