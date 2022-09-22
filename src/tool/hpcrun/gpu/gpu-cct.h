@@ -52,8 +52,16 @@
 // interface operations
 //******************************************************************************
 
-cct_node_t *
+void
 gpu_cct_insert
+(
+ cct_node_t *cct_node,
+ ip_normalized_t ip
+);
+
+
+cct_node_t *
+gpu_cct_insert_always
 (
  cct_node_t *cct_node,
  ip_normalized_t ip
