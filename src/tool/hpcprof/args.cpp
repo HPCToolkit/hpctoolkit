@@ -93,7 +93,8 @@ General Options:
       --force                 Overwrite the output if it exists already.
   -O FILE                     Shorthand for `--force -o FILE'.
   -Q, --dry-run               Disable output. Useful for performance testing.
-  -jN                         Use N threads to accelerate processing.
+  -jN                         Use N threads to accelerate processing. Defaults
+                              to the number of hardware threads in your cpuset.
 
 Input Options:
   -S, --structure=FILE        Read binary structure information from FILE.
