@@ -23,6 +23,7 @@ repos:
   hooks:
   # Remove trailing whitespace
   - id: trailing-whitespace
+    exclude: '\.patch$'
     # XXX: Only enabled in CI files for now due to large numbers of failures
     files: ^(\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|ci/)
   # All files must end in a single newline (or be perfectly empty)

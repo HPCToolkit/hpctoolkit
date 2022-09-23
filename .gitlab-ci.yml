@@ -72,7 +72,7 @@ autoreconf:
   needs: []
   script:
   - ./autogen > autogen.log
-  - git status --porcelain=v1 --untracked-files no > changes || exit $?
+  - git status --porcelain=v1 --untracked-files=no > changes || exit $?
   - |
     if test -s changes; then
       echo "== CHANGES DETECTED, running git diff..."
@@ -81,6 +81,7 @@ autoreconf:
       exit 1
     fi
   artifacts:
+    when: always
     paths:
     - autogen.log
     - fixup.patch
@@ -95,6 +96,7 @@ autoreconf check:
   needs:
   - autoreconf
 
+  allow_failure: true
   variables:
     GIT_DEPTH: 100
   rules:
@@ -109,9 +111,10 @@ autoreconf check:
     while read rev; do
       echo
       echo "== Checking $(git show --no-patch --pretty=reference $rev)" | tee -a autogen.log
-      git checkout "$rev" || exit $?
+      git checkout --force "$rev" || exit $?
+      git clean -fxd || exit $?
       ./autogen >> autogen.log || exit $?
-      git status --porcelain=v1 --untracked-files no > changes || exit $?
+      git status --porcelain=v1 --untracked-files=no > changes || exit $?
       if test -s changes; then
         echo "== CHANGES DETECTED, running git diff..."
         git diff | tee fixup.patch
@@ -122,6 +125,7 @@ autoreconf check:
       fi
     done < revs
   artifacts:
+    when: always
     paths:
     - autogen.log
     - fixup.patch
@@ -146,18 +150,17 @@ autoreconf check:
     - export SPACK_ROOT=$(realpath `mktemp -d .spack.XXXX`)
     - git clone --shared --branch=develop .spack.git $SPACK_ROOT
 
-    # Apply PR #32136: Local cache for buildcache files
-    # Provides a clean mechanism to cache binaries locally, significantly reducing network I/O
-    # See https://github.com/spack/spack/pull/32136
-    - curl -L https://github.com/spack/spack/pull/32136.patch > pr32136.patch
-    - git -C $SPACK_ROOT apply -3 - < pr32136.patch || git -C $SPACK_ROOT reset --hard
-
-    # Apply PR #32583: Silly idea to speed up relocation
-    # Removes some painfully slow relocation logic, signficantly speeding up buildcache unpacking
-    - curl -L https://github.com/spack/spack/pull/32583.patch > pr32583.patch
-    - git -C $SPACK_ROOT apply -3 - < pr32583.patch || { git -C $SPACK_ROOT reset --hard; git -C $SPACK_ROOT apply -3 - < pr32136.patch || git -C $SPACK_ROOT reset --hard; }
-
-    - rm pr32136.patch pr32583.patch
+    # Apply the extra PRs to improve our Spack experience.
+    # PR #32136: Local cache for buildcache files
+    # PR #32137: Update the binary index before attempting direct fetches
+    # PR #32300: spack ci: Refine job attribute configuration
+    # PR #32583: [WIP] Silly idea to speed up relocation
+    - >-
+      ci/scripts/git-apply-all.py $SPACK_ROOT
+      https://github.com/spack/spack/pull/32136.patch
+      file:ci/spack-buildcache-always-index.patch
+      https://github.com/spack/spack/pull/32300.patch
+      https://github.com/spack/spack/pull/32583.patch
 
     # Load Spack into this environment
     - source $SPACK_ROOT/share/spack/setup-env.sh
@@ -198,13 +201,15 @@ autoreconf check:
     - spack buildcache keys --install --trust
     # Add the ref-specific buildcache as a source of packages, manually
     - >-
-      test "$CI_COMMIT_REF_PROTECTED" = "true"
-      && SBCACHE_ROOT=protected
-      || SBCACHE_ROOT=nonprotected
+      if test "$CI_COMMIT_REF_PROTECTED" = "true";
+      then SBCACHE_ROOT=protected;
+      else SBCACHE_ROOT=nonprotected;
+      fi
     - >-
-      test -n "$CI_MERGE_REQUEST_IID"
-      && SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}"
-      || SBCACHE_DIR="$CI_COMMIT_REF_SLUG"
+      if test -n "$CI_MERGE_REQUEST_IID";
+      then SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}";
+      else SBCACHE_DIR="$CI_COMMIT_REF_SLUG";
+      fi
     - >-
       spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
@@ -212,17 +217,15 @@ autoreconf check:
       main "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
     # For merge request pipelines targeting a protected branch, also add the target's buildcache
     - >-
-      test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
-      && spack mirror add --scope site
+      if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"; then
+      spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
       main-target "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-      || true
+      || exit $?;
+      fi
     - unset SBCACHE_ROOT SBCACHE_DIR
     - spack mirror list
-    # Manually update the buildcache indices to speed up `spack install`.
-    # See https://github.com/spack/spack/pull/32137
-    - spack buildcache list > /dev/null
     # Configure the local binary cache to cache binaries
     - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
     # Make sure Spack has a GCC available. Oddly enough, this command will run `spack compiler find` internally,
@@ -255,8 +258,8 @@ autoreconf check:
     - ccache --zero-stats
     # Replace CC/CXX with ccache'd versions
     - mkdir .ccache-bin/
-    - test -z "$JOB_CC" || { ln -s "$(command -pv ccache)" .ccache-bin/"$CC" && export CC="$(realpath .ccache-bin)/$CC"; }
-    - test -z "$JOB_CC" || { ln -s "$(command -pv ccache)" .ccache-bin/"$CXX" && export CXX="$(realpath .ccache-bin)/$CXX"; }
+    - if test -n "$JOB_CC"; then ln -s "$(command -pv ccache)" .ccache-bin/"$CC" && export CC="$(realpath .ccache-bin)/$CC" || exit $?; fi
+    - if test -n "$JOB_CC"; then ln -s "$(command -pv ccache)" .ccache-bin/"$CXX" && export CXX="$(realpath .ccache-bin)/$CXX" || exit $?; fi
     # Decide on a number of workers based on the number of available processors
     - jobs=$(ci/scripts/nproc.py $CI_NPROC)
     - if [ "$jobs" -le 2 ]; then (( jobs = jobs + 1 )); fi
@@ -274,18 +277,20 @@ autoreconf check:
       *) echo "Unknown generic target: $(spack arch --generic-target)"; exit 1; ;;
       esac
     # Install the environments requested by this job
-    - >-
-      test -z "$JOB_ENV_MINIMUM" || {
-      env_minimum=ci/dependencies/minimum/c/$os/$arch/;
-      spack -e $env_minimum install --cache-only --no-check-signature --fail-fast
-      && spack env activate --sh $env_minimum > $env_minimum/load.sh
-      && cat $env_minimum/load.sh; }
-    - >-
-      test -z "$JOB_ENV_LATEST" || {
-      env_latest=ci/dependencies/latest/c/$os/$arch/;
-      spack -e $env_latest install --cache-only --no-check-signature --fail-fast
-      && spack env activate --sh $env_latest > $env_latest/load.sh
-      && cat $env_latest/load.sh; }
+    - |
+      if test -n "$JOB_ENV_MINIMUM"; then
+        env_minimum=ci/dependencies/minimum/c/$os/$arch/;
+        spack -e $env_minimum install --cache-only --no-check-signature --fail-fast || exit $?;
+        spack env activate --sh $env_minimum > $env_minimum/load.sh || exit $?;
+        cat $env_minimum/load.sh || exit $?;
+      fi
+    - |
+      if test -n "$JOB_ENV_LATEST"; then
+        env_latest=ci/dependencies/latest/c/$os/$arch/;
+        spack -e $env_latest install --cache-only --no-check-signature --fail-fast || exit $?;
+        spack env activate --sh $env_latest > $env_latest/load.sh || exit $?;
+        cat $env_latest/load.sh || exit $?;
+      fi
   - echo -e "\e[0Ksection_end:`date +%s`:spack_install\r\e[0K"
 
   after_script:
@@ -310,8 +315,9 @@ autoreconf check:
     - IMAGE: almalinux8
       JOB_CC: gcc=8
 
-    - IMAGE: centos7
-      JOB_CC: gcc=8
+    # XXX: Disabled due to Spack-related issues
+    # - IMAGE: centos7
+    #   JOB_CC: gcc=8
 
     - IMAGE: ubuntu20.04
       JOB_CC: [gcc-9, gcc-10, gcc-11.3.0]
@@ -323,7 +329,9 @@ autoreconf check:
   - job: autoreconf
     artifacts: false
   - concretize_deps.amd64
-  - build_deps.amd64
+  - build_deps.amd64 1 3
+  - build_deps.amd64 2 3
+  - build_deps.amd64 3 3
 
   script:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
@@ -368,7 +376,9 @@ autoreconf check:
   - job: autoreconf
     artifacts: false
   - concretize_deps.amd64
-  - build_deps.amd64
+  - build_deps.amd64 1 3
+  - build_deps.amd64 2 3
+  - build_deps.amd64 3 3
 
   script:
   # Pull CUDA from the image itself
@@ -414,7 +424,9 @@ autoreconf check:
   - job: autoreconf
     artifacts: false
   - concretize_deps.amd64
-  - build_deps.amd64
+  - build_deps.amd64 1 3
+  - build_deps.amd64 2 3
+  - build_deps.amd64 3 3
 
   script:
   # Pull ROCm from the image itself
@@ -460,7 +472,9 @@ autoreconf check:
   - job: autoreconf
     artifacts: false
   - concretize_deps.amd64
-  - build_deps.amd64
+  - build_deps.amd64 1 3
+  - build_deps.amd64 2 3
+  - build_deps.amd64 3 3
 
   script:
   # Pull Level 0 (part of OneAPI) from the image itself
@@ -511,7 +525,9 @@ check.amd64:
   - job: autoreconf
     artifacts: false
   - concretize_deps.amd64
-  - build_deps.amd64
+  - build_deps.amd64 1 3
+  - build_deps.amd64 2 3
+  - build_deps.amd64 3 3
 
   script:
   # Run the build script for the configuration of interest. Use some Python to help.
