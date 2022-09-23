@@ -71,6 +71,8 @@
 #define INST_LATENCY  "latency"
 #define INST_SIMD     "simd"
 
+#define ENABLE_SIMD_ANALYSIS 0
+
 
 
 //******************************************************************************
@@ -136,8 +138,10 @@ gpu_instrumentation_options_set
 	  options->count_instructions = true;
 	} else if (strcmp(token, INST_LATENCY) == 0) {
 	  options->attribute_latency = true;
+  #if ENABLE_SIMD_ANALYSIS
 	} else if (strcmp(token, INST_SIMD) == 0) {
 	  options->analyze_simd = true;
+  #endif
 	} else {
 	  fprintf(stderr, "hpcrun ERROR: while parsing GPU instrumentation knobs, unrecognized knob '%s'\n", token);
 	  exit(-1);
@@ -170,9 +174,6 @@ printf("gpu instrumentation options  : %s\n", opt);
 
   // consistency check
   if (options->attribute_latency) {
-    if (options->count_instructions) {
-      fprintf(stderr, "hpcrun WARNING: unwise to count GPU instructions while attributing GPU instruction latency\n");
-    }
     if (options->analyze_simd) {
       fprintf(stderr, "hpcrun WARNING: unwise to analyze GPU SIMD instructions while attributing GPU instruction latency\n");
     }
