@@ -584,6 +584,36 @@ hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm, bool unwoun
 }
 
 
+static void
+print_node(cct_node_t* node, unsigned int indent)
+{
+  while(indent-- > 0) putchar(' ');
+  printf("%d (%p) (lm_id = %d lm_ip = %p)\n", node->persistent_id, node,
+	 node->addr.ip_norm.lm_id, (void *) node->addr.ip_norm.lm_ip);
+}
+
+
+static void
+hpcrun_cct_dump_helper(cct_node_t* node, unsigned int indent, int *kids)
+{
+  if (node) {
+    indent++;
+    (*kids)++;
+    print_node(node, indent);
+    hpcrun_cct_dump_helper(node->left, indent, kids);
+    hpcrun_cct_dump_helper(node->right, indent, kids);
+  }
+}
+
+
+void hpcrun_cct_dump_children(cct_node_t* node)
+{
+  int kids = 0;
+  printf("dumping children of node "); print_node(node, 0);
+  hpcrun_cct_dump_helper(node->children, 0, &kids);
+  printf("node %d has %d children\n", node->persistent_id, kids);
+}
+
 //
 // Fundamental mutation operation: insert a given addr into the
 // set of children of a given cct node. Return the cct_node corresponding
