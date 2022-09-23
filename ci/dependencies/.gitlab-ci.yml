@@ -29,7 +29,8 @@ concretize_deps.amd64:
     matrix:
     - IMAGE:
       - almalinux8
-      - centos7
+      # XXX: Disabled due to Spack-related failures
+      # - centos7
       - fedora36
       - leap15
     # Some images have multiple compilers, in those cases we choose one to concretize to
@@ -55,13 +56,17 @@ concretize_deps.amd64:
   #   Always concretize to the generic target instead of a specific one
   - spack config --scope site add "packages:all:target:['$CI_SPACK_ARCH']"
   #   Always concretize to a particular compiler if there are multiple
-  - test -n "$CI_SPACK_CC" && spack config --scope site add "packages:all:compiler:['$CI_SPACK_CC']"
+  - >-
+    if test -n "$CI_SPACK_CC"; then
+    spack config --scope site add "packages:all:compiler:['$CI_SPACK_CC']" || exit $?;
+    fi
   # Set up concrete environments named by the OS and ARCH
   - OS=$(spack arch --operating-system)
-  - mkdir -p ci/dependencies/minimum/c/$OS/$ARCH/ && cp -r ci/dependencies/minimum/{spack.yaml,config} ci/dependencies/minimum/c/$OS/$ARCH/
-  - mkdir -p ci/dependencies/latest/c/$OS/$ARCH/ && cp -r ci/dependencies/latest/{spack.yaml,config} ci/dependencies/latest/c/$OS/$ARCH/
+  - mkdir -p ci/dependencies/minimum/c/$OS/$ARCH/
+  - cp -r ci/dependencies/minimum/{spack.yaml,config} ci/dependencies/minimum/c/$OS/$ARCH/
+  - mkdir -p ci/dependencies/latest/c/$OS/$ARCH/
+  - cp -r ci/dependencies/latest/{spack.yaml,config} ci/dependencies/latest/c/$OS/$ARCH/
   # Concretize each of the environments in turn, into subdirectories named by the OS and ARCH
-  - spack buildcache list > /dev/null  # Manually update the buildcache index to make the concretization faster
   - >-
     ci/scripts/all_at_once.py 1
     "spack -e ci/dependencies/minimum/c/$OS/$ARCH/ -d concretize --reuse"
@@ -85,42 +90,43 @@ concretize_deps.arm64:
 
 
 # Fuse all the environments into one, and generate the pipeline for it
-generate_deps.amd64:
+generate_deps.amd64 1 3:
   stage: dependencies
   extends: .spack
   needs:
   - 'concretize_deps.amd64: [almalinux8]'
-  - 'concretize_deps.amd64: [centos7]'
-  - 'concretize_deps.amd64: [fedora36]'
-  - 'concretize_deps.amd64: [leap15]'
-  - 'concretize_deps.amd64: [ubuntu20.04, gcc@9]'
+  # - 'concretize_deps.amd64: [centos7]'
 
   script:
   # Fuse the now-concrete environments into one
   - python3 ci/dependencies/merged-cache/fuse.py
-    ci/dependencies/{minimum,latest}/c/{almalinux8,centos7,fedora36,opensuse_leap15,ubuntu20.04}/amd64/
+    ci/dependencies/{minimum,latest}/c/almalinux8/amd64/
+    # ci/dependencies/{minimum,latest}/c/{almalinux8,centos7}/amd64/
   - &generate_pipeline
     # Add the series of mirrors that the main jobs are expected to pull from
     - >-
-      test "$CI_COMMIT_REF_PROTECTED" = "true"
-      && SBCACHE_ROOT=protected
-      || SBCACHE_ROOT=nonprotected
+      if test "$CI_COMMIT_REF_PROTECTED" = "true";
+      then SBCACHE_ROOT=protected;
+      else SBCACHE_ROOT=nonprotected;
+      fi
     - >-
-      test -n "$CI_MERGE_REQUEST_IID"
-      && SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}"
-      || SBCACHE_DIR="$CI_COMMIT_REF_SLUG"
+      if test -n "$CI_MERGE_REQUEST_IID";
+      then SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}";
+      else SBCACHE_DIR="$CI_COMMIT_REF_SLUG";
+      fi
     - >-
       spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
       destination "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
     - >-
-      test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
-      && spack mirror add --scope site
+      if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"; then
+      spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
       main-target "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-      || true
+      || exit $?;
+      fi
     - spack mirror list
     # Generate (and then adjust) the single pipeline
     - spack env activate --without-view ci/dependencies/merged-cache/
@@ -147,6 +153,35 @@ generate_deps.amd64:
     paths:
     - spack-ci-artifacts
 
+generate_deps.amd64 2 3:
+  stage: dependencies
+  extends: .spack
+  needs:
+  - 'concretize_deps.amd64: [fedora36]'
+  - 'concretize_deps.amd64: [leap15]'
+
+  script:
+  # Fuse the now-concrete environments into one
+  - python3 ci/dependencies/merged-cache/fuse.py
+    ci/dependencies/{minimum,latest}/c/{fedora36,opensuse_leap15}/amd64/
+  - *generate_pipeline
+
+  artifacts: *pipeline_artifacts
+
+generate_deps.amd64 3 3:
+  stage: dependencies
+  extends: .spack
+  needs:
+  - 'concretize_deps.amd64: [ubuntu20.04, gcc@9]'
+
+  script:
+  # Fuse the now-concrete environments into one
+  - python3 ci/dependencies/merged-cache/fuse.py
+    ci/dependencies/{minimum,latest}/c/ubuntu20.04/amd64/
+  - *generate_pipeline
+
+  artifacts: *pipeline_artifacts
+
 generate_deps.arm64:
   stage: dependencies
   extends: .spack
@@ -166,13 +201,29 @@ generate_deps.arm64:
 
 # Launch the generated pipeline as a child. We require that it works before
 # moving on so that we never build dependencies in our later jobs.
-build_deps.amd64:
+build_deps.amd64 1 3:
   stage: dependencies
-  needs: [generate_deps.amd64]
+  needs: [generate_deps.amd64 1 3]
   trigger:
     strategy: depend
     include:
-    - job: generate_deps.amd64
+    - job: generate_deps.amd64 1 3
+      artifact: spack-ci-artifacts/ci.yml
+build_deps.amd64 2 3:
+  stage: dependencies
+  needs: [generate_deps.amd64 2 3]
+  trigger:
+    strategy: depend
+    include:
+    - job: generate_deps.amd64 2 3
+      artifact: spack-ci-artifacts/ci.yml
+build_deps.amd64 3 3:
+  stage: dependencies
+  needs: [generate_deps.amd64 3 3]
+  trigger:
+    strategy: depend
+    include:
+    - job: generate_deps.amd64 3 3
       artifact: spack-ci-artifacts/ci.yml
 build_deps.arm64:
   stage: dependencies

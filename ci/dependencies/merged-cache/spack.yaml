@@ -3,14 +3,16 @@ spack:
 
   # Use packages from the public buildcache whenever possible
   mirrors:
-    base: 's3://spack-binaries/develop/hpctoolkit'
-    tmp-pr: 's3://spack-binaries-prs/pr32327_hpctoolkit-stack-final/hpctoolkit'
-    develop: 's3://spack-binaries/develop'
+    nowhere: s3://spack-binaries/nowhere
+    # XXX: Temporarily disabled to reduce noise
+    # base: 's3://spack-binaries/develop/hpctoolkit'
+    # develop: 's3://spack-binaries/develop'
 
   gitlab-ci:
     # The build-jobs don't need a clone of this repo, they use artifacts
+    # XXX: For now, they need a clone for some scripts and patches
     variables:
-      GIT_STRATEGY: none
+      GIT_STRATEGY: fetch
 
     service-job-attributes:
       tags: [docker]
@@ -24,12 +26,14 @@ spack:
         fi
       - rm sha
       # Pull Spack from our cache, updating if needed
-      - if ! [ -d .spack.git ]; then
-         git clone --depth=30 --single-branch --no-tags --branch=develop
-            --bare https://github.com/spack/spack.git .spack.git;
+      - >-
+        if ! [ -d .spack.git ]; then
+        git clone --depth=30 --single-branch --no-tags --branch=develop
+        --bare https://github.com/spack/spack.git .spack.git;
         fi
-      - if ! git -C .spack.git cat-file -e "$SPACK_CHECKOUT_VERSION"'^{commit}'; then
-          git -C .spack.git fetch --verbose origin develop:develop;
+      - >-
+        if ! git -C .spack.git cat-file -e "$SPACK_CHECKOUT_VERSION"'^{commit}'; then
+        git -C .spack.git fetch --verbose origin develop:develop;
         fi
       - git clone --shared --branch=develop .spack.git .spack
       - git -C .spack checkout --detach "$SPACK_CHECKOUT_VERSION"
@@ -38,13 +42,15 @@ spack:
       # Copy the AWS authentication flags into the Spack mirror config. Implements the principle of
       # least privilege.
       - >-
-        test "$CI_COMMIT_REF_PROTECTED" = "true"
-        && SBCACHE_ROOT=protected
-        || SBCACHE_ROOT=nonprotected
+        if test "$CI_COMMIT_REF_PROTECTED" = "true";
+        then SBCACHE_ROOT=protected;
+        else SBCACHE_ROOT=nonprotected;
+        fi
       - >-
-        test -n "$CI_MERGE_REQUEST_IID"
-        && SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}"
-        || SBCACHE_DIR="$CI_COMMIT_REF_SLUG"
+        if test -n "$CI_MERGE_REQUEST_IID";
+        then SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}";
+        else SBCACHE_DIR="$CI_COMMIT_REF_SLUG";
+        fi
       - >-
         spack mirror add --scope site
         --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
@@ -54,25 +60,35 @@ spack:
     before_script:
     # Hotfix SPACK_CHECKOUT_VERSION, because it tends to be borked
     - echo "$SPACK_CHECKOUT_VERSION"
-    - if (echo "$SPACK_CHECKOUT_VERSION" | grep -oE '[0-9a-f]{32}' > sha);
+    - >-
+      if (echo "$SPACK_CHECKOUT_VERSION" | grep -oE '[0-9a-f]{32}' > sha);
       then export SPACK_CHECKOUT_VERSION=`cat sha`;
       fi
     - rm sha
     # Pull Spack from our cache, updating if needed
-    - if ! [ -d .spack.git ]; then
-        git clone --depth=30 --single-branch --no-tags --branch=develop
-          --bare https://github.com/spack/spack.git .spack.git;
+    - >-
+      if ! [ -d .spack.git ]; then
+      git clone --depth=30 --single-branch --no-tags --branch=develop
+      --bare https://github.com/spack/spack.git .spack.git;
       fi
-    - if ! git -C .spack.git cat-file -e "$SPACK_CHECKOUT_VERSION"'^{commit}'; then
-        git -C .spack.git fetch --verbose origin develop:develop;
+    - >-
+      if ! git -C .spack.git cat-file -e "$SPACK_CHECKOUT_VERSION"'^{commit}'; then
+      git -C .spack.git fetch --verbose origin develop:develop;
       fi
     - git clone --shared --branch=develop .spack.git .spack
     - git -C .spack checkout --detach "$SPACK_CHECKOUT_VERSION"
 
-    # Apply PR #32136: Local cache for buildcache files
-    # Provides a clean mechanism to cache binaries locally, significantly reducing network I/O
-    # See https://github.com/spack/spack/pull/32136
-    - curl -L https://github.com/spack/spack/pull/32136.patch | git -C .spack apply -3 - || git reset --hard
+    # Apply the extra PRs to improve our Spack experience.
+    # PR #32136: Local cache for buildcache files
+    # PR #32137: Update the binary index before attempting direct fetches
+    # PR #32300: spack ci: Refine job attribute configuration
+    # PR #32583: [WIP] Silly idea to speed up relocation
+    - >-
+      ci/scripts/git-apply-all.py .spack
+      https://github.com/spack/spack/pull/32136.patch
+      file:ci/spack-buildcache-always-index.patch
+      https://github.com/spack/spack/pull/32300.patch
+      https://github.com/spack/spack/pull/32583.patch
 
     # Load Spack into this environment
     - export SPACK_ROOT="`realpath .spack`"
@@ -81,35 +97,35 @@ spack:
     # Copy the AWS authentication flags into the Spack mirror config. Implements the principle of
     # least privilege.
     - >-
-      test "$CI_COMMIT_REF_PROTECTED" = "true"
-      && SBCACHE_ROOT=protected
-      || SBCACHE_ROOT=nonprotected
+      if test "$CI_COMMIT_REF_PROTECTED" = "true";
+      then SBCACHE_ROOT=protected;
+      else SBCACHE_ROOT=nonprotected;
+      fi
     - >-
-      test -n "$CI_MERGE_REQUEST_IID"
-      && SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}"
-      || SBCACHE_DIR="$CI_COMMIT_REF_SLUG"
+      if test -n "$CI_MERGE_REQUEST_IID";
+      then SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}";
+      else SBCACHE_DIR="$CI_COMMIT_REF_SLUG";
+      fi
     - >-
       spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
       destination "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
     - >-
-      test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"
-      && spack mirror add --scope site
+      if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"; then
+      spack mirror add --scope site
       --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
       --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
       main-target "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-      || true
+      || exit $?;
+      fi
     - unset SBCACHE_ROOT SBCACHE_DIR
 
     # Configure the local binary cache to cache binaries
     - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
     script:
-    - spack config --scope site add config:install_tree:padded_length:512
+    - spack config --scope site add config:install_tree:padded_length:100
     - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
-    # Manually update the buildcache indices to speed up `spack install`.
-    # See https://github.com/spack/spack/pull/32137
-    - spack buildcache list > /dev/null
     # We should do `spack buildcache keys -it` here... but doing that makes `spack ci rebuild`
     # try to install without --no-check-signature, which we don't want. Ugh.
     # It would be much nicer if Spack had per-mirror keys.
