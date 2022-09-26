@@ -1501,13 +1501,19 @@ AC_ARG_ENABLE([mpi-search],
   [enable_mpi_search=no])
 
 
-# disable hpcprof-mpi unless force option
+# disable hpcprof-mpi unless force option is given
 if test "$enable_force_hpcprof_mpi" = no ; then
   if test "x$MPICXX" != x || test "x$enable_mpi_search" != xno ; then
-    AC_MSG_WARN([hpcprof-mpi is disabled due to errors.])
-    AC_MSG_WARN([use hpcprof to use multiple threads instead.])
-    AC_MSG_WARN([for developers, reconfigure with --enable-force-hpcprof-mpi])
-    AC_MSG_WARN([to allow building hpcprof-mpi.])
+    AC_MSG_WARN([hpcprof-mpi is temporarily disabled due to unresolved])
+    AC_MSG_WARN([errors.  use hpcprof with multiple threads instead.])
+    AC_MSG_WARN([])
+    AC_MSG_WARN([for developers working on hpcprof-mpi, reconfigure with:])
+    AC_MSG_WARN([   --enable-force-hpcprof-mpi])
+    AC_MSG_WARN([])
+    AC_MSG_WARN([for users, unset MPICXX from your environment, or else])
+    AC_MSG_WARN([reconfigure with:])
+    AC_MSG_WARN([   MPICXX= ])
+    AC_MSG_WARN([])
     AC_MSG_ERROR([hpcprof-mpi is disabled])
   fi
   MPICXX=
