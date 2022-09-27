@@ -41,49 +41,50 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: July 11, 2021.
+Last revised: September 26, 2022.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
 
-@subsection (2021-07-11) Dyninst cannot find Libiberty libraries
+@subsection (2022-09-23) Hpcprof-mpi is currently disabled
 
-Rarely, on some systems, dyninst cmake is unable to find the libiberty
-libraries and fails with a message similar to the following.
+Currently, on the develop branch and in the most recent release, the
+@code{hpcprof-mpi} program is disabled due to unresolved errors.
+After these bugs are resolved, then it will be re-enabled.
+
+@noindent
+@b{Workaround:} Use @code{hpcprof} which is now multi-threaded and
+should suffice.
+
+@noindent
+@b{Note:} For a spack build, do not use @code{+mpi}, and for an
+autotools build, make sure MPICXX is not set in your environment, or
+else set @code{MPICXX=} on the configure command.
+
+@c ------------------------------------------------------------
+
+@subsection (2022-09-23) Hpctoolkit +cray fails
+
+Suppose @code{spack install hpctoolkit +cray} fails as follows.
 
 @example
--- Could NOT find LibIberty (missing: LibIberty_LIBRARIES) 
-CMake Error at cmake/LibIberty.cmake:53 (message):
-  LibIberty not found and cannot be downloaded because build is sterile.
-Call Stack (most recent call first):
-  CMakeLists.txt:34 (include)
+   161   configure: supplied MPICXX compiler:
+   162   configure: Cray MPI wrapper: /opt/cray/pe/craype/2.6.5/bin/CC
+   163   configure: MPICXX compiler: g++ (GCC) 9.3.0 20200312 (Cray Inc.)
+   164   configure: MPICXX path: /opt/cray/pe/craype/2.6.5/bin/CC
+   165   checking if MPICXX is a valid MPI C++ compiler... no
+>> 166   configure: error: MPICXX is not a valid compiler: /opt/cray/pe/craype/2.6.5/bin/CC
 @end example
 
 @noindent
-This problem is infrequent and not well understood.  It seems to happen
-more often on some Debian or Ubuntu systems, but certainly not all such
-systems.  So, if you run into this problem and can reproduce it, please
-report this to @code{hpctoolkit-forum} as above.
-
-@noindent
-@b{Workaround:} Apply the following patch to the spack repository, or
-just hand-edit the dyninst @code{package.py} file to add the one line.
-(Note: the last context line in the patch is a blank line.)
+Building hpctoolkit @code{+cray} requires @code{--dirty} and building
+for the front end arch.  Make sure you have the PrgEnv-gnu, gcc,
+craype and cray-mpich modules loaded (and darshan unloaded) and
+re-install with:
 
 @example
-diff --git a/var/spack/repos/builtin/packages/dyninst/package.py b/var/spack/repos/builtin/packages/dyninst/package.py
-index 38c664d500..0b71d332a8 100644
---- a/var/spack/repos/builtin/packages/dyninst/package.py
-+++ b/var/spack/repos/builtin/packages/dyninst/package.py
-@@@@ -103,6 +103,7 @@@@ def cmake_args(self):
-             '-DBoost_ROOT_DIR=%s'     % spec['boost'].prefix,
-             '-DElfUtils_ROOT_DIR=%s'  % spec['elf'].prefix,
-             '-DLibIberty_ROOT_DIR=%s' % spec['libiberty'].prefix,
-+            '-DLibIberty_LIBRARIES=%s' % spec['libiberty'].libs,
-             '-DTBB_ROOT_DIR=%s'       % spec['tbb'].prefix,
-         ]
-
+spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
 @end example
 
 @c ------------------------------------------------------------
@@ -137,12 +138,13 @@ every line begins and ends with double quotes.
 
 @noindent
 This problem is rare, non-deterministic, not at all understood, and
-impossible to reproduce on demand.  So again, if you can reproduce the
-problem, even non-deterministically, please report this as above.
+impossible to reproduce on demand.  If you can reproduce the problem,
+even non-deterministically, please report this to
+@code{hpctoolkit-forum} as above.
 
 @noindent
 @b{Workaround:} The only workaround is to retry the git clone.  If
-building outside of spack, the delete the source tree and repeat git
+building outside of spack, then delete the source tree and repeat git
 clone.  If building with spack, first remove spack's downloaded copy
 with @code{spack clean -d}, then retry @code{spack install}.
 
@@ -150,72 +152,7 @@ with @code{spack clean -d}, then retry @code{spack install}.
 
 @section Recently Resolved Issues
 
-@subsection (2020-09-05) Configure fails without -fPIC in dependencies
-
-As of commit @uref{https://github.com/HPCToolkit/hpctoolkit/pull/317,
-b2d3d067ecad} on 2020-09-05, the hpctoolkit master branch now requires
-libunwind and xz (lzma) to be built with variant @code{+pic}.  This is
-used to better separate and hide third-party libraries in hpcrun from
-the application.  If not, then configure will fail with an error such
-as:
-
-@example
-configure: libunwind.a static archive: yes
-configure: libunwind.a compiled with -fPIC: no
-configure: error: libunwind.a must be compiled with -fPIC
-@end example
-
-@noindent
-@b{Fixed:} Build libunwind and xz (lzma) with the @code{+pic} variants.
-For example, in @code{packages.yaml},
-
-@example
-libunwind:
-  version:  [1.5.0]
-  variants: +xz +pic
-xz:
-  version:  [5.2.5]
-  variants: +pic
-@end example
-
-@c ------------------------------------------------------------
-
-@subsection (2020-06-29) Cray front-end compilers
-
-@code{Spack compiler find} was previously broken for detecting the
-front-end compilers on Cray that HPCToolkit uses.
-
-@noindent
-@b{Fixed:} This is now fixed in commit
-@uref{https://github.com/spack/spack/pull/17267, 789d060ff61b}
-on 2020-06-29.
-
-@noindent
-@b{Note:} Remember, you still need to fill in the @code{modules:}
-field with the following four modules.  For example, this is an entry
-for the @code{gcc/8.3.0} module on theta at ANL.  Note that the
-front-end operating_system is something like @code{sles15} (not
-@code{cnl6}), and the front-end target is @code{x86_64} (not
-@code{mic_knl}).  Your versions may differ.
-
-@example
-- compiler:
-    environment: @{@}
-    flags: @{@}
-    modules:
-    - PrgEnv-gnu/6.0.7
-    - gcc/8.3.0
-    - craype/2.6.5
-    - cray-mpich/7.7.14
-    operating_system: sles15
-    paths:
-      cc:  /opt/gcc/8.3.0/bin/gcc
-      cxx: /opt/gcc/8.3.0/bin/g++
-      f77: /opt/gcc/8.3.0/bin/gfortran
-      fc:  /opt/gcc/8.3.0/bin/gfortran
-    spec: gcc@@8.3.0
-    target: x86_64
-@end example
+None at this time.
 
 @c ------------------------------------------------------------
 
@@ -238,12 +175,30 @@ This problem is usually temporary and the solution is to either wait a
 few minutes or an hour and try again, or else download the file manually
 and put it into a spack mirror.
 
+@noindent
+@b{Workaround:} Spack's default method of fetching is using internal
+Python libraries (@code{urllib}).  Sometimes, depending on version, this
+may have trouble.  In that case, you could try resetting this to the
+external @code{curl} program in @code{config.yaml}.
+
+@example
+config:
+  url_fetch_method: curl
+@end example
+
+@c ------------------------------------------------------------
+
 @subsection Connection timeout
 
 Another way fetch can fail is with a connection timeout.  Some sites,
 especially sourceforge are often slow to connect.  If this happens, then
 increase the connection timeout in @code{config.yaml} to 30 or 60
 seconds (default is 10 seconds).
+
+@example
+config:
+  connect_timeout: 60
+@end example
 
 @subsection New version breaks the build
 
@@ -258,36 +213,6 @@ Sometimes but rarely, something in the spack core will change or break
 the code in some @code{package.py} file.  The solution is to look
 through the spack git log and revert the repository to a recent commit
 before the breakage.
-
-@c ------------------------------------------------------------
-
-@subsection IBM-Java fails to fetch (powerpc)
-
-IBM is fairly aggressive about taking down old versions, so you may find
-that fetching ibm-java fails while trying to install hpcviewer (powerpc
-only).
-
-@example
-==> Installing ibm-java
-==> No binary for ibm-java found: installing from source
-==> Error: FetchError: All fetchers failed
-@end example
-
-@noindent
-If this happens, first compare @code{spack info ibm-java} with what
-versions are available at IBM's download site.  If there is another
-8.0.x.y version that spack understands that is still available for
-download, then use that.
-
-@example
-@uref{http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java}
-@end example
-
-@noindent
-If not, then manually download the latest 8.0.x.y version, compute a
-@code{sha256sum} checksum for the file and then edit the
-@code{ibm-java/package.py} file to add this version.  And then report
-the problem to the spack maintainer.
 
 @c ------------------------------------------------------------
 

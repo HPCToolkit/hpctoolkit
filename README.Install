@@ -81,7 +81,7 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: September 12, 2022.
+Last revised: September 26, 2022.
 
 2 Prerequisites
 ===============
@@ -445,7 +445,6 @@ version.
          require: "@12.2.0"
 
 Note:
-
   1. The value for 'require:' is a full spec (so include '@' for
      version) and supersedes both version and variants.
 
@@ -458,6 +457,18 @@ prefers to rebuild the latest version of a package.  But '--reuse' and
 '--fresh' apply to all package versions.  The advantage of 'require:' is
 that you can selectively choose the version and variants on a package by
 package basis.
+
+   There are two extensions to 'require:' that are sometimes useful.
+'any_of' requires one or more from a list of specs, and 'one_of'
+requires exactly one from a list of specs.  For example,
+
+     packages:
+       boost:
+         require:
+           - one_of: ["@1.75.0", "@1.77.0"]
+       elfutils:
+         require:
+           - any_of: ["+bzip2", "+xz"]
 
      <https://spack.readthedocs.io/en/latest/build_settings.html#package-requirements>
 
@@ -769,11 +780,13 @@ the spack variant '+mpi' is for building hpcprof-mpi, the MPI version of
 hpcprof.  If you want to build hpcprof-mpi, then you need to supply an
 installation of MPI.
 
-   Normally, for systems with compute nodes, you should use an existing
-MPI module that was built for the correct interconnect for your system
-and add this to 'packages.yaml'.  The MPI module should be built with
-the same version of GNU gcc/g++ used to build hpctoolkit (to keep the
-C++ libraries in sync).
+     spack install hpctoolkit +mpi
+
+Normally, for systems with compute nodes, you should use an existing MPI
+module that was built for the correct interconnect for your system and
+add this to 'packages.yaml'.  The MPI module should be built with the
+same version of GNU gcc/g++ used to build hpctoolkit (to keep the C++
+libraries in sync).
 
 11.4 PAPI vs Perfmon
 --------------------
@@ -801,10 +814,21 @@ be available.
 12.1 Cray
 ---------
 
-Cray systems have separate front and back-end architecture types.  For
-example, on theta at ANL, the front-end arch is 'cray-sles15-haswell'
-(SuSE Linux version 15 for haswell) and the back-end is
-'cray-cnl7-mic_knl' (Compute Node Linux for KNL).
+There are now two types of Cray systems.  The classic, "old-style" Cray
+(theta at ANL) runs static binaries on the compute nodes, uses modules
+PrgEnv-gnu and craype, uses CC, cc and ftn as the MPI wrappers, and
+'spack arch' reports platform cray.  The "new-style" Cray (thetagpu at
+ANL) runs dynamic binaries, uses mpicc and mpicxx from openmpi as the
+MPI wrappers, and 'spack arch' reports platform linux.
+
+   On a new-style cray, use '+mpi' and a spack external for openmpi to
+build hpcprof-mpi, just like a non-cray system.  The remainder of this
+section describes how to build hpcprof-mpi for old-style cray.
+
+   Cray systems have separate front and back-end architecture types.
+For example, on theta at ANL, the front-end arch is
+'cray-sles15-haswell' (SuSE Linux version 15 for haswell) and the
+back-end is 'cray-cnl7-haswell' (Compute Node Linux).
 
    Hpctoolkit needs to be built with the GNU Programming Environment and
 the front-end x86_64 compilers, plus the 'CC' MPI C++ wrapper.  Switch
@@ -816,9 +840,9 @@ conflicts with hpctoolkit.
      module unload darshan
 
 By default, spack does not correctly identify the gcc compiler modules
-as front-end compilers.  Start by loading a recent gcc module (eg, 7.x
-or 8.x) and try running 'spack compiler find' and 'spack compiler list'.
-For example on theta at ANL,
+as front-end compilers.  Start by loading a recent gcc module (eg, 8.x,
+9.x or later) and try running 'spack compiler find' and 'spack compiler
+list'.  For example on theta at ANL,
 
      module load gcc/8.3.0
      spack compiler find /opt/gcc/8.3.0
@@ -867,21 +891,17 @@ Phi back-end nodes (KNL, KNH, etc), add '~tm' to intel-tbb to disable
 transactional memory.
 
    Finally, build hpctoolkit with the front-end arch type (eg,
-cray-sles15-x86_64) and option '+cray'.  Normally, you can use OS type
-'fe' (front-end) in place of 'sles15'.  As with Blue Gene, the '+cray'
+cray-sles15-x86_64) and options '+cray' and '--dirty'.  Normally, you
+can use OS type 'fe' (front-end) in place of 'sles15'.  The '+cray'
 option adds MPI and hpcprof-mpi and supersedes the '+mpi' variant.
-
-     spack install hpctoolkit +cray arch=cray-fe-x86_64
-
-On some systems, spack fails to properly load the compiler modules
-during the build and fails during hpctoolkit configure with an error
-about, "MPICXX is not a valid compiler."  In this case, make sure that
-you have the PrgEnv-gnu and gcc modules loaded and retry the install
-with '--dirty'.
 
      spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
 
-For developers, if you are building hpctoolkit directly (outside of
+If the hpctoolkit build fails with an error "MPICXX is not a valid
+compiler," then make sure your module environment includes PrgEnv-gnu
+and you are using '--dirty'.
+
+   For developers, if you are building hpctoolkit directly (outside of
 spack) but using spack prerequisites, then use a configure line similar
 to the following.
 

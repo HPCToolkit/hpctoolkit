@@ -20,7 +20,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: May 16, 2022.
+#  Last revised: September 26, 2022.
 #
 packages:
 
@@ -39,6 +39,16 @@ packages:
   #   compiler: [gcc@8.5.0]
   #   providers:
   #     mpi: [openmpi]
+
+
+  # Note: settings in this file are only preferences, not hard
+  # requirements.  If spack chooses a different version or variant,
+  # you can force spack to use your version with the new 'require:'
+  # field.  Require takes a single, full spec and supersedes both
+  # version and variant and should always be quoted.
+  #
+  # dyninst:
+  #   require: "@12.2.0 +openmp"
 
 
   #------------------------------------------------------------
@@ -68,21 +78,25 @@ packages:
   # hpctoolkit -- these settings can be specified here or else on the
   # spack install command line.
   #
-  # Use version 'master' for the latest snapshot from master.
-  # Version 'develop' is for pre-release features.
+  # Version 'develop' is now the main line of development for
+  # recommended versions.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon (now default).
   # +viewer also installs hpcviewer (default).
   # +cuda, +rocm for GPU support.
   #
+  # Note: +mpi is currently disabled for develop.
+  #
   # hpctoolkit:
   #   version:  [2022.05.15, master]
-  #   variants: +mpi +papi +viewer
+  #   variants: +papi +viewer
 
 
   # binutils -- used by hpcprof and struct simple (for functions and
   # line map info) and for VMA types in various places.
+  #
+  # No longer used for latest version or develop.
   #
   # Need >= 2.32 for important bug fixes.
   # Avoid 2.35, it contains a bug that spews errors from hpcprof.
@@ -117,7 +131,7 @@ packages:
     version:  [1.77.0]
     variants: >
       +atomic +chrono +date_time +filesystem +system +thread +timer
-      +graph +regex +shared +multithreaded ~debug
+      +graph +regex +shared +multithreaded
       visibility=global
 
 
@@ -142,7 +156,7 @@ packages:
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [12.1.0, master]
+    version:  [12.2.0, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -190,6 +204,8 @@ packages:
   # libdwarf -- used in fnbounds for access to eh frames (not yet
   # available from elfutils).
   #
+  # No longer used for latest version or develop.
+  #
   # Normally want a recent version for best support for output from
   # current compilers.
   #
@@ -219,7 +235,7 @@ packages:
   # ~dlopen is needed for 2021.02 and later.
   #
   libmonitor:
-    version:  [2021.11.08, master]
+    version:  [2022.09.02, master]
     variants: +hpctoolkit ~dlopen
 
 
@@ -257,6 +273,12 @@ packages:
   mbedtls:
     version:  [2.27.0]
     variants: +pic
+
+
+  # memkind -- used in hpcrun
+  #
+  memkind:
+    version:  [1.13.0]
 
 
   # papi -- used in hpcrun for access to the hardware performance
@@ -297,6 +319,17 @@ packages:
   xz:
     version:  [5.2.5]
     variants: +pic
+
+
+  # yaml-cpp -- now used by develop for writing yaml
+  #
+  # Use recent version for bug fixes.
+  #
+  # +shared is required for linking with shared lib
+  #
+  yaml-cpp:
+    version:  [0.7.0]
+    variants: +shared build_type=RelWithDebInfo
 
 
   # zlib -- used by binutils, elfutils and libdwarf to read compressed

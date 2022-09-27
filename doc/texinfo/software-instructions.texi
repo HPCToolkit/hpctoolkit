@@ -72,7 +72,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: September 12, 2022.
+Last revised: September 26, 2022.
 
 @c ------------------------------------------------------------
 
@@ -542,7 +542,6 @@ packages:
 
 @noindent
 Note:
-
 @enumerate
 @item
 The value for @code{require:} is a full spec (so include @code{@@} for
@@ -560,6 +559,20 @@ which prefers to rebuild the latest version of a package.  But
 @code{--reuse} and @code{--fresh} apply to all package versions.  The
 advantage of @code{require:} is that you can selectively choose the
 version and variants on a package by package basis.
+
+There are two extensions to @code{require:} that are sometimes useful.
+@code{any_of} requires one or more from a list of specs, and
+@code{one_of} requires exactly one from a list of specs.  For example,
+
+@example
+packages:
+  boost:
+    require:
+      - one_of: ["@@1.75.0", "@@1.77.0"]
+  elfutils:
+    require:
+      - any_of: ["+bzip2", "+xz"]
+@end example
 
 @example
 @uref{https://spack.readthedocs.io/en/latest/build_settings.html#package-requirements}
@@ -941,6 +954,11 @@ hpctoolkit, the spack variant @code{+mpi} is for building hpcprof-mpi,
 the MPI version of hpcprof.  If you want to build hpcprof-mpi, then
 you need to supply an installation of MPI.
 
+@example
+spack install hpctoolkit +mpi
+@end example
+
+@noindent
 Normally, for systems with compute nodes, you should use an existing
 MPI module that was built for the correct interconnect for your system
 and add this to @code{packages.yaml}.  The MPI module should be built
@@ -972,10 +990,22 @@ be available.
 
 @subsection Cray
 
+There are now two types of Cray systems.  The classic, ``old-style''
+Cray (theta at ANL) runs static binaries on the compute nodes, uses
+modules PrgEnv-gnu and craype, uses CC, cc and ftn as the MPI
+wrappers, and @code{spack arch} reports platform cray.
+The ``new-style'' Cray (thetagpu at ANL) runs dynamic binaries, uses
+mpicc and mpicxx from openmpi as the MPI wrappers, and @code{spack
+arch} reports platform linux.
+
+On a new-style cray, use @code{+mpi} and a spack external for openmpi
+to build hpcprof-mpi, just like a non-cray system.  The remainder of
+this section describes how to build hpcprof-mpi for old-style cray.
+
 Cray systems have separate front and back-end architecture types.  For
 example, on theta at ANL, the front-end arch is
 @code{cray-sles15-haswell} (SuSE Linux version 15 for haswell) and the
-back-end is @code{cray-cnl7-mic_knl} (Compute Node Linux for KNL).
+back-end is @code{cray-cnl7-haswell} (Compute Node Linux).
 
 Hpctoolkit needs to be built with the GNU Programming Environment and
 the front-end x86_64 compilers, plus the @code{CC} MPI C++ wrapper.
@@ -990,9 +1020,9 @@ module unload darshan
 
 @noindent
 By default, spack does not correctly identify the gcc compiler modules
-as front-end compilers.  Start by loading a recent gcc module (eg, 7.x
-or 8.x) and try running @code{spack compiler find} and @code{spack
-compiler list}.  For example on theta at ANL,
+as front-end compilers.  Start by loading a recent gcc module (eg,
+8.x, 9.x or later) and try running @code{spack compiler find} and
+@code{spack compiler list}.  For example on theta at ANL,
 
 @example
 module load gcc/8.3.0
@@ -1047,27 +1077,20 @@ Phi back-end nodes (KNL, KNH, etc), add @code{~tm} to intel-tbb to
 disable transactional memory.
 
 Finally, build hpctoolkit with the front-end arch type (eg,
-cray-sles15-x86_64) and option @code{+cray}.  Normally, you can use OS
-type @code{fe} (front-end) in place of @code{sles15}.  As with Blue
-Gene, the @code{+cray} option adds MPI and hpcprof-mpi and supersedes
-the @code{+mpi} variant.
-
-@example
-spack install hpctoolkit +cray arch=cray-fe-x86_64
-@end example
-
-@noindent
-On some systems, spack fails to properly load the compiler modules
-during the build and fails during hpctoolkit configure with an error
-about, ``MPICXX is not a valid compiler.''  In this case, make sure that
-you have the PrgEnv-gnu and gcc modules loaded and retry the install
-with @code{--dirty}.
+cray-sles15-x86_64) and options @code{+cray} and @code{--dirty}.
+Normally, you can use OS type @code{fe} (front-end) in place of
+@code{sles15}.  The @code{+cray} option adds MPI and hpcprof-mpi and
+supersedes the @code{+mpi} variant.
 
 @example
 spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
 @end example
 
 @noindent
+If the hpctoolkit build fails with an error ``MPICXX is not a valid
+compiler,'' then make sure your module environment includes PrgEnv-gnu
+and you are using @code{--dirty}.
+
 For developers, if you are building hpctoolkit directly (outside of
 spack) but using spack prerequisites, then use a configure line
 similar to the following.

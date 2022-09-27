@@ -3,17 +3,15 @@ Current Spack Issues for HPCToolkit
 
 1 Introduction
 2 Current Issues
-2.1 (2021-07-11) Dyninst cannot find Libiberty libraries
-2.2 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
+2.1 (2022-09-23) Hpcprof-mpi is currently disabled
+2.2 (2022-09-23) Hpctoolkit +cray fails
+2.3 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
 3 Recently Resolved Issues
-3.1 (2020-09-05) Configure fails without -fPIC in dependencies
-3.2 (2020-06-29) Cray front-end compilers
 4 General Problems
 4.1 Unable to fetch
 4.2 Connection timeout
 4.3 New version breaks the build
 4.4 Spack core breaks the build
-4.5 IBM-Java fails to fetch (powerpc)
 5 Issues with specific versions
 5.1 Binutils 2.35
 5.2 Boost 1.68.0
@@ -39,46 +37,44 @@ hpctoolkit web site.
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: July 11, 2021.
+Last revised: September 26, 2022.
 
 2 Current Issues
 ================
 
-2.1 (2021-07-11) Dyninst cannot find Libiberty libraries
---------------------------------------------------------
+2.1 (2022-09-23) Hpcprof-mpi is currently disabled
+--------------------------------------------------
 
-Rarely, on some systems, dyninst cmake is unable to find the libiberty
-libraries and fails with a message similar to the following.
+Currently, on the develop branch and in the most recent release, the
+'hpcprof-mpi' program is disabled due to unresolved errors.  After these
+bugs are resolved, then it will be re-enabled.
 
-     -- Could NOT find LibIberty (missing: LibIberty_LIBRARIES)
-     CMake Error at cmake/LibIberty.cmake:53 (message):
-       LibIberty not found and cannot be downloaded because build is sterile.
-     Call Stack (most recent call first):
-       CMakeLists.txt:34 (include)
+Workaround: Use 'hpcprof' which is now multi-threaded and should
+suffice.
 
-This problem is infrequent and not well understood.  It seems to happen
-more often on some Debian or Ubuntu systems, but certainly not all such
-systems.  So, if you run into this problem and can reproduce it, please
-report this to 'hpctoolkit-forum' as above.
+Note: For a spack build, do not use '+mpi', and for an autotools build,
+make sure MPICXX is not set in your environment, or else set 'MPICXX='
+on the configure command.
 
-Workaround: Apply the following patch to the spack repository, or just
-hand-edit the dyninst 'package.py' file to add the one line.  (Note: the
-last context line in the patch is a blank line.)
+2.2 (2022-09-23) Hpctoolkit +cray fails
+---------------------------------------
 
-     diff --git a/var/spack/repos/builtin/packages/dyninst/package.py b/var/spack/repos/builtin/packages/dyninst/package.py
-     index 38c664d500..0b71d332a8 100644
-     --- a/var/spack/repos/builtin/packages/dyninst/package.py
-     +++ b/var/spack/repos/builtin/packages/dyninst/package.py
-     @@ -103,6 +103,7 @@ def cmake_args(self):
-                  '-DBoost_ROOT_DIR=%s'     % spec['boost'].prefix,
-                  '-DElfUtils_ROOT_DIR=%s'  % spec['elf'].prefix,
-                  '-DLibIberty_ROOT_DIR=%s' % spec['libiberty'].prefix,
-     +            '-DLibIberty_LIBRARIES=%s' % spec['libiberty'].libs,
-                  '-DTBB_ROOT_DIR=%s'       % spec['tbb'].prefix,
-              ]
+Suppose 'spack install hpctoolkit +cray' fails as follows.
 
+        161   configure: supplied MPICXX compiler:
+        162   configure: Cray MPI wrapper: /opt/cray/pe/craype/2.6.5/bin/CC
+        163   configure: MPICXX compiler: g++ (GCC) 9.3.0 20200312 (Cray Inc.)
+        164   configure: MPICXX path: /opt/cray/pe/craype/2.6.5/bin/CC
+        165   checking if MPICXX is a valid MPI C++ compiler... no
+     >> 166   configure: error: MPICXX is not a valid compiler: /opt/cray/pe/craype/2.6.5/bin/CC
 
-2.2 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
+Building hpctoolkit '+cray' requires '--dirty' and building for the
+front end arch.  Make sure you have the PrgEnv-gnu, gcc, craype and
+cray-mpich modules loaded (and darshan unloaded) and re-install with:
+
+     spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
+
+2.3 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
 -------------------------------------------------------
 
 Very rarely, the hpctoolkit build fails in 'hpcrun-fmt.c' or
@@ -119,72 +115,19 @@ line begins and ends with double quotes.
      ...
 
 This problem is rare, non-deterministic, not at all understood, and
-impossible to reproduce on demand.  So again, if you can reproduce the
-problem, even non-deterministically, please report this as above.
+impossible to reproduce on demand.  If you can reproduce the problem,
+even non-deterministically, please report this to 'hpctoolkit-forum' as
+above.
 
 Workaround: The only workaround is to retry the git clone.  If building
-outside of spack, the delete the source tree and repeat git clone.  If
+outside of spack, then delete the source tree and repeat git clone.  If
 building with spack, first remove spack's downloaded copy with 'spack
 clean -d', then retry 'spack install'.
 
 3 Recently Resolved Issues
 ==========================
 
-3.1 (2020-09-05) Configure fails without -fPIC in dependencies
---------------------------------------------------------------
-
-As of commit b2d3d067ecad
-(https://github.com/HPCToolkit/hpctoolkit/pull/317) on 2020-09-05, the
-hpctoolkit master branch now requires libunwind and xz (lzma) to be
-built with variant '+pic'.  This is used to better separate and hide
-third-party libraries in hpcrun from the application.  If not, then
-configure will fail with an error such as:
-
-     configure: libunwind.a static archive: yes
-     configure: libunwind.a compiled with -fPIC: no
-     configure: error: libunwind.a must be compiled with -fPIC
-
-Fixed: Build libunwind and xz (lzma) with the '+pic' variants.  For
-example, in 'packages.yaml',
-
-     libunwind:
-       version:  [1.5.0]
-       variants: +xz +pic
-     xz:
-       version:  [5.2.5]
-       variants: +pic
-
-3.2 (2020-06-29) Cray front-end compilers
------------------------------------------
-
-'Spack compiler find' was previously broken for detecting the front-end
-compilers on Cray that HPCToolkit uses.
-
-Fixed: This is now fixed in commit 789d060ff61b
-(https://github.com/spack/spack/pull/17267) on 2020-06-29.
-
-Note: Remember, you still need to fill in the 'modules:' field with the
-following four modules.  For example, this is an entry for the
-'gcc/8.3.0' module on theta at ANL. Note that the front-end
-operating_system is something like 'sles15' (not 'cnl6'), and the
-front-end target is 'x86_64' (not 'mic_knl').  Your versions may differ.
-
-     - compiler:
-         environment: {}
-         flags: {}
-         modules:
-         - PrgEnv-gnu/6.0.7
-         - gcc/8.3.0
-         - craype/2.6.5
-         - cray-mpich/7.7.14
-         operating_system: sles15
-         paths:
-           cc:  /opt/gcc/8.3.0/bin/gcc
-           cxx: /opt/gcc/8.3.0/bin/g++
-           f77: /opt/gcc/8.3.0/bin/gfortran
-           fc:  /opt/gcc/8.3.0/bin/gfortran
-         spec: gcc@8.3.0
-         target: x86_64
+None at this time.
 
 4 General Problems
 ==================
@@ -204,6 +147,14 @@ This problem is usually temporary and the solution is to either wait a
 few minutes or an hour and try again, or else download the file manually
 and put it into a spack mirror.
 
+Workaround: Spack's default method of fetching is using internal Python
+libraries ('urllib').  Sometimes, depending on version, this may have
+trouble.  In that case, you could try resetting this to the external
+'curl' program in 'config.yaml'.
+
+     config:
+       url_fetch_method: curl
+
 4.2 Connection timeout
 ----------------------
 
@@ -211,6 +162,9 @@ Another way fetch can fail is with a connection timeout.  Some sites,
 especially sourceforge are often slow to connect.  If this happens, then
 increase the connection timeout in 'config.yaml' to 30 or 60 seconds
 (default is 10 seconds).
+
+     config:
+       connect_timeout: 60
 
 4.3 New version breaks the build
 --------------------------------
@@ -227,29 +181,6 @@ Sometimes but rarely, something in the spack core will change or break
 the code in some 'package.py' file.  The solution is to look through the
 spack git log and revert the repository to a recent commit before the
 breakage.
-
-4.5 IBM-Java fails to fetch (powerpc)
--------------------------------------
-
-IBM is fairly aggressive about taking down old versions, so you may find
-that fetching ibm-java fails while trying to install hpcviewer (powerpc
-only).
-
-     ==> Installing ibm-java
-     ==> No binary for ibm-java found: installing from source
-     ==> Error: FetchError: All fetchers failed
-
-If this happens, first compare 'spack info ibm-java' with what versions
-are available at IBM's download site.  If there is another 8.0.x.y
-version that spack understands that is still available for download,
-then use that.
-
-     <http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java>
-
-If not, then manually download the latest 8.0.x.y version, compute a
-'sha256sum' checksum for the file and then edit the
-'ibm-java/package.py' file to add this version.  And then report the
-problem to the spack maintainer.
 
 5 Issues with specific versions
 ===============================
