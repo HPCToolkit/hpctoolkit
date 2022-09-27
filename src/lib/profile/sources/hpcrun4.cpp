@@ -58,9 +58,9 @@
 using namespace hpctoolkit;
 using namespace sources;
 
-Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
+Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, std::shared_ptr<Logstore> logstore)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
-    thread(nullptr), path(fn),
+    thread(nullptr), path(fn), logstore(std::move(logstore)),
     tracepath(fn.parent_path() / fn.stem().concat(".hpctrace")) {
   // Try to open up the file. Errors handled inside somewhere.
   file = hpcrun_sparse_open(path.c_str(), 0, 0);
@@ -98,7 +98,7 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
     } else if(k != HPCRUN_FMT_NV_traceMinTime && k != HPCRUN_FMT_NV_traceMaxTime
               && k != HPCRUN_FMT_NV_mpiRank && k != HPCRUN_FMT_NV_tid
               && k != HPCRUN_FMT_NV_hostid && k != HPCRUN_FMT_NV_pid) {
-      util::log::warning()
+      util::log::vwarning()
       << "Unknown file attribute in " << path.string() << ":\n"
           "  '" << k << "'='" << std::string(v) << "'!";
     }
@@ -240,7 +240,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         settings.visibility = Metric::Settings::visibility_t::hiddenByDefault;
         break;
       case HPCRUN_FMT_METRIC_SHOW_INCLUSIVE:
-        util::log::error{} << "Show parameter SHOW_INCLUSIVE does not have a clear definition,"
+        util::log::verror{} << "Show parameter SHOW_INCLUSIVE does not have a clear definition,"
                               " " << m.name << " may be presented incorrectly.";
         settings.scopes &= {MetricScope::execution, MetricScope::point};
         break;
@@ -251,7 +251,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         settings.visibility = Metric::Settings::visibility_t::invisible;
         break;
       default:
-        util::log::error{} << "Unknown show parameter " << (unsigned int)m.flags.fields.show
+        util::log::verror{} << "Unknown show parameter " << (unsigned int)m.flags.fields.show
                            << ", " << m.name << " may be presented incorrectly.";
         break;
       }
@@ -454,7 +454,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             scope = Scope(Scope::placeholder, n.lm_ip);
             if(&par.get() == &global) {
               if(!warned_top_demotion) {
-                util::log::warning() << "Demoting invalid top-level Contexts to <partial call paths> in "
+                util::log::vwarning() << "Demoting invalid top-level Contexts to <partial call paths> in "
                     << path.filename().string();
                 warned_top_demotion = true;
               }
@@ -474,7 +474,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           // Instruction Contexts cannot be a top-level Context
           if(&par.get() == &global) {
             if(!warned_top_demotion) {
-              util::log::warning() << "Demoting invalid top-level Contexts to <partial call paths> in "
+              util::log::vwarning() << "Demoting invalid top-level Contexts to <partial call paths> in "
                   << path.filename().string();
               warned_top_demotion = true;
             }
@@ -491,8 +491,10 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           } else {
             // Failed to generate the appropriate FlowGraph, we must be missing
             // some data. Map to par -> (unknown) -> (point) and throw an error.
-            util::log::error{} << "Missing required CFG data for binary: "
-              << scope.point_data().first.path().string();
+            if(logstore->missingCFG.emplace(std::cref(scope.point_data().first)).second) {
+              util::log::error{} << "Missing required CFG data for binary: "
+                << scope.point_data().first.path().string();
+            }
             auto& unk = sink.context(par, {Relation::call, Scope()}).second;
             auto pnt = sink.context(unk, {Relation::call, scope});
             nodes.emplace(id, singleCtx_t(par.get(), pnt));
@@ -550,8 +552,10 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         } else {
           // Failed to generate the appropriate FlowGraph, we must be missing
           // some data. Map to (global) -> (unknown) -> (point) and throw an error.
-          util::log::error{} << "Missing required CFG data for binary: "
-            << mod_it->second.path().string();
+          if(logstore->missingCFG.emplace(std::cref(mod_it->second)).second) {
+            util::log::error{} << "Missing required CFG data for binary: "
+              << mod_it->second.path().string();
+          }
           auto& unk = sink.context(global, {Relation::call, Scope()}).second;
           auto pnt = sink.context(unk, {Relation::call, scope});
           nodes.emplace(id, singleCtx_t(unk, pnt));

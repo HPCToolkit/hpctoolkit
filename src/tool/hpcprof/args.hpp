@@ -65,6 +65,9 @@ public:
   /// Sources and corrosponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileSource>, stdshim::filesystem::path>> sources;
 
+  /// Logstore used across the Sources
+  std::shared_ptr<Logstore> logstore;
+
   /// KernelSymbols Finalizers from properly named measurements directories
   std::vector<std::unique_ptr<ProfileFinalizer>> ksyms;
 

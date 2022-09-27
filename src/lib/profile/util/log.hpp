@@ -98,8 +98,8 @@ public:
   Settings(none_t) : bits(0) {};
 
   /// Full initialization
-  Settings(bool v_error, bool v_warning, bool v_info)
-    : bits((v_error ? 1 : 0) | (v_warning ? 2 : 0) | (v_info ? 4 : 0)) {}
+  Settings(bool v_error, bool v_warning, bool v_verbose, bool v_info)
+    : bits((v_error ? 1 : 0) | (v_warning ? 2 : 0) | (v_verbose ? 4 : 0) | (v_info ? 8 : 0)) {}
 
   /// Bitwise operators
   friend Settings operator&(Settings a, Settings b) noexcept { return a.bits & b.bits; }
@@ -119,7 +119,8 @@ public:
   /// Named versions of the individual bits
   auto error() { return bits[0]; }
   auto warning() { return bits[1]; }
-  auto info() { return bits[2]; }
+  auto verbose() { return bits[2]; }
+  auto info() { return bits[3]; }
 
 private:
   Settings(std::bitset<3> bits) : bits(bits) {};
@@ -152,6 +153,18 @@ struct error final : public detail::MessageBuffer {
   error& operator=(const error&) = delete;
 };
 
+/// Verbose non-fatal error message buffer. For cases where things aren't ideal,
+/// but also not bad enough to be too loud about it.
+struct verror final : public detail::MessageBuffer {
+  verror();
+  ~verror();
+
+  verror(verror&&) = default;
+  verror(const verror&) = delete;
+  verror& operator=(verror&&) = default;
+  verror& operator=(const verror&) = delete;
+};
+
 /// Warning message buffer. For cases where something went wrong, but it should
 /// all work out in the end. Probably.
 struct warning final : public detail::MessageBuffer {
@@ -162,6 +175,18 @@ struct warning final : public detail::MessageBuffer {
   warning(const warning&) = delete;
   warning& operator=(warning&&) = default;
   warning& operator=(const warning&) = delete;
+};
+
+/// Verbose warning message buffer. For cases where something went wrong, but it
+/// usually works out in the end, and we don't want to be too loud about it.
+struct vwarning final : public detail::MessageBuffer {
+  vwarning();
+  ~vwarning();
+
+  vwarning(vwarning&&) = default;
+  vwarning(const vwarning&) = delete;
+  vwarning& operator=(vwarning&&) = default;
+  vwarning& operator=(const vwarning&) = delete;
 };
 
 /// Args-info message buffer. To describe how the arguments were interpreted in
