@@ -408,32 +408,54 @@ std::vector<double> ContextFlowGraph::interiorFactors_impl(
     for(auto& g: groups) {
       size_t next_first = next_groups.size();
       double total_v = 0;
-      // Add a series of groups based on the divergence...
-      auto first = g.first;
-      auto last = m_templates.end();
-      for(auto it = first; it != g.last; ++it) {
+
+      // We want to break g up into sub-Groups based on divergence in the
+      // ridx'th caller. But we also want to ignore Templates that are simply
+      // impossible because they were never "entered" (!hasEC[...]).
+      //
+      // So we keep two iterator-cursors, marking the first and (inclusive) last
+      // possible Template within the current sub-Group. When a new possible
+      // Template appears, we either extend the current sub-Group to include it,
+      // or start a new sub-Group to represent the divergence.
+      auto first = m_templates.end();
+      auto ilast = first;
+      for(auto it = g.first; it != g.last; ++it) {
+        // Skip over any Templates that are impossible
         if(!hasEC[std::distance(m_templates.begin(), it)]) continue;
-        last = it;
         assert(it->path().size() > ridx);
-        if(rAtIdx(first->path()) != rAtIdx(it->path())) {
-          // There is a divergence! Add a new group marking it and reset
+
+        if(first != m_templates.end()) {
+          if(rAtIdx(first->path()) == rAtIdx(it->path())) {
+            // This Template is the same as the current sub-Group. Just expand
+            // the sub-Group to include this one and continue along.
+            ilast = it;
+            continue;
+          }
+
+          // This Template diverges from the current sub-Group. Save the current
+          // sub-Group before we reset.
           double v = 0;
           if(metricInterior)
             if(auto mvs = find(rAtIdx(first->path())))
               v = at(*mvs, *metricInterior);
-          next_groups.push_back({first, it, v});
+          next_groups.push_back({first, ++ilast, v});
           total_v += v;
-          first = it;
         }
+
+        // This Template is the first in a new sub-Group. Reset the cursors
+        // to represent this.
+        first = ilast = it;
       }
-      assert(last != m_templates.end() && "Entire group got elided by hasEC?");
-      // Add the last group in the series with whatever's left.
-      // The "end" here may be before g.last depending on hasEC.
+
+      // At the end of the previous loop, we should still have one sub-Group
+      // left. Save it now.
+      assert(first != m_templates.end() && ilast != m_templates.end()
+             && "Entire group was impossible according to hasEC?");
       double v = 0;
       if(metricInterior)
         if(auto mvs = find(rAtIdx(first->path())))
           v = at(*mvs, *metricInterior);
-      next_groups.push_back({first, ++last, v});
+      next_groups.push_back({first, ++ilast, v});
       total_v += v;
 
       // ...Then go back through the new groups and do the division.
