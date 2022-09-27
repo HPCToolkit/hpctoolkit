@@ -188,9 +188,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   bool dryRun = false;
 
   std::unordered_set<std::string> only_exes;
-
-  int quiet = 0;
-  util::log::Settings logSettings(true, true, false);
+  int verbosity = 0;
 
   int opt;
   int longopt;
@@ -202,10 +200,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
                 << header << options << footer;
       std::exit(0);
     case 'v':
-      logSettings.info() = true;
+      verbosity++;
       break;
     case 'q':
-      quiet++;
+      verbosity--;
       break;
     case 'O':
       arg_overwriteOutput = 1;
@@ -395,12 +393,15 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     threads = cpuset_hwthreads();
   }
 
-  if(quiet > 0) {
-    logSettings = util::log::Settings::none;
-    logSettings.error() = quiet < 2;
+  {
+    util::log::Settings logSettings = util::log::Settings::none;
+    logSettings.error() = verbosity >= -1;  // -q and higher
+    logSettings.warning() = verbosity >= 0;  // default and higher
+    logSettings.verbose() = verbosity >= 1;  // -v and higher
+    logSettings.info() = verbosity >= 2; // -vv and higher
+    util::log::Settings::set(std::move(logSettings));
+    util::log::info{} << "Maximum verbosity enabled";
   }
-  util::log::Settings::set(std::move(logSettings));
-  util::log::info{} << "Maximum verbosity enabled";
 
   if(dryRun) {
     output = fs::path();
@@ -529,6 +530,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     }
   }
 
+  logstore = std::make_shared<Logstore>();
+
   // Every rank tests its allocated set of inputs, and the total number of
   // successes per group is summed.
   std::vector<std::uint32_t> cnts(argc - optind, 0);
@@ -552,7 +555,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       #pragma omp for schedule(dynamic) nowait
       for(std::size_t i = 0; i < files.size(); i++) {
         auto pg = std::move(files[i]);
-        auto s = ProfileSource::create_for(pg.first);
+        auto s = ProfileSource::create_for(pg.first, logstore);
         if(!only_exes.empty()) {
           if(auto* r4 = dynamic_cast<hpctoolkit::sources::Hpcrun4*>(s.get()); r4 != nullptr) {
             if(only_exes.count(r4->exe_basename()) == 0)
@@ -648,7 +651,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   // Add the inputs newly allocated to us to our set
   for(auto& p_s: extra) {
     stdshim::filesystem::path p = std::move(p_s);
-    auto s = ProfileSource::create_for(p);
+    auto s = ProfileSource::create_for(p, logstore);
     if(!s) util::log::fatal{} << "Input " << p << " has changed on disk, please let it stablize before continuing!";
     sources.emplace_back(std::move(s), std::move(p));
   }

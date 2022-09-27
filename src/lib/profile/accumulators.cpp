@@ -125,7 +125,6 @@ StatisticAccumulator::PartialRef StatisticAccumulator::get(const StatisticPartia
 }
 
 void MetricAccumulator::add(double v) noexcept {
-  if(v == 0) util::log::warning{} << "Adding a 0-metric value!";
   atomic_add(point, v);
 }
 

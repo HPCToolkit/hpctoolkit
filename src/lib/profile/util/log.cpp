@@ -101,8 +101,24 @@ error::~error() {
   }
 }
 
+verror::verror() : detail::MessageBuffer(Settings::get().verbose()) { (*this) << "VERBOSE ERROR: "; }
+verror::~verror() {
+  if(!empty()) {
+    (*this) << '\n';
+    std::cerr << sbuf.str();
+  }
+}
+
 warning::warning() : detail::MessageBuffer(Settings::get().warning()) { (*this) << "WARNING: "; }
 warning::~warning() {
+  if(!empty()) {
+    (*this) << '\n';
+    std::cerr << sbuf.str();
+  }
+}
+
+vwarning::vwarning() : detail::MessageBuffer(Settings::get().verbose()) { (*this) << "VERBOSE WARNING: "; }
+vwarning::~vwarning() {
   if(!empty()) {
     (*this) << '\n';
     std::cerr << sbuf.str();

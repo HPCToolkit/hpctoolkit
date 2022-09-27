@@ -261,21 +261,21 @@ bool ProfileAttributes::merge(const ProfileAttributes& o) {
   bool ok = true;
   if(!m_name) m_name = o.m_name;
   else if(o.m_name && m_name != o.m_name) {
-    util::log::warning() << "Merging profiles with different names: `"
+    util::log::vwarning() << "Merging profiles with different names: `"
       << *m_name << "' and `" << *o.m_name << "'!";
     ok = false;
   }
 
   if(!m_job) m_job = o.m_job;
   else if(o.m_job && m_job != o.m_job) {
-    util::log::warning() << "Merging profiles with different job ids: "
+    util::log::vwarning() << "Merging profiles with different job ids: "
       << *m_job << " and " << *o.m_job << "!";
     ok = false;
   }
 
   if(!m_path) m_path = o.m_path;
   else if(o.m_path && m_path != o.m_path) {
-    util::log::warning() << "Merging profiles with different paths: `"
+    util::log::vwarning() << "Merging profiles with different paths: `"
       << m_path->string() << "' and `" << o.m_path->string() << "'!";
     ok = false;
   }
@@ -284,7 +284,7 @@ bool ProfileAttributes::merge(const ProfileAttributes& o) {
     auto it = m_env.find(e.first);
     if(it == m_env.end()) m_env.insert(e);
     else if(it->second != e.second) {
-      util::log::warning() << "Merging profiles with different values for environment `"
+      util::log::vwarning() << "Merging profiles with different values for environment `"
         << e.first << "': `" << it->second << "' and `" << e.second << "'!";
       ok = false;
     }
@@ -294,7 +294,7 @@ bool ProfileAttributes::merge(const ProfileAttributes& o) {
     auto it = m_idtupleNames.find(e.first);
     if(it == m_idtupleNames.end()) m_idtupleNames.insert(e);
     else if(it->second != e.second) {
-      util::log::warning() << "Merging profiles with different values for tuple kind "
+      util::log::vwarning() << "Merging profiles with different values for tuple kind "
         << e.first << ": '" << it->second << "' and '" << e.second << "'!";
       ok = false;
     }
