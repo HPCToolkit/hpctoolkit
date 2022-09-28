@@ -19787,17 +19787,29 @@ fi
 
 
 
-# disable hpcprof-mpi unless force option
+# disable hpcprof-mpi unless force option is given
 if test "$enable_force_hpcprof_mpi" = no ; then
   if test "x$MPICXX" != x || test "x$enable_mpi_search" != xno ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: hpcprof-mpi is disabled due to errors." >&5
-$as_echo "$as_me: WARNING: hpcprof-mpi is disabled due to errors." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: use hpcprof to use multiple threads instead." >&5
-$as_echo "$as_me: WARNING: use hpcprof to use multiple threads instead." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: for developers, reconfigure with --enable-force-hpcprof-mpi" >&5
-$as_echo "$as_me: WARNING: for developers, reconfigure with --enable-force-hpcprof-mpi" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to allow building hpcprof-mpi." >&5
-$as_echo "$as_me: WARNING: to allow building hpcprof-mpi." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: hpcprof-mpi is temporarily disabled due to unresolved" >&5
+$as_echo "$as_me: WARNING: hpcprof-mpi is temporarily disabled due to unresolved" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: errors.  use hpcprof with multiple threads instead." >&5
+$as_echo "$as_me: WARNING: errors.  use hpcprof with multiple threads instead." >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
+$as_echo "$as_me: WARNING: " >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: for developers working on hpcprof-mpi, reconfigure with:" >&5
+$as_echo "$as_me: WARNING: for developers working on hpcprof-mpi, reconfigure with:" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:    --enable-force-hpcprof-mpi" >&5
+$as_echo "$as_me: WARNING:    --enable-force-hpcprof-mpi" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
+$as_echo "$as_me: WARNING: " >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: for users, unset MPICXX from your environment, or else" >&5
+$as_echo "$as_me: WARNING: for users, unset MPICXX from your environment, or else" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: reconfigure with:" >&5
+$as_echo "$as_me: WARNING: reconfigure with:" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:    MPICXX= " >&5
+$as_echo "$as_me: WARNING:    MPICXX= " >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
+$as_echo "$as_me: WARNING: " >&2;}
     as_fn_error $? "hpcprof-mpi is disabled" "$LINENO" 5
   fi
   MPICXX=
