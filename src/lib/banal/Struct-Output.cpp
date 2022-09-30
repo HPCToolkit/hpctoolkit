@@ -233,7 +233,7 @@ printStructFileBegin(ostream * os, ostream * gaps, string filenm)
       << "<!DOCTYPE HPCToolkitStructure [\n"
       << hpcstruct_xml_head
       << "]>\n"
-      << "<HPCToolkitStructure i=\"0\" version=\"4.7\" n=\"\">\n";
+      << "<HPCToolkitStructure i=\"0\" version=\"4.8\" n=\"\">\n";
 
   if (gaps != NULL) {
     *gaps << "This file describes the unclaimed vma ranges (gaps) in the control\n"

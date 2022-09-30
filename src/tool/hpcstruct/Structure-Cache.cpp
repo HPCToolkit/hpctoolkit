@@ -65,7 +65,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fstream>
+#include <cstring>
+#include <memory>
 
+#include <xercesc/sax2/SAX2XMLReader.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
+#include <xercesc/sax2/XMLReaderFactory.hpp>
+#include <xercesc/sax2/Attributes.hpp>
+#include <xercesc/util/XMLString.hpp>
 
 //***************************************************************************
 // local includes
@@ -80,6 +88,7 @@
 #include "Args.hpp"
 
 using namespace std;
+using namespace xercesc;
 
 //***************************************************************************
 // environment variable naming the structure cache; may be overriden from command line
@@ -92,6 +101,21 @@ using namespace std;
 //***************************************************************************
 // local operations
 //***************************************************************************
+
+// Xerces requires the global XMLPlatformUtils to be called before and after all
+// usage. Since that's a big pain, we just tie it into the static constructors.
+namespace {
+struct XercesState {
+  XercesState() {
+    XMLPlatformUtils::Initialize();
+  }
+  ~XercesState() {
+    XMLPlatformUtils::Terminate();
+  }
+};
+}
+
+static XercesState xercesState;
 
 typedef enum { PATH_READABLE, PATH_WRITEABLE, PATH_DIR_READABLE, PATH_DIR_WRITEABLE,
         PATH_DIR_CREATED, PATH_ABSENT, PATH_ERROR } ckpath_ret_t;
@@ -281,59 +305,87 @@ hpcstruct_cache_needs_cleanup
   return ret;
 }
 
-// Routine to check that the cache'd file is correctly formatted
-//  Returns true if the last line of the file is <</HPCToolkitStructure>
-//  returns false on any error, or if the line does not match
+namespace {
+struct XMLStr {
+  XMLStr(const std::string& s) : str(XMLString::transcode(s.c_str())) {};
+  ~XMLStr() { XMLString::release(&str); }
+  operator const XMLCh*() const { return str; }
+  XMLCh* str;
+};
+
+struct HeaderFinder : public DefaultHandler {
+  std::string version;
+
+  void startElement(const XMLCh* const, const XMLCh* const tagname,
+                    const XMLCh* const, const Attributes& attrs) {
+    char* n = XMLString::transcode(tagname);
+    if(n == nullptr) return;
+
+    // We only care about the HPCToolkitStructure tag
+    std::string_view name(n);
+    if(name != "HPCToolkitStructure") {
+      XMLString::release(&n);
+      return;
+    }
+    XMLString::release(&n);
+
+    // Extract the version number. If we fail, the version is "INVALID".
+    const XMLCh* const vx = attrs.getValue(XMLStr("version"));
+    if(vx == nullptr) {
+      version = "INVALID";
+      return;
+    }
+    char* v = XMLString::transcode(vx);
+    if(v == nullptr) {
+      version = "INVALID";
+      return;
+    }
+    version = v;
+    XMLString::release(&v);
+  }
+};
+}
+
+// Routine to check that the cached file is correctly formatted
+//  returns true if the cached file seems up-to-date, false otherwise
 static bool
 check_cache_file (char *path)
 {
-  // The file exists and is readable;  check to see if it is corrupted
-  //   That is, if the last line in the file is NOT "</HPCToolkitStructure>"
-  int fd = open(path, O_RDONLY | O_CLOEXEC);
-  if ( fd < 0 ) {
-    fprintf( stderr, "  file %s, open failed; returns %d err= %s\n", path, fd, strerror(errno) );
+  // Pass 1: the file must exist, be readable, and end with "</HPCToolkitStructure>"
+  try {
+    const char expected[] = "</HPCToolkitStructure>\n";
+    char got[sizeof expected] = {0};
+
+    std::ifstream file(path, std::ios_base::in | std::ios_base::ate);
+    file.seekg(-(std::ifstream::off_type)(sizeof expected - 1), std::ios_base::end);
+    file.read(got, sizeof got - 1);
+    if(file.gcount() < (std::streamsize)(sizeof expected - 1)) return false;
+    if(std::strncmp(expected, got, sizeof expected)) return false;
+  } catch(std::exception&) {
     return false;
   }
 
-  struct stat statbuf;
-  int retval = fstat (fd, &statbuf);
-  if (retval != 0)  {
-    // fstat of file failed
-    fprintf( stderr, "  file %s, fstat failed: returns %d -- %s\n", path, retval, strerror(errno) );
+  // Pass 2: the file must have the a "4.8" version number
+  try {
+    XMLPScanToken token;
+    std::unique_ptr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
+    if(!parser) return false;
+    if(!parser->parseFirst(XMLStr(path), token)) return false;
+
+    HeaderFinder handler;
+    parser->setContentHandler(&handler);
+    parser->setErrorHandler(&handler);
+    while(handler.version.empty()) {
+      if(!parser->parseNext(token)) return false;
+    }
+
+    if(handler.version != "4.8") return false;
+  } catch(std::exception&) {
+    return false;
+  } catch(SAXException&) {
     return false;
   }
 
-  // compute pointer to last line, if it is the correct string
-  off_t stringsize = strlen ("</HPCToolkitStructure>");
-  off_t offset = statbuf.st_size - stringsize -1;
-  if (offset < stringsize-1 ) {  // room for <HPCToolkitStructure> as well
-    // file is not long enough to be correct
-    fprintf( stderr, "  file %s too short, offset to last line, if correct, = %ld;  stringsize = %ld\n", path, offset, stringsize );
-    return false;
-  }
-
-  off_t offret = lseek(fd, offset, SEEK_SET);
-  if (offret != offset ) {
-    // seek to position failed
-    fprintf( stderr, "  file %s, lssek to %ld failed: returns %ld -- %s\n", path, offset, offret, strerror(errno) );
-    return false;
-  }
-  char readbuf[stringsize + 1 ];
-  ssize_t len = read (fd, &readbuf, stringsize);
-  if (len != stringsize ) {
-    // read of last line failed
-    fprintf( stderr, "  file %s, read last line at %ld failed: returns %ld, not %ld -- %s\n",
-        path, offset, len, stringsize, strerror(errno) );
-    return false;
-  }
-  readbuf[stringsize] = (char)0;
-  if ( strcmp (readbuf, "</HPCToolkitStructure>" ) != 0 ) {
-    // last line is not right
-    fprintf(stderr, "  file %s, last line = \"%s\" does not match </HPCToolkitStructure> \n", path, readbuf);
-    return false;
-  }
-  // It is properly formatted
-  // fprintf(stderr, "  file %s, last line = \"%s\" matches </HPCToolkitStructure> \n", path, readbuf);
   return true;
 }
 
