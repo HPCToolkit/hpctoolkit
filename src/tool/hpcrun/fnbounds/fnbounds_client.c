@@ -483,7 +483,8 @@ launch_server(void)
   }
 
   // Give up a bit of our stack for the child shim. It doesn't need much.
-  char child_stack[4 * 1024 * 2];
+  // Make sure the stack is aligned, in case the architecture cares (e.g. ARM).
+  char child_stack[4 * 1024 * 2] __attribute__((aligned));
 
   // Clone the child shim. With Glibc <2.24 there is a bug (https://sourceware.org/bugzilla/show_bug.cgi?id=18862)
   // where this will reset the pthreads state in the parent if CLONE_VM is used.
