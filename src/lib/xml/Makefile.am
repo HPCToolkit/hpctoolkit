@@ -75,7 +75,8 @@ MYSOURCES = \
 
 MYDTDHEADERS = \
 	$(srcdir)/hpc-experiment.dtd.h \
-	$(srcdir)/hpc-structure.dtd.h
+	$(srcdir)/hpc-structure.dtd.h \
+	$(srcdir)/hpc-structure.dtd.version.h
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
@@ -114,6 +115,9 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 # Regenerate DTD headers if DTDs have changed.
 $(srcdir)/%.dtd.h : $(top_srcdir)/lib/dtd/%.dtd
 	$(srcdir)/makedtdstring $<  > $@
+
+$(srcdir)/%.dtd.version.h : $(top_srcdir)/lib/dtd/%.dtd
+	 awk -f $(srcdir)/dtd-version.awk < $< > $@
 
 #############################################################################
 # Common rules
