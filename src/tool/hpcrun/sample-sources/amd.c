@@ -229,5 +229,6 @@ METHOD_FN(display_events)
 
 #define ss_name amd_gpu
 #define ss_cls SS_HARDWARE
+#define ss_sort_order  23
 
 #include "ss_obj.h"
