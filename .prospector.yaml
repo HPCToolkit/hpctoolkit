@@ -1,0 +1,6 @@
+strictness: medium
+
+mypy:
+  run: true
+  options:
+    python-version: '3.6'

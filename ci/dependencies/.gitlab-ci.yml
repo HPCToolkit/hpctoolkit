@@ -10,13 +10,13 @@
 #     to properly express our testing dependencies.
 #
 # In short, if done the correct and straightforward way, we would have a combinatorial
-# explosion of jobs and pipelines in this file. This would be obtuse and a pain to
-# maintain. To avoid that, we instead manipulate the JSON Spack uses to maintain concrete
-# environments in rather atrocious ways and trick it into doing what we want.
-# See comments below for more details.
+# explosion of jobs and pipelines in this file. To avoid that, we use a "Multi-Level Pipeline" (MLP)
+# approach. We let `spack ci generate` generate a boatload of pipelines, but then use an automated
+# script to generate a single top-level pipeline that launches all the others. This removes most of
+# the combinatorial burden, leaving us with (two) trigger jobs to launch the MLP.
 
-# Concretize all the environments under various combinations of OS and arch.
-concretize_deps.amd64:
+# Generate a pipeline for each combination of OS and arch.
+generate_deps.amd64:
   stage: dependencies
   extends: .spack
   image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
@@ -49,10 +49,6 @@ concretize_deps.amd64:
     esac
     echo "Will concretize for generic target $CI_SPACK_ARCH"
   # Setup the Spack configuration for concretization:
-  #   Copy the base-mirrors configuration from the cache environment
-  - spack -e ci/dependencies/merged-cache/ config get mirrors | tee mirrors.yaml
-  - spack config --scope site add --file mirrors.yaml
-  - spack buildcache keys --install --trust
   #   Always concretize to the generic target instead of a specific one
   - spack config --scope site add "packages:all:target:['$CI_SPACK_ARCH']"
   #   Always concretize to a particular compiler if there are multiple
@@ -68,16 +64,32 @@ concretize_deps.amd64:
   - cp -r ci/dependencies/latest/{spack.yaml,config} ci/dependencies/latest/c/$OS/$ARCH/
   # Concretize each of the environments in turn, into subdirectories named by the OS and ARCH
   - >-
-    ci/scripts/all_at_once.py 1
-    "spack -e ci/dependencies/minimum/c/$OS/$ARCH/ -d concretize --reuse"
-    "spack -e ci/dependencies/latest/c/$OS/$ARCH/ -d concretize --reuse"
+    echo -e 'minimum\nlatest' | xargs -P0 -I '{}' -t
+    spack -e "ci/dependencies/{}/c/$OS/$ARCH/" concretize --reuse
+  # Load the downstream buildcaches, so the secrets are available
+  - ci/dependencies/spack-bc-downstream.sh
+  # Generate pipelines for each of the environments
+  # Generate the single pipeline for this combination
+  - >-
+    echo -e "minimum\nlatest" | xargs -P0 -I '{}' -t
+    spack -e "ci/dependencies/{}/c/$OS/$ARCH/" ci generate
+    --optimize
+    --check-index-only
+    --buildcache-destination "$(spack mirror list | grep -m1 '^destination ' | awk '{print $2}')"
+    --artifacts-root "spack-ci-artifacts/$OS/$ARCH/{}/"
+    --output-file "spack-ci-artifacts/$OS/$ARCH/{}/ci.yml"
+  # Annotate the pipeline with the source job, for the MLP
+  - >-
+    echo -e "\n...\n---\nsource: {pipeline: \"$CI_PIPELINE_ID\", job: \"$CI_JOB_NAME\", name: \"$OS $ARCH\"}"
+    | tee -a spack-ci-artifacts/$OS/$ARCH/{minimum,latest}/ci.yml
 
   artifacts:
     paths:
     - ci/dependencies/{minimum,latest}/c/*/*/{spack.lock,spack.yaml,config/}
+    - spack-ci-artifacts/
 
-concretize_deps.arm64:
-  extends: concretize_deps.amd64
+generate_deps.arm64:
+  extends: generate_deps.amd64
   variables:
     ARCH: arm64
   parallel:
@@ -89,147 +101,45 @@ concretize_deps.arm64:
       CI_SPACK_CC: gcc@9
 
 
-# Fuse all the environments into one, and generate the pipeline for it
-generate_deps.amd64 1 3:
+# Construct a Multi-Level Pipeline that runs all the pipelines from spack ci generate
+mlp_deps.amd64:
   stage: dependencies
-  extends: .spack
+  tags: [docker]
+  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
   needs:
-  - 'concretize_deps.amd64: [almalinux8]'
-  # - 'concretize_deps.amd64: [centos7]'
-
+  - generate_deps.amd64
+  before_script:
+  - pip install ruamel.yaml
   script:
-  # Fuse the now-concrete environments into one
-  - python3 ci/dependencies/merged-cache/fuse.py
-    ci/dependencies/{minimum,latest}/c/almalinux8/amd64/
-    # ci/dependencies/{minimum,latest}/c/{almalinux8,centos7}/amd64/
-  - &generate_pipeline
-    # Add the series of mirrors that the main jobs are expected to pull from
-    - >-
-      if test "$CI_COMMIT_REF_PROTECTED" = "true";
-      then SBCACHE_ROOT=protected;
-      else SBCACHE_ROOT=nonprotected;
-      fi
-    - >-
-      if test -n "$CI_MERGE_REQUEST_IID";
-      then SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}";
-      else SBCACHE_DIR="$CI_COMMIT_REF_SLUG";
-      fi
-    - >-
-      spack mirror add --scope site
-      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
-      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      destination "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
-    - >-
-      if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"; then
-      spack mirror add --scope site
-      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
-      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      main-target "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-      || exit $?;
-      fi
-    - spack mirror list
-    # Generate (and then adjust) the single pipeline
-    - spack env activate --without-view ci/dependencies/merged-cache/
-    - >-
-      spack ci generate
-      --optimize
-      --check-index-only
-      --buildcache-destination "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
-      --artifacts-root spack-ci-artifacts
-      --output-file spack-ci-artifacts/ci.yml
-    # We need to adjust the pipeline manually to fill in parts that aren't able to be set otherwise.
-    # https://github.com/spack/spack/pull/32300 will help with this.
-    - >-
-      PYTHONPATH=$SPACK_ROOT/lib/spack/external python3 ci/dependencies/fixpipe.py
-      spack-ci-artifacts/ci.yml
-      --add-globals '{workflow: {rules: [{when: always}]}}'
-      --add-to-jobs '{cache: [
-      {key: spack, paths: [.spack.git], when: always},
-      {key: depsjob-$CI_JOB_IMAGE, paths: [.spack-bincache/], when: always},
-      ]}'
-      --ignore-job no-specs-to-rebuild
-
-  artifacts: &pipeline_artifacts
+  - >-
+    python3 ci/dependencies/mlp.py ci.yml
+    spack-ci-artifacts/{almalinux8,fedora36,opensuse_leap15,ubuntu20.04}/amd64/{minimum,latest}/ci.yml
+  artifacts:
     paths:
-    - spack-ci-artifacts
-
-generate_deps.amd64 2 3:
-  stage: dependencies
-  extends: .spack
+    - ci.yml
+mlp_deps.arm64:
+  extends: mlp_deps.amd64
   needs:
-  - 'concretize_deps.amd64: [fedora36]'
-  - 'concretize_deps.amd64: [leap15]'
-
+  - generate_deps.arm64
   script:
-  # Fuse the now-concrete environments into one
-  - python3 ci/dependencies/merged-cache/fuse.py
-    ci/dependencies/{minimum,latest}/c/{fedora36,opensuse_leap15}/amd64/
-  - *generate_pipeline
+  - >-
+    python3 ci/dependencies/mlp.py ci.yml
+    spack-ci-artifacts/ubuntu20.04/arm64/{minimum,latest}/ci.yml
 
-  artifacts: *pipeline_artifacts
-
-generate_deps.amd64 3 3:
+# Launch the MLP and get this done.
+build_deps.amd64:
   stage: dependencies
-  extends: .spack
-  needs:
-  - 'concretize_deps.amd64: [ubuntu20.04, gcc@9]'
-
-  script:
-  # Fuse the now-concrete environments into one
-  - python3 ci/dependencies/merged-cache/fuse.py
-    ci/dependencies/{minimum,latest}/c/ubuntu20.04/amd64/
-  - *generate_pipeline
-
-  artifacts: *pipeline_artifacts
-
-generate_deps.arm64:
-  stage: dependencies
-  extends: .spack
-  needs:
-  # - 'concretize_deps.arm64: [almalinux8]'
-  # - 'concretize_deps.arm64: [fedora36]'
-  - 'concretize_deps.arm64: [ubuntu20.04, gcc@9]'
-
-  script:
-  # Fuse the now-concrete environments into one
-  - python3 ci/dependencies/merged-cache/fuse.py
-    ci/dependencies/{minimum,latest}/c/ubuntu20.04/arm64/
-    # ci/dependencies/{minimum,latest}/c/{almalinux8,fedora36,ubuntu20.04}/arm64/
-  - *generate_pipeline
-
-  artifacts: *pipeline_artifacts
-
-# Launch the generated pipeline as a child. We require that it works before
-# moving on so that we never build dependencies in our later jobs.
-build_deps.amd64 1 3:
-  stage: dependencies
-  needs: [generate_deps.amd64 1 3]
+  needs: [mlp_deps.amd64]
   trigger:
     strategy: depend
     include:
-    - job: generate_deps.amd64 1 3
-      artifact: spack-ci-artifacts/ci.yml
-build_deps.amd64 2 3:
-  stage: dependencies
-  needs: [generate_deps.amd64 2 3]
-  trigger:
-    strategy: depend
-    include:
-    - job: generate_deps.amd64 2 3
-      artifact: spack-ci-artifacts/ci.yml
-build_deps.amd64 3 3:
-  stage: dependencies
-  needs: [generate_deps.amd64 3 3]
-  trigger:
-    strategy: depend
-    include:
-    - job: generate_deps.amd64 3 3
-      artifact: spack-ci-artifacts/ci.yml
+    - job: mlp_deps.amd64
+      artifact: ci.yml
 build_deps.arm64:
   stage: dependencies
-  needs: [generate_deps.arm64]
+  needs: [mlp_deps.arm64]
   trigger:
     strategy: depend
     include:
-    - job: generate_deps.arm64
-      artifact: spack-ci-artifacts/ci.yml
+    - job: mlp_deps.arm64
+      artifact: ci.yml

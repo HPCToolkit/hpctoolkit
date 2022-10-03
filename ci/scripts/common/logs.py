@@ -1,8 +1,8 @@
-import enum
+import abc
 import contextlib
+import enum
 import sys
 import time
-import abc
 
 _section_counter = 0
 
@@ -52,7 +52,7 @@ def section(header, collapsed=False, color=None):
 def dump_file(filename, limit_bytes=10 * 1024):
     """Dump the given file to stdout, stopping at the given limit if not None"""
     size = 0
-    with open(filename, "r") as f:
+    with open(filename, encoding="utf-8") as f:
         for line in f:
             size += len(line)
             if limit_bytes is not None and size > limit_bytes:
@@ -74,12 +74,11 @@ class AbstractStatusResult(abc.ABC):
     @abc.abstractmethod
     def summary(self):
         """Return a short summary string for this result, or the empty string if self.flawless"""
-        pass
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def flawless(self):
         """Return True if this result finished without any errors or warnings"""
-        pass
 
 
 def print_results(*results, prefix=""):
