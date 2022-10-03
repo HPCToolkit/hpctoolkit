@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import argparse
 import shutil
 import sys
+from pathlib import Path
 
-sys.path.insert(0, Path(__file__).parent)
-
-from common.configuration import DependencyConfiguration, Configuration, Unsatisfiable
-from common.logs import colorize, FgColor, section, dump_file, print_header, print_results
 from common import buildsys
+from common.configuration import Configuration, DependencyConfiguration, Unsatisfiable
+from common.logs import FgColor, colorize, dump_file, print_header, print_results, section
 
 parser = argparse.ArgumentParser(
     description="Build a single HPCToolkit and make sure it compiles and tests pass.",
@@ -45,11 +43,6 @@ parser.add_argument(
     default=[],
     help="Variant-spec (Spack +~ format) to build and check",
 )
-parser.add_argument(
-    "--check-fail-code",
-    type=int,
-    help="Failure code to use if make check fails",
-)
 args = parser.parse_args()
 del parser
 
@@ -59,36 +52,47 @@ depscfg = DependencyConfiguration.from_files(*args.configs)
 class BuildStepFailure(Exception):
     "Failure in one of the build steps"
 
-    def __init__(self, step, code=None):
-        assert code is None or code.__index__() > 0
+    def __init__(self, step):
         self.step = step
-        self.code = code
 
 
-def build(**variant):
-    "Attempt to build and run `make check` on the given variant. Return whether we were successful or not."
-    # Setup the configuration for this run
+def configure(variant):
     try:
-        cfg = Configuration(depscfg, **variant)
+        return Configuration(depscfg, variant)
     except Unsatisfiable as unsat:
+        if any(Configuration.satisfies(variant, ig) for ig in args.ignore):
+            # This one can be unsatisfiable, it's marked as ignored.
+            with colorize(FgColor.info):
+                print(f"## HPCToolkit {Configuration.to_string(variant)} skipped")
+            sys.stdout.flush()
+            return True
+
+        # Otherwise, it's an error
         with colorize(FgColor.error):
             print(
-                f"## HPCToolkit {Configuration.to_string(**variant)} is unsatisfiable, missing {unsat.missing}"
+                f"## HPCToolkit {Configuration.to_string(variant)} is unsatisfiable, missing {unsat.missing}"
             )
         sys.stdout.flush()
         return False
 
+
+def build(variant):
+    "Attempt to build the given variant. Return whether we were successful or not."
+    cfg = configure(variant)
+    if not isinstance(cfg, Configuration):
+        return cfg
+
     results = []
     try:
         with section(
-            "## Build for HPCToolkit " + Configuration.to_string(**variant),
+            "## Build for HPCToolkit " + Configuration.to_string(variant),
             color=FgColor.header,
             collapsed=True,
         ):
             sys.stdout.flush()
             # Set up the temporary directories
             srcdir = Path().absolute()
-            logdir = args.log_output / (args.log_prefix + Configuration.to_string("", **variant))
+            logdir = args.log_output / (args.log_prefix + Configuration.to_string(variant, ""))
             logdir.mkdir(parents=True)
             logdir = logdir.absolute()
 
@@ -98,17 +102,15 @@ def build(**variant):
                 # Configure
                 print_header("[1/4] ../configure ...")
                 ok = buildsys.configure(srcdir, builddir, cfg, prefix=installdir, logdir=logdir)
-                if (builddir / "config.log").exists():
-                    shutil.copyfile(builddir / "config.log", logdir / "config.log")
                 if not ok:
                     dump_file(logdir / "configure.log")
                     raise BuildStepFailure("configure")
 
                 # Make
                 print_header("[2/4] make")
-                ok = buildsys.compile(builddir, cfg, jobs=args.jobs, logdir=logdir)
-                dump_file(logdir / "compile.stderr.log")
-                results.append(buildsys.CompileResult(logdir / "compile.stderr.log"))
+                ok = buildsys.build(builddir, cfg, jobs=args.jobs, logdir=logdir)
+                dump_file(logdir / "build.stderr.log")
+                results.append(buildsys.BuildResult(logdir / "build.stderr.log"))
                 if not ok:
                     raise BuildStepFailure("make")
 
@@ -133,7 +135,7 @@ def build(**variant):
                 ok = buildsys.test(builddir, cfg, logdir=logdir)
                 dump_file(logdir / "test.stderr.log")
                 if not ok:
-                    raise BuildStepFailure("make check", args.check_fail_code)
+                    raise BuildStepFailure("make check")
 
             finally:
                 if builddir.exists():
@@ -144,21 +146,19 @@ def build(**variant):
         with colorize(FgColor.error):
             print(f" [\u274c] Build failed in {fail.step}")
             print_results(*results, prefix="     - ")
-            if fail.code is not None:
-                print(f"Exiting with code {fail.code}")
         sys.stdout.flush()
-        return fail.code if fail.code is not None else 1
+        return False
 
     # Successful build, give a short summary of how well it did
     if any(not r.flawless for r in results):
         with colorize(FgColor.warning):
-            print(f" [\U0001f315] Build successful")
+            print(" [\U0001f315] Build successful")
             print_results(*results, prefix="     - ")
     else:
         with colorize(FgColor.flawless):
-            print(f" [\u2714] Build successful with no detected flaws")
+            print(" [\u2714] Build successful with no detected flaws")
     sys.stdout.flush()
-    return 0
+    return True
 
 
-sys.exit(build(**args.spec))
+sys.exit(0 if build(args.spec) else 1)

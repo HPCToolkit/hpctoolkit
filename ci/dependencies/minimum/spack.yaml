@@ -80,3 +80,69 @@ spack:
       link: roots
       select:
       - libpfm4
+
+  # Reuse packages from the public buildcache whenever possible
+  mirrors:
+    nowhere: /does/not/exist
+    # XXX: Temporarily disabled to reduce noise
+    # base: 's3://spack-binaries/develop/hpctoolkit'
+    # develop: 's3://spack-binaries/develop'
+
+  gitlab-ci:
+    pipeline-attributes:
+      workflow:
+        rules:
+        - when: always
+
+    build-job-attributes:
+      tags: [docker]  # Other tags are added by mappings
+      cache:
+      - key: spack
+        paths: [.spack.git]
+        when: always
+      - key: depsjob-$CI_JOB_IMAGE
+        paths: [.spack-bincache/]
+        when: always
+
+      before_script: &spack_init
+      - export SPACK_ROOT="$(realpath .spack)"
+      - ci/dependencies/spack-init.sh
+      - source "$SPACK_ROOT"/share/spack/setup-env.sh
+      - ci/dependencies/spack-bc-downstream.sh
+      script:
+      - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
+      - spack config --scope site add config:install_tree:padded_length:100
+      - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
+      - spack -d --disable-locks ci rebuild
+
+    reindex-job-attributes:
+      tags: [docker]
+      image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
+      before_script: *spack_init
+
+    noop-job-attributes:
+      tags: [noop-job]
+
+    mappings:
+    - match: ['os=centos7']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/centos7:latest
+    - match: ['os=fedora36']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/fedora36:latest
+    - match: ['os=opensuse_leap15']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/leap15:latest
+    - match: ['os=almalinux8']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:latest
+    - match: ['os=ubuntu20.04']
+      runner-attributes:
+        image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
+
+    - match: ['target=:x86_64_v3']
+      runner-attributes:
+        tags: [linux/amd64]
+    - match: ['target=:graviton']
+      runner-attributes:
+        tags: [linux/arm64]

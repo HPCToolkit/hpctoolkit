@@ -141,20 +141,21 @@ Options: Informational
 
 Options: Profiling (Defaults shown in curly brackets {})
   -e <event>[@<howoften>], --event <event>[@<howoften>]
-                      <event> may be an architecture-independent hardware or
-                      software event supported by Linux perf, a native hardware
-                      counter event, a hardware counter event supported by the
-                      PAPI library, or a Linux  system timer (CPUTIME and REALTIME).
-                      This option may be given multiple times to profile several events
-                      at once. If the value for <howoften> is a number, it will be
-                      interpreted as a sample period. For Linux perf events, one
-                      may specify a sampling frequency for 'howoften' by writing f
-                      before a number.  For instance, to sample an event 100 times
-                      per second,  specify  <howoften>  as '@f100'. For Linux perf
-                      events, if no value for <howoften> is specified, hpcrun
-                      will monitor the event using frequency-based sampling at 300
-                      samples/second. If no event is specified, hpcrun will collect
-                      CPUTIME samples 200 times per second per application thread.
+                      <event> may be a Linux system timer (CPUTIME and REALTIME),
+                      a specifier for monitoring GPU operations, software or hardware 
+                      counter events supported by Linux perf, hardware counter events 
+                      supported by the PAPI library, and more. A complete list of
+                      available events can be obtained by running 'hpcrun -L'. The '-e'
+                      option may be given multiple times to profile several events at
+                      once. If the value for <howoften> is a number, it will be interpreted
+                      as a sample period. For Linux perf events, one may specify a sampling
+                      frequency for 'howoften' by writing f before a number.  For
+                      instance, to sample an event 100 times per second,  specify
+                      <howoften>  as '@f100'. For Linux perf events, if no value for
+                      <howoften> is specified, hpcrun will monitor the event using
+                      frequency-based sampling at 300 samples/second. If no event is
+                      specified, hpcrun will collect CPUTIME samples 200 times per
+                      second per application thread.
 
   -c, --count <howoften>
                       Only  available  for  events  managed  by Linux perf. This

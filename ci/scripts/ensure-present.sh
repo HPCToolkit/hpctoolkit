@@ -31,7 +31,7 @@ for prog in "$@"; do
   # Python packages are prefixed with py:
   py:*)
     if command -v python3 >/dev/null; then
-      python3 -c "import $(echo $prog | cut -d: -f2-)" &>/dev/null || missing+=("$prog")
+      python3 -c "import $(echo "$prog" | cut -d: -f2-)" &>/dev/null || missing+=("$prog")
     else
       missing+=(python3 "$prog")
     fi

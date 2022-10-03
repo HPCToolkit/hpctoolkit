@@ -85,6 +85,7 @@
 #include <lib/support/FileUtil.hpp>
 
 #include "Structure-Cache.hpp"
+#include "Structure-Version.hpp"
 #include "Args.hpp"
 
 using namespace std;
@@ -385,8 +386,9 @@ check_cache_file (char *path)
   } catch(SAXException&) {
     return false;
   }
+  // It is properly formatted
 
-  return true;
+  return StructureFileCheckVersion(path);
 }
 
 //  clean up cache entry being replaced 
