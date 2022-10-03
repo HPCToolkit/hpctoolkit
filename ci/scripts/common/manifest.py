@@ -1,9 +1,9 @@
-from pathlib import Path
-import re
 import os
+import re
 import textwrap
+from pathlib import Path
 
-from .logs import AbstractStatusResult, colorize, FgColor
+from .logs import AbstractStatusResult, FgColor, colorize
 
 
 class _ManifestFile:
@@ -17,7 +17,7 @@ class _ManifestFile:
 
 
 class _ManifestLib(_ManifestFile):
-    def __init__(self, path, target, *aliases, strict=True):
+    def __init__(self, path, target, *aliases):
         super().__init__(path)
         self.target = str(target)
         self.aliases = [str(a) for a in aliases]
@@ -42,13 +42,13 @@ class _ManifestLib(_ManifestFile):
                 missing.add(alias.relative_to(installdir))
                 continue
             if not alias.is_absolute():
-                missing.add((alias.relative_to(installdir), f"Not a symlink"))
+                missing.add((alias.relative_to(installdir), "Not a symlink"))
                 continue
 
             targ = Path(os.readlink(alias))
             if len(targ.parts) > 1:
                 missing.add(
-                    (alias.relative_to(installdir), f"Invalid symlink, must point to sibling file")
+                    (alias.relative_to(installdir), "Invalid symlink, must point to sibling file")
                 )
                 continue
             if targ.name != target.name:
@@ -63,7 +63,7 @@ class _ManifestLib(_ManifestFile):
 
 
 class _ManifestExtLib(_ManifestFile):
-    def __init__(self, path, main_suffix, *suffixes, strict=True):
+    def __init__(self, path, main_suffix, *suffixes):
         super().__init__(path)
         self.main_suffix = str(main_suffix)
         self.suffixes = [str(s) for s in suffixes]
@@ -124,7 +124,10 @@ class Manifest:
 
     def __init__(self, *, mpi: bool):
         """Given a set of variant-keywords, determine the install manifest as a list of ManifestFiles"""
-        so = lambda n: r"\.so" + r"\.\d+" * n.__index__()
+
+        def so(n):
+            return r"\.so" + r"\.\d+" * n.__index__()
+
         self.files = [
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_atomic-mt", ".so", so(3)),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_atomic", ".so", so(3)),

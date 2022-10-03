@@ -1,22 +1,43 @@
 default_language_version:
   python: python3
 
+# NB: The hooks in this file are listed in a particular order to reduce the number of times
+# pre-commit has to run before getting an all-clear.
+
 repos:
-- repo: meta
+# ------------------------------------------------------------------------------------
+#  Automation hooks:  Hooks that can alter the semantics of files
+# ------------------------------------------------------------------------------------
+
+- repo: https://github.com/asottile/pyupgrade
+  rev: v2.38.2
   hooks:
-  # Check that hooks listed actually do something
-  - id: check-hooks-apply
-  # Check that any excludes do indeed exclude something
-  - id: check-useless-excludes
+  # Automatically elide older Python syntax and replace with newer ones
+  - id: pyupgrade
+    args: [--py36-plus]
+    # These files are excluded from all Python linting, they're old and probably unused
+    exclude: &py_exclude '^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$'
+
+
+# ------------------------------------------------------------------------------------
+#  Formatting hooks:  Hooks that alter the syntax but not semantics of files
+# ------------------------------------------------------------------------------------
 
 - repo: https://github.com/psf/black
-  rev: '22.6.0'
+  rev: '22.8.0'
   hooks:
   # Blacken all Python code, except allow slightly longer line lengths
   - id: black
     args: ['--line-length=100', '--target-version=py36']
-    # These files are Python 2, and probably unused but we have them anyway
-    exclude: '^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$'
+    exclude: *py_exclude
+
+- repo: https://github.com/PyCQA/isort
+  rev: 5.10.1
+  hooks:
+  # Sort imports in all the Python code
+  - id: isort
+    args: [--profile, black]
+    exclude: *py_exclude
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.3.0
@@ -25,11 +46,11 @@ repos:
   - id: trailing-whitespace
     exclude: '\.patch$'
     # XXX: Only enabled in CI files for now due to large numbers of failures
-    files: ^(\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|ci/)
+    files: &ci_files (^ci/|\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.prospector\.yaml$)
   # All files must end in a single newline (or be perfectly empty)
   - id: end-of-file-fixer
     # XXX: Only enabled in CI files for now due to large numbers of failures
-    files: ^(\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|ci/)
+    files: *ci_files
   # Remove the UTF8 BOM from the start of any files
   - id: fix-byte-order-marker
   # Use UNIX-style line endings (LF)
@@ -37,6 +58,22 @@ repos:
     args: [--fix=lf]
     # XXX: Exclude files in doc/ that use CRLF endings
     exclude: doc/www/.*\.html(\.in)?
+
+
+# ------------------------------------------------------------------------------------
+#  Linting hooks:  Hooks that do not alter files but checks that they satisfy various conditions
+# ------------------------------------------------------------------------------------
+
+- repo: meta
+  hooks:
+  # Check that hooks listed actually do something
+  - id: check-hooks-apply
+  # Check that any excludes do indeed exclude something
+  - id: check-useless-excludes
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.3.0
+  hooks:
   # Ensure all executable scripts have a shebang
   - id: check-executables-have-shebangs
   # Ensure large files (>=500KB) are never added outside of LFS
@@ -60,23 +97,33 @@ repos:
         doc/www/software-instructions.html    # Some of the tags in here are high-entropy
       )$
 
+- repo: https://github.com/PyCQA/prospector
+  rev: 1.7.7
+  hooks:
+  # Use Prospector to lint all our Python code
+  - id: prospector
+    additional_dependencies: ['.[with_mypy]', ruamel.yaml]
+    exclude: *py_exclude
+
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.8.0.4
-  hooks: []
+  hooks:
   # Find common errors in shell scripts using shellcheck
-  # XXX: Disabled for now due to large numbers of failures
-  # - id: shellcheck
+  - id: shellcheck
+    # XXX: Only enabled in CI files for now
+    files: *ci_files
 
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: '0.17.1'
+  rev: '0.18.3'
   hooks:
   # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
   - id: check-gitlab-ci
 
 - repo: https://github.com/codespell-project/codespell
-  rev: v2.1.0
+  rev: v2.2.1
   hooks:
   # Identify common spelling mistakes in code and comments
   - id: codespell
     # XXX: Only enabled in CI files for now
-    files: ^(\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|ci/)
+    files: *ci_files
+    exclude: '\.patch$'

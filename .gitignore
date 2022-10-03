@@ -2,3 +2,4 @@ __pycache__/
 !.editorconfig
 !.gitlab-ci.yml
 !/.pre-commit-config.yaml
+!.prospector.yaml

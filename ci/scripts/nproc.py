@@ -2,8 +2,8 @@
 
 # Utility much like nproc, but aware enough to read cgroups information
 
-import os
 import math
+import os
 import sys
 
 
@@ -15,7 +15,7 @@ def cpuset_max():
 
 
 def get_cgroup_fs():
-    with open("/proc/self/mountinfo", "r") as f:
+    with open("/proc/self/mountinfo", encoding="utf-8") as f:
         for mount in f:
             parts = mount.split()
             # We only care about 2 fields in here
@@ -27,7 +27,7 @@ def get_cgroup_fs():
 
 
 def get_cgroup_path():
-    with open("/proc/self/cgroup", "r") as f:
+    with open("/proc/self/cgroup", encoding="utf-8") as f:
         for cgroup in f:
             cgid, cnts, path = cgroup.split(":", 2)
             if cgid == "0" and len(cnts) == 0:
@@ -38,7 +38,7 @@ def get_cgroup_path():
 def cgroup_max():
     try:
         cgroup = get_cgroup_fs() + get_cgroup_path()
-        with open(os.path.join(cgroup, "cpu.max"), "r") as f:
+        with open(os.path.join(cgroup, "cpu.max"), encoding="utf-8") as f:
             for line in f:
                 quota, period = line.split()
                 quota, period = int(quota), int(period)

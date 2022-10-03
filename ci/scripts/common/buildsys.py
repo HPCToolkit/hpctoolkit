@@ -1,43 +1,52 @@
-from pathlib import Path
 import contextlib
-import subprocess
-import shutil
 import re
-
-from .logs import AbstractStatusResult
+import shutil
+import subprocess
+import typing as T
+from pathlib import Path
 
 from .configuration import Configuration
+from .logs import AbstractStatusResult
 
 
-def configure(
-    srcdir, builddir, cfg: Configuration, prefix=None, logprefix="configure", logdir=None
+@contextlib.contextmanager
+def _logfiles(suffix1: str, suffix2: T.Optional[str] = None, *, logprefix: str, logdir=None):
+    if logdir is not None:
+        logdir = Path(logdir)
+        with open(logdir / (logprefix + suffix1), "w", encoding="utf-8") as f1:
+            if suffix2 is not None:
+                with open(logdir / (logprefix + suffix2), "w", encoding="utf-8") as f2:
+                    yield f1, f2
+            else:
+                yield f1
+    else:
+        yield (None, None) if suffix2 is not None else None
+
+
+def configure(  # noqa: too-many-arguments
+    srcdir, builddir, cfg: Configuration, prefix=None, logprefix="configure", logdir=None, **kwargs
 ):
     """Configure a build directory based on a Configuration, possibly redirecting logs.
     Returns True if the configuration was successful."""
     srcdir, builddir = Path(srcdir), Path(builddir)
     assert (srcdir / "configure").is_file()
     builddir.mkdir()
-    if logdir is not None:
-        logdir = Path(logdir)
-        logdir.mkdir(parents=True, exist_ok=True)
-        config_log = open(logdir / (logprefix + ".log"), "w")
-    else:
-        config_log = contextlib.nullcontext()
 
     extra_args = []
     if prefix is not None:
         extra_args.append(f"--prefix={Path(prefix).as_posix()}")
 
-    with config_log as config_log:
+    with _logfiles(".log", logdir=logdir, logprefix=logprefix, **kwargs) as config_log:
         proc = subprocess.run(
             [srcdir / "configure"] + cfg.args + extra_args,
             cwd=builddir,
             stdout=config_log,
             stderr=config_log,
             env=cfg.env,
+            check=False,
         )
     if logdir is not None and (builddir / "config.log").exists():
-        shutil.copyfile(builddir / "config.log", logdir / "config.log")
+        shutil.copyfile(builddir / "config.log", Path(logdir) / "config.log")
 
     return proc.returncode == 0
 
@@ -47,40 +56,29 @@ def _make(
     cfg: Configuration,
     *makeargs,
     jobs=1,
-    logdir=None,
     logprefix="make",
     split_stderr=True,
+    **kwargs,
 ):
     """Run make in the given build directory"""
     builddir = Path(builddir)
     assert builddir.is_dir()
 
-    if logdir is not None:
-        logdir = Path(logdir)
-        if split_stderr:
-            out_log = open(logdir / (logprefix + ".stdout.log"), "w")
-            err_log = open(logdir / (logprefix + ".stderr.log"), "w")
-        else:
-            out_log = open(logdir / (logprefix + ".log"), "w")
-            err_log = contextlib.nullcontext(out_log)
-    else:
-        out_log = contextlib.nullcontext()
-        err_log = contextlib.nullcontext()
-
-    with out_log as out_log:
-        with err_log as err_log:
-            proc = subprocess.run(
-                [cfg.make, "--output-sync", f"-j{jobs:d}" if jobs > 0 else "-j", *makeargs],
-                cwd=builddir,
-                stdout=out_log,
-                stderr=err_log,
-                env=cfg.env,
-            )
+    suffixes = [".stdout.log", ".stderr.log"] if split_stderr else [".log"]
+    with _logfiles(*suffixes, logprefix=logprefix, **kwargs) as (out_log, err_log):
+        proc = subprocess.run(
+            [cfg.make, "--output-sync", f"-j{jobs:d}" if jobs > 0 else "-j", *makeargs],
+            cwd=builddir,
+            stdout=out_log,
+            stderr=err_log,
+            env=cfg.env,
+            check=False,
+        )
 
     return proc.returncode == 0
 
 
-def compile(builddir, cfg: Configuration, *, jobs=16, logprefix="compile", **kwargs):
+def build(builddir, cfg: Configuration, *, jobs=16, logprefix="build", **kwargs):
     """Build the configured build directory, possibly redirecting logs.
     Returns True if the build was successful."""
     return _make(builddir, cfg, jobs=jobs, logprefix=logprefix, **kwargs)
@@ -107,12 +105,12 @@ def test(builddir, cfg: Configuration, *, jobs=16, logprefix="test", logdir=None
     return ok
 
 
-class CompileResult(AbstractStatusResult):
-    """Detect warnings/errors in compilation logs"""
+class BuildResult(AbstractStatusResult):
+    """Detect warnings/errors in build logs"""
 
     def __init__(self, logfile):
         self.warnings, self.errors = 0, 0
-        with open(logfile, "r") as f:
+        with open(logfile, encoding="utf-8") as f:
             for line in f:
                 if re.match(r"[^:]+:(\d+:){1,2}\s+warning:", line):  # Warning from GCC
                     self.warnings += 1

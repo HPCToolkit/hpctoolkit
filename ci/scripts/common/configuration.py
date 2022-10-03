@@ -1,14 +1,15 @@
-import re
-import platform
+import collections
+import collections.abc
+import itertools
 import os
+import platform
+import re
 import shlex
 import shutil
-import itertools
-from pathlib import Path
-import collections
+import typing as T
 
-from .util import flatten
 from .manifest import Manifest
+from .util import flatten
 
 
 class Unsatisfiable(Exception):
@@ -34,7 +35,7 @@ class DependencyConfiguration:
         self.configs = []
 
     def load(self, fn):
-        with open(fn, "r") as f:
+        with open(fn, encoding="utf-8") as f:
             for line in f:
                 self.configs.append((fn, line))
 
@@ -56,12 +57,12 @@ class DependencyConfiguration:
 
                 result = []
                 for word in shlex.split(line):
-                    vars = {
+                    envvars = {
                         "PWD": conf.parent.absolute().as_posix(),
                         "CC": os.environ.get("CC", None),
                         "CXX": os.environ.get("CXX", None),
                     }
-                    for var, val in vars.items():
+                    for var, val in envvars.items():
                         var = "${" + var + "}"
                         if var not in word:
                             continue
@@ -76,25 +77,31 @@ class DependencyConfiguration:
 class Configuration:
     """Representation of a possible build configuration of HPCToolkit"""
 
-    def __init__(
-        self,
-        depcfg: DependencyConfiguration,
-        *,
-        mpi: bool,
-        debug: bool,
-        papi: bool,
-        opencl: bool,
-        cuda: bool,
-        rocm: bool,
-        level0: bool,
-    ):
+    def __init__(self, depcfg: DependencyConfiguration, variant: T.Dict[str, bool]):
         """Derive the full Configuration from the given DependencyConfiguration and variant-keywords."""
-        self.make = shutil.which("make")
-        if not self.make:
-            raise RuntimeError(f"Unable to find make!")
+        make = shutil.which("make")
+        if make is None:
+            raise RuntimeError("Unable to find make!")
+        self.make: str = make
 
-        self.manifest = Manifest(mpi=mpi)
+        self.manifest: Manifest = Manifest(mpi=variant["mpi"])
 
+        fragments: T.List[str] = self.__class__._collect_fragments(depcfg, variant)
+
+        # Parse the now-together fragments to derive the environment and configure args
+        self.args: T.List[str] = []
+        self.env: T.Any = collections.ChainMap({}, os.environ)
+        for arg in flatten(fragments):
+            m = re.fullmatch(r"ENV\{(\w+)\}=(.*)", arg)
+            if m is None:
+                self.args.append(arg)
+            else:
+                self.env[m.group(1)] = m.group(2)
+
+    @staticmethod
+    def _collect_fragments(
+        depcfg: DependencyConfiguration, variant: T.Dict[str, bool]
+    ) -> T.List[str]:
         fragments = [
             depcfg.get("--with-boost="),
             depcfg.get("--with-bzip="),
@@ -114,29 +121,29 @@ class Configuration:
         if platform.machine() == "x86_64":
             fragments.append(depcfg.get("--with-xed="))
 
-        if papi:
+        if variant["papi"]:
             fragments.append(depcfg.get("--with-papi="))
         else:
             fragments.append(depcfg.get("--with-perfmon="))
 
-        if cuda:
+        if variant["cuda"]:
             fragments.append(depcfg.get("--with-cuda="))
 
-        if level0:
+        if variant["level0"]:
             fragments.append(depcfg.get("--with-level0="))
 
-        if opencl:
+        if variant["opencl"]:
             fragments.append(depcfg.get("--with-opencl="))
 
-        if False:  # TODO: GTPin
-            fragments.extend(
-                [
-                    depcfg.get("--with-gtpin="),
-                    depcfg.get("--with-igc="),
-                ]
-            )
+        # if False:  # TODO: GTPin
+        #     fragments.extend(
+        #         [
+        #             depcfg.get("--with-gtpin="),
+        #             depcfg.get("--with-igc="),
+        #         ]
+        #     )
 
-        if rocm:
+        if variant["rocm"]:
             try:
                 fragments.append(depcfg.get("--with-rocm="))
             except Unsatisfiable:
@@ -150,33 +157,28 @@ class Configuration:
                     ]
                 )
 
-        if False:  # TODO: all-static (do we really want to support this?)
-            fragments.append("--enable-all-static")
+        # if False:  # TODO: all-static (do we really want to support this?)
+        #     fragments.append("--enable-all-static")
 
         fragments.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
-        if mpi:
+        if variant["mpi"]:
             fragments.append(depcfg.get("MPICXX="))
             fragments.append("--enable-force-hpcprof-mpi")
         else:
             fragments.append("MPICXX=")
 
-        if debug:
+        if variant["debug"]:
             fragments.append("--enable-develop")
 
-        # Parse the now-togther fragments to derive the environment and configure args
-        self.args = []
-        self.env = collections.ChainMap({}, os.environ)
-        for arg in flatten(fragments):
-            m = re.fullmatch(r"ENV\{(\w+)\}=(.*)", arg)
-            if m is None:
-                self.args.append(arg)
-            else:
-                self.env[m.group(1)] = m.group(2)
+        return fragments
 
     @classmethod
     def all_variants(cls):
         """Generate a list of all possible variants as dictionaries of variant-keywords"""
-        vbool = lambda x, first=False: [(x, first), (x, not first)]
+
+        def vbool(x, first=False):
+            return [(x, first), (x, not first)]
+
         return map(
             dict,
             itertools.product(
@@ -196,48 +198,44 @@ class Configuration:
 
     @staticmethod
     def to_string(
+        variant: T.Dict[str, bool],
         separator: str = " ",
-        *,
-        mpi: bool,
-        debug: bool,
-        papi: bool,
-        opencl: bool,
-        cuda: bool,
-        rocm: bool,
-        level0: bool,
-    ):
-        """Generate the string form for a series of variant-keywords"""
-        vbool = lambda x, n: f"+{n}" if x else f"~{n}"
+    ) -> str:
+        """Generate the string form for a variant set"""
+
+        def vbool(n):
+            return f"+{n}" if variant[n] else f"~{n}"
+
         return separator.join(
             [
-                vbool(mpi, "mpi"),
-                vbool(debug, "debug"),
-                vbool(papi, "papi"),
-                vbool(opencl, "opencl"),
-                vbool(cuda, "cuda"),
-                vbool(rocm, "rocm"),
-                vbool(level0, "level0"),
+                vbool("mpi"),
+                vbool("debug"),
+                vbool("papi"),
+                vbool("opencl"),
+                vbool("cuda"),
+                vbool("rocm"),
+                vbool("level0"),
             ]
         )
 
     @staticmethod
-    def parse(arg: str):
-        """Parse a variant-spec (vaugely Spack format) into a dictionary of variant-keywords"""
+    def parse(arg: str) -> T.Dict[str, bool]:
+        """Parse a variant-spec (vaugely Spack format) into a variant (dict)"""
         result = {}
-        for word in re.finditer(r"[+~\w]+", arg):
-            word = word.group(0)
+        for wmatch in re.finditer(r"[+~\w]+", arg):
+            word = wmatch.group(0)
             if word[0] not in "+~":
                 raise ValueError("Variants must have a value indicator (+~): " + word)
             for match in re.finditer(r"([+~])(\w*)", word):
                 value, variant = match.group(1), match.group(2)
                 result[variant] = value == "+"
-        for k in result.keys():
+        for k in result:
             if k not in ("mpi", "debug", "papi", "opencl", "cuda", "rocm", "level0"):
                 raise ValueError(f"Invalid variant name {k}")
         return result
 
     @staticmethod
-    def satisfies(specific, general):
+    def satisfies(specific: T.Dict[str, bool], general: T.Dict[str, bool]) -> bool:
         """Test if the `specific` variant is a subset of a `general` variant"""
         for k, v in general.items():
             if k in specific and specific[k] != v:

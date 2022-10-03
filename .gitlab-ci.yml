@@ -139,31 +139,9 @@ autoreconf check:
     paths: [.spack.git]
   before_script:
   - echo -e "\e[0Ksection_start:`date +%s`:spack_clone_init[collapsed=true]\r\e[0KSpack update and initialization"
-  - # Save network by caching the Spack repository locally
-    - |
-      if ! [ -d .spack.git ]; then
-        git clone --depth=10 --single-branch --no-tags \
-          --branch=develop --bare https://github.com/spack/spack.git .spack.git
-      fi
-    - git -C .spack.git fetch --verbose origin develop:develop
-    # Clone as an actual instance of Spack
-    - export SPACK_ROOT=$(realpath `mktemp -d .spack.XXXX`)
-    - git clone --shared --branch=develop .spack.git $SPACK_ROOT
-
-    # Apply the extra PRs to improve our Spack experience.
-    # PR #32136: Local cache for buildcache files
-    # PR #32137: Update the binary index before attempting direct fetches
-    # PR #32300: spack ci: Refine job attribute configuration
-    # PR #32583: [WIP] Silly idea to speed up relocation
-    - >-
-      ci/scripts/git-apply-all.py $SPACK_ROOT
-      https://github.com/spack/spack/pull/32136.patch
-      file:ci/spack-buildcache-always-index.patch
-      https://github.com/spack/spack/pull/32300.patch
-      https://github.com/spack/spack/pull/32583.patch
-
-    # Load Spack into this environment
-    - source $SPACK_ROOT/share/spack/setup-env.sh
+  - - export SPACK_ROOT="$(realpath "$(mktemp -d .spack.XXXX)")"
+    - ci/dependencies/spack-init.sh
+    - source "$SPACK_ROOT"/share/spack/setup-env.sh
   - echo -e "\e[0Ksection_end:`date +%s`:spack_clone_init\r\e[0K"
 
 # Build jobs require a working Spack with access to the buildcache. This (very long) job handles all
@@ -194,38 +172,7 @@ autoreconf check:
   - !reference [.spack, before_script]
 
   - echo -e "\e[0Ksection_start:`date +%s`:spack_buildcache_config[collapsed=true]\r\e[0KSpack buildcache configuration"
-  - # Add the upstream buildcaches as sources of packages, from the merged-cache environment
-    - spack -e ci/dependencies/merged-cache/ config get mirrors | tee mirrors.yaml
-    - spack config --scope site add --file mirrors.yaml
-    - rm mirrors.yaml
-    - spack buildcache keys --install --trust
-    # Add the ref-specific buildcache as a source of packages, manually
-    - >-
-      if test "$CI_COMMIT_REF_PROTECTED" = "true";
-      then SBCACHE_ROOT=protected;
-      else SBCACHE_ROOT=nonprotected;
-      fi
-    - >-
-      if test -n "$CI_MERGE_REQUEST_IID";
-      then SBCACHE_DIR="mr${CI_MERGE_REQUEST_IID}_${CI_COMMIT_REF_SLUG}";
-      else SBCACHE_DIR="$CI_COMMIT_REF_SLUG";
-      fi
-    - >-
-      spack mirror add --scope site
-      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
-      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      main "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/$SBCACHE_ROOT/$SBCACHE_DIR"
-    # For merge request pipelines targeting a protected branch, also add the target's buildcache
-    - >-
-      if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"; then
-      spack mirror add --scope site
-      --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}"
-      --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}"
-      main-target "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-      || exit $?;
-      fi
-    - unset SBCACHE_ROOT SBCACHE_DIR
-    - spack mirror list
+  - - ci/dependencies/spack-bc-downstream.sh
     # Configure the local binary cache to cache binaries
     - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
     # Make sure Spack has a GCC available. Oddly enough, this command will run `spack compiler find` internally,
@@ -280,14 +227,14 @@ autoreconf check:
     - |
       if test -n "$JOB_ENV_MINIMUM"; then
         env_minimum=ci/dependencies/minimum/c/$os/$arch/;
-        spack -e $env_minimum install --cache-only --no-check-signature --fail-fast || exit $?;
+        spack -e $env_minimum --disable-locks install --cache-only --no-check-signature --fail-fast || exit $?;
         spack env activate --sh $env_minimum > $env_minimum/load.sh || exit $?;
         cat $env_minimum/load.sh || exit $?;
       fi
     - |
       if test -n "$JOB_ENV_LATEST"; then
         env_latest=ci/dependencies/latest/c/$os/$arch/;
-        spack -e $env_latest install --cache-only --no-check-signature --fail-fast || exit $?;
+        spack -e $env_latest --disable-locks install --cache-only --no-check-signature --fail-fast || exit $?;
         spack env activate --sh $env_latest > $env_latest/load.sh || exit $?;
         cat $env_latest/load.sh || exit $?;
       fi
@@ -328,10 +275,8 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - concretize_deps.amd64
-  - build_deps.amd64 1 3
-  - build_deps.amd64 2 3
-  - build_deps.amd64 3 3
+  - generate_deps.amd64
+  - build_deps.amd64
 
   script:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
@@ -375,10 +320,8 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - concretize_deps.amd64
-  - build_deps.amd64 1 3
-  - build_deps.amd64 2 3
-  - build_deps.amd64 3 3
+  - generate_deps.amd64
+  - build_deps.amd64
 
   script:
   # Pull CUDA from the image itself
@@ -423,10 +366,8 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - concretize_deps.amd64
-  - build_deps.amd64 1 3
-  - build_deps.amd64 2 3
-  - build_deps.amd64 3 3
+  - generate_deps.amd64
+  - build_deps.amd64
 
   script:
   # Pull ROCm from the image itself
@@ -471,10 +412,8 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - concretize_deps.amd64
-  - build_deps.amd64 1 3
-  - build_deps.amd64 2 3
-  - build_deps.amd64 3 3
+  - generate_deps.amd64
+  - build_deps.amd64
 
   script:
   # Pull Level 0 (part of OneAPI) from the image itself
@@ -524,16 +463,14 @@ check.amd64:
   needs:
   - job: autoreconf
     artifacts: false
-  - concretize_deps.amd64
-  - build_deps.amd64 1 3
-  - build_deps.amd64 2 3
-  - build_deps.amd64 3 3
+  - generate_deps.amd64
+  - build_deps.amd64
 
   script:
   # Run the build script for the configuration of interest. Use some Python to help.
   - >-
     (source $env_latest/load.sh && ci/scripts/makecheck.py $env_latest/config/general
-    -j $jobs -o logs/ -p latest_ -s "$SPEC" $EXTRA_ARGS) || exit $?
+    -j $jobs -o logs/ -p latest_ -s "$SPEC") || exit $?
   # Tarball the HPCToolkit install for later stages
   - tar -C / -cvzf hpctoolkit_install.$CI_ARCH.tar.gz opt/hpctoolkit/
 
@@ -547,13 +484,9 @@ check.arm64:
   extends: check.amd64
   variables:
     ARCH: arm64
-    EXTRA_ARGS: '--check-fail-code 33'
-
-  allow_failure:
-    exit_codes: 33
 
   needs:
   - job: autoreconf
     artifacts: false
-  - concretize_deps.arm64
+  - generate_deps.arm64
   - build_deps.arm64
