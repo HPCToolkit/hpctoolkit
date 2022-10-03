@@ -79,7 +79,13 @@ IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 IGC_IFLAGS = @OPT_IGC_IFLAGS@
 endif
 
-MYSOURCES = main.cpp Args.cpp Structure-Cache.cpp SingleBin.cpp MeasDir.cpp
+MYSOURCES = \
+	main.cpp \
+	Args.cpp \
+	Structure-Cache.cpp \
+	Structure-Version.cpp \
+	SingleBin.cpp \
+	MeasDir.cpp
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \

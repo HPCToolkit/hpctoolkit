@@ -77,6 +77,7 @@
 #include <lib/support/FileUtil.hpp>
 
 #include "Structure-Cache.hpp"
+#include "Structure-Version.hpp"
 #include "Args.hpp"
 
 using namespace std;
@@ -334,7 +335,8 @@ check_cache_file (char *path)
   }
   // It is properly formatted
   // fprintf(stderr, "  file %s, last line = \"%s\" matches </HPCToolkitStructure> \n", path, readbuf);
-  return true;
+
+  return StructureFileCheckVersion(path);
 }
 
 //  clean up cache entry being replaced 
