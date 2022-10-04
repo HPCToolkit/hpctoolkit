@@ -31,3 +31,9 @@ else
   git -C .spack.git fetch --verbose origin +octo-all-ci-improvements:octo-all-ci-improvements || exit $?
   git clone --shared --branch=octo-all-ci-improvements .spack.git "$SPACK_ROOT" || exit $?
 fi
+
+# Set some standard configuration values for Spack in CI
+#   Locking can be slow with fuse-overlayfs, give it a little more time than usual to sort out
+"$SPACK_ROOT"/bin/spack config --scope site add 'config:db_lock_timeout:60'
+#   The network can be pretty heavy sometimes, don't stop because of that
+"$SPACK_ROOT"/bin/spack config --scope site add 'config:connect_timeout:600'

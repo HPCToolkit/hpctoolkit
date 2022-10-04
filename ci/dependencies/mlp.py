@@ -30,6 +30,8 @@ pipeline: T.Dict[str, T.Any] = {
     },
 }
 
+name_counts: T.Dict[str, int] = {}
+
 # For each child pipeline, gather its source pipeline/job and decide whether to include it
 for child in args.children:
     with open(child, encoding="utf-8") as f:
@@ -58,20 +60,32 @@ for child in args.children:
         # Technically a bad pipeline, but we ignore it completely in this case
         continue
 
+    # Add the appropriate need to the copy job
+    need = {
+        "pipeline": src_pipeline,
+        "job": src_job,
+    }
+    if need not in pipeline["copy"]["needs"]:
+        pipeline["copy"]["needs"].append(need)
+
     # Generate a trigger job for this pipeline
-    pipeline["copy"]["needs"].append(
-        {
-            "pipeline": src_pipeline,
-            "job": src_job,
-        }
-    )
-    pipeline[name] = {
+    num = name_counts.get(name, 0)
+    name_counts[name] = num + 1
+    pipeline[f"{name} {num:d} 0"] = {
         "stage": "trigger",
         "trigger": {
             "include": [{"job": "copy", "artifact": child.as_posix()}],
             "strategy": "depend",
         },
     }
+
+# If the needs: for the copy job gets too long, clone the job to make GitLab happy
+if len(pipeline["copy"]["needs"]) > 5:
+    needs = pipeline["copy"]["needs"]
+    pipeline["copy"]["needs"] = needs[:5]
+    for i, start in enumerate(range(5, len(pipeline["copy"]["needs"]), 5)):
+        pipeline[f"copy {i+2}"] = pipeline["copy"].copy()
+        pipeline[f"copy {i+2}"]["needs"] = needs[i : i + 5]
 
 # Dump the top-level pipeline into the output
 with open(args.output, "w", encoding="utf-8") as f:
