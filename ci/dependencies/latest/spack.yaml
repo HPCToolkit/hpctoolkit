@@ -113,7 +113,7 @@ spack:
       - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
       - spack config --scope site add config:install_tree:padded_length:100
       - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
-      - spack -d --disable-locks ci rebuild
+      - spack -d ci rebuild
 
     reindex-job-attributes:
       tags: [docker]

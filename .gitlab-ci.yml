@@ -227,14 +227,14 @@ autoreconf check:
     - |
       if test -n "$JOB_ENV_MINIMUM"; then
         env_minimum=ci/dependencies/minimum/c/$os/$arch/;
-        spack -e $env_minimum --disable-locks install --cache-only --no-check-signature --fail-fast || exit $?;
+        spack -e $env_minimum install --cache-only --no-check-signature --fail-fast || exit $?;
         spack env activate --sh $env_minimum > $env_minimum/load.sh || exit $?;
         cat $env_minimum/load.sh || exit $?;
       fi
     - |
       if test -n "$JOB_ENV_LATEST"; then
         env_latest=ci/dependencies/latest/c/$os/$arch/;
-        spack -e $env_latest --disable-locks install --cache-only --no-check-signature --fail-fast || exit $?;
+        spack -e $env_latest install --cache-only --no-check-signature --fail-fast || exit $?;
         spack env activate --sh $env_latest > $env_latest/load.sh || exit $?;
         cat $env_latest/load.sh || exit $?;
       fi
