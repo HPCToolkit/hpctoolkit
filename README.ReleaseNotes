@@ -1,4 +1,93 @@
 ----------------------------------------
+HPCToolkit 2022.10.01
+----------------------------------------
+
+HPCToolkit Release Notes
+
+Enhancements:
+- Hpcrun
+  - Supports profiling and tracing GPU-accelerated applications atop Intel’s 
+    Level0 runtime
+  - Supports instrumentation-based performance measurement of GPU kernels atop
+    Intel’s Level0 runtime, including instruction counting and approximate
+    attribution of memory latency
+  - Reduces space requirements for performance measurements using new sparse
+    formats
+  - Accommodates the inability to fork when software for Cray’s Cassini NIC
+    senses the use of pinned memory
+  - Annotates profiles and traces with metadata that identifies hardware and
+    software abstractions (e.g., nodes, GPUs, MPI ranks, threads, GPU streams)
+- Hpcstruct
+  - Analyzes CPU and GPU binaries using half of the hardware threads available
+    in your CPU set 
+  - Supports caching of program analysis results for reuse. For instance, 
+    analysis results of support libraries can be done once and cached rather
+    than once for each experiment.
+  - Automatically removes incomplete or otherwise invalid analysis results in
+    your cache
+- Hpcprof
+  - Reduces space requirements for performance analysis metrics by replacing a 
+    dense representation of  metrics for CPU threads and GPU streams with 
+    sparse tensors
+  - profile-major-sparse format - all metric data for an individual profile is
+    contiguous (profile.db)
+  - context-major-sparse format - all metric data for an individual calling
+    context is contiguous (cct.db)
+  - Assembles a single-file representation of program traces for all CPU and 
+    GPU contexts (trace.db) instead of having hpcviewer combine traces
+  - Replaces XML representation of program calling contexts with a compact 
+    binary representation (meta.db)
+  - Is now highly multithreaded: by default, it analyzes performance data using
+    all available threads (in your CPU set)
+  - Reconstructs calling contexts within GPU kernels, including dynamic call
+    chains, inlined functions and templates, loop nests, and statements
+
+Bug fixes:
+- Eliminated a heap corruption error in hpcrun.
+
+Infrastructure improvements:
+- documentation for all of HPCToolkit’s binary formats is automatically 
+  deposited in every database that hpcprof generates.
+- development and deployment of CI for multiple architectures and operating 
+  systems
+- development of ‘minitest’ - a collection of CPU and GPU test cases
+- GPU test cases currently exercise NVIDIA and AMD GPUs using CUDA, HIP, and 
+  OpenMP
+
+Dependency changes:
+- Deletions
+  - binutils: replaced by elfutils
+- Additions
+  - libiberty: was part of Binutils but is now required separately
+  - yaml-cpp: a YAML parser and emitter in C++
+  
+Known Issues:
+- HPCToolkit’s hpcprof-mpi is unavailable in this release while we improve its 
+  robustness for corner cases so that it is suitable for production use. When 
+  finished, it will employ both shared and distributed memory parallelism for 
+  scalable analysis of performance measurements.
+- On AMD GPUs, measurements of activity on AMD GPUs using hardware counters 
+  don’t include measurements of OpenMP offloading implemented directly atop 
+  HSA by AMD’s compilers.
+
+HPCViewer Release Notes
+
+Enhancements:
+- Supports new binary representations (profile.db, cct.db, trace.db, meta.db)
+- Supports using CCT node Filters to hide nodes and/or their descendants when
+  rendering traces
+- Reports tuples of metadata associated with trace lines
+- Supports filtering of trace view using trace metadata
+
+Bug fixes:
+- Fixed rendering of traces for GPU streams so that they appear properly at all
+  scales
+- Cleared memory used in a pointer-based data structure when filtering tree 
+  nodes to enable garbage collection to avoid a JVM out of memory error
+- Fixed resizing of table rows in filter dialog box
+
+
+----------------------------------------
 HPCToolkit 2022.05.15
 ----------------------------------------
 
