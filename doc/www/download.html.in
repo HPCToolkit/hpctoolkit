@@ -63,7 +63,6 @@ The instructions to install Java:
 			<li>Or download from:
 				<ul>
 					<li><a href="https://adoptopenjdk.net">AdoptOpenJDK</a> or <a href="https://adoptium.net/">Adoptium</a> for the newer JDK versions</li>
-					<li><a href="https://www.azul.com/downloads/">Azul Zulu</a> (recommended for Mac M1 platform)</li>
 					<li><a href="https://www.oracle.com/java/technologies/javase-downloads.html">Oracle</a> </li>
 				</ul>
 		</ul>
@@ -93,6 +92,8 @@ The instructions to install Java:
 <h2>Older releases</h2>
 
 <blockquote>
+<a href="download/hpcviewer/2022.06"><tt>2022.06 Release</tt></a>
+<br/>
 <a href="download/hpcviewer/2022.01"><tt>2022.01 Release</tt></a>
 <br/>
 <a href="download/hpcviewer/2021.10"><tt>2021.10 Release</tt></a>
@@ -101,33 +102,11 @@ The instructions to install Java:
 <br/>
 <a href="download/hpcviewer/2021.03"><tt>2021.03 Release</tt></a>
 <br/>
-<a href="download/hpcviewer/2020.12"><tt>2020.12 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2020.07"><tt>2020.07 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2020.05"><tt>2020.05 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2020.04"><tt>2020.04 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2020.03"><tt>2020.03 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2020.02"><tt>2020.02 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2019.12"><tt>2019.12 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2019.09"><tt>2019.09 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2019.08"><tt>2019.08 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2019.04"><tt>2019.04 Release</tt></a>
-<br/>
-<a href="download/hpcviewer/2019.02"><tt>2019.02 Release</tt></a>
-<br/>
 <br/>
 <a href="download/hpcviewer/Archive"><tt>Prior versions</tt></a>
 </blockquote>
 
-<p>[<span class="lastupdated">Page last updated: 2022/04/05</span>]
+<p>[<span class="lastupdated">Page last updated: 2022/10/04</span>]
 </p>
 <!-- ********************************************************************** -->
 
