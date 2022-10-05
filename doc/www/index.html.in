@@ -63,8 +63,8 @@ loop nests, and identifies inlined code.
 
 hpcprof overlays call path profiles and traces with program structure 
 computed by hpcstruct and correlates the result with source code. 
-hpcprof/mpi handles thousands of profiles from a parallel execution by 
-performing this correlation in parallel. hpcprof and hpcprof/mpi generate a 
+hpcprof-mpi handles thousands of profiles from a parallel execution by
+performing this correlation in parallel. hpcprof and hpcprof-mpi generate a
 performance database that can be explored using the hpcviewer user interface. 
 </p>
 </li>
@@ -89,7 +89,7 @@ showing activity over time at different call stack depths.
 
 <h2>Quick Links</h2>
 <ul>
-<li><a href="https://github.com/HPCToolkit">GitHub Project</a>
+<li><a href="https://gitlab.com/HPCToolkit">GitLab Project</a>
 </li>
 <li><a href="software-instructions.html">Build Instructions</a>
 </li>
@@ -125,7 +125,7 @@ In this project, the goal is to extend HPCToolkit with improved capabilities for
 <h2> License</h2>
 <p>HPCToolkit is released under the 3-clause
   <a href="LICENSE">BSD license</a> and is available on
-  <a href="https://github.com/HPCToolkit">GitHub/HPCToolkit</a>.
+  <a href="https://gitlab.com/HPCToolkit">GitLab/HPCToolkit</a>.
 </p>
 
 <p>[<span class="lastupdated">Page last updated: 2022/10/05</span>]
