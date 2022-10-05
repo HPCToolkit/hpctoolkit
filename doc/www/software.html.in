@@ -43,16 +43,17 @@ the old hpctoolkit externals).
 <p>You can install HPCToolkit with the &quot;One Button&quot;
 <code>spack install hpctoolkit</code> method, or else use spack to
 install the prerequisites and then build hpctoolkit with the
-traditional <code>configure ; make ; make install</code> method.  Both
-the hpctoolkit and spack repositories are available on GitHub.
+traditional <code>configure ; make ; make install</code> method.
+The hpctoolkit repository is available on GitLab.
+The spack repository is available on GitHub.
 </p>
 
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
-    <td><a href="https://github.com/HPCToolkit/hpctoolkit">hpctoolkit</a>
+    <td><a href="https://gitlab.com/HPCToolkit/HPCToolkit">HPCToolkit</a>
     </td>
-    <td><code>git clone https://github.com/HPCToolkit/hpctoolkit.git</code>
+    <td><code>git clone https://gitlab.com/HPCToolkit/HPCToolkit.git</code>
     </td>
   </tr>
   <tr>
@@ -72,20 +73,20 @@ Note: Trace views provided previously by HPCToolkit's <tt>hpctraceviewer</tt> in
 
 Source code for HPCToolkit's hpcviewer graphical
 user interface is available from the
-<a href="https://github.com/HPCToolkit/hpcviewer.e4">hpcviewer.e4 repository</a>
-on GitHub.  Unless you are a tool developer who wants to modify the
+<a href="https://gitlab.com/HPCToolkit/HPCViewer">HPCViewer repository</a>
+on GitLab.  Unless you are a tool developer who wants to modify the
 capabilities of these graphical user interfaces, we recommend
 downloading the binary releases.
 See the repository's 
-<a href="https://github.com/HPCToolkit/hpcviewer.e4/blob/master/README.md">README.md</a> for information about how to build <tt>hpcviewer</tt> from source code.
+<a href="https://gitlab.com/HPCToolkit/HPCViewer/blob/master/README.md">README.md</a> for information about how to build <tt>hpcviewer</tt> from source code.
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
   <td>
-    <a href="https://github.com/HPCToolkit/hpcviewer.e4">hpcviewer</a> 
+    <a href="https://gitlab.com/HPCToolkit/HPCViewer">HPCViewer</a> 
   </td>
   <td>
-    <code>git clone https://github.com/HPCToolkit/hpcviewer.e4.git</code>
+    <code>git clone https://gitlab.com/HPCToolkit/HPCViewer.git</code>
   </td>
   </tr>
   </table>
@@ -98,7 +99,7 @@ See the repository's
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2021/06/12</span>]
+<p>[<span class="lastupdated">Page last updated: 2022/10/05</span>]
 </p>
 
 <!-- ********************************************************************** -->
