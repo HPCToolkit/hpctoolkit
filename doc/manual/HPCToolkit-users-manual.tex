@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2022.04.15}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2022.10.01}
 %\subtitle{}
 
 \author{John Mellor-Crummey,\\
@@ -136,7 +136,7 @@ Keren Zhou\\
 Rice University\\
 }
 
-\date{April 15, 2022}
+\date{October 1, 2022}
 
 \maketitle
 
@@ -277,7 +277,7 @@ as well as other clusters and supercomputers based on x86\_64, Power, and ARM pr
 
 
 \begin{figure}[t]
-\centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-workflow}}
+\centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-gpu-workflow}}
 \caption{Overview of \HPCToolkit{}'s tool work flow.}
 
 \label{fig:hpctoolkit-overview:a}
@@ -433,7 +433,7 @@ It assumes an operational installation of \HPCToolkit{}.
 \label{chpt:quickstart:tour}
 
 \begin{figure}[t]
-\centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-workflow}}
+\centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-gpu-workflow}}
 \caption{Overview of \HPCToolkit{} tool's work flow.}
 \label{fig:hpctoolkit-overview:b}
 \end{figure}
@@ -529,7 +529,7 @@ Currently, the database contains measurements files for each thread that are nam
     \verb|app-<mpi-rank>-<thread-id>-<host-id>-<process-id>.<generation-id>.hpctrace|
 \end{quote}
 
-\subsubsection{Specifying Sample Sources}
+\subsubsection{Specifying CPU Sample Sources}
 
 \HPCToolkit{} primarily monitors an application using asynchronous sampling.
 Consequently, the most common option to \hpcrun{} is a list of sample sources that define how samples are generated.
@@ -546,13 +546,26 @@ To use the same sample sources with an \hpclink{}-ed application, use a command 
   \texttt{export HPCRUN\_EVENT\_LIST="$e_1$@howoften$_1$ $e_2$@howoften$_2$"}
 \end{quote}
 
+\subsubsection{Measuring GPU Computations}
+
+One can simply profile and optionally trace computations offloaded onto AMD, Intel, and NVIDIA GPUs by using one of the following event specifiers:
+\begin{itemize}
+\item  {\tt -e gpu=nvidia}  is used with CUDA and OpenMP on NVIDIA GPUs
+\item  {\tt -e gpu=amd}  is used with CUDA and OpenMP on NVIDIA GPUs
+\item  {\tt -e gpu=level0}  is used with Intel's Level Zero runtime for Data Parallel C++ and OpenMP
+\item  {\tt -e gpu=opencl}  can be used on any of the GPU platforms. 
+\end{itemize}
+
+Adding a {\tt -t} to \hpcrun{}'s command line when profiling GPU computations will trace them as well.
+
+For more information about how to use PC sampling (NVIDIA GPUs only) or binary instrumentation (Intel GPUs) for instruction-level performance measurement of GPU kernels, see Chapter~\ref{chpt:gpu}.
 
 % ==========================================================
 % ==========================================================
 
 \subsection{Recovering Program Structure}
 
-Typically, \hpcstruct{} is launched without any options, with an argument that is a \HPCToolkit{}  \emph{measurements directory}.
+Typically, \hpcstruct{} is launched without any options, with an argument that is a \HPCToolkit{}  \emph{measurement directory}.
 \hpcstruct{} identifies the application as well as any shared libraries and GPU binaries it invokes.
 It processes each of them and records information its program structure in the \emph{measurements directory}.
 Program structure for a binary includes information about its source files, procedures, inlined code, loop nests, and statements.
@@ -1276,75 +1289,78 @@ This is why we need the application to call \mytt{MPI_Comm_rank()} with communic
 
 \cleardoublepage
 \chapter{Measurement and Analysis of OpenMP Multithreading}
-\label{chpt:gpu}
+\label{chpt:openmp}
 
-{
-\centering
- \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring OpenMP computations using the OpenMP 5.0 OpenMP Tools API support known as OMPT.}}
- \vspace{2ex}
-}
-
-HPCToolkit includes an implementation of the OpenMP 5.0 Tools API
-known as OMPT. The OMPT interface enables HPCToolkit to extract
+HPCToolkit includes an implementation of the OpenMP Tools API
+known as OMPT that was first defined in OpenMP 5.0. The OMPT interface enables HPCToolkit to extract
 enough information to reconstruct user-level calling contexts from
 implementation-level measurements.
 
+In the unlikely event that there is a bad interaction between HPCToolkit's support for the OMPT interface
+and an OpenMP runtime, OMPT support may be disabled
+when measuring your code with HPCToolkit by setting an environment variable, as shown below
+
+\vspace{1ex}
+{\tt export OMP\_TOOL=disabled}
+
+\section{Monitoring OpenMP on the Host}
 Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes.
-Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight
-OpenMP Runtime) and Intel's OpenMP runtime provide emerging support
-for OMPT. At present, support in these implementations is known to
-be incomplete, especially with respect to offloading computation
-onto TARGET devices.
+IBM's LOMP (Lightweight OpenMP Runtime) and recent versions of LLVM's OpenMP runtime,  
+AMD's AOMP, and Intel's OpenMP runtime provide emerging support
+for OMPT. Support in these implementations evolving, especially with respect to offloading computation
+onto TARGET devices. 
+A notable exception for a popular runtime that lacks OMPT support is the GCC compiler suite's {\tt libgomp}. Fortunately, the LLVM OpenMP runtime, which supports OMPT, is compatible with {\tt libgomp}, at least on the host.\footnote{It appears that GCC's support for OpenMP offloading can only be used with {\tt libgomp},}
 
-If an interaction between HPCToolkit's support for the OMPT interface
-and an OpenMP runtime causes problems, OMPT support may be disabled
-when using HPCToolkit by setting  OpenMP environment variable {\tt
-OMP\_TOOL} to {\tt disabled}.
+ In OpenMP implementations without support for the OMPT interface, HPCToolkit records and reports implementation-level measurements of program executions. At the implementation-level, work is typically partitioned between a primary (master) thread and one or more worker threads. Without the OMPT interface, work executed by the master thread can be associated with its full user-level calling context and is reported under \verb|<program root>|. However, OpenMP regions and tasks executed by worker threads typically can't be associated with the calling context in which regions or tasks were launched. Instead, the work is attributed to a worker thread outer context that polls for work, finds the work, and executes the work. HPCToolkit reports such work under \verb|<thread root>|.
 
-\section{Monitoring OpenMP TARGET Offloading}
+
+When an OpenMP runtime supports the OMPT interface,  by registering  callbacks  using the OMPT interface and  making calls to OMPT interface operations in the runtime API, HPCToolkit can gather information that enables it to reconstruct a global, user-level view of the parallelism. Using the OMPT interface, HPCToolkit can attribute metrics for costs incurred by worker threads in parallel regions back to the calling contexts in which those parallel regions were invoked. In such cases, most or all work performance is attributed back to global user-level calling contexts that are descendants of \verb|<program root>|. When using the OMPT interface, there may be some costs that cannot be attributed back to a global user-level calling context in an OpenMP program. For instance, costs assocuated with idle worker threads that can't be associated with any parallel region may be attributed to \verb|<omp idle>|. Even when using the OMPT interface, some costs may be attributed to \verb|<thread root>|; however, such costs are typically small and are often associated with runtime startup.
+
+\section{Monitoring OpenMP Offloading on GPUs}
+
+HPCToolkit includes support for using the OMPT interface to monitor offloading of computations specified with OpenMP TARGET to GPUs and attributing them back to the host calling contexts from which they were offloaded.
 
 \subsection{NVIDIA GPUs}
-To our knowledge, NVIDIA's OpenMP {\tt nvc++} compiler and its
-runtime lack OMPT support. Without OMPT support, HPCToolkit
-separates performance information for the OpenMP master thread from
-other OpenMP threads (and any other threads that may be present at
-runtime, such as MPI helper threads). Performance of the master thread is
-attributed to \verb|<program root>|; the performance of all other threads
-is attributed to \verb|<thread root>|. While this is not as convenient
-as the high-level unified call stack constructed using the OMPT interface,
-this approach can be used to analyze performance data for OpenMP programs
-compiled with NVIDIA's compilers using HPCToolkit. However, it will be
-harder to understand this separate presentation of master thread vs.\ all others.
 
-LLVM-generated code for say v12.0 or later have good host-side OMPT
-support in the runtime. HPCToolkit manages to do a good job associating
-the performance of kernels with the CPU calling contexts in which
-they are launched by hiding all NVIDIA library frames in the call
-stack, which are stripped code anyway. Patches to add OMPT support
-to LLVM OpenMP are pending; they haven't been accepted yet.
+OpenMP computations executing on NVIDIA GPUs are monitored whenever {\tt hpcrun}'s command-line witches are configured to monitor operations on NVIDIA GPUs, as described in Section~\ref{sec:nvidia-gpu}.
+
+At this writing, NVIDIA's OpenMP {\tt nvc++} compiler and 
+runtime lack OMPT support. Without OMPT support, HPCToolkit
+separates performance information for the OpenMP primary thread from
+other OpenMP threads (and any other threads that may be present at
+runtime, such as MPI helper threads). Performance of the primary thread is
+attributed to \verb|<program root>|; the performance of all other threads
+is attributed to \verb|<thread root>|. While this is not as easy to analyze and understand
+as the global, user-level calling context view constructed using the OMPT interface,
+this approach can be used to analyze performance data for OpenMP programs
+compiled with NVIDIA's compilers using HPCToolkit. 
+
+LLVM-generated code for  v12.0 or later have good host-side OMPT
+support in the runtime. HPCToolkit does a good job associating
+the performance of kernels with global, user-level CPU calling contexts in which
+they are launched.
+
+Regardless of what compiler is used to offload OpenMP computations to NVIDIA GPUs, HPCToolkit simplifies the host calling contexts to which it attributes GPU operations by hiding all NVIDIA library frames that correspond to stripped code in NVIDIA's CUDA runtime. 
+The presence of long chains of procedure frames only identified by their machine code address in NVIDIA's CUDA library in the calling contexts for GPU operations obscures rather than enlightens; 
+thus, suppressing them is appropriate.
 
 \subsection{AMD GPUs}
-AMD's ROCm 5.1 release contains support for monitoring
-the offloading of computations to AMD GPUs using OpenMP Target.
-This monitoring is not enabled by default;
-it must be enabled by passing {\tt -e gpu=openmp} to \hpcrun{}.
 
-For OpenMP code compiled with {\tt amdclang} or {\tt amdclang++},
-the {\tt -e gpu=openmp} option will cause HPCToolkit to use the
-OMPT interface to monitor GPU operations, such as kernel execution,
-and data copies.  With no other options, it will profile these
-operations and attribute them to the OpenMP TARGET directives that
-caused the operations to be initiated. Adding a {\tt -t} option
-will cause \hpcrun{} to trace the GPU operations.
+OpenMP computations executing on AMD GPUs are monitored whenever {\tt hpcrun}'s command-line switches are configured to monitor operations on AMD GPUs, as described in Section~\ref{sec:amd-gpu}.
 
-At present, OpenMP code compiled with Cray's {\tt cc} or {\tt CC}
-compilers generates code that runs atop AMD's ROCm 4 runtime, which
-lacks OMPT support. As a result, GPU operations offloaded with HSA
-(as they seem to be) are invisible to HPCToolkit.
+AMD's ROCm 5.1 and later releases contains OMPT support for monitoring and attributing host computations as well as computations 
+offloaded to AMD GPUs using OpenMP TARGET. When compiled with  {\tt amdclang} or {\tt amdclang++}, both host computations and computations offloaded to AMD GPUs can be associated with global user-level calling contexts that are children of \verb|<program root>|.  
+
+Cray's compilers only have partial support for the OMPT interface, which renders HPCToolkit unable to elide implementation-level details of parallel regions. For everyone but compiler or runtime developers, such details are an unnecessary and make it harder for application developers to understand their code with no added value.
+
 
 \subsection{Intel GPUs}
-Intel's latest runtime in OneAPI has support for the OMPT tools interface.
-We have no experience with this implementation at present.
+
+OpenMP computations executing on Intel GPUs are monitored whenever {\tt hpcrun}'s command-line switches are configured to monitor operations on Intel GPUs, as described in Section~\ref{sec:intel-gpu}.
+
+Intel's OneAPI {\tt ifx} and {\tt icx} compilers, which support OpenMP offloading in their OpenMP runtime atop Intel's latest GPU-enabled Level Zero runtime, provide support for the OMPT tools interface. 
+The implementation of host-side OMPT callbacks in Intel's OpenMP runtime is sufficient for attributing GPU work to global, user-level calling contexts rooted at \verb|<program root>|.
+
 
 
 % ***************************************************************************
@@ -1371,10 +1387,10 @@ We have no experience with this implementation at present.
 \label{chpt:known}
 
 This section lists some known issues and potential workarounds. 
-Other known issues can be seen in the project's GitHub issues pages: 
+Other known issues can be seen in the project's Gitlab issues pages: 
 \begin{itemize}
- \item For HPCToolkit in general, see  \url{https://github.com/HPCToolkit/hpctoolkit/issues}
- \item For hpcviewer, see \url{https://github.com/HPCToolkit/hpcviewer.e4/issues}
+ \item For HPCToolkit in general, see  \url{https://gitlab.com/HPCToolkit/HPCToolkit/issues}
+ \item For hpcviewer, see \url{https://gitlab.com/HPCToolkit/HPCViewer/issues}
 \end{itemize}
 
 \section{\hpcrun{} reports partial call paths for code executed by a constructor prior to entering main}
@@ -1399,17 +1415,6 @@ conflicts with other process-level tools that use the Linux {\tt perf\_events} s
 \paragraph{Description:}  On Cray systems, we have observed that \hpcrun{} associates several profiles and traces with rank 0, thread 0. This results from the fact that the Cray PMI daemon gets forked from the application in a constructor and there is no exec. Initially, each process gets tagged with rank 0, thread 0 until the real rank and thread is determined later in the execution. That determination never happens for the PMI daemon.
 
 \paragraph{Workaround:} In our experience, the hpcrun files in the measurement for the daemon tagged with rank 0 thread 0 are very small. In experiments we ran, they were about 2K. You can remove these profiles and their matching trace files before processing a measurement database with hpcprof or hpcprof-mpi. The correspondence between a profile and trace can be determined because they only differ in their suffix (hpcrun or hpctrace).
-
-\section{After analyzing an execution traces  \hpcprof-mpi{}, \hpcviewer{} may report invalid CPID (call path id)
-values when displaying traces}
-
-\paragraph{Affected architectures:}  any CPU 
-
-\paragraph{Description:} HPCToolkit assumes that the only call paths that appear in traces are leaves in a calling context tree. When analyzing traces with \hpcprof-mpi{}, a strategy used to handle interior nodes that may have been traced doesn't work when analysis of traces is performed with \hpcprof-mpi{} using multiple processes. 
-
-\paragraph{Workaround:} As long as the number of invalid CPID values seems small relative to the number of samples you see in the trace view, you can ignore this issue. 
-
-\paragraph{Development Plan:} A forthcoming version of \hpcprof-mpi{} will not require that any node appearing in a trace is a leaf in a calling context tree.
 
 \section{\hpcrun{} sometimes enables writing of read-only data}
 
