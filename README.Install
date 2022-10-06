@@ -16,9 +16,11 @@ Installing HPCToolkit with Spack
 10 Manual Install
 11 Advanced Options
 11.1 CUDA
-11.2 ROCM
-11.3 MPI
-11.4 PAPI vs Perfmon
+11.2 Level Zero
+11.3 ROCM
+11.4 OpenCL
+11.5 MPI
+11.6 PAPI vs Perfmon
 12 Platform Specific Notes
 12.1 Cray
 13 HPCToolkit GUI Interface (Hpcviewer)
@@ -81,7 +83,7 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: September 26, 2022.
+Last revised: October 5, 2022.
 
 2 Prerequisites
 ===============
@@ -244,6 +246,19 @@ new syntax, the paths go in 'modules.yaml'.
            lmod: /path/to/top-level/lmod-module/directory
          enable:
            - tcl  (or lmod)
+
+Note: for Lmod modules, you should also turn off autoload for
+hpctoolkit.  Autoload loads the modules for hpctoolkit's dependencies.
+But hpctoolkit does not need this and loading them may interfere with an
+application's dependencies.
+
+     modules:
+       default:
+         lmod:
+           hpctoolkit:
+             autoload: none
+           all:
+             autoload: direct
 
 There are a few other fields that you may want to set for your local
 system.  These are all in 'config.yaml'.
@@ -704,7 +719,36 @@ automatically (but check the summary at the end of the configure
 output).  If you are using CUDA from a separate system module, then you
 will need the '--with-cuda' option.
 
-11.2 ROCM
+11.2 Level Zero
+---------------
+
+HPCToolkit supports profiling Intel GPUs through the Intel Level Zero
+and Intel GTPin interfaces.  For basic support (start and stop times for
+GPU kernels) add the '+level_zero' variant.  For advanced support inside
+the GPU kernel, also add the '+gtpin' variant.  But we recommend always
+compiling with gtpin and then deciding at runtime which options to use.
+
+     spack install hpctoolkit +level_zero +gtpin
+
+GTPin requires the 'oneapi-igc' package which is an external only spack
+package, normally installed in '/usr'.  You should add this with a spack
+externals and let spack build the rest.  For example:
+
+     packages:
+       oneapi-igc:
+         externals:
+          - spec: oneapi-igc@1.0.10409
+            prefix: /usr
+
+For an autotools build, use the options:
+
+     configure  \
+         --with-level0=/path/to/oneapi-level-zero/prefix  \
+         --with-gtpin=/path/to/intel-gtpin/prefix  \
+         --with-igc=/usr   (or oneapi-igc prefix)  \
+         ...
+
+11.3 ROCM
 ---------
 
 HPCToolkit supports profiling AMD GPU binaries through the HIP/ROCM
@@ -772,7 +816,25 @@ option.  Otherwise, use the other four options.
 It is allowed to mix the all-in-one option with the individual packages.
 The rule is that the specific overrides the general.
 
-11.3 MPI
+11.4 OpenCL
+-----------
+
+For all three GPU types, an application can access the GPU through the
+native interface (CUDA, ROCM, Level Zero) or through the OpenCL
+interface.  To add support for OpenCL, add the '+opencl' variant in
+addition to the native interface.  We recommend adding opencl support
+for all GPU types.  For example, with CUDA:
+
+     spack install hpctoolkit +cuda +opencl
+
+For an autotools build, use the '--with-opencl' option.
+
+     configure  \
+         --with-cuda=/path/to/cuda/prefix  \
+         --with-opencl=/path/to/opencl-c-headers/prefix  \
+         ...
+
+11.5 MPI
 --------
 
 HPCToolkit always supports profiling MPI applications.  For hpctoolkit,
@@ -788,7 +850,7 @@ add this to 'packages.yaml'.  The MPI module should be built with the
 same version of GNU gcc/g++ used to build hpctoolkit (to keep the C++
 libraries in sync).
 
-11.4 PAPI vs Perfmon
+11.6 PAPI vs Perfmon
 --------------------
 
 HPCToolkit can access the Hardware Performance Counters with either PAPI

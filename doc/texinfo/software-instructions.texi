@@ -72,7 +72,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: September 26, 2022.
+Last revised: October 5, 2022.
 
 @c ------------------------------------------------------------
 
@@ -292,6 +292,22 @@ modules:
       lmod: /path/to/top-level/lmod-module/directory
     enable:
       - tcl  (or lmod)
+@end example
+
+@noindent
+Note: for Lmod modules, you should also turn off autoload for
+hpctoolkit.  Autoload loads the modules for hpctoolkit's dependencies.
+But hpctoolkit does not need this and loading them may interfere with
+an application's dependencies.
+
+@example
+modules:
+  default:
+    lmod:
+      hpctoolkit:
+        autoload: none
+      all:
+        autoload: direct
 @end example
 
 @noindent
@@ -869,6 +885,45 @@ will need the @code{--with-cuda} option.
 
 @c ------------------------------------------------------------
 
+@subsection Level Zero
+
+HPCToolkit supports profiling Intel GPUs through the Intel Level Zero
+and Intel GTPin interfaces.  For basic support (start and stop times
+for GPU kernels) add the @code{+level_zero} variant.  For advanced
+support inside the GPU kernel, also add the @code{+gtpin} variant.
+But we recommend always compiling with gtpin and then deciding at
+runtime which options to use.
+
+@example
+spack install hpctoolkit +level_zero +gtpin
+@end example
+
+@noindent
+GTPin requires the @code{oneapi-igc} package which is an external only
+spack package, normally installed in @code{/usr}.  You should add this
+with a spack externals and let spack build the rest.  For example:
+
+@example
+packages:
+  oneapi-igc:
+    externals:
+     - spec: oneapi-igc@@1.0.10409
+       prefix: /usr
+@end example
+
+@noindent
+For an autotools build, use the options:
+
+@example
+configure  \
+    --with-level0=/path/to/oneapi-level-zero/prefix  \
+    --with-gtpin=/path/to/intel-gtpin/prefix  \
+    --with-igc=/usr   (or oneapi-igc prefix)  \
+    ...
+@end example
+
+@c ------------------------------------------------------------
+
 @subsection ROCM
 
 HPCToolkit supports profiling AMD GPU binaries through the HIP/ROCM
@@ -944,6 +999,30 @@ configure  \
 @noindent
 It is allowed to mix the all-in-one option with the individual
 packages.  The rule is that the specific overrides the general.
+
+@c ------------------------------------------------------------
+
+@subsection OpenCL
+
+For all three GPU types, an application can access the GPU through the
+native interface (CUDA, ROCM, Level Zero) or through the OpenCL
+interface.  To add support for OpenCL, add the @code{+opencl} variant
+in addition to the native interface.  We recommend adding opencl
+support for all GPU types.  For example, with CUDA:
+
+@example
+spack install hpctoolkit +cuda +opencl
+@end example
+
+@noindent
+For an autotools build, use the @code{--with-opencl} option.
+
+@example
+configure  \
+    --with-cuda=/path/to/cuda/prefix  \
+    --with-opencl=/path/to/opencl-c-headers/prefix  \
+    ...
+@end example
 
 @c ------------------------------------------------------------
 
