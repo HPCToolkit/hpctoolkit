@@ -20,7 +20,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: September 26, 2022.
+#  Last revised: October 6, 2022.
 #
 packages:
 
@@ -89,8 +89,19 @@ packages:
   # Note: +mpi is currently disabled for develop.
   #
   # hpctoolkit:
-  #   version:  [2022.05.15, master]
+  #   version:  [2022.10.01, develop]
   #   variants: +papi +viewer
+
+
+  # hpcviewer -- hpctoolkit databases are platform independent, so the
+  # viewer can be installed together with hpctoolkit, or by itself on
+  # another machine.
+  #
+  # Hpctoolkit 2022.10.01 requires hpcviewer >= 2022.10 due to format
+  # change in the database.
+  #
+  hpcviewer:
+    version: [2022.10]
 
 
   # binutils -- used by hpcprof and struct simple (for functions and
