@@ -61,9 +61,11 @@
 <li><a name="toc-Advanced-Options" href="#Advanced-Options">11 Advanced Options</a>
 <ul class="no-bullet">
   <li><a name="toc-CUDA" href="#CUDA">11.1 CUDA</a></li>
-  <li><a name="toc-ROCM" href="#ROCM">11.2 ROCM</a></li>
-  <li><a name="toc-MPI" href="#MPI">11.3 MPI</a></li>
-  <li><a name="toc-PAPI-vs-Perfmon" href="#PAPI-vs-Perfmon">11.4 PAPI vs Perfmon</a></li>
+  <li><a name="toc-Level-Zero" href="#Level-Zero">11.2 Level Zero</a></li>
+  <li><a name="toc-ROCM" href="#ROCM">11.3 ROCM</a></li>
+  <li><a name="toc-OpenCL" href="#OpenCL">11.4 OpenCL</a></li>
+  <li><a name="toc-MPI" href="#MPI">11.5 MPI</a></li>
+  <li><a name="toc-PAPI-vs-Perfmon" href="#PAPI-vs-Perfmon">11.6 PAPI vs Perfmon</a></li>
 </ul></li>
 <li><a name="toc-Platform-Specific-Notes" href="#Platform-Specific-Notes">12 Platform Specific Notes</a>
 <ul class="no-bullet">
@@ -146,7 +148,7 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: September 26, 2022.
+<p>Last revised: October 5, 2022.
 </p>
 
 <a name="Prerequisites"></a>
@@ -346,6 +348,21 @@ In the new syntax, the paths go in <code>modules.yaml</code>.
       lmod: /path/to/top-level/lmod-module/directory
     enable:
       - tcl  (or lmod)
+</pre></div>
+
+<p>Note: for Lmod modules, you should also turn off autoload for
+hpctoolkit.  Autoload loads the modules for hpctoolkit&rsquo;s dependencies.
+But hpctoolkit does not need this and loading them may interfere with
+an application&rsquo;s dependencies.
+</p>
+<div class="example">
+<pre class="example">modules:
+  default:
+    lmod:
+      hpctoolkit:
+        autoload: none
+      all:
+        autoload: direct
 </pre></div>
 
 <p>There are a few other fields that you may want to set for your local
@@ -887,8 +904,45 @@ output).  If you are using CUDA from a separate system module, then you
 will need the <code>--with-cuda</code> option.
 </p>
 
+<a name="Level-Zero"></a>
+<h4 class="subsection">11.2 Level Zero</h4>
+
+<p>HPCToolkit supports profiling Intel GPUs through the Intel Level Zero
+and Intel GTPin interfaces.  For basic support (start and stop times
+for GPU kernels) add the <code>+level_zero</code> variant.  For advanced
+support inside the GPU kernel, also add the <code>+gtpin</code> variant.
+But we recommend always compiling with gtpin and then deciding at
+runtime which options to use.
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit +level_zero +gtpin
+</pre></div>
+
+<p>GTPin requires the <code>oneapi-igc</code> package which is an external only
+spack package, normally installed in <code>/usr</code>.  You should add this
+with a spack externals and let spack build the rest.  For example:
+</p>
+<div class="example">
+<pre class="example">packages:
+  oneapi-igc:
+    externals:
+     - spec: oneapi-igc@1.0.10409
+       prefix: /usr
+</pre></div>
+
+<p>For an autotools build, use the options:
+</p>
+<div class="example">
+<pre class="example">configure  \
+    --with-level0=/path/to/oneapi-level-zero/prefix  \
+    --with-gtpin=/path/to/intel-gtpin/prefix  \
+    --with-igc=/usr   (or oneapi-igc prefix)  \
+    ...
+</pre></div>
+
+
 <a name="ROCM"></a>
-<h4 class="subsection">11.2 ROCM</h4>
+<h4 class="subsection">11.3 ROCM</h4>
 
 <p>HPCToolkit supports profiling AMD GPU binaries through the HIP/ROCM
 interface, and beginning with version 2022.04.15, we support building
@@ -962,8 +1016,31 @@ options.  If <code>/opt/rocm</code> is available, then use the
 packages.  The rule is that the specific overrides the general.
 </p>
 
+<a name="OpenCL"></a>
+<h4 class="subsection">11.4 OpenCL</h4>
+
+<p>For all three GPU types, an application can access the GPU through the
+native interface (CUDA, ROCM, Level Zero) or through the OpenCL
+interface.  To add support for OpenCL, add the <code>+opencl</code> variant
+in addition to the native interface.  We recommend adding opencl
+support for all GPU types.  For example, with CUDA:
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit +cuda +opencl
+</pre></div>
+
+<p>For an autotools build, use the <code>--with-opencl</code> option.
+</p>
+<div class="example">
+<pre class="example">configure  \
+    --with-cuda=/path/to/cuda/prefix  \
+    --with-opencl=/path/to/opencl-c-headers/prefix  \
+    ...
+</pre></div>
+
+
 <a name="MPI"></a>
-<h4 class="subsection">11.3 MPI</h4>
+<h4 class="subsection">11.5 MPI</h4>
 
 <p>HPCToolkit always supports profiling MPI applications.  For
 hpctoolkit, the spack variant <code>+mpi</code> is for building hpcprof-mpi,
@@ -981,7 +1058,7 @@ with the same version of GNU gcc/g++ used to build hpctoolkit (to keep
 the C++ libraries in sync).
 </p>
 <a name="PAPI-vs-Perfmon"></a>
-<h4 class="subsection">11.4 PAPI vs Perfmon</h4>
+<h4 class="subsection">11.6 PAPI vs Perfmon</h4>
 
 <p>HPCToolkit can access the Hardware Performance Counters with either
 PAPI or Perfmon (libpfm4).  By default, the hpctoolkit package uses
@@ -1496,7 +1573,7 @@ file.  See the section on Compilers above.
 <div style="width: 100%; font-size: small;">
   <hr />
   <p style="margin: 0px; font-size: small;">
-    &copy;2000-2021 <a href="http://www.rice.edu">Rice University</a>
+    &copy;2000-2022 <a href="http://www.rice.edu">Rice University</a>
     &bull;
     <a href="http://www.cs.rice.edu">Rice Computer Science</a>
   </p>
