@@ -1,6 +1,6 @@
-import abc
 import contextlib
 import enum
+import random
 import sys
 import time
 
@@ -21,7 +21,7 @@ class FgColor(enum.Enum):
 @contextlib.contextmanager
 def colorize(color):
     """Context manager to colorize any text printed to stdout"""
-    sys.stdout.write("\x1b[" + str(FgColor(color).value) + "m")
+    sys.stdout.write(f"\x1b[{FgColor(color).value}m")
     try:
         yield
     finally:
@@ -38,15 +38,18 @@ def section(header, collapsed=False, color=None):
     """Wrap any text printed to stdout in this context manager as a GitLab collapsible section"""
     global _section_counter
     _section_counter += 1
-    codename = "section_" + str(_section_counter)
+    codename = "section_" + str(_section_counter) + "_" + random.randbytes(8).hex()
     opts = "[collapsed=true]" if collapsed else ""
     if color is not None:
         header = colorize_str(color, header)
-    print(f"\x1b[0Ksection_start:{int(time.time())}:{codename}{opts}\r\x1b[0K{header}")
+    print(
+        f"\x1b[0Ksection_start:{int(time.monotonic())}:{codename}{opts}\r\x1b[0K{header}",
+        flush=True,
+    )
     try:
         yield
     finally:
-        print(f"\x1b[0Ksection_end:{int(time.time())}:{codename}\r\x1b[0K")
+        print(f"\x1b[0Ksection_end:{int(time.monotonic())}:{codename}\r\x1b[0K", end="", flush=True)
 
 
 def dump_file(filename, limit_bytes=10 * 1024):
@@ -66,24 +69,3 @@ def print_header(line):
     with colorize(FgColor.header):
         print(line)
     sys.stdout.flush()
-
-
-class AbstractStatusResult(abc.ABC):
-    """Base class for all results that have a printable status"""
-
-    @abc.abstractmethod
-    def summary(self):
-        """Return a short summary string for this result, or the empty string if self.flawless"""
-
-    @property
-    @abc.abstractmethod
-    def flawless(self):
-        """Return True if this result finished without any errors or warnings"""
-
-
-def print_results(*results, prefix=""):
-    for r in results:
-        assert isinstance(r, AbstractStatusResult)
-        s = r.summary()
-        if s:
-            print(str(prefix) + s.strip())

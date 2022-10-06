@@ -1,9 +1,81 @@
+import collections
+import collections.abc
+import itertools
 import os
+import platform
 import re
+import shlex
+import shutil
 import textwrap
+import typing as T
 from pathlib import Path
 
-from .logs import AbstractStatusResult, FgColor, colorize
+from .logs import FgColor, colorize
+from .util import flatten
+
+
+class Unsatisfiable(Exception):
+    "Exception raised when the given variant is unsatisfiable"
+
+    def __init__(self, missing):
+        super().__init__(f"missing definition for argument {missing}")
+        self.missing = missing
+
+
+class Impossible(Exception):
+    "Exception raised when the given variant is impossible"
+
+    def __init__(self, a, b):
+        super().__init__(f'conflict between "{a}" and "{b}"')
+        self.a, self.b = a, b
+
+
+def _multiwhich(*cmds: str) -> T.Optional[str]:
+    for cmd in cmds:
+        res = shutil.which(cmd)
+        if res:
+            return res
+    return None
+
+
+class DependencyConfiguration:
+    """State needed to derive configure-time arguments, based on simple configuration files"""
+
+    def __init__(self):
+        self.configs = []
+
+    def load(self, fn: Path, ctx: T.Optional[Path] = None):
+        with open(fn, encoding="utf-8") as f:
+            for line in f:
+                self.configs.append((ctx, line))
+
+    def get(self, argument):
+        "Fetch the full form of the given argument, by searching the configs"
+        argument = argument.lstrip()
+        for ctx, line in self.configs:
+            if line.startswith(argument):
+                if argument[-1].isspace():
+                    line = line[len(argument) :]
+                line = line.strip()
+
+                result = []
+                for word in shlex.split(line):
+                    envvars = {
+                        "CC": os.environ.get("CC", _multiwhich("gcc", "icc", "cc")),
+                        "CXX": os.environ.get("CXX", _multiwhich("g++", "icpc", "CC", "c++")),
+                    }
+                    if ctx is not None:
+                        envvars["CTX"] = ctx.absolute().as_posix()
+                    for var, val in envvars.items():
+                        var = "${" + var + "}"
+                        if var not in word:
+                            continue
+                        if val is None:
+                            raise Unsatisfiable(var)
+                        word = word.replace(var, val)
+                    result.append(word)
+                return result
+        raise Unsatisfiable(argument)
 
 
 class _ManifestFile:
@@ -85,38 +157,6 @@ class _ManifestExtLib(_ManifestFile):
                     found.add(path.relative_to(installdir))
 
         return found, set()
-
-
-class ManifestResult(AbstractStatusResult):
-    """Result of Manifest.check(...)"""
-
-    def __init__(self):
-        self.warnings = []
-        self.n_unexpected = 0
-        self.errors = []
-        self.n_uninstalled = 0
-
-    def __bool__(self):
-        return not self.errors and self.n_uninstalled == 0
-
-    @property
-    def flawless(self):
-        return self and not self.warnings and self.n_unexpected == 0
-
-    def summary(self):
-        if self.n_uninstalled > 0:
-            return f"{self.n_uninstalled:d} uninstalled files + {self.n_unexpected:d} unexpected installed files"
-        if self.n_unexpected > 0:
-            return f"{self.n_unexpected:d} unexpected installed files"
-        return ""
-
-    def print_colored(self):
-        with colorize(FgColor.warning):
-            for hunk in self.warnings:
-                print(hunk)
-        with colorize(FgColor.error):
-            for hunk in self.errors:
-                print(hunk)
 
 
 class Manifest:
@@ -301,9 +341,9 @@ class Manifest:
                 _ManifestFile("bin/hpcprof-mpi"),
             ]
 
-    def check(self, installdir) -> ManifestResult:
-        """Check whether installdir contains all the files expected"""
-        installdir = Path(installdir)
+    def check(self, installdir: Path) -> tuple[int, int]:
+        """Scan an install directory and compare against the expected manifest. Prints the results
+        of the checks to the log. Return the counts of missing and unexpected files."""
 
         # First derive the full listing of actually installed files
         listing = set()
@@ -312,17 +352,196 @@ class Manifest:
                 listing.add((Path(root) / fn).relative_to(installdir))
 
         # Then match these files up with the results we found
-        result = ManifestResult()
+        n_unexpected = 0
+        n_uninstalled = 0
+        warnings = []
+        errors = []
         for f in self.files:
             found, not_found = f.check(installdir)
-            result.warnings.extend(f"+ {fn.as_posix()}" for fn in found - listing)
-            result.n_unexpected += len(found - listing)
+            warnings.extend(f"+ {fn.as_posix()}" for fn in found - listing)
+            n_unexpected += len(found - listing)
             listing -= found
             for fn in not_found:
                 if isinstance(fn, tuple):
                     fn, msg = fn
-                    result.errors.append(f"! {fn.as_posix()}\n  ^ {textwrap.indent(msg, '    ')}")
+                    errors.append(f"! {fn.as_posix()}\n  ^ {textwrap.indent(msg, '    ')}")
                 else:
-                    result.errors.append(f"- {fn.as_posix()}")
-            result.n_uninstalled += len(not_found)
+                    errors.append(f"- {fn.as_posix()}")
+            n_uninstalled += len(not_found)
+
+        # Print out the warnings and then the errors, with colors
+        with colorize(FgColor.warning):
+            for hunk in warnings:
+                print(hunk)
+        with colorize(FgColor.error):
+            for hunk in errors:
+                print(hunk)
+
+        return n_uninstalled, n_unexpected
+
+
+class Configuration:
+    """Representation of a possible build configuration of HPCToolkit"""
+
+    def __init__(self, depcfg: DependencyConfiguration, variant: dict[str, bool]):
+        """Derive the full Configuration from the given DependencyConfiguration and variant-keywords."""
+        make = shutil.which("make")
+        if make is None:
+            raise RuntimeError("Unable to find make!")
+        self.make: str = make
+
+        self.manifest: Manifest = Manifest(mpi=variant["mpi"])
+
+        fragments: list[str] = self.__class__._collect_fragments(depcfg, variant)
+
+        # Parse the now-together fragments to derive the environment and configure args
+        self.args: list[str] = []
+        self.env: T.Any = collections.ChainMap({}, os.environ)
+        for arg in flatten(fragments):
+            m = re.fullmatch(r"ENV\{(\w+)\}=(.*)", arg)
+            if m is None:
+                self.args.append(arg)
+            else:
+                self.env[m.group(1)] = m.group(2)
+
+    @staticmethod
+    def _collect_fragments(depcfg: DependencyConfiguration, variant: dict[str, bool]) -> list[str]:
+        fragments = [
+            depcfg.get("--with-boost="),
+            depcfg.get("--with-bzip="),
+            depcfg.get("--with-dyninst="),
+            depcfg.get("--with-elfutils="),
+            depcfg.get("--with-tbb="),
+            depcfg.get("--with-libmonitor="),
+            depcfg.get("--with-libunwind="),
+            depcfg.get("--with-xerces="),
+            depcfg.get("--with-lzma="),
+            depcfg.get("--with-zlib="),
+            depcfg.get("--with-libiberty="),
+            depcfg.get("--with-memkind="),
+            depcfg.get("--with-yaml-cpp="),
+        ]
+
+        if platform.machine() == "x86_64":
+            fragments.append(depcfg.get("--with-xed="))
+
+        if variant["papi"]:
+            fragments.append(depcfg.get("--with-papi="))
+        else:
+            fragments.append(depcfg.get("--with-perfmon="))
+
+        if variant["cuda"]:
+            fragments.append(depcfg.get("--with-cuda="))
+
+        if variant["level0"]:
+            fragments.append(depcfg.get("--with-level0="))
+
+        if variant["opencl"]:
+            fragments.append(depcfg.get("--with-opencl="))
+
+        # if False:  # TODO: GTPin
+        #     fragments.extend(
+        #         [
+        #             depcfg.get("--with-gtpin="),
+        #             depcfg.get("--with-igc="),
+        #         ]
+        #     )
+
+        if variant["rocm"]:
+            try:
+                fragments.append(depcfg.get("--with-rocm="))
+            except Unsatisfiable:
+                # Try the split-form arguments instead
+                fragments.extend(
+                    [
+                        depcfg.get("--with-rocm-hip="),
+                        depcfg.get("--with-rocm-hsa="),
+                        depcfg.get("--with-rocm-tracer="),
+                        depcfg.get("--with-rocm-profiler="),
+                    ]
+                )
+
+        # if False:  # TODO: all-static (do we really want to support this?)
+        #     fragments.append("--enable-all-static")
+
+        fragments.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
+        if variant["mpi"]:
+            fragments.append(depcfg.get("MPICXX="))
+            fragments.append("--enable-force-hpcprof-mpi")
+        else:
+            fragments.append("MPICXX=")
+
+        if variant["debug"]:
+            fragments.append("--enable-develop")
+
+        return fragments
+
+    @classmethod
+    def all_variants(cls):
+        """Generate a list of all possible variants as dictionaries of variant-keywords"""
+
+        def vbool(x, first=False):
+            return [(x, first), (x, not first)]
+
+        return map(
+            dict,
+            itertools.product(
+                *reversed(
+                    [
+                        vbool("mpi"),
+                        vbool("debug", True),
+                        vbool("papi", True),
+                        vbool("opencl"),
+                        vbool("cuda"),
+                        vbool("rocm"),
+                        vbool("level0"),
+                    ]
+                )
+            ),
+        )
+
+    @staticmethod
+    def to_string(
+        variant: dict[str, bool],
+        separator: str = " ",
+    ) -> str:
+        """Generate the string form for a variant set"""
+
+        def vbool(n):
+            return f"+{n}" if variant[n] else f"~{n}"
+
+        return separator.join(
+            [
+                vbool("mpi"),
+                vbool("debug"),
+                vbool("papi"),
+                vbool("opencl"),
+                vbool("cuda"),
+                vbool("rocm"),
+                vbool("level0"),
+            ]
+        )
+
+    @staticmethod
+    def parse(arg: str) -> dict[str, bool]:
+        """Parse a variant-spec (vaugely Spack format) into a variant (dict)"""
+        result = {}
+        for wmatch in re.finditer(r"[+~\w]+", arg):
+            word = wmatch.group(0)
+            if word[0] not in "+~":
+                raise ValueError("Variants must have a value indicator (+~): " + word)
+            for match in re.finditer(r"([+~])(\w*)", word):
+                value, variant = match.group(1), match.group(2)
+                result[variant] = value == "+"
+        for k in result:
+            if k not in ("mpi", "debug", "papi", "opencl", "cuda", "rocm", "level0"):
+                raise ValueError(f"Invalid variant name {k}")
         return result
+
+    @staticmethod
+    def satisfies(specific: dict[str, bool], general: dict[str, bool]) -> bool:
+        """Test if the `specific` variant is a subset of a `general` variant"""
+        for k, v in general.items():
+            if k in specific and specific[k] != v:
+                return False
+        return True

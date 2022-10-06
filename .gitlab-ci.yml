@@ -161,10 +161,6 @@ autoreconf check:
     - .ccache/
 
   before_script:
-  # Python 3.6 has a hiccup with Unicode output, it doesn't consider the POSIX locale UTF-8 which
-  # tends to break things. >=3.7 has better coersion support, but until then we need to set this.
-  - export PYTHONIOENCODING=utf-8
-
   # Make sure we have the basic set of utilities required to launch Spack and build stuff
   - ci/scripts/ensure-present.sh make git curl cc file patchelf python3 py:boto3 py:clingo ${JOB_CC:+ccache}
 
@@ -178,6 +174,16 @@ autoreconf check:
     # Make sure Spack has a GCC available. Oddly enough, this command will run `spack compiler find` internally,
     # but only if needed.
     - spack compiler info gcc
+    # Mark down the OS and arch, as used in the concretized environment paths
+    - os="$(spack arch --operating-system)"
+    - |
+      case "$(spack arch --generic-target)" in
+      x86_64*) arch=amd64; ;;
+      aarch64) arch=arm64; ;;
+      ppc64le) arch=ppc64le; ;;
+      *) echo "Unknown generic target: $(spack arch --generic-target)"; exit 1; ;;
+      esac
+    - concrete=/c/$os/$arch/
   - echo -e "\e[0Ksection_end:`date +%s`:spack_buildcache_config\r\e[0K"
 
   - if test -n "$JOB_CC"; then
@@ -207,38 +213,8 @@ autoreconf check:
     - mkdir .ccache-bin/
     - if test -n "$JOB_CC"; then ln -s "$(command -pv ccache)" .ccache-bin/"$CC" && export CC="$(realpath .ccache-bin)/$CC" || exit $?; fi
     - if test -n "$JOB_CC"; then ln -s "$(command -pv ccache)" .ccache-bin/"$CXX" && export CXX="$(realpath .ccache-bin)/$CXX" || exit $?; fi
-    # Decide on a number of workers based on the number of available processors
-    - jobs=$(ci/scripts/nproc.py $CI_NPROC)
-    - if [ "$jobs" -le 2 ]; then (( jobs = jobs + 1 )); fi
-    - echo "Using $jobs jobs for builds"
     - echo -e "\e[0Ksection_end:`date +%s`:ccache_init\r\e[0K"
   - fi
-
-  - echo -e "\e[0Ksection_start:`date +%s`:spack_install[collapsed=true]\r\e[0KSpack environment unpacking"
-  - - os="$(spack arch --operating-system)"
-    - |
-      case "$(spack arch --generic-target)" in
-      x86_64*) arch=amd64; ;;
-      aarch64) arch=arm64; ;;
-      ppc64le) arch=ppc64le; ;;
-      *) echo "Unknown generic target: $(spack arch --generic-target)"; exit 1; ;;
-      esac
-    # Install the environments requested by this job
-    - |
-      if test -n "$JOB_ENV_MINIMUM"; then
-        env_minimum=ci/dependencies/minimum/c/$os/$arch/;
-        spack -e $env_minimum install --cache-only --no-check-signature --fail-fast || exit $?;
-        spack env activate --sh $env_minimum > $env_minimum/load.sh || exit $?;
-        cat $env_minimum/load.sh || exit $?;
-      fi
-    - |
-      if test -n "$JOB_ENV_LATEST"; then
-        env_latest=ci/dependencies/latest/c/$os/$arch/;
-        spack -e $env_latest install --cache-only --no-check-signature --fail-fast || exit $?;
-        spack env activate --sh $env_latest > $env_latest/load.sh || exit $?;
-        cat $env_latest/load.sh || exit $?;
-      fi
-  - echo -e "\e[0Ksection_end:`date +%s`:spack_install\r\e[0K"
 
   after_script:
   # Report statistics on how much ccache helped in this job
@@ -284,21 +260,21 @@ autoreconf check:
   # configuration or compile errors, by enabling all features and removing one at a time.
   # The exception is the variant `+~debug`, which is always swept completely.
   - >-
-    (source $env_latest/load.sh && ci/scripts/buildmany.py $env_latest/config/general
-    -j $jobs -o logs/ -p latest_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
+    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl ~cuda~rocm~level0'
     -s '~mpi +papi +opencl ~cuda~rocm~level0'
     -s '+mpi ~papi +opencl ~cuda~rocm~level0'
     -s '+mpi +papi ~opencl ~cuda~rocm~level0'
-    ) || exit $?
   - >-
-    (source $env_minimum/load.sh && ci/scripts/buildmany.py $env_minimum/config/general
-    -j $jobs -o logs/ -p minimum_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
+    "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl ~cuda~rocm~level0'
     -s '~mpi +papi +opencl ~cuda~rocm~level0'
     -s '+mpi ~papi +opencl ~cuda~rocm~level0'
     -s '+mpi +papi ~opencl ~cuda~rocm~level0'
-    ) || exit $?
 
   artifacts:
     paths:
@@ -308,6 +284,9 @@ autoreconf check:
 'buildmany.amd64: [+cuda]':
   extends: .buildcache-job
   image: nvcr.io/nvidia/cuda:$CUDA-devel-ubuntu20.04
+  services:
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+    alias: bundleserver
   tags: [docker, linux/amd64]
   variables:
     JOB_CC: gcc-9
@@ -329,21 +308,21 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (source $env_latest/load.sh && ci/scripts/buildmany.py img-config $env_latest/config/general
-    -j $jobs -o logs/ -p latest_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl +cuda~rocm~level0'
     -s '~mpi +papi +opencl +cuda~rocm~level0'
     -s '+mpi ~papi +opencl +cuda~rocm~level0'
     -s '+mpi +papi ~opencl +cuda~rocm~level0'
-    ) || exit $?
   - >-
-    (source $env_minimum/load.sh && ci/scripts/buildmany.py img-config $env_minimum/config/general
-    -j $jobs -o logs/ -p minimum_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
+    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl +cuda~rocm~level0'
     -s '~mpi +papi +opencl +cuda~rocm~level0'
     -s '+mpi ~papi +opencl +cuda~rocm~level0'
     -s '+mpi +papi ~opencl +cuda~rocm~level0'
-    ) || exit $?
 
   artifacts:
     paths:
@@ -354,6 +333,9 @@ autoreconf check:
 'buildmany.amd64: [+rocm]':
   extends: .buildcache-job
   image: docker.io/rocm/dev-ubuntu-20.04:$ROCM
+  services:
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+    alias: bundleserver
   tags: [docker, linux/amd64]
   variables:
     JOB_CC: gcc-9
@@ -375,21 +357,21 @@ autoreconf check:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (source $env_latest/load.sh && ci/scripts/buildmany.py img-config $env_latest/config/general
-    -j $jobs -o logs/ -p latest_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl ~cuda+rocm~level0'
     -s '~mpi +papi +opencl ~cuda+rocm~level0'
     -s '+mpi ~papi +opencl ~cuda+rocm~level0'
     -s '+mpi +papi ~opencl ~cuda+rocm~level0'
-    ) || exit $?
   - >-
-    (source $env_minimum/load.sh && ci/scripts/buildmany.py img-config $env_minimum/config/general
-    -j $jobs -o logs/ -p minimum_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
+    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl ~cuda+rocm~level0'
     -s '~mpi +papi +opencl ~cuda+rocm~level0'
     -s '+mpi ~papi +opencl ~cuda+rocm~level0'
     -s '+mpi +papi ~opencl ~cuda+rocm~level0'
-    ) || exit $?
 
   artifacts:
     paths:
@@ -400,6 +382,9 @@ autoreconf check:
 'buildmany.amd64: [+level0]':
   extends: .buildcache-job
   image: docker.io/intel/oneapi-basekit:$ONEAPI-devel-ubuntu20.04
+  services:
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+    alias: bundleserver
   tags: [docker, linux/amd64]
   variables:
     JOB_CC: gcc-9
@@ -415,27 +400,31 @@ autoreconf check:
   - generate_deps.amd64
   - build_deps.amd64
 
+  before_script:
+  # The base Intel image has some extra elements on the PATH, make sure /usr/local/bin takes precdence
+  - export PATH=/usr/local/bin:"$PATH"
+  - !reference [.buildcache-job, before_script]
   script:
   # Pull Level 0 (part of OneAPI) from the image itself
   - echo '--with-level0=/usr' > img-config
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   # See the `buildmany: [~gpus]` script for details on this design
   - >-
-    (source $env_latest/load.sh && ci/scripts/buildmany.py img-config $env_latest/config/general
-    -j $jobs -o logs/ -p latest_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl ~cuda~rocm+level0'
     -s '~mpi +papi +opencl ~cuda~rocm+level0'
     -s '+mpi ~papi +opencl ~cuda~rocm+level0'
     -s '+mpi +papi ~opencl ~cuda~rocm+level0'
-    ) || exit $?
   - >-
-    (source $env_minimum/load.sh && ci/scripts/buildmany.py img-config $env_minimum/config/general
-    -j $jobs -o logs/ -p minimum_
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
+    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     -s '+mpi +papi +opencl ~cuda~rocm+level0'
     -s '~mpi +papi +opencl ~cuda~rocm+level0'
     -s '+mpi ~papi +opencl ~cuda~rocm+level0'
     -s '+mpi +papi ~opencl ~cuda~rocm+level0'
-    ) || exit $?
 
   artifacts:
     paths:
@@ -469,15 +458,14 @@ check.amd64:
   script:
   # Run the build script for the configuration of interest. Use some Python to help.
   - >-
-    (source $env_latest/load.sh && ci/scripts/makecheck.py $env_latest/config/general
-    -j $jobs -o logs/ -p latest_ -s "$SPEC") || exit $?
-  # Tarball the HPCToolkit install for later stages
-  - tar -C / -cvzf hpctoolkit_install.$CI_ARCH.tar.gz opt/hpctoolkit/
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a test
+    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
+    -1 -s "$SPEC"
 
   artifacts:
     paths:
     - logs/
-    - hpctoolkit_install.*.tar.gz
     when: always
 
 check.arm64:

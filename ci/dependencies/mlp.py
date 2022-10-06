@@ -16,7 +16,7 @@ parser.add_argument("children", type=Path, nargs="+", help="Child pipelines")
 args = parser.parse_args()
 del parser
 
-pipeline: T.Dict[str, T.Any] = {
+pipeline: dict[str, T.Any] = {
     "workflow": {"rules": [{"when": "always"}]},
     "stages": ["copy", "trigger"],
     "copy": {
@@ -30,7 +30,7 @@ pipeline: T.Dict[str, T.Any] = {
     },
 }
 
-name_counts: T.Dict[str, int] = {}
+name_counts: dict[str, int] = {}
 
 # For each child pipeline, gather its source pipeline/job and decide whether to include it
 for child in args.children:

@@ -29,11 +29,20 @@ for prog in "$@"; do
     ;;
 
   # Python packages are prefixed with py:
+  # We only support Python 3.10, assume everything is missing if we don't have that
   py:*)
-    if command -v python3 >/dev/null; then
+    if command -v python3 >/dev/null \
+       && python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; then
       python3 -c "import $(echo "$prog" | cut -d: -f2-)" &>/dev/null || missing+=("$prog")
     else
       missing+=(python3 "$prog")
+    fi
+    ;;
+
+  python3)
+    if ! command -v python3 >/dev/null \
+       || ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)'; then
+      missing+=(python3)
     fi
     ;;
 
@@ -48,6 +57,9 @@ if [ "${#missing[@]}" -eq 0 ]; then
 fi
 
 
+bundles=()
+
+
 # Install missing packages that will be supplied by the OS itself.
 case "$os_code" in
 ubuntu:20.04)
@@ -55,9 +67,13 @@ ubuntu:20.04)
   for prog in "${missing[@]}"; do
     case "$prog" in
     py:*)
-      python3 -c "import pip" &>/dev/null || apt_packages+=("python3-pip")
+      # Handled by the Pip code later
       ;;
-    git|gcc-9|g++-9|ccache|file|patchelf|python3|curl|make)
+    python3)
+      # Ubuntu 20.04 ships Python 3.8, we want something newer. So use the bundle instead.
+      bundles+=(python.tar.xz)
+      ;;
+    git|gcc-9|g++-9|ccache|file|patchelf|curl|make)
       apt_packages+=("$prog")
       ;;
     *)
@@ -83,7 +99,19 @@ ubuntu:20.04)
   ;;
 esac
 
-if [ "${#missing[@]}" -eq 0 ]; then exit 0; fi
+
+# Install any missing packages that will be supplied by "bundles" overlaid on top of the OS
+if [ "${#bundles[@]}" -gt 0 ]; then
+  echo -e "\e[0Ksection_start:$(date +%s):bundle_install[collapsed=true]\r\e[0Ktar xaf ${bundles[*]}"
+  for bundle in "${bundles[@]}"; do
+    curl --no-progress-meter -L -o /tmp/"$bundle" http://bundleserver/"$bundle"
+    tar -C / -xaf /tmp/"$bundle"
+    rm /tmp/"$bundle"
+  done
+  hash -r
+  echo -e "\e[0Ksection_end:$(date +%s):bundle_install\r\e[0K"
+fi
+
 
 # Install missing packages that will be supplied by Pip
 pip_packages=()
@@ -106,5 +134,3 @@ if [ "${#pip_packages[@]}" -gt 0 ]; then
   python3 -m pip --cache-dir .pip-cache/ install "${pip_packages[@]}"
   echo -e "\e[0Ksection_end:$(date +%s):pip_install\r\e[0K"
 fi
-
-if [ "${#missing[@]}" -eq 0 ]; then exit 0; fi
