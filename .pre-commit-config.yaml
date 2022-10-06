@@ -10,11 +10,11 @@ repos:
 # ------------------------------------------------------------------------------------
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v2.38.2
+  rev: v3.0.0
   hooks:
   # Automatically elide older Python syntax and replace with newer ones
   - id: pyupgrade
-    args: [--py36-plus]
+    args: [--py310-plus]
     # These files are excluded from all Python linting, they're old and probably unused
     exclude: &py_exclude '^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$'
 
@@ -28,7 +28,7 @@ repos:
   hooks:
   # Blacken all Python code, except allow slightly longer line lengths
   - id: black
-    args: ['--line-length=100', '--target-version=py36']
+    args: ['--line-length=100', '--target-version=py310']
     exclude: *py_exclude
 
 - repo: https://github.com/PyCQA/isort
@@ -44,7 +44,6 @@ repos:
   hooks:
   # Remove trailing whitespace
   - id: trailing-whitespace
-    exclude: '\.patch$'
     # XXX: Only enabled in CI files for now due to large numbers of failures
     files: &ci_files (^ci/|\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.prospector\.yaml$)
   # All files must end in a single newline (or be perfectly empty)
@@ -87,7 +86,7 @@ repos:
     args: [--branch, master, --branch, develop]
 
 - repo: https://github.com/Yelp/detect-secrets
-  rev: v1.3.0
+  rev: v1.4.0
   hooks:
   # Scan for secrets that should never appear in the repo itself
   - id: detect-secrets
@@ -102,7 +101,7 @@ repos:
   hooks:
   # Use Prospector to lint all our Python code
   - id: prospector
-    additional_dependencies: ['.[with_mypy]', ruamel.yaml]
+    additional_dependencies: [mypy, ruamel.yaml]
     exclude: *py_exclude
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
@@ -126,4 +125,3 @@ repos:
   - id: codespell
     # XXX: Only enabled in CI files for now
     files: *ci_files
-    exclude: '\.patch$'
