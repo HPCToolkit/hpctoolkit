@@ -88,11 +88,11 @@
 // 
 //***************************************************************************
 
-uint
+unsigned int
 OSUtil_pid()
 {
   pid_t pid = getpid();
-  return (uint)pid;
+  return (unsigned int)pid;
 }
 
 

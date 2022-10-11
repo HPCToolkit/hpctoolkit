@@ -73,7 +73,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include "hpcio.h"
 #include "hpcio-buffer.h"
@@ -296,7 +295,7 @@ typedef struct hpcrun_metricFlags_bitfield_XXX {
   MetricFlags_Ty_t     ty     : 4;
   MetricFlags_ValTy_t  valTy  : 4;
   MetricFlags_ValFmt_t valFmt : 4;
-  uint partner      : 16;
+  unsigned int partner      : 16;
   bool show         : 1;
   bool showPercent  : 1;
 

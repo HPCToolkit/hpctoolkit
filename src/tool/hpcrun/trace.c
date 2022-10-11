@@ -99,7 +99,7 @@
 //*********************************************************************
 
 static void hpcrun_trace_file_validate(int valid, char *op);
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t nanotime);
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, unsigned int metric_id, uint32_t dLCA, uint64_t nanotime);
 
 
 //*********************************************************************
@@ -189,7 +189,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd, hpcrun_trace_type_t type)
 
 
 void
-hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t nanotime)
+hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, unsigned int metric_id, uint64_t nanotime)
 {
 	if (tracing && hpcrun_sample_prob_active()) {
         hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, INT_MAX, nanotime);
@@ -199,7 +199,7 @@ hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_p
 __thread uint64_t prev_nanotime = 0;
 
 void
-hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA, uint64_t sampling_period)
+hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, unsigned int metric_id, uint32_t dLCA, uint64_t sampling_period)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -230,7 +230,7 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metr
 
 void
 hpcrun_trace_append_stream(core_profile_trace_data_t *cptd, cct_node_t* node,
-  uint metric_id, uint32_t dLCA, uint64_t nanotime)
+  unsigned int metric_id, uint32_t dLCA, uint64_t nanotime)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     // mark the leaf of a call path recorded in a trace record for retention
@@ -269,7 +269,7 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
 //*********************************************************************
 
 static inline void
-hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t nanotime)
+hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, unsigned int metric_id, uint32_t dLCA, uint64_t nanotime)
 {
     if (cptd->trace_min_time_us == 0) {
         cptd->trace_min_time_us = nanotime;

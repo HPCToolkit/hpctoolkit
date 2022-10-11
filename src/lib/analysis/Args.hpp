@@ -68,7 +68,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 //*************************** Forward Declarations **************************
 
@@ -154,29 +153,29 @@ public:
   };
 
   static inline bool
-  MetricFlg_isSet(uint flags, MetricFlg x)
+  MetricFlg_isSet(unsigned int flags, MetricFlg x)
   { return (flags & x); }
 
   static inline void
-  MetricFlg_set(uint& flags, MetricFlg x)
+  MetricFlg_set(unsigned int& flags, MetricFlg x)
   { flags |= x; }
 
   static inline void
-  MetricFlg_clear(uint& flags, MetricFlg x)
+  MetricFlg_clear(unsigned int& flags, MetricFlg x)
   { flags &= ~x; }
 
   static inline bool
-  MetricFlg_isThread(uint flags)
+  MetricFlg_isThread(unsigned int flags)
   { return MetricFlg_isSet(flags, MetricFlg_Thread); }
 
   static inline bool
-  MetricFlg_isSum(uint flags)
+  MetricFlg_isSum(unsigned int flags)
   {
     return (MetricFlg_isSet(flags,  MetricFlg_StatsSum)
 	    || MetricFlg_isSet(flags, MetricFlg_StatsAll));
   }
 
-  uint prof_metrics;
+  unsigned int prof_metrics;
 
   // TODO: Currently this is always true even though we only need to
   // compute final metric values for (1) hpcproftt (flat) and (2)

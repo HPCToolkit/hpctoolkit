@@ -83,7 +83,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include "IteratorStack.hpp"
 
@@ -155,11 +154,11 @@ public:
   unlink();
 
   // returns the number of ancestors walking up the tree
-  uint
+  unsigned int
   ancestorCount() const;
 
   // functions for inspecting links to other nodes
-  uint
+  unsigned int
   childCount() const
   { return m_child_count; };
 
@@ -168,16 +167,16 @@ public:
   { return (m_child_count == 0); }
 
 
-  uint
+  unsigned int
   maxDepth()
   { return maxDepth(0); }
 
-  uint
-  maxDepth(uint parentDepth);
+  unsigned int
+  maxDepth(unsigned int parentDepth);
 
 public:
   virtual std::string
-  toString(uint oFlags = 0, const char* pfx = "") const;
+  toString(unsigned int oFlags = 0, const char* pfx = "") const;
 
 public:
   // N.B.: For derived classes, these may get in the way...
@@ -222,7 +221,7 @@ protected:
   NonUniformDegreeTreeNode* m_children;
   NonUniformDegreeTreeNode* m_next_sibling;
   NonUniformDegreeTreeNode* m_prev_sibling;
-  uint m_child_count;
+  unsigned int m_child_count;
 
   friend class NonUniformDegreeTreeNodeChildIterator;
   friend class NonUniformDegreeTreeIterator;

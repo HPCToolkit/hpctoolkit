@@ -419,7 +419,7 @@ hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre, uint32
 	  pre, id, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
 	  (int)x->flags.fields.ty, (int)x->flags.fields.valTy,
 	  (int)x->flags.fields.valFmt,
-	  (uint)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
+	  (unsigned int)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
 	  x->period,
 	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
   fprintf(fs, "    (frequency: %d) (multiplexed: %d) (period-mean: %f) (num-samples: %d)]\n",
@@ -601,7 +601,7 @@ int
 hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "%s[(id: %u) (nm: %s) (flg: 0x%"PRIx64")]\n",
-	  pre, (uint)x->id, x->name, x->flags);
+	  pre, (unsigned int)x->id, x->name, x->flags);
   return HPCFMT_OK;
 }
 
@@ -710,7 +710,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 
   if(!x->unwound) fprintf(fs, "(not unwound) ");
 
-  fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm_id, x->lm_ip);
+  fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (unsigned int)x->lm_id, x->lm_ip);
 
   if(x->lm_id == HPCRUN_PLACEHOLDER_LM) {
     fprintf(fs, "'%c%c%c%c%c%c%c%c' ",
@@ -736,7 +736,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
   fprintf(fs, "\n");
 
   fprintf(fs, "%s(metrics:", pre);
-  for (uint i = 0; i < x->num_metrics; ++i) {
+  for (unsigned int i = 0; i < x->num_metrics; ++i) {
     hpcrun_metricFlags_t mflags = hpcrun_metricFlags_NULL;
     if (metricTbl) {
       const metric_desc_t* mdesc = &(metricTbl->lst[i]);
@@ -912,14 +912,14 @@ hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs)
 
   x->values = (hpcrun_metricVal_t *) malloc((x->num_vals)*sizeof(hpcrun_metricVal_t));
   x->mids = (uint16_t *) malloc((x->num_vals)*sizeof(uint16_t));
-  for (uint i = 0; i < x->num_vals; ++i) {
+  for (unsigned int i = 0; i < x->num_vals; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->values[i].bits), fs));
     HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->mids[i], fs));
   }
 
   x->cct_node_ids = (uint32_t *) malloc((x->num_nz_cct_nodes + 1)*sizeof(uint32_t));
   x->cct_node_idxs = (uint64_t *) malloc((x->num_nz_cct_nodes + 1)*sizeof(uint64_t));
-  for (uint i = 0; i < x->num_nz_cct_nodes + 1; ++i) {
+  for (unsigned int i = 0; i < x->num_nz_cct_nodes + 1; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->cct_node_ids[i], fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->cct_node_idxs[i], fs));
   }
@@ -937,12 +937,12 @@ hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x,FILE* fs)
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->num_nz_cct_nodes, fs));
 
 
-  for (uint i = 0; i < x->num_vals; ++i) {
+  for (unsigned int i = 0; i < x->num_vals; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->values[i].bits, fs));
     HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->mids[i], fs));
   }
 
-  for (uint i = 0; i < x->num_nz_cct_nodes + 1; ++i) {
+  for (unsigned int i = 0; i < x->num_nz_cct_nodes + 1; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->cct_node_ids[i], fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_node_idxs[i], fs));
   }
@@ -967,7 +967,7 @@ hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
     HPCFMT_ThrowIfError(hpcrun_fmt_sparse_metrics_fprint_grep_helper(x, fs, metricTbl, pre));
   }else{
     fprintf(fs, "%s[metrics:\n%s(NOTES: printed in file order, help checking if hpcrun file is correct)\n", pre, pre);
-    for (uint i = 0; i < x->num_vals; ++i) {
+    for (unsigned int i = 0; i < x->num_vals; ++i) {
       fprintf(fs, "%s(value:", double_pre);
       hpcrun_metricFlags_t mflags = hpcrun_metricFlags_NULL;
       if (metricTbl) {
@@ -994,7 +994,7 @@ hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
   }
 
   fprintf(fs, "%s[cct node indices:\n", pre);
-  for (uint i = 0; i < x->num_nz_cct_nodes + 1; i++) {
+  for (unsigned int i = 0; i < x->num_nz_cct_nodes + 1; i++) {
     if(i < x->num_nz_cct_nodes){
       fprintf(fs, "%s(cct node id: %d, index: %ld)\n", double_pre, x->cct_node_ids[i], x->cct_node_idxs[i]);
     }else{
@@ -1016,13 +1016,13 @@ hpcrun_fmt_sparse_metrics_fprint_grep_helper(hpcrun_fmt_sparse_metrics_t* x, FIL
   char* double_pre = "    ";
   fprintf(fs, "%s[metrics easy grep version:\n%s(NOTES: metrics for a cct node are printed together, easy to grep)\n", pre, pre);
 
-  for (uint i = 0; i < x->num_nz_cct_nodes; ++i) {
+  for (unsigned int i = 0; i < x->num_nz_cct_nodes; ++i) {
     uint32_t cct_node_id = x->cct_node_ids[i];
     uint64_t cct_node_off = x->cct_node_idxs[i];
     uint64_t cct_next_node_off = x->cct_node_idxs[i+1];
     fprintf(fs, "%s(cct node id: %d) ", double_pre, cct_node_id);
 
-    for(uint j = cct_node_off; j < cct_next_node_off; j++){
+    for(unsigned int j = cct_node_off; j < cct_next_node_off; j++){
       fprintf(fs, "(metric %d:", x->mids[j]);
 
       hpcrun_metricFlags_t mflags = hpcrun_metricFlags_NULL;

@@ -90,7 +90,6 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
-#include <include/uint.h>
 
 #include "CallPath-Profile.hpp"
 
@@ -228,7 +227,7 @@ Profile::fmt_fread(FILE* infs,
   // ------------------------------------------------------------
 
   //YUMENG: no epoch info needed
-  //uint num_epochs = 0;
+  //unsigned int num_epochs = 0;
   //size_t file_cur = 0;
   //while ( !feof(infs) && (file_cur != footer.footer_offset)) {
 
@@ -553,7 +552,7 @@ Profile::fmt_epoch_fread(FILE* infs,
 
 #if 0
 int
-Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
+Profile::fmt_cct_fread(Profile& prof, FILE* infs, unsigned int rFlags,
 		       const metric_tbl_t& metricTbl,
 		       std::string ctxtStr, FILE* outfs)
 #else
@@ -584,7 +583,7 @@ Profile::fmt_cct_fread(FILE* infs,
 //YUMENG: No metric info
 #if 0
   // N.B.: numMetricsSrc <= [numMetricsDst = prof.metricMgr()->size()]
-  uint numMetricsSrc = metricTbl.len;
+  unsigned int numMetricsSrc = metricTbl.len;
 
   if (rFlags & RFlg_NoMetricValues) {
     numMetricsSrc = 0;
@@ -607,7 +606,7 @@ Profile::fmt_cct_fread(FILE* infs,
 
   const epoch_flags_t flags = {0};
 
-  for (uint i = 0; i < numNodes; ++i) {
+  for (unsigned int i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
@@ -638,7 +637,7 @@ Profile::fmt_cct_fread(FILE* infs,
     metric_desc_t* m_lst = metricTbl.lst;
     VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
 
-    for (uint i = 0; i < numMetricsSrc; i++) {
+    for (unsigned int i = 0; i < numMetricsSrc; i++) {
       char *expr = (char*) m_lst[i].formula;
       if (expr == NULL || strlen(expr)==0) continue;
 

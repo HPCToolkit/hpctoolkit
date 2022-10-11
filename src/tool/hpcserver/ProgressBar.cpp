@@ -67,7 +67,7 @@
 
 namespace TraceviewerServer
 {
-ProgressBar::ProgressBar(string name, ulong tasksToComplete) {
+ProgressBar::ProgressBar(string name, unsigned long tasksToComplete) {
 
 
 	tasks = tasksToComplete;
@@ -83,7 +83,7 @@ ProgressBar::ProgressBar(string name, ulong tasksToComplete) {
 
 	update();
 }
-void ProgressBar::incrementProgress(ulong tasks){
+void ProgressBar::incrementProgress(unsigned long tasks){
 	tasksComplete += tasks;
 	update();
 }

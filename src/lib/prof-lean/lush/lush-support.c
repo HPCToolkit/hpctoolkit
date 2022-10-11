@@ -70,7 +70,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include "lush-support.h"
 

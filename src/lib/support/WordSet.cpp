@@ -92,7 +92,7 @@ WordSet::~WordSet()
 }
 
 
-uint WordSet::HashFunct(const void *entry, const uint size)
+unsigned int WordSet::HashFunct(const void *entry, const unsigned int size)
 {
   return *((unsigned long *) entry) % size;
 }

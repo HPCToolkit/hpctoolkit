@@ -336,7 +336,7 @@ hpcio_beX_fread(uint8_t* val, size_t size, FILE* fs)
 {
   size_t num_read = 0;
 
-  for (uint i = 0; i < size; ++i) {
+  for (unsigned int i = 0; i < size; ++i) {
     int c = fgetc(fs);
     if (c == EOF) {
       break;
@@ -401,7 +401,7 @@ hpcio_beX_fwrite(uint8_t* val, size_t size, FILE* fs)
 {
   size_t num_write = 0;
   
-  for (uint i = 0; i < size; ++i) {
+  for (unsigned int i = 0; i < size; ++i) {
     int c = fputc(val[i], fs);
     if (c == EOF) {
       break;

@@ -68,7 +68,6 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
-#include <include/uint.h>
 
 #if ENABLE_VG_ANNOTATIONS == 1
 #include <valgrind/helgrind.h>
@@ -209,7 +208,7 @@ static void
 makeWorkList(FileMap *, WorkList &, WorkList &);
 
 static void
-printWorkList(WorkList &, uint &, ostream *, ostream *, string &);
+printWorkList(WorkList &, unsigned int &, ostream *, ostream *, string &);
 
 static void
 doFunctionList(WorkEnv &, FileInfo *, GroupInfo *, bool);
@@ -383,7 +382,7 @@ private:
   SymtabAPI::Function * sym_func;
   RealPathMgr * realPath;
   string  cache_filenm;
-  uint    cache_line;
+  unsigned int    cache_line;
   VMA  start;
   VMA  end;
 
@@ -399,7 +398,7 @@ public:
   }
 
   bool
-  getLineInfo(VMA vma, string & filenm, uint & line)
+  getLineInfo(VMA vma, string & filenm, unsigned int & line)
   {
     // try cache first
     if (start <= vma && vma < end) {
@@ -608,7 +607,7 @@ makeStructure(string filename,
 
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 	
-  for (uint i = 0; i < elfFileVector->size(); i++) {
+  for (unsigned int i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
     ElfFile *elfFile = (*elfFileVector)[i];
 
@@ -642,7 +641,7 @@ makeStructure(string filename,
 #pragma omp parallel  shared(modVec)
     {
 #pragma omp for  schedule(dynamic, 1)
-      for (uint i = 0; i < modVec.size(); i++) {
+      for (unsigned int i = 0; i < modVec.size(); i++) {
         Module * mod = modVec[i];
         mod->parseLineInformation();
       }
@@ -709,7 +708,7 @@ makeStructure(string filename,
     //
     WorkList wlPrint;
     WorkList wlLaunch;
-    uint num_done = 0;
+    unsigned int num_done = 0;
     mutex output_mtx;
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
@@ -721,7 +720,7 @@ makeStructure(string filename,
     firstprivate(outFile, gapsFile, search_path, gaps_filenm, parsable)
     {
 #pragma omp for  schedule(dynamic, 1)
-      for (uint i = 0; i < wlLaunch.size(); i++) {
+      for (unsigned int i = 0; i < wlLaunch.size(); i++) {
 	doWorkItem(wlLaunch[i], search_path, parsable, gapsFile != NULL);
 
 	// the printing must be single threaded
@@ -747,7 +746,7 @@ makeStructure(string filename,
     // if this is the last (or only) elf file, then don't bother with
     // piecemeal cleanup.
     if (i + 1 < elfFileVector->size()) {
-      for (uint i = 0; i < wlPrint.size(); i++) {
+      for (unsigned int i = 0; i < wlPrint.size(); i++) {
 	delete wlPrint[i];
       }
 
@@ -897,7 +896,7 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
 // be called locked or else single threaded.
 //
 static void
-printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
+printWorkList(WorkList & workList, unsigned int & num_done, ostream * outFile,
 	      ostream * gapsFile, string & gaps_filenm)
 {
   while (num_done < workList.size() && workList[num_done]->is_done.load()) {
@@ -1734,7 +1733,7 @@ doLoopTree(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
 
   std::sort(clist.begin(), clist.end(), LoopTreeLessThan);
 
-  for (uint i = 0; i < clist.size(); i++) {
+  for (unsigned int i = 0; i < clist.size(); i++) {
     LoopList *subList =
       doLoopTree(env, finfo, ginfo, func, visited, clist[i]);
 
@@ -1799,7 +1798,7 @@ doLoopLate(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 
   std::sort(bvec.begin(), bvec.end(), BlockLessThan);
 
-  for (uint i = 0; i < bvec.size(); i++) {
+  for (unsigned int i = 0; i < bvec.size(); i++) {
     if (! visited[bvec[i]]) {
       doBlock(env, ginfo, func, visited, bvec[i], root);
     }
@@ -1859,7 +1858,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     auto next_it = iit;  next_it++;
     Offset vma = iit->first;
     string filenm = "";
-    uint line = 0;
+    unsigned int line = 0;
 
     len = iit->second.size();
 
@@ -1921,7 +1920,7 @@ doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func
   int len = 4; 
   for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) { 
     string filenm = ""; 
-    uint line = 0; 
+    unsigned int line = 0; 
  
     lmcache.getLineInfo(vma, filenm, line); 
     string device;

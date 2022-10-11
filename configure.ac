@@ -385,25 +385,6 @@ AS_UNSET([ac_cv_header_inttypes_h]) # retest for C++
 
 # Check for types
 AC_CHECK_SIZEOF([void*])
-AC_CHECK_TYPES([ushort, uint, ulong])
-
-if test "${ac_cv_type_voidp}" = "yes" ; then
-  AC_DEFINE([HAVE_VOIDP_LANG_C], [1], [C compiler supports type "voidp"])
-fi
-if test "${ac_cv_type_ushort}" = "yes" ; then
-  AC_DEFINE([HAVE_USHORT_LANG_C], [1], [C compiler supports type "ushort"])
-fi
-if test "${ac_cv_type_uint}" = "yes" ; then
-  AC_DEFINE([HAVE_UINT_LANG_C], [1], [C compiler supports type "uint"])
-fi
-if test "${ac_cv_type_ulong}" = "yes" ; then
-  AC_DEFINE([HAVE_ULONG_LANG_C], [1], [C compiler supports type "ulong"])
-fi
-
-AS_UNSET([ac_cv_sizeof_voidp])      # retest for C++
-AS_UNSET([ac_cv_type_ushort])       # retest for C++
-AS_UNSET([ac_cv_type_uint])         # retest for C++
-AS_UNSET([ac_cv_type_ulong])        # retest for C++
 
 
 #-------------------------------------------------
@@ -423,7 +404,6 @@ HPC_CHECK_CXX_STDC_HEADERS()
 
 # Check for types
 AC_CHECK_SIZEOF([void*])
-AC_CHECK_TYPES([ushort, uint, ulong])
 
 host_sizeof_voidp="${ac_cv_sizeof_voidp}"
 

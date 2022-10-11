@@ -810,7 +810,7 @@ void SparseDB::write() {
 
       std::vector<char> buf(ci_sHdr.nCtxs * FMT_CCTDB_SZ_CtxInfo);
       char* cur = buf.data();
-      uint ctxid = 0;
+      unsigned int ctxid = 0;
       for(const Context& c: contexts) {
         const auto i = c.userdata[src.identifier()];
 

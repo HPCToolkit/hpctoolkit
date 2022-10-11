@@ -263,7 +263,7 @@ extern global_array_t *GA;
     getcontext(&uc);							\
 									\
     hpcrun_ga_metricId_dataDesc_t* ga_desc = NULL;			\
-    uint dataMetricId = HPCTRACE_FMT_MetricId_NULL;			\
+    unsigned int dataMetricId = HPCTRACE_FMT_MetricId_NULL;			\
 									\
     if (g_a != G_A_NULL) {						\
       int idx = ga_getDataIdx(g_a);					\
@@ -319,17 +319,17 @@ timeElapsed(uint64_t timeBeg)
 }
 
 
-static inline uint
+static inline unsigned int
 bytesXfr(Integer g_a, Integer* lo, Integer* hi)
 {
   // TODO: can this information be communicated from the runtime
   // rather than being (re?)computed here?
   Integer ga_hndl = GA_OFFSET + g_a;
-  uint ga_ndim = GA[ga_hndl].ndim;
-  uint ga_elemsize = GA[ga_hndl].elemsize;
+  unsigned int ga_ndim = GA[ga_hndl].ndim;
+  unsigned int ga_elemsize = GA[ga_hndl].elemsize;
   Integer num_elems = 0;
   gam_CountElems(ga_ndim, lo, hi, &num_elems);
-  uint num_bytes = num_elems * ga_elemsize;
+  unsigned int num_bytes = num_elems * ga_elemsize;
   return num_bytes;
 }
 

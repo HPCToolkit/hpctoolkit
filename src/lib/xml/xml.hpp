@@ -71,7 +71,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/IOUtil.hpp>

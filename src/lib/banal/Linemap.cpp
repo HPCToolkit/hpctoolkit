@@ -86,7 +86,6 @@
 #include <map>
 #include <vector>
 
-#include <include/uint.h>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/StringTable.hpp>
@@ -128,7 +127,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
   }
 
   // make map of dwarf src file index to m_str_tab index
-  vector <uint> fileVec;
+  vector <unsigned int> fileVec;
   fileVec.resize(file_count);
 
   for (n = 0; n < file_count; n++) {
@@ -143,7 +142,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
     Dwarf_Unsigned lineno = 0;
     Dwarf_Unsigned fileno;
     Dwarf_Bool is_end = 0;
-    uint file_index = m_empty_index;
+    unsigned int file_index = m_empty_index;
     int ret;
 
     ret = dwarf_lineaddr(linebuf[n], &addr, &dw_error);

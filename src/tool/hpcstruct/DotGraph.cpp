@@ -284,7 +284,7 @@ main(int argc, char **argv)
 
   // Output structure files under the current directory
   auto search_path = "./";
-  for (uint i = 0; i < elfFileVector->size(); i++) {
+  for (unsigned int i = 0; i < elfFileVector->size(); i++) {
     auto * elfFile = (*elfFileVector)[i];
     // open <filename>.dot.<i> for output
     char * base = basename(strdup(opts.filename));

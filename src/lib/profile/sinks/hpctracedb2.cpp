@@ -348,7 +348,7 @@ std::vector<uint64_t> HPCTraceDB2::calcStartEnd() {
   std::vector<uint64_t> trace_offs(trace_sizes.size() + 1);
   trace_sizes.emplace_back(0);
   exscan<uint64_t>(trace_sizes);
-  for(uint i = 0; i < trace_sizes.size();i++){
+  for(unsigned int i = 0; i < trace_sizes.size();i++){
     trace_offs[i] = trace_sizes[i] + my_off;
   }
 

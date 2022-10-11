@@ -107,7 +107,7 @@ ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
     string x = name.substr(0, posLangle /*len*/); // exclude '<'
 
     int nesting = 0;
-    for (uint i = posLangle; i < name.size(); i++) {
+    for (unsigned int i = posLangle; i < name.size(); i++) {
       char c = name[i];
 
       bool save_c = (nesting == 0);

@@ -136,7 +136,7 @@ main_rawData(const std::vector<string>& profileFiles, bool sm_easyToGrep)
 {
   std::ostream& os = std::cout;
 
-  for (uint i = 0; i < profileFiles.size(); ++i) {
+  for (unsigned int i = 0; i < profileFiles.size(); ++i) {
     const char* fnm = profileFiles[i].c_str();
 
     // generate nice header

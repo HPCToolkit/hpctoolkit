@@ -167,7 +167,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   if (! hpcrun_sample_prob_active())
     return fs;
 
-  const uint bufSZ = 32; // sufficient to hold a 64-bit integer in base 10
+  const unsigned int bufSZ = 32; // sufficient to hold a 64-bit integer in base 10
 
   const char* jobIdStr = OSUtil_jobid();
   if (!jobIdStr) {

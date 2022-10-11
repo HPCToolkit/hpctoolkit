@@ -71,7 +71,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include "pfq-rwlock.h"
 
@@ -131,7 +130,7 @@ BalancedTreeNode_init(BalancedTreeNode_t* x,
 typedef struct BalancedTree
 {
   BalancedTreeNode_t* root;
-  uint size;
+  unsigned int size;
 
   BalancedTree_alloc_fn_t allocFn;
   size_t nodeDataSz; // size of BalancedTreeNode_t.data
@@ -145,7 +144,7 @@ BalancedTree_init(BalancedTree_t* tree,
 		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz);
 
 
-static inline uint
+static inline unsigned int
 BalancedTree_size(BalancedTree_t* tree)
 {
   return tree->size;

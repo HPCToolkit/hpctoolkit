@@ -72,7 +72,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 //*************************** Forward Declarations **************************
 
@@ -138,13 +137,13 @@ public:
   // debugging
   // -------------------------------------------------------
   std::string
-  toString(uint flags = 0) const;
+  toString(unsigned int flags = 0) const;
   
   std::ostream&
-  dump(std::ostream& os, uint flags = 0, const char* pfx = "") const;
+  dump(std::ostream& os, unsigned int flags = 0, const char* pfx = "") const;
   
   void
-  ddump(uint flags = 0) const;
+  ddump(unsigned int flags = 0) const;
   
 
 private:

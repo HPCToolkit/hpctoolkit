@@ -73,7 +73,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include <lib/binutils/VMAInterval.hpp>
 
@@ -190,11 +189,11 @@ public:
   // Write contents
   // -------------------------------------------------------
   std::ostream&
-  writeXML(std::ostream& os = std::cerr, uint oFlags = 0) const;
+  writeXML(std::ostream& os = std::cerr, unsigned int oFlags = 0) const;
 
   // Dump contents for inspection (use flags from ANode)
   std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
+  dump(std::ostream& os = std::cerr, unsigned int oFlags = 0) const;
 
   void
   ddump() const;
@@ -327,14 +326,14 @@ public:
   { return m_type; }
 
   // id: a unique id; 0 is reserved for a NULL value
-  uint
+  unsigned int
   id() const
   { return m_id; }
 
-  static const uint Id_NULL = 0;
+  static const unsigned int Id_NULL = 0;
 
   // maxId: the maximum id of all structure nodes
-  static uint
+  static unsigned int
   maxId()
   { return s_nextUniqueId - 1; }
 
@@ -500,13 +499,13 @@ public:
   // --------------------------------------------------------
 
   std::string
-  toStringXML(uint oFlags = 0, const char* pre = "") const;
+  toStringXML(unsigned int oFlags = 0, const char* pre = "") const;
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  writeXML(std::ostream& os = std::cout, uint oFlags = 0,
+  writeXML(std::ostream& os = std::cout, unsigned int oFlags = 0,
 	   const char* pre = "") const;
 
   void
@@ -517,36 +516,36 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toString(uint oFlags = 0, const char* pre = "") const;
+  toString(unsigned int oFlags = 0, const char* pre = "") const;
 
   std::string
-  toString_id(uint oFlags = 0) const;
+  toString_id(unsigned int oFlags = 0) const;
 
   std::string
-  toStringMe(uint oFlags = 0, const char* pre = "") const;
+  toStringMe(unsigned int oFlags = 0, const char* pre = "") const;
 
   // dump
   std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0,
+  dump(std::ostream& os = std::cerr, unsigned int oFlags = 0,
        const char* pre = "") const;
 
   void ddump() const;
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
   virtual std::ostream&
-  dumpmePath(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpmePath(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 protected:
   bool
-  writeXML_pre(std::ostream& os = std::cout, uint oFlags = 0,
+  writeXML_pre(std::ostream& os = std::cout, unsigned int oFlags = 0,
 	       const char* prefix = "") const;
 
   void
-  writeXML_post(std::ostream& os = std::cout, uint oFlags = 0,
+  writeXML_post(std::ostream& os = std::cout, unsigned int oFlags = 0,
 		const char* prefix = "") const;
 private:
   void
@@ -555,16 +554,16 @@ private:
   void
   dtorCheck() const;
 
-  static uint s_nextUniqueId;
+  static unsigned int s_nextUniqueId;
 
 protected:
   ANodeTy m_type; // obsolete with typeid(), but hard to replace
-  uint m_id;
+  unsigned int m_id;
   bool m_visible;
 
 public:
   // original node id from .hpcstruct file (for debug)
-  uint m_origId;
+  unsigned int m_origId;
 };
 
 
@@ -753,20 +752,20 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::string
-  XMLLineRange(uint oFlags) const;
+  XMLLineRange(unsigned int oFlags) const;
 
   virtual std::string
-  XMLVMAIntervals(uint oFlags) const;
+  XMLVMAIntervals(unsigned int oFlags) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 protected:
@@ -898,10 +897,10 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  writeXML(std::ostream& os = std::cout, uint oFlags = 0,
+  writeXML(std::ostream& os = std::cout, unsigned int oFlags = 0,
 	   const char* pre = "") const;
 
   // --------------------------------------------------------
@@ -909,7 +908,7 @@ public:
   // --------------------------------------------------------
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 protected:
@@ -982,14 +981,14 @@ public:
   { return new Group(*this); }
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 private:
@@ -1146,15 +1145,15 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  writeXML(std::ostream& os = std::cout, uint oFlags = 0,
+  writeXML(std::ostream& os = std::cout, unsigned int oFlags = 0,
 	   const char* pre = "") const;
 
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
   void
@@ -1323,10 +1322,10 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 private:
@@ -1471,10 +1470,10 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 private:
@@ -1593,10 +1592,10 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 private:
@@ -1666,10 +1665,10 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
   const std::string&
@@ -1783,10 +1782,10 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 private:
@@ -1807,11 +1806,11 @@ public:
   Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName);
   // parent->type() == TyStmt
 
-  uint
+  unsigned int
   BegPos() const
   { return begPos; };
 
-  uint
+  unsigned int
   EndPos() const
   { return endPos; };
 
@@ -1827,20 +1826,20 @@ public:
   { return new Ref(*this); }
 
   virtual std::string
-  toXML(uint oFlags = 0) const;
+  toXML(unsigned int oFlags = 0) const;
 
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
 
   virtual std::ostream&
-  dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
+  dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
 	 const char* pre = "") const;
 
 private:
   void RelocateRef();
-  uint begPos;
-  uint endPos;
+  unsigned int begPos;
+  unsigned int endPos;
   std::string m_name;
 };
 

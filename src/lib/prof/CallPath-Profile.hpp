@@ -72,7 +72,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
@@ -113,7 +112,7 @@ public:
 
 #if 0
   static int
-  fmt_cct_fread(FILE* infs, uint rFlags,
+  fmt_cct_fread(FILE* infs, unsigned int rFlags,
 		const metric_tbl_t& metricTbl,
 		std::string ctxtStr, FILE* outfs);
 #else

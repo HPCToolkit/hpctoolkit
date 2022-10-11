@@ -245,13 +245,13 @@ Args::parse(int argc, const char* const argv[])
     // FIXME: sanity check that options correspond to mode
     
     // Check for required arguments
-    uint numArgs = parser.getNumArgs();
+    unsigned int numArgs = parser.getNumArgs();
     if ( !(numArgs >= 1) ) {
       ARG_ERROR("Incorrect number of arguments!");
     }
 
     profileFiles.resize(numArgs);
-    for (uint i = 0; i < numArgs; ++i) {
+    for (unsigned int i = 0; i < numArgs; ++i) {
       profileFiles[i] = parser.getArg(i);
     }
   }
