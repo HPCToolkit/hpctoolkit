@@ -61,7 +61,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include "PointerStack.hpp" 
 

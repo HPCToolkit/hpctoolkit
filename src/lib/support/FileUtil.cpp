@@ -147,7 +147,7 @@ bool
 fnmatch(const std::vector<std::string>& patternVec,
 	const char* string, int flags)
 {
-  for (uint i = 0; i < patternVec.size(); ++i) {
+  for (unsigned int i = 0; i < patternVec.size(); ++i) {
     const std::string& pat = patternVec[i];
     bool fnd = FileUtil::fnmatch(pat, string, flags);
     if (fnd) {
@@ -385,13 +385,13 @@ mkdirUnique(const char* dirnm)
       }
 
       // qualifier 2: pid
-      uint pid = OSUtil_pid();
+      unsigned int pid = OSUtil_pid();
       string pid_str = StrUtil::toStr(pid);
       string dirnm2 = string(dirnm) + "-" + pid_str;
       dirnmVec.push_back(dirnm2);
 
       // attempt to create alternative directories
-      for (uint i = 0; i < dirnmVec.size(); ++i) {
+      for (unsigned int i = 0; i < dirnmVec.size(); ++i) {
 	dirnm_new = dirnmVec[i];
 	DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying '" << dirnm_new << "'");
 	ret = ::mkdir(dirnm_new.c_str(), mkmode);

@@ -623,7 +623,7 @@ PathFindMgr::isRecursivePath(const char* path)
 //***************************************************************************
 
 string
-PathFindMgr::toString(uint flags) const
+PathFindMgr::toString(unsigned int flags) const
 {
   std::ostringstream os;
   dump(os, flags);
@@ -632,7 +632,7 @@ PathFindMgr::toString(uint flags) const
 
 
 std::ostream&
-PathFindMgr::dump(std::ostream& os, uint GCC_ATTR_UNUSED flags,
+PathFindMgr::dump(std::ostream& os, unsigned int GCC_ATTR_UNUSED flags,
 		  const char* pfx) const
 {
   using std::endl;
@@ -661,7 +661,7 @@ PathFindMgr::dump(std::ostream& os, uint GCC_ATTR_UNUSED flags,
 
 
 void
-PathFindMgr::ddump(uint flags) const
+PathFindMgr::ddump(unsigned int flags) const
 {
   dump(std::cerr, flags);
 }

@@ -68,7 +68,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include <lib/analysis/Args.hpp>
 

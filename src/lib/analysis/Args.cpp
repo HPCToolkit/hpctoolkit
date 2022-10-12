@@ -192,7 +192,7 @@ Args::normalizeSearchPaths()
   
   if (searchPathTpls.size() > 0) {
     DIAG_Msg(2, "search paths:");
-    for (uint i = 0; i < searchPathTpls.size(); ++i) {
+    for (unsigned int i = 0; i < searchPathTpls.size(); ++i) {
       DIAG_Msg(2, "  " << searchPathTpls[i].first);
     }
   }
@@ -214,7 +214,7 @@ std::string
 Args::searchPathStr() const
 {
   string path = ".";
-  for (uint i = 0; i < searchPathTpls.size(); ++i) {
+  for (unsigned int i = 0; i < searchPathTpls.size(); ++i) {
     path += string(":") + searchPathTpls[i].first;
   }
   return path;

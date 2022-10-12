@@ -100,7 +100,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 /************************ QuickSort function prototypes **********************/
 

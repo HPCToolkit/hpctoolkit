@@ -212,7 +212,7 @@ RealPathMgr::searchPaths(const string& pathsStr)
   // INVARIANT: m_searchPaths is non-empty
   m_searchPaths += "."; // current working directory
   
-  for (uint i = 0; i < searchPathVec.size(); ++i) {
+  for (unsigned int i = 0; i < searchPathVec.size(); ++i) {
     string path = searchPathVec[i];
 
     if (PathFindMgr::isRecursivePath(path.c_str())) {
@@ -232,7 +232,7 @@ RealPathMgr::searchPaths(const string& pathsStr)
 //***************************************************************************
 
 string
-RealPathMgr::toString(uint flags) const
+RealPathMgr::toString(unsigned int flags) const
 {
   std::ostringstream os;
   dump(os, flags);
@@ -241,7 +241,7 @@ RealPathMgr::toString(uint flags) const
 
 
 std::ostream&
-RealPathMgr::dump(std::ostream& os, uint GCC_ATTR_UNUSED flags,
+RealPathMgr::dump(std::ostream& os, unsigned int GCC_ATTR_UNUSED flags,
 		  const char* pfx) const
 {
   os << pfx << "[ RealPathMgr:" << std::endl;
@@ -258,7 +258,7 @@ RealPathMgr::dump(std::ostream& os, uint GCC_ATTR_UNUSED flags,
 
 
 void
-RealPathMgr::ddump(uint flags) const
+RealPathMgr::ddump(unsigned int flags) const
 {
   dump(std::cerr, flags);
 }

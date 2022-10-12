@@ -75,7 +75,6 @@
 // user include files
 //***************************************************************************
 
-#include <include/uint.h>
 
 
 
@@ -95,7 +94,7 @@
 extern "C" {
 #endif
 
-uint
+unsigned int
 OSUtil_pid();
 
 const char*

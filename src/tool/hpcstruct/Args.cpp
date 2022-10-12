@@ -370,7 +370,7 @@ Args::parse(int argc, const char* const argv[])
       std::vector<std::string> replacePaths;
       StrUtil::tokenize_str(arg, CLP_SEPARATOR, replacePaths);
       
-      for (uint i = 0; i < replacePaths.size(); ++i) {
+      for (unsigned int i = 0; i < replacePaths.size(); ++i) {
 	int occurancesOfEquals =
 	  Analysis::Util::parseReplacePath(replacePaths[i]);
 	

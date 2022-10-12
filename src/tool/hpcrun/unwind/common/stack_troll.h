@@ -47,7 +47,6 @@
 #ifndef STACK_TROLL_H
 #define STACK_TROLL_H
 
-#include <include/uint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +59,7 @@ typedef enum {
 } troll_status;
 
 #include "validate_return_addr.h"
-  troll_status stack_troll(void **start_sp, uint *ra_pos, validate_addr_fn_t validate_addr, void *generic_arg);
+  troll_status stack_troll(void **start_sp, unsigned int *ra_pos, validate_addr_fn_t validate_addr, void *generic_arg);
 
 #ifdef __cplusplus
 }

@@ -179,7 +179,7 @@ void NonUniformDegreeTreeNode::unlink()
 }
 
 
-uint
+unsigned int
 NonUniformDegreeTreeNode::ancestorCount() const
 {
   unsigned int ancestorCount = 0;
@@ -192,19 +192,19 @@ NonUniformDegreeTreeNode::ancestorCount() const
 }
 
 
-uint
-NonUniformDegreeTreeNode::maxDepth(uint parentDepth)
+unsigned int
+NonUniformDegreeTreeNode::maxDepth(unsigned int parentDepth)
 {
-  uint depth = parentDepth + 1;
+  unsigned int depth = parentDepth + 1;
 
   if (isLeaf()) {
     return depth;
   }
   else {
-    uint max_depth = 0;
+    unsigned int max_depth = 0;
     NonUniformDegreeTreeNodeChildIterator it(this);
     for (NonUniformDegreeTreeNode* x = NULL; (x = it.Current()); ++it) {
-      uint x_depth = x->maxDepth(depth);
+      unsigned int x_depth = x->maxDepth(depth);
       max_depth = std::max(max_depth, x_depth);
     }
     return max_depth;
@@ -213,7 +213,7 @@ NonUniformDegreeTreeNode::maxDepth(uint parentDepth)
 
 
 std::string
-NonUniformDegreeTreeNode::toString(uint GCC_ATTR_UNUSED oFlags,
+NonUniformDegreeTreeNode::toString(unsigned int GCC_ATTR_UNUSED oFlags,
 				   const char* GCC_ATTR_UNUSED pfx) const
 {
   return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);

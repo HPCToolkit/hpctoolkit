@@ -707,7 +707,7 @@ doStmtList(ostream * os, int depth, TreeNode * node)
   }
 
   // print each call stmt as a separate <C> tag
-  for (uint i = 0; i < callVec.size(); i++) {
+  for (unsigned int i = 0; i < callVec.size(); i++) {
     StmtInfo * sinfo = callVec[i];
 
     doIndent(os, depth);

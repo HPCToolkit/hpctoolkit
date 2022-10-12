@@ -71,7 +71,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
-#include <include/uint.h>
 
 #include <lib/isa/ISATypes.hpp>
 

@@ -91,12 +91,12 @@ static const int INVALID_INDEX              = -99;
 static const int ENTRY_DEPTH_FOR_HASHING    =  32;
 static const int LOOKING_FOR_AN_INDEX       =   1;
 
-static ulong NEXT_ID = 0;
+static unsigned long NEXT_ID = 0;
 
 /******************* HashTable static function prototypes ********************/
 
-static uint DefaultHashFunct  (const void* entry, const uint size);
-static uint DefaultRehashFunct  (const uint oldHashValue, const uint size);
+static unsigned int DefaultHashFunct  (const void* entry, const unsigned int size);
+static unsigned int DefaultRehashFunct  (const unsigned int oldHashValue, const unsigned int size);
 static int DefaultEntryCompare  (const void* entry1, const void* entry2);
 static void DefaultEntryCleanup  (void* entry);
 
@@ -136,7 +136,7 @@ HashTable::~HashTable ()
 
 //
 //
-void HashTable::Create (const uint theEntrySize, uint initialSlots,
+void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlots,
                         HashFunctFunctPtr    const _HashFunctCallback,
                         RehashFunctFunctPtr  const _RehashFunctCallback,
                         EntryCompareFunctPtr const _EntryCompareCallback,
@@ -441,7 +441,7 @@ int HashTable::GetEntryIndex (const void* entry) const
 
 //
 //
-void* HashTable::GetEntryByIndex (const uint index) const
+void* HashTable::GetEntryByIndex (const unsigned int index) const
 {
   if (hashTableCreated)
     {
@@ -457,7 +457,7 @@ void* HashTable::GetEntryByIndex (const uint index) const
 
 //
 //
-uint HashTable::NumberOfEntries () const
+unsigned int HashTable::NumberOfEntries () const
 {
   if (hashTableCreated)
     {
@@ -492,7 +492,7 @@ void HashTable::Dump ()
 
 //
 //
-void HashTable::Create (const uint theEntrySize, uint initialSlots)
+void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlots)
 {
    if (!hashTableCreated)
      {
@@ -541,14 +541,14 @@ void HashTable::Create (const uint theEntrySize, uint initialSlots)
 
 //
 //
-uint HashTable::HashFunct (const void* entry, const uint size) 
+unsigned int HashTable::HashFunct (const void* entry, const unsigned int size) 
 {
   return HashFunctCallback (entry, size);
 }
 
 //
 //
-uint HashTable::RehashFunct (const uint oldHashValue, const uint size) 
+unsigned int HashTable::RehashFunct (const unsigned int oldHashValue, const unsigned int size) 
 {
   return RehashFunctCallback (oldHashValue, size);
 }
@@ -792,17 +792,17 @@ void HashTable::FailureToDestroyError () const
 
 //
 //
-uint IntegerHashFunct (const int value, const uint size)
+unsigned int IntegerHashFunct (const int value, const unsigned int size)
 {
-   return (uint)((int)value % size);
+   return (unsigned int)((int)value % size);
 }
 
 //
 //
-uint IntegerRehashHashFunct (const uint oldHashValue, const uint size)
+unsigned int IntegerRehashHashFunct (const unsigned int oldHashValue, const unsigned int size)
 {
       // 16 is relatively prime to a Mersenne prime!
-  return (uint)((oldHashValue + 16) % size); 
+  return (unsigned int)((oldHashValue + 16) % size); 
 }
 
 //
@@ -814,9 +814,9 @@ int IntegerEntryCompare (const int value1, const int value2)
 
 //
 //
-uint StringHashFunct (const void* entry, const uint size)
+unsigned int StringHashFunct (const void* entry, const unsigned int size)
 {
-  uint  result = 0;
+  unsigned int  result = 0;
   char* cEntry = (char*) entry;
   unsigned char c;
 
@@ -832,10 +832,10 @@ uint StringHashFunct (const void* entry, const uint size)
 
 //
 //
-uint StringRehashFunct (const uint oldHashValue, const uint size)
+unsigned int StringRehashFunct (const unsigned int oldHashValue, const unsigned int size)
 {
       // 16 is relatively prime to a Mersenne prime!
-  return (uint)((oldHashValue + 16) % size); 
+  return (unsigned int)((oldHashValue + 16) % size); 
 }
 
 //
@@ -852,8 +852,8 @@ int StringEntryCompare (const void* entry1, const void* entry2)
 
 //
 //
-static uint DefaultHashFunct (const void* GCC_ATTR_UNUSED entry,
-			      const uint GCC_ATTR_UNUSED size)
+static unsigned int DefaultHashFunct (const void* GCC_ATTR_UNUSED entry,
+			      const unsigned int GCC_ATTR_UNUSED size)
 {
   DIAG_Die("Failure to specify HashFunct function.");
   return 0;
@@ -861,9 +861,9 @@ static uint DefaultHashFunct (const void* GCC_ATTR_UNUSED entry,
 
 //
 //
-static uint DefaultRehashFunct (const uint oldHashValue, const uint size)
+static unsigned int DefaultRehashFunct (const unsigned int oldHashValue, const unsigned int size)
 {
-  uint newHashValue;
+  unsigned int newHashValue;
 
       // 16 is relatively prime to a Mersenne prime!
   newHashValue = (oldHashValue + 16) % size; 

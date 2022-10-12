@@ -271,16 +271,15 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 /******************* HashTable extern function prototypes ********************/
 
-extern uint IntegerHashFunct  (const int value, const uint size);
-extern uint IntegerRehashHashFunct  (const uint oldHashValue, const uint size);
+extern unsigned int IntegerHashFunct  (const int value, const unsigned int size);
+extern unsigned int IntegerRehashHashFunct  (const unsigned int oldHashValue, const unsigned int size);
 extern int IntegerEntryCompare  (const int value1, const int value2);
 
-extern uint StringHashFunct  (const void* entry, const uint size);
-extern uint StringRehashFunct  (const uint oldHashValue, const uint size);
+extern unsigned int StringHashFunct  (const void* entry, const unsigned int size);
+extern unsigned int StringRehashFunct  (const unsigned int oldHashValue, const unsigned int size);
 extern int StringEntryCompare  (const void* entry1, const void* entry2);
 
 /*********************** HashTable function prototypes ***********************/
@@ -291,11 +290,11 @@ typedef void (*AddEntryFunctPtr)(void*, void*, va_list);
 typedef void (*DeleteEntryFunctPtr)(void*, va_list);
            /* void* entry, va_list argList */
 
-typedef uint (*HashFunctFunctPtr)(const void*, const uint);
-           /* void* entry, uint size */
+typedef unsigned int (*HashFunctFunctPtr)(const void*, const unsigned int);
+           /* void* entry, unsigned int size */
 
-typedef uint (*RehashFunctFunctPtr)(const uint, const uint);
-           /* uint oldHashValue, uint newSize */
+typedef unsigned int (*RehashFunctFunctPtr)(const unsigned int, const unsigned int);
+           /* unsigned int oldHashValue, unsigned int newSize */
 
 typedef int (*EntryCompareFunctPtr)(const void*, const void*);
            /* void* entry1, void* entry2 */
@@ -313,7 +312,7 @@ public:
   virtual ~HashTable ();
   
   // Must be called after creating object
-  void Create (const uint entrySize, uint initialSize,
+  void Create (const unsigned int entrySize, unsigned int initialSize,
 	       HashFunctFunctPtr    const HashFunctCallback,
 	       RehashFunctFunctPtr  const RehashFunctCallback,
 	       EntryCompareFunctPtr const EntryCompareCallback,
@@ -330,8 +329,8 @@ public:
 		     DeleteEntryFunctPtr const DeleteEntryCallback = 0, ...);
   void* QueryEntry (const void* entry) const;
   int   GetEntryIndex (const void* entry) const;
-  void* GetEntryByIndex (const uint index) const;
-  uint  NumberOfEntries () const;
+  void* GetEntryByIndex (const unsigned int index) const;
+  unsigned int  NumberOfEntries () const;
   
   void  Dump ();
   
@@ -339,22 +338,22 @@ public:
   
 protected:
   // Must be called after creating object
-  void Create (const uint entrySize, uint initialSize);
+  void Create (const unsigned int entrySize, unsigned int initialSize);
   
-  virtual uint HashFunct (const void* entry, const uint size);
-  virtual uint RehashFunct (const uint oldHashValue, const uint size);
+  virtual unsigned int HashFunct (const void* entry, const unsigned int size);
+  virtual unsigned int RehashFunct (const unsigned int oldHashValue, const unsigned int size);
   virtual int  EntryCompare (const void* entry1, const void* entry2);
   virtual void EntryCleanup (void* entry);
   
   HashTable& operator=(const HashTable &rhs);
   
 private:
-  const ulong id;                     // unique id for determining equality  
-  uint  numSlots;                     // number of distinct symbols
-  uint  nextSlot;                     // next available opening
-  uint  entrySize;                    // byte size of the entries
+  const unsigned long id;                     // unique id for determining equality  
+  unsigned int  numSlots;                     // number of distinct symbols
+  unsigned int  nextSlot;                     // next available opening
+  unsigned int  entrySize;                    // byte size of the entries
   void* entries;                      // array of hash table entries
-  uint  indexSetSize;                 // size of sparse hash index set
+  unsigned int  indexSetSize;                 // size of sparse hash index set
   int*  indexSet;                     // sparse hash index set
   
   bool hashTableCreated;

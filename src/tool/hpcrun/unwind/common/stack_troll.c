@@ -63,7 +63,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include <include/uint.h>
 
 #include "stack_troll.h"
 #include "fnbounds_interface.h"
@@ -74,7 +73,7 @@
 static const int TROLL_LIMIT = 16;
 
 troll_status
-stack_troll(void **start_sp, uint *ra_pos, validate_addr_fn_t validate_addr, void *generic_arg)
+stack_troll(void **start_sp, unsigned int *ra_pos, validate_addr_fn_t validate_addr, void *generic_arg)
 {
   void **sp = start_sp;
 

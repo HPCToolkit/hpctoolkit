@@ -67,20 +67,20 @@ namespace TraceviewerServer
 {
 class ProgressBar {
 private:
-typedef uint64_t ulong;
+typedef uint64_t unsigned long;
 
 	static const int DEFAULT_TERMINAL_WIDTH = 80;
 
 	int usableWidth;
 	int colsFilled;
-	ulong tasks;
+	unsigned long tasks;
 	int tasksComplete;
 	string label;
 	void update();
 public:
-	ProgressBar(string name, ulong tasksToComplete);
+	ProgressBar(string name, unsigned long tasksToComplete);
 
-	void incrementProgress(ulong tasks);
+	void incrementProgress(unsigned long tasks);
 	/**Call every time a task is completed */
 	void incrementProgress();
 

@@ -71,7 +71,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 #include <include/min-max.h>
 
 #include "lush.h"
@@ -89,7 +88,7 @@
 
 static frame_t*
 canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
-		   uint pchord_len, uint lchord_len);
+		   unsigned int pchord_len, unsigned int lchord_len);
 
 
 //***************************************************************************
@@ -157,7 +156,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   // ---------------------------------------------------------
   // Step through bichords
   // ---------------------------------------------------------
-  uint unw_len = 0;
+  unsigned int unw_len = 0;
   lush_step_t ty = LUSH_STEP_NULL;
 
   while ( (ty = lush_step_bichord(&cursor)) != LUSH_STEP_END_PROJ 
@@ -171,7 +170,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
     hpcrun_ensure_btbuf_avail();
     frame_t* chord_beg = td->btbuf_cur; // innermost note
-    uint pchord_len = 0, lchord_len = 0;
+    unsigned int pchord_len = 0, lchord_len = 0;
 
     // ---------------------------------------------------------
     // Step through p-notes of p-chord
@@ -267,14 +266,14 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 // returns the end of the chord (exclusive)
 static frame_t* 
 canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
-		   uint pchord_len, uint lchord_len)
+		   unsigned int pchord_len, unsigned int lchord_len)
 {
   // Set assoc and fill empty p-notes/l-notes
 
   // INVARIANT: chord_len >= 1
   //   [chord_beg = innermost ... outermost, chord_end)
 
-  uint chord_len = MAX(pchord_len, lchord_len);
+  unsigned int chord_len = MAX(pchord_len, lchord_len);
   frame_t* chord_end  = chord_beg + chord_len; // N.B.: exclusive
   frame_t* pchord_end = chord_beg + pchord_len;
   frame_t* lchord_end = chord_beg + lchord_len;
@@ -290,7 +289,7 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
   }
   // else: default is fine for a-to-0 and 1-to-1
   
-  uint path_len = chord_len;
+  unsigned int path_len = chord_len;
   for (frame_t* x = chord_beg; x < chord_end; ++x, --path_len) {
     lush_assoc_info__set_assoc(x->as_info, as);
     lush_assoc_info__set_path_len(x->as_info, path_len);

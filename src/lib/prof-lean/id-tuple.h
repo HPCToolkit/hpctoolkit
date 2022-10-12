@@ -70,7 +70,6 @@
 // local includes
 //***************************************************************************
 
-#include <include/uint.h>
 
 #include "../prof-lean/hpcio.h"
 #include "../prof-lean/hpcio-buffer.h"

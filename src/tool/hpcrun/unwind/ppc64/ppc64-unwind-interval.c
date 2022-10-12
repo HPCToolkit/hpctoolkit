@@ -62,7 +62,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
-#include <include/uint.h>
 #include <include/min-max.h>
 #include "ppc64-unwind-interval.h"
 #include "hpcrun-malloc.h"

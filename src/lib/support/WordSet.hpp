@@ -99,7 +99,7 @@ private:
   // virtual functions for hashing and comparing
   // that override the defaults for HashTable
   //-------------------------------------------------------------
-  uint HashFunct(const void *entry, const uint size);
+  unsigned int HashFunct(const void *entry, const unsigned int size);
   int EntryCompare(const void *entry1, const void *entry2); // 0 if equal
   
 //-------------------------------------------------------------

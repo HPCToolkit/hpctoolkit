@@ -74,7 +74,6 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
-#include <include/uint.h>
 
 #include "Util.hpp"
 

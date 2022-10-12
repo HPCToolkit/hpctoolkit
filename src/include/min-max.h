@@ -50,7 +50,7 @@
 //   $HeadURL$
 //
 // Purpose:
-//   uint types
+//   unsigned int types
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

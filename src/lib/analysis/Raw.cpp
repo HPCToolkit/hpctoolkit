@@ -1048,9 +1048,9 @@ Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)
 
     hpcmetricDB_fmt_hdr_fprint(&hdr, stdout);
 
-    for (uint nodeId = 1; nodeId < hdr.numNodes + 1; ++nodeId) {
+    for (unsigned int nodeId = 1; nodeId < hdr.numNodes + 1; ++nodeId) {
       fprintf(stdout, "(%6u: ", nodeId);
-      for (uint mId = 0; mId < hdr.numMetrics; ++mId) {
+      for (unsigned int mId = 0; mId < hdr.numMetrics; ++mId) {
 	double mval = 0;
 	ret = hpcfmt_real8_fread(&mval, fs);
 	if (ret != HPCFMT_OK) {

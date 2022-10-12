@@ -73,6 +73,7 @@ using std::endl;
 #include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
+#include <include/hpctoolkit-config.h>
 
 #include <lib/support/RealPathMgr.hpp>
 

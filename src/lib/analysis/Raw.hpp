@@ -66,7 +66,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h> 
 #include <lib/prof-lean/hpcrun-fmt.h> 
 #include <lib/prof-lean/id-tuple.h>
 

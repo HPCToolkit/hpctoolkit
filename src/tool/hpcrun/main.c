@@ -75,7 +75,6 @@
 // user include files 
 //***************************************************************************
 
-#include <include/uint.h>
 
 #include <include/hpctoolkit-config.h>
 #include <lib/prof-lean/placeholders.h>

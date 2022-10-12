@@ -66,7 +66,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 
 #include <lib/support/ProcNameMgr.hpp>
 

@@ -67,7 +67,6 @@
 //*************************** User Include Files *****************************
 
 #include <include/gcc-attr.h>
-#include <include/uint.h>
 
 
 #include "diagnostics.h"
@@ -92,10 +91,10 @@ Diagnostics_GetDiagnosticFilterLevel()
 
 void
 Diagnostics_TheMostVisitedBreakpointInHistory(const char* GCC_ATTR_UNUSED filenm,
-					      uint GCC_ATTR_UNUSED lineno)
+					      unsigned int GCC_ATTR_UNUSED lineno)
 {
   // Prevent this routine from ever being inlined
-  static uint count = 0;
+  static unsigned int count = 0;
   count++;
 }
 

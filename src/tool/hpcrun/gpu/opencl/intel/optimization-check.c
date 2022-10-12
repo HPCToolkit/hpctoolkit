@@ -30,7 +30,7 @@
 // local data
 //******************************************************************************
 
-static uint usedDeviceCount = 0;
+static unsigned int usedDeviceCount = 0;
 static cct_node_t *firstDeviceCCT = NULL;
 
 
@@ -314,7 +314,7 @@ clearKernelParams
 void
 recordDeviceCount
 (
- uint num_devices,
+ unsigned int num_devices,
  const cl_device_id *devices
 )
 {
@@ -412,7 +412,7 @@ clearBufferEntry
 
 
 /* using host device as an accelerator */
-static uint
+static unsigned int
 getTotalDeviceCount
 (
  void
@@ -421,7 +421,7 @@ getTotalDeviceCount
   cl_uint platformCount;
   cl_platform_id* platforms;
   cl_uint platformDeviceCount;
-  uint totalDeviceCount;
+  unsigned int totalDeviceCount;
 
   clGetPlatformIDs(0, NULL, &platformCount);
   platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
@@ -453,7 +453,7 @@ areAllDevicesUsed
   In order to achieve good balance one will have to split the work proportional to the capability of the accelerator instead of distributing it evenly
   */
 
-  uint totalDeviceCount = getTotalDeviceCount();
+  unsigned int totalDeviceCount = getTotalDeviceCount();
   if (totalDeviceCount != usedDeviceCount) {
     intel_optimization_t i;
     i.intelOptKind = UNUSED_DEVICES;

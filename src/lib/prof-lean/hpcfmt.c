@@ -73,7 +73,6 @@
 #include "hpcfmt.h"
 #include "hpcio.h"
 
-#include <include/uint.h>
 
 //*************************** Forward Declarations **************************
 
