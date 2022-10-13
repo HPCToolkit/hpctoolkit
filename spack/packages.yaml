@@ -20,7 +20,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: October 6, 2022.
+#  Last revised: October 12, 2022.
 #
 packages:
 
@@ -100,8 +100,12 @@ packages:
   # Hpctoolkit 2022.10.01 requires hpcviewer >= 2022.10 due to format
   # change in the database.
   #
+  # Note: for technical reasons, "2022.10" should be quoted to avoid
+  # being misinterpreted as the number 2022.1.  This applies to all
+  # 2-field numbers ending with "0".
+  #
   hpcviewer:
-    version: [2022.10]
+    version: [ "2022.10" ]
 
 
   # binutils -- used by hpcprof and struct simple (for functions and

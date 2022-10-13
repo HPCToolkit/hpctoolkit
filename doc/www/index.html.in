@@ -118,17 +118,16 @@ In this project, the goal is to extend HPCToolkit with improved capabilities for
     and ARM (aarch64).
   </li>
   <li>Cray XT/XE/XK/XC on x86_64 and Compute Node Linux.</li>
-  <li>IBM Blue Gene/Q on ppc64. (deprecated)</li>
 </ul>
 
 
 <h2> License</h2>
 <p>HPCToolkit is released under the 3-clause
   <a href="LICENSE">BSD license</a> and is available on
-  <a href="https://gitlab.com/HPCToolkit">GitLab/HPCToolkit</a>.
+  <a href="https://gitlab.com/hpctoolkit">GitLab/HPCToolkit</a>.
 </p>
 
-<p>[<span class="lastupdated">Page last updated: 2022/10/05</span>]
+<p>[<span class="lastupdated">Page last updated: 2022/10/11</span>]
 </p>
 
 <!-- ********************************************************************** -->
