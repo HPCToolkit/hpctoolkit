@@ -148,7 +148,7 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: October 5, 2022.
+<p>Last revised: October 12, 2022.
 </p>
 
 <a name="Prerequisites"></a>
@@ -157,9 +157,9 @@ your own needs.
 <p>Building HPCToolkit requires the following prerequisites.
 </p>
 <ol>
-<li> The GNU gcc and g++ compilers version 8.x or later with support for
-C++17.  On systems with older compilers, you can use spack to build a
-later version of gcc.
+<li> The GNU gcc, g++ and gfortran compilers version 8.x or later with
+support for C++17.  On systems with older compilers, you can use spack
+to build a later version of gcc.
 
 </li><li> GNU glibc version 2.16 or later.  Note: Red Hat 6.x uses glibc 2.12
 which is too old.
@@ -198,7 +198,7 @@ the available versions and variants for a package.  In most cases,
 spaces are optional between elements of a spec.  For example:
 
 <div class="example">
-<pre class="example">boost@1.77.0    dyninst @12.1.0    hpctoolkit @master
+<pre class="example">boost@1.77.0    dyninst @12.1.0    hpctoolkit @develop
 </pre></div>
 
 </li><li> &rsquo;+&rsquo;, &rsquo;-&rsquo;, &rsquo;~&rsquo; specify boolean (on/off) variants.  Note: <code>-</code>
@@ -218,7 +218,7 @@ and tilde after a non-space.  For example:
 </li><li> &rsquo;%&rsquo; specifies the build compiler and its version, for example:
 
 <div class="example">
-<pre class="example">hpctoolkit@master %gcc@8.5.0
+<pre class="example">hpctoolkit@develop %gcc@8.5.0
 </pre></div>
 
 </li><li> &rsquo;cflags&rsquo;, &rsquo;cxxflags&rsquo;, &rsquo;fflags&rsquo;, &rsquo;cppflags&rsquo;, &rsquo;ldflags&rsquo; and &rsquo;ldlibs&rsquo; are
@@ -235,7 +235,7 @@ a full spec and may include its own version, variants, etc.  For
 example:
 
 <div class="example">
-<pre class="example">hpctoolkit@master ^dyninst@12.1.0+openmp
+<pre class="example">hpctoolkit@develop ^dyninst@12.1.0+openmp
 </pre></div>
 
 </li><li> &rsquo;arch&rsquo;, &rsquo;platform&rsquo;, &rsquo;os&rsquo; and &rsquo;target&rsquo; are special options for the
@@ -278,7 +278,7 @@ configuration.  This process is called &rsquo;concretization.&rsquo;  To see how
 spack would concretize a spec, use <code>spack spec</code>.
 </p>
 <div class="example">
-<pre class="example">spack spec hpctoolkit@master ^binutils@2.34 ^boost@1.72.0
+<pre class="example">spack spec hpctoolkit@develop ^binutils@2.34 ^boost@1.72.0
 </pre></div>
 
 <div class="example">
@@ -293,7 +293,7 @@ spack would concretize a spec, use <code>spack spec</code>.
 spack machinery and recipes for building over 6,500 packages (and
 growing).  You should also clone HPCToolkit for the
 <code>packages.yaml</code> file which is used to configure the spack build.
-Note: hpctoolkit has now moved to GitLab.
+Note: spack is on GitHub, but hpctoolkit has moved to GitLab.
 </p>
 <div class="example">
 <pre class="example">git clone https://github.com/spack/spack.git

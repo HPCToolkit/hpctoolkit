@@ -83,16 +83,16 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: October 5, 2022.
+Last revised: October 12, 2022.
 
 2 Prerequisites
 ===============
 
 Building HPCToolkit requires the following prerequisites.
 
-  1. The GNU gcc and g++ compilers version 8.x or later with support for
-     C++17.  On systems with older compilers, you can use spack to build
-     a later version of gcc.
+  1. The GNU gcc, g++ and gfortran compilers version 8.x or later with
+     support for C++17.  On systems with older compilers, you can use
+     spack to build a later version of gcc.
 
   2. GNU glibc version 2.16 or later.  Note: Red Hat 6.x uses glibc 2.12
      which is too old.
@@ -128,7 +128,7 @@ both on the command line and in config files.
      the available versions and variants for a package.  In most cases,
      spaces are optional between elements of a spec.  For example:
 
-          boost@1.77.0    dyninst @12.1.0    hpctoolkit @master
+          boost@1.77.0    dyninst @12.1.0    hpctoolkit @develop
 
   2. '+', '-', '~' specify boolean (on/off) variants.  Note: '-' (dash)
      and '~' (tilde) both mean 'off'.  Use dash after a space and tilde
@@ -142,7 +142,7 @@ both on the command line and in config files.
 
   4. '%' specifies the build compiler and its version, for example:
 
-          hpctoolkit@master %gcc@8.5.0
+          hpctoolkit@develop %gcc@8.5.0
 
   5. 'cflags', 'cxxflags', 'fflags', 'cppflags', 'ldflags' and 'ldlibs'
      are special name/value variants for compiler flags.  These are
@@ -155,7 +155,7 @@ both on the command line and in config files.
      package is a full spec and may include its own version, variants,
      etc.  For example:
 
-          hpctoolkit@master ^dyninst@12.1.0+openmp
+          hpctoolkit@develop ^dyninst@12.1.0+openmp
 
   7. 'arch', 'platform', 'os' and 'target' are special options for the
      system architecture and machine type.  Platform is normally
@@ -189,7 +189,7 @@ and create a unique hash value for that exact configuration.  This
 process is called 'concretization.'  To see how spack would concretize a
 spec, use 'spack spec'.
 
-     spack spec hpctoolkit@master ^binutils@2.34 ^boost@1.72.0
+     spack spec hpctoolkit@develop ^binutils@2.34 ^boost@1.72.0
 
      <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
 
@@ -199,8 +199,8 @@ spec, use 'spack spec'.
 Spack is available via git clone from GitHub.  This includes the core
 spack machinery and recipes for building over 6,500 packages (and
 growing).  You should also clone HPCToolkit for the 'packages.yaml' file
-which is used to configure the spack build.  Note: hpctoolkit has now
-moved to GitLab.
+which is used to configure the spack build.  Note: spack is on GitHub,
+but hpctoolkit has moved to GitLab.
 
      git clone https://github.com/spack/spack.git
      git clone https://gitlab.com/hpctoolkit/hpctoolkit.git

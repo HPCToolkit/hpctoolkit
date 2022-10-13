@@ -72,7 +72,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: October 5, 2022.
+Last revised: October 12, 2022.
 
 @c ------------------------------------------------------------
 
@@ -82,9 +82,9 @@ Building HPCToolkit requires the following prerequisites.
 
 @enumerate
 @item
-The GNU gcc and g++ compilers version 8.x or later with support for
-C++17.  On systems with older compilers, you can use spack to build a
-later version of gcc.
+The GNU gcc, g++ and gfortran compilers version 8.x or later with
+support for C++17.  On systems with older compilers, you can use spack
+to build a later version of gcc.
 
 @item
 GNU glibc version 2.16 or later.  Note: Red Hat 6.x uses glibc 2.12
@@ -130,7 +130,7 @@ the available versions and variants for a package.  In most cases,
 spaces are optional between elements of a spec.  For example:
 
 @example
-boost@@1.77.0    dyninst @@12.1.0    hpctoolkit @@master
+boost@@1.77.0    dyninst @@12.1.0    hpctoolkit @@develop
 @end example
 
 @item
@@ -153,7 +153,7 @@ dyninst+openmp build_type=RelWithDebInfo    xerces-c@@3.2.2 transcoder=iconv
 '%' specifies the build compiler and its version, for example:
 
 @example
-hpctoolkit@@master %gcc@@8.5.0
+hpctoolkit@@develop %gcc@@8.5.0
 @end example
 
 @item
@@ -172,7 +172,7 @@ a full spec and may include its own version, variants, etc.  For
 example:
 
 @example
-hpctoolkit@@master ^dyninst@@12.1.0+openmp
+hpctoolkit@@develop ^dyninst@@12.1.0+openmp
 @end example
 
 @item
@@ -219,7 +219,7 @@ configuration.  This process is called 'concretization.'  To see how
 spack would concretize a spec, use @code{spack spec}.
 
 @example
-spack spec hpctoolkit@@master ^binutils@@2.34 ^boost@@1.72.0
+spack spec hpctoolkit@@develop ^binutils@@2.34 ^boost@@1.72.0
 @end example
 
 @example
@@ -234,7 +234,7 @@ Spack is available via git clone from GitHub.  This includes the core
 spack machinery and recipes for building over 6,500 packages (and
 growing).  You should also clone HPCToolkit for the
 @code{packages.yaml} file which is used to configure the spack build.
-Note: hpctoolkit has now moved to GitLab.
+Note: spack is on GitHub, but hpctoolkit has moved to GitLab.
 
 @example
 git clone https://github.com/spack/spack.git
