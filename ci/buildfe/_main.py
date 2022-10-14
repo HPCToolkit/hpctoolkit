@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 import shlex
 import shutil
 import statistics
@@ -12,16 +13,16 @@ import typing as T
 from pathlib import Path
 
 from .action import Action, ActionResult, action_sequence, summarize_results
-from .buildsys import Build, CheckInstall, Configure, Install, Test
+from .buildsys import Build, CheckInstallManifest, Configure, Install, Test
 from .configuration import Configuration, DependencyConfiguration, Unsatisfiable
 from .logs import FgColor, colorize, print_header, section
 
 actions = {
-    "configure": Configure,
-    "build": Build,
-    "install": Install,
-    "check-install": CheckInstall,
-    "test": Test,
+    "configure": (Configure,),
+    "build": (Build,),
+    "install": (Install,),
+    "check-install": (CheckInstallManifest,),
+    "test": (Test,),
 }
 
 
@@ -131,13 +132,19 @@ Examples:
         default=[],
         help="Extra arguments to pass to spack install",
     )
+    parser.add_argument(
+        "--ccache-stats",
+        default=False,
+        action="store_true",
+        help="Report per-build ccache statistics. Note that this clears the ccache statistics",
+    )
     return parser
 
 
 def post_parse(args):
     if args.keep:
         args.single_spec = True
-    args.action = action_sequence([actions[a]() for a in args.action])
+    args.action = action_sequence([act() for name in args.action for act in actions[name]])
     return args
 
 
@@ -293,7 +300,7 @@ def run_actions(
             tim = endtim - starttim
             print(f"[{i+1}/{len(args.action)}] {a.name()} took {tim:.3f} seconds")
             results.append((a, r, tim))
-            if not r.passed:
+            if not r.completed:
                 break
     finally:
         if not args.keep:
@@ -304,10 +311,90 @@ def run_actions(
     return results
 
 
+def parse_stats(stdout):
+    stats = {}
+    for line in stdout.splitlines():
+        parts = re.split(" {3,}|\t+", line)
+        if len(parts) == 2:
+            key, val = parts
+            try:
+                stats[key] = int(val)
+            except ValueError:
+                pass
+    return stats
+
+
+def print_ccache_stats():
+    try:
+        proc = subprocess.run(
+            [shutil.which("ccache"), "--print-stats"], stdout=subprocess.PIPE, text=True, check=True
+        )
+    except subprocess.CalledProcessError:
+        # Older ccache doesn't support the machine-readable --print-stats, so just skip
+        return
+
+    stats = parse_stats(proc.stdout)
+    d_hit, p_hit, miss = (
+        stats["direct_cache_hit"],
+        stats["preprocessed_cache_hit"],
+        stats["cache_miss"],
+    )
+    total_hit = d_hit + p_hit
+    total = total_hit + miss
+
+    with section(f"Ccache efficacy: {total_hit/total*100:.3f}%", collapsed=True):
+        print(f"Hit: {total_hit/total*100:.3f}% ({total_hit:d} of {total:d})")
+        print(f"  Direct: {d_hit/total_hit*100:.3f}% ({d_hit:d} of {total_hit:d})")
+        print(f"  Preprocessed: {p_hit/total_hit*100:.3f}% ({p_hit:d} of {total_hit:d})")
+        print(f"Missed: {miss/total*100:.3f}% ({miss:d} of {total:d})")
+
+
+def build(v, cfg, args) -> tuple[bool, dict]:
+    if args.ccache_stats:
+        subprocess.run(
+            [shutil.which("ccache"), "--zero-stats"], stdout=subprocess.DEVNULL, check=True
+        )
+
+    ok = True
+    with section(
+        "## Build for HPCToolkit " + Configuration.to_string(v),
+        color=FgColor.header,
+        collapsed=True,
+    ):
+        results = run_actions(v, cfg, args)
+
+    if any(not r.completed for a, r, t in results):
+        with colorize(FgColor.error):
+            failures = [a.name() for a, r, t in results if not r.completed]
+            print(f" [\U0001f4a5] Build failed in {' '.join(failures)}", flush=True)
+        ok = False
+    elif any(not r.passed for a, r, t in results):
+        with colorize(FgColor.error):
+            print(" [\u274c] Build completed with errors", flush=True)
+        ok = False
+    elif any(not r.flawless for a, r, t in results):
+        with colorize(FgColor.warning):
+            print(" [\U0001f315] Build successful", flush=True)
+    else:
+        with colorize(FgColor.flawless):
+            print(" [\u2714] Build successful with no detected flaws", flush=True)
+    summarize_results((r for a, r, t in results), prefix="    - ")
+
+    if args.ccache_stats:
+        print_ccache_stats()
+
+    return ok, {a: t for a, r, t in results}
+
+
 def print_stats(times: list[float], prefix: str = ""):
-    print(f"{prefix}Time: {statistics.mean(times):.3f} +- {statistics.stdev(times):.1f} seconds")
-    qtls = statistics.quantiles(times, n=5)
-    print(f"{prefix}      20% < {qtls[0]:.3f} s | {qtls[3]:.3f} s < 20%")
+    if len(times) == 1:
+        print(f"{prefix}Time: {times[0]:.3f} seconds")
+    else:
+        print(
+            f"{prefix}Time: {statistics.mean(times):.3f} +- {statistics.stdev(times):.1f} seconds"
+        )
+        qtls = statistics.quantiles(times, n=5)
+        print(f"{prefix}      20% < {qtls[0]:.3f} s | {qtls[3]:.3f} s < 20%")
 
 
 def main():
@@ -331,35 +418,19 @@ def main():
         if unsat:
             all_ok = False
 
-        with section(
-            "## Build for HPCToolkit " + Configuration.to_string(v),
-            color=FgColor.header,
-            collapsed=True,
-        ):
-            results = run_actions(v, cfg, args)
+        ok, this_times = build(v, cfg, args)
+        all_ok = all_ok and ok
 
-        if any(not r.passed for a, r, t in results):
-            with colorize(FgColor.error):
-                failures = [a.name() for a, r, t in results if not r.passed]
-                print(f" [\u274c] Build failed in {' '.join(failures)}", flush=True)
-            all_ok = False
-        elif any(not r.flawless for a, r, t in results):
-            with colorize(FgColor.warning):
-                print(" [\U0001f315] Build successful", flush=True)
-        else:
-            with colorize(FgColor.flawless):
-                print(" [\u2714] Build successful with no detected flaws", flush=True)
-        summarize_results((r for a, r, t in results), prefix="    - ")
-
-        for a, r, t in results:
-            if a not in times:
-                times[a] = []
-            times[a].append(t)
+        for a, t in this_times.items():
+            ts = times.get(a, [])
+            ts.append(t)
+            times[a] = ts
 
     if len(variants) > 1:
         with section("Performance statistics", collapsed=True):
             for i, a in enumerate(args.action):
-                print(f"{i+1}/{len(args.action)}: {a.name()}")
-                print_stats(times[a], "  ")
+                if a in times:
+                    print(f"{i+1}/{len(args.action)}: {a.name()}")
+                    print_stats(times[a], "  ")
 
     sys.exit(0 if all_ok else 1)
