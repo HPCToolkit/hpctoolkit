@@ -62,6 +62,10 @@ generate_deps.amd64:
   - cp -r ci/dependencies/minimum/{spack.yaml,config} ci/dependencies/minimum/c/$OS/$ARCH/
   - mkdir -p ci/dependencies/latest/c/$OS/$ARCH/
   - cp -r ci/dependencies/latest/{spack.yaml,config} ci/dependencies/latest/c/$OS/$ARCH/
+
+  - &postjob
+    - ci/scripts/network-stats.sh .netstats.txt
+
   # Concretize each of the environments in turn, into subdirectories named by the OS and ARCH
   - >-
     echo -e 'minimum\nlatest' | xargs -P0 -I '{}' -t
@@ -82,6 +86,8 @@ generate_deps.amd64:
   - >-
     echo -e "\n...\n---\nsource: {pipeline: \"$CI_PIPELINE_ID\", job: \"$CI_JOB_NAME\", name: \"$OS $ARCH\"}"
     | tee -a spack-ci-artifacts/$OS/$ARCH/{minimum,latest}/ci.yml
+
+  - *postjob
 
   artifacts:
     paths:

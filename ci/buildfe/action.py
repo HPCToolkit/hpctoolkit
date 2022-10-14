@@ -23,7 +23,12 @@ class ActionResult(abc.ABC):
     @property
     @abc.abstractmethod
     def passed(self) -> bool:
-        """Return False if the Action failed to complete its task."""
+        """Return False if the Action finished with errors that fail the run as a whole."""
+
+    @property
+    @abc.abstractmethod
+    def completed(self) -> bool:
+        """Return False if the Action was unable to complete its task, and dependent Actions should not run."""
 
 
 def summarize_results(results: Iterable[ActionResult], prefix: str = "") -> None:
@@ -61,10 +66,14 @@ class ReturnCodeResult(ActionResult):
 
     @property
     def flawless(self):
-        return self.passed
+        return self.completed
 
     @property
     def passed(self):
+        return self.completed
+
+    @property
+    def completed(self):
         return self._returncode == 0
 
 

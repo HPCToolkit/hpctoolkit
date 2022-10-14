@@ -113,11 +113,15 @@ spack:
       - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
       - spack config --scope site add config:install_tree:padded_length:100
       - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
+      - &postjob
+        - ci/scripts/network-stats.sh .netstats.txt
       - spack -d ci rebuild
+      - *postjob
 
     reindex-job-attributes:
       tags: [docker]
       image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
+      resource_group: bcindex-$CI_COMMIT_REF_SLUG
       before_script: *spack_init
 
     noop-job-attributes:

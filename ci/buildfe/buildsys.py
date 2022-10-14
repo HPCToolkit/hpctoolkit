@@ -109,12 +109,16 @@ class BuildResult(ActionResult):
                     self.errors += 1
 
     @property
+    def completed(self):
+        return self.subresult.completed
+
+    @property
     def passed(self):
         return self.subresult.passed and self.errors == 0
 
     @property
     def flawless(self):
-        return self.subresult.flawless and self.passed and self.warnings == 0
+        return self.subresult.flawless and self.errors == 0 and self.warnings == 0
 
     def summary(self):
         fragments = []
@@ -138,8 +142,12 @@ class UnscannedBuildResult(ActionResult):
         self.subresult = subresult
 
     @property
+    def completed(self):
+        return True
+
+    @property
     def passed(self):
-        return self.subresult.passed
+        return False
 
     @property
     def flawless(self):
@@ -208,6 +216,10 @@ class CheckManifestResult(ActionResult):
         self.unexpected = unexpected
 
     @property
+    def completed(self):
+        return True
+
+    @property
     def passed(self):
         return self.missing == 0
 
@@ -223,7 +235,7 @@ class CheckManifestResult(ActionResult):
         return "install manifest matched"
 
 
-class CheckInstall(Action):
+class CheckInstallManifest(Action):
     """Check the installed files against the expected install manifest."""
 
     def header(self, cfg: Configuration) -> str:
