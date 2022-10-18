@@ -285,6 +285,17 @@ std::string HPCTraceDB2::exmlTag() {
 
 void HPCTraceDB2::write() {
   if(!tracefile) return;
+
+  // XXX: If there are no traces, delete the trace.db file outright.
+  // This currently only works in the single-rank case. The multi-rank case is
+  // more interesting and requires more work.
+  if(mpi::World::size() != 1)
+    util::log::fatal{} << "WIP currently unable to support multi-rank!";
+  if(!has_traces.load(std::memory_order_relaxed)) {
+    tracefile->remove();
+    return;
+  }
+
   auto traceinst = tracefile->open(true, true);
   if(mpi::World::rank() + 1 == mpi::World::size())
     traceinst.writeat(footerPos, sizeof fmt_tracedb_footer, fmt_tracedb_footer);

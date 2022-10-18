@@ -77,9 +77,16 @@ public:
 
   /// Synchronize this File's state between MPI ranks and the filesystem.
   /// This should be called once and only once per File.
-  /// Acts as an MPI sychronization point.
+  /// May act as an MPI synchronization point.
   // MT: Externally Synchronized
   void synchronize() noexcept;
+
+  /// Delete the File, removing it from the filesystem.
+  /// This should be called once and only once per File, after synchronize().
+  /// No Instances should be alive during this call, and open() cannot be called
+  /// after this function returns.
+  /// May act as an MPI synchronization point.
+  void remove() noexcept;
 
   /// Open the File, potentially for write access. Read access is always implied.
   /// Only valid after synchronize() has been called for this File.

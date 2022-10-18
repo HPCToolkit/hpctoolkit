@@ -75,12 +75,16 @@ using namespace hpctoolkit::util;
 
 File::File(stdshim::filesystem::path path, bool create) noexcept
   : impl(std::make_unique<detail::FileImpl>(std::move(path), create)) {}
-File::~File() = default;
+File::~File() {
+  if(impl && impl->fd != -1)
+    close(impl->fd);
+}
 
 File::File(File&&) = default;
 File& File::operator=(File&&) = default;
 
 void File::synchronize() noexcept {
+  assert(impl && "Attempt to call File::synchronize after ::remove!");
   assert(impl->fd == -1 && "Attempt to call File::synchronize twice!");
   if(mpi::World::rank() == 0) {
     // Check that the file exists, or clear and create if we need to.
@@ -104,9 +108,19 @@ void File::synchronize() noexcept {
   }
 }
 
+void File::remove() noexcept {
+  assert(impl && impl->fd != -1 && "Attempt to call File::remove before File::synchronize!");
+  if(mpi::World::rank() == 0) {
+    stdshim::filesystem::remove(impl->path);
+  }
+  close(impl->fd);
+  impl.reset();
+}
+
 File::Instance::Instance() = default;
 File::Instance::Instance(const File& file, bool writable, bool mapped) noexcept
   : impl(std::make_unique<detail::FileInstanceImpl>(file.impl->fd)) {
+  assert(impl && "Attempt to call File::open after ::remove!");
   assert(impl->fd != -1 && "Attempt to call File::open before ::synchronize!");
 }
 File::Instance::~Instance() = default;
