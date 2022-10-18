@@ -129,6 +129,7 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
 
   auto& ud = t.userdata[uds.thread];
   if(!ud.has_trace) {
+    // NB: We use exchange here instead of store to make Valgrind happy
     has_traces.exchange(true, std::memory_order_relaxed);
     ud.has_trace = true;
     if(tracefile) ud.inst = tracefile->open(true, true);
