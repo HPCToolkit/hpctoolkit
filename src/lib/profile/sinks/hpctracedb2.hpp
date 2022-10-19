@@ -131,7 +131,7 @@ private:
     std::array<char, 12 * 1024 * 86> buffer;
     char* cursor = buffer.data();
     uint64_t tmcntr = 0;
-    bool lastWasBlank = true;
+    bool lastWasBlank = false;
 
     std::shared_mutex prebuffer_lock;
     bool prebuffer_done = false;

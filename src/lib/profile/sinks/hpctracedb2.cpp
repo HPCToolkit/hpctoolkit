@@ -129,6 +129,7 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
 
   auto& ud = t.userdata[uds.thread];
   if(!ud.has_trace) {
+    // NB: We use exchange here instead of store to make Valgrind happy
     has_traces.exchange(true, std::memory_order_relaxed);
     ud.has_trace = true;
     if(tracefile) ud.inst = tracefile->open(true, true);
@@ -285,6 +286,17 @@ std::string HPCTraceDB2::exmlTag() {
 
 void HPCTraceDB2::write() {
   if(!tracefile) return;
+
+  // XXX: If there are no traces, delete the trace.db file outright.
+  // This currently only works in the single-rank case. The multi-rank case is
+  // more interesting and requires more work.
+  if(mpi::World::size() != 1)
+    util::log::fatal{} << "WIP currently unable to support multi-rank!";
+  if(!has_traces.load(std::memory_order_relaxed)) {
+    tracefile->remove();
+    return;
+  }
+
   auto traceinst = tracefile->open(true, true);
   if(mpi::World::rank() + 1 == mpi::World::size())
     traceinst.writeat(footerPos, sizeof fmt_tracedb_footer, fmt_tracedb_footer);
