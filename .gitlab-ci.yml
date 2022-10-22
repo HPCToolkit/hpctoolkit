@@ -254,7 +254,7 @@ autoreconf check:
     #   JOB_CC: gcc=8
 
     - IMAGE: ubuntu20.04
-      JOB_CC: [gcc-9, gcc-10, gcc-11.3.0]
+      JOB_CC: [gcc-9, gcc-10]
 
     - IMAGE: fedora36
       JOB_CC: gcc=12
