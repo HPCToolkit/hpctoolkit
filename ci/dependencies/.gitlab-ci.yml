@@ -27,15 +27,17 @@ generate_deps.amd64:
     ARCH: amd64
   parallel:
     matrix:
-    - IMAGE:
-      - almalinux8
-      # XXX: Disabled due to Spack-related failures
-      # - centos7
-      - fedora36
-      - leap15
-    # Some images have multiple compilers, in those cases we choose one to concretize to
+    - IMAGE: leap15
+      CI_SPACK_CC: gcc@7
+    # XXX: Disabled due to Spack-related failures
+    # - IMAGE: centos7
+    #   CI_SPACK_CC: gcc@8
+    - IMAGE: almalinux8
+      CI_SPACK_CC: gcc@8
     - IMAGE: ubuntu20.04
       CI_SPACK_CC: gcc@9
+    - IMAGE: fedora36
+      CI_SPACK_CC: gcc@12
 
   script:
   - |
