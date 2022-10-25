@@ -298,108 +298,116 @@ roctracer_subscriber_callback
   const char* kernel_name = NULL;
   hipStream_t kernel_stream = 0;
 
-  switch (callback_id) {
-  case HIP_API_ID_hipMemcpy:
-  case HIP_API_ID_hipMemcpyToSymbolAsync:
-  case HIP_API_ID_hipMemcpyFromSymbolAsync:
-  case HIP_API_ID_hipMemcpyDtoD:
-  case HIP_API_ID_hipMemcpy2DToArray:
-  case HIP_API_ID_hipMemcpyAsync:
-  case HIP_API_ID_hipMemcpyFromSymbol:
-  case HIP_API_ID_hipMemcpy3D:
-  case HIP_API_ID_hipMemcpyAtoH:
-  case HIP_API_ID_hipMemcpyHtoD:
-  case HIP_API_ID_hipMemcpyHtoA:
-  case HIP_API_ID_hipMemcpy2D:
-  case HIP_API_ID_hipMemcpyPeerAsync:
-  case HIP_API_ID_hipMemcpyDtoH:
-  case HIP_API_ID_hipMemcpyHtoDAsync:
-  case HIP_API_ID_hipMemcpyFromArray:
-  case HIP_API_ID_hipMemcpy2DAsync:
-  case HIP_API_ID_hipMemcpyToArray:
-  case HIP_API_ID_hipMemcpyToSymbol:
-  case HIP_API_ID_hipMemcpyPeer:
-  case HIP_API_ID_hipMemcpyDtoDAsync:
-  case HIP_API_ID_hipMemcpyDtoHAsync:
-  case HIP_API_ID_hipMemcpyParam2D:
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-         gpu_placeholder_type_copy);
-    is_valid_op = true;
-    break;
+  switch(domain) {
+  case ACTIVITY_DOMAIN_HIP_API:
+    switch (callback_id) {
+    case HIP_API_ID_hipMemcpy:
+    case HIP_API_ID_hipMemcpyToSymbolAsync:
+    case HIP_API_ID_hipMemcpyFromSymbolAsync:
+    case HIP_API_ID_hipMemcpyDtoD:
+    case HIP_API_ID_hipMemcpy2DToArray:
+    case HIP_API_ID_hipMemcpyAsync:
+    case HIP_API_ID_hipMemcpyFromSymbol:
+    case HIP_API_ID_hipMemcpy3D:
+    case HIP_API_ID_hipMemcpyAtoH:
+    case HIP_API_ID_hipMemcpyHtoD:
+    case HIP_API_ID_hipMemcpyHtoA:
+    case HIP_API_ID_hipMemcpy2D:
+    case HIP_API_ID_hipMemcpyPeerAsync:
+    case HIP_API_ID_hipMemcpyDtoH:
+    case HIP_API_ID_hipMemcpyHtoDAsync:
+    case HIP_API_ID_hipMemcpyFromArray:
+    case HIP_API_ID_hipMemcpy2DAsync:
+    case HIP_API_ID_hipMemcpyToArray:
+    case HIP_API_ID_hipMemcpyToSymbol:
+    case HIP_API_ID_hipMemcpyPeer:
+    case HIP_API_ID_hipMemcpyDtoDAsync:
+    case HIP_API_ID_hipMemcpyDtoHAsync:
+    case HIP_API_ID_hipMemcpyParam2D:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_copy);
+      is_valid_op = true;
+      break;
 
-  case HIP_API_ID_hipMalloc:
-  case HIP_API_ID_hipMallocPitch:
-  case HIP_API_ID_hipMalloc3DArray:
-  case HIP_API_ID_hipMallocArray:
-  case HIP_API_ID_hipHostMalloc:
-  case HIP_API_ID_hipMallocManaged:
-  case HIP_API_ID_hipMalloc3D:
-  case HIP_API_ID_hipExtMallocWithFlags:
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-         gpu_placeholder_type_alloc);
-    is_valid_op = true;
-    break;
+    case HIP_API_ID_hipMalloc:
+    case HIP_API_ID_hipMallocPitch:
+    case HIP_API_ID_hipMalloc3DArray:
+    case HIP_API_ID_hipMallocArray:
+    case HIP_API_ID_hipHostMalloc:
+    case HIP_API_ID_hipMallocManaged:
+    case HIP_API_ID_hipMalloc3D:
+    case HIP_API_ID_hipExtMallocWithFlags:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_alloc);
+      is_valid_op = true;
+      break;
 
-  case HIP_API_ID_hipMemset3DAsync:
-  case HIP_API_ID_hipMemset2D:
-  case HIP_API_ID_hipMemset2DAsync:
-  case HIP_API_ID_hipMemset:
-  case HIP_API_ID_hipMemsetD8:
-  case HIP_API_ID_hipMemset3D:
-  case HIP_API_ID_hipMemsetAsync:
-  case HIP_API_ID_hipMemsetD32Async:
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-         gpu_placeholder_type_memset);
-    is_valid_op = true;
-    break;
+    case HIP_API_ID_hipMemset3DAsync:
+    case HIP_API_ID_hipMemset2D:
+    case HIP_API_ID_hipMemset2DAsync:
+    case HIP_API_ID_hipMemset:
+    case HIP_API_ID_hipMemsetD8:
+    case HIP_API_ID_hipMemset3D:
+    case HIP_API_ID_hipMemsetAsync:
+    case HIP_API_ID_hipMemsetD32Async:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_memset);
+      is_valid_op = true;
+      break;
 
-  case HIP_API_ID_hipFree:
-  case HIP_API_ID_hipFreeArray:
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-         gpu_placeholder_type_delete);
-    is_valid_op = true;
-    break;
+    case HIP_API_ID_hipFree:
+    case HIP_API_ID_hipFreeArray:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_delete);
+      is_valid_op = true;
+      break;
 
-  case HIP_API_ID_hipModuleLaunchKernel:
-  case HIP_API_ID_hipLaunchCooperativeKernel:
-  case HIP_API_ID_hipHccModuleLaunchKernel: {
-    //case HIP_API_ID_hipExtModuleLaunchKernel:
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_kernel);
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_trace);
-    is_valid_op = true;
-    is_kernel_op = true;
-    kernel_name = hip_kernel_name_fn(data->args.hipModuleLaunchKernel.f);
-    if (collect_counter) {
-      kernel_stream = data->args.hipModuleLaunchKernel.stream;
+    case HIP_API_ID_hipModuleLaunchKernel:
+    case HIP_API_ID_hipLaunchCooperativeKernel:
+    case HIP_API_ID_hipHccModuleLaunchKernel: {
+      //case HIP_API_ID_hipExtModuleLaunchKernel:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_kernel);
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_trace);
+      is_valid_op = true;
+      is_kernel_op = true;
+      kernel_name = hip_kernel_name_fn(data->args.hipModuleLaunchKernel.f);
+      if (collect_counter) {
+        kernel_stream = data->args.hipModuleLaunchKernel.stream;
+      }
+      break;
     }
-    break;
-  }
-  case HIP_API_ID_hipLaunchKernel: {
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_kernel);
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_trace);
-    is_valid_op = true;
-    is_kernel_op = true;
-    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address,
-      data->args.hipLaunchKernel.stream);
-    if (collect_counter) {
-      kernel_stream = data->args.hipLaunchKernel.stream;
+    case HIP_API_ID_hipLaunchKernel: {
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_kernel);
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_trace);
+      is_valid_op = true;
+      is_kernel_op = true;
+      kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address,
+        data->args.hipLaunchKernel.stream);
+      if (collect_counter) {
+        kernel_stream = data->args.hipLaunchKernel.stream;
+      }
+      break;
     }
-    break;
-  }
-  case HIP_API_ID_hipCtxSynchronize:
-  case HIP_API_ID_hipStreamSynchronize:
-  case HIP_API_ID_hipDeviceSynchronize:
-  case HIP_API_ID_hipEventSynchronize:
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-         gpu_placeholder_type_sync);
-    is_valid_op = true;
-    break;
+    case HIP_API_ID_hipCtxSynchronize:
+    case HIP_API_ID_hipStreamSynchronize:
+    case HIP_API_ID_hipDeviceSynchronize:
+    case HIP_API_ID_hipEventSynchronize:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                   gpu_placeholder_type_sync);
+      is_valid_op = true;
+      break;
+    default:
+      PRINT("HIP API tracing: Unhandled op %u, domain %u\n", callback_id, domain);
+      break;
+    }
+  case ACTIVITY_DOMAIN_HSA_API:
+  case ACTIVITY_DOMAIN_KFD_API:
+  case ACTIVITY_DOMAIN_ROCTX:
   default:
-    PRINT("HIP API tracing: Unhandled op %u, domain %u\n", callback_id, domain);
     break;
   }
 
@@ -591,6 +599,8 @@ roctracer_init
 {
   HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HIP_API, NULL));
 
+  monitor_disable_new_threads();
+
   // Allocating tracing pool
   roctracer_properties_t properties;
   memset(&properties, 0, sizeof(roctracer_properties_t));
@@ -617,6 +627,8 @@ roctracer_init
 
   // Prepare getting URI
   rocprofiler_uri_setup();
+
+  monitor_enable_new_threads();
 }
 
 void
