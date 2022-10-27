@@ -45,7 +45,7 @@ repos:
   # Remove trailing whitespace
   - id: trailing-whitespace
     # XXX: Only enabled in CI files for now due to large numbers of failures
-    files: &ci_files (^ci/|\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.prospector\.yaml$)
+    files: &ci_files (^ci/|\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.prospector\.yaml$|tests2/(?!Makefile\.in$))
   # All files must end in a single newline (or be perfectly empty)
   - id: end-of-file-fixer
     # XXX: Only enabled in CI files for now due to large numbers of failures

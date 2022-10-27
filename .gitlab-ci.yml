@@ -274,18 +274,20 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
     "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda~rocm~level0'
-    -s '~mpi +papi +opencl ~cuda~rocm~level0'
-    -s '+mpi ~papi +opencl ~cuda~rocm~level0'
-    -s '+mpi +papi ~opencl ~cuda~rocm~level0'
+    -s '+tests2 +mpi +papi +opencl ~cuda~rocm~level0'
+    -s '~tests2 +mpi +papi +opencl ~cuda~rocm~level0'
+    -s '+tests2 ~mpi +papi +opencl ~cuda~rocm~level0'
+    -s '+tests2 +mpi ~papi +opencl ~cuda~rocm~level0'
+    -s '+tests2 +mpi +papi ~opencl ~cuda~rocm~level0'
   - >-
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
     "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda~rocm~level0'
-    -s '~mpi +papi +opencl ~cuda~rocm~level0'
-    -s '+mpi ~papi +opencl ~cuda~rocm~level0'
-    -s '+mpi +papi ~opencl ~cuda~rocm~level0'
+    -s '+tests2 +mpi +papi +opencl ~cuda~rocm~level0'
+    -s '~tests2 +mpi +papi +opencl ~cuda~rocm~level0'
+    -s '+tests2 ~mpi +papi +opencl ~cuda~rocm~level0'
+    -s '+tests2 +mpi ~papi +opencl ~cuda~rocm~level0'
+    -s '+tests2 +mpi +papi ~opencl ~cuda~rocm~level0'
   - *postjob
 
   artifacts:
@@ -322,18 +324,18 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl +cuda~rocm~level0'
-    -s '~mpi +papi +opencl +cuda~rocm~level0'
-    -s '+mpi ~papi +opencl +cuda~rocm~level0'
-    -s '+mpi +papi ~opencl +cuda~rocm~level0'
+    -s '+mpi +papi +opencl +cuda~rocm~level0+tests2'
+    -s '~mpi +papi +opencl +cuda~rocm~level0+tests2'
+    -s '+mpi ~papi +opencl +cuda~rocm~level0+tests2'
+    -s '+mpi +papi ~opencl +cuda~rocm~level0+tests2'
   - >-
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
     img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl +cuda~rocm~level0'
-    -s '~mpi +papi +opencl +cuda~rocm~level0'
-    -s '+mpi ~papi +opencl +cuda~rocm~level0'
-    -s '+mpi +papi ~opencl +cuda~rocm~level0'
+    -s '+mpi +papi +opencl +cuda~rocm~level0+tests2'
+    -s '~mpi +papi +opencl +cuda~rocm~level0+tests2'
+    -s '+mpi ~papi +opencl +cuda~rocm~level0+tests2'
+    -s '+mpi +papi ~opencl +cuda~rocm~level0+tests2'
   - *postjob
 
   artifacts:
@@ -371,18 +373,18 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda+rocm~level0'
-    -s '~mpi +papi +opencl ~cuda+rocm~level0'
-    -s '+mpi ~papi +opencl ~cuda+rocm~level0'
-    -s '+mpi +papi ~opencl ~cuda+rocm~level0'
+    -s '+mpi +papi +opencl ~cuda+rocm~level0+tests2'
+    -s '~mpi +papi +opencl ~cuda+rocm~level0+tests2'
+    -s '+mpi ~papi +opencl ~cuda+rocm~level0+tests2'
+    -s '+mpi +papi ~opencl ~cuda+rocm~level0+tests2'
   - >-
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
     img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda+rocm~level0'
-    -s '~mpi +papi +opencl ~cuda+rocm~level0'
-    -s '+mpi ~papi +opencl ~cuda+rocm~level0'
-    -s '+mpi +papi ~opencl ~cuda+rocm~level0'
+    -s '+mpi +papi +opencl ~cuda+rocm~level0+tests2'
+    -s '~mpi +papi +opencl ~cuda+rocm~level0+tests2'
+    -s '+mpi ~papi +opencl ~cuda+rocm~level0+tests2'
+    -s '+mpi +papi ~opencl ~cuda+rocm~level0+tests2'
   - *postjob
 
   artifacts:
@@ -424,18 +426,18 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda~rocm+level0'
-    -s '~mpi +papi +opencl ~cuda~rocm+level0'
-    -s '+mpi ~papi +opencl ~cuda~rocm+level0'
-    -s '+mpi +papi ~opencl ~cuda~rocm+level0'
+    -s '+mpi +papi +opencl ~cuda~rocm+level0+tests2'
+    -s '~mpi +papi +opencl ~cuda~rocm+level0+tests2'
+    -s '+mpi ~papi +opencl ~cuda~rocm+level0+tests2'
+    -s '+mpi +papi ~opencl ~cuda~rocm+level0+tests2'
   - >-
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
     img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda~rocm+level0'
-    -s '~mpi +papi +opencl ~cuda~rocm+level0'
-    -s '+mpi ~papi +opencl ~cuda~rocm+level0'
-    -s '+mpi +papi ~opencl ~cuda~rocm+level0'
+    -s '+mpi +papi +opencl ~cuda~rocm+level0+tests2'
+    -s '~mpi +papi +opencl ~cuda~rocm+level0+tests2'
+    -s '+mpi ~papi +opencl ~cuda~rocm+level0+tests2'
+    -s '+mpi +papi ~opencl ~cuda~rocm+level0+tests2'
   - *postjob
 
   artifacts:
@@ -445,20 +447,15 @@ autoreconf check:
 
 
 # Build single versions of the codebase and run unit tests through `make check`
-check.amd64:
+'check amd64':
   stage: test
   extends: .buildcache-job
   tags: [docker, linux/$ARCH]
-  image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
+  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
   variables:
     ARCH: amd64
-  parallel:
-    matrix:
-    - IMAGE: ubuntu20.04
-      JOB_CC: gcc-10
-      SPEC:
-      - +mpi +debug +papi ~opencl ~cuda ~rocm ~level0
-      - +mpi +debug ~papi ~opencl ~cuda ~rocm ~level0
+    JOB_CC: gcc-10
+    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
 
   needs:
   - job: autoreconf
@@ -467,21 +464,30 @@ check.amd64:
   - build_deps.amd64
 
   script:
-  # Run the build script for the configuration of interest. Use some Python to help.
+  # Run the test suite for the configuration of interest. Use some Python to help.
+  # If this fails, don't error unless we are missing some of the test log output.
   - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a test
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
     "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -1 -s "$SPEC"
+    -1 -s "$SPEC" || true
+  - &check_postjob
+    - find logs/ -name '*.junit.xml' -execdir cp -t "$CI_PROJECT_DIR" {} +
+    - test -e test.testlog.junit.xml
+    - test -e test.pytest.junit.xml
   - *postjob
 
-  artifacts:
+  artifacts: &check_artifacts
+    reports:
+      junit:
+      - test.testlog.junit.xml
+      - test.pytest.junit.xml
     paths:
     - logs/
     when: always
 
-check.arm64:
-  extends: check.amd64
+'check arm64':
+  extends: 'check amd64'
   variables:
     ARCH: arm64
 
@@ -490,6 +496,72 @@ check.arm64:
     artifacts: false
   - generate_deps.arm64
   - build_deps.arm64
+
+'check cuda amd64':
+  extends: .buildcache-job-derivative
+  image: nvcr.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
+  services:
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+    alias: bundleserver
+  tags: [docker, linux/amd64, gpu/cuda/11.6]
+  variables:
+    JOB_CC: gcc-9
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    SPEC: +tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - generate_deps.amd64
+  - build_deps.amd64
+
+  script:
+  # Pull CUDA from the image itself
+  - echo '--with-cuda=/usr/local/cuda CUDAFLAGS="-gencode arch=compute_60,code=sm_60"' > img-config
+  # Run the test suite for the configuration of interest. Use some Python to help.
+  # If this fails, don't error unless we are missing some of the test log output.
+  - >-
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
+    -1 -s "$SPEC" || true
+  - *check_postjob
+  - *postjob
+
+  artifacts: *check_artifacts
+
+'check rocm amd64':
+  extends: .buildcache-job-derivative
+  image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
+  services:
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+    alias: bundleserver
+  tags: [docker, linux/amd64, gpu/rocm/5.2]
+  variables:
+    JOB_CC: gcc-9
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    SPEC: +tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0
+
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - generate_deps.amd64
+  - build_deps.amd64
+
+  script:
+  # Pull ROCm from the image itself
+  - echo '--with-rocm=/opt/rocm' > img-config
+  # Run the test suite for the configuration of interest. Use some Python to help.
+  # If this fails, don't error unless we are missing some of the test log output.
+  - >-
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
+    -1 -s "$SPEC" || true
+  - *check_postjob
+  - *postjob
+
+  artifacts: *check_artifacts
 
 
 # Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
@@ -504,6 +576,8 @@ spack install:
     matrix:
     - ARCH: [amd64]
 
+  dependencies: []
+
   allow_failure: true
   script:
   # Spack out a representative HPCToolkit. All dependencies should be in the buildcache.
@@ -513,3 +587,97 @@ spack install:
     spack install --no-check-signature --fail-fast --use-buildcache=package:never,dependencies:only
     "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
     "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"
+
+
+# Manual jobs to (re)generate testing data via `make gen-testdata`
+gen-testdata.cpu:
+  stage: .post
+  extends: .buildcache-job
+  tags: [docker, linux/amd64]
+  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+  variables:
+    JOB_CC: gcc-10
+    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
+
+  dependencies:
+  - generate_deps.amd64
+  - build_deps.amd64
+  when: manual
+
+  script:
+  # Run the build script for the configuration of interest. Use some Python to help.
+  - >-
+    python3 -m ci.buildfe -l logs/ -a gen-testdata
+    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
+    --keep -s "$SPEC"
+  - mv -t tests2/data/meas/ ci/build/tests2-build/data/meas/*.tar.xz
+
+  artifacts:
+    paths:
+    - logs/
+    - tests2/data/meas/*.tar.xz
+
+gen-testdata.gpu.nvidia:
+  stage: .post
+  extends: .buildcache-job-derivative
+  image: nvcr.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
+  services:
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+    alias: bundleserver
+  tags: [docker, linux/amd64, gpu/cuda/11.6]
+  variables:
+    JOB_CC: gcc-9
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    SPEC: '+tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0'
+
+  dependencies:
+  - generate_deps.amd64
+  - build_deps.amd64
+  when: manual
+
+  script:
+  # Run the build script for the configuration of interest. Use some Python to help.
+  - >-
+    python3 -m ci.buildfe -l logs/ -a gen-testdata
+    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
+    --keep -s "$SPEC"
+  - mv -t tests2/data/meas/ ci/build/tests2-build/data/meas/*.tar.xz
+
+  artifacts:
+    paths:
+    - logs/
+    - tests2/data/meas/*.tar.xz
+
+gen-testdata.gpu.amd:
+  stage: .post
+  extends: .buildcache-job-derivative
+  image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
+  services:
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+    alias: bundleserver
+  tags: [docker, linux/amd64, gpu/rocm/5.2]
+  variables:
+    JOB_CC: gcc-9
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0'
+
+  dependencies:
+  - generate_deps.amd64
+  - build_deps.amd64
+  when: manual
+
+  script:
+  # Run the build script for the configuration of interest. Use some Python to help.
+  - >-
+    python3 -m ci.buildfe -l logs/ -a gen-testdata
+    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
+    --keep -s "$SPEC"
+  - mv -t tests2/data/meas/ ci/build/tests2-build/data/meas/*.tar.xz
+
+  artifacts:
+    paths:
+    - logs/
+    - tests2/data/meas/*.tar.xz

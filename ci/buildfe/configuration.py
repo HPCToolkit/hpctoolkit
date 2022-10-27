@@ -474,6 +474,9 @@ class Configuration:
         if variant["debug"]:
             fragments.append("--enable-develop")
 
+        if variant["tests2"]:
+            fragments.append("--enable-tests2")
+
         return fragments
 
     @classmethod
@@ -488,6 +491,7 @@ class Configuration:
             itertools.product(
                 *reversed(
                     [
+                        vbool("tests2", True),
                         vbool("mpi"),
                         vbool("debug", True),
                         vbool("papi", True),
@@ -512,6 +516,7 @@ class Configuration:
 
         return separator.join(
             [
+                vbool("tests2"),
                 vbool("mpi"),
                 vbool("debug"),
                 vbool("papi"),
@@ -534,7 +539,7 @@ class Configuration:
                 value, variant = match.group(1), match.group(2)
                 result[variant] = value == "+"
         for k in result:
-            if k not in ("mpi", "debug", "papi", "opencl", "cuda", "rocm", "level0"):
+            if k not in ("tests2", "mpi", "debug", "papi", "opencl", "cuda", "rocm", "level0"):
                 raise ValueError(f"Invalid variant name {k}")
         return result
 

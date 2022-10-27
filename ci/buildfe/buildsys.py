@@ -263,7 +263,7 @@ class Test(MakeAction):
     """Run build-time tests for the configured build directory."""
 
     def name(self) -> str:
-        return "make check"
+        return "make check installcheck"
 
     def dependencies(self) -> tuple[Action]:
         return Build(), Install()
@@ -277,7 +277,7 @@ class Test(MakeAction):
         installdir: Path,
         logdir: T.Optional[Path] = None,
     ) -> ActionResult:
-        res = self._run("test", cfg, builddir, "check", logdir=logdir)
+        res = self._run("test", cfg, builddir, "check", "installcheck", logdir=logdir)
         if logdir is not None:
             testlogdir = logdir / "test"
             testlogdir.mkdir()
@@ -286,4 +286,35 @@ class Test(MakeAction):
                 rlog = log.relative_to(testsdir)
                 (testlogdir / rlog.parent).mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(log, testlogdir / rlog)
+            tests2bdir = builddir / "tests2-build"
+            shutil.copyfile(
+                tests2bdir / "meson-logs" / "testlog.txt", testlogdir / "test.tests2.log"
+            )
+            for fn in (
+                tests2bdir / "meson-logs" / "testlog.junit.xml",
+                tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml",
+            ):
+                if fn.exists():
+                    shutil.copyfile(fn, logdir / ("test." + fn.name))
         return res
+
+
+class GenTestData(MakeAction):
+    """Generate data for later, offline tests"""
+
+    def name(self) -> str:
+        return "make gen-testdata"
+
+    def dependencies(self) -> tuple[Action]:
+        return Build(), Install()
+
+    def run(
+        self,
+        cfg: Configuration,
+        *,
+        builddir: Path,
+        srcdir: Path,
+        installdir: Path,
+        logdir: T.Optional[Path] = None,
+    ) -> ActionResult:
+        return self._run("gen-testdata", cfg, builddir, "gen-testdata", logdir=logdir)

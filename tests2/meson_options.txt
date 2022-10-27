@@ -1,0 +1,3 @@
+option('hpctoolkit', type: 'string', description: 'Path to the HPCToolkit install')
+option('cuda', type: 'feature', description: 'Enable CUDA-based tests')
+option('rocm', type: 'feature', description: 'Enable ROCm-based tests')

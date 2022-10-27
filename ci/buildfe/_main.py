@@ -13,7 +13,7 @@ import typing as T
 from pathlib import Path
 
 from .action import Action, ActionResult, action_sequence, summarize_results
-from .buildsys import Build, CheckInstallManifest, Configure, Install, Test
+from .buildsys import Build, CheckInstallManifest, Configure, GenTestData, Install, Test
 from .configuration import Configuration, DependencyConfiguration, Unsatisfiable
 from .logs import FgColor, colorize, print_header, section
 
@@ -23,6 +23,7 @@ actions = {
     "install": (Install,),
     "check-install": (CheckInstallManifest,),
     "test": (Test,),
+    "gen-testdata": (GenTestData,),
 }
 
 
@@ -327,7 +328,11 @@ def parse_stats(stdout):
 def print_ccache_stats():
     try:
         proc = subprocess.run(
-            [shutil.which("ccache"), "--print-stats"], stdout=subprocess.PIPE, text=True, check=True
+            [shutil.which("ccache"), "--print-stats"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=True,
         )
     except subprocess.CalledProcessError:
         # Older ccache doesn't support the machine-readable --print-stats, so just skip

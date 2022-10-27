@@ -5274,6 +5274,48 @@ fi
 AM_CONDITIONAL(OPT_ENABLE_VG_ANNOTATIONS, test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes")
 
 
+#-------------------------------------------------
+# Option: --enable-tests2
+#-------------------------------------------------
+
+AC_ARG_ENABLE([tests2],
+  AS_HELP_STRING([--enable-tests2],
+                 [Enable the new-form test suite. Requires additional dependencies like Meson and PyTest.]),
+  [case "${enableval}" in
+     yes) enable_tests2="yes" ;;
+     no)  enable_tests2="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-tests2]) ;;
+   esac],
+  [enable_tests2=no])
+
+if test "$enable_tests2" = yes; then
+  export CUDA_HOME="$CUDA"
+
+  meson_args="-Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_CFLAGS}' -Dcpp_args='${CXXFLAGS} ${HOST_CXXFLAGS}' -Dcuda_args='${CUDAFLAGS}'"
+  meson_args="${meson_args} -Dbuildtype=plain"
+  if test "$OPT_HAVE_CUDA" = yes
+  then meson_args="${meson_args} -Dcuda=enabled"
+  else meson_args="${meson_args} -Dcuda=disabled"
+  fi
+  if test "$OPT_HAVE_ROCM" = yes
+  then meson_args="${meson_args} -Drocm=enabled"
+  else meson_args="${meson_args} -Drocm=disabled"
+  fi
+
+  eval echo meson "$meson_args"
+
+  if ! { test -d tests2-build/ && eval meson setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
+    rm -rf tests2-build/
+    if ! eval meson setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
+      AC_MSG_ERROR([Error configuring test suite, meson setup failed!])
+    fi
+  fi
+
+  unset CUDA_HOME
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_TESTS2], [test "$enable_tests2" = yes])
+
 #----------------------------------------------------------------------------
 # Should we expect statically linked binaries
 #----------------------------------------------------------------------------
@@ -5395,6 +5437,8 @@ AC_CONFIG_FILES([ \
   \
   tests/Makefile \
   tests/Makefile.spack \
+  \
+  tests2/Makefile \
 ])
 
 
