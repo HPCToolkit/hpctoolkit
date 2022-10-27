@@ -13,7 +13,15 @@ import typing as T
 from pathlib import Path
 
 from .action import Action, ActionResult, action_sequence, summarize_results
-from .buildsys import Build, CheckInstallManifest, Configure, GenTestData, Install, Test
+from .buildsys import (
+    Build,
+    CheckInstallManifest,
+    Configure,
+    GenTestData,
+    Install,
+    InstallTestData,
+    Test,
+)
 from .configuration import Configuration, DependencyConfiguration, Unsatisfiable
 from .logs import FgColor, colorize, print_header, section
 
@@ -24,6 +32,7 @@ actions = {
     "check-install": (CheckInstallManifest,),
     "test": (Test,),
     "gen-testdata": (GenTestData,),
+    "install-testdata": (InstallTestData,),
 }
 
 

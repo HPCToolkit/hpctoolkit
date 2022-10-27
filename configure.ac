@@ -5301,6 +5301,10 @@ if test "$enable_tests2" = yes; then
   then meson_args="${meson_args} -Drocm=enabled"
   else meson_args="${meson_args} -Drocm=disabled"
   fi
+  if test -n "$MPICXX"
+  then meson_args="${meson_args} -Dmpi=enabled"
+  else meson_args="${meson_args} -Dmpi=disabled"
+  fi
 
   eval echo meson "$meson_args"
 

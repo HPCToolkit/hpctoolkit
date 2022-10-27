@@ -1,0 +1,473 @@
+!db/v4
+meta: !meta.db/v4
+  General: !meta.db/v4/GeneralProperties
+    title: test-small
+    description: TODO database description
+  IdNames: !meta.db/v4/IdentifierNames
+    names:
+    - SUMMARY
+    - NODE
+    - RANK
+    - THREAD
+    - GPUDEVICE
+    - GPUCONTEXT
+    - GPUSTREAM
+    - CORE
+  Metrics: !meta.db/v4/PerformanceMetrics
+    scopes:
+    - &id001 !meta.db/v4/PropagationScope
+      scopeName: point
+      type: !meta.db/v4/PropagationScope.Type point
+      propagationIndex: 255
+    - &id002 !meta.db/v4/PropagationScope
+      scopeName: function
+      type: !meta.db/v4/PropagationScope.Type transitive
+      propagationIndex: 0
+    - &id003 !meta.db/v4/PropagationScope
+      scopeName: lex_aware
+      type: !meta.db/v4/PropagationScope.Type custom
+      propagationIndex: 255
+    - &id004 !meta.db/v4/PropagationScope
+      scopeName: execution
+      type: !meta.db/v4/PropagationScope.Type execution
+      propagationIndex: 255
+    metrics:
+    - !meta.db/v4/Metric
+      name: cycles
+      scopeInsts:
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id001
+        propMetricId: 4
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id002
+        propMetricId: 5
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id003
+        propMetricId: 6
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id004
+        propMetricId: 7
+      summaries:
+      - !meta.db/v4/SummaryStatistic
+        scope: *id001
+        formula: $$
+        combine: &id005 !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 4
+      - !meta.db/v4/SummaryStatistic
+        scope: *id002
+        formula: $$
+        combine: *id005
+        statMetricId: 5
+      - !meta.db/v4/SummaryStatistic
+        scope: *id003
+        formula: $$
+        combine: *id005
+        statMetricId: 6
+      - !meta.db/v4/SummaryStatistic
+        scope: *id004
+        formula: $$
+        combine: *id005
+        statMetricId: 7
+    - !meta.db/v4/Metric
+      name: instructions
+      scopeInsts:
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id001
+        propMetricId: 0
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id002
+        propMetricId: 1
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id003
+        propMetricId: 2
+      - !meta.db/v4/PropagationScopeInstance
+        scope: *id004
+        propMetricId: 3
+      summaries:
+      - !meta.db/v4/SummaryStatistic
+        scope: *id001
+        formula: $$
+        combine: *id005
+        statMetricId: 0
+      - !meta.db/v4/SummaryStatistic
+        scope: *id002
+        formula: $$
+        combine: *id005
+        statMetricId: 1
+      - !meta.db/v4/SummaryStatistic
+        scope: *id003
+        formula: $$
+        combine: *id005
+        statMetricId: 2
+      - !meta.db/v4/SummaryStatistic
+        scope: *id004
+        formula: $$
+        combine: *id005
+        statMetricId: 3
+  Modules: !meta.db/v4/LoadModules
+    modules:
+    - &id006 !meta.db/v4/Module
+      flags: !meta.db/v4/Module.Flags []
+      path: /builds/hpctoolkit/hpctoolkit/ci/build/tests2-build/data/meas/test-small
+  Files: !meta.db/v4/SourceFiles
+    files:
+    - &id007 !meta.db/v4/File
+      flags: !meta.db/v4/File.Flags []
+      path: /builds/hpctoolkit/hpctoolkit/tests2/data/meas/small.c
+  Functions: !meta.db/v4/Functions
+    functions:
+    - &id013 !meta.db/v4/Function
+      name: caller
+      module: *id006
+      offset: 4470
+      file: *id007
+      line: 6
+      flags: &id008 !meta.db/v4/Function.Flags []
+    - &id017 !meta.db/v4/Function
+      name: spinsleep
+      module: *id006
+      offset: 4393
+      file: *id007
+      line: 1
+      flags: *id008
+    - &id009 !meta.db/v4/Function
+      name: main
+      module: *id006
+      offset: 4491
+      file: *id007
+      line: 10
+      flags: *id008
+  Context: !meta.db/v4/ContextTree
+    entryPoints:
+    - !meta.db/v4/EntryPoint
+      ctxId: 21
+      entryPoint: !meta.db/v4/EntryPoint.EntryPoint unknown_entry
+      prettyName: unknown entry
+      children: []
+    - !meta.db/v4/EntryPoint
+      ctxId: 1
+      entryPoint: !meta.db/v4/EntryPoint.EntryPoint main_thread
+      prettyName: main thread
+      children:
+      - !meta.db/v4/Context
+        ctxId: 2
+        flags: &id010 !meta.db/v4/Context.Flags [hasFunction]
+        relation: &id011 !meta.db/v4/Context.Relation call
+        lexicalType: &id012 !meta.db/v4/Context.LexicalType function
+        propagation: 0
+        function: *id009
+        file:
+        line:
+        module:
+        offset:
+        children:
+        - !meta.db/v4/Context
+          ctxId: 3
+          flags: &id014 !meta.db/v4/Context.Flags [hasSrcLoc]
+          relation: &id015 !meta.db/v4/Context.Relation lexical
+          lexicalType: &id016 !meta.db/v4/Context.LexicalType line
+          propagation: 1
+          function:
+          file: *id007
+          line: 1112
+          module:
+          offset:
+          children:
+          - !meta.db/v4/Context
+            ctxId: 12
+            flags: *id010
+            relation: *id011
+            lexicalType: *id012
+            propagation: 0
+            function: *id013
+            file:
+            line:
+            module:
+            offset:
+            children:
+            - !meta.db/v4/Context
+              ctxId: 13
+              flags: *id014
+              relation: *id015
+              lexicalType: *id016
+              propagation: 1
+              function:
+              file: *id007
+              line: 1112
+              module:
+              offset:
+              children:
+              - !meta.db/v4/Context
+                ctxId: 15
+                flags: *id010
+                relation: *id011
+                lexicalType: *id012
+                propagation: 0
+                function: *id017
+                file:
+                line:
+                module:
+                offset:
+                children:
+                - !meta.db/v4/Context
+                  ctxId: 19
+                  flags: *id014
+                  relation: *id015
+                  lexicalType: *id016
+                  propagation: 1
+                  function:
+                  file: *id007
+                  line: 1112
+                  module:
+                  offset:
+                  children: []
+                - !meta.db/v4/Context
+                  ctxId: 16
+                  flags: *id014
+                  relation: *id015
+                  lexicalType: &id018 !meta.db/v4/Context.LexicalType loop
+                  propagation: 1
+                  function:
+                  file: *id007
+                  line: 1112
+                  module:
+                  offset:
+                  children:
+                  - !meta.db/v4/Context
+                    ctxId: 17
+                    flags: *id014
+                    relation: *id015
+                    lexicalType: *id016
+                    propagation: 1
+                    function:
+                    file: *id007
+                    line: 1112
+                    module:
+                    offset:
+                    children: []
+          - !meta.db/v4/Context
+            ctxId: 5
+            flags: *id010
+            relation: *id011
+            lexicalType: *id012
+            propagation: 0
+            function: *id017
+            file:
+            line:
+            module:
+            offset:
+            children:
+            - !meta.db/v4/Context
+              ctxId: 9
+              flags: *id014
+              relation: *id015
+              lexicalType: *id016
+              propagation: 1
+              function:
+              file: *id007
+              line: 1112
+              module:
+              offset:
+              children: []
+            - !meta.db/v4/Context
+              ctxId: 6
+              flags: *id014
+              relation: *id015
+              lexicalType: *id018
+              propagation: 1
+              function:
+              file: *id007
+              line: 1112
+              module:
+              offset:
+              children:
+              - !meta.db/v4/Context
+                ctxId: 7
+                flags: *id014
+                relation: *id015
+                lexicalType: *id016
+                propagation: 1
+                function:
+                file: *id007
+                line: 1112
+                module:
+                offset:
+                children: []
+profile: !profile.db/v4
+  ProfileInfos: !profile.db/v4/ProfileInfos
+    profiles:
+    - !profile.db/v4/Profile
+      idTuple:
+      flags: !profile.db/v4/Profile.Flags [isSummary]
+      values:
+        0: {}
+        65536: {}
+        3: {}
+        262144: {}
+        5:
+          5: 2000000000.0
+          6: 2000000000.0
+          7: 2000000000.0
+          4: 2000000000.0
+        393216: {}
+        14: {}
+        1179648: {}
+        12:
+          7: 2000000000.0
+          5: 2000000000.0
+          6: 2000000000.0
+          4: 2000000000.0
+        851968: {}
+        22: {}
+    - !profile.db/v4/Profile
+      idTuple: !profile.db/v4/IdentifierTuple
+        ids:
+        - !profile.db/v4/Identifier
+          kind: 1
+          flags: !profile.db/v4/Identifier.Flags [isPhysical]
+          logicalId: 0
+          physicalId: 1493845509
+        - !profile.db/v4/Identifier
+          kind: 3
+          flags: !profile.db/v4/Identifier.Flags []
+          logicalId: 0
+          physicalId: 0
+      flags: !profile.db/v4/Profile.Flags []
+      values:
+        0: {}
+        65536: {}
+        3: {}
+        262144: {}
+        5:
+          5: 2000000000.0
+          6: 2000000000.0
+          7: 2000000000.0
+          4: 2000000000.0
+        393216: {}
+        14: {}
+        1179648: {}
+        12:
+          7: 2000000000.0
+          5: 2000000000.0
+          6: 2000000000.0
+          4: 2000000000.0
+        851968: {}
+        22: {}
+context: !cct.db/v4
+  CtxInfos: !cct.db/v4/ContextInfos
+    contexts:
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 3000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 3000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 3000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 3000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 1000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        5:
+          1: 1000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values:
+        5:
+          1: 1000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values:
+        5:
+          1: 1000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values:
+        4:
+          1: 1000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values: {}
+    - !cct.db/v4/PerContext
+      values: {}
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 2000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 2000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 2000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        7:
+          1: 2000000000.0
+    - !cct.db/v4/PerContext
+      values:
+        5:
+          1: 2000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values:
+        5:
+          1: 2000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values:
+        5:
+          1: 2000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values:
+        4:
+          1: 2000000000.0
+        1: {}
+        0: {}
+    - !cct.db/v4/PerContext
+      values: {}
+    - !cct.db/v4/PerContext
+      values: {}
+    - !cct.db/v4/PerContext
+      values: {}
+trace: !trace.db/v4
+  CtxTraces: !trace.db/v4/ContextTraceHeaders
+    timestampRange:
+      min: 1667092831243352000
+      max: 1667092832139790000
+    traces:
+    - !trace.db/v4/ContextTrace
+      profIndex: 1
+      line:
+      - !trace.db/v4/ContextTraceElement
+        timestamp: 1667092831243352000
+        ctxId: 0
+      - !trace.db/v4/ContextTraceElement
+        timestamp: 1667092831542196000
+        ctxId: 9
+      - !trace.db/v4/ContextTraceElement
+        timestamp: 1667092831841025000
+        ctxId: 19
+      - !trace.db/v4/ContextTraceElement
+        timestamp: 1667092832139790000
+        ctxId: 19

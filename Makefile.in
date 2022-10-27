@@ -883,6 +883,9 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 gen-testdata:
 	@$(MAKE) -C tests2/ gen-testdata
 
+install-testdata:
+	@$(MAKE) -C tests2/ install-testdata
+
 define copy-libs
     if test "$1" = yes ; then \
 	( cd "$2" && tar cf - $3 2>/dev/null ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
