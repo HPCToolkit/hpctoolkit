@@ -69,8 +69,6 @@ std::ostream& hpctoolkit::operator<<(std::ostream& os, Statistic::combination_t 
 
 ExtraStatistic::ExtraStatistic(Settings s)
   : u_settings(std::move(s)) {
-  assert(!u_settings().formula.empty() && "ExtraStatistics must have a non-empty formula!");
-
   const auto& fmt = u_settings().format;
   size_t pos = 0;
   bool found = false;
@@ -83,37 +81,6 @@ ExtraStatistic::ExtraStatistic(Settings s)
       pos += 1;
     }
   }
-}
-
-bool ExtraStatistic::Settings::operator==(const Settings& o) const noexcept {
-  bool res = Metric::Settings::operator==(o);
-  if(res && formula != o.formula) {
-      util::log::fatal f{};
-      f << "EStats with the same name but different formulas: ";
-      if(formula.size() != o.formula.size()) {
-        f << "#" << formula.size() << " != " << o.formula.size();
-      } else {
-        f << "\n";
-        for(size_t i = 0; i < formula.size(); i++) {
-          f << "  " << i << ": ";
-          if(std::holds_alternative<std::string>(formula[i])) {
-            f << std::get<std::string>(formula[i]);
-          } else {
-            const auto& mp = std::get<ExtraStatistic::MetricPartialRef>(formula[i]);
-            f << "[" <<  mp.metric.name() << "]." << mp.partialIdx;
-          }
-          f << " " << (formula[i] == o.formula[i] ? "=" : "!") << "= ";
-          if(std::holds_alternative<std::string>(o.formula[i])) {
-            f << std::get<std::string>(o.formula[i]);
-          } else {
-            const auto& mp = std::get<ExtraStatistic::MetricPartialRef>(o.formula[i]);
-            f << "[" <<  mp.metric.name() << "]." << mp.partialIdx;
-          }
-          f << "\n";
-        }
-      }
-  }
-  return res;
 }
 
 Statistic::Statistic(std::string suff, bool showp, Expression form, bool showBD)

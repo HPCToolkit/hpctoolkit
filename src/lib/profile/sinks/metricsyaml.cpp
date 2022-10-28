@@ -100,6 +100,12 @@ static std::string anchorName(const Metric& m, const StatisticPartial& p, Metric
   return sanitize(ss.str());
 }
 
+static std::string anchorName(const Metric& m, MetricScope s) {
+  std::ostringstream ss;
+  ss << m.name() << '-' << Statistic::combination_t::sum << '-' << Expression(Expression::variable) << '-' << s;
+  return sanitize(ss.str());
+}
+
 // These need to be in the YAML namespace for ADL to work properly
 namespace YAML {
 static YAML::Emitter& operator<<(YAML::Emitter& e, const Statistic::combination_t c) {
@@ -177,6 +183,49 @@ static bool rawFormula(YAML::Emitter& out, const Metric& m, const Statistic& s, 
   return true;
 }
 
+static bool rawFormula(YAML::Emitter& out, const ExtraStatistic& es, MetricScope ms, const std::string& key) {
+  using namespace YAML;
+  if(!es.scopes().has(ms)) return false;
+  out << Key << key << Value << Flow;
+  es.formula().citerate_all(
+    [&](double v){ out << v; },
+    [&](Expression::uservalue_t v){
+      assert(v != 0);
+      out << Alias(anchorName(*(const Metric*)v, ms));
+    },
+    [&](const Expression& e){
+      out << BeginMap << Key;
+      switch(e.kind()) {
+      case Expression::Kind::constant:
+      case Expression::Kind::subexpression:
+      case Expression::Kind::variable:
+        std::abort();
+      case Expression::Kind::op_sum: out << "+"; break;
+      case Expression::Kind::op_sub:
+        if(e.op_args().size() == 1) out << "+";
+        else out << "-";
+        break;
+      case Expression::Kind::op_neg: out << "-"; break;
+      case Expression::Kind::op_prod: out << "*"; break;
+      case Expression::Kind::op_div: out << "/"; break;
+      case Expression::Kind::op_pow: out << "^"; break;
+      case Expression::Kind::op_sqrt: out << "sqrt"; break;
+      case Expression::Kind::op_log: out << "log"; break;
+      case Expression::Kind::op_ln: out << "ln"; break;
+      case Expression::Kind::op_min: out << "min"; break;
+      case Expression::Kind::op_max: out << "max"; break;
+      case Expression::Kind::op_floor: out << "floor"; break;
+      case Expression::Kind::op_ceil: out << "ceil"; break;
+      }
+      out << Value << BeginSeq;
+    },
+    [&](const Expression& e){
+      out << EndSeq << EndMap;
+    }
+  );
+  return true;
+}
+
 static void rawLeafVariants(YAML::Emitter& out, const Metric& m) {
   using namespace YAML;
   out << Key << "variants" << Value << BeginMap;
@@ -187,19 +236,53 @@ static void rawLeafVariants(YAML::Emitter& out, const Metric& m) {
           << Flow << BeginSeq << "number";
     if(s.showPercent()) out << "percent";
     out << EndSeq
-        << Key << "formula" << Value << BeginMap
-        << Key << "inclusive" << Value << BeginMap;
-    rawFormula(out, m, s, MetricScope::execution, "standard");
+        << Key << "formula" << Value << BeginMap;
+    if(m.scopes().has(MetricScope::execution)) {
+      out << Key << "inclusive" << Value << BeginMap;
+      rawFormula(out, m, s, MetricScope::execution, "standard");
+      out << EndMap;
+    }
+    if(m.scopes().has(MetricScope::lex_aware)
+       || m.scopes().has(MetricScope::function)
+       || m.scopes().has(MetricScope::point)) {
+      out << Key << "exclusive" << Value << BeginMap;
+      rawFormula(out, m, s, MetricScope::lex_aware, "custom");
+      if(!rawFormula(out, m, s, MetricScope::function, "standard"))
+        rawFormula(out, m, s, MetricScope::point, "standard");
+      out << EndMap;
+    }
     out << EndMap
-        << Key << "exclusive" << Value << BeginMap;
-    rawFormula(out, m, s, MetricScope::lex_aware, "custom");
-    if(!rawFormula(out, m, s, MetricScope::function, "standard"))
-      rawFormula(out, m, s, MetricScope::point, "standard");
-    out << EndMap
-        << EndMap
         << EndMap;
   }
   out << EndMap;
+}
+
+static void rawLeafVariants(YAML::Emitter& out, const ExtraStatistic& es) {
+  using namespace YAML;
+  out << Key << "variants" << Value << BeginMap
+      << Key << "" << Value << BeginMap
+      << Key << "render" << Value
+        << Flow << BeginSeq << "number";
+  if(es.showPercent()) out << "percent";
+  out << EndSeq
+      << Key << "formula" << Value << BeginMap;
+  if(es.scopes().has(MetricScope::execution)) {
+    out << Key << "inclusive" << Value << BeginMap;
+    rawFormula(out, es, MetricScope::execution, "standard");
+    out << EndMap;
+  }
+  if(es.scopes().has(MetricScope::lex_aware)
+     || es.scopes().has(MetricScope::function)
+     || es.scopes().has(MetricScope::point)) {
+    out << Key << "exclusive" << Value << BeginMap;
+    rawFormula(out, es, MetricScope::lex_aware, "custom");
+    if(!rawFormula(out, es, MetricScope::function, "standard"))
+      rawFormula(out, es, MetricScope::point, "standard");
+    out << EndMap;
+  }
+  out << EndMap
+      << EndMap
+      << EndMap;
 }
 
 static void rawLeaf(YAML::Emitter& out, const Metric& m) {
@@ -211,6 +294,15 @@ static void rawLeaf(YAML::Emitter& out, const Metric& m) {
       << Key << "name" << Value << m.name()
       << Key << "description" << Value << m.description();
   rawLeafVariants(out, m);
+  out << EndMap;
+}
+
+static void rawLeaf(YAML::Emitter& out, const ExtraStatistic& es) {
+  using namespace YAML;
+  out << BeginMap
+      << Key << "name" << Value << es.name()
+      << Key << "description" << Value << es.description();
+  rawLeafVariants(out, es);
   out << EndMap;
 }
 
@@ -580,13 +672,13 @@ void MetricsYAML::standard(std::ostream& os) {
   Emitter out(os);
   out << BeginMap << Key << "version" << Value << 0;
 
-  std::vector<std::reference_wrapper<const Metric>> mets;
-  mets.reserve(src.metrics().size());
+  std::vector<std::variant<std::reference_wrapper<const Metric>, std::reference_wrapper<const ExtraStatistic>>> mets;
+  mets.reserve(src.metrics().size() + src.extraStatistics().size());
 
   // Before doing anything else, make sure we have access to all the inputs
   out << Key << "inputs" << BeginSeq;
   for(const Metric& m: src.metrics().citerate()) {
-    mets.emplace_back(m);
+    mets.push_back(std::cref(m));
     const auto f = [&](MetricScope s) {
       if(!m.scopes().has(s)) return false;
       for(const auto& p: m.partials()) {
@@ -606,16 +698,28 @@ void MetricsYAML::standard(std::ostream& os) {
   }
   out << EndSeq;
 
+  // Also add the ExtraStatistics into the set before sorting
+  for(const ExtraStatistic& es: src.extraStatistics().citerate())
+    mets.push_back(std::cref(es));
+
   // Sort the metrics in the order we want to present them in the end
-  std::sort(mets.begin(), mets.end(), [](const Metric& a, const Metric& b) -> bool {
-    if(a.orderId() && b.orderId() && a.orderId().value() != b.orderId().value())
-      return a.orderId().value() < b.orderId().value();
-    return a.name() < b.name();
+  std::sort(mets.begin(), mets.end(), [](const auto& a, const auto& b) -> bool {
+    return std::visit([](auto ref_a, auto ref_b) -> bool {
+      const auto& a = ref_a.get();
+      const auto& b = ref_b.get();
+      if(a.orderId() && b.orderId() && a.orderId().value() != b.orderId().value())
+        return a.orderId().value() < b.orderId().value();
+      return a.name() < b.name();
+    }, a, b);
   });
 
   // Emit all the metrics without any hierarchy, in order
   out << Key << "roots" << Value << BeginSeq;
-  for(const Metric& m: mets) rawLeaf(out, m);
+  for(const auto& x: mets) {
+    std::visit([&](auto ref_x){
+      rawLeaf(out, ref_x);
+    }, x);
+  }
   out << EndSeq;
 
   // Close it off

@@ -371,17 +371,14 @@ public:
     }
   };
 
-  /// Every ExtraStatistic is defined by a formula like this. If every
-  /// Metric/Partial pair is replaced by a variable name and the entire vector
-  /// concatinated, the result is a C-like math formula.
-  using formula_t = std::vector<std::variant<std::string, MetricPartialRef>>;
-
   /// The Settings for an ExtraStatistic are much like those for standard
   /// Metrics, with a few additions.
   struct Settings : public Metric::Settings {
-    Settings() : Metric::Settings(), showPercent(true) {};
+    Settings()
+      : Metric::Settings(), showPercent(true), formula(Expression(0.0)) {};
     Settings(Metric::Settings&& s)
-      : Metric::Settings(std::move(s)), showPercent(true) {};
+      : Metric::Settings(std::move(s)), showPercent(true),
+        formula(Expression(0.0)) {};
 
     Settings(Settings&& o) = default;
     Settings(const Settings&) = default;
@@ -393,13 +390,16 @@ public:
     bool showPercent : 1;
 
     /// Formula used to calculate the values for the ExtraStatistic.
-    formula_t formula;
+    /// Variables in this formula are pointers to Metrics.
+    Expression formula;
 
     /// Printf-style format string to use when rendering resulting values.
     /// This should only contain a single conversion specification (argument)
     std::string format;
 
-    bool operator==(const Settings& o) const noexcept;
+    bool operator==(const Settings& o) const noexcept {
+      return this->Metric::Settings::operator==(o);
+    }
   };
 
   /// ExtraStatistics are only ever created by the Pipeline.
@@ -410,8 +410,9 @@ public:
   MetricScopeSet scopes() const noexcept { return u_settings().scopes; }
   Settings::visibility_t visibility() const noexcept { return u_settings().visibility; }
   bool showPercent() const noexcept { return u_settings().showPercent; }
-  const formula_t& formula() const noexcept { return u_settings().formula; }
+  const Expression& formula() const noexcept { return u_settings().formula; }
   const std::string& format() const noexcept { return u_settings().format; }
+  std::optional<unsigned int> orderId() const noexcept { return u_settings().orderId; }
 
   /// Get whether this Statistic should be presented by default.
   // MT: Safe (const)

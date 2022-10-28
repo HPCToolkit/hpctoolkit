@@ -135,11 +135,13 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
   // TODO: Add [scopes] to the below
   // Format: [cnt] ([estat name] [estat description] [cnt] ([isString ? 1 : 0] ([string] | [metric id])...)...)
   cnt = unpack<std::uint64_t>(it);
+  assert(cnt == 0 && "ExtraStatistics in MPI mode are currently disabled");
   for(std::size_t i = 0; i < cnt; i++) {
     ExtraStatistic::Settings s;
     s.name = unpack<std::string>(it);
     s.description = unpack<std::string>(it);
 
+#if 0
     auto ecnt = unpack<std::uint64_t>(it);
     s.formula.reserve(ecnt);
     for(std::size_t ei = 0; ei < ecnt; ei++) {
@@ -160,6 +162,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
     }
 
     sink.extraStatistic(std::move(s));
+#endif
   }
 
   auto min = unpack<std::uint64_t>(it);
