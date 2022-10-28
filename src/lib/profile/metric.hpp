@@ -178,8 +178,8 @@ public:
     const Metric& getMetric() const noexcept { return metric; }
 
     /// Alter the base index of an Identifier. `value` must be chosen such
-    /// that no other Metric's Identifier has a base index within the range
-    ///     [value, value + metric.partials().size() * metric.scopes().count() )
+    /// that no other Metric's Identifier has a base index within the interval
+    ///     [value, value + max(metric.partials().size(), 1) * metric.scopes().size() )
     // MT: Externally Synchronized
     Identifier& operator=(unsigned int v) noexcept { value = v; return *this; }
 
@@ -198,7 +198,7 @@ public:
     /// specific MetricScopes or whole Metrics.
     // MT: Safe (const)
     unsigned int getFor(const StatisticPartial& part) const noexcept {
-      return value + part.m_idx * metric.scopes().count();
+      return value + part.m_idx * metric.scopes().size();
     }
 
     /// Get an identifier unique for a StatisticPartial/MetricScope pair. Will
@@ -206,7 +206,8 @@ public:
     /// identifiers for the whole StatisticPartial or Metric.
     // MT: Safe (const)
     unsigned int getFor(const StatisticPartial& part, MetricScope ms) const noexcept {
-      return value + part.m_idx * metric.scopes().count() + static_cast<int>(ms);
+      assert(metric.scopes().has(ms));
+      return value + part.m_idx * metric.scopes().size() + static_cast<int>(ms);
     }
 
     /// Get an identifier unique to the MetricScope. Will not overlap with
@@ -214,6 +215,7 @@ public:
     /// StatisticPartials or the whole Metric.
     // MT: Safe (const)
     unsigned int getFor(MetricScope ms) const noexcept {
+      assert(metric.scopes().has(ms));
       return value + static_cast<int>(ms);
     }
 
