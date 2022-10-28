@@ -59,7 +59,8 @@ std::optional<unsigned int> DenseIds::identify(const File&) noexcept {
   return file_id.fetch_add(1, std::memory_order_relaxed);
 }
 std::optional<Metric::Identifier> DenseIds::identify(const Metric& m) noexcept {
-  return Metric::Identifier(m, met_id.fetch_add(m.partials().size() * m.scopes().count(), std::memory_order_relaxed));
+  auto inc = std::max<size_t>(m.partials().size(), 1) * m.scopes().size();
+  return Metric::Identifier(m, met_id.fetch_add(inc, std::memory_order_relaxed));
 }
 std::optional<unsigned int> DenseIds::identify(const Context&) noexcept {
   return ctx_id.fetch_add(1, std::memory_order_relaxed);
