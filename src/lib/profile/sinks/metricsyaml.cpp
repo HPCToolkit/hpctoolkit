@@ -293,6 +293,16 @@ static void rawLeaf(YAML::Emitter& out, const Metric& m) {
   out << BeginMap
       << Key << "name" << Value << m.name()
       << Key << "description" << Value << m.description();
+  switch(m.visibility()) {
+  case Metric::Settings::visibility_t::invisible:
+    assert(false && "Unreachable");
+    std::abort();
+  case Metric::Settings::visibility_t::shownByDefault:
+    break;  // Default
+  case Metric::Settings::visibility_t::hiddenByDefault:
+    out << Key << "visible by default" << Value << false;
+    break;
+  }
   rawLeafVariants(out, m);
   out << EndMap;
 }
@@ -678,7 +688,8 @@ void MetricsYAML::standard(std::ostream& os) {
   // Before doing anything else, make sure we have access to all the inputs
   out << Key << "inputs" << BeginSeq;
   for(const Metric& m: src.metrics().citerate()) {
-    mets.push_back(std::cref(m));
+    if(m.visibility() != Metric::Settings::visibility_t::invisible)
+      mets.push_back(std::cref(m));
     const auto f = [&](MetricScope s) {
       if(!m.scopes().has(s)) return false;
       for(const auto& p: m.partials()) {
@@ -700,7 +711,8 @@ void MetricsYAML::standard(std::ostream& os) {
 
   // Also add the ExtraStatistics into the set before sorting
   for(const ExtraStatistic& es: src.extraStatistics().citerate())
-    mets.push_back(std::cref(es));
+    if(es.visibility() != Metric::Settings::visibility_t::invisible)
+      mets.push_back(std::cref(es));
 
   // Sort the metrics in the order we want to present them in the end
   std::sort(mets.begin(), mets.end(), [](const auto& a, const auto& b) -> bool {
