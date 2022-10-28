@@ -132,6 +132,8 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
 
   // TODO: Add [scopes] to the below
   // Format: [cnt] ([estat name] [estat description] [cnt] ([isString ? 1 : 0] ([string] | [metric id])...)...)
+  // XXX: ExtraStatistics in MPI mode are currently disabled
+#if 0
   pack(out, src.extraStatistics().size());
   for(const ExtraStatistic& es: src.extraStatistics().citerate()) {
     pack(out, es.name());
@@ -149,6 +151,7 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
       }
     }
   }
+#endif
 
   auto [min, max] = src.timepointBounds().value_or(std::make_pair(
       std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));

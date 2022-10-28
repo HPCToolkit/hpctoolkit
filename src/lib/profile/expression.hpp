@@ -193,18 +193,18 @@ public:
   // MT: Safe (const)
   template<class FC, class FE, class FV, class FO1, class FO2>
   std::enable_if_t<
-    (std::is_invocable_v<FC, double> || std::is_null_pointer_v<FC>)
-    && (std::is_invocable_v<FE, const Expression&> || std::is_null_pointer_v<FE>)
-    && (std::is_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)
-    && (std::is_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)
-    && (std::is_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>),
+    (std::is_invocable_v<FC, double> || std::is_null_pointer_v<std::remove_reference_t<FC>>)
+    && (std::is_invocable_v<FE, const Expression&> || std::is_null_pointer_v<std::remove_reference_t<FE>>)
+    && (std::is_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<std::remove_reference_t<FV>>)
+    && (std::is_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<std::remove_reference_t<FO1>>)
+    && (std::is_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<std::remove_reference_t<FO2>>),
   void> citerate(FC&& f_constant, FE&& f_subexpression, FV&& f_variable,
                  FO1&& f_pre_op, FO2&& f_post_op) const noexcept(
-      (std::is_nothrow_invocable_v<FC, double> || std::is_null_pointer_v<FC>)
-      && (std::is_nothrow_invocable_v<FE, const Expression&> || std::is_null_pointer_v<FE>)
-      && (std::is_nothrow_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<FV>)
-      && (std::is_nothrow_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<FO1>)
-      && (std::is_nothrow_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<FO2>))
+      (std::is_nothrow_invocable_v<FC, double> || std::is_null_pointer_v<std::remove_reference_t<FC>>)
+      && (std::is_nothrow_invocable_v<FE, const Expression&> || std::is_null_pointer_v<std::remove_reference_t<FE>>)
+      && (std::is_nothrow_invocable_v<FV, uservalue_t> || std::is_null_pointer_v<std::remove_reference_t<FV>>)
+      && (std::is_nothrow_invocable_v<FO1, const Expression&> || std::is_null_pointer_v<std::remove_reference_t<FO1>>)
+      && (std::is_nothrow_invocable_v<FO2, const Expression&> || std::is_null_pointer_v<std::remove_reference_t<FO2>>))
   {
     switch(m_kind) {
     case Kind::constant:

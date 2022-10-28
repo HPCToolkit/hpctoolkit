@@ -285,45 +285,14 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     }
 
     for(auto&& [rawFormula, es_settings]: std::move(estats)) {
-      const auto& ct = std::use_facet<std::ctype<char>>(std::locale::classic());
-      std::size_t idx = 0;
-      while(idx != std::string::npos && idx < rawFormula.size()) {
-        if(rawFormula[idx] == '#' || rawFormula[idx] == '$'
-           || rawFormula[idx] == '@') {
-          // Variable specification, collect the digits and decode
-          auto id = ({
-            idx++;
-            std::string id;
-            while(idx < rawFormula.size()
-                  && ct.is(std::ctype<char>::digit, rawFormula[idx])) {
-              id += rawFormula[idx];
-              idx++;
-            }
-            if(id.size() == 0) {
-              util::log::info{} << "Invalid empty formula string";
-              return false;
-            }
-            std::stoll(id);
-          });
-          id += 1;  // Adjust to sparse metric ids
-          const auto it = metrics.find(id);
-          if(it == metrics.end()) {
-            util::log::info{} << "Value for unknown metric id: " << id;
-            return false;
-          }
-          auto& met = it->second.metric;
-          es_settings.formula.emplace_back(ExtraStatistic::MetricPartialRef(
-            met, met.statsAccess().requestSumPartial()));
-        } else {
-          // C-like formula components
-          std::size_t next = rawFormula.find_first_of("#$@", idx);
-          if(next == std::string::npos)
-            es_settings.formula.emplace_back(rawFormula.substr(idx));
-          else
-            es_settings.formula.emplace_back(rawFormula.substr(idx, next-idx));
-          idx = next;
-        }
-      }
+      std::istringstream ss(std::move(rawFormula));
+      ss.imbue(std::locale::classic());
+      es_settings.formula = parseFormula(ss);
+      es_settings.formula.citerate(nullptr, nullptr,
+        [&](Expression::uservalue_t v){
+          Metric& m = const_cast<Metric&>(*(const Metric*)v);
+          m.statsAccess().requestSumPartial();
+        }, nullptr, nullptr);
       sink.extraStatistic(std::move(es_settings));
     }
     for(const auto& im: metrics) sink.metricFreeze(im.second.metric);
@@ -664,4 +633,87 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     << path.string() << "\n"
        "  what(): " << e.what();
   return false;
+}
+
+std::optional<std::tuple<Expression::Kind, int, bool, unsigned int>>
+Hpcrun4::peekFormulaOperator(std::istream& s) const {
+  std::istream::sentry sen(s, true);
+  switch(s.peek()) {
+  case '+':
+    return std::make_tuple(Expression::Kind::op_sum, 0, false, 1);
+  case '-':
+    return std::make_tuple(Expression::Kind::op_sub, 0, false, 1);
+  case '*':
+    return std::make_tuple(Expression::Kind::op_prod, 1, false, 1);
+  case '/':
+    return std::make_tuple(Expression::Kind::op_div, 1, false, 1);
+  case '^':
+    return std::make_tuple(Expression::Kind::op_pow, 2, true, 1);
+  case std::istream::traits_type::eof():
+  case ')':
+    return std::nullopt;
+  default:
+    throw std::invalid_argument("Attempt to parse invalid formula, invalid operator");
+  }
+}
+
+Expression Hpcrun4::parseFormulaPrimary(std::istream& s) const {
+  std::istream::sentry sen(s, true);
+  switch(s.peek()) {
+  case '(': {
+    s.get();
+    Expression e = parseFormula(s);
+    if(s.get() != ')')
+      throw std::invalid_argument("Attempt to parse invalid formula, parans not balanced");
+    return e;
+  }
+  case '-': {
+    s.get();
+    return Expression(Expression::Kind::op_neg, {parseFormulaPrimary(s)});
+  }
+  case '#': {
+    s.get();
+    unsigned int id;
+    s >> id;
+    if(!s)
+      throw std::invalid_argument("Attempt to parse invalid formula");
+    return Expression(Expression::variable, (uintptr_t)&metrics.at(id+1).metric);
+  }
+  default: {
+    double val;
+    s >> val;
+    if(!s)
+      throw std::invalid_argument("Attempt to parse invalid formula");
+    return Expression(val);
+  }
+  }
+}
+
+Expression Hpcrun4::parseFormula1(std::istream& s, Expression lhs, int min_prec) const {
+  // Implementation of the algorithm from https://en.wikipedia.org/wiki/Operator-precedence_parser
+
+  // Check for an operator we are allowed to process
+  auto lookahead = peekFormulaOperator(s);
+  while(lookahead && std::get<1>(*lookahead) >= min_prec) {
+    auto [op, op_prec, right_assoc, oplen] = *lookahead;
+    s.ignore(oplen);  // Advance to next token
+
+    auto rhs = parseFormulaPrimary(s);
+
+    lookahead = peekFormulaOperator(s);
+    while(lookahead
+          && (std::get<1>(*lookahead) > op_prec
+              || (std::get<2>(*lookahead) && std::get<1>(*lookahead) == op_prec))) {
+      rhs = parseFormula1(s, std::move(rhs), op_prec + (std::get<1>(*lookahead) > op_prec ? 1 : 0));
+      lookahead = peekFormulaOperator(s);
+    }
+
+    lhs = Expression(op, {std::move(lhs), std::move(rhs)});
+  }
+  return lhs;
+}
+
+Expression Hpcrun4::parseFormula(std::istream& s) const {
+  auto lhs = parseFormulaPrimary(s);
+  return parseFormula1(s, std::move(lhs), 0);
 }

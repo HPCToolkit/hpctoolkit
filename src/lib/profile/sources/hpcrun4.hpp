@@ -47,6 +47,7 @@
 #ifndef HPCTOOLKIT_PROFILE_SOURCES_HPCRUN4_H
 #define HPCTOOLKIT_PROFILE_SOURCES_HPCRUN4_H
 
+#include "../expression.hpp"
 #include "../source.hpp"
 
 #include "../util/locked_unordered.hpp"
@@ -116,6 +117,13 @@ private:
 
   // ID to Module mapping.
   std::unordered_map<unsigned int, Module&> modules;
+
+  // Recursive functions for parsing formulas into Expressions
+  std::optional<std::tuple<Expression::Kind, int, bool, unsigned int>>
+    peekFormulaOperator(std::istream&) const;
+  Expression parseFormulaPrimary(std::istream&) const;
+  Expression parseFormula1(std::istream&, Expression, int) const;
+  Expression parseFormula(std::istream&) const;
 
   // Simple single Context.
   struct singleCtx_t {
