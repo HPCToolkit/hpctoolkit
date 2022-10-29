@@ -120,6 +120,11 @@ roots:
     # Defaults to `description:` up to the first period or newline.
     short description: !!str Cycles spent in the CPU.
 
+    # Whether this metric should be visible in the Viewer by default, default
+    # true. If false, the Viewer may require that the metric be enabled in the
+    # metric list before it will be presented.
+    visible by default: true
+
     # How the values in the metrics rooted here will be presented in the Viewer
     # by default. One of:
     #  - 'column': Columns of data that can be expanded to show inner metrics.
