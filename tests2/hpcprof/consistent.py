@@ -13,7 +13,7 @@ with extracted(sys.argv[2]) as dbase:
 with extracted(sys.argv[1]) as meas:
     for threadcnt in [1, 4, 16, 64]:
         with thread_disruptive():
-            with hpcprof(meas, f"-j{threadcnt:d}") as db:
+            with hpcprof(meas, f"-j{threadcnt:d}", "--foreign") as db:
                 diff = StrictDiff(base, from_path(db.basedir))
                 acc = StrictAccuracy(diff)
                 if len(diff.hunks) > 0 or acc.inaccuracy:

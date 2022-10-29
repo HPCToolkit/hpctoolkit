@@ -26,7 +26,7 @@ def sanitize(ti):
 
 
 with extracted(args.input) as inp:
-    with hpcprof(inp, "-j4") as dbase:
+    with hpcprof(inp, "-j4", "--foreign") as dbase:
         with tarfile.open(args.output, mode="w:xz") as out:
             out.add(dbase.basedir, arcname=".", recursive=True, filter=sanitize)
 

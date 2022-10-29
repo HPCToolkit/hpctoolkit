@@ -65,15 +65,11 @@
 #include "lib/profile/stdshim/filesystem.hpp"
 #include <iostream>
 #include <stack>
+#include <memory>
 
 using namespace hpctoolkit;
 using namespace hpctoolkit::literals;
 namespace fs = stdshim::filesystem;
-
-template<class T, class... Args>
-static std::unique_ptr<T> make_unique_x(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 
 int rank0(ProfArgs&& args) {
   // We only have one Pipeline, this is its builder.
@@ -91,19 +87,20 @@ int rank0(ProfArgs&& args) {
   ProfArgs::StatisticsExtender se(args);
   pipelineB << se;
 
+  // Make sure the files are searched for as they should be
+  ProfArgs::Prefixer pr(args);
+  pipelineB << pr;
+
   // Load in the Finalizers for Structfiles.
   for(auto& sp: args.structs) pipelineB << std::move(sp.first);
   ProfArgs::StructWarner sw(args);
   pipelineB << sw;
 
-  // Make sure the files are searched for as they should be
-  ProfArgs::Prefixer pr(args);
-  pipelineB << pr;
-
-  // Insert the proper Finalizer for drawing data directly from the Modules.
-  // This is used as a fallback if the Structfiles aren't available.
-  finalizers::DirectClassification dc(args.dwarfMaxSize);
-  pipelineB << dc;
+  if(!args.foreign) {
+    // Insert the proper Finalizer for drawing data directly from the Modules.
+    // This is used as a fallback if the Structfiles aren't available.
+    pipelineB << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
+  }
 
   // Ids for everything are pulled from the void. We call the shots here.
   finalizers::DenseIds dids;
@@ -166,11 +163,11 @@ int rank0(ProfArgs&& args) {
   // Finally, eventually we get to actually write stuff out.
   switch(args.format) {
   case ProfArgs::Format::metadb: {
-    pipelineB << make_unique_x<sinks::MetaDB>(args.output, args.include_sources)
-              << make_unique_x<sinks::SparseDB>(args.output)
-              << make_unique_x<sinks::MetricsYAML>(args.output);
+    pipelineB << std::make_unique<sinks::MetaDB>(args.output, args.include_sources)
+              << std::make_unique<sinks::SparseDB>(args.output)
+              << std::make_unique<sinks::MetricsYAML>(args.output);
     if(args.include_traces)
-      pipelineB << make_unique_x<sinks::HPCTraceDB2>(args.output);
+      pipelineB << std::make_unique<sinks::HPCTraceDB2>(args.output);
     break;
   }
   }

@@ -146,19 +146,21 @@ uint64_t MetaDB::stringsTableLookup(const std::string& s) {
 void MetaDB::instance(const File& f) {
   auto& udf = f.userdata[ud];
   util::call_once(udf.once, [&]{
-    const auto& rp = f.userdata[src.resolvedPath()];
-    if(!rp.empty()) {
-      auto p = stdshim::filesystem::path("src") / rp.relative_path().lexically_normal();
-      udf.pPath_base = stringsTableLookup(p.string());
-      p = dir / p;
-      stdshim::filesystem::create_directories(p.parent_path());
-      stdshim::filesystem::copy_file(rp, p,
-          stdshim::filesystem::copy_options::overwrite_existing);
-      udf.copied = true;
-    } else {
-      udf.pPath_base = stringsTableLookup(f.path().string());
-      udf.copied = false;
+    if(copySources) {
+      const auto& rp = f.userdata[src.resolvedPath()];
+      if(!rp.empty()) {
+        auto p = stdshim::filesystem::path("src") / rp.relative_path().lexically_normal();
+        udf.pPath_base = stringsTableLookup(p.string());
+        p = dir / p;
+        stdshim::filesystem::create_directories(p.parent_path());
+        stdshim::filesystem::copy_file(rp, p,
+            stdshim::filesystem::copy_options::overwrite_existing);
+        udf.copied = true;
+        return;
+      }
     }
+    udf.pPath_base = stringsTableLookup(f.path().string());
+    udf.copied = false;
   });
 }
 

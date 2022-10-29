@@ -120,6 +120,7 @@ Settings& Settings::operator<<(ProfileFinalizer& f) {
   auto pro = f.provides();
   auto req = f.requires();
   assert(req - available == ExtensionClass() && "Finalizer requires unavailable extended data!");
+  requested += req;
   available += pro;
   finalizers.all.emplace_back(f);
   if(pro.hasIdentifier()) finalizers.identifier.emplace_back(f);
