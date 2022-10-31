@@ -58,6 +58,27 @@
 using namespace hpctoolkit;
 using namespace sources;
 
+namespace {
+template<class F>
+class scope_exit final {
+public:
+  [[nodiscard]] scope_exit(F&& f) : callback(std::move(f)) {}
+  ~scope_exit() { callback(); }
+
+  scope_exit(const scope_exit&) = delete;
+  scope_exit& operator=(const scope_exit&) = delete;
+  scope_exit(scope_exit&&) = delete;
+  scope_exit& operator=(scope_exit&&) = delete;
+
+private:
+  F callback;
+};
+template<class F>
+scope_exit<std::decay_t<F>> make_scope_exit(F&& f) {
+  return scope_exit<F>(std::forward<F>(f));
+}
+}
+
 Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, std::shared_ptr<Logstore> logstore)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
     thread(nullptr), path(fn), logstore(std::move(logstore)),
@@ -227,6 +248,12 @@ bool Hpcrun4::realread(const DataClass& needed) try {
   hpcrun_sparse_resume(file, path.c_str());
 
   if(needed.hasAttributes()) {
+    // This the only part of the code that creates Metrics, so when we leave we need to
+    // make sure we freeze the metrics. Even if we failed along the way.
+    scope_exit finally([this]{
+      for(const auto& im: metrics) sink.metricFreeze(im.second.metric);
+    });
+
     int id;
     metric_desc_t m;
     std::vector<std::pair<std::string, ExtraStatistic::Settings>> estats;
@@ -295,7 +322,6 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         }, nullptr, nullptr);
       sink.extraStatistic(std::move(es_settings));
     }
-    for(const auto& im: metrics) sink.metricFreeze(im.second.metric);
   }
   if(needed.hasReferences()) {
     int id;
