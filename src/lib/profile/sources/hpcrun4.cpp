@@ -230,6 +230,7 @@ void Hpcrun4::read(const DataClass& needed) {
   if(!realread(needed)) {
     util::log::error{} << "Error while parsing measurement profile " << path.string();
     fileValid = false;
+    hpcrun_sparse_close(file);
   }
 }
 
