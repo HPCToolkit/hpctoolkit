@@ -663,7 +663,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
 
 std::optional<std::tuple<Expression::Kind, int, bool, unsigned int>>
 Hpcrun4::peekFormulaOperator(std::istream& s) const {
-  std::istream::sentry sen(s, true);
+  std::istream::sentry sen(s);
   switch(s.peek()) {
   case '+':
     return std::make_tuple(Expression::Kind::op_sum, 0, false, 1);
@@ -677,14 +677,21 @@ Hpcrun4::peekFormulaOperator(std::istream& s) const {
     return std::make_tuple(Expression::Kind::op_pow, 2, true, 1);
   case std::istream::traits_type::eof():
   case ')':
+  case ',':
     return std::nullopt;
   default:
     throw std::invalid_argument("Attempt to parse invalid formula, invalid operator");
   }
 }
 
+static std::string getUntil(std::istream& s, char delim) {
+  std::stringbuf sb;
+  s.get(sb, delim);
+  return sb.str();
+}
+
 Expression Hpcrun4::parseFormulaPrimary(std::istream& s) const {
-  std::istream::sentry sen(s, true);
+  std::istream::sentry sen(s);
   switch(s.peek()) {
   case '(': {
     s.get();
@@ -702,14 +709,35 @@ Expression Hpcrun4::parseFormulaPrimary(std::istream& s) const {
     unsigned int id;
     s >> id;
     if(!s)
-      throw std::invalid_argument("Attempt to parse invalid formula");
+      throw std::invalid_argument("Attempt to parse invalid formula, invalid variable ref");
     return Expression(Expression::variable, (uintptr_t)&metrics.at(id+1).metric);
+  }
+  case 'm': {
+    std::string funcname = getUntil(s, '(');
+    Expression::Kind op;
+    if(funcname == "max") op = Expression::Kind::op_max;
+    else if(funcname == "min") op = Expression::Kind::op_min;
+    else
+      throw std::invalid_argument("Attempt to parse invalid formula, unrecognized function");
+    if(s.get() != '(')
+      throw std::invalid_argument("Attempt to parse invalid formula, bad function syntax, no open parens");
+
+    std::vector<Expression> args;
+    char end;
+    do {
+      args.emplace_back(parseFormula(s));
+      end = s.get();
+    } while(end == ',');
+    if(end != ')')
+      throw std::invalid_argument("Attempt to parse invalid formula, bad function syntax, no close parens");
+
+    return Expression(op, std::move(args));
   }
   default: {
     double val;
     s >> val;
     if(!s)
-      throw std::invalid_argument("Attempt to parse invalid formula");
+      throw std::invalid_argument("Attempt to parse invalid formula, bad constant");
     return Expression(val);
   }
   }
