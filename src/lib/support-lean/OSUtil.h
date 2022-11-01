@@ -98,6 +98,9 @@ unsigned int
 OSUtil_pid();
 
 const char*
+OSUtil_local_rank();
+
+const char*
 OSUtil_jobid();
 
 uint32_t

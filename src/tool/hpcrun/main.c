@@ -103,6 +103,8 @@
 #include <sample-sources/none.h>
 #include <sample-sources/itimer.h>
 
+#include <lib/support-lean/OSUtil.h>
+
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
@@ -263,6 +265,36 @@ bool hpcrun_suppress_sample()
   return hpcrun_thread_suppress_sample;
 }
 
+bool hpcrun_local_rank_enabled()
+{
+  const char *local_ranks = getenv("HPCRUN_LOCAL_RANKS");
+  const char *my_rank = OSUtil_local_rank();
+
+  // a testing harness
+  if (my_rank == 0) {
+    my_rank = getenv("HPCRUN_LOCAL_RANK");
+  }
+
+  if (local_ranks && my_rank) {
+    if (strcmp(local_ranks, my_rank) == 0) {
+      // profiling only a single local rank
+      return true;
+    }
+    char* local = strdup(local_ranks);
+    char* token = strtok(local, ",");
+    while (token) {
+      int found = (strcmp(token, my_rank) == 0);
+      if (found) {
+        free(local);
+        return true;
+      }
+      token = strtok(NULL, ",");
+    }
+    free(local);
+    return false;
+  }
+  return true;
+}
 
 //
 // Local functions
@@ -943,6 +975,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
+  if (!hpcrun_local_rank_enabled()) {
+    hpcrun_set_disabled();
+  }
+
   // We initialize the load map and fnbounds before registering sample source.
   // This is because sample source init (such as PAPI)  may dlopen other libraries,
   // which will trigger our library monitoring code and fnbound queries
@@ -999,6 +1035,11 @@ void
 monitor_at_main()
 {  
   bool is_child = false;
+
+  if (hpcrun_get_disabled()) {
+    return;
+  }
+
   hpcrun_prepare_measurement_subsystem(is_child);
 }
 
