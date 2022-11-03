@@ -688,13 +688,6 @@ void SparseDB::write() {
       fmt_profiledb_profInfoSHdr_read(&piSHdr, buf);
     }
 
-    // Profile 0 is a summary profile... which we haven't written yet. Skip over it.
-    // This conditional should always be true, but don't make a mess if it isn't.
-    if(piSHdr.nProfiles > 0) {
-      --piSHdr.nProfiles;
-      piSHdr.pProfiles += FMT_PROFILEDB_SZ_ProfInfo;
-    }
-
     // Read the whole section in
     std::vector<char> buf(piSHdr.nProfiles * FMT_PROFILEDB_SZ_ProfInfo);
     fi.readat(piSHdr.pProfiles, buf.size(), buf.data());
