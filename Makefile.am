@@ -109,6 +109,9 @@ endif
 gen-testdata:
 	@$(MAKE) -C tests2/ gen-testdata
 
+install-testdata:
+	@$(MAKE) -C tests2/ install-testdata
+
 ############################################################
 # Install
 ############################################################

@@ -590,6 +590,9 @@ clean-local:
 gen-testdata:
 	meson compile -C ../tests2-build/ gen-testdata
 
+install-testdata:
+	meson compile -C ../tests2-build/ install-testdata
+
 installcheck-local:
 	meson compile -C ../tests2-build/
 	meson test -C ../tests2-build/ --print-errorlogs

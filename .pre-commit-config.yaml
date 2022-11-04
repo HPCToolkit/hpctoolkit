@@ -77,6 +77,10 @@ repos:
   - id: check-executables-have-shebangs
   # Ensure large files (>=500KB) are never added outside of LFS
   - id: check-added-large-files
+  # Ensure symlinks always point to something
+  - id: check-symlinks
+  # Warn if symlinks are ever accidentally destroyed
+  - id: destroyed-symlinks
   # Ensure conflict markers are never committed anywhere
   - id: check-merge-conflict
   # Ensure files do not differ only in case (problematic on some filesystems)
@@ -101,8 +105,8 @@ repos:
   hooks:
   # Use Prospector to lint all our Python code
   - id: prospector
-    additional_dependencies: [mypy, ruamel.yaml]
-    exclude: *py_exclude
+    additional_dependencies: [mypy, ruamel.yaml, pytest]
+    exclude: '(^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$|_test\.py$)'
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.8.0.4

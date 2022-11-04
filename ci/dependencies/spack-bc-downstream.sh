@@ -25,4 +25,14 @@ if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true"; then
     || exit $?
 fi
 
+# Always try to reuse from the default branch as well, if we didn't add it in the previous step
+if test "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" != "$CI_DEFAULT_BRANCH" \
+   && test "$CI_COMMIT_REF_NAME" != "$CI_DEFAULT_BRANCH"; then
+  spack mirror add --scope site \
+    --s3-access-key-id "${SBCACHE_AWS_ID:-$SBCACHE_AWS_ID_NP}" \
+    --s3-access-key-secret "${SBCACHE_AWS_SECRET:-$SBCACHE_AWS_SECRET_NP}" \
+    main-default "$SBCACHE_SCHEMA://$SBCACHE_BUCKET/protected/$CI_DEFAULT_BRANCH" \
+    || exit $?
+fi
+
 spack mirror list

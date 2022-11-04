@@ -478,7 +478,7 @@ autoreconf check:
   - *postjob
 
   artifacts: &check_artifacts
-    reports:
+    reports: &check_reports
       junit:
       - test.testlog.junit.xml
       - test.pytest.junit.xml
@@ -605,18 +605,27 @@ gen-testdata.cpu:
   when: manual
 
   script:
-  # Run the build script for the configuration of interest. Use some Python to help.
+  # Generate a new batch of test data, and copy it back to the source tree
   - >-
-    python3 -m ci.buildfe -l logs/ -a gen-testdata
+    python3 -m ci.buildfe -l logs/generation/ -a install-testdata
     "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    --keep -s "$SPEC"
-  - mv -t tests2/data/meas/ ci/build/tests2-build/data/meas/*.tar.xz
+    -1s "$SPEC"
+  # Re-run the tests on the new data to ensure everything is still a-ok
+  - >-
+    python3 -m ci.buildfe -l logs/posttest/ -a test
+    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
+    -1s "$SPEC"
+  - *check_postjob
+  - *postjob
 
   artifacts:
+    reports: *check_reports
     paths:
     - logs/
-    - tests2/data/meas/*.tar.xz
+    - tests2/data/
+    when: always
 
 gen-testdata.gpu.nvidia:
   stage: .post
@@ -637,18 +646,29 @@ gen-testdata.gpu.nvidia:
   when: manual
 
   script:
-  # Run the build script for the configuration of interest. Use some Python to help.
+  # Pull CUDA from the image itself
+  - echo '--with-cuda=/usr/local/cuda CUDAFLAGS="-gencode arch=compute_60,code=sm_60"' > img-config
+  # Generate a new batch of test data, and copy it back to the source tree
   - >-
-    python3 -m ci.buildfe -l logs/ -a gen-testdata
-    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    python3 -m ci.buildfe -l logs/generation/ -a install-testdata
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    --keep -s "$SPEC"
-  - mv -t tests2/data/meas/ ci/build/tests2-build/data/meas/*.tar.xz
+    -1s "$SPEC"
+  # Re-run the tests on the new data to ensure everything is still a-ok
+  - >-
+    python3 -m ci.buildfe -l logs/posttest/ -a test
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
+    -1s "$SPEC"
+  - *check_postjob
+  - *postjob
 
   artifacts:
+    reports: *check_reports
     paths:
     - logs/
-    - tests2/data/meas/*.tar.xz
+    - tests2/data/
+    when: always
 
 gen-testdata.gpu.amd:
   stage: .post
@@ -669,15 +689,26 @@ gen-testdata.gpu.amd:
   when: manual
 
   script:
-  # Run the build script for the configuration of interest. Use some Python to help.
+  # Pull ROCm from the image itself
+  - echo '--with-rocm=/opt/rocm' > img-config
+  # Generate a new batch of test data, and copy it back to the source tree
   - >-
-    python3 -m ci.buildfe -l logs/ -a gen-testdata
-    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    python3 -m ci.buildfe -l logs/generation/ -a install-testdata
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    --keep -s "$SPEC"
-  - mv -t tests2/data/meas/ ci/build/tests2-build/data/meas/*.tar.xz
+    -1s "$SPEC"
+  # Re-run the tests on the new data to ensure everything is still a-ok
+  - >-
+    python3 -m ci.buildfe -l logs/posttest/ -a test
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
+    -1s "$SPEC"
+  - *check_postjob
+  - *postjob
 
   artifacts:
+    reports: *check_reports
     paths:
     - logs/
-    - tests2/data/meas/*.tar.xz
+    - tests2/data/
+    when: always

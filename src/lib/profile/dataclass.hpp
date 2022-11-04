@@ -239,6 +239,12 @@ public:
   bool anyOf(const ExtensionClass& o) const noexcept { return operator&(o).hasAny(); }
   bool allOf(const ExtensionClass& o) const noexcept { return operator&(o) == o; }
 
+  // Copy-constructable and copy-assignable
+  ExtensionClass(const ExtensionClass&) noexcept = default;
+  ExtensionClass& operator=(const ExtensionClass&) noexcept = default;
+  ExtensionClass(ExtensionClass&&) noexcept = default;
+  ExtensionClass& operator=(ExtensionClass&&) noexcept = default;
+
   // ExtensionClasses support | and + as union, - as set subtraction, and & as intersection.
   ExtensionClass operator|(const ExtensionClass& o) const noexcept { return mask | o.mask; }
   ExtensionClass operator+(const ExtensionClass& o) const noexcept { return operator|(o); }

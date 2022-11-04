@@ -1,0 +1,559 @@
+!db/v4
+meta: !meta.db/v4
+  General: !meta.db/v4/GeneralProperties
+    title: test-small
+    description: TODO database description
+  IdNames: !meta.db/v4/IdentifierNames
+    names:
+    - SUMMARY
+    - NODE
+    - RANK
+    - THREAD
+    - GPUDEVICE
+    - GPUCONTEXT
+    - GPUSTREAM
+    - CORE
+  Metrics: !meta.db/v4/PerformanceMetrics
+    scopes:
+    - &id001 !meta.db/v4/PropagationScope  # point [point]
+      scopeName: point
+      type: !meta.db/v4/PropagationScope.Type point
+      propagationIndex: 255
+    - &id002 !meta.db/v4/PropagationScope  # function [transitive] bit/0
+      scopeName: function
+      type: !meta.db/v4/PropagationScope.Type transitive
+      propagationIndex: 0
+    - &id003 !meta.db/v4/PropagationScope  # lex_aware [custom]
+      scopeName: lex_aware
+      type: !meta.db/v4/PropagationScope.Type custom
+      propagationIndex: 255
+    - &id004 !meta.db/v4/PropagationScope  # execution [execution]
+      scopeName: execution
+      type: !meta.db/v4/PropagationScope.Type execution
+      propagationIndex: 255
+    metrics:
+    - !meta.db/v4/Metric
+      name: cycles
+      scopeInsts:
+      - !meta.db/v4/PropagationScopeInstance  # point  #4
+        scope: *id001
+        propMetricId: 4
+      - !meta.db/v4/PropagationScopeInstance # function  #5
+        scope: *id002
+        propMetricId: 5
+      - !meta.db/v4/PropagationScopeInstance # lex_aware  #6
+        scope: *id003
+        propMetricId: 6
+      - !meta.db/v4/PropagationScopeInstance # execution  #7
+        scope: *id004
+        propMetricId: 7
+      summaries:
+      - !meta.db/v4/SummaryStatistic  # sum / '$$' / point  #4
+        scope: *id001
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 4
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / function  #5
+        scope: *id002
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 5
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / lex_aware  #6
+        scope: *id003
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 6
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / execution  #7
+        scope: *id004
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 7
+    - !meta.db/v4/Metric
+      name: instructions
+      scopeInsts:
+      - !meta.db/v4/PropagationScopeInstance  # point  #0
+        scope: *id001
+        propMetricId: 0
+      - !meta.db/v4/PropagationScopeInstance # function  #1
+        scope: *id002
+        propMetricId: 1
+      - !meta.db/v4/PropagationScopeInstance # lex_aware  #2
+        scope: *id003
+        propMetricId: 2
+      - !meta.db/v4/PropagationScopeInstance # execution  #3
+        scope: *id004
+        propMetricId: 3
+      summaries:
+      - !meta.db/v4/SummaryStatistic  # sum / '$$' / point  #0
+        scope: *id001
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 0
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / function  #1
+        scope: *id002
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 1
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / lex_aware  #2
+        scope: *id003
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 2
+      - !meta.db/v4/SummaryStatistic # sum / '$$' / execution  #3
+        scope: *id004
+        formula: $$
+        combine: !meta.db/v4/SummaryStatistic.Combine sum
+        statMetricId: 3
+  Modules: !meta.db/v4/LoadModules
+    modules:
+    - &id005 !meta.db/v4/Module  # /test-small []
+      flags: !meta.db/v4/Module.Flags []
+      path: /builds/hpctoolkit/hpctoolkit/ci/build/tests2-build/data/meas/test-small
+  Files: !meta.db/v4/SourceFiles
+    files:
+    - &id006 !meta.db/v4/File  # /small.c []
+      flags: !meta.db/v4/File.Flags []
+      path: /builds/hpctoolkit/hpctoolkit/tests2/data/meas/small.c
+  Functions: !meta.db/v4/Functions
+    functions:
+    - &id008 !meta.db/v4/Function  # caller /small.c:6 /test-small+0x1176 []
+      name: caller
+      module: *id005
+      offset: 4470
+      file: *id006
+      line: 6
+      flags: !meta.db/v4/Function.Flags []
+    - &id009 !meta.db/v4/Function  # spinsleep /small.c:1 /test-small+0x1129 []
+      name: spinsleep
+      module: *id005
+      offset: 4393
+      file: *id006
+      line: 1
+      flags: !meta.db/v4/Function.Flags []
+    - &id007 !meta.db/v4/Function  # main /small.c:10 /test-small+0x118b []
+      name: main
+      module: *id005
+      offset: 4491
+      file: *id006
+      line: 10
+      flags: !meta.db/v4/Function.Flags []
+  Context: !meta.db/v4/ContextTree
+    entryPoints:
+    - !meta.db/v4/EntryPoint  # unknown entry (= unknown_entry)  #21
+      ctxId: 21
+      entryPoint: !meta.db/v4/EntryPoint.EntryPoint unknown_entry
+      prettyName: unknown entry
+      children: []
+    - !meta.db/v4/EntryPoint # main thread (= main_thread)  #1
+      ctxId: 1
+      entryPoint: !meta.db/v4/EntryPoint.EntryPoint main_thread
+      prettyName: main thread
+      children:
+      - !meta.db/v4/Context  # -call> [function] main  #2
+        ctxId: 2
+        flags: !meta.db/v4/Context.Flags [hasFunction]
+        relation: !meta.db/v4/Context.Relation call
+        lexicalType: !meta.db/v4/Context.LexicalType function
+        propagation: 0
+        function: *id007
+        file:
+        line:
+        module:
+        offset:
+        children:
+        - !meta.db/v4/Context  # -lexical> [line] /small.c:11  #3
+          ctxId: 3
+          flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+          relation: !meta.db/v4/Context.Relation lexical
+          lexicalType: !meta.db/v4/Context.LexicalType line
+          propagation: 1
+          function:
+          file: *id006
+          line: 11
+          module:
+          offset:
+          children:
+          - !meta.db/v4/Context  # -call> [function] caller  #12
+            ctxId: 12
+            flags: !meta.db/v4/Context.Flags [hasFunction]
+            relation: !meta.db/v4/Context.Relation call
+            lexicalType: !meta.db/v4/Context.LexicalType function
+            propagation: 0
+            function: *id008
+            file:
+            line:
+            module:
+            offset:
+            children:
+            - !meta.db/v4/Context  # -lexical> [line] /small.c:7  #13
+              ctxId: 13
+              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+              relation: !meta.db/v4/Context.Relation lexical
+              lexicalType: !meta.db/v4/Context.LexicalType line
+              propagation: 1
+              function:
+              file: *id006
+              line: 7
+              module:
+              offset:
+              children:
+              - !meta.db/v4/Context  # -call> [function] spinsleep  #15
+                ctxId: 15
+                flags: !meta.db/v4/Context.Flags [hasFunction]
+                relation: !meta.db/v4/Context.Relation call
+                lexicalType: !meta.db/v4/Context.LexicalType function
+                propagation: 0
+                function: *id009
+                file:
+                line:
+                module:
+                offset:
+                children:
+                - !meta.db/v4/Context  # -lexical> [line] /small.c:1  #19
+                  ctxId: 19
+                  flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+                  relation: !meta.db/v4/Context.Relation lexical
+                  lexicalType: !meta.db/v4/Context.LexicalType line
+                  propagation: 1
+                  function:
+                  file: *id006
+                  line: 1
+                  module:
+                  offset:
+                  children: []
+                - !meta.db/v4/Context # -lexical> [loop] /small.c:3  #16
+                  ctxId: 16
+                  flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+                  relation: !meta.db/v4/Context.Relation lexical
+                  lexicalType: !meta.db/v4/Context.LexicalType loop
+                  propagation: 1
+                  function:
+                  file: *id006
+                  line: 3
+                  module:
+                  offset:
+                  children:
+                  - !meta.db/v4/Context  # -lexical> [line] /small.c:3  #17
+                    ctxId: 17
+                    flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+                    relation: !meta.db/v4/Context.Relation lexical
+                    lexicalType: !meta.db/v4/Context.LexicalType line
+                    propagation: 1
+                    function:
+                    file: *id006
+                    line: 3
+                    module:
+                    offset:
+                    children: []
+          - !meta.db/v4/Context # -call> [function] spinsleep  #5
+            ctxId: 5
+            flags: !meta.db/v4/Context.Flags [hasFunction]
+            relation: !meta.db/v4/Context.Relation call
+            lexicalType: !meta.db/v4/Context.LexicalType function
+            propagation: 0
+            function: *id009
+            file:
+            line:
+            module:
+            offset:
+            children:
+            - !meta.db/v4/Context  # -lexical> [line] /small.c:1  #9
+              ctxId: 9
+              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+              relation: !meta.db/v4/Context.Relation lexical
+              lexicalType: !meta.db/v4/Context.LexicalType line
+              propagation: 1
+              function:
+              file: *id006
+              line: 1
+              module:
+              offset:
+              children: []
+            - !meta.db/v4/Context # -lexical> [loop] /small.c:3  #6
+              ctxId: 6
+              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+              relation: !meta.db/v4/Context.Relation lexical
+              lexicalType: !meta.db/v4/Context.LexicalType loop
+              propagation: 1
+              function:
+              file: *id006
+              line: 3
+              module:
+              offset:
+              children:
+              - !meta.db/v4/Context  # -lexical> [line] /small.c:3  #7
+                ctxId: 7
+                flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+                relation: !meta.db/v4/Context.Relation lexical
+                lexicalType: !meta.db/v4/Context.LexicalType line
+                propagation: 1
+                function:
+                file: *id006
+                line: 3
+                module:
+                offset:
+                children: []
+profile: !profile.db/v4
+  ProfileInfos: !profile.db/v4/ProfileInfos
+    profiles:
+    - !profile.db/v4/Profile  # {/} [isSummary]
+      idTuple:
+      flags: !profile.db/v4/Profile.Flags [isSummary]
+      values:
+        0:  # for <root>
+          7: 3000000000.0  # for sum / '$$' / execution  #7
+        1: # for main thread (= main_thread)  #1
+          7: 3000000000.0  # for sum / '$$' / execution  #7
+        2: # for -call> [function] main  #2
+          7: 3000000000.0  # for sum / '$$' / execution  #7
+        3: # for -lexical> [line] /small.c:11  #3
+          7: 3000000000.0  # for sum / '$$' / execution  #7
+        4:
+          7: 1000000000.0  # for sum / '$$' / execution  #7
+        5: # for -call> [function] spinsleep  #5
+          5: 1000000000.0  # for sum / '$$' / function  #5
+          6: 1000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 1000000000.0 # for sum / '$$' / execution  #7
+        6: # for -lexical> [loop] /small.c:3  #6
+          5: 1000000000.0  # for sum / '$$' / function  #5
+          6: 1000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 1000000000.0 # for sum / '$$' / execution  #7
+        7: # for -lexical> [line] /small.c:3  #7
+          5: 1000000000.0  # for sum / '$$' / function  #5
+          6: 1000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 1000000000.0 # for sum / '$$' / execution  #7
+        8:
+          4: 1000000000.0  # for sum / '$$' / point  #4
+          5: 1000000000.0 # for sum / '$$' / function  #5
+          6: 1000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 1000000000.0 # for sum / '$$' / execution  #7
+        11:
+          7: 2000000000.0  # for sum / '$$' / execution  #7
+        12: # for -call> [function] caller  #12
+          7: 2000000000.0  # for sum / '$$' / execution  #7
+        13: # for -lexical> [line] /small.c:7  #13
+          7: 2000000000.0  # for sum / '$$' / execution  #7
+        14:
+          7: 2000000000.0  # for sum / '$$' / execution  #7
+        15: # for -call> [function] spinsleep  #15
+          5: 2000000000.0  # for sum / '$$' / function  #5
+          6: 2000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 2000000000.0 # for sum / '$$' / execution  #7
+        16: # for -lexical> [loop] /small.c:3  #16
+          5: 2000000000.0  # for sum / '$$' / function  #5
+          6: 2000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 2000000000.0 # for sum / '$$' / execution  #7
+        17: # for -lexical> [line] /small.c:3  #17
+          5: 2000000000.0  # for sum / '$$' / function  #5
+          6: 2000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 2000000000.0 # for sum / '$$' / execution  #7
+        18:
+          4: 2000000000.0  # for sum / '$$' / point  #4
+          5: 2000000000.0 # for sum / '$$' / function  #5
+          6: 2000000000.0 # for sum / '$$' / lex_aware  #6
+          7: 2000000000.0 # for sum / '$$' / execution  #7
+    - !profile.db/v4/Profile # {NODE 0 [0x590a3000] / THREAD 0} []
+      idTuple: !profile.db/v4/IdentifierTuple  # NODE 0 [0x590a3000] / THREAD 0
+        ids:
+        - !profile.db/v4/Identifier  # NODE 0 [0x590a3000]
+          kind: 1
+          flags: !profile.db/v4/Identifier.Flags [isPhysical]
+          logicalId: 0
+          physicalId: 1493839872
+        - !profile.db/v4/Identifier # THREAD 0
+          kind: 3
+          flags: !profile.db/v4/Identifier.Flags []
+          logicalId: 0
+          physicalId: 0
+      flags: !profile.db/v4/Profile.Flags []
+      values:
+        0:  # for <root>
+          7: 3000000000.0  # for execution  #7
+        1: # for main thread (= main_thread)  #1
+          7: 3000000000.0  # for execution  #7
+        2: # for -call> [function] main  #2
+          7: 3000000000.0  # for execution  #7
+        3: # for -lexical> [line] /small.c:11  #3
+          7: 3000000000.0  # for execution  #7
+        4:
+          7: 1000000000.0  # for execution  #7
+        5: # for -call> [function] spinsleep  #5
+          5: 1000000000.0  # for function  #5
+          6: 1000000000.0 # for lex_aware  #6
+          7: 1000000000.0 # for execution  #7
+        6: # for -lexical> [loop] /small.c:3  #6
+          5: 1000000000.0  # for function  #5
+          6: 1000000000.0 # for lex_aware  #6
+          7: 1000000000.0 # for execution  #7
+        7: # for -lexical> [line] /small.c:3  #7
+          5: 1000000000.0  # for function  #5
+          6: 1000000000.0 # for lex_aware  #6
+          7: 1000000000.0 # for execution  #7
+        8:
+          4: 1000000000.0  # for point  #4
+          5: 1000000000.0 # for function  #5
+          6: 1000000000.0 # for lex_aware  #6
+          7: 1000000000.0 # for execution  #7
+        11:
+          7: 2000000000.0  # for execution  #7
+        12: # for -call> [function] caller  #12
+          7: 2000000000.0  # for execution  #7
+        13: # for -lexical> [line] /small.c:7  #13
+          7: 2000000000.0  # for execution  #7
+        14:
+          7: 2000000000.0  # for execution  #7
+        15: # for -call> [function] spinsleep  #15
+          5: 2000000000.0  # for function  #5
+          6: 2000000000.0 # for lex_aware  #6
+          7: 2000000000.0 # for execution  #7
+        16: # for -lexical> [loop] /small.c:3  #16
+          5: 2000000000.0  # for function  #5
+          6: 2000000000.0 # for lex_aware  #6
+          7: 2000000000.0 # for execution  #7
+        17: # for -lexical> [line] /small.c:3  #17
+          5: 2000000000.0  # for function  #5
+          6: 2000000000.0 # for lex_aware  #6
+          7: 2000000000.0 # for execution  #7
+        18:
+          4: 2000000000.0  # for point  #4
+          5: 2000000000.0 # for function  #5
+          6: 2000000000.0 # for lex_aware  #6
+          7: 2000000000.0 # for execution  #7
+context: !cct.db/v4
+  CtxInfos: !cct.db/v4/ContextInfos
+    contexts:
+    - !cct.db/v4/PerContext  # for <root>
+      values:
+        7:  # for execution  #7
+          1: 3000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for main thread (= main_thread)  #1
+      values:
+        7:  # for execution  #7
+          1: 3000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [function] main  #2
+      values:
+        7:  # for execution  #7
+          1: 3000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [line] /small.c:11  #3
+      values:
+        7:  # for execution  #7
+          1: 3000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for [4]
+      values:
+        7:  # for execution  #7
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [function] spinsleep  #5
+      values:
+        5:  # for function  #5
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [loop] /small.c:3  #6
+      values:
+        5:  # for function  #5
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [line] /small.c:3  #7
+      values:
+        5:  # for function  #5
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for [8]
+      values:
+        4:  # for point  #4
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        5: # for function  #5
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 1000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [line] /small.c:1  #9
+      values: {}
+    - !cct.db/v4/PerContext # for [10]
+      values: {}
+    - !cct.db/v4/PerContext # for [11]
+      values:
+        7:  # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [function] caller  #12
+      values:
+        7:  # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [line] /small.c:7  #13
+      values:
+        7:  # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for [14]
+      values:
+        7:  # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -call> [function] spinsleep  #15
+      values:
+        5:  # for function  #5
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [loop] /small.c:3  #16
+      values:
+        5:  # for function  #5
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [line] /small.c:3  #17
+      values:
+        5:  # for function  #5
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for [18]
+      values:
+        4:  # for point  #4
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        5: # for function  #5
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        6: # for lex_aware  #6
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+        7: # for execution  #7
+          1: 2000000000.0  # for {NODE 0 [0x590a3000] / THREAD 0}
+    - !cct.db/v4/PerContext # for -lexical> [line] /small.c:1  #19
+      values: {}
+    - !cct.db/v4/PerContext # for [20]
+      values: {}
+    - !cct.db/v4/PerContext # for unknown entry (= unknown_entry)  #21
+      values: {}
+trace: !trace.db/v4
+  CtxTraces: !trace.db/v4/ContextTraceHeaders
+    timestampRange:
+      min: 1667527374253078000
+      max: 1667527375253324000
+    traces:
+    - !trace.db/v4/ContextTrace  # 1.000246000s (1667527374.253077984-1667527375.253324032) for {NODE 0 [0x590a3000] / THREAD 0}
+      profIndex: 1
+      line:
+      - !trace.db/v4/ContextTraceElement  # +0.000000000s at <root>
+        timestamp: 1667527374253078000
+        ctxId: 0
+      - !trace.db/v4/ContextTraceElement # +0.333509000s at -lexical> [line] /small.c:1  #9
+        timestamp: 1667527374586587000
+        ctxId: 9
+      - !trace.db/v4/ContextTraceElement # +0.666883000s at -lexical> [line] /small.c:1  #19
+        timestamp: 1667527374919961000
+        ctxId: 19
+      - !trace.db/v4/ContextTraceElement # +1.000246000s at -lexical> [line] /small.c:1  #19
+        timestamp: 1667527375253324000
+        ctxId: 19

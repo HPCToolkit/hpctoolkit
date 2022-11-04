@@ -131,6 +131,12 @@ Processing options:
                               data from. Units are K,M,G,T (powers of 1024)
                               If limit is "unlimited," always parses DWARF.
                               Default limit is 100M.
+      --foreign
+                              Process the measurements as if they came from a
+                              "foreign" system with a different filesystem than
+                              the one the measurements were gathered on.
+                              Only needed for internal testing, not needed for
+                              practical use.
 
 Compatibility Options:
       --name=NAME             Equivalent to `-n NAME'
@@ -160,6 +166,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   int arg_includeTraces = include_traces;
   int arg_overwriteOutput = 0;
   int arg_valgrindUnclean = valgrindUnclean;
+  int arg_foreign = 0;
   struct option longopts[] = {
     // These first ones are more special and must be in this order.
     {"version", no_argument, NULL, 0},
@@ -180,6 +187,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     {"name", required_argument, NULL, 'n'},
     {"force", no_argument, &arg_overwriteOutput, 1},
     {"valgrind-unclean", no_argument, &arg_valgrindUnclean, 1},
+    {"foreign", no_argument, &arg_foreign, 1},
     {0, 0, 0, 0}
   };
 
@@ -388,6 +396,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   include_sources = arg_includeSources;
   include_traces = arg_includeTraces;
   valgrindUnclean = arg_valgrindUnclean;
+  foreign = arg_foreign;
+
+  if(foreign)
+    include_sources = false;
 
   if(threads == 0) {
     threads = cpuset_hwthreads();
@@ -704,11 +716,11 @@ void ProfArgs::StatisticsExtender::appendStatistics(const Metric& m, Metric::Sta
 }
 
 std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const File& f) noexcept {
-  return search(args.prefixes, f.path());
+  return args.foreign ? std::nullopt : search(args.prefixes, f.path());
 }
 
 std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const Module& m) noexcept {
-  return search(args.prefixes, m.path());
+  return args.foreign ? std::nullopt : search(args.prefixes, m.path());
 }
 
 std::optional<std::pair<util::optional_ref<Context>, Context&>>

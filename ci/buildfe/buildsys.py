@@ -318,3 +318,24 @@ class GenTestData(MakeAction):
         logdir: T.Optional[Path] = None,
     ) -> ActionResult:
         return self._run("gen-testdata", cfg, builddir, "gen-testdata", logdir=logdir)
+
+
+class InstallTestData(MakeAction):
+    """Generate data for later tests, and install it to the source directory."""
+
+    def name(self) -> str:
+        return "make gen-testdata"
+
+    def dependencies(self) -> tuple[Action]:
+        return Build(), Install()
+
+    def run(
+        self,
+        cfg: Configuration,
+        *,
+        builddir: Path,
+        srcdir: Path,
+        installdir: Path,
+        logdir: T.Optional[Path] = None,
+    ) -> ActionResult:
+        return self._run("install-testdata", cfg, builddir, "install-testdata", logdir=logdir)
