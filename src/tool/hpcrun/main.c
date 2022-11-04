@@ -1017,16 +1017,16 @@ monitor_init_process(int *argc, char **argv, void* data)
       auditor_exports->mainlib_connected(get_saved_vdso_path());
     }
 #endif
+
+    TMSG(PROCESS, "init process: pid: %d  parent: %d  fork-child: %d",
+         (int) getpid(), (int) getppid(), (int) is_child);
+    TMSG(PROCESS, "name: %s", process_name);
+
+    if (is_child){
+      hpcrun_prepare_measurement_subsystem(is_child);
+    }
+
   }
-
-  TMSG(PROCESS, "init process: pid: %d  parent: %d  fork-child: %d",
-       (int) getpid(), (int) getppid(), (int) is_child);
-  TMSG(PROCESS, "name: %s", process_name);
-
-  if (is_child){
-    hpcrun_prepare_measurement_subsystem(is_child);
-  }
-
   return data;
 }
 
@@ -1267,7 +1267,7 @@ monitor_thread_pre_create(void)
   struct monitor_thread_info mti;
   monitor_get_new_thread_info(&mti);
   void *thread_pre_create_address = mti.mti_create_return_addr;
-  if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
+  if (hpcrun_get_disabled() || module_ignore_map_inrange_lookup(thread_pre_create_address)) {
     return MONITOR_IGNORE_NEW_THREAD;
   }
 
