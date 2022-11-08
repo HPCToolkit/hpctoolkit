@@ -2,6 +2,7 @@
 
 import argparse
 import re
+import sys
 import tarfile
 from pathlib import Path
 
@@ -25,6 +26,7 @@ def sanitize(ti):
 
 
 def check_ok(M):
+    sample_cnts = []
     logfiles = 0
     for stem in M.thread_stems:
         if M.logfile(stem):
@@ -36,16 +38,24 @@ def check_ok(M):
                         sample_cnt = int(mat.group(1))
                         break
                 else:
-                    print(f"{stem}: Did not find SUMMARY line in log output. Retrying...")
+                    print(
+                        f"{stem}: Did not find SUMMARY line in log output. Retrying...",
+                        file=sys.stderr,
+                    )
                     return False
             if sample_cnt < args.min_samples:
                 print(
-                    f"{stem}: Achieved {sample_cnt} samples, wanted at least {args.min_samples}. Retrying..."
+                    f"{stem}: Achieved {sample_cnt} samples, wanted at least {args.min_samples}. Retrying...",
+                    file=sys.stderr,
                 )
                 return False
+            sample_cnts.append(sample_cnt)
     if logfiles == 0:
-        print("Did not find any log output. Retrying...")
+        print("Did not find any log output. Retrying...", file=sys.stderr)
         return False
+    print(
+        f"Achieved {sum(sample_cnts)} total samples (min/avg/max {min(sample_cnts)}/{sum(sample_cnts)/len(sample_cnts)}/{max(sample_cnts)} per process)"
+    )
     return True
 
 
