@@ -4,8 +4,8 @@ _prof = [python3, files('prof.py')]
 
 _databases = {
   'small': {'yaml': true},
-  '1loop-perf': {},
-  '1loop-perf-t': {},
+  'loops-perf': {},
+  'loops-perf-t': {},
   # 'vecadd-cuda-nvidia': {},
   # 'vecadd-cuda-nvidiapc': {},
   # 'vecadd-hip-amd': {},

@@ -802,6 +802,9 @@ case "${host}" in
     ;;
 esac
 
+HOST_NOOPT_CFLAGS="${HOST_CFLAGS}"
+HOST_NOOPT_CXXFLAGS="${HOST_CXXFLAGS}"
+
 # Grab optimization flags
 HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
 HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
@@ -5291,8 +5294,13 @@ AC_ARG_ENABLE([tests2],
 if test "$enable_tests2" = yes; then
   export CUDA_HOME="$CUDA"
 
-  meson_args="-Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_CFLAGS}' -Dcpp_args='${CXXFLAGS} ${HOST_CXXFLAGS}' -Dcuda_args='${CUDAFLAGS}'"
-  meson_args="${meson_args} -Dbuildtype=plain"
+  meson_args="-Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_NOOPT_CFLAGS}'"
+  meson_args="${meson_args} -Dcpp_args='${CXXFLAGS} ${HOST_NOOPT_CXXFLAGS}'"
+  meson_args="${meson_args} -Dcuda_args='${CUDAFLAGS}'"
+  if test "$OPT_ENABLE_DEVELOP" = yes
+  then meson_args="${meson_args} -Dbuildtype=debug"
+  else meson_args="${meson_args} -Dbuildtype=release"
+  fi
   if test "$OPT_HAVE_CUDA" = yes
   then meson_args="${meson_args} -Dcuda=enabled"
   else meson_args="${meson_args} -Dcuda=disabled"
