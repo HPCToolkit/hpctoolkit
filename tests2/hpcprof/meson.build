@@ -3,12 +3,20 @@ foreach name, meas : testdata_meas
       env: hpctoolkit_pyenv, suite: 'hpcprof')
 endforeach
 foreach name, dbase : testdata_dbase_current
-  test(f'hpcprof consistent on @name@', python3,
-      args: [files('consistent.py'), dbase['measurements']['cached'], dbase['cached_db']],
-      env: hpctoolkit_pyenv, suite: 'hpcprof', timeout: 30 * 4)
+  foreach threadcnt : ['1', '4', '16', '64']
+    test(f'hpcprof -j@threadcnt@ @name@ / accuracy', python3,
+        args: [files('accuracy.py'), threadcnt, dbase['measurements']['cached'], dbase['cached_db']],
+        env: hpctoolkit_pyenv, suite: 'hpcprof')
+  endforeach
+
   if mpic.found() or mpicpp.found()
-    test(f'hpcprof-mpi consistent on @name@', python3,
-        args: [files('consistent-mpi.py'), dbase['measurements']['cached'], dbase['cached_db']],
-        env: hpctoolkit_pyenv, suite: ['hpcprof', 'mpi'], timeout: 30 * 8)
+    foreach rankcnt : ['1', '2', '4', '8']
+      foreach threadcnt : ['1', '4']
+        test(f'hpcprof-mpi ranks=@rankcnt@ -j@threadcnt@ @name@ / accuracy', python3,
+            args: [files('accuracy-mpi.py'), rankcnt, threadcnt, dbase['measurements']['cached'],
+                   dbase['cached_db']],
+            env: hpctoolkit_pyenv, suite: ['hpcprof', 'mpi'])
+      endforeach
+    endforeach
   endif
 endforeach
