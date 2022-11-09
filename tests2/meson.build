@@ -1,6 +1,7 @@
 project('hpctsuite', 'c', 'cpp',
   meson_version: '>=0.62.2',
-  license: 'BSD-3-Clause')
+  license: 'BSD-3-Clause',
+  default_options: ['c_std=gnu11', 'cpp_std=gnu++17', 'cuda_std=c++17'])
 
 cpp = meson.get_compiler('cpp')
 fs = import('fs')
@@ -26,12 +27,20 @@ if get_option('mpi').enabled()
   hpcprof_mpi = _hpctoolkit_root / 'bin' / 'hpcprof-mpi'
 endif
 
-# If we have CUDA language support, add a message about the minimum driver version
+# Find CUDA language support. cuda_dep is a convenience dependency/disabler for this.
+cuda_dep = disabler()
 if add_languages('cuda', native: false, required: get_option('cuda'))
+  cuda_dep = declare_dependency()
+
+  # If we have CUDA language support, add a message about the minimum driver version
   _cuda_version = meson.get_compiler('cuda').version().split()[0]
   _cuda_min_driver = import('unstable-cuda').min_driver_version(_cuda_version)
   message(f'Compiling for CUDA @_cuda_version@, driver must be at least @_cuda_min_driver@')
 endif
+
+# Find HIP language support.
+hipcc = find_program('hipcc', required: get_option('rocm'), disabler: true)
+hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
 
 # Find MPI. This is overcomplicated because Meson built-in MPI support is a bit rough
 _mpi_test_code = '''
@@ -129,9 +138,14 @@ else
   mpiexec = [_sh, '-c', 'exit 77']
 endif
 
-subdir('lib/python/hpctoolkit')
+# Utilities for running tests and such
+subdir('lib')
+
+# Data for running tests
+subdir('data')
+
+# Tests themselves
 subdir('hpcrun')
-subdir('data')  # data comes after hpcrun to reuse binaries used in hpcrun testing
 subdir('hpcstruct')
 subdir('hpcprof')
 subdir('end2end')

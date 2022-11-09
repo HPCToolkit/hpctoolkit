@@ -6,6 +6,12 @@ _exe_small = executable('testmeas-small', files('small.c'),
 _exe_loops = executable('testmeas-loops', files('loops.c'),
     override_options: ['debug=true', 'optimization=0'],
     dependencies: dependency('openmp'))
+_exe_loops_cuda = executable('testmeas-loops-cuda', files('loops.cu'),
+    dependencies: cuda_dep)
+_exe_loops_hip = custom_target(output: 'testmeas-loops-hip', input: files('loops.hip.cpp'),
+    command: hipcc_cmd)
+
+_cuda_pc = [cuda_filter, '--capability=>6.0', '--random=1']
 
 _measurements = {
   # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand
@@ -20,14 +26,12 @@ _measurements = {
   # 'loops-cputime-t': [_run, '--', '@OUTPUT@', '-e', 'CPUTIME', '-t', _exe_loops],
   'loops-perf': [_run, '--', '@OUTPUT@', '-e', 'cycles@f30', '-e', 'instructions@120000000', _exe_loops],
   'loops-perf-t': [_run, '--', '@OUTPUT@', '-e', 'cycles@f30', '-e', 'instructions@120000000', '-t', _exe_loops],
-
-  # `vecadd-*` are designed to exercise handling for GPU metrics.
-  # 'vecadd-cuda-nvidia':
-  #   has_cuda ? [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', '-e', 'REALTIME', exe_vecadd_cuda] : [],
-  # 'vecadd-cuda-nvidiapc':
-  #   has_cuda ? [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', '-e', 'REALTIME', exe_vecadd_cuda] : [],
-  # 'vecadd-hip-amd':
-  #   has_hip ? [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', '-e', 'REALTIME', exe_vecadd_hip] : [],
+  'loops-cuda-nvidia': [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', _exe_loops_cuda],
+  'loops-cuda-nvidia-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', _exe_loops_cuda],
+  'loops-cuda-nvidiapc': [_cuda_pc, _run, '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', _exe_loops_cuda],
+  'loops-cuda-nvidiapc-t': [_cuda_pc, _run, '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', '-t', _exe_loops_cuda],
+  'loops-hip-amd': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', _exe_loops_hip],
+  'loops-hip-amd-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', '-t', _exe_loops_hip],
 }
 
 foreach name, cmd : _measurements
@@ -35,10 +39,12 @@ foreach name, cmd : _measurements
   _meas = {
     'cached': files(_out),
   }
-  if cmd.length() > 0
-    _gen = custom_target(output: _out, command: cmd, env: hpctoolkit_pyenv, console: true,
-        build_always_stale: true, build_by_default: false)
+
+  _gen = custom_target(output: _out, command: cmd, env: hpctoolkit_pyenv, console: true,
+      build_always_stale: true, build_by_default: false)
+  if not is_disabler(_gen)
     _meas += {'gen_target': _gen}
   endif
+
   testdata_meas += {name: _meas}
 endforeach

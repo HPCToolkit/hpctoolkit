@@ -503,7 +503,7 @@ autoreconf check:
   services:
   - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
     alias: bundleserver
-  tags: [docker, linux/amd64, gpu/cuda/11.6]
+  tags: [docker, linux/amd64, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
@@ -517,7 +517,7 @@ autoreconf check:
 
   script:
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda CUDAFLAGS="-gencode arch=compute_60,code=sm_60"' > img-config
+  - echo '--with-cuda=/usr/local/cuda' > img-config
   # Run the test suite for the configuration of interest. Use some Python to help.
   # If this fails, don't error unless we are missing some of the test log output.
   - >-
@@ -536,7 +536,7 @@ autoreconf check:
   services:
   - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
     alias: bundleserver
-  tags: [docker, linux/amd64, gpu/rocm/5.2]
+  tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
@@ -634,7 +634,7 @@ gen-testdata.gpu.nvidia:
   services:
   - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
     alias: bundleserver
-  tags: [docker, linux/amd64, gpu/cuda/11.6]
+  tags: [docker, linux/amd64, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
@@ -647,7 +647,7 @@ gen-testdata.gpu.nvidia:
 
   script:
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda CUDAFLAGS="-gencode arch=compute_60,code=sm_60"' > img-config
+  - echo '--with-cuda=/usr/local/cuda' > img-config
   # Generate a new batch of test data, and copy it back to the source tree
   - >-
     python3 -m ci.buildfe -l logs/generation/ -a install-testdata
@@ -677,7 +677,7 @@ gen-testdata.gpu.amd:
   services:
   - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
     alias: bundleserver
-  tags: [docker, linux/amd64, gpu/rocm/5.2]
+  tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64

@@ -6,9 +6,12 @@ _databases = {
   'small': {'yaml': true},
   'loops-perf': {},
   'loops-perf-t': {},
-  # 'vecadd-cuda-nvidia': {},
-  # 'vecadd-cuda-nvidiapc': {},
-  # 'vecadd-hip-amd': {},
+  'loops-cuda-nvidia': {},
+  'loops-cuda-nvidia-t': {},
+  'loops-cuda-nvidiapc': {},
+  'loops-cuda-nvidiapc-t': {},
+  'loops-hip-amd': {},
+  'loops-hip-amd-t': {},
 }
 
 foreach name, features : _databases
