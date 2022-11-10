@@ -183,46 +183,21 @@ class FixedAlteredHunk(DiffHunk):
 ValT = T.TypeVar("ValT")
 
 
-class Future(T.NamedTuple):
-    context: dict[StructureBase, StructureBase]
-    updates: set[tuple[StructureBase, StructureBase]]
-
-    def copy(self):
-        return Future(self.context.copy(), self.updates.copy())
-
-    def defer_update(self, a: ValT, b: ValT):
-        self.updates.add((a, b))
-
-    def __str__(self):
-        ctx = ", ".join(f"{a}: {b}" for a, b in self.context.items())
-        ups = ", ".join(f"{a} = {b}" for a, b in self.updates)
-        return f"{self.__class__.__name__}({{{ctx}}}, [{ups}])"
-
-
 class StrictDiff(DiffStrategy):
-    """Strict DiffStrategy that only accepts exact matches.
+    """Strict DiffStrategy that only accepts matches with no semantic differences."""
 
-    The results of this DiffStrategy are MonotonicHunks, i.e. massive additions
-    and removals where matches failed.
-    """
-
-    _context: dict[StructureBase, StructureBase]
+    _contexts: list[dict[StructureBase, StructureBase]]
     removed: set[StructureBase]
     added: set[StructureBase]
     altered: dict[StructureBase, StructureBase]
-    _futures: list[Future]
 
     def __init__(self, a, b):
         super().__init__(a, b)
-        self._context, self.removed, self.added, self.altered = {}, set(), set(), {}
-        self._futures = []
+        self._contexts, self.removed, self.added, self.altered = [{}], set(), set(), {}
         self._update(a, b)
 
     def contexts(self):
-        if self._futures:
-            yield from (self._context | f.context for f in self._futures)
-        else:
-            yield self._context
+        return self._contexts
 
     @functools.cached_property
     def hunks(self):
@@ -255,149 +230,61 @@ class StrictDiff(DiffStrategy):
 
     @contextlib.contextmanager
     def _preserve_state(self):
-        old_state = self._context, self.removed, self.added, self.altered, self._futures
-        self._context = self._context.copy()
+        old_state = self._contexts, self.removed, self.added, self.altered
+        self._contexts = [c.copy() for c in self._contexts]
         self.removed = self.removed.copy()
         self.added = self.added.copy()
         self.altered = self.altered.copy()
-        self._futures = [e.copy() for e in self._futures]
+        try:
+            self._preserving = True
+            yield
+        finally:
+            self._contexts, self.removed, self.added, self.altered = old_state
+            del self._preserving
+
+    def _failure_canary(self):
+        """Return an object which, when changes, indicates new failures have been encountered"""
+        return (len(self.removed), len(self.added), len(self.altered))
+
+    def _set(self, a: ValT, b: ValT):
+        """Define without a shadow of a doubt that a == b."""
+        for c in self._contexts:
+            c[a] = b
+            assert len(c) == len(set(c.values()))
+
+    def _presume(self, a: ValT, b: ValT) -> bool:
+        """Assert that a == b from a prior _update. In other words, deny any context mapping in
+        which a != b. Returns False if that would result in no contexts at all."""
+        if a is None or b is None:
+            return a is None and b is None
+        new_ctxs = [c for c in self._contexts if a in c and c[a] is b]
+        if new_ctxs:
+            with self._alter_contexts():
+                self._contexts = new_ctxs
+            return True
+        return False
+
+    def _presume_keyed(
+        self, a: ValT, b: ValT, *, key: tuple[dict, dict] = None, raw_base_eq: bool = False
+    ) -> bool:
+        """Same as _presume, but understands the key keyword argument of _key_m."""
+        if key is not None:
+            return self._presume(key[0][a], key[1][b])
+        if raw_base_eq:
+            return a == b
+        return self._presume(a, b)
+
+    @contextlib.contextmanager
+    def _alter_contexts(self):
+        all_a = set.union(*[set(c.keys()) for c in self._contexts])
+        all_b = set.union(*[set(c.values()) for c in self._contexts])
         try:
             yield
         finally:
-            self._context, self.removed, self.added, self.altered, self._futures = old_state
-
-    def _possible_future(self, a: ValT, b: ValT) -> bool:
-        """Determine if a == b can spawn a potential future in the Diff-state. Meaning that it
-        can be resolved without any new errors."""
-        with self._preserve_state():
-            lens = len(self.removed), len(self.added), len(self.altered)
-            self._update(a, b)
-            return lens == (len(self.removed), len(self.added), len(self.altered))
-
-    def _spawn_futures(self, ab: collections.abc.Iterable[tuple[ValT, ValT]]):
-        """Record the futures that spawn from this point when a == b for every given a,b pair.
-        These must be "new" futures that are independent of previously seen futures."""
-        newfutures: list[Future] = []
-        for a, b in ab:
-            # Record what would happen if a == b
-            assert self._possible_future(a, b)
-            with self._preserve_state():
-                self._update(a, b)
-                newctx, newfut = self._context, self._futures
-
-            # Prune out prior state from the new state. This also ensures the prior state was not
-            # altered along the way.
-            for f in self._futures:
-                del newfut[newfut.index(f)]
-            for ca in self._context:
-                del newctx[ca]
-
-            # Generate the final set of new futures we add to the table
-            for overlay in newfut if newfut else [{}]:
-                assert not any(k in newctx for k in overlay)
-                newfutures.append(Future(newctx | overlay, set()))
-        self._futures.extend(newfutures)
-
-    def _accept_future(self, future: Future):
-        """Accept the given future and consider it truth."""
-        # Delete this future any fuse it into the _context
-        del self._futures[self._futures.index(future)]
-        self._context.update(future.context)
-        self._remove_bad_futures()
-        self._simplify_futures()
-
-        # Run any updates that were deferred until the Future was decided on
-        for a, b in future.updates:
-            self._update(a, b)
-
-    def _deny_futures(self, where: T.Callable[[dict[StructureBase, StructureBase]], bool]):
-        """Deny any futures where where(self._context) returns true."""
-        newfutures, lostfutures = [], []
-        for f in self._futures:
-            (lostfutures if where(self._context | f.context) else newfutures).append(f)
-        self._futures = newfutures
-
-        # Some keys may no longer be provided in the futures. If so, mark them as removed.
-        for f in lostfutures:
-            for a in f.context:
-                if not any(a in ff.context for ff in self._futures):
-                    self.removed.add(a)
-
-        self._simplify_futures()
-
-    def _remove_bad_futures(self):
-        """Remove any "bad" futures which are attempting to overwrite the truth."""
-        newfutures = []
-        for f in self._futures:
-            bad_k = (k in self._context for k in f.context)
-            bad_v = (v in self._context.values() for v in f.context.values())
-            if any(bad_k) or any(bad_v):
-                assert not any(bad_k) or all(bad_k)
-                assert not any(bad_v) or all(bad_v)
-            else:
-                newfutures.append(f)
-        self._futures = newfutures
-
-    def _simplify_futures(self):
-        """Find any futures where only one future is possible, and accept them."""
-        # Build a map of all the futures by the keys they provide.
-        providers: dict[StructureBase, Future | None] = {}
-        for f in self._futures:
-            for k in f.context:
-                if k not in providers:
-                    providers[k] = f
-                else:
-                    providers[k] = None
-
-        # Apply every future that is the only one providing a key. To keep consistent, it must be
-        # the only provider for all its keys.
-        lostfutures = []
-        hitlist_ids = {id(f) for f in providers.values() if f is not None}
-        for f in self._futures:
-            if id(f) not in hitlist_ids:
-                continue
-            assert all(providers[k] is f for k in f.context)
-            self._context.update(f.context)
-            lostfutures.append(f)
-        self._futures = [f for f in self._futures if id(f) not in hitlist_ids]
-
-        self._remove_bad_futures()
-
-        # Run any updates that were deferred until now
-        for f in lostfutures:
-            for a, b in f.updates:
-                self._update(a, b)
-
-    def _maybe_disambiguate(self, a: ValT, b: ValT) -> bool:
-        """Promote a ?= b to a == b, if there was any doubt. In other words, deny any potential
-        Future in which a != b. Returns true if a == b when all is said and done."""
-        if a is None or b is None:
-            return a is None and b is None
-        if a not in self._context:
-            self._deny_futures(lambda fc: a in fc and fc[a] is not b)
-        return a in self._context and self._context[a] is b
-
-    def _disambiguate(self, a: ValT, b: ValT):
-        """Promote a ?= b to a == b and raise an AssertionError if a != b."""
-        ok = self._maybe_disambiguate(a, b)
-        assert ok
-
-    def _maybe_disambiguate_keyed(
-        self, a: ValT, b: ValT, *, key: tuple[dict, dict] = None, raw_base_eq: bool = False
-    ) -> bool:
-        """Same as _maybe_disambiguate, but understands the key keyword argument of _key_m."""
-        if key is not None:
-            return self._maybe_disambiguate(key[0][a], key[1][b])
-        if raw_base_eq:
-            return a == b
-        return self._maybe_disambiguate(a, b)
-
-    def _disambiguate_keyed(
-        self, a: ValT, b: ValT, *, key: tuple[dict, dict] = None, raw_base_eq: bool = False
-    ):
-        """Same as _disambiguate, but understands the key keyword argument of _key_m."""
-        ok = self._maybe_disambiguate_keyed(a, b, key=key, raw_base_eq=raw_base_eq)
-        assert ok
+            for c in self._contexts:
+                assert len(c) == len(set(c.values()))
+            self.removed.update(all_a - set.union(*[set(c.keys()) for c in self._contexts]))
+            self.added.update(all_b - set.union(*[set(c.values()) for c in self._contexts]))
 
     @functools.singledispatchmethod
     def _update(self, a, b):
@@ -410,14 +297,20 @@ class StrictDiff(DiffStrategy):
     def _(self, a: types.NoneType, b: types.NoneType):
         pass
 
-    def _key_m(self, o, *, side_a: bool, key: tuple[dict, dict] = None) -> collections.abc.Hashable:
-        return self._key(key[0 if side_a else 1][o] if key is not None else o, side_a=side_a)
-
     @functools.singledispatchmethod
     def _key(self, o, *, side_a: bool) -> collections.abc.Hashable:
         """Derive a hashable key from the given object, that uniquely identifies it compared to its
         siblings."""
         raise NotImplementedError(f"No unique key for type {type(o)}")
+
+    _key_a = functools.partialmethod(_key, side_a=True)
+    _key_b = functools.partialmethod(_key, side_a=False)
+
+    def _key_m(self, o, *, side_a: bool, key: tuple[dict, dict] = None) -> collections.abc.Hashable:
+        return self._key(key[0 if side_a else 1][o] if key is not None else o, side_a=side_a)
+
+    _key_ma = functools.partialmethod(_key_m, side_a=True)
+    _key_mb = functools.partialmethod(_key_m, side_a=False)
 
     @_key.register
     def _(self, o: types.NoneType, *, side_a: bool):
@@ -449,7 +342,8 @@ class StrictDiff(DiffStrategy):
     def _isomorphic_update(  # noqa: MC0001
         self, a: collections.abc.Iterable[ValT], b: collections.abc.Iterable[ValT]
     ):
-        """Update the Diff-state presuming a == b, ignoring order between the two sequences."""
+        """Update the Diff-state assuming a == b when _key(a) == _key(b), ignoring order between
+        the two sequences."""
         a_dict = collections.defaultdict(set)
         for e in a:
             a_dict[self._key(e, side_a=True)].add(e)
@@ -465,41 +359,67 @@ class StrictDiff(DiffStrategy):
                 self._update(list(all_va)[0], list(all_vb)[0])
                 continue
 
+            # Build up a list of all perfect matches. We only consider ambiguity when it wouldn't
+            # result in match failure later on down the line.
+            matches: dict[ValT, set[ValT]] = {}
+            for va in all_va:
+                matches[va] = set()
+                for vb in all_vb:
+                    fcan = self._failure_canary()
+                    with self._preserve_state():
+                        self._update(va, vb)
+                        if self._failure_canary() == fcan:
+                            matches[va].add(vb)
+
             # Locate any cases where a va matches with exactly one vb in practice.
             # These cases are not ambiguous and we can remove them from the comparison.
-            all_matched = True
-            new_all_va = set()
-            for va in all_va:
-                matched = None
-                for vb in all_vb:
-                    if not self._possible_future(va, vb):
-                        all_matched = False
-                        continue  # Not a match
-                    if matched is None:
-                        matched = vb  # First match!
-                    else:
-                        # Ambiguity is still present, no need to look further.
-                        matched = None
-                        break
-                # If we have a match, _update and remove. Otherwise keep the pair.
-                if matched is not None:
-                    self._update(va, matched)
-                    all_vb.remove(matched)
-                else:
-                    new_all_va.add(va)
-            all_va = new_all_va
-            del new_all_va
+            done = False
+            while not done:
+                to_rm = []
+                for va, good_vbs in matches.items():
+                    if len(good_vbs) == 1:
+                        to_rm.append((va, list(good_vbs)[0]))
+                for va, vb in to_rm:
+                    self._update(va, vb)
+                    del matches[va]
+                    all_va.remove(va)
+                    all_vb.remove(vb)
+                    for good_vbs in matches.values():
+                        good_vbs.discard(vb)
+                done = len(to_rm) == 0
 
-            # At this point, all_va and all_vb do not match perfectly and are ambiguous.
-            # If there could still be a 1:1 mapping, record all possible futures
-            if len(all_va) == len(all_vb) and all_matched:
-                list_va = list(all_va)
-                for list_vb in itertools.permutations(all_vb):
-                    self._spawn_futures(zip(list_va, list_vb))
+            # Locate any cases where a va matches nothing or a vb has no va.
+            # These cases are definitely removals/additions so we can handle them.
+            for va in [va for va, good_vbs in matches.items() if len(good_vbs) == 0]:
+                del matches[va]
+                all_va.remove(va)
+                self.removed.add(va)
+            for vb in all_vb - set().union(*matches.values()):
+                all_vb.remove(vb)
+                self.added.add(vb)
+
+            if not matches:
+                continue
+
+            # Whatever remains in matches is true ambiguity. Spin out more _contexts to
+            # represent all the available options.
+            final_contexts = []
+            va_list = list(all_va)
+            for vb_list in itertools.product(*[matches[va] for va in va_list]):
+                assert len(vb_list) == len(va_list)
+                if len(set(vb_list)) == len(vb_list):  # No overlap allowed
+                    with self._preserve_state():
+                        for va, vb in zip(va_list, vb_list):
+                            self._update(va, vb)
+                        final_contexts.extend(self._contexts)
+            if final_contexts:
+                with self._alter_contexts():
+                    self._contexts = final_contexts
             else:
-                # Otherwise, there's no hope for a perfect match. Consider it a full add/rm sequence.
+                # Something went horribly wrong. Consider it a full rm/add sequence.
                 self.removed.update(all_va)
                 self.added.update(all_vb)
+
         for kb, all_vb in b_dict.items():
             if kb not in a_dict:
                 for vb in all_vb:
@@ -521,41 +441,45 @@ class StrictDiff(DiffStrategy):
             b_dict[db] = vb
         b_set = set(b_dict.values())
 
-        for va, da in a:
-            if da is not None:
-                # Deny any futures where the delegation could potentially fail
-                self._deny_futures(
-                    functools.partial((lambda da, fc: da in fc and fc[da] not in b_dict), da)
-                )
+        def worker(va: ValT, da: StructureBase) -> bool:
+            # Deny any context mapping where the delegation would fail. If it fails in all
+            # current mappings, consider this a failure.
+            new_ctxs = [c for c in self._contexts if da in c and c[da] in b_dict]
+            if not new_ctxs:
+                return False
+            with self._alter_contexts():
+                self._contexts = new_ctxs
 
-                # If we already have a mapping, consider it truth and delegate the comparison
-                if da in self._context and self._context[da] in b_dict:
-                    vb = b_dict[self._context[da]]
+            # Attempt to _update each context mapping based on the delegation, if possible.
+            new_ctxs = []
+            for c in self._contexts:
+                vb = b_dict[c[da]]
+                self._contexts = [c]
+                fcan = self._failure_canary()
+                with self._preserve_state():
                     self._update(va, vb)
-                    b_set.discard(vb)
-                    continue
-
-                # If we don't have a mapping yet, see if any future defines the mapping and defer
-                found = False
-                for f in self._futures:
-                    if da in f.context:
-                        vb = b_dict[f.context[da]]
-                        f.defer_update(va, vb)
+                    if self._failure_canary() == fcan:
+                        assert self._contexts
+                        new_ctxs.extend(self._contexts)
                         b_set.discard(vb)
-                        found = True
-                if found:
-                    continue
-                del found
+            if not new_ctxs:
+                return False
+            with self._alter_contexts():
+                self._contexts = new_ctxs
 
-            # Whatever it is, we will never get a perfect match here. Consider it a failure.
-            self.removed.add(va)
-        for vb in b_set:
-            self.added.add(vb)
+            return True
+
+        a_dict = {}
+        for va, da in a:
+            a_dict[da] = va
+            if da is None or not worker(va, da):
+                self.removed.add(va)
+        self.added.update(b_set)
 
     @_update.register
     @check_fields("meta", "profile", "context", "trace")
     def _(self, a: v4.Database, b: v4.Database):
-        self._context[a] = b
+        self._set(a, b)
         self._update(a.meta, b.meta)
         self._update(a.profile, b.profile)
         self._update(a.context, b.context)
@@ -574,7 +498,7 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("General", "IdNames", "Metrics", "Files", "Modules", "Functions", "Context")
     def _(self, a: v4.metadb.MetaDB, b: v4.metadb.MetaDB):
-        self._context[a] = b
+        self._set(a, b)
         self._update(a.General, b.General)
         self._update(a.IdNames, b.IdNames)
         self._update(a.Metrics, b.Metrics)
@@ -587,7 +511,7 @@ class StrictDiff(DiffStrategy):
     @check_fields("title", "description")
     def _(self, a: v4.metadb.GeneralProperties, b: v4.metadb.GeneralProperties):
         if a.title == b.title and a.description == b.description:
-            self._context[a] = b
+            self._set(a, b)
         else:
             self.altered[a] = b
 
@@ -596,14 +520,14 @@ class StrictDiff(DiffStrategy):
     def _(self, a: v4.metadb.IdentifierNames, b: v4.metadb.IdentifierNames):
         # The order the of the names is not semantically important
         if set(a.names) == set(b.names):
-            self._context[a] = b
+            self._set(a, b)
         else:
             self.altered[a] = b
 
     @_update.register
     @check_fields("scopes", "metrics")
     def _(self, a: v4.metadb.PerformanceMetrics, b: v4.metadb.PerformanceMetrics):
-        self._context[a] = b
+        self._set(a, b)
         self._isomorphic_update(a.scopes, b.scopes)
         self._isomorphic_update(a.metrics, b.metrics)
 
@@ -617,8 +541,8 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("scopeName", "type", "propagationIndex")
     def _(self, a: v4.metadb.PropagationScope, b: v4.metadb.PropagationScope):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        self._set(a, b)
 
     @_key.register
     @check_fields("name", "scopeInsts", "summaries")
@@ -629,8 +553,8 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("name", "scopeInsts", "summaries")
     def _(self, a: v4.metadb.Metric, b: v4.metadb.Metric):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        self._set(a, b)
         self._isomorphic_update(a.scopeInsts, b.scopeInsts)
         self._isomorphic_update(a.summaries, b.summaries)
 
@@ -643,9 +567,11 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("scope", "propMetricId")
     def _(self, a: v4.metadb.PropagationScopeInstance, b: v4.metadb.PropagationScopeInstance):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._disambiguate(a.scope, b.scope)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        if self._presume(a.scope, b.scope):
+            self._set(a, b)
+        else:
+            self.altered[a] = b
 
     @_key.register
     @check_fields("scope", "formula", "combine", "statMetricId")
@@ -656,14 +582,16 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("scope", "formula", "combine", "statMetricId")
     def _(self, a: v4.metadb.SummaryStatistic, b: v4.metadb.SummaryStatistic):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._disambiguate(a.scope, b.scope)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        if self._presume(a.scope, b.scope):
+            self._set(a, b)
+        else:
+            self.altered[a] = b
 
     @_update.register
     @check_fields("files")
     def _(self, a: v4.metadb.SourceFiles, b: v4.metadb.SourceFiles):
-        self._context[a] = b
+        self._set(a, b)
         self._isomorphic_update(a.files, b.files)
 
     @_key.register
@@ -675,13 +603,13 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("flags", "path")
     def _(self, a: v4.metadb.File, b: v4.metadb.File):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        self._set(a, b)
 
     @_update.register
     @check_fields("modules")
     def _(self, a: v4.metadb.LoadModules, b: v4.metadb.LoadModules):
-        self._context[a] = b
+        self._set(a, b)
         self._isomorphic_update(a.modules, b.modules)
 
     @_key.register
@@ -693,13 +621,13 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("flags", "path")
     def _(self, a: v4.metadb.Module, b: v4.metadb.Module):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        self._set(a, b)
 
     @_update.register
     @check_fields("functions")
     def _(self, a: v4.metadb.Functions, b: v4.metadb.Functions):
-        self._context[a] = b
+        self._set(a, b)
         self._isomorphic_update(a.functions, b.functions)
 
     @_key.register
@@ -717,15 +645,19 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("name", "module", "offset", "file", "line", "flags")
     def _(self, a: v4.metadb.Function, b: v4.metadb.Function):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._disambiguate(a.module, b.module)
-        self._disambiguate(a.file, b.file)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        # NB: Avoid short-circuit evaluation
+        x = self._presume(a.module, b.module)
+        y = self._presume(a.file, b.file)
+        if x and y:
+            self._set(a, b)
+        else:
+            self.altered[a] = b
 
     @_update.register
     @check_fields("entryPoints")
     def _(self, a: v4.metadb.ContextTree, b: v4.metadb.ContextTree):
-        self._context[a] = b
+        self._set(a, b)
         self._isomorphic_update(a.entryPoints, b.entryPoints)
 
     @_key.register
@@ -738,9 +670,9 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("ctxId", "entryPoint", "prettyName", "children")
     def _(self, a: v4.metadb.EntryPoint, b: v4.metadb.EntryPoint):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
+        assert self._key_a(a) == self._key_b(b)
         if a.prettyName == b.prettyName:
-            self._context[a] = b
+            self._set(a, b)
         else:
             self.altered[a] = b
         self._isomorphic_update(a.children, b.children)
@@ -786,12 +718,15 @@ class StrictDiff(DiffStrategy):
         "children",
     )
     def _(self, a: v4.metadb.Context, b: v4.metadb.Context):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._disambiguate(a.function, b.function)
-        self._disambiguate(a.file, b.file)
-        self._disambiguate(a.module, b.module)
+        assert self._key_a(a) == self._key_b(b)
+        x = self._presume(a.function, b.function)
+        y = self._presume(a.file, b.file)
+        z = self._presume(a.module, b.module)
         # TODO: propagation
-        self._context[a] = b
+        if x and y and z:
+            self._set(a, b)
+        else:
+            self.altered[a] = b
         self._isomorphic_update(a.children, b.children)
 
     # ========================
@@ -801,13 +736,13 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("ProfileInfos")
     def _(self, a: v4.profiledb.ProfileDB, b: v4.profiledb.ProfileDB):
-        self._context[a] = b
+        self._set(a, b)
         self._update(a.ProfileInfos, b.ProfileInfos)
 
     @_update.register
     @check_fields("profiles")
     def _(self, a: v4.profiledb.ProfileInfos, b: v4.profiledb.ProfileInfos):
-        self._context[a] = b
+        self._set(a, b)
         self._isomorphic_update(a.profiles, b.profiles)
 
     @_key.register
@@ -818,8 +753,8 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("idTuple", "flags", "values")
     def _(self, a: v4.profiledb.Profile, b: v4.profiledb.Profile):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
-        self._context[a] = b
+        assert self._key_a(a) == self._key_b(b)
+        self._set(a, b)
         self._update(a.idTuple, b.idTuple)
 
     @_key.register
@@ -830,7 +765,7 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("ids")
     def _(self, a: v4.profiledb.IdentifierTuple, b: v4.profiledb.IdentifierTuple):
-        self._context[a] = b
+        self._set(a, b)
         self._sequential_update(a.ids, b.ids)
 
     @_key.register
@@ -847,8 +782,8 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("kind", "flags", "logicalId", "physicalId")
     def _(self, a: v4.profiledb.Identifier, b: v4.profiledb.Identifier):
-        if self._key(a, side_a=True) == self._key(b, side_a=False):
-            self._context[a] = b
+        if self._key_a(a) == self._key_b(b):
+            self._set(a, b)
         else:
             self.altered[a] = b
 
@@ -859,13 +794,13 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("CtxInfos")
     def _(self, a: v4.cctdb.ContextDB, b: v4.cctdb.ContextDB):
-        self._context[a] = b
+        self._set(a, b)
         self._update(a.CtxInfos, b.CtxInfos)
 
     @_update.register
     @check_fields("contexts")
     def _(self, a: v4.cctdb.ContextInfos, b: v4.cctdb.ContextInfos):
-        self._context[a] = b
+        self._set(a, b)
         if isinstance(self.a, v4.Database):
             # The PerContexts are associated based on the association of the Contexts in meta.db
             # PerContexts that don't have an associated Context are left unassociated
@@ -891,7 +826,7 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("values")
     def _(self, a: v4.cctdb.PerContext, b: v4.cctdb.PerContext):
-        self._context[a] = b
+        self._set(a, b)
 
     # ======================
     #   formats.v4.tracedb
@@ -900,14 +835,14 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("CtxTraces")
     def _(self, a: v4.tracedb.TraceDB, b: v4.tracedb.TraceDB):
-        self._context[a] = b
+        self._set(a, b)
         self._update(a.CtxTraces, b.CtxTraces)
 
     @_update.register
     @check_fields("timestampRange", "traces")
     def _(self, a: v4.tracedb.ContextTraceHeadersSection, b: v4.tracedb.ContextTraceHeadersSection):
         if a.timestampRange == b.timestampRange:
-            self._context[a] = b
+            self._set(a, b)
         else:
             self.altered[a] = b
         self._isomorphic_update(a.traces, b.traces)
@@ -921,20 +856,21 @@ class StrictDiff(DiffStrategy):
     @_update.register
     @check_fields("profIndex", "line")
     def _(self, a: v4.tracedb.ContextTrace, b: v4.tracedb.ContextTrace):
-        assert self._key(a, side_a=True) == self._key(b, side_a=False)
+        assert self._key_a(a) == self._key_b(b)
         key = (self.a.profile_map, self.b.profile_map) if isinstance(self.a, v4.Database) else None
-        self._disambiguate_keyed(a.profIndex, b.profIndex, key=key, raw_base_eq=True)
-        self._context[a] = b
+        if self._presume_keyed(a.profIndex, b.profIndex, key=key, raw_base_eq=True):
+            self._set(a, b)
+        else:
+            self.altered[a] = b
         self._sequential_update(a.line, b.line)
 
     @_update.register
     @check_fields("timestamp", "ctxId")
     def _(self, a: v4.tracedb.ContextTraceElement, b: v4.tracedb.ContextTraceElement):
         key = (self.a.context_map, self.b.context_map) if isinstance(self.a, v4.Database) else None
-        if a.timestamp == b.timestamp and self._maybe_disambiguate_keyed(
-            a.ctxId, b.ctxId, key=key, raw_base_eq=True
-        ):
-            self._context[a] = b
+        x = self._presume_keyed(a.ctxId, b.ctxId, key=key, raw_base_eq=True)
+        if a.timestamp == b.timestamp and x:
+            self._set(a, b)
         else:
             self.altered[a] = b
 
@@ -998,18 +934,22 @@ class StrictAccuracy(AccuracyStrategy):
                 a, b, diff = key
                 paths = self.failures[key]
 
-                if diff == self._cmp_bad_sign:
-                    why = "values have differing signs"
-                elif diff == self._cmp_exp_diff:
-                    why = "values differ by more than a power of 2"
-                else:
-                    exp_a, exp_b = math.frexp(abs(a))[1], math.frexp(abs(b))[1]
-                    exp = (
-                        f"{exp_a:d}"
-                        if exp_a == exp_b
-                        else f"({min(exp_a,exp_b):d}|{max(exp_a,exp_b):d})"
-                    )
-                    why = f"difference of {diff:f} * 2^{exp} = {diff*self._norm2ulp} ULPs"
+                match diff:
+                    case self.CmpError.bad_sign:
+                        why = "values have differing signs"
+                    case self.CmpError.exp_diff:
+                        why = "values differ by more than a power of 2"
+                    case _ if isinstance(diff, float):
+                        exp_a, exp_b = math.frexp(abs(a))[1], math.frexp(abs(b))[1]
+                        exp = (
+                            f"{exp_a:d}"
+                            if exp_a == exp_b
+                            else f"({min(exp_a,exp_b):d}|{max(exp_a,exp_b):d})"
+                        )
+                        why = f"difference of {diff:f} * 2^{exp} = {diff*self._norm2ulp} ULPs"
+                    case _:
+                        assert False, f"Invalid diff value: {diff!r}"
+
                 print(f"  - {a:f} != {b:f}: {why} (abs diff {abs(a-b):f})", file=out)
                 print(
                     "   At: "
@@ -1019,18 +959,19 @@ class StrictAccuracy(AccuracyStrategy):
                     file=out,
                 )
 
-    _cmp_bad_sign: T.ClassVar[float] = 510.0
-    _cmp_exp_diff: T.ClassVar[float] = 500.0
+    class CmpError(enum.Enum):
+        bad_sign = enum.auto()
+        exp_diff = enum.auto()
 
-    def _float_cmp(self, a: float, b: float) -> float:
+    def _float_cmp(self, a: float, b: float) -> float | CmpError:
         """Compare two floats and return 0.0 if the two are equal. If not, returns the
-        normalized difference or a _cmp_* constant indicating the error."""
+        normalized difference or a CmpError indicating the error."""
         # Shortcut for true equality
         if a == b:
             return 0.0
         # Different signs are always different, no matter what
         if math.copysign(1.0, a) != math.copysign(1.0, b):
-            return self._cmp_bad_sign
+            return self.CmpError.bad_sign
 
         # Pick apart the floats into their mantissa and exponents
         a_m, a_e = math.frexp(abs(a))
@@ -1046,7 +987,7 @@ class StrictAccuracy(AccuracyStrategy):
         assert a_e < b_e
         if b_e - a_e > 1:
             # There is at least 2 orders of magnitude difference. They really aren't the same.
-            return self._cmp_exp_diff
+            return self.CmpError.exp_diff
         assert b_e - a_e == 1
 
         # The values are in neighboring exponents. Calculate the normalized difference by summing
@@ -1134,9 +1075,10 @@ class StrictAccuracy(AccuracyStrategy):
             prof_map = self.diff.a.profile_map
             prof_b2id = self.diff.b.profile.ProfileInfos.profiles.index
             met_map = self.diff.a.raw_metric_map
-            i = self.diff.a.context.CtxInfos.contexts.index(
-                a
-            ), self.diff.b.context.CtxInfos.contexts.index(b)
+            i = (
+                self.diff.a.context.CtxInfos.contexts.index(a),
+                self.diff.b.context.CtxInfos.contexts.index(b),
+            )
         else:
             assert isinstance(self.diff.a, v4.cctdb.ContextDB)
             i = self.diff.a.CtxInfos.contexts.index(a), self.diff.b.CtxInfos.contexts.index(b)
