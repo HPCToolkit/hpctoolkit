@@ -1,7 +1,9 @@
 import contextlib
+import os
 import re
 import shutil
 import subprocess
+import tempfile
 import typing as T
 from pathlib import Path
 
@@ -306,7 +308,10 @@ class Test(MakeAction):
         if self.junit_copyout:
             for fn in junit_logs:
                 if fn.exists():
-                    shutil.copyfile(fn, Path() / ("test." + fn.name))
+                    _, outfn = tempfile.mkstemp(
+                        prefix="test.", suffix="." + fn.name, dir=os.getcwd()
+                    )
+                    shutil.copyfile(fn, outfn)
 
         return res
 

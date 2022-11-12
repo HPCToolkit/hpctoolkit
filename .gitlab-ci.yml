@@ -450,115 +450,88 @@ autoreconf check:
 
 
 # Build single versions of the codebase and run unit tests through `make check`
-'check amd64':
+.check job:
   stage: test
   extends: .buildcache-job
-  tags: [docker, linux/$ARCH]
-  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
+  script:
+  - touch img-config
+  # Run the test suite for the configuration of interest. Use some Python to help.
+  - >-
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
+    --test-junit-copyout -1 -s "$SPEC" || true
+  - *postjob
+  artifacts:
+    reports:
+      junit: '*.junit.xml'
+    paths:
+    - logs/
+    when: always
+
+.check job amd64:
+  extends: .check job
   variables:
     ARCH: amd64
-    JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
-
   needs:
   - job: autoreconf
     artifacts: false
   - generate_deps.amd64
   - build_deps.amd64
-
-  script:
-  # Run the test suite for the configuration of interest. Use some Python to help.
-  # If this fails, don't error unless we are missing some of the test log output.
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
-    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    --test-junit-copyout -1 -s "$SPEC" || true
-  - *postjob
-
-  artifacts: &check_artifacts
-    reports:
-      junit:
-      - test.testlog.junit.xml
-      - test.pytest.junit.xml
-    paths:
-    - logs/
-    when: always
-
-'check arm64':
-  extends: 'check amd64'
+.check job arm64:
+  extends: .check job
   variables:
     ARCH: arm64
-
   needs:
   - job: autoreconf
     artifacts: false
   - generate_deps.arm64
   - build_deps.arm64
 
-'check cuda amd64':
-  extends: .buildcache-job-derivative
+check amd64:
+  extends: .check job amd64
+  tags: [docker, linux/$ARCH]
+  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
+  variables:
+    JOB_CC: gcc-10
+    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
+check arm64:
+  extends: .check job arm64
+  tags: [docker, linux/$ARCH]
+  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
+  variables:
+    JOB_CC: gcc-10
+    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
+check cuda amd64:
+  extends: [.check job amd64, .buildcache-job-derivative]
   image: nvcr.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
   services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:$ARCH
     alias: bundleserver
-  tags: [docker, linux/amd64, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
+  tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
     SPEC: +tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0
-
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
-
-  script:
+  before_script:
+  - !reference [.check job amd64, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
-  # Run the test suite for the configuration of interest. Use some Python to help.
-  # If this fails, don't error unless we are missing some of the test log output.
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    --test-junit-copyout -1 -s "$SPEC" || true
-  - *postjob
-
-  artifacts: *check_artifacts
-
-'check rocm amd64':
-  extends: .buildcache-job-derivative
+check rocm amd64:
+  extends: [.check job amd64, .buildcache-job-derivative]
   image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
   services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
+  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:$ARCH
     alias: bundleserver
-  tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
+  tags: [docker, linux/$ARCH, gpu/amd/usrspace:5.2]
   variables:
     JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
     SPEC: +tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0
-
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
-
-  script:
+  before_script:
+  - !reference [.check job amd64, before_script]
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
-  # Run the test suite for the configuration of interest. Use some Python to help.
-  # If this fails, don't error unless we are missing some of the test log output.
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    --test-junit-copyout -1 -s "$SPEC" || true
-  - *postjob
-
-  artifacts: *check_artifacts
 
 
 # Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.

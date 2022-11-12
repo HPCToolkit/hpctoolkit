@@ -33,8 +33,7 @@
 
   artifacts:
     reports:
-      junit:
-      - '*.junit.xml'
+      junit: '*.junit.xml'
     paths:
     - logs/
     - data.*.tar.xz
