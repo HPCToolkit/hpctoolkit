@@ -470,15 +470,11 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
     "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -1 -s "$SPEC" || true
-  - &check_postjob
-    - find logs/ -name '*.junit.xml' -execdir cp -t "$CI_PROJECT_DIR" {} +
-    - test -e test.testlog.junit.xml
-    - test -e test.pytest.junit.xml
+    --test-junit-copyout -1 -s "$SPEC" || true
   - *postjob
 
   artifacts: &check_artifacts
-    reports: &check_reports
+    reports:
       junit:
       - test.testlog.junit.xml
       - test.pytest.junit.xml
@@ -524,8 +520,7 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -1 -s "$SPEC" || true
-  - *check_postjob
+    --test-junit-copyout -1 -s "$SPEC" || true
   - *postjob
 
   artifacts: *check_artifacts
@@ -557,8 +552,7 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -1 -s "$SPEC" || true
-  - *check_postjob
+    --test-junit-copyout -1 -s "$SPEC" || true
   - *postjob
 
   artifacts: *check_artifacts

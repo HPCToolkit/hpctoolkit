@@ -85,11 +85,24 @@ class Action(abc.ABC):
     These are always singletons, calling Action() will return the singleton object.
     """
 
+    __singleton = None
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        init = cls.__init__
+
+        def newinit(self, *args, **kwargs):
+            if self.__singleton is None:  # noqa: protected-access
+                init(self, *args, **kwargs)
+
+        cls.__init__ = newinit
+
     def __new__(cls):
-        """Return the singleton Action object, creating if needed."""
-        if "_Action__singleton" not in cls.__dict__:
-            cls.__singleton = super().__new__(cls)
-            assert "_Action__singleton" in cls.__dict__
+        """Return the singleton Action object."""
+        if cls.__singleton is None:
+            value = super().__new__(cls)
+            value.__init__()
+            cls.__singleton = value
         return cls.__singleton
 
     def header(self, cfg: Configuration) -> str:  # noqa: unused-argument

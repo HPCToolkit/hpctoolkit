@@ -262,6 +262,9 @@ class CheckInstallManifest(Action):
 class Test(MakeAction):
     """Run build-time tests for the configured build directory."""
 
+    def __init__(self):
+        self.junit_copyout = False
+
     def name(self) -> str:
         return "make check installcheck"
 
@@ -278,6 +281,13 @@ class Test(MakeAction):
         logdir: T.Optional[Path] = None,
     ) -> ActionResult:
         res = self._run("test", cfg, builddir, "check", "installcheck", logdir=logdir)
+
+        tests2bdir = builddir / "tests2-build"
+        junit_logs = (
+            tests2bdir / "meson-logs" / "testlog.junit.xml",
+            tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml",
+        )
+
         if logdir is not None:
             testlogdir = logdir / "test"
             testlogdir.mkdir()
@@ -286,16 +296,18 @@ class Test(MakeAction):
                 rlog = log.relative_to(testsdir)
                 (testlogdir / rlog.parent).mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(log, testlogdir / rlog)
-            tests2bdir = builddir / "tests2-build"
             shutil.copyfile(
                 tests2bdir / "meson-logs" / "testlog.txt", testlogdir / "test.tests2.log"
             )
-            for fn in (
-                tests2bdir / "meson-logs" / "testlog.junit.xml",
-                tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml",
-            ):
+            for fn in junit_logs:
                 if fn.exists():
                     shutil.copyfile(fn, logdir / ("test." + fn.name))
+
+        if self.junit_copyout:
+            for fn in junit_logs:
+                if fn.exists():
+                    shutil.copyfile(fn, Path() / ("test." + fn.name))
+
         return res
 
 
