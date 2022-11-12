@@ -148,11 +148,18 @@ Examples:
         action="store_true",
         help="Report per-build ccache statistics. Note that this clears the ccache statistics",
     )
+    parser.add_argument(
+        "--test-junit-copyout",
+        default=False,
+        action="store_true",
+        help="test: Copy JUnit XML results to the current directory. Implies --single-spec",
+    )
     return parser
 
 
 def post_parse(args):
-    if args.keep:
+    Test().junit_copyout = args.test_junit_copyout
+    if args.keep or args.test_junit_copyout:
         args.single_spec = True
     args.action = action_sequence([act() for name in args.action for act in actions[name]])
     return args

@@ -530,8 +530,8 @@ def test_float_compare():
     # Test the edge cases
     sa = StrictAccuracy(DummyDiff(), grace=1, precision=prec)
     assert sa._float_cmp(0.0, -0.0) == 0.0
-    assert sa._float_cmp(math.nextafter(0, -1), math.nextafter(0, 1)) == sa._cmp_bad_sign
-    assert sa._float_cmp(0.5, 2.0) == sa._cmp_exp_diff
+    assert sa._float_cmp(math.nextafter(0, -1), math.nextafter(0, 1)) == sa.CmpError.bad_sign
+    assert sa._float_cmp(0.5, 2.0) == sa.CmpError.exp_diff
 
     # Test the boundaries in the normalized region
     sa = StrictAccuracy(DummyDiff(), grace=1, precision=prec)
