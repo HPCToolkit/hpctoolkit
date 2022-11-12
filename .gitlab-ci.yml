@@ -13,11 +13,14 @@ stages:
 - dependencies
 - test
 - lint
+- update
 
 
 include:
 # Jobs for building all the dependencies with Spack
 - local: ci/dependencies/.gitlab-ci.yml
+# Jobs to regenerating test data when needed
+- local: tests2/data/.gitlab-ci.yml
 
 
 variables:
@@ -581,128 +584,3 @@ spack install:
     spack install --no-check-signature --fail-fast --use-buildcache=package:never,dependencies:only
     "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
     "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"
-
-
-# Manual jobs to (re)generate testing data via `make gen-testdata`
-gen-testdata.cpu:
-  stage: .post
-  extends: .buildcache-job
-  tags: [docker, linux/amd64]
-  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
-  variables:
-    JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
-
-  dependencies:
-  - generate_deps.amd64
-  - build_deps.amd64
-  when: manual
-
-  script:
-  # Generate a new batch of test data, and copy it back to the source tree
-  - >-
-    python3 -m ci.buildfe -l logs/generation/ -a install-testdata
-    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    -1s "$SPEC"
-  # Re-run the tests on the new data to ensure everything is still a-ok
-  - >-
-    python3 -m ci.buildfe -l logs/posttest/ -a test
-    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    -1s "$SPEC"
-  - *check_postjob
-  - *postjob
-
-  artifacts:
-    reports: *check_reports
-    paths:
-    - logs/
-    - tests2/data/
-    when: always
-
-gen-testdata.gpu.nvidia:
-  stage: .post
-  extends: .buildcache-job-derivative
-  image: nvcr.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
-    alias: bundleserver
-  tags: [docker, linux/amd64, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
-  variables:
-    JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
-    SPEC: '+tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0'
-
-  dependencies:
-  - generate_deps.amd64
-  - build_deps.amd64
-  when: manual
-
-  script:
-  # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda' > img-config
-  # Generate a new batch of test data, and copy it back to the source tree
-  - >-
-    python3 -m ci.buildfe -l logs/generation/ -a install-testdata
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    -1s "$SPEC"
-  # Re-run the tests on the new data to ensure everything is still a-ok
-  - >-
-    python3 -m ci.buildfe -l logs/posttest/ -a test
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    -1s "$SPEC"
-  - *check_postjob
-  - *postjob
-
-  artifacts:
-    reports: *check_reports
-    paths:
-    - logs/
-    - tests2/data/
-    when: always
-
-gen-testdata.gpu.amd:
-  stage: .post
-  extends: .buildcache-job-derivative
-  image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
-    alias: bundleserver
-  tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
-  variables:
-    JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
-    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0'
-
-  dependencies:
-  - generate_deps.amd64
-  - build_deps.amd64
-  when: manual
-
-  script:
-  # Pull ROCm from the image itself
-  - echo '--with-rocm=/opt/rocm' > img-config
-  # Generate a new batch of test data, and copy it back to the source tree
-  - >-
-    python3 -m ci.buildfe -l logs/generation/ -a install-testdata
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    -1s "$SPEC"
-  # Re-run the tests on the new data to ensure everything is still a-ok
-  - >-
-    python3 -m ci.buildfe -l logs/posttest/ -a test
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
-    -1s "$SPEC"
-  - *check_postjob
-  - *postjob
-
-  artifacts:
-    reports: *check_reports
-    paths:
-    - logs/
-    - tests2/data/
-    when: always
