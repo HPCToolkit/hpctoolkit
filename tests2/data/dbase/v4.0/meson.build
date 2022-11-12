@@ -18,7 +18,8 @@ foreach name, features : _databases
   _out_db = name+'.tar.xz'
   _dbase = {
     'measurements': testdata_meas[name],
-    'cached_db': files(_out_db)
+    'cached_db': files(_out_db),
+    'xfail': features.get('xfail', false) or testdata_meas[name]['xfail'],
   }
   _idxs = {'_db': 0}
   _cmd = [_prof, '@INPUT@', '@OUTPUT@0@@'.format(_idxs['_db'])]

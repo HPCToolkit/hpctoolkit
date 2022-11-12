@@ -33,11 +33,13 @@ _measurements = {
   'loops-hip-amd': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', _exe_loops_hip],
   'loops-hip-amd-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', '-t', _exe_loops_hip],
 }
+_xfails = []
 
 foreach name, cmd : _measurements
   _out = name+'.tar.xz'
   _meas = {
     'cached': files(_out),
+    'xfail': name in _xfails,
   }
 
   _gen = custom_target(output: _out, command: cmd, env: hpctoolkit_pyenv, console: true,

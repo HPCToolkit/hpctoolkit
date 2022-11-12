@@ -136,7 +136,7 @@ autoreconf check:
 # Many jobs require Spack to function. This is the common setup pieces.
 # Note that Spack may shift SHA's between jobs.
 .spack:
-  cache: &cache_spack
+  cache:
     key: spack
     when: always
     paths: [.spack.git]
@@ -453,6 +453,11 @@ autoreconf check:
 .check job:
   stage: test
   extends: .buildcache-job
+
+  variables:
+    # OpenMPI refuses to run as user 0 without these options set.
+    OMPI_ALLOW_RUN_AS_ROOT: 1
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
   - touch img-config
   # Run the test suite for the configuration of interest. Use some Python to help.
@@ -460,8 +465,9 @@ autoreconf check:
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    --test-junit-copyout -1 -s "$SPEC" || true
+    --test-junit-copyout -1 -s "$SPEC"
   - *postjob
+
   artifacts:
     reports:
       junit: '*.junit.xml'
