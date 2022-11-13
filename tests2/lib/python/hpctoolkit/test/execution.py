@@ -115,7 +115,7 @@ class Measurements:
 
 
 @contextlib.contextmanager
-def hpcrun(*args, timeout=30, env=None, output=None):
+def hpcrun(*args, timeout: int = None, env=None, output=None):
     exe_args = args[-1]
     if not isinstance(exe_args, list):
         exe_args = [exe_args]
@@ -174,7 +174,7 @@ class Database:
 
 
 @contextlib.contextmanager
-def hpcprof(meas, *args, timeout=30, env=None, output=None):
+def hpcprof(meas, *args, timeout: int = None, env=None, output=None):
     if isinstance(meas, Measurements):
         meas = meas.basedir
     meas = Path(meas)
@@ -204,7 +204,7 @@ def hpcprof(meas, *args, timeout=30, env=None, output=None):
 
 
 @contextlib.contextmanager
-def hpcprof_mpi(ranks: int, meas, *args, timeout=30, env=None, output=None):
+def hpcprof_mpi(ranks: int, meas, *args, timeout: int = None, env=None, output=None):
     if isinstance(meas, Measurements):
         meas = meas.basedir
     meas = Path(meas)
@@ -241,7 +241,7 @@ def hpcprof_mpi(ranks: int, meas, *args, timeout=30, env=None, output=None):
         yield Database(ddir)
 
 
-def hpcstruct(binary_or_meas, *args, timeout=30, env=None, output=None):
+def hpcstruct(binary_or_meas, *args, timeout: int = None, env=None, output=None):
     if "HPCTOOLKIT_APP_HPCSTRUCT" not in os.environ:
         raise RuntimeError("hpcstruct not available, cannot continue! Run under meson devenv!")
     hpcstruct = os.environ["HPCTOOLKIT_APP_HPCSTRUCT"]

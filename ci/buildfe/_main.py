@@ -152,7 +152,7 @@ Examples:
         "--test-junit-copyout",
         default=False,
         action="store_true",
-        help="test: Copy JUnit XML results to the current directory. Implies --single-spec",
+        help="test: Copy JUnit XML results to the current directory",
     )
     return parser
 
