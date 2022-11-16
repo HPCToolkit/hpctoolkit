@@ -241,7 +241,6 @@ hpcrun_delete_real_timer(thread_data_t *td)
 #ifdef ENABLE_CLOCK_REALTIME
   if (td->timer_init) {
     ret = timer_delete(td->timerid);
-    td->timerid = NULL;
   }
   td->timer_init = false;
 #endif
@@ -256,15 +255,15 @@ hpcrun_delete_real_timer(thread_data_t *td)
 // is unsafe as td->timerid can be set to NULL immediately before it is 
 // loaded as an argument.  To avoid a SEGV, copy the timer into a local 
 // variable, test it, and only call timer_settime with a non-NULL timer. 
+
 static int
 hpcrun_settime(thread_data_t *td, struct itimerspec *spec)
 {
   if (!td->timer_init) return -1; // fail: timer not initialized
 
-  timer_t mytimer = td->timerid;
-  if (mytimer == NULL) return -1; // fail: timer deleted
+  // timer_t mytimer = td->timerid;
 
-  return timer_settime(mytimer, 0, spec, NULL);
+  return timer_settime(td->timerid, 0, spec, NULL);
 }
 
 static int
@@ -290,7 +289,7 @@ hpcrun_stop_timer(thread_data_t *td)
     // If timer is invalid, it is not active; treat it as stopped
     // and ignore any error code that may have been returned by
     // hpcrun_settime
-    if ((!td->timer_init) || (!td->timerid)) return 0;
+    if (! td->timer_init) return 0;
 
     return ret;
   }
@@ -331,7 +330,7 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   ret = hpcrun_start_timer(td);
 
   if (use_realtime || use_cputime) {
-    if ((!td->timer_init) || (!td->timerid)) {
+    if (! td->timer_init) {
       // When multiple threads are present, a thread might receive a shutdown
       // signal while handling a sample. When a shutdown signal is received,
       // the thread's timer is deleted and set to uninitialized.
