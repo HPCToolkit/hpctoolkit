@@ -1,5 +1,6 @@
 import collections
 import collections.abc
+import dataclasses
 import itertools
 import os
 import platform
@@ -380,17 +381,245 @@ class Manifest:
         return n_uninstalled, n_unexpected
 
 
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class ConcreteSpecification:
+    """Point in the build configuration space, represented as a series of boolean-valued variants."""
+
+    tests2: bool
+    mpi: bool
+    debug: bool
+    papi: bool
+    opencl: bool
+    cuda: bool
+    rocm: bool
+    level0: bool
+
+    @classmethod
+    def all(cls) -> collections.abc.Iterable["ConcreteSpecification"]:
+        """List all possible ConcreteSpecifications in the configuration space."""
+        dims = [
+            # (variant, values...), in order from slowest- to fastest-changing
+            ("level0", False, True),
+            ("rocm", False, True),
+            ("cuda", False, True),
+            ("opencl", False, True),
+            ("papi", True, False),
+            ("debug", True, False),
+            ("mpi", False, True),
+            ("tests2", True, False),
+        ]
+        for point in itertools.product(*[[(x[0], val) for val in x[1:]] for x in dims]):
+            yield cls(**dict(point))
+
+    @classmethod
+    def variants(cls) -> tuple[str]:
+        """List the names of all the available variants."""
+        return tuple(f.name for f in dataclasses.fields(cls))
+
+    def __str__(self) -> str:
+        return " ".join(f"+{n}" if getattr(self, n) else f"~{n}" for n in self.variants())
+
+    @property
+    def without_spaces(self) -> str:
+        return "".join(f"+{n}" if getattr(self, n) else f"~{n}" for n in self.variants())
+
+
+class Specification:
+    """Subset of the build configuration space."""
+
+    @dataclasses.dataclass
+    class _Condition:
+        min_enabled: int
+        max_enabled: int
+
+    _concrete_cls: T.ClassVar[type] = ConcreteSpecification
+    _clauses: dict[tuple[str], _Condition] | bool
+
+    def _parse_long(self, valid_variants: set[str], clause: str):
+        mat = re.fullmatch(r"\(([\w\s]+)\)\[([+~><=\d\s]+)\]", clause)
+        if not mat:
+            raise ValueError(f"Invalid clause: {clause!r}")
+
+        variants = mat.group(1).split()
+        if not variants:
+            raise ValueError(f"Missing variants listing: {clause!r}")
+        for v in variants:
+            if v not in valid_variants:
+                raise ValueError("Invalid variant: {v}")
+        variants = tuple(sorted(variants))
+
+        cond = self._clauses.setdefault(variants, self._Condition(0, len(variants)))
+        for c in mat.group(2).split():
+            cmat = re.fullmatch(r"([+~])([><=])(\d+)", c)
+            if not cmat:
+                raise ValueError(f"Invalid conditional expression: {c!r}")
+            match cmat.group(1):
+                case "+":
+                    n, op = int(cmat.group(3)), cmat.group(2)
+                case "~":
+                    # ~>N is +<(V-N), etc.
+                    n = len(variants) - int(cmat.group(3))
+                    op = {">": "<", "<": ">", "=": "="}[cmat.group(2)]
+                case _:
+                    assert False
+            for base_op in {">": ">", "<": "<", "=": "<>"}[op]:
+                match base_op:
+                    case ">":
+                        cond.min_enabled = max(cond.min_enabled, n)
+                    case "<":
+                        cond.max_enabled = min(cond.max_enabled, n)
+                    case _:
+                        assert False
+
+    def _parse_short(self, valid_variants: set[str], clause: str):
+        mat = re.fullmatch(r"([+~])(\w+)", clause)
+        if not mat:
+            raise ValueError(f"Invalid clause: {clause!r}")
+
+        match mat.group(1):
+            case "+":
+                cnt = 1
+            case "~":
+                cnt = 0
+            case _:
+                assert False
+
+        variant = mat.group(2)
+        if variant not in valid_variants:
+            raise ValueError(f"Invalid variant: {variant}")
+
+        cond = self._clauses.setdefault((variant,), self._Condition(0, 1))
+        cond.min_enabled = max(cond.min_enabled, cnt)
+        cond.max_enabled = min(cond.max_enabled, cnt)
+
+    def _optimize(self):
+        assert isinstance(self._clauses, dict)
+
+        # Fold multi-variant clauses that have a single solution into single-variant clauses
+        new_clauses = {}
+        for vrs, cond in self._clauses.items():
+            assert len(vrs) > 0
+            assert cond.min_enabled <= len(vrs)
+            assert cond.max_enabled <= len(vrs)
+            if (
+                len(vrs) > 1
+                and cond.min_enabled == cond.max_enabled
+                and cond.min_enabled in (0, len(vrs))
+            ):
+                for v in vrs:
+                    newcond = new_clauses.setdefault((v,), self._Condition(0, 1))
+                    newcond.min_enabled = max(newcond.min_enabled, cond.min_enabled)
+                    newcond.max_enabled = min(newcond.max_enabled, cond.max_enabled)
+            else:
+                new_clauses[vrs] = cond
+        self._clauses = new_clauses
+
+        # Prune clauses that trivially can't be satisfied or are always satisfied. For cleanliness.
+        good_clauses = {}
+        for vrs, cond in self._clauses.items():
+            assert len(vrs) > 0
+            assert cond.min_enabled <= len(vrs)
+            assert cond.max_enabled <= len(vrs)
+            if cond.min_enabled <= cond.max_enabled and (
+                cond.min_enabled > 0 or cond.max_enabled < len(vrs)
+            ):
+                good_clauses[vrs] = cond
+        self._clauses = good_clauses if good_clauses else False
+
+    def __init__(self, spec: str, /, *, allow_blank: bool = False, allow_empty: bool = False):
+        """
+        Create a new Specification from the given specification string.
+
+        The syntax follows this rough BNF grammar:
+            spec := all | none | W { clause W }*
+            clause := flag variant
+                      | '(' W variant { W variant }* W ')[' W condition { W condition }* W ']'
+            flag := '+' | '~'
+            condition := flag comparison N
+            comparison := '>' | '<' | '='
+            variant := # any variant listed in ConcreteSpecification.variants()
+            N := # any base 10 number
+            W := # any sequence of whitespace
+        """
+        valid_variants = frozenset(self._concrete_cls.variants())
+
+        # Parse the spec itself
+        match spec.strip():
+            case "all":
+                self._clauses = True
+            case "none":
+                self._clauses = False
+            case _:
+                self._clauses = {}
+                for token in re.split(r"(\([^)]+\)\[[^]]+\])|\s", spec):
+                    if token is None or not token:
+                        continue
+                    if token[0] == "(":
+                        self._parse_long(valid_variants, token)
+                    else:
+                        self._parse_short(valid_variants, token)
+                if not self._clauses:
+                    if allow_blank:
+                        self._clauses = True
+                    else:
+                        raise ValueError("Blank specification not permitted")
+                else:
+                    self._optimize()
+
+        # If required, check that we match *something*
+        if not allow_empty:
+            if isinstance(self._clauses, bool):
+                matches_any = self._clauses
+            else:
+                matches_any = any(self.satisfies(c) for c in self._concrete_cls.all())
+            if not matches_any:
+                raise ValueError(f"Specification does not match anything: {spec!r}")
+
+    def satisfies(self, concrete: _concrete_cls) -> bool:
+        """Test whether the given ConcreteSpecification satisfies this Specification"""
+        if isinstance(self._clauses, bool):
+            return self._clauses
+
+        for vrs, c in self._clauses.items():
+            cnt = sum(1 if getattr(concrete, v) else 0 for v in vrs)
+            if cnt < c.min_enabled or c.max_enabled < cnt:
+                return False
+        return True
+
+    def __str__(self) -> str:
+        if isinstance(self._clauses, bool):
+            return "all" if self._clauses else "none"
+
+        fragments = []
+        for vrs, cond in self._clauses.items():
+            if len(vrs) == 1:
+                assert cond.min_enabled == cond.max_enabled
+                fragments.append(("+" if cond.min_enabled == 1 else "~") + vrs[0])
+            else:
+                cfrags = []
+                if cond.min_enabled > 0:
+                    cfrags.append(f"+>{cond.min_enabled:d}")
+                if cond.max_enabled < len(vrs):
+                    cfrags.append(f"+<{cond.max_enabled:d}")
+                assert cfrags
+                fragments.append(f"({' '.join(vrs)})[{' '.join(cfrags)}]")
+        return " ".join(fragments)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({str(self)!r})"
+
+
 class Configuration:
     """Representation of a possible build configuration of HPCToolkit"""
 
-    def __init__(self, depcfg: DependencyConfiguration, variant: dict[str, bool]):
+    def __init__(self, depcfg: DependencyConfiguration, variant: ConcreteSpecification):
         """Derive the full Configuration from the given DependencyConfiguration and variant-keywords."""
         make = shutil.which("make")
         if make is None:
             raise RuntimeError("Unable to find make!")
         self.make: str = make
 
-        self.manifest: Manifest = Manifest(mpi=variant["mpi"])
+        self.manifest: Manifest = Manifest(mpi=variant.mpi)
 
         fragments: list[str] = self.__class__._collect_fragments(depcfg, variant)
 
@@ -405,7 +634,9 @@ class Configuration:
                 self.env[m.group(1)] = m.group(2)
 
     @staticmethod
-    def _collect_fragments(depcfg: DependencyConfiguration, variant: dict[str, bool]) -> list[str]:
+    def _collect_fragments(
+        depcfg: DependencyConfiguration, variant: ConcreteSpecification
+    ) -> list[str]:
         fragments = [
             depcfg.get("--with-boost="),
             depcfg.get("--with-bzip="),
@@ -425,18 +656,18 @@ class Configuration:
         if platform.machine() == "x86_64":
             fragments.append(depcfg.get("--with-xed="))
 
-        if variant["papi"]:
+        if variant.papi:
             fragments.append(depcfg.get("--with-papi="))
         else:
             fragments.append(depcfg.get("--with-perfmon="))
 
-        if variant["cuda"]:
+        if variant.cuda:
             fragments.append(depcfg.get("--with-cuda="))
 
-        if variant["level0"]:
+        if variant.level0:
             fragments.append(depcfg.get("--with-level0="))
 
-        if variant["opencl"]:
+        if variant.opencl:
             fragments.append(depcfg.get("--with-opencl="))
 
         # if False:  # TODO: GTPin
@@ -447,7 +678,7 @@ class Configuration:
         #         ]
         #     )
 
-        if variant["rocm"]:
+        if variant.rocm:
             try:
                 fragments.append(depcfg.get("--with-rocm="))
             except Unsatisfiable:
@@ -465,88 +696,16 @@ class Configuration:
         #     fragments.append("--enable-all-static")
 
         fragments.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
-        if variant["mpi"]:
+        if variant.mpi:
             fragments.append(depcfg.get("MPICXX="))
             fragments.append("--enable-force-hpcprof-mpi")
         else:
             fragments.append("MPICXX=")
 
-        if variant["debug"]:
+        if variant.debug:
             fragments.append("--enable-develop")
 
-        if variant["tests2"]:
+        if variant.tests2:
             fragments.append("--enable-tests2")
 
         return fragments
-
-    @classmethod
-    def all_variants(cls):
-        """Generate a list of all possible variants as dictionaries of variant-keywords"""
-
-        def vbool(x, first=False):
-            return [(x, first), (x, not first)]
-
-        return map(
-            dict,
-            itertools.product(
-                *reversed(
-                    [
-                        vbool("tests2", True),
-                        vbool("mpi"),
-                        vbool("debug", True),
-                        vbool("papi", True),
-                        vbool("opencl"),
-                        vbool("cuda"),
-                        vbool("rocm"),
-                        vbool("level0"),
-                    ]
-                )
-            ),
-        )
-
-    @staticmethod
-    def to_string(
-        variant: dict[str, bool],
-        separator: str = " ",
-    ) -> str:
-        """Generate the string form for a variant set"""
-
-        def vbool(n):
-            return f"+{n}" if variant[n] else f"~{n}"
-
-        return separator.join(
-            [
-                vbool("tests2"),
-                vbool("mpi"),
-                vbool("debug"),
-                vbool("papi"),
-                vbool("opencl"),
-                vbool("cuda"),
-                vbool("rocm"),
-                vbool("level0"),
-            ]
-        )
-
-    @staticmethod
-    def parse(arg: str) -> dict[str, bool]:
-        """Parse a variant-spec (vaugely Spack format) into a variant (dict)"""
-        result = {}
-        for wmatch in re.finditer(r"[+~\w]+", arg):
-            word = wmatch.group(0)
-            if word[0] not in "+~":
-                raise ValueError("Variants must have a value indicator (+~): " + word)
-            for match in re.finditer(r"([+~])(\w*)", word):
-                value, variant = match.group(1), match.group(2)
-                result[variant] = value == "+"
-        for k in result:
-            if k not in ("tests2", "mpi", "debug", "papi", "opencl", "cuda", "rocm", "level0"):
-                raise ValueError(f"Invalid variant name {k}")
-        return result
-
-    @staticmethod
-    def satisfies(specific: dict[str, bool], general: dict[str, bool]) -> bool:
-        """Test if the `specific` variant is a subset of a `general` variant"""
-        for k, v in general.items():
-            if k in specific and specific[k] != v:
-                return False
-        return True

@@ -144,7 +144,7 @@ autoreconf check:
   - echo -e "\e[0Ksection_start:`date +%s`:spack_clone_init[collapsed=true]\r\e[0KSpack update and initialization"
   - - export SPACK_ROOT="$(realpath .spack)"
     - ci/dependencies/spack-init.sh
-    - source "$SPACK_ROOT"/share/spack/setup-env.sh
+    - export PATH="$SPACK_ROOT"/bin:"$PATH"
   - echo -e "\e[0Ksection_end:`date +%s`:spack_clone_init\r\e[0K"
 
 # Build jobs require a working Spack with access to the buildcache. This (very long) job handles all
@@ -158,8 +158,13 @@ autoreconf check:
     paths:
     - .apt-cache/
     - .pip-cache/
-    - .spack-bincache/
+    - .spack-bincache-shared/
   - &bcjob_cache2
+    key: bcjob-$CI_JOB_IMAGE-$CI_COMMIT_REF_SLUG
+    when: always
+    paths:
+    - .spack-bincache-nonprotected/
+  - &bcjob_cache3
     key: bcjob-$CI_JOB_IMAGE-$JOB_CC
     when: always
     paths:
@@ -175,7 +180,16 @@ autoreconf check:
   - echo -e "\e[0Ksection_start:`date +%s`:spack_buildcache_config[collapsed=true]\r\e[0KSpack buildcache configuration"
   - - ci/dependencies/spack-bc-downstream.sh
     # Configure the local binary cache to cache binaries
-    - spack config --scope site add "config:binary_cache_root:$CI_PROJECT_DIR/.spack-bincache/"
+    - |
+      cat > .spack-bincache-config.yml <<EOF
+      config:
+        local_binary_cache:
+        - prefixes: ['${SBCACHE_URL}/nonprotected']
+          root: '${CI_PROJECT_DIR}/.spack-bincache-nonprotected/'
+        - root: '${CI_PROJECT_DIR}/.spack-bincache-shared/'
+      EOF
+    - spack config --scope site add -f .spack-bincache-config.yml
+    - rm .spack-bincache-config.yml
     # Make sure Spack has a GCC available. Oddly enough, this command will run `spack compiler find` internally,
     # but only if needed.
     - spack compiler info gcc
@@ -196,13 +210,19 @@ autoreconf check:
     # Derive the CC/CXX from the JOB_CC shorthand
     - |
       test -z "$JOB_CC" || case "$JOB_CC" in
-      # Rocky/Fedora/SUSE form, which don't ship multiple GCCs
+      # Rocky/Fedora form, which don't ship multiple GCCs
       gcc=*)
         export CC=gcc CXX=g++
         ;;
-      # Debian/Ubuntu form, which ships multiple GCCs
+      clang=*)
+        export CC=clang CXX=clang++
+        ;;
+      # Debian/Ubuntu/SUSE form, which ships multiple GCCs
       gcc-*)
         export CC=gcc-"${JOB_CC##gcc-}" CXX=g++-"${JOB_CC##gcc-}"
+        ;;
+      clang-*)
+        export CC=clang-"${JOB_CC##clang-}" CXX=clang++-"${JOB_CC##clang-}"
         ;;
       *)
         echo "Invalid compiler shorthand: $JOB_CC"
@@ -234,219 +254,157 @@ autoreconf check:
   - !reference [.spack, cache]
   - <<: *bcjob_cache1
     key: bcjob-$BASE_IMAGE
-  - *bcjob_cache2
+  - <<: *bcjob_cache2
+    key: bcjob-$BASE_IMAGE-$CI_COMMIT_REF_SLUG
+  - *bcjob_cache3
 
 # Build many versions of the codebase, to ensure all the various compilations work
-'buildmany.amd64: [*]':
+# As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
+# at a time. With the exception of +debug, which is flipped at will.
+.buildmany:
   stage: test
   extends: .buildcache-job
   tags: [docker, linux/$ARCH]
   image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
+
+  script:
+  - touch img-config
+  # Run the build script for a wide sweep of configurations. Use some Python to help.
+  - >-
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
+    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
+    -s "$SPEC"
+  - >-
+    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
+    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
+    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
+    -s "$SPEC"
+  - *postjob
+
+  artifacts:
+    paths:
+    - logs/
+    when: always
+
+.buildmany.amd64:
+  extends: .buildmany
   variables:
     ARCH: amd64
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - generate_deps.amd64
+  - build_deps.amd64
+.buildmany.arm64:
+  extends: .buildmany
+  variables:
+    ARCH: arm64
+  needs:
+  - job: autoreconf
+    artifacts: false
+  - generate_deps.arm64
+  - build_deps.arm64
+
+'buildmany: [amd64]':
+  extends: .buildmany.amd64
   parallel:
     matrix:
-    - IMAGE: leap15
-      JOB_CC: gcc=7
-
     - IMAGE: almalinux8
       JOB_CC: gcc=8
 
-    # XXX: Disabled due to Spack-related issues
-    # - IMAGE: centos7
-    #   JOB_CC: gcc=8
+    - IMAGE: leap15
+      JOB_CC: gcc-11
 
     - IMAGE: ubuntu20.04
       JOB_CC: [gcc-9, gcc-10]
 
     - IMAGE: fedora36
-      JOB_CC: gcc=12
+      JOB_CC: [gcc=12]
+  variables:
+    SPEC: '~cuda ~rocm ~level0 (tests2 mpi papi opencl)[~<1]'
 
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
+'buildmany: [arm64]':
+  extends: .buildmany.arm64
+  parallel:
+    matrix:
+    - IMAGE: ubuntu20.04
+      JOB_CC: [gcc-10]
+  variables:
+    SPEC: '~cuda ~rocm ~level0 (tests2 mpi papi opencl)[~<1]'
 
-  script:
-  # Run the build script for a wide sweep of configurations. Use some Python to help.
-  # The matrix of configurations is chosen to test cases that are most likely to trigger
-  # configuration or compile errors, by enabling all features and removing one at a time.
-  # The exception is the variant `+~debug`, which is always swept completely.
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
-    "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+tests2 +mpi +papi +opencl ~cuda~rocm~level0'
-    -s '~tests2 +mpi +papi +opencl ~cuda~rocm~level0'
-    -s '+tests2 ~mpi +papi +opencl ~cuda~rocm~level0'
-    -s '+tests2 +mpi ~papi +opencl ~cuda~rocm~level0'
-    -s '+tests2 +mpi +papi ~opencl ~cuda~rocm~level0'
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
-    "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+tests2 +mpi +papi +opencl ~cuda~rocm~level0'
-    -s '~tests2 +mpi +papi +opencl ~cuda~rocm~level0'
-    -s '+tests2 ~mpi +papi +opencl ~cuda~rocm~level0'
-    -s '+tests2 +mpi ~papi +opencl ~cuda~rocm~level0'
-    -s '+tests2 +mpi +papi ~opencl ~cuda~rocm~level0'
-  - *postjob
-
-  artifacts:
-    paths:
-    - logs/
-    when: always
-
-'buildmany.amd64: [+cuda]':
-  extends: .buildcache-job-derivative
+'buildmany: [amd64, +cuda]':
+  extends: [.buildmany.amd64, .buildcache-job-derivative]
   image: nvcr.io/nvidia/cuda:$CUDA-devel-ubuntu20.04
   services:
   - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
     alias: bundleserver
-  tags: [docker, linux/amd64]
-  variables:
-    JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
   parallel:
     matrix:
-    - CUDA: [11.7.1]
+    - CUDA: [11.8.0]
+  variables:
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    JOB_CC: gcc-9
+    SPEC: '+cuda ~rocm ~level0 +tests2 (mpi papi opencl)[~<1]'
 
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
-
-  script:
+  before_script:
+  - !reference [.buildmany.amd64, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
-  # Run the build script for a wide sweep of configurations. Use some Python to help.
-  # See the `buildmany: [~gpus]` script for details on this design
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl +cuda~rocm~level0+tests2'
-    -s '~mpi +papi +opencl +cuda~rocm~level0+tests2'
-    -s '+mpi ~papi +opencl +cuda~rocm~level0+tests2'
-    -s '+mpi +papi ~opencl +cuda~rocm~level0+tests2'
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
-    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl +cuda~rocm~level0+tests2'
-    -s '~mpi +papi +opencl +cuda~rocm~level0+tests2'
-    -s '+mpi ~papi +opencl +cuda~rocm~level0+tests2'
-    -s '+mpi +papi ~opencl +cuda~rocm~level0+tests2'
-  - *postjob
 
-  artifacts:
-    paths:
-    - logs/
-    when: always
+'buildmany: [amd64, +cuda]: [10.2]':
+  extends: [.buildmany.amd64, .buildcache-job-derivative]
+  image: registry.gitlab.com/hpctoolkit/ci-images/almalinux8-cuda10.2:amd64
+  variables:
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:amd64
+    JOB_CC: gcc=8
+    SPEC: '+cuda ~rocm ~level0 ~tests2 (mpi papi opencl)[~<1]'
 
+  before_script:
+  - !reference [.buildmany.amd64, before_script]
+  # Pull CUDA from the image itself
+  - echo '--with-cuda=/usr/local/cuda' > img-config
 
-'buildmany.amd64: [+rocm]':
-  extends: .buildcache-job-derivative
+'buildmany: [amd64, +rocm]':
+  extends: [.buildmany.amd64, .buildcache-job-derivative]
   image: docker.io/rocm/dev-ubuntu-20.04:$ROCM
   services:
   - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
     alias: bundleserver
-  tags: [docker, linux/amd64]
-  variables:
-    JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
   parallel:
     matrix:
     - ROCM: [5.2.3]
+  variables:
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    JOB_CC: gcc-9
+    SPEC: '~cuda +rocm ~level0 +tests2 (mpi papi opencl)[~<1]'
 
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
-
-  script:
+  before_script:
+  - !reference [.buildmany.amd64, before_script]
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
-  # Run the build script for a wide sweep of configurations. Use some Python to help.
-  # See the `buildmany: [~gpus]` script for details on this design
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda+rocm~level0+tests2'
-    -s '~mpi +papi +opencl ~cuda+rocm~level0+tests2'
-    -s '+mpi ~papi +opencl ~cuda+rocm~level0+tests2'
-    -s '+mpi +papi ~opencl ~cuda+rocm~level0+tests2'
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
-    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda+rocm~level0+tests2'
-    -s '~mpi +papi +opencl ~cuda+rocm~level0+tests2'
-    -s '+mpi ~papi +opencl ~cuda+rocm~level0+tests2'
-    -s '+mpi +papi ~opencl ~cuda+rocm~level0+tests2'
-  - *postjob
 
-  artifacts:
-    paths:
-    - logs/
-    when: always
-
-
-'buildmany.amd64: [+level0]':
-  extends: .buildcache-job-derivative
+'buildmany: [amd64, +level0]':
+  extends: [.buildmany.amd64, .buildcache-job-derivative]
   image: docker.io/intel/oneapi-basekit:$ONEAPI-devel-ubuntu20.04
   services:
   - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
     alias: bundleserver
   tags: [docker, linux/amd64]
-  variables:
-    JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
   parallel:
     matrix:
     - ONEAPI: ['2022.2']
-
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
+  variables:
+    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    JOB_CC: gcc-9
+    SPEC: '~cuda ~rocm +level0 +tests2 (mpi papi opencl)[~<1]'
 
   before_script:
   # The base Intel image has some extra elements on the PATH, make sure /usr/local/bin takes precdence
   - export PATH=/usr/local/bin:"$PATH"
-  - !reference [.buildcache-job, before_script]
-  script:
+  - !reference [.buildmany.amd64, before_script]
   # Pull Level 0 (part of OneAPI) from the image itself
   - echo '--with-level0=/usr' > img-config
-  # Run the build script for a wide sweep of configurations. Use some Python to help.
-  # See the `buildmany: [~gpus]` script for details on this design
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda~rocm+level0+tests2'
-    -s '~mpi +papi +opencl ~cuda~rocm+level0+tests2'
-    -s '+mpi ~papi +opencl ~cuda~rocm+level0+tests2'
-    -s '+mpi +papi ~opencl ~cuda~rocm+level0+tests2'
-  - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
-    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s '+mpi +papi +opencl ~cuda~rocm+level0+tests2'
-    -s '~mpi +papi +opencl ~cuda~rocm+level0+tests2'
-    -s '+mpi ~papi +opencl ~cuda~rocm+level0+tests2'
-    -s '+mpi +papi ~opencl ~cuda~rocm+level0+tests2'
-  - *postjob
-
-  artifacts:
-    paths:
-    - logs/
-    when: always
 
 
 # Build single versions of the codebase and run unit tests through `make check`

@@ -29,9 +29,6 @@ generate_deps.amd64:
     matrix:
     - IMAGE: leap15
       CI_SPACK_CC: gcc@7
-    # XXX: Disabled due to Spack-related failures
-    # - IMAGE: centos7
-    #   CI_SPACK_CC: gcc@8
     - IMAGE: almalinux8
       CI_SPACK_CC: gcc@8
     - IMAGE: ubuntu20.04
