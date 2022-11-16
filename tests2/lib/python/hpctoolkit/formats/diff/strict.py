@@ -963,6 +963,16 @@ class StrictAccuracy(AccuracyStrategy):
         bad_sign = enum.auto()
         exp_diff = enum.auto()
 
+        def __lt__(self, other):
+            if isinstance(other, float):
+                return False
+            return self.value < other.value
+
+        def __gt__(self, other):
+            if isinstance(other, float):
+                return True
+            return self.value > other.value
+
     def _float_cmp(self, a: float, b: float) -> float | CmpError:
         """Compare two floats and return 0.0 if the two are equal. If not, returns the
         normalized difference or a CmpError indicating the error."""
