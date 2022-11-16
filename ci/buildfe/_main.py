@@ -22,7 +22,13 @@ from .buildsys import (
     InstallTestData,
     Test,
 )
-from .configuration import Configuration, DependencyConfiguration, Unsatisfiable
+from .configuration import (
+    ConcreteSpecification,
+    Configuration,
+    DependencyConfiguration,
+    Specification,
+    Unsatisfiable,
+)
 from .logs import FgColor, colorize, print_header, section
 
 actions = {
@@ -34,6 +40,13 @@ actions = {
     "gen-testdata": (GenTestData,),
     "install-testdata": (InstallTestData,),
 }
+
+
+def parse_spec(spec: str) -> Specification:
+    try:
+        return Specification(spec)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"invalid spec '{spec}': {e}")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -59,17 +72,24 @@ Each SRC above can be one of the following:
  - Two paths separated by a semicolon (<bdir>\\;<cdir>). The `config` in the first is used and the
    second is Spack installed and activated. ${CTX} in the `config` is replaced by the second.
 
-The SPEC above is very similar to the Spack boolean variant syntax, a SPEC lists keys separated by
-whitespace and prefixed by `+` or `~`. The allowed keys are:
+This command sweeps the space of build configurations that satisfy any of the given SPECs.
+Each build configuration is represented by a series of boolean-valued "variants," with true/false
+being represented by `+` and `~` (like Spack spec syntax). The available variants are:
     +mpi:  Enable Prof-MPI support
     +debug:  Enable extra debug flags
     +papi:  Enable PAPI support
     +opencl:  Enable OpenCL support
     +cuda:  Enable Nvidia CUDA support
-    +rocm: Enable AMD ROCm support
+    +rocm:  Enable AMD ROCm support
     +level0:  Enable Intel Level Zero support
-These flags more-or-less reflect the variants of the same name in the official Spack recipe, but
-there is no enforcement for this and there may be differences.
+Each SPEC constrains the allowed configurations via a series of "clauses" of the form:
+    +VARIANT:  The given VARIANT is enabled
+    ~VARIANT:  The given VARIANT is disabled
+    (VARIANTS...)[CONDITIONS...]: The listed VARIANTS satisfy all the CONDITIONS, of the form:
+        +>N:  At least N of the listed VARIANTS are enabled
+        +<N:  At most N of the listed VARIANTS are enabled
+        +=N:  Exactly N of the listed VARIANTS are enabled
+        ~>N, ~<N, ~=N: Same as above but for disabled
 
 The output from this program is summarized to only include warnings or errors, and is wrapped in
 collapsible sections to allow for easy viewing from the GitLab UI.
@@ -110,7 +130,7 @@ Examples:
         "-s",
         "--spec",
         metavar="SPEC",
-        type=Configuration.parse,
+        type=parse_spec,
         action="append",
         help="Only build variants matching this spec. Can be repeated to union specs",
     )
@@ -118,7 +138,7 @@ Examples:
         "-u",
         "--unsatisfiable",
         metavar="SPEC",
-        type=Configuration.parse,
+        type=parse_spec,
         action="append",
         help="Mark variants matching this spec as known to be unsatisfiable",
     )
@@ -135,6 +155,13 @@ Examples:
         action="store_true",
         default=False,
         help="Keep the build and install directories around after the command completes. Implies --single-spec",
+    )
+    parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Don't build, instead print the configuration space and action sequence",
     )
     parser.add_argument(
         "--spack-args",
@@ -166,7 +193,10 @@ def post_parse(args):
 
 
 def load_src(
-    depcfg: DependencyConfiguration, src: tuple[Path, Path] | tuple[Path], spack_args: list[str]
+    depcfg: DependencyConfiguration,
+    src: tuple[Path, Path] | tuple[Path],
+    spack_args: list[str],
+    dry_run: bool,
 ) -> None:
     if len(src) == 1:
         if src[0].is_file():
@@ -193,7 +223,7 @@ def load_src(
     depcfg.load(bdir / "config", cdir)
 
     # If the second directory is a Spack environment, install and activate it
-    if (cdir / "spack.yaml").exists():
+    if (cdir / "spack.yaml").exists() and not dry_run:
         load_spackenv(cdir, spack_args)
 
 
@@ -256,24 +286,24 @@ def load_spackenv(cdir: Path, spack_args) -> None:
                 os.environ[var] = val
 
 
-def gen_variants(args) -> list[tuple[dict[str, bool], bool]]:
+def gen_variants(args) -> list[tuple[ConcreteSpecification, bool]]:
     result = [
-        (v, any(Configuration.satisfies(v, u) for u in (args.unsatisfiable or [])))
-        for v in Configuration.all_variants()
-        if not args.spec or any(Configuration.satisfies(v, s) for s in args.spec)
+        (cs, any(u.satisfies(cs) for u in (args.unsatisfiable or [])))
+        for cs in ConcreteSpecification.all()
+        if not args.spec or any(s.satisfies(cs) for s in args.spec)
     ]
     assert result
     if args.single_spec and len(result) > 1:
         print("Multiple spec match but -1/--single-spec given, refine your parameters!")
         print("Specs that matched:")
-        for v, _ in result:
-            print("  " + Configuration.to_string(v))
+        for cs, _ in result:
+            print("  " + str(cs))
         sys.exit(2)
     return result
 
 
 def configure(
-    depcfg: DependencyConfiguration, v: dict[str, bool], unsat: bool
+    depcfg: DependencyConfiguration, v: ConcreteSpecification, unsat: bool
 ) -> T.Optional[Configuration]:
     try:
         cfg = Configuration(depcfg, v)
@@ -281,7 +311,7 @@ def configure(
         if not unsat:
             with colorize(FgColor.error):
                 print(
-                    f"## HPCToolkit {Configuration.to_string(v)} is unsatisfiable, missing {e.missing}",
+                    f"## HPCToolkit {str(v)} is unsatisfiable, missing {e.missing}",
                     flush=True,
                 )
         return None
@@ -289,19 +319,19 @@ def configure(
         if unsat:
             with colorize(FgColor.error):
                 print(
-                    f"## HPCToolkit {Configuration.to_string(v)} was incorrectly marked as unsatisfiable",
+                    f"## HPCToolkit {str(v)} was incorrectly marked as unsatisfiable",
                     flush=True,
                 )
     return cfg
 
 
 def run_actions(
-    variant: dict[str, bool], cfg: Configuration, args
+    variant: ConcreteSpecification, cfg: Configuration, args
 ) -> list[tuple[Action, ActionResult, float]]:
     srcdir = Path().absolute()
     logdir = None
     if args.logs_dir:
-        logdir = args.logs_dir / args.log_format.format(Configuration.to_string(variant, ""))
+        logdir = args.logs_dir / args.log_format.format(variant.without_spaces)
         logdir.mkdir(parents=True)
         logdir = logdir.absolute()
     builddir = srcdir / "ci" / "build"
@@ -370,7 +400,7 @@ def print_ccache_stats():
         print(f"Missed: {miss/total*100:.3f}% ({miss:d} of {total:d})")
 
 
-def build(v, cfg, args) -> tuple[bool, dict]:
+def build(v: ConcreteSpecification, cfg: Configuration, args) -> tuple[bool, dict]:
     if args.ccache_stats:
         subprocess.run(
             [shutil.which("ccache"), "--zero-stats"], stdout=subprocess.DEVNULL, check=True
@@ -378,7 +408,7 @@ def build(v, cfg, args) -> tuple[bool, dict]:
 
     ok = True
     with section(
-        "## Build for HPCToolkit " + Configuration.to_string(v),
+        "## Build for HPCToolkit " + str(v),
         color=FgColor.header,
         collapsed=True,
     ):
@@ -425,7 +455,16 @@ def main():
 
     depcfg = DependencyConfiguration()
     for src in args.sources:
-        load_src(depcfg, src, args.spack_args)
+        load_src(depcfg, src, args.spack_args, args.dry_run)
+
+    if args.dry_run:
+        print(f"For each of the following {len(variants)} configurations:")
+        for v, _ in variants:
+            print("  " + str(v))
+        print(f"Would run the following {len(args.action)} actions:")
+        for a in args.action:
+            print("  " + a.name())
+        sys.exit(0)
 
     times: dict[Action, list[float]] = {}
 
