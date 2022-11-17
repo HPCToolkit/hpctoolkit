@@ -927,9 +927,9 @@ class StrictAccuracy(AccuracyStrategy):
             fails = sorted(self.failures, key=lambda x: x[2], reverse=True)
             suffix = " (of first 1000 encountered)" if self.failed_cnt >= 1000 else ""
             if len(fails) <= 30:
-                print(f"  Details of failures{suffix}:", file=out)
+                print(f"  Details of failures{suffix} (expected != got):", file=out)
             else:
-                print(f"  Details of 30 worst failures{suffix}:", file=out)
+                print(f"  Details of 30 worst failures{suffix} (expected != got):", file=out)
             for key in fails[:30]:
                 a, b, diff = key
                 paths = self.failures[key]
