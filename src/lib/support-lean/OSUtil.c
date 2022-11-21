@@ -165,6 +165,12 @@ OSUtil_local_rank()
     return rid;
   }
 
+  // HPE's Parallel Application Launch Service
+  rid = getenv("PALS_RANKID");
+  if (rid) {
+    return rid;
+  }
+
   return rid;
 }
 
