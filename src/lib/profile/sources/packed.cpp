@@ -96,7 +96,17 @@ double unpack<double>(std::vector<uint8_t>::const_iterator& it) noexcept {
   return x.d;
 }
 
+static_assert(std::is_same_v<StatisticAccumulator::raw_t, std::array<double, 5>>, "unpack needs to be updated!");
+template<>
+StatisticAccumulator::raw_t unpack<StatisticAccumulator::raw_t>(std::vector<uint8_t>::const_iterator& it) noexcept {
+  return StatisticAccumulator::raw_t{
+    unpack<double>(it), unpack<double>(it), unpack<double>(it),
+    unpack<double>(it), unpack<double>(it),
+  };
+}
+
 Packed::Packed() {};
+Packed::Packed(const IdTracker& tracker) : tracker(tracker) {};
 
 std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcept {
   // Format: [job or magic] [name] [path] [env cnt] ([env key] [env val]...)
@@ -121,55 +131,52 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
   }
   sink.attributes(std::move(attr));
 
-  // TODO: Add [scopes] to the below
-  // Format: [cnt] ([metric name] [metric description]...)
+  // Format: [cnt] ([metric name] [metric description] [scopes])...
   metrics.clear();
   cnt = unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
     Metric::Settings s;
     s.name = unpack<std::string>(it);
     s.description = unpack<std::string>(it);
+    s.scopes = MetricScopeSet(unpack<MetricScopeSet::int_type>(it));
     metrics.emplace_back(sink.metric(s));
   }
 
-  // TODO: Add [scopes] to the below
-  // Format: [cnt] ([estat name] [estat description] [cnt] ([isString ? 1 : 0] ([string] | [metric id])...)...)
+  // Format: [cnt] ([estat name] [estat description] [scopes] [formula])...
+  // Where [formula] = [kind] [formula args]...
   cnt = unpack<std::uint64_t>(it);
-  assert(cnt == 0 && "ExtraStatistics in MPI mode are currently disabled");
   for(std::size_t i = 0; i < cnt; i++) {
     ExtraStatistic::Settings s;
     s.name = unpack<std::string>(it);
     s.description = unpack<std::string>(it);
+    s.scopes = MetricScopeSet(unpack<MetricScopeSet::int_type>(it));
 
-#if 0
-    auto ecnt = unpack<std::uint64_t>(it);
-    s.formula.reserve(ecnt);
-    for(std::size_t ei = 0; ei < ecnt; ei++) {
-      switch(unpack<std::uint8_t>(it)) {
-      case 1:  // string
-        s.formula.emplace_back(unpack<std::string>(it));
-        break;
-      case 0: {  // metric id
+    const std::function<Expression()> unpackExpression = [&]() -> Expression {
+      Expression::Kind kind = (Expression::Kind)unpack<std::uint8_t>(it);
+      switch(kind) {
+      case Expression::Kind::constant:
+        return Expression(unpack<double>(it));
+      case Expression::Kind::variable: {
         Metric& m = metrics.at(unpack<std::uint64_t>(it));
-        s.formula.emplace_back(ExtraStatistic::MetricPartialRef{
-            m, m.statsAccess().requestSumPartial()});
-        break;
+        m.statsAccess().requestSumPartial();
+        return Expression((Expression::uservalue_t)&m);
       }
-      default:
-        assert(false && "Invalid case in Packed attributes!");
-        std::abort();
+      case Expression::Kind::subexpression:
+        assert(false && "Attempt to unpack invalid Expression, should not have sub-Expressions");
+        abort();
+      default: {
+        assert(kind >= Expression::Kind::first_op);
+        const int argcnt = unpack<std::uint8_t>(it);
+        std::vector<Expression> args;
+        args.reserve(argcnt);
+        for(int i = 0; i < argcnt; i++)
+          args.emplace_back(unpackExpression());
+        return Expression(kind, std::move(args));
       }
-    }
-
+      }
+    };
+    s.formula = unpackExpression();
     sink.extraStatistic(std::move(s));
-#endif
-  }
-
-  auto min = unpack<std::uint64_t>(it);
-  auto max = unpack<std::uint64_t>(it);
-  if(min != 0 && max != 0) {
-    sink.timepointBounds(std::chrono::nanoseconds(min),
-                         std::chrono::nanoseconds(max));
   }
 
   for(auto& m: metrics) sink.metricFreeze(m);
@@ -221,44 +228,85 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
     case (std::uint64_t)Scope::Type::global:
       assert(false && "Packed unpacked global Scope that wasn't the root!");
       std::abort();
+    case (std::uint64_t)Scope::Type::function:
+    case (std::uint64_t)Scope::Type::loop:
+    case (std::uint64_t)Scope::Type::line:
+      // Unrepresented Scopes, ignore and press on
+      tip.push(tip.top());
+      continue;
     default:
       assert(false && "Unrecognized Scope type while unpacking Contexts!");
+      std::abort();
     }
     auto& c = sink.context(tip.empty() ? sink.global() : tip.top().get(),
         {Relation::call, s}).second;
     tip.push(c);
   }
+
+  // Format: [cnt] ([Scope.type] Scope...)...
+  auto cnt = unpack<std::uint64_t>(it);
+  for(std::uint64_t i = 0; i < cnt; ++i) {
+    auto next = unpack<std::uint64_t>(it);
+    Scope s;
+    switch(next) {
+    case (std::uint64_t)Scope::Type::point: {
+      // Format: [Scope.type] [module id] [offset]
+      auto midx = unpack<std::uint64_t>(it);
+      auto off = unpack<std::uint64_t>(it);
+      s = Scope{modules.at(midx), off};
+      break;
+    }
+    default:
+      assert(false && "Unrecognized Scope type while unpacking Contexts!");
+      std::abort();
+    }
+
+    sink.contextFlowGraph(s);
+  }
+
   return it;
 }
 
-void Packed::ContextTracker::write() {};
+void Packed::IdTracker::write() {};
 
-void Packed::ContextTracker::notifyContext(const Context& c) noexcept {
-  target.emplace(c.userdata[src.identifier()], std::ref(const_cast<Context&>(c)));
+void Packed::IdTracker::notifyContext(const Context& c) noexcept {
+  contexts.emplace(c.userdata[src.identifier()], std::ref(const_cast<Context&>(c)));
 }
 
-std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it, const ctx_map_t& cs) noexcept {
-  // Format: [cnt] ([context ID] ([metrics]...)...)
+void Packed::IdTracker::notifyMetric(const Metric& m) noexcept {
+  metrics.emplace(m.userdata[src.identifier()], std::cref(m));
+}
+
+std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it) noexcept {
+  // Format: [cnt] ([context ID] [cnt] ([metric ID] [use] [values]...)...)...
+  assert(tracker && "unpackMetrics can only be used if an IdTracker is provided!");
   auto cnt = unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
-    Context& c = cs.at(unpack<std::uint64_t>(it));
-    for(Metric& m: metrics) {
+    Context& c = tracker->contexts.at(unpack<std::uint64_t>(it));
+    auto mcnt = unpack<std::uint64_t>(it);
+    for(std::size_t j = 0; j < mcnt; j++) {
+      const Metric& m = tracker->metrics.at(unpack<std::uint64_t>(it));
       c.data().markUsed(m, MetricScopeSet(unpack<MetricScopeSet::int_type>(it)));
 
       util::optional_ref<StatisticAccumulator> accums;
       for(const auto& p: m.partials()) {
-        double point = unpack<double>(it);
-        double function = unpack<double>(it);
-        double execution = unpack<double>(it);
-        if(point != 0 || function != 0 || execution != 0) {
+        auto value = unpack<StatisticAccumulator::raw_t>(it);
+        if(value != StatisticAccumulator::rawZero()) {
           if(!accums) accums = c.data().statisticsFor(m);
-          auto accum = accums->get(p);
-          if(point != 0) accum.add(MetricScope::point, point);
-          if(function != 0) accum.add(MetricScope::function, function);
-          if(execution != 0) accum.add(MetricScope::execution, execution);
+          accums->get(p).addRaw(value);
         }
       }
     }
+  }
+  return it;
+}
+
+std::vector<uint8_t>::const_iterator Packed::unpackTimepoints(iter_t it) noexcept {
+  auto min = unpack<std::uint64_t>(it);
+  auto max = unpack<std::uint64_t>(it);
+  if(min != 0 && max != 0) {
+    sink.timepointBounds(std::chrono::nanoseconds(min),
+                         std::chrono::nanoseconds(max));
   }
   return it;
 }

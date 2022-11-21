@@ -141,9 +141,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_1 = hpcprof_mpi-main.$(OBJEXT) \
-	hpcprof_mpi-master.$(OBJEXT) hpcprof_mpi-worker.$(OBJEXT) \
-	hpcprof_mpi-tree.$(OBJEXT) hpcprof_mpi-mpi.$(OBJEXT) \
+am__objects_1 = hpcprof_mpi-main.$(OBJEXT) hpcprof_mpi-tree.$(OBJEXT) \
+	hpcprof_mpi-mpi.$(OBJEXT) \
 	../hpcprof/hpcprof_mpi-args.$(OBJEXT)
 am_hpcprof_mpi_OBJECTS = $(am__objects_1)
 hpcprof_mpi_OBJECTS = $(am_hpcprof_mpi_OBJECTS)
@@ -523,7 +522,7 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 EXT_LIBS = lib/hpctoolkit/ext-libs
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 MYSOURCES = \
-	main.cpp master.cpp worker.cpp tree.cpp \
+	main.cpp tree.cpp \
 	mpi.cpp ../hpcprof/args.cpp
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ \
@@ -676,10 +675,8 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@../hpcprof/$(DEPDIR)/hpcprof_mpi-args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-master.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-tree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_mpi-worker.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -718,34 +715,6 @@ hpcprof_mpi-main.obj: main.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='main.cpp' object='hpcprof_mpi-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-
-hpcprof_mpi-master.o: master.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-master.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi-master.Tpo -c -o hpcprof_mpi-master.o `test -f 'master.cpp' || echo '$(srcdir)/'`master.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcprof_mpi-master.Tpo $(DEPDIR)/hpcprof_mpi-master.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='master.cpp' object='hpcprof_mpi-master.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-master.o `test -f 'master.cpp' || echo '$(srcdir)/'`master.cpp
-
-hpcprof_mpi-master.obj: master.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-master.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi-master.Tpo -c -o hpcprof_mpi-master.obj `if test -f 'master.cpp'; then $(CYGPATH_W) 'master.cpp'; else $(CYGPATH_W) '$(srcdir)/master.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcprof_mpi-master.Tpo $(DEPDIR)/hpcprof_mpi-master.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='master.cpp' object='hpcprof_mpi-master.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-master.obj `if test -f 'master.cpp'; then $(CYGPATH_W) 'master.cpp'; else $(CYGPATH_W) '$(srcdir)/master.cpp'; fi`
-
-hpcprof_mpi-worker.o: worker.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-worker.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi-worker.Tpo -c -o hpcprof_mpi-worker.o `test -f 'worker.cpp' || echo '$(srcdir)/'`worker.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcprof_mpi-worker.Tpo $(DEPDIR)/hpcprof_mpi-worker.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='worker.cpp' object='hpcprof_mpi-worker.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-worker.o `test -f 'worker.cpp' || echo '$(srcdir)/'`worker.cpp
-
-hpcprof_mpi-worker.obj: worker.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-worker.obj -MD -MP -MF $(DEPDIR)/hpcprof_mpi-worker.Tpo -c -o hpcprof_mpi-worker.obj `if test -f 'worker.cpp'; then $(CYGPATH_W) 'worker.cpp'; else $(CYGPATH_W) '$(srcdir)/worker.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcprof_mpi-worker.Tpo $(DEPDIR)/hpcprof_mpi-worker.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='worker.cpp' object='hpcprof_mpi-worker.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_mpi-worker.obj `if test -f 'worker.cpp'; then $(CYGPATH_W) 'worker.cpp'; else $(CYGPATH_W) '$(srcdir)/worker.cpp'; fi`
 
 hpcprof_mpi-tree.o: tree.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_mpi_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_mpi-tree.o -MD -MP -MF $(DEPDIR)/hpcprof_mpi-tree.Tpo -c -o hpcprof_mpi-tree.o `test -f 'tree.cpp' || echo '$(srcdir)/'`tree.cpp

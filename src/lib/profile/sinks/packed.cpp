@@ -97,6 +97,22 @@ static std::uint8_t* pack(std::uint8_t* out, const double v) noexcept {
   x.d = v;
   return pack(out, x.u);
 }
+static_assert(std::is_same_v<StatisticAccumulator::raw_t, std::array<double, 5>>, "pack needs to be updated!");
+static const inline size_t raw_size = 5 * 8;
+static void pack(std::vector<std::uint8_t>& out, const StatisticAccumulator::raw_t& v) noexcept {
+  pack(out, v[0]);
+  pack(out, v[1]);
+  pack(out, v[2]);
+  pack(out, v[3]);
+  pack(out, v[4]);
+}
+static std::uint8_t* pack(std::uint8_t* out, const StatisticAccumulator::raw_t& v) noexcept {
+  out = pack(out, v[0]);
+  out = pack(out, v[1]);
+  out = pack(out, v[2]);
+  out = pack(out, v[3]);
+  return pack(out, v[4]);
+}
 
 Packed::Packed()
   : metrics(), moduleIDs() {};
@@ -118,8 +134,7 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
     pack(out, kv.second);
   }
 
-  // TODO: Add [scopes] to the below
-  // Format: [cnt] ([metric name] [metric description]...)
+  // Format: [cnt] ([metric name] [metric description] [scopes])...
   metrics.clear();
   pack(out, src.metrics().size());
   std::unordered_map<const Metric*, size_t> metids;
@@ -128,35 +143,31 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
     metrics.emplace_back(m);
     pack(out, m.name());
     pack(out, m.description());
+    pack(out, m.scopes().toInt());
   }
 
-  // TODO: Add [scopes] to the below
-  // Format: [cnt] ([estat name] [estat description] [cnt] ([isString ? 1 : 0] ([string] | [metric id])...)...)
-  // XXX: ExtraStatistics in MPI mode are currently disabled
-#if 0
+  // Format: [cnt] ([estat name] [estat description] [scopes] [formula])...
+  // Where [formula] = [kind] ([arg cnt] if op) [formula args]...
   pack(out, src.extraStatistics().size());
   for(const ExtraStatistic& es: src.extraStatistics().citerate()) {
     pack(out, es.name());
     pack(out, es.description());
-    const auto& form = es.formula();
-    pack(out, form.size());
-    for(const auto& e: form) {
-      if(std::holds_alternative<std::string>(e)) {
-        pack(out, (std::uint8_t)1);
-        pack(out, std::get<std::string>(e));
-      } else {
-        pack(out, (std::uint8_t)0);
-        const auto& mp = std::get<ExtraStatistic::MetricPartialRef>(e);
-        pack(out, metids.find(&mp.metric)->second);
-      }
-    }
+    pack(out, es.scopes().toInt());
+    es.formula().citerate_all(
+      [&](double value){
+        pack(out, (std::uint8_t)Expression::Kind::constant);
+        pack(out, value);
+      },
+      [&](Expression::uservalue_t var){
+        pack(out, (std::uint8_t)Expression::Kind::variable);
+        pack(out, (std::uint64_t)metids.at((const Metric*)var));
+      },
+      [&](const Expression& ex){
+        pack(out, (std::uint8_t)ex.kind());
+        pack(out, (std::uint8_t)ex.op_args().size());
+      },
+      nullptr);
   }
-#endif
-
-  auto [min, max] = src.timepointBounds().value_or(std::make_pair(
-      std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
-  pack(out, (std::uint64_t)min.count());
-  pack(out, (std::uint64_t)max.count());
 }
 
 void Packed::packReferences(std::vector<std::uint8_t>& out) noexcept {
@@ -170,58 +181,80 @@ void Packed::packReferences(std::vector<std::uint8_t>& out) noexcept {
 }
 
 void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
+  // Format: [Scope.type] [Scope.data...] children... [sentinel]
   src.contexts().citerate([&](const Context& c){
     if(c.scope().relation() != Relation::global
        && c.scope().relation() != Relation::call) {
       util::log::fatal{} << "sinks::Packed does not support non-physical calling Context!";
     }
-    pack(out, (std::uint64_t)c.scope().flat().type());
-    switch(c.scope().flat().type()) {
+    Scope s = c.scope().flat();
+    pack(out, (std::uint64_t)s.type());
+    switch(s.type()) {
     case Scope::Type::point: {
-      // Format: <type> [module id] [offset] children... [sentinel]
+      // Format: [module id] [offset]
       auto mo = c.scope().flat().point_data();
       pack(out, moduleIDs.at(&mo.first));
       pack(out, mo.second);
       break;
     }
     case Scope::Type::placeholder:
-      // Format: <type> [placeholder] children... [sentinel]
-      pack(out, (uint64_t)c.scope().flat().enumerated_data());
+      // Format: [placeholder]
+      pack(out, (std::uint64_t)s.enumerated_data());
       break;
     case Scope::Type::unknown:
     case Scope::Type::global:
-      // Format: <type> children... [sentinel]
+    case Scope::Type::function:
+    case Scope::Type::loop:
+    case Scope::Type::line:
+      // No data to represent, or unable to represent
       break;
+    }
+  }, [&](const Context& c){
+    pack(out, (std::uint64_t)0xFEF1F0F3ULL << 32);
+  });
+
+  // Format: [cnt] ([Scope.type] Scope...)...
+  pack(out, (std::uint64_t)src.contextFlowGraphs().size());
+  for(const ContextFlowGraph& cg: src.contextFlowGraphs().citerate()) {
+    auto s = cg.scope();
+    pack(out, (std::uint64_t)s.type());
+    switch(s.type()) {
+    case Scope::Type::point: {
+      // Format: [Scope.type] [module id] [offset]
+      auto mo = s.point_data();
+      pack(out, moduleIDs.at(&mo.first));
+      pack(out, mo.second);
+      break;
+    }
+    case Scope::Type::placeholder:
+    case Scope::Type::unknown:
+    case Scope::Type::global:
     case Scope::Type::function:
     case Scope::Type::loop:
     case Scope::Type::line:
       assert(false && "Unhandled Scope type in Packed!");
       std::abort();
     }
-  }, [&](const Context& c){
-    pack(out, (std::uint64_t)0xFEF1F0F3ULL << 32);
-  });
+  }
 }
 
 void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
-  // Format: [cnt] ([context ID] ([metrics]...)...)
+  // Format: [cnt] ([context ID] [cnt] ([metric ID] [use] [values]...)...)...
   auto start = out.size();
   std::uint64_t cnt = 0;
   pack(out, cnt);
   src.contexts().citerate([&](const Context& c){
     pack(out, (std::uint64_t)c.userdata[src.identifier()]);
-    for(const Metric& m: metrics) {
+    pack(out, (std::uint64_t)src.metrics().size());
+    for(const Metric& m: src.metrics().citerate()) {
+      pack(out, (std::uint64_t)m.userdata[src.identifier()]);
       pack(out, c.data().metricUsageFor(m).toInt());
 
       for(const auto& p: m.partials()) {
         if(auto v = m.getFor(c)) {
-          pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
-          pack(out, (double)v->get(p).get(MetricScope::function).value_or(0));
-          pack(out, (double)v->get(p).get(MetricScope::execution).value_or(0));
+          pack(out, v->get(p).getRaw());
         } else {
-          pack(out, (double)0);
-          pack(out, (double)0);
-          pack(out, (double)0);
+          pack(out, StatisticAccumulator::rawZero());
         }
       }
     }
@@ -231,6 +264,13 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   std::vector<std::uint8_t> tmp;
   pack(tmp, cnt);
   for(const auto b: tmp) out[start++] = b;
+}
+
+void Packed::packTimepoints(std::vector<std::uint8_t>& out) noexcept {
+  auto [min, max] = src.timepointBounds().value_or(std::make_pair(
+      std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
+  pack(out, (std::uint64_t)min.count());
+  pack(out, (std::uint64_t)max.count());
 }
 
 ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)
@@ -253,9 +293,6 @@ void ParallelPacked::notifyContext(const Context& ctx) {
 
 void ParallelPacked::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   Packed::packAttributes(out);
-  bytesPerCtx = 8;
-  for(const Metric& m: metrics)
-    bytesPerCtx += sizeof(MetricScopeSet::int_type) + m.partials().size() * 3 * 8;
 }
 
 void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
@@ -263,6 +300,10 @@ void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   assert(!packMetricsGroups.empty() && "packMetrics can only be called once!");
   std::size_t cCnt = ctxCnt.load(std::memory_order_relaxed);
   pack(out, (std::uint64_t)cCnt);
+
+  bytesPerCtx = 8 + 8;
+  for(const Metric& m: src.metrics().citerate())
+    bytesPerCtx += 8 + sizeof(MetricScopeSet::int_type) + m.partials().size() * raw_size;
 
   // Its dense, so we know the exact size already. Allocate the space we need
   auto startIdx = out.size();
@@ -292,21 +333,20 @@ util::WorkshareResult ParallelPacked::helpPackMetrics() noexcept {
 }
 
 void ParallelPacked::packMetricGroup(std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>& task) noexcept {
+  // Format: [cnt] ([context ID] [cnt] ([metric ID] [use] [values]...)...)...
   std::uint8_t* out = output + task.first * bytesPerCtx;
   for(const Context& c: std::move(task.second)) {
     out = pack(out, (std::uint64_t)c.userdata[src.identifier()]);
-    for(const Metric& m: metrics) {
+    out = pack(out, (std::uint64_t)src.metrics().size());
+    for(const Metric& m: src.metrics().citerate()) {
+      out = pack(out, (std::uint64_t)m.userdata[src.identifier()]);
       out = pack(out, c.data().metricUsageFor(m).toInt());
 
       for(const auto& p: m.partials()) {
         if(auto v = m.getFor(c)) {
-          out = pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
-          out = pack(out, (double)v->get(p).get(MetricScope::function).value_or(0));
-          out = pack(out, (double)v->get(p).get(MetricScope::execution).value_or(0));
+          out = pack(out, v->get(p).getRaw());
         } else {
-          out = pack(out, (double)0);
-          out = pack(out, (double)0);
-          out = pack(out, (double)0);
+          out = pack(out, StatisticAccumulator::rawZero());
         }
       }
     }

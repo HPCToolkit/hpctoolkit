@@ -57,6 +57,10 @@
 
 namespace hpctoolkit {
 
+namespace util {
+class stable_hash_state;
+}
+
 class Module;
 
 /// Application source File. Main data is just the full path to the source file,
@@ -91,6 +95,8 @@ private:
     return u_path;
   }
 };
+
+util::stable_hash_state& operator<<(util::stable_hash_state&, const File&) noexcept;
 
 /// High-level application Function(-like construct), within a particular
 /// Module. These do not have userdata and are not allocated by the Pipeline.
@@ -173,6 +179,8 @@ private:
   util::optional_ref<const File> m_file;
   uint64_t m_line;
 };
+
+util::stable_hash_state& operator<<(util::stable_hash_state&, const Function&) noexcept;
 
 }  // namespace hpctoolkit
 

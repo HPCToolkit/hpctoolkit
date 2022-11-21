@@ -80,7 +80,7 @@ XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 
 MYSOURCES = \
-	main.cpp master.cpp worker.cpp tree.cpp \
+	main.cpp tree.cpp \
 	mpi.cpp ../hpcprof/args.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@

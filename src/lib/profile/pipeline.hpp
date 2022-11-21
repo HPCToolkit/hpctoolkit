@@ -279,7 +279,7 @@ public:
     void attributes(const ProfileAttributes&);
 
     /// Emit some Thread-less timepoint bounds into the Pipeline.
-    /// DataClass: `attributes`
+    /// DataClass: `ctxTimepoints` or `metricTimepoints`
     // MT: Externally Synchronized (this), Internally Synchronized
     void timepointBounds(std::chrono::nanoseconds min, std::chrono::nanoseconds max);
 
@@ -531,8 +531,8 @@ public:
     /// Allow registration of Userdata for Sinks.
     Structs& structs() { return pipe->structs; }
 
-    /// Access to the canonical copies of the data within the Pipeline. Can only
-    /// be used after the write() barrier.
+    /// Access to the canonical copies of the data within the Pipeline.
+    /// Can only be used after the appropriate wavefront or write() barrier.
     const ProfileAttributes& attributes();
     std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
       timepointBounds();
@@ -543,6 +543,7 @@ public:
     const util::locked_unordered_uniqued_set<Metric>& metrics();
     const util::locked_unordered_uniqued_set<ExtraStatistic>& extraStatistics();
     const Context& contexts();
+    const util::locked_unordered_uniqued_set<ContextFlowGraph>& contextFlowGraphs();
     const util::locked_unordered_set<std::unique_ptr<Thread>>& threads();
 
     /// Get the size of the worker team in use by the connected Pipeline. Useful

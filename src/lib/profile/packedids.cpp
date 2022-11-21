@@ -48,8 +48,11 @@
 
 #include "packedids.hpp"
 
+#include "util/stable_hash.hpp"
 #include "util/log.hpp"
 #include "mpi/core.hpp"
+
+#include <algorithm>
 
 using namespace hpctoolkit;
 
@@ -68,101 +71,72 @@ static void pack(std::vector<std::uint8_t>& out, const std::uint64_t v) noexcept
     out.push_back((v >> shift) & 0xff);
 }
 
-IdPacker::IdPacker() : stripcnt(0), buffersize(0) {};
-
-void IdPacker::notifyPipeline() noexcept {
-  udOnce = src.structs().context.add<ctxonce>(std::ref(*this));
-}
-
-void IdPacker::notifyContextExpansion(const Context& from, Scope s, const Context& to) {
-  // Check that we haven't handled this particular expansion already
-  if(!from.userdata[udOnce].seen.emplace(s).second) return;
-  stripcnt.fetch_add(1, std::memory_order_relaxed);
-
-  // Nab a pseudo-random buffer to fill with our data
-  auto hash = std::hash<const Context*>{}(&from) ^ std::hash<Scope>{}(s);
-  static_assert(std::numeric_limits<decltype(hash)>::radix == 2, "Non-binary architecture?");
-  unsigned char idx = hash & 0xff;
-  for(int i = 8; i < std::numeric_limits<decltype(hash)>::digits; i += 8)
-    idx ^= (hash >> i) & 0xff;
-
-  auto& buffer = stripbuffers[idx].second;
-  std::unique_lock<std::mutex> lock(stripbuffers[idx].first);
-  auto oldsz = buffer.size();
-
-  // Helper function to trace an expansion and record it
-  auto trace = [&](const Context& leaf) {
-    std::vector<std::reference_wrapper<const Context>> stack;
-    util::optional_ref<const Context> c;
-    for(c = leaf; c && c != &from; c = c->direct_parent())
-      stack.emplace_back(*c);
-    assert(c && "Found NULL while mapping expansion, is someone trying to be clever?");
-    assert(!stack.empty() && "Context expansion did not actually expand?");
-
-    pack(buffer, (std::uint64_t)stack.size());
-    for(auto it = stack.crbegin(), ite = stack.crend(); it != ite; ++it) {
-      const Context& c = it->get();
-      buffer.push_back((std::uint8_t)c.scope().relation());
-      pack(buffer, (std::uint64_t)c.userdata[src.identifier()]);
-    }
-  };
-
-  // Now we can write the entry for out friends to work with.
-  // Format: [parent id] (Scope)
-  auto cid = from.userdata[src.identifier()];
-  pack(buffer, (std::uint64_t)cid);
-  switch(s.type()) {
-  case Scope::Type::point: {
-    // Format: [module id] [offset]
-    auto mo = s.point_data();
-    pack(buffer, (std::uint64_t)mo.first.userdata[src.identifier()]);
-    pack(buffer, (std::uint64_t)mo.second);
-    break;
-  }
-  case Scope::Type::placeholder:
-    // Format: [magic] [placeholder]
-    pack(buffer, (std::uint64_t)0xF3F2F1F0ULL << 32);
-    pack(buffer, (std::uint64_t)s.enumerated_data());
-    break;
-  case Scope::Type::unknown:
-    // Format: [magic]
-    pack(buffer, (std::uint64_t)0xF0F1F2F3ULL << 32);
-    break;
-  case Scope::Type::global:
-  case Scope::Type::function:
-  case Scope::Type::loop:
-  case Scope::Type::line:
-    assert(false && "PackedIds can't handle non-point Contexts!");
-    std::abort();
-  }
-
-  // Format: [cnt] ((Relation) [context id])...
-  trace(to);
-
-  buffersize.fetch_add(buffer.size() - oldsz, std::memory_order_relaxed);
-}
+IdPacker::IdPacker() = default;
 
 void IdPacker::notifyWavefront(DataClass ds) {
-  if(ds.hasReferences() && ds.hasContexts()) {  // This is it!
+  if(ds.hasContexts() && ds.hasAttributes()) {  // This is it!
     std::vector<uint8_t> ct;
-    // Format: [global id] [mod cnt] (modules) [map cnt] (map entries...)
+
+    // Format: [global id] [cnt] ([parent id] [nonce] [cnt] ([child hash] [child id])...)...
     pack(ct, (std::uint64_t)src.contexts().userdata[src.identifier()]);
+    auto cntPtr = ct.size();
+    std::size_t cnt = 0;
+    pack(ct, (std::uint64_t)cnt);
+    src.contexts().citerate([&](const Context& c){
+      ++cnt;
 
-    std::vector<std::string> mods;
-    for(const Module& m: src.modules().iterate()) {
-      const auto& id = m.userdata[src.identifier()];
-      if(mods.size() <= id) mods.resize(id+1, "");
-      mods.at(id) = m.path().string();
+      // Save hash states for each of the children
+      std::vector<std::tuple<util::stable_hash_state, std::uint64_t, unsigned int, std::reference_wrapper<const Context>>> children;
+      for(const Context& cc: c.children().citerate()) {
+        util::stable_hash_state shs;
+        shs << cc.scope();
+        children.emplace_back(std::move(shs), 0, cc.userdata[src.identifier()], cc);
+      }
+
+      // Scan for a suitable nonce that gives the children unique hashes
+      std::uint8_t nonce = 255;
+      for(std::uint8_t trial_nonce = 0; trial_nonce < 20; ++trial_nonce) {
+        for(auto& [shs, hash, id, cc]: children) {
+          auto copy_shs = shs;
+          copy_shs << trial_nonce;
+          hash = copy_shs.squeeze();
+        }
+        std::sort(children.begin(), children.end(), [](auto& a, auto& b) -> bool {
+          return std::get<1>(a) < std::get<1>(b);
+        });
+
+        bool is_unique = true;
+        for(std::size_t i = 1; i < children.size(); ++i) {
+          if(std::get<1>(children[i-1]) == std::get<1>(children[i])) {
+            is_unique = false;
+            break;
+          }
+        }
+        if(is_unique) {
+          nonce = trial_nonce;
+          break;
+        }
+      }
+      if(nonce == 255)
+        util::log::fatal{} << "Unable to find a suitable unique hash function!";
+
+      // Save the results
+      pack(ct, (std::uint64_t)c.userdata[src.identifier()]);
+      ct.push_back(nonce);
+      pack(ct, (std::uint64_t)children.size());
+      for(const auto& [shs, hash, id, cc]: children) {
+        pack(ct, (std::uint64_t)hash);
+        pack(ct, (std::uint64_t)id);
+      }
+    }, nullptr);
+    {
+      std::vector<std::uint8_t> cntv;
+      pack(cntv, (std::uint64_t)cnt);
+      for(const auto& b: cntv)
+        ct[cntPtr++] = b;
     }
-    pack(ct, (std::uint64_t)mods.size());
-    for(auto& s: mods) pack(ct, std::move(s));
 
-    pack(ct, (std::uint64_t)stripcnt.load(std::memory_order_relaxed));
-    ct.reserve(ct.size() + buffersize.load(std::memory_order_relaxed));
-    for(const auto& ls: stripbuffers)
-      ct.insert(ct.end(), ls.second.begin(), ls.second.end());
-
-    // Format: ... [met cnt] ([id] [name])...
+    // Format: [metric cnt] ([id] [name])...
     pack(ct, (std::uint64_t)src.metrics().size());
     for(auto& m: src.metrics().citerate()) {
       pack(ct, (std::uint64_t)m().userdata[src.identifier()].base());
@@ -200,46 +174,23 @@ IdUnpacker::IdUnpacker(std::vector<uint8_t>&& c) : ctxtree(std::move(c)) {
 
 void IdUnpacker::unpack() noexcept {
   auto it = ctxtree.cbegin();
+
+  // Format: [global id] [cnt] ([parent id] [nonce] [cnt] ([child hash] [child id])...)...
   ::unpack<std::uint64_t>(it);  // Skip over the global id
-
-  exmod = &sink.module("/nonexistent/exmod");
-
   auto cnt = ::unpack<std::uint64_t>(it);
-  for(std::size_t i = 0; i < cnt; i++)
-    modmap.emplace_back(sink.module(::unpack<std::string>(it)));
-
-  cnt = ::unpack<std::uint64_t>(it);
-  for(std::size_t i = 0; i < cnt; i++) {
-    Scope s;
-    // Format: [parent id] (Scope) [cnt] [children ids]...
-    unsigned int parent = ::unpack<std::uint64_t>(it);
-    auto next = ::unpack<std::uint64_t>(it);
-    if(next == (0xF0F1F2F3ULL << 32)) {
-      // Format: [magic]
-      s = {};  // Unknown Scope
-    } else if(next == (0xF3F2F1F0ULL << 32)) {
-      // Format: [magic] [placeholder]
-      s = {Scope::placeholder, ::unpack<std::uint64_t>(it)};
-    } else {
-      // Format: [module id] [offset]
-      auto off = ::unpack<std::uint64_t>(it);
-      s = {modmap.at(next), off};
-    }
-    std::size_t cnt = ::unpack<std::uint64_t>(it);
-    if(cnt == 0) {
-      // TODO: Figure out how to handle Superpositions in IdPacker and IdUnpacker
-      assert(false && "IdUnpacker currently doesn't handle Superpositions!");
-      std::abort();
-    }
-    auto& scopes = exmap[parent][{(Relation)*it, s}];
-    for(std::size_t x = 0; x < cnt; x++) {
-      Relation rel = (Relation)*it;
-      it++;
-      auto id = ::unpack<std::uint64_t>(it);
-      scopes.emplace_back(rel, Scope(*exmod, id));
+  for(std::size_t i = 0; i < cnt; ++i) {
+    auto pid = ::unpack<std::uint64_t>(it);
+    auto& out = idmap[pid]; // parent id
+    out.first = *it++;  // nonce
+    auto ccnt = ::unpack<std::uint64_t>(it);
+    for(std::size_t j = 0; j < ccnt; ++j) {
+      auto hash = ::unpack<std::uint64_t>(it);
+      unsigned int id = ::unpack<std::uint64_t>(it);
+      out.second[hash] = id;
     }
   }
 
+  // Format: [metric cnt] ([id] [name])...
   cnt = ::unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
     auto id = ::unpack<std::uint64_t>(it);
@@ -250,40 +201,15 @@ void IdUnpacker::unpack() noexcept {
   ctxtree.clear();
 }
 
-std::optional<std::pair<util::optional_ref<Context>, Context&>>
-IdUnpacker::classify(Context& c, NestedScope& ns) noexcept {
-  util::call_once(once, [this]{ unpack(); });
-  bool first = true;
-  auto x = exmap.find(c.userdata[sink.identifier()]);
-  assert(x != exmap.end() && "Missing data for Context `co`!");
-  auto y = x->second.find(ns);
-  assert(y != x->second.end() && "Missing data for Scope `s` from Context `co`!");
-  util::optional_ref<Context> cr;
-  std::reference_wrapper<Context> cc = c;
-  for(const auto& next: y->second) {
-    if(!first) {
-      cc = sink.context(cc, ns).second;
-      if(!cr) cr = cc;
-    }
-    ns = next;
-    first = false;
-  }
-  return std::make_pair(cr, cc);
-}
-
 std::optional<unsigned int> IdUnpacker::identify(const Context& c) noexcept {
-  switch(c.scope().flat().type()) {
-  case Scope::Type::global:
+  util::call_once(once, [this]{ unpack(); });
+  if(!c.direct_parent())
     return globalid;
-  case Scope::Type::point: {
-    auto mo = c.scope().flat().point_data();
-    assert(&mo.first == exmod && "point Scopes must reference the marker Module!");
-    return mo.second;
-  }
-  default:
-    assert(false && "Unhandled Scope in IdUnpacker");
-    std::abort();
-  }
+  const auto& ids = idmap.at(c.direct_parent()->userdata[sink.identifier()]);
+  util::stable_hash_state shs;
+  shs << c.scope() << ids.first;
+  auto hash = shs.squeeze();
+  return ids.second.at(hash);
 }
 
 std::optional<Metric::Identifier> IdUnpacker::identify(const Metric& m) noexcept {

@@ -49,6 +49,8 @@
 
 #include "../sink.hpp"
 
+#include "../finalizer.hpp"
+
 #include "../util/parallel_work.hpp"
 #include "../util/ref_wrappers.hpp"
 
@@ -64,6 +66,26 @@ class Packed : public ProfileSink {
 public:
   Packed();
   ~Packed() = default;
+
+  /// Simple Finalizer that prevents any later Finalizer from classifying.
+  /// Needed when using Packed due to limitations in the format used.
+  class DontClassify final : public ProfileFinalizer {
+  public:
+    DontClassify() = default;
+    ~DontClassify() = default;
+
+    ExtensionClass provides() const noexcept override {
+      return ExtensionClass::classification;
+    }
+    ExtensionClass requires() const noexcept override {
+      return {};
+    }
+
+    std::optional<std::pair<util::optional_ref<Context>, Context&>>
+    classify(Context& ancestor, NestedScope&) noexcept override {
+      return {{std::nullopt, ancestor}};
+    }
+  };
 
   // This Sink uses the unique identifiers to make associations. Subclasses
   // should take care to append this to their own overrides.
@@ -96,6 +118,11 @@ protected:
   /// reading end.
   // MT: Externally Synchronized
   void packMetrics(std::vector<std::uint8_t>&) noexcept;
+
+  /// Packs the available `*Timepoints` data on the end of the given vector.
+  /// Note that this does not actual pack the traces, just the bounds.
+  // MT: Externally Synchronized
+  void packTimepoints(std::vector<std::uint8_t>&) noexcept;
 };
 
 /// Extension of Packed that uses parallel algorithms for packing contexts and

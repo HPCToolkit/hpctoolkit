@@ -97,24 +97,27 @@ static double atomic_op(std::atomic<double>& a, const double v, Statistic::combi
 StatisticAccumulator::StatisticAccumulator(const Metric& m)
   : partials(m.partials().size()) {};
 
-void StatisticAccumulator::PartialRef::add(MetricScope s, double v) noexcept {
-  assert(v > 0 && "Attempt to add 0 value to a Partial!");
+StatisticAccumulator::raw_t StatisticAccumulator::Partial::getRaw() const noexcept {
+  return raw_t{
+    point.load(std::memory_order_relaxed),
+    function.load(std::memory_order_relaxed),
+    function_noloops.load(std::memory_order_relaxed),
+    execution.load(std::memory_order_relaxed),
+    isLoop.load(std::memory_order_relaxed) ? 1.0 : 0.0,
+  };
+}
+
+void StatisticAccumulator::PartialRef::addRaw(const raw_t& v) noexcept {
 #ifndef NDEBUG
   added = true;
 #endif
-  switch(s) {
-  case MetricScope::point: atomic_op(partial.point, v, statpart.combinator()); return;
-  case MetricScope::function: atomic_op(partial.function, v, statpart.combinator()); return;
-  // TODO: This is probably completely wrong, but this part of the interface needs
-  // to be redesigned to fix it and it only affects hpcprof-mpi. So ignore the
-  // errors for now.
-  case MetricScope::lex_aware:
-    atomic_op(partial.isLoop ? partial.function_noloops : partial.function, v, statpart.combinator());
-    return;
-  case MetricScope::execution: atomic_op(partial.execution, v, statpart.combinator()); return;
-  }
-  assert(false && "Invalid MetricScope!");
-  std::abort();
+  atomic_op(partial.point, v[0], statpart.combinator());
+  atomic_op(partial.function, v[1], statpart.combinator());
+  atomic_op(partial.function_noloops, v[2], statpart.combinator());
+  atomic_op(partial.execution, v[3], statpart.combinator());
+  const bool isLoop = v[4] == 1.0;
+  if(partial.isLoop.load(std::memory_order_relaxed) != isLoop)
+    partial.isLoop.store(isLoop, std::memory_order_relaxed);
 }
 
 StatisticAccumulator::PartialCRef StatisticAccumulator::get(const StatisticPartial& p) const noexcept {

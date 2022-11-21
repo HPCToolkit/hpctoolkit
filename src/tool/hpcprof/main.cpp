@@ -70,7 +70,7 @@ int main(int argc, char* const argv[]) {
   // Get the main core of the Pipeline set up.
   ProfilePipeline::Settings pipelineB;
   for(auto& sp : args.sources) pipelineB << std::move(sp.first);
-  for(auto& sp : args.ksyms) pipelineB << std::move(sp);
+  for(auto& sp : args.ksyms) pipelineB << std::move(sp.first);
   ProfArgs::StatisticsExtender se(args);
   pipelineB << se;
 

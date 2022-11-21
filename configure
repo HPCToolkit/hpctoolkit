@@ -1027,7 +1027,6 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 enable_endian
-enable_force_hpcprof_mpi
 enable_mpi_search
 enable_bgq
 with_dummy_blank_line
@@ -1747,8 +1746,6 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-endian         host endianness (big, little), only needed if
                           autoconf fails to detect correctly
-  --enable-force-hpcprof-mpi
-                          allow building hpcprof-mpi, disabled due to errors
   --enable-mpi-search=(cray,bgq)
                           search for MPI C++ compiler on given system (for
                           spack build)
@@ -19579,18 +19576,6 @@ search_for_mpi()
 # build a static hpcprof-mpi.
 
 
-# In develop branch, hpcprof-mpi is broken.  Disable prof-mpi unless a
-# force option is given.
-
-# Check whether --enable-force-hpcprof-mpi was given.
-if test "${enable_force_hpcprof_mpi+set}" = set; then :
-  enableval=$enable_force_hpcprof_mpi;
-else
-  enable_force_hpcprof_mpi=no
-fi
-
-
-
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: supplied MPICXX compiler: $MPICXX" >&5
@@ -19600,37 +19585,6 @@ $as_echo "$as_me: supplied MPICXX compiler: $MPICXX" >&6;}
 if test "${enable_mpi_search+set}" = set; then :
   enableval=$enable_mpi_search;
 else
-  enable_mpi_search=no
-fi
-
-
-
-# disable hpcprof-mpi unless force option is given
-if test "$enable_force_hpcprof_mpi" = no ; then
-  if test "x$MPICXX" != x || test "x$enable_mpi_search" != xno ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: hpcprof-mpi is temporarily disabled due to unresolved" >&5
-$as_echo "$as_me: WARNING: hpcprof-mpi is temporarily disabled due to unresolved" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: errors.  use hpcprof with multiple threads instead." >&5
-$as_echo "$as_me: WARNING: errors.  use hpcprof with multiple threads instead." >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
-$as_echo "$as_me: WARNING: " >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: for developers working on hpcprof-mpi, reconfigure with:" >&5
-$as_echo "$as_me: WARNING: for developers working on hpcprof-mpi, reconfigure with:" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:    --enable-force-hpcprof-mpi" >&5
-$as_echo "$as_me: WARNING:    --enable-force-hpcprof-mpi" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
-$as_echo "$as_me: WARNING: " >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: for users, unset MPICXX from your environment, or else" >&5
-$as_echo "$as_me: WARNING: for users, unset MPICXX from your environment, or else" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: reconfigure with:" >&5
-$as_echo "$as_me: WARNING: reconfigure with:" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:    MPICXX= " >&5
-$as_echo "$as_me: WARNING:    MPICXX= " >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
-$as_echo "$as_me: WARNING: " >&2;}
-    as_fn_error $? "hpcprof-mpi is disabled" "$LINENO" 5
-  fi
-  MPICXX=
   enable_mpi_search=no
 fi
 

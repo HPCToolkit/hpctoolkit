@@ -62,6 +62,10 @@
 
 namespace hpctoolkit {
 
+namespace util {
+class stable_hash_state;
+}
+
 // Just a simple load module class, nothing to see here
 class Module {
 public:
@@ -85,6 +89,8 @@ private:
     return u_path;
   }
 };
+
+util::stable_hash_state& operator<<(util::stable_hash_state&, const Module&) noexcept;
 
 }
 

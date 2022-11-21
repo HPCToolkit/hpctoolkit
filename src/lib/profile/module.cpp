@@ -46,22 +46,7 @@
 
 #include "module.hpp"
 
-#include "lib/support-lean/demangle.h"
-#include "pipeline.hpp"
-
-#include <elfutils/libdw.h>
-#include <dwarf.h>
-
-#include <stdexcept>
-#include <unordered_map>
-#include <limits>
-#include <algorithm>
-extern "C" {
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-}
+#include "util/stable_hash.hpp"
 
 using namespace hpctoolkit;
 
@@ -72,3 +57,7 @@ Module::Module(Module&& m)
     u_path(std::move(m.u_path)) {}
 Module::Module(ud_t::struct_t& rs, stdshim::filesystem::path p)
   : userdata(rs, std::cref(*this)), u_path(std::move(p)) {}
+
+util::stable_hash_state& hpctoolkit::operator<<(util::stable_hash_state& h, const Module& m) noexcept {
+  return h << m.path();
+}

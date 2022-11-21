@@ -87,12 +87,9 @@ public:
   void notifyCtxTimepointRewindStart(const Thread&) override;
   void notifyThreadFinal(std::shared_ptr<const PerThreadTemporary>) override;
 
-  /// Return the tag for the experiment.xml, or an empty string if empty.
-  std::string exmlTag();
-
 private:
   std::optional<hpctoolkit::util::File> tracefile;
-  std::atomic<bool> has_traces{false};
+  bool has_traces;
   size_t totalNumTraces;
   uint64_t footerPos;
 
