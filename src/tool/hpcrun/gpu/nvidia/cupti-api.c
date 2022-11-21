@@ -1472,7 +1472,10 @@ cupti_pc_sampling_enable
  int frequency
 )
 {
+  if (cupti_pc_sampling_enabled) return;
+
   TMSG(CUPTI, "enter cupti_pc_sampling_enable");
+
   cupti_pc_sampling_enabled = true;
   CUpti_ActivityPCSamplingConfig config;
   config.samplingPeriod = 0;
