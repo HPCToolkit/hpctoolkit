@@ -927,9 +927,9 @@ class StrictAccuracy(AccuracyStrategy):
             fails = sorted(self.failures, key=lambda x: x[2], reverse=True)
             suffix = " (of first 1000 encountered)" if self.failed_cnt >= 1000 else ""
             if len(fails) <= 30:
-                print(f"  Details of failures{suffix}:", file=out)
+                print(f"  Details of failures{suffix} (expected != got):", file=out)
             else:
-                print(f"  Details of 30 worst failures{suffix}:", file=out)
+                print(f"  Details of 30 worst failures{suffix} (expected != got):", file=out)
             for key in fails[:30]:
                 a, b, diff = key
                 paths = self.failures[key]
@@ -962,6 +962,16 @@ class StrictAccuracy(AccuracyStrategy):
     class CmpError(enum.Enum):
         bad_sign = enum.auto()
         exp_diff = enum.auto()
+
+        def __lt__(self, other):
+            if isinstance(other, float):
+                return False
+            return self.value < other.value
+
+        def __gt__(self, other):
+            if isinstance(other, float):
+                return True
+            return self.value > other.value
 
     def _float_cmp(self, a: float, b: float) -> float | CmpError:
         """Compare two floats and return 0.0 if the two are equal. If not, returns the

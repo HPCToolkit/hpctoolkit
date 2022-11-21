@@ -1,3 +1,4 @@
+import collections
 import contextlib
 import json
 import os
@@ -12,7 +13,7 @@ from pathlib import Path
 from .action import Action, ActionResult, ReturnCodeResult
 from .configuration import Configuration
 from .logs import dump_file
-from .util import nproc
+from .util import nproc, nproc_max
 
 
 @contextlib.contextmanager
@@ -67,12 +68,13 @@ class Configure(Action):
 class MakeAction(Action):
     """Base class for Actions that primarily run `make ...` in the build directory."""
 
-    def _run(
+    def _run(  # noqa: too-many-locals
         self,
         logprefix: str,
         cfg: Configuration,
         builddir: Path,
         *targets,
+        env: dict[str, str] = None,
         logdir: T.Optional[Path] = None,
         split_stderr: bool = True,
         parallel: bool = True,
@@ -84,11 +86,15 @@ class MakeAction(Action):
             raise RuntimeError("Unable to find Make!")
         assert isinstance(make, str)
 
+        final_env = cfg.env
+        if env is not None:
+            final_env = collections.ChainMap(env, final_env)
+
         cmd = [make, "--output-sync", f"-j{nproc() if parallel else 1:d}", *targets]
         logsuffixes = (".stdout.log", ".stderr.log") if split_stderr else (".log",)
         with _stdlogfiles(logdir, logprefix, *logsuffixes) as (out_log, err_log):
             proc = subprocess.run(
-                cmd, cwd=builddir, stdout=out_log, stderr=err_log, env=cfg.env, check=False
+                cmd, cwd=builddir, stdout=out_log, stderr=err_log, env=final_env, check=False
             )
 
         if logdir is not None:
@@ -407,7 +413,15 @@ class Test(MakeAction):
         installdir: Path,
         logdir: T.Optional[Path] = None,
     ) -> ActionResult:
-        res = self._run("test", cfg, builddir, "check", "installcheck", logdir=logdir)
+        res = self._run(
+            "test",
+            cfg,
+            builddir,
+            "check",
+            "installcheck",
+            logdir=logdir,
+            env={"MESON_TESTTHREADS": f"{nproc_max():d}"},
+        )
 
         tests2bdir = builddir / "tests2-build"
         if logdir is not None:
