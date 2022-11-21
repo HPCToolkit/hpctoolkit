@@ -275,6 +275,11 @@ bool hpcrun_local_rank_enabled()
     my_rank = getenv("HPCRUN_LOCAL_RANK");
   }
 
+#ifdef DEBUG_LOCAL_RANKS
+  fprintf(stderr, "pid %ld: HPCRUN_LOCAL_RANKS=%s my_rank=%s\n", getpid(), 
+         local_ranks, my_rank);
+#endif
+
   if (local_ranks && my_rank) {
     if (strcmp(local_ranks, my_rank) == 0) {
       // profiling only a single local rank
@@ -1258,6 +1263,10 @@ monitor_init_mpi(int *argc, char ***argv)
 void*
 monitor_thread_pre_create(void)
 {
+  if (!hpcrun_local_rank_enabled()) {
+    hpcrun_set_disabled();
+  }
+
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
   if (hpcrun_module_ignore_map_uninitialized || hpcrun_get_disabled()) {
