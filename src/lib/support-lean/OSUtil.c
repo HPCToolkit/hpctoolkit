@@ -154,19 +154,13 @@ OSUtil_local_rank()
   }
 
   // SLURM
-  rid = getenv("SLURM_LOCAL_RANK");
+  rid = getenv("SLURM_LOCALID");
   if (rid) {
     return rid;
   }
 
   // LSF
   rid = getenv("JSM_NAMESPACE_LOCAL_RANK");
-  if (rid) {
-    return rid;
-  }
-
-  // HPE's Parallel Application Launch Service
-  rid = getenv("PALS_RANKID");
   if (rid) {
     return rid;
   }
