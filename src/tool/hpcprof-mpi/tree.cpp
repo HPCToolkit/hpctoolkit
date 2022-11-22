@@ -49,6 +49,7 @@
 #include "tree.hpp"
 
 #include "lib/profile/mpi/all.hpp"
+#include "lib/profile/util/once.hpp"
 
 using namespace hpctoolkit;
 
@@ -58,10 +59,10 @@ RankTree::RankTree(std::size_t arity)
     min(mpi::World::rank() * arity + 1),
     max(std::min<std::size_t>(min + arity, mpi::World::size())) {};
 
-Sender::Sender(RankTree& t) : tree(t), stash(nullptr) {};
-Sender::Sender(RankTree& t, std::vector<std::uint8_t>& s) : tree(t), stash(&s) {};
+Sender::Sender(RankTree& t) : tree(t) {};
 
 void Sender::notifyPipeline() noexcept {
+  sinks::Packed::notifyPipeline();
   src.registerOrderedWrite();
 }
 
@@ -74,41 +75,53 @@ void Sender::write() {
     auto mpiSem = src.enterOrderedWrite();
     mpi::send(block, tree.parent, mpi::Tag::RankTree_1);
   }
-
-  if(stash) {
-    packReferences(*stash);
-    packContexts(*stash);
-  }
 }
 
-Receiver::Receiver(std::size_t p) : peer(p), done(false) {};
+Receiver::Receiver(std::size_t peer) : peer(peer) {};
+Receiver::Receiver(std::size_t peer, std::vector<std::uint8_t>& blockstore)
+  : peer(peer), blockstore(blockstore) {};
+Receiver::Receiver(std::vector<std::uint8_t> block)
+  : readBlock(true), block(std::move(block)) {};
 
-void Receiver::read(const DataClass&) {
-  if(done) return;
-  std::vector<std::uint8_t> block;
-  {
+std::pair<bool, bool> Receiver::requiresOrderedRegions() const noexcept {
+  return {!readBlock, false};
+}
+
+void Receiver::read(const DataClass& d) {
+  if(!readBlock) {
     auto mpiSem = sink.enterOrderedPrewaveRegion();
     block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_1);
+    readBlock = true;
   }
-  iter_t it = block.begin();
-  it = unpackAttributes(it);
-  it = unpackReferences(it);
-  it = unpackContexts(it);
-  done = true;
+
+  if(!parsedBlock && d.anyOf(provides())) {
+    iter_t it = block.begin();
+    it = unpackAttributes(it);
+    it = unpackReferences(it);
+    it = unpackContexts(it);
+    if(blockstore) {
+      *blockstore = std::move(block);
+    } else {
+      block.clear();
+    }
+    parsedBlock = true;
+  }
 }
 
 void Receiver::append(ProfilePipeline::Settings& pB, RankTree& tree) {
   for(std::size_t peer = tree.min; peer < tree.max; peer++)
     pB << std::make_unique<Receiver>(peer);
 }
-
-MetricSender::MetricSender(RankTree& t, bool n)
-  : sinks::ParallelPacked(false, true), tree(t), needsTimepoints(n) {};
-
-DataClass MetricSender::accepts() const noexcept {
-  using namespace hpctoolkit::literals;
-  return data::attributes + data::contexts + data::metrics;
+void Receiver::append(ProfilePipeline::Settings& pB, RankTree& tree,
+    std::deque<std::vector<uint8_t>>& stores) {
+  for(std::size_t peer = tree.min; peer < tree.max; peer++) {
+    stores.emplace_back();
+    pB << std::make_unique<Receiver>(peer, stores.back());
+  }
 }
+
+MetricSender::MetricSender(RankTree& t)
+  : sinks::ParallelPacked(false, true), tree(t) {};
 
 void MetricSender::notifyPipeline() noexcept {
   sinks::ParallelPacked::notifyPipeline();
@@ -117,8 +130,8 @@ void MetricSender::notifyPipeline() noexcept {
 
 void MetricSender::write() {
   std::vector<std::uint8_t> block;
-  packAttributes(block);
   packMetrics(block);
+  packTimepoints(block);
   auto mpiSem = src.enterOrderedWrite();
   mpi::send(block, tree.parent, mpi::Tag::RankTree_2);
 }
@@ -127,51 +140,31 @@ util::WorkshareResult MetricSender::help() {
   return helpPackMetrics();
 }
 
-MetricReceiver::MetricReceiver(std::size_t p, ctx_map_t& c)
-  : cmap(c), peer(p), done(false), stash(nullptr) {};
-MetricReceiver::MetricReceiver(std::size_t p, ctx_map_t& c, const std::vector<std::uint8_t>& s)
-  : cmap(c), peer(p), done(false), stash(&s) {};
-
-DataClass MetricReceiver::provides() const noexcept {
-  using namespace hpctoolkit::literals;
-  return data::attributes + data::metrics
-         + (stash ? data::references + data::contexts : DataClass{});
-}
+MetricReceiver::MetricReceiver(std::size_t p, sources::Packed::IdTracker& tracker)
+  : sources::Packed(tracker), peer(p) {};
 
 DataClass MetricReceiver::finalizeRequest(const DataClass& d) const noexcept {
-  using namespace hpctoolkit::literals;
-  DataClass rd = d;
-  if(rd.hasContexts()) rd += data::references;
-  if(rd.hasMetrics()) rd += data::attributes;
-  return rd;
+  return d;
 }
 
 void MetricReceiver::read(const DataClass& d) {
-  if(stash && d.hasContexts()) {
-    iter_t it = stash->begin();
-    it = unpackReferences(it);
-    it = unpackContexts(it);
-  }
-
-  if(!d.hasMetrics() || done) return;
-
-  std::vector<std::uint8_t> block;
-  {
+  if(!readBlock) {
     auto mpiSem = sink.enterOrderedPostwaveRegion();
     block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_2);
+    readBlock = true;
   }
-  iter_t it = block.begin();
-  it = unpackAttributes(it);
-  it = unpackMetrics(it, cmap);
-  done = true;
+
+  if(!parsedBlock && d.anyOf(provides())) {
+    iter_t it = block.begin();
+    it = unpackMetrics(it);
+    it = unpackTimepoints(it);
+    block.clear();
+    parsedBlock = true;
+  }
 }
 
-void MetricReceiver::append(ProfilePipeline::Settings& pB, RankTree& tree, ctx_map_t& cmap) {
+void MetricReceiver::append(ProfilePipeline::Settings& pB, RankTree& tree,
+    hpctoolkit::sources::Packed::IdTracker& tracker) {
   for(std::size_t peer = tree.min; peer < tree.max; peer++)
-    pB << std::make_unique<MetricReceiver>(peer, cmap);
-}
-void MetricReceiver::append(ProfilePipeline::Settings& pB, RankTree& tree, ctx_map_t& cmap,
-                            const std::vector<std::uint8_t>& stash) {
-  for(std::size_t peer = tree.min; peer < tree.max; peer++)
-    pB << std::make_unique<MetricReceiver>(peer, cmap, stash);
+    pB << std::make_unique<MetricReceiver>(peer, tracker);
 }

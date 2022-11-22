@@ -59,33 +59,20 @@ public:
   ~IdPacker() = default;
 
   DataClass accepts() const noexcept override {
-    return DataClass::references + DataClass::contexts + DataClass::attributes;
+    return DataClass::contexts + DataClass::attributes;
   }
   ExtensionClass requires() const noexcept override {
     return ExtensionClass::identifier;
   }
   DataClass wavefronts() const noexcept override {
-    return DataClass::references + DataClass::contexts + DataClass::attributes;
+    return DataClass::contexts + DataClass::attributes;
   }
 
-  void notifyPipeline() noexcept override;
-  void notifyContextExpansion(const Context&, Scope, const Context&) override;
   void notifyWavefront(DataClass) override;
   void write() override {};
 
 protected:
   virtual void notifyPacked(std::vector<uint8_t>&&) = 0;
-
-private:
-  std::atomic<std::size_t> stripcnt;
-  struct ctxonce {
-    ctxonce(const Context&, IdPacker&) {};
-    util::locked_unordered_set<Scope> seen;
-  };
-  Context::ud_t::typed_member_t<ctxonce> udOnce;
-
-  std::atomic<std::size_t> buffersize;
-  std::array<std::pair<std::mutex, std::vector<uint8_t>>, 256> stripbuffers;
 };
 
 class IdUnpacker final : public ProfileFinalizer {
@@ -101,19 +88,13 @@ public:
   std::optional<unsigned int> identify(const Context&) noexcept override;
   std::optional<Metric::Identifier> identify(const Metric&) noexcept override;
 
-  std::optional<std::pair<util::optional_ref<Context>, Context&>>
-  classify(Context&, NestedScope&) noexcept override;
-
 private:
   void unpack() noexcept;
   std::vector<uint8_t> ctxtree;
 
   std::once_flag once;
-  const Module* exmod;
-  std::vector<std::reference_wrapper<const Module>> modmap;
   unsigned int globalid;
-  std::unordered_map<unsigned int, std::unordered_map<NestedScope, std::vector<NestedScope>>> exmap;
-
+  std::unordered_map<unsigned int, std::pair<std::uint8_t, std::unordered_map<std::uint64_t, unsigned int>>> idmap;
   std::unordered_map<std::string, unsigned int> metmap;
 };
 

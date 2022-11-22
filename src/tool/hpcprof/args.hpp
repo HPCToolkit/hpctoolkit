@@ -69,7 +69,7 @@ public:
   std::shared_ptr<Logstore> logstore;
 
   /// KernelSymbols Finalizers from properly named measurements directories
-  std::vector<std::unique_ptr<ProfileFinalizer>> ksyms;
+  std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> ksyms;
 
   /// (Structfile) Finalizers and corrosponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> structs;

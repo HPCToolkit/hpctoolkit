@@ -86,7 +86,7 @@ MYSOURCES = \
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
 	\
 	util/ragged_vector.cpp util/once.cpp util/xml.cpp util/log.cpp \
-	util/file-posix.cpp util/lzmastream.cpp \
+	util/file-posix.cpp util/lzmastream.cpp util/stable_hash.cpp \
 	\
 	mpi/accumulate-thread.cpp \
 	\

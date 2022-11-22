@@ -698,7 +698,6 @@ class Configuration:
         fragments.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
         if variant.mpi:
             fragments.append(depcfg.get("MPICXX="))
-            fragments.append("--enable-force-hpcprof-mpi")
         else:
             fragments.append("MPICXX=")
 

@@ -60,6 +60,34 @@ public:
   Packed();
   ~Packed() = default;
 
+  /// Helper Sink to fill the identifier to Context table.
+  class IdTracker : public ProfileSink {
+  public:
+    IdTracker() = default;
+    ~IdTracker() = default;
+
+    DataClass accepts() const noexcept override {
+      return DataClass::attributes + DataClass::contexts;
+    }
+    ExtensionClass requires() const noexcept override {
+      return ExtensionClass::identifier;
+    }
+
+    void write() override;
+
+    void notifyContext(const Context&) noexcept override;
+    void notifyMetric(const Metric&) noexcept override;
+
+  private:
+    friend class Packed;
+    util::locked_unordered_map<std::uint64_t, std::reference_wrapper<Context>> contexts;
+    util::locked_unordered_map<std::uint64_t, std::reference_wrapper<const Metric>> metrics;
+  };
+
+  /// The given IdTracker should be in the same Pipeline as this Source, and
+  /// IdPacker/IdUnpacker should be used to keep ids consistent.
+  Packed(const IdTracker&);
+
 protected:
   // Everything done during unpacking is marked with an iterator.
   using iter_t = std::vector<std::uint8_t>::const_iterator;
@@ -76,37 +104,18 @@ protected:
   // MT: Externally Synchronized
   iter_t unpackContexts(iter_t) noexcept;
 
-public:
-  /// Mapping of identifiers to the corrosponding Contexts. For unpackMetrics.
-  using ctx_map_t = util::locked_unordered_map<std::uint64_t, std::reference_wrapper<Context>>;
-
-protected:
   /// Unpacks and emits a vector's `metrics` data.
   /// Note that this relies on identifiers being the same as on the writing end.
   // MT: Externally Synchronized
-  iter_t unpackMetrics(iter_t, const ctx_map_t&) noexcept;
+  iter_t unpackMetrics(iter_t) noexcept;
 
-public:
-  /// Helper Sink to fill the identifier to Context table.
-  class ContextTracker : public ProfileSink {
-  public:
-    ContextTracker(ctx_map_t& t) : target(t) {};
-    ~ContextTracker() = default;
-
-    DataClass accepts() const noexcept override { return DataClass::contexts; }
-    ExtensionClass requires() const noexcept override {
-      return ExtensionClass::identifier;
-    }
-
-    void write() override;
-
-    void notifyContext(const Context&) noexcept override;
-
-  private:
-    ctx_map_t& target;
-  };
+  /// Unpacks and emits a vector's `*Timepoints` data.
+  /// Specifically the bounds, not much else.
+  // MT: Externally Synchronized
+  iter_t unpackTimepoints(iter_t) noexcept;
 
 private:
+  util::optional_ref<const IdTracker> tracker;
   std::vector<std::reference_wrapper<Metric>> metrics;
   std::vector<std::reference_wrapper<Module>> modules;
 };

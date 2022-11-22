@@ -564,6 +564,13 @@ util::Once::Caller Source::enterOrderedPostwaveRegion() {
     assert(!slocal->disabled.has(DataClass:: DS) && "Attempt to emit `" #DS "` after Source has already read(`" #DS "`)!"); \
 } while(0)
 
+#define SRC_ASSERT_LIMITS_MULTI(DS) do { \
+  assert(dataLimit.anyOf(DS) && "Source did not register for `" #DS "` emission!"); \
+  assert(pipe->scheduled.anyOf(DS) && "`" #DS "` are not scheduled for this Pipeline!"); \
+  if(slocal != nullptr) \
+    assert(!slocal->disabled.allOf(DS) && "Attempt to emit `" #DS "` after Source has already read(`" #DS "`)!"); \
+} while(0)
+
 void Source::attributes(const ProfileAttributes& as) {
   SRC_ASSERT_LIMITS(attributes);
   std::unique_lock<std::mutex> l(pipe->attrsLock);
@@ -571,7 +578,7 @@ void Source::attributes(const ProfileAttributes& as) {
 }
 
 void Source::timepointBounds(std::chrono::nanoseconds min, std::chrono::nanoseconds max) {
-  SRC_ASSERT_LIMITS(attributes);
+  SRC_ASSERT_LIMITS_MULTI(DataClass::ctxTimepoints | DataClass::metricTimepoints);
   std::unique_lock<std::mutex> l(pipe->attrsLock);
   if(pipe->timepointBounds) {
     pipe->timepointBounds->first = std::min(min, pipe->timepointBounds->first);
@@ -666,9 +673,6 @@ std::pair<Context&, Context&> Source::context(Context& p, const NestedScope& ns)
   std::tie(res_flat, first) = res_flat.get().ensure(res_ns);
   if(first) notifyContext(res_flat);
 
-  if(finalizeContexts)
-    for(ProfileSink& sink: pipe->sinks)
-      sink.notifyContextExpansion(p, ns.flat(), res_flat);
   return {res_rel ? *res_rel : res_flat.get(), res_flat};
 }
 
@@ -984,7 +988,8 @@ const ProfileAttributes& Sink::attributes() {
 
 std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
 Sink::timepointBounds() {
-  assert(dataLimit.hasAttributes() && "Sink did not register for `attributes` absorption!");
+  assert(dataLimit.anyOf(DataClass::ctxTimepoints | DataClass::metricTimepoints)
+         && "Sink did not register for a `*Timepoints` absorption!");
   return pipe->timepointBounds;
 }
 
@@ -1013,6 +1018,11 @@ const util::locked_unordered_uniqued_set<ExtraStatistic>& Sink::extraStatistics(
 const Context& Sink::contexts() {
   assert(dataLimit.hasContexts() && "Sink did not register for `contexts` absorption!");
   return *pipe->cct;
+}
+
+const util::locked_unordered_uniqued_set<ContextFlowGraph>& Sink::contextFlowGraphs() {
+  assert(dataLimit.hasContexts() && "Sink did not register for `contexts` absorption!");
+  return pipe->cgraphs;
 }
 
 const util::locked_unordered_set<std::unique_ptr<Thread>>& Sink::threads() {

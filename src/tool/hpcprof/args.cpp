@@ -493,6 +493,30 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     output = mpi::bcast(output.string(), 0);
   }
 
+  // Scan for ProfileFinalizers in the measurements dir
+  for(int idx = optind; idx < argc; idx++) {
+    fs::path p(argv[idx]);
+    if(fs::is_directory(p)) {
+      // Check for a kernel_symbols/ directory for ksymsfiles.
+      fs::path sp = p / "kernel_symbols";
+      if(fs::is_directory(sp))
+        ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(sp), sp);
+
+      // Check for a structs/ directory for extra structfiles.
+      sp = p / "structs";
+      if(fs::exists(sp)) {
+        for(const auto& de: fs::directory_iterator(sp)) {
+          std::unique_ptr<ProfileFinalizer> c;
+          if(de.path().extension() != ".hpcstruct") continue;
+          try {
+            c.reset(new finalizers::StructFile(de));
+          } catch(...) { continue; }
+          ProfArgs::structs.emplace_back(std::move(c), de);
+        }
+      }
+    }
+  }
+
   // Gather up all the potential inputs, and distribute them across the ranks
   std::vector<std::pair<stdshim::filesystem::path, std::size_t>> files;
   {
@@ -506,22 +530,6 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           for(const auto& de: fs::directory_iterator(p)) {
             allfiles[peer].emplace_back(de.path().string());
             peer = (peer + 1) % allfiles.size();
-          }
-          // Also check for a kernel_symbols/ directory for ksymsfiles.
-          fs::path sp = p / "kernel_symbols";
-          if(fs::is_directory(sp))
-            ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(std::move(sp)));
-          // Also check for a structs/ directory for extra structfiles.
-          sp = p / "structs";
-          if(fs::exists(sp)) {
-            for(const auto& de: fs::directory_iterator(sp)) {
-              std::unique_ptr<ProfileFinalizer> c;
-              if(de.path().extension() != ".hpcstruct") continue;
-              try {
-                c.reset(new finalizers::StructFile(de));
-              } catch(...) { continue; }
-              ProfArgs::structs.emplace_back(std::move(c), de);
-            }
           }
         } else {
           allfiles[peer].emplace_back(p.string());

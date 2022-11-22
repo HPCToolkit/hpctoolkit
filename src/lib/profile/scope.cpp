@@ -49,9 +49,11 @@
 #include "util/log.hpp"
 #include "module.hpp"
 #include "lexical.hpp"
+#include "util/stable_hash.hpp"
 
 #include "lib/prof-lean/placeholders.h"
 
+#include "stdshim/bit.hpp"
 #include <cassert>
 #include <cctype>
 #include <iomanip>
@@ -207,20 +209,14 @@ bool NestedScope::operator<(const NestedScope& o) const noexcept {
 }
 
 // Hashes
-static constexpr unsigned int bits = std::numeric_limits<std::size_t>::digits;
-static constexpr unsigned int mask = bits - 1;
-static_assert(0 == (bits & (bits - 1)), "value to rotate must be a power of 2");
-static constexpr std::size_t rotl(std::size_t n, unsigned int c) noexcept {
-  return (n << (mask & c)) | (n >> (-(mask & c)) & mask);
-}
 std::size_t std::hash<Scope>::operator()(const Scope &l) const noexcept {
   switch(l.ty) {
   case Scope::Type::unknown: return 0x5;
   case Scope::Type::global: return 0x3;
   case Scope::Type::point: {
     std::size_t sponge = 0x9;
-    sponge = rotl(sponge ^ h_mod(l.data.point.m), 1);
-    sponge = rotl(sponge ^ h_u64(l.data.point.offset), 3);
+    sponge = stdshim::rotl(sponge ^ h_mod(l.data.point.m), 1);
+    sponge = stdshim::rotl(sponge ^ h_u64(l.data.point.offset), 3);
     return sponge;
   }
   case Scope::Type::function:
@@ -228,17 +224,44 @@ std::size_t std::hash<Scope>::operator()(const Scope &l) const noexcept {
   case Scope::Type::loop:
   case Scope::Type::line: {
     std::size_t sponge = l.ty == Scope::Type::loop ? 0x11 : 0x13;
-    sponge = rotl(sponge ^ h_file(l.data.line.s), 1);
-    sponge = rotl(sponge ^ h_u64(l.data.line.l), 3);
+    sponge = stdshim::rotl(sponge ^ h_file(l.data.line.s), 1);
+    sponge = stdshim::rotl(sponge ^ h_u64(l.data.line.l), 3);
     return sponge;
   }
   case Scope::Type::placeholder:
-    return rotl(0x15 ^ h_u64(l.data.enumerated), 1);
+    return stdshim::rotl(0x15 ^ h_u64(l.data.enumerated), 1);
   }
   return 0;  // unreachable
 };
 std::size_t std::hash<NestedScope>::operator()(const NestedScope& ns) const noexcept {
-  return rotl(h_rel(ns.relation()), 5) ^ h_scope(ns.flat());
+  return stdshim::rotl(h_rel(ns.relation()), 5) ^ h_scope(ns.flat());
+}
+
+util::stable_hash_state& hpctoolkit::operator<<(util::stable_hash_state& h, const Scope& s) noexcept {
+  h << (std::uint8_t)s.ty;
+  switch(s.ty) {
+  case Scope::Type::unknown:
+  case Scope::Type::global:
+    return h;
+  case Scope::Type::point:
+    return h << *s.data.point.m << s.data.point.offset;
+  case Scope::Type::function:
+    return h << *s.data.function.f;
+  case Scope::Type::loop:
+  case Scope::Type::line:
+    return h << *s.data.line.s << s.data.line.l;
+  case Scope::Type::placeholder:
+    return h << s.data.enumerated;
+  default:
+    assert(false && "Invalid Scope::Type");
+    std::abort();
+  }
+}
+util::stable_hash_state& hpctoolkit::operator<<(util::stable_hash_state& h, Relation r) noexcept {
+  return h << (std::uint8_t)r;
+}
+util::stable_hash_state& hpctoolkit::operator<<(util::stable_hash_state& h, const NestedScope& ns) noexcept {
+  return h << ns.relation() << ns.flat();
 }
 
 // Stringification

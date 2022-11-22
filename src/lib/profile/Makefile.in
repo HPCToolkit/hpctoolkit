@@ -151,6 +151,7 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	util/libHPCprofile_la-log.lo \
 	util/libHPCprofile_la-file-posix.lo \
 	util/libHPCprofile_la-lzmastream.lo \
+	util/libHPCprofile_la-stable_hash.lo \
 	mpi/libHPCprofile_la-accumulate-thread.lo \
 	libHPCprofile_la-pipeline.lo libHPCprofile_la-source.lo \
 	libHPCprofile_la-context.lo libHPCprofile_la-scope.lo \
@@ -566,7 +567,7 @@ MYSOURCES = \
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
 	\
 	util/ragged_vector.cpp util/once.cpp util/xml.cpp util/log.cpp \
-	util/file-posix.cpp util/lzmastream.cpp \
+	util/file-posix.cpp util/lzmastream.cpp util/stable_hash.cpp \
 	\
 	mpi/accumulate-thread.cpp \
 	\
@@ -694,6 +695,8 @@ util/libHPCprofile_la-file-posix.lo: util/$(am__dirstamp) \
 	util/$(DEPDIR)/$(am__dirstamp)
 util/libHPCprofile_la-lzmastream.lo: util/$(am__dirstamp) \
 	util/$(DEPDIR)/$(am__dirstamp)
+util/libHPCprofile_la-stable_hash.lo: util/$(am__dirstamp) \
+	util/$(DEPDIR)/$(am__dirstamp)
 mpi/$(am__dirstamp):
 	@$(MKDIR_P) mpi
 	@: > mpi/$(am__dirstamp)
@@ -805,6 +808,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-lzmastream.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-once.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-ragged_vector.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-stable_hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-xml.Plo@am__quote@
 
 .c.o:
@@ -917,6 +921,13 @@ util/libHPCprofile_la-lzmastream.lo: util/lzmastream.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util/lzmastream.cpp' object='util/libHPCprofile_la-lzmastream.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o util/libHPCprofile_la-lzmastream.lo `test -f 'util/lzmastream.cpp' || echo '$(srcdir)/'`util/lzmastream.cpp
+
+util/libHPCprofile_la-stable_hash.lo: util/stable_hash.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT util/libHPCprofile_la-stable_hash.lo -MD -MP -MF util/$(DEPDIR)/libHPCprofile_la-stable_hash.Tpo -c -o util/libHPCprofile_la-stable_hash.lo `test -f 'util/stable_hash.cpp' || echo '$(srcdir)/'`util/stable_hash.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libHPCprofile_la-stable_hash.Tpo util/$(DEPDIR)/libHPCprofile_la-stable_hash.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util/stable_hash.cpp' object='util/libHPCprofile_la-stable_hash.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o util/libHPCprofile_la-stable_hash.lo `test -f 'util/stable_hash.cpp' || echo '$(srcdir)/'`util/stable_hash.cpp
 
 mpi/libHPCprofile_la-accumulate-thread.lo: mpi/accumulate-thread.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT mpi/libHPCprofile_la-accumulate-thread.lo -MD -MP -MF mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Tpo -c -o mpi/libHPCprofile_la-accumulate-thread.lo `test -f 'mpi/accumulate-thread.cpp' || echo '$(srcdir)/'`mpi/accumulate-thread.cpp

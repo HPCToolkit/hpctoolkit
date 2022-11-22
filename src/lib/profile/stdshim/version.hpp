@@ -59,6 +59,16 @@
 // For now. Change later when things break on some compiler in the future.
 #if __cplusplus >= 201903L
 #define HPCTOOLKIT_STDSHIM_STD_HAS_atomic_wait
+
+#if defined(__has_include)
+#if __has_include(<bit>)
+#define HPCTOOLKIT_STDSHIM_STD_HAS_bit
+#endif
+#else  // defined(__has_include)
+// If we can't test it directly, just assume the compiler has it
+#define HPCTOOLKIT_STDSHIM_STD_HAS_bit
+#endif
+
 #endif  // __cplusplus >= 201903L
 #if __cplusplus >= 201703L
 

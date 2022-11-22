@@ -286,6 +286,15 @@ private:
 
 /// Accumulator structure for the Statistics implicitly bound to a Context.
 class StatisticAccumulator final {
+public:
+  using raw_t = std::array<double, 5>;
+
+  /// Get a tuple of raw accumulator values set to 0. This function should be
+  /// used instead of manually filling raw_t for internal state.
+  static raw_t rawZero() noexcept {
+    return raw_t{0, 0, 0, 0, 0};
+  }
+
 private:
   /// Each Accumulator is a vector of Partial accumulators, each of which is
   /// bound implicitly to a particular Statistic::Partial.
@@ -301,6 +310,7 @@ private:
 
   private:
     std::optional<double> get(MetricScope) const noexcept;
+    raw_t getRaw() const noexcept;
 
     friend class StatisticAccumulator;
     friend class PerThreadTemporary;
@@ -324,15 +334,22 @@ public:
       assert(added && "Created a PartialRef but did not add any value!");
     }
 
-    /// Add some value to this particular Partial, for a particular MetricScope.
-    // MT: Internally Synchronized
-    void add(MetricScope, double) noexcept;
-
     /// Get this Partial's accumulation, for a particular MetricScope.
     // MT: Safe (const), Unstable (before `metrics` wavefront)
     std::optional<double> get(MetricScope ms) const noexcept {
       return partial.get(ms);
     }
+
+    /// Get the tuple of raw accumulator values for this Partial. Can be passed
+    /// to addRaw() to include this Partial's accumulation within another.
+    // MT: Safe (const), Unstable (before `metrics` wavefront)
+    raw_t getRaw() const noexcept {
+      return partial.getRaw();
+    }
+
+    /// Add a sequence of raw accumulator values to this Partial.
+    // MT: Internally Synchronized
+    void addRaw(const raw_t&) noexcept;
 
   private:
     friend class StatisticAccumulator;
@@ -358,6 +375,13 @@ public:
     // MT: Safe (const), Unstable (before `metrics` wavefront)
     std::optional<double> get(MetricScope ms) const noexcept {
       return partial.get(ms);
+    }
+
+    /// Get the tuple of raw accumulator values for this Partial. Can be passed
+    /// to addRaw() to include this Partial's accumulation within another.
+    // MT: Safe (const), Unstable (before `metrics` wavefront)
+    raw_t getRaw() const noexcept {
+      return partial.getRaw();
     }
 
   private:

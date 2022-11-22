@@ -1463,16 +1463,6 @@ search_for_mpi()
 # build a static hpcprof-mpi.
 
 
-# In develop branch, hpcprof-mpi is broken.  Disable prof-mpi unless a
-# force option is given.
-
-AC_ARG_ENABLE([force-hpcprof-mpi],
-  [AS_HELP_STRING([--enable-force-hpcprof-mpi],
-      [allow building hpcprof-mpi, disabled due to errors])],
-  [],
-  [enable_force_hpcprof_mpi=no])
-
-
 AC_ARG_VAR([MPICXX], [MPI C++ compiler for hpcprof-mpi])
 
 AC_MSG_NOTICE([supplied MPICXX compiler: $MPICXX])
@@ -1482,27 +1472,6 @@ AC_ARG_ENABLE([mpi-search],
       [search for MPI C++ compiler on given system (for spack build)])],
   [],
   [enable_mpi_search=no])
-
-
-# disable hpcprof-mpi unless force option is given
-if test "$enable_force_hpcprof_mpi" = no ; then
-  if test "x$MPICXX" != x || test "x$enable_mpi_search" != xno ; then
-    AC_MSG_WARN([hpcprof-mpi is temporarily disabled due to unresolved])
-    AC_MSG_WARN([errors.  use hpcprof with multiple threads instead.])
-    AC_MSG_WARN([])
-    AC_MSG_WARN([for developers working on hpcprof-mpi, reconfigure with:])
-    AC_MSG_WARN([   --enable-force-hpcprof-mpi])
-    AC_MSG_WARN([])
-    AC_MSG_WARN([for users, unset MPICXX from your environment, or else])
-    AC_MSG_WARN([reconfigure with:])
-    AC_MSG_WARN([   MPICXX= ])
-    AC_MSG_WARN([])
-    AC_MSG_ERROR([hpcprof-mpi is disabled])
-  fi
-  MPICXX=
-  enable_mpi_search=no
-fi
-
 
 case "$enable_mpi_search" in
   cray )

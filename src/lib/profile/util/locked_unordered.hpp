@@ -121,6 +121,11 @@ public:
 
   /// Get the value for a key, throwing if it doesn't exist.
   // MT: Internally Synchronized
+  V& at(const K& k) {
+    auto r = find(k);
+    if(!r) throw std::out_of_range("Attempt to at() a nonexistent key!");
+    return *r;
+  }
   const V& at(const K& k) const {
     auto r = find(k);
     if(!r) throw std::out_of_range("Attempt to at() a nonexistent key!");
@@ -163,6 +168,13 @@ public:
   /// Check whether the map is empty.
   // MT: Externally Synchronized
   bool empty() const noexcept { return real.empty(); }
+
+  // Erase an element from the map. Returns the number of elements removed (0 or 1).
+  // MT: Internally Syncrhonized
+  size_type erase(const K& key) noexcept {
+    std::unique_lock<M> l(lock);
+    return real.erase(key);
+  }
 
 private:
   /// Iteration support structure, to ensure the internal lock is held.

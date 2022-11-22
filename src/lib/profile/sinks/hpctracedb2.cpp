@@ -95,7 +95,16 @@ void HPCTraceDB2::notifyWavefront(DataClass d){
     if(tracefile)
       traceinst = tracefile->open(true, true);
 
-    totalNumTraces = getTotalNumTraces();
+    // Determine the total number of Threads
+    totalNumTraces = mpi::allreduce<uint32_t>(src.threads().size(), mpi::Op::sum());
+
+    // Determine the total number of Threads with any timepoints
+    uint32_t myRealTraces = 0;
+    for(const auto& t: src.threads().citerate()) {
+      if(t->attributes.ctxTimepointMaxCount() > 0)
+        myRealTraces += 1;
+    }
+    has_traces = mpi::allreduce<uint32_t>(myRealTraces, mpi::Op::sum()) > 0;
 
     //calculate the offsets for later stored in start and end
     //assign the values of the hdrs
@@ -129,8 +138,6 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
 
   auto& ud = t.userdata[uds.thread];
   if(!ud.has_trace) {
-    // NB: We use exchange here instead of store to make Valgrind happy
-    has_traces.exchange(true, std::memory_order_relaxed);
     ud.has_trace = true;
     if(tracefile) ud.inst = tracefile->open(true, true);
   }
@@ -271,29 +278,13 @@ void HPCTraceDB2::notifyPipeline() noexcept {
     tracefile->synchronize();
 }
 
-std::string HPCTraceDB2::exmlTag() {
-  if(!has_traces.load(std::memory_order_relaxed)) return "";
-  auto [min, max] = src.timepointBounds().value_or(std::make_pair(
-      std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
-  std::ostringstream ss;
-  ss << "<TraceDB"
-        " i=\"0\""
-        " db-min-time=\"" << min.count() << "\""
-        " db-max-time=\"" << max.count() << "\""
-        " u=\"1000000000\"/>\n";
-  return ss.str();
-}
-
 void HPCTraceDB2::write() {
   if(!tracefile) return;
 
-  // XXX: If there are no traces, delete the trace.db file outright.
-  // This currently only works in the single-rank case. The multi-rank case is
-  // more interesting and requires more work.
-  if(mpi::World::size() != 1)
-    util::log::fatal{} << "WIP currently unable to support multi-rank!";
-  if(!has_traces.load(std::memory_order_relaxed)) {
-    tracefile->remove();
+  // If there are no traces, delete the trace.db file outright, and do nothing more.
+  if(!has_traces) {
+    if(mpi::World::rank() == 0)
+      tracefile->remove();
     return;
   }
 
@@ -336,11 +327,6 @@ void HPCTraceDB2::write() {
 HPCTraceDB2::traceHdr::traceHdr(const Thread& t, HPCTraceDB2& tdb)
   : prof_info_idx(t.userdata[tdb.src.identifier()] + 1),
    start(INVALID_HDR), end(INVALID_HDR) {}
-
-uint64_t HPCTraceDB2::getTotalNumTraces() {
-  uint32_t rank_num_traces = src.threads().size();
-  return mpi::allreduce<uint32_t>(rank_num_traces, mpi::Op::sum());
-}
 
 std::vector<uint64_t> HPCTraceDB2::calcStartEnd() {
   //get the size of all traces

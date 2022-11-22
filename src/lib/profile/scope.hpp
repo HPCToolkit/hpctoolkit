@@ -56,6 +56,10 @@
 
 namespace hpctoolkit {
 
+namespace util {
+class stable_hash_state;
+}
+
 class ProfilePipeline;
 
 class Module;
@@ -207,11 +211,14 @@ private:
   } data;
 
   friend class std::hash<Scope>;
+  friend util::stable_hash_state& operator<<(util::stable_hash_state&, const Scope&) noexcept;
 
   // A special constructor only available to Profiles for the `global` Scope.
   friend class ProfilePipeline;
   explicit Scope(ProfilePipeline&);
 };
+
+util::stable_hash_state& operator<<(util::stable_hash_state&, const Scope&) noexcept;
 
 /// The Relation a NestedScope has with its parent Scope. We nest Scopes to
 /// indicate a number of different relationships while retaining a consistent
@@ -243,6 +250,8 @@ bool isCall(Relation r) noexcept;
 
 /// Stringification support for Relation enumeration constants
 std::string_view stringify(Relation) noexcept;
+
+util::stable_hash_state& operator<<(util::stable_hash_state&, Relation) noexcept;
 
 /// Flat Scope that has a Relation with its parent. These are the core scopes
 /// listed in the Context tree.
@@ -285,6 +294,8 @@ private:
   Relation m_relation;
   Scope m_flat;
 };
+
+util::stable_hash_state& operator<<(util::stable_hash_state&, const NestedScope&) noexcept;
 
 }
 

@@ -46,7 +46,10 @@
 
 #include "lexical.hpp"
 
+#include "module.hpp"
+
 #include "util/log.hpp"
+#include "util/stable_hash.hpp"
 
 #include <cassert>
 
@@ -59,6 +62,10 @@ File::File(File&& f)
 File::File(ud_t::struct_t& rs, stdshim::filesystem::path p)
   : userdata(rs, std::ref(*this)), u_path(std::move(p)) {
   assert(!u_path().empty() && "Attempt to create a File with an empty path!");
+}
+
+util::stable_hash_state& hpctoolkit::operator<<(util::stable_hash_state& h, const File& f) noexcept {
+  return h << f.path();
 }
 
 Function::Function(const Module& m, std::optional<uint64_t> o, std::string n)
@@ -106,4 +113,11 @@ Function& Function::operator+=(Function&& o) noexcept {
   if(m_name.empty() || (!o.m_name.empty() && m_name > o.m_name))
     m_name = std::move(o.m_name);
   return *this;
+}
+
+util::stable_hash_state& hpctoolkit::operator<<(util::stable_hash_state& h, const Function& f) noexcept {
+  h << f.module() << f.offset().value_or(0) << f.name();
+  if(auto sl = f.sourceLocation())
+    h << sl->first << sl->second;
+  return h;
 }
