@@ -772,7 +772,7 @@ Analysis::Raw::writeAsText_metadb(const char* filenm)
             "      (pScope: 0x" << inst.pScope << " [pScopeName: 0x"
               << base.pScopeName << " = &\""
               << &buf.at(base.pScopeName - fhdr.pMetrics) << "\"])\n"
-            "      (propMetricId: " << inst.propMetricId << ")\n"
+            "      (propMetricId: " << std::dec << inst.propMetricId << std::hex << ")\n"
             "    ]\n";
         }
         for(unsigned int j = 0; j < mdesc.nSummaries; j++) {
