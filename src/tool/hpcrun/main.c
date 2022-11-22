@@ -52,6 +52,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <setjmp.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -1333,9 +1334,21 @@ monitor_init_thread(int tid, void* data)
 void
 monitor_fini_thread(void* init_thread_data)
 {
+  sigset_t set;
+  sigset_t old_set;
+
+  // block profiling signals
+  sigemptyset(&set);
+  sigaddset(&set, SIGRTMIN + 2);  // papi
+  sigaddset(&set, SIGRTMIN + 3);  // posix
+  sigaddset(&set, SIGRTMIN + 4);  // perf
+
+  monitor_real_pthread_sigmask(SIG_BLOCK, &set, &old_set);
+
   hpcrun_threadmgr_thread_delete();
 
   if (hpcrun_get_disabled()) {
+    monitor_real_pthread_sigmask(SIG_SETMASK, &old_set, NULL);
     return;
   }
 
@@ -1344,6 +1357,8 @@ monitor_fini_thread(void* init_thread_data)
   epoch_t *epoch = (epoch_t *)init_thread_data;
   hpcrun_thread_fini(epoch);
   hpcrun_safe_exit();
+
+  monitor_real_pthread_sigmask(SIG_SETMASK, &old_set, NULL);
 }
 
 

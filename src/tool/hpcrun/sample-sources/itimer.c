@@ -70,6 +70,7 @@
 #include <sys/syscall.h>
 #endif
 
+#include <pthread.h>
 
 /******************************************************************************
  * libmonitor
@@ -576,7 +577,13 @@ METHOD_FN(finalize_event_list)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-  monitor_sigaction(the_signal_num, &itimer_signal_handler, 0, NULL);
+  struct sigaction act;
+
+  memset(&act, 0, sizeof(act));
+  sigemptyset(&act.sa_mask);
+  sigaddset(&act.sa_mask, 42);  // shootdown signal
+
+  monitor_sigaction(the_signal_num, &itimer_signal_handler, 0, &act);
 }
 
 static void
