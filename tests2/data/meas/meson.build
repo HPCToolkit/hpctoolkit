@@ -13,6 +13,8 @@ _exe_loops_hip = custom_target(output: 'testmeas-loops-hip', input: files('loops
 
 _cuda_pc = [cuda_filter, '--capability=>6.0', '--random=1']
 
+_extract = [python3, files('extract_ms.py'), '@INPUT@', '@OUTPUT@']
+
 _measurements = {
   # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand
   # calling context tree. Good for debugging very bad problems.
@@ -22,15 +24,10 @@ _measurements = {
   # simple multithreading. Various events/trace settings are tested to exercise minor differences
   # in the different metrics. Tuned to contain <300 samples total.
   # CPUTIME is currently disabled due to https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/646
-  # 'loops-cputime': [_run, '--', '@OUTPUT@', '-e', 'CPUTIME', _exe_loops],
   # 'loops-cputime-t': [_run, '--', '@OUTPUT@', '-e', 'CPUTIME', '-t', _exe_loops],
-  'loops-perf': [_run, '--', '@OUTPUT@', '-e', 'cycles@f30', '-e', 'instructions@120000000', _exe_loops],
   'loops-perf-t': [_run, '--', '@OUTPUT@', '-e', 'cycles@f30', '-e', 'instructions@120000000', '-t', _exe_loops],
-  'loops-cuda-nvidia': [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', _exe_loops_cuda],
-  'loops-cuda-nvidia-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', _exe_loops_cuda],
-  'loops-cuda-nvidiapc': [_cuda_pc, _run, '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', _exe_loops_cuda],
+  'loops-cuda-nvidia-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', '-t', _exe_loops_cuda],
   'loops-cuda-nvidiapc-t': [_cuda_pc, _run, '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', '-t', _exe_loops_cuda],
-  'loops-hip-amd': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', _exe_loops_hip],
   'loops-hip-amd-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', '-t', _exe_loops_hip],
 }
 _xfails = []
@@ -38,7 +35,9 @@ _xfails = []
 foreach name, cmd : _measurements
   _out = name+'.tar.xz'
   _meas = {
-    'cached': files(_out),
+    'tarball': files(_out),
+    'extracted': custom_target(output: name+'.m', input: files(_out), command: _extract,
+        env: hpctoolkit_pyenv, build_by_default: false),
     'xfail': name in _xfails,
   }
 

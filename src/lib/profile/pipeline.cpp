@@ -253,15 +253,6 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   std::size_t idx = 0;
   for(auto& ms: sources) {
     ms.dataLimit = ms().provides();
-    sourceLocals[idx].orderedRegions = ms().requiresOrderedRegions();
-    if(sourceLocals[idx].orderedRegions.first) {
-      sourceLocals[idx].priorPrewaveRegionDep = sourcePrewaveRegionDepChain;
-      sourcePrewaveRegionDepChain = idx;
-    }
-    if(sourceLocals[idx].orderedRegions.second) {
-      sourceLocals[idx].priorPostwaveRegionDep = sourcePostwaveRegionDepChain;
-      sourcePostwaveRegionDepChain = idx;
-    }
     ms().bindPipeline(Source(*this, ms.dataLimit, ExtensionClass::all(), sourceLocals[idx]));
     scheduled |= ms.dataLimit;
     idx++;
@@ -367,18 +358,10 @@ void ProfilePipeline::run() {
       notify(sinks[i], unscheduledWaves);
 
     // Unblock the finishing wave for any Sources that don't have waves.
-    // Also handle cases that require an initial pre-wavefront ordering
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t i = 0; i < sources.size(); ++i) {
       if(!(scheduledWaves & sources[i].dataLimit).hasAny()) {
         sources[i].wavesComplete.signal();
-      }
-      auto& sl = sourceLocals[i];
-      if(sl.orderedRegions.first) {
-        std::unique_lock<std::mutex> l(sources[i].lock);
-        sl.orderedPrewaveRegionUnlocked = true;
-        sources[i]().read({});
-        sl.orderedPrewaveRegionUnlocked = false;
       }
     }
 
@@ -423,7 +406,6 @@ void ProfilePipeline::run() {
       {
         sources[i].wavesComplete.wait();
         std::unique_lock<std::mutex> l(sources[i].lock);
-        sl.orderedPostwaveRegionUnlocked = true;
         sl.lastWave = true;
         DataClass req = (sources[i]().finalizeRequest(scheduled - scheduledWaves)
                          - sources[i].read) & sources[i].dataLimit;
@@ -536,25 +518,6 @@ const decltype(ProfilePipeline::Extensions::resolvedPath)&
 Source::resolvedPath() const {
   assert(extensionLimit.hasResolvedPath() && "Source did not register for `resolvedPath` emission!");
   return pipe->uds.resolvedPath;
-}
-
-util::Once::Caller Source::enterOrderedPrewaveRegion() {
-  assert(slocal->orderedRegions.first && "Source attempted to enter a prewave ordered region without registration!");
-  assert(slocal->orderedPrewaveRegionUnlocked && "Source attempted to enter a prewave ordered region prior to wavefront completion!");
-  if(slocal->priorPrewaveRegionDep != std::numeric_limits<std::size_t>::max())
-    pipe->sourceLocals[slocal->priorPrewaveRegionDep].orderedPrewaveRegionDepOnce.wait();
-  return slocal->orderedPrewaveRegionDepOnce.signal();
-}
-util::Once::Caller Source::enterOrderedPostwaveRegion() {
-  assert(slocal->orderedRegions.second && "Source attempted to enter a postwave ordered region without registration!");
-  assert(slocal->orderedPostwaveRegionUnlocked && "Source attempted to enter a postwave ordered region prior to wavefront completion!");
-  if(slocal->priorPostwaveRegionDep != std::numeric_limits<std::size_t>::max())
-    pipe->sourceLocals[slocal->priorPostwaveRegionDep].orderedPostwaveRegionDepOnce.wait();
-  else if(pipe->sinkWavefrontDepChain != std::numeric_limits<std::size_t>::max())
-    pipe->sinks[pipe->sinkWavefrontDepChain].wavefrontDepOnce.wait();
-  else if(pipe->sourcePrewaveRegionDepChain != std::numeric_limits<std::size_t>::max())
-    pipe->sourceLocals[pipe->sourcePrewaveRegionDepChain].orderedPrewaveRegionDepOnce.wait();
-  return slocal->orderedPostwaveRegionDepOnce.signal();
 }
 
 #define SRC_ASSERT_LIMITS(DS) do { \
@@ -959,8 +922,6 @@ util::Once::Caller Sink::enterOrderedWavefront() {
   assert(orderedWavefront && "Attempt to enter an ordered wavefront region without registering!");
   if(priorWavefrontDepOnce != std::numeric_limits<std::size_t>::max())
     pipe->sinks[priorWavefrontDepOnce].wavefrontDepOnce.wait();
-  else if(pipe->sourcePrewaveRegionDepChain != std::numeric_limits<std::size_t>::max())
-    pipe->sourceLocals[pipe->sourcePrewaveRegionDepChain].orderedPrewaveRegionDepOnce.wait();
   return pipe->sinks[idx].wavefrontDepOnce.signal();
 }
 util::Once::Caller Sink::enterOrderedWrite() {

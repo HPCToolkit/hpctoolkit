@@ -1,17 +1,22 @@
 # Jobs used to regenerate testing data. Run when requested or required.
 
 .regen job:
-  stage: update
+  stage: extended test
   extends: .buildcache-job
   dependencies:
   - generate_deps.amd64
   - build_deps.amd64
 
   rules:
-  - if: $REGEN_TESTDATA
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    changes:
-    - tests2/data/**/*
+  - &main_rules
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: regen testdata/i'
+    - if: $REGEN_TESTDATA
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+      - tests2/data/**/*
+  - when: on_success
+    variables:
+      DONT_SAVE: '1'
 
   variables:
     # OpenMPI refuses to run as user 0 without these options set.
@@ -27,15 +32,18 @@
     -1s "$SPEC"
   # Pack up the changes as a tarball for extraction
   - git ls-files --modified tests2/data/ > files.txt
-  - tar -cJf "data.$CI_JOB_NAME.tar.xz" -T files.txt
+  - tar -cJf "data.$SLUG.tar.xz" -T files.txt
   # Re-run the tests on the new data to ensure everything is still a-ok
   - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/posttest/" -a test
+    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/posttest/" -a test
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast'
     --test-junit-copyout -1s "$SPEC"
   - &postjob
     - ci/scripts/network-stats.sh .netstats.txt
+
+  after_script:
+  - test -z "$DONT_SAVE" || rm -f "data.$SLUG.tar.xz"
 
   artifacts:
     reports:
@@ -46,61 +54,58 @@
     when: always
 
 
-regen testdata cpu:
+'regen testdata: [cpu]':
   extends: .regen job
   tags: [docker, linux/amd64]
   image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
   variables:
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
+    SLUG: cpu
 
-regen testdata gpu nvidia:
+'regen testdata: [+cuda]':
   extends: [.regen job, .buildcache-job-derivative]
   image: nvcr.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
-    alias: bundleserver
   tags: [docker, linux/amd64, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
     SPEC: '+tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0'
+    SLUG: cuda
   before_script:
   - !reference [.regen job, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
 
-regen testdata gpu amd:
+'regen testdata: [+rocm]':
   extends: [.regen job, .buildcache-job-derivative]
   image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
-    alias: bundleserver
   tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0'
+    SLUG: rocm
   before_script:
   - !reference [.regen job, before_script]
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
 
 
-regen testdata final:
+regen testdata:
   stage: update
   image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04
   tags: [docker]
-  rules: !reference [.regen job, rules]
-  needs:
-  - regen testdata cpu
-  - regen testdata gpu nvidia
-  - regen testdata gpu amd
+  rules: *main_rules
+  dependencies:
+  - 'regen testdata: [cpu]'
+  - 'regen testdata: [+cuda]'
+  - 'regen testdata: [+rocm]'
   script:
   # Unpack all the tarballs, in sequence
-  - tar -xJf 'data.regen testdata gpu nvidia'.tar.xz
-  - tar -xJf 'data.regen testdata gpu amd'.tar.xz
-  - tar -xJf 'data.regen testdata cpu'.tar.xz
+  - tar -xJf data.cuda.tar.xz
+  - tar -xJf data.rocm.tar.xz
+  - tar -xJf data.cpu.tar.xz
   # Repackage the changes as a new tarball for easy deployment
   - git ls-files --modified tests2/data/ > files.txt
   - tar -cJf "testdata.tar.xz" -T files.txt

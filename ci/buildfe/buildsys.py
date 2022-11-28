@@ -90,7 +90,14 @@ class MakeAction(Action):
         if env is not None:
             final_env = collections.ChainMap(env, final_env)
 
-        cmd = [make, "--output-sync", f"-j{nproc() if parallel else 1:d}", *targets]
+        cmd = [make, f"-j{nproc() if parallel else 1:d}"]
+        if parallel:
+            cmd.append("--output-sync")
+        if not split_stderr:
+            cmd.append("--no-print-directory")
+            cmd.append("V=0")
+        cmd.extend(targets)
+
         logsuffixes = (".stdout.log", ".stderr.log") if split_stderr else (".log",)
         with _stdlogfiles(logdir, logprefix, *logsuffixes) as (out_log, err_log):
             proc = subprocess.run(
@@ -310,13 +317,13 @@ class Test(MakeAction):
         if not testjson.exists():
             return MissingJUnitLogs(testjson.name, res)
 
-        # Parse the JSON and find the jobs that are marked as EXPECTEDFAIL
-        xfails = set()
+        # Parse the JSON and find the jobs that we want to report as failures
+        otherfails = set()
         with open(testjson, encoding="utf-8") as f:
             for line in f:
                 data = json.loads(line)
-                if data["result"] == "EXPECTEDFAIL":
-                    xfails.add(data["name"])
+                if data["result"] in ("EXPECTEDFAIL", "TIMEOUT"):
+                    otherfails.add(data["name"])
 
         with open(testxml, encoding="utf-8") as f:
             with xml.dom.minidom.parse(f) as dom:
@@ -325,12 +332,12 @@ class Test(MakeAction):
                     all_new_fails = 0
                     for suite in top.getElementsByTagName("testsuite"):
                         new_fails = 0
-                        for case in suite.getElementsByTagName("testcase"):
+                        for tcase in suite.getElementsByTagName("testcase"):
                             if (
-                                case.getAttribute("name") in xfails
-                                and len(case.getElementsByTagName("failure")) == 0
+                                tcase.getAttribute("name") in otherfails
+                                and len(tcase.getElementsByTagName("failure")) == 0
                             ):
-                                case.appendChild(dom.createElement("failure"))
+                                tcase.appendChild(dom.createElement("failure"))
                                 new_fails += 1
                         if suite.hasAttribute("failures"):
                             suite.setAttribute(
@@ -419,8 +426,10 @@ class Test(MakeAction):
             builddir,
             "check",
             "installcheck",
+            parallel=False,
             logdir=logdir,
             env={"MESON_TESTTHREADS": f"{nproc_max():d}"},
+            split_stderr=False,
         )
 
         tests2bdir = builddir / "tests2-build"
@@ -438,12 +447,17 @@ class Test(MakeAction):
 
         final_res = res
         junit_logs = (
-            (tests2bdir / "meson-logs" / "testlog.junit.xml", self.fixup_meson),
-            (tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml", self.fixup_pytest),
+            (tests2bdir / "meson-logs" / "testlog.junit.xml", self.fixup_meson, True),
+            (
+                tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml",
+                self.fixup_pytest,
+                False,
+            ),
         )
-        for fn, fixup in junit_logs:
+        for fn, fixup, required in junit_logs:
             if not fn.exists():
-                final_res = MissingJUnitLogs(fn.name, res)
+                if required:
+                    final_res = MissingJUnitLogs(fn.name, res)
                 continue
 
             new_contents = fixup(res, tests2bdir, fn)

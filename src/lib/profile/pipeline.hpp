@@ -232,15 +232,6 @@ private:
 #ifndef NDEBUG
     DataClass disabled;
 #endif
-
-    std::pair<bool, bool> orderedRegions;
-    util::Once orderedPrewaveRegionDepOnce;
-    bool orderedPrewaveRegionUnlocked = false;
-    std::size_t priorPrewaveRegionDep;
-
-    util::Once orderedPostwaveRegionDepOnce;
-    bool orderedPostwaveRegionUnlocked = false;
-    std::size_t priorPostwaveRegionDep;
   };
 
 public:
@@ -259,16 +250,6 @@ public:
     // MT: Safe (const)
     const decltype(Extensions::identifier)& identifier() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
-
-    /// Wait for and enter a region used for ordering of pre-wavefront parts.
-    /// Only available if `Source::requiresOrderedRegion().first` returns true,
-    /// and only during an empty read request.
-    util::Once::Caller enterOrderedPrewaveRegion();
-
-    /// Wait for and enter a region used for ordering of post-wavefront parts.
-    /// Only available if `Source::requiresOrderedRegion().second` returns true,
-    /// and only after all possible wavefronts.
-    util::Once::Caller enterOrderedPostwaveRegion();
 
     /// Get the limits on this Source's emissions.
     DataClass limit() const noexcept { return dataLimit & pipe->scheduled; }

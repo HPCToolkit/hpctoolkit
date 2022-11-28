@@ -1,16 +1,13 @@
 _testdata_dbase = {}
 
 _prof = [python3, files('prof.py')]
+_pickle = [python3, files('pickle_db.py'), '@INPUT@', '@OUTPUT@']
 
 _databases = {
   'small': {'yaml': true},
-  'loops-perf': {},
   'loops-perf-t': {},
-  'loops-cuda-nvidia': {},
   'loops-cuda-nvidia-t': {},
-  'loops-cuda-nvidiapc': {},
   'loops-cuda-nvidiapc-t': {},
-  'loops-hip-amd': {},
   'loops-hip-amd-t': {},
 }
 
@@ -18,7 +15,9 @@ foreach name, features : _databases
   _out_db = name+'.tar.xz'
   _dbase = {
     'measurements': testdata_meas[name],
-    'cached_db': files(_out_db),
+    'tarball': files(_out_db),
+    'pickled': custom_target(output: name+'.pickle', input: files(_out_db),
+        command: _pickle, env: hpctoolkit_pyenv, build_by_default: false),
     'xfail': features.get('xfail', false) or testdata_meas[name]['xfail'],
   }
   _idxs = {'_db': 0}
@@ -27,7 +26,7 @@ foreach name, features : _databases
 
   if features.get('yaml', false)
     _out_yaml = name+'.yaml'
-    _dbase += {'cached_yaml': files(_out_yaml)}
+    _dbase += {'yaml': files(_out_yaml)}
     _idxs += {'_yaml': _output.length()}
     _cmd += ['-y', '@OUTPUT@0@@'.format(_output.length())]
     _output += [_out_yaml]

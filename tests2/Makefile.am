@@ -64,4 +64,4 @@ install-testdata:
 
 installcheck-local:
 	meson compile -C ../tests2-build/
-	meson test -C ../tests2-build/ --print-errorlogs
+	meson test -C ../tests2-build/ --print-errorlogs $${MESON_TEST_OPTS}
