@@ -408,12 +408,14 @@ do
 		    ;;
 
 		gpu=amd )
-		    rocm_libdir="${rocm_lib_path}"
-		    export HSA_TOOLS_LIB=librocprofiler64.so.1
-		    export ROCP_TOOL_LIB=libhpcrun.so
-		    export ROCP_METRICS=@ROCM_PROFILER_METRICS@
-		    export ROCP_HSA_INTERCEPT=1
-		    export AMD_DIRECT_DISPATCH=0
+                    if test "@ROCM_PROFILER_METRICS@"x != x ; then
+		        rocm_libdir="${rocm_lib_path}"
+		        export HSA_TOOLS_LIB=librocprofiler64.so.1
+		        export ROCP_TOOL_LIB=libhpcrun.so
+		        export ROCP_METRICS=@ROCM_PROFILER_METRICS@
+		        export ROCP_HSA_INTERCEPT=1
+		        export AMD_DIRECT_DISPATCH=0
+                    fi
 		    ;;
 
 		gpu=opencl*|intel_gpu_util )
@@ -448,9 +450,11 @@ do
 	    ;;
 
 	-L | -l | --list-events )
-	    export HSA_TOOLS_LIB=librocprofiler64.so.1
-	    export ROCP_TOOL_LIB=libhpcrun.so
-	    export ROCP_METRICS=@ROCM_PROFILER_METRICS@
+            if test "@ROCM_PROFILER_METRICS@"x != x ; then
+	        export HSA_TOOLS_LIB=librocprofiler64.so.1
+	        export ROCP_TOOL_LIB=libhpcrun.so
+	        export ROCP_METRICS=@ROCM_PROFILER_METRICS@
+            fi
 	    export HPCRUN_EVENT_LIST=LIST
 	    export HPCRUN_LIST_EVENT=1
 	    ;;
