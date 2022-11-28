@@ -281,10 +281,10 @@ template<class T, bool> struct is_futex_int_helper : std::false_type {};
 template<class T>
 struct is_futex_int_helper<T, true> : std::integral_constant<bool,
   std::numeric_limits<T>::radix == 2
-  && (std::numeric_limits<T>::digits + std::is_signed<T>::value ? 1 : 0) <= 32>
+  && (std::numeric_limits<T>::digits + (std::is_signed_v<T> ? 1 : 0)) <= 32>
   {};
 template<class T>
-using is_futex_int = is_futex_int_helper<T, std::is_integral<T>::value>;
+using is_futex_int = is_futex_int_helper<T, std::is_integral_v<T>>;
 
 // Enumeration types are also allowed if their underlying type is small.
 template<class T, bool> struct is_futex_enum_helper : std::false_type {};
