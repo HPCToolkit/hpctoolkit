@@ -83,12 +83,10 @@ private:
 /// Source for receiving the data from Sender
 class Receiver : public hpctoolkit::sources::Packed {
 public:
-  Receiver(std::size_t);
   Receiver(std::size_t, std::vector<std::uint8_t>&);
-  Receiver(std::vector<std::uint8_t>);
+  Receiver(std::vector<std::uint8_t>&);
   ~Receiver() = default;
 
-  std::pair<bool, bool> requiresOrderedRegions() const noexcept override;
   hpctoolkit::DataClass provides() const noexcept override {
     using namespace hpctoolkit::literals;
     return data::attributes + data::references + data::contexts;
@@ -98,16 +96,14 @@ public:
   }
   void read(const hpctoolkit::DataClass&) override;
 
-  static void append(hpctoolkit::ProfilePipeline::Settings&, RankTree&);
   static void append(hpctoolkit::ProfilePipeline::Settings&, RankTree&,
       std::deque<std::vector<std::uint8_t>>&);
 
 private:
   std::size_t peer;
   bool readBlock = false;
-  std::vector<std::uint8_t> block;
+  std::vector<std::uint8_t>& block;
   bool parsedBlock = false;
-  hpctoolkit::util::optional_ref<std::vector<std::uint8_t>> blockstore;
 };
 
 /// Sink for sending Statistic data up the tree.
@@ -136,14 +132,13 @@ public:
   MetricReceiver(std::size_t, hpctoolkit::sources::Packed::IdTracker&);
   ~MetricReceiver() = default;
 
-  std::pair<bool, bool> requiresOrderedRegions() const noexcept override {
-    return {false, true};
-  }
   hpctoolkit::DataClass provides() const noexcept override {
     using namespace hpctoolkit::literals;
     return data::metrics + data::ctxTimepoints;
   }
-  hpctoolkit::DataClass finalizeRequest(const hpctoolkit::DataClass& d) const noexcept override;
+  hpctoolkit::DataClass finalizeRequest(const hpctoolkit::DataClass& d) const noexcept override {
+    return d;
+  }
   void read(const hpctoolkit::DataClass& d) override;
 
   static void append(hpctoolkit::ProfilePipeline::Settings&, RankTree&,

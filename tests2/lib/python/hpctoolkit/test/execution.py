@@ -2,7 +2,6 @@ import collections
 import contextlib
 import functools
 import os
-import random
 import shlex
 import subprocess
 import sys
@@ -10,20 +9,6 @@ import tempfile
 from pathlib import Path
 
 from .errors import PredictableFailure
-
-
-@contextlib.contextmanager
-def thread_disruptive(threads: int = 1):
-    """Context manager to use when running commands which should have disruptively bad scheduling."""
-    old_affinity = None
-    if hasattr(os, "sched_getaffinity") and hasattr(os, "sched_setaffinity"):
-        old_affinity = os.sched_getaffinity(0)
-        os.sched_setaffinity(0, random.sample(old_affinity, threads))
-    try:
-        yield
-    finally:
-        if old_affinity is not None:
-            os.sched_setaffinity(0, old_affinity)
 
 
 def _subproc_run(arg0, cmd, *args, wrapper: list[str] = tuple(), **kwargs):

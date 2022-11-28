@@ -12,6 +12,7 @@ stages:
 - validate
 - dependencies
 - test
+- extended test
 - lint
 - update
 
@@ -170,9 +171,16 @@ autoreconf check:
     paths:
     - .ccache/
 
+  variables:
+    # Limit the ccache cache size to a modest level.
+    # One HPCToolkit buildmany is ~2.5GB (~600MB compressed) over ~25000 files
+    CCACHE_COMPRESS: 'true'
+    CCACHE_MAXSIZE: '3G'
+    CCACHE_MAXFILES: '30000'
+
   before_script:
   # Make sure we have the basic set of utilities required to launch Spack and build stuff
-  - ci/scripts/ensure-present.sh make git curl cc file patchelf python3 py:boto3 py:clingo ${JOB_CC:+ccache}
+  - ci/scripts/ensure-present.sh make git curl cc file patchelf python3 eatmydata py:boto3 py:clingo ${JOB_CC:+ccache}
 
   # Unpack and instantiate Spack here
   - !reference [.spack, before_script]
@@ -246,7 +254,10 @@ autoreconf check:
 
   after_script:
   # Report statistics on how much ccache helped in this job
-  - CCACHE_DIR="$(realpath .ccache/)" ccache --show-stats
+  - CCACHE_DIR="$(realpath .ccache/)" ccache --show-stats || true
+  - CCACHE_DIR="$(realpath .ccache/)" ccache --show-compression || true
+  # Zero the statistics to lower GitLab cache thrashing
+  - CCACHE_DIR="$(realpath .ccache/)" ccache --zero-stats || true
 
 .buildcache-job-derivative:
   extends: .buildcache-job
@@ -271,12 +282,12 @@ autoreconf check:
   - touch img-config
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
+    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
     -s "$SPEC"
   - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
+    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
     img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
     -s "$SPEC"
@@ -331,14 +342,11 @@ autoreconf check:
     - IMAGE: ubuntu20.04
       JOB_CC: [gcc-10]
   variables:
-    SPEC: '~cuda ~rocm ~level0 (tests2 mpi papi opencl)[~<1]'
+    SPEC: '~cuda ~rocm ~level0 +debug +tests2 (mpi papi opencl)[~<1]'
 
 'buildmany: [amd64, +cuda]':
   extends: [.buildmany.amd64, .buildcache-job-derivative]
   image: nvcr.io/nvidia/cuda:$CUDA-devel-ubuntu20.04
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
-    alias: bundleserver
   parallel:
     matrix:
     - CUDA: [11.8.0]
@@ -368,9 +376,6 @@ autoreconf check:
 'buildmany: [amd64, +rocm]':
   extends: [.buildmany.amd64, .buildcache-job-derivative]
   image: docker.io/rocm/dev-ubuntu-20.04:$ROCM
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
-    alias: bundleserver
   parallel:
     matrix:
     - ROCM: [5.2.3]
@@ -387,9 +392,6 @@ autoreconf check:
 'buildmany: [amd64, +level0]':
   extends: [.buildmany.amd64, .buildcache-job-derivative]
   image: docker.io/intel/oneapi-basekit:$ONEAPI-devel-ubuntu20.04
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:amd64
-    alias: bundleserver
   tags: [docker, linux/amd64]
   parallel:
     matrix:
@@ -420,7 +422,7 @@ autoreconf check:
   - touch img-config
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
+    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
     img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
     --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
     --test-junit-copyout -1 -s "$SPEC"
@@ -452,46 +454,57 @@ autoreconf check:
   - generate_deps.arm64
   - build_deps.arm64
 
-check amd64:
+# NB: We use --repeat in the check jobs to detect bugs that cause sporadic test failures.
+# We chose --repeat 7, since this statistically provides:
+#   - 99.2% confidence that this MR does not introduce a "blocking" bug that would prevent others'
+#     work. We are very confident that a run will succeed >1/2 the time, and so require minimal
+#     repeated commands to "push past" the issue. (`1 - pbinom(0, 7, 1 - 1/2) -> 0.992`)
+#   - 79.0% confidence that this MR does not introduce a bug that would "annoy" others during their
+#     work. We are modestly confident that a run will succeed >4/5 of the time, in which case the
+#     bug may not be especially noticable. (`1 - pbinom(0, 7, 1 - 4/5) -> 0.790`)
+#
+# For the curious, the key formula to solve for the --repeat value is:
+#     {# of repeats} > log(1 - {confidence}) / log({min prob of success})
+# So a 99% confidence of 90% success rate requires a --repeat of at least 44.
+
+'check amd64: [cpu]':
   extends: .check job amd64
   tags: [docker, linux/$ARCH]
   image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
   variables:
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
-check arm64:
+    MESON_TEST_OPTS: '--maxfail 10 --repeat 7'
+'check arm64: [cpu]':
   extends: .check job arm64
   tags: [docker, linux/$ARCH]
   image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
   variables:
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
-check cuda amd64:
+    MESON_TEST_OPTS: '--maxfail 10'
+'check amd64: [+cuda]':
   extends: [.check job amd64, .buildcache-job-derivative]
   image: nvcr.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:$ARCH
-    alias: bundleserver
   tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
     SPEC: +tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0
+    MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite cuda'
   before_script:
   - !reference [.check job amd64, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
-check rocm amd64:
+'check amd64: [+rocm]':
   extends: [.check job amd64, .buildcache-job-derivative]
   image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
-  services:
-  - name: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04-bundles:$ARCH
-    alias: bundleserver
   tags: [docker, linux/$ARCH, gpu/amd/usrspace:5.2]
   variables:
     JOB_CC: gcc-9
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
     SPEC: +tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0
+    MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite rocm'
   before_script:
   - !reference [.check job amd64, before_script]
   # Pull ROCm from the image itself
@@ -510,7 +523,7 @@ spack install:
     matrix:
     - ARCH: [amd64]
 
-  dependencies: []
+  needs: []
 
   allow_failure: true
   script:
@@ -518,6 +531,6 @@ spack install:
   # TODO: Expand this list a bit sometime to better represent what we want to ensure works
   - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"
   - >-
-    spack install --no-check-signature --fail-fast --use-buildcache=package:never,dependencies:only
+    eatmydata spack install --no-check-signature --fail-fast --use-buildcache=package:never,dependencies:only
     "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
     "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"

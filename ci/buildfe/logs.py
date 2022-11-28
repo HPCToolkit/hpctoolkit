@@ -52,17 +52,30 @@ def section(header, collapsed=False, color=None):
         print(f"\x1b[0Ksection_end:{int(time.monotonic())}:{codename}\r\x1b[0K", end="", flush=True)
 
 
-def dump_file(filename, limit_bytes=10 * 1024):
-    """Dump the given file to stdout, stopping at the given limit if not None"""
-    size = 0
+def dump_file(filename, limit_bytes=10 * 1024, tail: bool = True):
+    """Dump the given file to stdout, stopping at the given limit if not None.
+    If tail is True, dump the end of the file (instead of the start)."""
+    buffer, size, truncated = [], 0, False
     with open(filename, encoding="utf-8") as f:
         for line in f:
+            buffer.append(line)
             size += len(line)
             if limit_bytes is not None and size > limit_bytes:
-                with colorize(FgColor.header):
-                    print(f"=== Truncated for space, see {filename} for complete log ===")
-                break
-            print(line.rstrip("\n"))
+                truncated = True
+                while size > limit_bytes:
+                    size -= len(buffer.pop(0))
+
+    if truncated and tail:
+        with colorize(FgColor.header):
+            print("=== Truncated for space, printing tail end of log ===")
+    for line in buffer:
+        print(line.rstrip("\n"))
+    if truncated:
+        with colorize(FgColor.header):
+            if not tail:
+                print(f"=== Truncated for space, see {filename} for complete log ===")
+            else:
+                print(f"=== See {filename} for complete log ===")
 
 
 def print_header(line):

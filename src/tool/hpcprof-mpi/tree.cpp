@@ -77,19 +77,13 @@ void Sender::write() {
   }
 }
 
-Receiver::Receiver(std::size_t peer) : peer(peer) {};
-Receiver::Receiver(std::size_t peer, std::vector<std::uint8_t>& blockstore)
-  : peer(peer), blockstore(blockstore) {};
-Receiver::Receiver(std::vector<std::uint8_t> block)
-  : readBlock(true), block(std::move(block)) {};
-
-std::pair<bool, bool> Receiver::requiresOrderedRegions() const noexcept {
-  return {!readBlock, false};
-}
+Receiver::Receiver(std::size_t peer, std::vector<std::uint8_t>& block)
+  : peer(peer), block(block) {};
+Receiver::Receiver(std::vector<std::uint8_t>& block)
+  : readBlock(true), block(block) {};
 
 void Receiver::read(const DataClass& d) {
   if(!readBlock) {
-    auto mpiSem = sink.enterOrderedPrewaveRegion();
     block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_1);
     readBlock = true;
   }
@@ -99,19 +93,10 @@ void Receiver::read(const DataClass& d) {
     it = unpackAttributes(it);
     it = unpackReferences(it);
     it = unpackContexts(it);
-    if(blockstore) {
-      *blockstore = std::move(block);
-    } else {
-      block.clear();
-    }
     parsedBlock = true;
   }
 }
 
-void Receiver::append(ProfilePipeline::Settings& pB, RankTree& tree) {
-  for(std::size_t peer = tree.min; peer < tree.max; peer++)
-    pB << std::make_unique<Receiver>(peer);
-}
 void Receiver::append(ProfilePipeline::Settings& pB, RankTree& tree,
     std::deque<std::vector<uint8_t>>& stores) {
   for(std::size_t peer = tree.min; peer < tree.max; peer++) {
@@ -143,13 +128,8 @@ util::WorkshareResult MetricSender::help() {
 MetricReceiver::MetricReceiver(std::size_t p, sources::Packed::IdTracker& tracker)
   : sources::Packed(tracker), peer(p) {};
 
-DataClass MetricReceiver::finalizeRequest(const DataClass& d) const noexcept {
-  return d;
-}
-
 void MetricReceiver::read(const DataClass& d) {
   if(!readBlock) {
-    auto mpiSem = sink.enterOrderedPostwaveRegion();
     block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_2);
     readBlock = true;
   }

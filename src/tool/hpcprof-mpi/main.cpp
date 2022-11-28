@@ -223,7 +223,7 @@ int main(int argc, char* const argv[]) {
   {
     // Restore the bits we got in the first Pipeline, to keep things consistent.
     for(auto& block: receivedBlocks)
-      pipelineB2 << std::make_unique<Receiver>(std::move(block));
+      pipelineB2 << std::make_unique<Receiver>(block);
 
     // The Statistics need to be consistent between all the ranks, since we only
     // stabilize the Metric ids.

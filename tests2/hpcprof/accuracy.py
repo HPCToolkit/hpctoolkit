@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
 
+import pickle
 import sys
 
 from hpctoolkit.formats import from_path  # noqa: import-error
 from hpctoolkit.formats.diff.strict import StrictAccuracy, StrictDiff  # noqa: import-error
-from hpctoolkit.test.execution import hpcprof, thread_disruptive  # noqa: import-error
+from hpctoolkit.test.execution import hpcprof  # noqa: import-error
 from hpctoolkit.test.tarball import extracted  # noqa: import-error
 
 threadcnt = int(sys.argv[1])
 
-with extracted(sys.argv[3]) as dbase:
-    base = from_path(dbase)
+with open(sys.argv[3], "rb") as f:
+    base = pickle.load(f)
 
-with extracted(sys.argv[2]) as meas:
-    with thread_disruptive():
-        with hpcprof(meas, f"-j{threadcnt:d}", "--foreign") as db:
-            diff = StrictDiff(base, from_path(db.basedir))
-            acc = StrictAccuracy(diff)
-            if len(diff.hunks) > 0 or acc.inaccuracy:
-                diff.render(sys.stdout)
-                acc.render(sys.stdout)
-                sys.exit(1)
+with hpcprof(sys.argv[2], f"-j{threadcnt:d}", "--foreign") as db:
+    diff = StrictDiff(base, from_path(db.basedir))
+    acc = StrictAccuracy(diff)
+    if len(diff.hunks) > 0 or acc.inaccuracy:
+        diff.render(sys.stdout)
+        acc.render(sys.stdout)
+        sys.exit(1)
