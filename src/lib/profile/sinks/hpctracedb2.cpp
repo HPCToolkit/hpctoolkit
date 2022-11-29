@@ -204,6 +204,10 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<
       ud.tmcntr++;
     }
   }
+
+  // Trim the prebuffer back down to the cursor value
+  if(prebuffer_cursor != nullptr)
+    ud.prebuffer.resize(std::distance(ud.prebuffer.data(), prebuffer_cursor));
 }
 
 void HPCTraceDB2::notifyCtxTimepointRewindStart(const Thread& t) {
