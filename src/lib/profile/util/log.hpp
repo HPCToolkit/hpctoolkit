@@ -123,9 +123,9 @@ public:
   auto info() { return bits[3]; }
 
 private:
-  Settings(std::bitset<3> bits) : bits(bits) {};
+  Settings(std::bitset<4> bits) : bits(bits) {};
 
-  std::bitset<3> bits;
+  std::bitset<4> bits;
 };
 
 /// Fatal error message buffer. When destructed, the program is terminated after
