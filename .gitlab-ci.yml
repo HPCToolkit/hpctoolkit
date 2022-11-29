@@ -328,10 +328,10 @@ autoreconf check:
       JOB_CC: gcc-11
 
     - IMAGE: ubuntu20.04
-      JOB_CC: [gcc-9, gcc-10]
+      JOB_CC: [gcc-9, gcc-10, clang-10]
 
     - IMAGE: fedora36
-      JOB_CC: [gcc=12]
+      JOB_CC: [gcc=12, clang=14]
   variables:
     SPEC: '~cuda ~rocm ~level0 (tests2 mpi papi opencl)[~<1]'
 

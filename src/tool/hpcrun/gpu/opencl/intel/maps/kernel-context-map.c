@@ -183,7 +183,6 @@ kernel_context_map_insert
     entry->context_id = context_id;
   }
   spinlock_unlock(&kernel_context_map_lock);
-  return entry;
 }
 
 

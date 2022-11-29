@@ -90,8 +90,7 @@
   macro(GXFER, 14) \
   macro(INTEL_OPTIMIZATION, 15) \
   macro(BLAME_SHIFT, 16)  \
-  macro(GPU_UTILIZATION, 17) \
-  macro(CTR, 18)
+  macro(GPU_UTILIZATION, 17)
 
 
 #define FORALL_METRIC_KINDS(macro)  \

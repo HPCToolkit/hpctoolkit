@@ -43,8 +43,8 @@
 // lock for blame-shifting activities
 static spinlock_t itimer_blame_lock = SPINLOCK_UNLOCKED;
 
-static _Atomic(uint64_t) g_num_threads_at_sync = { 0 };
-static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
+static _Atomic(uint64_t) g_num_threads_at_sync = ATOMIC_VAR_INIT(0);
+static _Atomic(uint32_t) g_unfinished_kernels = ATOMIC_VAR_INIT(0);
 
 static kernel_node_t* completed_kernel_list_head = NULL;
 

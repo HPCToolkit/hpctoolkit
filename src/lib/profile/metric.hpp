@@ -111,10 +111,10 @@ public:
   const Expression& finalizeFormula() const noexcept { return m_formula; }
 
 private:
-  const std::string m_suffix;
-  const bool m_showPerc;
-  const Expression m_formula;
-  const bool m_visibleByDefault;
+  std::string m_suffix;
+  bool m_showPerc;
+  Expression m_formula;
+  bool m_visibleByDefault;
 
   friend class Metric;
   Statistic(std::string, bool, Expression, bool);
@@ -198,7 +198,7 @@ public:
     /// specific MetricScopes or whole Metrics.
     // MT: Safe (const)
     unsigned int getFor(const StatisticPartial& part) const noexcept {
-      return value + part.m_idx * metric.scopes().size();
+      return value + part.m_idx * metric.get().scopes().size();
     }
 
     /// Get an identifier unique for a StatisticPartial/MetricScope pair. Will
@@ -206,8 +206,8 @@ public:
     /// identifiers for the whole StatisticPartial or Metric.
     // MT: Safe (const)
     unsigned int getFor(const StatisticPartial& part, MetricScope ms) const noexcept {
-      assert(metric.scopes().has(ms));
-      return value + part.m_idx * metric.scopes().size() + static_cast<int>(ms);
+      assert(metric.get().scopes().has(ms));
+      return value + part.m_idx * metric.get().scopes().size() + static_cast<int>(ms);
     }
 
     /// Get an identifier unique to the MetricScope. Will not overlap with
@@ -215,12 +215,12 @@ public:
     /// StatisticPartials or the whole Metric.
     // MT: Safe (const)
     unsigned int getFor(MetricScope ms) const noexcept {
-      assert(metric.scopes().has(ms));
+      assert(metric.get().scopes().has(ms));
       return value + static_cast<int>(ms);
     }
 
   private:
-    const Metric& metric;
+    std::reference_wrapper<const Metric> metric;
     unsigned int value;
   };
 

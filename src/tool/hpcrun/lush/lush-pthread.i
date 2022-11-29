@@ -99,7 +99,7 @@ extern atomic_long DBG_maxLockAllocCur;
 extern atomic_long DBG_numLockFreelistCur;
 #endif
 
-typedef _Atomic(pthread_spinlock_t) atomic_pthread_spinlock_t;
+typedef _Atomic(int) atomic_pthread_spinlock_t;
 
 typedef struct lushPtr_SyncObjData {
 
@@ -181,14 +181,14 @@ typedef struct lushPthr {
 
 extern void* lushPthr_mem_beg; // memory begin
 extern void* lushPthr_mem_end; // memory end
-typedef _Atomic(void *) lushPthr_mem_ptr_t;
+typedef _Atomic(uintptr_t) lushPthr_mem_ptr_t;
 extern lushPthr_mem_ptr_t lushPthr_mem_ptr; // current pointer
 
 
 static inline void* 
 lushPthr_malloc(size_t size) 
 {
-  void* memEnd = atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
+  void* memEnd = (void*)atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
   if (memEnd < lushPthr_mem_end) {
     return (memEnd - size);
   }

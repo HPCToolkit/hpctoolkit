@@ -298,8 +298,9 @@ void ProfilePipeline::complete(PerThreadTemporary&& tt, std::optional<std::pair<
     s.notifyTimepoints(tt.thread(), tps);
   });
   for(auto& [m, tpd]: tt.metricTpData.iterate()) {
+    const Metric& mm = m;
     drain(tpd, DataClass::metricTimepoints, [&](ProfileSink& s, const auto& tps){
-      s.notifyTimepoints(tt.thread(), m, tps);
+      s.notifyTimepoints(tt.thread(), mm, tps);
     });
   }
 
