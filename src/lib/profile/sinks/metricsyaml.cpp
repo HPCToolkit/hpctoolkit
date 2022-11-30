@@ -312,6 +312,8 @@ static void rawLeaf(YAML::Emitter& out, const ExtraStatistic& es) {
   out << BeginMap
       << Key << "name" << Value << es.name()
       << Key << "description" << Value << es.description();
+  if(!es.format().empty())
+    out << Key << "format" << Value << es.format();
   rawLeafVariants(out, es);
   out << EndMap;
 }
