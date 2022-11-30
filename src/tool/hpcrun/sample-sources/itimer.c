@@ -90,6 +90,7 @@
 #include "ss-errno.h"
 
 #include <hpcrun/hpcrun_options.h>
+#include <hpcrun/hpcrun_signals.h>
 #include <hpcrun/hpcrun_stats.h>
 
 #include <hpcrun/main.h>
@@ -577,13 +578,7 @@ METHOD_FN(finalize_event_list)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-  struct sigaction act;
-
-  memset(&act, 0, sizeof(act));
-  sigemptyset(&act.sa_mask);
-  sigaddset(&act.sa_mask, 42);  // shootdown signal
-
-  monitor_sigaction(the_signal_num, &itimer_signal_handler, 0, &act);
+  monitor_sigaction(the_signal_num, &itimer_signal_handler, 0, NULL);
 }
 
 static void
@@ -636,6 +631,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
   HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
 
+  sigset_t oldset;
+  hpcrun_block_shootdown_signal(&oldset);
+
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
@@ -643,6 +641,8 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   if (hpcrun_suppress_sample() || sample_filters_apply()) {
     TMSG(ITIMER_HANDLER, "thread sampling suppressed");
     hpcrun_restart_timer(self, 1);
+
+    hpcrun_restore_sigmask(&oldset);
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
@@ -661,6 +661,8 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     if (! hpcrun_is_sampling_disabled()) {
       hpcrun_restart_timer(self, 0);
     }
+
+    hpcrun_restore_sigmask(&oldset);
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
@@ -720,6 +722,8 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
 
   hpcrun_safe_exit();
+
+  hpcrun_restore_sigmask(&oldset);
 
   HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 

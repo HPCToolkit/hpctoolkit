@@ -91,6 +91,7 @@
 #include "hpcrun-initializers.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
+#include "hpcrun_signals.h"
 #include "hpcrun_stats.h"
 #include "name.h"
 #include "start-stop.h"
@@ -539,6 +540,8 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_stats_reinit();
   hpcrun_start_stop_internal_init();
+
+  hpcrun_signals_init();
 
   // sample source setup
 
@@ -1334,21 +1337,13 @@ monitor_init_thread(int tid, void* data)
 void
 monitor_fini_thread(void* init_thread_data)
 {
-  sigset_t set;
-  sigset_t old_set;
-
-  // block profiling signals
-  sigemptyset(&set);
-  sigaddset(&set, SIGRTMIN + 2);  // papi
-  sigaddset(&set, SIGRTMIN + 3);  // posix
-  sigaddset(&set, SIGRTMIN + 4);  // perf
-
-  monitor_real_pthread_sigmask(SIG_BLOCK, &set, &old_set);
+  sigset_t oldset;
+  hpcrun_block_profile_signal(&oldset);
 
   hpcrun_threadmgr_thread_delete();
 
   if (hpcrun_get_disabled()) {
-    monitor_real_pthread_sigmask(SIG_SETMASK, &old_set, NULL);
+    hpcrun_restore_sigmask(&oldset);
     return;
   }
 
@@ -1358,7 +1353,7 @@ monitor_fini_thread(void* init_thread_data)
   hpcrun_thread_fini(epoch);
   hpcrun_safe_exit();
 
-  monitor_real_pthread_sigmask(SIG_SETMASK, &old_set, NULL);
+  hpcrun_restore_sigmask(&oldset);
 }
 
 

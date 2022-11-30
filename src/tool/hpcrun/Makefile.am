@@ -291,6 +291,7 @@ MY_BASE_FILES =				\
 	handling_sample.c		\
 	hpcrun-initializers.c		\
 	hpcrun_options.c		\
+	hpcrun_signals.c		\
 	hpcrun_stats.c			\
 	loadmap.c			\
 	metrics.c			\
