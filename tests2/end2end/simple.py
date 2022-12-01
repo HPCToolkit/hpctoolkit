@@ -2,7 +2,7 @@
 
 import sys
 
-from hpctoolkit.test.execution import hpcprof, hpcrun, hpcstruct  # noqa: import-error
+from hpctoolkit.test.execution import hpcprof, hpcrun, hpcstruct
 
 with hpcrun(sys.argv[1]) as M:
     hpcstruct(M)

@@ -55,17 +55,8 @@ precommit:
   tags: [docker, linux/amd64]
   image: registry.gitlab.com/hpctoolkit/ci-images/selfcheck:amd64
   needs: []
-  cache:
-    key: precommit
-    paths:
-    - .pc-cache/
   script:
-  - mkdir -p .pc-cache/ ~/.cache/
-  - ln -s $(realpath .pc-cache/) ~/.cache/pre-commit
-  - pre-commit run --all-files || { git diff | tee fixup.patch && exit 1; }
-  artifacts:
-    paths:
-    - fixup.patch
+  - pre-commit run --all-files --show-diff-on-failure
 
 
 # The Autogoo for the HEAD commit (at least) must be in-sync before we build

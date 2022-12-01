@@ -3,10 +3,10 @@
 import pickle
 import sys
 
-from hpctoolkit.formats import from_path  # noqa: import-error
-from hpctoolkit.formats.diff.strict import StrictAccuracy, StrictDiff  # noqa: import-error
-from hpctoolkit.test.execution import hpcprof_mpi  # noqa: import-error
-from hpctoolkit.test.tarball import extracted  # noqa: import-error
+from hpctoolkit.formats import from_path
+from hpctoolkit.formats.diff.strict import StrictAccuracy, StrictDiff
+from hpctoolkit.test.execution import hpcprof_mpi
+from hpctoolkit.test.tarball import extracted
 
 rankcnt = int(sys.argv[1])
 threadcnt = int(sys.argv[2])

@@ -339,7 +339,7 @@ class StrictDiff(DiffStrategy):
             else:
                 self._update(ea, eb)
 
-    def _isomorphic_update(  # noqa: MC0001
+    def _isomorphic_update(
         self, a: collections.abc.Iterable[ValT], b: collections.abc.Iterable[ValT]
     ):
         """Update the Diff-state assuming a == b when _key(a) == _key(b), ignoring order between

@@ -87,7 +87,7 @@ class ProfileDB(DatabaseFile):
     )
 
     def _with(self, meta: "MetaDB"):
-        self.ProfileInfos._with(meta)  # noqa: protected-access
+        self.ProfileInfos._with(meta)
 
     @classmethod
     def from_file(cls, file):
@@ -122,7 +122,7 @@ class ProfileInfos(StructureBase):
 
     def _with(self, meta: "MetaDB"):
         for p in self.profiles:
-            p._with(meta)  # noqa: protected-access
+            p._with(meta)
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
@@ -145,9 +145,9 @@ class Profile(StructureBase):
     @yaml_object
     class Flags(BitFlags, yaml_tag="!profile.db/v4/Profile.Flags"):
         # Added in v4.0
-        isSummary = (0, 0)  # noqa: N815
+        isSummary = (0, 0)
 
-    idTuple: T.Optional["IdentifierTuple"]  # noqa: N815
+    idTuple: T.Optional["IdentifierTuple"]
     flags: Flags
     values: dict[int, dict[int, float]]
 
@@ -183,7 +183,7 @@ class Profile(StructureBase):
 
     def _with(self, meta: "MetaDB"):
         if self.idTuple is not None:
-            self.idTuple._with(meta)  # noqa: protected-access
+            self.idTuple._with(meta)
         self._context_map = meta.context_map
         self._metric_map = (
             meta.summary_metric_map if self.Flags.isSummary in self.flags else meta.raw_metric_map
@@ -227,7 +227,7 @@ class Profile(StructureBase):
         state = cls._as_commented_map(obj)
 
         if hasattr(obj, "_context_map") and hasattr(obj, "_metric_map"):
-            c_map, m_map = obj._context_map, obj._metric_map  # noqa: protected-access
+            c_map, m_map = obj._context_map, obj._metric_map
 
             state["values"] = _CommentedMap(state["values"])
             for ctxId in state["values"]:
@@ -268,7 +268,7 @@ class IdentifierTuple(StructureBase):
 
     def _with(self, meta: "MetaDB"):
         for i in self.ids:
-            i._with(meta)  # noqa: protected-access
+            i._with(meta)
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
@@ -289,12 +289,12 @@ class Identifier(StructureBase):
     @yaml_object
     class Flags(BitFlags, yaml_tag="!profile.db/v4/Identifier.Flags"):
         # Added in v4.0
-        isPhysical = (0, 0)  # noqa: N815
+        isPhysical = (0, 0)
 
     kind: int
     flags: Flags
-    logicalId: int  # noqa: N815
-    physicalId: int  # noqa: N815
+    logicalId: int
+    physicalId: int
 
     # NB: Although this structure is extendable, its total size is fixed
     size: T.ClassVar[int] = 0x10

@@ -2,7 +2,7 @@
 
 import argparse
 
-from hpctoolkit.test.execution import hpcrun  # noqa: import-error
+from hpctoolkit.test.execution import hpcrun
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--threads-per-proc", type=int, default=1)

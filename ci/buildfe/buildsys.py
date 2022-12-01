@@ -68,7 +68,7 @@ class Configure(Action):
 class MakeAction(Action):
     """Base class for Actions that primarily run `make ...` in the build directory."""
 
-    def _run(  # noqa: too-many-locals
+    def _run(
         self,
         logprefix: str,
         cfg: Configuration,
@@ -79,6 +79,7 @@ class MakeAction(Action):
         split_stderr: bool = True,
         parallel: bool = True,
     ) -> ActionResult:
+        # pylint: disable=too-many-locals
         assert builddir.is_dir()
 
         make = shutil.which("make")
@@ -353,9 +354,8 @@ class Test(MakeAction):
                 # Return the resulting XML
                 return dom.toxml(encoding="utf-8")
 
-    def fixup_pytest(  # noqa: too-many-locals
-        self, res, tests2bdir: Path, testxml: Path
-    ) -> bytes | ActionResult:
+    def fixup_pytest(self, res, tests2bdir: Path, testxml: Path) -> bytes | ActionResult:
+        # pylint: disable=too-many-locals
         _ = res, tests2bdir
         with open(testxml, encoding="utf-8") as f:
             with xml.dom.minidom.parse(f) as dom:
@@ -411,7 +411,7 @@ class Test(MakeAction):
                 # Return the resulting XML
                 return dom.toxml(encoding="utf-8")
 
-    def run(  # noqa: too-many-locals
+    def run(
         self,
         cfg: Configuration,
         *,
@@ -420,6 +420,7 @@ class Test(MakeAction):
         installdir: Path,
         logdir: T.Optional[Path] = None,
     ) -> ActionResult:
+        # pylint: disable=too-many-locals
         res = self._run(
             "test",
             cfg,

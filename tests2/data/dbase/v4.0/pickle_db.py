@@ -4,7 +4,7 @@ import argparse
 import pickle
 from pathlib import Path
 
-from hpctoolkit.formats import from_path_extended  # noqa: import-error
+from hpctoolkit.formats import from_path_extended
 
 parser = argparse.ArgumentParser(
     description="Parse a database tarball and export the equivalent pickled Database object"

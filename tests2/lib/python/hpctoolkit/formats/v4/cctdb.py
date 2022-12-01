@@ -84,7 +84,7 @@ class ContextDB(DatabaseFile):
     )
 
     def _with(self, meta: "MetaDB", profile: "ProfileDB"):
-        self.CtxInfos._with(meta, profile)  # noqa: protected-access
+        self.CtxInfos._with(meta, profile)
 
     @classmethod
     def from_file(cls, file):
@@ -114,16 +114,16 @@ class ContextInfos(StructureBase):
 
     def __post_init__(self):
         for ctxId, c in enumerate(self.contexts):
-            c._with_id(ctxId)  # noqa: protected-access
+            c._with_id(ctxId)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
         for ctxId, c in enumerate(self.contexts):
-            c._with_id(ctxId)  # noqa: protected-access
+            c._with_id(ctxId)
 
     def _with(self, meta: "MetaDB", profile: "ProfileDB"):
         for ctxId, c in enumerate(self.contexts):
-            c._with(meta, profile, ctxId)  # noqa: protected-access
+            c._with(meta, profile, ctxId)
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
@@ -223,7 +223,7 @@ class PerContext(StructureBase):
         state = cls._as_commented_map(obj)
 
         if hasattr(obj, "_profile_map") and hasattr(obj, "_metric_map"):
-            p_map, m_map = obj._profile_map, obj._metric_map  # noqa: protected-access
+            p_map, m_map = obj._profile_map, obj._metric_map
 
             state["values"] = _CommentedMap(state["values"])
             for metId in state["values"]:

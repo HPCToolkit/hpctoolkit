@@ -1,6 +1,11 @@
 strictness: medium
 
+pylint:
+  options:
+    enable: 'useless-suppression'
+
 mypy:
   run: true
+  strict: true
   options:
     python-version: '3.10'
