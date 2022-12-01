@@ -225,7 +225,7 @@ public:
   };
 
   /// Structure to be used for creating new Metrics. Encapsulates a number of
-  /// smaller settings into a convienent structure.
+  /// smaller settings into a convenient structure.
   struct Settings {
     Settings()
       : scopes(MetricScopeSet::all), visibility(visibility_t::shownByDefault)
