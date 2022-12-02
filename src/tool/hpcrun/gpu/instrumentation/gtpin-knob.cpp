@@ -68,7 +68,7 @@ gtpin_knob_bool
 )
 {
   using namespace gtpin;
-  
+
   GTPinKnob knob = KNOB_FindArg(name);
   assert(knob != NULL);
 

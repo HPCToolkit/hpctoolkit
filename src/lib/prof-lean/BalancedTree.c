@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -77,12 +77,12 @@ static void
 BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y);
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 
 void
-BalancedTreeNode_init(BalancedTreeNode_t* x, 
+BalancedTreeNode_init(BalancedTreeNode_t* x,
 		      void* key, BalancedTreeNode_t* parent)
 {
   x->left = NULL;
@@ -96,11 +96,11 @@ BalancedTreeNode_init(BalancedTreeNode_t* x,
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
-void 
-BalancedTree_init(BalancedTree_t* tree, 
+void
+BalancedTree_init(BalancedTree_t* tree,
 		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz)
 {
   tree->root = NULL;
@@ -118,7 +118,7 @@ BalancedTree_insert(BalancedTree_t* tree, void* key)
 {
   pfq_rwlock_node_t locklcl;
   pfq_rwlock_write_lock(&tree->rwlock, &locklcl);
- 
+
   BalancedTreeNode_t* x = tree->root;
   BalancedTreeNode_t* x_parent = NULL;
 
@@ -217,13 +217,13 @@ BalancedTree_leftRotate(BalancedTree_t* tree, BalancedTreeNode_t* x)
 {
   // set y (INVARIANT: y != NULL)
   BalancedTreeNode_t* y = x->right;
-  
+
   // move b to x's right subtree
   x->right = y->left;
   if (y->left != NULL) {
     y->left->parent = x;
   }
-  
+
   // move y to x's old position
   y->parent = x->parent;
   if (x->parent == NULL) {
@@ -254,7 +254,7 @@ BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y)
 {
   // set x (INVARIANT: x != NULL)
   BalancedTreeNode_t* x = y->left;
-  
+
   // move b to y's left subtree
   y->left = x->right;
   if (x->right != NULL) {
@@ -282,8 +282,8 @@ BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y)
 
 
 #if 0
-static void 
-BalancedTree_foreach_rec(BalancedTreeNode_t*, 
+static void
+BalancedTree_foreach_rec(BalancedTreeNode_t*,
 			 BalancedTree_foreach_func, void*);
 
 void

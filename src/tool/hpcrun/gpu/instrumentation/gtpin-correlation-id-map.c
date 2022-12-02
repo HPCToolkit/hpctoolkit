@@ -110,7 +110,7 @@ typedef struct typed_splay_node(correlation_id) {
   gpu_op_ccts_t op_ccts;
   gpu_activity_channel_t *activity_channel;
   uint64_t submit_time;
-} typed_splay_node(correlation_id); 
+} typed_splay_node(correlation_id);
 
 
 //******************************************************************************
@@ -140,7 +140,7 @@ gtpin_correlation_id_map_entry_alloc()
 static gtpin_correlation_id_map_entry_t *
 gtpin_correlation_id_map_entry_new
 (
- uint64_t gtpin_correlation_id, 
+ uint64_t gtpin_correlation_id,
  gpu_op_ccts_t *op_ccts,
  gpu_activity_channel_t *activity_channel,
  uint64_t submit_time
@@ -181,7 +181,7 @@ gtpin_correlation_id_map_lookup
 void
 gtpin_correlation_id_map_insert
 (
- uint64_t gtpin_correlation_id, 
+ uint64_t gtpin_correlation_id,
  gpu_op_ccts_t *op_ccts,
  gpu_activity_channel_t *activity_channel,
  uint64_t submit_time
@@ -195,7 +195,7 @@ gtpin_correlation_id_map_insert
     entry->activity_channel = activity_channel;
     entry->submit_time = submit_time;
   } else {
-    gtpin_correlation_id_map_entry_t *entry = 
+    gtpin_correlation_id_map_entry_t *entry =
       gtpin_correlation_id_map_entry_new(gtpin_correlation_id, op_ccts, activity_channel, submit_time);
 
     st_insert(&map_root, entry);
@@ -246,7 +246,7 @@ gtpin_correlation_id_map_entry_submit_time_get
  gtpin_correlation_id_map_entry_t *entry
 )
 {
-  return entry->submit_time; 
+  return entry->submit_time;
 }
 
 

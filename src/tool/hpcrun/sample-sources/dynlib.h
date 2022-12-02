@@ -72,7 +72,7 @@ dynlib_open
 );
 
 
-int 
+int
 dynlib_sym
 (
    void **fn,

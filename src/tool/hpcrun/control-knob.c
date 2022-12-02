@@ -128,4 +128,3 @@ control_knob_value_get_string(char *in, char **value)
   fprintf(stderr,"No such name in Control register\n");
   return 2;
 }
-

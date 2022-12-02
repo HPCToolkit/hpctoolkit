@@ -75,8 +75,8 @@ int altinstr_replacementscan_f = SC_DONE;
 int is_dotso;
 int server_mode = 0;
 
-static char ebuf[1024]; 
-static char ebuf2[1024]; 
+static char ebuf[1024];
+static char ebuf2[1024];
 
 uint64_t refOffset;
 uint64_t sr;
@@ -224,14 +224,14 @@ get_funclist(char *name)
   char  *ret = NULL;
   uint64_t k;
   Elf   *e;
-  
+
   refOffset = 0;
 
   // Make sure function list array is allocated
   // And that initial values are set to something reasonable in case of early exit
   //
   if ( farray == NULL) {
-    farray = (Function_t*) valloc(MAX_FUNC * sizeof(Function_t) );  
+    farray = (Function_t*) valloc(MAX_FUNC * sizeof(Function_t) );
     maxfunc = MAX_FUNC;
     nfunc = 0;
     //
@@ -279,7 +279,7 @@ get_funclist(char *name)
     cleanup();  // ensure farray freed in case of error
     return ebuf;
   }
-  
+
   // process the mapped header
   // ret points to either a char error buffer or is NULL,
   // in which case just return it to indicate success
@@ -455,7 +455,7 @@ process_mapped_header(Elf *lelf)
       sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
       return ebuf2;
     }
-    if (secHead.sh_flags == (SHF_ALLOC|SHF_EXECINSTR)) { 
+    if (secHead.sh_flags == (SHF_ALLOC|SHF_EXECINSTR)) {
 
       sprintf(foo, "start %s section", secName);
       fn = strdup(foo);
@@ -465,7 +465,7 @@ process_mapped_header(Elf *lelf)
       fn = strdup(foo);
       add_function(secHead.sh_addr+secHead.sh_size, fn, SC_FNTYPE_NONE, FR_YES);
     }
-      
+
     if (secHead.sh_type == SHT_SYMTAB) {
       rf = symtabread(lelf, secHead);
       // only skip eh_frame if symtabread was successful
@@ -484,24 +484,24 @@ process_mapped_header(Elf *lelf)
 
     else if (secHead.sh_type == SHT_PROGBITS) {
       if (!strcmp(secName,".plt")) {
-        pltscan(lelf, secHead); 
+        pltscan(lelf, secHead);
       }
       else if (!strcmp(secName,".plt.sec")) {
-        pltsecscan(lelf, secHead); 
+        pltsecscan(lelf, secHead);
       }
       else if (!strcmp(secName,".init")) {
-        initscan(lelf, secHead); 
+        initscan(lelf, secHead);
       }
       else if (!strcmp(secName,".text")) {
-        textscan(lelf, secHead); 
+        textscan(lelf, secHead);
         ehInfo.textSection = section;  // may be needed for eh_frame scan
       }
       else if (!strcmp(secName,".data")) {
-        textscan(lelf, secHead); 
+        textscan(lelf, secHead);
         ehInfo.dataSection = section;  // may be needed for eh_frame scan
       }
       else if (!strcmp(secName,".fini")) {
-        finiscan(lelf, secHead); 
+        finiscan(lelf, secHead);
       }
       else if (!strcmp(secName,".eh_frame_hdr")) {
         ehInfo.ehHdrIndex = elf_ndxscn(section);
@@ -512,7 +512,7 @@ process_mapped_header(Elf *lelf)
         ehInfo.ehFrameSection = section;
       }
       else if (!strcmp(secName,".altinstr_replacement")) {
-        altinstr_replacementscan(lelf, secHead); 
+        altinstr_replacementscan(lelf, secHead);
       }
     }
   }
@@ -529,7 +529,7 @@ process_mapped_header(Elf *lelf)
   // from the scan, even if there were errors.
   //
   if (symTabPresent == FR_NO) {
-    (void)ehframescan(lelf, &ehInfo);  
+    (void)ehframescan(lelf, &ehInfo);
   }
 
   if (verbose > 1) {
@@ -616,7 +616,7 @@ dynsymread(Elf *e, GElf_Shdr sechdr)
 
 }
 
-uint64_t 
+uint64_t
 symtabread(Elf *e, GElf_Shdr sechdr)
 {
   uint64_t rf;
@@ -769,7 +769,7 @@ add_function(uint64_t faddr, char *fname, char *src, uint8_t freeFlag)
   farray[nfunc].fr_fnam = freeFlag;
   //
   // on freeFlag: FR_YES means fname was malloc'd elsewhere and needs freeing
-  // after we're done with the list.  FR_NO means it's a symbol *  from an elf *, so 
+  // after we're done with the list.  FR_NO means it's a symbol *  from an elf *, so
   // libelf will take care of it.
   //
 #if DEBUG
@@ -807,8 +807,8 @@ func_cmp(const void *a, const void *b)
 {
   int ret;
 
-  Function_t fp1 = *((Function_t *) a); 
-  Function_t fp2 = *((Function_t *) b); 
+  Function_t fp1 = *((Function_t *) a);
+  Function_t fp2 = *((Function_t *) b);
   if (fp1.fadd > fp2.fadd ) {
     ret = 1;
   } else if (fp1.fadd < fp2.fadd ) {
@@ -826,7 +826,7 @@ func_cmp(const void *a, const void *b)
 void
 usage()
 {
-  fprintf(stderr, 
+  fprintf(stderr,
       "Usage: hpcfnbounds [options] object-file\n    options are:\n"
       "\t-v\tturn on verbose output in hpcfnbounds\n"
       "\t-v2\tturn on extended verbose output in hpcfnbounds\n"

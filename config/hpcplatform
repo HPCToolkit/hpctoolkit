@@ -6,12 +6,12 @@
 
 ## **************************************************************************
 ##
-## File: 
+## File:
 ##    hpcplatform: see usage.
 ##
 ## Author:
 ##    Written by Nathan Tallent, Rice University.
-##    
+##
 ## **************************************************************************
 
 #############################################################################
@@ -52,12 +52,12 @@ f_getoptions()
       --version | -v )
          echo "version: ${HPCPLATFORM_VERSION}" ; exit 0 ;;
       --help | --h* | -h )
-         f_usage; exit 0 ;; 
-      -* ) 
+         f_usage; exit 0 ;;
+      -* )
          printf "${error_pfx} Invalid option '$1'\n";
          f_usage; exit 1;
          ;;
-      * )   
+      * )
          break ;;
     esac
     shift
@@ -78,7 +78,7 @@ PATH=".:${PATH}"
 # Try to find the platform
 platform_guess=`config.guess`
 platform=`hpcguess "${platform_guess}"`
-if [ $? -eq 0 ]; then 
+if [ $? -eq 0 ]; then
   printf "${platform}\n"
   exit 0
 else

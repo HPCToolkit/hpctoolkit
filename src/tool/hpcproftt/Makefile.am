@@ -145,4 +145,3 @@ install-exec-hook:
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
-

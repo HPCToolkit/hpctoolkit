@@ -86,7 +86,7 @@ typedef struct {
 // thread local data
 //***************************************************************************
 
-static __thread lm_seg_t lm_seg; 
+static __thread lm_seg_t lm_seg;
 
 
 

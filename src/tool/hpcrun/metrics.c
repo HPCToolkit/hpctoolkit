@@ -187,13 +187,13 @@ hpcrun_metrics_data_dump()
   for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
     hpcrun_get_num_metrics(kind);
     for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
-      printf("metric_data[%d].(desc=%p (%s), id=%d (%s), kind=%p (%s), proc=%p (%s))\n", 
+      printf("metric_data[%d].(desc=%p (%s), id=%d (%s), kind=%p (%s), proc=%p (%s))\n",
 	     l->g_id,
 	     metric_data[l->g_id].desc,
 	     check(metric_data[l->g_id].desc == &l->val),
 	     metric_data[l->g_id].id,
 	     check(metric_data[l->g_id].id == l->id),
-	     metric_data[l->g_id].kind, 
+	     metric_data[l->g_id].kind,
 	     check(metric_data[l->g_id].kind == kind),
 	     metric_data[l->g_id].proc,
 	     check(metric_data[l->g_id].proc == l->proc));
@@ -226,7 +226,7 @@ hpcrun_metrics_data_finalize()
   }
 }
 
-// Note: (johnmc) needs double-checked locking if all_kinds_done not 
+// Note: (johnmc) needs double-checked locking if all_kinds_done not
 // set prior to multithreading
 int
 hpcrun_get_num_kind_metrics()
@@ -268,7 +268,7 @@ hpcrun_get_num_metrics(kind_info_t *kind)
 
 // Finalize metrics
 
-void hpcrun_close_kind(kind_info_t *kind) 
+void hpcrun_close_kind(kind_info_t *kind)
 {
   hpcrun_get_num_metrics(kind);
 }
@@ -387,7 +387,7 @@ hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
   n->proc = upd_fn;
   n->id   = kind->idx++;
   n->g_id = metric_id;
-  
+
   metric_desc_t* mdesc = &(n->val);
   TMSG(METRICS,"id = %d, name = %s, flags = %d, period = %d", metric_id, name, valFmt, period);
   if (! mdesc) {
@@ -403,7 +403,7 @@ hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
   mdesc->flags = hpcrun_metricFlags_NULL;
 
   mdesc->name = (char*) name;
-  mdesc->description = (char*) description; 
+  mdesc->description = (char*) description;
   mdesc->period = period;
   mdesc->flags.fields.ty     = MetricFlags_Ty_Raw; // FIXME
   mdesc->flags.fields.valFmt = valFmt;
@@ -474,7 +474,7 @@ hpcrun_metric_std(int metric_id, metric_data_list_t* set,
   switch (minfo->flags.fields.valFmt) {
     case MetricFlags_ValFmt_Int:
       if (operation == '+')
-        loc->i += val.i; 
+        loc->i += val.i;
       else if (operation == '=')
         loc->i = val.i;
       break;
@@ -594,7 +594,7 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 }
 
 //
-// make a sparse copy - YUMENG 
+// make a sparse copy - YUMENG
 //
 
 //used to show what the datalist looks like, test purpose
@@ -617,7 +617,7 @@ datalist_display(metric_data_list_t *data_list)
       uint64_t v = actual[i].v1.bits; // local copy of val
       printf(" %d",v);
     /*int shift = 0, num_write = 0, c;
-  
+
     for (shift = 56; shift >= 0; shift -= 8) {
       printf("%ld : ", ((v >> shift) & 0xff));
     }*/
@@ -625,25 +625,25 @@ datalist_display(metric_data_list_t *data_list)
     printf("\n");
   }
   printf("END\n");
-  
+
 }
 #endif
 
 uint64_t
 hpcrun_metric_sparse_count(metric_data_list_t* list)
 {
-  
+
   kind_info_t *curr_k;
   metric_data_list_t *curr;
   uint64_t num_nzval = 0;
-  
+
   for (curr_k = first_kind; curr_k != NULL; curr_k = curr_k->link) {
     for (curr = list; curr != NULL && curr->kind != curr_k; curr = curr->next);
     if(curr){
       metric_set_t* actual = curr->metrics;
       for(int i = 0; i < curr_k->idx; i++ ){
         if(actual[i].v1.i != 0){
-          num_nzval++;         
+          num_nzval++;
         }
       }
     }
@@ -657,10 +657,10 @@ uint64_t
 hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* metric_ids,
 			     metric_data_list_t* list, int initializing_idx)
 {
-  
+
   kind_info_t *curr_k;
   metric_data_list_t *curr;
-  
+
   cct_metric_data_t curr_m;
 
   int curr_id = 0;//global id of metrics
@@ -668,11 +668,11 @@ hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* metric_ids,
 
   for (curr_k = first_kind; curr_k != NULL; curr_k = curr_k->link) {
     for (curr = list; curr != NULL && curr->kind != curr_k; curr = curr->next);
-    if(curr){     
+    if(curr){
       metric_set_t* actual = curr->metrics;
       for(int i = 0; i < curr_k->idx; i++ ){
         curr_m = actual[i].v1;
-        if(curr_m.i != 0){ 
+        if(curr_m.i != 0){
           val[initializing_idx + num_nzval] = curr_m;
           metric_ids[initializing_idx + num_nzval] = (uint16_t)curr_id;
           num_nzval++;
@@ -681,7 +681,7 @@ hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* metric_ids,
       }
     }else{//if curr not exist, meaning no metrics for this kind, still needs to update the metric id to match the kind
       curr_id += curr_k->idx;
-    } 
+    }
   }
 
   //num_nzval will be offset for next cct's metrics

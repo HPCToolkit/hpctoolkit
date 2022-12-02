@@ -89,7 +89,7 @@
 
 #else
 
-#define do_lock() 
+#define do_lock()
 #define do_unlock()
 
 #endif
@@ -118,7 +118,7 @@ union blame_entry_t {
 
 
 /***************************************************************************
- * private data  
+ * private data
  ***************************************************************************/
 
 static uint64_t volatile thelock;
@@ -129,7 +129,7 @@ static uint64_t volatile thelock;
  * private operations
  ***************************************************************************/
 
-uint32_t 
+uint32_t
 blame_entry_obj_id(uint_fast64_t value)
 {
   blame_all_t entry;
@@ -138,7 +138,7 @@ blame_entry_obj_id(uint_fast64_t value)
 }
 
 
-uint32_t 
+uint32_t
 blame_entry_blame(uint_fast64_t value)
 {
   blame_all_t entry;
@@ -146,21 +146,21 @@ blame_entry_blame(uint_fast64_t value)
   return entry.parts.blame;
 }
 
-uint32_t 
+uint32_t
 blame_map_obj_id(uint64_t obj)
 {
   return ((uint32_t) ((uint64_t)obj) >> 2);
 }
 
 
-uint32_t 
-blame_map_hash(uint64_t obj) 
+uint32_t
+blame_map_hash(uint64_t obj)
 {
   return ((uint32_t)((blame_map_obj_id(obj)) & INDEX_MASK));
 }
 
 
-uint_fast64_t 
+uint_fast64_t
 blame_map_entry(uint64_t obj, uint32_t metric_value)
 {
   blame_all_t be;
@@ -183,7 +183,7 @@ blame_map_new(void)
   return rv;
 }
 
-void 
+void
 blame_map_init(blame_entry_t table[])
 {
   int i;
@@ -214,7 +214,7 @@ blame_map_add_blame(blame_entry_t table[],
     if(obj_at_index == obj_id) {
 #ifdef LOSSLESS_BLAME
       if (atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, newval.combined,
-						  memory_order_relaxed, memory_order_relaxed)) 
+						  memory_order_relaxed, memory_order_relaxed))
         break;
 #else
       // the atomicity is not needed here, but it is the easiest way to write this
@@ -226,7 +226,7 @@ blame_map_add_blame(blame_entry_t table[],
 	newval.combined = blame_map_entry(obj, metric_value);
 #ifdef LOSSLESS_BLAME
 	if ((atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, newval.combined,
-						     memory_order_relaxed, memory_order_relaxed)))  
+						     memory_order_relaxed, memory_order_relaxed)))
           break;
 	// otherwise, try again
 #else
@@ -238,7 +238,7 @@ blame_map_add_blame(blame_entry_t table[],
       else {
 	EMSG("leaked blame %d\n", metric_value);
 	// entry in use for another object's blame
-	// in this case, since it isn't easy to shift 
+	// in this case, since it isn't easy to shift
 	// our blame efficiently, we simply drop it.
 	break;
       }
@@ -248,7 +248,7 @@ blame_map_add_blame(blame_entry_t table[],
 }
 
 
-uint64_t 
+uint64_t
 blame_map_get_blame(blame_entry_t table[], uint64_t obj)
 {
   static uint64_t zero = 0;
@@ -265,7 +265,7 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
     if(entry_obj_id == obj_id) {
 #ifdef LOSSLESS_BLAME
       if (!atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, zero,
-						  memory_order_relaxed, memory_order_relaxed)) 
+						  memory_order_relaxed, memory_order_relaxed))
         continue; // try again on failure
 #else
       table[index].all = 0;

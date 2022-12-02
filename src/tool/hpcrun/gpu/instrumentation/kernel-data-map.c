@@ -115,7 +115,7 @@ kernel_data_map_insert
   } else {
     spinlock_lock(&kernel_data_map_lock);
     kernel_data_map_entry_t *entry = kernel_data_new(kernel_id, kernel_data);
-    kd_insert(&kernel_data_map_root, entry);  
+    kd_insert(&kernel_data_map_root, entry);
     spinlock_unlock(&kernel_data_map_lock);
   }
 }

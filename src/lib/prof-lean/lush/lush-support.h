@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -131,7 +131,7 @@ typedef struct lush_agent_pool lush_agent_pool_t;
 // ---------------------------------------------------------
 
 enum lush_assoc {
-  // Association classes 
+  // Association classes
 #define MKASSOC1(as, c1)      ( ((as) << 4) | (c1) )
 #define MKASSOC2(as, c1, c2)  ( ((as) << 4) | (c1) | (c2) )
 
@@ -168,39 +168,39 @@ typedef union lush_assoc_info_u lush_assoc_info_t;
 
 union lush_assoc_info_u {
   uint32_t bits;
-  
+
   struct lush_assoc_info_s {
     lush_assoc_t as  : 8;
     uint32_t     len : 24; // (inclusive) length of path to root note: >= 1
   } u;
 };
 
-// 
+//
 // lush assoc_info selectors, manipulators, constants
 //
 
 extern lush_assoc_info_t lush_assoc_info_NULL;
 
 static inline unsigned
-lush_assoc_class(lush_assoc_t as) 
+lush_assoc_class(lush_assoc_t as)
 {
   return ((as) & LUSH_ASSOC_CLASS_MASK);
 }
 
-static inline bool 
-lush_assoc_is_a_to_0(lush_assoc_t as) 
+static inline bool
+lush_assoc_is_a_to_0(lush_assoc_t as)
 {
   return (lush_assoc_class(as) & LUSH_ASSOC_CLASS_a_to_0);
 }
 
-static inline bool 
-lush_assoc_is_1_to_a(lush_assoc_t as) 
+static inline bool
+lush_assoc_is_1_to_a(lush_assoc_t as)
 {
   return (lush_assoc_class(as) & LUSH_ASSOC_CLASS_1_to_a);
 }
 
 static inline bool
-lush_assoc_is_a_to_1(lush_assoc_t as) 
+lush_assoc_is_a_to_1(lush_assoc_t as)
 {
   return (lush_assoc_class(as) & LUSH_ASSOC_CLASS_a_to_1);
 }
@@ -211,7 +211,7 @@ lush_assoc_info__get_path_len(lush_assoc_info_t x)
   return (x).u.len;
 }
 
-static inline lush_assoc_t 
+static inline lush_assoc_t
 lush_assoc_info__get_assoc(lush_assoc_info_t x)
 {
   return x.u.as;
@@ -226,7 +226,7 @@ lush_assoc_info__path_len_eq(lush_assoc_info_t x, lush_assoc_info_t y)
   return lush_assoc_info__get_path_len(x) == lush_assoc_info__get_path_len(y);
 }
 
-static inline bool 
+static inline bool
 lush_assoc_class_eq(lush_assoc_t x, lush_assoc_t y)
 {
   return ( ((x) == (y)) /* handles x == y == LUSH_ASSOC_NULL */
@@ -288,13 +288,13 @@ lush_assoc_info_is_root_note(lush_assoc_info_t x)
 
 #define LUSH_ASSOC_STR_MAX_LEN 6
 
-const char* 
+const char*
 lush_assoc_tostr(lush_assoc_t as);
 
 
 #define LUSH_ASSOC_INFO_STR_MIN_LEN (LUSH_ASSOC_STR_MAX_LEN + 26)
 
-const char* 
+const char*
 lush_assoc_info_sprintf(char* str, lush_assoc_info_t as_info);
 
 
@@ -326,9 +326,9 @@ lush_lip_init(lush_lip_t* x)
 static inline bool
 lush_lip_eq(const lush_lip_t* x, const lush_lip_t* y)
 {
-  return ((x == y) || (x && y 
+  return ((x == y) || (x && y
 		       && x->data8[0] == y->data8[0]
-		       && x->data8[1] == y->data8[1])); 
+		       && x->data8[1] == y->data8[1]));
 }
 
 static inline bool
@@ -355,7 +355,7 @@ lush_lip_gt(const lush_lip_t* x, const lush_lip_t* y)
 
 #define LUSH_LIP_STR_MIN_LEN (20 * LUSH_LIP_DATA8_SZ) /* 0x + 16 + space */
 
-const char* 
+const char*
 lush_lip_sprintf(char* str, const lush_lip_t* x);
 
 

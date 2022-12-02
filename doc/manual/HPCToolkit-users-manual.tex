@@ -448,8 +448,8 @@ It assumes an operational installation of \HPCToolkit{}.
 
 To use \HPCToolkit{} to measure and analyze an application's performance, one first compiles and links the application for a production run, using \emph{full} optimization.
 Second, one launches an application with \HPCToolkit{}'s measurement tool, \hpcrun{}, which uses statistical sampling to collect a performance profile.
-Third, one applies \hpcstruct{} to an application's measurement directory to recover program structure information from any CPU or GPU binary that was measured. 
-Program structure, which includes information about files, procedures, inlined code, and loops, is used to relate performance measurements to source code. 
+Third, one applies \hpcstruct{} to an application's measurement directory to recover program structure information from any CPU or GPU binary that was measured.
+Program structure, which includes information about files, procedures, inlined code, and loops, is used to relate performance measurements to source code.
 Fourth, one uses \hpcprof{} to combine information about an application's structure with dynamic performance measurements to produce a performance database.
 For large executions where analyzing performance measurements serially would be imprudent, \HPCToolkit{}  provides \hpcprof-mpi{} - an MPI program that can be launched to analyze  performance data from many MPI ranks and threads in parallel.
 Finally, one explores a performance database with \HPCToolkit{}'s graphical user interface: \hpcviewer{} which presents
@@ -553,7 +553,7 @@ One can simply profile and optionally trace computations offloaded onto AMD, Int
 \item  {\tt -e gpu=nvidia}  is used with CUDA and OpenMP on NVIDIA GPUs
 \item  {\tt -e gpu=amd}  is used with CUDA and OpenMP on NVIDIA GPUs
 \item  {\tt -e gpu=level0}  is used with Intel's Level Zero runtime for Data Parallel C++ and OpenMP
-\item  {\tt -e gpu=opencl}  can be used on any of the GPU platforms. 
+\item  {\tt -e gpu=opencl}  can be used on any of the GPU platforms.
 \end{itemize}
 
 Adding a {\tt -t} to \hpcrun{}'s command line when profiling GPU computations will trace them as well.
@@ -1305,10 +1305,10 @@ when measuring your code with HPCToolkit by setting an environment variable, as 
 
 \section{Monitoring OpenMP on the Host}
 Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes.
-IBM's LOMP (Lightweight OpenMP Runtime) and recent versions of LLVM's OpenMP runtime,  
+IBM's LOMP (Lightweight OpenMP Runtime) and recent versions of LLVM's OpenMP runtime,
 AMD's AOMP, and Intel's OpenMP runtime provide emerging support
 for OMPT. Support in these implementations evolving, especially with respect to offloading computation
-onto TARGET devices. 
+onto TARGET devices.
 A notable exception for a popular runtime that lacks OMPT support is the GCC compiler suite's {\tt libgomp}. Fortunately, the LLVM OpenMP runtime, which supports OMPT, is compatible with {\tt libgomp}, at least on the host.\footnote{It appears that GCC's support for OpenMP offloading can only be used with {\tt libgomp},}
 
  In OpenMP implementations without support for the OMPT interface, HPCToolkit records and reports implementation-level measurements of program executions. At the implementation-level, work is typically partitioned between a primary (master) thread and one or more worker threads. Without the OMPT interface, work executed by the master thread can be associated with its full user-level calling context and is reported under \verb|<program root>|. However, OpenMP regions and tasks executed by worker threads typically can't be associated with the calling context in which regions or tasks were launched. Instead, the work is attributed to a worker thread outer context that polls for work, finds the work, and executes the work. HPCToolkit reports such work under \verb|<thread root>|.
@@ -1324,7 +1324,7 @@ HPCToolkit includes support for using the OMPT interface to monitor offloading o
 
 OpenMP computations executing on NVIDIA GPUs are monitored whenever {\tt hpcrun}'s command-line witches are configured to monitor operations on NVIDIA GPUs, as described in Section~\ref{sec:nvidia-gpu}.
 
-At this writing, NVIDIA's OpenMP {\tt nvc++} compiler and 
+At this writing, NVIDIA's OpenMP {\tt nvc++} compiler and
 runtime lack OMPT support. Without OMPT support, HPCToolkit
 separates performance information for the OpenMP primary thread from
 other OpenMP threads (and any other threads that may be present at
@@ -1333,23 +1333,23 @@ attributed to \verb|<program root>|; the performance of all other threads
 is attributed to \verb|<thread root>|. While this is not as easy to analyze and understand
 as the global, user-level calling context view constructed using the OMPT interface,
 this approach can be used to analyze performance data for OpenMP programs
-compiled with NVIDIA's compilers using HPCToolkit. 
+compiled with NVIDIA's compilers using HPCToolkit.
 
 LLVM-generated code for  v12.0 or later have good host-side OMPT
 support in the runtime. HPCToolkit does a good job associating
 the performance of kernels with global, user-level CPU calling contexts in which
 they are launched.
 
-Regardless of what compiler is used to offload OpenMP computations to NVIDIA GPUs, HPCToolkit simplifies the host calling contexts to which it attributes GPU operations by hiding all NVIDIA library frames that correspond to stripped code in NVIDIA's CUDA runtime. 
-The presence of long chains of procedure frames only identified by their machine code address in NVIDIA's CUDA library in the calling contexts for GPU operations obscures rather than enlightens; 
+Regardless of what compiler is used to offload OpenMP computations to NVIDIA GPUs, HPCToolkit simplifies the host calling contexts to which it attributes GPU operations by hiding all NVIDIA library frames that correspond to stripped code in NVIDIA's CUDA runtime.
+The presence of long chains of procedure frames only identified by their machine code address in NVIDIA's CUDA library in the calling contexts for GPU operations obscures rather than enlightens;
 thus, suppressing them is appropriate.
 
 \subsection{AMD GPUs}
 
 OpenMP computations executing on AMD GPUs are monitored whenever {\tt hpcrun}'s command-line switches are configured to monitor operations on AMD GPUs, as described in Section~\ref{sec:amd-gpu}.
 
-AMD's ROCm 5.1 and later releases contains OMPT support for monitoring and attributing host computations as well as computations 
-offloaded to AMD GPUs using OpenMP TARGET. When compiled with  {\tt amdclang} or {\tt amdclang++}, both host computations and computations offloaded to AMD GPUs can be associated with global user-level calling contexts that are children of \verb|<program root>|.  
+AMD's ROCm 5.1 and later releases contains OMPT support for monitoring and attributing host computations as well as computations
+offloaded to AMD GPUs using OpenMP TARGET. When compiled with  {\tt amdclang} or {\tt amdclang++}, both host computations and computations offloaded to AMD GPUs can be associated with global user-level calling contexts that are children of \verb|<program root>|.
 
 Cray's compilers only have partial support for the OMPT interface, which renders HPCToolkit unable to elide implementation-level details of parallel regions. For everyone but compiler or runtime developers, such details are an unnecessary and make it harder for application developers to understand their code with no added value.
 
@@ -1358,7 +1358,7 @@ Cray's compilers only have partial support for the OMPT interface, which renders
 
 OpenMP computations executing on Intel GPUs are monitored whenever {\tt hpcrun}'s command-line switches are configured to monitor operations on Intel GPUs, as described in Section~\ref{sec:intel-gpu}.
 
-Intel's OneAPI {\tt ifx} and {\tt icx} compilers, which support OpenMP offloading in their OpenMP runtime atop Intel's latest GPU-enabled Level Zero runtime, provide support for the OMPT tools interface. 
+Intel's OneAPI {\tt ifx} and {\tt icx} compilers, which support OpenMP offloading in their OpenMP runtime atop Intel's latest GPU-enabled Level Zero runtime, provide support for the OMPT tools interface.
 The implementation of host-side OMPT callbacks in Intel's OpenMP runtime is sufficient for attributing GPU work to global, user-level calling contexts rooted at \verb|<program root>|.
 
 
@@ -1386,8 +1386,8 @@ The implementation of host-side OMPT callbacks in Intel's OpenMP runtime is suff
 \chapter{Known Issues}
 \label{chpt:known}
 
-This section lists some known issues and potential workarounds. 
-Other known issues can be seen in the project's Gitlab issues pages: 
+This section lists some known issues and potential workarounds.
+Other known issues can be seen in the project's Gitlab issues pages:
 \begin{itemize}
  \item For HPCToolkit in general, see  \url{https://gitlab.com/HPCToolkit/HPCToolkit/issues}
  \item For hpcviewer, see \url{https://gitlab.com/HPCToolkit/HPCViewer/issues}
@@ -1395,7 +1395,7 @@ Other known issues can be seen in the project's Gitlab issues pages:
 
 \section{\hpcrun{} reports partial call paths for code executed by a constructor prior to entering main}
 
-\paragraph{Description:} At present, all samples of code executed by constructors are reported as a partial call paths even if they are full unwinds. This occurs because HPCToolkit wasn't designed to attribute code that executes in constructors. 
+\paragraph{Description:} At present, all samples of code executed by constructors are reported as a partial call paths even if they are full unwinds. This occurs because HPCToolkit wasn't designed to attribute code that executes in constructors.
 
 \paragraph{Workaround:} Don't be concerned by partial call paths that unwind through \verb|__libc_start_main|  and \verb|__lib_csu_init|. The samples are fully attributed even though HPCToolkit does not recognize them as such.
 
@@ -1403,7 +1403,7 @@ Other known issues can be seen in the project's Gitlab issues pages:
 
 \section{\hpcrun{} may fail to measure a program execution on a CPU with hardware performance counters}
 
-\paragraph{Description:} We observed a problem using Linux  {\tt perf\_events} to measure CPU performance using hardware performance counters on an {\tt x86\_64} cluster at Sandia. An investigation determined that the cluster was running Sandia's LDMS (Lightweight Distributed Metric Service)---a low-overhead, low-latency framework for collecting, transferring, and storing metric data on a large distributed computer system. On this cluster, the LDMS  daemon had been configured to use the {\tt syspapi\_sampler} (\url{https://github.com/ovis-hpc/ovis/blob/OVIS-4/ldms/src/sampler/syspapi/syspapi\_sampler.c}), which uses the Linux {\tt perf\_events} subsystem to measure hardware counters at the node level. At present, the LDMS {\tt syspapi\_sampler}'s use of  the Linux {\tt perf\_events} subsystem for data collection at the node level conflicts with native use of use the Linux {\tt perf\_events} subsystem by HPCToolkit for process-level measurement.\footnote{We observed the same conflict between the LDMS {\tt syspapi\_sampler}  and the Linux {\tt perf} command-line tool. We expect that the  {\tt syspapi\_sampler} 
+\paragraph{Description:} We observed a problem using Linux  {\tt perf\_events} to measure CPU performance using hardware performance counters on an {\tt x86\_64} cluster at Sandia. An investigation determined that the cluster was running Sandia's LDMS (Lightweight Distributed Metric Service)---a low-overhead, low-latency framework for collecting, transferring, and storing metric data on a large distributed computer system. On this cluster, the LDMS  daemon had been configured to use the {\tt syspapi\_sampler} (\url{https://github.com/ovis-hpc/ovis/blob/OVIS-4/ldms/src/sampler/syspapi/syspapi\_sampler.c}), which uses the Linux {\tt perf\_events} subsystem to measure hardware counters at the node level. At present, the LDMS {\tt syspapi\_sampler}'s use of  the Linux {\tt perf\_events} subsystem for data collection at the node level conflicts with native use of use the Linux {\tt perf\_events} subsystem by HPCToolkit for process-level measurement.\footnote{We observed the same conflict between the LDMS {\tt syspapi\_sampler}  and the Linux {\tt perf} command-line tool. We expect that the  {\tt syspapi\_sampler}
 conflicts with other process-level tools that use the Linux {\tt perf\_events} subsystem to measure events using hardware counters.}
 
 \paragraph{Workaround:} Surprisingly, measurement using HPCToolkit's PAPI interface atop Linux  {\tt perf\_events} works even though using HPCToolkit directly atop Linux  {\tt perf\_events} yields no measurement data.  For instance, rather than measuring {\tt cycles} using Linux {\tt perf\_events} directly with {\tt -e cycles}, one can measure cycles through HPCToolkit's PAPI measurement subsystem using {\tt -e PAPI\_TOT\_CYC}. Of course, one can configure PAPI to measure other hardware events, such as graduated instructions and cache misses.
@@ -1419,15 +1419,15 @@ conflicts with other process-level tools that use the Linux {\tt perf\_events} s
 \section{\hpcrun{} sometimes enables writing of read-only data}
 
 If an application or shared library contains a \verb|PT_GNU_RELRO| segment in its program header, the runtime loader \verb|ld.so| will mark all data in that segment readonly
-after relocations have been processed at runtime. 
-As described in Section~\ref{hpcrun-audit} of the manual, on \verb|x86_64| and Power architectures, \hpcrun{} uses \verb|LD_AUDIT| to monitor operations on dynamic libraries. 
+after relocations have been processed at runtime.
+As described in Section~\ref{hpcrun-audit} of the manual, on \verb|x86_64| and Power architectures, \hpcrun{} uses \verb|LD_AUDIT| to monitor operations on dynamic libraries.
 For \hpcrun{} to properly resolve calls to functions in shared libraries, the Global Offset Table (GOT) must be writable. Sometimes, the GOT lies within the \verb|PT_GNU_RELRO| segment, which may cause it to be marked readonly after relocations are processed.
 If \hpcrun{} is using   \verb|LD_AUDIT| to monitor shared library operations, it will enable write permissions on the \verb|PT_GNU_RELRO| segment during execution. While this makes some data writable that should have read-only permissions, it should not affect the behavior of any program that does not attempt to overwrite data that should have been readonly in its address space.
 
 \section{A confusing label for GPU theoretical occupancy}
 \paragraph{Affected architectures:}  NVIDIA GPUs
 
-\paragraph{Description:} When analyzing a GPU-accelerated application that employs NVIDIA GPUs, HPCToolkit estimates percent GPU theoretical occupancy as the ratio of active GPU threads divided by the maximum number of GPU threads available. In multi-threaded or multi-rank programs, HPCToolkit reports GPU  theoretical occupancy with the label 
+\paragraph{Description:} When analyzing a GPU-accelerated application that employs NVIDIA GPUs, HPCToolkit estimates percent GPU theoretical occupancy as the ratio of active GPU threads divided by the maximum number of GPU threads available. In multi-threaded or multi-rank programs, HPCToolkit reports GPU  theoretical occupancy with the label
 
 \begin{quote}
 Sum over rank/thread of exclusive 'GPU kernel: theoretical occupancy (FGP\_ACT / FGP\_MAX)'
@@ -1441,7 +1441,7 @@ GPU kernel: theoretical occupancy (FGP\_ACT / FGP\_MAX)
 
 The metric is computed correctly by summing the fine-grain parallelism used in each kernel launch across all threads and ranks and dividing it by the sum of the maximum fine-grain parallelism available to each kernel launch across all threads and ranks, and presenting the value as a percent.
 
-\paragraph{Explanation:} This metric is unlike others computed by HPCToolkit. Rather than being computed by \hpcprof{}, it is computed by having \hpcviewer{} interpret a formula. 
+\paragraph{Explanation:} This metric is unlike others computed by HPCToolkit. Rather than being computed by \hpcprof{}, it is computed by having \hpcviewer{} interpret a formula.
 
 \paragraph{Workaround:} Pay attention to the metric value, which is computed correctly and ignore its awkward label.
 
@@ -1588,21 +1588,21 @@ reason, it cannot be used to profile {\tt setuid} programs.
 
 By default, hpcrun use {\tt glibc}'s {\tt LD\_AUDIT} subsystem to monitor an application's use of dynamic
   libraries. Use of  {\tt LD\_AUDIT}  is needed to properly interpret a load module's
-  {\tt RUNPATH} attribute. However, use of {\tt LD\_AUDIT} will cause {\tt dlmopen} to fail 
-  for \verb|glibc < 2.32|. Intel's GTPin library for instrumentation of Intel GPU 
+  {\tt RUNPATH} attribute. However, use of {\tt LD\_AUDIT} will cause {\tt dlmopen} to fail
+  for \verb|glibc < 2.32|. Intel's GTPin library for instrumentation of Intel GPU
   binaries uses {\tt dlmopen}.
 
-If your program encounters a failure related to dynamic library loading, 
+If your program encounters a failure related to dynamic library loading,
 \hpcrun{} has several options for precisely controlling the approach \hpcrun{}'s uses to monitor shared libraries that might help.
 
 \begin{itemize}
-\item\verb|--disable-auditor|. This option instructs hpcrun to track dynamic library operations by intercepting {\tt dlopen} and {\tt dlclose} instead of using {\tt LD\_AUDIT}. 
- Note that this alternate approach can cause problem with load modules that specify a {\tt RUNPATH}. 
+\item\verb|--disable-auditor|. This option instructs hpcrun to track dynamic library operations by intercepting {\tt dlopen} and {\tt dlclose} instead of using {\tt LD\_AUDIT}.
+ Note that this alternate approach can cause problem with load modules that specify a {\tt RUNPATH}.
  Due to a {\tt glibc} bug, this option is disabled by default on ARM.
 
 \item\verb|--enable-auditor|. {\tt LD\_AUDIT} is by default disabled on ARM due to a glib bug. Use this option to enable {\tt LD\_AUDIT} on ARM.
 
-\item\verb|--disable-auditor-got-rewriting|. When HPCToolkit uses  {\tt glibs}'s {\tt LD\_AUDIT}  capability {\tt glibc} unnecessarily intercepts every call to a function in a shared library. 
+\item\verb|--disable-auditor-got-rewriting|. When HPCToolkit uses  {\tt glibs}'s {\tt LD\_AUDIT}  capability {\tt glibc} unnecessarily intercepts every call to a function in a shared library.
 \hpcrun{} avoids this overhead by rewriting each shared library's global offset table (GOT). Such rewriting is tricky. This option can be used to disable GOT rewriting if you suspect that the rewriting is causing your application to fail.
 
 \item\verb|--namespace-single|.   {\tt dlmopen} may load a shared library into an alternate namespace.  Use of {\tt dlmopen} to create multiple namespaces can cause an application to crash when using \verb|glibc < 2.32|. This option asks HPCToolkit to load all  shared libraries within the application namespace, which might help avoid a crash.  (This option is the default when performing instruction-level measurements of Intel GPU binaries with GTPin as GTPin uses  {\tt dlmopen}.)
@@ -1622,7 +1622,7 @@ to abort. One can detect the presence of \verb|gprof| instrumentation in an
 application by the presence of the \verb|__monstartup| and \verb|_mcleanup| symbols
 in a executable.  You can recompile your code without the
 \verb|-pg| compiler flag and measure again. Alternatively, you can use the \verb|--disable-gprof|
-argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while 
+argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while
 measuring performance with \HPCToolkit{}.
 
 To cope with {\tt gprof} instrumentation in dynamically-linked programs, you can use \hpcrun{}'s \verb|--disable-gprof| option.
@@ -1634,16 +1634,16 @@ To cope with {\tt gprof} instrumentation in dynamically-linked programs, you can
 
 \subsection{Deadlock while monitoring a program that uses IBM Spectrum MPI and NVIDIA GPUs}
 
-IBM's Spectrum MPI uses a special library {\tt libpami\_cudahook.so} to intercept allocations of GPU memory so that Spectrum MPI knows when data is allocated on an NVIDIA GPU. 
-Unfortunately, the mechanism used by Spectrum MPI to do so (wrapping {\tt dlsym}) interferes with performance tools that use {\tt dlopen} and {\tt dlsym}. 
-This interference causes measurement of a GPU-accelerated MPI application using HPCToolkit to deadlock when an application uses both Spectrum MPI and and CUDA on an NVIDIA GPU. 
+IBM's Spectrum MPI uses a special library {\tt libpami\_cudahook.so} to intercept allocations of GPU memory so that Spectrum MPI knows when data is allocated on an NVIDIA GPU.
+Unfortunately, the mechanism used by Spectrum MPI to do so (wrapping {\tt dlsym}) interferes with performance tools that use {\tt dlopen} and {\tt dlsym}.
+This interference causes measurement of a GPU-accelerated MPI application using HPCToolkit to deadlock when an application uses both Spectrum MPI and and CUDA on an NVIDIA GPU.
 
-To avoid this deadlock on systems when launching a program that uses Spectrum MPI with  {\tt jsrun}, use {\tt --smpiargs="-x PAMI\_DISABLE\_CUDA\_HOOK=1 -disable\_gpu\_hooks"} to disable the PAMI CUDA hook library.  
-These flags  cannot be used with the {\tt -gpu} flag. 
+To avoid this deadlock on systems when launching a program that uses Spectrum MPI with  {\tt jsrun}, use {\tt --smpiargs="-x PAMI\_DISABLE\_CUDA\_HOOK=1 -disable\_gpu\_hooks"} to disable the PAMI CUDA hook library.
+These flags  cannot be used with the {\tt -gpu} flag.
 
-Note however that disabling Spectrum MPI's CUDA hook will cause trouble if CUDA device memory is passed into the MPI library as a send or receive buffer. 
-An additional restriction is that memory obtained with a call to {\tt cudaMallocHost} may not be passed as a send or receive buffer. 
-Functionally similar memory may be obtained with any host allocation function followed by a call the {\tt cudaHostRegister}. 
+Note however that disabling Spectrum MPI's CUDA hook will cause trouble if CUDA device memory is passed into the MPI library as a send or receive buffer.
+An additional restriction is that memory obtained with a call to {\tt cudaMallocHost} may not be passed as a send or receive buffer.
+Functionally similar memory may be obtained with any host allocation function followed by a call the {\tt cudaHostRegister}.
 
 % ===========================================================================
 % ===========================================================================
@@ -1689,15 +1689,15 @@ for more detail on HPCToolkit's \texttt{perfevents} support.
 CUPTI to monitor computations on NVIDIA GPUs. In our experience,
 this error occurs when the version of CUPTI used by HPCToolkit is
 incompatible with the version of CUDA used by your program or CUDA kernel driver installed on your system. You can check the
-version of the CUDA kernel driver installed on your system using the {\tt nvidia-smi} command. 
-Table 3 {\em CUDA Application Compatibility Support Matrix} at the following URL~\url{https://docs.nvidia.com/deploy/cuda-compatibility/index.html\#cuda-application-compatibility} 
-specifies what versions of the CUDA kernel driver match each version of CUDA and CUPTI. 
-Although the table indicates that some drivers can support newer versions of CUDA than the one that they were designed for, 
-e.g. driver 418.40.04+ designed to support CUDA 10.1 can also run CUDA 11.0 and 11.1 programs, 
-in our experience that does not necessarily mean that the driver will support performance measurement of CUDA programs 
+version of the CUDA kernel driver installed on your system using the {\tt nvidia-smi} command.
+Table 3 {\em CUDA Application Compatibility Support Matrix} at the following URL~\url{https://docs.nvidia.com/deploy/cuda-compatibility/index.html\#cuda-application-compatibility}
+specifies what versions of the CUDA kernel driver match each version of CUDA and CUPTI.
+Although the table indicates that some drivers can support newer versions of CUDA than the one that they were designed for,
+e.g. driver 418.40.04+ designed to support CUDA 10.1 can also run CUDA 11.0 and 11.1 programs,
+in our experience that does not necessarily mean that the driver will support performance measurement of CUDA programs
 using any CUDA version newer than 10.1.
-We believe that best way to avoid the \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED} error is to ensure that 
-(1) HPCToolkit is compiled with the version of CUDA that your installed CUDA kernel driver was designed to support, and 
+We believe that best way to avoid the \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED} error is to ensure that
+(1) HPCToolkit is compiled with the version of CUDA that your installed CUDA kernel driver was designed to support, and
 (2) your application uses the version of CUDA that matches the one your kernel driver was designed to support or a compatible older version.
 
 % ===========================================================================
@@ -1710,7 +1710,7 @@ When trying to use PC sampling to measure computation on an NVIDIA GPU, you may 
 
 For all versions of CUDA  to date (through CUDA 11), NVIDIA's CUPTI library only supports PC sampling for only one process per GPU. If multiple MPI ranks in your application run CUDA on the same GPU, you may see this error.\footnote{We have observed this error on CUDA 11.}
 
-You have two alternatives: 
+You have two alternatives:
 \begin{enumerate}
 \item Measure the execution in which multiple MPI ranks share a GPU using only {\tt -e gpu=nvidia} without PC sampling.
 \item Launch your program so that there is only a single MPI rank per GPU.
@@ -1726,7 +1726,7 @@ You have two alternatives:
 
 When trying to use PC sampling to measure computation on an NVIDIA GPU, you may encounter the following error: `function {\tt cuptiActivityEnableContext} failed with error {\tt CUPTI\_ERROR\_UNKNOWN}'.
 
-For all versions of CUDA  to date (through CUDA 11), NVIDIA's CUPTI library only supports PC sampling for only one process per GPU. If multiple MPI ranks in your application run CUDA on the same GPU, you may see this error.\footnote{We have observed this error on CUDA 10.} You have two alternatives: 
+For all versions of CUDA  to date (through CUDA 11), NVIDIA's CUPTI library only supports PC sampling for only one process per GPU. If multiple MPI ranks in your application run CUDA on the same GPU, you may see this error.\footnote{We have observed this error on CUDA 10.} You have two alternatives:
 \begin{enumerate}
 \item Measure the execution in which multiple MPI ranks share a GPU using only {\tt -e gpu=nvidia} without PC sampling.
 \item Launch your program so that there is only a single MPI rank per GPU.
@@ -1785,19 +1785,19 @@ lacks binary analysis capabilities for ARM processors, there is a
 higher likelihood that the lack of a \verb|-g| compiler option for
 an executable or a shared library will lead to partial unwinds.
 
-One annoying place where partial unwinds are somewhat common on \verb|x86_64| 
+One annoying place where partial unwinds are somewhat common on \verb|x86_64|
 processors is in Intel's MKL family of libraries.  A careful examination of Intel’s
 MKL libraries showed that most but not all routines have
-compiler-generated Frame Descriptor Entries (FDEs) that help tools 
+compiler-generated Frame Descriptor Entries (FDEs) that help tools
 unwind the call stack.  For any routine that lacks
-an FDE, HPCToolkit tries to compensate using binary analysis.  
+an FDE, HPCToolkit tries to compensate using binary analysis.
 Unfortunately, highly-optimized code in MKL library
 routines has code features that are difficult to analyze correctly.
 
 There are two ways to deal with this problem:
 \begin{itemize}
 \item Analyze the execution using information from partial unwinds. Often knowing several levels of calling context is enough for analysis without full calling context for sample events.
-\item 
+\item
 Recompile the binary or shared library causing the problem and add \verb|-g| to the list of its compiler options.
 \end{itemize}
 
@@ -1867,7 +1867,7 @@ measurement data for the \verb|gprof| profiler.  If you are using
 \HPCToolkit{} to collect performance data, the \verb|gprof| instrumentation
 is needlessly slowing your application. You can recompile your code without the
 \verb|-pg| compiler flag and measure again. Alternatively, you can use the \verb|--disable-gprof|
-argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while 
+argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while
 measuring performance with \HPCToolkit{}.
 
 \section{Problems Recovering Loops in NVIDIA GPU binaries}
@@ -1974,7 +1974,7 @@ If you see this error, the memory footprint that \hpcviewer{} needs to store and
 \subsection{\hpcviewer{} writes a long list of Java error messages to the terminal!}
 
 The Eclipse Java framework that serves as the foundation for \hpcviewer{} can be somewhat temperamental. If the persistent state maintained by Eclipse for \hpcviewer{}
-gets corrupted, \hpcviewer{} may spew a list of errors deep within call chains of the Eclipse framework.  
+gets corrupted, \hpcviewer{} may spew a list of errors deep within call chains of the Eclipse framework.
 
 On MacOS and Linux, try removing your \hpcviewer{} Eclipse workspace with default location:\\
  \texttt{\$HOME/.hpctoolkit/hpcviewer} \\

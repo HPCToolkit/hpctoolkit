@@ -94,7 +94,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
-pkglibexec_PROGRAMS = hpctracedump 
+pkglibexec_PROGRAMS = hpctracedump
 
 hpctracedump_SOURCES  = $(MYSOURCES)
 hpctracedump_CFLAGS   = $(MYCFLAGS)
@@ -110,4 +110,3 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
-

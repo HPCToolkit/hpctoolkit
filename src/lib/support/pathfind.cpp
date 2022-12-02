@@ -76,13 +76,13 @@ pathfind(const char* pathList,
   int   accessFlags = 0;
   const char* path;
   const char* sep;
-  
+
   if (result) { sfree(result); result = NULL; }
 
   /* Check that name is plausible. */
   if (name == NULL || *name == '\0')
     return NULL;
-  
+
   /* Convert mode chars to accessFlags, for use by access function. */
   if (mode) {
     if (strchr( mode, 'r' )) accessFlags |= R_OK;
@@ -90,7 +90,7 @@ pathfind(const char* pathList,
     if (strchr( mode, 'x' )) accessFlags |= X_OK;
   }
   if (!accessFlags) { accessFlags = F_OK; }
-  
+
   /* If pathList is empty or name is absolute, don't search path for it. */
   if (pathList == NULL || *pathList == '\0' || *name == '/') {
     if (access( name, accessFlags ) >= 0) {
@@ -98,10 +98,10 @@ pathfind(const char* pathList,
     }
     return result;
   }
-  
+
   path = pathList;
   while (path) {
-    
+
     int len, pathLen, retval;
     char* tmp;
 
@@ -119,7 +119,7 @@ pathfind(const char* pathList,
     else {
       strcpy (tmp, name);
     }
-    
+
     retval = access( tmp, accessFlags );
 #ifdef SELFTEST
     printf ("Access %s == %d\n", tmp, retval);
@@ -131,10 +131,10 @@ pathfind(const char* pathList,
     else {
       delete[] tmp;
     }
-    
+
     path = sep ? sep + 1 : NULL;
   }
-  
+
   return NULL;
 }
 
@@ -145,7 +145,7 @@ main (int argc, const char *argv[])
 {
   int	i;
   char*	res;
-  
+
   for (i = 1; i < argc; i++) {
     res = pathfind (getenv ("PATH"), argv[i], "r");
     printf("findpath(%s) == %s\n", argv[i], res ? res : "<<NULL>>");

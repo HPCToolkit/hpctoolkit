@@ -47,15 +47,15 @@
 //**************************************************************************
 // Build intervals for a cold path 'function'
 //
-// A cold path 'function' is a block of code that the hpcfnbounds detector 
-// thinks is an independent function. The block of code, however, is not 
-// treated as a function. Instead of being called, the code block is 
-// conditionally branched to from a hot path 'parent' function. (it is not 
-// 'called' very often, so we call it cold path code). Furthermore a cold 
-// path 'function' does not 'return'; rather, it jumps back to the 
+// A cold path 'function' is a block of code that the hpcfnbounds detector
+// thinks is an independent function. The block of code, however, is not
+// treated as a function. Instead of being called, the code block is
+// conditionally branched to from a hot path 'parent' function. (it is not
+// 'called' very often, so we call it cold path code). Furthermore a cold
+// path 'function' does not 'return'; rather, it jumps back to the
 // instruction just after the conditional branch in the hot path
 //
-// These routines take care of detecting a cold path 'function', and 
+// These routines take care of detecting a cold path 'function', and
 // updating the intervals of the cold path code.
 //
 //**************************************************************************
@@ -93,7 +93,7 @@ static bool confirm_cold_path_call(void *loc, interval_arg_t *iarg);
 
 
 //**************************************************************************
-// interface operations 
+// interface operations
 //**************************************************************************
 
 void
@@ -151,7 +151,7 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
       // store the address of the branch, in case this turns out to be a
       // cold path routine.
-      iarg->return_addr = branch_target; 
+      iarg->return_addr = branch_target;
 
       return confirm_cold_path_call(branch_target,iarg);
     }
@@ -162,10 +162,10 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
 
 //**************************************************************************
-// private operations 
+// private operations
 //**************************************************************************
 
-// Confirm that the previous instruction is a conditional branch to 
+// Confirm that the previous instruction is a conditional branch to
 // the beginning of the cold call routine
 static bool
 confirm_cold_path_call(void *loc, interval_arg_t *iarg)
@@ -176,7 +176,7 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
   xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
   xed_decoded_inst_zero_keep_mode(xptr);
   void *possible_call = loc - 6;
-  void *routine       = iarg->beg;     
+  void *routine       = iarg->beg;
   xed_error = xed_decode(xptr, (uint8_t *)possible_call, 15);
 
   TMSG(COLD_CODE,"  --trying to confirm a cold code 'call' from addr %p",
@@ -189,13 +189,13 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
 
   xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
   switch(xiclass) {
-  case XED_ICLASS_JBE: 
-  case XED_ICLASS_JL: 
-  case XED_ICLASS_JLE: 
+  case XED_ICLASS_JBE:
+  case XED_ICLASS_JL:
+  case XED_ICLASS_JLE:
   case XED_ICLASS_JNB:
-  case XED_ICLASS_JNBE: 
-  case XED_ICLASS_JNL: 
-  case XED_ICLASS_JNLE: 
+  case XED_ICLASS_JNBE:
+  case XED_ICLASS_JNL:
+  case XED_ICLASS_JNLE:
   case XED_ICLASS_JNO:
   case XED_ICLASS_JNP:
   case XED_ICLASS_JNS:
@@ -219,4 +219,3 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
   EMSG("confirm cold path call shouldn't get here!");
   return false;
 }
-

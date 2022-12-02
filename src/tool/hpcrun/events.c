@@ -48,7 +48,7 @@
 
 /****************************************************************************
 //
-// File: 
+// File:
 //    events.c
 //
 // Purpose:
@@ -62,7 +62,7 @@
 //
 //    Adapted from parts of The Visual Profiler by Curtis L. Janssen
 //    (events.c).
-//    
+//
 *****************************************************************************/
 
 #include <string.h>
@@ -150,7 +150,7 @@ papi_event_t hpcrun_event_table[] = {
 
 const papi_event_t *
 hpcrun_event_by_name(const char *name)
-{ 
+{
   papi_event_t *i = hpcrun_event_table;
   for (; i->name != NULL; i++) {
     if (strcmp(name, i->name) == 0) return i;
@@ -171,10 +171,10 @@ hpcrun_event_by_code(int code)
 /****************************************************************************/
 
 /*
- * output an indented comma-separated list with lines wrapped around 
- * 70 characters 
+ * output an indented comma-separated list with lines wrapped around
+ * 70 characters
  */
-void 
+void
 hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e)
 {
   /* initial values */
@@ -186,7 +186,7 @@ hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e)
   /* Prospective line length (see format string below) */
   linelen += strlen(sep);
   linelen += strlen(e->name);
-      
+
   /* If the prospective line is beyond our line limit, wrap and try
      again.  We are guaranteed that the event name is not longer than
      our line limit (causing an infinite loop).
@@ -207,10 +207,10 @@ hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e)
 /*
   Write the event and its description to stream 'fs'
 */
-void 
+void
 hpcrun_write_event(FILE* fs, const papi_event_t* e)
 {
   if (!e) { return; }
-  
+
   fprintf(fs, "  %s - %s\n", e->name, e->description);
 }

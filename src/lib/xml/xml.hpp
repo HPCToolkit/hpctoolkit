@@ -80,7 +80,7 @@
 //****************************************************************************
 
 namespace xml {
-  
+
   extern const std::string SPC;   // space
   extern const std::string eleB;  // element begin, initial
   extern const std::string eleBf; // element begin, final
@@ -88,7 +88,7 @@ namespace xml {
   extern const std::string eleEc; // element end, compact: <.../>
   extern const std::string attB;  // attribute value begin
   extern const std::string attE;  // attribute value end
-  
+
   enum XMLElementI {
     TOKEN = 0,
     ATT1 = 1,
@@ -109,13 +109,13 @@ namespace xml {
     ESC_TRUE  =	(1 << 0),   /* Escape reserved XML chars */
     UNESC_FALSE = (0 << 0),
     UNESC_TRUE  = (1 << 0)
-  }; 
+  };
 
   // Returns the string with all necessary characters (un)escaped; will
   // not modify 'str'
   std::string EscapeStr(const char* str);
 
-  inline std::string 
+  inline std::string
   EscapeStr(const std::string& str)
   {
     return EscapeStr(str.c_str());
@@ -123,24 +123,24 @@ namespace xml {
 
   std::string UnEscapeStr(const char* str);
 
-  inline std::string 
+  inline std::string
   UnEscapeStr(const std::string& str)
   {
     return UnEscapeStr(str.c_str());
   }
 
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
   // Reads from 'attB' to and including 'attE'.  Eats up whitespace
-  // before and after the attibute.  
+  // before and after the attibute.
   // -------------------------------------------------------
   bool ReadAttrStr(std::istream& is, std::string& s, int flags = UNESC_TRUE);
 
   // declaration to remove Intel compiler warning
-  template <class T> bool 
+  template <class T> bool
   ReadAttrNum(std::istream& is, T& n);
 
   // Read a number into a C/C++ numerical type
-  template <class T> bool 
+  template <class T> bool
   ReadAttrNum(std::istream& is, T& n)
   {
     bool STATE = true; // false indicates an error
@@ -151,10 +151,10 @@ namespace xml {
     STATE &= IOUtil::Skip(is, "\""); is >> std::ws;
     return STATE;
   }
-  
-  // -------------------------------------------------------  
+
+  // -------------------------------------------------------
   // Writes attribute value, beginning with 'attB' and ending with 'attE'
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
 
   // FIXME: replace the WriteAttr* with this; replace instances of
   // MakeAttr that go to ostreams with Write.
@@ -163,9 +163,9 @@ namespace xml {
     const SampledMetricDesc* mdesc;
     hpcrun_metricVal_t x;
   };
-  
+
   static inline WriteMetricInfo_
-  writeMetric(const SampledMetricDesc* mdesc, hpcrun_metricVal_t x) 
+  writeMetric(const SampledMetricDesc* mdesc, hpcrun_metricVal_t x)
   {
     WriteMetricInfo_ info;
     info.mdesc = mdesc;
@@ -186,64 +186,64 @@ namespace xml {
   }
 #endif
 
-  bool 
+  bool
   WriteAttrStr(std::ostream& os, const char* s, int flags = ESC_TRUE);
 
-  inline bool 
+  inline bool
   WriteAttrStr(std::ostream& os, const std::string& s, int flags = ESC_TRUE)
   {
     return WriteAttrStr(os, s.c_str(), flags);
   }
 
   // declaration to remove Intel compiler warning
-  template <class T> bool 
+  template <class T> bool
   WriteAttrNum(std::ostream& os, T n);
 
   // Write a C/C++ numerical type
-  template <class T> bool 
+  template <class T> bool
   WriteAttrNum(std::ostream& os, T n)
   {
     os << attB << n << attE;
-    return (!os.fail());  
-  } 
+    return (!os.fail());
+  }
 
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
   // Creates an attribute string, beginning with 'attB' and ending with 'attE'
-  // -------------------------------------------------------  
+  // -------------------------------------------------------
 
-  inline std::string 
+  inline std::string
   MakeAttrStr(const char* x, int flags = ESC_TRUE) {
     std::string str = ((flags & ESC_TRUE) ? EscapeStr(x) : x);
     return (attB + str + attE);
   }
 
-  inline std::string 
+  inline std::string
   MakeAttrStr(const std::string& x, int flags = ESC_TRUE) {
     return MakeAttrStr(x.c_str(), flags);
   }
 
 
-  inline std::string 
+  inline std::string
   MakeAttrNum(int x) {
     return (attB + StrUtil::toStr(x) + attE);
   }
 
-  inline std::string 
+  inline std::string
   MakeAttrNum(unsigned int x, int base = 10) {
     return (attB + StrUtil::toStr(x, base) + attE);
   }
 
-  inline std::string 
+  inline std::string
   MakeAttrNum(int64_t x) {
     return (attB + StrUtil::toStr(x) + attE);
   }
 
-  inline std::string 
+  inline std::string
   MakeAttrNum(uint64_t x, int base = 10) {
     return (attB + StrUtil::toStr(x, base) + attE);
   }
 
-  inline std::string 
+  inline std::string
   MakeAttrNum(double x, const char* format = "%g" /*"%.15f"*/) {
     return (attB + StrUtil::toStr(x, format) + attE);
   }

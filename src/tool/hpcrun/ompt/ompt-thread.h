@@ -49,7 +49,7 @@
 
 
 //******************************************************************************
-// local includes  
+// local includes
 //******************************************************************************
 
 #include "ompt-types.h"
@@ -111,17 +111,17 @@ extern __thread int unresolved_cnt;
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
-void 
+void
 ompt_thread_type_set
 (
   ompt_thread_t ttype
 );
 
 
-ompt_thread_t 
+ompt_thread_t
 ompt_thread_type_get
 (
   void
@@ -135,14 +135,14 @@ ompt_thread_computes
 );
 
 
-region_stack_el_t * 
+region_stack_el_t *
 top_region_stack
 (
  void
 );
 
 
-region_stack_el_t * 
+region_stack_el_t *
 pop_region_stack
 (
  void
@@ -151,20 +151,20 @@ pop_region_stack
 
 void push_region_stack
 (
- ompt_notification_t* notification, 
- bool took_sample, 
+ ompt_notification_t* notification,
+ bool took_sample,
  bool team_master
 );
 
 
-void 
+void
 clear_region_stack
 (
  void
 );
 
 
-int 
+int
 is_empty_region_stack
 (
  void

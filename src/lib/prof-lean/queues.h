@@ -65,7 +65,7 @@
 
 
 //*****************************************************************************
-// macros 
+// macros
 //*****************************************************************************
 
 // routine name for a queue operation
@@ -74,10 +74,10 @@
 
 // typed queue pointer
 #define typed_queue_elem_ptr(type)		\
-  type ## _ ## q_element_ptr_t 
+  type ## _ ## q_element_ptr_t
 
 #define typed_queue_elem(type)			\
-  type ## _ ## q_element_t 
+  type ## _ ## q_element_t
 
 #define typed_queue_elem_fn(type, fn)		\
   type ## _ ## q_element_ ## fn
@@ -86,32 +86,32 @@
 #define typed_queue_op(type, qtype, op)		\
   type ## _ ## qtype ## _ ## op
 
-// ptr set routine name for a typed queue 
+// ptr set routine name for a typed queue
 #define typed_queue_elem_ptr_set(type, qtype)	\
-  typed_queue_op(type, qtype, ptr_set)			
+  typed_queue_op(type, qtype, ptr_set)
 
-// ptr get routine name for a typed queue 
+// ptr get routine name for a typed queue
 #define typed_queue_elem_ptr_get(type, qtype)	\
-  typed_queue_op(type, qtype, ptr_get)			
+  typed_queue_op(type, qtype, ptr_get)
 
-// swap routine name for a typed queue 
+// swap routine name for a typed queue
 #define typed_queue_swap(type, qtype)		\
-  typed_queue_op(type, qtype, swap)			
+  typed_queue_op(type, qtype, swap)
 
-// push routine name for a typed queue 
+// push routine name for a typed queue
 #define typed_queue_push(type, qtype)		\
-  typed_queue_op(type, qtype, push)			
+  typed_queue_op(type, qtype, push)
 
-// pop routine name for a typed queue 
+// pop routine name for a typed queue
 #define typed_queue_pop(type, qtype)		\
-  typed_queue_op(type, qtype, pop)			
+  typed_queue_op(type, qtype, pop)
 
-// steal routine name for a typed queue 
+// steal routine name for a typed queue
 #define typed_queue_steal(type, qtype)		\
-  typed_queue_op(type, qtype, steal)			
+  typed_queue_op(type, qtype, steal)
 
 
-// define typed wrappers for a queue type 
+// define typed wrappers for a queue type
 #define typed_queue(type, qtype)				\
   void								\
   typed_queue_elem_ptr_set(type, qtype)				\
@@ -216,7 +216,7 @@ squeue_swap
 );
 
 
-// push a singleton e or a chain beginning with e onto q 
+// push a singleton e or a chain beginning with e onto q
 void
 squeue_push
 (
@@ -233,7 +233,7 @@ squeue_pop
 );
 
 
-// steal the entire chain rooted at q 
+// steal the entire chain rooted at q
 q_element_t *
 squeue_steal
 (
@@ -270,7 +270,7 @@ cqueue_swap
 );
 
 
-// push a singleton e or a chain beginning with e onto q 
+// push a singleton e or a chain beginning with e onto q
 void
 cqueue_push
 (
@@ -287,7 +287,7 @@ cqueue_pop
 );
 
 
-// steal the entire chain rooted at q 
+// steal the entire chain rooted at q
 q_element_t *
 cqueue_steal
 (

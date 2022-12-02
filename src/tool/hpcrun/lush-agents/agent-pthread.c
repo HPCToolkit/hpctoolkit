@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -118,14 +118,14 @@ LUSHI_init(int argc, char** argv,
 }
 
 
-extern int 
+extern int
 LUSHI_fini()
 {
   return 0;
 }
 
 
-extern char* 
+extern char*
 LUSHI_strerror(int code)
 {
   return ""; // STUB
@@ -136,14 +136,14 @@ LUSHI_strerror(int code)
 // Maintaining Responsibility for Code/Frame-space
 // **************************************************************************
 
-extern int 
+extern int
 LUSHI_reg_dlopen()
 {
   return 0; // FIXME: coordinate with dylib stuff
 }
 
 
-extern bool 
+extern bool
 LUSHI_ismycode(void* addr)
 {
   // NOTE: Currently, this does not prevent our LUSHI_do_backtrace
@@ -154,7 +154,7 @@ LUSHI_ismycode(void* addr)
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 extern lush_step_t
@@ -181,7 +181,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
 }
 
 
-extern int 
+extern int
 LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 {
   return 0; // STUB
@@ -189,7 +189,7 @@ LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 extern int
@@ -199,7 +199,7 @@ LUSHI_lip_destroy(lush_lip_t* lip)
 }
 
 
-extern int 
+extern int
 LUSHI_lip_eq(lush_lip_t* lip)
 {
   return 0; // STUB
@@ -242,7 +242,7 @@ LUSHI_do_metric(uint64_t incrMetricIn,
     pthr->idleness = 0;
 #elif (LUSH_PTHR_FN_TY == 2)
     bool is_working_lock = lushPthr_isWorking_lock(pthr);
-    
+
     double num_working      = *(pthr->ps_num_working);
     double num_working_lock = *(pthr->ps_num_working_lock);
     double num_idle_cond    = MAX(0, *(pthr->ps_num_idle_cond)); // timing!

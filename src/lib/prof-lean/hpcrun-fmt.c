@@ -878,7 +878,7 @@ hpcrun_fmt_idtuple_dxnry_free(hpcrun_fmt_idtuple_dxnry_t* dxnry, hpcfmt_free_fn 
 
 //***************************************************************************
 // sparse metircs - YUMENG
-// 
+//
 /* EXAMPLE
 [sparse metrics:
   [basic information:
@@ -1047,7 +1047,7 @@ hpcrun_fmt_sparse_metrics_fprint_grep_helper(hpcrun_fmt_sparse_metrics_t* x, FIL
       fprintf(fs, ") ");
     }
     fprintf(fs, "\n");
-    
+
   }
   fprintf(fs, "%s]\n", pre);
 
@@ -1132,7 +1132,7 @@ hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre)
   fprintf(fs, "%s[        footer start: %ld]\n", pre, x->footer_start);
 
   char* check_magic_num = "NO!";
-  if(x->HPCRUNsm == HPCRUNsm) check_magic_num = "YES!"; 
+  if(x->HPCRUNsm == HPCRUNsm) check_magic_num = "YES!";
   fprintf(fs, "%s[        MAGIC NUMBER: equal to the expected? %s]\n", pre, check_magic_num);
 
   fprintf(fs,"]\n");
@@ -1181,7 +1181,7 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, siz
     return NULL;
   }
   hpcrun_sparse_footer_update_w_start(&(sparse_fs->footer), start_pos); //temp
-  fseek(fs, sparse_fs->footer.hdr_start, SEEK_SET); 
+  fseek(fs, sparse_fs->footer.hdr_start, SEEK_SET);
 
   return sparse_fs;
 }
@@ -1205,7 +1205,7 @@ void hpcrun_sparse_footer_update_w_start(hpcrun_fmt_footer_t *f, size_t start_po
   f->sm_start          += start_pos;
   f->sm_end            += start_pos;
   f->footer_start      += start_pos;
-  
+
 }
 
 /* succeed: return 0; fail: return 1; */
@@ -1247,7 +1247,7 @@ void hpcrun_sparse_close(hpcrun_sparse_file_t* sparse_fs)
 int hpcrun_sparse_check_mode(hpcrun_sparse_file_t* sparse_fs, bool expected, const char* msg)
 {
   if(sparse_fs->mode != expected){
-    fprintf(stderr, "ERROR: %s: hpcrun_sparse_file object's current state is %s, not as expected %s\n", 
+    fprintf(stderr, "ERROR: %s: hpcrun_sparse_file object's current state is %s, not as expected %s\n",
       msg, MODE(sparse_fs->mode), MODE(expected));
     return SF_ERR;
   }
@@ -1296,7 +1296,7 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
 
   size_t realoffset = sparse_fs->footer.met_tbl_start + sparse_fs->metric_bytes_read;
   if(realoffset == sparse_fs->footer.met_tbl_end) return SF_END; // no more next metric
-  if(realoffset > sparse_fs->footer.met_tbl_end)  return SF_ERR; 
+  if(realoffset > sparse_fs->footer.met_tbl_end)  return SF_ERR;
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(m, sparse_fs->file, fmtVersion, malloc));
   sparse_fs->cur_metric_id += 1;
@@ -1310,15 +1310,15 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
 {
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
-  
+
   //first time initialization
-  if(sparse_fs->cct_nodes_read == 0){ 
+  if(sparse_fs->cct_nodes_read == 0){
     fseek(sparse_fs->file, sparse_fs->footer.cct_start, SEEK_SET);
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&sparse_fs->num_cct_nodes, sparse_fs->file));
   }
   if(sparse_fs->cct_nodes_read == sparse_fs->num_cct_nodes) return SF_END;
 
-  size_t realoffset = sparse_fs->footer.cct_start + (SF_cct_node_SIZE * sparse_fs->cct_nodes_read) + SF_num_cct_SIZE; 
+  size_t realoffset = sparse_fs->footer.cct_start + (SF_cct_node_SIZE * sparse_fs->cct_nodes_read) + SF_num_cct_SIZE;
   if(realoffset > sparse_fs->footer.cct_end) return SF_ERR;
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   epoch_flags_t fake = {0};//need to remove in the future
@@ -1361,7 +1361,7 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  //first time initialization 
+  //first time initialization
   if(sparse_fs->sm_block_touched == 0){
     int id_tuple_size;
     uint16_t id_tuple_length;
@@ -1372,7 +1372,7 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(sparse_fs->num_nzval),sparse_fs->file));
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(sparse_fs->num_nz_cct_nodes),sparse_fs->file));
     sparse_fs->val_mid_offset     = sparse_fs->footer.sm_start + id_tuple_size + SF_num_val_SIZE + SF_num_nz_cct_node_SIZE;
-    sparse_fs->cct_node_id_idx_offset = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * sparse_fs->num_nzval; 
+    sparse_fs->cct_node_id_idx_offset = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * sparse_fs->num_nzval;
   }
   if(sparse_fs->sm_block_touched == sparse_fs->num_nz_cct_nodes) return SF_END; //no more cct block
 
@@ -1394,7 +1394,7 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
   sparse_fs->sm_block_touched++;
 
   //seek to the first val_metricID place
-  fseek(sparse_fs->file,(sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * val_mid_idx), SEEK_SET); 
+  fseek(sparse_fs->file,(sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * val_mid_idx), SEEK_SET);
 
   return cct_node_id;
 }
@@ -1418,7 +1418,7 @@ int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t
     fprintf(stderr, "ERROR: cannot read next entry for current cct: current position of hpcrun_sparse_file object is not within curren cct block's range.\n");
     return SF_ERR;
   }
-  if(cur_pos == cur_block_end_pos) return SF_END; 
+  if(cur_pos == cur_block_end_pos) return SF_END;
 
   uint16_t mid;
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(val->bits),sparse_fs->file));
@@ -1729,4 +1729,3 @@ hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs)
 
   return HPCFMT_OK;
 }
-

@@ -45,7 +45,7 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static char intel_align64_signature[] = { 
+static char intel_align64_signature[] = {
  0x53,                      	// push   %rbx
  0x48, 0x89, 0xe3,              // mov    %rsp,%rbx
  0x48, 0x83, 0xe4, 0xc0,        // and    $0xffffffffffffffc0,%rsp
@@ -57,16 +57,16 @@ static char intel_align64_signature[] = {
 };
 
 
-int 
+int
 x86_adjust_intel_align64_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel_align64_signature);
 
   if (len > siglen && strncmp((char *)intel_align64_signature, ins, siglen) == 0) {
-    // signature matched 
+    // signature matched
     unwind_interval *ui = stat->first;
 
-    // this won't fix all of the intervals, but it will fix the ones 
+    // this won't fix all of the intervals, but it will fix the ones
     // that we care about.
     //
     // The method is as follows:
@@ -89,6 +89,6 @@ x86_adjust_intel_align64_intervals(char *ins, int len, btuwi_status_t *stat)
     }
 
     return 1;
-  } 
+  }
   return 0;
 }

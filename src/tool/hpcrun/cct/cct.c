@@ -280,10 +280,10 @@ l_count_mark(cct_node_t* n, cct_op_arg_t arg, size_t level)
     n->display = true;
   }
   if(n->display && n->parent) n->parent->display = true;
-  
+
 
   (count_arg->num_nzval) += num_nzval;
-  if(num_nzval) (count_arg->num_nz_cct_nodes)++; 
+  if(num_nzval) (count_arg->num_nz_cct_nodes)++;
   if(n->display)(count_arg->n)++;
 }
 
@@ -403,7 +403,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
     hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
 
   //set_sparse_copy: copy the values into sparse_metrics
-  uint64_t curr_cct_node_idx = sparse_metrics->cur_cct_node_idx; 
+  uint64_t curr_cct_node_idx = sparse_metrics->cur_cct_node_idx;
   uint64_t num_nzval = hpcrun_metric_set_sparse_copy(sparse_metrics->values, sparse_metrics->mids, data_list, curr_cct_node_idx);
   if(num_nzval != 0){
     (sparse_metrics->cct_node_ids)[sparse_metrics->num_nz_cct_nodes] = tmp->id;
@@ -916,8 +916,8 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
   if(sparse_metrics->cur_cct_node_idx != sparse_metrics->num_vals){
     hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->id_tuple.length, "number of nzvals and cur_cct_node_idx are not equal after walking through the cct");
     return HPCRUN_ERR;
-  } 
-    
+  }
+
   return HPCRUN_OK;
 }
 

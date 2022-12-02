@@ -54,7 +54,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct opencl_context_map_entry_t opencl_context_map_entry_t;
@@ -94,5 +94,3 @@ opencl_cl_context_map_entry_context_id_get
 
 
 #endif
-
-

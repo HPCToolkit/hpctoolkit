@@ -4,4 +4,3 @@
 std::string &getRealPath(const char *name);
 
 #endif
-

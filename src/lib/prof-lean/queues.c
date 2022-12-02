@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //*****************************************************************************
-// local includes 
+// local includes
 //*****************************************************************************
 
 #include "queues.h"
@@ -121,7 +121,7 @@ squeue_pop
     e = Sp(q);
     Sp(q) = e->Sd(next);
     e->Sd(next) = 0;
-  } 
+  }
 
   return e;
 }
@@ -187,7 +187,7 @@ cqueue_push
     q_element_t *enext = atomic_load(&e->Ad(next));
     if (enext == 0) break;
     e = enext;
-  } 
+  }
 
   do {
     atomic_store(&e->Ad(next), head);
@@ -233,7 +233,7 @@ cqueue_steal
 //*****************************************************************************
 
 #define UNIT_TEST 0
-#if UNIT_TEST 
+#if UNIT_TEST
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -244,7 +244,7 @@ typedef struct {
   int value;
 } typed_queue_elem(int);
 
-typedef q_element_ptr_t typed_queue_elem_ptr(int);				
+typedef q_element_ptr_t typed_queue_elem_ptr(int);
 
 typed_queue_elem_ptr(int) queue;
 
@@ -260,7 +260,7 @@ typed_queue_elem_fn(int,new)(int value)
 }
 
 
-void 
+void
 pop
 (
   int n
@@ -279,12 +279,12 @@ pop
 }
 
 
-void 
+void
 push
 (
-  int min, 
+  int min,
   int n
-) 
+)
 {
   int i;
   for(i = min; i < min+n; i++) {
@@ -294,11 +294,11 @@ push
 }
 
 
-void 
+void
 dump
 (
   int_q_element_t *e
-) 
+)
 {
   int i;
   for(; e; e = (int_q_element_t *) typed_queue_elem_ptr_get(int,qtype)(&e->next)) {
@@ -310,7 +310,7 @@ dump
 int
 main
 (
-  int argc, 
+  int argc,
   char **argv
 )
 {

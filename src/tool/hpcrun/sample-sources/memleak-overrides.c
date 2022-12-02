@@ -212,7 +212,7 @@ splay_insert(struct leakinfo_s *node)
 
   node->left = node->right = NULL;
 
-  spinlock_lock(&memtree_lock);  
+  spinlock_lock(&memtree_lock);
   if (memleak_tree_root != NULL) {
     memleak_tree_root = splay(memleak_tree_root, memblock);
 
@@ -225,13 +225,13 @@ splay_insert(struct leakinfo_s *node)
       node->right = memleak_tree_root->right;
       memleak_tree_root->right = NULL;
     } else {
-      TMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)", 
+      TMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)",
 	   node->memblock);
       assert(0);
     }
   }
   memleak_tree_root = node;
-  spinlock_unlock(&memtree_lock);  
+  spinlock_unlock(&memtree_lock);
 }
 
 
@@ -240,9 +240,9 @@ splay_delete(void *memblock)
 {
   struct leakinfo_s *result = NULL;
 
-  spinlock_lock(&memtree_lock);  
+  spinlock_lock(&memtree_lock);
   if (memleak_tree_root == NULL) {
-    spinlock_unlock(&memtree_lock);  
+    spinlock_unlock(&memtree_lock);
     TMSG(MEMLEAK, "memleak splay tree empty: unable to delete %p", memblock);
     return NULL;
   }
@@ -250,7 +250,7 @@ splay_delete(void *memblock)
   memleak_tree_root = splay(memleak_tree_root, memblock);
 
   if (memblock != memleak_tree_root->memblock) {
-    spinlock_unlock(&memtree_lock);  
+    spinlock_unlock(&memtree_lock);
     TMSG(MEMLEAK, "memleak splay tree: %p not in tree", memblock);
     return NULL;
   }
@@ -259,14 +259,14 @@ splay_delete(void *memblock)
 
   if (memleak_tree_root->left == NULL) {
     memleak_tree_root = memleak_tree_root->right;
-    spinlock_unlock(&memtree_lock);  
+    spinlock_unlock(&memtree_lock);
     return result;
   }
 
   memleak_tree_root->left = splay(memleak_tree_root->left, memblock);
   memleak_tree_root->left->right = memleak_tree_root->right;
   memleak_tree_root =  memleak_tree_root->left;
-  spinlock_unlock(&memtree_lock);  
+  spinlock_unlock(&memtree_lock);
   return result;
 }
 
@@ -459,8 +459,8 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->right = NULL;
   if (hpcrun_memleak_active()) {
     sample_val_t smpl =
-      hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), 
-        (hpcrun_metricVal_t) {.i=bytes}, 
+      hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(),
+        (hpcrun_metricVal_t) {.i=bytes},
         0, 1, NULL);
     info_ptr->context = smpl.sample_node;
     loc_str = loc_name[loc];

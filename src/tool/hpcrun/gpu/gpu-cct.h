@@ -66,4 +66,3 @@ gpu_cct_insert_always
  cct_node_t *cct_node,
  ip_normalized_t ip
 );
-

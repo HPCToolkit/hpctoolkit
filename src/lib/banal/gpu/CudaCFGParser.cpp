@@ -178,7 +178,7 @@ void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
             }
           } else {
             if (DEBUG_CUDA_CFGPARSER) {
-              std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 
+              std::cout << "warning: CUBIN function " << operand << " not found" << std::endl;
             }
           }
         }
@@ -336,7 +336,7 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
   }
 
   link_dangling_blocks(dangling_blocks, functions);
-  
+
   // Sort blocks after linking dangling blocks
   for (auto *function : functions) {
     for (auto *block : function->blocks) {

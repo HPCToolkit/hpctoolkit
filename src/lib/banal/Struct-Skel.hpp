@@ -151,7 +151,7 @@ public:
   string  prettyName;
   long  line_num;
   VMA   entry_vma;
-  unsigned symbol_index; 
+  unsigned symbol_index;
   bool  gap_only;
 
   ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string ln, string pn,

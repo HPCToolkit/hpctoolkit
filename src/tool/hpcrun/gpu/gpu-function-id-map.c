@@ -102,7 +102,7 @@ typedef struct typed_splay_node(function_id) {
 
   uint64_t function_id; // key
   ip_normalized_t pc;
-} typed_splay_node(function_id); 
+} typed_splay_node(function_id);
 
 
 //******************************************************************************
@@ -140,7 +140,7 @@ gpu_function_id_map_entry_new
 {
   gpu_function_id_map_entry_t *e = gpu_function_id_map_entry_alloc();
 
-  memset(e, 0, sizeof(gpu_function_id_map_entry_t)); 
+  memset(e, 0, sizeof(gpu_function_id_map_entry_t));
 
   e->function_id = function_id;
   e->pc = pc;
@@ -170,17 +170,17 @@ gpu_function_id_map_lookup
 void
 gpu_function_id_map_insert
 (
- uint64_t function_id, 
+ uint64_t function_id,
  ip_normalized_t pc
 )
 {
-  if (st_lookup(&map_root, function_id)) { 
+  if (st_lookup(&map_root, function_id)) {
     // fatal error: function_id already present; a
     // correlation should be inserted only once.
     assert(0);
   } else {
-    gpu_function_id_map_entry_t *entry = 
-      gpu_function_id_map_entry_new(function_id, pc); 
+    gpu_function_id_map_entry_t *entry =
+      gpu_function_id_map_entry_new(function_id, pc);
 
     st_insert(&map_root, entry);
   }
@@ -219,4 +219,3 @@ gpu_function_id_map_count
 {
   return st_count(map_root);
 }
-

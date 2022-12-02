@@ -34,7 +34,7 @@ Installing HPCToolkit with Spack
 16.1 Unable to fetch tar file
 16.2 New releases break the build
 16.3 Failure to load modules
-    
+
 
 1 Introduction
 ==============
@@ -1300,4 +1300,3 @@ sign that spack is missing a module during the build.
 case where this is necessary.  The correct solution is to fill in the
 'modules:' field in 'compilers.yaml' or some other config file.  See the
 section on Compilers above.
-

@@ -55,13 +55,13 @@
 #include <stdbool.h>
 
 //*****************************************************************************
-// 
+//
 //*****************************************************************************
 
-int dylib_find_module_containing_addr(void *addr, 
+int dylib_find_module_containing_addr(void *addr,
 				      // output parameters
 				      char *module_name,
-				      void **start, 
+				      void **start,
 				      void **end);
 
 #endif

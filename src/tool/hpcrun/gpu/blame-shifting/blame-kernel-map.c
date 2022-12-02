@@ -154,4 +154,3 @@ kernel_map_entry_kernel_node_get
 {
   return entry->node;
 }
-

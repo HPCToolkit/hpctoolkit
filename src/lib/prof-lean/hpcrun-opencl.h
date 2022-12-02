@@ -53,4 +53,3 @@
 #include <CL/cl.h>
 
 #endif
-

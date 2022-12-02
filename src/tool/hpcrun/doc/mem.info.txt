@@ -4,7 +4,7 @@
 //
 // Note that the available dynamic memory is strictly tied to available swap
 // space.
-// 
+//
 //***************************************************************************
 
 // csprof_malloc_init: Prepares the private memory management system
@@ -28,7 +28,7 @@ int csprof_malloc_fini(csprof_mem_t *);
 // *exact* size (in bytes) requested.  If there is insufficient
 // memory, an attempt will be made to allocate more.  If this is not
 // possible, an error is printed and the program is terminated.
-// 
+//
 // * This memory cannot be freed! *
 void* csprof_malloc(size_t size);
 void* csprof_malloc_threaded(csprof_mem_t *, size_t size);

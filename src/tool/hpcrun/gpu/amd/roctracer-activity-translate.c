@@ -178,14 +178,14 @@ roctracer_activity_translate
       convert_memset(ga, record);
     } else {
       convert_unknown(ga);
-      PRINT("roctracer buffer event: Unhandled HIP OPS activity %s, duration %d\n", name, record->end_ns - record->begin_ns);      
+      PRINT("roctracer buffer event: Unhandled HIP OPS activity %s, duration %d\n", name, record->end_ns - record->begin_ns);
     }
   } else if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
     // Ignore API tracing records
     convert_unknown(ga);
   } else {
     convert_unknown(ga);
-    PRINT("roctracer buffer enent: Unhandled activity %s, domain %u, op %u, kind %u\n", 
+    PRINT("roctracer buffer enent: Unhandled activity %s, domain %u, op %u, kind %u\n",
       name, record->domain, record->op, record->kind);
   }
   cstack_ptr_set(&(ga->next), 0);

@@ -45,8 +45,8 @@
 // File: elf-extract.h
 //
 // Purpose:
-//   determine section location and size in elf binary  
-//   
+//   determine section location and size in elf binary
+//
 //***************************************************************************
 
 #ifndef __elf_extract_h__
@@ -62,7 +62,7 @@ elf_section_info
  const char *section_name,
  unsigned char **section,
  size_t *section_size
-); 
+);
 
 
 #endif

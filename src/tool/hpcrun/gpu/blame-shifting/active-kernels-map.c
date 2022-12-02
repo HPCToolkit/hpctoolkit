@@ -49,7 +49,7 @@
 typedef struct typed_splay_node(ak_node) {
   struct typed_splay_node(ak_node) *left;
   struct typed_splay_node(ak_node) *right;
-  
+
   uint64_t kernel_id; // key
   kernel_node_t *kernel_node;
 
@@ -133,7 +133,7 @@ active_kernels_insert
     assert(0);  // entry for a given key should be inserted only once
   } else {
     active_kernels_entry_t *entry = ak_node_new(ak_id, kernel_node);
-    ak_insert(&ak_map_root, entry);  
+    ak_insert(&ak_map_root, entry);
     size++;
   }
   spinlock_unlock(&ak_map_lock);
@@ -195,7 +195,6 @@ ak_map_clear
 )
 {
   spinlock_lock(&ak_map_lock);
-  clear_recursive();		
+  clear_recursive();
   spinlock_unlock(&ak_map_lock);
 }
-

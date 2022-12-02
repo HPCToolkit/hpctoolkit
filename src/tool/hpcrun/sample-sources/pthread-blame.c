@@ -203,18 +203,18 @@ get_blame(uint64_t obj)
 }
 
 
-static void 
+static void
 process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr)
 {
   TMSG(LOCKWAIT, "Processing directed blame");
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
- 
+
 #ifdef LOCKWAIT_FIX
-  // Only blame shift idleness for time and cycle metrics. 
-  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
+  // Only blame shift idleness for time and cycle metrics.
+  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) )
     return;
 #endif // LOCKWAIT_FIX
-  
+
   uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
 
   uint64_t obj_to_blame = get_blame_target();
@@ -283,8 +283,8 @@ pthread_directed_blame_accept(void* obj)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, get_blame_metric_id(), 
-	(hpcrun_metricVal_t) {.i=blame}, 
+    hpcrun_sample_callpath(&uc, get_blame_metric_id(),
+	(hpcrun_metricVal_t) {.i=blame},
         SKIP_ONE_FRAME, 1, NULL);
     hpcrun_safe_exit();
   }
@@ -346,7 +346,7 @@ METHOD_FN(supports_event,const char *ev_str)
   return (strstr(ev_str, PTHREAD_EVENT_NAME) != NULL);
 }
 
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {

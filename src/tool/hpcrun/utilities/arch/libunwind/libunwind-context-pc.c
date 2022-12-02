@@ -65,4 +65,4 @@ hpcrun_context_pc(void *context)
   }
 
   return (void *) pc;
-} 
+}

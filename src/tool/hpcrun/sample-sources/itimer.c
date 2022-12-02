@@ -160,7 +160,7 @@ enum _local_const {
 
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 
 static int
@@ -250,13 +250,13 @@ hpcrun_delete_real_timer(thread_data_t *td)
   return ret;
 }
 
-// While handling a sample, the shutdown signal handler may asynchronously 
-// delete a thread's timer and set it to NULL. Calling timer_settime on a 
+// While handling a sample, the shutdown signal handler may asynchronously
+// delete a thread's timer and set it to NULL. Calling timer_settime on a
 // deleted timer will return an error. Calling timer_settime on a NULL
-// timer will SEGV. For that reason, calling timer_settime(td->timerid, ...) 
-// is unsafe as td->timerid can be set to NULL immediately before it is 
-// loaded as an argument.  To avoid a SEGV, copy the timer into a local 
-// variable, test it, and only call timer_settime with a non-NULL timer. 
+// timer will SEGV. For that reason, calling timer_settime(td->timerid, ...)
+// is unsafe as td->timerid can be set to NULL immediately before it is
+// loaded as an argument.  To avoid a SEGV, copy the timer into a local
+// variable, test it, and only call timer_settime with a non-NULL timer.
 
 static int
 hpcrun_settime(thread_data_t *td, struct itimerspec *spec)
@@ -428,12 +428,12 @@ METHOD_FN(stop)
 {
   TMSG(ITIMER_CTL, "stop %s", the_event_name);
 
-  // We have observed thread-centric profiling signals 
-  // (e.g., REALTIME) being delivered to a thread even after 
+  // We have observed thread-centric profiling signals
+  // (e.g., REALTIME) being delivered to a thread even after
   // we have stopped the thread's timer.  During thread
-  // finalization, this can cause a catastrophic error. 
-  // For that reason, we always block the thread's timer 
-  // signal when stopping. 
+  // finalization, this can cause a catastrophic error.
+  // For that reason, we always block the thread's timer
+  // signal when stopping.
   monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
 
   thread_data_t *td = hpcrun_get_thread_data();
@@ -461,7 +461,7 @@ METHOD_FN(supports_event, const char *ev_str)
   return hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME)
     || hpcrun_ev_is(ev_str, REALTIME_EVENT_NAME);
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -542,7 +542,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
-  
+
 
   // set metric information in metric table
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
@@ -552,7 +552,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 					  sample_period, metric_property_time);
   METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
-    int mid_idleness = 
+    int mid_idleness =
       hpcrun_set_new_metric_info_and_period(timer_kind, IDLE_METRIC_NAME,
 					    MetricFlags_ValFmt_Real,
 					    sample_period, metric_property_time);
@@ -625,7 +625,7 @@ METHOD_FN(display_events)
 
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 static int
@@ -699,7 +699,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   metric_incr = cur_time_us - TD_GET(last_time_us);
 
   // convert microseconds to seconds
-  hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
+  hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6};
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
 

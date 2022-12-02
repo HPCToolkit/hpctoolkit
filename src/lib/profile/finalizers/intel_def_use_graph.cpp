@@ -110,4 +110,3 @@ void IntelDefUseGraphClassification::module(const Module& m, Classification& c) 
     readDefUseGraphEdges(du_filePath, c);
   }
 }
-

@@ -64,7 +64,7 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 
   if (op0_name == XED_OPERAND_REG0) {
     xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
-    if (x86_isReg_SP(reg0)) { 
+    if (x86_isReg_SP(reg0)) {
       x86recipe_t *xr = UWI_RECIPE(iarg->current);
       if (xr->reg.bp_status != BP_UNCHANGED) {
 	//----------------------------------------------------------------------
@@ -73,7 +73,7 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg);
       } else {
 	// remember that SP was adjusted by masking bits
-	iarg->sp_realigned = true; 
+	iarg->sp_realigned = true;
       }
     }
   }

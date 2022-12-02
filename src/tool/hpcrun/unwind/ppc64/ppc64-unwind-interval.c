@@ -83,7 +83,7 @@ static void
 ppc64_print_interval_set(unwind_interval *first);
 
 static const char *
-ra_ty_string(ra_ty_t ty); 
+ra_ty_string(ra_ty_t ty);
 
 static const char *
 sp_ty_string(sp_ty_t ty);
@@ -109,8 +109,8 @@ build_intervals(char  *ins, unsigned int len, unwinder_t uw)
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// Function: new_ui 
-// Purpose:  
+// Function: new_ui
+// Purpose:
 //   Allocate and initialize an unwind recipe for a new code address range.
 // --------------------------------------------------------------------------
 unwind_interval *
@@ -124,14 +124,14 @@ new_ui(char *startaddr,
   uwi_t *uwi =  bitree_uwi_rootval(u);
 
   // ----------------------------------------------------------------
-  // Initialize the address range (referred to as an interval) to 
-  // which this recipe applies. The interval begins at startaddr. 
-  // for now, use 0 as the end address. The end address will be 
+  // Initialize the address range (referred to as an interval) to
+  // which this recipe applies. The interval begins at startaddr.
+  // for now, use 0 as the end address. The end address will be
   // filled in when a successor recipe is linked behind this one or
-  // when the end of the enclosing routine is reached 
+  // when the end of the enclosing routine is reached
   // ----------------------------------------------------------------
   uwi->interval.start = (uintptr_t)startaddr;
-  uwi->interval.end = 0; 
+  uwi->interval.end = 0;
 
   // ----------------------------------------------------------------
   // initialize the unwind recipe for the given interval as specified
@@ -146,7 +146,7 @@ new_ui(char *startaddr,
 }
 
 
-void 
+void
 link_ui(unwind_interval* current, unwind_interval* next)
 {
   UWI_END_ADDR(current) = UWI_START_ADDR(next);
@@ -194,7 +194,7 @@ uw_recipe_print(void* recipe)
   ppc64recipe_print(recipe);
 }
 
-void 
+void
 ui_dump(unwind_interval* u)
 {
   if (!u) {
@@ -212,7 +212,7 @@ ui_dump(unwind_interval* u)
 //***************************************************************************
 
 void
-suspicious_interval(void *pc) 
+suspicious_interval(void *pc)
 {
   EMSG("suspicous interval for pc = %p", pc);
   hpcrun_stats_num_unwind_intervals_suspicious_inc();
@@ -221,13 +221,13 @@ suspicious_interval(void *pc)
 
 
 //***************************************************************************
-// private operations 
+// private operations
 //***************************************************************************
 
 #define STR(s) case s: return #s
 
 static const char *
-ra_ty_string(ra_ty_t ty) 
+ra_ty_string(ra_ty_t ty)
 {
   switch (ty) {
     STR(RATy_NULL);
@@ -271,7 +271,7 @@ register_name(int reg)
 // build_intervals: helpers
 //***************************************************************************
 
-static inline bool 
+static inline bool
 isInsn_MFLR(uint32_t insn, int* Rt)
 {
   if ((insn & PPC_OP_XFX_SPR_MASK) == PPC_OP_MFLR) {
@@ -282,7 +282,7 @@ isInsn_MFLR(uint32_t insn, int* Rt)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_MTLR(uint32_t insn, int* Rt)
 {
   if ((insn & PPC_OP_XFX_SPR_MASK) == PPC_OP_MTLR) {
@@ -293,15 +293,15 @@ isInsn_MTLR(uint32_t insn, int* Rt)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_STW(uint32_t insn, int Rs, int Ra)
 {
-  const int D = 0x0;  
+  const int D = 0x0;
   return (insn & PPC_INSN_D_MASK) == PPC_INSN_D(PPC_OP_STW, Rs, Ra, D);
 }
 
 
-static inline bool 
+static inline bool
 isInsn_STD(uint32_t insn, int Rs, int Ra)
 {
   // std Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
@@ -310,7 +310,7 @@ isInsn_STD(uint32_t insn, int Rs, int Ra)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_LWZ(uint32_t insn, int Rt, int Ra)
 {
   const int D = 0x0;
@@ -318,7 +318,7 @@ isInsn_LWZ(uint32_t insn, int Rt, int Ra)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_STWU(uint32_t insn, int Rs, int Ra)
 {
   // stwu Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
@@ -327,7 +327,7 @@ isInsn_STWU(uint32_t insn, int Rs, int Ra)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_STDU(uint32_t insn, int Rs, int Ra)
 {
   // stdu Rs Ra: store Rs at (Ra + D); set Ra to (Ra + D)
@@ -336,18 +336,18 @@ isInsn_STDU(uint32_t insn, int Rs, int Ra)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_STWUX(uint32_t insn, int Ra)
-{   
+{
   // stwux Rs Ra Rb: store Rs at (Ra + Rb); set Ra to (Ra + Rb)
   const int Rs = 0, Rb = 0, Rc = 0x0;
   return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
 	  == PPC_INSN_X(PPC_OP_STWUX, Rs, Ra, Rb, Rc));
 }
 
-static inline bool 
+static inline bool
 isInsn_STDUX(uint32_t insn, int Ra)
-{   
+{
   // stdux Rs Ra Rb: store Rs at (Ra + Rb); set Ra to (Ra + Rb)
   const int Rs = 0, Rb = 0, Rc = 0x0;
   return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
@@ -355,7 +355,7 @@ isInsn_STDUX(uint32_t insn, int Ra)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_ADDI(uint32_t insn, int Rt, int Ra)
 {
   const int SI = 0x0;
@@ -363,7 +363,7 @@ isInsn_ADDI(uint32_t insn, int Rt, int Ra)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_MR(uint32_t insn, int Ra)
 {
   // mr Ra Rs = or Ra Rs Rb where Rs = Rb
@@ -375,23 +375,23 @@ isInsn_MR(uint32_t insn, int Ra)
 }
 
 
-static inline bool 
+static inline bool
 isInsn_BLR(uint32_t insn)
-{ 
-  return (insn == PPC_OP_BLR); 
+{
+  return (insn == PPC_OP_BLR);
 }
 
 
-static inline bool 
+static inline bool
 isInsn_B(uint32_t insn)
-{ 
+{
   return ((insn & PPC_OP_I_MASK) == PPC_OP_B);
 }
 
 
-static inline bool 
+static inline bool
 isInsn_BA(uint32_t insn)
-{ 
+{
   return ((insn & PPC_OP_I_MASK) == PPC_OP_BA);
 }
 
@@ -405,55 +405,55 @@ branchTarget(uint32_t insn, uint32_t *insnAddr)
   uint32_t LI = insn & LI_mask;
   uint32_t LIsign = insn & LI_hibit;
   uint64_t LI_extbits = ~((LI_hibit << 1) - 1);
-  uint64_t LIext =  LI | (LIsign ? LI_extbits : 0); 
-  uint64_t target =  LIext + (AA ? 0 : (uint64_t) insnAddr); 
+  uint64_t LIext =  LI | (LIsign ? LI_extbits : 0);
+  uint64_t target =  LIext + (AA ? 0 : (uint64_t) insnAddr);
   return (uint32_t *) target;
 }
 
 
 //***************************************************************************
 
-static inline bool 
+static inline bool
 isInsn_BCL(uint32_t insn)
-{ 
-  uint32_t bop = insn & PPC_B_MASK; 
+{
+  uint32_t bop = insn & PPC_B_MASK;
   return (bop == PPC_OP_BCL);
 }
 
 
-static inline bool 
+static inline bool
 isInsn_BCLA(uint32_t insn)
-{ 
-  uint32_t bop = insn & PPC_B_MASK; 
+{
+  uint32_t bop = insn & PPC_B_MASK;
   return (bop == PPC_OP_BCLA);
 }
 
 
-static inline bool 
+static inline bool
 isInsn_BCLRL(uint32_t insn)
-{ 
-  uint32_t xlop = insn & PPC_XL_MASK; 
+{
+  uint32_t xlop = insn & PPC_XL_MASK;
   return (xlop == PPC_OP_BCLRL);
 }
 
 
-static inline bool 
+static inline bool
 isInsn_BCCTRL(uint32_t insn)
-{ 
-  uint32_t xlop = insn & PPC_XL_MASK; 
+{
+  uint32_t xlop = insn & PPC_XL_MASK;
   return (xlop == PPC_OP_BCCTRL);
 }
 
 
 //***************************************************************************
 
-static inline int 
-getRADispFromSPDisp(int sp_disp) 
-{ 
+static inline int
+getRADispFromSPDisp(int sp_disp)
+{
 #ifdef __PPC64__
-  int disp = sp_disp + 2 * (sizeof(void*)); 
+  int disp = sp_disp + 2 * (sizeof(void*));
 #else
-  int disp = sp_disp + (sizeof(void*)); 
+  int disp = sp_disp + (sizeof(void*));
 #endif
   return disp;
 }
@@ -461,7 +461,7 @@ getRADispFromSPDisp(int sp_disp)
 
 static inline int
 getSPDispFromUI(unwind_interval* ui)
-{ 
+{
   // if sp_ty != SPTy_SPRel, then frame size is 0
   return (UWI_RECIPE(ui)->sp_ty == SPTy_SPRel) ? UWI_RECIPE(ui)->sp_arg : 0;
 }
@@ -469,16 +469,16 @@ getSPDispFromUI(unwind_interval* ui)
 
 #define INSN(insn) ((char*)(insn))
 static inline char*
-nextInsn(uint32_t* insn) 
-{ 
-  return INSN(insn + 1); 
+nextInsn(uint32_t* insn)
+{
+  return INSN(insn + 1);
 }
 
 
 static inline char*
-currentInsn(uint32_t* insn) 
-{ 
-  return INSN(insn); 
+currentInsn(uint32_t* insn)
+{
+  return INSN(insn);
 }
 
 
@@ -502,18 +502,18 @@ currentInsn(uint32_t* insn)
 //  |-------------|
 // A|             |
 //  | RA          | <- stored by caller
-//  | CR          |    (64-bit ABI only) 
+//  | CR          |    (64-bit ABI only)
 //  | SP <---     | <- stored w/ stwu
 //  |--------/----|
 // B|       /     |                          Typical frame
 //  | RA   /      | <- (by C)
-//  | CR  /       |    (64-bit ABI only) 
+//  | CR  /       |    (64-bit ABI only)
 //  | SP / <- <-  | <- (stwu)
 //  |-------/--|--|
 // C|      /   |  |                          Possible nasty frame
-//  | []  /    |  | <- 
+//  | []  /    |  | <-
 //  | SP /    /   | <- (stwu)
-//  |- - - - / - -|  
+//  |- - - - / - -|
 //  |       /     | (xtra frame)
 //  |      /      |
 //  |     /       |
@@ -542,14 +542,14 @@ currentInsn(uint32_t* insn)
 // Nasty PPC frames have few common characteristics between compilers
 // (frame size > 16 bit displacement field)
 //   mflr    r0
-//   mr      r12,r1       ! 
+//   mr      r12,r1       !
 //   stw     r0,4(r1)     ! save RA in parent frame (note frame size is 0)
 //   lis     r0,-1        ! r0 <- 0xffff0000 (-65536)
 //   addic   r0,r0,-1664  ! r0 <- 67200 = -65536 + -1664
 //   stwux   r1,r1,r0     ! store r1 at (r1 + r0); set r1 to (r1 + r0)
 //
 //   ... compute: cobber r12, of course! ...
-// 
+//
 //   addis   r11,r1,1     ! r11 <- r1 + [0x10000 (65536)]
 //   addi    r11,r11,1664 ! r11 <- r11 + 1664
 //   lwz     r0,4(r11)    ! restore RA (r0)
@@ -577,7 +577,7 @@ currentInsn(uint32_t* insn)
 static btuwi_status_t
 ppc64_build_intervals(char *beg_insn, unsigned int len)
 {
-  unwind_interval* beg_ui = 
+  unwind_interval* beg_ui =
     new_ui(beg_insn, SPTy_Reg, RATy_Reg, PPC_REG_SP, PPC_REG_LR);
   unwind_interval* ui = beg_ui;
   unwind_interval* canon_ui = beg_ui;
@@ -684,7 +684,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //   (may come before or after storing of RA)
     //--------------------------------------------------
     else if (isInsn_STDU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
-      int sp_disp = - PPC_OPND_DISP_DS(*cur_insn);  
+      int sp_disp = - PPC_OPND_DISP_DS(*cur_insn);
       int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
 		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
@@ -717,7 +717,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //--------------------------------------------------
     else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
 	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
-      int sp_disp = - PPC_OPND_DISP(*cur_insn);  
+      int sp_disp = - PPC_OPND_DISP(*cur_insn);
       int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
 		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
@@ -725,7 +725,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     		  PPC_REG_SP, ra_arg);
       ui = nxt_ui;
     }
-    else if (isInsn_MR(*cur_insn, PPC_REG_SP) &&  
+    else if (isInsn_MR(*cur_insn, PPC_REG_SP) &&
 	     PPC_OPND_REG_S(*cur_insn) != PPC_REG_SP) {
       // Move Register r1 <- rx where rx != r1
       // N.B. To be sure the MR restores SP, we would have to track
@@ -734,7 +734,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       if (sp_disp != 0) {
 	// adjust the RA offset by SP offset prior to the restore
         int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
-                      (UWI_RECIPE(ui)->ra_arg - sp_disp) : 
+                      (UWI_RECIPE(ui)->ra_arg - sp_disp) :
 		      UWI_RECIPE(ui)->ra_arg);
 	nxt_ui =
 		new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
@@ -756,13 +756,13 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	// Restore the canonical interval, if necessary.
 	if (!ui_cmp(ui, canon_ui)) {
 	  nxt_ui =
-	    new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, 
-		   UWI_RECIPE(canon_ui)->ra_ty, 
-		   UWI_RECIPE(canon_ui)->sp_arg, 
+	    new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
+		   UWI_RECIPE(canon_ui)->ra_ty,
+		   UWI_RECIPE(canon_ui)->sp_arg,
 		   UWI_RECIPE(canon_ui)->ra_arg);
 	  ui = nxt_ui;
 	}
-      } 
+      }
       //--------------------------------------------------
       // branch that sets the LR: must revert to canonical
       // interval where RA is in the stack
@@ -787,23 +787,23 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	// do after this instruction has executed.
 	if (!ui_cmp(ui, canon_ui)) {
 	  nxt_ui =
-	    new_ui(currentInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, 
-		   UWI_RECIPE(canon_ui)->ra_ty, 
-		   UWI_RECIPE(canon_ui)->sp_arg, 
+	    new_ui(currentInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
+		   UWI_RECIPE(canon_ui)->ra_ty,
+		   UWI_RECIPE(canon_ui)->sp_arg,
 		   UWI_RECIPE(canon_ui)->ra_arg);
 	  ui = nxt_ui;
 	}
       }
       //--------------------------------------------------
-      // unconditional branch when stack pointer for 
+      // unconditional branch when stack pointer for
       // the caller in SP
       //--------------------------------------------------
       else if ((isInsn_B(*cur_insn) || isInsn_BA(*cur_insn)) &&
-	       ((UWI_RECIPE(ui)->sp_ty == SPTy_Reg) && 
+	       ((UWI_RECIPE(ui)->sp_ty == SPTy_Reg) &&
 		UWI_RECIPE(ui)->sp_arg == PPC_REG_SP)) {
 	uint32_t *target = branchTarget(*cur_insn, cur_insn);
-	//-------------------------------------------------- 
-	// recognize an interior tail call if branch target is 
+	//--------------------------------------------------
+	// recognize an interior tail call if branch target is
 	// outside the current function.
 	//
 	// note: we don't track when the return address may still be
@@ -819,8 +819,8 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	  // Restore the canonical interval, if necessary.
 	  if (!ui_cmp(ui, canon_ui)) {
 	    nxt_ui =
-	      new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, 
-		     UWI_RECIPE(canon_ui)->ra_ty, 
+	      new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
+		     UWI_RECIPE(canon_ui)->ra_ty,
 		     UWI_RECIPE(canon_ui)->sp_arg,
 		     UWI_RECIPE(canon_ui)->ra_arg);
 	    ui = nxt_ui;
@@ -833,7 +833,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       link_ui(prev_ui, ui);
       count++;
     }
-    
+
     cur_insn++;
   }
 
@@ -845,12 +845,12 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
   stat.error = 0;
   stat.first = beg_ui;
 
-  return stat; 
+  return stat;
 }
 
 
-static void 
-ppc64_print_interval_set(unwind_interval *beg_ui) 
+static void
+ppc64_print_interval_set(unwind_interval *beg_ui)
 {
   TMSG(INTV, "");
   for (unwind_interval* u = beg_ui; u; u = UWI_NEXT(u)) {
@@ -860,7 +860,7 @@ ppc64_print_interval_set(unwind_interval *beg_ui)
 }
 
 
-void 
+void
 ppc64_dump_intervals(void* addr)
 {
   void *s, *e;

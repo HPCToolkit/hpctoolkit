@@ -167,24 +167,24 @@ hpcrun_check_fence(void* ip)
 }
 
 
-static int 
+static int
 hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 			  void** reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc_unnorm;
-  
+
   return 0;
 }
 
 
-static int 
+static int
 hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 			ip_normalized_t* reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc_norm;
-  
+
   return 0;
 }
 
@@ -230,7 +230,7 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 }
 
 void *
-getNxtPCFromReg(hpcrun_unw_cursor_t* cursor) 
+getNxtPCFromReg(hpcrun_unw_cursor_t* cursor)
 {
 	unwind_interval *intvl = cursor->unwr_info.btuwi;
 	if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
@@ -239,12 +239,12 @@ getNxtPCFromReg(hpcrun_unw_cursor_t* cursor)
 		} else {
 			return (void*)(cursor->ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
 		}
-	} 
+	}
 	return 0;
 }
 
 
-void 
+void
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   ucontext_t* ctxt = (ucontext_t*)context;
@@ -281,7 +281,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   compute_normalized_ips(cursor);
 
-  TMSG(UNW, "init: pc=%p, sp=%p, fp=%p", 
+  TMSG(UNW, "init: pc=%p, sp=%p, fp=%p",
        cursor->pc_unnorm, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(intvl); }
 }
@@ -306,7 +306,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   }
 
   bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
-  
+
   // next (parent) frame
   void*           nxt_pc = NULL;
   void** nxt_sp = NULL;
@@ -314,18 +314,18 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
   void*  ra_loc = NULL;
   unwind_interval* nxt_intvl = NULL;
-  
+
   if (!intvl) {
     TMSG(UNW, "error: missing interval for pc=%p", pc);
     return STEP_ERROR;
   }
 
-  
+
   cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
 
   //-----------------------------------------------------------
   // check if we have reached the end of our unwind, which is
-  // demarcated with a fence. 
+  // demarcated with a fence.
   //-----------------------------------------------------------
   if (fence_stop(cursor->fence)) {
     TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
@@ -388,7 +388,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   if (found) {
 	nxt_intvl = cursor->unwr_info.btuwi;
   }
- 
+
   // if nxt_pc is invalid for some reason...
   if (!nxt_intvl) {
 	TMSG(UNW, "warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
@@ -428,7 +428,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 
   // INVARIANT: Ensure we always make progress unwinding ...
   bool mayFrameSizeBe0 = (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg);
-  if (mayFrameSizeBe0) { 
+  if (mayFrameSizeBe0) {
     if (cursor->pc_unnorm == nxt_pc && cursor->sp == nxt_sp) {
       // no forward progess with a register-based unwind
       TMSG(UNW, "error: loop! pc = nxt_pc = %p sp = nxt_sp = %p", nxt_pc, nxt_sp);

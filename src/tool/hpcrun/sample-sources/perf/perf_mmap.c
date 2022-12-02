@@ -539,4 +539,3 @@ perf_mmap_init()
   pagesize = sysconf(_SC_PAGESIZE);
   tail_mask = PERF_TAIL_MASK(pagesize);
 }
-

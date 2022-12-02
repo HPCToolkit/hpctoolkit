@@ -53,7 +53,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct gtpin_correlation_id_map_entry_t gtpin_correlation_id_map_entry_t;
@@ -104,7 +104,7 @@ gtpin_correlation_id_map_entry_activity_channel_get
 );
 
 
-uint64_t 
+uint64_t
 gtpin_correlation_id_map_entry_submit_time_get
 (
  gtpin_correlation_id_map_entry_t *entry

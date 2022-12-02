@@ -37,7 +37,7 @@ public:
 // map for interning character strings for file names
 // ---------------------------------------------------
 
-static std::map<const char *, std::string *, FilenameCompare> fileNameMap; 
+static std::map<const char *, std::string *, FilenameCompare> fileNameMap;
 
 
 
@@ -50,6 +50,6 @@ std::string &getRealPath(const char *name)
         if (thename == NULL) {
 		//  the filename is not in the list. Add it.
 		thename  = new std::string(RealPath(name));
-	} 
+	}
  	return *thename;
 }

@@ -54,7 +54,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct buffer_map_entry_t buffer_map_entry_t;
@@ -75,8 +75,8 @@ buffer_map_lookup
 buffer_map_entry_t*
 buffer_map_update
 (
- uint64_t, 
- int, 
+ uint64_t,
+ int,
  int
 );
 
@@ -102,4 +102,3 @@ buffer_map_entry_D2H_count_get
 );
 
 #endif  // buffer_map_h
-

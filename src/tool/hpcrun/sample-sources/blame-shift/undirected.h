@@ -2,7 +2,7 @@
 #define __undirected_h__
 
 /******************************************************************************
- * types 
+ * types
  *****************************************************************************/
 
 typedef int *(*undirected_idle_cnt_ptr_fn)(void);
@@ -38,7 +38,7 @@ void undirected_blame_idle_begin(undirected_blame_info_t *bi);
 
 void undirected_blame_idle_end(undirected_blame_info_t *bi);
 
-void undirected_blame_sample(void *arg, int metric_id, 
+void undirected_blame_sample(void *arg, int metric_id,
 			     cct_node_t *node, int metric_incr);
 
 

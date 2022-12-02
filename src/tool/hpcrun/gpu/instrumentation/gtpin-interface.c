@@ -150,7 +150,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPinBBL, 
+ GTPinBBL,
  GTPin_BBLHead,
  (
   GTPinKernel kernel
@@ -170,47 +170,47 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPinBBL, 
+ GTPinBBL,
  GTPin_BBLNext,
  (
-  GTPinBBL block 
+  GTPinBBL block
  )
 );
 
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_BBLValid,
  (
-  GTPinBBL block 
+  GTPinBBL block
  )
 );
 
 
 GTPIN_FN
 (
- GTPinINS, 
+ GTPinINS,
  GTPin_InsHead,
  (
-  GTPinBBL block 
+  GTPinBBL block
  )
 );
 
 
 GTPIN_FN
 (
- GTPinINS, 
+ GTPinINS,
  GTPin_InsTail,
  (
-  GTPinBBL block 
+  GTPinBBL block
  )
 );
 
 
 GTPIN_FN
 (
- int32_t, 
+ int32_t,
  GTPin_InsOffset,
  (
   GTPinINS ins
@@ -220,7 +220,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPinINS, 
+ GTPinINS,
  GTPin_InsNext,
  (
   GTPinINS ins
@@ -230,7 +230,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPinINS, 
+ GTPinINS,
  GTPin_InsPrev,
  (
   GTPinINS ins
@@ -240,7 +240,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_InsDisasm,
  (
   ged_ins_t* ged_ins,
@@ -253,7 +253,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_InsGetExecSize,
  (
   GTPinINS ins
@@ -263,7 +263,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_InsIsFlagModifier,
  (
   GTPinINS ins
@@ -273,7 +273,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- ged_ins_t, 
+ ged_ins_t,
  GTPin_InsGED,
  (
   GTPinINS ins
@@ -283,7 +283,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_InsIsChangingIP,
  (
   GTPinINS ins
@@ -293,7 +293,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_InsIsEOT,
  (
   GTPinINS ins
@@ -303,7 +303,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_InsValid,
  (
   GTPinINS ins
@@ -314,7 +314,7 @@ GTPIN_FN
 GTPIN_FN
 (
  void,
- GTPin_OnKernelBuild, 
+ GTPin_OnKernelBuild,
  (
   KernelBuildCallBackFunc fn,
   void *v
@@ -325,7 +325,7 @@ GTPIN_FN
 GTPIN_FN
 (
  void,
- GTPin_OnKernelRun, 
+ GTPin_OnKernelRun,
  (
   KernelRunCallBackFunc fn,
   void *v
@@ -356,10 +356,10 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_KernelProfilingActive,
  (
-  GTPinKernelExec kernelExec, 
+  GTPinKernelExec kernelExec,
   uint32_t activate
  )
 );
@@ -377,12 +377,12 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_KernelGetName,
  (
-  GTPinKernel kernel, 
-  uint32_t buf_size, 
-  char *buf, 
+  GTPinKernel kernel,
+  uint32_t buf_size,
+  char *buf,
   uint32_t *str_size
  )
 );
@@ -390,7 +390,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_SIMD, 
+ GTPINTOOL_SIMD,
  GTPin_KernelGetSIMD,
  (
   GTPinKernel kernel
@@ -400,11 +400,11 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_GetElf,
  (
-  GTPinKernel kernel, 
-  uint32_t buf_size, 
+  GTPinKernel kernel,
+  uint32_t buf_size,
   char *buf,
   uint32_t *elf_size
  )
@@ -413,10 +413,10 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_MemClaim,
  (
-  GTPinKernel kernel, 
+  GTPinKernel kernel,
   uint32_t bytes,
   GTPinMem *mem
  )
@@ -425,10 +425,10 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_OpcodeprofInstrument,
  (
-  GTPinINS ins, 
+  GTPinINS ins,
   GTPinMem countSlot
  )
 );
@@ -436,7 +436,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_LatencyInstrumentPre,
  (
   GTPinINS ins
@@ -446,7 +446,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_LatencyInstrumentPost_Mem,
  (
   GTPinINS ins,
@@ -458,7 +458,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_SimdProfInstrument,
  (
   GTPinINS ins,
@@ -472,7 +472,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_InsGetExecMask,
  (
   GTPinINS ins
@@ -482,7 +482,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GenPredArgs, 
+ GenPredArgs,
  GTPin_InsGetPredArgs,
  (
   GTPinINS ins
@@ -492,7 +492,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- bool, 
+ bool,
  GTPin_InsIsMaskEnabled,
  (
   GTPinINS ins
@@ -502,7 +502,7 @@ GTPIN_FN
 
 GTPIN_FN
 (
- uint32_t, 
+ uint32_t,
  GTPin_LatencyAvailableRegInstrument,
  (
   GTPinKernel kernel
@@ -512,12 +512,12 @@ GTPIN_FN
 
 GTPIN_FN
 (
- GTPINTOOL_STATUS, 
+ GTPINTOOL_STATUS,
  GTPin_MemRead,
  (
   GTPinMem mem,
-  uint32_t mem_block_id, 
-  uint32_t buf_size, 
+  uint32_t mem_block_id,
+  uint32_t buf_size,
   char* buf,
   uint32_t *mem_size
  )
@@ -535,7 +535,7 @@ gtpin_bind
  void
 )
 {
-#ifndef HPCRUN_STATIC_LINK  
+#ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
 
 #define GTPIN_BIND(fn)        \
@@ -558,11 +558,10 @@ gtpin_bind
 
     FORALL_GTPIN_CXX_ROUTINES(GTPIN_BIND);
   }
-    
-    
+
+
   return 0;
 #else
   return -1;
-#endif // ! HPCRUN_STATIC_LINK  
+#endif // ! HPCRUN_STATIC_LINK
 }
-

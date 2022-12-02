@@ -16,7 +16,7 @@ Current Spack Issues for HPCToolkit
 5.1 Binutils 2.35
 5.2 Boost 1.68.0
 5.3 Elfutils 0.176
-    
+
 
 1 Introduction
 ==============
@@ -203,4 +203,3 @@ Avoid boost version 1.68.0, it breaks the build for hpctoolkit.
 
 Beginning with 0.176, elfutils requires glibc 2.16 or later and won't
 work with an older glibc, including RedHat or CentOS 6.x and Blue Gene.
-

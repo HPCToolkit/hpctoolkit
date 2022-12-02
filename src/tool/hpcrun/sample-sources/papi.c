@@ -107,7 +107,7 @@
 
 
 /******************************************************************************
- * type declarations 
+ * type declarations
  *****************************************************************************/
 
 typedef struct {
@@ -117,7 +117,7 @@ typedef struct {
 
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
@@ -341,7 +341,7 @@ METHOD_FN(supports_event, const char *ev_str)
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
   }
-  
+
   char evtmp[1024];
   int ec;
   long th;
@@ -349,7 +349,7 @@ METHOD_FN(supports_event, const char *ev_str)
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -410,7 +410,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       prop = metric_property_cycles;
       blame_shift_source_register(bs_type_cycles);
-    } 
+    }
 
     // allow derived events (proxy sampling), as long as some event
     // supports hardware overflow.  use threshold = 0 to force proxy
@@ -486,7 +486,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   ret = PAPI_create_eventset(&eventSet);
   TMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
   if (ret != PAPI_OK) {
-    hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
+    hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s",
 		 ret, PAPI_strerror(ret));
   }
 
@@ -618,7 +618,7 @@ hpcrun_disable_papi_cuda(void)
 }
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 // Returns: 1 if the event code is a derived event.
@@ -706,7 +706,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
     TMSG(PAPI_SAMPLE,"sampling call path for metric_id = %d", metric_id);
     hpcrun_metricVal_t value = {.i=1};
-    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, value/*metricIncr*/, 
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, value/*metricIncr*/,
 			   0/*skipInner*/, 0/*isSync*/, NULL);
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);

@@ -93,7 +93,7 @@ string
 VMAInterval::toString() const
 {
   string self = "["
-    + StrUtil::toStr(m_beg, 16) + "-" 
+    + StrUtil::toStr(m_beg, 16) + "-"
     + StrUtil::toStr(m_end, 16) + ")";
   return self;
 }
@@ -105,7 +105,7 @@ VMAInterval::fromString(const char* formattedstr)
   const char* s = formattedstr;
   const char* p = formattedstr;
   if (!p) { return; }
-  
+
   // -----------------------------------------------------
   // 1. ignore leading whitespace
   // -----------------------------------------------------
@@ -123,15 +123,15 @@ VMAInterval::fromString(const char* formattedstr)
   unsigned endidx;
   m_beg = StrUtil::toUInt64(p, &endidx);
   p += endidx;
- 
+
   // skip '-'
   DIAG_Assert(*p == '-', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
-  
+
   // read 'm_end'
   m_end = StrUtil::toUInt64(p, &endidx);
   p += endidx;
-  
+
   // skip ')'
   DIAG_Assert(*p == ')', DIAG_UnexpectedInput << "'" << s << "'");
 }
@@ -160,7 +160,7 @@ VMAInterval::ddump() const
 
 // Given an interval x to insert or delete from the interval set, the
 // following cases are possible where x is represented by <> and
-// existing interval set by {}.  
+// existing interval set by {}.
 //
 // We first find lb and ub such that: (lb <= x < ub) and lb != x.
 //
@@ -192,7 +192,7 @@ iteratorPair
 VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
 {
   DIAG_DevMsgIf(DBG, "VMAIntervalSet::insert [begin]\n"
-		<< "  this: " << toString() << endl 
+		<< "  this: " << toString() << endl
 		<< "  add : " << x.toString());
 
   // empty interval
@@ -262,7 +262,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
   // find [lb, ub) where lb is the first element !< x and ub is the
   // first element > x.  IOW, if lb != end() then (x <= lb < ub).
   // -------------------------------------------------------
-  std::pair<VMAIntervalSet::iterator, VMAIntervalSet::iterator> lu = 
+  std::pair<VMAIntervalSet::iterator, VMAIntervalSet::iterator> lu =
     equal_range(x);
   VMAIntervalSet::iterator lb = lu.first;
   VMAIntervalSet::iterator ub = lu.second;
@@ -281,7 +281,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       --lb;
     }
   }
-  
+
   // -------------------------------------------------------
   // Detect the appropriate case.  Note that we do not have to
   // explicitly consider Case 1 since it amounts to a NOP.
@@ -290,7 +290,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
   VMA ub_end = (ub != end()) ? ub->end() : 0;
 
   if (lb != end() && lb->contains(x)) {
-    // Case 0: split interval: erase [lb, ub); 
+    // Case 0: split interval: erase [lb, ub);
     //   insert [lb->beg(), x.beg()), [x.end(), lb->end())
     VMA lb_end = lb->end();
     My_t::erase(lb, ub);
@@ -320,7 +320,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
     }
   }
   else if (ub == end()) {
-    // INVARIANT: lb != end() 
+    // INVARIANT: lb != end()
 
     if ( !(lb->end() < x.beg()) ) {
       // Case 2a: erase [lb, end()); insert [lb->beg(), x.beg())
@@ -350,7 +350,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       }
     }
     else if ( !(lb->end() < x.beg() && x.end() < ub->beg()) ) {
-      // Case 4: erase [lb, ub + 1); 
+      // Case 4: erase [lb, ub + 1);
       //   insert [lb->beg(), x.beg()) and [x.end(), ub->end()).
       VMAIntervalSet::iterator end = ub;
       My_t::erase(lb, ++end);
@@ -393,7 +393,7 @@ VMAIntervalSet::fromString(const char* formattedstr)
 
   // ignore leading whitespace
   if (!p || p[0] == '\0') { return; }
-  
+
   // skip '{'
   DIAG_Assert(*p == '{', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
@@ -409,7 +409,7 @@ VMAIntervalSet::fromString(const char* formattedstr)
     q = strchr(p, ')');
     q++;
   }
-  
+
   // skip '}'
   DIAG_Assert(*q == '}', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
@@ -447,7 +447,7 @@ VMAIntervalSet::ddump() const
 Cf. LoadModScope::dumpmaps
 
 template<typename T>
-void 
+void
 VMAIntervalMap_ddump(VMAIntervalMap<T>* x)
 {
   x->ddump();

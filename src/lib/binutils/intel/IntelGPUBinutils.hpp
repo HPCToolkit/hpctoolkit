@@ -73,7 +73,7 @@ enum SHT_OPENCL : uint32_t {
 bool
 findIntelGPUBins
 (
- const std::string &file_name, 
+ const std::string &file_name,
  const char *file_buffer,
  size_t file_size,
  ElfFileVector *filevector

@@ -51,7 +51,7 @@
 #include <include/hpctoolkit-config.h>
 #include <cct/cct.h>
 
-void 
+void
 prepare_device
 (
  void
@@ -80,14 +80,14 @@ ompt_trace_node_get
 // NVIDIA GPU pc sampling support
 //-----------------------------------------------------------------------------
 
-void 
+void
 ompt_pc_sampling_enable
 (
- void 
+ void
 );
 
 
-void 
+void
 ompt_pc_sampling_disable
 (
  void

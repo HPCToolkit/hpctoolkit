@@ -115,7 +115,7 @@ enum hpcrun_placeholder {
 };
 
 //*****************************************************************************
-// interface operations 
+// interface operations
 //*****************************************************************************
 
 // Get the "pretty" string name of the given placeholder, or NULL if unknown.

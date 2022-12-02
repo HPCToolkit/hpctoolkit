@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //

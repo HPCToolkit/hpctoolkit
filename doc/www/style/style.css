@@ -1,5 +1,5 @@
 /****************************************************************************
- * 
+ *
  * HPCToolkit style sheet
  *
  ****************************************************************************/
@@ -88,12 +88,12 @@ ul.noindent > li:before {
  */
 .xmlcomment {
   color: red;
-  font-style: italic; 
+  font-style: italic;
   /* text-decoration: none; */
   background-color: transparent;
 }
 
-/* xmlvar class: attribute values/variables that users should note 
+/* xmlvar class: attribute values/variables that users should note
  *   (for annotating/explaining XML formats)
  */
 .xmlvar {
@@ -193,7 +193,7 @@ a {
 pre, code {
   font-family: monospace;
   font-size: 1.1em;
-  background-color: transparent; 
+  background-color: transparent;
 }
 
 img {

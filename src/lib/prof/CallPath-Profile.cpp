@@ -660,4 +660,3 @@ Profile::fmt_cct_fread(FILE* infs,
 } // namespace CallPath
 
 } // namespace Prof
-

@@ -53,7 +53,7 @@ void
 roctracer_activity_translate
 (
  gpu_activity_t *entry,
- roctracer_record_t *record     
+ roctracer_record_t *record
 );
 
 

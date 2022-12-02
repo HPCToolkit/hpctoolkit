@@ -28,7 +28,7 @@ Two levels: Developer and User.
 Dev | acinclude.m4 (1)    | aclocal       aclocal.m4
     | configure.ac (2)    | autoconf      configure
     | Makefile.am  (3)    | automake      Makefile.in
-    |----------------------------------------------------- 
+    |-----------------------------------------------------
 Usr | config/* (4)        | configure     Makefile
     |                     | make          (lib/exe)
     |                     | make install  (lib/exe)
@@ -46,7 +46,7 @@ After making changes to an Autoconf/make input file run:
   aclocal
   autoconf
   automake
-or 
+or
   aclocal && autoconf && automake
 
 N.B. for Autoconf/make and CVS: cf. hpcautotouch.  The timestamps of
@@ -65,7 +65,7 @@ To create or update the files in config/*, run:
 This is necessary, e.g., after upgrading to a new version of automake.
 
 To add libtool support, run:
-  libtoolize -f -c 
+  libtoolize -f -c
 
 To update both libtool and automake:
   aclocal
@@ -77,4 +77,3 @@ To update both libtool and automake:
 
 * N.B.: automake and libtool must be configured with the same --prefix
 so aclocal can see libtool.m4!
-

@@ -10,7 +10,7 @@ sample_filters_register(sf_fn_entry_t *entry)
 }
 
 
-int 
+int
 sample_filters_apply()
 {
    sf_fn_entry_t* entry = sf_filters;

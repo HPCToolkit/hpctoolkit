@@ -60,7 +60,7 @@
 /****************************************************************************/
 
 /*
- * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++. 
+ * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++.
  * This is a C wrapper for the standard routine so that it can be available
  * for C++ programs.
  *

@@ -48,7 +48,7 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static char intelmic_comp13_for_main_signature[] = { 
+static char intelmic_comp13_for_main_signature[] = {
   0x53,                         // push   %rbx
   0x48, 0x89, 0xe3,             // mov    %rsp,%rbx
   0x48, 0x83, 0xe4, 0x80,       // and    $0xffffffffffffff80,%rsp
@@ -60,7 +60,7 @@ static char intelmic_comp13_for_main_signature[] = {
 };
 
 
-static char intelmic_comp13_kmp_alloc_thread_signature[] = { 
+static char intelmic_comp13_kmp_alloc_thread_signature[] = {
   0x53,                         // push   %rbx
   0x48, 0x89, 0xe3,             // mov    %rsp,%rbx
   0x48, 0x83, 0xe4, 0xc0,       // and    $0xffffffffffffffc0,%rsp
@@ -72,16 +72,16 @@ static char intelmic_comp13_kmp_alloc_thread_signature[] = {
 };
 
 
-int 
+int
 x86_adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   // NOTE: the two signatures above are the same length. The next three lines of code below depend upon that.
-  int siglen = sizeof(intelmic_comp13_for_main_signature); 
-  if (len > siglen && ((strncmp((char *)intelmic_comp13_for_main_signature, ins, siglen) == 0) || 
+  int siglen = sizeof(intelmic_comp13_for_main_signature);
+  if (len > siglen && ((strncmp((char *)intelmic_comp13_for_main_signature, ins, siglen) == 0) ||
 		       (strncmp((char *)intelmic_comp13_kmp_alloc_thread_signature, ins, siglen) == 0))) {
-    // signature matched 
+    // signature matched
     unwind_interval *ui = stat->first;
-    
+
     // this won't fix all of the intervals, but it will fix the one we care about.
     while(ui) {
        x86recipe_t *xr = UWI_RECIPE(ui);
@@ -92,6 +92,6 @@ x86_adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
       ui = UWI_NEXT(ui);
     }
     return 1;
-  } 
+  }
   return 0;
 }

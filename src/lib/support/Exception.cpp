@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -95,8 +95,8 @@ Diagnostics::Exception::~Exception()
 }
 
 
-void 
-Diagnostics::Exception::Ctor(const std::string& x, 
+void
+Diagnostics::Exception::Ctor(const std::string& x,
 			     const char* filenm, unsigned int lineno)
 {
   mWhat = x;
@@ -104,7 +104,7 @@ Diagnostics::Exception::Ctor(const std::string& x,
     std::ostringstream os;
     os << filenm << ":" << lineno;
     mWhere = os.str();
-  } 
+  }
 }
 
 //****************************************************************************
@@ -112,7 +112,7 @@ Diagnostics::Exception::Ctor(const std::string& x,
 //****************************************************************************
 
 Diagnostics::FatalException::FatalException(const char* x,
-					    const char* filenm, 
+					    const char* filenm,
 					    unsigned int lineno)
   : Diagnostics::Exception(x, filenm, lineno)
 {
@@ -120,7 +120,7 @@ Diagnostics::FatalException::FatalException(const char* x,
 
 
 Diagnostics::FatalException::FatalException(const std::string x,
-					    const char* filenm, 
+					    const char* filenm,
 					    unsigned int lineno)
   : Diagnostics::Exception(x, filenm, lineno)
 {
@@ -130,4 +130,3 @@ Diagnostics::FatalException::FatalException(const std::string x,
 Diagnostics::FatalException::~FatalException()
 {
 }
-

@@ -87,8 +87,8 @@ public:
 public:
   PathFindMgr();
   ~PathFindMgr();
-  
-  
+
+
   static PathFindMgr&
   singleton();
 
@@ -126,25 +126,25 @@ public:
   // calls to this function, and must not be freed by the caller.
   const char*
   pathfind(const char* pathList, const char* name, const char* mode);
-  
-  
+
+
   // Is this a valid recursive path of the form '.../path/\*' ?
   static int
   isRecursivePath(const char* path);
- 
+
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
   std::string
   toString(unsigned int flags = 0) const;
-  
+
   std::ostream&
   dump(std::ostream& os, unsigned int flags = 0, const char* pfx = "") const;
-  
+
   void
   ddump(unsigned int flags = 0) const;
-  
+
 
 private:
 
@@ -223,7 +223,7 @@ private:
   //                       be cached. If it is recursive, a '*' will be
   //                       appended at the end.
   //
-  // @param seenPaths:     Set of paths already seen.  Used to avoid 
+  // @param seenPaths:     Set of paths already seen.  Used to avoid
   //                       cycles caused by symlinks.
   //
   // @param resultpathVec: If non-NULL and 'path' is recursive, all
@@ -233,7 +233,7 @@ private:
   scan(std::string& path, std::set<std::string>& seenPaths,
        std::vector<std::string>* recursionStack = NULL);
 
- 
+
   // If the cache is full and a path cannot be found from the cache,
   // pathfind_slow is called to try to resolve the path. Searches
   // through all the directories in 'pathList', attempting to find
@@ -254,8 +254,8 @@ private:
   const char*
   pathfind_slow(const char* pathList, const char* name, const char* mode,
 		std::set<std::string>& seenPaths);
-  
-  
+
+
   // Resolves all '..' and '.' in 'path' in reference to itself. Does
   // NOT find the unique real path of 'path'. Returns how many '..'
   // are left in 'path'. Helps make sure more accurate results are
@@ -268,7 +268,7 @@ private:
   // @return:     The number of '..' in 'path' after it has been resolved.
   int
   resolve(std::string& path);
-  
+
 
 private:
   typedef std::map<std::string, std::vector<std::string> > PathMap;

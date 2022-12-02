@@ -129,7 +129,7 @@ RealPathMgr::realpath(string& pathNm) const
   if (pathNm.empty()) {
     return false;
   }
-  
+
   // INVARIANT: 'pathNm' is not empty
 
   // INVARIANT: all entries in the map are non-empty
@@ -175,7 +175,7 @@ RealPathMgr::realpath(string& pathNm) const
       // 3. Resolve 'pathNm' using PathFindMgr or realpath
       // -------------------------------------------------------
       string pathNm_real = pathNm;
-      
+
       if (m_searchPaths.empty()) {
 	pathNm_real = RealPath(pathNm.c_str());
       }
@@ -211,7 +211,7 @@ RealPathMgr::searchPaths(const string& pathsStr)
 
   // INVARIANT: m_searchPaths is non-empty
   m_searchPaths += "."; // current working directory
-  
+
   for (unsigned int i = 0; i < searchPathVec.size(); ++i) {
     string path = searchPathVec[i];
 
@@ -262,4 +262,3 @@ RealPathMgr::ddump(unsigned int flags) const
 {
   dump(std::cerr, flags);
 }
-

@@ -119,7 +119,7 @@ doMeasurementsDir
 
   // Construct full paths for hpcproftt and hpcstruct
   //
-  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
+  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX)
     + "/libexec/hpctoolkit/hpcproftt";
 
   string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
@@ -232,7 +232,7 @@ doMeasurementsDir
   exit(0);
 }
 
-// Routine to verify that given measurements directory 
+// Routine to verify that given measurements directory
 // (1) is readable
 // (2) contains measurement files
 //
@@ -248,7 +248,7 @@ verify_measurements_directory
 )
 {
   DIR *dir = opendir(measurements_dir.c_str());
-  
+
   if (dir != NULL) {
     struct dirent *ent;
     bool has_hpcrun = false;
@@ -266,7 +266,7 @@ verify_measurements_directory
       exit(1);
     }
   } else {
-    DIAG_EMsg("Unable to open measurements directory " << measurements_dir 
+    DIAG_EMsg("Unable to open measurements directory " << measurements_dir
               << ": " << strerror(errno));
     exit(1);
   }
@@ -274,7 +274,7 @@ verify_measurements_directory
 
 
 #if 0
-// check if measurements directory contains a GPU binary 
+// check if measurements directory contains a GPU binary
 static bool
 check_gpubin
 (
@@ -313,7 +313,7 @@ create_structs_directory
   int result_dir = mkdir(structs_dir.c_str(), 0755);
 
   if (result_dir != 0 && errno != EEXIST) {
-    DIAG_EMsg("Unable to create results directory " << structs_dir 
+    DIAG_EMsg("Unable to create results directory " << structs_dir
               << ": " << strerror(errno));
     exit(1);
   }
@@ -334,4 +334,3 @@ open_makefile
     exit(1);
   }
 }
-

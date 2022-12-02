@@ -100,7 +100,7 @@
 
 
 //***************************************************************
-// global includes 
+// global includes
 //***************************************************************
 
 #include <errno.h>   // errno
@@ -112,12 +112,12 @@
 #include <unistd.h>  // gethostid
 #include <sys/time.h>   // gettimeofday
 #include <sys/types.h>  // struct stat
-#include <sys/stat.h>   // stat 
+#include <sys/stat.h>   // stat
 #include <stdbool.h>
 
 
 //***************************************************************
-// local includes 
+// local includes
 //***************************************************************
 
 #include "env.h"
@@ -155,14 +155,14 @@ struct fileid {
 
 
 //***************************************************************
-// forward declarations 
+// forward declarations
 //***************************************************************
 
 static void hpcrun_rename_log_file_early(int rank);
 
 
 //***************************************************************
-// local data 
+// local data
 //***************************************************************
 
 static char default_path[PATH_MAX + 1] = {'\0'};
@@ -389,16 +389,16 @@ hpcrun_files_executable_pathname()
 }
 
 
-const char * 
+const char *
 hpcrun_files_executable_name()
 {
   return executable_name;
 }
 
 
-void 
+void
 hpcrun_files_set_directory()
-{  
+{
   char *path = getenv(HPCRUN_OUT_PATH);
 
   // compute path for default measurement directory
@@ -442,7 +442,7 @@ hpcrun_files_output_directory()
 }
 
 
-void 
+void
 hpcrun_files_set_executable(const char *execname)
 {
   executable_name[sizeof(executable_name) - 1] = 0;

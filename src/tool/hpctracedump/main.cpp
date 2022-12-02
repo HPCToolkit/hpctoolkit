@@ -103,7 +103,7 @@ main(int argc, char **argv)
     exit(-1);
   }
 
-  // read and dump trace records until EOF 
+  // read and dump trace records until EOF
   while ( !feof(infs) ) {
     hpctrace_fmt_datum_t datum;
 

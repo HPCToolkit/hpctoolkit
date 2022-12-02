@@ -210,7 +210,7 @@ gpu_stream_id_map_stream_process
 )
 {
   gpu_stream_id_map_insert(root, device_id, context_id, stream_id);
-  fn((*root)->trace, ti); 
+  fn((*root)->trace, ti);
 }
 
 
@@ -259,4 +259,3 @@ gpu_stream_map_signal_all
 {
   st_forall(*root, splay_inorder, signal_stream, 0);
 }
-

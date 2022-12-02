@@ -370,7 +370,7 @@ packages:
 
   # cuda -- nvidia cuda, now in master
   #
-  # Requires: 10.x or later, 11.1 preferred. 
+  # Requires: 10.x or later, 11.1 preferred.
   # Note: best to use 11.5 or later, assuming the system supports it
   #
   # cuda:

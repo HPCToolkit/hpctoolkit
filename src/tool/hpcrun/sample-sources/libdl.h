@@ -50,9 +50,9 @@
 //   libdl.h
 //
 // Purpose:
-//   simple wrappers that facilitate using dlopen and dlsym to dynamically 
+//   simple wrappers that facilitate using dlopen and dlsym to dynamically
 //   bind symbols for use by hpcrun sample sources.
-//  
+//
 //***************************************************************************
 
 #ifndef _HPCTOOLKIT_LIBDL_H_
@@ -89,8 +89,8 @@
   void* h = dlopen(lib, flags);						\
   if (!h) {								\
     return DYNAMIC_BINDING_STATUS_ERROR;				\
-  }                                                   
-  
+  }
+
 #define CHK_DLSYM(h, fn) {						\
     dlerror();								\
     DYN_FN_NAME(fn) = dlsym(h, #fn);					\

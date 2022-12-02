@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 //
 // This software was produced with support in part from the Defense Advanced
-// Research Projects Agency (DARPA) through AFRL Contract FA8650-09-C-1915. 
+// Research Projects Agency (DARPA) through AFRL Contract FA8650-09-C-1915.
 // Nothing in this work should be construed as reflecting the official policy or
 // position of the Defense Department, the United States government, or
 // Rice University.
@@ -112,7 +112,7 @@ static int libunwind_debug = 0;
 //************************************************
 
 #if DEBUG_LIBUNWIND_INTERFACE
-int 
+int
 libunw_debug_on()
 {
   libunwind_debug = 1;
@@ -120,7 +120,7 @@ libunw_debug_on()
 }
 
 
-int 
+int
 libunwind_debug_off()
 {
   libunwind_debug = 0;
@@ -243,8 +243,8 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 
 #if DEBUG_LIBUNWIND_INTERFACE
   if (libunwind_debug) {
-	printf("ip = %p (%d, %lx) the_function=%p (%d,%lx) ", 
-	cursor->pc_unnorm, cursor->pc_norm.lm_id, cursor->pc_norm.lm_ip, 
+	printf("ip = %p (%d, %lx) the_function=%p (%d,%lx) ",
+	cursor->pc_unnorm, cursor->pc_norm.lm_id, cursor->pc_norm.lm_ip,
         func_start_pc, cursor->the_function.lm_id, cursor->the_function.lm_ip);
   }
 #endif
@@ -265,7 +265,7 @@ libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor, int decrement_pc)
   compute_normalized_ips(cursor);
   TMSG(UNW, "unw_step: advance pc: %p\n", cursor->pc_unnorm);
   cursor->libunw_status = found ? LIBUNW_READY : LIBUNW_UNAVAIL;
-  
+
 #if DEBUG_LIBUNWIND_INTERFACE
   if (libunwind_debug) {
     printf("libunw_status = %s ", libunw_state_string(cursor->libunw_status));
@@ -420,11 +420,11 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
   stat.error = status;
   stat.first = bitree_uwi_rightsubtree(dummy);
 
-  return stat; 
+  return stat;
 }
 
 // ----------------------------------------------------------
-// libunw_unw_step: 
+// libunw_unw_step:
 //   Given a cursor, step the cursor to the next (less deeply
 //   nested) frame using a recipe found previously, and find
 //   a new recipe for the next call.

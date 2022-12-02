@@ -64,7 +64,7 @@ void timer_start
     clock_gettime(CLOCK_REALTIME, start_time);
 }
 
-double 
+double
 timer_elapsed
 (
  struct timespec *start_time

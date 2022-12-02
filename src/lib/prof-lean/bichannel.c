@@ -56,10 +56,10 @@
 
 
 //*****************************************************************************
-// interface operations 
+// interface operations
 //*****************************************************************************
 
-void 
+void
 bichannel_init
 (
  bichannel_t *ch
@@ -70,11 +70,11 @@ bichannel_init
 }
 
 
-void 
+void
 bichannel_push
 (
- bichannel_t *ch, 
- bichannel_direction_t dir, 
+ bichannel_t *ch,
+ bichannel_direction_t dir,
  s_element_t *e
 )
 {
@@ -85,7 +85,7 @@ bichannel_push
 s_element_t *
 bichannel_pop
 (
- bichannel_t *ch, 
+ bichannel_t *ch,
  bichannel_direction_t dir
 )
 {
@@ -93,10 +93,10 @@ bichannel_pop
 }
 
 
-void 
+void
 bichannel_reverse
 (
- bichannel_t *ch, 
+ bichannel_t *ch,
  bichannel_direction_t dir
 )
 {
@@ -104,10 +104,10 @@ bichannel_reverse
 }
 
 
-void 
+void
 bichannel_steal
 (
- bichannel_t *ch, 
+ bichannel_t *ch,
  bichannel_direction_t dir
 )
 {

@@ -54,7 +54,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct opencl_queue_map_entry_t opencl_queue_map_entry_t;
@@ -73,7 +73,7 @@ opencl_cl_queue_map_lookup
 uint32_t
 opencl_cl_queue_map_update
 (
- uint64_t, 
+ uint64_t,
  uint32_t
 );
 
@@ -100,4 +100,3 @@ opencl_cl_queue_map_entry_context_id_get
 
 
 #endif
-

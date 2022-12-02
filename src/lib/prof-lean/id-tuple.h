@@ -98,10 +98,10 @@
 #define PMS_id_tuple_len_SIZE       2
 #define PMS_id_SIZE                 18
 
-#define IDTUPLE_IDS_BOTH_VALID      0  
-#define IDTUPLE_IDS_LOGIC_LOCAL     1 
-#define IDTUPLE_IDS_LOGIC_GLOBAL    2 
-#define IDTUPLE_IDS_LOGIC_ONLY      3 
+#define IDTUPLE_IDS_BOTH_VALID      0
+#define IDTUPLE_IDS_LOGIC_LOCAL     1
+#define IDTUPLE_IDS_LOGIC_GLOBAL    2
+#define IDTUPLE_IDS_LOGIC_ONLY      3
 
 #define IDTUPLE_GET_INTERPRET(kind) (((kind)>>14) & 0x3)
 #define IDTUPLE_GET_KIND(kind)      ((kind) & ((1<<14)-1))
@@ -153,17 +153,17 @@ kindStr
 void
 id_tuple_constructor
 (
- id_tuple_t *tuple, 
- pms_id_t *ids, 
+ id_tuple_t *tuple,
+ pms_id_t *ids,
  int ids_length
 );
 
 
-void 
+void
 id_tuple_push_back
 (
- id_tuple_t *tuple, 
- uint16_t kind, 
+ id_tuple_t *tuple,
+ uint16_t kind,
  uint64_t physical_index,
  uint64_t logical_index
 );
@@ -172,8 +172,8 @@ id_tuple_push_back
 void
 id_tuple_copy
 (
- id_tuple_t *dest, 
- id_tuple_t *src, 
+ id_tuple_t *dest,
+ id_tuple_t *src,
  id_tuple_allocator_fn_t alloc
 );
 
@@ -182,36 +182,36 @@ id_tuple_copy
 // Single id_tuple
 //---------------------------------------------------------------------------
 
-int 
+int
 id_tuple_fwrite(id_tuple_t* x, FILE* fs);
 
-int 
+int
 id_tuple_fread(id_tuple_t* x, FILE* fs);
 
-int 
+int
 id_tuple_fprint(id_tuple_t* x, FILE* fs);
 
-void 
+void
 id_tuple_dump(id_tuple_t* x);
 
-void 
+void
 id_tuple_free(id_tuple_t* x);
 
 
 //---------------------------------------------------------------------------
-// for profile.db 
+// for profile.db
 //---------------------------------------------------------------------------
 
-int 
+int
 id_tuples_pms_fwrite(uint32_t num_tuples, id_tuple_t* x, FILE* fs);
 
-int 
+int
 id_tuples_pms_fread(id_tuple_t** x, uint32_t num_tuples,FILE* fs);
 
-int 
+int
 id_tuples_pms_fprint(uint32_t num_tuples,uint64_t id_tuples_size, id_tuple_t* x, FILE* fs);
 
-void 
+void
 id_tuples_pms_free(id_tuple_t** x, uint32_t num_tuples);
 
 //---------------------------------------------------------------------------

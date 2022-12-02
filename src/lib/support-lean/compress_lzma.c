@@ -71,7 +71,7 @@
 // forward declarations
 //***************************************************************************
 
-static const char* 
+static const char*
 get_error_message(lzma_ret ret) __attribute__ ((unused));
 
 
@@ -80,7 +80,7 @@ get_error_message(lzma_ret ret) __attribute__ ((unused));
 // private operations
 //***************************************************************************
 
-static lzma_ret 
+static lzma_ret
 init_encoder(lzma_stream *strm, uint32_t preset)
 {
 	// Initialize the encoder using a preset. Set the integrity to check
@@ -439,7 +439,7 @@ compress_deflate(FILE *source, FILE *dest, int level)
 	// actually used except initialized with LZMA_STREAM_INIT.
 	lzma_end(&strm);
 
-	if (ret == LZMA_OK) 
+	if (ret == LZMA_OK)
 		return COMPRESS_OK;
 
 	return COMPRESS_FAIL;

@@ -280,7 +280,7 @@ level0_command_begin
     kernel_ip.lm_ip = 0;
 
     cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
-    command_node->kernel = 
+    command_node->kernel =
     gpu_cct_insert_always(kernel_ph, kernel_ip);
 
     cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);

@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -100,7 +100,7 @@ Diagnostics_GetDiagnosticFilterLevel();
 // especially useful for use with debuggers that do not have good
 // exception support.
 DIAG_EXTERN void
-Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm, 
+Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 					      unsigned int lineno);
 
 
@@ -193,7 +193,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
   DIAG_WMsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
 #define DIAG_EMsg(streamArgs)                                       \
-  DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL              
+  DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL
 
 #define DIAG_DevEMsg(streamArgs)                                       \
   { DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL;              \
@@ -272,7 +272,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 
 //****************************************************************************
-// 
+//
 //****************************************************************************
 
 extern const char* DIAG_Unimplemented;
@@ -281,4 +281,3 @@ extern const char* DIAG_UnexpectedOpr;
 
 
 #endif /* support_diagnostics_h */
-

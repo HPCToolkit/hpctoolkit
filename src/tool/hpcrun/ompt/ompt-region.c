@@ -91,7 +91,7 @@ static __thread ompt_data_t* private_region_freelist_head = NULL;
 // forward declarations
 //*****************************************************************************
 
-static ompt_region_data_t * 
+static ompt_region_data_t *
 ompt_region_acquire
 (
  void
@@ -111,7 +111,7 @@ ompt_region_release
 static ompt_region_data_t *
 ompt_region_data_new
 (
- uint64_t region_id, 
+ uint64_t region_id,
  cct_node_t *call_path
 )
 {
@@ -131,12 +131,12 @@ ompt_region_data_new
 }
 
 
-static void 
+static void
 ompt_parallel_begin_internal
 (
  ompt_data_t *parallel_data,
  int flags
-) 
+)
 {
   ompt_region_data_t* region_data = ompt_region_data_new(hpcrun_ompt_get_unique_id(), NULL);
   parallel_data->ptr = region_data;
@@ -170,7 +170,7 @@ ompt_parallel_begin_internal
 
   if (ompt_eager_context_p()) {
      region_data->call_path =
-       ompt_parallel_begin_context(region_id, 
+       ompt_parallel_begin_context(region_id,
 				   flags & ompt_parallel_invoker_program);
   }
 }
@@ -311,7 +311,7 @@ ompt_implicit_task_internal_begin
 
   if (region_data == NULL) {
     // there are no parallel region callbacks for the initial task.
-    // region_data == NULL indicates that this is an initial task. 
+    // region_data == NULL indicates that this is an initial task.
     // do nothing for initial tasks.
     return;
   }
@@ -382,7 +382,7 @@ ompt_implicit_task
 }
 
 
-static ompt_region_data_t* 
+static ompt_region_data_t*
 ompt_region_alloc
 (
  void
@@ -393,7 +393,7 @@ ompt_region_alloc
 }
 
 
-static ompt_region_data_t* 
+static ompt_region_data_t*
 ompt_region_freelist_get
 (
  void
@@ -402,7 +402,7 @@ ompt_region_freelist_get
   // FIXME vi3: should in this situation call OMPT_REGION_DATA_T_STAR / Notification / TRL_EL
   // FIXME vi3: I think that call to wfq_dequeue_private in this case should be thread safe
   // but check this one more time
-  ompt_region_data_t* r = 
+  ompt_region_data_t* r =
     (ompt_region_data_t*) wfq_dequeue_private(&public_region_freelist,
 					      OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
   return r;
@@ -412,7 +412,7 @@ ompt_region_freelist_get
 static void
 ompt_region_freelist_put
 (
- ompt_region_data_t *r 
+ ompt_region_data_t *r
 )
 {
   r->region_id = 0xdeadbeef;
@@ -471,7 +471,7 @@ ompt_regions_init
   ompt_region_debug_init();
 }
 
-void 
+void
 ompt_parallel_region_register_callbacks
 (
  ompt_set_callback_t ompt_set_callback_fn

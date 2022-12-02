@@ -223,8 +223,8 @@ bool update_shadow() {
         m = p;
       } else if(m->new) {
         if(verbose)
-          fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)" 
-		  " dl_info.dlpi_addr = %p\n", m->entry.path, m->entry.start, 
+          fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)"
+		  " dl_info.dlpi_addr = %p\n", m->entry.path, m->entry.start,
 		  m->entry.end, (void *)m->entry.dl_info.dlpi_addr);
         hooks.open(&m->entry);
         m->new = false;

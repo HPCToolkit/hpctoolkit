@@ -81,7 +81,7 @@ extern bool hpcrun_get_retain_recursion_mode();
 
 
 //***************************************************************************
-// forward declarations 
+// forward declarations
 //***************************************************************************
 
 static void lush_assoc_info2str(char* buf, size_t len, lush_assoc_info_t info);
@@ -91,7 +91,7 @@ static void lush_lip2str(char* buf, size_t len, lush_lip_t* lip);
 // interface functions
 //***************************************************************************
 
-void 
+void
 hpcrun_bt_dump(frame_t* unwind, const char* tag)
 {
   static const int msg_limit = 100;
@@ -154,7 +154,7 @@ hpcrun_bt_init(backtrace_t* bt, size_t size)
 }
 
 frame_t*
-hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
+hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 		   int skip)
 {
   // N.B.: INVARIANT: bt_inner < bt_outer
@@ -195,9 +195,9 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   step_state ret = STEP_ERROR; // default return value from stepper
 
   //--------------------------------------------------------------------
-  // note: these variables are not local variables so that if a SIGSEGV 
-  // occurs and control returns up several procedure frames, the values 
-  // are accessible to a dumping routine that will tell us where we ran 
+  // note: these variables are not local variables so that if a SIGSEGV
+  // occurs and control returns up several procedure frames, the values
+  // are accessible to a dumping routine that will tell us where we ran
   // into a problem.
   //--------------------------------------------------------------------
 
@@ -214,20 +214,20 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
     // check for trampoline interactions
     if (hpcrun_trampoline_interior(ip)) {
-      // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
+      // bail; we shouldn't be unwinding here. hpcrun is in the midst of
       // counting a return from a sampled frame using a trampoline.
-      // drop the sample. 
-      // FIXME: sharpen the information to indicate why the sample is 
+      // drop the sample.
+      // FIXME: sharpen the information to indicate why the sample is
       //        being dropped.
       hpcrun_unw_drop();
     }
 
     else if (ENABLED(USE_TRAMP) && hpcrun_trampoline_at_entry(ip)) {
       if (ret == STEP_ERROR){
-	// we are about to enter the trampoline code to synchronously 
+	// we are about to enter the trampoline code to synchronously
 	// record a return. for now, simply do nothing ...
-	// FIXME: with a bit more effort, we could charge 
-	//        the sample to the return address in the caller. 
+	// FIXME: with a bit more effort, we could charge
+	//        the sample to the return address in the caller.
 	hpcrun_unw_drop();
       }
       else {
@@ -240,7 +240,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 	break;
       }
     } // end the check for trampoline interactions
-    
+
     hpcrun_ensure_btbuf_avail();
 
     td->btbuf_cur->cursor = cursor;
@@ -306,7 +306,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       // FIXME: For the moment, ignore skipInner issues with trampolines.
       //        Eventually, this will need to be addressed
       //
-      EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d) when TRAMP is on.", 
+      EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d) when TRAMP is on.",
 	   skipInner);
     }
     else {
@@ -358,18 +358,18 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
     if (tramp_found) {
       TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
       TMSG(TRAMP, " FOUND TRAMP: constructing cached backtrace");
-      
+
       if (!hpcrun_trampoline_update(bt_last)) {
           EMSG("ERROR: trampoline update failed. Drop the sample.");
           hpcrun_unw_drop();
       }
-      
-      bool middle_of_recursion = 
+
+      bool middle_of_recursion =
              td->tramp_frame != td->cached_bt_frame_beg
           && td->tramp_frame != td->cached_bt_buf_frame_end-1
           && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
           && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function));
-      
+
       //
       // join current backtrace fragment to previous trampoline-marked prefix
       // and make this new conjoined backtrace the cached-backtrace
@@ -395,7 +395,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
       TMSG(TRAMP, "Check: tramp ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
 	   td->tramp_frame->ra_loc, *((void**) td->tramp_frame->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
-      
+
       // When recursive frames are merged in CCT, special handling is needed.
       if (!hpcrun_get_retain_recursion_mode()) {
         // Locate the last frame on btbuf that refers to the same function as tramp_frame.
@@ -404,12 +404,12 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
                 && ip_normalized_eq(&(recursion_last->the_function), &((recursion_last+1)->the_function)) ) {
           recursion_last++;
         }
-        
-        /* if the last frame isn't tramp_frame itself, tramp_frame is in a chain of recursive frames, 
+
+        /* if the last frame isn't tramp_frame itself, tramp_frame is in a chain of recursive frames,
          * special handling is needed for correct insertion of frames into CCT.
-         * 
+         *
          * In CCT, all recursive frames are represented with two CCT nodes:
-         * 
+         *
          *   bar() -- parent of recursive function, where insertion of backtrace takes place.
          *     |
          *    r() -- upper CCT node of the recursive function, where we want tramp_cct_node points to.
@@ -418,12 +418,12 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
         */
         if (recursion_last != td->tramp_frame) {
           // First, make sure that tramp_cct_node points to the upper CCT node of the recursive function.
-          
+
           // if tramp_frame is the first recursive frame, tramp_cct_node is pointing to the lower CCT node of the recursive function.
-          if (!middle_of_recursion) 
+          if (!middle_of_recursion)
             // points tramp_cct_node to the upper CCT node of the recursive function.
             td->tramp_cct_node = (td->tramp_cct_node) ? hpcrun_cct_parent(td->tramp_cct_node) : NULL;
-          
+
           // Second, make sure that there are at least two frames for the recursive function on backtrace
           // by inserting the last recursive frame into backtrace.
           hpcrun_ensure_btbuf_avail();
@@ -438,7 +438,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       hpcrun_cached_bt_adjust_size(new_frame_count);
       size_t n_cached_frames = new_frame_count - 1;
       TMSG(TRAMP, "Confirm: ra_loc(last bt frame) = %p", (bt_beg + n_cached_frames)->ra_loc);
-      
+
       td->cached_bt_frame_beg = td->cached_bt_buf_frame_end - n_cached_frames;
       memcpy(td->cached_bt_frame_beg, bt_beg, sizeof(frame_t) * n_cached_frames);
       td->cached_frame_count = n_cached_frames;
@@ -455,7 +455,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 }
 
 //***************************************************************************
-// private operations 
+// private operations
 //***************************************************************************
 
 static void

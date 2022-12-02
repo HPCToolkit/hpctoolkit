@@ -143,7 +143,7 @@ if OPT_USE_ZLIB
 #	compress.h compress.c
 
 #MYLIBADD   += -L$(ZLIB_LIB) -lz
-#MYCFLAGS   += -I$(ZLIB_INC) 
+#MYCFLAGS   += -I$(ZLIB_INC)
 
 else
 #MYSOURCES += \
@@ -168,4 +168,3 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
-

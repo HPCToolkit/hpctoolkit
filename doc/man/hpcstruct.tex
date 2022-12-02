@@ -200,11 +200,11 @@ Analyze GPU binaries references in a measurements directory. {"yes"}
 \item[\OptArg{--gpucfg}{"yes"/"no"}]
 Compute loop nesting structure for GPU machine code. {"no"}
 
-% \item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
-% Use \Arg{path} when resolving source file names. 
+% \item[\OptArg{-I}{path}, \OptArg{--include}{path}]
+% Use \Arg{path} when resolving source file names.
 % This option is useful when a compiler records the same filename in different ways within the symbolic information.
 % (Yes, this does happen.)
-% For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}. 
+% For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}.
 % This option may appear multiple times.
 
 % \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
@@ -212,7 +212,7 @@ Compute loop nesting structure for GPU machine code. {"no"}
 % (e.g., a profile's load map and source code).
 % Use \verb+'\'+ to escape instances of '=' within specified paths.
 % This option may appear multiple times.
-% 
+%
 % Use this when a profile or executable references files that have been relocated,
 % such as might occur with a file system change.
 
@@ -273,12 +273,12 @@ Indicates that hpcstruct was invoked by a script used to process measurement dir
 \section{Examples}
 
 \begin{enumerate}
-\item 
-Assume we have used HPCToolkit to collect performance measurements for the (optimized) CPU binary 
-\File{sweep3d} and that performance measurement data for the application is in the measurement 
-directory \File{hpctoolkit-sweep3d-measurements}. 
+\item
+Assume we have used HPCToolkit to collect performance measurements for the (optimized) CPU binary
+\File{sweep3d} and that performance measurement data for the application is in the measurement
+directory \File{hpctoolkit-sweep3d-measurements}.
 Assume that \File{sweep3d} was compiled with debugging information using the -g compiler flag in addition to any
-optimization flags. 
+optimization flags.
 To recover program structure in \File{sweep3d} and any shared libraries used during the run
 for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}, execute:
 \medskip
@@ -288,17 +288,17 @@ for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}, execute:
 \medskip
 The output is placed in a subdirectory of the measurements directory.
 \medskip
-These program structure files are used to interpret performance measurements in \File{hpctoolkit-sweep3d-measurements}. 
+These program structure files are used to interpret performance measurements in \File{hpctoolkit-sweep3d-measurements}.
 \medskip
 \begin{verbatim}
     hpcprof hpctoolkit-sweep3d-measurements
 \end{verbatim}
 
 \item
-Assume we have used HPCToolkit to collect performance measurements for the (optimized) GPU-accelerated 
+Assume we have used HPCToolkit to collect performance measurements for the (optimized) GPU-accelerated
 CPU binary \File{laghos}, which offloaded computation onto one or more Nvidia GPUs.
-Assume that performance measurement data for the application is in the measurement 
-directory \File{hpctoolkit-laghos-measurements}. 
+Assume that performance measurement data for the application is in the measurement
+directory \File{hpctoolkit-laghos-measurements}.
 \medskip
 Assume that the CPU code for \File{laghos} was compiled with debugging information using the -g compiler flag in addition to any
 optimization flags and that the GPU code the application contains was compiled with line map information (-lineinfo).
@@ -348,7 +348,7 @@ tries both platform's and GNU's demangler.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% \section{Bugs}
-%% 
+%%
 %% \begin{enumerate}
 
 %% \item xxxxxx
@@ -392,4 +392,3 @@ WWW: \URL{http://hpctoolkit.org}.
 %% time-stamp-end: "}\n"
 %% time-stamp-line-limit: 50
 %% End:
-

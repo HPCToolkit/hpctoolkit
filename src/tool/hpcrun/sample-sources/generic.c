@@ -95,7 +95,7 @@
 
 // *****************************************************************************
 // (file) local variables
-// 
+//
 // *****************************************************************************
 
 //
@@ -108,7 +108,7 @@ static struct SOME_STRUCT ss_specific_data;
 //
 // Almost all sample sources have events. The local data below keeps track of
 // event info, and metric info.
-// 
+//
 // NOTE: some very unusual sample sources may not have any events. (see 'none' sample source)
 //       In this case, the event & metric tracking data structures can likely be dispensed with
 
@@ -316,7 +316,7 @@ METHOD_FN(supports_event, const char *ev_str)
 
   return hpcrun_ev_is(ev_str,"YOUR_SOURCE");
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -340,14 +340,14 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // fetch the event string for the sample source
   char* _p = METHOD_CALL(self, get_event_str);
-  
+
 
   //  ** You MAY BE able to pre-allocate metrics for your sample source **
   //  if so, you should do that before the main event processing loop
   //
   //  Example of preallocation:
   //  hpcrun_pre_allocate_metrics(1 + lush_metrics);
-  
+
   //
   // EVENT: for each event in the event spec
   //
@@ -378,7 +378,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     for (int i=0; i < NUM_METRICS_FOR_EVENT(event); i++) {
       int metric_id;
       const char *name = NAME_FOR_EVENT_METRIC(event, i);
-      
+
       if (METRIC_IS_STANDARD) {
       // For a standard updating metric (add some counts at each sample time), use
       // hpcrun_set_metric_info_and_period routine, as shown below
@@ -468,7 +468,7 @@ METHOD_FN(display_events)
 #include "ss_obj.h"
 
 //******************************************************************************
-// private operations 
+// private operations
 // *****************************************************************************
 
 //
@@ -476,12 +476,12 @@ METHOD_FN(display_events)
 // Typically, the event trigger is a unix signal, so a unix signal handler must be installed
 //
 // ***** ALL sample source event handlers MUST pass a proper (unix) context ****
-// 
+//
 // NOTE: PAPI does NOT use a standard unix signal handler.
 //
 // The example handler below is a standard unix signal handler.
 // See papi for an event handler that is NOT a standard unix signal handler
-// 
+//
 static int
 generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
@@ -537,7 +537,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
   //
   // If the sigprocmask must be manipulated to ensure continuing samples, then
   // be sure to use monitor_real_sigprocmask.
-  // 
+  //
   // You do NOT normally have to do this. This manipulation is only called for
   // if the regular signal handling mechanism is buggy.
   //

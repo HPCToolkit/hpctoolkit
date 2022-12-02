@@ -3,7 +3,7 @@
 <!ELEMENT TITLE	 EMPTY>
 <!ATTLIST TITLE
             name CDATA #REQUIRED>
-	    
+
 <!ELEMENT PATH EMPTY>
 <!ATTLIST PATH
             name CDATA #REQUIRED

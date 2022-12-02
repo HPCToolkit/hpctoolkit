@@ -62,16 +62,16 @@ static char icc_variant_signature[] = {
 };
 
 
-int 
+int
 x86_adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
 {
   int siglen = sizeof(icc_variant_signature);
 
   if (len > siglen && strncmp((char *)icc_variant_signature, ins, siglen) == 0) {
-    // signature matched 
+    // signature matched
     unwind_interval* ui = (unwind_interval *) stat->first;
 
-    // this won't fix all of the intervals, but it will fix the ones 
+    // this won't fix all of the intervals, but it will fix the ones
     // that we care about.
     //
     // The method is as follows:

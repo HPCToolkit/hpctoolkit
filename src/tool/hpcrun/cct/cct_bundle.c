@@ -93,7 +93,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   //
   // By default (ATTACH_THREAD_CTXT is *cleared*), then attach
   // all thread-stopped call paths to thread root.
-  // 
+  //
   if (ENABLED(ATTACH_THREAD_CTXT) && ctxt) {
     hpcrun_cct_insert_path(&(bundle->thread_root), ctxt->context);
   }
@@ -102,15 +102,15 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
 }
 
 //
-// Write to file for cct bundle: 
+// Write to file for cct bundle:
 //
 #if 0
-int 
+int
 hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
-                         cct2metrics_t* cct2metrics_map)           
+                         cct2metrics_t* cct2metrics_map)
 #else
 //YUMENG: add sparse_metrics to collect metric values and info
-int 
+int
 hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
                          cct2metrics_t* cct2metrics_map, hpcrun_fmt_sparse_metrics_t* sparse_metrics)
 #endif
@@ -135,7 +135,7 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
   // write out newly constructed cct
 #if 0
   return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags);
-#else 
+#else
 //YUMENG: add sparse_metrics to collect metric values and info
   return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags, sparse_metrics);
 #endif
@@ -165,7 +165,7 @@ hpcrun_cct_bundle_get_no_activity_node
  cct_bundle_t* cct
 )
 {
-  cct_node_t *no_activity_cct = NULL; 
+  cct_node_t *no_activity_cct = NULL;
   if (cct) {
     no_activity_cct = hpcrun_cct_insert_ip_norm(cct->top,
         get_placeholder_norm(hpcrun_placeholder_no_activity), true);

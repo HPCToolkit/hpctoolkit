@@ -47,10 +47,10 @@
 //***************************************************************************
 // IteratorStack.h
 //
-//   an iterator that is realized as a stack of iterators. this abstraction 
+//   an iterator that is realized as a stack of iterators. this abstraction
 //   is useful for traversing nested structures.
 //
-// Author: John Mellor-Crummey                                
+// Author: John Mellor-Crummey
 //
 // Creation Date: October 1993
 //
@@ -93,15 +93,15 @@ enum IterStackEnumType {
 class IteratorStack: public StackableIterator {
 public:
   enum TraversalOrder { Unordered, PreOrder, PostOrder,
-			ReversePreOrder, ReversePostOrder, 
+			ReversePreOrder, ReversePostOrder,
 			PreAndPostOrder };
-  
+
 public:
 
-  IteratorStack(TraversalOrder torder, 
+  IteratorStack(TraversalOrder torder,
 		IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
   ~IteratorStack();
-  
+
   void *CurrentUpCall() const;
 
   void operator++(int); // postfix increment
@@ -109,11 +109,11 @@ public:
 
   // pop all but one iterator off the stack; reset the one left
   void Reset(); // same traversal order as before
-  void Reset(TraversalOrder torder, 
+  void Reset(TraversalOrder torder,
 	     IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
 
   // empty the stack and reset the state to that as if freshly constructed
-  void ReConstruct(TraversalOrder torder, 
+  void ReConstruct(TraversalOrder torder,
 		   IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
 
   bool IsValid() const;
@@ -132,7 +132,7 @@ protected:
   StackableIterator *Top(void) const;
   StackableIterator *GetIteratorAtPosition(unsigned int depth) const; // TOS=0
   void FreeTop();
-  
+
   int Depth() const;
 
 private:

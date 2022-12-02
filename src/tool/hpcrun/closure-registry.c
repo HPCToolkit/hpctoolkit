@@ -1,6 +1,6 @@
 //******************************************************************************
 // file: closure-registry.c
-// purpose: 
+// purpose:
 //   implementation of support for registering and applying a set of closures
 //******************************************************************************
 
@@ -28,7 +28,7 @@
 
 void
 closure_list_register(
-  closure_list_t *l, 
+  closure_list_t *l,
   closure_t *entry
 )
 {
@@ -37,9 +37,9 @@ closure_list_register(
 }
 
 
-int 
+int
 closure_list_deregister(
-  closure_list_t *l, 
+  closure_list_t *l,
   closure_t *entry
 )
 {
@@ -49,7 +49,7 @@ closure_list_deregister(
      if (curr == entry) {
        *ptr_to_curr = curr->next;
        return 0;
-     } 
+     }
      ptr_to_curr = &curr->next;
      curr = curr->next;
    }
@@ -57,7 +57,7 @@ closure_list_deregister(
 }
 
 
-void 
+void
 closure_list_apply(
   closure_list_t *l
 )
@@ -70,7 +70,7 @@ closure_list_apply(
 }
 
 
-void 
+void
 closure_list_dump(
   closure_list_t *l
 )
@@ -86,7 +86,7 @@ closure_list_dump(
 #undef UNIT_TEST_closure_registry
 #ifdef UNIT_TEST_closure_registry
 
-void 
+void
 c1_fn(
  void *arg
 )
@@ -95,7 +95,7 @@ c1_fn(
 }
 
 
-void 
+void
 c2_fn(
  void *arg
 )
@@ -109,24 +109,24 @@ closure_t c2 = {.fn = c2_fn, .next = NULL, .arg = NULL };
 closure_list_t cl;
 
 
-int 
+int
 main(
-  int argc, 
+  int argc,
   char **argv)
 {
-  closure_list_register(&cl, &c1); 
+  closure_list_register(&cl, &c1);
   closure_list_dump(&cl);
   closure_list_apply(&cl);
 
-  closure_list_register(&cl, &c2); 
+  closure_list_register(&cl, &c2);
   closure_list_dump(&cl);
   closure_list_apply(&cl);
 
-  closure_list_deregister(&cl, &c2); 
+  closure_list_deregister(&cl, &c2);
   closure_list_dump(&cl);
   closure_list_apply(&cl);
 
-  closure_list_deregister(&cl, &c1); 
+  closure_list_deregister(&cl, &c1);
   closure_list_dump(&cl);
   closure_list_apply(&cl);
 }

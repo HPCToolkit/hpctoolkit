@@ -9,7 +9,7 @@ oldname=`grep "<LM" $2  | head -1 | awk '{print $3}' | sed '/n="/s///' | sed '/g
 # echo DEBUG oldname = $oldname
 # echo DEBUG newname = $1
 
-#  Check to see if  the two names match 
+#  Check to see if  the two names match
 if [ "$oldname" = "$1" ] ; then
     # they match, we're done
     # echo DEBUG Pathname matched
@@ -18,13 +18,13 @@ fi
 
 # if they don't match, run a sed script to change the pathname in the structure file
 # First, make sure neither name has a pipe character in it
-err=`echo $oldname | grep "|" | wc -l ` 
+err=`echo $oldname | grep "|" | wc -l `
 if [ $err -ne 0 ]; then
     echo "The original filename in the struct file has an embedded pipe character; not rewriting"
     exit -1
 fi
 
-err=`echo $1 | grep "|" | wc -l ` 
+err=`echo $1 | grep "|" | wc -l `
 if [ $err -ne 0 ]; then
     echo "The new filename for the struct file has an embedded pipe character; not rewriting"
     exit -1
@@ -32,7 +32,7 @@ fi
 
 # echo DEBUG Pathname mismatch found
 
-# The pathname in the structure file is not correct 
+# The pathname in the structure file is not correct
 #  It needs to be fixed
 /bin/rm -f $2.old $2.new
 mv $2 $2.old

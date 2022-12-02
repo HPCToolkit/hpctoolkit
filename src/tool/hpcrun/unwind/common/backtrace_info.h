@@ -23,9 +23,9 @@ typedef struct {
   size_t   n_trolls;  // # of frames that resulted from trolling
   fence_enum_t fence:3; // Type of stop -- thread or main *only meaninful when good unwind
   bool     has_tramp:1; // true when a trampoline short-circuited the unwind
-  bool     bottom_frame_elided:1; // true if bottom frame has been elided 
+  bool     bottom_frame_elided:1; // true if bottom frame has been elided
   bool     partial_unwind:1; // true if not a full unwind
-  bool     collapsed:1; // callstack collapsed by hpctoolkit, e.g. OpenMP placeholders 
+  bool     collapsed:1; // callstack collapsed by hpctoolkit, e.g. OpenMP placeholders
   void    *trace_pc;  // in/out value: modified to adjust trace when modifying backtrace
 } backtrace_info_t;
 

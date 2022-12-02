@@ -50,14 +50,14 @@
 /*
  * function: executable_path
  *
- * purpose: 
- *    search for an executable file that matches 'filename'  
+ * purpose:
+ *    search for an executable file that matches 'filename'
  *    relative to the current directory or a colon separated
  *    list of  paths
  *
- * return value: 
+ * return value:
  *   upon success, it will return the value supplied as path_name
- *            
+ *
  *
  * NOTES:
  * 1. path_list is a colon separated list of paths to search
@@ -69,4 +69,3 @@
 char *executable_path(const char *filename, const char *path_list, char *executable_name);
 
 #endif
-

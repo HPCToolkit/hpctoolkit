@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -80,7 +80,7 @@
 //***************************************************************************
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 typedef void* (*BalancedTree_alloc_fn_t)(size_t);
@@ -124,7 +124,7 @@ BalancedTreeNode_init(BalancedTreeNode_t* x,
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 typedef struct BalancedTree
@@ -139,8 +139,8 @@ typedef struct BalancedTree
 } BalancedTree_t;
 
 
-void 
-BalancedTree_init(BalancedTree_t* tree, 
+void
+BalancedTree_init(BalancedTree_t* tree,
 		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz);
 
 

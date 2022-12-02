@@ -77,21 +77,21 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 // type declarations
 //******************************************************************************
 
-typedef enum {    
+typedef enum {
   GPU_ACTIVITY_UNKNOWN                 = 0,
   GPU_ACTIVITY_KERNEL                  = 1,
-  GPU_ACTIVITY_KERNEL_BLOCK             = 2,  
+  GPU_ACTIVITY_KERNEL_BLOCK             = 2,
   GPU_ACTIVITY_MEMCPY                  = 3,
   GPU_ACTIVITY_MEMCPY2                 = 4,
   GPU_ACTIVITY_MEMSET                  = 5,
-  GPU_ACTIVITY_MEMORY                  = 6,    
+  GPU_ACTIVITY_MEMORY                  = 6,
   GPU_ACTIVITY_SYNCHRONIZATION         = 7,
   GPU_ACTIVITY_GLOBAL_ACCESS           = 8,
   GPU_ACTIVITY_LOCAL_ACCESS            = 9,
   GPU_ACTIVITY_BRANCH                  = 10,
   GPU_ACTIVITY_CDP_KERNEL              = 11,
   GPU_ACTIVITY_PC_SAMPLING             = 12,
-  GPU_ACTIVITY_PC_SAMPLING_INFO        = 13, 
+  GPU_ACTIVITY_PC_SAMPLING_INFO        = 13,
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
@@ -127,7 +127,7 @@ typedef enum {
 } gpu_local_access_type_t;
 
 
-typedef enum {    
+typedef enum {
   GPU_SYNC_UNKNOWN               = 0,
   GPU_SYNC_EVENT                 = 1,
   GPU_SYNC_STREAM_EVENT_WAIT     = 2,
@@ -139,12 +139,12 @@ typedef enum {
 
 typedef enum {
   GPU_MEMCPY_UNK = 0,  // unknown
-  GPU_MEMCPY_H2D = 1,  // host to device 
-  GPU_MEMCPY_D2H = 2,  // device to host 
-  GPU_MEMCPY_H2A = 3,  // host to device array 
+  GPU_MEMCPY_H2D = 1,  // host to device
+  GPU_MEMCPY_D2H = 2,  // device to host
+  GPU_MEMCPY_H2A = 3,  // host to device array
   GPU_MEMCPY_A2H = 4,  // device array to host
   GPU_MEMCPY_A2A = 5,  // device array to device array
-  GPU_MEMCPY_A2D = 6,  // device array to device 
+  GPU_MEMCPY_A2D = 6,  // device array to device
   GPU_MEMCPY_D2A = 7,  // device to device array
   GPU_MEMCPY_D2D = 8,  // device to device
   GPU_MEMCPY_H2H = 9,  // host to host
@@ -153,7 +153,7 @@ typedef enum {
 } gpu_memcpy_type_t;
 
 
-typedef enum {    
+typedef enum {
   GPU_INST_STALL_NONE         = 1,
   GPU_INST_STALL_IFETCH       = 2,
   GPU_INST_STALL_IDEPEND      = 3,
@@ -207,7 +207,7 @@ typedef struct gpu_pc_sampling_t {
   ip_normalized_t pc;
   uint32_t samples;
   uint32_t latencySamples;
-  gpu_inst_stall_t stallReason;    
+  gpu_inst_stall_t stallReason;
 } gpu_pc_sampling_t;
 
 
@@ -225,7 +225,7 @@ typedef struct gpu_flush_t {
 } gpu_flush_t;
 
 // this type is prefix of all memory structures
-// gpu_interval_t is a prefix 
+// gpu_interval_t is a prefix
 typedef struct gpu_mem_t {
   uint64_t start;
   uint64_t end;
@@ -233,7 +233,7 @@ typedef struct gpu_mem_t {
 } gpu_mem_t;
 
 
-// gpu_mem_t is a prefix 
+// gpu_mem_t is a prefix
 typedef struct gpu_memcpy_t {
   uint64_t start;
   uint64_t end;
@@ -248,7 +248,7 @@ typedef struct gpu_memcpy_t {
 
 
 // memory allocation or free operation
-// gpu_mem_t is a prefix 
+// gpu_mem_t is a prefix
 typedef struct gpu_memory_t {
   uint64_t start;
   uint64_t end;
@@ -262,7 +262,7 @@ typedef struct gpu_memory_t {
 } gpu_memory_t;
 
 
-// gpu_mem_t is a prefix 
+// gpu_mem_t is a prefix
 typedef struct gpu_memset_t {
   uint64_t start;
   uint64_t end;
@@ -338,7 +338,7 @@ typedef struct gpu_global_access_t {
   uint64_t l2_transactions;
   uint64_t theoreticalL2Transactions;
   uint64_t bytes;
-  gpu_global_access_type_t type;  
+  gpu_global_access_type_t type;
 } gpu_global_access_t;
 
 
@@ -395,7 +395,7 @@ typedef struct gpu_counter_t {
 
 // a type that can be used to access start and end times
 // for a subset of activity kinds including kernel execution,
-// memcpy, memset, 
+// memcpy, memset,
 typedef struct gpu_interval_t {
   uint64_t start;
   uint64_t end;
@@ -421,7 +421,7 @@ typedef struct gpu_utilization_t {
 } gpu_utilization_t;
 
 
-typedef struct gpu_activity_details_t { 
+typedef struct gpu_activity_details_t {
   union {
     /* Each field stores the complete information needed
        for processing each activity kind.
@@ -449,7 +449,7 @@ typedef struct gpu_activity_details_t {
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 
-    /* Activity interval is used to access start time and end time of 
+    /* Activity interval is used to access start time and end time of
        an coarse grained activity.
      */
     gpu_interval_t interval;
@@ -497,7 +497,7 @@ gpu_activity_alloc
 void
 gpu_activity_free
 (
- gpu_activity_channel_t *channel, 
+ gpu_activity_channel_t *channel,
  gpu_activity_t *a
 );
 

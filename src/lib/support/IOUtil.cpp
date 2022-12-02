@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -87,7 +87,7 @@ OpenIStream(const char* filenm)
   if (!filenm || filenm[0] == '\0') {
     // Use cin
     return &std::cin;
-  } 
+  }
   else {
     std::ifstream* ifs = new std::ifstream;
     try {
@@ -108,7 +108,7 @@ OpenOStream(const char* filenm)
   if (!filenm || filenm[0] == '\0') {
     // Use cout
     return &std::cout;
-  } 
+  }
   else {
     std::ofstream* ofs = new std::ofstream;
     try {
@@ -162,7 +162,7 @@ OpenIFile(std::ifstream& fs, const char* filenm)
 }
 
 
-void 
+void
 OpenOFile(std::ofstream& fs, const char* filenm)
 {
   using namespace std;
@@ -181,23 +181,23 @@ CloseFile(std::fstream& fs)
 }
 
 
-std::string 
+std::string
 Get(std::istream& is, char end)
 {
   static const int bufSz = 256;
   char buf[bufSz];
   std::string str;
-  
+
   while ( (!is.eof() && !is.fail()) && is.peek() != end) {
     is.get(buf, bufSz, end);
     str += buf;
-  }  
+  }
 
   return str;
 }
 
 
-std::string 
+std::string
 GetLine(std::istream& is, char end)
 {
   std::string str = Get(is, end);
@@ -206,7 +206,7 @@ GetLine(std::istream& is, char end)
 }
 
 
-bool 
+bool
 Skip(std::istream& is, const char* s)
 {
   DIAG_Assert(s, DIAG_UnexpectedInput);
@@ -222,4 +222,3 @@ Skip(std::istream& is, const char* s)
 //****************************************************************************
 
 } // end of IOUtil namespace
-

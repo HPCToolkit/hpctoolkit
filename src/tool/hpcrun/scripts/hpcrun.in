@@ -39,7 +39,7 @@ export MONITOR_NO_SYSTEM_OVERRIDE=1
 
 #------------------------------------------------------------
 # LD_AUDIT is crippled on Arm systems until at least
-# glibc 2.35. On Arm systems, emulate LD_AUDIT support at 
+# glibc 2.35. On Arm systems, emulate LD_AUDIT support at
 # present to avoid failures due to LD_AUDIT bugs.
 #------------------------------------------------------------
 
@@ -141,8 +141,8 @@ Options: Informational
 Options: Profiling (Defaults shown in curly brackets {})
   -e <event>[@<howoften>], --event <event>[@<howoften>]
                       <event> may be a Linux system timer (CPUTIME and REALTIME),
-                      a specifier for monitoring GPU operations, software or hardware 
-                      counter events supported by Linux perf, hardware counter events 
+                      a specifier for monitoring GPU operations, software or hardware
+                      counter events supported by Linux perf, hardware counter events
                       supported by the PAPI library, and more. A complete list of
                       available events can be obtained by running 'hpcrun -L'. The '-e'
                       option may be given multiple times to profile several events at

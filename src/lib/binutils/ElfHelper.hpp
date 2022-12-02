@@ -49,7 +49,7 @@
 //
 // Purpose:
 //   Interface for a module that scans an elf file and returns a vector
-//   of sections 
+//   of sections
 //
 //***************************************************************************
 

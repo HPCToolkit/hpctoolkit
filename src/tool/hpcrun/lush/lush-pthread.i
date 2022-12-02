@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -114,11 +114,11 @@ typedef struct lushPtr_SyncObjData {
   bool isLocked;
 
   struct lushPtr_SyncObjData* next;
-  
+
 } lushPtr_SyncObjData_t;
 
 
-static inline void 
+static inline void
 lushPtr_SyncObjData_init(lushPtr_SyncObjData_t* x)
 {
   atomic_store_explicit(&x->idleness, 0, memory_order_relaxed);
@@ -131,11 +131,11 @@ lushPtr_SyncObjData_init(lushPtr_SyncObjData_t* x)
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 typedef struct lushPthr {
-  
+
   // -------------------------------------------------------
   // thread specific metrics
   // -------------------------------------------------------
@@ -173,10 +173,10 @@ typedef struct lushPthr {
 
   lushPtr_SyncObjData_t* freelstHead;
   lushPtr_SyncObjData_t* freelstTail;
-  
+
 } lushPthr_t;
-  
-  
+
+
 //***************************************************************************
 
 extern void* lushPthr_mem_beg; // memory begin
@@ -185,8 +185,8 @@ typedef _Atomic(uintptr_t) lushPthr_mem_ptr_t;
 extern lushPthr_mem_ptr_t lushPthr_mem_ptr; // current pointer
 
 
-static inline void* 
-lushPthr_malloc(size_t size) 
+static inline void*
+lushPthr_malloc(size_t size)
 {
   void* memEnd = (void*)atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
   if (memEnd < lushPthr_mem_end) {
@@ -194,7 +194,7 @@ lushPthr_malloc(size_t size)
   }
   return NULL;
 }
- 
+
 
 // **************************************************************************
 

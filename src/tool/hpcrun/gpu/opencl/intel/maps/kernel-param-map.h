@@ -62,7 +62,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct kernel_param_map_entry_t kernel_param_map_entry_t;
@@ -89,8 +89,8 @@ kernel_param_map_lookup
 kernel_param_map_entry_t*
 kernel_param_map_insert
 (
- uint64_t, 
- const void *, 
+ uint64_t,
+ const void *,
  size_t
 );
 
@@ -116,4 +116,3 @@ kernel_param_map_entry_kp_list_get
 );
 
 #endif  // kernel_param_map_h
-

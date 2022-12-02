@@ -45,9 +45,9 @@
 // File: elf-helper.h
 //
 // Purpose:
-//   interface to query ELF binary information and hide the details about 
+//   interface to query ELF binary information and hide the details about
 //   extended number
-//   
+//
 //***************************************************************************
 
 #ifndef ELF_HELPER_H
@@ -64,7 +64,7 @@ typedef struct elf_helper {
   Elf_Scn* symtab_section;
   Elf_Data *symtab_data;
   Elf_Scn* symtab_shndx_section;
-  Elf_Data *symtab_shndx_data;  
+  Elf_Data *symtab_shndx_data;
 } elf_helper_t;
 
 void

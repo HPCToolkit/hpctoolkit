@@ -54,7 +54,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct kernel_queue_map_entry_t kernel_queue_map_entry_t;
@@ -81,8 +81,8 @@ kernel_queue_map_lookup
 kernel_queue_map_entry_t*
 kernel_queue_map_insert
 (
- uint64_t, 
- uint64_t, 
+ uint64_t,
+ uint64_t,
  uint64_t
 );
 
@@ -108,4 +108,3 @@ kernel_queue_map_entry_qc_list_get
 );
 
 #endif  // kernel_queue_map_h
-

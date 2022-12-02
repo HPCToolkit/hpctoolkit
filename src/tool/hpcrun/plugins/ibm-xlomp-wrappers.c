@@ -3,7 +3,7 @@
 
 #ifdef HPCTOOLKIT_DEBUG
 #include <messages/messages.h>
-#else 
+#else
 #define TMSG(...)
 #endif
 
@@ -11,7 +11,7 @@
 
 
 /************************************************************
- * external declarations 
+ * external declarations
  ***********************************************************/
 
 extern void idle_metric_blame_shift_idle(void);
@@ -24,7 +24,7 @@ extern void idle_metric_register_blame_source(void);
 
 
 /************************************************************
- * forward declarations 
+ * forward declarations
  ***********************************************************/
 
 int __real_pthread_yield();
@@ -45,7 +45,7 @@ int __real__xlsmp_DynamicChunkCall(long a1, long a2, long a3, long a4,
  * private operations
  ***********************************************************/
 
-HPCRUN_CONSTRUCTOR(init_xlomp_plugin)(void) 
+HPCRUN_CONSTRUCTOR(init_xlomp_plugin)(void)
 {
   idle_metric_register_blame_source();
 }
@@ -103,7 +103,7 @@ __wrap__xlsmp_DynamicChunkCall(long a1, long a2, long a3, long a4,
 }
 
 
-int 
+int
 __wrap__xlsmpSyncWorkShareItemL2(long x, long y, long z, long other)
 {
    int ret;
@@ -116,7 +116,7 @@ __wrap__xlsmpSyncWorkShareItemL2(long x, long y, long z, long other)
 }
 
 
-int 
+int
 __wrap__xlsmpSyncRegionItemL2Fence(long x, long y, long z)
 {
    int ret;
@@ -129,27 +129,27 @@ __wrap__xlsmpSyncRegionItemL2Fence(long x, long y, long z)
 }
 
 
-int 
+int
 __wrap_pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m)
 {
    int ret;
    TMSG(IDLE, "enter cond");
    IDLE();
    ret = __real_pthread_cond_wait(c, m);
-   WORKING();	
+   WORKING();
    TMSG(IDLE, "exit cond");
    return ret;
 }
 
 
-int 
+int
 __wrap_pthread_yield()
 {
    int ret;
    TMSG(IDLE, "enter yield");
    IDLE();
    ret = __real_pthread_yield();
-   WORKING();	
+   WORKING();
    TMSG(IDLE, "exit yield");
    return ret;
 }

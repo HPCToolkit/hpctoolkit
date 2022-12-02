@@ -88,7 +88,7 @@ namespace TraceviewerServer
 	DataSocketStream::DataSocketStream(int _Port, bool Accept = true)
 	{
 		port = _Port;
-		
+
 		unopenedSocketFD = socket(PF_INET, SOCK_STREAM, 0);
 		if (unopenedSocketFD == -1)
 			cerr << "Could not create socket" << endl;
@@ -150,7 +150,7 @@ namespace TraceviewerServer
 			return port;
 		}
 	}
-	
+
 	DataSocketStream::~DataSocketStream()
 	{
 		fclose(file);

@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef binutils_BinUtils_hpp 
+#ifndef binutils_BinUtils_hpp
 #define binutils_BinUtils_hpp
 
 //************************* System Include Files ****************************

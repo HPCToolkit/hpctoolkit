@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -93,8 +93,8 @@ static void handle_any_dlerror();
 // LUSH Agents
 // **************************************************************************
 
-int 
-lush_agent__init(lush_agent_t* x, int id, const char* path, 
+int
+lush_agent__init(lush_agent_t* x, int id, const char* path,
 		 lush_agent_pool_t* pool)
 {
   x->id = id;
@@ -109,7 +109,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
 #define CALL_DLSYM(BASE, X, ID, HANDLE)	       \
   BASE->X[ID] = (X ## _fn_t)dlsym(HANDLE, #X); \
   handle_any_dlerror()
-  
+
   CALL_DLSYM(pool, LUSHI_init,         id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_fini,         id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_strerror,     id, x->dlhandle);
@@ -123,7 +123,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
 #undef CALL_DLSYM
 
   pool->LUSHI_init[x->id](0, NULL, id,
-			  (LUSHCB_malloc_fn_t)NULL, 
+			  (LUSHCB_malloc_fn_t)NULL,
 			  (LUSHCB_free_fn_t)NULL,
 			  (LUSHCB_step_fn_t)hpcrun_unw_step,
 			  LUSHCB_loadmap_find);
@@ -154,7 +154,7 @@ handle_any_dlerror()
   // Note: We assume dlsym() or something similar has just been called!
   char *error;
   if ((error = dlerror()) != NULL) {
-    fprintf(stderr, "%s\n", error); 
+    fprintf(stderr, "%s\n", error);
     exit(1);
   }
 }
@@ -164,7 +164,7 @@ handle_any_dlerror()
 // LUSH Agent Pool
 // **************************************************************************
 
-int 
+int
 lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
 {
   int num_agents = 1; // count the agents
@@ -175,7 +175,7 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
   // 1. Allocate tables first
 #define FN_TBL_ALLOC(BASE, FN, SZ) \
   BASE->FN = (FN ## _fn_t *) hpcrun_malloc(sizeof(FN ## _fn_t) * (SZ))
-  
+
   FN_TBL_ALLOC(x, LUSHI_init,            num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_fini,            num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_strerror,        num_agents + 1);
@@ -193,18 +193,18 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
   // FIXME: assumes only one agent at the moment
   int aid = 1;
   const char* apath = path;
-  lush_agent__init(&x->agent, aid, apath, x);  
+  lush_agent__init(&x->agent, aid, apath, x);
 
   return 0;
 }
 
 
-int 
+int
 lush_agent_pool__fini(lush_agent_pool_t* x)
 {
 #define FN_TBL_FREE(BASE, FN) \
   /* free(BASE->FN) */
-  
+
   FN_TBL_FREE(x, LUSHI_init);
   FN_TBL_FREE(x, LUSHI_fini);
   FN_TBL_FREE(x, LUSHI_strerror);
@@ -216,7 +216,7 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
   FN_TBL_FREE(x, LUSHI_do_metric);
 
 #undef FN_TBL_FREE
-  
+
   memset(x, 0, sizeof(*x));
 
   return 0;
@@ -227,12 +227,12 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
 // LUSH Unwinding Interface
 // **************************************************************************
 
-void 
-lush_init_unw(lush_cursor_t* cursor, 
+void
+lush_init_unw(lush_cursor_t* cursor,
 	      lush_agent_pool_t* apool, ucontext_t* context)
 {
   memset(cursor, 0, sizeof(*cursor));
-  
+
   cursor->apool = apool;
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ);
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
@@ -268,7 +268,7 @@ lush_step_bichord(lush_cursor_t* cursor)
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
-    if (pool->LUSHI_ismycode[aid]((void*) ip_unnorm)) { 
+    if (pool->LUSHI_ismycode[aid]((void*) ip_unnorm)) {
       ty = pool->LUSHI_step_bichord[aid](cursor);
       lush_cursor_set_aid_prev(cursor, aid);
       first_aid = aid;
@@ -296,7 +296,7 @@ lush_step_bichord(lush_cursor_t* cursor)
 }
 
 
-lush_step_t 
+lush_step_t
 lush_step_pnote(lush_cursor_t* cursor)
 {
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_END_PCHORD)) {
@@ -322,7 +322,7 @@ lush_step_pnote(lush_cursor_t* cursor)
   }
 
   ty = lush_forcestep_pnote(cursor);
-  
+
   // filter return type
   if (ty == LUSH_STEP_END_PROJ) {
     ty = LUSH_STEP_END_CHORD;
@@ -389,9 +389,9 @@ lush_step_pchord(lush_cursor_t* cursor)
       lush_forcestep_pnote(cursor);
     }
     lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_DONE_CHORD);
-      
+
     ty = lush_forcestep_pnote(cursor);
-    
+
     if (ty == LUSH_STEP_DONE_CHORDS || ty == LUSH_STEP_ERROR) {
       // we have reached the outermost frame of the stack (or an error epoch)
       lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONE_CHORD);
@@ -416,7 +416,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
   }
 
   lush_step_t ty = LUSH_STEP_NULL;
-  
+
   // Step cursor to next p-note, using the appropriate agent
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = lush_cursor_get_aid(cursor);

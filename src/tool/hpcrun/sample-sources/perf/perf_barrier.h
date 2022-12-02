@@ -42,7 +42,7 @@
 // ******************************************************* EndRiceCopyright *
 
 /***
- *** The code in this file is mainly taken from 
+ *** The code in this file is mainly taken from
  *** https://github.com/deater/perf_event_tests/blob/master/include/perf_barrier.h
  ***/
 
@@ -114,4 +114,3 @@
 #error Need to define rmb for this architecture!
 #error See the kernel source directory: tools/perf/perf.h file
 #endif
-

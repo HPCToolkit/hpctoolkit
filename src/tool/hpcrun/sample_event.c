@@ -128,7 +128,7 @@ record_partial_unwind(
 
   if (bt_last < bt_beg)
     bt_last = bt_beg;
-  
+
   bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
 
   backtrace_info_t bt;
@@ -178,7 +178,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   hpcrun_sample_val_init(&ret);
 
   // if monitor_block_shootdown() returns a non-zero value
-  // a thread is waiting to exit. if so, we can skip 
+  // a thread is waiting to exit. if so, we can skip
   // recording an asynchronous sample; however, synchronous
   // unwinds can't be skipped because the caller is
   // expecting a call path.
@@ -398,4 +398,3 @@ hpcrun_gen_thread_ctxt(void* context)
 
   return node;
 }
-

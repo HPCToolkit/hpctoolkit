@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#ifdef DEPRECATION_WARNINGS 
+#ifdef DEPRECATION_WARNINGS
 # ifdef __cplusplus
 # define DEPRECATED_51 [[deprecated("as of 5.1")]]
 # else

@@ -46,12 +46,12 @@
 
 //
 // Validate a return address obtained from an hpcrun_unw_step:
-//   Most useful after a troll operation, but may still be used for 
+//   Most useful after a troll operation, but may still be used for
 //   QC on all unwinds
 //
 
 //***************************************************************************
-// system include files 
+// system include files
 //***************************************************************************
 
 #include <stdbool.h>
@@ -59,7 +59,7 @@
 
 
 //***************************************************************************
-// local include files 
+// local include files
 //***************************************************************************
 
 #include "x86-decoder.h"
@@ -77,7 +77,7 @@
 
 
 //****************************************************************************
-// local types 
+// local types
 //****************************************************************************
 
 typedef struct xed_decode_t {
@@ -88,11 +88,11 @@ typedef struct xed_decode_t {
 
 
 //****************************************************************************
-// local operations 
+// local operations
 //****************************************************************************
 
 // this function provides a convenient single breakpoint location for stopping
-// when an invalid unwind is found. 
+// when an invalid unwind is found.
 static validation_status
 status_is_wrong()
 {
@@ -222,9 +222,9 @@ contains_tail_call_to_f(void *callee, void *target_fn)
     case XED_ICLASS_JL:
     case XED_ICLASS_JLE:
     case XED_ICLASS_JNB:
-    case XED_ICLASS_JNBE: 
-    case XED_ICLASS_JNL: 
-    case XED_ICLASS_JNLE: 
+    case XED_ICLASS_JNBE:
+    case XED_ICLASS_JNL:
+    case XED_ICLASS_JNLE:
     case XED_ICLASS_JNO:
     case XED_ICLASS_JNP:
     case XED_ICLASS_JNS:
@@ -235,7 +235,7 @@ contains_tail_call_to_f(void *callee, void *target_fn)
     case XED_ICLASS_JS:
     case XED_ICLASS_JZ:
       // jumps
-    case XED_ICLASS_JMP: 
+    case XED_ICLASS_JMP:
     case XED_ICLASS_JMP_FAR:
       {
 	void *target = x86_get_branch_target(ins, xptr);
@@ -287,7 +287,7 @@ x86_plt_branch_target(void *ins, xed_decoded_inst_t *xptr)
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
   xed_operand_type_enum_t op0_type = xed_operand_type(op0);
 
-  if (op0_name == XED_OPERAND_MEM0 && 
+  if (op0_name == XED_OPERAND_MEM0 &&
       op0_type == XED_OPERAND_TYPE_IMM_CONST) {
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
     xed_reg_enum_t reg = xed_operand_values_get_base_reg(vals,0);
@@ -303,7 +303,7 @@ x86_plt_branch_target(void *ins, xed_decoded_inst_t *xptr)
 }
 
 
-static 
+static
 validation_status
 confirm_plt_call(void *addr, void *callee)
 {
@@ -352,7 +352,7 @@ return_addr_valid(void *addr, unwindr_info_t *unwr_info)
 }
 
 //****************************************************************************
-// interface operations 
+// interface operations
 //****************************************************************************
 validation_status
 deep_validate_return_addr(void* addr, void* generic)

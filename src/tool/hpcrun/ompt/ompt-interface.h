@@ -84,7 +84,7 @@
 // hpcrun wrappers for ompt interfaces
 //------------------------------------------------------------------------------
 
-int 
+int
 hpcrun_ompt_get_parallel_info
 (
  int ancestor_level,
@@ -93,43 +93,43 @@ hpcrun_ompt_get_parallel_info
 );
 
 
-uint64_t 
+uint64_t
 hpcrun_ompt_get_unique_id
 (
  void
 );
 
 
-ompt_data_t * 
+ompt_data_t *
 hpcrun_ompt_get_task_data
 (
  int level
 );
 
 
-uint64_t 
+uint64_t
 hpcrun_ompt_outermost_parallel_id
 (
  void
 );
 
 
-uint64_t 
+uint64_t
 hpcrun_ompt_get_parallel_info_id
 (
  int ancestor_level
 );
 
 
-void 
+void
 hpcrun_ompt_get_parallel_info_id_pointer
 (
- int ancestor_level, 
+ int ancestor_level,
  uint64_t *region_id
 );
 
 
-ompt_state_t 
+ompt_state_t
 hpcrun_ompt_get_state
 (
  uint64_t *wait_id
@@ -143,7 +143,7 @@ hpcrun_ompt_get_task_frame
 );
 
 
-int 
+int
 hpcrun_ompt_get_thread_num
 (
  int level
@@ -151,7 +151,7 @@ hpcrun_ompt_get_thread_num
 
 
 // returns 1 if the current state represents a form of overhead
-int 
+int
 hpcrun_omp_state_is_overhead
 (
  void
@@ -165,28 +165,28 @@ hpcrun_ompt_get_idle_frame
 );
 
 
-uint64_t 
+uint64_t
 hpcrun_ompt_get_blame_target
 (
  void
 );
 
 
-int 
+int
 hpcrun_ompt_elide_frames
 (
  void
 );
 
 
-void 
+void
 ompt_mutex_blame_shift_request
 (
  void
 );
 
 
-void 
+void
 ompt_idle_blame_shift_request
 (
  void
@@ -203,7 +203,7 @@ ompt_task_full_context_p
 // allocate and free notifications
 //-----------------------------------------------------------------------------
 
-ompt_notification_t * 
+ompt_notification_t *
 hpcrun_ompt_notification_alloc
 (
  void
@@ -211,7 +211,7 @@ hpcrun_ompt_notification_alloc
 
 
 // free adds entity to freelist
-void 
+void
 hpcrun_ompt_notification_free
 (
  ompt_notification_t *notification
@@ -222,21 +222,21 @@ hpcrun_ompt_notification_free
 // allocate and free thread's regions
 //-----------------------------------------------------------------------------
 
-ompt_trl_el_t * 
+ompt_trl_el_t *
 hpcrun_ompt_trl_el_alloc
 (
  void
 );
 
 
-void 
+void
 hpcrun_ompt_trl_el_free
 (
  ompt_trl_el_t *thread_region
 );
 
 
-ompt_region_data_t * 
+ompt_region_data_t *
 hpcrun_ompt_get_region_data
 (
  int ancestor_level
@@ -247,14 +247,14 @@ hpcrun_ompt_get_region_data
 // access to region data
 //-----------------------------------------------------------------------------
 
-ompt_region_data_t * 
+ompt_region_data_t *
 hpcrun_ompt_get_current_region_data
 (
  void
 );
 
 
-ompt_region_data_t * 
+ompt_region_data_t *
 hpcrun_ompt_get_parent_region_data
 (
  void
@@ -262,25 +262,25 @@ hpcrun_ompt_get_parent_region_data
 
 
 //-----------------------------------------------------------------------------
-// freelist manipulation 
+// freelist manipulation
 //-----------------------------------------------------------------------------
 
-ompt_base_t * 
+ompt_base_t *
 freelist_remove_first
 (
  ompt_base_t **head
 );
 
 
-void 
+void
 freelist_add_first
 (
- ompt_base_t *new, 
+ ompt_base_t *new,
  ompt_base_t **head
 );
 
 
-ompt_set_result_t 
+ompt_set_result_t
 ompt_set_callback_internal
 (
   ompt_callbacks_t event,

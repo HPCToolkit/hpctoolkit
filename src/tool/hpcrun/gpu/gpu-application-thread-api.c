@@ -91,12 +91,12 @@ gpu_application_thread_correlation_callback
   int zero_metric_id = 0; // nothing to see here
 
   ucontext_t uc;
-  getcontext(&uc); // current context, where unwind will begin 
+  getcontext(&uc); // current context, where unwind will begin
 
   // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
+  hpcrun_safe_enter();
 
-  cct_node_t *node = 
+  cct_node_t *node =
     hpcrun_sample_callpath(&uc, zero_metric_id,
 			   zero_metric_incr, 0, 1, NULL).sample_node;
 
@@ -104,8 +104,8 @@ gpu_application_thread_correlation_callback
 
   cct_addr_t *node_addr = hpcrun_cct_addr(node);
 
-  // elide unwanted context from GPU calling context: frames from 
-  // libhpcrun and any from GPU load modules registered in the 
+  // elide unwanted context from GPU calling context: frames from
+  // libhpcrun and any from GPU load modules registered in the
   // module ignore map (e.g. libcupti and libcuda, which are stripped)
   static __thread uint16_t libhpcrun_id = 0;
 

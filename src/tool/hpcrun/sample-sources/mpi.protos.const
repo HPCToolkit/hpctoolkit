@@ -1,7 +1,7 @@
 @
 @
 @  MPI specification file for wrapper generator.
-@  Original version from mpiP 
+@  Original version from mpiP
 @
 
 int MPI_Abort ( MPI_Comm comm, int errorcode )
@@ -423,5 +423,3 @@ int MPI_Waitall ( int count, MPI_Request *array_of_requests, MPI_Status *array_o
 int MPI_Waitany ( int count, MPI_Request *array_of_requests, int *index, MPI_Status *status )
 
 int MPI_Waitsome ( int incount, MPI_Request *array_of_requests, int *count, int *array_of_indices, MPI_Status *array_of_statuses )
-
-

@@ -384,7 +384,7 @@ MONITOR_EXT_WRAP_NAME(pnga_create)(Integer type, Integer ndim,
 #endif
 
   ga_setDataIdx(*g_a, idx);
-  
+
   return ret;
 }
 
@@ -408,7 +408,7 @@ MONITOR_EXT_WRAP_NAME(pnga_create_handle)()
 #endif
 
   ga_setDataIdx(g_a, idx);
-  
+
   return g_a;
 }
 
@@ -439,7 +439,7 @@ void
 MONITOR_EXT_WRAP_NAME(pnga_get)(Integer g_a, Integer* lo, Integer* hi, void* buf, Integer* ld)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_get, pnga_get);
-  
+
   def_isSampled_blocking();
 
   real_pnga_get(g_a, lo, hi, buf, ld);
@@ -552,7 +552,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbwait)(Integer *nbhandle)
 
   if (isSampled) {
     double latency = timeElapsed(timeBeg);
-    doSample(G_A_NULL, 
+    doSample(G_A_NULL,
 	     doMetric(hpcrun_ga_metricId_latency, latency, r),
 	     do0(), do0(), do0());
   }
@@ -573,7 +573,7 @@ MONITOR_EXT_WRAP_NAME(pnga_brdcst)(Integer type, void *buf, Integer len, Integer
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_brdcst, pnga_brdcst);
 
   def_isSampled_blocking();
-  
+
   real_pnga_brdcst(type, buf, len, originator);
 
   doSample_collective_blocking();

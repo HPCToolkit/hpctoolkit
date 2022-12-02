@@ -47,9 +47,9 @@
 //   cuda-device-map.h
 //
 // Purpose:
-//   interface definitions for map that enables one to look up device 
+//   interface definitions for map that enables one to look up device
 //   properties given a device id
-//  
+//
 //***************************************************************************
 
 #ifndef cuda_device_map_h
@@ -74,7 +74,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct cuda_device_map_entry_t cuda_device_map_entry_t;

@@ -71,4 +71,3 @@ gpu_monitoring_thread_activities_ready_with_idx
 {
   gpu_correlation_channel_set_consume_with_idx(idx);
 }
-

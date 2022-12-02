@@ -45,4 +45,3 @@ install: all
 
 clean:
 	rm -f $(TEMP_FILES) $(HTML_FILES) $(TEXT_FILES)
-

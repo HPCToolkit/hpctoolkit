@@ -32,7 +32,7 @@ cuda_ncontexts_reset(void)
   fetch_and_store(&ncontexts, 0);
 }
 
-uint64_t 
+uint64_t
 cuda_ncontexts_incr(void)
 {
   atomic_add_i64(&ncontexts, 1L);

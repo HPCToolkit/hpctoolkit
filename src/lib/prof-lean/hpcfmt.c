@@ -95,7 +95,7 @@ hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc)
   if (!buf) {
     return HPCFMT_ERR;
   }
-  
+
   for (int i = 0; i < len; i++) {
     int c = fgetc(infs);
     if (c == EOF) {
@@ -116,7 +116,7 @@ hpcfmt_str_fwrite(const char* str, FILE* outfs)
   uint32_t len = (str) ? strlen(str) : 0;
 
   hpcfmt_int4_fwrite(len, outfs);
-  
+
   for (int i = 0; i < len; i++) {
     int c = fputc(str[i], outfs);
     if (c == EOF) {
@@ -170,12 +170,12 @@ hpcfmt_nvpair_fwrite(hpcfmt_nvpair_t* nvp, FILE* fs)
   int ret;
 
   ret = hpcfmt_str_fwrite(nvp->name, fs);
-  if (ret != HPCFMT_OK) { 
+  if (ret != HPCFMT_OK) {
     return HPCFMT_ERR;
   }
-  
+
   ret = hpcfmt_str_fwrite(nvp->val, fs);
-  if (ret != HPCFMT_OK) { 
+  if (ret != HPCFMT_OK) {
     return HPCFMT_ERR;
   }
 
@@ -191,7 +191,7 @@ hpcfmt_nvpairs_vfwrite(FILE* out, va_list args)
 
   uint32_t len = 0;
 
-  for (char* arg = va_arg(_tmp, char*); arg != NULL; 
+  for (char* arg = va_arg(_tmp, char*); arg != NULL;
        arg = va_arg(_tmp, char*)) {
     arg = va_arg(_tmp, char*);
     len++;
@@ -200,7 +200,7 @@ hpcfmt_nvpairs_vfwrite(FILE* out, va_list args)
 
   hpcfmt_int4_fwrite(len, out);
 
-  for (char* arg = va_arg(args, char*); arg != NULL; 
+  for (char* arg = va_arg(args, char*); arg != NULL;
        arg = va_arg(args, char*)) {
     hpcfmt_str_fwrite(arg, out); // write NAME
     arg = va_arg(args, char*);
@@ -229,7 +229,7 @@ hpcfmt_nvpair_fprint(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre)
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 int

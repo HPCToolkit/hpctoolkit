@@ -98,14 +98,14 @@
 #undef typed_splay_node
 #define typed_splay_node(correlation_id) gpu_event_id_map_entry_t
 
-typedef struct typed_splay_node(event_id) { 
+typedef struct typed_splay_node(event_id) {
   struct gpu_event_id_map_entry_t *left;
   struct gpu_event_id_map_entry_t *right;
   uint64_t event_id;
 
   uint32_t context_id;
   uint32_t stream_id;
-} typed_splay_node(event_id); 
+} typed_splay_node(event_id);
 
 
 //******************************************************************************
@@ -156,7 +156,7 @@ gpu_event_id_map_lookup
 {
   gpu_event_id_map_entry_t *result = st_lookup(&map_root, event_id);
 
-  TMSG(DEFER_CTXT, "event map lookup: event=0x%lx (record %p)", 
+  TMSG(DEFER_CTXT, "event map lookup: event=0x%lx (record %p)",
        event_id, result);
 
   return result;

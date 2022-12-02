@@ -70,7 +70,7 @@ define([HPC_MPICC_LIST], [mpicc   \
 # HPC_DEF_CHECK_MPICXX()
 #---------------------------------------------------------------
 
-# HPC_check_mpicxx(): 
+# HPC_check_mpicxx():
 #   args: ($1: compiler)
 #   return 0 for success, 1 otherwise
 
@@ -144,7 +144,7 @@ AC_DEFUN([HPC_PROG_MPICXX],
    # Determine final value of MPICXX
    if test "${ac_cv_path_MPICXX}" != "no" ; then
      MPICXX=${ac_cv_path_MPICXX}
-   else 
+   else
      MPICXX=
    fi
 
@@ -153,12 +153,12 @@ AC_DEFUN([HPC_PROG_MPICXX],
 
 
 
-#AC_CACHE_CHECK([for MPI C compiler], [ac_cv_path_M4], 
-#  [AC_PATH_PROGS_FEATURE_CHECK([M4], [m4 gm4], 
-#    [[m4out=‘echo ’changequote([,])indir([divnum])’ | $ac_path_M4‘ 
-#      test "x$m4out" = x0 \ 
-#      && ac_cv_path_M4=$ac_path_M4 ac_path_M4_found=:]], 
+#AC_CACHE_CHECK([for MPI C compiler], [ac_cv_path_M4],
+#  [AC_PATH_PROGS_FEATURE_CHECK([M4], [m4 gm4],
+#    [[m4out=‘echo ’changequote([,])indir([divnum])’ | $ac_path_M4‘
+#      test "x$m4out" = x0 \
+#      && ac_cv_path_M4=$ac_path_M4 ac_path_M4_found=:]],
 #    [AC_MSG_ERROR([could not find m4 that supports indir])])
-# ]) 
+# ])
 #
 #AC_SUBST([M4], [$ac_cv_path_M4])

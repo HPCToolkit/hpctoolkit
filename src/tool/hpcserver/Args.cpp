@@ -230,11 +230,11 @@ Args::parse(int argc, const char* const argv[])
     // Parse the command line
     // -------------------------------------------------------
     parser.parse(optArgs, argc, argv);
-    
+
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
-    
+
     // Special options that should be checked first
     if (parser.isOpt("help")) {
       printUsage(std::cerr);
@@ -307,11 +307,11 @@ Args::setHPCHome()
 	 << endl;
     exit(1);
   }
-   
+
   // chop of trailing slashes
   int len = strlen(home);
   if (home[len-1] == '/') home[--len] = 0;
-   
+
   DIR *fp = opendir(home);
   if (fp == NULL) {
     cerr << "Error: " << home << " is not a directory" << endl;
@@ -321,4 +321,3 @@ Args::setHPCHome()
   hpcHome = home;
 }
 #endif
-

@@ -125,9 +125,9 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
   for (auto fit = funcList.begin(); fit != funcList.end(); ++fit)
   {
     ParseAPI::Function * func = *fit;
-    
+
     if (only_func) {
-      // if only_func is a non-NULL character string, only produce 
+      // if only_func is a non-NULL character string, only produce
       // output for this function
       if (strcmp(only_func, func->name().c_str()) != 0) {
 	// name doesn't match only_func

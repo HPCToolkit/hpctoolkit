@@ -83,7 +83,7 @@ uint8_t* md5_transform(struct md5_context* ctx, const void* data, uintmax_t size
     do {
         aa = a;
         bb = b;
-        cc = c; 
+        cc = c;
         dd = d;
 
         STEP(F, a, b, c, d, SET(0), 0xd76aa478, 7);

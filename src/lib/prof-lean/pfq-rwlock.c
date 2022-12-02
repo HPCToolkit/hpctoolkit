@@ -86,7 +86,7 @@
 
 //------------------------------------------------------------------
 // define a macro to point to the low-order byte of an integer type
-// in a way that will work on both big-endian and little-endian 
+// in a way that will work on both big-endian and little-endian
 // processors
 //------------------------------------------------------------------
 #ifdef HOST_BIG_ENDIAN
@@ -167,7 +167,7 @@ pfq_rwlock_write_lock(pfq_rwlock_t *l, pfq_rwlock_node_t *me)
   // set writer_blocking_readers to block any readers in the next batch
   //--------------------------------------------------------------------
   uint32_t phase = atomic_load_explicit(&l->rin, memory_order_relaxed) & PHASE_BIT;
-  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release); 
+  atomic_store_explicit(&l->writer_blocking_readers[phase].bit, true, memory_order_release);
 
   //----------------------------------------------------------------------------
   // store to writer_blocking_headers bit must complete before incrementing rin

@@ -51,10 +51,10 @@
  * stack for a value that is an address in some function (and therefore is
  * a valid return address). If such a value is found, then the address (eg the
  * stack pointer) is returned.
- * 
+ *
  * Valid return address is determined by using the enclosing_function_bounds
  * routine.
- * 
+ *
  * NOTE: This is a secondary heuristic: when the normal binary analysis interval
  * builder does not yield a useful interval, the unwinder can use this stack trolling
  * method.
@@ -120,7 +120,7 @@ stack_troll(void **start_sp, unsigned int *ra_pos, validate_addr_fn_t validate_a
     }
     sp++;
   }
-  
+
   TMSG(TROLL,"(sp=%p): failed using limit %d", start_sp, TROLL_LIMIT);
   *ra_pos = -1;
   return TROLL_INVALID; // error

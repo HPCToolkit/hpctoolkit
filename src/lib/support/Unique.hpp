@@ -123,8 +123,8 @@ class Unique
 
       Unique(const Unique& mo);
         // Copy constructor (explicitly not allowed).
-        // has not implemetationm since compiler should complain 
-        // about inaccessability 
+        // has not implemetationm since compiler should complain
+        // about inaccessability
       Unique& operator=(const Unique& mo);
         // Assignment operator (explicitly not allowed).
         // has not implemetationm, ...

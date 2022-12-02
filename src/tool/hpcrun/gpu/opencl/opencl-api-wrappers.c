@@ -295,4 +295,3 @@ clFinish
 {
 	return hpcrun_clFinish(command_queue);
 }
-

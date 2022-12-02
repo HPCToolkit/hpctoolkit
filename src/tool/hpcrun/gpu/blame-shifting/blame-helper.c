@@ -12,7 +12,7 @@
 //******************************************************************************
 
 #include <hpcrun/memory/hpcrun-malloc.h>    // hpcrun_malloc
-#include <lib/prof-lean/splay-uint64.h>     // splay_visit_t 
+#include <lib/prof-lean/splay-uint64.h>     // splay_visit_t
 #include <lib/prof-lean/stdatomic.h>        // atomic_fetch_add
 
 #include "blame-kernel-map.h"               // kernel_node_t
@@ -86,9 +86,9 @@ node_alloc_helper
  Node **free_list
 )
 {
-  Node *first = *free_list; 
+  Node *first = *free_list;
 
-  if (first) { 
+  if (first) {
     *free_list = NEXT(first);
   } else {
     first = (Node *) hpcrun_malloc_safe(sizeof(Node));
@@ -102,8 +102,8 @@ node_alloc_helper
 static void
 node_free_helper
 (
- Node **free_list, 
- Node *node 
+ Node **free_list,
+ Node *node
 )
 {
   NEXT(node) = *free_list;
@@ -260,7 +260,7 @@ quickSort
 
 
 //******************************************************************************
-// private functions 
+// private functions
 //******************************************************************************
 
 void __attribute__((unused))
@@ -370,7 +370,7 @@ free_all_sortable_nodes
 
 
 //******************************************************************************
-// interface functions 
+// interface functions
 //******************************************************************************
 
 // sync start and end are in nanoseconds
@@ -395,4 +395,3 @@ calculate_blame_for_active_kernels
   distribute_blame_to_kernels(head);
   free_all_sortable_nodes(head);
 }
-

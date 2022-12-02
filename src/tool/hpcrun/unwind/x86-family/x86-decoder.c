@@ -53,19 +53,19 @@
 
 
 /******************************************************************************
- * global variables 
+ * global variables
  *****************************************************************************/
 xed_control_t x86_decoder_settings;
 
 
 
 /******************************************************************************
- * local variables 
+ * local variables
  *****************************************************************************/
 
 static xed_state_t xed_machine_state =
 #if defined (HOST_CPU_x86_64)
- { XED_MACHINE_MODE_LONG_64,  
+ { XED_MACHINE_MODE_LONG_64,
    XED_ADDRESS_WIDTH_64b };
 #else
  { XED_MACHINE_MODE_LONG_COMPAT_32,
@@ -74,7 +74,7 @@ static xed_state_t xed_machine_state =
 
 
 /******************************************************************************
- * interface operations 
+ * interface operations
  *****************************************************************************/
 
 void x86_family_decoder_init()

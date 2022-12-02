@@ -84,7 +84,7 @@ x86_get_branch_target(void *ins, xed_decoded_inst_t *xptr)
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
   xed_operand_type_enum_t op0_type = xed_operand_type(op0);
 
-  if (op0_name == XED_OPERAND_RELBR && 
+  if (op0_name == XED_OPERAND_RELBR &&
       op0_type == XED_OPERAND_TYPE_IMM_CONST) {
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
@@ -95,4 +95,3 @@ x86_get_branch_target(void *ins, xed_decoded_inst_t *xptr)
   }
   return NULL;
 }
-

@@ -107,7 +107,7 @@ typedef struct typed_splay_node(correlation_id) {
   uint64_t kernel_name_id; // key using kernel name hash
 
   uint32_t module_id;
-} typed_splay_node(correlation_id); 
+} typed_splay_node(correlation_id);
 
 
 
@@ -187,7 +187,7 @@ opencl_kernel_loadmap_map_insert
     entry->kernel_name_id = kernel_name_id;
     entry->module_id = module_id;
   } else {
-    opencl_kernel_loadmap_map_entry_t *entry = 
+    opencl_kernel_loadmap_map_entry_t *entry =
       opencl_kernel_loadmap_map_entry_new(kernel_name_id, module_id);
 
     st_insert(&map_root, entry);

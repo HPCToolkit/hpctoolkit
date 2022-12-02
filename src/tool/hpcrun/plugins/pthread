@@ -1,7 +1,7 @@
 #
 # The pthread (==LOCKWAIT) sample source as an hpclink plugin.
 #
-#   hpclink --plugin pthread gcc ... 
+#   hpclink --plugin pthread gcc ...
 #
 
 hpclink_files='../libhpcrun_pthread_wrap.a'

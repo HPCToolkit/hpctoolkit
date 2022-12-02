@@ -219,20 +219,20 @@ static std::string getRegNameString(iga::RegName reg)
 {
   switch (reg)
   {
-    case iga::RegName::GRF_R:       return  "GRF"; 
-    case iga::RegName::ARF_NULL:    return  "AREG_NULL"; 
+    case iga::RegName::GRF_R:       return  "GRF";
+    case iga::RegName::ARF_NULL:    return  "AREG_NULL";
     case iga::RegName::ARF_A:       return  "AREG_A";
-    case iga::RegName::ARF_ACC:     return  "AREG_ACC";  
+    case iga::RegName::ARF_ACC:     return  "AREG_ACC";
     case iga::RegName::ARF_CE:      return  "AREG_MASK0";
     case iga::RegName::ARF_MSG:     return  "AREG_MSG";
-    case iga::RegName::ARF_DBG:     return  "AREG_DBG"; 
-    case iga::RegName::ARF_SR:      return  "AREG_SR0"; 
-    case iga::RegName::ARF_CR:      return  "AREG_CR0"; 
-    case iga::RegName::ARF_N:       return  "AREG_N"; 
-    case iga::RegName::ARF_IP:      return  "AREG_IP";   
-    case iga::RegName::ARF_F:       return  "AREG_F";  
-    case iga::RegName::ARF_TM:      return  "AREG_TM0";  
-    case iga::RegName::ARF_TDR:     return  "AREG_TDR0"; 
+    case iga::RegName::ARF_DBG:     return  "AREG_DBG";
+    case iga::RegName::ARF_SR:      return  "AREG_SR0";
+    case iga::RegName::ARF_CR:      return  "AREG_CR0";
+    case iga::RegName::ARF_N:       return  "AREG_N";
+    case iga::RegName::ARF_IP:      return  "AREG_IP";
+    case iga::RegName::ARF_F:       return  "AREG_F";
+    case iga::RegName::ARF_TM:      return  "AREG_TM0";
+    case iga::RegName::ARF_TDR:     return  "AREG_TDR0";
     case iga::RegName::ARF_SP:      return  "AREG_SP";
     case iga::RegName::ARF_MME:     return  "AREG_MME";
     case iga::RegName::ARF_FC:      return  "AREG_FC";
@@ -248,7 +248,7 @@ static std::string getIGATypeString(iga::Type type)
     switch (type)
     {
     case iga::Type::UB:   return "Type_UB";
-    case iga::Type::B:    return "Type_B"; 
+    case iga::Type::B:    return "Type_B";
     case iga::Type::UW:   return "Type_UW";
     case iga::Type::W:    return "Type_W";
     case iga::Type::UD:   return "Type_UD";
@@ -256,7 +256,7 @@ static std::string getIGATypeString(iga::Type type)
     case iga::Type::UQ:   return "Type_UQ";
     case iga::Type::Q:    return "Type_Q";
     case iga::Type::HF:   return "Type_HF";
-    case iga::Type::F:    return "Type_F"; 
+    case iga::Type::F:    return "Type_F";
     case iga::Type::DF:   return "Type_DF";
     case iga::Type::UV:   return "Type_UV";
     case iga::Type::V:    return "Type_V";
@@ -274,18 +274,18 @@ static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
     switch (predCtrl)
     {
       case iga::PredCtrl::SEQ:        return "PRED_DEFAULT";
-      case iga::PredCtrl::ANY2H:      return "PRED_ANY2H";        
+      case iga::PredCtrl::ANY2H:      return "PRED_ANY2H";
       case iga::PredCtrl::ANY4H:      return "PRED_ANY4H";
-      case iga::PredCtrl::ANY8H:      return "PRED_ANY8H";       
-      case iga::PredCtrl::ANY16H:     return "PRED_ANY16H";       
-      case iga::PredCtrl::ANY32H:     return "PRED_ANY32H";       
-      case iga::PredCtrl::ALL2H:      return "PRED_ALL2H";        
-      case iga::PredCtrl::ALL4H:      return "PRED_ALL4H";        
-      case iga::PredCtrl::ALL8H:      return "PRED_ALL8H";       
-      case iga::PredCtrl::ALL16H:     return "PRED_ALL16H";       
-      case iga::PredCtrl::ALL32H:     return "PRED_ALL32H";       
-      case iga::PredCtrl::ANYV:       return "PRED_ANYV";         
-      case iga::PredCtrl::ALLV:       return "PRED_ALLV";         
+      case iga::PredCtrl::ANY8H:      return "PRED_ANY8H";
+      case iga::PredCtrl::ANY16H:     return "PRED_ANY16H";
+      case iga::PredCtrl::ANY32H:     return "PRED_ANY32H";
+      case iga::PredCtrl::ALL2H:      return "PRED_ALL2H";
+      case iga::PredCtrl::ALL4H:      return "PRED_ALL4H";
+      case iga::PredCtrl::ALL8H:      return "PRED_ALL8H";
+      case iga::PredCtrl::ALL16H:     return "PRED_ALL16H";
+      case iga::PredCtrl::ALL32H:     return "PRED_ALL32H";
+      case iga::PredCtrl::ANYV:       return "PRED_ANYV";
+      case iga::PredCtrl::ALLV:       return "PRED_ALLV";
       default:   //iga::PredCtrl::NONE;
         //assert(false && "illegal predicate control");
         return "PRED_NONE";
@@ -297,7 +297,7 @@ static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
 static int
 getElementSize
 (
- iga::Type dataType 
+ iga::Type dataType
 )
 {
   // values for NF and INVALID not added
@@ -316,7 +316,7 @@ getElementSize
 }
 
 
-static void 
+static void
 addCustomFunctionObject
 (
  const std::string &func_obj_name,
@@ -329,12 +329,12 @@ addCustomFunctionObject
 
   unsigned long reg_size = reg->getMemSize();
   Symbol *custom_symbol = new Symbol(
-      func_obj_name, 
+      func_obj_name,
       SymtabAPI::Symbol::ST_FUNCTION, // SymbolType
       Symbol::SL_LOCAL, //SymbolLinkage
       SymtabAPI::Symbol::SV_DEFAULT, //SymbolVisibility
       0, //Offset,
-      NULL, //Module *module 
+      NULL, //Module *module
       reg, //Region *r
       reg_size, //unsigned s
       false, //bool d
@@ -463,15 +463,15 @@ getIntelInstructionStat
   }
 
   // barriers are executed using send instruction. example:
-  // [324] (W)      send (1|M0)              null     r22     0x3         0x2000004  //  wr:1+?, rd:0,  barrier 
+  // [324] (W)      send (1|M0)              null     r22     0x3         0x2000004  //  wr:1+?, rd:0,  barrier
   // one can only have memory coherency and synchronization inside a 'work group' or 'thread group', depending on the nomenclature.
   // This instruction makes this thread wait until all threads in its group have entered the barrier.
   // AFAIK, all threads in a work-group share a single barrier
   // unlike CUDA, there is a single barrier register in intel instructions.
-  // So is fine to send a vector of 1 entry when an instruction is a barrier and 
+  // So is fine to send a vector of 1 entry when an instruction is a barrier and
   // empty vector when the instruction is not a barrier?
 
-  // commenting this section since synchronization is not factored in backward slicing 
+  // commenting this section since synchronization is not factored in backward slicing
 #if 0
   bool instContainsBarrier = false;
   if (opcode == iga::Op::SEND || opcode == iga::Op::SENDC || opcode == iga::Op::SENDS || opcode == iga::Op::SENDSC) {
@@ -491,7 +491,7 @@ getIntelInstructionStat
   bool invPred = kv.isInversePredicate(offset);
   // int32_t flagReg = kv.getFlagReg(offset);
   // int32_t flagSubReg = kv.getFlagSubReg(offset);
-  
+
   GPUParse::InstructionStat::PredicateFlag predFlag;
   if (pred == iga::PredCtrl::NONE) {
     predFlag = GPUParse::InstructionStat::PredicateFlag::PREDICATE_NONE;
@@ -503,7 +503,7 @@ getIntelInstructionStat
 
 #if DEBUG
   std::cout << "\npred: " << getIGAPredCtrlString(pred) << ",invPred: " << invPred
-    << ", flag register: " << flagReg << ", flag subregister: " << flagSubReg; 
+    << ", flag register: " << flagReg << ", flag subregister: " << flagSubReg;
 #endif
 
   auto *inst_stat = new GPUParse::InstructionStat(op, offset, predFlag, dsts, srcs);
@@ -654,9 +654,9 @@ sliceIntelInstructions
           auto *inst_stat = inst->inst_stat;
           inst_stat_map[inst->offset] = inst_stat;
           inst_block_map[inst->offset] = block;
-        }    
-      }    
-    }    
+        }
+      }
+    }
   }
   std::vector<std::pair<Dyninst::ParseAPI::GPUBlock *, Dyninst::ParseAPI::Function *>> block_vec;
   for (auto dyn_func : func_set) {
@@ -802,7 +802,7 @@ parseIntelCFG
 
   // Construct basic blocks
   while (offset < text_section_size) {
-    auto *block = new GPUParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id)); 
+    auto *block = new GPUParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id));
     block_id++;
 
     function.blocks.push_back(block);
@@ -819,7 +819,7 @@ parseIntelCFG
     block->insts.push_back(std::move(inst));
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
-      offset += size;  
+      offset += size;
       size = kv.getInstSize(offset);
       if (size == 0) {
         // this is a weird edge case, what to do?
@@ -845,7 +845,7 @@ parseIntelCFG
     }
     offset += size;
   }
-  
+
   using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
 
   // Construct targets
@@ -875,7 +875,7 @@ parseIntelCFG
 
     for (size_t j = 0; j < jump_targets_count; j++) {
       auto *target_block = block_offset_map.at(jump_targets[j]);
-      
+
       TargetType type = TargetType::COND_TAKEN;
       if (inst->is_call) {
         // XXX(Keren): since we parse each instruction individually,
@@ -937,11 +937,11 @@ readIntelCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
- Dyninst::SymtabAPI::Symtab *the_symtab, 
+ Dyninst::SymtabAPI::Symtab *the_symtab,
  bool cfg_wanted,
  bool du_graph_wanted,
  int jobs,
- Dyninst::ParseAPI::CodeSource **code_src, 
+ Dyninst::ParseAPI::CodeSource **code_src,
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
@@ -949,7 +949,7 @@ readIntelCFG
   // in its symbol table. Without a function symbol in the symbol table, Dyninst will not
   // associate line map entries with addresses in the kernel. To cope with this defect of
   // binaries for Intel GPU kernels, we add a function symbol for the kernel to its Dyninst
-  // symbol table.	
+  // symbol table.
   auto function_name = elfFile->getGPUKernelName();
   addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
 
@@ -968,7 +968,7 @@ readIntelCFG
     std::vector<GPUParse::Function *> functions = {&function};
 
     CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-    *code_src = new GPUCodeSource(functions, the_symtab); 
+    *code_src = new GPUCodeSource(functions, the_symtab);
     *code_obj = new CodeObject(*code_src, cfg_fact);
     (*code_obj)->parse();
 

@@ -69,7 +69,7 @@ call_is_push_next_addr_idiom(xed_decoded_inst_t* xptr, interval_arg_t* iarg)
   void* ins = iarg->ins;
   void* call_addr = x86_get_branch_target(ins, xptr);
   void* next_addr = nextInsn(iarg, xptr);
-  
+
   return (call_addr == next_addr);
 }
 
@@ -87,7 +87,7 @@ process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     hw_tmp->uwi = iarg->current;
     hw_tmp->state = HW_INITIALIZED;
   }
-  
+
   //
   // Treat call instruction that looks like:
   //           call NEXT
@@ -145,7 +145,7 @@ call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *in
     return current;
   }
 
-  if (iclass_eq(xptr, XED_ICLASS_JMP) || 
+  if (iclass_eq(xptr, XED_ICLASS_JMP) ||
       iclass_eq(xptr, XED_ICLASS_JMP_FAR)) {
     if (xed_decoded_inst_number_of_memory_operands(xptr) == 0) {
       const xed_immdis_t& disp = xptr->get_disp();
@@ -157,7 +157,7 @@ call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *in
     }
   }
   if (jmp_target == NULL) {
-    // jump of proper type not recognized 
+    // jump of proper type not recognized
     return current;
   }
   // FIXME: possibly test to ensure jmp_target is within routine
@@ -170,7 +170,7 @@ call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *in
   if (xed_err != XED_ERROR_NONE) {
     return current;
   }
-  
+
   if (iclass_eq(xptr, XED_ICLASS_SUB) || iclass_eq(xptr, XED_ICLASS_ADD)) {
     const xed_operand_t* op0 = xed_inst_operand(xi,0);
     if ((xed_operand_name(op0) == XED_OPERAND_REG)
@@ -195,4 +195,3 @@ call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *in
   return current;
 }
 #endif
-

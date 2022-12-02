@@ -97,7 +97,7 @@ hpcrun_nanosleep
   struct timespec time_wait = {.tv_sec=0, .tv_nsec=nsec};
   struct timespec time_rem = {.tv_sec=0, .tv_nsec=0};
   int32_t ret;
-  
+
   for(;;){
     ret = nanosleep(&time_wait, &time_rem);
     if (! (ret < 0 && errno == EINTR)){

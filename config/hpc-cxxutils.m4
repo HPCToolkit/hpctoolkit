@@ -102,7 +102,7 @@ AC_DEFUN([HPC_ENSURE_DEFINED_CFLAGS],
 define([HPC_isCompilerMakingStaticBinaries],
        [MY_isCompilerMakingStaticBinaries $@])dnl
 
-# HPC_is_statically_linked(): 
+# HPC_is_statically_linked():
 #   args: ($@: compiler + flags)
 #   return 0 for yes, 1 otherwise
 
@@ -162,7 +162,7 @@ AC_DEFUN([HPC_DEF_IS_BINARY_STATICALLY_LINKED],
   [HPC_isBinaryStaticallyLinked()
    {
      fnm=$[]1
-  
+
      if ( ldd "$fnm" | ${GREP} ".so" >/dev/null 2>&1 ); then
        return 1 # false
      fi
@@ -250,7 +250,7 @@ AC_DEFUN([HPC_DEF_CXXCMP],
    {
      mycxx=$[]1
      shift
-  
+
      while test $[]# -ge 1 ; do
        if ( echo "${mycxx}" | ${GREP} "$[]1\$" >/dev/null 2>&1 ); then
          return 0
@@ -307,4 +307,3 @@ AC_DEFUN([HPC_DEF_CHECK_CXX_PAPI_LINK],
        return 1
      fi
    }])dnl
-

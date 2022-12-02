@@ -55,7 +55,7 @@ cupti_occupancy_analyze
  uint32_t *thread_registers,
  uint32_t *block_threads,
  uint32_t *block_shared_memory
-); 
+);
 
 
 void
@@ -69,4 +69,3 @@ cupti_sm_efficiency_analyze
 
 
 #endif
-

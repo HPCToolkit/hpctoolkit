@@ -218,4 +218,3 @@ cuda_device_map_count
 {
   return st_count(map_root);
 }
-

@@ -248,11 +248,11 @@ Args::parse(int argc, const char* const argv[])
     // Parse the command line
     // -------------------------------------------------------
     parser.parse(optArgs, argc, argv);
-    
+
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
-    
+
     // Special options that should be checked first
     if (parser.isOpt("debug")) {
       int dbg = 1;
@@ -366,14 +366,14 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("replace-path")) {
       string arg = parser.getOptArg("replace-path");
-      
+
       std::vector<std::string> replacePaths;
       StrUtil::tokenize_str(arg, CLP_SEPARATOR, replacePaths);
-      
+
       for (unsigned int i = 0; i < replacePaths.size(); ++i) {
 	int occurancesOfEquals =
 	  Analysis::Util::parseReplacePath(replacePaths[i]);
-	
+
 	if (occurancesOfEquals > 1) {
 	  ARG_ERROR("Too many occurances of \'=\'; make sure to escape any \'=\' in your paths");
 	}

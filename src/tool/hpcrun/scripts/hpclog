@@ -7,7 +7,7 @@ function dolog (){
     SF=/tmp/$$.s
     LF=/tmp/$$.l
     DF=/tmp/$$.d
-    echo % 
+    echo %
     echo % assessing call stack unwinding failures in log file $fn
     echo %
     sed -n '
@@ -33,7 +33,7 @@ function dolog (){
 function _help (){
     fname=$(basename $0)
     cat <<EOF
-This script analyzes hpcrun log files and produces a summary of dropped samples, and trolling events. 
+This script analyzes hpcrun log files and produces a summary of dropped samples, and trolling events.
 The summary is written to stdout.
 
 To use this script:

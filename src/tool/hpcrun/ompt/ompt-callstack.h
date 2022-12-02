@@ -49,7 +49,7 @@
 
 
 //******************************************************************************
-// system includes  
+// system includes
 //******************************************************************************
 
 #include <stdint.h>
@@ -57,7 +57,7 @@
 
 
 //******************************************************************************
-// local includes  
+// local includes
 //******************************************************************************
 
 #include <hpcrun/cct/cct.h>
@@ -67,7 +67,7 @@
 
 
 //******************************************************************************
-// interface functions  
+// interface functions
 //******************************************************************************
 
 void ompt_callstack_init
@@ -79,7 +79,7 @@ void ompt_callstack_init
 cct_node_t *
 ompt_region_context_eager
 (
- uint64_t region_id, 
+ uint64_t region_id,
  ompt_scope_endpoint_t se_type,
  int adjust_callsite
 );
@@ -88,7 +88,7 @@ ompt_region_context_eager
 cct_node_t *
 ompt_parallel_begin_context
 (
- ompt_id_t region_id, 
+ ompt_id_t region_id,
  int adjust_callsite
 );
 
@@ -100,7 +100,7 @@ ompt_region_root
 );
 
 
-void 
+void
 ompt_record_thread_type
 (
  ompt_thread_t type

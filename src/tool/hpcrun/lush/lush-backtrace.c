@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -105,7 +105,7 @@ bool is_lush_agent = false;
 
 cct_node_t*
 lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-		   int metricId, 
+		   int metricId,
                    hpcrun_metricVal_t metricIncr,
 		   int skipInner, int isSync)
 {
@@ -124,7 +124,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   if (metricId == lush_agents->metric_time) {
     lush_agentid_t aid = 1; // TODO: multiple agents
-    if (lush_agents->LUSHI_do_metric[aid](metricIncr.i, 
+    if (lush_agents->LUSHI_do_metric[aid](metricIncr.i,
 					  &doMetric, &doMetricIdleness,
 					  &incrMetric, &incrMetricIdleness)) {
       //aidMetricIdleness = aid; // case 1
@@ -146,7 +146,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   lush_cursor_t cursor;
   lush_init_unw(&cursor, lush_agents, context);
-  
+
   // FIXME: unwind/common/backtrace.c
   thread_data_t* td = hpcrun_get_thread_data();
   td->btbuf_cur   = td->btbuf_beg;  // innermost
@@ -159,13 +159,13 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   unsigned int unw_len = 0;
   lush_step_t ty = LUSH_STEP_NULL;
 
-  while ( (ty = lush_step_bichord(&cursor)) != LUSH_STEP_END_PROJ 
+  while ( (ty = lush_step_bichord(&cursor)) != LUSH_STEP_END_PROJ
 	  && ty != LUSH_STEP_ERROR ) {
     lush_agentid_t aid = lush_cursor_get_aid(&cursor);
     lush_assoc_t as = lush_cursor_get_assoc(&cursor);
 
     TMSG(LUNW, "Chord: aid:%d assoc:%d", aid, as);
-  
+
     // FIXME: short circuit unwind if we hit the 'active return'
 
     hpcrun_ensure_btbuf_avail();
@@ -180,7 +180,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
       //unw_word_t ip = lush_cursor_get_ip(&cursor);
       ip_normalized_t ip_norm = lush_cursor_get_ip_norm(&cursor);
-      TMSG(LUNW, "IP:  lm-id = %d and lm-ip = %p", ip_norm.lm_id, 
+      TMSG(LUNW, "IP:  lm-id = %d and lm-ip = %p", ip_norm.lm_id,
 	   ip_norm.lm_ip);
       td->btbuf_cur->ip_norm = ip_norm;
 
@@ -199,7 +199,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
       lush_lip_t* lip = lush_cursor_get_lip(&cursor); // ephemeral
       TMSG(LUNW, "LIP: %p", *((void**)lip));
-      
+
       if (lush_assoc_is_a_to_1(as)) {
 	if (!lip_persistent) {
 	  lip_persistent = lush_lip_clone(lip);
@@ -237,7 +237,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     hpcrun_bt_dump(td->btbuf_cur, "LUSH");
   }
 
-  frame_t* bt_beg = td->btbuf_beg;      // innermost, inclusive 
+  frame_t* bt_beg = td->btbuf_beg;      // innermost, inclusive
   frame_t* bt_end = td->btbuf_cur - 1; // outermost, inclusive
   cct_node_t* cct_cursor = cct->tree_root;
 
@@ -264,7 +264,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
 
 // returns the end of the chord (exclusive)
-static frame_t* 
+static frame_t*
 canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
 		   unsigned int pchord_len, unsigned int lchord_len)
 {
@@ -288,12 +288,12 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
     lip = chord_beg->lip;
   }
   // else: default is fine for a-to-0 and 1-to-1
-  
+
   unsigned int path_len = chord_len;
   for (frame_t* x = chord_beg; x < chord_end; ++x, --path_len) {
     lush_assoc_info__set_assoc(x->as_info, as);
     lush_assoc_info__set_path_len(x->as_info, path_len);
-    
+
     if (x >= pchord_end) {
       // INVARIANT: as must be 1-to-M
       x->ip_norm = ip_norm;
@@ -303,7 +303,7 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
       x->lip = lip;
     }
   }
-  
+
   return chord_end;
 }
 

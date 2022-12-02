@@ -49,7 +49,7 @@
 //
 // Purpose:
 //   implementation of a function that scans an elf file and returns a vector
-//   of sections 
+//   of sections
 //
 //***************************************************************************
 
@@ -88,7 +88,7 @@
 
 
 //******************************************************************************
-// interface functions 
+// interface functions
 //******************************************************************************
 
 bool
@@ -111,7 +111,7 @@ ElfFile::open
     return false;
   }
 
-  GElf_Ehdr ehdr_v; 
+  GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (!ehdr) {
     memPtr = 0;
@@ -144,7 +144,7 @@ ElfFile::open
 }
 
 
-ElfFile::~ElfFile() 
+ElfFile::~ElfFile()
 {
   if (origPtr != memPtr && origPtr != 0) free(origPtr);
   elf_end(elf);

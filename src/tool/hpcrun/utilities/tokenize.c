@@ -101,8 +101,8 @@ next_tok(void)
 int
 hpcrun_extract_threshold
 (
- const char *input_string, 
- long *threshold, 
+ const char *input_string,
+ long *threshold,
  long default_value
 )
 {
@@ -112,13 +112,13 @@ hpcrun_extract_threshold
     *threshold = default_value;
     type = THRESH_DEFAULT;
   } else {
-    if (*input_string == PREFIX_FREQUENCY) { 
+    if (*input_string == PREFIX_FREQUENCY) {
       input_string++; // skip the PREFIX_FREQUENCY character
       type = THRESH_FREQ;
     } else {
       type = THRESH_VALUE;
     }
-    
+
     char *endptr;
     long value = strtol(input_string, &endptr, 10);
     if (value == 0) {
@@ -129,7 +129,7 @@ hpcrun_extract_threshold
       if (endptr == input_string) {
 	value = default_value;
 	if (type == THRESH_FREQ) {
-	  // FIXME: Laksono: we have some choices 
+	  // FIXME: Laksono: we have some choices
 	  //
 	  //   Should the type be changed to THRESH_VALUE here?
 	  //
@@ -138,21 +138,21 @@ hpcrun_extract_threshold
 	}
       }
     }
-    
+
     *threshold = value;
   }
-    
+
   return type;
 }
 
 // event option syntax is event_name @ [f] threshold
 //   if the f indicator exist, the number is the frequency, otherwise
 //   it's a period number
-// Returns: 
+// Returns:
 //   THRESH_FREQ     if event has explicit frequency
 //   THRESH_VALUE    if event has explicit threshold,
 //   THRESH_DEFAULT  if using default.
-// 
+//
 int
 hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def)
 {
@@ -180,7 +180,7 @@ hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def
   strncpy(ev, in, len);
   ev[len] = '\0';
   *th = def;
-  
+
   return THRESH_DEFAULT;
 }
 

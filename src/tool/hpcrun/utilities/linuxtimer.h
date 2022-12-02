@@ -61,7 +61,7 @@
 // type declarations
 //*****************************************************************************
 
-typedef struct { 
+typedef struct {
   struct sigevent sigev;
   timer_t timerid;
   clockid_t clock;

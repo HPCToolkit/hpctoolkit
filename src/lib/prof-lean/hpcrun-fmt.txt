@@ -5,7 +5,7 @@ hpcrun binary data format (see "Abbreviation notes" below)
 =============================================================================
 
 fmt-hdr {epoch}*
-  
+
 ------------------------------------------------------------
 
 fmt-hdr = fmt-magicno-version{24b} [nv-pair]*

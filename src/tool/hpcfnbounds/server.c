@@ -113,11 +113,11 @@ static struct syserv_fnbounds_info fnb_info;
 static int jmpbuf_ok = 0;
 static sigjmp_buf jmpbuf;
 
-// 
+//
 // Although init_server only returns 0 for now (errors don't interrupt)
 // we could return 1 in case of a problem
 //
-uint64_t 
+uint64_t
 init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
 {
   struct syserv_mesg mesg;
@@ -473,4 +473,3 @@ signal_handler_init(void)
     err(1, "sigaction failed on SIGPIPE");
   }
 }
-

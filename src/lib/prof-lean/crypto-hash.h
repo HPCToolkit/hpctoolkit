@@ -51,7 +51,7 @@
 //
 // Purpose:
 //   compute a cryptographic hash of a sequence of bytes. this is used
-//   to name information presented to hpcrun in memory (e.g. a GPU binary) 
+//   to name information presented to hpcrun in memory (e.g. a GPU binary)
 //   that needs to be saved for post-mortem analysis.
 //
 //***************************************************************************
@@ -75,22 +75,22 @@ extern "C" {
 
 
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_compute_hash
 //
 // arguments:
-//   input:        
+//   input:
 //     pointer to a vector of bytes that will be crytographically hashed
-//   input_length:        
+//   input_length:
 //     length in bytes of the input
-//   hash:        
+//   hash:
 //     pointer to a vector of bytes of length >= crypto_hash_length()
 //
 // return value:
 //   0: success
 //   non-zero: failure
 //-----------------------------------------------------------------------------
-int 
+int
 crypto_compute_hash
 (
   const void *input,
@@ -101,16 +101,16 @@ crypto_compute_hash
 
 
 //-----------------------------------------------------------------------------
-// function: 
+// function:
 //   crypto_hash_to_hexstring
 //
 // arguments:
-//   hash:        
+//   hash:
 //     pointer to crytographic hash computed by cryto_hash_compute
-//   hash_string: 
-//     pointer to character buffer where string equivalent of the hash code 
+//   hash_string:
+//     pointer to character buffer where string equivalent of the hash code
 //     will be written
-//   hash_string_length: 
+//   hash_string_length:
 //     length of the hash string must be > 2 * crypto_hash_length()
 //
 // return value:

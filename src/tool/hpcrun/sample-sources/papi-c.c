@@ -115,7 +115,7 @@
 #include "papi-c.h"
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
 static int  event_is_derived(int ev_code);
@@ -144,7 +144,7 @@ static uint64_t hpcrun_cycles_cmd_period = 0;
 
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 static int
@@ -162,7 +162,7 @@ get_event_index(sample_source_t *self, int event_code)
 //
 // fetch a given component's event set. Create one if need be
 //
-int 
+int
 get_component_event_set(papi_source_info_t* psi, int cidx)
 {
    if (cidx < 0 || cidx >= psi->num_components) {
@@ -316,8 +316,8 @@ METHOD_FN(start)
   int cidx;
   TMSG(PAPI, "start");
 
-  if (papi_unavail) { 
-    return; 
+  if (papi_unavail) {
+    return;
   }
 
   thread_data_t* td = hpcrun_get_thread_data();
@@ -349,7 +349,7 @@ METHOD_FN(start)
 	  EMSG("PAPI returned EISRUN for event set %d component %d", ci->eventSet, cidx);
 	}
 	else if (ret != PAPI_OK) {
-	  EMSG("PAPI_start failed with %s (%d) for event set %d component %d ", 
+	  EMSG("PAPI_start failed with %s (%d) for event set %d component %d ",
 	       PAPI_strerror(ret), ret, ci->eventSet, cidx);
 	  hpcrun_ssfail_start("PAPI");
 	}
@@ -357,7 +357,7 @@ METHOD_FN(start)
 	if (ci->some_derived) {
 	  ret = PAPI_read(ci->eventSet, ci->prev_values);
 	  if (ret != PAPI_OK) {
-	    EMSG("PAPI_read of event set %d for component %d failed with %s (%d)", 
+	    EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
 		 ci->eventSet, cidx, PAPI_strerror(ret), ret);
 	  }
 	}
@@ -453,14 +453,14 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   ev_str = strip_papi_prefix(ev_str);
-  
+
   TMSG(PAPI, "supports event");
   if (papi_unavail) { return false; }
 
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
   }
-  
+
   char evtmp[1024];
   int ec;
   long th;
@@ -468,7 +468,7 @@ METHOD_FN(supports_event, const char *ev_str)
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -622,7 +622,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   if (papi_unavail) { return; }
 
   int num_components = PAPI_num_components();
-  int ss_info_size = sizeof(papi_source_info_t) + 
+  int ss_info_size = sizeof(papi_source_info_t) +
     num_components * sizeof(papi_component_info_t);
 
   TMSG(PAPI, "Num components = %d", num_components);
@@ -635,7 +635,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   psi->num_components = num_components;
   for (i = 0; i < num_components; i++) {
     papi_component_info_t *ci = &(psi->component_info[i]);
-    ci->inUse = false;  
+    ci->inUse = false;
     ci->eventSet = PAPI_NULL;
     ci->state = INIT;
     ci->some_derived = 0;
@@ -658,15 +658,15 @@ METHOD_FN(gen_event_set, int lush_metrics)
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     int cidx = PAPI_get_event_component(evcode);
-    
+
     ret = component_add_event(psi, cidx, evcode);
     psi->component_info[cidx].some_derived |= event_is_derived(evcode);
     TMSG(PAPI, "Added event code %x to component %d", evcode, cidx);
     {
       char buffer[PAPI_MAX_STR_LEN];
       PAPI_event_code_to_name(evcode, buffer);
-      TMSG(PAPI, 
-	   "PAPI_add_event(eventSet=%%d, event_code=%x (event name %s)) component=%d", 
+      TMSG(PAPI,
+	   "PAPI_add_event(eventSet=%%d, event_code=%x (event name %s)) component=%d",
 	   /* eventSet, */ evcode, buffer, cidx);
     }
     if (ret != PAPI_OK) {
@@ -689,7 +689,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
     long thresh = self->evl.events[i].thresh;
     int cidx = PAPI_get_event_component(evcode);
     int eventSet = get_component_event_set(psi, cidx);
-    
+
     // **** No overflow for synchronous events ****
     // **** Use component-specific setup for synchronous events ****
     if (component_uses_sync_samples(cidx)) {
@@ -703,7 +703,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
     if (! derived[i]) {
       ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
 			  papi_event_handler);
-      TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d) = %d", 
+      TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d) = %d",
 	   eventSet, evcode, thresh, ret);
       if (ret != PAPI_OK) {
 	EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
@@ -760,7 +760,7 @@ METHOD_FN(display_events)
     printf("\n\n");
   }
 
-  num_components = PAPI_num_components(); 
+  num_components = PAPI_num_components();
   for(cidx = 0; cidx < num_components; cidx++) {
     const PAPI_component_info_t* component = PAPI_get_component_info(cidx);
     int cmp_event_count = 0;
@@ -772,7 +772,7 @@ METHOD_FN(display_events)
     printf("\n");
     printf("Name  Description\n");
     printf("===========================================================================\n");
-    
+
     ev = 0 | PAPI_NATIVE_MASK;
     ret = PAPI_enum_cmp_event(&ev, PAPI_ENUM_FIRST, cidx);
     while (ret == PAPI_OK) {
@@ -805,7 +805,7 @@ METHOD_FN(display_events)
 #include "ss_obj.h"
 
 // **************************************************************************
-// * public operations 
+// * public operations
 // **************************************************************************
 void
 hpcrun_disable_papi_cuda(void)
@@ -814,7 +814,7 @@ hpcrun_disable_papi_cuda(void)
 }
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 // Returns: 1 if the event code is a derived event.
@@ -865,7 +865,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   sigset_t oldset;
   hpcrun_block_shootdown_signal(&oldset);
-  
+
   sample_source_t *self = &obj_name();
   long long values[MAX_EVENTS];
   int my_events[MAX_EVENTS];
@@ -912,11 +912,11 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     }
   }
 
-  ret = PAPI_get_overflow_event_index(event_set, ovec, my_events, 
+  ret = PAPI_get_overflow_event_index(event_set, ovec, my_events,
 				      &my_event_count);
   if (ret != PAPI_OK) {
     TMSG(PAPI_SAMPLE, "papi_event_handler: event set %d ovec %ld "
-	 "get_overflow_event_index return code = %d ==> %s", 
+	 "get_overflow_event_index return code = %d ==> %s",
 	 event_set, ovec, ret, PAPI_strerror(ret));
 #ifdef DEBUG_PAPI_OVERFLOW
     ret = PAPI_list_events(event_set, my_event_codes, &my_event_codes_count);
@@ -925,7 +925,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 	   "Return code = %d ==> %s", ret, PAPI_strerror(ret));
     } else {
       for (i = 0; i < my_event_codes_count; i++) {
-        TMSG(PAPI_SAMPLE, "event set %d event code %d = %x\n", 
+        TMSG(PAPI_SAMPLE, "event set %d event code %d = %x\n",
 	     event_set, i, my_event_codes[i]);
       }
     }
@@ -944,7 +944,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     // This means lush's 'time' metric should be *last*
 
     TMSG(PAPI_SAMPLE,"handling papi overflow event: "
-	"event set %d event index = %d event code = 0x%x", 
+	"event set %d event index = %d event code = 0x%x",
 	event_set, my_events[i], my_event_codes[my_events[i]]);
 
     int event_index = get_event_index(self, my_event_codes[my_events[i]]);
@@ -970,7 +970,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       .sampling_period = hpcrun_cycles_cmd_period,
       .is_time_based_metric = time_based_metric
     };
-    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id,
 			(hpcrun_metricVal_t) {.i=metricIncrement},
 			0/*skipInner*/, 0/*isSync*/, &info);
 

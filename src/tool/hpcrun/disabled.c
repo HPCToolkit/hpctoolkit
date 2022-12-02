@@ -45,13 +45,13 @@
 // ******************************************************* EndRiceCopyright *
 
 //*****************************************************************************
-// File: disabled.c 
+// File: disabled.c
 //
 // Description:
 //   interface to support disabling hpcrun and checking for disabled status.
 //
 // History:
-//   19 July 2009 - John Mellor-Crummey - created 
+//   19 July 2009 - John Mellor-Crummey - created
 //
 //*****************************************************************************
 
@@ -76,14 +76,14 @@ static bool hpcrun_is_disabled = false;
 // interface operations
 //*****************************************************************************
 
-bool 
+bool
 hpcrun_get_disabled(void)
 {
   return hpcrun_is_disabled;
 }
 
 
-void 
+void
 hpcrun_set_disabled(void)
 {
   hpcrun_is_disabled = true;

@@ -110,7 +110,7 @@ basename(const char* fName)
     size_t in = path.find_last_of("/");
     if (in != path.npos && path.length() > 1)
       return path.substr(in + 1);
-    
+
     return path;
   }
 #endif
@@ -193,20 +193,20 @@ isDir(const char* path)
 int
 countChar(const char* path, char c)
 {
-  int srcFd = open(path, O_RDONLY); 
+  int srcFd = open(path, O_RDONLY);
   if (srcFd < 0) {
-    return -1; 
-  } 
+    return -1;
+  }
   int count = 0;
-  char buf[256]; 
-  ssize_t nRead; 
+  char buf[256];
+  ssize_t nRead;
   while ((nRead = read(srcFd, buf, 256)) > 0) {
     for (int i = 0; i < nRead; i++) {
-      if (buf[i] == c) count++; 
+      if (buf[i] == c) count++;
     }
   }
-  return count; 
-} 
+  return count;
+}
 
 } // end of FileUtil namespace
 
@@ -234,7 +234,7 @@ copy(const char* dst, ...)
 {
   va_list srcFnmList;
   va_start(srcFnmList, dst);
-  
+
   DIAG_MsgIf(0, "FileUtil::copy: ... -> " << dst);
 
   int dstFd = open(dst, O_WRONLY | O_CREAT | O_TRUNC,
@@ -250,7 +250,7 @@ copy(const char* dst, ...)
   while ( (srcFnm = va_arg(srcFnmList, char*)) ) {
     int srcFd = open(srcFnm, O_RDONLY);
     if ((srcFd < 0) || (dstFd < 0)) {
-      errorMsg += (string("unable to open '") + srcFnm + "' (" 
+      errorMsg += (string("unable to open '") + srcFnm + "' ("
 		   + strerror(errno) + ")");
     }
     else {
@@ -263,7 +263,7 @@ copy(const char* dst, ...)
   close(dstFd);
 
   if (!errorMsg.empty()) {
-    DIAG_Msg(1, "Unable to copy file into hpctoolkit database: " << 
+    DIAG_Msg(1, "Unable to copy file into hpctoolkit database: " <<
 	      errorMsg);
   }
 }
@@ -281,7 +281,7 @@ move(const char* dst, const char* src)
 
 int
 remove(const char* file)
-{ 
+{
   return unlink(file);
 }
 
@@ -331,7 +331,7 @@ mkdir(const char* dir)
     if (isAbsPath) {
       x = "/" + x;
     }
-    
+
     if (isDir(x)) {
       break; // FIXME: double check: what if this is a symlink?
     }
@@ -400,7 +400,7 @@ mkdirUnique(const char* dirnm)
 	  break;
 	}
       }
-      
+
       if (is_done) {
 	DIAG_Msg(1, "Created directory: " << dirnm_new);
       }
@@ -412,7 +412,7 @@ mkdirUnique(const char* dirnm)
       DIAG_Die("Could not create database directory " << dirnm);
     }
   }
-  
+
   return make_pair(dirnm_new, is_done);
 }
 
@@ -426,7 +426,7 @@ tmpname()
   // unfortunately no way to interface this with the ofstream class constructor
   // which requires a filename. thus, a hack is born ...
   // John Mellor-Crummey 5/7/2003
-  
+
   // eraxxon: GNU is right that 'tmpnam' can be dangerous, but
   // 'mkstemp' is not strictly part of C++! We could create an
   // interface to 'mkstemp' within a C file, but this is getting
@@ -435,7 +435,7 @@ tmpname()
 #ifdef __GNUC__
   static char tmpfilename[MAXPATHLEN];
 
-  // creating a unique temp name with the new mkstemp interface now 
+  // creating a unique temp name with the new mkstemp interface now
   // requires opening, closing, and deleting a file when all we want
   // is the filename. sigh ...
   strcpy(tmpfilename,"/tmp/hpcviewtmpXXXXXX");
@@ -444,10 +444,9 @@ tmpname()
 
   return tmpfilename;
 #else
-  return tmpnam(NULL); 
+  return tmpnam(NULL);
 #endif
 }
 
 
 } // end of FileUtil namespace
-

@@ -79,7 +79,7 @@ gpu_monitoring_trace_sample_frequency_set
 );
 
 
-uint32_t 
+uint32_t
 gpu_monitoring_trace_sample_frequency_get
 (
  void
@@ -88,4 +88,3 @@ gpu_monitoring_trace_sample_frequency_get
 
 
 #endif
-

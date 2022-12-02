@@ -102,7 +102,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "ss-errno.h"
- 
+
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -188,7 +188,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
   int64_t counter, threshold;
   int ev, k;
 
-  
+
 
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample()) {
@@ -300,7 +300,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     code = self->evl.events[k].event;
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
-    metric_id = 
+    metric_id =
       hpcrun_set_new_metric_info_and_period(upc_kind, strdup(name),
         MetricFlags_ValFmt_Int, threshold, metric_property_none);
     self->evl.events[k].metric_id = metric_id;

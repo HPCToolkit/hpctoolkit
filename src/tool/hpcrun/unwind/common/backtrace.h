@@ -51,13 +51,13 @@
 // file: backtrace.h
 //
 // purpose:
-//     an interface for performing stack unwinding 
+//     an interface for performing stack unwinding
 //
 //***************************************************************************
 
 
 //***************************************************************************
-// system include files 
+// system include files
 //***************************************************************************
 
 #include <stddef.h>
@@ -66,7 +66,7 @@
 #include <ucontext.h>
 
 //***************************************************************************
-// local include files 
+// local include files
 //***************************************************************************
 
 #include <hpcrun/utilities/ip-normalized.h>
@@ -102,7 +102,7 @@ typedef void (*bt_mut_fn)(backtrace_t* bt, bt_fn_arg arg);
 
 bool hpcrun_backtrace_std(backtrace_t* bt, ucontext_t* context);
 
-frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, 
+frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
 			    int skip);
 
 void hpcrun_bt_dump(frame_t* unwind, const char* tag);

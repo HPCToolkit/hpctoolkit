@@ -84,7 +84,7 @@ typedef struct unwind_interval_t unwind_interval;
 
 
 /*************************************************************************************
- * type declarations 
+ * type declarations
  ************************************************************************************/
 
 typedef bitree_uwi_t unwind_interval;

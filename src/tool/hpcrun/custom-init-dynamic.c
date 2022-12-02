@@ -52,7 +52,7 @@
 //
 // The canonical name for the shared object is "hpcrun-custom.so". At the moment, this
 // file must be found in the same directory as the one in which hpcrun is invoked.
-// 
+//
 //
 
 // *********************************************

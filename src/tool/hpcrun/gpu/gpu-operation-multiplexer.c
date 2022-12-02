@@ -101,7 +101,7 @@ gpu_operation_record
 )
 {
   int current_operation_channels_count;
-  
+
   hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, HPCRUN_NO_TRACE, true);
 
   while (!atomic_load(&stop_operation_flag)){
@@ -111,7 +111,7 @@ gpu_operation_record
 
   current_operation_channels_count = atomic_load(&operation_channels_count);
   gpu_operation_channel_set_process(current_operation_channels_count);
-  
+
   // even if this is not normal exit, gpu-trace-fini will behave as if it is a normal exit
   gpu_trace_fini(NULL, MONITOR_EXIT_NORMAL);
   atomic_store(&gpu_trace_finished, true);

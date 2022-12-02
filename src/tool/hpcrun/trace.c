@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //*********************************************************************
-// global includes 
+// global includes
 //*********************************************************************
 
 #include <stdio.h>
@@ -55,7 +55,7 @@
 
 
 //*********************************************************************
-// local includes 
+// local includes
 //*********************************************************************
 
 #include <include/hpctoolkit-config.h>
@@ -95,7 +95,7 @@
 
 
 //*********************************************************************
-// forward declarations 
+// forward declarations
 //*********************************************************************
 
 static void hpcrun_trace_file_validate(int valid, char *op);
@@ -103,7 +103,7 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
 
 
 //*********************************************************************
-// local variables 
+// local variables
 //*********************************************************************
 
 static int tracing = 0;
@@ -139,7 +139,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd, hpcrun_trace_type_t type)
   // With fractional sampling, if this process is inactive, then don't
   // open an output file, not even /dev/null.
   if (tracing && hpcrun_sample_prob_active()) {
-	
+
     TMSG(TRACE, "Hit active portion");
     int fd, ret;
 
@@ -180,7 +180,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd, hpcrun_trace_type_t type)
       assert(false && "Invalid trace type!");
       // TODO: hpcrun_terminate()
     }
-    
+
     ret = hpctrace_fmt_hdr_outbuf(flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
@@ -274,12 +274,12 @@ hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int
     if (cptd->trace_min_time_us == 0) {
         cptd->trace_min_time_us = nanotime;
     }
-    
+
     // TODO: should we need this check???
     if(cptd->trace_max_time_us < nanotime) {
         cptd->trace_max_time_us = nanotime;
     }
-    
+
     if(cptd->trace_last_time > nanotime) {
       cptd->trace_is_ordered = false;
     }
@@ -298,20 +298,20 @@ hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int
 #else
     trace_datum.comp = nanotime;
 #endif
-    
+
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, true);
 #else
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
-    
+
 #if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
 #else
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
 #endif
-    
+
     int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
 }

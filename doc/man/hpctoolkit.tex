@@ -55,7 +55,7 @@ It has been designed around the following principles:
 \item \textbf{Support multiple performance measures to prevent myopic interpretation.}
 \item \textbf{Display user-defined derived performance metrics for effective analysis.}
 \item \textbf{Take a top down approach to performance analysis.}
-\item \textbf{Use hierarchical aggregation to mitigate approximate attribution.} 
+\item \textbf{Use hierarchical aggregation to mitigate approximate attribution.}
 \item \textbf{Ensure that measurement and analysis can scale to very large programs and executions.}
 
 \end{itemize}
@@ -70,19 +70,19 @@ in papers on the HPCToolkit website at \HTMLhref{http://hpctoolkit.org}{hpctoolk
 
 A typical performance analysis session consists of:
 \begin{enumerate}
-\item \textbf{Measuring execution costs.}  
+\item \textbf{Measuring execution costs.}
 \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} uses statistical sampling to collect with low overhead and high accuracy
 a set of \emph{call path profiles},
 i.e. measurements of hardware resource consumption (costs) together with the call paths at which consumption occurred.
 For statically linked applications \HTMLhref{hpclink.html}{\Cmd{hpclink}{1}} serves the same purpose.
 
-\item \textbf{Analyzing source code structure.} 
+\item \textbf{Analyzing source code structure.}
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} discovers static program structure such as procedures and loop nests
 from binary code in the application's executable and the shared libraries and compiled GPU binaries.
 It takes into account optimizing compiler transformations such as restructuring of procedures and loops
 for inlining, software pipelining, multicore parallelization, and offloading to GPUs.
 
-\item \textbf{Attributing measured costs to source code structure.} 
+\item \textbf{Attributing measured costs to source code structure.}
 \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}}
 combines \Prog{hpcrun}'s dynamic profiles
 with \Prog{hpcstruct}'s static program structure information
@@ -91,7 +91,7 @@ to meaningful source code constructs such as procedures, loop nests, and individ
 The result of attribution is an \emph{experiment database} stored in a file system directory.
 
 \item \textbf{Visualizing attributed costs in source code or timeline views.}
-\HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}} 
+\HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
 are tools for presenting the resulting experiment databases.
 \Prog{hpcviewer} displays measurements in outline form,
 each entry attributing costs to a source code construct by line number
@@ -138,7 +138,7 @@ the \Prog{-t} / \Prog{--trace} option to collect additional data.
 named \File{hpctoolkit-appname-measurements},
 so the two sets of measurements are combined automatically.
 
-\item \textbf{Analyze}. 
+\item \textbf{Analyze}.
 Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to discover program structure of the program
 and the shared libraries and GPU binaries it used during the run.
 Although \Prog{hpcstruct} has a number of advanced options, it is typically run with none.
@@ -216,4 +216,3 @@ WWW: \URL{http://hpctoolkit.org}.
 %% time-stamp-end: "}\n"
 %% time-stamp-line-limit: 50
 %% End:
-

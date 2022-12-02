@@ -377,7 +377,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
       layer--;
     }
   }
-  
+
   while (hlayer >= 0) {
 	// Splice out nodes at layer, including found node.
 	lpreds[hlayer]->nexts[hlayer] = succs[hlayer]->nexts[hlayer]->nexts[hlayer];
@@ -541,7 +541,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  if (pred->marked || succ->marked || pred->nexts[layer] != succ)
 	    break;
 	  // my value better be less than the node I am inserting before
-	  assert(cskl->compare(value, pred->nexts[layer]->val) == -1); 
+	  assert(cskl->compare(value, pred->nexts[layer]->val) == -1);
 	}
 	if (layer == my_height) {
 	  // link new node in at levels [0 .. my_height-1]
@@ -756,7 +756,7 @@ cskl_links_dump(csklnode_t *node, int max_height)
   // links [0..height)
   for (i = 0; i < height; i++) {
     printf("0x%016lx ", (unsigned long) node->nexts[i]);
-  } 
+  }
 
   // links not present [height..max_height)
   for (i = height; i < max_height; i++) {
@@ -806,7 +806,7 @@ cskl_links_print(csklnode_t *node, int max_height)
   // links [1..height)
   for (i = 1; i < height; i++) {
     printf("-+");
-  } 
+  }
 
   // links not present [height..max_height)
   for (i = height; i < max_height; i++) {
@@ -842,7 +842,7 @@ cskl_print(cskiplist_t *cskl, cskl_node_tostr node_tostr)
 int
 cskl_check_node_dump
 (
- val_cmp compare,            // compare node values 
+ val_cmp compare,            // compare node values
  int max_height,             // number of list levels
  cskl_node_tostr node_tostr, // print node value
  csklnode_t *node
@@ -853,7 +853,7 @@ cskl_check_node_dump
   int succIsGreater[node->height];
   for (i = 0; i < node->height; i++) {
     csklnode_t *succ = node->nexts[i];
-    succIsGreater[i] = (compare(node->val, succ->val) == -1); 
+    succIsGreater[i] = (compare(node->val, succ->val) == -1);
     correct &= succIsGreater[i];
   }
   if (!correct) {
@@ -864,7 +864,7 @@ cskl_check_node_dump
       printf("-");
     }
     printf(" ");
-    
+
     cskl_links_dump(node, max_height);
 
     // allocate and clear a buffer
@@ -895,4 +895,3 @@ cskl_check_dump
   }
   printf("***** END CHECK: skip list %p is %s\n", cs, correct ? "correct" : "incorrect");
 }
-

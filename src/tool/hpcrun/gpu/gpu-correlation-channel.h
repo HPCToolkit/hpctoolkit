@@ -63,7 +63,7 @@ typedef struct gpu_op_ccts_t gpu_op_ccts_t;
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 // produce into the first channel that my thread created

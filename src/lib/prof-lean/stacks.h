@@ -65,7 +65,7 @@
 
 
 //*****************************************************************************
-// macros 
+// macros
 //*****************************************************************************
 
 #define stacks_macro_body_ignore(x) ;
@@ -98,36 +98,36 @@
 #define typed_stack_op(type, qtype, op) \
   type ## _ ## qtype ## _ ## op
 
-// ptr set routine name for a typed stack 
+// ptr set routine name for a typed stack
 #define typed_stack_elem_ptr_set(type, qtype) \
   typed_stack_op(type, qtype, ptr_set)
 
-// ptr get routine name for a typed stack 
+// ptr get routine name for a typed stack
 #define typed_stack_elem_ptr_get(type, qtype) \
   typed_stack_op(type, qtype, ptr_get)
 
-// swap routine name for a typed stack 
+// swap routine name for a typed stack
 #define typed_stack_swap(type, qtype) \
   typed_stack_op(type, qtype, swap)
 
-// push routine name for a typed stack 
+// push routine name for a typed stack
 #define typed_stack_push(type, qtype) \
   typed_stack_op(type, qtype, push)
 
-// pop routine name for a typed stack 
+// pop routine name for a typed stack
 #define typed_stack_pop(type, qtype) \
   typed_stack_op(type, qtype, pop)
 
-// steal routine name for a typed stack 
+// steal routine name for a typed stack
 #define typed_stack_steal(type, qtype) \
   typed_stack_op(type, qtype, steal)
 
-// forall routine name for a typed stack 
+// forall routine name for a typed stack
 #define typed_stack_forall(type, qtype) \
   typed_stack_op(type, qtype, forall)
 
 
-// define typed wrappers for a stack type 
+// define typed wrappers for a stack type
 #define typed_stack(type, qtype, macro) \
   void \
   typed_stack_elem_ptr_set(type, qtype) \
@@ -258,7 +258,7 @@ sstack_pop
 );
 
 
-// steal the entire chain rooted at s 
+// steal the entire chain rooted at s
 s_element_t *
 sstack_steal
 (
@@ -274,7 +274,7 @@ sstack_reverse
 );
 
 
-// iterate over each element e in the stack, call fn(e, arg) 
+// iterate over each element e in the stack, call fn(e, arg)
 void
 sstack_forall
 (
@@ -312,7 +312,7 @@ cstack_swap
 );
 
 
-// push a singleton e or a chain beginning with e onto s 
+// push a singleton e or a chain beginning with e onto s
 void
 cstack_push
 (
@@ -329,7 +329,7 @@ cstack_pop
 );
 
 
-// steal the entire chain rooted at s 
+// steal the entire chain rooted at s
 s_element_t *
 cstack_steal
 (
@@ -337,8 +337,8 @@ cstack_steal
 );
 
 
-// iterate over each element e in the stack, call fn(e, arg) 
-// note: unsafe to use concurrently with cstack_steal or cstack_pop 
+// iterate over each element e in the stack, call fn(e, arg)
+// note: unsafe to use concurrently with cstack_steal or cstack_pop
 void
 cstack_forall
 (
@@ -350,4 +350,3 @@ cstack_forall
 
 
 #endif
-

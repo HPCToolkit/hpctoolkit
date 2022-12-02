@@ -89,10 +89,10 @@ typedef bool (*ANodeFilterFct)(const ANode& x, long addArg);
 
 class ANodeFilter {
 public:
-  ANodeFilter(ANodeFilterFct f, const char* n, long a) 
-    : fct(f), m_name(n), arg(a) 
+  ANodeFilter(ANodeFilterFct f, const char* n, long a)
+    : fct(f), m_name(n), arg(a)
   { }
-  
+
   virtual ~ANodeFilter()
   { }
 
@@ -133,18 +133,18 @@ extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 //              until the last node is removed
 
 class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
-public: 
+public:
 
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
   ANodeChildIterator(const ANode* root, const ANodeFilter* filter = NULL)
-    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false), 
+    : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false),
       m_filter(filter)
   { }
 
 
   ANode*
-  current() const 
+  current() const
   { return static_cast<ANode*>(Current()); }
 
 
@@ -161,22 +161,22 @@ public:
     }
     return x_base;
   }
-  
-private: 
-  const ANodeFilter* m_filter; 
+
+private:
+  const ANodeFilter* m_filter;
 };
 
 
 class ACodeNodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
-public: 
+public:
   ACodeNodeChildIterator(const ACodeNode* root)
     : NonUniformDegreeTreeNodeChildIterator(root, /*forward*/false)
   { }
 
   ACodeNode*
-  current() const 
-  { 
-    return dynamic_cast<ACodeNode*>(Current()); 
+  current() const
+  {
+    return dynamic_cast<ACodeNode*>(Current());
   }
 
 };
@@ -191,15 +191,15 @@ public:
 //***************************************************************************
 
 class ANodeIterator : public NonUniformDegreeTreeIterator {
-public: 
+public:
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
   ANodeIterator(const ANode* root,
 		const ANodeFilter* filter = NULL,
 		bool leavesOnly = false,
 		TraversalOrder torder = PreOrder)
-    : NonUniformDegreeTreeIterator(root, torder, 
-				   ((leavesOnly) 
+    : NonUniformDegreeTreeIterator(root, torder,
+				   ((leavesOnly)
 				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
       m_filter(filter)
@@ -221,13 +221,13 @@ public:
 	break;
       }
       const_cast<ANodeIterator*>(this)->operator++();
-    } 
+    }
     return x_base;
   }
 
-private: 
+private:
   const ANodeFilter* m_filter;
-};  
+};
 
 
 //*****************************************************************************
@@ -245,7 +245,7 @@ public:
   static int cmpByLine(const void* x, const void* y);
   static int cmpById(const void* x, const void* y);
 
-public: 
+public:
   ANodeSortedIterator(const ANode* node,
 		      cmp_fptr_t compare_fn,
 		      const ANodeFilter* filterFunc = NULL,
@@ -288,7 +288,7 @@ private:
 
 
 class ANodeSortedChildIterator {
-public: 
+public:
   ANodeSortedChildIterator(const ANode* root,
 			   ANodeSortedIterator::cmp_fptr_t compare_fn,
 			   const ANodeFilter* filterFunc = NULL);

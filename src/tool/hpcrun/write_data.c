@@ -155,7 +155,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   if (rank < 0) {
     rank = 0;
   }
-  
+
   int fd = hpcrun_open_profile_file(rank, cptd->id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {
@@ -215,7 +215,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
                         HPCRUN_FMT_NV_traceDisorder,
                           cptd->trace_is_ordered ? "0" : traceDisorderStr,
                         NULL);
-  
+
   return fs;
 }
 
@@ -230,7 +230,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     return HPCRUN_OK;
 
   //
-  // === # epochs === 
+  // === # epochs ===
   //
 
   epoch_t* current_epoch = epoch;
@@ -274,7 +274,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 
     epoch_flags.fields.isLogicalUnwind = hpcrun_isLogicalUnwind();
     TMSG(LUSH,"epoch lush flag set to %s", epoch_flags.fields.isLogicalUnwind ? "true" : "false");
-    
+
     TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.bits);
     hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
 			       default_measurement_granularity,
@@ -286,12 +286,12 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     // == load map ==
     //
     //YUMENG
-    if(footer) footer->loadmap_start = ftell(fs); 
+    if(footer) footer->loadmap_start = ftell(fs);
 
     TMSG(DATA_WRITE, "Preparing to write loadmap");
 
     hpcrun_loadmap_t* current_loadmap = s->loadmap;
-    
+
     hpcfmt_int4_fwrite(current_loadmap->size, fs);
 
     // N.B.: Write in reverse order to obtain nicely ascending LM ids.
@@ -301,7 +301,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
       lm_entry.id = lm_src->id;
       lm_entry.name = lm_src->name;
       lm_entry.flags = hpcrun_loadModule_flags_get(lm_src);
-      
+
       ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
       if(ret != HPCFMT_OK){
         TMSG(DATA_WRITE, "Error writing loadmap entry");
@@ -309,12 +309,12 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
       }
     }
 
-    //YUMENG: set footer  
+    //YUMENG: set footer
     if(footer) {
       footer->loadmap_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->loadmap_end), SEEK_SET);
     }
-    
+
     TMSG(DATA_WRITE, "Done writing loadmap");
 
 
@@ -328,8 +328,8 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
   #else
     //YUMENG: set up sparse_metrics and walk through cct
     //footer
-    if(footer) footer->cct_start = ftell(fs); 
- 
+    if(footer) footer->cct_start = ftell(fs);
+
     //initialize the sparse_metrics
     hpcrun_fmt_sparse_metrics_t sparse_metrics;
     sparse_metrics.id_tuple = cptd->id_tuple;
@@ -344,7 +344,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     }
 
   #endif
-    
+
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx or collecting sparse metrics", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
@@ -382,12 +382,12 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     }
 
     TMSG(DATA_WRITE, "Done writing metric tbl");
-#endif    
+#endif
 
     //
     // == id-tuple dictionary ==
     //
-    if(footer) footer->idtpl_dxnry_start = ftell(fs); 
+    if(footer) footer->idtpl_dxnry_start = ftell(fs);
 
     hpcrun_fmt_idtuple_dxnry_fwrite(fs);
 
@@ -436,12 +436,12 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 
   } // epoch loop
 
-  return HPCRUN_OK; 
-  
+  return HPCRUN_OK;
+
   write_error:
     EMSG("could not save profile data to hpcrun file");
     perror("write_profile_data");
-    return HPCRUN_ERR; 
+    return HPCRUN_ERR;
 }
 
 void
@@ -472,7 +472,7 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   //YUMENG: set footer
   footer.hdr_end = ftell(fs);
   fseek(fs, MULTIPLE_1024(footer.hdr_end), SEEK_SET);
-  
+
   if (fs == NULL)
     return HPCRUN_ERR;
 

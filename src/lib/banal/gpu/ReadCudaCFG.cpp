@@ -39,7 +39,7 @@ using namespace InstructionAPI;
 
 
 static bool
-test_nvdisasm() 
+test_nvdisasm()
 {
   // check whether nvdisasm works
   int retval = system("nvdisasm > /dev/null") == 0;
@@ -53,15 +53,15 @@ test_nvdisasm()
 static bool
 dumpCubin
 (
- const std::string &cubin, 
- ElfFile *elfFile 
-) 
+ const std::string &cubin,
+ ElfFile *elfFile
+)
 {
   int retval = false;
   int fd = open(cubin.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRWXU);
   if (fd != -1) {
     int len = elfFile->getLength();
-    retval = write(fd, elfFile->getMemoryOriginal(), len) == len; 
+    retval = write(fd, elfFile->getMemoryOriginal(), len) == len;
     close(fd);
   }
   return retval;
@@ -98,12 +98,12 @@ parseDotCFG
 (
  const std::string &search_path,
  const std::string &elf_filename,
- const std::string &dot_filename, 
+ const std::string &dot_filename,
  const std::string &cubin,
  int cuda_arch,
  Dyninst::SymtabAPI::Symtab *the_symtab,
  std::vector<GPUParse::Function *> &functions
-) 
+)
 {
   GPUParse::CudaCFGParser cfg_parser;
   // Step 1: parse all function symbols
@@ -332,11 +332,11 @@ readCudaCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
- Dyninst::SymtabAPI::Symtab *the_symtab, 
+ Dyninst::SymtabAPI::Symtab *the_symtab,
  bool cfg_wanted,
- Dyninst::ParseAPI::CodeSource **code_src, 
+ Dyninst::ParseAPI::CodeSource **code_src,
  Dyninst::ParseAPI::CodeObject **code_obj
-) 
+)
 {
   static bool compute_cfg = cfg_wanted && test_nvdisasm();
   bool dump_cubin_success = false;
@@ -348,12 +348,12 @@ readCudaCFG
 
     dump_cubin_success = dumpCubin(cubin, elfFile);
     if (!dump_cubin_success) {
-      std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
+      std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl;
     } else {
       std::vector<GPUParse::Function *> functions;
       parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
       CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-      *code_src = new GPUCodeSource(functions, the_symtab); 
+      *code_src = new GPUCodeSource(functions, the_symtab);
       *code_obj = new CodeObject(*code_src, cfg_fact);
       (*code_obj)->parse();
       unlink(dot.c_str());

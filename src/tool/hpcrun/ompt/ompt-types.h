@@ -44,8 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __OMPT_TYPES_H__ 
-#define __OMPT_TYPES_H__ 
+#ifndef __OMPT_TYPES_H__
+#define __OMPT_TYPES_H__
 
 //******************************************************************************
 // OMPT
@@ -56,7 +56,7 @@
 
 
 //******************************************************************************
-// local includes  
+// local includes
 //******************************************************************************
 
 #include <lib/prof-lean/stdatomic.h>
@@ -87,7 +87,7 @@ struct ompt_thread_region_freelist_s;
 
 
 //******************************************************************************
-// type declarations 
+// type declarations
 //******************************************************************************
 
 typedef union ompt_next_u ompt_next_t;
@@ -177,4 +177,3 @@ typedef struct region_stack_el_s {
 // FIXME vi3: ompt_data_t freelist manipulation
 
 #endif
-

@@ -132,7 +132,7 @@ InputFile::openFile
  InputFileErrorType_t errType
 )
 {
-  const char *tag = 
+  const char *tag =
     (errType == InputFileError_Error) ? "ERROR: " : "WARNING: ";
 
   this->filename = filename;
@@ -140,7 +140,7 @@ InputFile::openFile
   int    file_fd = open(filename.c_str(), O_RDONLY);
 
   if (file_fd < 0) {
-    DIAG_MsgIf_GENERIC(tag, 1, "Unable to open input file: " 
+    DIAG_MsgIf_GENERIC(tag, 1, "Unable to open input file: "
            << filename << " (" << strerror(errno) << ")");
 
     if (errType != InputFileError_WarningNothrow) throw 1;
@@ -149,7 +149,7 @@ InputFile::openFile
   }
 
   size_t f_size = file_size(file_fd);
-  
+
   if (f_size == 0) {
     DIAG_MsgIf_GENERIC(tag, 1, "Empty input file " << filename);
 
@@ -161,7 +161,7 @@ InputFile::openFile
   char  *file_buffer = (char *) malloc(f_size);
 
   if (file_buffer == 0) {
-    DIAG_MsgIf_GENERIC(tag, 1, "Unable to allocate file buffer of " 
+    DIAG_MsgIf_GENERIC(tag, 1, "Unable to allocate file buffer of "
            << f_size << " bytes");
     if (errType != InputFileError_WarningNothrow) throw 1;
 
@@ -188,7 +188,7 @@ InputFile::openFile
   if (result) {
     filevector->push_back(elfFile);
     //findCubins(elfFile, filevector);
-  } 
+  }
   #ifdef ENABLE_IGC
   else if (!findIntelGPUBins(filename, file_buffer, f_size, filevector)) { // Check if the file is a intel debug binary
     // Release memory

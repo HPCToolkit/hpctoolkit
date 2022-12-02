@@ -61,19 +61,18 @@ extern int trace;
 //***************************************************************************
 
 #ifndef NTRACE
-#define IFTRACE        if (trace) std::cerr 
-#define IFDOTRACE      if (trace) 
-#else 
-// the optimizer will take care of this 
-#define IFTRACE        if (0) std::cerr 
+#define IFTRACE        if (trace) std::cerr
+#define IFDOTRACE      if (trace)
+#else
+// the optimizer will take care of this
+#define IFTRACE        if (0) std::cerr
 #define IFDOTRACE      if (0)
-#endif 
+#endif
 
 #define TRACE_METHOD(Class, method)  \
-      IFTRACE << (unsigned long) this << "->" << #Class << "::" << #method << " "  
+      IFTRACE << (unsigned long) this << "->" << #Class << "::" << #method << " "
 #define TRACE_STATIC_METHOD(Class, method)  \
-      IFTRACE << "STATIC" << "->" << #Class << "::" << #method << " "  
+      IFTRACE << "STATIC" << "->" << #Class << "::" << #method << " "
 #define SET_TRACE_IMPL(module) void SetTrace ## module( int trc) { trace = trc; }
 
-#endif 
-
+#endif

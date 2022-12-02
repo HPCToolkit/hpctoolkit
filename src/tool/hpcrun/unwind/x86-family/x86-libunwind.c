@@ -8,9 +8,9 @@
 
 #define MYMSG(f,...) hpcrun_pmsg(#f, __VA_ARGS__)
 
-static void 
-cursor_set(unw_context_t *uc, unw_cursor_t *cursor, 
-           void **sp, void **bp, void *ip) 
+static void
+cursor_set(unw_context_t *uc, unw_cursor_t *cursor,
+           void **sp, void **bp, void *ip)
 {
   // initialize unwind context
   memset(uc, 0, sizeof(*uc));
@@ -24,8 +24,8 @@ cursor_set(unw_context_t *uc, unw_cursor_t *cursor,
 }
 
 static void
-cursor_get(unw_context_t *uc, unw_cursor_t *cursor, 
-           void ***sp, void ***bp, void **ip) 
+cursor_get(unw_context_t *uc, unw_cursor_t *cursor,
+           void ***sp, void ***bp, void **ip)
 {
   unw_word_t uip, usp, ubp;
 
@@ -44,7 +44,7 @@ libunwind_step(void ***sp, void ***bp, void **ip)
 {
   int status;
   unw_context_t uc;
-  unw_cursor_t cursor; 
+  unw_cursor_t cursor;
 
   // temporarily splice this out
   return 0;

@@ -52,7 +52,7 @@
 #include <lib/isa-lean/x86/instruction-set.h>
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 
 static bool plt_is_next(char *ins);
@@ -82,7 +82,7 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
       // invariant: when we reach a return, if the BP was overwritten, it
       // should have been restored. this must be incorrect. let's reset
       // the bp status for all intervals leading up to this one since
-      // the last canonical restore. 
+      // the last canonical restore.
       unwind_interval *start = iarg->restored_canonical;
       unwind_interval *u = start;
       do {
@@ -104,17 +104,17 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
   }
   if ((void*)nextInsn(iarg, xptr) < iarg->end) {
     //-------------------------------------------------------------------------
-    // the return is not the last instruction in the interval; 
-    // set up an interval for code after the return 
+    // the return is not the last instruction in the interval;
+    // set up an interval for code after the return
     //-------------------------------------------------------------------------
     if (plt_is_next(nextInsn(iarg, xptr))) {
       //-------------------------------------------------------------------------
-      // the code following the return is a program linkage table. each entry in 
-      // the program linkage table should be invoked with the return address at 
+      // the code following the return is a program linkage table. each entry in
+      // the program linkage table should be invoked with the return address at
       // top of the stack. this is exactly what the interval containing this
-      // return instruction looks like. set the current interval as the 
+      // return instruction looks like. set the current interval as the
       // "canonical interval" to be restored after then jump at the end of each
-      // entry in the PLT. 
+      // entry in the PLT.
       //-------------------------------------------------------------------------
       iarg->canonical_interval = iarg->current;
     }
@@ -133,7 +133,7 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
 static bool
 plt_is_next(char *ins)
 {
-  
+
   // Assumes: 'ins' is pointing at the instruction from which
   // lookahead is to occur (i.e, the instruction prior to the first
   // lookahead).
@@ -148,10 +148,10 @@ plt_is_next(char *ins)
   char *jmp_target = NULL;
 
   // skip optional padding if there appears to be any
-  while ((((long) ins) & 0x11) && (*ins == 0x0)) ins++; 
+  while ((((long) ins) & 0x11) && (*ins == 0x0)) ins++;
 
   // -------------------------------------------------------
-  // requirement 1: push of displacement relative to IP 
+  // requirement 1: push of displacement relative to IP
   // -------------------------------------------------------
   xed_decoded_inst_zero_set_mode(xptr, xed_settings);
   xed_err = xed_decode(xptr, (uint8_t*) ins, 15);
@@ -163,7 +163,7 @@ plt_is_next(char *ins)
     if (xed_decoded_inst_number_of_memory_operands(xptr) == 2) {
       const xed_inst_t* xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t* op0 = xed_inst_operand(xi, 0);
-      if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
+      if ((xed_operand_name(op0) == XED_OPERAND_MEM0) &&
         x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
         int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
         push_succ_addr = ins + xed_decoded_inst_get_length(xptr);
@@ -173,7 +173,7 @@ plt_is_next(char *ins)
   }
 
   if (val_pushed == NULL) {
-    // push of proper type not recognized 
+    // push of proper type not recognized
     return false;
   }
 
@@ -186,13 +186,13 @@ plt_is_next(char *ins)
     return false;
   }
 
-  if (iclass_eq(xptr, XED_ICLASS_JMP) || 
+  if (iclass_eq(xptr, XED_ICLASS_JMP) ||
       iclass_eq(xptr, XED_ICLASS_JMP_FAR)) {
     if (xed_decoded_inst_number_of_memory_operands(xptr) == 1) {
 
       const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t *op0 =  xed_inst_operand(xi,0);
-      if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
+      if ((xed_operand_name(op0) == XED_OPERAND_MEM0) &&
          x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
          long long offset = xed_decoded_inst_get_memory_displacement(xptr,0);
          jmp_target = push_succ_addr + xed_decoded_inst_get_length(xptr) + offset;
@@ -201,7 +201,7 @@ plt_is_next(char *ins)
   }
 
   if (jmp_target == NULL) {
-    // jump of proper type not recognized 
+    // jump of proper type not recognized
     return false;
   }
 
@@ -214,4 +214,3 @@ plt_is_next(char *ins)
 
   return false;
 }
-

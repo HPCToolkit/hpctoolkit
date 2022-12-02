@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -114,7 +114,7 @@ struct lush_agent_pool {
 };
 
 int
-lush_agent__init(lush_agent_t* x, int id, const char* path, 
+lush_agent__init(lush_agent_t* x, int id, const char* path,
 		 lush_agent_pool_t* pool);
 
 int
@@ -135,7 +135,7 @@ lush_agent_pool__fini(lush_agent_pool_t* x);
 // Given an agent-pool and context, initialize the lush_cursor but do
 // not step to the first (innermost) bichord.
 void
-lush_init_unw(lush_cursor_t* cursor, 
+lush_init_unw(lush_cursor_t* cursor,
 	      lush_agent_pool_t* apool, ucontext_t* context);
 
 
@@ -150,7 +150,7 @@ lush_step_bichord(lush_cursor_t* cursor);
 
 // Given a lush_cursor, step the cursor to the next (less deeply
 // nested) p-note/l-note of the current p-chord/l-chord.
-// Returns: 
+// Returns:
 //   LUSH_STEP_CONT:      if step was sucessful
 //                        (for l-notes, only possible if not a-to-0)
 //   LUSH_STEP_END_CHORD: if prev note was the end of the chord
@@ -182,9 +182,9 @@ lush_forcestep_pchord(lush_cursor_t* cursor);
 //   LUSH_STEP_ERROR:     on account of an error.
 //
 // Sets zero or more of the following flags (as appropriate):
-//   LUSH_CURSOR_FLAGS_END_PPROJ:  
-//   LUSH_CURSOR_FLAGS_BEG_PCHORD: 
-//   LUSH_CURSOR_FLAGS_END_PCHORD: 
+//   LUSH_CURSOR_FLAGS_END_PPROJ:
+//   LUSH_CURSOR_FLAGS_BEG_PCHORD:
+//   LUSH_CURSOR_FLAGS_END_PCHORD:
 lush_step_t
 lush_forcestep_pnote(lush_cursor_t* cursor);
 

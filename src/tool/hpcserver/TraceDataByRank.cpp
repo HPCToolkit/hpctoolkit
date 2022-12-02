@@ -76,7 +76,7 @@ namespace TraceviewerServer
 		maxloc = data->getMaxLoc(rank);
 		numPixelsH = _numPixelH;
 
-		
+
 		listCPID = new vector<TimeCPID>();
 
 	}
@@ -192,7 +192,7 @@ namespace TraceviewerServer
 
 		Time l_time = data->getLong(l_boundOffset);
 		Time r_time = data->getLong(r_boundOffset);
-	
+
 		// apply "Newton's method" to find target time
 		while (r_index - l_index > 1)
 		{

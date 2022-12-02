@@ -78,7 +78,7 @@ typedef struct gpu_op_ccts_t gpu_op_ccts_t;
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 gpu_correlation_t *
@@ -91,7 +91,7 @@ gpu_correlation_alloc
 void
 gpu_correlation_free
 (
- gpu_correlation_channel_t *channel, 
+ gpu_correlation_channel_t *channel,
  gpu_correlation_t *c
 );
 

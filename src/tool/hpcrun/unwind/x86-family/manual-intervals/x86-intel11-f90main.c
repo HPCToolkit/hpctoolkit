@@ -48,7 +48,7 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static char intel11_f90main_signature[] = { 
+static char intel11_f90main_signature[] = {
   0x53,                         // push   %rbx
   0x48, 0x89, 0xe3,             // mov    %rsp,%rbx
   0x48, 0x83, 0xe4, 0x80,       // and    $0xffffffffffffff80,%rsp
@@ -60,13 +60,13 @@ static char intel11_f90main_signature[] = {
 };
 
 
-int 
+int
 x86_adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel11_f90main_signature);
 
   if (len > siglen && strncmp((char *)intel11_f90main_signature, ins, siglen) == 0) {
-    // signature matched 
+    // signature matched
     unwind_interval *ui = stat->first;
 
     // this won't fix all of the intervals, but it will fix the one we care about.
@@ -79,6 +79,6 @@ x86_adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
       ui = UWI_NEXT(ui);
     }
     return 1;
-  } 
+  }
   return 0;
 }

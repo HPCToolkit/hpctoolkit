@@ -145,18 +145,18 @@ void
 ppc64recipe_print(void* recipe);
 
 
-static inline bool 
+static inline bool
 ui_cmp(unwind_interval* ux, unwind_interval* uy)
 {
   ppc64recipe_t *x = UWI_RECIPE(ux);
   ppc64recipe_t *y = UWI_RECIPE(uy);
   return ((x->sp_ty  == y->sp_ty) &&
-	  (x->ra_ty  == y->ra_ty) && 
+	  (x->ra_ty  == y->ra_ty) &&
 	  (x->sp_arg == y->sp_arg) &&
 	  (x->ra_arg == y->ra_arg));
 }
 
-void 
+void
 ui_dump(unwind_interval *u);
 
 // FIXME: these should be part of the common interface

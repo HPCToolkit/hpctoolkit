@@ -69,7 +69,7 @@
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 void
@@ -117,10 +117,9 @@ gpu_trace_item_alloc
 void
 gpu_trace_item_free
 (
- gpu_trace_channel_t *channel, 
+ gpu_trace_channel_t *channel,
  gpu_trace_item_t *ti
 )
 {
   channel_item_free(channel, ti);
 }
-

@@ -45,12 +45,12 @@
 // ******************************************************* EndRiceCopyright *
 
 //------------------------------------------------------------------------------
-// File: poll.c 
-//  
-// Purpose: 
-//   wrapper for libc poll. if poll returns a -1 because it was interrupted, 
-//   assume the interrupt was from asynchronous sampling caused by hpcrun and 
-//   restart. 
+// File: poll.c
+//
+// Purpose:
+//   wrapper for libc poll. if poll returns a -1 because it was interrupted,
+//   assume the interrupt was from asynchronous sampling caused by hpcrun and
+//   restart.
 //------------------------------------------------------------------------------
 
 
@@ -100,7 +100,7 @@ static poll_fn *real_poll = NULL;
 // local operations
 //******************************************************************************
 
-static void 
+static void
 find_poll(void)
 {
 #ifdef HPCRUN_STATIC_LINK
@@ -117,7 +117,7 @@ find_poll(void)
 // interface operations
 //******************************************************************************
 
-int 
+int
 MONITOR_EXT_WRAP_NAME(poll)
   (struct pollfd *fds, nfds_t nfds, int init_timeout)
 {

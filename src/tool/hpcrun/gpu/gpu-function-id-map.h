@@ -59,7 +59,7 @@
 #include <hpcrun/utilities/ip-normalized.h>
 
 /******************************************************************************
- * type definitions 
+ * type definitions
  *****************************************************************************/
 
 typedef struct gpu_function_id_map_entry_t gpu_function_id_map_entry_t;

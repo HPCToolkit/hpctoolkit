@@ -63,7 +63,7 @@
 #define typed_bichannel(x) gpu_activity_channel_t
 #define typed_stack_elem(x) gpu_activity_t
 
-// define macros that simplify use of activity channel API 
+// define macros that simplify use of activity channel API
 #define channel_init  \
   typed_bichannel_init(gpu_activity_t)
 
@@ -115,7 +115,7 @@ gpu_activity_channel_alloc
  void
 )
 {
-  gpu_activity_channel_t *c = 
+  gpu_activity_channel_t *c =
     hpcrun_malloc_safe(sizeof(gpu_activity_channel_t));
 
   channel_init(c);
@@ -126,7 +126,7 @@ gpu_activity_channel_alloc
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 gpu_activity_channel_t *

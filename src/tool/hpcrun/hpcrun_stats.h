@@ -52,7 +52,7 @@
 void hpcrun_stats_reinit(void);
 
 //-----------------------------
-// samples total 
+// samples total
 //-----------------------------
 
 void hpcrun_stats_num_samples_total_inc(void);
@@ -60,7 +60,7 @@ long hpcrun_stats_num_samples_total(void);
 
 
 //-----------------------------
-// samples attempted 
+// samples attempted
 //-----------------------------
 
 void hpcrun_stats_num_samples_attempted_inc(void);
@@ -68,7 +68,7 @@ long hpcrun_stats_num_samples_attempted(void);
 
 
 //-----------------------------
-// samples blocked async 
+// samples blocked async
 //-----------------------------
 
 void hpcrun_stats_num_samples_blocked_async_inc(void);
@@ -76,7 +76,7 @@ long hpcrun_stats_num_samples_blocked_async(void);
 
 
 //-----------------------------
-// samples blocked dlopen 
+// samples blocked dlopen
 //-----------------------------
 
 void hpcrun_stats_num_samples_blocked_dlopen_inc(void);
@@ -107,7 +107,7 @@ long hpcrun_stats_acc_samples_dropped(void);
 
 
 //-----------------------------
-// acc trace records 
+// acc trace records
 //-----------------------------
 void hpcrun_stats_acc_trace_records_add(long value);
 long hpcrun_stats_acc_trace_records(void);

@@ -9,7 +9,7 @@ metric_is_timebase(int metric_id, int *period)
   if (metric_desc == NULL) return 0;
 
   *period = metric_desc->period;
- 
+
   // temporal blame shifting requires a time or cycles metric
   return (metric_desc->properties.time | metric_desc->properties.cycles);
 }

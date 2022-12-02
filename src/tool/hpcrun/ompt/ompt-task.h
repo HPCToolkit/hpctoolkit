@@ -59,7 +59,7 @@
 // interface operations
 //*****************************************************************************
 
-void 
+void
 ompt_task_register_callbacks
 (
  ompt_set_callback_t ompt_set_callback_fn

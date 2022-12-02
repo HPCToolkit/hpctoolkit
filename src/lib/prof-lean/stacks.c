@@ -99,7 +99,7 @@ sstack_push
  s_element_t *e
 )
 {
-  s_element_t *first = 
+  s_element_t *first =
     (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
 
   atomic_store_explicit(&(e->Ad(next)), first, memory_order_relaxed);
@@ -145,7 +145,7 @@ sstack_reverse
   s_element_t *prev = NULL;
   s_element_t *e = (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
   while (e) {
-    s_element_t *next = 
+    s_element_t *next =
       (s_element_t *) atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
     atomic_store_explicit(&(e->Ad(next)), prev, memory_order_relaxed);
     prev = e;
@@ -163,14 +163,14 @@ sstack_forall
  void *arg
 )
 {
-  s_element_t *current = 
+  s_element_t *current =
     (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
 
   while (current) {
     fn(current, arg);
-    current = 
+    current =
       (s_element_t *) atomic_load_explicit(&current->Ad(next), memory_order_relaxed);
-  } 
+  }
 }
 
 
@@ -275,7 +275,7 @@ cstack_forall
   while (current) {
     fn(current, arg);
     current = (s_element_t *) atomic_load(&current->Ad(next));
-  } 
+  }
 }
 
 
@@ -284,7 +284,7 @@ cstack_forall
 //*****************************************************************************
 
 #define UNIT_TEST 0
-#if UNIT_TEST 
+#if UNIT_TEST
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -301,7 +301,7 @@ typed_stack_impl(int, cstack);
 
 typed_stack_elem_ptr(int) queue;
 
-void 
+void
 print(typed_stack_elem(int) *e, void *arg)
 {
   printf("%d\n", e->value);
@@ -311,7 +311,7 @@ int main(int argc, char **argv)
 {
   int i;
   for (i = 0; i < 10; i++) {
-    typed_stack_elem_ptr(int) 
+    typed_stack_elem_ptr(int)
       item = (typed_stack_elem_ptr(int)) malloc(sizeof(typed_stack_elem(int)));
     item->value = i;
     typed_stack_elem_ptr_set(int, cstack)(item, 0);
@@ -391,7 +391,7 @@ dump
 )
 {
   int i;
-  for(; e; 
+  for(; e;
       e = (int_s_element_t *) typed_stack_elem_ptr_get(int,qtype)(&e->next)) {
     printf("%d stole %d\n", omp_get_thread_num(), e->value);
   }

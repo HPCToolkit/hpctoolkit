@@ -246,7 +246,7 @@ all: $(CPUBIN_DIR) $(GPUBIN_USED_DIR)
 	$(MAKE) -j $(SJOBS) THREADS=$(STHREADS) GPAR_SIZE=0 CPAR_SIZE=0 analyze
 endif
 
-analyze: $(GS) $(CS) 
+analyze: $(GS) $(CS)
 
 #-------------------------------------------------------------------------------
 # rule for listing load modules in hpcrun files

@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -143,7 +143,7 @@ typedef enum lush_cursor_flags lush_cursor_flags_t;
 
 enum lush_cursor_flags {
   LUSH_CURSOR_FLAGS_NONE = 0x00000000,
-  
+
   //fixme: do we want this?
   //LUSH_CURSOR_FLAGS_MASK       = 0x00000000,
   //LUSH_CURSOR_FLAGS_MASK_AGENT = 0x00000000,
@@ -180,28 +180,28 @@ struct lush_cursor {
 };
 
 
-static inline bool 
+static inline bool
 lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
-{ 
-  return (cursor->flags & f); 
+{
+  return (cursor->flags & f);
 }
 
 
-static inline void 
+static inline void
 lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
 {
   cursor->flags = (cursor->flags | f);
 }
 
 
-static inline void 
+static inline void
 lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
 {
   cursor->flags = (cursor->flags & ~f);
 }
 
 
-static inline lush_assoc_t 
+static inline lush_assoc_t
 lush_cursor_get_assoc(lush_cursor_t* cursor)
 {
   return lush_assoc_info__get_assoc(cursor->as_info);

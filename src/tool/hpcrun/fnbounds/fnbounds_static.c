@@ -63,7 +63,7 @@
 //*********************************************************************
 
 //-------------------------------------------------------------------------
-// the external variables below will be defined in a 
+// the external variables below will be defined in a
 // machine-generated file
 //-------------------------------------------------------------------------
 
@@ -99,7 +99,7 @@ fnbounds_init(const char *executable_name)
   fh.mmap_size = 0;
 
   dso_info_t *dso =
-    hpcrun_dso_make(executable_name, (void*)hpcrun_nm_addrs, 
+    hpcrun_dso_make(executable_name, (void*)hpcrun_nm_addrs,
 		    &fh, lm_beg_fn, lm_end_fn, lm_size);
   fnbounds_executable_dso = hpcrun_loadmap_map(dso);
   hpcrun_loadModule_flags_set(fnbounds_executable_dso, LOADMAP_ENTRY_ANALYZE);
@@ -145,7 +145,7 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 }
 
 
-void 
+void
 fnbounds_fini()
 {
 }

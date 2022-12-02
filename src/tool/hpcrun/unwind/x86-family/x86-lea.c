@@ -59,7 +59,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
   const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
 
-  if ((op0_name == XED_OPERAND_REG0)) { 
+  if ((op0_name == XED_OPERAND_REG0)) {
     x86recipe_t *xr = UWI_RECIPE(next);
     x86registers_t reg = xr->reg;
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
@@ -82,16 +82,16 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	if (memops > 0) {
 	  int mem_op_index = 0;
 
-	  xed_reg_enum_t basereg = 
+	  xed_reg_enum_t basereg =
 	    xed_decoded_inst_get_base_reg(xptr, mem_op_index);
 
 	  if (x86_isReg_SP(basereg)) {
 	    //==================================================================
-	    // the LEA instruction adjusts SP with a displacement. 
-	    // begin a new interval where sp_ra_pos is adjusted by the 
-	    // displacement.        
+	    // the LEA instruction adjusts SP with a displacement.
+	    // begin a new interval where sp_ra_pos is adjusted by the
+	    // displacement.
 	    //==================================================================
-	    xed_int64_t disp = 
+	    xed_int64_t disp =
 	      xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
 	    reg.sp_ra_pos -= disp;
 	    reg.sp_bp_pos -= disp;
@@ -101,7 +101,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	      if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {
 		//--------------------------------------------------------------
 		// set the highwatermark and canonical interval upon seeing
-		// the FIRST subtract (using lea with negative displacement) 
+		// the FIRST subtract (using lea with negative displacement)
 		// from SP; take no action on subsequent subtracts.
 		// test case: pthread_cond_wait@@GLIBC_2.3.2 in
 		// 3.10.0-327.el7.centos.mpsp_1.3.1.45.x86_64
@@ -109,7 +109,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 		// 5 November 2016 -- John Mellor-Crummey
 		//--------------------------------------------------------------
 		hw_tmp->uwi = next;
-		hw_tmp->succ_inst_ptr = next_ins; 
+		hw_tmp->succ_inst_ptr = next_ins;
 		hw_tmp->state = HW_NEW_STATE(hw_tmp->state, HW_SP_DECREMENTED);
 		iarg->canonical_interval = next;
 	      }

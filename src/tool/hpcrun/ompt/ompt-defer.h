@@ -51,7 +51,7 @@
 
 
 //******************************************************************************
-// local includes  
+// local includes
 //******************************************************************************
 
 #include <hpcrun/thread_data.h>
@@ -70,7 +70,7 @@
 
 
 //******************************************************************************
-// interface functions 
+// interface functions
 //******************************************************************************
 
 // check whether the lazy resolution is needed in an unwind
@@ -81,29 +81,29 @@ need_defer_cntxt
 );
 
 
-// resolve the contexts 
-void 
+// resolve the contexts
+void
 resolve_cntxt
 (
  void
 );
 
 
-void 
+void
 resolve_cntxt_fini
 (
  thread_data_t *thread_data
 );
 
 
-void 
+void
 resolve_other_cntxt
 (
  thread_data_t *thread_data
 );
 
 
-uint64_t 
+uint64_t
 is_partial_resolve
 (
  cct_node_t *prefix
@@ -111,7 +111,7 @@ is_partial_resolve
 
 
 // deferred region ID assignment
-void 
+void
 init_region_id
 (
  void
@@ -125,64 +125,64 @@ hpcrun_region_lookup
 );
 
 
-int 
+int
 length_trl
 (
- ompt_trl_el_t* regions_list_head, 
+ ompt_trl_el_t* regions_list_head,
  int of_freelist
 );
 
 
-int 
+int
 register_thread
 (
  int level
 );
 
 
-void 
+void
 register_thread_to_all_regions
 (
  void
 );
 
 
-void 
+void
 register_to_all_regions
 (
  void
 );
 
 
-void 
+void
 try_resolve_context
 (
  void
 );
 
 
-int 
+int
 try_resolve_one_region_context
 (
  void
 );
 
 
-void 
+void
 resolve_one_region_context
 (
  ompt_region_data_t* region_data
 );
 
 
-void 
+void
 ompt_resolve_region_contexts_poll
 (
  void
 );
 
 
-void 
+void
 ompt_resolve_region_contexts
 (
  int is_process
@@ -190,35 +190,35 @@ ompt_resolve_region_contexts
 
 
 // function which provides call path for regions where thread is the master
-void 
+void
 provide_callpath_for_regions_if_needed
 (
-  backtrace_info_t* bt, 
+  backtrace_info_t* bt,
   cct_node_t* cct
 );
 
 
-void 
+void
 provide_callpath_for_end_of_the_region
 (
- backtrace_info_t *bt, 
+ backtrace_info_t *bt,
  cct_node_t *cct
 );
 
 
 // stack reorganization
-void 
+void
 add_region_and_ancestors_to_stack
 (
- ompt_region_data_t *region_data, 
+ ompt_region_data_t *region_data,
  bool team_master
 );
 
 
-void 
+void
 tmp_end_region_resolve
 (
- ompt_notification_t *notification, 
+ ompt_notification_t *notification,
  cct_node_t* prefix
 );
 

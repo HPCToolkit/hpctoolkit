@@ -4401,7 +4401,7 @@ AC_LANG_POP
 #-------------------------------------------------
 
 # CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
-# in CUDA, CUDA/extras/CUPTI, or in a separate install 
+# in CUDA, CUDA/extras/CUPTI, or in a separate install
 # directory specified using the --with-cupti option.
 
 CUDA="$default_cuda_prefix"
@@ -4759,7 +4759,7 @@ AC_SUBST([OPT_GTPIN_LIBDIR])
 
 # Can specify ROCM with all-in-one ROCM directory (normally
 # /opt/rocm), or with spack packages: hip, roctracer-dev,
-# rocprofiler-dev, and hsa-rocr-dev or partially with 
+# rocprofiler-dev, and hsa-rocr-dev or partially with
 # /opt/rocm plus a subset of spack packages.
 #
 # Note: may use both --with-rocm plus specific rocm package(s).

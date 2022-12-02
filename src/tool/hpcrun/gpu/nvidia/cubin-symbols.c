@@ -189,12 +189,12 @@ relocateSymbolsHelper
   } else {
     return NULL;
   }
-  
+
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {
     symbol_values = newSymbolsVector(nsymbols);
     for (int i = 0; i < nsymbols; i++) {
-      GElf_Sym sym;      
+      GElf_Sym sym;
       GElf_Sym *symp = NULL;
       int section_index;
       symp = elf_helper_get_symbol(eh, i, &sym, &section_index);

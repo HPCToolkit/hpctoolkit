@@ -328,7 +328,7 @@ doSingleBinary
 #if 0
     cerr << "DEBUG singleApplicationBinary : checkname_cmd replaced names in struct file " << endl;
 #endif
-      
+
       } else if (renamestat == 0 ) {
 #if 0
         cerr << "DEBUG singleApplicationBinary : checkname_cmd did not need to replace names in struct file " << endl;

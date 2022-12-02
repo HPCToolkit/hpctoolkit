@@ -49,10 +49,10 @@ splay_delete_root
   }
 
   // detach deleted node from others
-  (*root)->left = (*root)->right = NULL; 
+  (*root)->left = (*root)->right = NULL;
 
   // set new root
-  *root = map_root; 
+  *root = map_root;
 }
 
 
@@ -120,7 +120,7 @@ splay_uint64_insert
 
   if (*root != NULL) {
     *root = splay_splay(*root, node->key);
-    
+
     if (node->key < (*root)->key) {
       node->left = (*root)->left;
       node->right = *root;
@@ -131,13 +131,13 @@ splay_uint64_insert
       (*root)->right = NULL;
     } else {
       // key already present in the tree
-      return true; // insert failed 
+      return true; // insert failed
     }
-  } 
+  }
 
   *root = node;
 
-  return true; // insert succeeded 
+  return true; // insert succeeded
 }
 
 
@@ -168,7 +168,7 @@ splay_uint64_delete
 )
 {
   splay_uint64_node_t *removed = NULL;
-  
+
   if (*root) {
     *root = splay_splay(*root, key);
 
@@ -192,17 +192,17 @@ splay_uint64_forall
 )
 {
   switch (order) {
-  case splay_inorder: 
+  case splay_inorder:
     splay_forall_inorder(root, fn, arg);
     break;
-  case splay_allorder: 
+  case splay_allorder:
     splay_forall_allorder(root, fn, arg);
     break;
   }
 }
 
 
-uint64_t 
+uint64_t
 splay_uint64_count
 (
  splay_uint64_node_t *node
@@ -303,7 +303,7 @@ printnode
 
   if (order == splay_preorder_visit) (*depth)++;
   if (order == splay_inorder_visit) {
-    printf("%*s%ld%*s%ld\n", *depth, "", node->key, 
+    printf("%*s%ld%*s%ld\n", *depth, "", node->key,
 	   60-*depth-digits(node->key), "", node->mysquared);
   }
   if (order == splay_postorder_visit) (*depth)--;
@@ -313,7 +313,7 @@ printnode
 int
 main
 (
- int argc, 
+ int argc,
  char **argv
 )
 {
@@ -324,7 +324,7 @@ main
   for (i = 0; i < N; i++) {
     int val = rand() % 100;
     if (st_lookup(&root, val) == NULL) {
-      st_insert(&root, splay_node(val)); 
+      st_insert(&root, splay_node(val));
       inserted++;
     }
   }
@@ -340,7 +340,7 @@ main
   for (i = 0; i < N; i++) {
     int val = rand() % 100;
     if (st_lookup(&root, val) == NULL) {
-      st_insert(&root, splay_node(val)); 
+      st_insert(&root, splay_node(val));
       inserted++;
     }
   }

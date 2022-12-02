@@ -247,7 +247,7 @@ computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
 static void
 doUnparsableFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo);
 
-static void 
+static void
 doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 		     TreeNode * root);
 
@@ -606,7 +606,7 @@ makeStructure(string filename,
   Output::setPrettyPrint(structOpts.pretty_print_output);
 
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
-	
+
   for (unsigned int i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
     ElfFile *elfFile = (*elfFileVector)[i];
@@ -712,7 +712,7 @@ makeStructure(string filename,
     mutex output_mtx;
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
-		
+
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
 #pragma omp parallel  default(none)				\
@@ -1853,7 +1853,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   } else if (intel_gpu_arch > 0) {
     device = "INTEL GPU";
   }
-  
+
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     auto next_it = iit;  next_it++;
     Offset vma = iit->first;
@@ -1883,46 +1883,46 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
 }
 
-//---------------------------------------------------------------------- 
+//----------------------------------------------------------------------
 
-// Unparsable functions 
-// 
-static void 
+// Unparsable functions
+//
+static void
 doUnparsableFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
-{ 
-  // not sure if cuda generates multiple functions, but we'll handle 
-  // this case until proven otherwise. 
-  long num = 0; 
- 
-  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) { 
-    ProcInfo * pinfo = pit->second; 
-    ParseAPI::Function * func = pinfo->func; 
-    num++; 
- 
-#if DEBUG_CFG_SOURCE 
-    long num_funcs = ginfo->procMap.size(); 
-    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda"); 
-#endif 
- 
-    TreeNode * root = new TreeNode; 
- 
-    doUnparsableFunction(env, ginfo, func, root); 
-    pinfo->root = root; 
-  } 
-} 
+{
+  // not sure if cuda generates multiple functions, but we'll handle
+  // this case until proven otherwise.
+  long num = 0;
 
-static void 
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+    ProcInfo * pinfo = pit->second;
+    ParseAPI::Function * func = pinfo->func;
+    num++;
+
+#if DEBUG_CFG_SOURCE
+    long num_funcs = ginfo->procMap.size();
+    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda");
+#endif
+
+    TreeNode * root = new TreeNode;
+
+    doUnparsableFunction(env, ginfo, func, root);
+    pinfo->root = root;
+  }
+}
+
+static void
 doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 		     TreeNode * root)
-{ 
+{
   LineMapCache lmcache (ginfo->sym_func, env.realPath);
- 
-  int len = 4; 
-  for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) { 
-    string filenm = ""; 
-    unsigned int line = 0; 
- 
-    lmcache.getLineInfo(vma, filenm, line); 
+
+  int len = 4;
+  for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) {
+    string filenm = "";
+    unsigned int line = 0;
+
+    lmcache.getLineInfo(vma, filenm, line);
     string device;
     addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, device);
   }

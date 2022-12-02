@@ -131,8 +131,8 @@
 // according to https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART____VERSION.html,
 // CUDA encodes the runtime version number as (1000 * major + 10 * minor)
 
-#define RUNTIME_MAJOR_VERSION(rt_version) (rt_version / 1000) 
-#define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10) 
+#define RUNTIME_MAJOR_VERSION(rt_version) (rt_version / 1000)
+#define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10)
 
 
 //******************************************************************************
@@ -191,7 +191,7 @@ CUDA_RUNTIME_FN
 CUDA_RUNTIME_FN
 (
  cudaRuntimeGetVersion,
- ( 
+ (
   int* runtimeVersion
  )
 );
@@ -277,7 +277,7 @@ cuda_device_compute_capability
 
 
 // returns 0 on success
-static int 
+static int
 cuda_device_id
 (
   int *device_id
@@ -393,11 +393,11 @@ cuda_global_pc_sampling_required
 
 #ifdef DEBUG
   printf("cuda_global_pc_sampling_required: "
-         "device major = %d minor = %d cuda major = %d\n", 
+         "device major = %d minor = %d cuda major = %d\n",
          dev_major, dev_minor, RUNTIME_MAJOR_VERSION(rt_version));
 #endif
 
-  *required = ((DEVICE_IS_TURING(dev_major, dev_minor)) && 
+  *required = ((DEVICE_IS_TURING(dev_major, dev_minor)) &&
                (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
 
   return 0;

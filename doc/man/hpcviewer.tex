@@ -84,8 +84,8 @@ Print a help message.
 
 
 \item[\Opt{-jh}, \Opt{--java-heap} <size>]
-  	Set the JVM maximum heap size for this execution of  \Prog{hpcviewer}. The value of \texttt{size} must be 
-	in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either 
+  	Set the JVM maximum heap size for this execution of  \Prog{hpcviewer}. The value of \texttt{size} must be
+	in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either
 	3076M or 3G.
 
 
@@ -119,11 +119,11 @@ This view organizes performance data according to the static structure of an app
 All costs incurred in \emph{any} calling context by a procedure are aggregated together in the flat view.
 
 \item \textbf{Thread view}
-	This view is to display the metrics of a certain threads and/or processes. 
+	This view is to display the metrics of a certain threads and/or processes.
 To activate the view, one needs to select a thread or a set of threads of interest by clicking the thread-view button from Top-down view.
-On the thread selection window, one needs to select the checkbox of the threads of interest. 
+On the thread selection window, one needs to select the checkbox of the threads of interest.
 To  narrow the list, one can specify the thread name on the filter part of the window.
-Once threads have been selected, click \textbf{OK}, and the Thread view will be activated. 
+Once threads have been selected, click \textbf{OK}, and the Thread view will be activated.
 The tree of the view is the same as the tree from the Top-down view, with the metrics only from the selected threads.
 If there are more than one selected threads, the metrics are the average of the values of the selected threads.
 \\
@@ -152,12 +152,12 @@ load module, source file, procedure, procedure activation,
 loop, single line of code, or code fragment inlined from elsewhere.
 Outline items can be selected and their children folded and unfolded.
 
-Which items appear in the outline depend on which view is displayed: 
+Which items appear in the outline depend on which view is displayed:
 
 \begin{itemize}
 
 \item In the Top-down view, displayed items are
-procedure activations, loops, source lines, and inlined code. 
+procedure activations, loops, source lines, and inlined code.
 Most items link to a single location in the source code,
 but a procedure activation item links to two:
 the call site where the procedure was invoked and the procedure body executed in response.
@@ -205,7 +205,7 @@ Showing the graph (plot, sorted plot or histogram) of metric values of the selec
 
 \item \textbf{Show the metrics of a set of threads}.
 Showing the CCT and the metrics of a seletected threads.
- 
+
 
 
 \item \textbf{Flatten} (icon of a slashed tree node).
@@ -256,8 +256,8 @@ and the \emph{Histogram} graph displays a barchart of metric value distributions
 
 \section{Trace view}
 
-The view interactively presents program traces in a top-down fashion. 
-It comprises of three different parts. 
+The view interactively presents program traces in a top-down fashion.
+It comprises of three different parts.
 
 
 \begin{itemize}
@@ -284,14 +284,14 @@ It comprises of three different parts.
 
 \item \textbf{Summary view} (same location as depth view on the left-bottom part):
   The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
-  Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
+  Similar to Depth view, the time range in Summary reflects to the time range in the Trace view.
 
 \item \textbf{Call stack view} (right, top):
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's crosshair.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
 
 \item \textbf{Statistics view} (tab in top, right pane)
-  The view shows a list of procedures and the estimated execution percentage for each for the time interval currently shown in the Trace view. 
+  The view shows a list of procedures and the estimated execution percentage for each for the time interval currently shown in the Trace view.
 
 
 \item \textbf{Mini map view} (right, bottom):
@@ -301,7 +301,7 @@ It comprises of three different parts.
 \end{itemize}
 Note:
 \begin{itemize}
-\item GPUs are very fast, hence the time interval during which a GPU operation is active may be very short. A problem for users is that it may be hard to locate short GPU operations that are separated by long intervals of idleness in the trace. Such operations will often be invisible because 
+\item GPUs are very fast, hence the time interval during which a GPU operation is active may be very short. A problem for users is that it may be hard to locate short GPU operations that are separated by long intervals of idleness in the trace. Such operations will often be invisible because
  when hpcviewer renders a pixel in a trace, it will not show a GPU operation unless the time point at the left edge of the pixel's associated time interval falls within the time interval of the GPU operation.
  	To force hpcviewer to render a GPU operation if any GPU operation is active within the time interval associated with a pixel, one can enable \emph{Expose GPU traces} by clicking the menu \textbf{File} - \textbf{Preferences} and click the \textbf{Traces} page, then check the \emph{Expose GPU traces} option.
 \\
@@ -314,20 +314,20 @@ Warning: enabling this option causes trace statistics to be unreliable because G
 
 \subsection{Main view}
 
-Main view is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces. 
+Main view is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces.
 
 The buttons in the action pane are the following:
 \begin{itemize}
 
 \item Home : Resetting the view configuration into the original view, i.e., viewing traces for all times and processes.
-\item Horiontal zoom in / out : Zooming in/out the time dimension of the traces. 
+\item Horiontal zoom in / out : Zooming in/out the time dimension of the traces.
 \item Vertical zoom in / out : Zooming in/out the process dimension of the traces.
 \item Navigation buttons : Navigating the trace view to the left, right, up and bottom, respectively. It is also possible to navigate with the arrow keys in the keyboard. Since Trace view does not support scrool bars, the only way to navigate is through navigation buttons (or arrow keys).
 \item Undo : Canceling the action of zoom or navigation and returning back to the previous view configuration.
 \item Redo : Redoing of previously undo change of view configuration.
-\item Save/Load a view configuration : Saving/loading a saved view configuration. 
-A view configuration file contains the information of the current dimension of time and process, the depth and the position of the crosshair. 
-It is recommended to store the view configuration file in the same directory as the database to ensure that the view configuration file matches well with the database since the file does not store which database it is associated with. 
+\item Save/Load a view configuration : Saving/loading a saved view configuration.
+A view configuration file contains the information of the current dimension of time and process, the depth and the position of the crosshair.
+It is recommended to store the view configuration file in the same directory as the database to ensure that the view configuration file matches well with the database since the file does not store which database it is associated with.
 Although it is possible to open a view configuration file which is associated from different database, it is highly not recommended since each database has different time/process dimensions and depth.
 
 
@@ -335,9 +335,9 @@ Although it is possible to open a view configuration file which is associated fr
 
 The information pane contains some information concerning the range status of the current displayed data.
 \begin{itemize}
- \item Time Range. The information of current time-range (horizontal) dimension. 
- \item Rank Range. The information of current process-range (vertical) dimension. 
- \item Cross Hair. The information of current crosshair position in time and process dimensions. 
+ \item Time Range. The information of current time-range (horizontal) dimension.
+ \item Rank Range. The information of current process-range (vertical) dimension.
+ \item Cross Hair. The information of current crosshair position in time and process dimensions.
 \end{itemize}
 
 
@@ -362,7 +362,7 @@ In Depth view a user can specify a new cross-hair time and a new time range.
 % ===========================================================================
 \subsection{Summary view}
 
-Summary view presents the proportion of number of calls of time $t$ across the current displayed rank of proces $p$. 
+Summary view presents the proportion of number of calls of time $t$ across the current displayed rank of proces $p$.
 Similar to Depth view, the time range in Summary view is always consistent with the time range in Trace view.
 One can also select a new time range in this view.
 
@@ -381,8 +381,8 @@ In this view, the user can select the depth dimension by either typing the depth
 % ===========================================================================
 \subsection{Statistic view}
 
-The view shows a list of procedures and the estimated execution percentage for each for the time interval currently shown in the Trace view. 
-  Whenever the user changes the time interval displayed in the Trace view, the statistics view will update its list of procedures and their execution percentages to 
+The view shows a list of procedures and the estimated execution percentage for each for the time interval currently shown in the Trace view.
+  Whenever the user changes the time interval displayed in the Trace view, the statistics view will update its list of procedures and their execution percentages to
   reflect the current interval.  Similarly, a change in the selected call path depth will also update the contents of the statistics view.
 
 
@@ -414,11 +414,11 @@ This menu includes several menu items for controlling basic viewer operations.
   Open a new \Prog{hpcviewer} window that is independent from the existing one.
 
 \item \textbf{Switch database}
-  Load a performance database into the current \Prog{hpcviewer} window and close all opened databases (if any). 
+  Load a performance database into the current \Prog{hpcviewer} window and close all opened databases (if any).
 
 \item \textbf{Open database}
-  Load a performance database into the current \Prog{hpcviewer} window. 
-  Currently \Prog{hpcviewer} restricts maximum of five database open at a time. 
+  Load a performance database into the current \Prog{hpcviewer} window.
+  Currently \Prog{hpcviewer} restricts maximum of five database open at a time.
   To display more, one can either closing an existing open database, or opening a new \Prog{hpcviewer} window.
 
 \item \textbf{Close database}
@@ -456,7 +456,7 @@ This menu is to allow users to filter certain nodes in the Profile view or filte
  \item \textbf{Filter CCT nodes}.
   Open a filter property window which lists a set of filters and its properties.
 \Prog{hpcviewer} allows  users to define multiple filters, and each filter is associated with a type and a glob pattern (A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +).
-There are three types of filter: ``\textbf{self only}'' to omit matched nodes, 
+There are three types of filter: ``\textbf{self only}'' to omit matched nodes,
 ``\textbf{descendants only}'' to exclude only the subtree of the matched nodes, and ``\textbf{self and descendants}'' to
 remove matched nodes and its descendants.
 
@@ -470,7 +470,7 @@ remove matched nodes and its descendants.
 
 \subsection{View}
 This menu is only visible if at least one database is loaded.
-All actions in this menu are intended primarily for tool developer use. 
+All actions in this menu are intended primarily for tool developer use.
 By default, the menu is hidden. Once a database is loaded, the menu is then visible.
 
 \begin{itemize}
@@ -498,7 +498,7 @@ One can also edit the name of a metric colum or even edit the formula of a deriv
 
 \subsection{Help}
 
-This menu displays information about the viewer. 
+This menu displays information about the viewer.
 \begin{itemize}
 
 \item \textbf{About}.
@@ -551,4 +551,3 @@ WWW: \URL{http://hpctoolkit.org}.
 %% time-stamp-end: "}\n"
 %% time-stamp-line-limit: 50
 %% End:
-

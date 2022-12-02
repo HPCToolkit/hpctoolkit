@@ -103,7 +103,7 @@ typedef struct typed_splay_node(queue) {
   uint64_t queue_id; // key
 
   uint64_t context_id;
-} typed_splay_node(queue); 
+} typed_splay_node(queue);
 
 
 //******************************************************************************
@@ -143,7 +143,7 @@ queue_context_map_entry_new
 
   e->queue_id = queue_id;
   e->context_id = context_id;
-  
+
   return e;
 }
 
@@ -172,7 +172,7 @@ queue_context_map_lookup
 void
 queue_context_map_insert
 (
- uint64_t queue_id, 
+ uint64_t queue_id,
  uint64_t context_id
 )
 {
@@ -182,7 +182,7 @@ queue_context_map_insert
   if (entry) {
     entry->context_id = context_id;
   } else {
-    queue_context_map_entry_t *entry = 
+    queue_context_map_entry_t *entry =
       queue_context_map_entry_new(queue_id, context_id);
 
     st_insert(&map_root, entry);

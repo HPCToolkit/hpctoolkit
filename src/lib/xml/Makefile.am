@@ -78,8 +78,8 @@ MYDTDHEADERS = \
 	$(srcdir)/hpc-structure.dtd.h \
 	$(srcdir)/hpc-structure.dtd.version.h
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -124,4 +124,3 @@ $(srcdir)/%.dtd.version.h : $(top_srcdir)/lib/dtd/%.dtd
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
-

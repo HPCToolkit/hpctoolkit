@@ -74,7 +74,7 @@ pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr
 
 // return 0 or positive if the event exists, -1 otherwise
 // if the event exist, code and type are the code and type of the event
-int 
+int
 pfmu_getEventType(const char *eventname, u64 *code, u64 *type)
 {
   return -1;
@@ -83,7 +83,7 @@ pfmu_getEventType(const char *eventname, u64 *code, u64 *type)
 
 /*
  * interface to check if an event is "supported"
- * "supported" here means, it matches with the perfmon PMU event 
+ * "supported" here means, it matches with the perfmon PMU event
  *
  * return 0 or positive if the event exists, -1 otherwise
  */

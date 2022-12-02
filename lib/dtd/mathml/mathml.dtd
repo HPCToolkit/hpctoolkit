@@ -188,7 +188,7 @@
 
 <!ENTITY % att-xmlns
                                      'xmlns%mathml-colon;%mathml-prefix;
-                                      CDATA #FIXED 
+                                      CDATA #FIXED
                                      "http://www.w3.org/1998/Math/MathML"' >
 <!ENTITY  % att-global
   '%att-xmlns;
@@ -472,7 +472,7 @@
 
 <!-- Empty presentation layout schemata -->
 
-<!ENTITY  % peschema                 '%mathml-maligngroup; | 
+<!ENTITY  % peschema                 '%mathml-maligngroup; |
                                       %mathml-malignmark;' >
 
 <!ELEMENT %mathml-malignmark;         EMPTY >

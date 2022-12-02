@@ -64,7 +64,7 @@ typedef struct cct_ctxt_t cct_ctxt_t;
 // NB: NOT opaque
 //
 struct cct_ctxt_t {
-  cct_node_t* context;// cct  
+  cct_node_t* context;// cct
   cct_ctxt_t* parent; // a list of cct_ctxt_t
 
 };

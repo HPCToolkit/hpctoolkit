@@ -220,11 +220,11 @@ Args::parse(int argc, const char* const argv[])
     // Parse the command line
     // -------------------------------------------------------
     parser.parse(optArgs, argc, argv);
-    
+
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
-    
+
     // Special options that should be checked first
     if (parser.isOpt("help")) {
       printUsage(std::cerr);
@@ -243,7 +243,7 @@ Args::parse(int argc, const char* const argv[])
     }
 
     // FIXME: sanity check that options correspond to mode
-    
+
     // Check for required arguments
     unsigned int numArgs = parser.getNumArgs();
     if ( !(numArgs >= 1) ) {
@@ -306,4 +306,3 @@ Args::dump(std::ostream& os) const
   os << "Args.cmd= " << getCmd() << endl;
   Analysis::Args::dump(os);
 }
-

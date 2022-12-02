@@ -118,7 +118,7 @@ typedef struct {
 // forward declarations
 //******************************************************************************
 
-int 
+int
 pfmu_getEventType(const char *eventname, u64 *code, u64 *type);
 
 //******************************************************************************
@@ -140,9 +140,9 @@ event_has_pname(char *s)
  * @param code: config, @type: type of event
  * @return: file descriptor if successful, -1 otherwise
  *  caller needs to check errno for the root cause
- */ 
+ */
 static int
-create_event(uint64_t code, uint64_t type) 
+create_event(uint64_t code, uint64_t type)
 {
   struct perf_event_attr event_attr;
   memset(&event_attr, 0, sizeof(event_attr));
@@ -168,12 +168,12 @@ create_event(uint64_t code, uint64_t type)
 /******************
  * test a pmu if it's profilable or not
  * @return 0 if it's fine. 1 otherwise
- ******************/ 
+ ******************/
 static int
 test_pmu(char *evname)
 {
   u64  code, type;
-  
+
   if (pfmu_getEventType(evname, &code, &type) >0 ) {
     if (create_event(code, type)>=0) {
       return EVENT_IS_PROFILABLE;
@@ -187,8 +187,8 @@ test_pmu(char *evname)
  * the display will be formatted by display library
  *
  * @param: perf event information
- * @return: 
- *   0 if profilable, 
+ * @return:
+ *   0 if profilable,
  *  -1 if there's a fatal error
  *   1 otherwise
  ******************/
@@ -218,7 +218,7 @@ show_event_info(pfm_event_info_t *info)
   int profilable = test_pmu(buffer);
 
   display_line_single(stdout);
-  
+
   if (profilable == EVENT_IS_PROFILABLE) {
     display_event_info(stdout, buffer, info->desc);
   } else {
@@ -238,7 +238,7 @@ show_event_info(pfm_event_info_t *info)
 	continue;
       }
 
-      // the counter may not be profilable. Perhaps requires more attributes/masks 
+      // the counter may not be profilable. Perhaps requires more attributes/masks
       // or higher user privilege (like super user)
       // add a sign to users so they know the event may not be profilable
       sprintf(buffer_desc, "%s (*)", ainfo.desc);
@@ -295,7 +295,7 @@ show_info(char *event )
       }
     }
   }
-  
+
   return match;
 }
 
@@ -325,7 +325,7 @@ pfmu_getEventDescription(const char *event_name)
     pfm_event_info_t info;
     memset(&info, 0, sizeof(info));
     info.size = sizeof(info);
-    
+
     ret = pfm_get_event_info(arg.idx, PFM_OS_NONE, &info);
 
     if (ret == PFM_SUCCESS) {
@@ -364,7 +364,7 @@ pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr
 
 // return 0 or positive if the event exists, -1 otherwise
 // if the event exist, code and type are the code and type of the event
-int 
+int
 pfmu_getEventType(const char *eventname, u64 *code, u64 *type)
 {
   pfm_perf_encode_arg_t arg;
@@ -389,7 +389,7 @@ pfmu_getEventType(const char *eventname, u64 *code, u64 *type)
 
 /*
  * interface to check if an event is "supported"
- * "supported" here means, it matches with the perfmon PMU event 
+ * "supported" here means, it matches with the perfmon PMU event
  *
  * return 0 or positive if the event exists, -1 otherwise
  */
@@ -461,7 +461,7 @@ pfmu_showEventList()
       "OS generic",
   };
   printf("Detected PMU models:\n");
-  
+
   pfm_for_all_pmus(i) {
     ret = pfm_get_pmu_info(i, &pinfo);
     if (ret != PFM_SUCCESS)
@@ -492,4 +492,3 @@ pfmu_showEventList()
 
   return 0;
 }
-

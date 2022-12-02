@@ -104,7 +104,7 @@ typedef struct typed_splay_node(queue) {
   uint64_t kernel_id; // key
 
   qc_node_t *qc_list;
-} typed_splay_node(queue); 
+} typed_splay_node(queue);
 
 
 //******************************************************************************
@@ -143,7 +143,7 @@ kernel_queue_map_entry_new
 
   e->kernel_id = kernel_id;
   e->qc_list = NULL;
-  
+
   return e;
 }
 
@@ -154,9 +154,9 @@ qc_node_alloc_helper
  qc_node_t **free_list
 )
 {
-  qc_node_t *first = *free_list; 
+  qc_node_t *first = *free_list;
 
-  if (first) { 
+  if (first) {
     *free_list = first->next;
   } else {
     first = (qc_node_t *) hpcrun_malloc_safe(sizeof(qc_node_t));
@@ -170,8 +170,8 @@ qc_node_alloc_helper
 static void
 qc_node_free_helper
 (
- qc_node_t **free_list, 
- qc_node_t *node 
+ qc_node_t **free_list,
+ qc_node_t *node
 )
 {
   node->next = *free_list;
@@ -205,8 +205,8 @@ kernel_queue_map_lookup
 kernel_queue_map_entry_t*
 kernel_queue_map_insert
 (
- uint64_t kernel_id, 
- uint64_t queue_id, 
+ uint64_t kernel_id,
+ uint64_t queue_id,
  uint64_t context_id
 )
 {
@@ -238,7 +238,7 @@ kernel_queue_map_delete
 )
 {
   spinlock_lock(&kernel_queue_map_lock);
-  
+
   kernel_queue_map_entry_t *node = st_delete(&map_root, kernel_id);
   // clear all nodes inside node->qc_list
   qc_node_t *qn = node->qc_list;

@@ -116,7 +116,7 @@ typedef struct sample_source_t {
   int                     sort_order;    // registered list order: low to high
   struct sample_source_t* next_reg;      // simple linked list of REGISTERED sample source objects
   struct sample_source_t* next_sel;      // simple linked list of SELECTED   sample source objects
-  
+
 } sample_source_t;
 
 

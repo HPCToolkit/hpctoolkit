@@ -8,7 +8,7 @@
 // where roctracer and rocprofiler will each create
 // one monitoring thread.
 // As the implementation of the channel is one-proceduer-one-consumer,
-// we need an array of correlation and 
+// we need an array of correlation and
 // activity channel for each application thread.
 // For platforms where there is just one monitoring
 // thread, such as NVIDIA, the implementation maintains

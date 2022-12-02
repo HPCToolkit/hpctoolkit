@@ -2,7 +2,7 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$ 
+// $HeadURL$
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -46,7 +46,7 @@
 
 
 //*****************************************************************************
-// system includes 
+// system includes
 //*****************************************************************************
 
 #include <stdio.h>
@@ -77,7 +77,7 @@
 //----------------------------------------------------------------------------
 // note the creation context for an OpenMP task
 //----------------------------------------------------------------------------
-static void 
+static void
 ompt_task_begin_internal
 (
  ompt_data_t* task_data
@@ -114,7 +114,7 @@ ompt_task_begin_internal
   }
 
   if (unwind_here) {
-    ucontext_t uc; 
+    ucontext_t uc;
     getcontext(&uc);
 
     hpcrun_metricVal_t zero_metric_incr_metricVal;
@@ -176,5 +176,3 @@ ompt_task_register_callbacks
                                 (ompt_callback_t)ompt_task_create);
   assert(ompt_event_may_occur(retval));
 }
-
-

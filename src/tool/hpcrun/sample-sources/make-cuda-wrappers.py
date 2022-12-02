@@ -1,6 +1,6 @@
-#!/usr/local/bin/python 
+#!/usr/local/bin/python
 # -*- python -*-
-#   
+#
 #   HPCToolkit MPI Profiler
 #   this script is adapted from mpiP MPI Profiler ( http://mpip.sourceforge.net/ )
 #
@@ -291,7 +291,7 @@ extern bool hpcrun_is_safe_to_sync(const char* fn);
             param = argTypeName.split()[-1].split('*')[-1]
             if param.strip() != "void":
                 fp.write(param)
-            
+
 
         fp.write( ');\n')
 	fp.write('}\n')
@@ -310,7 +310,7 @@ extern bool hpcrun_is_safe_to_sync(const char* fn);
             param = argTypeName.split()[-1].split('*')[-1]
             if param.strip() != "void":
                 fp.write(param)
-            
+
 
         fp.write( ');\n')
 	fp.write('monitor_enable_new_threads();\n')
@@ -320,7 +320,7 @@ extern bool hpcrun_is_safe_to_sync(const char* fn);
         fp.write('}\n')
 #    fp.write('''
 ##endif
-#''')  
+#''')
     fp.close();
 
 
@@ -356,15 +356,15 @@ extern bool hpcrun_is_safe_to_sync(const char* fn);
             param = argTypeName.split()[-1].split('*')[-1]
             if param.strip() != "void":
                 fp.write(param)
-            
+
 
         fp.write( ');\n')
 	fp.write('}\n')
         fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = true;\n')
 	fp.write('monitor_disable_new_threads();\n')
         #fp.write('printf("\\n%s on","' +sig[1] +'");')
-        fp.write('cudaError_t ret = cudaRuntimeFunctionPointer[' +FuncNameToEnum(sig[1]) + '].' + sig[1] + 'Real(') 
- 
+        fp.write('cudaError_t ret = cudaRuntimeFunctionPointer[' +FuncNameToEnum(sig[1]) + '].' + sig[1] + 'Real(')
+
         args = sig[2].split(',')
         first = True
         for argTypeName in args:
@@ -375,8 +375,8 @@ extern bool hpcrun_is_safe_to_sync(const char* fn);
             param = argTypeName.split()[-1].split('*')[-1]
             if param.strip() != "void":
                 fp.write(param)
-            
- 
+
+
         fp.write( ');\n')
 	fp.write('monitor_enable_new_threads();\n')
         fp.write('TD_GET(gpu_data.is_thread_at_cuda_sync) = false;\n')
@@ -424,7 +424,7 @@ defaultValue = re.compile('__dv\s*\(.*\)')
 signatures = []
 for line in lines:
     funcName = line.group(2)
-    funcPrefix = line.group(1) 
+    funcPrefix = line.group(1)
     funcArgs = line.group(3)
     noDefaultArgs = defaultValue.sub('',funcArgs)
     #print p.group(1), p.group(2), p.group(3), p.group(4), p.group(5), '(', n, ')'
@@ -432,16 +432,15 @@ for line in lines:
     #print funcPrefix, funcName, '(' , noDefaultArgs, ')'
     for argTypeName in args:
         last = argTypeName.split()[-1]
-	last = last.split('*')[-1] 
+	last = last.split('*')[-1]
     	#print last
     signatures.append((funcPrefix, funcName, noDefaultArgs))
 
 if sys.argv[1] == 'driver':
-   WriteDriverFunctionPointerHeader(generatedHeaderFile, signatures) 
+   WriteDriverFunctionPointerHeader(generatedHeaderFile, signatures)
    WritecuDriverFunctionPointerTable(generatedTableFile, signatures)
    WriteDriverFunctionWrapper(generatedWrapperFile, signatures)
 elif sys.argv[1] == 'runtime':
-   WriteRuntimeFunctionPointerHeader(generatedHeaderFile, signatures) 
+   WriteRuntimeFunctionPointerHeader(generatedHeaderFile, signatures)
    WritecuRuntimeFunctionPointerTable(generatedTableFile, signatures)
    WriteRuntimeFunctionWrapper(generatedWrapperFile, signatures)
-

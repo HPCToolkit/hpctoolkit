@@ -54,7 +54,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct queue_context_map_entry_t queue_context_map_entry_t;
@@ -73,7 +73,7 @@ queue_context_map_lookup
 void
 queue_context_map_insert
 (
- uint64_t, 
+ uint64_t,
  uint64_t
 );
 
@@ -100,4 +100,3 @@ queue_context_map_entry_context_id_get
 
 
 #endif  // queue_context_map_h
-

@@ -302,8 +302,8 @@ StmtMap::insert(StmtInfo * sinfo)
 // adjacent stmts if their file and line match.
 //
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath, 
-              VMA vma, int len, string & filenm, SrcFile::ln line, 
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath,
+              VMA vma, int len, string & filenm, SrcFile::ln line,
               string & device, bool is_call, bool is_sink, VMA target)
 {
   InlineSeqn path;

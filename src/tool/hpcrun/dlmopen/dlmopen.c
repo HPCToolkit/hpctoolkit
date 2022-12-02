@@ -51,12 +51,12 @@
 //
 //   this functionality is needed when using LD_AUDIT
 //   with an older glibc that crashes when using dlmopen
-//   in combination with an auditor library. 
+//   in combination with an auditor library.
 //
-//   this file will be compiled into a separate 
+//   this file will be compiled into a separate
 //   shared library that will be loaded only when this
-//   functionality is needed. 
-// 
+//   functionality is needed.
+//
 //----------------------------------------------------------
 
 
@@ -71,7 +71,7 @@
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 void *dlmopen (Lmid_t lmid, const char *filename, int flags)

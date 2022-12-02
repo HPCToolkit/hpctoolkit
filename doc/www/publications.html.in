@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- -*- coding: utf-8 -*- -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -29,7 +29,7 @@
 <h2>Selected Overview Paper</h2>
 
 <!-- BEGIN CITATIONS pubs-overview -->
-<!-- 
+<!--
      \citation{Adhianto-etal:2010:CPE-hpctoolkit}
   -->
 <!-- END CITATIONS pubs-overview -->
@@ -61,8 +61,8 @@ HPCToolkit: Tools for performance analysis of optimized parallel programs.
 <h2>HPCToolkit Papers</h2>
 
 <!-- BEGIN CITATIONS pubs-hpctoolkit-a -->
-<!-- 
-    
+<!--
+
      \citation{10.1145/3437801.3441604}
      \citation{9370339}
      \citation{9355258}
@@ -552,7 +552,7 @@ In <cite>ICS '01: Proc. of the 15th International Conference on
 <h2>HPCToolkit Talks and Posters</h2>
 
 <!-- BEGIN CITATIONS pubs-hpctoolkit-b -->
-<!-- 
+<!--
      \citation{Chabbi-etal:2013:hpctoolkit}
      \citation{Mellor-Crummey:talk:2011:alcf-workshop}
      \citation{Tallent:talk:2010:SC-hpctoolkit}
@@ -722,7 +722,7 @@ In <cite>SIGMETRICS '01: Proc. of the 2001 ACM SIGMETRICS International
 <h2>Performance Modeling and Prediction Papers</h2>
 
 <!-- BEGIN CITATIONS pubs-prediction -->
-<!-- 
+<!--
      \citation{Marin-MC:2007:IPCCC-insight}
      \citation{Qasem-Kennedy-MC:2006:JoS-autotuning-search}
      \citation{Marin-MC:2005:scalable-prediction}

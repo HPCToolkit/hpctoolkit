@@ -2,7 +2,7 @@
 #define __cct_backtrace_finalize_h__
 
 //******************************************************************************
-// local includes 
+// local includes
 //******************************************************************************
 
 #include "unwind/common/backtrace_info.h"
@@ -16,7 +16,7 @@
 //******************************************************************************
 
 typedef void (*cct_backtrace_finalize_fn)(
-  backtrace_info_t *bt, 
+  backtrace_info_t *bt,
   int isSync
 );
 
@@ -43,7 +43,7 @@ extern void cct_backtrace_finalize_register(
 
 
 extern void cct_backtrace_finalize(
-  backtrace_info_t *bt, 
+  backtrace_info_t *bt,
   int isSync
 );
 

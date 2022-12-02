@@ -71,10 +71,10 @@ extern "C" {
 int
 hpcio_outbuf_attach
 (
-  hpcio_outbuf_t **outbuf /* out */, 
+  hpcio_outbuf_t **outbuf /* out */,
   int fd,
-  void *buf_start, 
-  size_t buf_size, 
+  void *buf_start,
+  size_t buf_size,
   int flags,
   allocator_t alloc
 );
@@ -83,8 +83,8 @@ hpcio_outbuf_attach
 ssize_t
 hpcio_outbuf_write
 (
-  hpcio_outbuf_t *outbuf, 
-  const void *data, 
+  hpcio_outbuf_t *outbuf,
+  const void *data,
   size_t size
 );
 

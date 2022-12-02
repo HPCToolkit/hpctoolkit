@@ -28,7 +28,7 @@ typedef struct cct2metrics_t cct2metrics_t;
 extern void hpcrun_cct2metrics_init(cct2metrics_t** map);
 
 // ******** Interface operations **********
-// 
+//
 
 //
 // for a given cct node, return the metric set
@@ -67,7 +67,7 @@ cct_metric_data_update(int metric_id,
 			  cct_metric_data_t incr)
 {
   metric_data_list_t *set = hpcrun_reify_metric_set(x, metric_id);
-  
+
   if (type == SET)
     hpcrun_metric_std_set(metric_id, set, incr);
   else if (type == INCR)

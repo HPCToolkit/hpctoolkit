@@ -48,11 +48,11 @@ boundary_compare
 {
   const char* aa = *(const char**)a;
   const char* bb = *(const char**)b;
-  
+
   // strtok will alter input argument, hence creating a clone of aa and bb
   char* aa_clone = strdup(aa);
   char* bb_clone = strdup(bb);
-  
+
   // a and b are in the format "<mem> <S/E>"
   // mem(int): memory address of the boundary
   // S/E(char): type of boundary (S=start, E=end)
@@ -60,7 +60,7 @@ boundary_compare
   char * a_type = strtok(NULL, " ");
   int b_num = atoi(strtok(bb_clone, " "));
   char * b_type = strtok(NULL, " ");
-  
+
   // if boundaries have same address, we sort by type (E comes before S lexicographically)
   if (a_num == b_num) {
     return strcmp(a_type, b_type);
@@ -74,7 +74,7 @@ static bool
 checkIfMemoryRegionsOverlap
 (
  kp_node_t *kernel_param_list
-) 
+)
 {
   uint16_t num_params = 0;
   kp_node_t *curr = kernel_param_list;
@@ -98,7 +98,7 @@ checkIfMemoryRegionsOverlap
     boundaries[index++] =  strdup(end);
     curr = curr->next;
   }
-  
+
   qsort(boundaries, arr_length, sizeof(char*), boundary_compare);
 
   bool currentOpen = false;
@@ -106,7 +106,7 @@ checkIfMemoryRegionsOverlap
     char *b = strdup(boundaries[i]);
     strtok(b, " ");             // memory address, which will be useful when returning all overlapped buffers
     char *boundary_type = strtok(NULL, " ");
-    
+
     if (strcmp(boundary_type, "S") == 0) {
       // if there are two consecutive start boundaries, there is an overlap
       if (currentOpen) return true;
@@ -182,7 +182,7 @@ recordQueueContext
  cl_context context
 )
 {
-  queue_context_map_insert((uint64_t)queue, (uint64_t)context);   
+  queue_context_map_insert((uint64_t)queue, (uint64_t)context);
 }
 
 
@@ -192,8 +192,8 @@ clearQueueContext
  cl_command_queue queue
 )
 {
-  queue_context_map_delete((uint64_t)queue);   
-  
+  queue_context_map_delete((uint64_t)queue);
+
 }
 
 
@@ -211,9 +211,9 @@ isKernelSubmittedToMultipleQueues
    *
    * If we submit the kernels to the same queue, we get best performance because all the kernels are able to just transfer the needed inputs once at the
    * beginning and do all their computations.
-   * 
+   *
    * If the kernels are submitted to different queues that share the same context, the performance is similar to submitting it to one queue.
-   * 
+   *
    * When a kernel is submitted to a new queue with a different context, the JIT process compiles the kernel to the new
    * device associated with the context. If this JIT compilation time is discounted, the actual execution of the kernels is similar.
    *
@@ -222,8 +222,8 @@ isKernelSubmittedToMultipleQueues
    *
    * If for some reason there is a need to use different queues, the problem can be alleviated by creating the queues with shared context.
    * This will prevent the need to transfer the input buffers, but the memory footprint of the kernels will increase because all the output buffers have be
-   * resident at the same time in the context whereas earlier the same memory on the device could be used for the output buffers.*/ 
-  
+   * resident at the same time in the context whereas earlier the same memory on the device could be used for the output buffers.*/
+
   queue_context_map_entry_t *qc_entry = queue_context_map_lookup((uint64_t)queue);
   uint64_t queue_context = queue_context_map_entry_context_id_get(qc_entry);
   // kernel_context_map_entry_t *kc_entry = kernel_context_map_insert((uint64_t)kernel, queue_context);
@@ -283,7 +283,7 @@ areKernelParamsAliased
   }
   kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
   bool aliased = checkIfMemoryRegionsOverlap(kp_list);
-  
+
   cct_node_t *cct_ph = place_cct_under_opencl_kernel(kernel_module_id);
 
   intel_optimization_t i;
@@ -461,4 +461,3 @@ areAllDevicesUsed
     record_intel_optimization_metrics(firstDeviceCCT, &i);  // this may crash when firstDeviceCCT == NULL
   }
 }
-

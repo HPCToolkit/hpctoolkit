@@ -67,7 +67,7 @@
 
 #define typed_splay_alloc(free_list, splay_node_type)		\
   (splay_node_type *) splay_uint64_alloc_helper		\
-  ((splay_uint64_node_t **) free_list, sizeof(splay_node_type))	
+  ((splay_uint64_node_t **) free_list, sizeof(splay_node_type))
 
 
 #define typed_splay_free(free_list, node)			\
@@ -84,7 +84,7 @@
 splay_uint64_node_t *
 splay_uint64_alloc_helper
 (
- splay_uint64_node_t **free_list, 
+ splay_uint64_node_t **free_list,
  size_t size
 );
 
@@ -92,8 +92,8 @@ splay_uint64_alloc_helper
 void
 splay_uint64_free_helper
 (
- splay_uint64_node_t **free_list, 
- splay_uint64_node_t *e 
+ splay_uint64_node_t **free_list,
+ splay_uint64_node_t *e
 );
 
 

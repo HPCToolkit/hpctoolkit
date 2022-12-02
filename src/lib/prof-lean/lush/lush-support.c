@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -76,12 +76,12 @@
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 lush_assoc_info_t lush_assoc_info_NULL = { .bits = 0 };
 
-const char* 
+const char*
 lush_assoc_tostr(lush_assoc_t as)
 {
   switch (as) {
@@ -96,7 +96,7 @@ lush_assoc_tostr(lush_assoc_t as)
 }
 
 
-const char* 
+const char*
 lush_assoc_info_sprintf(char* str, lush_assoc_info_t as_info)
 {
   // INVARIANT: str must have at least LUSH_ASSOC_INFO_STR_MIN_LEN slots
@@ -104,20 +104,20 @@ lush_assoc_info_sprintf(char* str, lush_assoc_info_t as_info)
   lush_assoc_t as = as_info.u.as;
   unsigned len = as_info.u.len;
 
-  const char* as_str = lush_assoc_tostr(as);  
+  const char* as_str = lush_assoc_tostr(as);
   snprintf(str, LUSH_ASSOC_INFO_STR_MIN_LEN, "%s (%u)", as_str, len);
   str[LUSH_ASSOC_INFO_STR_MIN_LEN - 1] = '\0';
-  
+
   return str;
 }
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 lush_lip_t lush_lip_NULL = { .data8 = {0, 0} };
 
-const char* 
+const char*
 lush_lip_sprintf(char* str, const lush_lip_t* x)
 {
   str[0] = '\0';
@@ -139,7 +139,7 @@ lush_lip_sprintf(char* str, const lush_lip_t* x)
 }
 
 #if 0
-void 
+void
 lush_lip_fprint(FILE* fs, lush_lip_t* x);
 {
   if (x) {

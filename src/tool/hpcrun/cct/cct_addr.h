@@ -64,7 +64,7 @@ struct cct_addr_t {
 
   // logical instruction pointer
   lush_lip_t* lip;
-  
+
 };
 
 //

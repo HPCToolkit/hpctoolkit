@@ -97,7 +97,7 @@ static int leak_metric_id = -1;
 static void
 METHOD_FN(init)
 {
-  self->state = INIT; 
+  self->state = INIT;
 
   // reset static variables to their virgin state
   alloc_metric_id = -1;
@@ -153,7 +153,7 @@ METHOD_FN(supports_event,const char *ev_str)
 {
   return hpcrun_ev_is(ev_str,"MEMLEAK");
 }
- 
+
 
 // MEMLEAK creates two metrics: bytes allocated and Bytes Freed.
 
@@ -211,7 +211,7 @@ METHOD_FN(display_events)
 
 //
 // sync class is "SS_SOFTWARE" so that both synchronous and asynchronous sampling is possible
-// 
+//
 
 #define ss_name memleak
 #define ss_cls SS_SOFTWARE
@@ -232,14 +232,14 @@ METHOD_FN(display_events)
 //        Consequently, the interaction with metrics must be done procedurally
 
 int
-hpcrun_memleak_alloc_id() 
+hpcrun_memleak_alloc_id()
 {
   return alloc_metric_id;
 }
 
 
 int
-hpcrun_memleak_active() 
+hpcrun_memleak_active()
 {
   if (hpcrun_is_initialized()) {
     thread_data_t* td = hpcrun_safe_get_td();
@@ -256,7 +256,7 @@ void
 hpcrun_alloc_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(MEMLEAK, "\talloc (cct node %p): metric[%d] += %d", 
+    TMSG(MEMLEAK, "\talloc (cct node %p): metric[%d] += %d",
 	 node, alloc_metric_id, incr);
     cct_metric_data_increment(alloc_metric_id,
 			      node,
@@ -269,9 +269,9 @@ void
 hpcrun_free_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(MEMLEAK, "\tfree (cct node %p): metric[%d] += %d", 
+    TMSG(MEMLEAK, "\tfree (cct node %p): metric[%d] += %d",
 	 node, free_metric_id, incr);
-    
+
     cct_metric_data_increment(free_metric_id,
 			      node,
 			      (cct_metric_data_t){.i = incr});

@@ -79,7 +79,7 @@ main_rawData(const std::vector<string>& profileFiles, bool sm_easyToGrep);
 
 //****************************************************************************
 
-void 
+void
 prof_abort
 (
   int error_code
@@ -89,8 +89,8 @@ prof_abort
 }
 
 
-int 
-main(int argc, char* const* argv) 
+int
+main(int argc, char* const* argv)
 {
   int ret;
 
@@ -100,7 +100,7 @@ main(int argc, char* const* argv)
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  } 
+  }
   catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
@@ -118,11 +118,11 @@ main(int argc, char* const* argv)
 }
 
 
-static int 
-realmain(int argc, char* const* argv) 
+static int
+realmain(int argc, char* const* argv)
 {
   Args args(argc, argv);  // exits if error on command line
-  return main_rawData(args.profileFiles, args.sm_easyToGrep); 
+  return main_rawData(args.profileFiles, args.sm_easyToGrep);
 }
 
 

@@ -82,7 +82,7 @@ typedef struct {
 typedef struct gpu_data_t {
   // True if this thread is at CuXXXXSynchronize.
   bool is_thread_at_cuda_sync;
-  // maintains state to account for overload potential  
+  // maintains state to account for overload potential
   uint8_t overload_state;
   // current active stream
   uint64_t active_stream;
@@ -118,7 +118,7 @@ typedef struct gpu_data_t {
     thread_locks package
         (each of the 'lock' elements is true if this thread owns the lock.
          locks must be released in an exceptional situation)
-	fnbounds_lock   
+	fnbounds_lock
 	splay_lock
     sample source package
        event_set
@@ -149,7 +149,7 @@ typedef struct thread_data_t {
 
   int last_synch_sample;
   int last_sample;
-  
+
   int overhead; // indicate whether the thread is overhead
 
   int lockwait; // if thread is in work & lockwait state, it is waiting for a lock
@@ -165,7 +165,7 @@ typedef struct thread_data_t {
   cct_node_t *omp_task_context; // pass task context from elider to cct insertion
   int master; // whether the thread is the master thread
   int team_master; // whether the thread is the team master thread
- 
+
   int defer_write; // whether should defer the write
 
   int reuse; // mark whether the td is ready for reuse
@@ -193,7 +193,7 @@ typedef struct thread_data_t {
   bool           timer_init;
 
   uint64_t       last_time_us; // microseconds
-   
+
   // ----------------------------------------
   // core_profile_trace_data contains the following
   // epoch: loadmap + cct + cct_ctxt
@@ -215,12 +215,12 @@ typedef struct thread_data_t {
   // +------------------------------------------------------------+
   // [new backtrace         )              [cached backtrace      )
   // +------------------------------------------------------------+
-  //                        ^              ^ 
+  //                        ^              ^
   //                        |              |
   //                    btbuf_cur       btbuf_sav
-  
+
   frame_t* btbuf_cur;  // current frame when actively constructing a backtrace
-  frame_t* btbuf_beg;  // beginning of the backtrace buffer 
+  frame_t* btbuf_beg;  // beginning of the backtrace buffer
                        // also, location of the innermost frame in
                        // newly recorded backtrace (although skipInner may
                        // adjust the portion of the backtrace that is recorded)
@@ -242,13 +242,13 @@ typedef struct thread_data_t {
   frame_t* cached_bt_buf_beg;  // the begin of the cached backtrace buffer
   frame_t* cached_bt_frame_beg;  // the begin of cached frames
   frame_t* cached_bt_buf_frame_end;  // the end of the cached backtrace buffer & end of cached frames
-  
+
   frame_t* tramp_frame;       // (cached) frame assoc. w/ cur. trampoline loc.
   cct_node_t* tramp_cct_node; // cct node associated with the trampoline
 
   uint32_t prev_dLCA; // distance to LCA in the CCT for the previous sample
   uint32_t dLCA; // distance to LCA in the CCT
-  
+
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------
@@ -291,30 +291,30 @@ typedef struct thread_data_t {
   // USE CASE: Certain metrics (like GPU_IDLE_CAUSE from blame-shifting) should only be
   // attributed to main thread (thread 0) and not background threads.
   bool application_thread_0;
-  
+
   uint64_t gpu_trace_prev_time;
- 
+
 } thread_data_t;
 
 
 static const size_t HPCRUN_TraceBufferSz = HPCIO_RWBufferSz;
 
 
-void 
+void
 hpcrun_init_pthread_key
 (
   void
 );
 
 
-void 
+void
 hpcrun_set_thread0_data
 (
   void
 );
 
 
-void 
+void
 hpcrun_set_thread_data
 (
   thread_data_t *td
@@ -329,24 +329,24 @@ extern thread_data_t* hpcrun_safe_get_td(void);
 extern thread_data_t* hpcrun_allocate_thread_data(int id);
 
 
-void 
+void
 hpcrun_unthreaded_data
 (
   void
 );
 
 
-void 
+void
 hpcrun_threaded_data
 (
   void
 );
 
 
-void 
+void
 hpcrun_thread_init_mem_pool_once
 (
-  int id, 
+  int id,
   cct_ctxt_t *thr_ctxt,
   hpcrun_trace_type_t trace,
   bool demand_new_thread
@@ -356,21 +356,21 @@ hpcrun_thread_init_mem_pool_once
 void
 hpcrun_thread_data_init
 (
-  int id, 
-  cct_ctxt_t* thr_ctxt, 
-  int is_child, 
+  int id,
+  cct_ctxt_t* thr_ctxt,
+  int is_child,
   size_t n_sources
 );
 
 
-void     
+void
 hpcrun_cached_bt_adjust_size
 (
   size_t n
 );
 
 
-frame_t* 
+frame_t*
 hpcrun_expand_btbuf
 (
   void

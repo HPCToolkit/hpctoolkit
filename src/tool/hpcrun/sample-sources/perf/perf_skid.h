@@ -57,13 +57,13 @@
 // parse the event into event_name and the type of precise_ip
 //  the name of the event excludes the precise ip suffix
 // returns:
-//  PERF_EVENT_AUTODETECT_SKID       
-//  PERF_EVENT_SKID_ZERO_REQUIRED    
-//  PERF_EVENT_SKID_ZERO_REQUESTED  
-//  PERF_EVENT_SKID_CONSTANT         
-//  PERF_EVENT_SKID_ARBITRARY        
-//  PERF_EVENT_SKID_NONE    
-//  PERF_EVENT_SKID_ERROR        
+//  PERF_EVENT_AUTODETECT_SKID
+//  PERF_EVENT_SKID_ZERO_REQUIRED
+//  PERF_EVENT_SKID_ZERO_REQUESTED
+//  PERF_EVENT_SKID_CONSTANT
+//  PERF_EVENT_SKID_ARBITRARY
+//  PERF_EVENT_SKID_NONE
+//  PERF_EVENT_SKID_ERROR
 int
 perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks);
 

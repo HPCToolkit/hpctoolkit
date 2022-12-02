@@ -98,8 +98,8 @@ typed_stack_declare_type(gpu_correlation_channel_ptr_t);
 // local data
 //******************************************************************************
 
-static 
-typed_stack_elem_ptr(gpu_correlation_channel_ptr_t) 
+static
+typed_stack_elem_ptr(gpu_correlation_channel_ptr_t)
 gpu_correlation_channel_stacks[GPU_CHANNEL_TOTAL];
 
 
@@ -152,7 +152,7 @@ gpu_correlation_channel_set_insert_with_idx
 )
 {
   // allocate and initialize new entry for channel stack
-  channel_stack_elem_t *e = 
+  channel_stack_elem_t *e =
     (channel_stack_elem_t *) hpcrun_malloc_safe(sizeof(channel_stack_elem_t));
 
   // initialize the new entry

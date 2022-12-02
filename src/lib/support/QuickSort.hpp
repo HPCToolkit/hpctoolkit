@@ -119,10 +119,10 @@ class QuickSort
     void Sort (const int minEntryIndex, const int maxEntryIndex);
 
   private:
-    void** ArrayPtr;                 
-    EntryCompareFunctPtr CompareFunct;   
+    void** ArrayPtr;
+    EntryCompareFunctPtr CompareFunct;
 
-    bool QuickSortCreated;         
+    bool QuickSortCreated;
 
     void Swap (int a, int b);
     int  Partition (const int min, const int max, const int q);

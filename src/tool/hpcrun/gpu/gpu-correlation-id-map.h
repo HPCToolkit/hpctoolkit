@@ -55,7 +55,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct gpu_correlation_id_map_entry_t gpu_correlation_id_map_entry_t;

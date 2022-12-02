@@ -46,7 +46,7 @@
 /*  debug.c -- print out various elements of the data structures */
 
 //******************************************************************************
-// include files 
+// include files
 //******************************************************************************
 
 #include	"fnbounds.h"
@@ -306,7 +306,7 @@ print_program_headers64
     }
     if (progHeader.p_type == PT_LOAD) {
       refOffset = progHeader.p_vaddr;
-    }   
+    }
     fprintf(stderr, "FNB2: %4ld ", j);
     fprintf(stderr, "0x%08x ", progHeader.p_type);
     fprintf(stderr, "0x%08x ", progHeader.p_flags);
@@ -376,4 +376,3 @@ print_section_headers64
 
   fprintf(stderr, "FNB2: \n");	/* end of section header table */
 }
-

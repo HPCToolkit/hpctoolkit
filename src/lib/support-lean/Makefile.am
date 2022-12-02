@@ -86,9 +86,9 @@ else
   MYAR = $(AR) cru
 endif
 
-MYLIBADD = 
+MYLIBADD =
 
-MYCLEAN = 
+MYCLEAN =
 
 
 #############################################################################
@@ -109,4 +109,3 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
-

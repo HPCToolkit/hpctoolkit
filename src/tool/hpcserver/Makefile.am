@@ -93,7 +93,7 @@ MYSOURCES = \
 	main.cpp
 
 
-MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK 
+MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK
 
 MYCFLAGS   = @HOST_CFLAGS@   $(MYMPIFLAGS) $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS) $(HPC_IFLAGS) @XERCES_IFLAGS@
@@ -102,7 +102,7 @@ MYLDFLAGS  = -lz
 
 MYLDADD = \
         @HOST_LIBTREPOSITORY@ \
-        $(HPCLIB_Support) 
+        $(HPCLIB_Support)
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -132,4 +132,3 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
-

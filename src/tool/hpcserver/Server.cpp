@@ -176,14 +176,14 @@ namespace TraceviewerServer
 			parseInfo(socketptr);
 		else
 			cerr << "Did not receive info packet" << endl;
-	
+
 #ifdef HPCTOOLKIT_PROFILE
 		hpctoolkit_sampling_stop();
 #endif
 		// ------------------------------------------------------------------
 		// main loop for a communication session
-		// as long as the client doesn't send OPEN or DONE, we remain in 
-		// in this loop 
+		// as long as the client doesn't send OPEN or DONE, we remain in
+		// in this loop
 		// ------------------------------------------------------------------
 		while (true)
 		{
@@ -234,7 +234,7 @@ namespace TraceviewerServer
 	void Server::sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket)
 	{
 		socket->writeInt(DBOK);
- 	
+
 		int actualXMLPort = xmlSocket->getPort();
 		socket->writeInt(actualXMLPort);
 

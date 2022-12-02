@@ -48,15 +48,15 @@
 // StackableIterator.C
 //
 //   a base set of functionality for iterators that can be used with the
-//   IteratorStack abstraction to traverse nested structures 
+//   IteratorStack abstraction to traverse nested structures
 //
-// Author: John Mellor-Crummey                                
+// Author: John Mellor-Crummey
 //
 // Creation Date: October 1993
 //
 // Modification History:
-//   see StackableIterator.h 
-// 
+//   see StackableIterator.h
+//
 //***************************************************************************
 
 //************************** System Include Files ***************************
@@ -75,9 +75,9 @@
 // class StackableIterator interface operations
 //***************************************************************************
 
-StackableIterator::StackableIterator()  
+StackableIterator::StackableIterator()
 {
-  
+
 }
 
 
@@ -98,21 +98,16 @@ bool StackableIterator::IsValid() const
 }
 
 
-void StackableIterator::Dump() 
+void StackableIterator::Dump()
 {
 #if 0
-  dumpHandler.Dump("[%s %x; current = %x]\n", typeid(this).name(), this, 
+  dumpHandler.Dump("[%s %x; current = %x]\n", typeid(this).name(), this,
 		   CurrentUpCall());
   DumpUpCall();
 #endif
 }
 
 
-void StackableIterator::DumpUpCall() 
+void StackableIterator::DumpUpCall()
 {
 }
-
-
-
-
-

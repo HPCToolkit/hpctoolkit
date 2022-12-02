@@ -65,7 +65,7 @@ initialize_pointer_chase(long bytes)
     long stride8;
 
     chase_array = (unsigned char *)malloc(bytes);
-    
+
     chases = bytes/stride;
     half = chases/2;
     stride8 = stride/8;
@@ -88,7 +88,7 @@ pointer_chase(long iterations, long kilobytes)
     long i;
 
     initialize_pointer_chase(kilobytes * KILOBYTE);
- 
+
     for(i=0; i<iterations; ++i) {
         unsigned char **p = (unsigned char **)chase_array;
 

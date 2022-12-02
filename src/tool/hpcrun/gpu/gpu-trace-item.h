@@ -66,7 +66,7 @@
 // forward type declarations
 //******************************************************************************
 
-typedef struct cct_node_t cct_node_t; 
+typedef struct cct_node_t cct_node_t;
 
 typedef struct thread_data_t thread_data_t;
 
@@ -78,9 +78,9 @@ typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 typedef struct gpu_trace_item_t {
   s_element_ptr_t next;
-  uint64_t cpu_submit_time; 
-  uint64_t start; 
-  uint64_t end; 
+  uint64_t cpu_submit_time;
+  uint64_t start;
+  uint64_t end;
   cct_node_t *call_path_leaf;
 } gpu_trace_item_t;
 
@@ -97,7 +97,7 @@ typedef void (*gpu_trace_item_consume_fn_t)
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 void
@@ -131,7 +131,7 @@ gpu_trace_item_alloc
 void
 gpu_trace_item_free
 (
- gpu_trace_channel_t *channel, 
+ gpu_trace_channel_t *channel,
  gpu_trace_item_t *ti
 );
 

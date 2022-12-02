@@ -269,7 +269,7 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	"GPU local memory: store (transactions, theoretical)")
 
 //--------------------------------------------------------------------------
-// scalar metrics 
+// scalar metrics
 //--------------------------------------------------------------------------
 
 
@@ -408,7 +408,7 @@ GPU_XFER_XRCV_COUNT              			 = 5
 
 #define FORALL_GSAMP(macro)			\
   FORALL_GSAMP_INT(macro)			\
-  FORALL_GSAMP_REAL(macro)				
+  FORALL_GSAMP_REAL(macro)
 
 
 // gpu transfer information
@@ -519,7 +519,7 @@ gpu_metrics_GPU_INST_enable
 (
  void
 );
- 
+
 
 // record NVIDIA GPU instruction stall reasons
 void
@@ -619,7 +619,7 @@ gpu_metrics_INTEL_OPTIMIZATION_enable
 
 
 //--------------------------------------------------
-// attribute GPU measurements to an application 
+// attribute GPU measurements to an application
 // thread's calling context tree
 //--------------------------------------------------
 
@@ -632,4 +632,3 @@ gpu_metrics_attribute
 
 
 #endif
-

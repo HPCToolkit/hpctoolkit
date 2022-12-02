@@ -347,11 +347,11 @@ public:
   nameQual() const
   { return name(); }
 
-  void 
-  setInvisible() 
+  void
+  setInvisible()
   { m_visible = false; }
 
-  bool 
+  bool
   isVisible() const
   { return m_visible == true; }
 
@@ -660,13 +660,13 @@ public:
     DIAG_Assert(Logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
 		"ACodeNode::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
   }
-  
+
   void
-  freezeLine() 
+  freezeLine()
   { m_lineno_frozen = true; }
 
   void
-  thawLine() 
+  thawLine()
   { m_lineno_frozen = false; }
 
 
@@ -798,7 +798,7 @@ private:
   std::string m_scope_filenm;
   SrcFile::ln m_scope_lineno;
   bool m_lineno_frozen;
-  
+
 public:
   void setScopeLocation(std::string &file, SrcFile::ln line) {
     m_scope_filenm = file;
@@ -1632,7 +1632,7 @@ public:
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
-  Loop(ACodeNode* parent, std::string &filenm, 
+  Loop(ACodeNode* parent, std::string &filenm,
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyLoop, parent, begLn, endLn, 0, 0)
   {

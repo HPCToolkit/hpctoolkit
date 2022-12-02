@@ -86,5 +86,3 @@ int hpcrun_cpu_trace_on();
 int hpcrun_gpu_trace_on();
 
 #endif // hpcrun_trace_h
-
-

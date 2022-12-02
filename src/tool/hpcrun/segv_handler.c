@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
-// system include files 
+// system include files
 //***************************************************************************
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@
 
 
 //***************************************************************************
-// user include files 
+// user include files
 //***************************************************************************
 
 #include "include/queue.h" // Singly-linkled list macros
@@ -97,7 +97,7 @@ typedef struct segv_list_s {
 
 //*************************** Local variables **************************
 
-static SLIST_HEAD(segv_list_head, segv_list_s) list_cb_head = 
+static SLIST_HEAD(segv_list_head, segv_list_s) list_cb_head =
 	SLIST_HEAD_INITIALIZER(segv_list_head);
 
 //***************************************************************************
@@ -146,7 +146,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
 
     hpcrun_bt_dump(td->btbuf_cur, "SEGV");
 
-    // call clean-up callback functions 
+    // call clean-up callback functions
     segv_list_t *item;
     SLIST_FOREACH(item, &list_cb_head, entries) {
       if (item->callback != NULL)
@@ -185,15 +185,15 @@ hpcrun_setup_segv()
 
 // Interface for callback registerations when a segv occurs.
 // The callback function will be called when a segv happens.
-// Returns: 0 if the function is already registered, 
+// Returns: 0 if the function is already registered,
 //  	1 if the function is now added to the list
 //  	-1 if there's something wrong
-// Warnning: this function is not thread safe. 
+// Warnning: this function is not thread safe.
 
-int 
+int
 hpcrun_segv_register_cb( hpcrun_sig_callback_t cb )
 {
-  segv_list_t *list_item = NULL; 
+  segv_list_t *list_item = NULL;
 
   // searching if the callback is already registered
   SLIST_FOREACH(list_item, &list_cb_head, entries) {
@@ -210,5 +210,3 @@ hpcrun_segv_register_cb( hpcrun_sig_callback_t cb )
   SLIST_INSERT_HEAD(&list_cb_head, list_item, entries);
   return 1;
 }
-
-

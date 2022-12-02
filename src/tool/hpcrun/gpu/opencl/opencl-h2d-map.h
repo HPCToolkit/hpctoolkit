@@ -62,7 +62,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct opencl_h2d_map_entry_t opencl_h2d_map_entry_t;
@@ -91,8 +91,8 @@ opencl_h2d_map_lookup
 void
 opencl_h2d_map_insert
 (
- uint64_t, 
- uint64_t, 
+ uint64_t,
+ uint64_t,
  size_t,
  opencl_object_t *
 );
@@ -136,7 +136,7 @@ opencl_h2d_map_entry_callback_info_get
 void
 opencl_update_ccts_for_h2d_nodes
 (
- opencl_splay_fn_t fn	
+ opencl_splay_fn_t fn
 );
 
 
@@ -147,4 +147,3 @@ opencl_h2d_map_count
 );
 
 #endif
-

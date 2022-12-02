@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 #ifndef support_FileUtil_hpp
-#define support_FileUtil_hpp 
+#define support_FileUtil_hpp
 
 //************************* System Include Files ****************************
 
@@ -90,7 +90,7 @@ rmSuffix(const std::string& fname)
 
 // 'dirname': returns the '/path' component of "/path/fname.ext"
 extern std::string
-dirname(const char* fname); 
+dirname(const char* fname);
 
 inline std::string
 dirname(const std::string& fname)
@@ -116,10 +116,10 @@ fnmatch(const std::string pattern, const char* string, int flags = 0)
 
 
 bool
-fnmatch(const std::vector<std::string>& patternVec, 
-	const char* string, 
+fnmatch(const std::vector<std::string>& patternVec,
+	const char* string,
 	int flags = 0);
-  
+
 
 // ---------------------------------------------------------
 // file tests
@@ -178,7 +178,7 @@ move(const std::string& dst, const std::string& src)
 
 
 
-// deletes fname (unlink) 
+// deletes fname (unlink)
 extern int
 remove(const char* fname);
 
@@ -194,7 +194,7 @@ mkdir(const std::string& dir)
 }
 
 
-// mkdirUnique: 
+// mkdirUnique:
 std::pair<std::string, bool>
 mkdirUnique(const char* dirnm);
 
@@ -205,8 +205,8 @@ mkdirUnique(const std::string& dirnm)
 }
 
 
-// retuns a name that can safely be used for a temporary file 
-// in a static variable, which is overwritten with each call to 
+// retuns a name that can safely be used for a temporary file
+// in a static variable, which is overwritten with each call to
 // tmpname
 extern const char*
 tmpname();

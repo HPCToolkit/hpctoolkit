@@ -104,7 +104,7 @@ opencl_kernel_epilogue
 )
 {
   // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
+  hpcrun_safe_enter();
 
   uint64_t event_id = (uint64_t) event;
   unsigned long kernel_start, kernel_end;
@@ -119,7 +119,7 @@ opencl_kernel_epilogue
       EMSG("clGetEventProfilingInfo failed");
     }
 
-    // Just to verify that this is a valid profiling value. 
+    // Just to verify that this is a valid profiling value.
     elapsedTime = kernel_end- kernel_start;
     if (elapsedTime <= 0) {
       printf("bad kernel time\n");
@@ -166,7 +166,7 @@ opencl_sync_epilogue
 )
 {
   // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
+  hpcrun_safe_enter();
 
   struct timespec sync_end;
   // using CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC gives time that matches with kernel start and end time outputted by clGetEventProfilingInfo

@@ -91,7 +91,7 @@
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(context_id) gpu_context_id_map_entry_t 
+#define typed_splay_node(context_id) gpu_context_id_map_entry_t
 
 
 
@@ -106,7 +106,7 @@ struct gpu_context_id_map_entry_t {
   uint64_t first_time;
   uint64_t time_offset;
   gpu_stream_id_map_entry_t *streams;
-}; 
+};
 
 
 typedef struct trace_fn_helper_t {
@@ -252,7 +252,7 @@ gpu_context_id_map_lookup
 {
   gpu_context_id_map_entry_t *result = st_lookup(&map_root, context_id);
 
-  TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)", 
+  TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)",
        context_id, result);
 
   return result;

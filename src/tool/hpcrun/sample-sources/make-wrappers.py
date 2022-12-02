@@ -1,6 +1,6 @@
-#!/usr/local/bin/python 
+#!/usr/local/bin/python
 # -*- python -*-
-#   
+#
 #   HPCToolkit MPI Profiler
 #   this script is adapted from mpiP MPI Profiler ( http://mpip.sourceforge.net/ )
 #
@@ -108,7 +108,7 @@ noDefineList = [
     "MPI_Pcontrol"
     ]
 
-opaqueInArgDict = { 
+opaqueInArgDict = {
   ("MPI_Abort", "comm"):"MPI_Comm",
   ("MPI_Accumulate", "origin_datatype"):"MPI_Datatype",
   ("MPI_Accumulate", "target_datatype"):"MPI_Datatype",
@@ -324,7 +324,7 @@ opaqueInArgDict = {
   ("MPI_Win_wait", "win"):"MPI_Win"
 }
 
-opaqueOutArgDict = { 
+opaqueOutArgDict = {
   ("MPI_Bsend_init", "request"):"MPI_Request",
   ("MPI_Cart_create", "comm_cart"):"MPI_Comm",
   ("MPI_Cart_sub", "comm_new"):"MPI_Comm",
@@ -380,15 +380,15 @@ opaqueOutArgDict = {
 }
 
 incrementFortranIndexDict = {
-  ("MPI_Testany"): ("*index", 1), 
+  ("MPI_Testany"): ("*index", 1),
   ("MPI_Testsome"): ("array_of_indices", "*count"),
-  ("MPI_Waitany"): ("*index", 1), 
-  ("MPI_Waitsome"): ("array_of_indices", "*count") 
+  ("MPI_Waitany"): ("*index", 1),
+  ("MPI_Waitsome"): ("array_of_indices", "*count")
   }
 
 xlateFortranArrayExceptions = {
-  ("MPI_Testany", "array_of_requests"): ("index"), 
-  ("MPI_Waitany", "array_of_requests"): ("index") 
+  ("MPI_Testany", "array_of_requests"): ("index"),
+  ("MPI_Waitany", "array_of_requests"): ("index")
 }
 
 
@@ -431,7 +431,7 @@ class xlateEntry:
         "initialize a new Fortran translation structure"
         self.mpiType = mpiType
         self.varName = varName
-        
+
 
 def ProcessDirectiveLine(lastFunction, line):
     tokens = string.split(line)
@@ -549,8 +549,8 @@ def ParamDictUpdate(fname):
             elif paramMessType == 3:
                 fdict[fname].recvCountPname = pname
             elif paramMessType == 4:
-                fdict[fname].recvTypePname = pname                
-            
+                fdict[fname].recvTypePname = pname
+
         #  Identify and assign io size parameters
         if ioParamDict.has_key((fname,pname)):
             paramMessType = ioParamDict[(fname,pname)]
@@ -558,7 +558,7 @@ def ParamDictUpdate(fname):
                 fdict[fname].ioCountPname = pname
             elif paramMessType == 2:
                 fdict[fname].ioTypePname = pname
-            
+
         #  Identify and assign rma size parameters
         if rmaParamDict.has_key((fname,pname)):
             paramMessType = rmaParamDict[(fname,pname)]
@@ -566,7 +566,7 @@ def ParamDictUpdate(fname):
                 fdict[fname].rmaCountPname = pname
             elif paramMessType == 2:
                 fdict[fname].rmaTypePname = pname
-            
+
 	if (fdict[fname].paramDict[pname].pointerLevel == 0) \
 	   and (fdict[fname].paramDict[pname].arrayLevel == 0) \
 	   and (fdict[fname].paramDict[pname].basetype != "void"):
@@ -693,7 +693,7 @@ def StandardFileHeader(fname):
 
 
 ###
-### Scan the lists of all functions and look for optimization 
+### Scan the lists of all functions and look for optimization
 ### opportunities (in space/speed).
 ###
 ### NOT USED
@@ -720,7 +720,7 @@ def GenerateStructureFile():
     sname = cwd + "/mpiPi_def.h"
     g = open(sname, "w")
     olist = StandardFileHeader(sname)
-    
+
     olist.append("\n")
     olist.append("#define mpiPi_BASE " + str(baseID) + "\n")
     olist.append("\n")
@@ -793,7 +793,7 @@ def CreateWrapper(funct, olist):
     #####
     ##### C wrapper
     #####
-    olist.append("\n\n" + fdict[funct].returntype + " HPCRUN_MPI_WRAP(" 
+    olist.append("\n\n" + fdict[funct].returntype + " HPCRUN_MPI_WRAP("
 		 + fdict[funct].name +  ") (" + fdict[funct].paramStr + "){" )
     if fdict[funct].wrapperPreList:
 	olist.extend(fdict[funct].wrapperPreList)
@@ -806,8 +806,8 @@ def CreateWrapper(funct, olist):
 		buffcount = fdict[funct].recvCountPname
 		bufftype  = fdict[funct].recvTypePname
 
-        olist.append( "\n" 
-                      + "if ( " + fdict[funct].sendTypePname + " != MPI_DATATYPE_NULL ) {\n" 
+        olist.append( "\n"
+                      + "if ( " + fdict[funct].sendTypePname + " != MPI_DATATYPE_NULL ) {\n"
 		      + "  hpmpi_store_metric(Get_Msg_size(" +buffcount+ ", "+ bufftype + ") );\n"
                       + "} else {\n  TMSG(MPI,\"MPI_DATATYPE_NULL encountered.  MPI_IN_PLACE not supported.\\n\");\n"
                       + "  TMSG(MPI,\"Values for %s may be invalid.\\n\", &(__func__)[7]);\n}\n")
@@ -838,7 +838,7 @@ def CreateWrapper(funct, olist):
 
     ##### funct decl
     olist.append("\n\nvoid " + "F77_" + string.upper(funct) + "(" )
-    
+
     #================================================================================
     # In the case where MPI_Fint and and opaque objects such as MPI_Request are not the same size,
     #   we want to use MPI conversion functions.
@@ -867,40 +867,40 @@ def CreateWrapper(funct, olist):
     xlateCount = 0
     #  Input types to translate
     xlateTargetTypes = [ "MPI_Comm", "MPI_Datatype", "MPI_File", "MPI_Group", "MPI_Info", "MPI_Op", "MPI_Request" ]
-        
+
     freelist = []
-    
+
     #  Iterate through the arguments for this function
     opaqueFound = 0
     for i in fdict[funct].paramConciseList:
-    
+
         if ( doOpaqueXlate is True and fdict[funct].paramDict[i].basetype in xlateTargetTypes ) :
-            
+
             #  Verify that there is a Dictionary entry for translating this argument
             if ( not ( opaqueInArgDict.has_key((funct, i)) or opaqueOutArgDict.has_key((funct, i)) ) ):
                 print "*** Failed to find translation information for " + funct + ":" + i + "\n"
-            
+
             opaqueFound = 1
             # All Fortran opaque object are of type MPI_Fint
             currBasetype = "MPI_Fint"
-            
+
             #  Store variable name and type
             xlateTypes.append(fdict[funct].paramDict[i].basetype)
             xlateVarNames.append(i)
-            
+
             #  Try to identify whether array or single value by whether "array" is in the variable name
             #  and add C declaration to declaration list.
             if ( xlateVarNames[xlateCount].count("array") > 0 ):
                 decl += xlateTypes[xlateCount] + " *c_" + xlateVarNames[xlateCount] + ";\n";
             else:
                 decl += xlateTypes[xlateCount] + " c_" + xlateVarNames[xlateCount] + ";\n";
-                
+
             xlateCount += 1
         else:
             #  Not translating this variable
     		currBasetype = fdict[funct].paramDict[i].basetype
-            
-        #  Add argument to function declaration    
+
+        #  Add argument to function declaration
     	olist.append(currBasetype + ' ')
 
     	if (fdict[funct].paramDict[i].pointerLevel == 0) \
@@ -923,12 +923,12 @@ def CreateWrapper(funct, olist):
     	    pass
     	if fdict[funct].paramConciseList.index(i) < len(fdict[funct].paramConciseList) - 1:
     	    olist.append(", ")
-    
-    #  Add ierr argument and declarations to output list        
+
+    #  Add ierr argument and declarations to output list
     olist.append(" , MPI_Fint *ierr)")
     olist.append("{")
     olist.append("\n")
-    
+
     if fdict[funct].wrapperPreList:
 	    olist.extend(fdict[funct].wrapperPreList)
 
@@ -942,44 +942,44 @@ def CreateWrapper(funct, olist):
     for i in range(len(xlateVarNames)) :
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
-        
+
         #  A pretty sketchy way of identifying an array size, but as far as I can tell,
         #  only one array is passed as an argument per function.
         if ( fdict[funct].paramConciseList.count("count") > 1 ):
             print "*** Multiple arrays in 1 function!!!!\n";
-            
+
         if ( "incount" in fdict[funct].paramConciseList ):
             countVar = "incount";
         elif ( "count" in fdict[funct].paramConciseList ):
             countVar = "count";
         else:
             countVar = "max_integers"
-            
+
         if ( xlateVarName.count("array") > 0 ):
             olist.append("c_" + xlateVarName + " = (" + xlateType + "*)malloc(sizeof(" + xlateType + ")*(*" + countVar + "));\n")
             olist.append("if ( c_" + xlateVarName + " == NULL ) mpiPi_abort(\"Failed to allocate memory in " \
                 + funct + "\");\n")
             freelist.append("c_"+xlateVarName)
-    
+
     #  Generate pre-call translation code if necessary by iterating through arguments that
     #  were identified as opaque objects needing translation above
     for i in range(len(xlateVarNames)) :
-        
+
         #  Set current argument name and type
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
-        
+
         #  Check for valid function:argument-name entry for pre-call translation.
         if ( opaqueInArgDict.has_key((funct, xlateVarName)) \
             and opaqueInArgDict[(funct, xlateVarName)] == xlateType ) :
-                
+
             #  Datatype translation is the only call where the translation function
             #  doesn't match the argument type.
             if ( xlateType == "MPI_Datatype" ):
                 xlateFuncType = "MPI_Type"
             else:
                 xlateFuncType = xlateType
-                
+
             if ( xlateVarName.count("array") > 0 ):
                 olist.append("{\n  int i; \n")
                 olist.append("  for (i = 0; i < *" + countVar + "; i++) { \n")
@@ -989,14 +989,14 @@ def CreateWrapper(funct, olist):
                 olist.append("c_" + xlateVarName + " = " + xlateFuncType + "_f2c(*" + xlateVarName + ");\n")
 
             xlateDone = 1
-            
-    #  Start generating call to C/Fortran common mpiP wrapper function        
-    olist.append("\nint rc = " + funct + "(  " )    
+
+    #  Start generating call to C/Fortran common mpiP wrapper function
+    olist.append("\nint rc = " + funct + "(  " )
     argname = ""
 
     #  Iterate through mpiP wrapper function arguments, replacing argument with C version where appropriate
     for i in fdict[funct].paramConciseList:
-        if ( i in xlateVarNames and 
+        if ( i in xlateVarNames and
             ( opaqueInArgDict.has_key((funct, i)) or opaqueOutArgDict.has_key((funct, i))) ):
             if ( i.count("array") > 0 ):
                 argname = "c_" + i;
@@ -1004,7 +1004,7 @@ def CreateWrapper(funct, olist):
                 argname = "&c_" + i;
         else:
             argname = i
-            
+
         if (fdict[funct].paramDict[i].pointerLevel == 0) \
            and (fdict[funct].paramDict[i].arrayLevel == 0) \
            and (fdict[funct].paramDict[i].basetype != "void"):
@@ -1015,7 +1015,7 @@ def CreateWrapper(funct, olist):
             olist.append(argname)
         else:
             pass
-            
+
         if fdict[funct].paramConciseList.index(i) < len(fdict[funct].paramConciseList) - 1:
             olist.append(", ")
 
@@ -1025,9 +1025,9 @@ def CreateWrapper(funct, olist):
     #  Generate post-call translation code if necessary
     xlateCode = []
     xlateDone = 0
-    
+
     for i in range(len(xlateVarNames)) :
-        
+
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
 
@@ -1053,9 +1053,9 @@ def CreateWrapper(funct, olist):
                 xlateCode.append("  }\n}\n")
             else:
                 xlateCode.append("*" + xlateVarName + " = " + xlateFuncType + "_c2f(c_" + xlateVarName + ");\n")
-                
+
             xlateDone = 1
-            
+
     #  If appropriate, increment any output indices
     if incrementFortranIndexDict.has_key(funct) :
       if  incrementFortranIndexDict[funct][1] == 1 :
@@ -1069,16 +1069,16 @@ def CreateWrapper(funct, olist):
       #print " xlateCode is ", xlateCode
       olist.extend(xlateCode)
       olist.append("}\n")
-                
+
     #  Free allocated arrays
     for freeSym in freelist:
         olist.append("free("+freeSym+");\n")
-                
+
     olist.append("} /* " + string.lower(funct) + " */\n")
 
     #if ( opaqueFound == 1 and xlateDone == 0 ):
     #    print "Function " + funct + " not translated!\n"
-        
+
     print "   Wrapped " + funct
 
 
@@ -1171,19 +1171,19 @@ def GenerateWeakSymbols():
 
     sname = cwd + "/weak-symbols-pcontrol.h"
     p = open(sname, "w")
-        
+
     fmlist = ['symbol', 'symbol_', 'symbol__', 'SYMBOL', 'SYMBOL_', 'SYMBOL__' ]
     if f77symbol in fmlist :
       fmlist.remove(f77symbol)
-			
+
     symflist = copy.deepcopy(flist)
 
     for funct in symflist:
       dfunc = GetFortranSymbol(f77symbol, funct)
-    	
+
       for mt in fmlist:
         wfunc = GetFortranSymbol(mt, funct)
-        if funct in [ 'MPI_Init', 'MPI_Init_thread', 'MPI_Finalize'] :  
+        if funct in [ 'MPI_Init', 'MPI_Init_thread', 'MPI_Finalize'] :
           s.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
         elif 'Pcontrol' in funct :
           p.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
@@ -1248,7 +1248,7 @@ def main():
     doWeakSymbols = False
     useSetJmp = False
     arch = 'unknown'
-    
+
     for o, a in opts:
 	print "o: ",o," a: ",a
         if o == '--f77symbol':
@@ -1261,7 +1261,7 @@ def main():
             arch = a
         if o == '--usesetjmp':
             useSetJmp = True
-            
+
 
     ##### Load the input file
     if len(pargs) < 1:
@@ -1286,34 +1286,34 @@ def main():
 #####
 main()
 
-#  
-#  
+#
+#
 #  <license>
-#  
-#  Copyright (c) 2006, The Regents of the University of California. 
-#  Produced at the Lawrence Livermore National Laboratory 
-#  Written by Jeffery Vetter and Christopher Chambreau. 
-#  UCRL-CODE-223450. 
-#  All rights reserved. 
-#   
-#  This file is part of mpiP.  For details, see http://mpip.sourceforge.net/. 
-#   
+#
+#  Copyright (c) 2006, The Regents of the University of California.
+#  Produced at the Lawrence Livermore National Laboratory
+#  Written by Jeffery Vetter and Christopher Chambreau.
+#  UCRL-CODE-223450.
+#  All rights reserved.
+#
+#  This file is part of mpiP.  For details, see http://mpip.sourceforge.net/.
+#
 #  Redistribution and use in source and binary forms, with or without
 #  modification, are permitted provided that the following conditions are
 #  met:
-#   
+#
 #  * Redistributions of source code must retain the above copyright
 #  notice, this list of conditions and the disclaimer below.
-#  
+#
 #  * Redistributions in binary form must reproduce the above copyright
 #  notice, this list of conditions and the disclaimer (as noted below) in
 #  the documentation and/or other materials provided with the
 #  distribution.
-#  
+#
 #  * Neither the name of the UC/LLNL nor the names of its contributors
 #  may be used to endorse or promote products derived from this software
 #  without specific prior written permission.
-#  
+#
 #  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 #  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 #  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -1326,22 +1326,22 @@ main()
 #  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#   
-#   
-#  Additional BSD Notice 
-#   
+#
+#
+#  Additional BSD Notice
+#
 #  1. This notice is required to be provided under our contract with the
 #  U.S. Department of Energy (DOE).  This work was produced at the
 #  University of California, Lawrence Livermore National Laboratory under
 #  Contract No. W-7405-ENG-48 with the DOE.
-#   
+#
 #  2. Neither the United States Government nor the University of
 #  California nor any of their employees, makes any warranty, express or
 #  implied, or assumes any liability or responsibility for the accuracy,
 #  completeness, or usefulness of any information, apparatus, product, or
 #  process disclosed, or represents that its use would not infringe
 #  privately-owned rights.
-#   
+#
 #  3.  Also, reference herein to any specific commercial products,
 #  process, or services by trade name, trademark, manufacturer or
 #  otherwise does not necessarily constitute or imply its endorsement,
@@ -1350,8 +1350,8 @@ main()
 #  herein do not necessarily state or reflect those of the United States
 #  Government or the University of California, and shall not be used for
 #  advertising or product endorsement purposes.
-#  
+#
 #  </license>
-#  
-#  
+#
+#
 # --- EOF

@@ -238,7 +238,7 @@ findOrAddKernelModule
   char *kernel_name = (char *) malloc(kernel_name_len+1);
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
 			     (kernel, kernel_name_len, kernel_name, NULL));
-  
+
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
   uint32_t kernel_elf_size = 0;
@@ -246,7 +246,7 @@ findOrAddKernelModule
   ASSERT_GTPIN_STATUS(status);
 
   char *kernel_elf = (char *)malloc(sizeof(char) * kernel_elf_size);
-  status = HPCRUN_GTPIN_CALL(GTPin_GetElf, 
+  status = HPCRUN_GTPIN_CALL(GTPin_GetElf,
 			     (kernel, kernel_elf_size, kernel_elf, NULL));
   ASSERT_GTPIN_STATUS(status);
 
@@ -431,7 +431,7 @@ kernelBlockActivityProcess
       bb_instruction_count, bb_execution_count, bb_latency_cycles, bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
-  
+
   //FIXME? Aaron had the last argument as true
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip, false); // how to set the ip_norm
   if (cct_child) {
@@ -581,9 +581,9 @@ addSimdInstrumentation
       GTPinMem mem_simd;
       status = HPCRUN_GTPIN_CALL(GTPin_MemClaim, (kernel, sizeof(uint32_t), &mem_simd)); ASSERT_GTPIN_STATUS(status);
       curr->mem_simd = mem_simd;
-      
+
       GenPredArgs pa = simdgroup_entry_getPredArgs(curr->entry);
-      status = HPCRUN_GTPIN_CALL(GTPin_SimdProfInstrument, (sectionHead, simdgroup_entry_getMaskCtrl(curr->entry), 
+      status = HPCRUN_GTPIN_CALL(GTPin_SimdProfInstrument, (sectionHead, simdgroup_entry_getMaskCtrl(curr->entry),
           simdgroup_entry_getExecMask(curr->entry), &pa, mem_simd));
       if (status != GTPINTOOL_STATUS_SUCCESS)	return false;
       curr->instCount = simdgroup_entry_getInst(curr->entry);
@@ -707,15 +707,15 @@ onKernelBuild
 
   kernel_data_gtpin_block_t *gtpin_block_head = NULL;
   kernel_data_gtpin_block_t *gtpin_block_curr = NULL;
-  
+
   bool hasLatencyInstrumentation = false;
   uint32_t regInst;
   if (latency_knob) {
     regInst = HPCRUN_GTPIN_CALL(GTPin_LatencyAvailableRegInstrument, (kernel));
   }
 
-  for (GTPinBBL block = HPCRUN_GTPIN_CALL(GTPin_BBLHead, (kernel)); 
-       HPCRUN_GTPIN_CALL(GTPin_BBLValid, (block)); 
+  for (GTPinBBL block = HPCRUN_GTPIN_CALL(GTPin_BBLHead, (kernel));
+       HPCRUN_GTPIN_CALL(GTPin_BBLValid, (block));
        block = HPCRUN_GTPIN_CALL(GTPin_BBLNext, (block))) {
     GTPinINS head = HPCRUN_GTPIN_CALL(GTPin_InsHead,(block));
     GTPinINS tail = HPCRUN_GTPIN_CALL(GTPin_InsTail,(block));
@@ -738,11 +738,11 @@ onKernelBuild
     if (simd_knob) {
       shead = addSimdInstrumentation(kernel, head, tail, mem_opcode, &bb_scalar_instructions);
     }
-    
+
     int32_t head_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(head));
     int32_t tail_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(tail));
 
-    kernel_data_gtpin_block_t *gtpin_block = 
+    kernel_data_gtpin_block_t *gtpin_block =
       (kernel_data_gtpin_block_t *) hpcrun_malloc(sizeof(kernel_data_gtpin_block_t));
     gtpin_block->head_offset = head_offset;
     gtpin_block->tail_offset = tail_offset;
@@ -759,7 +759,7 @@ onKernelBuild
       gtpin_block_curr->next = gtpin_block;
     }
     gtpin_block_curr = gtpin_block;
-    
+
     // while loop that iterates for each instruction in the block and adds an offset entry in map
     int32_t offset = head_offset;
     int bb_instruction_count = 0;
@@ -796,7 +796,7 @@ onKernelBuild
     kernel_data_gtpin->kernel_id = (uint64_t)kernel;
     kernel_data_gtpin->simd_width = HPCRUN_GTPIN_CALL(GTPin_KernelGetSIMD, (kernel));
     kernel_data_gtpin->block = gtpin_block_head;
-    kernel_data.data = kernel_data_gtpin; 
+    kernel_data.data = kernel_data_gtpin;
     kernel_data_map_insert((uint64_t)kernel, kernel_data);
   }
 
@@ -850,7 +850,7 @@ onKernelComplete
     // or instrumentation is turned off
     return;
   }
-  
+
   hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, HPCRUN_NO_TRACE, true);
 
   gpu_activity_channel_t *activity_channel = gtpin_correlation_id_map_entry_activity_channel_get(entry);
@@ -868,7 +868,7 @@ onKernelComplete
   kernel_data_t kernel_data = kernel_data_map_entry_kernel_data_get(kernel_data_map_entry);
   assert(kernel_data.kind == KERNEL_DATA_GTPIN);
 
-  kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)kernel_data.data; 
+  kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)kernel_data.data;
   kernel_data_gtpin_block_t *block = kernel_data_gtpin->block;
 
   while (block != NULL) {
@@ -962,7 +962,7 @@ onKernelComplete
 
     kernel_data_gtpin_inst_t *inst = block->inst;
     kernelBlockActivityProcess(correlation_id, kernel_data.loadmap_module_id,
-        inst->offset, block->instruction_count, block->execution_count, block->aggregated_latency, 
+        inst->offset, block->instruction_count, block->execution_count, block->aggregated_latency,
         bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss,
         activity_channel, host_op_node);
     while (inst != NULL) {
@@ -1064,4 +1064,3 @@ gtpin_produce_runtime_callstack
   head.next = data->next;
   free(data);
 }
-

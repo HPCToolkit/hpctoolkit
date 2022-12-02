@@ -189,7 +189,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-  return strncmp(ev_str, LEVEL0, strlen(LEVEL0)) == 0; 
+  return strncmp(ev_str, LEVEL0, strlen(LEVEL0)) == 0;
 #else
   return false;
 #endif

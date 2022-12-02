@@ -59,11 +59,11 @@
 
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 unwind_interval *find_first_bp_frame(unwind_interval *first);
 
-unwind_interval *find_first_non_decr(unwind_interval *first, 
+unwind_interval *find_first_non_decr(unwind_interval *first,
 				     unwind_interval *highwatermark);
 
 
@@ -72,7 +72,7 @@ unwind_interval *find_first_non_decr(unwind_interval *first,
  * interface operations
  *****************************************************************************/
 
-void 
+void
 reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
 	bool irdebug, interval_arg_t *iarg)
 {
@@ -80,10 +80,10 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
   unwind_interval *first               = iarg->first;
   unwind_interval *hw_uwi              = iarg->highwatermark.uwi;
 
-  // if the return is not the last instruction in the interval, 
-  // set up an interval for code after the return 
+  // if the return is not the last instruction in the interval,
+  // set up an interval for code after the return
   if ((void*)nextInsn(iarg, xptr) < iarg->end) {
-    if (iarg->bp_frames_found) { 
+    if (iarg->bp_frames_found) {
       // look for first bp frame
       first = find_first_bp_frame(first);
       set_ui_canonical(first, iarg->canonical_interval);
@@ -100,7 +100,7 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
 	}
       }
       first = iarg->canonical_interval;
-    } else { 
+    } else {
       // look for first nondecreasing with no jmp
       first = find_first_non_decr(first, hw_uwi);
       set_ui_canonical(first, iarg->canonical_interval);
@@ -134,7 +134,7 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
       }
     }
   }
-  *next = current; 
+  *next = current;
 }
 
 
@@ -168,4 +168,3 @@ find_first_non_decr(unwind_interval *first, unwind_interval *highwatermark)
   }
   return first;
 }
-

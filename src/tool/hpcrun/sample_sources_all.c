@@ -141,7 +141,7 @@ static __thread int ignore_thread = THREAD_DOINIT;
 
 
 //*******************************************************************
-// private functions 
+// private functions
 //*******************************************************************
 
 static int
@@ -153,9 +153,9 @@ ignore_this_thread()
     char *string = getenv("HPCRUN_IGNORE_THREAD");
     if (string) {
 
-      // eliminate special cases by adding comma delimiters at front and back 
+      // eliminate special cases by adding comma delimiters at front and back
       char all_str[1024];
-      sprintf(all_str, ",%s,", string); 
+      sprintf(all_str, ",%s,", string);
 
       int myid = monitor_get_thread_num();
       char myid_str[20];

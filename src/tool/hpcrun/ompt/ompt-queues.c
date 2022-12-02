@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //*****************************************************************************
-// local includes 
+// local includes
 //*****************************************************************************
 
 #include "ompt-queues.h"
@@ -123,7 +123,7 @@ ompt_wfq_t *queue
 void
 wfq_enqueue
 (
- ompt_base_t *new, 
+ ompt_base_t *new,
  ompt_wfq_t *queue
 )
 {
@@ -157,7 +157,7 @@ wfq_dequeue_public
 ompt_base_t*
 wfq_dequeue_private
 (
- ompt_wfq_t *public_queue, 
+ ompt_wfq_t *public_queue,
  ompt_base_t **private_queue
 )
 {

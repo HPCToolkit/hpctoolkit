@@ -13,7 +13,7 @@ blame_shift_register(bs_fn_entry_t *entry)
 }
 
 
-void 
+void
 blame_shift_apply(int metric_id, cct_node_t *node, int metric_incr)
 {
    bs_fn_entry_t* fn = bs_fns;
@@ -24,14 +24,14 @@ blame_shift_apply(int metric_id, cct_node_t *node, int metric_incr)
 }
 
 
-void 
+void
 blame_shift_source_register(bs_type bst)
 {
    bs_type_registered[bst] = 1;
 }
 
 
-int 
+int
 blame_shift_source_available(bs_type bst)
 {
    return bs_type_registered[bst];

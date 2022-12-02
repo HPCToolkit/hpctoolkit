@@ -10,7 +10,7 @@
 #  define x86_Reg_DI rdi
 #elif defined (HOST_CPU_x86)
 #  define x86_Reg_BP ebp
-#  define x86_Reg_DX edx	
+#  define x86_Reg_DX edx
 #  define x86_Reg_CX ecx
 #  define x86_Reg_BX ebx
 #  define x86_Reg_AX eax
@@ -26,7 +26,7 @@
 
 	.text
 	.global hpcrun_trampoline
-	.type hpcrun_trampoline,@function	
+	.type hpcrun_trampoline,@function
 hpcrun_trampoline:
 	push	%x86_Reg_BP /* need to save a slot for the "real" return address */
 
@@ -40,7 +40,7 @@ hpcrun_trampoline:
 	   this may be good if someday we decide to index things off of
 	   the base pointer (unlikely, but who knows?).
 	   save return value registers */
-	
+
 
 	push	%x86_Reg_CX
 	push	%x86_Reg_BX
@@ -48,7 +48,7 @@ hpcrun_trampoline:
 	push	%x86_Reg_DX
 	push	%x86_Reg_SI
 	push	%x86_Reg_DI
-#if defined(HOST_CPU_x86_64)	
+#if defined(HOST_CPU_x86_64)
 	push	%r15
 	push	%r14
 	push	%r13

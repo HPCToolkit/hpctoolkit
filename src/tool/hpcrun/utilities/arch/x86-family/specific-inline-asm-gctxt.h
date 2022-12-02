@@ -48,7 +48,7 @@
 #define SPECIFIC_INLINE_ASM_GCTXT
 
 //***************************************************************************
-// local include files 
+// local include files
 //***************************************************************************
 
 #include <utilities/arch/ucontext-manip.h>
@@ -56,14 +56,14 @@
 
 
 //***************************************************************************
-// macros 
+// macros
 //***************************************************************************
 
-// macro: INLINE_ASM_GCTXT 
+// macro: INLINE_ASM_GCTXT
 // purpose:
-//   lightweight version of getcontext, which saves 
+//   lightweight version of getcontext, which saves
 //   PC, BP, SP into a ucontext structure in their
-//   normal positions 
+//   normal positions
 
 #define INLINE_ASM_GCTXT(uc)                               \
   /* load PC into RAX; save RAX into uc structure   */     \

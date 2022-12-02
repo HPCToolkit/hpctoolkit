@@ -4,7 +4,7 @@
 <!-- David Carlisle -->
 
 <!-- XHTML -->
-<!ENTITY % xhtml 
+<!ENTITY % xhtml
    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
    SYSTEM "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" >
 
@@ -34,6 +34,3 @@
 <!ATTLIST OMA xref CDATA #IMPLIED>
 <!ATTLIST OMA xmlns CDATA #IMPLIED>
 <!ATTLIST OMV name CDATA #IMPLIED>
-
-
-

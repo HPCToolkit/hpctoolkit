@@ -73,10 +73,10 @@ walk_ctxt_rev(cct_ctxt_t* ctxt, cct_op_t op, cct_op_arg_t arg)
   walk_ctxt_rev_l(ctxt, op, arg, 0);
 }
 
-cct_ctxt_t* 
+cct_ctxt_t*
 copy_thr_ctxt(cct_ctxt_t* thr_ctxt)
 {
-  // MEMORY PROBLEM: if thr_ctxt is reclaimed 
+  // MEMORY PROBLEM: if thr_ctxt is reclaimed
   // FIXME: if reclamation of a thread context is possible, we would need
   //        a deep copy here.
   return thr_ctxt;

@@ -1,7 +1,7 @@
 #ifndef PPCAT_PPSTR_H
 #define PPCAT_PPSTR_H
 
-// Add several Levels of indirection for cpp token pasting (##), 
+// Add several Levels of indirection for cpp token pasting (##),
 // and stringize (#) operators.
 // These macros are to facilitate other macro definitions that use these features.
 // (The indirection is necessary due to quirkyness of cpp expansion algorithm).

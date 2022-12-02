@@ -45,16 +45,16 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
-// 
-// WordSet: 
-// 
+//
+// WordSet:
+//
 //   This table can be used to store a set of words
-//                                                                          
-// WordSetIterator: 
+//
+// WordSetIterator:
 //
 //   for enumerating entries in a WordSet
 //
-// Author:  John Mellor-Crummey                       January 1994 
+// Author:  John Mellor-Crummey                       January 1994
 //
 //***************************************************************************
 
@@ -102,19 +102,19 @@ int WordSet::EntryCompare(const void *e1, const void *e2)
 {
   return  *((unsigned long *) e1) - *((unsigned long *) e2);
 }
-  
 
-void WordSet::Add(unsigned long entry) 
+
+void WordSet::Add(unsigned long entry)
 {
-  HashTable::AddEntry(&entry); 
+  HashTable::AddEntry(&entry);
 }
 
-  
+
 void WordSet::Delete(unsigned long entry)
 {
-  HashTable::DeleteEntry(&entry); 
+  HashTable::DeleteEntry(&entry);
 }
-  
+
 
 int WordSet::IsMember(unsigned long entry) const
 {
@@ -125,7 +125,7 @@ int WordSet::IsMember(unsigned long entry) const
 
 bool WordSet::Intersects(const WordSet &rhs) const
 {
-  // identify the larger and smaller of the two set operands 
+  // identify the larger and smaller of the two set operands
   const WordSet *larger, *smaller;
   if (NumberOfEntries() > rhs.NumberOfEntries()) {
     larger = this; smaller = &rhs;
@@ -133,10 +133,10 @@ bool WordSet::Intersects(const WordSet &rhs) const
     larger = &rhs; smaller = this;
   }
 
-  // check for intersection by looking up 
+  // check for intersection by looking up
   // each element of the smaller set in the larger set.
   unsigned long *word;
-  for (WordSetIterator words(smaller); (word = words.Current()); words++) { 
+  for (WordSetIterator words(smaller); (word = words.Current()); words++) {
     if (larger->IsMember(*word)) return true;
   }
   return false;
@@ -152,9 +152,9 @@ void WordSet::Clear()
 }
 
 
-unsigned long WordSet::GetEntryByIndex(unsigned int indx) const 
+unsigned long WordSet::GetEntryByIndex(unsigned int indx) const
 {
-  return *((unsigned long *) HashTable::GetEntryByIndex(indx)); 
+  return *((unsigned long *) HashTable::GetEntryByIndex(indx));
 }
 
 
@@ -197,7 +197,7 @@ WordSet& WordSet::operator=(const WordSet &rhs)
 
 WordSet& WordSet::operator&=(const WordSet &rhs)
 {
-  // identify the larger and smaller of the two set operands 
+  // identify the larger and smaller of the two set operands
   const WordSet *larger, *smaller;
   if (NumberOfEntries() > rhs.NumberOfEntries()) {
     larger = this; smaller = &rhs;
@@ -205,16 +205,16 @@ WordSet& WordSet::operator&=(const WordSet &rhs)
     larger = &rhs; smaller = this;
   }
 
-  // perform the intersection by looking up 
+  // perform the intersection by looking up
   // each element of the smaller set in the larger set.
   // accumulate the intersection in a temporary set "temp"
   WordSetIterator words(smaller);
   unsigned long *word;
   WordSet temp;
-  for (; (word = words.Current()); words++) { 
+  for (; (word = words.Current()); words++) {
     if (larger->IsMember(*word)) temp.Add(*word);
   }
-  
+
   // overwrite the current set with the intersection
   return (*this = temp);
 }
@@ -222,7 +222,7 @@ WordSet& WordSet::operator&=(const WordSet &rhs)
 
 WordSet& WordSet::operator-=(const WordSet &rhs)
 {
-  // perform the difference by looking up 
+  // perform the difference by looking up
   // each element of this set in the rhs set.
   // Delete the members that match
   unsigned long *word;
@@ -236,20 +236,20 @@ WordSet& WordSet::operator-=(const WordSet &rhs)
 
 
 void
-WordSet::Dump(std::ostream& out, const char* name, const char* indent) 
+WordSet::Dump(std::ostream& out, const char* name, const char* indent)
 {
-  out << indent << "WordSet " << name << " " << this << std::endl; 
-  int countThisLine = 0; 
+  out << indent << "WordSet " << name << " " << this << std::endl;
+  int countThisLine = 0;
   for (WordSetIterator step(this); step.Current(); step++) {
     if (countThisLine == 0) {
       out << indent << "    ";
     }
-    out << *(long *) step.Current() << std::endl; 
+    out << *(long *) step.Current() << std::endl;
     if (++countThisLine == 10) {
       out << std::endl;
       countThisLine = 0;
     }
-  } 
+  }
 }
 
 //**********************************************************************
@@ -282,4 +282,3 @@ unsigned long *WordSetSortedIterator::Current() const
     return &((WordSetSortedIterator *)this)->current;
   } else return 0;
 }
-

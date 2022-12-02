@@ -108,7 +108,7 @@ typedef struct typed_splay_node(context) {
   uint64_t context; // key
 
   uint32_t context_id;
-} typed_splay_node(context); 
+} typed_splay_node(context);
 
 
 //******************************************************************************
@@ -148,7 +148,7 @@ opencl_cl_context_map_entry_new
 
   e->context = context;
   e->context_id = context_id;
-  
+
   return e;
 }
 
@@ -189,12 +189,12 @@ opencl_cl_context_map_update
     entry->context = context;
     entry->context_id = cl_context_id;
   } else {
-    opencl_context_map_entry_t *entry = 
+    opencl_context_map_entry_t *entry =
       opencl_cl_context_map_entry_new(context, cl_context_id);
 
     st_insert(&map_root, entry);
   }
-    
+
   // Update cl_context_id
   ret_context_id = cl_context_id++;
 
@@ -242,4 +242,3 @@ opencl_cl_context_map_count
 {
   return st_count(map_root);
 }
-

@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -77,7 +77,7 @@ class ElfParser {
 
   LineInfo GetLineInfo(uint32_t file_id) const {
     if (!IsValid()) {
-      return LineInfo();    
+      return LineInfo();
     }
 
     const uint8_t* section = nullptr;
@@ -123,7 +123,7 @@ class ElfParser {
       reinterpret_cast<const Elf64SectionHeader*>(data_ + header->shoff);
     const char* name_section = reinterpret_cast<const char*>(
         data_ + section_header[header->shstrndx].offset);
-    
+
     for (uint32_t i = 1; i < header->shnum; ++i) {
       const char* section_name = name_section + section_header[i].name;
       if (strcmp(section_name, name) == 0) {

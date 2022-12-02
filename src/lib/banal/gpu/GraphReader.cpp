@@ -19,7 +19,7 @@ void GraphReader::read(Graph &graph) {
   boost::read_graphviz_detail::parse_graphviz_from_string(dotfile.str(), result, true);
 
   std::unordered_map<std::string, size_t> vertex_name_to_id;
-  read_vertices(result, vertex_name_to_id, graph);  
+  read_vertices(result, vertex_name_to_id, graph);
   read_edges(result, vertex_name_to_id, graph);
 }
 
@@ -37,7 +37,7 @@ void GraphReader::read_vertices(
     vertex_name_to_id[vertex_name] = vertex_id;
 
     const std::string &vertex_label = (node.second)["label"];
-    // handle nvdisasm bug: sometimes block name is a label like .L_105 
+    // handle nvdisasm bug: sometimes block name is a label like .L_105
     // if the block contains a .weak name indicating it represents a function
     // use the .weak name instead
     if (vertex_name[0] == '.') {

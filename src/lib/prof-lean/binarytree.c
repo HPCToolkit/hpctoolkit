@@ -48,14 +48,14 @@
 //   $HeadURL$
 //
 // Purpose:
-//   Implement an API for binary trees that supports 
-//   (1) building a balanced binary tree from an arbitrary imbalanced tree 
-//       (e.g., a list), and 
-//   (2) searching a binary tree for a matching node  
+//   Implement an API for binary trees that supports
+//   (1) building a balanced binary tree from an arbitrary imbalanced tree
+//       (e.g., a list), and
+//   (2) searching a binary tree for a matching node
 //
-//   The binarytree_node_t data type is meant to be used as a prefix to 
+//   The binarytree_node_t data type is meant to be used as a prefix to
 //   other structures so that this code can be used to manipulate arbitrary
-//   tree structures.  Macros support the (unsafe) up and down casting needed 
+//   tree structures.  Macros support the (unsafe) up and down casting needed
 //   to use the API on derived structures.
 //
 //******************************************************************************
@@ -70,14 +70,14 @@
 #include <assert.h>
 
 //******************************************************************************
-// local include files 
+// local include files
 //******************************************************************************
 
 #include "binarytree.h"
 
 
 //******************************************************************************
-// macros 
+// macros
 //******************************************************************************
 
 #define MAX_SUBTREE_STR 32768
@@ -258,9 +258,9 @@ binarytree_find(binarytree_t * root,	val_cmp matches, void *val)
 {
   while (root) {
     int cmp_status = matches(root->val, val);
-  
+
     if (cmp_status == 0) return root; // subtree_root matches val
-  
+
     // determine which subtree to search
     root = (cmp_status > 0) ? root->left : root->right;
   }

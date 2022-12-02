@@ -45,7 +45,7 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static char intel_align32_signature[] = { 
+static char intel_align32_signature[] = {
  0x53,                      	// push   %rbx
  0x48, 0x89, 0xe3,              // mov    %rsp,%rbx
  0x48, 0x83, 0xe4, 0xe0,        // and    $0xffffffffffffffe0,%rsp
@@ -57,16 +57,16 @@ static char intel_align32_signature[] = {
 };
 
 
-int 
+int
 x86_adjust_intel_align32_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel_align32_signature);
 
   if (len > siglen && strncmp((char *)intel_align32_signature, ins, siglen) == 0) {
-    // signature matched 
+    // signature matched
     unwind_interval *ui = (unwind_interval *) stat->first;
 
-    // this won't fix all of the intervals, but it will fix the ones 
+    // this won't fix all of the intervals, but it will fix the ones
     // that we care about.
     //
     // The method is as follows:
@@ -78,12 +78,12 @@ x86_adjust_intel_align32_intervals(char *ins, int len, btuwi_status_t *stat)
     for(; UWI_RECIPE(ui)->ra_status != RA_STD_FRAME; ui = UWI_NEXT(ui));
 
     // this is only correct for 64-bit code
-    for(; ui; ui = UWI_NEXT(ui)) { 
+    for(; ui; ui = UWI_NEXT(ui)) {
       x86recipe_t *xr = UWI_RECIPE(ui);
       if (xr->ra_status == RA_SP_RELATIVE) continue;
-      if (((xr->ra_status == RA_STD_FRAME) || 
-           (xr->ra_status == RA_BP_FRAME)) && 
-          (xr->reg.bp_status == BP_SAVED)) {  
+      if (((xr->ra_status == RA_STD_FRAME) ||
+           (xr->ra_status == RA_BP_FRAME)) &&
+          (xr->reg.bp_status == BP_SAVED)) {
          xr->ra_status = RA_BP_FRAME;
          xr->reg.bp_ra_pos = 8;
          xr->reg.bp_bp_pos = 0;
@@ -91,6 +91,6 @@ x86_adjust_intel_align32_intervals(char *ins, int len, btuwi_status_t *stat)
     }
 
     return 1;
-  } 
+  }
   return 0;
 }

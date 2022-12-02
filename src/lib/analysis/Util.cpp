@@ -97,13 +97,13 @@ using std::string;
 #define TMP_BUFFER_LEN 1024
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 namespace Analysis {
 namespace Util {
 
-Analysis::Util::ProfType_t 
+Analysis::Util::ProfType_t
 getProfileType(const std::string& filenm)
 {
   static const int bufSZ = 32;
@@ -112,7 +112,7 @@ getProfileType(const std::string& filenm)
   std::istream* is = IOUtil::OpenIStream(filenm.c_str());
   is->read(buf, bufSZ);
   IOUtil::CloseStream(is);
-  
+
   ProfType_t ty = ProfType_NULL;
   if (strncmp(buf, HPCRUN_FMT_Magic, HPCRUN_FMT_MagicLen) == 0) {
     ty = ProfType_Callpath;
@@ -135,7 +135,7 @@ getProfileType(const std::string& filenm)
     ty = ProfType_MetaDB;
   }
 
-  
+
   return ty;
 }
 

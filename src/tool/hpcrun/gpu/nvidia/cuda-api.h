@@ -48,7 +48,7 @@
 //
 // Purpose:
 //   interface definitions for wrapper around NVIDIA CUDA layer
-//  
+//
 //***************************************************************************
 
 #ifndef cuda_api_h
@@ -84,7 +84,7 @@ typedef struct cuda_device_property {
 //*****************************************************************************
 
 // returns 0 on success
-int 
+int
 cuda_bind
 (
  void
@@ -100,10 +100,10 @@ cuda_context
 
 
 // returns 0 on success
-int 
+int
 cuda_device_property_query
 (
- int device_id, 
+ int device_id,
  cuda_device_property_t *property
 );
 

@@ -111,7 +111,7 @@ typedef struct typed_splay_node(correlation_id) {
   uint64_t corr_id;
   size_t size;
   opencl_object_t *cb_info;
-} typed_splay_node(correlation_id); 
+} typed_splay_node(correlation_id);
 
 
 //******************************************************************************
@@ -182,8 +182,8 @@ opencl_h2d_map_lookup
 void
 opencl_h2d_map_insert
 (
- uint64_t buffer_id, 
- uint64_t correlation_id, 
+ uint64_t buffer_id,
+ uint64_t correlation_id,
  size_t size,
  opencl_object_t *cb_info
 )
@@ -196,7 +196,7 @@ opencl_h2d_map_insert
     entry->size = size;
     entry->cb_info = cb_info;
   } else {
-    opencl_h2d_map_entry_t *entry = 
+    opencl_h2d_map_entry_t *entry =
       opencl_h2d_map_entry_new(buffer_id, correlation_id, size, cb_info);
 
     st_insert(&map_root, entry);
@@ -264,7 +264,7 @@ opencl_h2d_map_entry_callback_info_get
 void
 opencl_update_ccts_for_h2d_nodes
 (
- opencl_splay_fn_t fn	
+ opencl_splay_fn_t fn
 )
 {
 	st_forall(map_root, splay_inorder, fn, NULL);

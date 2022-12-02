@@ -34,7 +34,7 @@ struct cct2metrics_t {
 //
 // There is 1 cct2metric map per thread. The public
 // interface functions implicitly reference this map
-// 
+//
 
 #define THREAD_LOCAL_MAP() TD_GET(core_profile_trace_data.cct2metrics_map)
 
@@ -56,7 +56,7 @@ hpcrun_cct2metrics_init(cct2metrics_t** map)
 }
 //
 // ******* Internal operations: **********
-// mapping implemented as a splay tree 
+// mapping implemented as a splay tree
 //
 
 void
@@ -180,7 +180,7 @@ hpcrun_move_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t dest, c
     TMSG(CCT2METRICS, " -- found %p, returning metrics", current_map->node);
     metric_data_list_t *metric_data_list = current_map->kind_metrics;
     current_map->kind_metrics = NULL;
-    cct2metrics_assoc(dest, metric_data_list); 
+    cct2metrics_assoc(dest, metric_data_list);
     return metric_data_list;
   }
   TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
@@ -234,5 +234,3 @@ cct2metrics_assoc(cct_node_id_t node, metric_data_list_t* kind_metrics)
   TMSG(CCT2METRICS, "METRICS_ASSOC final, THREAD_LOCAL_MAP = %p", THREAD_LOCAL_MAP());
   if (ENABLED(CCT2METRICS)) splay_tree_dump(THREAD_LOCAL_MAP());
 }
-
-

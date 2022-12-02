@@ -133,7 +133,7 @@ gpu_activity_alloc
 void
 gpu_activity_free
 (
- gpu_activity_channel_t *channel, 
+ gpu_activity_channel_t *channel,
  gpu_activity_t *a
 )
 {
@@ -143,7 +143,7 @@ gpu_activity_free
 void
 gpu_instruction_set
 (
- gpu_instruction_t* insn, 
+ gpu_instruction_t* insn,
  ip_normalized_t pc
 )
 {
@@ -160,8 +160,8 @@ gpu_interval_set
 {
   interval->start = start;
   interval->end = end;
-  PRINT("gpu interval: [%lu, %lu) delta = %ld\n", interval->start, 
-        interval->end, interval->end - interval->start); 
+  PRINT("gpu interval: [%lu, %lu) delta = %ld\n", interval->start,
+        interval->end, interval->end - interval->start);
 }
 
 

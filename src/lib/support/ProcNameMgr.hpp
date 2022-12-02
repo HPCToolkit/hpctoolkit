@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef ProcNameMgr_hpp 
+#ifndef ProcNameMgr_hpp
 #define ProcNameMgr_hpp
 
 //************************* System Include Files ****************************
@@ -75,7 +75,7 @@
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// 'ProcNameMgr' 
+// 'ProcNameMgr'
 // --------------------------------------------------------------------------
 
 class ProcNameMgr
@@ -84,17 +84,17 @@ public:
   ProcNameMgr() { }
   virtual ~ProcNameMgr() { }
 
-  virtual std::string 
+  virtual std::string
   canonicalize(const std::string& name) = 0;
 
-  std::string 
+  std::string
   canonicalizeCppTemplate(const std::string& name);
 
 };
 
 
 // --------------------------------------------------------------------------
-// 'CppNameMgr' 
+// 'CppNameMgr'
 // --------------------------------------------------------------------------
 
 class CppNameMgr : public ProcNameMgr
@@ -103,7 +103,7 @@ public:
   CppNameMgr() { }
   virtual ~CppNameMgr() { }
 
-  virtual std::string 
+  virtual std::string
   canonicalize(const std::string& name) {
     return canonicalizeCppTemplate(name);
   }
@@ -113,7 +113,7 @@ private:
 
 
 // --------------------------------------------------------------------------
-// 'CilkNameMgr' 
+// 'CilkNameMgr'
 // --------------------------------------------------------------------------
 
 class CilkNameMgr : public ProcNameMgr
@@ -122,28 +122,28 @@ public:
   CilkNameMgr() { }
   virtual ~CilkNameMgr() { }
 
-  virtual std::string 
+  virtual std::string
   canonicalize(const std::string& name);
 
   static const std::string cilkmain;
 
 private:
 
-  bool 
-  isGenerated(const std::string& x, 
+  bool
+  isGenerated(const std::string& x,
 	      const std::string& pfx, const std::string& sfx)
   {
     bool isSane = (x.length() > (pfx.length() + sfx.length()));
     size_t sfx_pos = x.length() - sfx.length();
 
     // test suffix first becuase it fails more than the prefix comparison
-    return (isSane && 
+    return (isSane &&
 	    x.compare(sfx_pos, sfx.length(), sfx) == 0 &&
 	    x.compare(0, pfx.length(), pfx) == 0);
   }
 
-  std::string 
-  basename(const std::string& x, 
+  std::string
+  basename(const std::string& x,
 	   const std::string& pfx, const std::string& sfx)
   {
     // Assume: x.length() > (pfx.length() + sfx.length())

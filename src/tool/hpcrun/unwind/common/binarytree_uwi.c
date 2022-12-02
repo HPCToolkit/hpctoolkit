@@ -57,7 +57,7 @@ bitree_uwi_malloc(unwinder_t uw,
     }
     if (!_lf_uwi_tree[uw])
       _lf_uwi_tree[uw] =
-	(bitree_uwi_t *)binarytree_listalloc(sizeof(uwi_t) + recipe_size, 
+	(bitree_uwi_t *)binarytree_listalloc(sizeof(uwi_t) + recipe_size,
 					     NUM_NODES, GF[uw].alloc);
   }
 

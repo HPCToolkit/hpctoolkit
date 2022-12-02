@@ -65,7 +65,7 @@
 //  directly by a user or invoked for a binary in a measurements directory.
 //  The latter case is distinguished by a "-M measurements-dir" argument,
 //  which should never be used directly by a user.
-//  
+//
 //  In either case, if a cache is specified, and the binary's structure
 //  file is found, it is copied to the output structure file.
 //  If no cache is specified, or the binary is not found in the cache,
@@ -139,15 +139,15 @@ main(int argc, char* argv[])
   catch (const Diagnostics::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  } 
+  }
   catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  } 
+  }
   catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
-  } 
+  }
   catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
     exit(2);
@@ -163,7 +163,7 @@ realmain(int argc, char* argv[])
 #if 0
   fprintf(stderr, "DEBUG hpcstruct, argc = %d, pid = %d\n",
     argc, getpid() );
-  
+
   char **p = argv;
   for (int i = 0; i < argc; i ++) {
     fprintf(stderr, "DEBUG  argv[%d] = %s\n", i, *p);

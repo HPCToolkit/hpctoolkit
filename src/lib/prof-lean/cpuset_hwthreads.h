@@ -62,7 +62,7 @@ extern "C" {
 //     return the number of hardware threads available to this process
 //     return 1 if no other value can be computed
 //------------------------------------------------------------------------------
-unsigned int 
+unsigned int
 cpuset_hwthreads
 (
   void

@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -92,7 +92,7 @@ spinlock_init(spinlock_t *l)
 }
 
 static inline
-void 
+void
 spinlock_unlock(spinlock_t *l)
 {
   atomic_store_explicit(&l->thelock, SPINLOCK_UNLOCKED_VALUE, memory_order_release);
@@ -100,14 +100,14 @@ spinlock_unlock(spinlock_t *l)
 
 
 static inline
-bool 
+bool
 spinlock_is_locked(spinlock_t *l)
 {
   return (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE);
 }
 
 static inline
-void 
+void
 spinlock_lock(spinlock_t *l)
 {
   /* test-and-set lock */
@@ -121,7 +121,7 @@ spinlock_lock(spinlock_t *l)
 
 // deadlock avoiding lock primitives:
 //
-// test-and-test-and-set lock acquisition, but make a bounded 
+// test-and-test-and-set lock acquisition, but make a bounded
 // number of attempts to get lock.
 // to be signature compatible, this locking function takes a "locked" value, but does
 // not use it.
@@ -176,7 +176,7 @@ hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 // hwt_limit_spinlock_lock uses the CAS primitive, but prevents deadlock
 // by checking the locked value to see if this (hardware) thread has already
 // acquired the lock. This spinlock *also* uses the iteration limit
-// from the limit spinlock. 
+// from the limit spinlock.
 
 // The hwt technique covers priority inversion deadlock
 // in a way that is most friendly to high priority threads.

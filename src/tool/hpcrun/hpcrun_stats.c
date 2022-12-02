@@ -115,7 +115,7 @@ hpcrun_stats_reinit(void)
 
 
 //-----------------------------
-// samples total 
+// samples total
 //-----------------------------
 
 void
@@ -134,7 +134,7 @@ hpcrun_stats_num_samples_total(void)
 
 
 //-----------------------------
-// samples attempted 
+// samples attempted
 //-----------------------------
 
 void
@@ -153,7 +153,7 @@ hpcrun_stats_num_samples_attempted(void)
 
 
 //-----------------------------
-// samples blocked async 
+// samples blocked async
 //-----------------------------
 
 // The async blocks happen in the signal handlers, without getting to
@@ -175,7 +175,7 @@ hpcrun_stats_num_samples_blocked_async(void)
 
 
 //-----------------------------
-// samples blocked dlopen 
+// samples blocked dlopen
 //-----------------------------
 
 void
@@ -480,7 +480,7 @@ hpcrun_stats_print_summary(void)
 
   AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
        "errors: %ld (segv: %ld, soft: %ld)",
-       cpu_blocked, cpu_blocked_async, cpu_blocked_dlopen, 
+       cpu_blocked, cpu_blocked_async, cpu_blocked_dlopen,
        cpu_dropped, cpu_segv, cpu_dropped - cpu_segv);
 
   AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld, yielded: %ld),\n"
@@ -501,4 +501,3 @@ hpcrun_stats_print_summary(void)
     hpcrun_validation_summary();
   }
 }
-

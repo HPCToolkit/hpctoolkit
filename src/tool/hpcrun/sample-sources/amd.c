@@ -183,19 +183,19 @@ METHOD_FN(finalize_event_list)
   roctracer_init();
 
   device_finalizer_flush.fn = roctracer_flush;
-  device_finalizer_register(device_finalizer_type_flush, 
+  device_finalizer_register(device_finalizer_type_flush,
                             &device_finalizer_flush);
 
   device_finalizer_shutdown.fn = roctracer_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, 
+  device_finalizer_register(device_finalizer_type_shutdown,
                             &device_finalizer_shutdown);
 
-  // initialize gpu tracing 
+  // initialize gpu tracing
   gpu_trace_init();
 
   // Register shutdown function to finalize gpu tracing and write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, 
+  device_finalizer_register(device_finalizer_type_shutdown,
                             &device_trace_finalizer_shutdown);
 }
 

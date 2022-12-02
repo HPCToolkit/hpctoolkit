@@ -48,7 +48,7 @@
 // File: Fatbin.cpp
 //
 // Purpose:
-//   unpack cuda fatbin 
+//   unpack cuda fatbin
 //
 // Description:
 //
@@ -95,11 +95,11 @@
 //******************************************************************************
 
 typedef struct NvidiaFatBinHeader_s {
-  int32_t magicNumber; 
-  int32_t version; 
-  const unsigned long long* data; 
+  int32_t magicNumber;
+  int32_t version;
+  const unsigned long long* data;
   void* unused;
-} NvidiaFatBinHeader_t; 
+} NvidiaFatBinHeader_t;
 
 
 typedef std::vector<NvidiaFatBinHeader_t *> FatbinSectionVector;
@@ -133,7 +133,7 @@ recordIfNvFatbin
 #if 0
   bool isFatbin = strcmp(elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name),
 			 CUDA_FATBIN_DATASECTION) == 0;
-  if (isFatbin) { 
+  if (isFatbin) {
     NvidiaFatBinHeader_t *fatbin =
       (NvidiaFatBinHeader_t *) elfSectionGetData(obj_ptr, shdr);
     std::string empty;
@@ -143,7 +143,7 @@ recordIfNvFatbin
     }
   }
   return isFatbin;
-#else  
+#else
   return false;
 #endif
 }
@@ -183,7 +183,7 @@ recordIfCubin
   return false;
 }
 #endif
-	
+
 
 // cubin text segments all start at offset 0 and are thus overlapping.
 // relocate each text segment so that it begins at its offset in the
@@ -253,7 +253,7 @@ findCubins
   Elf *elf = elfFile->getElf();
 
   ElfSectionVector *sections = elfGetSectionVector(elf);
-  
+
   if (sections) {
     success = findCubinSections(elfFile, elfFile->getMemory(), elf,
 			     sections, elfFileVector);
@@ -271,7 +271,7 @@ bool
 isCubin(Elf *elf)
 {
   // open the header of the Elf object
-  GElf_Ehdr ehdr_v; 
+  GElf_Ehdr ehdr_v;
   GElf_Ehdr *obj_ehdr = gelf_getehdr(elf, &ehdr_v);
 
   // check the header of the Elf object to see if it is a Cubin
@@ -285,8 +285,8 @@ writeElfFile
  ElfFile *elfFile,
  const char *suffix
 )
-{  
-  std::string filename = elfFile->getFileName() + suffix;  
+{
+  std::string filename = elfFile->getFileName() + suffix;
   FILE *f = fopen(filename.c_str(), "w");
   fwrite(elfFile->getMemory(), elfFile->getLength(), 1, f);
   fclose(f);

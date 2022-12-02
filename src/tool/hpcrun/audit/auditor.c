@@ -83,7 +83,7 @@
 // macros
 //******************************************************************************
 
-// define the architecture-specific GOT index where the address of loader's 
+// define the architecture-specific GOT index where the address of loader's
 // resolver function can be found
 
 #if defined(HOST_CPU_x86_64) || defined(HOST_CPU_x86)
@@ -799,4 +799,3 @@ unsigned int la_objclose(uintptr_t* cookie) {
   *cookie = 0;
   return 0;
 }
-

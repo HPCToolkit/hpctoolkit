@@ -159,7 +159,7 @@ METHOD_FN(supports_event,const char *ev_str)
 {
   return hpcrun_ev_is(ev_str, HPCRUN_METRIC_RetCnt);
 }
- 
+
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)
@@ -203,7 +203,7 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\t\tEach time a procedure returns, the return count for that\n"
-	 "\t\tprocedure is incremented\n" 
+	 "\t\tprocedure is incremented\n"
          "(experimental feature, x86 only)\n", HPCRUN_METRIC_RetCnt);
   printf("\n");
 }
@@ -232,7 +232,7 @@ hpcrun_retcnt_inc(cct_node_t* node, int incr)
   int metric_id = hpcrun_event2metric(&_retcnt_obj, RETCNT_EVENT);
 
   if (metric_id == -1) return;
-  
+
   TMSG(TRAMP, "Increment retcnt (metric id = %d), by %d", metric_id, incr);
   cct_metric_data_increment(metric_id,
 			    node,
