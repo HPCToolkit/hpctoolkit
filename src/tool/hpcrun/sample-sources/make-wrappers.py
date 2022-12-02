@@ -15,19 +15,22 @@
 #
 
 from __future__ import print_function
-import sys
-import os
+
 import copy
-import re
-import time
 import getopt
-import socket
+import os
 import pdb
+import re
+import socket
+import sys
+import time
 
 if sys.version_info >= (3, 0):
     xrange = range
+
     def range(*args):
         return list(xrange(*args))
+
 
 cnt = 0
 fdict = {}
@@ -36,369 +39,364 @@ verbose = 0
 baseID = 1000
 
 messParamDict = {
-
-    ( "MPI_Allgather", "sendcount"):1,
-    ( "MPI_Allgather", "sendtype"):2,
-    ( "MPI_Allgatherv", "sendcount"):1,
-    ( "MPI_Allgatherv", "sendtype"):2,
-    ( "MPI_Allreduce", "count"):1,
-    ( "MPI_Allreduce", "datatype"):2,
-    ( "MPI_Alltoall", "sendcount"):1,
-    ( "MPI_Alltoall", "sendtype"):2,
-    ( "MPI_Bcast", "count"):1,
-    ( "MPI_Bcast", "datatype"):2,
-    ( "MPI_Bsend", "count"):1,
-    ( "MPI_Bsend", "datatype"):2,
-    ( "MPI_Gather", "sendcnt"):1,
-    ( "MPI_Gather", "sendtype"):2,
-    ( "MPI_Gatherv", "sendcnt"):1,
-    ( "MPI_Gatherv", "sendtype"):2,
-    ( "MPI_Ibsend", "count"):1,
-    ( "MPI_Ibsend", "datatype"):2,
-    ( "MPI_Irecv", "count"):1,
-    ( "MPI_Irecv", "datatype"):2,
-    ( "MPI_Irsend", "count"):1,
-    ( "MPI_Irsend", "datatype"):2,
-    ( "MPI_Isend", "count"):1,
-    ( "MPI_Isend", "datatype"):2,
-    ( "MPI_Issend", "count"):1,
-    ( "MPI_Issend", "datatype"):2,
-    ( "MPI_Recv", "count"):1,
-    ( "MPI_Recv", "datatype"):2,
-    ( "MPI_Reduce", "count"):1,
-    ( "MPI_Reduce", "datatype"):2,
-    ( "MPI_Rsend", "count"):1,
-    ( "MPI_Rsend", "datatype"):2,
-    ( "MPI_Scan", "count"):1,
-    ( "MPI_Scan", "datatype"):2,
-    ( "MPI_Scatter", "sendcnt"):1,
-    ( "MPI_Scatter", "sendtype"):2,
-    ( "MPI_Send", "count"):1,
-    ( "MPI_Send", "datatype"):2,
-    ( "MPI_Sendrecv", "sendcount"):1,
-    ( "MPI_Sendrecv", "sendtype"):2,
-    ( "MPI_Sendrecv_replace", "count"):1,
-    ( "MPI_Sendrecv_replace", "datatype"):2,
-    ( "MPI_Ssend", "count"):1,
-    ( "MPI_Ssend", "datatype"):2
-    }
+    ("MPI_Allgather", "sendcount"): 1,
+    ("MPI_Allgather", "sendtype"): 2,
+    ("MPI_Allgatherv", "sendcount"): 1,
+    ("MPI_Allgatherv", "sendtype"): 2,
+    ("MPI_Allreduce", "count"): 1,
+    ("MPI_Allreduce", "datatype"): 2,
+    ("MPI_Alltoall", "sendcount"): 1,
+    ("MPI_Alltoall", "sendtype"): 2,
+    ("MPI_Bcast", "count"): 1,
+    ("MPI_Bcast", "datatype"): 2,
+    ("MPI_Bsend", "count"): 1,
+    ("MPI_Bsend", "datatype"): 2,
+    ("MPI_Gather", "sendcnt"): 1,
+    ("MPI_Gather", "sendtype"): 2,
+    ("MPI_Gatherv", "sendcnt"): 1,
+    ("MPI_Gatherv", "sendtype"): 2,
+    ("MPI_Ibsend", "count"): 1,
+    ("MPI_Ibsend", "datatype"): 2,
+    ("MPI_Irecv", "count"): 1,
+    ("MPI_Irecv", "datatype"): 2,
+    ("MPI_Irsend", "count"): 1,
+    ("MPI_Irsend", "datatype"): 2,
+    ("MPI_Isend", "count"): 1,
+    ("MPI_Isend", "datatype"): 2,
+    ("MPI_Issend", "count"): 1,
+    ("MPI_Issend", "datatype"): 2,
+    ("MPI_Recv", "count"): 1,
+    ("MPI_Recv", "datatype"): 2,
+    ("MPI_Reduce", "count"): 1,
+    ("MPI_Reduce", "datatype"): 2,
+    ("MPI_Rsend", "count"): 1,
+    ("MPI_Rsend", "datatype"): 2,
+    ("MPI_Scan", "count"): 1,
+    ("MPI_Scan", "datatype"): 2,
+    ("MPI_Scatter", "sendcnt"): 1,
+    ("MPI_Scatter", "sendtype"): 2,
+    ("MPI_Send", "count"): 1,
+    ("MPI_Send", "datatype"): 2,
+    ("MPI_Sendrecv", "sendcount"): 1,
+    ("MPI_Sendrecv", "sendtype"): 2,
+    ("MPI_Sendrecv_replace", "count"): 1,
+    ("MPI_Sendrecv_replace", "datatype"): 2,
+    ("MPI_Ssend", "count"): 1,
+    ("MPI_Ssend", "datatype"): 2,
+}
 
 ioParamDict = {
-
-    ( "MPI_File_read", "count"):1,
-    ( "MPI_File_read", "datatype"):2,
-    ( "MPI_File_read_all", "count"):1,
-    ( "MPI_File_read_all", "datatype"):2,
-    ( "MPI_File_read_at", "count"):1,
-    ( "MPI_File_read_at", "datatype"):2,
-    ( "MPI_File_write", "count"):1,
-    ( "MPI_File_write", "datatype"):2,
-    ( "MPI_File_write_all", "count"):1,
-    ( "MPI_File_write_all", "datatype"):2,
-    ( "MPI_File_write_at", "count"):1,
-    ( "MPI_File_write_at", "datatype"):2
-    }
+    ("MPI_File_read", "count"): 1,
+    ("MPI_File_read", "datatype"): 2,
+    ("MPI_File_read_all", "count"): 1,
+    ("MPI_File_read_all", "datatype"): 2,
+    ("MPI_File_read_at", "count"): 1,
+    ("MPI_File_read_at", "datatype"): 2,
+    ("MPI_File_write", "count"): 1,
+    ("MPI_File_write", "datatype"): 2,
+    ("MPI_File_write_all", "count"): 1,
+    ("MPI_File_write_all", "datatype"): 2,
+    ("MPI_File_write_at", "count"): 1,
+    ("MPI_File_write_at", "datatype"): 2,
+}
 
 rmaParamDict = {
+    ("MPI_Accumulate", "target_count"): 1,
+    ("MPI_Accumulate", "target_datatype"): 2,
+    ("MPI_Get", "origin_count"): 1,
+    ("MPI_Get", "origin_datatype"): 2,
+    ("MPI_Put", "origin_count"): 1,
+    ("MPI_Put", "origin_datatype"): 2,
+}
 
-    ( "MPI_Accumulate", "target_count"):1,
-    ( "MPI_Accumulate", "target_datatype"):2,
-    ( "MPI_Get", "origin_count"):1,
-    ( "MPI_Get", "origin_datatype"):2,
-    ( "MPI_Put", "origin_count"):1,
-    ( "MPI_Put", "origin_datatype"):2
-    }
-
-noDefineList = [
-    "MPI_Pcontrol"
-    ]
+noDefineList = ["MPI_Pcontrol"]
 
 opaqueInArgDict = {
-  ("MPI_Abort", "comm"):"MPI_Comm",
-  ("MPI_Accumulate", "origin_datatype"):"MPI_Datatype",
-  ("MPI_Accumulate", "target_datatype"):"MPI_Datatype",
-  ("MPI_Accumulate", "op"):"MPI_Op",
-  ("MPI_Accumulate", "win"):"MPI_Win",
-  ("MPI_Allgather", "comm"):"MPI_Comm",
-  ("MPI_Allgather", "recvtype"):"MPI_Datatype",
-  ("MPI_Allgather", "sendtype"):"MPI_Datatype",
-  ("MPI_Allgatherv", "comm"):"MPI_Comm",
-  ("MPI_Allgatherv", "recvtype"):"MPI_Datatype",
-  ("MPI_Allgatherv", "sendtype"):"MPI_Datatype",
-  ("MPI_Allreduce", "comm"):"MPI_Comm",
-  ("MPI_Allreduce", "datatype"):"MPI_Datatype",
-  ("MPI_Allreduce", "op"):"MPI_Op",
-  ("MPI_Alltoall", "comm"):"MPI_Comm",
-  ("MPI_Alltoall", "recvtype"):"MPI_Datatype",
-  ("MPI_Alltoall", "sendtype"):"MPI_Datatype",
-  ("MPI_Alltoallv", "comm"):"MPI_Comm",
-  ("MPI_Alltoallv", "recvtype"):"MPI_Datatype",
-  ("MPI_Alltoallv", "sendtype"):"MPI_Datatype",
-  ("MPI_Attr_delete", "comm"):"MPI_Comm",
-  ("MPI_Attr_get", "comm"):"MPI_Comm",
-  ("MPI_Attr_put", "comm"):"MPI_Comm",
-  ("MPI_Attr_put", "comm"):"MPI_Comm",
-  ("MPI_Barrier", "comm"):"MPI_Comm",
-  ("MPI_Bcast", "datatype"):"MPI_Datatype",
-  ("MPI_Bcast", "comm"):"MPI_Comm",
-  ("MPI_Bsend", "comm"):"MPI_Comm",
-  ("MPI_Bsend", "datatype"):"MPI_Datatype",
-  ("MPI_Bsend_init", "comm"):"MPI_Comm",
-  ("MPI_Bsend_init", "datatype"):"MPI_Datatype",
-  ("MPI_Cancel", "request"):"MPI_Request",
-  ("MPI_Cart_coords", "comm"):"MPI_Comm",
-  ("MPI_Cart_create", "comm_old"):"MPI_Comm",
-  ("MPI_Cart_get", "comm"):"MPI_Comm",
-  ("MPI_Cart_map", "comm_old"):"MPI_Comm",
-  ("MPI_Cart_rank", "comm"):"MPI_Comm",
-  ("MPI_Cart_shift", "comm"):"MPI_Comm",
-  ("MPI_Cart_sub", "comm"):"MPI_Comm",
-  ("MPI_Cartdim_get", "comm"):"MPI_Comm",
-  ("MPI_Comm_compare", "comm1"):"MPI_Comm",
-  ("MPI_Comm_compare", "comm2"):"MPI_Comm",
-  ("MPI_Comm_create", "comm"):"MPI_Comm",
-  ("MPI_Comm_create", "group"):"MPI_Group",
-  ("MPI_Comm_dup", "comm"):"MPI_Comm",
-  ("MPI_Comm_free", "commp"):"MPI_Comm",
-  ("MPI_Comm_group", "comm"):"MPI_Comm",
-  ("MPI_Comm_rank", "comm"):"MPI_Comm",
-  ("MPI_Comm_remote_group", "comm"):"MPI_Comm",
-  ("MPI_Comm_remote_size", "comm"):"MPI_Comm",
-  ("MPI_Comm_size", "comm"):"MPI_Comm",
-  ("MPI_Comm_split", "comm"):"MPI_Comm",
-  ("MPI_Comm_test_inter", "comm"):"MPI_Comm",
-  ("MPI_Errhandler_get", "comm"):"MPI_Comm",
-  ("MPI_Errhandler_set", "comm"):"MPI_Comm",
-  ("MPI_File_close", "fh"):"MPI_File",
-  ("MPI_File_open", "comm"):"MPI_Comm",
-  ("MPI_File_open", "info"):"MPI_Info",
-  ("MPI_File_preallocate", "fh"):"MPI_File",
-  ("MPI_File_read", "fh"):"MPI_File",
-  ("MPI_File_read", "datatype"):"MPI_Datatype",
-  ("MPI_File_read_all", "fh"):"MPI_File",
-  ("MPI_File_read_all", "datatype"):"MPI_Datatype",
-  ("MPI_File_read_at", "fh"):"MPI_File",
-  ("MPI_File_read_at", "datatype"):"MPI_Datatype",
-  ("MPI_File_seek", "fh"):"MPI_File",
-  ("MPI_File_set_view", "fh"):"MPI_File",
-  ("MPI_File_set_view", "etype"):"MPI_Datatype",
-  ("MPI_File_set_view", "filetype"):"MPI_Datatype",
-  ("MPI_File_set_view", "info"):"MPI_Info",
-  ("MPI_File_write", "fh"):"MPI_File",
-  ("MPI_File_write", "datatype"):"MPI_Datatype",
-  ("MPI_File_write_all", "fh"):"MPI_File",
-  ("MPI_File_write_all", "datatype"):"MPI_Datatype",
-  ("MPI_File_write_at", "fh"):"MPI_File",
-  ("MPI_File_write_at", "datatype"):"MPI_Datatype",
-  ("MPI_Gather", "comm"):"MPI_Comm",
-  ("MPI_Gather", "recvtype"):"MPI_Datatype",
-  ("MPI_Gather", "sendtype"):"MPI_Datatype",
-  ("MPI_Gatherv", "comm"):"MPI_Comm",
-  ("MPI_Gatherv", "recvtype"):"MPI_Datatype",
-  ("MPI_Gatherv", "sendtype"):"MPI_Datatype",
-  ("MPI_Get", "origin_datatype"):"MPI_Datatype",
-  ("MPI_Get", "target_datatype"):"MPI_Datatype",
-  ("MPI_Get", "win"):"MPI_Win",
-  ("MPI_Get_count", "datatype"):"MPI_Datatype",
-  ("MPI_Get_elements", "datatype"):"MPI_Datatype",
-  ("MPI_Graph_create", "comm_old"):"MPI_Comm",
-  ("MPI_Graph_get", "comm"):"MPI_Comm",
-  ("MPI_Graph_map", "comm_old"):"MPI_Comm",
-  ("MPI_Graph_neighbors", "comm"):"MPI_Comm",
-  ("MPI_Graph_neighbors_count", "comm"):"MPI_Comm",
-  ("MPI_Graphdims_get", "comm"):"MPI_Comm",
-  ("MPI_Group_compare", "group1"):"MPI_Group",
-  ("MPI_Group_compare", "group2"):"MPI_Group",
-  ("MPI_Group_difference", "group1"):"MPI_Group",
-  ("MPI_Group_difference", "group2"):"MPI_Group",
-  ("MPI_Group_excl", "group"):"MPI_Group",
-  ("MPI_Group_free", "group"):"MPI_Group",
-  ("MPI_Group_incl", "group"):"MPI_Group",
-  ("MPI_Group_intersection", "group1"):"MPI_Group",
-  ("MPI_Group_intersection", "group2"):"MPI_Group",
-  ("MPI_Group_range_excl", "group"):"MPI_Group",
-  ("MPI_Group_range_incl", "group"):"MPI_Group",
-  ("MPI_Group_rank", "group"):"MPI_Group",
-  ("MPI_Group_size", "group"):"MPI_Group",
-  ("MPI_Group_translate_ranks", "group_a"):"MPI_Group",
-  ("MPI_Group_translate_ranks", "group_b"):"MPI_Group",
-  ("MPI_Group_union", "group1"):"MPI_Group",
-  ("MPI_Group_union", "group2"):"MPI_Group",
-  ("MPI_Ibsend", "comm"):"MPI_Comm",
-  ("MPI_Ibsend", "datatype"):"MPI_Datatype",
-  ("MPI_Intercomm_create", "local_comm"):"MPI_Comm",
-  ("MPI_Intercomm_create", "peer_comm"):"MPI_Comm",
-  ("MPI_Intercomm_merge", "comm"):"MPI_Comm",
-  ("MPI_Iprobe", "comm"):"MPI_Comm",
-  ("MPI_Irecv", "comm"):"MPI_Comm",
-  ("MPI_Irecv", "datatype"):"MPI_Datatype",
-  ("MPI_Irsend", "comm"):"MPI_Comm",
-  ("MPI_Irsend", "datatype"):"MPI_Datatype",
-  ("MPI_Isend", "comm"):"MPI_Comm",
-  ("MPI_Isend", "datatype"):"MPI_Datatype",
-  ("MPI_Issend", "comm"):"MPI_Comm",
-  ("MPI_Issend", "datatype"):"MPI_Datatype",
-  ("MPI_Pack", "comm"):"MPI_Comm",
-  ("MPI_Pack", "datatype"):"MPI_Datatype",
-  ("MPI_Pack_size", "comm"):"MPI_Comm",
-  ("MPI_Pack_size", "datatype"):"MPI_Datatype",
-  ("MPI_Probe", "comm"):"MPI_Comm",
-  ("MPI_Put", "origin_datatype"):"MPI_Datatype",
-  ("MPI_Put", "target_datatype"):"MPI_Datatype",
-  ("MPI_Put", "win"):"MPI_Win",
-  ("MPI_Recv", "comm"):"MPI_Comm",
-  ("MPI_Recv", "datatype"):"MPI_Datatype",
-  ("MPI_Recv_init", "comm"):"MPI_Comm",
-  ("MPI_Recv_init", "datatype"):"MPI_Datatype",
-  ("MPI_Reduce", "comm"):"MPI_Comm",
-  ("MPI_Reduce", "datatype"):"MPI_Datatype",
-  ("MPI_Reduce", "op"):"MPI_Op",
-  ("MPI_Reduce_scatter", "comm"):"MPI_Comm",
-  ("MPI_Reduce_scatter", "datatype"):"MPI_Datatype",
-  ("MPI_Reduce_scatter", "op"):"MPI_Op",
-  ("MPI_Request_free", "request"):"MPI_Request",
-  ("MPI_Rsend", "comm"):"MPI_Comm",
-  ("MPI_Rsend", "datatype"):"MPI_Datatype",
-  ("MPI_Rsend_init", "comm"):"MPI_Comm",
-  ("MPI_Rsend_init", "datatype"):"MPI_Datatype",
-  ("MPI_Scan", "comm"):"MPI_Comm",
-  ("MPI_Scan", "op"):"MPI_Op",
-  ("MPI_Scan", "datatype"):"MPI_Datatype",
-  ("MPI_Scatter", "comm"):"MPI_Comm",
-  ("MPI_Scatter", "recvtype"):"MPI_Datatype",
-  ("MPI_Scatter", "sendtype"):"MPI_Datatype",
-  ("MPI_Scatterv", "comm"):"MPI_Comm",
-  ("MPI_Scatterv", "recvtype"):"MPI_Datatype",
-  ("MPI_Scatterv", "sendtype"):"MPI_Datatype",
-  ("MPI_Send", "comm"):"MPI_Comm",
-  ("MPI_Send", "datatype"):"MPI_Datatype",
-  ("MPI_Send_init", "comm"):"MPI_Comm",
-  ("MPI_Send_init", "datatype"):"MPI_Datatype",
-  ("MPI_Sendrecv", "comm"):"MPI_Comm",
-  ("MPI_Sendrecv", "recvtag"):"MPI_Datatype",
-  ("MPI_Sendrecv", "recvtype"):"MPI_Datatype",
-  ("MPI_Sendrecv", "sendtype"):"MPI_Datatype",
-  ("MPI_Sendrecv_replace", "comm"):"MPI_Comm",
-  ("MPI_Sendrecv_replace", "datatype"):"MPI_Datatype",
-  ("MPI_Ssend", "comm"):"MPI_Comm",
-  ("MPI_Ssend", "datatype"):"MPI_Datatype",
-  ("MPI_Ssend_init", "comm"):"MPI_Comm",
-  ("MPI_Ssend_init", "datatype"):"MPI_Datatype",
-  ("MPI_Start", "request"):"MPI_Request",
-  ("MPI_Startall", "array_of_requests"):"MPI_Request",
-  ("MPI_Test", "request"):"MPI_Request",
-  ("MPI_Testall", "array_of_requests"):"MPI_Request",
-  ("MPI_Testany", "array_of_requests"):"MPI_Request",
-  ("MPI_Testsome", "array_of_requests"):"MPI_Request",
-  ("MPI_Topo_test", "comm"):"MPI_Comm",
-  ("MPI_Type_commit", "datatype"):"MPI_Datatype",
-  ("MPI_Type_contiguous", "oldtype"):"MPI_Datatype",
-  ("MPI_Type_extent", "datatype"):"MPI_Datatype",
-  ("MPI_Type_free", "datatype"):"MPI_Datatype",
-  ("MPI_Type_get_contents", "datatype"):"MPI_Datatype",
-  ("MPI_Type_get_envelope", "datatype"):"MPI_Datatype",
-  ("MPI_Type_hindexed", "oldtype"):"MPI_Datatype",
-  ("MPI_Type_hvector", "oldtype"):"MPI_Datatype",
-  ("MPI_Type_indexed", "oldtype"):"MPI_Datatype",
-  ("MPI_Type_lb", "datatype"):"MPI_Datatype",
-  ("MPI_Type_size", "datatype"):"MPI_Datatype",
-  ("MPI_Type_struct", "array_of_types"):"MPI_Datatype",
-  ("MPI_Type_ub", "datatype"):"MPI_Datatype",
-  ("MPI_Type_vector", "oldtype"):"MPI_Datatype",
-  ("MPI_Unpack", "comm"):"MPI_Comm",
-  ("MPI_Unpack", "datatype"):"MPI_Datatype",
-  ("MPI_Wait", "request"):"MPI_Request",
-  ("MPI_Waitall", "array_of_requests"):"MPI_Request",
-  ("MPI_Waitany", "array_of_requests"):"MPI_Request",
-  ("MPI_Waitsome", "array_of_requests"):"MPI_Request",
-  ("MPI_Win_complete", "win"):"MPI_Win",
-  ("MPI_Win_create", "info"):"MPI_Info",
-  ("MPI_Win_create", "comm"):"MPI_Comm",
-  ("MPI_Win_create", "win"):"MPI_Win",
-  ("MPI_Win_fence", "win"):"MPI_Win",
-  ("MPI_Win_free", "win"):"MPI_Win",
-  ("MPI_Win_get_group", "win"):"MPI_Win",
-  ("MPI_Win_get_group", "group"):"MPI_Group",
-  ("MPI_Win_lock", "win"):"MPI_Win",
-  ("MPI_Win_post", "group"):"MPI_Group",
-  ("MPI_Win_post", "win"):"MPI_Win",
-  ("MPI_Win_start", "group"):"MPI_Group",
-  ("MPI_Win_start", "win"):"MPI_Win",
-  ("MPI_Win_test", "win"):"MPI_Win",
-  ("MPI_Win_unlock", "win"):"MPI_Win",
-  ("MPI_Win_wait", "win"):"MPI_Win"
+    ("MPI_Abort", "comm"): "MPI_Comm",
+    ("MPI_Accumulate", "origin_datatype"): "MPI_Datatype",
+    ("MPI_Accumulate", "target_datatype"): "MPI_Datatype",
+    ("MPI_Accumulate", "op"): "MPI_Op",
+    ("MPI_Accumulate", "win"): "MPI_Win",
+    ("MPI_Allgather", "comm"): "MPI_Comm",
+    ("MPI_Allgather", "recvtype"): "MPI_Datatype",
+    ("MPI_Allgather", "sendtype"): "MPI_Datatype",
+    ("MPI_Allgatherv", "comm"): "MPI_Comm",
+    ("MPI_Allgatherv", "recvtype"): "MPI_Datatype",
+    ("MPI_Allgatherv", "sendtype"): "MPI_Datatype",
+    ("MPI_Allreduce", "comm"): "MPI_Comm",
+    ("MPI_Allreduce", "datatype"): "MPI_Datatype",
+    ("MPI_Allreduce", "op"): "MPI_Op",
+    ("MPI_Alltoall", "comm"): "MPI_Comm",
+    ("MPI_Alltoall", "recvtype"): "MPI_Datatype",
+    ("MPI_Alltoall", "sendtype"): "MPI_Datatype",
+    ("MPI_Alltoallv", "comm"): "MPI_Comm",
+    ("MPI_Alltoallv", "recvtype"): "MPI_Datatype",
+    ("MPI_Alltoallv", "sendtype"): "MPI_Datatype",
+    ("MPI_Attr_delete", "comm"): "MPI_Comm",
+    ("MPI_Attr_get", "comm"): "MPI_Comm",
+    ("MPI_Attr_put", "comm"): "MPI_Comm",
+    ("MPI_Attr_put", "comm"): "MPI_Comm",
+    ("MPI_Barrier", "comm"): "MPI_Comm",
+    ("MPI_Bcast", "datatype"): "MPI_Datatype",
+    ("MPI_Bcast", "comm"): "MPI_Comm",
+    ("MPI_Bsend", "comm"): "MPI_Comm",
+    ("MPI_Bsend", "datatype"): "MPI_Datatype",
+    ("MPI_Bsend_init", "comm"): "MPI_Comm",
+    ("MPI_Bsend_init", "datatype"): "MPI_Datatype",
+    ("MPI_Cancel", "request"): "MPI_Request",
+    ("MPI_Cart_coords", "comm"): "MPI_Comm",
+    ("MPI_Cart_create", "comm_old"): "MPI_Comm",
+    ("MPI_Cart_get", "comm"): "MPI_Comm",
+    ("MPI_Cart_map", "comm_old"): "MPI_Comm",
+    ("MPI_Cart_rank", "comm"): "MPI_Comm",
+    ("MPI_Cart_shift", "comm"): "MPI_Comm",
+    ("MPI_Cart_sub", "comm"): "MPI_Comm",
+    ("MPI_Cartdim_get", "comm"): "MPI_Comm",
+    ("MPI_Comm_compare", "comm1"): "MPI_Comm",
+    ("MPI_Comm_compare", "comm2"): "MPI_Comm",
+    ("MPI_Comm_create", "comm"): "MPI_Comm",
+    ("MPI_Comm_create", "group"): "MPI_Group",
+    ("MPI_Comm_dup", "comm"): "MPI_Comm",
+    ("MPI_Comm_free", "commp"): "MPI_Comm",
+    ("MPI_Comm_group", "comm"): "MPI_Comm",
+    ("MPI_Comm_rank", "comm"): "MPI_Comm",
+    ("MPI_Comm_remote_group", "comm"): "MPI_Comm",
+    ("MPI_Comm_remote_size", "comm"): "MPI_Comm",
+    ("MPI_Comm_size", "comm"): "MPI_Comm",
+    ("MPI_Comm_split", "comm"): "MPI_Comm",
+    ("MPI_Comm_test_inter", "comm"): "MPI_Comm",
+    ("MPI_Errhandler_get", "comm"): "MPI_Comm",
+    ("MPI_Errhandler_set", "comm"): "MPI_Comm",
+    ("MPI_File_close", "fh"): "MPI_File",
+    ("MPI_File_open", "comm"): "MPI_Comm",
+    ("MPI_File_open", "info"): "MPI_Info",
+    ("MPI_File_preallocate", "fh"): "MPI_File",
+    ("MPI_File_read", "fh"): "MPI_File",
+    ("MPI_File_read", "datatype"): "MPI_Datatype",
+    ("MPI_File_read_all", "fh"): "MPI_File",
+    ("MPI_File_read_all", "datatype"): "MPI_Datatype",
+    ("MPI_File_read_at", "fh"): "MPI_File",
+    ("MPI_File_read_at", "datatype"): "MPI_Datatype",
+    ("MPI_File_seek", "fh"): "MPI_File",
+    ("MPI_File_set_view", "fh"): "MPI_File",
+    ("MPI_File_set_view", "etype"): "MPI_Datatype",
+    ("MPI_File_set_view", "filetype"): "MPI_Datatype",
+    ("MPI_File_set_view", "info"): "MPI_Info",
+    ("MPI_File_write", "fh"): "MPI_File",
+    ("MPI_File_write", "datatype"): "MPI_Datatype",
+    ("MPI_File_write_all", "fh"): "MPI_File",
+    ("MPI_File_write_all", "datatype"): "MPI_Datatype",
+    ("MPI_File_write_at", "fh"): "MPI_File",
+    ("MPI_File_write_at", "datatype"): "MPI_Datatype",
+    ("MPI_Gather", "comm"): "MPI_Comm",
+    ("MPI_Gather", "recvtype"): "MPI_Datatype",
+    ("MPI_Gather", "sendtype"): "MPI_Datatype",
+    ("MPI_Gatherv", "comm"): "MPI_Comm",
+    ("MPI_Gatherv", "recvtype"): "MPI_Datatype",
+    ("MPI_Gatherv", "sendtype"): "MPI_Datatype",
+    ("MPI_Get", "origin_datatype"): "MPI_Datatype",
+    ("MPI_Get", "target_datatype"): "MPI_Datatype",
+    ("MPI_Get", "win"): "MPI_Win",
+    ("MPI_Get_count", "datatype"): "MPI_Datatype",
+    ("MPI_Get_elements", "datatype"): "MPI_Datatype",
+    ("MPI_Graph_create", "comm_old"): "MPI_Comm",
+    ("MPI_Graph_get", "comm"): "MPI_Comm",
+    ("MPI_Graph_map", "comm_old"): "MPI_Comm",
+    ("MPI_Graph_neighbors", "comm"): "MPI_Comm",
+    ("MPI_Graph_neighbors_count", "comm"): "MPI_Comm",
+    ("MPI_Graphdims_get", "comm"): "MPI_Comm",
+    ("MPI_Group_compare", "group1"): "MPI_Group",
+    ("MPI_Group_compare", "group2"): "MPI_Group",
+    ("MPI_Group_difference", "group1"): "MPI_Group",
+    ("MPI_Group_difference", "group2"): "MPI_Group",
+    ("MPI_Group_excl", "group"): "MPI_Group",
+    ("MPI_Group_free", "group"): "MPI_Group",
+    ("MPI_Group_incl", "group"): "MPI_Group",
+    ("MPI_Group_intersection", "group1"): "MPI_Group",
+    ("MPI_Group_intersection", "group2"): "MPI_Group",
+    ("MPI_Group_range_excl", "group"): "MPI_Group",
+    ("MPI_Group_range_incl", "group"): "MPI_Group",
+    ("MPI_Group_rank", "group"): "MPI_Group",
+    ("MPI_Group_size", "group"): "MPI_Group",
+    ("MPI_Group_translate_ranks", "group_a"): "MPI_Group",
+    ("MPI_Group_translate_ranks", "group_b"): "MPI_Group",
+    ("MPI_Group_union", "group1"): "MPI_Group",
+    ("MPI_Group_union", "group2"): "MPI_Group",
+    ("MPI_Ibsend", "comm"): "MPI_Comm",
+    ("MPI_Ibsend", "datatype"): "MPI_Datatype",
+    ("MPI_Intercomm_create", "local_comm"): "MPI_Comm",
+    ("MPI_Intercomm_create", "peer_comm"): "MPI_Comm",
+    ("MPI_Intercomm_merge", "comm"): "MPI_Comm",
+    ("MPI_Iprobe", "comm"): "MPI_Comm",
+    ("MPI_Irecv", "comm"): "MPI_Comm",
+    ("MPI_Irecv", "datatype"): "MPI_Datatype",
+    ("MPI_Irsend", "comm"): "MPI_Comm",
+    ("MPI_Irsend", "datatype"): "MPI_Datatype",
+    ("MPI_Isend", "comm"): "MPI_Comm",
+    ("MPI_Isend", "datatype"): "MPI_Datatype",
+    ("MPI_Issend", "comm"): "MPI_Comm",
+    ("MPI_Issend", "datatype"): "MPI_Datatype",
+    ("MPI_Pack", "comm"): "MPI_Comm",
+    ("MPI_Pack", "datatype"): "MPI_Datatype",
+    ("MPI_Pack_size", "comm"): "MPI_Comm",
+    ("MPI_Pack_size", "datatype"): "MPI_Datatype",
+    ("MPI_Probe", "comm"): "MPI_Comm",
+    ("MPI_Put", "origin_datatype"): "MPI_Datatype",
+    ("MPI_Put", "target_datatype"): "MPI_Datatype",
+    ("MPI_Put", "win"): "MPI_Win",
+    ("MPI_Recv", "comm"): "MPI_Comm",
+    ("MPI_Recv", "datatype"): "MPI_Datatype",
+    ("MPI_Recv_init", "comm"): "MPI_Comm",
+    ("MPI_Recv_init", "datatype"): "MPI_Datatype",
+    ("MPI_Reduce", "comm"): "MPI_Comm",
+    ("MPI_Reduce", "datatype"): "MPI_Datatype",
+    ("MPI_Reduce", "op"): "MPI_Op",
+    ("MPI_Reduce_scatter", "comm"): "MPI_Comm",
+    ("MPI_Reduce_scatter", "datatype"): "MPI_Datatype",
+    ("MPI_Reduce_scatter", "op"): "MPI_Op",
+    ("MPI_Request_free", "request"): "MPI_Request",
+    ("MPI_Rsend", "comm"): "MPI_Comm",
+    ("MPI_Rsend", "datatype"): "MPI_Datatype",
+    ("MPI_Rsend_init", "comm"): "MPI_Comm",
+    ("MPI_Rsend_init", "datatype"): "MPI_Datatype",
+    ("MPI_Scan", "comm"): "MPI_Comm",
+    ("MPI_Scan", "op"): "MPI_Op",
+    ("MPI_Scan", "datatype"): "MPI_Datatype",
+    ("MPI_Scatter", "comm"): "MPI_Comm",
+    ("MPI_Scatter", "recvtype"): "MPI_Datatype",
+    ("MPI_Scatter", "sendtype"): "MPI_Datatype",
+    ("MPI_Scatterv", "comm"): "MPI_Comm",
+    ("MPI_Scatterv", "recvtype"): "MPI_Datatype",
+    ("MPI_Scatterv", "sendtype"): "MPI_Datatype",
+    ("MPI_Send", "comm"): "MPI_Comm",
+    ("MPI_Send", "datatype"): "MPI_Datatype",
+    ("MPI_Send_init", "comm"): "MPI_Comm",
+    ("MPI_Send_init", "datatype"): "MPI_Datatype",
+    ("MPI_Sendrecv", "comm"): "MPI_Comm",
+    ("MPI_Sendrecv", "recvtag"): "MPI_Datatype",
+    ("MPI_Sendrecv", "recvtype"): "MPI_Datatype",
+    ("MPI_Sendrecv", "sendtype"): "MPI_Datatype",
+    ("MPI_Sendrecv_replace", "comm"): "MPI_Comm",
+    ("MPI_Sendrecv_replace", "datatype"): "MPI_Datatype",
+    ("MPI_Ssend", "comm"): "MPI_Comm",
+    ("MPI_Ssend", "datatype"): "MPI_Datatype",
+    ("MPI_Ssend_init", "comm"): "MPI_Comm",
+    ("MPI_Ssend_init", "datatype"): "MPI_Datatype",
+    ("MPI_Start", "request"): "MPI_Request",
+    ("MPI_Startall", "array_of_requests"): "MPI_Request",
+    ("MPI_Test", "request"): "MPI_Request",
+    ("MPI_Testall", "array_of_requests"): "MPI_Request",
+    ("MPI_Testany", "array_of_requests"): "MPI_Request",
+    ("MPI_Testsome", "array_of_requests"): "MPI_Request",
+    ("MPI_Topo_test", "comm"): "MPI_Comm",
+    ("MPI_Type_commit", "datatype"): "MPI_Datatype",
+    ("MPI_Type_contiguous", "oldtype"): "MPI_Datatype",
+    ("MPI_Type_extent", "datatype"): "MPI_Datatype",
+    ("MPI_Type_free", "datatype"): "MPI_Datatype",
+    ("MPI_Type_get_contents", "datatype"): "MPI_Datatype",
+    ("MPI_Type_get_envelope", "datatype"): "MPI_Datatype",
+    ("MPI_Type_hindexed", "oldtype"): "MPI_Datatype",
+    ("MPI_Type_hvector", "oldtype"): "MPI_Datatype",
+    ("MPI_Type_indexed", "oldtype"): "MPI_Datatype",
+    ("MPI_Type_lb", "datatype"): "MPI_Datatype",
+    ("MPI_Type_size", "datatype"): "MPI_Datatype",
+    ("MPI_Type_struct", "array_of_types"): "MPI_Datatype",
+    ("MPI_Type_ub", "datatype"): "MPI_Datatype",
+    ("MPI_Type_vector", "oldtype"): "MPI_Datatype",
+    ("MPI_Unpack", "comm"): "MPI_Comm",
+    ("MPI_Unpack", "datatype"): "MPI_Datatype",
+    ("MPI_Wait", "request"): "MPI_Request",
+    ("MPI_Waitall", "array_of_requests"): "MPI_Request",
+    ("MPI_Waitany", "array_of_requests"): "MPI_Request",
+    ("MPI_Waitsome", "array_of_requests"): "MPI_Request",
+    ("MPI_Win_complete", "win"): "MPI_Win",
+    ("MPI_Win_create", "info"): "MPI_Info",
+    ("MPI_Win_create", "comm"): "MPI_Comm",
+    ("MPI_Win_create", "win"): "MPI_Win",
+    ("MPI_Win_fence", "win"): "MPI_Win",
+    ("MPI_Win_free", "win"): "MPI_Win",
+    ("MPI_Win_get_group", "win"): "MPI_Win",
+    ("MPI_Win_get_group", "group"): "MPI_Group",
+    ("MPI_Win_lock", "win"): "MPI_Win",
+    ("MPI_Win_post", "group"): "MPI_Group",
+    ("MPI_Win_post", "win"): "MPI_Win",
+    ("MPI_Win_start", "group"): "MPI_Group",
+    ("MPI_Win_start", "win"): "MPI_Win",
+    ("MPI_Win_test", "win"): "MPI_Win",
+    ("MPI_Win_unlock", "win"): "MPI_Win",
+    ("MPI_Win_wait", "win"): "MPI_Win",
 }
 
 opaqueOutArgDict = {
-  ("MPI_Bsend_init", "request"):"MPI_Request",
-  ("MPI_Cart_create", "comm_cart"):"MPI_Comm",
-  ("MPI_Cart_sub", "comm_new"):"MPI_Comm",
-  ("MPI_Comm_create", "comm_out"):"MPI_Comm",
-  ("MPI_Comm_dup", "comm_out"):"MPI_Comm",
-  ("MPI_Comm_free", "commp"):"MPI_Comm",
-  ("MPI_Comm_group", "group"):"MPI_Group",
-  ("MPI_Comm_remote_group", "group"):"MPI_Group",
-  ("MPI_Comm_split", "comm_out"):"MPI_Comm",
-  ("MPI_File_close", "fh"):"MPI_File",
-  ("MPI_File_open", "fh"):"MPI_File",
-  ("MPI_Graph_create", "comm_graph"):"MPI_Comm",
-  ("MPI_Group_difference", "group_out"):"MPI_Group",
-  ("MPI_Group_excl", "newgroup"):"MPI_Group",
-  ("MPI_Group_free", "group"):"MPI_Group",
-  ("MPI_Group_incl", "group_out"):"MPI_Group",
-  ("MPI_Group_intersection", "group_out"):"MPI_Group",
-  ("MPI_Group_range_excl", "newgroup"):"MPI_Group",
-  ("MPI_Group_range_incl", "newgroup"):"MPI_Group",
-  ("MPI_Group_union", "group_out"):"MPI_Group",
-  ("MPI_Ibsend", "request"):"MPI_Request",
-  ("MPI_Intercomm_create", "comm_out"):"MPI_Comm",
-  ("MPI_Intercomm_merge", "comm_out"):"MPI_Comm",
-  ("MPI_Irecv", "request"):"MPI_Request",
-  ("MPI_Irsend", "request"):"MPI_Request",
-  ("MPI_Isend", "request"):"MPI_Request",
-  ("MPI_Issend", "request"):"MPI_Request",
-  ("MPI_Op_create", "op"):"MPI_Op",
-  ("MPI_Recv_init", "request"):"MPI_Request",
-  ("MPI_Request_free", "request"):"MPI_Request",
-  ("MPI_Rsend_init", "request"):"MPI_Request",
-  ("MPI_Send_init", "request"):"MPI_Request",
-  ("MPI_Ssend_init", "request"):"MPI_Request",
-  ("MPI_Start", "request"):"MPI_Request",
-  ("MPI_Startall", "array_of_requests"):"MPI_Request",
-  ("MPI_Test", "request"):"MPI_Request",
-  ("MPI_Testall", "array_of_requests"):"MPI_Request",
-  ("MPI_Testany", "array_of_requests"):"MPI_Request",
-  ("MPI_Testsome", "array_of_requests"):"MPI_Request",
-  ("MPI_Type_commit", "datatype"):"MPI_Datatype",
-  ("MPI_Type_contiguous", "newtype"):"MPI_Datatype",
-  ("MPI_Type_free", "datatype"):"MPI_Datatype",
-  ("MPI_Type_get_contents", "array_of_datatypes"):"MPI_Datatype",
-  ("MPI_Type_hindexed", "newtype"):"MPI_Datatype",
-  ("MPI_Type_hvector", "newtype"):"MPI_Datatype",
-  ("MPI_Type_indexed", "newtype"):"MPI_Datatype",
-  ("MPI_Type_struct", "newtype"):"MPI_Datatype",
-  ("MPI_Type_vector", "newtype"):"MPI_Datatype",
-  ("MPI_Wait", "request"):"MPI_Request",
-  ("MPI_Waitall", "array_of_requests"):"MPI_Request",
-  ("MPI_Waitany", "array_of_requests"):"MPI_Request",
-  ("MPI_Waitsome", "array_of_requests"):"MPI_Request"
+    ("MPI_Bsend_init", "request"): "MPI_Request",
+    ("MPI_Cart_create", "comm_cart"): "MPI_Comm",
+    ("MPI_Cart_sub", "comm_new"): "MPI_Comm",
+    ("MPI_Comm_create", "comm_out"): "MPI_Comm",
+    ("MPI_Comm_dup", "comm_out"): "MPI_Comm",
+    ("MPI_Comm_free", "commp"): "MPI_Comm",
+    ("MPI_Comm_group", "group"): "MPI_Group",
+    ("MPI_Comm_remote_group", "group"): "MPI_Group",
+    ("MPI_Comm_split", "comm_out"): "MPI_Comm",
+    ("MPI_File_close", "fh"): "MPI_File",
+    ("MPI_File_open", "fh"): "MPI_File",
+    ("MPI_Graph_create", "comm_graph"): "MPI_Comm",
+    ("MPI_Group_difference", "group_out"): "MPI_Group",
+    ("MPI_Group_excl", "newgroup"): "MPI_Group",
+    ("MPI_Group_free", "group"): "MPI_Group",
+    ("MPI_Group_incl", "group_out"): "MPI_Group",
+    ("MPI_Group_intersection", "group_out"): "MPI_Group",
+    ("MPI_Group_range_excl", "newgroup"): "MPI_Group",
+    ("MPI_Group_range_incl", "newgroup"): "MPI_Group",
+    ("MPI_Group_union", "group_out"): "MPI_Group",
+    ("MPI_Ibsend", "request"): "MPI_Request",
+    ("MPI_Intercomm_create", "comm_out"): "MPI_Comm",
+    ("MPI_Intercomm_merge", "comm_out"): "MPI_Comm",
+    ("MPI_Irecv", "request"): "MPI_Request",
+    ("MPI_Irsend", "request"): "MPI_Request",
+    ("MPI_Isend", "request"): "MPI_Request",
+    ("MPI_Issend", "request"): "MPI_Request",
+    ("MPI_Op_create", "op"): "MPI_Op",
+    ("MPI_Recv_init", "request"): "MPI_Request",
+    ("MPI_Request_free", "request"): "MPI_Request",
+    ("MPI_Rsend_init", "request"): "MPI_Request",
+    ("MPI_Send_init", "request"): "MPI_Request",
+    ("MPI_Ssend_init", "request"): "MPI_Request",
+    ("MPI_Start", "request"): "MPI_Request",
+    ("MPI_Startall", "array_of_requests"): "MPI_Request",
+    ("MPI_Test", "request"): "MPI_Request",
+    ("MPI_Testall", "array_of_requests"): "MPI_Request",
+    ("MPI_Testany", "array_of_requests"): "MPI_Request",
+    ("MPI_Testsome", "array_of_requests"): "MPI_Request",
+    ("MPI_Type_commit", "datatype"): "MPI_Datatype",
+    ("MPI_Type_contiguous", "newtype"): "MPI_Datatype",
+    ("MPI_Type_free", "datatype"): "MPI_Datatype",
+    ("MPI_Type_get_contents", "array_of_datatypes"): "MPI_Datatype",
+    ("MPI_Type_hindexed", "newtype"): "MPI_Datatype",
+    ("MPI_Type_hvector", "newtype"): "MPI_Datatype",
+    ("MPI_Type_indexed", "newtype"): "MPI_Datatype",
+    ("MPI_Type_struct", "newtype"): "MPI_Datatype",
+    ("MPI_Type_vector", "newtype"): "MPI_Datatype",
+    ("MPI_Wait", "request"): "MPI_Request",
+    ("MPI_Waitall", "array_of_requests"): "MPI_Request",
+    ("MPI_Waitany", "array_of_requests"): "MPI_Request",
+    ("MPI_Waitsome", "array_of_requests"): "MPI_Request",
 }
 
 incrementFortranIndexDict = {
-  ("MPI_Testany"): ("*index", 1),
-  ("MPI_Testsome"): ("array_of_indices", "*count"),
-  ("MPI_Waitany"): ("*index", 1),
-  ("MPI_Waitsome"): ("array_of_indices", "*count")
-  }
+    ("MPI_Testany"): ("*index", 1),
+    ("MPI_Testsome"): ("array_of_indices", "*count"),
+    ("MPI_Waitany"): ("*index", 1),
+    ("MPI_Waitsome"): ("array_of_indices", "*count"),
+}
 
 xlateFortranArrayExceptions = {
-  ("MPI_Testany", "array_of_requests"): ("index"),
-  ("MPI_Waitany", "array_of_requests"): ("index")
+    ("MPI_Testany", "array_of_requests"): ("index"),
+    ("MPI_Waitany", "array_of_requests"): ("index"),
 }
 
 
 class VarDesc:
-    def __init__ (self,name, basetype, pointerLevel, arrayLevel):
+    def __init__(self, name, basetype, pointerLevel, arrayLevel):
         "initialize a new variable description structure"
         self.name = name
         self.basetype = basetype
@@ -406,14 +404,15 @@ class VarDesc:
         self.arrayLevel = arrayLevel
         self.recordIt = 0
 
+
 class fdecl:
-    def __init__ (self,name, id, returntype, paramList, paramStr, protoline):
+    def __init__(self, name, id, returntype, paramList, paramStr, protoline):
         "initialize a new function declaration structure"
         self.name = name
         self.id = id
         self.returntype = returntype
         self.paramList = paramList
-        self.paramStr  = paramStr
+        self.paramStr = paramStr
         self.paramDict = {}
         self.protoline = protoline
         self.wrapperPreList = []
@@ -431,8 +430,9 @@ class fdecl:
         self.rmaCountPname = ""
         self.rmaTypePname = ""
 
+
 class xlateEntry:
-    def __init__ (self,mpiType,varName):
+    def __init__(self, mpiType, varName):
         "initialize a new Fortran translation structure"
         self.mpiType = mpiType
         self.varName = varName
@@ -446,16 +446,16 @@ def ProcessDirectiveLine(lastFunction, line):
         fdict[lastFunction].extrafieldsList.append(tokens[2])
         fdict[lastFunction].extrafields[tokens[2]] = tokens[1]
     else:
-        print("Warning: ",lastFunction," unknown directive [",line.strip(),"]")
+        print("Warning: ", lastFunction, " unknown directive [", line.strip(), "]")
 
 
 def ProcessWrapperPreLine(lastFunction, line):
-    #print "Processing wrapper pre [",line.strip(),"] for ",lastFunction
+    # print "Processing wrapper pre [",line.strip(),"] for ",lastFunction
     fdict[lastFunction].wrapperPreList.append(line)
 
 
 def ProcessWrapperPostLine(lastFunction, line):
-    #print "Processing wrapper post [",line.strip(),"] for ",lastFunction
+    # print "Processing wrapper post [",line.strip(),"] for ",lastFunction
     fdict[lastFunction].wrapperPostList.append(line)
 
 
@@ -463,7 +463,7 @@ def DumpDict():
     for i in flist:
         print(i)
         if verbose:
-            print("\tParams\t",fdict[i].paramList)
+            print("\tParams\t", fdict[i].paramList)
             if fdict[i].wrapperPreList:
                 print("\tpre\t", fdict[i].wrapperPreList)
             if fdict[i].wrapperPostList:
@@ -474,7 +474,7 @@ def DumpDict():
 ##### Some MPI types we want to record. If there are pointers to them, deref them.
 ##### To simplify, assume that the value can be an 'int' for printing and assignment.
 #####
-def SpecialParamRecord(funct,param):
+def SpecialParamRecord(funct, param):
     global flist
     global fdict
     basetype = fdict[funct].paramDict[param].basetype
@@ -499,7 +499,6 @@ def SpecialParamRecord(funct,param):
         return 0
 
 
-
 #####
 ##### ParamDictUpdate - updates the datastructures for a function after
 #####    the basics have been entered. Must be called for each function.
@@ -518,16 +517,16 @@ def ParamDictUpdate(fname):
         arrayLevel = p.count("[")
         if (pointerLevel > 0) and (arrayLevel > 0):
             ## handle pointers and arrays
-            pname = p[p.rfind("*")+1:p.find("[")]
-            basetype = p[0:p.find("*")]
+            pname = p[p.rfind("*") + 1 : p.find("[")]
+            basetype = p[0 : p.find("*")]
         elif pointerLevel > 0:
             ## handle pointers
-            pname = p[p.rfind("*")+1:len(p)]
-            basetype = p[0:p.find("*")]
+            pname = p[p.rfind("*") + 1 : len(p)]
+            basetype = p[0 : p.find("*")]
         elif arrayLevel > 0:
             ## handle arrays
-            pname = p[p.find(" "):p.find("[")]
-            basetype = p[0:p.find(" ")]
+            pname = p[p.find(" ") : p.find("[")]
+            basetype = p[0 : p.find(" ")]
         else:
             ## normal hopefully :)
             tokens = p.split()
@@ -541,12 +540,12 @@ def ParamDictUpdate(fname):
 
         pname = pname.strip()
         basetype = basetype.strip()
-        fdict[fname].paramDict[pname] = VarDesc(pname,basetype,pointerLevel,arrayLevel)
+        fdict[fname].paramDict[pname] = VarDesc(pname, basetype, pointerLevel, arrayLevel)
         fdict[fname].paramConciseList.append(pname)
 
         #  Identify and assign message size parameters
-        if (fname,pname) in messParamDict:
-            paramMessType = messParamDict[(fname,pname)]
+        if (fname, pname) in messParamDict:
+            paramMessType = messParamDict[(fname, pname)]
             if paramMessType == 1:
                 fdict[fname].sendCountPname = pname
             elif paramMessType == 2:
@@ -557,33 +556,35 @@ def ParamDictUpdate(fname):
                 fdict[fname].recvTypePname = pname
 
         #  Identify and assign io size parameters
-        if (fname,pname) in ioParamDict:
-            paramMessType = ioParamDict[(fname,pname)]
+        if (fname, pname) in ioParamDict:
+            paramMessType = ioParamDict[(fname, pname)]
             if paramMessType == 1:
                 fdict[fname].ioCountPname = pname
             elif paramMessType == 2:
                 fdict[fname].ioTypePname = pname
 
         #  Identify and assign rma size parameters
-        if (fname,pname) in rmaParamDict:
-            paramMessType = rmaParamDict[(fname,pname)]
+        if (fname, pname) in rmaParamDict:
+            paramMessType = rmaParamDict[(fname, pname)]
             if paramMessType == 1:
                 fdict[fname].rmaCountPname = pname
             elif paramMessType == 2:
                 fdict[fname].rmaTypePname = pname
 
-        if (fdict[fname].paramDict[pname].pointerLevel == 0) \
-           and (fdict[fname].paramDict[pname].arrayLevel == 0) \
-           and (fdict[fname].paramDict[pname].basetype != "void"):
+        if (
+            (fdict[fname].paramDict[pname].pointerLevel == 0)
+            and (fdict[fname].paramDict[pname].arrayLevel == 0)
+            and (fdict[fname].paramDict[pname].basetype != "void")
+        ):
             fdict[fname].paramDict[pname].recordIt = 1
-        elif SpecialParamRecord(fname,pname):
+        elif SpecialParamRecord(fname, pname):
             fdict[fname].paramDict[pname].recordIt = 1
         else:
             pass
 
         if verbose:
-            #print "\t->",p
-            print("\t",pname, basetype, pointerLevel, arrayLevel)
+            # print "\t->",p
+            print("\t", pname, basetype, pointerLevel, arrayLevel)
 
 
 #####
@@ -602,14 +603,14 @@ def ReadInputFile(f):
 
     fcounter = baseID
 
-    print("-----*----- Parsing input file:",f)
+    print("-----*----- Parsing input file:", f)
     while True:
         ##### read a line from input
         rawline = f.readline()
         if not rawline:
             break
         cnt = cnt + 1
-        line = re.sub("\@.*$","",rawline)
+        line = re.sub("\@.*$", "", rawline)
 
         ##### break it into tokens
         tokens = line.split()
@@ -617,16 +618,18 @@ def ReadInputFile(f):
             continue
 
         ##### determine what type of line this is and then parse it as required
-        if (line.find("(") != -1) \
-           and (line.find(")") != -1) \
-           and (line.find("MPI_") != -1) \
-           and parserState == p_start:
+        if (
+            (line.find("(") != -1)
+            and (line.find(")") != -1)
+            and (line.find("MPI_") != -1)
+            and parserState == p_start
+        ):
             ##### we have a prototype start line
             name = tokens[1]
             retype = tokens[0]
             lparen = line.index("(")
             rparen = line.index(")")
-            paramstr = line[lparen+1:rparen]
+            paramstr = line[lparen + 1 : rparen]
             paramList = [s.strip() for s in paramstr.split(",")]
             #    print cnt, "-->", name,  paramList
             fdict[name] = fdecl(name, fcounter, retype, paramList, paramstr, line)
@@ -670,14 +673,14 @@ def ReadInputFile(f):
 
             ##### UNKNOWN
             else:
-                print("Unknown input line ",cnt, ":", line, end=' ')
+                print("Unknown input line ", cnt, ":", line, end=" ")
 
     flist = sorted(fdict.keys())
     fcounter = baseID
-    for f in flist :
-      fdict[f].id = fcounter
-      if f not in noDefineList:
-        fcounter = fcounter + 1
+    for f in flist:
+        fdict[f].id = fcounter
+        if f not in noDefineList:
+            fcounter = fcounter + 1
     print("-----*----- Parsing completed: ", len(fdict), " functions found.")
 
 
@@ -688,8 +691,10 @@ def StandardFileHeader(fname):
     olist = []
     olist.append("/* " + fname + " */\n")
     olist.append("/* DO NOT EDIT -- AUTOMATICALLY GENERATED! */\n")
-    olist.append("/* Timestamp: " + time.strftime("%d %B %Y %H:%M", time.localtime(time.time())) + "  */\n")
-    olist.append("/* Location: " + socket.gethostname () + " " + os.name + " */\n")
+    olist.append(
+        "/* Timestamp: " + time.strftime("%d %B %Y %H:%M", time.localtime(time.time())) + "  */\n"
+    )
+    olist.append("/* Location: " + socket.gethostname() + " " + os.name + " */\n")
     olist.append("/* Creator: " + os.environ["LOGNAME"] + "  */\n")
     olist.append("\n")
     olist.append("\n")
@@ -730,8 +735,8 @@ def GenerateStructureFile():
     olist.append("\n")
 
     for funct in flist:
-      if funct not in noDefineList:
-        olist.append("#define mpiPi_" + funct + " " + str(fdict[funct].id) + "\n")
+        if funct not in noDefineList:
+            olist.append("#define mpiPi_" + funct + " " + str(fdict[funct].id) + "\n")
 
     olist.append("\n\n/* eof */\n")
     g.writelines(olist)
@@ -752,8 +757,8 @@ def GenerateLookup():
     g = open(sname, "w")
     olist = StandardFileHeader(sname)
 
-    olist.append("#include \"mpiPi.h\"\n")
-    olist.append("#include \"mpiPi_def.h\"\n")
+    olist.append('#include "mpiPi.h"\n')
+    olist.append('#include "mpiPi_def.h"\n')
     olist.append("\n")
     olist.append("\n")
 
@@ -762,13 +767,12 @@ def GenerateLookup():
     counter = 0
     for funct in flist:
         if funct not in noDefineList:
-          if counter < len(flist) \
-            and counter > 0 :
-            olist.append(",\n")
-          olist.append("\t{ mpiPi_" + funct)
-          olist.append(", \"" + funct + "\"")
-          olist.append("}")
-          counter = counter + 1
+            if counter < len(flist) and counter > 0:
+                olist.append(",\n")
+            olist.append("\t{ mpiPi_" + funct)
+            olist.append(', "' + funct + '"')
+            olist.append("}")
+            counter = counter + 1
 
     olist.append(",\n\t{0,NULL}};\n")
 
@@ -790,60 +794,76 @@ def CreateWrapper(funct, olist):
         return
 
     if verbose:
-        print("Wrapping ",funct)
+        print("Wrapping ", funct)
 
-    olist.append("\n\n\n/* --------------- " + funct + " --------------- */\n" )
+    olist.append("\n\n\n/* --------------- " + funct + " --------------- */\n")
 
     #####
     ##### C wrapper
     #####
-    olist.append("\n\n" + fdict[funct].returntype + " HPCRUN_MPI_WRAP("
-                 + fdict[funct].name +  ") (" + fdict[funct].paramStr + "){" )
+    olist.append(
+        "\n\n"
+        + fdict[funct].returntype
+        + " HPCRUN_MPI_WRAP("
+        + fdict[funct].name
+        + ") ("
+        + fdict[funct].paramStr
+        + "){"
+    )
     if fdict[funct].wrapperPreList:
         olist.extend(fdict[funct].wrapperPreList)
 
-    if ((fdict[funct].sendCountPname != "") or (fdict[funct].recvCountPname != "")):
+    if (fdict[funct].sendCountPname != "") or (fdict[funct].recvCountPname != ""):
         buffcount = fdict[funct].sendCountPname
-        bufftype  = fdict[funct].sendTypePname
+        bufftype = fdict[funct].sendTypePname
 
-        if (fdict[funct].sendCountPname == ""):
-                buffcount = fdict[funct].recvCountPname
-                bufftype  = fdict[funct].recvTypePname
+        if fdict[funct].sendCountPname == "":
+            buffcount = fdict[funct].recvCountPname
+            bufftype = fdict[funct].recvTypePname
 
-        olist.append( "\n"
-                      + "if ( " + fdict[funct].sendTypePname + " != MPI_DATATYPE_NULL ) {\n"
-                      + "  hpmpi_store_metric(Get_Msg_size(" +buffcount+ ", "+ bufftype + ") );\n"
-                      + "} else {\n  TMSG(MPI,\"MPI_DATATYPE_NULL encountered.  MPI_IN_PLACE not supported.\\n\");\n"
-                      + "  TMSG(MPI,\"Values for %s may be invalid.\\n\", &(__func__)[7]);\n}\n")
+        olist.append(
+            "\n"
+            + "if ( "
+            + fdict[funct].sendTypePname
+            + " != MPI_DATATYPE_NULL ) {\n"
+            + "  hpmpi_store_metric(Get_Msg_size("
+            + buffcount
+            + ", "
+            + bufftype
+            + ") );\n"
+            + '} else {\n  TMSG(MPI,"MPI_DATATYPE_NULL encountered.  MPI_IN_PLACE not supported.\\n");\n'
+            + '  TMSG(MPI,"Values for %s may be invalid.\\n", &(__func__)[7]);\n}\n'
+        )
 
-    olist.append("\nreturn P" + funct + "( " )
+    olist.append("\nreturn P" + funct + "( ")
 
     for i in fdict[funct].paramConciseList:
-        if (fdict[funct].paramDict[i].pointerLevel == 0) \
-           and (fdict[funct].paramDict[i].arrayLevel == 0) \
-           and (fdict[funct].paramDict[i].basetype != "void"):
+        if (
+            (fdict[funct].paramDict[i].pointerLevel == 0)
+            and (fdict[funct].paramDict[i].arrayLevel == 0)
+            and (fdict[funct].paramDict[i].basetype != "void")
+        ):
             olist.append(" " + i)
-        elif (fdict[funct].paramDict[i].pointerLevel > 0):
+        elif fdict[funct].paramDict[i].pointerLevel > 0:
             olist.append(i)
-        elif (fdict[funct].paramDict[i].arrayLevel > 0):
+        elif fdict[funct].paramDict[i].arrayLevel > 0:
             olist.append(i)
         else:
-            print("Warning: passing on arg",i,"in",funct)
+            print("Warning: passing on arg", i, "in", funct)
         if fdict[funct].paramConciseList.index(i) < len(fdict[funct].paramConciseList) - 1:
             olist.append(", ")
 
-    olist.append(" );\n\n" )
+    olist.append(" );\n\n")
     olist.append("}" + " /* " + funct + " */\n")
-
 
     #####
     ##### Fortran wrapper
     #####
 
     ##### funct decl
-    olist.append("\n\nvoid " + "F77_" + funct.upper() + "(" )
+    olist.append("\n\nvoid " + "F77_" + funct.upper() + "(")
 
-    #================================================================================
+    # ================================================================================
     # In the case where MPI_Fint and and opaque objects such as MPI_Request are not the same size,
     #   we want to use MPI conversion functions.
     #
@@ -862,7 +882,7 @@ def CreateWrapper(funct, olist):
     #   4.  Make the function call with appropriate C variables.
     #   5.  Perform any necessary post-call array and scalar xlation.
     #   6.  Free any arrays.
-    #================================================================================
+    # ================================================================================
 
     ###  Type translation information
     xlateVarName = ""
@@ -870,7 +890,15 @@ def CreateWrapper(funct, olist):
     xlateTypes = []
     xlateCount = 0
     #  Input types to translate
-    xlateTargetTypes = [ "MPI_Comm", "MPI_Datatype", "MPI_File", "MPI_Group", "MPI_Info", "MPI_Op", "MPI_Request" ]
+    xlateTargetTypes = [
+        "MPI_Comm",
+        "MPI_Datatype",
+        "MPI_File",
+        "MPI_Group",
+        "MPI_Info",
+        "MPI_Op",
+        "MPI_Request",
+    ]
 
     freelist = []
 
@@ -878,10 +906,10 @@ def CreateWrapper(funct, olist):
     opaqueFound = 0
     for i in fdict[funct].paramConciseList:
 
-        if ( doOpaqueXlate is True and fdict[funct].paramDict[i].basetype in xlateTargetTypes ) :
+        if doOpaqueXlate is True and fdict[funct].paramDict[i].basetype in xlateTargetTypes:
 
             #  Verify that there is a Dictionary entry for translating this argument
-            if ( not ( (funct, i) in opaqueInArgDict or (funct, i) in opaqueOutArgDict ) ):
+            if not ((funct, i) in opaqueInArgDict or (funct, i) in opaqueOutArgDict):
                 print("*** Failed to find translation information for " + funct + ":" + i + "\n")
 
             opaqueFound = 1
@@ -894,35 +922,37 @@ def CreateWrapper(funct, olist):
 
             #  Try to identify whether array or single value by whether "array" is in the variable name
             #  and add C declaration to declaration list.
-            if ( xlateVarNames[xlateCount].count("array") > 0 ):
-                decl += xlateTypes[xlateCount] + " *c_" + xlateVarNames[xlateCount] + ";\n";
+            if xlateVarNames[xlateCount].count("array") > 0:
+                decl += xlateTypes[xlateCount] + " *c_" + xlateVarNames[xlateCount] + ";\n"
             else:
-                decl += xlateTypes[xlateCount] + " c_" + xlateVarNames[xlateCount] + ";\n";
+                decl += xlateTypes[xlateCount] + " c_" + xlateVarNames[xlateCount] + ";\n"
 
             xlateCount += 1
         else:
             #  Not translating this variable
-                currBasetype = fdict[funct].paramDict[i].basetype
+            currBasetype = fdict[funct].paramDict[i].basetype
 
         #  Add argument to function declaration
-        olist.append(currBasetype + ' ')
+        olist.append(currBasetype + " ")
 
-        if (fdict[funct].paramDict[i].pointerLevel == 0) \
-           and (fdict[funct].paramDict[i].arrayLevel == 0) \
-           and (fdict[funct].paramDict[i].basetype != "void"):
+        if (
+            (fdict[funct].paramDict[i].pointerLevel == 0)
+            and (fdict[funct].paramDict[i].arrayLevel == 0)
+            and (fdict[funct].paramDict[i].basetype != "void")
+        ):
             olist.append(" * ")
 
-        if (fdict[funct].paramDict[i].pointerLevel > 0):
-            for j in xrange(1,fdict[funct].paramDict[i].pointerLevel+1):
+        if fdict[funct].paramDict[i].pointerLevel > 0:
+            for j in xrange(1, fdict[funct].paramDict[i].pointerLevel + 1):
                 olist.append(" *")
 
         olist.append(i)
 
-        if (fdict[funct].paramDict[i].arrayLevel > 0):
-            for x in range(0, fdict[funct].paramDict[i].arrayLevel) :
-              olist.append('[')
-            for x in range(0, fdict[funct].paramDict[i].arrayLevel) :
-              olist.append(']')
+        if fdict[funct].paramDict[i].arrayLevel > 0:
+            for x in range(0, fdict[funct].paramDict[i].arrayLevel):
+                olist.append("[")
+            for x in range(0, fdict[funct].paramDict[i].arrayLevel):
+                olist.append("]")
         else:
             pass
         if fdict[funct].paramConciseList.index(i) < len(fdict[funct].paramConciseList) - 1:
@@ -934,88 +964,115 @@ def CreateWrapper(funct, olist):
     olist.append("\n")
 
     if fdict[funct].wrapperPreList:
-            olist.extend(fdict[funct].wrapperPreList)
+        olist.extend(fdict[funct].wrapperPreList)
 
-    if ( 'mips' in arch ) :
-      olist.append("void *saved_ret_addr = __builtin_return_address(0);\n")
-    else :
-      if ( useSetJmp == True ) :
-        olist.append("setjmp (jbuf);\n\n")
+    if "mips" in arch:
+        olist.append("void *saved_ret_addr = __builtin_return_address(0);\n")
+    else:
+        if useSetJmp == True:
+            olist.append("setjmp (jbuf);\n\n")
 
     #  Allocate any arrays used for translation
-    for i in range(len(xlateVarNames)) :
+    for i in range(len(xlateVarNames)):
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
 
         #  A pretty sketchy way of identifying an array size, but as far as I can tell,
         #  only one array is passed as an argument per function.
-        if ( fdict[funct].paramConciseList.count("count") > 1 ):
-            print("*** Multiple arrays in 1 function!!!!\n");
+        if fdict[funct].paramConciseList.count("count") > 1:
+            print("*** Multiple arrays in 1 function!!!!\n")
 
-        if ( "incount" in fdict[funct].paramConciseList ):
-            countVar = "incount";
-        elif ( "count" in fdict[funct].paramConciseList ):
-            countVar = "count";
+        if "incount" in fdict[funct].paramConciseList:
+            countVar = "incount"
+        elif "count" in fdict[funct].paramConciseList:
+            countVar = "count"
         else:
             countVar = "max_integers"
 
-        if ( xlateVarName.count("array") > 0 ):
-            olist.append("c_" + xlateVarName + " = (" + xlateType + "*)malloc(sizeof(" + xlateType + ")*(*" + countVar + "));\n")
-            olist.append("if ( c_" + xlateVarName + " == NULL ) mpiPi_abort(\"Failed to allocate memory in " \
-                + funct + "\");\n")
-            freelist.append("c_"+xlateVarName)
+        if xlateVarName.count("array") > 0:
+            olist.append(
+                "c_"
+                + xlateVarName
+                + " = ("
+                + xlateType
+                + "*)malloc(sizeof("
+                + xlateType
+                + ")*(*"
+                + countVar
+                + "));\n"
+            )
+            olist.append(
+                "if ( c_"
+                + xlateVarName
+                + ' == NULL ) mpiPi_abort("Failed to allocate memory in '
+                + funct
+                + '");\n'
+            )
+            freelist.append("c_" + xlateVarName)
 
     #  Generate pre-call translation code if necessary by iterating through arguments that
     #  were identified as opaque objects needing translation above
-    for i in range(len(xlateVarNames)) :
+    for i in range(len(xlateVarNames)):
 
         #  Set current argument name and type
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
 
         #  Check for valid function:argument-name entry for pre-call translation.
-        if ( (funct, xlateVarName) in opaqueInArgDict \
-            and opaqueInArgDict[(funct, xlateVarName)] == xlateType ) :
+        if (funct, xlateVarName) in opaqueInArgDict and opaqueInArgDict[
+            (funct, xlateVarName)
+        ] == xlateType:
 
             #  Datatype translation is the only call where the translation function
             #  doesn't match the argument type.
-            if ( xlateType == "MPI_Datatype" ):
+            if xlateType == "MPI_Datatype":
                 xlateFuncType = "MPI_Type"
             else:
                 xlateFuncType = xlateType
 
-            if ( xlateVarName.count("array") > 0 ):
+            if xlateVarName.count("array") > 0:
                 olist.append("{\n  int i; \n")
                 olist.append("  for (i = 0; i < *" + countVar + "; i++) { \n")
-                olist.append("    c_" + xlateVarName + "[i] = " + xlateFuncType + "_f2c(" + xlateVarName + "[i]);\n")
+                olist.append(
+                    "    c_"
+                    + xlateVarName
+                    + "[i] = "
+                    + xlateFuncType
+                    + "_f2c("
+                    + xlateVarName
+                    + "[i]);\n"
+                )
                 olist.append("  }\n}\n")
             else:
-                olist.append("c_" + xlateVarName + " = " + xlateFuncType + "_f2c(*" + xlateVarName + ");\n")
+                olist.append(
+                    "c_" + xlateVarName + " = " + xlateFuncType + "_f2c(*" + xlateVarName + ");\n"
+                )
 
             xlateDone = 1
 
     #  Start generating call to C/Fortran common mpiP wrapper function
-    olist.append("\nint rc = " + funct + "(  " )
+    olist.append("\nint rc = " + funct + "(  ")
     argname = ""
 
     #  Iterate through mpiP wrapper function arguments, replacing argument with C version where appropriate
     for i in fdict[funct].paramConciseList:
-        if ( i in xlateVarNames and
-            ( (funct, i) in opaqueInArgDict or (funct, i) in opaqueOutArgDict) ):
-            if ( i.count("array") > 0 ):
-                argname = "c_" + i;
+        if i in xlateVarNames and ((funct, i) in opaqueInArgDict or (funct, i) in opaqueOutArgDict):
+            if i.count("array") > 0:
+                argname = "c_" + i
             else:
-                argname = "&c_" + i;
+                argname = "&c_" + i
         else:
             argname = i
 
-        if (fdict[funct].paramDict[i].pointerLevel == 0) \
-           and (fdict[funct].paramDict[i].arrayLevel == 0) \
-           and (fdict[funct].paramDict[i].basetype != "void"):
-            olist.append("*"+argname)
-        elif (fdict[funct].paramDict[i].pointerLevel > 0):
+        if (
+            (fdict[funct].paramDict[i].pointerLevel == 0)
+            and (fdict[funct].paramDict[i].arrayLevel == 0)
+            and (fdict[funct].paramDict[i].basetype != "void")
+        ):
+            olist.append("*" + argname)
+        elif fdict[funct].paramDict[i].pointerLevel > 0:
             olist.append(argname)
-        elif (fdict[funct].paramDict[i].arrayLevel > 0):
+        elif fdict[funct].paramDict[i].arrayLevel > 0:
             olist.append(argname)
         else:
             pass
@@ -1030,57 +1087,88 @@ def CreateWrapper(funct, olist):
     xlateCode = []
     xlateDone = 0
 
-    for i in range(len(xlateVarNames)) :
+    for i in range(len(xlateVarNames)):
 
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
 
-        if ( (funct, xlateVarName) in opaqueOutArgDict \
-            and opaqueOutArgDict[(funct, xlateVarName)] == xlateType ):
+        if (funct, xlateVarName) in opaqueOutArgDict and opaqueOutArgDict[
+            (funct, xlateVarName)
+        ] == xlateType:
 
             #  Datatype translation is the only call where the translation function
             #  doesn't match the argument type.
-            if ( xlateType == "MPI_Datatype" ):
+            if xlateType == "MPI_Datatype":
                 xlateFuncType = "MPI_Type"
             else:
                 xlateFuncType = xlateType
 
             #  Generate array or scalar translation code
-            if ( (funct, xlateVarName) in xlateFortranArrayExceptions ) :
-              xlateCode.append(xlateVarName + "[*" + xlateFortranArrayExceptions[(funct,xlateVarName)] + \
-              "] = " + xlateFuncType + "_c2f(c_" + xlateVarName + \
-              "[*" + xlateFortranArrayExceptions[(funct, xlateVarName)] + "]);\n")
-            elif ( xlateVarName.count("array") > 0 ):
+            if (funct, xlateVarName) in xlateFortranArrayExceptions:
+                xlateCode.append(
+                    xlateVarName
+                    + "[*"
+                    + xlateFortranArrayExceptions[(funct, xlateVarName)]
+                    + "] = "
+                    + xlateFuncType
+                    + "_c2f(c_"
+                    + xlateVarName
+                    + "[*"
+                    + xlateFortranArrayExceptions[(funct, xlateVarName)]
+                    + "]);\n"
+                )
+            elif xlateVarName.count("array") > 0:
                 xlateCode.append("{\n  int i; \n")
                 xlateCode.append("  for (i = 0; i < *" + countVar + "; i++) { \n")
-                xlateCode.append("    " + xlateVarName + "[i] = " + xlateFuncType + "_c2f(c_" + xlateVarName + "[i]);\n")
+                xlateCode.append(
+                    "    "
+                    + xlateVarName
+                    + "[i] = "
+                    + xlateFuncType
+                    + "_c2f(c_"
+                    + xlateVarName
+                    + "[i]);\n"
+                )
                 xlateCode.append("  }\n}\n")
             else:
-                xlateCode.append("*" + xlateVarName + " = " + xlateFuncType + "_c2f(c_" + xlateVarName + ");\n")
+                xlateCode.append(
+                    "*" + xlateVarName + " = " + xlateFuncType + "_c2f(c_" + xlateVarName + ");\n"
+                )
 
             xlateDone = 1
 
     #  If appropriate, increment any output indices
-    if funct in incrementFortranIndexDict :
-      if  incrementFortranIndexDict[funct][1] == 1 :
-        xlateCode.append("if ( " + incrementFortranIndexDict[funct][0] + " >= 0 ) (" + incrementFortranIndexDict[funct][0] + ")++;\n")
-      else:
-        xlateCode.append("{ int i; for ( i = 0; i < " + incrementFortranIndexDict[funct][1] + "; i++)  " \
-          + incrementFortranIndexDict[funct][0] + "[i]++;}\n")
+    if funct in incrementFortranIndexDict:
+        if incrementFortranIndexDict[funct][1] == 1:
+            xlateCode.append(
+                "if ( "
+                + incrementFortranIndexDict[funct][0]
+                + " >= 0 ) ("
+                + incrementFortranIndexDict[funct][0]
+                + ")++;\n"
+            )
+        else:
+            xlateCode.append(
+                "{ int i; for ( i = 0; i < "
+                + incrementFortranIndexDict[funct][1]
+                + "; i++)  "
+                + incrementFortranIndexDict[funct][0]
+                + "[i]++;}\n"
+            )
 
-    if xlateDone == 1 :
-      olist.append("if ( rc == MPI_SUCCESS ) { \n")
-      #print " xlateCode is ", xlateCode
-      olist.extend(xlateCode)
-      olist.append("}\n")
+    if xlateDone == 1:
+        olist.append("if ( rc == MPI_SUCCESS ) { \n")
+        # print " xlateCode is ", xlateCode
+        olist.extend(xlateCode)
+        olist.append("}\n")
 
     #  Free allocated arrays
     for freeSym in freelist:
-        olist.append("free("+freeSym+");\n")
+        olist.append("free(" + freeSym + ");\n")
 
     olist.append("} /* " + funct.lower() + " */\n")
 
-    #if ( opaqueFound == 1 and xlateDone == 0 ):
+    # if ( opaqueFound == 1 and xlateDone == 0 ):
     #    print "Function " + funct + " not translated!\n"
 
     print("   Wrapped " + funct)
@@ -1108,7 +1196,7 @@ def GenerateWrappers():
     olist.append("#include <safe-sampling.h>\n")
     olist.append("#include <sample_event.h>\n")
     olist.append("#include <monitor-exts/monitor_ext.h>\n")
-    olist.append("#include \"symbols.h\"\n")
+    olist.append('#include "symbols.h"\n')
 
     olist.append("\n/**** macros ****/\n")
     olist.append("\n#define HPCRUN_MPI_WRAP MONITOR_EXT_WRAP_NAME\n")
@@ -1118,16 +1206,20 @@ def GenerateWrappers():
 
     olist.append("\n/**** internal private functions ****/\n")
     olist.append("\nstatic inline int Get_Msg_size( int count, MPI_Datatype datatype ){\n")
-    olist.append("  int dsize;\n  PMPI_Type_size( datatype, &dsize );\n  return count * dsize;\n}\n");
-    olist.append("\nstatic void hpmpi_store_metric(size_t bytes){\n");
-    olist.append("  ucontext_t uc;\n");
-    olist.append("  if (hpcrun_safe_enter()) {\n");
-    olist.append("    getcontext(&uc);\n");
-    olist.append("    sample_val_t sampleVal = hpcrun_sample_callpath(&uc, hpcrun_mpi_metric_id(), bytes, 0, 1);\n");
-    olist.append("    TMSG(MPI, \"sample: %p, bytes: %d\", sampleVal.sample_node, bytes);\n");
-    olist.append("    hpcrun_safe_exit();\n");
-    olist.append("  }\n");
-    olist.append("}\n");
+    olist.append(
+        "  int dsize;\n  PMPI_Type_size( datatype, &dsize );\n  return count * dsize;\n}\n"
+    )
+    olist.append("\nstatic void hpmpi_store_metric(size_t bytes){\n")
+    olist.append("  ucontext_t uc;\n")
+    olist.append("  if (hpcrun_safe_enter()) {\n")
+    olist.append("    getcontext(&uc);\n")
+    olist.append(
+        "    sample_val_t sampleVal = hpcrun_sample_callpath(&uc, hpcrun_mpi_metric_id(), bytes, 0, 1);\n"
+    )
+    olist.append('    TMSG(MPI, "sample: %p, bytes: %d", sampleVal.sample_node, bytes);\n')
+    olist.append("    hpcrun_safe_exit();\n")
+    olist.append("  }\n")
+    olist.append("}\n")
 
     for funct in flist:
         CreateWrapper(funct, olist)
@@ -1138,23 +1230,23 @@ def GenerateWrappers():
     g.close()
 
 
-def GetFortranSymbol(fsymtp, fsym) :
-        ofsym = ""
+def GetFortranSymbol(fsymtp, fsym):
+    ofsym = ""
 
-        if fsymtp == 'symbol':
-                        ofsym = fsym.lower()
-        elif fsymtp == 'symbol_':
-                        ofsym = fsym.lower() + "_"
-        elif fsymtp == 'symbol__':
-                        ofsym = fsym.lower() + "__"
-        elif fsymtp == 'SYMBOL':
-                        ofsym = fsym.upper()
-        elif fsymtp == 'SYMBOL_':
-                        ofsym = fsym.upper() + "_"
-        elif fsymtp == 'SYMBOL__':
-                        ofsym = fsym.upper() + "__"
+    if fsymtp == "symbol":
+        ofsym = fsym.lower()
+    elif fsymtp == "symbol_":
+        ofsym = fsym.lower() + "_"
+    elif fsymtp == "symbol__":
+        ofsym = fsym.lower() + "__"
+    elif fsymtp == "SYMBOL":
+        ofsym = fsym.upper()
+    elif fsymtp == "SYMBOL_":
+        ofsym = fsym.upper() + "_"
+    elif fsymtp == "SYMBOL__":
+        ofsym = fsym.upper() + "__"
 
-        return ofsym
+    return ofsym
 
 
 def GenerateWeakSymbols():
@@ -1176,23 +1268,23 @@ def GenerateWeakSymbols():
     sname = cwd + "/weak-symbols-pcontrol.h"
     p = open(sname, "w")
 
-    fmlist = ['symbol', 'symbol_', 'symbol__', 'SYMBOL', 'SYMBOL_', 'SYMBOL__' ]
-    if f77symbol in fmlist :
-      fmlist.remove(f77symbol)
+    fmlist = ["symbol", "symbol_", "symbol__", "SYMBOL", "SYMBOL_", "SYMBOL__"]
+    if f77symbol in fmlist:
+        fmlist.remove(f77symbol)
 
     symflist = copy.deepcopy(flist)
 
     for funct in symflist:
-      dfunc = GetFortranSymbol(f77symbol, funct)
+        dfunc = GetFortranSymbol(f77symbol, funct)
 
-      for mt in fmlist:
-        wfunc = GetFortranSymbol(mt, funct)
-        if funct in [ 'MPI_Init', 'MPI_Init_thread', 'MPI_Finalize'] :
-          s.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
-        elif 'Pcontrol' in funct :
-          p.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
-        elif fdict[funct].nowrapper == 0 :
-          g.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
+        for mt in fmlist:
+            wfunc = GetFortranSymbol(mt, funct)
+            if funct in ["MPI_Init", "MPI_Init_thread", "MPI_Finalize"]:
+                s.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
+            elif "Pcontrol" in funct:
+                p.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
+            elif fdict[funct].nowrapper == 0:
+                g.write("#pragma weak " + wfunc + " = " + dfunc + "\n")
 
     g.close()
     p.close()
@@ -1208,22 +1300,22 @@ def GenerateSymbolDefs():
     sname = cwd + "/symbols.h"
 
     symflist = copy.deepcopy(flist)
-    symflist.append('mpipi_get_fortran_argc')
-    symflist.append('mpipi_get_fortran_arg')
+    symflist.append("mpipi_get_fortran_argc")
+    symflist.append("mpipi_get_fortran_arg")
 
     g = open(sname, "w")
     for funct in symflist:
-        if f77symbol == 'symbol':
+        if f77symbol == "symbol":
             f77funct = funct.lower()
-        elif f77symbol == 'symbol_':
+        elif f77symbol == "symbol_":
             f77funct = funct.lower() + "_"
-        elif f77symbol == 'symbol__':
+        elif f77symbol == "symbol__":
             f77funct = funct.lower() + "__"
-        elif f77symbol == 'SYMBOL':
+        elif f77symbol == "SYMBOL":
             f77funct = funct.upper()
-        elif f77symbol == 'SYMBOL_':
+        elif f77symbol == "SYMBOL_":
             f77funct = funct.upper() + "_"
-        elif f77symbol == 'SYMBOL__':
+        elif f77symbol == "SYMBOL__":
             f77funct = funct.upper() + "__"
         else:
             f77funct = funct.lower()
@@ -1231,6 +1323,7 @@ def GenerateSymbolDefs():
         g.write("#define F77_" + funct.upper() + " " + f77funct + "\n")
 
     g.close()
+
 
 def main():
     global fdict
@@ -1241,31 +1334,32 @@ def main():
     global doWeakSymbols
     global useSetJmp
 
-    opts, pargs = getopt.getopt(sys.argv[1:], '', ['f77symbol=', 'xlate', 'arch=', 'weak', 'usesetjmp'])
+    opts, pargs = getopt.getopt(
+        sys.argv[1:], "", ["f77symbol=", "xlate", "arch=", "weak", "usesetjmp"]
+    )
 
     print("MPI Wrapper Generator ($Revision: 442 $)")
-    #print "opts=",opts
-    #print "pargs=",pargs
+    # print "opts=",opts
+    # print "pargs=",pargs
 
-    f77symbol = 'symbol'
+    f77symbol = "symbol"
     doOpaqueXlate = False
     doWeakSymbols = False
     useSetJmp = False
-    arch = 'unknown'
+    arch = "unknown"
 
     for o, a in opts:
-        print("o: ",o," a: ",a)
-        if o == '--f77symbol':
+        print("o: ", o, " a: ", a)
+        if o == "--f77symbol":
             f77symbol = a
-        if o == '--xlate':
+        if o == "--xlate":
             doOpaqueXlate = True
-        if o == '--weak':
+        if o == "--weak":
             doWeakSymbols = True
-        if o == '--arch':
+        if o == "--arch":
             arch = a
-        if o == '--usesetjmp':
+        if o == "--usesetjmp":
             useSetJmp = True
-
 
     ##### Load the input file
     if len(pargs) < 1:
@@ -1275,13 +1369,13 @@ def main():
     ReadInputFile(f)
 
     print("-----*----- Beginning parameter optimization")
-    #ParameterOptimization()
+    # ParameterOptimization()
 
-    #GenerateStructureFile()
+    # GenerateStructureFile()
     GenerateWrappers()
     GenerateSymbolDefs()
-    if doWeakSymbols == True :
-      GenerateWeakSymbols()
+    if doWeakSymbols == True:
+        GenerateWeakSymbols()
     GenerateLookup()
 
 
