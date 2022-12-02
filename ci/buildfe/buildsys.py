@@ -1,5 +1,6 @@
 import collections
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -13,7 +14,7 @@ from pathlib import Path
 from .action import Action, ActionResult, ReturnCodeResult
 from .configuration import Configuration
 from .logs import dump_file
-from .util import nproc, nproc_max
+from .util import nproc, nproc_max, project_dir
 
 
 @contextlib.contextmanager
@@ -48,6 +49,7 @@ class Configure(Action):
         installdir: Path,
         logdir: T.Optional[Path] = None,
     ) -> ActionResult:
+        srcdir.resolve(strict=True)
         assert (srcdir / "configure").is_file()
         builddir.mkdir()
 
@@ -114,17 +116,76 @@ class MakeAction(Action):
 class BuildResult(ActionResult):
     """Detect warnings/errors in build logs"""
 
-    def __init__(self, logfile: Path, subresult: ActionResult):
+    def _gcc_to_cq(self, logline: str) -> dict | None:
+        # Compiler warning regex:
+        #     {path}.{extension}:{line}:{column}: {severity}: {message} [{flag(s)}]
+        mat = re.fullmatch(
+            r"^(.*)\.([a-z+]{1,3}):(\d+):(\d+:)?\s+(warning|error):\s+(.*)\s+\[((\w|-|=)*)\]$",
+            logline.strip("\n"),
+        )
+        if not mat:
+            return None
+
+        report = {
+            "type": "issue",
+            "check_name": mat.group(7),  # flag(2)
+            "description": mat.group(6),  # message
+            "categories": ["compiler"],
+            "location": {},
+        }
+
+        topdir = project_dir()
+        path = Path(mat.group(1) + "." + mat.group(2))
+        if path.is_absolute() and not path.is_relative_to(topdir):
+            return None
+        if not path.is_absolute():
+            # Strip off prefixes and see if we can find the file we're looking for
+            for i in range(1, len(path.parts) - 1):
+                newpath = topdir / Path(*path.parts[i:])
+                if newpath.is_file():
+                    path = newpath
+                    break
+            else:
+                return None
+        report["location"]["path"] = path.relative_to(topdir).as_posix()
+
+        line = int(mat.group(3))
+        if len(mat.group(4)) > 0:
+            col = int(mat.group(4)[:-1])
+            report["location"]["positions"] = {"begin": {"line": line, "column": col}}
+        else:
+            report["location"]["lines"] = {"begin": line}
+
+        match mat.group(5):
+            case "warning":
+                report["severity"] = "major"
+                self.warnings += 1
+            case "error":
+                report["severity"] = "critical"
+                self.errors += 1
+        assert "severity" in report
+
+        report["fingerprint"] = hashlib.md5(json.dumps(report).encode("utf-8")).hexdigest()
+        return report
+
+    def __init__(self, logfile: Path, cq_output: Path | None, subresult: ActionResult):
         self.subresult = subresult
         self.warnings, self.errors = 0, 0
+        report = []
         with open(logfile, encoding="utf-8") as f:
             for line in f:
-                if re.match(r"[^:]+:(\d+:){1,2}\s+warning:", line):  # Warning from GCC
+                cq = self._gcc_to_cq(line)
+                if cq is not None:
+                    report.append(cq)
+                elif re.match(r"[^:]+:(\d+:){1,2}\s+warning:", line):  # Warning from GCC
                     self.warnings += 1
                 elif re.match(r"[^:]+:(\d+:){1,2}\s+error:", line):  # Error from GCC
                     self.errors += 1
                 elif re.match(r"[^:]+:\s+undefined reference to", line):  # Error from ld
                     self.errors += 1
+        if cq_output is not None:
+            with open(cq_output, "w", encoding="utf-8") as f:
+                json.dump(report, f)
 
     @property
     def completed(self):
@@ -199,7 +260,7 @@ class Build(MakeAction):
     ) -> ActionResult:
         res = self._run("build", cfg, builddir, "all", logdir=logdir, split_stderr=True)
         return (
-            BuildResult(logdir / "build.stderr.log", res)
+            BuildResult(logdir / "build.stderr.log", logdir / "build.cq.json", res)
             if logdir is not None
             else UnscannedBuildResult(res)
         )

@@ -1,6 +1,10 @@
+import functools
 import math
 import os
+import shutil
+import subprocess
 import warnings
+from pathlib import Path
 
 
 def flatten(lists):
@@ -12,6 +16,74 @@ def flatten(lists):
         else:
             result.append(x)
     return result
+
+
+class Git:
+    """Helper class for running Git queries and commands. Very incomplete."""
+
+    def __new__(cls):
+        """Return the singleton Git object, creating if needed."""
+        if "_Git__singleton" not in cls.__dict__:
+            cls.__singleton = super().__new__(cls)
+            assert "_Git__singleton" in cls.__dict__
+        return cls.__singleton
+
+    def __init__(self):
+        git = shutil.which("git")
+        if not git:
+            raise RuntimeError("Git is not available!")
+        self.git: str = git
+
+    def __call__(
+        self, *args: str | Path, check: bool = True, supress_stderr: bool = False
+    ) -> str | None:
+        """Run a command and save the output."""
+        result = subprocess.run(
+            [self.git, *args],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL if supress_stderr else None,
+            text=True,
+            check=check,
+        )
+        return result.stdout.strip("\n") if result.returncode == 0 else None
+
+    def list_paths(self, *args: str | Path, **kwargs) -> list[Path] | None:
+        """Run a command who's output is a list of paths, and return the parsed output."""
+        output = self(*args, **kwargs)
+        if output is None:
+            return None
+        return [Path(line) for line in output.splitlines()] if output else []
+
+    @functools.lru_cache
+    def toplevel(self) -> Path:
+        """Get the absolute path to the top-level Git directory, from git rev-parse --show-toplevel."""
+        r = self("rev-parse", "--show-toplevel")
+        return Path(r).resolve(strict=True)
+
+    @functools.lru_cache
+    def all_files(self, *args: str | Path, absolute: bool = False, **kwargs) -> list[Path]:
+        """Get a list of all checked-in files as Git sees the world."""
+        topdir = self.toplevel()
+        relative = self.list_paths("-C", topdir, "ls-files", *args, **kwargs)
+        if relative is None:
+            return None
+        return [topdir / p for p in relative] if absolute else relative
+
+    @functools.lru_cache
+    def is_file(self, *paths: Path) -> bool:
+        """Check if any of the given paths is checked into the repository.
+        See also all_files()."""
+        return (
+            self.all_files("--error-unmatch", *paths, check=False, supress_stderr=True) is not None
+        )
+
+
+def project_dir() -> Path:
+    """Get the top-level project directory. Uses CI_PROJECT_DIR if available, otherwise uses the
+    top-level Git directory."""
+    if "CI_PROJECT_DIR" in os.environ:
+        return Path(os.environ["CI_PROJECT_DIR"]).resolve(strict=True)
+    return Git().toplevel()
 
 
 def cpuset_max() -> int:
