@@ -6,7 +6,7 @@ import sys
 import tarfile
 from pathlib import Path
 
-from hpctoolkit.test.execution import hpcrun, hpcstruct  # noqa: import-error
+from hpctoolkit.test.execution import hpcrun, hpcstruct
 
 parser = argparse.ArgumentParser(
     description="Run hpcrun and package the measurements as an xz-tarball"

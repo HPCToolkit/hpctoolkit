@@ -75,23 +75,23 @@ class Database(DatabaseBase):
             meta = metadb.MetaDB.from_file(metaf)
         with open(dbdir / "profile.db", "rb") as profilef:
             profile = profiledb.ProfileDB.from_file(profilef)
-            profile._with(meta)  # noqa: protected-access
+            profile._with(meta)
         with open(dbdir / "cct.db", "rb") as contextf:
             context = cctdb.ContextDB.from_file(contextf)
-            context._with(meta, profile)  # noqa: protected-access
+            context._with(meta, profile)
         trace = None
         if (dbdir / "trace.db").is_file():
             with open(dbdir / "trace.db", "rb") as tracef:
                 trace = tracedb.TraceDB.from_file(tracef)
-                trace._with(meta, profile)  # noqa: protected-access
+                trace._with(meta, profile)
         return cls(meta=meta, profile=profile, context=context, trace=trace)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        self.profile._with(self.meta)  # noqa: protected-access
-        self.context._with(self.meta, self.profile)  # noqa: protected-access
+        self.profile._with(self.meta)
+        self.context._with(self.meta, self.profile)
         if self.trace is not None:
-            self.trace._with(self.meta, self.profile)  # noqa: protected-access
+            self.trace._with(self.meta, self.profile)
 
     @classmethod
     def register_yaml(cls, yaml: ruamel.yaml.YAML) -> ruamel.yaml.YAML:

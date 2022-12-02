@@ -5,9 +5,9 @@ import tarfile
 from pathlib import Path
 
 import ruamel.yaml
-from hpctoolkit.formats.v4 import Database  # noqa: import-error
-from hpctoolkit.test.execution import hpcprof  # noqa: import-error
-from hpctoolkit.test.tarball import extracted  # noqa: import-error
+from hpctoolkit.formats.v4 import Database
+from hpctoolkit.test.execution import hpcprof
+from hpctoolkit.test.tarball import extracted
 
 parser = argparse.ArgumentParser(
     description="Run hpcprof on some measurements and package the database as an xz-tarball"

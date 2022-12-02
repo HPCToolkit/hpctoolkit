@@ -92,7 +92,7 @@ class Action(abc.ABC):
         init = cls.__init__
 
         def newinit(self, *args, **kwargs):
-            if self.__singleton is None:  # noqa: protected-access
+            if self.__singleton is None:  # pylint: disable=protected-access
                 init(self, *args, **kwargs)
 
         cls.__init__ = newinit
@@ -105,7 +105,7 @@ class Action(abc.ABC):
             cls.__singleton = value
         return cls.__singleton
 
-    def header(self, cfg: Configuration) -> str:  # noqa: unused-argument
+    def header(self, cfg: Configuration) -> str:  # pylint: disable=unused-argument
         """Header for this Action's operations. To be printed to the log as a status message."""
         return self.name()
 

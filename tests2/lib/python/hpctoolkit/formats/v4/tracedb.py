@@ -80,7 +80,7 @@ class TraceDB(DatabaseFile):
     )
 
     def _with(self, meta: "MetaDB", profile: "ProfileDB"):
-        self.CtxTraces._with(meta, profile)  # noqa: protected-access
+        self.CtxTraces._with(meta, profile)
 
     @classmethod
     def from_file(cls, file):
@@ -98,7 +98,7 @@ class ContextTraceHeadersSection(StructureBase):
 
     yaml_tag: T.ClassVar[str] = "!trace.db/v4/ContextTraceHeaders"
 
-    timestampRange: T.TypedDict("TimestampMinMax", {"min": int, "max": int})  # noqa: N815
+    timestampRange: T.TypedDict("TimestampMinMax", {"min": int, "max": int})
     traces: list["ContextTrace"]
 
     __struct = VersionedStructure(
@@ -113,7 +113,7 @@ class ContextTraceHeadersSection(StructureBase):
 
     def _with(self, meta: "MetaDB", profile: "ProfileDB"):
         for t in self.traces:
-            t._with(meta, profile)  # noqa: protected-access
+            t._with(meta, profile)
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
@@ -134,7 +134,7 @@ class ContextTrace(StructureBase):
 
     yaml_tag: T.ClassVar[str] = "!trace.db/v4/ContextTrace"
 
-    profIndex: int  # noqa: N815
+    profIndex: int
     line: list["ContextTraceElement"]
 
     __struct = VersionedStructure(
@@ -164,18 +164,18 @@ class ContextTrace(StructureBase):
 
     def __post_init__(self):
         for e in self.line:
-            e._with_first(self.line[0].timestamp)  # noqa: protected-access
+            e._with_first(self.line[0].timestamp)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
         for e in self.line:
-            e._with_first(self.line[0].timestamp)  # noqa: protected-access
+            e._with_first(self.line[0].timestamp)
 
     def _with(self, meta: "MetaDB", profile: "ProfileDB"):
         if self.profIndex in profile.profile_map:
             self._profile = profile.profile_map[self.profIndex]
         for e in self.line:
-            e._with(meta)  # noqa: protected-access
+            e._with(meta)
 
     @classmethod
     def from_file(cls, version, file, offset):
@@ -196,7 +196,7 @@ class ContextTraceElement(StructureBase):
     yaml_tag: T.ClassVar[str] = "!trace.db/v4/ContextTraceElement"
 
     timestamp: int
-    ctxId: int  # noqa: N815
+    ctxId: int
 
     __struct = VersionedStructure(
         # Fixed structure

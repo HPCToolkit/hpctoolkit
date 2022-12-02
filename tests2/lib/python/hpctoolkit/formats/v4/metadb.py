@@ -283,7 +283,7 @@ class Metric(StructureBase):
     yaml_tag: T.ClassVar[str] = "!meta.db/v4/Metric"
 
     name: str
-    scopeInsts: list["PropagationScopeInstance"]  # noqa: N815
+    scopeInsts: list["PropagationScopeInstance"]
     summaries: list["SummaryStatistic"]
 
     __struct = VersionedStructure(
@@ -297,7 +297,7 @@ class Metric(StructureBase):
     )
 
     @classmethod
-    def from_file(  # noqa: too-many-arguments
+    def from_file(
         cls,
         version: int,
         file,
@@ -328,7 +328,7 @@ class PropagationScopeInstance(StructureBase):
     yaml_tag: T.ClassVar[str] = "!meta.db/v4/PropagationScopeInstance"
 
     scope: "PropagationScope"
-    propMetricId: int  # noqa: N815
+    propMetricId: int
 
     __struct = VersionedStructure(
         "<",
@@ -373,7 +373,7 @@ class SummaryStatistic(StructureBase):
     scope: "PropagationScope"
     formula: str
     combine: Combine
-    statMetricId: int  # noqa: N815
+    statMetricId: int
 
     __struct = VersionedStructure(
         "<",
@@ -422,9 +422,9 @@ class PropagationScope(StructureBase):
         execution = (2, 0)
         transitive = (3, 0)
 
-    scopeName: str  # noqa: N815
+    scopeName: str
     type: Type
-    propagationIndex: int  # noqa: N815
+    propagationIndex: int
 
     __struct = VersionedStructure(
         "<",
@@ -611,7 +611,7 @@ class Functions(StructureBase):
     )
 
     @classmethod
-    def from_file(  # noqa: too-many-arguments
+    def from_file(
         cls,
         version: int,
         file,
@@ -676,7 +676,7 @@ class Function(StructureBase):
         return f"{self.name}{srcloc}{point} [{','.join(e.name for e in self.Flags if e in self.flags)}]"
 
     @classmethod
-    def from_file(  # noqa: too-many-arguments
+    def from_file(
         cls,
         version: int,
         file,
@@ -706,7 +706,7 @@ class ContextTree(StructureBase):
 
     yaml_tag: T.ClassVar[str] = "!meta.db/v4/ContextTree"
 
-    entryPoints: list["EntryPoint"]  # noqa: N815
+    entryPoints: list["EntryPoint"]
 
     __struct = VersionedStructure(
         "<",
@@ -717,7 +717,7 @@ class ContextTree(StructureBase):
     )
 
     @classmethod
-    def from_file(  # noqa: too-many-arguments
+    def from_file(
         cls,
         version: int,
         file,
@@ -758,9 +758,9 @@ class EntryPoint(StructureBase):
         main_thread = (1, 0)
         application_thread = (2, 0)
 
-    ctxId: int  # noqa: N815
-    entryPoint: EntryPoint  # noqa: N815
-    prettyName: str  # noqa: N815
+    ctxId: int
+    entryPoint: EntryPoint
+    prettyName: str
     children: list["Context"]
 
     __struct = VersionedStructure(
@@ -778,7 +778,7 @@ class EntryPoint(StructureBase):
         return f"{self.prettyName} (= {self.entryPoint.name})  #{self.ctxId}"
 
     @classmethod
-    def from_file(  # noqa: too-many-arguments
+    def from_file(
         cls,
         version: int,
         file,
@@ -814,9 +814,9 @@ class Context(StructureBase):
     @yaml_object
     class Flags(BitFlags, yaml_tag="!meta.db/v4/Context.Flags"):
         # Added in v4.0
-        hasFunction = (0, 0)  # noqa: N815
-        hasSrcLoc = (1, 0)  # noqa: N815
-        hasPoint = (2, 0)  # noqa: N815
+        hasFunction = (0, 0)
+        hasSrcLoc = (1, 0)
+        hasPoint = (2, 0)
 
     @yaml_object
     class Relation(Enumeration, yaml_tag="!meta.db/v4/Context.Relation"):
@@ -833,10 +833,10 @@ class Context(StructureBase):
         line = (2, 0)
         instruction = (3, 0)
 
-    ctxId: int  # noqa: N815
+    ctxId: int
     flags: Flags
     relation: Relation
-    lexicalType: LexicalType  # noqa: N815
+    lexicalType: LexicalType
     propagation: int
     function: Function | None
     file: File | None
@@ -891,7 +891,7 @@ class Context(StructureBase):
         return f"-{self.relation.name}> [{self.lexicalType.name}] {' '.join(bits)}  #{self.ctxId}"
 
     @classmethod
-    def from_file(  # noqa: too-many-arguments
+    def from_file(
         cls,
         version: int,
         file,
