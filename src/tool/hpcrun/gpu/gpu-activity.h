@@ -447,7 +447,7 @@ typedef struct gpu_activity_details_t {
     gpu_blame_shift_t blame_shift;
     gpu_utilization_t gpu_utilization_info;
 
-    /* Access short cut for activitiy fields shared by multiple kinds */
+    /* Access short cut for activity fields shared by multiple kinds */
 
     /* Activity interval is used to access start time and end time of
        an coarse grained activity.

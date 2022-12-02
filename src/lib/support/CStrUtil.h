@@ -75,7 +75,6 @@ extern int   STREQ(const char* x, const char* y);
 
 extern char* ssave(const char *const str);
 extern void  sfree(char* str);
-extern void  smove(char** old_str, char* new_str);
 extern char* nssave(int n, const char *const s1, ...);
 extern int   find(char s1[], char s2[]);
 extern int   char_count(char s1[], char s2[]);

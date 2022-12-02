@@ -191,7 +191,7 @@ void PerThreadTemporary::finalize() noexcept {
       if(!first) it->second += v;
     };
 
-    // First redistrubute the Reconstructions, since those are a bit easier.
+    // First redistribute the Reconstructions, since those are a bit easier.
     for(const auto& [r, input]: r_data.citerate()) {
       auto [factors, hasEC] = r->rescalingFactors(c_data);
       {

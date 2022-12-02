@@ -438,7 +438,7 @@ PathFindMgr::scan(std::string& path, std::set<std::string>& seenPaths,
     path = RealPath(path.c_str());
   }
 
-  // 1. check for a past occurance
+  // 1. check for a past occurrence
   std::set<std::string>::iterator it = seenPaths.find(path);
   if (it != seenPaths.end()) {
     return localPaths;
@@ -578,7 +578,7 @@ PathFindMgr::resolve(std::string& path)
 	result = section +  result; // append section to the beginning
       }
       else { // here, have encountered at least 1 ".." so don't include section
-	levelsBack--; // since we didnt include section, we went back a level
+	levelsBack--; // since we didn't include section, we went back a level
       }
     }
 

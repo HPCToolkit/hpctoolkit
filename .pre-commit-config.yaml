@@ -142,6 +142,7 @@ repos:
     exclude: |
       (?x)^(
         config/(ltmain\.sh|depcomp|config\.guess|config\.sub|libtool\.m4) |    # Autotools files with code misspellings
+        configure |
         lib/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
         tools/latex2man/.* |    # External code
       )$

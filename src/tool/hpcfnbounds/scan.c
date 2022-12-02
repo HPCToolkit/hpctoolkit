@@ -535,7 +535,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   static char elfFailMess[] = {"Error in eh_frame handling, aborting scan.  libelf failed with "};
 
 
-  // don't process non-existant section
+  // don't process non-existent section
   if (ehRecord->ehFrameSection == NULL) {
     return SC_SKIP;
   }
@@ -746,7 +746,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
             break;
           case 'S':
             //
-            // non-zero stack offet, see the dot-h
+            // non-zero stack offset, see the dot-h
             //
             cieTable[kc].cieAddressOffset = EHF_FORWARD_OFF;
             ++b;

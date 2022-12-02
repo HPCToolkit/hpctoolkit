@@ -911,32 +911,32 @@ fi
 
 find_version()
 {
-  ans='unknown non-gnu'
+  result='unknown non-gnu'
 
   # strip any compiler flags, 'gcc -m64'
   base=`echo $1 | awk '{ print $1 }'`
   version=`$base --version 2>/dev/null`
   echo "$version" | grep -i copyright >/dev/null
   if test $? -eq 0 ; then
-    ans=`echo "$version" | head -1`
+    result=`echo "$version" | head -1`
   fi
 
-  echo "$ans"
+  echo "$result"
 }
 
 find_path()
 {
-  ans=
+  result=
   base=`echo $1 | awk '{ print $1 }'`
   case "$base" in
-    /* ) ans="$base" ;;
-    * )  AC_PATH_PROG([ans], [$base], [no]) ;;
+    /* ) result="$base" ;;
+    * )  AC_PATH_PROG([result], [$base], [no]) ;;
   esac
-  if test "x$ans" = xno ; then
-    ans=unknown
+  if test "x$result" = xno ; then
+    result=unknown
   fi
 
-  echo "$ans"
+  echo "$result"
 }
 
 test_is_gnu()
@@ -1038,14 +1038,14 @@ unsigned long addrs[] = {
   0x400400, 0x400410
 };
 unsigned long len = sizeof(addrs) / sizeof(addrs[0]);
-]])], [ans=yes], [ans=no])
+]])], [result=yes], [result=no])
 
-  AC_MSG_RESULT([$ans])
+  AC_MSG_RESULT([$result])
 
   AC_LANG_POP()
   CC="$ORIG_CC"
 
-  if test "$ans" = yes ; then HPCLINK_CC="$SPACK_CC"
+  if test "$result" = yes ; then HPCLINK_CC="$SPACK_CC"
   else HPCLINK_CC=gcc
   fi
 fi
@@ -1106,8 +1106,8 @@ int main() {
     }
   }
 }
-]])], [ans=yes], [ans=no])
-  if test "$ans" = yes ; then
+]])], [result=yes], [result=no])
+  if test "$result" = yes ; then
     cxx17_avail=yes
     cxx17_flag="$flag"
     break
@@ -1196,16 +1196,16 @@ long mylen(std::list <int> lst)
 {
   return (long) lst.size();
 }
-]])], [ans=yes], [ans=no])
+]])], [result=yes], [result=no])
 
-AC_MSG_RESULT([$ans])
+AC_MSG_RESULT([$result])
 
 AC_LANG_POP
 
 CXXFLAGS="$ORIG_CXXFLAGS"
 
 # Add to CXXFLAGS if supported and not already supplied.
-if test "$ans" = yes ; then
+if test "$result" = yes ; then
   case "x$CXXFLAGS" in
     *${flag}* ) ;;
     * ) HOST_CXXFLAGS="$HOST_CXXFLAGS $flag" ;;
@@ -1245,8 +1245,8 @@ void myprint(int len)
     std::cout << i << "\n";
   }
 }
-]])], [ans=yes], [ans=no])
-  if test "$ans" = yes ; then
+]])], [result=yes], [result=no])
+  if test "$result" = yes ; then
     openmp_flag="$flag"
     break
   fi
@@ -1433,7 +1433,7 @@ fi
 #
 search_for_mpi()
 {
-  ans=no
+  result=no
 
   for name in "$@" ; do
     for item in `type -a $name 2>/dev/null` ; do
@@ -1442,7 +1442,7 @@ search_for_mpi()
           # spack wrapper: /path/to/spack/lib/spack/env/case-insensitive/CC
           echo "$item" | grep -E -i -e 'lib.*spack.*env' >/dev/null
           if test $? -ne 0 ; then
-            ans="$item"
+            result="$item"
             break 2
           fi
           ;;
@@ -1450,7 +1450,7 @@ search_for_mpi()
     done
   done
 
-  echo "$ans"
+  echo "$result"
 }
 
 #-------------------------------------------------
@@ -4054,12 +4054,12 @@ if test "x$enable_openmp" != xyes ; then
 fi
 
 hpcstruct_mesg=serial
-ans=no
+result=no
 
 if test "$parse_openmp" = yes ; then
   AC_DEFINE([ENABLE_OPENMP], [1], [ParseAPI supports openmp (for hpcstruct)])
   hpcstruct_mesg=openmp
-  ans=hpcstruct
+  result=hpcstruct
 else
   OPENMP_FLAG=
   symtab_openmp=no
@@ -4068,10 +4068,10 @@ fi
 if test "$symtab_openmp" = yes ; then
   AC_DEFINE([ENABLE_OPENMP_SYMTAB], [1], [Symtab supports openmp (for fnbounds)])
   hpcstruct_mesg="$hpcstruct_mesg + fnbounds"
-  ans="$ans + fnbounds"
+  result="$result + fnbounds"
 fi
 
-AC_MSG_NOTICE([openmp support from dyninst: $ans])
+AC_MSG_NOTICE([openmp support from dyninst: $result])
 
 AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$parse_openmp" = yes])
 AM_CONDITIONAL([OPT_ENABLE_OPENMP_SYMTAB], [test "$symtab_openmp" = yes])
@@ -4125,10 +4125,10 @@ int my_size(void)
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   return size;
 }
-]])], [ans=yes], [ans=no])
-  AC_MSG_RESULT([$ans])
+]])], [result=yes], [result=no])
+  AC_MSG_RESULT([$result])
 
-  if test "$ans" = no ; then
+  if test "$result" = no ; then
     AC_MSG_WARN([invalid MPICC compiler for MPI wrappers: $MPICC ])
     AC_MSG_ERROR([reconfigure with MPICC set to valid MPI compiler])
   fi
@@ -4136,13 +4136,13 @@ int my_size(void)
   # check MPI_INC include path
   #
   AC_MSG_CHECKING([MPI wrapper include path: $MPI_INC ])
-  ans=no
+  result=no
   if test -f "${MPI_INC}/mpi.h" ; then
-    ans=yes
+    result=yes
   fi
-  AC_MSG_RESULT([$ans])
+  AC_MSG_RESULT([$result])
 
-  if test "$ans" = no ; then
+  if test "$result" = no ; then
     AC_MSG_WARN([no mpi.h in MPI_INC include path: $MPI_INC])
     AC_MSG_ERROR([reconfigure with MPI_INC set to MPI include directory])
   fi
@@ -4357,20 +4357,20 @@ int main()
   sigev.sigev_notify_thread_id = syscall(SYS_gettid);
   return timer_create(CLOCK_REALTIME, &sigev, &timerid);
 }
-]])], [ans=yes], [ans=no])
+]])], [result=yes], [result=no])
 
-AC_MSG_RESULT([$ans])
+AC_MSG_RESULT([$result])
 
 # The POSIX timers pass this test on blue gene, but they don't work on
 # the back end.
 if test "$blue_gene_back_end" = yes ; then
   AC_MSG_NOTICE([disable POSIX timers for blue gene back end])
-  ans=no
+  result=no
 fi
 
 # If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
 
-if test "$ans" = yes ; then
+if test "$result" = yes ; then
   AC_DEFINE([ENABLE_CLOCK_REALTIME], [1],
             [Support for CLOCK_REALTIME and SIGEV_THREAD_ID])
 
@@ -4384,10 +4384,10 @@ int main()
   clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
   return 0;
 }
-]])], [ans=yes], [ans=no])
-  AC_MSG_RESULT([$ans])
+]])], [result=yes], [result=no])
+  AC_MSG_RESULT([$result])
 
-  if test "$ans" = yes ; then
+  if test "$result" = yes ; then
     AC_DEFINE([ENABLE_CLOCK_CPUTIME], [1], [Support for CLOCK_THREAD_CPUTIME_ID])
   fi
 fi

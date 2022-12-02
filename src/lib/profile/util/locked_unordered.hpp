@@ -114,7 +114,7 @@ public:
   using iterator = typename real_t::iterator;
   using const_iterator = typename real_t::const_iterator;
 
-  /// Get the value for a key, creating an entry if nessesary.
+  /// Get the value for a key, creating an entry if necessary.
   // MT: Internally Synchronized
   V& operator[](const K& k) { return opget(su_lock<M>(lock), k).first; }
   V& operator[](K&& k) { return opget(su_lock<M>(lock), std::move(k)).first; }
@@ -170,7 +170,7 @@ public:
   bool empty() const noexcept { return real.empty(); }
 
   // Erase an element from the map. Returns the number of elements removed (0 or 1).
-  // MT: Internally Syncrhonized
+  // MT: Internally Synchronized
   size_type erase(const K& key) noexcept {
     std::unique_lock<M> l(lock);
     return real.erase(key);

@@ -107,15 +107,6 @@ sfree(char *str)
 }
 
 
-void
-smove(char **old, char *fresh)
-{
-  sfree(*old);
-  *old = ssave(fresh);
-  return;
-}
-
-
 /*
  *  strcpye -     like strcpy, but returns a pointer
  *                to the null that terminates s1.

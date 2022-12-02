@@ -375,7 +375,7 @@ Args::parse(int argc, const char* const argv[])
 	  Analysis::Util::parseReplacePath(replacePaths[i]);
 
 	if (occurancesOfEquals > 1) {
-	  ARG_ERROR("Too many occurances of \'=\'; make sure to escape any \'=\' in your paths");
+	  ARG_ERROR("Too many occurrences of \'=\'; make sure to escape any \'=\' in your paths");
 	}
 	else if(occurancesOfEquals == 0) {
 	  ARG_ERROR("The \'=\' between the old path and new path is missing");

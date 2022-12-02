@@ -92,7 +92,7 @@ extern __thread ompt_trl_el_t* thread_region_freelist_head;
 extern __thread ompt_wfq_t public_region_freelist;
 
 
-// stack that contais all nested parallel region
+// stack that contains all nested parallel region
 // FIXME vi3: 128 levels are supported
 extern __thread region_stack_el_t region_stack[];
 extern  __thread int top_index;

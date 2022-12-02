@@ -344,7 +344,7 @@ resolve_cntxt
     // defer cntxt)
 
 
-    // FIXME: Accomodate to region_data_t
+    // FIXME: Accommodate to region_data_t
     // FIXME: Focus on this
     // (ADDR2(UNRESOLVED, get from region_data)
     // watch for monitoring variables
@@ -401,7 +401,7 @@ hpcrun_region_lookup
 {
   cct_node_t *result = NULL;
 
-  // FIXME: Find another way to get infor about parallel region
+  // FIXME: Find another way to get info about parallel region
 
 //  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
 //  if (record) {
@@ -487,7 +487,7 @@ swap_and_free
   region_stack[depth].team_master = 0;
   region_stack[depth].took_sample = 0;
 
-  // I previosly use this as a condition to free notification,
+  // I previously use this as a condition to free notification,
   // which is bad and the explanation is below
   // Notification can be at the end of the queue
   // and this condition does not check thath
@@ -722,7 +722,7 @@ try_resolve_one_region_context
     cct_node_t *region_call_path = region_data->call_path;
 
     // FIXME: why hpcrun_cct_insert_path_return_leaf ignores top cct of the path
-    // when had this condtion, once infinity happen
+    // when had this condition, once infinity happen
     if (parent_unresolved_cct == hpcrun_get_thread_epoch()->csdata.thread_root) {
       // from initial region, we should remove the first one
       prefix = hpcrun_cct_insert_path_return_leaf(parent_unresolved_cct, region_call_path);
@@ -922,7 +922,7 @@ first_frame_above
 {
   frame_t *it;
   for(it = start; it <= end; it++, (*index)++) {
-    // FIXME: exit frame of current should be the same as enter_frame.ptr of previous frane
+    // FIXME: exit frame of current should be the same as enter_frame.ptr of previous frame
     if (UINT64_T(it->cursor.sp) >= frame_address){
       return it;
     }

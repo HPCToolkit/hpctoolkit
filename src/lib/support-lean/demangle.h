@@ -59,7 +59,7 @@ extern "C" {
 #endif
 
 // Returns: malloc()ed string for the demangled name, or else NULL.
-// Note: the caller is resposible for calling free() on the result.
+// Note: the caller is responsible for calling free() on the result.
 //
 char * hpctoolkit_demangle(const char *);
 

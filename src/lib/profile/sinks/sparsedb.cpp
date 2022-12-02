@@ -558,7 +558,7 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
            && "Final layout doesn't match precalculated ctx_off!");
     buf.reserve(buf.size() + newsz);
 
-    // Concatinate the prof_idx/value pairs, in bytes form, in metric order
+    // Concatenate the prof_idx/value pairs, in bytes form, in metric order
     for(const auto& [mid, pvbuf]: valuebufs)
       buf.insert(buf.end(), pvbuf.begin(), pvbuf.end());
 

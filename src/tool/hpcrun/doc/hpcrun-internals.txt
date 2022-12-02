@@ -270,7 +270,7 @@ new state if we have changed epochs, new tree nodes in the CCT, a longer
 buffer to record backtraces, etc.), we needed a memory allocator
 that *was* safe to be called from within a signal handler.
 
-The implementation of the memory allocator is straightfoward.  Large
+The implementation of the memory allocator is straightforward.  Large
 chunks of memory are carved out via `mmap' and smaller chunks of memory
 are handed out from within these larger chunks.  There is a current
 large chunk from which allocation requests are fulfilled.  A free
@@ -638,7 +638,7 @@ EpochsTable
 TreeId
   magic		10 bytes; "HPC_CSTREE" (no trailing null)
   version	5 bytes; "01.0T"
-  endianess	1 byte; 'l' or 'b'
+  endianness	1 byte; 'l' or 'b'
 
 Tree
   id		TreeId

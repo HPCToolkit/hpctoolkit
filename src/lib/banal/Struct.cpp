@@ -478,12 +478,12 @@ LoopMinEntryAddr(Loop * loop)
     return 0;
   }
 
-  VMA ans = VMA_MAX;
+  VMA result = VMA_MAX;
   for (int i = 0; i < num_ents; i++) {
-    ans = std::min(ans, entBlocks[i]->start());
+    result = std::min(result, entBlocks[i]->start());
   }
 
-  return ans;
+  return result;
 }
 
 // Sort Loops (from their LoopTreeNodes) by min entry VMAs.
@@ -865,8 +865,8 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
   //
   double threshold = WORK_LIST_PCT * total_cost / ((double) opts.jobs_struct);
 
-  for (auto wit = wlPrint.begin(); wit != wlPrint.end(); ++wit) {
-    WorkItem * witem = *wit;
+  for (auto it = wlPrint.begin(); it != wlPrint.end(); ++it) {
+    WorkItem * witem = *it;
 
     if (witem->cost > threshold) {
       wlLaunch.push_back(witem);
@@ -876,8 +876,8 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
   std::sort(wlLaunch.begin(), wlLaunch.end(), WorkItemGreaterThan);
 
   // add the small items in print order
-  for (auto wit = wlPrint.begin(); wit != wlPrint.end(); ++wit) {
-    WorkItem * witem = *wit;
+  for (auto it = wlPrint.begin(); it != wlPrint.end(); ++it) {
+    WorkItem * witem = *it;
 
     if (! witem->promote) {
       wlLaunch.push_back(witem);
@@ -2599,7 +2599,7 @@ static string
 debugPrettyName(const string & procnm)
 {
   string str = procnm;
-  string ans = "";
+  string result = "";
   size_t str_len = str.size();
   size_t pos = 0;
 
@@ -2608,13 +2608,13 @@ debugPrettyName(const string & procnm)
     char open, close;
 
     if (next == string::npos) {
-      ans += str.substr(pos);
+      result += str.substr(pos);
       break;
     }
     if (str[next] == '<') { open = '<';  close = '>'; }
     else { open = '(';  close = ')'; }
 
-    ans += str.substr(pos, next - pos) + open + close;
+    result += str.substr(pos, next - pos) + open + close;
 
     int depth = 1;
     for (pos = next + 1; pos < str_len && depth > 0; pos++) {
@@ -2623,7 +2623,7 @@ debugPrettyName(const string & procnm)
     }
   }
 
-  return ans;
+  return result;
 }
 
 //----------------------------------------------------------------------

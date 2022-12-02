@@ -571,7 +571,7 @@ addSimdInstrumentation
     }
 
     // For each element in insCountsPerGroup, create the corresponding SimdProfGroup record,
-    // and insert SimdProf instrumentaion at the beginning of the current section
+    // and insert SimdProf instrumentation at the beginning of the current section
     SimdGroupNode *curr = groupHead;
     SimdGroupNode *next;
     int count = 0;
@@ -729,7 +729,7 @@ onKernelBuild
     }
 
     GTPinMem mem_opcode;
-    // latency instrumentation can also retreive counts
+    // latency instrumentation can also retrieve counts
     if ((count_knob && !hasLatencyInstrumentation) || (latency_knob && !hasLatencyInstrumentation)) {
       mem_opcode = addOpcodeInstrumentation(kernel, head);
     }
@@ -800,7 +800,7 @@ onKernelBuild
     kernel_data_map_insert((uint64_t)kernel, kernel_data);
   }
 
-  // add these details to cct_node. If thats not needed, we can create the kernel_cct in onKernelComplete
+  // add these details to cct_node. If that's not needed, we can create the kernel_cct in onKernelComplete
   ETMSG(OPENCL, "onKernelBuild complete. Inserted key: %"PRIu64 "",(uint64_t)kernel);
 }
 
@@ -880,7 +880,7 @@ onKernelComplete
       // simd, count and latency probes all need mem_opcode probes
       // simd: needs mem_opcode for bb_exec_count calculation
       // count: same as above
-      // latency: needs mem_opcode for all basic blocks where latency probes couldnt be added
+      // latency: needs mem_opcode for all basic blocks where latency probes couldn't be added
       thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_opcode));
     }
     assert(thread_count > 0);

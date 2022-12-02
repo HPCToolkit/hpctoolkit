@@ -276,7 +276,7 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
     debug_blocks(blocks);
   }
 
-  // Split blocks for loop analysis ans CALL instructions
+  // Split blocks for loop analysis and CALL instructions
   // TODO(keren): identify RET edges?
   split_blocks(blocks, block_id_map);
 
@@ -325,7 +325,7 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
         }
       }
       std::sort(function->blocks.begin(), function->blocks.end(), compare_block_ptr);
-      // For sm_30 <= cuda arch < sm_70, the first 8 byte of outter functions are control codes.
+      // For sm_30 <= cuda arch < sm_70, the first 8 byte of outer functions are control codes.
       // For sm_70, byte 0-16 will be the first instruction
       // Inner (local) functions will not start with a control code
       // So when we find a block starts with 8, just enforce the begin offset to be 0

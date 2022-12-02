@@ -53,7 +53,7 @@ Description:
   algorithms exploit the line map and debug information recorded in an
   application binary during compilation, for best results, we recommend that
   binaries be compiled with standard debug information or at a minimum,
-  line map information. Typically, this is accomplished by pasing a '-g'
+  line map information. Typically, this is accomplished by passing a '-g'
   option to each compiler along with any optimization flags. See the
   HPCToolkit manual for more information.
 

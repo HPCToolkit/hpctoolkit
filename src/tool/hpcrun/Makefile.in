@@ -1776,7 +1776,6 @@ am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
-ans = @ans@
 bindir = @bindir@
 build = @build@
 build_alias = @build_alias@
@@ -1817,6 +1816,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+result = @result@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -2371,7 +2371,7 @@ PROF_LEAN_A = $(top_builddir)/src/lib/prof-lean/.libs/libHPCprof-lean.a
 SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 
 # Modified versions of the external archives.  The static case works
-# with or without -fPIC, but the dynamic case requies -fPIC.
+# with or without -fPIC, but the dynamic case requires -fPIC.
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \

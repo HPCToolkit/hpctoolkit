@@ -131,7 +131,7 @@ parseDotCFG
   std::vector<Symbol *> unparsable_function_symbols;
   // Store functions that are parsed by nvdisasm
   std::vector<Symbol *> parsed_function_symbols;
-  // nvdisasm add suffix such as "__1" and "__3" to funciton names
+  // nvdisasm add suffix such as "__1" and "__3" to function names
   // that are shared by multiple functions.
   // Here we split such name into its symbol name and its suffix
   // and use the pair as the key for the function map
@@ -198,7 +198,7 @@ parseDotCFG
       }
       block->address = block->insts[0]->offset;
     }
-    // Allow gaps between a function begining and the first block?
+    // Allow gaps between a function beginning and the first block?
     //function->blocks[0]->address = symbol->getOffset();
     function->address = symbol->getOffset();
   }

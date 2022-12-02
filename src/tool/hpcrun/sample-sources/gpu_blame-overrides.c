@@ -2055,7 +2055,7 @@ gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node,  int metric_dc)
     // If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
     // There is no better solution yet since we dont know which GPU card we should be looking for idleness.
     if(g_do_shared_blaming){
-      if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truely idle i.e. no other process is keeping it busy
+      if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truly idle i.e. no other process is keeping it busy
 	// Increment gpu_ilde by metric_incr
 	cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
 	    .i = metric_incr});

@@ -217,14 +217,14 @@ typedef void (*cct_op_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
 //
 
 //
-// visting order: children first, then node
+// visiting order: children first, then node
 //
 extern void hpcrun_cct_walk_child_1st_w_level(cct_node_t* cct,
 					      cct_op_t op,
 					      cct_op_arg_t arg, size_t level);
 
 //
-// visting order: node first, then children
+// visiting order: node first, then children
 //
 extern void hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct,
 					     cct_op_t op,

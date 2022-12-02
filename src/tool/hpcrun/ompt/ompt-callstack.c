@@ -224,11 +224,11 @@ interval_contains
  void *addr
 )
 {
-  uint64_t uaddr  = (uint64_t) addr;
-  uint64_t ulower = (uint64_t) lower;
-  uint64_t uupper = (uint64_t) upper;
+  uint64_t u_addr  = (uint64_t) addr;
+  uint64_t u_lower = (uint64_t) lower;
+  uint64_t u_upper = (uint64_t) upper;
 
-  return ((ulower <= uaddr) & (uaddr <= uupper));
+  return ((u_lower <= u_addr) & (u_addr <= u_upper));
 }
 
 
@@ -387,7 +387,7 @@ ompt_elide_runtime_frame(
     // frames at top of stack elided. continue with the rest
   }
 
-  // FIXME vi3: trouble with master thread when defering
+  // FIXME vi3: trouble with master thread when deferring
   // general case: elide frames between frame1->enter and frame0->exit
   while (true) {
     frame_t *exit0 = NULL, *reenter1 = NULL;
@@ -473,7 +473,7 @@ ompt_elide_runtime_frame(
 
 
 
-    // FIXME vi3: This makes trouble with master thread when defering
+    // FIXME vi3: This makes trouble with master thread when deferring
     if (exit0 && reenter1) {
 
 
@@ -484,7 +484,7 @@ ompt_elide_runtime_frame(
       // By eliminating the topmost frame we should avoid the appearance of the same frame twice
       //  in the callpath
 
-      // FIXME vi3: find better way to solve this  "This makes trouble with master thread when defering"
+      // FIXME vi3: find better way to solve this  "This makes trouble with master thread when deferring"
 //      if (TD_GET(master)){
 //        return;
 //      }
@@ -823,7 +823,7 @@ ompt_cct_cursor_finalize
       // it should be enough just to set cursor to unresolved node
       // which corresponds to not_master_region
 
-      // everything is ok with cursos
+      // everything is ok with cursors
       cct_cursor = cct_not_master_region;
 
 // johnmc merge

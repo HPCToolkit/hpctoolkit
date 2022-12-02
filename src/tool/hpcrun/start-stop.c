@@ -62,7 +62,7 @@
 // sampling in all threads is more complicated because it would have
 // to be done in a signal handler which can't really be done safely.
 //
-// (3) Sampling is initally on.  If you want it initially off, then
+// (3) Sampling is initially on.  If you want it initially off, then
 // set HPCRUN_DELAY_SAMPLING in the environment.
 //
 //***************************************************************************

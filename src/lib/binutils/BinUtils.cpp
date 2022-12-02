@@ -81,16 +81,16 @@ canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
 string
 demangleProcName(const std::string& name)
 {
-  string ans = name;
+  string result = name;
 
   char *str = hpctoolkit_demangle(name.c_str());
 
   if (str != NULL) {
-    ans = str;
+    result = str;
     free(str);
   }
 
-  return ans;
+  return result;
 }
 
 } // namespace BinUtil

@@ -824,7 +824,7 @@ opencl_isClArgBuffer
   /*
    * There are 2 scenarios in which opencl_isClArgBuffer will return false
    * 1. When clCreateBuffer was not called for arg before calling clSetKernelArg
-   * 2. clEnqueueWriteBuffer is being called for arg. We shouldnt be recording duplicate H2D calls
+   * 2. clEnqueueWriteBuffer is being called for arg. We shouldn't be recording duplicate H2D calls
    * */
   uint64_t buffer_id = opencl_get_buffer_id(arg);
   bool isBuffer;
@@ -1759,7 +1759,7 @@ hpcrun_clFinish
 )
 {
   ETMSG(OPENCL, "clFinish called");
-  // on the assumption that clFinish is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
+  // on the assumption that clFinish is synchronous, we have sandwiched it with calls to sync_prologue and sync_epilogue
   if(is_opencl_blame_shifting_enabled()) {
     opencl_sync_prologue(command_queue);
   }

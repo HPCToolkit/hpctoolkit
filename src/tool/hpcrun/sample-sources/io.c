@@ -179,7 +179,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("IO\t\tThe number of bytes read and written per dynamic context\n");
+  printf("IO\t\t" "The number of bytes read and written per dynamic context\n");
   printf("\n");
 }
 

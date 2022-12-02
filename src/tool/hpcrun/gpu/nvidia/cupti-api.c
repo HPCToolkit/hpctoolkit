@@ -845,7 +845,7 @@ cupti_subscriber_callback
 
     switch (cb_id) {
       //FIXME(Keren): do not support memory allocate and free for current CUPTI version
-      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
+      // FIXME(Dejan): here find #bytes from func argument list and attribute it to node in cct(corr_id)
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
@@ -1653,7 +1653,7 @@ cupti_device_init()
   cupti_runtime_api_flag = false;
 
   // FIXME: Callback shutdown currently disabled to handle issues with fork()
-  // See the comment preceeding sample-sources/nvidia.c:process_event_list for details.
+  // See the comment preceding sample-sources/nvidia.c:process_event_list for details.
 
   // cupti_correlation_enabled = false;
   // cupti_pc_sampling_enabled = false;

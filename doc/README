@@ -27,7 +27,7 @@ Use either no target or target 'all'.
 
 To install missing sty files, download the missing files from CTAN
 and install at local directory. Use kpsewhich command to locate the
-directory used by latex. On Linux platfom, it's usually at
+directory used by latex. On Linux platform, it's usually at
 
 /home/<user>/texmf/tex/latex/<package>
 

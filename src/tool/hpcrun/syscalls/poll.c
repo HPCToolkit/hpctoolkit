@@ -144,7 +144,7 @@ MONITOR_EXT_WRAP_NAME(poll)
     }
     errno = incoming_errno;
 
-    // adjust timout and restart syscall
+    // adjust timeout and restart syscall
     if (init_timeout > 0) {
       clock_gettime(CLOCK_REALTIME, &now);
 

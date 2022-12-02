@@ -205,7 +205,7 @@ mkdirUnique(const std::string& dirnm)
 }
 
 
-// retuns a name that can safely be used for a temporary file
+// returns a name that can safely be used for a temporary file
 // in a static variable, which is overwritten with each call to
 // tmpname
 extern const char*

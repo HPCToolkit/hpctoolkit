@@ -214,7 +214,7 @@ ui_dump(unwind_interval* u)
 void
 suspicious_interval(void *pc)
 {
-  EMSG("suspicous interval for pc = %p", pc);
+  EMSG("suspicious interval for pc = %p", pc);
   hpcrun_stats_num_unwind_intervals_suspicious_inc();
 }
 

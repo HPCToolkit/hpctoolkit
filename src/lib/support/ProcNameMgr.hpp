@@ -136,7 +136,7 @@ private:
     bool isSane = (x.length() > (pfx.length() + sfx.length()));
     size_t sfx_pos = x.length() - sfx.length();
 
-    // test suffix first becuase it fails more than the prefix comparison
+    // test suffix first because it fails more than the prefix comparison
     return (isSane &&
 	    x.compare(sfx_pos, sfx.length(), sfx) == 0 &&
 	    x.compare(0, pfx.length(), pfx) == 0);

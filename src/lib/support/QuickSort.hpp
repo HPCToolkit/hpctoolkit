@@ -69,7 +69,7 @@
  *   deallocates the space for the pointers initialized in Create.            *
  *                                                                            *
  * Sort:                                                                      *
- *   recursivley sorts the section of the array from minEntry to maxEntry.    *
+ *   recursively sorts the section of the array from minEntry to maxEntry.    *
  *                                                                            *
  **************************** QuickSort Private *******************************
  *                                                                            *

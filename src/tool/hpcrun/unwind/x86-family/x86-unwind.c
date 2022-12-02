@@ -550,7 +550,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     //-----------------------------------------------------------
     // if value of BP reloaded from the save area does not point
     // into the stack, then it cannot possibly be useful as a frame
-    // pointer in the caller or any of its ancesters.
+    // pointer in the caller or any of its ancestors.
     //
     // if the value in the BP register points into the stack, then
     // it might be useful as a frame pointer. in this case, we have

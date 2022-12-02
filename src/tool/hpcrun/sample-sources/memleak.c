@@ -200,7 +200,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("MEMLEAK\t\tThe number of bytes allocated and freed per dynamic context\n");
+  printf("MEMLEAK\t\t" "The number of bytes allocated and freed per dynamic context\n");
   printf("\n");
 }
 

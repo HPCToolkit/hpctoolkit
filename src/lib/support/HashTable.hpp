@@ -54,7 +54,7 @@
  *                                                                            *
  * Since the HashTable uses callbacks and virtual functions, use care if any  *
  * function that is overridden calls the functions of the HashTable.  There   *
- * is the possiblity of recursive function calls if this is the case.         *
+ * is the possibility of recursive function calls if this is the case.         *
  * The functions are designed such that recursive calls can take place, but   *
  * if the overriding functions are not designed carefully, poor code          *
  * performance can result.                                                    *
@@ -187,7 +187,7 @@
  *                                                                            *
  * If it is desired, a derived class can be created and these four functions  *
  * can be overridden.  This allows for more specialized operation of the      *
- * HashTable.  If a dervied class is created, use the Create function         *
+ * HashTable.  If a derived class is created, use the Create function         *
  * supplied in the protected section.  This will ensure that the virtual      *
  * functions are called correctly.                                            *
  *                                                                            *

@@ -101,7 +101,7 @@ public:
   // 'm_cache'.  If that search is unsuccessful and the cache is full,
   // it then searches for a file named "name" in each directory in the
   // colon-separated pathlist given as the first argument, and returns
-  // the full pathname to the first occurence that has at least the
+  // the full pathname to the first occurrence that has at least the
   // mode bits specified by mode. For any 'recursive-path', it
   // recursively searches all of that paths descendents as well. An
   // empty path in the pathlist is interpreted as the current
@@ -148,7 +148,7 @@ public:
 
 private:
 
-  // Retreives the highest priority and closest matching real path to
+  // Retrieves the highest priority and closest matching real path to
   // "filePath" from 'm_cache', where priority is defined by how close
   // the real path is to the front of the vector of real paths.  If
   // the file name exists in 'm_cache', but none of the real paths
@@ -156,7 +156,7 @@ private:
   // be returned.
   //
   // Notes:
-  // * We cache all files in a recursive seach path such that:
+  // * We cache all files in a recursive search path such that:
   //   - the path portion of the file is fully resolved
   //   - the filename portion may or may not be a symlink
   //   - with forward-sym links, there can be multiple paths that lead to
@@ -237,7 +237,7 @@ private:
   // If the cache is full and a path cannot be found from the cache,
   // pathfind_slow is called to try to resolve the path. Searches
   // through all the directories in 'pathList', attempting to find
-  // 'name'.  Touches the disk alot, making this a very slow, and last
+  // 'name'.  Touches the disk a lot, making this a very slow, and last
   // resort, method. Returns NULL if the file cannot be found.
   //
   // @param pathList: List of all the paths to search through. Each

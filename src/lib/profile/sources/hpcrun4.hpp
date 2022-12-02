@@ -72,7 +72,7 @@ public:
 
   bool valid() const noexcept override;
 
-  /// Get the basename of the measured exectuable.
+  /// Get the basename of the measured executable.
   std::string exe_basename() const;
 
   /// Read in enough data to satisfy a request or until a timeout is reached.

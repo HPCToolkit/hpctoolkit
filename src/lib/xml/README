@@ -26,7 +26,7 @@ files are newer than the source files and not regenerate them.  Yuck.
 
 Instead, write a script in the lib/dtd/ directory to explicitly
 regenerate the files.  Or, delete the .dtd.h files from the repository
-and regenerate them on evey build.
+and regenerate them on every build.
 
 Better still, put the source and generated files in the same
 directory.

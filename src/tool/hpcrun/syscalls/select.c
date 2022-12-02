@@ -53,7 +53,7 @@
 //   caused by hpcrun and restart.
 //
 // Note:
-//   The kernel automatically updates the timout parameter for select(),
+//   The kernel automatically updates the timeout parameter for select(),
 //   but not for poll(), ppoll() or pselect().
 //------------------------------------------------------------------------------
 

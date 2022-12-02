@@ -244,8 +244,8 @@ ilmstat_btuwi_pair_malloc(
  * set its fields using the appropriate parameters
  * return the head node.
  */
-  ilmstat_btuwi_pair_t *ans = pop_free_pair(&_lf_ilmstat_btuwi);
-  return ilmstat__btuwi_pair_init(ans, treestat, lm, start, end);
+  ilmstat_btuwi_pair_t *result = pop_free_pair(&_lf_ilmstat_btuwi);
+  return ilmstat__btuwi_pair_init(result, treestat, lm, start, end);
 }
 
 //******************************************************************************

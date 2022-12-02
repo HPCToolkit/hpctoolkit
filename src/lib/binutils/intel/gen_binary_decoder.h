@@ -62,8 +62,8 @@ class GenBinaryDecoder {
         break;
       }
 
-      size_t lenght = kernel_view_.getInstSyntax(offset, text, MAX_STR_SIZE);
-      assert(lenght > 0);
+      size_t length = kernel_view_.getInstSyntax(offset, text, MAX_STR_SIZE);
+      assert(length > 0);
       instruction_list.push_back(std::make_pair(offset, text));
 
       offset += size;

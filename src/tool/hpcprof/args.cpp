@@ -675,7 +675,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   for(auto& p_s: extra) {
     stdshim::filesystem::path p = std::move(p_s);
     auto s = ProfileSource::create_for(p, logstore);
-    if(!s) util::log::fatal{} << "Input " << p << " has changed on disk, please let it stablize before continuing!";
+    if(!s) util::log::fatal{} << "Input " << p << " has changed on disk, please let it stabilize before continuing!";
     sources.emplace_back(std::move(s), std::move(p));
   }
 }

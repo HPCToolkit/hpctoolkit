@@ -430,13 +430,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   bool mayFrameSizeBe0 = (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg);
   if (mayFrameSizeBe0) {
     if (cursor->pc_unnorm == nxt_pc && cursor->sp == nxt_sp) {
-      // no forward progess with a register-based unwind
+      // no forward progress with a register-based unwind
       TMSG(UNW, "error: loop! pc = nxt_pc = %p sp = nxt_sp = %p", nxt_pc, nxt_sp);
       return STEP_ERROR;
     }
   } else {
     if (!isPossibleParentSP(sp, nxt_sp)) {
-      // no forward progess with a stack-based unwind
+      // no forward progress with a stack-based unwind
       TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
       return STEP_ERROR;
     }

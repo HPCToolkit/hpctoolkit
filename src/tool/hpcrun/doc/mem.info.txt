@@ -9,7 +9,7 @@
 
 // csprof_malloc_init: Prepares the private memory management system
 // for use.  This function may be called multiple times; on each
-// successive call, the memory mangement system is reset and all
+// successive call, the memory management system is reset and all
 // contents are lost.  If desired, users may choose initial sizes (in
 // bytes) for the regular ('sz') and temporary ('sz_tmp') memory
 // stores; set these parameters to 1 to use default sizes.  Either of
@@ -36,7 +36,7 @@ void* csprof_malloc_threaded(csprof_mem_t *, size_t size);
 // csprof_tmalloc: Returns a pointer to a block of temporary memory of
 // the *exact* size (in bytes) requested.  If there is insufficient
 // memory, *no attempt* will be made to allocate more and NULL is
-// returned. Temporary memory is allocated analagous to a stack; it
+// returned. Temporary memory is allocated analogous to a stack; it
 // may be freed using 'csprof_tfree' but it *must be* freed in the
 // reverse order of allocation.
 //

@@ -65,7 +65,7 @@
 // Returns: malloc()ed string for the demangled name, or else NULL if
 // 'name' is not a mangled name.
 //
-// Note: the caller is resposible for calling free() on the result.
+// Note: the caller is responsible for calling free() on the result.
 //
 char *
 hpctoolkit_demangle(const char * name)

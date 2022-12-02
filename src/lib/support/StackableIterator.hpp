@@ -100,7 +100,7 @@ public:
   virtual void Reset() = 0;
 
   //----------------------------------------------------------------------
-  // dump essential state (class name, this pointer, currrent iterate)
+  // dump essential state (class name, this pointer, current iterate)
   // and invoke DumpUpCall to report interesting state of derived class
   //----------------------------------------------------------------------
   void Dump();

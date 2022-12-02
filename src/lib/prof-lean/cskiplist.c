@@ -150,11 +150,11 @@ static csklnode_t*
 csklnode_alloc_from_lfl(
 	void* val)
 {
-  csklnode_t *ans = _lf_cskl_nodes;
+  csklnode_t *result = _lf_cskl_nodes;
   _lf_cskl_nodes = _lf_cskl_nodes->nexts[0];
-  ans->nexts[0] = NULL;
-  ans->val = val;
-  return ans;
+  result->nexts[0] = NULL;
+  result->val = val;
+  return result;
 }
 
 /*

@@ -145,7 +145,7 @@ void
 hpcrun_pmsg(const char *tag, const char *fmt, ...)
 {
 #ifdef SINGLE_THREAD_LOGGING
-  if ( getenv("OT") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
+  if ( getenv("O""T") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
     return;
   }
 #endif // SINGLE_THREAD_LOGGING

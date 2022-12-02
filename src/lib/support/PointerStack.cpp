@@ -51,7 +51,7 @@
 // Author:  John Mellor-Crummey                               October 1993
 //
 // rjf	2-21-98 Replaced previous versions of PointerStack with
-//              a self-contained implementaion for efficiency and
+//              a self-contained implementation for efficiency and
 //		to avoid using templates when building runtime libraries
 //		on machines on which the compiler itself does not run.
 

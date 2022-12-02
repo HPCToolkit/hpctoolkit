@@ -439,7 +439,7 @@ private:
 	    const std::string& sw, const std::string& arg);
 
 private:
-  std::string command;           // comand name
+  std::string command;           // command name
   SwitchToArgMap switchToArgMap; // optional arguments
   ArgVec arguments;              // regular arguments
 };

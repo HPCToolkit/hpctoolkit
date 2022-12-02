@@ -197,7 +197,7 @@ AC_DEFUN([HPC_CHECK_CXX_STDC_HEADERS],
 #include <cfloat>
 #include <clocale>
 ],
-         [std::strcmp("fee fi", "fo fum");])],
+         [std::strcmp("fee-fi", "fo-fum");])],
        [ac_cv_check_cxx_ctd_cheaders="yes"],
        [ac_cv_check_cxx_ctd_cheaders="no"])])
    if test "$ac_cv_check_cxx_ctd_cheaders" = "no" ; then

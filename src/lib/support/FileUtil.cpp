@@ -304,7 +304,7 @@ mkdir(const char* dir)
   //    "./p0"                ==> [. p0]
   //
   // Note: we could do tokenization in place (string::find_last_of()),
-  // but (1) this is more elegant and (2) sytem calls and disk
+  // but (1) this is more elegant and (2) system calls and disk
   // accesses will overwhelm any possible difference in performance.
   // -------------------------------------------------------
   std::vector<string> pathVec;

@@ -194,7 +194,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("SYNC\t\tThe number of synchronous metric slots allocated,\n"
+  printf("SYNC\t\t" "The number of synchronous metric slots allocated,\n"
 	 "\t\teg, SYNC@3 would generate 3 slots\n");
   printf("\n");
 }

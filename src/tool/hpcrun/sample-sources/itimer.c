@@ -337,7 +337,7 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
       // signal while handling a sample. When a shutdown signal is received,
       // the thread's timer is deleted and set to uninitialized.
       // In this circumstance, restarting the timer will fail and that
-      // is appropriate. Return without futher action or reporting an error.
+      // is appropriate. Return without further action or reporting an error.
       return;
     }
   }

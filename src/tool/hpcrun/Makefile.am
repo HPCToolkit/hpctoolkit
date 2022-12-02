@@ -854,7 +854,7 @@ PROF_LEAN_A = $(top_builddir)/src/lib/prof-lean/.libs/libHPCprof-lean.a
 SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 
 # Modified versions of the external archives.  The static case works
-# with or without -fPIC, but the dynamic case requies -fPIC.
+# with or without -fPIC, but the dynamic case requires -fPIC.
 
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a

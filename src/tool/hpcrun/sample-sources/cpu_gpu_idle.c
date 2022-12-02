@@ -224,7 +224,7 @@ METHOD_FN(finalize_event_list)
 }
 static void METHOD_FN(gen_event_set, int lush_metrics)
 {
-    // There is NO signal hander for us, we proxy with itimer or PAPI_TOT_CYC
+    // There is NO signal handler for us, we proxy with itimer or PAPI_TOT_CYC
 }
 
 static void METHOD_FN(display_events)

@@ -868,7 +868,7 @@ def CreateWrapper(funct, olist):
     #   we want to use MPI conversion functions.
     #
     # The most obvious problem we have encountered is for MPI_Request objects,
-    #   but Communicators, Group, Datatype, Op, and File are also possibily problems.
+    #   but Communicators, Group, Datatype, Op, and File are also possibly problems.
     #
     # There are two cases:
     #   1) A single argument needs to be translated.

@@ -141,7 +141,7 @@ lush_init_unw(lush_cursor_t* cursor,
 
 // Given a lush_cursor, step the cursor to the next (less deeply
 // nested) bichord.  Returns:
-//   LUSH_STEP_CONT:     if step was sucessful
+//   LUSH_STEP_CONT:     if step was successful
 //   LUSH_STEP_END_PROJ: if chord was end of projection
 //   LUSH_STEP_ERROR:    on account of an error.
 lush_step_t
@@ -151,7 +151,7 @@ lush_step_bichord(lush_cursor_t* cursor);
 // Given a lush_cursor, step the cursor to the next (less deeply
 // nested) p-note/l-note of the current p-chord/l-chord.
 // Returns:
-//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_CONT:      if step was successful
 //                        (for l-notes, only possible if not a-to-0)
 //   LUSH_STEP_END_CHORD: if prev note was the end of the chord
 //   LUSH_STEP_ERROR:     on account of an error.
@@ -176,7 +176,7 @@ lush_forcestep_pchord(lush_cursor_t* cursor);
 // Given a lush_cursor, _forcefully_ step the cursor to the next (less
 // deeply nested) p-note which may also be the next p-chord.
 // Returns:
-//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_CONT:      if step was successful
 //   LUSH_STEP_END_CHORD: if prev p-note was the end of the p-chord
 //   LUSH_STEP_END_PROJ:  if prev p-chord was end of p-projection
 //   LUSH_STEP_ERROR:     on account of an error.

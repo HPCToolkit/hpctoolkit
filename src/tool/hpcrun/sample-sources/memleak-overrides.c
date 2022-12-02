@@ -281,21 +281,21 @@ static float
 string_to_prob(char *str)
 {
   int x, y;
-  float ans;
+  float ret;
 
   if (strchr(str, '/') != NULL) {
     if (sscanf(str, "%d/%d", &x, &y) == 2 && y > 0) {
-      ans = (float)x / (float)y;
+      ret = (float)x / (float)y;
     } else {
-      ans = DEFAULT_PROB;
+      ret = DEFAULT_PROB;
     }
   } else {
-    if (sscanf(str, "%f", &ans) < 1) {
-      ans = DEFAULT_PROB;
+    if (sscanf(str, "%f", &ret) < 1) {
+      ret = DEFAULT_PROB;
     }
   }
 
-  return ans;
+  return ret;
 }
 
 
@@ -360,7 +360,7 @@ memleak_same_page(void *p1, void *p2)
 // (so free can look for a header without risking a segfault).  Note:
 // aligned mallocs never get headers.
 //
-// sys_ptr = pointer returned by sysem malloc
+// sys_ptr = pointer returned by system malloc
 // bytes = size of application's region
 // align = non-zero if an aligned malloc
 //
@@ -731,7 +731,7 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 // the metric is inactive and we don't record it in the CCT (unless
 // memleak is entirely disabled).  If the region has a header, then
 // the system ptr is not the application ptr, and we must find the
-// sytem ptr or else free() will crash.
+// system ptr or else free() will crash.
 //
 void
 MONITOR_EXT_WRAP_NAME(free)(void *ptr)

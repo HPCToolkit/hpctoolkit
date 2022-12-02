@@ -203,7 +203,7 @@ gpu_context_id_map_adjust_times
  gpu_trace_item_t *ti
 )
 {
-  // If we have established correspondance between
+  // If we have established correspondence between
   // a cpu timestamp and a gpu timestamp, we just need
   // to compute its difference as the time offset
   //
@@ -222,7 +222,7 @@ gpu_context_id_map_adjust_times
     // when GPU operations are asynchronous.
     // For example, when we launch a kernel asynchronously,
     // the GPU kernel may not be executed until the runtime loads a GPU binary
-    // or perfoms JIT compilation. In such cases, the host timestamp taken at the
+    // or performs JIT compilation. In such cases, the host timestamp taken at the
     // entry of the kernel launch API can be significantly earlier than the time
     // when the kernel is actually executed on the GPU.
     if (entry->first_time == 0) {

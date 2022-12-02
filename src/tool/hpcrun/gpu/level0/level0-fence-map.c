@@ -125,8 +125,8 @@ level0_fence_map_delete
   level0_handle_map_entry_t *entry =
     level0_handle_map_lookup(&fence_map_root, key);
 
-  // It is possible that the applicatio will first
-  // do a fence reset and then a fence destory
+  // It is possible that the application will first
+  // do a fence reset and then a fence destroy
   if (entry != NULL) {
     level0_fence_data_t* result =
         (level0_fence_data_t*) (*level0_handle_map_entry_data_get(entry));

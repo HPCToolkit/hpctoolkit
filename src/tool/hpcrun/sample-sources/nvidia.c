@@ -480,11 +480,11 @@ METHOD_FN(display_events)
 	 NVIDIA_CUDA);
   printf("\n");
   printf("%s\tComprehensive monitoring on an NVIDIA GPU as described above\n"
-	 "\t\twith the addition of PC sampling. PC sampling attributes\n"
-	 "\t\tSTALL reasons to individual GPU instructions. PC sampling also\n"
-	 "\t\trecords aggregate statistics about the TOTAL number of samples measured,\n"
-	 "\t\tthe number of samples EXPECTED, and the number of samples DROPPED.\n"
-	 "\t\tGPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
+	 "\t\t" "with the addition of PC sampling. PC sampling attributes\n"
+	 "\t\t" "STALL reasons to individual GPU instructions. PC sampling also\n"
+	 "\t\t" "records aggregate statistics about the TOTAL number of samples measured,\n"
+	 "\t\t" "the number of samples EXPECTED, and the number of samples DROPPED.\n"
+	 "\t\t" "GPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
 	 NVIDIA_CUDA_PC_SAMPLING);
   printf("\n");
 }

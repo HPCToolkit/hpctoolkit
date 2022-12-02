@@ -179,7 +179,7 @@ confirm_indirect_call_specific(void* addr, size_t offset, void** call_ins)
 static bool
 confirm_indirect_call(void* addr, void** call_ins)
 {
-  TMSG(VALIDATE_UNW,"trying to confirm an indirect call preceeding %p", addr);
+  TMSG(VALIDATE_UNW,"trying to confirm an indirect call preceding %p", addr);
   for (size_t i=1;i <= 7;i++) {
     if (confirm_indirect_call_specific(addr, i, call_ins)){
       return true;
@@ -374,25 +374,25 @@ deep_validate_return_addr(void* addr, void* generic)
   void* callee = (void*)unwr_info.interval.start;
   TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
   if (confirm_call(addr, callee)) {
-    TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
+    TMSG(VALIDATE_UNW, "Instruction preceding %p is a call to this routine. Unwind confirmed", addr);
     return UNW_ADDR_CONFIRMED;
   }
   validation_status result = confirm_plt_call(addr, callee);
   if (result != UNW_ADDR_WRONG) {
     TMSG(VALIDATE_UNW,
-	 "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
+	 "Instruction preceding %p is a call through the PLT to this routine. Unwind confirmed",
 	 addr);
     return result;
   }
   result = confirm_tail_call(addr, callee);
   if (result != UNW_ADDR_WRONG) {
-    TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
+    TMSG(VALIDATE_UNW,"Instruction preceding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
     return result;
   }
 
   void* call_ins;
   if (confirm_indirect_call(addr, &call_ins)){
-    TMSG(VALIDATE_UNW,"Instruction preceeding %p is an indirect call. Unwind is LIKELY ok", addr);
+    TMSG(VALIDATE_UNW,"Instruction preceding %p is an indirect call. Unwind is LIKELY ok", addr);
     return UNW_ADDR_PROBABLE_INDIRECT;
   }
   TMSG(VALIDATE_UNW,"Unwind addr %p is NOT confirmed", addr);

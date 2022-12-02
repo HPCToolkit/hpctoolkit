@@ -6,7 +6,7 @@
 #include <utilities/ppcat+ppstr.h>
 
 //
-// All overriden functions need a few pieces of syntactic functionality:
+// All overridden functions need a few pieces of syntactic functionality:
 //   1) How to syntactically refer to the real function
 //        (??_FN)
 //   2) How to declare the typedef of the real function
@@ -19,7 +19,7 @@
 //        (??_INIT)
 //
 // The exact syntax, however, may be different for each overridden function.
-// In the typical case, the overriden functions fall into a few classes, rather than
+// In the typical case, the overridden functions fall into a few classes, rather than
 // all functions having unique syntax for the components.
 //
 // NOTE: an additional wrinkle is that static and dynamic linking may require distinct
@@ -34,7 +34,7 @@
 // are:
 //
 //   1) ALT     : There is a canonically-named alternative function
-//                to duplicate the functionality of the overriden function.
+//                to duplicate the functionality of the overridden function.
 //
 //                Example: "pthread_mutex_lock" has "__pthred_mutex_lock" as
 //                          an alternate entry point

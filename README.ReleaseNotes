@@ -152,7 +152,7 @@ Infrastructure improvements:
 
 Dependency changes:
 - Deletions
-  - Mbedtls - superceded by internal MD5 hash implementation
+  - Mbedtls - superseded by internal MD5 hash implementation
   - ROCm Debug API - obtain GPU binaries using Roctracer API instead
   - Gotcha - unused and removed
 - Additions
@@ -876,7 +876,7 @@ HPCToolkit Version 5.0.0: [2011.02.15]
 - Major overhaul of hpcrun:
   - fully support dynamic loading
   - fully support gathering thread creation contexts
-  - reenable support on x86 for tracking return counts
+  - re-enable support on x86 for tracking return counts
   - use a CCT where a node keeps its children in a splay tree
 
 - Rework post-mortem analysis tool, hpcprof:
@@ -1001,8 +1001,8 @@ HPCToolkit Version 4.0.0: [2004.11.06]
 - Autoconf HPCToolkitRoot and hpcviewer.
 - HPCToolkit now uses libtool to build libraries.
 - Revamp launching of hpcview et al. to not be dependent upon
-  Sourcemes.  All needed envionment variables are set dynamically.
-- Overhaul hpcquick to canonicalize all performace data files into
+  Sourcemes.  All needed environment variables are set dynamically.
+- Overhaul hpcquick to canonicalize all performance data files into
   PROFILE files before extracting metrics.  Include support for processing
   hpcrun files.
 - Merge separate hpcrun/hpcprof into HPCToolkit code base.
@@ -1092,7 +1092,7 @@ HPCTools Version 3.5.1: [2003.03.07]
 - Miscellaneous tweaks
   - Fix strcpy bug in GetDemangledFuncName().
   - Makefile tweaks
-  - Convert ArchIndType.h limits from const (statics) to #defines.
+  - Convert ArchIndType.h limits from const (static) to #defines.
   - Make trace a global variable so that tracing can be globally
     switched on/off.
   - Update alpha macros to support alpha GCC compiler

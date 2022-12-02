@@ -277,7 +277,7 @@ print_elf_header64
 
   fprintf(stderr, "\n");
 
-  /* MSB of flags conatins ARM EABI version */
+  /* MSB of flags contains ARM EABI version */
   fprintf(stderr, "FNB2: ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
 
   fprintf(stderr, "FNB2: \n");	/* End of ELF header */

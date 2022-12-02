@@ -182,7 +182,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("MPI_MSG\t\tThe number of bytes for all sent/received messages\n");
+  printf("MPI_MSG\t\t" "The number of bytes for all sent/received messages\n");
   printf("\n");
 }
 

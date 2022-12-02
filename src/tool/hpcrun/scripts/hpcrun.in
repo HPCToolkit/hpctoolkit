@@ -114,7 +114,7 @@ statistical sampling (rather than instrumentation).  It collects
 per-thread call path profiles that represent the full calling context of
 sample points.  Sample points may be generated from multiple simultaneous
 sampling sources.  hpcrun profiles complex applications that use forks,
-execs, threads, and dynamic linking/unlinking; it may be used in conjuction
+execs, threads, and dynamic linking/unlinking; it may be used in conjunction
 with parallel process launchers such as MPICH's mpiexec and SLURM's srun.
 
 To profile a statically linked executable, make sure to link with hpclink.
@@ -124,7 +124,7 @@ the -e/--event option.  For an event 'e' and period 'p', after every 'p'
 instances of 'e', a sample is generated that causes hpcrun to inspect the
 and record information about the monitored <command>.
 
-When <command> terminates, a profile measurement databse will be written to
+When <command> terminates, a profile measurement database will be written to
 the directory:
   hpctoolkit-<command>-measurements[-<jobid>]
 where <jobid> is a job launcher id that associated with the execution, if any.

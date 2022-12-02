@@ -449,7 +449,7 @@ areAllDevicesUsed
   orthogonal to the job done by the host to orchestrate the kernel submission and creation. The underlying operating system manages the kernels
   submitted to the CPU accelerator as another process and uses the same openCL/Level0 runtime mechanisms to exchange information with the host device.
 
-  my addition: We can infact use all accelerators for distributing large computations
+  my addition: We can in fact use all accelerators for distributing large computations
   In order to achieve good balance one will have to split the work proportional to the capability of the accelerator instead of distributing it evenly
   */
 

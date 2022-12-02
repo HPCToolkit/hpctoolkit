@@ -215,7 +215,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 /***************************************************************
  * Register events to compute blocking time in the kernel
  * We use perf's sofrware context switch event to compute the
- * time spent inside the kernel. For this, we need to sample everytime
+ * time spent inside the kernel. For this, we need to sample every time
  * a context switch occurs, and compute the time when entering the
  * kernel vs leaving the kernel. See perf_event_handler.
  * We need two metrics for this:

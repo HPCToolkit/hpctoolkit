@@ -224,7 +224,7 @@ METHOD_FN(start)
   //
   // Sample-source specific code goes here.
   //
-  // If there are any auxilliary data that the start mechanism needs,
+  // If there are any auxiliary data that the start mechanism needs,
   // declare some static local variables (see the local variables section
   // near the top of the file).
   // The values for these local variables can be set in either the 'gen_event_set'
@@ -262,7 +262,7 @@ METHOD_FN(stop)
   //
   // sample-source specific stopping code goes here
   //
-  // Similar to the 'start' method, if the 'stop' method needs any auxilliary data
+  // Similar to the 'start' method, if the 'stop' method needs any auxiliary data
   // declare some static local variables (see the local variables section
   // near the top of the file).
   // The values for these local variables can be set in either the 'gen_event_set'

@@ -108,7 +108,7 @@ void lruTest()
 	for (int i = 0; i < OBJCOUNT; ++i) {
 		if (!inuse[i]){
 			inuse[i] = true;
-			list.reAdd(i);
+			list.addAgain(i);
 		}
 	}
 	list.dump();
@@ -130,7 +130,7 @@ void lruTest()
 		if(!inuse[ran = (rand()%OBJCOUNT)])
 		{
 			inuse[ran] = true;
-			list.reAdd(ran);
+			list.addAgain(ran);
 			assert(list.getUsedPageCount() == ++count);
 		}
 	}
@@ -147,7 +147,7 @@ void lruTest()
 	assert(list.getUsedPageCount()==0);
 	for(int i = 0; i< OBJCOUNT; i++)
 	{
-		list.reAdd(i);
+		list.addAgain(i);
 	}
 	assert(list.getUsedPageCount()==OBJCOUNT);
 	list.dump();

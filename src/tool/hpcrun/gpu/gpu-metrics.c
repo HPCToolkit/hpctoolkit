@@ -698,7 +698,7 @@ gpu_activity_t *activity
 )
 {
 
-	printf("Attrubute NVLINK not implemented\n\n");
+	printf("Attribute NVLINK not implemented\n\n");
 //	gpu_link_t *m = &(activity->details.memcpy);
 //	cct_node_t *cct_node = activity->cct_node;
 

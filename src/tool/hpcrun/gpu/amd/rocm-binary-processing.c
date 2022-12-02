@@ -114,7 +114,7 @@ static spinlock_t rocm_binary_list_lock;
 // At least, NVIDIA support code iterates over symbol table
 // to relocate functions, and hpcfnbounds code iterates over
 // symbol table to find function starts.
-// It would be good to refactor these ELF operations into commond
+// It would be good to refactor these ELF operations into common
 // code.
 
 static void
@@ -217,7 +217,7 @@ construct_amd_gpu_symbols
 // TODO:
 // Eventually, we want to write the URI into our load map rather than copying the binary into a file.
 // To handle this long-term goal, the URI parsing would have to be code shared by hpcrun, hpcprof,
-// and hpcstruct. We can move function parse_amd_gpu_binary_uri to prof-lean direcotry and refactor
+// and hpcstruct. We can move function parse_amd_gpu_binary_uri to prof-lean directory and refactor
 // the function to return something that can help identifies the GPU binary specified by the URI.
 
 static void
@@ -232,7 +232,7 @@ parse_amd_gpu_binary_uri
   char* filepath = mutable_uri + strlen("file://");
   char* filepath_end = filepath;
 
-  // filepath is seperated by either # or ?
+  // filepath is separated by either # or ?
   while (*filepath_end != '#' && *filepath_end != '?')
     ++filepath_end;
   *filepath_end = 0;

@@ -288,10 +288,10 @@ public:
   long  line_num;
   bool  irred;
 
-  LoopInfo(TreeNode *nd, FLPSeqn &pth, const std::string &nm, VMA vma,
+  LoopInfo(TreeNode *nod, FLPSeqn &pth, const std::string &nm, VMA vma,
 	   long file, long base, long line, bool ir = false)
   {
-    node = nd;
+    node = nod;
     path = pth;
     name = nm;
     entry_vma = vma;

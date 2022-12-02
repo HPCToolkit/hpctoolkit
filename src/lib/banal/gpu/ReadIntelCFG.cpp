@@ -372,8 +372,8 @@ getIntelInstructionStat
 
 #if DEBUG
   std::cout << "offset: " << offset << ". asm: " << inst_asm_text << std::endl;
-  std::cout << "\nopcode:" << op << "\n";
-  std::cout << "\nnumber of source registers: " << noSrcReg;
+  std::cout << "\n" "opcode:" << op << "\n";
+  std::cout << "\n" "number of source registers: " << noSrcReg;
 #endif
 
   std::vector<int> srcs;
@@ -388,7 +388,7 @@ getIntelInstructionStat
     }
     uint32_t vertStride, width, horzStride;
     // Returns 0 if any of instruction's src operand region components
-    // (Src RgnVt, RgnWi, RgnHz) are succesfully determined.
+    // (Src RgnVt, RgnWi, RgnHz) are successfully determined.
     // Otherwise returns -1.
     int32_t status = kv.getSrcRegion(offset, i, &vertStride, &width, &horzStride);
     if (status != 0) {
@@ -432,7 +432,7 @@ getIntelInstructionStat
   if (dstRegType == iga::RegName::GRF_R) {
     uint32_t horzStride;
     // Returns 0 if instruction's destination operand horizontal stride
-    // (DstRgnHz) is succesfully returned.
+    // (DstRgnHz) is successfully returned.
     // Otherwise returns -1.
     int32_t status = kv.getDstRegion(offset, &horzStride);
     if (status == 0) {

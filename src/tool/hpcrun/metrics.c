@@ -92,7 +92,7 @@ typedef struct metric_desc_list_t {
 static metric_desc_list_t* pre_alloc = NULL;
 
 //
-// To accomodate block sparse representation,
+// To accommodate block sparse representation,
 // use 'kinds' == dense subarrays of metrics
 //
 // Sample use:
@@ -172,10 +172,10 @@ hpcrun_pre_allocate_metrics(size_t num)
 }
 
 const char *
-check(int ans)
+check(int value)
 {
   static const char *answers[] = {"n", "y"};
-  return answers[ans];
+  return answers[value];
 }
 
 

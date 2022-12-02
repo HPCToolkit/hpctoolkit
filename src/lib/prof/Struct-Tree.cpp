@@ -1643,7 +1643,7 @@ ANode::writeXML_post(ostream& os, unsigned int GCC_ATTR_UNUSED oFlags,
 ostream&
 ANode::writeXML(ostream& os, unsigned int oFlags, const char* pfx) const
 {
-  // indent childen of visible nodes
+  // indent children of visible nodes
   string indent = isVisible() ? "  " : "";
 
   if (oFlags & Tree::OFlg_Compressed) {

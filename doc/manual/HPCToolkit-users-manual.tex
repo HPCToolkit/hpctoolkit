@@ -1828,7 +1828,7 @@ The most common causes for unusually high overhead are the following:
   \end{quote}
   Note: The \verb|hpcsummary| script is no longer included in the \verb|bin| directory of an \HPCToolkit{} installation;
   it is a developer script that can be found in the \verb|libexec/hpctoolkit| directory.
-  Let us know if you encounter signficant problems with bad unwinds.
+  Let us know if you encounter significant problems with bad unwinds.
 
 \item You have very long call paths where long is in the hundreds or thousands.
   On x86-based architectures, try additionally using \hpcrun{}'s \texttt{RETCNT} event.
@@ -1888,7 +1888,7 @@ measuring performance with \HPCToolkit{}.
 \subsection{Fail to run \hpcviewer{}: executable launcher was unable to locate its companion shared library}
 
 Although this error mostly incurrs on Windows platform, but it can happen in other environment.
-The cause of this issue is that the permission of one of Eclipse launcher libary (org.eclipse.equinox.launcher.*) is too restricted.
+The cause of this issue is that the permission of one of Eclipse launcher library (org.eclipse.equinox.launcher.*) is too restricted.
 To fix this, set the permission of the library to 0755, and launch again the viewer.
 
 
@@ -2104,7 +2104,7 @@ If debugging information is available, source files can come in two forms: absol
 \item Finally, if a source file path is absolute and cannot be found by its absolute path, \hpcprofAll{} uses a special search mode.
 Let the source file path be \texttt{$p$/$f$}.
 If the path's base file name $f$ is found within a search directory, then that is considered a match.
-This special search mode accomodates common complexities such as:
+This special search mode accommodates common complexities such as:
 (1) source file paths that are relative not to your source code tree but to the directory where the source was compiled;
 (2) source file paths to source code that is later moved; and
 (3) source file paths that are relative to file system that is no longer mounted.

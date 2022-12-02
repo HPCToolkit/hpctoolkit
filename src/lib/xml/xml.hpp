@@ -131,7 +131,7 @@ namespace xml {
 
   // -------------------------------------------------------
   // Reads from 'attB' to and including 'attE'.  Eats up whitespace
-  // before and after the attibute.
+  // before and after the attribute.
   // -------------------------------------------------------
   bool ReadAttrStr(std::istream& is, std::string& s, int flags = UNESC_TRUE);
 

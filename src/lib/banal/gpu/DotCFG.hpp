@@ -52,10 +52,10 @@ struct InstructionStat {
   std::vector<int> psrcs;   // P0-P6: only records predicate registers
   std::vector<int> bdsts;   // B1-B6: only records barriers
   std::vector<int> bsrcs;   // B1-B6: only records barriers
-  std::vector<int> udsts;   // UR0-UR63: only records uniform regsters
-  std::vector<int> usrcs;   // UR0-UR63: only records uniform regsters
-  std::vector<int> updsts;  // UP0-UP?: only records uniform predicate regsters
-  std::vector<int> upsrcs;  // UP0-UP?: only records uniform predicate regsters
+  std::vector<int> udsts;   // UR0-UR63: only records uniform registers
+  std::vector<int> usrcs;   // UR0-UR63: only records uniform registers
+  std::vector<int> updsts;  // UP0-UP?: only records uniform predicate registers
+  std::vector<int> upsrcs;  // UP0-UP?: only records uniform predicate registers
   std::map<int, std::vector<int> > assign_pcs;
   std::map<int, std::vector<int> > passign_pcs;
   std::map<int, std::vector<int> > bassign_pcs;

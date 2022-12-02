@@ -328,7 +328,7 @@ perf_util_init()
 {
   // perf_kernel_lm_id must be set for each process.
   // We shouldn't reset its value here because perf_util_init
-  // is called everytime a child is forked.
+  // is called every time a child is forked.
   // Let the variable set in the declaration.
   // perf_kernel_lm_id = 0;
 

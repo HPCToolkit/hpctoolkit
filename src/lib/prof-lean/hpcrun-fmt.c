@@ -1186,7 +1186,7 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, siz
   return sparse_fs;
 }
 
-//TEMPARARY function: we concatenate hpcrun files into one giant file for experiments
+//TEMPORARY function: we concatenate hpcrun files into one giant file for experiments
 // so we need to update the footer
 // TODO in the future: if hpcrun output is one file at the beginning,
 // the footer info should already be correct
@@ -1400,7 +1400,7 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
 }
 
 /* succeed: returns positive metricID (matching metricTbl, start from 1); end of this block: 0;error: return -1*/
-/* ASSUMPTION: it is called continously for one block, i.e. no other fseek happen between calls */
+/* ASSUMPTION: it is called continuously for one block, i.e. no other fseek happen between calls */
 int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t* val)
 {
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
@@ -1415,7 +1415,7 @@ int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t
   size_t cur_block_end_pos   = sparse_fs->cur_block_end;
   if(cur_pos > sparse_fs->footer.sm_end || cur_block_start_pos > sparse_fs->footer.sm_end || cur_block_end_pos > sparse_fs->footer.sm_end) return SF_ERR;
   if((cur_pos < cur_block_start_pos) || (cur_pos > cur_block_end_pos)){
-    fprintf(stderr, "ERROR: cannot read next entry for current cct: current position of hpcrun_sparse_file object is not within curren cct block's range.\n");
+    fprintf(stderr, "ERROR: cannot read next entry for current cct: current position of hpcrun_sparse_file object is not within current cct block's range.\n");
     return SF_ERR;
   }
   if(cur_pos == cur_block_end_pos) return SF_END;

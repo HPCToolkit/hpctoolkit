@@ -37,7 +37,7 @@ f_usage()
   $p "  GNU's config.guess script.  The raw input should be in the form:\n"
   $p "    host_cpu-host_vendor-host_os\n"
   $p "\n"
-  $p "  All error messages are preceeded by '${error_pfx}'\n"
+  $p "  All error messages are preceded by '${error_pfx}'\n"
   $p "\n"
   $p "  Options: Defaults are shown in square brackets [].\n"
   $p "    -h, --help   : Print help, then exit\n"

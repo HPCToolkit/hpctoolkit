@@ -114,7 +114,7 @@ static void escape() {
   if(!done) MPI_Abort(MPI_COMM_WORLD, 0);
 }
 
-// We support serialized MPI if nessesary
+// We support serialized MPI if necessary
 static std::mutex lock;
 static bool needsLock = true;
 static std::unique_lock<std::mutex> mpiLock() {

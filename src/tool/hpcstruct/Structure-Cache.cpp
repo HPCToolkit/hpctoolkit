@@ -92,7 +92,7 @@ using namespace std;
 using namespace xercesc;
 
 //***************************************************************************
-// environment variable naming the structure cache; may be overriden from command line
+// environment variable naming the structure cache; may be overridden from command line
 //***************************************************************************
 
 #define STRUCT_CACHE_ENV "HPCTOOLKIT_HPCSTRUCT_CACHE"

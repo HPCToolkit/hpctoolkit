@@ -87,7 +87,7 @@
 // Usage:
 // To trace the client-side messages, use -v
 // To tell the server to run in verbose mode, use -V
-// To tell the server not to do agressive function searching, use -d
+// To tell the server not to do aggressive function searching, use -d
 // To have the client write its output to a file, use -o <outfile>
 // The last argument should be the path to the server
 
@@ -317,9 +317,9 @@ page_align(size_t size)
 
   if (pagesize == 0) {
 #if defined(_SC_PAGESIZE)
-    long ans = sysconf(_SC_PAGESIZE);
-    if (ans > 0) {
-      pagesize = ans;
+    long result = sysconf(_SC_PAGESIZE);
+    if (result > 0) {
+      pagesize = result;
     }
 #endif
     if (pagesize == 0) {

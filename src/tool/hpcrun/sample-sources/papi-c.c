@@ -132,7 +132,7 @@ static void event_fatal_error(int ev_code, int papi_ret);
 static int papi_unavail = 0;
 
 //
-// To accomodate GPU blame shifting, we must disable the cuda component
+// To accommodate GPU blame shifting, we must disable the cuda component
 // Flag below controls this disabling
 //
 static bool disable_papi_cuda = false;
@@ -683,7 +683,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
     }
 
   // set up overflow handling for asynchronous event sets for active components
-  // set up synchronous handling for synchronous event sets for active compoents
+  // set up synchronous handling for synchronous event sets for active components
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     long thresh = self->evl.events[i].thresh;

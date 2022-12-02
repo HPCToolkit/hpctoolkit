@@ -243,7 +243,7 @@ static int
 perf_sample_callchain(u64 data_head, u64 *data_tail,
                       pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
 {
-  mmap_data->nr = 0;     // initialze the number of records to be 0
+  mmap_data->nr = 0;     // initialize the number of records to be 0
   u64 num_records = 0;
 
   // determine how many frames in the call chain

@@ -866,7 +866,7 @@ public:
   // --------------------------------------------------------
 
   // findLM: First, try to find by nm_real = realpath(nm).  If that is
-  // unsuccesful, try to find by nm_base = basename(nm_real) if
+  // unsuccessful, try to find by nm_base = basename(nm_real) if
   // nm_base == nm_real.
   LM*
   findLM(const char* nm) const;

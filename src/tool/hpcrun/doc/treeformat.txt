@@ -33,7 +33,7 @@ EpochsTable
 TreeId
   magic		10 bytes; "HPC_CSTREE" (no trailing null)
   version	5 bytes; "01.0T"
-  endianess	1 byte; 'l' or 'b'
+  endianness	1 byte; 'l' or 'b'
 
 Tree
   id		TreeId
