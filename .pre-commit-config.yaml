@@ -15,8 +15,8 @@ repos:
   # Automatically elide older Python syntax and replace with newer ones
   - id: pyupgrade
     args: [--py310-plus]
-    # These files are excluded from all Python linting, they're old and probably unused
-    exclude: &py_exclude '^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$'
+    # XXX: Old Python 2.7-compatible script. Probably bitrot by now.
+    exclude: '^src/tool/hpcrun/sample-sources/make-wrappers.py$'
 
 
 # ------------------------------------------------------------------------------------
@@ -29,7 +29,6 @@ repos:
   # Blacken all Python code, except allow slightly longer line lengths
   - id: black
     args: ['--line-length=100', '--target-version=py310']
-    exclude: *py_exclude
 
 - repo: https://github.com/PyCQA/isort
   rev: 5.11.4
@@ -37,7 +36,6 @@ repos:
   # Sort imports in all the Python code
   - id: isort
     args: [--profile, black]
-    exclude: *py_exclude
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0
@@ -109,7 +107,11 @@ repos:
     # Some of our dependencies (needed in the virtual env for pylint to work)
     - ruamel.yaml
     - podman
-    exclude: '(^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$|_test\.py$)'
+    exclude: |
+      (?x)(
+        _test\.py$ |    # Code for tests need not be super clean
+        ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
+      )
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.9.0.2
