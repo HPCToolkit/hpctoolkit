@@ -1,14 +1,14 @@
 #!/bin/sh
 # -*- Mode:Shell-script -*-
 
-function dolog (){
+dolog (){
 
     fn=${1:-"(stdin)"}
     SF=/tmp/$$.s
     LF=/tmp/$$.l
     DF=/tmp/$$.d
     echo %
-    echo % assessing call stack unwinding failures in log file $fn
+    echo % assessing call stack unwinding failures in log file "$fn"
     echo %
     sed -n '
         /samples/          w '$SF'
@@ -26,12 +26,12 @@ function dolog (){
                  printf("no failures found\n")
             }
     ' | sort -n -r --key=2 > $DF
-    echo trolling success = $(cat $LF | wc -l) | cat $SF - $DF
+    echo trolling success = "$(cat $LF | wc -l)" | cat $SF - $DF
     rm -f $SF $LF $DF
 }
 
-function _help (){
-    fname=$(basename $0)
+help (){
+    fname=$(basename "$0")
     cat <<EOF
 This script analyzes hpcrun log files and produces a summary of dropped samples, and trolling events.
 The summary is written to stdout.
@@ -48,7 +48,7 @@ To use this script:
 EOF
 }
 
-if [ "$*" == --help  ]; then
+if [ "$*" = --help  ]; then
     _help
     exit 0
 fi

@@ -10,7 +10,7 @@ case "$hash_value" in
     * ) hash_value=no ;;
 esac
 
-if test "x$prog_name" = x ; then
+if test "$prog_name" = "" ; then
     prog_name="$0"
 fi
 
@@ -23,8 +23,8 @@ valid_hpctoolkit_hash()
     ret=1
 
     if test -f "$hfile" ; then
-	inst_hash=`cat "$hfile"`
-	test "x$config_hash" = "x$inst_hash"
+	inst_hash=$(cat "$hfile")
+	test "$config_hash" = "$inst_hash"
 	ret=$?
     fi
     return $ret
@@ -53,10 +53,10 @@ fi
 if test "$found_dir" = no && test "$hash_value" != no ; then
     script="$0"
     if test -L "$script" ; then
-	script=`realpath "$script"`
+	script=$(realpath "$script")
     fi
-    dir=`dirname "$script"`
-    dir=`( cd "${dir}/${hpc_path_to_root}" 2>/dev/null && /bin/pwd )`
+    dir=$(dirname "$script")
+    dir=$( cd "${dir}/${hpc_path_to_root}" 2>/dev/null && /bin/pwd )
 
     if valid_hpctoolkit_hash "$dir" "$hash_value" ; then
 	HPCTOOLKIT="$dir"
