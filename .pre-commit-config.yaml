@@ -101,14 +101,12 @@ repos:
       )$
 
 - repo: https://github.com/PyCQA/prospector
-  rev: v1.8.1
+  rev: v1.8.2
   hooks:
   # Use Prospector to lint all our Python code
   - id: prospector
     additional_dependencies:
     - 'prospector[with_mypy]'
-    # NB: Dodge for https://github.com/PyCQA/prospector/issues/547
-    - pylint==2.15.6
     # Some of our dependencies (needed in the virtual env for pylint to work)
     - ruamel.yaml
     exclude: '(^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$|_test\.py$)'
