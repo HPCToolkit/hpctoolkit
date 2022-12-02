@@ -138,5 +138,10 @@ repos:
   hooks:
   # Identify common spelling mistakes in code and comments
   - id: codespell
-    # XXX: Only enabled in CI files for now
-    files: (^ci/|\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.prospector\.yaml$|tests2/(?!Makefile\.in$))
+    args: ['--config', '.codespellrc']
+    exclude: |
+      (?x)^(
+        config/(ltmain\.sh|depcomp|config\.guess|config\.sub|libtool\.m4) |    # Autotools files with code misspellings
+        lib/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
+        tools/latex2man/.* |    # External code
+      )$

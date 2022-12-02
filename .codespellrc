@@ -1,0 +1,5 @@
+[codespell]
+# HSA is part of the ROCm software stack. codespell mistakes it for "has".
+ignore-words-list = hsa
+# Wil Phan is one of our staff members. codespell mistakes it for "will/well".
+ignore-regex = \bWil\s+Phan\b
