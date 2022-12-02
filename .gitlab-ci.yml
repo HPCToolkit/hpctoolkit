@@ -345,6 +345,7 @@ autoreconf check:
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
     JOB_CC: gcc-9
     SPEC: '+cuda ~rocm ~level0 +tests2 (mpi papi opencl)[~<1]'
+    NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
 
   before_script:
   - !reference [.buildmany.amd64, before_script]
@@ -358,6 +359,7 @@ autoreconf check:
     BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:amd64
     JOB_CC: gcc=8
     SPEC: '+cuda ~rocm ~level0 ~tests2 (mpi papi opencl)[~<1]'
+    NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
 
   before_script:
   - !reference [.buildmany.amd64, before_script]
