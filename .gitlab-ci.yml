@@ -502,6 +502,31 @@ autoreconf check:
   - echo '--with-rocm=/opt/rocm' > img-config
 
 
+# Perform linting tasks that can only be done when the whole build is complete
+lint:
+  stage: lint
+  needs:
+  - 'buildmany: [amd64]'
+  - 'buildmany: [arm64]'
+  - 'buildmany: [amd64, +cuda]'
+  - 'buildmany: [amd64, +cuda]: [10.2]'
+  - 'buildmany: [amd64, +rocm]'
+  - 'buildmany: [amd64, +level0]'
+  - 'check amd64: [cpu]'
+  - 'check arm64: [cpu]'
+  - 'check amd64: [+cuda]'
+  - 'check amd64: [+rocm]'
+  when: always
+
+  script:
+  # Merge all the code quality results into a single file, for use by GitLab
+  - ./ci/scripts/merge_cq.py cq.json logs/**/*.cq.json
+
+  artifacts:
+    reports:
+      codequality: cq.json
+
+
 # Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
 # Failures are allowed so that if the dependencies or build flags shift, we are made aware (by a
 # big orange exclaimation point) but not blocked by upstream Spack.
