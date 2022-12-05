@@ -156,3 +156,22 @@ hpcrun_restore_sigmask(sigset_t * oldset)
 {
   return monitor_real_pthread_sigmask(SIG_SETMASK, oldset, NULL);
 }
+
+//----------------------------------------------------------------------
+
+void
+hpcrun_drain_signal(int sig)
+{
+  sigset_t set;
+  struct timespec timeout = {0, 0};
+
+  sigemptyset(&set);
+  sigaddset(&set, sig);
+
+  // wait until no signals returned
+  for (;;) {
+    if (sigtimedwait(&set, NULL, &timeout) < 0) {
+      break;
+    }
+  }
+}

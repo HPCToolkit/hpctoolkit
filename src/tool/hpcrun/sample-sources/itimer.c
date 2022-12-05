@@ -442,6 +442,8 @@ METHOD_FN(stop)
     EMSG("stop %s failed, errno: %d", the_event_name, errno);
   }
 
+  hpcrun_drain_signal(REALTIME_SIGNAL);
+
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 

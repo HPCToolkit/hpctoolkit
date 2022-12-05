@@ -85,6 +85,7 @@
 
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
+#include <hpcrun/hpcrun_signals.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/safe-sampling.h>
@@ -385,17 +386,22 @@ METHOD_FN(stop)
   TMSG(PAPI, "stop");
   if (papi_unavail) { return; }
 
+  sigset_t oldset;
+  hpcrun_block_profile_signal(&oldset);
+
   thread_data_t *td = hpcrun_get_thread_data();
   int nevents = self->evl.nevents;
   source_state_t my_state = TD_GET(ss_state)[self->sel_idx];
 
   if (my_state == STOP) {
     TMSG(PAPI,"*NOTE* PAPI stop called when already in state STOP");
+    hpcrun_restore_sigmask(&oldset);
     return;
   }
 
   if (my_state != START) {
     TMSG(PAPI,"*WARNING* PAPI stop called when not in state START");
+    hpcrun_restore_sigmask(&oldset);
     return;
   }
 
@@ -418,6 +424,10 @@ METHOD_FN(stop)
       }
     }
   }
+
+  hpcrun_drain_signal(SIGRTMIN + 2);
+
+  hpcrun_restore_sigmask(&oldset);
 
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
@@ -850,6 +860,9 @@ static void
 papi_event_handler(int event_set, void *pc, long long ovec,
                    void *context)
 {
+  sigset_t oldset;
+  hpcrun_block_shootdown_signal(&oldset);
+  
   sample_source_t *self = &obj_name();
   long long values[MAX_EVENTS];
   int my_events[MAX_EVENTS];
@@ -861,11 +874,15 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_codes_count = MAX_EVENTS;
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_suppress_sample() || sample_filters_apply()) return;
+  if (hpcrun_suppress_sample() || sample_filters_apply()) {
+    hpcrun_restore_sigmask(&oldset);
+    return;
+  }
 
   if (!ovec) {
     TMSG(PAPI_SAMPLE, "papi overflow event: event set %d ovec = %ld",
 	 event_set, ovec);
+    hpcrun_restore_sigmask(&oldset);
     return;
   }
 
@@ -873,6 +890,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   // and return and avoid any MSG.
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
+    hpcrun_restore_sigmask(&oldset);
     return;
   }
 
@@ -974,4 +992,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   }
 
   hpcrun_safe_exit();
+
+  hpcrun_restore_sigmask(&oldset);
 }

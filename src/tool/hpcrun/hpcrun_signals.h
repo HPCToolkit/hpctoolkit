@@ -56,4 +56,6 @@ int hpcrun_block_profile_signal(sigset_t * oldset);
 int hpcrun_block_shootdown_signal(sigset_t * oldset);
 int hpcrun_restore_sigmask(sigset_t * oldset);
 
+void hpcrun_drain_signal(int sig);
+
 #endif
