@@ -49,11 +49,8 @@ repos:
     exclude: *autogoo
   # Remove the UTF8 BOM from the start of any files
   - id: fix-byte-order-marker
-  # Use UNIX-style line endings (LF)
+  # Ensure files have consistent endings. (This operates in the worktree, Git also normalizes the index)
   - id: mixed-line-ending
-    args: [--fix=lf]
-    # XXX: Exclude files in doc/ that use CRLF endings
-    exclude: doc/www/.*\.html(\.in)?
 
 
 # ------------------------------------------------------------------------------------
