@@ -186,8 +186,8 @@ private:
   hpctoolkit::util::ParallelForEach<
       std::reference_wrapper<const Thread>> forEachThread;
   hpctoolkit::util::ParallelFor forProfilesParse;
-  hpctoolkit::util::ResettableParallelFor forProfilesLoad;
-  hpctoolkit::util::ResettableParallelForEach<
+  hpctoolkit::util::RepeatingParallelFor forProfilesLoad;
+  hpctoolkit::util::RepeatingParallelForEach<
       std::pair<uint32_t, uint32_t>> forEachContextRange;
 };
 

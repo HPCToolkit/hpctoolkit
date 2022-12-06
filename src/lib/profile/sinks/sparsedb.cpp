@@ -97,11 +97,10 @@ SparseDB::SparseDB(stdshim::filesystem::path dir) {
 }
 
 util::WorkshareResult SparseDB::help() {
-  auto res = forEachThread.contribute();
-  if(!res.completed) return res;
-  res = forProfilesParse.contribute();
-  if(!res.completed) return res;
-  return forProfilesLoad.contribute() + forEachContextRange.contribute();
+  return forEachThread.contributeWhileAble()
+         + forProfilesParse.contributeWhileAble()
+         + forProfilesLoad.contributeWhileAble()
+         + forEachContextRange.contributeWhileAble();
 }
 
 void SparseDB::notifyPipeline() noexcept {
@@ -611,7 +610,7 @@ void SparseDB::write() {
       pmf->open(true, false).writeat(pProfiles + FMT_PROFILEDB_SZ_ProfInfo * idx,
                                      sizeof buf, buf);
     });
-    forEachThread.contribute(forEachThread.wait());
+    forEachThread.contributeUntilComplete();
   }
 
   // Lay out the main parts of the cct.db file
@@ -706,7 +705,7 @@ void SparseDB::write() {
         .ctxPairs = readProfileCtxPairs(*pmf, pi),
       };
     });
-    forProfilesParse.contribute(forProfilesParse.wait());
+    forProfilesParse.contributeUntilComplete();
     profiles.resize(next.load(std::memory_order_relaxed));
   }
 
@@ -855,7 +854,7 @@ void SparseDB::write() {
           const auto& p = profiles[i];
           metricData[i] = {firstCtx, lastCtx, *pmf, p.offset, p.index, p.ctxPairs};
         });
-      forProfilesLoad.reset();  // Also waits for work to complete
+      forProfilesLoad.contributeUntilEmpty();
 
       // Divide up this ctx group into ranges suitable for distributing to threads.
       std::vector<std::pair<uint32_t, uint32_t>> ctxRanges;
@@ -887,7 +886,7 @@ void SparseDB::write() {
         [this, &metricData, &ctxOffsets](const auto& range){
           writeContexts(range.first, range.second, *cmf, metricData, ctxOffsets);
         });
-      forEachContextRange.reset();
+      forEachContextRange.contributeUntilEmpty();
     }
 
     // Fetch the next available workitem from the group
@@ -895,9 +894,7 @@ void SparseDB::write() {
   }
 
   // Notify our helper threads that the workshares are complete now
-  forProfilesLoad.fill({});
   forProfilesLoad.complete();
-  forEachContextRange.fill({});
   forEachContextRange.complete();
 
   // The last rank is in charge of writing the final footer, AFTER all other
