@@ -116,6 +116,9 @@ struct cct_node_t {
   // contexts between us and parent.
   bool unwound;
 
+  // If false, we don't write it out in hpcrun file
+  bool display;
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -188,6 +191,7 @@ cct_node_create(cct_addr_t* addr, bool unwound, cct_node_t* parent)
 
   node->is_leaf = false;
   node->unwound = unwound;
+  node->display = false;
 
   return node;
 }
@@ -260,20 +264,27 @@ typedef struct {
 } count_arg_t;
 
 static void
-l_count(cct_node_t* n, cct_op_arg_t arg, size_t level)
+l_count_mark(cct_node_t* n, cct_op_arg_t arg, size_t level)
 {
   count_arg_t *count_arg = (count_arg_t *)arg;
   if (hpcrun_cct_is_dummy(n) && !count_arg->count_dummy) {
     return;
   }
 
-  //YUMENG: count the number of non-zero values
   metric_data_list_t *data_list =
     hpcrun_get_metric_data_list_specific(&(count_arg->cct2metrics_map), n);
   uint64_t num_nzval = hpcrun_metric_sparse_count(data_list);
+
+  // decide if we display the node in cct section of hpcrun file or not
+  if(num_nzval || hpcrun_cct_retained(n)){
+    n->display = true;
+  }
+  if(n->display && n->parent) n->parent->display = true;
+  
+
   (count_arg->num_nzval) += num_nzval;
-  if(num_nzval != 0) (count_arg->num_nz_cct_nodes)++; 
-  (count_arg->n)++;
+  if(num_nzval) (count_arg->num_nz_cct_nodes)++; 
+  if(n->display)(count_arg->n)++;
 }
 
 //
@@ -339,29 +350,6 @@ l_dummy(cct_node_t* n, cct_op_arg_t arg, size_t level)
   }
 }
 
-
-#if 0
-//YUMENG: count non_zero values for each cct, already merged with l_count
-static void
-lcount_nzval(cct_node_t* node, cct_op_arg_t arg, size_t level)
-{
-  // avoid writing dummy nodes
-  if (!HPCRUN_CCT_KEEP_DUMMY) {
-    if (hpcrun_cct_is_dummy(node)) {
-      return;
-    }
-  }
-
-  sizes_arg_t* my_arg = (sizes_arg_t*) arg;
-  metric_data_list_t *data_list =
-    hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
-
-  //count the number of non-zero values
-   uint64_t num_nzval = hpcrun_metric_sparse_count(data_list);
-   (my_arg->num_nzval) += num_nzval;
-}
-#endif
-
 static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
@@ -399,12 +387,6 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
   tmp->unwound = node->unwound;
 
-  //YUMENG: seems no need to inform new prof about being leaf
-  // if no children, chg sign of id when written out
-  //if (hpcrun_cct_no_children(node) || all_children_dummy) {
-  //  tmp->id = -tmp->id;
-  //}
-
   if (flags.fields.isLogicalUnwind){
     tmp->as_info = addr->as_info;
     lush_lip_init(&tmp->lip);
@@ -417,8 +399,6 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   // double casts to avoid warnings when pointer is < 64 bits
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
-#if 1
-  // YUMENG's code
   metric_data_list_t *data_list =
     hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
 
@@ -432,22 +412,8 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   }
   sparse_metrics->cur_cct_node_idx += num_nzval;
 
-  tmp->num_metrics = 0;
-#elif 0
-  // keren's code
-  tmp->num_metrics = my_arg->num_kind_metrics;
-  metric_data_list_t *data_list =
-    hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
-  hpcrun_metric_set_dense_copy(tmp->metrics, data_list, my_arg->num_kind_metrics);
-#else
-  // code from master
-  tmp->num_metrics = my_arg->num_metrics;
-  metric_set_t* ms = hpcrun_get_metric_set_specific(&(my_arg->cct2metrics_map), node);
-
-  hpcrun_metric_set_dense_copy(tmp->metrics, ms, my_arg->num_metrics);
-#endif
-
-  hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
+  if(node->display)
+    hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
 //
@@ -886,9 +852,9 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
   uint64_t num_nzval = 0;
   uint32_t num_nz_cct_nodes = 0;
   if (HPCRUN_CCT_KEEP_DUMMY) {
-    nodes = hpcrun_cct_num_nodes(cct, true, &cct2metrics_map, &num_nzval, &num_nz_cct_nodes);
+    nodes = hpcrun_cct_num_nz_nodes_and_mark_display(cct, true, &cct2metrics_map, &num_nzval, &num_nz_cct_nodes);
   } else {
-    nodes = hpcrun_cct_num_nodes(cct, false, &cct2metrics_map, &num_nzval, &num_nz_cct_nodes);
+    nodes = hpcrun_cct_num_nz_nodes_and_mark_display(cct, false, &cct2metrics_map, &num_nzval, &num_nz_cct_nodes);
   }
   sparse_metrics->num_cct_nodes = nodes;
 
@@ -975,23 +941,23 @@ void hpcrun_cct_fwrite_errmsg_w_fn(FILE* fs, uint32_t tid, char* msg)
 // Utilities
 //
 size_t
-hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy, cct2metrics_t **cct2metrics_map,uint64_t* num_nzval, uint32_t* num_nz_cct_nodes)
+hpcrun_cct_num_nz_nodes_and_mark_display(cct_node_t* cct, bool count_dummy, cct2metrics_t **cct2metrics_map,uint64_t* num_nzval, uint32_t* num_nz_cct_nodes)
 {
   count_arg_t count_arg = {
     .count_dummy = count_dummy,
     .n = 0,
-
-    //YUMENG: count number of non-zero values
     .cct2metrics_map = *cct2metrics_map,
     .num_nzval = *num_nzval,
     .num_nz_cct_nodes = *num_nz_cct_nodes
   };
-  hpcrun_cct_walk_node_1st(cct, l_count, &count_arg);
+  hpcrun_cct_walk_child_1st(cct, l_count_mark, &count_arg);
   *cct2metrics_map = count_arg.cct2metrics_map;
   *num_nzval = count_arg.num_nzval;
   *num_nz_cct_nodes = count_arg.num_nz_cct_nodes;
   return count_arg.n;
 }
+
+
 
 //
 // look up addr in the set of cct's children

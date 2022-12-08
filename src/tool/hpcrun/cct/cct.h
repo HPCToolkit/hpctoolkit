@@ -285,12 +285,10 @@ void hpcrun_cct_fwrite_errmsg_w_fn(FILE* fs, uint32_t tid, char* msg);
 //
 // Utilities
 //
-#if 0
-extern size_t hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy);
-#else
-extern size_t hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy,\
+extern size_t hpcrun_cct_num_nz_nodes_and_mark_display(cct_node_t* cct, bool count_dummy,\
     cct2metrics_t **cct2metrics_map,uint64_t* num_nzval, uint32_t* num_nzcct);
-#endif
+
+
 //
 // look up addr in the set of cct's children
 // return the found node or NULL
