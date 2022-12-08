@@ -461,8 +461,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
 	handling_sample.c hpcrun-initializers.c hpcrun_options.c \
-	hpcrun_stats.c loadmap.c metrics.c name.c rank.c \
-	sample_event.c sample_prob.c sample_sources_all.c \
+	hpcrun_signals.c hpcrun_stats.c loadmap.c metrics.c name.c \
+	rank.c sample_event.c sample_prob.c sample_sources_all.c \
 	sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c \
 	sample-sources/blame-shift/directed.c \
@@ -631,11 +631,11 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-epoch.lo libhpcrun_la-files.lo \
 	libhpcrun_la-handling_sample.lo \
 	libhpcrun_la-hpcrun-initializers.lo \
-	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_stats.lo \
-	libhpcrun_la-loadmap.lo libhpcrun_la-metrics.lo \
-	libhpcrun_la-name.lo libhpcrun_la-rank.lo \
-	libhpcrun_la-sample_event.lo libhpcrun_la-sample_prob.lo \
-	libhpcrun_la-sample_sources_all.lo \
+	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_signals.lo \
+	libhpcrun_la-hpcrun_stats.lo libhpcrun_la-loadmap.lo \
+	libhpcrun_la-metrics.lo libhpcrun_la-name.lo \
+	libhpcrun_la-rank.lo libhpcrun_la-sample_event.lo \
+	libhpcrun_la-sample_prob.lo libhpcrun_la-sample_sources_all.lo \
 	sample-sources/blame-shift/libhpcrun_la-blame-shift.lo \
 	sample-sources/blame-shift/libhpcrun_la-blame-map.lo \
 	sample-sources/blame-shift/libhpcrun_la-directed.lo \
@@ -1017,8 +1017,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
 	handling_sample.c hpcrun-initializers.c hpcrun_options.c \
-	hpcrun_stats.c loadmap.c metrics.c name.c rank.c \
-	sample_event.c sample_prob.c sample_sources_all.c \
+	hpcrun_signals.c hpcrun_stats.c loadmap.c metrics.c name.c \
+	rank.c sample_event.c sample_prob.c sample_sources_all.c \
 	sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c \
 	sample-sources/blame-shift/directed.c \
@@ -1158,6 +1158,7 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-handling_sample.$(OBJEXT) \
 	libhpcrun_o-hpcrun-initializers.$(OBJEXT) \
 	libhpcrun_o-hpcrun_options.$(OBJEXT) \
+	libhpcrun_o-hpcrun_signals.$(OBJEXT) \
 	libhpcrun_o-hpcrun_stats.$(OBJEXT) \
 	libhpcrun_o-loadmap.$(OBJEXT) libhpcrun_o-metrics.$(OBJEXT) \
 	libhpcrun_o-name.$(OBJEXT) libhpcrun_o-rank.$(OBJEXT) \
@@ -1992,8 +1993,8 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
 	handling_sample.c hpcrun-initializers.c hpcrun_options.c \
-	hpcrun_stats.c loadmap.c metrics.c name.c rank.c \
-	sample_event.c sample_prob.c sample_sources_all.c \
+	hpcrun_signals.c hpcrun_stats.c loadmap.c metrics.c name.c \
+	rank.c sample_event.c sample_prob.c sample_sources_all.c \
 	sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c \
 	sample-sources/blame-shift/directed.c \
@@ -4179,6 +4180,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-handling_sample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun-initializers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_options.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_signals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_stats.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-main.Plo@am__quote@
@@ -4216,6 +4218,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-handling_sample.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun-initializers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_options.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_signals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-main.Po@am__quote@
@@ -4936,6 +4939,13 @@ libhpcrun_la-hpcrun_options.lo: hpcrun_options.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_options.c' object='libhpcrun_la-hpcrun_options.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-hpcrun_options.lo `test -f 'hpcrun_options.c' || echo '$(srcdir)/'`hpcrun_options.c
+
+libhpcrun_la-hpcrun_signals.lo: hpcrun_signals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcrun_signals.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-hpcrun_signals.Tpo -c -o libhpcrun_la-hpcrun_signals.lo `test -f 'hpcrun_signals.c' || echo '$(srcdir)/'`hpcrun_signals.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-hpcrun_signals.Tpo $(DEPDIR)/libhpcrun_la-hpcrun_signals.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_signals.c' object='libhpcrun_la-hpcrun_signals.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-hpcrun_signals.lo `test -f 'hpcrun_signals.c' || echo '$(srcdir)/'`hpcrun_signals.c
 
 libhpcrun_la-hpcrun_stats.lo: hpcrun_stats.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcrun_stats.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-hpcrun_stats.Tpo -c -o libhpcrun_la-hpcrun_stats.lo `test -f 'hpcrun_stats.c' || echo '$(srcdir)/'`hpcrun_stats.c
@@ -6833,6 +6843,20 @@ libhpcrun_o-hpcrun_options.obj: hpcrun_options.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_options.c' object='libhpcrun_o-hpcrun_options.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun_options.obj `if test -f 'hpcrun_options.c'; then $(CYGPATH_W) 'hpcrun_options.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_options.c'; fi`
+
+libhpcrun_o-hpcrun_signals.o: hpcrun_signals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_signals.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_signals.Tpo -c -o libhpcrun_o-hpcrun_signals.o `test -f 'hpcrun_signals.c' || echo '$(srcdir)/'`hpcrun_signals.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun_signals.Tpo $(DEPDIR)/libhpcrun_o-hpcrun_signals.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_signals.c' object='libhpcrun_o-hpcrun_signals.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun_signals.o `test -f 'hpcrun_signals.c' || echo '$(srcdir)/'`hpcrun_signals.c
+
+libhpcrun_o-hpcrun_signals.obj: hpcrun_signals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_signals.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_signals.Tpo -c -o libhpcrun_o-hpcrun_signals.obj `if test -f 'hpcrun_signals.c'; then $(CYGPATH_W) 'hpcrun_signals.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_signals.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun_signals.Tpo $(DEPDIR)/libhpcrun_o-hpcrun_signals.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_signals.c' object='libhpcrun_o-hpcrun_signals.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun_signals.obj `if test -f 'hpcrun_signals.c'; then $(CYGPATH_W) 'hpcrun_signals.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_signals.c'; fi`
 
 libhpcrun_o-hpcrun_stats.o: hpcrun_stats.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_stats.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_stats.Tpo -c -o libhpcrun_o-hpcrun_stats.o `test -f 'hpcrun_stats.c' || echo '$(srcdir)/'`hpcrun_stats.c
