@@ -77,6 +77,7 @@
 
 #include "simple_oo.h"
 #include "sample_source_obj.h"
+#include "ss-errno.h"
 #include "common.h"
 #include "display.h"
 #include "exclude.h"
@@ -860,6 +861,8 @@ static void
 papi_event_handler(int event_set, void *pc, long long ovec,
                    void *context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   sigset_t oldset;
   hpcrun_block_shootdown_signal(&oldset);
   
@@ -876,6 +879,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) {
     hpcrun_restore_sigmask(&oldset);
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
     return;
   }
 
@@ -883,6 +887,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     TMSG(PAPI_SAMPLE, "papi overflow event: event set %d ovec = %ld",
 	 event_set, ovec);
     hpcrun_restore_sigmask(&oldset);
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
     return;
   }
 
@@ -891,6 +896,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
     hpcrun_restore_sigmask(&oldset);
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
     return;
   }
 
@@ -994,4 +1000,5 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   hpcrun_safe_exit();
 
   hpcrun_restore_sigmask(&oldset);
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 }
