@@ -2352,9 +2352,9 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	`python3-config --includes` $(am__append_125) \
-	$(am__append_128) $(am__append_132) $(am__append_136) \
-	$(am__append_140) $(am__append_144) $(GOTCHA_IFLAGS)
+	$(am__append_125) $(am__append_128) $(am__append_132) \
+	$(am__append_136) $(am__append_140) $(am__append_144) \
+	$(GOTCHA_IFLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_fake_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
