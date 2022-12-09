@@ -19,7 +19,6 @@ hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
-rocm_lib_path='@OPT_ROCM_LD_LIB_PATH@'
 gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
 memkind_libdir='@MEMKIND_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
@@ -305,7 +304,6 @@ non_empty()
 
 audit_list=
 preload_list=
-rocm_libdir=
 gtpin_libdir=
 namespace_default=multiple
 namespace_multiple=
@@ -408,11 +406,10 @@ do
 		    ;;
 
 		gpu=amd )
-                    if test "@ROCM_PROFILER_METRICS@"x != x ; then
-		        rocm_libdir="${rocm_lib_path}"
+                    if test "${ROCM_PATH}/lib/rocprofiler/metrics.xml"x != x ; then
 		        export HSA_TOOLS_LIB=librocprofiler64.so.1
 		        export ROCP_TOOL_LIB=libhpcrun.so
-		        export ROCP_METRICS=@ROCM_PROFILER_METRICS@
+		        export ROCP_METRICS="${ROCM_PATH}/lib/rocprofiler/metrics.xml"
 		        export ROCP_HSA_INTERCEPT=1
 		        export AMD_DIRECT_DISPATCH=0
                     fi
@@ -721,7 +718,6 @@ hpc_ld_library_path="${hpcrun_dir}"
 hpc_ld_library_path="${hpc_ld_library_path}${papi_libdir:+:${papi_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${ext_libdir:+:${ext_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${perfmon_libdir:+:${perfmon_libdir}}"
-hpc_ld_library_path="${hpc_ld_library_path}${rocm_libdir:+:${rocm_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${gtpin_libdir:+:${gtpin_libdir}}"
 if test "$use_memkind" = yes ; then
     hpc_ld_library_path="${hpc_ld_library_path}${memkind_libdir:+:${memkind_libdir}}"
