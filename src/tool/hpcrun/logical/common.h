@@ -67,6 +67,8 @@
 // Logical stack and mutator functions
 // --------------------------------------
 
+#define MAX_POSSIBLE_FRAMES 4
+
 typedef union logical_frame_t {
   uintptr_t generic;
 #ifdef ENABLE_LOGICAL_PYTHON
@@ -109,11 +111,15 @@ typedef struct logical_region_t {
   // region. Set to NULL after use.
   void (*beforeenter_fixup)(struct logical_region_t*, hpcrun_unw_cursor_t*);
 
-  // If not NULL, the last (latest) frame part of the logical region. In other
-  // words the caller of the physical code called from the logical scope.
-  // Stored as the cursor's sp field.
-  // If NULL, indicates that we are still within the logical region.
-  void* exit;
+  // If not empty, the possible last (latest) frame(s) part of the logical
+  // region. In other words the caller of the physical code called from the
+  // logical scope. Stored as the cursor's sp field.
+  // If empty, indicates that we are still within the logical region.
+  // Length in exit_len.
+  void* exit[MAX_POSSIBLE_FRAMES];
+
+  // Number of valid elements in exit.
+  uint8_t exit_len;
 
   // Optional finalizer for exit, returns the last (latest) frame part of the
   // logical region. Frames at lower offsets are newer. Must not return a frame

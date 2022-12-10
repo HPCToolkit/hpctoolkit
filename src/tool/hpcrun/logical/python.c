@@ -135,9 +135,13 @@ static bool python_unwind(logical_region_t* region, void** store,
 // -----------------------------
 
 static void python_beforeenter(logical_region_t* reg, hpcrun_unw_cursor_t* cur) {
-  while(cur->pc_norm.lm_id == reg->specific.python.lm)
+  TMSG(LOGICAL_UNWIND, "Fixing beforeenter be out of libpython.so, start sp @ %p", cur->sp);
+  while(cur->pc_norm.lm_id == reg->specific.python.lm) {
     if(hpcrun_unw_step(cur) <= STEP_STOP)
       break;
+    TMSG(LOGICAL_UNWIND, "  stepped to sp @ %p", cur->sp);
+  }
+  TMSG(LOGICAL_UNWIND, "Exited at sp @ %p", cur->sp);
 }
 
 static const frame_t* python_afterexit(logical_region_t* reg,
@@ -169,7 +173,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
            DL(PyUnicode_AsUTF8)(code->co_filename),
            DL(PyFrame_GetLineNumber)(frame), frame);
     }
-    if(top == NULL || top->exit != NULL) {
+    if(top == NULL || top->exit_len > 0) {
       // We have entered a new Python region for the first time. Push it.
       logical_region_t reg = {
         .generator = python_unwind, .specific = {.python = {
@@ -178,7 +182,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
         }},
         .expected = 1,  // This should be a top-level frame
         .beforeenter = {}, .beforeenter_fixup = python_beforeenter,
-        .exit = NULL, .afterexit = python_afterexit,
+        .exit = {}, .exit_len = 0, .afterexit = python_afterexit,
       };
       hpcrun_logical_frame_cursor(&reg.beforeenter, 2);
       reg.specific.python.lm = reg.beforeenter.pc_norm.lm_id;
@@ -199,7 +203,9 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     // Update the top region to note that we have exited Python
     top->specific.python.cfunc = arg;
     top->expected++;
-    top->exit = hpcrun_logical_frame_sp(3);
+    top->exit_len = 4;
+    for(size_t i = 0; i < top->exit_len; ++i)
+      top->exit[i] = hpcrun_logical_frame_sp(i + 1);
     hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0, NULL}});
     break;
   }
@@ -211,7 +217,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     // Update the top region to note that we have re-entered Python
     top->specific.python.cfunc = NULL;
     top->expected--;
-    top->exit = NULL;
+    top->exit_len = 0;
     hpcrun_logical_substack_pop(lstack, top, 1);
     break;
   }

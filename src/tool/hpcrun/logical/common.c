@@ -234,8 +234,18 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
 
       // Progress the cursor until the first frame_t within this logical segment
       frame_t* bt_top = bt_cur;
-      if(cur->exit != NULL) {
-        while(bt_cur->cursor.sp != cur->exit) {
+      if(cur->exit_len > 0) {
+        while(1) {
+          bool hit = false;
+          for(unsigned int i = 0; i < cur->exit_len; ++i) {
+            if(bt_cur->cursor.sp == cur->exit[i]) {
+              hit = true;
+              break;
+            }
+          }
+          if(hit)
+            break;
+
           TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
                 name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
           if(bt_cur == bt->last) goto earlyexit;
