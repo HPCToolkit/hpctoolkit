@@ -187,10 +187,9 @@ static inline void hpcrun_logical_substack_pop(logical_region_stack_t* s, logica
 })
 __attribute__((always_inline))
 static inline void hpcrun_logical_frame_cursor_real(ucontext_t* ctx, hpcrun_unw_cursor_t* cur, size_t n) {
-  int steps_taken = 0;
   hpcrun_unw_init_cursor(cur, ctx);
   for(size_t i = 0; i < n; i++) {
-    if(hpcrun_unw_step(cur, &steps_taken) <= STEP_STOP)
+    if(hpcrun_unw_step(cur) <= STEP_STOP)
       break;
   }
 }

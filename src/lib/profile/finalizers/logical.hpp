@@ -58,7 +58,20 @@ public:
 
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
   ExtensionClass requires() const noexcept override { return ExtensionClass::resolvedPath; }
-  void module(const Module&, Classification&) noexcept override;
+
+  void notifyPipeline() noexcept override;
+
+  std::optional<std::pair<util::optional_ref<Context>, Context&>>
+  classify(Context&, NestedScope&) noexcept override;
+
+private:
+  struct udModule {
+    bool isLogical = false;
+    std::unordered_map<uint32_t, std::variant<std::reference_wrapper<const File>, const Function>> map;
+  };
+  Module::ud_t::typed_member_t<udModule> ud;
+
+  void load(const Module&, udModule&) noexcept;
 };
 
 }

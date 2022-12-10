@@ -56,6 +56,7 @@
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
+#include "lib/profile/finalizers/logical.hpp"
 
 #include <memory>
 #include <iostream>
@@ -81,6 +82,10 @@ int main(int argc, char* const argv[]) {
   // Make sure the files are searched for as they should be
   ProfArgs::Prefixer pr(args);
   pipelineB << pr;
+
+  // Load in the Finalizer to parse logical constructs
+  finalizers::LogicalFile lf;
+  pipelineB << lf;
 
   // Load in the Finalizers for Structfiles
   for(auto& sp : args.structs) pipelineB << std::move(sp.first);

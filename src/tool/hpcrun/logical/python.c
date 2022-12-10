@@ -135,9 +135,8 @@ static bool python_unwind(logical_region_t* region, void** store,
 // -----------------------------
 
 static void python_beforeenter(logical_region_t* reg, hpcrun_unw_cursor_t* cur) {
-  int steps_taken = 0;
   while(cur->pc_norm.lm_id == reg->specific.python.lm)
-    if(hpcrun_unw_step(cur, &steps_taken) <= STEP_STOP)
+    if(hpcrun_unw_step(cur) <= STEP_STOP)
       break;
 }
 
@@ -181,7 +180,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
         .beforeenter = {}, .beforeenter_fixup = python_beforeenter,
         .exit = NULL, .afterexit = python_afterexit,
       };
-      hpcrun_logical_frame_cursor(&reg.beforeenter, 1);
+      hpcrun_logical_frame_cursor(&reg.beforeenter, 2);
       reg.specific.python.lm = reg.beforeenter.pc_norm.lm_id;
       top = hpcrun_logical_stack_push(lstack, &reg);
     } else {
@@ -200,7 +199,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     // Update the top region to note that we have exited Python
     top->specific.python.cfunc = arg;
     top->expected++;
-    top->exit = hpcrun_logical_frame_sp(1);
+    top->exit = hpcrun_logical_frame_sp(3);
     hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0, NULL}});
     break;
   }

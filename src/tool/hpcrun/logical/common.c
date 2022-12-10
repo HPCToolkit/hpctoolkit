@@ -212,6 +212,11 @@ void hpcrun_logical_register() {
   }
 }
 
+static const char* name_for(uint16_t lm_id) {
+  const load_module_t* lm = hpcrun_loadmap_findById(lm_id);
+  return lm == NULL ? "<placeholders>" : lm->name;
+}
+
 static void logicalize_bt(backtrace_info_t* bt, int isSync) {
   thread_data_t* td = hpcrun_get_thread_data();
   if(td->logical.depth == 0) return;  // No need for our services
@@ -232,7 +237,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       if(cur->exit != NULL) {
         while(bt_cur->cursor.sp != cur->exit) {
           TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
-                hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+                name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
           if(bt_cur == bt->last) goto earlyexit;
           bt_cur++;
         }
@@ -258,7 +263,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       }
       while(bt_cur->cursor.sp != cur->beforeenter.sp) {
         TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
-              hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+              name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
         if(bt_cur == bt->last) goto earlyexit;
         bt_cur++;
       }
@@ -330,9 +335,9 @@ earlyexit:
 
   for(; bt_cur != bt->last; bt_cur++)
     TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
-          hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+          name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
   TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
-        hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+        name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
 
   TMSG(LOGICAL_UNWIND, "========= END Logicalizing backtrace =========");
 }

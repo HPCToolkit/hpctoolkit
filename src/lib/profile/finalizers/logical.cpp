@@ -55,7 +55,38 @@ using namespace finalizers;
 
 LogicalFile::LogicalFile() = default;
 
-void LogicalFile::module(const Module& m, Classification& c) noexcept {
+void LogicalFile::notifyPipeline() noexcept {
+  ud = sink.structs().module.add_default<udModule>(
+    [this](udModule& data, const Module& m){
+      load(m, data);
+    });
+}
+
+std::optional<std::pair<util::optional_ref<Context>, Context&>>
+LogicalFile::classify(Context& parent, NestedScope& ns) noexcept {
+  if(ns.flat().type() == Scope::Type::point) {
+    auto mo = ns.flat().point_data();
+    const auto& udm = mo.first.userdata[ud];
+    if(udm.isLogical) {
+      auto lineno = mo.second & 0xFFFFFFFFULL;
+      auto it = udm.map.find(mo.second >> 32);
+      if(it != udm.map.end()) {
+        if(const auto* prf = std::get_if<std::reference_wrapper<const File>>(&it->second)) {
+          ns.flat() = {prf->get(), lineno};
+        } else if(const auto* pf = std::get_if<const Function>(&it->second)) {
+          ns.flat() = Scope(*pf);
+        } else {
+          // unreachable
+          std::terminate();
+        }
+      }
+      return {std::make_pair(std::nullopt, std::ref(parent))};
+    }
+  }
+  return std::nullopt;
+}
+
+void LogicalFile::load(const Module& m, udModule& data) noexcept {
   const auto& rpath = m.userdata[sink.resolvedPath()];
   const auto& mpath = rpath.empty() ? m.path() : rpath;
   FILE* f = fopen(mpath.c_str(), "rb");
@@ -69,7 +100,6 @@ void LogicalFile::module(const Module& m, Classification& c) noexcept {
   }
 
   // Read in stanzas until anything bad happens
-  std::vector<Classification::LineScope> lines;
   int ret;
   do {
     uint32_t fid = 0;
@@ -81,23 +111,19 @@ void LogicalFile::module(const Module& m, Classification& c) noexcept {
     if((ret = hpcfmt_str_fread(&filename, f, std::malloc)) != HPCFMT_OK) { ret = HPCFMT_ERR; break; }
     if((ret = hpcfmt_int4_fread(&lineno, f)) != HPCFMT_OK) { ret = HPCFMT_ERR; break; }
 
-    uint64_t lo = (uint64_t)fid << 32;
-    uint64_t hi = (uint64_t)(fid+1) << 32;
+    bool ok = true;
     if(funcname[0] != '\0') {
-      File* f = nullptr;
-      uint64_t l = 0;
-      if(filename[0] != '\0') {
-        f = &sink.file(filename), l = lineno;
-        lines.emplace_back(lo, f, 0);
-        lines.emplace_back(hi-1, nullptr, 0);
-      }
-      c.setScope({lo, hi-1}, c.addScope(c.addFunction(m, funcname, 0, f, l)));
+      Function f(m, std::nullopt, funcname);
+      if(filename[0] != '\0')
+        f.sourceLocation(sink.file(filename), lineno);
+      ok = data.map.try_emplace(fid, std::move(f)).second;
     } else if(filename[0] != '\0') {
-      File* f = &sink.file(filename);
-      lines.emplace_back(lo, f, 0);
-      lines.emplace_back(hi-1, nullptr, 0);
+      ok = data.map.try_emplace(fid, sink.file(filename)).second;
     } else
       util::log::fatal{} << "Invalid logical stanza, both names are empty!";
+
+    if(!ok)
+      util::log::fatal{} << "Invalid logical stanza, same id used twice!";
 
     std::free(funcname);
     std::free(filename);
@@ -108,12 +134,5 @@ void LogicalFile::module(const Module& m, Classification& c) noexcept {
     util::log::warning{} << "Logical metadata file " << mpath << " appears to be truncated, some logical frames may be missing!";
 
   std::fclose(f);
-
-  // Put everything into the Classification
-  c.setLines(std::move(lines));
-  c.setLinePost([](Scope orig, uint64_t off, std::tuple<const File*, uint64_t, bool> res){
-    if(std::get<0>(res) == nullptr) return orig;
-    Scope ret = {*std::get<0>(res), off & UINT32_C(0xFFFFFFFF)};
-    return ret;
-  });
+  data.isLogical = true;
 }
