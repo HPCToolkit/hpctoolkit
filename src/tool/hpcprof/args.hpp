@@ -74,11 +74,11 @@ public:
   /// (Structfile) Finalizers and corrosponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> structs;
 
-  /// Struct file warning Finalizer
-  class StructWarner final : public ProfileFinalizer {
+  /// Finalizer that warns when a Structfile is present but missed due to path differences
+  class StructPartialMatch final : public ProfileFinalizer {
   public:
-    StructWarner(ProfArgs& a) : args(a) {};
-    ~StructWarner() = default;
+    StructPartialMatch(ProfArgs& a) : args(a) {};
+    ~StructPartialMatch() = default;
 
     ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
     ExtensionClass requires() const noexcept override { return {}; }

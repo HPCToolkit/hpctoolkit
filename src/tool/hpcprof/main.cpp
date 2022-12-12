@@ -84,13 +84,14 @@ int main(int argc, char* const argv[]) {
 
   // Load in the Finalizers for Structfiles
   for(auto& sp : args.structs) pipelineB << std::move(sp.first);
-  ProfArgs::StructWarner sw(args);
-  pipelineB << sw;
+  ProfArgs::StructPartialMatch spm(args);
+  pipelineB << spm;
 
   if(!args.foreign) {
     // Insert the proper Finalizer for drawing data directly from the Modules.
     // This is used as a fallback if the Structfiles aren't available.
-    pipelineB << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
+    pipelineB << std::make_unique<finalizers::DirectClassification>(
+        args.dwarfMaxSize, !args.structs.empty());
   }
 
   switch(args.format) {
