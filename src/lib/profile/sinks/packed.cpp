@@ -324,12 +324,12 @@ void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   fePackMetrics.fill(std::move(workitems),
                      [this](auto& group){ packMetricGroup(group); });
   packMetricsGroups.clear();
-  fePackMetrics.contribute(fePackMetrics.wait());
+  fePackMetrics.contributeUntilComplete();
   output = nullptr;
 }
 
 util::WorkshareResult ParallelPacked::helpPackMetrics() noexcept {
-  return fePackMetrics.contribute();
+  return fePackMetrics.contributeWhileAble();
 }
 
 void ParallelPacked::packMetricGroup(std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>& task) noexcept {
