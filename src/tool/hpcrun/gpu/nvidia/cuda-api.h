@@ -115,5 +115,21 @@ cuda_global_pc_sampling_required
   int *required
 );
 
+// returns 0 on success
+int
+cuda_get_module
+(
+ CUmodule *mod,
+ CUfunction fn
+);
+
+// returns 0 on success
+int
+cuda_get_driver_version
+(
+ int *major,
+ int *minor
+);
+
 
 #endif

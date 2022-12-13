@@ -160,6 +160,25 @@ CUDA_FN
 );
 
 
+CUDA_FN
+(
+ cuFuncGetModule,
+ (
+  CUmodule* hmod,
+  CUfunction function
+ )
+);
+
+
+CUDA_FN
+(
+ cuDriverGetVersion,
+ (
+  int* version
+ )
+);
+
+
 CUDA_RUNTIME_FN
 (
  cudaGetDevice,
@@ -198,6 +217,8 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute);
   CHK_DLSYM(cuda, cuCtxGetCurrent);
+  CHK_DLSYM(cuda, cuFuncGetModule);
+  CHK_DLSYM(cuda, cuDriverGetVersion);
 
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
@@ -378,6 +399,36 @@ cuda_global_pc_sampling_required
 
   *required = ((DEVICE_IS_TURING(dev_major, dev_minor)) && 
                (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
+
+  return 0;
+}
+
+
+int
+cuda_get_module
+(
+ CUmodule *mod,
+ CUfunction fn
+)
+{
+  HPCRUN_CUDA_API_CALL(cuFuncGetModule, (mod, fn));
+  return 0;
+}
+
+
+int
+cuda_get_driver_version
+(
+ int *major,
+ int *minor
+)
+{
+  int version;
+
+  HPCRUN_CUDA_API_CALL(cuDriverGetVersion, (&version));
+
+  *major = version / 1000;
+  *minor = version - *major * 1000;
 
   return 0;
 }

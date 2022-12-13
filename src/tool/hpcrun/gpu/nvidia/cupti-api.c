@@ -289,7 +289,8 @@ typedef struct {
 
 
 typedef struct {
-  uint32_t cubin_id;
+  uint32_t cubin_id_pre_v12; // CUDA driver version < 12
+  uint32_t cubin_id_v12;     // CUDA driver version 12 or later
 } hpctoolkit_cumod_st_t;
 
 
@@ -742,18 +743,57 @@ cupti_unload_callback_cuda
 }
 
 
+static uint32_t
+cupti_function_index
+(
+ CUfunction function
+)
+{
+  hpctoolkit_cufunc_st_t *cufunc = (hpctoolkit_cufunc_st_t *)(function);
+  return cufunc->function_index;
+}
+
+
+static uint32_t
+cupti_module_id
+(
+ CUfunction function
+)
+{
+  uint32_t cubin_id;
+
+  CUmodule mod;
+  cuda_get_module(&mod, function); 
+
+  int major, minor;
+  cuda_get_driver_version(&major, &minor);
+
+  hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)mod;
+
+  if (major < 12) {
+    cubin_id = cumod->cubin_id_pre_v12;
+  } else {
+    cubin_id = cumod->cubin_id_v12;
+  }
+
+  return cubin_id;
+}
+
+
 static ip_normalized_t
 cupti_func_ip_resolve
 (
  CUfunction function
 )
 {
-  hpctoolkit_cufunc_st_t *cufunc = (hpctoolkit_cufunc_st_t *)(function);
-  hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)cufunc->cumod;
-  uint32_t function_index = cufunc->function_index;
-  uint32_t cubin_id = cumod->cubin_id;
+  uint32_t function_index = cupti_function_index(function);
+
+  uint32_t cubin_id = cupti_module_id(function);
+
   ip_normalized_t ip_norm = cubin_id_transform(cubin_id, function_index, 0);
+
   TMSG(CUPTI_TRACE, "Decode function_index %u cubin_id %u", function_index, cubin_id);
+
   return ip_norm;
 }
 
