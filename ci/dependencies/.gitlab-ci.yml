@@ -16,16 +16,25 @@
 # the combinatorial burden, leaving us with (two) trigger jobs to launch the MLP.
 
 # Generate a pipeline for each combination of OS and arch.
-generate_deps.amd64:
-  stage: dependencies
+'deps:generate: [amd64]':
+  stage: deps:generate
   extends: .spack
   image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
   tags: [docker, linux/$ARCH]
   needs: []
 
+  rules: &rebuild_images
+  - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: rebuild depsimg/i'
+  - if: $REBUILD_DEPSIMG
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes:
+    - ci/dependencies/latest/spack.yaml
+    - ci/dependencies/minimum/spack.yaml
+
   variables:
     ARCH: amd64
-  parallel:
+  parallel: &parallel_amd64
     matrix:
     - IMAGE: leap15
       CI_SPACK_CC: gcc@7
@@ -58,9 +67,9 @@ generate_deps.amd64:
   # Set up concrete environments named by the OS and ARCH
   - OS=$(spack arch --operating-system)
   - mkdir -p ci/dependencies/minimum/c/$OS/$ARCH/
-  - cp -r ci/dependencies/minimum/{spack.yaml,config} ci/dependencies/minimum/c/$OS/$ARCH/
+  - cp ci/dependencies/minimum/spack.yaml ci/dependencies/minimum/c/$OS/$ARCH/
   - mkdir -p ci/dependencies/latest/c/$OS/$ARCH/
-  - cp -r ci/dependencies/latest/{spack.yaml,config} ci/dependencies/latest/c/$OS/$ARCH/
+  - cp ci/dependencies/latest/spack.yaml ci/dependencies/latest/c/$OS/$ARCH/
 
   - &postjob
     - ci/scripts/network-stats.sh .netstats.txt
@@ -90,14 +99,14 @@ generate_deps.amd64:
 
   artifacts:
     paths:
-    - ci/dependencies/{minimum,latest}/c/*/*/{spack.lock,spack.yaml,config/}
+    - ci/dependencies/{minimum,latest}/c/*/*/spack.lock
     - spack-ci-artifacts/
 
-generate_deps.arm64:
-  extends: generate_deps.amd64
+'deps:generate: [arm64]':
+  extends: 'deps:generate: [amd64]'
   variables:
     ARCH: arm64
-  parallel:
+  parallel: &parallel_arm64
     matrix:
     # - IMAGE:
     #   - almalinux8
@@ -107,14 +116,15 @@ generate_deps.arm64:
 
 
 # Construct a Multi-Level Pipeline that runs all the pipelines from spack ci generate
-mlp_deps.amd64:
-  stage: dependencies
+'deps:mlp: [amd64]':
+  stage: deps:prep
   tags: [docker]
   image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
+  rules: *rebuild_images
   needs:
-  - generate_deps.amd64
+  - 'deps:generate: [amd64]'
   before_script:
-  - pip install ruamel.yaml
+  - ci/scripts/ensure-present.sh py:ruamel.yaml
   script:
   - >-
     python3 ci/dependencies/mlp.py ci.yml
@@ -122,29 +132,250 @@ mlp_deps.amd64:
   artifacts:
     paths:
     - ci.yml
-mlp_deps.arm64:
-  extends: mlp_deps.amd64
+'deps:mlp: [arm64]':
+  extends: 'deps:mlp: [amd64]'
   needs:
-  - generate_deps.arm64
+  - 'deps:generate: [arm64]'
   script:
   - >-
     python3 ci/dependencies/mlp.py ci.yml
     spack-ci-artifacts/ubuntu20.04/arm64/{minimum,latest}/ci.yml
 
 # Launch the MLP and get this done.
-build_deps.amd64:
-  stage: dependencies
-  needs: [mlp_deps.amd64]
+deps:build amd64:
+  stage: deps:build
+  rules: *rebuild_images
+  needs: ['deps:mlp: [amd64]']
   trigger:
     strategy: depend
     include:
-    - job: mlp_deps.amd64
+    - job: 'deps:mlp: [amd64]'
       artifact: ci.yml
-build_deps.arm64:
-  stage: dependencies
-  needs: [mlp_deps.arm64]
+deps:build arm64:
+  stage: deps:build
+  rules: *rebuild_images
+  needs: ['deps:mlp: [arm64]']
   trigger:
     strategy: depend
     include:
-    - job: mlp_deps.arm64
+    - job: 'deps:mlp: [arm64]'
       artifact: ci.yml
+
+# Package up images containing the Spack-built dependencies
+'deps:package: [amd64]':
+  stage: deps:package
+  extends: .spack
+  tags: [docker, linux/amd64]
+  image: quay.io/buildah/stable
+  rules: *rebuild_images
+  needs:
+  - 'deps:generate: [amd64]'
+  - 'deps:build amd64'
+  variables:
+    ARCH: amd64
+  parallel: *parallel_amd64
+  cache:
+  - !reference [.spack, cache]
+  - key: spack-bincache-$IMAGE:$ARCH
+    when: always
+    paths:
+    - .spack-bincache-shared/
+  - key: spack-bincache-$IMAGE:$ARCH-$CI_COMMIT_REF_SLUG
+    when: always
+    paths:
+    - .spack-bincache-nonprotected/
+  before_script:
+  - yum install -y git python3 diffutils
+  - !reference [.spack, before_script]
+  script:
+  # Configure this Spack instance with the buildcache mirrors.
+  # This is temporary and won't persist into the final images
+  - PATH=$(realpath .spack/bin):$PATH ci/dependencies/spack-bc-downstream.sh
+  - |
+    cat > .spack-bincache-config.yml <<EOF
+    config:
+      local_binary_cache:
+      - prefixes: ['${SBCACHE_URL}/nonprotected']
+        root: '/.spack-bincache-nonprotected/'
+      - root: '/.spack-bincache-shared/'
+    EOF
+  - spack config --scope site add -f .spack-bincache-config.yml
+  - rm .spack-bincache-config.yml
+
+  # Make sure the rootless user and container will be able to access everything
+  - mkdir -p .spack-bincache-shared/ .spack-bincache-nonprotected/
+  - chown -R build:build .spack/ .spack-bincache-shared/ .spack-bincache-nonprotected/
+
+  # Create a base container where all the magic happens
+  - sudo -u build buildah from --isolation chroot registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH > container
+  - c=$(cat container)
+  # Set the Spack install_tree to something that we will persist
+  - >-
+    sudo -u build buildah run  --isolation chroot -v $CI_PROJECT_DIR/.spack:/.spack $c
+    /.spack/bin/spack config --scope system add 'config:install_tree:root:/spack/install'
+  # Figure out the OS slug we will use
+  - >-
+    sudo -u build buildah run  --isolation chroot -v $CI_PROJECT_DIR/.spack:/.spack $c
+    /.spack/bin/spack arch --operating-system > os
+  - OS=$(cat os)
+  - echo $OS
+
+  # At this point, we have enough information to compare the current environment with the prior.
+  # If it doesn't look like anything changed since the last successful pipeline, reuse the older
+  # image and skip all this hassle.
+  - |
+    cmp_img() {
+      sudo -u build buildah from --isolation chroot "$DEPS_IMAGES-$IMAGE-$ARCH" > container || return $?
+      sudo -u build buildah unshare --mount C=$(cat container) sh -c "
+        cmp ci/dependencies/latest/spack.yaml \$C/spack/cenv/latest/spack.yaml \
+        && cmp ci/dependencies/latest/c/$OS/$ARCH/spack.lock \$C/spack/cenv/latest/spack.lock \
+        && cmp ci/dependencies/minimum/spack.yaml \$C/spack/cenv/minimum/spack.yaml \
+        && cmp ci/dependencies/minimum/c/$OS/$ARCH/spack.lock \$C/spack/cenv/minimum/spack.lock
+      "
+    }
+  # 1. Reuse from the default branch first. This will likely the most up-to-date image available.
+  - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:latest-$CI_DEFAULT_BRANCH"
+  - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; exit 0; fi
+  # 2. Reuse from our MR target branch next, if we have one and it's protected
+  - if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true" && test "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" != "$CI_DEFAULT_BRANCH"; then
+  - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:latest-$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+  - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; exit 0; fi
+  - fi
+  # 3. Reuse from a previous pipeline on this branch/MR
+  - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; fi
+  - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:$PREFIX$CI_COMMIT_REF_SLUG"
+  - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; exit 0; fi
+  # Otherwise, continue along assuming an image tag prefix unique to this pipeline
+  - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}"
+  - echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env
+
+  # Copy the concrete environments into the container
+  - sudo -u build buildah copy --chown root:root $c ci/dependencies/latest/spack.yaml /spack/cenv/latest/spack.yaml
+  - sudo -u build buildah copy --chown root:root $c ci/dependencies/latest/c/$OS/$ARCH/spack.lock /spack/cenv/latest/spack.lock
+  - sudo -u build buildah copy --chown root:root $c ci/dependencies/minimum/spack.yaml /spack/cenv/minimum/spack.yaml
+  - sudo -u build buildah copy --chown root:root $c ci/dependencies/minimum/c/$OS/$ARCH/spack.lock /spack/cenv/minimum/spack.lock
+
+  # Install the concrete environments from the updated buildcache
+  - >-
+    sudo -u build buildah run --isolation chroot
+    -v $CI_PROJECT_DIR/.spack:/.spack
+    -v $CI_PROJECT_DIR/.spack-bincache-shared:/.spack-bincache-shared
+    -v $CI_PROJECT_DIR/.spack-bincache-nonprotected:/.spack-bincache-nonprotected
+    $c
+    /.spack/bin/spack -e /spack/cenv/latest install --use-buildcache=only --no-check-signature --fail-fast
+  - >-
+    sudo -u build buildah run --isolation chroot
+    -v $CI_PROJECT_DIR/.spack:/.spack
+    -v $CI_PROJECT_DIR/.spack-bincache-shared:/.spack-bincache-shared
+    -v $CI_PROJECT_DIR/.spack-bincache-nonprotected:/.spack-bincache-nonprotected
+    $c
+    /.spack/bin/spack -e /spack/cenv/minimum install --use-buildcache=only --no-check-signature --fail-fast
+
+  # Re-copy the spack.yaml, to prevent Spack's habit of rewriting it from causing problems down the road
+  - sudo -u build buildah copy --chown root:root $c ci/dependencies/latest/spack.yaml /spack/cenv/latest/spack.yaml
+  - sudo -u build buildah copy --chown root:root $c ci/dependencies/minimum/spack.yaml /spack/cenv/minimum/spack.yaml
+
+  # Commit the final result and push it up
+  - sudo -u build buildah commit $c "$DEPS_IMAGES-$IMAGE-$ARCH"
+  - sudo -u build buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  - sudo -u build buildah push --digestfile $IMAGE-$ARCH.digest "$DEPS_IMAGES-$IMAGE-$ARCH"
+  artifacts:
+    paths:
+    - '*.env'
+    - '*.digest'
+'deps:package: [arm64]':
+  extends: 'deps:package: [amd64]'
+  tags: [docker, linux/arm64]
+  needs:
+  - 'deps:generate: [arm64]'
+  - 'deps:build arm64'
+  variables:
+    ARCH: arm64
+  parallel: *parallel_arm64
+
+# Summary jobs for later jobs to directly depend on
+'deps: [amd64]':
+  stage: deps
+  tags: [docker, linux/amd64]
+  image: quay.io/buildah/stable
+  needs:
+  - job: 'deps:package: [amd64]'
+    optional: true
+  variables:
+    IMAGES: leap15 almalinux8 ubuntu20.04 fedora36
+    ARCH: amd64
+  before_script:
+  - yum install -y diffutils
+  script:
+  - if ! test -e *.env; then
+  - # We didn't build this time, so we are expecting to be able to reuse a prior image. Search for
+    # any suitable images and mark down the needed prefixes.
+    - |
+      cmp_img() {
+        sudo -u build buildah from --isolation chroot "$DEPS_IMAGES-$IMAGE-$ARCH" > container || return $?
+        sudo -u build buildah unshare --mount C=$(cat container) sh -c "
+          cmp ci/dependencies/latest/spack.yaml \$C/spack/cenv/latest/spack.yaml \
+          && cmp ci/dependencies/minimum/spack.yaml \$C/spack/cenv/minimum/spack.yaml
+        "
+      }
+    - for IMAGE in $IMAGES; do
+    # 1. Reuse from the default branch first. This will likely the most up-to-date image available.
+    - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:latest-$CI_DEFAULT_BRANCH"
+    - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; continue; fi
+    # 2. Reuse from our MR target branch next, if we have one and it's protected
+    - if test "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = "true" && test "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" != "$CI_DEFAULT_BRANCH"; then
+    - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:latest-$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; continue; fi
+    - fi
+    # 3. Reuse from a previous pipeline on this branch/MR
+    - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; fi
+    - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:$PREFIX$CI_COMMIT_REF_SLUG"
+    - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; continue; fi
+    # We can't find a suitable image. This is a hard error.
+    - echo "Unable to find a suitable deps image to reuse for running this pipeline!"
+    - echo "This might be because the environments were recently updated and the $CI_DEFAULT_BRANCH pipeline is still running."
+    - exit 1
+    - done
+  - fi
+
+  # Make sure all the images we will be using for this run are within the same prefix
+  # First one gets copied to deps.env for pushing to the rest of the pipeline
+  - for IMAGE in $IMAGES; do
+  - - if ! test -e deps.env; then cp $IMAGE-$ARCH.env deps.env; fi
+    - diff deps.env $IMAGE-$ARCH.env
+  - done
+  artifacts:
+    reports:
+      dotenv: deps.env
+'deps: [arm64]':
+  extends: 'deps: [amd64]'
+  tags: [docker, linux/arm64]
+  needs:
+  - job: 'deps:package: [arm64]'
+    optional: true
+  variables:
+    IMAGES: ubuntu20.04
+    ARCH: arm64
+
+# If the pipeline as a whole passed, rename the image tag to something downstream MRs can use
+publish deps:
+  stage: .post
+  tags: [docker]
+  image: quay.io/podman/stable
+  rules: *rebuild_images
+  dependencies:
+  - 'deps:package: [amd64]'
+  - 'deps:package: [arm64]'
+  before_script:
+  - sudo -u podman podman login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+  - for df in *.digest; do
+  - # Compose the source image and destination tag that we will publish
+    - src="$CI_REGISTRY_IMAGE/ci@$(cat $df)"
+    - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; fi
+    - dst="$CI_REGISTRY_IMAGE/ci:$PREFIX$CI_COMMIT_REF_SLUG-$(basename "$df" .digest)"
+    - echo "Publishing $src as $dst..."
+    - sudo -u podman podman pull "$src"
+    - sudo -u podman podman tag "$src" "$dst"
+    - sudo -u podman podman push "$dst"
+  - done

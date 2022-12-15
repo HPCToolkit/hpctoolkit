@@ -173,7 +173,7 @@ fi
 declare -A pip_packages
 for package in "${!missing_py[@]}"; do
   case "$package" in
-  boto3|clingo)
+  boto3|clingo|ruamel.yaml|podman)
     pip_packages+=(["$package"]=1)
     ;;
 

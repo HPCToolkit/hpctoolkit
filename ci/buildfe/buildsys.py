@@ -318,7 +318,7 @@ class CheckInstallManifest(Action):
     """Check the installed files against the expected install manifest."""
 
     def header(self, cfg: Configuration) -> str:
-        return "Checking install manifest..."
+        return "Checking install manifest"
 
     def name(self) -> str:
         return "check install"

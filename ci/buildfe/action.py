@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from .configuration import Configuration
-from .logs import FgColor, colorize_str
+from .logs import FgColor
 
 
 class ActionResult(abc.ABC):
@@ -30,24 +30,57 @@ class ActionResult(abc.ABC):
     def completed(self) -> bool:
         """Return False if the Action was unable to complete its task, and dependent Actions should not run."""
 
+    def color(self) -> FgColor:
+        """Return the standard color that represents this result's state"""
+        if not self.completed or not self.passed:
+            return FgColor.error
+        if not self.flawless:
+            return FgColor.warning
+        return FgColor.flawless
 
-def summarize_results(results: Iterable[ActionResult], prefix: str = "") -> None:
-    """Print the summaries of a list of ActionResults to the output. Colorized to indicate status."""
-    for r in results:
-        assert isinstance(r, ActionResult)
 
-        color = None
-        if r.flawless:
-            color = FgColor.flawless
-        elif r.passed:
-            color = FgColor.warning
-        else:
-            color = FgColor.error
+class SummaryResult(ActionResult):
+    """Simple ActionResult that combines the worst of all its inputs"""
 
-        if color is not None:
-            s = r.summary().strip()
-            if s:
-                print(colorize_str(color, prefix + s))
+    def __init__(self):
+        self._results = []
+
+    def add(self, action: "Action", result: ActionResult):
+        self._results.append((action, result))
+
+    def summary(self) -> str:
+        if not self.completed:
+            return "Did not complete " + " ".join(
+                a.name() for a, r in self._results if not r.completed
+            )
+        if not self.passed:
+            return "Failed in " + " ".join(a.name() for a, r in self._results if not r.passed)
+        if not self.flawless:
+            return "Passed with warnings in " + " ".join(
+                a.name() for a, r in self._results if not r.flawless
+            )
+        return "Passed with no warnings"
+
+    def icon(self) -> str:
+        if not self.completed:
+            return "\U0001f4a5"  # 💥
+        if not self.passed:
+            return "\u274c"  # ❌
+        if not self.flawless:
+            return "\U0001f315"  # 🌕
+        return "\u2714"  # ✔
+
+    @property
+    def flawless(self):
+        return all(r.flawless for a, r in self._results)
+
+    @property
+    def passed(self):
+        return all(r.passed for a, r in self._results)
+
+    @property
+    def completed(self):
+        return all(r.completed for a, r in self._results)
 
 
 class ReturnCodeResult(ActionResult):
