@@ -66,6 +66,7 @@
 #include <string.h>        // strstr
 #endif
 
+#include <monitor.h>
 
 
 //***************************************************************************
@@ -325,7 +326,8 @@ static __thread cct_node_t *cupti_kernel_ph = NULL;
 static __thread cct_node_t *cupti_trace_ph = NULL;
 
 static bool cupti_correlation_enabled = false;
-static bool cupti_pc_sampling_enabled = false;
+static bool cupti_pc_sampling_context_set = false;
+static CUcontext cupti_pc_sampling_context = NULL;
 
 static cupti_correlation_callback_t cupti_correlation_callback =
   cupti_correlation_callback_dummy;
@@ -689,7 +691,7 @@ cupti_error_callback_dummy // __attribute__((unused))
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
       "function %s failed with error %s", type, fn, error_string);
   EEMSG("See the 'FAQ and Troubleshooting' chapter in the HPCToolkit manual for guidance");
-  exit(1);
+  monitor_real_exit(1);
 }
 
 
@@ -1512,7 +1514,18 @@ cupti_pc_sampling_enable
 )
 {
   TMSG(CUPTI, "enter cupti_pc_sampling_enable");
-  cupti_pc_sampling_enabled = true;
+
+  // A program may use might multiple contexts. PC sampling can be
+  // active for only one context at a time. Shut down PC sampling for
+  // the previous context so it can be enabled for the current context.
+  if (cupti_pc_sampling_context_set) {
+    if (cupti_pc_sampling_context != context) {
+      cupti_pc_sampling_disable(cupti_pc_sampling_context);
+    }
+  }
+
+  cupti_pc_sampling_context = context;
+  cupti_pc_sampling_context_set = true;
   CUpti_ActivityPCSamplingConfig config;
   config.samplingPeriod = 0;
   config.samplingPeriod2 = frequency;
@@ -1543,11 +1556,11 @@ cupti_pc_sampling_disable
  CUcontext context
 )
 {
-  if (cupti_pc_sampling_enabled) {
+  if (cupti_pc_sampling_context_set) {
     HPCRUN_CUPTI_CALL(cuptiActivityDisableContext,
                      (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
-    cupti_pc_sampling_enabled = false;
+    cupti_pc_sampling_context_set = false;
   }
 }
 

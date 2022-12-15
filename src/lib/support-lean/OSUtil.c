@@ -136,6 +136,38 @@ OSUtil_jobid()
 }
 
 
+const char*
+OSUtil_local_rank()
+{
+  char* rid = NULL;
+
+  // OpenMPI
+  rid = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
+  if (rid) {
+    return rid;
+  }
+
+  // MPICH
+  rid = getenv("MPI_LOCALRANKID");
+  if (rid) {
+    return rid;
+  }
+
+  // SLURM
+  rid = getenv("SLURM_LOCALID");
+  if (rid) {
+    return rid;
+  }
+
+  // LSF
+  rid = getenv("JSM_NAMESPACE_LOCAL_RANK");
+  if (rid) {
+    return rid;
+  }
+
+  return rid;
+}
+
 uint32_t
 OSUtil_hostid()
 {

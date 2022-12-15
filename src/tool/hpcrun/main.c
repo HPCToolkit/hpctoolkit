@@ -105,6 +105,8 @@
 #include <sample-sources/none.h>
 #include <sample-sources/itimer.h>
 
+#include <lib/support-lean/OSUtil.h>
+
 #include "sample_sources_registered.h"
 #include "sample_sources_all.h"
 #include "segv_handler.h"
@@ -265,6 +267,41 @@ bool hpcrun_suppress_sample()
   return hpcrun_thread_suppress_sample;
 }
 
+bool hpcrun_local_rank_enabled()
+{
+  const char *local_ranks = getenv("HPCRUN_LOCAL_RANKS");
+  const char *my_rank = OSUtil_local_rank();
+
+  // a testing harness
+  if (my_rank == 0) {
+    my_rank = getenv("HPCRUN_LOCAL_RANK");
+  }
+
+#ifdef DEBUG_LOCAL_RANKS
+  fprintf(stderr, "pid %ld: HPCRUN_LOCAL_RANKS=%s my_rank=%s\n", getpid(), 
+         local_ranks, my_rank);
+#endif
+
+  if (local_ranks && my_rank) {
+    if (strcmp(local_ranks, my_rank) == 0) {
+      // profiling only a single local rank
+      return true;
+    }
+    char* local = strdup(local_ranks);
+    char* token = strtok(local, ",");
+    while (token) {
+      int found = (strcmp(token, my_rank) == 0);
+      if (found) {
+        free(local);
+        return true;
+      }
+      token = strtok(NULL, ",");
+    }
+    free(local);
+    return false;
+  }
+  return true;
+}
 
 //
 // Local functions
@@ -947,6 +984,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
+  if (!hpcrun_local_rank_enabled()) {
+    hpcrun_set_disabled();
+  }
+
   // We initialize the load map and fnbounds before registering sample source.
   // This is because sample source init (such as PAPI)  may dlopen other libraries,
   // which will trigger our library monitoring code and fnbound queries
@@ -985,16 +1026,16 @@ monitor_init_process(int *argc, char **argv, void* data)
       auditor_exports->mainlib_connected(get_saved_vdso_path());
     }
 #endif
+
+    TMSG(PROCESS, "init process: pid: %d  parent: %d  fork-child: %d",
+         (int) getpid(), (int) getppid(), (int) is_child);
+    TMSG(PROCESS, "name: %s", process_name);
+
+    if (is_child){
+      hpcrun_prepare_measurement_subsystem(is_child);
+    }
+
   }
-
-  TMSG(PROCESS, "init process: pid: %d  parent: %d  fork-child: %d",
-       (int) getpid(), (int) getppid(), (int) is_child);
-  TMSG(PROCESS, "name: %s", process_name);
-
-  if (is_child){
-    hpcrun_prepare_measurement_subsystem(is_child);
-  }
-
   return data;
 }
 
@@ -1003,6 +1044,11 @@ void
 monitor_at_main()
 {  
   bool is_child = false;
+
+  if (hpcrun_get_disabled()) {
+    return;
+  }
+
   hpcrun_prepare_measurement_subsystem(is_child);
 }
 
@@ -1221,6 +1267,10 @@ monitor_init_mpi(int *argc, char ***argv)
 void*
 monitor_thread_pre_create(void)
 {
+  if (!hpcrun_local_rank_enabled()) {
+    hpcrun_set_disabled();
+  }
+
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
   if (hpcrun_module_ignore_map_uninitialized || hpcrun_get_disabled()) {
@@ -1230,7 +1280,7 @@ monitor_thread_pre_create(void)
   struct monitor_thread_info mti;
   monitor_get_new_thread_info(&mti);
   void *thread_pre_create_address = mti.mti_create_return_addr;
-  if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
+  if (hpcrun_get_disabled() || module_ignore_map_inrange_lookup(thread_pre_create_address)) {
     return MONITOR_IGNORE_NEW_THREAD;
   }
 

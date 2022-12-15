@@ -194,6 +194,12 @@ Options: Profiling (Defaults shown in curly brackets {})
                        profiles of the same <command> will be placed in the
                        same output directory.
 
+  -olr <list>, --only-local-ranks <list>
+                       Measure only specified MPI local ranks. <list> is a
+                       comma-separated series of local ranks. A local rank
+                       is the local index of a rank on a node.
+                       {all local ranks measured}
+
   -r, --retain-recursion
                        Normally, hpcrun will collapse (simple) recursive call chains
                        to save space and analysis time. This option disables that
@@ -491,6 +497,14 @@ do
 	-o | --output )
 	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_OUT_PATH="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-olr | --only-local-ranks )
+	    non_empty "$1" || die "missing argument for $arg"
+	    export HPCRUN_LOCAL_RANKS="$1"
 	    shift
 	    ;;
 
