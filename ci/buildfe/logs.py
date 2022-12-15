@@ -15,7 +15,7 @@ class FgColor(enum.Enum):
     error = 91  # Bright red
     warning = 33  # Yellow
     flawless = 32  # Green
-    info = 90  # Bright black / Grey
+    info = 37  # White
 
 
 @contextlib.contextmanager

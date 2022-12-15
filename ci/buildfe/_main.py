@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import os
 import re
 import shlex
@@ -8,11 +9,12 @@ import string
 import subprocess
 import sys
 import tempfile
+import textwrap
 import time
 import typing as T
 from pathlib import Path
 
-from .action import Action, ActionResult, action_sequence, summarize_results
+from .action import Action, SummaryResult, action_sequence
 from .buildsys import (
     Build,
     CheckInstallManifest,
@@ -164,6 +166,9 @@ Examples:
         help="Don't build, instead print the configuration space and action sequence",
     )
     parser.add_argument(
+        "--spack-no-install", action="store_true", default=False, help="Don't run spack install"
+    )
+    parser.add_argument(
         "--spack-args",
         type=shlex.split,
         default=[],
@@ -174,6 +179,23 @@ Examples:
         default=False,
         action="store_true",
         help="Report per-build ccache statistics. Note that this clears the ccache statistics",
+    )
+    parser.add_argument(
+        "--reproducible",
+        action="store_true",
+        help="Output reproduction instructions in the log",
+    )
+    parser.add_argument(
+        "--reproduction-cmd",
+        action="append",
+        default=[],
+        help="Add the given command to the reproduction instructions",
+    )
+    parser.add_argument(
+        "--reproduction-volume",
+        action="append",
+        default=[],
+        help="Add the given volume to the Podman command in the reproduction instructions",
     )
     parser.add_argument(
         "--test-junit-copyout",
@@ -195,6 +217,7 @@ def post_parse(args):
 def load_src(
     depcfg: DependencyConfiguration,
     src: tuple[Path, Path] | tuple[Path],
+    spack_install: bool,
     spack_args: list[str],
     dry_run: bool,
 ) -> None:
@@ -224,7 +247,7 @@ def load_src(
 
     # If the second directory is a Spack environment, install and activate it
     if (cdir / "spack.yaml").exists() and not dry_run:
-        load_spackenv(cdir, spack_args)
+        load_spackenv(cdir, spack_install, spack_args)
 
 
 def shlex_iter(lexer: shlex.shlex):
@@ -235,23 +258,24 @@ def shlex_iter(lexer: shlex.shlex):
         yield token
 
 
-def load_spackenv(cdir: Path, spack_args) -> None:
+def load_spackenv(cdir: Path, spack_install: bool, spack_args) -> None:
     spack = shutil.which("spack")
     if not spack:
         print("Spack environment given as a source but `spack` not available!", file=sys.stderr)
         sys.exit(2)
     assert isinstance(spack, str)
 
-    with section(f"spack install {cdir.as_posix()}...", collapsed=True):
-        # Save and restore the spack.yaml to keep things sane between runs
-        # See https://github.com/spack/spack/issues/31091
-        with tempfile.SpooledTemporaryFile(mode="w+") as storef:
-            with open(cdir / "spack.yaml", encoding="utf-8") as f:
-                shutil.copyfileobj(f, storef)
-            storef.seek(0)
-            subprocess.run([spack, "-e", cdir, "install", *spack_args], check=True)
-            with open(cdir / "spack.yaml", "w", encoding="utf-8") as f:
-                shutil.copyfileobj(storef, f)
+    if spack_install:
+        with section(f"spack install {cdir.as_posix()}...", collapsed=True):
+            # Save and restore the spack.yaml to keep things sane between runs
+            # See https://github.com/spack/spack/issues/31091
+            with tempfile.SpooledTemporaryFile(mode="w+") as storef:
+                with open(cdir / "spack.yaml", encoding="utf-8") as f:
+                    shutil.copyfileobj(f, storef)
+                storef.seek(0)
+                subprocess.run([spack, "-e", cdir, "install", *spack_args], check=True)
+                with open(cdir / "spack.yaml", "w", encoding="utf-8") as f:
+                    shutil.copyfileobj(storef, f)
 
     envload = subprocess.run(
         [spack, "env", "activate", "--sh", cdir], stdout=subprocess.PIPE, text=True, check=True
@@ -325,39 +349,6 @@ def configure(
     return cfg
 
 
-def run_actions(
-    variant: ConcreteSpecification, cfg: Configuration, args
-) -> list[tuple[Action, ActionResult, float]]:
-    srcdir = Path().absolute()
-    logdir = None
-    if args.logs_dir:
-        logdir = args.logs_dir / args.log_format.format(variant.without_spaces)
-        logdir.mkdir(parents=True)
-        logdir = logdir.absolute()
-    builddir = srcdir / "ci" / "build"
-    installdir = srcdir / "ci" / "install"
-
-    results = []
-    try:
-        for i, a in enumerate(args.action):
-            print_header(f"[{i+1}/{len(args.action)}] {a.header(cfg)}")
-            starttim = time.monotonic()
-            r = a.run(cfg, builddir=builddir, srcdir=srcdir, installdir=installdir, logdir=logdir)
-            endtim = time.monotonic()
-            tim = endtim - starttim
-            print(f"[{i+1}/{len(args.action)}] {a.name()} took {tim:.3f} seconds")
-            results.append((a, r, tim))
-            if not r.completed:
-                break
-    finally:
-        if not args.keep:
-            if builddir.exists():
-                shutil.rmtree(builddir)
-            if installdir.exists():
-                shutil.rmtree(installdir)
-    return results
-
-
 def parse_stats(stdout):
     stats = {}
     for line in stdout.splitlines():
@@ -371,7 +362,7 @@ def parse_stats(stdout):
     return stats
 
 
-def print_ccache_stats():
+def print_ccache_stats(header_prefix: str):
     try:
         proc = subprocess.run(
             [shutil.which("ccache"), "--print-stats"],
@@ -393,48 +384,91 @@ def print_ccache_stats():
     total_hit = d_hit + p_hit
     total = total_hit + miss
 
-    with section(f"Ccache efficacy: {total_hit/total*100:.3f}%", collapsed=True):
+    with section(
+        header_prefix + f"Ccache statistics: {total_hit/total*100:.3f}%",
+        color=FgColor.info,
+        collapsed=True,
+    ):
         print(f"Hit: {total_hit/total*100:.3f}% ({total_hit:d} of {total:d})")
         print(f"  Direct: {d_hit/total_hit*100:.3f}% ({d_hit:d} of {total_hit:d})")
         print(f"  Preprocessed: {p_hit/total_hit*100:.3f}% ({p_hit:d} of {total_hit:d})")
         print(f"Missed: {miss/total*100:.3f}% ({miss:d} of {total:d})")
 
 
-def build(v: ConcreteSpecification, cfg: Configuration, args) -> tuple[bool, dict]:
+def build(variant: ConcreteSpecification, cfg: Configuration, args) -> tuple[bool, dict]:
+    # pylint: disable=too-many-locals
     if args.ccache_stats:
         subprocess.run(
             [shutil.which("ccache"), "--zero-stats"], stdout=subprocess.DEVNULL, check=True
         )
 
-    ok = True
-    with section(
-        "## Build for HPCToolkit " + str(v),
-        color=FgColor.header,
-        collapsed=True,
-    ):
-        results = run_actions(v, cfg, args)
+    print_header("## Building for configuration " + str(variant) + " ...")
 
-    if any(not r.completed for a, r, t in results):
-        with colorize(FgColor.error):
-            failures = [a.name() for a, r, t in results if not r.completed]
-            print(f" [\U0001f4a5] Build failed in {' '.join(failures)}", flush=True)
-        ok = False
-    elif any(not r.passed for a, r, t in results):
-        with colorize(FgColor.error):
-            print(" [\u274c] Build completed with errors", flush=True)
-        ok = False
-    elif any(not r.flawless for a, r, t in results):
-        with colorize(FgColor.warning):
-            print(" [\U0001f315] Build successful", flush=True)
-    else:
-        with colorize(FgColor.flawless):
-            print(" [\u2714] Build successful with no detected flaws", flush=True)
-    summarize_results((r for a, r, t in results), prefix="    - ")
+    srcdir = Path().absolute()
+    logdir = None
+    if args.logs_dir:
+        logdir = args.logs_dir / args.log_format.format(variant.without_spaces)
+        logdir.mkdir(parents=True)
+        logdir = logdir.absolute()
+    builddir = srcdir / "ci" / "build"
+    installdir = srcdir / "ci" / "install"
+
+    summary = SummaryResult()
+    times = {}
+    ok = True
+    try:
+        for i, a in enumerate(args.action):
+            with section(
+                f"  [{i+1}/{len(args.action)}] {a.header(cfg)}...",
+                color=FgColor.header,
+                collapsed=True,
+            ):
+                starttim = time.monotonic()
+                r = a.run(
+                    cfg, builddir=builddir, srcdir=srcdir, installdir=installdir, logdir=logdir
+                )
+                endtim = time.monotonic()
+                tim = endtim - starttim
+                print(f"  [{i+1}/{len(args.action)}] {a.name()} took {tim:.3f} seconds")
+            with colorize(r.color()):
+                print(f"  [{i+1}/{len(args.action)}] {r.summary()}")
+
+            summary.add(a, r)
+            times[a] = tim
+            if not r.passed:
+                ok = False
+            if not r.completed:
+                ok = False
+                break
+    finally:
+        if not args.keep:
+            if builddir.exists():
+                shutil.rmtree(builddir)
+            if installdir.exists():
+                shutil.rmtree(installdir)
 
     if args.ccache_stats:
-        print_ccache_stats()
+        print_ccache_stats(f"  [-/{len(args.action)}] ")
 
-    return ok, {a: t for a, r, t in results}
+    if args.reproducible:
+        if summary.passed:
+            sec = section("  Reproduction instructions", color=FgColor.header, collapsed=True)
+        else:
+            sec = contextlib.nullcontext()
+        with sec:
+            print(
+                "To reproduce the above build, run the following commands from your local HPCToolkit checkout:"
+            )
+            print(textwrap.indent(reproduction_cmd(variant, args), "    "))
+            if "CI_JOB_IMAGE" in os.environ:
+                print(
+                    "Note that the above uses container tags which may change. See top of job log for exact image digest used."
+                )
+
+    with colorize(summary.color()):
+        print(f"[{summary.icon()}] {summary.summary()}")
+
+    return ok, times
 
 
 def print_stats(times: list[float], prefix: str = ""):
@@ -448,6 +482,29 @@ def print_stats(times: list[float], prefix: str = ""):
         print(f"{prefix}      20% < {qtls[0]:.3f} s | {qtls[3]:.3f} s < 20%")
 
 
+def reproduction_cmd(variant: ConcreteSpecification, args) -> str:
+    chev = "$"
+    lines = []
+    if "CI_JOB_IMAGE" in os.environ:
+        podargs = ["--rm", "-it", "-v", "./:/hpctoolkit"]
+        for vol in args.reproduction_volume:
+            podargs.append("-v")
+            podargs.append(vol)
+        podargs.append(shlex.quote(os.environ["CI_JOB_IMAGE"]))
+        lines.append(f"{chev} podman run {' '.join(podargs)}")
+        chev = "#"
+        lines.append(f"{chev} cd /hpctoolkit")
+
+    for cmd in args.reproduction_cmd:
+        lines.append(chev + " " + shlex.join(shlex.split(cmd)))
+
+    feargs = [";".join(p.as_posix() for p in paths) for paths in args.sources]
+    feargs.append("-1s")
+    feargs.append(str(variant))
+    lines.append(f"{chev} python3 -m ci.buildfe {shlex.join(feargs)}")
+    return "\n".join(lines)
+
+
 def main():
     args = post_parse(build_parser().parse_args())
 
@@ -455,7 +512,7 @@ def main():
 
     depcfg = DependencyConfiguration()
     for src in args.sources:
-        load_src(depcfg, src, args.spack_args, args.dry_run)
+        load_src(depcfg, src, not args.spack_no_install, args.spack_args, args.dry_run)
 
     if args.dry_run:
         print(f"For each of the following {len(variants)} configurations:")
@@ -474,6 +531,8 @@ def main():
         if cfg is None:
             if not unsat:
                 all_ok = False
+            if len(variants) > 1:
+                print()  # Blank line between configuration stanzas
             continue
         if unsat:
             all_ok = False
@@ -486,8 +545,11 @@ def main():
             ts.append(t)
             times[a] = ts
 
+        if len(variants) > 1:
+            print()  # Blank line between configuration stanzas
+
     if len(variants) > 1:
-        with section("Performance statistics", collapsed=True):
+        with section("Performance statistics", color=FgColor.info, collapsed=True):
             for i, a in enumerate(args.action):
                 if a in times:
                     print(f"{i+1}/{len(args.action)}: {a.name()}")

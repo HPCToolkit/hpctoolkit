@@ -109,6 +109,7 @@ repos:
     - 'prospector[with_mypy]'
     # Some of our dependencies (needed in the virtual env for pylint to work)
     - ruamel.yaml
+    - podman
     exclude: '(^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$|_test\.py$)'
 
 - repo: https://github.com/shellcheck-py/shellcheck-py

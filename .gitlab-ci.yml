@@ -9,8 +9,12 @@ workflow:
 
 
 stages:
+- deps:generate
+- deps:prep
+- deps:build
+- deps:package
+- deps
 - validate
-- dependencies
 - test
 - extended test
 - lint
@@ -139,25 +143,16 @@ autoreconf check:
     - export PATH="$SPACK_ROOT"/bin:"$PATH"
   - echo -e "\e[0Ksection_end:`date +%s`:spack_clone_init\r\e[0K"
 
-# Build jobs require a working Spack with access to the buildcache. This (very long) job handles all
-# the common setup pieces that go into that.
-.buildcache-job:
+# Build jobs require a working Spack and compilers and a few other bits. This job handles that setup.
+.build-job:
   cache:
   - !reference [.spack, cache]
-  - &bcjob_cache1
-    key: bcjob-$CI_JOB_IMAGE
+  - key: pkgs-$IMAGE_BASE
     when: always
     paths:
     - .apt-cache/
     - .pip-cache/
-    - .spack-bincache-shared/
-  - &bcjob_cache2
-    key: bcjob-$CI_JOB_IMAGE-$CI_COMMIT_REF_SLUG
-    when: always
-    paths:
-    - .spack-bincache-nonprotected/
-  - &bcjob_cache3
-    key: bcjob-$CI_JOB_IMAGE-$JOB_CC
+  - key: ccache-$IMAGE_BASE$IMAGE_EXT-$JOB_CC
     when: always
     paths:
     - .ccache/
@@ -171,38 +166,12 @@ autoreconf check:
 
   before_script:
   # Make sure we have the basic set of utilities required to launch Spack and build stuff
-  - ci/scripts/ensure-present.sh make git curl cc file patchelf python3 eatmydata py:boto3 py:clingo ${JOB_CC:+ccache}
+  - >-
+    ci/scripts/ensure-present.sh make git curl cc file patchelf python3 eatmydata
+    py:boto3 py:clingo ${JOB_CC:+ccache} ${IMAGE_EXT:+py:podman}
 
   # Unpack and instantiate Spack here
   - !reference [.spack, before_script]
-
-  - echo -e "\e[0Ksection_start:`date +%s`:spack_buildcache_config[collapsed=true]\r\e[0KSpack buildcache configuration"
-  - - ci/dependencies/spack-bc-downstream.sh
-    # Configure the local binary cache to cache binaries
-    - |
-      cat > .spack-bincache-config.yml <<EOF
-      config:
-        local_binary_cache:
-        - prefixes: ['${SBCACHE_URL}/nonprotected']
-          root: '${CI_PROJECT_DIR}/.spack-bincache-nonprotected/'
-        - root: '${CI_PROJECT_DIR}/.spack-bincache-shared/'
-      EOF
-    - spack config --scope site add -f .spack-bincache-config.yml
-    - rm .spack-bincache-config.yml
-    # Make sure Spack has a GCC available. Oddly enough, this command will run `spack compiler find` internally,
-    # but only if needed.
-    - spack compiler info gcc
-    # Mark down the OS and arch, as used in the concretized environment paths
-    - os="$(spack arch --operating-system)"
-    - |
-      case "$(spack arch --generic-target)" in
-      x86_64*) arch=amd64; ;;
-      aarch64) arch=arm64; ;;
-      ppc64le) arch=ppc64le; ;;
-      *) echo "Unknown generic target: $(spack arch --generic-target)"; exit 1; ;;
-      esac
-    - concrete=/c/$os/$arch/
-  - echo -e "\e[0Ksection_end:`date +%s`:spack_buildcache_config\r\e[0K"
 
   - if test -n "$JOB_CC"; then
   - - echo -e "\e[0Ksection_start:`date +%s`:ccache_init[collapsed=true]\r\e[0KCompiler and ccache initialization"
@@ -240,49 +209,33 @@ autoreconf check:
     - echo -e "\e[0Ksection_end:`date +%s`:ccache_init\r\e[0K"
   - fi
 
-  - &postjob
-    - ci/scripts/network-stats.sh .netstats.txt
-
   after_script:
-  # Report statistics on how much ccache helped in this job
-  - CCACHE_DIR="$(realpath .ccache/)" ccache --show-stats || true
-  - CCACHE_DIR="$(realpath .ccache/)" ccache --show-compression || true
   # Zero the statistics to lower GitLab cache thrashing
-  - CCACHE_DIR="$(realpath .ccache/)" ccache --zero-stats || true
-
-.buildcache-job-derivative:
-  extends: .buildcache-job
-  cache:
-  - !reference [.spack, cache]
-  - <<: *bcjob_cache1
-    key: bcjob-$BASE_IMAGE
-  - <<: *bcjob_cache2
-    key: bcjob-$BASE_IMAGE-$CI_COMMIT_REF_SLUG
-  - *bcjob_cache3
+  - CCACHE_DIR="$(realpath .ccache/)" ccache --zero-stats
 
 # Build many versions of the codebase, to ensure all the various compilations work
 # As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
 # at a time. With the exception of +debug, which is flipped at will.
 .buildmany:
   stage: test
-  extends: .buildcache-job
+  extends: .build-job
   tags: [docker, linux/$ARCH]
-  image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
+  image: $DEPS_IMAGES-$IMAGE_BASE-$ARCH
 
+  before_script:
+  - !reference [.build-job, before_script]
+  - REPROD_ARGS=(--reproduction-cmd 'touch img-config')
   script:
   - touch img-config
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   - >-
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s "$SPEC"
+    img-config "ci/dependencies/latest;/spack/cenv/latest" --spack-no-install --ccache-stats
+    --reproducible "${REPROD_ARGS[@]}" -s "$SPEC"
   - >-
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
-    img-config "ci/dependencies/minimum;ci/dependencies/minimum/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    -s "$SPEC"
-  - *postjob
+    img-config "ci/dependencies/minimum;/spack/cenv/minimum" --spack-no-install --ccache-stats
+    --reproducible "${REPROD_ARGS[@]}" -s "$SPEC"
 
   artifacts:
     paths:
@@ -296,8 +249,7 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
+  - 'deps: [amd64]'
 .buildmany.arm64:
   extends: .buildmany
   variables:
@@ -305,107 +257,131 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - generate_deps.arm64
-  - build_deps.arm64
+  - 'deps: [arm64]'
 
 'buildmany: [amd64]':
   extends: .buildmany.amd64
   parallel:
     matrix:
-    - IMAGE: almalinux8
+    - IMAGE_BASE: almalinux8
       JOB_CC: gcc=8
 
-    - IMAGE: leap15
+    - IMAGE_BASE: leap15
       JOB_CC: gcc-11
 
-    - IMAGE: ubuntu20.04
+    - IMAGE_BASE: ubuntu20.04
       JOB_CC: [gcc-9, gcc-10, clang-10]
 
-    - IMAGE: fedora36
+    - IMAGE_BASE: fedora36
       JOB_CC: [gcc=12, clang=14]
   variables:
     SPEC: '~cuda ~rocm ~level0 (tests2 mpi papi opencl)[~<1]'
-
 'buildmany: [arm64]':
   extends: .buildmany.arm64
   parallel:
     matrix:
-    - IMAGE: ubuntu20.04
+    - IMAGE_BASE: ubuntu20.04
       JOB_CC: [gcc-10]
   variables:
     SPEC: '~cuda ~rocm ~level0 +debug +tests2 (mpi papi opencl)[~<1]'
 
 'buildmany: [amd64, +cuda]':
-  extends: [.buildmany.amd64, .buildcache-job-derivative]
+  extends: .buildmany.amd64
+  services: &podman_service
+  - name: quay.io/podman/stable
+    entrypoint: ['/usr/bin/sudo', '-u', 'podman', 'podman', 'system', 'service', '-t', '0', 'tcp://0.0.0.0:7000']
+    alias: podman
   image: nvcr.io/nvidia/cuda:$CUDA-devel-ubuntu20.04
   parallel:
     matrix:
     - CUDA: [11.8.0]
   variables:
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    IMAGE_BASE: ubuntu20.04
+    IMAGE_EXT: +cuda
     JOB_CC: gcc-9
     SPEC: '+cuda ~rocm ~level0 +tests2 (mpi papi opencl)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
-
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
-
+  # Pull dependencies from the base image
+  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 'buildmany: [amd64, +cuda]: [10.2]':
-  extends: [.buildmany.amd64, .buildcache-job-derivative]
+  extends: .buildmany.amd64
+  services: *podman_service
   image: registry.gitlab.com/hpctoolkit/ci-images/almalinux8-cuda10.2:amd64
   variables:
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:amd64
+    IMAGE_BASE: almalinux8
+    IMAGE_EXT: +cuda
     JOB_CC: gcc=8
     SPEC: '+cuda ~rocm ~level0 ~tests2 (mpi papi opencl)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
-
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
+  # Pull dependencies from the base image
+  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
 'buildmany: [amd64, +rocm]':
-  extends: [.buildmany.amd64, .buildcache-job-derivative]
+  extends: .buildmany.amd64
+  services: *podman_service
   image: docker.io/rocm/dev-ubuntu-20.04:$ROCM
   parallel:
     matrix:
     - ROCM: [5.2.3]
   variables:
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    IMAGE_BASE: ubuntu20.04
+    IMAGE_EXT: +rocm
     JOB_CC: gcc-9
     SPEC: '~cuda +rocm ~level0 +tests2 (mpi papi opencl)[~<1]'
-
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
+  # Pull dependencies from the base image
+  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGs+=(--reproduction-cmd "echo '--with-rocm=/opt/rocm' > img-config")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
 'buildmany: [amd64, +level0]':
-  extends: [.buildmany.amd64, .buildcache-job-derivative]
+  extends: .buildmany.amd64
+  services: *podman_service
   image: docker.io/intel/oneapi-basekit:$ONEAPI-devel-ubuntu20.04
   tags: [docker, linux/amd64]
   parallel:
     matrix:
     - ONEAPI: ['2022.2']
   variables:
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:amd64
+    IMAGE_BASE: ubuntu20.04
+    IMAGE_EXT: +intel
     JOB_CC: gcc-9
     SPEC: '~cuda ~rocm +level0 +tests2 (mpi papi opencl)[~<1]'
-
   before_script:
   # The base Intel image has some extra elements on the PATH, make sure /usr/local/bin takes precdence
   - export PATH=/usr/local/bin:"$PATH"
   - !reference [.buildmany.amd64, before_script]
   # Pull Level 0 (part of OneAPI) from the image itself
   - echo '--with-level0=/usr' > img-config
+  # Pull dependencies from the base image
+  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGs+=(--reproduction-cmd "echo '--with-level0=/usr' > img-config")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
 
 # Build single versions of the codebase and run unit tests through `make check`
 .check job:
   stage: test
-  extends: .buildcache-job
+  extends: .build-job
 
   variables:
     # OpenMPI refuses to run as user 0 without these options set.
@@ -416,10 +392,10 @@ autoreconf check:
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
-    img-config "ci/dependencies/latest;ci/dependencies/latest/$concrete"
-    --spack-args='--use-buildcache=only --no-check-signature --fail-fast' --ccache-stats
-    --test-junit-copyout -1 -s "$SPEC"
-  - *postjob
+    img-config "ci/dependencies/latest;/spack/cenv/latest"
+    --spack-no-install --ccache-stats --test-junit-copyout
+    --reproducible ${REPROD_CMDS:- --reproduction-cmd 'touch img-config'}
+    -1 -s "$SPEC"
 
   artifacts:
     reports:
@@ -435,8 +411,7 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - generate_deps.amd64
-  - build_deps.amd64
+  - 'deps: [amd64]'
 .check job arm64:
   extends: .check job
   variables:
@@ -444,8 +419,7 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
-  - generate_deps.arm64
-  - build_deps.arm64
+  - 'deps: [arm64]'
 
 # NB: We use --repeat in the check jobs to detect bugs that cause sporadic test failures.
 # We chose --repeat 7, since this statistically provides:
@@ -463,7 +437,7 @@ autoreconf check:
 'check amd64: [cpu]':
   extends: .check job amd64
   tags: [docker, linux/$ARCH]
-  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
+  image: $DEPS_IMAGES-ubuntu20.04-$ARCH
   variables:
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
@@ -471,41 +445,57 @@ autoreconf check:
 'check arm64: [cpu]':
   extends: .check job arm64
   tags: [docker, linux/$ARCH]
-  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
+  image: $DEPS_IMAGES-ubuntu20.04-$ARCH
   variables:
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
     MESON_TEST_OPTS: '--maxfail 10'
+
 'check amd64: [+cuda]':
-  extends: [.check job amd64, .buildcache-job-derivative]
+  extends: .check job amd64
+  services: *podman_service
   image: nvcr.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
   tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
+    IMAGE_BASE: ubuntu20.04
+    IMAGE_EXT: +cuda
     JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
     SPEC: +tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0
     MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite cuda'
   before_script:
   - !reference [.check job amd64, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
+  # Pull dependencies from the base image
+  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+
 'check amd64: [+rocm]':
-  extends: [.check job amd64, .buildcache-job-derivative]
+  extends: .check job amd64
+  services: *podman_service
   image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
   tags: [docker, linux/$ARCH, gpu/amd/usrspace:5.2]
   variables:
+    IMAGE_BASE: ubuntu20.04
+    IMAGE_EXT: +cuda
     JOB_CC: gcc-9
-    BASE_IMAGE: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
     SPEC: +tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0
     MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite rocm'
   before_script:
   - !reference [.check job amd64, before_script]
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
+  # Pull dependencies from the base image
+  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGs+=(--reproduction-cmd "echo '--with-rocm=/opt/rocm' > img-config")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
 
 # Perform linting tasks that can only be done when the whole build is complete
-lint:
+.lint:
   stage: lint
   needs:
   - 'buildmany: [amd64]'
@@ -532,23 +522,18 @@ lint:
 # Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
 # Failures are allowed so that if the dependencies or build flags shift, we are made aware (by a
 # big orange exclaimation point) but not blocked by upstream Spack.
-spack install:
+'spack install: [amd64]':
   stage: lint
-  extends: .buildcache-job
-  tags: [docker, linux/$ARCH]
-  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
-  parallel:
-    matrix:
-    - ARCH: [amd64]
-
-  needs: []
-
+  extends: .spack
+  tags: [docker, linux/amd64]
+  image: $DEPS_IMAGES-ubuntu20.04-amd64
+  needs: ['deps: [amd64]']
   allow_failure: true
   script:
-  # Spack out a representative HPCToolkit. All dependencies should be in the buildcache.
+  # Spack out a representative HPCToolkit. All dependencies should already be built.
   # TODO: Expand this list a bit sometime to better represent what we want to ensure works
   - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"
   - >-
-    eatmydata spack install --no-check-signature --fail-fast --use-buildcache=package:never,dependencies:only
+    eatmydata spack install --fail-fast
     "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
     "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"

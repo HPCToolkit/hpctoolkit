@@ -35,4 +35,4 @@ if test "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" != "$CI_DEFAULT_BRANCH" \
     || exit $?
 fi
 
-spack mirror list
+spack mirror list --scope site
