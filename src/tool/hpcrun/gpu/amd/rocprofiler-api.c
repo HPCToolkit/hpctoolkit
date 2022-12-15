@@ -451,7 +451,6 @@ roctracer_codeobj_callback
     evt_data->codeobj.load_size,
     evt_data->codeobj.load_delta,
     uri);
-  free((void*)uri);
 }
 
 //******************************************************************************
