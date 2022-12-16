@@ -242,7 +242,7 @@ deps:build arm64:
   - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; exit 0; fi
   - fi
   # 3. Reuse from a previous pipeline on this branch/MR
-  - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; fi
+  - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; else PREFIX=nonprot-; fi
   - DEPS_IMAGES="$CI_REGISTRY_IMAGE/ci:$PREFIX$CI_COMMIT_REF_SLUG"
   - if cmp_img; then echo "DEPS_IMAGES=$DEPS_IMAGES" > $IMAGE-$ARCH.env; exit 0; fi
   # Otherwise, continue along assuming an image tag prefix unique to this pipeline
@@ -307,7 +307,7 @@ deps:build arm64:
   before_script:
   - yum install -y diffutils
   script:
-  - if ! test -e *.env; then
+  - if ! stat -t *.env >/dev/null 2>&1; then
   - # We didn't build this time, so we are expecting to be able to reuse a prior image. Search for
     # any suitable images and mark down the needed prefixes.
     - |
@@ -372,7 +372,7 @@ publish deps:
   - for df in *.digest; do
   - # Compose the source image and destination tag that we will publish
     - src="$CI_REGISTRY_IMAGE/ci@$(cat $df)"
-    - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; fi
+    - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; else PREFIX=nonprot-; fi
     - dst="$CI_REGISTRY_IMAGE/ci:$PREFIX$CI_COMMIT_REF_SLUG-$(basename "$df" .digest)"
     - echo "Publishing $src as $dst..."
     - sudo -u podman podman pull "$src"
