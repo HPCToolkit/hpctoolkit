@@ -369,7 +369,7 @@ publish deps:
   before_script:
   - sudo -u podman podman login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-  - for df in *.digest; do
+  - find . -type f -maxdepth 1 -name '*.digest' | while read df; do
   - # Compose the source image and destination tag that we will publish
     - src="$CI_REGISTRY_IMAGE/ci@$(cat $df)"
     - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; else PREFIX=nonprot-; fi
