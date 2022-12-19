@@ -4885,9 +4885,12 @@ case "$ROCM" in
     fi
 
     # HSA
-    if test -f "$ROCM/include/hsa/hsa.h" ; then
-      AC_MSG_NOTICE([found $ROCM/include/hsa/hsa.h])
-      ROCM_HSA_IFLAGS="-I$ROCM/include/hsa"
+    # FIXME: as of rocm 5.2/5.3, this was not fully switched over,
+    # so temporarily use both paths.
+    if test -f "$ROCM/include/hsa/hsa.h" || test -f "$ROCM/include/hsa.h"
+    then
+      AC_MSG_NOTICE([found $ROCM: hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM/include -I$ROCM/include/hsa"
       ROCM_HSA_INC_MESG="$ROCM/hsa"
       found=yes
     fi
@@ -5002,9 +5005,11 @@ case "$ROCM_HSA" in
     require_rocm=yes
     found=no
 
-    if test -f "$ROCM_HSA/include/hsa/hsa.h" ; then
-      AC_MSG_NOTICE([found $ROCM_HSA/include/hsa/hsa.h])
-      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
+    # FIXME: again, temporarily use both paths
+    if test -f "$ROCM_HSA/include/hsa/hsa.h" || test -f "$ROCM_HSA/include/hsa.h"
+    then
+      AC_MSG_NOTICE([found $ROCM_HSA: hsa.h])
+      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include -I$ROCM_HSA/include/hsa"
       ROCM_HSA_INC_MESG="$ROCM_HSA"
       found=yes
     fi

@@ -23891,10 +23891,13 @@ $as_echo "$as_me: found $ROCM/rocprofiler/lib/librocprofiler64.so" >&6;}
     fi
 
     # HSA
-    if test -f "$ROCM/include/hsa/hsa.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/hsa/hsa.h" >&5
-$as_echo "$as_me: found $ROCM/include/hsa/hsa.h" >&6;}
-      ROCM_HSA_IFLAGS="-I$ROCM/include/hsa"
+    # FIXME: as of rocm 5.2/5.3, this was not fully switched over,
+    # so temporarily use both paths.
+    if test -f "$ROCM/include/hsa/hsa.h" || test -f "$ROCM/include/hsa.h"
+    then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM: hsa.h" >&5
+$as_echo "$as_me: found $ROCM: hsa.h" >&6;}
+      ROCM_HSA_IFLAGS="-I$ROCM/include -I$ROCM/include/hsa"
       ROCM_HSA_INC_MESG="$ROCM/hsa"
       found=yes
     fi
@@ -24020,10 +24023,12 @@ case "$ROCM_HSA" in
     require_rocm=yes
     found=no
 
-    if test -f "$ROCM_HSA/include/hsa/hsa.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HSA/include/hsa/hsa.h" >&5
-$as_echo "$as_me: found $ROCM_HSA/include/hsa/hsa.h" >&6;}
-      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
+    # FIXME: again, temporarily use both paths
+    if test -f "$ROCM_HSA/include/hsa/hsa.h" || test -f "$ROCM_HSA/include/hsa.h"
+    then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HSA: hsa.h" >&5
+$as_echo "$as_me: found $ROCM_HSA: hsa.h" >&6;}
+      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include -I$ROCM_HSA/include/hsa"
       ROCM_HSA_INC_MESG="$ROCM_HSA"
       found=yes
     fi
