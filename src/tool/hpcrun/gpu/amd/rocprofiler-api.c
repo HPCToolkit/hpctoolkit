@@ -561,10 +561,8 @@ rocprofiler_bind
 #undef ROCPROFILER_BIND
 
   hpcrun_force_dlopen(true);
-  //if (getenv("HPCRUN_LIST_EVENT")) {
-    CHK_DLOPEN(hsa, "libhsa-runtime64.so", RTLD_NOW | RTLD_GLOBAL);
-    hsa_init();
-  //}
+  CHK_DLOPEN(hsa, "libhsa-runtime64.so", RTLD_NOW | RTLD_GLOBAL);
+  hsa_init();
   hpcrun_force_dlopen(false);
 
   return DYNAMIC_BINDING_STATUS_OK;
