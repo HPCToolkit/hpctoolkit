@@ -223,6 +223,7 @@ __attribute__ ((unused));
 int lush_metrics = 0; // FIXME: global variable for now
 
 bool hpcrun_no_unwind = false;
+bool hpcrun_local_rank_disabled = false;
 
 /******************************************************************************
  * (public declaration) thread-local variables
@@ -301,6 +302,22 @@ bool hpcrun_local_rank_enabled()
     return false;
   }
   return true;
+}
+
+
+static const char *
+hpcrun_event_list()
+{
+  const char *event_list = getenv("HPCRUN_EVENT_LIST");
+  return event_list;
+}
+
+
+static bool
+hpcrun_output_event_list()
+{
+  bool output_event_list = strcmp(hpcrun_event_list(), "LIST") == 0;
+  return output_event_list;
 }
 
 //
@@ -986,6 +1003,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   if (!hpcrun_local_rank_enabled()) {
     hpcrun_set_disabled();
+    hpcrun_local_rank_disabled = true;
   }
 
   // We initialize the load map and fnbounds before registering sample source.
@@ -993,11 +1011,12 @@ monitor_init_process(int *argc, char **argv, void* data)
   // which will trigger our library monitoring code and fnbound queries
   hpcrun_initLoadmap();
 
-  // We do not want creating the measurement directory when
+  // We do not want to create the measurement directory when
   // the user only wants to see the complete event list
-  if (getenv("HPCRUN_LIST_EVENT")) {
+  if (hpcrun_output_event_list()) {
     hpcrun_set_disabled();
   }
+
   // We need to initialize messages related functions and set up measurement directory,
   // so that we can write vdso and prevent fnbounds print messages to the terminal.
   messages_init();
@@ -1045,8 +1064,10 @@ monitor_at_main()
 {  
   bool is_child = false;
 
-  if (hpcrun_get_disabled()) {
-    return;
+  if (!hpcrun_output_event_list()) {
+    if (hpcrun_local_rank_disabled) {
+      return;
+    }
   }
 
   hpcrun_prepare_measurement_subsystem(is_child);
@@ -1083,10 +1104,9 @@ void hpcrun_prepare_measurement_subsystem(bool is_child)
     // the same setting governs whether or not fnbounds is needed or used.
     hpcrun_no_unwind = hpcrun_get_env_bool("HPCRUN_NO_UNWIND");
 
-    char* s = getenv(HPCRUN_EVENT_LIST);
-
     if (hpcrun_identify_sample_sources) {
-      hpcrun_sample_sources_from_eventlist(s);
+      char *event_list = strdup(hpcrun_event_list());
+      hpcrun_sample_sources_from_eventlist(event_list);
       hpcrun_identify_sample_sources = false;
     }
 
@@ -1269,6 +1289,7 @@ monitor_thread_pre_create(void)
 {
   if (!hpcrun_local_rank_enabled()) {
     hpcrun_set_disabled();
+    hpcrun_local_rank_disabled = true;
   }
 
   // N.B.: monitor_thread_pre_create() can be called before
