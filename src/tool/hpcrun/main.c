@@ -782,8 +782,12 @@ hpcrun_fini_internal()
 
     TMSG(FINI, "process attempting sample shutdown");
 
-    SAMPLE_SOURCES(stop);
-    SAMPLE_SOURCES(shutdown);
+    bool is_monitored_thread = monitor_get_thread_num() != -1;
+
+    if (is_monitored_thread) {
+      SAMPLE_SOURCES(stop);
+      SAMPLE_SOURCES(shutdown);
+    }
 
     // shutdown LUSH agents
     if (lush_agents) {
@@ -806,12 +810,15 @@ hpcrun_fini_internal()
     int is_process = 1;
     thread_finalize(is_process);
 
-    // assign id tuple for main thread
-    thread_data_t* td = hpcrun_get_thread_data();
-    hpcrun_id_tuple_cputhread(td);
+    thread_data_t* td = NULL;
+    if (is_monitored_thread) {
+      // assign id tuple for main thread
+      td = hpcrun_get_thread_data();
+      hpcrun_id_tuple_cputhread(td);
+    }
 
     // write all threads' profile data and close trace file
-    hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
+    hpcrun_threadMgr_data_fini(td);
 
 #ifndef HPCRUN_STATIC_LINK
     auditor_exports->mainlib_disconnect();
