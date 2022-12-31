@@ -53,6 +53,7 @@
 #include "lib/profile/finalizers/kernelsyms.hpp"
 #include "lib/profile/finalizers/struct.hpp"
 #include "include/hpctoolkit-config.h"
+#include "include/hpctoolkit-version.h"
 #include "lib/profile/mpi/all.hpp"
 
 #include "lib/prof-lean/cpuset_hwthreads.h"
@@ -84,7 +85,7 @@ structure data (`-S'), and provide prefix replacements (`-R') as needed.
 static const std::string options = R"EOF(
 General Options:
   -h, --help                  Display this help and exit.
-      --version               Print version information and exit.
+  -V, --version               Print version information and exit.
   -v, --verbose               Enable additional information output.
   -q, --quiet
                               Disable non-error messages. Overrides --verbose.
@@ -169,12 +170,12 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   int arg_foreign = 0;
   struct option longopts[] = {
     // These first ones are more special and must be in this order.
-    {"version", no_argument, NULL, 0},
     {"metric-db", required_argument, NULL, 0},
     {"no-thread-local", no_argument, NULL, 0},
     {"dwarf-max-size", required_argument, NULL, 0},
     {"only-exe", required_argument, NULL, 0},
     // The rest can be in any order
+    {"version", no_argument, NULL, 'V'},
     {"help", no_argument, NULL, 'h'},
     {"verbose", no_argument, NULL, 'v'},
     {"quiet", no_argument, NULL, 'q'},
@@ -200,13 +201,18 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
 
   int opt;
   int longopt;
-  while((opt = getopt_long(argc, argv, "hvqQO:o:j:S:R:n:f:M:", longopts, &longopt)) >= 0) {
+  while((opt = getopt_long(argc, argv, "hVvqQO:o:j:S:R:n:f:M:", longopts, &longopt)) >= 0) {
     switch(opt) {
     case 'h':
       std::cout << "Usage: " << fs::path(argv[0]).filename().string()
                              << " " << summary  // header begins with a '\n'
                 << header << options << footer;
       std::exit(0);
+    case 'V': {
+      std::string prog = fs::path(argv[0]).filename().string();
+      hpctoolkit_print_version(prog.c_str());
+      std::exit(0);
+    }
     case 'v':
       verbosity++;
       break;
@@ -320,11 +326,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     }
     case 0:
       switch(longopt) {
-      case 0:  // --version
-        std::cout << fs::path(argv[0]).filename().string()
-                  << " of HPCToolkit " << version << "\n";
-        std::exit(0);
-      case 1: {  // --metric-db (mutually exclusive with --no-thread-local)
+      case 0: {  // --metric-db (mutually exclusive with --no-thread-local)
         if(seenNoThreadLocal) {
           std::cerr << "Error: --metric-db and --no-thread-local cannot be used together!\n";
           std::exit(2);
@@ -339,7 +341,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         seenMetricDB = true;
         break;
       }
-      case 2:  // --no-thread-local (mutually exclusive with --metric-db)
+      case 1:  // --no-thread-local (mutually exclusive with --metric-db)
         if(seenMetricDB) {
           std::cerr << "Error: --metric-db and --no-thread-local cannot be used together!\n";
           std::exit(2);
@@ -347,7 +349,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         include_thread_local = false;
         seenNoThreadLocal = true;
         break;
-      case 3: {  // --dwarf-max-size
+      case 2: {  // --dwarf-max-size
         char* end;
         double limit = std::strtod(optarg, &end);
         if(end == optarg) {  // Failed conversion
@@ -381,7 +383,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         }
         break;
       }
-      case 4:  // --only-exe
+      case 3:  // --only-exe
         only_exes.emplace(optarg);
         break;
       }
