@@ -67,6 +67,8 @@ static logical_metadata_store_t* metadata = NULL;
 // ---------------------------------------
 
 void hpcrun_logical_init() {
+  metadata = NULL;
+
 #ifdef ENABLE_LOGICAL_PYTHON
   hpcrun_logical_python_init();
 #endif
