@@ -308,14 +308,20 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       void* store = NULL;
       size_t index = 0;
       struct logical_frame_segment_t* subseg = cur->subhead;
-      size_t suboff = cur->subdepth % FRAMES_PER_SEGMENT;
-      while(cur->generator(cur, &store, index, subseg == NULL ? NULL : &subseg->frames[suboff-1], logical_start + index)) {
+      // 1-based index of the current logical frame, or 0 if ran out of frames.
+      size_t subnum = cur->subdepth == 0 ? 0 : ((cur->subdepth-1) % FRAMES_PER_SEGMENT) + 1;
+      assert((subnum == 0 || subseg != NULL) && "Frames without backing frame-segment!");
+      while(cur->generator(cur, &store, index, subnum == 0 ? NULL : &subseg->frames[subnum-1], logical_start + index)) {
         TMSG(LOGICAL_UNWIND, "(logical) ip = %d +%p", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
         assert(index < cur->expected && "Expected number of logical frames is too low!");
         index++;
-        if(suboff > 0) suboff--;
-        if(suboff == 0 && subseg != NULL)
-          subseg = subseg->prev, suboff = FRAMES_PER_SEGMENT;
+        if(subnum > 0) {
+          subnum--;
+          if(subnum == 0) {
+            subseg = subseg->prev;
+            subnum = subseg == NULL ? 0 : FRAMES_PER_SEGMENT;
+          }
+        }
       }
       TMSG(LOGICAL_UNWIND, "(logical) ip = %d +%p",
            (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);

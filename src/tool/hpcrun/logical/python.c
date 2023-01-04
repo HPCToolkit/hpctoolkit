@@ -94,6 +94,7 @@ static logical_metadata_store_t python_metastore;
 static bool python_unwind(logical_region_t* region, void** store,
     unsigned int index, logical_frame_t* in_lframe, frame_t* frame) {
   logical_python_region_t* state = &region->specific.python;
+  assert(in_lframe != NULL);
   logical_python_frame_t* lframe = &in_lframe->python;
   if(state->cfunc != NULL) {
     if(index == 0) {
