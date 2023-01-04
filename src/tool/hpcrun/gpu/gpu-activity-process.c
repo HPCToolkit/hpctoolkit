@@ -292,10 +292,23 @@ gpu_sampling_info_process
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node =
-        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+      cct_node_t *func_ph =
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, gpu_placeholder_type_trace);
+      cct_node_t *kernel_ph =
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, gpu_placeholder_type_kernel);
 
-      attribute_activity(host_op_entry, sri, host_op_node);
+      cct_node_t *func_node = hpcrun_cct_children(func_ph); // only child
+      cct_node_t *kernel_node;
+      if (func_node == NULL) {
+        // in case placeholder doesn't have a child
+        kernel_node = kernel_ph;
+      } else {
+        // find the proper child of kernel_ph
+        cct_addr_t *addr = hpcrun_cct_addr(func_node);
+        kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm, true);
+      }
+
+      attribute_activity(host_op_entry, sri, kernel_node);
     }
     // sample info is the last record for a given correlation id
     bool more_samples =
