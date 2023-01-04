@@ -111,6 +111,7 @@ static bool python_unwind(logical_region_t* region, void** store,
 
   PyFrameObject* pyframe = *store;
   PyCodeObject* code = DL(PyFrame_GetCode)(pyframe);
+  Py_DECREF(code);
   TMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame %p: %s:%d in function %s (starting at line %d)",
        pyframe, DL(PyUnicode_AsUTF8)(code->co_filename),
        DL(PyFrame_GetLineNumber)(pyframe), DL(PyUnicode_AsUTF8)(code->co_name),
@@ -125,10 +126,12 @@ static bool python_unwind(logical_region_t* region, void** store,
     TMSG(LOGICAL_CTX_PYTHON, "Registered the above as Python fid #%x", lframe->fid);
   }
   frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, DL(PyFrame_GetLineNumber)(pyframe));
-  *store = DL(PyFrame_GetBack)(pyframe);
-  if(ENABLED(LOGICAL_CTX_PYTHON) && *store == state->caller && index+1 < region->expected)
+  PyFrameObject* prevframe = DL(PyFrame_GetBack)(pyframe);
+  Py_XDECREF(prevframe);
+  if(ENABLED(LOGICAL_CTX_PYTHON) && prevframe == state->caller && index+1 < region->expected)
     TMSG(LOGICAL_CTX_PYTHON, "Python appears to be missing some frames, got %d of %d (caller = %p)", index+1, region->expected, state->caller);
-  return *store != state->caller;
+  *store = prevframe;
+  return prevframe != state->caller;
 }
 
 // -----------------------------
@@ -168,6 +171,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     IF_ENABLED(LOGICAL_CTX_PYTHON) {
       PyCodeObject* code = DL(PyFrame_GetCode)(frame);
+      Py_DECREF(code);
       TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call of Python function %s (%s:%d), now at frame = %p",
            top == NULL ? -1 : top->expected, top == NULL ? 1 : top->expected+1,
            DL(PyUnicode_AsUTF8)(code->co_name),
@@ -185,6 +189,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
         .beforeenter = {}, .beforeenter_fixup = python_beforeenter,
         .exit = {}, .exit_len = 0, .afterexit = python_afterexit,
       };
+      Py_XDECREF(reg.specific.python.caller);
       hpcrun_logical_frame_cursor(&reg.beforeenter, 2);
       reg.specific.python.lm = reg.beforeenter.pc_norm.lm_id;
       top = hpcrun_logical_stack_push(lstack, &reg);
@@ -224,13 +229,14 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   }
   case PyTrace_RETURN: {
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
-    TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] (about to) return from Python frame = %p, now at frame %p",
-         top->expected, top->expected-1, frame, DL(PyFrame_GetBack)(frame));
     assert(top != NULL && "Python RETURN without a logical stack???");
     PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
+    Py_XDECREF(prevframe);
+    TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] (about to) return from Python frame = %p, now at frame %p",
+         top->expected, top->expected-1, frame, prevframe);
     if(prevframe == top->specific.python.caller) {
       // We are exiting a Python region. Pop it from the stack.
-      hpcrun_logical_substack_settop(lstack, hpcrun_logical_stack_top(lstack), 0);
+      hpcrun_logical_substack_settop(lstack, top, 0);
       hpcrun_logical_stack_pop(lstack, 1);
     } else {
       // Update the top region with the new frame
