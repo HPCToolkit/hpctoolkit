@@ -86,9 +86,8 @@ static const std::string options = R"EOF(
 General Options:
   -h, --help                  Display this help and exit.
   -V, --version               Print version information and exit.
-  -v, --verbose
-                              Enable additional information output.
-                              Repeatable up to -vv.
+  -v, --verbose               Output additional information.
+  -vv                         Output detailed additional information.
   -q, --quiet
                               Disable non-error messages. Overrides --verbose.
                               If repeated will disable all output.
