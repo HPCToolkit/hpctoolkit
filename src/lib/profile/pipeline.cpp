@@ -202,7 +202,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
       [this](stdshim::filesystem::path& sp, const File& f){
         for(ProfileFinalizer& fp: finalizers.resolvedPath) {
           if(auto v = fp.resolvePath(f)) {
-            assert(!v->empty());
+            assert(!v->empty() && v->is_absolute());
             sp = *v;
             break;
           }
@@ -212,7 +212,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
       [this](stdshim::filesystem::path& sp, const Module& m){
         for(ProfileFinalizer& fp: finalizers.resolvedPath) {
           if(auto v = fp.resolvePath(m)) {
-            assert(!v->empty());
+            assert(!v->empty() && v->is_absolute());
             sp = *v;
             break;
           }
