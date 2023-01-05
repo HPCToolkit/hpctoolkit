@@ -3,6 +3,7 @@ strictness: medium
 pylint:
   options:
     enable: 'useless-suppression'
+    extension-pkg-allow-list: [math]
 
 mypy:
   run: true
