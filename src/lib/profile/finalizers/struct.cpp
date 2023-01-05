@@ -501,8 +501,8 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       ud.rcg.emplace(targets, std::move(caller));
     } catch(std::exception& e) {
       util::log::info{} << "Missing callee at 0x" << std::hex << callee
-			<< " when processing Structfile for binary\n  "
-			<< m.path().string();
+                        << " when processing Structfile for binary\n  "
+                        << m.path().string();
     }
   }
 
