@@ -278,8 +278,16 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         std::cerr << "Missing destination prefix in -R '" << optarg << "'!\n";
         std::exit(2);
       }
-      if(!prefixes.emplace(fs::path(from), fs::path(to)).second) {
-        std::cerr << "Duplicate replacement for prefix '" << from << "'!\n";
+      fs::path from_p = std::move(from);
+      fs::path to_p = fs::absolute(std::move(to));
+      if(from_p.is_relative()) {
+        std::cerr << "Source prefix must be absolute in -R '" << optarg << "'!\n";
+        std::exit(2);
+      }
+
+      auto [it, first] = prefixes.emplace(std::move(from_p), std::move(to_p));
+      if(!first) {
+        std::cerr << "Duplicate replacement for prefix '" << it->first.native() << "'!\n";
         std::exit(2);
       }
       break;
