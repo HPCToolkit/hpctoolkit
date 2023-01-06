@@ -278,8 +278,16 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         std::cerr << "Missing destination prefix in -R '" << optarg << "'!\n";
         std::exit(2);
       }
-      if(!prefixes.emplace(fs::path(from), fs::path(to)).second) {
-        std::cerr << "Duplicate replacement for prefix '" << from << "'!\n";
+      fs::path from_p = std::move(from);
+      fs::path to_p = fs::absolute(std::move(to));
+      if(from_p.is_relative()) {
+        std::cerr << "Source prefix must be absolute in -R '" << optarg << "'!\n";
+        std::exit(2);
+      }
+
+      auto [it, first] = prefixes.emplace(std::move(from_p), std::move(to_p));
+      if(!first) {
+        std::cerr << "Duplicate replacement for prefix '" << it->first.native() << "'!\n";
         std::exit(2);
       }
       break;
@@ -702,6 +710,8 @@ static std::pair<bool, fs::path> remove_prefix(const fs::path& path, const fs::p
 
 static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path, stdshim::hash_path>& prefixes,
                                       const fs::path& p) noexcept {
+  if(p.is_relative())
+    return std::nullopt;  // Can't do anything with a relative path
   std::error_code ec;
   for(const auto& ft: prefixes) {
     auto xp = remove_prefix(p, ft.first);
