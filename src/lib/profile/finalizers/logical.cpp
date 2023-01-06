@@ -68,19 +68,40 @@ LogicalFile::classify(Context& parent, NestedScope& ns) noexcept {
     auto mo = ns.flat().point_data();
     const auto& udm = mo.first.userdata[ud];
     if(udm.isLogical) {
-      auto lineno = mo.second & 0xFFFFFFFFULL;
-      auto it = udm.map.find(mo.second >> 32);
-      if(it != udm.map.end()) {
-        if(const auto* prf = std::get_if<std::reference_wrapper<const File>>(&it->second)) {
-          ns.flat() = {prf->get(), lineno};
-        } else if(const auto* pf = std::get_if<const Function>(&it->second)) {
-          ns.flat() = Scope(*pf);
-        } else {
-          // unreachable
-          std::terminate();
-        }
+      auto fid = mo.second >> 32;
+      if(fid == 0) {
+        // Indicates an unknown logical region. Map to (unknown).
+        ns.flat() = Scope();
+        return {std::make_pair(std::nullopt, std::ref(parent))};
       }
-      return {std::make_pair(std::nullopt, std::ref(parent))};
+      auto it = udm.map.find(fid);
+      if(it == udm.map.end()) {
+        // Definitely logical, but not in the list. This is an error, map to (unknown).
+        // TODO: Make an ERROR here
+        ns.flat() = Scope();
+        return {std::make_pair(std::nullopt, std::ref(parent))};
+      }
+      auto lineno = mo.second & 0xFFFFFFFFULL;
+      if(const auto* prf = std::get_if<std::reference_wrapper<const File>>(&it->second)) {
+        // Indicates a line within a File
+        ns.flat() = {prf->get(), lineno};
+        return {std::make_pair(std::nullopt, std::ref(parent))};
+      }
+      if(const auto* pf = std::get_if<const Function>(&it->second)) {
+        // Indicates a line within a Function
+        auto srcloc = pf->sourceLocation();
+        if(lineno == 0 || !srcloc) {
+          // No line or missing file information, skip the line Context.
+          ns.flat() = Scope(*pf);
+          return {std::make_pair(std::nullopt, std::ref(parent))};
+        }
+        Context& func = sink.context(parent, {ns.relation(), Scope(*pf)}).second;
+        ns = {Relation::enclosure, Scope(srcloc->first, lineno)};
+        return {std::make_pair(std::ref(func), std::ref(func))};
+      }
+
+      // unreachable
+      std::terminate();
     }
   }
   return std::nullopt;
