@@ -495,8 +495,16 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
 
   // Now convert the tmp_rcg into the proper rcg
   ud.rcg.reserve(tmp_rcg.size());
-  for(const auto& [callee, caller]: tmp_rcg)
-    ud.rcg.emplace(funcs.at(callee), std::move(caller));
+  for(const auto& [callee, caller]: tmp_rcg) {
+    auto target_it = funcs.find(callee);
+    if(target_it != funcs.end()) {
+      ud.rcg.emplace(target_it->second, std::move(caller));
+    } else {
+      util::log::info{} << "Missing callee at 0x" << std::hex << callee
+                        << " when processing Structfile for binary\n  "
+                        << m.path().string();
+    }
+  }
 
   return true;
 } catch(std::exception& e) {
