@@ -87,6 +87,10 @@
 
 #include "monitor.h"
 
+#ifdef ENABLE_CUDA
+#include "gpu/nvidia/cuda-api.h"
+#endif
+
 
 
 //*****************************************************************************
@@ -144,6 +148,14 @@ typedef struct ompt_device_entry_t {
 } ompt_device_entry_t;
 
 
+typedef int (*ompt_get_code_t)
+(
+ void* host,
+ const void* dev,
+ size_t bytes
+);
+
+
 
 //*****************************************************************************
 // forward declarations
@@ -167,6 +179,7 @@ static ompt_device_entry_t *device_list = 0;
 
 static __thread bool ompt_need_flush = false;
 
+static ompt_get_code_t ompt_get_code;
 
 
 //*****************************************************************************
@@ -507,6 +520,12 @@ ompt_device_initialize(int device_num,
     EEMSG("WARNING: OMPT GPU monitoring not supported by vendor runtime");
   }
 
+#ifdef ENABLE_CUDA
+  if (strncmp(type, "NVIDIA", 6) == 0) {
+    ompt_get_code = cuda_get_code;
+  }
+#endif
+
   device_list_insert(device_num, device);
   ompt_device_map_insert(device_num, device, type);
 }
@@ -532,7 +551,15 @@ ompt_device_load(int device_num,
   PRINT("ompt_device_load->%s, %d\n", filename, device_num);
 
   uint32_t loadmap_module_id;
+  bool do_free = false;
+  if (host_addr == NULL && device_addr != NULL)
+  {
+    host_addr = malloc(bytes);
+    do_free = true;
+    ompt_get_code(host_addr, device_addr, bytes);
+  }
   gpu_binary_save(host_addr, bytes, true /* mark_used */, &loadmap_module_id);
+  if (do_free) free(host_addr);
 }
 
 

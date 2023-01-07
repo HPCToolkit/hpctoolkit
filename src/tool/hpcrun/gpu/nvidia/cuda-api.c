@@ -60,7 +60,6 @@
 #include <stdio.h>
 #include <string.h>    // memset
 
-#include <cuda.h>
 #include <cuda_runtime.h>
 
 
@@ -91,19 +90,19 @@
 
 #define HPCRUN_CUDA_API_CALL(fn, args)                              \
 {                                                                   \
-  CUresult error_result = CUDA_FN_NAME(fn) args;		    \
-  if (error_result != CUDA_SUCCESS) {				    \
+  CUresult error_result = CUDA_FN_NAME(fn) args;                    \
+  if (error_result != CUDA_SUCCESS) {                               \
     ETMSG(CUDA, "cuda api %s returned %d", #fn,                     \
           (int) error_result);                                      \
-    exit(-1);							    \
-  }								    \
+    exit(-1);                                                       \
+  }                                                                 \
 }
 
 
 #define HPCRUN_CUDA_RUNTIME_CALL(fn, args)                          \
 {                                                                   \
-  cudaError_t error_result = CUDA_FN_NAME(fn) args;		    \
-  if (error_result != cudaSuccess) {				    \
+  cudaError_t error_result = CUDA_FN_NAME(fn) args;                 \
+  if (error_result != cudaSuccess) {                                \
     ETMSG(CUDA, "cuda runtime %s returned %d", #fn,                 \
           (int) error_result);                                      \
     exit(-1);							    \
@@ -196,6 +195,19 @@ CUDA_RUNTIME_FN
  )
 );
 
+
+CUDA_RUNTIME_FN
+(
+ cudaMemcpy,
+ ( 
+  void* dst,
+  const void* src,
+  size_t count,
+  enum cudaMemcpyKind kind
+ )
+);
+
+
 #endif
 
 
@@ -224,6 +236,7 @@ cuda_bind
 
   CHK_DLSYM(cudart, cudaGetDevice);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
+  CHK_DLSYM(cudart, cudaMemcpy);
 
   return DYNAMIC_BINDING_STATUS_OK;
 #else
@@ -411,8 +424,12 @@ cuda_get_module
  CUfunction fn
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuFuncGetModule, (mod, fn));
   return 0;
+#else
+  return -1;
+#endif
 }
 
 
@@ -423,6 +440,7 @@ cuda_get_driver_version
  int *minor
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   int version;
 
   HPCRUN_CUDA_API_CALL(cuDriverGetVersion, (&version));
@@ -431,4 +449,24 @@ cuda_get_driver_version
   *minor = version - *major * 1000;
 
   return 0;
+#else
+  return -1;
+#endif  
+}
+
+
+int
+cuda_get_code
+(
+ void* host,
+ const void* dev,
+ size_t bytes
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_RUNTIME_CALL(cudaMemcpy, (host, dev, bytes, cudaMemcpyDeviceToHost));
+  return 0;
+#else
+  return -1;
+#endif
 }

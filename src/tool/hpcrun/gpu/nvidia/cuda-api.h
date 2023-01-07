@@ -115,6 +115,7 @@ cuda_global_pc_sampling_required
   int *required
 );
 
+
 // returns 0 on success
 int
 cuda_get_module
@@ -122,6 +123,7 @@ cuda_get_module
  CUmodule *mod,
  CUfunction fn
 );
+
 
 // returns 0 on success
 int
@@ -131,5 +133,14 @@ cuda_get_driver_version
  int *minor
 );
 
+
+// returns 0 on success
+int
+cuda_get_code
+(
+ void* host,
+ const void* dev,
+ size_t bytes
+);
 
 #endif
