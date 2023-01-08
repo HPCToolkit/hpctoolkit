@@ -557,8 +557,8 @@ static void writeContexts(uint32_t firstCtx, uint32_t lastCtx,
     assert(align(ctxOffsets[ctx_id] + newsz, 4) == ctxOffsets[ctx_id+1]
            && "Final layout doesn't match precalculated ctx_off!");
     buf.reserve(buf.size() + newsz);
-    
-    // Concatinate the prof_idx/value pairs, in bytes form, in metric order
+
+    // Concatenate the prof_idx/value pairs, in bytes form, in metric order
     for(const auto& [mid, pvbuf]: valuebufs)
       buf.insert(buf.end(), pvbuf.begin(), pvbuf.end());
 
@@ -639,7 +639,7 @@ void SparseDB::write() {
           assert((mu.first->scopes() & use) == use && "Inconsistent Metric value usage data!");
           return out + use.count();
         });
-      ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;      
+      ctxOffsets[i] += udc.nMetrics * FMT_CCTDB_SZ_MIdx;
     }
   }
   // All-reduce to get the total size for every context
@@ -648,7 +648,7 @@ void SparseDB::write() {
   const auto ctxStart = align(fHdr.pCtxInfo + fHdr.szCtxInfo, 4);
   stdshim::transform_exclusive_scan(ctxOffsets.begin(), ctxOffsets.end(), ctxOffsets.begin(),
     ctxStart, std::plus<>{},
-    [](uint64_t sz){ return align(sz, 4); });  
+    [](uint64_t sz){ return align(sz, 4); });
 
   // Divide the contexts into ranges of easily distributable sizes
   std::vector<uint32_t> ctxRanges;
@@ -824,7 +824,7 @@ void SparseDB::write() {
           cur += FMT_CCTDB_SZ_CtxInfo;
           ctxid++;
         }
-        
+
         // write context info for context i
         fmt_cctdb_ctxInfo_t cii;
         cii.valueBlock.nMetrics = c.userdata[ud].nMetrics;

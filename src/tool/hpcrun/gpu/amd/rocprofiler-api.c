@@ -415,7 +415,7 @@ initialize_counter_information
   HPCRUN_ROCPROFILER_CALL(rocprofiler_iterate_info,
     (NULL, ROCPROFILER_INFO_KIND_METRIC, total_counter_accumulator, NULL));
 
-  // Allocate infomation array
+  // Allocate information array
   counter_name = (const char**) malloc(total_counters * sizeof(const char*));
   counter_description = (const char**) malloc(total_counters * sizeof(const char*));
 

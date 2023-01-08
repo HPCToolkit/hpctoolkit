@@ -127,7 +127,7 @@ linuxtimer_newsignal
 )
 {
   // avoid signal conflict with papi (2), itimer (3), perf (4)
-  return SIGRTMIN + 5; 
+  return SIGRTMIN + 5;
 }
 
 
@@ -173,4 +173,3 @@ linuxtimer_delete
 
   return ret;
 }
-

@@ -4,12 +4,12 @@
 //
 // Note that the available dynamic memory is strictly tied to available swap
 // space.
-// 
+//
 //***************************************************************************
 
 // csprof_malloc_init: Prepares the private memory management system
 // for use.  This function may be called multiple times; on each
-// successive call, the memory mangement system is reset and all
+// successive call, the memory management system is reset and all
 // contents are lost.  If desired, users may choose initial sizes (in
 // bytes) for the regular ('sz') and temporary ('sz_tmp') memory
 // stores; set these parameters to 1 to use default sizes.  Either of
@@ -28,7 +28,7 @@ int csprof_malloc_fini(csprof_mem_t *);
 // *exact* size (in bytes) requested.  If there is insufficient
 // memory, an attempt will be made to allocate more.  If this is not
 // possible, an error is printed and the program is terminated.
-// 
+//
 // * This memory cannot be freed! *
 void* csprof_malloc(size_t size);
 void* csprof_malloc_threaded(csprof_mem_t *, size_t size);
@@ -36,7 +36,7 @@ void* csprof_malloc_threaded(csprof_mem_t *, size_t size);
 // csprof_tmalloc: Returns a pointer to a block of temporary memory of
 // the *exact* size (in bytes) requested.  If there is insufficient
 // memory, *no attempt* will be made to allocate more and NULL is
-// returned. Temporary memory is allocated analagous to a stack; it
+// returned. Temporary memory is allocated analogous to a stack; it
 // may be freed using 'csprof_tfree' but it *must be* freed in the
 // reverse order of allocation.
 //

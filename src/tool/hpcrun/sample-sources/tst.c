@@ -76,7 +76,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "ss-errno.h"
- 
+
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -121,14 +121,14 @@
 #  if defined(HOST_SYSTEM_IBM_BLUEGENE)
   //--------------------------------------------------------------------------
   // Blue Gene/P compute node support for itimer incorrectly delivers SIGALRM
-  // in one-shot mode. To sidestep this problem, we use itimer in 
-  // interval mode, but with an interval so long that we never expect to get 
-  // a repeat interrupt before resetting it. 
+  // in one-shot mode. To sidestep this problem, we use itimer in
+  // interval mode, but with an interval so long that we never expect to get
+  // a repeat interrupt before resetting it.
   //--------------------------------------------------------------------------
-#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (SECONDS_PER_HOUR) 
+#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (SECONDS_PER_HOUR)
 #    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
 #  else  // !defined(HOST_SYSTEM_IBM_BLUEGENE)
-#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (0) 
+#    define AUTOMATIC_ITIMER_RESET_SECONDS(x)            (0)
 #    define AUTOMATIC_ITIMER_RESET_MICROSECONDS(x)       (0)
 #  endif // !defined(HOST_SYSTEM_IBM_BLUEGENE)
 
@@ -150,7 +150,7 @@ enum _local_const {
 };
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 
 static int
@@ -256,14 +256,14 @@ METHOD_FN(supports_event, const char *ev_str)
 {
   return hpcrun_ev_is(ev_str,"_TST");
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
 
   // fetch the event string for the sample source
   char* _p = METHOD_CALL(self, get_event_str);
-  
+
   //
   // EVENT: Only 1 wallclock event
   //
@@ -297,7 +297,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
-  
+
   // set metric information in metric table
 
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
@@ -313,7 +313,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   METHOD_CALL(self, store_metric_id, _TST_EVENT, metric_id);
   TMSG(_TST_CTL, "setting metric _TST, period = %ld", sample_period);
   if (lush_metrics == 1) {
-    int mid_idleness = 
+    int mid_idleness =
       hpcrun_set_new_metric_info_and_period(tst_kind, "idleness (ms)",
         MetricFlags_ValFmt_Real, sample_period, metric_property_none);
     lush_agents->metric_idleness = mid_idleness;
@@ -377,7 +377,7 @@ METHOD_FN(display_events)
 #include "ss_obj.h"
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 static int

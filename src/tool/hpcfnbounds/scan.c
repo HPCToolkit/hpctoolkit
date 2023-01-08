@@ -49,7 +49,7 @@
 #include <scan.h>
 #include <endian.h>
 
-uint64_t 
+uint64_t
 decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t *adv, char *errString)
 {
   uint64_t unsignedBaseAddr, unsignedFunctionAddr, unsignedRelAddr;
@@ -160,8 +160,8 @@ decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t 
 
 }
 
-int64_t 
-decodeSLEB128(uint8_t *input, uint64_t *adv) 
+int64_t
+decodeSLEB128(uint8_t *input, uint64_t *adv)
 {
   int64_t result;  // always ret int64, the caller will conv to i32 if required
   uint64_t shift, size;
@@ -179,10 +179,10 @@ decodeSLEB128(uint8_t *input, uint64_t *adv)
     ++ladv;
     result |= (byte & 0x7f) << shift;
     shift += 7;
-    
+
   } while (byte & 0x80);
 
-  if ((shift < size) && (byte & 0x40)) { // 0x40 is the sign bit 
+  if ((shift < size) && (byte & 0x40)) { // 0x40 is the sign bit
     result |= (~0ull << shift);  // sign extend
   }
 
@@ -197,8 +197,8 @@ decodeSLEB128(uint8_t *input, uint64_t *adv)
 
 }
 
-uint64_t 
-decodeULEB128(uint8_t *input, uint64_t *adv) 
+uint64_t
+decodeULEB128(uint8_t *input, uint64_t *adv)
 {
   uint64_t result, shift, size;
   uint8_t byte;
@@ -314,7 +314,7 @@ unalignedEndianRead(uint8_t *stream, size_t size, uint64_t sign)
         }
         return r;
         break;
-      // 
+      //
       // if size was funky, just fall through without returning
       //
       default:
@@ -363,7 +363,7 @@ unalignedEndianRead(uint8_t *stream, size_t size, uint64_t sign)
       }
     }
   }
-    
+
 #endif
 #endif
 
@@ -382,7 +382,7 @@ pltscan(Elf *e, GElf_Shdr secHead)
   if (skipSectionScan(e, secHead, pltscan_f) == SC_SKIP) {
     return SC_SKIP;
   }
-  
+
   startAddr = secHead.sh_addr;
   endAddr = startAddr + secHead.sh_size;
   pltEntrySize = secHead.sh_entsize;
@@ -416,7 +416,7 @@ pltsecscan(Elf *e, GElf_Shdr secHead)
   if (skipSectionScan(e, secHead, pltsecscan_f) == SC_SKIP) {
     return SC_SKIP;
   }
-  
+
   startAddr = secHead.sh_addr;
   endAddr = startAddr + secHead.sh_size;
   pltEntrySize = secHead.sh_entsize;
@@ -444,7 +444,7 @@ initscan(Elf *e, GElf_Shdr secHead)
   if (skipSectionScan(e, secHead, initscan_f) == SC_SKIP) {
     return SC_SKIP;
   }
-  
+
   // NOT YET IMPLEMENTED
   if(verbose> 1) {
     fprintf (stderr, "FNB2: \tscanning .init instructions not yet implemented\n");
@@ -460,7 +460,7 @@ textscan(Elf *e, GElf_Shdr secHead)
   if (skipSectionScan(e, secHead, textscan_f) == SC_SKIP) {
     return SC_SKIP;
   }
-  
+
   // NOT YET IMPLEMENTED
   if(verbose> 1) {
     fprintf (stderr, "FNB2: \tscanning .text instructions not yet implemented\n");
@@ -476,7 +476,7 @@ finiscan(Elf *e, GElf_Shdr secHead)
   if (skipSectionScan(e, secHead, finiscan_f) == SC_SKIP) {
     return SC_SKIP;
   }
-  
+
   // NOT YET IMPLEMENTED
   if(verbose> 1) {
     fprintf (stderr, "FNB2: \tscanning .fini instructions not yet implemented\n");
@@ -492,7 +492,7 @@ altinstr_replacementscan(Elf *e, GElf_Shdr secHead)
   if (skipSectionScan(e, secHead, altinstr_replacementscan_f) == SC_SKIP) {
     return SC_SKIP;
   }
-  
+
   // NOT YET IMPLEMENTED
   if(verbose> 1) {
     fprintf (stderr, "\tFNB2: scanning .altinstr_replacement instructions not yet implemented\n");
@@ -535,7 +535,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   static char elfFailMess[] = {"Error in eh_frame handling, aborting scan.  libelf failed with "};
 
 
-  // don't process non-existant section
+  // don't process non-existent section
   if (ehRecord->ehFrameSection == NULL) {
     return SC_SKIP;
   }
@@ -544,13 +544,13 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
     fprintf(stderr, "FNB2: %s %s\n", elfFailMess, elf_errmsg(-1));
     return SC_SKIP;
   }
-    
+
   if (skipSectionScan(e, ehSecHead, ehframeread_f) == SC_SKIP) {
     return SC_SKIP;
   }
   //
   // we may need these depending on the FDE encode field.
-  // the other parts of decodeRecord must be set before each 
+  // the other parts of decodeRecord must be set before each
   // call to decodeDwarfAddress.
   //
   decodeRecord.textSecAddr = 0ull;
@@ -631,11 +631,11 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
     recType = *(pw + EHF_WO_TYPE);
 
     //
-    // if this is a CIE, we need to read through all the variable length records 
-    // in order to find the fdeEnc.  That's why we use cieOffset and a...  We don't actually need 
+    // if this is a CIE, we need to read through all the variable length records
+    // in order to find the fdeEnc.  That's why we use cieOffset and a...  We don't actually need
     // some of the values here, but we have to decode them in order to find our place in the
     // byte stream, then let the optimizer throw them out.
-    // 
+    //
     if (recType == EHF_TP_CIE) {
       cieTable[kc].cieBaseAddress = recordOffset;
       cieTable[kc].cieSize = recLen + extra;
@@ -698,7 +698,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       }
       cieOffset += a;
 
-      // 
+      //
       // Now process each byte of the augData according to the augString
       //
       cieTable[kc].cieContainsType.R = EHF_CIE_FALSE;
@@ -734,19 +734,19 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
             cieTable[kc].cieContainsType.L = EHF_CIE_TRUE;
             fdeEnc = *(pb+cieOffset);
             cieTable[kc].cieFDEEncType.L = fdeEnc;
-            ++cieOffset;  
+            ++cieOffset;
             ++b;
             break;
           case 'R':
             cieTable[kc].cieContainsType.R = EHF_CIE_TRUE;
             fdeEnc = *(pb+cieOffset);
             cieTable[kc].cieFDEEncType.R = fdeEnc;
-            ++cieOffset;  
+            ++cieOffset;
             ++b;
             break;
           case 'S':
             //
-            // non-zero stack offet, see the dot-h
+            // non-zero stack offset, see the dot-h
             //
             cieTable[kc].cieAddressOffset = EHF_FORWARD_OFF;
             ++b;
@@ -765,8 +765,8 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
       //
       // the cie count is also the index into the cieTable, that is the max
-      // defined CIE.  If the below condition happens, we need to increase the size of 
-      // the table.  This seems unlikely, but if it happens it might be a good idea to 
+      // defined CIE.  If the below condition happens, we need to increase the size of
+      // the table.  This seems unlikely, but if it happens it might be a good idea to
       // increase EHF_MAX_CIE so there is no realloc here.
       //
       ++kc;
@@ -789,10 +789,10 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       //
       // determine to which CIE this FDE belongs. recType contains the offset to the CIE address
       // from that point in the stream.  Since we don't expect a huge amount of CIEs, just leaf
-      // through them to find the right one.  (In theory the actual CIE should be near the last 
+      // through them to find the right one.  (In theory the actual CIE should be near the last
       // one used in the list, this would be a performance enhancement).
       //
-      cieAddress = recordOffset + sizeof(recLen) - recType; 
+      cieAddress = recordOffset + sizeof(recLen) - recType;
 
       for (kk = 0; kk < kc; kk++) {
         if ( cieTable[kk].cieBaseAddress == cieAddress ) {
@@ -811,7 +811,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
       fdeRefCIE = &cieTable[curCIE];
 
-      // 
+      //
       // verify that the CIE parsed correctly
       //
       if ((fdeRefCIE -> cieSize) == 0) {
@@ -823,19 +823,19 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       fdeOffset = EHF_WO_FS*sizeof(*pw);
 
       //
-      // grab the personality function if there's a 'P'. This comes from the reference CIE and doesn't 
+      // grab the personality function if there's a 'P'. This comes from the reference CIE and doesn't
       // change any of the FDE offsets
       //
       if ( (fdeRefCIE -> cieContainsType.P) == EHF_CIE_TRUE) {
         decodeRecord.totalOffset = fdeRefCIE -> cieAugDataOffset;
         decodeRecord.fdeEnc = fdeRefCIE -> cieFDEEncType.P;
 
-        personalityFunctionAddr = decodeDwarfAddress(fdeRefCIE->cieAugData, &decodeRecord, &a, 
+        personalityFunctionAddr = decodeDwarfAddress(fdeRefCIE->cieAugData, &decodeRecord, &a,
             "personality function");
 
         //
         // now add the personality function to the list
-        // note that since the personality address comes from the cie, 
+        // note that since the personality address comes from the cie,
         // we don't increase fdeOffset
         //
         if (personalityFunctionAddr != EHF_DECDWRF_ERROR) {
@@ -935,8 +935,6 @@ nextRecord:
   if(verbose> 1) {
     fprintf (stderr, "FNB2: scanning .eh_frame, found %d CIE and %d FDE records\n", kc, kf);
     }
-  
+
   return SC_DONE;
 }
-
-

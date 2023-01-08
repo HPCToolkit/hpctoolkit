@@ -1,5 +1,5 @@
 //******************************************************************************
-// File: splay-tree.h 
+// File: splay-tree.h
 //
 // Description:
 //   extensible splay tree implementation that uses 64-bit unsigned keys
@@ -52,18 +52,18 @@ typedef void (*splay_fn_t)
 
 
 //*****************************************************************************
-// macros 
+// macros
 //*****************************************************************************
 
 #define splay_macro_body_ignore(x) ;
 #define splay_macro_body_show(x) x
 
 
-// declare typed interface functions 
+// declare typed interface functions
 #define typed_splay_declare(type)		\
   typed_splay(type, splay_macro_body_ignore)
 
-// implementation of typed interface functions 
+// implementation of typed interface functions
 #define typed_splay_impl(type)			\
   typed_splay(type, splay_macro_body_show)
 
@@ -82,32 +82,32 @@ typedef void (*splay_fn_t)
   type ## _  ## op
 
 
-// insert routine name for a typed splay 
+// insert routine name for a typed splay
 #define typed_splay_splay(type) \
   typed_splay_op(type, splay)
 
-// insert routine name for a typed splay 
+// insert routine name for a typed splay
 #define typed_splay_insert(type) \
   typed_splay_op(type, insert)
 
-// lookup routine name for a typed splay 
+// lookup routine name for a typed splay
 #define typed_splay_lookup(type) \
   typed_splay_op(type, lookup)
 
-// delete routine name for a typed splay 
+// delete routine name for a typed splay
 #define typed_splay_delete(type) \
   typed_splay_op(type, delete)
 
-// forall routine name for a typed splay 
+// forall routine name for a typed splay
 #define typed_splay_forall(type) \
   typed_splay_op(type, forall)
 
-// count routine name for a typed splay 
+// count routine name for a typed splay
 #define typed_splay_count(type) \
   typed_splay_op(type, count)
 
 
-// define typed wrappers for a splay type 
+// define typed wrappers for a splay type
 #define typed_splay(type, macro) \
   static bool \
   typed_splay_insert(type) \
@@ -198,10 +198,10 @@ splay_uint64_delete
 //------------------------------------------------------------------------------
 // iterates over all nodes and calls fn(node, visit_type, arg)
 //
-// for inorder traversal: 
-//   fn invoked once per node with visit type splay_inorder_visit 
+// for inorder traversal:
+//   fn invoked once per node with visit type splay_inorder_visit
 //
-// for allorder traversal: 
+// for allorder traversal:
 //   fn invoked three times per node
 //     first with splay_preorder_visit before visiting left child
 //     second with splay_inorder_visit after visiting left child
@@ -218,10 +218,10 @@ splay_uint64_forall
 
 
 //------------------------------------------------------------------------------
-// return an inclusive count of the number of nodes in the subtree 
+// return an inclusive count of the number of nodes in the subtree
 // rooted at node
 //------------------------------------------------------------------------------
-uint64_t 
+uint64_t
 splay_uint64_count
 (
  splay_uint64_node_t *node

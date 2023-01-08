@@ -85,19 +85,19 @@ public:
   public:
     Exception(const char* x,
 	      const char* filenm = NULL, unsigned int lineno = 0)
-      : Diagnostics::Exception(x, filenm, lineno) 
+      : Diagnostics::Exception(x, filenm, lineno)
       { }
 
     Exception(std::string x,
-	      const char* filenm = NULL, unsigned int lineno = 0) 
-      : Diagnostics::Exception(x, filenm, lineno) 
+	      const char* filenm = NULL, unsigned int lineno = 0)
+      : Diagnostics::Exception(x, filenm, lineno)
       { }
 
     ~Exception() { }
   };
 
 
-public: 
+public:
   Args();
   Args(int argc, const char* const argv[]);
   virtual ~Args();
@@ -112,7 +112,7 @@ public:
 
   void
   printUsage(std::ostream& os) const;
-  
+
   // Error
   static void
   printError(std::ostream& os, const char* msg) /*const*/;
@@ -148,11 +148,11 @@ public:
 
 private:
   void Ctor();
-  void setHPCHome(); 
+  void setHPCHome();
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
-#endif // Args_hpp 
+#endif // Args_hpp

@@ -196,7 +196,7 @@ intel_papi_teardown
                   ret, PAPI_strerror(ret));
   }
 
-  // some metric attrbutions were missing from .hpcrun files, 
+  // some metric attributions were missing from .hpcrun files,
   // hence adding a flush operation
   atomic_bool wait;
   atomic_store(&wait, true);

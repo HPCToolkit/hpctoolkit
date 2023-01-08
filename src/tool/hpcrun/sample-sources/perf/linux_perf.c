@@ -62,7 +62,7 @@
 #include <unistd.h>
 #include <math.h>
 
-#include <sys/syscall.h> 
+#include <sys/syscall.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
@@ -89,7 +89,7 @@
 #include "sample-sources/sample_source_obj.h"
 #include "sample-sources/common.h"
 #include "sample-sources/ss-errno.h"
- 
+
 #include <hpcrun/main.h>
 #include <hpcrun/cct_insert_backtrace.h>
 #include <hpcrun/files.h>
@@ -110,7 +110,7 @@
 #include <lib/prof-lean/hpcrun-metric.h> // prefix for metric helper
 #include <lib/support-lean/OSUtil.h>     // hostid
 
-#include <include/linux_info.h> 
+#include <include/linux_info.h>
 
 #include "perfmon-util.h"
 
@@ -136,7 +136,7 @@
 // default number of samples per second per thread
 //
 // linux perf has a default of 4000. this seems high, but the overhead for perf
-// is still small.  however, for some processors (e.g., KNL), overhead 
+// is still small.  however, for some processors (e.g., KNL), overhead
 // at such a high sampling rate is significant and as a result, the kernel
 // will adjust the threshold to less than 100.
 //
@@ -179,16 +179,16 @@ struct event_threshold_s {
 };
 
 //******************************************************************************
-// forward declarations 
+// forward declarations
 //******************************************************************************
 
-static bool 
+static bool
 perf_thread_init(event_info_t *event, event_thread_t *et);
 
-static void 
+static void
 perf_thread_fini(int nevents, event_thread_t *event_thread);
 
-static int 
+static int
 perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 
 
@@ -219,17 +219,17 @@ static uint64_t hpcrun_cycles_cmd_period = 0;
 static sigset_t sig_mask;
 
 //******************************************************************************
-// private operations 
+// private operations
 //******************************************************************************
 
 
-/* 
+/*
  * determine whether the perf sample source has been finalized for this thread
- */ 
-static int 
+ */
+static int
 perf_was_finalized
 (
- int nevents, 
+ int nevents,
  event_thread_t *event_thread
 )
 {
@@ -239,7 +239,7 @@ perf_was_finalized
 
 /*
  * Enable all the counters
- */ 
+ */
 static void
 perf_start_all(int nevents, event_thread_t *event_thread)
 {
@@ -247,9 +247,9 @@ perf_start_all(int nevents, event_thread_t *event_thread)
 
   for(i=0; i<nevents; i++) {
     int fd = event_thread[i].fd;
-    if (fd<0) 
-      continue; 
- 
+    if (fd<0)
+      continue;
+
     ret = ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
 
     if (ret == -1) {
@@ -260,7 +260,7 @@ perf_start_all(int nevents, event_thread_t *event_thread)
 
 /*
  * Disable all the counters
- */ 
+ */
 static void
 perf_stop_all(int nevents, event_thread_t *event_thread)
 {
@@ -268,9 +268,9 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
 
   for(i=0; i<nevents; i++) {
     int fd = event_thread[i].fd;
-    if (fd<0) 
-      continue; 
- 
+    if (fd<0)
+      continue;
+
     ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
     if (ret == -1) {
       EMSG("Can't disable event with fd: %d: %s", fd, strerror(errno));
@@ -301,9 +301,9 @@ copy_kallsyms()
     return -1;
 
   // double the size of the buffer for the destination path to avoid warning
-  // if we set the size to PATH_MAX gcc will bark 
+  // if we set the size to PATH_MAX gcc will bark
   const int PATH_DEST_MAX = PATH_MAX * 2;
-  char  dest[PATH_DEST_MAX]; 
+  char  dest[PATH_DEST_MAX];
   char  kernel_name[PATH_MAX];
   char  dest_directory[PATH_MAX];
   const char *output_directory = hpcrun_files_output_directory();
@@ -346,7 +346,7 @@ copy_kallsyms()
 // initialization
 //----------------------------------------------------------
 
-static void 
+static void
 perf_init()
 {
   // copy /proc/kallsyms file into hpctoolkit output directory
@@ -360,7 +360,7 @@ perf_init()
 
   perf_mmap_init();
 
-  // initialize sigset to contain PERF_SIGNAL 
+  // initialize sigset to contain PERF_SIGNAL
   sigemptyset(&sig_mask);
   sigaddset(&sig_mask, PERF_SIGNAL);
 
@@ -382,7 +382,7 @@ perf_init()
 // initialize an event
 //  event_num: event number
 //  name: name of event (has to be recognized by perf event)
-//  threshold: sampling threshold 
+//  threshold: sampling threshold
 //----------------------------------------------------------
 static bool
 perf_thread_init(event_info_t *event, event_thread_t *et)
@@ -402,20 +402,20 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
          " id: %d, fd: %d, skid: %d,"
          " config: %d, type: %d, sample_freq: %d,"
          " freq: %d, error: %s",
-         event->id, et->fd, event->attr.precise_ip, 
-         event->attr.config, event->attr.type, event->attr.sample_freq, 
+         event->id, et->fd, event->attr.precise_ip,
+         event->attr.config, event->attr.type, event->attr.sample_freq,
          event->attr.freq, strerror(errno));
     return false;
   }
 
-  // create mmap buffer for this file 
+  // create mmap buffer for this file
   et->mmap = set_mmap(et->fd);
 
   // make sure the file I/O is asynchronous
   int flag = fcntl(et->fd, F_GETFL, 0);
   int ret  = fcntl(et->fd, F_SETFL, flag | O_ASYNC );
   if (ret == -1) {
-    EMSG("Can't set notification for event %d, fd: %d: %s", 
+    EMSG("Can't set notification for event %d, fd: %d: %s",
       event->id, et->fd, strerror(errno));
   }
 
@@ -433,13 +433,13 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   owner.pid  = syscall(SYS_gettid);
   ret = fcntl(et->fd, F_SETOWN_EX, &owner);
   if (ret == -1) {
-    EMSG("Can't set thread owner for event %d, fd: %d: %s", 
+    EMSG("Can't set thread owner for event %d, fd: %d: %s",
       event->id, et->fd, strerror(errno));
   }
 
   ret = ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);
   if (ret == -1) {
-    EMSG("Can't reset event %d, fd: %d: %s", 
+    EMSG("Can't reset event %d, fd: %d: %s",
       event->id, et->fd, strerror(errno));
   }
   return (ret >= 0);
@@ -447,7 +447,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
 
 
 //----------------------------------------------------------
-// actions when the program terminates: 
+// actions when the program terminates:
 //  - unmap the memory
 //  - close file descriptors used by each event
 //----------------------------------------------------------
@@ -472,7 +472,7 @@ perf_thread_fini(int nevents, event_thread_t *event_thread)
       event_thread[i].fd = PERF_FD_FINALIZED;
     }
 
-    if (event_thread[i].mmap) { 
+    if (event_thread[i].mmap) {
       perf_unmmap(event_thread[i].mmap);
       event_thread[i].mmap = 0;
     }
@@ -571,7 +571,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipInner*/, 0/*isSync*/, &info);
 
-  blame_shift_apply(current->event->hpcrun_metric_id, sv->sample_node, 
+  blame_shift_apply(current->event->hpcrun_metric_id, sv->sample_node,
                     counter /*metricIncr*/);
 
   return sv;
@@ -699,10 +699,10 @@ METHOD_FN(thread_fini_action)
 {
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
 
-  METHOD_CALL(self, stop); // stop the sample source 
+  METHOD_CALL(self, stop); // stop the sample source
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
-  int nevents = (self->evl).nevents; 
+  int nevents = (self->evl).nevents;
 
   perf_thread_fini(nevents, event_thread);
 
@@ -733,12 +733,12 @@ METHOD_FN(stop)
     return;
   }
 
-  // We have observed thread-centric profiling signals 
-  // (e.g., REALTIME) being delivered to a thread even after 
+  // We have observed thread-centric profiling signals
+  // (e.g., REALTIME) being delivered to a thread even after
   // we have stopped the thread's timer.  During thread
-  // finalization, this can cause a catastrophic error. 
-  // For that reason, we always block the thread's timer 
-  // signal when stopping. 
+  // finalization, this can cause a catastrophic error.
+  // For that reason, we always block the thread's timer
+  // signal when stopping.
   monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
@@ -760,10 +760,10 @@ METHOD_FN(shutdown)
 {
   TMSG(LINUX_PERF, "shutdown");
 
-  METHOD_CALL(self, stop); // stop the sample source 
+  METHOD_CALL(self, stop); // stop the sample source
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
-  int nevents = (self->evl).nevents; 
+  int nevents = (self->evl).nevents;
 
   perf_thread_fini(nevents, event_thread);
 
@@ -808,7 +808,7 @@ METHOD_FN(supports_event, const char *ev_str)
 }
 
 
- 
+
 // --------------------------------------------------------------------------
 // handle a list of events
 // --------------------------------------------------------------------------
@@ -826,7 +826,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // TODO: stupid way to count the number of events
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
-  
+
   // setup all requested events
 
   size_t size = sizeof(event_info_t) * num_events;
@@ -890,7 +890,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     // ------------------------------------------------------------
     // initialize the property of the metric
-    // if the metric's name has "CYCLES" it mostly a cycle metric 
+    // if the metric's name has "CYCLES" it mostly a cycle metric
     //  this assumption is not true, but it's quite closed
     // ------------------------------------------------------------
 
@@ -914,7 +914,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // ------------------------------------------------------------
     int metric_period = 1;
     if (is_period) {
-      // using frequency : the threshold is always 1, 
+      // using frequency : the threshold is always 1,
       //                   since the period is determine dynamically
       metric_period = threshold;
     }
@@ -935,7 +935,7 @@ METHOD_FN(process_event_list, int lush_metrics)
         hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 / threshold);
       }
     }
-   
+
     METHOD_CALL(self, store_event, event_attr->config, metric_period);
     free(name);
   }
@@ -1048,8 +1048,8 @@ read_fd(int fd)
 
 static int
 perf_event_handler(
-  int sig, 
-  siginfo_t* siginfo, 
+  int sig,
+  siginfo_t* siginfo,
   void* context
 )
 {
@@ -1081,8 +1081,8 @@ perf_event_handler(
   int nevents = self->evl.nevents;
 
   // if finalized already, refuse to handle any more samples
-  if (event_thread == NULL || 
-      nevents <= 0         || 
+  if (event_thread == NULL ||
+      nevents <= 0         ||
       perf_was_finalized(nevents, event_thread)) {
 
     hpcrun_safe_exit();
@@ -1098,7 +1098,7 @@ perf_event_handler(
   // ----------------------------------------------------------------------------
 
   if (siginfo->si_code < 0  ||  siginfo->si_fd < 0) {
-    TMSG(LINUX_PERF, "signal si_code %d < 0 indicates not from kernel", 
+    TMSG(LINUX_PERF, "signal si_code %d < 0 indicates not from kernel",
          siginfo->si_code);
     perf_start_all(nevents, event_thread);
     hpcrun_safe_exit();
@@ -1144,7 +1144,7 @@ perf_event_handler(
   // ----------------------------------------------------------------------------
   // check #4:
   // check the index of the file descriptor (if we have multiple events)
-  // if the file descriptor is not on the list, we shouldn't store the 
+  // if the file descriptor is not on the list, we shouldn't store the
   // metrics. Perhaps we should throw away?
   // ----------------------------------------------------------------------------
 
@@ -1206,4 +1206,3 @@ perf_event_handler(
 
   return 0; // tell monitor that the signal has been handled
 }
-

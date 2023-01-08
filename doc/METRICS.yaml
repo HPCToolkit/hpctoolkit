@@ -239,7 +239,7 @@ roots:
               # the formulation. Defaults to the value of `standard:`.
               custom: [4*,[*in-l1-miss-I,-,*in-l2-miss-I]]
 
-              # Version of the formula based compeletely on well-defined metric
+              # Version of the formula based completely on well-defined metric
               # inputs, which refer only to non-custom propagation scopes. Used
               # in the bottom-up and flat views, where this property is required
               # for accurate analysis. Defaults to null.

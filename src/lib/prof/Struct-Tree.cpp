@@ -184,7 +184,7 @@ writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
   if (!prettyPrint) {
     oFlags |= Prof::Struct::Tree::OFlg_Compressed;
   }
-  
+
   os << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n"
      << xml::MakeAttrStr(strctTree.name()) << ">\n";
   strctTree.writeXML(os, oFlags);
@@ -494,7 +494,7 @@ Proc::demandStmtSimple(SrcFile::ln line, VMA beg_vma, VMA end_vma)
     (*m_stmtMap)[line] = stmt;
   }
 
-  return stmt;  
+  return stmt;
 }
 
 
@@ -686,7 +686,7 @@ ANode::leastCommonAncestor(ANode* n1, ANode* n2)
   for (ANode* a = n2->parent(); (a); a = a->parent()) {
     anc2.push_front(a);
   }
-  
+
   // Find the most deeply nested common ancestor
   ANode* lca = NULL;
   while ( (!anc1.empty() && !anc2.empty()) && (anc1.front() == anc2.front())) {
@@ -694,7 +694,7 @@ ANode::leastCommonAncestor(ANode* n1, ANode* n2)
     anc1.pop_front();
     anc2.pop_front();
   }
-  
+
   return lca;
 }
 
@@ -805,7 +805,7 @@ ANode::arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2)
     d1 = d2;
     d2 = t;
   }
-  
+
   // Iterate over the longest path (d1 -> lca) searching for d2.  Stop
   // when x is NULL or lca.
   for (ANode* x = d1; (x && x != lca); x = x->parent()) {
@@ -813,7 +813,7 @@ ANode::arePathsOverlapping(ANode* lca, ANode* desc1, ANode* desc2)
       return true;
     }
   }
-  
+
   // If we arrive here, we did not encounter d2.  Divergent.
   return false;
 }
@@ -824,7 +824,7 @@ ANode::mergePaths(ANode* lca, ANode* node_dst, ANode* node_src)
 {
   bool merged = false;
   // Should we verify that lca is really the lca?
-  
+
   // Collect nodes along the paths 'lca' --> 'node_dst', 'node_src'.
   // Exclude 'lca'.  Shallowest nodes are at beginning of list.
   ANodeList path_dst, path_src;
@@ -835,7 +835,7 @@ ANode::mergePaths(ANode* lca, ANode* node_dst, ANode* node_src)
     path_src.push_front(x);
   }
   DIAG_Assert(path_dst.size() > 0 && path_src.size() > 0, "");
-  
+
   // Merge nodes in 'path_src' into 'path_dst', shallowest to deepest,
   // exiting as soon as a merge fails
   ANodeList::iterator it_dst = path_dst.begin();
@@ -852,7 +852,7 @@ ANode::mergePaths(ANode* lca, ANode* node_dst, ANode* node_src)
       break; // done
     }
   }
-  
+
   return merged;
 }
 
@@ -864,17 +864,17 @@ ANode::merge(ANode* node_dst, ANode* node_src)
   //if (!IsMergable(node_dst, node_src)) {
   //  return false;
   //}
-  
+
   // Perform the merge
   // 1. Move all children of 'node_src' into 'node_dst'
   for (ANodeChildIterator it(node_src); it.Current(); /* */) {
     ANode* x = it.current();
     it++; // advance iterator so we can unlink 'x'
-    
+
     x->unlink();
     x->link(node_dst);
   }
-  
+
   // 2. If merging ACodeNodes, update line ranges
   ACodeNode* dst0 = dynamic_cast<ACodeNode*>(node_dst);
   ACodeNode* src0 = dynamic_cast<ACodeNode*>(node_src);
@@ -885,11 +885,11 @@ ANode::merge(ANode* node_dst, ANode* node_src)
     dst0->setLineRange(begLn, endLn);
     dst0->vmaSet().merge(src0->vmaSet()); // merge VMAs
   }
-  
+
   // 3. Unlink 'node_src' from the tree and delete it
   node_src->unlink();
   delete node_src;
-  
+
   return true;
 }
 
@@ -1041,7 +1041,7 @@ LM::buildMap(VMAIntervalMap<T>*& mp, ANode::ANodeTy ty) const
   if (!mp) {
     mp = new VMAIntervalMap<T>;
   }
-  
+
   ANodeIterator it(this, &ANodeTyFilter[ty]);
   for (; it.Current(); ++it) {
     T x = dynamic_cast<T>(it.Current());
@@ -1065,7 +1065,7 @@ LM::verifyMap(VMAIntervalMap<T>* m, const char* map_nm)
       DIAG_Assert(!x.overlaps(y), "LM::verifyMap: found overlapping elements within " << map_nm << ": " << x.toString() << " and " << y.toString());
     }
   }
-  
+
   return true;
 }
 
@@ -1106,7 +1106,7 @@ File::findProc(const char* name, const char* linkname) const
       found = it->second;
     }
   }
-  
+
   return found;
 }
 
@@ -1121,10 +1121,10 @@ ACodeNode::setLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
   if (m_lineno_frozen) return;
 
   checkLineRange(begLn, endLn);
-  
+
   m_begLn = begLn;
   m_endLn = endLn;
-  
+
   relocateIf();
 
   // never propagate changes outside an Alien
@@ -1186,7 +1186,7 @@ ACodeNode::relocate()
       && (!next || (m_begLn <= next->begLine()))) {
     return;
   }
-  
+
   // INVARIANT: The parent scope contains at least two children
   DIAG_Assert(parent()->childCount() >= 2, "");
 
@@ -1254,7 +1254,7 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
 	if (fnd->type() == TyStmt) {
 	  return fnd; // never look inside LINE_SCOPEs
 	}
-	
+
 	// desired line might be in inner scope; however, it might be
 	// elsewhere because optimization left procedure with
 	// non-contiguous line ranges in scopes at various levels.
@@ -1279,7 +1279,7 @@ ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
     bool endLinesEqual = (x->endLine() == y->endLine());
     if (endLinesEqual) {
       // We have two ACodeNode's with identical line intervals...
-      
+
       // Use lexicographic comparison for procedures
       if (x->type() == ANode::TyProc && y->type() == ANode::TyProc) {
 	Proc *px = (Proc*)x, *py = (Proc*)y;
@@ -1288,7 +1288,7 @@ ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
 	int cmp2 = px->linkName().compare(py->linkName());
 	if (cmp2 != 0) { return cmp2; }
       }
-      
+
       // Use VMAInterval sets otherwise.
       bool x_lt_y = (x->vmaSet() < y->vmaSet());
       bool y_lt_x = (y->vmaSet() < x->vmaSet());
@@ -1300,7 +1300,7 @@ ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
 	  if      (x->isLeaf()) { return -1; } // x < y
 	  else if (y->isLeaf()) { return  1; } // x > y
 	}
-	
+
 	// Give up!
 	return 0;
       }
@@ -1556,27 +1556,27 @@ Alien::toXML(unsigned int oFlags) const
   // we'll add an attribute 'ln' to point to the ID of the function definition.
   // This is needed to inform hpcprof that the alien shouldn't be considered
   // as different function.
-  
+
   // 1a: get the load module of the alien
   LM   *lm   = ancestorLM();
 
   // 1b: check if the alien has the file pointer to its definition
   File *file = lm->findFile(m_filenm);
   if (file) {
-    
+
     // 2: check if there's the same procedure name in the file
     Proc *proc = file->findProc(m_displaynm);
-    
+
     if (proc) {
 #if 0
       // 3: check if alien's line range is within the function definition
       bool inc = SrcFile::include(proc->begLine(), proc->endLine(), begLine(), endLine());
       if (inc) {
 	// 4: add the link attribute to the function definition
-      	self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id())); 
+      	self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id()));
       }
 #endif
-      self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id())); 
+      self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id()));
     }
   }
   return self;
@@ -1643,14 +1643,14 @@ ANode::writeXML_post(ostream& os, unsigned int GCC_ATTR_UNUSED oFlags,
 ostream&
 ANode::writeXML(ostream& os, unsigned int oFlags, const char* pfx) const
 {
-  // indent childen of visible nodes
-  string indent = isVisible() ? "  " : ""; 
+  // indent children of visible nodes
+  string indent = isVisible() ? "  " : "";
 
   if (oFlags & Tree::OFlg_Compressed) {
     pfx = "";
     indent = "";
   }
- 
+
   bool doPost = writeXML_pre(os, oFlags, pfx);
   string pfx_new = pfx + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByLine);
@@ -1891,14 +1891,14 @@ void
 LM::dumpmaps() const
 {
   ostream& os = std::cerr;
- 
+
   os << "Procedure map\n";
   for (VMAToProcMap::const_iterator it = m_procMap->begin();
        it != m_procMap->end(); ++it) {
     it->first.dump(os);
     os << " --> " << hex << "Ox" << it->second << dec << endl;
   }
-  
+
   os << endl;
 
   os << "Statement map\n";
@@ -1956,4 +1956,3 @@ Ref::RelocateRef()
 
 } // namespace Struct
 } // namespace Prof
-

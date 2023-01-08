@@ -2,7 +2,7 @@ Description:
   hpcstruct recovers program structure information for CPU and GPU
   binaries.  hpcprof uses program structure information to relate
   performance measurements back to source code.
-  
+
   Apply hpcstruct to a directory containing HPCToolkit performance
   measurements to recover the program structure for each CPU and GPU
   binary referenced by measurement data. Although not normally
@@ -53,7 +53,7 @@ Description:
   algorithms exploit the line map and debug information recorded in an
   application binary during compilation, for best results, we recommend that
   binaries be compiled with standard debug information or at a minimum,
-  line map information. Typically, this is accomplished by pasing a '-g'
+  line map information. Typically, this is accomplished by passing a '-g'
   option to each compiler along with any optimization flags. See the
   HPCToolkit manual for more information.
 
@@ -90,13 +90,13 @@ Options: Override parallelism defaults
 
 Options: Override structure recovery defaults
   --cpu <yes/no>       Analyze CPU binaries referenced by a measurements
-                       directory. {yes} 
+                       directory. {yes}
   --gpu <yes/no>       Analyze GPU binaries referenced by a measurements
-                       directory. {yes} 
+                       directory. {yes}
   --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.
                        Loop nesting structure is only useful with
                        instruction-level measurements collected using PC
-                       sampling or instrumentation. {no} 
+                       sampling or instrumentation. {no}
 
 
 Options: Specify output file when analyzing a single binary

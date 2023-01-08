@@ -51,11 +51,11 @@
 // File: pmsg.i
 //
 // Description:
-//   definitions shared between the synchronous and asynchronous halves of the 
+//   definitions shared between the synchronous and asynchronous halves of the
 //   messaging system.
 //
 // History:
-//   19 July 2009 
+//   19 July 2009
 //     partition pmsg.c into messages-sync.c and messages-async.c c
 //
 //*****************************************************************************
@@ -98,7 +98,7 @@ extern spinlock_t pmsg_lock;
 // interface functions (within messages subsystem)
 //*****************************************************************************
 
-void hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id, 
+void hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id,
                              const char *tag, const char *fmt, va_list_box* box);
 
 

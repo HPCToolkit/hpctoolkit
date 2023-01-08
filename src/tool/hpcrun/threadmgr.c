@@ -45,14 +45,14 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// File: threadmgr.c: 
+// File: threadmgr.c:
 // Purpose: maintain information about the number of live threads
 //******************************************************************************
 
 
 
 //******************************************************************************
-// system include files 
+// system include files
 //******************************************************************************
 
 #include <stdint.h>
@@ -62,7 +62,7 @@
 #include <sys/sysinfo.h>
 
 //******************************************************************************
-// local include files 
+// local include files
 //******************************************************************************
 #include "threadmgr.h"
 #include "thread_data.h"
@@ -207,7 +207,7 @@ finalize_all_thread_data(void *arg)
     core_profile_trace_data_t *cptd = &data->thread_data->core_profile_trace_data;
     hpcrun_set_thread_data(data->thread_data); //YUMENG: added to make sure writer can hpcrun_malloc(pretend I am this thread)
     finalize_thread_data(cptd);
-    
+
     TMSG(PROCESS, "%d: write thread data", cptd->id);
 
     data = grab_thread_data();
@@ -226,14 +226,14 @@ hpcrun_threadmgr_thread_new()
 }
 
 
-void 
+void
 hpcrun_threadmgr_thread_delete()
 {
 	adjust_thread_count(-1);
 }
 
 
-int 
+int
 hpcrun_threadmgr_thread_count()
 {
 	return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
@@ -353,7 +353,7 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separat
   if (add_separator && data->core_profile_trace_data.id != TOOL_THREAD_ID) {
     cct_node_t *node  = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
     if (node) {
-      hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 
+      hpcrun_trace_append(&(data->core_profile_trace_data), node, 0,
 			  HPCTRACE_FMT_DLCA_NULL, 0);
     }
   }
@@ -452,5 +452,3 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
   EMSG("Total threads: %d, logical threads: %d", tot_threads, num_threads);
 #endif
 }
-
-

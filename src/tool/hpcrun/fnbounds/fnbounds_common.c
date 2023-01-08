@@ -47,7 +47,7 @@
 #include "fnbounds_interface.h"
 
 int
-fnbounds_table_lookup(void **table, int length, void *ip, 
+fnbounds_table_lookup(void **table, int length, void *ip,
 		      void **start, void **end)
 {
   int lo, mid, high;

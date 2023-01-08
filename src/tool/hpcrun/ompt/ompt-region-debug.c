@@ -122,7 +122,7 @@ typed_queue(rn, squeue)
 static typed_queue_elem(rn) *
 rn_alloc()
 {
-  typed_queue_elem(rn) *rn = 
+  typed_queue_elem(rn) *rn =
     (typed_queue_elem(rn) *) hpcrun_malloc(sizeof(typed_queue_elem(rn)));
 
   return rn;
@@ -132,8 +132,8 @@ rn_alloc()
 static typed_queue_elem(rn) *
 rn_get()
 {
-  typed_queue_elem(rn) *rn = 
-    (typed_queue_elem_ptr_get(rn, squeue)(&rn_freelist) ? 
+  typed_queue_elem(rn) *rn =
+    (typed_queue_elem_ptr_get(rn, squeue)(&rn_freelist) ?
      typed_queue_pop(rn, squeue)(&rn_freelist) : rn_alloc());
 
   return rn;
@@ -162,7 +162,7 @@ rn_matches
 }
 
 
-void 
+void
 rn_print
 (
  char *what,
@@ -170,11 +170,11 @@ rn_print
 )
 {
   printf("region %p id 0x%lx notification %p notification->next %14p thread %3d "
-	 "region->region_id 0x%lx      %s\n", rn->region, 
-	 rn->region_id, rn->notification, rn->notification->next.next, rn->thread_id, rn->region->region_id, 
+	 "region->region_id 0x%lx      %s\n", rn->region,
+	 rn->region_id, rn->notification, rn->notification->next.next, rn->thread_id, rn->region->region_id,
 	 what);
 }
- 
+
 
 static void
 rn_queue_drop
@@ -191,8 +191,8 @@ rn_queue_drop
   // invariant: cur is pointer to container for next element
   typed_queue_elem(rn) *next;
 
-  // for each element in the queue 
-  for (; (next = typed_queue_elem_ptr_get(rn, squeue)(cur));) { 
+  // for each element in the queue
+  for (; (next = typed_queue_elem_ptr_get(rn, squeue)(cur));) {
     // if a match is found, remove and return it
     if (rn_matches(next, region, thread_id)) {
       typed_queue_elem(rn) *rn = typed_queue_pop(rn, squeue)(cur);
@@ -204,10 +204,10 @@ rn_queue_drop
     }
 
     // preserve invariant that cur is pointer to container for next element
-    cur = &typed_queue_elem_ptr_get(rn, squeue)(cur)->next; 
+    cur = &typed_queue_elem_ptr_get(rn, squeue)(cur)->next;
   }
 
-  printf("rn_queue_drop failed: (region %p, id 0x%lx, thread %3d)", 
+  printf("rn_queue_drop failed: (region %p, id 0x%lx, thread %3d)",
 	 region, notification->region_id, thread_id);
 }
 
@@ -224,7 +224,7 @@ ompt_region_debug_notify_needed
 )
 {
   int tid = monitor_get_thread_num();
- 
+
   spinlock_lock(&debuginfo_lock);
 
   typed_queue_elem(rn) *rn = rn_get();
@@ -285,7 +285,7 @@ ompt_region_debug_region_create
 }
 
 
-int 
+int
 hpcrun_ompt_region_check
 (
   void
@@ -293,7 +293,7 @@ hpcrun_ompt_region_check
 {
    ompt_region_data_t *e = global_region_list;
    while (e) {
-     printf("region %p region id 0x%lx call_path = %p queue head = %p\n", 
+     printf("region %p region id 0x%lx call_path = %p queue head = %p\n",
 	    e, e->region_id, e->call_path, atomic_load(&e->queue.head));
 
      ompt_notification_t *n = (ompt_notification_t *) atomic_load(&e->queue.head);
@@ -303,16 +303,16 @@ hpcrun_ompt_region_check
        n = (ompt_notification_t *) n->next.next;
      }
      e = (ompt_region_data_t *) e->next_region;
-   } 
+   }
 
-   typed_queue_elem(rn) *rn = 
+   typed_queue_elem(rn) *rn =
      typed_queue_elem_ptr_get(rn, squeue)(&rn_list);
 
    int result = rn != 0;
 
    while (rn) {
      rn_print("(notification pending)", rn);
-     rn = typed_queue_elem_ptr_get(rn,squeue)(&rn->next); 
+     rn = typed_queue_elem_ptr_get(rn,squeue)(&rn->next);
    }
 
    return result;

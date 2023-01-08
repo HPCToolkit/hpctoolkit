@@ -103,7 +103,7 @@ typedef struct typed_splay_node(queue) {
   uint64_t kernel_id; // key
 
   kp_node_t *kp_list;
-} typed_splay_node(queue); 
+} typed_splay_node(queue);
 
 
 //******************************************************************************
@@ -142,7 +142,7 @@ kernel_param_map_entry_new
 
   e->kernel_id = kernel_id;
   e->kp_list = NULL;
-  
+
   return e;
 }
 
@@ -153,9 +153,9 @@ kp_node_alloc_helper
  kp_node_t **free_list
 )
 {
-  kp_node_t *first = *free_list; 
+  kp_node_t *first = *free_list;
 
-  if (first) { 
+  if (first) {
     *free_list = first->next;
   } else {
     first = (kp_node_t *) hpcrun_malloc_safe(sizeof(kp_node_t));
@@ -169,8 +169,8 @@ kp_node_alloc_helper
 static void
 kp_node_free_helper
 (
- kp_node_t **free_list, 
- kp_node_t *node 
+ kp_node_t **free_list,
+ kp_node_t *node
 )
 {
   node->next = *free_list;
@@ -204,8 +204,8 @@ kernel_param_map_lookup
 kernel_param_map_entry_t*
 kernel_param_map_insert
 (
- uint64_t kernel_id, 
- const void *mem, 
+ uint64_t kernel_id,
+ const void *mem,
  size_t size
 )
 {
@@ -240,7 +240,7 @@ kernel_param_map_delete
 )
 {
   spinlock_lock(&kernel_param_map_lock);
-  
+
   kernel_param_map_entry_t *node = st_delete(&map_root, kernel_id);
   if (!node) {
     // This kernel could have no params or clReleaseKernel has been called more than once

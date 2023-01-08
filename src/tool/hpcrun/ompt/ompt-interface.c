@@ -2,7 +2,7 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$ 
+// $HeadURL$
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -144,9 +144,9 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 
 //-----------------------------------------
 // variable ompt_idle_count:
-//    this variable holds a count of how 
+//    this variable holds a count of how
 //    many times the current thread has
-//    been marked as idle. a count is used 
+//    been marked as idle. a count is used
 //    rather than a flag to support
 //    nested marking.
 //-----------------------------------------
@@ -154,7 +154,7 @@ static __thread int ompt_idle_count;
 
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 //----------------------------------------------------------------------------
@@ -162,7 +162,7 @@ static __thread int ompt_idle_count;
 //----------------------------------------------------------------------------
 
 //-------------------------------------------------
-// return a mutex that should be blamed for 
+// return a mutex that should be blamed for
 // current waiting (if any)
 //-------------------------------------------------
 
@@ -250,7 +250,7 @@ ompt_thread_needs_blame
 
 
 //----------------------------------------------------------------------------
-// interface function to register support for directed blame shifting for 
+// interface function to register support for directed blame shifting for
 // OpenMP operations on mutexes if event OMP_MUTEX is present
 //----------------------------------------------------------------------------
 
@@ -280,11 +280,11 @@ ompt_register_mutex_metrics
 )
 {
   kind_info_t *mut_kind = hpcrun_metrics_new_kind();
-  omp_mutex_blame_info.wait_metric_id = 
-    hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_WAIT", 
+  omp_mutex_blame_info.wait_metric_id =
+    hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_WAIT",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-  omp_mutex_blame_info.blame_metric_id = 
+  omp_mutex_blame_info.blame_metric_id =
     hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_BLAME",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
   hpcrun_close_kind(mut_kind);
@@ -299,11 +299,11 @@ ompt_register_idle_metrics
 )
 {
   kind_info_t *idl_kind = hpcrun_metrics_new_kind();
-  omp_idle_blame_info.idle_metric_id = 
+  omp_idle_blame_info.idle_metric_id =
     hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_IDLE",
 				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
-  omp_idle_blame_info.work_metric_id = 
+  omp_idle_blame_info.work_metric_id =
     hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_WORK",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
   hpcrun_close_kind(idl_kind);
@@ -334,7 +334,7 @@ ompt_idle_blame_shift_register
 // initialize pointers to callback functions supported by the OMPT interface
 //----------------------------------------------------------------------------
 
-static void 
+static void
 ompt_init_inquiry_fn_ptrs
 (
  ompt_function_lookup_t ompt_fn_lookup
@@ -354,7 +354,7 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //----------------------------------------------------------------------------
 
 //-------------------------------------------------
-// note birth and death of threads to support 
+// note birth and death of threads to support
 // undirected blame shifting using the IDLE metric
 //-------------------------------------------------
 
@@ -391,7 +391,7 @@ ompt_thread_end
 
 
 //-------------------------------------------------
-// note the beginning and end of idleness to 
+// note the beginning and end of idleness to
 // support undirected blame shifting
 //-------------------------------------------------
 
@@ -418,7 +418,7 @@ ompt_idle_end
 }
 
 
-static void 
+static void
 __attribute__ ((unused))
 ompt_idle
 (
@@ -453,11 +453,11 @@ ompt_sync
 
 
 //-------------------------------------------------
-// accept any blame accumulated for mutex while 
+// accept any blame accumulated for mutex while
 // this thread held it
 //-------------------------------------------------
 
-static void 
+static void
 ompt_mutex_blame_accept
 (
  uint64_t mutex
@@ -472,7 +472,7 @@ ompt_mutex_blame_accept
 // initialization of OMPT interface by setting up callbacks
 //----------------------------------------------------------------------------
 
-static void 
+static void
 init_threads
 (
  void
@@ -484,7 +484,7 @@ init_threads
 }
 
 
-static void 
+static void
 init_parallel_regions
 (
  void
@@ -495,7 +495,7 @@ init_parallel_regions
 }
 
 
-static void 
+static void
 init_tasks
 (
  void
@@ -519,7 +519,7 @@ init_mutex_blame_shift
 
   if (!ompt_mutex_blame_requested) return;
 
-  retval = ompt_set_callback(ompt_callback_mutex_released, 
+  retval = ompt_set_callback(ompt_callback_mutex_released,
                              ompt_mutex_blame_accept);
   mutex_blame_shift_avail |= ompt_event_may_occur(retval);
 
@@ -608,7 +608,7 @@ ompt_initialize
   init_parallel_regions();
 
 #if 0
-  // johnmc: disable blame shifting for OpenMP 5 until we have 
+  // johnmc: disable blame shifting for OpenMP 5 until we have
   // an appropriate plan
   init_mutex_blame_shift(ompt_runtime_version);
   init_idle_blame_shift(ompt_runtime_version);
@@ -616,7 +616,7 @@ ompt_initialize
 
   char* ompt_task_full_ctxt_str = getenv("OMPT_TASK_FULL_CTXT");
   if (ompt_task_full_ctxt_str) {
-    ompt_task_full_context = 
+    ompt_task_full_context =
       strcmp("ENABLED", getenv("OMPT_TASK_FULL_CTXT")) == 0;
   } else{
     ompt_task_full_context = 0;
@@ -675,7 +675,7 @@ ompt_start_tool
   if (getenv("OMPT_DEBUG_WAIT")) {
     while (ompt_debug_wait);
   }
- 
+
 #if OMPT_DEBUG_STARTUP
   printf("Starting tool...\n");
 #endif
@@ -688,7 +688,7 @@ ompt_start_tool
 }
 
 
-int 
+int
 hpcrun_omp_state_is_overhead
 (
  void
@@ -706,7 +706,7 @@ hpcrun_omp_state_is_overhead
     case ompt_state_wait_ordered:
       return 1;
 
-    default: 
+    default:
       break;
     }
   }
@@ -725,7 +725,7 @@ hpcrun_ompt_elide_frames
  void
 )
 {
-  return ompt_elide; 
+  return ompt_elide;
 }
 
 
@@ -829,7 +829,7 @@ uint64_t hpcrun_ompt_get_unique_id()
 }
 
 
-uint64_t 
+uint64_t
 hpcrun_ompt_get_parallel_info_id
 (
  int ancestor_level
@@ -845,10 +845,10 @@ hpcrun_ompt_get_parallel_info_id
 }
 
 
-void 
+void
 hpcrun_ompt_get_parallel_info_id_pointer
 (
- int ancestor_level, 
+ int ancestor_level,
  uint64_t *region_id
 )
 {
@@ -873,9 +873,9 @@ hpcrun_ompt_outermost_parallel_id
 (
  void
 )
-{ 
-  ompt_id_t outer_id = 0; 
-  if (ompt_initialized) { 
+{
+  ompt_id_t outer_id = 0;
+  if (ompt_initialized) {
     int i = 0;
     for (;;) {
       ompt_id_t next_id = hpcrun_ompt_get_parallel_info_id(i++);
@@ -898,7 +898,7 @@ ompt_mutex_blame_shift_request
 }
 
 
-int 
+int
 ompt_task_full_context_p
 (
   void
@@ -928,10 +928,10 @@ freelist_remove_first(ompt_base_t **head){
 }
 
 
-void 
+void
 freelist_add_first
 (
- ompt_base_t *new, 
+ ompt_base_t *new,
  ompt_base_t **head
 )
 {
@@ -1044,7 +1044,7 @@ hpcrun_ompt_get_thread_num(int level)
 }
 
 
-ompt_set_result_t 
+ompt_set_result_t
 ompt_set_callback_internal
 (
   ompt_callbacks_t event,

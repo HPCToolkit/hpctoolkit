@@ -57,7 +57,7 @@
 #include <lib/isa-lean/x86/instruction-set.h>
 
 /******************************************************************************
- * interface operations 
+ * interface operations
  *****************************************************************************/
 
 unwind_interval *
@@ -82,7 +82,7 @@ process_push(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
 
   reg.sp_ra_pos += size;
   reg.sp_bp_pos += size;
-  if (op0_name == XED_OPERAND_REG0) { 
+  if (op0_name == XED_OPERAND_REG0) {
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
     if (x86_isReg_BP(regname) && bp_status == BP_UNCHANGED) {
       reg.bp_status = BP_SAVED;
@@ -108,7 +108,7 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
   int size;
 
   switch(iclass(xptr)) {
-  case XED_ICLASS_POP:   size = -((int)sizeof(void*));  break;  
+  case XED_ICLASS_POP:   size = -((int)sizeof(void*));  break;
   case XED_ICLASS_POPFQ: size = -8;  break;
   case XED_ICLASS_POPFD: size = -4;  break;
   case XED_ICLASS_POPF:  size = -2;  break;
@@ -117,7 +117,7 @@ process_pop(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 
   reg.sp_ra_pos += size;
   reg.sp_bp_pos += size;
-  if (op0_name == XED_OPERAND_REG0) { 
+  if (op0_name == XED_OPERAND_REG0) {
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
     if (x86_isReg_BP(regname)) reg.bp_status = BP_UNCHANGED;
   }

@@ -102,7 +102,7 @@ typedef struct typed_splay_node(queue) {
 
   int H2D_count;
   int D2H_count;
-} typed_splay_node(queue); 
+} typed_splay_node(queue);
 
 
 //******************************************************************************
@@ -141,7 +141,7 @@ buffer_map_entry_new
   e->buffer_id = buffer_id;
   e->H2D_count = 0;
   e->D2H_count = 0;
-  
+
   return e;
 }
 
@@ -172,8 +172,8 @@ buffer_map_lookup
 buffer_map_entry_t*
 buffer_map_update
 (
- uint64_t buffer_id, 
- int H2D_incr, 
+ uint64_t buffer_id,
+ int H2D_incr,
  int D2H_incr
 )
 {
@@ -201,7 +201,7 @@ buffer_map_delete
 )
 {
   spinlock_lock(&buffer_map_lock);
-  
+
   buffer_map_entry_t *entry = st_lookup(&map_root, buffer_id);
   if (entry) {
     // in some cases, we observed clReleaseMemObject is called on H2D buffers without calls to clEnqueueWriteBuffer.

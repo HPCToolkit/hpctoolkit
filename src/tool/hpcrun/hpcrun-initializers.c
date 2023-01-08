@@ -1,11 +1,11 @@
 //******************************************************************************
 // file: hpcrun-initializers.c
-// purpose: 
+// purpose:
 //   implementation of an interface for deferring a call to an initializer.
 //******************************************************************************
 
 //******************************************************************************
-// local includes 
+// local includes
 //******************************************************************************
 
 #include "hpcrun-initializers.h"
@@ -29,7 +29,7 @@ void
 hpcrun_initializers_defer(closure_t *c)
 {
   if (hpcrun_is_initialized()) {
-    c->fn(c->arg); 
+    c->fn(c->arg);
   } else {
     closure_list_register(&hpcrun_initializers, c);
   }

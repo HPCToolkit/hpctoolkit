@@ -33,4 +33,3 @@ steps.  The .html files are generated from texinfo and we keep the
 generated version in the repository.  This means that normal users who
 clone hpctoolkit already have the generated files and 'make install'
 for hpctoolkit will copy them to the install directory.
-

@@ -82,9 +82,7 @@ gpu_instrumentation_enabled
 {
   return o->count_instructions | o->analyze_simd | o-> attribute_latency;
 }
-  
+
 
 
 #endif
-
-

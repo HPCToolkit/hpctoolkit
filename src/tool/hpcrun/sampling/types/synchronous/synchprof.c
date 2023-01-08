@@ -108,4 +108,3 @@ hpcrun_driver_resume(hpcrun_state_t *state)
 {
     /* no support required */
 }
-

@@ -48,14 +48,14 @@
 //   $HeadURL$
 //
 // Purpose:
-//   Define an API for binary trees that supports 
-//   (1) building a balanced binary tree from an arbitrary imbalanced tree 
-//       (e.g., a list), and 
-//   (2) searching a binary tree for a matching node  
+//   Define an API for binary trees that supports
+//   (1) building a balanced binary tree from an arbitrary imbalanced tree
+//       (e.g., a list), and
+//   (2) searching a binary tree for a matching node
 //
-//   The binarytree_node_t data type is meant to be used as a prefix to 
+//   The binarytree_node_t data type is meant to be used as a prefix to
 //   other structures so that this code can be used to manipulate arbitrary
-//   tree structures.  Macros support the (unsafe) up and down casting needed 
+//   tree structures.  Macros support the (unsafe) up and down casting needed
 //   to use the API on derived structures.
 //
 //******************************************************************************

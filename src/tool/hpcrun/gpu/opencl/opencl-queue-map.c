@@ -109,7 +109,7 @@ typedef struct typed_splay_node(queue) {
 
   uint32_t queue_id; // we save queue id as the stream id
   uint32_t context_id;
-} typed_splay_node(queue); 
+} typed_splay_node(queue);
 
 
 //******************************************************************************
@@ -150,7 +150,7 @@ opencl_cl_queue_map_entry_new
   e->queue = queue;
   e->queue_id = cl_queue_id;
   e->context_id = context_id;
-  
+
   return e;
 }
 
@@ -179,7 +179,7 @@ opencl_cl_queue_map_lookup
 uint32_t
 opencl_cl_queue_map_update
 (
- uint64_t queue, 
+ uint64_t queue,
  uint32_t context_id
 )
 {
@@ -193,12 +193,12 @@ opencl_cl_queue_map_update
     entry->queue_id = cl_queue_id;
     entry->context_id = context_id;
   } else {
-    opencl_queue_map_entry_t *entry = 
+    opencl_queue_map_entry_t *entry =
       opencl_cl_queue_map_entry_new(queue, context_id);
 
     st_insert(&map_root, entry);
   }
-    
+
   // Update cl_queue_id
   ret_queue_id = cl_queue_id++;
 

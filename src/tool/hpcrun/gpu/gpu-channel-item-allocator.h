@@ -61,7 +61,7 @@
 
 #define channel_item_alloc(channel, channel_item_type)		\
   (channel_item_type *) channel_item_alloc_helper		\
-  ((bichannel_t *) channel, sizeof(channel_item_type))	
+  ((bichannel_t *) channel, sizeof(channel_item_type))
 
 #define channel_item_free(channel, item)			\
     channel_item_free_helper					\
@@ -77,7 +77,7 @@
 s_element_t *
 channel_item_alloc_helper
 (
- bichannel_t *c, 
+ bichannel_t *c,
  size_t size
 );
 
@@ -85,7 +85,7 @@ channel_item_alloc_helper
 void
 channel_item_free_helper
 (
- bichannel_t *c, 
+ bichannel_t *c,
  s_element_t *se
 );
 

@@ -4,9 +4,9 @@
 \label{sec:env}
 
 \HPCToolkit{}'s measurement subsystem decides what and how to measure
-using information it obtains from environment variables.  
+using information it obtains from environment variables.
 This chapter describes all of the environment variables that control
-\HPCToolkit's measurement subsystem. 
+\HPCToolkit's measurement subsystem.
 
 When using
 \HPCToolkit{}'s \hpcrun{} script to measure the performance of
@@ -16,21 +16,21 @@ measurement subsystem by appropriately setting environment variables.
 To measure statically-linked executables, one first adds \HPCToolkit's
 measurement subsystem to a binary as it is linked by using \HPCToolkit's
 \hpclink{} script. Prior to launching a statically-linked binary that
-includes \HPCToolkit's measurement subsystem, a user 
+includes \HPCToolkit's measurement subsystem, a user
 must manually set environment variables.
 
 Section~\ref{user-env} describes
 environment variables of interest to users. Section~\ref{system-env}
 describes environment variables designed for use by \HPCToolkit{}
 developers. In some cases, \HPCToolkit's developers will ask a user
-to set some of the environment variables described in Section~\ref{system-env} to generate a detailed error 
+to set some of the environment variables described in Section~\ref{system-env} to generate a detailed error
 report when problems arise.
 
 \section{Environment Variables for Users}
 \label{user-env}
 
 \paragraph{HPCTOOLKIT.}
-Under normal circumstances, there is no need to use this environment variable. 
+Under normal circumstances, there is no need to use this environment variable.
 However, there are two situations where \hpcrun{}
 \emph{must} consult the \verb+HPCTOOLKIT+ environment variable to determine the location
 of \HPCToolkit{}'s top-level installation directory to find libraries
@@ -50,7 +50,7 @@ and utilities that it needs at runtime.
 \paragraph{HPCRUN\_EVENT\_LIST.}
 
 This environment variable is used provide a set of (event, period)
-pairs that will be used to configure \HPCToolkit's measurement subsystem to perform 
+pairs that will be used to configure \HPCToolkit's measurement subsystem to perform
 asynchronous sampling.  The HPCRUN\_EVENT\_LIST environment variable
 must be set otherwise HPCToolkit's measurement subsystem will terminate
 execution. If an application should run with sampling disabled,
@@ -61,7 +61,7 @@ square brackets, periods are optional. The default period is 1
 million.
 
 \parg
-Flags to add an event with \hpcrun: \verb|-e/--event| $event1[@period1]$ 
+Flags to add an event with \hpcrun: \verb|-e/--event| $event1[@period1]$
 
 \parg
 Multiple events may be specified using multiple instances of \verb|-e/--event| options.
@@ -147,7 +147,7 @@ Name & Value & Description \\\hline\hline
 
 {\bf Note 3}: Value used as {\tt CUPTI\_ACTIVITY\_ATTR\_DEVICE\_BUFFER\_SIZE}. See \url{https://docs.nvidia.com/cuda/cupti/group__CUPTI__ACTIVITY__API.html}.
 
-{\bf Note 4}: Value used as \verb|CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE|. See \url{https://docs.nvidia.com/cuda/cupti/group__CUPTI__ACTIVITY__API.html} 
+{\bf Note 4}: Value used as \verb|CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE|. See \url{https://docs.nvidia.com/cuda/cupti/group__CUPTI__ACTIVITY__API.html}
 \end{flushleft}
 \caption{Control knob names and default values.}
 \label{knob-names}
@@ -218,7 +218,7 @@ Flags to set low memsize with \hpcrun: \verb|-lm/--low-memsize| $bytes$
 
 \paragraph{HPCTOOLKIT\_HPCSTRUCT\_CACHE}
 
-If this enviroment variable contains the name of a Linux directory
+If this environment variable contains the name of a Linux directory
 that is readable and writable to you, \hpcstruct{} will cache any
 program structure files it computes in this directory. When invoked
 to analyze a binary, \hpcstruct{} will check if program structure
@@ -231,9 +231,9 @@ cache.
 
 \paragraph{HPCRUN\_AUDIT\_FAKE\_AUDITOR.}
 
-By default, \hpcrun{} will use \verb|libc|'s \verb|LD_AUDIT| feature to monitor dynamic library operations. 
-For cases where using \verb|LD_AUDIT| is problematic (e.g. with applications or libraries that require the use of {\tt dlmopen}) , 
-\hpcrun{} supports an alternative {\em fake auditor} that monitors shared library operations by wrapping {\tt dlopen} and {\tt dlclose} instead. This variable will be set to 1 if a {\em fake auditor} is used. 
+By default, \hpcrun{} will use \verb|libc|'s \verb|LD_AUDIT| feature to monitor dynamic library operations.
+For cases where using \verb|LD_AUDIT| is problematic (e.g. with applications or libraries that require the use of {\tt dlmopen}) ,
+\hpcrun{} supports an alternative {\em fake auditor} that monitors shared library operations by wrapping {\tt dlopen} and {\tt dlclose} instead. This variable will be set to 1 if a {\em fake auditor} is used.
 If \verb|LD_AUDIT| is not causing your program to crash, we don't recommend using the fake auditor as it may cause your application or shared libraries it loads to ignore any {\tt RUNPATH} set in their binaries.
 
 \parg
@@ -241,7 +241,7 @@ Flag to select the fake auditor with \hpcrun: \verb|--disable-auditor|.
 
 \paragraph{HPCRUN\_AUDIT\_DISABLE\_PLT\_CALL\_OPT.}
 
-By default, \hpcrun{} will use \verb|libc|'s \verb|LD_AUDIT| feature to monitor dynamic library operations. The \verb|LD_AUDIT| facility has the unfortunate behavior of intercepting each call to a shared library. Each call to a shared library is dispatched through  the {\em Procedure Linkage Table} (PLT). We have observed that allowing the \verb|LD_AUDIT| facility to intercept each call to a shared library is costly: on {\tt x86\_64} we measured a slowdown of $68\times$ for a call to an empty shared library routine. 
+By default, \hpcrun{} will use \verb|libc|'s \verb|LD_AUDIT| feature to monitor dynamic library operations. The \verb|LD_AUDIT| facility has the unfortunate behavior of intercepting each call to a shared library. Each call to a shared library is dispatched through  the {\em Procedure Linkage Table} (PLT). We have observed that allowing the \verb|LD_AUDIT| facility to intercept each call to a shared library is costly: on {\tt x86\_64} we measured a slowdown of $68\times$ for a call to an empty shared library routine.
 
 To avoid this overhead, \hpcrun{} sidesteps \verb|LD_AUDIT|'s monitoring of a load module's calls to a shared library routine by allowing the address of the routine to be cached in the load module's Global Offset Table (GOT). The mechanism for this optimization is complex. If you suspect that this optimization is causing your program to crash, this optimization can be disabled. If your program is not crashing, don't even consider adjusting this!
 
@@ -275,14 +275,14 @@ flag, the flag will be enabled, it will cause HPCToolkit's measurement
 subsystem to log messages guarded with that flag as an application
 executes. The complete list of dynamic debugging flags can be found
 in HPCToolkit's source code in the file
-src/tool/hpcrun/messages/messages.flag-defns. A special flag value ``ALL'' enables all flags. 
+src/tool/hpcrun/messages/messages.flag-defns. A special flag value ``ALL'' enables all flags.
 \parg
 Note: not all debugging flags are
-meaningful on all architectures. 
+meaningful on all architectures.
 
-\parg 
+\parg
 Caution: turning on debugging flags
-will typically result in voluminous log messages, which will typically will 
+will typically result in voluminous log messages, which will typically will
 dramatically slow measurement of the execution under study.
 
 \parg
@@ -308,5 +308,3 @@ system. Be careful!
 For dynamically-linked executables, this environment variable must
 be set to the full path of a copy of HPCToolkit's hpcfnbounds
 utility. There are presently two versions of this utility. One, known as \verb|hpcfnbounds|, analyzes program load modules (the executable and shared libraries) using Dyninst to recover a table of addresses that represent the beginning of each function. A second version of the tool, known as \verb|hpcfnbounds2|, was designed to compute  the same set of addresses for a load module using only a lightweight inspection of the load module's symbol table and DWARF information. \verb|hpcfnbounds2| is over a factor of ten faster and uses over a factor of 10 less memory than the original. \verb|hpcfnbounds2|  is the default. If \verb|hpcfnbounds2| delivers an unsatisfactory result, a user can employ \verb|hpcfnbounds| instead by setting this environment variable using the \verb|--fnbounds| command line argument to \hpcrun{}.
-
-

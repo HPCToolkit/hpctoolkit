@@ -54,7 +54,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct kernel_context_map_entry_t kernel_context_map_entry_t;
@@ -75,7 +75,7 @@ kernel_context_map_lookup
 void
 kernel_context_map_insert
 (
- uint64_t, 
+ uint64_t,
  uint64_t
 );
 
@@ -101,4 +101,3 @@ kernel_context_map_entry_context_id_get
 );
 
 #endif  // kernel_context_map_h
-

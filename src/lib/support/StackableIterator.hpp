@@ -48,9 +48,9 @@
 // StackableIterator.h
 //
 //   a base set of functionality for iterators that can be used with the
-//   IteratorStack abstraction to traverse nested structures 
+//   IteratorStack abstraction to traverse nested structures
 //
-// Author: John Mellor-Crummey                                
+// Author: John Mellor-Crummey
 //
 // Creation Date: October 1993
 //
@@ -77,8 +77,8 @@ public:
   virtual ~StackableIterator();
 
   //----------------------------------------------------------------------
-  // upcall to get the value of the current element in the iteration from 
-  // a derived iterator 
+  // upcall to get the value of the current element in the iteration from
+  // a derived iterator
   //----------------------------------------------------------------------
   virtual void *CurrentUpCall() const = 0;
 
@@ -90,9 +90,9 @@ public:
 
   //----------------------------------------------------------------------
   // predicate to test if the value returned by CurrentUpCall is valid.
-  // supplied default implementation returns true if the value is non-zero 
+  // supplied default implementation returns true if the value is non-zero
   //----------------------------------------------------------------------
-  virtual bool IsValid() const; 
+  virtual bool IsValid() const;
 
   //----------------------------------------------------------------------
   // upcall to restart the iteration at the beginning
@@ -100,17 +100,16 @@ public:
   virtual void Reset() = 0;
 
   //----------------------------------------------------------------------
-  // dump essential state (class name, this pointer, currrent iterate) 
+  // dump essential state (class name, this pointer, current iterate)
   // and invoke DumpUpCall to report interesting state of derived class
   //----------------------------------------------------------------------
   void Dump();
 
 private:
   //----------------------------------------------------------------------
-  // upcall to dump any interesting state of a derived class 
+  // upcall to dump any interesting state of a derived class
   //----------------------------------------------------------------------
   virtual void DumpUpCall();
 };
 
 #endif
-

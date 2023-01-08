@@ -100,7 +100,7 @@ typedef struct typed_splay_node(queue) {
   struct typed_splay_node(queue) *right;
   uint64_t device_id; // key
 
-} typed_splay_node(queue); 
+} typed_splay_node(queue);
 
 
 //******************************************************************************
@@ -137,7 +137,7 @@ device_map_entry_new
   device_map_entry_t *e = device_map_entry_alloc();
 
   e->device_id = device_id;
-  
+
   return e;
 }
 
@@ -193,7 +193,7 @@ device_map_delete
 )
 {
   spinlock_lock(&device_map_lock);
-  
+
   device_map_entry_t *node = st_delete(&map_root, device_id);
   st_free(&free_list, node);
 

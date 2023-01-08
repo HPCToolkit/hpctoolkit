@@ -4,7 +4,7 @@
 # lines are equivalent ways of linking in the GA overrides.
 #
 #   hpclink --ga gcc ...
-#   hpclink --plugin ga gcc ... 
+#   hpclink --plugin ga gcc ...
 #
 
 hpclink_files='../libhpcrun_ga_wrap.a'
@@ -15,4 +15,3 @@ hpclink_wrap_names='\
     pnga_nbget pnga_nbput pnga_nbacc'
     #pnga_nbwait
 hpclink_undefined_names='pnga_put'
-

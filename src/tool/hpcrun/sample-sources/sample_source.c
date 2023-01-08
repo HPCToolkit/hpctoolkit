@@ -45,21 +45,21 @@
 // ******************************************************* EndRiceCopyright *
 
 /******************************************************************************
- * this is a draft of an interface that we can use to separate sampling 
- * sources from the profiler core. 
+ * this is a draft of an interface that we can use to separate sampling
+ * sources from the profiler core.
  *
  * each sampling source will define a method table.
  * sampling sources will register themselves to process arguments using
- * an init constructor. (that part of the interface isn't worked out yet.) 
+ * an init constructor. (that part of the interface isn't worked out yet.)
  *
- * any sampling source selected with the command line arguments will 
- * register a method table with this interface. all active sampling sources 
- * registered will be invoked when an action on sampling sources 
+ * any sampling source selected with the command line arguments will
+ * register a method table with this interface. all active sampling sources
+ * registered will be invoked when an action on sampling sources
  * (init, start, stop) is initiated.
  *****************************************************************************/
 
 /******************************************************************************
- * type declarations 
+ * type declarations
  *****************************************************************************/
 typedef enum {
   SAMPLING_INIT=0,
@@ -84,17 +84,17 @@ static sample_source_globals_t *ssg = NULL;
 
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 
 static void call_sampling_methods(sampling_method method, thread_data_t *td);
-static void call_sampling_method(sampling_source_globals_t *g, 
+static void call_sampling_method(sampling_source_globals_t *g,
 				 sampling_method method, thread_data_t *td);
 
 
 
 /******************************************************************************
- * interface functions 
+ * interface functions
  *****************************************************************************/
 
 void
@@ -142,7 +142,7 @@ call_sampling_methods(sampling_method mid, thread_data_t* td)
 
 
 static void
-call_sampling_method(sampling_source_globals_t* g, 
+call_sampling_method(sampling_source_globals_t* g,
 		     sampling_method mid, thread_data_t* td)
 {
   (g->methods[mid])(td);

@@ -73,7 +73,7 @@
 
 //
 // objects follow the prototype below:
-// 
+//
 // typedef struct _obj_s {
 //
 //  METHOD_DEF(void,m1,void);    // defines method m1(void)

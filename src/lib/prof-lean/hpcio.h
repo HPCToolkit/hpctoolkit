@@ -87,7 +87,7 @@ extern "C" {
 //***************************************************************************
 
 // Open and close a file stream for use with the library's read/write
-// routines. 
+// routines.
 //
 // hpcio_fopen_w, hpcio_open_r: Opens the file pointed to by 'fnm' and
 // returns a file stream for buffered I/O.  For writing, if
@@ -97,7 +97,7 @@ extern "C" {
 // these errors, or other open errors, NULL is returned; otherwise a
 // non-null FILE pointer is returned.
 //
-// hpcio_close: Close the file stream.  Returns 0 upon success; 
+// hpcio_close: Close the file stream.  Returns 0 upon success;
 // non-zero on error.
 FILE*
 hpcio_fopen_w(const char* fnm, int overwrite);

@@ -610,7 +610,7 @@ level0_command_list_append_launch_kernel_entry
     level0_create_new_event(hContext, &event, &event_pool);
   }
 
-  PRINT("level0_command_list_append_launch_kernel_entry: kernel handle %p, commmand list handle %p, event handle %p, event pool handle %p\n",
+  PRINT("level0_command_list_append_launch_kernel_entry: kernel handle %p, command list handle %p, event handle %p, event pool handle %p\n",
     (void*)kernel, (void*)command_list, (void*)event, (void*)event_pool);
 
   // Lookup the command list and append the kernel launch to the command list
@@ -688,7 +688,7 @@ level0_command_list_create_exit
   PRINT("level0_command_list_create_exit: command list %p, context handle %p, imm list %d\n",
     (void*)handle, (void*)hContext, isImmediateList);
   // Record the creation of a command list
-  // command list map: command list handle -> a list of kernel launchs and memcpy
+  // command list map: command list handle -> a list of kernel launches and memcpy
   if (!isImmediateList) {
     level0_commandlist_map_insert(handle);
   }
@@ -1161,7 +1161,7 @@ hpcrun_zeCommandQueueSynchronize
   uint64_t timeout                           // [in] if non-zero, then indicates the maximum time (in nanoseconds) to yield before returning
 )
 {
-  PRINT("Enter zeCommandQueueSynchronize wrapper: commmand queue %p\n", hCommandQueue);
+  PRINT("Enter zeCommandQueueSynchronize wrapper: command queue %p\n", hCommandQueue);
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandQueueSynchronize, (hCommandQueue, timeout));
   level0_attribute_command_queue(hCommandQueue);
   return ret;

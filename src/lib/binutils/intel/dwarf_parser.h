@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -62,7 +62,7 @@ class DwarfParser {
 
   LineInfo GetLineInfo(uint32_t file_id) const {
     assert(file_id > 0);
-    
+
     if (!IsValid()) {
       return LineInfo();
     }
@@ -76,7 +76,7 @@ class DwarfParser {
       DwarfStateMachine(line_number_program, line_number_program_size,
                         reinterpret_cast<const Dwarf32Header*>(data_)).Run();
     if (line_info.size() == 0) {
-      return LineInfo();    
+      return LineInfo();
     }
 
     return ProcessLineInfo(line_info, file_id);
@@ -149,7 +149,7 @@ class DwarfParser {
       line = item.second.second;
       result.push_back(std::make_pair(address, line));
     }
-    
+
     return result;
 }
 

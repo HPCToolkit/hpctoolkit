@@ -314,7 +314,7 @@ public:
     // MT: Internally Synchronized
     void requestStatistics(Statistics);
 
-    /// Request a Partial representing the sum of relavent values.
+    /// Request a Partial representing the sum of relevant values.
     // MT: Internally Synchronized
     std::size_t requestSumPartial();
 
@@ -324,7 +324,7 @@ public:
     std::unique_lock<std::mutex> synchronize();
   };
 
-  /// Convience function to generate a StatsAccess handle.
+  /// Convenience function to generate a StatsAccess handle.
   StatsAccess statsAccess() { return StatsAccess{*this}; }
 
 private:

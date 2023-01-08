@@ -3,7 +3,7 @@
 //
 //******************************************************************************
 // file: closure-registry.h
-// purpose: 
+// purpose:
 //   interface for registering and applying a set of generic closures
 //******************************************************************************
 

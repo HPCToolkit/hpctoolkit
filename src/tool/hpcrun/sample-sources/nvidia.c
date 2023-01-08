@@ -375,7 +375,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 			gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
-    
+
     // pc sampling cannot be on with concurrent kernels
     kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
     }	else if (hpcrun_ev_is(event, NVIDIA_CUDA_NV_LINK)) {
@@ -480,11 +480,11 @@ METHOD_FN(display_events)
 	 NVIDIA_CUDA);
   printf("\n");
   printf("%s\tComprehensive monitoring on an NVIDIA GPU as described above\n"
-	 "\t\twith the addition of PC sampling. PC sampling attributes\n"
-	 "\t\tSTALL reasons to individual GPU instructions. PC sampling also\n"
-	 "\t\trecords aggregate statistics about the TOTAL number of samples measured,\n"
-	 "\t\tthe number of samples EXPECTED, and the number of samples DROPPED.\n"
-	 "\t\tGPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
+	 "\t\t" "with the addition of PC sampling. PC sampling attributes\n"
+	 "\t\t" "STALL reasons to individual GPU instructions. PC sampling also\n"
+	 "\t\t" "records aggregate statistics about the TOTAL number of samples measured,\n"
+	 "\t\t" "the number of samples EXPECTED, and the number of samples DROPPED.\n"
+	 "\t\t" "GPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
 	 NVIDIA_CUDA_PC_SAMPLING);
   printf("\n");
 }

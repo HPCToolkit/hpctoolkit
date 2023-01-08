@@ -105,4 +105,3 @@ gpu_monitoring_trace_sample_frequency_get
 {
   return gpu_trace_sample_frequency;
 }
-

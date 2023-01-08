@@ -50,7 +50,7 @@
 //   $HeadURL$
 //
 // Purpose:
-//   Define the interface for a function that returns the time of day in 
+//   Define the interface for a function that returns the time of day in
 //   microseconds as a long integer.
 //
 //******************************************************************************
@@ -65,4 +65,4 @@
 // return the time of day in microseconds as a long integer
 unsigned long usec_time();
 
-#endif  
+#endif

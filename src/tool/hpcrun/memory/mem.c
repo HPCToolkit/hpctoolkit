@@ -125,25 +125,25 @@ hpcrun_mem_init(void)
 {
   static int init_done = 0;
   char *str;
-  long ans;
+  long result;
 
   if (init_done)
     return;
 
 #ifdef _SC_PAGESIZE
-  if ((ans = sysconf(_SC_PAGESIZE)) > 0) {
-    pagesize = ans;
+  if ((result = sysconf(_SC_PAGESIZE)) > 0) {
+    pagesize = result;
   }
 #endif
 
   str = getenv(HPCRUN_MEMSIZE);
-  if (str != NULL && sscanf(str, "%ld", &ans) == 1) {
-    memsize = hpcrun_align_pagesize(ans);
+  if (str != NULL && sscanf(str, "%ld", &result) == 1) {
+    memsize = hpcrun_align_pagesize(result);
   }
 
   str = getenv(HPCRUN_LOW_MEMSIZE);
-  if (str != NULL && sscanf(str, "%ld", &ans) == 1) {
-    low_memsize = ans;
+  if (str != NULL && sscanf(str, "%ld", &result) == 1) {
+    low_memsize = result;
   } else {
     low_memsize = memsize/40;
     if (low_memsize < MIN_LOW_MEMSIZE)
@@ -370,7 +370,7 @@ hpcrun_malloc_freeable(size_t size)
   // For now, don't bother with freeable memory.
 #if 0
   hpcrun_meminfo_t *mi = &TD_GET(memstore);
-  void *addr, *ans;
+  void *addr, *result;
 
   size = round_up(size);
   addr = mi->mi_low + size;
@@ -390,11 +390,11 @@ hpcrun_malloc_freeable(size_t size)
     TMSG(MALLOC, "%s: low on memory, setting epoch flush flag", __func__);
   }
 
-  ans = mi->mi_low;
+  result = mi->mi_low;
   mi->mi_low = addr;
   total_freeable += size;
   TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
-  return ans;
+  return result;
 #endif
 }
 

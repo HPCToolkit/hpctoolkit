@@ -89,7 +89,7 @@ struct metric_position_t{
 typedef struct metric_position_t metric_position_t;
 
 //
-// To accomodate block sparse representation,
+// To accommodate block sparse representation,
 // use 'kinds' == dense subarrays of metrics
 //
 // Sample use:

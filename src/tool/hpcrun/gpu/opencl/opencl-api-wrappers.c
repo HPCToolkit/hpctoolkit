@@ -57,7 +57,7 @@
 
 //#ifdef ENABLE_GTPIN
 #if 1
-// one downside of this appproach is that we may override the callback provided by user
+// one downside of this approach is that we may override the callback provided by user
 cl_int
 clBuildProgram
 (
@@ -295,4 +295,3 @@ clFinish
 {
 	return hpcrun_clFinish(command_queue);
 }
-

@@ -45,7 +45,7 @@
 // File: cubin-symbols.h
 //
 // Purpose:
-//   interface to determine cubin symbol relocation values that will be used 
+//   interface to determine cubin symbol relocation values that will be used
 //   by hpcstruct
 //
 //***************************************************************************

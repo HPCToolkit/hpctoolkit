@@ -104,7 +104,7 @@ typedef struct typed_splay_node(context) {
   uint64_t kernel_id; // key
 
   uint64_t context_id;
-} typed_splay_node(context); 
+} typed_splay_node(context);
 
 
 //******************************************************************************
@@ -170,7 +170,7 @@ kernel_context_map_lookup
 void
 kernel_context_map_insert
 (
- uint64_t kernel_id, 
+ uint64_t kernel_id,
  uint64_t context_id
 )
 {
@@ -194,7 +194,7 @@ kernel_context_map_delete
 )
 {
   spinlock_lock(&kernel_context_map_lock);
-  
+
   kernel_context_map_entry_t *node = st_delete(&map_root, kernel_id);
 
   if (!node) {

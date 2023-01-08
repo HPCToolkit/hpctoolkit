@@ -1,7 +1,7 @@
 #include <ucontext.h>
 
 //***************************************************************************
-// local include files 
+// local include files
 //***************************************************************************
 
 #include <utilities/arch/context-pc.h>

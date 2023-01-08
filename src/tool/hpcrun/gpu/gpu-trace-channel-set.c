@@ -179,7 +179,7 @@ gpu_trace_channel_set_insert
 )
 {
   // allocate and initialize new entry for channel stack
-  channel_stack_elem_t *e = 
+  channel_stack_elem_t *e =
     (channel_stack_elem_t *) hpcrun_malloc_safe(sizeof(channel_stack_elem_t));
 
   // initialize the new entry

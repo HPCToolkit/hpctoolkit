@@ -84,7 +84,7 @@
 #define typed_bichannel(x) gpu_trace_channel_t
 #define typed_stack_elem(x) gpu_trace_item_t
 
-// define macros that simplify use of trace channel API 
+// define macros that simplify use of trace channel API
 #define channel_init  \
   typed_bichannel_init(gpu_trace_item_t)
 
@@ -267,4 +267,3 @@ gpu_trace_channel_signal_consumer
 {
   pthread_cond_signal(&trace_channel->cond);
 }
-

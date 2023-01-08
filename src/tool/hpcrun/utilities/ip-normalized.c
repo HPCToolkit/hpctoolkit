@@ -73,7 +73,7 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
   if (!lm) {
     lm = hpcrun_loadmap_findByAddr(unnormalized_ip, unnormalized_ip);
   }
-  
+
   if (lm && lm->dso_info) {
     ip_normalized_t ip_norm = (ip_normalized_t) {
       .lm_id = lm->id,
@@ -108,10 +108,10 @@ hpcrun_denormalize_ip(ip_normalized_t *normalized_ip)
     load_module_t* lm = hpcrun_loadmap_findById(normalized_ip->lm_id);
     if (lm != 0) {
       uint64_t offset = lm->dso_info->start_to_ref_dist;
-      void *denormalized_ip = (void *) (normalized_ip->lm_ip + offset); 
+      void *denormalized_ip = (void *) (normalized_ip->lm_ip + offset);
       return denormalized_ip;
     }
-  } 
+  }
   // Unable to denormalize, return a bad value
   return NULL;
 }

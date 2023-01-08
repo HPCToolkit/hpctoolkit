@@ -14,9 +14,9 @@ readCudaCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
- Dyninst::SymtabAPI::Symtab *the_symtab, 
+ Dyninst::SymtabAPI::Symtab *the_symtab,
  bool cfg_wanted,
- Dyninst::ParseAPI::CodeSource **code_src, 
+ Dyninst::ParseAPI::CodeSource **code_src,
  Dyninst::ParseAPI::CodeObject **code_obj
 );
 

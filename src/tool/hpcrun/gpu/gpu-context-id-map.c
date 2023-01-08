@@ -91,7 +91,7 @@
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(context_id) gpu_context_id_map_entry_t 
+#define typed_splay_node(context_id) gpu_context_id_map_entry_t
 
 
 
@@ -106,7 +106,7 @@ struct gpu_context_id_map_entry_t {
   uint64_t first_time;
   uint64_t time_offset;
   gpu_stream_id_map_entry_t *streams;
-}; 
+};
 
 
 typedef struct trace_fn_helper_t {
@@ -203,7 +203,7 @@ gpu_context_id_map_adjust_times
  gpu_trace_item_t *ti
 )
 {
-  // If we have established correspondance between
+  // If we have established correspondence between
   // a cpu timestamp and a gpu timestamp, we just need
   // to compute its difference as the time offset
   //
@@ -222,7 +222,7 @@ gpu_context_id_map_adjust_times
     // when GPU operations are asynchronous.
     // For example, when we launch a kernel asynchronously,
     // the GPU kernel may not be executed until the runtime loads a GPU binary
-    // or perfoms JIT compilation. In such cases, the host timestamp taken at the
+    // or performs JIT compilation. In such cases, the host timestamp taken at the
     // entry of the kernel launch API can be significantly earlier than the time
     // when the kernel is actually executed on the GPU.
     if (entry->first_time == 0) {
@@ -252,7 +252,7 @@ gpu_context_id_map_lookup
 {
   gpu_context_id_map_entry_t *result = st_lookup(&map_root, context_id);
 
-  TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)", 
+  TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)",
        context_id, result);
 
   return result;

@@ -184,7 +184,7 @@ public:
 
   /// Register a typed memory block for future ragged_vectors. Unlike add(...),
   /// this uses the default constructor and the given function for initialization.
-  // MT: Internally Synchonized
+  // MT: Internally Synchronized
   template<class T, class... Args>
   generic_typed_member<T> add_default(std::function<void(T&, InitArgs&&...)>&& init) {
     return add(sizeof(T), alignof(T), [init](void* v, InitArgs&&... iargs){
@@ -197,7 +197,7 @@ public:
 
   /// Register a typed memory block for future ragged_vectors. Unlike add(...),
   /// this uses the default constructor for initialization.
-  // MT: Internally Synchonized
+  // MT: Internally Synchronized
   template<class T, class... Args>
   generic_typed_member<T> add_default() {
     return add(sizeof(T), alignof(T), [](void* v, InitArgs&&... iargs){
@@ -209,7 +209,7 @@ public:
 
   /// Register a typed memory block for future ragged_vectors. Uses the
   /// constructor add() would use, but still calls a custom function after.
-  // MT: Internally Synchonized
+  // MT: Internally Synchronized
   template<class T, class... Args>
   generic_typed_member<T> add_initializer(
       std::function<void(T&, InitArgs&&...)>&& init, Args&&... args) {
@@ -222,7 +222,7 @@ public:
   }
 
   /// Freeze additions to the struct, allowing ragged_vectors to be generated.
-  // MT: Externally Synchonized
+  // MT: Externally Synchronized
   void freeze() noexcept { complete = true; }
 
   /// Check whether the ragged_struct is frozen and ready for actual use.
@@ -249,7 +249,7 @@ public:
     m_entries[m.m_index].initializer((char*)d + m.m_offset, std::forward<InitArgs>(args)...);
   }
 
-  /// Destroy the given memeber in the given data block.
+  /// Destroy the given member in the given data block.
   // MT: Externally Synchronized (after freeze())
   void destruct(const member& m, void* d) {
     valid();

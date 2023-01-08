@@ -45,20 +45,20 @@
 // ******************************************************* EndRiceCopyright *
 
 //*****************************************************************************
-// File: messages-async.c 
+// File: messages-async.c
 //
 // Description:
 //   This half of the messaging system must be async-signal safe.
-//   Namely, it must be safe to call these operations from within signal 
-//   handlers. Operations in this file may not directly or indirectly 
+//   Namely, it must be safe to call these operations from within signal
+//   handlers. Operations in this file may not directly or indirectly
 //   allocate memory using malloc. They may not call functions that
-//   acquire locks that may be already held by the application code or 
+//   acquire locks that may be already held by the application code or
 //   functions that may be called during synchronous profiler operations
 //   that may be interrupted by asynchronous profiler operations.
 //
 // History:
-//   19 July 2009 
-//     created by partitioning pmsg.c into messages-sync.c and 
+//   19 July 2009
+//     created by partitioning pmsg.c into messages-sync.c and
 //     messages-async.c
 //
 //*****************************************************************************
@@ -66,7 +66,7 @@
 
 
 //*****************************************************************************
-// global includes 
+// global includes
 //*****************************************************************************
 
 #include <stdio.h>
@@ -76,7 +76,7 @@
 
 
 //*****************************************************************************
-// local includes 
+// local includes
 //*****************************************************************************
 
 #include "disabled.h"
@@ -119,7 +119,7 @@ static bool check_limit = true;    // by default, limit messages
 // forward declarations
 //*****************************************************************************
 
-static void create_msg(char *buf, size_t buflen, bool add_thread_id, 
+static void create_msg(char *buf, size_t buflen, bool add_thread_id,
 		       const char *tag, const char *fmt, va_list_box* box);
 
 //*****************************************************************************
@@ -145,7 +145,7 @@ void
 hpcrun_pmsg(const char *tag, const char *fmt, ...)
 {
 #ifdef SINGLE_THREAD_LOGGING
-  if ( getenv("OT") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
+  if ( getenv("O""T") && (TD_GET(core_profile_trace_data.id) != THE_THREAD)) {
     return;
   }
 #endif // SINGLE_THREAD_LOGGING
@@ -157,7 +157,7 @@ hpcrun_pmsg(const char *tag, const char *fmt, ...)
 
 // like pmsg, except echo message to stderr when flag is set
 void
-hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
+hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
 		   const char *fmt ,...)
 {
   if (debug_flag_get(flag) == 0){
@@ -171,7 +171,7 @@ hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
 
 // like nmsg, except echo message to stderr when flag is set
 void
-hpcrun_nmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag, 
+hpcrun_nmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
 		   const char *fmt ,...)
 {
   if (debug_flag_get(flag) == 0){
@@ -209,7 +209,7 @@ hpcrun_amsg(const char *fmt,...)
 
 
 //*****************************************************************************
-// interface operations (within message subsystem) 
+// interface operations (within message subsystem)
 //*****************************************************************************
 
 void

@@ -33,7 +33,7 @@ typedef struct kernel_data_gtpin_inst {
   bool isComplex;
   uint64_t aggregated_latency;
   struct kernel_data_gtpin_inst *next;
-} kernel_data_gtpin_inst_t; 
+} kernel_data_gtpin_inst_t;
 
 typedef struct kernel_data_gtpin_block {
   int32_t head_offset;
@@ -48,14 +48,14 @@ typedef struct kernel_data_gtpin_block {
   int instruction_count;
   struct kernel_data_gtpin_inst *inst;
   struct kernel_data_gtpin_block *next;
-} kernel_data_gtpin_block_t; 
+} kernel_data_gtpin_block_t;
 
 typedef struct kernel_data_gtpin {
   uint64_t kernel_id;
   uint64_t simd_width;
   struct kernel_data_gtpin_block *block;
-} kernel_data_gtpin_t; 
-  
+} kernel_data_gtpin_t;
+
 typedef struct kernel_data {
   uint32_t loadmap_module_id;
   kernel_data_kind_t kind;

@@ -62,7 +62,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct cubin_id_map_entry_s cubin_id_map_entry_t;
@@ -77,14 +77,14 @@ cubin_id_map_entry_t *
 cubin_id_map_lookup
 (
  uint32_t cubin_id
-); 
+);
 
 
 void
 cubin_id_map_insert
 (
- uint32_t cubin_id, 
- uint32_t hpctoolkit_module_id, 
+ uint32_t cubin_id,
+ uint32_t hpctoolkit_module_id,
  Elf_SymbolVector *vector
 );
 
@@ -113,8 +113,8 @@ cubin_id_map_entry_elf_vector_get
 ip_normalized_t
 cubin_id_transform
 (
- uint32_t cubin_id, 
- uint32_t function_id, 
+ uint32_t cubin_id,
+ uint32_t function_id,
  uint64_t offset
 );
 

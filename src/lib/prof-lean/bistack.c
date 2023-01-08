@@ -64,7 +64,7 @@
 // interface functions
 //*****************************************************************************
 
-void 
+void
 bistack_init
 (
  bistack_t *s
@@ -151,7 +151,7 @@ typed_bistack_impl(int)
 typed_stack_elem(int) *
 typed_stack_elem_fn(int,new)(int value)
 {
-  typed_stack_elem(int) *e = 
+  typed_stack_elem(int) *e =
     (typed_stack_elem(int)* ) malloc(sizeof(int_s_element_t));
   e->value = value;
   cstack_ptr_set(&e->next, 0);
@@ -209,7 +209,7 @@ dump
 )
 {
   int i;
-  for(; e; 
+  for(; e;
       e = (int_s_element_t *) typed_stack_elem_ptr_get(int,cstack)(&e->next)) {
     printf("%d stole %d\n", omp_get_thread_num(), e->value);
   }

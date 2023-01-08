@@ -11,14 +11,14 @@
 namespace Dyninst {
 namespace ParseAPI {
 
-class PARSER_EXPORT GPUCFGFactory : public CFGFactory {   
+class PARSER_EXPORT GPUCFGFactory : public CFGFactory {
  public:
   GPUCFGFactory(std::vector<GPUParse::Function *> &functions) :
     _functions(functions) {}
   virtual ~GPUCFGFactory() {}
 
  protected:
-  virtual Function * mkfunc(Address addr, FuncSource src, 
+  virtual Function * mkfunc(Address addr, FuncSource src,
     std::string name, CodeObject * obj, CodeRegion * region,
     Dyninst::InstructionSource * isrc);
 

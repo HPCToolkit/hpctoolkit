@@ -55,7 +55,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct device_map_entry_t device_map_entry_t;
@@ -87,4 +87,3 @@ device_map_delete
 );
 
 #endif  // device_map_h
-

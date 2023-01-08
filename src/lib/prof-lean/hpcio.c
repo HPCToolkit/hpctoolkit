@@ -111,7 +111,7 @@ hpcio_fopen_w(const char* fnm, int overwrite)
   FILE* fs = NULL; // default return value
 
   if (overwrite == 0) {
-    // Open file for writing; fail if the file already exists.  
+    // Open file for writing; fail if the file already exists.
     fd = open(fnm, O_WRONLY | O_CREAT | O_EXCL, mode);
   }
   else if (overwrite == 1) {
@@ -127,7 +127,7 @@ hpcio_fopen_w(const char* fnm, int overwrite)
   }
 
   if (fd != -1 ) {
-    // open succeeded. create a buffered stream since we 
+    // open succeeded. create a buffered stream since we
     // will perform many small writes.
     fs = fdopen(fd, "w");
   }
@@ -159,7 +159,7 @@ int
 hpcio_fclose(FILE* fs)
 {
   if (fs) {
-    if (fclose(fs) == EOF) { 
+    if (fclose(fs) == EOF) {
       return 1;
     }
   }
@@ -183,7 +183,7 @@ hpcio_le2_fread(uint16_t* val, FILE* fs)
 {
   uint16_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
-  
+
   for (shift = 0; shift < 16; shift += 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
@@ -200,7 +200,7 @@ hpcio_le4_fread(uint32_t* val, FILE* fs)
 {
   uint32_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
-  
+
   for (shift = 0; shift < 32; shift += 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
@@ -217,7 +217,7 @@ hpcio_le8_fread(uint64_t* val, FILE* fs)
 {
   uint64_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
-  
+
   for (shift = 0; shift < 64; shift += 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
@@ -236,7 +236,7 @@ hpcio_le2_fwrite(uint16_t* val, FILE* fs)
 {
   uint16_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
-  
+
   for (shift = 0; shift < 16; shift += 8) {
     c = fputc( ((v >> shift) & 0xff) , fs);
     if (c == EOF) { break; }
@@ -251,7 +251,7 @@ hpcio_le4_fwrite(uint32_t* val, FILE* fs)
 {
   uint32_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
-  
+
   for (shift = 0; shift < 32; shift += 8) {
     c = fputc( ((v >> shift) & 0xff) , fs);
     if (c == EOF) { break; }
@@ -266,7 +266,7 @@ hpcio_le8_fwrite(uint64_t* val, FILE* fs)
 {
   uint64_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
-  
+
   for (shift = 0; shift < 64; shift += 8) {
     c = fputc( ((v >> shift) & 0xff) , fs);
     if (c == EOF) { break; }
@@ -285,7 +285,7 @@ hpcio_be2_fread(uint16_t* val, FILE* fs)
 {
   uint16_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
-  
+
   for (shift = 8; shift >= 0; shift -= 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
@@ -302,7 +302,7 @@ hpcio_be4_fread(uint32_t* val, FILE* fs)
 {
   uint32_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
-  
+
   for (shift = 24; shift >= 0; shift -= 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
@@ -319,7 +319,7 @@ hpcio_be8_fread(uint64_t* val, FILE* fs)
 {
   uint64_t v = 0; // local copy of val
   int shift = 0, num_read = 0, c;
-  
+
   for (shift = 56; shift >= 0; shift -= 8) {
     if ( (c = fgetc(fs)) == EOF ) { break; }
     num_read++;
@@ -356,7 +356,7 @@ hpcio_be2_fwrite(uint16_t* val, FILE* fs)
 {
   uint16_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
-  
+
   for (shift = 8; shift >= 0; shift -= 8) {
     c = fputc( ((v >> shift) & 0xff) , fs);
     if (c == EOF) { break; }
@@ -371,7 +371,7 @@ hpcio_be4_fwrite(uint32_t* val, FILE* fs)
 {
   uint32_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
-  
+
   for (shift = 24; shift >= 0; shift -= 8) {
     c = fputc( ((v >> shift) & 0xff) , fs);
     if (c == EOF) { break; }
@@ -386,7 +386,7 @@ hpcio_be8_fwrite(uint64_t* val, FILE* fs)
 {
   uint64_t v = *val; // local copy of val
   int shift = 0, num_write = 0, c;
-  
+
   for (shift = 56; shift >= 0; shift -= 8) {
     c = fputc( ((v >> shift) & 0xff) , fs);
     if (c == EOF) { break; }
@@ -400,7 +400,7 @@ size_t
 hpcio_beX_fwrite(uint8_t* val, size_t size, FILE* fs)
 {
   size_t num_write = 0;
-  
+
   for (unsigned int i = 0; i < size; ++i) {
     int c = fputc(val[i], fs);
     if (c == EOF) {
@@ -451,7 +451,7 @@ hpcio_be8_swrite(uint64_t val, char* buf)
 #define BIG_ENDIAN      0
 #define LITTLE_ENDIAN   1
 
-// hpcio_get_endianness: Return endianness of current architecture. 
+// hpcio_get_endianness: Return endianness of current architecture.
 int
 hpcio_get_endianness()
 {
@@ -462,6 +462,6 @@ hpcio_get_endianness()
   }
   else { // bite[0] == 0x01
     return LITTLE_ENDIAN; // 'bite' points to least significant byte
-  }   
+  }
 }
 #endif

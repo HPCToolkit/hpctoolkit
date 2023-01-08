@@ -45,21 +45,21 @@
 // ******************************************************* EndRiceCopyright *
 
 //*****************************************************************************
-// File: messages-sync.c 
+// File: messages-sync.c
 //
 // Description:
 //   This half of the messaging system. It contains parts that need not be
-//   async-signal safe. 
+//   async-signal safe.
 //
 // History:
-//   19 July 2009 
+//   19 July 2009
 //     created by partitioning pmsg.c into pmsg-sync.c and pmsg-async.c
 //
 //*****************************************************************************
 
 
 //*****************************************************************************
-// global includes 
+// global includes
 //*****************************************************************************
 
 #include <fcntl.h>
@@ -77,7 +77,7 @@
 
 
 //*****************************************************************************
-// local includes 
+// local includes
 //*****************************************************************************
 
 #include "disabled.h"
@@ -103,17 +103,17 @@
 
 
 //*****************************************************************************
-// file local (static) variables 
+// file local (static) variables
 //*****************************************************************************
 
 //-------------------------------------
-// Log output may be throttled by using 
+// Log output may be throttled by using
 // the message limiting mechanism
 //-------------------------------------
 static int global_msg_count = 0;
 
 //-------------------------------------
-// how many unwind msg blocks to permit 
+// how many unwind msg blocks to permit
 // (500 is reasonable choice)
 // FIXME: make this an option
 //-------------------------------------
@@ -122,12 +122,12 @@ static int const threshold = 500;
 static int log_file_fd = STDERR_FD;
 
 //*****************************************************************************
-// forward declarations 
+// forward declarations
 //*****************************************************************************
 
 
 //*****************************************************************************
-// interface operations 
+// interface operations
 //*****************************************************************************
 
 void
@@ -178,9 +178,9 @@ messages_fini(void)
 	      "prematurely closed hpctoolkit's log file", exec, pid);
     }
     //----------------------------------------------------------------------
-    // if this is an execution of an MPI program, we opened the log file 
-    // before the MPI rank was known. thus, the name of the log file is 
-    // missing the MPI rank. fix that now by renaming the log file to what 
+    // if this is an execution of an MPI program, we opened the log file
+    // before the MPI rank was known. thus, the name of the log file is
+    // missing the MPI rank. fix that now by renaming the log file to what
     // it should be.
     //----------------------------------------------------------------------
     int rank = hpcrun_get_rank();
@@ -280,4 +280,3 @@ hpcrun_up_pmsg_count(void)
 {
   global_msg_count++;
 }
-

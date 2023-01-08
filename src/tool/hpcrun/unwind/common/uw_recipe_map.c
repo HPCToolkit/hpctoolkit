@@ -244,8 +244,8 @@ ilmstat_btuwi_pair_malloc(
  * set its fields using the appropriate parameters
  * return the head node.
  */
-  ilmstat_btuwi_pair_t *ans = pop_free_pair(&_lf_ilmstat_btuwi);
-  return ilmstat__btuwi_pair_init(ans, treestat, lm, start, end);
+  ilmstat_btuwi_pair_t *result = pop_free_pair(&_lf_ilmstat_btuwi);
+  return ilmstat__btuwi_pair_init(result, treestat, lm, start, end);
 }
 
 //******************************************************************************
@@ -305,7 +305,7 @@ uw_recipe_map_report(const char *op, void *start, void *end)
 //---------------------------------------------------------------------
 
 
-#if UW_RECIPE_MAP_DEBUG_VERBOSE 
+#if UW_RECIPE_MAP_DEBUG_VERBOSE
 static void
 treestat_tostr(tree_stat_t stat, char str[])
 {
@@ -439,7 +439,7 @@ uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
     fprintf(stderr, "%s", buf);
   }
 }
-#else 
+#else
 #define uw_recipe_map_report_and_dump(op, start, end)
 #endif
 
@@ -531,7 +531,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 {
   if (start > 0) {
     ilmstat_btuwi_pair_t* ileft = uw_recipe_map_inrange_find(start - 1, uw);
-    if (ileft) { 
+    if (ileft) {
       if ((ileft->interval.end == start) &&
           (NEVER == atomic_load_explicit(&ileft->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the left
@@ -542,7 +542,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
   }
   if (end < UINTPTR_MAX) {
     ilmstat_btuwi_pair_t* iright = uw_recipe_map_inrange_find(end+1, uw);
-    if (iright) { 
+    if (iright) {
       if ((iright->interval.start == end) &&
           (NEVER == atomic_load_explicit(&iright->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the right
@@ -660,12 +660,12 @@ uw_recipe_map_init(void)
 /*
  * just look, don't make any modifications, even to the hashtable
  */
-static tree_stat_t 
+static tree_stat_t
 uw_recipe_map_lookup_helper
 (
  thread_data_t* td,
- void *addr, 
- unwinder_t uw, 
+ void *addr,
+ unwinder_t uw,
  unwindr_info_t *unwr_info,
  ilmstat_btuwi_pair_t **callers_ilm_btui // ptr to caller's ilm_btui
 )
@@ -703,7 +703,7 @@ uw_recipe_map_lookup_helper
         if (oldstat == READY) {
           unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
           if (unwr_info->btuwi != NULL) {
-            uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui, 
+            uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui,
 			   unwr_info->btuwi);
           }
         } else {
@@ -733,8 +733,8 @@ uw_recipe_map_lookup_helper
 bool
 uw_recipe_map_lookup_noinsert
 (
- void *addr, 
- unwinder_t uw, 
+ void *addr,
+ unwinder_t uw,
  unwindr_info_t *unwr_info
 )
 {
@@ -763,7 +763,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 
   if (oldstat != READY) {
     // unwind recipe currently unavailable, prepare to build recipes for the enclosing
-    // routine 
+    // routine
     if (!ilm_btui) {
     load_module_t *lm;
     void *fcn_start, *fcn_end;
@@ -782,7 +782,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     ilm_btui =
       ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
         DEFERRED, my_alloc);
-    
+
     csklnode_t *node = cskl_insert(unwinder_to_cskiplist[uw], ilm_btui, my_alloc);
     if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
       // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
@@ -794,7 +794,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 #if UW_RECIPE_MAP_DEBUG
     assert(ilm_btui != NULL);
 #endif
-    
+
     if (atomic_compare_exchange_strong_explicit(&ilm_btui->stat, &oldstat, FORTHCOMING,
                   memory_order_release, memory_order_relaxed)) {
       // it is my responsibility to build the tree of intervals for the function
@@ -802,7 +802,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
       void *fcn_end   = (void*)ilm_btui->interval.end;
 
       // ----------------------------------------------------------
-      // potentially crash in this statement. need to save the state 
+      // potentially crash in this statement. need to save the state
       // ----------------------------------------------------------
 
       sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
@@ -848,7 +848,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
         uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui, unwr_info->btuwi);
       }
     }
-  } 
+  }
 
   TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
 

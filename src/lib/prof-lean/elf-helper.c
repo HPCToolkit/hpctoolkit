@@ -45,9 +45,9 @@
 // File: elf-helper.c
 //
 // Purpose:
-//   interface implementation for querying ELF binary information and 
+//   interface implementation for querying ELF binary information and
 //   hiding the details about extended number
-//   
+//
 //***************************************************************************
 
 
@@ -85,16 +85,16 @@ elf_helper_initialize
   eh->symtab_data = NULL;
   eh->symtab_shndx_section = NULL;
   eh->symtab_shndx_data = NULL;
-  
+
   // Find .symtab and .symtab_shndx
-  Elf_Scn *scn = NULL;  
+  Elf_Scn *scn = NULL;
   while ((scn = elf_nextscn(elf, scn)) != NULL) {
     GElf_Shdr shdr;
     if (!gelf_getshdr(scn, &shdr)) continue;
     if (shdr.sh_type == SHT_SYMTAB_SHNDX) {
       // If .symtab_shndx section exists, we need extended numbering
       // for section index of a symbol
-      eh->symtab_shndx_section = scn;    
+      eh->symtab_shndx_section = scn;
       eh->symtab_shndx_data = elf_getdata(scn, NULL);
     }
     if (shdr.sh_type == SHT_SYMTAB) {
@@ -130,6 +130,3 @@ elf_helper_get_symbol
   }
   return symp;
 }
-
-
-      

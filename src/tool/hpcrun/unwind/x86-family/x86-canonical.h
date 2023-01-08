@@ -55,7 +55,7 @@
  * interface operations
  *****************************************************************************/
 
-void 
+void
 reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
 	bool irdebug, interval_arg_t *iarg);
 

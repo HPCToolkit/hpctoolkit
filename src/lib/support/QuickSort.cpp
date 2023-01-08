@@ -141,7 +141,6 @@ void QuickSort::Sort (const int minEntryIndex, const int maxEntryIndex)
           Sort (mid+1, maxEntryIndex);
         }
     }
- 
+
   return;
 }
-

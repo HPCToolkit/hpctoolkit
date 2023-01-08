@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -141,14 +141,14 @@ LUSHI_init(int argc, char** argv,
 }
 
 
-extern int 
+extern int
 LUSHI_fini()
 {
   return 0;
 }
 
 
-extern char* 
+extern char*
 LUSHI_strerror(int code)
 {
   return ""; // STUB
@@ -159,14 +159,14 @@ LUSHI_strerror(int code)
 // Maintaining Responsibility for Code/Frame-space
 // **************************************************************************
 
-extern int 
+extern int
 LUSHI_reg_dlopen()
 {
   return 0; // FIXME: coordinate with dylib stuff
 }
 
 
-extern bool 
+extern bool
 LUSHI_ismycode(void* addr)
 {
   char buffer[PATH_MAX];
@@ -190,7 +190,7 @@ bool
 is_cilkprogram(void* addr, char* lm_name /*helper storage*/)
 {
   void *lm_beg, *lm_end;
-  int ret = CB_loadmap_find(addr, lm_name, &lm_beg, &lm_end); 
+  int ret = CB_loadmap_find(addr, lm_name, &lm_beg, &lm_end);
   if (ret && !(strstr(lm_name, lib_str) || strstr(lm_name, ld_str))) {
     return true;
   }
@@ -199,7 +199,7 @@ is_cilkprogram(void* addr, char* lm_name /*helper storage*/)
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 extern lush_step_t
@@ -224,7 +224,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
 
   // FIXME: consider effects of multiple agents
-  //lush_agentid_t last_aid = lush_cursor_get_aid(cursor); 
+  //lush_agentid_t last_aid = lush_cursor_get_aid(cursor);
 
   if (cur_seg == UnwSeg_CilkRT) {
     // INVARIANT: unw_ty_is_worker() == true
@@ -247,7 +247,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	break;
       case UnwTy_WorkerLcl:
-	if (csr->u.prev_seg == UnwSeg_User 
+	if (csr->u.prev_seg == UnwSeg_User
 	    && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
 	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
@@ -260,7 +260,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	}
 	break;
       case UnwTy_Worker:
-	if (csr->u.prev_seg == UnwSeg_User 
+	if (csr->u.prev_seg == UnwSeg_User
 	    && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
 	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
@@ -293,7 +293,7 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
   // NOTE: Since all associations are 1-to-a, it is always valid to step.
 
   lush_step_t ty = LUSH_STEP_NULL;
-  
+
   int t = CB_step(lush_cursor_get_pcursor(cursor));
   if (t > 0) {
     ty = LUSH_STEP_END_CHORD;
@@ -304,7 +304,7 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
   else /* (t < 0) */ {
     ty = LUSH_STEP_ERROR;
   }
-  
+
   return ty;
 }
 
@@ -331,7 +331,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
   lush_assoc_t as = lush_cursor_get_assoc(cursor);
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
   cilk_ip_t* lip = (cilk_ip_t*)lush_cursor_get_lip(cursor);
-  
+
   if (lush_assoc_is_a_to_0(as)) {
     ty = LUSH_STEP_END_CHORD;
   }
@@ -368,7 +368,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
 }
 
 
-extern int 
+extern int
 LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 {
   return 0; // STUB
@@ -376,7 +376,7 @@ LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 static int
@@ -385,12 +385,12 @@ init_lcursor(lush_cursor_t* cursor)
   lush_lip_t* lip = lush_cursor_get_lip(cursor);
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
   lush_agentid_t aid_prev = lush_cursor_get_aid_prev(cursor);
-  
+
   // -------------------------------------------------------
   // inter-bichord data
   // -------------------------------------------------------
   if (aid_prev == lush_agentid_NULL) {
-    CilkWorkerState* ws = 
+    CilkWorkerState* ws =
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
     Closure* cactus_stack = (ws) ? CILKWS_CL_DEQ_BOT(ws) : NULL;
 
@@ -460,7 +460,7 @@ classify_by_unw_segment(cilk_cursor_t* csr)
 
   if (unw_ty_is_worker(csr->u.ty)) {
     // -------------------------------------------------------
-    // 1. is_cilkrt &  (deq_diff <= 1) => UnwSeg_CilkSched 
+    // 1. is_cilkrt &  (deq_diff <= 1) => UnwSeg_CilkSched
     // 2. is_cilkrt & !(deq_diff <= 1) => UnwSeg_CilkRT
     // 3. is_user                      => UnwSeg_User
     // -------------------------------------------------------
@@ -487,7 +487,7 @@ classify_by_unw_segment(cilk_cursor_t* csr)
     cur_seg = UnwSeg_CilkSched;
     if ( !(is_user || is_cilkrt) ) {
       // is_user may be true when executing main
-      EEMSG("FIXME: Unknown segment for master (assert)\n"); 
+      EEMSG("FIXME: Unknown segment for master (assert)\n");
     }
   }
   else {
@@ -518,7 +518,7 @@ peek_segment(lush_cursor_t* cursor)
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 extern int
@@ -528,7 +528,7 @@ LUSHI_lip_destroy(lush_lip_t* lip)
 }
 
 
-extern int 
+extern int
 LUSHI_lip_eq(lush_lip_t* lip)
 {
   return 0; // STUB
@@ -554,14 +554,14 @@ LUSHI_lip_write()
 // **************************************************************************
 
 extern bool
-LUSHI_do_metric(uint64_t incrMetricIn, 
-		bool* doMetric, bool* doMetricIdleness, 
+LUSHI_do_metric(uint64_t incrMetricIn,
+		bool* doMetric, bool* doMetricIdleness,
 		uint64_t* incrMetric, double* incrMetricIdleness)
 {
   // INVARIANT: at least one thread is working
   // INVARIANT: ws is non-NULL
 
-  CilkWorkerState* ws = 
+  CilkWorkerState* ws =
     (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
   bool isWorking = (ws && CILK_WS_is_working(ws));
 
@@ -590,6 +590,6 @@ LUSHI_do_metric(uint64_t incrMetricIn,
   }
   return *doMetric;
 }
- 
+
 
 // **************************************************************************

@@ -254,7 +254,7 @@ doSingleBinary
   }
 
   // Initialize the output stream for the hpcstruct file
-  //  Cacheing is embedded in this call
+  //  Caching is embedded in this call
   //
   hpcstruct.init(cache_path_directory.c_str(), cache_flat_entry.c_str(),
 		 structure_name.c_str(), hpcstruct_path.c_str());
@@ -328,7 +328,7 @@ doSingleBinary
 #if 0
     cerr << "DEBUG singleApplicationBinary : checkname_cmd replaced names in struct file " << endl;
 #endif
-      
+
       } else if (renamestat == 0 ) {
 #if 0
         cerr << "DEBUG singleApplicationBinary : checkname_cmd did not need to replace names in struct file " << endl;

@@ -74,10 +74,10 @@
 //***************************************************************************
 
 class Args {
-public: 
-  Args(); 
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  ~Args();
 
   // Parse the command line
   void
@@ -89,7 +89,7 @@ public:
 
   void
   printUsage(std::ostream& os) const;
-  
+
   // Error
   void
   printError(std::ostream& os, const char* msg) const;
@@ -120,6 +120,6 @@ private:
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
-#endif // Args_hpp 
+#endif // Args_hpp

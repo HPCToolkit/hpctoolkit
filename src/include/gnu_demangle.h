@@ -67,7 +67,7 @@
 
 #include <libiberty/demangle.h>
 
-/* Undo possibly mischevious macros in binutils/include/ansidecl.h */
+/* Undo possibly mischievous macros in binutils/include/ansidecl.h */
 #undef inline
 
 #endif

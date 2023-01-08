@@ -62,7 +62,7 @@ typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 thread_data_t *

@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 //=====================================================================
-// File: fnbounds_dynamic.c  
-// 
+// File: fnbounds_dynamic.c
+//
 //     provide information about function bounds for functions in
 //     dynamically linked load modules. use an extra "server" process
 //     to handle computing the symbols to insulate the client process
@@ -72,7 +72,7 @@
 #include <stdlib.h>    // for getenv
 #include <errno.h>     // for errno
 #include <stdint.h>
-#include <stdbool.h>   
+#include <stdbool.h>
 #include <sys/param.h> // for PATH_MAX
 #include <sys/types.h>
 #include <unistd.h>    // getpid
@@ -128,7 +128,7 @@
 // local variables
 //*********************************************************************
 
-// locking functions to ensure that dynamic bounds data structures 
+// locking functions to ensure that dynamic bounds data structures
 // are consistent.
 
 static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
@@ -157,19 +157,19 @@ fnbounds_compute(const char *filename, void *start, void *end);
 //*********************************************************************
 
 //---------------------------------------------------------------------
-// function fnbounds_init: 
-// 
+// function fnbounds_init:
+//
 //     for dynamically-linked executables, start an fnbounds server
 //     process to that will compute function bounds information upon
 //     demand for dynamically-linked load modules.
 //
-//     return code = 0 upon success, otherwise fork failed 
+//     return code = 0 upon success, otherwise fork failed
 //
 //     NOTE: don't make this routine idempotent: it may be needed to
 //     start a new server if the process forks
 //---------------------------------------------------------------------
 
-int 
+int
 fnbounds_init(const char *executable_name)
 {
   if (hpcrun_get_disabled()) return 0;
@@ -183,10 +183,10 @@ bool
 fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 {
   bool ret = false; // failure unless otherwise reset to 0 below
-  
+
   load_module_t* lm_ = hpcrun_loadmap_findByAddr(ip, ip);
   dso_info_t* dso = (lm_) ? lm_->dso_info : NULL;
-  
+
   if (dso && dso->nsymbols > 0) {
     void* ip_norm = ip;
     if (dso->is_relocatable) {
@@ -197,7 +197,7 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 
     if (dso->table) {
       // N.B.: works on normalized IPs
-      int rv = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm, 
+      int rv = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm,
 				     (void**) start, (void**) end);
 
       ret = (rv == 0);
@@ -233,13 +233,13 @@ fnbounds_map_dso(const char *module_name, void *start, void *end, struct dl_phdr
 }
 
 //---------------------------------------------------------------------
-// function fnbounds_fini: 
-// 
+// function fnbounds_fini:
+//
 //     for dynamically-linked executables, shut down the fnbounds
 //     server process
 //---------------------------------------------------------------------
 
-void 
+void
 fnbounds_fini()
 {
   if (hpcrun_get_disabled()) return;
@@ -251,7 +251,7 @@ fnbounds_fini()
 void
 fnbounds_release_lock(void)
 {
-  FNBOUNDS_UNLOCK;  
+  FNBOUNDS_UNLOCK;
 }
 
 
@@ -278,7 +278,7 @@ fnbounds_fetch_executable_table(void)
 // is already locked (mostly).
 //*********************************************************************
 
-static dso_info_t* 
+static dso_info_t*
 fnbounds_compute(const char* incoming_filename, void* start, void* end)
 {
   struct fnbounds_file_header fh;
@@ -286,18 +286,18 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   void** nm_table;
   long map_size;
 
-  // typically, we use the filename for the query to the system server. however, 
+  // typically, we use the filename for the query to the system server. however,
   // for [vdso], the filename will be the name of a file in the measurements
   // directory where a copy of the [vdso] segment will be saved. for parallel programs,
   // there is a race between the one process that opens the file first in exclusive
   // mode and other processes that just continue. one of the continuing processes
-  // might try to invoke the system server to compute function bounds based on the 
+  // might try to invoke the system server to compute function bounds based on the
   // file contents before the file is completely written. for that reason, we use
   // declare below pathname_for_query, which will just be [vdso] rather than the
   // name of the file that contains a copy. given [vdso], the system server will
   // compute the bounds using its own memory-mapped copy of [vdso] rather than
-  // waiting for the file to be written -- johnmc 7/2017 
-  const char *pathname_for_query;  
+  // waiting for the file to be written -- johnmc 7/2017
+  const char *pathname_for_query;
   if (incoming_filename == NULL) {
     return (NULL);
   }
@@ -336,5 +336,3 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
 
   return hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
 }
-
-

@@ -115,7 +115,7 @@ ompt_region_debug_region_create
 );
 
 
-int 
+int
 hpcrun_ompt_region_check
 (
   void

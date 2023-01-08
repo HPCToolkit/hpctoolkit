@@ -86,4 +86,3 @@ c_isinf_d(double x)
 {
   return isinf(x);
 }
-

@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Util_hpp 
+#ifndef Analysis_Util_hpp
 #define Analysis_Util_hpp
 
 //************************* System Include Files ****************************

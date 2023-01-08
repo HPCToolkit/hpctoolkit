@@ -65,4 +65,3 @@ endif
 if OPT_LZMA_STATIC
     SUBDIRS += lzma
 endif
-

@@ -125,7 +125,7 @@ queue_map_insert
     assert(0);  // entry for a given key should be inserted only once
   } else {
     queue_map_entry_t *entry = queue_node_new(queue_id, node);
-    queue_insert(&queue_map_root, entry);  
+    queue_insert(&queue_map_root, entry);
   }
   spinlock_unlock(&queue_map_lock);
 }
@@ -152,4 +152,3 @@ queue_map_entry_queue_node_get
 {
   return entry->node;
 }
-

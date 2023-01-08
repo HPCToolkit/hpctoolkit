@@ -15,8 +15,8 @@ repos:
   # Automatically elide older Python syntax and replace with newer ones
   - id: pyupgrade
     args: [--py310-plus]
-    # These files are excluded from all Python linting, they're old and probably unused
-    exclude: &py_exclude '^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$'
+    # XXX: Old Python 2.7-compatible script. Probably bitrot by now.
+    exclude: '^src/tool/hpcrun/sample-sources/make-wrappers.py$'
 
 
 # ------------------------------------------------------------------------------------
@@ -29,7 +29,6 @@ repos:
   # Blacken all Python code, except allow slightly longer line lengths
   - id: black
     args: ['--line-length=100', '--target-version=py310']
-    exclude: *py_exclude
 
 - repo: https://github.com/PyCQA/isort
   rev: 5.11.4
@@ -37,26 +36,21 @@ repos:
   # Sort imports in all the Python code
   - id: isort
     args: [--profile, black]
-    exclude: *py_exclude
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0
   hooks:
   # Remove trailing whitespace
   - id: trailing-whitespace
-    # XXX: Only enabled in CI files for now due to large numbers of failures
-    files: &ci_files (^ci/|\.gitlab-ci\.yml$|\.pre-commit-config\.yaml$|\.gitignore$|\.prospector\.yaml$|tests2/(?!Makefile\.in$))
+    # Exclude Autogoo since it generates tons of trailing whitespace
+    exclude: &autogoo '^((.*/|)Makefile.in|configure)$'
   # All files must end in a single newline (or be perfectly empty)
   - id: end-of-file-fixer
-    # XXX: Only enabled in CI files for now due to large numbers of failures
-    files: *ci_files
+    exclude: *autogoo
   # Remove the UTF8 BOM from the start of any files
   - id: fix-byte-order-marker
-  # Use UNIX-style line endings (LF)
+  # Ensure files have consistent endings. (This operates in the worktree, Git also normalizes the index)
   - id: mixed-line-ending
-    args: [--fix=lf]
-    # XXX: Exclude files in doc/ that use CRLF endings
-    exclude: doc/www/.*\.html(\.in)?
 
 
 # ------------------------------------------------------------------------------------
@@ -110,15 +104,25 @@ repos:
     # Some of our dependencies (needed in the virtual env for pylint to work)
     - ruamel.yaml
     - podman
-    exclude: '(^src/tool/hpcrun/sample-sources/make-(cuda-)?wrappers.py$|_test\.py$)'
+    exclude: |
+      (?x)(
+        _test\.py$ |    # Code for tests need not be super clean
+        ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
+      )
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.9.0.2
   hooks:
   # Find common errors in shell scripts using shellcheck
   - id: shellcheck
-    # XXX: Only enabled in CI files for now
-    files: *ci_files
+    # Exclude Autotools files, they don't pass shellcheck (which is a really bad sign!)
+    exclude: '^(configure$|config/)'
+  - id: shellcheck
+    # These files get injected into the launch scripts manually with a lot of context, so we have
+    # to give it a few extra arguments to get these through.
+    files: '^config/(copyright-hash|export-hpctoolkit|launch-options)$'
+    types: [file]
+    args: ['--shell=sh', '--exclude=SC2154']
 
 - repo: https://github.com/python-jsonschema/check-jsonschema
   rev: '0.20.0'
@@ -131,5 +135,11 @@ repos:
   hooks:
   # Identify common spelling mistakes in code and comments
   - id: codespell
-    # XXX: Only enabled in CI files for now
-    files: *ci_files
+    args: ['--config', '.codespellrc']
+    exclude: |
+      (?x)^(
+        config/(ltmain\.sh|depcomp|config\.guess|config\.sub|libtool\.m4) |    # Autotools files with code misspellings
+        configure |
+        lib/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
+        tools/latex2man/.* |    # External code
+      )$

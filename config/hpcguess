@@ -6,12 +6,12 @@
 
 ## **************************************************************************
 ##
-## File: 
+## File:
 ##    hpcguess: see usage.
 ##
 ## Author:
 ##    Written by Nathan Tallent, Rice University.
-##    
+##
 ## **************************************************************************
 
 #############################################################################
@@ -37,7 +37,7 @@ f_usage()
   $p "  GNU's config.guess script.  The raw input should be in the form:\n"
   $p "    host_cpu-host_vendor-host_os\n"
   $p "\n"
-  $p "  All error messages are preceeded by '${error_pfx}'\n"
+  $p "  All error messages are preceded by '${error_pfx}'\n"
   $p "\n"
   $p "  Options: Defaults are shown in square brackets [].\n"
   $p "    -h, --help   : Print help, then exit\n"
@@ -61,7 +61,7 @@ f_opt_check()
 {
   # 'option_value' should be non-nil
   f_error_on_nil "$2" "${error_pfx} no value for option $1\n"
-    
+
   # 'option_value' should not start with '-'
   if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
     printf "${error_pfx} invalid value for option $1: $2\n"
@@ -81,16 +81,16 @@ f_getoptions()
       --version | -v )
          echo "version: ${HPCGUESS_VERSION}" ; exit 0 ;;
       --help | --h* | -h )
-         f_usage; exit 0 ;; 
+         f_usage; exit 0 ;;
       -- )     # Stop option processing
          shift; break ;;
 #      - )      # Use stdin as input.
 #         break ;;
-      -* ) 
+      -* )
          printf "${error_pfx} Invalid option '$1'\n";
          f_usage; exit 1;
          ;;
-      * )   
+      * )
          break ;;
     esac
     shift
@@ -126,7 +126,7 @@ case $1 in
   mips*-*-irix*)
     cononical_host="mips-IRIX64" ;;
 
-  # Linux 
+  # Linux
   i386*-*-linux* | i686*-*-linux*)
     cononical_host="x86-Linux" ;;
   ia64*-*-linux*)
@@ -134,9 +134,9 @@ case $1 in
   x86_64*-*-linux*)
     cononical_host="x86_64-Linux" ;;
   mips64el*-*-linux*)
-    cononical_host="mips64el-Linux" ;; 
+    cononical_host="mips64el-Linux" ;;
   powerpc64*-*-linux*)
-    cononical_host="powerpc64-Linux" ;; 
+    cononical_host="powerpc64-Linux" ;;
 
   # MacOS
   powerpc*-*-darwin*)

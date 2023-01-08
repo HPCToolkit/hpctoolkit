@@ -144,4 +144,3 @@ gpu_correlation_free
 {
   channel_item_free(channel, c);
 }
-

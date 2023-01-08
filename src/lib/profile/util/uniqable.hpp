@@ -62,7 +62,7 @@
 /// proper subset of their members, while others need to stay mutable for
 /// linking into a larger substrate. The STL structures impose an extra `const`
 /// to ensure the contents are (logically) accurate. Some approaches are:
-///  1. Use `const_cast`. Downside is that `operator=` becomes unuseable.
+///  1. Use `const_cast`. Downside is that `operator=` becomes unusable.
 ///  2. Use `mutable`. Downside is that `const` is significantly weakened.
 ///  3. Use a `std::pair` underneath. Downside is a C++ type management mess.
 /// We take an alternative of approach 2, using templates and a runtime check

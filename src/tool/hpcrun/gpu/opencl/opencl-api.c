@@ -545,7 +545,7 @@ opencl_binary_sizes
 )
 {
   cl_int ret = cl_get_program_info(program, CL_PROGRAM_BINARY_SIZES,
-				   device_count * sizeof(size_t), binary_sizes, 0); 
+				   device_count * sizeof(size_t), binary_sizes, 0);
   return ret;
 }
 
@@ -751,10 +751,10 @@ opencl_operation_multiplexer_push
   gpu_activity.details.correlation.host_correlation_id = correlation_id;
   gpu_operation_multiplexer_push(obj->details.initiator_channel,
     NULL, &gpu_activity);
-  
+
   // The actual entry
   opencl_activity_translate(&gpu_activity, obj, interval);
-  gpu_operation_multiplexer_push(obj->details.initiator_channel, 
+  gpu_operation_multiplexer_push(obj->details.initiator_channel,
     obj->pending_operations, &gpu_activity);
 }
 
@@ -824,7 +824,7 @@ opencl_isClArgBuffer
   /*
    * There are 2 scenarios in which opencl_isClArgBuffer will return false
    * 1. When clCreateBuffer was not called for arg before calling clSetKernelArg
-   * 2. clEnqueueWriteBuffer is being called for arg. We shouldnt be recording duplicate H2D calls
+   * 2. clEnqueueWriteBuffer is being called for arg. We shouldn't be recording duplicate H2D calls
    * */
   uint64_t buffer_id = opencl_get_buffer_id(arg);
   bool isBuffer;
@@ -1148,7 +1148,7 @@ opencl_api_initialize
   ETMSG(OPENCL, "CL_TARGET_OPENCL_VERSION: %d", CL_TARGET_OPENCL_VERSION);
   // we need this even when instrumentation is off inorder to get kernel names in hpcviewer
   hpcrun_thread_init_mem_pool_once(TOOL_THREAD_ID, NULL, HPCRUN_NO_TRACE, true);
-  
+
   // GPU_IDLE_CAUSE should be attributed only to application thread
   // application thread calls this fn
   thread_data_t* td   = hpcrun_get_thread_data();
@@ -1334,7 +1334,7 @@ hpcrun_clCreateCommandQueueWithProperties
   if (optimization_check && *errcode_ret == CL_SUCCESS) {
     recordQueueContext(queue, context);
   }
-	
+
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_queue_prologue(queue);
 	}
@@ -1349,7 +1349,7 @@ hpcrun_clCreateCommandQueueWithProperties
 static uint32_t
 getKernelModuleId
 (
- cl_kernel ocl_kernel 
+ cl_kernel ocl_kernel
 )
 {
   size_t kernel_name_size;
@@ -1742,7 +1742,7 @@ get_numeric_hash_id_for_string
   // Compute hash for mem_ptr with mem_size
   unsigned char hash[CRYPTO_HASH_LENGTH];
   crypto_compute_hash(mem_ptr, mem_size, hash, CRYPTO_HASH_LENGTH);
-  
+
   size_t i;
   uint64_t num_hash = 0;
   for (i = 0; i < CRYPTO_HASH_LENGTH; ++i) {
@@ -1759,7 +1759,7 @@ hpcrun_clFinish
 )
 {
   ETMSG(OPENCL, "clFinish called");
-  // on the assumption that clFinish is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
+  // on the assumption that clFinish is synchronous, we have sandwiched it with calls to sync_prologue and sync_epilogue
   if(is_opencl_blame_shifting_enabled()) {
     opencl_sync_prologue(command_queue);
   }

@@ -45,9 +45,9 @@
 // File: elf-extract.c
 //
 // Purpose:
-//   interface implementation for querying ELF binary information and 
+//   interface implementation for querying ELF binary information and
 //   hiding the details about extended number
-//   
+//
 //***************************************************************************
 
 
@@ -81,13 +81,13 @@ elf_section_info
  const char *section_name,
  unsigned char **section,
  size_t *section_size
-) 
+)
 {
   // sanity check
   elf_version(EV_CURRENT);
 
   // open elf file
-  Elf *elf = elf_memory((char *) binary, binary_size); 
+  Elf *elf = elf_memory((char *) binary, binary_size);
 
   if (elf) {
     // locate pointer to string table containing section names
@@ -95,7 +95,7 @@ elf_section_info
     elf_getshdrstrndx(elf, &section_string_index);
 
     // find section by name
-    Elf_Scn *scn = NULL;  
+    Elf_Scn *scn = NULL;
     while ((scn = elf_nextscn(elf, scn)) != NULL) {
       // extract section header
       GElf_Shdr shdr;
@@ -104,10 +104,10 @@ elf_section_info
       // extract section name from header
       const char *sec_name = elf_strptr(elf, section_string_index, shdr.sh_name);
 
-      // return info if section has target name 
+      // return info if section has target name
       if (strcmp(section_name, sec_name) == 0) {
 	*section = binary + shdr.sh_offset;
-	*section_size = shdr.sh_size; 
+	*section_size = shdr.sh_size;
 	return true;
       }
     }

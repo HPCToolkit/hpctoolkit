@@ -54,13 +54,13 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
 //****************************************************************************
 
-#ifndef support_Exception_hpp 
+#ifndef support_Exception_hpp
 #define support_Exception_hpp
 
 //************************** System Include Files ****************************
@@ -75,7 +75,7 @@
 
 //****************************************************************************
 
-// Note: Use the inteface in "diagnostics.h"
+// Note: Use the interface in "diagnostics.h"
 
 //****************************************************************************
 // Exception
@@ -131,11 +131,11 @@ namespace Diagnostics {
     // -------------------------------------------------------
     // message/reporting
     // -------------------------------------------------------
-    virtual std::string message() const { 
+    virtual std::string message() const {
       return "[Diagnostics::Exception] " + mWhat + " (" + mWhere + ")";
     }
 
-    virtual void report(std::ostream& os) const { 
+    virtual void report(std::ostream& os) const {
       os << message() << std::endl;
     }
 
@@ -144,7 +144,7 @@ namespace Diagnostics {
   protected:
     void Ctor(const std::string& x,
 	      const char* filenm = NULL, unsigned int lineno = 0);
-    
+
     std::string mWhat;
     std::string mWhere;
   };
@@ -166,12 +166,12 @@ namespace Diagnostics {
     // -------------------------------------------------------
     // message/reporting
     // -------------------------------------------------------
-    virtual std::string message() const { 
+    virtual std::string message() const {
       return "[Diagnostics::FatalException] " + mWhat + " [" + mWhere + "]";
     }
 
   };
-  
+
 } /* namespace Diagnostics */
 
 //****************************************************************************

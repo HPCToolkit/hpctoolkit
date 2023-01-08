@@ -118,7 +118,7 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
     return;
   }
 
-  // compute the blocking time: current_time - time_last_cs_out 
+  // compute the blocking time: current_time - time_last_cs_out
   // Linux kernel should give us time in nanosec (see the sched_clock()) so we need
   // to convert it to sec by multiply it with 1e-09
   const double SEC_PER_NANOSEC = 0.000000001;
@@ -215,7 +215,7 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 /***************************************************************
  * Register events to compute blocking time in the kernel
  * We use perf's sofrware context switch event to compute the
- * time spent inside the kernel. For this, we need to sample everytime
+ * time spent inside the kernel. For this, we need to sample every time
  * a context switch occurs, and compute the time when entering the
  * kernel vs leaving the kernel. See perf_event_handler.
  * We need two metrics for this:
@@ -229,26 +229,26 @@ register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
-  event_desc->metric_custom->metric_index = 
+  event_desc->metric_custom->metric_index =
     hpcrun_set_new_metric_info_and_period(
       blocktime_kind, METRIC_NAME_BLOCKTIME,
       MetricFlags_ValFmt_Real, 1 /* period */, metric_property_none);
 
-  event_desc->metric_custom->metric_desc = 
-    hpcrun_id2metric_linked(event_desc->metric_custom->metric_index);  
+  event_desc->metric_custom->metric_desc =
+    hpcrun_id2metric_linked(event_desc->metric_custom->metric_index);
 
   metric_blocking_index = event_desc->metric_custom->metric_index;
 
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------
-  event_desc->hpcrun_metric_id = 
+  event_desc->hpcrun_metric_id =
     hpcrun_set_new_metric_info_and_period(
       kb_kind, EVNAME_CONTEXT_SWITCHES,
       MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
 
-  event_desc->metric_desc = 
-    hpcrun_id2metric_linked(event_desc->hpcrun_metric_id); 
+  event_desc->metric_desc =
+    hpcrun_id2metric_linked(event_desc->hpcrun_metric_id);
 
   event_desc->metric_desc->flags.fields.show = METRIC_HIDDEN;
 

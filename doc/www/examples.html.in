@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- -*- coding: utf-8 -*- -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -36,7 +36,7 @@ Chombo AMR Framework: amrGodunov3D on 1024 cores of a Cray XE6:
 <br />
 <br />
 
-The compressed tar file contains data for hpcviewer 
+The compressed tar file contains data for hpcviewer
 You can use hpcviewer to explore where the code spends its time with top-down, bottom-up, and flat views of the performance data.
 hpcviewer's top-down view of the calling context tree enables you to drill down and see what is important. hpcviewer's bottom-up view enables you to assess the cost of individual functions to their multiple invocation sites.
 You can use hpcviewer to see how the execution unfolds over time at multiple levels of abstraction.
@@ -46,44 +46,44 @@ For details about how to use the hpcviewer user interfaces, see Chapters 5 and 6
 </ul>
 </p>
 
-<!-- 
-<p>This page contains links that will enable you to download a copy of 
-hpcviewer (HPCToolkit's performance data browser) and some sample 
-databases to help give you get a sense of what it is like to use 
-HPCToolkit for performance analysis. 
+<!--
+<p>This page contains links that will enable you to download a copy of
+hpcviewer (HPCToolkit's performance data browser) and some sample
+databases to help give you get a sense of what it is like to use
+HPCToolkit for performance analysis.
 <br>
 <ul>
 <li>
 Download hpcviewer
-[<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/HPCViewer.jar.gz">HPCViewer.jar.gz</a> (767KB)], 
-[<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/HPCViewer.jar">HPCViewer.jar</a> (2.5MB)], 
-- This is a Java archive (jar) file that is HPCToolkit's user interface for interactive browsing of performance databases. The jar file was built with Java 1.4.1 and requires a recent version of Java, though it may work with Java versions earlier than 1.4.1.  Launching the jar file will start the viewer and bring up a file chooser dialog to open a performance database. The file chooser dialog should be used to open the XML file inside the top-level directory of a performance database. 
+[<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/HPCViewer.jar.gz">HPCViewer.jar.gz</a> (767KB)],
+[<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/HPCViewer.jar">HPCViewer.jar</a> (2.5MB)],
+- This is a Java archive (jar) file that is HPCToolkit's user interface for interactive browsing of performance databases. The jar file was built with Java 1.4.1 and requires a recent version of Java, though it may work with Java versions earlier than 1.4.1.  Launching the jar file will start the viewer and bring up a file chooser dialog to open a performance database. The file chooser dialog should be used to open the XML file inside the top-level directory of a performance database.
 </li>
 <br>
 <li>
-<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/icc-vs-gcc.tar.gz">Download icc-vs-gcc.tar.gz</a> (5KB) - This gzipped tar file contains an HPCViewer performance 
+<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/icc-vs-gcc.tar.gz">Download icc-vs-gcc.tar.gz</a> (5KB) - This gzipped tar file contains an HPCViewer performance
 database that compares the Intel 8.0 C compiler (-g -O3)
-with gcc 3.2.3 (-O3 -g3 -funroll-all-loops) on an Itanium 2 (McKinley) 
-(900MHz XS6000) for McAlpin's Streams benchmark.  The former 
-generates code alomst 4x faster than the latter. 
+with gcc 3.2.3 (-O3 -g3 -funroll-all-loops) on an Itanium 2 (McKinley)
+(900MHz XS6000) for McAlpin's Streams benchmark.  The former
+generates code almost 4x faster than the latter.
 <br>
 <br>
 This small but interesting example illustrates the compiler-independence
-of HPCToolkit.  While the database provided only compares two compilers on the same architecture, HPCToolkit can also be used similarly for 
+of HPCToolkit.  While the database provided only compares two compilers on the same architecture, HPCToolkit can also be used similarly for
 cross-architecture comparisons.
 </li>
 <br>
 <li>
-<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/NAS-BT-meas-vs-predicted.tar.gz">Download NAS-BT-meas-vs-predicted.tar.gz</a> (57KB) - This gzipped tar file contains an HPCViewer performance 
-database for 200x200x200 problem size executions of NAS BT. The database includes both a variety of metrics (L2 Miss, L3 Miss, Total Mem Access) measured on a 900MHz Itanium 2, as well as predictions of these values made using a combination of static and dynamic analysis of a SPARC binary. 
+<a href="http://hipersoft.rice.edu/hpctoolkit/SERVER/examples/NAS-BT-meas-vs-predicted.tar.gz">Download NAS-BT-meas-vs-predicted.tar.gz</a> (57KB) - This gzipped tar file contains an HPCViewer performance
+database for 200x200x200 problem size executions of NAS BT. The database includes both a variety of metrics (L2 Miss, L3 Miss, Total Mem Access) measured on a 900MHz Itanium 2, as well as predictions of these values made using a combination of static and dynamic analysis of a SPARC binary.
 <br>
 <br>
-The performance prediction approach that is compared with measured data 
+The performance prediction approach that is compared with measured data
 is described in the following  paper:
 <br>
-Gabriel Marin and John Mellor-Crummey. 
+Gabriel Marin and John Mellor-Crummey.
 Cross Architecture Performance Predictions for Scientific Applications
-Using Parameterized Models. In Proceedings of the Joint International Conference on Measurement and Modeling of Computer Systems, NY, NY, June 2004. 
+Using Parameterized Models. In Proceedings of the Joint International Conference on Measurement and Modeling of Computer Systems, NY, NY, June 2004.
 <a href="http://www.cs.rice.edu/~johnmc/papers/MM-SIGMETRICS04-abstract.html">[abstract]</a>
 <a href="http://www.cs.rice.edu/~johnmc/papers/MM-SIGMETRICS04.pdf">[pdf]</a>
 </li>

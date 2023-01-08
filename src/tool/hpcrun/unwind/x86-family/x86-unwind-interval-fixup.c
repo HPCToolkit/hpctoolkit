@@ -65,7 +65,7 @@
 //------------------------------------------------------------------------------
 
 #define DECLARE_FIXUP_ROUTINE(fn) \
-        extern int fn(char *ins, int len, btuwi_status_t* stat); 
+        extern int fn(char *ins, int len, btuwi_status_t* stat);
 
 #define REGISTER_FIXUP_ROUTINE(fn) fn,
 
@@ -91,7 +91,7 @@ static x86_ui_fixup_fn_t x86_interval_fixup_routine_vector[] = {
 
 
 //------------------------------------------------------------------------------
-// interface operations 
+// interface operations
 //------------------------------------------------------------------------------
 
 int

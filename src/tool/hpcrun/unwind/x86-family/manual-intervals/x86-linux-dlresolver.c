@@ -50,7 +50,7 @@
 
 // code snippets from ld-2.17.so
 
-static char dl_runtime_resolve_signature_1[] = { 
+static char dl_runtime_resolve_signature_1[] = {
    0x48, 0x83, 0xec, 0x78,                   // sub    $0x78,%rsp
    0x48, 0x89, 0x44, 0x24, 0x40,             // mov    %rax,0x40(%rsp)
    0x48, 0x89, 0x4c, 0x24, 0x48,             // mov    %rcx,0x48(%rsp)
@@ -67,7 +67,7 @@ static char dl_runtime_resolve_signature_1[] = {
 };
 
 
-static char dl_runtime_resolve_signature_2[] = { 
+static char dl_runtime_resolve_signature_2[] = {
  0x48, 0x83, 0xec, 0x38,        // sub    $0x38,%rsp
  0x48, 0x89, 0x04, 0x24,        // mov    %rax,(%rsp)
  0x48, 0x89, 0x4c, 0x24, 0x08,  // mov    %rcx,0x8(%rsp)
@@ -87,7 +87,7 @@ static int matches(char *ins, int len, const char *sig)
 }
 
 
-int 
+int
 x86_adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *stat)
 {
 
@@ -100,6 +100,6 @@ x86_adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_
 	  ui = UWI_NEXT(ui);
 	}
 	return 1;
-  } 
+  }
   return 0;
 }

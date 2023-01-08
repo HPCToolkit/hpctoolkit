@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Raw_Raw_hpp 
+#ifndef Analysis_Raw_Raw_hpp
 #define Analysis_Raw_Raw_hpp
 
 //************************* System Include Files ****************************
@@ -66,7 +66,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/prof-lean/hpcrun-fmt.h> 
+#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/id-tuple.h>
 
 //*************************** Forward Declarations ***************************
@@ -77,7 +77,7 @@ namespace Analysis {
 
 namespace Raw {
 
-void 
+void
 writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep);
 //YUMENG: second arg: if more flags, maybe build a struct to include all flags and pass the struct around
 

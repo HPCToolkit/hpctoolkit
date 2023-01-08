@@ -5,7 +5,7 @@ hpcrun binary data format (see "Abbreviation notes" below)
 =============================================================================
 
 fmt-hdr {epoch}*
-  
+
 ------------------------------------------------------------
 
 fmt-hdr = fmt-magicno-version{24b} [nv-pair]*
@@ -128,6 +128,6 @@ the type being read. No allocator means -all- space, including internal componen
 have already been allocated.
 
 All primitives with variable length fields will represent that by a pointer to
-appropriate data type (e.g. std C array indentification).
+appropriate data type (e.g. std C array identification).
 
 hdr_fwrite primitive can be variadic (so different sig)

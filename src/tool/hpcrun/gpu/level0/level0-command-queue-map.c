@@ -135,8 +135,8 @@ level0_command_queue_map_delete
   level0_handle_map_entry_t *entry =
     level0_handle_map_lookup(&command_queue_map_root, key);
 
-  // It is possible that the applicatio will first
-  // do a command_queue reset and then a command_queue destory
+  // It is possible that the application will first
+  // do a command_queue reset and then a command_queue destroy
   if (entry != NULL) {
     level0_command_queue_data_t* result =
         (level0_command_queue_data_t*) (*level0_handle_map_entry_data_get(entry));

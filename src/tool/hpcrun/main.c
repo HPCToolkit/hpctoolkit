@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
-// system include files 
+// system include files
 //***************************************************************************
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@
 
 
 //***************************************************************************
-// user include files 
+// user include files
 //***************************************************************************
 
 
@@ -231,7 +231,7 @@ bool hpcrun_local_rank_disabled = false;
 static __thread bool hpcrun_thread_suppress_sample = true;
 
 //***************************************************************************
-// local variables 
+// local variables
 //***************************************************************************
 
 static hpcrun_options_t opts;
@@ -279,7 +279,7 @@ bool hpcrun_local_rank_enabled()
   }
 
 #ifdef DEBUG_LOCAL_RANKS
-  fprintf(stderr, "pid %ld: HPCRUN_LOCAL_RANKS=%s my_rank=%s\n", getpid(), 
+  fprintf(stderr, "pid %ld: HPCRUN_LOCAL_RANKS=%s my_rank=%s\n", getpid(),
          local_ranks, my_rank);
 #endif
 
@@ -326,10 +326,10 @@ hpcrun_output_event_list()
 static void
 setup_main_bounds_check(void* main_addr)
 {
-  // record bound information for the symbol main statically linked 
+  // record bound information for the symbol main statically linked
   // into an executable, or a PLT stub named main and the function
   // to which it will be dynamically bound. these function bounds will
-  // later be used to validate unwinds in the main thread by the function 
+  // later be used to validate unwinds in the main thread by the function
   // hpcrun_inbounds_main.
 
   load_module_t* lm = NULL;
@@ -470,22 +470,22 @@ hpcrun_set_safe_to_sync(void)
 //***************************************************************************
 
 //***************************************************************************
-// internal operations 
+// internal operations
 //***************************************************************************
 
 static int
 abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
 {
   long pid = (long) getpid();
-  EEMSG("hpcrun: abort timeout activated in process %ld - context pc %p", 
-    pid, hpcrun_context_pc(context)); 
+  EEMSG("hpcrun: abort timeout activated in process %ld - context pc %p",
+    pid, hpcrun_context_pc(context));
   monitor_real_abort();
-  
+
   return 0; /* keep compiler happy, but can't get here */
 }
 
 
-static void 
+static void
 hpcrun_set_abort_timeout()
 {
   static int process_index = 0;
@@ -524,7 +524,7 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 #endif
 
 //------------------------------------
-// process level 
+// process level
 //------------------------------------
 
 void
@@ -665,10 +665,10 @@ hpcrun_init_internal(bool is_child)
   hpcrun_set_safe_to_sync();
 
   if (hpcrun_trace_isactive() && hpcrun_cpu_trace_on()) {
-    // If tracing on the CPU, insert <no activity> at the beginning of the 
-    // trace.  This ensures that if there is a long interval at the 
-    // beginning of the trace when sampling is disabled, the trace will 
-    // not be artificially short.  Don't add <no activity> to a CPU trace 
+    // If tracing on the CPU, insert <no activity> at the beginning of the
+    // trace.  This ensures that if there is a long interval at the
+    // beginning of the trace when sampling is disabled, the trace will
+    // not be artificially short.  Don't add <no activity> to a CPU trace
     // line when only tracing on a GPU.
     core_profile_trace_data_t * cptd = &(TD_GET(core_profile_trace_data));
     cct_bundle_t* cct_bundle = &(cptd->epoch->csdata);
@@ -702,25 +702,25 @@ node_ptr = (hpcrun_aux_cleanup_t *) hpcrun_malloc(sizeof(hpcrun_aux_cleanup_t));
 #define ADD_TO_FREE_AUX_CLEANUP_LIST(node_ptr) do { (node_ptr)->next = hpcrun_aux_cleanup_free_list_head; \
 hpcrun_aux_cleanup_free_list_head = (node_ptr); }while(0)
 
-// Add a callback function and its argument to a doubly-linked list of things to cleanup at process termination. 
+// Add a callback function and its argument to a doubly-linked list of things to cleanup at process termination.
 // Don't rely on sample source data in the implementation of the callback.
 // Caller needs to ensure that the entry is safe.
 
-hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg) 
+hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), void * arg)
 {
-  spinlock_lock(&hpcrun_aux_cleanup_lock); 
+  spinlock_lock(&hpcrun_aux_cleanup_lock);
   hpcrun_aux_cleanup_t * node;
   GET_NEW_AUX_CLEANUP_NODE(node);
   node->func = func;
   node->arg = arg;
- 
+
   node->prev = NULL;
   node->next = hpcrun_aux_cleanup_list_head;
   if (hpcrun_aux_cleanup_list_head) {
     hpcrun_aux_cleanup_list_head->prev = node;
   }
   hpcrun_aux_cleanup_list_head = node;
-  spinlock_unlock(&hpcrun_aux_cleanup_lock); 
+  spinlock_unlock(&hpcrun_aux_cleanup_lock);
   return node;
 }
 
@@ -729,7 +729,7 @@ hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), vo
 void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node)
 {
   assert (node != NULL);
-  spinlock_lock(&hpcrun_aux_cleanup_lock); 
+  spinlock_lock(&hpcrun_aux_cleanup_lock);
   if (node->prev) {
     if (node->next) {
       node->next->prev = node->prev;
@@ -741,8 +741,8 @@ void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node)
     }
     hpcrun_aux_cleanup_list_head = node->next;
   }
-  ADD_TO_FREE_AUX_CLEANUP_LIST(node);   
-  spinlock_unlock(&hpcrun_aux_cleanup_lock); 
+  ADD_TO_FREE_AUX_CLEANUP_LIST(node);
+  spinlock_unlock(&hpcrun_aux_cleanup_lock);
 }
 
 // This will be called after sample sources have been shutdown.
@@ -763,11 +763,11 @@ static void hpcrun_process_aux_cleanup_action()
 
 /***
  * This routine is called at the end of the program to:
- *   call sample-sources to stop and shutdown 
+ *   call sample-sources to stop and shutdown
  *   clean hpcrun action
  *   clean thread manager (write profile data and closing resources)
  *   terminate hpcfnbounds
- ***/ 
+ ***/
 void
 hpcrun_fini_internal()
 {
@@ -831,7 +831,7 @@ hpcrun_fini_internal()
 
 
 //------------------------------------
-// thread level 
+// thread level
 //------------------------------------
 
 #ifdef USE_GCC_THREAD
@@ -866,10 +866,10 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
 
   hpcrun_thread_init_mem_pool_once(id, thr_ctxt,
     has_trace ? HPCRUN_SAMPLE_TRACE : HPCRUN_NO_TRACE, demand_new_thread);
-  
+
   hpcrun_get_thread_data()->inside_hpcrun = 1;
-  
-  
+
+
   if (ENABLED(THREAD_CTXT)) {
     if (thr_ctxt) {
       hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
@@ -902,7 +902,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
  *   call sample sources to stop and finish the thread action
  *   notify thread manager of the end of the thread (so that it can
  *      either clean-up the data, or reuse the data for another thread)
- **/ 
+ **/
 void
 hpcrun_thread_fini(epoch_t *epoch)
 {
@@ -941,19 +941,19 @@ hpcrun_thread_fini(epoch_t *epoch)
 }
 
 //***************************************************************************
-// hpcrun debugging support 
+// hpcrun debugging support
 //***************************************************************************
 
 volatile int HPCRUN_DEBUGGER_WAIT = 1;
 
-void 
+void
 hpcrun_continue()
 {
   HPCRUN_DEBUGGER_WAIT = 0;
 }
 
 
-void 
+void
 hpcrun_wait()
 {
   bool HPCRUN_WAIT = hpcrun_get_env_bool("HPCRUN_WAIT");
@@ -961,9 +961,9 @@ hpcrun_wait()
   if (HPCRUN_WAIT) {
     while (HPCRUN_DEBUGGER_WAIT);
 
-    // when the user program forks, we don't want to wait to have a debugger 
+    // when the user program forks, we don't want to wait to have a debugger
     // attached for each exec along a chain of fork/exec. if that is what
-    // you want when debugging, make your own arrangements. 
+    // you want when debugging, make your own arrangements.
     unsetenv("HPCRUN_WAIT");
   }
 }
@@ -1068,7 +1068,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
 void
 monitor_at_main()
-{  
+{
   bool is_child = false;
 
   if (!hpcrun_output_event_list()) {
@@ -1139,7 +1139,7 @@ void hpcrun_prepare_measurement_subsystem(bool is_child)
   }else{
     while(! atomic_load(&ms_init_completed));
   }
-    
+
 }
 
 
@@ -1337,7 +1337,7 @@ monitor_thread_pre_create(void)
     EMSG("error: monitor_thread_pre_create: getcontext = %d", ret);
     goto fini;
   }
-  
+
   cct_node_t* n = hpcrun_gen_thread_ctxt(&context);
 
   TMSG(THREAD,"before lush malloc");
@@ -1374,7 +1374,7 @@ monitor_thread_post_create(void* data)
   hpcrun_safe_exit();
 }
 
-void* 
+void*
 monitor_init_thread(int tid, void* data)
 {
 #ifdef USE_GCC_THREAD
@@ -1910,4 +1910,3 @@ cplus_demangle(char *str, int opts)
 }
 
 #endif
-

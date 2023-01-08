@@ -116,7 +116,7 @@
 // ************************************************
 
 // ******* Global Variables ***********
-int g_cpu_gpu_proxy_count = 0; 
+int g_cpu_gpu_proxy_count = 0;
 bool g_cpu_gpu_enabled = false;
 
 
@@ -139,8 +139,8 @@ static void METHOD_FN(init)
 {
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
     //active threads represents the total number of threads in the system
-    //including the main thread 
-    self->state = INIT;                                    
+    //including the main thread
+    self->state = INIT;
 }
 
 static void METHOD_FN(thread_init)
@@ -186,7 +186,7 @@ static void METHOD_FN(shutdown)
 }
 
 static bool METHOD_FN(supports_event, const char *ev_str)
-{    
+{
   return hpcrun_ev_is(ev_str, "CPU_GPU_IDLE");
 }
 
@@ -194,7 +194,7 @@ static bool METHOD_FN(supports_event, const char *ev_str)
 
 static void METHOD_FN(process_event_list, int lush_metrics)
 {
-    
+
     TMSG(CPU_GPU_BLAME_CTL, "process event list, lush_metrics = %d", lush_metrics);
 
     gpu_metrics_BLAME_SHIFT_enable();
@@ -204,11 +204,11 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     bs_entry.next = 0;
     blame_shift_register(&bs_entry);
 
-    // The blame-shift registration for OPENCL and CUDA are kept in separate if-blocks and not if-else'd because someone may want to enable both 
+    // The blame-shift registration for OPENCL and CUDA are kept in separate if-blocks and not if-else'd because someone may want to enable both
 		#ifdef ENABLE_OPENCL
 			opencl_blame_shifting_enable();
 		#endif
-		
+
 		#ifdef ENABLE_CUDA
 			// CUDA blame-shifting: (disabled because support is out-of-date)
 			// bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
@@ -224,7 +224,7 @@ METHOD_FN(finalize_event_list)
 }
 static void METHOD_FN(gen_event_set, int lush_metrics)
 {
-    // There is NO signal hander for us, we proxy with itimer or PAPI_TOT_CYC
+    // There is NO signal handler for us, we proxy with itimer or PAPI_TOT_CYC
 }
 
 static void METHOD_FN(display_events)
@@ -249,6 +249,5 @@ static void METHOD_FN(display_events)
 #include "ss_obj.h"
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
-

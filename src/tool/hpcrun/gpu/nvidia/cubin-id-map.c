@@ -333,4 +333,3 @@ cubin_id_map_count
 {
   return cubin_id_map_count_helper(cubin_id_map_root);
 }
-

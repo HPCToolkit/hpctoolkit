@@ -78,7 +78,7 @@ class PathReplacementMgr {
 public:
   PathReplacementMgr();
   ~PathReplacementMgr();
-  
+
 
   static PathReplacementMgr&
   singleton();
@@ -94,11 +94,11 @@ public:
   std::string
   replace(const std::string& path) const;
 
-  
+
   // Adds an old path and its associated new path as a pair to the
   // pathReplacement vector and then sorts the list in descending
   // order of size
-  //  
+  //
   // @param oldPath: The original partial path, which can be any
   //   substring of a path.
   // @param newPath: The new partial path to replace oldPath.

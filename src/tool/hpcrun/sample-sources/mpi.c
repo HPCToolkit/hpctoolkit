@@ -92,7 +92,7 @@ static int hpmpi_metric_id = -1;
 static void
 METHOD_FN(init)
 {
-  self->state = INIT; 
+  self->state = INIT;
 }
 
 
@@ -143,7 +143,7 @@ METHOD_FN(supports_event,const char *ev_str)
 {
   return hpcrun_ev_is(ev_str,"MPI_MSG");
 }
- 
+
 
 // MPI_MSG creates one metrics: bytes sent/received in bytes
 
@@ -182,7 +182,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("MPI_MSG\t\tThe number of bytes for all sent/received messages\n");
+  printf("MPI_MSG\t\t" "The number of bytes for all sent/received messages\n");
   printf("\n");
 }
 
@@ -193,7 +193,7 @@ METHOD_FN(display_events)
 
 //
 // sync class is "SS_SOFTWARE" so that both synchronous and asynchronous sampling is possible
-// 
+//
 
 #define ss_name hpmpi
 #define ss_cls SS_SOFTWARE
@@ -231,5 +231,3 @@ hpcrun_mpi_inc(cct_node_t* node, int incr)
 			      (cct_metric_data_t){.i = incr});
   }
 }
-
-

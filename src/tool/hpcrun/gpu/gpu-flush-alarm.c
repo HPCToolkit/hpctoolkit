@@ -140,12 +140,12 @@ gpu_flush_alarm_set
  const char *client_msg
 )
 {
-  pthread_once(&gpu_flush_alarm_initialized, gpu_flush_alarm_init); 
+  pthread_once(&gpu_flush_alarm_initialized, gpu_flush_alarm_init);
 
   gpu_flush_alarm_msg = client_msg;
 
   linuxtimer_create(&gpu_flush_alarm_timer, CLOCK_REALTIME,
-		    gpu_flush_alarm_signal);	
+		    gpu_flush_alarm_signal);
 
   monitor_sigaction(linuxtimer_getsignal(&gpu_flush_alarm_timer),
 		    &gpu_flush_alarm_handler, 0, NULL);
@@ -172,7 +172,3 @@ gpu_flush_alarm_test
 {
   sleep(20);
 }
-
-
-
-

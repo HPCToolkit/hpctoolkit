@@ -45,16 +45,16 @@
 // ******************************************************* EndRiceCopyright *
 
 //
-// generic blame shifting sample source 
+// generic blame shifting sample source
 //
 // to use this code, define
-//    BLAME_LAYER     -- the name of the software layer in which the blame 
+//    BLAME_LAYER     -- the name of the software layer in which the blame
 //                       shifting occurs, e.g. OpenMP
-//    BLAME_NAME      -- the name of the event on the command line, 
+//    BLAME_NAME      -- the name of the event on the command line,
 //                       e.g., OMP_MUTEX
-//    BLAME_DIRECTED  -- define this if using directed blame shifting 
+//    BLAME_DIRECTED  -- define this if using directed blame shifting
 //    BLAME_REQUEST   -- name of the function to be invoked to initialize
-//                       the blame shifting 
+//                       the blame shifting
 
 /******************************************************************************
  * macros
@@ -150,7 +150,7 @@ METHOD_FN(supports_event,const char *ev_str)
   return (strstr(ev_str, stringify(BLAME_NAME)) != NULL);
 }
 
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {

@@ -94,7 +94,7 @@ namespace Analysis {
 //---------------------------------------------------------------------------
 
 class Args {
-public: 
+public:
   Args();
   virtual ~Args();
 
@@ -215,9 +215,9 @@ public:
 
   std::string out_txt;           // disable: "", stdout: "-"
 
-  enum TxtSum { 
+  enum TxtSum {
     TxtSum_NULL  = 0,
-    
+
     // individual flags
     TxtSum_fPgm  = 0x00000001,
     TxtSum_fLM   = 0x00000010,
@@ -227,7 +227,7 @@ public:
     TxtSum_fStmt = 0x00100000,
 
     // composite flags
-    TxtSum_ALL  = (TxtSum_fPgm | TxtSum_fLM | TxtSum_fFile | TxtSum_fProc 
+    TxtSum_ALL  = (TxtSum_fPgm | TxtSum_fLM | TxtSum_fFile | TxtSum_fProc
 		   | TxtSum_fLoop | TxtSum_fStmt)
   };
 
@@ -245,7 +245,7 @@ public:
 
 public:
   // -------------------------------------------------------
-  // 
+  //
   // -------------------------------------------------------
 
   void
@@ -257,14 +257,14 @@ public:
 
   std::string
   searchPathStr() const;
-  
+
 
 private:
   void Ctor();
-}; 
+};
 
 } // namespace Analysis
 
 //***************************************************************************
 
-#endif // Analysis_Args_hpp 
+#endif // Analysis_Args_hpp

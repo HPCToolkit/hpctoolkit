@@ -49,10 +49,10 @@
 
 #include <stdio.h>
 
-/* an "loadmap" is an interval of time during which no two dynamic 
-   libraries are mapped to the same region of the address space. 
+/* an "loadmap" is an interval of time during which no two dynamic
+   libraries are mapped to the same region of the address space.
    an loadmap can span across dlopen and dlclose operations. an loadmap
-   ends when a dlopen maps a new load module on top of a region of 
+   ends when a dlopen maps a new load module on top of a region of
    the address space that has previously been occupied by another
    module earlier during the loadmap.
 */
@@ -95,7 +95,7 @@ typedef struct dso_info_t {
 
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 // Constructs a new dso_info_t by either pulling an unused one from
@@ -113,7 +113,7 @@ hpcrun_dso_make(const char* name, void** table,
 
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 // Use to dump the free list
@@ -127,7 +127,7 @@ hpcrun_dso_dump(dso_info_t* x);
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 typedef struct load_module_t
@@ -145,8 +145,8 @@ typedef struct load_module_t
 load_module_t*
 hpcrun_loadModule_new(const char* name);
 
-// used only to add a load module for the kernel 
-uint16_t 
+// used only to add a load module for the kernel
+uint16_t
 hpcrun_loadModule_add(const char* name);
 
 void
@@ -157,7 +157,7 @@ hpcrun_loadModule_flags_get(load_module_t *lm);
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 typedef struct hpcrun_loadmap_t
@@ -170,9 +170,9 @@ typedef struct hpcrun_loadmap_t
 
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
-void 
+void
 hpcrun_loadmap_lock();
 
 
@@ -185,7 +185,7 @@ hpcrun_loadmap_isLocked();
 
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 // Requests a new load map.
@@ -202,7 +202,7 @@ extern void hpcrun_loadmap_init(hpcrun_loadmap_t* x);
 extern void hpcrun_loadmap_print(hpcrun_loadmap_t* loadmap);
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 // hpcrun_loadmap_findByAddr: Find the (currently mapped) load module
@@ -227,7 +227,7 @@ hpcrun_loadmap_findLoadName(const char* name);
 
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 // hpcrun_loadmap_map: Add a load module based on 'dso' to the current

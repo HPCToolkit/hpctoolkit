@@ -66,16 +66,16 @@
  * forward declarations
  ************************************************************************************/
 
-static const char *ra_status_string(ra_loc l); 
+static const char *ra_status_string(ra_loc l);
 static const char *bp_status_string(bp_loc l);
 
 
 /*************************************************************************************
- * interface operations 
+ * interface operations
  ************************************************************************************/
 
 void
-suspicious_interval(void *pc) 
+suspicious_interval(void *pc)
 {
   TMSG(SUSPICIOUS_INTERVAL,"suspicious interval for pc = %p", pc);
   hpcrun_stats_num_unwind_intervals_suspicious_inc();
@@ -110,7 +110,7 @@ void
 set_ui_canonical(unwind_interval *u, unwind_interval *value)
 {
   UWI_RECIPE(u)->prev_canonical = value;
-} 
+}
 
 unwind_interval *
 fluke_ui(char *loc, unsigned int pos)
@@ -134,7 +134,7 @@ fluke_ui(char *loc, unsigned int pos)
   return u;
 }
 
-void 
+void
 link_ui(unwind_interval *current, unwind_interval *next)
 {
   UWI_END_ADDR(current) = UWI_START_ADDR(next);
@@ -178,7 +178,7 @@ dump_ui(unwind_interval *u, int dump_to_stderr)
   dump_ui_str(u, buf, sizeof(buf));
 
   TMSG(UNW, buf);
-  if (dump_to_stderr) { 
+  if (dump_to_stderr) {
     fprintf(stderr, "%s", buf);
     fflush(stderr);
   }
@@ -254,11 +254,11 @@ uw_recipe_print(void* recipe)
 
 
 /*************************************************************************************
- * private operations 
+ * private operations
  ************************************************************************************/
 
 static const char *
-ra_status_string(ra_loc l) 
+ra_status_string(ra_loc l)
 {
   switch(l) {
    STR(RA_SP_RELATIVE);
@@ -283,4 +283,3 @@ bp_status_string(bp_loc l)
     assert(0);
   }
 }
-

@@ -26,8 +26,8 @@ Note that you run make from the doc/manual source directory.
 Use either no target or target 'all'.
 
 To install missing sty files, download the missing files from CTAN
-and install at local directory. Use kpsewhich command to locate the 
-directory used by latex. On Linux platfom, it's usually at
+and install at local directory. Use kpsewhich command to locate the
+directory used by latex. On Linux platform, it's usually at
 
 /home/<user>/texmf/tex/latex/<package>
 
@@ -112,4 +112,3 @@ cp-ing them.  The htdocs/hpctoolkit directory is group writable, but
 unless you're the last one to install a given file, you probably don't
 have write permission for individual files.  But tar will delete the
 old file and install a new one (with you as owner).
-

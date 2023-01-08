@@ -109,7 +109,7 @@ getVersion(const char *structFileName)
       std::regex version("\\d+.\\d+");
       if (regex_search(line, match, version)) {
 	result = match.str();
-	break; 
+	break;
       }
     }
   }
@@ -125,6 +125,6 @@ getVersion(const char *structFileName)
 
 bool StructureFileCheckVersion(const char *structureFileName)
 {
-  std::string version = getVersion(structureFileName); 
+  std::string version = getVersion(structureFileName);
   return (version.compare(HPCSTRUCT_VERSION_STRING) == 0);
 }

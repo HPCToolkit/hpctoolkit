@@ -102,7 +102,7 @@ typedef void (*cskl_node_tostr)(void* node_val, int node_height, int max_height,
 //******************************************************************************
 
 /*
- * Inititalize mcs lock on global free csklnode list.
+ * Initialize mcs lock on global free csklnode list.
  */
 void
 cskl_init();

@@ -51,7 +51,7 @@
 //   debug flags management for hpcrun
 //
 // History:
-//   23 July 2009 - John Mellor-Crummey 
+//   23 July 2009 - John Mellor-Crummey
 //     created by splitting off from message-sync.c
 //
 //*****************************************************************************
@@ -59,7 +59,7 @@
 
 
 //*****************************************************************************
-// global includes 
+// global includes
 //*****************************************************************************
 
 #include <stdlib.h>
@@ -69,7 +69,7 @@
 
 
 //*****************************************************************************
-// local includes 
+// local includes
 //*****************************************************************************
 
 #include "messages/debug-flag.h"
@@ -79,7 +79,7 @@
 extern void unlimit_msgs(void);
 
 //*****************************************************************************
-// global variables 
+// global variables
 //*****************************************************************************
 
 static char *dbg_tbl[] = {
@@ -158,7 +158,7 @@ static pmsg_category all_list_entries [] = {
  // E(CSP_MALLOC),
  // E(MEM__ALLOC),
  E(NORM_IP),
- E(PARTIAL_UNW) 
+ E(PARTIAL_UNW)
 };
 
 
@@ -174,7 +174,7 @@ static int dbg_flags[N_DBG_CATEGORIES];
 
 
 //*****************************************************************************
-// forward declarations 
+// forward declarations
 //*****************************************************************************
 
 static void debug_flag_set_all(int v);
@@ -187,7 +187,7 @@ static const char *debug_flag_name_get(int i);
 
 
 //*****************************************************************************
-// interface operations 
+// interface operations
 //*****************************************************************************
 
 void debug_flag_init()
@@ -223,7 +223,7 @@ debug_flag_dump()
 {
   for (int i=0; i < N_DBG_CATEGORIES; i++){
     if (i < N_DBG_CATEGORIES){
-      fprintf(stderr,"debug flag %s = %d\n", debug_flag_name_get(i), 
+      fprintf(stderr,"debug flag %s = %d\n", debug_flag_name_get(i),
 	      debug_flag_get(i));
     } else {
       fprintf(stderr,"debug flag (unknown) = %d\n", i);
@@ -234,7 +234,7 @@ debug_flag_dump()
 
 
 //*****************************************************************************
-// private operations 
+// private operations
 //*****************************************************************************
 
 static void
@@ -262,7 +262,7 @@ debug_flag_name_get(int i)
   if (i < N_DBG_CATEGORIES) {
     result = dbg_tbl[i];
   }
-  return result; 
+  return result;
 }
 
 
@@ -308,7 +308,7 @@ debug_flag_process_string(char *in, int debug_initialization)
 }
 
 
-static void 
+static void
 debug_flag_process_env(int debug_initialization)
 {
   char *s = getenv("HPCRUN_DEBUG_FLAGS");
@@ -316,4 +316,3 @@ debug_flag_process_env(int debug_initialization)
     debug_flag_process_string(s, debug_initialization);
   }
 }
-

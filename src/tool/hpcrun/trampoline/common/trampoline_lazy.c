@@ -87,10 +87,10 @@ hpcrun_trampoline_bt_dump(void)
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
        td->cached_bt_buf_frame_end - td->cached_bt_frame_beg, td->cached_frame_count);
   for (frame_t* f = td->cached_bt_frame_beg; f < td->cached_bt_buf_frame_end; f++) {
-      //TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p", 
-      //      f->cursor.pc_unnorm, f->cursor.ra_loc, 
+      //TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p",
+      //      f->cursor.pc_unnorm, f->cursor.ra_loc,
       //      f->cursor.sp, f->cursor.bp);
-      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, 
+      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc,
               f->ra_loc == NULL ? NULL : *((void**) f->ra_loc));
   }
 }
@@ -115,12 +115,12 @@ hpcrun_init_trampoline_info(void)
 bool
 hpcrun_trampoline_interior(void* addr)
 {
-  return ((void*)hpcrun_trampoline < addr 
+  return ((void*)hpcrun_trampoline < addr
 	  && addr <= (void*)hpcrun_trampoline_end);
 }
 
 
-// returns true iff at first address of trampoline code. 
+// returns true iff at first address of trampoline code.
 bool
 hpcrun_trampoline_at_entry(void* addr)
 {
@@ -156,9 +156,9 @@ hpcrun_trampoline_advance(void)
   else
     td->dLCA++;
   TMSG(TRAMP, " ... to node %p", parent);
-  
+
   td->tramp_frame++;
-  
+
   TMSG(TRAMP, "cached frame count reduced from %d to %d", td->cached_frame_count,
        td->cached_frame_count - 1);
   (td->cached_frame_count)--;
@@ -183,7 +183,7 @@ hpcrun_trampoline_advance(void)
   return NULL;
 }
 
-void 
+void
 hpcrun_trampoline_insert(cct_node_t* node)
 {
   TMSG(TRAMP, "insert into node %p", node);
@@ -205,7 +205,7 @@ hpcrun_trampoline_insert(cct_node_t* node)
   td->tramp_loc       = addr;
 
   TMSG(TRAMP, "Actual return addr @ %p = %p", addr, *((void**) addr));
-  // save the return address overwritten with trampoline address 
+  // save the return address overwritten with trampoline address
   td->tramp_retn_addr = *((void**) addr);
 
   *((void**)addr) = hpcrun_trampoline;

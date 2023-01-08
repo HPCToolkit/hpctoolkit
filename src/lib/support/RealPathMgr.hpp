@@ -104,12 +104,12 @@ public:
   // return false.
   bool
   realpath(std::string& pathNm) const;
-  
-  
+
+
   const std::string&
   searchPaths() const
   { return m_searchPaths; }
-  
+
 
   // Given 'sPaths', each individual search path is ripped from the
   // string and has RealPath() applied to it before it is added to
@@ -122,7 +122,7 @@ public:
   //
   void
   searchPaths(const std::string& sPaths);
-  
+
 
   // -------------------------------------------------------
   // debugging

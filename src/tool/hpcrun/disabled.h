@@ -48,13 +48,13 @@
 #define disabled_h
 
 //*****************************************************************************
-// File: disabled.h 
+// File: disabled.h
 //
 // Description:
 //   interface to support disabling hpcrun and checking for disabled status.
 //
 // History:
-//   19 July 2009 - John Mellor-Crummey - created 
+//   19 July 2009 - John Mellor-Crummey - created
 //
 //*****************************************************************************
 

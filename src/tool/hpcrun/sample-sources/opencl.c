@@ -47,7 +47,7 @@
 
 #include "common.h"
 
-#include <monitor.h> 
+#include <monitor.h>
 #include <pthread.h>
 
 #include <hpcrun/device-finalizers.h>
@@ -161,7 +161,7 @@ METHOD_FN(supports_event, const char *ev_str)
 #ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, OPENCL_OPTION);
 #if 0
-  return strncmp(ev_str, OPENCL_OPTION, strlen(OPENCL_OPTION)) == 0; 
+  return strncmp(ev_str, OPENCL_OPTION, strlen(OPENCL_OPTION)) == 0;
   return (hpcrun_ev_is(ev_str, OPENCL) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION)
                                            || strstr(ev_str, INSTRUMENTATION_PREFIX)
                                            || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)

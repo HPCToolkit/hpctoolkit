@@ -283,7 +283,7 @@ public:
       if(m_compare(value.first, m_ranges.back().first)) {
         m_consistent = false;  // New out-of-order element
       } else if(!m_compare(m_ranges.back().first, value.first)) {
-        // Incomparible keys, so we call it equal and merge it instead.
+        // Incomparable keys, so we call it equal and merge it instead.
         m_merge(m_ranges.back().second, value.second);
         return;
       }
@@ -295,7 +295,7 @@ public:
       if(m_compare(value.first, m_ranges.back().first)) {
         m_consistent = false;  // New out-of-order element
       } else if(!m_compare(m_ranges.back().first, value.first)) {
-        // Incomparible keys, so we call it equal and merge it instead.
+        // Incomparable keys, so we call it equal and merge it instead.
         m_merge(m_ranges.back().second, std::move(value.second));
         return;
       }
@@ -319,7 +319,7 @@ public:
         // New out-of-order element
         m_consistent = false;
       } else if(!m_compare(last.first, m_ranges.back().first)) {
-        // Incomparible keys, so we call it equal and merge it.
+        // Incomparable keys, so we call it equal and merge it.
         m_merge(last.second, std::move(m_ranges.back().second));
         m_ranges.pop_back();
       }
@@ -335,7 +335,7 @@ public:
       if(m_compare(key, m_ranges.back().first)) {
         m_consistent = false;  // New out-of-order element
       } else if(!m_compare(m_ranges.back().first, key)) {
-        // Incomparible keys, so we call it equal and merge it instead.
+        // Incomparable keys, so we call it equal and merge it instead.
         m_merge(m_ranges.back().second, V(std::forward<Args>(args)...));
         return;
       }
@@ -349,7 +349,7 @@ public:
       if(m_compare(key, m_ranges.back().first)) {
         m_consistent = false;  // New out-of-order element
       } else if(!m_compare(m_ranges.back().first, key)) {
-        // Incomparible keys, so we call it equal and merge it instead.
+        // Incomparable keys, so we call it equal and merge it instead.
         m_merge(m_ranges.back().second, V(std::forward<Args>(args)...));
         return;
       }

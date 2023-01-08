@@ -132,9 +132,9 @@ extern cct_node_t* hpcrun_cct_new(void);
 extern cct_node_t* hpcrun_cct_new_partial(void);
 extern cct_node_t* hpcrun_cct_new_special(void* addr);
 extern cct_node_t* hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip);
-// 
+//
 // Accessor functions
-// 
+//
 
 extern cct_node_t* hpcrun_cct_parent(cct_node_t* node);
 extern cct_node_t* hpcrun_cct_children(cct_node_t* node);
@@ -217,14 +217,14 @@ typedef void (*cct_op_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
 //
 
 //
-// visting order: children first, then node
+// visiting order: children first, then node
 //
 extern void hpcrun_cct_walk_child_1st_w_level(cct_node_t* cct,
 					      cct_op_t op,
 					      cct_op_arg_t arg, size_t level);
 
 //
-// visting order: node first, then children
+// visiting order: node first, then children
 //
 extern void hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct,
 					     cct_op_t op,
@@ -275,8 +275,8 @@ typedef struct cct2metrics_t cct2metrics_t;
 #if 0
 int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
                       cct_node_t* cct, FILE* fs, epoch_flags_t flags);
-#else 
-//YUMENG: add sparse_metrics to collect metric values and info 
+#else
+//YUMENG: add sparse_metrics to collect metric values and info
 int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
                       cct_node_t* cct, FILE* fs, epoch_flags_t flags, hpcrun_fmt_sparse_metrics_t* sparse_metrics);
 

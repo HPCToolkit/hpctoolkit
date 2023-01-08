@@ -104,11 +104,11 @@ Unique::Unique(): className()
 Unique::Unique(const char* theClassName)
   : className((theClassName) ? theClassName : "")
 {
-  if (classNameSet.count(className) != 0) { 
+  if (classNameSet.count(className) != 0) {
     DIAG_Die("Trying to create another " + className + " instance");
   }
   else {
-    classNameSet.insert(className); 
+    classNameSet.insert(className);
   }
 }
 

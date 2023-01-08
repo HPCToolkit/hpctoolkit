@@ -146,9 +146,9 @@ void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlo
    if (!hashTableCreated)
      {
        unsigned int power = 0, i = 31;
-  
+
        if (initialSlots < 8) initialSlots = 8;
-   
+
        while (i > 1)   // compute size for the sparse index set
          {
            if (initialSlots & (1 << i))
@@ -159,21 +159,21 @@ void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlo
              }
            i--;
          }
-  
+
        numSlots     = initialSlots;
        nextSlot     = FIRST_SLOT;
        entrySize    = theEntrySize;
        entries      = (void*) new char[entrySize * numSlots];
        indexSetSize = power;
        indexSet     = new int[indexSetSize];
-  
+
        memset (entries, 0, entrySize * numSlots);
 
        for (i = 0; i < indexSetSize; i++) indexSet[i] = EMPTY;
 
           //  Set the function pointer and the HashTable will use those
           //  instead of the virtual functions.  If any are left out (or
-          //  set NULL by the user) just use the virtual function as a 
+          //  set NULL by the user) just use the virtual function as a
           //  default.
        if (_HashFunctCallback)    HashFunctCallback = _HashFunctCallback;
 
@@ -190,7 +190,7 @@ void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlo
                 << "\t\tentrySize: " << entrySize << "\n"
                 << "\t\tentries: " <<  entries << "\n"
                 << "\t\tindexSetSize: " << indexSetSize << "\n"
-                << "\t\tindexSet: " << indexSet << "\n" 
+                << "\t\tindexSet: " << indexSet << "\n"
                 << endl;
 #      endif
 
@@ -231,7 +231,7 @@ void HashTable::Destroy ()
 }
 
 //
-// Explicitly defined to prevent usage. 
+// Explicitly defined to prevent usage.
 HashTable &HashTable::operator=(const HashTable& GCC_ATTR_UNUSED rhs)
 {
   DIAG_Die("Should not call HashTable::operator=()!");
@@ -254,26 +254,26 @@ void HashTable::AddEntry (void* entry, AddEntryFunctPtr const AddEntryCallback, 
        va_list argList;
        int   index = QueryIndexSet (entry, true);
        char* cEntries = (char*)entries;
-  
+
        DIAG_Assert(index != INVALID_INDEX, "");
 
 #      ifdef DEBUG
-         cerr << "HashTable::AddEntry: using index " << index 
+         cerr << "HashTable::AddEntry: using index " << index
               << endl;
 #      endif
-  
+
        if (indexSet[index] < 0)
          { // add entry
             indexSet[index] = nextSlot++;
             memcpy (&cEntries[entrySize * indexSet[index]], entry, entrySize);
             if (nextSlot == numSlots) OverflowEntries ();
-         } 
+         }
        else
          { // entry already present
             if (AddEntryCallback != NULL)
-              { 
+              {
                  va_start (argList, AddEntryCallback);
-                 AddEntryCallback ((void*)&cEntries[entrySize * indexSet[index]], 
+                 AddEntryCallback ((void*)&cEntries[entrySize * indexSet[index]],
                                    entry, argList);
                  va_end (argList);
               }
@@ -300,54 +300,54 @@ void HashTable::DeleteEntry (void* entry, DeleteEntryFunctPtr const DeleteEntryC
        va_list argList;
        int index = QueryIndexSet (entry, false);
        char* cEntries = (char*) entries;
-  
+
        if (index == INVALID_INDEX || indexSet[index] == EMPTY || indexSet[index] == DELETED)
          { // entry doesn't exist
 #           ifdef DEBUG
-                cerr << "\tHashTable::DeleteEntry: entry not found." 
+                cerr << "\tHashTable::DeleteEntry: entry not found."
                      << endl;
 #           endif
          }
        else
          { // move the last entry into the vacant slot and fix the index set
 #           ifdef DEBUG
-              cerr << "\tHashTable::DeleteEntry: deleting entry for index " << index 
+              cerr << "\tHashTable::DeleteEntry: deleting entry for index " << index
                    << endl;
 #           endif
 
             int last = nextSlot - 1;
 
 #           ifdef DEBUG
-              cerr << "\tHashTable::DeleteEntry: moving last entry to empty slot." 
+              cerr << "\tHashTable::DeleteEntry: moving last entry to empty slot."
                    << endl;
 #           endif
 
             if (last >= 0)
               {
-                if (indexSet[index] != last) 
+                if (indexSet[index] != last)
                   {
                      char* tempEntry = new char[entrySize];
                      int tempIndexSetValue = 0;
                      int toIndex = index;
                      int fromIndex = QueryIndexSet (&cEntries[last * entrySize], false);
- 
-                     memcpy (tempEntry, 
-                             &cEntries[entrySize * indexSet[toIndex]], 
+
+                     memcpy (tempEntry,
+                             &cEntries[entrySize * indexSet[toIndex]],
                              entrySize);
                      memcpy (&cEntries[entrySize * indexSet[toIndex]],
-                             &cEntries[entrySize * indexSet[fromIndex]], 
+                             &cEntries[entrySize * indexSet[fromIndex]],
                              entrySize);
-                     memcpy (&cEntries[entrySize * indexSet[fromIndex]], 
-                             tempEntry, 
+                     memcpy (&cEntries[entrySize * indexSet[fromIndex]],
+                             tempEntry,
                              entrySize);
-    
+
                      tempIndexSetValue = indexSet[toIndex];
                      indexSet[toIndex] = indexSet[fromIndex];
                      indexSet[fromIndex] = tempIndexSetValue;
 
                      delete [] tempEntry;
                   }
-    
+
                 nextSlot = last;
                 indexSet[index] = DELETED;
 
@@ -474,18 +474,18 @@ unsigned int HashTable::NumberOfEntries () const
 //
 void HashTable::Dump ()
 {
-   cout << "HashTable: " << this << " (id: " << id << ")" << endl; 
+   cout << "HashTable: " << this << " (id: " << id << ")" << endl;
    if (hashTableCreated) {
-      HashTableIterator stp(this); 
-      int i; 
+      HashTableIterator stp(this);
+      int i;
 
       for (i =0; stp.Current(); stp++, i++) {
-         cout << i << " : indx " << GetEntryIndex(stp.Current()) 
+         cout << i << " : indx " << GetEntryIndex(stp.Current())
 		   << " : ptr  " << stp.Current() << endl;
-      } 
+      }
    } else {
-      cout << "     NOT CREATED" << endl; 
-   } 
+      cout << "     NOT CREATED" << endl;
+   }
 }
 
 /******************* HashTable protected member functions ********************/
@@ -497,9 +497,9 @@ void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlo
    if (!hashTableCreated)
      {
        unsigned int power = 0, i = 31;
-  
+
        if (initialSlots < 8) initialSlots = 8;
-   
+
        while (i > 1)   // compute size for the sparse index set
          {
            if (initialSlots & (1 << i))
@@ -510,14 +510,14 @@ void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlo
              }
            i--;
          }
-  
+
        numSlots     = initialSlots;
        nextSlot     = FIRST_SLOT;
        entrySize    = theEntrySize;
        entries      = (void*) new char[entrySize * numSlots];
        indexSetSize = power;
        indexSet     = new int[indexSetSize];
-  
+
        memset (entries, 0, entrySize * numSlots);
 
        for (i = 0; i < indexSetSize; i++) indexSet[i] = EMPTY;
@@ -541,14 +541,14 @@ void HashTable::Create (const unsigned int theEntrySize, unsigned int initialSlo
 
 //
 //
-unsigned int HashTable::HashFunct (const void* entry, const unsigned int size) 
+unsigned int HashTable::HashFunct (const void* entry, const unsigned int size)
 {
   return HashFunctCallback (entry, size);
 }
 
 //
 //
-unsigned int HashTable::RehashFunct (const unsigned int oldHashValue, const unsigned int size) 
+unsigned int HashTable::RehashFunct (const unsigned int oldHashValue, const unsigned int size)
 {
   return RehashFunctCallback (oldHashValue, size);
 }
@@ -575,17 +575,17 @@ int HashTable::QueryIndexSet (const void* entry, const bool addingEntry) const
 {
   int initialIndex, currentIndex;
   int firstDeletedIndex = INVALID_INDEX;
-  int rehashCount = 0; 
+  int rehashCount = 0;
   char* cEntries = (char*)entries;
   HashTable* This = (HashTable*)this;  // for circumventing const'ness
 
   currentIndex = initialIndex = This->HashFunct(entry, indexSetSize);
 
 # ifdef DEBUG
-    cerr << "\tHashTable::QueryIndexSet(" << entry << ", " << addingEntry << ")." 
+    cerr << "\tHashTable::QueryIndexSet(" << entry << ", " << addingEntry << ")."
          << endl;
 # endif
-  
+
   while (LOOKING_FOR_AN_INDEX)
     {
        switch (indexSet[currentIndex])
@@ -603,28 +603,28 @@ int HashTable::QueryIndexSet (const void* entry, const bool addingEntry) const
             case DELETED:
               if (firstDeletedIndex != INVALID_INDEX)
                 {
-                   if (firstDeletedIndex == currentIndex) 
+                   if (firstDeletedIndex == currentIndex)
                      {  // wrapped the table, use this first "DELETED" slot.
                         return currentIndex;
                      }
                 }
-              else 
+              else
                 {     // tag the first encountered "DELETED" slot for the future.
                    firstDeletedIndex = currentIndex;
                 }
             break;
 
             default:
-              if (This->EntryCompare(entry, 
+              if (This->EntryCompare(entry,
                                         &cEntries[entrySize * indexSet[currentIndex]]) == 0)
                 {
                    return currentIndex;
                 }
             break;
          }
-   
+
 #      ifdef DEBUG
-         cerr << "\tRehashing the Index" 
+         cerr << "\tRehashing the Index"
               << endl;
 #      endif
 
@@ -635,7 +635,7 @@ int HashTable::QueryIndexSet (const void* entry, const bool addingEntry) const
          {     // if we've rehashed to much and the table is more than half full or
                // we've wrapped the table looking for an empty slot, then
                // increase the size of the table and rehash the entries fix problem.
-            if (((rehashCount > 10) && ((2 * nextSlot) > indexSetSize)) || 
+            if (((rehashCount > 10) && ((2 * nextSlot) > indexSetSize)) ||
                 (currentIndex == initialIndex))
               {
                  This->OverflowIndexSet ();
@@ -696,39 +696,39 @@ void HashTable::OverflowIndexSet()
 {
   unsigned int i, initialIndex, finalIndex, size;
   char* cEntries = (char*)entries;
-  
+
   if (indexSetSize < 4096)
     {                                   // big table => more careful choice
        size = indexSetSize + 1024;      // small table => big increment
     }                                   // big table => more careful choice
-  else 
+  else
     {                                   // big table => more careful choice
        size  = nextSlot & 0xFFFFFFFE;   // make it even
        size += indexSetSize;	        // add number of entries to index set
-    }				        
-  
+    }
+
 # ifdef DEBUG
-    cerr << "\tHashTable::OverflowIndexSet: old size: " << indexSetSize 
+    cerr << "\tHashTable::OverflowIndexSet: old size: " << indexSetSize
          << ", new size: " << size
          << endl;
 # endif
-  
+
   indexSetSize = size;
-  
+
   if (indexSet != 0) delete [] indexSet;
-  
+
   indexSet = new int[indexSetSize];
-  
+
   for (i = 0; i < indexSetSize; i++) indexSet[i] = EMPTY;
-  
+
   for (i = 0; i < nextSlot; i++)
     {
        finalIndex = initialIndex = HashFunct (&cEntries[entrySize * i], indexSetSize);
-    
+
        while(indexSet[finalIndex] != EMPTY)
          {
 #           ifdef DEBUG
-              cerr << "\tRehashing for OverflowIndexSet()" 
+              cerr << "\tRehashing for OverflowIndexSet()"
                    << endl;
 #           endif
 
@@ -748,27 +748,27 @@ void HashTable::OverflowEntries ()
 {
   int newSlots, newSize, oldSize;
   char* ptr;
-  
+
   if (numSlots < 4096) newSlots = numSlots + 512;
   else if (numSlots < 16384) newSlots = numSlots + 2048;
   else newSlots = (int) (1.33 * numSlots);
-  
-  oldSize  = numSlots * entrySize; 
+
+  oldSize  = numSlots * entrySize;
   newSize  = newSlots * entrySize;
-  
+
   ptr = new char [newSize];
   memset (ptr, 0, newSize);
   memcpy (ptr, entries, oldSize);  // copy the old values
-  
+
   delete [] (char*)entries;                  // and replace it
   entries = ptr;
-  
+
 # ifdef DEBUG
     cerr << "\tHashTable::OverflowEntries: old slots: " << numSlots
-         << ", new slots: " << newSlots 
+         << ", new slots: " << newSlots
          << endl;
 # endif
-  
+
   numSlots = newSlots;
 
   return;
@@ -802,7 +802,7 @@ unsigned int IntegerHashFunct (const int value, const unsigned int size)
 unsigned int IntegerRehashHashFunct (const unsigned int oldHashValue, const unsigned int size)
 {
       // 16 is relatively prime to a Mersenne prime!
-  return (unsigned int)((oldHashValue + 16) % size); 
+  return (unsigned int)((oldHashValue + 16) % size);
 }
 
 //
@@ -835,7 +835,7 @@ unsigned int StringHashFunct (const void* entry, const unsigned int size)
 unsigned int StringRehashFunct (const unsigned int oldHashValue, const unsigned int size)
 {
       // 16 is relatively prime to a Mersenne prime!
-  return (unsigned int)((oldHashValue + 16) % size); 
+  return (unsigned int)((oldHashValue + 16) % size);
 }
 
 //
@@ -866,12 +866,12 @@ static unsigned int DefaultRehashFunct (const unsigned int oldHashValue, const u
   unsigned int newHashValue;
 
       // 16 is relatively prime to a Mersenne prime!
-  newHashValue = (oldHashValue + 16) % size; 
+  newHashValue = (oldHashValue + 16) % size;
 
 # ifdef DEBUG
-      cerr << "\tHashTable::DefaultRehashFunct\t" << oldHashValue 
-           << " ---> " << newHashValue 
-           << endl; 
+      cerr << "\tHashTable::DefaultRehashFunct\t" << oldHashValue
+           << " ---> " << newHashValue
+           << endl;
 # endif
 
   return newHashValue;
@@ -933,7 +933,7 @@ void* HashTableIterator::Current () const
 {
   // Second condition could still arise if someone tries to access the
   // current entry after calling DeleteEntry on it.
-  
+
   if (currentEntryNumber >= 0 &&
       (unsigned int)currentEntryNumber < ((HashTable*)hashTable)->nextSlot)
     {

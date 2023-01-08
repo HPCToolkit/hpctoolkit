@@ -11,7 +11,7 @@
 
   <!-- ****************************************************************** -->
 
-  <!-- TgDt/Dt: flexible tagged data: (n)ame, (t)ype, (v)alue -->
+  <!-- TgDt/Dt: flexible tagged data: (n)ame, (t)ype, v=value -->
   <!ELEMENT TgDt (Dt*)>
   <!ELEMENT Dt EMPTY>
   <!ATTLIST Dt
@@ -47,7 +47,7 @@
 	      form    CDATA #REQUIRED
 	      type    CDATA #REQUIRED>
 
-    <!-- Metric data, used in sections: (n)ame [from MetricTable]; (v)alue -->
+    <!-- Metric data, used in sections: (n)ame [from MetricTable]; v=value -->
     <!ELEMENT M EMPTY>
     <!ATTLIST M
 	      n  CDATA #REQUIRED

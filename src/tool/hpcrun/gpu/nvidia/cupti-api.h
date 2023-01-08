@@ -107,11 +107,11 @@ cupti_activity_process
 );
 
 
-void 
-cupti_buffer_alloc 
+void
+cupti_buffer_alloc
 (
- uint8_t **buffer, 
- size_t *buffer_size, 
+ uint8_t **buffer,
+ size_t *buffer_size,
  size_t *maxNumRecords
 );
 
@@ -148,7 +148,7 @@ void
 cupti_pc_sampling_enable
 (
  CUcontext context,
- int frequency 
+ int frequency
 );
 
 
@@ -159,7 +159,7 @@ cupti_pc_sampling_disable
 );
 
 
-cupti_set_status_t 
+cupti_set_status_t
 cupti_monitoring_set
 (
  const  CUpti_ActivityKind activity_kinds[],
@@ -180,21 +180,21 @@ void cupti_activity_timestamp_get
 );
 
 
-void 
+void
 cupti_init
 (
  void
 );
 
 
-void 
+void
 cupti_start
 (
  void
 );
 
 
-void 
+void
 cupti_pause
 (
  CUcontext context,
@@ -202,7 +202,7 @@ cupti_pause
 );
 
 
-void 
+void
 cupti_finalize
 (
  void
@@ -222,7 +222,7 @@ cupti_num_dropped_records_get
 (
  CUcontext context,
  uint32_t streamId,
- size_t* dropped 
+ size_t* dropped
 );
 
 
@@ -235,7 +235,7 @@ cupti_buffer_cursor_advance
 );
 
 
-void 
+void
 cupti_buffer_completion_callback
 (
  CUcontext ctx,
@@ -249,8 +249,8 @@ cupti_buffer_completion_callback
 void
 cupti_load_callback_cuda
 (
- uint32_t module_id, 
- const void *cubin, 
+ uint32_t module_id,
+ const void *cubin,
  size_t cubin_size
 );
 
@@ -258,8 +258,8 @@ cupti_load_callback_cuda
 void
 cupti_unload_callback_cuda
 (
- uint32_t module_id, 
- const void *cubin, 
+ uint32_t module_id,
+ const void *cubin,
  size_t cubin_size
 );
 

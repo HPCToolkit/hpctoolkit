@@ -91,9 +91,9 @@ HasANodeTy(const ANode& node, long type)
 
 
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
-  ANodeFilter(HasANodeTy, 
+  ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyRoot).c_str(), ANode::TyRoot),
-  ANodeFilter(HasANodeTy, 
+  ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyGroup).c_str(), ANode::TyGroup),
   ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyLM).c_str(), ANode::TyLM),
@@ -113,7 +113,7 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
 	      ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
 };
 
-  
+
 //***************************************************************************
 // ANodeChildIterator
 //***************************************************************************
@@ -149,7 +149,7 @@ ANodeSortedIterator::dumpAndReset(ostream& os)
   while (current()) {
     os << current()->toString() << endl;
     (*this)++;
-  } 
+  }
   reset();
 }
 

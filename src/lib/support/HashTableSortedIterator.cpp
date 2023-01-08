@@ -149,5 +149,3 @@ void HashTableSortedIterator::Reset ()
 
   return;
 }
-
-

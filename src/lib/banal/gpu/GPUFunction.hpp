@@ -8,7 +8,7 @@ namespace ParseAPI {
 
 class PARSER_EXPORT GPUFunction : public ParseAPI::Function {
  public:
-  GPUFunction(Address addr, std::string name, CodeObject * obj, 
+  GPUFunction(Address addr, std::string name, CodeObject * obj,
     CodeRegion * region, InstructionSource * isource) :
     Function(addr, name, obj, region, isource) {
     _cache_valid = true;

@@ -67,14 +67,14 @@
 // type declarations
 //******************************************************************************
 
-typedef struct gpu_host_correlation_map_entry_t 
-gpu_host_correlation_map_entry_t; 
+typedef struct gpu_host_correlation_map_entry_t
+gpu_host_correlation_map_entry_t;
 
-typedef struct cct_node_t cct_node_t; 
+typedef struct cct_node_t cct_node_t;
 
 typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 
-typedef struct gpu_op_ccts_t gpu_op_ccts_t; 
+typedef struct gpu_op_ccts_t gpu_op_ccts_t;
 
 
 

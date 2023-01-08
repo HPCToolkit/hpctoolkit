@@ -47,15 +47,15 @@
 //***************************************************************************
 // IteratorStack.C
 //
-//   an iterator that is realized as a stack of iterators. this abstraction 
+//   an iterator that is realized as a stack of iterators. this abstraction
 //   is useful for traversing nested structures.
 //
-// Author: John Mellor-Crummey                                
+// Author: John Mellor-Crummey
 //
 // Creation Date: October 1993
 //
 // Modification History:
-//  see IteratorStack.h 
+//  see IteratorStack.h
 //
 //***************************************************************************
 
@@ -76,8 +76,8 @@ struct IteratorStackS {
 };
 
 
-IteratorStack::IteratorStack(TraversalOrder torder, 
-			     IterStackEnumType _enumType)  
+IteratorStack::IteratorStack(TraversalOrder torder,
+			     IterStackEnumType _enumType)
 {
   iteratorStackRepr = new IteratorStackS;
   InitTraversal(torder, _enumType);
@@ -127,7 +127,7 @@ void IteratorStack::operator++(int)
   for(;;) {
     StackableIterator* top = Top();
     if (top == 0) break;
-    
+
     if ((traversalOrder == PreOrder) || (traversalOrder == PreAndPostOrder)) {
       void* current = top->CurrentUpCall();
       (*top)++; // advance iterator at the top of stack
@@ -138,7 +138,7 @@ void IteratorStack::operator++(int)
     }
     else
       (*top)++; // advance iterator at the top of stack
-    
+
     if (top->IsValid() == false) {
       bool popped = false;
       while ((Top()->IsValid() == false) &&
@@ -159,8 +159,8 @@ void IteratorStack::operator++(int)
 }
 
 
-void IteratorStack::ReConstruct(TraversalOrder torder, 
-				IterStackEnumType _enumType) 
+void IteratorStack::ReConstruct(TraversalOrder torder,
+				IterStackEnumType _enumType)
 {
   InitTraversal(torder, _enumType);
   FreeStack(0);
@@ -173,7 +173,7 @@ void IteratorStack::Reset()
   StackableIterator* top = Top();
   if (top) {
     top->Reset();
-    if (traversalOrder == PostOrder) 
+    if (traversalOrder == PostOrder)
       Push(IteratorToPushIfAny(top->CurrentUpCall()));
   }
 }
@@ -199,12 +199,12 @@ bool IteratorStack::IsValid() const
 }
 
 TraversalVisitType IteratorStack::VisitType() const
-{  
+{
   switch(clientTraversalOrder) {
   case PreOrder:
   case ReversePreOrder:
     return PreVisit;
-  case PostOrder: 
+  case PostOrder:
   case ReversePostOrder:
     return PostVisit;
 //case ReversePreAndPostOrder:
@@ -226,7 +226,7 @@ TraversalVisitType IteratorStack::VisitType() const
 }
 
 IteratorStack::TraversalOrder IteratorStack::GetTraversalOrder() const
-{  
+{
   return clientTraversalOrder;
 }
 
@@ -234,7 +234,7 @@ bool IteratorStack::IterationIsForward() const
 {
   switch(clientTraversalOrder) {
   case PreOrder:
-  case PostOrder: 
+  case PostOrder:
   case PreAndPostOrder:
     return true;
   case ReversePreOrder:
@@ -272,7 +272,7 @@ void IteratorStack::FreeStack(int maxDepth)
 }
 
 
-void IteratorStack::InitTraversal(TraversalOrder torder, 
+void IteratorStack::InitTraversal(TraversalOrder torder,
 				  IterStackEnumType _enumType)
 {
   clientTraversalOrder = torder;
@@ -286,7 +286,7 @@ void IteratorStack::InitTraversal(TraversalOrder torder,
 //else if (torder == ReversePreAndPostOrder)
 //  traversalOrder = PreAndPostOrder;  // reversed by IteratorToPushIfAny
   else {
-    DIAG_Assert((torder == PreOrder) || (torder == PostOrder) || 
+    DIAG_Assert((torder == PreOrder) || (torder == PostOrder) ||
 		(torder == PreAndPostOrder), "");
     traversalOrder = torder;
   }
@@ -298,7 +298,7 @@ void IteratorStack::DumpUpCall()
   //dumpHandler.BeginScope();
   int depth = iteratorStackRepr->pstack.Depth();
   for (; --depth >= 0; ) {
-    StackableIterator* it = 
+    StackableIterator* it =
       (StackableIterator*) iteratorStackRepr->pstack.Get(depth);
     it->Dump();
   }
@@ -314,46 +314,41 @@ void IteratorStack::DumpUpCall()
 SingletonIterator::SingletonIterator(const void* singletonValue,
 				     TraversalVisitType vtype)
   : value(singletonValue), done(false), visitType(vtype)
-{  
+{
 }
 
 
-SingletonIterator::~SingletonIterator()  
+SingletonIterator::~SingletonIterator()
 {
 }
 
 
 void* SingletonIterator::CurrentUpCall() const
-{ 
+{
   const void* retval = done ? 0 : value;
   return (void*) retval;  // const cast away
 }
 
 
-void SingletonIterator::operator++() 
-{ 
-  done = true; 
+void SingletonIterator::operator++()
+{
+  done = true;
 }
 
 
-void SingletonIterator::operator++(int) 
-{ 
-  done = true; 
+void SingletonIterator::operator++(int)
+{
+  done = true;
 }
 
 
-void SingletonIterator::Reset() 
-{ 
-  done = false; 
+void SingletonIterator::Reset()
+{
+  done = false;
 }
 
 
 TraversalVisitType SingletonIterator::VisitType() const
-{ 
+{
   return visitType;
 }
-
-
-
-
-

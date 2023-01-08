@@ -67,7 +67,7 @@
 
 
 //******************************************************************************
-// forward declarations 
+// forward declarations
 //******************************************************************************
 
 class ElfFileVector;
@@ -78,10 +78,10 @@ class ElfFileVector;
 // type definitions
 //******************************************************************************
 
-typedef enum InputFileErrorType_t { 
-  InputFileError_WarningNothrow, 
-  InputFileError_Warning, 
-  InputFileError_Error 
+typedef enum InputFileErrorType_t {
+  InputFileError_WarningNothrow,
+  InputFileError_Warning,
+  InputFileError_Error
 } InputFileErrorType_t;
 
 

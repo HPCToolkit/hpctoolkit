@@ -145,7 +145,7 @@ METHOD_FN(supports_event,const char *ev_str)
 {
   return hpcrun_ev_is(ev_str,"SYNC");
 }
- 
+
 
 //
 // Special SYNC protocol:
@@ -194,7 +194,7 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("SYNC\t\tThe number of synchronous metric slots allocated,\n"
+  printf("SYNC\t\t" "The number of synchronous metric slots allocated,\n"
 	 "\t\teg, SYNC@3 would generate 3 slots\n");
   printf("\n");
 }
@@ -206,7 +206,7 @@ METHOD_FN(display_events)
 
 //
 // sync class is "SS_SOFTWARE" so that both synchronous and asynchronous sampling is possible
-// 
+//
 
 #define ss_name sync
 #define ss_cls SS_SOFTWARE

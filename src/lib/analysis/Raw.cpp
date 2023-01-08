@@ -92,7 +92,7 @@ using std::string;
 
 //****************************************************************************
 
-void 
+void
 Analysis::Raw::writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep)
 {
   using namespace Analysis::Util;
@@ -1082,7 +1082,7 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
     }
 
     hpctrace_fmt_hdr_t hdr;
-    
+
     int ret = hpctrace_fmt_hdr_fread(&hdr, fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading trace file '" << filenm << "'");
@@ -1111,4 +1111,3 @@ Analysis::Raw::writeAsText_callpathTrace(const char* filenm)
     throw;
   }
 }
-

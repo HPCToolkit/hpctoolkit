@@ -167,7 +167,7 @@ public:
 
   mutable ud_t userdata;
 
-  /// Attributes accociated with this Thread.
+  /// Attributes associated with this Thread.
   ThreadAttributes attributes;
 };
 

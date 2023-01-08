@@ -65,7 +65,7 @@
 /****************************************************************************/
 
 /* findinstall
- *  
+ *
  * Note: This is a little trickier than a shell script launcher
  * because if cmd was invoked as 'foo' with the assumption that it
  * would be found using PATH, 'cmd' is _not_ a fully resolved a path,
@@ -90,29 +90,29 @@ findinstall(const char* cmd, const char* base_cmd)
   if (!cmd1) {
     cmd1 = (char*)cmd;
   }
-  
+
   /* given a command with a path, find the root installation directory */
   cmd1 = strdup(cmd1);
   bindir = dirname(cmd1);
   if (strcmp(bindir, ".") == 0) {
     rootdir_rel = "..";
-  } 
+  }
   else {
     bindir_tmp = strdup(bindir);
     rootdir_rel = dirname(bindir_tmp);
-  }  
+  }
 
   // printf("%s // %s // %s\n", cmd, bindir, rootdir_rel);
-      
+
   if (realpath(rootdir_rel, rootdir) == NULL) {
     // fprintf(stderr, "%s: %s\n", cmd, strerror(errno));
     goto error;
   }
-  
+
   free(cmd1);
   free(bindir_tmp);
   return rootdir;
-  
+
  error:
   return NULL;
 }

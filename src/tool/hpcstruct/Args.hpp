@@ -77,10 +77,10 @@ typedef enum { CACHE_DISABLED, CACHE_ENABLED, CACHE_NOT_NAMED, CACHE_ENTRY_COPIE
 //***************************************************************************
 
 class Args {
-public: 
-  Args(); 
+public:
+  Args();
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  ~Args();
 
   // Parse the command line
   void
@@ -92,7 +92,7 @@ public:
 
   void
   printUsage(std::ostream& os) const;
-  
+
   // Error
   void
   printError(std::ostream& os, const char* msg) const;
@@ -116,7 +116,7 @@ public:
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
-  long parallel_analysis_threshold; 
+  long parallel_analysis_threshold;
   bool analyze_cpu_binaries ;     // default: true
   bool analyze_gpu_binaries ;     // default: true
   bool compute_gpu_cfg;
@@ -145,8 +145,8 @@ private:
 private:
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
-}; 
+};
 
 extern Args *global_args;
 
-#endif // Args_hpp 
+#endif // Args_hpp

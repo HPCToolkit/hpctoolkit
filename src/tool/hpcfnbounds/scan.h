@@ -62,7 +62,7 @@ typedef struct __ehRecord {
   Elf_Scn   *ehHdrSection;
   Elf_Scn   *ehFrameSection;
   Elf_Scn   *textSection;
-  Elf_Scn   *dataSection; 
+  Elf_Scn   *dataSection;
   size_t    ehHdrIndex;
   size_t    ehFrameIndex;
 } ehRecord_t;
@@ -108,7 +108,7 @@ uint64_t  decodeDwarfAddress(uint8_t *, ehDecodeRecord_t *, uint64_t *, char *);
 uint64_t  unalignedEndianRead(uint8_t *, size_t, uint64_t);
 
 
-// Defines 
+// Defines
 #define EHF_MAX_CIE       (64)
 #define EHF_CIE_TRUE      (1)
 #define EHF_CIE_FALSE     (0)
@@ -150,8 +150,8 @@ uint64_t  unalignedEndianRead(uint8_t *, size_t, uint64_t);
 // #define EHF_STREAM_ORDER  (EHF_STREAM_BE)
 
 // determine the stack offset for CIE's with 'S'.  In practice
-// this seems independent of instruction word size, but might not be 
-// on some architectures.  if funnies are produced, this is where to fix 
+// this seems independent of instruction word size, but might not be
+// on some architectures.  if funnies are produced, this is where to fix
 // it.  If there is a macro that gives the minimum instruction word size, this is
 // where to put it.
 #define EHF_FOLLOW_IWS    (0)

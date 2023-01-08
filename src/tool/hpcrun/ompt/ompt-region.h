@@ -68,7 +68,7 @@ ompt_regions_init
 );
 
 
-void 
+void
 ompt_parallel_region_register_callbacks
 (
  ompt_set_callback_t ompt_set_callback_fn
@@ -76,7 +76,7 @@ ompt_parallel_region_register_callbacks
 
 
 // free adds entity to freelist
-void 
+void
 hpcrun_ompt_region_free
 (
  ompt_region_data_t *region_data

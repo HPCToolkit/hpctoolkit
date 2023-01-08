@@ -472,7 +472,7 @@ relocateSymbolsHelper
     symbol_section_index = new Elf_SymbolSectionIndexVector(nsymbols);
     // Update symbol offsets
     for (int i = 0; i < nsymbols; i++) {
-      GElf_Sym sym;      
+      GElf_Sym sym;
       int section_index;
       GElf_Sym *symp;
       symp = elf_helper_get_symbol(eh, i, &sym, &section_index);
@@ -497,7 +497,7 @@ relocateSymbolsHelper
               // text section that contains it.
               sym.st_value = (Elf64_Addr) s_offset + addr_signed;
               gelf_update_sym(datap, i, &sym);
-              (*symbol_values)[i] = s_offset + addr_signed;              
+              (*symbol_values)[i] = s_offset + addr_signed;
             }
           default: break;
         }
@@ -537,7 +537,7 @@ relocateSymbolsHelper
         }
       }
     }
-    delete symbol_section_index;    
+    delete symbol_section_index;
   }
   return symbol_values;
 }
@@ -624,7 +624,7 @@ relocateCubin
   bool success = false;
 
   elf_helper_t eh;
-  elf_helper_initialize(cubin_elf, &eh);  
+  elf_helper_initialize(cubin_elf, &eh);
 
   Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
   if (sections) {

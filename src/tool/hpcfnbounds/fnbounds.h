@@ -142,7 +142,7 @@ extern const char __e_[];
 #define FR_YES	(1)
 #define FR_NO	(0)
 
-// Defines 
+// Defines
 #define MAX_FUNC          (65536)
 #define TB_SIZE		        (512)
 #define MAX_SYM_SIZE	    (TB_SIZE)

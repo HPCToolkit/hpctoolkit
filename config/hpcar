@@ -5,12 +5,12 @@
 
 ## **************************************************************************
 ##
-## File: 
+## File:
 ##    hpcar: see usage.
 ##
 ## Author:
 ##    Written by Nathan Tallent, Rice University.
-##    
+##
 ## **************************************************************************
 
 #############################################################################
@@ -29,7 +29,7 @@ my $opt_ar_cmd = undef;
 my $opt_ar_lib = undef;
 my @opt_ar_filenames = ( );
 my $opt_threshhold = 20;
- 
+
 my $the_usage =
 "Usage:
   ${cmd} <ar-command> <ar-lib> <ar-args>
@@ -49,7 +49,7 @@ my $the_usage =
 \n";
 
 my @the_options = ('version|v',
-		   'help|h', 
+		   'help|h',
 		   );
 
 sub usage() {
@@ -63,19 +63,19 @@ sub getoptions()
   my %opts = ();
 
   my $ret = GetOptions(\%opts, @the_options);
-  if (!$ret) { 
+  if (!$ret) {
     printf "${error_pfx} Invalid option\n";
     usage();
     exit(1);
   }
 
   my $numArgs = scalar(@ARGV);
-  if ( !($numArgs >= 3) ) { 
+  if ( !($numArgs >= 3) ) {
     printf "${error_pfx} Invalid number of required arguments!\n";
     usage();
     exit(1);
   }
-  
+
   $opt_ar_cmd = $ARGV[0];
   shift(@ARGV);
   $opt_ar_lib = $ARGV[0];
@@ -86,7 +86,7 @@ sub getoptions()
   }
 }
 
- 
+
 #############################################################################
 # Main
 #############################################################################
@@ -106,7 +106,7 @@ foreach my $glb (@opt_ar_filenames) {
 while (@the_files) {
   my @tmp = splice(@the_files, 0, $opt_threshhold);
   my $filelst = join(' ', @tmp);
-  
+
   my $cmd = "${opt_ar_cmd} ${opt_ar_lib} ${filelst}";
   print "---------------------------------------------\n";
   print "${cmd}\n";
@@ -115,4 +115,3 @@ while (@the_files) {
       exit(-1);
   }
 }
-

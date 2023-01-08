@@ -48,7 +48,7 @@
 //******************************************************************************
 // File: ss-list.h
 //
-// Purpose: 
+// Purpose:
 //   This file contains a list of sample sources wrapped by a call to an
 //   unspecified macro. The intended use of this file is to define the
 //   macro, include the file elsewhere one or more times to register the
@@ -61,21 +61,21 @@
 #include <include/hpctoolkit-config.h>
 
 SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
+SAMPLE_SOURCE_DECL_MACRO(io)
 #ifdef ENABLE_CLOCK_REALTIME
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
+SAMPLE_SOURCE_DECL_MACRO(itimer)
 #endif
 
 #ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
+SAMPLE_SOURCE_DECL_MACRO(linux_perf)
 #endif
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
+SAMPLE_SOURCE_DECL_MACRO(memleak)
 
-SAMPLE_SOURCE_DECL_MACRO(none)  
+SAMPLE_SOURCE_DECL_MACRO(none)
 
 #ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
+SAMPLE_SOURCE_DECL_MACRO(papi)
 #endif
 
 SAMPLE_SOURCE_DECL_MACRO(directed_blame)
@@ -124,4 +124,3 @@ SAMPLE_SOURCE_DECL_MACRO(opencl)
 #ifdef HPCRUN_CPU_GPU_IDLE
 SAMPLE_SOURCE_DECL_MACRO(cpu_gpu_idle)
 #endif
-

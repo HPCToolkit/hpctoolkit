@@ -47,7 +47,7 @@
 #include "placeholders.h"
 
 //*****************************************************************************
-// global includes 
+// global includes
 //*****************************************************************************
 
 #include <hpctoolkit-config.h>
@@ -84,7 +84,7 @@ static const char phname_gpu_kernel[]  = "<gpu kernel>";
 static const char phname_gpu_memset[]  = "<gpu memset>";
 
 //*****************************************************************************
-// interface operations 
+// interface operations
 //*****************************************************************************
 
 const char *

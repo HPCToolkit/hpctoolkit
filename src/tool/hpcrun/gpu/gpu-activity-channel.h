@@ -58,9 +58,9 @@
 // forward type declarations
 //******************************************************************************
 
-typedef struct gpu_activity_t gpu_activity_t; 
+typedef struct gpu_activity_t gpu_activity_t;
 
-typedef struct gpu_activity_channel_t gpu_activity_channel_t; 
+typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 
 
 

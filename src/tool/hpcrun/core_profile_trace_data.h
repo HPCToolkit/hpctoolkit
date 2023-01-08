@@ -19,7 +19,7 @@ typedef struct core_profile_trace_data_t {
   // ----------------------------------------
   epoch_t* epoch;
 
-  //metrics: this is needed otherwise 
+  //metrics: this is needed otherwise
   //hpcprof does not pick them up
   cct2metrics_t* cct2metrics_map;
 
@@ -48,26 +48,3 @@ typedef struct core_profile_trace_data_t {
 
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

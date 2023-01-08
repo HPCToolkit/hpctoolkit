@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -122,7 +122,7 @@ LUSHI_DECL(bool, LUSHI_ismycode, (void* addr));
 
 // Given a lush_cursor, step the cursor to the next (less deeply
 // nested) bichord.  Returns:
-//   LUSH_STEP_CONT:     if step was sucessful
+//   LUSH_STEP_CONT:     if step was successful
 //   LUSH_STEP_ERROR:    on account of an error.
 //
 // It is assumed that:
@@ -140,7 +140,7 @@ LUSHI_DECL(lush_step_t, LUSHI_step_bichord, (lush_cursor_t* cursor));
 // Given a lush_cursor, _forcefully_ step the cursor to the next (less
 // deeply nested) p-note which may also be the next p-chord.
 // Returns:
-//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_CONT:      if step was successful
 //   LUSH_STEP_END_CHORD: if prev p-note was the end of the p-chord
 //   LUSH_STEP_END_PROJ:  if prev p-chord was end of p-projection
 //   LUSH_STEP_ERROR:     on account of an error.
@@ -149,8 +149,8 @@ LUSHI_DECL(lush_step_t, LUSHI_step_pnote, (lush_cursor_t* cursor));
 
 // Given a lush_cursor, step the cursor to the next (less deeply
 // nested) l-note of the current l-chord.
-// Returns: 
-//   LUSH_STEP_CONT:      if step was sucessful (only possible if not a-to-0)
+// Returns:
+//   LUSH_STEP_CONT:      if step was successful (only possible if not a-to-0)
 //   LUSH_STEP_END_CHORD: if prev l-note was the end of the l-chord
 //   LUSH_STEP_ERROR:     on account of an error.
 LUSHI_DECL(lush_step_t, LUSHI_step_lnote, (lush_cursor_t* cursor));

@@ -76,7 +76,7 @@ static const char *newline = "\n";
 // Local methods
 //******************************************************************************
 
-static 
+static
 char *
 sanitize
 (
@@ -106,7 +106,7 @@ printw(FILE *output, const char *name, const char *desc_unsanitized)
 
   if (desc_unsanitized) {
     dlen = strlen(desc_unsanitized);
-    desc_buffer = (char *) malloc(dlen+1); 
+    desc_buffer = (char *) malloc(dlen+1);
     char *desc = sanitize(desc_buffer, desc_unsanitized);
 
     int lines = strwrap((char *)desc, MAX_DESC_PER_LINE, &line, &len);
@@ -176,4 +176,3 @@ display_event_info(FILE *output, const char *event, const char *desc)
   printw(output, event, desc);
   fprintf(output, newline);
 }
-

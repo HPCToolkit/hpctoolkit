@@ -60,7 +60,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct opencl_kernel_loadmap_map_entry_t opencl_kernel_loadmap_map_entry_t;
@@ -81,7 +81,7 @@ opencl_kernel_loadmap_map_lookup
 void
 opencl_kernel_loadmap_map_insert
 (
- uint64_t, 
+ uint64_t,
  uint32_t
 );
 
@@ -114,4 +114,3 @@ opencl_kernel_loadmap_map_count
 );
 
 #endif
-

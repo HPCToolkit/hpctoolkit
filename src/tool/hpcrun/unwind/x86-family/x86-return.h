@@ -62,5 +62,3 @@ unwind_interval *
 process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg);
 
 #endif
-
-

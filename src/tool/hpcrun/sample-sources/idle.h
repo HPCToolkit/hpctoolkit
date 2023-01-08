@@ -12,7 +12,6 @@ void idle_metric_blame_shift_work(void);
 void idle_metric_thread_start(void);
 void idle_metric_thread_end(void);
 
-void idle_metric_enable(); 
+void idle_metric_enable();
 
 #endif
-

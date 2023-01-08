@@ -48,9 +48,9 @@
 
 /***
  * Check if an event needs to be excluded or not.
- * @param event 
+ * @param event
  * @return true if the event has to be excluded, false otherwise
- */ 
+ */
 bool is_event_to_exclude(char *event);
 
 #endif

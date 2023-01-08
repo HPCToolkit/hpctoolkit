@@ -45,10 +45,10 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// File: threadmgr.h 
+// File: threadmgr.h
 //
-// Purpose: 
-//   interface definitions for threadmgr, which maintains information 
+// Purpose:
+//   interface definitions for threadmgr, which maintains information
 //   about the number of live threads
 //******************************************************************************
 

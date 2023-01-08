@@ -103,7 +103,7 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 /*
  * get int long value of variable environment.
- * If the variable is not set, return the default value 
+ * If the variable is not set, return the default value
  */
 static long
 getEnvLong(const char *env_var, long default_value)
@@ -122,7 +122,7 @@ getEnvLong(const char *env_var, long default_value)
 }
 
 
-static char* 
+static char*
 strlaststr(const char* haystack, const char* needle)
 {
    char*  loc = 0;
@@ -148,12 +148,12 @@ find_precise_suffix(const char *s, const char *suffix, char allowed)
 
     // skip allowable characters after suffix
     if (allowed) {
-      if (*end == allowed) end++; 
-      if (*end == allowed) end++; 
+      if (*end == allowed) end++;
+      if (*end == allowed) end++;
     }
 
-    // check that either 
-    // (1) there is nothing left, or 
+    // check that either
+    // (1) there is nothing left, or
     // (2) it is followed by DELIMITER_HOWOFTEN
     if (*end != 0 && *end != DELIMITER_HOWOFTEN) ptr_att = 0;
   }
@@ -201,7 +201,7 @@ perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
 // find the best precise ip value in this platform
 // @param current perf event attribute. This attribute can be
 //    updated for the default precise ip.
-// @return the assigned precise ip 
+// @return the assigned precise ip
 //----------------------------------------------------------
 u64
 perf_skid_get_precise_ip(struct perf_event_attr *attr)
@@ -226,19 +226,19 @@ perf_skid_get_precise_ip(struct perf_event_attr *attr)
   // set to the most arbitrary skid to ensure it works
   //
   attr->precise_ip = PERF_EVENT_SKID_ARBITRARY;
-  
+
   return attr->precise_ip;
 }
 
 // parse the event into event_name and the type of precise_ip
 //  the name of the event excludes the precise ip suffix
 // returns:
-//  4 PERF_EVENT_AUTODETECT_SKID       
-//  3 PERF_EVENT_SKID_ZERO_REQUIRED    
-//  2 PERF_EVENT_SKID_ZERO_REQUESTED  
-//  1 PERF_EVENT_SKID_CONSTANT         
-//  0 PERF_EVENT_SKID_ARBITRARY        
-//  -1 PERF_EVENT_SKID_ERROR   
+//  4 PERF_EVENT_AUTODETECT_SKID
+//  3 PERF_EVENT_SKID_ZERO_REQUIRED
+//  2 PERF_EVENT_SKID_ZERO_REQUESTED
+//  1 PERF_EVENT_SKID_CONSTANT
+//  0 PERF_EVENT_SKID_ARBITRARY
+//  -1 PERF_EVENT_SKID_ERROR
 int
 perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks)
 {
@@ -281,7 +281,7 @@ perf_skid_parse_event(const char *event_string, char **event_string_without_skid
     memcpy(buffer, event_string, ptr_att - event_string);
     buffer[ptr_att - event_string] = 0;
     precise++;
-    
+
     const char *ptr_next = ptr_att + len_suf;
     if (!ptr_next)
       // shouldn't happen here
@@ -311,11 +311,11 @@ perf_skid_parse_event(const char *event_string, char **event_string_without_skid
 #include <stdio.h>
 
 #define MAX_NAME_EVENT 128
-int 
+int
 main (int argc, char *argv[])
 {
-  char *ev[] = {"cycles:p", "cycles:pp", "cycles", "cycles::popo:peer", 
-	  	"cycles::popo:oeer:ppp", "cycles::popo:peer:p", "cycles@100", 
+  char *ev[] = {"cycles:p", "cycles:pp", "cycles", "cycles::popo:peer",
+	  	"cycles::popo:oeer:ppp", "cycles::popo:peer:p", "cycles@100",
 	  	"cycles::popo:oeer:p@100", "cycles::popo:peer:p@f10",
  		"cycles::popo:peer:ppp@5050", "cycles::popo:peer:pp",
  		"cs:P", "cs:Pp", "cs:pppp", "cs:P@10000" };

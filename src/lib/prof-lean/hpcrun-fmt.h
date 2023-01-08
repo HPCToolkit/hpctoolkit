@@ -595,22 +595,22 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
 static const uint16_t HPCRUN_IDTUPLE_COUNT     = 8;
 static const int  HPCRUN_IDTUPLE_COUNT_LEN     = 2;
 
-static const char HPCRUN_IDTUPLE_SUMMARY[]     = "SUMMARY"; 
-static const char HPCRUN_IDTUPLE_NODE[]        = "NODE";              
-static const char HPCRUN_IDTUPLE_RANK[]        = "RANK";         
-static const char HPCRUN_IDTUPLE_THREAD[]      = "THREAD";     
-static const char HPCRUN_IDTUPLE_GPUDEVICE[]   = "GPUDEVICE"; 
-static const char HPCRUN_IDTUPLE_GPUCONTEXT[]  = "GPUCONTEXT"; 
-static const char HPCRUN_IDTUPLE_GPUSTREAM[]   = "GPUSTREAM";  
-static const char HPCRUN_IDTUPLE_CORE[]        = "CORE";     
+static const char HPCRUN_IDTUPLE_SUMMARY[]     = "SUMMARY";
+static const char HPCRUN_IDTUPLE_NODE[]        = "NODE";
+static const char HPCRUN_IDTUPLE_RANK[]        = "RANK";
+static const char HPCRUN_IDTUPLE_THREAD[]      = "THREAD";
+static const char HPCRUN_IDTUPLE_GPUDEVICE[]   = "GPUDEVICE";
+static const char HPCRUN_IDTUPLE_GPUCONTEXT[]  = "GPUCONTEXT";
+static const char HPCRUN_IDTUPLE_GPUSTREAM[]   = "GPUSTREAM";
+static const char HPCRUN_IDTUPLE_CORE[]        = "CORE";
 
-typedef struct hpcrun_fmt_idtuple_dxnry_entry_t 
+typedef struct hpcrun_fmt_idtuple_dxnry_entry_t
 {
   uint16_t kind;
   char* kindStr;
 } hpcrun_fmt_idtuple_dxnry_entry_t;
 
-typedef struct hpcrun_fmt_idtuple_dxnry_t 
+typedef struct hpcrun_fmt_idtuple_dxnry_t
 {
   uint16_t num_entries;
   hpcrun_fmt_idtuple_dxnry_entry_t* dictionary;
@@ -641,7 +641,7 @@ static const uint32_t LastNodeEnd = 0x656E6421;
 static const uint16_t LastMidEnd  = 0x6564;
 
 typedef struct hpcrun_fmt_sparse_metrics_t{
-  //uint32_t tid; 
+  //uint32_t tid;
   id_tuple_t id_tuple;
   uint64_t num_vals;
   uint64_t num_cct_nodes;
@@ -721,8 +721,8 @@ static const int SF_END     = 0;
 static const int SF_FAIL    = 1;
 static const int SF_ERR     = -1;
 
-static const int SF_footer_SIZE           = 7 * 16; 
-static const int SF_num_lm_SIZE           = 4; 
+static const int SF_footer_SIZE           = 7 * 16;
+static const int SF_num_lm_SIZE           = 4;
 static const int SF_num_metric_SIZE       = 4;
 static const int SF_num_cct_SIZE          = 8;
 static const int SF_cct_node_SIZE         = 19; // id:4 id-parent:4 lm-id:2 im-ip:8 flags:1
@@ -753,13 +753,13 @@ typedef struct hpcrun_sparse_file {
   uint32_t sm_block_touched;
 
   //to read metric values for current block, initialized when hpcrun_sparse_next_block is called
-  size_t cur_block_end; //in terms of number of nzvals 
-  size_t cur_block_start;//in terms of number of nzvals 
+  size_t cur_block_end; //in terms of number of nzvals
+  size_t cur_block_start;//in terms of number of nzvals
   uint64_t num_nzval;
   uint32_t num_nz_cct_nodes;
   size_t cct_node_id_idx_offset;
   size_t val_mid_offset;
-  
+
 
 } hpcrun_sparse_file_t;
 
@@ -989,7 +989,7 @@ typedef struct sampling_info_s {
 
   // sampling period in nanoseconds.
   // This is used for adding <no activity> to traces where threads are idle
-  // 0 means not a time-based metric, in which case we do not add 
+  // 0 means not a time-based metric, in which case we do not add
   // <no activity> to the trace.
   uint64_t sampling_period;
 
@@ -1006,4 +1006,3 @@ typedef struct sampling_info_s {
 #endif
 
 #endif /* prof_lean_hpcrun_fmt_h */
-

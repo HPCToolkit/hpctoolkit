@@ -134,7 +134,7 @@ vdso_segment_len
 
   size_t elf_size = 0;
   elf_version(EV_CURRENT);
-  Elf *vdso_elf = elf_memory(vdso_addr, seg_len); 
+  Elf *vdso_elf = elf_memory(vdso_addr, seg_len);
   GElf_Ehdr ehdr;
   if (vdso_elf && gelf_getehdr(vdso_elf, &ehdr)) {
     // ELF Format:
@@ -169,5 +169,3 @@ set_saved_vdso_path(const char* path)
   strcpy(vdso_saved_path, path);
   return 0;
 }
-
-

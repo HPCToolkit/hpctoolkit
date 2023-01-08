@@ -57,7 +57,7 @@
 // block the unwanted signals.
 //
 // oldset is returned as the original signal mask to restore via
-//   hpcrun_restore_sigmask() 
+//   hpcrun_restore_sigmask()
 //
 // Note: if you block a signal in one scope, don't siglongjmp()
 // outside of that scope without restoring the signal mask.
@@ -100,7 +100,7 @@ static sigset_t the_shootdown_mask;
 // variable in case that conflicts with something.
 //
 static void
-hpcrun_signals_init_internal(void) 
+hpcrun_signals_init_internal(void)
 {
   sigemptyset(&the_profile_mask);
   sigaddset(&the_profile_mask, SIGRTMIN + 2);  // papi

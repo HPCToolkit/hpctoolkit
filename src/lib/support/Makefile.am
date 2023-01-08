@@ -107,7 +107,7 @@ MYSOURCES = \
 	QuickSort.hpp QuickSort.cpp \
 	Unique.hpp Unique.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
 
 if IS_HOST_AR
@@ -139,4 +139,3 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
-

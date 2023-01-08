@@ -56,7 +56,7 @@
 // macros
 //******************************************************************************
 
-#define PPC64_CALL_NBYTES 4 // the number of bytes in a PPC64 branch-and-link 
+#define PPC64_CALL_NBYTES 4 // the number of bytes in a PPC64 branch-and-link
 
 
 
@@ -64,17 +64,17 @@
 // operations
 //******************************************************************************
 
-static inline uint64_t 
+static inline uint64_t
 length_of_call_instruction
 (
   void
 )
 {
   return PPC64_CALL_NBYTES;
-} 
+}
 
 
-// return true iff the instruction is a PPC64 branch and link 
+// return true iff the instruction is a PPC64 branch and link
 static inline bool
 isInsn_BL
 (
@@ -85,10 +85,10 @@ isInsn_BL
 }
 
 
-// given an instruction pointer, find the next call instruction. return the 
-// difference in bytes between the end of that call instruction and the 
+// given an instruction pointer, find the next call instruction. return the
+// difference in bytes between the end of that call instruction and the
 // initial instruction pointer
-static inline int 
+static inline int
 offset_to_pc_after_next_call
 (
   void *ip

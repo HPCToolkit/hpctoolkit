@@ -49,4 +49,4 @@
 
 #include <unwind/common/std_unw_cursor.h>
 
-#endif // UNW_DATATYPES_SPECIFIC_H 
+#endif // UNW_DATATYPES_SPECIFIC_H

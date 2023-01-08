@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -109,7 +109,7 @@ tokenize_char(const std::string& tokenstr, const char* delim,
     if (begp == string::npos) {
       break;
     }
-    
+
     endp = tokenstr.find_first_of(delim, begp);
     if (endp == string::npos) {
       endp = sz;
@@ -126,7 +126,7 @@ tokenize_str(const std::string& tokenstr, const char* delim,
 {
   const int delimsz = strlen(delim);
   const size_t sz = tokenstr.size();
-  
+
   for (size_t begp = 0, endp = 0; begp < sz; begp = endp + delimsz) {
     endp = tokenstr.find(delim, begp);
     if (endp == string::npos) {
@@ -151,7 +151,7 @@ join(const std::vector<string>& tokenvec, const char* delim,
   // N.B.: [begIdx, endIdx)
   for (size_t i = begIdx; i < endIdx; ++i) {
     result += tokenvec[i];
-    if (i + 1 < endIdx) { 
+    if (i + 1 < endIdx) {
       result += delim;
     }
   }
@@ -168,7 +168,7 @@ toLong(const char* str, unsigned* endidx)
 {
   long value = 0;
   DIAG_Assert((str && str[0] != '\0'), "StrUtil::toLong: empty string!");
-  
+
   errno = 0;
   char* endptr = NULL;
   value = strtol(str, &endptr, 0);
@@ -176,7 +176,7 @@ toLong(const char* str, unsigned* endidx)
     *endidx = (endptr - str) / sizeof(char);
   }
   if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
-    string msg = "[StrUtil::toLong] Cannot convert `" + string(str) 
+    string msg = "[StrUtil::toLong] Cannot convert `" + string(str)
       + "' to integral (long) value";
     if (errno) { // not always set
       msg += string(" (") + strerror(errno) + string(")");
@@ -192,7 +192,7 @@ toUInt64(const char* str, unsigned* endidx)
 {
   uint64_t value = 0;
   DIAG_Assert((str && str[0] != '\0'), "StrUtil::toUInt64: empty string!");
-  
+
   errno = 0;
   char* endptr = NULL;
   value = strtoull(str, &endptr, 0);
@@ -211,12 +211,12 @@ toUInt64(const char* str, unsigned* endidx)
 }
 
 
-double   
+double
 toDbl(const char* str, unsigned* endidx)
 {
   double value = 0;
   DIAG_Assert((str && str[0] != '\0'), "StrUtil::toDbl: empty string!");
-  
+
   errno = 0;
   char* endptr = NULL;
   value = strtod(str, &endptr);
@@ -249,11 +249,11 @@ toStr(const int x, int base)
   case 10:
     format = "%d";
     break;
-    
+
   default:
     DIAG_Die(DIAG_Unimplemented);
   }
-  
+
   sprintf(buf, format, x);
   return string(buf);
 }
@@ -271,17 +271,17 @@ toStr(const unsigned x, int base)
     //stringSize = 2 + numSz;
     format = "%u";
     break;
-    
+
   case 16:
     //int numSz = (x == 0) ? 1 : (int) log10((double)l);
-    //stringSize = 4 + numSz; 
+    //stringSize = 4 + numSz;
     format = "%#x";
     break;
 
   default:
     DIAG_Die(DIAG_Unimplemented);
   }
-  
+
   sprintf(buf, format, x);
   return string(buf);
 }
@@ -292,7 +292,7 @@ toStr(const int64_t x, int base)
 {
   char buf[BSIZE];
   const char* format = NULL;
-  
+
   switch (base) {
   case 10:
     format = "%" PRId64;
@@ -305,7 +305,7 @@ toStr(const int64_t x, int base)
   default:
     DIAG_Die(DIAG_Unimplemented);
   }
-  
+
   sprintf(buf, format, x);
   return string(buf);
 }
@@ -316,12 +316,12 @@ toStr(const uint64_t x, int base)
 {
   char buf[BSIZE];
   const char* format = NULL;
-  
+
   switch (base) {
   case 10:
     format = "%" PRIu64;
     break;
-    
+
   case 16:
     format = "%#" PRIx64;
     break;
@@ -329,7 +329,7 @@ toStr(const uint64_t x, int base)
   default:
     DIAG_Die(DIAG_Unimplemented);
   }
-  
+
   sprintf(buf, format, x);
   return string(buf);
 }

@@ -8,7 +8,7 @@
 
   <!-- ****************************************************************** -->
 
-  <!-- Info/NV: flexible name-value pairs: (n)ame; (t)ype; (v)alue -->
+  <!-- Info/NV: flexible name-value pairs: (n)ame; (t)ype; v=value -->
   <!ELEMENT Info (NV*)>
   <!ATTLIST Info
 	    n CDATA #IMPLIED>
@@ -75,7 +75,7 @@
 	      i   CDATA #IMPLIED
 	      frm CDATA #REQUIRED>
 
-    <!-- Metric data, used in sections: (n)ame [from Metric]; (v)alue -->
+    <!-- Metric data, used in sections: (n)ame [from Metric]; v=value -->
     <!ELEMENT M EMPTY>
     <!ATTLIST M
 	      n CDATA #REQUIRED
@@ -136,7 +136,7 @@
     <!-- ProcedureTable assigns a short name to a procedure -->
     <!ELEMENT ProcedureTable (Procedure)*>
 
-    <!-- Dictionary for procedure: (i)d, (n)ame, (f)eature and (v)alue of the address -->
+    <!-- Dictionary for procedure: (i)d, (n)ame, (f)eature and v=value of the address -->
     <!-- Possible value of f: -->
     <!-- 0: normal procedure -->
     <!-- 1: place holder, do not add anything -->

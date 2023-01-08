@@ -54,7 +54,7 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
@@ -99,11 +99,11 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* GCC_ATTR_UNUSED filenm
 }
 
 
-const char* DIAG_Unimplemented = 
+const char* DIAG_Unimplemented =
   "Unimplemented feature: ";
-const char* DIAG_UnexpectedInput = 
+const char* DIAG_UnexpectedInput =
   "Unexpected input: ";
-const char* DIAG_UnexpectedOpr = 
+const char* DIAG_UnexpectedOpr =
   "Unexpected operator: ";
 
 

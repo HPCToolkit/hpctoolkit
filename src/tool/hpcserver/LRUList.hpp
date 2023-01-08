@@ -89,7 +89,7 @@ public:
 	 * which for VersatileMemoryPage corresponds to being mapped, or they are on
 	 * the "not in use" list, which corresponds to not being mapped. An object
 	 * must only be added with addNew() once. If it is removed from the list
-	 * with remove(), it must be added with reAdd(). It is not necessary to call
+	 * with remove(), it must be added with addAgain(). It is not necessary to call
 	 * putOnTop() after adding an element as it will already be on top.
 	 */
 	LRUList(int expectedMaxSize)//Up to linear time
@@ -133,7 +133,7 @@ public:
 		removed.splice(removed.end(), useOrder, --useOrder.end());
 		usedPages--;
 	}
-	void reAdd(int index)//Constant time
+	void addAgain(int index)//Constant time
 	{
 		typename list<T*>::iterator it = iters[index];
 		useOrder.splice(useOrder.begin(), removed, it);

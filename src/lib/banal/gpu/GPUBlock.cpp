@@ -97,7 +97,7 @@ appendOperandstoInst
 
 
 GPUBlock::GPUBlock(CodeObject * o, CodeRegion * r,
-  Address start, Address end, Address last, 
+  Address start, Address end, Address last,
   std::vector<GPUParse::Inst*> insts,
   Dyninst::Architecture arch) :
   Block(o, r, start, end, last), _insts(std::move(insts)), _arch(arch) {}
@@ -113,7 +113,7 @@ void GPUBlock::getInsns(Insns &insns) const {
   unsigned char dummy_inst[MAX_INST_SIZE];
 #ifdef DYNINST_SUPPORTS_INTEL_GPU
   entryID entry_id = _entry_ids_max_;
-  
+
   if (_arch == Arch_cuda) {
     entry_id = cuda_op_general;
   } else if (_arch == Arch_intelGen9) {

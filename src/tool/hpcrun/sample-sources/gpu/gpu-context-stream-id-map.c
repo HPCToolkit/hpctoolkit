@@ -218,5 +218,3 @@ void signal_all_streams() {
         splay_tree_traversal(cupti_context_stream_id_map_root);
     }
 }
-
-

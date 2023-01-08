@@ -17,5 +17,3 @@ void filterTest (){
 
 	cout << "Include (1,2) " << (b ? "true" : "false") <<endl;
 }
-
-

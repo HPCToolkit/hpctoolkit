@@ -58,21 +58,21 @@ using std::string;
 
 namespace BinUtil {
 
-// 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName' 
+// 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName'
 // to attempt to demangle it.  If there is an error in demangling,
 // return 'name'; otherwise return the demangled version.
 string
 canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
 {
   if (name.empty()) {
-    return name; 
+    return name;
   }
 
   string bestname = demangleProcName(name.c_str());
   if (procNameMgr) {
     bestname = procNameMgr->canonicalize(bestname);
   }
-  
+
   return bestname;
 }
 
@@ -81,16 +81,16 @@ canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
 string
 demangleProcName(const std::string& name)
 {
-  string ans = name;
+  string result = name;
 
   char *str = hpctoolkit_demangle(name.c_str());
 
   if (str != NULL) {
-    ans = str;
+    result = str;
     free(str);
   }
 
-  return ans;
+  return result;
 }
 
 } // namespace BinUtil

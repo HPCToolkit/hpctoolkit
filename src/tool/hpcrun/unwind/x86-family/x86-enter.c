@@ -54,7 +54,7 @@
 #include <messages/messages.h>
 
 /******************************************************************************
- * interface operations 
+ * interface operations
  *****************************************************************************/
 
 unwind_interval *
@@ -84,12 +84,11 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
   reg.bp_status = BP_SAVED;
   reg.sp_bp_pos += offset - 8;
   reg.bp_bp_pos = 0;
-  
+
   next = new_ui(nextInsn(iarg, xptr), RA_STD_FRAME, &reg);
   hw_tmp->uwi = next;
-  hw_tmp->state = 
-    HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED | 
+  hw_tmp->state =
+    HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED |
 		 HW_SP_DECREMENTED | HW_BP_OVERWRITTEN);
   return next;
 }
-

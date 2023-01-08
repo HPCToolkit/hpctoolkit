@@ -2,7 +2,7 @@
 // system includes
 //******************************************************************************
 
-#include <ucontext.h> 
+#include <ucontext.h>
 #include <dlfcn.h>
 
 #include <stdbool.h>

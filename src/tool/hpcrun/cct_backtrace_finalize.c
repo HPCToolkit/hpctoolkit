@@ -1,5 +1,5 @@
 //******************************************************************************
-// local includes  
+// local includes
 //******************************************************************************
 
 #include "cct_backtrace_finalize.h"
@@ -7,7 +7,7 @@
 
 
 //******************************************************************************
-// global variables 
+// global variables
 //******************************************************************************
 
 static cct_backtrace_finalize_entry_t *finalizers;
@@ -42,7 +42,7 @@ cct_cursor_finalize_register(
 
 void
 cct_backtrace_finalize(
-  backtrace_info_t *bt, 
+  backtrace_info_t *bt,
   int isSync
 )
 {
@@ -64,4 +64,3 @@ cct_cursor_finalize(
   if (cursor_finalize) return cursor_finalize(cct, bt, cursor);
   else return cursor;
 }
-

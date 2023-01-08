@@ -47,7 +47,7 @@
 //******************************************************************************
 // File: trampoline_eager.c
 //
-// Purpose: unwind optimization & iteration-based analysis on PPC. 
+// Purpose: unwind optimization & iteration-based analysis on PPC.
 //
 // Implemented by marking the last bit of RA on the stack / in the register.
 // Currently only supports PPC. May be extended to architectures that ignore
@@ -106,7 +106,7 @@ hpcrun_trampoline_bt_dump(void)
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
        td->cached_bt_buf_frame_end - td->cached_bt_frame_beg, td->cached_frame_count);
   for (frame_t* f = td->cached_bt_frame_beg; f < td->cached_bt_buf_frame_end; f++) {
-      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, 
+      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc,
               f->ra_loc == NULL ? NULL : *((void**) f->ra_loc));
   }
 }
@@ -128,7 +128,7 @@ bool hpcrun_trampoline_update(frame_t* stop_frame)
 {
   thread_data_t* td = hpcrun_get_thread_data();
 
-  if (!td->tramp_present) return false; 
+  if (!td->tramp_present) return false;
 
   frame_t* frame = td->tramp_frame;
   cct_node_t* node = td->tramp_cct_node;
@@ -137,9 +137,9 @@ bool hpcrun_trampoline_update(frame_t* stop_frame)
 
   // Locate which frame is marked
   while (count > 0) {
-    if (frame->ra_loc == stop_frame->ra_loc) 
+    if (frame->ra_loc == stop_frame->ra_loc)
       break;
-    
+
     cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
     if (  !hpcrun_get_retain_recursion_mode()
        && frame != td->cached_bt_frame_beg
@@ -151,7 +151,7 @@ bool hpcrun_trampoline_update(frame_t* stop_frame)
     else
       dLCA++;
     node = parent;
-    
+
     frame++;
     count--;
   }
@@ -161,7 +161,7 @@ bool hpcrun_trampoline_update(frame_t* stop_frame)
   if (node == NULL) return false;
 
   // Update corresponding values
-  TMSG(TRAMP, "Marked addr located at node %p, cached frame count reduced from %d to %d", 
+  TMSG(TRAMP, "Marked addr located at node %p, cached frame count reduced from %d to %d",
           node, td->cached_frame_count, count);
   td->tramp_frame = frame;
   td->tramp_cct_node = node;
@@ -178,7 +178,7 @@ hpcrun_trampoline_interior(void* addr)
 }
 
 
-// returns true iff at first address of trampoline code. 
+// returns true iff at first address of trampoline code.
 bool
 hpcrun_trampoline_at_entry(void* addr)
 {
@@ -186,7 +186,7 @@ hpcrun_trampoline_at_entry(void* addr)
 }
 
 
-void 
+void
 hpcrun_trampoline_insert(cct_node_t* node)
 {
   TMSG(TRAMP, "Mark start at node %p", node);
@@ -224,7 +224,7 @@ hpcrun_trampoline_insert(cct_node_t* node)
     } else {
       TMSG(TRAMP, "Tramp frame ra loc = NULL, skip marking this frame");
     }
-    
+
     cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
     if (  !hpcrun_get_retain_recursion_mode()
        && frame != td->cached_bt_frame_beg
@@ -246,4 +246,3 @@ hpcrun_trampoline_remove(void)
 {
   hpcrun_init_trampoline_info();
 }
-

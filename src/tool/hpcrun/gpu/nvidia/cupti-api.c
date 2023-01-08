@@ -687,7 +687,7 @@ cupti_error_callback_dummy // __attribute__((unused))
  const char *error_string
 )
 {
-  
+
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
       "function %s failed with error %s", type, fn, error_string);
   EEMSG("See the 'FAQ and Troubleshooting' chapter in the HPCToolkit manual for guidance");
@@ -729,7 +729,7 @@ cupti_load_callback_cuda
   if (entry == NULL) {
     Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
     cubin_id_map_insert(cubin_id, loadmap_module_id, vector);
-  } 
+  }
 }
 
 
@@ -765,7 +765,7 @@ cupti_module_id
   uint32_t cubin_id;
 
   CUmodule mod;
-  cuda_get_module(&mod, function); 
+  cuda_get_module(&mod, function);
 
   int major, minor;
   cuda_get_driver_version(&major, &minor);
@@ -845,7 +845,7 @@ cupti_subscriber_callback
 
     switch (cb_id) {
       //FIXME(Keren): do not support memory allocate and free for current CUPTI version
-      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
+      // FIXME(Dejan): here find #bytes from func argument list and attribute it to node in cct(corr_id)
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
@@ -1018,7 +1018,7 @@ cupti_subscriber_callback
 
 	  gpu_cct_insert(kernel_ph, kernel_ip);
 
-          cct_node_t *trace_ph = 
+          cct_node_t *trace_ph =
 	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
 	  gpu_cct_insert(trace_ph, kernel_ip);
@@ -1384,7 +1384,7 @@ cupti_init
 )
 {
   FLUSH_ALARM_SIGALLOC();
-  
+
   cupti_activity_enabled.buffer_request = cupti_buffer_alloc;
   cupti_activity_enabled.buffer_complete = cupti_buffer_completion_callback;
 }
@@ -1653,7 +1653,7 @@ cupti_device_init()
   cupti_runtime_api_flag = false;
 
   // FIXME: Callback shutdown currently disabled to handle issues with fork()
-  // See the comment preceeding sample-sources/nvidia.c:process_event_list for details.
+  // See the comment preceding sample-sources/nvidia.c:process_event_list for details.
 
   // cupti_correlation_enabled = false;
   // cupti_pc_sampling_enabled = false;
@@ -1677,4 +1677,3 @@ cupti_device_shutdown(void *args, int how)
   cupti_callbacks_unsubscribe();
   cupti_device_flush(args, how);
 }
-

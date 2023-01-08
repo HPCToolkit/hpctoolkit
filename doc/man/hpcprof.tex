@@ -69,7 +69,7 @@ each of which is either a call path profile directory or an individual profile f
 For best results, you may need to specify one or more
 \textbf{-I} options to specify search directories for source code files.
 If no search directories are specified,
-\Prog{hpcprof} will find only source files whose paths are recorded in an application binary, shared library, or GPU binary 
+\Prog{hpcprof} will find only source files whose paths are recorded in an application binary, shared library, or GPU binary
 as an absolute path still present in the file system or a relative path with respect to the current working directory.
 If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} was run on the measurements directory, no \textbf{-S} arguments are needed.
 
@@ -126,17 +126,17 @@ If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} was run on the measurements dir
 \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
 Replace every instance of \Arg{old-path} by \Arg{new-path}
 in all paths for which \Arg{old-path} is a prefix of a path to a binary measured by HPCToolkit
-or a source file used to produce a binary measured by HPCToolkit. 
+or a source file used to produce a binary measured by HPCToolkit.
 Use '\Bs'\ to escape instances of '=' within a path.
 This option may be given multiple times.
 \medskip
-Use this option when a profile or binary contains references to files no 
-longer present at their original path. 
-For instance, a library may have been compiled by a system administrator and 
-distributed with line map information containing file paths that point to a 
-build directory that no longer exists. 
-If you can locate a copy of the source code for the library, you can unpack 
-it anywhere and provide a -R option that maps the prefix of the build 
+Use this option when a profile or binary contains references to files no
+longer present at their original path.
+For instance, a library may have been compiled by a system administrator and
+distributed with line map information containing file paths that point to a
+build directory that no longer exists.
+If you can locate a copy of the source code for the library, you can unpack
+it anywhere and provide a -R option that maps the prefix of the build
 directory to the prefix of the directory where you unpacked a copy of the library sources.
 
 \item[\OptArg{--only-exe}{filename}]
@@ -198,7 +198,7 @@ The default is \Prog{no}.
 \section{Examples}
 
 %\begin{enumerate}
-%\item 
+%\item
 
 
 %\end{enumerate}

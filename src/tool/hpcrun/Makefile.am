@@ -157,7 +157,7 @@ LIBELF_INC   = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
-PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@ 
+PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
@@ -259,7 +259,7 @@ UNW_LIBUNW_FILES = \
 UNW_LIBUNW_INCLUDE_DIRS = \
        -I$(srcdir)/unwind/generic-libunwind
 
-UNW_LIBUNW_LD_FLAGS = 
+UNW_LIBUNW_LD_FLAGS =
 
 UNW_MIPS_FILES = \
         $(UNW_COMMON_FILES) \
@@ -854,7 +854,7 @@ PROF_LEAN_A = $(top_builddir)/src/lib/prof-lean/.libs/libHPCprof-lean.a
 SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 
 # Modified versions of the external archives.  The static case works
-# with or without -fPIC, but the dynamic case requies -fPIC.
+# with or without -fPIC, but the dynamic case requires -fPIC.
 
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
@@ -970,7 +970,7 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS) 
+  libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_gprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -1051,7 +1051,7 @@ if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
   libhpcrun_o_LDADD     += $(OPT_PAPI_LIBS_STAT)
-  
+
   MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
 
@@ -1116,7 +1116,7 @@ if OPT_ENABLE_OPENCL
   libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
-endif 
+endif
 
 if OPT_ENABLE_GTPIN
   libhpcrun_la_SOURCES  += $(MY_GTPIN_FILES)

@@ -79,7 +79,7 @@ public:
   virtual bool valid() const noexcept;
 
   /// Bind this Source to a Pipeline to emit the actual bits and bobs.
-  // MT: Externally Sychronized
+  // MT: Externally Synchronized
   void bindPipeline(ProfilePipeline::Source&& se) noexcept;
 
   /// Query what Classes this Source can actually provide to the Pipeline.
@@ -102,7 +102,7 @@ protected:
   /// Destination for read data. Since Sources may have various needs and orders
   /// for their outputs, they need constant access to a "sink" for whatever they
   /// happen to pull out.
-  // MT Internally Sychronized (Implicit)
+  // MT Internally Synchronized (Implicit)
   ProfilePipeline::Source sink;
 
   // You should never create a ProfileSource directly

@@ -15,14 +15,14 @@
 #include "cct-node-vector.h"
 
 /******************************************************************************
- * type definitions 
+ * type definitions
  *****************************************************************************/
 
 struct cct_node_vector_s {
   cct_node_t **nodes;
   uint64_t size;
   uint64_t capacity;
-}; 
+};
 
 
 cct_node_vector_t *cct_node_vector_init()

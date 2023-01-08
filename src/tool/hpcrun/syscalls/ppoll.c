@@ -128,32 +128,32 @@ find_pselect(void)
 // Both tspec_add() and tspec_sub() assume that the inputs are
 // normalized, that is, 0 <= nsec < BILLION.
 //
-// Returns: ans <-- a + b
+// Returns: result <-- a + b
 //
 static inline void
-tspec_add(struct timespec *ans, const struct timespec *a, const struct timespec *b)
+tspec_add(struct timespec *result, const struct timespec *a, const struct timespec *b)
 {
-  ans->tv_sec  = a->tv_sec + b->tv_sec;
-  ans->tv_nsec = a->tv_nsec + b->tv_nsec;
+  result->tv_sec  = a->tv_sec + b->tv_sec;
+  result->tv_nsec = a->tv_nsec + b->tv_nsec;
 
-  if (ans->tv_nsec >= BILLION) {
-    ans->tv_sec++;
-    ans->tv_nsec -= BILLION;
+  if (result->tv_nsec >= BILLION) {
+    result->tv_sec++;
+    result->tv_nsec -= BILLION;
   }
 }
 
 //
-// Returns: ans <-- a - b
+// Returns: result <-- a - b
 //
 static inline void
-tspec_sub(struct timespec *ans, const struct timespec *a, const struct timespec *b)
+tspec_sub(struct timespec *result, const struct timespec *a, const struct timespec *b)
 {
-  ans->tv_sec  = a->tv_sec - b->tv_sec;
-  ans->tv_nsec = a->tv_nsec - b->tv_nsec;
+  result->tv_sec  = a->tv_sec - b->tv_sec;
+  result->tv_nsec = a->tv_nsec - b->tv_nsec;
 
-  if (ans->tv_nsec < 0) {
-    ans->tv_sec--;
-    ans->tv_nsec += BILLION;
+  if (result->tv_nsec < 0) {
+    result->tv_sec--;
+    result->tv_nsec += BILLION;
   }
 }
 
@@ -204,7 +204,7 @@ MONITOR_EXT_WRAP_NAME(ppoll)
     }
     errno = init_errno;
 
-    // adjust timout and restart syscall
+    // adjust timeout and restart syscall
     if (update_timeout) {
       clock_gettime(CLOCK_REALTIME, &now);
       tspec_sub(&my_timeout, &end, &now);
@@ -267,7 +267,7 @@ MONITOR_EXT_WRAP_NAME(pselect)
     }
     errno = init_errno;
 
-    // adjust timout and restart syscall
+    // adjust timeout and restart syscall
     if (update_timeout) {
       clock_gettime(CLOCK_REALTIME, &now);
       tspec_sub(&my_timeout, &end, &now);

@@ -95,7 +95,7 @@ using std::string;
 //   Templates may have multiple nested < >, but have at least one pair
 //   Excluding function pointer types, functions have at most one pair of ( )
 
-std::string 
+std::string
 ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
 {
   size_t posLangle = name.find_first_of('<'); // returns valid pos or npos
@@ -123,10 +123,10 @@ ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
 	x += c;
       }
     }
-    
+
     return x;
   }
-  
+
   return name;
 }
 
@@ -216,5 +216,3 @@ CilkNameMgr::canonicalize(const string& name)
 
 
 //***************************************************************************
-
-

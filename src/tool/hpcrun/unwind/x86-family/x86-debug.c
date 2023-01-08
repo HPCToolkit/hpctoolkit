@@ -106,11 +106,11 @@ x86_dump_ins(void *ins)
 
   xed_decoded_inst_zero_set_mode(xptr, &x86_decoder_settings.xed_settings);
   xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
-  
+
   if (xed_error == XED_ERROR_NONE) {
     xed_decoded_inst_dump(xptr, inst_buf, sizeof(inst_buf));
-    sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins, 
-	    xed_decoded_inst_get_length(xptr), 
+    sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins,
+	    xed_decoded_inst_get_length(xptr),
 	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
   }
   else {
@@ -125,7 +125,7 @@ x86_dump_ins(void *ins)
     }
     else
 #endif // ENABLE_XOP and HOST_CPU_x86_64
-      sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n", 
+      sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n",
 	      ins, (int) xed_error);
   }
   EMSG(errbuf);

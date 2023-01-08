@@ -52,10 +52,10 @@ struct InstructionStat {
   std::vector<int> psrcs;   // P0-P6: only records predicate registers
   std::vector<int> bdsts;   // B1-B6: only records barriers
   std::vector<int> bsrcs;   // B1-B6: only records barriers
-  std::vector<int> udsts;   // UR0-UR63: only records uniform regsters
-  std::vector<int> usrcs;   // UR0-UR63: only records uniform regsters
-  std::vector<int> updsts;  // UP0-UP?: only records uniform predicate regsters
-  std::vector<int> upsrcs;  // UP0-UP?: only records uniform predicate regsters
+  std::vector<int> udsts;   // UR0-UR63: only records uniform registers
+  std::vector<int> usrcs;   // UR0-UR63: only records uniform registers
+  std::vector<int> updsts;  // UP0-UP?: only records uniform predicate registers
+  std::vector<int> upsrcs;  // UP0-UP?: only records uniform predicate registers
   std::map<int, std::vector<int> > assign_pcs;
   std::map<int, std::vector<int> > passign_pcs;
   std::map<int, std::vector<int> > bassign_pcs;
@@ -148,7 +148,7 @@ struct InstructionStat {
     uassign_pcs(uassign_pcs),
     upassign_pcs(upassign_pcs),
     control(control) {}
-  
+
   InstructionStat(const std::string &op, int pc, PredicateFlag predicate_flag,
                   std::vector<int> dsts, std::vector<int> srcs)
     : op(op),
@@ -235,7 +235,7 @@ struct CudaInst : public Inst {
     if (inst_str.find("}") != std::string::npos) {  // Dual second
       inst_str = inst_str.substr(2);
       auto pos = inst_str.find("*/");
-      if (pos != std::string::npos) {  
+      if (pos != std::string::npos) {
         inst_str.replace(pos, 2, ":");
         dual_second = true;
       }
@@ -247,7 +247,7 @@ struct CudaInst : public Inst {
         // Port notation in dot graph to link basic blocks
         auto pos = s.find(">");
         this->port = s.substr(1, pos - 1);
-        s = s.substr(pos + 1); 
+        s = s.substr(pos + 1);
       }
       std::stringstream ss;
       ss << std::hex << s;
@@ -309,7 +309,7 @@ struct CudaInst : public Inst {
                     this->target = s.substr(pos, digit_pos - pos);
                   }
                 }
-              } 
+              }
             }
           }
         }
@@ -327,7 +327,7 @@ typedef Dyninst::ParseAPI::EdgeTypeEnum TargetType;
 struct Target {
   Inst *inst;
   Block *block;
-  TargetType type; 
+  TargetType type;
 
   Target(Inst *inst, Block *block, TargetType type) : inst(inst), block(block), type(type) {}
 
@@ -390,7 +390,7 @@ struct Function {
 
 
 struct LoopEntry {
-  Block *entry_block; 
+  Block *entry_block;
   Block *back_edge_block;
   Inst *back_edge_inst;
 
@@ -414,7 +414,7 @@ struct Loop {
 
 struct Call {
   Inst *inst;
-  Block *block; 
+  Block *block;
   Function *caller_function;
   Function *callee_function;
 

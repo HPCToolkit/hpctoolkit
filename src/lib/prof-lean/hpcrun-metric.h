@@ -74,7 +74,7 @@ extern "C" {
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 // N.B. use a macro rather than a 'const char*' because the latter is
@@ -89,4 +89,3 @@ extern "C" {
 #endif
 
 #endif /* prof_lean_hpcrun_metric_h */
-

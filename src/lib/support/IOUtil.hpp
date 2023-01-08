@@ -54,13 +54,13 @@
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
-// 
+//
 // Author:
 //   Nathan Tallent
 //
 //****************************************************************************
 
-#ifndef support_IOUtil_hpp 
+#ifndef support_IOUtil_hpp
 #define support_IOUtil_hpp
 
 //************************** System Include Files ****************************
@@ -99,10 +99,10 @@ CloseStream(std::ostream* s);
 void
 CloseStream(std::iostream* s);
 
-void 
+void
 OpenIFile(std::ifstream& fs, const char* filenm);
 
-void 
+void
 OpenOFile(std::ofstream& fs, const char* filenm);
 
 void
@@ -111,18 +111,18 @@ CloseFile(std::fstream& fs);
 
 // just like std::get and std::getline, except is not limited by a
 // fixed input buffer size
-std::string 
+std::string
 Get(std::istream& is, char end = '\n');
 
-std::string 
+std::string
 GetLine(std::istream& is, char end = '\n');
 
 // skips the specified string; returns false if there is a
 // deviation between 's' and what is read; true otherwise
-bool 
+bool
 Skip(std::istream& is, const char* s);
 
-inline bool 
+inline bool
 Skip(std::istream& is, const std::string& s)
 { return Skip(is, s.c_str()); }
 

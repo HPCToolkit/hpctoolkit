@@ -78,12 +78,12 @@
 
 #ifdef NO_HPCRUN_MSGS
 #define STDERR_MSG(...)
-#define EEMSG(...)      
-#define PMSG(f,...)    
-#define TMSG(f,...)    
-#define ETMSG(f,...)   
-#define NMSG(f,...)    
-#define ENMSG(f, ...)  
+#define EEMSG(...)
+#define PMSG(f,...)
+#define TMSG(f,...)
+#define ETMSG(f,...)
+#define NMSG(f,...)
+#define ENMSG(f, ...)
 #else // ! NO_HPCRUN_MSGS
 
 #define STDERR_MSG(...) hpcrun_stderr_log_msg(false,__VA_ARGS__)
@@ -117,9 +117,9 @@ void hpcrun_emsg_valist(const char *fmt, va_list_box* box);
 void hpcrun_nmsg(pmsg_category flag, const char* tag, const char *fmt,...);
 extern void hpcrun_pmsg(const char* tag, const char *fmt,...);
 
-void hpcrun_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
+void hpcrun_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag,
 			const char *fmt,...);
-void hpcrun_nmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag, 
+void hpcrun_nmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag,
 			const char *fmt,...);
 void hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt,...);
 void hpcrun_exit_on_error(int ret, int ret_expected, const char *fmt,...);

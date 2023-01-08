@@ -269,7 +269,7 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	"GPU local memory: store (transactions, theoretical)")
 
 //--------------------------------------------------------------------------
-// scalar metrics 
+// scalar metrics
 //--------------------------------------------------------------------------
 
 
@@ -408,13 +408,13 @@ GPU_XFER_XRCV_COUNT              			 = 5
 
 #define FORALL_GSAMP(macro)			\
   FORALL_GSAMP_INT(macro)			\
-  FORALL_GSAMP_REAL(macro)				
+  FORALL_GSAMP_REAL(macro)
 
 
 // gpu transfer information
 #define FORALL_GXFER(macro)			\
 	macro("GXFER:XMIT (B)",          			GPU_XFER_XMIT,		\
-	"GPU link total data transmited")			\
+	"GPU link total data transmitted")			\
 	macro("GXFER:XRCV (B)",          			GPU_XFER_XRCV,		\
 	"GPU link total data received")		\
 	macro("GXFER:XMIT_TP (GB)",          	GPU_XFER_XMIT_TP,		\
@@ -422,7 +422,7 @@ GPU_XFER_XRCV_COUNT              			 = 5
 	macro("GXFER:XRCV_TP (GB)",          	GPU_XFER_XRCV_TP,		\
 	"GPU link total received throughput")		\
 	macro("GXFER:XMIT_COUNT",             GPU_XFER_XMIT_COUNT,  			\
-	"GPU link launch count transmited")					\
+	"GPU link launch count transmitted")					\
 	macro("GXFER:XRCV_COUNT",             GPU_XFER_XRCV_COUNT,  			\
 	"GPU kernel: launch count received")
 
@@ -442,7 +442,7 @@ GPU_XFER_XRCV_COUNT              			 = 5
   macro("OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL",                OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL,		\
 	"kernel output is input for another kernel. Try merging kernels to avoid sending redundant data to GPU: bool")        \
   macro("UNUSED_DEVICES:COUNT",                UNUSED_DEVICES,		\
-	"all avaiable devices are not getting utilized. Offload computations to all devices to reduce total application execution time: count")
+	"all available devices are not getting utilized. Offload computations to all devices to reduce total application execution time: count")
 
 
 // blame-shifting metrics
@@ -519,7 +519,7 @@ gpu_metrics_GPU_INST_enable
 (
  void
 );
- 
+
 
 // record NVIDIA GPU instruction stall reasons
 void
@@ -619,7 +619,7 @@ gpu_metrics_INTEL_OPTIMIZATION_enable
 
 
 //--------------------------------------------------
-// attribute GPU measurements to an application 
+// attribute GPU measurements to an application
 // thread's calling context tree
 //--------------------------------------------------
 
@@ -632,4 +632,3 @@ gpu_metrics_attribute
 
 
 #endif
-

@@ -65,8 +65,8 @@ uw_recipe_map_init(void);
  *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
  *   where the root of btuwi is the uwi_t for addr
  * else return false
- * 
- * NOTE: if using on-the-fly binary analysis, this attempts to build recipes for the 
+ *
+ * NOTE: if using on-the-fly binary analysis, this attempts to build recipes for the
  *       procedure enclosing addr
  */
 bool

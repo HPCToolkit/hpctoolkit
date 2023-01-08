@@ -2,26 +2,26 @@
 %% http://bibdesk.sourceforge.net/
 
 
-%% Created for Nathan Tallent at 2011-09-21 23:15:24 -0500 
+%% Created for Nathan Tallent at 2011-09-21 23:15:24 -0500
 
 
-%% Saved with string encoding Unicode (UTF-8) 
+%% Saved with string encoding Unicode (UTF-8)
 
-@inproceedings{10.1145/3437801.3441604, 
-author = {Meng, Xiaozhu and Anderson, Jonathon M. and Mellor-Crummey, John and Krentel, Mark W. and Miller, Barton P. and Milakovic, Srdan}, 
-title = {Parallel Binary Code Analysis}, 
-year = {2021}, 
-isbn = {9781450382946}, 
-publisher = {Association for Computing Machinery}, 
-address = {New York, NY, USA}, 
-url = {https://doi.org/10.1145/3437801.3441604}, 
-doi = {10.1145/3437801.3441604}, 
-abstract = {Binary code analysis is widely used to help assess a program's correctness, performance, and provenance. Binary analysis applications often construct control flow graphs, analyze data flow, and use debugging information to understand how machine code relates to source lines, inlined functions, and data types. To date, binary analysis has been single-threaded, which is too slow for convenient use in performance tuning workflows where it is used to help attribute performance to complex applications with large binaries.This paper describes our design and implementation for accelerating the task of constructing control flow graphs (CFGs) from binaries by using multithreading. Prior research focuses on algorithms for analysis of challenging code constructs encountered while constructing CFGs, including functions sharing code, jump tables, non-returning functions, and tail calls. These algorithms are described from a program analysis perspective and are not suitable for direct parallel implementation. We abstract the task of constructing CFGs as repeated applications of several core CFG operations that include creating functions, basic blocks, and edges. We then derive CFG operation dependency, commutativity, and monotonicity. These operation properties guide our design of a new parallel analysis for constructing CFGs. Using 64 threads, we achieved as much as 25\texttimes{} speedup for constructing CFGs and 8\texttimes{} for a performance analysis tool that leverages our new analysis to recover program structure.}, 
-booktitle = {Proceedings of the 26th ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming}, 
-pages = {76–89}, 
-numpages = {14}, 
-keywords = {performance analysis, operation dependencies and properties, control flow graph construction}, 
-location = {Virtual Event, Republic of Korea}, 
+@inproceedings{10.1145/3437801.3441604,
+author = {Meng, Xiaozhu and Anderson, Jonathon M. and Mellor-Crummey, John and Krentel, Mark W. and Miller, Barton P. and Milakovic, Srdan},
+title = {Parallel Binary Code Analysis},
+year = {2021},
+isbn = {9781450382946},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3437801.3441604},
+doi = {10.1145/3437801.3441604},
+abstract = {Binary code analysis is widely used to help assess a program's correctness, performance, and provenance. Binary analysis applications often construct control flow graphs, analyze data flow, and use debugging information to understand how machine code relates to source lines, inlined functions, and data types. To date, binary analysis has been single-threaded, which is too slow for convenient use in performance tuning workflows where it is used to help attribute performance to complex applications with large binaries.This paper describes our design and implementation for accelerating the task of constructing control flow graphs (CFGs) from binaries by using multithreading. Prior research focuses on algorithms for analysis of challenging code constructs encountered while constructing CFGs, including functions sharing code, jump tables, non-returning functions, and tail calls. These algorithms are described from a program analysis perspective and are not suitable for direct parallel implementation. We abstract the task of constructing CFGs as repeated applications of several core CFG operations that include creating functions, basic blocks, and edges. We then derive CFG operation dependency, commutativity, and monotonicity. These operation properties guide our design of a new parallel analysis for constructing CFGs. Using 64 threads, we achieved as much as 25\texttimes{} speedup for constructing CFGs and 8\texttimes{} for a performance analysis tool that leverages our new analysis to recover program structure.},
+booktitle = {Proceedings of the 26th ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming},
+pages = {76–89},
+numpages = {14},
+keywords = {performance analysis, operation dependencies and properties, control flow graph construction},
+location = {Virtual Event, Republic of Korea},
 series = {PPoPP '21} }
 
 @INPROCEEDINGS{9355258,
@@ -42,8 +42,8 @@ month = {nov}
 
 @INPROCEEDINGS{9307876,
   author={Sai, Ryuichi and Mellor-Crummey, John and Meng, Xiaozhu and Araya-Polo, Mauricio and Meng, Jie},
-  booktitle={2020 IEEE/ACM Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems (PMBS)}, 
-  title={Accelerating High-Order Stencils on GPUs}, 
+  booktitle={2020 IEEE/ACM Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems (PMBS)},
+  title={Accelerating High-Order Stencils on GPUs},
   year={2020},
   volume={},
   number={},
@@ -51,19 +51,19 @@ month = {nov}
   doi={10.1109/PMBS51919.2020.00014}}
 
 
-@inproceedings{10.1145/3392717.3392752, 
-author = {Zhou, Keren and Krentel, Mark W. and Mellor-Crummey, John}, 
-title = {Tools for Top-down Performance Analysis of {GPU}-Accelerated Applications}, 
-year = {2020}, isbn = {9781450379830}, 
-publisher = {Association for Computing Machinery}, 
-address = {New York, NY, USA}, url = {https://doi.org/10.1145/3392717.3392752}, 
-doi = {10.1145/3392717.3392752}, 
-abstract = {This paper describes extensions to Rice University's HPCToolkit performance tools to support measurement and analysis of GPU-accelerated applications. To help developers understand the performance of accelerated applications as a whole, HPCToolkit's measurement and analysis tools attribute metrics to calling contexts that span both CPUs and GPUs. To measure GPU-accelerated applications efficiently, HPCToolkit employs a novel wait-free data structure to coordinate monitoring and attribution of GPU performance metrics. To help developers understand the performance of complex GPU code generated from high-level programming models, HPCToolkit's hpcprof constructs sophisticated approximations of call path profiles for GPU computations. To support fine-grain analysis and tuning, HPCToolkit attributes GPU performance metrics to source lines and loops. Also, HPCToolkit uses GPU PC samples to derive and attribute a collection of useful GPU performance metrics. We illustrate HPCToolkit's new capabilities for analyzing GPU- accelerated applications with three case studies.}, 
-booktitle = {Proceedings of the 34th ACM International Conference on Supercomputing}, 
-articleno = {26}, 
-numpages = {12}, 
-keywords = {GPU, wait-free, roofline, calling context tree, profiler, HPC}, 
-location = {Barcelona, Spain}, 
+@inproceedings{10.1145/3392717.3392752,
+author = {Zhou, Keren and Krentel, Mark W. and Mellor-Crummey, John},
+title = {Tools for Top-down Performance Analysis of {GPU}-Accelerated Applications},
+year = {2020}, isbn = {9781450379830},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA}, url = {https://doi.org/10.1145/3392717.3392752},
+doi = {10.1145/3392717.3392752},
+abstract = {This paper describes extensions to Rice University's HPCToolkit performance tools to support measurement and analysis of GPU-accelerated applications. To help developers understand the performance of accelerated applications as a whole, HPCToolkit's measurement and analysis tools attribute metrics to calling contexts that span both CPUs and GPUs. To measure GPU-accelerated applications efficiently, HPCToolkit employs a novel wait-free data structure to coordinate monitoring and attribution of GPU performance metrics. To help developers understand the performance of complex GPU code generated from high-level programming models, HPCToolkit's hpcprof constructs sophisticated approximations of call path profiles for GPU computations. To support fine-grain analysis and tuning, HPCToolkit attributes GPU performance metrics to source lines and loops. Also, HPCToolkit uses GPU PC samples to derive and attribute a collection of useful GPU performance metrics. We illustrate HPCToolkit's new capabilities for analyzing GPU- accelerated applications with three case studies.},
+booktitle = {Proceedings of the 34th ACM International Conference on Supercomputing},
+articleno = {26},
+numpages = {12},
+keywords = {GPU, wait-free, roofline, calling context tree, profiler, HPC},
+location = {Barcelona, Spain},
 series = {ICS '20} }
 
 @inproceedings{10.5555/3433701.3433819,
@@ -83,8 +83,8 @@ series = {ICS '20} }
 
 @INPROCEEDINGS{9307876,
   author={Sai, Ryuichi and Mellor-Crummey, John and Meng, Xiaozhu and Araya-Polo, Mauricio and Meng, Jie},
-  booktitle={2020 {IEEE/ACM} Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems {(PMBS)}}, 
-  title={Accelerating High-Order Stencils on {GPUs}}, 
+  booktitle={2020 {IEEE/ACM} Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems {(PMBS)}},
+  title={Accelerating High-Order Stencils on {GPUs}},
   year={2020},
   volume={},
   number={},
@@ -92,19 +92,19 @@ series = {ICS '20} }
   doi={10.1109/PMBS51919.2020.00014}}
 
 
-@inproceedings{10.1145/3392717.3392752, 
-author = {Zhou, Keren and Krentel, Mark W. and Mellor-Crummey, John}, 
-title = {Tools for Top-down Performance Analysis of {GPU}-Accelerated Applications}, 
-year = {2020}, isbn = {9781450379830}, 
-publisher = {Association for Computing Machinery}, 
-address = {New York, NY, USA}, url = {https://doi.org/10.1145/3392717.3392752}, 
-doi = {10.1145/3392717.3392752}, 
-abstract = {This paper describes extensions to Rice University's HPCToolkit performance tools to support measurement and analysis of GPU-accelerated applications. To help developers understand the performance of accelerated applications as a whole, HPCToolkit's measurement and analysis tools attribute metrics to calling contexts that span both CPUs and GPUs. To measure GPU-accelerated applications efficiently, HPCToolkit employs a novel wait-free data structure to coordinate monitoring and attribution of GPU performance metrics. To help developers understand the performance of complex GPU code generated from high-level programming models, HPCToolkit's hpcprof constructs sophisticated approximations of call path profiles for GPU computations. To support fine-grain analysis and tuning, HPCToolkit attributes GPU performance metrics to source lines and loops. Also, HPCToolkit uses GPU PC samples to derive and attribute a collection of useful GPU performance metrics. We illustrate HPCToolkit's new capabilities for analyzing GPU- accelerated applications with three case studies.}, 
-booktitle = {Proceedings of the 34th ACM International Conference on Supercomputing}, 
-articleno = {26}, 
-numpages = {12}, 
-keywords = {GPU, wait-free, roofline, calling context tree, profiler, HPC}, 
-location = {Barcelona, Spain}, 
+@inproceedings{10.1145/3392717.3392752,
+author = {Zhou, Keren and Krentel, Mark W. and Mellor-Crummey, John},
+title = {Tools for Top-down Performance Analysis of {GPU}-Accelerated Applications},
+year = {2020}, isbn = {9781450379830},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA}, url = {https://doi.org/10.1145/3392717.3392752},
+doi = {10.1145/3392717.3392752},
+abstract = {This paper describes extensions to Rice University's HPCToolkit performance tools to support measurement and analysis of GPU-accelerated applications. To help developers understand the performance of accelerated applications as a whole, HPCToolkit's measurement and analysis tools attribute metrics to calling contexts that span both CPUs and GPUs. To measure GPU-accelerated applications efficiently, HPCToolkit employs a novel wait-free data structure to coordinate monitoring and attribution of GPU performance metrics. To help developers understand the performance of complex GPU code generated from high-level programming models, HPCToolkit's hpcprof constructs sophisticated approximations of call path profiles for GPU computations. To support fine-grain analysis and tuning, HPCToolkit attributes GPU performance metrics to source lines and loops. Also, HPCToolkit uses GPU PC samples to derive and attribute a collection of useful GPU performance metrics. We illustrate HPCToolkit's new capabilities for analyzing GPU- accelerated applications with three case studies.},
+booktitle = {Proceedings of the 34th ACM International Conference on Supercomputing},
+articleno = {26},
+numpages = {12},
+keywords = {GPU, wait-free, roofline, calling context tree, profiler, HPC},
+location = {Barcelona, Spain},
 series = {ICS '20} }
 
 
@@ -128,8 +128,8 @@ series = {ICS '20} }
 
 @INPROCEEDINGS{9370339,
   author={Zhou, Keren and Meng, Xiaozhu and Sai, Ryuichi and Mellor-Crummey, John},
-  booktitle={2021 {IEEE/ACM} International Symposium on Code Generation and Optimization {(CGO)}}, 
-  title={{GPA: A GPU} Performance Advisor Based on Instruction Sampling}, 
+  booktitle={2021 {IEEE/ACM} International Symposium on Code Generation and Optimization {(CGO)}},
+  title={{GPA: A GPU} Performance Advisor Based on Instruction Sampling},
   year={2021},
   volume={},
   number={},
@@ -139,7 +139,7 @@ series = {ICS '20} }
 
 
 @misc{zhou2020gpa,
-title={{GPA}: A {GPU} Performance Advisor Based on Instruction Sampling}, 
+title={{GPA}: A {GPU} Performance Advisor Based on Instruction Sampling},
 author={Keren Zhou and Xiaozhu Meng and Ryuichi Sai and John Mellor-Crummey},
 year={2020},
 eprint={2009.04061},
@@ -148,7 +148,7 @@ primaryClass={cs.PF}
 }
 
 @misc{meng2020parallel,
-title={Parallel Binary Code Analysis}, 
+title={Parallel Binary Code Analysis},
 author={Xiaozhu Meng and Jonathon M. Anderson and John Mellor-Crummey and Mark W. Krentel and Barton P. Miller and Srdan Milaković},
 year={2020},
 eprint={2001.10621},
@@ -175,7 +175,7 @@ primaryClass={cs.PF}
 }
 
 @misc{sai2020accelerating,
-title={Accelerating High-Order Stencils on {GPUs}}, 
+title={Accelerating High-Order Stencils on {GPUs}},
 author={Ryuichi Sai and John Mellor-Crummey and Xiaozhu Meng and Mauricio Araya-Polo and Jie Meng},
 year={2020},
 eprint={2009.04619},
@@ -186,8 +186,8 @@ primaryClass={cs.DC}
 
 @INPROCEEDINGS{9070296,
 author={P. {Taffet} and J. {Mellor-Crummey}},
-booktitle={2019 IEEE Symposium on High-Performance Interconnects (HOTI)}, 
-title={Lightweight, Packet-Centric Monitoring of Network Traffic and Congestion Implemented in P4}, 
+booktitle={2019 IEEE Symposium on High-Performance Interconnects (HOTI)},
+title={Lightweight, Packet-Centric Monitoring of Network Traffic and Congestion Implemented in P4},
 year={2019},
 volume={},
 number={},
@@ -234,7 +234,7 @@ doi={10.1109/HOTI.2019.00026}}
 @article{johnmc:piper17,
 	title = {PIPER: Performance Insight for Programmers and Exascale Runtimes: Guiding the Development of the Exascale Software Stack},
 	author = {Mellor-Crummey, John},
-	abstractNote = {The PIPER project set out to develop methodologies and software for measurement, analysis, attribution, and presentation of performance data for extreme-scale systems. Goals of the project were to support analysis of massive multi-scale parallelism, heterogeneous architectures, multi-faceted performance concerns, and to support both post-mortem performance analysis to identify program features that contribute to problematic performance and on-line performance analysis to drive adaptation. This final report summarizes the research and development activity at Rice University as part of the PIPER project. Producing a complete suite of performance tools for exascale platforms during the course of this project was impossible since both hardware and software for exascale systems is still a moving target. For that reason, the project focused broadly on the development of new techniques for measurement and analysis of performance on modern parallel architectures, enhancements to HPCToolkit’s software infrastructure to support our research goals or use on sophisticated applications, engaging developers of multithreaded runtimes to explore how support for tools should be integrated into their designs, engaging operating system developers with feature requests for enhanced monitoring support, engaging vendors with requests that they add hardware measure- ment capabilities and software interfaces needed by tools as they design new components of HPC platforms including processors, accelerators and networks, and finally collaborations with partners interested in using HPCToolkit to analyze and tune scalable parallel applications.},
+	abstractNote = {The PIPER project set out to develop methodologies and software for measurement, analysis, attribution, and presentation of performance data for extreme-scale systems. Goals of the project were to support analysis of massive multi-scale parallelism, heterogeneous architectures, multi-faceted performance concerns, and to support both post-mortem performance analysis to identify program features that contribute to problematic performance and on-line performance analysis to drive adaptation. This final report summarizes the research and development activity at Rice University as part of the PIPER project. Producing a complete suite of performance tools for exascale platforms during the course of this project was impossible since both hardware and software for exascale systems is still a moving target. For that reason, the project focused broadly on the development of new techniques for measurement and analysis of performance on modern parallel architectures, enhancements to HPCToolkit’s software infrastructure to support our research goals or use on sophisticated applications, engaging developers of multithreaded runtimes to explore how support for tools should be integrated into their designs, engaging operating system developers with feature requests for enhanced monitoring support, engaging vendors with requests that they add hardware measurement capabilities and software interfaces needed by tools as they design new components of HPC platforms including processors, accelerators and networks, and finally collaborations with partners interested in using HPCToolkit to analyze and tune scalable parallel applications.},
 	doi = {10.2172/1400393},
 	journal = {},
 	place = {United States},
@@ -280,17 +280,17 @@ doi={10.1109/HOTI.2019.00026}}
 
 
 
-@INPROCEEDINGS{Taffet:2016:ICPPW-hpctoolkit, 
- author={Taffet, Philip and Adhianto, Laksono}, 
- booktitle={2016 45th International Conference on Parallel Processing Workshops (ICPPW)}, 
- title={Addressing Challenges in Visualizing Huge Call-Path Traces}, 
- year={2016}, 
- volume={}, 
- number={}, 
- pages={319-328}, 
- keywords={client-server systems;data visualisation;multi-threading;ray tracing;software tools;huge call-path trace visualization;large-scale parallel systems;tracing;parallel programs;performance visualization tool;threads;parallel execution;client-server approach;hpctraceviewer;HPC-toolkit performance tools;algebraic multigrid;AMG;unstructured mesh transport;UMT codes;Servers;Optimization;Data visualization;Context;Supercomputers;Instruction sets;HPCToolkit;performance analysis;data traces;high performance computing}, 
- doi={10.1109/ICPPW.2016.53}, 
- ISSN={2332-5690}, 
+@INPROCEEDINGS{Taffet:2016:ICPPW-hpctoolkit,
+ author={Taffet, Philip and Adhianto, Laksono},
+ booktitle={2016 45th International Conference on Parallel Processing Workshops (ICPPW)},
+ title={Addressing Challenges in Visualizing Huge Call-Path Traces},
+ year={2016},
+ volume={},
+ number={},
+ pages={319-328},
+ keywords={client-server systems;data visualisation;multi-threading;ray tracing;software tools;huge call-path trace visualization;large-scale parallel systems;tracing;parallel programs;performance visualization tool;threads;parallel execution;client-server approach;hpctraceviewer;HPC-toolkit performance tools;algebraic multigrid;AMG;unstructured mesh transport;UMT codes;Servers;Optimization;Data visualization;Context;Supercomputers;Instruction sets;HPCToolkit;performance analysis;data traces;high performance computing},
+ doi={10.1109/ICPPW.2016.53},
+ ISSN={2332-5690},
  month={Aug},
 }
 
@@ -311,7 +311,7 @@ doi={10.1109/HOTI.2019.00026}}
  publisher = {ACM},
  address = {New York, NY, USA},
  keywords = {NUMA, memory access pattern, performance optimization, profiler, threads},
-} 
+}
 
 @article{Liu:2014:TAP:2692916.2555271:Sigplan-hpctoolkit,
  author = {Liu, Xu and Mellor-Crummey, John},
@@ -331,7 +331,7 @@ doi={10.1109/HOTI.2019.00026}}
  publisher = {ACM},
  address = {New York, NY, USA},
  keywords = {NUMA, memory access pattern, performance optimization, profiler, threads},
-} 
+}
 
 @inproceedings{Liu:2013:DPP:2503210.2503297:SC-hpctoolkit,
 	author = {Liu, Xu and Mellor-Crummey, John},
@@ -397,7 +397,7 @@ doi={10.1109/HOTI.2019.00026}}
 
 @inproceedings{Adhianto-etal:2008:SC-NLPLSS-hpctoolkit,
 	Author = {Adhianto, L. and Fagan, M. and Krentel, M. and Marin, G. and {Mellor-Crummey}, J. and Tallent, N. R.},
-	Booktitle = {Workshop on Node Level Parallelism for Large Scale Supercomputers, in conjuction with Supercomputing 2008},
+	Booktitle = {Workshop on Node Level Parallelism for Large Scale Supercomputers, in conjunction with Supercomputing 2008},
 	Date-Added = {2008-09-04 09:07:53 -0500},
 	Date-Modified = {2009-06-23 09:10:30 -0500},
 	Month = {November},
@@ -435,7 +435,7 @@ doi={10.1109/HOTI.2019.00026}}
 
 @inproceedings{Adhianto-MC-Ta:2010:PSTI-hpcviewer,
 	Author = {Adhianto, Laksono and {Mellor-Crummey}, John and Tallent, Nathan R.},
-	Booktitle = {PSTI 2010: Workshop on Parallel Software Tools and Tool Infrastructures, in conjuction with the 2010 International Conference on Parallel Processing},
+	Booktitle = {PSTI 2010: Workshop on Parallel Software Tools and Tool Infrastructures, in conjunction with the 2010 International Conference on Parallel Processing},
 	Date-Added = {2008-09-04 09:00:12 -0500},
 	Date-Modified = {2010-10-12 13:39:01 -0500},
 	Pdf = {http://www.hpctoolkit.org/pubs/psti-2010-hpcviewer.pdf},
@@ -674,7 +674,7 @@ Pittsburgh, PA}}
 
 @inproceedings{MellorCrummey-Ta:2008:ISPASS-TIMERS-methodology,
 	Author = {{Mellor-Crummey}, John and Tallent, Nathan R.},
-	Booktitle = {Workshop on Tools, Infrastructures and Methodologies for the Evaluation of Research Systems, in conjuction with the 2008 IEEE International Symposium on Performance Analysis of Systems and Software},
+	Booktitle = {Workshop on Tools, Infrastructures and Methodologies for the Evaluation of Research Systems, in conjunction with the 2008 IEEE International Symposium on Performance Analysis of Systems and Software},
 	Date-Added = {2010-06-24 08:53:38 -0500},
 	Date-Modified = {2010-06-24 08:53:38 -0500},
 	Month = {February},

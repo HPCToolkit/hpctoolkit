@@ -17,8 +17,8 @@ source and no change to the build procedure.  You should build your
 application natively with full optimization.  \hpcrun{} inserts its
 profiling code into the application at runtime via \verb|LD_PRELOAD|.
 
-\hpcrun{} monitors the execution of applications on a CPU using asynchronous sampling.  If \hpcrun{} is used without any arguments to measure a program  
- 
+\hpcrun{} monitors the execution of applications on a CPU using asynchronous sampling.  If \hpcrun{} is used without any arguments to measure a program
+
  \begin{quote}
 \begin{verbatim}
 hpcrun app arg ...
@@ -45,14 +45,14 @@ Typically, one uses the \verb|-e| (or \verb|--event|) to
 specify a sample source and sampling rate.\footnote{GPU and OpenMP measurement events don't accept a rate.}
 Sample sources are specified as `\verb|event@howoften|'
 where \verb|event| is the name of the source and \verb|howoften| is either
-a number specifying the period (threshold) for that event, or \verb|f| followed by a number, \eg{}, \verb|@f100| 
-specifying a target sampling frequency for the event in samples/second.\footnote{Frequency-based sampling and 
+a number specifying the period (threshold) for that event, or \verb|f| followed by a number, \eg{}, \verb|@f100|
+specifying a target sampling frequency for the event in samples/second.\footnote{Frequency-based sampling and
 the frequency-based notation for {\tt howoften} is only
-available for sample sources managed by Linux {\tt perf\_events}. For Linux {\tt perf\_events}, \HPCToolkit{} uses 
+available for sample sources managed by Linux {\tt perf\_events}. For Linux {\tt perf\_events}, \HPCToolkit{} uses
 a default sampling frequency of 300 samples/second.}
-Note that a higher period implies a lower rate of sampling.  
+Note that a higher period implies a lower rate of sampling.
 The \verb|-e| option may be used multiple times to specify that multiple
-sample sources be used for measuring an execution.  
+sample sources be used for measuring an execution.
 
 The basic syntax for profiling an application with
 \hpcrun{} is:
@@ -64,7 +64,7 @@ hpcrun -t -e event@howoften ... app arg ...
 \end{quote}
 
 For example, to profile an application using hardware counter sample sources
-provided by Linux \verb|perf_events| and sample cycles at 300 times/second (the default sampling frequency) and sample every 4,000,000 instructions, 
+provided by Linux \verb|perf_events| and sample cycles at 300 times/second (the default sampling frequency) and sample every 4,000,000 instructions,
 you would use:
 
 \begin{quote}
@@ -133,21 +133,21 @@ and \verb|exec| the binary.
 \subsubsection{\hpcrun{} causes failures related to loading or using shared libraries}
 \label{hpcrun-audit}
 
-Unfortunately, the {\tt libc} implementations used today on most platforms have known bugs monitoring loading and unloading of shared libraries and calls to a shared library's API. 
-While the best approach for coping with these problems is to use a system running  {\tt libc}  2.32 or later, for most people, this is not an option: 
+Unfortunately, the {\tt libc} implementations used today on most platforms have known bugs monitoring loading and unloading of shared libraries and calls to a shared library's API.
+While the best approach for coping with these problems is to use a system running  {\tt libc}  2.32 or later, for most people, this is not an option:
 the system administrator picks the operating system version, which determines the {\tt libc} and loader ({\tt ld.so}) versions available to developers.
 
-To understand what kinds of problems that you may encounter with shared libraries and how you can work around them, it is helpful to understand how HPCToolkit monitors shared libraries. 
-On Power and \verb|x86_64| architectures, by default \hpcrun{}  use \verb|LD_AUDIT| to monitor an application's use of dynamic libraries. 
+To understand what kinds of problems that you may encounter with shared libraries and how you can work around them, it is helpful to understand how HPCToolkit monitors shared libraries.
+On Power and \verb|x86_64| architectures, by default \hpcrun{}  use \verb|LD_AUDIT| to monitor an application's use of dynamic libraries.
 Use of \verb|LD_AUDIT|  is the only  strategy for monitoring shared libraries that will cause the loader to properly interpret a load module's
- \verb|RUNPATH| attribute. However, use of \verb|LD_AUDIT|  will cause {\tt dlmopen} to fail  for {\tt libc} $< 2.32$. 
-While use of {\tt dlmopen} is rather uncommon, Intel's GTPin library for instrumentation of Intel GPU binaries, which is used by HPCToolkit, uses {\tt dlmopen}. 
+ \verb|RUNPATH| attribute. However, use of \verb|LD_AUDIT|  will cause {\tt dlmopen} to fail  for {\tt libc} $< 2.32$.
+While use of {\tt dlmopen} is rather uncommon, Intel's GTPin library for instrumentation of Intel GPU binaries, which is used by HPCToolkit, uses {\tt dlmopen}.
 
-% If your program uses {\tt dlmopen}, you have two alternatives: ask \hpcrun{} to use an alternative strategy for monitoring shared libraries, namely by wrapping {\tt dlopen} and {\tt dlclose}. 
+% If your program uses {\tt dlmopen}, you have two alternatives: ask \hpcrun{} to use an alternative strategy for monitoring shared libraries, namely by wrapping {\tt dlopen} and {\tt dlclose}.
 
-At the writing of this manual, all existing versions of {\tt libc} have a fatal flaw in their implementations of the \verb|LD_AUDIT| API for the ARM architecture. 
-When \verb|LD_AUDIT|  is enabled on ARM, it fails to save a register that passes an address used to determine where a returned structure should be written. 
-Any  program that returns a structure will almost certainly fail on an ARM platform if \hpcrun{} uses \verb|LD_AUDIT| to monitor dynamic library operations. 
+At the writing of this manual, all existing versions of {\tt libc} have a fatal flaw in their implementations of the \verb|LD_AUDIT| API for the ARM architecture.
+When \verb|LD_AUDIT|  is enabled on ARM, it fails to save a register that passes an address used to determine where a returned structure should be written.
+Any  program that returns a structure will almost certainly fail on an ARM platform if \hpcrun{} uses \verb|LD_AUDIT| to monitor dynamic library operations.
 
 The following options direct \hpcrun{} to adjust the strategy it uses for monitoring dynamic libraries. We suggest that you don't consider using any of these options unless your program fails using \hpcrun{}'s defaults.
 
@@ -158,11 +158,11 @@ The following options direct \hpcrun{} to adjust the strategy it uses for monito
                        {\tt dlopen} and {\tt dlclose}  instead of using \verb|LD_AUDIT|. Note
                        that this alternate approach can cause problem with
                        load modules that specify a RUNPATH. Due to a {\tt libc} bug,
-                       this option is disabled by default on ARM. 
-                       
+                       this option is disabled by default on ARM.
+
 \item{{\tt --enable-auditor}}    \verb|LD_AUDIT| is by default disabled on ARM due to a {\tt libc} bug.
                        Use this option to enable \verb|LD_AUDIT| on ARM. This option may be useful if none of your shared library API operations return structures.
-                       
+
 \item{{\tt --disable-auditor-got-rewriting}}
                        By default, \hpcrun{} uses \verb|LD_AUDIT| to help track dynamic
                        library operations using an 'auditor' library. When using
@@ -173,35 +173,35 @@ The following options direct \hpcrun{} to adjust the strategy it uses for monito
                        This option can be used to disable GOT rewriting if
                        it is believed that the rewriting is causing the
                        application to fail.
-                       
+
 \item{{\tt --namespace-single}}   {\tt dlmopen} may load a shared library into an alternate
                        namespace.  Use of {\tt dlmopen} to create multiple namespaces
                        can cause an application to crash when using {\tt libc} $< 2.32$. This option asks HPCToolkit to load all
                        shared libraries within the application namespace, which
                        might help avoid a crash.  (Default when performing
                        instruction-level measurements of Intel GPU binaries.)
-                       
+
 \item{{\tt --namespace-multiple}} {\tt dlmopen} may load a shared library into an alternate
                        namespace. Force HPCToolkit to allow {\tt dlmopen} to create
                        alternate namespaces.  (Default unless performing
                        instruction-level measurements of Intel GPU binaries.)
  \end{description}
- 
+
  If your code fails to find libraries when it is monitoring your code by wrapping {\tt dlopen} and {\tt dlclose} rather than using \verb|LD_AUDIT|, you can sidestep this problem by adding any library paths encoded by a {\tt RUNPATH} attributie in your application or a shared library it uses to your \verb|LD_LIBRARY_PATH| variable before launching \hpcrun{}.
-                      
+
 
 \subsubsection{ \hpcrun{} causes your application to fail when {\tt gprof} instrumentation is present}
 
 When an application has been compiled with the compiler flag \verb|-pg|,
-the compiler adds instrumentation to collect performance measurement data for 
-the \verb|gprof| profiler. Measuring application performance with 
+the compiler adds instrumentation to collect performance measurement data for
+the \verb|gprof| profiler. Measuring application performance with
 \HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
 active in the same execution may cause the execution
 to abort. One can detect the presence of \verb|gprof| instrumentation in an
-application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols 
+application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols
 in a executable.
-One can disable \verb|gprof| instrumentation when measuring the performance of 
-a dynamically-linked application by using the \verb|--disable-gprof| 
+One can disable \verb|gprof| instrumentation when measuring the performance of
+a dynamically-linked application by using the \verb|--disable-gprof|
 argument to \hpcrun{}.
 
 
@@ -209,37 +209,37 @@ argument to \hpcrun{}.
 
 \section{Hardware Counter Event Names}
 
-HPCToolkit uses libpfm4\cite{libpfm-www} to translate from an event name string to an event code recognized by the kernel. 
+HPCToolkit uses libpfm4\cite{libpfm-www} to translate from an event name string to an event code recognized by the kernel.
 An event name is case insensitive and is defined as followed:
 \begin{verbatim}
-[pmu::][event_name][:unit_mask][:modifier|:modifier=val] 
+[pmu::][event_name][:unit_mask][:modifier|:modifier=val]
 \end{verbatim}
 
 \begin{itemize}
 	\item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
-	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted. 
+	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted.
 	\item \textbf{unit\_mask}.  Some events can be refined using sub-events. A {\tt unit\_mask} designates an optional sub-event.  An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
 	\item \textbf{modifier}.  A modifier is an optional filter that restricts when an event counts.
                 The form of a  modifier may be either \texttt{:modifier} or \texttt{:modifier=val}.
-		For modifiers without a value, the presence of the modifier is 
-                interpreted as a restriction. Events may allow use of multiple modifiers 
+		For modifiers without a value, the presence of the modifier is
+                interpreted as a restriction. Events may allow use of multiple modifiers
                 at the same time.
 		\begin{itemize}
-		\item \textbf{hardware event modifiers}. Some hardware events support one or more modifiers that restrict counting to a subset of events. For instance, on an Intel Broadwell EP, one can add a modifier to \verb|MEM_LOAD_UOPS_RETIRED| to count only load operations that are 
-an \verb|L2_HIT| or an \verb|L2_MISS|. For information about all modifers for hardware events, 
-one can direct \HPCToolkit{}'s measurement subsystem to list all native events and their modifiers 
-as described in Section~\ref{sample-sources}. 
-		\item \textbf{precise\_ip}. For some events, it is possible to control the amount of skid. 
-Skid is a measure of how many instructions may execute between an event and the PC where the event is reported. 
-Smaller skid enables more accurate attribution of events to instructions. Without a skid modifier, hpcrun allows arbitrary skid because some architectures 
+		\item \textbf{hardware event modifiers}. Some hardware events support one or more modifiers that restrict counting to a subset of events. For instance, on an Intel Broadwell EP, one can add a modifier to \verb|MEM_LOAD_UOPS_RETIRED| to count only load operations that are
+an \verb|L2_HIT| or an \verb|L2_MISS|. For information about all modifiers for hardware events,
+one can direct \HPCToolkit{}'s measurement subsystem to list all native events and their modifiers
+as described in Section~\ref{sample-sources}.
+		\item \textbf{precise\_ip}. For some events, it is possible to control the amount of skid.
+Skid is a measure of how many instructions may execute between an event and the PC where the event is reported.
+Smaller skid enables more accurate attribution of events to instructions. Without a skid modifier, hpcrun allows arbitrary skid because some architectures
 don't support anything more precise.  One may optionally specify one of the following as a skid modifier:
 			\begin{itemize}
 				\item \verb|:p| : a sample must have constant skid.
 				\item \verb|:pp| :  a sample is requested to have 0 skid.
-				\item \verb|:ppp| : a sample must have 0 skid.  
+				\item \verb|:ppp| : a sample must have 0 skid.
 				\item \verb|:P| : autodetect the least skid possible.
 			\end{itemize}
-			NOTE: If the kernel or the hardware does not support the specified value of the skid, no error message will be reported 
+			NOTE: If the kernel or the hardware does not support the specified value of the skid, no error message will be reported
 but no samples will be recorded.
 	\end{itemize}
 \end{itemize}
@@ -260,41 +260,41 @@ separate compute nodes, it is best to run this on a compute node.
 
 \subsection{Linux \perfevents}
 
-Linux \perfevents{} provides a powerful interface that supports 
-measurement of both application execution and kernel activity. 
+Linux \perfevents{} provides a powerful interface that supports
+measurement of both application execution and kernel activity.
 Using
-\perfevents{}, one can measure both hardware and software events. 
+\perfevents{}, one can measure both hardware and software events.
 Using a processor's hardware performance monitoring unit (PMU), the
 \perfevents{} interface can measure an execution using any hardware counter
 supported by the PMU. Examples of hardware events include cycles, instructions
 completed, cache misses, and stall cycles. Using instrumentation built in to the Linux kernel,
 the \perfevents{} interface can measure software events. Examples of software events include page
-faults, context switches, and CPU migrations. 
+faults, context switches, and CPU migrations.
 
 
 
 \subsubsection{Capabilities of HPCToolkit's \perfevents{} Interface}
 
-\paragraph{Frequency-based sampling.} 
-The Linux \perfevents{} interface supports frequency-based sampling. 
+\paragraph{Frequency-based sampling.}
+The Linux \perfevents{} interface supports frequency-based sampling.
 With frequency-based sampling, the kernel automatically selects and adjusts an event period with the
-aim of delivering samples for that event at a target sampling frequency.\footnote{The 
-kernel may be unable to deliver the desired frequency if 
-there are fewer events per second than the desired frequency.}  
-Unless a user explicitly specifies an event count threshold for an event, 
-HPCToolkit's measurement interface will use frequency-based sampling by default.  
-HPCToolkit's default sampling frequency is ${\rm min}(300,M-1)$, where $M$ is the 
+aim of delivering samples for that event at a target sampling frequency.\footnote{The
+kernel may be unable to deliver the desired frequency if
+there are fewer events per second than the desired frequency.}
+Unless a user explicitly specifies an event count threshold for an event,
+HPCToolkit's measurement interface will use frequency-based sampling by default.
+HPCToolkit's default sampling frequency is ${\rm min}(300,M-1)$, where $M$ is the
 value specified in the system configuration file \verb|/proc/sys/kernel/perf_event_max_sample_rate|.
 
-For circumstances where the user wants to use frequency-based sampling but 
-HPCToolkit's default sampling frequency is inappropriate, 
-one can specify the target sampling frequency for a particular event using the notation 
+For circumstances where the user wants to use frequency-based sampling but
+HPCToolkit's default sampling frequency is inappropriate,
+one can specify the target sampling frequency for a particular event using the notation
 {\em event}{\tt @f}{\em rate} when specifying an event or change the default sampling frequency.
 When measuring a dynamically-linked executable using {\tt hpcrun}, one can change the default sampling frequency using {\tt hpcrun}'s {\tt -c} option. To set a new default sampling frequency for a statically-linked executable instrumented with {\tt hpclink}, set the \verb|HPCRUN_PERF_COUNT| environment variable.
-The section below entitled {\em Launching} provides  
+The section below entitled {\em Launching} provides
 examples of how to monitor an execution using frequency-based sampling.
 
-\paragraph{Multiplexing.} 
+\paragraph{Multiplexing.}
 Using multiplexing enables one to monitor more events
 in a single execution than the number of hardware counters a processor
 can support for each thread. The number of events that can be monitored in
@@ -308,7 +308,7 @@ using a thread's hardware counters,\footnote{How many events can be
   events specified.} the kernel will employ multiplexing and divide
 the set of events to be monitored into groups, monitor only one group
 of events at a time, and cycle repeatedly through the groups
-as a program executes. 
+as a program executes.
 
 For applications that have very regular,
 steady state behavior, e.g., an iterative code with lots of
@@ -316,15 +316,15 @@ iterations, multiplexing will yield results that are suitably representative
 of execution behavior.  However, for executions that consist of
 unique short phases, measurements collected using multiplexing may
 not accurately represent the execution behavior. To obtain
-more accurate measurements, one can run an application multiple times and in 
+more accurate measurements, one can run an application multiple times and in
 each run collect a subset of events that can be measured without multiplexing.
-Results from several such executions can be imported into HPCToolkit's \hpcviewer{} 
+Results from several such executions can be imported into HPCToolkit's \hpcviewer{}
 and analyzed together.
 
 
-\paragraph{Thread blocking.} When a program executes, 
+\paragraph{Thread blocking.} When a program executes,
 a thread may block waiting for the kernel to complete some operation on its behalf.
-For instance, a thread may block waiting for data to become available so that a {\tt read} operation 
+For instance, a thread may block waiting for data to become available so that a {\tt read} operation
 can complete. On systems running Linux 4.3 or newer, one can use the \perfevents{} sample source to monitor how much time a thread is blocked and where the blocking occurs. To measure
 the time a thread spends blocked, one can profile with \verb|BLOCKTIME| event and
 another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shouldn't have any frequency or period specified, whereas \verb|CYCLES| may have a frequency or period specified.
@@ -332,8 +332,8 @@ another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shou
 \subsubsection{Launching}
 \label{sec:perf-launching}
 
-When sampling with native events, by default hpcrun will profile using \perfevents{}. 
-To force HPCToolkit to use PAPI rather than \perfevents{} to oversee monitoring of a PMU event 
+When sampling with native events, by default hpcrun will profile using \perfevents{}.
+To force HPCToolkit to use PAPI rather than \perfevents{} to oversee monitoring of a PMU event
 (assuming that HPCToolkit has been configured to include support for PAPI),
 one must prefix the event with \lq{\verb|papi::|}\rq{} as follows:
 
@@ -347,10 +347,10 @@ hpcrun -e papi::CYCLES
  \lq{\verb|papi::|}\rq. For instance it is sufficient to specify \verb|PAPI_TOT_CYC| event
 without any prefix to profile using PAPI. For more information about using PAPI, see Section~\ref{section:papi}.
 
-Below, we provide some examples of various ways to measure \verb|CYCLES| 
+Below, we provide some examples of various ways to measure \verb|CYCLES|
 and \verb|INSTRUCTIONS|  using \HPCToolkit{}'s \perfevents{} measurement substrate:
 
-To sample an execution 100 times per second (frequency-based sampling) counting \verb|CYCLES| 
+To sample an execution 100 times per second (frequency-based sampling) counting \verb|CYCLES|
 and 100 times a second counting \verb|INSTRUCTIONS|:
 \begin{quote}
 \begin{verbatim}
@@ -376,7 +376,7 @@ hpcrun -e CYCLES -e INSTRUCTIONS …
 \end{verbatim}
 \end{quote}
 
-One can specify a different default sampling period or frequency using the \verb|-c| option. 
+One can specify a different default sampling period or frequency using the \verb|-c| option.
 The command below will sample  \verb|CYCLES| and \verb|INSTRUCTIONS| at 200 samples per second each:
 
 \begin{quote}
@@ -391,34 +391,34 @@ hpcrun -c f200 -e CYCLES -e INSTRUCTIONS …
 
 \begin{itemize}
 \item
-Linux \perfevents{} uses one file descriptor for each event to be monitored. 
+Linux \perfevents{} uses one file descriptor for each event to be monitored.
 Furthermore, since \hpcrun{} generates one hpcrun file for each thread, and an additional hpctrace file if traces is enabled.
-Hence for $e$ events and $t$ threads, the required number of file descriptors is: 
+Hence for $e$ events and $t$ threads, the required number of file descriptors is:
 \begin{quote}
-  $t \times e + t + t$ (if trace is enabled) 
+  $t \times e + t + t$ (if trace is enabled)
 \end{quote}
-For instance, if one profiles a multi-threaded program that executes with 500 threads using 4 events, 
+For instance, if one profiles a multi-threaded program that executes with 500 threads using 4 events,
 then the required number of file descriptors is
 \begin{quote}
   500 threads $\times$ 4 events + 500 hpcrun files + 500 hpctrace files \\
   = 3000 file descriptors
 \end{quote}
-If the number of file descriptors exceeds the number of maximum number of open files, then the program will crash. 
+If the number of file descriptors exceeds the number of maximum number of open files, then the program will crash.
 To remedy this issue, one needs to increase the number of maximum number of open files allowed.
 
 \item
 \sloppy
 When a system is configured with suitable permissions, HPCToolkit will sample call stacks
-within the Linux kernel in addition to application-level call stacks. This feature can be useful to measure kernel activity on behalf of a thread (e.g., zero-filling allocated pages when they are first touched) 
+within the Linux kernel in addition to application-level call stacks. This feature can be useful to measure kernel activity on behalf of a thread (e.g., zero-filling allocated pages when they are first touched)
 or to observe where, why, and how long a thread blocks.
 For a user to be able to sample kernel call stacks, the configuration file
 \verb|/proc/sys/kernel/perf_event_paranoid| must have a value $\leq 1$.  To associate addresses
 in kernel call paths with function names, the value of
-\verb|/proc/sys/kernel/kptr_restrict| must be 0 (number zero). If these settings are not configured in this way on your system, you will need someone with administrator privileges to change them for you to 
+\verb|/proc/sys/kernel/kptr_restrict| must be 0 (number zero). If these settings are not configured in this way on your system, you will need someone with administrator privileges to change them for you to
 be able to sample call stacks within the kernel.
 
 \item
-Due to a limitation present in all Linux kernel versions currently available,  
+Due to a limitation present in all Linux kernel versions currently available,
 HPCToolkit's measurement subsystem can only approximate a thread's blocking time.
 At present, Linux reports when a thread blocks but does not report when a thread resumes execution.
 For that reason, HPCToolkit's measurement subsystem approximates the time a thread spends blocked using sampling as the time between when the thread blocks and when the thread receives its first sample
@@ -426,9 +426,9 @@ after resuming execution.
 
 
 \item
-Users need to be cautious when considering measured counts of events that have been collected using 
+Users need to be cautious when considering measured counts of events that have been collected using
 hardware counter multiplexing.  Currently, it is not obvious to a user
-if a metric was measured using a multiplexed counter. Information about whether a counter was 
+if a metric was measured using a multiplexed counter. Information about whether a counter was
 multiplexed is only available in the \verb|experiment.xml| file produced when post-processing measurement data with \hpcprof{} or \hpcprofmpi, but is not visible in \hpcviewer.
 \end{itemize}
 
@@ -437,13 +437,13 @@ multiplexed is only available in the \verb|experiment.xml| file produced when po
 
 PAPI, the Performance API, is a library for providing access to the
 hardware performance counters. PAPI aims to provide a
-consistent, high-level interface that consists of a universal set of event names that can be used 
-to measure performance on any processor, independent of any processor-specific event names. 
+consistent, high-level interface that consists of a universal set of event names that can be used
+to measure performance on any processor, independent of any processor-specific event names.
 In some cases, PAPI event names
-represent quantities synthesized by combining measurements based on multiple native events 
+represent quantities synthesized by combining measurements based on multiple native events
 available on a particular processor.
 For instance, in some cases PAPI reports
-total cache misses by measuring and combining data misses and instruction misses. 
+total cache misses by measuring and combining data misses and instruction misses.
 PAPI is available from the University of Tennessee at \url{http://icl.cs.utk.edu/papi}.
 
 PAPI focuses mostly on in-core CPU events: cycles, cache misses,
@@ -527,22 +527,22 @@ overhead and distort the execution of your program; they won't yield more
 accurate results.
 
 Beginning with Linux kernel version 2.6.32,
-support for accessing  performance counters 
+support for accessing  performance counters
 using the Linux \perfevents{} performance monitoring subsystem is
 built into the kernel.  \perfevents{}  provides a measurement substrate for PAPI on Linux.
 
 On modern Linux systems that include support
-for \verb|perf_events|, PAPI is only recommended for monitoring 
-events outside the scope of the \verb|perf_events| interface. 
+for \verb|perf_events|, PAPI is only recommended for monitoring
+events outside the scope of the \verb|perf_events| interface.
 
 \paragraph{Proxy Sampling}
 
 \HPCToolkit{} supports proxy sampling for derived PAPI events.
 For \HPCToolkit{} to sample a PAPI event directly, the event must not be
-derived and must trigger hardware interrupts when a threshold is exceeded.  
+derived and must trigger hardware interrupts when a threshold is exceeded.
 For events that cannot trigger interrupts directly, HPCToolkit's proxy sampling
-sample on another event that is supported directly and then reads the 
-counter for the derived event. In this case, 
+sample on another event that is supported directly and then reads the
+counter for the derived event. In this case,
 a native event can serve as a proxy for one or more derived events.
 
 To use proxy sampling, specify the \hpcrun{} command line as usual and
@@ -586,16 +586,16 @@ accurate.
 The unit for periods of these timers is microseconds.
 
 Before describing this capability further, it is worth noting
-that the CYCLES event supported by Linux \perfevents{} or PAPI's \verb|PAPI_TOT_CYC| 
-are generally superior to any of the timer-based sampling sources. 
+that the CYCLES event supported by Linux \perfevents{} or PAPI's \verb|PAPI_TOT_CYC|
+are generally superior to any of the timer-based sampling sources.
 
 \sloppy
 The \verb|CPUTIME| and \verb|REALTIME| sample sources are based on the POSIX
-timers \verb|CLOCK_THREAD_CPUTIME_ID| and \verb|CLOCK_REALTIME| with 
-the Linux \verb|SIGEV_THREAD_ID| extension.  
-\verb|CPUTIME| only counts time when the CPU is running;  
+timers \verb|CLOCK_THREAD_CPUTIME_ID| and \verb|CLOCK_REALTIME| with
+the Linux \verb|SIGEV_THREAD_ID| extension.
+\verb|CPUTIME| only counts time when the CPU is running;
 \verb|REALTIME| counts
-real (wall clock) time, whether the process is running or not. 
+real (wall clock) time, whether the process is running or not.
 Signal delivery for these timers is thread-specific, so these timers are suitable for
 profiling multithreaded programs.
 Sampling using the \verb|REALTIME| sample source
@@ -614,8 +614,8 @@ hpcrun -e REALTIME@5000 app arg ...
 
 \noindent {\it Note:} do not use more than one timer-based sample source to monitor a program execution.
 When using a sample source such as \verb|CPUTIME| or \verb|REALTIME|,
-we recommend not using another time-based sampling source such as 
-Linux \perfevents{} CYCLES or PAPI's \verb|PAPI_TOT_CYC|. 
+we recommend not using another time-based sampling source such as
+Linux \perfevents{} CYCLES or PAPI's \verb|PAPI_TOT_CYC|.
 Technically, this is feasible and \hpcrun{} won't die.
 However, multiple time-based sample sources would compete with one another to measure the
 execution and likely lead to dropped samples and possibly distorted results.
@@ -625,10 +625,10 @@ execution and likely lead to dropped samples and possibly distorted results.
 The \verb|IO| sample source counts the number of bytes read and
 written.  This displays two metrics in the viewer: ``IO Bytes Read''
 and ``IO Bytes Written.''  The \verb|IO| source is a synchronous sample
-source.  
+source.
 It overrides the functions \verb|read|, \verb|write|, \verb|fread|
 and \verb|fwrite| and records the number of bytes read or
-written along with their dynamic context synchronously rather 
+written along with their dynamic context synchronously rather
 than relying on data collection triggered by interrupts.
 
 To include this source, use the \verb|IO| event (no period).  In the
@@ -880,17 +880,17 @@ corresponding situations are:
   \item{\verb|HPCTOOLKIT|} To function correctly, \hpcrun{} must know
        the location of the \HPCToolkit{} top-level installation directory.
        The \hpcrun{} script uses elements of the installation \verb|lib| and
-       \verb|libexec| subdirectories. On most systems, the 
+       \verb|libexec| subdirectories. On most systems, the
        \hpcrun{} can find the requisite
-       components relative to its own location in the file system. 
+       components relative to its own location in the file system.
        However, some parallel job launchers \emph{copy} the
        \hpcrun{} script to a different location as they launch a job. If your
        system does this, you must set the \verb|HPCTOOLKIT|
-       environment variable to the location of the \HPCToolkit{} top-level installation directory 
+       environment variable to the location of the \HPCToolkit{} top-level installation directory
        before launching a job.
 \end{description}
 
-{\bf Note to system administrators:} if your system provides a module system for configuring 
+{\bf Note to system administrators:} if your system provides a module system for configuring
 software packages, then constructing
 a module for \HPCToolkit{} to initialize these environment variables to appropriate settings
 would be convenient for users.
@@ -902,7 +902,7 @@ would be convenient for users.
 % system specific notes for titan, keenland?
 %
 
-If you are trying to profile a dynamically-linked executable on a Cray that is still using the ALPS job launcher and you see an error like the following 
+If you are trying to profile a dynamically-linked executable on a Cray that is still using the ALPS job launcher and you see an error like the following
 
 \begin{quote}
 \begin{verbatim}
@@ -912,7 +912,7 @@ or in your environment, and try again.
 \end{verbatim}
 \end{quote}
 
-\noindent 
+\noindent
 in your job's error log then read on. Otherwise, skip this section.
 
 The problem is that the Cray job launcher copies HPCToolkit's \hpcrun{}
@@ -922,10 +922,10 @@ breaks \hpcrun{}'s method for finding \HPCToolkit{}'s install directory.
 
 To fix this problem, in your job script, set \verb|HPCTOOLKIT| to the top-level \HPCToolkit{} installation directory
 (the directory containing the \verb|bin|, \verb|lib| and
-\verb|libexec| subdirectories) and export it to the environment.  
+\verb|libexec| subdirectories) and export it to the environment.
 (If launching statically-linked binaries created using \hpclink{}, this step is unnecessary, but harmless.)
-Figure~\ref{cray-alps} show a skeletal job script that sets the \verb|HPCTOOLKIT| environment variable  before monitoring 
-a dynamically-linked executable with \hpcrun{}: 
+Figure~\ref{cray-alps} show a skeletal job script that sets the \verb|HPCTOOLKIT| environment variable  before monitoring
+a dynamically-linked executable with \hpcrun{}:
 
 \begin{figure}
 \begin{quote}
@@ -942,7 +942,7 @@ cd $PBS_O_WORKDIR
 aprun -n #nodes hpcrun -e event@howoften dynamic-app arg ...
 \end{verbatim}
 \end{quote}
-\caption{A sketch of how to help HPCToolkit find its dynamic libraries when using Cray's ALPS job launcher.} 
+\caption{A sketch of how to help HPCToolkit find its dynamic libraries when using Cray's ALPS job launcher.}
 \label{cray-alps}
 \end{figure}
 
@@ -950,4 +950,3 @@ Your system may have a module installed for \verb|hpctoolkit| with the
 correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
 the easiest solution is to load the \verb|hpctoolkit| module.  Try
 ``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
-

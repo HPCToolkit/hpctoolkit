@@ -97,14 +97,14 @@
 
 //
 // TODO: add trace correction info here
-// FIXME: merge metrics belongs in a different file. it is not specific to 
+// FIXME: merge metrics belongs in a different file. it is not specific to
 // OpenMP
 //
 static void
 merge_metrics
 (
- cct_node_t *a, 
- cct_node_t *b, 
+ cct_node_t *a,
+ cct_node_t *b,
  merge_op_arg_t arg
 )
 {
@@ -149,8 +149,8 @@ deferred_resolution_breakpoint
 static void
 omp_resolve
 (
- cct_node_t* cct, 
- cct_op_arg_t a, 
+ cct_node_t* cct,
+ cct_op_arg_t a,
  size_t l
 )
 {
@@ -207,8 +207,8 @@ omp_resolve
 static void
 omp_resolve_and_free
 (
- cct_node_t* cct, 
- cct_op_arg_t a, 
+ cct_node_t* cct,
+ cct_op_arg_t a,
  size_t l
 )
 {
@@ -254,22 +254,22 @@ is_partial_resolve
 
 //-----------------------------------------------------------------------------
 // Function: resolve_cntxt
-// 
-// Purpose: 
+//
+// Purpose:
 //   resolve contexts of parallel regions.
 //
 // Description:
-// (1) Compute the outer-most region id; only the outer-most region needs to be 
+// (1) Compute the outer-most region id; only the outer-most region needs to be
 //     resolved
-// (2) If the thread has a current region id that is different from its previous 
+// (2) If the thread has a current region id that is different from its previous
 //     one; and the previous region id is non-zero, resolve the previous region.
 //     The previous region id is recorded in td->region_id.
 // (3) If the thread has a current region id that is different from its previous
-//     one; and the current region id is non-zero, add a slot into the 
+//     one; and the current region id is non-zero, add a slot into the
 //     unresolved tree indexed by the current region_id
 // (4) Update td->region_id to be the current region id
 
-void 
+void
 resolve_cntxt
 (
  void
@@ -344,7 +344,7 @@ resolve_cntxt
     // defer cntxt)
 
 
-    // FIXME: Accomodate to region_data_t
+    // FIXME: Accommodate to region_data_t
     // FIXME: Focus on this
     // (ADDR2(UNRESOLVED, get from region_data)
     // watch for monitoring variables
@@ -401,7 +401,7 @@ hpcrun_region_lookup
 {
   cct_node_t *result = NULL;
 
-  // FIXME: Find another way to get infor about parallel region
+  // FIXME: Find another way to get info about parallel region
 
 //  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
 //  if (record) {
@@ -417,7 +417,7 @@ hpcrun_region_lookup
 
 // FIXME: move this function at better place
 
-int 
+int
 get_stack_index
 (
  ompt_region_data_t *region_data
@@ -487,7 +487,7 @@ swap_and_free
   region_stack[depth].team_master = 0;
   region_stack[depth].took_sample = 0;
 
-  // I previosly use this as a condition to free notification,
+  // I previously use this as a condition to free notification,
   // which is bad and the explanation is below
   // Notification can be at the end of the queue
   // and this condition does not check thath
@@ -499,7 +499,7 @@ swap_and_free
 void
 add_region_and_ancestors_to_stack
 (
- ompt_region_data_t *region_data, 
+ ompt_region_data_t *region_data,
  bool team_master
 )
 {
@@ -698,7 +698,7 @@ try_resolve_one_region_context
 {
   ompt_notification_t *old_head = NULL;
 
-  old_head = (ompt_notification_t*) 
+  old_head = (ompt_notification_t*)
     wfq_dequeue_private(&threads_queue, OMPT_BASE_T_STAR_STAR(private_threads_queue));
 
   if (!old_head) return 0;
@@ -722,7 +722,7 @@ try_resolve_one_region_context
     cct_node_t *region_call_path = region_data->call_path;
 
     // FIXME: why hpcrun_cct_insert_path_return_leaf ignores top cct of the path
-    // when had this condtion, once infinity happen
+    // when had this condition, once infinity happen
     if (parent_unresolved_cct == hpcrun_get_thread_epoch()->csdata.thread_root) {
       // from initial region, we should remove the first one
       prefix = hpcrun_cct_insert_path_return_leaf(parent_unresolved_cct, region_call_path);
@@ -747,7 +747,7 @@ try_resolve_one_region_context
   // free notification
   hpcrun_ompt_notification_free(old_head);
 
-  // check if the notification needs to be forwarded 
+  // check if the notification needs to be forwarded
   ompt_notification_t* next = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
   if (next) {
     wfq_enqueue(OMPT_BASE_T_STAR(next), next->threads_queue);
@@ -763,8 +763,8 @@ try_resolve_one_region_context
 void
 update_unresolved_node
 (
- cct_node_t* n, 
- cct_op_arg_t arg, 
+ cct_node_t* n,
+ cct_op_arg_t arg,
  size_t level
 )
 {
@@ -772,7 +772,7 @@ update_unresolved_node
 
   // Note: GCC7 statically evaluates this as false and dead code
   // eliminates the body without the cast on UNRESOLVED
-  if (addr->ip_norm.lm_id == (uint16_t) UNRESOLVED) { 
+  if (addr->ip_norm.lm_id == (uint16_t) UNRESOLVED) {
     addr->ip_norm = get_placeholder_norm(hpcrun_placeholder_ompt_region_unresolved);
   }
 }
@@ -781,7 +781,7 @@ update_unresolved_node
 void
 update_any_unresolved_regions
 (
- cct_node_t* root 
+ cct_node_t* root
 )
 {
   void *no_arg = 0;
@@ -806,7 +806,7 @@ mark_remaining_unresolved_regions
 }
 
 
-void 
+void
 ompt_resolve_region_contexts
 (
  int is_process
@@ -821,14 +821,14 @@ ompt_resolve_region_contexts
   for(;;i++) {
 
     // if all regions resolved, we are done
-    if (unresolved_cnt == 0) break; 
+    if (unresolved_cnt == 0) break;
 
     // poll for a notification to resolve a region context
     try_resolve_one_region_context();
 
     // infrequently check for a timeout
     if (i % 1000) {
-      
+
       // there are cases where not all region contexts can be
       // resolved. for instance, a user may initiate termination with
       // a Cntrl-C in the middle of a parallel region. if we have
@@ -856,7 +856,7 @@ ompt_resolve_region_contexts
 }
 
 
-void 
+void
 ompt_resolve_region_contexts_poll
 (
  void
@@ -877,7 +877,7 @@ top_cct
 (
  cct_node_t *current_cct
 )
-{  
+{
   if (!current_cct)
     return NULL;
 
@@ -914,15 +914,15 @@ top_cct
 frame_t*
 first_frame_above
 (
- frame_t *start, 
- frame_t *end, 
- uint64_t frame_address, 
+ frame_t *start,
+ frame_t *end,
+ uint64_t frame_address,
  int *index
 )
 {
   frame_t *it;
   for(it = start; it <= end; it++, (*index)++) {
-    // FIXME: exit frame of current should be the same as enter_frame.ptr of previous frane
+    // FIXME: exit frame of current should be the same as enter_frame.ptr of previous frame
     if (UINT64_T(it->cursor.sp) >= frame_address){
       return it;
     }
@@ -935,9 +935,9 @@ first_frame_above
 frame_t*
 first_frame_below
 (
- frame_t *start, 
- frame_t *end, 
- uint64_t frame_address, 
+ frame_t *start,
+ frame_t *end,
+ uint64_t frame_address,
  int *index
 )
 {
@@ -965,7 +965,7 @@ first_frame_below
 cct_node_t*
 get_cct_from_prefix
 (
- cct_node_t* cct, 
+ cct_node_t* cct,
  int index
 )
 {
@@ -989,7 +989,7 @@ get_cct_from_prefix
 cct_node_t*
 copy_prefix
 (
- cct_node_t* top, 
+ cct_node_t* top,
  cct_node_t* bottom
 )
 {
@@ -1061,11 +1061,11 @@ is_outermost_region_thread_is_master
 void
 print_prefix_info
 (
- char *message, 
- cct_node_t *prefix, 
- ompt_region_data_t *region_data, 
- int stack_index, 
- backtrace_info_t *bt, 
+ char *message,
+ cct_node_t *prefix,
+ ompt_region_data_t *region_data,
+ int stack_index,
+ backtrace_info_t *bt,
  cct_node_t *cct
 )
 {
@@ -1121,7 +1121,7 @@ dont_resolve_region
 int
 prefix_length
 (
- cct_node_t *bottom_prefix, 
+ cct_node_t *bottom_prefix,
  cct_node_t *top_prefix
 )
 {
@@ -1141,7 +1141,7 @@ prefix_length
 void
 provide_callpath_for_regions_if_needed
 (
- backtrace_info_t *bt, 
+ backtrace_info_t *bt,
  cct_node_t *cct
 )
 {
@@ -1318,7 +1318,7 @@ provide_callpath_for_regions_if_needed
 void
 provide_callpath_for_end_of_the_region
 (
- backtrace_info_t *bt, 
+ backtrace_info_t *bt,
  cct_node_t *cct
 )
 {
@@ -1405,7 +1405,7 @@ provide_callpath_for_end_of_the_region
 void
 tmp_end_region_resolve
 (
- ompt_notification_t *notification, 
+ ompt_notification_t *notification,
  cct_node_t* prefix
 )
 {

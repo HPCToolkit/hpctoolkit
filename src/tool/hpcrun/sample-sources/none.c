@@ -143,12 +143,12 @@ METHOD_FN(supports_event,const char *ev_str)
 {
   return hpcrun_ev_is(ev_str,"NONE");
 }
- 
+
 
 //
 // Special NONE protocol:
 //  if event is NONE@xxx, then create log file and process the TMSG logging
-//  if event is just plain NONE, then 
+//  if event is just plain NONE, then
 //     no log file or any other evidence of hpcrun
 //
 static void
@@ -159,7 +159,7 @@ METHOD_FN(process_event_list,int lush_metrics)
   if (none_str) {
     char *use_log = strchr(none_str,'@');
     if (use_log == NULL) {
-      hpcrun_set_disabled(); 
+      hpcrun_set_disabled();
     }
   }
 }
@@ -198,14 +198,14 @@ METHOD_FN(display_events)
 #include "ss_obj.h"
 
 /******************************************************************************
- * interface functions 
+ * interface functions
  *****************************************************************************/
 
-void 
+void
 hpcrun_process_sample_source_none(void)
 {
   sample_source_t *none = &_none_obj;
-  
+
   METHOD_CALL(none, process_event_list, 0);
 
   if (getenv("SHOW_NONE") && hpcrun_get_disabled()) {

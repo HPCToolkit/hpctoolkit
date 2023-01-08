@@ -70,14 +70,14 @@ typedef struct thread_finalize_entry_s {
 // interface operations
 //******************************************************************************
 
-extern void 
+extern void
 thread_finalize_register
 (
   thread_finalize_entry_t *e
 );
 
 
-extern void 
+extern void
 thread_finalize
 (
   int is_process

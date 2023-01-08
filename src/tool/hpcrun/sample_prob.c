@@ -95,24 +95,24 @@ static float
 string_to_prob(char *str)
 {
   int x, y;
-  float ans;
+  float result;
 
   if (strchr(str, '/') != NULL) {
     if (sscanf(str, "%d/%d", &x, &y) == 2 && y > 0) {
-      ans = (float)x / (float)y;
+      result = (float)x / (float)y;
     } else {
       prob_str_broken = 1;
-      ans = DEFAULT_PROB;
+      result = DEFAULT_PROB;
     }
   }
   else {
-    if (sscanf(str, "%f", &ans) < 1) {
+    if (sscanf(str, "%f", &result) < 1) {
       prob_str_broken = 1;
-      ans = DEFAULT_PROB;
+      result = DEFAULT_PROB;
     }
   }
 
-  return ans;
+  return result;
 }
 
 

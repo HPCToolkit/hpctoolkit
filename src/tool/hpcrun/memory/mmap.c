@@ -94,15 +94,15 @@ void
 hpcrun_mmap_init(void)
 {
   static bool init_done = false;
-  long ans;
+  long result;
 
   if (init_done)
     return;
 
 #ifdef _SC_PAGESIZE
-  if ((ans = sysconf(_SC_PAGESIZE)) > 0) {
-    TMSG(MMAP, "sysconf gives pagesize = %ld", ans);
-    pagesize = ans;
+  if ((result = sysconf(_SC_PAGESIZE)) > 0) {
+    TMSG(MMAP, "sysconf gives pagesize = %ld", result);
+    pagesize = result;
   }
 #endif
   TMSG(MMAP, "pagesize = %ld", pagesize);

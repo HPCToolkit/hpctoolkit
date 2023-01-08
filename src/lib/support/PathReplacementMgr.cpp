@@ -117,7 +117,7 @@ PathReplacementMgr::replace(const string& path) const
 }
 
 
-// Comparison function we use to sort 'pathReplacment' according to the first 
+// Comparison function we use to sort 'pathReplacment' according to the first
 // values of the pair, which is the old partial path.
 //
 // @param a: The first pair object to compare.
@@ -138,4 +138,3 @@ PathReplacementMgr::addPath(const string& oldPath, const string& newPath)
   std::stable_sort(m_pathReplacement.begin(), m_pathReplacement.end(),
 		   compare_as_strings);
 }
-

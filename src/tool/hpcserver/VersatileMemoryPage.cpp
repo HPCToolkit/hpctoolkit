@@ -141,7 +141,7 @@ namespace TraceviewerServer
 
 
 		isMapped = true;
-		mostRecentlyUsed->reAdd(index);
+		mostRecentlyUsed->addAgain(index);
 	}
 	void VersatileMemoryPage::unmapPage()
 	{

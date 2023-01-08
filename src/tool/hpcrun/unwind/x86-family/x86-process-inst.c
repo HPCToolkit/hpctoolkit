@@ -74,7 +74,7 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
   switch(xiclass) {
 
-  case XED_ICLASS_JMP: 
+  case XED_ICLASS_JMP:
   case XED_ICLASS_JMP_FAR:
 	next = process_unconditional_branch(xptr, irdebug, iarg);
 	if (hpcrun_is_cold_code(xptr, iarg)) {
@@ -102,9 +102,9 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
   case XED_ICLASS_JL:
   case XED_ICLASS_JLE:
   case XED_ICLASS_JNB:
-  case XED_ICLASS_JNBE: 
-  case XED_ICLASS_JNL: 
-  case XED_ICLASS_JNLE: 
+  case XED_ICLASS_JNBE:
+  case XED_ICLASS_JNL:
+  case XED_ICLASS_JNLE:
   case XED_ICLASS_JNO:
   case XED_ICLASS_JNP:
   case XED_ICLASS_JNS:
@@ -119,7 +119,7 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
   case XED_ICLASS_FNSTCW:
   case XED_ICLASS_STMXCSR:
-    if ((iarg->highwatermark).succ_inst_ptr == iarg->ins) { 
+    if ((iarg->highwatermark).succ_inst_ptr == iarg->ins) {
       //----------------------------------------------------------
       // recognize Pathscale idiom for routine prefix and ignore
       // any highwatermark setting that resulted from it.
@@ -132,7 +132,7 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
     next = iarg->current;
     break;
 
-  case XED_ICLASS_LEA: 
+  case XED_ICLASS_LEA:
     next = process_lea(xptr, xi, iarg);
     break;
 
@@ -158,22 +158,22 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
     next = process_return(xptr, irdebug, iarg);
     break;
 
-  case XED_ICLASS_ADD:   
-  case XED_ICLASS_SUB: 
+  case XED_ICLASS_ADD:
+  case XED_ICLASS_SUB:
     next = process_addsub(xptr, xi, iarg);
     break;
 
   case XED_ICLASS_PUSH:
-  case XED_ICLASS_PUSHF:  
-  case XED_ICLASS_PUSHFD: 
-  case XED_ICLASS_PUSHFQ: 
+  case XED_ICLASS_PUSHF:
+  case XED_ICLASS_PUSHFD:
+  case XED_ICLASS_PUSHFQ:
     next = process_push(xptr, xi, iarg);
     break;
 
-  case XED_ICLASS_POP:   
-  case XED_ICLASS_POPF:  
-  case XED_ICLASS_POPFD: 
-  case XED_ICLASS_POPFQ: 
+  case XED_ICLASS_POP:
+  case XED_ICLASS_POPF:
+  case XED_ICLASS_POPFD:
+  case XED_ICLASS_POPFQ:
     next = process_pop(xptr, xi, iarg);
     break;
 

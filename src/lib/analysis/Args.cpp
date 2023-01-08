@@ -177,7 +177,7 @@ Args::normalizeSearchPaths()
     PathTupleVec::iterator x_it = it;
 
     ++it; // advance iterator
-    
+
     if (chdir(x.c_str()) == 0) {
       char norm_x[PATH_MAX+1];
       getcwd(norm_x, PATH_MAX);
@@ -189,7 +189,7 @@ Args::normalizeSearchPaths()
     }
     chdir(cwd);
   }
-  
+
   if (searchPathTpls.size() > 0) {
     DIAG_Msg(2, "search paths:");
     for (unsigned int i = 0; i < searchPathTpls.size(); ++i) {
@@ -225,5 +225,3 @@ Args::searchPathStr() const
 
 
 //***************************************************************************
-
-

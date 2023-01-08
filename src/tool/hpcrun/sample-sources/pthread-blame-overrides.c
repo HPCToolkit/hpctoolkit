@@ -73,7 +73,7 @@
 extern void monitor_real_abort(void);
 
 //
-// NOTE 1: the following functions (apparently) need dlvsym instead of dlsym to obtain the 
+// NOTE 1: the following functions (apparently) need dlvsym instead of dlsym to obtain the
 //         true function:
 //           pthread_cond_broadcast
 //           pthread_cond_signal
@@ -88,7 +88,7 @@ extern void monitor_real_abort(void);
 //         If constructor needed, uncomment code below
 //
 // void
-// HPCRUN_CONTRUCTOR(pthread_plugin_init)() 
+// HPCRUN_CONTRUCTOR(pthread_plugin_init)()
 // {
 //   DL_LOOKUPV(pthread_cond_broadcast);
 //   DL_LOOKUPV(pthread_cond_signal);
@@ -127,9 +127,9 @@ extern void monitor_real_abort(void);
 #define sem_post_REAL                 DL
 #define sem_timedwait_REAL            DL
 
-// 
+//
 // Typedefs and declarations for real routines that are overridden
-// 
+//
 
 REAL_TYPEDEF(int, pthread_cond_timedwait)(pthread_cond_t* restrict cond,
                                           pthread_mutex_t* restrict mutex,
@@ -157,7 +157,7 @@ REAL_DCL(pthread_mutex_timedlock);
 REAL_DCL(pthread_spin_lock);
 REAL_DCL(pthread_spin_unlock);
 
-int 
+int
 OVERRIDE_NM(pthread_cond_timedwait)(pthread_cond_t* restrict cond,
                                     pthread_mutex_t* restrict mutex,
                                     const struct timespec* restrict abstime)
@@ -171,7 +171,7 @@ OVERRIDE_NM(pthread_cond_timedwait)(pthread_cond_t* restrict cond,
   return retval;
 }
 
-int 
+int
 OVERRIDE_NM(pthread_cond_wait)(pthread_cond_t* restrict cond,
                                pthread_mutex_t* restrict mutex)
 {
@@ -184,7 +184,7 @@ OVERRIDE_NM(pthread_cond_wait)(pthread_cond_t* restrict cond,
   return retval;
 }
 
-int 
+int
 OVERRIDE_NM(pthread_cond_broadcast)(pthread_cond_t *cond)
 {
   REAL_INIT(pthread_cond_broadcast);
@@ -194,7 +194,7 @@ OVERRIDE_NM(pthread_cond_broadcast)(pthread_cond_t *cond)
   return retval;
 }
 
-int 
+int
 OVERRIDE_NM(pthread_cond_signal)(pthread_cond_t* cond)
 {
   REAL_INIT(pthread_cond_signal);
@@ -204,7 +204,7 @@ OVERRIDE_NM(pthread_cond_signal)(pthread_cond_t* cond)
   return retval;
 }
 
-int 
+int
 OVERRIDE_NM(pthread_mutex_lock)(pthread_mutex_t* mutex)
 {
   REAL_INIT(pthread_mutex_lock);
@@ -222,7 +222,7 @@ OVERRIDE_NM(pthread_mutex_lock)(pthread_mutex_t* mutex)
   return retval;
 }
 
-int 
+int
 OVERRIDE_NM(pthread_mutex_unlock)(pthread_mutex_t* mutex)
 {
   REAL_INIT(pthread_mutex_unlock);
@@ -237,12 +237,12 @@ OVERRIDE_NM(pthread_mutex_unlock)(pthread_mutex_t* mutex)
   return retval;
 }
 
-int 
+int
 OVERRIDE_NM(pthread_mutex_timedlock)(pthread_mutex_t* restrict mutex,
                                      const struct timespec* restrict abs_timeout)
 {
   REAL_INIT(pthread_mutex_timedlock);
-  
+
   TMSG(LOCKWAIT, "mutex timedlock ENCOUNTERED");
   if (! pthread_blame_lockwait_enabled() ) {
     return REAL_FN(pthread_mutex_timedlock)(mutex, abs_timeout);

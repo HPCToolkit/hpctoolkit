@@ -228,7 +228,7 @@ def display_metric(dir, title, label, metric):
     # Copy the subset of processes in DATA that have a value for this
     # metric.  This is awkward, but it's better than segfaulting if
     # the directory is corrupt or has missing metrics.
-    
+
     total_nproc = len(DATA)
     COPY = []
     for n in range(total_nproc):
@@ -345,4 +345,3 @@ if NUM_ERRORS > 0:
     print
     print '!! Warning: summary finished with %d errors !!' % NUM_ERRORS
     print
-

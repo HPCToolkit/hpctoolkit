@@ -49,7 +49,7 @@
 //   unwind.h
 //
 // Purpose:
-//   interface to the stack-unwinding primitives. 
+//   interface to the stack-unwinding primitives.
 //
 //***************************************************************************
 
@@ -67,7 +67,7 @@
 // local include files
 //***************************************************************************
 
-#include <unwind/common/unw-datatypes.h> 
+#include <unwind/common/unw-datatypes.h>
 #include <hpcrun/utilities/ip-normalized.h>
 
 //***************************************************************************
@@ -93,7 +93,7 @@ hpcrun_unw_init();
 // ----------------------------------------------------------
 
 int
-hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, 
+hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c,
 			   ip_normalized_t* reg_value);
 
 int
@@ -112,7 +112,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
 
 
 // ----------------------------------------------------------
-// hpcrun_unw_step: 
+// hpcrun_unw_step:
 //   Given a cursor, step the cursor to the next (less deeply
 //   nested) frame.  Conforms to the semantics of libunwind's
 //   hpcrun_unw_step.  In particular, returns:

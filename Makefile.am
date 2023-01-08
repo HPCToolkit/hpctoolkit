@@ -206,7 +206,7 @@ endif
 ############################################################
 
 DIST_FILES = LICENSE Makefile* README* aclocal.m4 autogen configure*  \
-	config doc lib spack src tests tools 
+	config doc lib spack src tests tools
 
 MY_DIST_DIR = $(PACKAGE_TARNAME)-$(PACKAGE_VERSION)
 MY_TAR_FILE = $(MY_DIST_DIR).tar

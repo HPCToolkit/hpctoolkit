@@ -849,7 +849,7 @@ HPCRUN_LIBCXX_PATH
 cxx17_flag
 CXX17_FLAG
 HPCLINK_CC
-ans
+result
 HOST_CPU_AARCH64
 HOST_CPU_AARCH64_FALSE
 HOST_CPU_AARCH64_TRUE
@@ -17909,7 +17909,7 @@ else
 int
 main ()
 {
-std::strcmp("fee fi", "fo fum");
+std::strcmp("fee-fi", "fo-fum");
   ;
   return 0;
 }
@@ -18876,35 +18876,35 @@ fi
 
 find_version()
 {
-  ans='unknown non-gnu'
+  result='unknown non-gnu'
 
   # strip any compiler flags, 'gcc -m64'
   base=`echo $1 | awk '{ print $1 }'`
   version=`$base --version 2>/dev/null`
   echo "$version" | grep -i copyright >/dev/null
   if test $? -eq 0 ; then
-    ans=`echo "$version" | head -1`
+    result=`echo "$version" | head -1`
   fi
 
-  echo "$ans"
+  echo "$result"
 }
 
 find_path()
 {
-  ans=
+  result=
   base=`echo $1 | awk '{ print $1 }'`
   case "$base" in
-    /* ) ans="$base" ;;
+    /* ) result="$base" ;;
     * )  # Extract the first word of "$base", so it can be a program name with args.
 set dummy $base; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_ans+:} false; then :
+if ${ac_cv_path_result+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  case $ans in
+  case $result in
   [\\/]* | ?:[\\/]*)
-  ac_cv_path_ans="$ans" # Let the user override the test with a path.
+  ac_cv_path_result="$result" # Let the user override the test with a path.
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -18914,7 +18914,7 @@ do
   test -z "$as_dir" && as_dir=.
     for ac_exec_ext in '' $ac_executable_extensions; do
   if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_ans="$as_dir/$ac_word$ac_exec_ext"
+    ac_cv_path_result="$as_dir/$ac_word$ac_exec_ext"
     $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -18922,14 +18922,14 @@ done
   done
 IFS=$as_save_IFS
 
-  test -z "$ac_cv_path_ans" && ac_cv_path_ans="no"
+  test -z "$ac_cv_path_result" && ac_cv_path_result="no"
   ;;
 esac
 fi
-ans=$ac_cv_path_ans
-if test -n "$ans"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+result=$ac_cv_path_result
+if test -n "$result"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -18937,11 +18937,11 @@ fi
 
  ;;
   esac
-  if test "x$ans" = xno ; then
-    ans=unknown
+  if test "x$result" = xno ; then
+    result=unknown
   fi
 
-  echo "$ans"
+  echo "$result"
 }
 
 test_is_gnu()
@@ -19064,14 +19064,14 @@ unsigned long len = sizeof(addrs) / sizeof(addrs[0]);
 
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -19081,7 +19081,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
   CC="$ORIG_CC"
 
-  if test "$ans" = yes ; then HPCLINK_CC="$SPACK_CC"
+  if test "$result" = yes ; then HPCLINK_CC="$SPACK_CC"
   else HPCLINK_CC=gcc
   fi
 fi
@@ -19153,12 +19153,12 @@ int main() {
 
 _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  if test "$ans" = yes ; then
+  if test "$result" = yes ; then
     cxx17_avail=yes
     cxx17_flag="$flag"
     break
@@ -19267,14 +19267,14 @@ long mylen(std::list <int> lst)
 
 _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -19286,7 +19286,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 CXXFLAGS="$ORIG_CXXFLAGS"
 
 # Add to CXXFLAGS if supported and not already supplied.
-if test "$ans" = yes ; then
+if test "$result" = yes ; then
   case "x$CXXFLAGS" in
     *${flag}* ) ;;
     * ) HOST_CXXFLAGS="$HOST_CXXFLAGS $flag" ;;
@@ -19337,12 +19337,12 @@ void myprint(int len)
 
 _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  if test "$ans" = yes ; then
+  if test "$result" = yes ; then
     openmp_flag="$flag"
     break
   fi
@@ -19546,7 +19546,7 @@ fi
 #
 search_for_mpi()
 {
-  ans=no
+  result=no
 
   for name in "$@" ; do
     for item in `type -a $name 2>/dev/null` ; do
@@ -19555,7 +19555,7 @@ search_for_mpi()
           # spack wrapper: /path/to/spack/lib/spack/env/case-insensitive/CC
           echo "$item" | grep -E -i -e 'lib.*spack.*env' >/dev/null
           if test $? -ne 0 ; then
-            ans="$item"
+            result="$item"
             break 2
           fi
           ;;
@@ -19563,7 +19563,7 @@ search_for_mpi()
     done
   done
 
-  echo "$ans"
+  echo "$result"
 }
 
 #-------------------------------------------------
@@ -22781,14 +22781,14 @@ $as_echo "$as_me: disable openmp support in hpcstruct" >&6;}
 fi
 
 hpcstruct_mesg=serial
-ans=no
+result=no
 
 if test "$parse_openmp" = yes ; then
 
 $as_echo "#define ENABLE_OPENMP 1" >>confdefs.h
 
   hpcstruct_mesg=openmp
-  ans=hpcstruct
+  result=hpcstruct
 else
   OPENMP_FLAG=
   symtab_openmp=no
@@ -22799,11 +22799,11 @@ if test "$symtab_openmp" = yes ; then
 $as_echo "#define ENABLE_OPENMP_SYMTAB 1" >>confdefs.h
 
   hpcstruct_mesg="$hpcstruct_mesg + fnbounds"
-  ans="$ans + fnbounds"
+  result="$result + fnbounds"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: openmp support from dyninst: $ans" >&5
-$as_echo "$as_me: openmp support from dyninst: $ans" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: openmp support from dyninst: $result" >&5
+$as_echo "$as_me: openmp support from dyninst: $result" >&6;}
 
  if test "$parse_openmp" = yes; then
   OPT_ENABLE_OPENMP_TRUE=
@@ -22885,15 +22885,15 @@ int my_size(void)
 
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 
-  if test "$ans" = no ; then
+  if test "$result" = no ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: invalid MPICC compiler for MPI wrappers: $MPICC " >&5
 $as_echo "$as_me: WARNING: invalid MPICC compiler for MPI wrappers: $MPICC " >&2;}
     as_fn_error $? "reconfigure with MPICC set to valid MPI compiler" "$LINENO" 5
@@ -22903,14 +22903,14 @@ $as_echo "$as_me: WARNING: invalid MPICC compiler for MPI wrappers: $MPICC " >&2
   #
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking MPI wrapper include path: $MPI_INC " >&5
 $as_echo_n "checking MPI wrapper include path: $MPI_INC ... " >&6; }
-  ans=no
+  result=no
   if test -f "${MPI_INC}/mpi.h" ; then
-    ans=yes
+    result=yes
   fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 
-  if test "$ans" = no ; then
+  if test "$result" = no ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no mpi.h in MPI_INC include path: $MPI_INC" >&5
 $as_echo "$as_me: WARNING: no mpi.h in MPI_INC include path: $MPI_INC" >&2;}
     as_fn_error $? "reconfigure with MPI_INC set to MPI include directory" "$LINENO" 5
@@ -23246,27 +23246,27 @@ int main()
 
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 
 # The POSIX timers pass this test on blue gene, but they don't work on
 # the back end.
 if test "$blue_gene_back_end" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: disable POSIX timers for blue gene back end" >&5
 $as_echo "$as_me: disable POSIX timers for blue gene back end" >&6;}
-  ans=no
+  result=no
 fi
 
 # If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
 
-if test "$ans" = yes ; then
+if test "$result" = yes ; then
 
 $as_echo "#define ENABLE_CLOCK_REALTIME 1" >>confdefs.h
 
@@ -23287,16 +23287,16 @@ int main()
 
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 
-  if test "$ans" = yes ; then
+  if test "$result" = yes ; then
 
 $as_echo "#define ENABLE_CLOCK_CPUTIME 1" >>confdefs.h
 

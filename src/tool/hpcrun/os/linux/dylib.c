@@ -113,8 +113,8 @@ struct dylib_fmbn_s {
 // forward declarations
 //*****************************************************************************
 
-static int 
-dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
+static int
+dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
 					   size_t size, void *fargs_v);
 
 
@@ -127,10 +127,10 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
 // ensure bounds information computed for the executable
 //------------------------------------------------------------------
 
-int 
-dylib_find_module_containing_addr(void* addr, 
+int
+dylib_find_module_containing_addr(void* addr,
 				  char* module_name,
-				  void** start, 
+				  void** start,
 				  void** end)
 {
   int retval = 0; // not found
@@ -159,7 +159,7 @@ dylib_find_module_containing_addr(void* addr,
 //*****************************************************************************
 
 static void
-dylib_get_segment_bounds(struct dl_phdr_info *info, 
+dylib_get_segment_bounds(struct dl_phdr_info *info,
 			 struct dylib_seg_bounds_s *bounds)
 {
   int j;
@@ -174,7 +174,7 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
       char *saddr = SEG_START_ADDR(info, j);
       long size = SEG_SIZE(info, j);
       // don't adjust info unless segment has positive size
-      if (size > 0) { 
+      if (size > 0) {
 	char *eaddr = saddr + size;
 	if (saddr < start) start = saddr;
 	if (eaddr >= end) end = eaddr;
@@ -188,7 +188,7 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
 
 
 static int
-dylib_find_module_containing_addr_callback(struct dl_phdr_info* info, 
+dylib_find_module_containing_addr_callback(struct dl_phdr_info* info,
 					   size_t size, void* fargs_v)
 {
   struct dylib_fmca_s* fargs = (struct dylib_fmca_s*) fargs_v;
@@ -197,7 +197,7 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info* info,
   //------------------------------------------------------------------------
   // if addr is in within the segment bounds
   //------------------------------------------------------------------------
-  if (fargs->addr >= fargs->bounds.start && 
+  if (fargs->addr >= fargs->bounds.start &&
       fargs->addr < fargs->bounds.end) {
     fargs->module_name = info->dlpi_name;
     return 1;
@@ -205,4 +205,3 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info* info,
 
   return 0;
 }
-

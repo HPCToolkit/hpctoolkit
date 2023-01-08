@@ -51,19 +51,19 @@
 
 #include "executable-path.h"
 
-/* 
+/*
  *******************************************************************************
- * forward declarations 
+ * forward declarations
  *******************************************************************************
  */
 
-static int assemble_fullpath(const char *prefix, const int terminator, 
-			     const char *suffix, char *result, 
+static int assemble_fullpath(const char *prefix, const int terminator,
+			     const char *suffix, char *result,
 			     char *result_end);
 
 
 
-/* 
+/*
  *******************************************************************************
  * interface operations
  *******************************************************************************
@@ -79,7 +79,7 @@ static int assemble_fullpath(const char *prefix, const int terminator,
  *    using in-place modification.
  */
 char *
-executable_path(const char *filename, const char *path_list, 
+executable_path(const char *filename, const char *path_list,
 		char *executable_name)
 {
   if (!access(filename, F_OK)) return realpath(filename, executable_name);
@@ -98,23 +98,23 @@ executable_path(const char *filename, const char *path_list,
     while (path_prefix) {
       colon = strchr(path_prefix,':'); /* find the end of path_prefix */
 
-      /* 
-       * assemble a new path using the current path_prefix. the character 
-       * marking the end of path_prefix is either a ':' if there is another 
-       * path in path_list or it is a 0 if path_prefix points to the last 
-       * prefix 
+      /*
+       * assemble a new path using the current path_prefix. the character
+       * marking the end of path_prefix is either a ':' if there is another
+       * path in path_list or it is a 0 if path_prefix points to the last
+       * prefix
        */
-      failure = assemble_fullpath(path_prefix, (colon ? ':' : 0), filename, 
+      failure = assemble_fullpath(path_prefix, (colon ? ':' : 0), filename,
 				  path, &path[PATH_MAX - 1]);
       if (failure) return NULL;
 
-      /* if the file is present at path, return its real path in 
-       * executable_name 
+      /* if the file is present at path, return its real path in
+       * executable_name
        */
       if (!access(path, X_OK)) return realpath(path, executable_name);
 
       /* move path_prefix to the next path in path_list, if any */
-      path_prefix = (colon ? colon + 1 : NULL); 
+      path_prefix = (colon ? colon + 1 : NULL);
     }
   }
 
@@ -123,7 +123,7 @@ executable_path(const char *filename, const char *path_list,
 
 
 
-/* 
+/*
  *******************************************************************************
  * private operations
  *******************************************************************************
@@ -132,9 +132,9 @@ executable_path(const char *filename, const char *path_list,
 /*
  * function: strtcpy
  *
- * purpose: 
- *   copy string from src to dest until either the terminating character t 
- *   is encountered in the src string, or dest passes dest_end 
+ * purpose:
+ *   copy string from src to dest until either the terminating character t
+ *   is encountered in the src string, or dest passes dest_end
  *
  * arguments: t is the terminating character
  */
@@ -149,13 +149,13 @@ strtcpy(char *dest, const char *src, const int t, char *dest_end)
   }
   return dest;
 }
- 
 
-static int 
-assemble_fullpath(const char *prefix, const int terminator, 
+
+static int
+assemble_fullpath(const char *prefix, const int terminator,
 		  const char *suffix, char *result, char *result_end)
 {
-  char *end; 
+  char *end;
 
   /* copy prefix */
   end = strtcpy(result, prefix, terminator, result_end);

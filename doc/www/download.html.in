@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- -*- coding: utf-8 -*- -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -69,7 +69,7 @@ The instructions to install Java:
 	</li>
 	<li>Set <b><code>JAVA_HOME</code></b> environment variable to the installed directory</li>
 </ol>
-	
+
 
 
 <h2>Latest release</h2>

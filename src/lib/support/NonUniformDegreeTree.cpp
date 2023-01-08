@@ -163,7 +163,7 @@ void NonUniformDegreeTreeNode::unlink()
       // fix link from parent to the ring if necessary
       if (m_parent->m_children == this)
 	m_parent->m_children = m_next_sibling;
-	
+
       // relink predecessor's forward link
       m_prev_sibling->m_next_sibling = m_next_sibling;
 

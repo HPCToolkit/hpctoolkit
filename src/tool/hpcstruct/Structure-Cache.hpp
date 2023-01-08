@@ -80,7 +80,7 @@
 //
 //    If a GPU binary is reprocessed with a different --gpucfg value, there may be
 //	three different files in that subdirectory: hpcstruct, hpcstruct+gpucfg, and gaps
-//  
+//
 
 #ifndef Structure_Cache_hpp
 #define Structure_Cache_hpp

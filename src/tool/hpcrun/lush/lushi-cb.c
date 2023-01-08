@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -83,11 +83,11 @@
 // **************************************************************************
 // Facility for unwinding physical stack
 // **************************************************************************
- 
+
 int
-LUSHCB_loadmap_find(void* addr, 
+LUSHCB_loadmap_find(void* addr,
 		    char* module_name,
-		    void** start, 
+		    void** start,
 		    void** end)
 {
   int r = 0;
@@ -98,4 +98,3 @@ LUSHCB_loadmap_find(void* addr,
 #endif
   return r;
 }
-

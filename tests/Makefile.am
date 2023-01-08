@@ -79,4 +79,3 @@ sort_CXXFLAGS = -g -O @cxx17_flag@
 clean-local:
 	rm -rf hpctoolkit-*-measurements hpctoolkit-*-database
 	rm -f *.hpcstruct
-

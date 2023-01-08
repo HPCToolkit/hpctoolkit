@@ -133,4 +133,3 @@ void fmt_cctdb_mIdx_write(char d[FMT_CCTDB_SZ_MIdx], const fmt_cctdb_mIdx_t* idx
   fmt_u16_write(d+0x00, idx->metricId);
   fmt_u64_write(d+0x02, idx->startIndex);
 }
-

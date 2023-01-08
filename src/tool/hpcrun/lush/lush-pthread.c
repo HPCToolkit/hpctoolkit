@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -113,19 +113,19 @@ atomic_long DBG_numLockFreelistCur = 0; // number of (spin) locks cur. on freeli
 // to with an char array of the appropriate size.
 
 typedef struct {
-   
+
   atomic_long ps_num_procs        GCC_ATTR_VAR_CACHE_ALIGN;
   atomic_long ps_num_threads;
 
   atomic_long ps_num_working      GCC_ATTR_VAR_CACHE_ALIGN;
 
   atomic_long ps_num_working_lock GCC_ATTR_VAR_CACHE_ALIGN;
-  
+
   atomic_long ps_num_idle_cond    GCC_ATTR_VAR_CACHE_ALIGN;
 
   // LUSH_PTHR_FN_TY == 3
   BalancedTree_t ps_syncObjToData; // synch-obj -> data
-  
+
 } lushPthr_globals_t;
 
 
@@ -140,10 +140,10 @@ lushPthr_globals_t globals = {
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
-void 
+void
 lushPthr_processInit()
 {
   // WARNING: At the moment, this routine is called *after*
@@ -151,14 +151,14 @@ lushPthr_processInit()
 
   atomic_store_explicit(&globals.ps_num_procs, sysconf(_SC_NPROCESSORS_ONLN), memory_order_relaxed);
   atomic_store_explicit(&globals.ps_num_threads, 0, memory_order_relaxed);
- 
+
   atomic_store_explicit(&globals.ps_num_working, 0, memory_order_relaxed);
   atomic_store_explicit(&globals.ps_num_working_lock, 0, memory_order_relaxed);
 
   atomic_store_explicit(&globals.ps_num_idle_cond, 0, memory_order_relaxed);
 
   // LUSH_PTHR_FN_TY == 3
-  BalancedTree_init(&globals.ps_syncObjToData, hpcrun_malloc, 
+  BalancedTree_init(&globals.ps_syncObjToData, hpcrun_malloc,
 		    sizeof(lushPtr_SyncObjData_t));
 
   lushPthr_mem_beg = (void*)lushPthr_mem;
@@ -166,12 +166,12 @@ lushPthr_processInit()
 
   // align with next cache line
   atomic_store_explicit(&lushPthr_mem_ptr,
-			(void*)( (uintptr_t)(lushPthr_mem_beg 
+			(void*)( (uintptr_t)(lushPthr_mem_beg
 					     + lushPthr_maxValueOfLock
 					     + (HOST_CACHE_LINE_SZ - 1))
 				 & (uintptr_t)~(HOST_CACHE_LINE_SZ - 1)),
 			memory_order_relaxed);
-  
+
 #if (LUSH_PTHR_FN_TY == 3)
   // sanity check
   if ( !(sizeof(pthread_spinlock_t) == 4) ) {
@@ -186,23 +186,23 @@ lushPthr_processInit()
 
 // **************************************************************************
 
-void 
+void
 lushPthr_init(lushPthr_t* x)
 {
   x->is_working = false;
   x->num_locks  = 0;
   x->cond_lock  = 0;
-  
+
   x->doIdlenessCnt = 0;
   x->begIdleness = 0;
   x->idleness    = 0;
-  
+
   x->ps_num_procs   = &globals.ps_num_procs;
   x->ps_num_threads = &globals.ps_num_threads;
 
   x->ps_num_working      = &globals.ps_num_working;
   x->ps_num_working_lock = &globals.ps_num_working_lock;
-  
+
   x->ps_num_idle_cond = &globals.ps_num_idle_cond;
 
   // ------------------------------------------------------------
@@ -221,10 +221,10 @@ lushPthr_init(lushPthr_t* x)
 }
 
 
-void 
+void
 lushPthr_dump(lushPthr_t* x, const char* nm, void* lock)
 {
-#if (LUSH_PTHR_FN_TY == 3) 
+#if (LUSH_PTHR_FN_TY == 3)
   int lckval = (lock) ? *((int*)lock) : 0;
   int lushval = 0;
   if (lushPthr_isSyncDataPointer(lckval)) {

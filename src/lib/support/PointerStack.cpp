@@ -45,13 +45,13 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
-// 
-// PointerStack.C: 
-// 
+//
+// PointerStack.C:
+//
 // Author:  John Mellor-Crummey                               October 1993
 //
 // rjf	2-21-98 Replaced previous versions of PointerStack with
-//              a self-contained implementaion for efficiency and
+//              a self-contained implementation for efficiency and
 //		to avoid using templates when building runtime libraries
 //		on machines on which the compiler itself does not run.
 
@@ -62,7 +62,7 @@
 //*************************** User Include Files ****************************
 
 
-#include "PointerStack.hpp" 
+#include "PointerStack.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -83,9 +83,9 @@ PointerStack::~PointerStack()
 
 void
 PointerStack::ExtendAndPush(void *item) {
-  
-  int size = lastSlot + 1; 
-  int newsize; 
+
+  int size = lastSlot + 1;
+  int newsize;
   if( size < 256 ) {
     newsize = 256;
   }
@@ -96,21 +96,10 @@ PointerStack::ExtendAndPush(void *item) {
   // Create a new stack and copy the old one
   void** newStack = new void*[newsize];
   for (int i = 0; i <= topElement; i++) { newStack[i] = theStack[i]; }
-  delete[] theStack; 
+  delete[] theStack;
   theStack = newStack;
   lastSlot = newsize - 1; // recalibrate 'lastSlot'
 
   // Finally do the push.
   theStack[++topElement] = item;
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -51,18 +51,18 @@
 static char pgi_mp_pexit_signature[] = {
   0x41,  0x5b,                			// pop    %r11
   0x4c, 0x89, 0x9c, 0x24, 0xb0, 0x00, 0x00, 	// mov    %r11,0xb0(%rsp)
-  0x00, 
+  0x00,
   0x48, 0x83, 0x7c, 0x24, 0x08, 0x01,    	// cmpq   $0x1,0x8(%rsp)
 };
 
 
-int 
+int
 x86_adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(pgi_mp_pexit_signature);
 
   if (len > siglen && strncmp((char *)pgi_mp_pexit_signature, ins, siglen) == 0) {
-    // signature matched 
+    // signature matched
     unwind_interval *ui = stat->first;
 
     // this won't fix all of the intervals, but it will fix the one we care about.
@@ -75,6 +75,6 @@ x86_adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
       ui = UWI_NEXT(ui);
     }
     return 1;
-  } 
+  }
   return 0;
 }

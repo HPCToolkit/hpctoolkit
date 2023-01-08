@@ -47,9 +47,9 @@
 //
 // MEMLEAK sample source public interface:
 //
-//  The allocate/free wrappers for the MEMLEAK sample source are not 
-//  housed with the rest of the MEMLEAK code. They will be separate 
-//  so that they are not linked into all executables. 
+//  The allocate/free wrappers for the MEMLEAK sample source are not
+//  housed with the rest of the MEMLEAK code. They will be separate
+//  so that they are not linked into all executables.
 //
 //  To avoid exposing the details of the MEMLEAK handler via global variables,
 //  the following procedural interfaces are provided.
@@ -60,7 +60,7 @@
 #define sample_source_memleak_h
 
 /******************************************************************************
- * local includes 
+ * local includes
  *****************************************************************************/
 
 #include <cct/cct.h>

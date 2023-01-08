@@ -117,7 +117,7 @@ hpcrun_thread_core_bindings
 
 
 //***************************************************************************
-// data 
+// data
 //***************************************************************************
 
 #ifdef USE_GCC_THREAD
@@ -278,12 +278,12 @@ hpcrun_threaded_data
 void
 hpcrun_thread_init_mem_pool_once
 (
-  int id, 
+  int id,
   cct_ctxt_t *thr_ctxt,
   hpcrun_trace_type_t trace,
   bool demand_new_thread
 )
-{ 
+{
   thread_data_t* td = NULL;
 
   if (mem_pool_initialized == false){
@@ -294,7 +294,7 @@ hpcrun_thread_init_mem_pool_once
 }
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 thread_data_t*
@@ -311,10 +311,10 @@ hpcrun_allocate_thread_data
 static inline void
 core_profile_trace_data_init
 (
-  core_profile_trace_data_t * cptd, 
-  int id, 
+  core_profile_trace_data_t * cptd,
+  int id,
   cct_ctxt_t* thr_ctxt
-) 
+)
 {
   // ----------------------------------------
   // id
@@ -374,9 +374,9 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 void
 hpcrun_thread_data_init
 (
-  int id, 
-  cct_ctxt_t* thr_ctxt, 
-  int is_child, 
+  int id,
+  cct_ctxt_t* thr_ctxt,
+  int is_child,
   size_t n_sources
 )
 {
@@ -409,12 +409,12 @@ hpcrun_thread_data_init
   // blame shifting support
   // ----------------------------------------
 
-  td->idle = 0;         // a thread begins in the working state 
+  td->idle = 0;         // a thread begins in the working state
   td->blame_target = 0; // initially, no target for directed blame
 
-  td->last_sample = 0; 
-  td->last_synch_sample = -1; 
- 
+  td->last_sample = 0;
+  td->last_synch_sample = -1;
+
   td->overhead = 0; // begin at not in overhead
 
   td->lockwait = 0;
@@ -426,7 +426,7 @@ hpcrun_thread_data_init
   td->outer_region_context = 0;
 
   td->defer_flag = 0;
-  
+
   td->omp_task_context = 0;
   td->master = 0;
   td->team_master = 0;
@@ -479,7 +479,7 @@ hpcrun_thread_data_init
   td->tramp_loc         = NULL;
   td->cached_bt_buf_beg = hpcrun_malloc(sizeof(frame_t)
 					* CACHED_BACKTRACE_SIZE);
-  td->cached_bt_frame_beg = td->cached_bt_buf_beg + CACHED_BACKTRACE_SIZE;         
+  td->cached_bt_frame_beg = td->cached_bt_buf_beg + CACHED_BACKTRACE_SIZE;
   td->cached_bt_buf_frame_end = td->cached_bt_frame_beg;
   td->tramp_frame       = NULL;
   td->tramp_cct_node    = NULL;
@@ -529,7 +529,7 @@ hpcrun_thread_data_init
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 void
@@ -545,7 +545,7 @@ hpcrun_cached_bt_adjust_size
 
   frame_t* newbuf = hpcrun_malloc(n * sizeof(frame_t));
   size_t frameSize = td->cached_bt_buf_frame_end - td->cached_bt_frame_beg;
-  memcpy(newbuf + n - frameSize, td->cached_bt_frame_beg, 
+  memcpy(newbuf + n - frameSize, td->cached_bt_frame_beg,
       (void*)td->cached_bt_buf_frame_end - (void*)td->cached_bt_frame_beg);
   td->cached_bt_buf_beg = newbuf;
   td->cached_bt_buf_frame_end = newbuf+n;
@@ -648,7 +648,7 @@ dump_cpuset
   printf("cpu set count = %d\n", count);
   if (count > 0) {
     printf("cpu set ={ ");
-    int i; 
+    int i;
     for (i = 0; i < CPU_SETSIZE; i++) {
       if (CPU_ISSET(i, cpuset)) {
 	printf("%d ", i);
@@ -667,7 +667,7 @@ cpuset_dense_region
  int remaining_count
 )
 {
-  int i; 
+  int i;
   for (i = first+1; i < CPU_SETSIZE && remaining_count--; i++) {
     if (!CPU_ISSET(i, cpuset)) {
       return false;
@@ -688,18 +688,18 @@ hpcrun_thread_core_bindings
 
   cpu_set_t cpuset;
   if (pthread_getaffinity_np(self, sizeof (cpuset), &cpuset) == 0) {
-    // FIXME: this returns the first HW thread id for a dense set of bindings. 
-    // this isn't always the right thing. one case that needs special handling is 
+    // FIXME: this returns the first HW thread id for a dense set of bindings.
+    // this isn't always the right thing. one case that needs special handling is
     // when HW threads on a core aren't adjacent. there are other cases as well.
     // the right way to do this is to compare with info from hwloc.
     int count = CPU_COUNT(&cpuset);
     if (count < 8) { // no CPU currently supports more than 8 SMT threads
-      int i; 
+      int i;
       for (i = 0; i < CPU_SETSIZE; i++) {
 	if (CPU_ISSET(i, &cpuset)) {
 	  if (cpuset_dense_region(&cpuset, i, count - 1)) {
 	    core_id = i;
-	  } 
+	  }
 	  break;
 	}
       }

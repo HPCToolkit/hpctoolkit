@@ -7,7 +7,7 @@
 
 
 /******************************************************************************
- * interface operations for clients 
+ * interface operations for clients
  *****************************************************************************/
 
 typedef uint64_t (*directed_blame_target_fn)(void);
@@ -27,7 +27,7 @@ void directed_blame_shift_start(void *arg, uint64_t obj) ;
 
 void directed_blame_shift_end(void *arg);
 
-void directed_blame_sample(void *arg, int metric_id, cct_node_t *node, 
+void directed_blame_sample(void *arg, int metric_id, cct_node_t *node,
                            int metric_incr);
 
 void directed_blame_accept(void *arg, uint64_t obj);

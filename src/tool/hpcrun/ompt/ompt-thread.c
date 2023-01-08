@@ -46,7 +46,7 @@
 
 
 //******************************************************************************
-// local includes  
+// local includes
 //******************************************************************************
 
 #include "ompt-thread.h"
@@ -54,7 +54,7 @@
 
 
 //******************************************************************************
-// global variables 
+// global variables
 //******************************************************************************
 
 // Memoization process vi3:
@@ -87,7 +87,7 @@ __thread ompt_frame_t *top_ancestor_frame = NULL;
 
 
 //******************************************************************************
-// private variables 
+// private variables
 //******************************************************************************
 
 static __thread int ompt_thread_type = ompt_thread_unknown;
@@ -108,12 +108,12 @@ ompt_thread_type_set
 }
 
 
-ompt_thread_t 
+ompt_thread_t
 ompt_thread_type_get
 (
 )
 {
-  return ompt_thread_type; 
+  return ompt_thread_type;
 }
 
 
@@ -160,8 +160,8 @@ pop_region_stack
 void
 push_region_stack
 (
- ompt_notification_t* notification, 
- bool took_sample, 
+ ompt_notification_t* notification,
+ bool took_sample,
  bool team_master
 )
 {

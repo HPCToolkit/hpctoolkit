@@ -124,7 +124,7 @@ insert_dw_entry
 }
 
 
-void 
+void
 add_defer_td
 (
  thread_data_t *td

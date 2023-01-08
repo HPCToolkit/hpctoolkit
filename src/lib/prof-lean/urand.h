@@ -48,8 +48,8 @@
 //   $HeadURL$
 //
 // Purpose:
-//   Define an API for generating thread-local streams of uniform random 
-//   numbers. 
+//   Define an API for generating thread-local streams of uniform random
+//   numbers.
 //
 //******************************************************************************
 
@@ -64,13 +64,12 @@
 // interface functions
 //******************************************************************************
 
-// generate a pseudo-random number between [0 .. RAND_MAX]. a thread-local 
-// seed is initialized using the time of day in microseconds when a thread 
+// generate a pseudo-random number between [0 .. RAND_MAX]. a thread-local
+// seed is initialized using the time of day in microseconds when a thread
 // first calls the generator.
 int urand();
 
 // generate a pseudo-random number [0 .. n], where n <= RAND_MAX
-int urand_bounded(int n); 
+int urand_bounded(int n);
 
 #endif
-

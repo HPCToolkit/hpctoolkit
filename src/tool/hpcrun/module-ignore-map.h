@@ -52,8 +52,8 @@
 // Purpose:
 //   interface definitions for a map of load modules that should be omitted
 //   from call paths for synchronous samples
-//   
-//  
+//
+//
 //***************************************************************************
 
 #ifndef _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
@@ -92,7 +92,7 @@ module_ignore_map_inrange_lookup
 bool
 module_ignore_map_lookup
 (
- void *start, 
+ void *start,
  void *end
 );
 

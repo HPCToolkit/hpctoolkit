@@ -624,7 +624,7 @@ cupti_activity_translate
     break;
 
 #if TRACK_SYNCHRONIZATION
-  // Ignore sychronization events as the time stamps are from the host.
+  // Ignore synchronization events as the time stamps are from the host.
   case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
     convert_synchronization(ga, (CUpti_ActivitySynchronization *) activity);
     break;

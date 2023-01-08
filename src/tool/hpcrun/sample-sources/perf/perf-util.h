@@ -38,7 +38,7 @@
 #ifndef __PERF_UTIL_H__
 #define __PERF_UTIL_H__
 
-#include <sys/syscall.h> 
+#include <sys/syscall.h>
 
 #include <unistd.h>
 #include <linux/types.h>
@@ -56,7 +56,7 @@
 
 
 
-// the number of maximum frames (call chains) 
+// the number of maximum frames (call chains)
 // For kernel only call chain, I think 32 is a good number.
 // If we include user call chains, it should be bigger than that.
 #define MAX_CALLCHAIN_FRAMES 32
@@ -84,7 +84,7 @@ typedef struct perf_mmap_data_s {
   u32    size;       /* if PERF_SAMPLE_RAW */
   char   *data;      /* if PERF_SAMPLE_RAW */
   /* if PERF_SAMPLE_BRANCH_STACK */
-  
+
                      /* if PERF_SAMPLE_BRANCH_STACK */
   u64    abi;        /* if PERF_SAMPLE_REGS_USER */
   u64    *regs;

@@ -62,13 +62,13 @@
 
 extern char *executable_name;
 
-/* these symbols will be defined when the program is fully linked */ 
+/* these symbols will be defined when the program is fully linked */
 extern void _start(void);
 extern int __stop___libc_freeres_ptrs;
 
 void *static_epoch_offset = (void *)&_start;
 void *static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
-char *static_executable_name = NULL; 
+char *static_executable_name = NULL;
 
 void hpcrun_init_process(struct monitor_start_main_args *m)
 {
@@ -87,7 +87,7 @@ void hpcrun_epoch_get_loaded_modules(hpcrun_epoch_t *epoch,
   hpcrun_epoch_module_t *newmod;
 
   if (previous_epoch == NULL) {
-    long static_epoch_size = 
+    long static_epoch_size =
       ((long) static_epoch_end) - ((long)static_epoch_offset);
 
     MSG(1,"synthesize initial epoch");
@@ -105,7 +105,7 @@ void hpcrun_epoch_get_loaded_modules(hpcrun_epoch_t *epoch,
 
   MSG(1,"epoch information: name = %s\n"
       "         mapaddr = %p\n"
-      "         size    = %lx", 
+      "         size    = %lx",
       epoch->loaded_modules->module_name,
       epoch->loaded_modules->mapaddr,
       epoch->loaded_modules->size);

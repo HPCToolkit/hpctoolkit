@@ -61,4 +61,3 @@ static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128 * 1024;  // 128 Kb, (rarely u
 #endif // USE_SMALL_MEM
 
 #endif // MEM_CONST_H
-

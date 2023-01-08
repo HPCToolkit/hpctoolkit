@@ -65,7 +65,7 @@
 // private data
 //******************************************************************************
 
-static atomic_long gpu_correlation_id_value = 
+static atomic_long gpu_correlation_id_value =
   ATOMIC_VAR_INIT(0x8000000000000001);
 
 
@@ -74,7 +74,7 @@ static atomic_long gpu_correlation_id_value =
 // interface operations
 //******************************************************************************
 
-uint64_t 
+uint64_t
 gpu_correlation_id
 (
  void

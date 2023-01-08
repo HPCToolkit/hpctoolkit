@@ -79,7 +79,7 @@
 // local data
 //******************************************************************************
 
-static const char *delimiter = ","; 
+static const char *delimiter = ",";
 
 
 
@@ -131,7 +131,7 @@ gpu_instrumentation_options_set
     case '=':
       ostr++;
       char *token = strtok(ostr, delimiter);
-	
+
       // analyze options
       while(token) {
 	if (strcmp(token, INST_COUNT) == 0) {
@@ -147,7 +147,7 @@ gpu_instrumentation_options_set
 	  exit(-1);
 	}
 	token = strtok(NULL, delimiter);
-      } 
+      }
       break;
 
     default:
@@ -179,4 +179,3 @@ printf("gpu instrumentation options  : %s\n", opt);
     }
   }
 }
-

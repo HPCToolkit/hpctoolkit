@@ -66,7 +66,7 @@
 // ---------------------------------------------------------
 
 typedef struct ip_normalized_t {
-  
+
   // ---------------------------------------------------------
   // id of load module
   // ---------------------------------------------------------
@@ -118,10 +118,10 @@ ip_normalized_gt(const ip_normalized_t* a, const ip_normalized_t* b)
 }
 
 
-// Converts an ip into a normalized ip using 'lm'. If 'lm' is NULL 
+// Converts an ip into a normalized ip using 'lm'. If 'lm' is NULL
 // the function attempts to find the load module that 'unnormalized_ip'
 // belongs to. If no load module is found or the load module does not
-// have a valid 'dso_info' field, ip_normalized_NULL is returned; 
+// have a valid 'dso_info' field, ip_normalized_NULL is returned;
 // otherwise, the properly normalized ip is returned.
 ip_normalized_t
 hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm);

@@ -60,10 +60,10 @@ extern "C" {
 #endif
 
   /*
-   * 'RealPath': returns the absolute path form of 'nm'. 
+   * 'RealPath': returns the absolute path form of 'nm'.
    */
   extern const char* RealPath(const char* nm);
-  
+
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif

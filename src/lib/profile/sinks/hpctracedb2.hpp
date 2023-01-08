@@ -150,7 +150,7 @@ private:
   #define INVALID_HDR    -1
   #define MULTIPLE_8(v) ((v + 7) & ~7)
 
-  uint64_t getTotalNumTraces(); 
+  uint64_t getTotalNumTraces();
   std::vector<uint64_t> calcStartEnd();
   void assignHdrs(const std::vector<uint64_t>& trace_offs);
 

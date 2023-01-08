@@ -203,4 +203,3 @@ simdgroup_entry_increment_inst_count
 {
   entry->inst++;
 }
-

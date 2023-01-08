@@ -135,7 +135,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
   }
 
   // create unsigned copy of count to avoid type errors in the loop
-  Dwarf_Unsigned ufile_count = (Dwarf_Unsigned) file_count; 
+  Dwarf_Unsigned ufile_count = (Dwarf_Unsigned) file_count;
 
   for (n = 0; n < count; n++) {
     Dwarf_Addr addr;

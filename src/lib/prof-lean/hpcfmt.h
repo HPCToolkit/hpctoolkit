@@ -118,7 +118,7 @@ typedef union {
   struct HPCFMT_List(t) {			\
     uint32_t len;				\
     t* lst;					\
-  } 
+  }
 
 #define HPCFMT_List_declare(t)			\
   typedef HPCFMT_ListRep(t) HPCFMT_List(t)
@@ -272,7 +272,7 @@ hpcfmt_real8_fwrite(double val, FILE* outfs)
 {
   // N.B.: This apparently breaks C99's "strict" anti-aliasing rules
   //uint64_t* v = (uint64_t*)(&val);
-  
+
   hpcfmt_byte8_union_t* v = (hpcfmt_byte8_union_t*)(&val);
   if ( sizeof(double) != hpcio_be8_fwrite(&(v->i8), outfs) ) {
     return HPCFMT_ERR;
@@ -293,13 +293,13 @@ typedef struct hpcfmt_str_t {
 } hpcfmt_str_t;
 
 
-int 
+int
 hpcfmt_str_fread(char** str, FILE* infs, hpcfmt_alloc_fn alloc);
 
-int 
+int
 hpcfmt_str_fwrite(const char* str, FILE* outfs);
 
-void 
+void
 hpcfmt_str_free(const char* str, hpcfmt_free_fn dealloc);
 
 
@@ -335,7 +335,7 @@ hpcfmt_nvpair_fprint(hpcfmt_nvpair_t* nvp, FILE* fs, const char* pre);
 
 
 //***************************************************************************
-// List of hpcfmt_nvpair_t 
+// List of hpcfmt_nvpair_t
 //***************************************************************************
 
 HPCFMT_List_declare(hpcfmt_nvpair_t);

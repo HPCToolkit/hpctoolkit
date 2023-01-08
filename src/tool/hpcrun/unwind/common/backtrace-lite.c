@@ -69,12 +69,12 @@
 #include <messages/messages.h>
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 
 #if (HPC_UNW_LITE)
-static int 
+static int
 hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
 {
   // special trivial case: size == 0 (N.B.: permit size < 0)
@@ -111,7 +111,7 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
     }
     first_step = 0;
   }
-  
+
   return my_size;
 }
 #endif
@@ -136,5 +136,5 @@ test_backtrace_lite(ucontext_t* context)
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************

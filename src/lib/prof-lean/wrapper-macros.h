@@ -5,19 +5,19 @@
 //   wrapper-macros.h
 //
 // Purpose:
-//   use C99 variadic macros to count and cast a list of macro arguments 
+//   use C99 variadic macros to count and cast a list of macro arguments
 //
 // Modification History
-// 
+//
 //  2010/12/27 - created Bill Scherer and John Mellor-Crummey
 //
 //*****************************************************************************
 
 
 //*****************************************************************************
-// VA_DECLARE_ARGSXX: 
-//    a set of macros to construct an argument list by pasting together type and 
-//    variable pairs 
+// VA_DECLARE_ARGSXX:
+//    a set of macros to construct an argument list by pasting together type and
+//    variable pairs
 //*****************************************************************************
 #define VA_DECLARE_ARG(type_t, x) type_t x
 
@@ -57,8 +57,8 @@
 
 
 //*****************************************************************************
-// VA_CALL_ARGSXX: 
-//    a set of macros to cast each of a sequence of arguments in a __VA_ARGS__ 
+// VA_CALL_ARGSXX:
+//    a set of macros to cast each of a sequence of arguments in a __VA_ARGS__
 //    list to type_t
 //*****************************************************************************
 #define VA_CALL_ARG(type_t, x) x
@@ -91,14 +91,14 @@
 	VA_CALL_ARG(type_t, x), VA_CALL_ARGS2(__VA_ARGS__)
 
 #define VA_CALL_ARGS2(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x) 
+	VA_CALL_ARG(type_t, x)
 
-#define VA_CALL_ARGS1(type_t,  ...) 
+#define VA_CALL_ARGS1(type_t,  ...)
 
 #define VA_CALL_ARGS0(...)
 
 //*****************************************************************************
-// VA_COMMA0, VA_COMMA1: 
+// VA_COMMA0, VA_COMMA1:
 //    macros that expand to the number of commas indicated by their suffix.
 //*****************************************************************************
 #define VA_COMMA0
@@ -106,14 +106,14 @@
 
 
 //*****************************************************************************
-// _VA_CONCAT2: 
+// _VA_CONCAT2:
 //    macro to concatenate a pair of arguments into a name.
 //*****************************************************************************
 #define _VA_CONCAT2(name,x) name##x
 
 
 //*****************************************************************************
-// _VA_CONCAT3: 
+// _VA_CONCAT3:
 //    macro to concatenate a pair of arguments into a name.
 //*****************************************************************************
 #define _VA_CONCAT3(x,y,z,...) x##y##z
@@ -129,10 +129,10 @@
 
 
 //*****************************************************************************
-// _VA_SELECT22: 
-// _VA_SELECT22_INTERNAL: 
-//    pair of macros to expand to 22nd argument. VA_SELECT22 macro ensures 
-//    that argument list is completely expanded before calling 
+// _VA_SELECT22:
+// _VA_SELECT22_INTERNAL:
+//    pair of macros to expand to 22nd argument. VA_SELECT22 macro ensures
+//    that argument list is completely expanded before calling
 //    _VA_SELECT22_INTERNAL
 //*****************************************************************************
 #define _VA_SELECT22_INTERNAL(_0,_1,_2,_3,_4,_5,_6,_7,			\
@@ -154,7 +154,7 @@
     _VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__)
 //*****************************************************************************
 // ONE_IF_EMPTY: expand to a 1 if a non-zero number of arguments are supplied.
-// WARNING: will give unpredictable results if more than 16 arguments supplied. 
+// WARNING: will give unpredictable results if more than 16 arguments supplied.
 //*****************************************************************************
 #define ONE_IF_NONEMPTY(...)						\
     _VA_SELECT22(_VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__),		\
@@ -178,7 +178,7 @@
 
 //*****************************************************************************
 // VA_DECLARE_ARGS:
-//    assembles a function declaration argument list with type variable pairs 
+//    assembles a function declaration argument list with type variable pairs
 //*****************************************************************************
 #define VA_DECLARE_ARGS(...)					\
     VA_CONCAT2_EVAL(VA_DECLARE_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(		\

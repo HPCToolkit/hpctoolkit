@@ -109,8 +109,8 @@ static void printKind(FILE* fs, const uint16_t kind) {
 void
 id_tuple_constructor
 (
- id_tuple_t *tuple, 
- pms_id_t *ids, 
+ id_tuple_t *tuple,
+ pms_id_t *ids,
  int ids_length
 )
 {
@@ -120,11 +120,11 @@ id_tuple_constructor
 }
 
 
-void 
+void
 id_tuple_push_back
 (
- id_tuple_t *tuple, 
- uint16_t kind, 
+ id_tuple_t *tuple,
+ uint16_t kind,
  uint64_t physical_index,
  uint64_t logical_index
 )
@@ -141,8 +141,8 @@ id_tuple_push_back
 void
 id_tuple_copy
 (
- id_tuple_t *dest, 
- id_tuple_t *src, 
+ id_tuple_t *dest,
+ id_tuple_t *src,
  id_tuple_allocator_fn_t alloc
 )
 {
@@ -151,11 +151,11 @@ id_tuple_copy
 
   dest->ids_length = dest->length = len;
   dest->ids = (pms_id_t *) alloc(ids_bytes);
-  memcpy(dest->ids, src->ids, ids_bytes); 
+  memcpy(dest->ids, src->ids, ids_bytes);
 }
 
 
-int 
+int
 id_tuple_fwrite(id_tuple_t* x, FILE* fs)
 {
     HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->length, fs));
@@ -167,11 +167,11 @@ id_tuple_fwrite(id_tuple_t* x, FILE* fs)
     return HPCFMT_OK;
 }
 
-int 
+int
 id_tuple_fread(id_tuple_t* x, FILE* fs)
 {
     HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(x->length), fs));
-    x->ids = (pms_id_t *) malloc(x->length * sizeof(pms_id_t)); 
+    x->ids = (pms_id_t *) malloc(x->length * sizeof(pms_id_t));
     for (unsigned int j = 0; j < x->length; ++j) {
       HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(x->ids[j].kind), fs));
       HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->ids[j].physical_index), fs));
@@ -180,7 +180,7 @@ id_tuple_fread(id_tuple_t* x, FILE* fs)
     return HPCFMT_OK;
 }
 
-int 
+int
 id_tuple_fprint(id_tuple_t* x, FILE* fs)
 {
     fprintf(fs,"[");
@@ -201,14 +201,14 @@ id_tuple_fprint(id_tuple_t* x, FILE* fs)
 }
 
 
-void 
+void
 id_tuple_dump(id_tuple_t* x)
 {
   id_tuple_fprint(x, stderr);
 }
 
 
-void 
+void
 id_tuple_free(id_tuple_t* x)
 {
     free(x->ids);

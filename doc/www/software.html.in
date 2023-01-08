@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- -*- coding: utf-8 -*- -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -77,13 +77,13 @@ user interface is available from the
 on GitLab.  Unless you are a tool developer who wants to modify the
 capabilities of these graphical user interfaces, we recommend
 downloading the binary releases.
-See the repository's 
+See the repository's
 <a href="https://gitlab.com/HPCToolkit/HPCViewer/blob/master/README.md">README.md</a> for information about how to build <tt>hpcviewer</tt> from source code.
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
   <td>
-    <a href="https://gitlab.com/HPCToolkit/HPCViewer">HPCViewer</a> 
+    <a href="https://gitlab.com/HPCToolkit/HPCViewer">HPCViewer</a>
   </td>
   <td>
     <code>git clone https://gitlab.com/HPCToolkit/HPCViewer.git</code>

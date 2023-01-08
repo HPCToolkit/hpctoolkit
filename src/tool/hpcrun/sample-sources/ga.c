@@ -180,7 +180,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   char evName[32];
   hpcrun_extract_ev_thresh(evStr, sizeof(evName), evName,
 			   (long*)&hpcrun_ga_period, periodDefault);
-  
+
   TMSG(GA, "GA: %s sampling period: %"PRIu64, evName, hpcrun_ga_period);
 
   kind_info_t *ga_kind = hpcrun_metrics_new_kind();

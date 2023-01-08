@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -89,7 +89,7 @@ extern "C" {
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 typedef union cilk_ip cilk_ip_t;
@@ -99,7 +99,7 @@ union cilk_ip {
   // LUSH type
   // ------------------------------------------------------------
   lush_lip_t official_lip;
-  
+
   // ------------------------------------------------------------
   // superimposed with:
   // ------------------------------------------------------------
@@ -111,7 +111,7 @@ union cilk_ip {
 };
 
 
-static inline void 
+static inline void
 cilk_ip_set(cilk_ip_t* x, ip_normalized_t ip /*uint32_t status*/)
 {
   lush_lip_setLMId(&(x->official_lip), (uint64_t)ip.lm_id);
@@ -121,15 +121,15 @@ cilk_ip_set(cilk_ip_t* x, ip_normalized_t ip /*uint32_t status*/)
 
 
 // **************************************************************************
-// 
+//
 // **************************************************************************
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 typedef enum unw_ty_e  unw_ty_t;
- 
+
 enum unw_ty_e {
   UnwTy_NULL    = 0,
   UnwTy_Master,  // master (non-worker thread)
@@ -138,21 +138,21 @@ enum unw_ty_e {
   UnwTy_Worker     // worker: user context is partially on cactus stack
 };
 
-static inline bool 
-unw_ty_is_master(unw_ty_t ty) 
+static inline bool
+unw_ty_is_master(unw_ty_t ty)
 {
   return (ty == UnwTy_Master);
 }
 
-static inline bool 
-unw_ty_is_worker(unw_ty_t ty) 
+static inline bool
+unw_ty_is_worker(unw_ty_t ty)
 {
   return ((ty == UnwTy_WorkerLcl) || (ty == UnwTy_Worker));
 }
 
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 typedef enum unw_seg_e unw_seg_t;
@@ -168,7 +168,7 @@ enum unw_seg_e {
 
 
 // ---------------------------------------------------------
-// 
+//
 // ---------------------------------------------------------
 
 typedef enum unw_flg_e unw_flg_t;
@@ -204,7 +204,7 @@ union cilk_cursor {
     unsigned  xxx     : 8; // UNUSED
     CilkWorkerState* cilk_worker_state;
     Closure*         cilk_closure; // modified during traversal
-    
+
     // ---------------------------------
     // intra-bichord data (valid for only one bichord)
     // ---------------------------------
@@ -237,25 +237,25 @@ csr_unset_flag(cilk_cursor_t* csr, unw_flg_t flg)
 // NOTE: Local work (innermost) is pushed and popped from the BOTTOM
 //   or the TAIL of the deque while thieves steal from the TOP or HEAD
 //   (outermost).
-static inline Closure* 
+static inline Closure*
 CILKWS_CL_DEQ_TOP(CilkWorkerState* x)
 {
   return x->context->Cilk_RO_params->deques[x->self].top; // outermost!
 }
 
-static inline Closure* 
+static inline Closure*
 CILKWS_CL_DEQ_BOT(CilkWorkerState* x)
 {
   return x->context->Cilk_RO_params->deques[x->self].bottom; // innermost!
 }
 
-static inline volatile CilkStackFrame** 
+static inline volatile CilkStackFrame**
 CILKWS_FRAME_DEQ_HEAD(CilkWorkerState* x)
 {
   return x->cache.head; // outermost!
 }
 
-static inline volatile CilkStackFrame** 
+static inline volatile CilkStackFrame**
 CILKWS_FRAME_DEQ_TAIL(CilkWorkerState* x)
 {
   return x->cache.tail; // innermost!

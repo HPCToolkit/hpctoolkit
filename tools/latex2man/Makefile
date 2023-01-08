@@ -213,4 +213,3 @@ diff:
 	@echo
 	for i in RCS/* ; do [ -f `basename $$i ,v` ] && rcsdiff -q $$i; done
 	@echo
-

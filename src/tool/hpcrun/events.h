@@ -48,7 +48,7 @@
 
 /****************************************************************************
 //
-// File: 
+// File:
 //    events.h
 //
 // Purpose:
@@ -62,7 +62,7 @@
 //
 //    Adapted from parts of The Visual Profiler by Curtis L. Janssen
 //    (events.h).
-//    
+//
 *****************************************************************************/
 
 #ifndef _event_h
@@ -80,10 +80,10 @@ extern "C" {
 #endif
 
   extern papi_event_t hpcrun_event_table[];
-  
+
   const papi_event_t *hpcrun_event_by_name(const char *name);
   const papi_event_t *hpcrun_event_by_code(int code);
-  
+
   void hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
   void hpcrun_write_event(FILE* fs, const papi_event_t* e);
 

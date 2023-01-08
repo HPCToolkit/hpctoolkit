@@ -54,7 +54,7 @@
  *                                                                            *
  * Since the HashTable uses callbacks and virtual functions, use care if any  *
  * function that is overridden calls the functions of the HashTable.  There   *
- * is the possiblity of recursive function calls if this is the case.         *
+ * is the possibility of recursive function calls if this is the case.         *
  * The functions are designed such that recursive calls can take place, but   *
  * if the overriding functions are not designed carefully, poor code          *
  * performance can result.                                                    *
@@ -187,7 +187,7 @@
  *                                                                            *
  * If it is desired, a derived class can be created and these four functions  *
  * can be overridden.  This allows for more specialized operation of the      *
- * HashTable.  If a dervied class is created, use the Create function         *
+ * HashTable.  If a derived class is created, use the Create function         *
  * supplied in the protected section.  This will ensure that the virtual      *
  * functions are called correctly.                                            *
  *                                                                            *
@@ -310,63 +310,63 @@ class HashTable
 public:
   HashTable ();
   virtual ~HashTable ();
-  
+
   // Must be called after creating object
   void Create (const unsigned int entrySize, unsigned int initialSize,
 	       HashFunctFunctPtr    const HashFunctCallback,
 	       RehashFunctFunctPtr  const RehashFunctCallback,
 	       EntryCompareFunctPtr const EntryCompareCallback,
 	       EntryCleanupFunctPtr const EntryCleanupCallback);
-  
+
   // Must be called before deleting object
   void Destroy ();
-  
+
   bool operator==(HashTable& rhsTab);
-  
-  void  AddEntry (void* entry, 
+
+  void  AddEntry (void* entry,
 		  AddEntryFunctPtr const AddEntryCallback = 0, ...);
-  void  DeleteEntry (void* entry, 
+  void  DeleteEntry (void* entry,
 		     DeleteEntryFunctPtr const DeleteEntryCallback = 0, ...);
   void* QueryEntry (const void* entry) const;
   int   GetEntryIndex (const void* entry) const;
   void* GetEntryByIndex (const unsigned int index) const;
   unsigned int  NumberOfEntries () const;
-  
+
   void  Dump ();
-  
+
   friend class HashTableIterator;
-  
+
 protected:
   // Must be called after creating object
   void Create (const unsigned int entrySize, unsigned int initialSize);
-  
+
   virtual unsigned int HashFunct (const void* entry, const unsigned int size);
   virtual unsigned int RehashFunct (const unsigned int oldHashValue, const unsigned int size);
   virtual int  EntryCompare (const void* entry1, const void* entry2);
   virtual void EntryCleanup (void* entry);
-  
+
   HashTable& operator=(const HashTable &rhs);
-  
+
 private:
-  const unsigned long id;                     // unique id for determining equality  
+  const unsigned long id;                     // unique id for determining equality
   unsigned int  numSlots;                     // number of distinct symbols
   unsigned int  nextSlot;                     // next available opening
   unsigned int  entrySize;                    // byte size of the entries
   void* entries;                      // array of hash table entries
   unsigned int  indexSetSize;                 // size of sparse hash index set
   int*  indexSet;                     // sparse hash index set
-  
+
   bool hashTableCreated;
-  
+
   HashFunctFunctPtr    HashFunctCallback;
   RehashFunctFunctPtr  RehashFunctCallback;
   EntryCompareFunctPtr EntryCompareCallback;
   EntryCleanupFunctPtr EntryCleanupCallback;
-  
+
   int  QueryIndexSet (const void* entry, const bool expand) const;
   void OverflowIndexSet ();
   void OverflowEntries ();
-  
+
   void FailureToCreateError () const;
   void FailureToDestroyError () const;
 };
@@ -378,11 +378,11 @@ class HashTableIterator
 public:
   HashTableIterator(const HashTable* theHashTable);
   virtual ~HashTableIterator();
-  
-  void  operator ++(int);		// prefix 
+
+  void  operator ++(int);		// prefix
   void* Current() const;
   void  Reset();
-  
+
 private:
   int currentEntryNumber;
   const HashTable* hashTable;

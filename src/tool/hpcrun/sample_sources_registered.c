@@ -58,7 +58,7 @@
 
 
 //------------------------------------------------------------------------------
-// external declarations 
+// external declarations
 //------------------------------------------------------------------------------
 
 // external declarations for each of the sample source constructors
@@ -76,10 +76,10 @@ static sample_source_t* registered_sample_sources = NULL;
 
 
 //------------------------------------------------------------------------------
-// interface operations 
+// interface operations
 //------------------------------------------------------------------------------
 
-static void 
+static void
 hpcrun_sample_sources_register(void)
 {
   if (registered_sample_sources != NULL) return; // don't re-register after a fork
@@ -92,7 +92,7 @@ hpcrun_sample_sources_register(void)
 }
 
 //------------------------------------------------------------------------------
-// interface operations 
+// interface operations
 //------------------------------------------------------------------------------
 
 // insert by order of 'sort_order', low to high

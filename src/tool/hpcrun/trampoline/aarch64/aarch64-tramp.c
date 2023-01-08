@@ -3,4 +3,3 @@
 
 void hpcrun_trampoline(void) { }
 void hpcrun_trampoline_end(void) { }
-

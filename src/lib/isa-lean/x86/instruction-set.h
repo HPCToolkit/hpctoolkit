@@ -72,7 +72,7 @@ extern "C" {
 //***************************************************************************
 // Laks: macro for detecting registers
 //
-#if defined (HOST_CPU_x86_64)		  
+#if defined (HOST_CPU_x86_64)
 #define X86_ISREG(REG) \
 static inline bool \
 x86_isReg_ ## REG  (xed_reg_enum_t reg) \
@@ -81,7 +81,7 @@ x86_isReg_ ## REG  (xed_reg_enum_t reg) \
 	  reg == XED_REG_R ## REG  ||   \
 	  reg == XED_REG_E ## REG  ||   \
 	  reg == XED_REG_ ## REG  );	\
-} 
+}
 #else
 #define X86_ISREG(REG) \
 static inline bool \
@@ -90,7 +90,7 @@ x86_isReg_ ## REG  (xed_reg_enum_t reg) \
   return (			        \
 	  reg == XED_REG_E ## REG  ||   \
 	  reg == XED_REG_ ## REG  );	\
-} 
+}
 #endif
 
 #define X86_ISREG_R(REG) 	 	\
@@ -101,7 +101,7 @@ x86_isReg_R ## REG (xed_reg_enum_t reg) \
 }
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 #ifdef __cplusplus

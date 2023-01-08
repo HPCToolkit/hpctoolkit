@@ -218,4 +218,3 @@ gpu_operation_item_process
     atomic_fetch_add(it->pending_operations, -1);
   }
 }
-

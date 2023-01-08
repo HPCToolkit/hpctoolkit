@@ -92,7 +92,7 @@ using namespace std;
 using namespace xercesc;
 
 //***************************************************************************
-// environment variable naming the structure cache; may be overriden from command line
+// environment variable naming the structure cache; may be overridden from command line
 //***************************************************************************
 
 #define STRUCT_CACHE_ENV "HPCTOOLKIT_HPCSTRUCT_CACHE"
@@ -171,7 +171,7 @@ ck_path
 
     } else {
 
-      // It's a file; is it writeable? 
+      // It's a file; is it writeable?
       if ( access(path, O_RDWR) == 0 ) {
         ret = PATH_WRITEABLE;
       } else {
@@ -222,7 +222,7 @@ ck_path
   std::cerr << "DEBUG " <<caller <<"ck_path ( "<< path << " ) returns " << retname << ret << std::endl;
 #endif
   return ret;
- } 
+ }
 
 
 //  Make or create a directory path
@@ -391,7 +391,7 @@ check_cache_file (char *path)
   return StructureFileCheckVersion(path);
 }
 
-//  clean up cache entry being replaced 
+//  clean up cache entry being replaced
 
 static int
 hpcstruct_cache_cleanup
@@ -412,7 +412,7 @@ hpcstruct_cache_cleanup
 
   if (oldhash != NULL) {
     // indicates the name of the replaced entry
-    // First, try to remove the directory 
+    // First, try to remove the directory
     std::string command("rm -rf ");
     command += path;
 #if 0

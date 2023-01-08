@@ -30,4 +30,3 @@ void progBarTest() {
 	bar.incrementProgress(83-q);
 
 }
-

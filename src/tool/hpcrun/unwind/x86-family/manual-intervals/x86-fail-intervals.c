@@ -62,16 +62,16 @@ static char fail_signature[] = {
 int
 x86_fail_intervals(char *ins, int len, btuwi_status_t *stat)
 {
-#ifdef X86_FAIL_INTERVALS_DEBUG 
+#ifdef X86_FAIL_INTERVALS_DEBUG
   int siglen = sizeof(fail_signature);
 
   if (len > siglen && strncmp((char *) fail_signature, ins, siglen) == 0) {
-    // signature matched 
+    // signature matched
     char *null = 0;
 
     *null = 0; // cause a SEGV by storing to the null pointer
   }
- 
+
 #endif
   return 0;
 }

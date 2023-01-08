@@ -68,7 +68,7 @@
 #define REG_INST_PTR REG_EIP
 #define REG_BASE_PTR REG_EBP
 #define REG_STACK_PTR REG_ESP
-#else 
+#else
 #ifdef REG_IP
 #define REG_INST_PTR REG_IP
 #define REG_BASE_PTR REG_BP

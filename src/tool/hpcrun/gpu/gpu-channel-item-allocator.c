@@ -58,7 +58,7 @@
 s_element_t *
 channel_item_alloc_helper
 (
- bichannel_t *c, 
+ bichannel_t *c,
  size_t size
 )
 {
@@ -78,7 +78,7 @@ channel_item_alloc_helper
 void
 channel_item_free_helper
 (
- bichannel_t *c, 
+ bichannel_t *c,
  s_element_t *se
 )
 {

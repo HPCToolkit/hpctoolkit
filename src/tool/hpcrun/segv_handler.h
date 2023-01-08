@@ -49,7 +49,7 @@
 
 typedef void (*hpcrun_sig_callback_t) (void);
 
-int 
+int
 hpcrun_segv_register_cb( hpcrun_sig_callback_t cb );
 
 int

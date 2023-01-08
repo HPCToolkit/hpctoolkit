@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-#ifndef VMAInterval_hpp 
+#ifndef VMAInterval_hpp
 #define VMAInterval_hpp
 
 //************************* System Include Files ****************************
@@ -120,15 +120,15 @@ public:
   VMA
   beg() const
   { return m_beg; }
-  
+
   void
   beg(VMA x)
   { m_beg = x; }
-  
+
   VMA
   end() const
   { return m_end; }
-  
+
   void
   end(VMA x)
   { m_end = x; }
@@ -144,25 +144,25 @@ public:
   // -------------------------------------------------------
   // interval comparison
   // -------------------------------------------------------
-  
+
   // overlaps: does this interval overlap x:
-  //       {interval}             
-  //  a.     <x> 
+  //       {interval}
+  //  a.     <x>
   //  b.           <x>
   //  c.  <x>
   bool
   overlaps(VMAInterval x) const
   {
-    return (contains(x) 
+    return (contains(x)
 	    || (x.beg() <= beg() && beg() <  x.end())
 	    || (x.beg() <  end() && end() <= x.end()));
   }
-  
+
   // contains: does this interval contain x
   bool
   contains(VMAInterval x) const
   { return ((beg() <= x.beg()) && (end() >= x.end())); }
-  
+
   // -------------------------------------------------------
   // print/read/write
   // -------------------------------------------------------
@@ -180,13 +180,13 @@ public:
 
   std::ostream&
   dump(std::ostream& os) const;
-  
+
   std::istream&
   slurp(std::istream& is);
-  
+
   void
   ddump() const;
-  
+
 private:
   VMA m_beg;
   VMA m_end;
@@ -196,16 +196,16 @@ private:
 // --------------------------------------------------------------------------
 // operator <, lt_VMAInterval: for ordering VMAInterval: Should work
 // for any kind of interval: [ ], ( ), [ ), ( ].  For example:
-//   
+//
 //   [1,1]  < [1,2] --> true
 //   [1,1]  < [1,1] --> false
 //   [1,10] < [4,6] --> true
 // --------------------------------------------------------------------------
 
-inline bool 
-operator<(const VMAInterval& x, const VMAInterval& y) 
+inline bool
+operator<(const VMAInterval& x, const VMAInterval& y)
 {
-  return ((x.beg() < y.beg()) || 
+  return ((x.beg() < y.beg()) ||
 	  ((x.beg() == y.beg()) && (x.end() < y.end())));
 }
 
@@ -221,14 +221,14 @@ public:
 // operators
 // --------------------------------------------------------------------------
 
-inline bool 
-operator==(const VMAInterval& x, const VMAInterval& y) 
+inline bool
+operator==(const VMAInterval& x, const VMAInterval& y)
 {
   return ((x.beg() == y.beg()) && (x.end() == y.end()));
 }
 
-inline bool 
-operator!=(const VMAInterval& x, const VMAInterval& y) 
+inline bool
+operator!=(const VMAInterval& x, const VMAInterval& y)
 {
   return ( !(x == y) );
 }
@@ -246,7 +246,7 @@ class VMAIntervalSet
 {
 public:
   typedef VMAInterval                                       key_type;
-  
+
   typedef std::set<key_type>                                My_t;
   typedef key_type                                          value_type;
   typedef My_t::key_compare                                 key_compare;
@@ -266,14 +266,14 @@ public:
 
   VMAIntervalSet(const char* formattedstr)
   { fromString(formattedstr); }
-  
+
   virtual ~VMAIntervalSet()
   { }
 
   // -------------------------------------------------------
   // cloning (proscribe by hiding copy constructor and operator=)
   // -------------------------------------------------------
-  
+
   // -------------------------------------------------------
   // iterator, find/insert, etc
   // -------------------------------------------------------
@@ -337,14 +337,14 @@ private:
   { return *this; }
 
 private:
-  
+
 };
 
 
 // --------------------------------------------------------------------------
 // operator <, lt_VMAIntervalSet: for ordering VMAIntervalSets based
 // on first entry.  For example:
-//   
+//
 //   {}       < {}      --> false
 //   {}       < {[1,2]} --> true
 //   {[1,1]}  < {}      --> false
@@ -353,7 +353,7 @@ private:
 //   {[1,10]} < {[4,6]} --> true
 // --------------------------------------------------------------------------
 
-inline bool 
+inline bool
 operator<(const VMAIntervalSet& x, const VMAIntervalSet& y)
 {
   if (x.size() == 0 && y.size() >= 1) {  // x < y
@@ -395,7 +395,7 @@ class VMAIntervalMap
 public:
   typedef VMAInterval                                       key_type;
   typedef T                                                 mapped_type;
-  
+
   typedef std::map<key_type, T>                             My_t;
   typedef std::pair<const key_type, T>                      value_type;
   typedef typename My_t::key_compare                        key_compare;
@@ -421,11 +421,11 @@ public:
   // -------------------------------------------------------
   // cloning (proscribe by hiding copy constructor and operator=)
   // -------------------------------------------------------
-  
+
   // -------------------------------------------------------
   // iterator, find/insert, etc
   // -------------------------------------------------------
-  
+
   // element access:
   //mapped_type& operator[](const key_type& x);
 
@@ -444,7 +444,7 @@ public:
     else if (!this->empty()) {
       lb_r--; // adjust for reverse iterators
     }
-    
+
     // Reverse-search for match
     for ( ; lb_r != this->rend(); ++lb_r) {
       const VMAInterval& vmaint = lb_r->first;
@@ -455,17 +455,17 @@ public:
       	break; // !vmaint.contains(toFind) AND (toFind > vmaint)
       }
     }
-    
+
     return this->end();
   }
-  
+
   const_iterator
   find(const key_type& x) const
   { return const_cast<VMAIntervalMap*>(this)->find(x); }
 
-  
+
   // use inherited std::map routines
-  
+
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
@@ -476,7 +476,7 @@ public:
     dump(os);
     return os.str();
   }
-  
+
   std::ostream&
   dump(std::ostream& os) const
   {
@@ -485,7 +485,7 @@ public:
     }
     return os;
   }
-  
+
   std::ostream&
   ddump() const
   {
@@ -500,10 +500,10 @@ private:
   { return *this; }
 
 private:
-  
+
 };
 
 
 //***************************************************************************
 
-#endif 
+#endif

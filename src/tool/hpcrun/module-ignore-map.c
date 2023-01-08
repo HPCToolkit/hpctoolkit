@@ -292,7 +292,7 @@ module_ignore_map_ignore
 )
 {
   if (lm == NULL) return false;
-  
+
   // Update path
   // Only one thread could update the flag,
   // Guarantee dlopen modules before notification are updated.

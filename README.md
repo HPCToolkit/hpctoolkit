@@ -58,4 +58,3 @@ compiler version, glibc version.
 directory and the output from `make`.
 
 * if a run failure, then what command you ran and how it failed.
-

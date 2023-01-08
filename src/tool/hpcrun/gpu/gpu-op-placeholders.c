@@ -73,7 +73,7 @@
 // public data
 //******************************************************************************
 
-gpu_op_placeholder_flags_t gpu_op_placeholder_flags_none = 0; 
+gpu_op_placeholder_flags_t gpu_op_placeholder_flags_none = 0;
 
 gpu_op_placeholder_flags_t gpu_op_placeholder_flags_all =
   SET_LOW_N_BITS(gpu_placeholder_type_count, gpu_op_placeholder_flags_t);

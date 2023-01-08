@@ -79,20 +79,20 @@
  * macros
  *****************************************************************************/
 
-#define idle_count(bi) (*(bi->get_idle_count_ptr())) 
-#define participates(bi) (bi->participates()) 
-#define working(bi) (bi->working()) 
+#define idle_count(bi) (*(bi->get_idle_count_ptr()))
+#define participates(bi) (bi->participates())
+#define working(bi) (bi->working())
 
 #define atomic_add(loc, value) \
-	atomic_fetch_add_explicit(loc, value, memory_order_relaxed) 
+	atomic_fetch_add_explicit(loc, value, memory_order_relaxed)
 
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 
-static inline void 
+static inline void
 undirected_blame_workers(undirected_blame_info_t *bi, long adjustment)
 {
   atomic_add(&bi->active_worker_count, adjustment);
@@ -101,7 +101,7 @@ undirected_blame_workers(undirected_blame_info_t *bi, long adjustment)
 
 
 //FIXME: must be marked no-inline
-static void 
+static void
 trace_current_context(undirected_blame_info_t *bi)
 {
   if (!hpcrun_safe_enter()) return;
@@ -115,17 +115,17 @@ trace_current_context(undirected_blame_info_t *bi)
 
 
 /******************************************************************************
- * interface operations 
+ * interface operations
  *****************************************************************************/
 
-void 
+void
 undirected_blame_thread_start(undirected_blame_info_t *bi)
 {
   undirected_blame_workers(bi, 1);
 }
 
 
-void 
+void
 undirected_blame_thread_end(undirected_blame_info_t *bi)
 {
   undirected_blame_workers(bi, -1);
@@ -163,7 +163,7 @@ undirected_blame_idle_end_trace(undirected_blame_info_t *bi)
 
 
 void
-undirected_blame_sample(void* arg, int metric_id, cct_node_t *node, 
+undirected_blame_sample(void* arg, int metric_id, cct_node_t *node,
                         int metric_incr)
 {
   undirected_blame_info_t *bi = (undirected_blame_info_t *) arg;
@@ -173,13 +173,13 @@ undirected_blame_sample(void* arg, int metric_id, cct_node_t *node,
   int metric_period;
 
   if (!metric_is_timebase(metric_id, &metric_period)) return;
-  
+
   double metric_value = metric_period * metric_incr;
 
-  // if (idle_count(bi) == 0) 
+  // if (idle_count(bi) == 0)
   { // if this thread is not idle
-    // capture active_worker_count into a local variable to make sure 
-    // that the count doesn't change between the time we test it and 
+    // capture active_worker_count into a local variable to make sure
+    // that the count doesn't change between the time we test it and
     // the time we use the value
 
     long active = atomic_load_explicit(&bi->active_worker_count, memory_order_relaxed);
@@ -190,15 +190,15 @@ undirected_blame_sample(void* arg, int metric_id, cct_node_t *node,
     double working_threads = active;
 
     double idle_threads = (total - active);
-		
+
     if (idle_threads > 0) {
       double idleness = (idle_threads/working_threads) * metric_value;
-      
-      cct_metric_data_increment(bi->idle_metric_id, node, 
+
+      cct_metric_data_increment(bi->idle_metric_id, node,
 				(cct_metric_data_t){.r = idleness});
     }
 
-    cct_metric_data_increment(bi->work_metric_id, node, 
+    cct_metric_data_increment(bi->work_metric_id, node,
                               (cct_metric_data_t){.i = metric_value});
   }
 }

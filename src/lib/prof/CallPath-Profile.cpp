@@ -209,7 +209,7 @@ Profile::fmt_fread(FILE* infs,
   }
   //YUMENG check if the ending position match the recorded in footer
   if((uint64_t)ftell(infs) != footer.hdr_end){
-    fprintf(stderr, "ERROR: 'fmt-hdr' is succesfully read but the data seems off the recorded location in '%s'\n",
+    fprintf(stderr, "ERROR: 'fmt-hdr' is successfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
   }
@@ -328,7 +328,7 @@ Profile::fmt_epoch_fread(FILE* infs,
   }
   //YUMENG check if the ending position match the recorded in footer
   if((uint64_t)ftell(infs) != footer.loadmap_end){
-    fprintf(stderr, "ERROR: 'loadmap' is succesfully read but the data seems off the recorded location in '%s'\n",
+    fprintf(stderr, "ERROR: 'loadmap' is successfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
   }
@@ -476,7 +476,7 @@ Profile::fmt_epoch_fread(FILE* infs,
   fmt_cct_fread(infs, ctxtStr, outfs);
   //check if the ending position match the recorded in footer
   if((uint64_t)ftell(infs) != footer.cct_end){
-    fprintf(stderr, "ERROR: 'cct' is succesfully read but the data seems off the recorded location in '%s'\n",
+    fprintf(stderr, "ERROR: 'cct' is successfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
   }
@@ -496,7 +496,7 @@ Profile::fmt_epoch_fread(FILE* infs,
   }
   //YUMENG check if the ending position match the recorded in footer
   if((uint64_t)ftell(infs) != footer.met_tbl_end){
-    fprintf(stderr, "ERROR: 'metric-tbl' is succesfully read but the data seems off the recorded location in '%s'\n",
+    fprintf(stderr, "ERROR: 'metric-tbl' is successfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
   }
@@ -515,7 +515,7 @@ Profile::fmt_epoch_fread(FILE* infs,
     DIAG_Throw("error reading 'id-tuple dxnry'");
   }
   if((uint64_t)ftell(infs) != footer.idtpl_dxnry_end){
-    fprintf(stderr, "ERROR: 'id-tuple dxnry' is succesfully read but the data seems off the recorded location in '%s'\n",
+    fprintf(stderr, "ERROR: 'id-tuple dxnry' is successfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
   }
@@ -535,7 +535,7 @@ Profile::fmt_epoch_fread(FILE* infs,
   }
   //check if the ending position match the recorded in footer
   if((uint64_t)ftell(infs) != footer.sm_end){
-    fprintf(stderr, "ERROR: 'sparse metrics' is succesfully read but the data seems off the recorded location in '%s'\n",
+    fprintf(stderr, "ERROR: 'sparse metrics' is successfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
   }
@@ -660,4 +660,3 @@ Profile::fmt_cct_fread(FILE* infs,
 } // namespace CallPath
 
 } // namespace Prof
-

@@ -45,7 +45,7 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
-// system include files 
+// system include files
 //***************************************************************************
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@
 
 
 //***************************************************************************
-// user include files 
+// user include files
 //***************************************************************************
 
 #include "term_handler.h"
@@ -90,7 +90,7 @@ hpcrun_setup_term()
 {
   int ret = monitor_sigaction(SIGTERM, &hpcrun_term_handler, 0, NULL);
   if (ret != 0) {
-    EMSG("hpcrun_setup_term: unable to install SIGTERM handler", 
+    EMSG("hpcrun_setup_term: unable to install SIGTERM handler",
 	 __FILE__, __LINE__);
   }
 

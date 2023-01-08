@@ -48,7 +48,7 @@
 #include "x86-interval-arg.h"
 
 /******************************************************************************
- * interface operations 
+ * interface operations
  *****************************************************************************/
 
 unwind_interval *
@@ -59,4 +59,3 @@ process_leave(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
   next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
   return next;
 }
-

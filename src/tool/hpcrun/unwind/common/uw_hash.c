@@ -70,14 +70,14 @@
 uw_hash_table_t*
 uw_hash_new
 (
-  size_t size, 
+  size_t size,
   uw_hash_malloc_fn fn
 )
 {
-  uw_hash_table_t *uw_hash_table = 
+  uw_hash_table_t *uw_hash_table =
     (uw_hash_table_t *)fn(sizeof(uw_hash_table_t));
 
-  uw_hash_entry_t *uw_hash_entries = 
+  uw_hash_entry_t *uw_hash_entries =
     (uw_hash_entry_t *)fn(size * sizeof(uw_hash_entry_t));
 
   memset(uw_hash_entries, 0, size * sizeof(uw_hash_entry_t));
@@ -92,10 +92,10 @@ uw_hash_new
 void
 uw_hash_insert
 (
-  uw_hash_table_t *uw_hash_table, 
+  uw_hash_table_t *uw_hash_table,
   unwinder_t uw,
-  void *key, 
-  ilmstat_btuwi_pair_t *ilm_btui, 
+  void *key,
+  ilmstat_btuwi_pair_t *ilm_btui,
   bitree_uwi_t *btuwi
 )
 {
@@ -115,8 +115,8 @@ uw_hash_insert
 uw_hash_entry_t *
 uw_hash_lookup
 (
-  uw_hash_table_t *uw_hash_table, 
-  unwinder_t uw, 
+  uw_hash_table_t *uw_hash_table,
+  unwinder_t uw,
   void *key
 )
 {
@@ -136,8 +136,8 @@ uw_hash_lookup
 void
 uw_hash_delete_range
 (
-  uw_hash_table_t *uw_hash_table, 
-  void *start, 
+  uw_hash_table_t *uw_hash_table,
+  void *start,
   void *end
 )
 {
@@ -158,7 +158,7 @@ uw_hash_delete_range
 void
 uw_hash_delete
 (
-  uw_hash_table_t *uw_hash_table, 
+  uw_hash_table_t *uw_hash_table,
   void *key
 )
 {

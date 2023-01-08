@@ -78,46 +78,46 @@
 // wait-free queue manipulation
 //-----------------------------------------------------------------------------
 
-void 
+void
 wfq_set_next_pending
 (
  ompt_base_t *element
 );
 
 
-ompt_base_t * 
+ompt_base_t *
 wfq_get_next
 (
  ompt_base_t *element
 );
 
 
-void 
+void
 wfq_init
 (
  ompt_wfq_t *queue
 );
 
 
-void 
+void
 wfq_enqueue
 (
- ompt_base_t *new, 
+ ompt_base_t *new,
  ompt_wfq_t *queue
 );
 
 
-ompt_base_t * 
+ompt_base_t *
 wfq_dequeue_public
 (
  ompt_wfq_t *public_queue
 );
 
 
-ompt_base_t * 
+ompt_base_t *
 wfq_dequeue_private
 (
- ompt_wfq_t *public_queue, 
+ ompt_wfq_t *public_queue,
  ompt_base_t **private_queue
 );
 

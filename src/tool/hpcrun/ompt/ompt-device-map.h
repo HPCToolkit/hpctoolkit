@@ -51,7 +51,7 @@
 //
 // Purpose:
 //   interface for map from device id to device data structure
-//  
+//
 //***************************************************************************
 
 
@@ -76,7 +76,7 @@
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 typedef struct ompt_device_map_entry_s ompt_device_map_entry_t;
@@ -94,24 +94,24 @@ ompt_device_map_lookup
 );
 
 
-void 
+void
 ompt_device_map_insert
 (
- uint64_t device_id, 
- ompt_device_t *ompt_device, 
+ uint64_t device_id,
+ ompt_device_t *ompt_device,
  const char *type
 );
 
 
-bool 
+bool
 ompt_device_map_refcnt_update
 (
- uint64_t device_id, 
+ uint64_t device_id,
  int val
 );
 
 
-uint64_t 
+uint64_t
 ompt_device_map_entry_refcnt_get
 (
  ompt_device_map_entry_t *entry

@@ -129,7 +129,7 @@ freelist_dequeue
   void
 )
 {
-   hpcio_outbuf_t *ob = 0; 
+   hpcio_outbuf_t *ob = 0;
    spinlock_lock(&freelist_lock);
    if (freelist) {
      ob = freelist;
@@ -219,10 +219,10 @@ outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
 int
 hpcio_outbuf_attach
 (
-  hpcio_outbuf_t **outbuf_ptr /* out */, 
+  hpcio_outbuf_t **outbuf_ptr /* out */,
   int fd,
-  void *buf_start, 
-  size_t buf_size, 
+  void *buf_start,
+  size_t buf_size,
   int flags,
   allocator_t alloc
 )

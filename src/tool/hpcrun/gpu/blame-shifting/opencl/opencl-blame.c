@@ -104,7 +104,7 @@ opencl_kernel_epilogue
 )
 {
   // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
+  hpcrun_safe_enter();
 
   uint64_t event_id = (uint64_t) event;
   unsigned long kernel_start, kernel_end;
@@ -119,7 +119,7 @@ opencl_kernel_epilogue
       EMSG("clGetEventProfilingInfo failed");
     }
 
-    // Just to verify that this is a valid profiling value. 
+    // Just to verify that this is a valid profiling value.
     elapsedTime = kernel_end- kernel_start;
     if (elapsedTime <= 0) {
       printf("bad kernel time\n");
@@ -150,7 +150,7 @@ opencl_sync_prologue
 
   struct timespec sync_start;
   // using CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC gives time that matches with kernel start and end time outputted by clGetEventProfilingInfo
-  // CLOCK_REALTIME gives a timestamp that isnt comparable with kernel start and end time
+  // CLOCK_REALTIME gives a timestamp that isn't comparable with kernel start and end time
   clock_gettime(CLOCK_MONOTONIC_RAW, &sync_start); // get current time
   sync_prologue((uint64_t)queue, sync_start);
 
@@ -166,14 +166,14 @@ opencl_sync_epilogue
 )
 {
   // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
+  hpcrun_safe_enter();
 
   struct timespec sync_end;
   // using CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC gives time that matches with kernel start and end time outputted by clGetEventProfilingInfo
-  // CLOCK_REALTIME gives a timestamp that isnt comparable with kernel start and end time
+  // CLOCK_REALTIME gives a timestamp that isn't comparable with kernel start and end time
   clock_gettime(CLOCK_MONOTONIC_RAW, &sync_end); // get current time
 
-  // we cant release opencl events at kernel_epilogue. Their unique event ids can be used later for attributing cpu_idle_blame.
+  // we can't release opencl events at kernel_epilogue. Their unique event ids can be used later for attributing cpu_idle_blame.
   // so we release them once they are processed in sync_epilogue
   kernel_id_t id_node = sync_epilogue((uint64_t)queue, sync_end, num_sync_events);
   releasing_opencl_events(id_node);

@@ -171,7 +171,7 @@ findIntelGPUBins
       // Compute hash for the kernel name
       char kernel_name_hash[CRYPTO_HASH_STRING_LENGTH];
       crypto_compute_hash_string(kernel_name.c_str(),
-				 kernel_name.size(), 
+				 kernel_name.size(),
 				 kernel_name_hash, sizeof(kernel_name_hash));
 
       std::string real_kernel_name =

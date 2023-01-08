@@ -51,7 +51,7 @@
  * --------
  * Searches for a file named "name" in each directory in the
  * colon-separated pathlist given as the first argument, and returns
- * the full pathname to the first occurence that has at least the mode
+ * the full pathname to the first occurrence that has at least the mode
  * bits specified by mode. An empty path in the pathlist is
  * interpreted as the current directory.  Returns NULL if 'name' is
  * not found.

@@ -49,7 +49,7 @@
 #include "x86-unwind-interval.h"
 
 
-static char gcc_adjust_stack_signature[] = { 
+static char gcc_adjust_stack_signature[] = {
    0x4c, 0x8d, 0x54, 0x24, 0x08, // lea    0x8(%rsp),%r10
    0x48, 0x83, 0xe4, 0xc0,       // and    $0xffffffffffffffc0,%rsp
    0x41, 0xff, 0x72, 0xf8,       // pushq  -0x8(%r10)
@@ -58,16 +58,16 @@ static char gcc_adjust_stack_signature[] = {
 };
 
 
-int 
+int
 x86_adjust_gcc_stack_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(gcc_adjust_stack_signature);
 
   if (len > siglen && strncmp((char *)gcc_adjust_stack_signature, ins, siglen) == 0) {
-    // signature matched 
+    // signature matched
     unwind_interval *ui = (unwind_interval *) stat->first;
 
-    // this won't fix all of the intervals, but it will fix the ones 
+    // this won't fix all of the intervals, but it will fix the ones
     // that we care about.
     while(ui) {
 
@@ -87,6 +87,6 @@ x86_adjust_gcc_stack_intervals(char *ins, int len, btuwi_status_t *stat)
     }
 
     return 1;
-  } 
+  }
   return 0;
 }

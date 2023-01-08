@@ -45,15 +45,15 @@
 // ******************************************************* EndRiceCopyright *
 
 //------------------------------------------------------------------------------
-// File: select.c 
-//  
-// Purpose: 
+// File: select.c
+//
+// Purpose:
 //   wrapper for libc select. if select returns a -1 because it was
 //   interrupted, assume the interrupt was from asynchronous sampling
-//   caused by hpcrun and restart. 
+//   caused by hpcrun and restart.
 //
 // Note:
-//   The kernel automatically updates the timout parameter for select(),
+//   The kernel automatically updates the timeout parameter for select(),
 //   but not for poll(), ppoll() or pselect().
 //------------------------------------------------------------------------------
 
@@ -89,7 +89,7 @@ typedef int select_fn
  int nfds,
  fd_set *read_fds,
  fd_set *write_fds,
- fd_set *except_fds, 
+ fd_set *except_fds,
  struct timeval *timeout
 );
 
@@ -126,13 +126,13 @@ find_select(void)
 // interface operations
 //******************************************************************************
 
-int 
+int
 MONITOR_EXT_WRAP_NAME(select)
 (
-  int nfds, 
-  fd_set *read_fds, 
-  fd_set *write_fds, 
-  fd_set *except_fds, 
+  int nfds,
+  fd_set *read_fds,
+  fd_set *write_fds,
+  fd_set *except_fds,
   struct timeval *timeout
 )
 {

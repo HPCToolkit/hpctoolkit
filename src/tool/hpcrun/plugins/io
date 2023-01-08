@@ -3,10 +3,9 @@
 # lines are equivalent ways of linking in the IO overrides.
 #
 #   hpclink --io gcc ...
-#   hpclink --plugin io gcc ... 
+#   hpclink --plugin io gcc ...
 #
 
 hpclink_files='../libhpcrun_io_wrap.a'
 hpclink_wrap_names='read write fread fwrite'
 hpclink_undefined_names='fwrite'
-

@@ -73,7 +73,7 @@ static int dump_ins = 0;
 
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 
 btuwi_status_t x86_build_intervals(void *ins, unsigned int len, int noisy);
@@ -81,7 +81,7 @@ btuwi_status_t x86_build_intervals(void *ins, unsigned int len, int noisy);
 static int x86_coalesce_unwind_intervals(unwind_interval *ui);
 
 /******************************************************************************
- * interface operations 
+ * interface operations
  *****************************************************************************/
 
 btuwi_status_t
@@ -215,7 +215,7 @@ x86_ui_same_data(x86recipe_t *proto, x86recipe_t *cand)
 //
 //       The tail call info is *currently* the only routine-level info computed at interval
 //       building time. If more routine-level information items come up, the reduction side
-//       effect of the coalesce routine can be expanded to accomodate.
+//       effect of the coalesce routine can be expanded to accommodate.
 
 static int
 x86_coalesce_unwind_intervals(unwind_interval *ui)

@@ -93,10 +93,10 @@
 
 
 /******************************************************************************
- * forward declarations 
+ * forward declarations
  *****************************************************************************/
 
-static void idle_metric_process_blame_for_sample(void* arg, int metric_id, 
+static void idle_metric_process_blame_for_sample(void* arg, int metric_id,
 						 cct_node_t *node, int metric_value);
 
 
@@ -106,7 +106,7 @@ static void idle_metric_process_blame_for_sample(void* arg, int metric_id,
  *****************************************************************************/
 
 // start with 1 total thread, 1 worker
-static atomic_uintptr_t total_threads       = ATOMIC_VAR_INIT(1); 
+static atomic_uintptr_t total_threads       = ATOMIC_VAR_INIT(1);
 static atomic_uintptr_t active_worker_count = ATOMIC_VAR_INIT(1);
 
 static int idle_metric_id = -1;
@@ -120,7 +120,7 @@ static bool idleness_blame_information_source_present = false;
 
 
 /******************************************************************************
- * sample source interface 
+ * sample source interface
  *****************************************************************************/
 
 static void
@@ -145,9 +145,9 @@ METHOD_FN(thread_init_action)
 static void
 METHOD_FN(start)
 {
-  if (!blame_shift_source_available(bs_type_timer) && 
+  if (!blame_shift_source_available(bs_type_timer) &&
       !blame_shift_source_available(bs_type_cycles)) {
-    STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, " 
+    STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, "
 	       "CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
     monitor_real_exit(1);
   }
@@ -171,7 +171,7 @@ METHOD_FN(shutdown)
 {
   if (idleness_blame_information_source_present == false) {
     STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
-        "idleness and work.\n" 
+        "idleness and work.\n"
         "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
 	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
     monitor_real_exit(1);
@@ -243,18 +243,18 @@ METHOD_FN(display_events)
 
 
 /******************************************************************************
- * private operations 
+ * private operations
  *****************************************************************************/
 
 static void
 idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node, int metric_incr)
 {
   metric_desc_t * metric_desc = hpcrun_id2metric(metric_id);
- 
-  // Only blame shift idleness for time and cycle metrics. 
-  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
+
+  // Only blame shift idleness for time and cycle metrics.
+  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) )
     return;
-  
+
   int metric_value = metric_desc->period * metric_incr;
   thread_data_t *td = hpcrun_get_thread_data();
   if (td->idle == 0) { // if this thread is not idle
@@ -269,14 +269,14 @@ idle_metric_process_blame_for_sample(void* arg, int metric_id, cct_node_t *node,
     double working_threads = active;
 
     double idle_threads = (total - active);
-		
+
     cct_metric_data_increment(idle_metric_id, node, (cct_metric_data_t){.r = (idle_threads / working_threads) * ((double) metric_value)});
     cct_metric_data_increment(work_metric_id, node, (cct_metric_data_t){.i = metric_value});
   }
 }
 
 
-static void 
+static void
 idle_metric_adjust_workers(long adjustment)
 {
   atomic_fetch_add_explicit(&active_worker_count, adjustment, memory_order_relaxed);
@@ -288,17 +288,17 @@ idle_metric_adjust_workers(long adjustment)
 
 
 /******************************************************************************
- * interface operations 
+ * interface operations
  *****************************************************************************/
 
-void 
+void
 idle_metric_thread_start()
 {
   idle_metric_adjust_workers(1);
 }
 
 
-void 
+void
 idle_metric_thread_end()
 {
   idle_metric_adjust_workers(-1);
@@ -329,7 +329,7 @@ idle_metric_blame_shift_idle(void)
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 
+    hpcrun_sample_callpath(&uc, idle_metric_id,
       (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
     hpcrun_safe_exit();
   }
@@ -353,9 +353,8 @@ idle_metric_blame_shift_work(void)
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 
+    hpcrun_sample_callpath(&uc, idle_metric_id,
       (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
     hpcrun_safe_exit();
   }
 }
-

@@ -46,7 +46,7 @@
 /*  debug.c -- print out various elements of the data structures */
 
 //******************************************************************************
-// include files 
+// include files
 //******************************************************************************
 
 #include	"fnbounds.h"
@@ -277,7 +277,7 @@ print_elf_header64
 
   fprintf(stderr, "\n");
 
-  /* MSB of flags conatins ARM EABI version */
+  /* MSB of flags contains ARM EABI version */
   fprintf(stderr, "FNB2: ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
 
   fprintf(stderr, "FNB2: \n");	/* End of ELF header */
@@ -306,7 +306,7 @@ print_program_headers64
     }
     if (progHeader.p_type == PT_LOAD) {
       refOffset = progHeader.p_vaddr;
-    }   
+    }
     fprintf(stderr, "FNB2: %4ld ", j);
     fprintf(stderr, "0x%08x ", progHeader.p_type);
     fprintf(stderr, "0x%08x ", progHeader.p_flags);
@@ -376,4 +376,3 @@ print_section_headers64
 
   fprintf(stderr, "FNB2: \n");	/* end of section header table */
 }
-

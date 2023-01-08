@@ -121,5 +121,3 @@ event_custom_register(event_custom_t *event)
   SLIST_INSERT_HEAD(&list_events_head, list_item, entries);
   return 1;
 }
-
-

@@ -101,22 +101,21 @@ public:
   HashTableSortedIterator(const HashTable* theHashTable,
 			  EntryCompareFunctPtr const _EntryCompare);
   virtual ~HashTableSortedIterator();
-  
+
   void  operator ++(int);
   bool IsValid() const;
   void* Current() const;
   void  Reset();
-  
+
 private:
   int    currentEntryNumber;
   int    numberOfSortedEntries;
   void** sortedEntries;
-  
+
   const HashTable* hashTable;
-  
+
   EntryCompareFunctPtr EntryCompare;
 
 };
 
 #endif // support_HashTableSortedIterator_hpp
-

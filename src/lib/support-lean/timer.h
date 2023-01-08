@@ -46,7 +46,7 @@
 
 //***************************************************************************
 //
-// File: 
+// File:
 //   $HeadURL$
 //
 // Purpose:
@@ -84,7 +84,7 @@ extern "C" {
 #endif
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 inline static uint64_t
@@ -113,7 +113,7 @@ time_getTime_us(clockid_t clockid, uint64_t* time)
   if (ret != 0) {
     return 1;
   }
-  *time = (time_cvtNanosecToMicrosecs(ts.tv_nsec) 
+  *time = (time_cvtNanosecToMicrosecs(ts.tv_nsec)
 	   + time_cvtSecToMicrosecs(ts.tv_sec));
   return 0;
 }
@@ -131,7 +131,7 @@ time_getTimeReal(uint64_t* time)
 {
   // In contrast to CLOCK_MONOTONIC{_HR}, CLOCK_REALTIME{_HR} is
   // affected by NTP (network time protocol) and can move forward/backward
-  
+
 #ifdef CLOCK_REALTIME_HR
   return time_getTime_us(CLOCK_REALTIME_HR, time);
 #else
@@ -141,7 +141,7 @@ time_getTimeReal(uint64_t* time)
 
 
 //***************************************************************************
-// 
+//
 //***************************************************************************
 
 // time_getTSC: returns value of "time stamp counter" (in cycles).
@@ -166,7 +166,7 @@ time_getTSC()
   asm volatile (".byte 0x0f, 0x31" : "=A" (tsc));
 
 #elif defined(__powerpc64__)
-  
+
   asm volatile ("mftb %0" : "=r" (tsc) : );
 
 #elif defined(__powerpc__)

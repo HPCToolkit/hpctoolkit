@@ -69,7 +69,7 @@
  *   deallocates the space for the pointers initialized in Create.            *
  *                                                                            *
  * Sort:                                                                      *
- *   recursivley sorts the section of the array from minEntry to maxEntry.    *
+ *   recursively sorts the section of the array from minEntry to maxEntry.    *
  *                                                                            *
  **************************** QuickSort Private *******************************
  *                                                                            *
@@ -119,10 +119,10 @@ class QuickSort
     void Sort (const int minEntryIndex, const int maxEntryIndex);
 
   private:
-    void** ArrayPtr;                 
-    EntryCompareFunctPtr CompareFunct;   
+    void** ArrayPtr;
+    EntryCompareFunctPtr CompareFunct;
 
-    bool QuickSortCreated;         
+    bool QuickSortCreated;
 
     void Swap (int a, int b);
     int  Partition (const int min, const int max, const int q);

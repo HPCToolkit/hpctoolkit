@@ -48,8 +48,8 @@
 //******************************************************************************
 // File: ss-errno.h
 //
-// Purpose: 
-//   hpctoolkit sample sources MUST not disturb the application's value of 
+// Purpose:
+//   hpctoolkit sample sources MUST not disturb the application's value of
 //   errno. define two macros to save and restore the application's errno
 //   at entry and exit of signal handlers.
 //

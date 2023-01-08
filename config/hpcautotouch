@@ -6,13 +6,13 @@
 
 ## **************************************************************************
 ##
-## File: 
+## File:
 ##    $Source$
 ##    cf. README.auto
 ##
 ## Author:
 ##    Written by Nathan Tallent, Rice University.
-##    
+##
 ## **************************************************************************
 
 #############################################################################
@@ -59,18 +59,18 @@ f_getoptions()
       --version | -v )
          echo "version: ${HPCAUTOTOUCH_VERSION}" ; exit 0 ;;
       --help | --h* | -h )
-         f_usage; exit 0 ;; 
-      -* ) 
+         f_usage; exit 0 ;;
+      -* )
          printf "${error_pfx} Invalid option '$1'\n";
          f_usage; exit 1;
          ;;
-      * )   
+      * )
          break ;;
     esac
     shift
   done
 
-  if [ -n "$1" ]; then 
+  if [ -n "$1" ]; then
     opt_dir="$1"
   fi
 
@@ -109,4 +109,3 @@ sleep 1
 find ${DIR} ${PRUNE} -name configure    -exec ${TOUCH} '{}' \; ${PRN}
 sleep 1
 find ${DIR} ${PRUNE} -name Makefile.in  -exec ${TOUCH} '{}' \; ${PRN}
-

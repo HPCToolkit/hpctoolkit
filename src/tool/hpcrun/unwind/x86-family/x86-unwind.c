@@ -44,14 +44,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// note: 
+// note:
 //     when cross compiling, this version MUST BE compiled for
 //     the target system, as the include file that defines the
 //     structure for the contexts may be different for the
 //     target system vs the build system.
 
 //***************************************************************************
-// system include files 
+// system include files
 //***************************************************************************
 
 #include <stdio.h>
@@ -71,7 +71,7 @@
 #include <libunwind.h>
 
 //***************************************************************************
-// local include files 
+// local include files
 //***************************************************************************
 
 #include <include/gcc-attr.h>
@@ -110,7 +110,7 @@
 #define DECREMENT_PC(pc) pc = ((char *)pc) - 1
 
 //****************************************************************************
-// global data 
+// global data
 //****************************************************************************
 
 int debug_unw = 0;
@@ -118,27 +118,27 @@ int debug_unw = 0;
 
 
 //****************************************************************************
-// local data 
+// local data
 //****************************************************************************
 
 // flag value won't matter environment var set
-static int DEBUG_WAIT_BEFORE_TROLLING = 1; 
+static int DEBUG_WAIT_BEFORE_TROLLING = 1;
 
 static int DEBUG_NO_LONGJMP = 0;
 
 
 
 //****************************************************************************
-// forward declarations 
+// forward declarations
 //****************************************************************************
 
 #define MYDBG 0
 
 
-static void 
+static void
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset);
 
-static step_state 
+static step_state
 unw_step_sp(hpcrun_unw_cursor_t* cursor);
 
 static step_state
@@ -197,7 +197,7 @@ hpcrun_unw_init(void)
 typedef unw_frame_regnum_t unw_reg_code_t;
 
 static int
-hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
+hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 		   void** reg_value)
 {
   //
@@ -215,7 +215,7 @@ hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 }
 
 static int
-hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id, 
+hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 			ip_normalized_t* reg_value)
 {
   //
@@ -336,20 +336,20 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   void *pc = cursor->pc_unnorm;
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
-		   
+
   if (cursor->fence != FENCE_NONE) {
     if (ENABLED(FENCE_UNW))
       TMSG(FENCE_UNW, "%s", fence_enum_name(cursor->fence));
 
     //-----------------------------------------------------------
     // check if we have reached the end of our unwind, which is
-    // demarcated with a fence. 
+    // demarcated with a fence.
     //-----------------------------------------------------------
     TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", pc);
     return STEP_STOP;
   }
 
-  // current frame  
+  // current frame
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
   unwind_interval* uw = cursor->unwr_info.btuwi;
@@ -366,11 +366,11 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   case RA_SP_RELATIVE:
     unw_res = unw_step_sp(cursor);
     break;
-    
+
   case RA_BP_FRAME:
     unw_res = unw_step_bp(cursor);
     break;
-    
+
   case RA_STD_FRAME:
     unw_res = unw_step_std(cursor);
     break;
@@ -380,12 +380,12 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     dump_ui(cursor->unwr_info.btuwi, 0);
     assert(0);
   }
-  if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
+  if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP;
 
   if (unw_res != STEP_ERROR) {
     return unw_res;
   }
-  
+
   TMSG(TROLL,"unw_step: STEP_ERROR, pc=%p, bp=%p, sp=%p", pc, bp, sp);
   dump_ui_troll(uw);
 
@@ -393,9 +393,9 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
             "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",
 	    getpid());
-    
-    // spin wait for developer to attach a debugger and clear the flag 
-    while(DEBUG_WAIT_BEFORE_TROLLING);  
+
+    // spin wait for developer to attach a debugger and clear the flag
+    while(DEBUG_WAIT_BEFORE_TROLLING);
   }
 
   update_cursor_with_troll(cursor, 1);
@@ -492,7 +492,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   if ( ENABLED(DBG_UNW_STEP) ){
     return dbg_unw_step(cursor);
   }
-  
+
   hpcrun_unw_cursor_t saved = *cursor;
   step_state rv = hpcrun_unw_step_real(cursor);
   if ( ENABLED(UNW_VALID) ) {
@@ -530,14 +530,14 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   if (xr == NULL) {
     return STEP_ERROR;
   }
-  
+
   TMSG(UNW,"step_sp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
 
   void** next_bp = xr->reg.bp_status == BP_UNCHANGED ? bp :
     //-----------------------------------------------------------
-    // reload the candidate value for the caller's BP from the 
-    // save area in the activation frame according to the unwind 
+    // reload the candidate value for the caller's BP from the
+    // save area in the activation frame according to the unwind
     // information produced by binary analysis
     //-----------------------------------------------------------
     *(void **)(sp + xr->reg.sp_bp_pos);
@@ -548,20 +548,20 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   if ((RA_BP_FRAME == xr->ra_status) ||
       (RA_STD_FRAME == xr->ra_status)) { // Makes sense to sanity check BP, do it
     //-----------------------------------------------------------
-    // if value of BP reloaded from the save area does not point 
-    // into the stack, then it cannot possibly be useful as a frame 
-    // pointer in the caller or any of its ancesters.
+    // if value of BP reloaded from the save area does not point
+    // into the stack, then it cannot possibly be useful as a frame
+    // pointer in the caller or any of its ancestors.
     //
-    // if the value in the BP register points into the stack, then 
-    // it might be useful as a frame pointer. in this case, we have 
-    // nothing to lose by assuming that our binary analysis for 
-    // unwinding might have been mistaken and that the value in 
-    // the register is the one we might want. 
+    // if the value in the BP register points into the stack, then
+    // it might be useful as a frame pointer. in this case, we have
+    // nothing to lose by assuming that our binary analysis for
+    // unwinding might have been mistaken and that the value in
+    // the register is the one we might want.
     //
     // 19 December 2007 - John Mellor-Crummey
     //-----------------------------------------------------------
-    
-    if (((unsigned long) next_bp < (unsigned long) sp) && 
+
+    if (((unsigned long) next_bp < (unsigned long) sp) &&
 	((unsigned long) bp > (unsigned long) sp)){
       next_bp = bp;
       TMSG(UNW,"  step_sp: unwind bp sanity check fails."
@@ -569,12 +569,12 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     }
   }
 
-  // invariant: unwind must move x86 stack pointer 
+  // invariant: unwind must move x86 stack pointer
   if (next_sp <= cursor->sp){
-    TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack." 
+    TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack."
 	 " New sp = %p, old sp = %p", cursor->pc_unnorm, next_sp,
 	 cursor->sp);
-      
+
     return STEP_ERROR;
   }
 
@@ -628,7 +628,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   if (DISABLED(OMP_SKIP_MSB)) {
     if (!((void *)bp < monitor_stack_bottom())) {
       TMSG(UNW,"  step_bp: STEP_ERROR, unwind attempted, but incoming bp(%p) was not"
-	   " between sp (%p) and monitor stack bottom (%p)", 
+	   " between sp (%p) and monitor stack bottom (%p)",
 	   bp, sp, monitor_stack_bottom());
       return STEP_ERROR;
     }
@@ -639,12 +639,12 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   void* ra_loc = (void*) next_sp;
   void *next_pc  = *next_sp++;
 
-  // invariant: unwind must move x86 stack pointer 
+  // invariant: unwind must move x86 stack pointer
   if ((void *)next_sp <= sp) {
     TMSG(UNW_STRATEGY,"BP unwind fails: bp (%p) < sp (%p)", bp, sp);
     return STEP_ERROR;
   }
-  
+
   if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp))
     return STEP_OK;
 
@@ -680,7 +680,7 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
     if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {
       TMSG(UNW_STRATEGY,"--STD_FRAME: SP failed, RETRY w BP");
       unw_res = unw_step_bp(cursor);
-      if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP; 
+      if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP;
     }
   }
   else {
@@ -756,11 +756,11 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     void *ra_loc    = (void*) next_sp;
 
     // the current base pointer is a good assumption for the caller's BP
-    void **next_bp = (void **) cursor->bp; 
+    void **next_bp = (void **) cursor->bp;
 
     next_sp += 1;
 
-    // invariant: unwind must move x86 stack pointer 
+    // invariant: unwind must move x86 stack pointer
     if (next_sp <= cursor->sp) {
       TMSG(TROLL,"Something weird happened! trolling from %p"
 	   " resulted in sp not advancing", cursor->pc_unnorm);
@@ -769,7 +769,7 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
 
     bool found = uw_recipe_map_lookup(((char *)next_pc) + offset, NATIVE_UNWINDER, &(cursor->unwr_info));
     if (found) {
-      TMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p", 
+      TMSG(TROLL,"Trolling advances cursor to pc = %p, sp = %p",
 	   next_pc, next_sp);
       TMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc_unnorm);
 
@@ -783,7 +783,7 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     // fall through for error handling
   }
   else {
-    TMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
+    TMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p",
 	 cursor->pc_unnorm);
     TMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc_unnorm);
     // fall through for error handling

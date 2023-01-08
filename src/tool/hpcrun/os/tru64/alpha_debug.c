@@ -80,4 +80,3 @@ hpcrun_print_state(hpcrun_state_t *state, void *context)
            __FILE__, __LINE__,
            hpcrun_state_flag_isset(state, CSPROF_THRU_TRAMP) ? "have" : "have not");
 }
-

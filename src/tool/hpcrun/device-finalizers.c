@@ -16,7 +16,7 @@ device_finalizer_register(device_finalizer_type_t type, device_finalizer_fn_entr
 }
 
 
-void 
+void
 device_finalizer_apply(device_finalizer_type_t type, int how)
 {
    device_finalizer_fn_entry_t* fn = kinds[type];

@@ -120,12 +120,12 @@ perf_split_retained_node(
   // extract the abstract address in the node
   cct_addr_t *addr = hpcrun_cct_addr(node);
 
-  // create an abstract address representing the next machine code address 
+  // create an abstract address representing the next machine code address
   cct_addr_t sibling_addr = *addr;
   sibling_addr.ip_norm.lm_ip++;
 
   // get the necessary sibling to node
-  cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
+  cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node),
 					       &sibling_addr, true);
 
   return sibling;
@@ -137,8 +137,8 @@ perf_split_retained_node(
  */
 static cct_node_t *
 perf_insert_cct(
-  uint16_t lm_id, 
-  cct_node_t *parent, 
+  uint16_t lm_id,
+  cct_node_t *parent,
   u64 ip
 )
 {
@@ -176,8 +176,8 @@ perf_util_get_kptr_restrict()
   return privilege;
 }
 
-static uint16_t 
-perf_get_kernel_lm_id() 
+static uint16_t
+perf_get_kernel_lm_id()
 {
   if (ksym_status == PERF_AVAILABLE && perf_kernel_lm_id == 0) {
     // ensure that this is initialized only once per process
@@ -213,12 +213,12 @@ perf_get_kernel_lm_id()
 //----------------------------------------------------------
 static cct_node_t *
 perf_add_kernel_callchain(
-  cct_node_t *leaf, 
+  cct_node_t *leaf,
   void *data_aux
 )
 {
   cct_node_t *parent = leaf;
-  
+
   if (data_aux == NULL)  {
     return parent;
   }
@@ -227,14 +227,14 @@ perf_add_kernel_callchain(
   if (data->nr > 0) {
     uint16_t kernel_lm_id = perf_get_kernel_lm_id();
 
-    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44 
+    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
     // if no kernel symbols are available, collapse the kernel call
     // chain into a single node
     if (perf_util_get_kptr_restrict() != 0) {
       return perf_insert_cct(kernel_lm_id, parent, 0);
     }
 
-    // add kernel IPs to the call chain top down, which is the 
+    // add kernel IPs to the call chain top down, which is the
     // reverse of the order in which they appear in ips[]
     for (int i = data->nr - 1; i > 0; i--) {
       parent = perf_insert_cct(kernel_lm_id, parent, data->ips[i]);
@@ -318,7 +318,7 @@ perf_util_kernel_syms_avail()
 
 /*************************************************************
  * Interface API
- **************************************************************/ 
+ **************************************************************/
 
 //----------------------------------------------------------
 // initialize perf_util. Need to be called as earliest as possible
@@ -328,9 +328,9 @@ perf_util_init()
 {
   // perf_kernel_lm_id must be set for each process.
   // We shouldn't reset its value here because perf_util_init
-  // is called everytime a child is forked.
+  // is called every time a child is forked.
   // Let the variable set in the declaration.
-  // perf_kernel_lm_id = 0; 
+  // perf_kernel_lm_id = 0;
 
   // if kernel symbols are available, we will attempt to collect kernel
   // callchains and add them to our call paths
@@ -383,7 +383,7 @@ perf_util_attr_init(
   // some PMUs is sensitive to the sample type.
   // For instance, IDLE-CYCLES-BACKEND will fail if we set PERF_SAMPLE_ADDR.
   // By default, we need to initialize sample_type as minimal as possible.
-  unsigned int sample_type = sampletype 
+  unsigned int sample_type = sampletype
                              | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
@@ -418,7 +418,7 @@ perf_util_attr_init(
 #endif
     attr->exclude_kernel           = INCLUDE;
   }
-  
+
   char *name;
   int precise_ip_type = perf_skid_parse_event(event_name, &name);
   free(name);
@@ -426,7 +426,7 @@ perf_util_attr_init(
   u64 precise_ip;
 
   switch (precise_ip_type) {
-    case PERF_EVENT_AUTODETECT_SKID: 
+    case PERF_EVENT_AUTODETECT_SKID:
             precise_ip = perf_skid_set_max_precise_ip(attr);
 	    break;
     case PERF_EVENT_SKID_ERROR:
@@ -442,4 +442,3 @@ perf_util_attr_init(
 
   return true;
 }
-
