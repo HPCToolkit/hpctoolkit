@@ -495,7 +495,7 @@ autoreconf check:
 
 
 # Perform linting tasks that can only be done when the whole build is complete
-.lint:
+lint:
   stage: lint
   needs:
   - 'buildmany: [amd64]'
