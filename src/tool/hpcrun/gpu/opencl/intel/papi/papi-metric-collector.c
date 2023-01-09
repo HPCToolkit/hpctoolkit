@@ -134,9 +134,9 @@ attribute_gpu_utilization_counters_to_kernel
   ga_ptr->details.gpu_utilization_info = (gpu_utilization_t) { .active = kernel_eu_active,
                                             .stalled = kernel_eu_stall,
                                             .idle = kernel_eu_idle};
-  printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[ACTIVE_INDEX], kernel_eu_active,
-                                           metric_name[STALL_INDEX], kernel_eu_stall,
-                                           "ComputeBasic.EuIdle", kernel_eu_idle);
+  printf("%s: %d, %s: %d, %s: %d\n", metric_name[ACTIVE_INDEX], kernel_eu_active,
+                                     metric_name[STALL_INDEX], kernel_eu_stall,
+                                     "ComputeBasic.EuIdle", kernel_eu_idle);
   cstack_ptr_set(&(ga_ptr->next), 0);
   gpu_operation_multiplexer_push(kernel_activity_channel, NULL, ga_ptr);
 }
