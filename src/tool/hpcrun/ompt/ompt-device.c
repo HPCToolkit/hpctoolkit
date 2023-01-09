@@ -551,15 +551,14 @@ ompt_device_load(int device_num,
   PRINT("ompt_device_load->%s, %d\n", filename, device_num);
 
   uint32_t loadmap_module_id;
-  bool do_free = false;
-  if (host_addr == NULL && device_addr != NULL)
-  {
-    host_addr = malloc(bytes);
-    do_free = true;
-    ompt_get_code(host_addr, device_addr, bytes);
+  void *tmp = 0;
+  if (host_addr == NULL && device_addr != NULL) {
+    tmp = malloc(bytes);
+    ompt_get_code(tmp, device_addr, bytes);
+    host_addr = tmp;
   }
   gpu_binary_save(host_addr, bytes, true /* mark_used */, &loadmap_module_id);
-  if (do_free) free(host_addr);
+  if (tmp) free(tmp);
 }
 
 
