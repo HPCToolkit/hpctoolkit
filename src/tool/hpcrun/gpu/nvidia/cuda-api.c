@@ -199,7 +199,7 @@ CUDA_RUNTIME_FN
 CUDA_RUNTIME_FN
 (
  cudaMemcpy,
- ( 
+ (
   void* dst,
   const void* src,
   size_t count,
@@ -451,7 +451,7 @@ cuda_get_driver_version
   return 0;
 #else
   return -1;
-#endif  
+#endif
 }
 
 
