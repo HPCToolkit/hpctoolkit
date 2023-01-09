@@ -79,8 +79,9 @@
 // local data
 //******************************************************************************
 
+#ifdef ENABLE_GTPIN
 static const char *delimiter = ",";
-
+#endif
 
 
 //******************************************************************************
@@ -178,4 +179,14 @@ printf("gpu instrumentation options  : %s\n", opt);
       fprintf(stderr, "hpcrun WARNING: unwise to analyze GPU SIMD instructions while attributing GPU instruction latency\n");
     }
   }
+}
+
+
+bool
+gpu_instrumentation_enabled
+(
+ gpu_instrumentation_t *o
+)
+{
+  return o->count_instructions | o->analyze_simd | o-> attribute_latency;
 }

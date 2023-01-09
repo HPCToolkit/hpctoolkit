@@ -103,14 +103,22 @@ typedef struct binarytree_s {
 // private operations
 //******************************************************************************
 
+// hide the length of a fixed length string from the caller to prevent compiler
+// whining
+static char *
+vlen_str(char *fixed_length_string)
+{
+  return fixed_length_string;
+}
+
 static void
 subtree_tostr2(binarytree_t *subtree, val_tostr tostr, char valstr[],
-			   char* left_lead, char result[])
+               char* left_lead, char result[])
 {
   if (subtree) {
     char Left_subtree_buff[MAX_SUBTREE_STR + 1];
-	char Right_subtree_buff[MAX_SUBTREE_STR + 1];
-	char Left_lead_buff[MAX_LEFT_LEAD_STR + 1];
+    char Right_subtree_buff[MAX_SUBTREE_STR + 1];
+    char Left_lead_buff[MAX_LEFT_LEAD_STR + 1];
 
     size_t new_left_lead_size = strlen(left_lead) + strlen("|  ") + 1;
     snprintf(Left_lead_buff, new_left_lead_size, "%s%s", left_lead, "|  ");
@@ -119,13 +127,13 @@ subtree_tostr2(binarytree_t *subtree, val_tostr tostr, char valstr[],
     snprintf(Left_lead_buff, new_left_lead_size, "%s%s", left_lead, "   ");
     binarytree_t * right = {subtree->right};
     subtree_tostr2(right, tostr, valstr, Left_lead_buff, Right_subtree_buff);
-	tostr(subtree->val, valstr);
+    tostr(subtree->val, valstr);
     snprintf(result, MAX_TREE_STR, "%s%s%s%s%s%s%s%s%s%s%s%s",
-    		"|_ ", valstr, "\n",
-			left_lead, "|\n",
-			left_lead, Left_subtree_buff, "\n",
-			left_lead, "|\n",
-			left_lead, Right_subtree_buff);
+             "|_ ", valstr, "\n",
+             left_lead, "|\n",
+             left_lead, vlen_str(Left_subtree_buff), "\n",
+             left_lead, "|\n",
+             left_lead, vlen_str(Right_subtree_buff));
   }
   else {
     strcpy(result, "|_ {}");
@@ -150,10 +158,10 @@ binarytree_new(size_t size, mem_alloc m_alloc)
 void binarytree_del(binarytree_t **root, mem_free m_free)
 {
   if (*root) {
-	binarytree_del(&((*root)->left), m_free);
-	binarytree_del(&((*root)->right), m_free);
-	m_free(*root);
-	*root = NULL;
+    binarytree_del(&((*root)->left), m_free);
+    binarytree_del(&((*root)->right), m_free);
+    m_free(*root);
+    *root = NULL;
   }
 }
 
@@ -184,8 +192,8 @@ binarytree_rightsubtree(binarytree_t *tree)
 
 void
 binarytree_set_leftsubtree(
-	binarytree_t *tree,
-	binarytree_t* subtree)
+  binarytree_t *tree,
+  binarytree_t* subtree)
 {
   assert(tree != NULL);
   tree->left = subtree;
@@ -193,8 +201,8 @@ binarytree_set_leftsubtree(
 
 void
 binarytree_set_rightsubtree(
-	binarytree_t *tree,
-	binarytree_t* subtree)
+  binarytree_t *tree,
+  binarytree_t* subtree)
 {
   assert(tree != NULL);
   tree->right = subtree;
@@ -204,7 +212,7 @@ int
 binarytree_count(binarytree_t *tree)
 {
   return tree?
-	  binarytree_count(tree->left) + binarytree_count(tree->right) + 1: 0;
+         binarytree_count(tree->left) + binarytree_count(tree->right) + 1: 0;
 }
 
 binarytree_t *
@@ -254,7 +262,7 @@ binarytree_listalloc(size_t elt_size, int num_elts, mem_alloc m_alloc)
 }
 
 binarytree_t *
-binarytree_find(binarytree_t * root,	val_cmp matches, void *val)
+binarytree_find(binarytree_t * root, val_cmp matches, void *val)
 {
   while (root) {
     int cmp_status = matches(root->val, val);
@@ -269,35 +277,35 @@ binarytree_find(binarytree_t * root,	val_cmp matches, void *val)
 
 void
 binarytree_tostring(binarytree_t * tree, val_tostr tostr, char valstr[],
-	char result[])
+  char result[])
 {
   binarytree_tostring_indent(tree, tostr, valstr, "", result);
 }
 
 void
 binarytree_tostring_indent(binarytree_t * root, val_tostr tostr,
-						 char valstr[],	char* indents, char result[])
+  char valstr[], char* indents, char result[])
 {
   if (root) {
     char Left_subtree_buff[MAX_SUBTREE_STR + 1];
-	char Right_subtree_buff[MAX_SUBTREE_STR + 1];
-	char newindents[MAX_INDENTS+5];
-	snprintf(newindents, MAX_INDENTS+4, "%s%s", indents, "|  ");
-	subtree_tostr2(root->left, tostr, valstr, newindents, result);
+    char Right_subtree_buff[MAX_SUBTREE_STR + 1];
+    char newindents[MAX_INDENTS+5];
+    snprintf(newindents, MAX_INDENTS+4, "%s%s", indents, "|  ");
+    subtree_tostr2(root->left, tostr, valstr, newindents, result);
     snprintf(Left_subtree_buff, MAX_SUBTREE_STR, "%s", result);
-	snprintf(newindents, MAX_INDENTS+4, "%s%s", indents, "   ");
-	subtree_tostr2(root->right, tostr, valstr, newindents, result);
-	snprintf(Right_subtree_buff, MAX_SUBTREE_STR, "%s", result);
-	tostr(root->val, valstr);
+    snprintf(newindents, MAX_INDENTS+4, "%s%s", indents, "   ");
+    subtree_tostr2(root->right, tostr, valstr, newindents, result);
+    snprintf(Right_subtree_buff, MAX_SUBTREE_STR, "%s", result);
+    tostr(root->val, valstr);
     snprintf(result, MAX_TREE_STR, "%s%s%s%s%s%s%s%s%s%s%s",
-    		valstr, "\n",
-			indents,"|\n",
-    		indents, Left_subtree_buff, "\n",
-			indents, "|\n",
-			indents, Right_subtree_buff);
+             valstr, "\n",
+             indents,"|\n",
+             indents, vlen_str(Left_subtree_buff), "\n",
+             indents, "|\n",
+             indents, vlen_str(Right_subtree_buff));
   }
   else {
-	strcpy(result, "{}");
+    strcpy(result, "{}");
   }
 }
 
@@ -305,9 +313,9 @@ int
 binarytree_height(binarytree_t *root)
 {
   if (root) {
-	int left_height = binarytree_height(root->left);
-	int right_height = binarytree_height(root->right);
-	return (left_height > right_height)? left_height + 1: right_height + 1;
+    int left_height = binarytree_height(root->left);
+    int right_height = binarytree_height(root->right);
+    return (left_height > right_height)? left_height + 1: right_height + 1;
   }
   return 0;
 }
@@ -316,13 +324,13 @@ binarytree_t *
 binarytree_insert(binarytree_t *root, val_cmp compare, binarytree_t *key)
 {
   if(!root) {
-	return key;  // empty tree case
+    return key;  // empty tree case
   }
   else if (compare(root->val, key->val) > 0) {
     root->left = binarytree_insert(root->left, compare, key);
   }
   else if (compare(root->val, key->val) < 0) {
-	root->right = binarytree_insert(root->right, compare, key);
+    root->right = binarytree_insert(root->right, compare, key);
   }
   return root;
 }

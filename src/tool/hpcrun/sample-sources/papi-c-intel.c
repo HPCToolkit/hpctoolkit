@@ -78,12 +78,13 @@ papi_c_intel_get_event_set(int* event_set)
 }
 
 
-void
+int
 papi_c_intel_add_event(int event_set, int evcode)
 {
-  if (event_set != my_event_set) return;
+  int rv = PAPI_EMISC;
 
-  int rv = PAPI_OK;
+  if (event_set != my_event_set) return rv;
+
   if (!event_set_finalized) {
     TMSG(INTEL, "Adding event %x to intel event set", evcode);
     rv = PAPI_add_event(my_event_set, evcode);
@@ -93,6 +94,8 @@ papi_c_intel_add_event(int event_set, int evcode)
     }
     TMSG(INTEL, "Added event %d, to intel event set %d", evcode, my_event_set);
   }
+
+  return rv;
 }
 
 

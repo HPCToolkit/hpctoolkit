@@ -62,7 +62,7 @@ namespace {
 template<class F>
 class scope_exit final {
 public:
-  [[nodiscard]] scope_exit(F&& f) : callback(std::move(f)) {}
+  scope_exit(F&& f) : callback(std::move(f)) {}
   ~scope_exit() { callback(); }
 
   scope_exit(const scope_exit&) = delete;

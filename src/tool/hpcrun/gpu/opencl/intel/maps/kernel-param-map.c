@@ -221,7 +221,7 @@ kernel_param_map_insert
   if (mem) {
     node->mem = *((cl_mem*)mem);
   } else {
-    node->mem = mem;
+    node->mem = 0;
   }
   node->size = size;
   node->next = entry->kp_list;

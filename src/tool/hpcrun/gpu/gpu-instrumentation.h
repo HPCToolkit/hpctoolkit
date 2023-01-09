@@ -74,14 +74,11 @@ gpu_instrumentation_options_set
 );
 
 
-static bool
+bool
 gpu_instrumentation_enabled
 (
  gpu_instrumentation_t *o
-)
-{
-  return o->count_instructions | o->analyze_simd | o-> attribute_latency;
-}
+);
 
 
 
