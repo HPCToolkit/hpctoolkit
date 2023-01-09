@@ -96,9 +96,9 @@ static bool python_unwind(logical_region_t* region, void** store,
   logical_python_region_t* state = &region->specific.python;
   if (in_lframe == NULL) {
     // opportunity for enhancement to handle the case when logical
-    // frames and python frames don't match. for now, give up, 
+    // frames and python frames don't match. for now, give up,
     // terminating the unwind by returning false.
-    return false; 
+    return false;
   }
   logical_python_frame_t* lframe = &in_lframe->python;
   if(state->cfunc != NULL) {

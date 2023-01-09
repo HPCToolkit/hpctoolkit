@@ -145,9 +145,9 @@ typedef struct logical_region_stack_t {
   size_t depth;
   // Linked list of segments for storing logical stack frames
   struct logical_region_segment_t* head;
-  // Linked list of "spare" segments to reuse as nessesary
+  // Linked list of "spare" segments to reuse as necessary
   struct logical_region_segment_t* spare;
-  // Linked list of "spare" substack segments to reuse as nessesary
+  // Linked list of "spare" substack segments to reuse as necessary
   struct logical_frame_segment_t* subspare;
 } logical_region_stack_t;
 
@@ -293,7 +293,7 @@ static inline ip_normalized_t hpcrun_logical_metadata_ipnorm(
 // Initialize all available logical context generators
 extern void hpcrun_logical_init();
 
-// Register the nessesary handler for modifying backtraces based on the logical stack
+// Register the necessary handler for modifying backtraces based on the logical stack
 extern void hpcrun_logical_register();
 
 // Finalize any of the logical bits that need to be finalized for this process
