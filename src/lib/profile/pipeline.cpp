@@ -247,7 +247,6 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   for(auto& s: sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(*cct);
   }
-  cct->userdata.initialize();
 
   // Now we can connect the input without losing any information.
   std::size_t idx = 0;
@@ -559,7 +558,6 @@ Module& Source::module(const stdshim::filesystem::path& p) {
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasReferences()) s().notifyModule(*r);
     }
-    r->userdata.initialize();
   }
   return *r;
 }
@@ -572,7 +570,6 @@ File& Source::file(const stdshim::filesystem::path& p) {
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasReferences()) s().notifyFile(*r);
     }
-    r->userdata.initialize();
   }
   return *r;
 }
@@ -602,7 +599,6 @@ void Source::metricFreeze(Metric& m) {
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasAttributes()) s().notifyMetric(m);
     }
-    m.userdata.initialize();
   }
   slocal->thawedMetrics.erase(&m);
 }
@@ -612,7 +608,6 @@ void Source::notifyContext(Context& c) {
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(c);
   }
-  c.userdata.initialize();
 }
 std::pair<Context&, Context&> Source::context(Context& p, const NestedScope& ns) {
   SRC_ASSERT_LIMITS(contexts);
@@ -751,7 +746,6 @@ Thread& Source::newThread(ThreadAttributes o) {
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasThreads()) s().notifyThread(t);
   }
-  t.userdata.initialize();
   return t;
 }
 

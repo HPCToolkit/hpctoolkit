@@ -171,15 +171,18 @@ int main(int argc, char* const argv[]) {
       // Make sure all Metrics have their Statistics set properly
       pipelineB1 << std::make_unique<ProfArgs::StatisticsExtender>(args);
 
+      // Load in the Finalizers for special cases
+      for(auto& sp : args.ksyms) pipelineB1 << std::move(sp.first);
+
       // Load in the Finalizers for Structfiles.
       for(auto& sp: args.structs) pipelineB1 << std::move(sp.first);
-      for(auto& sp : args.ksyms) pipelineB1 << std::move(sp.first);
-      pipelineB1 << std::make_unique<ProfArgs::StructWarner>(args);
+      pipelineB1 << std::make_unique<ProfArgs::StructPartialMatch>(args);
 
       if(!args.foreign) {
         // Insert the proper Finalizer for drawing data directly from the Modules.
         // This is used as a fallback if the Structfiles aren't available.
-        pipelineB1 << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
+        pipelineB1 << std::make_unique<finalizers::DirectClassification>(
+            args.dwarfMaxSize, !args.structs.empty());
       }
 
       // Ids for everything are pulled from the void. We call the shots here.
@@ -243,15 +246,15 @@ int main(int argc, char* const argv[]) {
 
     // We need to recreate the Context expansions identified by rank 0 here.
     // Load in a copy of all the finalizers.
-    for(auto& sp: args.structs)
-      pipelineB2 << std::make_unique<finalizers::StructFile>(sp.second);
     for(auto& sp: args.ksyms)
       pipelineB2 << std::make_unique<finalizers::KernelSymbols>(sp.second);
+    for(auto& sp: args.structs)
+      pipelineB2 << std::make_unique<finalizers::StructFile>(sp.second);
 
     if(!args.foreign) {
       // Insert the proper Finalizer for drawing data directly from the Modules.
       // This is used as a fallback if the Structfiles aren't available.
-      pipelineB2 << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
+      pipelineB2 << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize, false);
     }
 
     // For unpacking metrics, we need to be able to map ids back to Contexts and

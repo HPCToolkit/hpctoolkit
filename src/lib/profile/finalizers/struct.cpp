@@ -176,21 +176,31 @@ StructFile::classify(Context& c, NestedScope& ns) noexcept {
   if(ns.flat().type() == Scope::Type::point) {
     auto mo = ns.flat().point_data();
     const auto& udm = mo.first.userdata[ud];
-    auto leafit = udm.leaves.find(mo.second);
-    if(leafit != udm.leaves.end()) {
-      util::optional_ref<Context> cr;
-      std::reference_wrapper<Context> cc = c;
-      const std::function<void(const udModule::trienode&)> handle =
-        [&](const udModule::trienode& tn){
-          if(tn.second != nullptr)
-            handle(*(const udModule::trienode*)tn.second);
-          cc = sink.context(cc, {ns.relation(), tn.first.first}).second;
-          if(!cr) cr = cc;
-          ns.relation() = tn.first.second;
-        };
-      handle(leafit->second.first);
-      return std::make_pair(cr, cc);
+    if(udm.leaves.empty()) {
+      // We don't have any data for this Module, so pass it on
+      return std::nullopt;
     }
+
+    auto leafit = udm.leaves.find(mo.second);
+    if(leafit == udm.leaves.end()) {
+      // We have data for this module, but we don't have data for this specific
+      // point (i.e. a gap in the Structfile). Assume we are better than any
+      // other available Finalizer and report no information.
+      return std::make_pair(std::nullopt, std::ref(c));
+    }
+
+    util::optional_ref<Context> cr;
+    std::reference_wrapper<Context> cc = c;
+    const std::function<void(const udModule::trienode&)> handle =
+      [&](const udModule::trienode& tn){
+        if(tn.second != nullptr)
+          handle(*(const udModule::trienode*)tn.second);
+        cc = sink.context(cc, {ns.relation(), tn.first.first}).second;
+        if(!cr) cr = cc;
+        ns.relation() = tn.first.second;
+      };
+    handle(leafit->second.first);
+    return std::make_pair(cr, cc);
   }
   return std::nullopt;
 }
