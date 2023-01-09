@@ -192,4 +192,6 @@ extern uint64_t hpcrun_metric_sparse_count(metric_data_list_t* list);
 
 extern metric_data_list_t *hpcrun_merge_cct_metrics(metric_data_list_t *dest, metric_data_list_t *source);
 
+extern void hpcrun_set_move2proc(int metric_id, bool move);
+
 #endif // METRICS_H
