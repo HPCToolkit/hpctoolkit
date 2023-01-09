@@ -317,12 +317,12 @@ main(int argc, char **argv)
     CodeSource *code_src = NULL;
     CodeObject *code_obj = NULL;
 
-    // this thread count for performing backward slicing has been selected after some manual runs of hpcstruct
-    int threads = 5;
     if (cuda_file) { // don't run parseapi on cuda binary
       parsable = readCudaCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
     } else if (intel_file) { // don't run parseapi on intel binary
       #ifdef ENABLE_IGC
+      // this thread count for performing backward slicing has been selected after some manual runs of hpcstruct
+      int threads = 5;
       parsable = readIntelCFG(search_path, elfFile, symtab, true, false, threads, &code_src, &code_obj);
       #endif // ENABLE_IGC
     } else {
