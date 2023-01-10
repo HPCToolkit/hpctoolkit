@@ -42,11 +42,13 @@ repos:
   hooks:
   # Remove trailing whitespace
   - id: trailing-whitespace
-    # Exclude Autogoo since it generates tons of trailing whitespace
-    exclude: &autogoo '^((.*/|)Makefile.in|configure)$'
+    exclude: |
+      (?x)^(
+        (.*/|)Makefile\.in |    # Autogoo has tons of trailing whitespace
+        doc/www/publications\.html |    # Generated file, always has a few cases
+      )$
   # All files must end in a single newline (or be perfectly empty)
   - id: end-of-file-fixer
-    exclude: *autogoo
   # Remove the UTF8 BOM from the start of any files
   - id: fix-byte-order-marker
   # Ensure files have consistent endings. (This operates in the worktree, Git also normalizes the index)
