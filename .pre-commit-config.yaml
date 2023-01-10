@@ -101,6 +101,7 @@ repos:
   - id: prospector
     additional_dependencies:
     - 'prospector[with_mypy]'
+    - pylint==2.15.9
     # Some of our dependencies (needed in the virtual env for pylint to work)
     - ruamel.yaml
     - podman
