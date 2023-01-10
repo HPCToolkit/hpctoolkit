@@ -11,6 +11,7 @@ from hpctoolkit.formats.v4.metadb import Context, EntryPoint
 from hpctoolkit.test.execution import hpcprof, hpcrun
 
 parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--threads-per-proc", type=int, default=1)
 parser.add_argument("script", type=Path)
 parser.add_argument("script_args", default=[], nargs="*")
 args = parser.parse_args()
@@ -21,6 +22,8 @@ if not sys.executable:
 
 args.script = args.script.resolve(strict=True)
 with hpcrun("-e", "REALTIME", [sys.executable, str(args.script)] + args.script_args) as meas:
+    meas.check_standard(procs=1, threads_per_proc=args.threads_per_proc)
+
     with hpcprof(meas) as raw_db:
         db = Database.from_dir(raw_db.basedir)
 
@@ -82,5 +85,6 @@ with hpcrun("-e", "REALTIME", [sys.executable, str(args.script)] + args.script_a
                 and c.function.name == "func_lo"
             )
         except StopIteration as e:
+            sys.setrecursionlimit(100000)
             ruamel.yaml.YAML(typ="rt").dump(db.meta.Context, sys.stdout)
             raise e from None
