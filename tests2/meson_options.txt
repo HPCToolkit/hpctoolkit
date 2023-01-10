@@ -2,3 +2,4 @@ option('hpctoolkit', type: 'string', description: 'Path to the HPCToolkit instal
 option('cuda', type: 'feature', description: 'Enable tests for CUDA support')
 option('rocm', type: 'feature', description: 'Enable tests for ROCm support')
 option('mpi', type: 'feature', description: 'Enable tests for hpcprof-mpi')
+option('python', type: 'boolean', description: 'Enable tests for Python support')
