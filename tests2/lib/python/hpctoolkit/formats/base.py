@@ -325,10 +325,13 @@ BitFlagsT = T.TypeVar("BitFlagsT", bound="BitFlags")
 class BitFlags(enum.Flag):
     """Base class for all flag-bits fields in the formats."""
 
-    def __new__(cls, value: int, min_version: int):
+    def __new__(cls, value: int, min_version: int | None = None):
         obj = object.__new__(cls)
-        obj._value_ = 1 << value
-        obj.min_version = min_version
+        if min_version is not None:
+            obj._value_ = 1 << value
+            obj.min_version = min_version
+        else:
+            obj._value_ = value
         return obj
 
     @classmethod
@@ -339,7 +342,7 @@ class BitFlags(enum.Flag):
     @classmethod
     def versioned_decode(cls: T.Type[BitFlagsT], version: int, value: int) -> BitFlagsT:
         bits = [bit for bit in cls if bit.min_version <= version]
-        return cls(value) & functools.reduce(lambda x, y: x | y, bits) if bits else cls(0)  # noqa
+        return cls(value) & functools.reduce(lambda x, y: x | y, bits) if bits else cls(0)
 
     @classmethod
     def to_yaml(cls, representer, node):
@@ -351,7 +354,7 @@ class BitFlags(enum.Flag):
     @classmethod
     def from_yaml(cls, constructor, node):
         bits = [cls[val] for val in constructor.construct_sequence(node, deep=True)]
-        return functools.reduce(lambda x, y: x | y, bits) if bits else cls(0)  # noqa
+        return functools.reduce(lambda x, y: x | y, bits) if bits else cls(0)
 
 
 class InvalidFormatError(Exception):
