@@ -389,6 +389,7 @@ class ConcreteSpecification:
     mpi: bool
     debug: bool
     papi: bool
+    python: bool
     opencl: bool
     cuda: bool
     rocm: bool
@@ -403,6 +404,7 @@ class ConcreteSpecification:
             ("rocm", False, True),
             ("cuda", False, True),
             ("opencl", False, True),
+            ("python", False, True),
             ("papi", True, False),
             ("debug", True, False),
             ("mpi", False, True),
@@ -660,6 +662,9 @@ class Configuration:
             fragments.append(depcfg.get("--with-papi="))
         else:
             fragments.append(depcfg.get("--with-perfmon="))
+
+        if variant.python:
+            fragments.append(depcfg.get("--with-python="))
 
         if variant.cuda:
             fragments.append(depcfg.get("--with-cuda="))
