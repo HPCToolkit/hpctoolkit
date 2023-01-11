@@ -441,7 +441,9 @@ autoreconf check:
   variables:
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
-    MESON_TEST_OPTS: '--maxfail 10 --repeat 7'
+  before_script:
+  - !reference [.check job amd64, before_script]
+  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
 'check arm64: [cpu]':
   extends: .check job arm64
   tags: [docker, linux/$ARCH]
@@ -449,7 +451,9 @@ autoreconf check:
   variables:
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
-    MESON_TEST_OPTS: '--maxfail 10'
+  before_script:
+  - !reference [.check job arm64, before_script]
+  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10"
 
 'check amd64: [+cuda]':
   extends: .check job amd64
@@ -461,9 +465,9 @@ autoreconf check:
     IMAGE_EXT: +cuda
     JOB_CC: gcc-9
     SPEC: +tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0
-    MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite cuda'
   before_script:
   - !reference [.check job amd64, before_script]
+  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite cuda"
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
@@ -482,9 +486,9 @@ autoreconf check:
     IMAGE_EXT: +cuda
     JOB_CC: gcc-9
     SPEC: +tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0
-    MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite rocm'
   before_script:
   - !reference [.check job amd64, before_script]
+  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite rocm"
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
   # Pull dependencies from the base image
