@@ -143,14 +143,22 @@ static bool python_unwind(logical_region_t* region, void** store,
 // Python frame fixup routines
 // -----------------------------
 
+static const char* name_for(uint16_t lm_id) {
+  const load_module_t* lm = hpcrun_loadmap_findById(lm_id);
+  return lm == NULL ? "<placeholders>" : lm->name;
+}
+
 static void python_beforeenter(logical_region_t* reg, hpcrun_unw_cursor_t* cur) {
-  TMSG(LOGICAL_UNWIND, "Fixing beforeenter be out of libpython.so, start sp @ %p", cur->sp);
+  TMSG(LOGICAL_UNWIND, "Fixing beforeenter be out of libpython.so, start sp = %p  ip = %s +%p",
+    cur->sp, name_for(cur->pc_norm.lm_id), cur->pc_norm.lm_ip);
   while(cur->pc_norm.lm_id == reg->specific.python.lm) {
     if(hpcrun_unw_step(cur) <= STEP_STOP)
       break;
-    TMSG(LOGICAL_UNWIND, "  stepped to sp @ %p", cur->sp);
+    TMSG(LOGICAL_UNWIND, "  stepped to sp = %p  ip = %s +%p",
+      cur->sp, name_for(cur->pc_norm.lm_id), cur->pc_norm.lm_ip);
   }
-  TMSG(LOGICAL_UNWIND, "Exited at sp @ %p", cur->sp);
+  TMSG(LOGICAL_UNWIND, "Exited at sp = %p  ip = %s +%p",
+      cur->sp, name_for(cur->pc_norm.lm_id), cur->pc_norm.lm_ip);
 }
 
 static const frame_t* python_afterexit(logical_region_t* reg,

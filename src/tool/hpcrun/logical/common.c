@@ -256,11 +256,11 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
         if(cur->afterexit != NULL) {
           frame_t* new_exit = (frame_t*)cur->afterexit(cur, bt_cur, bt_top);
           assert(bt_top <= new_exit && new_exit <= bt_cur && "afterexit gave invalid frame!");
-          TMSG(LOGICAL_UNWIND, "== Exit from logical range @ %p (%d after exit @ %p) ==",
+          TMSG(LOGICAL_UNWIND, "== Exit from logical range @ sp = %p (%d after exit @ %p) ==",
                new_exit->cursor.sp, bt_cur-new_exit, cur->exit);
           bt_cur = new_exit;
         } else
-          TMSG(LOGICAL_UNWIND, "== Exit from logical range @ %p ==", cur->exit);
+          TMSG(LOGICAL_UNWIND, "== Exit from logical range @ sp = %p ==", cur->exit);
       } else {
         assert(first && "Only the topmost logical region can have exit = NULL!");
         TMSG(LOGICAL_UNWIND, "== Within logical range ==");
@@ -325,7 +325,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       }
       TMSG(LOGICAL_UNWIND, "(logical) ip = %d +%p",
            (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
-      TMSG(LOGICAL_UNWIND, "== Entry to logical range from %p (%d frames of %d expected) ==",
+      TMSG(LOGICAL_UNWIND, "== Entry to logical range from sp = %p (%d frames of %d expected) ==",
            cur->beforeenter.sp, index+1, cur->expected);
       IF_ENABLED(LOGICAL_UNWIND)
         if(index+1 < cur->expected)
@@ -352,9 +352,9 @@ earlyexit:
   }
 
   for(; bt_cur != bt->last; bt_cur++)
-    TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
+    TMSG(LOGICAL_UNWIND, " sp = %p  ip = %s +%p", bt_cur->cursor.sp,
           name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
-  TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
+  TMSG(LOGICAL_UNWIND, " sp = %p  ip = %s +%p", bt_cur->cursor.sp,
         name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
 
   TMSG(LOGICAL_UNWIND, "========= END Logicalizing backtrace =========");
