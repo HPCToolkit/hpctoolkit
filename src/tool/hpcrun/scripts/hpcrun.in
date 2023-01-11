@@ -24,6 +24,12 @@ memkind_libdir='@MEMKIND_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
 
+opt_have_cuda='@OPT_HAVE_CUDA@'
+opt_have_gtpin='@OPT_HAVE_GTPIN@'
+opt_have_level0='@OPT_HAVE_LEVEL0@'
+opt_have_opencl='@OPT_HAVE_OPENCL@'
+opt_have_rocm='@OPT_HAVE_ROCM@'
+
 #------------------------------------------------------------
 # On Cray Slingshot 11 systems, there is not yet complete
 # support for demand paging on the Cassini NIC. As a result,
@@ -412,6 +418,9 @@ do
 		    ;;
 
 		gpu=amd )
+		    if test "$opt_have_rocm" != yes ; then
+			die "HPCToolkit was not compiled with AMD ROCm support enabled"
+		    fi
                     if test "${ROCM_PATH}/lib/rocprofiler/metrics.xml"x != x ; then
 		        export HSA_TOOLS_LIB=librocprofiler64.so.1
 		        export ROCP_TOOL_LIB=libhpcrun.so
@@ -421,17 +430,33 @@ do
                     fi
 		    ;;
 
-		gpu=opencl*|intel_gpu_util )
-		    gtpin_libdir="${gtpin_lib_path}"
+		gpu=nvidia* )
+		    if test "$opt_have_cuda" != yes ; then
+			die "HPCToolkit was not compiled with NVIDIA CUDA support enabled"
+		    fi
+		    ;;
+
+		gpu=opencl )
+		    if test "$opt_have_opencl" != yes ; then
+			die "HPCToolkit was not compiled with OpenCL support enabled"
+		    fi
 		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
-		    namespace_default=single_if_auditing
 		    ;;
 
 		gpu=level0 )
+		    if test "$opt_have_level0" != yes ; then
+			die "HPCToolkit was not compiled with Level0 support enabled"
+		    fi
 		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"
 		    ;;
 
 		gpu=level0,inst* )
+		    if test "$opt_have_level0" != yes ; then
+			die "HPCToolkit was not compiled with Level0 support enabled"
+		    fi
+		    if test "$opt_have_gtpin" != yes ; then
+			die "HPCToolkit was not compiled with GTPin support enabled"
+		    fi
 		    gtpin_libdir="${gtpin_lib_path}"
 		    export ZET_ENABLE_API_TRACING_EXP=1
 		    export ZET_ENABLE_PROGRAM_INSTRUMENTATION=1
