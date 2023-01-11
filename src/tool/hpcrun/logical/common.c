@@ -269,10 +269,6 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       frame_t* logical_start = bt_cur;
 
       // Scan through until we've seen everything including the enter
-      if(cur->beforeenter_fixup != NULL) {
-        cur->beforeenter_fixup(cur, &cur->beforeenter);
-        cur->beforeenter_fixup = NULL;
-      }
       while(bt_cur->cursor.sp != cur->beforeenter.sp) {
         TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
               name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);

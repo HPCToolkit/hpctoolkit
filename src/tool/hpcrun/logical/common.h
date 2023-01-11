@@ -107,10 +107,6 @@ typedef struct logical_region_t {
   // physical caller of the logical bits.
   hpcrun_unw_cursor_t beforeenter;
 
-  // Optional finalizer called on beforeenter during the first unwind with this
-  // region. Set to NULL after use.
-  void (*beforeenter_fixup)(struct logical_region_t*, hpcrun_unw_cursor_t*);
-
   // If not empty, the possible last (latest) frame(s) part of the logical
   // region. In other words the caller of the physical code called from the
   // logical scope. Stored as the cursor's sp field.

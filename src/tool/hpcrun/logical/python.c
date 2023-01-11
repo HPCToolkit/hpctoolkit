@@ -148,19 +148,6 @@ static const char* name_for(uint16_t lm_id) {
   return lm == NULL ? "<placeholders>" : lm->name;
 }
 
-static void python_beforeenter(logical_region_t* reg, hpcrun_unw_cursor_t* cur) {
-  TMSG(LOGICAL_UNWIND, "Fixing beforeenter be out of libpython.so, start sp = %p  ip = %s +%p",
-    cur->sp, name_for(cur->pc_norm.lm_id), cur->pc_norm.lm_ip);
-  while(cur->pc_norm.lm_id == reg->specific.python.lm) {
-    if(hpcrun_unw_step(cur) <= STEP_STOP)
-      break;
-    TMSG(LOGICAL_UNWIND, "  stepped to sp = %p  ip = %s +%p",
-      cur->sp, name_for(cur->pc_norm.lm_id), cur->pc_norm.lm_ip);
-  }
-  TMSG(LOGICAL_UNWIND, "Exited at sp = %p  ip = %s +%p",
-      cur->sp, name_for(cur->pc_norm.lm_id), cur->pc_norm.lm_ip);
-}
-
 static const frame_t* python_afterexit(logical_region_t* reg,
     const frame_t* cur, const frame_t* top) {
   if(top->ip_norm.lm_id == reg->specific.python.lm) return top;
@@ -199,12 +186,24 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
           .frame = frame, .cfunc = NULL,
         }},
         .expected = 1,  // This should be a top-level frame
-        .beforeenter = {}, .beforeenter_fixup = python_beforeenter,
-        .exit = {}, .exit_len = 0, .afterexit = python_afterexit,
+        .beforeenter = {}, .exit = {}, .exit_len = 0, .afterexit = python_afterexit,
       };
       Py_XDECREF(reg.specific.python.caller);
-      hpcrun_logical_frame_cursor(&reg.beforeenter, 2);
+
+      // Unwind out through libpython.so to identify the appropriate physical caller
+      hpcrun_logical_frame_cursor(&reg.beforeenter, 1);
       reg.specific.python.lm = reg.beforeenter.pc_norm.lm_id;
+      TMSG(LOGICAL_CTX_PYTHON, "Fixing beforeenter be out of libpython.so, start sp = %p  ip = %s +%p",
+        reg.beforeenter.sp, name_for(reg.beforeenter.pc_norm.lm_id), reg.beforeenter.pc_norm.lm_ip);
+      while(reg.beforeenter.pc_norm.lm_id == reg.specific.python.lm) {
+        if(hpcrun_unw_step(&reg.beforeenter) <= STEP_STOP)
+          break;
+        TMSG(LOGICAL_CTX_PYTHON, "  stepped to sp = %p  ip = %s +%p",
+          reg.beforeenter.sp, name_for(reg.beforeenter.pc_norm.lm_id), reg.beforeenter.pc_norm.lm_ip);
+      }
+      TMSG(LOGICAL_CTX_PYTHON, "Exited at sp = %p  ip = %s +%p",
+          reg.beforeenter.sp, name_for(reg.beforeenter.pc_norm.lm_id), reg.beforeenter.pc_norm.lm_ip);
+
       top = hpcrun_logical_stack_push(lstack, &reg);
     } else {
       // Update the top region with the new frame
