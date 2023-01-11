@@ -74,7 +74,7 @@ ubuntu:20.04)
       # Use the deadsnakes PPA to get up-to-date versions of Python 3.
       # See https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa
       echo "deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu focal main" > /etc/apt/sources.list.d/deadsnakes.list
-      apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776
+      cp ci/data/deadsnakes-ppa.gpg /etc/apt/trusted.gpg.d/deadsnakes-ppa.gpg
       apt_packages+=([python3.10]=1 [python3.10-venv]=1)
       ln -sf /usr/bin/python3.10 /usr/local/bin/python3
       ;;
