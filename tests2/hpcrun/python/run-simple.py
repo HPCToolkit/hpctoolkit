@@ -5,9 +5,8 @@ import collections
 import sys
 from pathlib import Path
 
-import ruamel.yaml
-from hpctoolkit.formats.v4 import Database
-from hpctoolkit.formats.v4.metadb import Context, EntryPoint
+from hpctoolkit.formats import from_path
+from hpctoolkit.match.context import MatchCtx, MatchEntryPoint, chainmatch
 from hpctoolkit.test.execution import hpcprof, hpcrun
 
 parser = argparse.ArgumentParser()
@@ -25,66 +24,25 @@ with hpcrun("-e", "REALTIME", [sys.executable, str(args.script)] + args.script_a
     meas.check_standard(procs=1, threads_per_proc=args.threads_per_proc)
 
     with hpcprof(meas) as raw_db:
-        db = Database.from_dir(raw_db.basedir)
+        db = from_path(raw_db.basedir)
 
-        try:
-            # <program root>
-            ep = next(
-                ep
-                for ep in db.meta.Context.entryPoints
-                if ep.entryPoint == EntryPoint.EntryPoint.main_thread
+        matches = list(
+            chainmatch(
+                db.meta.Context,
+                MatchEntryPoint(entryPoint="main_thread"),
+                MatchCtx(relation="call", lexicalType="line", file=str(args.script)),
+                MatchCtx(relation="call", lexicalType="function", function="func_hi"),
+                MatchCtx(relation="lexical", lexicalType="line", file=str(args.script)),
+                MatchCtx(relation="call", lexicalType="function", function="func_mid"),
+                MatchCtx(relation="lexical", lexicalType="line", file=str(args.script)),
+                MatchCtx(relation="call", lexicalType="function", function="func_lo"),
             )
-
-            # -call> script.py:N
-            fm = next(
-                c
-                for c in ep.children
-                if c.relation == Context.Relation.call
-                and c.lexicalType == Context.LexicalType.line
-                and c.file.path.endswith(str(args.script))
-            )
-
-            # -call> func_hi -lexical> script.py:N
-            f1 = next(
-                c
-                for c in fm.children
-                if c.relation == Context.Relation.call
-                and c.lexicalType == Context.LexicalType.function
-                and c.function.name == "func_hi"
-            )
-            f1l = next(
-                c
-                for c in f1.children
-                if c.relation == Context.Relation.lexical
-                and c.lexicalType == Context.LexicalType.line
-                and c.file == fm.file
-            )
-
-            # -call> func_mid -lexical> script.py:N
-            f2 = next(
-                c
-                for c in f1l.children
-                if c.relation == Context.Relation.call
-                and c.lexicalType == Context.LexicalType.function
-                and c.function.name == "func_mid"
-            )
-            f2l = next(
-                c
-                for c in f2.children
-                if c.relation == Context.Relation.lexical
-                and c.lexicalType == Context.LexicalType.line
-                and c.file == fm.file
-            )
-
-            # -call> func_lo
-            f3 = next(
-                c
-                for c in f2l.children
-                if c.relation == Context.Relation.call
-                and c.lexicalType == Context.LexicalType.function
-                and c.function.name == "func_lo"
-            )
-        except StopIteration as e:
+        )
+        if not matches:
             sys.setrecursionlimit(100000)
             ruamel.yaml.YAML(typ="rt").dump(db.meta.Context, sys.stdout)
-            raise e from None
+            raise ValueError("Unable to find match!")
+        if len(matches) > 1:
+            sys.setrecursionlimit(100000)
+            ruamel.yaml.YAML(typ="rt").dump(db.meta.Context, sys.stdout)
+            raise ValueError(f"Found {len(matches)} matches, expected 1!")
