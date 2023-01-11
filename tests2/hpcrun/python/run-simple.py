@@ -5,6 +5,7 @@ import collections
 import sys
 from pathlib import Path
 
+import ruamel.yaml
 from hpctoolkit.formats import from_path
 from hpctoolkit.match.context import MatchCtx, MatchEntryPoint, chainmatch
 from hpctoolkit.test.execution import hpcprof, hpcrun
