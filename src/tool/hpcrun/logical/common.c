@@ -51,6 +51,7 @@
 #include "hpcrun-malloc.h"
 #include "messages/messages.h"
 #include "thread_data.h"
+#include "env.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -70,7 +71,8 @@ void hpcrun_logical_init() {
   metadata = NULL;
 
 #ifdef ENABLE_LOGICAL_PYTHON
-  hpcrun_logical_python_init();
+  if(hpcrun_get_env_bool("HPCRUN_LOGICAL_PYTHON"))
+    hpcrun_logical_python_init();
 #endif
 }
 

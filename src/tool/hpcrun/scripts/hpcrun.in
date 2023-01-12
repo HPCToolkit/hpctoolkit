@@ -29,6 +29,7 @@ opt_have_gtpin='@OPT_HAVE_GTPIN@'
 opt_have_level0='@OPT_HAVE_LEVEL0@'
 opt_have_opencl='@OPT_HAVE_OPENCL@'
 opt_have_rocm='@OPT_HAVE_ROCM@'
+opt_enable_python='@OPT_ENABLE_PYTHON@'
 
 #------------------------------------------------------------
 # On Cray Slingshot 11 systems, there is not yet complete
@@ -162,6 +163,30 @@ Options: Profiling (Defaults shown in curly brackets {})
                        specified, hpcrun will collect CPUTIME samples 200 times per
                        second per application thread.
 
+  -a, --attribution <method>
+                       Use the given <method> to produce the calling contexts that metrics
+                       are attributed to. By default, the calling context is produced by
+                       unwinding C/C++ call stack. Passing this option allows for
+                       additive or alternative methods to be used, multiple options may be
+                       passed to apply multiple modifications. Available methods:
+
+                           -a flat
+                                Don't unwind the call stack, instead attribute metrics to
+                                the leaf procedures (i.e. produce a "flat" profile).
+EOF
+if test "$opt_enable_python" = yes
+then cat <<EOF
+
+                           -a python
+                                Attribute to Python code and functions, instead of to
+                                C functions in the Python interpreter.
+                                NOTE: May cause crashes or not function if used with a
+                                different Python than HPCToolkit was built with.
+                                Highly experimental. Use at your own risk.
+EOF
+fi
+cat <<EOF
+
   -c, --count <howoften>
                        Only  available  for  events  managed  by Linux perf. This
                        option specifies a default value for how often to sample. The
@@ -216,6 +241,7 @@ Options: Profiling (Defaults shown in curly brackets {})
 
   -nu, --no-unwind     Disable unwinding and collect a flat profile of leaf
                        procedures only instead of full calling contexts.
+                       Equivalent to -a flat.
 
 
 Options to consider only when hpcrun causes an application to fail:
@@ -378,9 +404,24 @@ do
 
 	# --------------------------------------------------
 
-	-a | --agent )
+	-a | --attribution )
 	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_OPT_LUSH_AGENTS="$1"
+	    case "$1" in
+	        flat )
+		    export HPCRUN_NO_UNWIND=1
+		    ;;
+
+		python )
+		    if test "$opt_enable_python" != yes; then
+			die "HPCToolkit was not compiled with Python support enabled"
+		    fi
+		    export HPCRUN_LOGICAL_PYTHON=1
+		    ;;
+
+		* )
+		    die "Invalid argument for $arg: $1"
+		    ;;
+	    esac
 	    shift
 	    ;;
 
