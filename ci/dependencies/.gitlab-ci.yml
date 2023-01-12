@@ -225,7 +225,10 @@ deps:build arm64:
   # image and skip all this hassle.
   - |
     cmp_img() {
-      sudo -u build buildah from --isolation chroot "$DEPS_IMAGES-$IMAGE-$ARCH" > container || return $?
+      sudo -u build buildah from --isolation chroot "$DEPS_IMAGES-$IMAGE-$ARCH" > container \
+        || sudo -u build buildah from --isolation chroot "$DEPS_IMAGES-$IMAGE-$ARCH" > container \
+        || sudo -u build buildah from --isolation chroot "$DEPS_IMAGES-$IMAGE-$ARCH" > container \
+        || return $?
       sudo -u build buildah unshare --mount C=$(cat container) sh -c "
         cmp ci/dependencies/latest/spack.yaml \$C/spack/cenv/latest/spack.yaml \
         && cmp ci/dependencies/latest/c/$OS/$ARCH/spack.lock \$C/spack/cenv/latest/spack.lock \
