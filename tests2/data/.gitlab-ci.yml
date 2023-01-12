@@ -57,7 +57,7 @@
     IMAGE_BASE: ubuntu20.04
     ARCH: amd64
     JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
+    SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda ~rocm ~level0'
     SLUG: cpu
 
 'regen testdata: [+cuda]':
@@ -73,7 +73,7 @@
     IMAGE_EXT: +cuda
     ARCH: amd64
     JOB_CC: gcc-9
-    SPEC: '+tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0'
+    SPEC: '+tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0'
     SLUG: cuda
   before_script:
   - !reference [.regen job, before_script]
@@ -92,7 +92,7 @@
     IMAGE_EXT: +rocm
     ARCH: amd64
     JOB_CC: gcc-9
-    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0'
+    SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda +rocm ~level0'
     SLUG: rocm
   before_script:
   - !reference [.regen job, before_script]
