@@ -114,8 +114,7 @@ void LogicalFile::load(const Module& m, udModule& data) noexcept {
   if(f == nullptr) return;  // Can't do anything if we can't open it
 
   char buf[11] = {0};
-  std::fread(buf, 10, 1, f);
-  if(std::strcmp(buf, "HPCLOGICAL") != 0) {
+  if(std::fread(buf, 10, 1, f) < 1 || std::strcmp(buf, "HPCLOGICAL") != 0) {
     std::fclose(f);
     return;  // Not a logical file
   }
