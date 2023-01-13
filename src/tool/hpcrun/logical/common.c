@@ -223,16 +223,16 @@ static const char* name_for(uint16_t lm_id) {
 
 static void logicalize_bt(backtrace_info_t* bt, int isSync) {
   thread_data_t* td = hpcrun_get_thread_data();
-  if(td->logical.depth == 0) return;  // No need for our services
+  if(td->logical_regs.depth == 0) return;  // No need for our services
 
   TMSG(LOGICAL_UNWIND, "========= Logicalizing backtrace =========");
 
   frame_t* bt_cur = bt->begin;
 
   struct logical_region_segment_t* seg;
-  size_t off = td->logical.depth % REGIONS_PER_SEGMENT;
+  size_t off = td->logical_regs.depth % REGIONS_PER_SEGMENT;
   bool first = true;
-  for(seg = td->logical.head; seg != NULL; seg = seg->prev) {
+  for(seg = td->logical_regs.head; seg != NULL; seg = seg->prev) {
     for(; off > 0; off--) {
       logical_region_t* cur = &seg->regions[off-1];
 

@@ -504,8 +504,7 @@ hpcrun_thread_data_init
   // ----------------------------------------
   // Logical unwinding v2
   // ----------------------------------------
-  hpcrun_logical_stack_init(&td->logical);
-  td->python_function_cache = NULL;
+  hpcrun_logical_stack_init(&td->logical_stack);
 
   // ----------------------------------------
   // debug support

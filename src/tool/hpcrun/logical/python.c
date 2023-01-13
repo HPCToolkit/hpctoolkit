@@ -165,7 +165,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   int safe_ok = hpcrun_safe_enter();
   assert(safe_ok && "Python called by init code???");
   thread_data_t* td = hpcrun_get_thread_data();
-  logical_region_stack_t* lstack = &td->logical;
+  logical_region_stack_t* lstack = &td->logical_regs;
   switch(what) {
   case PyTrace_CALL: {
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
