@@ -1,5 +1,5 @@
 project('hpctsuite', 'c', 'cpp',
-  meson_version: '>=0.62.2',
+  meson_version: '>=0.64.0',
   license: 'BSD-3-Clause',
   default_options: ['c_std=gnu11', 'cpp_std=gnu++17', 'cuda_std=c++17'])
 

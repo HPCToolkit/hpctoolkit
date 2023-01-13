@@ -52,7 +52,7 @@ spack:
 
   # Special dependencies for the tests2 suite
   - python @3.10
-  - meson @0.62.2
+  - meson @0.64.0
   - py-pytest @7.1.3
   - py-ruamel-yaml @0.17.16
 
