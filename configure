@@ -23207,9 +23207,47 @@ case "$PYTHON_CONFIG" in
   no )
     ;;
   * )
-    # TODO: Check that its Python >= 3.8, which is needed for our injection method
     OPT_PYTHON_IFLAGS="`$PYTHON_CONFIG --includes`"
-    OPT_ENABLE_PYTHON=yes
+
+    # Check that Python >= 3.10 and < 4.0
+    ORIG_CFLAGS="$CFLAGS"
+    CFLAGS="${HOST_CFLAGS} ${CFLAGS} ${OPT_PYTHON_IFLAGS}"
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <Python.h>
+#if PY_VERSION_HEX >= 0x04000000
+#error "Python version too new, need 3.x!"
+#elif PY_VERSION_HEX < 0x030A00F0
+#error "Python version too old, need 3.10 or higher!"
+#endif
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  OPT_ENABLE_PYTHON=yes
+else
+  OPT_ENABLE_PYTHON=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+    CFLAGS="$ORIG_CFLAGS"
+
+    if test "$OPT_ENABLE_PYTHON" != yes; then
+      as_fn_error $? "Python version is incompatible, need >=3.10: $PYTHON_CONFIG" "$LINENO" 5
+    fi
     ;;
 esac
 

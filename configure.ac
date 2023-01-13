@@ -4322,9 +4322,30 @@ case "$PYTHON_CONFIG" in
   no )
     ;;
   * )
-    # TODO: Check that its Python >= 3.8, which is needed for our injection method
     OPT_PYTHON_IFLAGS="`$PYTHON_CONFIG --includes`"
-    OPT_ENABLE_PYTHON=yes
+
+    # Check that Python >= 3.10 and < 4.0
+    ORIG_CFLAGS="$CFLAGS"
+    CFLAGS="${HOST_CFLAGS} ${CFLAGS} ${OPT_PYTHON_IFLAGS}"
+    AC_LANG_PUSH([C])
+
+    AC_COMPILE_IFELSE([
+    AC_LANG_SOURCE([[
+#include <Python.h>
+#if PY_VERSION_HEX >= 0x04000000
+#error "Python version too new, need 3.x!"
+#elif PY_VERSION_HEX < 0x030A00F0
+#error "Python version too old, need 3.10 or higher!"
+#endif
+]])],
+    [OPT_ENABLE_PYTHON=yes],
+    [OPT_ENABLE_PYTHON=no])
+    AC_LANG_POP()
+    CFLAGS="$ORIG_CFLAGS"
+
+    if test "$OPT_ENABLE_PYTHON" != yes; then
+      AC_MSG_ERROR([Python version is incompatible, need >=3.10: $PYTHON_CONFIG])
+    fi
     ;;
 esac
 
