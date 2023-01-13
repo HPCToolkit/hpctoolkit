@@ -384,6 +384,7 @@ autoreconf check:
   extends: .build-job
 
   variables:
+    CENV: latest
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -392,7 +393,7 @@ autoreconf check:
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
-    img-config "ci/dependencies/latest;/spack/cenv/latest"
+    img-config "ci/dependencies/$CENV;/spack/cenv/$CENV"
     --spack-no-install --ccache-stats --test-junit-copyout
     --reproducible ${REPROD_CMDS:- --reproduction-cmd 'touch img-config'}
     -1 -s "$SPEC"
@@ -403,6 +404,9 @@ autoreconf check:
     paths:
     - logs/
     when: always
+.check min:
+  variables:
+    CENV: minimum
 
 .check job amd64:
   extends: .check job
@@ -444,6 +448,8 @@ autoreconf check:
   before_script:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
+'check min amd64: [cpu]':
+  extends: ['check amd64: [cpu]', .check min]
 'check arm64: [cpu]':
   extends: .check job arm64
   tags: [docker, linux/$ARCH]
@@ -454,6 +460,8 @@ autoreconf check:
   before_script:
   - !reference [.check job arm64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10"
+'check min arm64: [cpu]':
+  extends: ['check arm64: [cpu]', .check min]
 
 'check amd64: [+cuda]':
   extends: .check job amd64
@@ -475,6 +483,8 @@ autoreconf check:
   - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+'check min amd64: [+cuda]':
+  extends: ['check amd64: [+cuda]', .check min]
 
 'check amd64: [+rocm]':
   extends: .check job amd64
@@ -496,6 +506,8 @@ autoreconf check:
   - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-rocm=/opt/rocm' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+'check min amd64: [+rocm]':
+  extends: ['check amd64: [+rocm]', .check min]
 
 
 # Perform linting tasks that can only be done when the whole build is complete
