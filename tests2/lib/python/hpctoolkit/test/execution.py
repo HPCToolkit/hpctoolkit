@@ -123,10 +123,23 @@ def hpcrun(*args, timeout: int = None, env=None, output=None):
         proc = _subproc_run(
             "hpcrun", [hpcrun, *hpcrun_args] + ["-o", mdir, *exe_args], timeout=timeout, env=env
         )
+        m = Measurements(mdir)
+        # Dump the log files for debugging purposes
+        try:
+            for t in m.thread_stems:
+                if fn := m.logfile(t):
+                    print(f"--- --- {fn.name}", file=sys.stderr, flush=True)
+                    with open(fn) as f:
+                        for line in f:
+                            print(line.rstrip(), file=sys.stderr)
+            print("--- --- END LOGS", file=sys.stderr, flush=True)
+        except OSError:
+            pass
+
         if proc.returncode != 0:
             raise PredictableFailure("hpcrun returned a non-zero exit code!")
 
-        yield Measurements(mdir)
+        yield m
 
 
 class Database:
