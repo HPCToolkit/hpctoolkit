@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2021-2023, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef LOGICAL_COMMON_H
+#define LOGICAL_COMMON_H
+
 #include "frame.h"
 #include "hpctoolkit-config.h"
 #include "utilities/ip-normalized.h"
@@ -59,9 +62,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "lib/prof-lean/stdatomic.h"
-
-#ifndef LOGICAL_COMMON_H
-#define LOGICAL_COMMON_H
 
 // --------------------------------------
 // Logical stack and mutator functions

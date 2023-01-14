@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2021, Rice University
+// Copyright ((c)) 2021-2023, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,10 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <stdint.h>
-
 #ifndef LOGICAL_PYTHON_H
 #define LOGICAL_PYTHON_H
+
+#include <stdint.h>
 
 typedef struct logical_python_frame_t {
   // Cached fid for this frame
