@@ -101,10 +101,14 @@ static bool python_unwind(logical_region_t* region, void** store,
     return false;
   }
   logical_python_frame_t* lframe = &in_lframe->python;
+
   if(state->cfunc != NULL) {
+    // We already exited Python via a call to a C function, so the topmost
+    // logical frame should be the C function (from Python's perspective).
+    // Emit that frame here and adjust index so the rest of the code is general.
     if(index == 0) {
       TMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
-            DL(PyEval_GetFuncName)(state->cfunc));
+           DL(PyEval_GetFuncName)(state->cfunc));
       if(lframe->fid == 0)
         lframe->fid = hpcrun_logical_metadata_fid(&python_metastore, DL(PyEval_GetFuncName)(state->cfunc), NULL, 0);
       frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, 0);
@@ -112,8 +116,11 @@ static bool python_unwind(logical_region_t* region, void** store,
     }
     index--;
   }
+
+  // Initialize *store to the topmost PyFrameObject
   if(index == 0) *store = state->frame;
 
+  // Decipher the PyFrameObject to generate the final logical frame
   PyFrameObject* pyframe = *store;
   PyCodeObject* code = DL(PyFrame_GetCode)(pyframe);
   Py_DECREF(code);
@@ -131,22 +138,23 @@ static bool python_unwind(logical_region_t* region, void** store,
     TMSG(LOGICAL_CTX_PYTHON, "Registered the above as Python fid #%x", lframe->fid);
   }
   frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, DL(PyFrame_GetLineNumber)(pyframe));
+
+  // Fetch the next frame in the unwind and save that in *store for next time
   PyFrameObject* prevframe = DL(PyFrame_GetBack)(pyframe);
   Py_XDECREF(prevframe);
   if(ENABLED(LOGICAL_CTX_PYTHON) && prevframe == state->caller && index+1 < region->expected)
     TMSG(LOGICAL_CTX_PYTHON, "Python appears to be missing some frames, got %d of %d (caller = %p)", index+1, region->expected, state->caller);
   *store = prevframe;
+
+  // Stop whenever the next unwound frame is not part of this logical region
+  // PyFrame_GetBack returns NULL and state->caller is NULL for the bottommost
+  // PyFrameObject/logical_region_t, so this is a generic comparison.
   return prevframe != state->caller;
 }
 
 // -----------------------------
 // Python frame fixup routines
 // -----------------------------
-
-static const char* name_for(uint16_t lm_id) {
-  const load_module_t* lm = hpcrun_loadmap_findById(lm_id);
-  return lm == NULL ? "<placeholders>" : lm->name;
-}
 
 static const frame_t* python_afterexit(logical_region_t* reg,
     const frame_t* cur, const frame_t* top) {
@@ -161,13 +169,19 @@ static const frame_t* python_afterexit(logical_region_t* reg,
 // Python integration hooks
 // -----------------------------
 
+// NOTE: Only used for producing nicer debug log output.
+static const char* name_for(uint16_t lm_id) {
+  const load_module_t* lm = hpcrun_loadmap_findById(lm_id);
+  return lm == NULL ? "<not found>" : lm->name;
+}
+
 static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject* arg) {
   int safe_ok = hpcrun_safe_enter();
   assert(safe_ok && "Python called by init code???");
   thread_data_t* td = hpcrun_get_thread_data();
   logical_region_stack_t* lstack = &td->logical_regs;
   switch(what) {
-  case PyTrace_CALL: {
+  case PyTrace_CALL: {  // Some Python function was called
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     IF_ENABLED(LOGICAL_CTX_PYTHON) {
       PyCodeObject* code = DL(PyFrame_GetCode)(frame);
@@ -179,18 +193,18 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
            DL(PyFrame_GetLineNumber)(frame), frame);
     }
     if(top == NULL || top->exit_len > 0) {
-      // We have entered a new Python region for the first time. Push it.
+      // We are (re)entering Python from C. Push a brand new logical region
       logical_region_t reg = {
         .generator = python_unwind, .specific = {.python = {
           .lm = 0, .caller = DL(PyFrame_GetBack)(frame),
           .frame = frame, .cfunc = NULL,
         }},
-        .expected = 1,  // This should be a top-level frame
+        .expected = 1,
         .beforeenter = {}, .exit = {}, .exit_len = 0, .afterexit = python_afterexit,
       };
       Py_XDECREF(reg.specific.python.caller);
 
-      // Unwind out through libpython.so to identify the appropriate physical caller
+      // Unwind out through libpython.so to identify the appropriate C caller
       hpcrun_logical_frame_cursor(&reg.beforeenter, 1);
       reg.specific.python.lm = reg.beforeenter.pc_norm.lm_id;
       TMSG(LOGICAL_CTX_PYTHON, "Fixing beforeenter be out of libpython.so, start sp = %p  ip = %s +%p",
@@ -206,52 +220,65 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
 
       top = hpcrun_logical_stack_push(lstack, &reg);
     } else {
-      // Update the top region with the new frame
+      // Python is calling Python. Update the topmost frame in the region.
       top->specific.python.frame = frame;
       top->expected++;
     }
+
+    // Push a blank frame onto the substack for caching bits during the unwind.
     hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0, NULL}});
     break;
   }
-  case PyTrace_C_CALL: {
+  case PyTrace_C_CALL: {  // Python is calling a C function
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call into C via function %s from frame = %p",
          top->expected, top->expected+1, DL(PyEval_GetFuncName)(arg), frame);
     assert(top != NULL && "Python C_CALL without a logical stack???");
-    // Update the top region to note that we have exited Python
+
+    // Update the top region to record that we have exited Python. Assume there
+    // is a stable physical frame within the top 4 callers of this callback.
     top->specific.python.cfunc = arg;
     top->expected++;
     top->exit_len = 4;
     for(size_t i = 0; i < top->exit_len; ++i)
       top->exit[i] = hpcrun_logical_frame_sp(i + 1);
+
+    // Push a blank frame onto the substack for caching bits during the unwind.
     hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0, NULL}});
     break;
   }
-  case PyTrace_C_RETURN: {
+  case PyTrace_C_RETURN: {  // A C function is returning, back into Python
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] return from C into Python frame = %p",
          top->expected, top->expected-1, frame);
     assert(top != NULL && "Python C_RETURN without a logical stack???");
-    // Update the top region to note that we have re-entered Python
+
+    // Update the top region to record that we have re-entered Python
     top->specific.python.cfunc = NULL;
     top->expected--;
     top->exit_len = 0;
+
+    // Pop the topmost frame from the substack, we don't need it anymore.
     hpcrun_logical_substack_pop(lstack, top, 1);
     break;
   }
-  case PyTrace_RETURN: {
+  case PyTrace_RETURN: {  // Python is returning from a Python function.
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     assert(top != NULL && "Python RETURN without a logical stack???");
+
+    // Fetch the frame we are returning into
     PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
     Py_XDECREF(prevframe);
     TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] (about to) return from Python frame = %p, now at frame %p",
          top->expected, top->expected-1, frame, prevframe);
+
     if(prevframe == top->specific.python.caller) {
-      // We are exiting a Python region. Pop it from the stack.
+      // We are actually returning out of a Python function called from C.
+      // Pop the topmost logical region and pull out.
       hpcrun_logical_substack_settop(lstack, top, 0);
       hpcrun_logical_stack_pop(lstack, 1);
     } else {
-      // Update the top region with the new frame
+      // Update the top region with the new frame, and pop the unneeded frame
       top->specific.python.frame = prevframe;
       top->expected--;
       hpcrun_logical_substack_pop(lstack, top, 1);
@@ -259,7 +286,8 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     break;
   }
   case PyTrace_C_EXCEPTION:
-    // We seem to get a C_RETURN right after this, so we don't really need to care
+    // We seem to get a C_RETURN right after this, so we don't need to do
+    // anything special here.
     break;
   case PyTrace_EXCEPTION:
   case PyTrace_LINE:
@@ -271,10 +299,12 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
 }
 
 static int python_audit(const char* event, PyObject* args, void* ud) {
-  // We're in! Overwrite the profiler before anything else happens
+  // Set the trace function so we start getting callbacks from Python
   if(strcmp(event, "sys.setprofile") != 0)
     DL(PyEval_SetProfile)(python_profile, NULL);
-  // Make sure we will be logicalizing backtraces later
+
+  // We want our samples to be recorded in Python form, so make sure the
+  // backtrace finalizer to make that happen is registered.
   hpcrun_safe_enter();
   hpcrun_logical_register();
   hpcrun_safe_exit();

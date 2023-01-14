@@ -208,7 +208,9 @@ size_t hpcrun_logical_substack_settop(logical_region_stack_t* s, logical_region_
 
 static void logicalize_bt(backtrace_info_t*, int);
 static bool logicalize_bt_registered = false;
-static cct_backtrace_finalize_entry_t logicalize_bt_entry = {logicalize_bt};
+static cct_backtrace_finalize_entry_t logicalize_bt_entry = {
+  .fn = logicalize_bt, .next = NULL,
+};
 void hpcrun_logical_register() {
   if(!logicalize_bt_registered) {
     cct_backtrace_finalize_register(&logicalize_bt_entry);
@@ -216,9 +218,10 @@ void hpcrun_logical_register() {
   }
 }
 
+// NOTE: Only used for producing nicer debug log output.
 static const char* name_for(uint16_t lm_id) {
   const load_module_t* lm = hpcrun_loadmap_findById(lm_id);
-  return lm == NULL ? "<placeholders>" : lm->name;
+  return lm == NULL ? "<not found>" : lm->name;
 }
 
 static void logicalize_bt(backtrace_info_t* bt, int isSync) {
@@ -236,7 +239,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
     for(; off > 0; off--) {
       logical_region_t* cur = &seg->regions[off-1];
 
-      // Progress the cursor until the first frame_t within this logical segment
+      // Progress the cursor until the first frame_t within this logical region
       frame_t* bt_top = bt_cur;
       if(cur->exit_len > 0) {
         while(1) {
@@ -255,6 +258,8 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
           if(bt_cur == bt->last) goto earlyexit;
           bt_cur++;
         }
+
+        // Possibly adjust the cursor back if the logical region requests
         if(cur->afterexit != NULL) {
           frame_t* new_exit = (frame_t*)cur->afterexit(cur, bt_cur, bt_top);
           assert(bt_top <= new_exit && new_exit <= bt_cur && "afterexit gave invalid frame!");
@@ -273,7 +278,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       // Scan through until we've seen everything including the enter
       while(bt_cur->cursor.sp != cur->beforeenter.sp) {
         TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
-              name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
+             name_for(bt_cur->ip_norm.lm_id), bt_cur->ip_norm.lm_ip);
         if(bt_cur == bt->last) goto earlyexit;
         bt_cur++;
       }
@@ -329,7 +334,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
         if(index+1 < cur->expected)
           TMSG(LOGICAL_UNWIND, "== WARNING less frames than expected generated above! == ");
 
-      // Shift the physical frames down to fill the gap
+      // Shift the remaining physical frames down to fill in any gaps
       bt_cur = logical_start + index + 1;
       memmove(bt_cur, logical_end, (bt->last - logical_end + 1)*sizeof(frame_t));
       bt->last = bt_cur + (bt->last - logical_end);
@@ -390,11 +395,12 @@ void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
                  store->path, strerror(errno));
   }
 
+  // Then create the file where all the bits will be dumped
   next += sprintf(next, "/%s.", store->generator);
   int fd = -1;
   do {
-    // Create the file where all the bits will be dumped
-    // The last part is just randomly generated to not conflict
+    // The last part of the name is just randomly generated until no conflict
+    // <50% chance of conflict until ~5 billion metadata files
     sprintf(next, "%08lx", random());
     fd = open(store->path, O_WRONLY | O_EXCL | O_CREAT, 0644);
     if(fd == -1) {
@@ -442,36 +448,52 @@ static size_t int_hash(uint32_t x) {
 static struct logical_metadata_store_entry_t* hashtable_probe(
     logical_metadata_store_t* store, const struct logical_metadata_store_entry_t* needle) {
   for(size_t i = 0; i < store->tablesize/2; i++) {
-    // Quadratic probe
+    // Simple quadratic probing scheme
     struct logical_metadata_store_entry_t* entry =
         &store->idtable[(needle->hash+i*i) & (store->tablesize-1)];
-    if(entry->id == 0) return entry;  // Empty entry
+
+    if(entry->id == 0) {
+      // We hit an empty entry, so it must not be in the table.
+      return entry;
+    }
+
+    // Check all the cheap comparisons first
     if(needle->hash != entry->hash) continue;
     if((needle->funcname == NULL) != (entry->funcname == NULL)) continue;
     if((needle->filename == NULL) != (entry->filename == NULL)) continue;
     if(needle->lineno != entry->lineno) continue;
+
+    // Then do the expensive string comparisons
     if(needle->funcname != NULL && strcmp(needle->funcname, entry->funcname) != 0)
       continue;
     if(needle->filename != NULL && strcmp(needle->filename, entry->filename) != 0)
       continue;
-    return entry;  // Found it!
+
+    // Everything matches, we found it!
+    return entry;
   }
-  return NULL;  // Ran out of probes
+
+  // Ran out of probes, we should have found it by now. Must not be here.
+  return NULL;
 }
 
 static void hashtable_grow(logical_metadata_store_t* store) {
-  if(store->idtable == NULL) { // First one's easy
-    store->tablesize = 1<<8;  // Start off with 256
+  if(store->idtable == NULL) {
+    // If the table hasn't been created yet, start off with 256 entries
+    store->tablesize = 1<<8;
     store->idtable = hpcrun_malloc(store->tablesize * sizeof store->idtable[0]);
     memset(store->idtable, 0, store->tablesize * sizeof store->idtable[0]);
     return;
   }
 
+  // Otherwise, grow the table by 4x (to lower the number of times we grow)
   size_t oldsize = store->tablesize;
   struct logical_metadata_store_entry_t* oldtable = store->idtable;
-  store->tablesize *= 4;  // We want to reduce grows, to reduce our leak
+  store->tablesize *= 4;
   store->idtable = hpcrun_malloc(store->tablesize * sizeof store->idtable[0]);
   memset(store->idtable, 0, store->tablesize * sizeof store->idtable[0]);
+
+  // Copy all the non-empty entries from the old table into the new one
   for(size_t i = 0; i < oldsize; i++) {
     if(oldtable[i].id != 0) {
       struct logical_metadata_store_entry_t* e = hashtable_probe(store, &oldtable[i]);
@@ -479,7 +501,8 @@ static void hashtable_grow(logical_metadata_store_t* store) {
       *e = oldtable[i];
     }
   }
-  // free(oldtable);  // hpcrun_malloc memory isn't freeable
+
+  // We should free oldtable here, but hpcrun_malloc memory can't be freed...
 }
 
 uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
@@ -496,20 +519,25 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
     .hash = string_hash(funcname) ^ string_hash(filename) ^ int_hash(lineno),
   };
 
-  // Probe for the entry, or where it should be.
+  // Probe for the entry, or at least where it should be.
   struct logical_metadata_store_entry_t* entry = hashtable_probe(store, &pattern);
-  if(entry != NULL && entry->id != 0) {  // We have it!
+  if(entry != NULL && entry->id != 0) {
+    // Found it! We're done here.
     spinlock_unlock(&store->lock);
     return entry->id;
   }
   if(entry == NULL) {
+    // We didn't find it, but we also didn't find an empty slot to put the new
+    // entry. Grow the table and re-probe to get an empty space for us.
     hashtable_grow(store);
     entry = hashtable_probe(store, &pattern);
     assert(entry != NULL && "Entry still not found after growth!");
   }
-  *entry = pattern;
 
-  // Make sure the entry has copies of the strings for later, and assign an id
+  // This is a brand new entry. Copy most fields, and make copies of the strings
+  // to ensure someone doesn't accidentally free the memory out from under us.
+  *entry = pattern;
+  entry->id = store->nextid++;
   if(entry->funcname != NULL) {
     const char* base = entry->funcname;
     entry->funcname = hpcrun_malloc(strlen(base)+1);
@@ -520,7 +548,6 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
     entry->filename = hpcrun_malloc(strlen(base)+1);
     strcpy(entry->filename, base);
   }
-  entry->id = store->nextid++;
 
   spinlock_unlock(&store->lock);
   return entry->id;
