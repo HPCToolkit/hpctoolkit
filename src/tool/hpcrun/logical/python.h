@@ -49,24 +49,33 @@
 
 #include <stdint.h>
 
+/// Python-specific data to store in each #logical_frame_t.
 typedef struct logical_python_frame_t {
-  // Cached fid for this frame
+  /// Cached fid for this frame.
   uint32_t fid;
-  // PyCodeObject used to generate the above fid, in case we get out of sync
+
+  /// PyCodeObject used to generate the above fid. May be needed when bits go
+  /// out of sync sometimes.
   void* code;
 } logical_python_frame_t;
 
+/// Python-specific data to store in each #logical_region_t.
 typedef struct logical_python_region_t {
-  // Load module id for the Python infrastructure itself
+  /// Load module id for the Python infrastructure itself (libpython.so)
   int16_t lm;
-  // Latest PyFrameObject NOT to report (or NULL)
+
+  /// Topmost PyFrameObject that should not be reported as part of this region,
+  /// or `NULL` if the bottommost Python region.
   void* caller;
-  // Latest PyFrameObject (top of the stack)
+
+  /// Current topmost PyFrameObject, as determined by tracer callbacks.
   void* frame;
-  // If not NULL, the PyObject used to exit Python (via C_CALL)
+
+  /// If not `NULL`, the PyObject that was called to exit Python (`C_CALL`).
   void* cfunc;
 } logical_python_region_t;
 
+/// Initialize the Python logical attribution sub-system.
 extern void hpcrun_logical_python_init();
 
 #endif  // LOGICAL_PYTHON_H

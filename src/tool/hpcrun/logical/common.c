@@ -439,11 +439,11 @@ static size_t int_hash(uint32_t x) {
     uint64_t: ((uint64_t)x << 32) | x);
 }
 
-static struct logical_metadata_store_hashentry_t* hashtable_probe(
-    logical_metadata_store_t* store, const struct logical_metadata_store_hashentry_t* needle) {
+static struct logical_metadata_store_entry_t* hashtable_probe(
+    logical_metadata_store_t* store, const struct logical_metadata_store_entry_t* needle) {
   for(size_t i = 0; i < store->tablesize/2; i++) {
     // Quadratic probe
-    struct logical_metadata_store_hashentry_t* entry =
+    struct logical_metadata_store_entry_t* entry =
         &store->idtable[(needle->hash+i*i) & (store->tablesize-1)];
     if(entry->id == 0) return entry;  // Empty entry
     if(needle->hash != entry->hash) continue;
@@ -468,13 +468,13 @@ static void hashtable_grow(logical_metadata_store_t* store) {
   }
 
   size_t oldsize = store->tablesize;
-  struct logical_metadata_store_hashentry_t* oldtable = store->idtable;
+  struct logical_metadata_store_entry_t* oldtable = store->idtable;
   store->tablesize *= 4;  // We want to reduce grows, to reduce our leak
   store->idtable = hpcrun_malloc(store->tablesize * sizeof store->idtable[0]);
   memset(store->idtable, 0, store->tablesize * sizeof store->idtable[0]);
   for(size_t i = 0; i < oldsize; i++) {
     if(oldtable[i].id != 0) {
-      struct logical_metadata_store_hashentry_t* e = hashtable_probe(store, &oldtable[i]);
+      struct logical_metadata_store_entry_t* e = hashtable_probe(store, &oldtable[i]);
       assert(e != NULL && "Failure while repopulating hash table!");
       *e = oldtable[i];
     }
@@ -491,13 +491,13 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
   spinlock_lock(&store->lock);
 
   // We're looking for an entry that looks roughly like this
-  struct logical_metadata_store_hashentry_t pattern = {
+  struct logical_metadata_store_entry_t pattern = {
     .funcname = (char*)funcname, .filename = (char*)filename, .lineno = lineno,
     .hash = string_hash(funcname) ^ string_hash(filename) ^ int_hash(lineno),
   };
 
   // Probe for the entry, or where it should be.
-  struct logical_metadata_store_hashentry_t* entry = hashtable_probe(store, &pattern);
+  struct logical_metadata_store_entry_t* entry = hashtable_probe(store, &pattern);
   if(entry != NULL && entry->id != 0) {  // We have it!
     spinlock_unlock(&store->lock);
     return entry->id;
@@ -531,7 +531,7 @@ static void cleanup_metadata_store(logical_metadata_store_t* store) {
   if(f == NULL) return;
   fprintf(f, "HPCLOGICAL");
   for(size_t idx = 0; idx < store->tablesize; idx++) {
-    struct logical_metadata_store_hashentry_t* entry = &store->idtable[idx];
+    struct logical_metadata_store_entry_t* entry = &store->idtable[idx];
     if(entry->id == 0) continue;
     hpcfmt_int4_fwrite(entry->id, f);
     hpcfmt_str_fwrite(entry->funcname, f);

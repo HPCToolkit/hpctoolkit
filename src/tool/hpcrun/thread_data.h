@@ -269,6 +269,8 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // Logical unwinding v2
   // ----------------------------------------
+
+  /// Stack of active logical regions in this thread.
   logical_region_stack_t logical_regs;
 
   // ----------------------------------------

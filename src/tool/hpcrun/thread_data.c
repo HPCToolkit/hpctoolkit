@@ -504,7 +504,7 @@ hpcrun_thread_data_init
   // ----------------------------------------
   // Logical unwinding v2
   // ----------------------------------------
-  hpcrun_logical_stack_init(&td->logical_stack);
+  hpcrun_logical_stack_init(&td->logical_regs);
 
   // ----------------------------------------
   // debug support
