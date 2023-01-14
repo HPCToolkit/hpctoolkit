@@ -58,6 +58,7 @@
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
+#include "lib/profile/finalizers/logical.hpp"
 #include "lib/profile/finalizers/struct.hpp"
 #include "lib/profile/finalizers/kernelsyms.hpp"
 #include "lib/profile/util/log.hpp"
@@ -172,6 +173,7 @@ int main(int argc, char* const argv[]) {
       pipelineB1 << std::make_unique<ProfArgs::StatisticsExtender>(args);
 
       // Load in the Finalizers for special cases
+      pipelineB1 << std::make_unique<finalizers::LogicalFile>();
       for(auto& sp : args.ksyms) pipelineB1 << std::move(sp.first);
 
       // Load in the Finalizers for Structfiles.
@@ -204,7 +206,7 @@ int main(int argc, char* const argv[]) {
 
       // We still need the Structfiles for FlowGraph data, but nothing else.
       for(auto& sp: args.structs) pipelineB1 << std::move(sp.first);
-  }
+    }
 
     // Receive any bits from below us in the tree. We save these blocks and
     // inject them into the second Pipeline to make everything consistent.
@@ -246,6 +248,8 @@ int main(int argc, char* const argv[]) {
 
     // We need to recreate the Context expansions identified by rank 0 here.
     // Load in a copy of all the finalizers.
+    finalizers::LogicalFile lf;
+    pipelineB2 << lf;
     for(auto& sp: args.ksyms)
       pipelineB2 << std::make_unique<finalizers::KernelSymbols>(sp.second);
     for(auto& sp: args.structs)

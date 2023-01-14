@@ -318,7 +318,7 @@ autoreconf check:
     IMAGE_BASE: almalinux8
     IMAGE_EXT: +cuda
     JOB_CC: gcc=8
-    SPEC: '+cuda ~rocm ~level0 ~tests2 (mpi papi opencl)[~<1]'
+    SPEC: '+cuda ~rocm ~level0 ~tests2 (mpi papi opencl python)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
   before_script:
   - !reference [.buildmany.amd64, before_script]
@@ -341,7 +341,7 @@ autoreconf check:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +rocm
     JOB_CC: gcc-9
-    SPEC: '~cuda +rocm ~level0 +tests2 (mpi papi opencl)[~<1]'
+    SPEC: '~cuda +rocm ~level0 +tests2 (mpi papi opencl python)[~<1]'
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull ROCm from the image itself
@@ -364,7 +364,7 @@ autoreconf check:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +intel
     JOB_CC: gcc-9
-    SPEC: '~cuda ~rocm +level0 +tests2 (mpi papi opencl)[~<1]'
+    SPEC: '~cuda ~rocm +level0 +tests2 (mpi papi opencl python)[~<1]'
   before_script:
   # The base Intel image has some extra elements on the PATH, make sure /usr/local/bin takes precdence
   - export PATH=/usr/local/bin:"$PATH"
@@ -444,7 +444,7 @@ autoreconf check:
   image: $DEPS_IMAGES-ubuntu20.04-$ARCH
   variables:
     JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
+    SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda ~rocm ~level0'
   before_script:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
@@ -456,7 +456,7 @@ autoreconf check:
   image: $DEPS_IMAGES-ubuntu20.04-$ARCH
   variables:
     JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +papi ~opencl ~cuda ~rocm ~level0'
+    SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda ~rocm ~level0'
   before_script:
   - !reference [.check job arm64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10"
@@ -472,7 +472,7 @@ autoreconf check:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +cuda
     JOB_CC: gcc-9
-    SPEC: +tests2 +mpi +debug +papi ~opencl +cuda ~rocm ~level0
+    SPEC: +tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0
   before_script:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite cuda"
@@ -495,7 +495,7 @@ autoreconf check:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +cuda
     JOB_CC: gcc-9
-    SPEC: +tests2 +mpi +debug +papi ~opencl ~cuda +rocm ~level0
+    SPEC: +tests2 +mpi +debug +papi +python ~opencl ~cuda +rocm ~level0
   before_script:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite rocm"

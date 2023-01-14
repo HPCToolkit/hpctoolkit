@@ -65,6 +65,7 @@
 #include "cct2metrics.h"
 #include "core_profile_trace_data.h"
 #include "ompt/omp-tools.h"
+#include "logical/common.h"
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>
@@ -265,6 +266,12 @@ typedef struct thread_data_t {
   // ----------------------------------------
   lushPthr_t     pthr_metrics;
 
+  // ----------------------------------------
+  // Logical unwinding v2
+  // ----------------------------------------
+
+  /// Stack of active logical regions in this thread.
+  logical_region_stack_t logical_regs;
 
   // ----------------------------------------
   // debug stuff

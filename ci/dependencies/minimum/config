@@ -15,4 +15,5 @@
 --with-memkind=${CTX}/view-unified/
 --with-opencl=${CTX}/view-unified/
 --with-yaml-cpp=${CTX}/view-unified/
+--with-python=${CTX}/view-unified/bin/python3-config
 MPICXX=${CTX}/view-unified/bin/mpicxx ENV{OMPI_CC}=${CC} ENV{OMPI_CXX}=${CXX}

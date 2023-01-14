@@ -4302,6 +4302,63 @@ AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
 
 AC_SUBST([hpclink_extra_wrap_names])
 
+#-------------------------------------------------
+# with-python: support for Python callstack unwinding
+#-------------------------------------------------
+
+PYTHON_CONFIG=no
+OPT_ENABLE_PYTHON=no
+OPT_PYTHON_IFLAGS=
+
+AC_ARG_WITH([python],
+  [AS_HELP_STRING([--with-python=PATH],
+      [path to Python config tool (python-config)])],
+  [PYTHON_CONFIG="$withval"],
+  [])
+
+AC_MSG_CHECKING([for python])
+
+case "$PYTHON_CONFIG" in
+  no )
+    ;;
+  * )
+    OPT_PYTHON_IFLAGS="`$PYTHON_CONFIG --includes`"
+
+    # Check that Python >= 3.10 and < 4.0
+    ORIG_CFLAGS="$CFLAGS"
+    CFLAGS="${HOST_CFLAGS} ${CFLAGS} ${OPT_PYTHON_IFLAGS}"
+    AC_LANG_PUSH([C])
+
+    AC_COMPILE_IFELSE([
+    AC_LANG_SOURCE([[
+#include <Python.h>
+#if PY_VERSION_HEX >= 0x04000000
+#error "Python version too new, need 3.x!"
+#elif PY_VERSION_HEX < 0x030A00F0
+#error "Python version too old, need 3.10 or higher!"
+#endif
+]])],
+    [OPT_ENABLE_PYTHON=yes],
+    [OPT_ENABLE_PYTHON=no])
+    AC_LANG_POP()
+    CFLAGS="$ORIG_CFLAGS"
+
+    if test "$OPT_ENABLE_PYTHON" != yes; then
+      AC_MSG_ERROR([Python version is incompatible, need >=3.10: $PYTHON_CONFIG])
+    fi
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_PYTHON], [test "$OPT_ENABLE_PYTHON" = yes])
+
+AC_MSG_RESULT([$PYTHON_CONFIG])
+
+AC_SUBST([OPT_ENABLE_PYTHON])
+AC_SUBST([OPT_PYTHON_IFLAGS])
+
+if test "x$OPT_ENABLE_PYTHON" = xyes ; then
+  AC_DEFINE([ENABLE_LOGICAL_PYTHON], [1], [Support for Python logical unwinding])
+fi
 
 #-------------------------------------------------
 # enable-xop: support for AMD XOP instructions
@@ -5291,6 +5348,10 @@ if test "$enable_tests2" = yes; then
   if test -n "$MPICXX"
   then meson_args="${meson_args} -Dmpi=enabled"
   else meson_args="${meson_args} -Dmpi=disabled"
+  fi
+  if test "$OPT_ENABLE_PYTHON" = yes
+  then meson_args="${meson_args} -Dpython=true"
+  else meson_args="${meson_args} -Dpython=false"
   fi
 
   eval echo meson "$meson_args"

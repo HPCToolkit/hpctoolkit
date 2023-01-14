@@ -56,6 +56,7 @@
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
+#include "lib/profile/finalizers/logical.hpp"
 
 #include <memory>
 #include <iostream>
@@ -70,7 +71,6 @@ int main(int argc, char* const argv[]) {
   // Get the main core of the Pipeline set up.
   ProfilePipeline::Settings pipelineB;
   for(auto& sp : args.sources) pipelineB << std::move(sp.first);
-  for(auto& sp : args.ksyms) pipelineB << std::move(sp.first);
   ProfArgs::StatisticsExtender se(args);
   pipelineB << se;
 
@@ -81,6 +81,11 @@ int main(int argc, char* const argv[]) {
   // Make sure the files are searched for as they should be
   ProfArgs::Prefixer pr(args);
   pipelineB << pr;
+
+  // Load in the Finalizers for special cases
+  finalizers::LogicalFile lf;
+  pipelineB << lf;
+  for(auto& sp : args.ksyms) pipelineB << std::move(sp.first);
 
   // Load in the Finalizers for Structfiles
   for(auto& sp : args.structs) pipelineB << std::move(sp.first);
