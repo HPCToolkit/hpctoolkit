@@ -66,23 +66,14 @@
 
 
 //******************************************************************************
-// interface operations
+// private operations
 //******************************************************************************
 
-void
-gpu_application_thread_process_activities
+static cct_node_t *
+gpu_application_thread_correlation_callback_impl
 (
- void
-)
-{
-  gpu_activity_channel_consume(gpu_metrics_attribute);
-}
-
-
-cct_node_t *
-gpu_application_thread_correlation_callback
-(
- uint64_t correlation_id
+ uint64_t correlation_id,
+ bool return_prev
 )
 {
   PRINT("enter gpu_correlation_callback %u\n", correlation_id);
@@ -102,6 +93,8 @@ gpu_application_thread_correlation_callback
 
   hpcrun_safe_exit();
 
+  cct_node_t *prev = node;
+
   cct_addr_t *node_addr = hpcrun_cct_addr(node);
 
   // elide unwanted context from GPU calling context: frames from
@@ -120,6 +113,7 @@ gpu_application_thread_correlation_callback
 
   // skip procedure frames in libhpcrun
   while (libhpcrun_id != 0 && node_addr->ip_norm.lm_id == libhpcrun_id) {
+    prev = node;
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
   }
@@ -127,9 +121,51 @@ gpu_application_thread_correlation_callback
   // skip any procedure frames that should be suppressed,
   // e.g. stripped procedure frames inside libcupti and libcuda
   while (module_ignore_map_module_id_lookup(node_addr->ip_norm.lm_id)) {
+    prev = node;
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
   }
 
-  return node;
+  // for some runtimes, returning first frame in runtime library yields
+  // a more pleasing unwind context
+  return (return_prev ? prev : node);
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+gpu_application_thread_process_activities
+(
+ void
+)
+{
+  gpu_activity_channel_consume(gpu_metrics_attribute);
+}
+
+
+cct_node_t *
+gpu_application_thread_correlation_callback
+(
+ uint64_t correlation_id
+)
+{
+  // don't return the first frame in the runtime
+  return gpu_application_thread_correlation_callback_impl
+    (correlation_id, false);
+}
+
+
+cct_node_t *
+gpu_application_thread_correlation_callback_rt1
+(
+ uint64_t correlation_id
+)
+{
+  // return the first frame in the runtime
+  return gpu_application_thread_correlation_callback_impl
+    (correlation_id, true);
 }

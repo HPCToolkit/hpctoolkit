@@ -95,7 +95,7 @@ typedef struct amd_gpu_binary {
 
 amd_gpu_binary_t* binary_list = NULL;
 
-// A spin lock to serialize two AMD GPU binary opertionas:
+// A spin lock to serialize two AMD GPU binary operations:
 // 1. parse and add a code object to the binary list
 // 2. look up a function name from the the binary list
 static spinlock_t rocm_binary_list_lock;
@@ -347,10 +347,18 @@ parse_amd_gpu_binary
 // to handle large GPU binaries. We will need to use more efficient
 // lookup data structure, a splay tree or a trie.
 
+//---------------------------------------------------------------------
+//   device_id is necessary to ensure that a kernel maps back to a
+//   binary suitable for the specified device. however, device_id is a
+//   small integer device index and AMD hasn't told us how we can use
+//   this to map back to a device kind so we can limit this search to
+//   only binaries suitable for the device kind.
+//---------------------------------------------------------------------
 static ip_normalized_t
 lookup_amd_function
 (
-  const char *kernel_name
+ int device_id,
+ const char *kernel_name
 )
 {
   ip_normalized_t nip;
@@ -387,14 +395,15 @@ lookup_amd_function
 ip_normalized_t
 rocm_binary_function_lookup
 (
-  const char* kernel_name
+ int device_id,
+ const char* kernel_name
 )
 {
   // TODO:
   // 1. Currently we support multiple GPU binaries, but assume that kernel is unique
   //    across GPU binaries.
   spinlock_lock(&rocm_binary_list_lock);
-  ip_normalized_t nip = lookup_amd_function(kernel_name);
+  ip_normalized_t nip = lookup_amd_function(device_id, kernel_name);
   PRINT("HIP launch kernel %s, lm_ip %lx\n", kernel_name, nip.lm_ip);
   spinlock_unlock(&rocm_binary_list_lock);
   return nip;

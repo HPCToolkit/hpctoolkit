@@ -88,6 +88,16 @@
 //******************************************************************************
 
 void
+gpu_activity_init
+(
+ gpu_activity_t *activity
+)
+{
+  memset(activity, 0, sizeof(gpu_activity_t));
+}
+
+
+void
 gpu_context_activity_dump
 (
  gpu_activity_t *activity,

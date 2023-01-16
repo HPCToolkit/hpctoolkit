@@ -284,6 +284,7 @@ typedef struct gpu_kernel_t {
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
+  ip_normalized_t kernel_first_pc;
   int32_t dynamicSharedMemory;
   int32_t staticSharedMemory;
   int32_t localMemoryTotal;
@@ -478,6 +479,13 @@ typedef void (*gpu_activity_attribute_fn_t)
 //******************************************************************************
 // interface functions
 //******************************************************************************
+
+void
+gpu_activity_init
+(
+ gpu_activity_t *activity
+);
+
 
 void
 gpu_activity_consume
