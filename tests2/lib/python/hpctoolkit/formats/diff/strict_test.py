@@ -1,65 +1,19 @@
-## * BeginRiceCopyright *****************************************************
-##
-## $HeadURL$
-## $Id$
-##
-## --------------------------------------------------------------------------
-## Part of HPCToolkit (hpctoolkit.org)
-##
-## Information about sources of support for research and development of
-## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
-## --------------------------------------------------------------------------
-##
-## Copyright ((c)) 2022-2022, Rice University
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-##
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-##
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage.
-##
-## ******************************************************* EndRiceCopyright *
-
 import collections.abc
 import copy
 import dataclasses
-import functools
 import io
 import math
-import os
-from pathlib import Path
 
 import pytest
-import ruamel.yaml
 
-from .. import from_path_extended, v4
-from .._test_util import testdatadir, yaml
-from ..base import canonical_paths, get_from_path
+from .. import v4
+from .._test_util import yaml
+from ..base import DatabaseBase, canonical_paths, get_from_path
 from ..v4._test_data import v4_data_small
 from .base import DiffStrategy
-from .strict import *
+from .strict import CmpError, StrictAccuracy, StrictDiff
+
+_ = yaml, v4_data_small
 
 
 def all_objects(obj):
@@ -75,7 +29,7 @@ def all_objects(obj):
 
 
 @pytest.mark.parametrize("attr", [None, "meta", "profile", "context", "trace"])
-def test_no_diff(yaml, v4_data_small, attr):
+def test_no_diff(v4_data_small, attr):
     db = v4_data_small
     if attr:
         db = getattr(db, attr)
@@ -84,8 +38,9 @@ def test_no_diff(yaml, v4_data_small, attr):
 
     full_map = {x: get_from_path(diff.b, p) for x, p in canonical_paths(diff.a).items()}
     if attr is None:
+        assert isinstance(diff.a, v4.Database)
         for i in (4, 8, 10, 11, 14, 18, 19, 21):
-            del full_map[diff.a.context.CtxInfos.contexts[i]]
+            del full_map[diff.a.context.ctx_infos.contexts[i]]
 
     assert len(list(diff.contexts())) == 1
     assert set(diff.best_context().keys()) == set(full_map.keys())
@@ -93,18 +48,18 @@ def test_no_diff(yaml, v4_data_small, attr):
     assert len(diff.hunks) == 0
 
 
-def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
+def test_small_diff(v4_data_small):
     # Alter the small database in particular ways for testing purposes
     altered = copy.deepcopy(v4_data_small)
-    altered.meta.IdNames.names[-1] = "FOO"
-    altered.meta.Metrics.scopes.append(
+    altered.meta.id_names.names[-1] = "FOO"
+    altered.meta.metrics.scopes.append(
         v4.metadb.PropagationScope(
-            scopeName="foo", type=v4.metadb.PropagationScope.Type.custom, propagationIndex=255
+            scope_name="foo", type=v4.metadb.PropagationScope.Type.custom, propagation_index=255
         )
     )
-    altered.meta.Context.entryPoints[1].children[0].children[0].children[
+    altered.meta.context.entry_points[1].children[0].children[0].children[
         1
-    ].function = altered.meta.Functions.functions[2]
+    ].function = altered.meta.functions.functions[2]
 
     with io.StringIO() as buf:
         StrictDiff(v4_data_small, altered).render(buf)
@@ -112,7 +67,7 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
             buf.getvalue()
             == """\
  context:
-   CtxInfos:
+   ctx_infos:
      contexts[5]:   # for -call> [function] foo  #5
 -      !cct.db/v4/PerContext
 -      values:
@@ -153,16 +108,16 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +      !cct.db/v4/PerContext
 +      values: {}
  meta:
-   Context:
-     entryPoints[1]:   # main thread (= main_thread)  #1
+   context:
+     entry_points[1]:   # main thread (= main_thread)  #1
        children[0]:   # -call> [function] main  #2
          children[0]:   # -lexical> [line] /foo.c:1464  #3
            children[1]:   # -call> [function] foo  #5
 -            !meta.db/v4/Context
--            ctxId: 5
--            flags: !meta.db/v4/Context.Flags [hasFunction]
+-            ctx_id: 5
+-            flags: !meta.db/v4/Context.Flags [has_function]
 -            relation: !meta.db/v4/Context.Relation call
--            lexicalType: !meta.db/v4/Context.LexicalType function
+-            lexical_type: !meta.db/v4/Context.LexicalType function
 -            propagation: 0
 -            function: !meta.db/v4/Function  # foo /foo.c:3 /foo+0x1129 []
 -              name: foo
@@ -181,10 +136,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -            offset:
 -            children:
 -            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
--              ctxId: 9
--              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+-              ctx_id: 9
+-              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
--              lexicalType: !meta.db/v4/Context.LexicalType line
+-              lexical_type: !meta.db/v4/Context.LexicalType line
 -              propagation: 1
 -              function:
 -              file: *id001
@@ -193,10 +148,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -              offset:
 -              children: []
 -            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
--              ctxId: 6
--              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+-              ctx_id: 6
+-              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
--              lexicalType: !meta.db/v4/Context.LexicalType loop
+-              lexical_type: !meta.db/v4/Context.LexicalType loop
 -              propagation: 1
 -              function:
 -              file: *id001
@@ -205,10 +160,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -              offset:
 -              children:
 -              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
--                ctxId: 7
--                flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+-                ctx_id: 7
+-                flags: !meta.db/v4/Context.Flags [has_srcloc]
 -                relation: !meta.db/v4/Context.Relation lexical
--                lexicalType: !meta.db/v4/Context.LexicalType line
+-                lexical_type: !meta.db/v4/Context.LexicalType line
 -                propagation: 1
 -                function:
 -                file: *id001
@@ -218,10 +173,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -                children: []
            children[1]:   # -call> [function] main  #5
 +            !meta.db/v4/Context
-+            ctxId: 5
-+            flags: !meta.db/v4/Context.Flags [hasFunction]
++            ctx_id: 5
++            flags: !meta.db/v4/Context.Flags [has_function]
 +            relation: !meta.db/v4/Context.Relation call
-+            lexicalType: !meta.db/v4/Context.LexicalType function
++            lexical_type: !meta.db/v4/Context.LexicalType function
 +            propagation: 0
 +            function: !meta.db/v4/Function  # main /foo.c:12 /foo+0x1183 []
 +              name: main
@@ -240,10 +195,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +            offset:
 +            children:
 +            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
-+              ctxId: 9
-+              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
++              ctx_id: 9
++              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
-+              lexicalType: !meta.db/v4/Context.LexicalType line
++              lexical_type: !meta.db/v4/Context.LexicalType line
 +              propagation: 1
 +              function:
 +              file: *id001
@@ -252,10 +207,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +              offset:
 +              children: []
 +            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
-+              ctxId: 6
-+              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
++              ctx_id: 6
++              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
-+              lexicalType: !meta.db/v4/Context.LexicalType loop
++              lexical_type: !meta.db/v4/Context.LexicalType loop
 +              propagation: 1
 +              function:
 +              file: *id001
@@ -264,10 +219,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +              offset:
 +              children:
 +              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
-+                ctxId: 7
-+                flags: !meta.db/v4/Context.Flags [hasSrcLoc]
++                ctx_id: 7
++                flags: !meta.db/v4/Context.Flags [has_srcloc]
 +                relation: !meta.db/v4/Context.Relation lexical
-+                lexicalType: !meta.db/v4/Context.LexicalType line
++                lexical_type: !meta.db/v4/Context.LexicalType line
 +                propagation: 1
 +                function:
 +                file: *id001
@@ -275,7 +230,7 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +                module:
 +                offset:
 +                children: []
-   IdNames:
+   id_names:
      !meta.db/v4/IdentifierNames
       names:
       - SUMMARY
@@ -289,19 +244,19 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 ?       ^ ^^
 +     - FOO
 ?       ^ ^
-   Metrics:
+   metrics:
      scopes[3]:   # foo [custom]
 +      !meta.db/v4/PropagationScope
-+      scopeName: foo
++      scope_name: foo
 +      type: !meta.db/v4/PropagationScope.Type custom
-+      propagationIndex: 255
++      propagation_index: 255
  trace:
-   CtxTraces:
+   ctx_traces:
      traces[0]:   # 0.460766000s (1656693533.987950087-1656693534.448715925) for {NODE 0 [0x7f0101] / THREAD 0}
        line[0]:   # +0.000000000s at -lexical> [line] /foo.c:1464  #9
          !trace.db/v4/ContextTraceElement
           timestamp: 1656693533987950000
-          ctxId: 9
+          ctx_id: 9
 """
         )
 
@@ -311,7 +266,7 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
             buf.getvalue()
             == """\
  context:
-   CtxInfos:
+   ctx_infos:
      contexts[5]:   # for -call> [function] foo  #5
 +      !cct.db/v4/PerContext
 +      values:
@@ -352,16 +307,16 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +      !cct.db/v4/PerContext
 +      values: {}
  meta:
-   Context:
-     entryPoints[1]:   # main thread (= main_thread)  #1
+   context:
+     entry_points[1]:   # main thread (= main_thread)  #1
        children[0]:   # -call> [function] main  #2
          children[0]:   # -lexical> [line] /foo.c:1464  #3
            children[1]:   # -call> [function] foo  #5
 +            !meta.db/v4/Context
-+            ctxId: 5
-+            flags: !meta.db/v4/Context.Flags [hasFunction]
++            ctx_id: 5
++            flags: !meta.db/v4/Context.Flags [has_function]
 +            relation: !meta.db/v4/Context.Relation call
-+            lexicalType: !meta.db/v4/Context.LexicalType function
++            lexical_type: !meta.db/v4/Context.LexicalType function
 +            propagation: 0
 +            function: !meta.db/v4/Function  # foo /foo.c:3 /foo+0x1129 []
 +              name: foo
@@ -380,10 +335,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +            offset:
 +            children:
 +            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
-+              ctxId: 9
-+              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
++              ctx_id: 9
++              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
-+              lexicalType: !meta.db/v4/Context.LexicalType line
++              lexical_type: !meta.db/v4/Context.LexicalType line
 +              propagation: 1
 +              function:
 +              file: *id001
@@ -392,10 +347,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +              offset:
 +              children: []
 +            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
-+              ctxId: 6
-+              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
++              ctx_id: 6
++              flags: !meta.db/v4/Context.Flags [has_srcloc]
 +              relation: !meta.db/v4/Context.Relation lexical
-+              lexicalType: !meta.db/v4/Context.LexicalType loop
++              lexical_type: !meta.db/v4/Context.LexicalType loop
 +              propagation: 1
 +              function:
 +              file: *id001
@@ -404,10 +359,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +              offset:
 +              children:
 +              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
-+                ctxId: 7
-+                flags: !meta.db/v4/Context.Flags [hasSrcLoc]
++                ctx_id: 7
++                flags: !meta.db/v4/Context.Flags [has_srcloc]
 +                relation: !meta.db/v4/Context.Relation lexical
-+                lexicalType: !meta.db/v4/Context.LexicalType line
++                lexical_type: !meta.db/v4/Context.LexicalType line
 +                propagation: 1
 +                function:
 +                file: *id001
@@ -417,10 +372,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 +                children: []
            children[1]:   # -call> [function] main  #5
 -            !meta.db/v4/Context
--            ctxId: 5
--            flags: !meta.db/v4/Context.Flags [hasFunction]
+-            ctx_id: 5
+-            flags: !meta.db/v4/Context.Flags [has_function]
 -            relation: !meta.db/v4/Context.Relation call
--            lexicalType: !meta.db/v4/Context.LexicalType function
+-            lexical_type: !meta.db/v4/Context.LexicalType function
 -            propagation: 0
 -            function: !meta.db/v4/Function  # main /foo.c:12 /foo+0x1183 []
 -              name: main
@@ -439,10 +394,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -            offset:
 -            children:
 -            - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #9
--              ctxId: 9
--              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+-              ctx_id: 9
+-              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
--              lexicalType: !meta.db/v4/Context.LexicalType line
+-              lexical_type: !meta.db/v4/Context.LexicalType line
 -              propagation: 1
 -              function:
 -              file: *id001
@@ -451,10 +406,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -              offset:
 -              children: []
 -            - !meta.db/v4/Context # -lexical> [loop] /foo.c:1464  #6
--              ctxId: 6
--              flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+-              ctx_id: 6
+-              flags: !meta.db/v4/Context.Flags [has_srcloc]
 -              relation: !meta.db/v4/Context.Relation lexical
--              lexicalType: !meta.db/v4/Context.LexicalType loop
+-              lexical_type: !meta.db/v4/Context.LexicalType loop
 -              propagation: 1
 -              function:
 -              file: *id001
@@ -463,10 +418,10 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -              offset:
 -              children:
 -              - !meta.db/v4/Context  # -lexical> [line] /foo.c:1464  #7
--                ctxId: 7
--                flags: !meta.db/v4/Context.Flags [hasSrcLoc]
+-                ctx_id: 7
+-                flags: !meta.db/v4/Context.Flags [has_srcloc]
 -                relation: !meta.db/v4/Context.Relation lexical
--                lexicalType: !meta.db/v4/Context.LexicalType line
+-                lexical_type: !meta.db/v4/Context.LexicalType line
 -                propagation: 1
 -                function:
 -                file: *id001
@@ -474,7 +429,7 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 -                module:
 -                offset:
 -                children: []
-   IdNames:
+   id_names:
      !meta.db/v4/IdentifierNames
       names:
       - SUMMARY
@@ -488,26 +443,32 @@ def test_small_diff(capsys, yaml, tmp_path, v4_data_small):
 ?       ^ ^
 +     - CORE
 ?       ^ ^^
-   Metrics:
+   metrics:
      scopes[3]:   # foo [custom]
 -      !meta.db/v4/PropagationScope
--      scopeName: foo
+-      scope_name: foo
 -      type: !meta.db/v4/PropagationScope.Type custom
--      propagationIndex: 255
+-      propagation_index: 255
  trace:
-   CtxTraces:
+   ctx_traces:
      traces[0]:   # 0.460766000s (1656693533.987950087-1656693534.448715925) for {NODE 0 [0x7f0101] / THREAD 0}
        line[0]:   # +0.000000000s at -lexical> [line] /foo.c:1464  #9
          !trace.db/v4/ContextTraceElement
           timestamp: 1656693533987950000
-          ctxId: 9
+          ctx_id: 9
 """
         )
 
 
+class DummyDatabase(DatabaseBase):
+    @classmethod
+    def from_dir(cls, dbdir):
+        raise NotImplementedError
+
+
 class DummyDiff(DiffStrategy):
     def __init__(self):
-        super().__init__(None, None)
+        super().__init__(DummyDatabase(), DummyDatabase())
 
     def contexts(self):
         yield {}
@@ -530,8 +491,8 @@ def test_float_compare():
     # Test the edge cases
     sa = StrictAccuracy(DummyDiff(), grace=1, precision=prec)
     assert sa._float_cmp(0.0, -0.0) == 0.0
-    assert sa._float_cmp(math.nextafter(0, -1), math.nextafter(0, 1)) == sa.CmpError.bad_sign
-    assert sa._float_cmp(0.5, 2.0) == sa.CmpError.exp_diff
+    assert sa._float_cmp(math.nextafter(0, -1), math.nextafter(0, 1)) == CmpError.bad_sign
+    assert sa._float_cmp(0.5, 2.0) == CmpError.exp_diff
 
     # Test the boundaries in the normalized region
     sa = StrictAccuracy(DummyDiff(), grace=1, precision=prec)
@@ -560,9 +521,9 @@ def test_accuracy_of_invalid_diff():
 
 
 @pytest.mark.parametrize(
-    "attr,vcnt", [(None, 48), ("meta", 0), ("profile", 36), ("context", 18), ("trace", 0)]
+    ("attr", "vcnt"), [(None, 48), ("meta", 0), ("profile", 36), ("context", 18), ("trace", 0)]
 )
-def test_no_diff_accuracy(yaml, v4_data_small, attr, vcnt):
+def test_no_diff_accuracy(v4_data_small, attr, vcnt):
     db = v4_data_small
     if attr:
         db = getattr(db, attr)

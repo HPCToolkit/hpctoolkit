@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-import typing as T
+import typing
 from pathlib import Path
 
 import ruamel.yaml
@@ -16,7 +16,7 @@ parser.add_argument("children", type=Path, nargs="+", help="Child pipelines")
 args = parser.parse_args()
 del parser
 
-pipeline: dict[str, T.Any] = {
+pipeline: dict[str, typing.Any] = {
     "workflow": {"rules": [{"when": "always"}]},
     "stages": ["copy", "trigger"],
     "copy": {
@@ -83,7 +83,7 @@ for child in args.children:
 if len(pipeline["copy"]["needs"]) > 5:
     needs = pipeline["copy"]["needs"]
     pipeline["copy"]["needs"] = needs[:5]
-    for i, start in enumerate(range(5, len(pipeline["copy"]["needs"]), 5)):
+    for i, _start in enumerate(range(5, len(pipeline["copy"]["needs"]), 5)):
         pipeline[f"copy {i+2}"] = pipeline["copy"].copy()
         pipeline[f"copy {i+2}"]["needs"] = needs[i : i + 5]
 

@@ -1,2 +1,2 @@
-class PredictableFailure(Exception):
+class PredictableFailureError(Exception):
     pass

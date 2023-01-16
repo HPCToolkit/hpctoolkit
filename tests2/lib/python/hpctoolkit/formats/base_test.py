@@ -1,54 +1,19 @@
-## * BeginRiceCopyright *****************************************************
-##
-## $HeadURL$
-## $Id$
-##
-## --------------------------------------------------------------------------
-## Part of HPCToolkit (hpctoolkit.org)
-##
-## Information about sources of support for research and development of
-## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
-## --------------------------------------------------------------------------
-##
-## Copyright ((c)) 2022-2022, Rice University
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-##
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-##
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage.
-##
-## ******************************************************* EndRiceCopyright *
-
 import dataclasses
 import io
 
 import pytest
 import ruamel.yaml
 
-from .base import *
+from .base import (
+    BitFlags,
+    DatabaseFile,
+    EnumEntry,
+    Enumeration,
+    InvalidFormatError,
+    StructureBase,
+    UnsupportedFormatWarning,
+    canonical_paths,
+)
 
 
 def test_db_parse():
@@ -61,7 +26,7 @@ def test_db_parse():
         major_version = 2
         max_minor_version = 1
 
-    with pytest.raises(OSError):
+    with pytest.raises(OSError, match=r"file appears to be truncated"):
         FooDB._parse_header(io.BytesIO(b"too short"))
     with pytest.raises(InvalidFormatError, match=r"^File is not an HPCToolkit data file$"):
         FooDB._parse_header(io.BytesIO(b"BADMAGIC________    ________"))
@@ -117,17 +82,17 @@ def test_canonical_paths():
     @dataclasses.dataclass(eq=False, kw_only=True)
     class Y(StructureBase):
         x: X
-        l: list[X]
-        d: dict[str, X]
+        y: list[X]
+        z: dict[str, X]
 
-    a = Y(x=X(1, 2), l=[X(3, 4), X(5, 6)], d={"a": X(7, 8), "b": X(9, 10)})
+    a = Y(x=X(1, 2), y=[X(3, 4), X(5, 6)], z={"a": X(7, 8), "b": X(9, 10)})
     assert canonical_paths(a) == {
-        a: tuple(),
+        a: (),
         a.x: ("x",),
-        a.l[0]: ("l", 0),
-        a.l[1]: ("l", 1),
-        a.d["a"]: ("d", "a"),
-        a.d["b"]: ("d", "b"),
+        a.y[0]: ("y", 0),
+        a.y[1]: ("y", 1),
+        a.z["a"]: ("z", "a"),
+        a.z["b"]: ("z", "b"),
     }
 
 
@@ -139,9 +104,9 @@ def dump_to_string(yaml, data) -> str:
 
 def test_enumeration():
     class Test(Enumeration, yaml_tag="!enum.test"):
-        value1 = (1, 0)
-        value2 = (2, 0)
-        value3 = (3, 1)
+        value1 = EnumEntry(1, min_version=0)
+        value2 = EnumEntry(2, min_version=0)
+        value3 = EnumEntry(3, min_version=1)
 
     assert Test.value1.value == 1
     assert Test.value1.min_version == 0
@@ -152,9 +117,9 @@ def test_enumeration():
 
 def test_enumeration_yaml():
     class Test(Enumeration, yaml_tag="!enum.test"):
-        value1 = (1, 0)
-        value2 = (2, 0)
-        value3 = (3, 0)
+        value1 = EnumEntry(1, min_version=0)
+        value2 = EnumEntry(2, min_version=0)
+        value3 = EnumEntry(3, min_version=0)
 
     y = ruamel.yaml.YAML(typ="safe")
     y.register_class(Test)
@@ -168,9 +133,9 @@ def test_enumeration_yaml():
 
 def test_flags():
     class Test(BitFlags, yaml_tag="!flags.test"):
-        flag1 = (0, 0)
-        flag2 = (1, 0)
-        flag3 = (2, 1)
+        flag1 = EnumEntry(0, min_version=0)
+        flag2 = EnumEntry(1, min_version=0)
+        flag3 = EnumEntry(2, min_version=1)
 
     assert Test.flag1.value == 1
     assert Test.flag2.value == 2
@@ -184,10 +149,10 @@ def test_flags():
 
 def test_flags_yaml():
     class Test(BitFlags, yaml_tag="!flags.test"):
-        flag1 = (0, 0)
-        flag2 = (1, 0)
-        flag3 = (2, 0)
-        aaa_flag4 = (3, 0)
+        flag1 = EnumEntry(0, min_version=0)
+        flag2 = EnumEntry(1, min_version=0)
+        flag3 = EnumEntry(2, min_version=0)
+        aaa_flag4 = EnumEntry(3, min_version=0)
 
     y = ruamel.yaml.YAML(typ="safe")
     y.register_class(Test)

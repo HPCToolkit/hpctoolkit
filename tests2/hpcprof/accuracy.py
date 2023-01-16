@@ -6,7 +6,6 @@ import sys
 from hpctoolkit.formats import from_path
 from hpctoolkit.formats.diff.strict import StrictAccuracy, StrictDiff
 from hpctoolkit.test.execution import hpcprof
-from hpctoolkit.test.tarball import extracted
 
 threadcnt = int(sys.argv[1])
 

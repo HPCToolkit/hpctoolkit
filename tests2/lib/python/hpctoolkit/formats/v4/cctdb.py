@@ -1,54 +1,10 @@
-## * BeginRiceCopyright *****************************************************
-##
-## $HeadURL$
-## $Id$
-##
-## --------------------------------------------------------------------------
-## Part of HPCToolkit (hpctoolkit.org)
-##
-## Information about sources of support for research and development of
-## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
-## --------------------------------------------------------------------------
-##
-## Copyright ((c)) 2022-2022, Rice University
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-##
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-##
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage.
-##
-## ******************************************************* EndRiceCopyright *
-
 import dataclasses
-import typing as T
+import typing
 
 from .._util import VersionedStructure
 from ..base import DatabaseFile, StructureBase, _CommentedMap, yaml_object
 
-if T.TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from .metadb import MetaDB
     from .profiledb import ProfileDB
 
@@ -74,9 +30,9 @@ class ContextDB(DatabaseFile):
     max_minor_version = 0
     format_code = b"ctxt"
     footer_code = b"__ctx.db"
-    yaml_tag: T.ClassVar[str] = "!cct.db/v4"
+    yaml_tag: typing.ClassVar[str] = "!cct.db/v4"
 
-    CtxInfos: "ContextInfos"
+    ctx_infos: "ContextInfos"
 
     __struct = DatabaseFile._header_struct(
         # Added in v4.0
@@ -84,14 +40,14 @@ class ContextDB(DatabaseFile):
     )
 
     def _with(self, meta: "MetaDB", profile: "ProfileDB"):
-        self.CtxInfos._with(meta, profile)
+        self.ctx_infos._with(meta, profile)
 
     @classmethod
     def from_file(cls, file):
         minor = cls._parse_header(file)
         sections = cls.__struct.unpack_file(minor, file, 0)
         return cls(
-            CtxInfos=ContextInfos.from_file(minor, file, sections["pCtxInfos"]),
+            ctx_infos=ContextInfos.from_file(minor, file, sections["pCtxInfos"]),
         )
 
 
@@ -100,7 +56,7 @@ class ContextDB(DatabaseFile):
 class ContextInfos(StructureBase):
     """Section containing header metadata for the contexts in this database."""
 
-    yaml_tag: T.ClassVar[str] = "!cct.db/v4/ContextInfos"
+    yaml_tag: typing.ClassVar[str] = "!cct.db/v4/ContextInfos"
 
     contexts: list["PerContext"]
 
@@ -113,17 +69,17 @@ class ContextInfos(StructureBase):
     )
 
     def __post_init__(self):
-        for ctxId, c in enumerate(self.contexts):
-            c._with_id(ctxId)
+        for ctx_id, c in enumerate(self.contexts):
+            c._with_id(ctx_id)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-        for ctxId, c in enumerate(self.contexts):
-            c._with_id(ctxId)
+        for ctx_id, c in enumerate(self.contexts):
+            c._with_id(ctx_id)
 
     def _with(self, meta: "MetaDB", profile: "ProfileDB"):
-        for ctxId, c in enumerate(self.contexts):
-            c._with(meta, profile, ctxId)
+        for ctx_id, c in enumerate(self.contexts):
+            c._with(meta, profile, ctx_id)
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
@@ -141,7 +97,7 @@ class ContextInfos(StructureBase):
 class PerContext(StructureBase):
     """Information on a single context."""
 
-    yaml_tag: T.ClassVar[str] = "!cct.db/v4/PerContext"
+    yaml_tag: typing.ClassVar[str] = "!cct.db/v4/PerContext"
 
     values: dict[int, dict[int, float]]
 
@@ -169,11 +125,11 @@ class PerContext(StructureBase):
     )
     assert __met_idx.size(0) == 0x0A
 
-    def _with_id(self, ctxId: int):
-        self._ctx_id = ctxId
+    def _with_id(self, ctx_id: int):
+        self._ctx_id = ctx_id
 
-    def _with(self, meta: "MetaDB", profile: "ProfileDB", ctxId: int):
-        self._ctx_id = ctxId
+    def _with(self, meta: "MetaDB", profile: "ProfileDB", ctx_id: int):
+        self._ctx_id = ctx_id
         if self._ctx_id in meta.context_map:
             self._context = meta.context_map[self._ctx_id]
         self._profile_map = profile.profile_map
@@ -196,7 +152,7 @@ class PerContext(StructureBase):
                 data["valueBlock_pValues"], data["valueBlock_nValues"], cls.__value.size(0)
             )
         ]
-        metIndices = [
+        met_indices = [
             cls.__met_idx.unpack_file(0, file, o)
             for o in scaled_range(
                 data["valueBlock_pMetricIndices"],
@@ -210,11 +166,11 @@ class PerContext(StructureBase):
                     val["profIndex"]: val["value"]
                     for val in values[
                         idx["startIndex"] : (
-                            metIndices[i + 1]["startIndex"] if i + 1 < len(metIndices) else None
+                            met_indices[i + 1]["startIndex"] if i + 1 < len(met_indices) else None
                         )
                     ]
                 }
-                for i, idx in enumerate(metIndices)
+                for i, idx in enumerate(met_indices)
             }
         )
 
@@ -226,23 +182,23 @@ class PerContext(StructureBase):
             p_map, m_map = obj._profile_map, obj._metric_map
 
             state["values"] = _CommentedMap(state["values"])
-            for metId in state["values"]:
-                if metId in m_map:
+            for met_id in state["values"]:
+                if met_id in m_map:
                     state["values"].yaml_add_eol_comment(
-                        "for " + m_map[metId].shorthand,
-                        key=metId,
+                        "for " + m_map[met_id].shorthand,
+                        key=met_id,
                     )
-                state["values"][metId] = _CommentedMap(state["values"][metId])
-                for profIdx in state["values"][metId]:
-                    if profIdx in p_map:
+                state["values"][met_id] = _CommentedMap(state["values"][met_id])
+                for prof_idx in state["values"][met_id]:
+                    if prof_idx in p_map:
                         com = (
-                            p_map[profIdx].idTuple.shorthand
-                            if p_map[profIdx].idTuple is not None
+                            p_map[prof_idx].id_tuple.shorthand
+                            if p_map[prof_idx].id_tuple is not None
                             else "/"
                         )
-                        state["values"][metId].yaml_add_eol_comment(
+                        state["values"][met_id].yaml_add_eol_comment(
                             f"for {{{com}}}",
-                            key=profIdx,
+                            key=prof_idx,
                         )
 
         return representer.represent_mapping(cls.yaml_tag, state)

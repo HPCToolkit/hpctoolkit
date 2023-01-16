@@ -1,4 +1,5 @@
 import collections
+import collections.abc
 import contextlib
 import functools
 import os
@@ -8,14 +9,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-from .errors import PredictableFailure
+from .errors import PredictableFailureError
 
 
-def _subproc_run(arg0, cmd, *args, wrapper: list[str] = tuple(), **kwargs):
+def _subproc_run(arg0, cmd, *args, wrapper: collections.abc.Iterable[str] = (), **kwargs):
     msg = f"--- --- Running command: {' '.join([shlex.quote(str(s)) for s in [*wrapper] + [arg0] + cmd[1:]])}"
     print(msg, flush=True)
     print(msg, file=sys.stderr, flush=True)
-    return subprocess.run([*wrapper] + cmd, check=False, *args, **kwargs)
+    return subprocess.run(list(wrapper) + cmd, *args, check=False, **kwargs)
 
 
 def _identify_mpiexec(ranks: int):
@@ -23,17 +24,20 @@ def _identify_mpiexec(ranks: int):
         raise RuntimeError("mpiexec not available, cannot continue! Run under meson devenv!")
     mpiexec = os.environ["HPCTOOLKIT_DEV_MPIEXEC"].split(";") + [f"{ranks:d}"]
 
-    # Make sure mpiexec actually works
-    for args in ([], ["--oversubscribe"]):
+    def attempt(args: collections.abc.Iterable[str]) -> collections.abc.Iterable[str] | None:
         proc = subprocess.run(
-            mpiexec + [*args] + ["echo"],
+            mpiexec + list(args) + ["echo"],
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        if proc.returncode in (0, 77):
-            mpiexec.extend(args)
-            break
+        return args if proc.returncode in (0, 77) else None
+
+    # Make sure mpiexec actually works
+    if attempt([]) is not None:
+        pass  # Default settings work
+    elif (args := attempt(["--oversubscribe"])) is not None:
+        mpiexec.extend(args)
     else:
         raise RuntimeError("mpiexec appears to be non-functional!")
 
@@ -80,7 +84,7 @@ class Measurements:
     def check_standard(self, *, procs: int = 1, threads_per_proc: int = 1, traces: bool = False):
         threads = procs * threads_per_proc
         if len(self.thread_stems) != threads:
-            raise PredictableFailure(
+            raise PredictableFailureError(
                 f"Expected exactly {threads:d} threads, got {len(self.thread_stems)}"
             )
 
@@ -88,19 +92,19 @@ class Measurements:
         for t in self.thread_stems:
             logs_found += 1 if self.logfile(t) else 0
             if not self.profile(t):
-                raise PredictableFailure(f"Expected a profile for thread stem {t}")
+                raise PredictableFailureError(f"Expected a profile for thread stem {t}")
             if self.tracefile(t):
                 if not traces:
-                    raise PredictableFailure(f"Did not expect a trace for thread stem {t}")
+                    raise PredictableFailureError(f"Did not expect a trace for thread stem {t}")
             elif traces:
-                raise PredictableFailure(f"Expected a trace for thread stem {t}")
+                raise PredictableFailureError(f"Expected a trace for thread stem {t}")
 
         if logs_found != procs:
-            raise PredictableFailure(f"Expected exactly {procs} log file, got {logs_found}")
+            raise PredictableFailureError(f"Expected exactly {procs} log file, got {logs_found}")
 
 
 @contextlib.contextmanager
-def hpcrun(*args, timeout: int = None, env=None, output=None):
+def hpcrun(*args, timeout: int | None = None, env=None, output=None):
     exe_args = args[-1]
     if not isinstance(exe_args, list):
         exe_args = [exe_args]
@@ -111,7 +115,7 @@ def hpcrun(*args, timeout: int = None, env=None, output=None):
     hpcrun = os.environ["HPCTOOLKIT_APP_HPCRUN"]
 
     if env is not None:
-        env = collections.ChainedMap(env, os.environ)
+        env = collections.ChainMap(env, os.environ)
 
     if output is not None:
         output = contextlib.nullcontext(Path(output))
@@ -125,19 +129,17 @@ def hpcrun(*args, timeout: int = None, env=None, output=None):
         )
         m = Measurements(mdir)
         # Dump the log files for debugging purposes
-        try:
+        with contextlib.suppress(OSError):
             for t in m.thread_stems:
                 if fn := m.logfile(t):
                     print(f"--- --- {fn.name}", file=sys.stderr, flush=True)
-                    with open(fn) as f:
+                    with open(fn, encoding="utf-8") as f:
                         for line in f:
                             print(line.rstrip(), file=sys.stderr)
             print("--- --- END LOGS", file=sys.stderr, flush=True)
-        except OSError:
-            pass
 
         if proc.returncode != 0:
-            raise PredictableFailure("hpcrun returned a non-zero exit code!")
+            raise PredictableFailureError("hpcrun returned a non-zero exit code!")
 
         yield m
 
@@ -161,18 +163,18 @@ class Database:
         # Check for standard files that should always be there
         for fn in (meta_db, profile_db, cct_db, formats_md, metrics_yaml, metrics_default):
             if not fn.is_file():
-                raise PredictableFailure(f"Expected {fn.name} in database!")
+                raise PredictableFailureError(f"Expected {fn.name} in database!")
 
         # trace.db should only be present if traces were enabled
         if trace_db.is_file():
             if not tracedb:
-                raise PredictableFailure("trace.db present in database but not expected!")
+                raise PredictableFailureError("trace.db present in database but not expected!")
         elif tracedb:
-            raise PredictableFailure("Expected trace.db in database!")
+            raise PredictableFailureError("Expected trace.db in database!")
 
 
 @contextlib.contextmanager
-def hpcprof(meas, *args, timeout: int = None, env=None, output=None):
+def hpcprof(meas, *args, timeout: int | None = None, env=None, output=None):
     if isinstance(meas, Measurements):
         meas = meas.basedir
     meas = Path(meas)
@@ -182,7 +184,7 @@ def hpcprof(meas, *args, timeout: int = None, env=None, output=None):
     hpcprof = os.environ["HPCTOOLKIT_APP_HPCPROF"]
 
     if env is not None:
-        env = collections.ChainedMap(env, os.environ)
+        env = collections.ChainMap(env, os.environ)
 
     if output is not None:
         output = contextlib.nullcontext(Path(output))
@@ -196,13 +198,13 @@ def hpcprof(meas, *args, timeout: int = None, env=None, output=None):
             "hpcprof", [hpcprof, *args] + ["-o", ddir, meas], timeout=timeout, env=env
         )
         if proc.returncode != 0:
-            raise PredictableFailure("hpcprof returned a non-zero exit code!")
+            raise PredictableFailureError("hpcprof returned a non-zero exit code!")
 
         yield Database(ddir)
 
 
 @contextlib.contextmanager
-def hpcprof_mpi(ranks: int, meas, *args, timeout: int = None, env=None, output=None):
+def hpcprof_mpi(ranks: int, meas, *args, timeout: int | None = None, env=None, output=None):
     if isinstance(meas, Measurements):
         meas = meas.basedir
     meas = Path(meas)
@@ -214,7 +216,7 @@ def hpcprof_mpi(ranks: int, meas, *args, timeout: int = None, env=None, output=N
     mpiexec = _identify_mpiexec(ranks)
 
     if env is not None:
-        env = collections.ChainedMap(env, os.environ)
+        env = collections.ChainMap(env, os.environ)
 
     if output is not None:
         output = contextlib.nullcontext(Path(output))
@@ -234,12 +236,12 @@ def hpcprof_mpi(ranks: int, meas, *args, timeout: int = None, env=None, output=N
         if proc.returncode == 77:  # Propagate a skip returncode
             sys.exit(77)
         if proc.returncode != 0:
-            raise PredictableFailure("hpcprof returned a non-zero exit code!")
+            raise PredictableFailureError("hpcprof returned a non-zero exit code!")
 
         yield Database(ddir)
 
 
-def hpcstruct(binary_or_meas, *args, timeout: int = None, env=None, output=None):
+def hpcstruct(binary_or_meas, *args, timeout: int | None = None, env=None, output=None):
     if "HPCTOOLKIT_APP_HPCSTRUCT" not in os.environ:
         raise RuntimeError("hpcstruct not available, cannot continue! Run under meson devenv!")
     hpcstruct = os.environ["HPCTOOLKIT_APP_HPCSTRUCT"]
@@ -255,7 +257,7 @@ def hpcstruct(binary_or_meas, *args, timeout: int = None, env=None, output=None)
         meas = binary_or_meas.basedir
         proc = _subproc_run("hpcstruct", [hpcstruct, *args] + [meas], timeout=timeout, env=env)
         if proc.returncode != 0:
-            raise PredictableFailure("hpcstruct returned a non-zero exit code!")
+            raise PredictableFailureError("hpcstruct returned a non-zero exit code!")
 
         return None
 
@@ -280,7 +282,7 @@ def hpcstruct(binary_or_meas, *args, timeout: int = None, env=None, output=None)
                 env=env,
             )
             if proc.returncode != 0:
-                raise PredictableFailure("hpcstruct returned a non-zero exit code!")
+                raise PredictableFailureError("hpcstruct returned a non-zero exit code!")
 
             yield sfile
 

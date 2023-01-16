@@ -1,52 +1,6 @@
-## * BeginRiceCopyright *****************************************************
-##
-## $HeadURL$
-## $Id$
-##
-## --------------------------------------------------------------------------
-## Part of HPCToolkit (hpctoolkit.org)
-##
-## Information about sources of support for research and development of
-## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
-## --------------------------------------------------------------------------
-##
-## Copyright ((c)) 2022-2022, Rice University
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-##
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-##
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage.
-##
-## ******************************************************* EndRiceCopyright *
-
 import dataclasses
-import typing as T
+import typing
 from pathlib import Path
-
-import ruamel.yaml
 
 from ..base import DatabaseBase, yaml_object
 from . import cctdb, metadb, profiledb, tracedb
@@ -61,8 +15,8 @@ __all__ = [
 class Database(DatabaseBase):
     """Top-level database object for major version 4 of the database formats."""
 
-    major_version: T.ClassVar[int] = 4
-    yaml_tag: T.ClassVar[str] = "!db/v4"
+    major_version: typing.ClassVar[int] = 4
+    yaml_tag: typing.ClassVar[str] = "!db/v4"
 
     meta: metadb.MetaDB
     profile: profiledb.ProfileDB
@@ -92,15 +46,6 @@ class Database(DatabaseBase):
         self.context._with(self.meta, self.profile)
         if self.trace is not None:
             self.trace._with(self.meta, self.profile)
-
-    @classmethod
-    def register_yaml(cls, yaml: ruamel.yaml.YAML) -> ruamel.yaml.YAML:
-        yaml.register_class(cls)
-        metadb.MetaDB.register_yaml(yaml)
-        profiledb.ProfileDB.register_yaml(yaml)
-        cctdb.ContextDB.register_yaml(yaml)
-        tracedb.TraceDB.register_yaml(yaml)
-        return yaml
 
     @property
     def kind_map(self):

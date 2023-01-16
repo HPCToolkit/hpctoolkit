@@ -3,7 +3,6 @@
 import sys
 
 from hpctoolkit.test.execution import Measurements, hpcprof
-from hpctoolkit.test.tarball import extracted
 
 meas = Measurements(sys.argv[1])
 has_traces = any(meas.tracefile(stem) for stem in meas.thread_stems)

@@ -18,7 +18,9 @@ from .util import nproc, nproc_max, project_dir
 
 
 @contextlib.contextmanager
-def _stdlogfiles(logdir: Path, logprefix: str, suffix1: str, suffix2: T.Optional[str] = None):
+def _stdlogfiles(
+    logdir: Path | None, logprefix: str, suffix1: str, suffix2: T.Optional[str] = None
+):
     if logdir is not None:
         logdir = Path(logdir)
         with open(logdir / (logprefix + suffix1), "w", encoding="utf-8") as f1:
@@ -37,7 +39,7 @@ class Configure(Action):
     def name(self) -> str:
         return "./configure"
 
-    def dependencies(self) -> tuple[Action]:
+    def dependencies(self) -> tuple[Action, ...]:
         return tuple()
 
     def run(
@@ -76,8 +78,8 @@ class MakeAction(Action):
         cfg: Configuration,
         builddir: Path,
         *targets,
-        env: dict[str, str] = None,
-        logdir: T.Optional[Path] = None,
+        env: dict[str, str] | None = None,
+        logdir: Path | None = None,
         split_stderr: bool = True,
         parallel: bool = True,
     ) -> ActionResult:
@@ -126,7 +128,7 @@ class BuildResult(ActionResult):
         if not mat:
             return None
 
-        report = {
+        report: dict[str, T.Any] = {
             "type": "issue",
             "check_name": mat.group(7),  # flag(2)
             "description": mat.group(6),  # message
@@ -156,7 +158,7 @@ class BuildResult(ActionResult):
         else:
             report["location"]["lines"] = {"begin": line}
 
-        match mat.group(5):
+        match mat.group(5):  # noqa: E999
             case "warning":
                 report["severity"] = "major"
                 self.warnings += 1
@@ -359,7 +361,7 @@ class MissingJUnitLogs(ActionResult):
 
     def summary(self):
         frag = f"JUnit log {self.filename} missing"
-        return frag if self.subresult.flawless else f"{self.subresumt.summary()}, {frag}"
+        return frag if self.subresult.flawless else f"{self.subresult.summary()}, {frag}"
 
 
 class Test(MakeAction):
@@ -371,7 +373,7 @@ class Test(MakeAction):
     def name(self) -> str:
         return "make check installcheck"
 
-    def dependencies(self) -> tuple[Action]:
+    def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
 
     def fixup_meson(self, res, tests2bdir: Path, testxml: Path) -> bytes | ActionResult:
@@ -546,7 +548,7 @@ class GenTestData(MakeAction):
     def name(self) -> str:
         return "make gen-testdata"
 
-    def dependencies(self) -> tuple[Action]:
+    def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
 
     def run(
@@ -567,7 +569,7 @@ class InstallTestData(MakeAction):
     def name(self) -> str:
         return "make gen-testdata"
 
-    def dependencies(self) -> tuple[Action]:
+    def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
 
     def run(

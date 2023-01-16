@@ -1,55 +1,11 @@
-## * BeginRiceCopyright *****************************************************
-##
-## $HeadURL$
-## $Id$
-##
-## --------------------------------------------------------------------------
-## Part of HPCToolkit (hpctoolkit.org)
-##
-## Information about sources of support for research and development of
-## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
-## --------------------------------------------------------------------------
-##
-## Copyright ((c)) 2022-2022, Rice University
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-##
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-##
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage.
-##
-## ******************************************************* EndRiceCopyright *
-
 from pathlib import Path
 
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture()
 def v4_data_small(yaml):
-    yield yaml.load(_data_small)
+    return yaml.load(_data_small)
 
 
 @pytest.fixture(scope="session")
@@ -57,16 +13,16 @@ def v4_data_small_path(tmp_path_factory):
     out: Path = tmp_path_factory.mktemp("data-v4") / "small.yaml"
     with open(out, "w", encoding="utf-8") as f:
         f.write(_data_small)
-    yield out
+    return out
 
 
 _data_small = """\
 !db/v4
 meta: !meta.db/v4
-  General: !meta.db/v4/GeneralProperties
+  general: !meta.db/v4/GeneralProperties
     title: foo
     description: TODO database description
-  IdNames: !meta.db/v4/IdentifierNames
+  id_names: !meta.db/v4/IdentifierNames
     names:
     - SUMMARY
     - NODE
@@ -76,208 +32,208 @@ meta: !meta.db/v4
     - GPUCONTEXT
     - GPUSTREAM
     - CORE
-  Metrics: !meta.db/v4/PerformanceMetrics
+  metrics: !meta.db/v4/PerformanceMetrics
     scopes:
     - &id001 !meta.db/v4/PropagationScope
-      scopeName: point
+      scope_name: point
       type: !meta.db/v4/PropagationScope.Type point
-      propagationIndex: 255
+      propagation_index: 255
     - &id002 !meta.db/v4/PropagationScope
-      scopeName: function
+      scope_name: function
       type: !meta.db/v4/PropagationScope.Type transitive
-      propagationIndex: 0
+      propagation_index: 0
     - &id003 !meta.db/v4/PropagationScope
-      scopeName: execution
+      scope_name: execution
       type: !meta.db/v4/PropagationScope.Type execution
-      propagationIndex: 255
+      propagation_index: 255
     metrics:
     - !meta.db/v4/Metric
       name: cycles
-      scopeInsts:
+      scope_insts:
       - !meta.db/v4/PropagationScopeInstance
         scope: *id001
-        propMetricId: 15
+        prop_metric_id: 15
       - !meta.db/v4/PropagationScopeInstance
         scope: *id002
-        propMetricId: 16
+        prop_metric_id: 16
       - !meta.db/v4/PropagationScopeInstance
         scope: *id003
-        propMetricId: 17
+        prop_metric_id: 17
       summaries:
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: '1'
         combine: &id004 !meta.db/v4/SummaryStatistic.Combine sum
-        statMetricId: 15
+        stat_metric_id: 15
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: $$
         combine: *id004
-        statMetricId: 18
+        stat_metric_id: 18
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: ($$^2)
         combine: *id004
-        statMetricId: 21
+        stat_metric_id: 21
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: $$
         combine: &id005 !meta.db/v4/SummaryStatistic.Combine min
-        statMetricId: 24
+        stat_metric_id: 24
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: $$
         combine: &id006 !meta.db/v4/SummaryStatistic.Combine max
-        statMetricId: 27
+        stat_metric_id: 27
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: '1'
         combine: *id004
-        statMetricId: 16
+        stat_metric_id: 16
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: $$
         combine: *id004
-        statMetricId: 19
+        stat_metric_id: 19
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: ($$^2)
         combine: *id004
-        statMetricId: 22
+        stat_metric_id: 22
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: $$
         combine: *id005
-        statMetricId: 25
+        stat_metric_id: 25
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: $$
         combine: *id006
-        statMetricId: 28
+        stat_metric_id: 28
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: '1'
         combine: *id004
-        statMetricId: 17
+        stat_metric_id: 17
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: $$
         combine: *id004
-        statMetricId: 20
+        stat_metric_id: 20
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: ($$^2)
         combine: *id004
-        statMetricId: 23
+        stat_metric_id: 23
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: $$
         combine: *id005
-        statMetricId: 26
+        stat_metric_id: 26
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: $$
         combine: *id006
-        statMetricId: 29
+        stat_metric_id: 29
     - !meta.db/v4/Metric
       name: instructions
-      scopeInsts:
+      scope_insts:
       - !meta.db/v4/PropagationScopeInstance
         scope: *id001
-        propMetricId: 0
+        prop_metric_id: 0
       - !meta.db/v4/PropagationScopeInstance
         scope: *id002
-        propMetricId: 1
+        prop_metric_id: 1
       - !meta.db/v4/PropagationScopeInstance
         scope: *id003
-        propMetricId: 2
+        prop_metric_id: 2
       summaries:
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: '1'
         combine: *id004
-        statMetricId: 0
+        stat_metric_id: 0
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: $$
         combine: *id004
-        statMetricId: 3
+        stat_metric_id: 3
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: ($$^2)
         combine: *id004
-        statMetricId: 6
+        stat_metric_id: 6
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: $$
         combine: *id005
-        statMetricId: 9
+        stat_metric_id: 9
       - !meta.db/v4/SummaryStatistic
         scope: *id001
         formula: $$
         combine: *id006
-        statMetricId: 12
+        stat_metric_id: 12
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: '1'
         combine: *id004
-        statMetricId: 1
+        stat_metric_id: 1
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: $$
         combine: *id004
-        statMetricId: 4
+        stat_metric_id: 4
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: ($$^2)
         combine: *id004
-        statMetricId: 7
+        stat_metric_id: 7
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: $$
         combine: *id005
-        statMetricId: 10
+        stat_metric_id: 10
       - !meta.db/v4/SummaryStatistic
         scope: *id002
         formula: $$
         combine: *id006
-        statMetricId: 13
+        stat_metric_id: 13
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: '1'
         combine: *id004
-        statMetricId: 2
+        stat_metric_id: 2
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: $$
         combine: *id004
-        statMetricId: 5
+        stat_metric_id: 5
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: ($$^2)
         combine: *id004
-        statMetricId: 8
+        stat_metric_id: 8
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: $$
         combine: *id005
-        statMetricId: 11
+        stat_metric_id: 11
       - !meta.db/v4/SummaryStatistic
         scope: *id003
         formula: $$
         combine: *id006
-        statMetricId: 14
-  Modules: !meta.db/v4/LoadModules
+        stat_metric_id: 14
+  modules: !meta.db/v4/LoadModules
     modules:
     - &id007 !meta.db/v4/Module
       flags: !meta.db/v4/Module.Flags []
       path: /tmp/foo
-  Files: !meta.db/v4/SourceFiles
+  files: !meta.db/v4/SourceFiles
     files:
     - &id008 !meta.db/v4/File
       flags: !meta.db/v4/File.Flags [copied]
       path: src/tmp/foo.c
-  Functions: !meta.db/v4/Functions
+  functions: !meta.db/v4/Functions
     functions:
     - &id014 !meta.db/v4/Function
       name: bar
@@ -300,23 +256,23 @@ meta: !meta.db/v4
       file: *id008
       line: 12
       flags: *id009
-  Context: !meta.db/v4/ContextTree
-    entryPoints:
+  context: !meta.db/v4/ContextTree
+    entry_points:
     - !meta.db/v4/EntryPoint
-      ctxId: 22
-      entryPoint: !meta.db/v4/EntryPoint.EntryPoint unknown_entry
-      prettyName: unknown entry
+      ctx_id: 22
+      entry_point: !meta.db/v4/EntryPoint.EntryPoint unknown_entry
+      pretty_name: unknown entry
       children: []
     - !meta.db/v4/EntryPoint
-      ctxId: 1
-      entryPoint: !meta.db/v4/EntryPoint.EntryPoint main_thread
-      prettyName: main thread
+      ctx_id: 1
+      entry_point: !meta.db/v4/EntryPoint.EntryPoint main_thread
+      pretty_name: main thread
       children:
       - !meta.db/v4/Context
-        ctxId: 2
-        flags: &id011 !meta.db/v4/Context.Flags [hasFunction]
+        ctx_id: 2
+        flags: &id011 !meta.db/v4/Context.Flags [has_function]
         relation: &id012 !meta.db/v4/Context.Relation call
-        lexicalType: &id013 !meta.db/v4/Context.LexicalType function
+        lexical_type: &id013 !meta.db/v4/Context.LexicalType function
         propagation: 0
         function: *id010
         file:
@@ -325,10 +281,10 @@ meta: !meta.db/v4
         offset:
         children:
         - !meta.db/v4/Context
-          ctxId: 3
-          flags: &id015 !meta.db/v4/Context.Flags [hasSrcLoc]
+          ctx_id: 3
+          flags: &id015 !meta.db/v4/Context.Flags [has_srcloc]
           relation: &id016 !meta.db/v4/Context.Relation lexical
-          lexicalType: &id017 !meta.db/v4/Context.LexicalType line
+          lexical_type: &id017 !meta.db/v4/Context.LexicalType line
           propagation: 1
           function:
           file: *id008
@@ -337,10 +293,10 @@ meta: !meta.db/v4
           offset:
           children:
           - !meta.db/v4/Context
-            ctxId: 12
+            ctx_id: 12
             flags: *id011
             relation: *id012
-            lexicalType: *id013
+            lexical_type: *id013
             propagation: 0
             function: *id014
             file:
@@ -349,10 +305,10 @@ meta: !meta.db/v4
             offset:
             children:
             - !meta.db/v4/Context
-              ctxId: 13
+              ctx_id: 13
               flags: *id015
               relation: *id016
-              lexicalType: *id017
+              lexical_type: *id017
               propagation: 1
               function:
               file: *id008
@@ -361,10 +317,10 @@ meta: !meta.db/v4
               offset:
               children:
               - !meta.db/v4/Context
-                ctxId: 15
+                ctx_id: 15
                 flags: *id011
                 relation: *id012
-                lexicalType: *id013
+                lexical_type: *id013
                 propagation: 0
                 function: *id018
                 file:
@@ -373,10 +329,10 @@ meta: !meta.db/v4
                 offset:
                 children:
                 - !meta.db/v4/Context
-                  ctxId: 20
+                  ctx_id: 20
                   flags: *id015
                   relation: *id016
-                  lexicalType: *id017
+                  lexical_type: *id017
                   propagation: 1
                   function:
                   file: *id008
@@ -385,10 +341,10 @@ meta: !meta.db/v4
                   offset:
                   children: []
                 - !meta.db/v4/Context
-                  ctxId: 16
+                  ctx_id: 16
                   flags: *id015
                   relation: *id016
-                  lexicalType: &id019 !meta.db/v4/Context.LexicalType loop
+                  lexical_type: &id019 !meta.db/v4/Context.LexicalType loop
                   propagation: 1
                   function:
                   file: *id008
@@ -397,10 +353,10 @@ meta: !meta.db/v4
                   offset:
                   children:
                   - !meta.db/v4/Context
-                    ctxId: 17
+                    ctx_id: 17
                     flags: *id015
                     relation: *id016
-                    lexicalType: *id017
+                    lexical_type: *id017
                     propagation: 1
                     function:
                     file: *id008
@@ -409,10 +365,10 @@ meta: !meta.db/v4
                     offset:
                     children: []
           - !meta.db/v4/Context
-            ctxId: 5
+            ctx_id: 5
             flags: *id011
             relation: *id012
-            lexicalType: *id013
+            lexical_type: *id013
             propagation: 0
             function: *id018
             file:
@@ -421,10 +377,10 @@ meta: !meta.db/v4
             offset:
             children:
             - !meta.db/v4/Context
-              ctxId: 9
+              ctx_id: 9
               flags: *id015
               relation: *id016
-              lexicalType: *id017
+              lexical_type: *id017
               propagation: 1
               function:
               file: *id008
@@ -433,10 +389,10 @@ meta: !meta.db/v4
               offset:
               children: []
             - !meta.db/v4/Context
-              ctxId: 6
+              ctx_id: 6
               flags: *id015
               relation: *id016
-              lexicalType: *id019
+              lexical_type: *id019
               propagation: 1
               function:
               file: *id008
@@ -445,10 +401,10 @@ meta: !meta.db/v4
               offset:
               children:
               - !meta.db/v4/Context
-                ctxId: 7
+                ctx_id: 7
                 flags: *id015
                 relation: *id016
-                lexicalType: *id017
+                lexical_type: *id017
                 propagation: 1
                 function:
                 file: *id008
@@ -457,11 +413,11 @@ meta: !meta.db/v4
                 offset:
                 children: []
 profile: !profile.db/v4
-  ProfileInfos: !profile.db/v4/ProfileInfos
+  profile_infos: !profile.db/v4/ProfileInfos
     profiles:
     - !profile.db/v4/Profile
-      idTuple:
-      flags: !profile.db/v4/Profile.Flags [isSummary]
+      id_tuple:
+      flags: !profile.db/v4/Profile.Flags [is_summary]
       values:
         0: {}
         65536: {}
@@ -506,18 +462,18 @@ profile: !profile.db/v4
         111: {}
         7995392: {}
     - !profile.db/v4/Profile
-      idTuple: !profile.db/v4/IdentifierTuple
+      id_tuple: !profile.db/v4/IdentifierTuple
         ids:
         - !profile.db/v4/Identifier
           kind: 1
-          flags: !profile.db/v4/Identifier.Flags [isPhysical]
-          logicalId: 0
-          physicalId: 8323329
+          flags: !profile.db/v4/Identifier.Flags [is_physical]
+          logical_id: 0
+          physical_id: 8323329
         - !profile.db/v4/Identifier
           kind: 3
           flags: !profile.db/v4/Identifier.Flags []
-          logicalId: 0
-          physicalId: 0
+          logical_id: 0
+          physical_id: 0
       flags: !profile.db/v4/Profile.Flags []
       values:
         0: {}
@@ -539,7 +495,7 @@ profile: !profile.db/v4
         18: {}
         1310720: {}
 context: !cct.db/v4
-  CtxInfos: !cct.db/v4/ContextInfos
+  ctx_infos: !cct.db/v4/ContextInfos
     contexts:
     - !cct.db/v4/PerContext
       values:
@@ -636,21 +592,21 @@ context: !cct.db/v4
     - !cct.db/v4/PerContext
       values: {}
 trace: !trace.db/v4
-  CtxTraces: !trace.db/v4/ContextTraceHeaders
-    timestampRange:
+  ctx_traces: !trace.db/v4/ContextTraceHeaders
+    timestamp_range:
       min: 1656693533757421000
       max: 1656693534448716000
     traces:
     - !trace.db/v4/ContextTrace
-      profIndex: 1
+      prof_index: 1
       line:
       - !trace.db/v4/ContextTraceElement
         timestamp: 1656693533987950000
-        ctxId: 9
+        ctx_id: 9
       - !trace.db/v4/ContextTraceElement
         timestamp: 1656693534218386000
-        ctxId: 20
+        ctx_id: 20
       - !trace.db/v4/ContextTraceElement
         timestamp: 1656693534448716000
-        ctxId: 20
+        ctx_id: 20
 """

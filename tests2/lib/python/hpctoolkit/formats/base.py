@@ -1,54 +1,10 @@
-## * BeginRiceCopyright *****************************************************
-##
-## $HeadURL$
-## $Id$
-##
-## --------------------------------------------------------------------------
-## Part of HPCToolkit (hpctoolkit.org)
-##
-## Information about sources of support for research and development of
-## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
-## --------------------------------------------------------------------------
-##
-## Copyright ((c)) 2022-2022, Rice University
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-##
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-##
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage.
-##
-## ******************************************************* EndRiceCopyright *
-
 import abc
 import dataclasses
 import enum
 import functools
 import io
 import struct
-import typing as T
+import typing
 import warnings
 from pathlib import Path
 
@@ -105,35 +61,43 @@ class _CommentedSeq(ruamel.yaml.comments.CommentedSeq):
         return constructor.construct_sequence(node)
 
 
-class StructureBase(abc.ABC):
+class StructureBase:
     """Base class for all structures within the formats. These are the main "nodes" in the
-    object-graph that every database represents."""
+    object-graph that every database represents.
+    """
+
+    yaml_tag: typing.ClassVar[str]
 
     @property
     def shorthand(self) -> str | None:
         """Return a short 1-line string that can be used to describe this object, or None if the
-        class name is a sufficient shorthand for this object."""
-        return None
+        class name is a sufficient shorthand for this object.
+        """
+        return None  # noqa: RET501
 
     def __str__(self) -> str:
         sh = self.shorthand
         return super().__str__() if sh is None else f"{self.__class__.__name__}({sh})"
 
     @classmethod
-    def owning_fields(cls) -> list[dataclasses.Field]:
+    def owning_fields(cls) -> tuple[dataclasses.Field, ...]:
         """List the fields that objects of this type "own". Recursing only through "owned" fields
-        will result in a perfect tree iteration rather than a DAG iteration."""
+        will result in a perfect tree iteration rather than a DAG iteration.
+        """
         return dataclasses.fields(cls)
 
-    def __getstate__(self) -> dict[str, T.Any]:
+    def __getstate__(self) -> dict[str, typing.Any]:
         return {f.name: getattr(self, f.name) for f in dataclasses.fields(self)}
+
+    def __setstate__(self, state: dict[str, typing.Any]):
+        for f in dataclasses.fields(self):
+            if f.name not in state:
+                raise ValueError(f"Attempt to load invalid serialized state: no field {f.name}")
+            setattr(self, f.name, state[f.name])
 
     @classmethod
     def _as_commented_map(cls, obj):
-        if hasattr(obj, "__getstate__"):
-            state = obj.__getstate__()
-        else:
-            state = obj.__dict__.copy()
+        state = obj.__getstate__() if hasattr(obj, "__getstate__") else obj.__dict__.copy()
         assert isinstance(state, dict)
         rstate = ruamel.yaml.comments.CommentedMap(state)
         for k, v in rstate.items():
@@ -143,9 +107,8 @@ class StructureBase(abc.ABC):
             elif isinstance(v, list) and any(isinstance(vv, StructureBase) for vv in v):
                 rstate[k] = _CommentedSeq(v)
                 for i, vv in enumerate(rstate[k]):
-                    if isinstance(vv, StructureBase):
-                        if vv.shorthand is not None:
-                            rstate[k].yaml_add_eol_comment(vv.shorthand, key=i)
+                    if isinstance(vv, StructureBase) and vv.shorthand is not None:
+                        rstate[k].yaml_add_eol_comment(vv.shorthand, key=i)
         return rstate
 
     @classmethod
@@ -153,10 +116,11 @@ class StructureBase(abc.ABC):
         return representer.represent_mapping(cls.yaml_tag, cls._as_commented_map(obj))
 
 
-def canonical_paths(obj: StructureBase) -> dict[StructureBase, tuple[str | int]]:
+def canonical_paths(obj: StructureBase) -> dict[StructureBase, tuple[str | int, ...]]:
     """Starting from the given Database* object, identify all objects within that object-graph and
-    return a mapping from these objects to the attribute/index path required to access them."""
-    result: dict[StructureBase, tuple[str | int]] = {}
+    return a mapping from these objects to the attribute/index path required to access them.
+    """
+    result: dict[StructureBase, tuple[str | int, ...]] = {}
 
     def add(o: StructureBase | list | dict, path: list[str | int]):
         if isinstance(o, StructureBase):
@@ -181,17 +145,24 @@ def canonical_paths(obj: StructureBase) -> dict[StructureBase, tuple[str | int]]
     return result
 
 
-def get_from_path(obj: StructureBase, path: tuple[str | int]) -> StructureBase:
+def get_from_path(obj: StructureBase, path: tuple[str | int, ...]) -> StructureBase:
     """Access the object referenced by the given canonical path, which was generated by a prior call
-    to canonical_paths. The obj may differ but should be the same type."""
+    to canonical_paths. The obj may differ but should be the same type.
+    """
     cursor: StructureBase | list | dict = obj
     for elem in path:
         if isinstance(cursor, StructureBase):
+            assert isinstance(elem, str)
             cursor = getattr(cursor, elem)
-        elif isinstance(cursor, list | dict):
+        elif isinstance(cursor, list):
+            assert isinstance(elem, int)
+            cursor = cursor[elem]
+        elif isinstance(cursor, dict):
+            assert isinstance(elem, str)
             cursor = cursor[elem]
         else:
-            assert False
+            raise AssertionError()
+    assert isinstance(cursor, StructureBase)
     return cursor
 
 
@@ -205,16 +176,17 @@ class DatabaseFile(StructureBase):
 
     __hdr_struct = struct.Struct("10s4sBB")
 
-    major_version: T.ClassVar[int]
-    max_minor_version: T.ClassVar[int]
-    format_code: T.ClassVar[bytes]
-    footer_code: T.ClassVar[bytes]
-    yaml_tag: T.ClassVar[str]
+    major_version: typing.ClassVar[int]
+    max_minor_version: typing.ClassVar[int]
+    format_code: typing.ClassVar[bytes]
+    footer_code: typing.ClassVar[bytes]
+    yaml_tag: typing.ClassVar[str]
 
     @classmethod
     def _parse_header(cls, file) -> int:
         """Parse the header (and footer) of the given file. Returns the minor version number.
-        Raises standard errors and warnings for common format-incompatibility cases."""
+        Raises standard errors and warnings for common format-incompatibility cases.
+        """
         assert len(cls.format_code) == 4
         assert len(cls.footer_code) == 8
         fmtid, footer, major, minor = (
@@ -259,13 +231,13 @@ class DatabaseFile(StructureBase):
         return in_minor
 
     @classmethod
-    def _header_struct(cls, **sections: dict[str, tuple[int]]) -> VersionedStructure:
+    def _header_struct(cls, **sections: tuple[int]) -> VersionedStructure:
         """Generate a VersionedStructure for the section table of a FileHeader. The result will
         contain two fields per section, a 'p' prefix for the starting offset and a 'sz' prefix for
         the total size. For convenience the fields are already offset to skip over the initial
-        file identifiers, so start from offset 0 in the file."""
-
-        fields = {}
+        file identifiers, so start from offset 0 in the file.
+        """
+        fields: dict[str, tuple[int, int, str]] = {}
         offset = 16
         for name, (min_ver,) in sections.items():
             fields["sz" + name] = (min_ver, offset, "Q")
@@ -277,7 +249,7 @@ class DatabaseFile(StructureBase):
 class DatabaseBase(StructureBase):
     """Base class for the top-level object representing an entire performance database."""
 
-    major_version: T.ClassVar[int]
+    major_version: typing.ClassVar[int]
 
     @classmethod
     @abc.abstractmethod
@@ -285,16 +257,30 @@ class DatabaseBase(StructureBase):
         """Deserialize the entire database directory into appropriate DatabaseFile objects."""
 
 
-EnumerationT = T.TypeVar("EnumerationT", bound="Enumeration")
+EnumerationT = typing.TypeVar("EnumerationT", bound="Enumeration")
+
+
+@dataclasses.dataclass(frozen=True)
+class EnumEntry:
+    raw_value: int
+    min_version: int = dataclasses.field(kw_only=True)
 
 
 class Enumeration(enum.Enum):
     """Base class for all enumerations in the formats."""
 
-    def __new__(cls, value: int, min_version: int):
+    yaml_tag: typing.ClassVar[str]
+
+    def __init__(self, *_args):
+        self.min_version: int
+
+    def __new__(cls, value: EnumEntry | int):
         obj = object.__new__(cls)
-        obj._value_ = value
-        obj.min_version = min_version
+        if isinstance(value, EnumEntry):
+            obj._value_ = value.raw_value
+            obj.min_version = value.min_version
+        else:
+            obj._value_ = value
         return obj
 
     @classmethod
@@ -303,10 +289,8 @@ class Enumeration(enum.Enum):
         cls.yaml_tag = yaml_tag
 
     @classmethod
-    def versioned_decode(
-        cls: T.Type[EnumerationT], version: int, value: int
-    ) -> EnumerationT | None:
-        val = cls(value)  # noqa
+    def versioned_decode(cls: type[EnumerationT], version: int, value: int) -> EnumerationT | None:
+        val = cls(value)
         return val if val.min_version <= version else None
 
     @classmethod
@@ -319,19 +303,31 @@ class Enumeration(enum.Enum):
         return cls[constructor.construct_scalar(node)]
 
 
-BitFlagsT = T.TypeVar("BitFlagsT", bound="BitFlags")
+BitFlagsT = typing.TypeVar("BitFlagsT", bound="BitFlags")
 
 
 class BitFlags(enum.Flag):
     """Base class for all flag-bits fields in the formats."""
 
-    def __new__(cls, value: int, min_version: int | None = None):
+    yaml_tag: typing.ClassVar[str]
+
+    def __init__(self, *_args):
+        self.min_version: int
+
+    def __new__(cls, value: EnumEntry | int):
         obj = object.__new__(cls)
-        if min_version is not None:
-            obj._value_ = 1 << value
-            obj.min_version = min_version
+        if isinstance(value, EnumEntry):
+            obj._value_ = 1 << value.raw_value
+            obj.min_version = value.min_version
         else:
             obj._value_ = value
+            first = True
+            for bit in cls:
+                if bit.value | value != 0:
+                    obj.min_version = (
+                        bit.min_version if first else max(obj.min_version, bit.min_version)
+                    )
+                    first = False
         return obj
 
     @classmethod
@@ -340,7 +336,7 @@ class BitFlags(enum.Flag):
         cls.yaml_tag = yaml_tag
 
     @classmethod
-    def versioned_decode(cls: T.Type[BitFlagsT], version: int, value: int) -> BitFlagsT:
+    def versioned_decode(cls: type[BitFlagsT], version: int, value: int) -> BitFlagsT:
         bits = [bit for bit in cls if bit.min_version <= version]
         return cls(value) & functools.reduce(lambda x, y: x | y, bits) if bits else cls(0)
 
@@ -348,7 +344,9 @@ class BitFlags(enum.Flag):
     def to_yaml(cls, representer, node):
         representer.alias_key = None
         return representer.represent_sequence(
-            cls.yaml_tag, sorted(val.name for val in cls if val in node), flow_style=True
+            cls.yaml_tag,
+            sorted(val.name or str(val) for val in cls if val in node),
+            flow_style=True,
         )
 
     @classmethod
@@ -359,14 +357,17 @@ class BitFlags(enum.Flag):
 
 class InvalidFormatError(Exception):
     """Error raised when the input serialized data cannot be read due to structural errors, such as
-    corruption."""
+    corruption.
+    """
 
 
 class IncompatibleFormatError(InvalidFormatError):
     """Error raised when the input serialized data is of an incompatible version compared to the
-    library implementation."""
+    library implementation.
+    """
 
 
 class UnsupportedFormatWarning(UserWarning):
     """Warning raised when the input serialized data is a compatible but newer version compared to
-    the library implementation. Some data in the input may not be converted."""
+    the library implementation. Some data in the input may not be converted.
+    """

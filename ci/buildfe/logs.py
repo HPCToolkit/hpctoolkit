@@ -8,7 +8,7 @@ _section_counter = 0
 
 
 class FgColor(enum.Enum):
-    """Selection of foreground color codes to indicate various statuses"""
+    """Selection of foreground color codes to indicate various statuses."""
 
     # Selected subset that seem to work well in practical cases
     header = 36  # Cyan
@@ -20,7 +20,7 @@ class FgColor(enum.Enum):
 
 @contextlib.contextmanager
 def colorize(color):
-    """Context manager to colorize any text printed to stdout"""
+    """Context manager to colorize any text printed to stdout."""
     sys.stdout.write(f"\x1b[{FgColor(color).value}m")
     try:
         yield
@@ -29,13 +29,13 @@ def colorize(color):
 
 
 def colorize_str(color, string):
-    """Wrap a string in the appropriate color codes for the given color"""
+    """Wrap a string in the appropriate color codes for the given color."""
     return "\x1b[" + str(FgColor(color).value) + "m" + str(string) + "\x1b[0m"
 
 
 @contextlib.contextmanager
 def section(header, collapsed=False, color=None):
-    """Wrap any text printed to stdout in this context manager as a GitLab collapsible section"""
+    """Wrap any text printed to stdout in this context manager as a GitLab collapsible section."""
     global _section_counter
     _section_counter += 1
     codename = "section_" + str(_section_counter) + "_" + random.randbytes(8).hex()
@@ -54,7 +54,8 @@ def section(header, collapsed=False, color=None):
 
 def dump_file(filename, limit_bytes=10 * 1024, tail: bool = True):
     """Dump the given file to stdout, stopping at the given limit if not None.
-    If tail is True, dump the end of the file (instead of the start)."""
+    If tail is True, dump the end of the file (instead of the start).
+    """
     buffer, size, truncated = [], 0, False
     with open(filename, encoding="utf-8") as f:
         for line in f:

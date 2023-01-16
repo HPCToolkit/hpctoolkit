@@ -25,12 +25,11 @@ def sanitize(ti):
     return ti
 
 
-with extracted(args.input) as inp:
-    with hpcprof(inp, "-j4", "--foreign") as dbase:
-        with tarfile.open(args.output, mode="w:xz") as out:
-            out.add(dbase.basedir, arcname=".", recursive=True, filter=sanitize)
+with extracted(args.input) as inp, hpcprof(inp, "-j4", "--foreign") as dbase:
+    with tarfile.open(args.output, mode="w:xz") as out:
+        out.add(dbase.basedir, arcname=".", recursive=True, filter=sanitize)
 
-        if args.yaml_output:
-            db = Database.from_dir(dbase.basedir)
-            with open(args.yaml_output, "w", encoding="utf-8") as f:
-                ruamel.yaml.YAML(typ="rt").dump(db, f)
+    if args.yaml_output:
+        db = Database.from_dir(dbase.basedir)
+        with open(args.yaml_output, "w", encoding="utf-8") as f:
+            ruamel.yaml.YAML(typ="rt").dump(db, f)

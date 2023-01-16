@@ -1,0 +1,49 @@
+select = [
+  "F",  # Pyflakes
+  "E", "W",  # pycodestyle
+  "C90",  # mccabe
+  "I",  # isort
+
+  # pydocstyle
+  "D200", "D201", "D202", "D206", "D207", "D208", "D209", "D210", "D212",
+  "D214", "D215", "D3", "D4",
+
+  "UP",  # pyupgrade
+  "N",  # pep8-naming
+  "YTT",  # flake8-2020
+  "B",  # Bugbear
+  "A",  # flake8-builtins
+  "C4",  # flake8-comprehensions
+  "T10",  # flake8-debugger
+  "ISC",  # flake8-implicit-str-concat
+  "ICN",  # flake8-import-conventions
+  "PT",  # flake8-pytest-style
+  "Q",  # flake8-quotes
+  "RET",  # flake8-return
+  "SIM",  # flake8-simplify
+  "DTZ",  # flake8-datetimez
+  "ERA",  # eradicate
+  "PGH",  # pygrep-hooks
+  "PLE", "PLW",  # Pylint
+  "PIE",  # flake8-pie
+  "RUF", # Ruff-specific rules (ambiguous unicode and unused noqa)
+]
+
+ignore = [
+  # Allow going over the max line length, for now.
+  "E501",
+]
+
+unfixable = [
+  # Eradication can sometimes make comments weird. Don't remove automatically.
+  "ERA",
+
+  # Don't remove unused noqas, since they may have disappeared due to other errors.
+  "RUF100",
+
+  # Don't automatically remove unused bits, they usually indicate typos
+  "F8",
+]
+
+[mccabe]
+max-complexity = 15
