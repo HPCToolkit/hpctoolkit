@@ -7,12 +7,12 @@
   - 'deps: [amd64]'
 
   rules:
-  - &main_rules
-    - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: regen testdata/i'
-    - if: $REGEN_TESTDATA
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes:
-      - tests2/data/**/*
+  - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: regen testdata/i || $REGEN_TESTDATA'
+    when: always
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes:
+    - tests2/data/**/*
+    when: always
   - when: on_success
     variables:
       DONT_SAVE: '1'
@@ -102,12 +102,16 @@
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
 
 
-.regen testdata:
+regen testdata:
   stage: update
   image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04
   tags: [docker]
-  rules: *main_rules
-  dependencies:
+  rules:
+  - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: regen testdata/i || $REGEN_TESTDATA'
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes:
+    - tests2/data/**/*
+  needs:
   - 'regen testdata: [cpu]'
   - 'regen testdata: [+cuda]'
   - 'regen testdata: [+rocm]'

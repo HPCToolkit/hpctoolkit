@@ -53,9 +53,10 @@ def parse_spec(spec: str) -> Specification:
 
 def build_parser() -> argparse.ArgumentParser:
     def source(src: str) -> tuple[Path, Path] | tuple[Path]:
-        return tuple(Path(p) for p in src.split(";", 1))
+        parts = src.split(";", 1)
+        return (Path(parts[0]),) if len(parts) == 1 else (Path(parts[0]), Path(parts[1]))
 
-    def action(act: str) -> Action:
+    def action(act: str) -> str:
         if act not in actions:
             print(f"Invalid action {act}, must be one of {', '.join(actions)}")
             raise ValueError()
@@ -216,7 +217,7 @@ def post_parse(args):
 
 def load_src(
     depcfg: DependencyConfiguration,
-    src: tuple[Path, Path] | tuple[Path],
+    src: tuple[Path, ...],
     spack_install: bool,
     spack_args: list[str],
     dry_run: bool,
@@ -232,7 +233,8 @@ def load_src(
 
         bdir, cdir = src[0], src[0]
     else:
-        bdir, cdir = src
+        assert len(src) == 2
+        bdir, cdir = src[0], src[1]
         if not bdir.is_dir():
             print(f"Invalid source, not a directory: {bdir}", file=sys.stderr)
             sys.exit(2)
@@ -285,7 +287,7 @@ def load_spackenv(cdir: Path, spack_install: bool, spack_args) -> None:
 
     in_cmd = None
     for word in shlex_iter(lexer):
-        match word:
+        match word:  # noqa: E999
             case "alias" if not in_cmd:
                 in_cmd = "alias"
             case "export" if not in_cmd:
@@ -339,13 +341,13 @@ def configure(
                     flush=True,
                 )
         return None
-    else:
-        if unsat:
-            with colorize(FgColor.error):
-                print(
-                    f"## HPCToolkit {str(v)} was incorrectly marked as unsatisfiable",
-                    flush=True,
-                )
+
+    if unsat:
+        with colorize(FgColor.error):
+            print(
+                f"## HPCToolkit {str(v)} was incorrectly marked as unsatisfiable",
+                flush=True,
+            )
     return cfg
 
 
@@ -363,9 +365,12 @@ def parse_stats(stdout):
 
 
 def print_ccache_stats(header_prefix: str):
+    if (ccache := shutil.which("ccache")) is None:
+        return
+
     try:
         proc = subprocess.run(
-            [shutil.which("ccache"), "--print-stats"],
+            [ccache, "--print-stats"],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
@@ -397,10 +402,9 @@ def print_ccache_stats(header_prefix: str):
 
 def build(variant: ConcreteSpecification, cfg: Configuration, args) -> tuple[bool, dict]:
     # pylint: disable=too-many-locals
-    if args.ccache_stats:
-        subprocess.run(
-            [shutil.which("ccache"), "--zero-stats"], stdout=subprocess.DEVNULL, check=True
-        )
+
+    if args.ccache_stats and (ccache := shutil.which("ccache")) is not None:
+        subprocess.run([ccache, "--zero-stats"], stdout=subprocess.DEVNULL, check=True)
 
     print_header("## Building for configuration " + str(variant) + " ...")
 
@@ -451,11 +455,11 @@ def build(variant: ConcreteSpecification, cfg: Configuration, args) -> tuple[boo
         print_ccache_stats(f"  [-/{len(args.action)}] ")
 
     if args.reproducible:
-        if summary.passed:
-            sec = section("  Reproduction instructions", color=FgColor.header, collapsed=True)
-        else:
-            sec = contextlib.nullcontext()
-        with sec:
+        with (
+            section("  Reproduction instructions", color=FgColor.header, collapsed=True)
+            if summary.passed
+            else contextlib.nullcontext()
+        ):
             print(
                 "To reproduce the above build, run the following commands from your local HPCToolkit checkout:"
             )

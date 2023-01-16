@@ -17,7 +17,8 @@ foreach name, features : _databases
     'measurements': testdata_meas[name],
     'tarball': files(_out_db),
     'pickled': custom_target(output: name+'.pickle', input: files(_out_db),
-        command: _pickle, env: hpctoolkit_pyenv, build_by_default: false),
+        command: _pickle, env: hpctoolkit_pyenv, build_always_stale: true,
+        build_by_default: false),
     'xfail': features.get('xfail', false) or testdata_meas[name]['xfail'],
   }
   _idxs = {'_db': 0}

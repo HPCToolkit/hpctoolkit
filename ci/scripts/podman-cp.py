@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 from pathlib import PurePath
 
-from podman import PodmanClient
+from podman import PodmanClient  # type: ignore[import]
 
 parser = argparse.ArgumentParser(
     description="Copy files from a Podman image into the current space"

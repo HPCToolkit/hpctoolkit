@@ -18,6 +18,18 @@ repos:
     # XXX: Old Python 2.7-compatible script. Probably bitrot by now.
     exclude: '^src/tool/hpcrun/sample-sources/make-wrappers.py$'
 
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: 'v0.0.221'
+  hooks:
+  # Run a number of Python linters in Rust. Not completely feature-parity with Python-based linters,
+  # but can autofix a number of issues before they run. Also wicked fast.
+  - id: ruff
+    args: [--target-version=py310, --fix, --line-length=100]
+    exclude: &py_excludes |
+      (?x)(
+        ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
+      )
+
 
 # ------------------------------------------------------------------------------------
 #  Formatting hooks:  Hooks that alter the syntax but not semantics of files
@@ -85,33 +97,27 @@ repos:
   - id: no-commit-to-branch
     args: [--branch, master, --branch, develop]
 
-- repo: https://github.com/Yelp/detect-secrets
-  rev: v1.4.0
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v0.991
   hooks:
-  # Scan for secrets that should never appear in the repo itself
-  - id: detect-secrets
-    exclude: |
-      (?x)^(
-        configure |    # Some of the tight M4 looks like secret keywords
-        doc/www/software-instructions.html    # Some of the tags in here are high-entropy
-      )$
-
-- repo: https://github.com/PyCQA/prospector
-  rev: v1.8.3
-  hooks:
-  # Use Prospector to lint all our Python code
-  - id: prospector
+ # Run static checks on the Python code
+  - id: mypy
+    args: [--show-column-numbers, --pretty]
     additional_dependencies:
-    - 'prospector[with_mypy]'
-    - pylint==2.15.9
-    # Some of our dependencies (needed in the virtual env for pylint to work)
+    - pytest
     - ruamel.yaml
     - podman
-    exclude: |
-      (?x)(
-        _test\.py$ |    # Code for tests need not be super clean
-        ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
-      )
+    exclude: *py_excludes
+
+- repo: https://github.com/PyCQA/pylint
+  rev: v2.16.0b0
+  hooks:
+  # Run the aggressive static Python linter
+  - id: pylint
+    additional_dependencies:
+    - pylint-pytest
+    - ruamel.yaml
+    exclude: *py_excludes
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.9.0.2
@@ -145,4 +151,15 @@ repos:
         configure |
         lib/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
         tools/latex2man/.* |    # External code
+      )$
+
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.4.0
+  hooks:
+  # Scan for secrets that should never appear in the repo itself
+  - id: detect-secrets
+    exclude: |
+      (?x)^(
+        configure |    # Some of the tight M4 looks like secret keywords
+        doc/www/software-instructions.html    # Some of the tags in here are high-entropy
       )$

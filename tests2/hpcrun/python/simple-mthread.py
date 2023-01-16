@@ -1,14 +1,10 @@
-import contextlib
-import os
-import signal
-import sys
 import threading
 import time
 
 
 # Functions that "do work" that we will be detecting later
 def func_hi() -> None:
-    for i in range(10):
+    for _i in range(10):
         func_mid()
 
 

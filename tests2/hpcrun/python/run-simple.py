@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-import collections
 import sys
 from pathlib import Path
 
 import ruamel.yaml
-from hpctoolkit.formats import from_path
+from hpctoolkit.formats import from_path, vcurrent
 from hpctoolkit.match.context import MatchCtx, MatchEntryPoint, chainmatch
 from hpctoolkit.test.execution import hpcprof, hpcrun
 
@@ -28,24 +27,23 @@ with hpcrun(
 
     with hpcprof(meas) as raw_db:
         db = from_path(raw_db.basedir)
+        assert isinstance(db, vcurrent.Database)
 
         matches = list(
             chainmatch(
-                db.meta.Context,
-                MatchEntryPoint(entryPoint="main_thread"),
-                MatchCtx(relation="call", lexicalType="line", file=str(args.script)),
-                MatchCtx(relation="call", lexicalType="function", function="func_hi"),
-                MatchCtx(relation="lexical", lexicalType="line", file=str(args.script)),
-                MatchCtx(relation="call", lexicalType="function", function="func_mid"),
-                MatchCtx(relation="lexical", lexicalType="line", file=str(args.script)),
-                MatchCtx(relation="call", lexicalType="function", function="func_lo"),
+                db.meta.context,
+                MatchEntryPoint(entry_point="main_thread"),
+                MatchCtx(relation="call", lexical_type="line", file=str(args.script)),
+                MatchCtx(relation="call", lexical_type="function", function="func_hi"),
+                MatchCtx(relation="lexical", lexical_type="line", file=str(args.script)),
+                MatchCtx(relation="call", lexical_type="function", function="func_mid"),
+                MatchCtx(relation="lexical", lexical_type="line", file=str(args.script)),
+                MatchCtx(relation="call", lexical_type="function", function="func_lo"),
             )
         )
         if not matches:
-            sys.setrecursionlimit(100000)
-            ruamel.yaml.YAML(typ="rt").dump(db.meta.Context, sys.stdout)
+            ruamel.yaml.YAML(typ="rt").dump(db.meta.context, sys.stdout)
             raise ValueError("Unable to find match!")
         if len(matches) > 1:
-            sys.setrecursionlimit(100000)
-            ruamel.yaml.YAML(typ="rt").dump(db.meta.Context, sys.stdout)
+            ruamel.yaml.YAML(typ="rt").dump(db.meta.context, sys.stdout)
             raise ValueError(f"Found {len(matches)} matches, expected 1!")

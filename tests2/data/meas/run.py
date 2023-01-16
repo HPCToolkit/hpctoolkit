@@ -25,11 +25,11 @@ def sanitize(ti):
     return ti
 
 
-def check_ok(M):
+def check_ok(meas):
     sample_cnts = []
     logfiles = 0
-    for stem in M.thread_stems:
-        if M.logfile(stem):
+    for stem in meas.thread_stems:
+        if meas.logfile(stem):
             logfiles += 1
             with open(M.logfile(stem), encoding="utf-8") as f:
                 for line in f:
@@ -59,7 +59,7 @@ def check_ok(M):
     return True
 
 
-for i in range(10):
+for _i in range(10):
     with hpcrun(*args.arguments) as M:
         # Verify that the measurements contains enough samples to call it useful
         if not check_ok(M):
@@ -72,5 +72,5 @@ for i in range(10):
         with tarfile.open(args.output, mode="w:xz") as out:
             out.add(M.basedir, arcname=".", recursive=True, filter=sanitize)
             break
-else:
+else:  # noqa: PLW0120
     raise RuntimeError("All 10 attempts failed to collect enough data, adjust the arguments!")

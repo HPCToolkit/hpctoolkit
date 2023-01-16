@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import math
 import os
@@ -58,10 +59,12 @@ class Git:
     def toplevel(self) -> Path:
         """Get the absolute path to the top-level Git directory, from git rev-parse --show-toplevel."""
         r = self("rev-parse", "--show-toplevel")
+        if r is None:
+            raise RuntimeError("Not part of a Git repository!")
         return Path(r).resolve(strict=True)
 
     @functools.lru_cache
-    def all_files(self, *args: str | Path, absolute: bool = False, **kwargs) -> list[Path]:
+    def all_files(self, *args: str | Path, absolute: bool = False, **kwargs) -> list[Path] | None:
         """Get a list of all checked-in files as Git sees the world."""
         topdir = self.toplevel()
         relative = self.list_paths("-C", topdir, "ls-files", *args, **kwargs)
@@ -86,12 +89,14 @@ def project_dir() -> Path:
     return Git().toplevel()
 
 
-def cpuset_max() -> int:
+def cpuset_max() -> float:
     """Get the maximum number of threads accessible according to the process affinity"""
-    try:
+    with contextlib.suppress(Exception):
+        # This should work on all UNIX systems
         return len(os.sched_getaffinity(0))
-    except Exception:  # Non-UNIX system
-        return os.cpu_count()
+    # Fallback for non-UNIX systems
+    r = os.cpu_count()
+    return r if r is not None else float("inf")
 
 
 def cgroup_max() -> float:
@@ -132,11 +137,10 @@ def cgroup_max() -> float:
                 if quota == "max":
                     # This really is unlimited
                     return float("inf")
-                quota, period = int(quota), int(period)
-                return quota / period
+                return int(quota) / int(period)
     except FileNotFoundError as e:
         warnings.warn(f"Failed to identify cgroups, ignoring cgroups CPU limits: {e}")
-        return float("inf")
+    return float("inf")
 
 
 def nproc_max() -> int:
@@ -147,7 +151,7 @@ def nproc_max() -> int:
 def nproc() -> int:
     """Get the recommended number of processes that should be used for parallel operations"""
     np = nproc_max()
-    match np:
+    match np:  # noqa: E999
         case 1:
             return 2  # Minor parallelism
         case 2:

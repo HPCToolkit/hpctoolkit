@@ -1,6 +1,5 @@
 import abc
 import graphlib
-import typing as T
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -31,7 +30,7 @@ class ActionResult(abc.ABC):
         """Return False if the Action was unable to complete its task, and dependent Actions should not run."""
 
     def color(self) -> FgColor:
-        """Return the standard color that represents this result's state"""
+        """Return the standard color that represents this result's state."""
         if not self.completed or not self.passed:
             return FgColor.error
         if not self.flawless:
@@ -40,7 +39,7 @@ class ActionResult(abc.ABC):
 
 
 class SummaryResult(ActionResult):
-    """Simple ActionResult that combines the worst of all its inputs"""
+    """Simple ActionResult that combines the worst of all its inputs."""
 
     def __init__(self):
         self._results = []
@@ -84,7 +83,7 @@ class SummaryResult(ActionResult):
 
 
 class ReturnCodeResult(ActionResult):
-    """Simple ActionResult that is successful or not based on an integer process returncode"""
+    """Simple ActionResult that is successful or not based on an integer process returncode."""
 
     def __init__(self, cmdname: str, returncode: int):
         self._cmdname = cmdname
@@ -111,8 +110,7 @@ class ReturnCodeResult(ActionResult):
 
 
 class Action(abc.ABC):
-    """
-    ABC for the Actions the build front-end can take, for instance configuring or building the
+    """ABC for the Actions the build front-end can take, for instance configuring or building the
     project. These share a small set of arguments but are otherwise very generic.
 
     These are always singletons, calling Action() will return the singleton object.
@@ -128,13 +126,13 @@ class Action(abc.ABC):
             if self.__singleton is None:  # pylint: disable=protected-access
                 init(self, *args, **kwargs)
 
-        cls.__init__ = newinit
+        cls.__init__ = newinit  # type: ignore[assignment]
 
     def __new__(cls):
         """Return the singleton Action object."""
         if cls.__singleton is None:
             value = super().__new__(cls)
-            value.__init__()
+            value.__init__()  # type: ignore[misc]
             cls.__singleton = value
         return cls.__singleton
 
@@ -144,10 +142,10 @@ class Action(abc.ABC):
 
     @abc.abstractmethod
     def name(self) -> str:
-        """Name for this Action, as a noun. To be used in sentences in the log"""
+        """Name for this Action, as a noun. To be used in sentences in the log."""
 
     @abc.abstractmethod
-    def dependencies(self) -> tuple["Action"]:
+    def dependencies(self) -> tuple["Action", ...]:
         """List of other Actions that need to run before this one."""
 
     @abc.abstractmethod
@@ -158,17 +156,17 @@ class Action(abc.ABC):
         builddir: Path,
         srcdir: Path,
         installdir: Path,
-        logdir: T.Optional[Path] = None,
+        logdir: Path | None = None,
     ) -> ActionResult:
         """Run this Action with the given arguments."""
 
 
 def action_sequence(actions: Iterable[Action]) -> list[Action]:
     """Given a list of Actions, expand all dependencies and sort in topological order.
-    Returns the final list of Actions in the order they should be executed."""
-
+    Returns the final list of Actions in the order they should be executed.
+    """
     # Expand all dependencies, as much as possible
-    graph = {}
+    graph: dict[Action, tuple[Action, ...]] = {}
 
     def expand(action):
         if len(graph) > 100:

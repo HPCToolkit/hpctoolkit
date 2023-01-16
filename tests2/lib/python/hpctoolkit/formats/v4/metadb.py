@@ -1,54 +1,10 @@
-## * BeginRiceCopyright *****************************************************
-##
-## $HeadURL$
-## $Id$
-##
-## --------------------------------------------------------------------------
-## Part of HPCToolkit (hpctoolkit.org)
-##
-## Information about sources of support for research and development of
-## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
-## --------------------------------------------------------------------------
-##
-## Copyright ((c)) 2022-2022, Rice University
-## All rights reserved.
-##
-## Redistribution and use in source and binary forms, with or without
-## modification, are permitted provided that the following conditions are
-## met:
-##
-## * Redistributions of source code must retain the above copyright
-##   notice, this list of conditions and the following disclaimer.
-##
-## * Redistributions in binary form must reproduce the above copyright
-##   notice, this list of conditions and the following disclaimer in the
-##   documentation and/or other materials provided with the distribution.
-##
-## * Neither the name of Rice University (RICE) nor the names of its
-##   contributors may be used to endorse or promote products derived from
-##   this software without specific prior written permission.
-##
-## This software is provided by RICE and contributors "as is" and any
-## express or implied warranties, including, but not limited to, the
-## implied warranties of merchantability and fitness for a particular
-## purpose are disclaimed. In no event shall RICE or contributors be
-## liable for any direct, indirect, incidental, special, exemplary, or
-## consequential damages (including, but not limited to, procurement of
-## substitute goods or services; loss of use, data, or profits; or
-## business interruption) however caused and on any theory of liability,
-## whether in contract, strict liability, or tort (including negligence
-## or otherwise) arising in any way out of the use of this software, even
-## if advised of the possibility of such damage.
-##
-## ******************************************************* EndRiceCopyright *
-
 import dataclasses
 import functools
 import struct
-import typing as T
+import typing
 
 from .._util import VersionedStructure, read_nbytes, read_ntstring
-from ..base import BitFlags, DatabaseFile, Enumeration, StructureBase, yaml_object
+from ..base import BitFlags, DatabaseFile, EnumEntry, Enumeration, StructureBase, yaml_object
 
 __all__ = [
     "MetaDB",
@@ -86,15 +42,15 @@ class MetaDB(DatabaseFile):
     max_minor_version = 0
     format_code = b"meta"
     footer_code = b"_meta.db"
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4"
 
-    General: "GeneralProperties"
-    IdNames: "IdentifierNames"
-    Metrics: "PerformanceMetrics"
-    Modules: "LoadModules"
-    Files: "SourceFiles"
-    Functions: "Functions"
-    Context: "ContextTree"
+    general: "GeneralProperties"
+    id_names: "IdentifierNames"
+    metrics: "PerformanceMetrics"
+    modules: "LoadModules"
+    files: "SourceFiles"
+    functions: "Functions"
+    context: "ContextTree"
 
     __struct = DatabaseFile._header_struct(
         # Added in v4.0
@@ -112,61 +68,62 @@ class MetaDB(DatabaseFile):
     def from_file(cls, file):
         minor = cls._parse_header(file)
         sections = cls.__struct.unpack_file(minor, file, 0)
-        modules, modulesByOffset = LoadModules.from_file(minor, file, sections["pModules"])
-        files, filesByOffset = SourceFiles.from_file(minor, file, sections["pFiles"])
-        functions, functionsByOffset = Functions.from_file(
+        modules, modules_by_offset = LoadModules.from_file(minor, file, sections["pModules"])
+        files, files_by_offset = SourceFiles.from_file(minor, file, sections["pFiles"])
+        functions, functions_by_offset = Functions.from_file(
             minor,
             file,
             sections["pFunctions"],
-            modulesByOffset=modulesByOffset,
-            filesByOffset=filesByOffset,
+            modules_by_offset=modules_by_offset,
+            files_by_offset=files_by_offset,
         )
         return cls(
-            General=GeneralProperties.from_file(minor, file, sections["pGeneral"]),
-            IdNames=IdentifierNames.from_file(minor, file, sections["pIdNames"]),
-            Metrics=PerformanceMetrics.from_file(minor, file, sections["pMetrics"]),
-            Modules=modules,
-            Files=files,
-            Functions=functions,
-            Context=ContextTree.from_file(
+            general=GeneralProperties.from_file(minor, file, sections["pGeneral"]),
+            id_names=IdentifierNames.from_file(minor, file, sections["pIdNames"]),
+            metrics=PerformanceMetrics.from_file(minor, file, sections["pMetrics"]),
+            modules=modules,
+            files=files,
+            functions=functions,
+            context=ContextTree.from_file(
                 minor,
                 file,
                 sections["pContext"],
-                modulesByOffset=modulesByOffset,
-                filesByOffset=filesByOffset,
-                functionsByOffset=functionsByOffset,
+                modules_by_offset=modules_by_offset,
+                files_by_offset=files_by_offset,
+                functions_by_offset=functions_by_offset,
             ),
         )
 
     @functools.cached_property
     def kind_map(self) -> dict[int, str]:
         """Mapping from a kind index to the string name it represents."""
-        return dict(enumerate(self.IdNames.names))
+        return dict(enumerate(self.id_names.names))
 
     @functools.cached_property
     def raw_metric_map(self) -> dict[int, "PropagationScopeInstance"]:
         """Mapping from a statMetricId to the PropagationScopeInstance is represents."""
-        return {i.propMetricId: i for m in self.Metrics.metrics for i in m.scopeInsts}
+        return {i.prop_metric_id: i for m in self.metrics.metrics for i in m.scope_insts}
 
     @functools.cached_property
     def summary_metric_map(self) -> dict[int, "SummaryStatistic"]:
         """Mapping from a statMetricId to the SummaryStatistic is represents."""
-        return {s.statMetricId: s for m in self.Metrics.metrics for s in m.summaries}
+        return {s.stat_metric_id: s for m in self.metrics.metrics for s in m.summaries}
 
     @functools.cached_property
-    def context_map(self) -> dict[int, T.Union[None, "EntryPoint", "Context"]]:
+    def context_map(self) -> dict[int, typing.Union[None, "EntryPoint", "Context"]]:
         """Mapping from a ctxId to the Context or EntryPoint it represents.
 
-        Mapping to None is reserved for ctxId 0, which indicates the global root context."""
-        result = {0: None}
+        Mapping to None is reserved for ctxId 0, which indicates the global root context.
+        """
+        result: dict[int, None | EntryPoint | Context] = {0: None}
 
         def traverse(ctx: "Context"):
-            result[ctx.ctxId] = ctx
+            result[ctx.ctx_id] = ctx
             for c in ctx.children:
                 traverse(c)
 
-        for e in self.Context.entryPoints:
-            result[e.ctxId] = e
+        for e in self.context.entry_points:
+            result[e.ctx_id] = e
             for c in e.children:
                 traverse(c)
         return result
@@ -177,7 +134,7 @@ class MetaDB(DatabaseFile):
 class GeneralProperties(StructureBase):
     """meta.db General Properties section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/GeneralProperties"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/GeneralProperties"
 
     title: str
     description: str
@@ -203,7 +160,7 @@ class GeneralProperties(StructureBase):
 class IdentifierNames(StructureBase):
     """meta.db Hierarchical Identifier Names section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/IdentifierNames"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/IdentifierNames"
 
     names: list[str]
 
@@ -234,7 +191,7 @@ class IdentifierNames(StructureBase):
 class PerformanceMetrics(StructureBase):
     """meta.db Performance Metrics section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/PerformanceMetrics"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/PerformanceMetrics"
 
     scopes: list["PropagationScope"]
     metrics: list["Metric"]
@@ -255,7 +212,7 @@ class PerformanceMetrics(StructureBase):
     @classmethod
     def from_file(cls, version: int, file, offset: int):
         data = cls.__struct.unpack_file(version, file, offset)
-        scopesByOff = {
+        scopes_by_off = {
             o: PropagationScope.from_file(version, file, o)
             for o in scaled_range(data["pScopes"], data["nScopes"], data["szScope"])
         }
@@ -265,13 +222,13 @@ class PerformanceMetrics(StructureBase):
                     version,
                     file,
                     o,
-                    scopesByOffset=scopesByOff,
-                    szScopeInst=data["szScopeInst"],
-                    szSummary=data["szSummary"],
+                    scopes_by_offset=scopes_by_off,
+                    sz_scope_inst=data["szScopeInst"],
+                    sz_summary=data["szSummary"],
                 )
                 for o in scaled_range(data["pMetrics"], data["nMetrics"], data["szMetric"])
             ],
-            scopes=list(scopesByOff.values()),
+            scopes=list(scopes_by_off.values()),
         )
 
 
@@ -280,10 +237,10 @@ class PerformanceMetrics(StructureBase):
 class Metric(StructureBase):
     """Description for a single performance metric."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/Metric"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/Metric"
 
     name: str
-    scopeInsts: list["PropagationScopeInstance"]
+    scope_insts: list["PropagationScopeInstance"]
     summaries: list["SummaryStatistic"]
 
     __struct = VersionedStructure(
@@ -302,20 +259,22 @@ class Metric(StructureBase):
         version: int,
         file,
         offset: int,
-        scopesByOffset: dict[int, "PropagationScope"],
-        szScopeInst: int,
-        szSummary: int,
+        scopes_by_offset: dict[int, "PropagationScope"],
+        sz_scope_inst: int,
+        sz_summary: int,
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
             name=read_ntstring(file, data["pName"]),
-            scopeInsts=[
-                PropagationScopeInstance.from_file(version, file, o, scopesByOffset=scopesByOffset)
-                for o in scaled_range(data["pScopeInsts"], data["nScopeInsts"], szScopeInst)
+            scope_insts=[
+                PropagationScopeInstance.from_file(
+                    version, file, o, scopes_by_offset=scopes_by_offset
+                )
+                for o in scaled_range(data["pScopeInsts"], data["nScopeInsts"], sz_scope_inst)
             ],
             summaries=[
-                SummaryStatistic.from_file(version, file, o, scopesByOffset=scopesByOffset)
-                for o in scaled_range(data["pSummaries"], data["nSummaries"], szSummary)
+                SummaryStatistic.from_file(version, file, o, scopes_by_offset=scopes_by_offset)
+                for o in scaled_range(data["pSummaries"], data["nSummaries"], sz_summary)
             ],
         )
 
@@ -325,10 +284,10 @@ class Metric(StructureBase):
 class PropagationScopeInstance(StructureBase):
     """Description of a single instantated propagation scope within a Metric."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/PropagationScopeInstance"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/PropagationScopeInstance"
 
     scope: "PropagationScope"
-    propMetricId: int
+    prop_metric_id: int
 
     __struct = VersionedStructure(
         "<",
@@ -339,21 +298,21 @@ class PropagationScopeInstance(StructureBase):
 
     @property
     def shorthand(self) -> str:
-        return f"{self.scope.scopeName}  #{self.propMetricId}"
+        return f"{self.scope.scope_name}  #{self.prop_metric_id}"
 
     @classmethod
     def from_file(
-        cls, version: int, file, offset: int, scopesByOffset: dict[int, "PropagationScope"]
+        cls, version: int, file, offset: int, scopes_by_offset: dict[int, "PropagationScope"]
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
-            scope=scopesByOffset[data["pScope"]],
-            propMetricId=data["propMetricId"],
+            scope=scopes_by_offset[data["pScope"]],
+            prop_metric_id=data["propMetricId"],
         )
 
     @classmethod
-    def owning_fields(cls) -> list[dataclasses.Field]:
-        return [f for f in dataclasses.fields(cls) if f.name not in ("scope",)]
+    def owning_fields(cls) -> tuple[dataclasses.Field, ...]:
+        return tuple(f for f in dataclasses.fields(cls) if f.name not in ("scope",))
 
 
 @yaml_object
@@ -361,19 +320,19 @@ class PropagationScopeInstance(StructureBase):
 class SummaryStatistic(StructureBase):
     """Description of a single summary static under a Scope."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/SummaryStatistic"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/SummaryStatistic"
 
     @yaml_object
     class Combine(Enumeration, yaml_tag="!meta.db/v4/SummaryStatistic.Combine"):
         # Added in v4.0
-        sum = (0, 0)
-        min = (1, 0)
-        max = (2, 0)
+        sum = EnumEntry(0, min_version=0)  # noqa: A003
+        min = EnumEntry(1, min_version=0)  # noqa: A003
+        max = EnumEntry(2, min_version=0)  # noqa: A003
 
     scope: "PropagationScope"
     formula: str
-    combine: Combine
-    statMetricId: int
+    combine: Combine | None
+    stat_metric_id: int
 
     __struct = VersionedStructure(
         "<",
@@ -386,25 +345,24 @@ class SummaryStatistic(StructureBase):
 
     @property
     def shorthand(self) -> str:
-        return (
-            f"{self.combine.name} / '{self.formula}' / {self.scope.scopeName}  #{self.statMetricId}"
-        )
+        cb = self.combine.name if self.combine is not None else "<unknown>"
+        return f"{cb} / '{self.formula}' / {self.scope.scope_name}  #{self.stat_metric_id}"
 
     @classmethod
     def from_file(
-        cls, version: int, file, offset: int, scopesByOffset: dict[int, "PropagationScope"]
+        cls, version: int, file, offset: int, scopes_by_offset: dict[int, "PropagationScope"]
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
-            scope=scopesByOffset[data["pScope"]],
+            scope=scopes_by_offset[data["pScope"]],
             formula=read_ntstring(file, data["pFormula"]),
             combine=cls.Combine.versioned_decode(version, data["combine"]),
-            statMetricId=data["statMetricId"],
+            stat_metric_id=data["statMetricId"],
         )
 
     @classmethod
-    def owning_fields(cls) -> list[dataclasses.Field]:
-        return [f for f in dataclasses.fields(cls) if f.name not in ("scope",)]
+    def owning_fields(cls) -> tuple[dataclasses.Field, ...]:
+        return tuple(f for f in dataclasses.fields(cls) if f.name not in ("scope",))
 
 
 @yaml_object
@@ -412,19 +370,19 @@ class SummaryStatistic(StructureBase):
 class PropagationScope(StructureBase):
     """Description of a single propagation scope."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/PropagationScope"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/PropagationScope"
 
     @yaml_object
     class Type(Enumeration, yaml_tag="!meta.db/v4/PropagationScope.Type"):
         # Added in v4.0
-        custom = (0, 0)
-        point = (1, 0)
-        execution = (2, 0)
-        transitive = (3, 0)
+        custom = EnumEntry(0, min_version=0)
+        point = EnumEntry(1, min_version=0)
+        execution = EnumEntry(2, min_version=0)
+        transitive = EnumEntry(3, min_version=0)
 
-    scopeName: str
-    type: Type
-    propagationIndex: int
+    scope_name: str
+    type: Type | None  # noqa: A003
+    propagation_index: int
 
     __struct = VersionedStructure(
         "<",
@@ -438,16 +396,17 @@ class PropagationScope(StructureBase):
     def shorthand(self) -> str:
         suffix = ""
         if self.type == self.Type.transitive:
-            suffix = f" bit/{self.propagationIndex}"
-        return f"{self.scopeName} [{self.type.name}]" + suffix
+            suffix = f" bit/{self.propagation_index}"
+        ty = self.type.name if self.type is not None else "<unknown>"
+        return f"{self.scope_name} [{ty}]" + suffix
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
-            scopeName=read_ntstring(file, data["pScopeName"]),
+            scope_name=read_ntstring(file, data["pScopeName"]),
             type=cls.Type.versioned_decode(version, data["type"]),
-            propagationIndex=data["propagationIndex"],
+            propagation_index=data["propagationIndex"],
         )
 
 
@@ -456,7 +415,7 @@ class PropagationScope(StructureBase):
 class LoadModules(StructureBase):
     """meta.db Load Modules section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/LoadModules"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/LoadModules"
 
     modules: list["Module"]
 
@@ -471,15 +430,15 @@ class LoadModules(StructureBase):
     @classmethod
     def from_file(cls, version: int, file, offset: int):
         data = cls.__struct.unpack_file(version, file, offset)
-        modulesByOffset = {
+        modules_by_offset = {
             o: Module.from_file(version, file, o)
             for o in scaled_range(data["pModules"], data["nModules"], data["szModule"])
         }
         return (
             cls(
-                modules=list(modulesByOffset.values()),
+                modules=list(modules_by_offset.values()),
             ),
-            modulesByOffset,
+            modules_by_offset,
         )
 
 
@@ -488,7 +447,7 @@ class LoadModules(StructureBase):
 class Module(StructureBase):
     """Description for a single load module."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/Module"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/Module"
 
     @yaml_object
     class Flags(BitFlags, yaml_tag="!meta.db/v4/Module.Flags"):
@@ -506,14 +465,11 @@ class Module(StructureBase):
 
     @property
     def shortpath(self) -> str:
-        result = self.path
-        if "/" in result:
-            result = result[result.rfind("/") :]
-        return result
+        return self.path[self.path.rfind("/") :] if "/" in self.path else self.path
 
     @property
     def shorthand(self) -> str:
-        return f"{self.shortpath} [{','.join(e.name for e in self.Flags if e in self.flags)}]"
+        return f"{self.shortpath} [{self.flags.name or ''}]"
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
@@ -529,7 +485,7 @@ class Module(StructureBase):
 class SourceFiles(StructureBase):
     """meta.db Source Files section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/SourceFiles"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/SourceFiles"
 
     files: list["File"]
 
@@ -544,11 +500,11 @@ class SourceFiles(StructureBase):
     @classmethod
     def from_file(cls, version: int, file, offset: int):
         data = cls.__struct.unpack_file(version, file, offset)
-        filesByOffset = {
+        files_by_offset = {
             o: File.from_file(version, file, o)
             for o in scaled_range(data["pFiles"], data["nFiles"], data["szFile"])
         }
-        return cls(files=list(filesByOffset.values())), filesByOffset
+        return cls(files=list(files_by_offset.values())), files_by_offset
 
 
 @yaml_object
@@ -556,12 +512,12 @@ class SourceFiles(StructureBase):
 class File(StructureBase):
     """Description for a single source file."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/File"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/File"
 
     @yaml_object
     class Flags(BitFlags, yaml_tag="!meta.db/v4/File.Flags"):
         # Added in v4.0
-        copied = (0, 0)
+        copied = EnumEntry(0, min_version=0)
 
     flags: Flags
     path: str
@@ -575,14 +531,11 @@ class File(StructureBase):
 
     @property
     def shortpath(self) -> str:
-        result = self.path
-        if "/" in result:
-            result = result[result.rfind("/") :]
-        return result
+        return self.path[self.path.rfind("/") :] if "/" in self.path else self.path
 
     @property
     def shorthand(self) -> str:
-        return f"{self.shortpath} [{','.join(e.name for e in self.Flags if e in self.flags)}]"
+        return f"{self.shortpath} [{self.flags.name or ''}]"
 
     @classmethod
     def from_file(cls, version: int, file, offset: int):
@@ -598,7 +551,7 @@ class File(StructureBase):
 class Functions(StructureBase):
     """meta.db Functions section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/Functions"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/Functions"
 
     functions: list["Function"]
 
@@ -616,17 +569,21 @@ class Functions(StructureBase):
         version: int,
         file,
         offset: int,
-        modulesByOffset: dict[int, Module],
-        filesByOffset: dict[int, File],
+        modules_by_offset: dict[int, Module],
+        files_by_offset: dict[int, File],
     ):
         data = cls.__struct.unpack_file(version, file, offset)
-        functionsByOffset = {
+        functions_by_offset = {
             o: Function.from_file(
-                version, file, o, modulesByOffset=modulesByOffset, filesByOffset=filesByOffset
+                version,
+                file,
+                o,
+                modules_by_offset=modules_by_offset,
+                files_by_offset=files_by_offset,
             )
             for o in scaled_range(data["pFunctions"], data["nFunctions"], data["szFunction"])
         }
-        return cls(functions=list(functionsByOffset.values())), functionsByOffset
+        return cls(functions=list(functions_by_offset.values())), functions_by_offset
 
 
 @yaml_object
@@ -634,7 +591,7 @@ class Functions(StructureBase):
 class Function(StructureBase):
     """Description for a single performance metric."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/Function"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/Function"
 
     @yaml_object
     class Flags(BitFlags, yaml_tag="!meta.db/v4/Function.Flags"):
@@ -673,7 +630,7 @@ class Function(StructureBase):
     def shorthand(self) -> str:
         srcloc = f" {self.file.shortpath}:{self.line}" if self.file is not None else ""
         point = f" {self.module.shortpath}+0x{self.offset:x}" if self.module is not None else ""
-        return f"{self.name}{srcloc}{point} [{','.join(e.name for e in self.Flags if e in self.flags)}]"
+        return f"{self.name}{srcloc}{point} [{self.flags.name or ''}]"
 
     @classmethod
     def from_file(
@@ -681,22 +638,22 @@ class Function(StructureBase):
         version: int,
         file,
         offset: int,
-        modulesByOffset: dict[int, Module],
-        filesByOffset: dict[int, File],
+        modules_by_offset: dict[int, Module],
+        files_by_offset: dict[int, File],
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
             name=read_ntstring(file, data["pName"]),
-            module=modulesByOffset[data["pModule"]] if data["pModule"] != 0 else None,
+            module=modules_by_offset[data["pModule"]] if data["pModule"] != 0 else None,
             offset=data["offset"],
-            file=filesByOffset[data["pFile"]] if data["pFile"] != 0 else None,
+            file=files_by_offset[data["pFile"]] if data["pFile"] != 0 else None,
             line=data["line"],
             flags=cls.Flags.versioned_decode(version, data["flags"]),
         )
 
     @classmethod
-    def owning_fields(cls) -> list[dataclasses.Field]:
-        return [f for f in dataclasses.fields(cls) if f.name not in ("module", "file")]
+    def owning_fields(cls) -> tuple[dataclasses.Field, ...]:
+        return tuple(f for f in dataclasses.fields(cls) if f.name not in ("module", "file"))
 
 
 @yaml_object
@@ -704,9 +661,9 @@ class Function(StructureBase):
 class ContextTree(StructureBase):
     """meta.db Context Tree section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/ContextTree"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/ContextTree"
 
-    entryPoints: list["EntryPoint"]
+    entry_points: list["EntryPoint"]
 
     __struct = VersionedStructure(
         "<",
@@ -722,20 +679,20 @@ class ContextTree(StructureBase):
         version: int,
         file,
         offset: int,
-        modulesByOffset: dict[int, Module],
-        filesByOffset: dict[int, File],
-        functionsByOffset: dict[int, Function],
+        modules_by_offset: dict[int, Module],
+        files_by_offset: dict[int, File],
+        functions_by_offset: dict[int, Function],
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
-            entryPoints=[
+            entry_points=[
                 EntryPoint.from_file(
                     version,
                     file,
                     o,
-                    modulesByOffset=modulesByOffset,
-                    filesByOffset=filesByOffset,
-                    functionsByOffset=functionsByOffset,
+                    modules_by_offset=modules_by_offset,
+                    files_by_offset=files_by_offset,
+                    functions_by_offset=functions_by_offset,
                 )
                 for o in scaled_range(
                     data["pEntryPoints"], data["nEntryPoints"], data["szEntryPoint"]
@@ -749,18 +706,18 @@ class ContextTree(StructureBase):
 class EntryPoint(StructureBase):
     """meta.db Context Tree section."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/EntryPoint"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/EntryPoint"
 
     @yaml_object
     class EntryPoint(Enumeration, yaml_tag="!meta.db/v4/EntryPoint.EntryPoint"):
         # Added in v4.0
-        unknown_entry = (0, 0)
-        main_thread = (1, 0)
-        application_thread = (2, 0)
+        unknown_entry = EnumEntry(0, min_version=0)
+        main_thread = EnumEntry(1, min_version=0)
+        application_thread = EnumEntry(2, min_version=0)
 
-    ctxId: int
-    entryPoint: EntryPoint
-    prettyName: str
+    ctx_id: int
+    entry_point: EntryPoint | None
+    pretty_name: str
     children: list["Context"]
 
     __struct = VersionedStructure(
@@ -775,7 +732,8 @@ class EntryPoint(StructureBase):
 
     @property
     def shorthand(self) -> str:
-        return f"{self.prettyName} (= {self.entryPoint.name})  #{self.ctxId}"
+        ep = self.entry_point.name if self.entry_point is not None else "<unknown>"
+        return f"{self.pretty_name} (= {ep})  #{self.ctx_id}"
 
     @classmethod
     def from_file(
@@ -783,9 +741,9 @@ class EntryPoint(StructureBase):
         version: int,
         file,
         offset: int,
-        modulesByOffset: dict[int, Module],
-        filesByOffset: dict[int, File],
-        functionsByOffset: dict[int, Function],
+        modules_by_offset: dict[int, Module],
+        files_by_offset: dict[int, File],
+        functions_by_offset: dict[int, Function],
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         return cls(
@@ -794,13 +752,13 @@ class EntryPoint(StructureBase):
                 file,
                 data["pChildren"],
                 data["szChildren"],
-                modulesByOffset=modulesByOffset,
-                filesByOffset=filesByOffset,
-                functionsByOffset=functionsByOffset,
+                modules_by_offset=modules_by_offset,
+                files_by_offset=files_by_offset,
+                functions_by_offset=functions_by_offset,
             ),
-            ctxId=data["ctxId"],
-            entryPoint=cls.EntryPoint.versioned_decode(version, data["entryPoint"]),
-            prettyName=read_ntstring(file, data["pPrettyName"]),
+            ctx_id=data["ctxId"],
+            entry_point=cls.EntryPoint.versioned_decode(version, data["entryPoint"]),
+            pretty_name=read_ntstring(file, data["pPrettyName"]),
         )
 
 
@@ -809,34 +767,34 @@ class EntryPoint(StructureBase):
 class Context(StructureBase):
     """Description for a calling (or otherwise) context."""
 
-    yaml_tag: T.ClassVar[str] = "!meta.db/v4/Context"
+    yaml_tag: typing.ClassVar[str] = "!meta.db/v4/Context"
 
     @yaml_object
     class Flags(BitFlags, yaml_tag="!meta.db/v4/Context.Flags"):
         # Added in v4.0
-        hasFunction = (0, 0)
-        hasSrcLoc = (1, 0)
-        hasPoint = (2, 0)
+        has_function = EnumEntry(0, min_version=0)
+        has_srcloc = EnumEntry(1, min_version=0)
+        has_point = EnumEntry(2, min_version=0)
 
     @yaml_object
     class Relation(Enumeration, yaml_tag="!meta.db/v4/Context.Relation"):
         # Added in v4.0
-        lexical = (0, 0)
-        call = (1, 0)
-        inlined_call = (2, 0)
+        lexical = EnumEntry(0, min_version=0)
+        call = EnumEntry(1, min_version=0)
+        inlined_call = EnumEntry(2, min_version=0)
 
     @yaml_object
     class LexicalType(Enumeration, yaml_tag="!meta.db/v4/Context.LexicalType"):
         # Added in v4.0
-        function = (0, 0)
-        loop = (1, 0)
-        line = (2, 0)
-        instruction = (3, 0)
+        function = EnumEntry(0, min_version=0)
+        loop = EnumEntry(1, min_version=0)
+        line = EnumEntry(2, min_version=0)
+        instruction = EnumEntry(3, min_version=0)
 
-    ctxId: int
+    ctx_id: int
     flags: Flags
-    relation: Relation
-    lexicalType: LexicalType
+    relation: Relation | None
+    lexical_type: LexicalType | None
     propagation: int
     function: Function | None
     file: File | None
@@ -861,19 +819,19 @@ class Context(StructureBase):
     assert __struct.size(float("inf")) <= __flex_offset
 
     def __post_init__(self):
-        if self.Flags.hasFunction in self.flags:
+        if self.Flags.has_function in self.flags:
             if self.function is None:
                 raise ValueError("hasFunction implies function is not None!")
         elif self.function is not None:
             raise ValueError("!hasFunction implies function is None!")
 
-        if self.Flags.hasSrcLoc in self.flags:
+        if self.Flags.has_srcloc in self.flags:
             if self.file is None or self.line is None:
                 raise ValueError("hasSrcLoc implies file and line are not None!")
         elif self.file is not None or self.line is not None:
             raise ValueError("!hasSrcLoc implies file and line are None!")
 
-        if self.Flags.hasPoint in self.flags:
+        if self.Flags.has_point in self.flags:
             if self.module is None or self.offset is None:
                 raise ValueError("hasPoint implies module and offset are not None!")
         elif self.module is not None or self.offset is not None:
@@ -882,13 +840,20 @@ class Context(StructureBase):
     @property
     def shorthand(self) -> str:
         bits = []
-        if self.Flags.hasFunction in self.flags:
+        if self.Flags.has_function in self.flags:
+            assert self.function is not None
             bits.append(self.function.name)
-        if self.Flags.hasSrcLoc in self.flags:
+        if self.Flags.has_srcloc in self.flags:
+            assert self.file is not None
+            assert self.line is not None
             bits.append(f"{self.file.shortpath}:{self.line:d}")
-        if self.Flags.hasPoint in self.flags:
+        if self.Flags.has_point in self.flags:
+            assert self.module is not None
+            assert self.offset is not None
             bits.append(f"{self.module.shortpath}+0x{self.offset:x}")
-        return f"-{self.relation.name}> [{self.lexicalType.name}] {' '.join(bits)}  #{self.ctxId}"
+        r = self.relation.name if self.relation is not None else "<unknown>"
+        lt = self.lexical_type.name if self.lexical_type is not None else "<unknown>"
+        return f"-{r}> [{lt}] {' '.join(bits)}  #{self.ctx_id}"
 
     @classmethod
     def from_file(
@@ -896,14 +861,14 @@ class Context(StructureBase):
         version: int,
         file,
         offset: int,
-        modulesByOffset: dict[int, Module],
-        filesByOffset: dict[int, File],
-        functionsByOffset: dict[int, Function],
+        modules_by_offset: dict[int, Module],
+        files_by_offset: dict[int, File],
+        functions_by_offset: dict[int, Function],
     ):
         data = cls.__struct.unpack_file(version, file, offset)
         data["flags"] = cls.Flags.versioned_decode(version, data["flags"])
 
-        words = []
+        words: list[tuple[bytes, dict[int, list[bool]]]] = []
 
         def mark_as_used(allocs, size, idx):
             for subsz in (8, 4, 2, 1):
@@ -936,17 +901,17 @@ class Context(StructureBase):
             return struct.unpack(code, word[0][sz * idx : sz * (idx + 1)])[0]
 
         data["function"] = None
-        if cls.Flags.hasFunction in data["flags"]:
-            data["function"] = functionsByOffset[read_subfield("<Q")]
+        if cls.Flags.has_function in data["flags"]:
+            data["function"] = functions_by_offset[read_subfield("<Q")]
 
         data["file"] = data["line"] = None
-        if cls.Flags.hasSrcLoc in data["flags"]:
-            data["file"] = filesByOffset[read_subfield("<Q")]
+        if cls.Flags.has_srcloc in data["flags"]:
+            data["file"] = files_by_offset[read_subfield("<Q")]
             data["line"] = read_subfield("<L")
 
         data["module"] = data["offset"] = None
-        if cls.Flags.hasPoint in data["flags"]:
-            data["module"] = modulesByOffset[read_subfield("<Q")]
+        if cls.Flags.has_point in data["flags"]:
+            data["module"] = modules_by_offset[read_subfield("<Q")]
             data["offset"] = read_subfield("<Q")
 
         return (
@@ -956,14 +921,14 @@ class Context(StructureBase):
                     file,
                     data["pChildren"],
                     data["szChildren"],
-                    modulesByOffset=modulesByOffset,
-                    filesByOffset=filesByOffset,
-                    functionsByOffset=functionsByOffset,
+                    modules_by_offset=modules_by_offset,
+                    files_by_offset=files_by_offset,
+                    functions_by_offset=functions_by_offset,
                 ),
-                ctxId=data["ctxId"],
+                ctx_id=data["ctxId"],
                 flags=data["flags"],
                 relation=cls.Relation.versioned_decode(version, data["relation"]),
-                lexicalType=cls.LexicalType.versioned_decode(version, data["lexicalType"]),
+                lexical_type=cls.LexicalType.versioned_decode(version, data["lexicalType"]),
                 propagation=data["propagation"],
                 function=data["function"],
                 file=data["file"],
@@ -985,5 +950,7 @@ class Context(StructureBase):
         return result
 
     @classmethod
-    def owning_fields(cls) -> list[dataclasses.Field]:
-        return [f for f in dataclasses.fields(cls) if f.name not in ("function", "module", "file")]
+    def owning_fields(cls) -> tuple[dataclasses.Field, ...]:
+        return tuple(
+            f for f in dataclasses.fields(cls) if f.name not in ("function", "module", "file")
+        )

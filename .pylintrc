@@ -1,0 +1,54 @@
+[MESSAGES CONTROL]
+disable=fixme,
+        trailing-whitespace,
+        missing-final-newline,
+        too-few-public-methods,
+        too-many-public-methods,
+        global-statement,
+        assignment-from-none,
+        unused-format-string-key,
+        invalid-name,
+        bad-classmethod-argument,
+        bad-mcs-method-argument,
+        bad-mcs-classmethod-argument,
+        too-many-lines,
+        multiple-statements,
+        superfluous-parens,
+        no-self-argument,
+        E1103,
+        I0014,
+        exec-used,
+        attribute-defined-outside-init,
+        abstract-method,
+        super-init-not-called,
+        unnecessary-semicolon,
+        wildcard-import,
+        global-variable-undefined,
+        redefined-outer-name,
+        broad-except,
+        anomalous-backslash-in-string,
+        wrong-import-order,
+        ungrouped-imports,
+        empty-docstring,
+        missing-docstring,
+        missing-module-docstring,
+        missing-function-docstring,
+        missing-class-docstring,
+        duplicate-code,
+        import-error,
+        protected-access
+
+[FORMAT]
+max-line-length=159
+
+[DESIGN]
+max-locals=20
+max-returns=6
+max-branches=23
+max-statements=60
+min-public-methods=1
+max-public-methods=20
+max-parents=7
+max-attributes=11
+max-module-lines=1000
+max-args=7

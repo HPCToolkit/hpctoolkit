@@ -83,7 +83,7 @@ class _ManifestFile:
     def __init__(self, path):
         self.path = Path(path)
 
-    def check(self, installdir):
+    def check(self, installdir) -> tuple[set[Path], set[Path | tuple[Path, str]]]:
         if (Path(installdir) / self.path).is_file():
             return {self.path}, set()
         return set(), {self.path}
@@ -95,7 +95,7 @@ class _ManifestLib(_ManifestFile):
         self.target = str(target)
         self.aliases = [str(a) for a in aliases]
 
-    def check(self, installdir):
+    def check(self, installdir) -> tuple[set[Path], set[Path | tuple[Path, str]]]:
         installdir = Path(installdir)
         found, missing = set(), set()
 
@@ -141,7 +141,7 @@ class _ManifestExtLib(_ManifestFile):
         self.main_suffix = str(main_suffix)
         self.suffixes = [str(s) for s in suffixes]
 
-    def check(self, installdir):
+    def check(self, installdir) -> tuple[set[Path], set[Path | tuple[Path, str]]]:
         installdir = Path(installdir)
         common = installdir / self.path
         found = set()
@@ -349,14 +349,14 @@ class Manifest:
         # First derive the full listing of actually installed files
         listing = set()
         for root, _, files in os.walk(installdir):
-            for fn in files:
-                listing.add((Path(root) / fn).relative_to(installdir))
+            for filename in files:
+                listing.add((Path(root) / filename).relative_to(installdir))
 
         # Then match these files up with the results we found
         n_unexpected = 0
         n_uninstalled = 0
-        warnings = []
-        errors = []
+        warnings: list[str] = []
+        errors: list[str] = []
         for f in self.files:
             found, not_found = f.check(installdir)
             warnings.extend(f"+ {fn.as_posix()}" for fn in found - listing)
@@ -414,7 +414,7 @@ class ConcreteSpecification:
             yield cls(**dict(point))
 
     @classmethod
-    def variants(cls) -> tuple[str]:
+    def variants(cls) -> tuple[str, ...]:
         """List the names of all the available variants."""
         return tuple(f.name for f in dataclasses.fields(cls))
 
@@ -434,10 +434,10 @@ class Specification:
         min_enabled: int
         max_enabled: int
 
-    _concrete_cls: T.ClassVar[type] = ConcreteSpecification
-    _clauses: dict[tuple[str], _Condition] | bool
+    _concrete_cls: T.ClassVar[type[ConcreteSpecification]] = ConcreteSpecification
+    _clauses: dict[tuple[str, ...], _Condition] | bool
 
-    def _parse_long(self, valid_variants: set[str], clause: str):
+    def _parse_long(self, valid_variants: frozenset[str], clause: str):
         mat = re.fullmatch(r"\(([\w\s]+)\)\[([+~><=\d\s]+)\]", clause)
         if not mat:
             raise ValueError(f"Invalid clause: {clause!r}")
@@ -450,12 +450,13 @@ class Specification:
                 raise ValueError("Invalid variant: {v}")
         variants = tuple(sorted(variants))
 
+        assert isinstance(self._clauses, dict)
         cond = self._clauses.setdefault(variants, self._Condition(0, len(variants)))
         for c in mat.group(2).split():
             cmat = re.fullmatch(r"([+~])([><=])(\d+)", c)
             if not cmat:
                 raise ValueError(f"Invalid conditional expression: {c!r}")
-            match cmat.group(1):
+            match cmat.group(1):  # noqa: E999
                 case "+":
                     n, op = int(cmat.group(3)), cmat.group(2)
                 case "~":
@@ -473,7 +474,7 @@ class Specification:
                     case _:
                         assert False
 
-    def _parse_short(self, valid_variants: set[str], clause: str):
+    def _parse_short(self, valid_variants: frozenset[str], clause: str):
         mat = re.fullmatch(r"([+~])(\w+)", clause)
         if not mat:
             raise ValueError(f"Invalid clause: {clause!r}")
@@ -490,6 +491,7 @@ class Specification:
         if variant not in valid_variants:
             raise ValueError(f"Invalid variant: {variant}")
 
+        assert isinstance(self._clauses, dict)
         cond = self._clauses.setdefault((variant,), self._Condition(0, 1))
         cond.min_enabled = max(cond.min_enabled, cnt)
         cond.max_enabled = min(cond.max_enabled, cnt)
@@ -498,7 +500,7 @@ class Specification:
         assert isinstance(self._clauses, dict)
 
         # Fold multi-variant clauses that have a single solution into single-variant clauses
-        new_clauses = {}
+        new_clauses: dict[tuple[str, ...], Specification._Condition] = {}
         for vrs, cond in self._clauses.items():
             assert len(vrs) > 0
             assert cond.min_enabled <= len(vrs)
@@ -577,7 +579,7 @@ class Specification:
             if not matches_any:
                 raise ValueError(f"Specification does not match anything: {spec!r}")
 
-    def satisfies(self, concrete: _concrete_cls) -> bool:
+    def satisfies(self, concrete: ConcreteSpecification) -> bool:
         """Test whether the given ConcreteSpecification satisfies this Specification"""
         if isinstance(self._clauses, bool):
             return self._clauses
@@ -675,13 +677,7 @@ class Configuration:
         if variant.opencl:
             fragments.append(depcfg.get("--with-opencl="))
 
-        # if False:  # TODO: GTPin
-        #     fragments.extend(
-        #         [
-        #             depcfg.get("--with-gtpin="),
-        #             depcfg.get("--with-igc="),
-        #         ]
-        #     )
+        # TODO: GTPin (--with-gtpin= and --with-igc=)
 
         if variant.rocm:
             try:
@@ -697,8 +693,7 @@ class Configuration:
                     ]
                 )
 
-        # if False:  # TODO: all-static (do we really want to support this?)
-        #     fragments.append("--enable-all-static")
+        # TODO: all-static (do we really want to support this?)
 
         fragments.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
         if variant.mpi:
