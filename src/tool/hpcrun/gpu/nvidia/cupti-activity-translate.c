@@ -357,6 +357,7 @@ convert_kernel
   ga->details.kernel.threadRegisters = threadRegisters;
   ga->details.kernel.blockThreads = blockThreads;
   ga->details.kernel.blockSharedMemory = blockSharedMemory;
+  ga->details.kernel.kernel_first_pc = ip_normalized_NULL;
 }
 
 
@@ -583,6 +584,8 @@ cupti_activity_translate
  CUpti_Activity *activity
 )
 {
+  gpu_activity_init(ga);
+
   switch (activity->kind) {
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING:

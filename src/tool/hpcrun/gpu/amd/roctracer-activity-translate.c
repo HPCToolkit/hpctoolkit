@@ -49,19 +49,51 @@
 #define DEBUG 0
 
 
+//******************************************************************************
+// ROCm includes
+//******************************************************************************
+
+#include <rocm_version.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include "roctracer-activity-translate.h"
 #include <hpcrun/gpu/gpu-print.h>
+
+#include "roctracer-activity-translate.h"
+#include "rocm-binary-processing.h"
 
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static ip_normalized_t
+lookup_kernel_pc
+(
+ roctracer_record_t *activity
+)
+{
+  // if ROCm version < 5.3.3, roctracer_record_t doesn't have the
+  // kernel_name field. return ip_normalized_NULL in such cases
+#if ((ROCM_VERSION_MAJOR < 5) ||					\
+     ((ROCM_VERSION_MAJOR == 5) &&					\
+      ((ROCM_VERSION_MINOR < 3) ||					\
+       ((ROCM_VERSION_MINOR == 3) && (ROCM_VERSION_PATCH < 3)))))
+#warning "roctracer activity records in ROCm version < 5.3.3 don't support mapping costs to named kernels"
+  return ip_normalized_NULL;
+#else
+  // Until given better mechanisms by AMD, look up the kernel PC by
+  // device id and kernel name.
+  return rocm_binary_function_lookup(activity->device_id,
+				     activity->kernel_name);
+#endif
+}
+
 
 static void
 convert_kernel_launch
@@ -75,6 +107,7 @@ convert_kernel_launch
   ga->details.kernel.correlation_id = activity->correlation_id;
   ga->details.kernel.context_id = activity->device_id;
   ga->details.kernel.stream_id = activity->queue_id;
+  ga->details.kernel.kernel_first_pc = lookup_kernel_pc(activity);
 }
 
 
@@ -152,7 +185,8 @@ roctracer_activity_translate
 )
 {
   const char * name = roctracer_op_string(record->domain, record->op, record->kind);
-  memset(ga, 0, sizeof(gpu_activity_t));
+
+  gpu_activity_init(ga);
 
   // HACK HACK HACK
   // decrease end timestamp to avoid abutting events

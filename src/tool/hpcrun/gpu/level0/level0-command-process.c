@@ -104,6 +104,7 @@ level0_kernel_translate
 {
   PRINT("level0_kernel_translate: submit_time %llu, start %llu, end %llu\n", c->submit_time, start, end);
   ga->kind = GPU_ACTIVITY_KERNEL;
+  ga->details.kernel.kernel_first_pc = ip_normalized_NULL;
   ga->details.kernel.correlation_id = (uint64_t)(c->event);
   ga->details.kernel.submit_time = c->submit_time;
   gpu_interval_set(&ga->details.interval, start, end);

@@ -56,6 +56,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 
+
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -129,5 +130,9 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm);
 void *hpcrun_denormalize_ip(ip_normalized_t *normalized_ip);
 
 //***************************************************************************
+// constants
+//***************************************************************************
+
+extern const ip_normalized_t ip_normalized_NULL;
 
 #endif // ip_normalized_h

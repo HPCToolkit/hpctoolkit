@@ -109,9 +109,6 @@
   }            \
 }
 
-typedef const char* (*hip_kernel_name_fnt)(const hipFunction_t f);
-typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStream_t stream);
-
 #define DEBUG 0
 
 #include "hpcrun/gpu/gpu-print.h"
@@ -119,9 +116,6 @@ typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStre
 //******************************************************************************
 // local variables
 //******************************************************************************
-
-static hip_kernel_name_fnt hip_kernel_name_fn;
-static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
 
 // If we collect counters for GPU kernels,
 // we will serilize kernel executions.
@@ -296,7 +290,6 @@ roctracer_subscriber_callback
   bool is_valid_op = false;
   bool is_kernel_op = false;
   const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
-  const char* kernel_name = NULL;
   hipStream_t kernel_stream = 0;
 
   switch(domain) {
@@ -373,7 +366,6 @@ roctracer_subscriber_callback
                                    gpu_placeholder_type_trace);
       is_valid_op = true;
       is_kernel_op = true;
-      kernel_name = hip_kernel_name_fn(data->args.hipModuleLaunchKernel.f);
       if (collect_counter) {
         kernel_stream = data->args.hipModuleLaunchKernel.stream;
       }
@@ -386,8 +378,6 @@ roctracer_subscriber_callback
                                    gpu_placeholder_type_trace);
       is_valid_op = true;
       is_kernel_op = true;
-      kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address,
-        data->args.hipLaunchKernel.stream);
       if (collect_counter) {
         kernel_stream = data->args.hipLaunchKernel.stream;
       }
@@ -419,25 +409,15 @@ roctracer_subscriber_callback
     uint64_t correlation_id = data->correlation_id;
     uint64_t rocprofiler_correlation_id = 0;
     cct_node_t *api_node =
-    gpu_application_thread_correlation_callback(correlation_id);
+      gpu_application_thread_correlation_callback_rt1(correlation_id);
 
     gpu_op_ccts_t gpu_op_ccts;
     hpcrun_safe_enter();
     gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-    if (is_kernel_op && kernel_name != NULL) {
 
-      ip_normalized_t kernel_ip = rocm_binary_function_lookup(kernel_name);
-
-      cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
-      gpu_cct_insert(kernel_ph, kernel_ip);
-
-      cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
-      gpu_cct_insert(trace_ph, kernel_ip);
-
-      if (collect_counter) {
-        rocprofiler_correlation_id = correlation_id;
-        rocprofiler_start_kernel(rocprofiler_correlation_id);
-      }
+    if (is_kernel_op && collect_counter) {
+      rocprofiler_correlation_id = correlation_id;
+      rocprofiler_start_kernel(rocprofiler_correlation_id);
     }
 
     hpcrun_safe_exit();
@@ -458,7 +438,7 @@ roctracer_subscriber_callback
     //gpu_monitors_apply(api_node, gpu_monitor_type_enter);
 
     gpu_correlation_channel_produce_with_idx(ROCTRACER_CHANNEL_IDX, correlation_id, &gpu_op_ccts, cpu_submit_time);
-    if (collect_counter && is_kernel_op && kernel_name != NULL) {
+    if (collect_counter && is_kernel_op) {
       gpu_correlation_channel_produce_with_idx(ROCPROFILER_CHANNEL_IDX, rocprofiler_correlation_id, &gpu_op_ccts, cpu_submit_time);
     }
 
@@ -573,18 +553,6 @@ roctracer_bind
   FORALL_ROCTRACER_ROUTINES(ROCTRACER_BIND);
 
 #undef ROCTRACER_BIND
-
-  dlerror();
-  hip_kernel_name_fn = (hip_kernel_name_fnt) dlsym(hip, "hipKernelNameRef");
-  if (hip_kernel_name_fn == 0) {
-    return DYNAMIC_BINDING_STATUS_ERROR;
-  }
-
-  dlerror();
-  hip_kernel_name_ref_fn = (hip_kernel_name_ref_fnt) dlsym(hip, "hipKernelNameRefByPtr");
-  if (hip_kernel_name_ref_fn == 0) {
-    return DYNAMIC_BINDING_STATUS_ERROR;
-  }
 
   return DYNAMIC_BINDING_STATUS_OK;
 #else

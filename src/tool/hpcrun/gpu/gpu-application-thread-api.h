@@ -80,5 +80,11 @@ gpu_application_thread_correlation_callback
 );
 
 
+cct_node_t *
+gpu_application_thread_correlation_callback_rt1
+(
+ uint64_t correlation_id
+);
+
 
 #endif

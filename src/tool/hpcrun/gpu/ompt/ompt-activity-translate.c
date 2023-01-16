@@ -258,6 +258,7 @@ convert_target_submit
   ompt_record_target_kernel_t *k = &r->record.target_kernel;
 
   ga->kind = GPU_ACTIVITY_KERNEL;
+  ga->details.kernel.kernel_first_pc = ip_normalized_NULL;
   ga->details.kernel.correlation_id = k->host_op_id;
   *cid_ptr = k->host_op_id;
 

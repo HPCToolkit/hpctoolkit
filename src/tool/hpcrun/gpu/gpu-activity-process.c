@@ -56,13 +56,13 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-correlation-id.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
 #include <hpcrun/gpu/gpu-event-id-map.h>
 #include <hpcrun/gpu/gpu-function-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
+#include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/trace.h>
 
@@ -419,11 +419,19 @@ gpu_kernel_process
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
 						  gpu_placeholder_type_trace);
 
-      cct_node_t *func_node = hpcrun_cct_children(func_ph); // only child
+      cct_node_t *func_node = NULL;
 
-      if (func_node == NULL) {
-	// in case placeholder doesn't have a child
-        func_node = func_ph;
+      if (!ip_normalized_eq(&(activity->details.kernel.kernel_first_pc),
+			    &ip_normalized_NULL)) {
+	// the activity record specifies the first PC for the kernel
+	func_node = hpcrun_cct_insert_ip_norm
+	  (func_ph, activity->details.kernel.kernel_first_pc, true);
+      } else {
+	func_node = hpcrun_cct_children(func_ph);
+	if (func_node == NULL) {
+	  // in case placeholder doesn't have a child
+	  func_node = func_ph;
+	}
       }
 
       gpu_trace_item_t entry_trace;

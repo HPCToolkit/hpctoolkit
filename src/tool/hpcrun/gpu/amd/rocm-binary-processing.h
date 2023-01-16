@@ -57,19 +57,20 @@
 ip_normalized_t
 rocm_binary_function_lookup
 (
-  const char* kernel_name
+ int device_id,
+ const char* kernel_name
 );
 
 void
 rocm_binary_uri_add
 (
-  const char* uri
+ const char* uri
 );
 
 void
 rocm_binary_uri_list_init
 (
-  void
+ void
 );
 
 #endif
