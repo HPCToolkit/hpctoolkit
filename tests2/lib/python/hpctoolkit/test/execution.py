@@ -174,7 +174,15 @@ class Database:
 
 
 @contextlib.contextmanager
-def hpcprof(meas, *args, timeout: int | None = None, env=None, output=None):
+def hpcprof(
+    meas: Measurements | Path | str,
+    *args: str,
+    threads: int = 1,
+    timeout: int | None = None,
+    env=None,
+    output=None,
+):
+    assert threads >= 0
     if isinstance(meas, Measurements):
         meas = meas.basedir
     meas = Path(meas)
@@ -195,7 +203,10 @@ def hpcprof(meas, *args, timeout: int | None = None, env=None, output=None):
         ddir = Path(ddir)
         ddir.rmdir()
         proc = _subproc_run(
-            "hpcprof", [hpcprof, *args] + ["-o", ddir, meas], timeout=timeout, env=env
+            "hpcprof",
+            [hpcprof] + list(args) + [f"-j{threads:d}", "-o", ddir, meas],
+            timeout=timeout,
+            env=env,
         )
         if proc.returncode != 0:
             raise PredictableFailureError("hpcprof returned a non-zero exit code!")
@@ -204,7 +215,16 @@ def hpcprof(meas, *args, timeout: int | None = None, env=None, output=None):
 
 
 @contextlib.contextmanager
-def hpcprof_mpi(ranks: int, meas, *args, timeout: int | None = None, env=None, output=None):
+def hpcprof_mpi(
+    ranks: int,
+    meas: Measurements | Path | str,
+    *args: str,
+    threads: int = 1,
+    timeout: int | None = None,
+    env=None,
+    output=None,
+):
+    assert threads >= 0
     if isinstance(meas, Measurements):
         meas = meas.basedir
     meas = Path(meas)
@@ -228,7 +248,7 @@ def hpcprof_mpi(ranks: int, meas, *args, timeout: int | None = None, env=None, o
         ddir.rmdir()
         proc = _subproc_run(
             "hpcprof-mpi",
-            [hpcprof_mpi, *args] + ["-o", ddir, meas],
+            [hpcprof_mpi] + list(args) + [f"-j{threads:d}", "-o", ddir, meas],
             timeout=timeout,
             env=env,
             wrapper=mpiexec,
@@ -241,7 +261,15 @@ def hpcprof_mpi(ranks: int, meas, *args, timeout: int | None = None, env=None, o
         yield Database(ddir)
 
 
-def hpcstruct(binary_or_meas, *args, timeout: int | None = None, env=None, output=None):
+def hpcstruct(
+    binary_or_meas: Measurements | Path | str,
+    *args: str,
+    threads: int = 1,
+    timeout: int | None = None,
+    env=None,
+    output=None,
+):
+    assert threads >= 0
     if "HPCTOOLKIT_APP_HPCSTRUCT" not in os.environ:
         raise RuntimeError("hpcstruct not available, cannot continue! Run under meson devenv!")
     hpcstruct = os.environ["HPCTOOLKIT_APP_HPCSTRUCT"]
@@ -255,7 +283,12 @@ def hpcstruct(binary_or_meas, *args, timeout: int | None = None, env=None, outpu
         assert output is None, "Output cannot be specified with a Measurements input"
 
         meas = binary_or_meas.basedir
-        proc = _subproc_run("hpcstruct", [hpcstruct, *args] + [meas], timeout=timeout, env=env)
+        proc = _subproc_run(
+            "hpcstruct",
+            [hpcstruct] + list(args) + [f"-j{threads:d}", meas],
+            timeout=timeout,
+            env=env,
+        )
         if proc.returncode != 0:
             raise PredictableFailureError("hpcstruct returned a non-zero exit code!")
 
@@ -277,7 +310,7 @@ def hpcstruct(binary_or_meas, *args, timeout: int | None = None, env=None, outpu
         with out as sfile:
             proc = _subproc_run(
                 "hpcstruct",
-                [hpcstruct, *args] + ["-o", sfile.name, binary],
+                [hpcstruct] + list(args) + [f"-j{threads:d}", "-o", sfile.name, binary],
                 timeout=timeout,
                 env=env,
             )

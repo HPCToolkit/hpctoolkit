@@ -12,7 +12,7 @@ threadcnt = int(sys.argv[1])
 with open(sys.argv[3], "rb") as f:
     base = pickle.load(f)
 
-with hpcprof(sys.argv[2], f"-j{threadcnt:d}", "--foreign") as db:
+with hpcprof(sys.argv[2], "--foreign", threads=threadcnt) as db:
     diff = StrictDiff(base, from_path(db.basedir))
     acc = StrictAccuracy(diff)
     if len(diff.hunks) > 0 or acc.inaccuracy:

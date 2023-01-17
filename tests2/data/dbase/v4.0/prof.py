@@ -25,7 +25,7 @@ def sanitize(ti):
     return ti
 
 
-with extracted(args.input) as inp, hpcprof(inp, "-j4", "--foreign") as dbase:
+with extracted(args.input) as inp, hpcprof(inp, "--foreign", threads=4) as dbase:
     with tarfile.open(args.output, mode="w:xz") as out:
         out.add(dbase.basedir, arcname=".", recursive=True, filter=sanitize)
 
