@@ -500,14 +500,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     output = mpi::bcast(output.string(), 0);
   }
 
-  std::vector<std::string> meas_dirs;
-
   // Scan for ProfileFinalizers in the measurements dir
   for(int idx = optind; idx < argc; idx++) {
     fs::path p(argv[idx]);
     if(fs::is_directory(p)) {
-      meas_dirs.emplace_back(p.native());
-
       // Check for a kernel_symbols/ directory for ksymsfiles.
       fs::path sp = p / "kernel_symbols";
       if(fs::is_directory(sp))
@@ -524,22 +520,15 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           } catch(...) { continue; }
           ProfArgs::structs.emplace_back(std::move(c), de);
         }
+      } else if(mpi::World::rank() == 0) {
+        // WARN that the user should run hpcstruct on the measurements dir first
+        util::log::warning w;
+        w << "hpcstruct was not run on measurements first, this will give lower quality results!\n"
+             "Consider running hpcstruct on the input measurements first: hpcstruct";
+        if(threads > 0)
+          w << " -j" << threads;
+        w << " " << std::quoted(p.native());
       }
-    }
-  }
-
-  if(ProfArgs::structs.empty() && mpi::World::rank() == 0) {
-    util::log::warning w;
-    w << "No Structfiles given, this will give lower quality results and may slow down the analysis!\n";
-    if(!meas_dirs.empty()) {
-      w << "Consider running hpcstruct on the input measurements:";
-      for(const auto& md: meas_dirs) {
-        w << "\n    $ hpcstruct";
-        if(threads > 0) w << " -j" << threads;
-        w << " " << std::quoted(md);
-      }
-    } else {
-      w << "Consider running hpcstruct on the binaries and passing -S flags";
     }
   }
 
