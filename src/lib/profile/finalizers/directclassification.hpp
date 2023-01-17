@@ -61,7 +61,7 @@ class DirectClassification final : public ProfileFinalizer {
 public:
   // `dwarfThreshold` is in the units of bytes.
   // If dwarfThreshold == std::numeric_limits<uintmax_t>::max(), no limit.
-  DirectClassification(uintmax_t dwarfThreshold, bool warnWhenUsed);
+  DirectClassification(uintmax_t dwarfThreshold);
 
   void notifyPipeline() noexcept override;
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
@@ -89,7 +89,6 @@ private:
   };
 
   uintmax_t dwarfThreshold;
-  bool warnWhenUsed;
   Module::ud_t::typed_member_t<udModule> ud;
   void load(const Module&, udModule&) noexcept;
   bool fullDwarf(void* dw, const Module&, udModule&);

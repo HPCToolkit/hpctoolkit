@@ -183,8 +183,7 @@ int main(int argc, char* const argv[]) {
       if(!args.foreign) {
         // Insert the proper Finalizer for drawing data directly from the Modules.
         // This is used as a fallback if the Structfiles aren't available.
-        pipelineB1 << std::make_unique<finalizers::DirectClassification>(
-            args.dwarfMaxSize, !args.structs.empty());
+        pipelineB1 << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
       }
 
       // Ids for everything are pulled from the void. We call the shots here.
@@ -258,7 +257,7 @@ int main(int argc, char* const argv[]) {
     if(!args.foreign) {
       // Insert the proper Finalizer for drawing data directly from the Modules.
       // This is used as a fallback if the Structfiles aren't available.
-      pipelineB2 << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize, false);
+      pipelineB2 << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
     }
 
     // For unpacking metrics, we need to be able to map ids back to Contexts and

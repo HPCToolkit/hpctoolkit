@@ -95,8 +95,7 @@ int main(int argc, char* const argv[]) {
   if(!args.foreign) {
     // Insert the proper Finalizer for drawing data directly from the Modules.
     // This is used as a fallback if the Structfiles aren't available.
-    pipelineB << std::make_unique<finalizers::DirectClassification>(
-        args.dwarfMaxSize, !args.structs.empty());
+    pipelineB << std::make_unique<finalizers::DirectClassification>(args.dwarfMaxSize);
   }
 
   switch(args.format) {

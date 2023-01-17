@@ -68,8 +68,8 @@
 using namespace hpctoolkit;
 using namespace finalizers;
 
-DirectClassification::DirectClassification(uintmax_t dt, bool warnWhenUsed)
-  : dwarfThreshold(dt), warnWhenUsed(warnWhenUsed) {
+DirectClassification::DirectClassification(uintmax_t dt)
+  : dwarfThreshold(dt) {
   elf_version(EV_CURRENT);  // We always assume the current ELF version.
 }
 
@@ -202,11 +202,6 @@ void DirectClassification::load(const Module& m, udModule& ud) noexcept {
     elf_end(elf);
     close(fd);
     return;  // We only work with ELF files.
-  }
-
-  if(warnWhenUsed) {
-    util::log::warning() << "Parsing DWARF/ELF for binary, consider running hpcstruct instead: "
-                         << m.path().string();
   }
 
   // Process the DWARF, but only if its small enough
