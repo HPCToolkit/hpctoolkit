@@ -9,7 +9,7 @@ foreach name, dbase : testdata_dbase_current
     test(f'hpcprof -j@threadcnt@ @name@ / accuracy', python3,
         args: [files('accuracy.py'), threadcnt, dbase['measurements']['extracted'], dbase['pickled']],
         env: hpctoolkit_pyenv, suite: 'hpcprof',
-        should_fail: dbase['xfail'])
+        should_fail: dbase['xfail'], is_parallel: threads == 1)
   endforeach
 
   if mpic.found() or mpicpp.found()
