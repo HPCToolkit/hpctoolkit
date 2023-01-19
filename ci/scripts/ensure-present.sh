@@ -49,6 +49,11 @@ for prog in "$@"; do
     fi
     ;;
 
+  # Specific packages can be requested via verb:*
+  verb:*)
+    missing_sys+=(["$prog"]=1)
+    ;;
+
   *)
     command -v "$prog" >/dev/null || missing_sys+=(["$prog"]=1)
     ;;
@@ -67,8 +72,8 @@ ubuntu:20.04)
   declare -A apt_packages
   for prog in "${!missing_sys[@]}"; do
     case "$prog" in
-    py:*)
-      # Handled by the Pip code later
+    verb:*)
+      apt_packages+=(["${prog#verb:}"]=1)
       ;;
     python3)
       # Use the deadsnakes PPA to get up-to-date versions of Python 3.
@@ -102,8 +107,8 @@ almalinux:8.*|fedora:36)
   declare -A yum_packages
   for prog in "${!missing_sys[@]}"; do
     case "$prog" in
-    py:*)
-      # Handled by the Pip code later
+    verb:*)
+      yum_packages+=(["${prog#verb:}"]=1)
       ;;
     eatmydata)
       yum_packages+=(["$prog"]=1)
@@ -126,8 +131,8 @@ opensuse-leap:15.*)
   declare -A zypper_packages
   for prog in "${!missing_sys[@]}"; do
     case "$prog" in
-    py:*)
-      # Handled by the Pip code later
+    verb:*)
+      zypper_packages+=(["${prog#verb:}"]=1)
       ;;
     eatmydata)
       zypper_packages+=(["$prog"]=1)

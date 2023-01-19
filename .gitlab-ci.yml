@@ -168,7 +168,7 @@ autoreconf check:
   # Make sure we have the basic set of utilities required to launch Spack and build stuff
   - >-
     ci/scripts/ensure-present.sh make git curl cc file patchelf python3 eatmydata
-    py:boto3 py:clingo ${JOB_CC:+ccache} ${IMAGE_EXT:+py:podman}
+    py:boto3 py:clingo ${JOB_CC:+ccache} ${IMAGE_EXT:+py:podman} $extra_pkgs
 
   # Unpack and instantiate Spack here
   - !reference [.spack, before_script]
@@ -360,17 +360,38 @@ autoreconf check:
   parallel:
     matrix:
     - ONEAPI: ['2022.2']
+      GTPIN: ['3.0']
   variables:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +intel
     JOB_CC: gcc-9
-    SPEC: '~cuda ~rocm +level0 +tests2 (mpi papi opencl python)[~<1]'
+    SPEC: '~cuda ~rocm +level0 +tests2 (mpi papi opencl python gtpin)[~<1]'
   before_script:
+  # The base Intel image(s) don't ship with IGC by default, so install it
+  - extra_pkgs='verb:libigdfcl-dev verb:libigc-dev'
   # The base Intel image has some extra elements on the PATH, make sure /usr/local/bin takes precdence
   - export PATH=/usr/local/bin:"$PATH"
   - !reference [.buildmany.amd64, before_script]
-  # Pull Level 0 (part of OneAPI) from the image itself
+  # Pull Level 0 (part of OneAPI) and IGC from the image + packages themselves
   - echo '--with-level0=/usr' > img-config
+  - echo '--with-igc=/usr' >> img-config
+  # Install GTPin from the official sources
+  - |
+    case "$GTPIN" in
+    3.0)
+      GTPIN_URL='https://downloadmirror.intel.com/730598/external-release-gtpin-3.0-linux.tar.xz'
+      GTPIN_SHA='8a8a238ab9937d85e4cc5a5c15a79cad0e4aa306b57e5d72dad3e09230a4cdab'  # pragma: allowlist secret
+      ;;
+    *)
+      echo "No URL/hash entry for GTPin $GTPIN"
+      exit 1
+      ;;
+    esac
+  - curl -Lo /tmp/gtpin.tar.xz "$GTPIN_URL"
+  - echo "$GTPIN_SHA  /tmp/gtpin.tar.xz" | sha256sum -c || exit $?
+  - mkdir /opt/gtpin
+  - tar -C /opt/gtpin -xaf /tmp/gtpin.tar.xz
+  - echo '--with-gtpin=/opt/gtpin/Profilers' >> img-config
   # Pull dependencies from the base image
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
   - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')

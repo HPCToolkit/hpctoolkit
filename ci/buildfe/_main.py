@@ -29,7 +29,7 @@ from .configuration import (
     Configuration,
     DependencyConfiguration,
     Specification,
-    Unsatisfiable,
+    UnsatisfiableSpecError,
 )
 from .logs import FgColor, colorize, print_header, section
 
@@ -333,7 +333,7 @@ def configure(
 ) -> T.Optional[Configuration]:
     try:
         cfg = Configuration(depcfg, v)
-    except Unsatisfiable as e:
+    except UnsatisfiableSpecError as e:
         if not unsat:
             with colorize(FgColor.error):
                 print(

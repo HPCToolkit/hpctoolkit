@@ -1,5 +1,6 @@
 import collections
 import collections.abc
+import contextlib
 import dataclasses
 import itertools
 import os
@@ -15,7 +16,7 @@ from .logs import FgColor, colorize
 from .util import flatten
 
 
-class Unsatisfiable(Exception):
+class UnsatisfiableSpecError(Exception):
     "Exception raised when the given variant is unsatisfiable"
 
     def __init__(self, missing):
@@ -23,7 +24,7 @@ class Unsatisfiable(Exception):
         self.missing = missing
 
 
-class Impossible(Exception):
+class ImpossibleSpecError(Exception):
     "Exception raised when the given variant is impossible"
 
     def __init__(self, a, b):
@@ -72,11 +73,11 @@ class DependencyConfiguration:
                         if var not in word:
                             continue
                         if val is None:
-                            raise Unsatisfiable(var)
+                            raise UnsatisfiableSpecError(var)
                         word = word.replace(var, val)
                     result.append(word)
                 return result
-        raise Unsatisfiable(argument)
+        raise UnsatisfiableSpecError(argument)
 
 
 class _ManifestFile:
@@ -394,12 +395,18 @@ class ConcreteSpecification:
     cuda: bool
     rocm: bool
     level0: bool
+    gtpin: bool
+
+    def __post_init__(self, **_kwargs):
+        if self.gtpin and not self.level0:
+            raise ImpossibleSpecError("+gtpin", "~level0")
 
     @classmethod
     def all(cls) -> collections.abc.Iterable["ConcreteSpecification"]:
         """List all possible ConcreteSpecifications in the configuration space."""
         dims = [
             # (variant, values...), in order from slowest- to fastest-changing
+            ("gtpin", False, True),
             ("level0", False, True),
             ("rocm", False, True),
             ("cuda", False, True),
@@ -411,7 +418,8 @@ class ConcreteSpecification:
             ("tests2", True, False),
         ]
         for point in itertools.product(*[[(x[0], val) for val in x[1:]] for x in dims]):
-            yield cls(**dict(point))
+            with contextlib.suppress(ImpossibleSpecError):
+                yield cls(**dict(point))
 
     @classmethod
     def variants(cls) -> tuple[str, ...]:
@@ -673,16 +681,21 @@ class Configuration:
 
         if variant.level0:
             fragments.append(depcfg.get("--with-level0="))
+            if variant.gtpin:
+                fragments.extend(
+                    [
+                        depcfg.get("--with-gtpin="),
+                        depcfg.get("--with-igc="),
+                    ]
+                )
 
         if variant.opencl:
             fragments.append(depcfg.get("--with-opencl="))
 
-        # TODO: GTPin (--with-gtpin= and --with-igc=)
-
         if variant.rocm:
             try:
                 fragments.append(depcfg.get("--with-rocm="))
-            except Unsatisfiable:
+            except UnsatisfiableSpecError:
                 # Try the split-form arguments instead
                 fragments.extend(
                     [
