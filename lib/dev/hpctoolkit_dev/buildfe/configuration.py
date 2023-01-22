@@ -271,6 +271,7 @@ class Manifest:
             _ManifestFile("share/doc/hpctoolkit/fig/index.html"),
             _ManifestFile("share/doc/hpctoolkit/fig/spacer.gif"),
             _ManifestFile("share/doc/hpctoolkit/FORMATS.md"),
+            _ManifestFile("share/doc/hpctoolkit/METRICS.yaml"),
             _ManifestFile("share/doc/hpctoolkit/googleeeb6a75d4102e1ef.html"),
             _ManifestFile("share/doc/hpctoolkit/hpctoolkit.org.sitemap.txt"),
             _ManifestFile("share/doc/hpctoolkit/index.html"),

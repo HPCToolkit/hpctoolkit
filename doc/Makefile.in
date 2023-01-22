@@ -494,7 +494,8 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 LOOSEDOCS = \
-	FORMATS.md
+	FORMATS.md \
+	METRICS.yaml
 
 MANUAL = HPCToolkit-users-manual.pdf
 
@@ -870,7 +871,6 @@ uninstall-am: uninstall-dist_loosedocsDATA \
 
 .PRECIOUS: Makefile
 
-	METRICS.yaml
 
 #############################################################################
 # Other rules

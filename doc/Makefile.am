@@ -65,7 +65,7 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 LOOSEDOCS = \
-	FORMATS.md
+	FORMATS.md \
 	METRICS.yaml
 
 MANUAL = HPCToolkit-users-manual.pdf
