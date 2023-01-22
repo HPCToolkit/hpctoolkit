@@ -18406,8 +18406,8 @@ if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
   my_opt_cxxflags="-g -O0 -Wall -Wstack-usage=65536"
 else
   # On some compilers, -g implies -O0.  Make sure -O3 takes precedence!
-  my_opt_cflags="-g -O3 -Wall -Wstack-usage=65536"
-  my_opt_cxxflags="-g -O3 -Wall -Wstack-usage=65536"
+  my_opt_cflags="-g -O3 -Wall -Wstack-usage=65536 -DNDEBUG"
+  my_opt_cxxflags="-g -O3 -Wall -Wstack-usage=65536 -DNDEBUG"
 fi
 
 
@@ -18452,14 +18452,14 @@ case "${host}" in
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cxxflags="-g -O0"
       else
-        my_opt_cxxflags="-gopt -O2"
+        my_opt_cxxflags="-gopt -O2 -DNDEBUG"
       fi
     fi
     if MYcxxcmp $CC pgcc ; then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g -O0 -c9x"
       else
-        my_opt_cflags="-gopt -O3 -c9x"
+        my_opt_cflags="-gopt -O3 -c9x -DNDEBUG"
       fi
     fi
     ;;
@@ -18515,7 +18515,7 @@ case "${host}" in
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g"
       else
-        my_opt_cflags="-fast -g"
+        my_opt_cflags="-fast -g -DNDEBUG"
       fi
     fi
 
@@ -18537,14 +18537,14 @@ case "${host}" in
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cxxflags="-gall"
       else
-        my_opt_cxxflags="-g3 -O2"
+        my_opt_cxxflags="-g3 -O2 -DNDEBUG"
       fi
     fi
     if MYcxxcmp $CC cc; then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g"
       else
-        my_opt_cflags="-g3 -O3"
+        my_opt_cflags="-g3 -O3 -DNDEBUG"
       fi
     fi
 
