@@ -182,7 +182,10 @@ relocateSymbolsHelper
 {
   Elf_SymbolVector *symbol_values = NULL;
   int nsymbols;
-  assert (shdr->sh_type == SHT_SYMTAB);
+  if (shdr->sh_type != SHT_SYMTAB) {
+    assert (false && "Expected SYMTAB section!");
+    hpcrun_terminate();
+  }
   if (shdr->sh_entsize > 0) { // avoid divide by 0
     nsymbols = shdr->sh_size / shdr->sh_entsize;
     if (nsymbols <= 0) return NULL;

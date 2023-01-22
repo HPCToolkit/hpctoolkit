@@ -61,14 +61,16 @@ class DwarfParser {
   }
 
   LineInfo GetLineInfo(uint32_t file_id) const {
-    assert(file_id > 0);
+    if (file_id == 0)
+      std::abort();
 
     if (!IsValid()) {
       return LineInfo();
     }
 
     const uint8_t* ptr = ProcessHeader(nullptr);
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
     const uint8_t* line_number_program = ptr;
     uint32_t line_number_program_size =
       static_cast<uint32_t>(data_ + size_ - line_number_program);
@@ -94,7 +96,8 @@ class DwarfParser {
       uint32_t value = 0;
       bool done = false;
       ptr = utils::leb128::Decode32(ptr, value, done);
-      assert(done);
+      if (!done)
+        std::abort();
     }
 
     // include_directories
@@ -105,7 +108,8 @@ class DwarfParser {
     ++ptr;
 
     // file_names
-    assert(*ptr != 0);
+    if (*ptr == 0)
+      std::abort();
     while (*ptr != 0) {
       std::string file_name(reinterpret_cast<const char*>(ptr));
       ptr += file_name.size() + 1;
@@ -113,15 +117,15 @@ class DwarfParser {
       bool done = false;
       uint32_t directory_index = 0;
       ptr = utils::leb128::Decode32(ptr, directory_index, done);
-      assert(done);
+      if (!done) std::abort();
 
       uint32_t time = 0;
       ptr = utils::leb128::Decode32(ptr, time, done);
-      assert(done);
+      if (!done) std::abort();
 
       uint32_t size = 0;
       ptr = utils::leb128::Decode32(ptr, size, done);
-      assert(done);
+      if (!done) std::abort();
 
       if (file_names != nullptr) {
         file_names->push_back(file_name);
@@ -138,7 +142,8 @@ class DwarfParser {
     uint32_t address = 0;
     uint32_t line = 0;
     for (auto item : line_info) {
-      assert(address <= item.first);
+      if (address > item.first)
+        std::abort();  // DWARF lines not in sorted order?
       if (item.second.first != file) {
         continue;
       }

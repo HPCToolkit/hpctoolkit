@@ -305,7 +305,8 @@ level0_command_begin
     if (level0_gtpin_enabled()) {
       kernel_ip = gtpin_lookup_kernel_ip(kernel_name);
 #if 0
-      assert(kernel_ip.lm_id == get_load_module(kernel));
+      if (kernel_ip.lm_id != get_load_module(kernel))
+        hpcrun_terminate();
 #endif
     } else
 #endif  // ENABLE_GTPIN

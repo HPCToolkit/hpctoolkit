@@ -378,7 +378,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
   default:
     EMSG("unw_step: ILLEGAL UNWIND INTERVAL");
     dump_ui(cursor->unwr_info.btuwi, 0);
-    assert(0);
+    hpcrun_terminate();
   }
   if (unw_res == STEP_STOP_WEAK) unw_res = STEP_STOP;
 
@@ -661,7 +661,8 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   }
   TMSG(UNW,"  step_bp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
        unwr_info.btuwi != NULL, next_bp, next_sp, next_pc);
-  assert(ra_loc == (void *)(next_sp - 1));
+  if (ra_loc != (void *)(next_sp - 1))
+    hpcrun_terminate();
   cursor->unwr_info = unwr_info;
   save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
   compute_normalized_ips(cursor);
@@ -773,7 +774,8 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
            next_pc, next_sp);
       TMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc_unnorm);
 
-      assert(ra_loc == (void *)(next_sp - 1));
+      if (ra_loc != (void *)(next_sp - 1))
+        hpcrun_terminate();
       save_registers(cursor, next_pc, next_bp, next_sp, ra_loc);
       compute_normalized_ips(cursor);
       return; // success!

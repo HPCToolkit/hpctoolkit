@@ -262,14 +262,16 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
         // Possibly adjust the cursor back if the logical region requests
         if(cur->afterexit != NULL) {
           frame_t* new_exit = (frame_t*)cur->afterexit(cur, bt_cur, bt_top);
-          assert(bt_top <= new_exit && new_exit <= bt_cur && "afterexit gave invalid frame!");
+          if (bt_top > new_exit || new_exit > bt_cur)
+            hpcrun_terminate();  // afterexit gave invalid frame!
           TMSG(LOGICAL_UNWIND, "== Exit from logical range @ sp = %p (%d after exit @ %p) ==",
                new_exit->cursor.sp, bt_cur-new_exit, cur->exit);
           bt_cur = new_exit;
         } else
           TMSG(LOGICAL_UNWIND, "== Exit from logical range @ sp = %p ==", cur->exit);
       } else {
-        assert(first && "Only the topmost logical region can have exit = NULL!");
+        if (!first)
+          hpcrun_terminate();  // Only the topmost logical region can have exit = NULL!
         TMSG(LOGICAL_UNWIND, "== Within logical range ==");
       }
       first = false;
@@ -285,7 +287,8 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       frame_t* logical_end = bt_cur;
 
       TMSG(LOGICAL_UNWIND, "== Logically the above is replaced by the following ==");
-      assert(cur->expected > 0 && "Logical regions should always have at least 1 logical frame!");
+      if (cur->expected == 0)
+        hpcrun_terminate();  // Logical regions should always have at least 1 logical frame!
 
       // If needed, move later physical frames down to make room for the logical ones
       if(logical_start + cur->expected > logical_end) {
@@ -313,10 +316,12 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       struct logical_frame_segment_t* subseg = cur->subhead;
       // 1-based index of the current logical frame, or 0 if ran out of frames.
       size_t subnum = cur->subdepth == 0 ? 0 : ((cur->subdepth-1) % FRAMES_PER_SEGMENT) + 1;
-      assert((subnum == 0 || subseg != NULL) && "Frames without backing frame-segment!");
+      if (subnum > 0 && subseg == NULL)
+        hpcrun_terminate();  // Frames without backing frame-segment!
       while(cur->generator(cur, &store, index, subnum == 0 ? NULL : &subseg->frames[subnum-1], logical_start + index)) {
         TMSG(LOGICAL_UNWIND, "(logical) ip = %d +%p", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
-        assert(index < cur->expected && "Expected number of logical frames is too low!");
+        if (index >= cur->expected)
+          hpcrun_terminate();  // Expected number of logical frames is too low!
         index++;
         if(subnum > 0) {
           subnum--;
@@ -497,7 +502,8 @@ static void hashtable_grow(logical_metadata_store_t* store) {
   for(size_t i = 0; i < oldsize; i++) {
     if(oldtable[i].id != 0) {
       struct logical_metadata_store_entry_t* e = hashtable_probe(store, &oldtable[i]);
-      assert(e != NULL && "Failure while repopulating hash table!");
+      if (e == NULL)
+        hpcrun_terminate();  // Failure while repopulating hash table!
       *e = oldtable[i];
     }
   }
@@ -532,7 +538,8 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
     // entry. Grow the table and re-probe to get an empty space for us.
     hashtable_grow(store);
     entry = hashtable_probe(store, &pattern);
-    assert(entry != NULL && "Entry still not found after growth!");
+    if (entry == NULL)
+      hpcrun_terminate();  // Entry still not found after growth!
   }
 
   // This is a brand new entry. Copy most fields, and make copies of the strings

@@ -64,7 +64,6 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>

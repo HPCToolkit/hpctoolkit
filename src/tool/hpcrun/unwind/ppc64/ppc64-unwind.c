@@ -171,7 +171,8 @@ static int
 hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
                           void** reg_value)
 {
-  assert(reg_id == UNW_REG_IP);
+  if (reg_id != UNW_REG_IP)
+    hpcrun_terminate();
   *reg_value = cursor->pc_unnorm;
 
   return 0;
@@ -182,7 +183,8 @@ static int
 hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
                         ip_normalized_t* reg_value)
 {
-  assert(reg_id == UNW_REG_IP);
+  if (reg_id != UNW_REG_IP)
+    hpcrun_terminate();
   *reg_value = cursor->pc_norm;
 
   return 0;

@@ -53,7 +53,6 @@
  * (at least). This file will be updated once we find a way to make it work
  * properly.
  */
-#include <assert.h>
 #include <include/linux_info.h>
 
 #include <hpcrun/metrics.h>

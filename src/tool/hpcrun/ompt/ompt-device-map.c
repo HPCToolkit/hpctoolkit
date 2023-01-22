@@ -213,7 +213,8 @@ ompt_device_map_insert
     } else {
       // device_id already present: fatal error since a device_id
       //   should only be inserted once
-      assert(0);
+      assert(false && "device_id should only be inserted once");
+      hpcrun_terminate();
     }
   }
   ompt_device_map_root = entry;

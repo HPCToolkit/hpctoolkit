@@ -170,7 +170,8 @@ void binarytree_del(binarytree_t **root, mem_free m_free)
 void*
 binarytree_rootval(binarytree_t *tree)
 {
-  assert(tree != NULL);
+  if (tree == NULL)
+    abort();
   return tree->val;
 }
 
@@ -178,7 +179,8 @@ binarytree_rootval(binarytree_t *tree)
 binarytree_t*
 binarytree_leftsubtree(binarytree_t *tree)
 {
-  assert(tree != NULL);
+  if (tree == NULL)
+    abort();
   return tree->left;
 }
 
@@ -186,7 +188,8 @@ binarytree_leftsubtree(binarytree_t *tree)
 binarytree_t*
 binarytree_rightsubtree(binarytree_t *tree)
 {
-  assert(tree != NULL);
+  if (tree == NULL)
+    abort();
   return tree->right;
 }
 
@@ -195,7 +198,8 @@ binarytree_set_leftsubtree(
   binarytree_t *tree,
   binarytree_t* subtree)
 {
-  assert(tree != NULL);
+  if (tree == NULL)
+    abort();
   tree->left = subtree;
 }
 
@@ -204,7 +208,8 @@ binarytree_set_rightsubtree(
   binarytree_t *tree,
   binarytree_t* subtree)
 {
-  assert(tree != NULL);
+  if (tree == NULL)
+    abort();
   tree->right = subtree;
 }
 

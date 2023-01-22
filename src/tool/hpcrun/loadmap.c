@@ -550,7 +550,8 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   TMSG(LOADMAP, "Deleting unw intervals");
 
 #if LOADMAP_DEBUG
-  assert((uintptr_t)(old_dso->end_addr) < UINTPTR_MAX) ;
+  if ((uintptr_t)(old_dso->end_addr) >= UINTPTR_MAX)
+    hpcrun_terminate();
 #endif
 
 #if UW_RECIPE_MAP_DEBUG

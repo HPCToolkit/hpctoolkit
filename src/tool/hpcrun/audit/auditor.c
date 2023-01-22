@@ -53,7 +53,6 @@
 #define _GNU_SOURCE
 #endif
 
-#include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <link.h>
@@ -201,7 +200,8 @@ static int open_object(const object_t* obj) {
 }
 
 static bool fetch_hdrs(object_t* obj) {
-  assert(obj->entry.dl_info.dlpi_phdr == NULL);
+  if (obj->entry.dl_info.dlpi_phdr != NULL)
+    abort();
   obj->isVDSO = false;
 
   // For the main executable, use the aux vector if we can. It's faster and
@@ -334,7 +334,8 @@ static void complete_object(object_t* obj) {
 
   // Calculate the executable code range from the program headers, relative to
   // the l_addr base address.
-  assert(obj->entry.dl_info.dlpi_phnum > 0);
+  if (obj->entry.dl_info.dlpi_phnum == 0)
+    abort();
   uintptr_t start = UINTPTR_MAX;
   uintptr_t end = 0;
   for(size_t i = 0; i < obj->entry.dl_info.dlpi_phnum; i++) {

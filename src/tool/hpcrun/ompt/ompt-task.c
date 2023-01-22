@@ -174,5 +174,6 @@ ompt_task_register_callbacks
   int retval;
   retval = ompt_set_callback_fn(ompt_callback_task_create,
                                 (ompt_callback_t)ompt_task_create);
-  assert(ompt_event_may_occur(retval));
+  if (!ompt_event_may_occur(retval))
+    hpcrun_terminate();  // Insufficient OMPT support
 }

@@ -52,7 +52,6 @@
  * system includes
  *****************************************************************************/
 
-#include <assert.h>
 
 
 
@@ -200,7 +199,8 @@ blame_map_add_blame(blame_entry_t table[],
   uint32_t obj_id = blame_map_obj_id(obj);
   uint32_t index = blame_map_hash(obj);
 
-  assert(index >= 0 && index < N);
+  if (index >= N)
+    hpcrun_terminate();
 
   do_lock();
   uint_fast64_t oldval = atomic_load(&table[index].value);
@@ -256,7 +256,8 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
   uint32_t obj_id = blame_map_obj_id(obj);
   uint32_t index = blame_map_hash(obj);
 
-  assert(index >= 0 && index < N);
+  if (index >= N)
+    hpcrun_terminate();
 
   do_lock();
   for(;;) {

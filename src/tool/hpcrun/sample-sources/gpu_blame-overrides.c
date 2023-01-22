@@ -57,7 +57,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -124,7 +123,7 @@ if (err != CUDA_SUCCESS)                                               \
 {                                                                      \
 EETMSG("%s:%d: error %d for CUDA Driver API function '%s'\n",          \
 __FILE__, __LINE__, err, cufunc);                                      \
-monitor_real_abort();                                                  \
+hpcrun_terminate();                                                  \
 }
 
 #define CHECK_CUPTI_ERROR(err, cuptifunc)                             \
@@ -134,7 +133,7 @@ const char *errstr;                                                   \
 cuptiGetResultString(err, &errstr);                                   \
 EEMSG("%s:%d:Error %s for CUPTI API function '%s'.\n",                \
 __FILE__, __LINE__, errstr, cuptifunc);                               \
-monitor_real_abort();                                                 \
+hpcrun_terminate();                                                 \
 }
 
 #define CU_SAFE_CALL( call ) do {                                  \
@@ -142,7 +141,7 @@ CUresult err = call;                                               \
 if( CUDA_SUCCESS != err) {                                         \
 EEMSG("Cuda driver error %d in call at file '%s' in line %i.\n",   \
 err, __FILE__, __LINE__ );                                         \
-monitor_real_abort();                                              \
+hpcrun_terminate();                                              \
 } } while (0)
 
 #define CUDA_SAFE_CALL( call) do {                             \
@@ -151,7 +150,7 @@ if( cudaSuccess != err) {                                      \
   EMSG("In %s, @ line %d, gives error %d = '%s'\n", __FILE__, __LINE__, \
                    err, \
                    cudaGetErrorString(err));  \
-  monitor_real_abort();                                          \
+  hpcrun_terminate();                                          \
 } } while (0)
 
 #define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
@@ -379,7 +378,7 @@ hpcrun_safe_exit(); } while(0)
     if (! dlsym_arg) {                                                             \
       fprintf(stderr, "fallback dlopen of " #library " failed,"                    \
               " dlerror message = '%s'\n", dlerror());                             \
-      monitor_real_abort();                                                        \
+      hpcrun_terminate();                                                          \
     }                                                                              \
     if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
       fprintf(stderr, "Going forward with " #basename " overrides using " #library "\n"); \
@@ -398,7 +397,7 @@ hpcrun_safe_exit(); } while(0)
               basename ## FunctionPointer[i].generic);                             \
     if ((error = dlerror()) != NULL) {                                             \
       EEMSG("%s: during dlsym \n", error);                                         \
-      monitor_real_abort();                                                        \
+      hpcrun_terminate();                                                          \
     }                                                                              \
   }
 
@@ -659,16 +658,16 @@ static inline void create_shared_memory() {
     sprintf(shared_key, "/gpublame%d",device_id);
     if ( (fd = shm_open(shared_key, O_RDWR | O_CREAT, 0666)) < 0 ) {
         EEMSG("Failed to shm_open (%s) on device %d, retval = %d", shared_key, device_id, fd);
-        monitor_real_abort();
+        hpcrun_terminate();
     }
     if ( ftruncate(fd, sizeof(IPC_data_t)) < 0 ) {
         EEMSG("Failed to ftruncate() on device %d",device_id);
-        monitor_real_abort();
+        hpcrun_terminate();
     }
 
     if( (ipc_data = mmap(NULL, sizeof(IPC_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 )) == MAP_FAILED ) {
         EEMSG("Failed to mmap() on device %d",device_id);
-        monitor_real_abort();
+        hpcrun_terminate();
     }
 
     hpcrun_process_aux_cleanup_add(destroy_shared_memory, (void *) shared_key);
@@ -688,7 +687,8 @@ static uint32_t splay_get_stream_id(cudaStream_t key) {
     struct stream_to_id_map_t *root = stream_to_id_tree_root;
     REGULAR_SPLAY_TREE(stream_to_id_map_t, root, key, stream, left, right);
     // The stream at the root must match the key, else we are in a bad shape.
-    assert(root->stream == key);
+    if (root->stream != key)
+      hpcrun_terminate();
     stream_to_id_tree_root = root;
     uint32_t ret = stream_to_id_tree_root->id;
     spinlock_unlock(&g_stream_id_lock);
@@ -722,7 +722,7 @@ static stream_to_id_map_t *splay_insert(cudaStream_t stream_ip)
             stream_to_id_tree_root->right = NULL;
         } else {
             EEMSG("stream_to_id_tree_root  splay tree: unable to insert %p (already present)", node->stream);
-            monitor_real_abort();
+            hpcrun_terminate();
         }
     }
     stream_to_id_tree_root = node;
@@ -789,7 +789,7 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
     if (stream != stream_to_id_tree_root->stream) {
         spinlock_unlock(&g_stream_id_lock);
         TMSG(CUDA, "trying to deleting stream %p, but not in splay tree (root = %p)", stream, stream_to_id_tree_root->stream);
-        //        monitor_real_abort();
+        //        hpcrun_terminate();
         return NULL;
     }
 
@@ -906,7 +906,8 @@ static uint64_t attribute_shared_blame_on_kernels(event_list_node_t * recorded_n
             }
             continue;
         }
-        assert(start_active_kernel_node->event_time < end_active_kernel_node->event_time);
+        if (start_active_kernel_node->event_time >= end_active_kernel_node->event_time)
+          hpcrun_terminate();
 
         if (sorted_active_kernels_begin == NULL) {
             // First entry
@@ -984,14 +985,17 @@ static uint64_t attribute_shared_blame_on_kernels(event_list_node_t * recorded_n
         do {
             uint64_t new_time = current->event_time;
 
-            assert(new_time >= last_time);
-            assert(current != dummy_kernel_node && "should never process dummy_kernel_node");
+            if (new_time < last_time)
+              hpcrun_terminate();
+            if (current == dummy_kernel_node)
+              hpcrun_terminate();  // should never process dummy_kernel_node
 
             if (num_active_kernels && (new_time > last_time)) {
                 //blame all
                 active_kernel_node_t *blame_node = current->prev;
                 do {
-                    assert(blame_node->event_type == KERNEL_START);
+                    if (blame_node->event_type != KERNEL_START)
+                        hpcrun_terminate();
 
                     cct_metric_data_increment(cpu_idle_cause_metric_id, blame_node->launcher_cct, (cct_metric_data_t) {
                         .r = (new_time - last_time) * (scaling_factor) / num_active_kernels}
@@ -1067,7 +1071,8 @@ static uint32_t cleanup_finished_events() {
     stream_node_t *cur_stream = g_unfinished_stream_list_head;
 
     while (cur_stream != NULL) {
-        assert(cur_stream->unfinished_event_node && " Can't point unfinished stream to null");
+        if (!cur_stream->unfinished_event_node)
+            hpcrun_terminate();  // Can't point unfinished stream to null
         next_stream = cur_stream->next_unfinished_stream;
 
         event_list_node_t *current_event = cur_stream->unfinished_event_node;
@@ -1095,16 +1100,19 @@ static uint32_t cleanup_finished_events() {
                   break;
                 }
 
-                assert(elapsedTime > 0);
+                if (elapsedTime <= 0)
+                  hpcrun_terminate();
 
                 uint64_t micro_time_start = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
 
                 CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventElapsedTimeEnum].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event->event_end));
 
-                assert(elapsedTime > 0);
+                if (elapsedTime <= 0)
+                  hpcrun_terminate();
                 uint64_t micro_time_end = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
 
-                assert(micro_time_start <= micro_time_end);
+                if (micro_time_start > micro_time_end)
+                  hpcrun_terminate();
 
                 if(hpcrun_trace_isactive()) {
                   hpcrun_trace_append_with_time(cur_stream->st, cur_stream->idle_node_id, HPCRUN_FMT_MetricId_NULL /* null metric id */, micro_time_start - 1);
@@ -1874,7 +1882,7 @@ cuCtxCreate_v2 (CUcontext *pctx, unsigned int flags, CUdevice dev)
 {
   if (cuda_ncontexts_incr() > 1) {
     fprintf(stderr, "Too many contexts created\n");
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   if (! hpcrun_is_safe_to_sync(__func__)) {    return cuDriverFunctionPointer[cuCtxCreate_v2Enum].cuCtxCreate_v2Real(pctx, flags, dev);
   }
@@ -2002,7 +2010,7 @@ gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node,  int metric_dc)
   int ret = time_getTimeReal(&cur_time_us);
   if (ret != 0) {
     EMSG("time_getTimeReal (clock_gettime) failed!");
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   uint64_t metric_incr = cur_time_us - TD_GET(last_time_us);
 

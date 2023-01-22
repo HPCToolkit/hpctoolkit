@@ -68,11 +68,6 @@
 #include <messages/messages.h>
 
 //
-// No need to grab monitor.h for a single function
-//
-extern void monitor_real_abort(void);
-
-//
 // NOTE 1: the following functions (apparently) need dlvsym instead of dlsym to obtain the
 //         true function:
 //           pthread_cond_broadcast

@@ -514,8 +514,10 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end, unwinder_t uw)
   uw_recipe_map_report("uw_recipe_map_unpoison", (void *) start, (void *) end);
 
 #if UW_RECIPE_MAP_DEBUG
-  assert(ilmstat_btuwi != NULL); // start should be in range of some poisoned interval
-  assert(atomic_load_explicit(&ilmstat_btuwi->stat, memory_order_relaxed) == NEVER);  // should be a poisoned node
+  if (ilmstat_btuwi == NULL)
+    hpcrun_terminate();  // start should be in range of some poisoned interval
+  if (atomic_load_explicit(&ilmstat_btuwi->stat, memory_order_relaxed) != NEVER)
+    hpcrun_terminate();  // should be a poisoned node
 #endif
 
   uintptr_t s0 = ilmstat_btuwi->interval.start;
@@ -792,7 +794,8 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     }
     }
 #if UW_RECIPE_MAP_DEBUG
-    assert(ilm_btui != NULL);
+    if (ilm_btui == NULL)
+      hpcrun_terminate();
 #endif
 
     if (atomic_compare_exchange_strong_explicit(&ilm_btui->stat, &oldstat, FORTHCOMING,

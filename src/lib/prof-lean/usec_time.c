@@ -61,7 +61,7 @@
 // global includes
 //******************************************************************************
 
-#include <assert.h>
+#include <stdlib.h>
 #include <sys/time.h>
 
 
@@ -92,6 +92,7 @@ usec_time()
 {
   struct timeval tv;
   int retval = gettimeofday(&tv, 0);
-  assert(retval == 0);
+  if (retval != 0)
+    abort();  // gettimeofday failed
   return tv.tv_usec + USEC_PER_SEC * tv.tv_sec;
 }

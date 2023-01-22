@@ -406,12 +406,12 @@ int hpcrun_set_new_metric_desc(kind_info_t *kind, const char *name,
   TMSG(METRICS, "id = %d, name = %s, flags = %d, period = %d", metric_id, name, valFmt, period);
   if (!mdesc) {
     EMSG("Metric id is NULL (likely unallocated)");
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   if (name == NULL)
   {
     EMSG("Must supply a name for metric");
-    monitor_real_abort();
+    hpcrun_terminate();
   }
 
   *mdesc = metricDesc_NULL;
@@ -495,7 +495,8 @@ void hpcrun_metric_std(int metric_id, metric_data_list_t *set,
       loc->r = val.r;
     break;
   default:
-    assert(false);
+    assert(false && "Invalid metric value kind");
+    hpcrun_terminate();
   }
 }
 //

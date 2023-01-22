@@ -59,6 +59,7 @@
 
 #include <loadmap.h>
 #include <files.h>
+#include <messages/messages.h>
 
 //*********************************************************************
 
@@ -119,16 +120,16 @@ fnbounds_fetch_executable_table(void)
 int
 fnbounds_query(void *pc)
 {
-  assert(0);
-  return 0;
+  assert(false && "query not supported in static fnbounds");
+  hpcrun_terminate();
 }
 
 
 int
 fnbounds_add(char *module_name, void *start, void *end)
 {
-  assert(0);
-  return 0;
+  assert(false && "add not supported in static fnbounds");
+  hpcrun_terminate();
 }
 
 

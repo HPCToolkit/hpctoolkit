@@ -45,7 +45,6 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
 #include <string.h>
 
 //******************************************************************************
@@ -53,6 +52,7 @@
 //******************************************************************************
 
 #include <lib/prof-lean/splay-uint64.h>
+#include <messages/messages.h>
 
 #include "gpu-function-id-map.h"
 #include "gpu-splay-allocator.h"
@@ -177,7 +177,7 @@ gpu_function_id_map_insert
   if (st_lookup(&map_root, function_id)) {
     // fatal error: function_id already present; a
     // correlation should be inserted only once.
-    assert(0);
+    hpcrun_terminate();
   } else {
     gpu_function_id_map_entry_t *entry =
       gpu_function_id_map_entry_new(function_id, pc);

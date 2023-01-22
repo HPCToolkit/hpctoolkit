@@ -55,6 +55,7 @@
 //******************************************************************************
 
 #include <hpcrun/gpu/gpu-activity.h>
+#include <messages/messages.h>
 
 #include "opencl-activity-translate.h"
 #include "opencl-api.h"
@@ -164,7 +165,8 @@ opencl_activity_translate
       break;
 
     default:
-      assert(0);
+      assert(false && "Invalid activity kind!");
+      hpcrun_terminate();
   }
 
   cstack_ptr_set(&(ga->next), 0);

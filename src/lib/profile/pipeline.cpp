@@ -382,9 +382,11 @@ void ProfilePipeline::run() {
             if(sources[i].read.allOf(scheduledWaves & sources[i].dataLimit))
               sources[i].wavesComplete.signal();
           }
+#ifndef NDEBUG
           // Now that the Source has read all of what we requested, we disallow
           // any further output of what we just read.
           sourceLocals[i].disabled |= req;
+#endif
         }
         if(countdowns[idx].fetch_sub(1, std::memory_order_acq_rel)-1 == 0) {
           for(SinkEntry& e: sinks) notify(e, d);
@@ -411,7 +413,9 @@ void ProfilePipeline::run() {
                          - sources[i].read) & sources[i].dataLimit;
         sources[i].read |= req;
         if(req.hasAny()) sources[i]().read(req);
+#ifndef NDEBUG
         sl.disabled |= req;
+#endif
       }
 
       // Complete the threads unit to this Source in particular

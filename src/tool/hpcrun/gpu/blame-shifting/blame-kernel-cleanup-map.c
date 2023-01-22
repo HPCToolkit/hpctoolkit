@@ -2,7 +2,6 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
 #include <string.h>                           // memset
 
 

@@ -53,7 +53,6 @@
  *****************************************************************************/
 
 #include <alloca.h>
-#include <assert.h>
 #include <ctype.h>
 #include <papi.h>
 #include <setjmp.h>
@@ -156,7 +155,7 @@ METHOD_FN(thread_init)
   int retval = PAPI_thread_init(pthread_self);
   if (retval != PAPI_OK) {
     EEMSG("PAPI_thread_init NOT ok, retval = %d", retval);
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   TMSG(CUDA, "thread init OK");
 }
@@ -168,7 +167,7 @@ METHOD_FN(thread_init_action)
   int retval = PAPI_register_thread();
   if (retval != PAPI_OK) {
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   TMSG(CUDA, "register thread ok");
 }

@@ -44,7 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
 
@@ -92,7 +91,7 @@ void *__wrap_malloc(size_t s){
   _hpcrun_in_malloc = 1;
   alloc = __real_malloc(s);
   if (hpcrun_need_more){
-    assert(0);
+    hpcrun_terminate();
     /* alloc more space here */
     hpcrun_need_more = 0;
   }
@@ -102,5 +101,5 @@ void *__wrap_malloc(size_t s){
 
 void *__wrap_pthread_create(void *dc){
   EMSG("Called pthread_create!!");
-  assert(0);
+  hpcrun_terminate();
 }

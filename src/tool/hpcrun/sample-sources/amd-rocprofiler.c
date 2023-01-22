@@ -3,7 +3,6 @@
 //******************************************************************************
 
 #include <alloca.h>
-#include <assert.h>
 #include <ctype.h>
 #include <setjmp.h>
 #include <stdlib.h>

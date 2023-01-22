@@ -210,7 +210,8 @@ csklnode_malloc(
   }
 
 #if CSKL_DEBUG
-  assert(_lf_cskl_nodes);
+  if (!_lf_cskl_nodes)
+    abort();
 #endif
 
   return csklnode_alloc_from_lfl(val);
@@ -541,7 +542,8 @@ cskl_insert(cskiplist_t *cskl, void *value,
           if (pred->marked || succ->marked || pred->nexts[layer] != succ)
             break;
           // my value better be less than the node I am inserting before
-          assert(cskl->compare(value, pred->nexts[layer]->val) == -1);
+          if (cskl->compare(value, pred->nexts[layer]->val) != -1)
+            abort();
         }
         if (layer == my_height) {
           // link new node in at levels [0 .. my_height-1]

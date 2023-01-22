@@ -46,7 +46,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stdbool.h>
 
 #include <memory/hpcrun-malloc.h>
@@ -267,7 +266,7 @@ ra_status_string(ra_loc l)
    STR(RA_REGISTER);
    STR(POISON);
   default:
-    assert(0);
+    hpcrun_terminate();
   }
   return NULL;
 }
@@ -280,6 +279,6 @@ bp_status_string(bp_loc l)
     STR(BP_SAVED);
     STR(BP_HOSED);
   default:
-    assert(0);
+    hpcrun_terminate();
   }
 }

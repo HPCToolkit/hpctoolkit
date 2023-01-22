@@ -61,7 +61,6 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -227,7 +226,7 @@ splay_insert(struct leakinfo_s *node)
     } else {
       TMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)",
            node->memblock);
-      assert(0);
+      hpcrun_terminate();
     }
   }
   memleak_tree_root = node;

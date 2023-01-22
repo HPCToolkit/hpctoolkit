@@ -206,7 +206,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackReferences(iter_t it) noexcep
 std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept {
   std::stack<std::reference_wrapper<Context>, std::vector<std::reference_wrapper<Context>>> tip;
   // Format: <global> children... [sentinel]
-  auto globalTy = unpack<std::uint64_t>(it);
+  [[maybe_unused]] auto globalTy = unpack<std::uint64_t>(it);
   assert(globalTy == (std::uint64_t)Scope::Type::global && "Packed Contexts claim root is non-global?");
   while(1) {
     auto next = unpack<std::uint64_t>(it);

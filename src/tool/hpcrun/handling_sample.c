@@ -45,7 +45,6 @@
 // ******************************************************* EndRiceCopyright *
 
 #include <stdlib.h>
-#include <assert.h>
 #include "thread_data.h"
 
 #include "handling_sample.h"
@@ -66,7 +65,8 @@ hpcrun_init_handling_sample(thread_data_t *td, int in, int id)
 void
 hpcrun_set_handling_sample(thread_data_t *td)
 {
-  assert(td->handling_sample == 0);
+  if (td->handling_sample != 0)
+    hpcrun_terminate();
 
   td->handling_sample = 0xDEADBEEF;
 }
@@ -75,7 +75,8 @@ hpcrun_set_handling_sample(thread_data_t *td)
 void
 hpcrun_clear_handling_sample(thread_data_t *td)
 {
-  assert(td->handling_sample == 0xDEADBEEF);
+  if (td->handling_sample != 0xDEADBEEF)
+    hpcrun_terminate();
 
   td->handling_sample = 0;
 }

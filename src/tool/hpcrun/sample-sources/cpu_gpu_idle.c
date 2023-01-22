@@ -55,7 +55,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <stdbool.h>
 
 #include <signal.h>
@@ -160,7 +159,7 @@ METHOD_FN(start)
     TMSG(CPU_GPU_BLAME_CTL,"starting CPU_GPU_BLAME");
     if (! blame_shift_source_available(bs_type_timer)) {
         EMSG("Either pass -e WALLCLOCK or -e REALTIME to enable CPU_GPU_BLAME");
-        monitor_real_abort();
+        hpcrun_terminate();
     }
     g_cpu_gpu_enabled = true;
     TD_GET(ss_state)[self->sel_idx] = START;

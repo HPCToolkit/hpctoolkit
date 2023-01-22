@@ -75,7 +75,6 @@
 #include <stdbool.h>
 #include <ucontext.h>
 
-#include <assert.h>
 
 //*************************** User Include Files ****************************
 

@@ -45,6 +45,7 @@
 // system includes
 //******************************************************************************
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 
@@ -124,7 +125,7 @@
     const char* error_string = NULL; \
     rocprofiler_error_string(&error_string); \
     fprintf(stderr, "ERROR: %s\n", error_string); \
-    abort(); \
+    hpcrun_terminate(); \
   }                                             \
 }
 
@@ -399,8 +400,8 @@ decode_counter_value
       // is missing from the union, so I am unsure what to do about it.
       // Furthermore, I do not know how to parse ROCPROFILER_DATA_KIND_BYTES,
       // In both cases, I decided to crash the program to see how frequent this is.
-    assert(false);
-    return (gpu_counter_value_t) 0;
+    assert(false && "Unknown rocprofiler_data_kind_t");
+    hpcrun_terminate();
   }
 }
 

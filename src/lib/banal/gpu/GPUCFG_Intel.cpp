@@ -351,7 +351,8 @@ addCustomFunctionObject
 {
   Region *reg = NULL;
   bool status = symtab->findRegion(reg, ".text");
-  assert(status == true);
+  if (!status)
+    std::abort();
 
   unsigned long reg_size = reg->getMemSize();
   Symbol *custom_symbol = new Symbol(
@@ -372,7 +373,8 @@ addCustomFunctionObject
 
   //adding the custom symbol into the symtab object
   status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
-  assert(status == true);
+  if (!status)
+    std::abort();
 
   // After injecting symbol, we can parse inlining info
   symtab->parseTypesNow();
@@ -388,7 +390,8 @@ getIntelInstructionStat
 {
   char inst_asm_text[MAX_STR_SIZE] = { 0 };
   size_t length = kv.getInstSyntax(offset, inst_asm_text, MAX_STR_SIZE);
-  assert(length > 0);
+  if (length == 0)
+    std::abort();
   iga::Op opcode = kv.getOpcode(offset);
   std::string op = getOpString(opcode);
 
@@ -898,7 +901,8 @@ IntelGPUInstDumper::dump(GPUParse::Inst* inst)
 {
   auto inst_offset = addrToOffset(function.address, inst->offset);
   size_t n = kv.getInstSyntax(inst_offset, NULL, 0);
-  assert(n < MAX_STR_SIZE);
+  if (n >= MAX_STR_SIZE)
+    std::abort();
 
   char inst_str[MAX_STR_SIZE];
   inst_str[n] = '\0';

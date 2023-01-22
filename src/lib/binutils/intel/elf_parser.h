@@ -116,7 +116,8 @@ class ElfParser {
   void GetSection(const char* name,
                   const uint8_t** section,
                   uint64_t* section_size) const {
-    assert(section != nullptr && section_size != nullptr);
+    if (section == nullptr || section_size == nullptr)
+      std::abort();
 
     const Elf64Header* header = reinterpret_cast<const Elf64Header*>(data_);
     const Elf64SectionHeader* section_header =

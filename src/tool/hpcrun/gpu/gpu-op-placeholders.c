@@ -57,6 +57,8 @@
 
 #include <hpcrun/cct/cct.h>
 
+#include <messages/errors.h>
+
 #include "lib/prof-lean/placeholders.h"
 #include "gpu-op-placeholders.h"
 
@@ -125,7 +127,7 @@ gpu_op_placeholder_ip
     break;
   }
   assert(false && "Invalid GPU placeholder type!");
-  abort();
+  hpcrun_terminate();
 }
 
 

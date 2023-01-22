@@ -61,7 +61,6 @@
 #define _GNU_SOURCE  1
 
 #include <sys/types.h>
-#include <assert.h>
 #include <errno.h>
 #include <poll.h>
 #include <pthread.h>
@@ -109,7 +108,8 @@ find_poll(void)
   real_poll = (poll_fn *) dlsym(RTLD_NEXT, "poll");
 #endif
 
-  assert(real_poll);
+  if (real_poll == NULL)
+    hpcrun_terminate();  // poll is not available
 }
 
 

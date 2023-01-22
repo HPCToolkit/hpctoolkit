@@ -42,7 +42,8 @@ class ZeTracer {
   ZeTracer(ze_driver_handle_t driver,
            tracing_callback_t callback,
            void* user_data) {
-    assert(driver != nullptr);
+    if (driver == nullptr)
+      std::abort();
 
     data_.callback = callback;
     data_.user_data = user_data;
@@ -53,14 +54,16 @@ class ZeTracer {
     tracer_desc.pUserData = &data_;
 
     status = zetTracerCreate(driver, &tracer_desc, &handle_);
-    assert(status == ZE_RESULT_SUCCESS);
+    if (status != ZE_RESULT_SUCCESS)
+      abort();
   }
 
   ~ZeTracer() {
     if (handle_ != nullptr) {
       ze_result_t status = ZE_RESULT_SUCCESS;
       status = zetTracerDestroy(handle_);
-      assert(status == ZE_RESULT_SUCCESS);
+      if (status != ZE_RESULT_SUCCESS)
+        abort();
     }
   }
 

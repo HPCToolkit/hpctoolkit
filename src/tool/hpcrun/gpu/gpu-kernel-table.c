@@ -41,7 +41,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <assert.h>
 
 #include "gpu-kernel-table.h"
 #include "logical/common.h"
