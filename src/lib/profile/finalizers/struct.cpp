@@ -115,6 +115,11 @@ struct LHandler : public DefaultHandler {
 };
 
 namespace hpctoolkit::finalizers::detail {
+struct LMData {
+  std::string path;
+  bool has_calls;
+};
+
 class StructFileParser {
 public:
   StructFileParser(const stdshim::filesystem::path&) noexcept;
@@ -127,7 +132,7 @@ public:
 
   bool valid() const noexcept { return ok; }
 
-  std::string seekToNextLM() noexcept;
+  std::optional<LMData> seekToNextLM() noexcept;
   bool parse(ProfilePipeline::Source&, const Module&, StructFile::udModule&) noexcept;
 
 private:
@@ -137,6 +142,7 @@ private:
 };
 }
 
+using LMData = hpctoolkit::finalizers::detail::LMData;
 using StructFileParser = hpctoolkit::finalizers::detail::StructFileParser;
 
 StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
@@ -147,18 +153,19 @@ StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
       return;
     }
 
-    std::string lm;
+    auto lm = std::make_unique<LMData>();
     do {
-      lm = parser->seekToNextLM();
-      if(lm.empty()) {
+      if(auto o_lm = parser->seekToNextLM()) {
+        *lm = std::move(*o_lm);
+      } else {
         // EOF or error
         if(!parser->valid())
           util::log::error{} << "Error while parsing Structfile " << path.filename().string();
         return;
       }
-    } while(lms.find(lm) != lms.end());
-
-    lms.emplace(std::move(lm), std::move(parser));
+    } while(lms.find(lm->path) != lms.end());
+    auto path = std::move(lm->path);
+    lms.emplace(std::move(path), std::make_pair(std::move(lm), std::move(parser)));
   }
 }
 
@@ -209,6 +216,10 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
   if(fg.scope().type() == Scope::Type::point) {
     auto mo = fg.scope().point_data();
     const auto& udm = mo.first.userdata[ud];
+    if(!udm.has_cfg) {
+      // No valid data to use, and getting it wrong is wrong, so don't use any
+      return false;
+    }
 
     // First move from the instruction to it's enclosing function's entry. That
     // makes things easier for the DFS later.
@@ -279,18 +290,20 @@ std::vector<stdshim::filesystem::path> StructFile::forPaths() const {
 }
 
 void StructFile::load(const Module& m, udModule& ud) noexcept {
+  std::unique_ptr<LMData> lm;
   std::unique_ptr<StructFileParser> parser;
   {
     std::unique_lock<std::mutex> l(lms_lock);
     auto it = lms.find(m.path());
     if(it == lms.end()) it = lms.find(m.userdata[sink.resolvedPath()]);
     if(it == lms.end()) return;  // We got nothing
-    parser = std::move(it->second);
+    std::tie(lm, parser) = std::move(it->second);
     lms.erase(it);
   }
 
   // TODO: Check if this is the only StructFile for this Module.
 
+  if(lm->has_calls) ud.has_cfg = true;
   if(!parser->parse(sink, m, ud))
     util::log::error{} << "Error while parsing Structfile " << path.string();
 }
@@ -313,27 +326,30 @@ StructFileParser::StructFileParser(const stdshim::filesystem::path& path) noexce
   }
 }
 
-std::string StructFileParser::seekToNextLM() noexcept try {
+std::optional<LMData> StructFileParser::seekToNextLM() noexcept try {
   assert(ok);
   ok = false;
-  std::string lm;
+  LMData lm;
   bool eof = false;
   LHandler handler([&](const std::string& ename, const Attributes& attr){
-    if(ename == "LM") lm = xmlstr(attr.getValue(XMLStr("n")));
+    if(ename == "LM") {
+      lm.path = xmlstr(attr.getValue(XMLStr("n")));
+      lm.has_calls = xmlstr(attr.getValue(XMLStr("has-calls"))) == "1";
+    }
   }, [&](const std::string& ename){
     if(ename == "HPCToolkitStructure") eof = true;
   });
   parser->setContentHandler(&handler);
   parser->setErrorHandler(&handler);
 
-  while(lm.empty()) {
+  while(lm.path.empty()) {
     if(!parser->parseNext(token)) {
       if(!eof) {
         util::log::info{} << "Error while parsing for Structfile LM";
       } else ok = true;
       parser->setContentHandler(nullptr);
       parser->setErrorHandler(nullptr);
-      return std::string();
+      return std::nullopt;
     }
   }
   parser->setContentHandler(nullptr);
@@ -345,13 +361,13 @@ std::string StructFileParser::seekToNextLM() noexcept try {
        "  what(): " << e.what() << "\n";
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
-  return std::string();
+  return std::nullopt;
 } catch(xercesc::SAXException& e) {
   util::log::info{} << "Exception caught while parsing Structfile for LM\n"
        "  msg: " << xmlstr(e.getMessage()) << "\n";
   parser->setContentHandler(nullptr);
   parser->setErrorHandler(nullptr);
-  return std::string();
+  return std::nullopt;
 }
 
 static std::vector<util::interval<uint64_t>> parseVs(const std::string& vs) {
@@ -504,15 +520,22 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
   assert(stack.size() == 0 && "Inconsistent stack handling!");
 
   // Now convert the tmp_rcg into the proper rcg
-  ud.rcg.reserve(tmp_rcg.size());
-  for(const auto& [callee, caller]: tmp_rcg) {
-    auto target_it = funcs.find(callee);
-    if(target_it != funcs.end()) {
-      ud.rcg.emplace(target_it->second, std::move(caller));
-    } else {
-      util::log::info{} << "Missing callee at 0x" << std::hex << callee
-                        << " when processing Structfile for binary\n  "
-                        << m.path().string();
+  if(!tmp_rcg.empty()) {
+    ud.has_cfg = true;  // Presume that <C> tags are correct when present
+    ud.rcg.reserve(tmp_rcg.size());
+    for(const auto& [callee, caller]: tmp_rcg) {
+      auto target_it = funcs.find(callee);
+      if(target_it != funcs.end()) {
+        ud.rcg.emplace(target_it->second, std::move(caller));
+      } else {
+        // <C> tag obviously not correct, consider the entire CFG invalid
+        ud.has_cfg = false;
+        ud.rcg.clear();
+        util::log::info{} << "Missing callee at 0x" << std::hex << callee
+                          << " when processing Structfile for binary\n  "
+                          << m.path().string();
+        break;
+      }
     }
   }
 
