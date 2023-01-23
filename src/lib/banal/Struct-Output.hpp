@@ -69,7 +69,7 @@ using namespace std;
 void printStructFileBegin(ostream *, ostream *, string);
 void printStructFileEnd(ostream *, ostream *);
 
-void printLoadModuleBegin(ostream *, string);
+void printLoadModuleBegin(ostream *, string, bool has_calls);
 void printLoadModuleEnd(ostream *);
 
 void printFileBegin(ostream *, FileInfo *);

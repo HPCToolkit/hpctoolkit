@@ -660,11 +660,13 @@ makeStructure(string filename,
 
     bool intel_file = elfFile->isIntelGPUFile();
 
+    bool has_calls;
     if (cuda_file) { // don't run parseapi on cuda binary
       cuda_arch = elfFile->getArch();
       cubin_size = elfFile->getLength();
       parsable = readCudaCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
+      has_calls = structOpts.compute_gpu_cfg;
     } else if (intel_file) { // don't run parseapi on intel binary
       // TODO(Aaron): determine which generation of intel gpu it is
       intel_gpu_arch = 1;
@@ -672,6 +674,7 @@ makeStructure(string filename,
       #ifdef ENABLE_IGC
       parsable = readIntelCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, false, structOpts.jobs, &code_src, &code_obj);
+      has_calls = structOpts.compute_gpu_cfg;
       #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);
@@ -680,8 +683,9 @@ makeStructure(string filename,
       intel_gpu_arch = 0;
       cuda_arch = 0;
       cubin_size = 0;
+      has_calls = false;
     }
-    if (cuda_file || intel_file) {
+    if (has_calls) {
       // for GPU code, report call sites in structure output to support
       // static call graph reconstruction
       Output::enableCallTags();
@@ -713,7 +717,7 @@ makeStructure(string filename,
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
 
-    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
+    Output::printLoadModuleBegin(outFile, elfFile->getFileName(), has_calls);
 
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\

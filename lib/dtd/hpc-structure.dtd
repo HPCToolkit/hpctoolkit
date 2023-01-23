@@ -1,6 +1,6 @@
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Structure DTD                                             -->
-<!-- Version 4.8                                                          -->
+<!-- Version 4.9                                                          -->
 <!-- ******************************************************************** -->
 
 <!ELEMENT HPCToolkitStructure (LM)*>
@@ -19,6 +19,7 @@
   <!ATTLIST LM
 	i CDATA #REQUIRED
 	n CDATA #REQUIRED
+	has-calls CDATA #REQUIRED
 	v CDATA #IMPLIED>
   <!-- File: -->
   <!ELEMENT F (P|L|S)*>
