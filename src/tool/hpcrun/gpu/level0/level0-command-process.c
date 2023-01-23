@@ -234,7 +234,7 @@ get_metadata_fid
   zeKernelGetName(kernel, &name_size, kernel_name);
 
   uint32_t result = hpcrun_logical_metadata_fid(&level0_metadata_store,
-						kernel_name, NULL, 0);
+						kernel_name, LOGICAL_MANGLING_CPP, NULL, 0);
 
   free(kernel_name);
 

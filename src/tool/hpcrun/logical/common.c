@@ -506,7 +506,7 @@ static void hashtable_grow(logical_metadata_store_t* store) {
 }
 
 uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
-    const char* funcname, const char* filename, uint32_t lineno) {
+    const char* funcname, enum logical_mangling funcmang, const char* filename, uint32_t lineno) {
   if(funcname == NULL && filename == NULL)
     return 0; // Specially reserved for this case
   if(funcname == NULL) lineno = 0;  // It should be ignored
@@ -515,7 +515,8 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
 
   // We're looking for an entry that looks roughly like this
   struct logical_metadata_store_entry_t pattern = {
-    .funcname = (char*)funcname, .filename = (char*)filename, .lineno = lineno,
+    .funcname = (char*)funcname, .funcmang = funcmang,
+    .filename = (char*)filename, .lineno = lineno,
     .hash = string_hash(funcname) ^ string_hash(filename) ^ int_hash(lineno),
   };
 
@@ -562,6 +563,8 @@ static void cleanup_metadata_store(logical_metadata_store_t* store) {
     if(entry->id == 0) continue;
     hpcfmt_int4_fwrite(entry->id, f);
     hpcfmt_str_fwrite(entry->funcname, f);
+    char funcmang = entry->funcmang;
+    fwrite(&funcmang, sizeof(char), 1, f);
     hpcfmt_str_fwrite(entry->filename, f);
     hpcfmt_int4_fwrite(entry->lineno, f);
   }
