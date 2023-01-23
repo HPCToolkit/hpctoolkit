@@ -675,7 +675,9 @@ makeStructure(string filename,
       parsable = readIntelCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, false, structOpts.jobs, &code_src, &code_obj);
       has_calls = structOpts.compute_gpu_cfg;
-      #endif // ENABLE_IGC
+      #else  // ENABLE_IGC
+      has_calls = false;
+      #endif  // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);

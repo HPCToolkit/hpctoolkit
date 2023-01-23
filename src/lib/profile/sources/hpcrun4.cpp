@@ -488,8 +488,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             // Failed to generate the appropriate FlowGraph, we must be missing
             // some data. Map to par -> (unknown) -> (point) and throw an error.
             if(logstore->missingCFG.emplace(std::cref(scope.point_data().first)).second) {
-              util::log::error{} << "Missing required CFG data for binary: "
-                << scope.point_data().first.path().string();
+              util::log::error{} << "Bad or missing CFG data for binary: "
+                << scope.point_data().first.path().filename().string();
             }
             auto& unk = sink.context(par, {Relation::call, Scope()}).second;
             auto pnt = sink.context(unk, {Relation::call, scope});

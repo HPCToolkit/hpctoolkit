@@ -149,7 +149,7 @@ StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
   while(1) {  // Exit on EOF or error
     auto parser = std::make_unique<StructFileParser>(path);
     if(!parser->valid()) {
-      util::log::error{} << "Error while parsing Structfile " << path.filename().string();
+      util::log::warning{} << "Failed to parse Structfile " << path.filename().string();
       return;
     }
 
@@ -160,7 +160,7 @@ StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
       } else {
         // EOF or error
         if(!parser->valid())
-          util::log::error{} << "Error while parsing Structfile " << path.filename().string();
+          util::log::warning{} << "Failed to parse Structfile " << path.filename().string();
         return;
       }
     } while(lms.find(lm->path) != lms.end());
@@ -305,7 +305,7 @@ void StructFile::load(const Module& m, udModule& ud) noexcept {
 
   if(lm->has_calls) ud.has_cfg = true;
   if(!parser->parse(sink, m, ud))
-    util::log::error{} << "Error while parsing Structfile " << path.string();
+    util::log::warning{} << "Error parsing Structfile " << path.filename().string();
 }
 
 StructFileParser::StructFileParser(const stdshim::filesystem::path& path) noexcept
