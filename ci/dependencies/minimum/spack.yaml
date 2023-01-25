@@ -56,6 +56,7 @@ spack:
   - py-pytest @7.1.3
   - py-ruamel-yaml @0.17.16
   - py-click @8.1.3
+  - py-pyparsing @3.0.6
 
   - $target_specific
 

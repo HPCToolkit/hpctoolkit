@@ -126,6 +126,7 @@ repos:
     - ruamel.yaml
     - podman
     - click
+    - pyparsing
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
