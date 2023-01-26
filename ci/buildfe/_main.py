@@ -199,6 +199,11 @@ Examples:
         help="Add the given volume to the Podman command in the reproduction instructions",
     )
     parser.add_argument(
+        "-c",
+        "--compiler",
+        help="configure: Use the given compiler instead of the system default",
+    )
+    parser.add_argument(
         "--test-junit-copyout",
         default=False,
         action="store_true",
@@ -364,6 +369,14 @@ def parse_stats(stdout):
     return stats
 
 
+def safe_div(a: int, b: int) -> float:
+    if a == 0:
+        return float("nan") if b == 0 else -float("inf")
+    if b == 0:
+        return float("inf")
+    return a / b
+
+
 def print_ccache_stats(header_prefix: str):
     if (ccache := shutil.which("ccache")) is None:
         return
@@ -390,14 +403,14 @@ def print_ccache_stats(header_prefix: str):
     total = total_hit + miss
 
     with section(
-        header_prefix + f"Ccache statistics: {total_hit/total*100:.3f}%",
+        header_prefix + f"Ccache statistics: {safe_div(total_hit, total)*100:.3f}%",
         color=FgColor.info,
         collapsed=True,
     ):
-        print(f"Hit: {total_hit/total*100:.3f}% ({total_hit:d} of {total:d})")
-        print(f"  Direct: {d_hit/total_hit*100:.3f}% ({d_hit:d} of {total_hit:d})")
-        print(f"  Preprocessed: {p_hit/total_hit*100:.3f}% ({p_hit:d} of {total_hit:d})")
-        print(f"Missed: {miss/total*100:.3f}% ({miss:d} of {total:d})")
+        print(f"Hit: {safe_div(total_hit, total)*100:.3f}% ({total_hit:d} of {total:d})")
+        print(f"  Direct: {safe_div(d_hit, total_hit)*100:.3f}% ({d_hit:d} of {total_hit:d})")
+        print(f"  Preprocessed: {safe_div(p_hit, total_hit)*100:.3f}% ({p_hit:d} of {total_hit:d})")
+        print(f"Missed: {safe_div(miss, total)*100:.3f}% ({miss:d} of {total:d})")
 
 
 def build(variant: ConcreteSpecification, cfg: Configuration, args) -> tuple[bool, dict]:
@@ -503,6 +516,9 @@ def reproduction_cmd(variant: ConcreteSpecification, args) -> str:
         lines.append(chev + " " + shlex.join(shlex.split(cmd)))
 
     feargs = [";".join(p.as_posix() for p in paths) for paths in args.sources]
+    if args.compiler:
+        feargs.append("-c")
+        feargs.append(args.compiler)
     feargs.append("-1s")
     feargs.append(str(variant))
     lines.append(f"{chev} python3 -m ci.buildfe {shlex.join(feargs)}")
@@ -514,7 +530,7 @@ def main():
 
     variants = gen_variants(args)
 
-    depcfg = DependencyConfiguration()
+    depcfg = DependencyConfiguration(cc=args.compiler)
     for src in args.sources:
         load_src(depcfg, src, not args.spack_no_install, args.spack_args, args.dry_run)
 

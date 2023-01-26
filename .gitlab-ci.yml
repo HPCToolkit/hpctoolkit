@@ -15,17 +15,15 @@ stages:
 - deps:package
 - deps
 - validate
+- manual
 - test
 - extended test
 - lint
-- update
 
 
 include:
 # Jobs for building all the dependencies with Spack
 - local: ci/dependencies/.gitlab-ci.yml
-# Jobs to regenerating test data when needed
-- local: tests2/data/.gitlab-ci.yml
 
 
 variables:
@@ -129,35 +127,37 @@ autoreconf check:
     - autogen.log
     - fixup.patch
 
-# Many jobs require Spack to function. This is the common setup pieces.
-# Note that Spack may shift SHA's between jobs.
-.spack:
-  cache:
-    key: spack
-    when: always
-    paths: [.spack.git]
-  before_script:
-  - echo -e "\e[0Ksection_start:`date +%s`:spack_clone_init[collapsed=true]\r\e[0KSpack update and initialization"
-  - - export SPACK_ROOT="$(realpath .spack)"
-    - ci/dependencies/spack-init.sh
-    - export PATH="$SPACK_ROOT"/bin:"$PATH"
-  - echo -e "\e[0Ksection_end:`date +%s`:spack_clone_init\r\e[0K"
+
+# Allow manually triggering a child pipeline to regenerate the test data
+regen testdata:
+  stage: manual
+  when: manual
+  allow_failure: true
+  trigger:
+    include:
+    - local: tests2/data/.gitlab-ci.yml
+  variables:
+    PARENT_PIPELINE_ID: $CI_PIPELINE_ID
+
 
 # Build jobs require a working Spack and compilers and a few other bits. This job handles that setup.
 .build-job:
   cache:
-  - !reference [.spack, cache]
+  - key: spack
+    when: always
+    paths: [.spack.git]
   - key: pkgs-$IMAGE_BASE
     when: always
     paths:
-    - .apt-cache/
-    - .pip-cache/
+    - .pkg-cache/
   - key: ccache-$IMAGE_BASE$IMAGE_EXT-$JOB_CC
     when: always
     paths:
     - .ccache/
 
   variables:
+    CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
+    CCACHE_BASEDIR: '$CI_PROJECT_DIR'
     # Limit the ccache cache size to a modest level.
     # One HPCToolkit buildmany is ~2.5GB (~600MB compressed) over ~25000 files
     CCACHE_COMPRESS: 'true'
@@ -169,49 +169,23 @@ autoreconf check:
   - >-
     ci/scripts/ensure-present.sh make git curl cc file patchelf python3 eatmydata
     py:boto3 py:clingo ${JOB_CC:+ccache} ${IMAGE_EXT:+py:podman} $extra_pkgs
-
-  # Unpack and instantiate Spack here
-  - !reference [.spack, before_script]
-
-  - if test -n "$JOB_CC"; then
-  - - echo -e "\e[0Ksection_start:`date +%s`:ccache_init[collapsed=true]\r\e[0KCompiler and ccache initialization"
-    # Derive the CC/CXX from the JOB_CC shorthand
-    - |
-      test -z "$JOB_CC" || case "$JOB_CC" in
-      # Rocky/Fedora form, which don't ship multiple GCCs
-      gcc=*)
-        export CC=gcc CXX=g++
-        ;;
-      clang=*)
-        export CC=clang CXX=clang++
-        ;;
-      # Debian/Ubuntu/SUSE form, which ships multiple GCCs
-      gcc-*)
-        export CC=gcc-"${JOB_CC##gcc-}" CXX=g++-"${JOB_CC##gcc-}"
-        ;;
-      clang-*)
-        export CC=clang-"${JOB_CC##clang-}" CXX=clang++-"${JOB_CC##clang-}"
-        ;;
-      *)
-        echo "Invalid compiler shorthand: $JOB_CC"
-        exit 1
-        ;;
-      esac
-    - test -z "$JOB_CC" || "$CC" --version
-    - test -z "$JOB_CC" || "$CXX" --version
-    # Initialize ccache
-    - export CCACHE_DIR="$(realpath .ccache/)" CCACHE_BASEDIR="$CI_PROJECT_DIR"
-    - ccache --zero-stats
-    # Replace CC/CXX with ccache'd versions
-    - mkdir .ccache-bin/
-    - if test -n "$JOB_CC"; then ln -s "$(command -pv ccache)" .ccache-bin/"$CC" && export CC="$(realpath .ccache-bin)/$CC" || exit $?; fi
-    - if test -n "$JOB_CC"; then ln -s "$(command -pv ccache)" .ccache-bin/"$CXX" && export CXX="$(realpath .ccache-bin)/$CXX" || exit $?; fi
-    - echo -e "\e[0Ksection_end:`date +%s`:ccache_init\r\e[0K"
-  - fi
+  # Instantiate Spack
+  - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
+  - ci/dependencies/spack-init.sh
+  # Zero the ccache statistics for accurate measurements in the builds
+  - ccache --zero-stats
+  - >-
+    BUILD_REPROD_ARGS=(
+    --reproduction-cmd "ci/scripts/ensure-present.sh make git curl cc file patchelf python3 eatmydata
+    py:boto3 py:clingo ${JOB_CC:+ccache} ${IMAGE_EXT:+py:podman} $extra_pkgs"
+    --reproduction-cmd 'SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"'
+    --reproduction-cmd 'ci/dependencies/spack-init.sh'
+    )
 
   after_script:
-  # Zero the statistics to lower GitLab cache thrashing
-  - CCACHE_DIR="$(realpath .ccache/)" ccache --zero-stats
+  # Zero the ccache statistics to lower GitLab cache thrashing (maybe)
+  - ccache --zero-stats
+
 
 # Build many versions of the codebase, to ensure all the various compilations work
 # As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
@@ -224,18 +198,20 @@ autoreconf check:
 
   before_script:
   - !reference [.build-job, before_script]
-  - REPROD_ARGS=(--reproduction-cmd 'touch img-config')
+  - REPROD_ARGS=(--reproducible)
+  - REPROD_ARGS+=(--reproduction-cmd 'touch img-config')
   script:
   - touch img-config
   # Run the build script for a wide sweep of configurations. Use some Python to help.
+  - rm -rf logs/
   - >-
-    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -a install -a check-install
+    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -c "$JOB_CC" -a check-install
     img-config "ci/dependencies/latest;/spack/cenv/latest" --spack-no-install --ccache-stats
-    --reproducible "${REPROD_ARGS[@]}" -s "$SPEC"
+    "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -s "$SPEC"
   - >-
-    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -a install -a check-install
+    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -c "$JOB_CC" -a check-install
     img-config "ci/dependencies/minimum;/spack/cenv/minimum" --spack-no-install --ccache-stats
-    --reproducible "${REPROD_ARGS[@]}" -s "$SPEC"
+    "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -s "$SPEC"
 
   artifacts:
     paths:
@@ -307,7 +283,8 @@ autoreconf check:
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
-  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGS=(--reproducible)
+  - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 'buildmany: [amd64, +cuda]: [10.2]':
@@ -326,7 +303,8 @@ autoreconf check:
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
-  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGS=(--reproducible)
+  - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
@@ -348,7 +326,8 @@ autoreconf check:
   - echo '--with-rocm=/opt/rocm' > img-config
   # Pull dependencies from the base image
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
-  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGS=(--reproducible)
+  - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-rocm=/opt/rocm' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
@@ -368,33 +347,18 @@ autoreconf check:
     SPEC: '~cuda ~rocm +level0 +tests2 (mpi papi opencl python gtpin)[~<1]'
   before_script:
   # The base Intel image(s) don't ship with IGC by default, so install it
-  - extra_pkgs='verb:libigdfcl-dev verb:libigc-dev'
+  - extra_pkgs="gtpin:$GTPIN verb:libigdfcl-dev verb:libigc-dev"
   # The base Intel image has some extra elements on the PATH, make sure /usr/local/bin takes precdence
   - export PATH=/usr/local/bin:"$PATH"
   - !reference [.buildmany.amd64, before_script]
-  # Pull Level 0 (part of OneAPI) and IGC from the image + packages themselves
+  # Pull Level 0 (part of OneAPI), IGC and GTPin from the image + packages themselves
   - echo '--with-level0=/usr' > img-config
   - echo '--with-igc=/usr' >> img-config
-  # Install GTPin from the official sources
-  - |
-    case "$GTPIN" in
-    3.0)
-      GTPIN_URL='https://downloadmirror.intel.com/730598/external-release-gtpin-3.0-linux.tar.xz'
-      GTPIN_SHA='8a8a238ab9937d85e4cc5a5c15a79cad0e4aa306b57e5d72dad3e09230a4cdab'  # pragma: allowlist secret
-      ;;
-    *)
-      echo "No URL/hash entry for GTPin $GTPIN"
-      exit 1
-      ;;
-    esac
-  - curl -Lo /tmp/gtpin.tar.xz "$GTPIN_URL"
-  - echo "$GTPIN_SHA  /tmp/gtpin.tar.xz" | sha256sum -c || exit $?
-  - mkdir /opt/gtpin
-  - tar -C /opt/gtpin -xaf /tmp/gtpin.tar.xz
   - echo '--with-gtpin=/opt/gtpin/Profilers' >> img-config
   # Pull dependencies from the base image
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
-  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGS=(--reproducible)
+  - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-level0=/usr' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
@@ -412,11 +376,13 @@ autoreconf check:
   script:
   - touch img-config
   # Run the test suite for the configuration of interest. Use some Python to help.
+  - rm -rf logs/
   - >-
-    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a test
+    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -c "$JOB_CC"
+    ${REGEN:+-a install-testdata} -a test
     img-config "ci/dependencies/$CENV;/spack/cenv/$CENV"
     --spack-no-install --ccache-stats --test-junit-copyout
-    --reproducible ${REPROD_CMDS:- --reproduction-cmd 'touch img-config'}
+    "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}"
     -1 -s "$SPEC"
 
   artifacts:
@@ -428,6 +394,11 @@ autoreconf check:
 .check min:
   variables:
     CENV: minimum
+.check semifresh:
+  stage: extended test
+  needs: null  # Use implict stage dependencies
+  variables:
+    REGEN: 1
 
 .check job amd64:
   extends: .check job
@@ -437,6 +408,10 @@ autoreconf check:
   - job: autoreconf
     artifacts: false
   - 'deps: [amd64]'
+.check semifresh amd64:
+  extends: .check semifresh
+  dependencies:
+  - 'deps: [amd64]'
 .check job arm64:
   extends: .check job
   variables:
@@ -444,6 +419,10 @@ autoreconf check:
   needs:
   - job: autoreconf
     artifacts: false
+  - 'deps: [arm64]'
+.check semifresh arm64:
+  extends: .check semifresh
+  dependencies:
   - 'deps: [arm64]'
 
 # NB: We use --repeat in the check jobs to detect bugs that cause sporadic test failures.
@@ -471,6 +450,8 @@ autoreconf check:
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
 'check min amd64: [cpu]':
   extends: ['check amd64: [cpu]', .check min]
+'check semifresh amd64: [cpu]':
+  extends: ['check amd64: [cpu]', .check semifresh amd64]
 'check arm64: [cpu]':
   extends: .check job arm64
   tags: [docker, linux/$ARCH]
@@ -483,6 +464,8 @@ autoreconf check:
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10"
 'check min arm64: [cpu]':
   extends: ['check arm64: [cpu]', .check min]
+'check semifresh arm64: [cpu]':
+  extends: ['check arm64: [cpu]', .check semifresh arm64]
 
 'check amd64: [+cuda]':
   extends: .check job amd64
@@ -501,11 +484,14 @@ autoreconf check:
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
-  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGS=(--reproducible)
+  - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 'check min amd64: [+cuda]':
   extends: ['check amd64: [+cuda]', .check min]
+'check semifresh amd64: [+cuda]':
+  extends: ['check amd64: [+cuda]', .check semifresh amd64]
 
 'check amd64: [+rocm]':
   extends: .check job amd64
@@ -524,11 +510,14 @@ autoreconf check:
   - echo '--with-rocm=/opt/rocm' > img-config
   # Pull dependencies from the base image
   - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
-  - REPROD_ARGS=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
+  - REPROD_ARGS=(--reproducible)
+  - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-rocm=/opt/rocm' > img-config")
   - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 'check min amd64: [+rocm]':
   extends: ['check amd64: [+rocm]', .check min]
+'check semifresh amd64: [+rocm]':
+  extends: ['check amd64: [+rocm]', .check semifresh amd64]
 
 
 # Perform linting tasks that can only be done when the whole build is complete
@@ -542,9 +531,17 @@ lint:
   - 'buildmany: [amd64, +rocm]'
   - 'buildmany: [amd64, +level0]'
   - 'check amd64: [cpu]'
+  - 'check min amd64: [cpu]'
+  - 'check semifresh amd64: [cpu]'
   - 'check arm64: [cpu]'
+  - 'check min arm64: [cpu]'
+  - 'check semifresh arm64: [cpu]'
   - 'check amd64: [+cuda]'
+  - 'check min amd64: [+cuda]'
+  - 'check semifresh amd64: [+cuda]'
   - 'check amd64: [+rocm]'
+  - 'check min amd64: [+rocm]'
+  - 'check semifresh amd64: [+rocm]'
   when: always
 
   script:
@@ -561,12 +558,18 @@ lint:
 # big orange exclaimation point) but not blocked by upstream Spack.
 'spack install: [amd64]':
   stage: lint
-  extends: .spack
   tags: [docker, linux/amd64]
   image: $DEPS_IMAGES-ubuntu20.04-amd64
   needs: ['deps: [amd64]']
   allow_failure: true
+  cache:
+    key: spack-upstream
+    when: always
+    paths: [.spack.git]
   script:
+  # Instantiate Spack from upstream develop
+  - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
+  - ci/dependencies/spack-init.sh https://github.com/spack/spack develop
   # Spack out a representative HPCToolkit. All dependencies should already be built.
   # TODO: Expand this list a bit sometime to better represent what we want to ensure works
   - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"

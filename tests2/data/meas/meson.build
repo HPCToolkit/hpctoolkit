@@ -25,7 +25,7 @@ _measurements = {
   # in the different metrics. Tuned to contain <300 samples total.
   # CPUTIME is currently disabled due to https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/646
   # 'loops-cputime-t': [_run, '--', '@OUTPUT@', '-e', 'CPUTIME', '-t', _exe_loops],
-  'loops-perf-t': [_run, '--', '@OUTPUT@', '-e', 'cycles@f30', '-e', 'instructions@120000000', '-t', _exe_loops],
+  'loops-perf-t': [_run, '--', '@OUTPUT@', '-e', 'cycles@f100', '-e', 'instructions@120000000', '-t', _exe_loops],
   'loops-cuda-nvidia-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', '-t', _exe_loops_cuda],
   'loops-cuda-nvidiapc-t': [_cuda_pc, _run, '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', '-t', _exe_loops_cuda],
   'loops-hip-amd-t': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', '-t', _exe_loops_hip],

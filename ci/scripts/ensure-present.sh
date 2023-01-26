@@ -49,6 +49,35 @@ for prog in "$@"; do
     fi
     ;;
 
+  # GTPin is not installable from packages, we fetch the tarball instead and unpack it to /opt/gtpin
+  gtpin:*)
+    case "${prog##gtpin:}" in
+    3.0)
+      gtpin_file='gtpin-3.0.tar.xz'
+      gtpin_url='https://downloadmirror.intel.com/730598/external-release-gtpin-3.0-linux.tar.xz'
+      gtpin_sha='8a8a238ab9937d85e4cc5a5c15a79cad0e4aa306b57e5d72dad3e09230a4cdab'  # pragma: allowlist secret
+      ;;
+    *)
+      echo "No URL/hash entry for GTPin ${prog##gtpin:}"
+      exit 2
+      ;;
+    esac
+    echo -e "\e[0Ksection_start:$(date +%s):gtpin[collapsed=true]\r\e[0KInstalling GTPin from $gtpin_url"
+    mkdir -pv .pkg-cache/gtpin/
+    if ! [ -e ".pkg-cache/gtpin/$gtpin_file" ] \
+       || ! { echo "$gtpin_sha  .pkg-cache/gtpin/$gtpin_file" | sha256sum --check --strict --status; }; then
+      curl -Lo ".pkg-cache/gtpin/$gtpin_file" "$gtpin_url"
+    fi
+    if ! { echo "$gtpin_sha  .pkg-cache/gtpin/$gtpin_file" | sha256sum --check --strict --status; }; then
+      echo "Downloaded file has wrong SHA256!"
+      echo "  expected: $gtpin_sha"
+      echo "  got: $(sha256sum ".pkg-cache/gtpin/$gtpin_file" | cut -d' ' -f1)"
+    fi
+    mkdir /opt/gtpin
+    tar -C /opt/gtpin -xaf ".pkg-cache/gtpin/$gtpin_file"
+    echo -e "\e[0Ksection_end:$(date +%s):gtpin\r\e[0K"
+    ;;
+
   # Specific packages can be requested via verb:*
   verb:*)
     missing_sys+=(["$prog"]=1)
@@ -96,9 +125,9 @@ ubuntu:20.04)
   if [ "${#apt_packages[@]}" -gt 0 ]; then
     echo -e "\e[0Ksection_start:$(date +%s):apt_install[collapsed=true]\r\e[0Kapt-get install ${!apt_packages[*]}"
     rm -f /etc/apt/apt.conf.d/docker-clean
-    mkdir -pv .apt-cache/
+    mkdir -pv .pkg-cache/apt/
     apt-get update -yq
-    DEBIAN_FRONTEND=noninteractive apt-get -o Dir::Cache::Archives=".apt-cache/" install -y "${!apt_packages[@]}"
+    DEBIAN_FRONTEND=noninteractive apt-get -o Dir::Cache::Archives=".pkg-cache/apt/" install -y "${!apt_packages[@]}"
     echo -e "\e[0Ksection_end:$(date +%s):apt_install\r\e[0K"
   fi
   ;;
@@ -190,9 +219,9 @@ for package in "${!missing_py[@]}"; do
 done
 if [ "${#pip_packages[@]}" -gt 0 ]; then
   echo -e "\e[0Ksection_start:$(date +%s):pip_install[collapsed=true]\r\e[0Kpip install ${!pip_packages[*]}"
-  mkdir -pv .pip-cache/
+  mkdir -pv .pkg-cache/pip/
   python3 -m ensurepip --upgrade
-  python3 -m pip --cache-dir .pip-cache/ install --upgrade pip
-  python3 -m pip --cache-dir .pip-cache/ install "${!pip_packages[@]}"
+  python3 -m pip --cache-dir .pkg-cache/pip/ install --upgrade pip
+  python3 -m pip --cache-dir .pkg-cache/pip/ install "${!pip_packages[@]}"
   echo -e "\e[0Ksection_end:$(date +%s):pip_install\r\e[0K"
 fi

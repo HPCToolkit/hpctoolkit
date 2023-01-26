@@ -36,6 +36,9 @@ def _stdlogfiles(
 class Configure(Action):
     """Configure a build directory based on a Configuration."""
 
+    def __init__(self):
+        self._compiler: tuple[str, str] | None = None
+
     def name(self) -> str:
         return "./configure"
 
@@ -376,6 +379,9 @@ class Test(MakeAction):
     def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
 
+    def weak_dependencies(self) -> tuple[Action, ...]:
+        return (InstallTestData(),)
+
     def fixup_meson(self, res, tests2bdir: Path, testxml: Path) -> bytes | ActionResult:
         testjson = tests2bdir / "meson-logs" / "testlog.json"
         if not testjson.exists():
@@ -567,7 +573,7 @@ class InstallTestData(MakeAction):
     """Generate data for later tests, and install it to the source directory."""
 
     def name(self) -> str:
-        return "make gen-testdata"
+        return "make install-testdata"
 
     def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
