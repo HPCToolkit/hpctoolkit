@@ -38,6 +38,9 @@ include:
 
 
 variables:
+  # Most jobs don't needs submodules, those that do will override this.
+  GIT_SUBMODULE_STRATEGY: none
+
   # Add a transfer progress bar for artifacts
   TRANSFER_METER_FREQUENCY: 2s
 
@@ -149,6 +152,7 @@ regen testdata:
     - local: tests2/data/.gitlab-ci.yml
   variables:
     PARENT_PIPELINE_ID: $CI_PIPELINE_ID
+    GIT_SUBMODULE_STRATEGY: recursive
 
 
 # Build jobs require a working Spack and compilers and a few other bits. This job handles that setup.
@@ -333,6 +337,8 @@ regen testdata:
 
   variables:
     CENV: latest
+    # Some of the test data is stored in a submodule
+    GIT_SUBMODULE_STRATEGY: recursive
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1

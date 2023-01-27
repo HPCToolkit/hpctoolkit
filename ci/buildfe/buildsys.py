@@ -639,3 +639,13 @@ class FreshTestDataNvidia(FreshTestData):
 @FreshTestData.register
 class FreshTestDataAMD(FreshTestData):
     suite: T.ClassVar[str] = "amd"
+
+
+@FreshTestData.register
+class FreshTestDataSWCuda(FreshTestData):
+    suite: T.ClassVar[str] = "sw-cuda"
+
+
+@FreshTestData.register
+class FreshTestDataX8664(FreshTestData):
+    suite: T.ClassVar[str] = "x86-64"
