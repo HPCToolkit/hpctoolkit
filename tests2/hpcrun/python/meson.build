@@ -1,8 +1,3 @@
-# FIXME: ARM support for Python is still buggy. See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/698.
-if host_machine.cpu_family() == 'aarch64'
-  subdir_done()
-endif
-
 test('simple-1thread.py', python3, args: [files('simple-1thread.py')])
 test('hpcrun simple-1thread.py', python3, args: [files('run-simple.py'), files('simple-1thread.py')],
   env: hpctoolkit_pyenv, suite: ['hpcrun', 'python'])
