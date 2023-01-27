@@ -77,9 +77,7 @@
 static int
 hpcrun_term_handler(int sig, siginfo_t* siginfo, void* context)
 {
-   void* pc = hpcrun_context_pc(context);
-   EEMSG("hpcrun_term_handler: aborting execution on SIGTERM,"
-	 " context pc = %p\n", pc);
+   EEMSG("hpcrun_term_handler: aborting execution on SIGTERM");
    monitor_real_abort();
    return 0;
 }

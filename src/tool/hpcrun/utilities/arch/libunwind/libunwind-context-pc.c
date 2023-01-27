@@ -49,20 +49,10 @@
 #include <sys/types.h>
 #include <libunwind.h>
 
-// Returns: the PC/IP from a libunwind context struct.
-//
 void *
-hpcrun_context_pc(void *context)
+hpcrun_context_pc_async(void *context)
 {
-  unw_context_t *ctx = (unw_context_t *) context;
-  unw_cursor_t cursor;
-  unw_word_t pc = 0;
-
-  if (ctx == NULL
-      || unw_init_local(&cursor, ctx) != 0
-      || unw_get_reg(&cursor, UNW_REG_IP, &pc) != 0) {
-    pc = 0;
-  }
-
-  return (void *) pc;
+  // We would need to start up libunwind to do this, and that can't be
+  // async-signal-safe since libunwind needs to malloc internal data.
+  return NULL;
 }

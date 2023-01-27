@@ -225,9 +225,7 @@ hpcrun_sample_callpath(void* context, int metricId,
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
     if (epoch != NULL) {
-      void* pc = hpcrun_context_pc(context);
-
-      TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
+      TMSG(SAMPLE_CALLPATH, "%s taking profile sample", __func__);
       TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
 
       /* check to see if shared library loadmap (of current epoch) has changed out from under us */

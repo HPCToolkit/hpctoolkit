@@ -67,7 +67,7 @@
 
 
 void *
-hpcrun_context_pc(void *context)
+hpcrun_context_pc_async(void *context)
 {
   ucontext_t* ctxt = (ucontext_t*)context;
   return ucontext_pc(ctxt);

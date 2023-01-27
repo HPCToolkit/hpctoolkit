@@ -893,7 +893,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
-  if (! hpcrun_safe_enter_async(pc)) {
+  if (! hpcrun_safe_enter_async(context)) {
     hpcrun_stats_num_samples_blocked_async_inc();
     hpcrun_restore_sigmask(&oldset);
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();

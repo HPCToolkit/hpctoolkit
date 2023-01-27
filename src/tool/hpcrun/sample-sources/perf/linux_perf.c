@@ -1061,9 +1061,7 @@ perf_event_handler(
   // and return and avoid the potential for deadlock.
   // ----------------------------------------------------------------------------
 
-  void *pc = hpcrun_context_pc(context);
-
-  if (! hpcrun_safe_enter_async(pc)) {
+  if (! hpcrun_safe_enter_async(context)) {
     hpcrun_stats_num_samples_blocked_async_inc();
 
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
