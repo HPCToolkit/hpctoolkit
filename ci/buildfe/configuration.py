@@ -1,13 +1,16 @@
+import atexit
 import collections
 import collections.abc
 import contextlib
 import dataclasses
+import functools
 import itertools
 import os
 import platform
 import re
 import shlex
 import shutil
+import tempfile
 import textwrap
 import typing as T
 from pathlib import Path
@@ -32,19 +35,55 @@ class ImpossibleSpecError(Exception):
         self.a, self.b = a, b
 
 
-def _multiwhich(*cmds: str) -> T.Optional[str]:
-    for cmd in cmds:
-        res = shutil.which(cmd)
-        if res:
-            return res
-    return None
-
-
 class DependencyConfiguration:
     """State needed to derive configure-time arguments, based on simple configuration files"""
 
-    def __init__(self):
-        self.configs = []
+    def __init__(self, cc: str | None = None):
+        self.configs: list[tuple[Path | None, str]] = []
+        self._compiler: tuple[str, str] | None = None
+        self._compiler_wrappers: tuple[Path, Path] | None = None
+        if cc is not None:
+            if not cc or cc[0] == "-":
+                raise ValueError(cc)
+
+            cc = cc.split("=")[0]  # Anything after an = is considered a comment
+            mat = re.fullmatch("([^-]+)(-?.*)", cc)
+            assert mat
+            match mat.group(1):  # noqa: E999
+                case "gcc":
+                    self._compiler = "gcc" + mat.group(2), "g++" + mat.group(2)
+                case "clang":
+                    self._compiler = "clang" + mat.group(2), "clang++" + mat.group(2)
+                case _:
+                    raise ValueError(cc)
+
+    @functools.cached_property
+    def raw_compilers(self) -> tuple[str, str]:
+        if self._compiler is not None:
+            return self._compiler
+        if not shutil.which("cc") or not shutil.which("c++"):
+            raise RuntimeError("Unable to guess system compilers, cc/c++ not present!")
+        return "cc", "c++"
+
+    @functools.cached_property
+    def custom_compilers(self) -> tuple[str, str] | None:
+        ccache = shutil.which("ccache")
+        if self._compiler is not None or ccache:
+            raw_cc, raw_cxx = self.raw_compilers
+            if ccache:
+                ccdir = Path(tempfile.mkdtemp(".ccwrap"))
+                atexit.register(shutil.rmtree, ccdir, ignore_errors=True)
+                (cc := ccdir / raw_cc).symlink_to(ccache)
+                (cxx := ccdir / raw_cxx).symlink_to(ccache)
+                return str(cc), str(cxx)
+            return raw_cc, raw_cxx
+        return None
+
+    @functools.cached_property
+    def compilers(self) -> tuple[str, str]:
+        if self.custom_compilers is not None:
+            return self.custom_compilers
+        return self.raw_compilers
 
     def load(self, fn: Path, ctx: T.Optional[Path] = None):
         with open(fn, encoding="utf-8") as f:
@@ -63,8 +102,8 @@ class DependencyConfiguration:
                 result = []
                 for word in shlex.split(line):
                     envvars = {
-                        "CC": os.environ.get("CC", _multiwhich("gcc", "icc", "cc")),
-                        "CXX": os.environ.get("CXX", _multiwhich("g++", "icpc", "CC", "c++")),
+                        "CC": self.compilers[0],
+                        "CXX": self.compilers[1],
                     }
                     if ctx is not None:
                         envvars["CTX"] = ctx.absolute().as_posix()
@@ -464,7 +503,7 @@ class Specification:
             cmat = re.fullmatch(r"([+~])([><=])(\d+)", c)
             if not cmat:
                 raise ValueError(f"Invalid conditional expression: {c!r}")
-            match cmat.group(1):  # noqa: E999
+            match cmat.group(1):
                 case "+":
                     n, op = int(cmat.group(3)), cmat.group(2)
                 case "~":
@@ -644,6 +683,11 @@ class Configuration:
                 self.args.append(arg)
             else:
                 self.env[m.group(1)] = m.group(2)
+
+        if depcfg.custom_compilers:
+            cc, cxx = depcfg.custom_compilers
+            self.args.append(f"CC={cc}")
+            self.args.append(f"CXX={cxx}")
 
     @staticmethod
     def _collect_fragments(

@@ -148,6 +148,12 @@ class Action(abc.ABC):
     def dependencies(self) -> tuple["Action", ...]:
         """List of other Actions that need to run before this one."""
 
+    def weak_dependencies(self) -> tuple["Action", ...]:
+        """List of other Actions that, if present, need to run before this one.
+        Does not run dependencies unless they were requested already.
+        """
+        return ()
+
     @abc.abstractmethod
     def run(
         self,
@@ -178,6 +184,9 @@ def action_sequence(actions: Iterable[Action]) -> list[Action]:
 
     for a in actions:
         expand(a)
+
+    for a in graph:
+        graph[a] += tuple(w for w in a.weak_dependencies() if w in graph)
 
     # Run a topo sort on the graph and return the result
     return list(graphlib.TopologicalSorter(graph).static_order())

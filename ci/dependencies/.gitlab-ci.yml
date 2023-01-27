@@ -18,7 +18,6 @@
 # Generate a pipeline for each combination of OS and arch.
 'deps:generate: [amd64]':
   stage: deps:generate
-  extends: .spack
   image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
   tags: [docker, linux/$ARCH]
   needs: []
@@ -45,7 +44,16 @@
     - IMAGE: fedora36
       CI_SPACK_CC: gcc@12
 
+  cache:
+  - key: spack
+    when: always
+    paths: [.spack.git]
+
   script:
+  # Instantiate Spack
+  - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
+  - ci/dependencies/spack-init.sh
+  # Determine the generic target to use in Spack-speak
   - |
     case "$ARCH" in
     amd64) CI_SPACK_ARCH=x86_64_v3; ;;
@@ -164,7 +172,6 @@ deps:build arm64:
 # Package up images containing the Spack-built dependencies
 'deps:package: [amd64]':
   stage: deps:package
-  extends: .spack
   tags: [docker, linux/amd64]
   image: quay.io/buildah/stable
   rules: *rebuild_images
@@ -175,7 +182,9 @@ deps:build arm64:
     ARCH: amd64
   parallel: *parallel_amd64
   cache:
-  - !reference [.spack, cache]
+  - key: spack
+    when: always
+    paths: [.spack.git]
   - key: spack-bincache-$IMAGE:$ARCH
     when: always
     paths:
@@ -186,11 +195,12 @@ deps:build arm64:
     - .spack-bincache-nonprotected/
   before_script:
   - yum install -y git python3 diffutils
-  - !reference [.spack, before_script]
+  - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
+  - ci/dependencies/spack-init.sh
   script:
   # Configure this Spack instance with the buildcache mirrors.
   # This is temporary and won't persist into the final images
-  - PATH=$(realpath .spack/bin):$PATH ci/dependencies/spack-bc-downstream.sh
+  - ci/dependencies/spack-bc-downstream.sh
   - |
     cat > .spack-bincache-config.yml <<EOF
     config:
