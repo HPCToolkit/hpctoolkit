@@ -1,6 +1,6 @@
 testdata_meas = {}
 
-_run = [python3, files('run')]
+_run = find_program(files('run'))
 _exe_small = executable('testmeas-small', files('small.c'),
     override_options: ['debug=true', 'optimization=0'])
 _exe_loops = executable('testmeas-loops', files('loops.c'),
@@ -13,7 +13,7 @@ _exe_loops_hip = custom_target(output: 'testmeas-loops-hip', input: files('loops
 
 _cuda_pc = [cuda_filter, '--capability=>6.0', '--random=1']
 
-_extract = [python3, files('extract-ms'), '@INPUT@', '@OUTPUT@']
+_extract = [find_program(files('extract-ms')), '@INPUT@', '@OUTPUT@']
 
 _measurements = {
   # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand

@@ -1,7 +1,7 @@
 _testdata_dbase = {}
 
-_prof = [python3, files('prof')]
-_pickle = [python3, files('pickle-db'), '@INPUT@', '@OUTPUT@']
+_prof = find_program(files('prof'))
+_pickle = [find_program(files('pickle-db')), '@INPUT@', '@OUTPUT@']
 
 _databases = {
   'small': {'yaml': true},
