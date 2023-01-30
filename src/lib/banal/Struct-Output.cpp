@@ -233,7 +233,7 @@ printStructFileBegin(ostream * os, ostream * gaps, string filenm)
       << "<!DOCTYPE HPCToolkitStructure [\n"
       << hpcstruct_xml_head
       << "]>\n"
-      << "<HPCToolkitStructure i=\"0\" version=\"4.8\" n=\"\">\n";
+      << "<HPCToolkitStructure i=\"0\" version=\"4.9\" n=\"\">\n";
 
   if (gaps != NULL) {
     *gaps << "This file describes the unclaimed vma ranges (gaps) in the control\n"
@@ -264,7 +264,7 @@ printStructFileEnd(ostream * os, ostream * gaps)
 
 // Begin <LM> load module tag.
 void
-printLoadModuleBegin(ostream * os, string lmName)
+printLoadModuleBegin(ostream * os, string lmName, bool has_calls)
 {
   if (os == NULL) {
     return;
@@ -275,7 +275,7 @@ printLoadModuleBegin(ostream * os, string lmName)
   *os << "<LM"
       << INDEX
       << STRING("n", lmName)
-      << " v=\"{}\">\n";
+      << " has-calls=\"" << (has_calls ? "1" : "0") << "\" v=\"{}\">\n";
 }
 
 // Closing </LM> tag.

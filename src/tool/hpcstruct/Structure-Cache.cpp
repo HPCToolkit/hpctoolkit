@@ -366,7 +366,7 @@ check_cache_file (char *path)
     return false;
   }
 
-  // Pass 2: the file must have the a "4.8" version number
+  // Pass 2: the file must have the a "4.9" version number
   try {
     XMLPScanToken token;
     std::unique_ptr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
@@ -380,7 +380,7 @@ check_cache_file (char *path)
       if(!parser->parseNext(token)) return false;
     }
 
-    if(handler.version != "4.8") return false;
+    if(handler.version != "4.9") return false;
   } catch(std::exception&) {
     return false;
   } catch(SAXException&) {

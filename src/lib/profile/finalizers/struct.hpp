@@ -58,6 +58,7 @@
 namespace hpctoolkit::finalizers {
 
 namespace detail {
+struct LMData;
 class StructFileParser;
 }
 
@@ -92,6 +93,9 @@ private:
     std::map<util::interval<uint64_t>, std::pair<
         std::reference_wrapper<const trienode>,
         std::reference_wrapper<const Function>>> leaves;
+
+    // Whether this Module has (valid) call graph data
+    bool has_cfg = false;
     // Reversed call graph (callee Function -> caller instruction and top Function)
     std::unordered_multimap<util::reference_index<const Function>,
         std::pair<uint64_t, std::reference_wrapper<const Function>>> rcg;
@@ -106,7 +110,9 @@ private:
   // each binary path with the properly initialized Parser for that tag.
   std::mutex lms_lock;
   std::unordered_map<stdshim::filesystem::path,
-      std::unique_ptr<finalizers::detail::StructFileParser>, stdshim::hash_path> lms;
+      std::pair<std::unique_ptr<finalizers::detail::LMData>,
+          std::unique_ptr<finalizers::detail::StructFileParser>>,
+      stdshim::hash_path> lms;
 };
 
 }
