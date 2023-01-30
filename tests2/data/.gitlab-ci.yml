@@ -95,7 +95,7 @@ stages:
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
 
 'regen testdata: [+rocm]':
   extends: .regen job
@@ -114,7 +114,7 @@ stages:
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
 
 
 regen testdata:

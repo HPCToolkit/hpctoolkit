@@ -11,7 +11,7 @@ cuda_filter = executable('testutil-cuda-filter', files('filter.cu'),
 #
 # Running `meson test --setup=thread-disruptive` runs all tests under this wrapper. Note that doing
 # this slows down the tests and as such test timeouts are automatically increased.
-thread_disruptive = [python3, files('thread-disruptive.py')]
+thread_disruptive = [python3, files('thread-disruptive')]
 add_test_setup('threaddisruptive',
-    exe_wrapper: [python3, meson.current_source_dir()/'thread-disruptive.py'],
+    exe_wrapper: [python3, meson.current_source_dir()/'thread-disruptive'],
     timeout_multiplier: 100)

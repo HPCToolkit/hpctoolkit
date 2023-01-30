@@ -102,7 +102,9 @@ repos:
   hooks:
  # Run static checks on the Python code
   - id: mypy
-    args: [--show-column-numbers, --pretty]
+    # NB: The MyPy cache needs to be disabled (--no-incremental) to dodge
+    # https://github.com/python/mypy/issues/12664 which affects ruamel.yaml
+    args: [--scripts-are-modules, --no-incremental, --show-column-numbers, --pretty]
     additional_dependencies:
     - pytest
     - ruamel.yaml

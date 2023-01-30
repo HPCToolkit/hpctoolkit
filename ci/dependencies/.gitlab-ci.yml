@@ -135,7 +135,7 @@
   - ci/scripts/ensure-present.sh py:ruamel.yaml
   script:
   - >-
-    python3 ci/dependencies/mlp.py ci.yml
+    ci/dependencies/mlp ci.yml
     spack-ci-artifacts/{almalinux8,fedora36,opensuse_leap15,ubuntu20.04}/amd64/{minimum,latest}/ci.yml
   artifacts:
     paths:
@@ -146,7 +146,7 @@
   - 'deps:generate: [arm64]'
   script:
   - >-
-    python3 ci/dependencies/mlp.py ci.yml
+    ci/dependencies/mlp ci.yml
     spack-ci-artifacts/ubuntu20.04/arm64/{minimum,latest}/ci.yml
 
 # Launch the MLP and get this done.
