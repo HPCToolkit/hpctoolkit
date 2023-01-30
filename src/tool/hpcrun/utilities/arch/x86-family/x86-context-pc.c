@@ -72,7 +72,7 @@
 //****************************************************************************
 
 void*
-hpcrun_context_pc(void* context)
+hpcrun_context_pc_async(void* context)
 {
   mcontext_t *mc = GET_MCONTEXT(context);
   return MCONTEXT_PC(mc);

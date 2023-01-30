@@ -103,7 +103,7 @@
 #include <hpcrun/main.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trampoline/common/trampoline.h>
-
+#include <hpcrun/utilities/arch/context-pc.h>
 
 // Use hpcrun_safe_enter() at entry into our code in a synchronous
 // override.  If unsafe (false), then call the real function and
@@ -136,20 +136,26 @@ hpcrun_safe_enter(void)
 // interrupt.  If unsafe (false), then restart the next interrupt and
 // return.
 //
-// Use the program counter address (pc) to test if the interrupt came
+// Passed the signal context (context) to test if the interrupt came
 // from inside the trampoline assembler code.
 //
 // Returns: true if safe, ie, not already inside our code.
 //
 static inline int
-hpcrun_safe_enter_async(void *pc)
+hpcrun_safe_enter_async(void *context)
 {
   thread_data_t *td;
   int prev;
 
-  if (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc)
-      || ! hpcrun_td_avail()) {
+  if (! hpcrun_td_avail()) {
     return 0;
+  }
+
+  if (context != NULL) {
+    void *pc = hpcrun_context_pc_async(context);
+    if (pc != NULL && (hpcrun_trampoline_interior(pc) || hpcrun_trampoline_at_entry(pc))) {
+      return 0;
+    }
   }
 
   td = hpcrun_get_thread_data();

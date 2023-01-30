@@ -12,7 +12,7 @@
 //****************************************************************************
 
 void*
-hpcrun_context_pc(void* context)
+hpcrun_context_pc_async(void* context)
 {
   return ucontext_pc(context);
 }

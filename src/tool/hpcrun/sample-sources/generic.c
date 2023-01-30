@@ -489,8 +489,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
-  void* pc = hpcrun_context_pc(context);
-  if (! hpcrun_safe_enter_async(pc)) {
+  if (! hpcrun_safe_enter_async(context)) {
     hpcrun_stats_num_samples_blocked_async_inc();
   }
   else {

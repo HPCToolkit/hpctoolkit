@@ -55,7 +55,9 @@
 
 #include <utilities/arch/mcontext.h>
 
-void* hpcrun_context_pc(void* context);
+/// Fetch the current address (PC) out of the arch-specific context structure,
+/// if can be done async-signal-safely. Otherwise returns a constant NULL.
+void* hpcrun_context_pc_async(void* context);
 
 
 #endif // CONTEXT_PC
