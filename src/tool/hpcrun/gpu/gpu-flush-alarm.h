@@ -76,7 +76,7 @@
 #define GPU_FLUSH_ALARM_SET(msg)		\
   gpu_flush_alarm_set(msg)
 #define GPU_FLUSH_ALARM_CLEAR()			\
-  gpu_flush_alarm_init()
+  gpu_flush_alarm_clear()
 #define GPU_FLUSH_ALARM_FIRED()			\
   setjmp(gpu_flush_alarm_jump_buf)
 

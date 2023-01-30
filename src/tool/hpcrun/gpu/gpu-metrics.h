@@ -44,8 +44,6 @@
 #ifndef gpu_metric_h
 #define gpu_metric_h
 
-
-
 //*****************************************************************************
 // local includes
 //*****************************************************************************
@@ -54,49 +52,59 @@
 
 #include "gpu-activity.h"
 
-
-
 //*****************************************************************************
-// macros
+// types
 //*****************************************************************************
-
 
 typedef enum {
-  GPU_INST_STALL_ANY                   = 0
+  GPU_INST_STALL_ANY = 0
 } gpu_inst_stall_all_t;
 
-
 typedef enum {
-  GPU_GMEM_LD_CACHED_BYTES             = 0,
-  GPU_GMEM_LD_UNCACHED_BYTES           = 1,
-  GPU_GMEM_ST_BYTES                    = 2,
-  GPU_GMEM_LD_CACHED_L2TRANS           = 3,
-  GPU_GMEM_LD_UNCACHED_L2TRANS         = 4,
-  GPU_GMEM_ST_L2TRANS                  = 5,
-  GPU_GMEM_LD_CACHED_L2TRANS_THEOR     = 6,
-  GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR   = 7,
-  GPU_GMEM_ST_L2TRANS_THEOR            = 8
+  GPU_GMEM_LD_CACHED_BYTES = 0,
+  GPU_GMEM_LD_UNCACHED_BYTES = 1,
+  GPU_GMEM_ST_BYTES = 2,
+  GPU_GMEM_LD_CACHED_L2TRANS = 3,
+  GPU_GMEM_LD_UNCACHED_L2TRANS = 4,
+  GPU_GMEM_ST_L2TRANS = 5,
+  GPU_GMEM_LD_CACHED_L2TRANS_THEOR = 6,
+  GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR = 7,
+  GPU_GMEM_ST_L2TRANS_THEOR = 8
 } gpu_gmem_ops_t;
 
-
 typedef enum {
-  GPU_LMEM_LD_BYTES                    = 0,
-  GPU_LMEM_ST_BYTES                    = 1,
-  GPU_LMEM_LD_TRANS                    = 2,
-  GPU_LMEM_ST_TRANS                    = 3,
-  GPU_LMEM_LD_TRANS_THEOR              = 4,
-  GPU_LMEM_ST_TRANS_THEOR              = 5
+  GPU_LMEM_LD_BYTES = 0,
+  GPU_LMEM_ST_BYTES = 1,
+  GPU_LMEM_LD_TRANS = 2,
+  GPU_LMEM_ST_TRANS = 3,
+  GPU_LMEM_LD_TRANS_THEOR = 4,
+  GPU_LMEM_ST_TRANS_THEOR = 5
 } gpu_lmem_ops_t;
 
-
 typedef enum {
-GPU_XFER_XMIT                  				 = 0,
-GPU_XFER_XRCV                  				 = 1,
-GPU_XFER_XMIT_TP                   		 = 2,
-GPU_XFER_XRCV_TP                   		 = 3,
-GPU_XFER_XMIT_COUNT              			 = 4,
-GPU_XFER_XRCV_COUNT              			 = 5
+  GPU_XFER_XMIT = 0,
+  GPU_XFER_XRCV = 1,
+  GPU_XFER_XMIT_TP = 2,
+  GPU_XFER_XRCV_TP = 3,
+  GPU_XFER_XMIT_COUNT = 4,
+  GPU_XFER_XRCV_COUNT = 5
 } gpu_xfer_ops_t;
+
+typedef struct block_metrics_t {
+  uint64_t execution_count;
+  uint64_t latency;
+  uint64_t active_simd_lanes;
+} block_metrics_t;
+
+typedef struct instruction_metrics_t {
+  uint64_t execution_count;
+  uint64_t latency;
+  uint64_t total_simd_lanes;
+  uint64_t active_simd_lanes;
+  uint64_t wasted_simd_lanes;
+  uint64_t scalar_simd_loss;
+} instruction_metrics_t;
+
 
 
 //--------------------------------------------------------------------------
@@ -104,373 +112,364 @@ GPU_XFER_XRCV_COUNT              			 = 5
 //--------------------------------------------------------------------------
 
 // gpu memory allocation/deallocation
-#define FORALL_GMEM(macro)					\
-  macro("GMEM:UNK (B)",           GPU_MEM_UNKNOWN,		\
-	"GPU memory alloc/free: unknown memory kind (bytes)")	\
-  macro("GMEM:PAG (B)",           GPU_MEM_PAGEABLE,		\
-	"GPU memory alloc/free: pageable memory (bytes)")	\
-  macro("GMEM:PIN (B)",           GPU_MEM_PINNED,		\
-	"GPU memory alloc/free: pinned memory (bytes)")		\
-  macro("GMEM:DEV (B)",           GPU_MEM_DEVICE,		\
-	"GPU memory alloc/free: device memory (bytes)")		\
-  macro("GMEM:ARY (B)",           GPU_MEM_ARRAY,		\
-	"GPU memory alloc/free: array memory (bytes)")		\
-  macro("GMEM:MAN (B)",           GPU_MEM_MANAGED,		\
-	"GPU memory alloc/free: managed memory (bytes)")	\
-  macro("GMEM:DST (B)",           GPU_MEM_DEVICE_STATIC,	\
-	"GPU memory alloc/free: device static memory (bytes)")	\
-  macro("GMEM:MST (B)",           GPU_MEM_MANAGED_STATIC,	\
-	"GPU memory alloc/free: managed static memory (bytes)") \
-  macro("GMEM:COUNT",             GPU_MEM_COUNT, \
-        "GPU memory alloc/free: count")
-
+#define FORALL_GMEM(macro)						\
+  macro("GMEM:UNK (B)", GPU_MEM_UNKNOWN,				\
+        "GPU memory alloc/free: unknown memory kind (bytes)")		\
+  macro("GMEM:PAG (B)", GPU_MEM_PAGEABLE,				\
+	"GPU memory alloc/free: pageable memory (bytes)")		\
+  macro("GMEM:PIN (B)", GPU_MEM_PINNED,					\
+	"GPU memory alloc/free: pinned memory (bytes)")			\
+  macro("GMEM:DEV (B)", GPU_MEM_DEVICE,					\
+	"GPU memory alloc/free: device memory (bytes)")			\
+  macro("GMEM:ARY (B)", GPU_MEM_ARRAY,					\
+	"GPU memory alloc/free: array memory (bytes)")			\
+  macro("GMEM:MAN (B)", GPU_MEM_MANAGED,                                \
+	"GPU memory alloc/free: managed memory (bytes)")                \
+  macro("GMEM:DST (B)", GPU_MEM_DEVICE_STATIC,				\
+	"GPU memory alloc/free: device static memory (bytes)")		\
+  macro("GMEM:MST (B)", GPU_MEM_MANAGED_STATIC,				\
+	"GPU memory alloc/free: managed static memory (bytes)")		\
+  macro("GMEM:COUNT", GPU_MEM_COUNT,					\
+	"GPU memory alloc/free: count")
 
 // gpu memory set
-#define FORALL_GMSET(macro)					\
-  macro("GMSET:UNK (B)",          GPU_MEM_UNKNOWN,		\
-	"GPU memory set: unknown memory kind (bytes)")		\
-  macro("GMSET:PAG (B)",          GPU_MEM_PAGEABLE,		\
-	"GPU memory set: pageable memory (bytes)")		\
-  macro("GMSET:PIN (B)",          GPU_MEM_PINNED,		\
-	"GPU memory set: pinned memory (bytes)")		\
-  macro("GMSET:DEV (B)",          GPU_MEM_DEVICE,		\
-	"GPU memory set: device memory (bytes)")		\
-  macro("GMSET:ARY (B)",          GPU_MEM_ARRAY,		\
-	"GPU memory set: array memory (bytes)")			\
-  macro("GMSET:MAN (B)",          GPU_MEM_MANAGED,		\
-	"GPU memory set: managed memory (bytes)")		\
-  macro("GMSET:DST (B)",          GPU_MEM_DEVICE_STATIC,	\
-	"GPU memory set: device static memory (bytes)")		\
-  macro("GMSET:MST (B)",          GPU_MEM_MANAGED_STATIC,	\
-	"GPU memory set: managed static memory (bytes)") \
-  macro("GMSET:COUNT",            GPU_MEM_COUNT, \
-        "GPU memory set: count")
-
+#define FORALL_GMSET(macro)						\
+  macro("GMSET:UNK (B)", GPU_MEM_UNKNOWN,				\
+        "GPU memory set: unknown memory kind (bytes)")			\
+  macro("GMSET:PAG (B)", GPU_MEM_PAGEABLE,				\
+	"GPU memory set: pageable memory (bytes)")			\
+  macro("GMSET:PIN (B)", GPU_MEM_PINNED,				\
+	"GPU memory set: pinned memory (bytes)")			\
+  macro("GMSET:DEV (B)", GPU_MEM_DEVICE,				\
+	"GPU memory set: device memory (bytes)")			\
+  macro("GMSET:ARY (B)", GPU_MEM_ARRAY,					\
+	"GPU memory set: array memory (bytes)")				\
+  macro("GMSET:MAN (B)", GPU_MEM_MANAGED,				\
+	"GPU memory set: managed memory (bytes)")			\
+  macro("GMSET:DST (B)", GPU_MEM_DEVICE_STATIC,				\
+	"GPU memory set: device static memory (bytes)")			\
+  macro("GMSET:MST (B)", GPU_MEM_MANAGED_STATIC,			\
+	"GPU memory set: managed static memory (bytes)")		\
+  macro("GMSET:COUNT", GPU_MEM_COUNT,					\
+	"GPU memory set: count")
 
 #define FORALL_GPU_INST_STALL(macro)					\
-  macro(GPU_INST_METRIC_NAME ":STL_ANY",     GPU_INST_STALL_ANY,	\
-	"GPU instruction stalls: any")					\
-  macro(GPU_INST_METRIC_NAME ":STL_NONE",    GPU_INST_STALL_NONE,	\
+  macro(GPU_INST_METRIC_NAME ":STL_ANY", GPU_INST_STALL_ANY,		\
+        "GPU instruction stalls: any")					\
+  macro(GPU_INST_METRIC_NAME ":STL_NONE", GPU_INST_STALL_NONE,		\
 	"GPU instruction stalls: no stall")				\
-  macro(GPU_INST_METRIC_NAME ":STL_IFET",    GPU_INST_STALL_IFETCH,	\
+  macro(GPU_INST_METRIC_NAME ":STL_IFET", GPU_INST_STALL_IFETCH,	\
 	"GPU instruction stalls: await availability of next "		\
 	"instruction (fetch or branch delay)")				\
-  macro(GPU_INST_METRIC_NAME ":STL_IDEP",    GPU_INST_STALL_IDEPEND,	\
+  macro(GPU_INST_METRIC_NAME ":STL_IDEP", GPU_INST_STALL_IDEPEND,	\
 	"GPU instruction stalls: await satisfaction of instruction "	\
 	"input dependence")						\
-  macro(GPU_INST_METRIC_NAME ":STL_GMEM",    GPU_INST_STALL_GMEM,	\
+  macro(GPU_INST_METRIC_NAME ":STL_GMEM", GPU_INST_STALL_GMEM,		\
 	"GPU instruction stalls: await completion of global memory "	\
 	"access")							\
-  macro(GPU_INST_METRIC_NAME ":STL_TMEM",    GPU_INST_STALL_TMEM,	\
+  macro(GPU_INST_METRIC_NAME ":STL_TMEM", GPU_INST_STALL_TMEM,		\
 	"GPU instruction stalls: texture memory request queue full")	\
-  macro(GPU_INST_METRIC_NAME ":STL_SYNC",    GPU_INST_STALL_SYNC,	\
+  macro(GPU_INST_METRIC_NAME ":STL_SYNC", GPU_INST_STALL_SYNC,		\
 	"GPU instruction stalls: await completion of thread or "	\
 	"memory synchronization")					\
-  macro(GPU_INST_METRIC_NAME ":STL_CMEM",    GPU_INST_STALL_CMEM,	\
+  macro(GPU_INST_METRIC_NAME ":STL_CMEM", GPU_INST_STALL_CMEM,		\
 	"GPU instruction stalls: await completion of constant or "	\
 	"immediate memory access")					\
-  macro(GPU_INST_METRIC_NAME ":STL_PIPE",    GPU_INST_STALL_PIPE_BUSY,	\
-	"GPU instruction stalls: await completion of required "	\
-	"compute resources")					\
-  macro(GPU_INST_METRIC_NAME ":STL_MTHR",    GPU_INST_STALL_MEM_THROTTLE, \
+  macro(GPU_INST_METRIC_NAME ":STL_PIPE", GPU_INST_STALL_PIPE_BUSY,	\
+	"GPU instruction stalls: await completion of required "		\
+	"compute resources")						\
+  macro(GPU_INST_METRIC_NAME ":STL_MTHR", GPU_INST_STALL_MEM_THROTTLE,	\
 	"GPU instruction stalls: global memory request queue full")	\
-  macro(GPU_INST_METRIC_NAME ":STL_NSEL",    GPU_INST_STALL_NOT_SELECTED, \
+  macro(GPU_INST_METRIC_NAME ":STL_NSEL", GPU_INST_STALL_NOT_SELECTED,	\
 	"GPU instruction stalls: not selected for issue but ready")	\
-  macro(GPU_INST_METRIC_NAME ":STL_OTHR",    GPU_INST_STALL_OTHER,	\
+  macro(GPU_INST_METRIC_NAME ":STL_OTHR", GPU_INST_STALL_OTHER,		\
 	"GPU instruction stalls: other")				\
-  macro(GPU_INST_METRIC_NAME ":STL_SLP",     GPU_INST_STALL_SLEEP,	\
+  macro(GPU_INST_METRIC_NAME ":STL_SLP", GPU_INST_STALL_SLEEP,		\
 	"GPU instruction stalls: sleep")
 
-
 // gpu explicit copy
-#define FORALL_GXCOPY(macro)					\
-  macro("GXCOPY:UNK (B)",         GPU_MEMCPY_UNK,		\
-	"GPU explicit memory copy: unknown kind (bytes)")	\
-  macro("GXCOPY:H2D (B)",         GPU_MEMCPY_H2D,		\
-	"GPU explicit memory copy: host to device (bytes)")	\
-  macro("GXCOPY:D2H (B)",         GPU_MEMCPY_D2H,		\
-	"GPU explicit memory copy: device to host (bytes)")	\
-  macro("GXCOPY:H2A (B)",         GPU_MEMCPY_H2A,		\
-	"GPU explicit memory copy: host to array (bytes)")	\
-  macro("GXCOPY:A2H (B)",         GPU_MEMCPY_A2H,		\
-	"GPU explicit memory copy: array to host (bytes)")	\
-  macro("GXCOPY:A2A (B)",         GPU_MEMCPY_A2A,		\
-	"GPU explicit memory copy: array to array (bytes)")	\
-  macro("GXCOPY:A2D (B)",         GPU_MEMCPY_A2D,		\
-	"GPU explicit memory copy: array to device (bytes)")	\
-  macro("GXCOPY:D2A (B)",         GPU_MEMCPY_D2A,		\
-	"GPU explicit memory copy: device to array (bytes)")	\
-  macro("GXCOPY:D2D (B)",         GPU_MEMCPY_D2D,		\
-	"GPU explicit memory copy: device to device (bytes)")	\
-  macro("GXCOPY:H2H (B)",         GPU_MEMCPY_H2H,		\
-	"GPU explicit memory copy: host to host (bytes)")	\
-  macro("GXCOPY:P2P (B)",         GPU_MEMCPY_P2P,		\
-	"GPU explicit memory copy: peer to peer (bytes)") \
-  macro("GXCOPY:COUNT",           GPU_MEMCPY_COUNT, \
-        "GPU explicit memory copy: count")
+#define FORALL_GXCOPY(macro)						\
+  macro("GXCOPY:UNK (B)", GPU_MEMCPY_UNK,				\
+        "GPU explicit memory copy: unknown kind (bytes)")		\
+  macro("GXCOPY:H2D (B)", GPU_MEMCPY_H2D,				\
+	"GPU explicit memory copy: host to device (bytes)")		\
+  macro("GXCOPY:D2H (B)", GPU_MEMCPY_D2H,				\
+	"GPU explicit memory copy: device to host (bytes)")		\
+  macro("GXCOPY:H2A (B)", GPU_MEMCPY_H2A,				\
+	"GPU explicit memory copy: host to array (bytes)")		\
+  macro("GXCOPY:A2H (B)", GPU_MEMCPY_A2H,				\
+	"GPU explicit memory copy: array to host (bytes)")		\
+  macro("GXCOPY:A2A (B)", GPU_MEMCPY_A2A,				\
+	"GPU explicit memory copy: array to array (bytes)")		\
+  macro("GXCOPY:A2D (B)", GPU_MEMCPY_A2D,				\
+	"GPU explicit memory copy: array to device (bytes)")		\
+  macro("GXCOPY:D2A (B)", GPU_MEMCPY_D2A,				\
+	"GPU explicit memory copy: device to array (bytes)")		\
+  macro("GXCOPY:D2D (B)", GPU_MEMCPY_D2D,				\
+	"GPU explicit memory copy: device to device (bytes)")		\
+  macro("GXCOPY:H2H (B)", GPU_MEMCPY_H2H,				\
+	"GPU explicit memory copy: host to host (bytes)")		\
+  macro("GXCOPY:P2P (B)", GPU_MEMCPY_P2P,				\
+	"GPU explicit memory copy: peer to peer (bytes)")		\
+  macro("GXCOPY:COUNT", GPU_MEMCPY_COUNT,				\
+	"GPU explicit memory copy: count")
 
-
-#define FORALL_GSYNC(macro)					\
-  macro("GSYNC:UNK (sec)",         GPU_SYNC_UNKNOWN,		\
-	"GPU synchronizations: unknown kind")			\
-  macro("GSYNC:EVT (sec)",         GPU_SYNC_EVENT,		\
+#define FORALL_GSYNC(macro)                                     \
+  macro("GSYNC:UNK (sec)", GPU_SYNC_UNKNOWN,                    \
+        "GPU synchronizations: unknown kind")                   \
+  macro("GSYNC:EVT (sec)", GPU_SYNC_EVENT,			\
 	"GPU synchronizations: event")				\
-  macro("GSYNC:STRE (sec)",        GPU_SYNC_STREAM_EVENT_WAIT,	\
+  macro("GSYNC:STRE (sec)", GPU_SYNC_STREAM_EVENT_WAIT,		\
 	"GPU synchronizations: stream event wait")		\
-  macro("GSYNC:STR (sec)",         GPU_SYNC_STREAM,		\
+  macro("GSYNC:STR (sec)", GPU_SYNC_STREAM,			\
 	"GPU synchronizations: stream")				\
-  macro("GSYNC:CTX (sec)",         GPU_SYNC_CONTEXT,		\
-	"GPU synchronizations: context")     \
-  macro("GSYNC:COUNT",           GPU_SYNC_COUNT, \
-        "GPU synchronizations: count")
+  macro("GSYNC:CTX (sec)", GPU_SYNC_CONTEXT,			\
+	"GPU synchronizations: context")			\
+  macro("GSYNC:COUNT", GPU_SYNC_COUNT,				\
+	"GPU synchronizations: count")
 
 // gpu global memory access
 #define FORALL_GGMEM(macro)						\
-  macro("GGMEM:LDC (B)",          GPU_GMEM_LD_CACHED_BYTES,		\
-	"GPU global memory: load cacheable memory (bytes)")		\
-  macro("GGMEM:LDU (B)",          GPU_GMEM_LD_UNCACHED_BYTES,		\
+  macro("GGMEM:LDC (B)", GPU_GMEM_LD_CACHED_BYTES,			\
+        "GPU global memory: load cacheable memory (bytes)")		\
+  macro("GGMEM:LDU (B)", GPU_GMEM_LD_UNCACHED_BYTES,			\
 	"GPU global memory: load uncacheable memory (bytes)")		\
-  macro("GGMEM:ST (B)",           GPU_GMEM_ST_BYTES,			\
+  macro("GGMEM:ST (B)", GPU_GMEM_ST_BYTES,				\
 	"GPU global memory: store (bytes)")				\
   									\
-  macro("GGMEM:LDC (L2T)",        GPU_GMEM_LD_CACHED_L2TRANS,		\
+  macro("GGMEM:LDC (L2T)", GPU_GMEM_LD_CACHED_L2TRANS,			\
 	"GPU global memory: load cacheable (L2 cache transactions)")	\
-  macro("GGMEM:LDU (L2T)",        GPU_GMEM_LD_UNCACHED_L2TRANS,		\
+  macro("GGMEM:LDU (L2T)", GPU_GMEM_LD_UNCACHED_L2TRANS,		\
 	"GPU global memory: load uncacheable (L2 cache transactions)")	\
-  macro("GGMEM:ST (L2T)",         GPU_GMEM_ST_L2TRANS,			\
-	"GPU global memory: store (L2 cache transactions)")		\
-  				  					\
-  macro("GGMEM:LDCT (L2T)",       GPU_GMEM_LD_CACHED_L2TRANS_THEOR,	\
+  macro("GGMEM:ST (L2T)", GPU_GMEM_ST_L2TRANS,                          \
+	"GPU global memory: store (L2 cache transactions)")             \
+  									\
+  macro("GGMEM:LDCT (L2T)", GPU_GMEM_LD_CACHED_L2TRANS_THEOR,		\
 	"GPU global memory: load cacheable "				\
 	"(L2 cache transactions, theoretical)")				\
-  macro("GGMEM:LDUT (L2T)",       GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR,	\
+  macro("GGMEM:LDUT (L2T)", GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR,		\
 	"GPU global memory: load uncacheable "				\
 	"(L2 cache transactions, theoretical)")				\
-  macro("GGMEM:STT (L2T)",        GPU_GMEM_ST_L2TRANS_THEOR,		\
+  macro("GGMEM:STT (L2T)", GPU_GMEM_ST_L2TRANS_THEOR,			\
 	"GPU global memory: store "					\
 	"(L2 cache transactions, theoretical)")
 
-
 // gpu local memory access
-#define FORALL_GLMEM(macro)					\
-  macro("GLMEM:LD (B)",           GPU_LMEM_LD_BYTES,		\
-	"GPU local memory: load (bytes)")			\
-  macro("GLMEM:ST (B)",           GPU_LMEM_ST_BYTES,		\
-	"GPU local memory: store (bytes)")			\
-								\
-  macro("GLMEM:LD (T)",           GPU_LMEM_LD_TRANS,		\
-	"GPU local memory: load (transactions)")		\
-  macro("GLMEM:ST (T)",           GPU_LMEM_ST_TRANS,		\
-	"GPU local memory: store (transactions)")		\
-								\
-  macro("GLMEM:LDT (T)",          GPU_LMEM_LD_TRANS_THEOR,	\
-	"GPU local memory: load (transactions, theoretical)")	\
-  macro("GLMEM:STT (T)",          GPU_LMEM_ST_TRANS_THEOR,	\
+#define FORALL_GLMEM(macro)						\
+  macro("GLMEM:LD (B)", GPU_LMEM_LD_BYTES,				\
+        "GPU local memory: load (bytes)")				\
+  macro("GLMEM:ST (B)", GPU_LMEM_ST_BYTES,				\
+	"GPU local memory: store (bytes)")				\
+  									\
+  macro("GLMEM:LD (T)", GPU_LMEM_LD_TRANS,				\
+	"GPU local memory: load (transactions)")			\
+  macro("GLMEM:ST (T)", GPU_LMEM_ST_TRANS,				\
+	"GPU local memory: store (transactions)")			\
+  									\
+  macro("GLMEM:LDT (T)", GPU_LMEM_LD_TRANS_THEOR,			\
+	"GPU local memory: load (transactions, theoretical)")		\
+  macro("GLMEM:STT (T)", GPU_LMEM_ST_TRANS_THEOR,			\
 	"GPU local memory: store (transactions, theoretical)")
 
 //--------------------------------------------------------------------------
 // scalar metrics
 //--------------------------------------------------------------------------
 
-
 // gpu activity times
-#define FORALL_GTIMES(macro)					\
-  macro("GPUOP (sec)",              GPU_TIME_OP,		\
-	"GPU time: all operations (seconds)")  \
-  macro("GKER (sec)",               GPU_TIME_KER,			\
-	"GPU time: kernel execution (seconds)")			\
-  macro("GMEM (sec)",               GPU_TIME_MEM,			\
-	"GPU time: memory allocation/deallocation (seconds)")	\
-  macro("GMSET (sec)",              GPU_TIME_MSET,		\
-	"GPU time: memory set (seconds)")			\
-  macro("GXCOPY (sec)",             GPU_TIME_XCOPY,		\
-	"GPU time: explicit data copy (seconds)")		\
-  macro("GICOPY (sec)",             GPU_TIME_ICOPY,		\
-	"GPU time: implicit data copy (seconds)")		\
-  macro("GSYNC (sec)",              GPU_TIME_SYNC,		\
+#define FORALL_GTIMES(macro)                                          \
+  macro("GPUOP (sec)", GPU_TIME_OP,                                   \
+	"GPU time: all operations (seconds)")			      \
+  macro("GKER (sec)", GPU_TIME_KER,				      \
+	"GPU time: kernel execution (seconds)")			      \
+  macro("GMEM (sec)", GPU_TIME_MEM,				      \
+	"GPU time: memory allocation/deallocation (seconds)")	      \
+  macro("GMSET (sec)", GPU_TIME_MSET,				      \
+	"GPU time: memory set (seconds)")			      \
+  macro("GXCOPY (sec)", GPU_TIME_XCOPY,				      \
+	"GPU time: explicit data copy (seconds)")		      \
+  macro("GICOPY (sec)", GPU_TIME_ICOPY,				      \
+	"GPU time: implicit data copy (seconds)")			\
+  macro("GSYNC (sec)", GPU_TIME_SYNC,					\
 	"GPU time: synchronization (seconds)")
 
 // gpu instruction count
-#define FORALL_GPU_INST(macro)						\
-  macro(GPU_INST_METRIC_NAME, GPU_INST_ALL,				\
-	"GPU instructions executed")					\
-  macro(GPU_INST_METRIC_NAME ": SIMD_TOT", GPU_INST_TOT_SIMD_LANES,	\
-	"GPU total SIMD lanes")   \
-  macro(GPU_INST_METRIC_NAME ": SIMD_ACT", GPU_INST_ACT_SIMD_LANES,	\
-	"GPU active SIMD lanes")  \
-  macro(GPU_INST_METRIC_NAME ": SIMD_WST", GPU_INST_WASTE_SIMD_LANES,	\
-	"GPU wasted SIMD lanes")  \
-  macro(GPU_INST_METRIC_NAME ": SIMD_SLS", GPU_INST_SCALAR_SIMD_LOSS,	\
-	"GPU SIMD lanes lost due to scalar instructions")   \
-  macro(GPU_INST_METRIC_NAME ": LAT_CYC", GPU_INST_LATENCY,	\
-	"GPU instruction latency (cycles)")  \
-  macro(GPU_INST_METRIC_NAME ": LAT_COV", GPU_INST_COVERED_LATENCY,	\
-	"GPU covered latency (cycles)")  \
-  macro(GPU_INST_METRIC_NAME ": LAT_UCV", GPU_INST_UNCOVERED_LATENCY,	\
-	"GPU uncovered latency (cycles)")   \
-  macro(GPU_INST_METRIC_NAME ": LAT_THR", GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY,	\
-	"GPU threads needed to cover latency (1 + UCV/COV)")
-
+#define FORALL_GPU_INST(macro)                                                                                                        \
+  macro(GPU_INST_METRIC_NAME ":BLK_EXEC_CNT", GPU_BLOCK_EXECUTION_COUNT, \
+        "GPU kernel block execution count")				\
+  macro(GPU_INST_METRIC_NAME ":BLK_LAT", GPU_BLOCK_LATENCY,		\
+	"GPU kernel block latency")					\
+  macro(GPU_INST_METRIC_NAME ":BLK_SIMD_ACT", GPU_BLOCK_ACTIVE_SIMD_LANES, \
+	"GPU kernel block active SIMD lanes")				\
+  macro(GPU_INST_METRIC_NAME, GPU_INSTRUCTION_EXECUTION_COUNT,		\
+	"GPU block instruction execution count")			\
+  macro(GPU_INST_METRIC_NAME ":LAT", GPU_INSTRUCTION_LATENCY,		\
+	"GPU block instruction latency")				\
+  macro(GPU_INST_METRIC_NAME ":LAT_COV", GPU_INSTRUCTION_COVERED_LATENCY, \
+	"GPU block instruction covered latency")			\
+  macro(GPU_INST_METRIC_NAME ":LAT_UCV", GPU_INSTRUCTION_UNCOVERED_LATENCY, \
+	"GPU block instruction uncovered latency")			\
+  macro(GPU_INST_METRIC_NAME ":LAT_THR", GPU_INSTRUCTION_THREADS_TO_COVER_LATENCY, \
+	"GPU threads needed to cover latency (1 + UCV/COV)")		\
+  macro(GPU_INST_METRIC_NAME ":SIMD_TOT", GPU_INSTRUCTION_TOTAL_SIMD_LANES, \
+	"GPU block instruction total SIMD lanes")			\
+  macro(GPU_INST_METRIC_NAME ":SIMD_ACT", GPU_INSTRUCTION_ACTIVE_SIMD_LANES, \
+	"GPU block instruction active SIMD lanes")			\
+  macro(GPU_INST_METRIC_NAME ":SIMD_WST", GPU_INSTRUCTION_WASTED_SIMD_LANES, \
+	"GPU block instruction wasted SIMD lanes")			\
+  macro(GPU_INST_METRIC_NAME ":SIMD_SLS", GPU_INSTRUCTION_SCALAR_SIMD_LOSS, \
+	"GPU block instruction SIMD lanes lost due to scalar instructions")
 
 // gpu kernel characteristics
-#define FORALL_KINFO(macro)						\
-  macro("GKER:STMEM_ACUMU (B)",         GPU_KINFO_STMEM_ACUMU,		\
-	"GPU kernel: static memory accumulator [internal use only]")	\
-  macro("GKER:DYMEM_ACUMU (B)",         GPU_KINFO_DYMEM_ACUMU,	        \
-	"GPU kernel: dynamic memory accumulator [internal use only]") 	\
-  macro("GKER:LMEM_ACUMU (B)",          GPU_KINFO_LMEM_ACUMU,		\
-	"GPU kernel: local memory accumulator [internal use only]") 	\
-  macro("GKER:FGP_ACT_ACUMU",           GPU_KINFO_FGP_ACT_ACUMU,	\
+#define FORALL_KINFO(macro)                                                                                                  \
+  macro("GKER:STMEM_ACUMU (B)", GPU_KINFO_STMEM_ACUMU,			\
+        "GPU kernel: static memory accumulator [internal use only]")	\
+  macro("GKER:DYMEM_ACUMU (B)", GPU_KINFO_DYMEM_ACUMU,			\
+	"GPU kernel: dynamic memory accumulator [internal use only]")	\
+  macro("GKER:LMEM_ACUMU (B)", GPU_KINFO_LMEM_ACUMU,			\
+	"GPU kernel: local memory accumulator [internal use only]")	\
+  macro("GKER:FGP_ACT_ACUMU", GPU_KINFO_FGP_ACT_ACUMU,			\
 	"GPU kernel: fine-grain parallelism accumulator [internal use only]") \
-  macro("GKER:FGP_MAX_ACUMU",           GPU_KINFO_FGP_MAX_ACUMU,	\
+  macro("GKER:FGP_MAX_ACUMU", GPU_KINFO_FGP_MAX_ACUMU,			\
 	"GPU kernel: fine-grain parallelism accumulator [internal use only]") \
-  macro("GKER:THR_REG_ACUMU",           GPU_KINFO_REGISTERS_ACUMU,	\
+  macro("GKER:THR_REG_ACUMU", GPU_KINFO_REGISTERS_ACUMU,		\
 	"GPU kernel: thread register count accumulator [internal use only]") \
-  macro("GKER:BLK_THR_ACUMU",           GPU_KINFO_BLK_THREADS_ACUMU,	\
+  macro("GKER:BLK_THR_ACUMU", GPU_KINFO_BLK_THREADS_ACUMU,		\
 	"GPU kernel: thread count accumulator [internal use only]")	\
-  macro("GKER:BLK_SM_ACUMU",            GPU_KINFO_BLK_SMEM_ACUMU,	\
+  macro("GKER:BLK_SM_ACUMU", GPU_KINFO_BLK_SMEM_ACUMU,			\
 	"GPU kernel: block local memory accumulator [internal use only]") \
-  macro("GKER:BLKS_ACUMU",           GPU_KINFO_BLKS_ACUMU,	\
+  macro("GKER:BLKS_ACUMU", GPU_KINFO_BLKS_ACUMU,			\
 	"GPU kernel: block count accumulator [internal use only]")	\
-  macro("GKER:STMEM (B)",         GPU_KINFO_STMEM,			\
+  macro("GKER:STMEM (B)", GPU_KINFO_STMEM,				\
 	"GPU kernel: static memory (bytes)")				\
-  macro("GKER:DYMEM (B)",         GPU_KINFO_DYMEM,			\
+  macro("GKER:DYMEM (B)", GPU_KINFO_DYMEM,				\
 	"GPU kernel: dynamic memory (bytes)")				\
-  macro("GKER:LMEM (B)",          GPU_KINFO_LMEM,			\
+  macro("GKER:LMEM (B)", GPU_KINFO_LMEM,				\
 	"GPU kernel: local memory (bytes)")				\
-  macro("GKER:FGP_ACT",           GPU_KINFO_FGP_ACT,			\
+  macro("GKER:FGP_ACT", GPU_KINFO_FGP_ACT,				\
 	"GPU kernel: fine-grain parallelism, actual")			\
-  macro("GKER:FGP_MAX",           GPU_KINFO_FGP_MAX,			\
+  macro("GKER:FGP_MAX", GPU_KINFO_FGP_MAX,				\
 	"GPU kernel: fine-grain parallelism, maximum")			\
-  macro("GKER:THR_REG",           GPU_KINFO_REGISTERS,			\
+  macro("GKER:THR_REG", GPU_KINFO_REGISTERS,				\
 	"GPU kernel: thread register count")				\
-  macro("GKER:BLK_THR",           GPU_KINFO_BLK_THREADS,		\
+  macro("GKER:BLK_THR", GPU_KINFO_BLK_THREADS,				\
 	"GPU kernel: thread count")					\
-  macro("GKER:BLK_SM (B)",            GPU_KINFO_BLK_SMEM,		\
+  macro("GKER:BLK_SM (B)", GPU_KINFO_BLK_SMEM,				\
 	"GPU kernel: block local memory (bytes)")			\
-  macro("GKER:BLKS",            GPU_KINFO_BLKS,		\
-	"GPU kernel: block count")			\
-  macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
+  macro("GKER:BLKS", GPU_KINFO_BLKS,					\
+	"GPU kernel: block count")					\
+  macro("GKER:COUNT", GPU_KINFO_COUNT,					\
 	"GPU kernel: launch count")					\
-  macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
+  macro("GKER:OCC_THR", GPU_KINFO_OCCUPANCY_THR,			\
 	"GPU kernel: theoretical occupancy (FGP_ACT / FGP_MAX)")
 
 // gpu implicit copy
-#define FORALL_GICOPY(macro)					\
-  macro("GICOPY:UNK (B)",         GPU_ICOPY_UNKNOWN,		\
-	"GPU implicit copy: unknown kind (bytes)")		\
-  macro("GICOPY:H2D (B)",         GPU_ICOPY_H2D_BYTES,		\
-	"GPU implicit copy: host to device (bytes)")		\
-  macro("GICOPY:D2H (B)",         GPU_ICOPY_D2H_BYTES,		\
-	"GPU implicit copy: device to host (bytes)")		\
-  macro("GICOPY:D2D (B)",         GPU_ICOPY_D2D_BYTES,		\
-	"GPU implicit copy: device to device (bytes)")		\
-  macro("GICOPY:CPU_PF",          GPU_ICOPY_CPU_PF,		\
-	"GPU implicit copy: CPU page faults")			\
-  macro("GICOPY:GPU_PF",          GPU_ICOPY_GPU_PF,		\
-	"GPU implicit copy: GPU page faults")			\
-  macro("GICOPY:THRASH",          GPU_ICOPY_THRASH,		\
-	"GPU implicit copy: CPU thrashing page faults "		\
-	"(data frequently migrating between processors)")	\
-  macro("GICOPY:THROT",           GPU_ICOPY_THROT,		\
-	"GPU implicit copy: throttling "			\
-	"(prevent thrashing by delaying page fault service)")	\
-  macro("GICOPY:RMAP",            GPU_ICOPY_RMAP,		\
-	"GPU implicit copy: remote maps "			\
-	"(prevent thrashing by pinning memory for a time with "	\
-	"some processor mapping and accessing it remotely)")  \
-  macro("GICOPY:COUNT",           GPU_ICOPY_COUNT,  \
-  "GPU implicit copy: count")
-
+#define FORALL_GICOPY(macro)						\
+  macro("GICOPY:UNK (B)", GPU_ICOPY_UNKNOWN,				\
+        "GPU implicit copy: unknown kind (bytes)")			\
+  macro("GICOPY:H2D (B)", GPU_ICOPY_H2D_BYTES,				\
+	"GPU implicit copy: host to device (bytes)")			\
+  macro("GICOPY:D2H (B)", GPU_ICOPY_D2H_BYTES,				\
+	"GPU implicit copy: device to host (bytes)")			\
+  macro("GICOPY:D2D (B)", GPU_ICOPY_D2D_BYTES,				\
+	"GPU implicit copy: device to device (bytes)")			\
+  macro("GICOPY:CPU_PF", GPU_ICOPY_CPU_PF,				\
+	"GPU implicit copy: CPU page faults")				\
+  macro("GICOPY:GPU_PF", GPU_ICOPY_GPU_PF,				\
+	"GPU implicit copy: GPU page faults")				\
+  macro("GICOPY:THRASH", GPU_ICOPY_THRASH,                              \
+	"GPU implicit copy: CPU thrashing page faults "                 \
+	"(data frequently migrating between processors)")               \
+  macro("GICOPY:THROT", GPU_ICOPY_THROT,				\
+	"GPU implicit copy: throttling "				\
+	"(prevent thrashing by delaying page fault service)")		\
+  macro("GICOPY:RMAP", GPU_ICOPY_RMAP,					\
+	"GPU implicit copy: remote maps "				\
+	"(prevent thrashing by pinning memory for a time with "		\
+	"some processor mapping and accessing it remotely)")		\
+  macro("GICOPY:COUNT", GPU_ICOPY_COUNT,				\
+	"GPU implicit copy: count")
 
 // gpu branch
-#define FORALL_GBR(macro)					\
-    macro("GBR:DIV",                GPU_BR_DIVERGED,		\
-	  "GPU branches: diverged")				\
-  macro("GBR:EXE",                GPU_BR_EXECUTED,		\
+#define FORALL_GBR(macro)               \
+  macro("GBR:DIV", GPU_BR_DIVERGED,     \
+        "GPU branches: diverged")       \
+  macro("GBR:EXE", GPU_BR_EXECUTED,	\
 	"GPU branches: executed")
 
-
 // gpu sampling information
-#define FORALL_GSAMP_INT(macro)					\
-  macro("GSAMP:DRP",              GPU_SAMPLE_DROPPED,		\
-	"GPU PC samples: dropped")				\
-  macro("GSAMP:EXP",              GPU_SAMPLE_EXPECTED,		\
-	"GPU PC samples: expected")				\
-  macro("GSAMP:TOT",              GPU_SAMPLE_TOTAL,		\
-	"GPU PC samples: measured")				\
-  macro("GSAMP:PER (cyc)",        GPU_SAMPLE_PERIOD,		\
+#define FORALL_GSAMP_INT(macro)				\
+  macro("GSAMP:DRP", GPU_SAMPLE_DROPPED,		\
+        "GPU PC samples: dropped")			\
+  macro("GSAMP:EXP", GPU_SAMPLE_EXPECTED,		\
+	"GPU PC samples: expected")			\
+  macro("GSAMP:TOT", GPU_SAMPLE_TOTAL,			\
+	"GPU PC samples: measured")			\
+  macro("GSAMP:PER (cyc)", GPU_SAMPLE_PERIOD,		\
 	"GPU PC samples: period (GPU cycles)")
 
-#define FORALL_GSAMP_REAL(macro)				\
-  macro("GSAMP:UTIL",             GPU_SAMPLE_UTILIZATION,	\
-    "GPU utilization computed using PC sampling")
+#define FORALL_GSAMP_REAL(macro)			\
+  macro("GSAMP:UTIL", GPU_SAMPLE_UTILIZATION,		\
+	"GPU utilization computed using PC sampling")
 
-#define FORALL_GSAMP(macro)			\
-  FORALL_GSAMP_INT(macro)			\
+#define FORALL_GSAMP(macro) \
+  FORALL_GSAMP_INT(macro)   \
   FORALL_GSAMP_REAL(macro)
 
-
 // gpu transfer information
-#define FORALL_GXFER(macro)			\
-	macro("GXFER:XMIT (B)",          			GPU_XFER_XMIT,		\
-	"GPU link total data transmitted")			\
-	macro("GXFER:XRCV (B)",          			GPU_XFER_XRCV,		\
-	"GPU link total data received")		\
-	macro("GXFER:XMIT_TP (GB)",          	GPU_XFER_XMIT_TP,		\
-	"GPU link total transmit throughput")		\
-	macro("GXFER:XRCV_TP (GB)",          	GPU_XFER_XRCV_TP,		\
-	"GPU link total received throughput")		\
-	macro("GXFER:XMIT_COUNT",             GPU_XFER_XMIT_COUNT,  			\
-	"GPU link launch count transmitted")					\
-	macro("GXFER:XRCV_COUNT",             GPU_XFER_XRCV_COUNT,  			\
+#define FORALL_GXFER(macro)                                          \
+  macro("GXFER:XMIT (B)", GPU_XFER_XMIT,                             \
+        "GPU link total data transmitted")                            \
+  macro("GXFER:XRCV (B)", GPU_XFER_XRCV,			     \
+	"GPU link total data received")				     \
+  macro("GXFER:XMIT_TP (GB)", GPU_XFER_XMIT_TP,			     \
+	"GPU link total transmit throughput")			     \
+  macro("GXFER:XRCV_TP (GB)", GPU_XFER_XRCV_TP,			     \
+	"GPU link total received throughput")			     \
+  macro("GXFER:XMIT_COUNT", GPU_XFER_XMIT_COUNT,		     \
+	"GPU link launch count transmitted")			     \
+  macro("GXFER:XRCV_COUNT", GPU_XFER_XRCV_COUNT,		     \
 	"GPU kernel: launch count received")
 
-
 // intel optimization metrics
-#define FORALL_INTEL_OPTIMIZATION(macro)					\
-    macro("INORDER_QUEUE:COUNT",                INORDER_QUEUE,		\
-	  "count of inorder GPU queues/streams (enable out-of-order execution to run kernels in parallel)")				\
-  macro("GKER_MULTIPLE_CONTEXTS:COUNT",                KERNEL_TO_MULTIPLE_CONTEXTS,		\
-	"count of kernel executions on multiple contexts (each context will JIT the kernel)")        \
-  macro("GKER_PARAMS_NOT_ALIASED:COUNT",                KERNEL_PARAMS_NOT_ALIASED,		\
-	"count of kernel invocations with non-aliased parameters (add directive for enabling code-reordering optimization)")        \
-  macro("GKER_PARAMS_ALIASED:COUNT",                KERNEL_PARAMS_ALIASED,		\
-	"count of kernel invocations with aliased parameters")        \
-  macro("SINGLE_DEVICE_USE_AOT_COMPILATION",                SINGLE_DEVICE_USE_AOT_COMPILATION,		\
-	"since a single device is being used, use AOT for saving time JITing kernels: bool")        \
-  macro("OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL",                OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL,		\
-	"kernel output is input for another kernel. Try merging kernels to avoid sending redundant data to GPU: bool")        \
-  macro("UNUSED_DEVICES:COUNT",                UNUSED_DEVICES,		\
+#define FORALL_INTEL_OPTIMIZATION(macro)                                                                                                   \
+  macro("INORDER_QUEUE:COUNT", INORDER_QUEUE,				\
+        "count of inorder GPU queues/streams (enable out-of-order execution to run kernels in parallel)") \
+  macro("GKER_MULTIPLE_CONTEXTS:COUNT", KERNEL_TO_MULTIPLE_CONTEXTS,	\
+	"count of kernel executions on multiple contexts (each context will JIT the kernel)") \
+  macro("GKER_PARAMS_NOT_ALIASED:COUNT", KERNEL_PARAMS_NOT_ALIASED,	\
+	"count of kernel invocations with non-aliased parameters (add directive for enabling code-reordering optimization)") \
+  macro("GKER_PARAMS_ALIASED:COUNT", KERNEL_PARAMS_ALIASED,		\
+	"count of kernel invocations with aliased parameters")		\
+  macro("SINGLE_DEVICE_USE_AOT_COMPILATION", SINGLE_DEVICE_USE_AOT_COMPILATION,	\
+	"since a single device is being used, use AOT for saving time JITing kernels: bool") \
+  macro("OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL", OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL, \
+	"kernel output is input for another kernel. Try merging kernels to avoid sending redundant data to GPU: bool") \
+  macro("UNUSED_DEVICES:COUNT", UNUSED_DEVICES,				\
 	"all available devices are not getting utilized. Offload computations to all devices to reduce total application execution time: count")
 
-
 // blame-shifting metrics
-#define FORALL_BLAME_SHIFT(macro)					\
-  macro("CPU_IDLE (sec)",              CPU_IDLE,		\
-	"CPU_IDLE time (seconds)")  \
-  macro("GPU_IDLE_CAUSE (sec)",               GPU_IDLE_CAUSE,			\
-	"GPU_IDLE_CAUSE time (seconds)")			\
-  macro("CPU_IDLE_CAUSE (sec)",              CPU_IDLE_CAUSE,		\
+#define FORALL_BLAME_SHIFT(macro)                       \
+  macro("CPU_IDLE (sec)", CPU_IDLE,                     \
+        "CPU_IDLE time (seconds)")                      \
+  macro("GPU_IDLE_CAUSE (sec)", GPU_IDLE_CAUSE,		\
+	"GPU_IDLE_CAUSE time (seconds)")		\
+  macro("CPU_IDLE_CAUSE (sec)", CPU_IDLE_CAUSE,		\
 	"CPU_IDLE_CAUSE time (seconds)")
 
-
 // gpu-utilization metrics
-#define FORALL_GPU_UTILIZATION(macro)					\
-  macro("EU_ACTIVE",              EU_ACT,		"")  \
-  macro("EU_STALL",              EU_STL,		"")	 \
-  macro("EU_IDLE",             EU_IDLE,		"")  \
-  macro("GPU_UTIL_DENOMINATOR",              GPU_UTIL_DENOMINATOR,		\
+#define FORALL_GPU_UTILIZATION(macro)                                                           \
+  macro("EU_ACTIVE", EU_ACT, "")					\
+  macro("EU_STALL", EU_STL, "")						\
+  macro("EU_IDLE", EU_IDLE, "")						\
+  macro("GPU_UTIL_DENOMINATOR", GPU_UTIL_DENOMINATOR,			\
 	"this is a helper metric that increments the metric value by 100 for the corresponding CCT. This can be denominator to the above three \
-  to metrics to get the \% of GPU utilization")  \
-  macro("EU_ACT (%)",              EU_ACT_PERCENT,		\
-	"The percentage of time in which the Execution Units were active")    \
-  macro("EU_STL (%)",              EU_STL_PERCENT,		\
-	"The percentage of time in which the Execution Units were stalled")    \
-  macro("EU_IDLE (%)",              EU_IDLE_PERCENT,		\
+  to metrics to get the \% of GPU utilization")                                                 \
+  macro("EU_ACT (%)", EU_ACT_PERCENT,					\
+	"The percentage of time in which the Execution Units were active") \
+  macro("EU_STL (%)", EU_STL_PERCENT,					\
+	"The percentage of time in which the Execution Units were stalled") \
+  macro("EU_IDLE (%)", EU_IDLE_PERCENT,                                 \
 	"The percentage of time in which the Execution Units were idle")
-
-
 
 //******************************************************************************
 // interface operations
@@ -480,34 +479,24 @@ GPU_XFER_XRCV_COUNT              			 = 5
 // enable default GPU metrics
 //--------------------------------------------------
 
-void
-gpu_metrics_default_enable
+void gpu_metrics_default_enable
 (
  void
 );
-
 
 //--------------------------------------------------
 // record NVIDIA kernel info
 //--------------------------------------------------
 
-void
-gpu_metrics_KINFO_enable
-(
- void
-);
-
+void gpu_metrics_KINFO_enable(
+    void);
 
 //--------------------------------------------------
 // record implicit copy metrics for unified memory
 //--------------------------------------------------
 
-void
-gpu_metrics_GICOPY_enable
-(
- void
-);
-
+void gpu_metrics_GICOPY_enable(
+    void);
 
 //----------------------------------------
 // instruction sampling metrics
@@ -520,76 +509,60 @@ gpu_metrics_GPU_INST_enable
  void
 );
 
-
 // record NVIDIA GPU instruction stall reasons
-void
-gpu_metrics_GPU_INST_STALL_enable
+void gpu_metrics_GPU_INST_STALL_enable
 (
  void
 );
-
 
 // record NVIDIA GPU instruction sampling statistics
-void
-gpu_metrics_GSAMP_enable
+void gpu_metrics_GSAMP_enable
 (
  void
 );
 
-void
-gpu_metrics_GXFER_enable
+void gpu_metrics_GXFER_enable
 (
-void
+ void
 );
 
 // record blame-shifting metrics
-void
-gpu_metrics_BLAME_SHIFT_enable
+void gpu_metrics_BLAME_SHIFT_enable
 (
  void
 );
 
-
-void
-gpu_metrics_gpu_utilization_enable
+void gpu_metrics_gpu_utilization_enable
 (
  void
 );
-
-
 
 //--------------------------------------------------
 // record global memory access statistics
 //--------------------------------------------------
 
-void
-gpu_metrics_GGMEM_enable
+void gpu_metrics_GGMEM_enable
 (
  void
 );
-
 
 //--------------------------------------------------
 // record local memory access statistics
 //--------------------------------------------------
 
-void
-gpu_metrics_GLMEM_enable
+void gpu_metrics_GLMEM_enable
 (
  void
 );
-
 
 //--------------------------------------------------
 // record branch statistics
 //--------------------------------------------------
 
-void
-gpu_metrics_GBR_enable
+void gpu_metrics_GBR_enable
 (
  void
 );
-
 
 //--------------------------------------------------
 // record GPU hardware counters
@@ -599,36 +572,43 @@ gpu_metrics_GBR_enable
 // GPU hardware counters may have a few hundred metrics.
 // So, we should only create counter metrics for the ones that are
 // requested at the command line.
-void
-gpu_metrics_GPU_CTR_enable
+void gpu_metrics_GPU_CTR_enable
 (
-  int,
-  const char**,
-  const char**
+ int,
+ const char **,
+ const char **
 );
 
 //--------------------------------------------------
 // intel optimization metrics
 //--------------------------------------------------
 
-void
-gpu_metrics_INTEL_OPTIMIZATION_enable
+void gpu_metrics_INTEL_OPTIMIZATION_enable
 (
  void
 );
-
 
 //--------------------------------------------------
 // attribute GPU measurements to an application
 // thread's calling context tree
 //--------------------------------------------------
 
-void
-gpu_metrics_attribute
+void gpu_metrics_attribute
 (
  gpu_activity_t *activity
 );
 
+block_metrics_t
+fetch_block_metrics
+(
+ cct_node_t *
+);
 
+void
+attribute_instruction_metrics
+(
+ cct_node_t *,
+ instruction_metrics_t
+);
 
 #endif

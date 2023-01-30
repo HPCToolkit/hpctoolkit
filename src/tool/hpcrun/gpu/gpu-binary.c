@@ -46,12 +46,15 @@
 //******************************************************************************
 
 #include <stdio.h>
+#include <elf.h>
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
 #include <sys/stat.h>  // mkdir
 #include <sys/types.h>
 #include <unistd.h>
 #include <linux/limits.h>  // PATH_MAX
+
+
 
 //******************************************************************************
 // local includes
@@ -64,6 +67,10 @@
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
 
+#ifdef ENABLE_IGC
+#include <igc/ocl_igc_shared/executable_format/patch_list.h>
+#endif
+
 
 
 //******************************************************************************
@@ -71,6 +78,34 @@
 //******************************************************************************
 
 static spinlock_t binary_store_lock = SPINLOCK_UNLOCKED;
+static const char elf_magic_string[] = ELFMAG;
+static const uint32_t *elf_magic = (uint32_t *) elf_magic_string;
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+bool
+gpu_binary_validate_magic
+(
+ const char *mem_ptr,
+ size_t mem_size
+)
+{
+  if (mem_size < sizeof(uint32_t)) return false;
+
+  uint32_t *magic = (uint32_t *) mem_ptr;
+
+#ifdef ENABLE_IGC
+  // Is this an Intel 'Patch Token' binary?
+  if (*magic == MAGIC_CL) return true;
+#endif
+
+  // Is this an ELF binary?
+  if (*magic == *elf_magic) return true;
+
+  return false;
+}
 
 
 
@@ -86,7 +121,7 @@ gpu_binary_store
   size_t binary_size
 )
 {
-   // Write a file if does not exist
+  // Write a file if does not exist
   bool result;
   int fd;
   errno = 0;
@@ -168,6 +203,9 @@ gpu_binary_save
  uint32_t *loadmap_module_id
 )
 {
+  // Only save binaries with a valid magic number
+  if (!gpu_binary_validate_magic(mem_ptr, mem_size)) return false;
+
   // Generate a hash for the binary
   char hash_buf[CRYPTO_HASH_STRING_LENGTH];
   crypto_compute_hash_string(mem_ptr, mem_size, hash_buf,

@@ -118,10 +118,12 @@ ElfFile::open
     return false;
   }
 
+  this->arch = ehdr->e_flags & 0xFF;
+
   bool result = true;
+
 #ifdef EM_CUDA
   if (ehdr->e_machine == EM_CUDA) {
-    this->arch = ehdr->e_flags & 0xFF;
 #ifdef DYNINST_USE_CUDA
     origPtr = (char *) malloc(memLen);
     memcpy(origPtr, memPtr, memLen);
@@ -137,6 +139,12 @@ ElfFile::open
     result = false;
     memPtr = 0;
 #endif
+  }
+#endif
+
+#ifdef EM_INTEL_GEN9
+  if (ehdr->e_machine == EM_INTEL_GEN9) {
+    intelGPU = true;
   }
 #endif
 

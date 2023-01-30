@@ -188,8 +188,8 @@ extern lushPthr_mem_ptr_t lushPthr_mem_ptr; // current pointer
 static inline void*
 lushPthr_malloc(size_t size)
 {
-  void* memEnd = (void*)atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
-  if (memEnd < lushPthr_mem_end) {
+  char *memEnd = (char*)atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
+  if (memEnd < (char *)lushPthr_mem_end) {
     return (memEnd - size);
   }
   return NULL;

@@ -501,7 +501,9 @@ do
 		    gtpin_libdir="${gtpin_lib_path}"
 		    export ZET_ENABLE_API_TRACING_EXP=1
 		    export ZET_ENABLE_PROGRAM_INSTRUMENTATION=1
+		    export ZE_ENABLE_TRACING_LAYER=1
 		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"
+		    export HPCRUN_AUDIT_FAKE_AUDITOR=1
 		    namespace_default=single_if_auditing
 		    ;;
 
@@ -834,6 +836,7 @@ export HPCRUN_AUDIT_MAIN_LIB="${hpcrun_dir}/libhpcrun.so"
 if test -n "${hpc_ld_library_path}"; then
   LD_LIBRARY_PATH="${hpc_ld_library_path}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 fi
+
 if test -z "${LD_LIBRARY_PATH}"; then unset LD_LIBRARY_PATH; fi
 
 if test -n "${preload_list}"; then

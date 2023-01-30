@@ -84,6 +84,7 @@
 
 #include <hpcrun/control-knob.h>
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/logical/common.h>
 #include <hpcrun/gpu/amd/roctracer-api.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>

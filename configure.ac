@@ -4785,7 +4785,7 @@ case "$GTPIN" in
     if test ! -f "${GTPIN}/Include/gtpin.h" ; then
       AC_MSG_ERROR([unable to find gtpin.h in: $GTPIN])
     fi
-    OPT_GTPIN_IFLAGS="-I${GTPIN}/Include -I${GTPIN}/Include/ged/intel64/"
+    OPT_GTPIN_IFLAGS="-DENABLE_GTPIN -I${GTPIN}/Include -I${GTPIN}/Include/ged/intel64/"
 
     if test -f "${GTPIN}/Lib/intel64/libgtpin.so" ; then
       OPT_GTPIN_LIBDIR="${GTPIN}/Lib/intel64"

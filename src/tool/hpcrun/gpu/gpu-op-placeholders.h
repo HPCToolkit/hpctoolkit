@@ -59,6 +59,7 @@
 //******************************************************************************
 
 #include <hpcrun/utilities/ip-normalized.h>
+#include <hpcrun/cct/cct.h>
 
 
 

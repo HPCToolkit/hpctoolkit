@@ -126,6 +126,8 @@
 // local variables
 //******************************************************************************
 
+logical_metadata_store_t level0_metadata_store;
+
 // Assume one driver and one device.
 ze_driver_handle_t hDriver = NULL;
 ze_device_handle_t hDevice = NULL;
@@ -1203,6 +1205,9 @@ level0_init
     gtpin_instrumentation = true;
     gtpin_instrumentation_options(inst_options);
 #endif
+  }
+  if (!gtpin_instrumentation) {
+    hpcrun_logical_metadata_register(&level0_metadata_store, "level0");
   }
 }
 

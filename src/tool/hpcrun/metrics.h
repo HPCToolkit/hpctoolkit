@@ -188,10 +188,11 @@ extern uint64_t hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* 
 
 extern uint64_t hpcrun_metric_sparse_count(metric_data_list_t* list);
 
-
-
 extern metric_data_list_t *hpcrun_merge_cct_metrics(metric_data_list_t *dest, metric_data_list_t *source);
 
+extern cct_metric_data_t* fetch_metric(metric_data_list_t*, int);
+
 extern void hpcrun_set_move2proc(int metric_id, bool move);
+
 
 #endif // METRICS_H

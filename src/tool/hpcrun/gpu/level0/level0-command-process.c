@@ -68,6 +68,7 @@
 #endif
 
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/logical/common.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/stdatomic.h>
@@ -204,21 +205,40 @@ get_load_module
 
   free(kernel_name);
 
+#if 0
   // Step 2: get the hash for the binary that contains the kernel
   ze_module_handle_t module_handle = level0_kernel_module_map_lookup(kernel);
   PRINT("get_load_module: kernel handle %p, module handle %p\n", kernel, module_handle);
   char* binary_hash = level0_module_handle_map_lookup(module_handle);
+#endif
 
-  // Step 3: generate <binary hash>.gpubin.<kernel name hash> as the load module name
+  // Step 3: generate <kernel name hash>.gpubin as the kernel load module name
   char load_module_name[PATH_MAX] = {'\0'};
-  gpu_binary_path_generate(binary_hash, load_module_name);
-  strcat(load_module_name, ".");
-  strcat(load_module_name, kernel_name_hash);
+  gpu_binary_path_generate(kernel_name_hash, load_module_name);
 
-  // Step 4: find or create the load module
+  // Step 4: insert the load module
   uint32_t module_id = gpu_binary_loadmap_insert(load_module_name, true /* mark_used */);
 
   return module_id;
+}
+
+static uint32_t
+get_metadata_fid
+(
+  ze_kernel_handle_t kernel
+)
+{
+  size_t name_size = 0;
+  zeKernelGetName(kernel, &name_size, NULL);
+  char* kernel_name = malloc(name_size);
+  zeKernelGetName(kernel, &name_size, kernel_name);
+
+  uint32_t result = hpcrun_logical_metadata_fid(&level0_metadata_store,
+						kernel_name, NULL, 0);
+
+  free(kernel_name);
+
+  return result;
 }
 
 //*****************************************************************************
@@ -250,17 +270,18 @@ level0_command_begin
     case LEVEL0_MEMCPY: {
       ze_memory_type_t src_type = command_node->details.memcpy.src_type;
       ze_memory_type_t dst_type = command_node->details.memcpy.dst_type;
-// TODO: Do we need to distinguish copyin and copyout placeholder?
-//       We already have host to host, host to device types to
-//       distinguish copyin and copyout
-//      if (src_type == ZE_MEMORY_TYPE_HOST && dst_type != ZE_MEMORY_TYPE_HOST) {
-//        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
-//      } else if (src_type != ZE_MEMORY_TYPE_HOST && dst_type == ZE_MEMORY_TYPE_HOST) {
-//        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
-//      } else {
-      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
-      gpu_placeholder_node = gpu_placeholder_type_copy;
-//      }
+
+      // use src and dst types to distinguish copyin and copyout
+      if (src_type == ZE_MEMORY_TYPE_DEVICE && dst_type != ZE_MEMORY_TYPE_DEVICE) {
+        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
+        gpu_placeholder_node = gpu_placeholder_type_copyout;
+      } else if (src_type != ZE_MEMORY_TYPE_DEVICE && dst_type == ZE_MEMORY_TYPE_DEVICE) {
+        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
+        gpu_placeholder_node = gpu_placeholder_type_copyin;
+      } else {
+        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
+        gpu_placeholder_node = gpu_placeholder_type_copy;
+      }
       break;
     }
     default:
@@ -277,8 +298,16 @@ level0_command_begin
 
   if (command_node->type == LEVEL0_KERNEL) {
     ip_normalized_t kernel_ip;
-    kernel_ip.lm_id = get_load_module(command_node->details.kernel.kernel);
-    kernel_ip.lm_ip = 0;
+#ifdef ENABLE_GTPIN
+    if (level0_gtpin_enabled()) {
+      kernel_ip.lm_id = get_load_module(command_node->details.kernel.kernel);
+      kernel_ip.lm_ip = 0;
+    } else
+#endif  // ENABLE_GTPIN
+    {
+      uint32_t fid = get_metadata_fid(command_node->details.kernel.kernel);
+      kernel_ip = hpcrun_logical_metadata_ipnorm(&level0_metadata_store, fid, 0);
+    }
 
     cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
     command_node->kernel =

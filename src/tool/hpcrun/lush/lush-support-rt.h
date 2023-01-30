@@ -98,7 +98,6 @@
 // LUSH step
 // ---------------------------------------------------------
 
-typedef enum lush_step lush_step_t;
 
 enum lush_step {
   LUSH_STEP_NULL = 0,
@@ -109,6 +108,7 @@ enum lush_step {
   LUSH_STEP_ERROR      // error during the step
 };
 
+typedef enum lush_step lush_step_t;
 
 // ---------------------------------------------------------
 // LUSH LIP: An opaque logical id
@@ -118,7 +118,7 @@ enum lush_step {
 static inline lush_lip_t*
 lush_lip_clone(lush_lip_t* x)
 {
-  lush_lip_t* x_clone = hpcrun_malloc(sizeof(lush_lip_t));
+  lush_lip_t* x_clone = (lush_lip_t*) hpcrun_malloc(sizeof(lush_lip_t));
   memcpy(x_clone, x, sizeof(lush_lip_t));
   return x_clone;
 }
@@ -139,7 +139,6 @@ struct lush_lcursor {
 // LUSH cursor
 // ---------------------------------------------------------
 
-typedef enum lush_cursor_flags lush_cursor_flags_t;
 
 enum lush_cursor_flags {
   LUSH_CURSOR_FLAGS_NONE = 0x00000000,
@@ -159,6 +158,7 @@ enum lush_cursor_flags {
   LUSH_CURSOR_FLAGS_END_LCHORD = 0x00000040  // cursor @ end of l-chord
 };
 
+typedef enum lush_cursor_flags lush_cursor_flags_t;
 
 typedef struct lush_cursor lush_cursor_t;
 

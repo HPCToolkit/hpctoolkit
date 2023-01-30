@@ -71,7 +71,7 @@
 #define INST_LATENCY  "latency"
 #define INST_SIMD     "simd"
 
-#define ENABLE_SIMD_ANALYSIS 0
+#define ENABLE_SIMD_ANALYSIS 1
 
 
 
