@@ -156,12 +156,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(CUDA,"nevents = %d", nevents);
 
 
-#ifndef HPCRUN_STATIC_LINK
-  if (hip_bind()) {
-    EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
-    monitor_real_exit(-1);
-  }
-#endif
 }
 
 static void
@@ -170,6 +164,13 @@ METHOD_FN(finalize_event_list)
 #ifndef HPCRUN_STATIC_LINK
   if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+#endif
+
+#ifndef HPCRUN_STATIC_LINK
+  if (hip_bind()) {
+    EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
     monitor_real_exit(-1);
   }
 #endif
