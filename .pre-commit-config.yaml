@@ -19,7 +19,7 @@ repos:
     exclude: '^src/tool/hpcrun/sample-sources/make-wrappers.py$'
 
 - repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: 'v0.0.221'
+  rev: 'v0.0.237'
   hooks:
   # Run a number of Python linters in Rust. Not completely feature-parity with Python-based linters,
   # but can autofix a number of issues before they run. Also wicked fast.
@@ -43,7 +43,7 @@ repos:
     args: ['--line-length=100', '--target-version=py310']
 
 - repo: https://github.com/PyCQA/isort
-  rev: 5.11.4
+  rev: 5.12.0
   hooks:
   # Sort imports in all the Python code
   - id: isort
@@ -110,7 +110,7 @@ repos:
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
-  rev: v2.16.0b0
+  rev: v2.16.0b1
   hooks:
   # Run the aggressive static Python linter
   - id: pylint
@@ -134,7 +134,7 @@ repos:
     args: ['--shell=sh', '--exclude=SC2154']
 
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: '0.20.0'
+  rev: '0.21.0'
   hooks:
   # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
   - id: check-gitlab-ci

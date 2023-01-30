@@ -21,7 +21,7 @@ if not sys.executable:
 
 args.script = args.script.resolve(strict=True)
 with hpcrun(
-    "-a", "python", "-e", "REALTIME", [sys.executable, str(args.script)] + args.script_args
+    "-a", "python", "-e", "REALTIME", [sys.executable, str(args.script), *args.script_args]
 ) as meas:
     meas.check_standard(procs=1, threads_per_proc=args.threads_per_proc)
 

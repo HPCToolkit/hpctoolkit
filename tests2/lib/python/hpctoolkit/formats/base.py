@@ -117,7 +117,7 @@ class StructureBase:
 
 
 def canonical_paths(obj: StructureBase) -> dict[StructureBase, tuple[str | int, ...]]:
-    """Starting from the given Database* object, identify all objects within that object-graph and
+    """Identify all objects within the object-graph starting from the given Database*, and
     return a mapping from these objects to the attribute/index path required to access them.
     """
     result: dict[StructureBase, tuple[str | int, ...]] = {}

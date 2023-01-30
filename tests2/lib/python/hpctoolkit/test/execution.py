@@ -22,7 +22,7 @@ def _subproc_run(arg0, cmd, *args, wrapper: collections.abc.Iterable[str] = (), 
 def _identify_mpiexec(ranks: int):
     if "HPCTOOLKIT_DEV_MPIEXEC" not in os.environ:
         raise RuntimeError("mpiexec not available, cannot continue! Run under meson devenv!")
-    mpiexec = os.environ["HPCTOOLKIT_DEV_MPIEXEC"].split(";") + [f"{ranks:d}"]
+    mpiexec = [*os.environ["HPCTOOLKIT_DEV_MPIEXEC"].split(";"), f"{ranks:d}"]
 
     def attempt(args: collections.abc.Iterable[str]) -> collections.abc.Iterable[str] | None:
         proc = subprocess.run(
@@ -43,7 +43,7 @@ def _identify_mpiexec(ranks: int):
 
     # Count the number of ranks that come out and ensure we get the number we expect
     proc = subprocess.run(
-        mpiexec + ["echo", "!!RANK!!"],
+        [*mpiexec, "echo", "!!RANK!!"],
         check=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
@@ -204,7 +204,7 @@ def hpcprof(
         ddir.rmdir()
         proc = _subproc_run(
             "hpcprof",
-            [hpcprof] + list(args) + [f"-j{threads:d}", "-o", ddir, meas],
+            [hpcprof, *list(args)] + [f"-j{threads:d}", "-o", ddir, meas],
             timeout=timeout,
             env=env,
         )
@@ -248,7 +248,7 @@ def hpcprof_mpi(
         ddir.rmdir()
         proc = _subproc_run(
             "hpcprof-mpi",
-            [hpcprof_mpi] + list(args) + [f"-j{threads:d}", "-o", ddir, meas],
+            [hpcprof_mpi, *list(args)] + [f"-j{threads:d}", "-o", ddir, meas],
             timeout=timeout,
             env=env,
             wrapper=mpiexec,
@@ -276,7 +276,7 @@ def hpcstruct(
 
     env_stack = [{"HPCTOOLKIT_HPCSTRUCT_CACHE": ""}, os.environ]
     if env is not None:
-        env_stack = [env] + env_stack
+        env_stack = [env, *env_stack]
     env = collections.ChainMap(*env_stack)
 
     if isinstance(binary_or_meas, Measurements):
@@ -285,7 +285,7 @@ def hpcstruct(
         meas = binary_or_meas.basedir
         proc = _subproc_run(
             "hpcstruct",
-            [hpcstruct] + list(args) + [f"-j{threads:d}", meas],
+            [hpcstruct, *list(args)] + [f"-j{threads:d}", meas],
             timeout=timeout,
             env=env,
         )
@@ -310,7 +310,7 @@ def hpcstruct(
         with out as sfile:
             proc = _subproc_run(
                 "hpcstruct",
-                [hpcstruct] + list(args) + [f"-j{threads:d}", "-o", sfile.name, binary],
+                [hpcstruct, *list(args)] + [f"-j{threads:d}", "-o", sfile.name, binary],
                 timeout=timeout,
                 env=env,
             )
