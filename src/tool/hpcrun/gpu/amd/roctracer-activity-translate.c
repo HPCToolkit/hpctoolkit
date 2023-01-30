@@ -48,6 +48,9 @@
 #define TRACK_SYNCHRONIZATION 0
 #define DEBUG 0
 
+// version number from ROCm 5.3.3 release using hipRuntimeGetVersion
+#define ROCM_533_RELEASE_VERSION 50322062
+
 
 //******************************************************************************
 // ROCm includes
@@ -65,7 +68,7 @@
 
 #include "roctracer-activity-translate.h"
 #include "rocm-binary-processing.h"
-
+#include "hip/hip_runtime_api.h"
 
 
 //******************************************************************************
@@ -85,13 +88,35 @@ lookup_kernel_pc
       ((ROCM_VERSION_MINOR < 3) ||					\
        ((ROCM_VERSION_MINOR == 3) && (ROCM_VERSION_PATCH < 3)))))
 #warning "roctracer activity records in ROCm version < 5.3.3 don't support mapping costs to named kernels"
-  return ip_normalized_NULL;
 #else
-  // Until given better mechanisms by AMD, look up the kernel PC by
-  // device id and kernel name.
-  return rocm_binary_function_lookup(activity->device_id,
-				     activity->kernel_name);
+  // If we are executing this code, hpctoolkit was compiled with ROCm
+  // 5.3.3 or later.
+
+  // For ROCm versions >= 5.3.3, AMD recommends obtaining the kernel
+  // name from roctracer's activity API rather than the subscriber
+  // callback. A tool may receive a subscriber callback for a kernel
+  // launch before the tool is notified about loading the binary
+  // containing the kernel. That is why we are executing this code to
+  // associate the kernel back to the binary.
+
+  int version;
+  if (hip_version(&version) == 0) {
+    // A roctracer_record_t only has a kernel_name field for ROCm
+    // version 5.3.3 or higher. However, we may be monitoring a code
+    // compiled with an older version of ROCm. Only inspect the
+    // kernel_name field if built with ROCm 5.3.3 or later.
+    if (version >= ROCM_533_RELEASE_VERSION) {
+      // Until given better mechanisms by AMD, look up the kernel PC
+      // by the device id and kernel name.
+      return rocm_binary_function_lookup(activity->device_id,
+					 activity->kernel_name);
+    }
+  }
 #endif
+  // if the kernel name is not available to from the activity API,
+  // there is no way to associate the kernel invocation with the
+  // binary, so we don't try.
+  return ip_normalized_NULL;
 }
 
 

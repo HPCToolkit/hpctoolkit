@@ -109,4 +109,8 @@ hip_device_property_query
 int
 hip_dev_sync();
 
+int
+hip_version(
+ int *version
+);
 #endif //hip_api_h
