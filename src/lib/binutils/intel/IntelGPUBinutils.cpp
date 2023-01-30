@@ -145,8 +145,16 @@ findIntelGPUBins
 )
 {
   const char *ptr = file_buffer;
+
+  // make sure the file is long enough to contain a patch token binary header
+  if (file_size < sizeof(SProgramDebugDataHeaderIGC)) return false;
+
   const SProgramDebugDataHeaderIGC* header =
     reinterpret_cast<const SProgramDebugDataHeaderIGC*>(ptr);
+
+  // check for expected magic number
+  if (header->Magic != MAGIC_CL) return false;
+
   ptr += sizeof(SProgramDebugDataHeaderIGC);
 
   if (header->NumberOfKernels == 0) {

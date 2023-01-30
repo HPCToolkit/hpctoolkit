@@ -566,17 +566,16 @@ libhpcrun_opencl_la_LDFLAGS   += $(OPT_OCL_BH_LDFLAGS)
 endif
 
 if OPT_ENABLE_GTPIN
-MY_GTPIN_FILES = \
-	gpu/instrumentation/kernel-data-map.c \
-	gpu/instrumentation/simdgroup-map.c \
-	gpu/instrumentation/gtpin-instrumentation.c \
-	gpu/instrumentation/gtpin-correlation-id-map.c
 
+MY_DYNAMIC_FILES += gpu/instrumentation/gtpin-shim.c
 pkglib_LTLIBRARIES += libhpcrun_gtpin_cxx.la
-libhpcrun_gtpin_cxx_la_CPPFLAGS  = $(OPT_GTPIN_IFLAGS)
-libhpcrun_gtpin_cxx_la_SOURCES   = gpu/instrumentation/gtpin-knob.cpp
+libhpcrun_gtpin_cxx_la_CPPFLAGS  = -g $(MY_INCLUDE_DIRS) -I$(top_srcdir)/src/tool/hpcrun/unwind/x86-family
+libhpcrun_gtpin_cxx_la_CXXFLAGS  = @HOST_CXXFLAGS@
+
+libhpcrun_gtpin_cxx_la_SOURCES   = gpu/instrumentation/gtpin-instrumentation.cpp
 libhpcrun_gtpin_cxx_la_LDFLAGS   = -Wl,-Bsymbolic
-libhpcrun_gtpin_cxx_la_LDFLAGS   += -L$(OPT_GTPIN_LIBDIR) -Wl,-rpath=$(OPT_GTPIN_LIBDIR) -lgtpin
+libhpcrun_gtpin_cxx_la_LIBADD = -L$(TBB_LIB_DIR) -ltbb -ltbbmalloc -ldl
+
 endif
 
 if OPT_ENABLE_ROCM
@@ -635,13 +634,16 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
 	$(LIBUNWIND_IFLAGS)		\
+	   $(OPT_GTPIN_IFLAGS)             \
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)             \
 		$(ROCM_INC_FLGS) \
 	-I$(LIBELF_INC)			\
 	-I$(LIBMONITOR_INC)	\
 	$(GOTCHA_IFLAGS)	\
+	$(TBB_IFLAGS)	\
 	$(OPENCL_IFLAGS)
+
 
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
@@ -860,7 +862,7 @@ SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -Wl,-rpath=$$ORIGIN	-ldl
 
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
@@ -969,6 +971,9 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_SOURCES   += $(MY_X86_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
+if OPT_ENABLE_GTPIN
+  libhpcrun_gtpin_cxx_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+endif
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS)
@@ -1122,14 +1127,6 @@ if OPT_ENABLE_OPENCL
   libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
-endif
-
-if OPT_ENABLE_GTPIN
-  libhpcrun_la_SOURCES  += $(MY_GTPIN_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
-  libhpcrun_la_CFLAGS   += $(OPT_GTPIN_IFLAGS)
-
-  MY_CPP_DEFINES  += -DHPCRUN_SS_GTPIN
 endif
 
 if UNW_LIBUNW

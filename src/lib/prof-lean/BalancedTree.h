@@ -112,7 +112,7 @@ typedef struct BalancedTreeNode
 static inline BalancedTreeNode_t*
 BalancedTreeNode_alloc(BalancedTree_alloc_fn_t alloc, size_t dataSz)
 {
-  BalancedTreeNode_t* x = alloc(sizeof(BalancedTreeNode_t));
+  BalancedTreeNode_t* x = (BalancedTreeNode_t*) alloc(sizeof(BalancedTreeNode_t));
   x->data = alloc(dataSz);
   return x;
 }

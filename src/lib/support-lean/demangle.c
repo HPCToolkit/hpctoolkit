@@ -57,10 +57,12 @@
 #include <string.h>
 
 #include <include/gnu_demangle.h>
+#include <lib/prof-lean/spinlock.h>
 #include <lib/support-lean/demangle.h>
 
 #define DEMANGLE_FLAGS  (DMGL_PARAMS | DMGL_ANSI | DMGL_VERBOSE | DMGL_RET_DROP)
 
+static spinlock_t demangle_lock = SPINLOCK_UNLOCKED;
 
 // Returns: malloc()ed string for the demangled name, or else NULL if
 // 'name' is not a mangled name.
@@ -78,5 +80,11 @@ hpctoolkit_demangle(const char * name)
     return NULL;
   }
 
-  return cplus_demangle(name, DEMANGLE_FLAGS);
+  // NOTE: comments in GCC demangler indicate that the demangler uses shared state
+  // and that locking for multithreading is our responsibility
+  spinlock_lock(&demangle_lock);
+  char *demangled = cplus_demangle(name, DEMANGLE_FLAGS);
+  spinlock_unlock(&demangle_lock);
+
+  return demangled;
 }
