@@ -142,7 +142,7 @@ int main(int argc, char* const argv[]) {
     std::vector<std::unique_ptr<ProfileSource>> my_sources;
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t i = 0; i < args.sources.size(); i++)
-      my_sources.emplace_back(ProfileSource::create_for(args.sources[i].second, args.logstore));
+      my_sources.emplace_back(ProfileSource::create_for(args.sources[i].second));
     #pragma omp critical
     for(auto& s: my_sources) pipelineB1 << std::move(s);
     ANNOTATE_HAPPENS_BEFORE(&end_arc);
@@ -252,7 +252,7 @@ int main(int argc, char* const argv[]) {
     for(auto& sp: args.ksyms)
       pipelineB2 << std::make_unique<finalizers::KernelSymbols>(sp.second);
     for(auto& sp: args.structs)
-      pipelineB2 << std::make_unique<finalizers::StructFile>(sp.second);
+      pipelineB2 << std::make_unique<finalizers::StructFile>(sp.second, nullptr);
 
     if(!args.foreign) {
       // Insert the proper Finalizer for drawing data directly from the Modules.

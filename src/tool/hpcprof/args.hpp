@@ -65,9 +65,6 @@ public:
   /// Sources and corrosponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileSource>, stdshim::filesystem::path>> sources;
 
-  /// Logstore used across the Sources
-  std::shared_ptr<Logstore> logstore;
-
   /// KernelSymbols Finalizers from properly named measurements directories
   std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> ksyms;
 
@@ -84,6 +81,7 @@ public:
     ExtensionClass requires() const noexcept override { return {}; }
     std::optional<std::pair<util::optional_ref<Context>, Context&>>
     classify(Context&, NestedScope&) noexcept override;
+    bool resolve(ContextFlowGraph&) noexcept override;
 
   private:
     ProfArgs& args;
@@ -174,6 +172,8 @@ public:
   bool valgrindUnclean;
 
 private:
+  std::once_flag onceMissingGPUCFGs;
+  std::unordered_set<stdshim::filesystem::path, stdshim::hash_path> structpaths;
   std::unordered_map<stdshim::filesystem::path, std::vector<stdshim::filesystem::path>,
                      stdshim::hash_path> structheads;
 };

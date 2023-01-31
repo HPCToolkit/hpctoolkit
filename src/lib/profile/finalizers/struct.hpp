@@ -65,7 +65,25 @@ class StructFileParser;
 // When a struct file is around, this draws data from it to Classify a Module.
 class StructFile final : public ProfileFinalizer {
 public:
-  StructFile(stdshim::filesystem::path path);
+  class RecommendationStore {
+  public:
+    RecommendationStore(bool measDir, std::string hpcstructArgs = "")
+      : measDir(measDir), hpcstructArgs(std::move(hpcstructArgs)) {}
+    ~RecommendationStore() = default;
+
+  private:
+    friend class StructFile;
+
+    // If true, the Structfile is part of a measurements dir listed in hpcstructArgs.
+    // If false, the binary path should be appended to any recommendation.
+    bool measDir;
+    // hpcstruct argument(s) to recommend along
+    std::string hpcstructArgs;
+    // Flag to ensure any recommendation made from this is only recommended once.
+    std::once_flag once;
+  };
+
+  StructFile(stdshim::filesystem::path path, std::shared_ptr<RecommendationStore> store);
   ~StructFile();
 
   void notifyPipeline() noexcept override;
@@ -83,6 +101,16 @@ public:
   std::vector<stdshim::filesystem::path> forPaths() const;
 
 private:
+  std::shared_ptr<RecommendationStore> recstore;
+
+  /// Current status of the call graph data from a Structfile
+  enum class CallGraphStatus {
+    NONE,  ///< Default status
+    NOT_PRESENT,  ///< Call graph data was never requested or generated
+    VALID,  ///< Call graph data was found and parsed successfully
+    ERRORED,  ///< Call graph data was generated but failed to parse somehow
+  };
+
   struct udModule final {
     // Storage for Function data
     std::deque<Function> funcs;
@@ -94,8 +122,8 @@ private:
         std::reference_wrapper<const trienode>,
         std::reference_wrapper<const Function>>> leaves;
 
-    // Whether this Module has (valid) call graph data
-    bool has_cfg = false;
+    // Status of the call graph data for
+    CallGraphStatus cfgStatus = CallGraphStatus::NONE;
     // Reversed call graph (callee Function -> caller instruction and top Function)
     std::unordered_multimap<util::reference_index<const Function>,
         std::pair<uint64_t, std::reference_wrapper<const Function>>> rcg;
