@@ -106,7 +106,7 @@ class Measurements:
 @contextlib.contextmanager
 def hpcrun(*args, timeout: int | None = None, env=None, output=None):
     exe_args = args[-1]
-    if not isinstance(exe_args, list):
+    if isinstance(exe_args, str):
         exe_args = [exe_args]
     hpcrun_args = args[:-1]
 

@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+import pickle
+import sys
+
+import click
+from hpctoolkit.formats import from_path
+from hpctoolkit.formats.diff.strict import StrictAccuracy, StrictDiff
+from hpctoolkit.test.execution import hpcprof, hpcprof_mpi
+
+
+def load_pickled_db(_ctx, _param, value):
+    return pickle.load(value)
+
+
+@click.command()
+@click.option("-n", "--ranks", type=int, help="Use hpcprof-mpi with the given number of ranks")
+@click.option(
+    "-j", "--threads", type=int, default=1, help="Use the given number of analysis threads"
+)
+@click.argument("measurements", type=click.Path(exists=True, readable=True, file_okay=False))
+@click.argument("database", type=click.File(mode="rb"), callback=load_pickled_db)
+def test_accuracy(ranks: int | None, threads: int, measurements: str, database):
+    """Analyze some performance MEASUREMENTS and compare against a canonical DATABASE."""
+    if ranks:
+        ctx = hpcprof_mpi(ranks, measurements, "--foreign", threads=threads)
+    else:
+        ctx = hpcprof(measurements, "--foreign", threads=threads)
+    with ctx as db:
+        diff = StrictDiff(database, from_path(db.basedir))
+        acc = StrictAccuracy(diff)
+        if len(diff.hunks) > 0 or acc.inaccuracy:
+            diff.render(sys.stdout)
+            acc.render(sys.stdout)
+            raise click.ClickException("Comparison failed!")
+
+
+if __name__ == "__main__":
+    test_accuracy()  # pylint: disable=no-value-for-parameter

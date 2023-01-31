@@ -1,7 +1,5 @@
-_run_check = find_program(files('run-check'))
+exe_1loop = executable('test-1loop', files('1loop.cpp'), dependencies: dependency('openmp'))
 
-exe_1loop = executable('test-1loop', files('1loop.cpp'),
-  dependencies: dependency('openmp'))
-test('1loop', exe_1loop)
-test('hpcrun 1loop', _run_check, args: ['-t4', exe_1loop],
-  env: hpctoolkit_pyenv, suite: 'hpcrun')
+_tst = find_program(files('tst-produces-profiles'))
+test('Measurement of 1loop produces profiles', _tst, args: ['-t4', exe_1loop],
+     env: hpctoolkit_pyenv, suite: 'hpcrun')

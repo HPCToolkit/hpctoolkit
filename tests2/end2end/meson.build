@@ -1,6 +1,5 @@
-_simple = find_program(files('simple'))
-
+_tst = find_program(files('tst-default-pipeline'))
 foreach exe : [exe_1loop]
-  test('End-to-end on @0@'.format(exe.name()), _simple, args: [exe],
-    env: hpctoolkit_pyenv, suite: 'end2end', timeout: 90)
+  test('Default analysis pipeline on @0@ works'.format(exe.name()), _tst, args: [exe],
+       env: hpctoolkit_pyenv, suite: 'end2end', timeout: 90)
 endforeach

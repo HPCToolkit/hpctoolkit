@@ -109,6 +109,7 @@ repos:
     - pytest
     - ruamel.yaml
     - podman
+    - click
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
