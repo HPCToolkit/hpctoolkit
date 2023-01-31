@@ -110,7 +110,7 @@ repos:
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
-  rev: v2.16.0b1
+  rev: v2.15.10
   hooks:
   # Run the aggressive static Python linter
   - id: pylint
