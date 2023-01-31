@@ -668,13 +668,13 @@ makeStructure(string filename,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
       has_calls = structOpts.compute_gpu_cfg;
     } else if (intel_file) { // don't run parseapi on intel binary
-      // TODO(Aaron): determine which generation of intel gpu it is
       intel_gpu_arch = 1;
-
       #ifdef ENABLE_IGC
+      bool compute_intel_gpu_cfg = true;
       parsable = readIntelCFG(search_path, elfFile, the_symtab,
-        structOpts.compute_gpu_cfg, false, structOpts.jobs, &code_src, &code_obj);
-      has_calls = structOpts.compute_gpu_cfg;
+			      compute_intel_gpu_cfg, false,
+			      structOpts.jobs, &code_src, &code_obj);
+      has_calls = compute_intel_gpu_cfg;
       #else  // ENABLE_IGC
       has_calls = false;
       #endif  // ENABLE_IGC
