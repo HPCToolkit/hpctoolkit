@@ -404,8 +404,9 @@ level0_check_result
 )
 {
   if (ret == ZE_RESULT_SUCCESS) return;
-  fprintf(stderr, "Level API at line %d failed:", lineNo - 1);
-  #define LEVEL0_ERROR_CASE(x) case x: { fprintf(stderr, " %s", #x); break; }
+
+  #define LEVEL0_ERROR_CASE(x) case x: error = #x; break;
+  const char *error;
   switch (ret) {
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_UNINITIALIZED);
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_DEVICE_LOST);
@@ -415,10 +416,9 @@ level0_check_result
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SYNCHRONIZATION_OBJECT);
     LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_SIZE);
     LEVEL0_ERROR_CASE(ZE_RESULT_NOT_READY);
-    default:
-      fprintf(stderr, " unknown return code");
+    default: error = "unknown error"; break;
   }
-  fprintf(stderr, "\n");
+  fprintf(stderr, "Level Zero API failed: %s\n", error);
   exit(1);
 }
 
