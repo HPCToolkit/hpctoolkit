@@ -481,7 +481,7 @@ class Specification:
     _concrete_cls: T.ClassVar[type[ConcreteSpecification]] = ConcreteSpecification
     _clauses: dict[tuple[str, ...], _Condition] | bool
 
-    def _parse_long(self, valid_variants: frozenset[str], clause: str):
+    def _parse_long(self, valid_variants: frozenset[str], clause: str) -> set[str]:
         mat = re.fullmatch(r"\(([\w\s]+)\)\[([+~><=\d\s]+)\]", clause)
         if not mat:
             raise ValueError(f"Invalid clause: {clause!r}")
@@ -517,8 +517,9 @@ class Specification:
                         cond.max_enabled = min(cond.max_enabled, n)
                     case _:
                         assert False
+        return set(variants)
 
-    def _parse_short(self, valid_variants: frozenset[str], clause: str):
+    def _parse_short(self, valid_variants: frozenset[str], clause: str) -> set[str]:
         mat = re.fullmatch(r"([+~])(\w+)", clause)
         if not mat:
             raise ValueError(f"Invalid clause: {clause!r}")
@@ -539,6 +540,7 @@ class Specification:
         cond = self._clauses.setdefault((variant,), self._Condition(0, 1))
         cond.min_enabled = max(cond.min_enabled, cnt)
         cond.max_enabled = min(cond.max_enabled, cnt)
+        return {variant}
 
     def _optimize(self):
         assert isinstance(self._clauses, dict)
@@ -580,7 +582,8 @@ class Specification:
 
         The syntax follows this rough BNF grammar:
             spec := all | none | W { clause W }*
-            clause := flag variant
+            clause := '!' variant
+                      | flag variant
                       | '(' W variant { W variant }* W ')[' W condition { W condition }* W ']'
             flag := '+' | '~'
             condition := flag comparison N
@@ -590,6 +593,7 @@ class Specification:
             W := # any sequence of whitespace
         """
         valid_variants = frozenset(self._concrete_cls.variants())
+        constrained_variants = set()
 
         # Parse the spec itself
         match spec.strip():
@@ -602,10 +606,14 @@ class Specification:
                 for token in re.split(r"(\([^)]+\)\[[^]]+\])|\s", spec):
                     if token is None or not token:
                         continue
-                    if token[0] == "(":
-                        self._parse_long(valid_variants, token)
+                    if token[0] == "!":
+                        if token[1:] not in valid_variants:
+                            raise ValueError(f"Invalid variant: {token[1:]}")
+                        constrained_variants.add(token[1:])
+                    elif token[0] == "(":
+                        constrained_variants |= self._parse_long(valid_variants, token)
                     else:
-                        self._parse_short(valid_variants, token)
+                        constrained_variants |= self._parse_short(valid_variants, token)
                 if not self._clauses:
                     if allow_blank:
                         self._clauses = True
@@ -613,6 +621,24 @@ class Specification:
                         raise ValueError("Blank specification not permitted")
                 else:
                     self._optimize()
+
+        # Check that any unconstrained variants actually do not vary
+        if not isinstance(self._clauses, bool):
+            bad_variants = set()
+            for variant in valid_variants - constrained_variants:
+                matches_true = any(
+                    getattr(c, variant) and self.satisfies(c) for c in self._concrete_cls.all()
+                )
+                matches_false = any(
+                    not getattr(c, variant) and self.satisfies(c) for c in self._concrete_cls.all()
+                )
+                if matches_true and matches_false:
+                    bad_variants.add(variant)
+            if bad_variants:
+                vs = ", ".join(sorted(bad_variants))
+                raise ValueError(
+                    f"Specification must constrain or explicitly mark unconstrained: {vs}"
+                )
 
         # If required, check that we match *something*
         if not allow_empty:

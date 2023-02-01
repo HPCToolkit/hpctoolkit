@@ -88,6 +88,8 @@ Each SPEC constrains the allowed configurations via a series of "clauses" of the
         +<N:  At most N of the listed VARIANTS are enabled
         +=N:  Exactly N of the listed VARIANTS are enabled
         ~>N, ~<N, ~=N: Same as above but for disabled
+    !VARIANT:  The given VARIANT is explicitly unconstrined. This must be used to list any
+               unconstrained VARIANTS, otherwise the SPEC is invalid.
 
 The output from this program is summarized to only include warnings or errors, and is wrapped in
 collapsible sections to allow for easy viewing from the GitLab UI.
