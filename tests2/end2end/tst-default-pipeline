@@ -8,7 +8,7 @@ from hpctoolkit.test.execution import hpcprof, hpcrun, hpcstruct
 @click.argument("executable", type=click.Path(exists=True, executable=True, dir_okay=False))
 def test_default_pipeline(executable: str):
     """Test an hpcrun/hpcstruct/hpcprof pipeline with default settings on EXECUTABLE."""
-    with hpcrun(executable) as meas:
+    with hpcrun(cmd=[executable]) as meas:
         hpcstruct(meas)
         with hpcprof(meas) as db:
             db.check_standard(tracedb=False)

@@ -12,7 +12,7 @@ from hpctoolkit.test.execution import hpcrun
 @click.argument("cmd", nargs=-1, required=True)
 def test_produces_profiles(procs: int, threads_per_proc: int, cmd: tuple[str]):
     """Test that measuring CMD produces an expected number of profiles."""
-    with hpcrun(cmd) as meas:
+    with hpcrun(cmd=cmd) as meas:
         meas.check_standard(procs=procs, threads_per_proc=threads_per_proc)
 
 

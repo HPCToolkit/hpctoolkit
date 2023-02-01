@@ -39,7 +39,7 @@ def simple(threads: int, script: Path, args: tuple[str]):
     if not sys.executable:
         raise RuntimeError("No Python interpreter executable!")
 
-    with hpcrun("-a", "python", "-e", "REALTIME", [sys.executable, str(script), *args]) as meas:
+    with hpcrun("-a", "python", "-e", "REALTIME", cmd=[sys.executable, str(script), *args]) as meas:
         meas.check_standard(procs=1, threads_per_proc=threads)
 
         with hpcprof(meas) as raw_db:

@@ -60,7 +60,7 @@ def check_ok(meas):
 
 
 for _i in range(10):
-    with hpcrun(*args.arguments) as M:
+    with hpcrun(*args.arguments[:-1], cmd=[args.arguments[-1]]) as M:
         # Verify that the measurements contains enough samples to call it useful
         if not check_ok(M):
             continue
