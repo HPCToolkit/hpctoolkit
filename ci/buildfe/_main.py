@@ -70,13 +70,16 @@ Each SRC above can be one of the following:
 This command sweeps the space of build configurations that satisfy any of the given SPECs.
 Each build configuration is represented by a series of boolean-valued "variants," with true/false
 being represented by `+` and `~` (like Spack spec syntax). The available variants are:
+    +tests2:  Enable the tests2/ test suite
     +mpi:  Enable Prof-MPI support
     +debug:  Enable extra debug flags
     +papi:  Enable PAPI support
+    +python:  Enable Python logical unwinding support
     +opencl:  Enable OpenCL support
     +cuda:  Enable Nvidia CUDA support
     +rocm:  Enable AMD ROCm support
     +level0:  Enable Intel Level Zero support
+    +gtpin:  Enable Intel GTPin for instrumentation (requires +level0)
 Each SPEC constrains the allowed configurations via a series of "clauses" of the form:
     +VARIANT:  The given VARIANT is enabled
     ~VARIANT:  The given VARIANT is disabled
