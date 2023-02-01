@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+
+import click
+from hpctoolkit.test.execution import hpcprof, hpcrun, hpcstruct
+
+
+@click.command()
+@click.argument("executable", type=click.Path(exists=True, executable=True, dir_okay=False))
+def test_default_pipeline(executable: str):
+    """Test an hpcrun/hpcstruct/hpcprof pipeline with default settings on EXECUTABLE."""
+    with hpcrun(cmd=[executable]) as meas:
+        hpcstruct(meas)
+        with hpcprof(meas) as db:
+            db.check_standard(tracedb=False)
+
+
+if __name__ == "__main__":
+    test_default_pipeline()  # pylint: disable=no-value-for-parameter

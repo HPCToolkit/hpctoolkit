@@ -282,11 +282,11 @@ regen testdata:
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
   - REPROD_ARGS=(--reproducible)
   - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
-  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 'buildmany: [amd64, +cuda]: [10.2]':
   extends: .buildmany.amd64
   services: *podman_service
@@ -302,11 +302,11 @@ regen testdata:
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
   - REPROD_ARGS=(--reproducible)
   - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
-  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
 'buildmany: [amd64, +rocm]':
   extends: .buildmany.amd64
@@ -325,11 +325,11 @@ regen testdata:
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
   - REPROD_ARGS=(--reproducible)
   - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-rocm=/opt/rocm' > img-config")
-  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
 'buildmany: [amd64, +level0]':
   extends: .buildmany.amd64
@@ -356,11 +356,11 @@ regen testdata:
   - echo '--with-igc=/usr' >> img-config
   - echo '--with-gtpin=/opt/gtpin/Profilers' >> img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
   - REPROD_ARGS=(--reproducible)
   - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-level0=/usr' > img-config")
-  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 
 
 # Build single versions of the codebase and run unit tests through `make check`
@@ -483,11 +483,11 @@ regen testdata:
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
   - REPROD_ARGS=(--reproducible)
   - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-cuda=/usr/local/cuda' > img-config")
-  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 'check min amd64: [+cuda]':
   extends: ['check amd64: [+cuda]', .check min]
 'check semifresh amd64: [+cuda]':
@@ -509,11 +509,11 @@ regen testdata:
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
   # Pull dependencies from the base image
-  - ci/scripts/podman-cp.py tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
+  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
   - REPROD_ARGS=(--reproducible)
   - REPROD_ARGS+=(--reproduction-volume '$XDG_RUNTIME_DIR/podman/podman.sock:/podman.sock')
   - REPROD_ARGs+=(--reproduction-cmd "echo '--with-rocm=/opt/rocm' > img-config")
-  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp.py unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
+  - REPROD_ARGS+=(--reproduction-cmd "ci/scripts/podman-cp unix:///podman.sock $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack")
 'check min amd64: [+rocm]':
   extends: ['check amd64: [+rocm]', .check min]
 'check semifresh amd64: [+rocm]':
@@ -546,7 +546,7 @@ lint:
 
   script:
   # Merge all the code quality results into a single file, for use by GitLab
-  - ./ci/scripts/merge_cq.py cq.json logs/**/*.cq.json
+  - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
 
   artifacts:
     reports:

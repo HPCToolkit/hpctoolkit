@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+
+import click
+from hpctoolkit.test.execution import Measurements, hpcprof
+
+
+@click.command()
+@click.argument("measurements", type=click.Path(exists=True, readable=True, file_okay=False))
+def test_flags_effective(measurements: str):
+    """Test that hpcprof flags are effective when analyzing MEASUREMENTS."""
+    meas = Measurements(measurements)
+    has_traces = any(meas.tracefile(stem) for stem in meas.thread_stems)
+
+    with hpcprof(meas) as db:
+        db.check_standard(tracedb=has_traces)
+
+    with hpcprof(meas, "--no-traces") as db:
+        db.check_standard(tracedb=False)

@@ -104,12 +104,13 @@ class Measurements:
 
 
 @contextlib.contextmanager
-def hpcrun(*args, timeout: int | None = None, env=None, output=None):
-    exe_args = args[-1]
-    if not isinstance(exe_args, list):
-        exe_args = [exe_args]
-    hpcrun_args = args[:-1]
-
+def hpcrun(
+    *hpcrun_args: str | None,
+    cmd: collections.abc.Sequence[str],
+    timeout: int | None = None,
+    env=None,
+    output=None,
+):
     if "HPCTOOLKIT_APP_HPCRUN" not in os.environ:
         raise RuntimeError("hpcrun not available, cannot continue! Run under meson devenv!")
     hpcrun = os.environ["HPCTOOLKIT_APP_HPCRUN"]
@@ -124,9 +125,8 @@ def hpcrun(*args, timeout: int | None = None, env=None, output=None):
 
     with output as mdir:
         mdir = Path(mdir)
-        proc = _subproc_run(
-            "hpcrun", [hpcrun, *hpcrun_args] + ["-o", mdir, *exe_args], timeout=timeout, env=env
-        )
+        arglist = [hpcrun] + [a for a in hpcrun_args if a is not None] + ["-o", mdir, *cmd]
+        proc = _subproc_run("hpcrun", arglist, timeout=timeout, env=env)
         m = Measurements(mdir)
         # Dump the log files for debugging purposes
         with contextlib.suppress(OSError):

@@ -1,4 +1,5 @@
-foreach bin : [exe_1loop]
-  test('hpcstruct on @0@'.format(bin.name()), python3, args: [files('single-bin.py'), bin],
-    env: hpctoolkit_pyenv, suite: 'hpcstruct')
+_tst = find_program(files('tst-runs'))
+foreach bin : [tstexe_1loop]
+  test('Analysis of @0@ runs'.format(bin.name()), _tst, args: [bin],
+       env: hpctoolkit_pyenv, suite: 'hpcstruct')
 endforeach
