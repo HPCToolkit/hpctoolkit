@@ -240,7 +240,7 @@ regen testdata:
     - IMAGE_BASE: fedora36
       JOB_CC: [gcc=12, clang=14]
   variables:
-    SPEC: '~cuda ~rocm ~level0 (tests2 mpi papi opencl)[~<1]'
+    SPEC: '~cuda ~rocm ~level0 (tests2 mpi papi opencl python)[~<1]'
 'buildmany: [arm64]':
   extends: .buildmany.arm64
   parallel:
@@ -248,7 +248,7 @@ regen testdata:
     - IMAGE_BASE: ubuntu20.04
       JOB_CC: [gcc-10]
   variables:
-    SPEC: '~cuda ~rocm ~level0 +debug +tests2 (mpi papi opencl)[~<1]'
+    SPEC: '~cuda ~rocm ~level0 +debug +tests2 (mpi papi opencl python)[~<1]'
 
 'buildmany: [amd64, +cuda]':
   extends: .buildmany.amd64
@@ -260,7 +260,7 @@ regen testdata:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +cuda
     JOB_CC: gcc-9
-    SPEC: '+cuda ~rocm ~level0 +tests2 (mpi papi opencl)[~<1]'
+    SPEC: '+cuda ~rocm ~level0 +tests2 (mpi papi opencl python)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
   before_script:
   - !reference [.buildmany.amd64, before_script]
