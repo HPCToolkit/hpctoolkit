@@ -382,8 +382,14 @@ typedef struct logical_metadata_store_t {
   struct logical_metadata_store_t* next;
 } logical_metadata_store_t;
 
+enum logical_mangling {
+  LOGICAL_MANGLING_NONE = 0,  ///< No mangling was done, the name is not mangled.
+  LOGICAL_MANGLING_CPP = 1,  ///< The function name was mangled according to the C++ ABI.
+};
+
 struct logical_metadata_store_entry_t {
   char* funcname;  ///< Name of the logical function, or `NULL`.
+  enum logical_mangling funcmang;  ///< Mangling used on the #funcname.
   char* filename;  ///< Path/name of the source file, or `NULL`.
   uint32_t lineno; ///< Line number of the function, or `0`.
   size_t hash;  ///< Precomputed hash value for this entry.
@@ -436,11 +442,12 @@ static inline uint16_t hpcrun_logical_metadata_lmid(logical_metadata_store_t* st
 ///
 /// \relatesalso logical_metadata_store_t
 /// \param func Function name, or `NULL`.
+/// \param funcmang Mangling used for `func`.
 /// \param file File path/name, or `NULL`.
 /// \param lineno Line number of the described function, or `0`.
 /// \returns A unique identifier for the described lexical construct.
 extern uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t*,
-    const char* func, const char* file, uint32_t lineno);
+    const char* func, enum logical_mangling funcmang, const char* file, uint32_t lineno);
 
 /// Compose an #ip_normalized_t to represent a logical source line or lexical
 /// construct. The resulting normalized IP can be recorded in the backtrace by a

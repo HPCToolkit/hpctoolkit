@@ -110,7 +110,7 @@ static bool python_unwind(logical_region_t* region, void** store,
       TMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
            DL(PyEval_GetFuncName)(state->cfunc));
       if(lframe->fid == 0)
-        lframe->fid = hpcrun_logical_metadata_fid(&python_metastore, DL(PyEval_GetFuncName)(state->cfunc), NULL, 0);
+        lframe->fid = hpcrun_logical_metadata_fid(&python_metastore, DL(PyEval_GetFuncName)(state->cfunc), LOGICAL_MANGLING_NONE, NULL, 0);
       frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, 0);
       return true;
     }
@@ -133,7 +133,7 @@ static bool python_unwind(logical_region_t* region, void** store,
     if(strcmp(name, "<module>") == 0)
       name = NULL;  // Special case, the main module should just have its filename
     lframe->fid = hpcrun_logical_metadata_fid(&python_metastore,
-      name, DL(PyUnicode_AsUTF8)(code->co_filename), code->co_firstlineno);
+      name, LOGICAL_MANGLING_NONE, DL(PyUnicode_AsUTF8)(code->co_filename), code->co_firstlineno);
     lframe->code = code;
     TMSG(LOGICAL_CTX_PYTHON, "Registered the above as Python fid #%x", lframe->fid);
   }

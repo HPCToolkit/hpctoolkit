@@ -46,6 +46,7 @@
 
 #include "logical.hpp"
 
+#include "lib/support-lean/demangle.h"
 #include "lib/prof-lean/hpcfmt.h"
 
 #include <cstring>
@@ -124,12 +125,31 @@ void LogicalFile::load(const Module& m, udModule& data) noexcept {
   do {
     uint32_t fid = 0;
     char* funcname = NULL;
+    char funcmang = 0;
     char* filename = NULL;
     uint32_t lineno = 0;
     if((ret = hpcfmt_int4_fread(&fid, f)) != HPCFMT_OK) break;
     if((ret = hpcfmt_str_fread(&funcname, f, std::malloc)) != HPCFMT_OK) { ret = HPCFMT_ERR; break; }
+    if(fread(&funcmang, sizeof(char), 1, f) < 1) { ret = HPCFMT_ERR; break; }
     if((ret = hpcfmt_str_fread(&filename, f, std::malloc)) != HPCFMT_OK) { ret = HPCFMT_ERR; break; }
     if((ret = hpcfmt_int4_fread(&lineno, f)) != HPCFMT_OK) { ret = HPCFMT_ERR; break; }
+
+    switch(funcmang) {
+    case 0:  // No mangling
+      break;
+    case 1: {  // C++ style mangling
+      if(funcname != nullptr && funcname[0] != '\0') {
+        char* dn = hpctoolkit_demangle(funcname);
+        if(dn != nullptr) {
+          std::free(funcname);
+          funcname = dn;
+        }
+      }
+      break;
+    }
+    default:
+      util::log::fatal{} << "Invalid logical stanza, unrecognized mangling " << funcmang;
+    }
 
     bool ok = true;
     if(funcname[0] != '\0') {
