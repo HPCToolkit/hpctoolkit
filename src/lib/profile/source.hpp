@@ -54,10 +54,6 @@
 
 namespace hpctoolkit {
 
-struct Logstore final {
-  util::locked_unordered_set<util::reference_index<const Module>> missingCFG;
-};
-
 /// Base class for all sources of metric data. Not to be confused with "sample
 /// sources" which are the mechanisms hpcrun uses to get any data at all.
 /// Since the rest of the system really doesn't care how the data gets there,
@@ -70,7 +66,7 @@ public:
   /// Instantiates the proper Source for the given arguments. In time more
   /// overloadings may be added that will handle more interesting cases.
   // MT: Internally Synchronized
-  static std::unique_ptr<ProfileSource> create_for(const stdshim::filesystem::path&, std::shared_ptr<Logstore>);
+  static std::unique_ptr<ProfileSource> create_for(const stdshim::filesystem::path&);
 
   /// Most format errors from a Source can be handled within the Source itself,
   /// but if errors happen during construction callers (create_for) will want to

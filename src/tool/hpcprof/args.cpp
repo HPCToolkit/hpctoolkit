@@ -65,6 +65,7 @@
 #include <iomanip>
 #include <omp.h>
 #include <random>
+#include <sstream>
 
 using namespace hpctoolkit;
 namespace fs = stdshim::filesystem;
@@ -244,13 +245,16 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       fs::path path(optarg);
       std::unique_ptr<finalizers::StructFile> c;
       try {
-        c.reset(new finalizers::StructFile(path));
+        c.reset(new finalizers::StructFile(path,
+            std::make_shared<finalizers::StructFile::RecommendationStore>(false)));
       } catch(...) {
         std::cerr << "Invalid structure file '" << optarg << "'!\n";
         std::exit(2);
       }
-      for(const auto& p : c->forPaths())
+      for(const auto& p : c->forPaths()) {
+        structpaths.insert(p);
         structheads[p.filename()].emplace_back(p.parent_path());
+      }
       structs.emplace_back(std::move(c), path);
       break;
     }
@@ -509,25 +513,41 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       if(fs::is_directory(sp))
         ProfArgs::ksyms.emplace_back(std::make_unique<finalizers::KernelSymbols>(sp), sp);
 
+      // Construct the recommended arguments for hpcstruct, in case we need them
+      std::string structargs;
+      {
+        std::ostringstream ss;
+        if(threads > 0)
+          ss << " -j" << threads;
+        ss << " " << p.native();
+        structargs = ss.str();
+      }
+
       // Check for a structs/ directory for extra structfiles.
       sp = p / "structs";
-      if(fs::exists(sp)) {
+      if(fs::is_directory(sp)) {
+        std::shared_ptr<finalizers::StructFile::RecommendationStore> recstore;
+        if(mpi::World::rank() == 0)
+          recstore = std::make_shared<finalizers::StructFile::RecommendationStore>(true, std::move(structargs));
+
         for(const auto& de: fs::directory_iterator(sp)) {
           std::unique_ptr<ProfileFinalizer> c;
           if(de.path().extension() != ".hpcstruct") continue;
           try {
-            c.reset(new finalizers::StructFile(de));
+            c.reset(new finalizers::StructFile(de, recstore));
           } catch(...) { continue; }
           ProfArgs::structs.emplace_back(std::move(c), de);
         }
-      } else if(mpi::World::rank() == 0) {
-        // WARN that the user should run hpcstruct on the measurements dir first
-        util::log::warning w;
-        w << "hpcstruct was not run on measurements first, this will give lower quality results!\n"
-             "Consider running hpcstruct on the input measurements first: hpcstruct";
-        if(threads > 0)
-          w << " -j" << threads;
-        w << " " << std::quoted(p.native());
+      } else {
+        util::call_once(onceMissingGPUCFGs, [&]{
+          // WARN that the user should run hpcstruct on the measurements dir first
+          if(mpi::World::rank() == 0) {
+            util::log::warning() <<
+              "Program structure data is missing from the measurements directory, performance attribution will be degraded\n"
+              "  Consider running hpcstruct first:\n"
+              "    $ hpcstruct" << structargs;
+          }
+        });
       }
     }
   }
@@ -568,8 +588,6 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     }
   }
 
-  logstore = std::make_shared<Logstore>();
-
   // Every rank tests its allocated set of inputs, and the total number of
   // successes per group is summed.
   std::vector<std::uint32_t> cnts(argc - optind, 0);
@@ -593,7 +611,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
       #pragma omp for schedule(dynamic) nowait
       for(std::size_t i = 0; i < files.size(); i++) {
         auto pg = std::move(files[i]);
-        auto s = ProfileSource::create_for(pg.first, logstore);
+        auto s = ProfileSource::create_for(pg.first);
         if(!only_exes.empty()) {
           if(auto* r4 = dynamic_cast<hpctoolkit::sources::Hpcrun4*>(s.get()); r4 != nullptr) {
             if(only_exes.count(r4->exe_basename()) == 0)
@@ -689,7 +707,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   // Add the inputs newly allocated to us to our set
   for(auto& p_s: extra) {
     stdshim::filesystem::path p = std::move(p_s);
-    auto s = ProfileSource::create_for(p, logstore);
+    auto s = ProfileSource::create_for(p);
     if(!s) util::log::fatal{} << "Input " << p << " has changed on disk, please let it stabilize before continuing!";
     sources.emplace_back(std::move(s), std::move(p));
   }
@@ -768,4 +786,21 @@ ProfArgs::StructPartialMatch::classify(Context& c, NestedScope& ns) noexcept {
     }
   }
   return std::nullopt;
+}
+
+bool ProfArgs::StructPartialMatch::resolve(ContextFlowGraph& fg) noexcept {
+  util::log::debug{true} << fg.scope();
+  if(fg.scope().type() == Scope::Type::point) {
+    const auto& m = fg.scope().point_data().first;
+    if(args.structpaths.find(m.path()) == args.structpaths.end()) {
+      // This fell through all the Structfiles, so raise a little WARNING ourselves.
+      util::call_once(args.onceMissingGPUCFGs, [&]{
+        if(mpi::World::rank() == 0) {
+          util::log::warning()
+            << "Control flow data is missing or corrupted, disabling affected GPU context reconstruction";
+        }
+      });
+    }
+  }
+  return false;
 }

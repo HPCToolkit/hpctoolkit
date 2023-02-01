@@ -133,7 +133,7 @@ public:
   bool valid() const noexcept { return ok; }
 
   std::optional<LMData> seekToNextLM() noexcept;
-  bool parse(ProfilePipeline::Source&, const Module&, StructFile::udModule&) noexcept;
+  bool parse(ProfilePipeline::Source&, const Module&, bool, StructFile::udModule&) noexcept;
 
 private:
   std::unique_ptr<SAX2XMLReader> parser;
@@ -145,11 +145,12 @@ private:
 using LMData = hpctoolkit::finalizers::detail::LMData;
 using StructFileParser = hpctoolkit::finalizers::detail::StructFileParser;
 
-StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
+StructFile::StructFile(stdshim::filesystem::path p, std::shared_ptr<RecommendationStore> rs)
+  : recstore(std::move(rs)), path(std::move(p)) {
   while(1) {  // Exit on EOF or error
     auto parser = std::make_unique<StructFileParser>(path);
     if(!parser->valid()) {
-      util::log::warning{} << "Failed to parse Structfile " << path.filename().string();
+      util::log::warning{} << "Failed to parse Structfile " << path.filename().native();
       return;
     }
 
@@ -160,7 +161,7 @@ StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
       } else {
         // EOF or error
         if(!parser->valid())
-          util::log::warning{} << "Failed to parse Structfile " << path.filename().string();
+          util::log::warning{} << "Failed to parse Structfile " << path.filename().native();
         return;
       }
     } while(lms.find(lm->path) != lms.end());
@@ -216,8 +217,42 @@ bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
   if(fg.scope().type() == Scope::Type::point) {
     auto mo = fg.scope().point_data();
     const auto& udm = mo.first.userdata[ud];
-    if(!udm.has_cfg) {
-      // No valid data to use, and getting it wrong is wrong, so don't use any
+
+    switch(udm.cfgStatus) {
+    case CallGraphStatus::VALID:
+      // All good, nothing to see here
+      break;
+
+    case CallGraphStatus::NONE:
+      // Structfile didn't match, just ignore
+      return false;
+
+    case CallGraphStatus::NOT_PRESENT:
+      // hpcstruct was run without --gpucfg yes. We can't do reconstruction
+      // in this state so let the user know they did a bad.
+      if(recstore) {
+        util::call_once(recstore->once, [&]{
+          util::log::warning w;
+          w << "Unable to reconstruct calling contexts (or loops) within GPU kernels\n"
+                "  To enable this reconstruction, please run:\n"
+                "    $ hpcstruct --gpucfg yes" << recstore->hpcstructArgs;
+          if(!recstore->measDir) {
+            const auto& binary = mo.first.path();
+            auto sfile = binary.filename().concat(".hpcstruct");
+            w << " " << binary.native() << "\n"
+                  "  And pass the output file as -S " << sfile.native();
+          }
+        });
+      }
+      return false;
+
+    case CallGraphStatus::ERRORED:
+      // hpcstruct was run but the output was corrupt in some way. Warn that this
+      // is a problem for context reconstruction.
+      util::call_once(recstore->once, [&]{
+        util::log::warning()
+          << "Control flow data is corrupt, disabling affected GPU context reconstruction";
+      });
       return false;
     }
 
@@ -303,16 +338,16 @@ void StructFile::load(const Module& m, udModule& ud) noexcept {
 
   // TODO: Check if this is the only StructFile for this Module.
 
-  if(lm->has_calls) ud.has_cfg = true;
-  if(!parser->parse(sink, m, ud))
-    util::log::warning{} << "Error parsing Structfile " << path.filename().string();
+  ud.cfgStatus = lm->has_calls ? CallGraphStatus::ERRORED : CallGraphStatus::NOT_PRESENT;
+  if(!parser->parse(sink, m, lm->has_calls, ud))
+    util::log::warning{} << "Error parsing Structfile " << path.filename().native();
 }
 
 StructFileParser::StructFileParser(const stdshim::filesystem::path& path) noexcept
   : parser(XMLReaderFactory::createXMLReader()), ok(false) {
   try {
     if(!parser) return;
-    if(!parser->parseFirst(XMLStr(path.string()), token)) {
+    if(!parser->parseFirst(XMLStr(path.native()), token)) {
       util::log::info{} << "Error while parsing Structfile XML prologue";
       return;
     }
@@ -396,7 +431,7 @@ static std::vector<util::interval<uint64_t>> parseVs(const std::string& vs) {
 }
 
 bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
-                             StructFile::udModule& ud) noexcept try {
+                             bool has_calls, StructFile::udModule& ud) noexcept try {
   using trienode = std::pair<std::pair<Scope, Relation>, const void*>;
   assert(ok);
   struct Ctx {
@@ -520,8 +555,8 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
   assert(stack.size() == 0 && "Inconsistent stack handling!");
 
   // Now convert the tmp_rcg into the proper rcg
-  if(!tmp_rcg.empty()) {
-    ud.has_cfg = true;  // Presume that <C> tags are correct when present
+  if(has_calls || !tmp_rcg.empty()) {
+    ud.cfgStatus = StructFile::CallGraphStatus::VALID;
     ud.rcg.reserve(tmp_rcg.size());
     for(const auto& [callee, caller]: tmp_rcg) {
       auto target_it = funcs.find(callee);
@@ -529,7 +564,7 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
         ud.rcg.emplace(target_it->second, std::move(caller));
       } else {
         // <C> tag obviously not correct, consider the entire CFG invalid
-        ud.has_cfg = false;
+        ud.cfgStatus = StructFile::CallGraphStatus::ERRORED;
         ud.rcg.clear();
         util::log::info{} << "Missing callee at 0x" << std::hex << callee
                           << " when processing Structfile for binary\n  "

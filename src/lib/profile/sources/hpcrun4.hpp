@@ -166,18 +166,14 @@ private:
   // Flag for whether we've warned about top-level context demotion
   bool warned_top_demotion = false;
 
-  // Storage for logging info across all Hpcrun4 Sources
-  // TODO: Lift this to a more generic diagnostics system
-  std::shared_ptr<Logstore> logstore;
-
   // Path to the tracefile, and offset of the actual data blob.
   stdshim::filesystem::path tracepath;
   long trace_off;
   bool trace_sort;
 
   // We're all friends here.
-  friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&, std::shared_ptr<Logstore>);
-  Hpcrun4(const stdshim::filesystem::path&, std::shared_ptr<Logstore>);
+  friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&);
+  Hpcrun4(const stdshim::filesystem::path&);
 };
 
 }

@@ -79,10 +79,10 @@ scope_exit<std::decay_t<F>> make_scope_exit(F&& f) {
 }
 }
 
-Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn, std::shared_ptr<Logstore> logstore)
+Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
-    thread(nullptr), path(fn), logstore(std::move(logstore)),
-    tracepath(fn.parent_path() / fn.stem().concat(".hpctrace")) {
+    thread(nullptr), path(fn), tracepath(fn) {
+  tracepath.replace_extension(".hpctrace");
   // Try to open up the file. Errors handled inside somewhere.
   file = hpcrun_sparse_open(path.c_str(), 0, 0);
   if(file == nullptr) {
@@ -486,11 +486,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
             nodes.emplace(id, reconstructedCtx_t{sink.contextReconstruction(*fg, par)});
           } else {
             // Failed to generate the appropriate FlowGraph, we must be missing
-            // some data. Map to par -> (unknown) -> (point) and throw an error.
-            if(logstore->missingCFG.emplace(std::cref(scope.point_data().first)).second) {
-              util::log::error{} << "Bad or missing CFG data for binary: "
-                << scope.point_data().first.path().filename().string();
-            }
+            // some data. Map to par -> (unknown) -> (point).
             auto& unk = sink.context(par, {Relation::call, Scope()}).second;
             auto pnt = sink.context(unk, {Relation::call, scope});
             nodes.emplace(id, singleCtx_t(par.get(), pnt));
@@ -547,12 +543,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           nodes.emplace(id, outlinedRangeSample_t(*p_x, *fg));
         } else {
           // Failed to generate the appropriate FlowGraph, we must be missing
-          // some data. Map to (global) -> (unknown) -> (point) and throw an error.
-          if(logstore->missingCFG.emplace(std::cref(mod_it->second)).second) {
-            util::log::warning{} << "Missing required CFG data for binary, "
-              "call paths will not be reconstructed: "
-              << mod_it->second.path().filename().string();
-          }
+          // some data. Map to (global) -> (unknown) -> (point).
           auto& unk = sink.context(global, {Relation::call, Scope()}).second;
           auto pnt = sink.context(unk, {Relation::call, scope});
           nodes.emplace(id, singleCtx_t(unk, pnt));
