@@ -886,11 +886,8 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 # Other rules
 #############################################################################
 
-gen-testdata:
-	@$(MAKE) -C tests2/ gen-testdata
-
-install-testdata:
-	@$(MAKE) -C tests2/ install-testdata
+tests2/%:
+	@$(MAKE) -C tests2/ $@
 
 define copy-libs
     if test "$1" = yes ; then \

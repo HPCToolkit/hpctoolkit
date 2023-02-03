@@ -11,8 +11,26 @@ _databases = {
   'loops-hip-amd-t': {},
 }
 
+_root = testdata_root + 'dbase/v4.0/'
 foreach name, features : _databases
   _out_db = name+'.tar.xz'
+  _out_yaml = name+'.yaml'
+
+  _cmd = [_prof, '@INPUT@', '@OUTPUT0@']
+  _output = [_out_db]
+  assert(fs.is_samepath(testdata_srcroot / _root+_out_db, files(_out_db)))
+  if features.get('yaml', false)
+    _cmd += ['-y', '@OUTPUT1@']
+    _output += [_out_yaml]
+    assert(fs.is_samepath(testdata_srcroot / _root+_out_yaml, files(_out_yaml)))
+  endif
+  _gen = custom_target(output: _output, command: _cmd, input: testdata_meas[name]['fresh'],
+      env: hpctoolkit_pyenv, build_by_default: false)
+  _gen_files = {_root+_out_db: _gen[0]}
+  if features.get('yaml', false)
+    _gen_files += {_root+_out_yaml: _gen[1]}
+  endif
+
   _dbase = {
     'measurements': testdata_meas[name],
     'tarball': files(_out_db),
@@ -20,28 +38,15 @@ foreach name, features : _databases
         command: _pickle, env: hpctoolkit_pyenv, build_always_stale: true,
         build_by_default: false),
     'xfail': features.get('xfail', false) or testdata_meas[name]['xfail'],
+    'gen': {
+      'suite': testdata_meas[name]['gen']['suite'],
+      'files': _gen_files,
+    },
   }
-  _idxs = {'_db': 0}
-  _cmd = [_prof, '@INPUT@', '@OUTPUT@0@@'.format(_idxs['_db'])]
-  _output = [_out_db]
-
   if features.get('yaml', false)
-    _out_yaml = name+'.yaml'
     _dbase += {'yaml': files(_out_yaml)}
-    _idxs += {'_yaml': _output.length()}
-    _cmd += ['-y', '@OUTPUT@0@@'.format(_output.length())]
-    _output += [_out_yaml]
   endif
 
-  if testdata_meas[name].has_key('gen_target')
-    _gen = custom_target(output: _output, command: _cmd,
-        input: testdata_meas[name]['gen_target'], env: hpctoolkit_pyenv,
-        build_always_stale: true, build_by_default: false)
-    _dbase += {'gen_target': _gen}
-    foreach suffix, idx : _idxs
-      _dbase += {'gen_target'+suffix: _gen[idx]}
-    endforeach
-  endif
   _testdata_dbase += {name: _dbase}
 endforeach
 

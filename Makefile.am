@@ -106,11 +106,8 @@ endif
 # Other rules
 #############################################################################
 
-gen-testdata:
-	@$(MAKE) -C tests2/ gen-testdata
-
-install-testdata:
-	@$(MAKE) -C tests2/ install-testdata
+tests2/%:
+	@$(MAKE) -C tests2/ $@
 
 ############################################################
 # Install
