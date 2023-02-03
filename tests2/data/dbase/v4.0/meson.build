@@ -1,16 +1,17 @@
 _testdata_dbase = {}
 
 _prof = find_program(files('prof'))
-_pickle = [find_program(files('pickle-db')), '@INPUT@', '@OUTPUT@']
 
 _databases = {
   'small': {'yaml': true},
+  'loops-cputime-t': {},
   'loops-perf-t': {},
   'loops-cuda-nvidia-t': {},
   'loops-cuda-nvidiapc-t': {},
   'loops-hip-amd-t': {},
 }
 
+_extract_db = find_program(files('extract-db'))
 _root = testdata_root + 'dbase/v4.0/'
 foreach name, features : _databases
   _out_db = name+'.tar.xz'
@@ -31,12 +32,15 @@ foreach name, features : _databases
     _gen_files += {_root+_out_yaml: _gen[1]}
   endif
 
+  # Extract the tarball at configure-time to make it easier to manage
+  _extract_path = meson.current_build_dir() / f'@name@.d'
+  if run_command(_extract_db, files(_out_db), _extract_path, check: false).returncode() != 0
+    warning(f'Failed to extract @_root@@_out_db@, some tests may fail!')
+  endif
+
   _dbase = {
     'measurements': testdata_meas[name],
-    'tarball': files(_out_db),
-    'pickled': custom_target(output: name+'.pickle', input: files(_out_db),
-        command: _pickle, env: hpctoolkit_pyenv, build_always_stale: true,
-        build_by_default: false),
+    'dir': _extract_path,
     'xfail': features.get('xfail', false) or testdata_meas[name]['xfail'],
     'gen': {
       'suite': testdata_meas[name]['gen']['suite'],

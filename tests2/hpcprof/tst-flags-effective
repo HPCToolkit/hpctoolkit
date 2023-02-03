@@ -16,3 +16,7 @@ def test_flags_effective(measurements: str):
 
     with hpcprof(meas, "--no-traces") as db:
         db.check_standard(tracedb=False)
+
+
+if __name__ == "__main__":
+    test_flags_effective()  # pylint: disable=no-value-for-parameter

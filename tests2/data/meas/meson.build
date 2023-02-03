@@ -13,8 +13,6 @@ _exe_loops_hip = custom_target(output: 'testmeas-loops-hip', input: files('loops
 
 _cuda_pc = [cuda_filter, '--capability=>6.0', '--random=1']
 
-_extract = [find_program(files('extract-ms')), '@INPUT@', '@OUTPUT@']
-
 _measurements = {
   # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand
   # calling context tree. Good for debugging very bad problems.
@@ -49,6 +47,8 @@ _measurements = {
 }
 _xfails = []
 
+_extract_ms = find_program(files('extract-ms'))
+
 _root = testdata_root + 'meas/'
 foreach name, spec : _measurements
   _out = name+'.tar.xz'
@@ -59,10 +59,15 @@ foreach name, spec : _measurements
   else
     _gen = disabler()
   endif
+
+  # Extract the tarball at configure-time to make it easier to manage
+  _extract_path = meson.current_build_dir() / f'@name@.m'
+  if run_command(_extract_ms, files(_out), _extract_path, check: false).returncode() != 0
+    warning(f'Failed to extract @_root@@_out@, some tests may fail!')
+  endif
+
   testdata_meas += {name: {
-    'tarball': files(_out),
-    'extracted': custom_target(output: name+'.m', input: files(_out), command: _extract,
-        env: hpctoolkit_pyenv, build_by_default: false),
+    'dir': _extract_path,
     'xfail': name in _xfails,
     'fresh': _gen,
     'gen': {
