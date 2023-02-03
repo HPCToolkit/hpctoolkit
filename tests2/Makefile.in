@@ -593,11 +593,8 @@ all-am:
 clean-local:
 	meson compile -C ../tests2-build/ --clean
 
-gen-testdata:
-	meson compile -C ../tests2-build/ gen-testdata
-
-install-testdata:
-	meson compile -C ../tests2-build/ install-testdata
+tests2/%:
+	meson compile -C ../tests2-build/ $*
 
 installcheck-local:
 	meson compile -C ../tests2-build/

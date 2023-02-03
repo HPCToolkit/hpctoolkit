@@ -1,27 +1,28 @@
+testdata_root = 'tests2/data/'
+testdata_srcroot = meson.project_source_root() / '..'
+
 subdir('meas')
 subdir('dbase')
 
-_cp = find_program('cp', native: true)
+_make_tar = find_program(files('make-tar'))
+_tar_cmds = {
+  'none': [_make_tar, '@OUTPUT@'],
+  'cpu': [_make_tar, '@OUTPUT@'],
+  'nvidia': [_make_tar, '@OUTPUT@'],
+  'amd': [_make_tar, '@OUTPUT@'],
+}
 
-_gen_targets = []
-_cp_targets = []
-foreach name, spec : testdata_meas
-  if spec.has_key('gen_target')
-    _gen_targets += spec['gen_target']
-    _cp_targets += [run_target(f'install-testdata-meas-@name@',
-        command: [_cp, spec['gen_target'], spec['tarball']])]
-  endif
+foreach testdata : [testdata_meas, testdata_dbase]
+  foreach _, spec : testdata
+    _suite = spec['gen']['suite']
+    foreach dstpath, srcgen : spec['gen']['files']
+      _tar_cmds += {
+        _suite: _tar_cmds[_suite] + ['--add', srcgen, dstpath],
+      }
+    endforeach
+  endforeach
 endforeach
-foreach name, spec : testdata_dbase
-  if spec.has_key('gen_target')
-    _gen_targets += spec['gen_target']
-    _cp_targets += [run_target(f'install-testdata-dbase-@name@-db',
-        command: [_cp, spec['gen_target_db'], spec['tarball']])]
-    if spec.has_key('yaml')
-      _cp_targets += [run_target(f'install-testdata-dbase-@name@-yaml',
-          command: [_cp, spec['gen_target_yaml'], spec['yaml']])]
-    endif
-  endif
+
+foreach suite, cmd : _tar_cmds
+  custom_target(output: f'fresh-@suite@.tar.xz', command: cmd, build_by_default: false)
 endforeach
-alias_target('gen-testdata', _gen_targets)
-alias_target('install-testdata', _cp_targets)

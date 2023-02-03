@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import tarfile
 import tempfile
 import typing as T
 import xml.dom.minidom
@@ -227,7 +228,7 @@ class UnscannedBuildResult(ActionResult):
 
     @property
     def completed(self):
-        return True
+        return self.subresult.completed
 
     @property
     def passed(self):
@@ -378,9 +379,6 @@ class Test(MakeAction):
 
     def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
-
-    def weak_dependencies(self) -> tuple[Action, ...]:
-        return (InstallTestData(),)
 
     def fixup_meson(self, res, tests2bdir: Path, testxml: Path) -> bytes | ActionResult:
         testjson = tests2bdir / "meson-logs" / "testlog.json"
@@ -548,14 +546,50 @@ class Test(MakeAction):
         return final_res
 
 
-class GenTestData(MakeAction):
+class UnsavedTestDataResult(ActionResult):
+    """Result used when the generated test data was not saved"""
+
+    def __init__(self, subresult: ActionResult):
+        self.subresult = subresult
+
+    @property
+    def completed(self):
+        return self.subresult.completed
+
+    @property
+    def passed(self):
+        return self.subresult.passed
+
+    @property
+    def flawless(self):
+        return False
+
+    def summary(self):
+        return "test data was not saved" if self.subresult.flawless else self.subresult.summary()
+
+
+class FreshTestData(MakeAction):
     """Generate data for later, offline tests"""
 
+    def __init__(self):
+        self.unpack: bool = False
+
     def name(self) -> str:
-        return "make gen-testdata"
+        return f"make tests2/data/fresh-{self.suite}.tar.xz"
 
     def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
+
+    @property
+    def suite(self) -> str:
+        raise NotImplementedError
+
+    suites: T.ClassVar[dict[str, type["FreshTestData"]]] = {}
+
+    @classmethod
+    def register(cls, subcls):
+        cls.suites[subcls.suite] = subcls
+        return subcls
 
     def run(
         self,
@@ -566,25 +600,42 @@ class GenTestData(MakeAction):
         installdir: Path,
         logdir: T.Optional[Path] = None,
     ) -> ActionResult:
-        return self._run("gen-testdata", cfg, builddir, "gen-testdata", logdir=logdir)
+        suite = self.suite
+        result = self._run(
+            f"fresh-testdata-{suite}",
+            cfg,
+            builddir,
+            f"tests2/data/fresh-{suite}.tar.xz",
+            logdir=logdir,
+        )
+        if self.unpack and result.completed:
+            with tarfile.open(builddir / "tests2-build" / "data" / f"fresh-{suite}.tar.xz") as tarf:
+                tarf.extractall(srcdir)
+        if logdir is not None:
+            if result.completed:
+                shutil.copyfile(
+                    builddir / "tests2-build" / "data" / f"fresh-{suite}.tar.xz",
+                    logdir / f"fresh-{suite}.tar.xz",
+                )
+            return result
+        return UnsavedTestDataResult(result)
 
 
-class InstallTestData(MakeAction):
-    """Generate data for later tests, and install it to the source directory."""
+@FreshTestData.register
+class FreshTestDataNone(FreshTestData):
+    suite: T.ClassVar[str] = "none"
 
-    def name(self) -> str:
-        return "make install-testdata"
 
-    def dependencies(self) -> tuple[Action, ...]:
-        return Build(), Install()
+@FreshTestData.register
+class FreshTestDataCPU(FreshTestData):
+    suite: T.ClassVar[str] = "cpu"
 
-    def run(
-        self,
-        cfg: Configuration,
-        *,
-        builddir: Path,
-        srcdir: Path,
-        installdir: Path,
-        logdir: T.Optional[Path] = None,
-    ) -> ActionResult:
-        return self._run("install-testdata", cfg, builddir, "install-testdata", logdir=logdir)
+
+@FreshTestData.register
+class FreshTestDataNvidia(FreshTestData):
+    suite: T.ClassVar[str] = "nvidia"
+
+
+@FreshTestData.register
+class FreshTestDataAMD(FreshTestData):
+    suite: T.ClassVar[str] = "amd"

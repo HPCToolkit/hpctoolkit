@@ -15,15 +15,7 @@ import typing as T
 from pathlib import Path
 
 from .action import Action, SummaryResult, action_sequence
-from .buildsys import (
-    Build,
-    CheckInstallManifest,
-    Configure,
-    GenTestData,
-    Install,
-    InstallTestData,
-    Test,
-)
+from .buildsys import Build, CheckInstallManifest, Configure, FreshTestData, Install, Test
 from .configuration import (
     ConcreteSpecification,
     Configuration,
@@ -33,15 +25,15 @@ from .configuration import (
 )
 from .logs import FgColor, colorize, print_header, section
 
-actions = {
+actions: dict[str, tuple[type[Action], ...]] = {
     "configure": (Configure,),
     "build": (Build,),
     "install": (Install,),
     "check-install": (CheckInstallManifest,),
     "test": (Test,),
-    "gen-testdata": (GenTestData,),
-    "install-testdata": (InstallTestData,),
 }
+for suite, cls in FreshTestData.suites.items():
+    actions[f"fresh-testdata-{suite}"] = (cls,)
 
 
 def parse_spec(spec: str) -> Specification:
@@ -204,6 +196,12 @@ Examples:
         help="configure: Use the given compiler instead of the system default",
     )
     parser.add_argument(
+        "--fresh-unpack",
+        default=False,
+        action="store_true",
+        help="fresh-testdata-*: Unpack the generated test data to the source directory",
+    )
+    parser.add_argument(
         "--test-junit-copyout",
         default=False,
         action="store_true",
@@ -214,7 +212,9 @@ Examples:
 
 def post_parse(args):
     Test().junit_copyout = args.test_junit_copyout
-    if args.keep or args.test_junit_copyout:
+    for cls in FreshTestData.suites.values():
+        cls().unpack = args.fresh_unpack
+    if args.keep or args.fresh_unpack or args.test_junit_copyout:
         args.single_spec = True
     args.action = action_sequence([act() for name in args.action for act in actions[name]])
     return args
