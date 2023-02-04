@@ -12,10 +12,15 @@ _tar_cmds = {
   'amd': [_make_tar, '@OUTPUT@'],
 }
 
-foreach testdata : [testdata_meas, testdata_dbase]
+_disabled = []
+foreach testdata : [testdata_meas, testdata_dbase_current]
   foreach _, spec : testdata
     _suite = spec['gen']['suite']
     foreach dstpath, srcgen : spec['gen']['files']
+      if is_disabler(srcgen) and _suite not in _disabled
+        warning(f'data/fresh-@_suite@ target is available, generation target for @dstpath@ is disabled')
+        _disabled += _suite
+      endif
       _tar_cmds += {
         _suite: _tar_cmds[_suite] + ['--add', srcgen, dstpath],
       }
