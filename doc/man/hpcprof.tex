@@ -53,7 +53,9 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcprof} \oOpt{options} \Arg{measurement-group}...
+\Prog{hpcprof} \oOpt{options} \Arg{measurements}...
+
+\Prog{<mpi-launcher>}... \Prog{hpcprof-mpi} \oOpt{options} \Arg{measurements}...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
@@ -61,15 +63,15 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 \Prog{hpcprof} analyzes call path profile performance measurements,
 attributes them to static source code structure,
 and generates an experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
-For analyzing and attributing the performance of large-scale executions,
-use \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}}, a parallel version of \Prog{hpcprof}.
 
-\Prog{hpcprof} expects a list of \emph{measurement groups},
+\Prog{hpcprof-mpi} additionally parallelizes the analysis across multiple compute
+nodes, using MPI for communication.
+This is usually not needed except for especially large-scale executions (more than about 100,000 threads).
+Using 8-10 compute nodes is recommended as larger numbers tend to not improve the analysis speed.
+
+\Prog{hpcprof}/\Prog{hpcprof-mpi} expects a list of \emph{measurements},
 each of which is either a call path profile directory or an individual profile file.
-For best results, you may need to specify one or more
-\textbf{-I} options to specify search directories for source code files.
-If no search directories are specified,
-\Prog{hpcprof} will find only source files whose paths are recorded in an application binary, shared library, or GPU binary
+\Prog{hpcprof}/\Prog{hpcprof-mpi} will find only source files whose paths are recorded in an application binary, shared library, or GPU binary
 as an absolute path still present in the file system or a relative path with respect to the current working directory.
 If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} was run on the measurements directory, no \textbf{-S} arguments are needed.
 
@@ -78,8 +80,8 @@ If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} was run on the measurements dir
 \section{Arguments}
 
 \begin{Description}
-\item[\Arg{measurement-group}...] A sequence of file system paths,
-each speciufying a call path profile directory or an individual profile file.
+\item[\Arg{measurements}...] A sequence of file system paths,
+each specifying a call path profile directory or an individual profile file.
 \end{Description}
 
 Default values for an option's optional arguments are shown in \{\}.
@@ -88,8 +90,8 @@ Default values for an option's optional arguments are shown in \{\}.
 
 \begin{Description}
 
-\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}]
-Print progress messages to stderr at verbosity level \Arg{n}.  \{1\}
+\item[\Opt{-v}, \Opt{--verbose}]
+Print additional messages to stderr.
 
 \item[\Opt{-V}, \Opt{--version}]
 Print version information.
@@ -97,8 +99,8 @@ Print version information.
 \item[\Opt{-h}, \Opt{--help}]
 Print help.
 
-\item[\OptoArg{--debug}{n}]
-Print debugging messages at level \Arg{n}. \{1\}
+\item[\OptArg{-j}{threads}]
+Perform analysis with \Arg{threads} threads.  \{<all available>\}
 
 \end{Description}
 
@@ -107,14 +109,6 @@ Print debugging messages at level \Arg{n}. \{1\}
 \begin{Description}
 \item[\OptArg{--name}{name}, \OptArg{--title}{name}]
 Set the database's name (title) to \Arg{name}.
-
-\item[\OptArg{-I}{dir}, \OptArg{--include}{dir}]
-Use \Arg{dir} as a search directory to find source files.
-For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}.
-This option may be given multiple times.
-\medskip
-If a file appears in more than one search directory,
-the ambiguity is resolved in favor of the search directory which occurred first on the command line.
 
 \item[\OptArg{-S}{file}, \OptArg{--structure}{file}]
 Use the structure file \Arg{file} produced by \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}
@@ -161,18 +155,9 @@ Compute the specified metrics, where \Arg{metric} is one of the following:
   Min, Max over threads/processes
   \item[thread] per-thread/process metrics
   \end{itemize}
-Note that \Cmd{hpcprof-mpi}{1} cannot compute \Prog{thread}.
 
 The default metric is \Prog{sum}.
 This option may be given multiple times.
-
-\item[\Opt{--force-metric}]
-Show all thread-level metrics regardless of their number.
-
-\item[\OptArg{--normalize}{all | none}]
-If this option is \Prog{all}, normalize call paths in profiles to hide implementation details;
-if \Prog{none}, do not normalize.
-If not given, the default is \Prog{all}..
 
 \end{Description}
 
@@ -183,13 +168,6 @@ If not given, the default is \Prog{all}..
 \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}]
 Write the computed experiment database to \Arg{db-path}.
 The default path is \File{./hpctoolkit-$<$application$>$-database}.
-
-\item[\Opt{--remove-redundancy}]
-Eliminate procedure name redundancy in output file \File{experiment.xml}.
-
-\item[\Opt{--struct-id}]
-Add 'str=nnn' field to profile data with the hpcstruct node id.
-The default is \Prog{no}.
 
 \end{Description}
 
@@ -210,8 +188,7 @@ The default is \Prog{no}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
-\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.\\
-\HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}}.
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}

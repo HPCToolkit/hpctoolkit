@@ -73,7 +73,6 @@ MYSOURCES = \
 	hpcstruct.tex \
 	\
 	hpcprof.tex \
-	hpcprof-mpi.tex \
 	hpcproftt.tex \
 	\
 	hpcviewer.tex
@@ -98,7 +97,6 @@ man_MANS = \
 	hpclink.1hpctoolkit \
 	hpcstruct.1hpctoolkit \
 	hpcprof.1hpctoolkit \
-	hpcprof-mpi.1hpctoolkit \
 	hpcproftt.1hpctoolkit \
 	hpcviewer.1hpctoolkit
 
