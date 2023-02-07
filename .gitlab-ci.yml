@@ -270,7 +270,7 @@ regen testdata:
   image: docker.io/nvidia/cuda:$CUDA-devel-ubuntu20.04
   parallel:
     matrix:
-    - CUDA: [11.8.0]
+    - CUDA: [11.8.0, 12.0.1]
   variables:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +cuda
@@ -314,7 +314,7 @@ regen testdata:
   image: docker.io/rocm/dev-ubuntu-20.04:$ROCM
   parallel:
     matrix:
-    - ROCM: [5.2.3]
+    - ROCM: [5.1.3, 5.2.3, 5.3.2, 5.4.2]
   variables:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +rocm
@@ -338,7 +338,7 @@ regen testdata:
   tags: [docker, linux/amd64]
   parallel:
     matrix:
-    - ONEAPI: ['2022.2']
+    - ONEAPI: ['2022.2', '2022.3.1', '2023.0.0']
       GTPIN: ['3.0']
   variables:
     IMAGE_BASE: ubuntu20.04
