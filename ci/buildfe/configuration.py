@@ -316,7 +316,6 @@ class Manifest:
             _ManifestFile("share/doc/hpctoolkit/man/hpcstruct.html"),
             _ManifestFile("share/doc/hpctoolkit/man/hpctoolkit.html"),
             _ManifestFile("share/doc/hpctoolkit/man/hpcviewer.html"),
-            _ManifestFile("share/doc/hpctoolkit/manual/HPCToolkit-users-manual.pdf"),
             _ManifestFile("share/doc/hpctoolkit/overview.html"),
             _ManifestFile("share/doc/hpctoolkit/publications.html"),
             _ManifestFile("share/doc/hpctoolkit/README.Acknowledgments"),
