@@ -75,8 +75,7 @@ LOOSEDOCS = \
 SUBDIRS = \
 	www \
 	\
-	man \
-	manual
+	man
 
 loosedocsdir = $(docdir)
 dist_loosedocs_DATA = $(LOOSEDOCS)
