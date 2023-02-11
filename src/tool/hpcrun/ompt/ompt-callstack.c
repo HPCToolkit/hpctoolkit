@@ -298,22 +298,27 @@ ompt_elide_runtime_frame(
 
   // collapse callstack if a thread is idle or waiting in a barrier
   switch(check_state()) {
-    case ompt_state_wait_barrier:
-    case ompt_state_wait_barrier_implicit:
-    case ompt_state_wait_barrier_explicit:
-      // collapse barriers on non-master ranks
-      if (hpcrun_ompt_get_thread_num(0) != 0) {
-	collapse_callstack(bt, hpcrun_placeholder_ompt_barrier_wait_state);
-	goto return_label;
-      }
-      break;
-    case ompt_state_idle:
-      // collapse idle state
-      TD_GET(omp_task_context) = 0;
-      collapse_callstack(bt, hpcrun_placeholder_ompt_idle_state);
+  case ompt_state_wait_barrier:
+  case ompt_state_wait_barrier_implicit:
+  case ompt_state_wait_barrier_explicit:
+  case ompt_state_wait_barrier_implicit_parallel:
+  case ompt_state_wait_barrier_implicit_workshare:
+  case ompt_state_wait_barrier_implementation:
+  case ompt_state_wait_barrier_teams:
+
+    // collapse barriers on non-master ranks
+    if (hpcrun_ompt_get_thread_num(0) != 0) {
+      collapse_callstack(bt, hpcrun_placeholder_ompt_barrier_wait_state);
       goto return_label;
-    default:
-      break;
+    }
+    break;
+  case ompt_state_idle:
+    // collapse idle state
+    TD_GET(omp_task_context) = 0;
+    collapse_callstack(bt, hpcrun_placeholder_ompt_idle_state);
+    goto return_label;
+  default:
+    break;
   }
 
   int i = 0;
