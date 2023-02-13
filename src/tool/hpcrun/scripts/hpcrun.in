@@ -463,6 +463,7 @@ do
 			die "HPCToolkit was not compiled with AMD ROCm support enabled"
 		    fi
                     if test "${ROCM_PATH}/lib/rocprofiler/metrics.xml"x != x ; then
+                        export HSA_ENABLE_INTERRUPTS=0
 		        export HSA_TOOLS_LIB=librocprofiler64.so.1
 		        export ROCP_TOOL_LIB=libhpcrun.so
 		        export ROCP_METRICS="${ROCM_PATH}/lib/rocprofiler/metrics.xml"
