@@ -316,7 +316,11 @@ hpcrun_event_list()
 static bool
 hpcrun_output_event_list()
 {
-  bool output_event_list = strcmp(hpcrun_event_list(), "LIST") == 0;
+  bool output_event_list = false;
+  const char *list = hpcrun_event_list();
+  if (list) {
+    output_event_list = strcmp(list, "LIST") == 0;
+  }
   return output_event_list;
 }
 
