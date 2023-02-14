@@ -27,6 +27,16 @@ include:
 # Jobs for constructing the container images used in CI
 - local: ci/containers/.gitlab-ci.yml
 
+.rebuild images:
+  rules:
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+  - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: rebuild images/'
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes:
+    - ci/dependencies/latest/spack.yaml
+    - ci/dependencies/minimum/spack.yaml
+    - ci/containers/**/*
+
 
 variables:
   # Add a transfer progress bar for artifacts

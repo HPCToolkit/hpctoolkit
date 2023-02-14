@@ -1,19 +1,11 @@
 # This pipeline fragment builds and publishes the container images we use in CI.
 
-.rebuild containers:
-  rules: &rebuild
-  - !reference [.rebuild deps, rules]
-  - if: $CI_COMMIT_REF_PROTECTED == "true"
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    changes:
-    - ci/containers/**/*
-
 # Package up images containing the Spack-built dependencies
 'deps:package: [amd64]':
   stage: deps:package
   tags: [docker, linux/amd64]
   image: quay.io/buildah/stable
-  rules: *rebuild
+  rules: !reference [.rebuild images, rules]
   retry: 2
   needs:
   - 'deps:generate: [amd64]'
@@ -84,8 +76,11 @@
 
   # Push up the built image
   - >-
-    sudo -u build buildah push
+    sudo -u build buildah push --digestfile "$IMAGE-$ARCH.digest"
     "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH"
+  artifacts:
+    paths:
+    - '*.digest'
 'deps:package: [arm64]':
   extends: 'deps:package: [amd64]'
   tags: [docker, linux/arm64]
@@ -106,7 +101,7 @@
     name: quay.io/skopeo/stable
     entrypoint: ['']
   rules:
-  - !reference [.rebuild containers, rules]
+  - !reference [.rebuild images, rules]
   - when: on_success
     variables:
       REUSE_OTHER_IMAGE: 1
@@ -153,7 +148,7 @@ publish deps:
   image:
     name: quay.io/skopeo/stable
     entrypoint: ['']
-  rules: *rebuild
+  rules: !reference [.rebuild images, rules]
   retry: 2
   dependencies:
   - 'deps:package: [amd64]'

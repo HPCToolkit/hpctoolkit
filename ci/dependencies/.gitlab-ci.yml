@@ -15,22 +15,13 @@
 # script to generate a single top-level pipeline that launches all the others. This removes most of
 # the combinatorial burden, leaving us with (two) trigger jobs to launch the MLP.
 
-.rebuild deps:
-  rules: &rebuild
-  - if: $CI_COMMIT_REF_PROTECTED == "true"
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    changes:
-    - ci/dependencies/latest/spack.yaml
-    - ci/dependencies/minimum/spack.yaml
-    - ci/containers/**/*
-
 # Generate a pipeline for each combination of OS and arch.
 'deps:generate: [amd64]':
   stage: deps:generate
   image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
   tags: [docker, linux/$ARCH]
   needs: []
-  rules: *rebuild
+  rules: !reference [.rebuild images, rules]
   variables:
     ARCH: amd64
   parallel: &parallel_amd64
@@ -129,7 +120,7 @@
   stage: deps:prep
   tags: [docker]
   image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
-  rules: *rebuild
+  rules: !reference [.rebuild images, rules]
   needs:
   - 'deps:generate: [amd64]'
   before_script:
@@ -154,7 +145,7 @@
 # Launch the MLP and get this done.
 deps:build amd64:
   stage: deps:build
-  rules: *rebuild
+  rules: !reference [.rebuild images, rules]
   needs: ['deps:mlp: [amd64]']
   trigger:
     strategy: depend
@@ -163,7 +154,7 @@ deps:build amd64:
       artifact: ci.yml
 deps:build arm64:
   stage: deps:build
-  rules: *rebuild
+  rules: !reference [.rebuild images, rules]
   needs: ['deps:mlp: [arm64]']
   trigger:
     strategy: depend
