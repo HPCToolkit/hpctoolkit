@@ -1,0 +1,54 @@
+# Dockerfile for CI image for OpenSUSE Leap 15
+
+FROM registry.opensuse.org/opensuse/leap:15
+ARG TARGETARCH
+
+# Install all the packages required:
+#  - Base system pieces required by Spack
+#  - Compilers
+#  - Extra utilities
+# python3-boto3 is needed for S3 access
+RUN zypper install -y \
+    bzip2 \
+    ccache \
+    clang13 \
+    clang11 \
+    curl \
+    eatmydata \
+    file \
+    gcc gcc-c++ gcc-fortran \
+    gcc7 gcc7-c++ gcc7-fortran \
+    gcc8 gcc8-c++ gcc8-fortran \
+    gcc9 gcc9-c++ gcc9-fortran \
+    gcc10 gcc10-c++ gcc10-fortran \
+    gcc11 gcc11-c++ gcc11-fortran \
+    git \
+    git-lfs \
+    gzip \
+    make \
+    mercurial \
+    patch \
+    patchelf \
+    python310 \
+    python310-pip \
+    subversion \
+    tar \
+    unzip \
+    xz \
+    zstd \
+  && zypper clean \
+  && ln -s /usr/bin/python3.10 /usr/local/bin/python3
+
+# Install the permanent Spack configuration
+COPY config.yaml /etc/spack/
+COPY compilers.yaml /etc/spack/linux/
+RUN \
+  case $TARGETARCH in \
+  amd64) target=x86_64; ;; \
+  arm64) target=aarch64; ;; \
+  ppc64le) target=ppc64le; ;; \
+  *) echo "Invalid TARGETARCH: $TARGETARCH"; exit 1; ;; \
+  esac \
+  && sed -i "s/@TARGET@/$target/g" /etc/spack/linux/compilers.yaml
+
+INCLUDE ../spack.inc

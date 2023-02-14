@@ -1,0 +1,171 @@
+# This pipeline fragment builds and publishes the container images we use in CI.
+
+.rebuild containers:
+  rules: &rebuild
+  - !reference [.rebuild deps, rules]
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    changes:
+    - ci/containers/**/*
+
+# Package up images containing the Spack-built dependencies
+'deps:package: [amd64]':
+  stage: deps:package
+  tags: [docker, linux/amd64]
+  image: quay.io/buildah/stable
+  rules: *rebuild
+  retry: 2
+  needs:
+  - 'deps:generate: [amd64]'
+  - 'deps:build amd64'
+  variables:
+    ARCH: amd64
+  parallel:
+    matrix:
+    # Base CI images
+    - BASE: [leap15, almalinux8, ubuntu20.04, fedora36]
+    # CI images including the CUDA Toolkit
+    - BASE: almalinux8
+      EXT: [cuda10.2]
+    - BASE: ubuntu20.04
+      EXT: [cuda11.6.2, cuda11.8.0, cuda12.0.1]
+    # CI images including the ROCm tools
+    - BASE: ubuntu20.04
+      EXT: [rocm5.1.3, rocm5.2.3, rocm5.3.2, rocm5.4.2]
+    # CI images including Level 0 (and GTPin)
+    - BASE: ubuntu20.04
+      EXT: [lvlz2022.2, lvlz2022.3.1, lvlz2023.0.0]
+  cache:
+  - key: spack-bincache-$BASE:$ARCH
+    when: always
+    paths:
+    - .spack-bincache-shared/
+  - key: spack-bincache-$BASE:$ARCH-$CI_COMMIT_REF_SLUG
+    when: always
+    paths:
+    - .spack-bincache-nonprotected/
+  before_script:
+  - sudo -u build buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  - IMAGE=$BASE${EXT:+-}$EXT
+  script:
+  # Configure this Spack instance with the buildcache mirrors.
+  # This is temporary and won't persist into the final images
+  - mkdir .spack-config/
+  - ci/dependencies/spack-bc-downstream.sh > .spack-config/mirrors.yaml
+  - |
+    cat > .spack-config/config.yaml <<EOF
+    config:
+      local_binary_cache:
+      - prefixes: ['${SBCACHE_URL}/nonprotected']
+        root: '/cache/spack-bincache-nonprotected/'
+      - root: '/cache/spack-bincache-shared/'
+    EOF
+
+  # Make sure the rootless user and container will be able to access everything
+  - mkdir -p .spack-bincache-shared/ .spack-bincache-nonprotected/
+  - chown -R build:build .spack-bincache-shared/ .spack-bincache-nonprotected/
+
+  # Generate the checksums for the final image
+  - ci/containers/gen-cksum $IMAGE:$ARCH > spec.cksum
+
+  # Build the image we want to use in CI
+  - ci/containers/expand-includes ci/containers/$IMAGE/Containerfile.in > ci/containers/$IMAGE/Containerfile
+  - >-
+    sudo -u build buildah build --isolation chroot
+    --secret id=buildcache,src=.spack-config/mirrors.yaml
+    --secret id=buildcache_config,src=.spack-config/config.yaml
+    --build-context envs=ci/dependencies/
+    --build-context cenvs=ci/dependencies/c/$BASE/$ARCH/
+    --build-context buildcache_cache=.spack-bincache-shared/
+    --build-context buildcache_cache_nonprot=.spack-bincache-nonprotected/
+    --label edu.rice.hpctoolkit.ci.spec="$(cat spec.cksum)"
+    --tag "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH" --arch $ARCH
+    ci/containers/$IMAGE
+
+  # Push up the built image
+  - >-
+    sudo -u build buildah push
+    "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH"
+'deps:package: [arm64]':
+  extends: 'deps:package: [amd64]'
+  tags: [docker, linux/arm64]
+  needs:
+  - 'deps:generate: [arm64]'
+  - 'deps:build arm64'
+  variables:
+    ARCH: arm64
+  parallel:
+    matrix:
+    - BASE: [ubuntu20.04]
+
+# Summary jobs for later jobs to directly depend on
+'deps: [amd64]':
+  stage: deps
+  tags: [docker, linux/amd64]
+  image:
+    name: quay.io/skopeo/stable
+    entrypoint: ['']
+  rules:
+  - !reference [.rebuild containers, rules]
+  - when: on_success
+    variables:
+      REUSE_OTHER_IMAGE: 1
+  retry: 2
+  needs:
+  - job: 'deps:package: [amd64]'
+    optional: true
+  variables:
+    IMGSPECS: >-
+      leap15:amd64 almalinux8:amd64 ubuntu20.04:amd64 fedora36:amd64
+      almalinux8-cuda10.2:amd64 ubuntu20.04-cuda11.8.0:amd64 ubuntu20.04-cuda12.0.1:amd64
+      ubuntu20.04-rocm5.1.3:amd64 ubuntu20.04-rocm5.2.3:amd64 ubuntu20.04-rocm5.3.2:amd64 ubuntu20.04-rocm5.4.2:amd64
+      ubuntu20.04-lvlz2022.2:amd64 ubuntu20.04-lvlz2022.3.1:amd64 ubuntu20.04-lvlz2023.0.0:amd64
+  script:
+  - echo -n "DEPS_IMAGES=" > deps.env
+  - if [ -n "$REUSE_OTHER_IMAGE" ]; then
+  - # We didn't build this time, so we are expecting to be able to reuse a prior image. Search for
+    # any suitable images and mark down the needed prefixes.
+    - if ! ci/containers/find-reusable-img $IMGSPECS >> deps.env; then
+    # We can't find a suitable image. This is a hard error.
+    - echo "Unable to find a suitable deps image to reuse for running this pipeline!"
+    - echo "This might be because the environments were recently updated and the $CI_DEFAULT_BRANCH pipeline is still running."
+    - exit 1
+    - fi
+  - else
+  - echo "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}" >> deps.env
+  - fi
+  artifacts:
+    reports:
+      dotenv: deps.env
+'deps: [arm64]':
+  extends: 'deps: [amd64]'
+  tags: [docker, linux/arm64]
+  needs:
+  - job: 'deps:package: [arm64]'
+    optional: true
+  variables:
+    IMGSPECS: 'ubuntu20.04:arm64'
+
+# If the pipeline as a whole passed, rename the image tag to something downstream MRs can use
+publish deps:
+  stage: .post
+  tags: [docker]
+  image:
+    name: quay.io/skopeo/stable
+    entrypoint: ['']
+  rules: *rebuild
+  retry: 2
+  dependencies:
+  - 'deps:package: [amd64]'
+  - 'deps:package: [arm64]'
+  before_script:
+  - skopeo login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+  - find . -type f -maxdepth 1 -name '*.digest' | while read df; do
+  - # Compose the source image and destination tag that we will publish
+    - src="$CI_REGISTRY_IMAGE/ci@$(cat $df)"
+    - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then PREFIX=latest-; else PREFIX=nonprot-; fi
+    - dst="$CI_REGISTRY_IMAGE/ci:$PREFIX$CI_COMMIT_REF_SLUG-$(basename "$df" .digest)"
+    - echo "Publishing $src as $dst..."
+    - skopeo copy docker://"$src" docker://"$dst"
+  - done

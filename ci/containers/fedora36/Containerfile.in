@@ -1,0 +1,49 @@
+# Dockerfile for CI image for Fedora 36
+
+FROM registry.fedoraproject.org/fedora:36
+ARG TARGETARCH
+
+# Install all the packages required:
+#  - Base system pieces required by Spack
+#  - Compilers
+#  - Extra utilities
+# python3-boto3 is needed for S3 access
+RUN yum update -y \
+  && yum install -y \
+    bzip2 \
+    ccache \
+    clang \
+    eatmydata \
+    file \
+    gcc gcc-c++ gcc-gfortran \
+    git \
+    git-lfs \
+    make \
+    mercurial \
+    patch \
+    patchelf \
+    perl-open \
+    perl-FindBin \
+    python3 \
+    python3-boto3 \
+    python3-pip \
+    subversion \
+    unzip \
+    xz \
+    zstd \
+  && yum clean all && rm -rf /var/yum/* /var/dnf/* \
+  && python3 -m pip --no-cache-dir install clingo
+
+# Install the permanent Spack configuration
+COPY config.yaml /etc/spack/
+COPY compilers.yaml /etc/spack/linux/
+RUN \
+  case $TARGETARCH in \
+  amd64) target=x86_64; ;; \
+  arm64) target=aarch64; ;; \
+  ppc64le) target=ppc64le; ;; \
+  *) echo "Invalid TARGETARCH: $TARGETARCH"; exit 1; ;; \
+  esac \
+  && sed -i "s/@TARGET@/$target/g" /etc/spack/linux/compilers.yaml
+
+INCLUDE ../spack.inc

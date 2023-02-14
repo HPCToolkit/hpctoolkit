@@ -1,0 +1,26 @@
+# Dockerfile for CI image for Ubuntu Focal (20.04) with Intel's OneAPI release 2022.2
+
+FROM docker.io/intel/oneapi-basekit:2022.2-devel-ubuntu20.04 as base
+ARG TARGETARCH
+
+# Wipe the problematic environment set by the basekit image
+ENV PYTHONPATH=
+ENV PKG_CONFIG_PATH=
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV CPATH=
+ENV LIBRARY_PATH=
+ENV LD_LIBRARY_PATH=
+ENV CMAKE_PREFIX_PATH=
+
+# Install the extra packages required:
+#  - IGC headers
+RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
+    libigdfcl-dev libigc-dev \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install (a version of) GTPin
+ADD https://downloadmirror.intel.com/730598/external-release-gtpin-3.0-linux.tar.xz /tmp/gtpin-3.0.tar.xz
+RUN mkdir /opt/gtpin-3.0 && tar -C /opt/gtpin-3.0/ -xJf /tmp/gtpin-3.0.tar.xz && rm /tmp/gtpin-3.0.tar.xz
+
+INCLUDE ../ubuntu20.04/main.inc
