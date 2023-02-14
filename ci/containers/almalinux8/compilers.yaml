@@ -1,0 +1,21 @@
+compilers:
+- compiler:
+    spec: gcc@8.5.0
+    modules: []
+    operating_system: almalinux8
+    target: @TARGET@
+    paths:
+      cc: /usr/bin/gcc
+      cxx: /usr/bin/g++
+      f77: /usr/bin/gfortran
+      fc: /usr/bin/gfortran
+- compiler:
+    spec: clang@14.0.6
+    modules: []
+    operating_system: almalinux8
+    target: @TARGET@
+    paths:
+      cc: /usr/bin/clang
+      cxx: /usr/bin/clang++
+      f77: null
+      fc: null

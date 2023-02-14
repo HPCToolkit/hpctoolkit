@@ -1,0 +1,6 @@
+# Dockerfile for CI image for Alma Linux 8 (proxy for RHEL 8)
+
+FROM quay.io/almalinux/8-base:8
+ARG TARGETARCH
+
+INCLUDE main.inc

@@ -44,8 +44,8 @@ fi
 
 # Set some standard configuration values for Spack in CI
 #   Locking can be slow with fuse-overlayfs, give it a little more time than usual to sort out
-"$SPACK_ROOT"/bin/spack config --scope site add 'config:db_lock_timeout:60'
+"$SPACK_ROOT"/bin/spack config --scope site add 'config:db_lock_timeout:60' || exit $?
 #   The network can be pretty heavy sometimes, don't stop because of that
-"$SPACK_ROOT"/bin/spack config --scope site add 'config:connect_timeout:600'
+"$SPACK_ROOT"/bin/spack config --scope site add 'config:connect_timeout:600' || exit $?
 
 echo -e "\e[0Ksection_end:$(date +%s):spack_clone_init\r\e[0K"

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Expand any INCLUDE directives in the given Containerfile, output to stdout
+# Usage: expand-includes <Containerfile.in>
+
+parse_containerfile() {
+  local prefix
+  prefix="$(dirname "$1")" || return $?
+  # shellcheck disable=SC2162
+  while read command line; do
+    if [ "$command" = INCLUDE ]; then
+      parse_containerfile "$prefix"/"$line" || return $?
+    else
+      echo "$command $line"
+    fi
+  done < "$1"
+}
+parse_containerfile "$1" || exit $?

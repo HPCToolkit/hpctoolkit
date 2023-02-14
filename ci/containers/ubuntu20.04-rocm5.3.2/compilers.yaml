@@ -1,0 +1,31 @@
+compilers:
+- compiler:
+    spec: gcc@9.4.0
+    modules: []
+    operating_system: ubuntu20.04
+    target: @TARGET@
+    paths:
+      cc: /usr/bin/gcc-9
+      cxx: /usr/bin/g++-9
+      f77: /usr/bin/gfortran-9
+      fc: /usr/bin/gfortran-9
+- compiler:
+    spec: gcc@10.3.0
+    modules: []
+    operating_system: ubuntu20.04
+    target: @TARGET@
+    paths:
+      cc: /usr/bin/gcc-10
+      cxx: /usr/bin/g++-10
+      f77: /usr/bin/gfortran-10
+      fc: /usr/bin/gfortran-10
+- compiler:
+    spec: clang@10.0.0
+    modules: []
+    operating_system: ubuntu20.04
+    target: @TARGET@
+    paths:
+      cc: /usr/bin/clang-10
+      cxx: /usr/bin/clang++-10
+      f77: null
+      fc: null

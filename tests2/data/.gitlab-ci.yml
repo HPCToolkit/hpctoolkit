@@ -39,10 +39,6 @@ stages:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   before_script:
-  # Make sure we have the basic set of utilities required to launch Spack and build stuff
-  - >-
-    ci/scripts/ensure-present.sh make git curl cc file patchelf python3 eatmydata
-    py:boto3 py:clingo ${JOB_CC:+ccache} ${IMAGE_EXT:+py:podman} $extra_pkgs
   # Instantiate Spack
   - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
   - ci/dependencies/spack-init.sh
@@ -85,11 +81,7 @@ stages:
 
 'nvidia':
   extends: .regen job
-  services: &podman_service
-  - name: quay.io/podman/stable
-    entrypoint: ['/usr/bin/sudo', '-u', 'podman', 'podman', 'system', 'service', '-t', '0', 'tcp://0.0.0.0:7000']
-    alias: podman
-  image: docker.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
+  image: $DEPS_IMAGES-ubuntu20.04-cuda11.6.2-$ARCH
   tags: [docker, linux/amd64, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     IMAGE_BASE: ubuntu20.04
@@ -102,13 +94,10 @@ stages:
   - !reference [.regen job, before_script]
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
-  # Pull dependencies from the base image
-  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
 
 'amd':
   extends: .regen job
-  services: *podman_service
-  image: docker.io/rocm/dev-ubuntu-20.04:5.2.3
+  image: $DEPS_IMAGES-ubuntu20.04-rocm5.2.3-$ARCH
   tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
   variables:
     IMAGE_BASE: ubuntu20.04
@@ -121,8 +110,6 @@ stages:
   - !reference [.regen job, before_script]
   # Pull ROCm from the image itself
   - echo '--with-rocm=/opt/rocm' > img-config
-  # Pull dependencies from the base image
-  - ci/scripts/podman-cp tcp://podman:7000 $DEPS_IMAGES-$IMAGE_BASE-$ARCH /spack
 
 
 package:

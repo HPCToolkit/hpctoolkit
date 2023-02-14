@@ -115,7 +115,9 @@ spack:
       - export SPACK_ROOT="$(realpath .spack)"
       - ci/dependencies/spack-init.sh
       - source "$SPACK_ROOT"/share/spack/setup-env.sh
-      - ci/dependencies/spack-bc-downstream.sh
+      - ci/dependencies/spack-bc-downstream.sh > .bc-ds-mirrors.yaml
+      - spack config --scope site add -f .bc-ds-mirrors.yaml
+      - rm .bc-ds-mirrors.yaml
       script:
       - |
         cat > .spack-config.yml <<EOF
