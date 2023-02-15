@@ -86,7 +86,7 @@ Options: Override parallelism defaults
                        interpreted as kilobytes. One can also control the
                        stack size by setting the OMP_STACKSIZE environment
                        variable. A '-s <v>' option takes precedence,
-                       followed by OMP_STACKSIZE. {8M}
+                       followed by OMP_STACKSIZE. {32M}
 
 Options: Override structure recovery defaults
   --cpu <yes/no>       Analyze CPU binaries referenced by a measurements

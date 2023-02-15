@@ -86,12 +86,12 @@ done
 # 3 strategies to set OMP_STACKSIZE, in order of priority
 # 1. -s argument
 # 2. use existing value of OMP_STACKSIZE, if any
-# 3. default OMP_STACKSIZE to 8M (8MB)
+# 3. default OMP_STACKSIZE to 32M (32MB)
 #------------------------------------------------------------
 if test "x$stacksize" != x; then
   export OMP_STACKSIZE=$stacksize
 elif test "x$OMP_STACKSIZE" = x; then
-  export OMP_STACKSIZE=8M
+  export OMP_STACKSIZE=32M
 fi
 export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
 exec "${libexec_dir}/${binary_name}" $args
