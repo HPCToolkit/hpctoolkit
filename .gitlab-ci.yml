@@ -313,7 +313,7 @@ regen testdata:
   parallel:
     matrix:
     - ONEAPI: ['2022.2', '2022.3.1', '2023.0.0']
-      GTPIN: ['3.0']
+      GTPIN: ['3.0', '3.2.2']
   variables:
     IMAGE_BASE: ubuntu20.04
     IMAGE_EXT: +intel
