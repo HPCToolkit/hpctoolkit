@@ -12,28 +12,30 @@ Installing HPCToolkit with Spack
 6.3 Require, Reuse and Fresh
 7 Bootstrapping Clingo
 8 Compilers and compilers.yaml
-9 Spack Install
-10 Manual Install
-11 Advanced Options
-11.1 CUDA
-11.2 Level Zero
-11.3 ROCM
-11.4 OpenCL
-11.5 MPI
-11.6 PAPI vs Perfmon
-12 Platform Specific Notes
-12.1 Cray
-13 HPCToolkit GUI Interface (Hpcviewer)
-13.1 Spack Install
-13.2 Manual Install
-14 Building a New Compiler
-14.1 Using the New Compiler
-14.2 Bootstrapping Environment Modules
-15 Spack Mirrors
-16 Common Problems
-16.1 Unable to fetch tar file
-16.2 New releases break the build
-16.3 Failure to load modules
+9 Python
+10 Spack Install
+11 Manual Install
+12 Advanced Options
+12.1 CUDA
+12.2 Level Zero
+12.3 ROCM
+12.4 OpenCL
+12.5 MPI
+12.6 PAPI vs Perfmon
+12.7 Python
+13 Platform Specific Notes
+13.1 Cray
+14 HPCToolkit GUI Interface (Hpcviewer)
+14.1 Spack Install
+14.2 Manual Install
+15 Building a New Compiler
+15.1 Using the New Compiler
+15.2 Bootstrapping Environment Modules
+16 Spack Mirrors
+17 Common Problems
+17.1 Unable to fetch tar file
+17.2 New releases break the build
+17.3 Failure to load modules
 
 
 1 Introduction
@@ -83,7 +85,7 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: October 12, 2022.
+Last revised: February 6, 2023.
 
 2 Prerequisites
 ===============
@@ -101,8 +103,8 @@ Building HPCToolkit requires the following prerequisites.
      utilities: bash, sed, awk, grep, etc.  Most Linux systems have
      these tools, or else you couldn't compile anything.
 
-  4. Cmake version 3.4 or later, perl version 5.x, and python version
-     3.6 or later.  On systems that are missing these tools or have
+  4. Cmake version 3.12 or later, perl version 5.x, and python version
+     3.8 or later.  On systems that are missing these tools or have
      versions that are too old, you can use spack to build a later
      version.
 
@@ -159,22 +161,23 @@ both on the command line and in config files.
 
   7. 'arch', 'platform', 'os' and 'target' are special options for the
      system architecture and machine type.  Platform is normally
-     'linux', or else 'cray' (or even 'darwin').  OS is the Linux
-     distribution, 'rhel8', 'sles15', etc, and target is the machine
-     type, 'x86_64', 'ppc64le', etc.  Arch is a triple of platform, os
-     and target separated by dashes.
+     'linux', or else 'cray' (or even 'darwin').  OS (or
+     'operating_system') is the Linux distribution, 'rhel8', 'sles15',
+     etc, and target is the machine type, 'x86_64', 'ppc64le', etc.
+     Arch is a triple of platform, os and target separated by dashes,
+     for example 'linux-rhel8-x86_84'.
 
      Normally, a system has only one arch type and you don't need to
      specify this.  However, for systems with separate front and
      back-end types, the default is the back end.  For example, if you
-     wanted to build python for the front end on Cray, then you might
-     use something like this.
+     wanted to build for the front end on Cray, then you could use
+     something like this.
 
-          python@3.7.4 arch=cray-sles15-x86_64
+          python@3.7.4 arch=cray-sles15-x86_64    boost os=fe
 
-     Also, now that spack has implemented microarchitecture targets
-     (haswell, ivybridge, etc), you can use 'target' to build for a
-     generic x86_64 or a specific CPU type.  For example:
+     Now that spack has implemented microarchitecture targets (haswell,
+     ivybridge, etc), you can use 'target' to build for a generic x86_64
+     or a specific CPU type.  For example:
 
           amg2013 target=x86_64    lulesh target=ivybridge
 
@@ -183,13 +186,17 @@ both on the command line and in config files.
 
           spack arch --known-targets
 
+The following command gives a summary of spack spec syntax.
+
+     spack help --spec
+
 When writing a spec (for 'spack spec, install', etc), spack will fully
 resolve all possible choices for the package and all of its dependencies
 and create a unique hash value for that exact configuration.  This
 process is called 'concretization.'  To see how spack would concretize a
 spec, use 'spack spec'.
 
-     spack spec hpctoolkit@develop ^binutils@2.34 ^boost@1.72.0
+     spack spec hpctoolkit@develop ^elfutils@0.187 ^boost@1.77.0
 
      <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
 
@@ -352,7 +359,7 @@ change depending on your system.  But always check the current
 
 The other sections in 'packages.yaml' specify paths or modules for other
 packages and system build tools.  Building hpctoolkit's prerequisites
-requires cmake 3.4 or later, perl 5.x and python 3.5 or later.  There
+requires cmake 3.10 or later, perl 5.x and python 3.8 or later.  There
 are three ways to satisfy these requirements: a system installed version
 (eg, /usr), a pre-built module or build from scratch.
 
@@ -406,9 +413,9 @@ hpctoolkit (dyninst, elfutils, etc).
 ------------------------------
 
 Spack implements a hierarchy of micro-architecture targets, where
-'target' is a specific architecture (eg, haswell, ivybridge) instead of
-a generic family (x86_64).  This allows the compiler to optimize code
-for the specific target.
+'target' is a specific architecture (eg, haswell, ivybridge, etc)
+instead of a generic family (x86_64, ppc64le or aarch64).  This allows
+the compiler to optimize code for the specific target.
 
    You will notice this choice in two main places: the 'spack spec' and
 the path for the install directory.  For example, 'linux-rhel7-x86_64'
@@ -418,19 +425,23 @@ the list of generic families and micro-architecture targets.
      spack arch --known-targets
 
 If you prefer a generic install, you can use the 'target' option to
-specify a generic family instead of a micro-architecture target.  This
-would be useful for a shared install that needs to work across multiple
-machines with different micro-arch types.  For example:
+specify a generic family (x86_64, ppc64le or aarch64) instead of a
+micro-architecture target.  This would be useful for a shared install
+that needs to work across multiple machines with different micro-arch
+types.  For example:
 
      spack install hpctoolkit ... target=x86_64
 
-If you want to use this target for all spack builds, then you can
-specify this in 'packages.yaml'.  The generic families are: x86_64,
-ppc64, ppc64le and aarch64.  For example:
+You can also specify preferences for 'target', 'compilers' and
+'providers' in the 'all:' section of 'packages.yaml'.  Note: these are
+only preferences, they can be overridden on the command line.
 
      packages:
        all:
          target: [x86_64]
+         compiler: [gcc@9.3.0]
+         providers:
+           mpi: [openmpi]
 
 See the spack docs on 'Build Customization' and 'Specs and
 Dependencies'.
@@ -485,6 +496,15 @@ requires exactly one from a list of specs.  For example,
          require:
            - any_of: ["+bzip2", "+xz"]
 
+You can require the target, compiler or providers in 'packages.yaml' as
+follows.  Recall that the field for 'require:' is a spec in quotes.
+
+     packages:
+       all:
+         require: "%gcc@9.3.0 target=x86_64"
+       mpi:
+         require: "mpich@4.0"
+
      <https://spack.readthedocs.io/en/latest/build_settings.html#package-requirements>
 
 7 Bootstrapping Clingo
@@ -537,8 +557,8 @@ turned on.
 
      spack -d solve zlib
 
-   If the binary bootstrap fails or if your system is not supported,
-then you will need to let spack build clingo from source.  Reset
+If the binary bootstrap fails or if your system is not supported, then
+you will need to let spack build clingo from source.  Reset
 'spack-install' to true and rerun 'spack solve zlib'.  This requires a
 compiler with support for C++14 and takes maybe 30-45 minutes to install
 all the packages.
@@ -605,18 +625,54 @@ how spack manipulates the build environment.
          ...
 
 Spack uses '%' syntax to specify the build compiler and '@' syntax to
-specify the version.  For example, suppose you had gcc versions 7.3.1,
-8.3.0 and 10.2.0 available and you wanted to use 8.3.0.  You could write
+specify the version.  For example, suppose you had gcc versions 8.5.0,
+9.3.0 and 10.2.0 available and you wanted to use 9.3.0.  You could write
 this as:
 
-     spack install package %gcc@8.3.0
+     spack install package %gcc@9.3.0
+
+You can also set the choice of compiler in the 'all:' section of
+'packages.yaml'.
+
+     packages:
+       all:
+         compiler: [gcc@9.3.0]
 
 See the spack docs on 'Compiler Configuration'.
 
      <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
 
-9 Spack Install
-===============
+9 Python
+========
+
+Spack uses Python for two things.  First, to run the Spack scripts
+written in Python, and second, to use as a dependency for other spack
+packages.  These do not have to be the same python version or install.
+
+   Currently, Spack requires at a minimum Python 3.6 to run spack at
+all.  But 3.6 is deprecated and support for both 3.6 and 3.7 will be
+removed in a few months.  So, the best thing to do is to upgrade to
+Python 3.8 or later now.
+
+   If python 3.8 or later is not available on your system, then your
+options to install it are: (1) load a module for a later version, (2)
+use yum or apt to install a later version, (3) ask your sysadmin to
+install a later version, or (4) as a last resort, compile a later
+version.
+
+   If a later python is available on your system but not first in your
+PATH or under a different name, you can set the environment variable
+'SPACK_PYTHON' to the python3 binary.  For example, suppose
+'/usr/bin/python3' is too old, but python 3.8 is available as
+'/usr/bin/python3.8', then you could use:
+
+     export SPACK_PYTHON=/usr/bin/python3.8
+
+If set, 'SPACK_PYTHON' is the path to the Python interpreter used to run
+Spack.
+
+10 Spack Install
+================
 
 First, set up your 'config.yaml', 'packages.yaml' and 'compilers.yaml'
 files as above and edit them for your system.  You can see how spack
@@ -635,7 +691,7 @@ install.
 
      spack fetch -D hpctoolkit
 
-10 Manual Install
+11 Manual Install
 =================
 
 The manual method uses spack to build hpctoolkit's prerequisites and
@@ -688,10 +744,10 @@ recent directory time stamp (and issue a warning).  If this is not what
 you want, then you will need to specify the correct version with a
 '--with-package' option.
 
-11 Advanced Options
+12 Advanced Options
 ===================
 
-11.1 CUDA
+12.1 CUDA
 ---------
 
 Beginning with the 2020.03.01 version, HPCToolkit now supports profiling
@@ -719,7 +775,7 @@ automatically (but check the summary at the end of the configure
 output).  If you are using CUDA from a separate system module, then you
 will need the '--with-cuda' option.
 
-11.2 Level Zero
+12.2 Level Zero
 ---------------
 
 HPCToolkit supports profiling Intel GPUs through the Intel Level Zero
@@ -748,7 +804,7 @@ For an autotools build, use the options:
          --with-igc=/usr   (or oneapi-igc prefix)  \
          ...
 
-11.3 ROCM
+12.3 ROCM
 ---------
 
 HPCToolkit supports profiling AMD GPU binaries through the HIP/ROCM
@@ -816,7 +872,7 @@ option.  Otherwise, use the other four options.
 It is allowed to mix the all-in-one option with the individual packages.
 The rule is that the specific overrides the general.
 
-11.4 OpenCL
+12.4 OpenCL
 -----------
 
 For all three GPU types, an application can access the GPU through the
@@ -834,7 +890,7 @@ For an autotools build, use the '--with-opencl' option.
          --with-opencl=/path/to/opencl-c-headers/prefix  \
          ...
 
-11.5 MPI
+12.5 MPI
 --------
 
 HPCToolkit always supports profiling MPI applications.  For hpctoolkit,
@@ -848,9 +904,16 @@ Normally, for systems with compute nodes, you should use an existing MPI
 module that was built for the correct interconnect for your system and
 add this to 'packages.yaml'.  The MPI module should be built with the
 same version of GNU gcc/g++ used to build hpctoolkit (to keep the C++
-libraries in sync).
+libraries in sync).  For example,
 
-11.6 PAPI vs Perfmon
+     packages:
+       mpich:
+         externals:
+         - spec: mpich@4.0
+           modules:
+           - mpich/4.0
+
+12.6 PAPI vs Perfmon
 --------------------
 
 HPCToolkit can access the Hardware Performance Counters with either PAPI
@@ -870,110 +933,173 @@ automatically detect this, so if you build hpctoolkit with a recent
 enough version of PAPI, then both the PAPI and perfmon interfaces will
 be available.
 
-12 Platform Specific Notes
+12.7 Python
+-----------
+
+Beginning with the 2023 release, HPCToolkit can now profile Python
+scripts and attribute samples to python source functions instead of the
+python interpreter.  This requires Python 3.10 or later and is not the
+same python to run the spack scripts.  This should be the same python
+used to run the application.
+
+     spack install hpctoolkit +python
+
+When building with autotools, use the '--enable-python' argument with
+the path to the 'python-config' command.
+
+     configure  \
+         --enable-python=/path/to/python-config
+         ...
+
+13 Platform Specific Notes
 ==========================
 
-12.1 Cray
+13.1 Cray
 ---------
 
-There are now two types of Cray systems.  The classic, "old-style" Cray
-(theta at ANL) runs static binaries on the compute nodes, uses modules
-PrgEnv-gnu and craype, uses CC, cc and ftn as the MPI wrappers, and
-'spack arch' reports platform cray.  The "new-style" Cray (thetagpu at
-ANL) runs dynamic binaries, uses mpicc and mpicxx from openmpi as the
-MPI wrappers, and 'spack arch' reports platform linux.
+There are two ways to build 'hpcprof-mpi' on Cray systems depending on
+how old the system is and what MPI wrapper is available.  Newer Crays
+have an 'mpicxx' wrapper from the 'cray-mpich' module (but it may not be
+on your PATH). Older Crays use the 'CC' wrapper from the 'craype'
+module.
 
-   On a new-style cray, use '+mpi' and a spack external for openmpi to
-build hpcprof-mpi, just like a non-cray system.  The remainder of this
-section describes how to build hpcprof-mpi for old-style cray.
-
-   Cray systems have separate front and back-end architecture types.
-For example, on theta at ANL, the front-end arch is
-'cray-sles15-haswell' (SuSE Linux version 15 for haswell) and the
-back-end is 'cray-cnl7-haswell' (Compute Node Linux).
-
-   Hpctoolkit needs to be built with the GNU Programming Environment and
-the front-end x86_64 compilers, plus the 'CC' MPI C++ wrapper.  Switch
-to the 'PrgEnv-gnu' module and unload the darshan module.  Darshan is a
+   On either type of system, start by switching to the 'PrgEnv-gnu'
+module and unload the Darshan module if it exists.  Darshan is a
 profiling tool that monitors an application's use of I/O, but it
 conflicts with hpctoolkit.
 
-     module swap PrgEnv-intel PrgEnv-gnu
+     module swap PrgEnv-cray PrgEnv-gnu
      module unload darshan
 
-By default, spack does not correctly identify the gcc compiler modules
-as front-end compilers.  Start by loading a recent gcc module (eg, 8.x,
-9.x or later) and try running 'spack compiler find' and 'spack compiler
-list'.  For example on theta at ANL,
+Next, we need the front-end GCC compiler that is compatible with the MPI
+compiler.  The gcc compiler should use the front-end operating system
+type (sles, not cnl) and should be version 8.x or later (preferably 9.x
+or later).  The 'cc' and 'cxx' compilers should be gcc and g++, not the
+cc and CC wrappers, and the modules should include at least 'PrgEnv-gnu'
+and 'gcc'.
 
-     module load gcc/8.3.0
-     spack compiler find /opt/gcc/8.3.0
+   For example, I have the following on Crusher at ORNL in my
+'compilers.yaml' file (your versions may differ).  Note that spack may
+report the front-end arch type as either cray or linux.
 
-     spack compiler list
-     ==> Available compilers
-     -- gcc cnl7-any -------------------------------------------------
-     gcc@8.3.0  gcc@8.1.0  gcc@7.2.0  gcc@6.3.0  gcc@5.3.0
-     gcc@8.2.0  gcc@7.3.0  gcc@7.1.0  gcc@6.1.0  gcc@4.9.3
-
-     -- gcc sles15-x86_64 --------------------------------------------
-     gcc@8.3.0  gcc@4.8
-
-If spack identifies the compiler (as above), then great.  Note that we
-need spack to accept this as a front-end compiler (sles15-x86_64), not
-just for the back end (cnl7-any).  If spack doesn't find the compiler
-automatically, then you need to add it manually.  Edit
-'~/.spack/cray/compilers.yaml' and add an entry similer to the following
-(your versions may differ).
-
+     compilers:
      - compiler:
-         environment: {}
-         flags: {}
-         modules:
-         - PrgEnv-gnu/6.0.5
-         - gcc/8.3.0
-         - craype/2.6.1
-         - cray-mpich/7.7.10
-         operating_system: sles15
+         spec: gcc@11.2.0
          paths:
-           cc:  /opt/gcc/8.3.0/bin/gcc
-           cxx: /opt/gcc/8.3.0/bin/g++
-           f77: /opt/gcc/8.3.0/bin/gfortran
-           fc:  /opt/gcc/8.3.0/bin/gfortran
-         spec: gcc@8.3.0
+           cc:  /opt/cray/pe/gcc/11.2.0/bin/gcc
+           cxx: /opt/cray/pe/gcc/11.2.0/bin/g++
+           f77: /opt/cray/pe/gcc/11.2.0/bin/gfortran
+           fc:  /opt/cray/pe/gcc/11.2.0/bin/gfortran
+         modules:
+           - PrgEnv-gnu/8.3.3
+           - gcc/11.2.0
+         operating_system: sles15
          target: x86_64
+         ...
 
-Regardless of whether spack created the entry or you added it, you still
-need to add the 'modules:' field manually (be sure to include all four
-modules).  Although it takes several steps to create the correct entry,
-the good news is that it should continue to work as long as the
-underlying module exists.
+New Cray The preferred method for newer Crays is using the '+mpi' option
+and the 'cray-mpich' module.  This requires the 'mpicxx' wrapper,
+although it won't be on your PATH. Look in the '$MPICH_DIR' or
+'$CRAY_MPICH_DIR' directory for the 'mpicxx' wrapper.  For example on
+Crusher, this is at the following path, your path may be different.
 
-   Next, review your 'packages.yaml' file.  On Cray systems with Xeon
-Phi back-end nodes (KNL, KNH, etc), add '~tm' to intel-tbb to disable
-transactional memory.
+     /opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/bin/mpicxx
 
-   Finally, build hpctoolkit with the front-end arch type (eg,
-cray-sles15-x86_64) and options '+cray' and '--dirty'.  Normally, you
-can use OS type 'fe' (front-end) in place of 'sles15'.  The '+cray'
-option adds MPI and hpcprof-mpi and supersedes the '+mpi' variant.
+If this is available, then add a spack externals entry for 'cray-mpich'
+and the 'mpi' virtual package to 'packages.yaml'.  For example, I used
+this entry on Crusher, your versions may be different (put the specs in
+quotes).
 
-     spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
+     packages:
+       mpi:
+         require: "cray-mpich@8.1.17"
 
-If the hpctoolkit build fails with an error "MPICXX is not a valid
-compiler," then make sure your module environment includes PrgEnv-gnu
-and you are using '--dirty'.
+       cray-mpich:
+         externals:
+           - spec: "cray-mpich@8.1.17"
+             prefix: /opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1
+             modules:
+              - cray-mpich/8.1.17
 
-   For developers, if you are building hpctoolkit directly (outside of
-spack) but using spack prerequisites, then use a configure line similar
-to the following.
+Then, build with '+mpi' for the front-end arch type (with arch or os).
+If the front and back-end arch types are the same, then you don't need
+to specify that.  For example,
+
+     spack install hpctoolkit +mpi os=fe    (or arch=cray-sles15-x86_64)
+
+Cray's use of modules is complex and requires several modules to be
+loaded at compile time.  You will likely find that the above recipe
+fails with an undefined reference to one or more modules.  For example,
+
+     /usr/bin/ld: warning: libfabric.so.1, needed by /opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib/libmpi_gnu_91.so,
+     not found (try using -rpath or -rpath-link)
+     /usr/bin/ld: /opt/cray/pe/mpich/8.1.17/ofi/gnu/9.1/lib/libmpi_gnu_91.so:
+     undefined reference to `fi_strerror@FABRIC_1.0'
+
+There are two solutions.  One, you could search the failing build log to
+identify the missing modules and add them to the compiler entry.  This
+may require several modules.  For example on Crusher, I added these
+modules to the compiler entry and then the build succeeded.
+
+     modules:
+       - PrgEnv-gnu/8.3.3
+       - gcc/11.2.0
+       - craype/2.7.16
+       - cray-mpich/8.1.17
+       - libfabric/1.15.0.0
+
+The other solution is to load the 'PrgEnv-gnu' and related modules and
+then install hpctoolkit with the '--dirty' flag.  Note: only the final
+hpctoolkit package needs '--dirty'.  For example,
+
+     spack install --only dependencies hpctoolkit +mpi os=fe
+     spack install --dirty hpctoolkit +mpi os=fe
+
+Note: Some very new Cray systems (eg, Sunspot at ANL) have 'PrgEnv-gnu'
+but use a different MPI module than 'cray-mpich'.  On such a system,
+continue to add the extra modules to the compilers entry but use a spack
+externals entry for the other MPI module.
+
+Old Cray Some older Cray systems (eg, Theta at ANL) don't have the
+'mpicxx' wrapper.  In this case, it's necessary to use the '+cray'
+option.  This option tells hpctoolkit's configure to search for the
+older 'CC' wrapper.
+
+   Prepare the 'PrgEnv-gnu' and GCC compiler the same as with a newer
+Cray, then build hpctoolkit with the '+cray' option again for the
+front-end arch type.
+
+     spack install hpctoolkit +cray os=fe
+
+As with new Crays, you will likely need to add extra modules to the
+compiler entry or else build with '--dirty'.
+
+Autotools For building with autotools, use the 'MPICXX' configure
+variable to specify the MPI compiler, either CC or mpicxx.  Note: the
+'--enable-all-static' option is no longer used.
 
      configure  \
          --prefix=/path/to/install/prefix  \
-         --with-spack=/path/to/cray-sles15-x86_64/gcc-8.3.0  \
-         --enable-all-static  \
-         MPICXX=CC
+         --with-spack=/path/to/linux-sles15-x86_64/gcc-11.2.0  \
+         MPICXX=CC    (or /path/to/mpicxx)
 
-13 HPCToolkit GUI Interface (Hpcviewer)
+Old HPCToolkit Versions As of October 2022, we now always build
+'hpcprof-mpi' on Cray dynamically, and the '+all-static' option no
+longer exists.  However, for old versions of hpctoolkit up to
+2022.05.15, it is possible to build 'hpcprof-mpi' either statically or
+dynamically, depending on what your system supports.  (Hpcprof-mpi is
+disabled for the 2022.10.01 release.)
+
+   If your Cray supports it and 'CC' builds static binaries, then you
+can build 'hpcprof-mpi' statically with the '+cray' and '+cray-static'
+options.
+
+     spack install hpctoolkit @2022.05.15 +cray +cray-static os=fe
+
+The '+cray-static' option only applies with '+cray' (using the CC
+wrapper) and only for versions up to 2022.05.15.
+
+14 HPCToolkit GUI Interface (Hpcviewer)
 =======================================
 
 Since the 2020.12 release, the HPCToolkit GUI interface provides both
@@ -990,7 +1116,7 @@ hpcrun on one machine and then view the results on another machine.
 GTK+ 3.20 or later on Linux.  Older viewers, up through 2020.12, require
 Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
 
-13.1 Spack Install
+14.1 Spack Install
 ------------------
 
 The spack install is available on Linux x86_64, little-endian ppc64le
@@ -1016,7 +1142,7 @@ click your way to the 'hpcviewer.app' directory and double-click on the
 hpcviewer icon, or else use 'spack load hpcviewer' to put 'hpcviewer' on
 your PATH.
 
-13.2 Manual Install
+14.2 Manual Install
 -------------------
 
 Binary distributions of the viewers for all supported platforms are
@@ -1041,7 +1167,7 @@ one of several versions with modules), whereas the spack install
 includes the java prerequisite.  That is, the spack install is
 self-contained and does not need to change the system java.
 
-14 Building a New Compiler
+15 Building a New Compiler
 ==========================
 
 Some systems may have compilers that are too old for building HPCToolkit
@@ -1088,7 +1214,7 @@ too new to cause problems for some packages.  For example,
 
 Note: it is not necessary to rebuild the new compiler with itself.
 
-14.1 Using the New Compiler
+15.1 Using the New Compiler
 ---------------------------
 
 After building a new compiler, then you need to tell spack how to find
@@ -1149,7 +1275,7 @@ and re-add the appropriate modules automatically.
 
      <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
 
-14.2 Bootstrapping Environment Modules
+15.2 Bootstrapping Environment Modules
 --------------------------------------
 
 If your system does not support modules, then you will have to add it.
@@ -1166,7 +1292,7 @@ example,
 
 Again, add the setup command to your shell's startup scripts.
 
-15 Spack Mirrors
+16 Spack Mirrors
 ================
 
 A spack mirror allows you to download and save a source tar file in
@@ -1231,10 +1357,10 @@ above and copy it into the spack file cache.
 
      <https://spack.readthedocs.io/en/latest/mirrors.html>
 
-16 Common Problems
+17 Common Problems
 ==================
 
-16.1 Unable to fetch tar file
+17.1 Unable to fetch tar file
 -----------------------------
 
 Spack is somewhat fragile for how it downloads tar files and will often
@@ -1255,7 +1381,7 @@ manually download the file(s) by some other means and copy them to
 spack's cache directory 'spack/var/spack/cache/<package>' or to a spack
 mirror.
 
-16.2 New releases break the build
+17.2 New releases break the build
 ---------------------------------
 
 Normally, HPCToolkit should build and work correctly with the latest
@@ -1268,7 +1394,7 @@ build.
    The solution is to use 'packages.yaml' to specify an earlier version
 until the rest of the code adapts to the change.
 
-16.3 Failure to load modules
+17.3 Failure to load modules
 ----------------------------
 
 Spack is quite aggressive about compiling with a clean environment and

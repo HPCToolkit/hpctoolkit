@@ -41,51 +41,60 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: September 26, 2022.
+Last revised: February 6, 2023.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
 
-@subsection (2022-09-23) Hpcprof-mpi is currently disabled
+@subsection (2023-01-15) Problems with Python 3.6
 
-Currently, on the develop branch and in the most recent release, the
-@code{hpcprof-mpi} program is disabled due to unresolved errors.
-After these bugs are resolved, then it will be re-enabled.
+Python 3.6 is now deprecated for running Spack and support for 3.6,
+3.7 and earlier will be removed in the next few months.
+
+Two problems have been reported with Python 3.6 and earlier.  First,
+there are problems with the lustre file system that result in
+permission denied errors.  Second, sometimes there are problems
+fetching files with urllib.
 
 @noindent
-@b{Workaround:} Use @code{hpcprof} which is now multi-threaded and
-should suffice.
+@b{Solution} Both of these problems can be solved by using a later
+version of Python.  Since support for 3.7 and earlier will be removed
+in a few months, the smart thing to do is to upgrade to Python 3.8 or
+later now.  If a later version is available but not first in your path
+or under a different name, then one solution is to set the environment
+variable @code{SPACK_PYTHON} to the preferred path.  For example,
 
-@noindent
-@b{Note:} For a spack build, do not use @code{+mpi}, and for an
-autotools build, make sure MPICXX is not set in your environment, or
-else set @code{MPICXX=} on the configure command.
+@example
+export SPACK_PYTHON=/usr/bin/python3.8
+@end example
 
 @c ------------------------------------------------------------
 
-@subsection (2022-09-23) Hpctoolkit +cray fails
+@section Recently Resolved Issues
 
-Suppose @code{spack install hpctoolkit +cray} fails as follows.
+@subsection (2022-09-23) Hpcprof-mpi build fails
 
-@example
-   161   configure: supplied MPICXX compiler:
-   162   configure: Cray MPI wrapper: /opt/cray/pe/craype/2.6.5/bin/CC
-   163   configure: MPICXX compiler: g++ (GCC) 9.3.0 20200312 (Cray Inc.)
-   164   configure: MPICXX path: /opt/cray/pe/craype/2.6.5/bin/CC
-   165   checking if MPICXX is a valid MPI C++ compiler... no
->> 166   configure: error: MPICXX is not a valid compiler: /opt/cray/pe/craype/2.6.5/bin/CC
-@end example
+The 2022.10.01 release has @code{hpcprof-mpi} disabled due to
+unresolved errors, but these are now fixed in the latest develop and
+2023 release.
 
-@noindent
-Building hpctoolkit @code{+cray} requires @code{--dirty} and building
-for the front end arch.  Make sure you have the PrgEnv-gnu, gcc,
-craype and cray-mpich modules loaded (and darshan unloaded) and
-re-install with:
+On all systems except very old Cray, you should use the @code{+mpi}
+option (not @code{+cray}) with a spack externals entry for the
+appropriate module or install prefix, or else build the MPI package if
+necessary.
 
-@example
-spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
-@end example
+On a reasonably new Cray, build with @code{+mpi} and always the
+@code{cray-mpich} module.  Only on a very old Cray try the
+@code{+cray} option.  If there is no @code{cray-mpich} module, then
+build with @code{+mpi} as for a regular Linux machine.
+
+On any Cray, always configure for the front end (@code{os=fe}), and
+you will likely need to add extra modules to the compiler entry.  If
+you're unable to find a set of modules that work, as a last resort
+switch to the @code{PrgEnv-gnu} module and build with @code{--dirty}.
+
+See: @uref{software-instructions.html#Cray}
 
 @c ------------------------------------------------------------
 
@@ -105,54 +114,20 @@ hpcrun-fmt.c:131:10: error: 'HPCRUN_FMT_Magic' undeclared (first use in this fun
 @end example
 
 @noindent
-The problem is that @code{git clone} resulted in a corrupted copy of
-@code{hpcrun-fmt.h}.  This file should be a C/C++ header file beginning
-with a copyright notice in comments.
-
-@example
-// -*-Mode: C++;-*- // technically C99
-
-// * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
-//
-...
-@end example
+The problem is that due to quirks in some file system timestamps, the
+@code{hpcrun-fmt.h} file is being overwritten with a corrupt copy.
 
 @noindent
-The corrupted copy is the same as @code{hpcrun-fmt.txt} except that
-every line begins and ends with double quotes.
+@b{Fixed} This problem was fixed both in the hpctoolkit repository and
+in the Spack recipe as of January 17, 2023, with patches for older
+versions.
 
-@example
-"$Id$\n"
-"\n"
-"=============================================================================\n"
-"hpcrun binary data format (see "Abbreviation notes" below)\n"
-"=============================================================================\n"
-"\n"
-"fmt-hdr @{epoch@}*\n"
-"  \n"
-...
-@end example
-
-@noindent
-This problem is rare, non-deterministic, not at all understood, and
-impossible to reproduce on demand.  If you can reproduce the problem,
-even non-deterministically, please report this to
-@code{hpctoolkit-forum} as above.
-
-@noindent
-@b{Workaround:} The only workaround is to retry the git clone.  If
-building outside of spack, then delete the source tree and repeat git
-clone.  If building with spack, first remove spack's downloaded copy
-with @code{spack clean -d}, then retry @code{spack install}.
-
-@c ------------------------------------------------------------
-
-@section Recently Resolved Issues
-
-None at this time.
+If you see this bug in a Spack build, then update your version of
+Spack to something after this date.  If you see this bug in an
+autotools build, then either update your copy of hpctoolkit, or else
+manually move the file @code{src/lib/prof-lean/hpcrun-fmt.txt} to a
+name that doesn't end in @code{.txt} and use git to restore the
+original @code{hpcrun-fmt.h} file.
 
 @c ------------------------------------------------------------
 
@@ -171,9 +146,11 @@ and dies with a message similar to this.
 @end example
 
 @noindent
-This problem is usually temporary and the solution is to either wait a
-few minutes or an hour and try again, or else download the file manually
-and put it into a spack mirror.
+Now that most tar files are available from AWS, this problem has
+become very rare.  When it does still happen, the problem is usually
+temporary and the solution is to either wait a few minutes or an hour
+and try again, or else download the file manually and put it into a
+spack mirror.
 
 @noindent
 @b{Workaround:} Spack's default method of fetching is using internal
@@ -233,5 +210,4 @@ Avoid boost version 1.68.0, it breaks the build for hpctoolkit.
 
 Beginning with 0.176, elfutils requires glibc 2.16 or later and won't
 work with an older glibc, including RedHat or CentOS 6.x and Blue Gene.
-
 @bye
