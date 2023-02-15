@@ -3,10 +3,10 @@ Current Spack Issues for HPCToolkit
 
 1 Introduction
 2 Current Issues
-2.1 (2022-09-23) Hpcprof-mpi is currently disabled
-2.2 (2022-09-23) Hpctoolkit +cray fails
-2.3 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
+2.1 (2023-01-15) Problems with Python 3.6
 3 Recently Resolved Issues
+3.1 (2022-09-23) Hpcprof-mpi build fails
+3.2 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
 4 General Problems
 4.1 Unable to fetch
 4.2 Connection timeout
@@ -37,44 +37,57 @@ hpctoolkit web site.
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: September 26, 2022.
+Last revised: February 6, 2023.
 
 2 Current Issues
 ================
 
-2.1 (2022-09-23) Hpcprof-mpi is currently disabled
---------------------------------------------------
+2.1 (2023-01-15) Problems with Python 3.6
+-----------------------------------------
 
-Currently, on the develop branch and in the most recent release, the
-'hpcprof-mpi' program is disabled due to unresolved errors.  After these
-bugs are resolved, then it will be re-enabled.
+Python 3.6 is now deprecated for running Spack and support for 3.6, 3.7
+and earlier will be removed in the next few months.
 
-Workaround: Use 'hpcprof' which is now multi-threaded and should
-suffice.
+   Two problems have been reported with Python 3.6 and earlier.  First,
+there are problems with the lustre file system that result in permission
+denied errors.  Second, sometimes there are problems fetching files with
+urllib.
 
-Note: For a spack build, do not use '+mpi', and for an autotools build,
-make sure MPICXX is not set in your environment, or else set 'MPICXX='
-on the configure command.
+Solution Both of these problems can be solved by using a later version
+of Python.  Since support for 3.7 and earlier will be removed in a few
+months, the smart thing to do is to upgrade to Python 3.8 or later now.
+If a later version is available but not first in your path or under a
+different name, then one solution is to set the environment variable
+'SPACK_PYTHON' to the preferred path.  For example,
 
-2.2 (2022-09-23) Hpctoolkit +cray fails
----------------------------------------
+     export SPACK_PYTHON=/usr/bin/python3.8
 
-Suppose 'spack install hpctoolkit +cray' fails as follows.
+3 Recently Resolved Issues
+==========================
 
-        161   configure: supplied MPICXX compiler:
-        162   configure: Cray MPI wrapper: /opt/cray/pe/craype/2.6.5/bin/CC
-        163   configure: MPICXX compiler: g++ (GCC) 9.3.0 20200312 (Cray Inc.)
-        164   configure: MPICXX path: /opt/cray/pe/craype/2.6.5/bin/CC
-        165   checking if MPICXX is a valid MPI C++ compiler... no
-     >> 166   configure: error: MPICXX is not a valid compiler: /opt/cray/pe/craype/2.6.5/bin/CC
+3.1 (2022-09-23) Hpcprof-mpi build fails
+----------------------------------------
 
-Building hpctoolkit '+cray' requires '--dirty' and building for the
-front end arch.  Make sure you have the PrgEnv-gnu, gcc, craype and
-cray-mpich modules loaded (and darshan unloaded) and re-install with:
+The 2022.10.01 release has 'hpcprof-mpi' disabled due to unresolved
+errors, but these are now fixed in the latest develop and 2023 release.
 
-     spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
+   On all systems except very old Cray, you should use the '+mpi' option
+(not '+cray') with a spack externals entry for the appropriate module or
+install prefix, or else build the MPI package if necessary.
 
-2.3 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
+   On a reasonably new Cray, build with '+mpi' and always the
+'cray-mpich' module.  Only on a very old Cray try the '+cray' option.
+If there is no 'cray-mpich' module, then build with '+mpi' as for a
+regular Linux machine.
+
+   On any Cray, always configure for the front end ('os=fe'), and you
+will likely need to add extra modules to the compiler entry.  If you're
+unable to find a set of modules that work, as a last resort switch to
+the 'PrgEnv-gnu' module and build with '--dirty'.
+
+   See: <software-instructions.html#Cray>
+
+3.2 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
 -------------------------------------------------------
 
 Very rarely, the hpctoolkit build fails in 'hpcrun-fmt.c' or
@@ -88,46 +101,18 @@ Very rarely, the hpctoolkit build fails in 'hpcrun-fmt.c' or
      hpcrun-fmt.c:131:10: error: 'HPCRUN_FMT_Magic' undeclared (first use in this function)
         fwrite(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fs);
 
-The problem is that 'git clone' resulted in a corrupted copy of
-'hpcrun-fmt.h'.  This file should be a C/C++ header file beginning with
-a copyright notice in comments.
+The problem is that due to quirks in some file system timestamps, the
+'hpcrun-fmt.h' file is being overwritten with a corrupt copy.
 
-     // -*-Mode: C++;-*- // technically C99
+Fixed This problem was fixed both in the hpctoolkit repository and in
+the Spack recipe as of January 17, 2023, with patches for older
+versions.
 
-     // * BeginRiceCopyright *****************************************************
-     //
-     // $HeadURL$
-     // $Id$
-     //
-     ...
-
-The corrupted copy is the same as 'hpcrun-fmt.txt' except that every
-line begins and ends with double quotes.
-
-     "$Id$\n"
-     "\n"
-     "=============================================================================\n"
-     "hpcrun binary data format (see "Abbreviation notes" below)\n"
-     "=============================================================================\n"
-     "\n"
-     "fmt-hdr {epoch}*\n"
-     "  \n"
-     ...
-
-This problem is rare, non-deterministic, not at all understood, and
-impossible to reproduce on demand.  If you can reproduce the problem,
-even non-deterministically, please report this to 'hpctoolkit-forum' as
-above.
-
-Workaround: The only workaround is to retry the git clone.  If building
-outside of spack, then delete the source tree and repeat git clone.  If
-building with spack, first remove spack's downloaded copy with 'spack
-clean -d', then retry 'spack install'.
-
-3 Recently Resolved Issues
-==========================
-
-None at this time.
+   If you see this bug in a Spack build, then update your version of
+Spack to something after this date.  If you see this bug in an autotools
+build, then either update your copy of hpctoolkit, or else manually move
+the file 'src/lib/prof-lean/hpcrun-fmt.txt' to a name that doesn't end
+in '.txt' and use git to restore the original 'hpcrun-fmt.h' file.
 
 4 General Problems
 ==================
@@ -143,9 +128,11 @@ and dies with a message similar to this.
      ==> Fetching from https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.gz failed.
      ==> Error: FetchError: All fetchers failed for m4-1.4.18-vorbvkcjfac43b7vuswsvnm6xe7w7or5
 
-This problem is usually temporary and the solution is to either wait a
-few minutes or an hour and try again, or else download the file manually
-and put it into a spack mirror.
+Now that most tar files are available from AWS, this problem has become
+very rare.  When it does still happen, the problem is usually temporary
+and the solution is to either wait a few minutes or an hour and try
+again, or else download the file manually and put it into a spack
+mirror.
 
 Workaround: Spack's default method of fetching is using internal Python
 libraries ('urllib').  Sometimes, depending on version, this may have
