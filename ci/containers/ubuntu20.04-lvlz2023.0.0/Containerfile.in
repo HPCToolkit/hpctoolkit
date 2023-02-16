@@ -19,8 +19,10 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     libigdfcl-dev libigc-dev \
   && rm -rf /var/lib/apt/lists/*
 
-# Install (a version of) GTPin
+# Install GTPin
 ADD https://downloadmirror.intel.com/730598/external-release-gtpin-3.0-linux.tar.xz /tmp/gtpin-3.0.tar.xz
-RUN mkdir /opt/gtpin-3.0 && tar -C /opt/gtpin-3.0/ -xJf /tmp/gtpin-3.0.tar.xz && rm /tmp/gtpin-3.0.tar.xz
+ADD https://downloadmirror.intel.com/762747/external-release-gtpin-3.2.2-linux.tar.xz /tmp/gtpin-3.2.2.tar.xz
+RUN mkdir /opt/gtpin-3.0 && tar -C /opt/gtpin-3.0/ -xJf /tmp/gtpin-3.0.tar.xz && rm /tmp/gtpin-3.0.tar.xz \
+  && mkdir /opt/gtpin-3.2.2 && tar -C /opt/gtpin-3.2.2/ -xJf /tmp/gtpin-3.2.2.tar.xz && rm /tmp/gtpin-3.2.2.tar.xz
 
 INCLUDE ../ubuntu20.04/main.inc
