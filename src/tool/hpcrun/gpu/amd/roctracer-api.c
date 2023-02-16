@@ -49,7 +49,6 @@
 #include "roctracer-activity-translate.h"
 
 #include "hip-api.h"
-#include "rocm-binary-processing.h"
 
 #include <roctracer_hip.h>
 
@@ -63,6 +62,7 @@
 #include <hpcrun/gpu/gpu-context-id-map.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-cct.h>
+#include <hpcrun/gpu/gpu-kernel-table.h>
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -570,6 +570,8 @@ roctracer_init
  void
 )
 {
+  gpu_kernel_table_init();
+
   HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HIP_API, NULL));
 
   monitor_disable_new_threads();

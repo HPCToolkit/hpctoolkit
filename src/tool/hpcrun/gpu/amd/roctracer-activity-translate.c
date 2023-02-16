@@ -65,9 +65,9 @@
 //******************************************************************************
 
 #include <hpcrun/gpu/gpu-print.h>
+#include <hpcrun/gpu/gpu-kernel-table.h>
 
 #include "roctracer-activity-translate.h"
-#include "rocm-binary-processing.h"
 #include "hip/hip_runtime_api.h"
 
 
@@ -94,10 +94,7 @@ lookup_kernel_pc
 
   // For ROCm versions >= 5.3.3, AMD recommends obtaining the kernel
   // name from roctracer's activity API rather than the subscriber
-  // callback. A tool may receive a subscriber callback for a kernel
-  // launch before the tool is notified about loading the binary
-  // containing the kernel. That is why we are executing this code to
-  // associate the kernel back to the binary.
+  // callback.
 
   int version;
   if (hip_version(&version) == 0) {
@@ -106,10 +103,8 @@ lookup_kernel_pc
     // compiled with an older version of ROCm. Only inspect the
     // kernel_name field if built with ROCm 5.3.3 or later.
     if (version >= ROCM_533_RELEASE_VERSION) {
-      // Until given better mechanisms by AMD, look up the kernel PC
-      // by the device id and kernel name.
-      return rocm_binary_function_lookup(activity->device_id,
-					 activity->kernel_name);
+      // Use the kernel name alone as the kernel PC.
+      return gpu_kernel_table_get(activity->kernel_name, LOGICAL_MANGLING_CPP);
     }
   }
 #endif
