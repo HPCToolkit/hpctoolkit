@@ -187,6 +187,17 @@ hpcstruct will consider any binary of at least
 OpenMP threads to analyze large binaries than
 it uses to analyze small binaries.  {100000000}
 
+
+\item[\OptArg{-s}{v}, \OptArg{--stack}{v}]
+Set the stack size for OpenMP worker threads to <v>.
+<v> is a positive number optionally followed by
+a suffix: B (bytes), K (kilobytes), M (megabytes),
+or G (gigabytes). Without a suffix, <v> will be
+interpreted as kilobytes. One can also control the
+stack size by setting the OMP_STACKSIZE environment
+variable. A '-s <v>' option takes precedence,
+followed by OMP_STACKSIZE. {32M}
+
 \subsection{Options: override structure recovery defaults}
 
 \begin{Description}
