@@ -980,6 +980,14 @@ hpcrun_wait()
 
 void hpcrun_prepare_measurement_subsystem(bool is_child);
 
+void
+monitor_start_main_init()
+{
+  monitor_initialize();
+  hpcrun_prepare_measurement_subsystem(false);
+}
+
+
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
