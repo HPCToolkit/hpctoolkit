@@ -390,6 +390,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-operation-multiplexer.c 	\
 	gpu/gpu-splay-allocator.c	\
 	gpu/gpu-stream-id-map.c		\
+	gpu/gpu-kernel-table.c		\
 	gpu/gpu-trace.c			\
 	gpu/gpu-trace-channel.c		\
 	gpu/gpu-trace-item.c		\
