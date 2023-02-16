@@ -797,7 +797,6 @@ hpcrun_fini_internal()
       lush_agent_pool__fini(lush_agents);
       lush_agents = NULL;
     }
-    hpcrun_logical_fini();
 
     // N.B. short-circuit, if monitoring is disabled
     if (hpcrun_get_disabled()) {
@@ -813,6 +812,8 @@ hpcrun_fini_internal()
 
     int is_process = 1;
     thread_finalize(is_process);
+
+    hpcrun_logical_fini();
 
     thread_data_t* td = NULL;
     if (is_monitored_thread) {

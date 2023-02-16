@@ -72,7 +72,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
-#include <hpcrun/gpu/gpu-kernel_table.h>
+#include <hpcrun/gpu/gpu-kernel-table.h>
 
 #ifdef ENABLE_GTPIN
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
