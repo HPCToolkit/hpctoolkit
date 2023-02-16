@@ -70,13 +70,16 @@ Each SRC above can be one of the following:
 This command sweeps the space of build configurations that satisfy any of the given SPECs.
 Each build configuration is represented by a series of boolean-valued "variants," with true/false
 being represented by `+` and `~` (like Spack spec syntax). The available variants are:
+    +tests2:  Enable the tests2/ test suite
     +mpi:  Enable Prof-MPI support
     +debug:  Enable extra debug flags
     +papi:  Enable PAPI support
+    +python:  Enable Python logical unwinding support
     +opencl:  Enable OpenCL support
     +cuda:  Enable Nvidia CUDA support
     +rocm:  Enable AMD ROCm support
     +level0:  Enable Intel Level Zero support
+    +gtpin:  Enable Intel GTPin for instrumentation (requires +level0)
 Each SPEC constrains the allowed configurations via a series of "clauses" of the form:
     +VARIANT:  The given VARIANT is enabled
     ~VARIANT:  The given VARIANT is disabled
@@ -85,6 +88,8 @@ Each SPEC constrains the allowed configurations via a series of "clauses" of the
         +<N:  At most N of the listed VARIANTS are enabled
         +=N:  Exactly N of the listed VARIANTS are enabled
         ~>N, ~<N, ~=N: Same as above but for disabled
+    !VARIANT:  The given VARIANT is explicitly unconstrined. This must be used to list any
+               unconstrained VARIANTS, otherwise the SPEC is invalid.
 
 The output from this program is summarized to only include warnings or errors, and is wrapped in
 collapsible sections to allow for easy viewing from the GitLab UI.
