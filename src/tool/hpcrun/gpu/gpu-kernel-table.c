@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2023-2023, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -41,36 +41,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef rocm_binary_processing_h
-#define rocm_binary_processing_h
+#include <assert.h>
 
-//******************************************************************************
-// local includes
-//******************************************************************************
+#include "gpu-kernel-table.h"
+#include "logical/common.h"
 
-#include "hpcrun/utilities/ip-normalized.h"
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+static bool did_init = false;
+static logical_metadata_store_t kernel_metadata_store;
 
-ip_normalized_t
-rocm_binary_function_lookup
-(
- int device_id,
- const char* kernel_name
-);
 
-void
-rocm_binary_uri_add
-(
- const char* uri
-);
+void gpu_kernel_table_init() {
+  if(!did_init) {
+    did_init = true;
+    hpcrun_logical_metadata_register(&kernel_metadata_store, "gpu-kernel");
+  }
+}
 
-void
-rocm_binary_uri_list_init
-(
- void
-);
-
-#endif
+ip_normalized_t gpu_kernel_table_get(const char* kernel_name, enum logical_mangling mangling) {
+  uint32_t fid = hpcrun_logical_metadata_fid(&kernel_metadata_store,
+      kernel_name, mangling, NULL, 0);
+  return hpcrun_logical_metadata_ipnorm(&kernel_metadata_store, fid, 0);
+}

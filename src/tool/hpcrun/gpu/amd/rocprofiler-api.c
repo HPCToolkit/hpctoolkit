@@ -46,7 +46,6 @@
 //******************************************************************************
 
 #include "rocprofiler-api.h"
-#include "rocm-binary-processing.h"
 
 #include <roctracer_hip.h>
 #include <rocprofiler/rocprofiler.h>
@@ -429,6 +428,8 @@ initialize_counter_information
   memset(is_specified_by_user, 0, total_counters * sizeof(int));
 }
 
+// TODO: We no longer record binaries for ROCm, so no need for this callback
+#if 0
 // This function should be implemented in roctracer-api.c,
 // but due to c++ism in AMD software, I can only include rocprofiler header
 // filers in one .o
@@ -441,9 +442,6 @@ roctracer_codeobj_callback
   void* arg
 )
 {
-  const hsa_evt_data_t* evt_data = (const hsa_evt_data_t*)(data);
-  const char* uri = evt_data->codeobj.uri;
-  rocm_binary_uri_add(uri);
   PRINT("codeobj_callback domain(%u) cid(%u): load_base(0x%lx) load_size(0x%lx) load_delta(0x%lx) uri(\"%s\")\n",
     domain,
     cid,
@@ -452,6 +450,7 @@ roctracer_codeobj_callback
     evt_data->codeobj.load_delta,
     uri);
 }
+#endif
 
 //******************************************************************************
 // AMD hidden interface operations
@@ -668,8 +667,10 @@ rocprofiler_uri_setup
   // TODO: this really should be implemented in roctracer-api.c,
   // however, due to an AMD header file that is not fully C compatible,
   // I can only include rocprofiler header file in one source file.
-  rocm_binary_uri_list_init();
-  roctracer_enable_op_callback(
-    ACTIVITY_DOMAIN_HSA_EVT, HSA_EVT_ID_CODEOBJ, roctracer_codeobj_callback, NULL
-  );
+
+  // TODO: We are currently not saving ROCm binaries, so this callback is not
+  // needed at the moment.
+  // roctracer_enable_op_callback(
+  //   ACTIVITY_DOMAIN_HSA_EVT, HSA_EVT_ID_CODEOBJ, roctracer_codeobj_callback, NULL
+  // );
 }

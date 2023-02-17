@@ -62,6 +62,7 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-cct.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/gpu/gpu-kernel-table.h>
 
 #ifdef ENABLE_GTPIN
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
@@ -222,25 +223,6 @@ get_load_module
   return module_id;
 }
 
-static uint32_t
-get_metadata_fid
-(
-  ze_kernel_handle_t kernel
-)
-{
-  size_t name_size = 0;
-  zeKernelGetName(kernel, &name_size, NULL);
-  char* kernel_name = malloc(name_size);
-  zeKernelGetName(kernel, &name_size, kernel_name);
-
-  uint32_t result = hpcrun_logical_metadata_fid(&level0_metadata_store,
-						kernel_name, LOGICAL_MANGLING_CPP, NULL, 0);
-
-  free(kernel_name);
-
-  return result;
-}
-
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
@@ -298,15 +280,20 @@ level0_command_begin
 
   if (command_node->type == LEVEL0_KERNEL) {
     ip_normalized_t kernel_ip;
+    ze_kernel_handle_t kernel = command_node->details.kernel.kernel;
 #ifdef ENABLE_GTPIN
     if (level0_gtpin_enabled()) {
-      kernel_ip.lm_id = get_load_module(command_node->details.kernel.kernel);
+      kernel_ip.lm_id = get_load_module(kernel);
       kernel_ip.lm_ip = 0;
     } else
 #endif  // ENABLE_GTPIN
     {
-      uint32_t fid = get_metadata_fid(command_node->details.kernel.kernel);
-      kernel_ip = hpcrun_logical_metadata_ipnorm(&level0_metadata_store, fid, 0);
+      size_t name_size = 0;
+      zeKernelGetName(kernel, &name_size, NULL);
+      char* kernel_name = malloc(name_size);
+      zeKernelGetName(kernel, &name_size, kernel_name);
+      kernel_ip = gpu_kernel_table_get(kernel_name, LOGICAL_MANGLING_CPP);
+      free(kernel_name);
     }
 
     cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);

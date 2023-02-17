@@ -87,6 +87,7 @@
 #include <hpcrun/logical/common.h>
 #include <hpcrun/gpu/amd/roctracer-api.h>
 #include <hpcrun/gpu/gpu-activity.h>
+#include <hpcrun/gpu/gpu-kernel-table.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/gpu-instrumentation.h>

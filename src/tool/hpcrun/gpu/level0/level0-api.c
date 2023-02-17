@@ -72,6 +72,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/gpu/gpu-kernel-table.h>
 
 #ifdef ENABLE_GTPIN
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
@@ -125,8 +126,6 @@
 //******************************************************************************
 // local variables
 //******************************************************************************
-
-logical_metadata_store_t level0_metadata_store;
 
 // Assume one driver and one device.
 ze_driver_handle_t hDriver = NULL;
@@ -1207,7 +1206,7 @@ level0_init
 #endif
   }
   if (!gtpin_instrumentation) {
-    hpcrun_logical_metadata_register(&level0_metadata_store, "level0");
+    gpu_kernel_table_init();
   }
 }
 

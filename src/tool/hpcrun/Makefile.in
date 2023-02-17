@@ -501,7 +501,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/gpu-operation-item.c gpu/gpu-operation-item-process.c \
 	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
 	gpu/gpu-operation-multiplexer.c gpu/gpu-splay-allocator.c \
-	gpu/gpu-stream-id-map.c gpu/gpu-trace.c \
+	gpu/gpu-stream-id-map.c gpu/gpu-kernel-table.c gpu/gpu-trace.c \
 	gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
 	gpu/gpu-trace-channel-set.c gpu/gpu-trace-demultiplexer.c \
 	gpu/libomptarget/libomptarget-api.c gpu/ompt/ompt-gpu-api.c \
@@ -560,9 +560,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/amd-rocprofiler.c \
 	sample-sources/openmp-target.c gpu/amd/hip-api.c \
 	gpu/amd/roctracer-activity-translate.c gpu/amd/roctracer-api.c \
-	gpu/amd/rocprofiler-api.c gpu/amd/rocm-binary-processing.c \
-	sample-sources/level0.c gpu/level0/level0-api.c \
-	gpu/level0/level0-binary.c \
+	gpu/amd/rocprofiler-api.c sample-sources/level0.c \
+	gpu/level0/level0-api.c gpu/level0/level0-binary.c \
 	gpu/level0/level0-command-list-context-map.c \
 	gpu/level0/level0-command-list-map.c \
 	gpu/level0/level0-command-process.c \
@@ -703,6 +702,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	gpu/libhpcrun_la-gpu-operation-multiplexer.lo \
 	gpu/libhpcrun_la-gpu-splay-allocator.lo \
 	gpu/libhpcrun_la-gpu-stream-id-map.lo \
+	gpu/libhpcrun_la-gpu-kernel-table.lo \
 	gpu/libhpcrun_la-gpu-trace.lo \
 	gpu/libhpcrun_la-gpu-trace-channel.lo \
 	gpu/libhpcrun_la-gpu-trace-item.lo \
@@ -800,8 +800,7 @@ am__objects_37 =
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-hip-api.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-activity-translate.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-api.lo \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocprofiler-api.lo \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocm-binary-processing.lo
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocprofiler-api.lo
 @OPT_ENABLE_ROCM_TRUE@am__objects_39 = $(am__objects_38)
 @OPT_ENABLE_LEVEL0_TRUE@am__objects_40 =  \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/libhpcrun_la-level0.lo \
@@ -1055,7 +1054,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/gpu-operation-item.c gpu/gpu-operation-item-process.c \
 	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
 	gpu/gpu-operation-multiplexer.c gpu/gpu-splay-allocator.c \
-	gpu/gpu-stream-id-map.c gpu/gpu-trace.c \
+	gpu/gpu-stream-id-map.c gpu/gpu-kernel-table.c gpu/gpu-trace.c \
 	gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
 	gpu/gpu-trace-channel-set.c gpu/gpu-trace-demultiplexer.c \
 	gpu/libomptarget/libomptarget-api.c gpu/ompt/ompt-gpu-api.c \
@@ -1243,6 +1242,7 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-operation-multiplexer.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-splay-allocator.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-stream-id-map.$(OBJEXT) \
+	gpu/libhpcrun_o-gpu-kernel-table.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-trace.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-trace-channel.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-trace-item.$(OBJEXT) \
@@ -2039,7 +2039,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	gpu/gpu-operation-item.c gpu/gpu-operation-item-process.c \
 	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
 	gpu/gpu-operation-multiplexer.c gpu/gpu-splay-allocator.c \
-	gpu/gpu-stream-id-map.c gpu/gpu-trace.c \
+	gpu/gpu-stream-id-map.c gpu/gpu-kernel-table.c gpu/gpu-trace.c \
 	gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
 	gpu/gpu-trace-channel-set.c gpu/gpu-trace-demultiplexer.c \
 	gpu/libomptarget/libomptarget-api.c gpu/ompt/ompt-gpu-api.c \
@@ -2150,8 +2150,7 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/hip-api.c \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-activity-translate.c \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-api.c \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/rocprofiler-api.c \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/rocm-binary-processing.c
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/rocprofiler-api.c
 
 @OPT_ENABLE_LEVEL0_TRUE@MY_LEVEL0_FILES = \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/level0.c \
@@ -2903,6 +2902,8 @@ gpu/libhpcrun_la-gpu-splay-allocator.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-stream-id-map.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libhpcrun_la-gpu-kernel-table.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-trace.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-trace-channel.lo: gpu/$(am__dirstamp) \
@@ -3250,8 +3251,6 @@ gpu/amd/libhpcrun_la-roctracer-api.lo: gpu/amd/$(am__dirstamp) \
 	gpu/amd/$(DEPDIR)/$(am__dirstamp)
 gpu/amd/libhpcrun_la-rocprofiler-api.lo: gpu/amd/$(am__dirstamp) \
 	gpu/amd/$(DEPDIR)/$(am__dirstamp)
-gpu/amd/libhpcrun_la-rocm-binary-processing.lo:  \
-	gpu/amd/$(am__dirstamp) gpu/amd/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-level0.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 gpu/level0/$(am__dirstamp):
@@ -3723,6 +3722,8 @@ gpu/libhpcrun_o-gpu-operation-multiplexer.$(OBJEXT):  \
 gpu/libhpcrun_o-gpu-splay-allocator.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_o-gpu-stream-id-map.$(OBJEXT): gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libhpcrun_o-gpu-kernel-table.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_o-gpu-trace.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
@@ -4304,6 +4305,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-function-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-host-correlation-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-instrumentation.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-kernel-table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-metrics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-monitoring-thread-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-monitoring.Plo@am__quote@
@@ -4338,6 +4340,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-function-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-host-correlation-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-instrumentation.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-kernel-table.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-metrics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-monitoring-thread-api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-monitoring.Po@am__quote@
@@ -4355,7 +4358,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-hip-api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-rocprofiler-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Plo@am__quote@
@@ -5596,6 +5598,13 @@ gpu/libhpcrun_la-gpu-stream-id-map.lo: gpu/gpu-stream-id-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-stream-id-map.lo `test -f 'gpu/gpu-stream-id-map.c' || echo '$(srcdir)/'`gpu/gpu-stream-id-map.c
 
+gpu/libhpcrun_la-gpu-kernel-table.lo: gpu/gpu-kernel-table.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_la-gpu-kernel-table.lo -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_la-gpu-kernel-table.Tpo -c -o gpu/libhpcrun_la-gpu-kernel-table.lo `test -f 'gpu/gpu-kernel-table.c' || echo '$(srcdir)/'`gpu/gpu-kernel-table.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_la-gpu-kernel-table.Tpo gpu/$(DEPDIR)/libhpcrun_la-gpu-kernel-table.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-kernel-table.c' object='gpu/libhpcrun_la-gpu-kernel-table.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-kernel-table.lo `test -f 'gpu/gpu-kernel-table.c' || echo '$(srcdir)/'`gpu/gpu-kernel-table.c
+
 gpu/libhpcrun_la-gpu-trace.lo: gpu/gpu-trace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_la-gpu-trace.lo -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_la-gpu-trace.Tpo -c -o gpu/libhpcrun_la-gpu-trace.lo `test -f 'gpu/gpu-trace.c' || echo '$(srcdir)/'`gpu/gpu-trace.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_la-gpu-trace.Tpo gpu/$(DEPDIR)/libhpcrun_la-gpu-trace.Plo
@@ -6204,13 +6213,6 @@ gpu/amd/libhpcrun_la-rocprofiler-api.lo: gpu/amd/rocprofiler-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/rocprofiler-api.c' object='gpu/amd/libhpcrun_la-rocprofiler-api.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-rocprofiler-api.lo `test -f 'gpu/amd/rocprofiler-api.c' || echo '$(srcdir)/'`gpu/amd/rocprofiler-api.c
-
-gpu/amd/libhpcrun_la-rocm-binary-processing.lo: gpu/amd/rocm-binary-processing.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-rocm-binary-processing.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Tpo -c -o gpu/amd/libhpcrun_la-rocm-binary-processing.lo `test -f 'gpu/amd/rocm-binary-processing.c' || echo '$(srcdir)/'`gpu/amd/rocm-binary-processing.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Tpo gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/rocm-binary-processing.c' object='gpu/amd/libhpcrun_la-rocm-binary-processing.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-rocm-binary-processing.lo `test -f 'gpu/amd/rocm-binary-processing.c' || echo '$(srcdir)/'`gpu/amd/rocm-binary-processing.c
 
 sample-sources/libhpcrun_la-level0.lo: sample-sources/level0.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-level0.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-level0.Tpo -c -o sample-sources/libhpcrun_la-level0.lo `test -f 'sample-sources/level0.c' || echo '$(srcdir)/'`sample-sources/level0.c
@@ -8129,6 +8131,20 @@ gpu/libhpcrun_o-gpu-stream-id-map.obj: gpu/gpu-stream-id-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-stream-id-map.c' object='gpu/libhpcrun_o-gpu-stream-id-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-stream-id-map.obj `if test -f 'gpu/gpu-stream-id-map.c'; then $(CYGPATH_W) 'gpu/gpu-stream-id-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-stream-id-map.c'; fi`
+
+gpu/libhpcrun_o-gpu-kernel-table.o: gpu/gpu-kernel-table.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-kernel-table.o -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-kernel-table.Tpo -c -o gpu/libhpcrun_o-gpu-kernel-table.o `test -f 'gpu/gpu-kernel-table.c' || echo '$(srcdir)/'`gpu/gpu-kernel-table.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-kernel-table.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-kernel-table.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-kernel-table.c' object='gpu/libhpcrun_o-gpu-kernel-table.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-kernel-table.o `test -f 'gpu/gpu-kernel-table.c' || echo '$(srcdir)/'`gpu/gpu-kernel-table.c
+
+gpu/libhpcrun_o-gpu-kernel-table.obj: gpu/gpu-kernel-table.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-kernel-table.obj -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-kernel-table.Tpo -c -o gpu/libhpcrun_o-gpu-kernel-table.obj `if test -f 'gpu/gpu-kernel-table.c'; then $(CYGPATH_W) 'gpu/gpu-kernel-table.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-kernel-table.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-kernel-table.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-kernel-table.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-kernel-table.c' object='gpu/libhpcrun_o-gpu-kernel-table.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-kernel-table.obj `if test -f 'gpu/gpu-kernel-table.c'; then $(CYGPATH_W) 'gpu/gpu-kernel-table.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-kernel-table.c'; fi`
 
 gpu/libhpcrun_o-gpu-trace.o: gpu/gpu-trace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-trace.o -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-trace.Tpo -c -o gpu/libhpcrun_o-gpu-trace.o `test -f 'gpu/gpu-trace.c' || echo '$(srcdir)/'`gpu/gpu-trace.c

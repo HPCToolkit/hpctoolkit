@@ -390,6 +390,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-operation-multiplexer.c 	\
 	gpu/gpu-splay-allocator.c	\
 	gpu/gpu-stream-id-map.c		\
+	gpu/gpu-kernel-table.c		\
 	gpu/gpu-trace.c			\
 	gpu/gpu-trace-channel.c		\
 	gpu/gpu-trace-item.c		\
@@ -588,8 +589,7 @@ MY_ROCM_FILES =\
 	gpu/amd/hip-api.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c \
-	gpu/amd/rocprofiler-api.c \
-	gpu/amd/rocm-binary-processing.c
+	gpu/amd/rocprofiler-api.c
 endif
 
 if OPT_ENABLE_LEVEL0
