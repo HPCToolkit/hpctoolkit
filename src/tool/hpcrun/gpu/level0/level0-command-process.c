@@ -280,9 +280,10 @@ level0_command_begin
 
   if (command_node->type == LEVEL0_KERNEL) {
     ip_normalized_t kernel_ip;
+    ze_kernel_handle_t kernel = command_node->details.kernel.kernel;
 #ifdef ENABLE_GTPIN
     if (level0_gtpin_enabled()) {
-      kernel_ip.lm_id = get_load_module(command_node->details.kernel.kernel);
+      kernel_ip.lm_id = get_load_module(kernel);
       kernel_ip.lm_ip = 0;
     } else
 #endif  // ENABLE_GTPIN
