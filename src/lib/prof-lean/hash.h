@@ -15,7 +15,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2022, Rice University
+// Copyright ((c)) 2002-2023, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without

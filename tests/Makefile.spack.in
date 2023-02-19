@@ -1,6 +1,6 @@
 # -*-Mode: makefile;-*-
 #
-# Copyright (c) 2002-2022, Rice University.
+# Copyright (c) 2002-2023, Rice University.
 # See the file LICENSE for details.
 #
 # This Makefile integrates the smoke tests with Spack.  This version

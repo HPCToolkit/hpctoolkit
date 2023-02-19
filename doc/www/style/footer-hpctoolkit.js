@@ -3,7 +3,7 @@ document.write('\
   <div style="width: 100%; font-size: small;"> \
     <hr /> \
     <p style="margin: 0px; font-size: small;"> \
-      &copy;2000-2022 <a href="http://www.rice.edu">Rice University</a> \
+      &copy;2002-2023 <a href="http://www.rice.edu">Rice University</a> \
       &bull; \
       <a href="http://www.cs.rice.edu">Rice Computer Science</a> \
     </p> \

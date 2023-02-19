@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2002-2022, Rice University.
+//  Copyright (c) 2002-2023, Rice University.
 //  See the file LICENSE for details.
 //
 //  Simple selection sort, shows a couple of loops, some C++
