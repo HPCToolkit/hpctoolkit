@@ -47,6 +47,7 @@
 
 #include <stdio.h>
 #include <elf.h>
+#include <gelf.h>
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
 #include <sys/stat.h>  // mkdir
@@ -105,6 +106,32 @@ gpu_binary_validate_magic
   if (*magic == *elf_magic) return true;
 
   return false;
+}
+
+
+bool
+gpu_binary_validate
+(
+ const char *mem_ptr,
+ size_t mem_size
+)
+{
+  if (!gpu_binary_validate_magic(mem_ptr, mem_size)) return false;
+
+  // discard const keyword, but don't change the in-memory copy!
+  Elf *elf = elf_memory((char *) mem_ptr, mem_size);
+  bool retval = false;
+  if (elf) {
+    GElf_Ehdr header;
+    GElf_Ehdr *ehdr = gelf_getehdr (elf, &header);
+    if (ehdr) {
+      // at present, don't record AMD GPU binaries
+      retval = (ehdr->e_machine != EM_AMDGPU);
+    }
+    elf_end(elf);
+  }
+
+  return retval;
 }
 
 
@@ -203,8 +230,7 @@ gpu_binary_save
  uint32_t *loadmap_module_id
 )
 {
-  // Only save binaries with a valid magic number
-  if (!gpu_binary_validate_magic(mem_ptr, mem_size)) return false;
+  if (!gpu_binary_validate(mem_ptr, mem_size)) return false;
 
   // Generate a hash for the binary
   char hash_buf[CRYPTO_HASH_STRING_LENGTH];
