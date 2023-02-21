@@ -35,6 +35,8 @@ stages:
     CCACHE_COMPRESS: 'true'
     CCACHE_MAXSIZE: '3G'
     CCACHE_MAXFILES: '30000'
+    # Some of the test data is stored in a submodule
+    GIT_SUBMODULE_STRATEGY: recursive
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -79,6 +81,17 @@ stages:
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl ~cuda ~rocm ~level0'
     SUITE: cpu
 
+'x86-64':
+  extends: .regen job
+  tags: [docker, linux/amd64]
+  image: $DEPS_IMAGES-$IMAGE_BASE-$ARCH
+  variables:
+    IMAGE_BASE: ubuntu20.04
+    ARCH: amd64
+    JOB_CC: gcc-10
+    SPEC: '+tests2 +mpi ~debug +papi +python ~opencl ~cuda ~rocm ~level0'
+    SUITE: x86-64
+
 'nvidia':
   extends: .regen job
   image: $DEPS_IMAGES-ubuntu20.04-cuda11.6.2-$ARCH
@@ -90,6 +103,22 @@ stages:
     JOB_CC: gcc-9
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl +cuda ~rocm ~level0'
     SUITE: nvidia
+  before_script:
+  - !reference [.regen job, before_script]
+  # Pull CUDA from the image itself
+  - echo '--with-cuda=/usr/local/cuda' > img-config
+
+'sw-cuda':
+  extends: .regen job
+  image: $DEPS_IMAGES-ubuntu20.04-cuda11.8.0-$ARCH
+  tags: [docker, linux/amd64]
+  variables:
+    IMAGE_BASE: ubuntu20.04
+    IMAGE_EXT: +cuda
+    ARCH: amd64
+    JOB_CC: gcc-9
+    SPEC: '+tests2 +mpi ~debug +papi +python ~opencl +cuda ~rocm ~level0'
+    SUITE: sw-cuda
   before_script:
   - !reference [.regen job, before_script]
   # Pull CUDA from the image itself
@@ -116,6 +145,8 @@ package:
   stage: publish
   image: docker.io/alpine
   tags: [docker]
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
   script:
   - apk add xz
   - mkdir /tmp/result
@@ -124,6 +155,8 @@ package:
   - tar x -af logs/fresh-cpu.tar.xz -C /tmp/result
   - tar x -af logs/fresh-nvidia.tar.xz -C /tmp/result
   - tar x -af logs/fresh-amd.tar.xz -C /tmp/result
+  - tar x -af logs/fresh-x86-64.tar.xz -C /tmp/result
+  - tar x -af logs/fresh-sw-cuda.tar.xz -C /tmp/result
   # Repack into a single tarball
   - tar c -Jf testdata.tar.xz -C /tmp/result .
   artifacts:

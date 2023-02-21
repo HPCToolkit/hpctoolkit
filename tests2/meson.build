@@ -31,11 +31,6 @@ endif
 cuda_dep = disabler()
 if add_languages('cuda', native: false, required: get_option('cuda'))
   cuda_dep = declare_dependency()
-
-  # If we have CUDA language support, add a message about the minimum driver version
-  _cuda_version = meson.get_compiler('cuda').version().split()[0]
-  _cuda_min_driver = import('unstable-cuda').min_driver_version(_cuda_version)
-  message(f'Compiling for CUDA @_cuda_version@, driver must be at least @_cuda_min_driver@')
 endif
 
 # Find HIP language support.

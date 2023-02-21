@@ -38,6 +38,9 @@ include:
 
 
 variables:
+  # Most jobs don't needs submodules, those that do will override this.
+  GIT_SUBMODULE_STRATEGY: none
+
   # Add a transfer progress bar for artifacts
   TRANSFER_METER_FREQUENCY: 2s
 
@@ -149,6 +152,7 @@ regen testdata:
     - local: tests2/data/.gitlab-ci.yml
   variables:
     PARENT_PIPELINE_ID: $CI_PIPELINE_ID
+    GIT_SUBMODULE_STRATEGY: recursive
 
 
 # Build jobs require a working Spack and compilers and a few other bits. This job handles that setup.
@@ -333,6 +337,8 @@ regen testdata:
 
   variables:
     CENV: latest
+    # Some of the test data is stored in a submodule
+    GIT_SUBMODULE_STRATEGY: recursive
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -438,7 +444,7 @@ regen testdata:
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
-'check amd64: [+cuda]':
+'check amd64: [+cuda, 11.6.2]':
   extends: .check job amd64
   image: $DEPS_IMAGES-ubuntu20.04-cuda11.6.2-$ARCH
   tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
@@ -452,12 +458,33 @@ regen testdata:
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite cuda"
   # Pull CUDA from the image itself
   - echo '--with-cuda=/usr/local/cuda' > img-config
-'check min amd64: [+cuda]':
-  extends: ['check amd64: [+cuda]', .check min]
-'check semifresh amd64: [+cuda]':
-  extends: ['check amd64: [+cuda]', .check semifresh amd64]
+'check min amd64: [+cuda, 11.6.2]':
+  extends: ['check amd64: [+cuda, 11.6.2]', .check min]
+'check semifresh amd64: [+cuda, 11.6.2]':
+  extends: ['check amd64: [+cuda, 11.6.2]', .check semifresh amd64]
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-nvidia'
+
+'check amd64: [+cuda, 11.8.0]':
+  extends: .check job amd64
+  image: $DEPS_IMAGES-ubuntu20.04-cuda11.8.0-$ARCH
+  tags: [docker, linux/$ARCH]
+  variables:
+    IMAGE_BASE: ubuntu20.04
+    IMAGE_EXT: +cuda
+    JOB_CC: gcc-9
+    SPEC: +tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0
+  before_script:
+  - !reference [.check job amd64, before_script]
+  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
+  # Pull CUDA from the image itself
+  - echo '--with-cuda=/usr/local/cuda' > img-config
+'check min amd64: [+cuda, 11.8.0]':
+  extends: ['check amd64: [+cuda, 11.8.0]', .check min]
+'check semifresh amd64: [+cuda, 11.8.0]':
+  extends: ['check amd64: [+cuda, 11.8.0]', .check semifresh amd64]
+  variables:
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
 'check amd64: [+rocm]':
   extends: .check job amd64
@@ -497,9 +524,12 @@ lint:
   - 'check arm64: [cpu]'
   - 'check min arm64: [cpu]'
   - 'check semifresh arm64: [cpu]'
-  - 'check amd64: [+cuda]'
-  - 'check min amd64: [+cuda]'
-  - 'check semifresh amd64: [+cuda]'
+  - 'check amd64: [+cuda, 11.6.2]'
+  - 'check min amd64: [+cuda, 11.6.2]'
+  - 'check semifresh amd64: [+cuda, 11.6.2]'
+  - 'check amd64: [+cuda, 11.8.0]'
+  - 'check min amd64: [+cuda, 11.8.0]'
+  - 'check semifresh amd64: [+cuda, 11.8.0]'
   - 'check amd64: [+rocm]'
   - 'check min amd64: [+rocm]'
   - 'check semifresh amd64: [+rocm]'

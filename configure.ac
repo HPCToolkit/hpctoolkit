@@ -5328,11 +5328,27 @@ AC_ARG_ENABLE([tests2],
   [enable_tests2=no])
 
 if test "$enable_tests2" = yes; then
-  export CUDA_HOME="$CUDA"
+  # FIXME: Meson assumes that all dependencies are in the "environment," but the
+  # Autogoo here is built around prefix-paths. So to make everything consistent
+  # we have to fiddle with the environment Meson sees so that it finds the right
+  # bits. And then we have to burn those environment changes into the Makefiles
+  # so that Meson sees it even in a local rebuild. Sigh.
+  #
+  # Luckily CUDA is the only dependency that the tests2/ suite may require, so
+  # we only have to implement CUDA and not 10 other dependencies.
+  #
+  # See also https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/709.
+
+  meson_env=""
+  MESON_ENV=""
+  if test "$OPT_HAVE_CUDA" = yes; then
+    meson_env="$meson_env CUDA_PATH=\"$CUDA\" PATH=\"$CUDA/bin:\$PATH\""
+    MESON_ENV="$MESON_ENV CUDA_PATH=\"$CUDA\" PATH=\"$CUDA/bin:\$\$PATH\""
+  fi
 
   meson_args="-Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_NOOPT_CFLAGS}'"
   meson_args="${meson_args} -Dcpp_args='${CXXFLAGS} ${HOST_NOOPT_CXXFLAGS}'"
-  meson_args="${meson_args} -Dcuda_args='${CUDAFLAGS}'"
+  meson_args="${meson_args} -Dcuda_args='${CUDAFLAGS}' -Dcuda_ccbindir='${CXX}'"
   if test "$OPT_ENABLE_DEVELOP" = yes
   then meson_args="${meson_args} -Dbuildtype=debug"
   else meson_args="${meson_args} -Dbuildtype=release"
@@ -5354,16 +5370,16 @@ if test "$enable_tests2" = yes; then
   else meson_args="${meson_args} -Dpython=false"
   fi
 
-  eval echo meson "$meson_args"
+  eval echo "$meson_env" meson "$meson_args"
 
-  if ! { test -d tests2-build/ && eval meson setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
+  if ! { test -d tests2-build/ && eval "$meson_env" meson setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
     rm -rf tests2-build/
-    if ! eval meson setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
+    if ! eval "$meson_env" meson setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
       AC_MSG_ERROR([Error configuring test suite, meson setup failed!])
     fi
   fi
 
-  unset CUDA_HOME
+  AC_SUBST([MESON_ENV])
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_TESTS2], [test "$enable_tests2" = yes])

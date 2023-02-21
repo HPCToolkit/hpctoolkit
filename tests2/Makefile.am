@@ -51,14 +51,14 @@ AUTOMAKE_OPTIONS = foreign
 .NOTPARALLEL:
 
 all-am:
-	meson compile -C ../tests2-build/
+	@MESON_ENV@ meson compile -C ../tests2-build/
 
 clean-local:
-	meson compile -C ../tests2-build/ --clean
+	@MESON_ENV@ meson compile -C ../tests2-build/ --clean
 
 tests2/%:
-	meson compile -C ../tests2-build/ $*
+	@MESON_ENV@ meson compile -C ../tests2-build/ $*
 
 installcheck-local:
-	meson compile -C ../tests2-build/
-	meson test -C ../tests2-build/ --print-errorlogs $${MESON_TEST_OPTS}
+	@MESON_ENV@ meson compile -C ../tests2-build/
+	@MESON_ENV@ meson test -C ../tests2-build/ --print-errorlogs $${MESON_TEST_OPTS}

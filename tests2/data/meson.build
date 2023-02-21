@@ -3,6 +3,8 @@ testdata_srcroot = meson.project_source_root() / '..'
 
 subdir('meas')
 subdir('dbase')
+subdir('bin')
+subdir('struct')
 
 _make_tar = find_program(files('make-tar'))
 _tar_cmds = {
@@ -10,12 +12,19 @@ _tar_cmds = {
   'cpu': [_make_tar, '@OUTPUT@'],
   'nvidia': [_make_tar, '@OUTPUT@'],
   'amd': [_make_tar, '@OUTPUT@'],
+  'x86-64': [_make_tar, '@OUTPUT@'],
+  'sw-cuda': [_make_tar, '@OUTPUT@'],
 }
 
-foreach testdata : [testdata_meas, testdata_dbase]
+_disabled = []
+foreach testdata : [testdata_meas, testdata_dbase_current, testdata_struct_current]
   foreach _, spec : testdata
     _suite = spec['gen']['suite']
     foreach dstpath, srcgen : spec['gen']['files']
+      if is_disabler(srcgen) and _suite not in _disabled
+        warning(f'data/fresh-@_suite@ target is available, generation target for @dstpath@ is disabled')
+        _disabled += _suite
+      endif
       _tar_cmds += {
         _suite: _tar_cmds[_suite] + ['--add', srcgen, dstpath],
       }
