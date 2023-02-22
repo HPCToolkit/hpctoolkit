@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# Wrapper around the Python code in lib/dev/. Automatically sets up a venv for the script (and its
+# dependencies). Similar to pipx (but significantly smaller... and less powerful).
+
+here="$(dirname "$(realpath "$0")")"
+if ! test -d "$here"; then
+  echo "Unable to determine checkout directory!" >&2
+  exit 2
+fi
+
+bootstrap_venv="$here"/.devenv/_bootstrap/
+
+py_test='
+import sys, ctypes
+if sys.version_info < (3, 10): raise RuntimeError
+'
+py_spec='python@3.10: +ctypes'
+
+# If the dev venv doesn't exist or doesn't work, re-bootstrap it from scratch.
+if ! test -f "$bootstrap_venv"/bin/dev \
+   || ! test -x "$bootstrap_venv"/bin/dev \
+   || ! "$bootstrap_venv"/bin/dev --help >/dev/null 2>&1; then
+
+  # If our Python is too old, probe Spack and get ourselves a modern version.
+  if ! python3 -c "$py_test" >/dev/null 2>&1; then
+    echo '[bootstrap] Locating a modern Python installed by Spack...' >&2
+
+    if ! command -pv spack >/dev/null; then
+      {
+        echo '[bootstrap] Spack not found! This will make the ./dev script much less useful!'
+        echo '[bootstrap] Go install an instance of Spack:'
+        echo '[bootstrap]   $ git clone -c feature.manyFiles=true https://github.com/spack/spack.git ~/spack'
+        echo '[bootstrap]   $ . ~/spack/share/spack/setup-env.sh'
+        echo '[bootstrap]   $ spack bootstrap now'
+        echo '[bootstrap] See https://spack.readthedocs.io/en/latest/getting_started.html for more'
+      } >&2
+    fi
+
+    if ! spackload="$(spack load --sh --first --only=package "$py_spec")"; then
+      echo '[bootstrap] Building a modern Python via Spack...' >&2
+      echo '[bootstrap] This may take a while, go get a sandwich!' >&2
+      spack install --fail-fast "$py_spec" || exit $?
+      spackload="$(spack load --sh --first --only=package "$py_spec")" || exit $?
+    fi
+    eval "$spackload" || exit $?
+    python3 -c "$py_test" || exit $?
+  fi
+
+  echo '[bootstrap] Constructing a virtual environment for the ./dev script...' >&2
+
+  python3 -m venv --clear --upgrade-deps "$bootstrap_venv" || exit $?
+  "$bootstrap_venv"/bin/python3 -m pip install --require-virtualenv --editable "$here"/lib/dev \
+    || exit $?
+fi
+
+# Transfer control to the actual ./dev script.
+exec "$bootstrap_venv"/bin/dev "$@"

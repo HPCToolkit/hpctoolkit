@@ -9,6 +9,13 @@ if len(sys.argv) != 3:
     raise ValueError("Incorrect number of arguments, expected 2")
 if sys.version_info < (3, 10):
     raise RuntimeError("Insufficient Python version!")
+try:
+    import ctypes
+    import zlib
+    import bz2
+    import lzma
+except ImportError:
+    raise
 
 pyproject = Path(sys.argv[1]).resolve(strict=True)
 targetdir = Path(sys.argv[2]).resolve()

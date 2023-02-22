@@ -36,6 +36,8 @@ repos:
   # Ensure the poetry.lock files are in-sync with the pyproject.toml files
   - id: poetry-lock
     args: [-C, tests2/lib/python/, --check]
+  - id: poetry-lock
+    args: [-C, lib/dev/, --check]
 
 
 # ------------------------------------------------------------------------------------
@@ -127,6 +129,9 @@ repos:
   - id: poetry-check
     args: [-C, tests2/lib/python/]
     files: ^tests2/lib/python/pyproject\.toml$
+  - id: poetry-check
+    args: [-C, lib/dev/]
+    files: ^lib/dev/pyproject\.toml$
 
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.0.1
