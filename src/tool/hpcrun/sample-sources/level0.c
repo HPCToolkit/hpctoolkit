@@ -271,8 +271,12 @@ METHOD_FN(display_events)
 	 "\t\tWhen running on Intel GPUs, use optional instrumentation\n"
 	 "\t\twithin GPU kernels to collect one or more of the following:\n"
 	 "\t\t  count:   count how many times each GPU instruction executes\n"
+#if ENABLE_LATENCY_ANALYSIS
 	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
+#endif
+#if ENABLE_SIMD_ANALYSIS
 	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
+#endif
 	 "\n");
 #endif
 }
