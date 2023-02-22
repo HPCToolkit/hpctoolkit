@@ -71,7 +71,8 @@
 #define INST_LATENCY  "latency"
 #define INST_SIMD     "simd"
 
-#define ENABLE_SIMD_ANALYSIS 1
+#define ENABLE_SIMD_ANALYSIS 0
+#define ENABLE_LATENCY_ANALYSIS 0
 
 
 
@@ -137,8 +138,10 @@ gpu_instrumentation_options_set
       while(token) {
 	if (strcmp(token, INST_COUNT) == 0) {
 	  options->count_instructions = true;
+  #if ENABLE_LATENCY_ANALYSIS
 	} else if (strcmp(token, INST_LATENCY) == 0) {
 	  options->attribute_latency = true;
+  #endif
   #if ENABLE_SIMD_ANALYSIS
 	} else if (strcmp(token, INST_SIMD) == 0) {
 	  options->analyze_simd = true;

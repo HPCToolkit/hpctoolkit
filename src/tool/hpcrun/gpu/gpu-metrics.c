@@ -970,6 +970,11 @@ void gpu_metrics_GPU_INST_enable(
 
   FORALL_GPU_INST(INITIALIZE_SCALAR_METRIC_INT)
 
+  // hide block level instruction metrics in hpcviewer
+  hpcrun_set_display(METRIC_ID(GPU_BLOCK_EXECUTION_COUNT), HPCRUN_FMT_METRIC_INVISIBLE);
+  hpcrun_set_display(METRIC_ID(GPU_BLOCK_LATENCY), HPCRUN_FMT_METRIC_INVISIBLE);
+  hpcrun_set_display(METRIC_ID(GPU_BLOCK_ACTIVE_SIMD_LANES), HPCRUN_FMT_METRIC_INVISIBLE);
+
   FINALIZE_METRIC_KIND();
 
   metric_desc_t *thrds_to_cover_latency_metric;
