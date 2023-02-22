@@ -295,29 +295,29 @@ typedef struct instruction_metrics_t {
 // gpu instruction count
 #define FORALL_GPU_INST(macro)                                                                                                        \
   macro(GPU_INST_METRIC_NAME ":BLK_EXEC_CNT", GPU_BLOCK_EXECUTION_COUNT, \
-        "GPU kernel block execution count")				\
+        "GPU basic block execution count")				\
   macro(GPU_INST_METRIC_NAME ":BLK_LAT", GPU_BLOCK_LATENCY,		\
-	"GPU kernel block latency")					\
+	"GPU basic block latency")					\
   macro(GPU_INST_METRIC_NAME ":BLK_SIMD_ACT", GPU_BLOCK_ACTIVE_SIMD_LANES, \
-	"GPU kernel block active SIMD lanes")				\
+	"GPU basic block active SIMD lanes")				\
   macro(GPU_INST_METRIC_NAME, GPU_INSTRUCTION_EXECUTION_COUNT,		\
-	"GPU block instruction execution count")			\
+	"GPU instruction execution count")			\
   macro(GPU_INST_METRIC_NAME ":LAT", GPU_INSTRUCTION_LATENCY,		\
-	"GPU block instruction latency")				\
+	"GPU instruction latency")				\
   macro(GPU_INST_METRIC_NAME ":LAT_COV", GPU_INSTRUCTION_COVERED_LATENCY, \
-	"GPU block instruction covered latency")			\
+	"GPU instruction covered latency")			\
   macro(GPU_INST_METRIC_NAME ":LAT_UCV", GPU_INSTRUCTION_UNCOVERED_LATENCY, \
-	"GPU block instruction uncovered latency")			\
+	"GPU instruction uncovered latency")			\
   macro(GPU_INST_METRIC_NAME ":LAT_THR", GPU_INSTRUCTION_THREADS_TO_COVER_LATENCY, \
 	"GPU threads needed to cover latency (1 + UCV/COV)")		\
   macro(GPU_INST_METRIC_NAME ":SIMD_TOT", GPU_INSTRUCTION_TOTAL_SIMD_LANES, \
-	"GPU block instruction total SIMD lanes")			\
+	"GPU instruction total SIMD lanes")			\
   macro(GPU_INST_METRIC_NAME ":SIMD_ACT", GPU_INSTRUCTION_ACTIVE_SIMD_LANES, \
-	"GPU block instruction active SIMD lanes")			\
+	"GPU instruction active SIMD lanes")			\
   macro(GPU_INST_METRIC_NAME ":SIMD_WST", GPU_INSTRUCTION_WASTED_SIMD_LANES, \
-	"GPU block instruction wasted SIMD lanes")			\
+	"GPU instruction wasted SIMD lanes")			\
   macro(GPU_INST_METRIC_NAME ":SIMD_SLS", GPU_INSTRUCTION_SCALAR_SIMD_LOSS, \
-	"GPU block instruction SIMD lanes lost due to scalar instructions")
+	"GPU instruction SIMD lanes lost due to scalar instructions")
 
 // gpu kernel characteristics
 #define FORALL_KINFO(macro)                                                                                                  \
