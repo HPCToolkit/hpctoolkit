@@ -11,7 +11,6 @@ import sys
 import tempfile
 import textwrap
 import time
-import typing as T
 from pathlib import Path
 
 from .action import Action, SummaryResult, action_sequence
@@ -40,7 +39,7 @@ def parse_spec(spec: str) -> Specification:
     try:
         return Specification(spec)
     except ValueError as e:
-        raise argparse.ArgumentTypeError(f"invalid spec '{spec}': {e}")
+        raise argparse.ArgumentTypeError(f"invalid spec '{spec}': {e}") from None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -278,16 +277,18 @@ def load_spackenv(cdir: Path, spack_install: bool, spack_args) -> None:
     assert isinstance(spack, str)
 
     if spack_install:
-        with section(f"spack install {cdir.as_posix()}...", collapsed=True):
-            # Save and restore the spack.yaml to keep things sane between runs
-            # See https://github.com/spack/spack/issues/31091
-            with tempfile.SpooledTemporaryFile(mode="w+") as storef:
-                with open(cdir / "spack.yaml", encoding="utf-8") as f:
-                    shutil.copyfileobj(f, storef)
-                storef.seek(0)
-                subprocess.run([spack, "-e", cdir, "install", *spack_args], check=True)
-                with open(cdir / "spack.yaml", "w", encoding="utf-8") as f:
-                    shutil.copyfileobj(storef, f)
+        # Save and restore the spack.yaml to keep things sane between runs
+        # See https://github.com/spack/spack/issues/31091
+        with (
+            section(f"spack install {cdir.as_posix()}...", collapsed=True),
+            tempfile.SpooledTemporaryFile(mode="w+") as storef,
+        ):
+            with open(cdir / "spack.yaml", encoding="utf-8") as f:
+                shutil.copyfileobj(f, storef)
+            storef.seek(0)
+            subprocess.run([spack, "-e", cdir, "install", *spack_args], check=True)
+            with open(cdir / "spack.yaml", "w", encoding="utf-8") as f:
+                shutil.copyfileobj(storef, f)
 
     envload = subprocess.run(
         [spack, "env", "activate", "--sh", cdir], stdout=subprocess.PIPE, text=True, check=True
@@ -297,7 +298,7 @@ def load_spackenv(cdir: Path, spack_install: bool, spack_args) -> None:
 
     in_cmd = None
     for word in shlex_iter(lexer):
-        match word:  # noqa: E999
+        match word:
             case "alias" if not in_cmd:
                 in_cmd = "alias"
             case "export" if not in_cmd:
@@ -325,7 +326,7 @@ def load_spackenv(cdir: Path, spack_install: bool, spack_args) -> None:
 def gen_variants(args) -> list[tuple[ConcreteSpecification, bool]]:
     result = [
         (cs, any(u.satisfies(cs) for u in (args.unsatisfiable or [])))
-        for cs in ConcreteSpecification.all()
+        for cs in ConcreteSpecification.all_possible()
         if not args.spec or any(s.satisfies(cs) for s in args.spec)
     ]
     assert result
@@ -340,7 +341,7 @@ def gen_variants(args) -> list[tuple[ConcreteSpecification, bool]]:
 
 def configure(
     depcfg: DependencyConfiguration, v: ConcreteSpecification, unsat: bool
-) -> T.Optional[Configuration]:
+) -> Configuration | None:
     try:
         cfg = Configuration(depcfg, v)
     except UnsatisfiableSpecError as e:
@@ -367,10 +368,8 @@ def parse_stats(stdout):
         parts = re.split(" {3,}|\t+", line)
         if len(parts) == 2:
             key, val = parts
-            try:
+            with contextlib.suppress(ValueError):
                 stats[key] = int(val)
-            except ValueError:
-                pass
     return stats
 
 

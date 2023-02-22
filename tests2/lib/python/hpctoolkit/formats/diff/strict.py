@@ -8,7 +8,7 @@ import io
 import itertools
 import math
 import textwrap
-import typing as T
+import typing
 
 import ruamel.yaml
 
@@ -22,10 +22,11 @@ __all__ = ["MonotonicHunk", "FixedAlteredHunk", "StrictDiff", "StrictAccuracy"]
 
 def _pretty_path(path: collections.abc.Iterable[str | int], obj) -> list[str]:
     """Given a canonical path to a field of obj, generate a list of lines suitable for printing,
-    except for indentation."""
+    except for indentation.
+    """
     result = [""]
     for p in path:
-        assert isinstance(p, int | str)
+        assert isinstance(p, (int, str))
         if isinstance(obj, StructureBase):
             assert isinstance(p, str)
             if obj.shorthand is not None:
@@ -74,7 +75,7 @@ class _TrieNode(collections.defaultdict):
         self.added = set()
         self.altered = {}
 
-    def render(self, depth: int, out: T.TextIO):
+    def render(self, depth: int, out: typing.TextIO):
         indent = "  " * depth
         prefix_add = "+" + indent
         prefix_rm = "-" + indent
@@ -94,11 +95,11 @@ class _TrieNode(collections.defaultdict):
             )
         for obj in self.removed:
             out.write(
-                textwrap.indent(_yaml2str(obj, "rt").strip(), prefix_rm, lambda l: True) + "\n"
+                textwrap.indent(_yaml2str(obj, "rt").strip(), prefix_rm, lambda _: True) + "\n"
             )
         for obj in self.added:
             out.write(
-                textwrap.indent(_yaml2str(obj, "rt").strip(), prefix_add, lambda l: True) + "\n"
+                textwrap.indent(_yaml2str(obj, "rt").strip(), prefix_add, lambda _: True) + "\n"
             )
 
         for key in sorted(self.keys()):
@@ -124,7 +125,8 @@ class MonotonicHunk(DiffHunk):
 
 class FixedAlteredHunk(DiffHunk):
     """Hunk representing the alteration of a single "fixed-position" object. These objects have
-    strict structural positions and so children in the object-ownership-tree may be matched."""
+    strict structural positions and so children in the object-ownership-tree may be matched.
+    """
 
     def __init__(self, src, dst):
         super().__init__()
@@ -135,8 +137,8 @@ class FixedAlteredHunk(DiffHunk):
         return f"{self.__class__.__name__}({self.src!r}, {self.dst!r})"
 
 
-ValT = T.TypeVar("ValT")
-SValT = T.TypeVar("SValT", bound=StructureBase)
+ValT = typing.TypeVar("ValT")
+SValT = typing.TypeVar("SValT", bound=StructureBase)
 
 
 class StrictDiff(DiffStrategy):
@@ -163,7 +165,7 @@ class StrictDiff(DiffStrategy):
             + [FixedAlteredHunk(a, b) for a, b in self.altered.items()]
         )
 
-    def render(self, out: T.TextIO):
+    def render(self, out: typing.TextIO):
         a_paths, b_paths = canonical_paths(self.a), canonical_paths(self.b)
         hunktrie = _TrieNode()
         for obj_a in self.removed:
@@ -199,7 +201,7 @@ class StrictDiff(DiffStrategy):
             del self._preserving
 
     def _failure_canary(self):
-        """Return an object which, when changes, indicates new failures have been encountered"""
+        """Return an object which, when changes, indicates new failures have been encountered."""
         return (len(self.removed), len(self.added), len(self.altered))
 
     def _set(self, a: SValT, b: SValT):
@@ -210,7 +212,8 @@ class StrictDiff(DiffStrategy):
 
     def _presume(self, a: SValT | None, b: SValT | None) -> bool:
         """Assert that a == b from a prior _update. In other words, deny any context mapping in
-        which a != b. Returns False if that would result in no contexts at all."""
+        which a != b. Returns False if that would result in no contexts at all.
+        """
         if a is None or b is None:
             return a is None and b is None
         new_ctxs = [c for c in self._contexts if a in c and c[a] is b]
@@ -228,7 +231,9 @@ class StrictDiff(DiffStrategy):
         key: tuple[dict[ValT, SValT], dict[ValT, SValT]] | None = None,
         raw_base_eq: bool = False,
     ) -> bool:
-        """Same as _presume, but understands the key keyword argument of _key_m."""
+        """Assert that a == b from a prior _update, but understands the key keyword argument of _key_m.
+        See _presume.
+        """
         if key is not None:
             return self._presume(key[0][a], key[1][b])
         if raw_base_eq:
@@ -255,7 +260,8 @@ class StrictDiff(DiffStrategy):
     def _update(self, a, b):
         """Update the Diff-state presuming a == b. If it does not, update the Diff-state with a new
         set of Hunks indicating the difference. Then, recurse into the objects and attempt to match
-        those as well."""
+        those as well.
+        """
         raise NotImplementedError(f"Unable to diff type {type(a)}")
 
     @_update.register
@@ -263,15 +269,16 @@ class StrictDiff(DiffStrategy):
         pass
 
     @functools.singledispatchmethod
-    def _key(self, o: T.Any, *, side_a: bool) -> collections.abc.Hashable:
+    def _key(self, o: typing.Any, *, side_a: bool) -> collections.abc.Hashable:
         """Derive a hashable key from the given object, that uniquely identifies it compared to its
-        siblings."""
+        siblings.
+        """
         raise NotImplementedError(f"No unique key for type {type(o)}")
 
-    def _key_a(self, o: T.Any) -> collections.abc.Hashable:
+    def _key_a(self, o: typing.Any) -> collections.abc.Hashable:
         return self._key(o, side_a=True)
 
-    def _key_b(self, o: T.Any) -> collections.abc.Hashable:
+    def _key_b(self, o: typing.Any) -> collections.abc.Hashable:
         return self._key(o, side_a=False)
 
     def _key_m(
@@ -280,12 +287,12 @@ class StrictDiff(DiffStrategy):
         return self._key(key[0 if side_a else 1][o] if key is not None else o, side_a=side_a)
 
     def _key_ma(
-        self, o: T.Any, *, key: tuple[dict, dict] | None = None
+        self, o: typing.Any, *, key: tuple[dict, dict] | None = None
     ) -> collections.abc.Hashable:
         return self._key_m(o, side_a=True, key=key)
 
     def _key_mb(
-        self, o: T.Any, *, key: tuple[dict, dict] | None = None
+        self, o: typing.Any, *, key: tuple[dict, dict] | None = None
     ) -> collections.abc.Hashable:
         return self._key_m(o, side_a=False, key=key)
 
@@ -316,11 +323,12 @@ class StrictDiff(DiffStrategy):
             else:
                 self._update(ea, eb)
 
-    def _isomorphic_update(
+    def _isomorphic_update(  # noqa: C901
         self, a: collections.abc.Iterable[SValT], b: collections.abc.Iterable[SValT]
     ):
         """Update the Diff-state assuming a == b when _key(a) == _key(b), ignoring order between
-        the two sequences."""
+        the two sequences.
+        """
         a_dict = collections.defaultdict(set)
         for e in a:
             a_dict[self._key(e, side_a=True)].add(e)
@@ -386,7 +394,7 @@ class StrictDiff(DiffStrategy):
                 assert len(vb_list) == len(va_list)
                 if len(set(vb_list)) == len(vb_list):  # No overlap allowed
                     with self._preserve_state():
-                        for va, vb in zip(va_list, vb_list):
+                        for va, vb in zip(va_list, vb_list, strict=True):
                             self._update(va, vb)
                         final_contexts.extend(self._contexts)
             if final_contexts:
@@ -928,7 +936,7 @@ class StrictAccuracy(AccuracyStrategy):
             return 0
         return self.failed_cnt / self.total_cnt
 
-    def render(self, out: T.TextIO):
+    def render(self, out: typing.TextIO):
         print(
             f"Identified {self.inaccuracy*100:.2f}% inaccuracies in {self.total_cnt:d} values",
             file=out,
@@ -946,7 +954,7 @@ class StrictAccuracy(AccuracyStrategy):
                 a, b, diff = key
                 paths = self.failures[key]
 
-                match diff:  # noqa: E999
+                match diff:
                     case CmpError.bad_sign:
                         why = "values have differing signs"
                     case CmpError.exp_diff:
@@ -960,7 +968,7 @@ class StrictAccuracy(AccuracyStrategy):
                         )
                         why = f"difference of {diff:f} * 2^{exp} = {diff*self._norm2ulp} ULPs"
                     case _:
-                        assert False, f"Invalid diff value: {diff!r}"
+                        raise AssertionError(f"Invalid diff value: {diff!r}")
 
                 print(f"  - {a:f} != {b:f}: {why} (abs diff {abs(a-b):f})", file=out)
                 print(
@@ -973,7 +981,8 @@ class StrictAccuracy(AccuracyStrategy):
 
     def _float_cmp(self, a: float, b: float) -> float | CmpError:
         """Compare two floats and return 0.0 if the two are equal. If not, returns the
-        normalized difference or a CmpError indicating the error."""
+        normalized difference or a CmpError indicating the error.
+        """
         # Shortcut for true equality
         if a == b:
             return 0.0
@@ -1022,15 +1031,15 @@ class StrictAccuracy(AccuracyStrategy):
                             route.append(f"[{i_a:d}|{i_b:d}]")
                 self.failures.setdefault((a, b, diff), []).append("".join(route))
 
-    ObjT = T.TypeVar("ObjT")
-    ValT = T.TypeVar("ValT")
+    ObjT = typing.TypeVar("ObjT")
+    ValT = typing.TypeVar("ValT")
 
     def _zip_by_id(
         self,
         a: dict[int, ValT],
         b: dict[int, ValT],
         id2a: dict[int, ObjT] | None,
-        b2id: T.Callable[[ObjT], int] | None,
+        b2id: typing.Callable[[ObjT], int] | None,
     ) -> collections.abc.Iterable[tuple[tuple[int, int], ValT, ValT]]:
         if id2a is not None:
             assert b2id is not None

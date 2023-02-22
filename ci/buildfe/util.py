@@ -1,5 +1,4 @@
 import contextlib
-import functools
 import math
 import os
 import shutil
@@ -9,7 +8,7 @@ from pathlib import Path
 
 
 def flatten(lists):
-    """Given a possibly-recursive list, returned the flattened form"""
+    """Given a possibly-recursive list, returned the flattened form."""
     result = []
     for x in lists:
         if isinstance(x, list):
@@ -55,15 +54,15 @@ class Git:
             return None
         return [Path(line) for line in output.splitlines()] if output else []
 
-    @functools.lru_cache
     def toplevel(self) -> Path:
         """Get the absolute path to the top-level Git directory, from git rev-parse --show-toplevel."""
-        r = self("rev-parse", "--show-toplevel")
-        if r is None:
-            raise RuntimeError("Not part of a Git repository!")
-        return Path(r).resolve(strict=True)
+        if not hasattr(self, "_toplevel"):
+            r = self("rev-parse", "--show-toplevel")
+            if r is None:
+                raise RuntimeError("Not part of a Git repository!")
+            self._toplevel = Path(r).resolve(strict=True)
+        return self._toplevel
 
-    @functools.lru_cache
     def all_files(self, *args: str | Path, absolute: bool = False, **kwargs) -> list[Path] | None:
         """Get a list of all checked-in files as Git sees the world."""
         topdir = self.toplevel()
@@ -72,10 +71,10 @@ class Git:
             return None
         return [topdir / p for p in relative] if absolute else relative
 
-    @functools.lru_cache
     def is_file(self, *paths: Path) -> bool:
         """Check if any of the given paths is checked into the repository.
-        See also all_files()."""
+        See also all_files().
+        """
         return (
             self.all_files("--error-unmatch", *paths, check=False, supress_stderr=True) is not None
         )
@@ -83,14 +82,15 @@ class Git:
 
 def project_dir() -> Path:
     """Get the top-level project directory. Uses CI_PROJECT_DIR if available, otherwise uses the
-    top-level Git directory."""
+    top-level Git directory.
+    """
     if "CI_PROJECT_DIR" in os.environ:
         return Path(os.environ["CI_PROJECT_DIR"]).resolve(strict=True)
     return Git().toplevel()
 
 
 def cpuset_max() -> float:
-    """Get the maximum number of threads accessible according to the process affinity"""
+    """Get the maximum number of threads accessible according to the process affinity."""
     with contextlib.suppress(Exception):
         # This should work on all UNIX systems
         return len(os.sched_getaffinity(0))
@@ -100,7 +100,7 @@ def cpuset_max() -> float:
 
 
 def cgroup_max() -> float:
-    """Get the maximum amount of CPU-time allowed by the active cgroups"""
+    """Get the maximum amount of CPU-time allowed by the active cgroups."""
     try:
         cgroup_fs = None
         with open("/proc/self/mountinfo", encoding="utf-8") as f:
@@ -144,14 +144,14 @@ def cgroup_max() -> float:
 
 
 def nproc_max() -> int:
-    """Get the maximum number of processes available to this execution, based on the limits"""
+    """Get the maximum number of processes available to this execution, based on the limits."""
     return max(math.floor(min(cpuset_max(), cgroup_max())), 1)
 
 
 def nproc() -> int:
-    """Get the recommended number of processes that should be used for parallel operations"""
+    """Get the recommended number of processes that should be used for parallel operations."""
     np = nproc_max()
-    match np:  # noqa: E999
+    match np:
         case 1:
             return 2  # Minor parallelism
         case 2:

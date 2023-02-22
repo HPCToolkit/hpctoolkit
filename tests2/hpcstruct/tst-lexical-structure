@@ -61,13 +61,10 @@ class InboundsPlaceholder(ValueLike):
 
     @classmethod
     def parser(cls, *, debug: bool) -> pp.ParserElement:
-        val = pp.Literal("inbounds") | "inparbounds"
-
-        @val.set_parse_action
         def lift(toks: pp.ParseResults) -> InboundsPlaceholder | IntRangeValue:
             if not debug:
                 return IntRangeValue(0)
-            match toks[0]:  # noqa: E999
+            match toks[0]:
                 case "inbounds":
                     return cls(parent=False)
                 case "inparbounds":
@@ -75,6 +72,8 @@ class InboundsPlaceholder(ValueLike):
                 case _:
                     raise AssertionError
 
+        val = pp.Literal("inbounds") | "inparbounds"
+        val.set_parse_action(lift)
         return val
 
 
@@ -194,13 +193,13 @@ class IntRangeValue(Value):
     def parser(cls, *, debug: bool, **_kwargs) -> pp.ParserElement:
         return (
             pp.Literal("line").set_parse_action(
-                lambda s, l, _t: cls(pp.lineno(l, s)) if debug else cls(0)
+                lambda s, ln, _t: cls(pp.lineno(ln, s)) if debug else cls(0)
             )
             ^ pp.Literal("nextline").set_parse_action(
-                lambda s, l, _t: cls(pp.lineno(l, s) + 1) if debug else cls(0)
+                lambda s, ln, _t: cls(pp.lineno(ln, s) + 1) if debug else cls(0)
             )
             ^ pp.Literal("lineornext").set_parse_action(
-                lambda s, l, _t: cls(pp.lineno(l, s), plus=1) if debug else cls(0)
+                lambda s, ln, _t: cls(pp.lineno(ln, s), plus=1) if debug else cls(0)
             )
         )
 
@@ -261,7 +260,7 @@ class Tag:
     ) -> bool:
         return (
             elem.tag == self.tag
-            and all(k in self.attrs for k in elem.keys())
+            and all(k in self.attrs for k in elem.attrib)
             and all(
                 v.as_value(bounds=self.line_bounds, par_bounds=par_bounds).matches(elem.get(k, ""))
                 for k, v in self.attrs.items()
@@ -420,6 +419,7 @@ class Tag:
 
 
 def parse_sources(sources: collections.abc.Iterable[Path], *, debug: bool, binary: str) -> Tag:
+    # pylint: disable=too-many-locals
     definitions: dict[str, list[Tag]] = {}
     def_parser = Tag.predefined_parser()
 
@@ -427,12 +427,17 @@ def parse_sources(sources: collections.abc.Iterable[Path], *, debug: bool, binar
     def expand(toks: pp.ParseResults) -> list[Tag]:
         return definitions[toks.name]
 
+    macros: dict[str, str] = {}
+
+    def expand_macro(m) -> str:
+        return macros[m[1]]
+
     result: Tag | None = None
     for source in sources:
         file = source.resolve(strict=True).as_posix()
         parser = Tag.parser(def_parser, file=file, binary=binary, debug=debug)
 
-        macros: dict[str, str] = {}
+        macros = {}
         lines: list[str] = []
         in_def: tuple[str, list[str]] | None = None
         with open(source, encoding="utf-8") as f:
@@ -476,7 +481,7 @@ def parse_sources(sources: collections.abc.Iterable[Path], *, debug: bool, binar
                     case "CHECK":
                         expr = re.sub(
                             r"!!(\S+)",
-                            lambda m: macros[m[1]],  # pylint: disable=cell-var-from-loop
+                            expand_macro,
                             mat[2],
                         )
                         (in_def[1] if in_def is not None else lines)[-1] = " " * mat.start(2) + expr
@@ -485,7 +490,7 @@ def parse_sources(sources: collections.abc.Iterable[Path], *, debug: bool, binar
 
         if in_def is not None:
             raise ValueError(f"Missing ENDDEFINE for !{in_def[0]} at EOF")
-        if any(not l.isspace() for l in lines):
+        if any(not line.isspace() for line in lines):
             if result is not None:
                 raise ValueError("Only one file may define the top-level tag")
             result = parser.parse_string("\n".join(lines), parse_all=True)[0]
@@ -515,13 +520,12 @@ def test_lexical_structure(sources: tuple[Path], debugless: bool, binary: Path):
     """Test that analysis generates an appropriate structure for BINARY based on directives listed
     in the input sources.
     """
-
     try:
         tag = parse_sources(sources, debug=not debugless, binary=str(binary.resolve(strict=True)))
     except pp.ParseException as e:
-        raise click.ClickException("Pattern syntax error:\n" + e.explain())
+        raise click.ClickException("Pattern syntax error:\n" + e.explain()) from e
     except pp.ParseFatalException as e:
-        raise click.ClickException("Pattern syntax error:\n" + e.explain())
+        raise click.ClickException("Pattern syntax error:\n" + e.explain()) from e
 
     with hpcstruct(binary) as structfile:
         data = XmlET.parse(structfile)

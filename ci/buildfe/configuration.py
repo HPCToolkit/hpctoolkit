@@ -12,7 +12,7 @@ import shlex
 import shutil
 import tempfile
 import textwrap
-import typing as T
+import typing
 from pathlib import Path
 
 from .logs import FgColor, colorize
@@ -20,7 +20,7 @@ from .util import flatten
 
 
 class UnsatisfiableSpecError(Exception):
-    "Exception raised when the given variant is unsatisfiable"
+    """Exception raised when the given variant is unsatisfiable."""
 
     def __init__(self, missing):
         super().__init__(f"missing definition for argument {missing}")
@@ -28,7 +28,7 @@ class UnsatisfiableSpecError(Exception):
 
 
 class ImpossibleSpecError(Exception):
-    "Exception raised when the given variant is impossible"
+    """Exception raised when the given variant is impossible."""
 
     def __init__(self, a, b):
         super().__init__(f'conflict between "{a}" and "{b}"')
@@ -36,7 +36,7 @@ class ImpossibleSpecError(Exception):
 
 
 class DependencyConfiguration:
-    """State needed to derive configure-time arguments, based on simple configuration files"""
+    """State needed to derive configure-time arguments, based on simple configuration files."""
 
     def __init__(self, cc: str | None = None):
         self.configs: list[tuple[Path | None, str]] = []
@@ -49,7 +49,7 @@ class DependencyConfiguration:
             cc = cc.split("=")[0]  # Anything after an = is considered a comment
             mat = re.fullmatch("([^-]+)(-?.*)", cc)
             assert mat
-            match mat.group(1):  # noqa: E999
+            match mat.group(1):
                 case "gcc":
                     self._compiler = "gcc" + mat.group(2), "g++" + mat.group(2)
                 case "clang":
@@ -85,13 +85,13 @@ class DependencyConfiguration:
             return self.custom_compilers
         return self.raw_compilers
 
-    def load(self, fn: Path, ctx: T.Optional[Path] = None):
+    def load(self, fn: Path, ctx: Path | None = None):
         with open(fn, encoding="utf-8") as f:
             for line in f:
                 self.configs.append((ctx, line))
 
     def get(self, argument):
-        "Fetch the full form of the given argument, by searching the configs"
+        """Fetch the full form of the given argument, by searching the configs."""
         argument = argument.lstrip()
         for ctx, line in self.configs:
             if line.startswith(argument):
@@ -201,10 +201,10 @@ class _ManifestExtLib(_ManifestFile):
 
 
 class Manifest:
-    """Representation of an install manifest"""
+    """Representation of an install manifest."""
 
     def __init__(self, *, mpi: bool):
-        """Given a set of variant-keywords, determine the install manifest as a list of ManifestFiles"""
+        """Given a set of variant-keywords, determine the install manifest as a list of ManifestFiles."""
 
         def so(n):
             return r"\.so" + r"\.\d+" * n.__index__()
@@ -381,8 +381,8 @@ class Manifest:
 
     def check(self, installdir: Path) -> tuple[int, int]:
         """Scan an install directory and compare against the expected manifest. Prints the results
-        of the checks to the log. Return the counts of missing and unexpected files."""
-
+        of the checks to the log. Return the counts of missing and unexpected files.
+        """
         # First derive the full listing of actually installed files
         listing = set()
         for root, _, files in os.walk(installdir):
@@ -438,7 +438,7 @@ class ConcreteSpecification:
             raise ImpossibleSpecError("+gtpin", "~level0")
 
     @classmethod
-    def all(cls) -> collections.abc.Iterable["ConcreteSpecification"]:
+    def all_possible(cls) -> collections.abc.Iterable["ConcreteSpecification"]:
         """List all possible ConcreteSpecifications in the configuration space."""
         dims = [
             # (variant, values...), in order from slowest- to fastest-changing
@@ -478,7 +478,7 @@ class Specification:
         min_enabled: int
         max_enabled: int
 
-    _concrete_cls: T.ClassVar[type[ConcreteSpecification]] = ConcreteSpecification
+    _concrete_cls: typing.ClassVar[type[ConcreteSpecification]] = ConcreteSpecification
     _clauses: dict[tuple[str, ...], _Condition] | bool
 
     def _parse_long(self, valid_variants: frozenset[str], clause: str) -> set[str]:
@@ -508,7 +508,7 @@ class Specification:
                     n = len(variants) - int(cmat.group(3))
                     op = {">": "<", "<": ">", "=": "="}[cmat.group(2)]
                 case _:
-                    assert False
+                    raise AssertionError()
             for base_op in {">": ">", "<": "<", "=": "<>"}[op]:
                 match base_op:
                     case ">":
@@ -516,7 +516,7 @@ class Specification:
                     case "<":
                         cond.max_enabled = min(cond.max_enabled, n)
                     case _:
-                        assert False
+                        raise AssertionError()
         return set(variants)
 
     def _parse_short(self, valid_variants: frozenset[str], clause: str) -> set[str]:
@@ -530,7 +530,7 @@ class Specification:
             case "~":
                 cnt = 0
             case _:
-                assert False
+                raise AssertionError()
 
         variant = mat.group(2)
         if variant not in valid_variants:
@@ -576,9 +576,10 @@ class Specification:
                 good_clauses[vrs] = cond
         self._clauses = good_clauses if good_clauses else False
 
-    def __init__(self, spec: str, /, *, allow_blank: bool = False, allow_empty: bool = False):
-        """
-        Create a new Specification from the given specification string.
+    def __init__(  # noqa: C901
+        self, spec: str, /, *, allow_blank: bool = False, allow_empty: bool = False
+    ):
+        """Create a new Specification from the given specification string.
 
         The syntax follows this rough BNF grammar:
             spec := all | none | W { clause W }*
@@ -627,10 +628,12 @@ class Specification:
             bad_variants = set()
             for variant in valid_variants - constrained_variants:
                 matches_true = any(
-                    getattr(c, variant) and self.satisfies(c) for c in self._concrete_cls.all()
+                    getattr(c, variant) and self.satisfies(c)
+                    for c in self._concrete_cls.all_possible()
                 )
                 matches_false = any(
-                    not getattr(c, variant) and self.satisfies(c) for c in self._concrete_cls.all()
+                    not getattr(c, variant) and self.satisfies(c)
+                    for c in self._concrete_cls.all_possible()
                 )
                 if matches_true and matches_false:
                     bad_variants.add(variant)
@@ -645,12 +648,12 @@ class Specification:
             if isinstance(self._clauses, bool):
                 matches_any = self._clauses
             else:
-                matches_any = any(self.satisfies(c) for c in self._concrete_cls.all())
+                matches_any = any(self.satisfies(c) for c in self._concrete_cls.all_possible())
             if not matches_any:
                 raise ValueError(f"Specification does not match anything: {spec!r}")
 
     def satisfies(self, concrete: ConcreteSpecification) -> bool:
-        """Test whether the given ConcreteSpecification satisfies this Specification"""
+        """Test whether the given ConcreteSpecification satisfies this Specification."""
         if isinstance(self._clauses, bool):
             return self._clauses
 
@@ -684,7 +687,9 @@ class Specification:
 
 
 class Configuration:
-    """Representation of a possible build configuration of HPCToolkit"""
+    """Representation of a possible build configuration of HPCToolkit."""
+
+    args: list[str]
 
     def __init__(self, depcfg: DependencyConfiguration, variant: ConcreteSpecification):
         """Derive the full Configuration from the given DependencyConfiguration and variant-keywords."""
@@ -699,7 +704,7 @@ class Configuration:
 
         # Parse the now-together fragments to derive the environment and configure args
         self.args: list[str] = []
-        self.env: T.Any = collections.ChainMap({}, os.environ)
+        self.env: typing.Any = collections.ChainMap({}, os.environ)
         for arg in flatten(fragments):
             m = re.fullmatch(r"ENV\{(\w+)\}=(.*)", arg)
             if m is None:

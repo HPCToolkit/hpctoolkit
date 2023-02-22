@@ -905,9 +905,7 @@ def CreateWrapper(funct, olist):
     #  Iterate through the arguments for this function
     opaqueFound = 0
     for i in fdict[funct].paramConciseList:
-
         if doOpaqueXlate is True and fdict[funct].paramDict[i].basetype in xlateTargetTypes:
-
             #  Verify that there is a Dictionary entry for translating this argument
             if not ((funct, i) in opaqueInArgDict or (funct, i) in opaqueOutArgDict):
                 print("*** Failed to find translation information for " + funct + ":" + i + "\n")
@@ -1013,7 +1011,6 @@ def CreateWrapper(funct, olist):
     #  Generate pre-call translation code if necessary by iterating through arguments that
     #  were identified as opaque objects needing translation above
     for i in range(len(xlateVarNames)):
-
         #  Set current argument name and type
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
@@ -1022,7 +1019,6 @@ def CreateWrapper(funct, olist):
         if (funct, xlateVarName) in opaqueInArgDict and opaqueInArgDict[
             (funct, xlateVarName)
         ] == xlateType:
-
             #  Datatype translation is the only call where the translation function
             #  doesn't match the argument type.
             if xlateType == "MPI_Datatype":
@@ -1088,14 +1084,12 @@ def CreateWrapper(funct, olist):
     xlateDone = 0
 
     for i in range(len(xlateVarNames)):
-
         xlateVarName = xlateVarNames[i]
         xlateType = xlateTypes[i]
 
         if (funct, xlateVarName) in opaqueOutArgDict and opaqueOutArgDict[
             (funct, xlateVarName)
         ] == xlateType:
-
             #  Datatype translation is the only call where the translation function
             #  doesn't match the argument type.
             if xlateType == "MPI_Datatype":
