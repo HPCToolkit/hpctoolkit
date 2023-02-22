@@ -136,7 +136,7 @@ def canonical_paths(obj: StructureBase) -> dict[StructureBase, tuple[str | int, 
                 del path[-1]
         elif isinstance(o, dict):
             for k, v in o.items():
-                assert isinstance(k, str | int)
+                assert isinstance(k, (str, int))
                 path.append(k)
                 add(v, path)
                 del path[-1]

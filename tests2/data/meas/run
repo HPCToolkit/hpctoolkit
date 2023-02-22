@@ -72,5 +72,5 @@ for _i in range(10):
         with tarfile.open(args.output, mode="w:xz") as out:
             out.add(M.basedir, arcname=".", recursive=True, filter=sanitize)
             break
-else:  # noqa: PLW0120
+else:
     raise RuntimeError("All 10 attempts failed to collect enough data, adjust the arguments!")

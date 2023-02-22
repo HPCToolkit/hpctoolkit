@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
-import typing as T
+import typing
 import xml.dom.minidom
 from pathlib import Path
 
@@ -19,9 +19,7 @@ from .util import nproc, nproc_max, project_dir
 
 
 @contextlib.contextmanager
-def _stdlogfiles(
-    logdir: Path | None, logprefix: str, suffix1: str, suffix2: T.Optional[str] = None
-):
+def _stdlogfiles(logdir: Path | None, logprefix: str, suffix1: str, suffix2: str | None = None):
     if logdir is not None:
         logdir = Path(logdir)
         with open(logdir / (logprefix + suffix1), "w", encoding="utf-8") as f1:
@@ -44,7 +42,7 @@ class Configure(Action):
         return "./configure"
 
     def dependencies(self) -> tuple[Action, ...]:
-        return tuple()
+        return ()
 
     def run(
         self,
@@ -53,13 +51,15 @@ class Configure(Action):
         builddir: Path,
         srcdir: Path,
         installdir: Path,
-        logdir: T.Optional[Path] = None,
+        logdir: Path | None = None,
     ) -> ActionResult:
         srcdir.resolve(strict=True)
         assert (srcdir / "configure").is_file()
         builddir.mkdir()
 
-        cmd = [srcdir / "configure"] + cfg.args + [f"--prefix={installdir.as_posix()}"]
+        cmd: list[str | Path] = [srcdir / "configure"]
+        cmd.extend(cfg.args)
+        cmd.append(f"--prefix={installdir.as_posix()}")
         with _stdlogfiles(logdir, "configure", ".log") as (config_log, _):
             proc = subprocess.run(
                 cmd, cwd=builddir, stdout=config_log, stderr=config_log, env=cfg.env, check=False
@@ -120,7 +120,7 @@ class MakeAction(Action):
 
 
 class BuildResult(ActionResult):
-    """Detect warnings/errors in build logs"""
+    """Detect warnings/errors in build logs."""
 
     def _gcc_to_cq(self, logline: str) -> dict | None:
         # Compiler warning regex:
@@ -132,7 +132,7 @@ class BuildResult(ActionResult):
         if not mat:
             return None
 
-        report: dict[str, T.Any] = {
+        report: dict[str, typing.Any] = {
             "type": "issue",
             "check_name": mat.group(7),  # flag(2)
             "description": mat.group(6),  # message
@@ -162,7 +162,7 @@ class BuildResult(ActionResult):
         else:
             report["location"]["lines"] = {"begin": line}
 
-        match mat.group(5):  # noqa: E999
+        match mat.group(5):
             case "warning":
                 report["severity"] = "major"
                 self.warnings += 1
@@ -185,9 +185,9 @@ class BuildResult(ActionResult):
                     report.append(cq)
                 elif re.match(r"[^:]+:(\d+:){1,2}\s+warning:", line):  # Warning from GCC
                     self.warnings += 1
-                elif re.match(r"[^:]+:(\d+:){1,2}\s+error:", line):  # Error from GCC
-                    self.errors += 1
-                elif re.match(r"[^:]+:\s+undefined reference to", line):  # Error from ld
+                elif re.match(r"[^:]+:(\d+:){1,2}\s+error:", line) or re.match(
+                    r"[^:]+:\s+undefined reference to", line
+                ):  # Error from GCC or ld
                     self.errors += 1
         if cq_output is not None:
             with open(cq_output, "w", encoding="utf-8") as f:
@@ -221,7 +221,7 @@ class BuildResult(ActionResult):
 
 
 class UnscannedBuildResult(ActionResult):
-    """Result used when the build logs were not saved and thus not scanned"""
+    """Result used when the build logs were not saved and thus not scanned."""
 
     def __init__(self, subresult: ActionResult):
         self.subresult = subresult
@@ -262,7 +262,7 @@ class Build(MakeAction):
         builddir: Path,
         srcdir: Path,
         installdir: Path,
-        logdir: T.Optional[Path] = None,
+        logdir: Path | None = None,
     ) -> ActionResult:
         res = self._run("build", cfg, builddir, "all", logdir=logdir, split_stderr=True)
         return (
@@ -288,7 +288,7 @@ class Install(MakeAction):
         builddir: Path,
         srcdir: Path,
         installdir: Path,
-        logdir: T.Optional[Path] = None,
+        logdir: Path | None = None,
     ) -> ActionResult:
         return self._run("install", cfg, builddir, "install", logdir=logdir, split_stderr=True)
 
@@ -339,7 +339,7 @@ class CheckInstallManifest(Action):
         builddir: Path,
         srcdir: Path,
         installdir: Path,
-        logdir: T.Optional[Path] = None,
+        logdir: Path | None = None,
     ) -> ActionResult:
         return CheckManifestResult(*cfg.manifest.check(installdir))
 
@@ -393,90 +393,82 @@ class Test(MakeAction):
                 if data["result"] in ("EXPECTEDFAIL", "TIMEOUT"):
                     otherfails.add(data["name"])
 
-        with open(testxml, encoding="utf-8") as f:
-            with xml.dom.minidom.parse(f) as dom:
-                # Mark the tests identified above as failing, if they weren't already
-                for top in dom.getElementsByTagName("testsuites"):
-                    all_new_fails = 0
-                    for suite in top.getElementsByTagName("testsuite"):
-                        new_fails = 0
-                        for tcase in suite.getElementsByTagName("testcase"):
-                            if (
-                                tcase.getAttribute("name") in otherfails
-                                and len(tcase.getElementsByTagName("failure")) == 0
-                            ):
-                                tcase.appendChild(dom.createElement("failure"))
-                                new_fails += 1
-                        if suite.hasAttribute("failures"):
-                            suite.setAttribute(
-                                "failures",
-                                str(int(suite.getAttribute("failures") or 0) + new_fails),
-                            )
-                        all_new_fails += new_fails
-                    if top.hasAttribute("failures"):
-                        top.setAttribute(
-                            "failures", str(int(top.getAttribute("failures") or 0) + all_new_fails)
+        with open(testxml, encoding="utf-8") as f, xml.dom.minidom.parse(f) as dom:
+            # Mark the tests identified above as failing, if they weren't already
+            for top in dom.getElementsByTagName("testsuites"):
+                all_new_fails = 0
+                for suite in top.getElementsByTagName("testsuite"):
+                    new_fails = 0
+                    for tcase in suite.getElementsByTagName("testcase"):
+                        if (
+                            tcase.getAttribute("name") in otherfails
+                            and len(tcase.getElementsByTagName("failure")) == 0
+                        ):
+                            tcase.appendChild(dom.createElement("failure"))
+                            new_fails += 1
+                    if suite.hasAttribute("failures"):
+                        suite.setAttribute(
+                            "failures",
+                            str(int(suite.getAttribute("failures") or 0) + new_fails),
                         )
+                    all_new_fails += new_fails
+                if top.hasAttribute("failures"):
+                    top.setAttribute(
+                        "failures", str(int(top.getAttribute("failures") or 0) + all_new_fails)
+                    )
 
-                # Return the resulting XML
-                return dom.toxml(encoding="utf-8")
+            # Return the resulting XML
+            return dom.toxml(encoding="utf-8")
 
     def fixup_pytest(self, res, tests2bdir: Path, testxml: Path) -> bytes | ActionResult:
         # pylint: disable=too-many-locals
         _ = res, tests2bdir
-        with open(testxml, encoding="utf-8") as f:
-            with xml.dom.minidom.parse(f) as dom:
-                # Pytest marks XFAIL as a skip and a strict XPASS as a failure. Replace those
-                # markers their their non-X equivalent.
-                for top in dom.getElementsByTagName("testsuites"):
-                    all_new_fails, all_new_pass = 0, 0
-                    for suite in top.getElementsByTagName("testsuite"):
-                        new_fails, new_pass = 0, 0
-                        for case in suite.getElementsByTagName("testcase"):
-                            skipped = case.getElementsByTagName("skipped")
-                            if len(skipped) > 0 and all(
-                                x.getAttribute("type") == "pytest.xfail" for x in skipped
-                            ):
-                                for x in skipped:
-                                    case.removeChild(x)
-                                case.appendChild(dom.createElement("failure"))
-                                new_fails += 1
-                            failures = case.getElementsByTagName("failure")
-                            if len(failures) > 0 and all(
-                                "XPASS" in x.getAttribute("message") for x in failures
-                            ):
-                                for x in failures:
-                                    case.removeChild(x)
-                                new_pass += 1
-                        if suite.hasAttribute("failures"):
-                            suite.setAttribute(
-                                "failures",
-                                str(
-                                    int(suite.getAttribute("failures") or 0) + new_fails - new_pass
-                                ),
-                            )
-                        if suite.hasAttribute("skipped"):
-                            suite.setAttribute(
-                                "skipped", str(int(suite.getAttribute("skipped") or 0) - new_fails)
-                            )
-                        all_new_fails += new_fails
-                        all_new_pass += new_pass
-                    if top.hasAttribute("failures"):
-                        top.setAttribute(
+        with open(testxml, encoding="utf-8") as f, xml.dom.minidom.parse(f) as dom:
+            # Pytest marks XFAIL as a skip and a strict XPASS as a failure. Replace those
+            # markers their their non-X equivalent.
+            for top in dom.getElementsByTagName("testsuites"):
+                all_new_fails, all_new_pass = 0, 0
+                for suite in top.getElementsByTagName("testsuite"):
+                    new_fails, new_pass = 0, 0
+                    for case in suite.getElementsByTagName("testcase"):
+                        skipped = case.getElementsByTagName("skipped")
+                        if len(skipped) > 0 and all(
+                            x.getAttribute("type") == "pytest.xfail" for x in skipped
+                        ):
+                            for x in skipped:
+                                case.removeChild(x)
+                            case.appendChild(dom.createElement("failure"))
+                            new_fails += 1
+                        failures = case.getElementsByTagName("failure")
+                        if len(failures) > 0 and all(
+                            "XPASS" in x.getAttribute("message") for x in failures
+                        ):
+                            for x in failures:
+                                case.removeChild(x)
+                            new_pass += 1
+                    if suite.hasAttribute("failures"):
+                        suite.setAttribute(
                             "failures",
-                            str(
-                                int(top.getAttribute("failures") or 0)
-                                + all_new_fails
-                                - all_new_pass
-                            ),
+                            str(int(suite.getAttribute("failures") or 0) + new_fails - new_pass),
                         )
-                    if top.hasAttribute("skipped"):
-                        top.setAttribute(
-                            "skipped", str(int(top.getAttribute("skipped") or 0) - all_new_fails)
+                    if suite.hasAttribute("skipped"):
+                        suite.setAttribute(
+                            "skipped", str(int(suite.getAttribute("skipped") or 0) - new_fails)
                         )
+                    all_new_fails += new_fails
+                    all_new_pass += new_pass
+                if top.hasAttribute("failures"):
+                    top.setAttribute(
+                        "failures",
+                        str(int(top.getAttribute("failures") or 0) + all_new_fails - all_new_pass),
+                    )
+                if top.hasAttribute("skipped"):
+                    top.setAttribute(
+                        "skipped", str(int(top.getAttribute("skipped") or 0) - all_new_fails)
+                    )
 
-                # Return the resulting XML
-                return dom.toxml(encoding="utf-8")
+            # Return the resulting XML
+            return dom.toxml(encoding="utf-8")
 
     def run(
         self,
@@ -485,7 +477,7 @@ class Test(MakeAction):
         builddir: Path,
         srcdir: Path,
         installdir: Path,
-        logdir: T.Optional[Path] = None,
+        logdir: Path | None = None,
     ) -> ActionResult:
         # pylint: disable=too-many-locals
         res = self._run(
@@ -547,7 +539,7 @@ class Test(MakeAction):
 
 
 class UnsavedTestDataResult(ActionResult):
-    """Result used when the generated test data was not saved"""
+    """Result used when the generated test data was not saved."""
 
     def __init__(self, subresult: ActionResult):
         self.subresult = subresult
@@ -569,7 +561,7 @@ class UnsavedTestDataResult(ActionResult):
 
 
 class FreshTestData(MakeAction):
-    """Generate data for later, offline tests"""
+    """Generate data for later, offline tests."""
 
     def __init__(self):
         self.unpack: bool = False
@@ -584,7 +576,7 @@ class FreshTestData(MakeAction):
     def suite(self) -> str:
         raise NotImplementedError
 
-    suites: T.ClassVar[dict[str, type["FreshTestData"]]] = {}
+    suites: typing.ClassVar[dict[str, type["FreshTestData"]]] = {}
 
     @classmethod
     def register(cls, subcls):
@@ -598,7 +590,7 @@ class FreshTestData(MakeAction):
         builddir: Path,
         srcdir: Path,
         installdir: Path,
-        logdir: T.Optional[Path] = None,
+        logdir: Path | None = None,
     ) -> ActionResult:
         suite = self.suite
         result = self._run(
@@ -623,29 +615,29 @@ class FreshTestData(MakeAction):
 
 @FreshTestData.register
 class FreshTestDataNone(FreshTestData):
-    suite: T.ClassVar[str] = "none"
+    suite: typing.ClassVar[str] = "none"
 
 
 @FreshTestData.register
 class FreshTestDataCPU(FreshTestData):
-    suite: T.ClassVar[str] = "cpu"
+    suite: typing.ClassVar[str] = "cpu"
 
 
 @FreshTestData.register
 class FreshTestDataNvidia(FreshTestData):
-    suite: T.ClassVar[str] = "nvidia"
+    suite: typing.ClassVar[str] = "nvidia"
 
 
 @FreshTestData.register
 class FreshTestDataAMD(FreshTestData):
-    suite: T.ClassVar[str] = "amd"
+    suite: typing.ClassVar[str] = "amd"
 
 
 @FreshTestData.register
 class FreshTestDataSWCuda(FreshTestData):
-    suite: T.ClassVar[str] = "sw-cuda"
+    suite: typing.ClassVar[str] = "sw-cuda"
 
 
 @FreshTestData.register
 class FreshTestDataX8664(FreshTestData):
-    suite: T.ClassVar[str] = "x86-64"
+    suite: typing.ClassVar[str] = "x86-64"
