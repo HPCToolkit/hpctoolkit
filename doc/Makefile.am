@@ -68,6 +68,8 @@ LOOSEDOCS = \
 	FORMATS.md
 	METRICS.yaml
 
+MANUAL = HPCToolkit-users-manual.pdf
+
 #############################################################################
 # Automake rules
 #############################################################################
@@ -79,6 +81,9 @@ SUBDIRS = \
 
 loosedocsdir = $(docdir)
 dist_loosedocs_DATA = $(LOOSEDOCS)
+
+wwwmanualdir = $(docdir)/manual
+dist_wwwmanual_DATA = $(MANUAL)
 
 #############################################################################
 # Other rules

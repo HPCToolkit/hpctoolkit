@@ -105,7 +105,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(dist_loosedocs_DATA) \
-	$(am__DIST_COMMON)
+	$(dist_wwwmanual_DATA) $(am__DIST_COMMON)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/include/hpctoolkit-config.h
 CONFIG_CLEAN_FILES =
@@ -164,8 +164,9 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(loosedocsdir)"
-DATA = $(dist_loosedocs_DATA)
+am__installdirs = "$(DESTDIR)$(loosedocsdir)" \
+	"$(DESTDIR)$(wwwmanualdir)"
+DATA = $(dist_loosedocs_DATA) $(dist_wwwmanual_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 am__recursive_targets = \
@@ -494,6 +495,7 @@ AUTOMAKE_OPTIONS = foreign
 LOOSEDOCS = \
 	FORMATS.md
 
+MANUAL = HPCToolkit-users-manual.pdf
 
 #############################################################################
 # Automake rules
@@ -505,6 +507,8 @@ SUBDIRS = \
 
 loosedocsdir = $(docdir)
 dist_loosedocs_DATA = $(LOOSEDOCS)
+wwwmanualdir = $(docdir)/manual
+dist_wwwmanual_DATA = $(MANUAL)
 all: all-recursive
 
 .SUFFIXES:
@@ -564,6 +568,27 @@ uninstall-dist_loosedocsDATA:
 	@list='$(dist_loosedocs_DATA)'; test -n "$(loosedocsdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(loosedocsdir)'; $(am__uninstall_files_from_dir)
+install-dist_wwwmanualDATA: $(dist_wwwmanual_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_wwwmanual_DATA)'; test -n "$(wwwmanualdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(wwwmanualdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(wwwmanualdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(wwwmanualdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(wwwmanualdir)" || exit $$?; \
+	done
+
+uninstall-dist_wwwmanualDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_wwwmanual_DATA)'; test -n "$(wwwmanualdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(wwwmanualdir)'; $(am__uninstall_files_from_dir)
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run 'make' without going through this Makefile.
@@ -724,7 +749,7 @@ check: check-recursive
 all-am: Makefile $(DATA)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(loosedocsdir)"; do \
+	for dir in "$(DESTDIR)$(loosedocsdir)" "$(DESTDIR)$(wwwmanualdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-recursive
@@ -777,7 +802,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-dist_loosedocsDATA
+install-data-am: install-dist_loosedocsDATA install-dist_wwwmanualDATA
 
 install-dvi: install-dvi-recursive
 
@@ -821,7 +846,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-dist_loosedocsDATA
+uninstall-am: uninstall-dist_loosedocsDATA \
+	uninstall-dist_wwwmanualDATA
 
 .MAKE: $(am__recursive_targets) install-am install-strip
 
@@ -830,15 +856,16 @@ uninstall-am: uninstall-dist_loosedocsDATA
 	ctags-am distclean distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am \
-	install-dist_loosedocsDATA install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs installdirs-am \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am \
-	uninstall-dist_loosedocsDATA
+	install-dist_loosedocsDATA install-dist_wwwmanualDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-dist_loosedocsDATA \
+	uninstall-dist_wwwmanualDATA
 
 .PRECIOUS: Makefile
 
