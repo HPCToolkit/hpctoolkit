@@ -259,6 +259,7 @@ static locked_unordered_map<GtKernelId, KernelProfile, std::mutex, MyHashFunctio
 static locked_unordered_map<GtKernelId, uint32_t, std::mutex, MyHashFunctionKernelId> hash_map;
 
 static bool count_knob = false;
+static bool collect_latency = false;
 static bool latency_knob = false;
 static bool simd_knob = false;
 
@@ -649,7 +650,9 @@ void KernelProfile::gatherMetrics(IGtKernelDispatch &dispatch, CorrelationData c
                 if (latencyProfile.Read(*buffer, &record, index, 1, threadBucket))
                 {
                     bbl.executionCount += record.freq;
-                    bbl.latency += record.cycles;
+		    if (collect_latency) {
+		      bbl.latency += record.cycles;
+		    }
                 }
             }
 
@@ -803,8 +806,20 @@ void gtpin_instrumentation_options(
     gpu_instrumentation_t *instrumentation)
 {
     latency_knob = instrumentation->attribute_latency;
+    collect_latency = instrumentation->attribute_latency;
     simd_knob = instrumentation->analyze_simd;
+#if 0
+    // this is the way things should work
     count_knob = !latency_knob && (instrumentation->count_instructions || simd_knob);
+#else
+    // instruction counting alone currently destroys correctness.
+    // for now, replace instruction counting with latency measurements, which
+    // performs instruction counting as a side effect.
+    if (instrumentation->count_instructions) {
+      latency_knob = true;
+    }
+    count_knob = false;
+#endif
 
     if (count_knob || latency_knob || simd_knob)
     {
