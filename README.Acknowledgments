@@ -1,14 +1,11 @@
 Research and development of HPCToolkit is currently supported by
 
-  * DOE Center for Scalable Application Development Software,
-    cooperative agreement number DE-FC02-07ER25800;
+ Government
+  * DOE Exascale Computing Project 17-SC-20-SC
+  * Lawrence Livermore National Laboratory Subcontract B650752
+  * Argonne National Laboratory Subcontract 9F-60073
 
-  * DOE Performance Engineering Research Institute, cooperative
-    agreement number DE-FC02-06ER25762;
-
-  * DARPA Platform Aware Compilation Environment, AFRL Contract
-    FA8650-09-C-7915;
-
-  * Advanced Micro Devices; and
-
-  * WesternGeco.
+ Corporations
+  * Advanced Micro Devices
+  * Intel
+  * TotalEnergies EP Research & Technology USA, LLC
