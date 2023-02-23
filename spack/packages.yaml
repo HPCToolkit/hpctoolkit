@@ -20,7 +20,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: October 12, 2022.
+#  Last revised: February 22, 2023.
 #
 packages:
 
@@ -44,11 +44,19 @@ packages:
   # Note: settings in this file are only preferences, not hard
   # requirements.  If spack chooses a different version or variant,
   # you can force spack to use your version with the new 'require:'
-  # field.  Require takes a single, full spec and supersedes both
-  # version and variant and should always be quoted.
+  # field.
+  #
+  # Require takes a single, full spec and supersedes both version and
+  # variant and should always be quoted.  For example:
+  #
+  # all:
+  #   require: "%gcc@9.3.0 target=x86_64"
+  #
+  # mpi:
+  #   require: "mpich@4.0.2"
   #
   # dyninst:
-  #   require: "@12.2.0 +openmp"
+  #   require: "@12.2.1 +openmp"
 
 
   #------------------------------------------------------------
@@ -89,7 +97,7 @@ packages:
   # Note: +mpi is currently disabled for develop.
   #
   # hpctoolkit:
-  #   version:  [2022.10.01, develop]
+  #   version:  [2023.02.20, develop]
   #   variants: +papi +viewer
 
 
@@ -105,24 +113,17 @@ packages:
   # 2-field numbers ending with "0".
   #
   hpcviewer:
-    version: [ "2022.10" ]
+    version: [2023.02]
 
 
-  # binutils -- used by hpcprof and struct simple (for functions and
-  # line map info) and for VMA types in various places.
-  #
-  # No longer used for latest version or develop.
-  #
-  # Need >= 2.32 for important bug fixes.
-  # Avoid 2.35, it contains a bug that spews errors from hpcprof.
-  # Hpctoolkit <= 2020.03.01 requires binutils <= 2.33.1.
+  # binutils -- only used for old versions
   #
   # +libiberty is needed for xmalloc functions in libbfd.
   # ~nls is used to avoid building gettext.
   #
-  binutils:
-    version:  [2.38]
-    variants: +libiberty ~nls
+  # binutils:
+  #   version:  [2.38]
+  #   variants: +libiberty ~nls
 
 
   # boost -- used by dyninst and now in hpcstruct.
@@ -150,8 +151,7 @@ packages:
       visibility=global
 
 
-  # bzip2 -- used by elfutils to read compressed sections (and copy
-  # libs).
+  # bzip2 -- used by elfutils to read compressed sections
   #
   # Bzip2 has resumed development, anything after 1.0.6 is good.
   #
@@ -171,7 +171,7 @@ packages:
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [12.2.0, master]
+    version:  [12.3.0, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -186,13 +186,13 @@ packages:
   # ~nls is used to avoid building gettext.
   #
   elfutils:
-    version:  [0.186]
+    version:  [0.188]
     variants: +bzip2 +xz ~nls
 
 
   # intel-tbb -- used by dyninst as part of parallel parsing.
   #
-  # Dyninst requires >= 2018.6, most anything after that is good.
+  # Use 2020.3, dyninst can't handle later versions (not yet).
   #
   # Note: add ~tm for very old x86 or AMD or KNL systems that don't
   # support transactional memory (no-op on non-x86).
@@ -216,20 +216,13 @@ packages:
     variants: +debug +pic
 
 
-  # libdwarf -- used in fnbounds for access to eh frames (not yet
-  # available from elfutils).
+  # libdwarf -- only used for old versions
   #
-  # No longer used for latest version or develop.
-  #
-  # Normally want a recent version for best support for output from
-  # current compilers.
-  #
-  libdwarf:
-    version:  [20180129]
+  # libdwarf:
+  #   version:  [20180129]
 
 
-  # libiberty -- needed for dyninst configure (although dyninst 10.x
-  # doesn't actually link with it).
+  # libiberty -- used in dyninst and hpctoolkit for demangling
   #
   # Any recent version is good.
   #
@@ -250,7 +243,7 @@ packages:
   # ~dlopen is needed for 2021.02 and later.
   #
   libmonitor:
-    version:  [2022.09.02, master]
+    version:  [2023.02.13, master]
     variants: +hpctoolkit ~dlopen
 
 
@@ -279,15 +272,13 @@ packages:
     variants: +xz +pic
 
 
-  # mbedtls -- no longer used, this is for old hpctoolkit only
-  #
-  # Use a recent version >= 2.16.1.
+  # mbedtls -- only used for old versions
   #
   # +pic is required for linking with hpcrun.
   #
-  mbedtls:
-    version:  [2.27.0]
-    variants: +pic
+  # mbedtls:
+  #   version:  [2.27.0]
+  #   variants: +pic
 
 
   # memkind -- used in hpcrun
@@ -327,12 +318,12 @@ packages:
   # xz (lzma) -- used by elfutils and libunwind to read compressed
   # sections.
   #
-  # Any recent version is good.
+  # Currently, hpcrun won't link correctly with 5.2.7 and later.
   #
   # +pic is required for linking with hpcrun.
   #
   xz:
-    version:  [5.2.5]
+    version:  [5.2.6]
     variants: +pic
 
 
@@ -350,13 +341,13 @@ packages:
   # zlib -- used by binutils, elfutils and libdwarf to read compressed
   # sections.
   #
-  # Zlib development is stagnant and everything before 1.2.12 is
-  # deprecated due to security bugs, so use 1.2.12
+  # Zlib development is stagnant and everything before 1.2.13 is
+  # deprecated due to security bugs, so use 1.2.13
   #
   # +optimize is to add -O2.
   #
   zlib:
-    version:  [1.2.12]
+    version:  [1.2.13]
     variants: +optimize +shared
 
 
