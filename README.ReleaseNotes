@@ -1,4 +1,169 @@
 ----------------------------------------
+HPCToolkit 2023.02.20
+----------------------------------------
+
+HPCToolkit Release Notes
+
+Enhancements:
+- Hpcrun
+  - Python Support
+    - Add support for monitoring Python 3.10 applications as well as
+      Python-wrapped applications, e.g. Kull.  Supports PyTorch as well.
+  - AMD GPUs and ROCm
+    - Support ROCm >= 5.3.0, which required monitoring kernels at the roctracer
+      activity API rather than roctracer subscriber callback.
+    - Support backwards compatibility across multiple ROCm versions.
+      - HPCToolkit built against the newest ROCm 5.4.x can be used to profile
+        applications compiled with older ROCm 5.y.z versions.
+    - For ROCm, don't record GPU binaries to trace and profile at the kernel
+      level. Instead, attribute to GPU kernel names. Demangle kernel names as
+      necessary.
+  - Intel GPUs and Level Zero.
+    - A complete re-implementation of GTPin instrumentation for Intel GPU
+      binaries using GTPin's C++ API. (The C API for GTPin is limited and
+      deprecated.) Currently, only instruction counting is supported. Testing
+      and validation was done using GTPin 3.3 (not publicly available yet).
+    - Improve reporting of Level Zero error codes.
+    - For Level Zero, don't record GPU binaries to trace and profile at the
+      kernel level. Instead, attribute to GPU kernel names. Demangle kernel
+      names as necessary.
+  - NVIDIA GPUs and CUDA
+    - Support CUDA >= 12.0.
+  - OpenMP offloading support
+    - Support for new OMPT capabilities first available in OpenMP 5.1, used by
+      Intel's OpenMP offloading.
+  - Add sanity checks for listing available GPU support
+- Hpcstruct
+  - Always enable "--gpucfg yes" when processing Intel GPU binaries
+- Hpcprof
+  - Release a new implementation of hpcprof-mpi that employs both
+    distributed-memory parallelism (1 MPI rank per node) and extreme
+    multithreading (using all but one of the hardware threads on a node)
+    to analyze performance measurement data from extreme-scale executions.
+  - Add "-V" option to show version information for consistency with other
+    HPCToolkit tools
+  - Add "-vv" option for more verbose diagnostic output
+  - Improve warning message when processing binary DWARF/ELF information
+    due to missing/incomplete Structfiles
+  - Issue warning message when users run hpcprof on a measurement directory
+    without running hpcstruct on it first
+  - Improve warning message when encountering Structfiles that need hpcstruct
+    to be run with "--gpucfg yes"
+  - Without the "-vv" option, don't complain about callsite nodes in hpcstruct
+    output that invoke target addresses that aren't declared as functions
+
+Bug fixes:
+- Hpcrun
+  - To avoid runtime failures, don't set ROCm-related environment variables
+    when HPCToolkit is not built with ROCm support
+  - Fix compatibility with glibc >= 2.35 that previously caused hpcrun to
+    collect zero measurement samples with "-e REALTIME" event
+  - Suppress recording of GPU contexts with empty metric data
+  - Fix bug on double freeing a rocprofiler URI
+  - Support for using CUPTI on a subset of local MPI ranks to enable
+    PC sampling measurements with GAMESS
+  - Exit cleanly when CUPTI is initialized multiple times on the same GPU
+  - Correctly attribute GPU metrics to the GPU kernel node to fix hpcviewer's
+    bottom-up view
+  - Copy missing GPU binary from device for NVIDIA GPU kernels generated
+    from OpenMP target regions by Cray compilers
+  - Fix bug where hpcrun could crash on Arm during synchronous unwinds
+  - Avoid deadlock in initialization for AMD GPUs by initializing HPCToolkit
+    upon entry to libc_start_main.
+  - Avoid setting any environment variables in libhpcrun.so during ROCm
+    initialization
+  - Avoid recording AMD GPU binaries at present because Dyninst can't analyze
+    them without failing
+- Hpcstruct
+  - Add "has-calls" attribute under <LM> tags in the Structfile format
+    to record whether hpcstruct was run with "--gpu-cfg yes".
+  - Increase default OpenMP stack size to 32 MB to prevent hpcstruct from
+    running out of thread stack space
+  - Until PC sampling capabilities on AMD GPU becomes available, avoid saving
+    AMD GPU binaries at all, since analyzing these kernels currently crashes
+    Dyninst
+- Hpcprof
+  - Avoid generating a trace.db database when no tracing data is available
+  - Correctly output all previously-missing derived GPU metrics with their
+    format settings
+  - Add a "visible by default" flag to the metrics.yaml format.
+  - Process incomplete/corrupt measurement files gracefully instead of crashing
+    or dumping core.
+  - Fix bug on processing derived GPU metrics from PC sampling metrics
+  - Hpcprof command line output and hpcproftt now always prints metric ids
+    in decimal format for consistency with profile.db and cct.db
+  - Fix bug where parts of traces may occasionally appear empty in hpcviewer
+  - Fix occasional crash when executing hpcprof with high thread counts
+  - Fix bug that allowed hpcprof to copy source files outside the database
+    directory
+
+Infrastructure improvements:
+- Build system:
+  - HPCToolkit can now be built using LLVM/Clang >= 10
+  - Fix long-standing, obscure bug that caused builds to fail on some
+    filesystems that didn't handle timestamps correctly (the infamous
+    "hpcrun-fmt.txt" bug)
+  - Partial code migration from C to C++ to support GTPin >= 3.2.2
+- CI improvements:
+  - More integration tests for hpcrun, hpcstruct, hpcprof, and hpcprof-mpi
+  - Validation tests for hpcprof's output database structure
+  - Initial version of utilities for CCT validation
+  - More CPU and GPU test codes
+  - Better runner stability
+  - Reproducibility of CI jobs and artifacts
+  - Expand testing across more CUDA, HIP, and Level Zero+GTPin versions
+  - Regenerate fresh test data as needed
+- Automatic formatting and linting using pre-commit
+- Code quality report in GitLab based on number of compiler warnings and errors
+- Add issue and MR templates
+
+Dependency changes:
+- Additions
+  - HPCToolkit now requires C++17 compilers to build; the minimum GCC version
+    is now >= 8.x.
+  - Python (>= 3.10): only used when building with experimental Python support.
+
+Known Issues:
+- LaTeX source files for the HPCToolkit User Manual have been split off from
+  the main HPCToolkit repository. A PDF copy of the User Manual is still
+  included.
+- HPCToolkit now uses the roctracer activities API to record AMD GPU kernel
+  names, introduced in ROCm 5.3.3. When profiling applications built with a
+  ROCm stack < 5.3.3, HPCToolkit will not show GPU kernel names.
+- HPCToolkit is blind to CPU samples in private C++ namespaces (including Intel
+  Level Zero runtime), causes lots of samples that cannot be unwound at all
+
+HPCViewer Release Notes
+
+Enhancements:
+- Hpcviewer now sorts traces by logical id instead of physical id (host, nodes, and cores)
+
+Bug fixes:
+- Fix bug when rendering table headers in GTK dark theme
+- Fix bug in flat view's cost attribution for inlined statements
+- Fix Java out of memory exception when filtering CCT nodes
+- Fix bug for the thread selection for the thread view
+- Fix error when displaying a plot graph in a filtered database
+- Fix errors when using zoom-in/out and flatten operations
+- Fix bug in the creation of derived metrics for meta.db databases
+- Fix bug for metric's name and description
+- Fix bug by removing helper accumulator metrics in the plot graph menu
+- Fix bug in plotting exclusive costs in the plot graph
+- Fix missing exclusive costs in the thread view
+- Fix bug in x-axis plot graphs for meta.db databases
+- Fix bug when flattening in the flat view for new meta.db databases
+- Fix Java exception when sorting a metric column
+- Fix bug incorrect file attribution in some call sites
+- Fix bug when opening GPU databases with statistic metrics
+- Fix bug for top-down cost attribution for the line scopes
+- Fix bug when the first sample trace is not rendered properly
+- Fix bug when exclusive costs disappears in the profile view
+- Fix Java exception when filtering metric column and then adding a new
+  derived metric
+- Fix bug when hpcviewer doesn't render the last real trace entry correctly
+
+
+----------------------------------------
 HPCToolkit 2022.10.01
 ----------------------------------------
 
@@ -6,14 +171,14 @@ HPCToolkit Release Notes
 
 Enhancements:
 - Hpcrun
-  - Supports profiling and tracing GPU-accelerated applications atop Intel’s
+  - Supports profiling and tracing GPU-accelerated applications atop Intel's
     Level0 runtime
   - Supports instrumentation-based performance measurement of GPU kernels atop
-    Intel’s Level0 runtime, including instruction counting and approximate
+    Intel's Level0 runtime, including instruction counting and approximate
     attribution of memory latency
   - Reduces space requirements for performance measurements using new sparse
     formats
-  - Accommodates the inability to fork when software for Cray’s Cassini NIC
+  - Accommodates the inability to fork when software for Cray's Cassini NIC
     senses the use of pinned memory
   - Annotates profiles and traces with metadata that identifies hardware and
     software abstractions (e.g., nodes, GPUs, MPI ranks, threads, GPU streams)
@@ -46,11 +211,11 @@ Bug fixes:
 - Eliminated a heap corruption error in hpcrun.
 
 Infrastructure improvements:
-- documentation for all of HPCToolkit’s binary formats is automatically
+- documentation for all of HPCToolkit's binary formats is automatically
   deposited in every database that hpcprof generates.
 - development and deployment of CI for multiple architectures and operating
   systems
-- development of ‘minitest’ - a collection of CPU and GPU test cases
+- development of ‘minitest' - a collection of CPU and GPU test cases
 - GPU test cases currently exercise NVIDIA and AMD GPUs using CUDA, HIP, and
   OpenMP
 
@@ -62,13 +227,13 @@ Dependency changes:
   - yaml-cpp: a YAML parser and emitter in C++
 
 Known Issues:
-- HPCToolkit’s hpcprof-mpi is unavailable in this release while we improve its
+- HPCToolkit's hpcprof-mpi is unavailable in this release while we improve its
   robustness for corner cases so that it is suitable for production use. When
   finished, it will employ both shared and distributed memory parallelism for
   scalable analysis of performance measurements.
 - On AMD GPUs, measurements of activity on AMD GPUs using hardware counters
-  don’t include measurements of OpenMP offloading implemented directly atop
-  HSA by AMD’s compilers.
+  don't include measurements of OpenMP offloading implemented directly atop
+  HSA by AMD's compilers.
 
 HPCViewer Release Notes
 
@@ -129,7 +294,7 @@ Enhancements:
   GPU binaries that were measured in the execution using a mix of parallelism
   and concurrency.  Binaries that did not get any profile hits are not analyzed.
 - Hpcstruct's parallel efficiency has been improved. Changes that contributed
-  to that improvement include enhancements to parallelism in Dyninst’s
+  to that improvement include enhancements to parallelism in Dyninst's
   finalization of binary analysis and parallel assembly of hpcstruct's output
   file.
 - Update hpcstruct to support analysis of CUDA binaries from 11.5+ to
@@ -290,7 +455,7 @@ Bug fixes
     - Fix storing recent open database: store the absolute path, not the relative one.
     - Fix SWT resource leaks
     - Fix flickering issue on Windows when splitting the hpcviewer window.
-    - Fix trace view’s color map changes to also refresh other panes and windows
+    - Fix trace view's color map changes to also refresh other panes and windows
     - Fix Find dialog layout on Linux/GTK
     - Fix merging GPU databases
     - Fix a procedure-color mapping bug in the trace view
@@ -377,7 +542,7 @@ New and Improved functionality
       The integrated interface can be built from source on MacOS, Windows, and
       Linux using Apache Maven.
     Enhance Filter Panel
-    - Make Panel resizable, and add an “Apply” button.  Trace filters can use a
+    - Make Panel resizable, and add an "Apply" button.  Trace filters can use a
       regular expression for filtering ranks.
     Improved Preferences, About, Info, and Log Dialog Boxes
     - New support for log files using slf4j.  Logs are stored in the same
@@ -404,8 +569,8 @@ Fixed Issues
 - Conflicts with Application Libraries
   - HPCToolkit uses libunwind to interpret compiler-recorded unwinding
     information and libxz for compression. An application using a different
-    version of these libraries could fail if its calls are bound to HPCToolkit’s
-    copies. The entry-points in HPCToolkit’s copies of libunwind and libxz are
+    version of these libraries could fail if its calls are bound to HPCToolkit's
+    copies. The entry-points in HPCToolkit's copies of libunwind and libxz are
     now invisible to applications.
 - Incorrect Interactions with UCX
   - UCX is a communication substrate used by OpenMPI. UCX wraps mmap and munmap
@@ -421,7 +586,7 @@ Fixed Issues
 
   - LD_AUDIT transparently converts dlmopen calls to dlopen to merge all shared
     libraries into the global namespace. If that
-    doesn’t work, you ask hpcrun to use an alternative to LD_AUDIT
+    doesn't work, you ask hpcrun to use an alternative to LD_AUDIT
     using --disable-auditor. This alternative provides full support
     for dlmopen with multiple namespaces. However, any executables or
     libraries that depend upon a RUNPATH attribute will only work when
@@ -433,7 +598,7 @@ Fixed Issues
 - Workaround for LD_AUDIT Performance Degradation
   - Applications with many interlibrary calls suffer a performance degradation
     when LD_AUDIT is used. To address this issue, hpcrun rewrites an
-    application’s Global Offset Table (GOT). As a new feature, there is
+    application's Global Offset Table (GOT). As a new feature, there is
     a potential that this may cause something to go wrong and cause your
     application to crash. If that happens, the rewriting can be disabled
     with the hpcrun argument --disable-auditor-got-rewriting to diagnose
@@ -446,21 +611,21 @@ Open Issues
 - Problems with PC Samples from NVIDIA GPUs and CUDA 11.2
   - HPCToolkit does not properly attribute PC samples collected for binaries
     generated by CUDA 11.2. NVIDIA changed the format of line map information
-    produced by nvcc in CUDA 11.2. HPCToolkit uses Red Hat’s Elfutils to parse
+    produced by nvcc in CUDA 11.2. HPCToolkit uses Red Hat's Elfutils to parse
     line map information in CPU and GPU binaries. Elfutils does not yet parse
-    NVIDIA’s extensions to the line map, which leads to incorrect attribution.
+    NVIDIA's extensions to the line map, which leads to incorrect attribution.
 - Problems Installing for  AMD GPUs
   - Installation of ROCm either as an installed version or as spack-build
     package requires a two-step build, specifying ROCm as external packages.
 - Problems Installing for  Intel GPUs
   - Installation for Intel GPUs requires manual configuration and build of
     HPCToolkit. Spack can be used to build all HPCToolkit dependencies other
-    than Intel components. Intel’s software (oneapi, GT-Pin, Metrics Discovery
+    than Intel components. Intel's software (oneapi, GT-Pin, Metrics Discovery
     API, and Intel Graphics compiler) must be built manually and have their
-    paths provided to HPCToolkit’s configure as they are not available as spack
+    paths provided to HPCToolkit's configure as they are not available as spack
     packages.
 - Problems with Instruction-level Analysis of Intel GPU Binaries
-  - Instruction-level analysis only works with Intel’s newest compute runtime,
+  - Instruction-level analysis only works with Intel's newest compute runtime,
     which has not been publicly released.
 - Moving Measurements Directories may Cause Problems
   - Recorded data contains absolute paths, and processing the data may not find
@@ -517,7 +682,7 @@ Improved handling of irreducible loops.
 
 Hpcviewer
 
-Hide metric columns if it doesn’t have metric values.
+Hide metric columns if it doesn't have metric values.
 
 Using raw metric values in copying to clipboard and exporting to CSV
 files, instead of exporting the displayed format of the value.
