@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2022.10.01-develop],
+AC_INIT([hpctoolkit], [2023.02.20-release],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
