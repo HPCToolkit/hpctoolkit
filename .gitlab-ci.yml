@@ -49,6 +49,11 @@ variables:
   ARTIFACT_COMPRESSION_LEVEL: default
   CACHE_COMPRESSION_LEVEL: fastest
 
+  # Retry various preliminary job stages (network errors)
+  GET_SOURCES_ATTEMPTS: 3
+  ARTIFACTS_DOWNLOAD_ATTEMPTS: 3
+  EXECUTOR_JOB_SECTION_ATTEMPTS: 3
+
 
 default:
   # Most jobs can be interrupted and should be retried if failed for mysterious reasons
@@ -58,6 +63,7 @@ default:
     when:
     - unknown_failure
     - api_failure
+    - stuck_or_timeout_failure
     - runner_system_failure
 
   # By default, use a Docker runner with a late-model CI image
