@@ -856,7 +856,7 @@ class Context(StructureBase):
         return f"-{r}> [{lt}] {' '.join(bits)}  #{self.ctx_id}"
 
     @classmethod
-    def from_file(
+    def _from_file(
         cls,
         version: int,
         file,
@@ -916,15 +916,7 @@ class Context(StructureBase):
 
         return (
             cls(
-                children=cls.multi_from_file(
-                    version,
-                    file,
-                    data["pChildren"],
-                    data["szChildren"],
-                    modules_by_offset=modules_by_offset,
-                    files_by_offset=files_by_offset,
-                    functions_by_offset=functions_by_offset,
-                ),
+                children=[],
                 ctx_id=data["ctxId"],
                 flags=data["flags"],
                 relation=cls.Relation.versioned_decode(version, data["relation"]),
@@ -937,16 +929,30 @@ class Context(StructureBase):
                 offset=data["offset"],
             ),
             cls.__flex_offset + data["nFlexWords"] * 8,
+            data["pChildren"],
+            data["szChildren"],
         )
 
     @classmethod
+    def from_file(cls, version: int, file, offset: int, **kwargs):
+        result, sz, pchild, szchild = cls._from_file(version, file, offset, **kwargs)
+        result.children = cls.multi_from_file(version, file, pchild, szchild, **kwargs)
+        return result, sz
+
+    @classmethod
     def multi_from_file(cls, version: int, file, start: int, size: int, **kwargs):
-        result = []
-        offset = start
-        while offset < start + size:
-            c, sz = cls.from_file(version, file, offset, **kwargs)
-            result.append(c)
-            offset += sz
+        result: list[Context] = []
+        q: list[tuple[int, int, list[Context]]] = [(start, size, result)]
+        while q:
+            start, size, target = q.pop()
+            offset = start
+            while offset < start + size:
+                c, sz, pchild, szchild = cls._from_file(version, file, offset, **kwargs)
+                target.append(c)
+                c.children = []
+                q.append((pchild, szchild, c.children))
+                offset += sz
+
         return result
 
     @classmethod
