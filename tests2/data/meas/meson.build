@@ -11,8 +11,6 @@ _exe_loops_cuda = executable('testmeas-loops-cuda', files('loops.cu'),
 _exe_loops_hip = custom_target(output: 'testmeas-loops-hip', input: files('loops.hip.cpp'),
     command: hipcc_cmd)
 
-_cuda_pc = [cuda_filter, '--capability=>6.0', '--random=1']
-
 _measurements = {
   # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand
   # calling context tree. Good for debugging very bad problems.
@@ -33,11 +31,11 @@ _measurements = {
     'suite': 'cpu',
   },
   'loops-cuda-nvidia-t': {
-    'cmd': [_run, '--', '@OUTPUT@', '-e', 'gpu=nvidia', '-t', _exe_loops_cuda],
+    'cmd': [_run, '--cuda', '--', '@OUTPUT@', '-e', 'gpu=nvidia', '-t', _exe_loops_cuda],
     'suite': 'nvidia', 'if': cuda_dep.found(),
   },
   'loops-cuda-nvidiapc-t': {
-    'cmd': [_cuda_pc, _run, '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', '-t', _exe_loops_cuda],
+    'cmd': [_run, '--cuda-pc', '--', '@OUTPUT@', '-e', 'gpu=nvidia,pc', '-t', _exe_loops_cuda],
     'suite': 'nvidia', 'if': cuda_dep.found(),
   },
   'loops-hip-amd-t': {
