@@ -480,6 +480,7 @@ regen testdata:
     IMAGE_EXT: +cuda
     JOB_CC: gcc-9
     SPEC: +tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0
+    NVIDIA_VISIBLE_DEVICES: ''  # Disallow GPU access
   before_script:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
