@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
+import contextlib
 import re
 import sys
 import tarfile
+import typing
 from pathlib import Path
 
 from hpctoolkit.test.execution import hpcrun, hpcstruct
+from hpctoolkit.test.hardware import nvidia
 
 parser = argparse.ArgumentParser(
     description="Run hpcrun and package the measurements as an xz-tarball"
@@ -15,8 +18,17 @@ parser.add_argument("output", type=Path)
 parser.add_argument("arguments", nargs="+")
 parser.add_argument("--no-struct", default=True, action="store_false", dest="struct")
 parser.add_argument("-m", "--min-samples", default=100, type=int)
+parser.add_argument("--cuda", action="store_true")
+parser.add_argument("--cuda-pc", action="store_true")
 args = parser.parse_args()
 del parser
+
+if args.cuda_pc:
+    hw_ctx: typing.Any = nvidia(">=6.0")
+elif args.cuda:
+    hw_ctx = nvidia()
+else:
+    hw_ctx = contextlib.nullcontext()
 
 
 def sanitize(ti):
@@ -60,7 +72,7 @@ def check_ok(meas):
 
 
 for _i in range(10):
-    with hpcrun(*args.arguments[:-1], cmd=[args.arguments[-1]]) as M:
+    with hw_ctx, hpcrun(*args.arguments[:-1], cmd=[args.arguments[-1]]) as M:
         # Verify that the measurements contains enough samples to call it useful
         if not check_ok(M):
             continue

@@ -1,10 +1,5 @@
 subdir('python/hpctoolkit')
 
-# Running (cuda|hip)-filter <command>... will run the command in an environment where
-# (CUDA|HIP)_VISIBLE_DEVICES is set to limit device
-cuda_filter = executable('testutil-cuda-filter', files('filter.cu'),
-    dependencies: cuda_dep)
-
 # Running thread-disruptive <command>... will run the command in an environment where only a single
 # random thread is available to the command. Note that this uses affinity, so the command may run
 # far slower than expected in this environment.
