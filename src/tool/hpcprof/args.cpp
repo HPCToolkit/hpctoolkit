@@ -789,7 +789,6 @@ ProfArgs::StructPartialMatch::classify(Context& c, NestedScope& ns) noexcept {
 }
 
 bool ProfArgs::StructPartialMatch::resolve(ContextFlowGraph& fg) noexcept {
-  util::log::debug{true} << fg.scope();
   if(fg.scope().type() == Scope::Type::point) {
     const auto& m = fg.scope().point_data().first;
     if(args.structpaths.find(m.path()) == args.structpaths.end()) {
