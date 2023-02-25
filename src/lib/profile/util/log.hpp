@@ -98,8 +98,9 @@ public:
   Settings(none_t) : bits(0) {};
 
   /// Full initialization
-  Settings(bool v_error, bool v_warning, bool v_verbose, bool v_info)
-    : bits((v_error ? 1 : 0) | (v_warning ? 2 : 0) | (v_verbose ? 4 : 0) | (v_info ? 8 : 0)) {}
+  Settings(bool v_error, bool v_warning, bool v_verbose, bool v_info, bool v_debug)
+    : bits((v_error ? 1 : 0) | (v_warning ? 2 : 0) | (v_verbose ? 4 : 0)
+           | (v_info ? 8 : 0) | (v_debug ? 16 : 0)) {}
 
   /// Bitwise operators
   friend Settings operator&(Settings a, Settings b) noexcept { return a.bits & b.bits; }
@@ -121,11 +122,12 @@ public:
   auto warning() { return bits[1]; }
   auto verbose() { return bits[2]; }
   auto info() { return bits[3]; }
+  auto debug() { return bits[4]; }
 
 private:
-  Settings(std::bitset<4> bits) : bits(bits) {};
+  Settings(std::bitset<5> bits) : bits(bits) {};
 
-  std::bitset<4> bits;
+  std::bitset<5> bits;
 };
 
 /// Fatal error message buffer. When destructed, the program is terminated after
@@ -215,9 +217,8 @@ struct info final : public detail::MessageBuffer {
 
 /// Debug message buffer. To give as much data as possible about what's
 /// happening when its happening. For developers.
-/// For now, controlled by a compile-time switch. Eventually that will change.
 struct debug final : public detail::MessageBuffer {
-  debug(bool);
+  debug();
   ~debug();
 
   debug(debug&&) = default;

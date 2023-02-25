@@ -141,7 +141,7 @@ info::~info() {
   }
 }
 
-debug::debug(bool enable) : MessageBuffer(enable) {
+debug::debug() : detail::MessageBuffer(Settings::get().debug()) {
   (*this) << "DEBUG";
   if(mpi::World::size() > 0)
     (*this) << " [" << mpi::World::rank() << "]";
