@@ -6,9 +6,7 @@ import dataclasses
 import functools
 import itertools
 import os
-import platform
 import re
-import shlex
 import shutil
 import tempfile
 import textwrap
@@ -16,7 +14,6 @@ import typing
 from pathlib import Path
 
 from .logs import FgColor, colorize
-from .util import flatten
 
 
 class UnsatisfiableSpecError(Exception):
@@ -35,7 +32,7 @@ class ImpossibleSpecError(Exception):
         self.a, self.b = a, b
 
 
-class DependencyConfiguration:
+class Compilers:
     """State needed to derive configure-time arguments, based on simple configuration files."""
 
     def __init__(self, cc: str | None = None):
@@ -84,39 +81,6 @@ class DependencyConfiguration:
         if self.custom_compilers is not None:
             return self.custom_compilers
         return self.raw_compilers
-
-    def load(self, fn: Path, ctx: Path | None = None):
-        with open(fn, encoding="utf-8") as f:
-            for line in f:
-                self.configs.append((ctx, line))
-
-    def get(self, argument):
-        """Fetch the full form of the given argument, by searching the configs."""
-        argument = argument.lstrip()
-        for ctx, line in self.configs:
-            if line.startswith(argument):
-                if argument[-1].isspace():
-                    line = line[len(argument) :]
-                line = line.strip()
-
-                result = []
-                for word in shlex.split(line):
-                    envvars = {
-                        "CC": self.compilers[0],
-                        "CXX": self.compilers[1],
-                    }
-                    if ctx is not None:
-                        envvars["CTX"] = ctx.absolute().as_posix()
-                    for var, val in envvars.items():
-                        var = "${" + var + "}"
-                        if var not in word:
-                            continue
-                        if val is None:
-                            raise UnsatisfiableSpecError(var)
-                        word = word.replace(var, val)
-                    result.append(word)
-                return result
-        raise UnsatisfiableSpecError(argument)
 
 
 class _ManifestFile:
@@ -698,8 +662,12 @@ class Configuration:
 
     args: list[str]
 
-    def __init__(self, depcfg: DependencyConfiguration, variant: ConcreteSpecification):
-        """Derive the full Configuration from the given DependencyConfiguration and variant-keywords."""
+    def __init__(
+        self, args: collections.abc.Iterable[str], comp: Compilers, variant: ConcreteSpecification
+    ):
+        """Derive the full Configuration by adjusting the given args to ./configure to match
+        the expected comp(ilers) and variant.
+        """
         make = shutil.which("make")
         if make is None:
             raise RuntimeError("Unable to find make!")
@@ -707,96 +675,98 @@ class Configuration:
 
         self.manifest: Manifest = Manifest(mpi=variant.mpi)
 
-        fragments: list[str] = self.__class__._collect_fragments(depcfg, variant)
+        # Transform the example arguments as requested
+        self.args = self._args_with_if(args, variant.papi, "papi")
+        if variant.papi:
+            # Elide any --with-perfmon so libpfm comes from --with-papi
+            self.args = [a for a in self.args if not a.startswith("--with-perfmon=")]
+        else:
+            # Ensure there's a --with-perfmon available since we're --without-papi
+            self.args = self._transform_args(self.args, "--with-perfmon=", None)
+        self.args = self._args_with_if(self.args, variant.python, "python")
+        self.args = self._args_with_if(self.args, variant.cuda, "cuda")
+        self.args = self._args_with_if(self.args, variant.level0, "level0")
+        self.args = self._args_with_if(self.args, variant.gtpin, "gtpin")
+        self.args = self._args_with_if(self.args, variant.gtpin, "igc")
+        self.args = self._args_with_if(self.args, variant.opencl, "opencl")
+        self.args = self._args_with_if(
+            self.args, variant.rocm, "rocm", "rocm-hip", "rocm-hsa", "rocm-tracer", "rocm-profiler"
+        )
+        self.args.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
+        if variant.mpi:
+            self.args = self._transform_args(self.args, "MPICXX=", None)
+        else:
+            self.args = [a for a in self.args if not a.startswith("MPICXX=")]
+            self.args.append("MPICXX=")
+        self.args = self._args_enable_if(self.args, variant.debug, "develop")
+        self.args = self._args_enable_if(self.args, variant.tests2, "tests2")
 
-        # Parse the now-together fragments to derive the environment and configure args
-        self.args: list[str] = []
-        self.env: typing.Any = collections.ChainMap({}, os.environ)
-        for arg in flatten(fragments):
-            m = re.fullmatch(r"ENV\{(\w+)\}=(.*)", arg)
-            if m is None:
-                self.args.append(arg)
-            else:
-                self.env[m.group(1)] = m.group(2)
+        self.env: collections.abc.MutableMapping[str, str] = collections.ChainMap({}, os.environ)
 
-        if depcfg.custom_compilers:
-            cc, cxx = depcfg.custom_compilers
+        # Apply the configuration from the Compilers
+        if comp.custom_compilers:
+            cc, cxx = comp.custom_compilers
             self.args.append(f"CC={cc}")
             self.args.append(f"CXX={cxx}")
+            self.env["OMPI_CC"] = cc
+            self.env["OMPI_CXX"] = cxx
 
     @staticmethod
-    def _collect_fragments(
-        depcfg: DependencyConfiguration, variant: ConcreteSpecification
+    def _transform_args(
+        args: collections.abc.Iterable[str],
+        last_of: str,
+        none_of: str | None,
+        *,
+        add_if_missing: bool = False,
     ) -> list[str]:
-        fragments = [
-            depcfg.get("--with-boost="),
-            depcfg.get("--with-bzip="),
-            depcfg.get("--with-dyninst="),
-            depcfg.get("--with-elfutils="),
-            depcfg.get("--with-tbb="),
-            depcfg.get("--with-libmonitor="),
-            depcfg.get("--with-libunwind="),
-            depcfg.get("--with-xerces="),
-            depcfg.get("--with-lzma="),
-            depcfg.get("--with-zlib="),
-            depcfg.get("--with-libiberty="),
-            depcfg.get("--with-memkind="),
-            depcfg.get("--with-yaml-cpp="),
-        ]
+        result_pre: list[str] = []
+        main_arg: str | None = None
+        result_post: list[str] = []
+        for a in args:
+            if none_of is not None and a.startswith(none_of):
+                continue
 
-        if platform.machine() == "x86_64":
-            fragments.append(depcfg.get("--with-xed="))
+            if a.startswith(last_of):
+                main_arg = a
+                result_pre.extend(result_post)
+                result_post = []
+                continue
 
-        if variant.papi:
-            fragments.append(depcfg.get("--with-papi="))
-        else:
-            fragments.append(depcfg.get("--with-perfmon="))
+            (result_pre if main_arg is None else result_post).append(a)
 
-        if variant.python:
-            fragments.append(depcfg.get("--with-python="))
+        if main_arg is None:
+            if not add_if_missing:
+                raise UnsatisfiableSpecError(last_of)
+            main_arg = last_of
 
-        if variant.cuda:
-            fragments.append(depcfg.get("--with-cuda="))
+        return [*result_pre, main_arg, *result_post]
 
-        if variant.level0:
-            fragments.append(depcfg.get("--with-level0="))
-            if variant.gtpin:
-                fragments.extend(
-                    [
-                        depcfg.get("--with-gtpin="),
-                        depcfg.get("--with-igc="),
-                    ]
+    @classmethod
+    def _args_with_if(
+        cls, args: collections.abc.Iterable[str], cond: bool, *packages: str
+    ) -> list[str]:
+        result = list(args)
+        found = False
+        for p in packages:
+            with contextlib.suppress(UnsatisfiableSpecError):
+                result = (
+                    cls._transform_args(result, f"--with-{p}=", f"--without-{p}")
+                    if cond
+                    else cls._transform_args(
+                        result, f"--without-{p}", f"--with-{p}=", add_if_missing=True
+                    )
                 )
+                found = True
+        if not found:
+            if not packages:
+                raise ValueError
+            raise UnsatisfiableSpecError(packages[0])
+        return result
 
-        if variant.opencl:
-            fragments.append(depcfg.get("--with-opencl="))
-
-        if variant.rocm:
-            try:
-                fragments.append(depcfg.get("--with-rocm="))
-            except UnsatisfiableSpecError:
-                # Try the split-form arguments instead
-                fragments.extend(
-                    [
-                        depcfg.get("--with-rocm-hip="),
-                        depcfg.get("--with-rocm-hsa="),
-                        depcfg.get("--with-rocm-tracer="),
-                        depcfg.get("--with-rocm-profiler="),
-                    ]
-                )
-
-        # TODO: all-static (do we really want to support this?)
-
-        fragments.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
-        if variant.mpi:
-            fragments.append(depcfg.get("MPICXX="))
-        else:
-            fragments.append("MPICXX=")
-
-        if variant.debug:
-            fragments.append("--enable-develop")
-
-        if variant.tests2:
-            fragments.append("--enable-tests2")
-
-        return fragments
+    @classmethod
+    def _args_enable_if(
+        cls, args: collections.abc.Iterable[str], cond: bool, feature: str
+    ) -> list[str]:
+        inc = f"--enable-{feature}" if cond else f"--disable-{feature}"
+        exc = f"--disable-{feature}" if cond else f"--enable-{feature}"
+        return cls._transform_args(args, inc, exc, add_if_missing=True)

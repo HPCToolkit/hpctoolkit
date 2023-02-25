@@ -17,6 +17,7 @@ from pathlib import Path
 
 import click
 
+from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import AutogenEnv, DevEnv
 from .spack import Spack
@@ -649,11 +650,19 @@ Devenv has been populated but not configured. Use via the buildfe:
         )
 
 
-@main.command
+@main.command(add_help_option=False, context_settings={"ignore_unknown_options": True})
 @NamedEnv.pass_env(exists=True, help_verb="Run within")
-def buildfe(devenv: Env) -> None:
-    """Run the build frontend (ci.buildfe)."""
-    raise click.ClickException(f"TODO WIP {devenv=}")
+@dev_pass_obj
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+def buildfe(obj: DevState, devenv: Env, args: collections.abc.Collection[str]) -> None:
+    """Run the build frontend with the given ARGS."""
+    if not obj.project_root:
+        raise click.ClickException("buildfe only operates within an HPCToolkit project checkout")
+
+    env = DevEnv.restore(devenv.root)
+    with env.activate():
+        os.chdir(obj.project_root)
+        buildfe_main([*args] + [str(env.root)])
 
 
 if __name__ == "__main__":

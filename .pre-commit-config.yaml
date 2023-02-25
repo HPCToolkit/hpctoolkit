@@ -56,7 +56,7 @@ repos:
   hooks:
   # Sort imports in all the Python code
   - id: isort
-    args: [--profile, black]
+    args: [--profile, black, --line-length=100]
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0
