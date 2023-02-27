@@ -200,7 +200,6 @@ class Manifest:
             _ManifestExtLib(
                 "lib/hpctoolkit/ext-libs/libinstructionAPI", ".so", so(1), r"-\d+\.\d+\.so"
             ),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/liblzma", ".so", so(1), so(3)),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libmonitor_wrap", ".a"),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libmonitor", ".so", ".so.0", ".so.0.0.0"),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libparseAPI", ".so", so(2), so(3)),

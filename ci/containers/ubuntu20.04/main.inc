@@ -41,3 +41,4 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
 COPY config.yaml /etc/spack/
 
 INCLUDE ../spack.inc
+INCLUDE ../finalize.inc

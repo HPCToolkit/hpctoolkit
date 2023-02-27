@@ -10,6 +10,7 @@ workflow:
 
 stages:
 - deps:generate
+- deps:concretize
 - deps:prep
 - deps:build
 - deps:package
@@ -32,9 +33,8 @@ include:
   - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: rebuild images/'
   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     changes:
-    - ci/dependencies/latest/spack.yaml
-    - ci/dependencies/minimum/spack.yaml
     - ci/containers/**/*
+    - lib/dev/**/*
 
 
 variables:
@@ -89,17 +89,8 @@ autoreconf:
   image: $DEPS_IMAGES-ubuntu20.04-amd64
   needs:
   - 'deps: [amd64]'
-  before_script: &autoconf
-  - export PATH=/spack/cenv/_autogen/view/bin:"$PATH"
-  - export AUTOCONF=/spack/cenv/_autogen/view/bin/autoconf
-  - export ACLOCAL=/spack/cenv/_autogen/view/bin/aclocal
-  - export AUTOHEADER=/spack/cenv/_autogen/view/bin/autoheader
-  - export AUTOM4TE=/spack/cenv/_autogen/view/bin/autom4te
-  - export AUTOMAKE=/spack/cenv/_autogen/view/bin/automake
-  - export LIBTOOLIZE=/spack/cenv/_autogen/view/bin/libtoolize
-  - export M4=/spack/cenv/_autogen/view/bin/m4
   script:
-  - ./autogen > autogen.log
+  - dev autogen --custom-env /spack/cenv/_autogen > autogen.log
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
   - |
     if test -s changes; then
@@ -124,13 +115,14 @@ autoreconf check:
   needs:
   - autoreconf
   - 'deps: [amd64]'
+  - job: autoreconf
+    artifacts: false
 
   allow_failure: true
   variables:
     GIT_DEPTH: 100
   rules:
   - if: $CI_MERGE_REQUEST_TARGET_BRANCH_SHA
-  before_script: *autoconf
   script:
   - TARG="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_TARGET_BRANCH_SHA)"
   - SRC="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA)"
@@ -143,7 +135,7 @@ autoreconf check:
       echo "== Checking $(git show --no-patch --pretty=reference $rev)" | tee -a autogen.log
       git checkout --force "$rev" || exit $?
       git clean -fxd || exit $?
-      ./autogen >> autogen.log || exit $?
+      dev autogen --custom-env /spack/cenv/_autogen >> autogen.log || exit $?
       git status --porcelain=v1 --untracked-files=no > changes || exit $?
       if test -s changes; then
         echo "== CHANGES DETECTED, running git diff..."
@@ -198,7 +190,6 @@ regen testdata:
   before_script:
   # Zero the ccache statistics for accurate measurements in the builds
   - ccache --zero-stats
-  - BUILD_REPROD_ARGS=()
 
   after_script:
   # Zero the ccache statistics to lower GitLab cache thrashing (maybe)
@@ -214,22 +205,17 @@ regen testdata:
   tags: [docker, linux/$ARCH]
   image: $DEPS_IMAGES-$IMAGE_BASE-$ARCH
 
-  before_script:
-  - !reference [.build-job, before_script]
-  - REPROD_ARGS=(--reproducible)
-  - REPROD_ARGS+=(--reproduction-cmd 'touch img-config')
   script:
-  - touch img-config
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   - rm -rf logs/
   - >-
-    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -c "$JOB_CC" -a check-install
-    img-config "ci/dependencies/latest;/spack/cenv/latest" --spack-no-install --ccache-stats --fail-fast
-    "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -s "$SPEC"
+    eatmydata dev buildfe -d /spack/cenv/latest --
+    -l "logs/$CI_JOB_NAME/latest" -c "$JOB_CC" -a check-install
+    --ccache-stats --fail-fast --reproducible "${BUILD_ARGS[@]}" -s "$SPEC"
   - >-
-    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -c "$JOB_CC" -a check-install
-    img-config "ci/dependencies/minimum;/spack/cenv/minimum" --spack-no-install --ccache-stats --fail-fast
-    "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -s "$SPEC"
+    eatmydata dev buildfe -d /spack/cenv/minimum --
+    -l "logs/$CI_JOB_NAME/minimum" -c "$JOB_CC" -a check-install
+    --ccache-stats --fail-fast --reproducible "${BUILD_ARGS[@]}" -s "$SPEC"
 
   artifacts:
     paths:
@@ -294,7 +280,7 @@ regen testdata:
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda' > img-config
+  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 'buildmany: [amd64, +cuda]: [10.2]':
   extends: .buildmany.amd64
   image: $DEPS_IMAGES-almalinux8-cuda10.2-$ARCH
@@ -307,7 +293,7 @@ regen testdata:
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda' > img-config
+  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 
 'buildmany: [amd64, +rocm]':
   extends: .buildmany.amd64
@@ -323,7 +309,7 @@ regen testdata:
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull ROCm from the image itself
-  - echo '--with-rocm=/opt/rocm' > img-config
+  - BUILD_ARGS=( -C--with-rocm=/opt/rocm )
 
 'buildmany: [amd64, +level0]':
   extends: .buildmany.amd64
@@ -341,9 +327,12 @@ regen testdata:
   before_script:
   - !reference [.buildmany.amd64, before_script]
   # Pull Level 0 (part of OneAPI), IGC and GTPin from the image + packages themselves
-  - echo '--with-level0=/usr' > img-config
-  - echo '--with-igc=/usr' >> img-config
-  - echo "--with-gtpin=/opt/gtpin-$GTPIN/Profilers" >> img-config
+  - >-
+    BUILD_ARGS=(
+    -C--with-level0=/usr
+    -C--with-igc=/usr
+    -C--with-gtpin=/opt/gtpin-$GTPIN/Profilers
+    )
 
 
 # Build single versions of the codebase and run unit tests through `make check`
@@ -359,21 +348,18 @@ regen testdata:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
-  - touch img-config
   - rm -rf logs/
   # For semifresh runs, regenerate some of the test data before testing. Use some Python to help.
   - >-
     test -z "$REGEN" ||
-    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
-    img-config "ci/dependencies/$CENV;/spack/cenv/$CENV"
-    --spack-no-install --ccache-stats --fail-fast --fresh-unpack
-    "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -1 -s "$SPEC"
+    eatmydata dev buildfe -d /spack/cenv/$CENV --
+    -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
+    --ccache-stats --fail-fast --fresh-unpack --reproducible "${BUILD_ARGS[@]}" -1 -s "$SPEC"
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
-    eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
-    img-config "ci/dependencies/$CENV;/spack/cenv/$CENV"
-    --spack-no-install --ccache-stats --fail-fast --test-junit-copyout
-    "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -1 -s "$SPEC"
+    eatmydata dev buildfe -d /spack/cenv/$CENV --
+    -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
+    --ccache-stats --fail-fast --test-junit-copyout --reproducible "${BUILD_ARGS[@]}" -1 -s "$SPEC"
 
   artifacts:
     reports:
@@ -473,7 +459,7 @@ regen testdata:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite cuda"
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda' > img-config
+  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 'check min amd64: [+cuda, 11.6.2]':
   extends: ['check amd64: [+cuda, 11.6.2]', .check min]
 'check semifresh amd64: [+cuda, 11.6.2]':
@@ -495,7 +481,7 @@ regen testdata:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda' > img-config
+  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 'check min amd64: [+cuda, 11.8.0]':
   extends: ['check amd64: [+cuda, 11.8.0]', .check min]
 'check semifresh amd64: [+cuda, 11.8.0]':
@@ -516,7 +502,7 @@ regen testdata:
   - !reference [.check job amd64, before_script]
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite rocm"
   # Pull ROCm from the image itself
-  - echo '--with-rocm=/opt/rocm' > img-config
+  - BUILD_ARGS=( -C--with-rocm=/opt/rocm )
 'check min amd64: [+rocm]':
   extends: ['check amd64: [+rocm]', .check min]
 'check semifresh amd64: [+rocm]':

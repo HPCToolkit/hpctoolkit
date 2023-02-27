@@ -15,14 +15,43 @@
 # script to generate a single top-level pipeline that launches all the others. This removes most of
 # the combinatorial burden, leaving us with (two) trigger jobs to launch the MLP.
 
-# Generate a pipeline for each combination of OS and arch.
-'deps:generate: [amd64]':
+# Generate the abstract environments we will spin everything out from
+'deps:generate':
   stage: deps:generate
+  image:
+    name: registry.gitlab.com/hpctoolkit/ci-images/spack-fedora36:amd64
+    entrypoint: ['spack-env']
+  tags: [docker, linux/amd64]
+  needs: []
+  rules: !reference [.rebuild images, rules]
+  script:
+  # Install the ./dev script in a virtual environment
+  - python3 -m venv .dev_venv --clear --upgrade-deps --system-site-packages
+  - .dev_venv/bin/pip install --no-cache-dir --require-virtualenv lib/dev/
+  # Generate the abstract environments based on this Spack
+  - mkdir -p cenv/any/
+  - >-
+    .dev_venv/bin/dev generate --minimum cenv/any/minimum
+    --cuda=disabled --rocm=disabled --level0=disabled --gtpin=disabled
+    --opencl=enabled --python=enabled --papi=both --mpi=enabled
+  - >-
+    .dev_venv/bin/dev generate --latest cenv/any/latest
+    --cuda=disabled --rocm=disabled --level0=disabled --gtpin=disabled
+    --opencl=enabled --python=enabled --papi=both --mpi=enabled
+  - .dev_venv/bin/dev generate --autogen cenv/any/_autogen
+  artifacts:
+    paths:
+    - cenv/any/
+
+# Generate a pipeline for each combination of OS and arch.
+'deps:concretize: [amd64]':
+  stage: deps:concretize
   image:
     name: $IMAGE_NAME
     entrypoint: ['spack-env']
   tags: [docker, linux/$ARCH]
-  needs: []
+  needs:
+  - deps:generate
   rules: !reference [.rebuild images, rules]
   variables:
     ARCH: amd64
@@ -38,40 +67,38 @@
       IMAGE: fedora36
 
   script:
-  # Set up concrete environments named by the OS and ARCH
-  - mkdir -p ci/dependencies/c/$IMAGE/$ARCH/_autogen/
-  - cp ci/dependencies/_autogen/spack.yaml ci/dependencies/c/$IMAGE/$ARCH/_autogen/
-  - mkdir -p ci/dependencies/c/$IMAGE/$ARCH/minimum/
-  - cp ci/dependencies/minimum/spack.yaml ci/dependencies/c/$IMAGE/$ARCH/minimum/
-  - mkdir -p ci/dependencies/c/$IMAGE/$ARCH/latest/
-  - cp ci/dependencies/latest/spack.yaml ci/dependencies/c/$IMAGE/$ARCH/latest/
-
-  # Concretize each of the environments in turn, into subdirectories named by the OS and ARCH
+  # Rename the abstract environments to an OS/ARCH double for concretization
+  - mv cenv/any cenv/$IMAGE-$ARCH
+  # Concretize all the environments now, to freeze them a bit
   - >-
-    echo -e '_autogen\nminimum\nlatest' | xargs -P0 -I '{}' -t
-    spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" -C ci/dependencies/config/ concretize --reuse
+    echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
+    spack -e "cenv/$IMAGE-$ARCH/{}/" -C ci/dependencies/config/ concretize --reuse
   # Load the target downstream buildcache now, after everything is concretized
   - spack config add -f "$SBCACHE_YAML"
+  # Add a fake mirror to the environments to keep Spack happy
+  - >-
+    echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
+    spack -e "cenv/$IMAGE-$ARCH/{}/" mirror add fake http://nowhere
   # Generate pipelines for each of the environments
   - >-
     echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
-    spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" -C ci/dependencies/config/ ci generate
+    spack -e "cenv/$IMAGE-$ARCH/{}/" -C ci/dependencies/config/ ci generate
     --check-index-only
     --buildcache-destination "$(spack mirror list | grep -m1 '^main-bcache ' | awk '{print $2}')"
-    --artifacts-root "spack-ci-artifacts/$IMAGE/$ARCH/{}/"
-    --output-file "spack-ci-artifacts/$IMAGE/$ARCH/{}/ci.yml"
+    --artifacts-root "spack-ci-artifacts/$IMAGE-$ARCH/{}/"
+    --output-file "spack-ci-artifacts/$IMAGE-$ARCH/{}/ci.yml"
   # Annotate the pipeline with the source job, for the MLP
   - >-
     echo -e "\n...\n---\nsource: {pipeline: \"$CI_PIPELINE_ID\", job: \"$CI_JOB_NAME\", name: \"$IMAGE $ARCH\"}"
-    | tee -a spack-ci-artifacts/$IMAGE/$ARCH/{_autogen,minimum,latest}/ci.yml
+    | tee -a spack-ci-artifacts/$IMAGE-$ARCH/{_autogen,minimum,latest}/ci.yml
 
   artifacts:
     paths:
-    - ci/dependencies/c/*/*/*/spack.lock
+    - cenv/
     - spack-ci-artifacts/
 
-'deps:generate: [arm64]':
-  extends: 'deps:generate: [amd64]'
+'deps:concretize: [arm64]':
+  extends: 'deps:concretize: [amd64]'
   variables:
     ARCH: arm64
   parallel:
@@ -90,24 +117,24 @@
   image: docker.io/python:3.11-bullseye
   rules: !reference [.rebuild images, rules]
   needs:
-  - 'deps:generate: [amd64]'
+  - 'deps:concretize: [amd64]'
   before_script:
   - python3 -m pip install ruamel.yaml
   script:
   - >-
     ci/dependencies/mlp ci.yml
-    spack-ci-artifacts/{almalinux8,fedora36,leap15,ubuntu20.04}/amd64/{_autogen,minimum,latest}/ci.yml
+    spack-ci-artifacts/{almalinux8,fedora36,leap15,ubuntu20.04}-amd64/{_autogen,minimum,latest}/ci.yml
   artifacts:
     paths:
     - ci.yml
 'deps:mlp: [arm64]':
   extends: 'deps:mlp: [amd64]'
   needs:
-  - 'deps:generate: [arm64]'
+  - 'deps:concretize: [arm64]'
   script:
   - >-
     ci/dependencies/mlp ci.yml
-    spack-ci-artifacts/ubuntu20.04/arm64/{_autogen,minimum,latest}/ci.yml
+    spack-ci-artifacts/ubuntu20.04-arm64/{_autogen,minimum,latest}/ci.yml
 
 
 # Launch the MLP and get this done.

@@ -38,3 +38,4 @@ RUN yum update -y \
 COPY config.yaml /etc/spack/
 
 INCLUDE ../spack.inc
+INCLUDE ../finalize.inc
