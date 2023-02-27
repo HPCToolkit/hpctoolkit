@@ -48,7 +48,7 @@
 // ROCm includes
 //******************************************************************************
 
-#include <roctracer/roctracer_hip.h>
+#include <roctracer_hip.h>
 
 
 

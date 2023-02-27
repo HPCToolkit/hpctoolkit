@@ -48,22 +48,13 @@
 #define TRACK_SYNCHRONIZATION 0
 #define DEBUG 0
 
-// version number from ROCm 5.3.3 release using hipRuntimeGetVersion
-#define ROCM_533_RELEASE_VERSION 50322062
-
-
-//******************************************************************************
-// ROCm includes
-//******************************************************************************
-
-#include <rocm_version.h>
-
 
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
+#include <hpctoolkit-config.h>
 #include <hpcrun/gpu/gpu-print.h>
 #include <hpcrun/gpu/gpu-kernel-table.h>
 
@@ -81,34 +72,42 @@ lookup_kernel_pc
  roctracer_record_t *activity
 )
 {
-  // if ROCm version < 5.3.3, roctracer_record_t doesn't have the
-  // kernel_name field. return ip_normalized_NULL in such cases
-#if ((ROCM_VERSION_MAJOR < 5) ||					\
-     ((ROCM_VERSION_MAJOR == 5) &&					\
-      ((ROCM_VERSION_MINOR < 3) ||					\
-       ((ROCM_VERSION_MINOR == 3) && (ROCM_VERSION_PATCH < 3)))))
-#warning "roctracer activity records in ROCm version < 5.3.3 don't support mapping costs to named kernels"
-#else
-  // If we are executing this code, hpctoolkit was compiled with ROCm
-  // 5.3.3 or later.
-
-  // For ROCm versions >= 5.3.3, AMD recommends obtaining the kernel
+  // For modern ROCm versions, AMD recommends obtaining the kernel
   // name from roctracer's activity API rather than the subscriber
   // callback.
 
-  int version;
-  if (hip_version(&version) == 0) {
-    // A roctracer_record_t only has a kernel_name field for ROCm
-    // version 5.3.3 or higher. However, we may be monitoring a code
-    // compiled with an older version of ROCm. Only inspect the
-    // kernel_name field if built with ROCm 5.3.3 or later.
-    if (version >= ROCM_533_RELEASE_VERSION) {
-      // Use the kernel name alone as the kernel PC.
-      return gpu_kernel_table_get(activity->kernel_name, LOGICAL_MANGLING_CPP);
-    }
-  }
+  // The 'kernel_name' field is only available in ROCm 5.3.0+.
+  // Unfortunately, AMD hasn't seen fit to change the roctracer
+  // version number to account for this change. The roctracer version
+  // number has been 4.1 since ROCm 5.1.0.
+
+  // The 'bytes' field in a roctracer_record_t is at the same offset
+  // in the structure as 'kernel_name' (i.e. in a union) in ROCm
+  // 5.3.0+. In older ROCm versions, 'kernel_name' isn't a field.
+  // However, bytes "should probably" be 0 (say some AMD folks) for
+  // kernel launch records in older ROCm versions. Counting on this is
+  // a terrible way to achieve cross version compatibility! However,
+  // checking the HIP runtime version is out of the question because
+  // under some circumstances calling hipRuntimeGetVersion acquires locks
+  // and creates threads.
+
+  const char *kernel_name = 0;
+
+  // We use a configure test here to check for the availability of the
+  // kernel_name field in roctracer_record_t because AMD didn't tick
+  // the roctracer version when it was added and we can't check
+  // include the rocm_version.h file to check the version of ROCm
+  // because someone at AMD neglected to create a spack package for
+  // rocm-core, which provides rocm_version.h
+#ifdef HAVE_ROCM_ACTIVITY_KERNEL_NAME
+  kernel_name = activity->kernel_name;
 #endif
-  // if the kernel name is not available to from the activity API,
+
+  if (kernel_name) {
+    return gpu_kernel_table_get(kernel_name, LOGICAL_MANGLING_CPP);
+  }
+
+  // If the kernel name is not available from the activity API,
   // there is no way to associate the kernel invocation with the
   // binary, so we don't try.
   return ip_normalized_NULL;
