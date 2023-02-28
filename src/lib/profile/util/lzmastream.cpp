@@ -65,23 +65,17 @@ static lzma_ret maybeThrowLZMA_decoder(lzma_ret ret) {
   case LZMA_GET_CHECK:
     break;
   case LZMA_MEM_ERROR:
-    log::debug{true} << "MEM_ERROR";
     throw std::runtime_error("LZMA decoder ran out of memory");
   case LZMA_FORMAT_ERROR:
   case LZMA_MEMLIMIT_ERROR:
-    log::debug{true} << "FORMAT/MEMLIMIT_ERROR";
     throw std::runtime_error("LZMA decoder hit memory limit (the impossible happened?)");
   case LZMA_OPTIONS_ERROR:
-    log::debug{true} << "OPTIONS_ERROR";
     throw std::runtime_error("LZMA decoder with wrong options");
   case LZMA_DATA_ERROR:
-    log::debug{true} << "DATA_ERROR";
     throw std::runtime_error("attempt to decode a corrupted LZMA/XZ stream");
   case LZMA_BUF_ERROR:
-    log::debug{true} << "BUF_ERROR";
     throw std::runtime_error("LZMA decoder failed (multiple times) to make progress (4K is too small a buffer size?)");
   case LZMA_PROG_ERROR:
-    log::debug{true} << "PROG_ERROR";
     throw std::runtime_error("LZMA decoder encountered a really bad error");
   }
   return ret;
@@ -123,7 +117,6 @@ lzmastreambuf::int_type lzmastreambuf::underflow() {
       // Put back all the bytes we don't need anymore
       for(size_t i = 0; i < stream.avail_in; i++) {
         if(base_traits_type::eq_int_type(base_traits_type::eof(), base->sungetc())) {
-          log::debug{true} << "Failed to ungetc";
           // Welp, this is a problem
           setg(nullptr, nullptr, nullptr);
           return traits_type::eof();

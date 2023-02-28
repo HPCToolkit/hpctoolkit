@@ -422,6 +422,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     logSettings.warning() = verbosity >= 0;  // default and higher
     logSettings.verbose() = verbosity >= 1;  // -v and higher
     logSettings.info() = verbosity >= 2; // -vv and higher
+    logSettings.debug() = verbosity >= 4;  // -vvvv and higher
     util::log::Settings::set(std::move(logSettings));
     util::log::info{} << "Maximum verbosity enabled";
   }
@@ -789,7 +790,6 @@ ProfArgs::StructPartialMatch::classify(Context& c, NestedScope& ns) noexcept {
 }
 
 bool ProfArgs::StructPartialMatch::resolve(ContextFlowGraph& fg) noexcept {
-  util::log::debug{true} << fg.scope();
   if(fg.scope().type() == Scope::Type::point) {
     const auto& m = fg.scope().point_data().first;
     if(args.structpaths.find(m.path()) == args.structpaths.end()) {
