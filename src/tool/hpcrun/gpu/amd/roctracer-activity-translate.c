@@ -59,7 +59,7 @@
 #include <hpcrun/gpu/gpu-kernel-table.h>
 
 #include "roctracer-activity-translate.h"
-#include "hip/hip_runtime_api.h"
+#include <hip/hip_runtime_api.h>
 
 
 //******************************************************************************
