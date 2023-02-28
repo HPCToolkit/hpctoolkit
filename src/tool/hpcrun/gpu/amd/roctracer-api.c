@@ -109,16 +109,14 @@
   }            \
 }
 
-#define DEBUG 0
 
-#include "hpcrun/gpu/gpu-print.h"
 
 //******************************************************************************
 // local variables
 //******************************************************************************
 
 // If we collect counters for GPU kernels,
-// we will serilize kernel executions.
+// we will serialize kernel executions.
 // Hopefully, AMD tool support will improve this the future
 static bool collect_counter = false;
 

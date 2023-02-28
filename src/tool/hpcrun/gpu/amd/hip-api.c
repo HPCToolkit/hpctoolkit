@@ -60,7 +60,6 @@
 #include <stdio.h>
 #include <string.h>    // memset
 
-// #include <roctracer_hip.h>
 #include <hip/hip_runtime.h>
 
 //*****************************************************************************
@@ -95,8 +94,7 @@
 #define FORALL_HIP_ROUTINES(macro)             \
   macro(hipDeviceSynchronize)                  \
   macro(hipDeviceGetAttribute)                 \
-  macro(hipCtxGetCurrent)                      \
-  macro(hipRuntimeGetVersion)
+  macro(hipCtxGetCurrent)
 
 //******************************************************************************
 // static data
@@ -128,17 +126,7 @@ HIP_FN
 );
 
 
-HIP_FN
-(
- hipRuntimeGetVersion,
- (
- int *runtimeVersion
- )
-);
-
 #endif
-
-static int hip_runtime_version = 0;
 
 
 
@@ -185,13 +173,6 @@ void
 
   FORALL_HIP_ROUTINES(HIP_BIND);
 #undef HIP_BIND
-
-  monitor_disable_new_threads();
-
-  // initialize hip_runtime_version
-  HPCRUN_HIP_API_CALL(hipRuntimeGetVersion, (&hip_runtime_version));
-
-  monitor_disable_new_threads();
 
   return 0;
 #else
@@ -259,6 +240,7 @@ hip_device_property_query
 #endif
 }
 
+
 int
 hip_dev_sync
 ()
@@ -269,17 +251,4 @@ hip_dev_sync
 #else
   return -1;
 #endif
-}
-
-
-int
-hip_version
-(
- int *version
-)
-{
-  if (hip_runtime_version == 0) return -1;
-
-  *version = hip_runtime_version;
-  return 0;
 }
