@@ -5144,15 +5144,15 @@ int get_kernel_name(roctracer_record_t *r)
 {
   return r->kernel_name == 0;
 }
-]])], [ans=yes], [ans=no])
+]])], [result=yes], [result=no])
 
-AC_MSG_RESULT([$ans])
+AC_MSG_RESULT([$result])
 
 AC_LANG_POP
 
 CXXFLAGS="$ORIG_CXXFLAGS"
 
-if test "$ans" = yes ; then
+if test "$result" = yes ; then
   AC_DEFINE([HAVE_ROCM_ACTIVITY_KERNEL_NAME], 1, [activity_record has kernel_name field])
 fi
 

@@ -24216,14 +24216,14 @@ int get_kernel_name(roctracer_record_t *r)
 
 _ACEOF
 if ac_fn_cxx_try_compile "$LINENO"; then :
-  ans=yes
+  result=yes
 else
-  ans=no
+  result=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
-$as_echo "$ans" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $result" >&5
+$as_echo "$result" >&6; }
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -24234,7 +24234,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 CXXFLAGS="$ORIG_CXXFLAGS"
 
-if test "$ans" = yes ; then
+if test "$result" = yes ; then
 
 $as_echo "#define HAVE_ROCM_ACTIVITY_KERNEL_NAME 1" >>confdefs.h
 
