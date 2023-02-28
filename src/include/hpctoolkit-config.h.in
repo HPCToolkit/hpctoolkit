@@ -60,6 +60,9 @@
 /* HOST OS: 32 and 64 bit OS libraries */
 #undef HAVE_OS_MULTILIB
 
+/* activity_record has kernel_name field */
+#undef HAVE_ROCM_ACTIVITY_KERNEL_NAME
+
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 

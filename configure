@@ -23930,7 +23930,9 @@ case "$ROCM" in
     found=no
 
     # ROCM
-    if test -f "$ROCM/include/rocm_version.h" ; then
+    if test -f "$ROCM/include/rocm_version.h"  \
+       || test -f "$ROCM/include/hip/hip_version.h"
+    then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/rocm_version.h" >&5
 $as_echo "$as_me: found $ROCM/rocm_version.h" >&6;}
       ROCM_IFLAGS="-I$ROCM/include"
@@ -24187,6 +24189,58 @@ then
 fi
 
 #
+# Check if roctracer_record_t (activity_record) has kernel_name field.
+#
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $OPT_ROCM_IFLAGS"
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if activity_record contains kernel_name" >&5
+$as_echo_n "checking if activity_record contains kernel_name... " >&6; }
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <roctracer.h>
+int get_kernel_name(roctracer_record_t *r)
+{
+  return r->kernel_name == 0;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+if test "$ans" = yes ; then
+
+$as_echo "#define HAVE_ROCM_ACTIVITY_KERNEL_NAME 1" >>confdefs.h
+
+fi
+
+#
 # Check for ROCM version
 #
 rocm_mesg=no
@@ -24204,10 +24258,8 @@ $as_echo "$as_me: WARNING: unable to find rocm version" >&2;}
   else
     rocm_version="${rocm_major}.${rocm_minor}"
 
-    # Require 4.5 or 5.0 or greater.
-    if ( test $rocm_major -eq 4 && test $rocm_minor -ge 5 )  \
-       || test $rocm_major -ge 5
-    then :
+    # Require 5.0 or greater.
+    if test $rocm_major -ge 5 ; then :
     else
       as_fn_error $? "rocm version $rocm_version is too old, use 5.0 or later" "$LINENO" 5
     fi

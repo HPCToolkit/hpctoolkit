@@ -4891,7 +4891,9 @@ case "$ROCM" in
     found=no
 
     # ROCM
-    if test -f "$ROCM/include/rocm_version.h" ; then
+    if test -f "$ROCM/include/rocm_version.h"  \
+       || test -f "$ROCM/include/hip/hip_version.h"
+    then
       AC_MSG_NOTICE([found $ROCM/rocm_version.h])
       ROCM_IFLAGS="-I$ROCM/include"
       ROCM_MESG="$ROCM"
@@ -5126,6 +5128,35 @@ then
 fi
 
 #
+# Check if roctracer_record_t (activity_record) has kernel_name field.
+#
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $OPT_ROCM_IFLAGS"
+
+AC_LANG_PUSH([C++])
+
+AC_MSG_CHECKING([if activity_record contains kernel_name])
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <roctracer.h>
+int get_kernel_name(roctracer_record_t *r)
+{
+  return r->kernel_name == 0;
+}
+]])], [ans=yes], [ans=no])
+
+AC_MSG_RESULT([$ans])
+
+AC_LANG_POP
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+if test "$ans" = yes ; then
+  AC_DEFINE([HAVE_ROCM_ACTIVITY_KERNEL_NAME], 1, [activity_record has kernel_name field])
+fi
+
+#
 # Check for ROCM version
 #
 rocm_mesg=no
@@ -5142,10 +5173,8 @@ if test "$OPT_HAVE_ROCM" = yes ; then
   else
     rocm_version="${rocm_major}.${rocm_minor}"
 
-    # Require 4.5 or 5.0 or greater.
-    if ( test $rocm_major -eq 4 && test $rocm_minor -ge 5 )  \
-       || test $rocm_major -ge 5
-    then :
+    # Require 5.0 or greater.
+    if test $rocm_major -ge 5 ; then :
     else
       AC_MSG_ERROR([rocm version $rocm_version is too old, use 5.0 or later])
     fi
