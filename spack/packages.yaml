@@ -97,7 +97,7 @@ packages:
   # Note: +mpi is currently disabled for develop.
   #
   # hpctoolkit:
-  #   version:  [2023.02.20, develop]
+  #   version:  [2023.03.01, develop]
   #   variants: +papi +viewer
 
 
