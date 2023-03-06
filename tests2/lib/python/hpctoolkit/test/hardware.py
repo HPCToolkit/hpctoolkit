@@ -19,12 +19,10 @@ def nvidia(*capabilities: str, num_devices: int = 1) -> collections.abc.Iterator
     proc = subprocess.run(
         ["nvidia-smi", "--format=csv", "--query-gpu=index,uuid,compute_cap"],
         check=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
         text=True,
-        stderr=None,
     )
     gpus: list[dict] = list(csv.DictReader(proc.stdout.split("\n"), skipinitialspace=True))
-    print(gpus)
 
     # Try to obey CUDA_VISIBLE_DEVICES to some extent
     if "CUDA_VISIBLE_DEVICES" in os.environ:
