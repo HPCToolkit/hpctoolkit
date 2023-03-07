@@ -9,17 +9,25 @@ RUN git clone --depth=5 --single-branch --no-tags --branch=octo-all-ci-improveme
 
 INCLUDE spack-bootstrap.inc
 
-# Install the Spack-built dependencies based on the concrete environment(s)
-COPY --from=envs latest/spack.yaml /spack/cenv/latest/
-COPY --from=cenvs latest/spack.lock /spack/cenv/latest/
+# Install the Spack-built dependencies based on the concrete environments.
+# We do the same sequence for each environment, just with different paths,
+# in order from slowest-changing to fastest to encourage cache hits.
+# We always restore the environment's spack.yaml after installing to dodge Spack bugs.
+
+# /minimum/: Minimum supported versions of dependencies
 COPY --from=envs minimum/spack.yaml /spack/cenv/minimum/
 COPY --from=cenvs minimum/spack.lock /spack/cenv/minimum/
 RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
     --mount=type=secret,id=buildcache_config,target=/root/.spack/config.yaml \
-    --mount=type=cache,from=buildcache_cache,target=/cache/spack-bincache-shared \
-    --mount=type=cache,from=buildcache_cache_nonprot,target=/cache/spack-bincache-nonprotected \
-  $SPACK_ROOT/bin/spack --env /spack/cenv/latest install --use-buildcache=only --no-check-signature --fail-fast \
-  && $SPACK_ROOT/bin/spack --env /spack/cenv/minimum install --use-buildcache=only --no-check-signature --fail-fast
-# Re-copy the spack.yaml files to dodge Spack's bad habit of altering them
-COPY --from=envs latest/spack.yaml /spack/cenv/latest/
+    --mount=type=cache,target=/root/.spack-cache/ \
+  $SPACK_ROOT/bin/spack --env /spack/cenv/minimum install --use-buildcache=only --no-check-signature --fail-fast
 COPY --from=envs minimum/spack.yaml /spack/cenv/minimum/
+
+# /latest/: Latest available versions of dependencies
+COPY --from=envs latest/spack.yaml /spack/cenv/latest/
+COPY --from=cenvs latest/spack.lock /spack/cenv/latest/
+RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
+    --mount=type=secret,id=buildcache_config,target=/root/.spack/config.yaml \
+    --mount=type=cache,target=/root/.spack-cache/ \
+  $SPACK_ROOT/bin/spack --env /spack/cenv/latest install --use-buildcache=only --no-check-signature --fail-fast
+COPY --from=envs latest/spack.yaml /spack/cenv/latest/
