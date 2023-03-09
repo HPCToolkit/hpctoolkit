@@ -28,34 +28,37 @@
     - BASE: ubuntu20.04
       EXT: [lvlz2022.2, lvlz2022.3.1, lvlz2023.0.0]
   cache:
-  - key: spack-bincache-$BASE:$ARCH
-    when: always
+  - key: buildah-$BASE:$ARCH
     paths:
-    - .spack-bincache-shared/
-  - key: spack-bincache-$BASE:$ARCH-$CI_COMMIT_REF_SLUG
-    when: always
-    paths:
-    - .spack-bincache-nonprotected/
+    - .buildah-cache/
+
   before_script:
+  # Log into the registry
   - sudo -u build buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - IMAGE=$BASE${EXT:+-}$EXT
+  # Set up the cache and commands
+  - mkdir -p .buildah-cache/ .buildah-specific-cache/
+  - chown -R build:build .buildah-cache/ .buildah-specific-cache/
+  - ln -s $CI_PROJECT_DIR/.buildah-cache/ /var/tmp/buildah-cache-$(id -u build)
+  - bdah() { sudo -Eu build buildah "$@"; }
+
+  after_script:
+  # Purge old data from the cache
+  - find .buildah-cache/ -type f -atime +7 -print -delete
+  - find .buildah-cache/ -type d -empty -print -delete
+
   script:
   # Configure this Spack instance with the buildcache mirrors.
   # This is temporary and won't persist into the final images
-  - mkdir .spack-config/
-  - ci/dependencies/spack-bc-downstream.sh > .spack-config/mirrors.yaml
+  - ci/dependencies/spack-bc-downstream.sh > spack-mirrors.yaml
   - |
-    cat > .spack-config/config.yaml <<EOF
+    cat > spack-config.yaml <<EOF
     config:
       local_binary_cache:
       - prefixes: ['${SBCACHE_URL}/nonprotected']
-        root: '/cache/spack-bincache-nonprotected/'
-      - root: '/cache/spack-bincache-shared/'
+        root: '/root/.spack-cache/nonprotected/'
+      - root: '/root/.spack-cache/shared/'
     EOF
-
-  # Make sure the rootless user and container will be able to access everything
-  - mkdir -p .spack-bincache-shared/ .spack-bincache-nonprotected/
-  - chown -R build:build .spack-bincache-shared/ .spack-bincache-nonprotected/
 
   # Generate the checksums for the final image
   - ci/containers/gen-cksum $IMAGE:$ARCH > spec.cksum
@@ -63,20 +66,19 @@
   # Build the image we want to use in CI
   - ci/containers/expand-includes ci/containers/$IMAGE/Containerfile.in > ci/containers/$IMAGE/Containerfile
   - >-
-    sudo -u build buildah build --isolation chroot
-    --secret id=buildcache,src=.spack-config/mirrors.yaml
-    --secret id=buildcache_config,src=.spack-config/config.yaml
+    bdah build
+    --secret id=buildcache,src=spack-mirrors.yaml
+    --secret id=buildcache_config,src=spack-config.yaml
     --build-context envs=ci/dependencies/
     --build-context cenvs=ci/dependencies/c/$BASE/$ARCH/
-    --build-context buildcache_cache=.spack-bincache-shared/
-    --build-context buildcache_cache_nonprot=.spack-bincache-nonprotected/
     --label edu.rice.hpctoolkit.ci.spec="$(cat spec.cksum)"
     --tag "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH" --arch $ARCH
+    --layers --cache-from "$CI_REGISTRY_IMAGE/cache" --cache-to "$CI_REGISTRY_IMAGE/cache" --cache-ttl=72h
     ci/containers/$IMAGE
 
   # Push up the built image
   - >-
-    sudo -u build buildah push --digestfile "$IMAGE-$ARCH.digest"
+    bdah push --digestfile "$IMAGE-$ARCH.digest"
     "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH"
   artifacts:
     paths:
