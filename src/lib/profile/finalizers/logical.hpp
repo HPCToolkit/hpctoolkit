@@ -65,9 +65,15 @@ public:
   classify(Context&, NestedScope&) noexcept override;
 
 private:
+  using funcTable = util::locked_unordered_set<Function>;
+  util::locked_unordered_map<std::string, funcTable, std::mutex> funcTableMap;
+
   struct udModule {
     bool isLogical = false;
-    std::unordered_map<uint32_t, std::variant<std::reference_wrapper<const File>, const Function>> map;
+    std::unordered_map<uint32_t,
+        std::variant<std::reference_wrapper<const File>,
+                     std::reference_wrapper<const Function>>
+    > map;
   };
   Module::ud_t::typed_member_t<udModule> ud;
 
