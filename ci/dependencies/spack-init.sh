@@ -6,8 +6,8 @@ if test -z "$SPACK_ROOT"; then
 fi
 
 # By default, we use a fork of Spack that has a few PRs fused together
-spack_url=https://github.com/blue42u/spack.git
-spack_ref=octo-all-ci-improvements
+spack_url=https://github.com/spack/spack.git
+spack_ref=develop
 if test -n "$1"; then
   spack_url="$1"
   spack_ref="$2"

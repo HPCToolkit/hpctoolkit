@@ -24,7 +24,7 @@
   rules: !reference [.rebuild images, rules]
   variables:
     ARCH: amd64
-  parallel: &parallel_amd64
+  parallel:
     matrix:
     - IMAGE: leap15
       CI_SPACK_CC: gcc@7
@@ -40,6 +40,8 @@
     when: always
     paths: [.spack.git]
 
+  before_script:
+  - python3 -m pip install ruamel.yaml
   script:
   # Instantiate Spack
   - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
@@ -79,11 +81,9 @@
   # Load the target downstream buildcache now, after everything is concretized
   - spack config --scope site add -f "$SBCACHE_YAML"
   # Generate pipelines for each of the environments
-  # Generate the single pipeline for this combination
   - >-
     echo -e "minimum\nlatest" | xargs -P0 -I '{}' -t
-    spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" ci generate
-    --optimize
+    spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" -C ci/dependencies/config/ ci generate
     --check-index-only
     --buildcache-destination "$(spack mirror list | grep -m1 '^main-bcache ' | awk '{print $2}')"
     --artifacts-root "spack-ci-artifacts/$IMAGE/$ARCH/{}/"
@@ -104,7 +104,7 @@
   extends: 'deps:generate: [amd64]'
   variables:
     ARCH: arm64
-  parallel: &parallel_arm64
+  parallel:
     matrix:
     # - IMAGE:
     #   - almalinux8

@@ -164,9 +164,6 @@ regen testdata:
 # Build jobs require a working Spack and compilers and a few other bits. This job handles that setup.
 .build-job:
   cache:
-  - key: spack
-    when: always
-    paths: [.spack.git]
   - key: pkgs-$IMAGE_BASE
     when: always
     paths:

@@ -15,9 +15,6 @@ stages:
     job: 'deps: [amd64]'
 
   cache:
-  - key: spack
-    when: always
-    paths: [.spack.git]
   - key: pkgs-$IMAGE_BASE
     when: always
     paths:
@@ -41,9 +38,9 @@ stages:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   before_script:
-  # Instantiate Spack
-  - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
-  - ci/dependencies/spack-init.sh
+  - ccache --zero-stats
+  after_script:
+  - ccache --zero-stats
   script:
   - touch img-config
   # Generate a new batch of test data, saved to the logs/ dir

@@ -1,0 +1,64 @@
+ci:
+  target: gitlab
+
+  pipeline-gen:
+  - noop-job:
+      # Marking no-op jobs with these tag ensures the pipeline gets purged by the MLP
+      tags: [noop-job]
+      before_script:: []
+
+  - submapping:
+    - match: ['os=fedora36']
+      build-job:
+        image: registry.gitlab.com/hpctoolkit/ci-images/fedora36:$ARCH
+    - match: ['os=opensuse15']
+      build-job:
+        image: registry.gitlab.com/hpctoolkit/ci-images/leap15:$ARCH
+    - match: ['os=almalinux8']
+      build-job:
+        image: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:$ARCH
+    - match: ['os=ubuntu20.04']
+      build-job:
+        image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
+
+  - submapping:
+    - match: ['target=:x86_64_v3']
+      build-job:
+        variables:
+          ARCH: amd64
+    - match: ['target=:cortex_a75']
+      build-job:
+        variables:
+          ARCH: arm64
+
+  - build-job:
+      tags: [docker, linux/$ARCH]
+      cache:
+      - key: spack
+        paths: [.spack.git]
+        when: always
+      - key: spack-install-$CI_JOB_IMAGE
+        paths: [.spack-install/]
+
+      script:
+      # Configure Spack for building relocatable packages
+      - spack config --scope site add 'config:install_tree:padded_length:100'
+
+      # Configure the (cached) install tree, and remove the to-be-installed package
+      - spack config --scope site add 'config:install_tree:root:${CI_PROJECT_DIR}/.spack-install/'
+      - spack uninstall -yf "$SPACK_JOB_SPEC_PKG_NAME /$SPACK_JOB_SPEC_DAG_HASH" || true
+
+  - reindex-job:
+      tags: [docker]
+      image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
+      resource_group: bcindex-$CI_COMMIT_REF_SLUG
+
+  - any-job:
+      tags: [docker]
+      before_script:
+      # Clone and load the appropriate version of Spack
+      - export SPACK_ROOT="$(realpath .spack)"
+      - ci/dependencies/spack-init.sh
+      - source "$SPACK_ROOT"/share/spack/setup-env.sh
+      # Install the buildcache mirrors
+      - spack config --scope site add -f "$SBCACHE_YAML"
