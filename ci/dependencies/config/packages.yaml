@@ -1,0 +1,4 @@
+packages:
+  all:
+    require:
+    - any_of: ['target=:x86_64_v3', 'target=:aarch64']

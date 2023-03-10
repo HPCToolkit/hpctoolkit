@@ -26,7 +26,7 @@ ci:
       build-job:
         variables:
           ARCH: amd64
-    - match: ['target=:cortex_a75']
+    - match: ['target=:aarch64']
       build-job:
         variables:
           ARCH: arm64

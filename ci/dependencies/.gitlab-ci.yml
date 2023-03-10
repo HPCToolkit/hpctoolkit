@@ -40,30 +40,15 @@
     when: always
     paths: [.spack.git]
 
-  before_script:
-  - python3 -m pip install ruamel.yaml
   script:
   # Instantiate Spack
   - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
   - ci/dependencies/spack-init.sh
-  # Determine the generic target to use in Spack-speak
-  - |
-    case "$ARCH" in
-    amd64) CI_SPACK_ARCH=x86_64_v3; ;;
-    arm64) CI_SPACK_ARCH=aarch64; ;;
-    *)
-      echo "Invalid ARCH: $ARCH"
-      exit 1
-      ;;
-    esac
-    echo "Will concretize for generic target $CI_SPACK_ARCH"
   # Setup the Spack configuration for concretization:
-  #   Always concretize to the generic target instead of a specific one
-  - spack config --scope site add "packages:all:target:['$CI_SPACK_ARCH']"
   #   Always concretize to a particular compiler if there are multiple
   - >-
     if test -n "$CI_SPACK_CC"; then
-    spack config --scope site add "packages:all:compiler:['$CI_SPACK_CC']" || exit $?;
+    spack config add "packages:all:compiler:['$CI_SPACK_CC']" || exit $?;
     fi
   # Set up concrete environments named by the OS and ARCH
   - mkdir -p ci/dependencies/c/$IMAGE/$ARCH/minimum/
@@ -77,9 +62,9 @@
   # Concretize each of the environments in turn, into subdirectories named by the OS and ARCH
   - >-
     echo -e 'minimum\nlatest' | xargs -P0 -I '{}' -t
-    spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" concretize --reuse
+    spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" -C ci/dependencies/config/ concretize --reuse
   # Load the target downstream buildcache now, after everything is concretized
-  - spack config --scope site add -f "$SBCACHE_YAML"
+  - spack config add -f "$SBCACHE_YAML"
   # Generate pipelines for each of the environments
   - >-
     echo -e "minimum\nlatest" | xargs -P0 -I '{}' -t
