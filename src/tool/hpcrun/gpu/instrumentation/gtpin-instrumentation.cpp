@@ -772,26 +772,6 @@ extern "C" IGtCore *GTPin_GetCore()
 }
 
 
-bool
-gtpin_knob_bool
-(
- const char *name,
- bool value
-)
-{
-  using namespace gtpin;
-
-  GTPinKnob knob = KNOB_FindArg(name);
-  assert(knob != NULL);
-
-  KnobValue knob_value;
-  knob_value.value._bool = value;
-  knob_value.type = KNOB_TYPE_BOOL;
-
-  KNOB_STATUS status = KNOB_AddValue(knob, &knob_value);
-  return status == KNOB_STATUS_SUCCESS;
-}
-
 
 //*****************************************************************************
 // interface operations
@@ -821,11 +801,14 @@ void gtpin_instrumentation_options(
     count_knob = false;
 #endif
 
-    if (count_knob || latency_knob || simd_knob)
-    {
-      // turn off undesirable gtpin behaviors
-      gtpin_knob_bool("silent_warnings", true);
-      gtpin_knob_bool("no_empty_profile_dir", true);
+    if (count_knob || latency_knob || simd_knob) {
+      // customize GTPin behaviors
+      if (instrumentation->silent) {
+        SetKnobValue<bool>(true, "silent_warnings");       // don't print GTPin warnings
+      }
+      SetKnobValue<bool>(true, "no_empty_profile_dir");    // don't create GTPin profile directory
+      SetKnobValue<bool>(true, "xyzzy");                   // enable developer options
+      SetKnobValue<bool>(true, "prefer_lsc_scratch");      // use LSC scratch messages in PVC+
 
       // register our GTPin instance
       GTPinInstrumentation::Instance()->Register();

@@ -62,6 +62,7 @@ typedef struct {
   bool count_instructions;
   bool analyze_simd;
   bool attribute_latency;
+  bool silent; // no warnings to stderr from a binary instrumentation tool
 } gpu_instrumentation_t;
 
 
