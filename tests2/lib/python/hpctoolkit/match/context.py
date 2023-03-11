@@ -13,16 +13,19 @@ class _MatchAny:
     def matches(self, _got: typing.Any) -> typing.Literal[True]:
         return True
 
+    def __str__(self) -> str:
+        return "ANY"
+
 
 _MatchAnySingleton = _MatchAny()
 
 
 def _coercion(func):
     @functools.wraps(func)
-    def wrapper(self, val):
-        if isinstance(val, _MatchAny):
+    def wrapper(cls, val):
+        if isinstance(val, (_MatchAny, cls)):
             return val
-        return func(self, val)
+        return func(cls, val)
 
     return wrapper
 
@@ -36,6 +39,9 @@ class _MatchExact:
     def matches(self, got: typing.Any) -> bool:
         return got == self._value
 
+    def __str__(self) -> str:
+        return repr(self._value)
+
     @classmethod
     @_coercion
     def coerce(cls, val: typing.Any) -> "_MatchExact":
@@ -45,12 +51,12 @@ class _MatchExact:
 def _coercion_to_exact(exact: type | types.UnionType):
     def apply(func):
         @functools.wraps(func)
-        def wrapper(self, val):
-            if isinstance(val, _MatchAny):
+        def wrapper(cls, val):
+            if isinstance(val, (_MatchAny, cls)):
                 return val
             if isinstance(val, exact):
                 return _MatchExact(val)
-            return func(self, val)
+            return func(cls, val)
 
         return wrapper
 
@@ -83,6 +89,9 @@ class MatchStr(_MatchStrBase):
     def matches(self, got: str) -> bool:
         return got == self.expected
 
+    def __str__(self) -> str:
+        return repr(self.expected)
+
 
 class MatchStrEndsWith(_MatchStrBase):
     """Match if a string ends with the given string."""
@@ -92,6 +101,9 @@ class MatchStrEndsWith(_MatchStrBase):
 
     def matches(self, got: str) -> bool:
         return got.endswith(self.expectedend)
+
+    def __str__(self) -> str:
+        return "* + " + repr(self.expectedend)
 
 
 class MatchFile:
@@ -105,6 +117,15 @@ class MatchFile:
     def matches(self, f: metadb.File) -> bool:
         """Test if the given File satisfies the requirements."""
         return all(v.matches(getattr(f, k)) for k, v in self._submatch.items())
+
+    def __str__(self) -> str:
+        return (
+            "File("
+            + ", ".join(
+                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+            )
+            + ")"
+        )
 
     def itermatch(self, fs: metadb.SourceFiles) -> collections.abc.Iterator[metadb.File]:
         """Iterate over all matching Files."""
@@ -127,6 +148,15 @@ class MatchModule:
     def matches(self, m: metadb.Module) -> bool:
         """Test if the given Module satisfies the requirements."""
         return all(v.matches(getattr(m, k)) for k, v in self._submatch.items())
+
+    def __str__(self) -> str:
+        return (
+            "Module("
+            + ", ".join(
+                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+            )
+            + ")"
+        )
 
     def itermatch(self, lm: metadb.LoadModules) -> collections.abc.Iterator[metadb.Module]:
         """Iterate over all matching Modules."""
@@ -162,6 +192,15 @@ class MatchFunction:
         """Test if the given Function satisfies the requirements."""
         return all(v.matches(getattr(f, k)) for k, v in self._submatch.items())
 
+    def __str__(self) -> str:
+        return (
+            "Function("
+            + ", ".join(
+                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+            )
+            + ")"
+        )
+
     def itermatch(self, fs: metadb.Functions) -> collections.abc.Iterator[metadb.Function]:
         """Iterate over all matching Functions."""
         return filter(self.matches, fs.functions)
@@ -189,6 +228,15 @@ class MatchEntryPoint:
     def matches(self, ep: metadb.EntryPoint) -> bool:
         """Test if the given EntryPoint satisfies this matcher's requirements."""
         return all(v.matches(getattr(ep, k)) for k, v in self._submatch.items())
+
+    def __str__(self) -> str:
+        return (
+            "EntryPoint("
+            + ", ".join(
+                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+            )
+            + ")"
+        )
 
     def itermatch(self, ct: metadb.ContextTree) -> collections.abc.Iterator[metadb.EntryPoint]:
         """Iterate over all EntryPoints that satisfy this matcher's requirements."""
@@ -237,6 +285,15 @@ class MatchCtx:
     def matches(self, c: metadb.Context) -> bool:
         """Test if the given Context satisfies the requirements."""
         return all(v.matches(getattr(c, k)) for k, v in self._submatch.items())
+
+    def __str__(self) -> str:
+        return (
+            "Context("
+            + ", ".join(
+                [f"{k}={m}" for k, m in self._submatch.items() if not isinstance(m, _MatchAny)]
+            )
+            + ")"
+        )
 
     def itermatch(
         self, c: metadb.Context | metadb.EntryPoint

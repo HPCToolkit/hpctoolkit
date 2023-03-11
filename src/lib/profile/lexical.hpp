@@ -50,6 +50,7 @@
 #include "util/uniqable.hpp"
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
+#include "util/stable_hash.hpp"
 
 #include "stdshim/filesystem.hpp"
 #include <string>
@@ -124,6 +125,14 @@ public:
   Function& operator=(Function&&) = default;
   Function& operator=(const Function&) = default;
 
+  // Comparible
+  bool operator==(const Function& o) const noexcept {
+    return m_module == o.m_module && m_offset == o.m_offset && m_name == o.m_name
+           && ((!m_file && !o.m_file)
+               || (&*m_file == &*o.m_file && m_line == o.m_line));
+  }
+  bool operator!=(const Function& o) const noexcept { return !operator==(o); }
+
   /// Get the Module this Function is fully contained within.
   // MT: Safe (const)
   const Module& module() const noexcept { return *m_module; }
@@ -183,5 +192,13 @@ private:
 util::stable_hash_state& operator<<(util::stable_hash_state&, const Function&) noexcept;
 
 }  // namespace hpctoolkit
+
+template<>
+struct std::hash<hpctoolkit::Function> {
+  hpctoolkit::util::stable_hash<hpctoolkit::Function> stable;
+  std::size_t operator()(const hpctoolkit::Function& f) const noexcept {
+    return stable(f);
+  }
+};
 
 #endif  // HPCTOOLKIT_PROFILE_LEXICAL_H
