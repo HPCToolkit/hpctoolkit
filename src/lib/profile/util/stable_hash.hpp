@@ -114,7 +114,7 @@ private:
 /// Drop-in replacement for std::hash using the stable hash functions.
 template<class T>
 struct stable_hash {
-  std::size_t operator()(const T& v) noexcept {
+  std::size_t operator()(const T& v) const noexcept {
     stable_hash_state s;
     s << v;
     return (std::size_t)s.squeeze();

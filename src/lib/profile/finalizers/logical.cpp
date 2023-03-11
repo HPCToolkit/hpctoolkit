@@ -88,15 +88,16 @@ LogicalFile::classify(Context& parent, NestedScope& ns) noexcept {
         ns.flat() = {prf->get(), lineno};
         return {std::make_pair(std::nullopt, std::ref(parent))};
       }
-      if(const auto* pf = std::get_if<const Function>(&it->second)) {
+      if(const auto* prf = std::get_if<std::reference_wrapper<const Function>>(&it->second)) {
         // Indicates a line within a Function
-        auto srcloc = pf->sourceLocation();
+        const Function& f = prf->get();
+        auto srcloc = f.sourceLocation();
         if(lineno == 0 || !srcloc) {
           // No line or missing file information, skip the line Context.
-          ns.flat() = Scope(*pf);
+          ns.flat() = Scope(f);
           return {std::make_pair(std::nullopt, std::ref(parent))};
         }
-        Context& func = sink.context(parent, {ns.relation(), Scope(*pf)}).second;
+        Context& func = sink.context(parent, {ns.relation(), Scope(f)}).second;
         ns = {Relation::enclosure, Scope(srcloc->first, lineno)};
         return {std::make_pair(std::ref(func), std::ref(func))};
       }
@@ -119,6 +120,12 @@ void LogicalFile::load(const Module& m, udModule& data) noexcept {
     std::fclose(f);
     return;  // Not a logical file
   }
+
+  // Identify the logical "category" and merge the Functions + Modules.
+  // TODO: Should we record an identifier in the file itself instead of using the filename?
+  const std::string id = mpath.stem();
+  auto& funcs = funcTableMap[id];
+  const auto& cm = sink.module(std::string("<logical ") + id + ">");
 
   // Read in stanzas until anything bad happens
   int ret;
@@ -153,10 +160,11 @@ void LogicalFile::load(const Module& m, udModule& data) noexcept {
 
     bool ok = true;
     if(funcname[0] != '\0') {
-      Function f(m, std::nullopt, funcname);
+      Function f(cm, std::nullopt, funcname);
       if(filename[0] != '\0')
         f.sourceLocation(sink.file(filename), lineno);
-      ok = data.map.try_emplace(fid, std::move(f)).second;
+      const Function& cf = funcs.emplace(std::move(f)).first;
+      ok = data.map.try_emplace(fid, std::cref(cf)).second;
     } else if(filename[0] != '\0') {
       ok = data.map.try_emplace(fid, sink.file(filename)).second;
     } else
