@@ -70,6 +70,7 @@
 #define INST_COUNT    "count"
 #define INST_LATENCY  "latency"
 #define INST_SIMD     "simd"
+#define INST_SILENT   "silent"
 
 #define ENABLE_SIMD_ANALYSIS 0
 #define ENABLE_LATENCY_ANALYSIS 0
@@ -146,6 +147,8 @@ gpu_instrumentation_options_set
 	} else if (strcmp(token, INST_SIMD) == 0) {
 	  options->analyze_simd = true;
   #endif
+	} else if (strcmp(token, INST_SILENT) == 0) {
+	  options->silent = true;
 	} else {
 	  fprintf(stderr, "hpcrun ERROR: while parsing GPU instrumentation knobs, unrecognized knob '%s'\n", token);
 	  exit(-1);

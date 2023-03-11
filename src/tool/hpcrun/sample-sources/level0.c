@@ -277,6 +277,7 @@ METHOD_FN(display_events)
 #if ENABLE_SIMD_ANALYSIS
 	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
 #endif
+	 "\t\t  silent:  silence warnings from instrumentation\n"
 	 "\n");
 #endif
 }

@@ -278,6 +278,7 @@ METHOD_FN(display_events)
 	 "\t\t  count:   count how many times each GPU instruction executes\n"
 	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
 	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
+	 "\t\t  silent:  silence warnings from instrumentation\n"
 	 "\n");
 #endif
 
