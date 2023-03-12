@@ -41,14 +41,5 @@ RUN zypper install -y \
 
 # Install the permanent Spack configuration
 COPY config.yaml /etc/spack/
-COPY compilers.yaml /etc/spack/linux/
-RUN \
-  case $TARGETARCH in \
-  amd64) target=x86_64; ;; \
-  arm64) target=aarch64; ;; \
-  ppc64le) target=ppc64le; ;; \
-  *) echo "Invalid TARGETARCH: $TARGETARCH"; exit 1; ;; \
-  esac \
-  && sed -i "s/@TARGET@/$target/g" /etc/spack/linux/compilers.yaml
 
 INCLUDE ../spack.inc
