@@ -32,7 +32,7 @@ spack:
 
   - 'libiberty @2.37:'
   - 'elfutils +bzip2 +xz ~nls @0.186:'
-  - 'dyninst +openmp @12.1.0:'
+  - 'dyninst +openmp @12.3.0:'
   - intel-tbb +shared +tm @2020.3
 
   - 'bzip2 @1.0.8:'
