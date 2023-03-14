@@ -42,6 +42,13 @@ def parse_spec(spec: str) -> Specification:
         raise argparse.ArgumentTypeError(f"invalid spec '{spec}': {e}") from None
 
 
+def parse_spec_unstrict(spec: str) -> Specification:
+    try:
+        return Specification(spec, strict=False)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"invalid spec '{spec}': {e}") from None
+
+
 def build_parser() -> argparse.ArgumentParser:
     def source(src: str) -> tuple[Path, Path] | tuple[Path]:
         parts = src.split(";", 1)
@@ -137,7 +144,7 @@ Examples:
         "-u",
         "--unsatisfiable",
         metavar="SPEC",
-        type=parse_spec,
+        type=parse_spec_unstrict,
         action="append",
         help="Mark variants matching this spec as known to be unsatisfiable",
     )
@@ -176,6 +183,9 @@ Examples:
         default=False,
         action="store_true",
         help="Report per-build ccache statistics. Note that this clears the ccache statistics",
+    )
+    parser.add_argument(
+        "--fail-fast", action="store_true", help="Stop on the first failing configuration"
     )
     parser.add_argument(
         "--reproducible",
@@ -417,13 +427,15 @@ def print_ccache_stats(header_prefix: str):
         print(f"Missed: {safe_div(miss, total)*100:.3f}% ({miss:d} of {total:d})")
 
 
-def build(variant: ConcreteSpecification, cfg: Configuration, args) -> tuple[bool, dict]:
+def build(
+    idx: int, t: int, variant: ConcreteSpecification, cfg: Configuration, args
+) -> tuple[bool, dict]:
     # pylint: disable=too-many-locals
 
     if args.ccache_stats and (ccache := shutil.which("ccache")) is not None:
         subprocess.run([ccache, "--zero-stats"], stdout=subprocess.DEVNULL, check=True)
 
-    print_header("## Building for configuration " + str(variant) + " ...")
+    print_header(f"[{idx:d}/{t:d}] ## Building for configuration " + str(variant) + " ...")
 
     srcdir = Path().absolute()
     logdir = None
@@ -507,14 +519,13 @@ def reproduction_cmd(variant: ConcreteSpecification, args) -> str:
     chev = "$"
     lines = []
     if "CI_JOB_IMAGE" in os.environ:
-        podargs = ["--rm", "-it", "-v", "./:/hpctoolkit"]
+        podargs = ["--rm", "-it", "-v", "./:/hpctoolkit", "--workdir", "/hpctoolkit"]
         for vol in args.reproduction_volume:
             podargs.append("-v")
             podargs.append(vol)
         podargs.append(shlex.quote(os.environ["CI_JOB_IMAGE"]))
         lines.append(f"{chev} podman run {' '.join(podargs)}")
         chev = "#"
-        lines.append(f"{chev} cd /hpctoolkit")
 
     for cmd in args.reproduction_cmd:
         lines.append(chev + " " + shlex.join(shlex.split(cmd)))
@@ -550,18 +561,22 @@ def main():
     times: dict[Action, list[float]] = {}
 
     all_ok = True
+    good_variants: list[tuple[Configuration, ConcreteSpecification]] = []
     for v, unsat in variants:
         cfg = configure(depcfg, v, unsat)
         if cfg is None:
-            if not unsat:
-                all_ok = False
-            if len(variants) > 1:
-                print()  # Blank line between configuration stanzas
-            continue
-        if unsat:
+            all_ok = all_ok and unsat
+        elif unsat:
             all_ok = False
+        else:
+            good_variants.append((cfg, v))
 
-        ok, this_times = build(v, cfg, args)
+    if not all_ok:
+        print("## Configuration errors detected, stopping!")
+        sys.exit(2)
+
+    for i, (cfg, v) in enumerate(good_variants):
+        ok, this_times = build(i + 1, len(good_variants), v, cfg, args)
         all_ok = all_ok and ok
 
         for a, t in this_times.items():
@@ -569,10 +584,14 @@ def main():
             ts.append(t)
             times[a] = ts
 
-        if len(variants) > 1:
+        if len(good_variants) > 1:
             print()  # Blank line between configuration stanzas
 
-    if len(variants) > 1:
+        if args.fail_fast and not all_ok:
+            print("## Too many failures encountered, stopping!")
+            break
+
+    if all_ok and len(good_variants) > 1:
         with section("Performance statistics", color=FgColor.info, collapsed=True):
             for i, a in enumerate(args.action):
                 if a in times:

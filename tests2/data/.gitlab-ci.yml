@@ -47,7 +47,7 @@ stages:
   - >-
     python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a fresh-testdata-"$SUITE"
     img-config "ci/dependencies/latest;/spack/cenv/latest"
-    --spack-no-install -1s "$SPEC"
+    --spack-no-install --fail-fast -1s "$SPEC"
   - mv logs/"$CI_JOB_NAME"/*/fresh-"$SUITE".tar.xz logs/fresh-"$SUITE".tar.xz
 
   artifacts:
