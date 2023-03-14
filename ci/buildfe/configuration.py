@@ -578,7 +578,13 @@ class Specification:
         self._clauses = good_clauses if good_clauses else False
 
     def __init__(  # noqa: C901
-        self, spec: str, /, *, allow_blank: bool = False, allow_empty: bool = False
+        self,
+        spec: str,
+        /,
+        *,
+        allow_blank: bool = False,
+        allow_empty: bool = False,
+        strict: bool = True,
     ):
         """Create a new Specification from the given specification string.
 
@@ -638,7 +644,7 @@ class Specification:
                 )
                 if matches_true and matches_false:
                     bad_variants.add(variant)
-            if bad_variants:
+            if bad_variants and strict:
                 vs = ", ".join(sorted(bad_variants))
                 raise ValueError(
                     f"Specification must constrain or explicitly mark unconstrained: {vs}"
