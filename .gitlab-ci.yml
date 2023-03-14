@@ -214,11 +214,11 @@ regen testdata:
   - rm -rf logs/
   - >-
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/latest" -c "$JOB_CC" -a check-install
-    img-config "ci/dependencies/latest;/spack/cenv/latest" --spack-no-install --ccache-stats
+    img-config "ci/dependencies/latest;/spack/cenv/latest" --spack-no-install --ccache-stats --fail-fast
     "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -s "$SPEC"
   - >-
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/minimum" -c "$JOB_CC" -a check-install
-    img-config "ci/dependencies/minimum;/spack/cenv/minimum" --spack-no-install --ccache-stats
+    img-config "ci/dependencies/minimum;/spack/cenv/minimum" --spack-no-install --ccache-stats --fail-fast
     "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -s "$SPEC"
 
   artifacts:
@@ -356,13 +356,13 @@ regen testdata:
     test -z "$REGEN" ||
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
     img-config "ci/dependencies/$CENV;/spack/cenv/$CENV"
-    --spack-no-install --ccache-stats --fresh-unpack
+    --spack-no-install --ccache-stats --fail-fast --fresh-unpack
     "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -1 -s "$SPEC"
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
     eatmydata python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
     img-config "ci/dependencies/$CENV;/spack/cenv/$CENV"
-    --spack-no-install --ccache-stats --test-junit-copyout
+    --spack-no-install --ccache-stats --fail-fast --test-junit-copyout
     "${BUILD_REPROD_ARGS[@]}" "${REPROD_ARGS[@]}" -1 -s "$SPEC"
 
   artifacts:
