@@ -42,7 +42,11 @@ fi
 
 # 2. Reuse from our MR target branch next, if we have one and it's protected
 if [ "$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED" = true ] && [ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" != "$CI_DEFAULT_BRANCH" ]; then
-  prefix="$CI_REGISTRY_IMAGE/ci:latest-$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+  slug="$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+  slug="${slug,,}"  # Convert to lowercase
+  slug="${slug//[^0-9a-z]/-}"  # Convert all non-alphanumeric characters to -
+  slug="${slug::63}"  # Truncate to 63 bytes
+  prefix="$CI_REGISTRY_IMAGE/ci:latest-$slug"
   if try_prefix "$@"; then
     echo "$prefix"
     exit 0
