@@ -47,7 +47,6 @@
 
 #include "rocprofiler-api.h"
 
-#include <roctracer_hip.h>
 #include <rocprofiler/rocprofiler.h>
 #include <rocprofiler/activity.h>
 
