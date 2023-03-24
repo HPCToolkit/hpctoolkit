@@ -1463,16 +1463,16 @@ cupti_callbacks_unsubscribe
   cupti_unload_callback = 0;
   cupti_correlation_callback = 0;
 
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
-
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
-                   (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
+                   (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
-                   (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
+		    (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
+
+  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 }
 
 
