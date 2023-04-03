@@ -116,9 +116,7 @@ spack:
       - export SPACK_ROOT="$(realpath .spack)"
       - ci/dependencies/spack-init.sh
       - source "$SPACK_ROOT"/share/spack/setup-env.sh
-      - ci/dependencies/spack-bc-downstream.sh > .bc-ds-mirrors.yaml
-      - spack config --scope site add -f .bc-ds-mirrors.yaml
-      - rm .bc-ds-mirrors.yaml
+      - spack config --scope site add -f "$SBCACHE_YAML"
       script:
       - |
         cat > .spack-config.yml <<EOF
@@ -126,8 +124,6 @@ spack:
           install_tree:
             padded_length: 100
           local_binary_cache:
-          - prefixes: ['${SBCACHE_URL}/nonprotected']
-            root: '${CI_PROJECT_DIR}/.spack-bincache-nonprotected/'
           - root: '${CI_PROJECT_DIR}/.spack-bincache-shared/'
         EOF
       - spack config --scope site add -f .spack-config.yml

@@ -50,13 +50,10 @@
   script:
   # Configure this Spack instance with the buildcache mirrors.
   # This is temporary and won't persist into the final images
-  - ci/dependencies/spack-bc-downstream.sh > spack-mirrors.yaml
   - |
     cat > spack-config.yaml <<EOF
     config:
       local_binary_cache:
-      - prefixes: ['${SBCACHE_URL}/nonprotected']
-        root: '/root/.spack-cache/nonprotected/'
       - root: '/root/.spack-cache/shared/'
     EOF
 
@@ -67,7 +64,7 @@
   - ci/containers/expand-includes ci/containers/$IMAGE/Containerfile.in > ci/containers/$IMAGE/Containerfile
   - >-
     bdah build
-    --secret id=buildcache,src=spack-mirrors.yaml
+    --secret id=buildcache,src="$SBCACHE_YAML"
     --secret id=buildcache_config,src=spack-config.yaml
     --build-context envs=ci/dependencies/
     --build-context cenvs=ci/dependencies/c/$BASE/$ARCH/

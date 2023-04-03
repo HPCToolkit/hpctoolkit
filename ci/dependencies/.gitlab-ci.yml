@@ -76,10 +76,8 @@
   - >-
     echo -e 'minimum\nlatest' | xargs -P0 -I '{}' -t
     spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" concretize --reuse
-  # Load the downstream buildcaches, so the secrets are available
-  - ci/dependencies/spack-bc-downstream.sh > .bc-ds-mirrors.yaml
-  - spack config --scope site add -f .bc-ds-mirrors.yaml
-  - rm .bc-ds-mirrors.yaml
+  # Load the target downstream buildcache now, after everything is concretized
+  - spack config --scope site add -f "$SBCACHE_YAML"
   # Generate pipelines for each of the environments
   # Generate the single pipeline for this combination
   - >-
@@ -87,7 +85,7 @@
     spack -e "ci/dependencies/c/$IMAGE/$ARCH/{}/" ci generate
     --optimize
     --check-index-only
-    --buildcache-destination "$(spack mirror list | grep -m1 '^destination ' | awk '{print $2}')"
+    --buildcache-destination "$(spack mirror list | grep -m1 '^main-bcache ' | awk '{print $2}')"
     --artifacts-root "spack-ci-artifacts/$IMAGE/$ARCH/{}/"
     --output-file "spack-ci-artifacts/$IMAGE/$ARCH/{}/ci.yml"
   # Annotate the pipeline with the source job, for the MLP
