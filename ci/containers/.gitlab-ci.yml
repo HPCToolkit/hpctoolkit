@@ -42,21 +42,7 @@
   - ln -s $CI_PROJECT_DIR/.buildah-cache/ /var/tmp/buildah-cache-$(id -u build)
   - bdah() { sudo -Eu build buildah "$@"; }
 
-  after_script:
-  # Purge old data from the cache
-  - find .buildah-cache/ -type f -atime +7 -print -delete
-  - find .buildah-cache/ -type d -empty -print -delete
-
   script:
-  # Configure this Spack instance with the buildcache mirrors.
-  # This is temporary and won't persist into the final images
-  - |
-    cat > spack-config.yaml <<EOF
-    config:
-      local_binary_cache:
-      - root: '/root/.spack-cache/shared/'
-    EOF
-
   # Generate the checksums for the final image
   - ci/containers/gen-cksum $IMAGE:$ARCH > spec.cksum
 
@@ -65,12 +51,11 @@
   - >-
     bdah build
     --secret id=buildcache,src="$SBCACHE_YAML"
-    --secret id=buildcache_config,src=spack-config.yaml
     --build-context envs=ci/dependencies/
     --build-context cenvs=ci/dependencies/c/$BASE/$ARCH/
     --label edu.rice.hpctoolkit.ci.spec="$(cat spec.cksum)"
     --tag "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH" --arch $ARCH
-    --layers --cache-from "$CI_REGISTRY_IMAGE/cache" --cache-to "$CI_REGISTRY_IMAGE/cache" --cache-ttl=72h
+    --layers --cache-from "$CI_REGISTRY_IMAGE/cache" --cache-to "$CI_REGISTRY_IMAGE/cache"
     ci/containers/$IMAGE
 
   # Push up the built image
