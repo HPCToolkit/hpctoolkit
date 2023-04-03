@@ -18,7 +18,6 @@ INCLUDE spack-bootstrap.inc
 COPY --from=envs minimum/spack.yaml /spack/cenv/minimum/
 COPY --from=cenvs minimum/spack.lock /spack/cenv/minimum/
 RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
-    --mount=type=secret,id=buildcache_config,target=/root/.spack/config.yaml \
     --mount=type=cache,target=/root/.spack-cache/ \
   $SPACK_ROOT/bin/spack --env /spack/cenv/minimum install --use-buildcache=only --no-check-signature --fail-fast
 COPY --from=envs minimum/spack.yaml /spack/cenv/minimum/
@@ -27,7 +26,6 @@ COPY --from=envs minimum/spack.yaml /spack/cenv/minimum/
 COPY --from=envs latest/spack.yaml /spack/cenv/latest/
 COPY --from=cenvs latest/spack.lock /spack/cenv/latest/
 RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
-    --mount=type=secret,id=buildcache_config,target=/root/.spack/config.yaml \
     --mount=type=cache,target=/root/.spack-cache/ \
   $SPACK_ROOT/bin/spack --env /spack/cenv/latest install --use-buildcache=only --no-check-signature --fail-fast
 COPY --from=envs latest/spack.yaml /spack/cenv/latest/
