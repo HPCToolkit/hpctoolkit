@@ -105,12 +105,8 @@ spack:
       - key: spack
         paths: [.spack.git]
         when: always
-      - key: depsjob-$CI_JOB_IMAGE
-        paths: [.spack-bincache-shared/]
-        when: always
-      - key: depsjob-$CI_JOB_IMAGE-$CI_COMMIT_REF_SLUG
-        paths: [.spack-bincache-nonprotected/]
-        when: always
+      - key: spack-install-$CI_JOB_IMAGE
+        paths: [.spack-install/]
 
       before_script: &spack_init
       - export SPACK_ROOT="$(realpath .spack)"
@@ -118,16 +114,14 @@ spack:
       - source "$SPACK_ROOT"/share/spack/setup-env.sh
       - spack config --scope site add -f "$SBCACHE_YAML"
       script:
-      - |
-        cat > .spack-config.yml <<EOF
-        config:
-          install_tree:
-            padded_length: 100
-          local_binary_cache:
-          - root: '${CI_PROJECT_DIR}/.spack-bincache-shared/'
-        EOF
-      - spack config --scope site add -f .spack-config.yml
-      - rm .spack-config.yml
+      # Configure Spack for building relocatable packages
+      - spack config --scope site add 'config:install_tree:padded_length:100'
+
+      # Configure the (cached) install tree, and remove the to-be-installed package
+      - spack config --scope site add 'config:install_tree:root:${CI_PROJECT_DIR}/.spack-install/'
+      - spack uninstall -yf "$SPACK_JOB_SPEC_PKG_NAME /$SPACK_JOB_SPEC_DAG_HASH" || true
+
+      # Load the environment and build
       - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
       - &postjob
         - ci/scripts/network-stats.sh .netstats.txt
