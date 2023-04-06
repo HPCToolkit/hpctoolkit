@@ -18,7 +18,9 @@
 # Generate a pipeline for each combination of OS and arch.
 'deps:generate: [amd64]':
   stage: deps:generate
-  image: registry.gitlab.com/hpctoolkit/ci-images/$IMAGE:$ARCH
+  image:
+    name: $IMAGE_NAME
+    entrypoint: ['spack-env']
   tags: [docker, linux/$ARCH]
   needs: []
   rules: !reference [.rebuild images, rules]
@@ -26,30 +28,16 @@
     ARCH: amd64
   parallel:
     matrix:
-    - IMAGE: leap15
-      CI_SPACK_CC: gcc@7
-    - IMAGE: almalinux8
-      CI_SPACK_CC: gcc@8
-    - IMAGE: ubuntu20.04
-      CI_SPACK_CC: gcc@9
-    - IMAGE: fedora36
-      CI_SPACK_CC: gcc@12
-
-  cache:
-  - key: spack
-    when: always
-    paths: [.spack.git]
+    - IMAGE_NAME: ghcr.io/spack/leap15:latest
+      IMAGE: leap15
+    - IMAGE_NAME: registry.gitlab.com/hpctoolkit/ci-images/spack-almalinux8:amd64
+      IMAGE: almalinux8
+    - IMAGE_NAME: ghcr.io/spack/ubuntu-focal:latest
+      IMAGE: ubuntu20.04
+    - IMAGE_NAME: registry.gitlab.com/hpctoolkit/ci-images/spack-fedora36:amd64
+      IMAGE: fedora36
 
   script:
-  # Instantiate Spack
-  - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
-  - ci/dependencies/spack-init.sh
-  # Setup the Spack configuration for concretization:
-  #   Always concretize to a particular compiler if there are multiple
-  - >-
-    if test -n "$CI_SPACK_CC"; then
-    spack config add "packages:all:compiler:['$CI_SPACK_CC']" || exit $?;
-    fi
   # Set up concrete environments named by the OS and ARCH
   - mkdir -p ci/dependencies/c/$IMAGE/$ARCH/minimum/
   - cp ci/dependencies/minimum/spack.yaml ci/dependencies/c/$IMAGE/$ARCH/minimum/
@@ -89,8 +77,8 @@
     # - IMAGE:
     #   - almalinux8
     #   - fedora36
-    - IMAGE: ubuntu20.04
-      CI_SPACK_CC: gcc@9
+    - IMAGE_NAME: ghcr.io/spack/ubuntu-focal:latest
+      IMAGE: ubuntu20.04
 
 
 # Construct a Multi-Level Pipeline that runs all the pipelines from spack ci generate
