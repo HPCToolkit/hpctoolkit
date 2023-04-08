@@ -558,13 +558,13 @@ lint:
   needs: ['deps: [amd64]']
   allow_failure: true
   cache:
-    key: spack-upstream
+    key: spack
     when: always
     paths: [.spack.git]
   script:
-  # Instantiate Spack from upstream develop
+  # Instantiate Spack
   - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
-  - ci/dependencies/spack-init.sh https://github.com/spack/spack develop
+  - ci/dependencies/spack-init.sh
   # Spack out a representative HPCToolkit. All dependencies should already be built.
   # TODO: Expand this list a bit sometime to better represent what we want to ensure works
   - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"
