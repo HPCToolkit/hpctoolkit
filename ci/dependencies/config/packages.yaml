@@ -2,3 +2,8 @@ packages:
   all:
     require:
     - any_of: ['target=:x86_64_v3', 'target=:aarch64']
+
+  # FIXME: Temporary requirement to work around a bad Spack concretization
+  # See https://github.com/spack/spack/issues/36715
+  python:
+    require: '+ctypes'
