@@ -48,7 +48,7 @@ spack:
   - 'yaml-cpp @0.7.0:'
 
   # MPI
-  - openmpi
+  - 'openmpi @4.1.5:'
 
   # Special dependencies for the tests2 suite
   - 'python @3.11:'
