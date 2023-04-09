@@ -37,8 +37,8 @@
   - sudo -u build buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - IMAGE=$BASE${EXT:+-}$EXT
   # Set up the cache and commands
-  - mkdir -p .buildah-cache/ .buildah-specific-cache/
-  - chown -R build:build .buildah-cache/ .buildah-specific-cache/
+  - mkdir -p .buildah-cache/
+  - chown -R build:build .buildah-cache/
   - ln -s $CI_PROJECT_DIR/.buildah-cache/ /var/tmp/buildah-cache-$(id -u build)
   - bdah() { sudo -Eu build buildah "$@"; }
 

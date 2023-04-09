@@ -32,7 +32,7 @@ spack:
 
   - 'libiberty @2.37:'
   - 'elfutils +bzip2 +xz ~nls @0.186:'
-  - 'dyninst +openmp @12.1.0:'
+  - 'dyninst +openmp @12.3.0:'
   - intel-tbb +shared +tm @2020.3
 
   - 'bzip2 @1.0.8:'
@@ -48,7 +48,7 @@ spack:
   - 'yaml-cpp @0.7.0:'
 
   # MPI
-  - openmpi
+  - 'openmpi @4.1.5:'
 
   # Special dependencies for the tests2 suite
   - 'python @3.11:'
@@ -92,71 +92,3 @@ spack:
   # Reuse packages from the public buildcache whenever possible
   mirrors:
     develop: 's3://spack-binaries/develop'
-
-  gitlab-ci:
-    pipeline-attributes:
-      workflow:
-        rules:
-        - when: always
-
-    build-job-attributes:
-      tags: [docker, linux/$ARCH]
-      cache:
-      - key: spack
-        paths: [.spack.git]
-        when: always
-      - key: spack-install-$CI_JOB_IMAGE
-        paths: [.spack-install/]
-
-      before_script: &spack_init
-      - export SPACK_ROOT="$(realpath .spack)"
-      - ci/dependencies/spack-init.sh
-      - source "$SPACK_ROOT"/share/spack/setup-env.sh
-      - spack config --scope site add -f "$SBCACHE_YAML"
-      script:
-      # Configure Spack for building relocatable packages
-      - spack config --scope site add 'config:install_tree:padded_length:100'
-
-      # Configure the (cached) install tree, and remove the to-be-installed package
-      - spack config --scope site add 'config:install_tree:root:${CI_PROJECT_DIR}/.spack-install/'
-      - spack uninstall -yf "$SPACK_JOB_SPEC_PKG_NAME /$SPACK_JOB_SPEC_DAG_HASH" || true
-
-      # Load the environment and build
-      - spack env activate --without-view "$SPACK_CONCRETE_ENV_DIR"
-      - &postjob
-        - ci/scripts/network-stats.sh .netstats.txt
-      - spack -d ci rebuild
-      - *postjob
-
-    reindex-job-attributes:
-      tags: [docker]
-      image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
-      resource_group: bcindex-$CI_COMMIT_REF_SLUG
-      before_script: *spack_init
-
-    noop-job-attributes:
-      tags: [noop-job]
-
-    match_behavior: merge
-    mappings:
-    - match: ['os=fedora36']
-      job-attributes:
-        image: registry.gitlab.com/hpctoolkit/ci-images/fedora36:$ARCH
-    - match: ['os=opensuse_leap15']
-      job-attributes:
-        image: registry.gitlab.com/hpctoolkit/ci-images/leap15:$ARCH
-    - match: ['os=almalinux8']
-      job-attributes:
-        image: registry.gitlab.com/hpctoolkit/ci-images/almalinux8:$ARCH
-    - match: ['os=ubuntu20.04']
-      job-attributes:
-        image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:$ARCH
-
-    - match: ['target=:x86_64_v3']
-      job-attributes:
-        +variables:
-          ARCH: amd64
-    - match: ['target=:cortex_a72']
-      job-attributes:
-        +variables:
-          ARCH: arm64
