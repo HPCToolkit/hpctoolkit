@@ -41,32 +41,6 @@ foreach name, struct : testdata_struct_current
     test(f'Analysis of @name@ is consistent (-j@threads@@_suffix@)', _tst,
          args: _args + [f'-j@threads@'],
          env: hpctoolkit_pyenv, suite: 'hpcstruct', is_parallel: '--skip' in _args or threads == 1,
-         should_fail:
-           # FIXME: hpcstruct on ARM does not correctly parse CFGs on some x86-64 binaries.
-           # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/734
-           host_machine.cpu_family() == 'aarch64' and name in [
-             'small-inlines+loops-x86_64-gcc10-0',
-             'small-inlines+loops-x86_64-gcc10-d',
-             'small-inlines+loops-x86_64-gcc10-dr',
-             'small-inlines+loops-x86_64-gcc10-r',
-             'small-inlines+loops-x86_64-gcc12-0',
-             'small-inlines+loops-x86_64-gcc12-d',
-             'small-inlines+loops-x86_64-gcc12-dr',
-             'small-inlines+loops-x86_64-gcc12-r',
-             'small-inlines+loops-x86_64-gcc8-0',
-             'small-inlines+loops-x86_64-gcc8-d',
-             'small-inlines+loops-x86_64-gcc8-dr',
-             'small-inlines+loops-x86_64-gcc8-r',
-             'small-inlines+loops-x86_64-llvm11-d',
-             'small-inlines+loops-x86_64-llvm11-dr',
-             'small-inlines+loops-x86_64-llvm11-r',
-             'small-inlines+loops-x86_64-llvm15-d',
-             'small-inlines+loops-x86_64-llvm15-dr',
-             'small-inlines+loops-x86_64-llvm15-r',
-             'small-inlines+loops-x86_64-llvm7-d',
-             'small-inlines+loops-x86_64-llvm7-dr',
-             'small-inlines+loops-x86_64-llvm7-r',
-           ]
     )
   endforeach
 endforeach
