@@ -60,41 +60,64 @@
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
 
+#############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+MYSOURCES = \
+	main.cpp \
+	Args.hpp Args.cpp
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ -fopenmp $(HPC_IFLAGS)
+
+MYLDFLAGS = \
+	@HOST_CXXFLAGS@
+
+LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT = \
+	-Wl,--disable-new-dtags -Wl,-rpath='@HPCRUN_LIBCXX_PATH@'
+
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_Support) \
+	-lstdc++fs
+
+# @HOST_HPCPROFLM_LDFLAGS@
+
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
+
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS =
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
-if OPT_BUILD_TOOL_ALL
-SUBDIRS += \
-	hpcstruct \
-	hpcprof \
-	hpcproflm \
-	hpcproftt \
-	hpctracedump
+pkglibexec_PROGRAMS = hpcproflm
 
-if OPT_ENABLE_HPCSERVER
-SUBDIRS += hpcserver
-endif
-endif
+hpcproflm_SOURCES   = $(MYSOURCES)
+hpcproflm_CFLAGS    = $(MYCFLAGS)
+hpcproflm_CXXFLAGS  = $(MYCXXFLAGS)
+hpcproflm_LDFLAGS   = $(MYLDFLAGS) $(LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT)
+hpcproflm_LDADD     = $(MYLDADD)
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
-	hpcrun \
-	hpcfnbounds
-endif
+MOSTLYCLEANFILES = $(MYCLEAN)
 
-if OPT_ENABLE_MPI
-  SUBDIRS += hpcprof-mpi
-
-if OPT_ENABLE_HPCSERVER
-  SUBDIRS += hpcserver/mpi
-endif
-endif
+#install-exec-hook:
+#	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(bindir)/hpcproflm$(EXEEXT))
 
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules

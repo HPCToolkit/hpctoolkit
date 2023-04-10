@@ -5514,6 +5514,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
   src/tool/hpcproftt/Makefile \
+  src/tool/hpcproflm/Makefile \
   src/tool/hpcrun/Makefile \
   src/tool/hpcrun/utilities/bgq-cnk/Makefile \
   src/tool/hpcserver/Makefile \
