@@ -30,6 +30,22 @@ static void func2(volatile double* x) {
   *x = *x * 2 + 3;
 }
 
+__attribute__((always_inline))
+static inline void test_separated_loops_helper(volatile double* x) {
+  *x = *x * 2 + 3;
+}
+__attribute__((noinline))
+void test_separated_loops(volatile double* x) {
+  // The following two loops are arranged such that the compiler maps them to
+  // the same line and column numbers in the final debug output.
+#line 1000
+  for (volatile int i = 0; i < 2; i++)
+    test_separated_loops_helper(x);
+#line 1000
+  for (volatile int i = 0; i < 1; i++)
+    test_separated_loops_helper(x);
+}
+
 int main() {
 #pragma omp parallel num_threads(4)
   {
@@ -42,6 +58,7 @@ int main() {
             x = x * 2 + 3;
           x = x * 2 + 3;
           func1(&x);
+          test_separated_loops(&x);
         }
         for(unsigned int k = 0; k < 1; k++)
           x = x * 2 + 3;

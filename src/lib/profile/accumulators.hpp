@@ -80,8 +80,8 @@ enum class MetricScope : size_t {
   /// function call ignoring any child function calls.
   function,
 
-  /// Identical to function, but on a Type::loop Scope does not include any
-  /// descendents below a child Type::loop Scope.
+  /// Identical to function, but on a Type::*_loop Scope does not include any
+  /// descendents below a child Type::*_loop Scope.
   /// Called "exclusive" in the Viewer.
   lex_aware,
 

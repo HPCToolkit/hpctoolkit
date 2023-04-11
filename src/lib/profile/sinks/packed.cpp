@@ -204,7 +204,8 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     case Scope::Type::unknown:
     case Scope::Type::global:
     case Scope::Type::function:
-    case Scope::Type::loop:
+    case Scope::Type::lexical_loop:
+    case Scope::Type::binary_loop:
     case Scope::Type::line:
       // No data to represent, or unable to represent
       break;
@@ -230,7 +231,8 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     case Scope::Type::unknown:
     case Scope::Type::global:
     case Scope::Type::function:
-    case Scope::Type::loop:
+    case Scope::Type::lexical_loop:
+    case Scope::Type::binary_loop:
     case Scope::Type::line:
       assert(false && "Unhandled Scope type in Packed!");
       std::abort();

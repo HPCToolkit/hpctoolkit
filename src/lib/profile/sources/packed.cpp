@@ -229,7 +229,8 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
       assert(false && "Packed unpacked global Scope that wasn't the root!");
       std::abort();
     case (std::uint64_t)Scope::Type::function:
-    case (std::uint64_t)Scope::Type::loop:
+    case (std::uint64_t)Scope::Type::lexical_loop:
+    case (std::uint64_t)Scope::Type::binary_loop:
     case (std::uint64_t)Scope::Type::line:
       // Unrepresented Scopes, ignore and press on
       tip.push(tip.top());

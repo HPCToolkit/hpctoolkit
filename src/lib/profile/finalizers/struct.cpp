@@ -477,12 +477,13 @@ bool StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       ud.trie.push_back({{Scope(func), Relation::enclosure}, top.node});
       next.node = &ud.trie.back();
       next.func = func;
-    } else if(ename == "L") {  // Loop (Scope::Type::loop)
+    } else if(ename == "L") {  // Loop (Scope::Type::binary_loop)
       auto fpath = xmlstr(attr.getValue(XMLStr("f")));
       const File& file = fpath.empty() ? *top.file : sink.file(std::move(fpath));
       auto line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
+      auto addr = parseVs(xmlstr(attr.getValue(XMLStr("v"))))[0].begin;
       auto& next = stack.emplace(top, 'L');
-      ud.trie.push_back({{Scope(Scope::loop, file, line), Relation::enclosure}, top.node});
+      ud.trie.push_back({{Scope(Scope::loop, m, addr, file, line), Relation::enclosure}, top.node});
       next.node = &ud.trie.back();
       next.file = file;
     } else if(ename == "S" || ename == "C") {  // Statement (Scope::Type::line)

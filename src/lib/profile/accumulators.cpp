@@ -357,7 +357,8 @@ void PerThreadTemporary::finalize() noexcept {
     const Context& c = stack.top().ctx;
     md_t& data = c_data[c];
 
-    const bool isLoop = c.scope().flat().type() == Scope::Type::loop;
+    const bool isLoop = c.scope().flat().type() == Scope::Type::lexical_loop
+        || c.scope().flat().type() == Scope::Type::binary_loop;
 
     // Handle the internal propagation first, so we don't get mixed up.
     for(auto& mx: data.iterate()) {
@@ -371,7 +372,8 @@ void PerThreadTemporary::finalize() noexcept {
     for(std::size_t i = 0; i < stack.top().submds.size(); i++) {
       const auto& sub = stack.top().submds[i];
       const bool pullFunc = !isCall(sub.first.get().scope().relation());
-      const bool pullNoLoops = sub.first.get().scope().flat().type() != Scope::Type::loop;
+      const bool pullNoLoops = sub.first.get().scope().flat().type() != Scope::Type::lexical_loop
+          && sub.first.get().scope().flat().type() != Scope::Type::binary_loop;
       for(const auto& mx: sub.second.get().citerate()) {
         auto& accum = data[mx.first];
         if(pullFunc) {
