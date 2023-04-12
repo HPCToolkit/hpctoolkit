@@ -117,10 +117,10 @@ doMeasurementsDir
 
   setenv("PATH", new_path.c_str(), 1);
 
-  // Construct full paths for hpcproftt and hpcstruct
+  // Construct full paths for hpcproflm and hpcstruct
   //
-  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX)
-    + "/libexec/hpctoolkit/hpcproftt";
+  string hpcproflm_path = string(HPCTOOLKIT_INSTALL_PREFIX)
+    + "/libexec/hpctoolkit/hpcproflm";
 
   string hpcstruct_path = string(HPCTOOLKIT_INSTALL_PREFIX)
     + "/bin/hpcstruct";
@@ -194,7 +194,7 @@ doMeasurementsDir
 	   << "STHREADS = "     << small_threads << "\n"
 	   << "LJOBS = "        << jobs/pthreads << "\n"
 	   << "LTHREADS = "     << pthreads << "\n"
-	   << "PROFTT = "       << hpcproftt_path << "\n"
+	   << "PROFLM = "       << hpcproflm_path << "\n"
 	   << "STRUCT= "        << hpcstruct_path << "\n";
 
   if (!cache_path.empty()) {
