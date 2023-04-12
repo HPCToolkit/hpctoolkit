@@ -75,8 +75,10 @@ default:
 precommit:
   stage: lint
   tags: [docker, linux/amd64]
-  image: registry.gitlab.com/hpctoolkit/ci-images/selfcheck:amd64
+  image: docker.io/python:3.10-bullseye
   needs: []
+  before_script:
+  - python3 -m pip install pre-commit
   script:
   - pre-commit run --all-files --show-diff-on-failure
 
@@ -539,6 +541,7 @@ lint:
   - 'check semifresh amd64: [+rocm]'
   when: always
 
+  image: docker.io/python:3.11-alpine
   script:
   # Merge all the code quality results into a single file, for use by GitLab
   - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json

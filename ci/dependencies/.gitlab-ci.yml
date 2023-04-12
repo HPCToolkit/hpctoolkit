@@ -85,7 +85,7 @@
 'deps:mlp: [amd64]':
   stage: deps:prep
   tags: [docker]
-  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
+  image: docker.io/python:3.11-bullseye
   rules: !reference [.rebuild images, rules]
   needs:
   - 'deps:generate: [amd64]'
