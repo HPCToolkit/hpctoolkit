@@ -68,7 +68,6 @@ default:
 
   # By default, use a Docker runner with a late-model CI image
   tags: [docker]
-  image: registry.gitlab.com/hpctoolkit/ci-images/ubuntu20.04:latest
 
 
 # Pre-commit linting passes must pass for the pipeline to succeed
@@ -87,8 +86,18 @@ precommit:
 autoreconf:
   stage: validate
   tags: [docker, linux/amd64]
-  image: registry.gitlab.com/hpctoolkit/ci-images/hpct-devtools:amd64
-  needs: []
+  image: $DEPS_IMAGES-ubuntu20.04-amd64
+  needs:
+  - 'deps: [amd64]'
+  before_script: &autoconf
+  - export PATH=/spack/cenv/_autogen/view/bin:"$PATH"
+  - export AUTOCONF=/spack/cenv/_autogen/view/bin/autoconf
+  - export ACLOCAL=/spack/cenv/_autogen/view/bin/aclocal
+  - export AUTOHEADER=/spack/cenv/_autogen/view/bin/autoheader
+  - export AUTOM4TE=/spack/cenv/_autogen/view/bin/autom4te
+  - export AUTOMAKE=/spack/cenv/_autogen/view/bin/automake
+  - export LIBTOOLIZE=/spack/cenv/_autogen/view/bin/libtoolize
+  - export M4=/spack/cenv/_autogen/view/bin/m4
   script:
   - ./autogen > autogen.log
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
@@ -111,15 +120,17 @@ autoreconf:
 autoreconf check:
   stage: lint
   tags: [docker, linux/amd64]
-  image: registry.gitlab.com/hpctoolkit/ci-images/hpct-devtools:amd64
+  image: $DEPS_IMAGES-ubuntu20.04-amd64
   needs:
   - autoreconf
+  - 'deps: [amd64]'
 
   allow_failure: true
   variables:
     GIT_DEPTH: 100
   rules:
   - if: $CI_MERGE_REQUEST_TARGET_BRANCH_SHA
+  before_script: *autoconf
   script:
   - TARG="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_TARGET_BRANCH_SHA)"
   - SRC="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA)"
