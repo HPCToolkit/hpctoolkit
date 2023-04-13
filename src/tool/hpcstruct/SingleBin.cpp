@@ -299,7 +299,7 @@ doSingleBinary
 
   // if a cache is in use, ensure that the module path in the new .struct file is correct.
   //
-  if (use_cache == true ) {
+  if (error == 0 && use_cache == true) {
     string checkname_cmd = string("/bin/sh ") + string(HPCTOOLKIT_INSTALL_PREFIX) + "/libexec/hpctoolkit/renamestruct.sh "
         + args.in_filenm.c_str() + " " + hpcstruct_path.c_str();
 
@@ -345,7 +345,7 @@ doSingleBinary
       exit(1);
     }
 
-  }  // if (use_cache == true)
+  }  // if (error == 0 && use_cache == true)
 
   // Set cache usage status string
   const char * cache_stat_str;

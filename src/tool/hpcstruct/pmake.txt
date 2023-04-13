@@ -39,26 +39,13 @@ CACHE_ARGS = --nocache
 endif
 
 
-#*******************************************************************************
-# identify load modules to analyze
-#*******************************************************************************
-LM_DIR      = $(MEAS_DIR)/lm
-
 #-------------------------------------------------------------------------------
-# $(H): hpcrun file for all threads
+# create $(MEAS_DIR)/all.lm: a list of all load modules involved in the execution
 #-------------------------------------------------------------------------------
-H := $(wildcard $(MEAS_DIR)/*.hpcrun)
-
-#-------------------------------------------------------------------------------
-# $(L): load modules for hpcrun files
-#-------------------------------------------------------------------------------
-L := $(patsubst $(MEAS_DIR)/%.hpcrun,$(LM_DIR)/%.lm,$(H))
-
-#-------------------------------------------------------------------------------
-# create $(LM_DIR)/all.lm: a list of all load modules involved in the execution
-#-------------------------------------------------------------------------------
-$(LM_DIR)/all.lm: $(L)
-	cat $(L) | sort -u | grep -v libhpcrun | grep -v libmonitor | grep -v libxed | grep -v libpfm | grep -v libcuda | grep -v libcupti > $(LM_DIR)/all.lm
+$(MEAS_DIR)/all.lm:
+	@echo INFO: identifying load modules that need binary analysis
+	@echo
+	$(PROFLM) $(MEAS_DIR) > $(MEAS_DIR)/all.lm
 
 
 #*******************************************************************************
@@ -70,9 +57,9 @@ GPUBIN_USED_DIR  = $(MEAS_DIR)/gpubins-used
 #-------------------------------------------------------------------------------
 # create gpubins-used directory containing links to all GPU binaries used
 #-------------------------------------------------------------------------------
-$(GPUBIN_USED_DIR): $(LM_DIR)/all.lm
+$(GPUBIN_USED_DIR): $(MEAS_DIR)/all.lm
 	-@mkdir $(GPUBIN_USED_DIR) >&- 2>&-
-	-@cd $(GPUBIN_USED_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm | grep gpubin`; do ln -s $$i; done >&- 2>&-
+	-@cd $(GPUBIN_USED_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep gpubin`; do ln -s $$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------
 # $(GB): gpubin files
@@ -104,9 +91,9 @@ CPUBIN_DIR  = $(MEAS_DIR)/cpubins
 #-------------------------------------------------------------------------------
 # create cpubins directory containing links to all CPU binaries
 #-------------------------------------------------------------------------------
-$(CPUBIN_DIR): $(LM_DIR)/all.lm
+$(CPUBIN_DIR): $(MEAS_DIR)/all.lm
 	-@mkdir $(CPUBIN_DIR) >&- 2>&-
-	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm | grep -v gpubin`; do ln -s $$i; done >&- 2>&-
+	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(MEAS_DIR)/all.lm | grep -v gpubin`; do ln -s $$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------
 # $(CB): cpubin files
@@ -234,12 +221,6 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 #-------------------------------------------------------------------------------
 DOMAKE=1
 
-ifeq ($(L),)
-all:
-	echo ERROR: directory $(MEAS_DIR) does not contain any hpcrun measurement files
-DOMAKE=0
-endif
-
 ifeq ($(DOMAKE),1)
 all: $(CPUBIN_DIR) $(GPUBIN_USED_DIR)
 	$(MAKE) -j $(LJOBS) THREADS=$(LTHREADS) GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
@@ -247,13 +228,6 @@ all: $(CPUBIN_DIR) $(GPUBIN_USED_DIR)
 endif
 
 analyze: $(GS) $(CS)
-
-#-------------------------------------------------------------------------------
-# rule for listing load modules in hpcrun files
-#-------------------------------------------------------------------------------
-$(LM_DIR)/%.lm: $(MEAS_DIR)/%.hpcrun
-	-@mkdir $(LM_DIR) >&- 2>&-
-	$(PROFTT) -l $< > $@
 
 #-------------------------------------------------------------------------------
 # remove all generated files
@@ -264,7 +238,7 @@ clean:
 	@rm -f $(CS)
 	@echo removing all links to CPU binaries in $(CPUBIN_DIR)
 	@rm -rf $(CPUBIN_DIR)
-	@rm -rf $(LM_DIR)
+	@rm -rf $(MEAS_DIR)/all.lm
 	@echo removing all warnings files in $(STRUCTS_DIR)
 	@rm -f $(CW)
 	@rm -f $(GW)

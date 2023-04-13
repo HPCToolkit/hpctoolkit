@@ -24641,7 +24641,7 @@ launch_early_options="${srcdir}/config/launch-options"
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/extern/Makefile src/extern/libunwind/Makefile src/extern/lzma/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/prof/Makefile src/lib/profile/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile tests/Makefile tests/Makefile.spack tests2/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/extern/Makefile src/extern/libunwind/Makefile src/extern/lzma/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcproftt/Makefile src/tool/hpcproflm/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/prof/Makefile src/lib/profile/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile tests/Makefile tests/Makefile.spack tests2/Makefile"
 
 
 
@@ -26027,6 +26027,7 @@ do
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/Makefile" ;;
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
+    "src/tool/hpcproflm/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproflm/Makefile" ;;
     "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
     "src/tool/hpcrun/utilities/bgq-cnk/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/utilities/bgq-cnk/Makefile" ;;
     "src/tool/hpcserver/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/Makefile" ;;
