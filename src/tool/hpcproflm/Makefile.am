@@ -89,9 +89,6 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	-lstdc++fs
 
-# @HOST_HPCPROFLM_LDFLAGS@
-
-
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 
@@ -111,9 +108,6 @@ hpcproflm_LDFLAGS   = $(MYLDFLAGS) $(LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT)
 hpcproflm_LDADD     = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
-
-#install-exec-hook:
-#	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(bindir)/hpcproflm$(EXEEXT))
 
 
 #############################################################################

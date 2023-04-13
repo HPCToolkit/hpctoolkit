@@ -60,7 +60,6 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
-using std::cerr;
 using std::endl;
 
 #include <string>
@@ -107,7 +106,6 @@ static const char* usage_details =
      ;
 
 #define CLP CmdLineParser
-#define CLP_SEPARATOR "!!!"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
