@@ -1,5 +1,6 @@
 import dataclasses
 import functools
+import itertools
 import struct
 import typing
 
@@ -31,6 +32,29 @@ __all__ = [
 def scaled_range(start: int, cnt: int, step: int):
     for i in range(cnt):
         yield start + i * step
+
+
+class _Flex:
+    """Helper object to determine the offsets for a series of flex-fields."""
+
+    def __init__(self) -> None:
+        self._claimed: set[int] = set()
+
+    def allocate(self, size: int) -> int:
+        """Get the offset of the next flex-field in the packing order, with the given size."""
+        if size not in (1, 2, 4, 8):
+            raise ValueError(f"Unsupported size for flex-field: {size}")
+
+        for trial in itertools.count(0, size):
+            offsets = range(trial, trial + size)
+            if not any(offset in self._claimed for offset in offsets):
+                self._claimed |= set(offsets)
+                return trial
+        raise AssertionError
+
+    def size(self) -> int:
+        """Get the total span in bytes of the allocated flex-fields."""
+        return max(self._claimed) + 1 if self._claimed else 0
 
 
 @yaml_object
@@ -868,37 +892,15 @@ class Context(StructureBase):
         data = cls.__struct.unpack_file(version, file, offset)
         data["flags"] = cls.Flags.versioned_decode(version, data["flags"])
 
-        words: list[tuple[bytes, dict[int, list[bool]]]] = []
-
-        def mark_as_used(allocs, size, idx):
-            for subsz in (8, 4, 2, 1):
-                if subsz > size:
-                    continue
-                for i in range(idx * size // subsz, (idx + 1) * size // subsz):
-                    allocs[subsz][i] = True
+        flex = _Flex()
 
         def read_subfield(code):
             sz = struct.calcsize(code)
             assert sz in (8, 4, 2, 1)
-            word, idx = None, None
-
-            # If there's a word that has enough room to, use that
-            for w in words:
-                if not all(w[1][sz]):
-                    word = w
-                    idx = next(i for i, a in enumerate(word[1][sz]) if not a)
-                    break
-            else:
-                # Otherwise add a new word and work from there
-                word = (
-                    read_nbytes(file, 8, offset + cls.__flex_offset + 8 * len(words)),
-                    {8: [False], 4: [False] * 2, 2: [False] * 4, 1: [False] * 8},
-                )
-                words.append(word)
-                idx = 0
-
-            mark_as_used(word[1], sz, idx)
-            return struct.unpack(code, word[0][sz * idx : sz * (idx + 1)])[0]
+            field_off = flex.allocate(sz)
+            return struct.unpack(
+                code, read_nbytes(file, sz, offset + cls.__flex_offset + field_off)
+            )[0]
 
         data["function"] = None
         if cls.Flags.has_function in data["flags"]:
