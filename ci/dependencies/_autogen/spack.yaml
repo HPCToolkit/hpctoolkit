@@ -1,0 +1,18 @@
+spack:
+  concretizer:
+    unify: true
+
+  specs:
+  - autoconf @2.69
+  - automake @1.15.1
+  - libtool @2.4.6
+  - m4
+
+  view:
+    default:
+      root: view
+      link: run
+
+  # Reuse packages from the public buildcache whenever possible
+  mirrors:
+    develop: 's3://spack-binaries/develop'
