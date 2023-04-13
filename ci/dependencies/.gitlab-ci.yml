@@ -19,7 +19,7 @@
 'deps:generate':
   stage: deps:generate
   image:
-    name: registry.gitlab.com/hpctoolkit/ci-images/spack-fedora36:amd64
+    name: ghcr.io/spack/fedora37:latest
     entrypoint: ['spack-env']
   tags: [docker, linux/amd64]
   needs: []
@@ -59,12 +59,12 @@
     matrix:
     - IMAGE_NAME: ghcr.io/spack/leap15:latest
       IMAGE: leap15
-    - IMAGE_NAME: registry.gitlab.com/hpctoolkit/ci-images/spack-almalinux8:amd64
+    - IMAGE_NAME: ghcr.io/spack/almalinux8:latest
       IMAGE: almalinux8
     - IMAGE_NAME: ghcr.io/spack/ubuntu-focal:latest
       IMAGE: ubuntu20.04
-    - IMAGE_NAME: registry.gitlab.com/hpctoolkit/ci-images/spack-fedora36:amd64
-      IMAGE: fedora36
+    - IMAGE_NAME: ghcr.io/spack/fedora37:latest
+      IMAGE: fedora37
 
   script:
   # Rename the abstract environments to an OS/ARCH double for concretization
@@ -105,7 +105,7 @@
     matrix:
     # - IMAGE:
     #   - almalinux8
-    #   - fedora36
+    #   - fedora37
     - IMAGE_NAME: ghcr.io/spack/ubuntu-focal:latest
       IMAGE: ubuntu20.04
 
@@ -123,7 +123,7 @@
   script:
   - >-
     ci/dependencies/mlp ci.yml
-    spack-ci-artifacts/{almalinux8,fedora36,leap15,ubuntu20.04}-amd64/{_autogen,minimum,latest}/ci.yml
+    spack-ci-artifacts/{almalinux8,fedora37,leap15,ubuntu20.04}-amd64/{_autogen,minimum,latest}/ci.yml
   artifacts:
     paths:
     - ci.yml
