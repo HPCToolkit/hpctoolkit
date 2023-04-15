@@ -555,8 +555,6 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	-lstdc++fs
 
-
-# @HOST_HPCPROFLM_LDFLAGS@
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcproflm_SOURCES = $(MYSOURCES)
 hpcproflm_CFLAGS = $(MYCFLAGS)
@@ -956,9 +954,6 @@ endef
 	$(CXXCPP) $(MYCPPFLAGS_0_CC)  $< > $@
 
 #############################################################################
-
-#install-exec-hook:
-#	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(bindir)/hpcproflm$(EXEEXT))
 
 #############################################################################
 # Common rules
