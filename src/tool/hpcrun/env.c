@@ -75,3 +75,18 @@ hpcrun_get_env_bool(const char *name)
 
   return (atoi(str) != 0);
 }
+
+bool
+hpcrun_get_env_int(const char *name, int *result)
+{
+  if (name == NULL) { return false; }
+
+  char * str = getenv(name);
+
+  // not in environment
+  if (str == NULL) { return false; }
+
+  *result = atoi(str);
+
+  return true;
+}

@@ -53,7 +53,8 @@
 
 typedef enum hpcrun_trace_type_masks {
     HPCRUN_CPU_TRACE_FLAG = 1,
-    HPCRUN_GPU_TRACE_FLAG = 2
+    HPCRUN_GPU_TRACE_FLAG = 2,
+    HPCRUN_CPU_KERNEL_LAUNCH_TRACE_FLAG = 4
 } hpcrun_trace_type_masks_t;
 
 typedef enum hpcrun_trace_type {
@@ -84,5 +85,6 @@ int hpcrun_has_trace_metric();
 
 int hpcrun_cpu_trace_on();
 int hpcrun_gpu_trace_on();
+int hpcrun_cpu_kernel_launch_trace_on();
 
 #endif // hpcrun_trace_h

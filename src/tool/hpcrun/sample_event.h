@@ -104,6 +104,7 @@ hpcrun_sample_val_init(sample_val_t* x)
   x->trace_node = 0;
 }
 
+extern void hpcrun_trace_node(cct_node_t *node);
 
 extern sample_val_t hpcrun_sample_callpath(void *context, int metricId,
 		                   hpcrun_metricVal_t metricIncr,

@@ -634,7 +634,11 @@ ompt_target_callback_emi
   }
 #endif
 
+  // Must be under a safe region to prevent self interrupt
+  hpcrun_trace_node(target_node);
+
   hpcrun_safe_exit();
+
   td->overhead--;
 }
 

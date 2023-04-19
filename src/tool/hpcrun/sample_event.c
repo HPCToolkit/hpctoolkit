@@ -161,18 +161,60 @@ hpcrun_drop_sample(void)
   (*hpcrun_get_real_siglongjmp())(it->jb, 9);
 }
 
+static cct_node_t *
+hpcrun_trace_ip(ip_normalized_t leaf_ip, cct_node_t *parent, int metricId, uint64_t sampling_period)
+{
+  cct_node_t *trace_node = NULL;
+
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  bool trace_ok = ! td->deadlock_drop;
+  TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
+  if (trace_ok && hpcrun_trace_isactive() &&
+    td->core_profile_trace_data.id != TOOL_THREAD_ID) {
+    TMSG(TRACE, "Sample event encountered");
+
+    cct_addr_t frm;
+    memset(&frm, 0, sizeof(cct_addr_t));
+    frm.ip_norm = leaf_ip;
+
+    TMSG(TRACE,"parent node = %p, &frm = %p", parent, &frm);
+    cct_node_t* func_proxy =
+      hpcrun_cct_insert_addr(parent, &frm, true);
+
+    trace_node = func_proxy;
+
+    TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
+    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA, sampling_period);
+    TMSG(TRACE, "Appended func_proxy node to trace");
+  }
+
+  return trace_node;
+}
+
+void
+hpcrun_trace_node(cct_node_t *node)
+{
+  if (hpcrun_cpu_kernel_launch_trace_on()) {
+    cct_node_t *parent = hpcrun_cct_parent(node);
+    cct_addr_t *addr = hpcrun_cct_addr(node);
+
+#ifndef DATACENTRIC_TRACE
+    // needs a proper metric for a data-centric trace
+    int metricId = 0;
+    uint64_t sampling_period = UINT64_MAX;
+    hpcrun_trace_ip(addr->ip_norm, parent, metricId, sampling_period);
+#endif
+  }
+}
+
 
 sample_val_t
 hpcrun_sample_callpath(void* context, int metricId,
 		       hpcrun_metricVal_t metricIncr,
 		       int skipInner, int isSync, sampling_info_t *data)
 {
-  uint64_t sampling_period = 0;
-  int is_time_based_metric = 0;
-  if (data != NULL) {
-    sampling_period = data->sampling_period;
-    is_time_based_metric = data->is_time_based_metric;
-  }
+
 
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
@@ -285,25 +327,12 @@ hpcrun_sample_callpath(void* context, int metricId,
     leaf_ip = td->btbuf_beg->the_function;
   }
 
-  bool trace_ok = ! td->deadlock_drop;
-  TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
-  if (trace_ok && hpcrun_trace_isactive() && !isSync && is_time_based_metric > 0 &&
-    td->core_profile_trace_data.id != TOOL_THREAD_ID) {
-    TMSG(TRACE, "Sample event encountered");
-
-    cct_addr_t frm;
-    memset(&frm, 0, sizeof(cct_addr_t));
-    frm.ip_norm = leaf_ip;
-
-    TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
-    cct_node_t* func_proxy =
-      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm, true);
-
-    ret.trace_node = func_proxy;
-
-    TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
-    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA, sampling_period);
-    TMSG(TRACE, "Appended func_proxy node to trace");
+  if (!isSync) {
+    uint64_t sampling_period = data->sampling_period;;
+    int is_time_based_metric = data->is_time_based_metric;
+    if (is_time_based_metric > 0) {
+      ret.trace_node = hpcrun_trace_ip(leaf_ip, hpcrun_cct_parent(node), metricId, sampling_period);
+    }
   }
 
   hpcrun_clear_handling_sample(td);

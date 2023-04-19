@@ -107,7 +107,7 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
 //*********************************************************************
 
 static int tracing = 0;
-static int trace_suitable_metric = 0;
+static int trace_flags = 0;
 
 //*********************************************************************
 // interface operations
@@ -123,8 +123,11 @@ hpcrun_trace_isactive()
 void
 hpcrun_trace_init()
 {
-  tracing = hpcrun_get_env_bool(HPCRUN_TRACE);
-  TMSG(TRACE, "Tracing is %s", (tracing ? "ON" : "OFF"));
+  hpcrun_get_env_int(HPCRUN_TRACE, &tracing);
+  if (tracing > 1) {
+      hpcrun_set_trace_metric(HPCRUN_CPU_KERNEL_LAUNCH_TRACE_FLAG);
+  }
+  TMSG(TRACE, "Tracing is %s (%d)", (tracing ? "ON" : "OFF"), tracing);
 }
 
 void
@@ -332,7 +335,7 @@ hpcrun_set_trace_metric
   hpcrun_trace_type_masks_t m
 )
 {
-  trace_suitable_metric |= m;
+  trace_flags |= m;
 }
 
 int
@@ -340,7 +343,7 @@ hpcrun_has_trace_metric
 (
 )
 {
-  return (trace_suitable_metric > 0) ? 1 : 0;
+  return (trace_flags > 0) ? 1 : 0;
 }
 
 int
@@ -348,7 +351,7 @@ hpcrun_cpu_trace_on
 (
 )
 {
-  return (trace_suitable_metric & HPCRUN_CPU_TRACE_FLAG) ? 1 : 0;
+  return (trace_flags & HPCRUN_CPU_TRACE_FLAG) ? 1 : 0;
 }
 
 int
@@ -356,5 +359,14 @@ hpcrun_gpu_trace_on
 (
 )
 {
-  return (trace_suitable_metric & HPCRUN_GPU_TRACE_FLAG) ? 1 : 0;
+  return (trace_flags & HPCRUN_GPU_TRACE_FLAG) ? 1 : 0;
+}
+
+int
+hpcrun_cpu_kernel_launch_trace_on
+(
+
+)
+{
+  return (trace_flags & HPCRUN_CPU_KERNEL_LAUNCH_TRACE_FLAG) ? 1 : 0;
 }
