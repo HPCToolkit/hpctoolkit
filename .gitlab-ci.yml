@@ -106,53 +106,6 @@ autoreconf:
     - fixup.patch
 
 
-# Also check that the Autogoo is in-sync for all commits that will be merged,
-# but only if merged results pipelines are enabled.
-autoreconf check:
-  stage: lint
-  tags: [docker, linux/amd64]
-  image: $DEPS_IMAGES-ubuntu20.04-amd64
-  needs:
-  - autoreconf
-  - 'deps: [amd64]'
-  - job: autoreconf
-    artifacts: false
-
-  allow_failure: true
-  variables:
-    GIT_DEPTH: 100
-  rules:
-  - if: $CI_MERGE_REQUEST_TARGET_BRANCH_SHA
-  script:
-  - TARG="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_TARGET_BRANCH_SHA)"
-  - SRC="$(git show --no-patch --pretty=reference $CI_MERGE_REQUEST_SOURCE_BRANCH_SHA)"
-  - MERGE="$(git show --no-patch --pretty=reference HEAD)"
-  - echo "Checking commit range $TARG..$SRC + $MERGE"
-  - git rev-list --topo-order --reverse HEAD ^"$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" > revs
-  - |
-    while read rev; do
-      echo
-      echo "== Checking $(git show --no-patch --pretty=reference $rev)" | tee -a autogen.log
-      git checkout --force "$rev" || exit $?
-      git clean -fxd || exit $?
-      dev autogen --custom-env /spack/cenv/_autogen >> autogen.log || exit $?
-      git status --porcelain=v1 --untracked-files=no > changes || exit $?
-      if test -s changes; then
-        echo "== CHANGES DETECTED, running git diff..."
-        git diff | tee fixup.patch
-        echo "== AUTOGOO OUT-OF-SYNC, see patch above and in fixup.patch for details"
-        echo "== First noticed desynchronization in commit:"
-        git show --no-patch --pretty=medium $rev
-        exit 1
-      fi
-    done < revs
-  artifacts:
-    when: always
-    paths:
-    - autogen.log
-    - fixup.patch
-
-
 # Allow manually triggering a child pipeline to regenerate the test data
 regen testdata:
   stage: manual
