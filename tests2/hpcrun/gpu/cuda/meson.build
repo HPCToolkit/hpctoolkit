@@ -4,7 +4,7 @@ endif
 
 _tstexe_vecadd_cuda = executable('tstexe-vecadd-cuda', files('vecadd.cu'))
 
-_tst = configure_file(input: files('tst-produces-profiles'), output: '@PLAINNAME@.venv',
+_tst = configure_file(input: files('tst-produces-profiles-cuda'), output: '@PLAINNAME@.venv',
                       command: venv_shebang)
 test('Measurement of tstexe-vecadd-cuda produces profiles',
      _tst, args: [_tstexe_vecadd_cuda],
