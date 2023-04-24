@@ -5,18 +5,21 @@ _compile_options = {
   'opt': ['debug=false', 'optimization=3'],
 }
 
-_tst = find_program(files('tst-lexical-structure'))
+_tst = configure_file(input: files('tst-lexical-structure'), output: '@PLAINNAME@.venv',
+                      command: venv_shebang)
 foreach name, opt : _compile_options
   _has_debug = 'debug=true' in opt
   assert(_has_debug or 'debug=false' in opt)
-  test(f'Analysis of tstlib-inlines+loops-@name@ is lexically accurate', _tst, args: [
+  test(f'Analysis of tstlib-inlines+loops-@name@ is lexically accurate',
+       _tst, args: [
          shared_library(f'tstlib-inlines+loops-@name@', files('inlines+loops.c'),
                         build_by_default: false, override_options: opt),
          '--from', files('inlines+loops.c')] + (_has_debug ? [] : ['--debugless']),
        env: hpctoolkit_pyenv, suite: 'hpcstruct')
 endforeach
 
-_tst = find_program(files('tst-consistent'))
+_tst = configure_file(input: files('tst-consistent'), output: '@PLAINNAME@.venv',
+                      command: venv_shebang)
 foreach name, struct : testdata_struct_current
   _threads = [1, 16]
   _args = [struct.get('binary', {'binary': ''})['binary'], struct['structfile']]
@@ -38,8 +41,8 @@ foreach name, struct : testdata_struct_current
   endif
 
   foreach threads : _threads
-    test(f'Analysis of @name@ is consistent (-j@threads@@_suffix@)', _tst,
-         args: _args + [f'-j@threads@'],
+    test(f'Analysis of @name@ is consistent (-j@threads@@_suffix@)',
+         _tst, args: _args + [f'-j@threads@'],
          env: hpctoolkit_pyenv, suite: 'hpcstruct', is_parallel: '--skip' in _args or threads == 1,
     )
   endforeach
