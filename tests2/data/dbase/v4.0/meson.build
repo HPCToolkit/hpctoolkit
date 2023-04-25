@@ -1,7 +1,5 @@
 _testdata_dbase = {}
 
-_prof = find_program(files('prof'))
-
 _databases = {
   'small': {'yaml': true},
   'loops-cputime-t': {},
@@ -11,7 +9,7 @@ _databases = {
   'loops-hip-amd-t': {},
 }
 
-_extract_db = find_program(files('extract-db'))
+_prof = configure_file(input: files('prof'), output: '@PLAINNAME@.venv', command: venv_shebang)
 _root = testdata_root + 'dbase/v4.0/'
 foreach name, features : _databases
   _out_db = name+'.tar.xz'
@@ -34,7 +32,8 @@ foreach name, features : _databases
 
   # Extract the tarball at configure-time to make it easier to manage
   _extract_path = meson.current_build_dir() / f'@name@.d'
-  if run_command(_extract_db, files(_out_db), _extract_path, check: false).returncode() != 0
+  if run_command(venv_python, files('extract-db'), files(_out_db), _extract_path,
+                 check: false).returncode() != 0
     warning(f'Failed to extract @_root@@_out_db@, some tests may fail!')
   endif
 

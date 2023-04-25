@@ -1,6 +1,5 @@
 testdata_meas = {}
 
-_run = find_program(files('run'))
 _exe_small = executable('testmeas-small', files('small.c'),
     override_options: ['debug=true', 'optimization=0'])
 _exe_loops = executable('testmeas-loops', files('loops.c'),
@@ -11,6 +10,7 @@ _exe_loops_cuda = executable('testmeas-loops-cuda', files('loops.cu'),
 _exe_loops_hip = custom_target(output: 'testmeas-loops-hip', input: files('loops.hip.cpp'),
     command: hipcc_cmd)
 
+_run = configure_file(input: files('run'), output: '@PLAINNAME@.venv', command: venv_shebang)
 _measurements = {
   # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand
   # calling context tree. Good for debugging very bad problems.
@@ -45,8 +45,6 @@ _measurements = {
 }
 _xfails = []
 
-_extract_ms = find_program(files('extract-ms'))
-
 _root = testdata_root + 'meas/'
 foreach name, spec : _measurements
   _out = name+'.tar.xz'
@@ -60,7 +58,8 @@ foreach name, spec : _measurements
 
   # Extract the tarball at configure-time to make it easier to manage
   _extract_path = meson.current_build_dir() / f'@name@.m'
-  if run_command(_extract_ms, files(_out), _extract_path, check: false).returncode() != 0
+  if run_command(venv_python, files('extract-ms'), files(_out), _extract_path,
+                 check: false).returncode() != 0
     warning(f'Failed to extract @_root@@_out@, some tests may fail!')
   endif
 
