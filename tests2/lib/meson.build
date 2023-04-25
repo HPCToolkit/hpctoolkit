@@ -1,4 +1,4 @@
-subdir('python/hpctoolkit')
+subdir('python')
 
 # Running thread-disruptive <command>... will run the command in an environment where only a single
 # random thread is available to the command. Note that this uses affinity, so the command may run
