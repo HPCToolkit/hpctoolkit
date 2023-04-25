@@ -2,7 +2,6 @@ select = [
   "F",  # Pyflakes
   "E", "W",  # pycodestyle
   "C90",  # mccabe
-  "I",  # isort
 
   # pydocstyle
   "D200", "D201", "D202", "D206", "D207", "D208", "D209", "D210", "D212",
