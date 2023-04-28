@@ -53,6 +53,9 @@ ci:
       - spack config add 'config:install_tree:root:${CI_PROJECT_DIR}/.spack-install/'
       - spack uninstall -yf "$SPACK_JOB_SPEC_PKG_NAME /$SPACK_JOB_SPEC_DAG_HASH" || true
 
+      # Copy the common configuration bits into the user config scope
+      - find ci/dependencies/config/ -name '*.yaml' -exec spack config add -f {} \;
+
       # Load the Spack shell support
       - . "$SPACK_ROOT"/share/spack/setup-env.sh
 

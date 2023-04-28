@@ -37,11 +37,10 @@ parse_containerfile() {
 }
 parse_containerfile "$CI_PROJECT_DIR"/ci/containers/"$image"/Containerfile.in || exit $?
 
-# Hash the installed Spack environments, possibly with concrete forms
-hash_rename "$CI_PROJECT_DIR"/ci/dependencies/latest/spack.yaml \
-  /spack/cenv/latest/spack.yaml >> "$tmp" || exit $?
-hash_rename "$CI_PROJECT_DIR"/ci/dependencies/minimum/spack.yaml \
-  /spack/cenv/minimum/spack.yaml >> "$tmp" || exit $?
+# Hash the installed ./dev scriptsuite, which includes all the dependencies and such
+(cd "$CI_PROJECT_DIR"/lib/dev && find . -type f) | while read -r fn; do
+  hash_rename "$CI_PROJECT_DIR"/lib/dev/"$fn" /src/dev/"$fn" >> "$tmp" || exit $?
+done
 
 # Checksum the checksum file to generate the final checksum
 echo -n 'sha256:'
