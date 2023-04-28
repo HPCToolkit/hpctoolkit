@@ -644,6 +644,8 @@ my_pkglibdir
 OPT_ENABLE_TESTS2_FALSE
 OPT_ENABLE_TESTS2_TRUE
 MESON_ENV
+MESON_NATIVE_FILE
+MESON
 OPT_ENABLE_VG_ANNOTATIONS_FALSE
 OPT_ENABLE_VG_ANNOTATIONS_TRUE
 VALGRIND_IFLAGS
@@ -1116,7 +1118,9 @@ CXX17_FLAG
 MPICXX
 MPICC
 MPIF77
-MPI_INC'
+MPI_INC
+MESON
+MESON_NATIVE_FILE'
 
 
 # Initialize some variables set by options.
@@ -1883,6 +1887,9 @@ Some influential environment variables:
   MPICC       MPI C compiler for MPI wrapper support
   MPIF77      MPI Fortran compiler for MPI wrapper support
   MPI_INC     MPI include directory for MPI wrapper support
+  MESON       Path to the Meson executable
+  MESON_NATIVE_FILE
+              Path to a native file to pass to Meson
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -24495,6 +24502,9 @@ fi
 
 
 if test "$enable_tests2" = yes; then
+
+  if test -z "$MESON"; then MESON=meson; fi
+
   # FIXME: Meson assumes that all dependencies are in the "environment," but the
   # Autogoo here is built around prefix-paths. So to make everything consistent
   # we have to fiddle with the environment Meson sees so that it finds the right
@@ -24513,7 +24523,11 @@ if test "$enable_tests2" = yes; then
     MESON_ENV="$MESON_ENV CUDA_PATH=\"$CUDA\" PATH=\"$CUDA/bin:\$\$PATH\""
   fi
 
-  meson_args="-Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_NOOPT_CFLAGS}'"
+
+  if test -n "$MESON_NATIVE_FILE"; then
+  meson_args="--native-file $MESON_NATIVE_FILE"
+  fi
+  meson_args="${meson_args} -Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_NOOPT_CFLAGS}'"
   meson_args="${meson_args} -Dcpp_args='${CXXFLAGS} ${HOST_NOOPT_CXXFLAGS}'"
   meson_args="${meson_args} -Dcuda_args='${CUDAFLAGS}' -Dcuda_ccbindir='${CXX}'"
   if test "$OPT_ENABLE_DEVELOP" = yes
@@ -24537,11 +24551,11 @@ if test "$enable_tests2" = yes; then
   else meson_args="${meson_args} -Dpython=false"
   fi
 
-  eval echo "$meson_env" meson "$meson_args"
+  eval echo "$meson_env" "$MESON" "$meson_args"
 
-  if ! { test -d tests2-build/ && eval "$meson_env" meson setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
+  if ! { test -d tests2-build/ && eval "$meson_env" "$MESON" setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
     rm -rf tests2-build/
-    if ! eval "$meson_env" meson setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
+    if ! eval "$meson_env" "$MESON" setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
       as_fn_error $? "Error configuring test suite, meson setup failed!" "$LINENO" 5
     fi
   fi

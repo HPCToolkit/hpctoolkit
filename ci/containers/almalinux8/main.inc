@@ -22,6 +22,7 @@ RUN yum install -y epel-release shadow-utils \
     patchelf \
     perl-open \
     python3 \
+    python3-devel \
     subversion \
     tar \
     unzip \
@@ -44,3 +45,4 @@ RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
   && python3 /tmp/get-pip.py && rm /tmp/get-pip.py
 
 INCLUDE ../spack-bootstrap.inc
+INCLUDE ../finalize.inc

@@ -16,26 +16,23 @@ INCLUDE spack-bootstrap.inc
 # *did* update we get an updated Spack, instead of whatever stale thing might
 # be in the layer cache.
 
-# /_autogen/: Required versions for the Autotools and such
-COPY --from=envs _autogen/spack.yaml /spack/cenv/_autogen/
-COPY --from=cenvs _autogen/spack.lock /spack/cenv/_autogen/
+# /_autogen/: Standard tools used to form the Autogoo stashed in the repository
+COPY --from=cenv _autogen/spack.yaml _autogen/spack.lock /spack/cenv/_autogen/
 RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
   git -C $SPACK_ROOT pull --ff-only \
   && $SPACK_ROOT/bin/spack --env /spack/cenv/_autogen install --use-buildcache=only --no-check-signature --fail-fast
-COPY --from=envs _autogen/spack.yaml /spack/cenv/_autogen/
+COPY --from=cenv _autogen/spack.yaml /spack/cenv/_autogen/
 
 # /minimum/: Minimum supported versions of dependencies
-COPY --from=envs minimum/spack.yaml /spack/cenv/minimum/
-COPY --from=cenvs minimum/spack.lock /spack/cenv/minimum/
+COPY --from=cenv minimum/spack.yaml minimum/spack.lock minimum/dev.json /spack/cenv/minimum/
 RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
   git -C $SPACK_ROOT pull --ff-only \
   && $SPACK_ROOT/bin/spack --env /spack/cenv/minimum install --use-buildcache=only --no-check-signature --fail-fast
-COPY --from=envs minimum/spack.yaml /spack/cenv/minimum/
+COPY --from=cenv minimum/spack.yaml /spack/cenv/minimum/
 
 # /latest/: Latest available versions of dependencies
-COPY --from=envs latest/spack.yaml /spack/cenv/latest/
-COPY --from=cenvs latest/spack.lock /spack/cenv/latest/
+COPY --from=cenv latest/spack.yaml latest/spack.lock latest/dev.json /spack/cenv/latest/
 RUN --mount=type=secret,id=buildcache,target=/root/.spack/mirrors.yaml \
   git -C $SPACK_ROOT pull --ff-only \
   && $SPACK_ROOT/bin/spack --env /spack/cenv/latest install --use-buildcache=only --no-check-signature --fail-fast
-COPY --from=envs latest/spack.yaml /spack/cenv/latest/
+COPY --from=cenv latest/spack.yaml /spack/cenv/latest/

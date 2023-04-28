@@ -42,12 +42,10 @@ stages:
   after_script:
   - ccache --zero-stats
   script:
-  - touch img-config
   # Generate a new batch of test data, saved to the logs/ dir
   - >-
-    python3 -m ci.buildfe -l "logs/$CI_JOB_NAME" -a fresh-testdata-"$SUITE"
-    img-config "ci/dependencies/latest;/spack/cenv/latest"
-    --spack-no-install --fail-fast -1s "$SPEC"
+    dev buildfe -d /spack/cenv/latest -- -l "logs/$CI_JOB_NAME" -a fresh-testdata-"$SUITE"
+    --fail-fast "${BUILD_ARGS[@]}" -1s "$SPEC"
   - mv logs/"$CI_JOB_NAME"/*/fresh-"$SUITE".tar.xz logs/fresh-"$SUITE".tar.xz
 
   artifacts:
@@ -103,7 +101,7 @@ stages:
   before_script:
   - !reference [.regen job, before_script]
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda' > img-config
+  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 
 'sw-cuda':
   extends: .regen job
@@ -119,7 +117,7 @@ stages:
   before_script:
   - !reference [.regen job, before_script]
   # Pull CUDA from the image itself
-  - echo '--with-cuda=/usr/local/cuda' > img-config
+  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 
 'amd':
   extends: .regen job
@@ -135,7 +133,7 @@ stages:
   before_script:
   - !reference [.regen job, before_script]
   # Pull ROCm from the image itself
-  - echo '--with-rocm=/opt/rocm' > img-config
+  - BUILD_ARGS=( -C--with-rocm=/opt/rocm )
 
 
 package:

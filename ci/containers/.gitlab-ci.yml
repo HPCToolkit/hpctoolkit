@@ -8,7 +8,7 @@
   rules: !reference [.rebuild images, rules]
   retry: 2
   needs:
-  - 'deps:generate: [amd64]'
+  - 'deps:concretize: [amd64]'
   - 'deps:build amd64'
   variables:
     ARCH: amd64
@@ -51,8 +51,8 @@
   - >-
     bdah build
     --secret id=buildcache,src="$SBCACHE_YAML"
-    --build-context envs=ci/dependencies/
-    --build-context cenvs=ci/dependencies/c/$BASE/$ARCH/
+    --build-context lib=lib/
+    --build-context cenv=cenv/$BASE-$ARCH/
     --label edu.rice.hpctoolkit.ci.spec="$(cat spec.cksum)"
     --tag "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH" --arch $ARCH
     --layers --cache-from "$CI_REGISTRY_IMAGE/cache" --cache-to "$CI_REGISTRY_IMAGE/cache"
@@ -69,7 +69,7 @@
   extends: 'deps:package: [amd64]'
   tags: [docker, linux/arm64]
   needs:
-  - 'deps:generate: [arm64]'
+  - 'deps:concretize: [arm64]'
   - 'deps:build arm64'
   variables:
     ARCH: arm64

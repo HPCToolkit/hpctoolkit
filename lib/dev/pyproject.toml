@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "hpctoolkit_dev"
+version = "0.1.0"
+description = "Developer scriptsuite for HPCToolkit"
+authors = ["Jonathon Anderson <janderson@rice.edu>"]
+license = "BSD-3-Clause"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+click = "^8.1.3"
+ruamel-yaml = "^0.17.21"
+yaspin = "^2.3.0"
+
+[tool.poetry.scripts]
+dev = "hpctoolkit_dev.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
