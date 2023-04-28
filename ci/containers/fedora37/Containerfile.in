@@ -1,6 +1,6 @@
-# Dockerfile for CI image for Fedora 36
+# Dockerfile for CI image for Fedora 37
 
-FROM registry.fedoraproject.org/fedora:36
+FROM registry.fedoraproject.org/fedora:37
 ARG TARGETARCH
 
 # Install all the packages required:

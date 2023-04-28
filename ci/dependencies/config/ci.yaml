@@ -8,10 +8,10 @@ ci:
       before_script:: []
 
   - submapping:
-    - match: ['os=fedora36']
+    - match: ['os=fedora37']
       build-job:
         image:
-          name: registry.gitlab.com/hpctoolkit/ci-images/spack-fedora36:amd64
+          name: ghcr.io/spack/fedora37:latest
           entrypoint: ['spack-env']
     - match: ['os=opensuse15']
       build-job:
@@ -21,7 +21,7 @@ ci:
     - match: ['os=almalinux8']
       build-job:
         image:
-          name: registry.gitlab.com/hpctoolkit/ci-images/spack-almalinux8:amd64
+          name: ghcr.io/spack/almalinux8:latest
           entrypoint: ['spack-env']
     - match: ['os=ubuntu20.04']
       build-job:
