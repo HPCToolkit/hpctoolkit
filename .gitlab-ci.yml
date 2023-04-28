@@ -205,8 +205,8 @@ regen testdata:
     - IMAGE_BASE: ubuntu20.04
       JOB_CC: [gcc-9, gcc-10, clang-10]
 
-    - IMAGE_BASE: fedora36
-      JOB_CC: [gcc=12, clang=14]
+    - IMAGE_BASE: fedora37
+      JOB_CC: [gcc=12, clang=15]
   variables:
     SPEC: '~cuda ~rocm ~level0 !debug (tests2 mpi papi opencl python)[~<1]'
 'buildmany: [arm64]':
