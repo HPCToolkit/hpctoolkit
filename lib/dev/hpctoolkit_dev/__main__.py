@@ -381,11 +381,10 @@ Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 @NamedEnv.pass_env(exists=True, help_verb="Run within")
 def env(devenv: Env, command: collections.abc.Sequence[str]) -> None:
-    """Run COMMAND within a devenv.
+    """Run COMMAND (interactive shell by default) within a devenv.
 
-    The COMMAND will run with the devenv loaded and under `meson devenv`. If no command is given,
-    the default is to run a shell. The working directory of the COMMAND (or shell) will the build
-    directory for the environment.
+    The working directory of the COMMAND (or shell) will the build directory for the environment, if
+    it exists.
     """
     env = DevEnv.restore(devenv.root)
 
@@ -406,13 +405,14 @@ You are now entering a devenv shell. Some quick notes:
             $ . {shlex.quote(str(spack_setup))}
             $ spack env activate {shlex.quote(str(env.root))}
     3. You will be automatically placed in the build directory of
-        this devenv.
+        this devenv, if it exists.
 """,
             nl=False,
         )
 
     with env.activate():
-        os.chdir(env.builddir)
+        if env.builddir.exists():
+            os.chdir(env.builddir)
         if not command:
             shell = Path(os.environ.get("SHELL", "/bin/sh")).resolve()
             os.execl(shell, shell)

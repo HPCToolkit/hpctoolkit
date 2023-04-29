@@ -20,17 +20,17 @@ __all__ = ("AutogenEnv", "DevEnv")
 class AutogenEnv(SpackEnv):
     """Variant of a SpackEnv for the ./autogen environment."""
 
+    _AUTOCONF_SPEC: typing.ClassVar[VerConSpec] = VerConSpec("autoconf @2.69")
     _SPECS: typing.ClassVar[frozenset[VerConSpec]] = frozenset(
         {
-            VerConSpec("autoconf @2.69"),
+            _AUTOCONF_SPEC,
             VerConSpec("automake @1.15.1"),
             VerConSpec("libtool @2.4.6"),
         }
     )
-    packages: typing.ClassVar[frozenset[str]] = frozenset(s.package for s in _SPECS)
 
     def load_all(self) -> ShEnv:
-        return self.load(*self.packages)
+        return self.load(*self._SPECS)
 
     def environ(self) -> ShEnv:
         overlay = {
@@ -49,7 +49,7 @@ class AutogenEnv(SpackEnv):
 
     @property
     def autoreconf(self) -> Command:
-        return self.which("autoreconf", "autoconf")
+        return self.which("autoreconf", self._AUTOCONF_SPEC)
 
     def generate(self) -> None:
         self.generate_explicit(self._SPECS, DependencyMode.ANY)
@@ -216,12 +216,8 @@ class DevEnv(SpackEnv):
 
         return result
 
-    @property
-    def packages(self) -> set[str]:
-        return {s.package for s in self._specs if self.has_package(s.package)}
-
     def load_all(self) -> ShEnv:
-        return self.load(*self.packages)
+        return self.load(*self._specs, allow_missing_when=True)
 
     def generate(self, mode: DependencyMode) -> None:
         self.generate_explicit(self._specs, mode)

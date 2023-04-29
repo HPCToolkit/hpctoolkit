@@ -7,7 +7,6 @@ import json
 import os
 import re
 import shutil
-import stat
 import subprocess
 import textwrap
 import typing
@@ -67,6 +66,13 @@ class VerConSpec:
 
     def __str__(self) -> str:
         return f"{self._spec} {self.version_spec}" if self._versions else self._spec
+
+    def version_ok(self, version: Version) -> bool:
+        """Determine whether the given version is supported based on the constraints."""
+        for bot, top in self._versions:
+            if (not bot or bot <= version) and (not top or version <= top):
+                return True
+        return not self._versions
 
     @functools.cached_property
     def minimum_version(self) -> Version | None:
@@ -162,6 +168,12 @@ def resolve_specs(
     return result
 
 
+if os.environ.get("CI") == "true":
+    UPDATE_MSG = "\n  In CI: the reused merge-base image is out-of-date. Try updating the branch."
+else:
+    UPDATE_MSG = ""
+
+
 class SpackEnv:
     """Abstraction for a single managed Spack environment."""
 
@@ -187,31 +199,53 @@ class SpackEnv:
         )
 
     @functools.cached_property
-    def _lock_data(self) -> tuple[dict[str, str], dict[str, list[dict]]]:
+    def _lock_data(self) -> tuple[dict[str, str], dict[str, Version], dict[str, list[dict]]]:
         with open(self.root / "spack.lock", encoding="utf-8") as f:
             data = json.load(f)
         chashes: dict[str, str] = {
             VerConSpec.extract_package(r["spec"]): r["hash"] for r in data["roots"]
         }
+        versions: dict[str, Version] = {
+            k: Version(v["version"]) for k, v in data["concrete_specs"].items()
+        }
         specgraph: dict[str, list[dict]] = {
             k: v.get("dependencies", []) for k, v in data["concrete_specs"].items()
         }
-        return chashes, specgraph
+        return chashes, versions, specgraph
 
     @property
     def _chashes(self) -> dict[str, str]:
         return self._lock_data[0]
 
     @property
-    def _specgraph(self) -> dict[str, list[dict]]:
+    def _versions(self) -> dict[str, Version]:
         return self._lock_data[1]
+
+    @property
+    def _specgraph(self) -> dict[str, list[dict]]:
+        return self._lock_data[2]
 
     def has_package(self, pkg: str) -> bool:
         return pkg in self._chashes
 
-    def load(self, *pkgs: str) -> ShEnv:
+    def load(self, *specs: VerConSpec, allow_missing_when: bool = False) -> ShEnv:
         hashes: set[str] = set()
-        q = [self._chashes[p] for p in pkgs]
+        q = []
+
+        for s in specs:
+            h = self._chashes.get(s.package)
+            if h is None:
+                if s.when and allow_missing_when:
+                    continue
+                raise click.ClickException(
+                    f"Environment /{self.root.name} is missing concretization for expected package: {s.package}{UPDATE_MSG}"
+                )
+            if not s.version_ok(self._versions[h]):
+                raise click.ClickException(
+                    f"Environment /{self.root.name} contains bad concretization for spec: {s}{UPDATE_MSG}"
+                )
+            q.append(h)
+
         while q:
             nexthash = q.pop()
             if nexthash not in hashes:
@@ -222,7 +256,7 @@ class SpackEnv:
         return Spack.get().load(*["/" + h for h in hashes])
 
     def load_all(self) -> ShEnv:
-        return self.load(*self._chashes.keys())
+        return self.load(*[VerConSpec(p) for p in self._chashes])
 
     def prefix(self, pkg: str) -> Path:
         return Spack().get().get_prefix(f"{pkg}/{self._chashes[pkg]}", spack_env=self.root)
@@ -295,43 +329,16 @@ class SpackEnv:
             raise click.ClickException(f"spack install failed with code {e.returncode}") from e
 
     def which(
-        self, command: str, pkg: str | None = None, *, check_arg: str | None = "--version"
+        self, command: str, spec: VerConSpec | None = None, *, check_arg: str | None = "--version"
     ) -> Command:
-        path = (self.load(pkg) if pkg is not None else self.load_all())["PATH"]
+        path = (self.load(spec) if spec is not None else self.load_all())["PATH"]
         cmd = shutil.which(command, path=path)
         if cmd is None:
             raise RuntimeError(f"Unable to find {command} in path {path}")
         if cmd == shutil.which(command):
-            raise RuntimeError(f"Command {command} was not provided by package {pkg!r}")
+            raise RuntimeError(f"Command {command} was not provided by {spec!r}")
 
         result = Command(cmd)
-        if check_arg is not None:
-            result(check_arg, output=False)
-
-        return result
-
-    def wrap(
-        self, command: str, main_pkg: str, *pkgs: str, check_arg: str | None = "--version"
-    ) -> Command:
-        shenv = self.load(main_pkg, *pkgs)
-        path = shenv["PATH"]
-        cmd = shutil.which(command, path=path)
-        if cmd is None:
-            raise RuntimeError(f"Unable to find {command} in path {path}")
-        if cmd == shutil.which(command):
-            raise RuntimeError(
-                f"Command {command} was not provided by package(s) {[main_pkg, *pkgs]}"
-            )
-
-        output = self.root / f"{main_pkg}-{command}"
-        with open(output, "w", encoding="utf-8") as f:
-            f.write("#!/bin/sh\n")
-            f.write(re.sub(r"export (PYTHONPATH)=", r'export \1="$\1":', shenv.raw))
-            f.write("\n")
-            f.write(f'exec {cmd} "$@"\n')
-        output.chmod(output.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-        result = Command(output)
         if check_arg is not None:
             result(check_arg, output=False)
 

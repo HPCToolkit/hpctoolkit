@@ -61,6 +61,14 @@ default:
   tags: [docker]
 
 
+# Many jobs need a working copy of the ./dev scriptsuite. This job handles setting it up.
+.dev job:
+  extends: .image job
+  before_script:
+  - /opt/dev_venv/bin/python3 -m pip install --require-virtualenv lib/dev/
+  - export PATH=/opt/dev_venv/bin/:"$PATH"
+
+
 # Pre-commit linting passes must pass for the pipeline to succeed
 precommit:
   stage: lint
@@ -105,9 +113,20 @@ precommit:
     "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"
 
 
+# The two devenvs must be consistent with the current version of the ./dev scriptsuite.
+deps check:
+  extends: [.image job amd64, .dev job]
+  stage: validate
+  variables:
+    OS_BASE: ubuntu20.04
+  script:
+  - dev env -d /spack/cenv/latest echo OK
+  - dev env -d /spack/cenv/minimum echo OK
+
+
 # The Autogoo for the HEAD commit (at least) must be in-sync before we build
 autoreconf:
-  extends: .image job amd64
+  extends: [.image job amd64, .dev job]
   stage: validate
   variables:
     OS_BASE: ubuntu20.04
@@ -156,6 +175,8 @@ regen testdata:
     - .ccache/
 
   needs:
+  - job: deps check
+    artifacts: false
   - job: autoreconf
     artifacts: false
 
@@ -178,10 +199,10 @@ regen testdata:
   - ccache --zero-stats
 
 .build job amd64:
-  extends: [.image job amd64, .build job]
+  extends: [.image job amd64, .dev job, .build job]
   needs: [!reference [.image job amd64, needs], !reference [.build job, needs]]
 .build job arm64:
-  extends: [.image job arm64, .build job]
+  extends: [.image job arm64, .dev job, .build job]
   needs: [!reference [.image job arm64, needs], !reference [.build job, needs]]
 
 

@@ -36,6 +36,8 @@ stages:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   before_script:
+  - /opt/dev_venv/bin/python3 -m pip install --require-virtualenv lib/dev/
+  - export PATH=/opt/dev_venv/bin/:"$PATH"
   - ccache --zero-stats
   after_script:
   - ccache --zero-stats
