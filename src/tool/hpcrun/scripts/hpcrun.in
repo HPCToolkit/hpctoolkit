@@ -523,7 +523,7 @@ do
 
 	-L | -l | --list-events )
            if test "${ROCM_PATH}/lib/rocprofiler/metrics.xml"x != x ; then
-	        export HSA_TOOLS_LIB=librocprofiler64.so.1
+	        export HSA_TOOLS_LIB=librocprofiler64.so
 	        export ROCP_TOOL_LIB=libhpcrun.so
 		export ROCP_METRICS="${ROCM_PATH}/lib/rocprofiler/metrics.xml"
             fi
