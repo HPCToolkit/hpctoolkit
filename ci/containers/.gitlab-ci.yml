@@ -15,7 +15,7 @@
   parallel:
     matrix:
     # Base CI images
-    - BASE: [leap15, almalinux8, ubuntu20.04, fedora36]
+    - BASE: [leap15, almalinux8, ubuntu20.04, fedora37]
     # CI images including the CUDA Toolkit
     - BASE: almalinux8
       EXT: [cuda10.2]
@@ -28,55 +28,39 @@
     - BASE: ubuntu20.04
       EXT: [lvlz2022.2, lvlz2022.3.1, lvlz2023.0.0]
   cache:
-  - key: spack-bincache-$BASE:$ARCH
-    when: always
+  - key: buildah-$BASE:$ARCH
     paths:
-    - .spack-bincache-shared/
-  - key: spack-bincache-$BASE:$ARCH-$CI_COMMIT_REF_SLUG
-    when: always
-    paths:
-    - .spack-bincache-nonprotected/
+    - .buildah-cache/
+
   before_script:
+  # Log into the registry
   - sudo -u build buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   - IMAGE=$BASE${EXT:+-}$EXT
+  # Set up the cache and commands
+  - mkdir -p .buildah-cache/
+  - chown -R build:build .buildah-cache/
+  - ln -s $CI_PROJECT_DIR/.buildah-cache/ /var/tmp/buildah-cache-$(id -u build)
+  - bdah() { sudo -Eu build buildah "$@"; }
+
   script:
-  # Configure this Spack instance with the buildcache mirrors.
-  # This is temporary and won't persist into the final images
-  - mkdir .spack-config/
-  - ci/dependencies/spack-bc-downstream.sh > .spack-config/mirrors.yaml
-  - |
-    cat > .spack-config/config.yaml <<EOF
-    config:
-      local_binary_cache:
-      - prefixes: ['${SBCACHE_URL}/nonprotected']
-        root: '/cache/spack-bincache-nonprotected/'
-      - root: '/cache/spack-bincache-shared/'
-    EOF
-
-  # Make sure the rootless user and container will be able to access everything
-  - mkdir -p .spack-bincache-shared/ .spack-bincache-nonprotected/
-  - chown -R build:build .spack-bincache-shared/ .spack-bincache-nonprotected/
-
   # Generate the checksums for the final image
   - ci/containers/gen-cksum $IMAGE:$ARCH > spec.cksum
 
   # Build the image we want to use in CI
   - ci/containers/expand-includes ci/containers/$IMAGE/Containerfile.in > ci/containers/$IMAGE/Containerfile
   - >-
-    sudo -u build buildah build --isolation chroot
-    --secret id=buildcache,src=.spack-config/mirrors.yaml
-    --secret id=buildcache_config,src=.spack-config/config.yaml
+    bdah build
+    --secret id=buildcache,src="$SBCACHE_YAML"
     --build-context envs=ci/dependencies/
     --build-context cenvs=ci/dependencies/c/$BASE/$ARCH/
-    --build-context buildcache_cache=.spack-bincache-shared/
-    --build-context buildcache_cache_nonprot=.spack-bincache-nonprotected/
     --label edu.rice.hpctoolkit.ci.spec="$(cat spec.cksum)"
     --tag "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH" --arch $ARCH
+    --layers --cache-from "$CI_REGISTRY_IMAGE/cache" --cache-to "$CI_REGISTRY_IMAGE/cache"
     ci/containers/$IMAGE
 
   # Push up the built image
   - >-
-    sudo -u build buildah push --digestfile "$IMAGE-$ARCH.digest"
+    bdah push --digestfile "$IMAGE-$ARCH.digest"
     "$CI_REGISTRY_IMAGE/ci:${CI_PIPELINE_ID}-${CI_COMMIT_REF_SLUG}-$IMAGE-$ARCH"
   artifacts:
     paths:
@@ -111,7 +95,7 @@
     optional: true
   variables:
     IMGSPECS: >-
-      leap15:amd64 almalinux8:amd64 ubuntu20.04:amd64 fedora36:amd64
+      leap15:amd64 almalinux8:amd64 ubuntu20.04:amd64 fedora37:amd64
       almalinux8-cuda10.2:amd64 ubuntu20.04-cuda11.8.0:amd64 ubuntu20.04-cuda12.0.1:amd64
       ubuntu20.04-rocm5.1.3:amd64 ubuntu20.04-rocm5.2.3:amd64 ubuntu20.04-rocm5.3.2:amd64 ubuntu20.04-rocm5.4.2:amd64
       ubuntu20.04-lvlz2022.2:amd64 ubuntu20.04-lvlz2022.3.1:amd64 ubuntu20.04-lvlz2023.0.0:amd64

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import ruamel.yaml
 
-y = ruamel.yaml.YAML(typ="safe")
+y = ruamel.yaml.YAML(typ="rt")
 
 parser = argparse.ArgumentParser(
     description="Generate a Multi-Level Pipeline for the given pipelines"
