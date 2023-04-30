@@ -27,15 +27,6 @@ include:
 # Jobs for constructing the container images used in CI
 - local: ci/containers/.gitlab-ci.yml
 
-.rebuild images:
-  rules:
-  - if: $CI_COMMIT_REF_PROTECTED == "true"
-  - if: '$CI_MERGE_REQUEST_LABELS =~ /ci: rebuild images/'
-  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    changes:
-    - ci/containers/**/*
-    - lib/dev/**/*
-
 
 variables:
   # Most jobs don't needs submodules, those that do will override this.
@@ -70,6 +61,14 @@ default:
   tags: [docker]
 
 
+# Many jobs need a working copy of the ./dev scriptsuite. This job handles setting it up.
+.dev job:
+  extends: .image job
+  before_script:
+  - /opt/dev_venv/bin/python3 -m pip install --require-virtualenv lib/dev/
+  - export PATH=/opt/dev_venv/bin/:"$PATH"
+
+
 # Pre-commit linting passes must pass for the pipeline to succeed
 precommit:
   stage: lint
@@ -82,13 +81,55 @@ precommit:
   - pre-commit run --all-files --show-diff-on-failure
 
 
+# Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
+# Failures are allowed so that if the dependencies or build flags shift, we are made aware (by a
+# big orange exclaimation point) but not blocked by upstream Spack.
+'spack install: [amd64]':
+  extends: .image job amd64
+  stage: lint
+  variables:
+    OS_BASE: ubuntu20.04
+  allow_failure: true
+  cache:
+    key: spack
+    when: always
+    paths: [.spack.git]
+  script:
+  # Instantiate a fresh Spack develop (instead of whatever is burned into the image)
+  - |
+    if [ ! -d .spack.git ]; then
+      git clone --depth=30 --single-branch --no-tags --branch=develop --bare \
+        https://github.com/spack/spack.git .spack.git || exit $?
+    fi
+  - git -C .spack.git fetch --verbose origin +develop:develop
+  - git clone --shared --branch=develop .spack.git .spack
+  - export PATH="$(realpath .spack)"/bin:"$PATH"
+  # Spack out a representative HPCToolkit. All dependencies should already be built.
+  # TODO: Expand this list a bit sometime to better represent what we want to ensure works
+  - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"
+  - >-
+    eatmydata spack install --fail-fast
+    "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
+    "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"
+
+
+# The two devenvs must be consistent with the current version of the ./dev scriptsuite.
+deps check:
+  extends: [.image job amd64, .dev job]
+  stage: validate
+  variables:
+    OS_BASE: ubuntu20.04
+  script:
+  - dev env -d /spack/cenv/latest echo OK
+  - dev env -d /spack/cenv/minimum echo OK
+
+
 # The Autogoo for the HEAD commit (at least) must be in-sync before we build
 autoreconf:
+  extends: [.image job amd64, .dev job]
   stage: validate
-  tags: [docker, linux/amd64]
-  image: $DEPS_IMAGES-ubuntu20.04-amd64
-  needs:
-  - 'deps: [amd64]'
+  variables:
+    OS_BASE: ubuntu20.04
   script:
   - dev autogen --custom-env /spack/cenv/_autogen > autogen.log
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
@@ -108,6 +149,7 @@ autoreconf:
 
 # Allow manually triggering a child pipeline to regenerate the test data
 regen testdata:
+  rules: !reference [.image job, rules]
   stage: manual
   when: manual
   allow_failure: true
@@ -120,16 +162,23 @@ regen testdata:
 
 
 # Build jobs require a working Spack and compilers and a few other bits. This job handles that setup.
-.build-job:
+.build job:
+  extends: .dev job
   cache:
-  - key: pkgs-$IMAGE_BASE
+  - key: pkgs-$OS_BASE
     when: always
     paths:
     - .pkg-cache/
-  - key: ccache-$IMAGE_BASE$IMAGE_EXT-$JOB_CC
+  - key: ccache-$OS_BASE-$JOB_CC
     when: always
     paths:
     - .ccache/
+
+  needs:
+  - job: deps check
+    artifacts: false
+  - job: autoreconf
+    artifacts: false
 
   variables:
     CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
@@ -137,10 +186,11 @@ regen testdata:
     # Limit the ccache cache size to a modest level.
     # One HPCToolkit buildmany is ~2.5GB (~600MB compressed) over ~25000 files
     CCACHE_COMPRESS: 'true'
-    CCACHE_MAXSIZE: '3G'
-    CCACHE_MAXFILES: '30000'
+    CCACHE_MAXSIZE: '4G'
+    CCACHE_MAXFILES: '50000'
 
   before_script:
+  - !reference [.dev job, before_script]
   # Zero the ccache statistics for accurate measurements in the builds
   - ccache --zero-stats
 
@@ -148,151 +198,122 @@ regen testdata:
   # Zero the ccache statistics to lower GitLab cache thrashing (maybe)
   - ccache --zero-stats
 
+.build job amd64:
+  extends: [.image job amd64, .dev job, .build job]
+  needs: [!reference [.image job amd64, needs], !reference [.build job, needs]]
+.build job arm64:
+  extends: [.image job arm64, .dev job, .build job]
+  needs: [!reference [.image job arm64, needs], !reference [.build job, needs]]
+
 
 # Build many versions of the codebase, to ensure all the various compilations work
 # As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
 # at a time. With the exception of +debug, which is flipped at will.
 .buildmany:
+  extends: .build job
   stage: test
-  extends: .build-job
-  tags: [docker, linux/$ARCH]
-  image: $DEPS_IMAGES-$IMAGE_BASE-$ARCH
-
   script:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   - rm -rf logs/
   - >-
     eatmydata dev buildfe -d /spack/cenv/latest --
     -l "logs/$CI_JOB_NAME/latest" -c "$JOB_CC" -a check-install
-    --ccache-stats --fail-fast --reproducible "${BUILD_ARGS[@]}" -s "$SPEC"
+    --ccache-stats --fail-fast --reproducible $OS_BUILDFE_ARGS -s "$SPEC"
   - >-
     eatmydata dev buildfe -d /spack/cenv/minimum --
     -l "logs/$CI_JOB_NAME/minimum" -c "$JOB_CC" -a check-install
-    --ccache-stats --fail-fast --reproducible "${BUILD_ARGS[@]}" -s "$SPEC"
+    --ccache-stats --fail-fast --reproducible $OS_BUILDFE_ARGS -s "$SPEC"
+
+  after_script:
+  - !reference [.build job, after_script]
+  - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
 
   artifacts:
+    reports:
+      codequality: cq.json
     paths:
     - logs/
     when: always
 
-.buildmany.amd64:
-  extends: .buildmany
-  variables:
-    ARCH: amd64
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - 'deps: [amd64]'
-.buildmany.arm64:
-  extends: .buildmany
-  variables:
-    ARCH: arm64
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - 'deps: [arm64]'
-
 'buildmany: [amd64]':
-  extends: .buildmany.amd64
+  extends: [.build job amd64, .buildmany]
   parallel:
     matrix:
-    - IMAGE_BASE: almalinux8
+    - OS_BASE: almalinux8
       JOB_CC: gcc=8
 
-    - IMAGE_BASE: leap15
+    - OS_BASE: leap15
       JOB_CC: gcc-11
 
-    - IMAGE_BASE: ubuntu20.04
+    - OS_BASE: ubuntu20.04
       JOB_CC: [gcc-9, gcc-10, clang-10]
 
-    - IMAGE_BASE: fedora37
+    - OS_BASE: fedora37
       JOB_CC: [gcc=12, clang=15]
   variables:
     SPEC: '~cuda ~rocm ~level0 !debug (tests2 mpi papi opencl python)[~<1]'
 'buildmany: [arm64]':
-  extends: .buildmany.arm64
+  extends: [.build job arm64, .buildmany]
   parallel:
     matrix:
-    - IMAGE_BASE: ubuntu20.04
+    - OS_BASE: ubuntu20.04
       JOB_CC: [gcc-10]
   variables:
     SPEC: '~cuda ~rocm ~level0 +debug +tests2 (mpi papi opencl python)[~<1]'
 
 'buildmany: [amd64, +cuda]':
-  extends: .buildmany.amd64
-  image: $DEPS_IMAGES-ubuntu20.04-cuda$CUDA-$ARCH
+  extends: [.build job amd64, .buildmany]
   parallel:
     matrix:
-    - CUDA: [11.8.0, 12.0.1]
+    - CUDA: ['11.8.0', '12.0.1']
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +cuda
+    OS_BASE: ubuntu20.04
+    OS_EXT: -cuda$CUDA
+    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
     SPEC: '+cuda ~rocm ~level0 !debug +tests2 (mpi papi opencl python)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
-  before_script:
-  - !reference [.buildmany.amd64, before_script]
-  # Pull CUDA from the image itself
-  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 'buildmany: [amd64, +cuda]: [10.2]':
-  extends: .buildmany.amd64
-  image: $DEPS_IMAGES-almalinux8-cuda10.2-$ARCH
+  extends: [.build job amd64, .buildmany]
   variables:
-    IMAGE_BASE: almalinux8
-    IMAGE_EXT: +cuda
+    OS_BASE: almalinux8
+    OS_EXT: -cuda10.2
+    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc=8
     SPEC: '+cuda ~rocm ~level0 !debug ~tests2 (mpi papi opencl python)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
-  before_script:
-  - !reference [.buildmany.amd64, before_script]
-  # Pull CUDA from the image itself
-  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 
 'buildmany: [amd64, +rocm]':
-  extends: .buildmany.amd64
-  image: $DEPS_IMAGES-ubuntu20.04-rocm$ROCM-$ARCH
+  extends: [.build job amd64, .buildmany]
   parallel:
     matrix:
-    - ROCM: [5.1.3, 5.2.3, 5.3.2, 5.4.2]
+    - ROCM: ['5.1.3', '5.2.3', '5.3.2', '5.4.2']
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +rocm
+    OS_BASE: ubuntu20.04
+    OS_EXT: -rocm$ROCM
+    OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
     JOB_CC: gcc-9
     SPEC: '~cuda +rocm ~level0 !debug +tests2 (mpi papi opencl python)[~<1]'
-  before_script:
-  - !reference [.buildmany.amd64, before_script]
-  # Pull ROCm from the image itself
-  - BUILD_ARGS=( -C--with-rocm=/opt/rocm )
 
 'buildmany: [amd64, +level0]':
-  extends: .buildmany.amd64
-  image: $DEPS_IMAGES-ubuntu20.04-lvlz$ONEAPI-$ARCH
+  extends: [.build job amd64, .buildmany]
   tags: [docker, linux/amd64]
   parallel:
     matrix:
     - ONEAPI: ['2022.2', '2022.3.1', '2023.0.0']
       GTPIN: ['3.0', '3.2.2']
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +intel
+    OS_BASE: ubuntu20.04
+    OS_EXT: -lvlz$ONEAPI
+    OS_BUILDFE_ARGS: '-C--with-level0=/usr -C--with-igc=/usr -C--with-gtpin=/opt/gtpin-$GTPIN/Profilers'
     JOB_CC: gcc-9
     SPEC: '~cuda ~rocm +level0 !debug +tests2 (mpi papi opencl python gtpin)[~<1]'
-  before_script:
-  - !reference [.buildmany.amd64, before_script]
-  # Pull Level 0 (part of OneAPI), IGC and GTPin from the image + packages themselves
-  - >-
-    BUILD_ARGS=(
-    -C--with-level0=/usr
-    -C--with-igc=/usr
-    -C--with-gtpin=/opt/gtpin-$GTPIN/Profilers
-    )
 
 
 # Build single versions of the codebase and run unit tests through `make check`
-.check job:
+.check:
   stage: test
-  extends: .build-job
-
+  extends: .build job
   variables:
     CENV: latest
     # Some of the test data is stored in a submodule
@@ -301,57 +322,31 @@ regen testdata:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
+  - export MESON_TEST_OPTS="$MESON_TEST_OPTS $JOB_MESON_TEST_OPTS"
   - rm -rf logs/
   # For semifresh runs, regenerate some of the test data before testing. Use some Python to help.
   - >-
     test -z "$REGEN" ||
     eatmydata dev buildfe -d /spack/cenv/$CENV --
     -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
-    --ccache-stats --fail-fast --fresh-unpack --reproducible "${BUILD_ARGS[@]}" -1 -s "$SPEC"
+    --ccache-stats --fail-fast --fresh-unpack --reproducible $OS_BUILDFE_ARGS -1 -s "$SPEC"
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
     eatmydata dev buildfe -d /spack/cenv/$CENV --
     -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
-    --ccache-stats --fail-fast --test-junit-copyout --reproducible "${BUILD_ARGS[@]}" -1 -s "$SPEC"
+    --ccache-stats --fail-fast --test-junit-copyout --reproducible $OS_BUILDFE_ARGS -1 -s "$SPEC"
+
+  after_script:
+  - !reference [.build job, after_script]
+  - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
 
   artifacts:
     reports:
+      codequality: cq.json
       junit: '*.junit.xml'
     paths:
     - logs/
     when: always
-.check min:
-  variables:
-    CENV: minimum
-.check semifresh:
-  stage: test
-  variables:
-    REGEN: '-a fresh-testdata-none'
-
-.check job amd64:
-  extends: .check job
-  variables:
-    ARCH: amd64
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - 'deps: [amd64]'
-.check semifresh amd64:
-  extends: .check semifresh
-  dependencies:
-  - 'deps: [amd64]'
-.check job arm64:
-  extends: .check job
-  variables:
-    ARCH: arm64
-  needs:
-  - job: autoreconf
-    artifacts: false
-  - 'deps: [arm64]'
-.check semifresh arm64:
-  extends: .check semifresh
-  dependencies:
-  - 'deps: [arm64]'
 
 # NB: We use --repeat in the check jobs to detect bugs that cause sporadic test failures.
 # We chose --repeat 7, since this statistically provides:
@@ -367,161 +362,90 @@ regen testdata:
 # So a 99% confidence of 90% success rate requires a --repeat of at least 44.
 
 'check amd64: [cpu]':
-  extends: .check job amd64
-  tags: [docker, linux/$ARCH]
-  image: $DEPS_IMAGES-ubuntu20.04-$ARCH
+  extends: [.build job amd64, .check]
   variables:
+    OS_BASE: ubuntu20.04
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda ~rocm ~level0'
-  before_script:
-  - !reference [.check job amd64, before_script]
-  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
+    JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7'
 'check min amd64: [cpu]':
-  extends: ['check amd64: [cpu]', .check min]
+  extends: 'check amd64: [cpu]'
+  variables:
+    CENV: minimum
 'check semifresh amd64: [cpu]':
-  extends: ['check amd64: [cpu]', .check semifresh amd64]
+  extends: 'check amd64: [cpu]'
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
+
 'check arm64: [cpu]':
-  extends: .check job arm64
-  tags: [docker, linux/$ARCH]
-  image: $DEPS_IMAGES-ubuntu20.04-$ARCH
+  extends: [.build job amd64, .check]
   variables:
+    OS_BASE: ubuntu20.04
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda ~rocm ~level0'
-  before_script:
-  - !reference [.check job arm64, before_script]
-  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10"
+    JOB_MESON_TEST_OPTS: '--maxfail 10'
 'check min arm64: [cpu]':
-  extends: ['check arm64: [cpu]', .check min]
+  extends: 'check arm64: [cpu]'
+  variables:
+    CENV: minimum
 'check semifresh arm64: [cpu]':
-  extends: ['check arm64: [cpu]', .check semifresh arm64]
+  extends: 'check arm64: [cpu]'
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
 'check amd64: [+cuda, 11.6.2]':
-  extends: .check job amd64
-  image: $DEPS_IMAGES-ubuntu20.04-cuda11.6.2-$ARCH
+  extends: [.build job amd64, .check]
   tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +cuda
+    OS_BASE: ubuntu20.04
+    OS_EXT: -cuda11.6.2
+    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
     SPEC: +tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0
-  before_script:
-  - !reference [.check job amd64, before_script]
-  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite cuda"
-  # Pull CUDA from the image itself
-  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
+    JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite cuda'
 'check min amd64: [+cuda, 11.6.2]':
-  extends: ['check amd64: [+cuda, 11.6.2]', .check min]
+  extends: 'check amd64: [+cuda, 11.6.2]'
+  variables:
+    CENV: minimum
 'check semifresh amd64: [+cuda, 11.6.2]':
-  extends: ['check amd64: [+cuda, 11.6.2]', .check semifresh amd64]
+  extends: 'check amd64: [+cuda, 11.6.2]'
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-nvidia'
 
 'check amd64: [+cuda, 11.8.0]':
-  extends: .check job amd64
-  image: $DEPS_IMAGES-ubuntu20.04-cuda11.8.0-$ARCH
-  tags: [docker, linux/$ARCH]
+  extends: [.build job amd64, .check]
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +cuda
+    OS_BASE: ubuntu20.04
+    OS_EXT: -cuda11.8.0
+    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
     SPEC: +tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0
     NVIDIA_VISIBLE_DEVICES: ''  # Disallow GPU access
-  before_script:
-  - !reference [.check job amd64, before_script]
-  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7"
-  # Pull CUDA from the image itself
-  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
+    JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7'
 'check min amd64: [+cuda, 11.8.0]':
-  extends: ['check amd64: [+cuda, 11.8.0]', .check min]
+  extends: 'check amd64: [+cuda, 11.8.0]'
+  variables:
+    CENV: minimum
 'check semifresh amd64: [+cuda, 11.8.0]':
-  extends: ['check amd64: [+cuda, 11.8.0]', .check semifresh amd64]
+  extends: 'check amd64: [+cuda, 11.8.0]'
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
 'check amd64: [+rocm]':
-  extends: .check job amd64
-  image: $DEPS_IMAGES-ubuntu20.04-rocm5.2.3-$ARCH
+  extends: [.build job amd64, .check]
   tags: [docker, linux/$ARCH, gpu/amd/usrspace:5.2]
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +rocm
+    OS_BASE: ubuntu20.04
+    OS_EXT: -rocm5.2.3
+    OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
     JOB_CC: gcc-9
     SPEC: +tests2 +mpi +debug +papi +python ~opencl ~cuda +rocm ~level0
-  before_script:
-  - !reference [.check job amd64, before_script]
-  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 --suite rocm"
-  # Pull ROCm from the image itself
-  - BUILD_ARGS=( -C--with-rocm=/opt/rocm )
+    JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite rocm'
 'check min amd64: [+rocm]':
-  extends: ['check amd64: [+rocm]', .check min]
+  extends: 'check amd64: [+rocm]'
+  variables:
+    CENV: minimum
 'check semifresh amd64: [+rocm]':
-  extends: ['check amd64: [+rocm]', .check semifresh amd64]
+  extends: 'check amd64: [+rocm]'
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
-
-
-# Perform linting tasks that can only be done when the whole build is complete
-lint:
-  stage: lint
-  needs:
-  - 'buildmany: [amd64]'
-  - 'buildmany: [arm64]'
-  - 'buildmany: [amd64, +cuda]'
-  - 'buildmany: [amd64, +cuda]: [10.2]'
-  - 'buildmany: [amd64, +rocm]'
-  - 'buildmany: [amd64, +level0]'
-  - 'check amd64: [cpu]'
-  - 'check min amd64: [cpu]'
-  - 'check semifresh amd64: [cpu]'
-  - 'check arm64: [cpu]'
-  - 'check min arm64: [cpu]'
-  - 'check semifresh arm64: [cpu]'
-  - 'check amd64: [+cuda, 11.6.2]'
-  - 'check min amd64: [+cuda, 11.6.2]'
-  - 'check semifresh amd64: [+cuda, 11.6.2]'
-  - 'check amd64: [+cuda, 11.8.0]'
-  - 'check min amd64: [+cuda, 11.8.0]'
-  - 'check semifresh amd64: [+cuda, 11.8.0]'
-  - 'check amd64: [+rocm]'
-  - 'check min amd64: [+rocm]'
-  - 'check semifresh amd64: [+rocm]'
-  when: always
-
-  image: docker.io/python:3.11-alpine
-  script:
-  # Merge all the code quality results into a single file, for use by GitLab
-  - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
-
-  artifacts:
-    reports:
-      codequality: cq.json
-
-
-# Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
-# Failures are allowed so that if the dependencies or build flags shift, we are made aware (by a
-# big orange exclaimation point) but not blocked by upstream Spack.
-'spack install: [amd64]':
-  stage: lint
-  tags: [docker, linux/amd64]
-  image: $DEPS_IMAGES-ubuntu20.04-amd64
-  needs: ['deps: [amd64]']
-  allow_failure: true
-  cache:
-    key: spack
-    when: always
-    paths: [.spack.git]
-  script:
-  # Instantiate Spack
-  - export SPACK_ROOT="$(realpath .spack)" PATH="$(realpath .spack)"/bin:"$PATH"
-  - ci/dependencies/spack-init.sh
-  # Spack out a representative HPCToolkit. All dependencies should already be built.
-  # TODO: Expand this list a bit sometime to better represent what we want to ensure works
-  - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"
-  - >-
-    eatmydata spack install --fail-fast
-    "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
-    "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"
