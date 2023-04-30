@@ -17,13 +17,13 @@
 
 # Generate the abstract environments we will spin everything out from
 'deps:generate':
+  extends: .image rebuild job
   stage: deps:generate
   image:
     name: ghcr.io/spack/fedora37:latest
     entrypoint: ['spack-env']
   tags: [docker, linux/amd64]
   needs: []
-  rules: !reference [.rebuild images, rules]
   script:
   # Install the ./dev script in a virtual environment
   - python3 -m venv .dev_venv --clear --upgrade-deps --system-site-packages
@@ -45,6 +45,7 @@
 
 # Generate a pipeline for each combination of OS and arch.
 'deps:concretize: [amd64]':
+  extends: .image rebuild job
   stage: deps:concretize
   image:
     name: $IMAGE_NAME
@@ -52,7 +53,6 @@
   tags: [docker, linux/$ARCH]
   needs:
   - deps:generate
-  rules: !reference [.rebuild images, rules]
   variables:
     ARCH: amd64
   parallel:
@@ -112,10 +112,10 @@
 
 # Construct a Multi-Level Pipeline that runs all the pipelines from spack ci generate
 'deps:mlp: [amd64]':
+  extends: .image rebuild job
   stage: deps:prep
   tags: [docker]
   image: docker.io/python:3.11-bullseye
-  rules: !reference [.rebuild images, rules]
   needs:
   - 'deps:concretize: [amd64]'
   before_script:
@@ -139,8 +139,8 @@
 
 # Launch the MLP and get this done.
 deps:build amd64:
+  extends: .image rebuild job
   stage: deps:build
-  rules: !reference [.rebuild images, rules]
   needs: ['deps:mlp: [amd64]']
   trigger:
     strategy: depend
@@ -148,8 +148,8 @@ deps:build amd64:
     - job: 'deps:mlp: [amd64]'
       artifact: ci.yml
 deps:build arm64:
+  extends: .image rebuild job
   stage: deps:build
-  rules: !reference [.rebuild images, rules]
   needs: ['deps:mlp: [arm64]']
   trigger:
     strategy: depend

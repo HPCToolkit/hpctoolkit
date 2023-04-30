@@ -9,11 +9,9 @@ stages:
 
 # Job template to regenerate some subset of the test data
 .regen job:
+  image: $DEPS_IMAGE_PREFIX-$OS_BASE$OS_EXT-$ARCH
+  tags: [docker, linux/$ARCH]
   stage: generate
-  needs:
-  - pipeline: $PARENT_PIPELINE_ID
-    job: 'deps: [amd64]'
-
   cache:
   - key: pkgs-$IMAGE_BASE
     when: always
@@ -38,6 +36,8 @@ stages:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   before_script:
+  - /opt/dev_venv/bin/python3 -m pip install --require-virtualenv lib/dev/
+  - export PATH=/opt/dev_venv/bin/:"$PATH"
   - ccache --zero-stats
   after_script:
   - ccache --zero-stats
@@ -45,7 +45,7 @@ stages:
   # Generate a new batch of test data, saved to the logs/ dir
   - >-
     dev buildfe -d /spack/cenv/latest -- -l "logs/$CI_JOB_NAME" -a fresh-testdata-"$SUITE"
-    --fail-fast "${BUILD_ARGS[@]}" -1s "$SPEC"
+    --fail-fast $OS_BUILDFE_ARGS -1s "$SPEC"
   - mv logs/"$CI_JOB_NAME"/*/fresh-"$SUITE".tar.xz logs/fresh-"$SUITE".tar.xz
 
   artifacts:
@@ -56,10 +56,8 @@ stages:
 
 'none':
   extends: .regen job
-  tags: [docker, linux/amd64]
-  image: $DEPS_IMAGES-$IMAGE_BASE-$ARCH
   variables:
-    IMAGE_BASE: ubuntu20.04
+    OS_BASE: ubuntu20.04
     ARCH: amd64
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl ~cuda ~rocm ~level0'
@@ -67,10 +65,8 @@ stages:
 
 'cpu':
   extends: .regen job
-  tags: [docker, linux/amd64]
-  image: $DEPS_IMAGES-$IMAGE_BASE-$ARCH
   variables:
-    IMAGE_BASE: ubuntu20.04
+    OS_BASE: ubuntu20.04
     ARCH: amd64
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl ~cuda ~rocm ~level0'
@@ -78,10 +74,8 @@ stages:
 
 'x86-64':
   extends: .regen job
-  tags: [docker, linux/amd64]
-  image: $DEPS_IMAGES-$IMAGE_BASE-$ARCH
   variables:
-    IMAGE_BASE: ubuntu20.04
+    OS_BASE: ubuntu20.04
     ARCH: amd64
     JOB_CC: gcc-10
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl ~cuda ~rocm ~level0'
@@ -89,51 +83,38 @@ stages:
 
 'nvidia':
   extends: .regen job
-  image: $DEPS_IMAGES-ubuntu20.04-cuda11.6.2-$ARCH
-  tags: [docker, linux/amd64, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
+  tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +cuda
+    OS_BASE: ubuntu20.04
+    OS_EXT: -cuda11.6.2
+    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     ARCH: amd64
     JOB_CC: gcc-9
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl +cuda ~rocm ~level0'
     SUITE: nvidia
-  before_script:
-  - !reference [.regen job, before_script]
-  # Pull CUDA from the image itself
-  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 
 'sw-cuda':
   extends: .regen job
-  image: $DEPS_IMAGES-ubuntu20.04-cuda11.8.0-$ARCH
-  tags: [docker, linux/amd64]
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +cuda
+    OS_BASE: ubuntu20.04
+    OS_EXT: -cuda11.8.0
+    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     ARCH: amd64
     JOB_CC: gcc-9
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl +cuda ~rocm ~level0'
     SUITE: sw-cuda
-  before_script:
-  - !reference [.regen job, before_script]
-  # Pull CUDA from the image itself
-  - BUILD_ARGS=( -C--with-cuda=/usr/local/cuda )
 
 'amd':
   extends: .regen job
-  image: $DEPS_IMAGES-ubuntu20.04-rocm5.2.3-$ARCH
   tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
   variables:
-    IMAGE_BASE: ubuntu20.04
-    IMAGE_EXT: +rocm
+    OS_BASE: ubuntu20.04
+    OS_EXT: -rocm5.2.3
+    OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
     ARCH: amd64
     JOB_CC: gcc-9
     SPEC: '+tests2 +mpi ~debug +papi +python ~opencl ~cuda +rocm ~level0'
     SUITE: amd
-  before_script:
-  - !reference [.regen job, before_script]
-  # Pull ROCm from the image itself
-  - BUILD_ARGS=( -C--with-rocm=/opt/rocm )
 
 
 package:
