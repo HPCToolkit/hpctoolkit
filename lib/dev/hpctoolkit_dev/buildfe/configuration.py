@@ -256,7 +256,6 @@ class Manifest:
             _ManifestFile("libexec/hpctoolkit/hpcproftt"),
             _ManifestFile("libexec/hpctoolkit/hpcsummary"),
             _ManifestFile("libexec/hpctoolkit/hpctracedump"),
-            _ManifestFile("libexec/hpctoolkit/renamestruct.sh"),
             _ManifestFile("share/doc/hpctoolkit/documentation.html"),
             _ManifestFile("share/doc/hpctoolkit/download.html"),
             _ManifestFile("share/doc/hpctoolkit/examples.html"),

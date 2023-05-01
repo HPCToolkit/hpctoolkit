@@ -133,6 +133,20 @@ public:
     return needed;
   };
 
+  // Returns the path to the cached file in use, or "" if no cache is available.
+  // Calling this disables the automatic copy during finalize(), so only call
+  // this if the file needs to be adjusted before use.
+  std::string cached() {
+    if(use_cache) {
+      use_cache = false;
+      if(hpcstruct_cache_find(flat_name.c_str())) {
+	      return flat_name;
+      }
+      return stream_name;
+    }
+    return {};
+  }
+
   // finalize closes the output stream
   void finalize(int error) {
     if (stream) IOUtil::CloseStream(stream);
