@@ -168,6 +168,45 @@ OSUtil_local_rank()
   return rid;
 }
 
+static long long
+parse_uint(const char* str)
+{
+  if(str == NULL || str[0] == '\0')
+    return -1;
+
+  char* end = NULL;
+  long long result = strtoll(str, &end, 10);
+  return *end == '\0' ? result : -1;
+}
+
+long long
+OSUtil_rank()
+{
+  const char* val = NULL;
+
+  // OpenMPI
+  val = getenv("OMPI_COMM_WORLD_RANK");
+  if (val != NULL)
+    return parse_uint(val);
+
+  // MPICH
+  val = getenv("PMI_RANK");
+  if (val != NULL)
+    return parse_uint(val);
+
+  // SLURM
+  val = getenv("SLURM_PROCID");
+  if (val != NULL)
+    return parse_uint(val);
+
+  // LSF
+  val = getenv("JSM_NAMESPACE_RANK");
+  if (val != NULL)
+    return parse_uint(val);
+
+  return -1;
+}
+
 uint32_t
 OSUtil_hostid()
 {

@@ -64,6 +64,7 @@
 
 #include <stdint.h>
 #include <monitor.h>
+#include "lib/support-lean/OSUtil.h"
 #include "rank.h"
 
 struct jobinfo {
@@ -89,6 +90,11 @@ int
 hpcrun_get_rank(void)
 {
   int rank;
+
+  rank = OSUtil_rank();
+  if (rank >= 0) {
+    return rank;
+  }
 
   rank = monitor_mpi_comm_rank();
   if (rank >= 0) {

@@ -100,6 +100,9 @@ OSUtil_pid();
 const char*
 OSUtil_local_rank();
 
+long long
+OSUtil_rank();
+
 const char*
 OSUtil_jobid();
 
