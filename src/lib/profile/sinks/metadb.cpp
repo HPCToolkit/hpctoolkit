@@ -151,13 +151,23 @@ void MetaDB::instance(const File& f) {
       if(!rp.empty()) {
         assert(rp.is_absolute());  // This technique only works on absolute paths
         auto p = stdshim::filesystem::path("src") / rp.relative_path().lexically_normal();
-        udf.pPath_base = stringsTableLookup(p.string());
         p = dir / p;
-        stdshim::filesystem::create_directories(p.parent_path());
-        stdshim::filesystem::copy_file(rp, p,
-            stdshim::filesystem::copy_options::overwrite_existing);
-        udf.copied = true;
-        return;
+
+        bool ok = false;
+        try {
+          stdshim::filesystem::create_directories(p.parent_path());
+          stdshim::filesystem::copy_file(rp, p,
+              stdshim::filesystem::copy_options::overwrite_existing);
+          ok = true;
+        } catch(const stdshim::filesystem::filesystem_error& e) {
+          util::log::warning{} << "Failed to copy source file to database: "
+            << e.code().message() << " [" << rp.string() << "]";
+        }
+        if(ok) {
+          udf.pPath_base = stringsTableLookup(p.string());
+          udf.copied = true;
+          return;
+        }
       }
     }
     udf.pPath_base = stringsTableLookup(f.path().string());
