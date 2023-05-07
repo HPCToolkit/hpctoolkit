@@ -24,8 +24,10 @@ variables:
       variables: *rebuild_vars
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
-      - ci/containers/**/*
-      - lib/dev/**/*
+      - ci/containers/**/Containerfile.in  # Containerfiles for the various containers
+      - ci/containers/**/*.inc  # Containerfile fragments shared between containers
+      - lib/dev/hpctoolkit_dev/pyproject.toml  # Dependency specification for the dev script
+      - lib/dev/hpctoolkit_dev/envs.py  # Contains generation code for the environments
       variables: *rebuild_vars
     # If we can't find an image to reuse, just bite the bullet and rebuild.
     - if: >-
