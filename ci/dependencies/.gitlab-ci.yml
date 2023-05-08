@@ -69,17 +69,17 @@
   script:
   # Rename the abstract environments to an OS/ARCH double for concretization
   - mv cenv/any cenv/$IMAGE-$ARCH
-  # Concretize all the environments now, to freeze them a bit
+  # Load the target downstream buildcache (reuse is enabled)
+  - spack config add -f "$SBCACHE_YAML"
+  # Burn in the mirrors from the config so that they are present for the installs later
   - >-
     echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
-    spack -e "cenv/$IMAGE-$ARCH/{}/" -C ci/dependencies/config/ concretize --reuse
-  # Load the target downstream buildcache now, after everything is concretized
-  - spack config add -f "$SBCACHE_YAML"
+    spack -e "cenv/$IMAGE-$ARCH/{}/" config add -f ci/dependencies/config/mirrors.yaml
   # Add a fake mirror to the environments to keep Spack happy
   - >-
     echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
     spack -e "cenv/$IMAGE-$ARCH/{}/" mirror add fake http://nowhere
-  # Generate pipelines for each of the environments
+  # Concretize and generate pipelines for each of the environments
   - >-
     echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
     spack -e "cenv/$IMAGE-$ARCH/{}/" -C ci/dependencies/config/ ci generate

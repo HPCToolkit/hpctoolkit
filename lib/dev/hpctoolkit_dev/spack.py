@@ -282,24 +282,12 @@ class Spack(Command):
 
     def fetch_latest_ver(self, pkg: str) -> Version:
         """Probe Spack for the latest available version of the given package."""
-        with yaspin(text=f"Fetching information about {pkg}"):
-            data = self.capture("info", pkg)
-            found = False
-            for line in data.split("\n"):
-                if line.startswith("Safe versions:"):
-                    found = True
-                elif found:
-                    if "on branch" in line:
-                        # Rolling version, ignore
-                        continue
-
-                    m = re.match(r"\s*(\S+)", line)
-                    if not m:
-                        raise ValueError(f"Expected Spack version number on line: {line}")
-
-                    if re.search(r"\b(develop|main|master|head|trunk|stable)\b", m[1]):
-                        # Infinity version, ignore
-                        continue
-
-                    return Version(m[1])
+        with yaspin(text=f"Fetching versions of {pkg}"):
+            data = self.capture("versions", "--safe", pkg)
+            for ver in data.split("\n"):
+                ver = ver.strip()
+                if re.search(r"\b(develop|main|master|head|trunk|stable)\b", ver):
+                    # Infinity version, ignore
+                    continue
+                return Version(ver)
             raise ValueError(f'Unable to find Spack "Safe versions" for package {pkg}')
