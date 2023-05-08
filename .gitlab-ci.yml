@@ -131,7 +131,7 @@ autoreconf:
   variables:
     OS_BASE: ubuntu20.04
   script:
-  - dev autogen --custom-env /spack/cenv/_autogen > autogen.log
+  - dev autogen --custom-env /spack/cenv/_autogen --skip-install
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
   - |
     if test -s changes; then
@@ -143,7 +143,6 @@ autoreconf:
   artifacts:
     when: always
     paths:
-    - autogen.log
     - fixup.patch
 
 
@@ -199,10 +198,10 @@ regen testdata:
   - ccache --zero-stats
 
 .build job amd64:
-  extends: [.image job amd64, .dev job, .build job]
+  extends: [.image job amd64, .build job]
   needs: [!reference [.image job amd64, needs], !reference [.build job, needs]]
 .build job arm64:
-  extends: [.image job arm64, .dev job, .build job]
+  extends: [.image job arm64, .build job]
   needs: [!reference [.image job arm64, needs], !reference [.build job, needs]]
 
 
@@ -210,7 +209,6 @@ regen testdata:
 # As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
 # at a time. With the exception of +debug, which is flipped at will.
 .buildmany:
-  extends: .build job
   stage: test
   script:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
@@ -313,7 +311,6 @@ regen testdata:
 # Build single versions of the codebase and run unit tests through `make check`
 .check:
   stage: test
-  extends: .build job
   variables:
     CENV: latest
     # Some of the test data is stored in a submodule
@@ -378,7 +375,7 @@ regen testdata:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
 'check arm64: [cpu]':
-  extends: [.build job amd64, .check]
+  extends: [.build job arm64, .check]
   variables:
     OS_BASE: ubuntu20.04
     JOB_CC: gcc-10

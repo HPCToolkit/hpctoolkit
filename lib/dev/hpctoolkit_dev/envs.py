@@ -172,7 +172,7 @@ class DevEnv(SpackEnv):
             ),
             VerConSpec("bzip2 @1.0.8:"),
             VerConSpec("dyninst @12.3.0:"),
-            VerConSpec("elfutils +bzip2 +xz ~nls @0.186:"),
+            VerConSpec("elfutils ~nls @0.186:"),
             VerConSpec("intel-tbb +shared @2020.3"),
             VerConSpec("libmonitor +hpctoolkit ~dlopen @2022.09.02"),
             VerConSpec("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
