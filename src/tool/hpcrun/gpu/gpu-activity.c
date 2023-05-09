@@ -57,6 +57,8 @@
 #include "gpu-activity.h"
 #include "gpu-channel-item-allocator.h"
 
+#include "messages/messages.h"
+
 #define DEBUG 0
 
 #include "gpu-print.h"
@@ -168,6 +170,12 @@ gpu_interval_set
  uint64_t end
 )
 {
+  if (start > end) {
+    EMSG("WARNING: Suppressing reversed time interval for GPU activity: %u > %u",
+      (unsigned long)start, (unsigned long)end);
+    end = start + 1;
+  }
+
   interval->start = start;
   interval->end = end;
   PRINT("gpu interval: [%lu, %lu) delta = %ld\n", interval->start,
