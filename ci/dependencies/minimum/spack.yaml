@@ -31,7 +31,7 @@ spack:
     visibility=global
 
   - libiberty @2.37
-  - elfutils +bzip2 +xz ~nls @0.186
+  - elfutils ~nls @0.186
   - dyninst +openmp @12.3.0
   - intel-tbb +shared +tm @2020.3
 
