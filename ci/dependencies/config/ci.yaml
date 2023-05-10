@@ -44,6 +44,7 @@ ci:
       cache:
       - key: spack-install-$CI_JOB_IMAGE
         paths: [.spack-install/]
+      resource_group: bcbuild-$SPACK_JOB_SPEC_DAG_HASH
 
       script:
       # Configure Spack for building relocatable packages
