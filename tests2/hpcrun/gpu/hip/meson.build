@@ -9,3 +9,6 @@ test('Measurement of tstexe-vecadd-hip produces profiles',
 test('Measurement of tstexe-vecadd-hip with tracing produces profiles',
      _tst, args: ['--trace', _tstexe_vecadd_hip],
      env: hpctoolkit_pyenv, suite: ['hpcrun', 'rocm'])
+test('Measurement of tstexe-vecadd-hip with boosted tracing produces profiles',
+     _tst, args: ['--ttrace', _tstexe_vecadd_hip],
+     env: hpctoolkit_pyenv, suite: ['hpcrun', 'rocm'])
