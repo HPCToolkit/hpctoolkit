@@ -107,7 +107,6 @@ OSUtil_jobid()
     return jid;
   }
 
-
   // Cobalt
   jid = getenv("COBALT_JOBID");
   if (jid) {
@@ -128,6 +127,12 @@ OSUtil_jobid()
 
   // Sun Grid Engine
   jid = getenv("JOB_ID");
+  if (jid) {
+    return jid;
+  }
+
+  // Flux
+  jid = getenv("FLUX_JOB_ID");
   if (jid) {
     return jid;
   }
@@ -161,6 +166,12 @@ OSUtil_local_rank()
 
   // LSF
   rid = getenv("JSM_NAMESPACE_LOCAL_RANK");
+  if (rid) {
+    return rid;
+  }
+
+  // Flux
+  rid = getenv("FLUX_TASK_LOCAL_ID");
   if (rid) {
     return rid;
   }
@@ -201,6 +212,11 @@ OSUtil_rank()
 
   // LSF
   val = getenv("JSM_NAMESPACE_RANK");
+  if (val != NULL)
+    return parse_uint(val);
+
+  // Flux
+  val = getenv("FLUX_TASK_RANK");
   if (val != NULL)
     return parse_uint(val);
 
