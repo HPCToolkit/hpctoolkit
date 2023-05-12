@@ -51,10 +51,10 @@ in addition to profile views, eliminating the need for a separate <tt>hpctracevi
 
 <h2>Requirements</h2>
 <ul>
-	<li>On all platforms: Java 11 or newer </li>
+	<li>On all platforms: Java 11 or 17 </li>
 	<li>On Linux: GTK 3.20 or newer</li>
 </ul>
-<h3> Installing Java 11</h3>
+<h3> Installing Java</h3>
 The instructions to install Java:
 <ol>
 	<li>Download Java JDK
@@ -72,7 +72,7 @@ The instructions to install Java:
 
 
 
-<h2>Latest release: 2023.02</h2>
+<h2>Latest release: 2023.04</h2>
 
 <table>
   <thead>
@@ -92,6 +92,8 @@ The instructions to install Java:
 <h2>Older releases</h2>
 
 <blockquote>
+<a href="download/hpcviewer/2023.02"><tt>2023.02 Release</tt></a>
+<br/>
 <a href="download/hpcviewer/2023.01"><tt>2023.01 Release</tt></a>
 <br/>
 <a href="download/hpcviewer/2022.10"><tt>2022.10 Release</tt></a>
@@ -110,7 +112,7 @@ The instructions to install Java:
 <a href="download/hpcviewer/Archive"><tt>Prior versions</tt></a>
 </blockquote>
 
-<p>[<span class="lastupdated">Page last updated: 2022/10/04</span>]
+<p>[<span class="lastupdated">Page last updated: 2023/05/04</span>]
 </p>
 <!-- ********************************************************************** -->
 
