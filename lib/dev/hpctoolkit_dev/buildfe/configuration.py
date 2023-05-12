@@ -388,6 +388,7 @@ class ConcreteSpecification:
     tests2: bool
     mpi: bool
     debug: bool
+    valgrind_debug: bool
     papi: bool
     python: bool
     opencl: bool
@@ -399,6 +400,8 @@ class ConcreteSpecification:
     def __post_init__(self, **_kwargs):
         if self.gtpin and not self.level0:
             raise ImpossibleSpecError("+gtpin", "~level0")
+        if self.valgrind_debug and not self.debug:
+            raise ImpossibleSpecError("+valgrind_debug", "~debug")
 
     @classmethod
     def all_possible(cls) -> collections.abc.Iterable["ConcreteSpecification"]:
@@ -412,6 +415,7 @@ class ConcreteSpecification:
             ("opencl", False, True),
             ("python", False, True),
             ("papi", True, False),
+            ("valgrind_debug", False, True),
             ("debug", True, False),
             ("mpi", False, True),
             ("tests2", True, False),
@@ -697,6 +701,7 @@ class Configuration:
             self.args = [a for a in self.args if not a.startswith("MPICXX=")]
             self.args.append("MPICXX=")
         self.args = self._args_enable_if(self.args, variant.debug, "develop")
+        self.args = self._args_enable_if(self.args, variant.valgrind_debug, "valgrind-annotations")
         self.args = self._args_enable_if(self.args, variant.tests2, "tests2")
 
         self.env: collections.abc.MutableMapping[str, str] = collections.ChainMap({}, os.environ)

@@ -596,10 +596,10 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     std::vector<std::atomic<std::uint32_t>> cnts_a(cnts.size());
     for(auto& a: cnts_a) a.store(0, std::memory_order_relaxed);
 
-  #ifdef ENABLE_VG_ANNOTATIONS
+#ifndef NVALGRIND
     char start_arc;
     char end_arc;
-  #endif
+#endif  // !NVALGRIND
 
     std::mutex sources_lock;
     const fs::path profileext = std::string(".")+HPCRUN_ProfileFnmSfx;

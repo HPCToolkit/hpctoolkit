@@ -249,7 +249,7 @@ regen testdata:
     - OS_BASE: fedora37
       JOB_CC: [gcc=12, clang=15]
   variables:
-    SPEC: '~cuda ~rocm ~level0 !debug (tests2 mpi papi opencl python)[~<1]'
+    SPEC: '~cuda ~rocm ~level0 !debug (tests2 mpi papi opencl python valgrind_debug)[~<1]'
 'buildmany: [arm64]':
   extends: [.build job arm64, .buildmany]
   parallel:
@@ -257,7 +257,7 @@ regen testdata:
     - OS_BASE: ubuntu20.04
       JOB_CC: [gcc-10]
   variables:
-    SPEC: '~cuda ~rocm ~level0 +debug +tests2 (mpi papi opencl python)[~<1]'
+    SPEC: '~cuda ~rocm ~level0 +debug +valgrind_debug +tests2 (mpi papi opencl python)[~<1]'
 
 'buildmany: [amd64, +cuda]':
   extends: [.build job amd64, .buildmany]
@@ -269,7 +269,7 @@ regen testdata:
     OS_EXT: -cuda$CUDA
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
-    SPEC: '+cuda ~rocm ~level0 !debug +tests2 (mpi papi opencl python)[~<1]'
+    SPEC: '+cuda ~rocm ~level0 !debug +tests2 (mpi papi opencl python valgrind_debug)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
 'buildmany: [amd64, +cuda]: [10.2]':
   extends: [.build job amd64, .buildmany]
@@ -278,7 +278,7 @@ regen testdata:
     OS_EXT: -cuda10.2
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc=8
-    SPEC: '+cuda ~rocm ~level0 !debug ~tests2 (mpi papi opencl python)[~<1]'
+    SPEC: '+cuda ~rocm ~level0 !debug ~tests2 (mpi papi opencl python valgrind_debug)[~<1]'
     NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
 
 'buildmany: [amd64, +rocm]':
@@ -291,7 +291,7 @@ regen testdata:
     OS_EXT: -rocm$ROCM
     OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
     JOB_CC: gcc-9
-    SPEC: '~cuda +rocm ~level0 !debug +tests2 (mpi papi opencl python)[~<1]'
+    SPEC: '~cuda +rocm ~level0 !debug +tests2 (mpi papi opencl python valgrind_debug)[~<1]'
 
 'buildmany: [amd64, +level0]':
   extends: [.build job amd64, .buildmany]
@@ -305,7 +305,7 @@ regen testdata:
     OS_EXT: -lvlz$ONEAPI
     OS_BUILDFE_ARGS: '-C--with-level0=/usr -C--with-igc=/usr -C--with-gtpin=/opt/gtpin-$GTPIN/Profilers'
     JOB_CC: gcc-9
-    SPEC: '~cuda ~rocm +level0 !debug +tests2 (mpi papi opencl python gtpin)[~<1]'
+    SPEC: '~cuda ~rocm +level0 !debug +tests2 (mpi papi opencl python gtpin valgrind_debug)[~<1]'
 
 
 # Build single versions of the codebase and run unit tests through `make check`
@@ -363,7 +363,7 @@ regen testdata:
   variables:
     OS_BASE: ubuntu20.04
     JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda ~rocm ~level0'
+    SPEC: '+tests2 +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
     JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7'
 'check min amd64: [cpu]':
   extends: 'check amd64: [cpu]'
@@ -379,7 +379,7 @@ regen testdata:
   variables:
     OS_BASE: ubuntu20.04
     JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +papi +python ~opencl ~cuda ~rocm ~level0'
+    SPEC: '+tests2 +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
     JOB_MESON_TEST_OPTS: '--maxfail 10'
 'check min arm64: [cpu]':
   extends: 'check arm64: [cpu]'
@@ -398,7 +398,7 @@ regen testdata:
     OS_EXT: -cuda11.6.2
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
-    SPEC: +tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0
+    SPEC: +tests2 +mpi +debug ~valgrind_debug +papi +python ~opencl +cuda ~rocm ~level0
     JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite cuda'
 'check min amd64: [+cuda, 11.6.2]':
   extends: 'check amd64: [+cuda, 11.6.2]'
@@ -416,7 +416,7 @@ regen testdata:
     OS_EXT: -cuda11.8.0
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
-    SPEC: +tests2 +mpi +debug +papi +python ~opencl +cuda ~rocm ~level0
+    SPEC: +tests2 +mpi +debug +valgrind_debug +papi +python ~opencl +cuda ~rocm ~level0
     NVIDIA_VISIBLE_DEVICES: ''  # Disallow GPU access
     JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7'
 'check min amd64: [+cuda, 11.8.0]':
@@ -436,7 +436,7 @@ regen testdata:
     OS_EXT: -rocm5.2.3
     OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
     JOB_CC: gcc-9
-    SPEC: +tests2 +mpi +debug +papi +python ~opencl ~cuda +rocm ~level0
+    SPEC: +tests2 +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda +rocm ~level0
     JOB_MESON_TEST_OPTS: '--maxfail 10 --repeat 7 --suite rocm'
 'check min amd64: [+rocm]':
   extends: 'check amd64: [+rocm]'

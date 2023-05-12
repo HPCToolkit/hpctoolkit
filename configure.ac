@@ -5279,43 +5279,6 @@ AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
 
 
 #-------------------------------------------------
-# Option: --with-valgrind=PATH
-#-------------------------------------------------
-
-VALGRIND="$default_valgrind_prefix"
-
-AC_ARG_WITH([valgrind],
-  AS_HELP_STRING([--with-valgrind=PATH],
-                 [path to Valgrind install directory]),
-  [VALGRIND="$withval"],
-  [])
-
-VALGRIND_IFLAGS=
-
-AC_MSG_CHECKING([for Valgrind headers])
-
-case "$VALGRIND" in
-  /* )
-    # valgrind/valgrind.h must exist on the include path
-    if test -f "$VALGRIND"/include/valgrind/valgrind.h; then
-      VALGRIND_IFLAGS=-I"$VALGRIND"/include
-    else
-      AC_MSG_ERROR([unable to find valgrind.h in: $VALGRIND])
-    fi
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([Valgrind directory must be an absolute path])
-    ;;
-esac
-
-AC_MSG_RESULT([$VALGRIND])
-
-AC_SUBST([VALGRIND_IFLAGS])
-
-
-#-------------------------------------------------
 # Option: --enable-valgrind-annotations
 #-------------------------------------------------
 
@@ -5331,12 +5294,8 @@ AC_ARG_ENABLE([valgrind-annotations],
    esac],
   [OPT_ENABLE_VG_ANNOTATIONS=no])
 
-if test x"$OPT_ENABLE_VG_ANNOTATIONS" = xyes; then
-  if test x"$VALGRIND" = xno; then
-    AC_MSG_ERROR([Valgrind annotations requested but valgrind headers not available!])
-  fi
-  AC_DEFINE([ENABLE_VG_ANNOTATIONS], [1],
-            [Add extra annotations for debugging with Valgrind])
+if test x"$OPT_ENABLE_VG_ANNOTATIONS" = xno; then
+  CPPFLAGS="${CPPFLAGS} -DNVALGRIND"
 fi
 
 AM_CONDITIONAL(OPT_ENABLE_VG_ANNOTATIONS, test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes")
@@ -5615,6 +5574,8 @@ AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
 AC_MSG_NOTICE([  rtld-audit:   ${rtld_audit_mesg}])
 AC_MSG_NOTICE([])
+AC_MSG_NOTICE([  valgrind annotations: ${OPT_ENABLE_VG_ANNOTATIONS}])
+AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
 AC_MSG_NOTICE([  CC:        '${CC}'])
@@ -5665,8 +5626,6 @@ if test "$OPT_HAVE_ROCM" = yes ; then
   AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
   AC_MSG_NOTICE([  rocm profiler: $ROCM_PROFILER_MESG])
 fi
-AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
-AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
 AC_MSG_NOTICE([  yaml-cpp:     ${YAMLCPP}])
 
 if test "x$mult_spack_pkgs" != x ; then
