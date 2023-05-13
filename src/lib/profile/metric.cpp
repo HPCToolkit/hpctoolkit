@@ -171,8 +171,7 @@ bool Metric::freeze() {
     cntIdx = m_partials.size();
     m_partials.push_back({1, Statistic::combination_t::sum, cntIdx});
   }
-  if(m_thawed_sumPartial == std::numeric_limits<std::size_t>::max()
-     && (ss.sum || ss.mean || ss.stddev || ss.cfvar)) {
+  if(m_thawed_sumPartial == std::numeric_limits<std::size_t>::max()) {
     m_thawed_sumPartial = m_partials.size();
     m_partials.push_back({Expression::variable, Statistic::combination_t::sum,
                           m_thawed_sumPartial});

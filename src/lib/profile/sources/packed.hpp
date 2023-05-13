@@ -116,7 +116,7 @@ protected:
 
 private:
   util::optional_ref<const IdTracker> tracker;
-  std::vector<std::reference_wrapper<Metric>> metrics;
+  std::vector<std::pair<std::reference_wrapper<Metric>, std::uint8_t>> metrics;
   std::vector<std::reference_wrapper<Module>> modules;
 };
 
