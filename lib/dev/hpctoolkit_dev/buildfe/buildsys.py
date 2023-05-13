@@ -2,6 +2,7 @@ import collections
 import contextlib
 import hashlib
 import json
+import linecache
 import os
 import re
 import shutil
@@ -171,7 +172,16 @@ class BuildResult(ActionResult):
                 self.errors += 1
         assert "severity" in report
 
-        report["fingerprint"] = hashlib.md5(json.dumps(report).encode("utf-8")).hexdigest()
+        # The fingerprint is the hash of the report in JSON form, with parts masked out
+        report["fingerprint"] = hashlib.md5(
+            json.dumps(
+                report
+                | {
+                    "location": report["location"]
+                    | {"positions": None, "lines": None, "line": linecache.getline(str(path), line)}
+                }
+            ).encode("utf-8")
+        ).hexdigest()
         return report
 
     def __init__(self, logfile: Path, cq_output: Path | None, subresult: ActionResult):
