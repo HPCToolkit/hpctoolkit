@@ -67,7 +67,9 @@ Scope::Scope(const Module& m, uint64_t o)
   : ty(Type::point), data(m, o) {};
 Scope::Scope(const Function& f) : ty(Type::function), data(f) {};
 Scope::Scope(loop_t, const File& s, uint64_t l)
-  : ty(Type::loop), data(s,l) {};
+  : ty(Type::lexical_loop), data(s,l) {};
+Scope::Scope(loop_t, const Module& m, uint64_t o, const File& s, uint64_t l)
+  : ty(Type::binary_loop), data(m,o,s,l) {};
 Scope::Scope(const File& s, uint64_t l)
   : ty(Type::line), data(s,l) {};
 Scope::Scope(placeholder_t, uint64_t v)
@@ -84,6 +86,8 @@ std::pair<const Module&, uint64_t> Scope::point_data() const {
   switch(ty) {
   case Type::point:
     return data.point;
+  case Type::binary_loop:
+    return data.point_line.point;
   default:
     assert(false && "point_data is only valid on point Scopes!");
     std::abort();
@@ -102,9 +106,11 @@ const Function& Scope::function_data() const {
 
 std::pair<const File&, uint64_t> Scope::line_data() const {
   switch(ty) {
-  case Type::loop:
+  case Type::lexical_loop:
   case Type::line:
     return data.line;
+  case Type::binary_loop:
+    return data.point_line.line;
   default:
     assert(false && "line_data is only valid on line Scopes!");
     std::abort();
@@ -172,9 +178,11 @@ bool Scope::operator==(const Scope& o) const noexcept {
     return data.point == o.data.point;
   case Type::function:
     return data.function == o.data.function;
-  case Type::loop:
+  case Type::lexical_loop:
   case Type::line:
     return data.line == o.data.line;
+  case Type::binary_loop:
+    return data.point_line == o.data.point_line;
   case Type::placeholder:
     return data.enumerated == o.data.enumerated;
   }
@@ -194,9 +202,11 @@ bool Scope::operator<(const Scope& o) const noexcept {
     return data.point < o.data.point;
   case Type::function:
     return data.function < o.data.function;
-  case Type::loop:
+  case Type::lexical_loop:
   case Type::line:
     return data.line < o.data.line;
+  case Type::binary_loop:
+    return data.point_line < o.data.point_line;
   case Type::placeholder:
     return data.enumerated < o.data.enumerated;
   }
@@ -221,11 +231,19 @@ std::size_t std::hash<Scope>::operator()(const Scope &l) const noexcept {
   }
   case Scope::Type::function:
     return h_func(l.data.function.f);
-  case Scope::Type::loop:
+  case Scope::Type::lexical_loop:
   case Scope::Type::line: {
-    std::size_t sponge = l.ty == Scope::Type::loop ? 0x11 : 0x13;
+    std::size_t sponge = l.ty == Scope::Type::lexical_loop ? 0x11 : 0x13;
     sponge = stdshim::rotl(sponge ^ h_file(l.data.line.s), 1);
     sponge = stdshim::rotl(sponge ^ h_u64(l.data.line.l), 3);
+    return sponge;
+  }
+  case Scope::Type::binary_loop: {
+    std::size_t sponge = 0x17;
+    sponge = stdshim::rotl(sponge ^ h_mod(l.data.point_line.point.m), 1);
+    sponge = stdshim::rotl(sponge ^ h_u64(l.data.point_line.point.offset), 3);
+    sponge = stdshim::rotl(sponge ^ h_file(l.data.point_line.line.s), 5);
+    sponge = stdshim::rotl(sponge ^ h_u64(l.data.point_line.line.l), 7);
     return sponge;
   }
   case Scope::Type::placeholder:
@@ -247,9 +265,12 @@ util::stable_hash_state& hpctoolkit::operator<<(util::stable_hash_state& h, cons
     return h << *s.data.point.m << s.data.point.offset;
   case Scope::Type::function:
     return h << *s.data.function.f;
-  case Scope::Type::loop:
+  case Scope::Type::lexical_loop:
   case Scope::Type::line:
     return h << *s.data.line.s << s.data.line.l;
+  case Scope::Type::binary_loop:
+    return h << *s.data.point_line.point.m << s.data.point_line.point.offset
+             << *s.data.point_line.line.s << s.data.point_line.line.l;
   case Scope::Type::placeholder:
     return h << s.data.enumerated;
   default:
@@ -301,8 +322,9 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
   case Scope::Type::global: return os << "(global)";
   case Scope::Type::point: return os << "(point){" << point_str() << "}";
   case Scope::Type::function: return os << "(func){" << func_str() << "}";
-  case Scope::Type::loop: return os << "(loop){" << line_str() << "}";
+  case Scope::Type::lexical_loop: return os << "(loop){" << line_str() << "}";
   case Scope::Type::line: return os << "(line){" << line_str() << "}";
+  case Scope::Type::binary_loop: return os << "(loop){" << line_str() << " @ " << point_str() << "}";
   case Scope::Type::placeholder: return os << "(placeholder){" << enumerated_str() << "}";
   }
   return os;

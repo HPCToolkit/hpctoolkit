@@ -244,8 +244,12 @@ void MetaDB::notifyContext(const Context& c) {
   case Scope::Type::point:
     instance(sf.point_data().first);
     break;
-  case Scope::Type::loop:
+  case Scope::Type::lexical_loop:
   case Scope::Type::line:
+    instance(sf.line_data().first);
+    break;
+  case Scope::Type::binary_loop:
+    instance(sf.point_data().first);
     instance(sf.line_data().first);
     break;
   case Scope::Type::function:
@@ -659,9 +663,12 @@ void MetaDB::write() try {
         ctx.lexicalType = FMT_METADB_LEXTYPE_Line;
         setSrcLine();
         break;
-      case Scope::Type::loop:
+      case Scope::Type::lexical_loop:
+      case Scope::Type::binary_loop:
         ctx.lexicalType = FMT_METADB_LEXTYPE_Loop;
         setSrcLine();
+        if(c.scope().flat().type() == Scope::Type::binary_loop)
+          setPoint();
         break;
       case Scope::Type::point:
         ctx.lexicalType = FMT_METADB_LEXTYPE_Instruction;

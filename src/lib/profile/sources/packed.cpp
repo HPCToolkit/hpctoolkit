@@ -50,6 +50,7 @@
 
 #include "../util/log.hpp"
 
+#include <limits>
 #include <stack>
 
 using namespace hpctoolkit;
@@ -131,7 +132,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
   }
   sink.attributes(std::move(attr));
 
-  // Format: [cnt] ([metric name] [metric description] [scopes])...
+  // Format: [cnt] ([metric name] [metric description] [scopes] [visibility] [orderId])...
   metrics.clear();
   cnt = unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
@@ -139,7 +140,12 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
     s.name = unpack<std::string>(it);
     s.description = unpack<std::string>(it);
     s.scopes = MetricScopeSet(unpack<MetricScopeSet::int_type>(it));
-    metrics.emplace_back(sink.metric(s));
+    s.visibility = (Metric::Settings::visibility_t)unpack<std::uint8_t>(it);
+    auto o = unpack<std::uint64_t>(it);
+    if(o != std::numeric_limits<std::uint64_t>::max())
+      s.orderId = o;
+    auto nparts = unpack<std::uint8_t>(it);
+    metrics.emplace_back(std::ref(sink.metric(s)), nparts);
   }
 
   // Format: [cnt] ([estat name] [estat description] [scopes] [formula])...
@@ -157,7 +163,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
       case Expression::Kind::constant:
         return Expression(unpack<double>(it));
       case Expression::Kind::variable: {
-        Metric& m = metrics.at(unpack<std::uint64_t>(it));
+        Metric& m = metrics.at(unpack<std::uint64_t>(it)).first;
         m.statsAccess().requestSumPartial();
         return Expression((Expression::uservalue_t)&m);
       }
@@ -179,7 +185,10 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
     sink.extraStatistic(std::move(s));
   }
 
-  for(auto& m: metrics) sink.metricFreeze(m);
+  for(auto& [m, nparts]: metrics) {
+    sink.metricFreeze(m);
+    assert(m.get().partials().size() == nparts && "Inconsistent number of partials across ranks!");
+  }
   return it;
 }
 
@@ -229,7 +238,8 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
       assert(false && "Packed unpacked global Scope that wasn't the root!");
       std::abort();
     case (std::uint64_t)Scope::Type::function:
-    case (std::uint64_t)Scope::Type::loop:
+    case (std::uint64_t)Scope::Type::lexical_loop:
+    case (std::uint64_t)Scope::Type::binary_loop:
     case (std::uint64_t)Scope::Type::line:
       // Unrepresented Scopes, ignore and press on
       tip.push(tip.top());

@@ -48,6 +48,7 @@
 
 #include "packed.hpp"
 
+#include <limits>
 #include <stack>
 
 using namespace hpctoolkit;
@@ -134,7 +135,7 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
     pack(out, kv.second);
   }
 
-  // Format: [cnt] ([metric name] [metric description] [scopes])...
+  // Format: [cnt] ([metric name] [metric description] [scopes] [visibility] [orderId] [num partials])...
   metrics.clear();
   pack(out, src.metrics().size());
   std::unordered_map<const Metric*, size_t> metids;
@@ -144,6 +145,13 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
     pack(out, m.name());
     pack(out, m.description());
     pack(out, m.scopes().toInt());
+    pack(out, (std::uint8_t)m.visibility());
+    if(auto o = m.orderId()) {
+      pack(out, (std::uint64_t)*o);
+    } else {
+      pack(out, std::numeric_limits<std::uint64_t>::max());
+    }
+    pack(out, (std::uint8_t)m.partials().size());
   }
 
   // Format: [cnt] ([estat name] [estat description] [scopes] [formula])...
@@ -204,7 +212,8 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     case Scope::Type::unknown:
     case Scope::Type::global:
     case Scope::Type::function:
-    case Scope::Type::loop:
+    case Scope::Type::lexical_loop:
+    case Scope::Type::binary_loop:
     case Scope::Type::line:
       // No data to represent, or unable to represent
       break;
@@ -230,7 +239,8 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     case Scope::Type::unknown:
     case Scope::Type::global:
     case Scope::Type::function:
-    case Scope::Type::loop:
+    case Scope::Type::lexical_loop:
+    case Scope::Type::binary_loop:
     case Scope::Type::line:
       assert(false && "Unhandled Scope type in Packed!");
       std::abort();

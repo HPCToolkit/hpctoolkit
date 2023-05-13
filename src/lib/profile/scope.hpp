@@ -88,6 +88,7 @@ public:
 
   /// Constructor for loop-construct Scopes.
   Scope(loop_t, const File&, uint64_t line);
+  Scope(loop_t, const Module&, uint64_t offset, const File&, uint64_t line);
 
   /// Constructor for single-line Scopes.
   Scope(const File&, uint64_t line);
@@ -108,7 +109,8 @@ public:
     global,  ///< Scope of the global Context, root of the entire execution.
     point,  ///< A single instruction within the application, thus a "point".
     function,  ///< A normal ordinary function within the application.
-    loop,  ///< A loop-like construct, potentially source-level.
+    lexical_loop,  ///< A loop-like construct, potentially source-level.
+    binary_loop,  ///< A loop-like construct, potentially source-level.
     line,  ///< A single line within the original source.
     placeholder,  ///< A marker context with special meaning (and nothing else).
   };
@@ -198,6 +200,16 @@ private:
         return {*s, l};
       }
     } line;
+    struct point_line_u {
+      struct point_u point;
+      struct line_u line;
+      bool operator==(const point_line_u& o) const {
+        return point == o.point && line == o.line;
+      }
+      bool operator<(const point_line_u& o) const {
+        return !(point == o.point) ? point < o.point : line < o.line;
+      }
+    } point_line;
     uint64_t enumerated;
     Data() : empty{} {};
     Data(const Module& m, uint64_t o)
@@ -206,6 +218,8 @@ private:
       : function{&f} {};
     Data(const File& s, uint64_t l)
       : line{&s, l} {};
+    Data(const Module& m, uint64_t o, const File& s, uint64_t l)
+      : point_line{{&m, o}, {&s, l}} {};
     Data(uint64_t l)
       : enumerated{l} {};
   } data;
