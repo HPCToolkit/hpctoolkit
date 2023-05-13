@@ -2,6 +2,7 @@ import collections
 import contextlib
 import hashlib
 import json
+import linecache
 import os
 import re
 import shutil
@@ -9,7 +10,6 @@ import subprocess
 import tarfile
 import tempfile
 import typing
-import xml.dom.minidom
 from pathlib import Path
 
 from .action import Action, ActionResult, ReturnCodeResult
@@ -171,7 +171,16 @@ class BuildResult(ActionResult):
                 self.errors += 1
         assert "severity" in report
 
-        report["fingerprint"] = hashlib.md5(json.dumps(report).encode("utf-8")).hexdigest()
+        # The fingerprint is the hash of the report in JSON form, with parts masked out
+        report["fingerprint"] = hashlib.md5(
+            json.dumps(
+                report
+                | {
+                    "location": report["location"]
+                    | {"positions": None, "lines": None, "line": linecache.getline(str(path), line)}
+                }
+            ).encode("utf-8")
+        ).hexdigest()
         return report
 
     def __init__(self, logfile: Path, cq_output: Path | None, subresult: ActionResult):
@@ -380,96 +389,6 @@ class Test(MakeAction):
     def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
 
-    def fixup_meson(self, res, tests2bdir: Path, testxml: Path) -> bytes | ActionResult:
-        testjson = tests2bdir / "meson-logs" / "testlog.json"
-        if not testjson.exists():
-            return MissingJUnitLogs(testjson.name, res)
-
-        # Parse the JSON and find the jobs that we want to report as failures
-        otherfails = set()
-        with open(testjson, encoding="utf-8") as f:
-            for line in f:
-                data = json.loads(line)
-                if data["result"] in ("EXPECTEDFAIL", "TIMEOUT"):
-                    otherfails.add(data["name"])
-
-        with open(testxml, encoding="utf-8") as f, xml.dom.minidom.parse(f) as dom:
-            # Mark the tests identified above as failing, if they weren't already
-            for top in dom.getElementsByTagName("testsuites"):
-                all_new_fails = 0
-                for suite in top.getElementsByTagName("testsuite"):
-                    new_fails = 0
-                    for tcase in suite.getElementsByTagName("testcase"):
-                        if (
-                            tcase.getAttribute("name") in otherfails
-                            and len(tcase.getElementsByTagName("failure")) == 0
-                        ):
-                            tcase.appendChild(dom.createElement("failure"))
-                            new_fails += 1
-                    if suite.hasAttribute("failures"):
-                        suite.setAttribute(
-                            "failures",
-                            str(int(suite.getAttribute("failures") or 0) + new_fails),
-                        )
-                    all_new_fails += new_fails
-                if top.hasAttribute("failures"):
-                    top.setAttribute(
-                        "failures", str(int(top.getAttribute("failures") or 0) + all_new_fails)
-                    )
-
-            # Return the resulting XML
-            return dom.toxml(encoding="utf-8")
-
-    def fixup_pytest(self, res, tests2bdir: Path, testxml: Path) -> bytes | ActionResult:
-        # pylint: disable=too-many-locals
-        _ = res, tests2bdir
-        with open(testxml, encoding="utf-8") as f, xml.dom.minidom.parse(f) as dom:
-            # Pytest marks XFAIL as a skip and a strict XPASS as a failure. Replace those
-            # markers their their non-X equivalent.
-            for top in dom.getElementsByTagName("testsuites"):
-                all_new_fails, all_new_pass = 0, 0
-                for suite in top.getElementsByTagName("testsuite"):
-                    new_fails, new_pass = 0, 0
-                    for case in suite.getElementsByTagName("testcase"):
-                        skipped = case.getElementsByTagName("skipped")
-                        if len(skipped) > 0 and all(
-                            x.getAttribute("type") == "pytest.xfail" for x in skipped
-                        ):
-                            for x in skipped:
-                                case.removeChild(x)
-                            case.appendChild(dom.createElement("failure"))
-                            new_fails += 1
-                        failures = case.getElementsByTagName("failure")
-                        if len(failures) > 0 and all(
-                            "XPASS" in x.getAttribute("message") for x in failures
-                        ):
-                            for x in failures:
-                                case.removeChild(x)
-                            new_pass += 1
-                    if suite.hasAttribute("failures"):
-                        suite.setAttribute(
-                            "failures",
-                            str(int(suite.getAttribute("failures") or 0) + new_fails - new_pass),
-                        )
-                    if suite.hasAttribute("skipped"):
-                        suite.setAttribute(
-                            "skipped", str(int(suite.getAttribute("skipped") or 0) - new_fails)
-                        )
-                    all_new_fails += new_fails
-                    all_new_pass += new_pass
-                if top.hasAttribute("failures"):
-                    top.setAttribute(
-                        "failures",
-                        str(int(top.getAttribute("failures") or 0) + all_new_fails - all_new_pass),
-                    )
-                if top.hasAttribute("skipped"):
-                    top.setAttribute(
-                        "skipped", str(int(top.getAttribute("skipped") or 0) - all_new_fails)
-                    )
-
-            # Return the resulting XML
-            return dom.toxml(encoding="utf-8")
-
     def run(
         self,
         cfg: Configuration,
@@ -507,33 +426,23 @@ class Test(MakeAction):
 
         final_res = res
         junit_logs = (
-            (tests2bdir / "meson-logs" / "testlog.junit.xml", self.fixup_meson, True),
-            (
-                tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml",
-                self.fixup_pytest,
-                False,
-            ),
+            (tests2bdir / "meson-logs" / "testlog.junit.xml", True),
+            (tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml", False),
         )
-        for fn, fixup, required in junit_logs:
+        for fn, required in junit_logs:
             if not fn.exists():
                 if required:
                     final_res = MissingJUnitLogs(fn.name, res)
                 continue
 
-            new_contents = fixup(res, tests2bdir, fn)
-            if isinstance(new_contents, ActionResult):
-                final_res = new_contents
-                continue
-
             if logdir is not None:
-                with open(logdir / fn.name, "wb") as outf:
-                    outf.write(new_contents)
+                shutil.copyfile(fn, logdir / fn.name)
 
             if self.junit_copyout:
-                with os.fdopen(
+                with open(fn, "rb") as inf, os.fdopen(
                     tempfile.mkstemp(prefix="test.", suffix="." + fn.name, dir=os.getcwd())[0], "wb"
                 ) as outf:
-                    outf.write(new_contents)
+                    shutil.copyfileobj(inf, outf)
 
         return final_res
 
