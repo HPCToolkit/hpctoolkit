@@ -32,15 +32,16 @@ ci:
   - submapping:
     - match: ['target=:x86_64_v3']
       build-job:
+        tags: [saas-linux-small-amd64]
         variables:
           ARCH: amd64
     - match: ['target=:aarch64']
       build-job:
+        tags: [rice-linux-small-arm64]
         variables:
           ARCH: arm64
 
   - build-job:
-      tags: [docker, linux/$ARCH]
       cache:
       - key: spack-install-$CI_JOB_IMAGE
         paths: [.spack-install/]
@@ -58,14 +59,12 @@ ci:
       - . "$SPACK_ROOT"/share/spack/setup-env.sh
 
   - reindex-job:
-      tags: [docker]
       image:
         name: ghcr.io/spack/ubuntu-focal:latest
         entrypoint: ['spack-env']
       resource_group: bcindex-$CI_COMMIT_REF_SLUG
 
   - any-job:
-      tags: [docker]
       before_script:
       # Install the buildcache mirrors
       - spack config add -f "$SBCACHE_YAML"

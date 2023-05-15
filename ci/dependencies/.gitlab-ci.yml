@@ -22,9 +22,9 @@
   image:
     name: ghcr.io/spack/fedora37:latest
     entrypoint: ['spack-env']
-  tags: [docker, linux/amd64]
   needs: []
   script:
+  - yum list installed python3-devel || yum install -y python3-devel
   # Install the ./dev script in a virtual environment
   - python3 -m venv .dev_venv --clear --upgrade-deps --system-site-packages
   - .dev_venv/bin/pip install --no-cache-dir --require-virtualenv lib/dev/
@@ -50,7 +50,7 @@
   image:
     name: $IMAGE_NAME
     entrypoint: ['spack-env']
-  tags: [docker, linux/$ARCH]
+  tags: [saas-linux-small-amd64]
   needs:
   - deps:generate
   variables:
@@ -73,15 +73,15 @@
   - spack config add -f "$SBCACHE_YAML"
   # Burn in the mirrors from the config so that they are present for the installs later
   - >-
-    echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
+    echo -e "_autogen\nminimum\nlatest" | xargs -I '{}' -t
     spack -e "cenv/$IMAGE-$ARCH/{}/" config add -f ci/dependencies/config/mirrors.yaml
   # Add a fake mirror to the environments to keep Spack happy
   - >-
-    echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
+    echo -e "_autogen\nminimum\nlatest" | xargs -I '{}' -t
     spack -e "cenv/$IMAGE-$ARCH/{}/" mirror add fake http://nowhere
   # Concretize and generate pipelines for each of the environments
   - >-
-    echo -e "_autogen\nminimum\nlatest" | xargs -P0 -I '{}' -t
+    echo -e "_autogen\nminimum\nlatest" | xargs -I '{}' -t
     spack -e "cenv/$IMAGE-$ARCH/{}/" -C ci/dependencies/config/ ci generate
     --check-index-only
     --buildcache-destination "$(spack mirror list | grep -m1 '^main-bcache ' | awk '{print $2}')"
@@ -99,6 +99,7 @@
 
 'deps:concretize: [arm64]':
   extends: 'deps:concretize: [amd64]'
+  tags: [rice-linux-small-arm64]
   variables:
     ARCH: arm64
   parallel:
@@ -108,13 +109,13 @@
     #   - fedora37
     - IMAGE_NAME: ghcr.io/spack/ubuntu-focal:latest
       IMAGE: ubuntu20.04
+      CENV: *cenv
 
 
 # Construct a Multi-Level Pipeline that runs all the pipelines from spack ci generate
 'deps:mlp: [amd64]':
   extends: .image rebuild job
   stage: deps:prep
-  tags: [docker]
   image: docker.io/python:3.11-bullseye
   needs:
   - 'deps:concretize: [amd64]'

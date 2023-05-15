@@ -10,7 +10,6 @@ stages:
 # Job template to regenerate some subset of the test data
 .regen job:
   image: $DEPS_IMAGE_PREFIX-$OS_BASE$OS_EXT-$ARCH
-  tags: [docker, linux/$ARCH]
   stage: generate
   cache:
   - key: pkgs-$IMAGE_BASE
@@ -56,6 +55,7 @@ stages:
 
 'none':
   extends: .regen job
+  tags: [saas-linux-large-amd64]
   variables:
     OS_BASE: ubuntu20.04
     ARCH: amd64
@@ -65,6 +65,7 @@ stages:
 
 'cpu':
   extends: .regen job
+  tags: [saas-linux-large-amd64]
   variables:
     OS_BASE: ubuntu20.04
     ARCH: amd64
@@ -74,6 +75,7 @@ stages:
 
 'x86-64':
   extends: .regen job
+  tags: [saas-linux-large-amd64]
   variables:
     OS_BASE: ubuntu20.04
     ARCH: amd64
@@ -83,7 +85,7 @@ stages:
 
 'nvidia':
   extends: .regen job
-  tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
+  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     OS_BASE: ubuntu20.04
     OS_EXT: -cuda11.6.2
@@ -95,6 +97,7 @@ stages:
 
 'sw-cuda':
   extends: .regen job
+  tags: [saas-linux-large-amd64]
   variables:
     OS_BASE: ubuntu20.04
     OS_EXT: -cuda11.8.0
@@ -106,7 +109,7 @@ stages:
 
 'amd':
   extends: .regen job
-  tags: [docker, linux/amd64, gpu/amd/usrspace:5.2]
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
   variables:
     OS_BASE: ubuntu20.04
     OS_EXT: -rocm5.2.3
@@ -120,7 +123,6 @@ stages:
 package:
   stage: publish
   image: docker.io/alpine
-  tags: [docker]
   variables:
     GIT_SUBMODULE_STRATEGY: none
   script:

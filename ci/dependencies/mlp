@@ -21,7 +21,6 @@ pipeline: dict[str, typing.Any] = {
     "stages": ["copy", "trigger"],
     "copy": {
         "stage": "copy",
-        "tags": ["docker"],
         "script": [
             "if test -d spack-ci-artifacts/; then ls -lR spack-ci-artifacts/; else echo 'Nothing to do!'; fi"
         ],

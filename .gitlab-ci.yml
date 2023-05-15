@@ -57,9 +57,6 @@ default:
     - stuck_or_timeout_failure
     - runner_system_failure
 
-  # By default, use a Docker runner with a late-model CI image
-  tags: [docker]
-
 
 # Many jobs need a working copy of the ./dev scriptsuite. This job handles setting it up.
 .dev job:
@@ -72,7 +69,6 @@ default:
 # Pre-commit linting passes must pass for the pipeline to succeed
 precommit:
   stage: lint
-  tags: [docker, linux/amd64]
   image: docker.io/python:3.10-bullseye
   needs: []
   before_script:
@@ -86,6 +82,7 @@ precommit:
 # big orange exclaimation point) but not blocked by upstream Spack.
 'spack install: [amd64]':
   extends: .image job amd64
+  tags: [saas-linux-small-amd64]
   stage: lint
   variables:
     OS_BASE: ubuntu20.04
@@ -116,6 +113,7 @@ precommit:
 # The two devenvs must be consistent with the current version of the ./dev scriptsuite.
 deps check:
   extends: [.image job amd64, .dev job]
+  tags: [saas-linux-small-amd64]
   stage: validate
   variables:
     OS_BASE: ubuntu20.04
@@ -127,6 +125,7 @@ deps check:
 # The Autogoo for the HEAD commit (at least) must be in-sync before we build
 autoreconf:
   extends: [.image job amd64, .dev job]
+  tags: [saas-linux-small-amd64]
   stage: validate
   variables:
     OS_BASE: ubuntu20.04
@@ -235,6 +234,7 @@ regen testdata:
 
 'buildmany: [amd64]':
   extends: [.build job amd64, .buildmany]
+  tags: [saas-linux-small-amd64]
   parallel:
     matrix:
     - OS_BASE: almalinux8
@@ -252,6 +252,7 @@ regen testdata:
     SPEC: '~cuda ~rocm ~level0 !debug (tests2 mpi papi opencl python valgrind_debug)[~<1]'
 'buildmany: [arm64]':
   extends: [.build job arm64, .buildmany]
+  tags: [rice-linux-small-arm64]
   parallel:
     matrix:
     - OS_BASE: ubuntu20.04
@@ -261,6 +262,7 @@ regen testdata:
 
 'buildmany: [amd64, +cuda]':
   extends: [.build job amd64, .buildmany]
+  tags: [saas-linux-small-amd64]
   parallel:
     matrix:
     - CUDA: ['11.8.0', '12.0.1']
@@ -270,19 +272,19 @@ regen testdata:
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
     SPEC: '+cuda ~rocm ~level0 !debug +tests2 (mpi papi opencl python valgrind_debug)[~<1]'
-    NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
 'buildmany: [amd64, +cuda]: [10.2]':
   extends: [.build job amd64, .buildmany]
+  tags: [saas-linux-small-amd64]
   variables:
     OS_BASE: almalinux8
     OS_EXT: -cuda10.2
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc=8
     SPEC: '+cuda ~rocm ~level0 !debug ~tests2 (mpi papi opencl python valgrind_debug)[~<1]'
-    NVIDIA_VISIBLE_DEVICES: ''  # We're just building, no need to access hardware
 
 'buildmany: [amd64, +rocm]':
   extends: [.build job amd64, .buildmany]
+  tags: [saas-linux-small-amd64]
   parallel:
     matrix:
     - ROCM: ['5.1.3', '5.2.3', '5.3.2', '5.4.2']
@@ -295,7 +297,7 @@ regen testdata:
 
 'buildmany: [amd64, +level0]':
   extends: [.build job amd64, .buildmany]
-  tags: [docker, linux/amd64]
+  tags: [saas-linux-small-amd64]
   parallel:
     matrix:
     - ONEAPI: ['2022.2', '2022.3.1', '2023.0.0']
@@ -360,6 +362,7 @@ regen testdata:
 
 'check amd64: [cpu]':
   extends: [.build job amd64, .check]
+  tags: [saas-linux-large-amd64]
   variables:
     OS_BASE: ubuntu20.04
     JOB_CC: gcc-10
@@ -376,6 +379,7 @@ regen testdata:
 
 'check arm64: [cpu]':
   extends: [.build job arm64, .check]
+  tags: [rice-linux-small-arm64]
   variables:
     OS_BASE: ubuntu20.04
     JOB_CC: gcc-10
@@ -392,7 +396,7 @@ regen testdata:
 
 'check amd64: [+cuda, 11.6.2]':
   extends: [.build job amd64, .check]
-  tags: [docker, linux/$ARCH, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
+  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables:
     OS_BASE: ubuntu20.04
     OS_EXT: -cuda11.6.2
@@ -411,6 +415,7 @@ regen testdata:
 
 'check amd64: [+cuda, 11.8.0]':
   extends: [.build job amd64, .check]
+  tags: [saas-linux-large-amd64]
   variables:
     OS_BASE: ubuntu20.04
     OS_EXT: -cuda11.8.0
@@ -430,7 +435,7 @@ regen testdata:
 
 'check amd64: [+rocm]':
   extends: [.build job amd64, .check]
-  tags: [docker, linux/$ARCH, gpu/amd/usrspace:5.2]
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
   variables:
     OS_BASE: ubuntu20.04
     OS_EXT: -rocm5.2.3
