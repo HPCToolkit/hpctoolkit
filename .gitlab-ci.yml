@@ -163,11 +163,7 @@ regen testdata:
 .build job:
   extends: .dev job
   cache:
-  - key: pkgs-$OS_BASE
-    when: always
-    paths:
-    - .pkg-cache/
-  - key: ccache-$OS_BASE-$JOB_CC
+  - key: ccache-$CI_JOB_NAME
     when: always
     paths:
     - .ccache/
@@ -181,20 +177,9 @@ regen testdata:
   variables:
     CCACHE_DIR: '$CI_PROJECT_DIR/.ccache'
     CCACHE_BASEDIR: '$CI_PROJECT_DIR'
-    # Limit the ccache cache size to a modest level.
-    # One HPCToolkit buildmany is ~2.5GB (~600MB compressed) over ~25000 files
-    CCACHE_COMPRESS: 'true'
-    CCACHE_MAXSIZE: '4G'
-    CCACHE_MAXFILES: '50000'
-
-  before_script:
-  - !reference [.dev job, before_script]
-  # Zero the ccache statistics for accurate measurements in the builds
-  - ccache --zero-stats
-
-  after_script:
-  # Zero the ccache statistics to lower GitLab cache thrashing (maybe)
-  - ccache --zero-stats
+    CCACHE_NOCOMPRESS: 'true'
+    CCACHE_MAXSIZE: '5G'
+    CCACHE_MAXFILES: '0'
 
 .build job amd64:
   extends: [.image job amd64, .build job]
@@ -220,7 +205,6 @@ regen testdata:
     --ccache-stats --fail-fast --reproducible $OS_BUILDFE_ARGS -s "$SPEC"
 
   after_script:
-  - !reference [.build job, after_script]
   - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
 
   artifacts:
@@ -358,7 +342,6 @@ regen testdata:
     --ccache-stats --fail-fast --test-junit-copyout --reproducible $OS_BUILDFE_ARGS -1 -s "$SPEC"
 
   after_script:
-  - !reference [.build job, after_script]
   - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
 
   artifacts:
