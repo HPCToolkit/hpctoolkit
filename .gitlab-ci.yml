@@ -209,16 +209,14 @@ regen testdata:
 # at a time. With the exception of +debug, which is flipped at will.
 .buildmany:
   stage: test
+  variables:
+    CENV: latest
   script:
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   - rm -rf logs/
   - >-
     eatmydata dev buildfe -d /spack/cenv/latest --
-    -l "logs/$CI_JOB_NAME/latest" -c "$JOB_CC" -a check-install
-    --ccache-stats --fail-fast --reproducible $OS_BUILDFE_ARGS -s "$SPEC"
-  - >-
-    eatmydata dev buildfe -d /spack/cenv/minimum --
-    -l "logs/$CI_JOB_NAME/minimum" -c "$JOB_CC" -a check-install
+    -l "logs/$CI_JOB_NAME/$CENV" -c "$JOB_CC" -a check-install
     --ccache-stats --fail-fast --reproducible $OS_BUILDFE_ARGS -s "$SPEC"
 
   after_script:
@@ -250,6 +248,10 @@ regen testdata:
       JOB_CC: [gcc=12, clang=15]
   variables:
     SPEC: '~cuda ~rocm ~level0 !debug (tests2 mpi papi opencl python valgrind_debug)[~<1]'
+'buildmany min: [amd64]':
+  extends: 'buildmany: [amd64]'
+  variables:
+    CENV: minimum
 'buildmany: [arm64]':
   extends: [.build job arm64, .buildmany]
   tags: [rice-linux-small-arm64]
@@ -259,6 +261,10 @@ regen testdata:
       JOB_CC: [gcc-10]
   variables:
     SPEC: '~cuda ~rocm ~level0 +debug +valgrind_debug +tests2 (mpi papi opencl python)[~<1]'
+'buildmany min: [arm64]':
+  extends: 'buildmany: [arm64]'
+  variables:
+    CENV: minimum
 
 'buildmany: [amd64, +cuda]':
   extends: [.build job amd64, .buildmany]
@@ -272,6 +278,10 @@ regen testdata:
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc-9
     SPEC: '+cuda ~rocm ~level0 !debug +tests2 (mpi papi opencl python valgrind_debug)[~<1]'
+'buildmany min: [amd64, +cuda]':
+  extends: ['buildmany: [amd64, +cuda]']
+  variables:
+    CENV: minimum
 'buildmany: [amd64, +cuda]: [10.2]':
   extends: [.build job amd64, .buildmany]
   tags: [saas-linux-small-amd64]
@@ -281,6 +291,10 @@ regen testdata:
     OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
     JOB_CC: gcc=8
     SPEC: '+cuda ~rocm ~level0 !debug ~tests2 (mpi papi opencl python valgrind_debug)[~<1]'
+'buildmany min: [amd64, +cuda]: [10.2]':
+  extends: ['buildmany: [amd64, +cuda]: [10.2]']
+  variables:
+    CENV: minimum
 
 'buildmany: [amd64, +rocm]':
   extends: [.build job amd64, .buildmany]
@@ -294,6 +308,10 @@ regen testdata:
     OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
     JOB_CC: gcc-9
     SPEC: '~cuda +rocm ~level0 !debug +tests2 (mpi papi opencl python valgrind_debug)[~<1]'
+'buildmany min: [amd64, +rocm]':
+  extends: ['buildmany: [amd64, +rocm]']
+  variables:
+    CENV: minimum
 
 'buildmany: [amd64, +level0]':
   extends: [.build job amd64, .buildmany]
@@ -308,6 +326,10 @@ regen testdata:
     OS_BUILDFE_ARGS: '-C--with-level0=/usr -C--with-igc=/usr -C--with-gtpin=/opt/gtpin-$GTPIN/Profilers'
     JOB_CC: gcc-9
     SPEC: '~cuda ~rocm +level0 !debug +tests2 (mpi papi opencl python gtpin valgrind_debug)[~<1]'
+'buildmany min: [amd64, +level0]':
+  extends: ['buildmany: [amd64, +level0]']
+  variables:
+    CENV: minimum
 
 
 # Build single versions of the codebase and run unit tests through `make check`
