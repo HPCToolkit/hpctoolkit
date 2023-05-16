@@ -63,6 +63,10 @@
 
 #include "gpu-print.h"
 
+#define GPU_INTERVAL_ENDPOINT_INVALID 0
+#define GPU_INTERVAL_ENDPOINT_ISINVALID(time) \
+  ((time) == GPU_INTERVAL_ENDPOINT_INVALID)
+
 
 
 //******************************************************************************
@@ -173,13 +177,24 @@ gpu_interval_set
   if (start > end) {
     EMSG("WARNING: Suppressing reversed time interval for GPU activity: %u > %u",
       (unsigned long)start, (unsigned long)end);
-    end = start + 1;
+    end = start = GPU_INTERVAL_ENDPOINT_INVALID;
   }
 
   interval->start = start;
   interval->end = end;
   PRINT("gpu interval: [%lu, %lu) delta = %ld\n", interval->start,
         interval->end, interval->end - interval->start);
+}
+
+
+bool
+gpu_interval_is_invalid
+(
+  gpu_interval_t *gi
+)
+{
+  return GPU_INTERVAL_ENDPOINT_ISINVALID(gi->start) |
+         GPU_INTERVAL_ENDPOINT_ISINVALID(gi->end);
 }
 
 
