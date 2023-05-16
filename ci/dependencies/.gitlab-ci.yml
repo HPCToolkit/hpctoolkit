@@ -59,12 +59,16 @@
     matrix:
     - IMAGE_NAME: ghcr.io/spack/leap15:latest
       IMAGE: leap15
+      CENV: &cenv [latest, minimum, _autogen]
     - IMAGE_NAME: ghcr.io/spack/almalinux8:latest
       IMAGE: almalinux8
+      CENV: *cenv
     - IMAGE_NAME: ghcr.io/spack/ubuntu-focal:latest
       IMAGE: ubuntu20.04
+      CENV: *cenv
     - IMAGE_NAME: ghcr.io/spack/fedora37:latest
       IMAGE: fedora37
+      CENV: *cenv
 
   script:
   # Rename the abstract environments to an OS/ARCH double for concretization
@@ -72,25 +76,19 @@
   # Load the target downstream buildcache (reuse is enabled)
   - spack config add -f "$SBCACHE_YAML"
   # Burn in the mirrors from the config so that they are present for the installs later
-  - >-
-    echo -e "_autogen\nminimum\nlatest" | xargs -I '{}' -t
-    spack -e "cenv/$IMAGE-$ARCH/{}/" config add -f ci/dependencies/config/mirrors.yaml
+  - spack -e "cenv/$IMAGE-$ARCH/$CENV/" config add -f ci/dependencies/config/mirrors.yaml
   # Add a fake mirror to the environments to keep Spack happy
-  - >-
-    echo -e "_autogen\nminimum\nlatest" | xargs -I '{}' -t
-    spack -e "cenv/$IMAGE-$ARCH/{}/" mirror add fake http://nowhere
+  - spack -e "cenv/$IMAGE-$ARCH/$CENV/" mirror add fake http://nowhere
   # Concretize and generate pipelines for each of the environments
-  - >-
-    echo -e "_autogen\nminimum\nlatest" | xargs -I '{}' -t
-    spack -e "cenv/$IMAGE-$ARCH/{}/" -C ci/dependencies/config/ ci generate
+  - spack -e "cenv/$IMAGE-$ARCH/$CENV/" -C ci/dependencies/config/ ci generate
     --check-index-only
     --buildcache-destination "$(spack mirror list | grep -m1 '^main-bcache ' | awk '{print $2}')"
-    --artifacts-root "spack-ci-artifacts/$IMAGE-$ARCH/{}/"
-    --output-file "spack-ci-artifacts/$IMAGE-$ARCH/{}/ci.yml"
+    --artifacts-root "spack-ci-artifacts/$IMAGE-$ARCH/$CENV/"
+    --output-file "spack-ci-artifacts/$IMAGE-$ARCH/$CENV/ci.yml"
   # Annotate the pipeline with the source job, for the MLP
   - >-
     echo -e "\n...\n---\nsource: {pipeline: \"$CI_PIPELINE_ID\", job: \"$CI_JOB_NAME\", name: \"$IMAGE $ARCH\"}"
-    | tee -a spack-ci-artifacts/$IMAGE-$ARCH/{_autogen,minimum,latest}/ci.yml
+    | tee -a spack-ci-artifacts/$IMAGE-$ARCH/$CENV/ci.yml
 
   artifacts:
     paths:
