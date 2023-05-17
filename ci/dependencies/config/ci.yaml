@@ -48,6 +48,8 @@ ci:
       resource_group: bcbuild-$SPACK_JOB_SPEC_DAG_HASH
 
       script:
+      - spack --version
+
       # Configure Spack for building relocatable packages
       - spack config add 'config:install_tree:padded_length:100'
 

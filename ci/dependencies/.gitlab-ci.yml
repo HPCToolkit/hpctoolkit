@@ -24,6 +24,7 @@
     entrypoint: ['spack-env']
   needs: []
   script:
+  - spack --version
   - yum list installed python3-devel || yum install -y python3-devel
   # Install the ./dev script in a virtual environment
   - python3 -m venv .dev_venv --clear --upgrade-deps --system-site-packages
@@ -71,6 +72,7 @@
       CENV: *cenv
 
   script:
+  - spack --version
   # Rename the abstract environments to an OS/ARCH double for concretization
   - mv cenv/any cenv/$IMAGE-$ARCH
   # Load the target downstream buildcache (reuse is enabled)
