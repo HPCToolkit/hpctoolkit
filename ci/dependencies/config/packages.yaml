@@ -7,16 +7,9 @@ packages:
     # Disallow infinity versions, we only support full "point" releases
     - &noinf '@:99999999'
 
-    providers:
-      # Use OpenMPI for MPI in CI
-      mpi: [openmpi]
-
   mpi:
-    # No, really use OpenMPI for MPI in CI
-    require:
-    - *target
-    - *noinf
-    - 'openmpi'
+    # MPI in CI is OpenMPI
+    require: openmpi
 
   openmpi:
     require:
