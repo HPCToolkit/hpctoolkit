@@ -150,8 +150,8 @@ void MetaDB::instance(const File& f) {
       const auto& rp = f.userdata[src.resolvedPath()];
       if(!rp.empty()) {
         assert(rp.is_absolute());  // This technique only works on absolute paths
-        auto p = stdshim::filesystem::path("src") / rp.relative_path().lexically_normal();
-        p = dir / p;
+        auto relative = stdshim::filesystem::path("src") / rp.relative_path().lexically_normal();
+        auto p = dir / relative;
 
         bool ok = false;
         try {
@@ -164,7 +164,7 @@ void MetaDB::instance(const File& f) {
             << e.code().message() << " [" << rp.string() << "]";
         }
         if(ok) {
-          udf.pPath_base = stringsTableLookup(p.string());
+          udf.pPath_base = stringsTableLookup(relative.string());
           udf.copied = true;
           return;
         }
