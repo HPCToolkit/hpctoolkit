@@ -1,0 +1,36 @@
+container:
+  images:
+    build: ghcr.io/spack/ubuntu-focal:latest
+    final: 'docker.io/rocm/dev-ubuntu-20.04:5.3.2'
+
+  os_packages:
+    command: apt
+    final:
+    - bzip2
+    - ca-certificates
+    - ccache
+    - clang
+    - libomp-dev
+    - curl
+    - eatmydata
+    - file
+    - gcc-10
+    - g++-10
+    - gfortran-10
+    - gcc-9
+    - g++-9
+    - gfortran-9
+    - gcc
+    - g++
+    - gfortran
+    - git
+    - git-lfs
+    - gnupg2
+    - make
+    - mercurial
+    - patch
+    - patchelf
+    - subversion
+    - unzip
+    - xz-utils
+    - zstd

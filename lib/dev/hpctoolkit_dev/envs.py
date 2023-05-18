@@ -51,8 +51,8 @@ class AutogenEnv(SpackEnv):
     def autoreconf(self) -> Command:
         return self.which("autoreconf", self._AUTOCONF_SPEC)
 
-    def generate(self) -> None:
-        self.generate_explicit(self._SPECS, DependencyMode.ANY)
+    def generate(self, template: dict | None = None) -> None:
+        self.generate_explicit(self._SPECS, DependencyMode.ANY, template=template)
 
 
 class DevEnv(SpackEnv):
@@ -219,8 +219,8 @@ class DevEnv(SpackEnv):
     def load_all(self) -> ShEnv:
         return self.load(*self._specs, allow_missing_when=True)
 
-    def generate(self, mode: DependencyMode) -> None:
-        self.generate_explicit(self._specs, mode)
+    def generate(self, mode: DependencyMode, template: dict | None = None) -> None:
+        self.generate_explicit(self._specs, mode, template=template)
         with open(self.root / "dev.json", "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f)
 
