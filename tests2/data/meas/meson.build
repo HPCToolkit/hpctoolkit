@@ -27,7 +27,7 @@ _measurements = {
     'suite': 'none',
   },
   'loops-perf-t': {
-    'cmd': [_run, '--', '@OUTPUT@', '-e', 'cycles@f100', '-e', 'instructions@120000000', '-t', _exe_loops],
+    'cmd': [_run, '--', '@OUTPUT@', '-e', 'cycles@f1000', '-e', 'instructions@12000000', '-t', _exe_loops],
     'suite': 'cpu',
   },
   'loops-cuda-nvidia-t': {
