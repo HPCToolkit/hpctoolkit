@@ -1,6 +1,7 @@
 import collections
 import collections.abc
 import contextlib
+import copy
 import enum
 import functools
 import json
@@ -282,7 +283,10 @@ class SpackEnv:
     )
 
     def generate_explicit(
-        self, specs: collections.abc.Collection[VerConSpec], mode: DependencyMode
+        self,
+        specs: collections.abc.Collection[VerConSpec],
+        mode: DependencyMode,
+        template: dict | None = None,
     ) -> None:
         """Generate the Spack environment."""
         yaml = ruamel.yaml.YAML(typ="safe")
@@ -290,26 +294,25 @@ class SpackEnv:
 
         self.root.mkdir(exist_ok=True)
 
-        contents: dict[str, typing.Any] = {"spack": {"view": False}}
-        if (self.root / "spack.yaml").exists():
-            with open(self.root / "spack.yaml", encoding="utf-8") as f:
-                contents = yaml.load(f)
+        contents: dict[str, typing.Any] = {
+            "spack": copy.deepcopy(template) if template is not None else {}
+        }
+        sp = contents.setdefault("spack", {})
+        if "view" not in sp:
+            sp["view"] = False
 
-        contents["spack"].setdefault("concretizer", {})["unify"] = True
-
-        contents["spack"]["definitions"] = [
-            d for d in contents["spack"].get("definitions", []) if "_dev" not in d
-        ]
+        sp.setdefault("concretizer", {})["unify"] = True
+        sp["definitions"] = [d for d in contents["spack"].get("definitions", []) if "_dev" not in d]
         for when, subspecs in sorted(
             resolve_specs(specs, mode).items(), key=lambda kv: kv[0] or ""
         ):
             clause: dict[str, str | list[str]] = {"_dev": sorted(subspecs)}
             if when is not None:
                 clause["when"] = when
-            contents["spack"]["definitions"].append(clause)
+            sp["definitions"].append(clause)
 
-        if "$_dev" not in contents["spack"].setdefault("specs", []):
-            contents["spack"]["specs"].append("$_dev")
+        if "$_dev" not in sp.setdefault("specs", []):
+            sp["specs"].append("$_dev")
 
         with open(self.root / "spack.yaml", "w", encoding="utf-8") as f:
             yaml.dump(contents, f)

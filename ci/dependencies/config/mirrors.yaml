@@ -1,3 +1,0 @@
-mirrors:
-  # Reuse from the Spack public buildcache when possible
-  develop: 's3://spack-binaries/develop'

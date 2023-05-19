@@ -1,4 +1,0 @@
-config:
-  ccache: true
-  install_tree:
-    root: /spack/install

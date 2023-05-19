@@ -16,6 +16,7 @@ import venv
 from pathlib import Path
 
 import click
+import ruamel.yaml
 
 from .buildfe._main import main as buildfe_main
 from .command import Command
@@ -499,6 +500,15 @@ following commands to restore consistency:
     )
 
 
+def template_merge(base: dict, overlay: dict) -> dict:
+    for k, v in overlay.items():
+        if k in base and isinstance(base[k], dict) and isinstance(v, dict):
+            base[k] = template_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+
 @main.command
 @NamedEnv.pass_env_arg(notexists=True)
 # Generation type
@@ -554,7 +564,13 @@ following commands to restore consistency:
     help="Enable PAPI (-e PAPI_*) support",
 )
 @click.option("--mpi", type=feature, default="auto", help="Enable hpcprof-mpi")
-def generate(
+@click.option(
+    "--template",
+    type=click.File(),
+    help="Use the given Spack environment template. Additional templates will be merged recursively.",
+    multiple=True,
+)
+def generate(  # noqa: C901
     devenv: Path,
     autogen: bool,
     mode: DependencyMode,
@@ -567,7 +583,9 @@ def generate(
     python: feature_ty,
     papi: feature_ty | typing.Literal["both"],
     mpi: feature_ty,
+    template: tuple[typing.TextIO, ...],
 ) -> None:
+    # pylint: disable=too-many-locals
     """Generate a DEVENV for manual installation.
 
     Consider using 'dev create' instead. This command is only needed if the development environment
@@ -579,17 +597,36 @@ def generate(
     poststeps: list[str] = []
     nice_devenv = shlex.quote(str(devenv))
 
+    env_template: dict | None = None
+    template_settings: dict = {}
+    if template:
+        yaml = ruamel.yaml.YAML(typ="safe")
+        env_template = {}
+        for t in template:
+            data = yaml.load(t)
+            if data and not isinstance(data, dict):
+                raise click.ClickException(f"Invalid template, expected !map but got {data!r}")
+            env_template = template_merge(env_template, data)
+        template_settings = env_template.pop("dev", {})
+
     def feature2bool(name: str, value: feature_ty | typing.Literal["both"]) -> bool:
         if value != "auto":
             return value == "enabled"
         if auto != "auto":
             return auto == "enabled"
+        t = template_settings.get("features", {}).get(name)
+        if t is not None:
+            if t == "both" and name == "papi":
+                return False
+            if not isinstance(t, bool):
+                raise ValueError(t)
+            return t
         raise click.UsageError(f"Missing a non-auto setting for --{name} and --auto not set!")
 
     try:
         if autogen:
             aenv = AutogenEnv(devenv)
-            aenv.generate()
+            aenv.generate(template=env_template)
         else:
             denv = DevEnv(
                 devenv,
@@ -600,11 +637,15 @@ def generate(
                 opencl=feature2bool("opencl", opencl),
                 python=feature2bool("python", python),
                 papi=feature2bool("papi", papi),
-                optional_papi=(papi == "both"),
+                optional_papi=(
+                    papi == "both"
+                    or papi == "auto"
+                    and template_settings.get("features", {}).get("papi") == "both"
+                ),
                 mpi=feature2bool("mpi", mpi),
             )
             click.echo(denv.describe())
-            denv.generate(mode)
+            denv.generate(mode, template=env_template)
             presteps.append(f"./dev edit -d {nice_devenv}   # (optional)")
             poststeps.append(f"./dev populate {nice_devenv}")
     except KeyboardInterrupt:

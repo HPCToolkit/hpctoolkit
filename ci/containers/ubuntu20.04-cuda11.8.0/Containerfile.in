@@ -1,6 +1,0 @@
-# Dockerfile for CI image for Ubuntu Focal (20.04) with CUDA 11.8.0
-
-FROM docker.io/nvidia/cuda:11.8.0-devel-ubuntu20.04 as base
-ARG TARGETARCH
-
-INCLUDE ../ubuntu20.04/main.inc
