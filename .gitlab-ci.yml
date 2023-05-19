@@ -349,6 +349,10 @@ regen testdata:
     include:
     - local: tests2/data/.gitlab-ci.yml
   variables:
+    PARENT_IMAGE_amd64_ubuntu20_04: $IMAGE_amd64_ubuntu20_04_latest
+    PARENT_IMAGE_amd64_cuda11_6_2: $IMAGE_amd64_cuda11_6_2_latest
+    PARENT_IMAGE_amd64_cuda11_8_0: $IMAGE_amd64_cuda11_8_0_latest
+    PARENT_IMAGE_amd64_rocm5_2_3: $IMAGE_amd64_rocm5_2_3_latest
     PARENT_PIPELINE_ID: $CI_PIPELINE_ID
     GIT_SUBMODULE_STRATEGY: recursive
 
