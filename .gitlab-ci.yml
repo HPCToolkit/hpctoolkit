@@ -74,22 +74,40 @@ default:
 # Phase 1: setup:*
 #----------------------------------------------
 
+# Identify the latest develop-snapshot image built by Spack
+setup:identify:
+  stage: .pre
+  image:
+    name: quay.io/skopeo/stable
+    entrypoint: ['']
+  variables:
+    GIT_STRATEGY: none
+  script:
+  - yum install -y jq
+  - skopeo list-tags docker://ghcr.io/spack/ubuntu-focal > tags.json
+  - jq --raw-output '.Tags | map(select(test("^develop-[\\d-]+"))) | sort | reverse | .[0]' tags.json > spacktag.txt
+  - echo "SPACKTAG=$(cat spacktag.txt)" > spacktag.env
+  artifacts:
+    reports:
+      dotenv: spacktag.env
+
 # Generate a matrix of Dockerfiles for all the "spins" we test in CI
 setup:gen:
   extends: .dev job
   stage: setup:gen
   image:
-    name: ghcr.io/spack/fedora37:latest
+    name: ghcr.io/spack/fedora37:$SPACKTAG
     entrypoint: ['spack-env']
   variables:
     MODE: '--any'
-  needs: []
+  needs: ['setup:identify']
   before_script:
   - spack --version
   - yum list installed python3-devel || yum install -y python3-devel
   - !reference [.dev job, before_script]
   # Prepare to generate spins
   - mkdir imgctxs/
+  - sed -i "s/{SPACKTAG}/$SPACKTAG/g" ci/spins/*.yaml
   - |
     genimg() {
       set -x
