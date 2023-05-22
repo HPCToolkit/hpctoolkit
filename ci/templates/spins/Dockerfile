@@ -47,6 +47,9 @@ RUN find -L {{ paths.view }}/* -type f -exec readlink -f '{}' \; | \
 # Modifications to the environment that are necessary to run
 RUN spack env activate --sh -d {{ paths.environment }} > /opt/spack-environment/activate.sh
 
+# The view is a symlink. Copy it into a separate directory to preserve it's symlink status.
+RUN mkdir /view-final && mv {{ paths.view }} /view-final/
+
 {% if extra_instructions.build %}
 {{ extra_instructions.build }}
 {% endif %}
@@ -60,7 +63,7 @@ FROM {{ run.image }}
 COPY --from=builder {{ paths.environment }} {{ paths.environment }}
 COPY --from=builder {{ paths.store }} {{ paths.store }}
 COPY --from=builder {{ paths.hidden_view }} {{ paths.hidden_view }}
-COPY --from=builder {{ paths.view }} {{ paths.view }}
+COPY --from=builder /view-final /opt
 
 RUN ln -s /opt/spack-environment/activate.sh /etc/profile.d/z10_spack_environment.sh \
 &&  printf '#!/bin/sh\n. /opt/spack-environment/activate.sh\nexec "$@"' > /entrypoint.sh \
