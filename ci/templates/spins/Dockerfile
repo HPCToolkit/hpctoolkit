@@ -60,6 +60,12 @@ RUN mkdir /view-final && mv {{ paths.view }} /view-final/
 # Bare OS image to run the installed executables
 FROM {{ run.image }}
 
+{% if os_packages_final %}
+RUN {% if os_package_update %}{{ os_packages_final.update }} \
+ && {% endif %}{{ os_packages_final.install }} {{ os_packages_final.list | join | replace('\n', ' ') }} \
+ && {{ os_packages_final.clean }}
+{% endif %}
+
 COPY --from=builder {{ paths.environment }} {{ paths.environment }}
 COPY --from=builder {{ paths.store }} {{ paths.store }}
 COPY --from=builder {{ paths.hidden_view }} {{ paths.hidden_view }}
@@ -70,14 +76,7 @@ RUN ln -s /opt/spack-environment/activate.sh /etc/profile.d/z10_spack_environmen
 &&  chmod a+x /entrypoint.sh
 
 {% block final_stage %}
-
-{% if os_packages_final %}
-RUN {% if os_package_update %}{{ os_packages_final.update }} \
- && {% endif %}{{ os_packages_final.install }} {{ os_packages_final.list | join | replace('\n', ' ') }} \
- && {{ os_packages_final.clean }}
-{% endif %}
 {% if extra_instructions.final %}
-
 {{ extra_instructions.final }}
 {% endif %}
 {% endblock final_stage %}
