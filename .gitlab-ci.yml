@@ -176,7 +176,6 @@ setup:gen autogen:
 .setup:build:
   stage: setup:build
   image: quay.io/buildah/stable
-  retry: 2
   needs: [setup:gen]
   before_script:
   # Log into the registry
