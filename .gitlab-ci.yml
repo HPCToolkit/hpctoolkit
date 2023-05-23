@@ -209,7 +209,7 @@ setup:gen autogen:
 
 'setup:build: [amd64]':
   extends: .setup:build
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-small-amd64, huge-fs]
   variables:
     ARCH: amd64
     MODE: main
@@ -246,7 +246,7 @@ setup:gen autogen:
 
 'setup:build: [arm64]':
   extends: .setup:build
-  tags: [rice-linux-small-arm64]
+  tags: [rice-linux-small-arm64, huge-fs]
   variables:
     ARCH: arm64
     MODE: main
