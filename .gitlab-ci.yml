@@ -285,18 +285,27 @@ precommit:
 
 
 # Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
-# Failures are allowed so that if the dependencies or build flags shift, we are made aware (by a
-# big orange exclaimation point) but not blocked by upstream Spack.
+# Failures are allowed for MRs so that if the dependencies or build flags shift, we are made aware
+# (by a big orange exclaimation point) but not blocked by upstream Spack.
 'spack install: [amd64]':
   stage: lint
   image: $IMAGE_amd64_ubuntu20_04_main
   needs: ['setup:build: [amd64]: [ubuntu20.04]']
   tags: [saas-linux-small-amd64]
-  allow_failure: true
+  rules:
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+    allow_failure: false
+  - allow_failure: true
   cache:
     key: spack
     when: always
     paths: [.spack.git]
+  parallel:
+    matrix:
+    - VARIANTS:
+      # TODO: Expand this list a bit sometime to better represent what we want to ensure works
+      - +papi
+      - ~papi
   script:
   # Instantiate a fresh Spack develop (instead of whatever is burned into the image)
   - |
@@ -308,12 +317,10 @@ precommit:
   - git clone --shared --branch=develop .spack.git .spack
   - export PATH="$(realpath .spack)"/bin:"$PATH"
   # Spack out a representative HPCToolkit. All dependencies should already be built.
-  # TODO: Expand this list a bit sometime to better represent what we want to ensure works
-  - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"
   - >-
     eatmydata spack install --fail-fast --add
-    "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
-    "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"
+    "hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop
+    ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
 
 #-----------------------------------
 # Phase 2: validate
