@@ -19,6 +19,11 @@ packages:
     # Disallow infinity versions, we only support full "point" releases
     - &noinf '@:99999999'
 
+  hpctoolkit:
+    # HPCToolkit is allowed to have infinity versions
+    require:
+    - *target
+
   mpi:
     # MPI in CI is OpenMPI
     require: openmpi

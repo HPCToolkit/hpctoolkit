@@ -9,7 +9,6 @@ stages:
 
 # Job template to regenerate some subset of the test data
 .regen job:
-  image: $DEPS_IMAGE_PREFIX-$OS_BASE$OS_EXT-$ARCH
   stage: generate
   cache:
   - key: pkgs-$IMAGE_BASE

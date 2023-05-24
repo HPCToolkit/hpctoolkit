@@ -1,7 +1,15 @@
 {% extends "spins/Dockerfile" %}
+{% block build_stage %}
+{{ super() }}
+
+# Save the compilers to copy into the final image
+RUN spack config get compilers > /compilers.yaml
+
+{% endblock %}
 {% block final_stage %}
 {{ super() }}
 
+COPY --from=builder /compilers.yaml /etc/spack/compilers.yaml
 COPY dev.json /opt/spack-environment/
 
 # Install Spack develop

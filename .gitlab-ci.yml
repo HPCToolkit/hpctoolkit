@@ -74,22 +74,40 @@ default:
 # Phase 1: setup:*
 #----------------------------------------------
 
+# Identify the latest develop-snapshot image built by Spack
+setup:identify:
+  stage: .pre
+  image:
+    name: quay.io/skopeo/stable
+    entrypoint: ['']
+  variables:
+    GIT_STRATEGY: none
+  script:
+  - yum install -y jq
+  - skopeo list-tags docker://ghcr.io/spack/ubuntu-focal > tags.json
+  - jq --raw-output '.Tags | map(select(test("^develop-[\\d-]+"))) | sort | reverse | .[0]' tags.json > spacktag.txt
+  - echo "SPACKTAG=$(cat spacktag.txt)" > spacktag.env
+  artifacts:
+    reports:
+      dotenv: spacktag.env
+
 # Generate a matrix of Dockerfiles for all the "spins" we test in CI
 setup:gen:
   extends: .dev job
   stage: setup:gen
   image:
-    name: ghcr.io/spack/fedora37:latest
+    name: ghcr.io/spack/fedora37:$SPACKTAG
     entrypoint: ['spack-env']
   variables:
     MODE: '--any'
-  needs: []
+  needs: ['setup:identify']
   before_script:
   - spack --version
   - yum list installed python3-devel || yum install -y python3-devel
   - !reference [.dev job, before_script]
   # Prepare to generate spins
   - mkdir imgctxs/
+  - sed -i "s/{SPACKTAG}/$SPACKTAG/g" ci/spins/*.yaml
   - |
     genimg() {
       set -x
@@ -158,7 +176,6 @@ setup:gen autogen:
 .setup:build:
   stage: setup:build
   image: quay.io/buildah/stable
-  retry: 2
   needs: [setup:gen]
   before_script:
   # Log into the registry
@@ -192,7 +209,7 @@ setup:gen autogen:
 
 'setup:build: [amd64]':
   extends: .setup:build
-  tags: [saas-linux-small-amd64]
+  tags: [saas-linux-small-amd64, huge-fs]
   variables:
     ARCH: amd64
     MODE: main
@@ -229,7 +246,7 @@ setup:gen autogen:
 
 'setup:build: [arm64]':
   extends: .setup:build
-  tags: [rice-linux-small-arm64]
+  tags: [rice-linux-small-arm64, huge-fs]
   variables:
     ARCH: arm64
     MODE: main
@@ -268,18 +285,27 @@ precommit:
 
 
 # Check that the Spack recipe for @develop is sufficiently up-to-date to compile this branch.
-# Failures are allowed so that if the dependencies or build flags shift, we are made aware (by a
-# big orange exclaimation point) but not blocked by upstream Spack.
+# Failures are allowed for MRs so that if the dependencies or build flags shift, we are made aware
+# (by a big orange exclaimation point) but not blocked by upstream Spack.
 'spack install: [amd64]':
   stage: lint
   image: $IMAGE_amd64_ubuntu20_04_main
   needs: ['setup:build: [amd64]: [ubuntu20.04]']
   tags: [saas-linux-small-amd64]
-  allow_failure: true
+  rules:
+  - if: $CI_COMMIT_REF_PROTECTED == "true"
+    allow_failure: false
+  - allow_failure: true
   cache:
     key: spack
     when: always
     paths: [.spack.git]
+  parallel:
+    matrix:
+    - VARIANTS:
+      # TODO: Expand this list a bit sometime to better represent what we want to ensure works
+      - +papi
+      - ~papi
   script:
   # Instantiate a fresh Spack develop (instead of whatever is burned into the image)
   - |
@@ -291,12 +317,10 @@ precommit:
   - git clone --shared --branch=develop .spack.git .spack
   - export PATH="$(realpath .spack)"/bin:"$PATH"
   # Spack out a representative HPCToolkit. All dependencies should already be built.
-  # TODO: Expand this list a bit sometime to better represent what we want to ensure works
-  - HPCTOOLKIT="hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop"
   - >-
     eatmydata spack install --fail-fast --add
-    "$HPCTOOLKIT ~viewer ~mpi ~debug +papi +opencl ~cuda ~rocm ~level_zero"
-    "$HPCTOOLKIT ~viewer ~mpi ~debug ~papi +opencl ~cuda ~rocm ~level_zero"
+    "hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop
+    ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
 
 #-----------------------------------
 # Phase 2: validate
@@ -349,10 +373,10 @@ regen testdata:
     include:
     - local: tests2/data/.gitlab-ci.yml
   variables:
-    PARENT_IMAGE_amd64_ubuntu20_04: $IMAGE_amd64_ubuntu20_04_latest
-    PARENT_IMAGE_amd64_cuda11_6_2: $IMAGE_amd64_cuda11_6_2_latest
-    PARENT_IMAGE_amd64_cuda11_8_0: $IMAGE_amd64_cuda11_8_0_latest
-    PARENT_IMAGE_amd64_rocm5_2_3: $IMAGE_amd64_rocm5_2_3_latest
+    PARENT_IMAGE_amd64_ubuntu20_04: $IMAGE_amd64_ubuntu20_04_main
+    PARENT_IMAGE_amd64_cuda11_6_2: $IMAGE_amd64_cuda11_6_2_main
+    PARENT_IMAGE_amd64_cuda11_8_0: $IMAGE_amd64_cuda11_8_0_main
+    PARENT_IMAGE_amd64_rocm5_2_3: $IMAGE_amd64_rocm5_2_3_main
     PARENT_PIPELINE_ID: $CI_PIPELINE_ID
     GIT_SUBMODULE_STRATEGY: recursive
 

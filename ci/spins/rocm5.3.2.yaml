@@ -1,6 +1,6 @@
 container:
   images:
-    build: ghcr.io/spack/ubuntu-focal:latest
+    build: ghcr.io/spack/ubuntu-focal:{SPACKTAG}
     final: 'docker.io/rocm/dev-ubuntu-20.04:5.3.2'
 
   os_packages:

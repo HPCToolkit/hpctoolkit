@@ -4,7 +4,7 @@ container:
     #     os: 'ubuntu:20.04'
     #     spack: develop
     # But that doesn't work because Spack uses unqualified names for the images. Ugh.
-    build: ghcr.io/spack/ubuntu-focal:latest
+    build: ghcr.io/spack/ubuntu-focal:{SPACKTAG}
     final: docker.io/ubuntu:20.04
 
   os_packages:
