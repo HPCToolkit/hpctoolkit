@@ -155,8 +155,7 @@ using namespace std;
 #define DEBUG_UNKNOWN_CALLBACK  0
 #define DEBUG_NEW_GAPS  0
 
-#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS  \
-  || DEBUG_UNKNOWN_CALLBACK || DEBUG_NEW_GAPS
+#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS || DEBUG_NEW_GAPS
 #define DEBUG_ANY_ON  1
 #else
 #define DEBUG_ANY_ON  0
@@ -166,6 +165,7 @@ using namespace std;
 #define WORK_LIST_PCT  0.05
 
 static int merge_irred_loops = 1;
+static int fix_unknown_x86_instns = 1;
 
 
 //******************************************************************************
@@ -188,7 +188,7 @@ static size_t cubin_size = 0;
 
 static BAnal::Struct::Options opts;
 
-static mutex gaps_mutex;
+static mutex debug_mutex;
 
 //----------------------------------------------------------------------
 
@@ -566,11 +566,9 @@ InstructionAPI::Instruction
 myXedCallback(InstructionDecoder::buffer seqn)
 {
   uint8_t buf[MY_BUF_SIZE];
-  xed_decoded_inst_t xedd;
-  xed_state_t dstate;
-  int xed_error;
   Instruction ret;
 
+  // copy into array of uint8_t for xed
   int buf_len = 0;
   for (auto p = seqn.start; p != seqn.end; ++p) {
     buf[buf_len] = (uint8_t) *p;
@@ -581,46 +579,85 @@ myXedCallback(InstructionDecoder::buffer seqn)
     }
   }
 
+  xed_decoded_inst_t xedd;
+  xed_state_t dstate;
+  unsigned int xed_len = 0;
+
+  // test beginning of buffer
   xed_state_zero(&dstate);
   dstate.mmode = XED_MACHINE_MODE_LONG_64;
-
   xed_decoded_inst_zero_set_mode(&xedd, &dstate);
-  xed_error = xed_decode(&xedd, buf, buf_len);
-  unsigned int inst_len = xed_decoded_inst_get_length(&xedd);
 
-  if (xed_error == XED_ERROR_NONE) {
-    // a dyninst fake no-op, all we care about is the length, since we
-    // don't expect any control flow here
+  int xed_error = xed_decode(&xedd, buf, buf_len);
+  bool is_valid = (xed_error == XED_ERROR_NONE);
+
+  if (is_valid && fix_unknown_x86_instns) {
+    //
+    // valid instruction at beginning of buffer -- return a dyninst
+    // fake no-op, all we care about is the length, since we don't
+    // expect any control flow here
+    //
+    xed_len = xed_decoded_inst_get_length(&xedd);
     ret = Instruction {
       { e_nop, "nop", Arch_x86_64 },
-      inst_len,
+      xed_len,
       seqn.start,
       Arch_x86_64
     };
   }
   else {
-    // not a valid instruction
+    //
+    // invalid instruction
+    //
     ret = Instruction {};
   }
 
 #if DEBUG_UNKNOWN_CALLBACK
-  // serialize the output to allow for multiple threads
+
+  int start;
+  bool is_troll = false;
+  
+  if (! is_valid) {
+    //
+    // try trolling for next instuction, but do not fix.
+    // if found, then likely dyninst is out of sync
+    //
+    for (start = 1; start < buf_len; start++) {
+      xed_state_zero(&dstate);
+      dstate.mmode = XED_MACHINE_MODE_LONG_64;
+      xed_decoded_inst_zero_set_mode(&xedd, &dstate);
+      xed_error = xed_decode(&xedd, buf + start, buf_len - start);
+
+      if (xed_error == XED_ERROR_NONE) {
+	is_troll = true;
+	xed_len = xed_decoded_inst_get_length(&xedd);
+	break;
+      }
+    }
+  }
+
+  // serialize the output to allow for multiple threads.
   // we could sprintf() to a buffer and then dump all at once
-  gaps_mutex.lock();
+  debug_mutex.lock();
 
   printf("unknown: ");
   for (int i = 0; i < buf_len; i++) {
     printf(" %02x", buf[i]);
   }
-  if (xed_error == XED_ERROR_NONE) {
-    printf("  -->  %d\n", inst_len);
+  if (is_valid) {
+    printf("  valid: %d%s\n",
+	   xed_len, (fix_unknown_x86_instns ? "  (fix)" : ""));
+  }
+  else if (is_troll) {
+    printf("  troll: %d, %d\n", start, xed_len);
   }
   else {
-    printf("  -->  error: %d\n", xed_error);
+    printf("  error:\n");
   }
 
-  gaps_mutex.unlock();
-#endif
+  debug_mutex.unlock();
+
+#endif  // DEBUG_UNKNOWN_CALLBACK
 
   return ret;
 }
@@ -765,7 +802,7 @@ makeStructure(string filename,
       parsable = readCudaCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
       has_calls = structOpts.compute_gpu_cfg;
-    } 
+    }
     else if (intel_file) { // don't run parseapi on intel binary
       intel_gpu_arch = 1;
 #ifdef ENABLE_IGC
@@ -1797,7 +1834,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
   }
 
 #if DEBUG_SHOW_GAPS
-  gaps_mutex.lock();
+  debug_mutex.lock();
 
   auto pit = ginfo->procMap.begin();
   ProcInfo * pinfo = pit->second;
@@ -1819,7 +1856,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
     cout << "\ngaps: alt-file\n";
   }
 
-  gaps_mutex.unlock();
+  debug_mutex.unlock();
 #endif
 }
 
@@ -3008,127 +3045,97 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
 
 #if DEBUG_NEW_GAPS
 
-// totals over all functions
-static long num_gaps;
-static long num_gaps_16;
-static long total_size;
-static long max_size;
-
-void
-debugFunctionGaps(ParseAPI::Function * func)
-{
-  // get list of all blocks sorted by vma
-  const ParseAPI::Function::blocklist & blist = func->blocks();
-  vector <Block *> bvec;
-
-  if (blist.empty()) {
-    return;
-  }
-
-  for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-    Block * block = *bit;
-    bvec.push_back(block);
-  }
-  std::sort(bvec.begin(), bvec.end(), BlockLessThan);
-
-  // combine adjacent blocks into single range for compactness
-  Address entry_addr = func->addr();
-  auto bit = bvec.begin();
-  Address start = (*bit)->start();
-  Address end = (*bit)->end();
-  ++bit;
-  long my_num = 0;
-  long my_num_16 = 0;
-  long my_size = 0;
-  long my_max = 0;
-  int have_gap = 0;
-
-  for (; bit != bvec.end(); ++bit) {
-    Block * block = *bit;
-
-    if (end < block->start()) {
-      //
-      // gap -- delay printing header until we know this function has
-      // at least one gap, skip function if no gaps
-      //
-      if (! have_gap) {
-	cout << "\n------------------------------------------------------------\n"
-	     << "func:  0x" << hex << entry_addr << dec << "\n"
-	     << "parse:  '" << func->name() << "'\n\n";
-	have_gap = 1;
-      }
-      Address size = block->start() - end;
-
-      // this gap plus previous claimed region
-      cout << "claim:  0x" << hex << start << "--0x" << end << "\n"
-	   << "gap:    0x" << end << "--0x" << block->start()
-	   << "  size: 0x" << size << "  (" << dec << size << ")";
-
-      if (block->start() % 16 == 0) {
-	cout << "  align";
-      }
-      cout << "\n";
-
-      my_num++;
-      if (size >= 16) {
-	my_num_16++;
-      }
-      my_size += size;
-      if (size > my_max) {
-	my_max = size;
-      }
-      start = block->start();
-      end = block->end();
-    }
-    else {
-      //
-      // not gap -- extend previous claimed region
-      //
-      end = block->end();
-    }
-  }
-
-  // final claimed region and summary
-  if (have_gap) {
-    cout << "claim:  0x" << hex << start << "--0x" << end << dec << "\n\n"
-	 << "num gaps:  " << my_num << "  num over 16:  " << my_num_16 << "\n"
-	 << "sum size:  0x" << hex << my_size << "  (" << dec << my_size << ")\n";
-
-    num_gaps += my_num;
-    num_gaps_16 += my_num_16;
-    total_size += my_size;
-    if (my_max > max_size) {
-      max_size = my_max;
-    }
-  }
-}
-
+// Search for unclaimed regions (gaps) between basic blocks.  Some
+// compilers insert cold regions inside other functions, so we need to
+// analyze all blocks together.
+//
 static void
 debugNewGaps(CodeObject * code_obj, string elfFilename)
 {
-  // need to reinit global totals if analyzing multiple binaries
-  num_gaps = 0;
-  num_gaps_16 = 0;
-  total_size = 0;
-  max_size = 0;
+  long num_gaps = 0;
+  long num_gaps_16 = 0;
+  long num_gaps_64 = 0;
+  long num_gaps_256 = 0;
+  long num_gaps_other = 0;
 
+  long size_gaps = 0;
+  long size_gaps_16 = 0;
+  long size_gaps_64 = 0;
+  long size_gaps_256 = 0;
+  long size_gaps_other = 0;
+
+  //
+  // get list of all blocks and sort by start address
+  //
   const CodeObject::funclist & funcList = code_obj->funcs();
+  vector <Block *> blockVec;
 
   for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
     ParseAPI::Function * func = *fit;
-    debugFunctionGaps(func);
+    const ParseAPI::Function::blocklist & blist = func->blocks();
+
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      blockVec.push_back(block);
+    }
   }
 
-  cout << "\n------------------------------------------------------------\n\n"
-       << "Elf File:  " << elfFilename << "\n\n"
-       << "num gaps:  " << dec << num_gaps << "  num over 16:  " << num_gaps_16 << "\n"
-       << "total size:  0x" << hex << total_size << "  (" << dec << total_size << ")\n"
-       << "maz size:    0x" << hex << max_size << "  (" << dec << max_size << ")\n"
-       << endl;
+  std::sort(blockVec.begin(), blockVec.end(), BlockLessThan);
+
+  //
+  // compare adjacent blocks
+  //
+  Block * prev_block = blockVec[0];
+
+  for (long n = 1; n < blockVec.size(); n++) {
+    Block * block = blockVec[n];
+    long size = block->start() - prev_block->end();
+
+    if (size > 0) {
+      cout << "gap: prev block: 0x" << hex << prev_block->start()
+	   << "  end: 0x" << prev_block->end()
+	   << "  next: 0x" << block->start()
+	   << "  size: 0x" << size
+	   << dec << " (" << size << ")\n";
+    }
+
+    num_gaps++;
+    size_gaps += size;
+
+    if (size < 16) {
+      num_gaps_16++;
+      size_gaps_16 += size;
+    }
+    else if (size < 64) {
+      num_gaps_64++;
+      size_gaps_64 += size;
+    }
+    else if (size < 256) {
+      num_gaps_256++;
+      size_gaps_256 += size;
+    }
+    else {
+      num_gaps_other++;
+      size_gaps_other += size;
+    }
+
+    prev_block = block;
+  }
+
+  printf("\nnum gaps: %8ld    size: %10ld\n"
+	 "under 16: %8ld    size: %10ld\n"
+	 "under 64: %8ld    size: %10ld\n"
+	 "under 256: %7ld    size: %10ld\n"
+	 "other:    %8ld    size: %10ld\n",
+	 num_gaps, size_gaps, num_gaps_16, size_gaps_16,
+	 num_gaps_64, size_gaps_64, num_gaps_256, size_gaps_256,
+	 num_gaps_other, size_gaps_other);
+
+  cout << endl;
 }
 
 #endif  // DEBUG_NEW_GAPS
-#endif  // DEBUG_CFG_SOURCE
+#endif  // DEBUG_ANY_ON
 
 }  // namespace Struct
 }  // namespace BAnal
