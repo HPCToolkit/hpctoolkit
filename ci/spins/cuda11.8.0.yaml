@@ -1,6 +1,6 @@
 container:
   images:
-    build: ghcr.io/spack/ubuntu-focal:latest
+    build: ghcr.io/spack/ubuntu-focal:{SPACKTAG}
     final: 'docker.io/nvidia/cuda:11.8.0-devel-ubuntu20.04'
 
   os_packages:

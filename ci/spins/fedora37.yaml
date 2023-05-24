@@ -4,7 +4,7 @@ container:
     #     os: 'fedora:37'
     #     spack: develop
     # But that doesn't work because Spack uses unqualified names for the images. Ugh.
-    build: ghcr.io/spack/fedora37:latest
+    build: ghcr.io/spack/fedora37:{SPACKTAG}
     final: docker.io/fedora:37
 
   os_packages:

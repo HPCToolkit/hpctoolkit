@@ -4,7 +4,7 @@ container:
     #     os: 'almalinux:8'
     #     spack: develop
     # But that doesn't work because Spack uses unqualified names for the images. Ugh.
-    build: ghcr.io/spack/almalinux8:latest
+    build: ghcr.io/spack/almalinux8:{SPACKTAG}
     final: quay.io/almalinux/almalinux:8
 
   template: spins/cuda10.2.Dockerfile

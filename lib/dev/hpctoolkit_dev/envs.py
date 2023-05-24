@@ -174,7 +174,7 @@ class DevEnv(SpackEnv):
             VerConSpec("dyninst @12.3.0:"),
             VerConSpec("elfutils ~nls @0.186:"),
             VerConSpec("intel-tbb +shared @2020.3"),
-            VerConSpec("libmonitor +hpctoolkit ~dlopen @2022.09.02"),
+            VerConSpec("libmonitor +hpctoolkit ~dlopen @2023.03.15:"),
             VerConSpec("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
             VerConSpec("zlib +shared @1.2.13:"),
             VerConSpec("libunwind +xz +pic @1.6.2:"),

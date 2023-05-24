@@ -1,6 +1,6 @@
 container:
   images:
-    build: ghcr.io/spack/ubuntu-focal:latest
+    build: ghcr.io/spack/ubuntu-focal:{SPACKTAG}
     final: docker.io/intel/oneapi-runtime:2022.2-devel-ubuntu20.04
 
   template: spins/lvlz-gtpin3.0.Dockerfile
