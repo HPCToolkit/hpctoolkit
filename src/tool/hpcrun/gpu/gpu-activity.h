@@ -459,6 +459,12 @@ void gpu_interval_set
  uint64_t end
 );
 
+bool
+gpu_interval_is_invalid
+(
+  gpu_interval_t *gi
+);
+
 void
 gpu_activity_free
 (
