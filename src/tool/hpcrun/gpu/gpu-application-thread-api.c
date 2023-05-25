@@ -128,7 +128,14 @@ gpu_application_thread_correlation_callback_impl
 
   // for some runtimes, returning first frame in runtime library yields
   // a more pleasing unwind context
-  return (return_prev ? prev : node);
+  cct_node_t *result = return_prev ? prev : node;
+
+  // prevent self a sample interrupt while adjusting the trace
+  hpcrun_safe_enter();
+  hpcrun_trace_node(result);
+  hpcrun_safe_exit();
+
+  return result;
 }
 
 

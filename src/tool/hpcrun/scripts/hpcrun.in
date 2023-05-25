@@ -197,6 +197,12 @@ cat <<EOF
   -t, --trace          Generate a call path trace in addition to a call
                        path profile.
 
+  -tt, --ttrace        Enhanced resolution tracing. Generate a call path trace that
+                       includes both sample and kernel launches on the CPU in
+                       addition to a call path profile. Since additional non-sample
+					   elements are added, any statistical properties of the CPU
+					   traces are disturbed.
+
   --omp-serial-only    When profiling using the OMPT interface for OpenMP,
                        suppress all samples not in serial code.
 
@@ -544,7 +550,17 @@ do
 	# --------------------------------------------------
 
 	-t | --trace )
+		if test "$HPCRUN_TRACE"; then
+			die "-t/--trace is incompatible with -tt/--ttrace"
+		fi
 	    export HPCRUN_TRACE=1
+	    ;;
+
+	-tt | --ttrace )
+		if test "$HPCRUN_TRACE"; then
+			die "-tt/--ttrace is incompatible with -t/--trace"
+		fi
+	    export HPCRUN_TRACE=2
 	    ;;
 
 	# --------------------------------------------------

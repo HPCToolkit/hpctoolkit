@@ -62,4 +62,6 @@ extern const char* HPCRUN_LOW_MEMSIZE;
 
 bool hpcrun_get_env_bool(const char *);
 
+bool hpcrun_get_env_int(const char *, int *);
+
 #endif /* hpcrun_env_h */
