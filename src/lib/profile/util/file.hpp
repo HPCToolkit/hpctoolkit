@@ -110,11 +110,11 @@ public:
 
     /// Read a block of bytes from the given file offset, into the given buffer.
     /// Throws a fatal error on I/O errors.
-    void readat(std::uint_fast64_t offset, std::size_t size, void* data) noexcept;
+    void readat(std::uint_fast64_t offset, std::size_t size, char* data) noexcept;
 
     /// Write a block of bytes at the given offset, from the given buffer.
     /// Throws a fatal error on I/O errors.
-    void writeat(std::uint_fast64_t offset, std::size_t size, const void* data) noexcept;
+    void writeat(std::uint_fast64_t offset, std::size_t size, const char* data) noexcept;
 
     /// Wrapper for writeat for things like std::array and std::vector
     template<class T>

@@ -128,26 +128,42 @@ File::Instance::~Instance() = default;
 File::Instance::Instance(File::Instance&&) = default;
 File::Instance& File::Instance::operator=(File::Instance&&) = default;
 
-void File::Instance::readat(std::uint_fast64_t offset, std::size_t size, void* buf) noexcept {
+void File::Instance::readat(std::uint_fast64_t offset, std::size_t size, char* buf) noexcept {
   assert(impl && "Attempt to call readat on an empty File::Instance!");
-  auto cnt = pread(impl->fd, buf, size, offset);
-  if(cnt < 0) {
-    char buf[1024];
-    util::log::fatal{} << "Error during read: " << strerror_r(errno, buf, sizeof buf);
-  } else if((size_t)cnt < size) {
-    util::log::fatal{} << "Error during read: EOF after " << cnt
-                       << " bytes (of " << size << " byte read)";
+  const auto orig_size = size;
+  while(size > 0) {
+    auto cnt = pread(impl->fd, buf, size, offset);
+    if(cnt < 0) {
+      char buf[1024];
+      util::log::fatal{} << "Error during read: " << strerror_r(errno, buf, sizeof buf);
+    } else if(cnt == 0) {
+      util::log::fatal{} << "Error during read: EOF after " << (orig_size - size)
+                        << " bytes (of " << orig_size << " byte read)";
+    }
+
+    // Adjust the arguments for the next time attempt
+    offset += cnt;
+    size -= cnt;
+    buf += cnt;
   }
 }
 
-void File::Instance::writeat(std::uint_fast64_t offset, std::size_t size, const void* buf) noexcept {
+void File::Instance::writeat(std::uint_fast64_t offset, std::size_t size, const char* buf) noexcept {
   assert(impl && "Attempt to call writeat on an empty File::Instance!");
-  auto cnt = pwrite(impl->fd, buf, size, offset);
-  if(cnt < 0) {
-    char buf[1024];
-    util::log::fatal{} << "Error during write: " << strerror_r(errno, buf, sizeof buf);
-  } else if((size_t)cnt < size) {
-    util::log::fatal{} << "Error during write: EOF after " << cnt
-                       << " bytes (of " << size << " byte write)";
+  const auto orig_size = size;
+  while(size > 0) {
+    auto cnt = pwrite(impl->fd, buf, size, offset);
+    if(cnt < 0) {
+      char buf[1024];
+      util::log::fatal{} << "Error during write: " << strerror_r(errno, buf, sizeof buf);
+    } else if(cnt == 0) {
+      util::log::fatal{} << "Error during write: EOF after " << (orig_size - size)
+                        << " bytes (of " << orig_size << " byte write)";
+    }
+
+    // Adjust the arguments for the next time attempt
+    offset += cnt;
+    size -= cnt;
+    buf += cnt;
   }
 }
