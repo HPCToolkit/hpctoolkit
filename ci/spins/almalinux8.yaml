@@ -1,0 +1,35 @@
+container:
+  images:
+    # FIXME: This should really read:
+    #     os: 'almalinux:8'
+    #     spack: develop
+    # But that doesn't work because Spack uses unqualified names for the images. Ugh.
+    build: ghcr.io/spack/almalinux8:{SPACKTAG}
+    final: quay.io/almalinux/almalinux:8
+
+  os_packages:
+    command: yum
+    final:
+    - bzip2
+    - ccache
+    - clang
+    - diffutils
+    - eatmydata
+    - file
+    - gcc
+    - gcc-c++
+    - gcc-gfortran
+    - git
+    - git-lfs
+    - make
+    - mercurial
+    - patch
+    - patchelf
+    - perl-open
+    - python3
+    - python3-devel
+    - subversion
+    - tar
+    - unzip
+    - xz
+    - zstd

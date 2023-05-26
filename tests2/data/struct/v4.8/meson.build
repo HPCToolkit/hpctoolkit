@@ -1,6 +1,6 @@
 _testdata_struct = {}
 
-_struct = find_program(files('gen-struct'))
+_struct = configure_file(input: files('gen-struct'), output: '@PLAINNAME@.venv', command: venv_shebang)
 
 subdir('small')
 

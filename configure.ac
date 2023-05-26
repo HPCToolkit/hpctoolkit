@@ -5357,6 +5357,9 @@ AC_ARG_ENABLE([tests2],
   [enable_tests2=no])
 
 if test "$enable_tests2" = yes; then
+  AC_ARG_VAR([MESON], [Path to the Meson executable])
+  if test -z "$MESON"; then MESON=meson; fi
+
   # FIXME: Meson assumes that all dependencies are in the "environment," but the
   # Autogoo here is built around prefix-paths. So to make everything consistent
   # we have to fiddle with the environment Meson sees so that it finds the right
@@ -5375,7 +5378,11 @@ if test "$enable_tests2" = yes; then
     MESON_ENV="$MESON_ENV CUDA_PATH=\"$CUDA\" PATH=\"$CUDA/bin:\$\$PATH\""
   fi
 
-  meson_args="-Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_NOOPT_CFLAGS}'"
+  AC_ARG_VAR([MESON_NATIVE_FILE], [Path to a native file to pass to Meson])
+  if test -n "$MESON_NATIVE_FILE"; then
+  meson_args="--native-file $MESON_NATIVE_FILE"
+  fi
+  meson_args="${meson_args} -Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_NOOPT_CFLAGS}'"
   meson_args="${meson_args} -Dcpp_args='${CXXFLAGS} ${HOST_NOOPT_CXXFLAGS}'"
   meson_args="${meson_args} -Dcuda_args='${CUDAFLAGS}' -Dcuda_ccbindir='${CXX}'"
   if test "$OPT_ENABLE_DEVELOP" = yes
@@ -5399,11 +5406,11 @@ if test "$enable_tests2" = yes; then
   else meson_args="${meson_args} -Dpython=false"
   fi
 
-  eval echo "$meson_env" meson "$meson_args"
+  eval echo "$meson_env" "$MESON" "$meson_args"
 
-  if ! { test -d tests2-build/ && eval "$meson_env" meson setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
+  if ! { test -d tests2-build/ && eval "$meson_env" "$MESON" setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
     rm -rf tests2-build/
-    if ! eval "$meson_env" meson setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
+    if ! eval "$meson_env" "$MESON" setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
       AC_MSG_ERROR([Error configuring test suite, meson setup failed!])
     fi
   fi

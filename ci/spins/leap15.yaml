@@ -1,0 +1,51 @@
+container:
+  images:
+    # FIXME: This should really read
+    #     os: 'opensuse/leap:15'
+    #     spack: develop
+    # But that doesn't work because Spack uses unqualified names for the images. Ugh.
+    build: ghcr.io/spack/leap15:{SPACKTAG}
+    final: docker.io/opensuse/leap:latest
+
+  os_packages:
+    command: zypper
+    final:
+    - bzip2
+    - ccache
+    - clang13
+    - clang11
+    - curl
+    - eatmydata
+    - file
+    - gcc
+    - gcc-c++
+    - gcc-fortran
+    - gcc7
+    - gcc7-c++
+    - gcc7-fortran
+    - gcc8
+    - gcc8-c++
+    - gcc8-fortran
+    - gcc9
+    - gcc9-c++
+    - gcc9-fortran
+    - gcc10
+    - gcc10-c++
+    - gcc10-fortran
+    - gcc11
+    - gcc11-c++
+    - gcc11-fortran
+    - git
+    - git-lfs
+    - gzip
+    - make
+    - mercurial
+    - patch
+    - patchelf
+    - python310
+    - python310-pip
+    - subversion
+    - tar
+    - unzip
+    - xz
+    - zstd

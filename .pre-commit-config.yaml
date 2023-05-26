@@ -30,6 +30,15 @@ repos:
         ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
       )
 
+- repo: https://github.com/python-poetry/poetry
+  rev: '1.4.2'
+  hooks:
+  # Ensure the poetry.lock files are in-sync with the pyproject.toml files
+  - id: poetry-lock
+    args: [-C, tests2/lib/python/, --check]
+  - id: poetry-lock
+    args: [-C, lib/dev/, --check]
+
 
 # ------------------------------------------------------------------------------------
 #  Formatting hooks:  Hooks that alter the syntax but not semantics of files
@@ -47,7 +56,7 @@ repos:
   hooks:
   # Sort imports in all the Python code
   - id: isort
-    args: [--profile, black]
+    args: [--profile, black, --line-length=100]
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0
@@ -112,6 +121,17 @@ repos:
   # Reminder to always work in a branch separate from the main two
   - id: no-commit-to-branch
     args: [--branch, master, --branch, develop]
+
+- repo: https://github.com/python-poetry/poetry
+  rev: '1.4.2'
+  hooks:
+  # Ensure the pyproject.toml files are valid for Poetry
+  - id: poetry-check
+    args: [-C, tests2/lib/python/]
+    files: ^tests2/lib/python/pyproject\.toml$
+  - id: poetry-check
+    args: [-C, lib/dev/]
+    files: ^lib/dev/pyproject\.toml$
 
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.0.1

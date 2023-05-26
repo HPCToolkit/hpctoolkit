@@ -6,10 +6,6 @@ project('hpctsuite', 'c', 'cpp',
 cpp = meson.get_compiler('cpp')
 fs = import('fs')
 
-# Ensure our dependencies are available
-python3 = find_program('python3', native: true, version: ['>=3.10', '<4'])
-run_command(python3, '-c', 'import pytest, ruamel.yaml, click', check: true)
-
 # The path to the HPCToolkit install must be specified with -Dhpctoolkit
 if get_option('hpctoolkit') == ''
   error('-Dhpctoolkit must be specified and absolute!')
