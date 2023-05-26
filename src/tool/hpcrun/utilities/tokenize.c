@@ -160,11 +160,11 @@ hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def
   unsigned int len = strlen(in);
 
   char *dlm = strrchr(in, EVENT_DELIMITER);
-  if (!dlm) {
-    dlm = strrchr(in, ':');
-  }
   if (dlm) {
     if (isdigit(dlm[1]) || dlm[1] == PREFIX_FREQUENCY) {
+      // make sure the number if the threshold number,
+      // don't accept like xxxx:123b which is a named event
+
       // we probably have threshold number
       len = MIN(dlm - in, evlen);
       strncpy(ev, in, len);
@@ -202,8 +202,9 @@ int
 main (int argc, char *argv[])
 {
   const char *tokens[]={ "one", "two@", "three@3", "four@f4", "five@f", "six@s", "seven::perf",
-      "perf::eight@", "perf::nine@f200", "perf:ten@10" };
-  const int elem = 10;
+      "perf::eight@", "perf::nine@f200", "perf:ten@10", "eleven@123b", "twelve:123b@10000",
+      "thirteen:123b@f100" };
+  const int elem = 13;
   int i, res;
   long th;
   char ev[100];
