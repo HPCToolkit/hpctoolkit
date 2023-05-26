@@ -88,12 +88,14 @@
 
 #include "gpu-print.h"
 
+#define IGNORE_IF_INVALID_INTERVAL(gi) \
+  if (gpu_interval_is_invalid((gpu_interval_t *) &(gi->details))) return
+
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
-
 
 static void
 gpu_context_stream_trace
@@ -168,6 +170,8 @@ gpu_memcpy_process
  gpu_activity_t *activity
 )
 {
+  IGNORE_IF_INVALID_INTERVAL(activity);
+
   uint64_t correlation_id = activity->details.memcpy.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -350,6 +354,8 @@ gpu_memset_process
  gpu_activity_t *activity
 )
 {
+  IGNORE_IF_INVALID_INTERVAL(activity);
+
   uint64_t correlation_id = activity->details.memset.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -400,6 +406,8 @@ gpu_kernel_process
  gpu_activity_t *activity
 )
 {
+  IGNORE_IF_INVALID_INTERVAL(activity);
+
   uint64_t correlation_id = activity->details.kernel.correlation_id;
 
   gpu_correlation_id_map_entry_t *cid_map_entry =
@@ -504,6 +512,8 @@ gpu_synchronization_process
  gpu_activity_t *activity
 )
 {
+  IGNORE_IF_INVALID_INTERVAL(activity);
+
   uint64_t correlation_id = activity->details.synchronization.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -578,6 +588,8 @@ gpu_cdpkernel_process
  gpu_activity_t *activity
 )
 {
+  IGNORE_IF_INVALID_INTERVAL(activity);
+
   uint64_t correlation_id = activity->details.cdpkernel.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -646,6 +658,8 @@ gpu_memory_process
  gpu_activity_t *activity
 )
 {
+  IGNORE_IF_INVALID_INTERVAL(activity);
+
   uint64_t correlation_id = activity->details.memory.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
@@ -751,6 +765,7 @@ gpu_counter_process
   PRINT("Counter l2 cache hit %lu\n", activity->details.counters.l2_cache_hit);
   PRINT("Counter l2 cache miss %lu\n", activity->details.counters.l2_cache_miss);
 }
+
 
 
 //******************************************************************************
