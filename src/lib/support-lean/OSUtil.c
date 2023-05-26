@@ -88,6 +88,35 @@
 //
 //***************************************************************************
 
+struct envvar_rank_entry {
+  const char* local;
+  const char* global;
+};
+
+
+static const char* const envvars_jobid[] = {
+  "LSB_JOBID",  // LSF
+  "COBALT_JOBID",  // Cobalt
+  "PBS_JOBID",  // PBS
+  "SLURM_JOB_ID",  // SLURM
+  "JOB_ID",  // Sun Grid Engine
+  "FLUX_JOB_ID",  // Flux
+  NULL
+};
+
+
+static const struct envvar_rank_entry envvars_rank[] = {
+  {"PMI_LOCAL_RANK", "PMI_RANK"},  // PMI layer
+  {"OMPI_COMM_WORLD_LOCAL_RANK", "OMPI_COMM_WORLD_RANK"},  // OpenMPI
+  {"MPI_LOCALRANKID", NULL},  // MPICH
+  {"SLURM_LOCALID", "SLURM_PROCID"},  // SLURM
+  {"JSM_NAMESPACE_LOCAL_RANK", "JSM_NAMESPACE_RANK"},  // LSF
+  {"PALS_LOCAL_RANKID", "PALS_RANKID"},  // PBS Pro
+  {"FLUX_TASK_LOCAL_ID", "FLUX_TASK_RANK"},  // Flux
+  {NULL, NULL}
+};
+
+
 unsigned int
 OSUtil_pid()
 {
@@ -99,73 +128,54 @@ OSUtil_pid()
 const char*
 OSUtil_jobid()
 {
-  char* jid = NULL;
-
-  // LSF
-  jid = getenv("LSB_JOBID");
-  if (jid) {
-    return jid;
+  for (const char* const* envvar = envvars_jobid; *envvar != NULL; ++envvar) {
+    const char* jid = getenv(*envvar);
+    if (jid != NULL)
+      return jid;
   }
-
-
-  // Cobalt
-  jid = getenv("COBALT_JOBID");
-  if (jid) {
-    return jid;
-  }
-
-  // PBS
-  jid = getenv("PBS_JOBID");
-  if (jid) {
-    return jid;
-  }
-
-  // SLURM
-  jid = getenv("SLURM_JOB_ID");
-  if (jid) {
-    return jid;
-  }
-
-  // Sun Grid Engine
-  jid = getenv("JOB_ID");
-  if (jid) {
-    return jid;
-  }
-
-  return jid;
+  return NULL;
 }
 
 
 const char*
 OSUtil_local_rank()
 {
-  char* rid = NULL;
-
-  // OpenMPI
-  rid = getenv("OMPI_COMM_WORLD_LOCAL_RANK");
-  if (rid) {
-    return rid;
+  for (const struct envvar_rank_entry* envvar = envvars_rank;
+       envvar->local != NULL || envvar->global != NULL; ++envvar) {
+    if (envvar->local != NULL) {
+      const char* rid = getenv(envvar->local);
+      if (rid != NULL)
+        return rid;
+    }
   }
+  return NULL;
+}
 
-  // MPICH
-  rid = getenv("MPI_LOCALRANKID");
-  if (rid) {
-    return rid;
+
+static long long
+parse_uint(const char* str)
+{
+  if(str == NULL || str[0] == '\0')
+    return -1;
+
+  char* end = NULL;
+  long long result = strtoll(str, &end, 10);
+  return *end == '\0' ? result : -1;
+}
+
+
+long long
+OSUtil_rank()
+{
+  for (const struct envvar_rank_entry* envvar = envvars_rank;
+       envvar->local != NULL || envvar->global != NULL; ++envvar) {
+    if (envvar->global != NULL) {
+      const char* rid = getenv(envvar->global);
+      if (rid != NULL)
+        return parse_uint(rid);
+    }
   }
-
-  // SLURM
-  rid = getenv("SLURM_LOCALID");
-  if (rid) {
-    return rid;
-  }
-
-  // LSF
-  rid = getenv("JSM_NAMESPACE_LOCAL_RANK");
-  if (rid) {
-    return rid;
-  }
-
-  return rid;
+  return -1;
 }
 
 uint32_t
