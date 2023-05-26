@@ -170,8 +170,20 @@ OSUtil_local_rank()
     return rid;
   }
 
+  // PBS Pro
+  rid = getenv("PALS_LOCAL_RANKID");
+  if (rid) {
+    return rid;
+  }
+
   // Flux
   rid = getenv("FLUX_TASK_LOCAL_ID");
+  if (rid) {
+    return rid;
+  }
+
+  // PMI layer
+  rid = getenv("PMI_LOCAL_RANK");
   if (rid) {
     return rid;
   }
@@ -215,8 +227,18 @@ OSUtil_rank()
   if (val != NULL)
     return parse_uint(val);
 
+  // PBS Pro
+  val = getenv("PALS_RANKID");
+  if (val != NULL)
+    return parse_uint(val);
+
   // Flux
   val = getenv("FLUX_TASK_RANK");
+  if (val != NULL)
+    return parse_uint(val);
+
+  // PMI layer
+  val = getenv("PMI_RANK");
   if (val != NULL)
     return parse_uint(val);
 
