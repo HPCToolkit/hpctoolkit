@@ -397,8 +397,6 @@ MY_BASE_FILES =				\
 	gpu/gpu-trace-channel-set.c	\
 	gpu/gpu-trace-demultiplexer.c	\
 	\
-	gpu/libomptarget/libomptarget-api.c \
-	\
 	gpu/ompt/ompt-gpu-api.c 			\
 	gpu/ompt/ompt-activity-translate.c 		\
 	\

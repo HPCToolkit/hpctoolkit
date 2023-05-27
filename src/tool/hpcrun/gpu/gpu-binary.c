@@ -93,6 +93,8 @@ gpu_binary_validate_magic
  size_t mem_size
 )
 {
+  if (mem_ptr == 0) return false;
+
   if (mem_size < sizeof(uint32_t)) return false;
 
   uint32_t *magic = (uint32_t *) mem_ptr;
