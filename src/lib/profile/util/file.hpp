@@ -76,10 +76,16 @@ public:
   File& operator=(File&&);
 
   /// Synchronize this File's state between MPI ranks and the filesystem.
-  /// This should be called once and only once per File.
+  /// This or #initialize should be called once and only once per File.
   /// May act as an MPI synchronization point.
   // MT: Externally Synchronized
   void synchronize() noexcept;
+
+  /// Same as #synchronize, but does not operate across MPI ranks.
+  /// The file is assumed to only be accessed by this rank.
+  /// This or #synchronize should be called once and only once per File.
+  // MT: Externally Synchronized
+  void initialize() noexcept;
 
   /// Delete the File, removing it from the filesystem.
   /// This should be called once and only once per File, after synchronize().

@@ -108,6 +108,20 @@ void File::synchronize() noexcept {
   }
 }
 
+void File::initialize() noexcept {
+  assert(impl && "Attempt to call File::synchronize after ::remove!");
+  assert(impl->fd == -1 && "Attempt to call File::synchronize twice!");
+  // Check that the file exists, or clear and create if we need to.
+  impl->fd = ::open(impl->path.c_str(), O_RDWR | (impl->create ? O_CREAT | O_TRUNC : 0),
+                    0666);  // the umask will correct this as needed
+  if(impl->fd == -1) {
+    char buf[1024];
+    util::log::fatal{} << "Error opening file " << impl->path.string()
+                        << ": " << strerror_r(errno, buf, sizeof buf);
+  }
+}
+
+
 void File::remove() noexcept {
   assert(impl && impl->fd != -1 && "Attempt to call File::remove before File::synchronize!");
   if(mpi::World::rank() == 0) {
