@@ -51,8 +51,9 @@
 #include "../util/log.hpp"
 #include "../util/once.hpp"
 
-#include "lib/prof-lean/formats/metadb.h"
-#include "lib/prof-lean/formats/primitive.h"
+#include "../formats/metadb.hpp"
+#include "../formats/primitives.hpp"
+
 #include "lib/prof-lean/placeholders.h"
 
 #include <fstream>
@@ -61,8 +62,16 @@
 using namespace hpctoolkit;
 using namespace sinks;
 
-MetaDB::MetaDB(stdshim::filesystem::path dir, bool copySources)
-  : dir(std::move(dir)), copySources(copySources) {};
+MetaDB::MetaDB(stdshim::filesystem::path in_dir, bool copySources)
+  : dir(std::move(in_dir)), copySources(copySources) {
+
+  if(dir.empty())
+    util::log::fatal{} << "SparseDB doesn't allow for dry runs!";
+  else
+    stdshim::filesystem::create_directory(dir);
+
+  metadb = util::File(dir / "meta.db", true);
+}
 
 void MetaDB::notifyPipeline() noexcept {
   auto& ss = src.structs();
@@ -128,18 +137,16 @@ std::string MetaDB::accumulateFormulaString(const Expression& e) {
   return ss.str();
 }
 
-uint64_t MetaDB::stringsTableLookup(const std::string& s) {
+std::size_t MetaDB::stringsTableLookup(const std::string& s) {
   {
     std::shared_lock<std::shared_mutex> l(stringsLock);
     auto it = stringsTable.find(s);
     if(it != stringsTable.end()) return it->second;
   }
   std::unique_lock<std::shared_mutex> l(stringsLock);
-  auto [it, first] = stringsTable.try_emplace(s, stringsCursor);
-  if(first) {
-    stringsCursor += s.size() + 1;
+  auto [it, first] = stringsTable.try_emplace(s, stringsList.size());
+  if(first)
     stringsList.push_back(it->first);
-  }
   return it->second;
 }
 
@@ -164,13 +171,13 @@ void MetaDB::instance(const File& f) {
             << e.code().message() << " [" << rp.string() << "]";
         }
         if(ok) {
-          udf.pPath_base = stringsTableLookup(relative.string());
+          udf.pathSIdx = stringsTableLookup(relative.string());
           udf.copied = true;
           return;
         }
       }
     }
-    udf.pPath_base = stringsTableLookup(f.path().string());
+    udf.pathSIdx = stringsTableLookup(f.path().string());
     udf.copied = false;
   });
 }
@@ -178,14 +185,14 @@ void MetaDB::instance(const File& f) {
 void MetaDB::instance(const Module& m) {
   auto& udm = m.userdata[ud];
   util::call_once(udm.once, [&]{
-    udm.pPath_base = stringsTableLookup(m.path().string());
+    udm.pathSIdx = stringsTableLookup(m.path().string());
   });
 }
 
 void MetaDB::instance(const Function& f) {
   auto [udf, first] = udFuncs.try_emplace(f);
   if(!first) return;
-  udf.pName_base = stringsTableLookup(f.name());
+  udf.nameSIdx = stringsTableLookup(f.name());
   instance(f.module());
   if(auto sl = f.sourceLocation()) instance(sl->first);
 }
@@ -195,7 +202,7 @@ void MetaDB::instance(Scope::placeholder_t, const Scope& s) {
   if(!first) return;
   std::string name(s.enumerated_pretty_name());
   if(name.empty()) name = s.enumerated_fallback_name();
-  udf.pName_base = stringsTableLookup(std::move(name));
+  udf.nameSIdx = stringsTableLookup(std::move(name));
 }
 
 void MetaDB::notifyContext(const Context& c) {
@@ -209,17 +216,17 @@ void MetaDB::notifyContext(const Context& c) {
     switch(sf.type()) {
     case Scope::Type::unknown:
       udc.entryPoint = FMT_METADB_ENTRYPOINT_UNKNOWN_ENTRY;
-      udc.pPrettyName_base = stringsTableLookup("unknown entry");
+      udc.prettyNameSIdx = stringsTableLookup("unknown entry");
       break;
     case Scope::Type::placeholder:
       switch(sf.enumerated_data()) {
       case hpcrun_placeholder_fence_main:
         udc.entryPoint = FMT_METADB_ENTRYPOINT_MAIN_THREAD;
-        udc.pPrettyName_base = stringsTableLookup("main thread");
+        udc.prettyNameSIdx = stringsTableLookup("main thread");
         break;
       case hpcrun_placeholder_fence_thread:
         udc.entryPoint = FMT_METADB_ENTRYPOINT_APPLICATION_THREAD;
-        udc.pPrettyName_base = stringsTableLookup("application thread");
+        udc.prettyNameSIdx = stringsTableLookup("application thread");
         break;
       default:
         util::log::fatal{} << "Invalid top-level Scope: " << s;
@@ -271,545 +278,368 @@ void MetaDB::notifyContext(const Context& c) {
 }
 
 void MetaDB::write() try {
-  stdshim::filesystem::create_directory(dir);
-  std::ofstream f(dir / "meta.db", std::ios_base::out
-      | std::ios_base::trunc | std::ios_base::binary);
-  f.exceptions(std::ios_base::badbit | std::ios_base::failbit);
+  metadb->initialize();
+  auto file = metadb->open(true, true);
+  formats::LayoutEngine l(file);
 
-  fmt_metadb_fHdr_t filehdr = {
-    0, 0,
-    1, 1,
-    2, 2,
-    3, 3,
-    4, 4,
-    5, 5,
-    6, 6,
-    7, 7
-  };
-  f.seekp(FMT_METADB_SZ_FHdr, std::ios_base::beg);
-  uint64_t cursor = FMT_METADB_SZ_FHdr;
+  {
+    formats::WriteGuard<fmt_metadb_fHdr_t> fileHdr(l);
 
-  { // General Properties section
-    f.seekp(filehdr.pGeneral = align(cursor, 8), std::ios_base::beg);
+    { // General Properties section
+      formats::SubWriteGuard<fmt_metadb_generalSHdr_t> gphdr(l, *fileHdr);
 
-    const std::string defaultTitle = "<unnamed>";
-    const auto& title = src.attributes().name().value_or(defaultTitle);
-    const std::string description = "TODO database description";
+      formats::Written<std::string_view, formats::NullTerminatedString> title(l,
+          src.attributes().name() ? std::string_view(src.attributes().name().value())
+                                  : std::string_view("<unnamed>"));
+      gphdr->pTitle = title.ptr();
 
-    // Section header
-    fmt_metadb_generalSHdr_t gphdr;
-    gphdr.pTitle = filehdr.pGeneral + FMT_METADB_SZ_GeneralSHdr;
-    gphdr.pDescription = gphdr.pTitle + title.size() + 1;
-    cursor = gphdr.pDescription + description.size() + 1;
-    filehdr.szGeneral = cursor - filehdr.pGeneral;
-    char buf[FMT_METADB_SZ_GeneralSHdr];
-    fmt_metadb_generalSHdr_write(buf, &gphdr);
-    f.write(buf, sizeof buf);
-
-    // *pTitle string
-    f.write(title.data(), title.size());
-    f.put('\0');
-
-    // *pDescription string
-    f.write(description.data(), description.size());
-    f.put('\0');
-  }
-
-  { // Identifier Names section
-    f.seekp(filehdr.pIdNames = cursor = align(cursor, 8), std::ios_base::beg);
-
-    std::deque<util::optional_ref<const std::string>>
-        names(src.attributes().idtupleNames().size());
-    uint64_t nameSize = 0;
-    for(const auto& kv: src.attributes().idtupleNames()) {
-      if(names.size() <= kv.first) names.resize(kv.first+1);
-      names[kv.first] = kv.second;
-      nameSize += kv.second.size() + 1; // for NUL
+      formats::Written<std::string_view, formats::NullTerminatedString> description(l,
+          "TODO database description");
+      gphdr->pDescription = description.ptr();
     }
 
-    // Section header
-    fmt_metadb_idNamesSHdr_t idhdr;
-    idhdr.ppNames = align(filehdr.pIdNames + FMT_METADB_SZ_IdNamesSHdr, 8);
-    idhdr.nKinds = names.size();
-    char buf[FMT_METADB_SZ_IdNamesSHdr];
-    fmt_metadb_idNamesSHdr_write(buf, &idhdr);
-    f.write(buf, sizeof buf);
+    { // Identifier Names section
+      formats::SubWriteGuard<fmt_metadb_idNamesSHdr_t> idhdr(l, *fileHdr);
 
-    // *ppNames array
-    f.seekp(cursor = idhdr.ppNames, std::ios_base::beg);
-    auto firstName = cursor += 8 * idhdr.nKinds;
-    cursor += 1;  // "First" name is an empty string, for std::nullopt. Probably never used.
-    for(const auto& n: names) {
-      char buf[8];
-      fmt_u64_write(buf, n ? cursor : firstName);
-      f.write(buf, sizeof buf);
-      if(n) cursor += n->size() + 1;
-    }
-    f.put('\0');  // "First" empty name
-    filehdr.szIdNames = cursor - filehdr.pIdNames;
-
-    // **ppNames strings
-    for(const auto& n: names) {
-      if(n) {
-        f.write(n->data(), n->size());
-        f.put('\0');
+      std::deque<util::optional_ref<const std::string>> names(src.attributes().idtupleNames().size());
+      for(const auto& kv: src.attributes().idtupleNames()) {
+        if(names.size() <= kv.first) names.resize(kv.first+1);
+        names[kv.first] = kv.second;
       }
-    }
-  }
 
-  { // Performance Metrics section
-    f.seekp(filehdr.pMetrics = cursor = align(cursor, 8), std::ios_base::beg);
-
-    // section header
-    fmt_metadb_metricsSHdr_t shdr = {
-      .pMetrics = 0,
-      .nMetrics = static_cast<uint32_t>(src.metrics().size()),
-      .szMetric = 0, .szScopeInst = 0, .szSummary = 0,
-      .pScopes = align(cursor + FMT_METADB_SZ_MetricsSHdr, 8),
-      .nScopes = static_cast<uint16_t>(MetricScopeSet().size()),
-      .szScope = 0,
-    };
-    shdr.pMetrics = align(shdr.pScopes + shdr.nScopes*FMT_METADB_SZ_PropScope, 8);
-    {
-      char buf[FMT_METADB_SZ_MetricsSHdr];
-      fmt_metadb_metricsSHdr_write(buf, &shdr);
-      f.write(buf, sizeof buf);
-    }
-
-    // The *pMetrics subarrays go after the *pScopes array, keep a cursor there
-    uint64_t subCursor = align(shdr.pMetrics + shdr.nMetrics*FMT_METADB_SZ_MetricDesc, 8);
-
-    // The string table goes at the end of the section. Precalculate exactly
-    // where that will end up being.
-    uint64_t stringCursor = subCursor;
-    for(const Metric& m: src.metrics().citerate()) {
-      MetricRef mr = m;
-      stringCursor = align(stringCursor, 8) + mr.scopesSize();
-    }
-    auto stringsStart = stringCursor;
-    std::unordered_map<std::string, uint64_t> stringTable;
-    std::deque<std::string_view> strings;
-
-    // The *pScopes array goes right after the section header, so write that out
-    // first before moving on.
-    f.seekp(shdr.pScopes, std::ios_base::beg);
-    for(MetricScope ms: MetricScopeSet(MetricScopeSet::all)) {
-      auto str = [&](std::string_view sv){
-        strings.push_back(sv);
-        auto ret = stringCursor;
-        stringCursor += sv.size() + 1;
-        return ret;
-      };
-
-      fmt_metadb_propScope_t scope;
-      scope.propagationIndex = 255;
-      switch(ms) {
-      case MetricScope::point:
-        scope.pScopeName = str("point");
-        scope.type = FMT_METADB_SCOPETYPE_Point;
-        break;
-      case MetricScope::function:
-        scope.pScopeName = str("function");
-        scope.type = FMT_METADB_SCOPETYPE_Transitive;
-        scope.propagationIndex = 0;
-        break;
-      case MetricScope::lex_aware:
-        scope.pScopeName = str("lex_aware");
-        scope.type = FMT_METADB_SCOPETYPE_Custom;
-        break;
-      case MetricScope::execution:
-        scope.pScopeName = str("execution");
-        scope.type = FMT_METADB_SCOPETYPE_Execution;
-        break;
+      // Write out the names
+      formats::Written<std::string, formats::NullTerminatedString> nullStr(l, "");
+      std::deque<formats::Written<std::string_view, formats::NullTerminatedString>> strs;
+      for(const auto& n: names) {
+        if (n)
+          strs.emplace_back(l, *n);
       }
-      char buf[FMT_METADB_SZ_PropScope];
-      fmt_metadb_propScope_write(buf, &scope);
-      f.write(buf, sizeof buf);
+
+      // Then the array of names
+      formats::Written pStrs(l, std::move(strs));
+
+      idhdr->nKinds = pStrs->size();
+      idhdr->ppNames = pStrs.ptr();
     }
 
-    // Skip and write out the subarrays first, using a string table to
-    // save and merge shared strings for the table later.
-    // All the arrays are 8-aligned and 8-sized, so we don't need to align here.
-    f.seekp(subCursor, std::ios_base::beg);
-    std::unordered_map<util::reference_index<const Metric>, uint64_t> pScopes;
-    for(const Metric& m: src.metrics().citerate()) {
-      MetricRef mr = m;
-      auto subarrays = mr.composeSubarrays(subCursor, shdr.pScopes, m.userdata[src.identifier()],
-        [&](const std::string& s){
-          auto [it, first] = stringTable.try_emplace(s, stringCursor);
-          if(first) {
-            stringCursor += s.size() + 1;
-            strings.push_back(it->first);
+    { // Performance Metrics section
+      formats::SubWriteGuard<fmt_metadb_metricsSHdr_t> shdr(l, *fileHdr);
+
+      // First the propagation scopes
+      std::map<MetricScope, std::size_t> scopeIdxs;
+      auto scopes_f = [&l, &scopeIdxs]() -> auto {
+        std::deque<fmt_metadb_propScope_t> scopes;
+        for(MetricScope ms: MetricScopeSet(MetricScopeSet::all)) {
+          fmt_metadb_propScope_t scope;
+          scope.propagationIndex = 255;
+          switch(ms) {
+          case MetricScope::point:
+            scope.pScopeName =
+                formats::Written<std::string_view, formats::NullTerminatedString>(l, "point").ptr();
+            scope.type = FMT_METADB_SCOPETYPE_Point;
+            break;
+          case MetricScope::function:
+            scope.pScopeName =
+                formats::Written<std::string_view, formats::NullTerminatedString>(l, "function").ptr();
+            scope.type = FMT_METADB_SCOPETYPE_Transitive;
+            scope.propagationIndex = 0;
+            break;
+          case MetricScope::lex_aware:
+            scope.pScopeName =
+                formats::Written<std::string_view, formats::NullTerminatedString>(l, "lex_aware").ptr();
+            scope.type = FMT_METADB_SCOPETYPE_Custom;
+            break;
+          case MetricScope::execution:
+            scope.pScopeName =
+                formats::Written<std::string_view, formats::NullTerminatedString>(l, "execution").ptr();
+            scope.type = FMT_METADB_SCOPETYPE_Execution;
+            break;
           }
-          return it->second;
-        });
-      f.write(subarrays.data(), subarrays.size());
-      pScopes.emplace(m, subCursor);
-      subCursor += subarrays.size();
-    }
-
-    // Seek back and write out the *pMetrics array.
-    {
-      std::vector<char> buf(shdr.nMetrics * FMT_METADB_SZ_MetricDesc);
-      size_t metricCursor = 0;
-      for(const auto& [m, ps]: pScopes) {
-        MetricRef mr = m.get();
-        mr.compose(&buf.at(metricCursor), ps, [&](std::string_view sv){
-          strings.push_back(sv);
-          auto ret = stringCursor;
-          stringCursor += sv.size() + 1;
-          return ret;
-        });
-        metricCursor += FMT_METADB_SZ_MetricDesc;
-      }
-      f.seekp(shdr.pMetrics, std::ios_base::beg);
-      f.write(buf.data(), buf.size());
-    }
-
-    // Seek forward and write out all the strings we've been saving
-    f.seekp(stringsStart, std::ios_base::beg);
-    for(const auto& sv: strings) {
-      f.write(sv.data(), sv.size());
-      f.put('\0');
-    }
-    cursor = stringCursor;
-    filehdr.szMetrics = cursor - filehdr.pMetrics;
-  }
-
-  { // Common String Table section
-    filehdr.pStrings = cursor;
-    for(const auto& sv: stringsList) {
-      f.write(sv.data(), sv.size());
-      f.put('\0');
-      cursor += sv.size() + 1;
-    }
-    filehdr.szStrings = cursor - filehdr.pStrings;
-  }
-
-  { // Load Modules section
-    filehdr.pModules = cursor = align(cursor, 8);
-
-    fmt_metadb_modulesSHdr_t shdr = {
-      .pModules = align(cursor + FMT_METADB_SZ_ModulesSHdr, 8),
-      .nModules = 0,
-    };
-
-    f.seekp(cursor = shdr.pModules, std::ios_base::beg);
-    for(const Module& m: src.modules().citerate()) {
-      auto& udm = m.userdata[ud];
-      if(udm.pPath_base == std::numeric_limits<uint64_t>::max()) continue;
-      shdr.nModules++;
-      udm.ptr = cursor;
-
-      fmt_metadb_moduleSpec_t mspec = {
-        .pPath = filehdr.pStrings + udm.pPath_base,
-      };
-      char buf[FMT_METADB_SZ_ModuleSpec];
-      fmt_metadb_moduleSpec_write(buf, &mspec);
-      f.write(buf, sizeof buf);
-      cursor += sizeof buf;
-    }
-    filehdr.szModules = cursor - filehdr.pModules;
-
-    // Seek back and write the section header
-    f.seekp(filehdr.pModules, std::ios_base::beg);
-    char buf[FMT_METADB_SZ_ModulesSHdr];
-    fmt_metadb_modulesSHdr_write(buf, &shdr);
-    f.write(buf, sizeof buf);
-  }
-  // NOTE: cursor and file cursor out of sync here
-
-  { // Source Files section
-    filehdr.pFiles = cursor = align(cursor, 8);
-
-    fmt_metadb_filesSHdr_t shdr = {
-      .pFiles = align(cursor + FMT_METADB_SZ_FilesSHdr, 8),
-      .nFiles = 0,
-    };
-
-    f.seekp(cursor = shdr.pFiles, std::ios_base::beg);
-    for(const File& ff: src.files().citerate()) {
-      auto& udf = ff.userdata[ud];
-      if(udf.pPath_base == std::numeric_limits<uint64_t>::max()) continue;
-      shdr.nFiles++;
-      udf.ptr = cursor;
-
-      fmt_metadb_fileSpec_t fspec = {
-        .copied = udf.copied,
-        .pPath = filehdr.pStrings + udf.pPath_base,
-      };
-      char buf[FMT_METADB_SZ_FileSpec];
-      fmt_metadb_fileSpec_write(buf, &fspec);
-      f.write(buf, sizeof buf);
-      cursor += sizeof buf;
-    }
-    filehdr.szFiles = cursor - filehdr.pFiles;
-
-    // Seek back and write the section header
-    f.seekp(filehdr.pFiles, std::ios_base::beg);
-    char buf[FMT_METADB_SZ_FilesSHdr];
-    fmt_metadb_filesSHdr_write(buf, &shdr);
-    f.write(buf, sizeof buf);
-  }
-  // NOTE: cursor and file cursor out of sync here
-
-  { // Functions section
-    filehdr.pFunctions = cursor = align(cursor, 8);
-
-    fmt_metadb_functionsSHdr_t shdr = {
-      .pFunctions = align(cursor + FMT_METADB_SZ_FunctionsSHdr, 8),
-      .nFunctions = 0,
-    };
-
-    f.seekp(cursor = shdr.pFunctions, std::ios_base::beg);
-    for(auto& [rff, udf]: udFuncs.iterate()) {
-      const Function& ff = rff;
-      shdr.nFunctions++;
-      udf.ptr = cursor;
-
-      auto sl = ff.sourceLocation();
-      fmt_metadb_functionSpec_t fspec = {
-        .pName = filehdr.pStrings + udf.pName_base,
-        .pModule = ff.module().userdata[ud].ptr,
-        .offset = ff.offset().value_or(0),
-        .pFile = sl ? sl->first.userdata[ud].ptr : 0,
-        .line = sl ? static_cast<uint32_t>(sl->second) : 0,
-      };
-      char buf[FMT_METADB_SZ_FunctionSpec];
-      fmt_metadb_functionSpec_write(buf, &fspec);
-      f.write(buf, sizeof buf);
-      cursor += sizeof buf;
-    }
-    for(auto& [dat, udf]: udPlaceholders.iterate()) {
-      shdr.nFunctions++;
-      udf.ptr = cursor;
-
-      fmt_metadb_functionSpec_t fspec = {
-        .pName = filehdr.pStrings + udf.pName_base,
-        .pModule = 0, .offset = 0,
-        .pFile = 0, .line = 0,
-      };
-      char buf[FMT_METADB_SZ_FunctionSpec];
-      fmt_metadb_functionSpec_write(buf, &fspec);
-      f.write(buf, sizeof buf);
-      cursor += sizeof buf;
-    }
-    filehdr.szFunctions = cursor - filehdr.pFunctions;
-
-    // Seek back and write the section header
-    f.seekp(filehdr.pFunctions, std::ios_base::beg);
-    char buf[FMT_METADB_SZ_FunctionsSHdr];
-    fmt_metadb_functionsSHdr_write(buf, &shdr);
-    f.write(buf, sizeof buf);
-  }
-  // NOTE: cursor and file cursor out of sync here
-
-  { // Context Tree section
-    f.seekp(filehdr.pContext = cursor = align(cursor, 8), std::ios_base::beg);
-
-    const auto compose = [this](const Context& c, std::vector<char>& out) {
-      const auto& udc = c.userdata[ud];
-      fmt_metadb_context_t ctx;
-      ctx.szChildren = udc.szChildren;
-      ctx.pChildren = udc.pChildren;
-      ctx.ctxId = c.userdata[src.identifier()];
-      ctx.propagation = udc.propagation;
-      ctx.pFunction = ctx.pFile = ctx.pModule = 0;
-      switch(c.scope().relation()) {
-      case Relation::global: std::abort();
-      case Relation::enclosure:
-        ctx.relation = FMT_METADB_RELATION_LexicalNest;
-        break;
-      case Relation::call:
-        ctx.relation = FMT_METADB_RELATION_Call;
-        break;
-      case Relation::inlined_call:
-        ctx.relation = FMT_METADB_RELATION_InlinedCall;
-        break;
-      }
-
-      const auto setFunction = [&](const udFunction& ud){
-        ctx.pFunction = ud.ptr;
-        assert(ctx.pFunction != std::numeric_limits<uint64_t>::max());
-      };
-      const auto setSrcLine = [&]{
-        const auto [f, l] = c.scope().flat().line_data();
-        ctx.pFile = f.userdata[ud].ptr;
-        assert(ctx.pFile != std::numeric_limits<uint64_t>::max());
-        ctx.line = l;
-      };
-      const auto setPoint = [&]{
-        const auto [m, o] = c.scope().flat().point_data();
-        ctx.pModule = m.userdata[ud].ptr;
-        assert(ctx.pModule != std::numeric_limits<uint64_t>::max());
-        ctx.offset = o;
-      };
-
-      switch(c.scope().flat().type()) {
-      case Scope::Type::global: std::abort();
-      case Scope::Type::unknown:
-        ctx.lexicalType = FMT_METADB_LEXTYPE_Function;
-        // ...But we don't know the function, so pFunction = 0 still.
-        break;
-      case Scope::Type::function:
-        ctx.lexicalType = FMT_METADB_LEXTYPE_Function;
-        setFunction(udFuncs.at(c.scope().flat().function_data()));
-        break;
-      case Scope::Type::placeholder:
-        ctx.lexicalType = FMT_METADB_LEXTYPE_Function;
-        setFunction(udPlaceholders.at(c.scope().flat().enumerated_data()));
-        break;
-      case Scope::Type::line:
-        ctx.lexicalType = FMT_METADB_LEXTYPE_Line;
-        setSrcLine();
-        break;
-      case Scope::Type::lexical_loop:
-      case Scope::Type::binary_loop:
-        ctx.lexicalType = FMT_METADB_LEXTYPE_Loop;
-        setSrcLine();
-        if(c.scope().flat().type() == Scope::Type::binary_loop)
-          setPoint();
-        break;
-      case Scope::Type::point:
-        ctx.lexicalType = FMT_METADB_LEXTYPE_Instruction;
-        setPoint();
-        break;
-      }
-
-      auto oldsz = out.size();
-      out.resize(out.size() + FMT_METADB_MAXSZ_Context);
-      auto used = fmt_metadb_context_write(&out[oldsz], &ctx);
-      out.resize(oldsz + used);
-    };
-
-    // Lay out the section and write out the section header
-    fmt_metadb_contextsSHdr_t shdr;
-    shdr.pEntryPoints = cursor = align(cursor + FMT_METADB_SZ_ContextsSHdr, 8);
-    shdr.nEntryPoints = src.contexts().children().size();
-
-    char buf[FMT_METADB_SZ_ContextsSHdr];
-    fmt_metadb_contextsSHdr_write(buf, &shdr);
-    f.write(buf, sizeof buf);
-
-    f.seekp(cursor = align(cursor + shdr.nEntryPoints * FMT_METADB_SZ_EntryPoint, 8), std::ios_base::beg);
-
-    uint16_t i = 0;
-    for(const Context& top: src.contexts().children().citerate()) {
-      // Output Contexts in reversed DFS order, since that's easier to implement
-      // Since Contexts are 8-aligned and 8-sized, we don't need to seek in here
-      auto& udc = top.userdata[ud];
-      top.citerate(nullptr, [&](const Context& c){
-        if(c.children().empty()) return;
-        if(elide(c)) return;
-
-        auto& udc = c.userdata[ud];
-        std::vector<char> buf;
-        for(const Context& cc: c.children().citerate()) {
-          if(elide(cc)) {
-            for(const Context& gcc: cc.children().citerate()) {
-              assert(!elide(gcc) && "Recursion needed for this algorithm!");
-              compose(gcc, buf);
-            }
-          } else {
-            compose(cc, buf);
-          }
+          scopeIdxs[ms] = scopes.size();
+          scopes.push_back(scope);
         }
-        udc.pChildren = cursor;
-        f.write(buf.data(), buf.size());
-        cursor += udc.szChildren = buf.size();
-      });
-
-      // Seek back and interpret the top-level context as an entry point
-      char buf[FMT_METADB_SZ_EntryPoint];
-      fmt_metadb_entryPoint_t ep = {
-        .szChildren = udc.szChildren, .pChildren = udc.pChildren,
-        .ctxId = top.userdata[src.identifier()],
-        .entryPoint = udc.entryPoint,
-        .pPrettyName = filehdr.pStrings + udc.pPrettyName_base,
+        return scopes;
       };
-      fmt_metadb_entryPoint_write(buf, &ep);
-      f.seekp(shdr.pEntryPoints + i * FMT_METADB_SZ_EntryPoint, std::ios_base::beg);
-      f.write(buf, sizeof buf);
-      f.seekp(cursor, std::ios_base::beg);
+      formats::Written scopes(l, scopes_f());
+      shdr->pScopes = scopes.ptr();
+      shdr->nScopes = static_cast<std::uint16_t>(scopes->size());
 
-      i++;
+      // Next the metrics
+      auto metrics_f = [this, &l, &scopeIdxs, &scopes]() -> auto {
+        std::deque<fmt_metadb_metricDesc_t> metrics;
+        for(const Metric& m: src.metrics().citerate()) {
+          const Metric::Identifier& id = m.userdata[src.identifier()];
+
+          auto scopeInsts_f = [&m, &id, &scopeIdxs, &scopes]() -> auto {
+            std::deque<fmt_metadb_propScopeInst_t> scopeInsts;
+            for(MetricScope ms: m.scopes()) {
+              scopeInsts.push_back((fmt_metadb_propScopeInst_t){
+                .pScope = scopes.ptr(scopeIdxs.at(ms)),
+                .propMetricId = static_cast<uint16_t>(id.getFor(ms)),
+              });
+            }
+            return scopeInsts;
+          };
+          formats::Written scopeInsts(l, scopeInsts_f());
+
+          auto summaries_f = [&m, &id, &l, &scopeIdxs, &scopes]() -> auto {
+            std::deque<fmt_metadb_summaryStat_t> summaries;
+            for(MetricScope ms: m.scopes()) {
+              auto pScope = scopes.ptr(scopeIdxs.at(ms));
+              for(const auto& p: m.partials()) {
+                std::uint8_t combine = 255;
+                switch(p.combinator()) {
+                case Statistic::combination_t::sum:
+                  combine = FMT_METADB_COMBINE_Sum;
+                  break;
+                case Statistic::combination_t::min:
+                  combine = FMT_METADB_COMBINE_Min;
+                  break;
+                case Statistic::combination_t::max:
+                  combine = FMT_METADB_COMBINE_Max;
+                  break;
+                }
+                summaries.push_back((fmt_metadb_summaryStat_t){
+                  .pScope = pScope,
+                  .pFormula = formats::Written<std::string, formats::NullTerminatedString>(l,
+                      accumulateFormulaString(p.accumulate())).ptr(),
+                  .combine = combine,
+                  .statMetricId = static_cast<uint16_t>(id.getFor(p, ms)),
+                });
+              }
+            }
+            return summaries;
+          };
+          formats::Written summaries(l, summaries_f());
+
+          metrics.push_back((fmt_metadb_metricDesc_t){
+            .pName = formats::Written<std::string_view, formats::NullTerminatedString>(l,
+                m.name()).ptr(),
+            .pScopeInsts = scopeInsts.ptr(),
+            .pSummaries = summaries.ptr(),
+            .nScopeInsts = static_cast<std::uint16_t>(scopeInsts->size()),
+            .nSummaries = static_cast<std::uint16_t>(summaries->size()),
+          });
+        }
+        return metrics;
+      };
+      formats::Written metrics(l, metrics_f());
+      shdr->pMetrics = metrics.ptr();
+      shdr->nMetrics = static_cast<std::uint32_t>(metrics->size());
     }
 
-    filehdr.szContext = cursor - filehdr.pContext;
+    // Common String Table (section)
+    formats::Written strings(l, std::move(stringsList),
+        formats::DynamicArray<formats::NullTerminatedString>());
+    fileHdr->pStrings = strings.ptr();
+    fileHdr->szStrings = strings.bytesize();
+
+    { // Load Modules section
+      formats::SubWriteGuard<fmt_metadb_modulesSHdr_t> shdr(l, *fileHdr);
+
+      std::deque<std::reference_wrapper<udModule>> moduleUds;
+      auto modules_f = [&]() -> auto {
+        std::deque<fmt_metadb_moduleSpec_t> modules;
+        for(const Module& m: src.modules().citerate()) {
+          auto& udm = m.userdata[ud];
+          if(udm.pathSIdx == std::numeric_limits<std::size_t>::max()) continue;
+          moduleUds.emplace_back(std::ref(udm));
+          modules.push_back((fmt_metadb_moduleSpec_t){
+            .pPath = strings.ptr(udm.pathSIdx),
+          });
+        }
+        return modules;
+      };
+      formats::Written modules(l, modules_f());
+      shdr->pModules = modules.ptr();
+      shdr->nModules = modules->size();
+      std::size_t i = 0;
+      for(udModule& ud: moduleUds)
+        ud.ptr = modules.ptr(i++);
+    }
+
+    { // Source Files section
+      formats::SubWriteGuard<fmt_metadb_filesSHdr_t> shdr(l, *fileHdr);
+
+      std::deque<std::reference_wrapper<udFile>> fileUds;
+      auto files_f = [&]() -> auto {
+        std::deque<fmt_metadb_fileSpec_t> files;
+        for(const File& ff: src.files().citerate()) {
+          auto& udf = ff.userdata[ud];
+          if(udf.pathSIdx == std::numeric_limits<std::size_t>::max()) continue;
+          fileUds.emplace_back(std::ref(udf));
+          files.push_back((fmt_metadb_fileSpec_t){
+            .copied = udf.copied,
+            .pPath = strings.ptr(udf.pathSIdx),
+          });
+        }
+        return files;
+      };
+      formats::Written files(l, files_f());
+      shdr->pFiles = files.ptr();
+      shdr->nFiles = files->size();
+      std::size_t i = 0;
+      for(udFile& ud: fileUds)
+        ud.ptr = files.ptr(i++);
+    }
+
+    { // Functions section
+      formats::SubWriteGuard<fmt_metadb_functionsSHdr_t> shdr(l, *fileHdr);
+
+      std::deque<std::reference_wrapper<udFunction>> functionUds;
+      auto functions_f = [&]() -> auto {
+        std::deque<fmt_metadb_functionSpec_t> functions;
+        for(auto& [rff, udf]: udFuncs.iterate()) {
+          const Function& ff = rff;
+          functionUds.emplace_back(std::ref(udf));
+          auto sl = ff.sourceLocation();
+          functions.push_back((fmt_metadb_functionSpec_t){
+            .pName = strings.ptr(udf.nameSIdx),
+            .pModule = ff.module().userdata[ud].ptr,
+            .offset = ff.offset().value_or(0),
+            .pFile = sl ? sl->first.userdata[ud].ptr : 0,
+            .line = sl ? static_cast<uint32_t>(sl->second) : 0,
+          });
+        }
+        for(auto& [dat, udf]: udPlaceholders.iterate()) {
+          functionUds.emplace_back(std::ref(udf));
+          functions.push_back((fmt_metadb_functionSpec_t){
+            .pName = strings.ptr(udf.nameSIdx),
+            .pModule = 0, .offset = 0,
+            .pFile = 0, .line = 0,
+          });
+        }
+        return functions;
+      };
+      formats::Written functions(l, functions_f());
+      shdr->pFunctions = functions.ptr();
+      shdr->nFunctions = functions->size();
+      std::size_t i = 0;
+      for(udFunction& ud: functionUds)
+        ud.ptr = functions.ptr(i++);
+    }
+
+    { // Context Tree section
+      formats::SubWriteGuard<fmt_metadb_contextsSHdr_t> shdr(l, *fileHdr);
+
+      const auto compose = [this](const Context& c) -> fmt_metadb_context_t {
+        const auto& udc = c.userdata[ud];
+        fmt_metadb_context_t ctx;
+        ctx.szChildren = udc.szChildren;
+        ctx.pChildren = udc.pChildren;
+        ctx.ctxId = c.userdata[src.identifier()];
+        ctx.propagation = udc.propagation;
+        ctx.pFunction = ctx.pFile = ctx.pModule = 0;
+        switch(c.scope().relation()) {
+        case Relation::global: std::abort();
+        case Relation::enclosure:
+          ctx.relation = FMT_METADB_RELATION_LexicalNest;
+          break;
+        case Relation::call:
+          ctx.relation = FMT_METADB_RELATION_Call;
+          break;
+        case Relation::inlined_call:
+          ctx.relation = FMT_METADB_RELATION_InlinedCall;
+          break;
+        }
+
+        const auto setFunction = [&](const udFunction& ud){
+          ctx.pFunction = ud.ptr;
+          assert(ctx.pFunction != std::numeric_limits<uint64_t>::max());
+        };
+        const auto setSrcLine = [&]{
+          const auto [f, l] = c.scope().flat().line_data();
+          ctx.pFile = f.userdata[ud].ptr;
+          assert(ctx.pFile != std::numeric_limits<uint64_t>::max());
+          ctx.line = l;
+        };
+        const auto setPoint = [&]{
+          const auto [m, o] = c.scope().flat().point_data();
+          ctx.pModule = m.userdata[ud].ptr;
+          assert(ctx.pModule != std::numeric_limits<uint64_t>::max());
+          ctx.offset = o;
+        };
+
+        switch(c.scope().flat().type()) {
+        case Scope::Type::global: std::abort();
+        case Scope::Type::unknown:
+          ctx.lexicalType = FMT_METADB_LEXTYPE_Function;
+          // ...But we don't know the function, so pFunction = 0 still.
+          break;
+        case Scope::Type::function:
+          ctx.lexicalType = FMT_METADB_LEXTYPE_Function;
+          setFunction(udFuncs.at(c.scope().flat().function_data()));
+          break;
+        case Scope::Type::placeholder:
+          ctx.lexicalType = FMT_METADB_LEXTYPE_Function;
+          setFunction(udPlaceholders.at(c.scope().flat().enumerated_data()));
+          break;
+        case Scope::Type::line:
+          ctx.lexicalType = FMT_METADB_LEXTYPE_Line;
+          setSrcLine();
+          break;
+        case Scope::Type::lexical_loop:
+        case Scope::Type::binary_loop:
+          ctx.lexicalType = FMT_METADB_LEXTYPE_Loop;
+          setSrcLine();
+          if(c.scope().flat().type() == Scope::Type::binary_loop)
+            setPoint();
+          break;
+        case Scope::Type::point:
+          ctx.lexicalType = FMT_METADB_LEXTYPE_Instruction;
+          setPoint();
+          break;
+        }
+        return ctx;
+      };
+
+      auto entryPoints_f = [&]() -> auto {
+        std::deque<fmt_metadb_entryPoint_t> entryPoints;
+        for(const Context& top: src.contexts().children().citerate()) {
+          // Output Contexts in reversed DFS order, since that's easier to implement
+          top.citerate(nullptr, [&](const Context& c){
+            if(c.children().empty()) return;
+            if(elide(c)) return;
+
+            auto& udc = c.userdata[ud];
+            auto children_f = [&]() -> auto {
+              std::deque<fmt_metadb_context_t> children;
+              for(const Context& cc: c.children().citerate()) {
+                if(elide(cc)) {
+                  for(const Context& gcc: cc.children().citerate()) {
+                    assert(!elide(gcc) && "Recursion needed for this algorithm!");
+                    children.push_back(compose(gcc));
+                  }
+                } else {
+                  children.push_back(compose(cc));
+                }
+              }
+              return children;
+            };
+            formats::Written children(l, children_f());
+            udc.pChildren = children.ptr();
+            udc.szChildren = children.bytesize();
+          });
+
+          // Then compose the entry point
+          auto& udc = top.userdata[ud];
+          entryPoints.push_back((fmt_metadb_entryPoint_t){
+            .szChildren = udc.szChildren, .pChildren = udc.pChildren,
+            .ctxId = top.userdata[src.identifier()],
+            .entryPoint = udc.entryPoint,
+            .pPrettyName = strings.ptr(udc.prettyNameSIdx),
+          });
+        }
+        return entryPoints;
+      };
+      formats::Written entryPoints(l, entryPoints_f());
+      shdr->pEntryPoints = entryPoints.ptr();
+      shdr->nEntryPoints = entryPoints->size();
+    }
   }
 
-  { // File footer
-    f.write(fmt_metadb_footer, sizeof fmt_metadb_footer);
-  }
-
-  { // File header
-    char buf[FMT_METADB_SZ_FHdr];
-    fmt_metadb_fHdr_write(buf, &filehdr);
-    f.seekp(0, std::ios_base::beg);
-    f.write(buf, sizeof buf);
-  }
+  // File footer
+  file.writeat(l.size(), sizeof fmt_metadb_footer, fmt_metadb_footer);
 } catch(const std::exception& e) {
   util::log::fatal{} << "Error while writing meta.db: " << e.what();
-}
-
-MetaDB::MetricRef::MetricRef(const Metric& m) : m(m) {};
-
-template<class Lookup>
-void MetaDB::MetricRef::compose(char buf[FMT_METADB_SZ_MetricDesc],
-                                uint64_t pSubarrays, const Lookup& str) const {
-  fmt_metadb_metricDesc_t mdesc = {
-    .pName = str(m.name()),
-    .pScopeInsts = pSubarrays,
-    .pSummaries = pSubarrays + m.scopes().count() * FMT_METADB_SZ_PropScopeInst,
-    .nScopeInsts = static_cast<uint16_t>(m.scopes().count()),
-    .nSummaries = static_cast<uint16_t>(m.scopes().count()*m.partials().size()),
-  };
-  fmt_metadb_metricDesc_write(buf, &mdesc);
-}
-
-size_t MetaDB::MetricRef::scopesSize() const {
-  // {MD}, {PS} and {SS} are all 8-aligned and 8-sized, so we can just add
-  // without thinking about the alignments
-  return m.scopes().count() * (FMT_METADB_SZ_PropScopeInst + m.partials().size() * FMT_METADB_SZ_SummaryStat);
-}
-
-template<class Lookup>
-std::vector<char> MetaDB::MetricRef::composeSubarrays(uint64_t start,
-    uint64_t pScopes, const Metric::Identifier& id, const Lookup& str) const {
-  std::vector<char> buf;
-  buf.resize(scopesSize(), 0);
-  size_t scopeCursor = 0;
-  size_t summaryCursor = m.scopes().count() * FMT_METADB_SZ_PropScopeInst;
-  for(MetricScope ms: m.scopes()) {
-    auto pScope = pScopes + static_cast<size_t>(ms) * FMT_METADB_SZ_PropScope;
-
-    fmt_metadb_propScopeInst_t scope = {
-      .pScope = pScope,
-      .propMetricId = static_cast<uint16_t>(id.getFor(ms)),
-    };
-    fmt_metadb_propScopeInst_write(&buf[scopeCursor], &scope);
-    scopeCursor += FMT_METADB_SZ_PropScopeInst;
-
-    for(const auto& p: m.partials()) {
-      fmt_metadb_summaryStat_t summary;
-      summary.pScope = pScope;
-      summary.pFormula = str(accumulateFormulaString(p.accumulate()));
-      summary.statMetricId = static_cast<uint16_t>(id.getFor(p, ms));
-      switch(p.combinator()) {
-      case Statistic::combination_t::sum:
-        summary.combine = FMT_METADB_COMBINE_Sum;
-        break;
-      case Statistic::combination_t::min:
-        summary.combine = FMT_METADB_COMBINE_Min;
-        break;
-      case Statistic::combination_t::max:
-        summary.combine = FMT_METADB_COMBINE_Max;
-        break;
-      }
-
-      fmt_metadb_summaryStat_write(&buf[summaryCursor], &summary);
-      summaryCursor += FMT_METADB_SZ_SummaryStat;
-    }
-  }
-  return buf;
 }

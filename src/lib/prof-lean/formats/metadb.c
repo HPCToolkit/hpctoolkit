@@ -209,7 +209,7 @@ void fmt_metadb_propScope_write(char d[FMT_METADB_SZ_PropScope], const fmt_metad
   fmt_u64_write(d+0x00, ps->pScopeName);
   d[0x08] = ps->type;
   d[0x09] = ps->propagationIndex;
-  memset(d+0x0a, 0, FMT_METADB_SZ_PropScope - 0x01);
+  memset(d+0x0a, 0, FMT_METADB_SZ_PropScope - 0x0a);
 }
 
 void fmt_metadb_modulesSHdr_read(fmt_metadb_modulesSHdr_t* mhdr, const char d[FMT_METADB_SZ_ModulesSHdr]) {

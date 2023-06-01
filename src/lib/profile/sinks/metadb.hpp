@@ -49,6 +49,8 @@
 
 #include "../sink.hpp"
 
+#include "../util/file.hpp"
+
 #include <mutex>
 #include "../stdshim/filesystem.hpp"
 
@@ -90,30 +92,18 @@ public:
 
 private:
   stdshim::filesystem::path dir;
+  std::optional<util::File> metadb;
   bool copySources;
 
-  struct MetricRef {
-    MetricRef(const Metric&);
-
-    template<class F>
-    void compose(char*, uint64_t, const F&) const;
-    size_t scopesSize() const;
-    template<class F>
-    std::vector<char> composeSubarrays(uint64_t, uint64_t, const Metric::Identifier&, const F&) const;
-
-    const Metric& m;
-  };
-
   std::shared_mutex stringsLock;
-  uint64_t stringsCursor = 0;
-  std::unordered_map<std::string, uint64_t> stringsTable;
+  std::unordered_map<std::string, std::size_t> stringsTable;
   std::deque<std::string_view> stringsList;
 
-  uint64_t stringsTableLookup(const std::string&);
+  std::size_t stringsTableLookup(const std::string&);
 
   struct udFile {
     std::once_flag once;
-    uint64_t pPath_base = std::numeric_limits<uint64_t>::max();
+    std::size_t pathSIdx = std::numeric_limits<std::size_t>::max();
     bool copied : 1;
     uint64_t ptr = std::numeric_limits<uint64_t>::max();
   };
@@ -121,13 +111,13 @@ private:
 
   struct udModule {
     std::once_flag once;
-    uint64_t pPath_base = std::numeric_limits<uint64_t>::max();
+    std::size_t pathSIdx = std::numeric_limits<std::size_t>::max();
     uint64_t ptr = std::numeric_limits<uint64_t>::max();
   };
   void instance(const Module&);
 
   struct udFunction {
-    uint64_t pName_base = std::numeric_limits<uint64_t>::max();
+    std::size_t nameSIdx = std::numeric_limits<std::size_t>::max();
     uint64_t ptr = std::numeric_limits<uint64_t>::max();
   };
   void instance(const Function&);
@@ -137,7 +127,7 @@ private:
     uint64_t szChildren = 0;
     uint64_t pChildren = 0;
     uint16_t propagation = 0;
-    uint64_t pPrettyName_base = std::numeric_limits<uint64_t>::max();
+    std::size_t prettyNameSIdx = std::numeric_limits<std::size_t>::max();
     uint16_t entryPoint = std::numeric_limits<uint16_t>::max();
   };
 
