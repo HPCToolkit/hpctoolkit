@@ -228,6 +228,50 @@ static __thread bool ompt_runtime_api_flag = false;
 // device operations
 //*****************************************************************************
 
+static cct_node_t *
+get_callpath
+(
+ void
+)
+{
+  // sample a record
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+  int zero_metric_id = 0; // nothing to see here
+
+  ucontext_t uc;
+  getcontext(&uc);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead++;
+
+  hpcrun_safe_enter();
+
+  int skip_this_frame = 1; // omit this procedure frame on the call path
+  cct_node_t *node =
+    hpcrun_sample_callpath(&uc, zero_metric_id, zero_metric_incr,
+                           skip_this_frame, 1, NULL).sample_node;
+
+#if PRUNE_CALLPATH
+  // the load module for the runtime library that supports offloading
+  int lm = get_load_module(node);
+
+  // drop nodes on the call chain until we find one that is not in the load
+  // module for runtime library that supports offloading
+  for (;;) {
+    node = hpcrun_cct_parent(node);
+    if (get_load_module(node) != lm) break;
+  }
+#endif
+
+  // Must be under a safe region to prevent self interrupt
+  hpcrun_trace_node(target_node);
+
+  hpcrun_safe_exit();
+
+  td->overhead--;
+
+  return node;
+}
+
 static void
 hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
                          ompt_id_t host_op_id,
@@ -249,7 +293,15 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     cct_addr_t frm;
     memset(&frm, 0, sizeof(cct_addr_t));
     frm.ip_norm = ip_norm;
-    cct_node_t *api_node = hpcrun_cct_insert_addr(target_node, &frm, true);
+
+    // if target_node is not NULL, the operation is in a target region.
+    // in this case, the value of target_node represents the call path to
+    // this operation. if target_node is NULL, the operation is outside a
+    // target region. in this case, use stack unwinding to determine
+    // the call path where the operation was invoked.
+    cct_node_t *callpath = target_node ? target_node : get_callpath();
+
+    cct_node_t *api_node = hpcrun_cct_insert_addr(callpath, &frm, true);
 
     gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
 
@@ -606,40 +658,7 @@ ompt_target_callback_emi
   target_data->value = gpu_correlation_id();
   PRINT("ompt_target_callback->target_id 0x%lx\n", target_data->value);
 
-  // sample a record
-  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
-  int zero_metric_id = 0; // nothing to see here
-
-  ucontext_t uc;
-  getcontext(&uc);
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->overhead++;
-
-  hpcrun_safe_enter();
-
-  int skip_this_frame = 1; // omit this procedure frame on the call path
-  target_node =
-    hpcrun_sample_callpath(&uc, zero_metric_id, zero_metric_incr,
-                           skip_this_frame, 1, NULL).sample_node;
-
-#if PRUNE_CALLPATH
-  // the load module for the runtime library that supports offloading
-  int lm = get_load_module(target_node);
-
-  // drop nodes on the call chain until we find one that is not in the load
-  // module for runtime library that supports offloading
-  for (;;) {
-    target_node = hpcrun_cct_parent(target_node);
-    if (get_load_module(target_node) != lm) break;
-  }
-#endif
-
-  // Must be under a safe region to prevent self interrupt
-  hpcrun_trace_node(target_node);
-
-  hpcrun_safe_exit();
-
-  td->overhead--;
+  target_node = get_callpath();
 }
 
 void
