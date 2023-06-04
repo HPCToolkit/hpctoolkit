@@ -272,6 +272,20 @@ class Spack(Command):
     def packages_yaml(self) -> dict:
         return self.config_get("packages")
 
+    @functools.cached_property
+    def compilers_yaml(self) -> dict:
+        return self.config_get("compilers")
+
+    def fetch_compiler_paths(self, compilerspec: str) -> tuple[Path, Path]:
+        """Probe Spack for the paths to the compilers used for a given spec."""
+        for comp in self.compilers_yaml.get("compilers", []):
+            if "compiler" not in comp:
+                continue
+            comp = comp["compiler"]
+            if "spec" in comp and comp["spec"] == compilerspec:
+                return Path(comp["paths"]["cc"]), Path(comp["paths"]["cxx"])
+        raise ValueError(f"Unknown compiler not registered with Spack: {compilerspec}")
+
     def fetch_external_versions(self, pkg: str) -> list[Version]:
         """Probe Spack for the versions of a package supplied as externals."""
         return [

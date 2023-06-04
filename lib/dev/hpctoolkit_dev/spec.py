@@ -169,6 +169,33 @@ def resolve_specs(
     return result
 
 
+class ParsedLockfile:
+    """Cached data storage for the contents of a spack.lock file."""
+
+    def __init__(self, root: Path) -> None:
+        with open(root / "spack.lock", encoding="utf-8") as f:
+            self._raw = json.load(f)
+
+    @functools.cached_property
+    def chashes(self) -> dict[str, str]:
+        return {VerConSpec.extract_package(r["spec"]): r["hash"] for r in self._raw["roots"]}
+
+    @functools.cached_property
+    def versions(self) -> dict[str, Version]:
+        return {k: Version(v["version"]) for k, v in self._raw["concrete_specs"].items()}
+
+    @functools.cached_property
+    def compilers(self) -> dict[str, tuple[str, Version]]:
+        return {
+            k: (v["compiler"]["name"], Version(v["compiler"]["version"]))
+            for k, v in self._raw["concrete_specs"].items()
+        }
+
+    @functools.cached_property
+    def specgraph(self) -> dict[str, list[dict]]:
+        return {k: v.get("dependencies", []) for k, v in self._raw["concrete_specs"].items()}
+
+
 if os.environ.get("CI") == "true":
     UPDATE_MSG = "\n  In CI: the reused merge-base image is out-of-date. Try updating the branch."
 else:
@@ -200,48 +227,46 @@ class SpackEnv:
         )
 
     @functools.cached_property
-    def _lock_data(self) -> tuple[dict[str, str], dict[str, Version], dict[str, list[dict]]]:
-        with open(self.root / "spack.lock", encoding="utf-8") as f:
-            data = json.load(f)
-        chashes: dict[str, str] = {
-            VerConSpec.extract_package(r["spec"]): r["hash"] for r in data["roots"]
-        }
-        versions: dict[str, Version] = {
-            k: Version(v["version"]) for k, v in data["concrete_specs"].items()
-        }
-        specgraph: dict[str, list[dict]] = {
-            k: v.get("dependencies", []) for k, v in data["concrete_specs"].items()
-        }
-        return chashes, versions, specgraph
-
-    @property
-    def _chashes(self) -> dict[str, str]:
-        return self._lock_data[0]
-
-    @property
-    def _versions(self) -> dict[str, Version]:
-        return self._lock_data[1]
-
-    @property
-    def _specgraph(self) -> dict[str, list[dict]]:
-        return self._lock_data[2]
+    def _lock(self) -> ParsedLockfile | None:
+        return ParsedLockfile(self.root) if self.exists() else None
 
     def has_package(self, pkg: str) -> bool:
-        return pkg in self._chashes
+        assert self._lock
+        return pkg in self._lock.chashes
+
+    COMPILER_PREF = ("gcc", "clang")
+
+    @property
+    def recommended_compilerspec(self) -> str:
+        if not self._lock:
+            return "cc"
+        comp, ver = max(
+            (self._lock.compilers[chash] for _, chash in self._lock.chashes.items()),
+            key=lambda c: (
+                self.COMPILER_PREF.index(c[0]) if c[0] in self.COMPILER_PREF else -1,
+                c[1],
+            ),
+        )
+        return f"{comp}@{ver}"
+
+    @property
+    def recommended_compilers(self) -> tuple[Path, Path]:
+        return Spack.get().fetch_compiler_paths(self.recommended_compilerspec)
 
     def load(self, *specs: VerConSpec, allow_missing_when: bool = False) -> ShEnv:
+        assert self._lock
         hashes: set[str] = set()
         q = []
 
         for s in specs:
-            h = self._chashes.get(s.package)
+            h = self._lock.chashes.get(s.package)
             if h is None:
                 if s.when and allow_missing_when:
                     continue
                 raise click.ClickException(
                     f"Environment /{self.root.name} is missing concretization for expected package: {s.package}{UPDATE_MSG}"
                 )
-            if not s.version_ok(self._versions[h]):
+            if not s.version_ok(self._lock.versions[h]):
                 raise click.ClickException(
                     f"Environment /{self.root.name} contains bad concretization for spec: {s}{UPDATE_MSG}"
                 )
@@ -251,16 +276,18 @@ class SpackEnv:
             nexthash = q.pop()
             if nexthash not in hashes:
                 hashes.add(nexthash)
-                for dep in self._specgraph[nexthash]:
+                for dep in self._lock.specgraph[nexthash]:
                     if any(x in dep["type"] for x in ("run", "link")):
                         q.append(dep["hash"])
         return Spack.get().load(*["/" + h for h in hashes])
 
     def load_all(self) -> ShEnv:
-        return self.load(*[VerConSpec(p) for p in self._chashes])
+        assert self._lock
+        return self.load(*[VerConSpec(p) for p in self._lock.chashes])
 
     def prefix(self, pkg: str) -> Path:
-        return Spack().get().get_prefix(f"{pkg}/{self._chashes[pkg]}", spack_env=self.root)
+        assert self._lock
+        return Spack().get().get_prefix(f"{pkg}/{self._lock.chashes[pkg]}", spack_env=self.root)
 
     @classmethod
     def _yaml_merge(cls, dst: collections.abc.MutableMapping, src: collections.abc.Mapping):
@@ -322,7 +349,7 @@ class SpackEnv:
 
         (self.root / "spack.lock").unlink(missing_ok=True)
         with contextlib.suppress(AttributeError):
-            del self._lock_data
+            del self._lock
 
     def install(self) -> None:
         """Install the Spack environment."""
