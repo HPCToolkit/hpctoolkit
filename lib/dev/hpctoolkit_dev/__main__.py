@@ -442,6 +442,22 @@ def pre_commit(obj: DevState, args: collections.abc.Collection[str]) -> None:
 
 @main.command
 @dev_pass_obj
+def poetry(obj: DevState) -> None:
+    """Set up a Python venv with Poetry."""
+    with obj.internal_named_env("poetry", "venv") as ve_dir:
+        if not (ve_dir / "bin" / "poetry").is_file():
+            venv.EnvBuilder(
+                clear=True, with_pip=True, upgrade_deps=True, prompt="dev/poetry"
+            ).create(ve_dir)
+            vpython = Command(ve_dir / "bin" / "python3")
+            vpython("-m", "pip", "install", "--require-virtualenv", "poetry>=1.5.1")
+
+        click.echo("Virtual environment ready! Now run in your working shell:")
+        click.echo(f"    . {ve_dir}/bin/activate")
+
+
+@main.command
+@dev_pass_obj
 @click.option(
     "--custom-env",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
