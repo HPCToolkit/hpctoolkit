@@ -10,6 +10,7 @@ python = "^3.10"
 click = "^8.1.3"
 ruamel-yaml = "^0.17.21"
 yaspin = "^2.3.0"
+pyelftools = "^0.29"
 
 [tool.poetry.scripts]
 dev = "hpctoolkit_dev.__main__:main"
