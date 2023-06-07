@@ -424,27 +424,20 @@ class Test(MakeAction):
                 tests2bdir / "meson-logs" / "testlog.txt", testlogdir / "test.tests2.log"
             )
 
-        final_res = res
-        junit_logs = (
-            (tests2bdir / "meson-logs" / "testlog.junit.xml", True),
-            (tests2bdir / "lib" / "python" / "hpctoolkit" / "pytest.junit.xml", False),
-        )
-        for fn, required in junit_logs:
-            if not fn.exists():
-                if required:
-                    final_res = MissingJUnitLogs(fn.name, res)
-                continue
+        junit_log = tests2bdir / "meson-logs" / "testlog.junit.xml"
+        if not junit_log.exists():
+            return MissingJUnitLogs(junit_log.name, res)
 
-            if logdir is not None:
-                shutil.copyfile(fn, logdir / fn.name)
+        if logdir is not None:
+            shutil.copyfile(junit_log, logdir / "test.junit.xml")
 
-            if self.junit_copyout:
-                with open(fn, "rb") as inf, os.fdopen(
-                    tempfile.mkstemp(prefix="test.", suffix="." + fn.name, dir=os.getcwd())[0], "wb"
-                ) as outf:
-                    shutil.copyfileobj(inf, outf)
+        if self.junit_copyout:
+            with open(junit_log, "rb") as inf, os.fdopen(
+                tempfile.mkstemp(prefix="test.", suffix=".junit.xml", dir=os.getcwd())[0], "wb"
+            ) as outf:
+                shutil.copyfileobj(inf, outf)
 
-        return final_res
+        return res
 
 
 class UnsavedTestDataResult(ActionResult):

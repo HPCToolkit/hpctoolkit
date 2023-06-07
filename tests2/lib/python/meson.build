@@ -27,6 +27,8 @@ meson.add_devenv(hpctoolkit_pyenv)
 # The utilities themselves also have unit tests based on pytest
 _env = hpctoolkit_pyenv
 _env.set('TEST_DATA_DIR', meson.current_source_dir()/'..'/'..'/'data')
-test('pytest', venv_python, timeout: 0,
-  args: ['-m', 'pytest', meson.current_source_dir() / 'hpctoolkit', '--junitxml=pytest.junit.xml'],
+_pytst = configure_file(input: files('tst-pytest'), output: '@PLAINNAME@.venv',
+                        command: venv_shebang)
+test('pytest', _pytst, timeout: 0, protocol: 'gtest',
+  args: [meson.current_source_dir() / 'hpctoolkit'],
   env: _env, verbose: true, workdir: meson.current_build_dir())
