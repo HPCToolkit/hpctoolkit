@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2022/01/10}
+\setDate{2023/05/31}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -119,13 +119,14 @@ This view organizes performance data according to the static structure of an app
 All costs incurred in \emph{any} calling context by a procedure are aggregated together in the flat view.
 
 \item \textbf{Thread view}
-	This view is to display the metrics of a certain threads and/or processes.
-To activate the view, one needs to select a thread or a set of threads of interest by clicking the thread-view button from Top-down view.
-On the thread selection window, one needs to select the checkbox of the threads of interest.
-To  narrow the list, one can specify the thread name on the filter part of the window.
-Once threads have been selected, click \textbf{OK}, and the Thread view will be activated.
-The tree of the view is the same as the tree from the Top-down view, with the metrics only from the selected threads.
-If there are more than one selected threads, the metrics are the average of the values of the selected threads.
+	This view displays the metric values of \emph{execution contexts}.
+An execution context is an abstraction of a measure of code execution such as threads and processes.
+To activate the view, select a thread or a set of execution contexts by clicking the thread-view button from the Top-down view.
+On the execution context selection window, select the checkbox of the execution contexts of interest.
+To  narrow the list, specify the name on the filter part of the window.
+Once the execution contexts have been selected, click \textbf{OK}, and the Thread view will be activated.
+The tree of the view is the same as the tree from the Top-down view, with the metrics only from the selected execution contexts.
+If there is more than one selected thread, the metrics are the sum of the metric values.
 \\
 Currently contexts for GPU streams are not shown in the thread view; metrics for a GPU operation are associated with the calling context in the thread that initiated the GPU operation.
 
@@ -206,11 +207,13 @@ in standard CSV (Comma Separated Values) format.
 \item \textbf{Showing graph of metric values}.
 Showing the graph (plot, sorted plot or histogram) of metric values of the selected node in CCT for all processes or threads.
 Hovering the mouse over the dot will show the information of the rank or thread and its metric value.
+Right clicking on the graph will show menus to adjust the axis, zoom-in/out, display the setting and display the thread view of the cursor-pointed dot graph.\\
+Note: Currently contexts for GPU streams are not shown in the x-axis.
+The metrics for a GPU operation are associated with the calling context in the thread that initiated the GPU operation.
 
-\item \textbf{Show the metrics of a set of threads}.
-Showing the CCT and the metrics of a seletected threads.
-
-
+\item \textbf{Show the metrics of a set of execution contexts}.
+Shows the CCT and the metrics of a selected execution contexts (ranks and/or threads).
+If the set contains more than one execution contexts, then the value is the sum of the value of the selected execution contexts.
 
 \item \textbf{Flatten} (icon of a slashed tree node).
 \emph{Flatten} the navigation pane outline,
@@ -237,17 +240,17 @@ causing outline items at each level of the hierarchy to be sorted by their value
 \end{itemize}
 
 
-\subsection{Thread-Centric Graphs}
+\subsection{Plot Graphs}
 
-\Prog{hpcviewer} can display graphs of thread-level metric values.
-This is useful for quickly assessing load imbalance across processes and threads.
+\Prog{hpcviewer} can display graphs of thread-level metric values
+which is useful for quickly assessing load imbalance across processes and threads.
 
 To create a graph,
-choose the calling context view and select an item in the navigation pane,
-then pop up the context menu by right-clicking the item.
+choose the top-down view and select an item in the navigation pane,
+then click the graph button above the navigation pane.
 A list of graphable metrics appears at the bottom of the context menu,
 each with a sub-menu showing the three graph styles that \Prog{hpcviewer} can make.
-The \emph{Plot} graph displays metrics by MPI rank and thread number;
+The \emph{Plot} graph displays metrics ordered by execution context.
 The \emph{Sorted plot} graph displays metrics sorted by value;
 and the \emph{Histogram} graph displays a barchart of metric value distributions.
 
@@ -297,6 +300,9 @@ It comprises of three different parts.
 \item \textbf{Statistics view} (tab in top, right pane)
   The view shows a list of procedures and the estimated execution percentage for each for the time interval currently shown in the Trace view.
 
+\item \textbf{GPU Blame view} (tab in top, right pane)
+	This view shows the list of procedures that cause GPU idleness displayed in the trace view.
+
 
 \item \textbf{Mini map view} (right, bottom):
   The Mini Map shows, relative to the process/time dimensions, the portion of the execution shown by the Trace View.
@@ -340,8 +346,7 @@ Although it is possible to open a view configuration file which is associated fr
 The information pane contains some information concerning the range status of the current displayed data.
 \begin{itemize}
  \item Time Range. The information of current time-range (horizontal) dimension.
- \item Rank Range. The information of current process-range (vertical) dimension.
- \item Cross Hair. The information of current crosshair position in time and process dimensions.
+ \item Cross Hair. The information of current crosshair position in time and execution-context dimensions.
 \end{itemize}
 
 
@@ -457,15 +462,16 @@ This menu includes several menu items for controlling basic viewer operations.
 \subsection{Filter}
 This menu is to allow users to filter certain nodes in the Profile view or filter certain profiles in the Trace view.
 \begin{itemize}
+
+ \item \textbf{Filter execution contexts} \emph{(Trace view mode only)}.
+  Open a window for selecting which ranks or threads or GPUs should be displayed.
+
  \item \textbf{Filter CCT nodes}.
   Open a filter property window which lists a set of filters and its properties.
 \Prog{hpcviewer} allows  users to define multiple filters, and each filter is associated with a type and a glob pattern (A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +).
 There are three types of filter: ``\textbf{self only}'' to omit matched nodes,
 ``\textbf{descendants only}'' to exclude only the subtree of the matched nodes, and ``\textbf{self and descendants}'' to
 remove matched nodes and its descendants.
-
- \item \textbf{Filter ranks} \emph{(Trace view mode only)}.
-  Open a window for selecting which ranks should be displayed.
 
 \end{itemize}
 
