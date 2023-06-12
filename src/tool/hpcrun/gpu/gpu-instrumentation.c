@@ -73,7 +73,7 @@
 #define INST_SILENT   "silent"
 
 #define ENABLE_SIMD_ANALYSIS 0
-#define ENABLE_LATENCY_ANALYSIS 0
+#define ENABLE_LATENCY_ANALYSIS 1
 
 
 

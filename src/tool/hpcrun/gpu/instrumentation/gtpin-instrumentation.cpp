@@ -567,6 +567,7 @@ void KernelProfile::instrument(IGtKernelInstrument &instrument)
             {
                 preCode.front()->AppendAnnotation(__func__);
             }
+            instrument.InstrumentBbl(*bbl, GtIpoint::Before(), preCode);
 
             GtGenProcedure postCode;
             if (bbl->IsEot())
