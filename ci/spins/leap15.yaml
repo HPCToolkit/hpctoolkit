@@ -5,7 +5,7 @@ container:
     #     spack: develop
     # But that doesn't work because Spack uses unqualified names for the images. Ugh.
     build: ghcr.io/spack/leap15:{SPACKTAG}
-    final: docker.io/opensuse/leap:latest
+    final: docker.io/opensuse/leap:15
 
   os_packages:
     command: zypper
@@ -42,8 +42,8 @@ container:
     - mercurial
     - patch
     - patchelf
-    - python310
-    - python310-pip
+    - python311
+    - python311-pip
     - subversion
     - tar
     - unzip
