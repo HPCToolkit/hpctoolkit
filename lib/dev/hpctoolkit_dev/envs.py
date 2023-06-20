@@ -147,6 +147,7 @@ class DevEnv(SpackEnv):
         no = click.style("NO", fg="red", bold=True)
 
         return f"""\
+    Compiler             : {self.recommended_compilerspec}
     hpcprof-mpi          : {yes if self.mpi else no}
 
   {click.style("CPU Features", bold=True)}
@@ -217,7 +218,21 @@ class DevEnv(SpackEnv):
         return result
 
     def load_all(self) -> ShEnv:
-        return self.load(*self._specs, allow_missing_when=True)
+        try:
+            cc, cxx = self.recommended_compilers
+        except Exception:
+            click.echo(
+                f"WARNING: Unable to find default compilerspec {self.recommended_compilerspec}, not setting CC/CXX"
+            )
+            cc, cxx = None, None
+
+        overlay = {}
+        if cc:
+            overlay["CC"] = str(cc)
+        if cxx:
+            overlay["CXX"] = str(cxx)
+
+        return self.load(*self._specs, allow_missing_when=True).extend(overlay)
 
     def generate(self, mode: DependencyMode, template: dict | None = None) -> None:
         self.generate_explicit(self._specs, mode, template=template)

@@ -379,6 +379,76 @@ Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
 
 
 @main.command
+@NamedEnv.pass_env(exists=True, help_verb="Update")
+@dev_pass_obj
+# Generation mode
+@click.option(
+    "--latest",
+    "mode",
+    flag_value=DependencyMode.LATEST,
+    type=DependencyMode,
+    default=True,
+    help="Use the latest available version of dependencies",
+)
+@click.option(
+    "--minimum",
+    "mode",
+    flag_value=DependencyMode.MINIMUM,
+    type=DependencyMode,
+    help="Use the minimum supported version of dependencies",
+)
+@click.option(
+    "--any",
+    "mode",
+    flag_value=DependencyMode.ANY,
+    type=DependencyMode,
+    help="Use any supported version of dependencies",
+)
+# Population options
+@click.option("--build/--no-build", help="Also build HPCToolkit")
+def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> None:
+    """Update (re-generate) a devenv."""
+    if not obj.project_root:
+        raise click.ClickException("create only operates within an HPCToolkit project checkout")
+
+    env = DevEnv.restore(devenv.root)
+    yaml = ruamel.yaml.YAML(typ="safe")
+    with open(devenv.root / "spack.yaml", encoding="utf-8") as t:
+        prior = yaml.load(t)
+        if prior and not isinstance(prior, dict):
+            raise click.ClickException(f"Invalid template, expected !map but got {prior!r}")
+        prior = prior["spack"]
+
+    click.echo(env.describe())
+    env.generate(mode, template=prior)
+    env.install()
+    try:
+        env.populate(obj.project_root)
+    except subprocess.CalledProcessError as e:
+        raise click.ClickException(
+            f"""\
+./configure failed! Fix any errors above and continue with:
+$ ./dev populate {shlex.quote(str(devenv.root))}
+"""
+        ) from e
+    if build:
+        with env.activate():
+            env.build()
+
+    click.echo(
+        f"""\
+Devenv successfully created! You may now enter the devenv with:
+    $ ./dev env {shlex.join(devenv.args)}
+Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
+    $ make -j
+    $ make -j install
+    $ hpcrun -h
+""",
+        nl=False,
+    )
+
+
+@main.command
 @click.argument("command", nargs=-1, type=click.UNPROCESSED)
 @NamedEnv.pass_env(exists=True, help_verb="Run within")
 def env(devenv: Env, command: collections.abc.Sequence[str]) -> None:
@@ -438,6 +508,22 @@ def pre_commit(obj: DevState, args: collections.abc.Collection[str]) -> None:
 
         vprecommit = Command(ve_dir / "bin" / "pre-commit")
         vprecommit(*args)
+
+
+@main.command
+@dev_pass_obj
+def poetry(obj: DevState) -> None:
+    """Set up a Python venv with Poetry."""
+    with obj.internal_named_env("poetry", "venv") as ve_dir:
+        if not (ve_dir / "bin" / "poetry").is_file():
+            venv.EnvBuilder(
+                clear=True, with_pip=True, upgrade_deps=True, prompt="dev/poetry"
+            ).create(ve_dir)
+            vpython = Command(ve_dir / "bin" / "python3")
+            vpython("-m", "pip", "install", "--require-virtualenv", "poetry>=1.5.1")
+
+        click.echo("Virtual environment ready! Now run in your working shell:")
+        click.echo(f"    . {ve_dir}/bin/activate")
 
 
 @main.command

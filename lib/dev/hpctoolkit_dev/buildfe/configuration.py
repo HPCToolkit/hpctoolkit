@@ -8,6 +8,7 @@ import itertools
 import os
 import re
 import shutil
+import stat
 import tempfile
 import textwrap
 import typing
@@ -58,9 +59,10 @@ class Compilers:
     def raw_compilers(self) -> tuple[str, str]:
         if self._compiler is not None:
             return self._compiler
-        if not shutil.which("cc") or not shutil.which("c++"):
+        cc, cxx = os.environ.get("CC", "cc"), os.environ.get("CXX", "c++")
+        if not shutil.which(cc) or not shutil.which(cxx):
             raise RuntimeError("Unable to guess system compilers, cc/c++ not present!")
-        return "cc", "c++"
+        return cc, cxx
 
     @functools.cached_property
     def custom_compilers(self) -> tuple[str, str] | None:
@@ -70,8 +72,13 @@ class Compilers:
             if ccache:
                 ccdir = Path(tempfile.mkdtemp(".ccwrap"))
                 atexit.register(shutil.rmtree, ccdir, ignore_errors=True)
-                (cc := ccdir / raw_cc).symlink_to(ccache)
-                (cxx := ccdir / raw_cxx).symlink_to(ccache)
+                cc, cxx = ccdir / "cc", ccdir / "cxx"
+                with open(cc, "w", encoding="utf-8") as f:
+                    f.write(f'#!/bin/sh\nexec {ccache} {raw_cc} "$@"')
+                with open(cxx, "w", encoding="utf-8") as f:
+                    f.write(f'#!/bin/sh\nexec {ccache} {raw_cxx} "$@"')
+                cc.chmod(cc.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                cxx.chmod(cxx.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
                 return str(cc), str(cxx)
             return raw_cc, raw_cxx
         return None
