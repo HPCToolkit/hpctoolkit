@@ -333,7 +333,6 @@ deps check:
   tags: [saas-linux-small-amd64]
   script:
   - ./dev populate /opt/spack-environment
-  - ./dev env -d /opt/spack-environment echo OK
 
 
 # The Autogoo for the HEAD commit (at least) must be in-sync before we build
@@ -375,7 +374,7 @@ autoreconf:
   - >-
     eatmydata ./dev buildfe -d /opt/spack-environment --
     -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a check-install
-    --ccache-stats --fail-fast --reproducible $OS_BUILDFE_ARGS -s "$SPEC"
+    --ccache-stats --fail-fast --reproducible ${OS_NATIVE_FILE:+-C--native-file=$OS_NATIVE_FILE} -s "$SPEC"
   after_script:
   - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
   artifacts:
@@ -390,12 +389,12 @@ autoreconf:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    SPEC: '~cuda ~rocm ~level0 !debug (tests2 mpi papi opencl python valgrind_debug)[~<1]'
+    SPEC: '~cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 .buildmany arm64 cpu:
   extends: .buildmany
   tags: [rice-linux-small-arm64]
   variables:
-    SPEC: '~cuda ~rocm ~level0 +debug +valgrind_debug +tests2 (mpi papi opencl python)[~<1]'
+    SPEC: '~cuda ~rocm ~level0 +debug +valgrind_debug (mpi papi opencl python)[~<1]'
 
 'buildmany: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
@@ -462,8 +461,8 @@ autoreconf:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
-    SPEC: '+cuda ~rocm ~level0 !debug +tests2 (mpi papi opencl python valgrind_debug)[~<1]'
+    OS_NATIVE_FILE: ./ci/native/cuda.ini
+    SPEC: '+cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
 'buildmany: [amd64, cuda12.0.1]':
   extends: .buildmany amd64 cuda
@@ -483,8 +482,7 @@ autoreconf:
   needs: ['setup:build: [amd64]: [cuda10.2]', *deps_check, *autoreconf]
   variables:
     JOB_CC: gcc=8
-    # The tests2 suite is not expected to operate on CUDA 10.2
-    SPEC: &cuda102_min_spec '+cuda ~rocm ~level0 !debug ~tests2 (mpi papi opencl python valgrind_debug)[~<1]'
+    SPEC: &cuda102_min_spec '+cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
 'buildmany min: [amd64, cuda12.0.1]':
   extends: .buildmany amd64 cuda
@@ -511,8 +509,8 @@ autoreconf:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
-    SPEC: '~cuda +rocm ~level0 !debug +tests2 (mpi papi opencl python valgrind_debug)[~<1]'
+    OS_NATIVE_FILE: ./ci/native/rocm.ini
+    SPEC: '~cuda +rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
 'buildmany: [amd64, rocm5.1.3]':
   extends: .buildmany amd64 rocm
@@ -569,8 +567,8 @@ autoreconf:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    OS_BUILDFE_ARGS: '-C--with-level0=/usr -C--with-igc=/usr -C--with-gtpin=/opt/gtpin/Profilers'
-    SPEC: '~cuda ~rocm +level0 !debug +tests2 (mpi papi opencl python gtpin valgrind_debug)[~<1]'
+    OS_NATIVE_FILE: ./ci/native/lvlz-gtpin.ini
+    SPEC: '~cuda ~rocm +level0 !debug (mpi papi opencl python gtpin valgrind_debug)[~<1]'
 
 'buildmany: [amd64, lvlz2022.2, gtpin3.0]':
   extends: .buildmany amd64 lvlz
@@ -675,12 +673,16 @@ autoreconf:
     test -z "$REGEN" ||
     eatmydata ./dev buildfe -d /opt/spack-environment --
     -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
-    --ccache-stats --fail-fast --fresh-unpack --reproducible $OS_BUILDFE_ARGS -1 -s "$SPEC"
+    --ccache-stats --fail-fast --fresh-unpack --reproducible
+    ${OS_NATIVE_FILE:+-C--native-file=$OS_NATIVE_FILE} -1 -s "$SPEC"
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
     eatmydata ./dev buildfe -d /opt/spack-environment --
     -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
-    --ccache-stats --fail-fast --test-junit-copyout --reproducible $OS_BUILDFE_ARGS -1 -s "$SPEC"
+    --test-opt=--maxfail=10 --test-opt=--repeat=${JOB_TEST_REPEAT:-7}
+    ${JOB_TEST_SUITE:+--test-opt=--suite=$JOB_TEST_SUITE}
+    --ccache-stats --fail-fast --test-junit-copyout --reproducible
+    ${OS_NATIVE_FILE:+-C--native-file=$OS_NATIVE_FILE} -1 -s "$SPEC"
 
   after_script:
   - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
@@ -700,7 +702,7 @@ autoreconf:
   tags: [saas-linux-large-amd64, cpu/perf]
   variables: &vars_check_cpu
     JOB_CC: gcc-10
-    SPEC: '+tests2 +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
+    SPEC: '+mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
 'check min amd64: [cpu]':
   extends: .check
   image: $IMAGE_amd64_ubuntu20_04_minimum
@@ -719,7 +721,7 @@ autoreconf:
   tags: [rice-linux-small-arm64, cpu/perf]
   variables:
     <<: *vars_check_cpu
-    JOB_MESON_TEST_OPTS: '--repeat 1'
+    JOB_TEST_REPEAT: 1
 'check min arm64: [cpu]':
   extends: .check
   image: $IMAGE_arm64_ubuntu20_04_minimum
@@ -727,7 +729,7 @@ autoreconf:
   tags: [rice-linux-small-arm64, cpu/perf]
   variables:
     <<: *vars_check_cpu
-    JOB_MESON_TEST_OPTS: '--repeat 1'
+    JOB_TEST_REPEAT: 1
 'check semifresh arm64: [cpu]':
   extends: 'check arm64: [cpu]'
   variables:
@@ -739,10 +741,10 @@ autoreconf:
   needs: ['setup:build: [amd64]: [cuda11.6.2]', *deps_check, *autoreconf]
   tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables: &vars_check_cuda
-    OS_BUILDFE_ARGS: '-C--with-cuda=/usr/local/cuda'
+    OS_NATIVE_FILE: ./ci/native/cuda.ini
     JOB_CC: gcc-9
-    SPEC: +tests2 +mpi +debug ~valgrind_debug +papi +python ~opencl +cuda ~rocm ~level0
-    JOB_MESON_TEST_OPTS: '--suite cuda'
+    SPEC: +mpi +debug ~valgrind_debug +papi +python ~opencl +cuda ~rocm ~level0
+    JOB_TEST_SUITE: cuda
 'check min amd64: [+cuda, 11.6.2]':
   extends: .check
   image: $IMAGE_amd64_cuda11_6_2_minimum
@@ -783,10 +785,10 @@ autoreconf:
   needs: ['setup:build: [amd64]: [rocm5.2.3]', *deps_check, *autoreconf]
   tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
   variables: &vars_check_rocm
-    OS_BUILDFE_ARGS: '-C--with-rocm=/opt/rocm'
+    OS_NATIVE_FILE: ./ci/native/rocm.ini
     JOB_CC: gcc-9
-    SPEC: +tests2 +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda +rocm ~level0
-    JOB_MESON_TEST_OPTS: '--suite rocm'
+    SPEC: +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda +rocm ~level0
+    JOB_TEST_SUITE: rocm
 'check min amd64: [+rocm]':
   extends: .check
   image: $IMAGE_amd64_rocm5_2_3_minimum

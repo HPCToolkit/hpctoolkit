@@ -1,5 +1,5 @@
 testdata_root = 'tests2/data/'
-testdata_srcroot = meson.project_source_root() / '..'
+testdata_srcroot = meson.project_source_root()
 
 subdir('meas')
 subdir('dbase')
@@ -67,7 +67,7 @@ if has_cuda
     ],
   }
 endif
-if hipcc.found()
+if has_rocm
   _contents += {
     'amd': [
       testdata_meas['loops-hip-amd-t'], testdata_dbase_current['loops-hip-amd-t'],
@@ -77,6 +77,7 @@ endif
 
 _make_tar = find_program(files('make-tar'))
 foreach suite, contents : _contents
+  debug(f'Creating custom_target for fresh-testdata-@suite@.tar.xz')
   _cmd = [_make_tar, '@OUTPUT@']
   _i = 0
   foreach content : contents
@@ -86,5 +87,5 @@ foreach suite, contents : _contents
       _cmd += ['--add', srcgen, dstpath]
     endforeach
   endforeach
-  custom_target(output: f'fresh-@suite@.tar.xz', command: _cmd, build_by_default: false)
+  custom_target(output: f'fresh-testdata-@suite@.tar.xz', command: _cmd, build_by_default: false)
 endforeach

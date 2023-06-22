@@ -96,7 +96,6 @@ host_triplet = @host@
 @OPT_BUILD_FRONT_END_TRUE@	doc \
 @OPT_BUILD_FRONT_END_TRUE@	lib
 
-@OPT_ENABLE_TESTS2_TRUE@am__append_2 = tests2
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -204,7 +203,7 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = src doc lib tests tests2
+DIST_SUBDIRS = src doc lib tests
 
 #############################################################################
 # Automake rules
@@ -314,9 +313,6 @@ MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MEMKIND_LIBDIR = @MEMKIND_LIBDIR@
-MESON = @MESON@
-MESON_ENV = @MESON_ENV@
-MESON_NATIVE_FILE = @MESON_NATIVE_FILE@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
@@ -493,9 +489,13 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
-SUBDIRS = src $(am__append_1) tests $(am__append_2)
+SUBDIRS = src $(am__append_1) tests
 @OPT_BUILD_FRONT_END_TRUE@pkglibexec_SCRIPTS = $(MYSCRIPTS)
 @OPT_BUILD_FRONT_END_TRUE@dist_doc_DATA = $(MYDATA)
+
+#############################################################################
+# Other rules
+#############################################################################
 
 ############################################################
 # Install
@@ -883,13 +883,6 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 
 .PRECIOUS: Makefile
 
-
-#############################################################################
-# Other rules
-#############################################################################
-
-tests2/%:
-	@$(MAKE) -C tests2/ $@
 
 define copy-libs
     if test "$1" = yes ; then \

@@ -1,10 +1,8 @@
 import collections
 import collections.abc
-import contextlib
 import copy
 import enum
 import functools
-import json
 import os
 import re
 import shutil
@@ -16,8 +14,8 @@ from pathlib import Path
 import click
 import ruamel.yaml
 
-from .command import Command, ShEnv
-from .spack import Spack, Version
+from .command import Command
+from .spack import Compiler, Package, Spack, Version
 
 __all__ = ("DependencyMode", "VerConSpec", "SpackEnv")
 
@@ -169,33 +167,6 @@ def resolve_specs(
     return result
 
 
-class ParsedLockfile:
-    """Cached data storage for the contents of a spack.lock file."""
-
-    def __init__(self, root: Path) -> None:
-        with open(root / "spack.lock", encoding="utf-8") as f:
-            self._raw = json.load(f)
-
-    @functools.cached_property
-    def chashes(self) -> dict[str, str]:
-        return {VerConSpec.extract_package(r["spec"]): r["hash"] for r in self._raw["roots"]}
-
-    @functools.cached_property
-    def versions(self) -> dict[str, Version]:
-        return {k: Version(v["version"]) for k, v in self._raw["concrete_specs"].items()}
-
-    @functools.cached_property
-    def compilers(self) -> dict[str, tuple[str, Version]]:
-        return {
-            k: (v["compiler"]["name"], Version(v["compiler"]["version"]))
-            for k, v in self._raw["concrete_specs"].items()
-        }
-
-    @functools.cached_property
-    def specgraph(self) -> dict[str, list[dict]]:
-        return {k: v.get("dependencies", []) for k, v in self._raw["concrete_specs"].items()}
-
-
 if os.environ.get("CI") == "true":
     UPDATE_MSG = "\n  In CI: the reused merge-base image is out-of-date. Try updating the branch."
 else:
@@ -209,6 +180,16 @@ class SpackEnv:
         self.root = root.resolve()
         if self.root.exists() and not self.root.is_dir():
             raise FileExistsError(self.root)
+        self._package_cache: dict[str, Package | None] = {}
+
+    @functools.cached_property
+    def packages(self) -> dict[str, Package]:
+        """Fetch all packages installed in this environment."""
+        return {p.package: p for p in Spack.get().fetch_all(spack_env=self.root, concretized=True)}
+
+    def package(self, spec: str) -> Package:
+        """Fetch an individual package installed in this environment."""
+        return Spack.get().fetch(spec, spack_env=self.root, concretized=True)
 
     @staticmethod
     def validate_name(_ctx, _param, name: str) -> str:
@@ -226,68 +207,13 @@ class SpackEnv:
             and (self.root / "spack.lock").is_file()
         )
 
-    @functools.cached_property
-    def _lock(self) -> ParsedLockfile | None:
-        return ParsedLockfile(self.root) if self.exists() else None
-
-    def has_package(self, pkg: str) -> bool:
-        assert self._lock
-        return pkg in self._lock.chashes
-
-    COMPILER_PREF = ("gcc", "clang")
-
     @property
-    def recommended_compilerspec(self) -> str:
-        if not self._lock:
-            return "cc"
-        comp, ver = max(
-            (self._lock.compilers[chash] for _, chash in self._lock.chashes.items()),
-            key=lambda c: (
-                self.COMPILER_PREF.index(c[0]) if c[0] in self.COMPILER_PREF else -1,
-                c[1],
-            ),
+    def recommended_compiler(self) -> Compiler | None:
+        return (
+            Compiler.preferred(p.compiler for p in self.packages.values())
+            if self.exists()
+            else None
         )
-        return f"{comp}@{ver}"
-
-    @property
-    def recommended_compilers(self) -> tuple[Path, Path]:
-        return Spack.get().fetch_compiler_paths(self.recommended_compilerspec)
-
-    def load(self, *specs: VerConSpec, allow_missing_when: bool = False) -> ShEnv:
-        assert self._lock
-        hashes: set[str] = set()
-        q = []
-
-        for s in specs:
-            h = self._lock.chashes.get(s.package)
-            if h is None:
-                if s.when and allow_missing_when:
-                    continue
-                raise click.ClickException(
-                    f"Environment /{self.root.name} is missing concretization for expected package: {s.package}{UPDATE_MSG}"
-                )
-            if not s.version_ok(self._lock.versions[h]):
-                raise click.ClickException(
-                    f"Environment /{self.root.name} contains bad concretization for spec: {s}{UPDATE_MSG}"
-                )
-            q.append(h)
-
-        while q:
-            nexthash = q.pop()
-            if nexthash not in hashes:
-                hashes.add(nexthash)
-                for dep in self._lock.specgraph[nexthash]:
-                    if any(x in dep["type"] for x in ("run", "link")):
-                        q.append(dep["hash"])
-        return Spack.get().load(*["/" + h for h in hashes])
-
-    def load_all(self) -> ShEnv:
-        assert self._lock
-        return self.load(*[VerConSpec(p) for p in self._lock.chashes])
-
-    def prefix(self, pkg: str) -> Path:
-        assert self._lock
-        return Spack().get().get_prefix(f"{pkg}/{self._lock.chashes[pkg]}", spack_env=self.root)
 
     @classmethod
     def _yaml_merge(cls, dst: collections.abc.MutableMapping, src: collections.abc.Mapping):
@@ -348,8 +274,6 @@ class SpackEnv:
             f.write(self.GITIGNORE)
 
         (self.root / "spack.lock").unlink(missing_ok=True)
-        with contextlib.suppress(AttributeError):
-            del self._lock
 
     def install(self) -> None:
         """Install the Spack environment."""
@@ -359,9 +283,9 @@ class SpackEnv:
             raise click.ClickException(f"spack install failed with code {e.returncode}") from e
 
     def which(
-        self, command: str, spec: VerConSpec | None = None, *, check_arg: str | None = "--version"
+        self, command: str, spec: VerConSpec, *, check_arg: str | None = "--version"
     ) -> Command:
-        path = (self.load(spec) if spec is not None else self.load_all())["PATH"]
+        path = self.package(str(spec)).load["PATH"]
         cmd = shutil.which(command, path=path)
         if cmd is None:
             raise RuntimeError(f"Unable to find {command} in path {path}")

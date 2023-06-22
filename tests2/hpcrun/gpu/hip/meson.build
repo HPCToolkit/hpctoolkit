@@ -1,4 +1,4 @@
-if not hipcc.found()
+if not has_rocm
   subdir_done()
 endif
 

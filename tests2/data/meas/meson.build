@@ -38,7 +38,7 @@ if has_cuda
     },
   }
 endif
-if hipcc.found()
+if has_rocm
   _exe_loops_hip = custom_target(output: 'testmeas-loops-hip', input: files('loops.hip.cpp'),
       command: hipcc_cmd)
   _measurements += {

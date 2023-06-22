@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 from .action import Action, SummaryResult, action_sequence
-from .buildsys import Build, CheckInstallManifest, Configure, FreshTestData, Install, Test
+from .buildsys import Build, CheckInstallManifest, FreshTestData, Install, Setup, Test
 from .configuration import (
     Compilers,
     ConcreteSpecification,
@@ -25,7 +25,7 @@ from .configuration import (
 from .logs import FgColor, colorize, print_header, section
 
 actions: dict[str, tuple[type[Action], ...]] = {
-    "configure": (Configure,),
+    "setup": (Setup,),
     "build": (Build,),
     "install": (Install,),
     "check-install": (CheckInstallManifest,),
@@ -63,7 +63,6 @@ def build_parser() -> argparse.ArgumentParser:
 This command sweeps the space of build configurations that satisfy any of the given SPECs.
 Each build configuration is represented by a series of boolean-valued "variants," with true/false
 being represented by `+` and `~` (like Spack spec syntax). The available variants are:
-    +tests2:  Enable the tests2/ test suite
     +mpi:  Enable Prof-MPI support
     +debug:  Enable extra debug flags
     +papi:  Enable PAPI support
@@ -200,36 +199,22 @@ Examples:
         action="store_true",
         help="test: Copy JUnit XML results to the current directory",
     )
+    parser.add_argument(
+        "--test-opt",
+        action="append",
+        default=[],
+        help="test: Pass the given argument to meson test",
+    )
     return parser
 
 
 def post_parse(args):
     Test().junit_copyout = args.test_junit_copyout
+    Test().meson_opts = args.test_opt
     if args.keep or args.fresh_unpack or args.test_junit_copyout:
         args.single_spec = True
     args.action = action_sequence([act() for name in args.action for act in actions[name]])
     return args
-
-
-def parse_depsenv(src: Path) -> collections.abc.Iterator[str]:
-    with open(src / "configure", encoding="utf-8") as f:
-        lexer = shlex.shlex(f, posix=True, punctuation_chars=True)
-        prelude = True
-        for token in lexer:
-            if token.isspace():
-                continue
-
-            # The script usually starts with `exec .../configure`
-            if prelude and (token == "exec" or token.endswith("/configure")):
-                continue
-            prelude = False
-
-            # Ignore the $@
-            if token == "$@":
-                continue
-
-            # All the rest are arguments
-            yield token
 
 
 def gen_variants(args) -> list[tuple[ConcreteSpecification, bool]]:
@@ -249,10 +234,10 @@ def gen_variants(args) -> list[tuple[ConcreteSpecification, bool]]:
 
 
 def configure(
-    cargs: list[str], comp: Compilers, v: ConcreteSpecification, unsat: bool
+    meson: Path, cargs: list[str], comp: Compilers, v: ConcreteSpecification, unsat: bool
 ) -> Configuration | None:
     try:
-        cfg = Configuration(cargs, comp, v)
+        cfg = Configuration(meson, cargs, comp, v)
     except UnsatisfiableSpecError as e:
         if not unsat:
             with colorize(FgColor.error):
@@ -460,12 +445,12 @@ def reproduction_cmd(variant: ConcreteSpecification, args) -> str:
     return "\n".join(lines)
 
 
-def main(in_args: collections.abc.Sequence[str] | None = None):
+def main(meson: Path, in_args: collections.abc.Sequence[str] | None = None):
     args = post_parse(build_parser().parse_args(in_args))
 
     variants = gen_variants(args)
 
-    cargs = list(parse_depsenv(args.depsenv))
+    cargs = [f"--native-file={args.depsenv / 'meson_native.ini'}"]
     if args.configure_arg:
         cargs.extend(args.configure_arg)
     comp = Compilers(cc=args.compiler)
@@ -484,7 +469,7 @@ def main(in_args: collections.abc.Sequence[str] | None = None):
     all_ok = True
     good_variants: list[tuple[Configuration, ConcreteSpecification]] = []
     for v, unsat in variants:
-        cfg = configure(cargs, comp, v, unsat)
+        cfg = configure(meson, cargs, comp, v, unsat)
         if cfg is None:
             all_ok = all_ok and unsat
         elif unsat:

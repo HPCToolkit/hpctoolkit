@@ -49,10 +49,14 @@ foreach name, variants : _structfiles
     if _binname in testdata_bin
       _bin = testdata_bin[_binname]
       _attrs += {'binary': _bin}
+
+      _cmd = [_struct, '@INPUT@', '@OUTPUT@', features.get('gpucfg', false) ? '--gpucfg' : '--no-gpucfg']
+      if has_cuda
+        _cmd += ['--nvdisasm', nvdisasm.full_path()]
+      endif
+
       _gen = custom_target(output: _out_structfile,
-          command: [_struct, '@INPUT@', '@OUTPUT@',
-                    features.get('gpucfg', false) ? '--gpucfg' : '--no-gpucfg',
-          ], input: _bin['binary'], env: hpctoolkit_pyenv,
+          command: _cmd, input: _bin['binary'], env: hpctoolkit_pyenv,
           build_always_stale: true, build_by_default: false)
       _gen_attrs = {
         'gen': {

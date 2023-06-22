@@ -1,0 +1,10 @@
+#!/bin/sh
+
+builddir="$(realpath "$MESON_BUILD_ROOT")/$1"
+configure="$(realpath "$2")"
+shift 2
+
+rm -rf "$builddir"
+mkdir -p "$builddir"
+cd "$builddir"
+exec "$configure" "$@"

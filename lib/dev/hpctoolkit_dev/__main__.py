@@ -21,7 +21,6 @@ import ruamel.yaml
 from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import AutogenEnv, DevEnv
-from .spack import Spack
 from .spec import DependencyMode
 
 __all__ = ("main",)
@@ -63,6 +62,16 @@ class DevState:
             click.echo(f"NOTE: Using emphermal {noun} for {name}")
             with tempfile.TemporaryDirectory(prefix="dev-", suffix=f"-{name}") as result:
                 yield Path(result).resolve()
+
+    @property
+    def meson(self) -> Command:
+        with self.internal_named_env("meson", "venv") as ve_dir:
+            venv.EnvBuilder(with_pip=True, upgrade_deps=True, prompt="dev/meson").create(ve_dir)
+            vpython = Command(ve_dir / "bin" / "python3")
+            vpython("-m", "pip", "install", "--require-virtualenv", "meson[ninja]>=1.1.0,<2")
+
+            os.environ["NINJA"] = str(ve_dir / "bin" / "ninja")
+            return Command(ve_dir / "bin" / "meson")
 
 
 dev_pass_obj = click.make_pass_decorator(DevState, ensure=True)
@@ -349,17 +358,16 @@ def create(
         env.generate(mode)
         env.install()
         try:
-            env.populate(obj.project_root)
+            env.populate(obj.project_root, obj.meson)
         except subprocess.CalledProcessError as e:
             raise click.ClickException(
                 f"""\
-./configure failed! Fix any errors above and continue with:
+meson setup failed! Fix any errors above and continue with:
     $ ./dev populate {shlex.quote(str(devenv.root))}
 """
             ) from e
         if build:
-            with env.activate():
-                env.build()
+            env.build(obj.meson)
     except KeyboardInterrupt:
         if devenv.root.exists():
             shutil.rmtree(devenv.root)
@@ -367,12 +375,10 @@ def create(
 
     click.echo(
         f"""\
-Devenv successfully created! You may now enter the devenv with:
-    $ ./dev env {shlex.join(devenv.args)}
-Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
-    $ make -j
-    $ make -j install
-    $ hpcrun -h"""
+Devenv successfully created! You may now use Meson commands, Eg.:
+    $ ./dev meson {shlex.join(devenv.args)} compile
+    $ ./dev meson {shlex.join(devenv.args)} install
+    $ ./dev meson {shlex.join(devenv.args)} test"""
     )
 
 
@@ -421,68 +427,24 @@ def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> Non
     env.generate(mode, template=prior)
     env.install()
     try:
-        env.populate(obj.project_root)
+        env.populate(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
         raise click.ClickException(
             f"""\
-./configure failed! Fix any errors above and continue with:
-$ ./dev populate {shlex.quote(str(devenv.root))}
+meson setup failed! Fix any errors above and continue with:
+    $ ./dev populate {shlex.quote(str(devenv.root))}
 """
         ) from e
     if build:
-        with env.activate():
-            env.build()
+        env.build(obj.meson)
 
     click.echo(
         f"""\
-Devenv successfully created! You may now enter the devenv with:
-    $ ./dev env {shlex.join(devenv.args)}
-Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
-    $ make -j
-    $ make -j install
-    $ hpcrun -h"""
+Devenv successfully created! You may now use Meson commands, Eg.:
+    $ ./dev meson {shlex.join(devenv.args)} compile
+    $ ./dev meson {shlex.join(devenv.args)} install
+    $ ./dev meson {shlex.join(devenv.args)} test"""
     )
-
-
-@main.command
-@click.argument("command", nargs=-1, type=click.UNPROCESSED)
-@NamedEnv.pass_env(exists=True, help_verb="Run within")
-def env(devenv: Env, command: collections.abc.Sequence[str]) -> None:
-    """Run COMMAND (interactive shell by default) within a devenv.
-
-    The working directory of the COMMAND (or shell) will the build directory for the environment, if
-    it exists.
-    """
-    env = DevEnv.restore(devenv.root)
-
-    if not command:
-        spack_setup = (
-            Path(Spack.get().capture("location", "--spack-root").strip())
-            / "share"
-            / "spack"
-            / "setup-env.sh"
-        )
-        click.echo(
-            f"""\
-You are now entering a devenv shell. Some quick notes:
-    1. Do NOT load/unload modules or Spack packages (spack load).
-        These can cause the build to become inconsistent.
-    2. The Spack environment for the devenv is NOT activated.
-        If you have altered the spack.yaml and need this, run in the shell:
-            $ . {shlex.quote(str(spack_setup))}
-            $ spack env activate {shlex.quote(str(env.root))}
-    3. You will be automatically placed in the build directory of
-        this devenv, if it exists."""
-        )
-
-    with env.activate():
-        if env.builddir.exists():
-            os.chdir(env.builddir)
-        if not command:
-            shell = Path(os.environ.get("SHELL", "/bin/sh")).resolve()
-            os.execl(shell, shell)
-        else:
-            os.execvp(command[0], list(command))
 
 
 @main.command(add_help_option=False, context_settings={"ignore_unknown_options": True})
@@ -497,11 +459,26 @@ def pre_commit(obj: DevState, args: collections.abc.Collection[str]) -> None:
             ).create(ve_dir)
             vpython = Command(ve_dir / "bin" / "python3")
             vpython(
-                "-m", "pip", "install", "--require-virtualenv", "pre-commit>=3.2", "identify>=2.5"
+                "-m",
+                "pip",
+                "install",
+                "--require-virtualenv",
+                "pre-commit>=3.2",
+                "identify>=2.5",
             )
 
         vprecommit = Command(ve_dir / "bin" / "pre-commit")
         vprecommit.execl(*args)
+
+
+@main.command(context_settings={"ignore_unknown_options": True})
+@click.argument("args", nargs=-1, type=click.UNPROCESSED)
+@NamedEnv.pass_env(exists=True, help_verb="Operate on")
+@dev_pass_obj
+def meson(obj: DevState, devenv: Env, args: collections.abc.Collection[str]) -> None:
+    """Run meson commands in a devenv."""
+    env = DevEnv.restore(devenv.root)
+    obj.meson.execl(*args, cwd=env.builddir)
 
 
 @main.command
@@ -750,19 +727,17 @@ def populate(obj: DevState, devenv: Path) -> None:
     """
     env = DevEnv.restore(devenv)
     try:
-        env.populate(obj.project_root)
+        env.populate(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
-        raise click.ClickException("./configure failed! Fix any errors above and try again.") from e
+        raise click.ClickException("meson setup failed! Fix any errors above and try again.") from e
 
     if obj.project_root:
         click.echo(
             f"""\
-Devenv has been populated and is ready for use. To enter run:
-    $ ./dev env -d {shlex.quote(str(devenv))}
-Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
-    $ make -j
-    $ make -j install
-    $ hpcrun -h"""
+Devenv successfully created! You may now use Meson commands, Eg.:
+    $ ./dev meson -d {shlex.quote(str(devenv))} compile
+    $ ./dev meson -d {shlex.quote(str(devenv))} install
+    $ ./dev meson -d {shlex.quote(str(devenv))} test"""
         )
     else:
         click.echo(
@@ -782,9 +757,8 @@ def buildfe(obj: DevState, devenv: Env, args: collections.abc.Collection[str]) -
         raise click.ClickException("buildfe only operates within an HPCToolkit project checkout")
 
     env = DevEnv.restore(devenv.root)
-    with env.activate():
-        os.chdir(obj.project_root)
-        buildfe_main([*args] + [str(env.root)])
+    os.chdir(obj.project_root)
+    buildfe_main(obj.meson.path, [*args] + [str(env.root)])
 
 
 if __name__ == "__main__":

@@ -264,6 +264,27 @@ AC_ARG_ENABLE([develop],
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 
+#-------------------------------------------------
+# enable-plain
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether PLAIN mode is enabled])
+
+OPT_ENABLE_PLAIN=no
+
+AC_ARG_ENABLE([plain],
+  AS_HELP_STRING([--enable-plain],
+                 [Build in plain mode, use optimization and debug flags from C*FLAGS]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_PLAIN="yes" ;;
+     no)  OPT_ENABLE_PLAIN="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-plain]) ;;
+   esac],
+  [OPT_ENABLE_PLAIN=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_PLAIN}])
+AM_CONDITIONAL(OPT_ENABLE_PLAIN, test "${OPT_ENABLE_PLAIN}" = "yes")
+
 
 #-------------------------------------------------
 # enable-strip-debug
@@ -805,9 +826,11 @@ esac
 HOST_NOOPT_CFLAGS="${HOST_CFLAGS}"
 HOST_NOOPT_CXXFLAGS="${HOST_CXXFLAGS}"
 
-# Grab optimization flags
-HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
-HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
+if test "$OPT_ENABLE_PLAIN" = no; then
+  # Grab optimization flags
+  HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
+  HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
+fi
 
 # Several programs need system's demangle option
 HOST_HPCSTRUCT_LDFLAGS="${HOST_HPCSTRUCT_LDFLAGS} ${my_demangle_ldflags}"
@@ -1125,7 +1148,9 @@ if test "$cxx17_avail" = no ; then
 fi
 
 CXXFLAGS="$ORIG_CXXFLAGS"
-HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx17_flag"
+if test "$OPT_ENABLE_PLAIN" = no; then
+  HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx17_flag"
+fi
 
 AC_SUBST([cxx17_flag])
 
@@ -5301,84 +5326,6 @@ fi
 AM_CONDITIONAL(OPT_ENABLE_VG_ANNOTATIONS, test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes")
 
 
-#-------------------------------------------------
-# Option: --enable-tests2
-#-------------------------------------------------
-
-AC_ARG_ENABLE([tests2],
-  AS_HELP_STRING([--enable-tests2],
-                 [Enable the new-form test suite. Requires additional dependencies like Meson and PyTest.]),
-  [case "${enableval}" in
-     yes) enable_tests2="yes" ;;
-     no)  enable_tests2="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-tests2]) ;;
-   esac],
-  [enable_tests2=no])
-
-if test "$enable_tests2" = yes; then
-  AC_ARG_VAR([MESON], [Path to the Meson executable])
-  if test -z "$MESON"; then MESON=meson; fi
-
-  # FIXME: Meson assumes that all dependencies are in the "environment," but the
-  # Autogoo here is built around prefix-paths. So to make everything consistent
-  # we have to fiddle with the environment Meson sees so that it finds the right
-  # bits. And then we have to burn those environment changes into the Makefiles
-  # so that Meson sees it even in a local rebuild. Sigh.
-  #
-  # Luckily CUDA is the only dependency that the tests2/ suite may require, so
-  # we only have to implement CUDA and not 10 other dependencies.
-  #
-  # See also https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/709.
-
-  meson_env=""
-  MESON_ENV=""
-  if test "$OPT_HAVE_CUDA" = yes; then
-    meson_env="$meson_env CUDA_PATH=\"$CUDA\" PATH=\"$CUDA/bin:\$PATH\""
-    MESON_ENV="$MESON_ENV CUDA_PATH=\"$CUDA\" PATH=\"$CUDA/bin:\$\$PATH\""
-  fi
-
-  AC_ARG_VAR([MESON_NATIVE_FILE], [Path to a native file to pass to Meson])
-  if test -n "$MESON_NATIVE_FILE"; then
-  meson_args="--native-file $MESON_NATIVE_FILE"
-  fi
-  meson_args="${meson_args} -Dhpctoolkit=${prefix} -Dc_args='${CFLAGS} ${HOST_NOOPT_CFLAGS}'"
-  meson_args="${meson_args} -Dcpp_args='${CXXFLAGS} ${HOST_NOOPT_CXXFLAGS}'"
-  meson_args="${meson_args} -Dcuda_args='${CUDAFLAGS}' -Dcuda_ccbindir='${CXX}'"
-  if test "$OPT_ENABLE_DEVELOP" = yes
-  then meson_args="${meson_args} -Dbuildtype=debug"
-  else meson_args="${meson_args} -Dbuildtype=release"
-  fi
-  if test "$OPT_HAVE_CUDA" = yes
-  then meson_args="${meson_args} -Dcuda=enabled"
-  else meson_args="${meson_args} -Dcuda=disabled"
-  fi
-  if test "$OPT_HAVE_ROCM" = yes
-  then meson_args="${meson_args} -Drocm=enabled"
-  else meson_args="${meson_args} -Drocm=disabled"
-  fi
-  if test -n "$MPICXX"
-  then meson_args="${meson_args} -Dmpi=enabled"
-  else meson_args="${meson_args} -Dmpi=disabled"
-  fi
-  if test "$OPT_ENABLE_PYTHON" = yes
-  then meson_args="${meson_args} -Dpython=true"
-  else meson_args="${meson_args} -Dpython=false"
-  fi
-
-  eval echo "$meson_env" "$MESON" "$meson_args"
-
-  if ! { test -d tests2-build/ && eval "$meson_env" "$MESON" setup --wipe "$meson_args" tests2-build/ "${srcdir}"/tests2/; }; then
-    rm -rf tests2-build/
-    if ! eval "$meson_env" "$MESON" setup "$meson_args" tests2-build/ "${srcdir}"/tests2/; then
-      AC_MSG_ERROR([Error configuring test suite, meson setup failed!])
-    fi
-  fi
-
-  AC_SUBST([MESON_ENV])
-fi
-
-AM_CONDITIONAL([OPT_ENABLE_TESTS2], [test "$enable_tests2" = yes])
-
 #----------------------------------------------------------------------------
 # Should we expect statically linked binaries
 #----------------------------------------------------------------------------
@@ -5500,8 +5447,6 @@ AC_CONFIG_FILES([ \
   \
   tests/Makefile \
   tests/Makefile.spack \
-  \
-  tests2/Makefile \
 ])
 
 

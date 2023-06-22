@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import shutil
 import subprocess
 import typing
@@ -11,7 +12,7 @@ from hpctoolkit.test.execution import hpcstruct
 NVIDIA_MAGIC = b"\x7fELF\x02\x01\x01\x33\x07\0\0\0\0\0\0\0\x02\0\xbe\0"
 
 
-def check_gpucfg_supported(binary: Path):
+def check_gpucfg_supported(binary: Path, *, nvdisasm: Path | None):
     """Check if we expect --gpucfg yes to work for the given binary.
     Raises a ClickException if anything looks like it won't work.
     """
@@ -21,14 +22,17 @@ def check_gpucfg_supported(binary: Path):
 
     if prefix.startswith(NVIDIA_MAGIC):
         # hpcstruct will be using nvdisasm from the PATH to parse this binary.
-        # Run nvdisasm ourselves and determine if it will work.
-        nvdisasm = shutil.which("nvdisasm")
+        # Add the nvdisasm we want to actually test onto the PATH for this part.
         if nvdisasm is None:
-            raise click.ClickException("nvdisasm not found, --gpucfg yes will not work!")
+            raise click.ClickException("nvdisasm not found, --gpucfg yes will not work")
+        os.environ["PATH"] = f"{nvdisasm.parent}:{os.environ['PATH']}"
+        if not (found := shutil.which("nvdisasm")) or not nvdisasm.samefile(found):
+            raise RuntimeError("Setting PATH did not allow finding nvdisasm!")
+        # Run nvdisasm ourselves and determine if it will work.
         proc = subprocess.run([nvdisasm, binary], stdout=subprocess.DEVNULL, check=False)
         if proc.returncode != 0:
             raise click.ClickException(
-                "nvdisasm failed to parse binary, so --gpucfg yes will not work"
+                "nvdisasm failed to parse binary, --gpucfg yes will not work"
             )
 
 
@@ -36,10 +40,15 @@ def check_gpucfg_supported(binary: Path):
 @click.argument("binary", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.argument("output", type=click.File("wb"))
 @click.option("--gpucfg/--no-gpucfg", default=False)
-def gen_struct(binary: Path, output: typing.BinaryIO, gpucfg: bool):
+@click.option(
+    "--nvdisasm",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="nvdisasm to use when parsing Nvidia binaries",
+)
+def gen_struct(binary: Path, output: typing.BinaryIO, gpucfg: bool, nvdisasm: Path | None):
     """Analyze the BINARY and generate an OUTPUT Structfile, running `hpcstruct ARGS...`."""
     if gpucfg:
-        check_gpucfg_supported(binary)
+        check_gpucfg_supported(binary, nvdisasm=nvdisasm)
 
     with hpcstruct(binary, "--gpucfg", "yes" if gpucfg else "no", threads=1) as structfile:
         shutil.copyfileobj(structfile, output)
