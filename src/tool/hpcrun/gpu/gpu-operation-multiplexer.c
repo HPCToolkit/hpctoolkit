@@ -41,23 +41,41 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//******************************************************************************
+// global includes
+//******************************************************************************
 
-#include <hpcrun/control-knob.h>
-#include <lib/prof-lean/stdatomic.h>
 #include <pthread.h>
 
 
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include <hpcrun/control-knob.h>
+#include <lib/prof-lean/stdatomic.h>
+
 #define DEBUG 0
 
-#include "gpu-operation-multiplexer.h"
 #include "gpu-activity.h"
 #include "gpu-activity-channel.h"
 #include "gpu-activity-process.h"
 #include "gpu-monitoring-thread-api.h"
 #include "gpu-operation-channel-set.h"
+#include "gpu-operation-multiplexer.h"
 #include "gpu-trace.h"
 #include "gpu-print.h"
 #include "monitor.h"
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define OPERATION_CHANNELSET_SLEEP 50000000 // 50ms in ns
+
 
 
 //******************************************************************************
@@ -107,6 +125,7 @@ gpu_operation_record
   while (!atomic_load(&stop_operation_flag)){
     current_operation_channels_count = atomic_load(&operation_channels_count);
     gpu_operation_channel_set_process(current_operation_channels_count);
+    hpcrun_nanosleep(OPERATION_CHANNELSET_SLEEP);
   }
 
   current_operation_channels_count = atomic_load(&operation_channels_count);
