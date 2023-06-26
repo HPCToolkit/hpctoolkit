@@ -268,6 +268,7 @@ precommit:
   image: docker.io/python:3.10-bullseye
   needs: []
   before_script:
+  - apt-get update -yqq && apt-get install -yqq git git-lfs
   - python3 -m pip install pre-commit
   script:
   - pre-commit run --all-files --show-diff-on-failure
@@ -295,6 +296,10 @@ precommit:
       # TODO: Expand this list a bit sometime to better represent what we want to ensure works
       - +papi
       - ~papi
+  before_script:
+  # Ensure we have Git and Git LFS
+  - git --version
+  - git lfs --version
   script:
   # Instantiate a fresh Spack develop (instead of whatever is burned into the image)
   - |
