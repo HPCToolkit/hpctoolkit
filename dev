@@ -24,6 +24,12 @@ if ! test -f "$bootstrap_venv"/bin/dev \
 
   # If our Python is too old, probe Spack and get ourselves a modern version.
   if ! python3 -c "$py_test" >/dev/null 2>&1; then
+    if test "$HPCTOOLKIT_DEV_SYSTEM_PYTHON"; then
+      echo '[bootstrap] System Python requested but old or nonfunctional!'
+      echo '[bootstrap] Unable to continue, aborting!'
+      exit 120
+    fi
+
     echo '[bootstrap] Locating a modern Python installed by Spack...' >&2
 
     if ! command -pv spack >/dev/null; then

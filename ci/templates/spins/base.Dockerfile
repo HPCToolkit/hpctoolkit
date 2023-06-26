@@ -19,4 +19,6 @@ RUN git clone --depth=5 --single-branch --no-tags --branch=develop \
   && ln -s $SPACK_ROOT/bin/spack /usr/bin/spack \
   && spack clean --bootstrap && spack bootstrap now
 
+ENV HPCTOOLKIT_DEV_SYSTEM_PYTHON=1
+
 {% endblock %}
