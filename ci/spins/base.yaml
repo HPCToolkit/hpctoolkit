@@ -2,10 +2,6 @@ specs:
 # The ./dev scriptsuit requires Python 3.10. Needs to be specified here for the autogen image.
 - 'python @3.10:'
 
-mirrors:
-  # Reuse from the Spack public buildcache when possible
-  develop: 'https://binaries.spack.io/develop'
-
 concretizer:
   # Reuse everything, including the roots
   reuse: true
