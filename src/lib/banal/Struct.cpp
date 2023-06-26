@@ -165,7 +165,10 @@ using namespace std;
 #define WORK_LIST_PCT  0.05
 
 static int merge_irred_loops = 1;
+
+#ifdef USE_XED_FOR_GAPS
 static int fix_unknown_x86_instns = 1;
+#endif
 
 
 //******************************************************************************
@@ -3097,26 +3100,26 @@ debugNewGaps(CodeObject * code_obj, string elfFilename)
 	   << "  next: 0x" << block->start()
 	   << "  size: 0x" << size
 	   << dec << " (" << size << ")\n";
-    }
 
-    num_gaps++;
-    size_gaps += size;
+      num_gaps++;
+      size_gaps += size;
 
-    if (size < 16) {
-      num_gaps_16++;
-      size_gaps_16 += size;
-    }
-    else if (size < 64) {
-      num_gaps_64++;
-      size_gaps_64 += size;
-    }
-    else if (size < 256) {
-      num_gaps_256++;
-      size_gaps_256 += size;
-    }
-    else {
-      num_gaps_other++;
-      size_gaps_other += size;
+      if (size < 16) {
+	  num_gaps_16++;
+	  size_gaps_16 += size;
+      }
+      else if (size < 64) {
+	  num_gaps_64++;
+	  size_gaps_64 += size;
+      }
+      else if (size < 256) {
+	  num_gaps_256++;
+	  size_gaps_256 += size;
+      }
+      else {
+	  num_gaps_other++;
+	  size_gaps_other += size;
+      }
     }
 
     prev_block = block;
