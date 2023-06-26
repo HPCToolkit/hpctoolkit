@@ -419,7 +419,16 @@ def reproduction_cmd(variant: ConcreteSpecification, args) -> str:
     chev = "$"
     lines = []
     if "CI_JOB_IMAGE" in os.environ:
-        podargs = ["--rm", "-it", "-v", "./:/hpctoolkit", "--workdir", "/hpctoolkit"]
+        podargs = [
+            "--rm",
+            "-it",
+            "-v",
+            "./:/hpctoolkit",
+            "-v",
+            "/hpctoolkit/.devenv",
+            "--workdir",
+            "/hpctoolkit",
+        ]
         for vol in args.reproduction_volume:
             podargs.append("-v")
             podargs.append(vol)
@@ -439,6 +448,7 @@ def reproduction_cmd(variant: ConcreteSpecification, args) -> str:
             feargs.append("-C" + arg)
     feargs.append("-1s")
     feargs.append(str(variant))
+    lines.append(f"{chev} ./dev populate {shlex.quote(str(args.depsenv))}")
     lines.append(
         f"{chev} ./dev buildfe -d {shlex.quote(str(args.depsenv))} -- {shlex.join(feargs)}"
     )

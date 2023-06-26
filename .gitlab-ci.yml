@@ -46,14 +46,6 @@ default:
     - runner_system_failure
 
 
-# Many jobs need a working copy of the ./dev scriptsuite. This job handles setting it up.
-.dev job:
-  before_script:
-  # Install the ./dev scriptsuite in a virtual environment
-  - python3 -m venv .dev_venv --clear --upgrade-deps --system-site-packages
-  - export PATH="$(realpath .dev_venv/bin/):$PATH"
-  - pip install --no-cache-dir --require-virtualenv lib/dev/
-
 # Many jobs use ccache to speed up the build process. This job provides common settings for those.
 .ccache job:
   cache:
@@ -92,7 +84,6 @@ setup:identify:
 
 # Generate a matrix of Dockerfiles for all the "spins" we test in CI
 setup:gen:
-  extends: .dev job
   stage: setup:gen
   image:
     name: ghcr.io/spack/fedora37:$SPACKTAG
@@ -103,7 +94,6 @@ setup:gen:
   before_script:
   - spack --version
   - yum list installed python3-devel || yum install -y python3-devel
-  - !reference [.dev job, before_script]
   # Prepare to generate spins
   - mkdir imgctxs/
   - sed -i "s/{SPACKTAG}/$SPACKTAG/g" ci/spins/*.yaml
@@ -112,7 +102,7 @@ setup:gen:
       set -x
 
       # Generate the devenv using the appropriate arguments
-      dev generate "$MODE" imgctxs/"$1" \
+      ./dev generate "$MODE" imgctxs/"$1" \
         --template ci/spins/base.yaml --template ci/spins/"$1".yaml || return $?
       # Insert the symlink needed to access the templates
       ln -sr ci/templates imgctxs/"$1"/templates || return $?
@@ -327,25 +317,23 @@ precommit:
 
 # The two devenvs must be consistent with the current version of the ./dev scriptsuite.
 deps check:
-  extends: .dev job
   stage: validate
   image: $IMAGE_amd64_ubuntu20_04_main
   needs: ['setup:build: [amd64]: [ubuntu20.04]']
   tags: [saas-linux-small-amd64]
   script:
-  - dev populate /opt/spack-environment
-  - dev env -d /opt/spack-environment echo OK
+  - ./dev populate /opt/spack-environment
+  - ./dev env -d /opt/spack-environment echo OK
 
 
 # The Autogoo for the HEAD commit (at least) must be in-sync before we build
 autoreconf:
-  extends: [.dev job]
   stage: validate
   image: $IMAGE_amd64_ubuntu20_04_fixed
   needs: ['setup:build autogen']
   tags: [saas-linux-small-amd64]
   script:
-  - dev autogen --custom-env /opt/spack-environment --skip-install
+  - ./dev autogen --custom-env /opt/spack-environment --skip-install
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
   - |
     if test -s changes; then
@@ -367,14 +355,13 @@ autoreconf:
 # As a general rule, we sweep the most-likely-to-fail configurations by turning off a single variant
 # at a time. With the exception of +debug, which is flipped at will.
 .buildmany:
-  extends: .dev job
   stage: test
   script:
-  - dev populate /opt/spack-environment
+  - ./dev populate /opt/spack-environment
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   - rm -rf logs/
   - >-
-    eatmydata dev buildfe -d /opt/spack-environment --
+    eatmydata ./dev buildfe -d /opt/spack-environment --
     -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a check-install
     --ccache-stats --fail-fast --reproducible $OS_BUILDFE_ARGS -s "$SPEC"
   after_script:
@@ -662,7 +649,6 @@ autoreconf:
 #     {# of repeats} > log(1 - {confidence}) / log({min prob of success})
 # So a 99% confidence of 90% success rate requires a --repeat of at least 44.
 .check:
-  extends: .dev job
   stage: test
   variables:
     # Some of the test data is stored in a submodule
@@ -671,18 +657,18 @@ autoreconf:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
-  - dev populate /opt/spack-environment
+  - ./dev populate /opt/spack-environment
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 $JOB_MESON_TEST_OPTS"
   - rm -rf logs/
   # For semifresh runs, regenerate some of the test data before testing. Use some Python to help.
   - >-
     test -z "$REGEN" ||
-    eatmydata dev buildfe -d /opt/spack-environment --
+    eatmydata ./dev buildfe -d /opt/spack-environment --
     -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
     --ccache-stats --fail-fast --fresh-unpack --reproducible $OS_BUILDFE_ARGS -1 -s "$SPEC"
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
-    eatmydata dev buildfe -d /opt/spack-environment --
+    eatmydata ./dev buildfe -d /opt/spack-environment --
     -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
     --ccache-stats --fail-fast --test-junit-copyout --reproducible $OS_BUILDFE_ARGS -1 -s "$SPEC"
 
