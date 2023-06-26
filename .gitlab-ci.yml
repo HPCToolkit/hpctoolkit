@@ -12,7 +12,6 @@ stages:
 - setup:gen
 - setup:build
 - validate
-- manual
 - test
 - lint
 
@@ -359,27 +358,6 @@ autoreconf:
     when: always
     paths:
     - fixup.patch
-
-#-----------------------------------
-# Phase 2.5: manual
-#-----------------------------------
-
-# Allow manually triggering a child pipeline to regenerate the test data
-regen testdata:
-  stage: manual
-  when: manual
-  allow_failure: true
-  trigger:
-    include:
-    - local: tests2/data/.gitlab-ci.yml
-  variables:
-    PARENT_IMAGE_amd64_ubuntu20_04: $IMAGE_amd64_ubuntu20_04_main
-    PARENT_IMAGE_amd64_cuda11_6_2: $IMAGE_amd64_cuda11_6_2_main
-    PARENT_IMAGE_amd64_cuda11_8_0: $IMAGE_amd64_cuda11_8_0_main
-    PARENT_IMAGE_amd64_rocm5_2_3: $IMAGE_amd64_rocm5_2_3_main
-    PARENT_PIPELINE_ID: $CI_PIPELINE_ID
-    GIT_SUBMODULE_STRATEGY: recursive
-
 
 #-----------------------------------
 # Phase 3: test
@@ -736,7 +714,7 @@ regen testdata:
 'check semifresh amd64: [cpu]':
   extends: 'check amd64: [cpu]'
   variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-x86-64'
 
 'check arm64: [cpu]':
   extends: .check
@@ -801,7 +779,7 @@ regen testdata:
   extends: 'check amd64: [+cuda, 11.8.0]'
   tags: [saas-linux-large-amd64, cpu/perf]
   variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-sw-cuda'
 
 'check amd64: [+rocm]':
   extends: .check
@@ -824,3 +802,33 @@ regen testdata:
   tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2, cpu/perf]
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
+
+
+# Repackage the fresh testdata generated during the `check semifresh` jobs
+fresh testdata:
+  stage: .post
+  image: docker.io/alpine
+  needs:
+  - 'check semifresh amd64: [cpu]'
+  - 'check semifresh amd64: [+cuda, 11.6.2]'
+  - 'check semifresh amd64: [+cuda, 11.8.0]'
+  - 'check semifresh amd64: [+rocm]'
+  when: always
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
+  script:
+  - apk add xz
+  - mkdir /tmp/result
+  # Unpack all the tarballs to the temporary directory
+  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-none.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-cpu.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6.2]'/regen/*/fresh-nvidia.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+rocm]'/regen/*/fresh-amd.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-x86-64.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8.0]'/regen/*/fresh-sw-cuda.tar.xz -C /tmp/result"
+  # Repack into a single tarball
+  - tar c -Jf testdata.tar.xz -C /tmp/result .
+  artifacts:
+    expose_as: "Regenerated test data"
+    paths:
+    - testdata.tar.xz
