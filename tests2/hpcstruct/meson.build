@@ -29,15 +29,10 @@ foreach name, struct : testdata_struct_current
     _suffix = ' +gpucfg'
   endif
 
-  if 'binary' in struct
-    # FIXME: Multithread cases frequently fail consistency for CUDA binaries.
-    # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/733
-    if struct['binary']['arch_tags'][0].startswith('cuda::')
-      _threads = [1]
-    endif
-  else
-    # No binary available means we can't actually do this test
-    _args += ['--skip', f'Missing input binary, maybe submodule is not cloned?']
+  # FIXME: Multithread cases frequently fail consistency for CUDA binaries.
+  # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/733
+  if struct['binary']['arch_tags'][0].startswith('cuda::')
+    _threads = [1]
   endif
 
   foreach threads : _threads

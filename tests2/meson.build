@@ -23,14 +23,11 @@ if get_option('mpi').enabled()
   hpcprof_mpi = _hpctoolkit_root / 'bin' / 'hpcprof-mpi'
 endif
 
-# Find CUDA language support. cuda_dep is a convenience dependency/disabler for this.
-cuda_dep = disabler()
-if add_languages('cuda', native: false, required: get_option('cuda'))
-  cuda_dep = declare_dependency()
-endif
+# Find CUDA language support.
+has_cuda = add_languages('cuda', native: false, required: get_option('cuda'))
 
 # Find HIP language support.
-hipcc = find_program('hipcc', required: get_option('rocm'), disabler: true)
+hipcc = find_program('hipcc', required: get_option('rocm'))
 hipcc_cmd = [hipcc, '-o', '@OUTPUT@', '@INPUT@']
 
 # Find MPI. This is overcomplicated because Meson built-in MPI support is a bit rough
