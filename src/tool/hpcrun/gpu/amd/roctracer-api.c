@@ -570,9 +570,9 @@ roctracer_init
 {
   gpu_kernel_table_init();
 
-  HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HIP_API, NULL));
-
   monitor_disable_new_threads();
+
+  HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HIP_API, NULL));
 
   // Allocating tracing pool
   roctracer_properties_t properties;

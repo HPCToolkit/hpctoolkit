@@ -505,6 +505,8 @@ rocprofiler_init
   // and initialize all rocprofiler API function pointers
   rocprofiler_initialized = true;
 
+  monitor_disable_new_threads();
+
 #ifndef HPCRUN_STATIC_LINK
   // We usually bind GPU vendor library in finalize_event_list.
   // But here we must do early binding to query supported list of counters
@@ -519,6 +521,8 @@ rocprofiler_init
   HPCRUN_ROCPROFILER_CALL(rocprofiler_set_queue_callbacks, (callbacks_ptrs, NULL));
 
   initialize_counter_information();
+
+  monitor_enable_new_threads();
 
   // Initialize the spin lock used to serialize GPU kernel launches
   spinlock_init(&kernel_lock);
