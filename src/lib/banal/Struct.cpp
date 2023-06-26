@@ -619,7 +619,7 @@ myXedCallback(InstructionDecoder::buffer seqn)
 
   int start;
   bool is_troll = false;
-  
+
   if (! is_valid) {
     //
     // try trolling for next instuction, but do not fix.
