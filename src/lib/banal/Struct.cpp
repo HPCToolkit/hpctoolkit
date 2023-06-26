@@ -622,7 +622,7 @@ myXedCallback(InstructionDecoder::buffer seqn)
 
   if (! is_valid) {
     //
-    // try trolling for next instuction, but do not fix.
+    // try trolling for next instruction, but do not fix.
     // if found, then likely dyninst is out of sync
     //
     for (start = 1; start < buf_len; start++) {
