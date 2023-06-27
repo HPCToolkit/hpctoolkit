@@ -155,7 +155,8 @@ using namespace std;
 #define DEBUG_UNKNOWN_CALLBACK  0
 #define DEBUG_NEW_GAPS  0
 
-#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS || DEBUG_NEW_GAPS
+#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS || DEBUG_NEW_GAPS  \
+    || DEBUG_SKEL_SUMMARY || DEBUG_UNKNOWN_CALLBACK
 #define DEBUG_ANY_ON  1
 #else
 #define DEBUG_ANY_ON  0
@@ -191,7 +192,9 @@ static size_t cubin_size = 0;
 
 static BAnal::Struct::Options opts;
 
+#if DEBUG_ANY_ON
 static mutex debug_mutex;
+#endif
 
 //----------------------------------------------------------------------
 
