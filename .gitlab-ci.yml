@@ -17,8 +17,8 @@ stages:
 
 
 variables:
-  # Most jobs don't needs submodules, those that do will override this.
-  GIT_SUBMODULE_STRATEGY: none
+  # Most jobs require the submodules, those that don't will override this
+  GIT_SUBMODULE_STRATEGY: recursive
 
   # Add a transfer progress bar for artifacts
   TRANSFER_METER_FREQUENCY: 2s
@@ -89,6 +89,7 @@ setup:gen:
     name: ghcr.io/spack/fedora37:$SPACKTAG
     entrypoint: ['spack-env']
   variables:
+    GIT_SUBMODULE_STRATEGY: none
     MODE: '--any'
   needs: ['setup:identify']
   before_script:
@@ -166,6 +167,8 @@ setup:gen autogen:
   stage: setup:build
   image: quay.io/buildah/stable
   needs: [setup:gen]
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
   before_script:
   # Log into the registry
   - sudo -u build buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
@@ -290,6 +293,8 @@ precommit:
     key: spack
     when: always
     paths: [.spack.git]
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
   parallel:
     matrix:
     - VARIANTS:
@@ -337,6 +342,8 @@ autoreconf:
   image: $IMAGE_amd64_ubuntu20_04_fixed
   needs: ['setup:build autogen']
   tags: [saas-linux-small-amd64]
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
   script:
   - ./dev autogen --custom-env /opt/spack-environment --skip-install
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
@@ -656,8 +663,6 @@ autoreconf:
 .check:
   stage: test
   variables:
-    # Some of the test data is stored in a submodule
-    GIT_SUBMODULE_STRATEGY: recursive
     # OpenMPI refuses to run as user 0 without these options set.
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
@@ -705,7 +710,7 @@ autoreconf:
 'check semifresh amd64: [cpu]':
   extends: 'check amd64: [cpu]'
   variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-x86-64'
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
 'check arm64: [cpu]':
   extends: .check
@@ -815,7 +820,6 @@ fresh testdata:
   - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-cpu.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6.2]'/regen/*/fresh-nvidia.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [+rocm]'/regen/*/fresh-amd.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-x86-64.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8.0]'/regen/*/fresh-sw-cuda.tar.xz -C /tmp/result"
   # Repack into a single tarball
   - tar c -Jf testdata.tar.xz -C /tmp/result .

@@ -6,32 +6,85 @@ subdir('dbase')
 subdir('bin')
 subdir('struct')
 
-_make_tar = find_program(files('make-tar'))
-_tar_cmds = {
-  'none': [_make_tar, '@OUTPUT@'],
-  'cpu': [_make_tar, '@OUTPUT@'],
-  'nvidia': [_make_tar, '@OUTPUT@'],
-  'amd': [_make_tar, '@OUTPUT@'],
-  'x86-64': [_make_tar, '@OUTPUT@'],
-  'sw-cuda': [_make_tar, '@OUTPUT@'],
+_contents = {
+  'none': [
+    testdata_meas['loops-cputime-t'], testdata_dbase_current['loops-cputime-t'],
+    testdata_struct_current['small-inlines+loops-sm_62-nvcc102-0'],
+    testdata_struct_current['small-inlines+loops-sm_62-nvcc102-dr'],
+    testdata_struct_current['small-inlines+loops-sm_62-nvcc102-r'],
+    testdata_struct_current['small-inlines+loops-sm_75-nvcc112-0'],
+    testdata_struct_current['small-inlines+loops-sm_75-nvcc112-dr'],
+    testdata_struct_current['small-inlines+loops-sm_75-nvcc112-r'],
+    testdata_struct_current['small-inlines+loops-sm_87-nvcc118-0'],
+    testdata_struct_current['small-inlines+loops-sm_87-nvcc118-dr'],
+    testdata_struct_current['small-inlines+loops-sm_87-nvcc118-r'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc10-0'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc10-d'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc10-dr'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc10-r'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc12-0'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc12-d'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc12-dr'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc12-r'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc8-0'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc8-d'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc8-dr'],
+    testdata_struct_current['small-inlines+loops-x86_64-gcc8-r'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm11-0'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm11-d'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm11-dr'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm11-r'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm15-0'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm15-d'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm15-dr'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm15-r'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm7-0'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm7-d'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm7-dr'],
+    testdata_struct_current['small-inlines+loops-x86_64-llvm7-r'],
+  ],
+  'cpu': [
+    testdata_meas['small'], testdata_dbase_current['small'],
+    testdata_meas['loops-perf-t'], testdata_dbase_current['loops-perf-t'],
+  ],
 }
+if has_cuda
+  _contents += {
+    'nvidia': [
+      testdata_meas['loops-cuda-nvidia-t'], testdata_dbase_current['loops-cuda-nvidia-t'],
+      testdata_meas['loops-cuda-nvidiapc-t'], testdata_dbase_current['loops-cuda-nvidiapc-t'],
+    ],
+    'sw-cuda': [
+      testdata_struct_current['small-inlines+loops-sm_62-nvcc102-0+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_62-nvcc102-dr+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_62-nvcc102-r+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_75-nvcc112-0+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_75-nvcc112-dr+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_75-nvcc112-r+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_87-nvcc118-0+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_87-nvcc118-dr+gpucfg'],
+      testdata_struct_current['small-inlines+loops-sm_87-nvcc118-r+gpucfg'],
+    ],
+  }
+endif
+if hipcc.found()
+  _contents += {
+    'amd': [
+      testdata_meas['loops-hip-amd-t'], testdata_dbase_current['loops-hip-amd-t'],
+    ],
+  }
+endif
 
-_disabled = []
-foreach testdata : [testdata_meas, testdata_dbase_current, testdata_struct_current]
-  foreach _, spec : testdata
-    _suite = spec['gen']['suite']
-    foreach dstpath, srcgen : spec['gen']['files']
-      if is_disabler(srcgen) and _suite not in _disabled
-        warning(f'data/fresh-@_suite@ target is unavailable, generation target for @dstpath@ is disabled')
-        _disabled += _suite
-      endif
-      _tar_cmds += {
-        _suite: _tar_cmds[_suite] + ['--add', srcgen, dstpath],
-      }
+_make_tar = find_program(files('make-tar'))
+foreach suite, contents : _contents
+  _cmd = [_make_tar, '@OUTPUT@']
+  _i = 0
+  foreach content : contents
+    assert('gen' in content, f'Invalid content #@_i@ in suite @suite@')
+    _i += 1
+    foreach dstpath, srcgen : content['gen']['files']
+      _cmd += ['--add', srcgen, dstpath]
     endforeach
   endforeach
-endforeach
-
-foreach suite, cmd : _tar_cmds
-  custom_target(output: f'fresh-@suite@.tar.xz', command: cmd, build_by_default: false)
+  custom_target(output: f'fresh-@suite@.tar.xz', command: _cmd, build_by_default: false)
 endforeach

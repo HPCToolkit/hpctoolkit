@@ -1,3 +1,7 @@
+if not hipcc.found()
+  subdir_done()
+endif
+
 _tstexe_vecadd_hip = custom_target(output: 'tstexe-vecadd-hip', input: files('vecadd.hip.cpp'),
     command: hipcc_cmd)
 
