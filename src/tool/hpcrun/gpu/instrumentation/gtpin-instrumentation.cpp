@@ -218,6 +218,14 @@ public:
     std::vector<BasicBlock> basicBlocks;
     uint32_t simdGroupsCount;
 
+    GtReg _addrReg;
+    GtReg _dataReg; 
+    GtReg _timeReg;
+
+    void GeneratePostCodeMemBound(GtGenProcedure &proc, const IGtGenCoder &coder, const GtProfileArray &profileArray, uint32_t recordNum);
+    void GeneratePreCode(GtGenProcedure &proc, const IGtGenCoder &coder);
+    bool GeneratePostCodeRegBound(GtGenProcedure &postProc, GtGenProcedure &finiProc, const IGtGenCoder &coder, const GtProfileArray &profileArray, uint32_t recordNum);
+
     KernelProfile(uint32_t loadmapModuleIdIn)
       : loadmapModuleId(loadmapModuleIdIn) {
       simdGroupsCount = 0;
@@ -279,11 +287,75 @@ Copyright (C) 2016-2022 Intel Corporation
 SPDX-License-Identifier: MIT
 ============================= end_copyright_notice ===========================*/
 
-static void GeneratePostCodeMemBound(GtGenProcedure &proc, const IGtGenCoder &coder,
-                                     const GtProfileArray &profileArray, uint32_t recordNum, GtReg &_addrReg, GtReg &_dataReg, GtReg &_timeReg)
+bool Use64BitCounters(const IGtGenCoder &coder)
+{
+    return coder.InstructionFactory().CanAccessAtomically(GED_DATA_TYPE_uq);
+}
+
+void KernelProfile::GeneratePreCode(GtGenProcedure &proc, const IGtGenCoder &coder)
+{
+    coder.StartTimer(proc, _timeReg);
+    if (!proc.empty())
+    {
+        proc.front()->AppendAnnotation(__func__);
+    }
+}
+
+bool KernelProfile::GeneratePostCodeRegBound(GtGenProcedure &postProc, GtGenProcedure &finiProc, const IGtGenCoder &coder,
+                                       const GtProfileArray &profileArray, uint32_t recordNum)
 {
     IGtInsFactory &insF = coder.InstructionFactory();
-    bool is64BitCounter = coder.InstructionFactory().CanAccessAtomically(GED_DATA_TYPE_uq);
+    IGtVregFactory &vregs = coder.VregFactory();
+    IGtRegAllocator &ra = coder.RegAllocator();
+    bool is64BitCounter = Use64BitCounters(coder);
+
+    GtReg flagReg = FlagReg(0);
+    GtReg freqReg = vregs.MakeCounter(VREG_TYPE_DWORD);                                     // Frequency counter
+    GtReg cycleReg = vregs.MakeCounter(is64BitCounter ? VREG_TYPE_QWORD : VREG_TYPE_DWORD); // Cycle counter
+    GtReg cycleRegL = {cycleReg, sizeof(uint32_t), 0};                                      // Low 32-bits of cycle counter
+    GtReg dataRegL = {_dataReg, sizeof(uint32_t), 0};                                       // Low 32-bits of '_dataReg'
+
+    // Generate procedure that computes and aggregates cycles and frequency
+    GtGenProcedure proc;
+    coder.StopTimerExt(proc, _timeReg);
+    proc += insF.MakeAdd(cycleRegL, cycleRegL, _timeReg); // Add elapsed time to lower 32-bits of of 'cycleReg'
+    if (is64BitCounter)
+    {
+        // If cycleRegL overflowed, increment the high 32-bits of 'cycleReg'
+        GtReg cycleRegH = {cycleReg, sizeof(uint32_t), 1};
+        proc += insF.MakeCmp(GED_COND_MODIFIER_l, flagReg, cycleRegL, _timeReg);
+        proc += insF.MakeAdd(cycleRegH, cycleRegH, 1).SetPredicate(flagReg);
+    }
+    proc += insF.MakeAdd(freqReg, freqReg, 1); // freq++
+
+    if (!ra.ReserveVregOperands(proc))
+    {
+        return false; // No more free registers
+    }
+    proc.front()->AppendAnnotation(__func__);
+    postProc.MoveAfter(std::move(proc));
+
+    // Generate 'finiProc' procedure that stores aggregated cycles and frequency counters in the profile buffer
+    profileArray.ComputeAddress(coder, proc, _addrReg, recordNum);
+    proc += insF.MakeRegMov(_dataReg, cycleReg);
+    proc += insF.MakeAtomicAdd(NullReg(), _addrReg, _dataReg, (is64BitCounter ? GED_DATA_TYPE_uq : GED_DATA_TYPE_ud));
+
+    profileArray.ComputeRelAddress(coder, proc, _addrReg, _addrReg, offsetof(LatencyRecord, freq));
+    proc += insF.MakeRegMov(dataRegL, freqReg);
+    proc += insF.MakeAtomicAdd(NullReg(), _addrReg, _dataReg, GED_DATA_TYPE_ud);
+
+    proc.front()->AppendAnnotation("GenerateFiniCode");
+    finiProc.MoveAfter(std::move(proc));
+
+    return true;
+}
+
+
+void KernelProfile::GeneratePostCodeMemBound(GtGenProcedure &proc, const IGtGenCoder &coder,
+                                       const GtProfileArray &profileArray, uint32_t recordNum)
+{
+    IGtInsFactory &insF = coder.InstructionFactory();
+    bool is64BitCounter = Use64BitCounters(coder);
     GtReg dataRegL = {_dataReg, sizeof(uint32_t), 0}; // Low 32-bits of the data payload register
 
     // Generate code that computes elapsed time
@@ -520,53 +592,77 @@ void KernelProfile::instrument(IGtKernelInstrument &instrument)
     const IGtGenCoder &coder = instrument.Coder();
     IGtProfileBufferAllocator &allocator = instrument.ProfileBufferAllocator();
     IGtVregFactory &vregs = coder.VregFactory();
-    GtReg addrReg = vregs.MakeMsgAddrScratch();
     IGtInsFactory &insF = coder.InstructionFactory();
-    GtReg _timeReg = vregs.Make(VREG_TYPE_DWORD);
     bool is64BitCounter = insF.CanAccessAtomically(GED_DATA_TYPE_uq);
+    IGtRegAllocator &ra = coder.RegAllocator();
 
-    GtReg _dataReg = vregs.MakeMsgDataScratch(is64BitCounter ? VREG_TYPE_QWORD : VREG_TYPE_DWORD);
+    _timeReg = vregs.Make(VREG_TYPE_DWORD);
+    _addrReg = vregs.MakeMsgAddrScratch();
+    _dataReg = vregs.MakeMsgDataScratch(is64BitCounter ? VREG_TYPE_QWORD : VREG_TYPE_DWORD);
+
+    ra.Reserve(_dataReg.VregNumber());
+    ra.Reserve(_addrReg.VregNumber());
+    ra.Reserve(vregs.GetProfileBufferAddrVreg().Num());
 
     if (count_knob)
     {
         opcodeProfile = GtProfileArray(sizeof(OpcodeRecord), cfg.NumBbls(), kernel.GenModel().MaxThreadBuckets());
         opcodeProfile.Allocate(allocator);
-    }
 
-    if (latency_knob)
-    {
-        latencyProfile = GtProfileArray(sizeof(LatencyRecord), cfg.NumBbls(), kernel.GenModel().MaxThreadBuckets());
-        latencyProfile.Allocate(allocator);
-    }
 
-    for (const IGtBbl *bbl : cfg.Bbls())
-    {
-        BasicBlock basicBlock = BasicBlock(cfg, *bbl, instrument.Kernel().SimdWidth(), simd_knob);
-        basicBlocks.push_back(basicBlock);
-        simdGroupsCount += basicBlock.simdGroups.size();
-
-        block_map[std::make_pair(loadmapModuleId, basicBlock.instructions[0].offset)] = basicBlock;
-
-        if (count_knob)
+        for (const IGtBbl *bbl : cfg.Bbls())
         {
+            BasicBlock basicBlock = BasicBlock(cfg, *bbl, instrument.Kernel().SimdWidth(), simd_knob);
+            basicBlocks.push_back(basicBlock);
+            simdGroupsCount += basicBlock.simdGroups.size();
+
+            block_map[std::make_pair(loadmapModuleId, basicBlock.instructions[0].offset)] = basicBlock;
+
+
+
             GtGenProcedure proc;
-            opcodeProfile.ComputeAddress(coder, proc, addrReg, bbl->Id());
-            proc += insF.MakeAtomicInc(NullReg(), addrReg, GED_DATA_TYPE_ud);
+            opcodeProfile.ComputeAddress(coder, proc, _addrReg, bbl->Id());
+            proc += insF.MakeAtomicInc(NullReg(), _addrReg, GED_DATA_TYPE_ud);
             if (!proc.empty())
             {
                 proc.front()->AppendAnnotation(__func__);
             }
             instrument.InstrumentBbl(*bbl, GtIpoint::Before(), proc);
+
         }
 
-        if (latency_knob)
+    }
+
+
+    if (latency_knob)
+    {
+        std::vector<const IGtBbl *> bbls;
+        for (auto bblPtr : cfg.Bbls())
         {
-            GtGenProcedure preCode;
-            coder.StartTimer(preCode, _timeReg);
-            if (!preCode.empty())
+            if (!bblPtr->IsEmpty() && !bblPtr->FirstIns().IsChangingIP())
             {
-                preCode.front()->AppendAnnotation(__func__);
+                bbls.push_back(bblPtr);
             }
+        }
+
+        latencyProfile = GtProfileArray(sizeof(LatencyRecord), bbls.size(), kernel.GenModel().MaxThreadBuckets());
+        latencyProfile.Allocate(allocator);
+
+        GtGenProcedure finiCode;
+        bool tryRegInstrument = true;
+        int index = 0;
+
+
+        for (const IGtBbl *bbl : bbls)
+        {
+            BasicBlock basicBlock = BasicBlock(cfg, *bbl, instrument.Kernel().SimdWidth(), simd_knob);
+            basicBlocks.push_back(basicBlock);
+            simdGroupsCount += basicBlock.simdGroups.size();
+
+            block_map[std::make_pair(loadmapModuleId, basicBlock.instructions[0].offset)] = basicBlock;
+
+            GtGenProcedure preCode;
+            GeneratePreCode(preCode, coder);
             instrument.InstrumentBbl(*bbl, GtIpoint::Before(), preCode);
 
             GtGenProcedure postCode;
@@ -574,18 +670,39 @@ void KernelProfile::instrument(IGtKernelInstrument &instrument)
             {
                 const IGtIns &eotIns = bbl->LastIns();
                 coder.GenerateFakeSrcConsumers(postCode, eotIns);
-                GeneratePostCodeMemBound(postCode, coder, latencyProfile, bbl->Id(), addrReg, _dataReg, _timeReg);
+                GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
                 instrument.InstrumentInstruction(eotIns, GtIpoint::Before(), postCode);
             }
             else
             {
-                GeneratePostCodeMemBound(postCode, coder, latencyProfile, bbl->Id(), addrReg, _dataReg, _timeReg);
-                instrument.InstrumentBbl(*bbl, GtIpoint::After(), postCode);
+                if (tryRegInstrument)
+                {
+                    tryRegInstrument = GeneratePostCodeRegBound(postCode, finiCode, coder, latencyProfile, index);
+                }
+                if (!tryRegInstrument)
+                {
+                    GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
+                }
+                instrument.InstrumentBbl(*bbl, GtIpoint::After(), postCode);                
+                
+                // GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
+                // instrument.InstrumentBbl(*bbl, GtIpoint::After(), postCode);
             }
+
+            ++index;
         }
+
+
+        instrument.InstrumentExits(finiCode);
     }
 
-    if (simd_knob)
+
+    ra.ReleaseReserved(_dataReg.VregNumber());
+    ra.ReleaseReserved(_addrReg.VregNumber());
+    ra.ReleaseReserved(vregs.GetProfileBufferAddrVreg().Num());
+
+
+if (simd_knob)
     {
         GtReg dataRegL = {_dataReg, sizeof(uint32_t), 0};
 
@@ -609,20 +726,21 @@ void KernelProfile::instrument(IGtKernelInstrument &instrument)
                     proc += insF.MakeSel(dataRegL, dataRegL, 1).SetCondModifier(GED_COND_MODIFIER_l);
                 }
 
-                simdProfile.ComputeAddress(coder, proc, addrReg, index++);
+                simdProfile.ComputeAddress(coder, proc, _addrReg, index++);
 
                 if (is64BitCounter)
                 {
                     GtReg dataRegH = {_dataReg, sizeof(uint32_t), 1};
                     proc += insF.MakeMov(dataRegH, 0);
                 }
-                proc += insF.MakeAtomicAdd(NullReg(), addrReg, _dataReg, (is64BitCounter ? GED_DATA_TYPE_uq : GED_DATA_TYPE_ud));
+                proc += insF.MakeAtomicAdd(NullReg(), _addrReg, _dataReg, (is64BitCounter ? GED_DATA_TYPE_uq : GED_DATA_TYPE_ud));
 
                 proc.front()->AppendAnnotation(__func__);
                 instrument.InstrumentInstruction(cfg.GetInstruction(simdGroup.sectionHeadId), GtIpoint::Before(), proc);
             }
         }
     }
+
 }
 
 void KernelProfile::gatherMetrics(IGtKernelDispatch &dispatch, CorrelationData correlation_data)
@@ -651,9 +769,9 @@ void KernelProfile::gatherMetrics(IGtKernelDispatch &dispatch, CorrelationData c
                 if (latencyProfile.Read(*buffer, &record, index, 1, threadBucket))
                 {
                     bbl.executionCount += record.freq;
-		    if (collect_latency) {
-		      bbl.latency += record.cycles;
-		    }
+                    if (collect_latency) {
+                        bbl.latency += record.cycles;
+                    }
                 }
             }
 
@@ -672,8 +790,11 @@ void KernelProfile::gatherMetrics(IGtKernelDispatch &dispatch, CorrelationData c
                 }
             }
         }
+        // std::cout << "BLOCK WITH ID: " << index << " HAS LATENCY: " << bbl.latency << std::endl;
+
         ++index;
         process_block_activity(loadmapModuleId, correlation_data, bbl);
+
     }
 }
 
@@ -807,9 +928,9 @@ void gtpin_instrumentation_options(
       if (instrumentation->silent) {
         SetKnobValue<bool>(true, "silent_warnings");       // don't print GTPin warnings
       }
-      SetKnobValue<bool>(true, "no_empty_profile_dir");    // don't create GTPin profile directory
-      SetKnobValue<bool>(true, "xyzzy");                   // enable developer options
-      SetKnobValue<bool>(true, "prefer_lsc_scratch");      // use LSC scratch messages in PVC+
+      // SetKnobValue<bool>(true, "no_empty_profile_dir");    // don't create GTPin profile directory
+      // SetKnobValue<bool>(true, "xyzzy");                   // enable developer options
+      // SetKnobValue<bool>(true, "prefer_lsc_scratch");      // use LSC scratch messages in PVC+
 
       // register our GTPin instance
       GTPinInstrumentation::Instance()->Register();
@@ -863,7 +984,7 @@ void process_block_instructions(cct_node_t *root)
             cct_node_t *child = external_functions->hpcrun_cct_insert_instruction_child(block, instruction.offset);
             external_functions->attribute_instruction_metrics(child,
                                                               {.execution_count = executionCount,
-                                                               .latency = latency,
+                                                               .latency = instruction.latency,
                                                                .total_simd_lanes = totalSimdLanes,
                                                                .active_simd_lanes = activeSimdLanes,
                                                                .wasted_simd_lanes = totalSimdLanes - activeSimdLanes,
