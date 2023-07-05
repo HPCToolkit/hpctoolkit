@@ -166,7 +166,7 @@ METHOD_FN(finalize_event_list)
   // hpcrun metrics
   rocprofiler_finalize_event_list();
   // When the previous function finishes, we know the total_requested number
-  // of counters that should be collected for each kernel. 
+  // of counters that should be collected for each kernel.
   // Afterwards, we register callbacks for processing them.
   rocprofiler_register_counter_callbacks();
 

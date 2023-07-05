@@ -130,7 +130,7 @@ typedef struct callbacks_data_s {
 } callbacks_data_t;
 
 
-// The following data structures are used withing the context_entry_t
+// The following data structures are used within the context_entry_t
 typedef struct kernel_properties_s {
   uint32_t grid_size;
   uint32_t workgroup_size;
@@ -166,7 +166,7 @@ typedef void * symbols_map_it_t;
 
 #endif
 
-// Data structure that cointains the information about all requested counters,
+// Data structure that contains the information about all requested counters,
 // both basic and derived.
 typedef struct context_entry_s {
   bool valid;
@@ -328,7 +328,7 @@ rocprofiler_path
 // Depending on the `kind`, access to the corresponding union field
 // to extract the value of the counter. Cast the vaslue to the uint64_t
 // required by the gpu_activity.
-// Are we loosing any data by doing the cast? 
+// Are we losing any data by doing the cast?
 // How about adding the explicit inline attribute?
 static uint64_t
 decode_counter_value
@@ -354,7 +354,7 @@ decode_counter_value
       // present within the `rocprofiler_data_t` has 5 fields of different
       // type. It seems that ROCPROFILER_DATA_KIND_UNINIT (unsigned_int)
       // is missing from the union, so I am unsure what to do about it.
-      // Furthermore, I do not know how to parse ROCPROFILER_DATA_KIND_BYTES, 
+      // Furthermore, I do not know how to parse ROCPROFILER_DATA_KIND_BYTES,
       // In both cases, I decided to crash the program to see how frequent this is.
     assert(false);
     return (uint64_t) 0;
@@ -419,7 +419,7 @@ rocprofiler_context_handler
   }
 
   // Vladimir: We might not need two while loops. The official rocprof example
-  // waits on the `entry->valid`, so I added it just in case. 
+  // waits on the `entry->valid`, so I added it just in case.
   // Although not declared as the atomic boolean,
   // the example considers it as the atomic_bool.
   // We should consider using the atomic_bool instea.
@@ -487,7 +487,7 @@ rocprofiler_dispatch_callback
   counter_data.valid = true;
 
 
-  // The rocprofiler example uses reinterpret_cast<callbacks_data_t*>(arg);  
+  // The rocprofiler example uses reinterpret_cast<callbacks_data_t*>(arg);
   callbacks_data_t* tool_data = (callbacks_data_t*) arg;
   rocprofiler_feature_t* features = tool_data->features;
   unsigned feature_count = tool_data->feature_count;
@@ -498,7 +498,7 @@ rocprofiler_dispatch_callback
   entry->feature_count = feature_count;
   entry->file_handle = tool_data->file_handle;
   entry->active = true;
-  // The original example uses: 
+  // The original example uses:
   // reinterpret_cast<std::atomic<bool>*>(&entry->valid)->store(true);
   // Should we use the atomic operation here?
   entry->valid = true;
@@ -665,7 +665,7 @@ rocprofiler_init
 
 
 // Since this functions needs to know the exact number of counters
-// the hpcrun is interested for, the function must execute after 
+// the hpcrun is interested for, the function must execute after
 // the `finalize_event_list`
 void
 rocprofiler_register_counter_callbacks
