@@ -165,6 +165,10 @@ METHOD_FN(finalize_event_list)
   // in rocprofiler's format and initialize corresponding
   // hpcrun metrics
   rocprofiler_finalize_event_list();
+  // When the previous function finishes, we know the total_requested number
+  // of counters that should be collected for each kernel. 
+  // Afterwards, we register callbacks for processing them.
+  rocprofiler_register_counter_callbacks();
 
   device_finalizer_rocprofiler_shutdown.fn = rocprofiler_fini;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_rocprofiler_shutdown);
