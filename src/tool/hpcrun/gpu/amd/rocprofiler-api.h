@@ -140,5 +140,11 @@ rocprofiler_uri_setup
   void
 );
 
+void
+rocprofiler_register_counter_callbacks
+(
+  void
+);
+
 
 #endif

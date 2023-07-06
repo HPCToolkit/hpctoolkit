@@ -107,12 +107,81 @@
   }						\
 }
 
+// Vladimir: TODO: We might not need this data structure anymore?
 typedef struct {
   bool valid;
   hsa_agent_t agent;
   rocprofiler_group_t group;
   rocprofiler_callback_data_t data;
 } hpcrun_amd_counter_data_t;
+
+
+// Dispatch callback data type, that store information about requested counters.
+typedef struct callbacks_data_s {
+  rocprofiler_feature_t* features;
+  unsigned feature_count;
+  uint32_t *set;         // std::vector<uint32_t>* set;
+  unsigned group_index;
+  FILE* file_handle;
+  int filter_on;
+  uint32_t *gpu_index;   // std::vector<uint32_t>* gpu_index;
+  char **kernel_string;  // std::vector<std::string>* kernel_string;
+  uint32_t *range;       // std::vector<uint32_t>* range;
+} callbacks_data_t;
+
+
+// The following data structures are used within the context_entry_t
+typedef struct kernel_properties_s {
+  uint32_t grid_size;
+  uint32_t workgroup_size;
+  uint32_t lds_size;
+  uint32_t scratch_size;
+  uint32_t arch_vgpr_count;
+  uint32_t accum_vgpr_count;
+  uint32_t sgpr_count;
+  uint32_t wave_size;
+  hsa_signal_t signal;
+  uint64_t object;
+} kernel_properties_t;
+
+
+#if 0
+// Vladimir: C++ism of the official rocprofiler example
+
+typedef struct symbols_map_data_s {
+    const char* name;
+    uint64_t refs_count;
+} symbols_map_data_t;
+
+typedef std::map<uint64_t, symbols_map_data_t> symbols_map_t;
+
+typedef symbols_map_t::iterator symbols_map_it_t;
+
+#else
+
+// Vladimir: Since the size of the `symbols_map_t::iterator` is 8-bytes,
+// I added this workaround.
+typedef void * symbols_map_it_t;
+
+
+#endif
+
+// Data structure that contains the information about all requested counters,
+// both basic and derived.
+typedef struct context_entry_s {
+  bool valid;
+  bool active;
+  uint32_t index;
+  hsa_agent_t agent;
+  rocprofiler_group_t group;
+  rocprofiler_feature_t* features;
+  unsigned feature_count;
+  rocprofiler_callback_data_t data;
+  kernel_properties_t kernel_properties;
+  symbols_map_it_t kernel_name_it;
+  FILE* file_handle;
+} context_entry_t;
+
 
 //******************************************************************************
 // local variables
@@ -256,16 +325,59 @@ rocprofiler_path
   return path;
 }
 
+// Depending on the `kind`, access to the corresponding union field
+// to extract the value of the counter. Cast the vaslue to the uint64_t
+// required by the gpu_activity.
+// Are we losing any data by doing the cast?
+// How about adding the explicit inline attribute?
+static uint64_t
+decode_counter_value
+(
+  const rocprofiler_data_t* cnt_data
+)
+{
+  switch (cnt_data->kind)
+  {
+  case ROCPROFILER_DATA_KIND_UNINIT:
+
+    return (uint64_t) 0;
+  case ROCPROFILER_DATA_KIND_INT32:
+    return (uint64_t) cnt_data->result_int32;
+  case ROCPROFILER_DATA_KIND_INT64:
+    return (uint64_t) cnt_data->result_int64;
+  case ROCPROFILER_DATA_KIND_FLOAT:
+    return (uint64_t) cnt_data->result_float;
+  case ROCPROFILER_DATA_KIND_DOUBLE:
+    return (uint64_t) cnt_data->result_double;
+  default:
+      // The `rocprofiler_data_kind_t` hold 6 possible values, but the union
+      // present within the `rocprofiler_data_t` has 5 fields of different
+      // type. It seems that ROCPROFILER_DATA_KIND_UNINIT (unsigned_int)
+      // is missing from the union, so I am unsure what to do about it.
+      // Furthermore, I do not know how to parse ROCPROFILER_DATA_KIND_BYTES,
+      // In both cases, I decided to crash the program to see how frequent this is.
+    assert(false);
+    return (uint64_t) 0;
+  }
+}
+
 static void
 translate_rocprofiler_output
 (
-  gpu_activity_t* ga
+  gpu_activity_t* ga,
+  context_entry_t* entry
 )
 {
+  rocprofiler_group_t *group = &entry->group;
+  if (group->context != NULL && entry->feature_count > 0) {
+    HPCRUN_ROCPROFILER_CALL(rocprofiler_group_get_data, (group));
+    HPCRUN_ROCPROFILER_CALL(rocprofiler_get_metrics, (group->context));
+  }
+
   // Translate counter results stored in rocprofiler_feature_t
   // to hpcrun's gpu_activity_t data structure
-  rocprofiler_feature_t** features = counter_data.group.features;
-  unsigned feature_count = counter_data.group.feature_count;
+  rocprofiler_feature_t* features = entry->features;
+  unsigned feature_count = entry->feature_count;
 
   ga->kind = GPU_ACTIVITY_COUNTER;
   ga->details.counters.correlation_id = rocprofiler_correlation_id;
@@ -280,8 +392,8 @@ translate_rocprofiler_output
   // rocprofiler should pass metric results in the same order
   // that we pass metrics as input to rocprofiler
   for (unsigned i = 0; i < feature_count; ++i) {
-    const rocprofiler_feature_t* p = features[i];
-    ga->details.counters.values[i] = p->data.result_int64;
+    const rocprofiler_feature_t* p = &features[i];
+    ga->details.counters.values[i] = decode_counter_value(&p->data);
   }
 }
 
@@ -306,19 +418,25 @@ rocprofiler_context_handler
     valid = counter_data.valid;
   }
 
+  // Vladimir: We might not need two while loops. The official rocprof example
+  // waits on the `entry->valid`, so I added it just in case.
+  // Although not declared as the atomic boolean,
+  // the example considers it as the atomic_bool.
+  // We should consider using the atomic_bool instea.
+  context_entry_t *entry = (context_entry_t *) arg;
+  while (entry->valid == false) sched_yield();
+
   if (counter_data.group.context == NULL) {
     EMSG("error: AMD group->context = NULL");
-  }
-  if (counter_data.group.feature_count > 0) {
-    HPCRUN_ROCPROFILER_CALL(rocprofiler_group_get_data, (&counter_data.group));
-    HPCRUN_ROCPROFILER_CALL(rocprofiler_get_metrics, (counter_data.group.context));
   }
 
   gpu_activity_t ga;
   memset(&ga, 0, sizeof(gpu_activity_t));
   cstack_ptr_set(&(ga.next), 0);
 
-  translate_rocprofiler_output(&ga);
+  // Copy information from the `entry` to the `ga.
+  translate_rocprofiler_output(&ga, entry);
+  free(entry);
 
   // Consume the correlation channel for rocprofiler
   gpu_monitoring_thread_activities_ready_with_idx(ROCPROFILER_CHANNEL_IDX);
@@ -340,6 +458,9 @@ rocprofiler_dispatch_callback
 ) {
   if (total_requested == 0) return HSA_STATUS_SUCCESS;
 
+  // Initialize and set all fields to 0, so use calloc
+  context_entry_t *entry = (context_entry_t *) calloc(1, sizeof(context_entry_t));
+
   // Passed tool data
   hsa_agent_t agent = callback_data->agent;
 
@@ -349,7 +470,7 @@ rocprofiler_dispatch_callback
   rocprofiler_t* context = NULL;
   rocprofiler_properties_t properties = {};
   properties.handler = rocprofiler_context_handler;
-  properties.handler_arg = NULL;
+  properties.handler_arg = (void *) entry;
 
   counter_data.valid = false;
   HPCRUN_ROCPROFILER_CALL(rocprofiler_open, (agent, rocprofiler_input, total_requested,
@@ -364,6 +485,23 @@ rocprofiler_dispatch_callback
   counter_data.group = *group;
   counter_data.data = *callback_data;
   counter_data.valid = true;
+
+
+  // The rocprofiler example uses reinterpret_cast<callbacks_data_t*>(arg);
+  callbacks_data_t* tool_data = (callbacks_data_t*) arg;
+  rocprofiler_feature_t* features = tool_data->features;
+  unsigned feature_count = tool_data->feature_count;
+
+  entry->agent = callback_data->agent;
+  entry->group = *group;
+  entry->features = features;
+  entry->feature_count = feature_count;
+  entry->file_handle = tool_data->file_handle;
+  entry->active = true;
+  // The original example uses:
+  // reinterpret_cast<std::atomic<bool>*>(&entry->valid)->store(true);
+  // Should we use the atomic operation here?
+  entry->valid = true;
 
   // FIXME: some error checking seems warranted
   status = HSA_STATUS_SUCCESS;
@@ -516,10 +654,6 @@ rocprofiler_init
   }
 #endif
 
-  rocprofiler_queue_callbacks_t callbacks_ptrs = {};
-  callbacks_ptrs.dispatch = rocprofiler_dispatch_callback;
-  HPCRUN_ROCPROFILER_CALL(rocprofiler_set_queue_callbacks, (callbacks_ptrs, NULL));
-
   initialize_counter_information();
 
   monitor_enable_new_threads();
@@ -529,6 +663,26 @@ rocprofiler_init
   return;
 }
 
+
+// Since this functions needs to know the exact number of counters
+// the hpcrun is interested for, the function must execute after
+// the `finalize_event_list`
+void
+rocprofiler_register_counter_callbacks
+(
+  void
+)
+{
+  rocprofiler_queue_callbacks_t callbacks_ptrs = {};
+  callbacks_ptrs.dispatch = rocprofiler_dispatch_callback;
+  // Initialize the callbacks_data information to use the counters information
+  // set within by `initialize_counter_information`.
+  callbacks_data_t *callbacks_data = (callbacks_data_t *) malloc(sizeof(callbacks_data_t));
+  callbacks_data->features = rocprofiler_input;
+  callbacks_data->feature_count = total_requested;
+
+  HPCRUN_ROCPROFILER_CALL(rocprofiler_set_queue_callbacks, (callbacks_ptrs, callbacks_data));
+}
 
 void
 rocprofiler_fini
