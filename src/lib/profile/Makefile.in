@@ -45,7 +45,6 @@
 # C Preprocessor
 ############################################################
 
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -133,8 +132,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(noinst_HEADERS) \
-	$(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/include/hpctoolkit-config.h
 CONFIG_CLEAN_FILES =
@@ -252,7 +250,6 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-HEADERS = $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -570,8 +567,14 @@ HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-noinst_HEADERS = sinks/FORMATS.md.inc sinks/METRICS.yaml.inc
-BUILT_SOURCES = sinks/FORMATS.md.inc sinks/METRICS.yaml.inc
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 MYSOURCES = \
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
 	\
@@ -627,8 +630,7 @@ MYCPPFLAGS_0 = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 
 MYCPPFLAGS_0_CXX = $(MYCPPFLAGS_0) $(AM_CXXFLAGS) $(CXXFLAGS) $(MYCXXFLAGS)
 MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
-all: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+all: all-am
 
 .SUFFIXES:
 .SUFFIXES: .c .cpp .lo .o .obj
@@ -1231,12 +1233,10 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LTLIBRARIES) $(HEADERS)
+check: check-am
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
-install: $(BUILT_SOURCES)
-	$(MAKE) $(AM_MAKEFLAGS) install-am
+install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -1279,7 +1279,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
@@ -1351,7 +1350,7 @@ ps-am:
 
 uninstall-am:
 
-.MAKE: all check install install-am install-strip
+.MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-noinstLTLIBRARIES cscopelist-am ctags \
@@ -1383,23 +1382,6 @@ define HPC_moveIfStaticallyLinked
 endef
 
 #############################################################################
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
-
-sinks/FORMATS.md.inc: $(srcdir)/../../../doc/FORMATS.md $(srcdir)/../../tool/hpcstruct/stringify.sh
-	echo -n "static const char FORMATS_md[] = " > $@
-	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
-	echo ';' >> $@
-sinks/METRICS.yaml.inc: $(srcdir)/../../../doc/METRICS.yaml $(srcdir)/../../tool/hpcstruct/stringify.sh
-	echo -n "static const char METRICS_yaml[] = " > $@
-	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
-	echo ';' >> $@
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@

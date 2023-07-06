@@ -50,11 +50,11 @@
 
 #include "metadb.hpp"
 
+#include "include/hpctoolkit-config.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <fstream>
-
-#include "lib/profile/sinks/METRICS.yaml.inc"
 
 using namespace hpctoolkit;
 using namespace sinks;
@@ -71,8 +71,12 @@ void MetricsYAML::notifyWavefront(DataClass dc) {
   // Create the directory and write out all the files
   stdshim::filesystem::create_directories(outdir);
   {
-    std::ofstream example(outdir / "METRICS.yaml.ex");
-    example << METRICS_yaml;
+    std::error_code ec;
+    if(!stdshim::filesystem::copy_file(HPCTOOLKIT_INSTALL_PREFIX "/share/doc/hpctoolkit/METRICS.yaml",
+            outdir / "METRICS.yaml.ex", ec)) {
+      util::log::warning w;
+      w << "Error while writing out METRICS.yaml.ex: " << (ec ? ec.message() : "file exists");
+    }
   }
   {
     std::ofstream out(outdir / "default.yaml");

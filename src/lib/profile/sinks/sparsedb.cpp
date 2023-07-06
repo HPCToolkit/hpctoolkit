@@ -56,8 +56,10 @@
 #include <lib/prof-lean/id-tuple.h>
 #include "lib/prof-lean/formats/profiledb.h"
 #include "lib/prof-lean/formats/cctdb.h"
+#include "include/hpctoolkit-config.h"
 
 #include "../stdshim/numeric.hpp"
+#include "../stdshim/filesystem.hpp"
 #include <cassert>
 #include <cmath>
 #include <fstream>
@@ -65,8 +67,6 @@
 #include <stdexcept>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#include "lib/profile/sinks/FORMATS.md.inc"
 
 using namespace hpctoolkit;
 using namespace hpctoolkit::sinks;
@@ -89,10 +89,11 @@ SparseDB::SparseDB(stdshim::filesystem::path dir) {
   cmf = util::File(dir / "cct.db", true);
 
   // Dump the FORMATS.md file
-  try {
-    std::ofstream(dir / "FORMATS.md") << FORMATS_md;
-  } catch(std::exception& e) {
-    util::log::warning{} << "Error while writing out FORMATS.md file";
+  std::error_code ec;
+  if(!stdshim::filesystem::copy_file(HPCTOOLKIT_INSTALL_PREFIX "/share/doc/hpctoolkit/FORMATS.md",
+          dir / "FORMATS.md", ec)) {
+    util::log::warning w;
+    w << "Error while writing out FORMATS.md: " << (ec ? ec.message() : "file exists");
   }
 }
 
