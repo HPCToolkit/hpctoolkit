@@ -372,9 +372,7 @@ Devenv successfully created! You may now enter the devenv with:
 Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
     $ make -j
     $ make -j install
-    $ hpcrun -h
-""",
-        nl=False,
+    $ hpcrun -h"""
     )
 
 
@@ -442,9 +440,7 @@ Devenv successfully created! You may now enter the devenv with:
 Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
     $ make -j
     $ make -j install
-    $ hpcrun -h
-""",
-        nl=False,
+    $ hpcrun -h"""
     )
 
 
@@ -476,9 +472,7 @@ You are now entering a devenv shell. Some quick notes:
             $ . {shlex.quote(str(spack_setup))}
             $ spack env activate {shlex.quote(str(env.root))}
     3. You will be automatically placed in the build directory of
-        this devenv, if it exists.
-""",
-            nl=False,
+        this devenv, if it exists."""
         )
 
     with env.activate():
@@ -580,9 +574,7 @@ If you altered the environment, you should now run the
 following commands to restore consistency:
     $ spack -e {shlex.quote(str(devenv.root))} concretize -f
     $ spack -e {shlex.quote(str(devenv.root))} install
-    $ ./dev populate {shlex.join(devenv.args)}
-""",
-        nl=False,
+    $ ./dev populate {shlex.join(devenv.args)}"""
     )
 
 
@@ -770,17 +762,13 @@ Devenv has been populated and is ready for use. To enter run:
 Further commands (make/meson/etc.) MUST be run under this shell. Eg.:
     $ make -j
     $ make -j install
-    $ hpcrun -h
-""",
-            nl=False,
+    $ hpcrun -h"""
         )
     else:
         click.echo(
-            f"""\
+            f"""
 Devenv has been populated but not configured. Use via the buildfe:
-    $ ./dev buildfe -d {shlex.quote(str(devenv))} -- ...
-""",
-            nl=False,
+    $ ./dev buildfe -d {shlex.quote(str(devenv))} -- ..."""
         )
 
 
