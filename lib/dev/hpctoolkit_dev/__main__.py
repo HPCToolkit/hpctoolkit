@@ -501,7 +501,7 @@ def pre_commit(obj: DevState, args: collections.abc.Collection[str]) -> None:
             )
 
         vprecommit = Command(ve_dir / "bin" / "pre-commit")
-        vprecommit(*args)
+        vprecommit.execl(*args)
 
 
 @main.command

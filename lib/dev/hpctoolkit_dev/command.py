@@ -78,6 +78,7 @@ class Command:
         env: collections.abc.Mapping[str, str] | None = None,
         stdinput: str | None = None,
         cwd: Path | None = None,
+        error_output: bool = True,
     ) -> str:
         """Run the Command with the given arguments and options, and return it's stdout."""
         cmd = [self.path, *self._initial_args, *args]
@@ -87,14 +88,29 @@ class Command:
                 check=True,
                 text=True,
                 stdout=subprocess.PIPE,
+                stderr=None if error_output else subprocess.DEVNULL,
                 env=env,
                 input=stdinput,
                 cwd=cwd,
             )
         except subprocess.CalledProcessError as e:
-            sys.stdout.write(e.stdout)
+            if error_output:
+                sys.stdout.write(e.stdout)
             raise
         return proc.stdout
+
+    def execl(
+        self,
+        /,
+        *args: str | Path,
+        env: collections.abc.Mapping[str, str] | None = None,
+        cwd: Path | None = None,
+    ) -> typing.NoReturn:
+        """Run the Command, replacing the current process with it."""
+        cmd = [self.path, *self._initial_args, *args]
+        if cwd is not None:
+            os.chdir(cwd)
+        os.execve(self.path, [str(a) for a in cmd], env if env is not None else os.environ)
 
 
 class ShEnv(collections.abc.Mapping[str, str]):
