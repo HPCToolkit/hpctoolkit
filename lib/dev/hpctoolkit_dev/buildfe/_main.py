@@ -8,6 +8,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import tarfile
 import textwrap
 import time
 from pathlib import Path
@@ -204,8 +205,6 @@ Examples:
 
 def post_parse(args):
     Test().junit_copyout = args.test_junit_copyout
-    for cls in FreshTestData.suites.values():
-        cls().unpack = args.fresh_unpack
     if args.keep or args.fresh_unpack or args.test_junit_copyout:
         args.single_spec = True
     args.action = action_sequence([act() for name in args.action for act in actions[name]])
@@ -373,6 +372,12 @@ def build(
             if not r.completed:
                 ok = False
                 break
+        else:
+            if args.fresh_unpack:
+                for a in args.action:
+                    if any(isinstance(a, c) for c in FreshTestData.suites.values()):
+                        with tarfile.open(builddir / a.tarball_path) as tarf:
+                            tarf.extractall(srcdir)
     finally:
         if not args.keep:
             if builddir.exists():

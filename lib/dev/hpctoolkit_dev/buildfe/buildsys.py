@@ -7,7 +7,6 @@ import os
 import re
 import shutil
 import subprocess
-import tarfile
 import tempfile
 import typing
 from pathlib import Path
@@ -485,6 +484,10 @@ class FreshTestData(MakeAction):
         cls.suites[subcls.suite] = subcls
         return subcls
 
+    @property
+    def tarball_path(self) -> Path:
+        return Path("tests2-build") / "data" / f"fresh-{self.suite}.tar.xz"
+
     def run(
         self,
         cfg: Configuration,
@@ -494,22 +497,18 @@ class FreshTestData(MakeAction):
         installdir: Path,
         logdir: Path | None = None,
     ) -> ActionResult:
-        suite = self.suite
         result = self._run(
-            f"fresh-testdata-{suite}",
+            f"fresh-testdata-{self.suite}",
             cfg,
             builddir,
-            f"tests2/data/fresh-{suite}.tar.xz",
+            f"tests2/data/fresh-{self.suite}.tar.xz",
             logdir=logdir,
         )
-        if self.unpack and result.completed:
-            with tarfile.open(builddir / "tests2-build" / "data" / f"fresh-{suite}.tar.xz") as tarf:
-                tarf.extractall(srcdir)
         if logdir is not None:
             if result.completed:
                 shutil.copyfile(
-                    builddir / "tests2-build" / "data" / f"fresh-{suite}.tar.xz",
-                    logdir / f"fresh-{suite}.tar.xz",
+                    builddir / self.tarball_path,
+                    logdir / f"fresh-testdata-{self.suite}.tar.xz",
                 )
             return result
         return UnsavedTestDataResult(result)
