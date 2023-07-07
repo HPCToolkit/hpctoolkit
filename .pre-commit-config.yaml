@@ -143,11 +143,10 @@ repos:
     # https://github.com/python/mypy/issues/12664 which affects ruamel.yaml
     args: [--scripts-are-modules, --no-incremental, --show-column-numbers, --pretty]
     additional_dependencies:
-    - pytest
-    - ruamel.yaml
-    - podman
-    - click
-    - pyparsing
+    - pytest >=7.1.3, <8
+    - ruamel.yaml >=0.17.21, <0.18
+    - click >=8.1.3, <9, !=8.1.4
+    - pyparsing >=3.0.9, <4
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
@@ -156,8 +155,8 @@ repos:
   # Run the aggressive static Python linter
   - id: pylint
     additional_dependencies:
+    - ruamel.yaml >=0.17.21, <0.18
     - pylint-pytest
-    - ruamel.yaml
     exclude: *py_excludes
 
 - repo: https://github.com/shellcheck-py/shellcheck-py
