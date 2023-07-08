@@ -174,6 +174,7 @@ class Spack(Command):
         env: collections.abc.Mapping[str, str] | None = None,
         stdinput: str | None = None,
         cwd: Path | None = None,
+        error_output: bool = True,
     ) -> str:
         cmd: list[str | Path] = []
         if spack_env is not None:
@@ -184,6 +185,7 @@ class Spack(Command):
             env=env,
             stdinput=stdinput,
             cwd=cwd,
+            error_output=error_output,
         )
 
     def load(

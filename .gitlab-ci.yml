@@ -816,11 +816,11 @@ fresh testdata:
   - apk add xz
   - mkdir /tmp/result
   # Unpack all the tarballs to the temporary directory
-  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-none.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-cpu.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6.2]'/regen/*/fresh-nvidia.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+rocm]'/regen/*/fresh-amd.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8.0]'/regen/*/fresh-sw-cuda.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-none.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-cpu.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6.2]'/regen/*/fresh-testdata-nvidia.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+rocm]'/regen/*/fresh-testdata-amd.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8.0]'/regen/*/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
   # Repack into a single tarball
   - tar c -Jf testdata.tar.xz -C /tmp/result .
   artifacts:
