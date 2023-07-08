@@ -569,12 +569,12 @@ endif
 
 if OPT_ENABLE_GTPIN
 
-MY_DYNAMIC_FILES += gpu/instrumentation/gtpin-shim.c
+MY_DYNAMIC_FILES += gpu/intel/gtpin/gtpin-shim.c
 pkglib_LTLIBRARIES += libhpcrun_gtpin_cxx.la
 libhpcrun_gtpin_cxx_la_CPPFLAGS  = -g $(MY_INCLUDE_DIRS) -I$(top_srcdir)/src/tool/hpcrun/unwind/x86-family
 libhpcrun_gtpin_cxx_la_CXXFLAGS  = @HOST_CXXFLAGS@
 
-libhpcrun_gtpin_cxx_la_SOURCES   = gpu/instrumentation/gtpin-instrumentation.cpp
+libhpcrun_gtpin_cxx_la_SOURCES   = gpu/intel/gtpin/gtpin-instrumentation.cpp
 libhpcrun_gtpin_cxx_la_LDFLAGS   = -Wl,-Bsymbolic
 libhpcrun_gtpin_cxx_la_LIBADD = -L$(TBB_LIB_DIR) -ltbb -ltbbmalloc -ldl
 
@@ -594,20 +594,20 @@ endif
 if OPT_ENABLE_LEVEL0
 MY_LEVEL0_FILES=\
 	sample-sources/level0.c \
-	gpu/level0/level0-api.c \
-	gpu/level0/level0-binary.c \
-	gpu/level0/level0-command-list-context-map.c \
-	gpu/level0/level0-command-list-map.c \
-	gpu/level0/level0-command-process.c \
-	gpu/level0/level0-data-node.c \
-	gpu/level0/level0-event-map.c \
-	gpu/level0/level0-handle-map.c \
-	gpu/level0/level0-kernel-module-map.c \
-	gpu/level0/level0-fence-map.c \
-	gpu/level0/level0-command-queue-map.c
+	gpu/intel/level0/level0-api.c \
+	gpu/intel/level0/level0-binary.c \
+	gpu/intel/level0/level0-command-list-context-map.c \
+	gpu/intel/level0/level0-command-list-map.c \
+	gpu/intel/level0/level0-command-process.c \
+	gpu/intel/level0/level0-data-node.c \
+	gpu/intel/level0/level0-event-map.c \
+	gpu/intel/level0/level0-handle-map.c \
+	gpu/intel/level0/level0-kernel-module-map.c \
+	gpu/intel/level0/level0-fence-map.c \
+	gpu/intel/level0/level0-command-queue-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_level0.la
-libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
+libhpcrun_level0_la_SOURCES   = gpu/intel/level0/level0-api-wrappers.c
 libhpcrun_level0_la_CFLAGS    = $(OPT_LEVEL0_IFLAGS)
 libhpcrun_level0_la_LDFLAGS   = -Wl,-Bsymbolic
 
