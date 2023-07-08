@@ -297,6 +297,7 @@ MY_BASE_FILES =				\
 	metrics.c			\
 	name.c				\
 	rank.c				\
+	safe-sampling.c			\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\

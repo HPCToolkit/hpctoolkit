@@ -505,6 +505,9 @@ static void process_block_activity(
 {
     gpu_activity_channel_t *activity_channel = correlation_data.activity_channel;
     gpu_op_ccts_t *op_ccts = &correlation_data.op_ccts;
+
+    external_functions->safe_enter();
+
     cct_node_t *host_op_node = external_functions->gpu_op_ccts_get(op_ccts, gpu_placeholder_type_kernel);
 
     gpu_activity_t ga;
@@ -524,6 +527,8 @@ static void process_block_activity(
         ga.cct_node = cct_node;
         external_functions->gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
     }
+
+    external_functions->safe_exit();
 }
 
 static void visit_block(cct_node_t *block, cct_op_arg_t arg, size_t level)
@@ -928,7 +933,7 @@ void gtpin_instrumentation_options(
       if (instrumentation->silent) {
         SetKnobValue<bool>(true, "silent_warnings");       // don't print GTPin warnings
       }
-      // SetKnobValue<bool>(true, "no_empty_profile_dir");    // don't create GTPin profile directory
+      SetKnobValue<bool>(true, "no_empty_profile_dir");    // don't create GTPin profile directory
       // SetKnobValue<bool>(true, "xyzzy");                   // enable developer options
       // SetKnobValue<bool>(true, "prefer_lsc_scratch");      // use LSC scratch messages in PVC+
 

@@ -17,6 +17,8 @@
 
 typedef struct external_functions_t
 {
+    void (*safe_enter)(void);
+    void (*safe_exit)(void);
     void (*gpu_binary_path_generate)(
         const char *,
         char *);

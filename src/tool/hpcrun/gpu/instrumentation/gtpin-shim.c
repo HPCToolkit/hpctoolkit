@@ -88,6 +88,8 @@
 //*****************************************************************************
 
 static external_functions_t external_functions = {
+    .safe_enter = hpcrun_safe_enter_noinline,
+    .safe_exit = hpcrun_safe_exit_noinline,
     .gpu_binary_path_generate = gpu_binary_path_generate,
     .gpu_operation_multiplexer_push = gpu_operation_multiplexer_push,
     .fetch_block_metrics = fetch_block_metrics,

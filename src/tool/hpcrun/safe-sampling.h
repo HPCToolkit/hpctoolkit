@@ -131,6 +131,8 @@ hpcrun_safe_enter(void)
   return (prev == 0);
 }
 
+int hpcrun_safe_enter_noinline(void);
+
 
 // Use hpcrun_safe_enter_async() at entry into our code in an async
 // interrupt.  If unsafe (false), then restart the next interrupt and
@@ -181,6 +183,8 @@ hpcrun_safe_exit(void)
 
   td->inside_hpcrun = 0;
 }
+
+int hpcrun_safe_exit_noinline(void);
 
 
 #endif  // _HPCRUN_SAFE_SAMPLING_H_

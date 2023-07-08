@@ -462,8 +462,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
 	handling_sample.c hpcrun-initializers.c hpcrun_options.c \
 	hpcrun_signals.c hpcrun_stats.c loadmap.c metrics.c name.c \
-	rank.c sample_event.c sample_prob.c sample_sources_all.c \
-	sample-sources/blame-shift/blame-shift.c \
+	rank.c safe-sampling.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c \
 	sample-sources/blame-shift/directed.c \
 	sample-sources/blame-shift/undirected.c \
@@ -631,8 +631,9 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-hpcrun_options.lo libhpcrun_la-hpcrun_signals.lo \
 	libhpcrun_la-hpcrun_stats.lo libhpcrun_la-loadmap.lo \
 	libhpcrun_la-metrics.lo libhpcrun_la-name.lo \
-	libhpcrun_la-rank.lo libhpcrun_la-sample_event.lo \
-	libhpcrun_la-sample_prob.lo libhpcrun_la-sample_sources_all.lo \
+	libhpcrun_la-rank.lo libhpcrun_la-safe-sampling.lo \
+	libhpcrun_la-sample_event.lo libhpcrun_la-sample_prob.lo \
+	libhpcrun_la-sample_sources_all.lo \
 	sample-sources/blame-shift/libhpcrun_la-blame-shift.lo \
 	sample-sources/blame-shift/libhpcrun_la-blame-map.lo \
 	sample-sources/blame-shift/libhpcrun_la-directed.lo \
@@ -1013,8 +1014,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
 	handling_sample.c hpcrun-initializers.c hpcrun_options.c \
 	hpcrun_signals.c hpcrun_stats.c loadmap.c metrics.c name.c \
-	rank.c sample_event.c sample_prob.c sample_sources_all.c \
-	sample-sources/blame-shift/blame-shift.c \
+	rank.c safe-sampling.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c \
 	sample-sources/blame-shift/directed.c \
 	sample-sources/blame-shift/undirected.c \
@@ -1157,6 +1158,7 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-hpcrun_stats.$(OBJEXT) \
 	libhpcrun_o-loadmap.$(OBJEXT) libhpcrun_o-metrics.$(OBJEXT) \
 	libhpcrun_o-name.$(OBJEXT) libhpcrun_o-rank.$(OBJEXT) \
+	libhpcrun_o-safe-sampling.$(OBJEXT) \
 	libhpcrun_o-sample_event.$(OBJEXT) \
 	libhpcrun_o-sample_prob.$(OBJEXT) \
 	libhpcrun_o-sample_sources_all.$(OBJEXT) \
@@ -1995,8 +1997,8 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
 	handling_sample.c hpcrun-initializers.c hpcrun_options.c \
 	hpcrun_signals.c hpcrun_stats.c loadmap.c metrics.c name.c \
-	rank.c sample_event.c sample_prob.c sample_sources_all.c \
-	sample-sources/blame-shift/blame-shift.c \
+	rank.c safe-sampling.c sample_event.c sample_prob.c \
+	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c \
 	sample-sources/blame-shift/directed.c \
 	sample-sources/blame-shift/undirected.c \
@@ -4193,6 +4195,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-module-ignore-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-name.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-rank.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-safe-sampling.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_event.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_prob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-sample_sources_all.Plo@am__quote@
@@ -4231,6 +4234,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-module-ignore-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-name.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-rank.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-safe-sampling.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_event.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_prob.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-sample_sources_all.Po@am__quote@
@@ -4987,6 +4991,13 @@ libhpcrun_la-rank.lo: rank.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rank.c' object='libhpcrun_la-rank.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-rank.lo `test -f 'rank.c' || echo '$(srcdir)/'`rank.c
+
+libhpcrun_la-safe-sampling.lo: safe-sampling.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-safe-sampling.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-safe-sampling.Tpo -c -o libhpcrun_la-safe-sampling.lo `test -f 'safe-sampling.c' || echo '$(srcdir)/'`safe-sampling.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-safe-sampling.Tpo $(DEPDIR)/libhpcrun_la-safe-sampling.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='safe-sampling.c' object='libhpcrun_la-safe-sampling.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-safe-sampling.lo `test -f 'safe-sampling.c' || echo '$(srcdir)/'`safe-sampling.c
 
 libhpcrun_la-sample_event.lo: sample_event.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-sample_event.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-sample_event.Tpo -c -o libhpcrun_la-sample_event.lo `test -f 'sample_event.c' || echo '$(srcdir)/'`sample_event.c
@@ -6926,6 +6937,20 @@ libhpcrun_o-rank.obj: rank.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rank.c' object='libhpcrun_o-rank.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-rank.obj `if test -f 'rank.c'; then $(CYGPATH_W) 'rank.c'; else $(CYGPATH_W) '$(srcdir)/rank.c'; fi`
+
+libhpcrun_o-safe-sampling.o: safe-sampling.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-safe-sampling.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-safe-sampling.Tpo -c -o libhpcrun_o-safe-sampling.o `test -f 'safe-sampling.c' || echo '$(srcdir)/'`safe-sampling.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-safe-sampling.Tpo $(DEPDIR)/libhpcrun_o-safe-sampling.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='safe-sampling.c' object='libhpcrun_o-safe-sampling.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-safe-sampling.o `test -f 'safe-sampling.c' || echo '$(srcdir)/'`safe-sampling.c
+
+libhpcrun_o-safe-sampling.obj: safe-sampling.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-safe-sampling.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-safe-sampling.Tpo -c -o libhpcrun_o-safe-sampling.obj `if test -f 'safe-sampling.c'; then $(CYGPATH_W) 'safe-sampling.c'; else $(CYGPATH_W) '$(srcdir)/safe-sampling.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-safe-sampling.Tpo $(DEPDIR)/libhpcrun_o-safe-sampling.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='safe-sampling.c' object='libhpcrun_o-safe-sampling.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-safe-sampling.obj `if test -f 'safe-sampling.c'; then $(CYGPATH_W) 'safe-sampling.c'; else $(CYGPATH_W) '$(srcdir)/safe-sampling.c'; fi`
 
 libhpcrun_o-sample_event.o: sample_event.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-sample_event.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-sample_event.Tpo -c -o libhpcrun_o-sample_event.o `test -f 'sample_event.c' || echo '$(srcdir)/'`sample_event.c
