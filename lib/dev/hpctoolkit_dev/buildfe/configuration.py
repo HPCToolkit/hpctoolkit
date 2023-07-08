@@ -14,6 +14,8 @@ import textwrap
 import typing
 from pathlib import Path
 
+from elftools.elf.elffile import ELFFile  # type: ignore[import]
+
 from .logs import FgColor, colorize
 
 
@@ -90,21 +92,63 @@ class Compilers:
         return self.raw_compilers
 
 
+class _SymbolManifest:
+    def __init__(self, symbols: frozenset[str], *, allow_extra: bool | re.Pattern = False):
+        self.symbols = symbols
+        self.allow_extra: re.Pattern | None = None
+        if allow_extra:
+            self.allow_extra = re.compile(r".*") if allow_extra is True else allow_extra
+
+    def check(self, path: Path) -> str | None:
+        with open(path, "rb") as f, ELFFile(f) as file:
+            got = {
+                s.name
+                for seg in file.iter_segments("PT_DYNAMIC")
+                for s in seg.iter_symbols()
+                if s["st_info"].type == "STT_FUNC"
+                and s["st_info"].bind in ("STB_GLOBAL", "STB_WEAK")
+                and s["st_value"] != 0
+            }
+            missing, unexpected = self.symbols - got, got - self.symbols
+            if self.allow_extra:
+                unexpected = {s for s in unexpected if not self.allow_extra.fullmatch(s)}
+
+            lines: list[str] = []
+            if missing:
+                lines.append("The following symbols were expected but not found:")
+                for sym in missing:
+                    lines.append(f"  {sym!r},")
+            if unexpected:
+                lines.append("The following symbols were unexpected:")
+                for sym in unexpected:
+                    lines.append(f"  {sym!r},")
+            return "\n".join(lines) if lines else None
+
+
 class _ManifestFile:
-    def __init__(self, path):
+    def __init__(self, path, *, symbols: _SymbolManifest | None = None):
         self.path = Path(path)
+        self.symbols = symbols
 
     def check(self, installdir) -> tuple[set[Path], set[Path | tuple[Path, str]]]:
-        if (Path(installdir) / self.path).is_file():
-            return {self.path}, set()
-        return set(), {self.path}
+        if not (Path(installdir) / self.path).is_file():
+            return set(), {self.path}
+        if (
+            self.symbols is not None
+            and (symerr := self.symbols.check(Path(installdir) / self.path)) is not None
+        ):
+            return set(), {
+                (self.path, f"Symbol manifest failed to match:\n{textwrap.indent(symerr, '  ')}")
+            }
+        return {self.path}, set()
 
 
 class _ManifestLib(_ManifestFile):
-    def __init__(self, path, target, *aliases):
+    def __init__(self, path, target, *aliases, symbols: _SymbolManifest | None = None):
         super().__init__(path)
         self.target = str(target)
         self.aliases = [str(a) for a in aliases]
+        self.symbols = symbols
 
     def check(self, installdir) -> tuple[set[Path], set[Path | tuple[Path, str]]]:
         installdir = Path(installdir)
@@ -117,6 +161,13 @@ class _ManifestLib(_ManifestFile):
         if target.is_symlink():
             missing.add(
                 (target.relative_to(installdir), f"Unexpected symlink to {os.readlink(target)}")
+            )
+        if self.symbols is not None and (symerr := self.symbols.check(target)) is not None:
+            missing.add(
+                (
+                    target.relative_to(installdir),
+                    f"Symbol manifest failed to match:\n{textwrap.indent(symerr, '  ')}",
+                )
             )
 
         for a in self.aliases:
@@ -147,10 +198,11 @@ class _ManifestLib(_ManifestFile):
 
 
 class _ManifestExtLib(_ManifestFile):
-    def __init__(self, path, main_suffix, *suffixes):
+    def __init__(self, path, main_suffix, *suffixes, symbols: _SymbolManifest | None = None):
         super().__init__(path)
         self.main_suffix = str(main_suffix)
         self.suffixes = [str(s) for s in suffixes]
+        self.symbols = symbols
 
     def check(self, installdir) -> tuple[set[Path], set[Path | tuple[Path, str]]]:
         installdir = Path(installdir)
@@ -160,25 +212,310 @@ class _ManifestExtLib(_ManifestFile):
         main_path = common.with_name(common.name + self.main_suffix)
         if not main_path.is_file():
             return set(), {main_path.relative_to(installdir)}
+        if self.symbols is not None and (symerr := self.symbols.check(main_path)) is not None:
+            return set(), {
+                (
+                    main_path.relative_to(installdir),
+                    f"Symbol manifest failed to match:\n{textwrap.indent(symerr, '  ')}",
+                )
+            }
         found.add(main_path.relative_to(installdir))
 
+        missing: set[Path | tuple[Path, str]] = set()
         for path in common.parent.iterdir():
             if path.name.startswith(common.name) and path != main_path:
                 name = path.name[len(common.name) :]
                 if any(re.match(s, name) for s in self.suffixes):
+                    if (
+                        self.symbols is not None
+                        and (symerr := self.symbols.check(path)) is not None
+                    ):
+                        missing.add(
+                            (
+                                path.relative_to(installdir),
+                                f"Symbol manifest failed to match:\n{textwrap.indent(symerr, '  ')}",
+                            )
+                        )
+                        continue
                     found.add(path.relative_to(installdir))
 
-        return found, set()
+        return found, missing
 
 
 class Manifest:
     """Representation of an install manifest."""
 
-    def __init__(self, *, mpi: bool):
+    SYMBOLS_LIBHPCRUN = frozenset(
+        {
+            "__sysv_signal",
+            "debug_flag_dump",
+            "debug_flag_get",
+            "debug_flag_init",
+            "debug_flag_set",
+            "hpctoolkit_sampling_is_active",
+            "hpctoolkit_sampling_start",
+            "hpctoolkit_sampling_start_",
+            "hpctoolkit_sampling_start__",
+            "hpctoolkit_sampling_stop",
+            "hpctoolkit_sampling_stop_",
+            "hpctoolkit_sampling_stop__",
+            "messages_donothing",
+            "messages_fini",
+            "messages_init",
+            "messages_logfile_create",
+            "messages_logfile_fd",
+            "monitor_at_main",
+            "monitor_begin_process_exit",
+            "monitor_fini_process",
+            "monitor_fini_thread",
+            "monitor_init_mpi",
+            "monitor_init_process",
+            "monitor_init_thread",
+            "monitor_mpi_pre_init",
+            "monitor_post_fork",
+            "monitor_pre_fork",
+            "monitor_reset_stacksize",
+            "monitor_start_main_init",
+            "monitor_thread_post_create",
+            "monitor_thread_pre_create",
+            "ompt_start_tool",
+            "poll",
+            "ppoll",
+            "pselect",
+            "select",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_ROCM = frozenset(
+        {
+            "OnUnloadTool",
+            "OnLoadToolProp",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_DLMOPEN = frozenset(
+        {
+            "dlmopen",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_FAKE_AUDIT = frozenset(
+        {
+            "dlclose",
+            "dlmopen",
+            "dlopen",
+            "hpcrun_init_fake_auditor",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_GA = frozenset(
+        {
+            "pnga_acc",
+            "pnga_brdcst",
+            "pnga_create",
+            "pnga_create_handle",
+            "pnga_get",
+            "pnga_gop",
+            "pnga_nbacc",
+            "pnga_nbget",
+            "pnga_nbput",
+            "pnga_nbwait",
+            "pnga_put",
+            "pnga_sync",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_GPROF = frozenset(
+        {
+            "__monstartup",
+            "_mcleanup",
+            "_mcount",
+            "mcount",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_IO = frozenset(
+        {
+            "fread",
+            "fwrite",
+            "read",
+            "write",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_MEMLEAK = frozenset(
+        {
+            "calloc",
+            "free",
+            "malloc",
+            "memalign",
+            "posix_memalign",
+            "realloc",
+            "valloc",
+        }
+    )
+    SYMBOLS_LIBHPCRUN_PTHREAD = frozenset(
+        {
+            "override_lookup",
+            "override_lookupv",
+            "pthread_cond_broadcast",
+            "pthread_cond_signal",
+            "pthread_cond_timedwait",
+            "pthread_cond_wait",
+            "pthread_mutex_lock",
+            "pthread_mutex_timedlock",
+            "pthread_mutex_unlock",
+            "pthread_spin_lock",
+            "pthread_spin_unlock",
+            "sched_yield",
+            "sem_post",
+            "sem_timedwait",
+            "sem_wait",
+            "tbb_stats",
+        }
+    )
+    SYMBOLS_LIBMONITOR = frozenset(
+        {
+            "MPI_Comm_rank",
+            "MPI_Finalize",
+            "MPI_Init",
+            "MPI_Init_thread",
+            "PMPI_Comm_rank",
+            "PMPI_Finalize",
+            "PMPI_Init",
+            "PMPI_Init_thread",
+            "_Exit",
+            "__libc_start_main",
+            "_exit",
+            "execl",
+            "execle",
+            "execlp",
+            "execv",
+            "execve",
+            "execvp",
+            "exit",
+            "fork",
+            "monitor_adjust_stack_size",
+            "monitor_at_main",
+            "monitor_begin_process_exit",
+            "monitor_begin_process_fcn",
+            "monitor_block_shootdown",
+            "monitor_broadcast_signal",
+            "monitor_disable_new_threads",
+            "monitor_dlclose",
+            "monitor_dlopen",
+            "monitor_dlsym",
+            "monitor_early_init",
+            "monitor_enable_new_threads",
+            "monitor_end_library_fcn",
+            "monitor_end_process_fcn",
+            "monitor_fini_library",
+            "monitor_fini_mpi",
+            "monitor_fini_process",
+            "monitor_fini_thread",
+            "monitor_fork_init",
+            "monitor_get_addr_main",
+            "monitor_get_addr_thread_start",
+            "monitor_get_main_args",
+            "monitor_get_main_tn",
+            "monitor_get_new_thread_info",
+            "monitor_get_thread_num",
+            "monitor_get_tn",
+            "monitor_get_user_data",
+            "monitor_in_main_start_func_narrow",
+            "monitor_in_main_start_func_wide",
+            "monitor_in_start_func_narrow",
+            "monitor_in_start_func_wide",
+            "monitor_init_library",
+            "monitor_init_mpi",
+            "monitor_init_process",
+            "monitor_init_thread",
+            "monitor_init_thread_support",
+            "monitor_initialize",
+            "monitor_is_threaded",
+            "monitor_library_fini_destructor",
+            "monitor_library_init_constructor",
+            "monitor_main",
+            "monitor_mpi_comm_rank",
+            "monitor_mpi_comm_size",
+            "monitor_mpi_fini_count",
+            "monitor_mpi_init_count",
+            "monitor_mpi_post_fini",
+            "monitor_mpi_pre_init",
+            "monitor_post_dlclose",
+            "monitor_post_fork",
+            "monitor_pre_dlopen",
+            "monitor_pre_fork",
+            "monitor_real_abort",
+            "monitor_real_dlclose",
+            "monitor_real_dlopen",
+            "monitor_real_execve",
+            "monitor_real_exit",
+            "monitor_real_fork",
+            "monitor_real_pthread_sigmask",
+            "monitor_real_sigprocmask",
+            "monitor_real_system",
+            "monitor_remove_client_signals",
+            "monitor_reset_stacksize",
+            "monitor_reset_thread_list",
+            "monitor_set_mpi_size_rank",
+            "monitor_set_size_rank",
+            "monitor_shootdown_signal",
+            "monitor_sigaction",
+            "monitor_signal_init",
+            "monitor_signal_list_string",
+            "monitor_sigset_string",
+            "monitor_sigwait_handler",
+            "monitor_stack_bottom",
+            "monitor_start_main_init",
+            "monitor_thread_post_create",
+            "monitor_thread_pre_create",
+            "monitor_thread_shootdown",
+            "monitor_unblock_shootdown",
+            "monitor_unwind_process_bottom_frame",
+            "monitor_unwind_thread_bottom_frame",
+            "monitor_wrap_main",
+            "mpi_comm_rank",
+            "mpi_comm_rank_",
+            "mpi_comm_rank__",
+            "mpi_finalize",
+            "mpi_finalize_",
+            "mpi_finalize__",
+            "mpi_init",
+            "mpi_init_",
+            "mpi_init__",
+            "mpi_init_thread",
+            "mpi_init_thread_",
+            "mpi_init_thread__",
+            "pmpi_comm_rank",
+            "pmpi_comm_rank_",
+            "pmpi_comm_rank__",
+            "pmpi_finalize",
+            "pmpi_finalize_",
+            "pmpi_finalize__",
+            "pmpi_init",
+            "pmpi_init_",
+            "pmpi_init__",
+            "pmpi_init_thread",
+            "pmpi_init_thread_",
+            "pmpi_init_thread__",
+            "pthread_create",
+            "pthread_exit",
+            "pthread_sigmask",
+            "sigaction",
+            "signal",
+            "sigprocmask",
+            "sigtimedwait",
+            "sigwait",
+            "sigwaitinfo",
+            "system",
+            "vfork",
+        }
+    )
+
+    def __init__(self, *, mpi: bool, rocm: bool):
         """Given a set of variant-keywords, determine the install manifest as a list of ManifestFiles."""
 
         def so(n):
             return r"\.so" + r"\.\d+" * n.__index__()
+
+        hpcrun_symbols = self.SYMBOLS_LIBHPCRUN
+        if rocm:
+            hpcrun_symbols |= self.SYMBOLS_LIBHPCRUN_ROCM
+        hpcrun_extra = re.compile(r"^hpcrun_.+$")
 
         self.files = [
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_atomic-mt", ".so", so(3)),
@@ -208,7 +545,13 @@ class Manifest:
                 "lib/hpctoolkit/ext-libs/libinstructionAPI", ".so", so(1), r"-\d+\.\d+\.so"
             ),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libmonitor_wrap", ".a"),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libmonitor", ".so", ".so.0", ".so.0.0.0"),
+            _ManifestExtLib(
+                "lib/hpctoolkit/ext-libs/libmonitor",
+                ".so",
+                ".so.0",
+                ".so.0.0.0",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBMONITOR, allow_extra=True),
+            ),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libparseAPI", ".so", so(2), so(3)),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libpfm", ".so", so(1), so(3)),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libsymtabAPI", ".so", so(2), so(3)),
@@ -243,7 +586,10 @@ class Manifest:
             _ManifestFile("lib/hpctoolkit/libhpcrun_pthread.la"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_wrap.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun.o"),
-            _ManifestFile("lib/hpctoolkit/libhpcrun.so"),
+            _ManifestFile(
+                "lib/hpctoolkit/libhpcrun.so",
+                symbols=_SymbolManifest(hpcrun_symbols, allow_extra=hpcrun_extra),
+            ),
             # XXX: Why is there no libhpcrun.so.0.0.0 and libhpcrun.la?
             _ManifestFile("lib/hpctoolkit/libhpctoolkit.a"),
             _ManifestFile("lib/hpctoolkit/libhpctoolkit.la"),
@@ -335,13 +681,55 @@ class Manifest:
             _ManifestFile("share/man/man1/hpctoolkit.1hpctoolkit"),
             _ManifestFile("share/man/man1/hpcviewer.1hpctoolkit"),
             _ManifestLib("lib/hpctoolkit/libhpcrun_audit.so", ".0.0.0", ".0", ""),
-            _ManifestLib("lib/hpctoolkit/libhpcrun_dlmopen.so", ".0.0.0", ".0", ""),
-            _ManifestLib("lib/hpctoolkit/libhpcrun_fake_audit.so", ".0.0.0", ".0", ""),
-            _ManifestLib("lib/hpctoolkit/libhpcrun_ga.so", ".0.0.0", ".0", ""),
-            _ManifestLib("lib/hpctoolkit/libhpcrun_gprof.so", ".0.0.0", ".0", ""),
-            _ManifestLib("lib/hpctoolkit/libhpcrun_io.so", ".0.0.0", ".0", ""),
-            _ManifestLib("lib/hpctoolkit/libhpcrun_memleak.so", ".0.0.0", ".0", ""),
-            _ManifestLib("lib/hpctoolkit/libhpcrun_pthread.so", ".0.0.0", ".0", ""),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_dlmopen.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_DLMOPEN),
+            ),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_fake_audit.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_FAKE_AUDIT),
+            ),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_ga.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_GA),
+            ),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_gprof.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_GPROF),
+            ),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_io.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_IO),
+            ),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_memleak.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_MEMLEAK),
+            ),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_pthread.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_PTHREAD),
+            ),
             _ManifestLib("lib/hpctoolkit/libhpctoolkit.so", ".0.0.0", ".0", ""),
         ]
 
@@ -683,7 +1071,7 @@ class Configuration:
             raise RuntimeError("Unable to find make!")
         self.make: str = make
 
-        self.manifest: Manifest = Manifest(mpi=variant.mpi)
+        self.manifest: Manifest = Manifest(mpi=variant.mpi, rocm=variant.rocm)
 
         # Transform the example arguments as requested
         self.args = self._args_with_if(args, variant.papi, "papi")
