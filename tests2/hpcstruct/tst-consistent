@@ -3,6 +3,7 @@
 import collections.abc
 import dataclasses
 import difflib
+import os
 import re
 import shutil
 import subprocess
@@ -124,7 +125,7 @@ def canonical_form(file: typing.BinaryIO) -> list[str]:  # noqa: C901
 NVIDIA_MAGIC = b"\x7fELF\x02\x01\x01\x33\x07\0\0\0\0\0\0\0\x02\0\xbe\0"
 
 
-def check_gpucfg_supported(binary: Path):
+def check_gpucfg_supported(binary: Path, *, nvdisasm: Path | None):
     """Check if we expect --gpucfg yes to work for the given binary.
     Raises a ClickException if anything looks like it won't work.
     """
@@ -134,11 +135,14 @@ def check_gpucfg_supported(binary: Path):
 
     if prefix.startswith(NVIDIA_MAGIC):
         # hpcstruct will be using nvdisasm from the PATH to parse this binary.
-        # Run nvdisasm ourselves and determine if it will work.
-        nvdisasm = shutil.which("nvdisasm")
+        # Add the nvdisasm we want to actually test onto the PATH for this part.
         if nvdisasm is None:
             click.echo("Skipping: nvdisasm not found, --gpucfg yes will not work")
             sys.exit(77)
+        os.environ["PATH"] = f"{nvdisasm.parent}:{os.environ['PATH']}"
+        if not (found := shutil.which("nvdisasm")) or not nvdisasm.samefile(found):
+            raise RuntimeError("Setting PATH did not allow finding nvdisasm!")
+        # Run nvdisasm ourselves and determine if it will work.
         proc = subprocess.run([nvdisasm, binary], stdout=subprocess.DEVNULL, check=False)
         if proc.returncode != 0:
             click.echo("Skipping: nvdisasm failed to parse binary, --gpucfg yes will not work")
@@ -161,11 +165,17 @@ def skip(ctx, _param, value: str):
     "-j", "threads", type=int, default=1, help="Use the given number of threads for analysis"
 )
 @click.option("--gpucfg/--no-gpucfg", default=False, help="Enable GPU CFG parsing")
-@click.option("--skip", callback=skip, expose_value=False, is_eager=True)
-def test_consistent(binary: Path, structfile: typing.BinaryIO, threads: int, gpucfg: bool):
+@click.option(
+    "--nvdisasm",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="nvdisasm to use when parsing Nvidia binaries",
+)
+def test_consistent(
+    *, binary: Path, structfile: typing.BinaryIO, threads: int, gpucfg: bool, nvdisasm: Path | None
+):
     """Test that analysis of BINARY generates a result identical to STRUCTFILE."""
     if gpucfg:
-        check_gpucfg_supported(binary)
+        check_gpucfg_supported(binary, nvdisasm=nvdisasm)
 
     expected = canonical_form(structfile)
     with hpcstruct(binary, "--gpucfg", "yes" if gpucfg else "no", threads=threads) as f:
@@ -177,4 +187,4 @@ def test_consistent(binary: Path, structfile: typing.BinaryIO, threads: int, gpu
 
 
 if __name__ == "__main__":
-    test_consistent()  # pylint: disable=no-value-for-parameter
+    test_consistent()  # pylint: disable=no-value-for-parameter,missing-kwoa

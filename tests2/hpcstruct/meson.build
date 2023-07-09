@@ -29,6 +29,10 @@ foreach name, struct : testdata_struct_current
     _suffix = ' +gpucfg'
   endif
 
+  if has_cuda
+    _args += ['--nvdisasm', nvdisasm.full_path()]
+  endif
+
   # FIXME: Multithread cases frequently fail consistency for CUDA binaries.
   # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/733
   if struct['binary']['arch_tags'][0].startswith('cuda::')

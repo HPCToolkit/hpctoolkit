@@ -2,10 +2,10 @@
 # utilities for writing precise and robust test-scripts.
 
 # Install the Python module in the build directory somewhere
-run_command(files('setup-python'), files('pyproject.toml'), meson.current_build_dir() / 'venv',
+run_command(python, files('setup-python'), files('pyproject.toml'), meson.current_build_dir() / 'venv',
             check: true)
 venv_bindir = meson.current_build_dir() / 'venv' / 'bin'
-venv_python = find_program(venv_bindir / 'python3')
+venv_python = find_program(files(venv_bindir / 'python3'))
 
 # Configure command used to transform the shebangs of test scripts
 venv_shebang = [venv_python, files('rewrite-shebang'), venv_python.full_path(), '@INPUT@', '@OUTPUT@']

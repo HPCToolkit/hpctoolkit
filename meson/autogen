@@ -1,0 +1,17 @@
+#!/bin/bash
+
+declare -A expected
+for arg in "$@"; do expected["$arg"]=1; done
+
+# Ensure no Makefile.am's are missing from the arguments
+find "$MESON_SOURCE_ROOT"/{doc,lib,meson,spack,src,tests,tests2,tools}/ -name 'Makefile.am' \
+| while read file; do
+    echo "$file"
+    if [ -z "${expected["$file"]}" ]; then
+        echo "ERROR: Add to arguments: $file"
+        exit 1
+    fi
+done || exit $?
+
+cd "$MESON_SOURCE_ROOT" || exit $?
+exec "$AUTORECONF" --force --install --verbose

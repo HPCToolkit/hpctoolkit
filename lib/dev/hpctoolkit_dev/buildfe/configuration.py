@@ -16,6 +16,7 @@ from pathlib import Path
 
 from elftools.elf.elffile import ELFFile  # type: ignore[import]
 
+from ..meson import MesonMachineFile
 from .logs import FgColor, colorize
 
 
@@ -781,7 +782,6 @@ class Manifest:
 class ConcreteSpecification:
     """Point in the build configuration space, represented as a series of boolean-valued variants."""
 
-    tests2: bool
     mpi: bool
     debug: bool
     valgrind_debug: bool
@@ -814,7 +814,6 @@ class ConcreteSpecification:
             ("valgrind_debug", False, True),
             ("debug", True, False),
             ("mpi", False, True),
-            ("tests2", True, False),
         ]
         for point in itertools.product(*[[(x[0], val) for val in x[1:]] for x in dims]):
             with contextlib.suppress(ImpossibleSpecError):
@@ -1061,111 +1060,39 @@ class Configuration:
     args: list[str]
 
     def __init__(
-        self, args: collections.abc.Iterable[str], comp: Compilers, variant: ConcreteSpecification
+        self,
+        meson: Path,
+        args: collections.abc.Iterable[str],
+        comp: Compilers,
+        variant: ConcreteSpecification,
     ):
-        """Derive the full Configuration by adjusting the given args to ./configure to match
+        """Derive the full Configuration by adjusting the given args to meson setup to match
         the expected comp(ilers) and variant.
         """
-        make = shutil.which("make")
-        if make is None:
-            raise RuntimeError("Unable to find make!")
-        self.make: str = make
-
+        self.meson = meson
         self.manifest: Manifest = Manifest(mpi=variant.mpi, rocm=variant.rocm)
 
-        # Transform the example arguments as requested
-        self.args = self._args_with_if(args, variant.papi, "papi")
-        if variant.papi:
-            # Elide any --with-perfmon so libpfm comes from --with-papi
-            self.args = [a for a in self.args if not a.startswith("--with-perfmon=")]
-        else:
-            # Ensure there's a --with-perfmon available since we're --without-papi
-            self.args = self._transform_args(self.args, "--with-perfmon=", None)
-        self.args = self._args_with_if(self.args, variant.python, "python")
-        self.args = self._args_with_if(self.args, variant.cuda, "cuda")
-        self.args = self._args_with_if(self.args, variant.level0, "level0")
-        self.args = self._args_with_if(self.args, variant.gtpin, "gtpin")
-        self.args = self._args_with_if(self.args, variant.gtpin, "igc")
-        self.args = self._args_with_if(self.args, variant.opencl, "opencl")
-        self.args = self._args_with_if(
-            self.args, variant.rocm, "rocm", "rocm-hip", "rocm-hsa", "rocm-tracer", "rocm-profiler"
-        )
-        self.args.extend([f"MPI{cc}=" for cc in ("CC", "F77")])
-        if variant.mpi:
-            self.args = self._transform_args(self.args, "MPICXX=", None)
-        else:
-            self.args = [a for a in self.args if not a.startswith("MPICXX=")]
-            self.args.append("MPICXX=")
-        self.args = self._args_enable_if(self.args, variant.debug, "develop")
-        self.args = self._args_enable_if(self.args, variant.valgrind_debug, "valgrind-annotations")
-        self.args = self._args_enable_if(self.args, variant.tests2, "tests2")
+        self.args = [
+            *args,
+            f"-Dpapi={'enabled' if variant.papi else 'disabled'}",
+            f"-Dpython={'enabled' if variant.python else 'disabled'}",
+            f"-Dcuda={'enabled' if variant.cuda else 'disabled'}",
+            f"-Dlevel0={'enabled' if variant.level0 else 'disabled'}",
+            f"-Dgtpin={'enabled' if variant.gtpin else 'disabled'}",
+            f"-Dopencl={'enabled' if variant.opencl else 'disabled'}",
+            f"-Drocm={'enabled' if variant.rocm else 'disabled'}",
+            f"-Dhpcprof_mpi={'enabled' if variant.mpi else 'disabled'}",
+            f"-Dbuildtype={'debugoptimized' if variant.debug else 'release'}",
+            f"-Dvalgrind_annotations={'true' if variant.valgrind_debug else 'false'}",
+        ]
 
+        self.native = MesonMachineFile()
         self.env: collections.abc.MutableMapping[str, str] = collections.ChainMap({}, os.environ)
 
         # Apply the configuration from the Compilers
         if comp.custom_compilers:
             cc, cxx = comp.custom_compilers
-            self.args.append(f"CC={cc}")
-            self.args.append(f"CXX={cxx}")
+            self.native.add_binary("c", Path(cc))
+            self.native.add_binary("cpp", Path(cxx))
             self.env["OMPI_CC"] = cc
             self.env["OMPI_CXX"] = cxx
-
-    @staticmethod
-    def _transform_args(
-        args: collections.abc.Iterable[str],
-        last_of: str,
-        none_of: str | None,
-        *,
-        add_if_missing: bool = False,
-    ) -> list[str]:
-        result_pre: list[str] = []
-        main_arg: str | None = None
-        result_post: list[str] = []
-        for a in args:
-            if none_of is not None and a.startswith(none_of):
-                continue
-
-            if a.startswith(last_of):
-                main_arg = a
-                result_pre.extend(result_post)
-                result_post = []
-                continue
-
-            (result_pre if main_arg is None else result_post).append(a)
-
-        if main_arg is None:
-            if not add_if_missing:
-                raise UnsatisfiableSpecError(last_of)
-            main_arg = last_of
-
-        return [*result_pre, main_arg, *result_post]
-
-    @classmethod
-    def _args_with_if(
-        cls, args: collections.abc.Iterable[str], cond: bool, *packages: str
-    ) -> list[str]:
-        result = list(args)
-        found = False
-        for p in packages:
-            with contextlib.suppress(UnsatisfiableSpecError):
-                result = (
-                    cls._transform_args(result, f"--with-{p}=", f"--without-{p}")
-                    if cond
-                    else cls._transform_args(
-                        result, f"--without-{p}", f"--with-{p}=", add_if_missing=True
-                    )
-                )
-                found = True
-        if not found:
-            if not packages:
-                raise ValueError
-            raise UnsatisfiableSpecError(packages[0])
-        return result
-
-    @classmethod
-    def _args_enable_if(
-        cls, args: collections.abc.Iterable[str], cond: bool, feature: str
-    ) -> list[str]:
-        inc = f"--enable-{feature}" if cond else f"--disable-{feature}"
-        exc = f"--disable-{feature}" if cond else f"--enable-{feature}"
-        return cls._transform_args(args, inc, exc, add_if_missing=True)

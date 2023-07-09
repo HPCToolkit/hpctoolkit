@@ -5,6 +5,7 @@ import json
 import linecache
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -31,14 +32,14 @@ def _stdlogfiles(logdir: Path | None, logprefix: str, suffix1: str, suffix2: str
         yield None, None
 
 
-class Configure(Action):
-    """Configure a build directory based on a Configuration."""
+class Setup(Action):
+    """Setup a build directory based on a Configuration."""
 
     def __init__(self):
         self._compiler: tuple[str, str] | None = None
 
     def name(self) -> str:
-        return "./configure"
+        return "meson setup"
 
     def dependencies(self) -> tuple[Action, ...]:
         return ()
@@ -53,18 +54,28 @@ class Configure(Action):
         logdir: Path | None = None,
     ) -> ActionResult:
         srcdir.resolve(strict=True)
-        assert (srcdir / "configure").is_file()
         builddir.mkdir()
+        cfg_path = builddir / "cfg.ini"
+        cfg.native.save(cfg_path)
 
-        cmd: list[str | Path] = [srcdir / "configure"]
+        cmd: list[str | Path] = [cfg.meson, "setup"]
         cmd.extend(cfg.args)
         cmd.append(f"--prefix={installdir.as_posix()}")
+        cmd.append(f"--native-file={cfg_path}")
+        cmd.append(builddir)
+        cmd.append(srcdir)
         with _stdlogfiles(logdir, "configure", ".log") as (config_log, _):
             proc = subprocess.run(
-                cmd, cwd=builddir, stdout=config_log, stderr=config_log, env=cfg.env, check=False
+                cmd, stdout=config_log, stderr=config_log, env=cfg.env, check=False
             )
-        if logdir is not None and (builddir / "config.log").exists():
-            shutil.copyfile(builddir / "config.log", logdir / "configure.config.log")
+        if logdir is not None:
+            shutil.copyfile(
+                builddir / "meson-logs" / "meson-log.txt", logdir / "configure.meson.log"
+            )
+            if (builddir / "autotools-build" / "config.log").exists():
+                shutil.copyfile(
+                    builddir / "autotools-build" / "config.log", logdir / "configure.config.log"
+                )
 
         if proc.returncode != 0 and logdir is not None:
             dump_file(logdir / "configure.log")
@@ -72,8 +83,8 @@ class Configure(Action):
         return ReturnCodeResult("configure", proc.returncode)
 
 
-class MakeAction(Action):
-    """Base class for Actions that primarily run `make ...` in the build directory."""
+class MesonAction(Action):
+    """Base class for Actions that primarily run `meson ...` in the build directory."""
 
     def _run(
         self,
@@ -84,27 +95,15 @@ class MakeAction(Action):
         env: dict[str, str] | None = None,
         logdir: Path | None = None,
         split_stderr: bool = True,
-        parallel: bool = True,
     ) -> ActionResult:
         # pylint: disable=too-many-locals
         assert builddir.is_dir()
-
-        make = shutil.which("make")
-        if make is None:
-            raise RuntimeError("Unable to find Make!")
-        assert isinstance(make, str)
 
         final_env = cfg.env
         if env is not None:
             final_env = collections.ChainMap(env, final_env)
 
-        cmd = [make, f"-j{nproc() if parallel else 1:d}"]
-        if parallel:
-            cmd.append("--output-sync")
-        if not split_stderr:
-            cmd.append("--no-print-directory")
-            cmd.append("V=0")
-        cmd.extend(targets)
+        cmd = [cfg.meson, *targets]
 
         logsuffixes = (".stdout.log", ".stderr.log") if split_stderr else (".log",)
         with _stdlogfiles(logdir, logprefix, *logsuffixes) as (out_log, err_log):
@@ -115,7 +114,7 @@ class MakeAction(Action):
         if logdir is not None:
             dump_file(logdir / (logprefix + logsuffixes[-1]))
 
-        return ReturnCodeResult(" ".join(["make", *targets]), proc.returncode)
+        return ReturnCodeResult(" ".join(["meson"] + [str(t) for t in targets]), proc.returncode)
 
 
 class BuildResult(ActionResult):
@@ -254,14 +253,14 @@ class UnscannedBuildResult(ActionResult):
         )
 
 
-class Build(MakeAction):
+class Build(MesonAction):
     """Build the configured build directory."""
 
     def name(self) -> str:
-        return "make all"
+        return "meson compile"
 
     def dependencies(self) -> tuple[Action]:
-        return (Configure(),)
+        return (Setup(),)
 
     def run(
         self,
@@ -272,7 +271,9 @@ class Build(MakeAction):
         installdir: Path,
         logdir: Path | None = None,
     ) -> ActionResult:
-        res = self._run("build", cfg, builddir, "all", logdir=logdir, split_stderr=True)
+        res = self._run(
+            "build", cfg, builddir, "compile", f"-j{nproc():d}", logdir=logdir, split_stderr=True
+        )
         return (
             BuildResult(logdir / "build.stderr.log", logdir / "build.cq.json", res)
             if logdir is not None
@@ -280,11 +281,11 @@ class Build(MakeAction):
         )
 
 
-class Install(MakeAction):
+class Install(MesonAction):
     """Install the configured build directory."""
 
     def name(self) -> str:
-        return "make install"
+        return "meson install"
 
     def dependencies(self) -> tuple[Action]:
         return (Build(),)
@@ -376,14 +377,15 @@ class MissingJUnitLogs(ActionResult):
         return frag if self.subresult.flawless else f"{self.subresult.summary()}, {frag}"
 
 
-class Test(MakeAction):
+class Test(MesonAction):
     """Run build-time tests for the configured build directory."""
 
     def __init__(self):
         self.junit_copyout = False
+        self.meson_opts = []
 
     def name(self) -> str:
-        return "make check installcheck"
+        return f"meson test {shlex.join(self.meson_opts)}"
 
     def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
@@ -402,28 +404,19 @@ class Test(MakeAction):
             "test",
             cfg,
             builddir,
-            "check",
-            "installcheck",
-            parallel=False,
+            "test",
+            *self.meson_opts,
             logdir=logdir,
             env={"MESON_TESTTHREADS": f"{nproc_max():d}"},
             split_stderr=False,
         )
 
-        tests2bdir = builddir / "tests2-build"
         if logdir is not None:
             testlogdir = logdir / "test"
             testlogdir.mkdir()
-            testsdir = builddir / "tests"
-            for log in testsdir.rglob("*.log"):
-                rlog = log.relative_to(testsdir)
-                (testlogdir / rlog.parent).mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(log, testlogdir / rlog)
-            shutil.copyfile(
-                tests2bdir / "meson-logs" / "testlog.txt", testlogdir / "test.tests2.log"
-            )
+            shutil.copyfile(builddir / "meson-logs" / "testlog.txt", testlogdir / "test.log")
 
-        junit_log = tests2bdir / "meson-logs" / "testlog.junit.xml"
+        junit_log = builddir / "meson-logs" / "testlog.junit.xml"
         if not junit_log.exists():
             return MissingJUnitLogs(junit_log.name, res)
 
@@ -461,14 +454,11 @@ class UnsavedTestDataResult(ActionResult):
         return "test data was not saved" if self.subresult.flawless else self.subresult.summary()
 
 
-class FreshTestData(MakeAction):
+class FreshTestData(MesonAction):
     """Generate data for later, offline tests."""
 
-    def __init__(self):
-        self.unpack: bool = False
-
     def name(self) -> str:
-        return f"make tests2/data/fresh-{self.suite}.tar.xz"
+        return f"meson compile {self.tarball_path}"
 
     def dependencies(self) -> tuple[Action, ...]:
         return Build(), Install()
@@ -486,7 +476,7 @@ class FreshTestData(MakeAction):
 
     @property
     def tarball_path(self) -> Path:
-        return Path("tests2-build") / "data" / f"fresh-{self.suite}.tar.xz"
+        return Path("tests2") / "data" / f"fresh-testdata-{self.suite}.tar.xz"
 
     def run(
         self,
@@ -501,7 +491,9 @@ class FreshTestData(MakeAction):
             f"fresh-testdata-{self.suite}",
             cfg,
             builddir,
-            f"tests2/data/fresh-{self.suite}.tar.xz",
+            "compile",
+            f"-j{nproc():d}",
+            self.tarball_path,
             logdir=logdir,
         )
         if logdir is not None:
