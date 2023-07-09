@@ -75,7 +75,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
+#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
 #endif
 #include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>
 #include <hpcrun/messages/messages.h>
