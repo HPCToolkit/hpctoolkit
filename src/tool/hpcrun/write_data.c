@@ -479,7 +479,7 @@ int hpcrun_write_profile_data(core_profile_trace_data_t *cptd)
 #ifdef ENABLE_GTPIN
   if (level0_gtpin_enabled()) {
     for (epoch_t *epoch = cptd->epoch; epoch; epoch = epoch->next) {
-      process_block_instructions(epoch->csdata.top);
+      gtpin_process_block_instructions(epoch->csdata.top);
     }
   }
 #endif

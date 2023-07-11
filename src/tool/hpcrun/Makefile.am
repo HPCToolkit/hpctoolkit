@@ -623,25 +623,25 @@ if OPT_BGQ_BACKEND
    MY_CPP_DEFINES += -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
 endif
 
-MY_INCLUDE_DIRS =			\
-        -I$(top_srcdir)/src/tool        \
-	-I$(srcdir)/messages	        \
-	-I$(srcdir)/fnbounds		\
-	-I$(srcdir)/memory		\
-	-I$(srcdir)/os/linux		\
-	-I$(srcdir)/cct			\
-	-I$(srcdir)/ompt                \
-	-I$(srcdir)/unwind/common	\
-	-I$(srcdir)/utilities		\
-	$(HPC_IFLAGS)			\
-	$(LIBUNWIND_IFLAGS)		\
-	   $(OPT_GTPIN_IFLAGS)             \
-		$(ROCM_INC_FLGS) \
-	-I$(LIBELF_INC)			\
-	-I$(LIBMONITOR_INC)	\
-	$(GOTCHA_IFLAGS)	\
-	$(TBB_IFLAGS)	\
-	$(OPENCL_IFLAGS) \
+MY_INCLUDE_DIRS =   \
+        -I$(top_srcdir)/src/tool       \
+        -I$(srcdir)/messages           \
+        -I$(srcdir)/fnbounds           \
+        -I$(srcdir)/memory             \
+        -I$(srcdir)/os/linux           \
+        -I$(srcdir)/cct                \
+        -I$(srcdir)/ompt               \
+        -I$(srcdir)/unwind/common      \
+        -I$(srcdir)/utilities          \
+        $(HPC_IFLAGS)                  \
+        $(LIBUNWIND_IFLAGS)            \
+        $(OPT_GTPIN_IFLAGS)            \
+        $(ROCM_INC_FLGS)               \
+        -I$(LIBELF_INC)                \
+        -I$(LIBMONITOR_INC)            \
+        $(GOTCHA_IFLAGS)               \
+        $(TBB_IFLAGS)                  \
+        $(OPENCL_IFLAGS)               \
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)
 

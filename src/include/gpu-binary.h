@@ -64,12 +64,32 @@
 
 
 //******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef enum {
+  gpu_binary_kind_intel_patch_token = 0,
+  gpu_binary_kind_elf = 1,
+  gpu_binary_kind_unknown = 2
+} gpu_binary_kind_t;
+
+
+
+//******************************************************************************
 // interface operations
 //******************************************************************************
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+gpu_binary_kind_t
+gpu_binary_kind
+(
+  const char *mem_ptr,
+  size_t mem_size
+);
+
 
 bool
 gpu_binary_store

@@ -89,6 +89,8 @@
 static gtpin_hpcrun_api_t gtpin_hpcrun_api = {
   .safe_enter = hpcrun_safe_enter_noinline,
   .safe_exit = hpcrun_safe_exit_noinline,
+  .real_exit = monitor_real_exit,
+  .gpu_binary_kind = gpu_binary_kind,
   .gpu_binary_path_generate = gpu_binary_path_generate,
   .gpu_operation_multiplexer_push = gpu_operation_multiplexer_push,
   .fetch_block_metrics = fetch_block_metrics,
@@ -111,7 +113,7 @@ static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 
 static void (*gtpin_instrumentation_options_fn)(gpu_instrumentation_t *);
 static void (*gtpin_produce_runtime_callstack_fn)(gpu_op_ccts_t *);
-static void (*process_block_instructions_fn)(cct_node_t *);
+static void (*gtpin_process_block_instructions_fn)(cct_node_t *);
 
 
 
@@ -135,16 +137,16 @@ static void init()
     monitor_real_exit(-1);
   }
 
-  void (*init_gtpin_hpcrun_api_fn)(gtpin_hpcrun_api_t *) = dlsym(hpcrun_gtpinlib, "init_gtpin_hpcrun_api");
-  if (init_gtpin_hpcrun_api_fn == NULL) {
+  void (*gtpin_hpcrun_api_set_fn)(gtpin_hpcrun_api_t *) = dlsym(hpcrun_gtpinlib, "gtpin_hpcrun_api_set");
+  if (gtpin_hpcrun_api_set_fn == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to connect to HPCToolkit's gtpin support library: %s", dlerror());
     monitor_real_exit(-1);
   }
-  init_gtpin_hpcrun_api_fn(&gtpin_hpcrun_api);
+  gtpin_hpcrun_api_set_fn(&gtpin_hpcrun_api);
 
   gtpin_instrumentation_options_fn = dlsym(hpcrun_gtpinlib, "gtpin_instrumentation_options");
   gtpin_produce_runtime_callstack_fn = dlsym(hpcrun_gtpinlib, "gtpin_produce_runtime_callstack");
-  process_block_instructions_fn = dlsym(hpcrun_gtpinlib, "process_block_instructions");
+  gtpin_process_block_instructions_fn = dlsym(hpcrun_gtpinlib, "gtpin_process_block_instructions");
 }
 
 
@@ -159,14 +161,16 @@ void gtpin_instrumentation_options(gpu_instrumentation_t *instrumentation)
   gtpin_instrumentation_options_fn(instrumentation);
 }
 
+
 void gtpin_produce_runtime_callstack(gpu_op_ccts_t *op_ccts)
 {
   pthread_once(&once_control, init);
   gtpin_produce_runtime_callstack_fn(op_ccts);
 }
 
-void process_block_instructions(cct_node_t *node)
+
+void gtpin_process_block_instructions(cct_node_t *node)
 {
   pthread_once(&once_control, init);
-  process_block_instructions_fn(node);
+  gtpin_process_block_instructions_fn(node);
 }

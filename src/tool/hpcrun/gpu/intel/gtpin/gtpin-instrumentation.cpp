@@ -63,12 +63,17 @@ SPDX-License-Identifier: MIT
 // system include files
 //*****************************************************************************
 
+#include <map>
+#include <mutex>
 #include <string>
 #include <vector>
-#include <map>
-#include <string.h>
-#include <math.h>
 #include <set>
+
+#include <math.h>
+#include <string.h>
+#include <pthread.h>
+
+
 
 //*****************************************************************************
 // gtpin include files
@@ -76,6 +81,8 @@ SPDX-License-Identifier: MIT
 
 #include <api/gtpin_api.h>
 #include <gtpin.h>
+
+
 
 //*****************************************************************************
 // local include files
@@ -102,9 +109,9 @@ extern "C"
 #include <monitor.h>
 };
 
-#include <mutex>
-
 #include <lib/profile/util/locked_unordered.hpp>
+
+
 
 //*****************************************************************************
 // import namespaces
@@ -121,9 +128,9 @@ using namespace hpctoolkit::util;
 
 class MyHashFunction {
 public:
-    std::size_t operator()(const std::pair<uint16_t, uintptr_t> &pair) const {
-        return std::hash<uint16_t>()(pair.first) ^ std::hash<uintptr_t>()(pair.second);
-    }
+  std::size_t operator()(const std::pair<uint16_t, uintptr_t> &pair) const {
+    return std::hash<uint16_t>()(pair.first) ^ std::hash<uintptr_t>()(pair.second);
+  }
 };
 
 
@@ -182,10 +189,11 @@ struct SimdGroup {
   bool isSendIns;
 
   SimdGroup(const IGtIns &ins) : sectionHeadId(ins.Id()),
-				 maskCtrl(!ins.IsWriteMaskEnabled()),
-				 execMask(ins.ExecMask().Bits()),
-				 predicate(ins.Predicate()),
-				 isSendIns(ins.IsSendMessage()) {}
+                                 maskCtrl(!ins.IsWriteMaskEnabled()),
+                                 execMask(ins.ExecMask().Bits()),
+                                 predicate(ins.Predicate()),
+                                 isSendIns(ins.IsSendMessage()) {
+  }
   inline bool operator<(const SimdGroup &other) const {
     return std::make_tuple(maskCtrl, execMask, predicate, isSendIns) <
       std::make_tuple(other.maskCtrl, other.execMask, other.predicate, other.isSendIns);
@@ -210,32 +218,32 @@ struct BasicBlock {
 class KernelProfile
 {
 public:
-    uint32_t loadmapModuleId;
-    GtProfileArray opcodeProfile;
-    GtProfileArray simdProfile;
-    GtProfileArray latencyProfile;
-    std::vector<BasicBlock> basicBlocks;
-    uint32_t simdGroupsCount;
+  uint32_t loadmapModuleId;
+  GtProfileArray opcodeProfile;
+  GtProfileArray simdProfile;
+  GtProfileArray latencyProfile;
+  std::vector<BasicBlock> basicBlocks;
+  uint32_t simdGroupsCount;
 
-    GtReg _addrReg;
-    GtReg _dataReg; 
-    GtReg _timeReg;
+  GtReg _addrReg;
+  GtReg _dataReg;
+  GtReg _timeReg;
 
-    void GeneratePostCodeMemBound
-    (GtGenProcedure &proc, const IGtGenCoder &coder,
-     const GtProfileArray &profileArray, uint32_t recordNum);
-    void GeneratePreCode(GtGenProcedure &proc, const IGtGenCoder &coder);
-    bool GeneratePostCodeRegBound
-    (GtGenProcedure &postProc, GtGenProcedure &finiProc,
-     const IGtGenCoder &coder, const GtProfileArray &profileArray,
-     uint32_t recordNum);
+  void GeneratePostCodeMemBound
+  (GtGenProcedure &proc, const IGtGenCoder &coder,
+   const GtProfileArray &profileArray, uint32_t recordNum);
+  void GeneratePreCode(GtGenProcedure &proc, const IGtGenCoder &coder);
+  bool GeneratePostCodeRegBound
+  (GtGenProcedure &postProc, GtGenProcedure &finiProc,
+   const IGtGenCoder &coder, const GtProfileArray &profileArray,
+   uint32_t recordNum);
 
-    KernelProfile(uint32_t loadmapModuleIdIn) : loadmapModuleId(loadmapModuleIdIn) {
-      simdGroupsCount = 0;
-    }
+  KernelProfile(uint32_t loadmapModuleIdIn) : loadmapModuleId(loadmapModuleIdIn) {
+    simdGroupsCount = 0;
+  }
 
-    void instrument(IGtKernelInstrument &);
-    void gatherMetrics(IGtKernelDispatch &, CorrelationData);
+  void instrument(IGtKernelInstrument &);
+  void gatherMetrics(IGtKernelDispatch &, CorrelationData);
 };
 
 
@@ -246,8 +254,7 @@ public:
 
   bool Register();
 
-  static GTPinInstrumentation *Instance()
-  {
+  static GTPinInstrumentation *Instance() {
     static GTPinInstrumentation instance;
     return &instance;
   }
@@ -271,12 +278,13 @@ static locked_unordered_map<std::pair<uint16_t, uintptr_t>, BasicBlock, std::mut
 static locked_unordered_map<GtKernelId, KernelProfile, std::mutex, MyHashFunctionKernelId> _kernels;
 static locked_unordered_map<GtKernelId, uint32_t, std::mutex, MyHashFunctionKernelId> hash_map;
 
+// memoized result of GTPin_GetCore
+static IGtCore *igt_core = NULL;
+
 static bool count_knob = false;
 static bool collect_latency = false;
 static bool latency_knob = false;
 static bool simd_knob = false;
-
-static bool gtpin_modern = false; // later than 3.0
 
 static gtpin_hpcrun_api_t *gtpin_hpcrun_api;
 
@@ -426,7 +434,7 @@ calculate_instruction_latencies
     instruction.wIns = size * w_min / 4;
     if (instruction.isPredictable) {
       if (instruction.isComplex) {
-	instruction.wIns *= c_weight;
+        instruction.wIns *= c_weight;
       }
       sum_predictable_latency += instruction.wIns;
     } else {
@@ -455,6 +463,7 @@ calculate_instruction_latencies
 static int find_or_add_loadmap_module
 (const IGtKernel &kernel) {
   auto it = hash_map.find(kernel.Id());
+
   if (it) {
     return *it;
   }
@@ -468,24 +477,39 @@ static int find_or_add_loadmap_module
   if (kernel_elf_size == 0) return -1;
 
   char file_name[CRYPTO_HASH_STRING_LENGTH];
-  memset(file_name, 0, CRYPTO_HASH_STRING_LENGTH);
+  memset(file_name, 0, sizeof(file_name));
   gtpin_hpcrun_api->crypto_compute_hash_string(kernel_elf, kernel_elf_size, file_name, sizeof(file_name));
 
-  char kernel_name_hash[PATH_MAX];
+  char kernel_name_hash[CRYPTO_HASH_STRING_LENGTH];
+  memset(kernel_name_hash, 0, sizeof(kernel_name_hash));
   gtpin_hpcrun_api->crypto_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash, sizeof(kernel_name_hash));
 
   char path[PATH_MAX];
-  memset(path, 0, PATH_MAX);
+  memset(path, 0, sizeof(path));
 
-  char *thename = kernel_name_hash;
+  char *thename = file_name;
 
   gtpin_hpcrun_api->gpu_binary_path_generate(thename, path);
 
   gtpin_hpcrun_api->gpu_binary_store(path, kernel_elf, kernel_elf_size);
 
-  if (!gtpin_modern) {
+  gpu_binary_kind_t bkind = gtpin_hpcrun_api->gpu_binary_kind(kernel_elf, kernel_elf_size);
+
+  switch (bkind){
+  case gpu_binary_kind_intel_patch_token:
     strcat(path, ".");
-    strncat(path, kernel_name_hash, strlen(kernel_name_hash));
+    strncat(path, kernel_name_hash, CRYPTO_HASH_STRING_LENGTH);
+  case gpu_binary_kind_elf:
+    break;
+  case gpu_binary_kind_unknown:
+    if (kernel_elf_size > 4) {
+      const char *magic = kernel_elf;
+      fprintf(stderr, "FATAL: hpcrun failure: gtpin presented unknown binary kind: "
+              "%c%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
+    } else {
+      fprintf(stderr, "FATAL: hpcrun failure: gtpin presented unknown binary kind\n");
+    }
+    gtpin_hpcrun_api->real_exit(-1);
   }
 
   auto hash = gtpin_hpcrun_api->gpu_binary_loadmap_insert(path, true);
@@ -500,11 +524,10 @@ create_igt_kernel_node
 (GtKernelExecDesc exec_desc, GPU_PLATFORM platform)
 {
   CorrelationData *correlation_data = new CorrelationData();
-  if (correlation_tail == NULL)
-    {
-      correlation_head.next = NULL;
-      correlation_tail = &correlation_head;
-    }
+  if (correlation_tail == NULL) {
+    correlation_head.next = NULL;
+    correlation_tail = &correlation_head;
+  }
 
   correlation_data->correlation_id = exec_desc.ToString(platform);
 
@@ -595,10 +618,10 @@ BasicBlock::BasicBlock
       it2.instructions.push_back(instruction);
 
       if (ins->IsFlagModifier() || (ins->Id() == bbl.LastIns().Id())) {
-	for (auto &item : simdMap) {
-	  simdGroups.push_back(item);
-	}
-	simdMap.clear();
+        for (auto &item : simdMap) {
+          simdGroups.push_back(item);
+        }
+        simdMap.clear();
       }
     }
   }
@@ -651,7 +674,7 @@ KernelProfile::instrument
       opcodeProfile.ComputeAddress(coder, proc, _addrReg, bbl->Id());
       proc += insF.MakeAtomicInc(NullReg(), _addrReg, GED_DATA_TYPE_ud);
       if (!proc.empty()) {
-	proc.front()->AppendAnnotation(__func__);
+        proc.front()->AppendAnnotation(__func__);
       }
       instrument.InstrumentBbl(*bbl, GtIpoint::Before(), proc);
     }
@@ -661,7 +684,7 @@ KernelProfile::instrument
     std::vector<const IGtBbl *> bbls;
     for (auto bblPtr : cfg.Bbls()) {
       if (!bblPtr->IsEmpty() && !bblPtr->FirstIns().IsChangingIP()) {
-	bbls.push_back(bblPtr);
+        bbls.push_back(bblPtr);
       }
     }
 
@@ -686,21 +709,21 @@ KernelProfile::instrument
 
       GtGenProcedure postCode;
       if (bbl->IsEot()) {
-	const IGtIns &eotIns = bbl->LastIns();
-	coder.GenerateFakeSrcConsumers(postCode, eotIns);
-	GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
-	instrument.InstrumentInstruction(eotIns, GtIpoint::Before(), postCode);
+        const IGtIns &eotIns = bbl->LastIns();
+        coder.GenerateFakeSrcConsumers(postCode, eotIns);
+        GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
+        instrument.InstrumentInstruction(eotIns, GtIpoint::Before(), postCode);
       } else {
-	if (tryRegInstrument) {
-	  tryRegInstrument = GeneratePostCodeRegBound(postCode, finiCode, coder, latencyProfile, index);
-	}
-	if (!tryRegInstrument) {
-	  GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
-	}
-	instrument.InstrumentBbl(*bbl, GtIpoint::After(), postCode);                
-                
-	// GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
-	// instrument.InstrumentBbl(*bbl, GtIpoint::After(), postCode);
+        if (tryRegInstrument) {
+          tryRegInstrument = GeneratePostCodeRegBound(postCode, finiCode, coder, latencyProfile, index);
+        }
+        if (!tryRegInstrument) {
+          GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
+        }
+        instrument.InstrumentBbl(*bbl, GtIpoint::After(), postCode);
+
+        // GeneratePostCodeMemBound(postCode, coder, latencyProfile, index);
+        // instrument.InstrumentBbl(*bbl, GtIpoint::After(), postCode);
       }
       ++index;
     }
@@ -722,28 +745,27 @@ KernelProfile::instrument
 
     for (const BasicBlock &bbl : basicBlocks) {
       for (const SimdGroup &simdGroup : bbl.simdGroups) {
-	GtGenProcedure proc;
-	coder.ComputeSimdMask(proc, dataRegL, simdGroup.maskCtrl, simdGroup.execMask, simdGroup.predicate);
-	if (!simdGroup.isSendIns) {
-	  proc += insF.MakeCbit(dataRegL, dataRegL);
-	} else {
-	  proc += insF.MakeSel(dataRegL, dataRegL, 1).SetCondModifier(GED_COND_MODIFIER_l);
-	}
+        GtGenProcedure proc;
+        coder.ComputeSimdMask(proc, dataRegL, simdGroup.maskCtrl, simdGroup.execMask, simdGroup.predicate);
+        if (!simdGroup.isSendIns) {
+          proc += insF.MakeCbit(dataRegL, dataRegL);
+        } else {
+          proc += insF.MakeSel(dataRegL, dataRegL, 1).SetCondModifier(GED_COND_MODIFIER_l);
+        }
 
-	simdProfile.ComputeAddress(coder, proc, _addrReg, index++);
+        simdProfile.ComputeAddress(coder, proc, _addrReg, index++);
 
-	if (is64BitCounter) {
-	  GtReg dataRegH = {_dataReg, sizeof(uint32_t), 1};
-	  proc += insF.MakeMov(dataRegH, 0);
-	}
-	proc += insF.MakeAtomicAdd(NullReg(), _addrReg, _dataReg, (is64BitCounter ? GED_DATA_TYPE_uq : GED_DATA_TYPE_ud));
+        if (is64BitCounter) {
+          GtReg dataRegH = {_dataReg, sizeof(uint32_t), 1};
+          proc += insF.MakeMov(dataRegH, 0);
+        }
+        proc += insF.MakeAtomicAdd(NullReg(), _addrReg, _dataReg, (is64BitCounter ? GED_DATA_TYPE_uq : GED_DATA_TYPE_ud));
 
-	proc.front()->AppendAnnotation(__func__);
-	instrument.InstrumentInstruction(cfg.GetInstruction(simdGroup.sectionHeadId), GtIpoint::Before(), proc);
+        proc.front()->AppendAnnotation(__func__);
+        instrument.InstrumentInstruction(cfg.GetInstruction(simdGroup.sectionHeadId), GtIpoint::Before(), proc);
       }
     }
   }
-
 }
 
 
@@ -760,32 +782,32 @@ KernelProfile::gatherMetrics
   for (BasicBlock &bbl : basicBlocks) {
     for (uint32_t threadBucket = 0; threadBucket < dispatch.Kernel().GenModel().MaxThreadBuckets(); ++threadBucket) {
       if (count_knob) {
-	OpcodeRecord record;
-	if (opcodeProfile.Read(*buffer, &record, index, 1, threadBucket)) {
-	  bbl.executionCount += record.freq;
-	}
+        OpcodeRecord record;
+        if (opcodeProfile.Read(*buffer, &record, index, 1, threadBucket)) {
+          bbl.executionCount += record.freq;
+        }
       }
 
       if (latency_knob) {
-	LatencyRecord record;
-	if (latencyProfile.Read(*buffer, &record, index, 1, threadBucket)) {
-	  bbl.executionCount += record.freq;
-	  if (collect_latency) {
-	    bbl.latency += record.cycles;
-	  }
-	}
+        LatencyRecord record;
+        if (latencyProfile.Read(*buffer, &record, index, 1, threadBucket)) {
+          bbl.executionCount += record.freq;
+          if (collect_latency) {
+            bbl.latency += record.cycles;
+          }
+        }
       }
 
       if (simd_knob) {
-	uint32_t simd_index = 0;
+        uint32_t simd_index = 0;
 
-	for (SimdGroup &simdGroup : bbl.simdGroups) {
-	  SimdRecord record;
-	  if (simdProfile.Read(*buffer, &record, simd_index, 1, threadBucket)) {
-	    bbl.activeSimdLanes += record.opCount * simdGroup.instructions.size();
-	  }
-	  ++simd_index;
-	}
+        for (SimdGroup &simdGroup : bbl.simdGroups) {
+          SimdRecord record;
+          if (simdProfile.Read(*buffer, &record, simd_index, 1, threadBucket)) {
+            bbl.activeSimdLanes += record.opCount * simdGroup.instructions.size();
+          }
+          ++simd_index;
+        }
       }
     }
     // std::cout << "BLOCK WITH ID: " << index << " HAS LATENCY: " << bbl.latency << std::endl;
@@ -821,8 +843,8 @@ GTPinInstrumentation::OnKernelRun
     IGtProfileBuffer *buffer = dispatch.CreateProfileBuffer();
 
     if ((count_knob && kernelProfile->opcodeProfile.Initialize(*buffer)) ||
-	(latency_knob && kernelProfile->latencyProfile.Initialize(*buffer)) ||
-	(simd_knob && kernelProfile->simdProfile.Initialize(*buffer))) {
+        (latency_knob && kernelProfile->latencyProfile.Initialize(*buffer)) ||
+        (simd_knob && kernelProfile->simdProfile.Initialize(*buffer))) {
       dispatch.SetProfilingMode(true);
     }
   }
@@ -834,12 +856,10 @@ GTPinInstrumentation::Register
 (void) {
   IGtCore *core = GTPin_GetCore();
 
-  gtpin_modern =  strcmp(core->Version(), "3.0") > 0;
-
   if (!core->RegisterTool(*this)) {
     GTPIN_ERROR_MSG(std::string(Name()) + ": Failed registration with GTPin core. " +
-		    "GTPin API version = " + std::to_string(core->ApiVersion()) +
-		    "Tool API version = " + std::to_string(ApiVersion()));
+                    "GTPin API version = " + std::to_string(core->ApiVersion()) +
+                    "Tool API version = " + std::to_string(ApiVersion()));
     return false;
   }
   return true;
@@ -870,27 +890,35 @@ GTPinInstrumentation::OnKernelComplete
 // interface to Intel's gtpin C++ library
 //*****************************************************************************
 
+void
+gtpin_find_core
+(void)
+{
+  void *handler = dlmopen(LM_ID_BASE, "libgtpin.so", RTLD_LOCAL | RTLD_LAZY);
+  if (handler == NULL) {
+    fprintf(stderr, "FATAL: hpcrun: unable to load Intel's gtpin library: "
+	    "%s\n", dlerror());
+    gtpin_hpcrun_api->real_exit(-1);
+  }
+
+  IGtCore *(*getcore)() = (IGtCore * (*)()) dlsym(handler, "GTPin_GetCore");
+  if (getcore == NULL) {
+    fprintf(stderr, "FATAL: hpcrun: failed to bind function in Intel's"
+	    " gtpin library: %s\n", dlerror());
+    gtpin_hpcrun_api->real_exit(-1);
+  }
+
+  igt_core = getcore();
+}
+
 extern "C" {
   IGtCore *GTPin_GetCore
   (void) {
-    static IGtCore *core = NULL;
+    static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 
-    if (core == NULL) {
-      void *handler = dlmopen(LM_ID_BASE, "libgtpin.so", RTLD_LOCAL | RTLD_LAZY);
-      if (handler == NULL) {
-	EEMSG("FATAL: hpcrun failure: unable to load Intel's gtpin library: %s", dlerror());
-	monitor_real_exit(-1);
-      }
+    pthread_once(&once_control, gtpin_find_core);
 
-      IGtCore *(*getcore)() = (IGtCore * (*)()) dlsym(handler, "GTPin_GetCore");
-      if (getcore == NULL) {
-	EEMSG("FATAL: hpcrun failure: failed to bind function in Intel's gtpin library: %s", dlerror());
-	monitor_real_exit(-1);
-      }
-      core = getcore();
-    }
-
-    return core;
+    return igt_core;
   }
 }
 
@@ -901,7 +929,7 @@ extern "C" {
 //*****************************************************************************
 
 void
-init_gtpin_hpcrun_api
+gtpin_hpcrun_api_set
 (gtpin_hpcrun_api_t *functions) {
   gtpin_hpcrun_api = functions;
 }
@@ -963,7 +991,7 @@ gtpin_produce_runtime_callstack
 
 
 void
-process_block_instructions
+gtpin_process_block_instructions
 (cct_node_t *root) {
   std::vector<std::pair<cct_node_t *, BasicBlock>> data_vector;
   gtpin_hpcrun_api->hpcrun_cct_walk_node_1st(root, visit_block, &data_vector);
@@ -985,13 +1013,13 @@ process_block_instructions
       uint64_t scalarSimdLoss = simd_knob && instruction.execSize == 1 ? basicBlock.simdWidth - 1 : 0;
       cct_node_t *child = gtpin_hpcrun_api->hpcrun_cct_insert_instruction_child(block, instruction.offset);
       gtpin_hpcrun_api->attribute_instruction_metrics
-	(child,
-	 {.execution_count = executionCount,
-	     .latency = instruction.latency,
-	     .total_simd_lanes = totalSimdLanes,
-	     .active_simd_lanes = activeSimdLanes,
-	     .wasted_simd_lanes = totalSimdLanes - activeSimdLanes,
-	     .scalar_simd_loss = scalarSimdLoss});
+        (child,
+         {.execution_count = executionCount,
+          .latency = instruction.latency,
+          .total_simd_lanes = totalSimdLanes,
+          .active_simd_lanes = activeSimdLanes,
+          .wasted_simd_lanes = totalSimdLanes - activeSimdLanes,
+          .scalar_simd_loss = scalarSimdLoss});
     }
   }
 }

@@ -68,10 +68,6 @@
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
 
-#ifdef ENABLE_IGC
-#include <igc/ocl_igc_shared/executable_format/patch_list.h>
-#endif
-
 
 
 //******************************************************************************
@@ -82,12 +78,20 @@ static spinlock_t binary_store_lock = SPINLOCK_UNLOCKED;
 static const char elf_magic_string[] = ELFMAG;
 static const uint32_t *elf_magic = (uint32_t *) elf_magic_string;
 
+// magic number for an Intel 'Patch Token' binary. this constant comes from
+// Intel's igc/ocl_igc_shared/executable_format/patch_list.h, which can't be
+// imported here because the file is C++. good grief.
+static const uint32_t MAGIC_CL = 0x494E5443;      // 'I', 'N', 'T', 'C'
+
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
 
-bool
-gpu_binary_validate_magic
+
+gpu_binary_kind_t
+gpu_binary_kind
 (
  const char *mem_ptr,
  size_t mem_size
@@ -99,15 +103,24 @@ gpu_binary_validate_magic
 
   uint32_t *magic = (uint32_t *) mem_ptr;
 
-#ifdef ENABLE_IGC
   // Is this an Intel 'Patch Token' binary?
-  if (*magic == MAGIC_CL) return true;
-#endif
+  if (*magic == MAGIC_CL) return gpu_binary_kind_intel_patch_token;
 
   // Is this an ELF binary?
-  if (*magic == *elf_magic) return true;
+  if (*magic == *elf_magic) return gpu_binary_kind_elf;
 
-  return false;
+  return gpu_binary_kind_unknown;
+}
+
+
+bool
+gpu_binary_validate_magic
+(
+ const char *mem_ptr,
+ size_t mem_size
+)
+{
+  return gpu_binary_kind(mem_ptr, mem_size) != gpu_binary_kind_unknown;
 }
 
 
