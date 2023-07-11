@@ -40,16 +40,12 @@ is common to run hpcrun on one machine and then view the results on
 another machine.
 
 We build HPCToolkit and its prerequisite libraries from source.
-HPCToolkit has some 15-20 base prerequisites (more for cuda or rocm)
+HPCToolkit has some 20-25 base prerequisites (more for cuda or rocm)
 and we now use spack to build them.  It is possible to use spack to
 install all of hpctoolkit or build just the prerequisites and then
 build hpctoolkit with the traditional @code{configure ; make ; make
 install} method from autotools.  Developers will probably want to run
 @code{configure} and @code{make} manually, but both methods are
-supported.
-
-Note: the old method of using hpctoolkit-externals to build the
-prerequisite libraries is now superseded by spack and is no longer
 supported.
 
 These notes are written mostly from the view of using spack to build
@@ -72,7 +68,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: February 6, 2023.
+Last revised: July 11, 2023.
 
 @c ------------------------------------------------------------
 
@@ -92,11 +88,12 @@ which is too old.
 
 @item
 Basic build tools: make, ld, ar, objcopy, nm, etc, and shell utilities:
-bash, sed, awk, grep, etc.  Most Linux systems have these tools, or else
-you couldn't compile anything.
+bash, sed, awk, grep, etc.  Most Linux systems have these tools, or
+else you couldn't compile anything.  If you are building inside a
+container, you may need to add them.
 
 @item
-Cmake version 3.12 or later, perl version 5.x, and python version
+Cmake version 3.14 or later, perl version 5.x, and python version
 3.8 or later.  On systems that are missing these tools or have versions
 that are too old, you can use spack to build a later version.
 
@@ -130,8 +127,19 @@ the available versions and variants for a package.  In most cases,
 spaces are optional between elements of a spec.  For example:
 
 @example
-boost@@1.77.0    dyninst @@12.1.0    hpctoolkit @@develop
+boost@@1.77.0    hpctoolkit @@develop    papi @@=6.0.0    "libiberty@@2.40"
 @end example
+
+Note: @code{foo@@2.1} includes all versions beginning with @code{2.1},
+including @code{2.1}, @code{2.1.0}, @code{2.1.4}, @code{2.1.9.9.9},
+@code{2.1.stable}, etc.  If you want version exactly @code{2.1}, then
+use the notation @code{foo@@=2.1} to differentiate @code{2.1} from
+@code{2.1.*}.
+
+Note: dotted version numbers with exactly two fields that end with a 0
+(@code{@@1.10}, @code{@@2.120}, etc) should be quoted so that yaml
+does not treat the version @code{@@2.40} as the floating point number
+@code{2.4}.
 
 @item
 '+', '-', '~' specify boolean (on/off) variants.  Note: @code{-}
@@ -238,7 +246,7 @@ spack spec hpctoolkit@@develop ^elfutils@@0.187 ^boost@@1.77.0
 @section Clone Spack and HPCToolkit
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building over 6,500 packages (and
+spack machinery and recipes for building over 7,000 packages (and
 growing).  You should also clone HPCToolkit for the
 @code{packages.yaml} file which is used to configure the spack build.
 Note: spack is on GitHub, but hpctoolkit has moved to GitLab.
@@ -265,19 +273,16 @@ support for modules built by spack.
 
 @c ------------------------------------------------------------
 
-@section Config.yaml and Install Roots
+@section Config.yaml
 
 @code{config.yaml} is the top-level spack config file.  This specifies
 the directory layout for installed files and the top-level spack
-parameters.  There are two fields that you normally want to set,
-especially if you want to install packages and modules for hpctoolkit
-in a public directory.  For a module to be available, both the
-@code{install_tree} and @code{module_roots} directories must be
-accessible.
+parameters.
 
 By default, spack installs packages inside the spack repository at
 @code{spack/opt/spack}.  To use another location, set the @code{root}
-field under @code{install_tree} in @code{config.yaml}.
+field under @code{install_tree} in @code{config.yaml}.  Normally, you
+will want to set this.
 
 @example
 config:
@@ -286,46 +291,21 @@ config:
 @end example
 
 @noindent
-By default, spack installs module files inside the spack repository at
-@code{spack/share/spack}.  The syntax for resetting this is changing.
-In the new syntax, the paths go in @code{modules.yaml}.
-
-@example
-modules:
-  default:
-    roots:
-      # normally, need only one of these
-      tcl:  /path/to/top-level/tcl-module/directory
-      lmod: /path/to/top-level/lmod-module/directory
-    enable:
-      - tcl  (or lmod)
-@end example
-
-@noindent
-Note: for Lmod modules, you should also turn off autoload for
-hpctoolkit.  Autoload loads the modules for hpctoolkit's dependencies.
-But hpctoolkit does not need this and loading them may interfere with
-an application's dependencies.
-
-@example
-modules:
-  default:
-    lmod:
-      hpctoolkit:
-        autoload: none
-      all:
-        autoload: direct
-@end example
-
-@noindent
 There are a few other fields that you may want to set for your local
 system.  These are all in @code{config.yaml}.
 
 @enumerate
 @item
+@code{build_stage} -- the location where spack builds packages
+(default is in @code{/tmp}).
+
+@item
+@code{source_cache} -- where spack stores downloaded source tar files.
+
+@item
 @code{connect_timeout} -- some download sites, especially sourceforge
 are often slow to connect.  If you find that connections are timing out,
-then increase this time to 30 or 60 seconds (default is 10 seconds).
+try increasing this time to 30 or 60 seconds (default is 10 seconds).
 
 @item
 @code{url_fetch_method} -- by default, spack uses a python library
@@ -339,9 +319,6 @@ different number, then set this.
 @end enumerate
 
 @noindent
-There are also parameters for the locations of the build directories,
-the cache of downloaded tar files, etc, which you may wish to set.
-
 The default @code{config.yaml} file is in the spack repository at
 @code{spack/etc/spack/defaults}.  The simplest solution is to copy this
 file one directory up and then edit the copy (don't edit the default
@@ -354,9 +331,11 @@ vi config.yaml
 @end example
 
 @noindent
-Alternatively, you could put this file in a separate directory, outside
-of the spack repository and then use @code{-C dir} on the spack command
-line.  (The @code{-C} option goes before the spack command name.)
+Alternatively, you could put this file in a separate directory,
+outside of the spack repository and then use @code{-C/--config-scope
+dir} on the spack command line.  (The @code{-C} option goes before the
+spack command name.)  This is useful if you maintain multiple config
+files for different machines.
 
 @example
 spack -C dir install ...
@@ -388,6 +367,43 @@ See the spack docs on `Configuration Files' and `Basic Settings'.
 
 @c ------------------------------------------------------------
 
+@section Modules.yaml
+
+Spack supports creating module files, but does not install them by
+default.  If you want to install module files, then you need to edit
+@code{modules.yaml} to specify which type of modules to use (TCL or
+Lmod) and the install path.
+
+@example
+modules:
+  default:
+    roots:
+      # normally, need only one of these
+      tcl:  /path/to/top-level/tcl-module/directory
+      lmod: /path/to/top-level/lmod-module/directory
+    enable:
+      - tcl  (or lmod)
+@end example
+
+@noindent
+Also, for hpctoolkit, you should also turn off autoload for
+dependencies.  By default, autoload loads the modules for hpctoolkit's
+dependencies.  But hpctoolkit does not need this and loading them may
+interfere with an application's dependencies.  You should do this for
+both tcl and lmod modules.
+
+@example
+modules:
+  default:
+    tcl:
+      hpctoolkit:
+        autoload: none
+      all:
+        autoload: direct
+@end example
+
+@c ------------------------------------------------------------
+
 @section Packages.yaml
 
 The @code{packages.yaml} file specifies the versions and variants for
@@ -404,34 +420,27 @@ default, spack will choose the latest version of each package (plus
 any constraints from hpctoolkit's @code{package.py} file).  In most
 cases, this will work, but not always.  If you need to specify a
 different version or variant, then set this in @code{packages.yaml}.
+For example:
 
+@example
+packages:
+  elfutils:
+  version:  [0.189]
+  variants: ~nls
+@end example
+
+@noindent
 Note: the versions and variants specified in hpctoolkit's
 @code{package.py} file are hard constraints and should not be changed.
 Variants in @code{packages.yaml} are preferences that may be modified
 for your local system.  (But don't report a bug until you have first
 tried the versions from @code{packages.yaml} that we supply.)
 
-There are at least two packages with a variant that you may need to
-change depending on your system.  But always check the current
-@code{packages.yaml} file to see if any more have been added.
-
-@enumerate
-@item
-@code{binutils} -- avoid versions 2.35 and 2.35.1, they have a bug
-that spews errors from hpcprof.  Use 2.34 until 2.36 is available.
-
-@item
-@code{intel-tbb} -- for very old Intel or AMD systems that don't support
-transactional memory, change @code{+tm} to @code{~tm}.  (This option has
-no effect on non-x86 systems.)
-
-@end enumerate
-
 @subsection External Packages
 
 The other sections in @code{packages.yaml} specify paths or modules
 for other packages and system build tools.  Building hpctoolkit's
-prerequisites requires cmake 3.10 or later, perl 5.x and python 3.8 or
+prerequisites requires cmake 3.14 or later, perl 5.x and python 3.8 or
 later.  There are three ways to satisfy these requirements: a system
 installed version (eg, /usr), a pre-built module or build from
 scratch.
@@ -555,7 +564,7 @@ prefer to reuse an existing package that doesn't conform to
 
 For example, suppose you previously installed hpctoolkit with dyninst
 12.1.0.  Then, some months later, you update your spack repo and want
-to install a new hpctoolkit with dyninst 12.2.0.  By default, spack
+to install a new hpctoolkit with dyninst 12.3.0.  By default, spack
 will prefer to reuse the old 12.1.0 rather than rebuild the new
 version.
 
@@ -565,7 +574,7 @@ version.
 @example
 packages:
   dyninst:
-    require: "@@12.2.0"
+    require: "@@12.3.0"
 @end example
 
 @noindent
@@ -626,18 +635,18 @@ packages:
 The 'concretizer' is the part of spack that converts a partial spec
 into a full spec with values for the version and variants of every
 package in the spec plus all dependencies.  The new concretizer for
-spack (clingo) is a third-party python library for solving answer set
+spack (clingo) is a third-party python library for solving answer-set
 logic problems (eg, satisfiability).  Normally, this only needs to be
 set up once per machine, the first time you run spack.
 
 The easiest way to install clingo it to use spack's pre-built
 libraries.  These are available for Linux (x86_64, ppc64le, aarch64)
-and Macos/Darwin (x86_64) for python 3.5 or later.  The Macos version
+and Macos/Darwin (x86_64) for python 3.7 or later.  The Macos version
 also requires Macos 10.13 or later and the Xcode developer package
 (for python and other programs).
 
 By default, spack will automatically install (bootstrap) clingo the
-first time you run a command that uses it (eg, @code{spec} or
+first time you run a command that uses it (@code{spec} or
 @code{solve}).  However, if this fails or you want to verify the steps
 yourself, then follow these steps.
 
@@ -704,7 +713,7 @@ gcc, but you can specify a different compiler, if one is available.
 Spack uses a separate file, @code{compilers.yaml} to store information
 about available compilers.  This file is normally in your home directory
 at @code{~/.spack/platform} where `platform' is normally `linux' (or
-else `cray' or `bgq').
+else `cray').
 
 The first time you use spack, or after adding a new compiler, you should
 run @code{spack compiler find} to have spack search your system for
@@ -793,16 +802,16 @@ Spack uses Python for two things.  First, to run the Spack scripts
 written in Python, and second, to use as a dependency for other spack
 packages.  These do not have to be the same python version or install.
 
-Currently, Spack requires at a minimum Python 3.6 to run spack at all.
-But 3.6 is deprecated and support for both 3.6 and 3.7 will be removed
-in a few months.  So, the best thing to do is to upgrade to Python 3.8
-or later now.
+Currently, Spack requires at a minimum Python 3.7 to run spack at all.
+But 3.7 is deprecated and support for it will be removed in a few
+months.  So, the best thing to do is to upgrade to Python 3.8 or later
+now.
 
 If python 3.8 or later is not available on your system, then your
 options to install it are: (1) load a module for a later version, (2)
 use yum or apt to install a later version, (3) ask your sysadmin to
 install a later version, or (4) as a last resort, compile a later
-version.
+version from source.
 
 If a later python is available on your system but not first in your
 PATH or under a different name, you can set the environment variable
@@ -822,9 +831,10 @@ to run Spack.
 
 @section Spack Install
 
-First, set up your @code{config.yaml}, @code{packages.yaml} and
-@code{compilers.yaml} files as above and edit them for your system.
-You can see how spack will build hpctoolkit with @code{spack spec}.
+First, set up your @code{config.yaml}, @code{modules.yaml},
+@code{packages.yaml} and @code{compilers.yaml} files as above and edit
+them for your system.  You can see how spack will build hpctoolkit
+with @code{spack spec}.
 
 @example
 spack spec hpctoolkit
@@ -838,7 +848,7 @@ spack install hpctoolkit
 @end example
 
 @noindent
-@b{Tip:} Spack fetch is somewhat fragile and often has transient
+@b{Tip:} Spack fetch is somewhat fragile and sometimes has transient
 problems downloading files.  You can use @code{spack fetch -D} to
 pre-fetch all of the tar files and resolve any downloading problems
 before starting the full install.
@@ -874,7 +884,7 @@ automake and so allows for parallel make.
 @example
 configure  \
    --prefix=/path/to/hpctoolkit/install/prefix  \
-   --with-spack=/path/to/spack/install_tree/linux-fedora26-x86_64/gcc-7.3.1  \
+   --with-spack=/path/to/spack/install_tree/linux-centos9-x86_64/gcc-11.3.1  \
    ...
 make -j <num>
 make install
@@ -969,7 +979,8 @@ spack install hpctoolkit +level_zero +gtpin
 @noindent
 GTPin requires the @code{oneapi-igc} package which is an external only
 spack package, normally installed in @code{/usr}.  You should add this
-with a spack externals and let spack build the rest.  For example:
+manually with a spack externals (it's currently not searchable) and
+let spack build the rest.  For example:
 
 @example
 packages:
@@ -997,9 +1008,8 @@ configure  \
 HPCToolkit supports profiling AMD GPU binaries through the HIP/ROCM
 interface, and beginning with version 2022.04.15, we support building
 hpctoolkit plus rocm with a fully integrated spack build.  We require
-ROCM 4.5.x or later (prefer 5.x), and the ROCM version should match
-the version the application uses.  This is all very fluid and subject
-to change.
+ROCM 5.x or later, and the ROCM version should match the version the
+application uses.  This is still somewhat fluid and subject to change.
 
 There are two ways to build HPCToolkit plus ROCM with spack.
 HPCToolkit uses four ROCM prerequisites (hip, hsa-rocr-dev,
@@ -1121,24 +1131,22 @@ packages:
       - mpich/4.0
 @end example
 
+@c ------------------------------------------------------------
+
 @subsection PAPI vs Perfmon
 
 HPCToolkit can access the Hardware Performance Counters with either
-PAPI or Perfmon (libpfm4).  By default, the hpctoolkit package uses
-perfmon.  If you want to use PAPI instead, then build hpctoolkit with
-@code{+papi}.  However, you can't use both due to a potential conflict
-in their header files.
+PAPI (default) or Perfmon (libpfm4).  PAPI runs on top of the perfmon
+library and uses its own, internal (but slightly out of date) copy of
+perfmon.  So, building with @code{+papi} allows accessing the counters
+with either PAPI or perfmon events.
 
-PAPI runs on top of the perfmon library, but PAPI uses its own,
-internal copy of perfmon.  Prior to version 5.6.0, PAPI did not
-install the perfmon header files, so it was impossible to access the
-perfmon events through PAPI.
+If you want to disable PAPI and use the latest Perfmon instead, then
+build hpctoolkit with @code{~papi}.
 
-However, starting with version 5.6.0, PAPI now installs both the
-perfmon library and its header files.  Hpctoolkit configure will
-automatically detect this, so if you build hpctoolkit with a recent
-enough version of PAPI, then both the PAPI and perfmon interfaces will
-be available.
+@example
+spack install hpctoolkit ~papi
+@end example
 
 @c ------------------------------------------------------------
 
@@ -1367,9 +1375,8 @@ ppc64le and aarch64), Windows (x86_64) and MacOS (x86_64, M1 and M2).
 HPCToolkit databases are platform-independent and it is common to run
 hpcrun on one machine and then view the results on another machine.
 
-Starting with 2021.01, the viewer now requires Java 11 or later,
-plus GTK+ 3.20 or later on Linux.  Older viewers, up through
-2020.12, require Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
+Starting with 2021.01, the viewer now requires Java 11 or later, plus
+GTK+ 3.20 or later on Linux.
 
 @subsection Spack Install
 
@@ -1386,14 +1393,6 @@ with @code{spack info} and @code{spack spec}.
 spack info openjdk
 spack install hpcviewer
 spack install hpcviewer ^openjdk @@11.0.12_7    (if needed)
-@end example
-
-@noindent
-For older viewers, up through 2020.12, use the latest version of
-openjdk Java 8 (version 1.8).  For example (the versions may change):
-
-@example
-spack install hpcviewer ^openjdk @@1.8.0_265-b01
 @end example
 
 @noindent
@@ -1480,12 +1479,13 @@ modules:
 
 @noindent
 Then, choose a version of gcc and use the default compiler (normally
-@code{/usr/bin/gcc}) to build the newer version.  Currently, gcc 8.x
-is a good choice that builds robustly, has enough modern features but
-is not too new to cause problems for some packages.  For example,
+@code{/usr/bin/gcc}) to build the newer version.  Currently, gcc 10.x
+or 11.x is a good choice that builds robustly, has enough modern
+features but is not too new to cause problems for some packages.  For
+example,
 
 @example
-spack install gcc@@8.4.0
+spack install gcc@@10.4.0
 @end example
 
 @noindent
@@ -1579,7 +1579,7 @@ environment.  For example,
 
 @example
 spack install environment-modules
-cd /path/to/environment-modules-4.3.1-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
+cd /path/to/environment-modules-5.3.0-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
 (bash)  . ./bash
 (csh)   source ./csh
 @end example
