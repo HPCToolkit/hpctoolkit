@@ -80,7 +80,6 @@ class DevEnv(SpackEnv):
         opencl: bool,
         python: bool,
         papi: bool,
-        optional_papi: bool,
         mpi: bool,
     ) -> None:
         super().__init__(root)
@@ -91,7 +90,6 @@ class DevEnv(SpackEnv):
         self.opencl = opencl
         self.python = python
         self.papi = papi
-        self.optional_papi = optional_papi
         self.mpi = mpi
 
     @classmethod
@@ -113,7 +111,6 @@ class DevEnv(SpackEnv):
             opencl=flag("opencl"),
             python=flag("python"),
             papi=flag("papi"),
-            optional_papi=flag("optional_papi"),
             mpi=flag("mpi"),
         )
 
@@ -126,7 +123,6 @@ class DevEnv(SpackEnv):
             "opencl": self.opencl,
             "python": self.python,
             "papi": self.papi,
-            "optional_papi": self.optional_papi,
             "mpi": self.mpi,
         }
 
@@ -143,7 +139,7 @@ class DevEnv(SpackEnv):
     hpcprof-mpi          : {yes if self.mpi else no}
 
   {click.style("CPU Features", bold=True)}
-    PAPI                 : {"BOTH" if self.optional_papi else yes if self.papi else no}
+    PAPI                 : {yes if self.papi else no}
     Python               : {yes if self.python else no}
 
   {click.style("GPU Support", bold=True)}
@@ -190,6 +186,7 @@ class DevEnv(SpackEnv):
                 VerConSpec("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
                 VerConSpec("zlib +shared @1.2.13:"),
                 VerConSpec("libunwind +xz +pic @1.6.2:"),
+                VerConSpec("libpfm4 @4.11.0:"),
                 VerConSpec("xerces-c transcoder=iconv @3.2.3:"),
                 VerConSpec("libiberty +pic @2.37:"),
                 VerConSpec("intel-xed +pic @2022.04.17:", when="arch.satisfies('target=x86_64:')"),
@@ -201,10 +198,8 @@ class DevEnv(SpackEnv):
             | self._py_specs
         )
 
-        if self.papi or self.optional_papi:
+        if self.papi:
             result.add(VerConSpec("papi @6.0.0.1:"))
-        if not self.papi or self.optional_papi:
-            result.add(VerConSpec("libpfm4 @4.11.0:"))
         if self.cuda:
             result.add(VerConSpec("cuda @10.2.89:"))
         if self.level0 or self.gtpin:
@@ -273,6 +268,7 @@ class DevEnv(SpackEnv):
         native.add_property("prefix_tbb", self.packages["intel-tbb"].prefix)
         native.add_property("prefix_libmonitor", self.packages["libmonitor"].prefix)
         native.add_property("prefix_libunwind", self.packages["libunwind"].prefix)
+        native.add_property("prefix_perfmon", self.packages["libpfm4"].prefix)
         native.add_property("prefix_xerces", self.packages["xerces-c"].prefix)
         native.add_property("prefix_lzma", self.packages["xz"].prefix)
         native.add_property("prefix_zlib", self.packages["zlib"].prefix)
@@ -281,10 +277,8 @@ class DevEnv(SpackEnv):
             native.add_property("prefix_xed", self.packages["intel-xed"].prefix)
         native.add_property("prefix_memkind", self.packages["memkind"].prefix)
         native.add_property("prefix_yaml_cpp", self.packages["yaml-cpp"].prefix)
-        if self.papi or self.optional_papi:
+        if self.papi:
             native.add_property("prefix_papi", self.packages["papi"].prefix)
-        if not self.papi or self.optional_papi:
-            native.add_property("prefix_perfmon", self.packages["libpfm4"].prefix)
         if self.opencl:
             native.add_property("prefix_opencl", self.packages["opencl-c-headers"].prefix)
         if self.gtpin:

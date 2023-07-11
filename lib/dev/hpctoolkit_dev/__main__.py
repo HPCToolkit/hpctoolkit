@@ -351,7 +351,6 @@ def create(
             opencl=feature2bool("opencl", opencl),
             python=feature2bool("python", python),
             papi=feature2bool("papi", papi),
-            optional_papi=False,
             mpi=feature2bool("mpi", mpi),
         )
         click.echo(env.describe())
@@ -612,12 +611,7 @@ def template_merge(base: dict, overlay: dict) -> dict:
     "--opencl", type=feature, default="auto", help="Enable OpenCL (-e gpu=opencl) support"
 )
 @click.option("--python", type=feature, default="auto", help="Enable Python unwinding (-a python)")
-@click.option(
-    "--papi",
-    type=click.Choice(["enabled", "disabled", "auto", "both"], case_sensitive=False),
-    default="auto",
-    help="Enable PAPI (-e PAPI_*) support",
-)
+@click.option("--papi", type=feature, default="auto", help="Enable PAPI (-e PAPI_*) support")
 @click.option("--mpi", type=feature, default="auto", help="Enable hpcprof-mpi")
 @click.option(
     "--template",
@@ -625,7 +619,7 @@ def template_merge(base: dict, overlay: dict) -> dict:
     help="Use the given Spack environment template. Additional templates will be merged recursively.",
     multiple=True,
 )
-def generate(  # noqa: C901
+def generate(
     devenv: Path,
     autogen: bool,
     mode: DependencyMode,
@@ -636,7 +630,7 @@ def generate(  # noqa: C901
     gtpin: feature_ty,
     opencl: feature_ty,
     python: feature_ty,
-    papi: feature_ty | typing.Literal["both"],
+    papi: feature_ty,
     mpi: feature_ty,
     template: tuple[typing.TextIO, ...],
 ) -> None:
@@ -664,15 +658,13 @@ def generate(  # noqa: C901
             env_template = template_merge(env_template, data)
         template_settings = env_template.pop("dev", {})
 
-    def feature2bool(name: str, value: feature_ty | typing.Literal["both"]) -> bool:
+    def feature2bool(name: str, value: feature_ty) -> bool:
         if value != "auto":
             return value == "enabled"
         if auto != "auto":
             return auto == "enabled"
         t = template_settings.get("features", {}).get(name)
         if t is not None:
-            if t == "both" and name == "papi":
-                return False
             if not isinstance(t, bool):
                 raise ValueError(t)
             return t
@@ -692,11 +684,6 @@ def generate(  # noqa: C901
                 opencl=feature2bool("opencl", opencl),
                 python=feature2bool("python", python),
                 papi=feature2bool("papi", papi),
-                optional_papi=(
-                    papi == "both"
-                    or papi == "auto"
-                    and template_settings.get("features", {}).get("papi") == "both"
-                ),
                 mpi=feature2bool("mpi", mpi),
             )
             click.echo(denv.describe())

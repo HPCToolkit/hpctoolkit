@@ -60,5 +60,5 @@ dev:
     gtpin: false
     opencl: true
     python: true
-    papi: both
+    papi: true
     mpi: true
