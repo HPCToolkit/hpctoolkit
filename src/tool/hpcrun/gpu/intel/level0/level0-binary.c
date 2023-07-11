@@ -59,6 +59,17 @@
 
 
 
+//*****************************************************************************
+// type declarations
+//*****************************************************************************
+
+typedef struct {
+  const char *hash_string;
+  gpu_binary_kind_t bkind;
+} module_info_t;
+
+
+
 //******************************************************************************
 // local variables
 //******************************************************************************
@@ -69,26 +80,47 @@ static level0_handle_map_entry_t *module_free_list = NULL;
 
 static spinlock_t module_lock = SPINLOCK_UNLOCKED;
 
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+module_info_t *
+module_info_new
+(
+  const char *hash_string,
+  gpu_binary_kind_t bkind
+)
+{
+  module_info_t *mi = (module_info_t *) malloc(sizeof(module_info_t));
+
+  mi->hash_string = hash_string;
+  mi->bkind = bkind;
+
+  return mi;
+}
+
 
 void
 level0_module_handle_map_insert
 (
   ze_module_handle_t module,
-  char* hash_buf
+  const char* hash_string,
+  gpu_binary_kind_t bkind
 )
 {
   spinlock_lock(&module_lock);
 
   uint64_t key = (uint64_t)module;
   level0_handle_map_entry_t *entry =
-    level0_handle_map_entry_new(&module_free_list, key, (level0_data_node_t*)hash_buf);
+    level0_handle_map_entry_new(&module_free_list, key, (level0_data_node_t*) module_info_new(hash_string, bkind));
   level0_handle_map_insert(&module_map_root, entry);
 
   spinlock_unlock(&module_lock);
 }
+
+
 
 //******************************************************************************
 // interface operations
@@ -121,13 +153,35 @@ level0_binary_process
   char *hash_buf = (char *) malloc(CRYPTO_HASH_STRING_LENGTH);
   crypto_compute_hash_string(buf, size, hash_buf, CRYPTO_HASH_STRING_LENGTH);
 
-  level0_module_handle_map_insert(module, hash_buf);
+  gpu_binary_kind_t bkind = gpu_binary_kind(buf, size);
+
+  switch (bkind){
+  case gpu_binary_kind_intel_patch_token:
+    TMSG(LEVEL0, "INFO: hpcrun Level Zero binary kind: Intel Patch Token");
+    break;
+  case gpu_binary_kind_elf:
+    TMSG(LEVEL0, "INFO: hpcrun Level Zero binary kind: ELF");
+    break;
+  case gpu_binary_kind_unknown:
+    if (size > 4) {
+      const char *magic = buf;
+      EEMSG("WARNING: hpcrun: Level Zero presented unknown binary kind: "
+            "%c%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
+    } else {
+      EEMSG("WARNING: hpcrun: Level Zero presented unknown binary kind\n");
+    }
+  }
+
+  level0_module_handle_map_insert(module, hash_buf, bkind);
 }
 
-char*
+
+void
 level0_module_handle_map_lookup
 (
-  ze_module_handle_t module
+  ze_module_handle_t module,
+  char **hash_string,
+  gpu_binary_kind_t *bkind
 )
 {
   spinlock_lock(&module_lock);
@@ -135,9 +189,11 @@ level0_module_handle_map_lookup
   uint64_t key = (uint64_t)module;
   level0_handle_map_entry_t *entry =
     level0_handle_map_lookup(&module_map_root, key);
-  char *result = (char*) (*level0_handle_map_entry_data_get(entry));
+  module_info_t  *mi = (module_info_t *) (*level0_handle_map_entry_data_get(entry));
   spinlock_unlock(&module_lock);
-  return result;
+
+  *hash_string = mi->hash_string;
+  *bkind = mi->bkind;
 }
 
 void

@@ -548,7 +548,7 @@ hpcrun_cct_insert_instruction_child(cct_node_t* block, int32_t offset)
   ip_normalized_t ip;
   ip.lm_id = block->addr.ip_norm.lm_id;
   ip.lm_ip = (uintptr_t) offset;
-  return hpcrun_cct_insert_ip_norm(block->parent, ip, true);
+  return hpcrun_cct_insert_ip_norm(block->parent, ip, false);
 }
 
 cct_node_t*

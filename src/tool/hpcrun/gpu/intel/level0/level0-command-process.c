@@ -75,6 +75,8 @@
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/usec_time.h>
 
+#include <monitor.h>
+
 
 
 //*****************************************************************************
@@ -206,16 +208,29 @@ get_load_module
 
   free(kernel_name);
 
-#if 0
   // Step 2: get the hash for the binary that contains the kernel
+  char *binary_hash;
+  gpu_binary_kind_t bkind;
+
   ze_module_handle_t module_handle = level0_kernel_module_map_lookup(kernel);
   PRINT("get_load_module: kernel handle %p, module handle %p\n", kernel, module_handle);
-  char* binary_hash = level0_module_handle_map_lookup(module_handle);
-#endif
-
-  // Step 3: generate <kernel name hash>.gpubin as the kernel load module name
+  level0_module_handle_map_lookup(module_handle, &binary_hash, &bkind);
+  //
+  // Step 3: generate <binary hash>.gpubin as the kernel load module name
   char load_module_name[PATH_MAX] = {'\0'};
-  gpu_binary_path_generate(kernel_name_hash, load_module_name);
+  gpu_binary_path_generate(binary_hash, load_module_name);
+
+  // if patch token binary, append the kernel name hash to the load module name
+  switch (bkind){
+  case gpu_binary_kind_intel_patch_token:
+    strcat(load_module_name, ".");
+    strncat(load_module_name, kernel_name_hash, CRYPTO_HASH_STRING_LENGTH);
+  case gpu_binary_kind_elf:
+    break;
+  case gpu_binary_kind_unknown:
+    EEMSG("FATAL: hpcrun failure: level 0 encountered unknown binary kind");
+    monitor_real_exit(-1);
+  }
 
   // Step 4: insert the load module
   uint32_t module_id = gpu_binary_loadmap_insert(load_module_name, true /* mark_used */);

@@ -48,7 +48,11 @@
 // local includes
 //*****************************************************************************
 
+#include <include/gpu-binary.h>
+
 #include "level0-api.h"
+
+
 
 //******************************************************************************
 // interface operations
@@ -60,11 +64,15 @@ level0_binary_process
   ze_module_handle_t module
 );
 
-char*
+
+void
 level0_module_handle_map_lookup
 (
-  ze_module_handle_t module
+  ze_module_handle_t module,
+  char **hash_string,
+  gpu_binary_kind_t *bkind
 );
+
 
 void
 level0_module_handle_map_delete
