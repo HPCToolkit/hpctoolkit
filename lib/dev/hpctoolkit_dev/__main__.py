@@ -1,8 +1,10 @@
+import base64
 import collections
 import contextlib
 import dataclasses
 import functools
 import itertools
+import json
 import os
 import re
 import shlex
@@ -16,12 +18,14 @@ import venv
 from pathlib import Path
 
 import click
+import jsonschema
 import ruamel.yaml
 
+from . import schema
 from .buildfe._main import main as buildfe_main
 from .command import Command
-from .envs import AutogenEnv, DevEnv
-from .spec import DependencyMode
+from .envs import AutogenEnv, DevEnv, InvalidSpecificationError
+from .spec import DependencyMode, SpackEnv
 
 __all__ = ("main",)
 
@@ -720,6 +724,156 @@ def generate(
     click.echo(f"    $ spack -e {nice_devenv} install")
     for line in poststeps:
         click.echo(f"    $ {line}")
+
+
+def pack_for_request(env: SpackEnv, features: collections.abc.Collection[str] = ()) -> dict:
+    """Take a generated Env and produce the contents for a request JSON."""
+    root = env.root
+    with (root / "spack.yaml").open("r", encoding="utf-8") as spackyamlf:
+        spack = ruamel.yaml.YAML(typ="safe").load(spackyamlf)["spack"]
+
+    files: dict[str, dict[str, str]] = {}
+    for path in root.rglob("*"):
+        if path.parent == root and path.name == "spack.yaml":
+            # Handled in a later pass
+            continue
+
+        try:
+            data = {"text": path.read_text(encoding="utf-8", errors="strict")}
+        except ValueError:
+            data = {"base64": base64.b64encode(path.read_bytes()).decode("ascii")}
+        files[f"/{path.relative_to(root).as_posix()}"] = data
+
+    return {
+        "ifAvailable": sorted(features),
+        "spack": spack,
+        "files": files,
+    }
+
+
+# Translation table between DevEnv keyword arguments and their required request features
+FEATURE_FLAGS: dict[str, collections.abc.Collection[str]] = {
+    "cuda": ("cuda",),
+    "rocm": ("rocm",),
+    "level0": ("level0",),
+    "gtpin": ("gtpin", "igc"),  # Implies level0
+    "opencl": (),
+    "python": (),
+    "papi": (),
+    "mpi": (),
+}
+
+# Translation table between request features and external Spack packages
+FEATURE_PACKAGES: dict[str, collections.abc.Collection[str]] = {
+    "cuda": ("cuda",),
+    "rocm": ("hip", "hsa-rocr-dev", "rocprofiler-dev", "roctracer-dev"),
+    "level0": ("oneapi-level-zero",),
+    "gtpin": ("intel-gtpin",),
+    "igc": ("oneapi-igc"),
+}
+
+
+@main.command
+@click.argument("request", type=click.File("w", encoding="utf-8"))
+# Generation type
+@click.option("--autogen", is_flag=True, help="Generate an environment for ./dev autogen instead")
+# Generation mode
+@click.option(
+    "--latest",
+    "mode",
+    flag_value=DependencyMode.LATEST,
+    type=DependencyMode,
+    default=True,
+    help="Use the latest available version of dependencies",
+)
+@click.option(
+    "--minimum",
+    "mode",
+    flag_value=DependencyMode.MINIMUM,
+    type=DependencyMode,
+    help="Use the minimum supported version of dependencies",
+)
+@click.option(
+    "--any",
+    "mode",
+    flag_value=DependencyMode.ANY,
+    type=DependencyMode,
+    help="Use any supported version of dependencies",
+)
+# Feature flags
+@click.option(
+    "--template",
+    type=click.File(),
+    help="Use the given Spack environment template. Additional templates will be merged recursively.",
+    multiple=True,
+)
+def generate_request(
+    *,
+    request: typing.TextIO,
+    autogen: bool,
+    mode: DependencyMode,
+    template: tuple[typing.TextIO, ...],
+) -> None:
+    """Generate a generic REQUEST JSON file that describes all possible devenvs.
+
+    This command is primarily used internally by CI. It probably isn't what you are looking for,
+    consider `./dev create`.
+    """
+    env_template: dict | None = None
+    if template:
+        yaml = ruamel.yaml.YAML(typ="safe")
+        env_template = {}
+        for t in template:
+            data = yaml.load(t)
+            if data and not isinstance(data, dict):
+                raise click.ClickException(f"Invalid template, expected !map but got {data!r}")
+            env_template = template_merge(env_template, data)
+        if "dev" in env_template:
+            del env_template["dev"]
+
+    with tempfile.TemporaryDirectory() as tmpd_str:
+        tmpd = Path(tmpd_str).resolve(strict=True)
+
+        contents: list[dict] = []
+        if autogen:
+            aenv = AutogenEnv(tmpd / "root")
+            aenv.generate()
+            contents.append(pack_for_request(aenv))
+        else:
+            # Iterate over the actionable configuration space
+            flag_space = sorted(flag for flag, feats in FEATURE_FLAGS.items() if feats)
+            for r in range(len(flag_space), -1, -1):
+                for flags in itertools.combinations(flag_space, r):
+                    try:
+                        denv = DevEnv(
+                            tmpd / ("root " + " ".join(flags)),
+                            **{
+                                flag: flag in flags or not feats
+                                for flag, feats in FEATURE_FLAGS.items()
+                            },
+                        )
+                    except InvalidSpecificationError:
+                        continue
+
+                    unresolve: set[str] = {
+                        pkg
+                        for flag in flags
+                        for feat in FEATURE_FLAGS[flag]
+                        for pkg in FEATURE_PACKAGES[feat]
+                    }
+                    denv.generate(mode, unresolve=unresolve, template=env_template)
+
+                    feats: set[str] = set()
+                    for flag in flags:
+                        feats |= set(FEATURE_FLAGS[flag])
+                    contents.append(pack_for_request(denv, feats))
+
+    result = {
+        "version": 2,
+        "contents": contents,
+    }
+    jsonschema.validate(result, schema.request)
+    json.dump(result, request, sort_keys=True, separators=(",", ":"))
 
 
 @main.command

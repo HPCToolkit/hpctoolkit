@@ -126,10 +126,14 @@ class VerConSpec:
                 versions = [v for v in versions if not top < v]
         return max(versions, default=None)
 
-    def specs_for(self, mode: DependencyMode) -> set[str]:
+    def specs_for(
+        self, mode: DependencyMode, unresolve: collections.abc.Collection[str] = ()
+    ) -> set[str]:
         if not self._versions:
             return {self._spec}
 
+        if self.package in unresolve:
+            mode = DependencyMode.ANY
         match mode:
             case DependencyMode.ANY:
                 return {f"{self._spec} {self.version_spec}"}
@@ -152,7 +156,9 @@ class VerConSpec:
 
 
 def resolve_specs(
-    specs: collections.abc.Iterable["VerConSpec"], mode: DependencyMode
+    specs: collections.abc.Iterable["VerConSpec"],
+    mode: DependencyMode,
+    unresolve: collections.abc.Collection[str] = (),
 ) -> dict[str | None, set[str]]:
     by_when: dict[str | None, set[VerConSpec]] = {}
     for spec in specs:
@@ -162,7 +168,7 @@ def resolve_specs(
     for when, subspecs in by_when.items():
         bits: set[str] = set()
         for spec in subspecs:
-            bits |= spec.specs_for(mode)
+            bits |= spec.specs_for(mode, unresolve=unresolve)
         result[when] = bits
     return result
 
@@ -239,6 +245,7 @@ class SpackEnv:
         self,
         specs: collections.abc.Collection[VerConSpec],
         mode: DependencyMode,
+        unresolve: collections.abc.Collection[str] = (),
         template: dict | None = None,
     ) -> None:
         """Generate the Spack environment."""
@@ -257,7 +264,7 @@ class SpackEnv:
         sp.setdefault("concretizer", {})["unify"] = True
         sp["definitions"] = [d for d in contents["spack"].get("definitions", []) if "_dev" not in d]
         for when, subspecs in sorted(
-            resolve_specs(specs, mode).items(), key=lambda kv: kv[0] or ""
+            resolve_specs(specs, mode, unresolve=unresolve).items(), key=lambda kv: kv[0] or ""
         ):
             clause: dict[str, str | list[str]] = {"_dev": sorted(subspecs)}
             if when is not None:

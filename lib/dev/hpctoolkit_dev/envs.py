@@ -1,3 +1,4 @@
+import collections.abc
 import functools
 import json
 import shutil
@@ -12,7 +13,11 @@ from .meson import MesonMachineFile
 from .spack import Spack
 from .spec import DependencyMode, SpackEnv, VerConSpec
 
-__all__ = ("AutogenEnv", "DevEnv")
+__all__ = ("AutogenEnv", "DevEnv", "InvalidSpecificationError")
+
+
+class InvalidSpecificationError(ValueError):
+    pass
 
 
 class AutogenEnv(SpackEnv):
@@ -43,8 +48,12 @@ class AutogenEnv(SpackEnv):
     def autoreconf(self) -> Command:
         return Command(self.packages["autoconf"].prefix / "bin" / "autoreconf")
 
-    def generate(self, template: dict | None = None) -> None:
-        self.generate_explicit(self._SPECS, DependencyMode.ANY, template=template)
+    def generate(
+        self, unresolve: collections.abc.Collection[str] = (), template: dict | None = None
+    ) -> None:
+        self.generate_explicit(
+            self._SPECS, DependencyMode.ANY, unresolve=unresolve, template=template
+        )
 
 
 class DevEnv(SpackEnv):
@@ -82,6 +91,8 @@ class DevEnv(SpackEnv):
         papi: bool,
         mpi: bool,
     ) -> None:
+        if gtpin and not level0:
+            raise InvalidSpecificationError("level0 must be true if gtpin is true")
         super().__init__(root)
         self.cuda = cuda
         self.rocm = rocm
@@ -219,8 +230,13 @@ class DevEnv(SpackEnv):
 
         return result
 
-    def generate(self, mode: DependencyMode, template: dict | None = None) -> None:
-        self.generate_explicit(self._specs, mode, template=template)
+    def generate(
+        self,
+        mode: DependencyMode,
+        unresolve: collections.abc.Collection[str] = (),
+        template: dict | None = None,
+    ) -> None:
+        self.generate_explicit(self._specs, mode, unresolve=unresolve, template=template)
         with open(self.root / "dev.json", "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f)
 
