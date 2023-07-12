@@ -50,10 +50,10 @@
 int
 hpcrun_safe_enter_noinline(void)
 {
-  hpcrun_safe_enter();
+  return hpcrun_safe_enter();
 }
 
-int
+void
 hpcrun_safe_exit_noinline(void)
 {
   hpcrun_safe_exit();

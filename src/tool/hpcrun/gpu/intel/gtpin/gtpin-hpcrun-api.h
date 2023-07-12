@@ -89,7 +89,7 @@
 //*****************************************************************************
 
 typedef struct gtpin_hpcrun_api_t {
-  void (*safe_enter)(void);
+  int (*safe_enter)(void);
   void (*safe_exit)(void);
   void (*real_exit)(int code);
 

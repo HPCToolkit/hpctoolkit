@@ -52,11 +52,13 @@
 // local includes
 //*****************************************************************************
 
+#include <messages.h>
+
+#include <lib/prof-lean/crypto-hash.h>
+#include <lib/prof-lean/spinlock.h>
+
 #include "level0-binary.h"
 #include "level0-handle-map.h"
-#include "lib/prof-lean/crypto-hash.h"
-#include "lib/prof-lean/spinlock.h"
-
 
 
 //*****************************************************************************
@@ -153,7 +155,7 @@ level0_binary_process
   char *hash_buf = (char *) malloc(CRYPTO_HASH_STRING_LENGTH);
   crypto_compute_hash_string(buf, size, hash_buf, CRYPTO_HASH_STRING_LENGTH);
 
-  gpu_binary_kind_t bkind = gpu_binary_kind(buf, size);
+  gpu_binary_kind_t bkind = gpu_binary_kind((const char *) buf, size);
 
   switch (bkind){
   case gpu_binary_kind_intel_patch_token:
@@ -164,7 +166,7 @@ level0_binary_process
     break;
   case gpu_binary_kind_unknown:
     if (size > 4) {
-      const char *magic = buf;
+      const char *magic = (const char *) buf;
       EEMSG("WARNING: hpcrun: Level Zero presented unknown binary kind: "
             "%c%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
     } else {
@@ -180,7 +182,7 @@ void
 level0_module_handle_map_lookup
 (
   ze_module_handle_t module,
-  char **hash_string,
+  const char **hash_string,
   gpu_binary_kind_t *bkind
 )
 {

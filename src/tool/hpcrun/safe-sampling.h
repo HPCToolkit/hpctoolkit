@@ -184,7 +184,7 @@ hpcrun_safe_exit(void)
   td->inside_hpcrun = 0;
 }
 
-int hpcrun_safe_exit_noinline(void);
+void hpcrun_safe_exit_noinline(void);
 
 
 #endif  // _HPCRUN_SAFE_SAMPLING_H_

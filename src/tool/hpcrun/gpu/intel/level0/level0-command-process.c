@@ -209,7 +209,7 @@ get_load_module
   free(kernel_name);
 
   // Step 2: get the hash for the binary that contains the kernel
-  char *binary_hash;
+  const char *binary_hash;
   gpu_binary_kind_t bkind;
 
   ze_module_handle_t module_handle = level0_kernel_module_map_lookup(kernel);
@@ -282,6 +282,7 @@ level0_command_begin
       break;
     }
     default:
+      // FIXME: need to set gpu_placeholder_node to none, but there is not a none value
       break;
   }
 
@@ -344,7 +345,9 @@ level0_command_end
   uint64_t end
 )
 {
+#if 0
   uint64_t correlation_id = (uint64_t)(command_node->event);
+#endif
   gpu_monitoring_thread_activities_ready();
   gpu_activity_t gpu_activity;
   gpu_activity_t* ga = &gpu_activity;

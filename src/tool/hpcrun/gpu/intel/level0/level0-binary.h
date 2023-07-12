@@ -69,7 +69,7 @@ void
 level0_module_handle_map_lookup
 (
   ze_module_handle_t module,
-  char **hash_string,
+  const char **hash_string,
   gpu_binary_kind_t *bkind
 );
 
