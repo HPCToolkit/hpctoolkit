@@ -10,7 +10,8 @@ from yaspin import yaspin  # type: ignore[import]
 
 from .command import Command, ShEnv
 from .meson import MesonMachineFile
-from .spack import Spack
+from .spack import Compiler
+from .spack import proxy as spack_proxy
 from .spec import DependencyMode, SpackEnv, VerConSpec
 
 __all__ = ("AutogenEnv", "DevEnv", "InvalidSpecificationError")
@@ -68,13 +69,13 @@ class DevEnv(SpackEnv):
             case "papi" | "python" | "opencl":
                 return True
             case "cuda":
-                return bool(Spack.get().fetch_external_versions("cuda"))
+                return bool(spack_proxy.fetch_external_versions("cuda"))
             case "rocm":
-                return bool(Spack.get().fetch_external_versions("hip"))
+                return bool(spack_proxy.fetch_external_versions("hip"))
             case "level0":
-                return bool(Spack.get().fetch_external_versions("oneapi-level-zero"))
+                return bool(spack_proxy.fetch_external_versions("oneapi-level-zero"))
             case "gtpin":
-                return bool(Spack.get().fetch_external_versions("intel-gtpin"))
+                return bool(spack_proxy.fetch_external_versions("intel-gtpin"))
             case _:
                 raise ValueError(feature)
 
@@ -145,8 +146,15 @@ class DevEnv(SpackEnv):
         yes = click.style("YES", fg="green", bold=True)
         no = click.style("NO", fg="red", bold=True)
 
+        if self.recommended_compiler is None:
+            comp = "(undefined)"
+        elif not self.recommended_compiler:
+            comp = f"{self.recommended_compiler} (unavailable)"
+        else:
+            comp = f"{self.recommended_compiler}"
+
         return f"""\
-    Compiler             : {self.recommended_compiler.spec if self.recommended_compiler else '(undefined)'}
+    Rec. Compiler        : {comp}
     hpcprof-mpi          : {yes if self.mpi else no}
 
   {click.style("CPU Features", bold=True)}
@@ -250,14 +258,28 @@ class DevEnv(SpackEnv):
             pkg = self.packages[s.package]
             packages.add(pkg)
             packages |= pkg.dependencies
-        Spack.get().view_add(
-            self._pyview, *sorted(packages, key=lambda p: p.fullhash), spack_env=self.root
-        )
+        self.spack.view_add(self._pyview, *sorted(packages, key=lambda p: p.fullhash))
 
-    def _m_binaries(self, native: MesonMachineFile) -> None:
-        assert self.recommended_compiler
-        native.add_binary("c", self.recommended_compiler.cc)
-        native.add_binary("cpp", self.recommended_compiler.cpp)
+    def _m_binaries(self, native: MesonMachineFile, *, compiler: Compiler | None = None) -> None:
+        assert self.recommended_compiler is not None
+        if compiler is not None:
+            if not compiler:
+                raise ValueError(compiler)
+            if not compiler.compatible_with(self.recommended_compiler):
+                click.echo(
+                    click.style("WARNING", fg="yellow")
+                    + f": Requested compiler {compiler} may not be compatible with recommended compiler {self.recommended_compiler}, this may not work!"
+                )
+            native.add_binary("c", compiler.cc)
+            native.add_binary("cpp", compiler.cpp)
+        elif self.recommended_compiler:
+            native.add_binary("c", self.recommended_compiler.cc)
+            native.add_binary("cpp", self.recommended_compiler.cpp)
+        else:
+            click.echo(
+                click.style("WARNING", fg="yellow")
+                + f": Recommended compiler {self.recommended_compiler} is unavailable, Meson will use its own defaults instead!"
+            )
         native.add_binary("autoreconf", self.packages["autoconf"].prefix / "bin" / "autoreconf")
         native.add_binary("autoconf", self.packages["autoconf"].prefix / "bin" / "autoconf")
         native.add_binary("aclocal", self.packages["automake"].prefix / "bin" / "aclocal")
@@ -270,10 +292,12 @@ class DevEnv(SpackEnv):
         native.add_binary("python3", self._pyview / "bin" / "python3")
         native.add_binary("python", self._pyview / "bin" / "python3")
         if self.mpi:
-            native.add_binary("mpicxx", self.which("mpicxx", VerConSpec("mpi")).path)
+            native.add_binary(
+                "mpicxx", self.which("mpicxx", VerConSpec("mpi"), check_arg=None).path
+            )
             native.add_binary("mpiexec", self.which("mpiexec", VerConSpec("mpi")).path)
         if self.cuda:
-            native.add_binary("cuda", self.which("nvcc", VerConSpec("cuda")).path)
+            native.add_binary("cuda", self.which("nvcc", VerConSpec("cuda"), check_arg=None).path)
             native.add_binary("nvdisasm", self.which("nvdisasm", VerConSpec("cuda")).path)
 
     def _m_prefixes(self, native: MesonMachineFile) -> None:
@@ -310,12 +334,12 @@ class DevEnv(SpackEnv):
         if self.cuda:
             native.add_property("prefix_cuda", self.packages["cuda"].prefix)
 
-    def populate(self) -> None:
+    def populate(self, *, compiler: Compiler | None = None) -> None:
         """Populate the development environment with all the files needed to use it."""
         self._populate_pyview()
 
         native = MesonMachineFile()
-        self._m_binaries(native)
+        self._m_binaries(native, compiler=compiler)
         self._m_prefixes(native)
         # FIXME: Eventually we should set the defaults for the feature options here in the native
         # file, but that tends to interfere with options specified on the command line.

@@ -25,9 +25,31 @@ from . import schema
 from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import AutogenEnv, DevEnv, InvalidSpecificationError
+from .spack.system import SystemCompiler
 from .spec import DependencyMode, SpackEnv
 
 __all__ = ("main",)
+
+
+class SystemCompilerType(click.ParamType):
+    name = "Compiler"
+
+    def __init__(self, *, missing_ok: bool = False) -> None:
+        self._missing_ok = missing_ok
+
+    def convert(
+        self, value: str | SystemCompiler, param: click.Parameter | None, ctx: click.Context | None
+    ) -> SystemCompiler:
+        if isinstance(value, SystemCompiler):
+            return value
+
+        try:
+            result = SystemCompiler(value)
+        except ValueError as e:
+            self.fail(str(e), param, ctx)
+        if not result and not self._missing_ok:
+            self.fail(f"Unable to find compiler: {result}", param, ctx)
+        return result
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -326,6 +348,12 @@ feature_ty = typing.Literal["enabled", "disabled", "auto"]
 @click.option("--papi", type=feature, default="auto", help="Enable PAPI (-e PAPI_*) support")
 @click.option("--mpi", type=feature, default="auto", help="Enable hpcprof-mpi")
 # Population options
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(),
+    help="Compiler to populate the devenv with",
+)
 @click.option("--build/--no-build", help="Also build HPCToolkit")
 def create(
     obj: DevState,
@@ -340,6 +368,7 @@ def create(
     python: feature_ty,
     papi: feature_ty,
     mpi: feature_ty,
+    compiler: SystemCompiler | None,
     build: bool,
 ) -> None:
     """Create a fresh devenv ready for building HPCToolkit."""
@@ -369,7 +398,7 @@ def create(
         click.echo(env.describe())
         env.generate(mode)
         env.install()
-        env.populate()
+        env.populate(compiler=compiler)
         try:
             if obj.project_root:
                 env.setup(obj.project_root, obj.meson)
@@ -425,8 +454,21 @@ Devenv successfully created! You may now use Meson commands, Eg.:
     help="Use any supported version of dependencies",
 )
 # Population options
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(),
+    help="Compiler to populate the devenv with",
+)
 @click.option("--build/--no-build", help="Also build HPCToolkit")
-def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> None:
+def update(
+    obj: DevState,
+    devenv: Env,
+    *,
+    mode: DependencyMode,
+    compiler: SystemCompiler | None,
+    build: bool,
+) -> None:
     """Update (re-generate) a devenv."""
     if not obj.project_root:
         raise click.ClickException("create only operates within an HPCToolkit project checkout")
@@ -442,7 +484,7 @@ def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> Non
     click.echo(env.describe())
     env.generate(mode, template=prior)
     env.install()
-    env.populate()
+    env.populate(compiler=compiler)
     try:
         if obj.project_root:
             env.setup(obj.project_root, obj.meson)
@@ -879,14 +921,20 @@ def generate_request(
 @main.command
 @NamedEnv.pass_env_arg(exists=True)
 @dev_pass_obj
-def populate(obj: DevState, devenv: Path) -> None:
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(),
+    help="Compiler to populate the devenv with",
+)
+def populate(obj: DevState, devenv: Path, *, compiler: SystemCompiler | None) -> None:
     """Populate a manually installed DEVENV.
 
     Consider using 'dev create' instead. This command is only needed if the development environment
     needs to be manually installed, e.g. for a container image.
     """
     env = DevEnv.restore(devenv)
-    env.populate()
+    env.populate(compiler=compiler)
     try:
         if obj.project_root:
             env.setup(obj.project_root, obj.meson)

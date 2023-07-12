@@ -15,7 +15,8 @@ import click
 import ruamel.yaml
 
 from .command import Command
-from .spack import Compiler, Package, Spack, Version
+from .spack import Compiler, Package, Spack, Version, preferred_compiler
+from .spack import proxy as spack_proxy
 
 __all__ = ("DependencyMode", "VerConSpec", "SpackEnv")
 
@@ -87,7 +88,7 @@ class VerConSpec:
         """
         if not self._versions:
             return None
-        latest = Spack.get().fetch_latest_ver(self._package)
+        latest = spack_proxy.fetch_latest_ver(self._package)
         candidate: Version | None = None
         for bot, top in self._versions:
             if bot and latest < bot:
@@ -118,7 +119,7 @@ class VerConSpec:
         """Determine the latest available and supported version available as an external.
         Returns None if no such externals are available.
         """
-        versions = Spack.get().fetch_external_versions(self._package)
+        versions = spack_proxy.fetch_external_versions(self._package)
         for bot, top in self._versions:
             if bot:
                 versions = [v for v in versions if not v < bot]
@@ -127,7 +128,11 @@ class VerConSpec:
         return max(versions, default=None)
 
     def specs_for(
-        self, mode: DependencyMode, unresolve: collections.abc.Collection[str] = ()
+        self,
+        mode: DependencyMode,
+        /,
+        *,
+        unresolve: collections.abc.Collection[str] = (),
     ) -> set[str]:
         if not self._versions:
             return {self._spec}
@@ -158,6 +163,8 @@ class VerConSpec:
 def resolve_specs(
     specs: collections.abc.Iterable["VerConSpec"],
     mode: DependencyMode,
+    /,
+    *,
     unresolve: collections.abc.Collection[str] = (),
 ) -> dict[str | None, set[str]]:
     by_when: dict[str | None, set[VerConSpec]] = {}
@@ -189,13 +196,17 @@ class SpackEnv:
         self._package_cache: dict[str, Package | None] = {}
 
     @functools.cached_property
+    def spack(self) -> Spack:
+        return Spack(self.root)
+
+    @functools.cached_property
     def packages(self) -> dict[str, Package]:
         """Fetch all packages installed in this environment."""
-        return {p.package: p for p in Spack.get().fetch_all(spack_env=self.root, concretized=True)}
+        return {p.package: p for p in self.spack.fetch_all(concretized=True)}
 
     def package(self, spec: str) -> Package:
         """Fetch an individual package installed in this environment."""
-        return Spack.get().fetch(spec, spack_env=self.root, concretized=True)
+        return self.spack.fetch(spec, concretized=True)
 
     @staticmethod
     def validate_name(_ctx, _param, name: str) -> str:
@@ -216,7 +227,7 @@ class SpackEnv:
     @property
     def recommended_compiler(self) -> Compiler | None:
         return (
-            Compiler.preferred(p.compiler for p in self.packages.values())
+            preferred_compiler(p.compiler for p in self.packages.values())
             if self.exists()
             else None
         )
@@ -264,7 +275,8 @@ class SpackEnv:
         sp.setdefault("concretizer", {})["unify"] = True
         sp["definitions"] = [d for d in contents["spack"].get("definitions", []) if "_dev" not in d]
         for when, subspecs in sorted(
-            resolve_specs(specs, mode, unresolve=unresolve).items(), key=lambda kv: kv[0] or ""
+            resolve_specs(specs, mode, unresolve=unresolve).items(),
+            key=lambda kv: kv[0] or "",
         ):
             clause: dict[str, str | list[str]] = {"_dev": sorted(subspecs)}
             if when is not None:
@@ -285,7 +297,7 @@ class SpackEnv:
     def install(self) -> None:
         """Install the Spack environment."""
         try:
-            Spack.get().install("--fail-fast", spack_env=self.root)
+            self.spack.install("--fail-fast")
         except subprocess.CalledProcessError as e:
             raise click.ClickException(f"spack install failed with code {e.returncode}") from e
 
@@ -296,8 +308,6 @@ class SpackEnv:
         cmd = shutil.which(command, path=path)
         if cmd is None:
             raise RuntimeError(f"Unable to find {command} in path {path}")
-        if cmd == shutil.which(command):
-            raise RuntimeError(f"Command {command} was not provided by {spec!r}")
 
         result = Command(cmd)
         if check_arg is not None:
