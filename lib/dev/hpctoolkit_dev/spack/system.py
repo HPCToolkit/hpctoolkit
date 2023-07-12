@@ -1,3 +1,4 @@
+import collections.abc
 import enum
 import re
 import shutil
@@ -14,6 +15,43 @@ class OSClass(enum.Enum):
     DebianLike = "Debian/Ubuntu"
     RedHatLike = "Fedora/RHEL"
     SUSELeap = "OpenSUSE Leap"
+
+
+_TRANSLATIONS_RH: collections.abc.Mapping[str, str | None] = {
+    "bzip2": None,
+    "ccache": None,
+    "diffutils": None,
+    "eatmydata": None,
+    "file": None,
+    "g++": None,
+    "gcc": None,
+    "git-lfs": None,
+    "git": None,
+    "gnupg2": None,
+    "gzip": None,
+    "make": None,
+    "patch": None,
+    "tar": None,
+    "unzip": None,
+    "xz-utils": "xz",
+    "zstd": None,
+}
+_TRANSLATIONS_SUSE: collections.abc.Mapping[str, str | None] = _TRANSLATIONS_RH
+
+
+def translate(pkg: str, target: OSClass) -> str:
+    """Translate the Debian/Ubuntu name for an OS package into the name for a target OS."""
+    match target:
+        case OSClass.DebianLike:
+            return pkg
+        case OSClass.RedHatLike:
+            if pkg in _TRANSLATIONS_RH:
+                return _TRANSLATIONS_RH[pkg] or pkg
+        case OSClass.SUSELeap:
+            if pkg in _TRANSLATIONS_SUSE:
+                return _TRANSLATIONS_SUSE[pkg] or pkg
+    click.echo(f"WARNING: Unrecognized package {pkg} for target OS {target}, not translating")
+    return pkg
 
 
 @typing.final

@@ -22,10 +22,12 @@ import jsonschema
 import ruamel.yaml
 
 from . import schema
+from .buildfe import logs
 from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import AutogenEnv, DevEnv, InvalidSpecificationError
-from .spack.system import SystemCompiler
+from .spack.system import OSClass, SystemCompiler
+from .spack.system import translate as os_translate
 from .spec import DependencyMode, SpackEnv
 
 __all__ = ("main",)
@@ -971,6 +973,62 @@ def buildfe(obj: DevState, devenv: Env, args: collections.abc.Collection[str]) -
     env = DevEnv.restore(devenv.root)
     os.chdir(obj.project_root)
     buildfe_main(obj.meson.path, [*args] + [str(env.root)])
+
+
+@main.command
+@click.argument("packages", nargs=-1)
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(missing_ok=True),
+    multiple=True,
+    help="Also install the given compiler(s)",
+)
+@click.option(
+    "-y", "--yes-to-all", is_flag=True, help="Avoid any prompts during the install process"
+)
+def os_install(
+    *,
+    packages: collections.abc.Iterable[str],
+    compiler: collections.abc.Iterable[SystemCompiler],
+    yes_to_all: bool,
+) -> None:
+    """Install a number of PACKAGES by autodetecting the OS installation. Packages are generally
+    named by their names in Ubuntu/Debian and will be transformed as needed.
+
+    Primarily intended for setting up emphemeral build containers.
+    """
+    # First figure out what kind of system we are on
+    precmd: Command | None = None
+    if apt := shutil.which("apt-get"):
+        precmd = Command(apt, "update", "-qq", *(["-y"] if yes_to_all else []))
+        cmd = Command(apt, "install", "-qq", *(["-y"] if yes_to_all else []))
+        osclass = OSClass.DebianLike
+    elif zypper := shutil.which("zypper"):
+        cmd = Command(zypper, "install", *(["-y"] if yes_to_all else []))
+        osclass = OSClass.SUSELeap
+    elif dnf := shutil.which("dnf"):
+        cmd = Command(dnf, "install", *(["-y"] if yes_to_all else []))
+        # On everything except Fedora, we need to install epel-release
+        if not re.search(r"(?m)^ID=fedora$", Path("/etc/os-release").read_text(encoding="utf-8")):
+            precmd = cmd.withargs("epel-release")
+        osclass = OSClass.RedHatLike
+    else:
+        raise RuntimeError("Unable to identify the install command for this OS!")
+
+    # Determine the packages to install
+    to_install: set[str] = {os_translate(pkg, osclass) for pkg in packages}
+    for comp in compiler:
+        to_install |= comp.os_packages(osclass)
+
+    # Do the installation
+    with logs.section(f"Installing packages {' '.join(to_install)}", collapsed=True):
+        try:
+            if precmd is not None:
+                precmd()
+            cmd(*to_install)
+        except subprocess.CalledProcessError as e:
+            raise click.ClickException("Install commands failed, see above errors.") from e
 
 
 if __name__ == "__main__":
