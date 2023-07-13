@@ -10,7 +10,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
-import textwrap
+import traceback
 import typing
 import venv
 from pathlib import Path
@@ -35,13 +35,14 @@ class DevState:
     # May not exist, create this directory lazily when needed.
     named_environment_root: Path | None = None
 
-    _MISSING_PROJECT_ROOT_SOLUTIONS = textwrap.dedent(
-        """\
-    Potential solutions:
-      1. cd to the HPCToolkit project root directory.
-      2. Use the ./dev wrapper script in the project root directory.
-      3. Ensure './configure --version' works properly."""
-    )
+    # Whether to print the traceback of caught exceptions before converting to ClickException.
+    traceback: bool = False
+
+    _MISSING_PROJECT_ROOT_SOLUTIONS = """\
+Potential solutions:
+    1. cd to the HPCToolkit project root directory.
+    2. Use the ./dev wrapper script in the project root directory.
+    3. Ensure './configure --version' works properly."""
 
     def missing_named_why(self) -> str:
         """Give a suitable (short) reason why named_environment_root is None."""
@@ -231,8 +232,14 @@ class NamedEnv(click.ParamType):
     envvar="DEV_ISOLATED",
     help="Isolate internal data from other invocations",
 )
+@click.option(
+    "--traceback",
+    is_flag=True,
+    envvar="DEV_TRACEBACK",
+    help="Print tracebacks for handled exceptions",
+)
 @dev_pass_obj
-def main(obj: DevState, isolated: bool) -> None:
+def main(obj: DevState, isolated: bool, traceback: bool) -> None:
     """Create and manage development environments (devenvs) for building HPCToolkit.
 
     \b
@@ -257,6 +264,8 @@ def main(obj: DevState, isolated: bool) -> None:
 
     if not isolated and obj.project_root is not None:
         obj.named_environment_root = obj.project_root / ".devenv"
+
+    obj.traceback = traceback
 
 
 feature = click.Choice(["enabled", "disabled", "auto"], case_sensitive=False)
@@ -361,6 +370,8 @@ def create(
             if obj.project_root:
                 env.setup(obj.project_root, obj.meson)
         except subprocess.CalledProcessError as e:
+            if obj.traceback:
+                traceback.print_exception(e)
             raise click.ClickException(
                 f"""\
 meson setup failed! Fix any errors above and continue with:
@@ -432,6 +443,8 @@ def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> Non
         if obj.project_root:
             env.setup(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
+        if obj.traceback:
+            traceback.print_exception(e)
         raise click.ClickException(
             f"""\
 meson setup failed! Fix any errors above and continue with:
@@ -532,6 +545,8 @@ def autogen(obj: DevState, custom_env: Path, install: bool) -> None:
                 cwd=obj.project_root,
             )
         except subprocess.CalledProcessError as e:
+            if obj.traceback:
+                traceback.print_exception(e)
             raise click.ClickException(f"autoreconf exited with code {e.returncode}") from e
 
 
@@ -722,6 +737,8 @@ def populate(obj: DevState, devenv: Path) -> None:
         if obj.project_root:
             env.setup(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
+        if obj.traceback:
+            traceback.print_exception(e)
         raise click.ClickException("meson setup failed! Fix any errors above and try again.") from e
 
     if obj.project_root:
