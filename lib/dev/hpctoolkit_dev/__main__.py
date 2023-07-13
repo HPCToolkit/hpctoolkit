@@ -356,8 +356,10 @@ def create(
         click.echo(env.describe())
         env.generate(mode)
         env.install()
+        env.populate()
         try:
-            env.populate(obj.project_root, obj.meson)
+            if obj.project_root:
+                env.setup(obj.project_root, obj.meson)
         except subprocess.CalledProcessError as e:
             raise click.ClickException(
                 f"""\
@@ -425,8 +427,10 @@ def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> Non
     click.echo(env.describe())
     env.generate(mode, template=prior)
     env.install()
+    env.populate()
     try:
-        env.populate(obj.project_root, obj.meson)
+        if obj.project_root:
+            env.setup(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
         raise click.ClickException(
             f"""\
@@ -713,8 +717,10 @@ def populate(obj: DevState, devenv: Path) -> None:
     needs to be manually installed, e.g. for a container image.
     """
     env = DevEnv.restore(devenv)
+    env.populate()
     try:
-        env.populate(obj.project_root, obj.meson)
+        if obj.project_root:
+            env.setup(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
         raise click.ClickException("meson setup failed! Fix any errors above and try again.") from e
 

@@ -294,7 +294,7 @@ class DevEnv(SpackEnv):
         if self.cuda:
             native.add_property("prefix_cuda", self.packages["cuda"].prefix)
 
-    def populate(self, dev_root: Path | None, meson: Command) -> None:
+    def populate(self) -> None:
         """Populate the development environment with all the files needed to use it."""
         self._populate_pyview()
 
@@ -308,26 +308,30 @@ class DevEnv(SpackEnv):
         native_path = self.root / "meson_native.ini"
         native.save(native_path)
 
-        if dev_root is not None:
-            self.builddir.mkdir(exist_ok=True)
-            with yaspin(text="Configuring build directory"):
-                meson(
-                    "setup",
-                    "--wipe",
-                    f"--native-file={native_path}",
-                    f"--prefix={self.installdir}",
-                    f"-Dhpcprof_mpi={'enabled' if self.mpi else 'disabled'}",
-                    f"-Dpapi={'enabled' if self.papi else 'disabled'}",
-                    f"-Dpython={'enabled' if self.python else 'disabled'}",
-                    f"-Dopencl={'enabled' if self.opencl else 'disabled'}",
-                    f"-Dlevel0={'enabled' if self.level0 else 'disabled'}",
-                    f"-Dgtpin={'enabled' if self.gtpin else 'disabled'}",
-                    f"-Drocm={'enabled' if self.rocm else 'disabled'}",
-                    f"-Dcuda={'enabled' if self.cuda else 'disabled'}",
-                    self.builddir,
-                    dev_root,
-                    output=False,
-                )
+    def setup(self, dev_root: Path, meson: Command) -> None:
+        """Set up the build directory for this development environment. Must already be populated."""
+        native_path = self.root / "meson_native.ini"
+        assert native_path.is_file()
+
+        self.builddir.mkdir(exist_ok=True)
+        with yaspin(text="Configuring build directory"):
+            meson(
+                "setup",
+                "--wipe",
+                f"--native-file={native_path}",
+                f"--prefix={self.installdir}",
+                f"-Dhpcprof_mpi={'enabled' if self.mpi else 'disabled'}",
+                f"-Dpapi={'enabled' if self.papi else 'disabled'}",
+                f"-Dpython={'enabled' if self.python else 'disabled'}",
+                f"-Dopencl={'enabled' if self.opencl else 'disabled'}",
+                f"-Dlevel0={'enabled' if self.level0 else 'disabled'}",
+                f"-Dgtpin={'enabled' if self.gtpin else 'disabled'}",
+                f"-Drocm={'enabled' if self.rocm else 'disabled'}",
+                f"-Dcuda={'enabled' if self.cuda else 'disabled'}",
+                self.builddir,
+                dev_root,
+                output=False,
+            )
 
     @property
     def _pyview(self) -> Path:
