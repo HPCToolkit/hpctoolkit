@@ -10232,7 +10232,7 @@ install-exec-hook:
 @OPT_ENABLE_HPCRUN_TRUE@	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
 @OPT_ENABLE_HPCRUN_TRUE@	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(OPENCL_NAMES) \
 @OPT_ENABLE_HPCRUN_TRUE@		$(LIBOMPTARGET_NAMES) $(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
-@OPT_ENABLE_HPCRUN_TRUE@	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
+@OPT_ENABLE_HPCRUN_TRUE@	$(CC) -shared $(WORK_DYN)/part2.o $(LDFLAGS) $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
 @OPT_ENABLE_HPCRUN_TRUE@	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)
 @OPT_ENABLE_HPCRUN_FALSE@	@echo "skipping libhpcrun.so"
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	@echo "building and installing libhpcrun.o ..."
