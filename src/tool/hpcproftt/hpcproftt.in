@@ -12,7 +12,6 @@
 @launch_script_vars@
 
 # Relative paths are relative to HPCTOOLKIT.
-ext_libs_dir='@hpc_ext_libs_dir@'
 libexec_dir='libexec/hpctoolkit'
 
 # Should be absolute path.
@@ -37,14 +36,10 @@ hpc_path_to_root=../..
 @launch_early_options@
 
 # Relative paths are relative to HPCTOOLKIT.
-case "$ext_libs_dir" in
-    /* ) ;;
-    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
-esac
 case "$libexec_dir" in
     /* ) ;;
     * )  libexec_dir="${HPCTOOLKIT}/${libexec_dir}" ;;
 esac
 
-export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${libcxx_path}:${LD_LIBRARY_PATH}"
 exec "${libexec_dir}/${binary_name}" "$@"

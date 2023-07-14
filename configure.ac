@@ -1812,18 +1812,6 @@ AC_MSG_NOTICE([launch script hash: $hash_value])
 AC_SUBST([hash_value])
 
 
-#----------------------------------------------------------------------------
-# Prerequisites: external libraries
-#----------------------------------------------------------------------------
-
-#
-# Directory relative to hpctoolkit's prefix where we put external
-# package libraries, if we want to copy them.
-#
-hpc_ext_libs_dir=lib/hpctoolkit/ext-libs
-AC_SUBST([hpc_ext_libs_dir])
-
-
 #-------------------------------------------------
 # Option: --with-externals=PATH
 #
@@ -2132,13 +2120,7 @@ AC_ARG_WITH([boost],
 BOOST_IFLAGS=
 BOOST_LFLAGS=
 BOOST_LIB_DIR=
-BOOST_COPY=no
 
-# The copy list should include all libraries that any version of
-# dyninst would use (but no more).  But copy-libs won't fail on a
-# missing library, so it doesn't have to be exact.
-
-BOOST_COPY_LIST='atomic chrono date_time filesystem graph regex system thread timer'
 BOOST_NEEDED_LIST='graph regex system'
 
 AC_MSG_CHECKING([for boost])
@@ -2155,12 +2137,11 @@ case "$BOOST" in
       for f in "$dir"/libboost*system*.so* ; do
         if test -f "$f" ; then
           BOOST_LIB_DIR="$dir"
-          BOOST_COPY=yes
           break 2
         fi
       done
     done
-    if test "$BOOST_COPY" != yes ; then
+    if test -z "$BOOST_LIB_DIR" ; then
       AC_MSG_ERROR([invalid boost directory: $BOOST])
     fi
     num_pkgs=`expr 1 + $num_pkgs`
@@ -2181,14 +2162,9 @@ if test "x$BOOST_LIB_DIR" != x ; then
   for lib in $BOOST_NEEDED_LIST ; do
     if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
       boost_lflag_list="${boost_lflag_list} -lboost_$lib"
+      boost_lib_list="${boost_lib_list} $lib"
     else
       AC_MSG_ERROR([boost ${lib} is required])
-    fi
-  done
-
-  for lib in $BOOST_COPY_LIST ; do
-    if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
-      boost_lib_list="${boost_lib_list} $lib"
     fi
   done
 
@@ -2200,8 +2176,6 @@ fi
 AC_SUBST([BOOST_IFLAGS])
 AC_SUBST([BOOST_LFLAGS])
 AC_SUBST([BOOST_LIB_DIR])
-AC_SUBST([BOOST_COPY])
-AC_SUBST([BOOST_COPY_LIST])
 
 
 #-------------------------------------------------
@@ -2212,7 +2186,6 @@ AC_SUBST([BOOST_COPY_LIST])
 # prereq.  Toolkit doesn't directly call bzip, so we don't need an
 # include path here.  Note: this package is not built in externals.
 
-BZIP_COPY=no
 BZIP_LIB=no
 
 BZIP="$default_bzip_prefix"
@@ -2237,7 +2210,6 @@ case "$BZIP" in
     if test "$BZIP_LIB" = no ; then
       AC_MSG_ERROR([unable to find libbz2.so in: $BZIP])
     fi
-    BZIP_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -2249,7 +2221,6 @@ esac
 
 AC_MSG_RESULT([$BZIP])
 
-AC_SUBST([BZIP_COPY])
 AC_SUBST([BZIP_LIB])
 
 
@@ -2270,7 +2241,6 @@ AC_ARG_WITH([dyninst],
 DYNINST_IFLAGS=
 DYNINST_LFLAGS=
 DYNINST_LIB_DIR=
-DYNINST_COPY=no
 dyninst_features=
 
 AC_MSG_CHECKING([for dyninst])
@@ -2288,11 +2258,10 @@ case "${DYNINST}" in
       dir="${DYNINST}/$lib"
       if test -f "${dir}/libparseAPI.so" ; then
         DYNINST_LIB_DIR="$dir"
-        DYNINST_COPY=yes
         break
       fi
     done
-    if test "$DYNINST_COPY" != yes ; then
+    if test -z "$DYNINST_LIB_DIR" ; then
       AC_MSG_ERROR([invalid dyninst directory: $DYNINST])
     fi
     DYNINST_LFLAGS="-L${DYNINST_LIB_DIR} -lparseAPI -linstructionAPI -lsymtabAPI"
@@ -2311,7 +2280,6 @@ AC_MSG_RESULT([$DYNINST])
 AC_SUBST([DYNINST_IFLAGS])
 AC_SUBST([DYNINST_LFLAGS])
 AC_SUBST([DYNINST_LIB_DIR])
-AC_SUBST([DYNINST_COPY])
 
 
 #-------------------------------------------------
@@ -2330,7 +2298,6 @@ AC_MSG_CHECKING([for elfutils])
 
 LIBELF_INC=no
 LIBELF_LIB=no
-LIBELF_COPY=no
 
 case "$LIBELF" in
   /* )
@@ -2354,7 +2321,6 @@ case "$LIBELF" in
     if test "$LIBELF_LIB" = no ; then
       AC_MSG_ERROR([unable to find libelf.so or libdw.so in: $LIBELF])
     fi
-    LIBELF_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -2368,7 +2334,6 @@ AC_MSG_RESULT([$LIBELF])
 
 AC_SUBST([LIBELF_INC])
 AC_SUBST([LIBELF_LIB])
-AC_SUBST([LIBELF_COPY])
 
 
 #-------------------------------------------------
@@ -2439,7 +2404,6 @@ case "${LIBMONITOR}" in
   /* )
     LIBMONITOR_INC="${LIBMONITOR}/include"
     LIBMONITOR_BIN=${LIBMONITOR}/bin
-    LIBMONITOR_LIB=${LIBMONITOR}/lib
     if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
     else
       AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
@@ -2454,13 +2418,9 @@ case "${LIBMONITOR}" in
       LIBMONITOR_WRAP_NAMES=`nm "$wrap_file" | grep __wrap_ |
         $SED -e 's/.*__wrap_//' | tr '\n' ' '`
     fi
-    LIBMONITOR_COPY=yes
-    LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
-    LIBMONITOR_COPY=no
-    LIBMONITOR_RUN_DIR=no
     ;;
   * )
     AC_MSG_ERROR([libmonitor directory must be absolute path: $LIBMONITOR])
@@ -2474,8 +2434,6 @@ echo "$LIBMONITOR_WRAP_NAMES" >&AS_MESSAGE_LOG_FD
 
 AC_SUBST([LIBMONITOR_INC])
 AC_SUBST([LIBMONITOR_LIB])
-AC_SUBST([LIBMONITOR_COPY])
-AC_SUBST([LIBMONITOR_RUN_DIR])
 AC_SUBST([LIBMONITOR_WRAP_NAMES])
 
 
@@ -2652,7 +2610,6 @@ LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
 LZMA_PROF_MPI_LIBS=
 
-LZMA_COPY=no
 LZMA_LIB_DIR=
 
 lzma_exists=no
@@ -2682,7 +2639,6 @@ case "$LZMA" in
       ldir="${LZMA}/$lib"
       if test -f "${ldir}/liblzma.so" ; then
         LZMA_LDFLAGS_DYN="-L${ldir} -llzma"
-        LZMA_COPY=yes
         LZMA_LIB_DIR="$ldir"
         lzma_exists=yes
         lzma_dynamic=yes
@@ -2769,7 +2725,6 @@ AC_SUBST([LZMA_IFLAGS])
 AC_SUBST([LZMA_LDFLAGS_DYN])
 AC_SUBST([LZMA_LDFLAGS_STAT])
 AC_SUBST([LZMA_PROF_MPI_LIBS])
-AC_SUBST([LZMA_COPY])
 AC_SUBST([LZMA_LIB_DIR])
 
 AM_CONDITIONAL(OPT_LZMA_STATIC, [test "$lzma_static" = yes])
@@ -3035,7 +2990,6 @@ fi
 
 PERFMON=no
 PERFMON_STATIC=no
-PERFMON_COPY=no
 OPT_PERFMON=no
 
 PERFMON_CFLAGS=
@@ -3129,7 +3083,6 @@ case "$PERFMON" in
       if test -f "${lib_dir}/libpfm.so" || test -f "${lib_dir}/libpfm.a"
       then
         PERFMON_LIB="$lib_dir"
-        PERFMON_COPY=yes
         if test -f "${lib_dir}/libpfm.so" ; then
           PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
         fi
@@ -3152,7 +3105,6 @@ AC_SUBST([PERFMON_CFLAGS])
 AC_SUBST([PERFMON_LIB])
 AC_SUBST([PERFMON_LDFLAGS_DYN])
 AC_SUBST([PERFMON_LDFLAGS_STAT])
-AC_SUBST([PERFMON_COPY])
 
 AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
 
@@ -3335,7 +3287,6 @@ TBB_IFLAGS=
 TBB_LFLAGS=
 TBB_PROXY_LIB=
 TBB_LIB_DIR=
-TBB_COPY=no
 
 AC_MSG_CHECKING([for tbb])
 
@@ -3351,12 +3302,11 @@ case "$TBB" in
       for f in "$dir"/libtbb*.so* ; do
         if test -f "$f" ; then
           TBB_LIB_DIR="$dir"
-          TBB_COPY=yes
           break 2
         fi
       done
     done
-    if test "$TBB_COPY" != yes ; then
+    if test -z "$TBB_LIB_DIR" ; then
       AC_MSG_ERROR([invalid tbb directory: $TBB])
     fi
     num_pkgs=`expr 1 + $num_pkgs`
@@ -3393,7 +3343,6 @@ AC_SUBST([TBB_IFLAGS])
 AC_SUBST([TBB_LFLAGS])
 AC_SUBST([TBB_PROXY_LIB])
 AC_SUBST([TBB_LIB_DIR])
-AC_SUBST([TBB_COPY])
 
 
 #-------------------------------------------------
@@ -3409,7 +3358,6 @@ XED2_LIB_FLAGS=
 XED2_HPCRUN_LIBS=
 XED2_HPCLINK_LIBS=
 XED2_PROF_MPI_LIBS=
-XED2_COPY=no
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
 
@@ -3502,7 +3450,6 @@ AC_SUBST([XED2_LIB_FLAGS])
 AC_SUBST([XED2_HPCRUN_LIBS])
 AC_SUBST([XED2_HPCLINK_LIBS])
 AC_SUBST([XED2_PROF_MPI_LIBS])
-AC_SUBST([XED2_COPY])
 
 
 #-------------------------------------------------
@@ -3538,10 +3485,7 @@ XERCES_LDLIBS="-lxerces-c"
 #esac
 
 
-if test "$XERCES" = no ; then
-  XERCES_COPY=no
-else
-  XERCES_COPY=yes
+if test "$XERCES" != no ; then
   XERCES_LIB="${XERCES}/lib"
   num_pkgs=`expr 1 + $num_pkgs`
 fi
@@ -3551,7 +3495,6 @@ AC_SUBST([XERCES])
 AC_SUBST([XERCES_IFLAGS])
 AC_SUBST([XERCES_LDFLAGS])
 AC_SUBST([XERCES_LDLIBS])
-AC_SUBST([XERCES_COPY])
 AC_SUBST([XERCES_LIB])
 
 
@@ -3574,7 +3517,6 @@ AC_ARG_WITH([yaml-cpp],
 YAMLCPP_IFLAGS=
 YAMLCPP_LDFLAGS=
 YAMLCPP_LDLIBS=
-YAMLCPP_COPY=no
 
 case "$YAMLCPP" in
   /* )
@@ -3593,7 +3535,6 @@ case "$YAMLCPP" in
     if test "x$YAMLCPP_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libyaml-cpp.so in: $YAMLCPP])
     fi
-    YAMLCPP_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -3609,7 +3550,6 @@ AC_SUBST([YAMLCPP])
 AC_SUBST([YAMLCPP_IFLAGS])
 AC_SUBST([YAMLCPP_LDFLAGS])
 AC_SUBST([YAMLCPP_LDLIBS])
-AC_SUBST([YAMLCPP_COPY])
 AC_SUBST([YAMLCPP_LIB])
 
 
@@ -3632,7 +3572,6 @@ AC_MSG_CHECKING([zlib])
 ZLIB_INC=no
 ZLIB_LIB=no
 ZLIB_HPCLINK_LIB=no
-ZLIB_COPY=no
 
 case "$ZLIB" in
   /* )
@@ -3650,7 +3589,6 @@ case "$ZLIB" in
     if test "$ZLIB_LIB" = no ; then
       AC_MSG_ERROR([unable to find zlib.so or zlib.a in: $ZLIB])
     fi
-    ZLIB_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -3667,7 +3605,6 @@ AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
 AC_SUBST([ZLIB_INC])
 AC_SUBST([ZLIB_LIB])
 AC_SUBST([ZLIB_HPCLINK_LIB])
-AC_SUBST([ZLIB_COPY])
 
 
 #----------------------------------------------------------------------------
@@ -3965,10 +3902,6 @@ if test "$enable_back_end" = yes ; then
 fi
 back_end_label=
 BACK_END_LABEL=
-
-if test "$enable_back_end" = yes ; then
-  XERCES_COPY=no
-fi
 
 AC_SUBST([BACK_END_LABEL])
 

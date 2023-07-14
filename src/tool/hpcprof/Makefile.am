@@ -71,8 +71,6 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-EXT_LIBS = lib/hpctoolkit/ext-libs
-
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
@@ -86,8 +84,6 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@ \
 	@BOOST_IFLAGS@
 
 MYLDFLAGS = \
-	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
-	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
 	-lstdc++fs \
 	@HOST_CXXFLAGS@ \
 	@XERCES_LDFLAGS@ \

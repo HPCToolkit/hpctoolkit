@@ -50,8 +50,6 @@ include $(top_srcdir)/src/Makeinclude.config
 
 #----------------------------------------------------------------------
 
-EXT_LIBS = lib/hpctoolkit/ext-libs
-
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
 
@@ -67,10 +65,6 @@ MYCXXFLAGS = @HOST_CXXFLAGS@
 MYCFLAGS   = @HOST_CFLAGS@
 
 MYLDADD = -L$(LIBELF_LIB) -lelf
-
-MYLDFLAGS = \
-	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
-	-Wl,-rpath='$$ORIGIN/../../$(EXT_LIBS)'
 
 #----------------------------------------------------------------------
 
