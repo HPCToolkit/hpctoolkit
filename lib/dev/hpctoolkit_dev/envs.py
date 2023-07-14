@@ -417,11 +417,48 @@ class DevEnv:
         if self.cuda:
             native.add_property("prefix_cuda", prefix("cuda"))
 
+    def _m_rpath(self) -> list[str]:
+        """Generate the R*PATH args to use for this installation. Includes all library dependencies.
+
+        This is a heavily simplified form of how Spack generates its RPATHs. It should work fine
+        for Spack-built dependencies, it may not work in cases with many externals.
+        """
+        # TODO: Investigate if the remaining logic Spack uses is useful for this case.
+        # https://github.com/spack/spack/blob/2e9e7ce7c49990cccd8a8d777f0491978d72220d/lib/spack/spack/build_environment.py#L476-L537
+        # NOTE: Unlike Spack, the result does not contain any reference to `self.installdir`. We do
+        # not know if the installdir is clean, if it isn't adding -rpath's for it might unwittingly
+        # break the link. So don't do that.
+
+        packages: set[str] = set()
+        if self.papi:
+            packages |= {"papi"}
+        if self.gtpin:
+            packages |= {"intel-gtpin", "oneapi-igc"}
+        if self.level0 or self.gtpin:
+            packages |= {"oneapi-level-zero"}
+        if self.rocm:
+            packages |= {"hip", "hsa-rocr-dev", "roctracer-dev", "rocprofiler-dev"}
+        if self.cuda:
+            packages |= {"cuda"}
+
+        paths: set[Path] = set()
+        for pkg in packages:
+            prefix = (self.sp_spack.find(pkg) if isinstance(pkg, str) else pkg).prefix
+            if prefix is None:
+                raise RuntimeError(f"No prefix for package: {pkg!r}")
+            for suffix in ("lib", "lib64"):
+                if (prefix / suffix).is_dir():
+                    paths.add(prefix / suffix)
+        return [f"-Wl,-rpath={p}" for p in sorted(paths)]
+
     def populate(self, *, compiler: Compiler | None = None) -> None:
         """Populate the development environment with all the files needed to use it."""
         native = MesonMachineFile()
         self._m_binaries(native, compiler=compiler)
         self._m_prefixes(native)
+        rpaths = self._m_rpath()
+        native.add_builtin_option("c_link_args", rpaths)
+        native.add_builtin_option("cpp_link_args", rpaths)
         # FIXME: Eventually we should set the defaults for the feature options here in the native
         # file, but that tends to interfere with options specified on the command line.
         # So for now we just set them via the initial command line as well.
