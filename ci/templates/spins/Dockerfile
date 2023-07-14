@@ -44,12 +44,6 @@ RUN find -L {{ paths.view }}/* -type f -exec readlink -f '{}' \; | \
     awk -F: '{print $1}' | xargs strip
 {% endif %}
 
-# Modifications to the environment that are necessary to run
-RUN spack env activate --sh -d {{ paths.environment }} > /opt/spack-environment/activate.sh
-
-# The view is a symlink. Copy it into a separate directory to preserve it's symlink status.
-RUN mkdir /view-final && mv {{ paths.view }} /view-final/
-
 {% if extra_instructions.build %}
 {{ extra_instructions.build }}
 {% endif %}
@@ -68,12 +62,6 @@ RUN {% if os_package_update %}{{ os_packages_final.update }} \
 
 COPY --from=builder {{ paths.environment }} {{ paths.environment }}
 COPY --from=builder {{ paths.store }} {{ paths.store }}
-COPY --from=builder {{ paths.hidden_view }} {{ paths.hidden_view }}
-COPY --from=builder /view-final /opt
-
-RUN ln -s /opt/spack-environment/activate.sh /etc/profile.d/z10_spack_environment.sh \
-&&  printf '#!/bin/sh\n. /opt/spack-environment/activate.sh\nexec "$@"' > /entrypoint.sh \
-&&  chmod a+x /entrypoint.sh
 
 {% block final_stage %}
 {% if extra_instructions.final %}
@@ -83,6 +71,4 @@ RUN ln -s /opt/spack-environment/activate.sh /etc/profile.d/z10_spack_environmen
 {% for label, value in labels.items() %}
 LABEL "{{ label }}"="{{ value }}"
 {% endfor %}
-ENTRYPOINT ["/entrypoint.sh"]
-CMD [ "/bin/bash" ]
 {% endif %}

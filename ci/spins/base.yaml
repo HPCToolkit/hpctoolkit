@@ -1,6 +1,8 @@
 specs:
 # The ./dev scriptsuit requires Python 3.10. Needs to be specified here for the autogen image.
 - 'python @3.10:'
+# We expose make inside the images. Needs to be specified here for the autogen image.
+- gmake
 
 concretizer:
   # Reuse everything, including the roots
