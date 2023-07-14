@@ -1154,48 +1154,6 @@ fi
 
 AC_SUBST([cxx17_flag])
 
-#-------------------------------------------------
-
-# Find location of libstdc++.
-#
-# Try --print-file-name first.  If that doesn't work, then try ldd.
-# If --print-file-name works, then its answer is more reliable because
-# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
-# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
-#
-# Of course, --print-file-name and libstdc++.so are GNU-specific.
-# (Intel icc seems to support both, but computes an answer based on
-# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
-# here?
-
-libcxx_file=`${CXX} -print-file-name=libstdc++.so`
-
-case "$libcxx_file" in
-  /* ) ;;
-  * )
-    src="hpc_hello.$$.cc"
-    obj="hpc_hello.$$.out"
-    rm -f "$src" "$obj"
-    cat <<"EOF" >"$src"
-main(){}
-EOF
-    ${CXX} -o "$obj" "$src"
-    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
-    rm -f "$src" "$obj"
-    ;;
-esac
-
-libcxx_dir=`dirname $libcxx_file`
-libcxx_base=`basename $libcxx_file`
-HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
-
-case "$HPCRUN_LIBCXX_PATH" in
-  /* ) AC_MSG_NOTICE([found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}]) ;;
-  * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
-esac
-
-AC_SUBST([HPCRUN_LIBCXX_PATH])
-
 
 #-------------------------------------------------
 # CXXFLAGS for extended C++ alignment: -faligned-new

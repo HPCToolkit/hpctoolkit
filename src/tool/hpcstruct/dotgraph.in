@@ -14,9 +14,6 @@
 # Relative paths are relative to HPCTOOLKIT.
 libexec_dir='libexec/hpctoolkit'
 
-# Should be absolute path.
-libcxx_path='@HPCRUN_LIBCXX_PATH@'
-
 prog_name=dotgraph
 binary_name=dotgraph-bin
 
@@ -39,5 +36,4 @@ case "$libexec_dir" in
     * )  libexec_dir="${HPCTOOLKIT}/${libexec_dir}" ;;
 esac
 
-export LD_LIBRARY_PATH="${libcxx_path}:${LD_LIBRARY_PATH}"
 exec "${libexec_dir}/${binary_name}" "$@"

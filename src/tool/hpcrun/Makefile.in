@@ -1637,7 +1637,6 @@ HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
 HPCLINK_CC = @HPCLINK_CC@
 HPCLINK_LD_FLAGS = @HPCLINK_LD_FLAGS@
 HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
-HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -2373,11 +2372,10 @@ SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 # with or without -fPIC, but the dynamic case requires -fPIC.
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -Wl,-rpath=$$ORIGIN -ldl \
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -L$(LIBELF_LIB) \
-	-lelf $(PERFMON_LDFLAGS_DYN) $(OPT_ROCM_LDFLAGS) \
-	$(am__append_105) $(am__append_123) $(GOTCHA_LDFLAGS) \
-	$(UNW_DYNAMIC_LD_FLAGS)
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl -L$(LIBMONITOR_LIB) \
+	-lmonitor -lpthread -lrt -L$(LIBELF_LIB) -lelf \
+	$(PERFMON_LDFLAGS_DYN) $(OPT_ROCM_LDFLAGS) $(am__append_105) \
+	$(am__append_123) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic

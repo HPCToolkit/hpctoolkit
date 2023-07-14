@@ -866,7 +866,7 @@ SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -Wl,-rpath=$$ORIGIN	-ldl
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 

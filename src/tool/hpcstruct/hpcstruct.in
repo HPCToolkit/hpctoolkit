@@ -14,9 +14,6 @@
 # Relative paths are relative to HPCTOOLKIT.
 libexec_dir='libexec/hpctoolkit'
 
-# Should be absolute path.
-libcxx_path='@HPCRUN_LIBCXX_PATH@'
-
 prog_name=hpcstruct
 binary_name=hpcstruct-bin
 
@@ -88,5 +85,4 @@ if test "x$stacksize" != x; then
 elif test "x$OMP_STACKSIZE" = x; then
   export OMP_STACKSIZE=32M
 fi
-export LD_LIBRARY_PATH="${libcxx_path}:${LD_LIBRARY_PATH}"
 exec "${libexec_dir}/${binary_name}" $args
