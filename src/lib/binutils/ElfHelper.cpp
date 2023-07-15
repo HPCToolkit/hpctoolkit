@@ -142,11 +142,21 @@ ElfFile::open
   }
 #endif
 
+  switch(ehdr->e_machine) {
 #ifdef EM_INTEL_GEN9
-  if (ehdr->e_machine == EM_INTEL_GEN9) {
+  case EM_INTEL_GEN9:
     intelGPU = true;
-  }
+    break;
 #endif
+#ifdef EM_INTELGT
+  case EM_INTELGT:
+    intelGPU = true;
+    break;
+#endif
+  default:
+    intelGPU = false;
+    break;
+  }
 
   return result;
 }

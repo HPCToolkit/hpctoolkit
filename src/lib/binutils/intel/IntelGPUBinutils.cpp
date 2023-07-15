@@ -191,7 +191,6 @@ findIntelGPUBins
         fwrite(kernel_buffer, sizeof(char), kernel_size, fptr);
         fclose(fptr);
 
-        elf_file->setIntelGPUFile(true);
         elf_file->setGPUKernelName(kernel_name);
         filevector->push_back(elf_file);
       } else {
