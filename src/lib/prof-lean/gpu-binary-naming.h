@@ -41,43 +41,18 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef level0_binary_h
-#define level0_binary_h
+#ifndef gpu_binary_naming_h
+#define gpu_binary_naming_h
 
 //*****************************************************************************
-// local includes
+// macros
 //*****************************************************************************
 
-#include <hpcrun/gpu/gpu-binary.h>
+#define GPU_BINARY_NAME           "gpubin"
 
-#include "level0-api.h"
-
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-level0_binary_process
-(
-  ze_module_handle_t module
-);
+#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
+#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
 
 
-void
-level0_module_handle_map_lookup
-(
-  ze_module_handle_t module,
-  const char **hash_string,
-  gpu_binary_kind_t *bkind
-);
-
-
-void
-level0_module_handle_map_delete
-(
-  ze_module_handle_t module
-);
 
 #endif

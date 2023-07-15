@@ -71,16 +71,15 @@
 #include "ompt-device-map.h"
 #include "ompt-device.h"
 
-#include <include/gpu-binary.h>
-
-#include "gpu/gpu-op-placeholders.h"
 #include "gpu/gpu-application-thread-api.h"
+#include "gpu/gpu-binary.h"
 #include "gpu/gpu-correlation-channel.h"
 #include "gpu/gpu-correlation-channel-set.h"
 #include "gpu/gpu-correlation-id.h"
 #include "gpu/gpu-metrics.h"
 #include "gpu/gpu-monitoring.h"
 #include "gpu/gpu-monitoring-thread-api.h"
+#include "gpu/gpu-op-placeholders.h"
 #include "gpu/gpu-trace.h"
 
 #include "gpu/ompt/ompt-gpu-api.h"

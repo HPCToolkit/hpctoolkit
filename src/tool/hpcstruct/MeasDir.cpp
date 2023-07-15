@@ -66,13 +66,15 @@ using std::endl;
 
 #include <string.h>
 
-#include <include/gpu-binary.h>
 #include "hpcstruct.hpp"
-#include <lib/prof-lean/hpcio.h>
+
 #include <lib/prof-lean/cpuset_hwthreads.h>
+#include <lib/prof-lean/gpu-binary-naming.h>
+#include <lib/prof-lean/hpcio.h>
 #include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
+
 #include <include/hpctoolkit-config.h>
 
 #include <lib/support/RealPathMgr.hpp>

@@ -44,14 +44,6 @@
 #ifndef gpu_binary_h
 #define gpu_binary_h
 
-//*****************************************************************************
-// macros
-//*****************************************************************************
-
-#define GPU_BINARY_NAME           "gpubin"
-
-#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
-#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
 
 //******************************************************************************
 // system include
@@ -86,8 +78,8 @@ extern "C" {
 gpu_binary_kind_t
 gpu_binary_kind
 (
-  const char *mem_ptr,
-  size_t mem_size
+ const char *mem_ptr,
+ size_t mem_size
 );
 
 

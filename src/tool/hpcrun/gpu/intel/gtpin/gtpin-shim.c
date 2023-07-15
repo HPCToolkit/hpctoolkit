@@ -66,6 +66,7 @@
 #include "gtpin-hpcrun-api.h"
 
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/gpu/gpu-binary.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-correlation.h>
 #include <hpcrun/gpu/gpu-instrumentation.h>
@@ -76,8 +77,9 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <include/gpu-binary.h>
+
 #include <lib/prof-lean/crypto-hash.h>
+
 #include <monitor.h>
 
 
@@ -90,7 +92,7 @@ static gtpin_hpcrun_api_t gtpin_hpcrun_api = {
   .safe_enter = hpcrun_safe_enter_noinline,
   .safe_exit = hpcrun_safe_exit_noinline,
   .real_exit = monitor_real_exit,
-  .gpu_binary_kind = gpu_binary_kind,
+  .binary_kind = gpu_binary_kind,
   .gpu_binary_path_generate = gpu_binary_path_generate,
   .gpu_operation_multiplexer_push = gpu_operation_multiplexer_push,
   .fetch_block_metrics = fetch_block_metrics,

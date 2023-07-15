@@ -76,8 +76,8 @@
 #include <hpcrun/cct/cct.h>
 
 #include <hpcrun/safe-sampling.h>
-#include <include/gpu-binary.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
+#include <hpcrun/gpu/gpu-binary.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
@@ -93,7 +93,7 @@ typedef struct gtpin_hpcrun_api_t {
   void (*safe_exit)(void);
   void (*real_exit)(int code);
 
-  gpu_binary_kind_t (*gpu_binary_kind)(const char *mem_ptr, size_t mem_size);
+  gpu_binary_kind_t (*binary_kind)(const char *mem_ptr, size_t mem_size);
   void (*gpu_binary_path_generate)(const char *, char *);
   bool (*gpu_binary_store)(const char *, const void *, size_t);
   uint32_t (*gpu_binary_loadmap_insert)(const char *, bool);

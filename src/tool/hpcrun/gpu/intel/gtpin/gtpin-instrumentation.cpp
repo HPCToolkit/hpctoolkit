@@ -92,15 +92,14 @@ SPDX-License-Identifier: MIT
 
 extern "C"
 {
+#include <hpcrun/gpu/gpu-binary.h>
 #include <hpcrun/gpu/gpu-correlation.h>
 #include <hpcrun/gpu/gpu-instrumentation.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
-
-#include <hpcrun/safe-sampling.h>
-#include <include/gpu-binary.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <lib/prof-lean/spinlock.h>
@@ -493,7 +492,7 @@ static int find_or_add_loadmap_module
 
   gtpin_hpcrun_api->gpu_binary_store(path, kernel_elf, kernel_elf_size);
 
-  gpu_binary_kind_t bkind = gtpin_hpcrun_api->gpu_binary_kind(kernel_elf, kernel_elf_size);
+  gpu_binary_kind_t bkind = gtpin_hpcrun_api->binary_kind(kernel_elf, kernel_elf_size);
 
   switch (bkind){
   case gpu_binary_kind_intel_patch_token:
