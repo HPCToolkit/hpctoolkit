@@ -1,0 +1,9 @@
+packages:
+  mpi:
+    # The MPI in CI is OpenMPI. For now.
+    require: [openmpi]
+
+  # 4.1.5 is the first version that supports OMPI_ALLOW_RUN_AS_ROOT
+  # NB: Disabled for now due to missing support in the request format
+  # openmpi:
+  #   require: ['@4.1.5:']

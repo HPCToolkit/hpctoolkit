@@ -1,8 +1,10 @@
+import base64
 import collections
 import contextlib
 import dataclasses
 import functools
 import itertools
+import json
 import os
 import re
 import shlex
@@ -10,20 +12,46 @@ import shutil
 import stat
 import subprocess
 import tempfile
-import textwrap
+import traceback
 import typing
 import venv
 from pathlib import Path
 
 import click
+import jsonschema
 import ruamel.yaml
 
+from . import schema
+from .buildfe import logs
 from .buildfe._main import main as buildfe_main
 from .command import Command
-from .envs import AutogenEnv, DevEnv
-from .spec import DependencyMode
+from .envs import AutogenEnv, DevEnv, InvalidSpecificationError
+from .spack.system import OSClass, SystemCompiler
+from .spack.system import translate as os_translate
+from .spec import DependencyMode, SpackEnv
 
 __all__ = ("main",)
+
+
+class SystemCompilerType(click.ParamType):
+    name = "Compiler"
+
+    def __init__(self, *, missing_ok: bool = False) -> None:
+        self._missing_ok = missing_ok
+
+    def convert(
+        self, value: str | SystemCompiler, param: click.Parameter | None, ctx: click.Context | None
+    ) -> SystemCompiler:
+        if isinstance(value, SystemCompiler):
+            return value
+
+        try:
+            result = SystemCompiler(value)
+        except ValueError as e:
+            self.fail(str(e), param, ctx)
+        if not result and not self._missing_ok:
+            self.fail(f"Unable to find compiler: {result}", param, ctx)
+        return result
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -35,13 +63,14 @@ class DevState:
     # May not exist, create this directory lazily when needed.
     named_environment_root: Path | None = None
 
-    _MISSING_PROJECT_ROOT_SOLUTIONS = textwrap.dedent(
-        """\
-    Potential solutions:
-      1. cd to the HPCToolkit project root directory.
-      2. Use the ./dev wrapper script in the project root directory.
-      3. Ensure './configure --version' works properly."""
-    )
+    # Whether to print the traceback of caught exceptions before converting to ClickException.
+    traceback: bool = False
+
+    _MISSING_PROJECT_ROOT_SOLUTIONS = """\
+Potential solutions:
+    1. cd to the HPCToolkit project root directory.
+    2. Use the ./dev wrapper script in the project root directory.
+    3. Ensure './configure --version' works properly."""
 
     def missing_named_why(self) -> str:
         """Give a suitable (short) reason why named_environment_root is None."""
@@ -231,8 +260,14 @@ class NamedEnv(click.ParamType):
     envvar="DEV_ISOLATED",
     help="Isolate internal data from other invocations",
 )
+@click.option(
+    "--traceback",
+    is_flag=True,
+    envvar="DEV_TRACEBACK",
+    help="Print tracebacks for handled exceptions",
+)
 @dev_pass_obj
-def main(obj: DevState, isolated: bool) -> None:
+def main(obj: DevState, isolated: bool, traceback: bool) -> None:
     """Create and manage development environments (devenvs) for building HPCToolkit.
 
     \b
@@ -257,6 +292,8 @@ def main(obj: DevState, isolated: bool) -> None:
 
     if not isolated and obj.project_root is not None:
         obj.named_environment_root = obj.project_root / ".devenv"
+
+    obj.traceback = traceback
 
 
 feature = click.Choice(["enabled", "disabled", "auto"], case_sensitive=False)
@@ -313,6 +350,12 @@ feature_ty = typing.Literal["enabled", "disabled", "auto"]
 @click.option("--papi", type=feature, default="auto", help="Enable PAPI (-e PAPI_*) support")
 @click.option("--mpi", type=feature, default="auto", help="Enable hpcprof-mpi")
 # Population options
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(),
+    help="Compiler to populate the devenv with",
+)
 @click.option("--build/--no-build", help="Also build HPCToolkit")
 def create(
     obj: DevState,
@@ -327,6 +370,7 @@ def create(
     python: feature_ty,
     papi: feature_ty,
     mpi: feature_ty,
+    compiler: SystemCompiler | None,
     build: bool,
 ) -> None:
     """Create a fresh devenv ready for building HPCToolkit."""
@@ -351,15 +395,18 @@ def create(
             opencl=feature2bool("opencl", opencl),
             python=feature2bool("python", python),
             papi=feature2bool("papi", papi),
-            optional_papi=False,
             mpi=feature2bool("mpi", mpi),
         )
         click.echo(env.describe())
         env.generate(mode)
         env.install()
+        env.populate(compiler=compiler)
         try:
-            env.populate(obj.project_root, obj.meson)
+            if obj.project_root:
+                env.setup(obj.project_root, obj.meson)
         except subprocess.CalledProcessError as e:
+            if obj.traceback:
+                traceback.print_exception(e)
             raise click.ClickException(
                 f"""\
 meson setup failed! Fix any errors above and continue with:
@@ -409,8 +456,21 @@ Devenv successfully created! You may now use Meson commands, Eg.:
     help="Use any supported version of dependencies",
 )
 # Population options
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(),
+    help="Compiler to populate the devenv with",
+)
 @click.option("--build/--no-build", help="Also build HPCToolkit")
-def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> None:
+def update(
+    obj: DevState,
+    devenv: Env,
+    *,
+    mode: DependencyMode,
+    compiler: SystemCompiler | None,
+    build: bool,
+) -> None:
     """Update (re-generate) a devenv."""
     if not obj.project_root:
         raise click.ClickException("create only operates within an HPCToolkit project checkout")
@@ -426,9 +486,13 @@ def update(obj: DevState, devenv: Env, mode: DependencyMode, build: bool) -> Non
     click.echo(env.describe())
     env.generate(mode, template=prior)
     env.install()
+    env.populate(compiler=compiler)
     try:
-        env.populate(obj.project_root, obj.meson)
+        if obj.project_root:
+            env.setup(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
+        if obj.traceback:
+            traceback.print_exception(e)
         raise click.ClickException(
             f"""\
 meson setup failed! Fix any errors above and continue with:
@@ -529,6 +593,8 @@ def autogen(obj: DevState, custom_env: Path, install: bool) -> None:
                 cwd=obj.project_root,
             )
         except subprocess.CalledProcessError as e:
+            if obj.traceback:
+                traceback.print_exception(e)
             raise click.ClickException(f"autoreconf exited with code {e.returncode}") from e
 
 
@@ -612,12 +678,7 @@ def template_merge(base: dict, overlay: dict) -> dict:
     "--opencl", type=feature, default="auto", help="Enable OpenCL (-e gpu=opencl) support"
 )
 @click.option("--python", type=feature, default="auto", help="Enable Python unwinding (-a python)")
-@click.option(
-    "--papi",
-    type=click.Choice(["enabled", "disabled", "auto", "both"], case_sensitive=False),
-    default="auto",
-    help="Enable PAPI (-e PAPI_*) support",
-)
+@click.option("--papi", type=feature, default="auto", help="Enable PAPI (-e PAPI_*) support")
 @click.option("--mpi", type=feature, default="auto", help="Enable hpcprof-mpi")
 @click.option(
     "--template",
@@ -625,7 +686,7 @@ def template_merge(base: dict, overlay: dict) -> dict:
     help="Use the given Spack environment template. Additional templates will be merged recursively.",
     multiple=True,
 )
-def generate(  # noqa: C901
+def generate(
     devenv: Path,
     autogen: bool,
     mode: DependencyMode,
@@ -636,7 +697,7 @@ def generate(  # noqa: C901
     gtpin: feature_ty,
     opencl: feature_ty,
     python: feature_ty,
-    papi: feature_ty | typing.Literal["both"],
+    papi: feature_ty,
     mpi: feature_ty,
     template: tuple[typing.TextIO, ...],
 ) -> None:
@@ -664,15 +725,13 @@ def generate(  # noqa: C901
             env_template = template_merge(env_template, data)
         template_settings = env_template.pop("dev", {})
 
-    def feature2bool(name: str, value: feature_ty | typing.Literal["both"]) -> bool:
+    def feature2bool(name: str, value: feature_ty) -> bool:
         if value != "auto":
             return value == "enabled"
         if auto != "auto":
             return auto == "enabled"
         t = template_settings.get("features", {}).get(name)
         if t is not None:
-            if t == "both" and name == "papi":
-                return False
             if not isinstance(t, bool):
                 raise ValueError(t)
             return t
@@ -692,11 +751,6 @@ def generate(  # noqa: C901
                 opencl=feature2bool("opencl", opencl),
                 python=feature2bool("python", python),
                 papi=feature2bool("papi", papi),
-                optional_papi=(
-                    papi == "both"
-                    or papi == "auto"
-                    and template_settings.get("features", {}).get("papi") == "both"
-                ),
                 mpi=feature2bool("mpi", mpi),
             )
             click.echo(denv.describe())
@@ -716,19 +770,179 @@ def generate(  # noqa: C901
         click.echo(f"    $ {line}")
 
 
+def pack_for_request(env: SpackEnv, features: collections.abc.Collection[str] = ()) -> dict:
+    """Take a generated Env and produce the contents for a request JSON."""
+    root = env.root
+    with (root / "spack.yaml").open("r", encoding="utf-8") as spackyamlf:
+        spack = ruamel.yaml.YAML(typ="safe").load(spackyamlf)["spack"]
+
+    files: dict[str, dict[str, str]] = {}
+    for path in root.rglob("*"):
+        if path.parent == root and path.name == "spack.yaml":
+            # Handled in a later pass
+            continue
+
+        try:
+            data = {"text": path.read_text(encoding="utf-8", errors="strict")}
+        except ValueError:
+            data = {"base64": base64.b64encode(path.read_bytes()).decode("ascii")}
+        files[f"/{path.relative_to(root).as_posix()}"] = data
+
+    return {
+        "ifAvailable": sorted(features),
+        "spack": spack,
+        "files": files,
+    }
+
+
+# Translation table between DevEnv keyword arguments and their required request features
+FEATURE_FLAGS: dict[str, collections.abc.Collection[str]] = {
+    "cuda": ("cuda",),
+    "rocm": ("rocm",),
+    "level0": ("level0",),
+    "gtpin": ("gtpin", "igc"),  # Implies level0
+    "opencl": (),
+    "python": (),
+    "papi": (),
+    "mpi": (),
+}
+
+# Translation table between request features and external Spack packages
+FEATURE_PACKAGES: dict[str, collections.abc.Collection[str]] = {
+    "cuda": ("cuda",),
+    "rocm": ("hip", "hsa-rocr-dev", "rocprofiler-dev", "roctracer-dev"),
+    "level0": ("oneapi-level-zero",),
+    "gtpin": ("intel-gtpin",),
+    "igc": ("oneapi-igc"),
+}
+
+
+@main.command
+@click.argument("request", type=click.File("w", encoding="utf-8"))
+# Generation type
+@click.option("--autogen", is_flag=True, help="Generate an environment for ./dev autogen instead")
+# Generation mode
+@click.option(
+    "--latest",
+    "mode",
+    flag_value=DependencyMode.LATEST,
+    type=DependencyMode,
+    default=True,
+    help="Use the latest available version of dependencies",
+)
+@click.option(
+    "--minimum",
+    "mode",
+    flag_value=DependencyMode.MINIMUM,
+    type=DependencyMode,
+    help="Use the minimum supported version of dependencies",
+)
+@click.option(
+    "--any",
+    "mode",
+    flag_value=DependencyMode.ANY,
+    type=DependencyMode,
+    help="Use any supported version of dependencies",
+)
+# Feature flags
+@click.option(
+    "--template",
+    type=click.File(),
+    help="Use the given Spack environment template. Additional templates will be merged recursively.",
+    multiple=True,
+)
+def generate_request(
+    *,
+    request: typing.TextIO,
+    autogen: bool,
+    mode: DependencyMode,
+    template: tuple[typing.TextIO, ...],
+) -> None:
+    """Generate a generic REQUEST JSON file that describes all possible devenvs.
+
+    This command is primarily used internally by CI. It probably isn't what you are looking for,
+    consider `./dev create`.
+    """
+    env_template: dict | None = None
+    if template:
+        yaml = ruamel.yaml.YAML(typ="safe")
+        env_template = {}
+        for t in template:
+            data = yaml.load(t)
+            if data and not isinstance(data, dict):
+                raise click.ClickException(f"Invalid template, expected !map but got {data!r}")
+            env_template = template_merge(env_template, data)
+        if "dev" in env_template:
+            del env_template["dev"]
+
+    with tempfile.TemporaryDirectory() as tmpd_str:
+        tmpd = Path(tmpd_str).resolve(strict=True)
+
+        contents: list[dict] = []
+        if autogen:
+            aenv = AutogenEnv(tmpd / "root")
+            aenv.generate()
+            contents.append(pack_for_request(aenv))
+        else:
+            # Iterate over the actionable configuration space
+            flag_space = sorted(flag for flag, feats in FEATURE_FLAGS.items() if feats)
+            for r in range(len(flag_space), -1, -1):
+                for flags in itertools.combinations(flag_space, r):
+                    try:
+                        denv = DevEnv(
+                            tmpd / ("root " + " ".join(flags)),
+                            **{
+                                flag: flag in flags or not feats
+                                for flag, feats in FEATURE_FLAGS.items()
+                            },
+                        )
+                    except InvalidSpecificationError:
+                        continue
+
+                    unresolve: set[str] = {
+                        pkg
+                        for flag in flags
+                        for feat in FEATURE_FLAGS[flag]
+                        for pkg in FEATURE_PACKAGES[feat]
+                    }
+                    denv.generate(mode, unresolve=unresolve, template=env_template)
+
+                    feats: set[str] = set()
+                    for flag in flags:
+                        feats |= set(FEATURE_FLAGS[flag])
+                    contents.append(pack_for_request(denv, feats))
+
+    result = {
+        "version": 2,
+        "contents": contents,
+    }
+    jsonschema.validate(result, schema.request)
+    json.dump(result, request, sort_keys=True, separators=(",", ":"))
+
+
 @main.command
 @NamedEnv.pass_env_arg(exists=True)
 @dev_pass_obj
-def populate(obj: DevState, devenv: Path) -> None:
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(),
+    help="Compiler to populate the devenv with",
+)
+def populate(obj: DevState, devenv: Path, *, compiler: SystemCompiler | None) -> None:
     """Populate a manually installed DEVENV.
 
     Consider using 'dev create' instead. This command is only needed if the development environment
     needs to be manually installed, e.g. for a container image.
     """
     env = DevEnv.restore(devenv)
+    env.populate(compiler=compiler)
     try:
-        env.populate(obj.project_root, obj.meson)
+        if obj.project_root:
+            env.setup(obj.project_root, obj.meson)
     except subprocess.CalledProcessError as e:
+        if obj.traceback:
+            traceback.print_exception(e)
         raise click.ClickException("meson setup failed! Fix any errors above and try again.") from e
 
     if obj.project_root:
@@ -759,6 +973,62 @@ def buildfe(obj: DevState, devenv: Env, args: collections.abc.Collection[str]) -
     env = DevEnv.restore(devenv.root)
     os.chdir(obj.project_root)
     buildfe_main(obj.meson.path, [*args] + [str(env.root)])
+
+
+@main.command
+@click.argument("packages", nargs=-1)
+@click.option(
+    "-c",
+    "--compiler",
+    type=SystemCompilerType(missing_ok=True),
+    multiple=True,
+    help="Also install the given compiler(s)",
+)
+@click.option(
+    "-y", "--yes-to-all", is_flag=True, help="Avoid any prompts during the install process"
+)
+def os_install(
+    *,
+    packages: collections.abc.Iterable[str],
+    compiler: collections.abc.Iterable[SystemCompiler],
+    yes_to_all: bool,
+) -> None:
+    """Install a number of PACKAGES by autodetecting the OS installation. Packages are generally
+    named by their names in Ubuntu/Debian and will be transformed as needed.
+
+    Primarily intended for setting up emphemeral build containers.
+    """
+    # First figure out what kind of system we are on
+    precmd: Command | None = None
+    if apt := shutil.which("apt-get"):
+        precmd = Command(apt, "update", "-qq", *(["-y"] if yes_to_all else []))
+        cmd = Command(apt, "install", "-qq", *(["-y"] if yes_to_all else []))
+        osclass = OSClass.DebianLike
+    elif zypper := shutil.which("zypper"):
+        cmd = Command(zypper, "install", *(["-y"] if yes_to_all else []))
+        osclass = OSClass.SUSELeap
+    elif dnf := shutil.which("dnf"):
+        cmd = Command(dnf, "install", *(["-y"] if yes_to_all else []))
+        # On everything except Fedora, we need to install epel-release
+        if not re.search(r"(?m)^ID=fedora$", Path("/etc/os-release").read_text(encoding="utf-8")):
+            precmd = cmd.withargs("epel-release")
+        osclass = OSClass.RedHatLike
+    else:
+        raise RuntimeError("Unable to identify the install command for this OS!")
+
+    # Determine the packages to install
+    to_install: set[str] = {os_translate(pkg, osclass) for pkg in packages}
+    for comp in compiler:
+        to_install |= comp.os_packages(osclass)
+
+    # Do the installation
+    with logs.section(f"Installing packages {' '.join(to_install)}", collapsed=True):
+        try:
+            if precmd is not None:
+                precmd()
+            cmd(*to_install)
+        except subprocess.CalledProcessError as e:
+            raise click.ClickException("Install commands failed, see above errors.") from e
 
 
 if __name__ == "__main__":
