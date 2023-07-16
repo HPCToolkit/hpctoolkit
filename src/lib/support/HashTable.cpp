@@ -667,7 +667,7 @@ int HashTable::QueryIndexSet (const void* entry, const bool addingEntry) const
 //	an overflow.)  In this case, we'd like to change the distribution.
 //	Typically, two factors make a difference here: the density of
 //	entries in the indexSet table and numerical properties involving
-//	the MOD oepration in the hash function.
+//	the MOD operation in the hash function.
 //
 //   So, after much discussion and some limited experimentation, we chose
 //   the following scheme.  The indexSet set size is enlarged by roughly the

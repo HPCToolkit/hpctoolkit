@@ -9,9 +9,9 @@ testdatadir = Path(os.environ["TEST_DATA_DIR"])
 
 
 def test_small_v4_0():
-    with extracted(testdatadir / "dbase" / "v4.0" / "small.tar.xz") as db:
+    with extracted(testdatadir / "dbase" / "v4.0" / "small.tar.xz") as db_str:
         # pylint: disable=unidiomatic-typecheck
-        db = Path(db)
+        db = Path(db_str)
         assert type(from_path(db)) is v4.Database
         assert type(from_path(db / "meta.db")) is v4.metadb.MetaDB
         assert type(from_path(db / "profile.db")) is v4.profiledb.ProfileDB

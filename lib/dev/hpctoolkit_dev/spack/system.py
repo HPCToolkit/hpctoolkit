@@ -58,7 +58,7 @@ def translate(pkg: str, target: OSClass) -> str:
 class SystemCompiler(CompilerBase):
     """Compiler that represents a compiler installed on the system, referred to via a simple syntax."""
 
-    CC_TO_CPP = {
+    CC_TO_CPP: typing.ClassVar[dict] = {
         "gcc": "g++",
         "clang": "clang++",
     }

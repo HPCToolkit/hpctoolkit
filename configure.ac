@@ -391,7 +391,7 @@ AC_MSG_NOTICE([objcopy is $OBJCOPY])
 # C compiler checks
 #-------------------------------------------------
 
-AC_MSG_NOTICE([*** Using C comiler for tests ***])
+AC_MSG_NOTICE([*** Using C compiler for tests ***])
 
 AC_LANG([C])
 
@@ -412,7 +412,7 @@ AC_CHECK_SIZEOF([void*])
 # C++ compiler checks
 #-------------------------------------------------
 
-AC_MSG_NOTICE([*** Using C++ comiler for tests ***])
+AC_MSG_NOTICE([*** Using C++ compiler for tests ***])
 
 AC_LANG([C++])
 

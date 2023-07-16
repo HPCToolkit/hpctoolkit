@@ -55,8 +55,8 @@ class ContextTraceHeadersSection(StructureBase):
     yaml_tag: typing.ClassVar[str] = "!trace.db/v4/ContextTraceHeaders"
 
     class TimestampMinMax(typing.TypedDict):
-        min: int  # noqa: A003
-        max: int  # noqa: A003
+        min: int
+        max: int
 
     timestamp_range: TimestampMinMax
     traces: list["ContextTrace"]

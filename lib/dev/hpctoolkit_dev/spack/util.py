@@ -70,7 +70,7 @@ class Version:
                 else False
             )
 
-        # If a and b are both strings, compare lexigraphically.
+        # If a and b are both strings, compare lexicographically.
         # If b is an infinity or is an int, a < b.
         return isinstance(b, int) or b in cls.INFINITY_SEGMENTS or a <= b
 

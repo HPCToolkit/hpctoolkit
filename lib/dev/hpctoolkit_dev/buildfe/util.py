@@ -114,7 +114,9 @@ def cgroup_max() -> float:
                     break
         if cgroup_fs is None:
             # Must not be using cgroups v2, consider it unlimited
-            warnings.warn("No cgroup2 filesystem mounted, ignoring cgroups CPU limits")
+            warnings.warn(
+                "No cgroup2 filesystem mounted, ignoring cgroups CPU limits", stacklevel=1
+            )
             return float("inf")
         assert isinstance(cgroup_fs, str)
 
@@ -127,7 +129,9 @@ def cgroup_max() -> float:
                     break
         if cgroup_path is None:
             # Must not be in a cgroup? Consider it unlimited
-            warnings.warn("Process is not part of a cgroup, ignoring cgroups CPU limits")
+            warnings.warn(
+                "Process is not part of a cgroup, ignoring cgroups CPU limits", stacklevel=1
+            )
             return float("inf")
         assert isinstance(cgroup_path, str)
 
@@ -139,7 +143,7 @@ def cgroup_max() -> float:
                     return float("inf")
                 return int(quota) / int(period)
     except FileNotFoundError as e:
-        warnings.warn(f"Failed to identify cgroups, ignoring cgroups CPU limits: {e}")
+        warnings.warn(f"Failed to identify cgroups, ignoring cgroups CPU limits: {e}", stacklevel=1)
     return float("inf")
 
 

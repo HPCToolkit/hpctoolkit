@@ -88,18 +88,18 @@ void IdPacker::notifyWavefront(DataClass ds) {
       // Save hash states for each of the children
       std::vector<std::tuple<util::stable_hash_state, std::uint64_t, unsigned int, std::reference_wrapper<const Context>>> children;
       for(const Context& cc: c.children().citerate()) {
-        util::stable_hash_state shs;
-        shs << cc.scope();
-        children.emplace_back(std::move(shs), 0, cc.userdata[src.identifier()], cc);
+        util::stable_hash_state hashstate;
+        hashstate << cc.scope();
+        children.emplace_back(std::move(hashstate), 0, cc.userdata[src.identifier()], cc);
       }
 
       // Scan for a suitable nonce that gives the children unique hashes
       std::uint8_t nonce = 255;
       for(std::uint8_t trial_nonce = 0; trial_nonce < 20; ++trial_nonce) {
-        for(auto& [shs, hash, id, cc]: children) {
-          auto copy_shs = shs;
-          copy_shs << trial_nonce;
-          hash = copy_shs.squeeze();
+        for(auto& [hashstate, hash, id, cc]: children) {
+          auto copy_hashstate = hashstate;
+          copy_hashstate << trial_nonce;
+          hash = copy_hashstate.squeeze();
         }
         std::sort(children.begin(), children.end(), [](auto& a, auto& b) -> bool {
           return std::get<1>(a) < std::get<1>(b);
@@ -124,7 +124,7 @@ void IdPacker::notifyWavefront(DataClass ds) {
       pack(ct, (std::uint64_t)c.userdata[src.identifier()]);
       ct.push_back(nonce);
       pack(ct, (std::uint64_t)children.size());
-      for(const auto& [shs, hash, id, cc]: children) {
+      for(const auto& [hashstate, hash, id, cc]: children) {
         pack(ct, (std::uint64_t)hash);
         pack(ct, (std::uint64_t)id);
       }
@@ -206,9 +206,9 @@ std::optional<unsigned int> IdUnpacker::identify(const Context& c) noexcept {
   if(!c.direct_parent())
     return globalid;
   const auto& ids = idmap.at(c.direct_parent()->userdata[sink.identifier()]);
-  util::stable_hash_state shs;
-  shs << c.scope() << ids.first;
-  auto hash = shs.squeeze();
+  util::stable_hash_state hashstate;
+  hashstate << c.scope() << ids.first;
+  auto hash = hashstate.squeeze();
   return ids.second.at(hash);
 }
 

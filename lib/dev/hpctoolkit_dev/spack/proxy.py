@@ -407,8 +407,8 @@ def fetch_latest_ver(pkg: str) -> Version:
     """Probe Spack for the latest available version of the given package."""
     with yaspin(text=f"Fetching versions of {pkg}"):
         data = which_spack().capture("--no-env", "versions", "--safe", pkg)
-        for ver in data.split("\n"):
-            ver = ver.strip()
+        for raw_ver in data.split("\n"):
+            ver = raw_ver.strip()
             if re.search(r"\b(develop|main|master|head|trunk|stable)\b", ver):
                 # Infinity version, ignore
                 continue

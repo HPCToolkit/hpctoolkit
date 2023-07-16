@@ -416,7 +416,7 @@ void CudaCFGParser::split_blocks(
       size_t cur_block_id = 1;
       size_t prev_inst_index = 0;
       std::vector<std::pair<size_t, size_t> > intervals;
-      // Step 2: for each branch instrution, create a block except for the last inst
+      // Step 2: for each branch instruction, create a block except for the last inst
       for (size_t i = 0; i < split_inst_index.size(); ++i) {
         // Update interval
         auto index = split_inst_index[i];
