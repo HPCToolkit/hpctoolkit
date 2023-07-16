@@ -173,8 +173,6 @@ precommit:
     key: spack
     when: always
     paths: [.spack.git]
-  variables:
-    GIT_SUBMODULE_STRATEGY: none
   parallel:
     matrix:
     - VARIANTS:
@@ -195,15 +193,16 @@ precommit:
         https://github.com/spack/spack.git .spack.git || exit $?
     fi
   - git -C .spack.git fetch --verbose origin +develop:develop
-  - git clone --shared --branch=develop .spack.git .spack
-  - export PATH="$(realpath .spack)"/bin:"$PATH"
+  - git clone --shared --branch=develop .spack.git /tmp/spack
+  - export PATH=/tmp/spack/bin:"$PATH"
+  # Override any generic settings that were set in the deps image
+  - spack -L -D /opt/environment config add 'packages:hpctoolkit:require::[]'
+  - spack -L -D /opt/environment config add 'packages:all:require::[]'
+  # Register this clone of HPCToolkit as the source for Spack to build `hpctoolkit @develop-ci` from
+  - spack -L -D /opt/environment develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
   # Spack out a representative HPCToolkit. All dependencies should already be built.
-  - >-
-    eatmydata spack
-    -L -D /opt/environment -c 'packages:hpctoolkit:require::[]' -c 'packages:all:require::[]'
-    install --fail-fast --add --only=package
-    "hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop
-    ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
+  - eatmydata spack -L -D /opt/environment install --fail-fast --add --only=package
+    "hpctoolkit @=develop-ci ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
 
 #-----------------------------------
 # Phase 2: validate
