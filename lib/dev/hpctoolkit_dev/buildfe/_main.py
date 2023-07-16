@@ -242,7 +242,7 @@ def configure(
         if not unsat:
             with colorize(FgColor.error):
                 print(
-                    f"## HPCToolkit {str(v)} is unsatisfiable, missing {e.missing}",
+                    f"## HPCToolkit {v!s} is unsatisfiable, missing {e.missing}",
                     flush=True,
                 )
         return None
@@ -250,7 +250,7 @@ def configure(
     if unsat:
         with colorize(FgColor.error):
             print(
-                f"## HPCToolkit {str(v)} was incorrectly marked as unsatisfiable",
+                f"## HPCToolkit {v!s} was incorrectly marked as unsatisfiable",
                 flush=True,
             )
     return cfg
@@ -445,7 +445,7 @@ def reproduction_cmd(variant: ConcreteSpecification, args) -> str:
     return "\n".join(lines)
 
 
-def main(meson: Path, in_args: collections.abc.Sequence[str] | None = None):
+def main(meson: Path, in_args: collections.abc.Sequence[str] | None = None):  # noqa: C901
     args = post_parse(build_parser().parse_args(in_args))
 
     variants = gen_variants(args)

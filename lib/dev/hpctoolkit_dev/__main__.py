@@ -2,7 +2,6 @@ import base64
 import collections
 import contextlib
 import dataclasses
-import functools
 import itertools
 import json
 import os
@@ -119,7 +118,49 @@ class Env(typing.NamedTuple):
     args: tuple[str, ...]
 
 
-class NamedEnv(click.ParamType):
+class DevEnvType(click.ParamType):
+    """ParamType for a devenv referenced by Path."""
+
+    name = "devenv"
+
+    def __init__(
+        self, /, *, exists: bool = False, notexists: bool = False, flag: str | None
+    ) -> None:
+        self._check_exists = exists
+        self._check_notexists = notexists
+        self._flag = flag
+
+    def convert(
+        self, value: Env | str, param: click.Parameter | None, ctx: click.Context | None
+    ) -> Env:
+        if isinstance(value, Env):
+            return value
+        envpath = Path(value)
+        del value
+
+        env = Env(envpath, (self._flag, envpath.name) if self._flag else (envpath.name,))
+        if self._check_exists and not env.root.exists():
+            self.fail(f"Selected devenv does not exist: {env.root}", param, ctx)
+        if env.root.exists() and not env.root.is_dir():
+            self.fail(
+                f"Selected devenv already exists as a file, remove and try again: {env.root}",
+                param,
+                ctx,
+            )
+        if self._check_notexists and env.root.exists():
+            click.confirm(f"Selected devenv already exists, remove {env.root}?", abort=True)
+            shutil.rmtree(env.root)
+
+        if ctx is not None:
+            obj = ctx.ensure_object(DevState)
+            if obj.named_environment_root and env.root.parent == obj.named_environment_root:
+                with (obj.named_environment_root / ".gitignore").open("w", encoding="utf-8") as gi:
+                    gi.write(GITIGNORE)
+
+        return env
+
+
+class DevEnvByName(click.ParamType):
     """ParamType for a named devenv, stored under `.devenv/`.
 
     This concept only exists in the CLI, the backend classes use full Paths instead.
@@ -127,133 +168,63 @@ class NamedEnv(click.ParamType):
 
     name = "devenv name"
 
+    def __init__(
+        self, /, *, exists: bool = False, notexists: bool = False, flag: str | None
+    ) -> None:
+        self._check_exists = exists
+        self._check_notexists = notexists
+        self._flag = flag
+
     def convert(
-        self, value: typing.Any, param: click.Parameter | None, ctx: click.Context | None
-    ) -> Path:
-        assert ctx is not None
-        obj = ctx.find_object(DevState)
-        assert obj is not None
-
-        if not obj.named_environment_root:
-            self.fail(obj.missing_named_why(), param, ctx)
-
-        if isinstance(value, Path):
-            if not obj.named_environment_root.samefile(value.parent):
-                self.fail("Path does not refer to a named devenv", param, ctx)
-
-            if not value.name or value.name[0] == "_":
-                self.fail(f"Path to devenv has an invalid name: {value.name}", param, ctx)
-
+        self, value: Env | str, param: click.Parameter | None, ctx: click.Context | None
+    ) -> Env:
+        if isinstance(value, Env):
             return value
+        envpath = Path(value)
+        del value
 
-        if not isinstance(value, str):
-            raise TypeError(value)
+        if ctx is None:
+            raise AssertionError("Named devenvs cannot be used in Click prompts and such")
+        if not (obj := ctx.ensure_object(DevState)).named_environment_root:
+            self.fail(f"Named devenv are not available: {obj.missing_named_why()}", param, ctx)
 
-        if value[0] == "_" or "/" in value or "\\" in value:
-            self.fail(f"Name is invalid for a devenv: {value}", param, ctx)
-
-        return obj.named_environment_root / value
-
-    @classmethod
-    def pass_env(
-        cls,
-        /,
-        *,
-        nameflags: collections.abc.Collection[str] = ("-n", "--name"),
-        dirflags: collections.abc.Collection[str] = ("-d", "--directory"),
-        exists: bool = False,
-        notexists: bool = False,
-        help_verb: str,
-    ):
-        assert not exists or not notexists
-        nameflags = [*list(nameflags), "devenv_by_name"]
-        dirflags = [*list(dirflags), "devenv_by_dir"]
-
-        def result(f):
-            @dev_pass_obj
-            @click.option(*nameflags, type=cls(), help=f"{help_verb} a named devenv")
-            @click.option(
-                *dirflags,
-                type=click.Path(file_okay=False, exists=exists, writable=True, path_type=Path),
-                help=f"{help_verb} a devenv directory",
+        env = Env(
+            obj.named_environment_root / envpath,
+            (self._flag, envpath.name) if self._flag else (envpath.name,),
+        )
+        if self._check_exists and not env.root.exists():
+            self.fail(f"No devenv named {envpath.name}", param, ctx)
+        if env.root.exists() and not env.root.is_dir():
+            self.fail(
+                f"Selected devenv already exists as a file, remove and try again: {env.root}",
+                param,
+                ctx,
             )
-            @functools.wraps(f)
-            def wrapper(
-                obj: DevState,
-                *args,
-                devenv_by_name: Path | None,
-                devenv_by_dir: Path | None,
-                **kwargs,
-            ):
-                if devenv_by_name is not None:
-                    if devenv_by_dir is not None:
-                        raise click.UsageError(
-                            f"{'/'.join(nameflags)} and {'/'.join(dirflags)} cannot both be given"
-                        )
-                    if not obj.named_environment_root:
-                        raise click.UsageError(
-                            f"Named devenvs are not available: {obj.missing_named_why()}"
-                        )
-                    env = Env(
-                        obj.named_environment_root / devenv_by_name, ("-n", devenv_by_name.name)
-                    )
-                    if exists and not env.root.is_dir():
-                        raise click.BadParameter(f"No devenv named {devenv_by_name.name}")
-                elif devenv_by_dir is not None:
-                    env = Env(devenv_by_dir, ("-d", str(devenv_by_dir)))
-                else:
-                    if not obj.named_environment_root:
-                        raise click.UsageError(
-                            f"Default devenv is not available: {obj.missing_named_why()}"
-                        )
-                    env = Env(obj.named_environment_root / "default", ())
+        if self._check_notexists and env.root.exists():
+            click.confirm(f"Selected devenv already exists, remove {env.root}?", abort=True)
+            shutil.rmtree(env.root)
 
-                if env.root.exists() and not env.root.is_dir():
-                    raise click.UsageError(
-                        f"Selected devenv already exists as a file, remove and try again: {env.root}"
-                    )
-                if notexists and env.root.exists():
-                    click.confirm(f"Selected devenv already exists, remove {env.root}?", abort=True)
-                    shutil.rmtree(env.root)
-                if exists and not env.root.exists():
-                    raise click.UsageError(
-                        f"Selected devenv does not exist, try: ./dev create {shlex.join(env.args)}"
-                    )
+        if env.root.parent == obj.named_environment_root:
+            with (obj.named_environment_root / ".gitignore").open("w", encoding="utf-8") as gi:
+                gi.write(GITIGNORE)
 
-                if env.root.parent == obj.named_environment_root:
-                    with open(
-                        obj.named_environment_root / ".gitignore", "w", encoding="utf-8"
-                    ) as gi:
-                        gi.write(GITIGNORE)
-
-                return f(env, *args, **kwargs)
-
-            return wrapper
-
-        return result
-
-    @classmethod
-    def pass_env_arg(cls, /, *, exists: bool = False, notexists: bool = False):
-        def result(f):
-            @click.argument(
-                "devenv_by_dir",
-                metavar="DEVENV",
-                type=click.Path(file_okay=False, exists=exists, writable=True, path_type=Path),
-            )
-            @functools.wraps(f)
-            def wrapper(*args, devenv_by_dir: Path, **kwargs):
-                if notexists and devenv_by_dir.exists():
-                    raise click.UsageError(
-                        f"Selected devenv already exists, remove and try again: {devenv_by_dir}"
-                    )
-                return f(devenv_by_dir, *args, **kwargs)
-
-            return wrapper
-
-        return result
+        return env
 
 
-@click.group()
+def resolve_devenv(by_dir: Env | None, by_name: Env | None, default_ty: DevEnvByName) -> Env:
+    ctx = click.get_current_context()
+    if by_dir is not None and by_name is not None:
+        raise click.UsageError("Cannot specify a devenv both by -n/--name and -d/--directory")
+    return (
+        by_dir
+        if by_dir is not None
+        else by_name
+        if by_name is not None
+        else default_ty.convert("default", None, ctx)
+    )
+
+
+@click.group
 @click.option(
     "--isolated",
     is_flag=True,
@@ -267,7 +238,7 @@ class NamedEnv(click.ParamType):
     help="Print tracebacks for handled exceptions",
 )
 @dev_pass_obj
-def main(obj: DevState, isolated: bool, traceback: bool) -> None:
+def main(obj: DevState, /, *, isolated: bool, traceback: bool) -> None:
     """Create and manage development environments (devenvs) for building HPCToolkit.
 
     \b
@@ -300,9 +271,22 @@ feature = click.Choice(["enabled", "disabled", "auto"], case_sensitive=False)
 feature_ty = typing.Literal["enabled", "disabled", "auto"]
 
 
-@main.command()
-@NamedEnv.pass_env(notexists=True, dirflags=("-o", "-d", "--directory"), help_verb="Create")
-@dev_pass_obj
+@main.command
+@click.option(
+    "-o",
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(notexists=True, flag="-d"),
+    help="Create a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(notexists=True, flag="-n"),
+    help="Create a named devenv",
+)
 # Generation mode
 @click.option(
     "--latest",
@@ -357,9 +341,13 @@ feature_ty = typing.Literal["enabled", "disabled", "auto"]
     help="Compiler to populate the devenv with",
 )
 @click.option("--build/--no-build", help="Also build HPCToolkit")
+@dev_pass_obj
 def create(
     obj: DevState,
-    devenv: Env,
+    /,
+    *,
+    devenv_by_dir: Env | None,
+    devenv_by_name: Env | None,
     mode: DependencyMode,
     auto: feature_ty,
     cuda: feature_ty,
@@ -375,6 +363,9 @@ def create(
 ) -> None:
     """Create a fresh devenv ready for building HPCToolkit."""
     # pylint: disable=too-many-arguments
+    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(notexists=True, flag="-n"))
+    del devenv_by_dir
+    del devenv_by_name
     if not obj.project_root:
         raise click.ClickException("create only operates within an HPCToolkit project checkout")
 
@@ -430,8 +421,20 @@ Devenv successfully created! You may now use Meson commands, Eg.:
 
 
 @main.command
-@NamedEnv.pass_env(exists=True, help_verb="Update")
-@dev_pass_obj
+@click.option(
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(exists=True, flag="-d"),
+    help="Update a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(exists=True, flag="-n"),
+    help="Update a named devenv",
+)
 # Generation mode
 @click.option(
     "--latest",
@@ -463,15 +466,21 @@ Devenv successfully created! You may now use Meson commands, Eg.:
     help="Compiler to populate the devenv with",
 )
 @click.option("--build/--no-build", help="Also build HPCToolkit")
+@dev_pass_obj
 def update(
     obj: DevState,
-    devenv: Env,
+    /,
     *,
+    devenv_by_dir: Env | None,
+    devenv_by_name: Env | None,
     mode: DependencyMode,
     compiler: SystemCompiler | None,
     build: bool,
 ) -> None:
     """Update (re-generate) a devenv."""
+    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    del devenv_by_dir
+    del devenv_by_name
     if not obj.project_root:
         raise click.ClickException("create only operates within an HPCToolkit project checkout")
 
@@ -514,7 +523,7 @@ Devenv successfully created! You may now use Meson commands, Eg.:
 @main.command(add_help_option=False, context_settings={"ignore_unknown_options": True})
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 @dev_pass_obj
-def pre_commit(obj: DevState, args: collections.abc.Collection[str]) -> None:
+def pre_commit(obj: DevState, /, *, args: collections.abc.Collection[str]) -> None:
     """Run pre-commit."""
     with obj.internal_named_env("pre-commit", "venv") as ve_dir:
         if not (ve_dir / "bin" / "pre-commit").is_file():
@@ -537,17 +546,38 @@ def pre_commit(obj: DevState, args: collections.abc.Collection[str]) -> None:
 
 @main.command(context_settings={"ignore_unknown_options": True})
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-@NamedEnv.pass_env(exists=True, help_verb="Operate on")
+@click.option(
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(notexists=True, flag="-d"),
+    help="Operate on a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(notexists=True, flag="-n"),
+    help="Operate on a named devenv",
+)
 @dev_pass_obj
-def meson(obj: DevState, devenv: Env, args: collections.abc.Collection[str]) -> None:
+def meson(
+    obj: DevState,
+    /,
+    *,
+    devenv_by_dir: Env | None,
+    devenv_by_name: Env | None,
+    args: collections.abc.Collection[str],
+) -> None:
     """Run meson commands in a devenv."""
+    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(notexists=True, flag="-n"))
     env = DevEnv.restore(devenv.root)
     obj.meson.execl(*args, cwd=env.builddir)
 
 
 @main.command
 @dev_pass_obj
-def poetry(obj: DevState) -> None:
+def poetry(obj: DevState, /) -> None:
     """Set up a Python venv with Poetry."""
     with obj.internal_named_env("poetry", "venv") as ve_dir:
         if not (ve_dir / "bin" / "poetry").is_file():
@@ -562,7 +592,6 @@ def poetry(obj: DevState) -> None:
 
 
 @main.command
-@dev_pass_obj
 @click.option(
     "--custom-env",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
@@ -573,7 +602,8 @@ def poetry(obj: DevState) -> None:
     default=True,
     help="Install the Spack environment before attempting to use it",
 )
-def autogen(obj: DevState, custom_env: Path, install: bool) -> None:
+@dev_pass_obj
+def autogen(obj: DevState, /, *, custom_env: Path, install: bool) -> None:
     """Regenerate the autogoo (./autogen)."""
     if not obj.project_root:
         raise click.ClickException("autogen only operates within an HPCToolkit project checkout")
@@ -599,17 +629,49 @@ def autogen(obj: DevState, custom_env: Path, install: bool) -> None:
 
 
 @main.command
-@NamedEnv.pass_env(exists=True, help_verb="Describe")
-def describe(devenv: Env) -> None:
+@click.option(
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(exists=True, flag="-d"),
+    help="Describe a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(exists=True, flag="-n"),
+    help="Describe a named devenv",
+)
+def describe(*, devenv_by_dir: Env | None, devenv_by_name: Env | None) -> None:
     """Describe a devenv."""
+    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    del devenv_by_dir
+    del devenv_by_name
     env = DevEnv.restore(devenv.root)
     click.echo(env.describe(), nl=True)
 
 
 @main.command
-@NamedEnv.pass_env(exists=True, help_verb="Edit")
-def edit(devenv: Env) -> None:
+@click.option(
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(exists=True, flag="-d"),
+    help="Edir a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(exists=True, flag="-n"),
+    help="Edit a named devenv",
+)
+def edit(*, devenv_by_dir: Env | None, devenv_by_name: Env | None) -> None:
     """Edit a devenv's 'spack.yaml'."""
+    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    del devenv_by_dir
+    del devenv_by_name
     click.edit(filename=str(devenv.root / "spack.yaml"))
     click.echo(
         f"""\
@@ -631,7 +693,7 @@ def template_merge(base: dict, overlay: dict) -> dict:
 
 
 @main.command
-@NamedEnv.pass_env_arg(notexists=True)
+@click.argument("devenv", type=DevEnvType(notexists=True, flag=None))
 # Generation type
 @click.option("--autogen", is_flag=True, help="Generate an environment for ./dev autogen instead")
 # Generation mode
@@ -687,7 +749,8 @@ def template_merge(base: dict, overlay: dict) -> dict:
     multiple=True,
 )
 def generate(
-    devenv: Path,
+    *,
+    devenv: Env,
     autogen: bool,
     mode: DependencyMode,
     auto: feature_ty,
@@ -711,7 +774,7 @@ def generate(
 
     presteps: list[str] = []
     poststeps: list[str] = []
-    nice_devenv = shlex.quote(str(devenv))
+    nice_devenv = shlex.quote(str(devenv.root))
 
     env_template: dict | None = None
     template_settings: dict = {}
@@ -739,11 +802,11 @@ def generate(
 
     try:
         if autogen:
-            aenv = AutogenEnv(devenv)
+            aenv = AutogenEnv(devenv.root)
             aenv.generate(template=env_template)
         else:
             denv = DevEnv(
-                devenv,
+                devenv.root,
                 cuda=feature2bool("cuda", cuda),
                 rocm=feature2bool("rocm", rocm),
                 level0=feature2bool("level0", level0),
@@ -758,8 +821,8 @@ def generate(
             presteps.append(f"./dev edit -d {nice_devenv}   # (optional)")
             poststeps.append(f"./dev populate {nice_devenv}")
     except KeyboardInterrupt:
-        if devenv.exists():
-            shutil.rmtree(devenv)
+        if devenv.root.exists():
+            shutil.rmtree(devenv.root)
         raise
 
     click.echo("Devenv generated for manual installation. Your next steps should be:")
@@ -921,21 +984,21 @@ def generate_request(
 
 
 @main.command
-@NamedEnv.pass_env_arg(exists=True)
-@dev_pass_obj
+@click.argument("devenv", type=DevEnvType(exists=True, flag=None))
 @click.option(
     "-c",
     "--compiler",
     type=SystemCompilerType(),
     help="Compiler to populate the devenv with",
 )
-def populate(obj: DevState, devenv: Path, *, compiler: SystemCompiler | None) -> None:
+@dev_pass_obj
+def populate(obj: DevState, /, *, devenv: Env, compiler: SystemCompiler | None) -> None:
     """Populate a manually installed DEVENV.
 
     Consider using 'dev create' instead. This command is only needed if the development environment
     needs to be manually installed, e.g. for a container image.
     """
-    env = DevEnv.restore(devenv)
+    env = DevEnv.restore(devenv.root)
     env.populate(compiler=compiler)
     try:
         if obj.project_root:
@@ -949,30 +1012,51 @@ def populate(obj: DevState, devenv: Path, *, compiler: SystemCompiler | None) ->
         click.echo(
             f"""\
 Devenv successfully created! You may now use Meson commands, Eg.:
-    $ ./dev meson -d {shlex.quote(str(devenv))} compile
-    $ ./dev meson -d {shlex.quote(str(devenv))} install
-    $ ./dev meson -d {shlex.quote(str(devenv))} test"""
+    $ ./dev meson -d {shlex.quote(str(devenv.root))} compile
+    $ ./dev meson -d {shlex.quote(str(devenv.root))} install
+    $ ./dev meson -d {shlex.quote(str(devenv.root))} test"""
         )
     else:
         click.echo(
             f"""
 Devenv has been populated but not configured. Use via the buildfe:
-    $ ./dev buildfe -d {shlex.quote(str(devenv))} -- ..."""
+    $ ./dev buildfe -d {shlex.quote(str(devenv.root))} -- ..."""
         )
 
 
 @main.command(add_help_option=False, context_settings={"ignore_unknown_options": True})
-@NamedEnv.pass_env(exists=True, help_verb="Run within")
-@dev_pass_obj
+@click.option(
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(exists=True, flag="-d"),
+    help="Run within a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(exists=True, flag="-n"),
+    help="Run within a named devenv",
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def buildfe(obj: DevState, devenv: Env, args: collections.abc.Collection[str]) -> None:
+@dev_pass_obj
+def buildfe(
+    obj: DevState,
+    devenv_by_dir: Env | None,
+    devenv_by_name: Env | None,
+    args: collections.abc.Collection[str],
+) -> None:
     """Run the build frontend with the given ARGS."""
+    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    del devenv_by_dir
+    del devenv_by_name
     if not obj.project_root:
         raise click.ClickException("buildfe only operates within an HPCToolkit project checkout")
 
     env = DevEnv.restore(devenv.root)
     os.chdir(obj.project_root)
-    buildfe_main(obj.meson.path, [*args] + [str(env.root)])
+    buildfe_main(obj.meson.path, [*args, str(env.root)])
 
 
 @main.command
@@ -1032,4 +1116,4 @@ def os_install(
 
 
 if __name__ == "__main__":
-    main()  # pylint: disable=no-value-for-parameter
+    main()  # pylint: disable=no-value-for-parameter,missing-kwoa

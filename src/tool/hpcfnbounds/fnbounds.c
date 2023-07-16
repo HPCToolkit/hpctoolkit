@@ -167,7 +167,7 @@ main(int argc, char **argv, char **envp)
       exit(0);
     }
     if ( strcmp (*p, "-s") == 0 ) {
-      // code to inialize as a server  "-s <infd> <outfd>"
+      // code to initialize as a server  "-s <infd> <outfd>"
       if ((i+2) > argc) {
         // argument count is wrong
         fprintf (stderr, "FNB2: hpcfnbounds server invocation too few arguments\n" );

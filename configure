@@ -17679,8 +17679,8 @@ $as_echo "$as_me: objcopy is $OBJCOPY" >&6;}
 # C compiler checks
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C comiler for tests ***" >&5
-$as_echo "$as_me: *** Using C comiler for tests ***" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C compiler for tests ***" >&5
+$as_echo "$as_me: *** Using C compiler for tests ***" >&6;}
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -17871,8 +17871,8 @@ _ACEOF
 # C++ compiler checks
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C++ comiler for tests ***" >&5
-$as_echo "$as_me: *** Using C++ comiler for tests ***" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C++ compiler for tests ***" >&5
+$as_echo "$as_me: *** Using C++ compiler for tests ***" >&6;}
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'

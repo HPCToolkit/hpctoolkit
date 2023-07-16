@@ -16,7 +16,7 @@ class MesonMachineFile:
     def _norm(self, value: str | Path | int) -> str:
         if isinstance(value, int):
             return f"{value:d}"
-        if isinstance(value, (str, Path)):
+        if isinstance(value, str | Path):
             return "'{}'".format(str(value).replace("'", "\\'"))
         return None
 

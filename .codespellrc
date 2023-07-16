@@ -4,4 +4,5 @@
 # InsId is a type name from GTPin. codespell mistakes it for "inside".
 ignore-words-list = hsa,deques,insid
 # Wil Phan is one of our staff members. codespell mistakes it for "will/well".
-ignore-regex = \bWil\s+Phan\b
+# Any words in HTML that contain quotes don't work, e.g. "couldn&rsquo;t"
+ignore-regex = \b(Wil\s+Phan|couldn&rsquo;t)\b

@@ -123,8 +123,8 @@ def hpcrun(
     else:
         output = tempfile.TemporaryDirectory(prefix="hpc-tsuite-", suffix="-measurements")
 
-    with output as mdir:
-        mdir = Path(mdir)
+    with output as mdir_str:
+        mdir = Path(mdir_str)
         arglist = [hpcrun] + [a for a in hpcrun_args if a is not None] + ["-o", mdir, *cmd]
         proc = _subproc_run("hpcrun", arglist, timeout=timeout, env=env)
         m = Measurements(mdir)
@@ -199,12 +199,12 @@ def hpcprof(
     else:
         output = tempfile.TemporaryDirectory(prefix="hpctsuite-", suffix="-database")
 
-    with output as ddir:
-        ddir = Path(ddir)
+    with output as ddir_str:
+        ddir = Path(ddir_str)
         ddir.rmdir()
         proc = _subproc_run(
             "hpcprof",
-            [hpcprof, *list(args)] + [f"-j{threads:d}", "-o", ddir, meas],
+            [hpcprof, *list(args), f"-j{threads:d}", "-o", ddir, meas],
             timeout=timeout,
             env=env,
         )
@@ -243,12 +243,12 @@ def hpcprof_mpi(
     else:
         output = tempfile.TemporaryDirectory(prefix="hpctsuite-", suffix="-database")
 
-    with output as ddir:
-        ddir = Path(ddir)
+    with output as ddir_str:
+        ddir = Path(ddir_str)
         ddir.rmdir()
         proc = _subproc_run(
             "hpcprof-mpi",
-            [hpcprof_mpi, *list(args)] + [f"-j{threads:d}", "-o", ddir, meas],
+            [hpcprof_mpi, *list(args), f"-j{threads:d}", "-o", ddir, meas],
             timeout=timeout,
             env=env,
             wrapper=mpiexec,
@@ -285,7 +285,7 @@ def hpcstruct(
         meas = binary_or_meas.basedir
         proc = _subproc_run(
             "hpcstruct",
-            [hpcstruct, *list(args)] + [f"-j{threads:d}", meas],
+            [hpcstruct, *list(args), f"-j{threads:d}", meas],
             timeout=timeout,
             env=env,
         )
@@ -310,7 +310,7 @@ def hpcstruct(
         with out as sfile:
             proc = _subproc_run(
                 "hpcstruct",
-                [hpcstruct, *list(args)] + [f"-j{threads:d}", "-o", sfile.name, binary],
+                [hpcstruct, *list(args), f"-j{threads:d}", "-o", sfile.name, binary],
                 timeout=timeout,
                 env=env,
             )

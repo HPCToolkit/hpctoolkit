@@ -117,7 +117,7 @@ lzmastreambuf::int_type lzmastreambuf::underflow() {
       // Put back all the bytes we don't need anymore
       for(size_t i = 0; i < stream.avail_in; i++) {
         if(base_traits_type::eq_int_type(base_traits_type::eof(), base->sungetc())) {
-          // Welp, this is a problem
+          // Hrm. This is a problem.
           setg(nullptr, nullptr, nullptr);
           return traits_type::eof();
         }

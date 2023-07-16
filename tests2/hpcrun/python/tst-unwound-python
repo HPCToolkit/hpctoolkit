@@ -9,12 +9,12 @@ from hpctoolkit.match.context import MatchCtx, MatchEntryPoint, MatchFunction, c
 from hpctoolkit.test.execution import hpcprof, hpcrun
 
 
-@click.group()
+@click.group
 def test_unwound_python():
     """Test that measuring a given Python script will result in an appropriate recorded logical callstack."""
 
 
-@test_unwound_python.command()
+@test_unwound_python.command
 @click.option("-t", "--threads", type=int, default=1, help="Expected number of threads")
 @click.argument(
     "script",
