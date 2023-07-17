@@ -309,7 +309,7 @@ void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions
       if (block_id_map[block->id]->name[0] == '.') {
         continue;
       }
-      Function *function = new Function(function_id, block_id_map[block->id]->name);
+      Function *function = new Function(function_id, block_id_map[block->id]->name, 0);
       ++function_id;
       for (auto *bb : blocks) {
         if (_block_parent[bb->id] == block->id) {

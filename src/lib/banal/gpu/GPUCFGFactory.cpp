@@ -2,7 +2,7 @@
 #include "GPUFunction.hpp"
 #include <iostream>
 
-#define DEBUG_GPU_CFGFACTORY 0
+#define DEBUG_GPU_CFGFACTORY 1
 
 namespace Dyninst {
 namespace ParseAPI {
@@ -10,6 +10,7 @@ namespace ParseAPI {
 Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
   std::string name, CodeObject * obj, CodeRegion * region,
   Dyninst::InstructionSource * isrc) {
+  
   // Find function by name
   for (auto *function : _functions) {
     if (function->name == name) {
@@ -17,8 +18,8 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
 
       bool first_entry = true;
       if (DEBUG_GPU_CFGFACTORY) {
-        std::cout << "Function: " << function->name << " addr: 0x" <<
-          std::hex << addr << std::dec << std::endl;
+        std::cout << "******\nFunction: " << function->name
+		  << " addr: 0x" << std::hex << addr << std::dec << std::endl;
       }
       for (auto *block : function->blocks) {
         auto arch = block->insts.front()->arch;
@@ -29,9 +30,10 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
 
         {
           tbb::concurrent_hash_map<size_t, GPUBlock *>::accessor a;
-          if (_block_filter.insert(a, std::make_pair(block->id, nullptr))) {
+          if (_block_filter.insert(a, std::make_pair(block->address, nullptr))) {
             if (DEBUG_GPU_CFGFACTORY) {
-              std::cout << "New block: " << block->name << " id: " << block->id << std::endl;
+              std::cout << "New block: " << block->name << " id: " << block->id
+		        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
             }
             std::vector<std::pair<Offset, size_t>> inst_offsets;
             for (auto *inst : block->insts) {
@@ -45,7 +47,8 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             blocks_.add(ret_block);
           } else {
             if (DEBUG_GPU_CFGFACTORY) {
-              std::cout << "Old block: " << block->name << " id: " << block->id << std::endl;
+              std::cout << "Old block: " << block->name << " id: " << block->id
+		        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
             }
             ret_block = a->second;
           }
@@ -63,9 +66,10 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           GPUBlock *ret_target_block = NULL;
           {
             tbb::concurrent_hash_map<size_t, GPUBlock *>::accessor a;
-            if (_block_filter.insert(a, std::make_pair(target->block->id, nullptr))) {
+            if (_block_filter.insert(a, std::make_pair(target->block->address, nullptr))) {
               if (DEBUG_GPU_CFGFACTORY) {
-                std::cout << "New block: " << target->block->name << " id: " << target->block->id << std::endl;
+                std::cout << "New block: " << target->block->name << " id: " << target->block->id
+		          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
               }
               std::vector<std::pair<Offset, size_t>> inst_offsets;
               for (auto *inst : target->block->insts) {
@@ -79,7 +83,8 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
               blocks_.add(ret_target_block);
             } else {
               if (DEBUG_GPU_CFGFACTORY) {
-                std::cout << "Old block: " << target->block->name << " id: " << target->block->id << std::endl;
+                std::cout << "Old block: " << target->block->name << " id: " << target->block->id
+		          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
               }
               ret_target_block = a->second;
             }
@@ -88,7 +93,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           Edge *ret_edge = new Edge(ret_block, ret_target_block, target->type);
           ret_edge->ignore_index();
           if (DEBUG_GPU_CFGFACTORY) {
-            std::cout << "Edge: "<< " -> " << target->block->name << std::endl;
+            std::cout << "Edge: "<< block->name << " -> " << target->block->name << std::endl;
           }
           ret_edge->install();
           edges_.add(ret_edge);

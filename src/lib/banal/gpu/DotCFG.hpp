@@ -16,6 +16,7 @@
 namespace GPUParse {
 
 typedef Dyninst::Architecture Arch;
+typedef Dyninst::Address Address;
 
 
 struct InstructionStat {
@@ -177,7 +178,7 @@ struct InstructionStat {
 
 
 struct Inst {
-  int offset;
+  Address offset;
   int size;
   bool dual_first;
   bool dual_second;
@@ -192,16 +193,16 @@ struct Inst {
   Arch arch;
   InstructionStat *inst_stat;
 
-  Inst(int offset, int size, Arch arch, InstructionStat *inst_stat) : offset(offset), size(size), dual_first(false), dual_second(false),
+  Inst(Address offset, int size, Arch arch, InstructionStat *inst_stat) : offset(offset), size(size), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false), arch(arch), inst_stat(inst_stat) {}
 
   // Constructor for dummy inst
-  Inst(int offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
+  Inst(Address offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false), arch(arch) {}
 
-  Inst(int offset, int size) : Inst(offset, size, Dyninst::Arch_none) {}
+  Inst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_none) {}
 
-  explicit Inst(int offset) : Inst(offset, 0) {}
+  explicit Inst(Address offset) : Inst(offset, 0) {}
 };
 
 
@@ -209,11 +210,11 @@ struct Inst {
 
 struct IntelInst : public Inst {
   // Constructor for dummy inst
-  IntelInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_intelGen9) {}
+  IntelInst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_intelGen9) {}
 
-  IntelInst(int offset, int size, InstructionStat *inst_stat) : Inst(offset, size, Dyninst::Arch_intelGen9, inst_stat) {}
+  IntelInst(Address offset, int size, InstructionStat *inst_stat) : Inst(offset, size, Dyninst::Arch_intelGen9, inst_stat) {}
 
-  explicit IntelInst(int offset) : Inst(offset, 0, Dyninst::Arch_intelGen9) {}
+  explicit IntelInst(Address offset) : Inst(offset, 0, Dyninst::Arch_intelGen9) {}
 };
 
 #endif
@@ -221,9 +222,9 @@ struct IntelInst : public Inst {
 
 struct CudaInst : public Inst {
   // Constructor for dummy inst
-  CudaInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_cuda) {}
+  CudaInst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_cuda) {}
 
-  explicit CudaInst(int offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
+  explicit CudaInst(Address offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
 
   // Cuda instruction constructor
   CudaInst(std::string &inst_str) : CudaInst(0, 0) {
@@ -339,15 +340,15 @@ struct Target {
 
 struct Block {
   size_t id;
-  int address;
+  Address address;
   int begin_offset;
   std::vector<Inst *> insts;
   std::vector<Target *> targets;
   std::string name;
 
-  Block(size_t id, int address, const std::string &name) : id(id), address(address), name(name) {}
+  Block(size_t _id, Address _address, const std::string &_name) : id(_id), address(_address), name(_name) {}
 
-  Block(size_t id, const std::string &name) : Block(id, 0, name) {}
+  Block(size_t _id, const std::string &_name) : Block(_id, 0, _name) {}
 
   bool operator<(const Block &other) const {
     if (this->insts.size() == 0) {
@@ -376,10 +377,10 @@ struct Function {
   std::vector<Block *> blocks;
   size_t id;
   std::string name;
-  int address;
+  Address address;
 
-  Function(size_t id, const std::string &name) : id(id), name(name),
-    address(0) {}
+  Function(size_t _id, const std::string &_name, Address _address) : id(_id), name(_name),
+    address(_address) {}
 
   ~Function() {
     for (auto *block : blocks) {

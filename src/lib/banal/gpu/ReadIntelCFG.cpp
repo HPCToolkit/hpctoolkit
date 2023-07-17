@@ -489,8 +489,11 @@ getIntelInstructionStat
   // CE, ExecMask and DMask
   iga::PredCtrl pred = kv.getPredicate(offset);
   bool invPred = kv.isInversePredicate(offset);
-  // int32_t flagReg = kv.getFlagReg(offset);
-  // int32_t flagSubReg = kv.getFlagSubReg(offset);
+
+#if FLAGREG
+  int32_t flagReg = kv.getFlagReg(offset);
+  int32_t flagSubReg = kv.getFlagSubReg(offset);
+#endif
 
   GPUParse::InstructionStat::PredicateFlag predFlag;
   if (pred == iga::PredCtrl::NONE) {
@@ -503,7 +506,10 @@ getIntelInstructionStat
 
 #if DEBUG
   std::cout << "\npred: " << getIGAPredCtrlString(pred) << ",invPred: " << invPred
-    << ", flag register: " << flagReg << ", flag subregister: " << flagSubReg;
+#if FLAGREG
+    << ", flag register: " << flagReg << ", flag subregister: " << flagSubReg
+#endif
+  << std::endl;
 #endif
 
   auto *inst_stat = new GPUParse::InstructionStat(op, offset, predFlag, dsts, srcs);
@@ -789,20 +795,25 @@ static void
 parseIntelCFG
 (
  char *text_section,
- int text_section_size,
+ size_t text_section_size,
  GPUParse::Function &function,
  bool du_graph_wanted
 )
 {
-  KernelView kv(IGA_GEN9, text_section, text_section_size);
+  KernelView kv(IGA_XE_HPC, text_section, text_section_size);
   std::map<int, GPUParse::Block *> block_offset_map;
 
-  int offset = 0;
-  int block_id = 0;
+  Address offset = 0;
+  Address endOffset = text_section_size;
+
+  unsigned long block_id = 0;
 
   // Construct basic blocks
-  while (offset < text_section_size) {
-    auto *block = new GPUParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id));
+  while (offset < endOffset) {
+    Address position = offset + function.address;
+    auto *block =
+      new GPUParse::Block(block_id, position,
+        function.name + "_" + std::to_string(block_id));
     block_id++;
 
     function.blocks.push_back(block);
@@ -812,14 +823,15 @@ parseIntelCFG
     GPUParse::Inst *inst;
     if (du_graph_wanted) {
       auto *inst_stat = getIntelInstructionStat(kv, offset);
-      inst = new GPUParse::IntelInst(offset, size, inst_stat);
+      inst = new GPUParse::IntelInst(position, size, inst_stat);
     } else {
-      inst = new GPUParse::IntelInst(offset, size);
+      inst = new GPUParse::IntelInst(position, size);
     }
     block->insts.push_back(std::move(inst));
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
       offset += size;
+      position = offset + function.address;
       size = kv.getInstSize(offset);
       if (size == 0) {
         // this is a weird edge case, what to do?
@@ -836,7 +848,7 @@ parseIntelCFG
       length = kv.getInstSyntax(offset, inst_asm_text, MAX_STR_SIZE);
       assert(length > 0);
       auto *inst_stat = getIntelInstructionStat(kv, offset);
-      inst = new GPUParse::IntelInst(offset, size, inst_stat);
+      inst = new GPUParse::IntelInst(position, size, inst_stat);
       block->insts.push_back(std::move(inst));
     }
 
@@ -849,11 +861,12 @@ parseIntelCFG
   using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
 
   // Construct targets
-  std::array<int, KV_MAX_TARGETS_PER_INSTRUCTION + 1> jump_targets;
+  std::array<int32_t, KV_MAX_TARGETS_PER_INSTRUCTION + 1> jump_targets;
   for (size_t i = 0; i < function.blocks.size(); ++i) {
     auto *block = function.blocks[i];
     auto *inst = block->insts.back();
-    size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
+    size_t jump_targets_count =
+      kv.getInstTargets(inst->offset, jump_targets.data());
 
     if (i != function.blocks.size() - 1) {
       // Add a fall through edge
@@ -874,7 +887,19 @@ parseIntelCFG
     }
 
     for (size_t j = 0; j < jump_targets_count; j++) {
-      auto *target_block = block_offset_map.at(jump_targets[j]);
+      //----------------------------------------------------------------------
+      // Intel claims to be returning absolute addresses for jump target PCs.
+      // cHowever, we have observed zeBinaries with function symbols
+      // that have 48 bit addresses. Thus, absolute addresses for jump targets
+      // in such functions won't fit into 32 bits!!! Nor is it appropriate to
+      // use SIGNED numbers for jump target absolute addresses.
+      //
+      // HACKHACKHACK: rip off the top 32 bits and change to unsigned
+      //----------------------------------------------------------------------
+      uint32_t jump_target_lower_bits = jump_targets[j];
+      uint32_t function_address_lower_bits = function.address;
+      uint32_t jump_offset = jump_target_lower_bits - function_address_lower_bits;
+      auto *target_block = block_offset_map.at(jump_offset);
 
       TargetType type = TargetType::COND_TAKEN;
       if (inst->is_call) {
@@ -905,7 +930,9 @@ parseIntelCFG
 
     for (auto *block : function.blocks) {
       std::cout << std::hex;
-      std::cout << block->name << ": [" << block->insts.front()->offset << ", " << block->insts.back()->offset << "]" << std::endl;
+      auto front = block->insts.front();
+      auto back = block->insts.back();
+      std::cout << block->name << ": [" << front->offset << ", " << back->offset + back->size << ")" << std::endl;
 
       for (auto *inst : block->insts) {
         size_t n = kv.getInstSyntax(inst->offset, NULL, 0);
@@ -928,12 +955,8 @@ parseIntelCFG
 }
 
 
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
 bool
-readIntelCFG
+readPatchTokenCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
@@ -963,7 +986,7 @@ readIntelCFG
       return false;
     }
 
-    GPUParse::Function function(0, function_name);
+    GPUParse::Function function(0, function_name, 0);
     parseIntelCFG(text_section, text_section_size, function, du_graph_wanted);
     std::vector<GPUParse::Function *> functions = {&function};
 
@@ -985,10 +1008,120 @@ readIntelCFG
     return true;
   }
 
-  *code_src = new SymtabCodeSource(the_symtab);
-  *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
+  return false;
+}
+
+
+void
+parseTextSection
+(
+ std::vector<GPUParse::Function *> &functions,
+ char *fn_start,
+ size_t fn_length,
+ std::string &fn_name,
+ Offset fn_address
+)
+{
+  const bool no_du_graph_wanted = false;
+  if (fn_length > 0 && fn_name != "_entry") {
+    GPUParse::Function *function = new GPUParse::Function(0, fn_name.c_str(), fn_address);
+    parseIntelCFG(fn_start, fn_length, *function, no_du_graph_wanted);
+    functions.push_back(function);
+  }
+}
+
+
+bool
+readZeBinaryCFG
+(
+ const std::string &search_path,
+ ElfFile *elfFile,
+ Dyninst::SymtabAPI::Symtab *the_symtab,
+ bool cfg_wanted,
+ bool du_graph_wanted,
+ int jobs,
+ Dyninst::ParseAPI::CodeSource **code_src,
+ Dyninst::ParseAPI::CodeObject **code_obj
+)
+{
+  if (cfg_wanted) {
+    std::vector<GPUParse::Function *> functions;
+
+    std::vector<Symbol *> symbols;
+    the_symtab->getAllSymbolsByType(symbols, Symbol::ST_FUNCTION);
+    for (auto &symbol : symbols) {
+      Region *region = symbol->getRegion();
+      char *fn_text = ((char *) region->getPtrToRawData()) +
+        (symbol->getOffset() - region->getMemOffset());;
+      auto fn_size = symbol->getSize();
+      auto fn_name = symbol->getTypedName();
+      auto fn_address = symbol->getOffset();
+      parseTextSection(functions, fn_text, fn_size, fn_name, fn_address);
+    }
+
+    if (functions.size() > 0) {
+      CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+      *code_src = new GPUCodeSource(functions, the_symtab);
+      *code_obj = new CodeObject(*code_src, cfg_fact);
+  //    (*code_obj)->parse();
+
+      // parse function ranges eagerly here because doing it lazily 
+      // causes a race on Dyninst::Symtab::func_lookup
+      the_symtab->parseFunctionRanges();
+#if 0
+      if (du_graph_wanted) {
+        std::string elf_filePath = elfFile->getFileName();
+        const char *delimiter = ".gpubin";
+        size_t delim_loc = elf_filePath.find(delimiter);
+        std::string du_filePath = elf_filePath.substr(0, delim_loc + 7);
+        du_filePath += ".du";
+        sliceIntelInstructions((*code_obj)->funcs(), functions, function_name, jobs);
+        createDefUseEdges(functions, du_filePath);
+      }
+#endif
+
+      return true;
+    }
+  }
 
   return false;
+}
+
+
+//******************************************************************************
+// interface functions
+//******************************************************************************
+
+bool
+readIntelCFG
+(
+ const std::string &search_path,
+ ElfFile *elfFile,
+ Dyninst::SymtabAPI::Symtab *the_symtab,
+ bool cfg_wanted,
+ bool du_graph_wanted,
+ int jobs,
+ Dyninst::ParseAPI::CodeSource **code_src,
+ Dyninst::ParseAPI::CodeObject **code_obj
+)
+{
+  Region *reg = NULL;
+  bool isZeBinary = the_symtab->findRegion(reg, ".ze_info");
+  bool result;
+  if (isZeBinary) {
+    result = readZeBinaryCFG(search_path, elfFile, the_symtab, cfg_wanted,
+		           du_graph_wanted, jobs, code_src, code_obj);
+  } else {
+    result = readPatchTokenCFG(search_path, elfFile, the_symtab, cfg_wanted,
+		             du_graph_wanted, jobs, code_src, code_obj);
+  }
+
+  if (!result) {
+    *code_src = new SymtabCodeSource(the_symtab);
+    *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
+  }
+
+  return result;
 }
 
 

@@ -228,7 +228,7 @@ parseDotCFG
   // For functions that cannot be parsed
   for (auto *symbol : unparsable_function_symbols) {
     auto function_name = symbol->getMangledName();
-    auto *function = new GPUParse::Function(max_function_id++, std::move(function_name));
+    auto *function = new GPUParse::Function(max_function_id++, std::move(function_name), 0);
     function->address = symbol->getOffset();
     auto block_name = symbol->getMangledName() + "_0";
     auto *block = new GPUParse::Block(max_block_id++, std::move(block_name));
