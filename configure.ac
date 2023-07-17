@@ -3754,6 +3754,40 @@ fi
 
 #-------------------------------------------------
 
+# Test if dyninst supports the unknown instruction API.
+# For now, use this only on x86 with XED.
+
+use_xed_for_gaps=no
+
+if test "$DYNINST" != no && test "$XED2" != no ; then
+  AC_MSG_CHECKING([for dyninst unknown instruction support])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <Instruction.h>
+#include <InstructionDecoder.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+Instruction mycallback(InstructionDecoder::buffer buf)
+{
+  return Instruction{};
+}
+void install_callback(void)
+{
+  InstructionDecoder::unknown_instruction::register_callback(mycallback);
+}
+]])], [use_xed_for_gaps=yes])
+
+  AC_MSG_RESULT([$use_xed_for_gaps])
+fi
+
+if test "$use_xed_for_gaps" = yes ; then
+  AC_DEFINE(USE_XED_FOR_GAPS, 1, [use dyninst and xed for unknown instructions])
+  dyninst_features="$dyninst_features unknown-instn"
+fi
+
+#-------------------------------------------------
+
 # Test if dyninst supports cuda.
 
 use_cuda=no
@@ -3855,6 +3889,9 @@ if test "$dyninst_intel_gpu" = yes ; then
 fi
 
 #-------------------------------------------------
+
+dyninst_features=`echo $dyninst_features`
+AC_MSG_NOTICE([dyninst features: $dyninst_features])
 
 # Restore C++ flags from dyninst tests
 
@@ -5489,8 +5526,6 @@ dnl fi
 #-------------------------------------------------
 # Summary of the config options.
 #-------------------------------------------------
-
-dyninst_features=`echo $dyninst_features`
 
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])

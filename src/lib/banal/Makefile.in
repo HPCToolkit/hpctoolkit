@@ -115,7 +115,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_1 = -I$(XED2_INC)
+@OPT_ENABLE_OPENMP_TRUE@am__append_2 = $(OPENMP_FLAG)
 subdir = src/lib/banal
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -529,22 +530,14 @@ MYSOURCES = \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
 
-MYCXXFLAGS = \
-	@HOST_CXXFLAGS@  \
-	$(HPC_IFLAGS)  \
-	$(BOOST_IFLAGS)  \
-	$(DWARF_IFLAGS)  \
-	-I$(LIBELF_INC)  \
-	$(DYNINST_IFLAGS)  \
-	$(IGC_IFLAGS) \
-	$(MD_IFLAGS) \
-	$(TBB_IFLAGS)
-
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) $(BOOST_IFLAGS) \
+	$(DWARF_IFLAGS) -I$(LIBELF_INC) $(DYNINST_IFLAGS) \
+	$(IGC_IFLAGS) $(MD_IFLAGS) $(TBB_IFLAGS) $(am__append_1)
 MYLIBADD = @HOST_LIBTREPOSITORY@
 MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LTLIBRARIES = libHPCbanal.la
 libHPCbanal_la_SOURCES = $(MYSOURCES)
-libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS) $(am__append_1)
+libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS) $(am__append_2)
 libHPCbanal_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
