@@ -10,7 +10,6 @@ namespace ParseAPI {
 Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
   std::string name, CodeObject * obj, CodeRegion * region,
   Dyninst::InstructionSource * isrc) {
-  
   // Find function by name
   for (auto *function : _functions) {
     if (function->name == name) {
