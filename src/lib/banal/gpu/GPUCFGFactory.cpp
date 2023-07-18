@@ -2,7 +2,7 @@
 #include "GPUFunction.hpp"
 #include <iostream>
 
-#define DEBUG_GPU_CFGFACTORY 1
+#define DEBUG_GPU_CFGFACTORY 0
 
 namespace Dyninst {
 namespace ParseAPI {

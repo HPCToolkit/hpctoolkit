@@ -341,7 +341,6 @@ addCustomFunctionObject
 
   // After injecting symbol, we can parse inlining info
   symtab->parseTypesNow();
-  symtab->parseFunctionRanges();
 }
 
 
@@ -854,6 +853,14 @@ parseIntelCFG
   for (size_t i = 0; i < function.blocks.size(); ++i) {
     auto *block = function.blocks[i];
     auto *inst = block->insts.back();
+
+    //----------------------------------------------------------------------
+    // Intel claims to be returning absolute addresses for jump target PCs.
+    // cHowever, we have observed zeBinaries with function symbols
+    // that have 48 bit addresses. Thus, absolute addresses for jump targets
+    // in such functions won't fit into 32 bits!!! Nor is it appropriate to
+    // use SIGNED numbers for jump target absolute addresses.
+    //----------------------------------------------------------------------
     size_t jump_targets_count =
       kv.getInstTargets(inst->offset, jump_targets.data());
 
@@ -975,10 +982,6 @@ exportCfgIntoDyninst
   CFGFactory *cfg_fact = new GPUCFGFactory(functions);
   *code_src = new GPUCodeSource(functions, the_symtab);
   *code_obj = new CodeObject(*code_src, cfg_fact);
-
-  // parse function ranges eagerly here because doing it lazily
-  // causes a race on Dyninst::Symtab::func_lookup
-  the_symtab->parseFunctionRanges();
 }
 
 
@@ -1089,6 +1092,10 @@ readIntelCFG
     *code_src = new SymtabCodeSource(the_symtab);
     *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
   }
+
+  // parse function ranges eagerly here because doing it lazily
+  // causes a race on Dyninst::Symtab::func_lookup
+  the_symtab->parseFunctionRanges();
 
   return builtCFG;
 }
