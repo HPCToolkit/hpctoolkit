@@ -217,8 +217,7 @@ static std::string getKindString(iga::Kind kind) {
 
 static std::string getRegNameString(iga::RegName reg)
 {
-  switch (reg)
-  {
+  switch (reg) {
     case iga::RegName::GRF_R:       return  "GRF";
     case iga::RegName::ARF_NULL:    return  "AREG_NULL";
     case iga::RegName::ARF_A:       return  "AREG_A";
@@ -236,17 +235,14 @@ static std::string getRegNameString(iga::RegName reg)
     case iga::RegName::ARF_SP:      return  "AREG_SP";
     case iga::RegName::ARF_MME:     return  "AREG_MME";
     case iga::RegName::ARF_FC:      return  "AREG_FC";
-    default: //iga::RegName::INVALID
-                                    //assert(false && "illegal ARF");
-                                    return "REG_INVALID";
+    default:                        return  "REG_INVALID";
   }
 }
 
 
 static std::string getIGATypeString(iga::Type type)
 {
-    switch (type)
-    {
+    switch (type) {
     case iga::Type::UB:   return "Type_UB";
     case iga::Type::B:    return "Type_B";
     case iga::Type::UW:   return "Type_UW";
@@ -262,17 +258,14 @@ static std::string getIGATypeString(iga::Type type)
     case iga::Type::V:    return "Type_V";
     case iga::Type::VF:   return "Type_VF";
     case iga::Type::NF:   return "Type_NF";
-    default: //iga::Type::INVALID
-        //assert(false && "illegal type");
-        return "Type_INVALID";
+    default:              return "Type_INVALID";
     }
 }
 
 
 static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
 {
-    switch (predCtrl)
-    {
+    switch (predCtrl) {
       case iga::PredCtrl::SEQ:        return "PRED_DEFAULT";
       case iga::PredCtrl::ANY2H:      return "PRED_ANY2H";
       case iga::PredCtrl::ANY4H:      return "PRED_ANY4H";
@@ -286,9 +279,7 @@ static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
       case iga::PredCtrl::ALL32H:     return "PRED_ALL32H";
       case iga::PredCtrl::ANYV:       return "PRED_ANYV";
       case iga::PredCtrl::ALLV:       return "PRED_ALLV";
-      default:   //iga::PredCtrl::NONE;
-        //assert(false && "illegal predicate control");
-        return "PRED_NONE";
+      default:                        return "PRED_NONE";
     }
 }
 #endif
@@ -646,7 +637,6 @@ sliceIntelInstructions
 (
  const Dyninst::ParseAPI::CodeObject::funclist &func_set,
  std::vector<GPUParse::Function *> &functions,
- std::string function_name,
  int threads
 )
 {
@@ -719,7 +709,6 @@ sliceIntelInstructions
 #endif
         Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
         g = s.backwardSlice(p);
-        //bool status = g->printDOT(function_name + ".dot");
         g->exitNodes(exit_begin, exit_end);
 
         for (; exit_begin != exit_end; ++exit_begin) {
@@ -955,136 +944,89 @@ parseIntelCFG
 }
 
 
-bool
-readPatchTokenCFG
-(
- const std::string &search_path,
- ElfFile *elfFile,
- Dyninst::SymtabAPI::Symtab *the_symtab,
- bool cfg_wanted,
- bool du_graph_wanted,
- int jobs,
- Dyninst::ParseAPI::CodeSource **code_src,
- Dyninst::ParseAPI::CodeObject **code_obj
-)
-{
-  // An Intel GPU binary for a kernel does not contain a function symbol for the kernel
-  // in its symbol table. Without a function symbol in the symbol table, Dyninst will not
-  // associate line map entries with addresses in the kernel. To cope with this defect of
-  // binaries for Intel GPU kernels, we add a function symbol for the kernel to its Dyninst
-  // symbol table.
-  auto function_name = elfFile->getGPUKernelName();
-  addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
-
-  if (cfg_wanted) {
-    char *text_section = NULL;
-    auto text_section_size = elfFile->getTextSection(&text_section);
-    if (text_section_size == 0) {
-      *code_src = new SymtabCodeSource(the_symtab);
-      *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
-
-      return false;
-    }
-
-    GPUParse::Function function(0, function_name, 0);
-    parseIntelCFG(text_section, text_section_size, function, du_graph_wanted);
-    std::vector<GPUParse::Function *> functions = {&function};
-
-    CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-    *code_src = new GPUCodeSource(functions, the_symtab);
-    *code_obj = new CodeObject(*code_src, cfg_fact);
-    (*code_obj)->parse();
-
-    if (du_graph_wanted) {
-      std::string elf_filePath = elfFile->getFileName();
-      const char *delimiter = ".gpubin";
-      size_t delim_loc = elf_filePath.find(delimiter);
-      std::string du_filePath = elf_filePath.substr(0, delim_loc + 7);
-      du_filePath += ".du";
-      sliceIntelInstructions((*code_obj)->funcs(), functions, function_name, jobs);
-      createDefUseEdges(functions, du_filePath);
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
-
-void
-parseTextSection
+static void
+parseGPUFunction
 (
  std::vector<GPUParse::Function *> &functions,
  char *fn_start,
  size_t fn_length,
  std::string &fn_name,
- Offset fn_address
+ Offset fn_address,
+ bool du_graph_wanted
 )
 {
-  const bool no_du_graph_wanted = false;
-  if (fn_length > 0 && fn_name != "_entry") {
+  if (fn_length > 0) {
     GPUParse::Function *function = new GPUParse::Function(0, fn_name.c_str(), fn_address);
-    parseIntelCFG(fn_start, fn_length, *function, no_du_graph_wanted);
+    parseIntelCFG(fn_start, fn_length, *function, du_graph_wanted);
     functions.push_back(function);
   }
 }
 
 
-bool
-readZeBinaryCFG
+static void
+exportCfgIntoDyninst
 (
- const std::string &search_path,
- ElfFile *elfFile,
- Dyninst::SymtabAPI::Symtab *the_symtab,
- bool cfg_wanted,
- bool du_graph_wanted,
- int jobs,
- Dyninst::ParseAPI::CodeSource **code_src,
- Dyninst::ParseAPI::CodeObject **code_obj
+  std::vector<GPUParse::Function *> &functions,
+  Dyninst::SymtabAPI::Symtab *the_symtab,
+  Dyninst::ParseAPI::CodeSource **code_src,
+  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
-  if (cfg_wanted) {
-    std::vector<GPUParse::Function *> functions;
+  CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+  *code_src = new GPUCodeSource(functions, the_symtab);
+  *code_obj = new CodeObject(*code_src, cfg_fact);
 
-    std::vector<Symbol *> symbols;
-    the_symtab->getAllSymbolsByType(symbols, Symbol::ST_FUNCTION);
-    for (auto &symbol : symbols) {
-      Region *region = symbol->getRegion();
-      char *fn_text = ((char *) region->getPtrToRawData()) +
-        (symbol->getOffset() - region->getMemOffset());;
-      auto fn_size = symbol->getSize();
-      auto fn_name = symbol->getTypedName();
-      auto fn_address = symbol->getOffset();
-      parseTextSection(functions, fn_text, fn_size, fn_name, fn_address);
-    }
+  // parse function ranges eagerly here because doing it lazily
+  // causes a race on Dyninst::Symtab::func_lookup
+  the_symtab->parseFunctionRanges();
+}
 
-    if (functions.size() > 0) {
-      CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-      *code_src = new GPUCodeSource(functions, the_symtab);
-      *code_obj = new CodeObject(*code_src, cfg_fact);
-  //    (*code_obj)->parse();
 
-      // parse function ranges eagerly here because doing it lazily 
-      // causes a race on Dyninst::Symtab::func_lookup
-      the_symtab->parseFunctionRanges();
-#if 0
-      if (du_graph_wanted) {
-        std::string elf_filePath = elfFile->getFileName();
-        const char *delimiter = ".gpubin";
-        size_t delim_loc = elf_filePath.find(delimiter);
-        std::string du_filePath = elf_filePath.substr(0, delim_loc + 7);
-        du_filePath += ".du";
-        sliceIntelInstructions((*code_obj)->funcs(), functions, function_name, jobs);
-        createDefUseEdges(functions, du_filePath);
-      }
-#endif
+static void
+recoverCfgPatchTokenBinary
+(
+  const std::string &search_path,
+  ElfFile *elfFile,
+  bool du_graph_wanted,
+  std::string &fn_name,
+  Dyninst::SymtabAPI::Symtab *the_symtab,
+  Dyninst::ParseAPI::CodeSource **code_src,
+  Dyninst::ParseAPI::CodeObject **code_obj,
+  std::vector<GPUParse::Function *> &functions
+)
+{
+  Address fn_address = 0;
+  char *fn_text = NULL;
+  auto fn_size = elfFile->getTextSection(&fn_text);
+  parseGPUFunction(functions, fn_text, fn_size, fn_name, fn_address, du_graph_wanted);
+}
 
-      return true;
+
+static void
+recoverCfgZeBinary
+(
+  const std::string &search_path,
+  ElfFile *elfFile,
+  bool du_graph_wanted,
+  Dyninst::SymtabAPI::Symtab *the_symtab,
+  Dyninst::ParseAPI::CodeSource **code_src,
+  Dyninst::ParseAPI::CodeObject **code_obj,
+  std::vector<GPUParse::Function *> &functions
+)
+{
+  std::vector<Symbol *> symbols;
+  the_symtab->getAllSymbolsByType(symbols, Symbol::ST_FUNCTION);
+  for (auto &symbol : symbols) {
+    Region *region = symbol->getRegion();
+    char *fn_text = ((char *) region->getPtrToRawData()) +
+      (symbol->getOffset() - region->getMemOffset());;
+    auto fn_size = symbol->getSize();
+    auto fn_name = symbol->getTypedName();
+    auto fn_address = symbol->getOffset();
+    if (fn_name != "_entry") {
+      parseGPUFunction(functions, fn_text, fn_size, fn_name, fn_address, du_graph_wanted);
     }
   }
-
-  return false;
 }
 
 
@@ -1106,22 +1048,49 @@ readIntelCFG
 )
 {
   Region *reg = NULL;
+  std::vector<GPUParse::Function *> functions;
+
   bool isZeBinary = the_symtab->findRegion(reg, ".ze_info");
   bool result;
   if (isZeBinary) {
-    result = readZeBinaryCFG(search_path, elfFile, the_symtab, cfg_wanted,
-		           du_graph_wanted, jobs, code_src, code_obj);
+    if (cfg_wanted) {
+      recoverCfgZeBinary(search_path, elfFile, du_graph_wanted, the_symtab,
+                         code_src, code_obj, functions);
+    }
   } else {
-    result = readPatchTokenCFG(search_path, elfFile, the_symtab, cfg_wanted,
-		             du_graph_wanted, jobs, code_src, code_obj);
+    // An Intel GPU binary for a kernel does not contain a function symbol for the kernel
+    // in its symbol table. Without a function symbol in the symbol table, Dyninst will not
+    // associate line map entries with addresses in the kernel. To cope with this defect of
+    // binaries for Intel GPU kernels, we add a function symbol for the kernel to its Dyninst
+    // symbol table.
+    auto fn_name = elfFile->getGPUKernelName();
+    addCustomFunctionObject(fn_name, the_symtab); //adds a dummy function object
+
+    if (cfg_wanted) {
+      recoverCfgPatchTokenBinary(search_path, elfFile, du_graph_wanted, fn_name,
+                                 the_symtab, code_src, code_obj, functions);
+    }
   }
 
-  if (!result) {
+  bool builtCFG = functions.size() > 0;
+
+  if (builtCFG) {
+    exportCfgIntoDyninst(functions, the_symtab, code_src, code_obj);
+    if (du_graph_wanted) {
+      std::string elf_filePath = elfFile->getFileName();
+      const char *delimiter = ".gpubin";
+      size_t delim_loc = elf_filePath.find(delimiter);
+      std::string du_filePath = elf_filePath.substr(0, delim_loc + 7);
+      du_filePath += ".du";
+      sliceIntelInstructions((*code_obj)->funcs(), functions, jobs);
+      createDefUseEdges(functions, du_filePath);
+    }
+  } else {
     *code_src = new SymtabCodeSource(the_symtab);
     *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
   }
 
-  return result;
+  return builtCFG;
 }
 
 
