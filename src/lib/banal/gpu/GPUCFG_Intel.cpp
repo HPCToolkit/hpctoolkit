@@ -61,12 +61,21 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// Dyninst
+//***************************************************************************
+// Dyninst includes
+//***************************************************************************
+
 #include <Graph.h>                  // Graph
 #include <slicing.h>                // Slicer
 #include <Symtab.h>
 #include <CodeSource.h>
 #include <CodeObject.h>
+
+
+
+//***************************************************************************
+// Intel IGA
+//***************************************************************************
 
 #include <iga/kv.hpp>
 
@@ -86,6 +95,8 @@
 #include "GPUCodeSource.hpp"
 #include "GPUCFG_Intel.hpp"
 
+
+
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -99,9 +110,25 @@
 
 
 
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+class IntelGPUInstDumper : public GPUParse::GPUInstDumper {
+public:
+  IntelGPUInstDumper(GPUParse::Function &_function, KernelView &_kv) :
+    GPUInstDumper(_function), kv(_kv) {}
+  void dump(GPUParse::Inst* inst);
+private:
+  KernelView &kv;
+};
+
+using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
+
+
 
 //******************************************************************************
-// local definitions
+// local variables
 //******************************************************************************
 
 static int TRACK_LIMIT = 8;
@@ -109,13 +136,15 @@ static int TRACK_LIMIT = 8;
 
 
 //******************************************************************************
+// namespace imports
+//******************************************************************************
 
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
 
-using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
+
 
 //******************************************************************************
 // private functions
@@ -123,8 +152,7 @@ using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
 
 static std::string
 getOpString(iga::Op op) {
-  switch (op)
-  {
+  switch (op) {
     case iga::Op::ADD:      return "ADD";
     case iga::Op::ADDC:     return "ADDC";
     case iga::Op::AND:      return "AND";
@@ -204,7 +232,9 @@ getOpString(iga::Op op) {
   }
 }
 
-#if DEBUG
+
+#if DEBUG_INSTRUCTION_STAT
+
 static std::string getKindString(iga::Kind kind) {
   switch (kind)
   {
@@ -286,6 +316,7 @@ static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
       default:                        return "PRED_NONE";
     }
 }
+
 #endif
 
 
@@ -860,15 +891,6 @@ ensureBlockIsTarget
     targets.push_back(new GPUParse::Target(inst, block, type));
   }
 }
-
-
-class IntelGPUInstDumper : public GPUParse::GPUInstDumper {
-public:
-  IntelGPUInstDumper(GPUParse::Function &_function, KernelView &_kv) : GPUInstDumper(_function), kv(_kv) {}
-  void dump(GPUParse::Inst* inst);
-private:
-  KernelView &kv;
-};
 
 
 void

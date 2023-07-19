@@ -42,17 +42,30 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef INTEL_GPU_CFG_HPP
+#define INTEL_GPU_CFG_HPP
+
 //******************************************************************************
 // system includes
 //******************************************************************************
 
-#ifndef INTEL_GPU_CFG_HPP
-#define INTEL_GPU_CFG_HPP
-
 #include <string>
+
+
+
+//***************************************************************************
+// Dyninst includes
+//***************************************************************************
+
 #include <Symtab.h>
 #include <CodeSource.h>
 #include <CodeObject.h>
+
+
+
+//***************************************************************************
+// HPCToolkit includes
+//***************************************************************************
 
 #include <lib/binutils/ElfHelper.hpp>
 #include "GPUCFG.hpp"
@@ -60,7 +73,7 @@
 
 
 //******************************************************************************
-// type definitions
+// type declarations
 //*****************************************************************************
 
 enum SHT_OPENCL : uint32_t {
@@ -78,6 +91,8 @@ enum SHT_OPENCL : uint32_t {
   SHT_OPENCL_SPIRV_SC_IDS = 0xff00000b,            // Specialization Constants IDs
   SHT_OPENCL_SPIRV_SC_VALUES = 0xff00000c          // Specialization Constants values
 };
+
+
 
 //******************************************************************************
 // interface functions
