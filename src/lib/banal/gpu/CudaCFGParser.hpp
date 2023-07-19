@@ -5,7 +5,7 @@
 #include <vector>
 #include <deque>
 #include <unordered_map>
-#include "DotCFG.hpp"
+#include "GPUCFG.hpp"
 #include "Graph.hpp"
 
 namespace GPUParse {

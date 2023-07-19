@@ -10,7 +10,7 @@
 #include <CodeObject.h>
 
 bool
-readCudaCFG
+buildCudaGPUCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,

@@ -4,7 +4,7 @@
 #include <CFGFactory.h>
 
 #include "GPUBlock.hpp"
-#include "DotCFG.hpp"
+#include "GPUCFG.hpp"
 
 #include "tbb/concurrent_hash_map.h"
 

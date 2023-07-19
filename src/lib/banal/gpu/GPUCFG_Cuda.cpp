@@ -28,7 +28,7 @@
 #include "GPUCodeSource.hpp"
 #include "CudaCFGParser.hpp"
 #include "GraphReader.hpp"
-#include "ReadCudaCFG.hpp"
+#include "GPUCFG_Cuda.hpp"
 
 using namespace Dyninst;
 using namespace ParseAPI;
@@ -328,7 +328,7 @@ getFilename
 
 
 bool
-readCudaCFG
+buildCudaGPUCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,

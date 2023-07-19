@@ -5,7 +5,7 @@
 #include <CodeSource.h>
 #include <Symtab.h>
 
-#include "DotCFG.hpp"
+#include "GPUCFG.hpp"
 
 namespace Dyninst {
 namespace ParseAPI {

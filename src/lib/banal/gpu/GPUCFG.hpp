@@ -1,5 +1,5 @@
-#ifndef BANAL_GPU_DOT_CFG_H
-#define BANAL_GPU_DOT_CFG_H
+#ifndef GPUCFG_hpp
+#define GPUCFG_hpp
 
 #include <algorithm>
 #include <iostream>
@@ -359,6 +359,16 @@ struct Block {
       return this->insts[0]->offset < other.insts[0]->offset;
     }
   }
+  
+  Address startAddress() {
+    auto firstInstruction = insts.front();
+    return firstInstruction->offset;
+  }
+
+  Address endAddress() {
+    auto lastInstruction = insts.back();
+    return lastInstruction->offset + lastInstruction->size;
+  }
 
   ~Block() {
 #if 0
@@ -422,6 +432,22 @@ struct Call {
   Call(Inst *inst, Block *block, Function *caller_function, Function *callee_function) :
     inst(inst), block(block), caller_function(caller_function), callee_function(callee_function) {}
 };
+
+
+class GPUInstDumper {
+public:
+  GPUInstDumper(GPUParse::Function &_function) : function(_function) {}; 
+  virtual void dump(GPUParse::Inst* inst);
+protected:
+  GPUParse::Function &function;
+};
+
+void
+dumpFunction
+(
+  GPUParse::Function &function,
+  GPUInstDumper &idump
+);
 
 }
 

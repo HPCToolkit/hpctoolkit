@@ -102,12 +102,6 @@ GPUBlock::GPUBlock(CodeObject * o, CodeRegion * r,
   Dyninst::Architecture arch) :
   Block(o, r, start, end, last), _insts(std::move(insts)), _arch(arch) {}
 
-#if 0
-Address GPUBlock::last() const {
-  return this->_insts.back()->offset;
-}
-#endif
-
 
 void GPUBlock::getInsns(Insns &insns) const {
   unsigned char dummy_inst[MAX_INST_SIZE];
