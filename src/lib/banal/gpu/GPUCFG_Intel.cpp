@@ -839,7 +839,7 @@ addrToOffset
   return offset;
 }
 
-  
+
 static void
 getJumpTargetOffsets
 (
@@ -876,7 +876,7 @@ ensureBlockIsTarget
   std::vector<GPUParse::Target*> &targets,
   GPUParse::Block *block,
   GPUParse::Inst *inst,
-  TargetType type 
+  TargetType type
 )
 {
   bool blockIsTarget = false;

@@ -79,7 +79,7 @@
 
 
 //***************************************************************************
-// begin namespace 
+// begin namespace
 //***************************************************************************
 
 namespace GPUParse {
@@ -434,7 +434,7 @@ struct Block {
       return this->insts[0]->offset < other.insts[0]->offset;
     }
   }
-  
+
   Address startAddress() {
     auto firstInstruction = insts.front();
     return firstInstruction->offset;
@@ -511,7 +511,7 @@ struct Call {
 
 class GPUInstDumper {
 public:
-  GPUInstDumper(GPUParse::Function &_function) : function(_function) {}; 
+  GPUInstDumper(GPUParse::Function &_function) : function(_function) {};
   virtual void dump(GPUParse::Inst* inst);
 protected:
   GPUParse::Function &function;

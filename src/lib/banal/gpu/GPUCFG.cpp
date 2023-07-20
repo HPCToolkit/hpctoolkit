@@ -104,10 +104,10 @@ dumpBlock(
  GPUInstDumper &idump
 )
 {
-  std::cout << "\n  block [" << std::hex 
-            << block->startAddress() << ", " 
-            << block->endAddress() 
-            << std::dec << ")" 
+  std::cout << "\n  block [" << std::hex
+            << block->startAddress() << ", "
+            << block->endAddress()
+            << std::dec << ")"
             << std::endl;
   dumpBlockInstructions(block->insts, idump);
   dumpBlockTargets(block->targets);
