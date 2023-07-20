@@ -398,7 +398,7 @@ def fetch_external_versions(pkg: str) -> list[Version]:
     return [
         Version(ver[1])
         for ext in packages_yaml().get("packages", {}).get(pkg, {}).get("externals", [])
-        if (ver := Version.SPEC_VERSION_REGEX.search(ext.get("speget_spackc", "")))
+        if (ver := Version.SPEC_VERSION_REGEX.search(ext.get("spec", "")))
     ]
 
 
