@@ -196,12 +196,12 @@ precommit:
   - git clone --shared --branch=develop .spack.git /tmp/spack
   - export PATH=/tmp/spack/bin:"$PATH"
   # Override any generic settings that were set in the deps image
-  - spack -L -D /opt/environment config add 'packages:hpctoolkit:require::[]'
-  - spack -L -D /opt/environment config add 'packages:all:require::[]'
+  - spack -D /opt/environment config add 'packages:hpctoolkit:require::[]'
+  - spack -D /opt/environment config add 'packages:all:require::[]'
   # Register this clone of HPCToolkit as the source for Spack to build `hpctoolkit @develop-ci` from
-  - spack -L -D /opt/environment develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
+  - spack -D /opt/environment develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
   # Spack out a representative HPCToolkit. All dependencies should already be built.
-  - eatmydata spack -L -D /opt/environment install --fail-fast --add --only=package
+  - eatmydata spack -D /opt/environment install --fail-fast --add --only=package
     "hpctoolkit @=develop-ci ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
 
 #-----------------------------------
