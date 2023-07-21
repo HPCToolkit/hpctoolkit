@@ -138,7 +138,10 @@ class DevEnvType(click.ParamType):
         envpath = Path(value)
         del value
 
-        env = Env(envpath, (self._flag, envpath.name) if self._flag else (envpath.name,))
+        env = Env(
+            envpath,
+            (self._flag, shlex.quote(str(envpath))) if self._flag else (shlex.quote(str(envpath)),),
+        )
         if self._check_exists and not env.root.exists():
             self.fail(f"Selected devenv does not exist: {env.root}", param, ctx)
         if env.root.exists() and not env.root.is_dir():
@@ -169,11 +172,18 @@ class DevEnvByName(click.ParamType):
     name = "devenv name"
 
     def __init__(
-        self, /, *, exists: bool = False, notexists: bool = False, flag: str | None
+        self,
+        /,
+        *,
+        exists: bool = False,
+        notexists: bool = False,
+        flag: str | None,
+        default: bool = False,
     ) -> None:
         self._check_exists = exists
         self._check_notexists = notexists
         self._flag = flag
+        self._default = default
 
     def convert(
         self, value: Env | str, param: click.Parameter | None, ctx: click.Context | None
@@ -190,7 +200,11 @@ class DevEnvByName(click.ParamType):
 
         env = Env(
             obj.named_environment_root / envpath,
-            (self._flag, envpath.name) if self._flag else (envpath.name,),
+            ()
+            if self._default
+            else (self._flag, shlex.quote(envpath.name))
+            if self._flag
+            else (shlex.quote(envpath.name),),
         )
         if self._check_exists and not env.root.exists():
             self.fail(f"No devenv named {envpath.name}", param, ctx)
@@ -242,11 +256,17 @@ def main(obj: DevState, /, *, isolated: bool, traceback: bool) -> None:
     """Create and manage development environments (devenvs) for building HPCToolkit.
 
     \b
-    Example:
-        $ ./dev create && ./dev env   # Creates and enters a devenv shell
-        $ make -j install             # Builds and installs HPCToolkit
-        $ make installcheck           # Runs the test suite
-        $ hpcrun -h
+    Quickstart:
+        $ ./dev pre-commit install  # Recommended before developing
+        $ ./dev create
+        $ ./dev meson compile
+        $ ./dev meson install
+        $ ./dev meson test
+
+    Multiple devenvs can be maintained by passing `-n/--name my_devenv` or
+    `-d/--directory path/to/devenv/` to the above subcommands.
+
+    See individual `--help` strings for details.
     """  # noqa: D301
     # Try to figure out where the HPCToolkit checkout is. This is not a hard requirement but
     # is needed to use named environments, which are stored in .devenv/.
@@ -363,7 +383,9 @@ def create(
 ) -> None:
     """Create a fresh devenv ready for building HPCToolkit."""
     # pylint: disable=too-many-arguments
-    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(notexists=True, flag="-n"))
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(notexists=True, flag="-n", default=True)
+    )
     del devenv_by_dir
     del devenv_by_name
     if not obj.project_root:
@@ -478,7 +500,9 @@ def update(
     build: bool,
 ) -> None:
     """Update (re-generate) a devenv."""
-    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
+    )
     del devenv_by_dir
     del devenv_by_name
     if not obj.project_root:
@@ -550,14 +574,14 @@ def pre_commit(obj: DevState, /, *, args: collections.abc.Collection[str]) -> No
     "-d",
     "--directory",
     "devenv_by_dir",
-    type=DevEnvType(notexists=True, flag="-d"),
+    type=DevEnvType(exists=True, flag="-d"),
     help="Operate on a devenv directory",
 )
 @click.option(
     "-n",
     "--name",
     "devenv_by_name",
-    type=DevEnvByName(notexists=True, flag="-n"),
+    type=DevEnvByName(exists=True, flag="-n"),
     help="Operate on a named devenv",
 )
 @dev_pass_obj
@@ -570,7 +594,9 @@ def meson(
     args: collections.abc.Collection[str],
 ) -> None:
     """Run meson commands in a devenv."""
-    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(notexists=True, flag="-n"))
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
+    )
     env = DevEnv.restore(devenv.root)
     obj.meson.execl(*args, cwd=env.builddir)
 
@@ -645,7 +671,9 @@ def autogen(obj: DevState, /, *, custom_env: Path, install: bool) -> None:
 )
 def describe(*, devenv_by_dir: Env | None, devenv_by_name: Env | None) -> None:
     """Describe a devenv."""
-    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
+    )
     del devenv_by_dir
     del devenv_by_name
     env = DevEnv.restore(devenv.root)
@@ -669,7 +697,9 @@ def describe(*, devenv_by_dir: Env | None, devenv_by_name: Env | None) -> None:
 )
 def edit(*, devenv_by_dir: Env | None, devenv_by_name: Env | None) -> None:
     """Edit a devenv's 'spack.yaml'."""
-    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
+    )
     del devenv_by_dir
     del devenv_by_name
     click.edit(filename=str(devenv.root / "spack.yaml"))
@@ -1048,7 +1078,9 @@ def buildfe(
     args: collections.abc.Collection[str],
 ) -> None:
     """Run the build frontend with the given ARGS."""
-    devenv = resolve_devenv(devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n"))
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
+    )
     del devenv_by_dir
     del devenv_by_name
     if not obj.project_root:
