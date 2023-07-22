@@ -43,7 +43,9 @@ if has_rocm
       command: hipcc_cmd)
   _measurements += {
     'loops-hip-amd-t': {
-      'cmd': [_run, '--', '@OUTPUT@', '-e', 'gpu=amd', '-t', _exe_loops_hip],
+      'cmd': [_run, '--', '@OUTPUT@',
+              '--rocprofiler-path', rocm_profiler_exdep.get_variable(internal: 'prefix'),
+              '-e', 'gpu=amd', '-t', _exe_loops_hip],
     },
   }
 endif
