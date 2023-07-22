@@ -249,6 +249,10 @@ cat <<EOF
                        procedures only instead of full calling contexts.
                        Equivalent to -a flat.
 
+  --rocprofiler-path   Path to the ROCProfiler installation. Usually, this is /opt/rocm
+                       or a versioned variant e.g. /opt/rocm-5.4.3. This should match the
+                       ROCm installation your application is running with.
+                       Defaults to the ROCM_PATH environment variable.
 
 Options to consider only when hpcrun causes an application to fail:
 
@@ -352,6 +356,7 @@ gtpin_libdir=
 namespace_default=multiple
 namespace_multiple=
 namespace_single=
+rocm_envs_rocprofiler_path="$ROCM_PATH"
 
 # All versions of glibc currently have a bug handling R_X86_64_TLSDESC
 # relocations when LD_AUDIT is used. This bug causes programs to crash
@@ -464,18 +469,14 @@ do
 		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so"
 		    ;;
 
-		gpu=amd )
+		gpu=amd | rocprof::* )
 		    if test "$opt_have_rocm" != yes ; then
 			die "HPCToolkit was not compiled with AMD ROCm support enabled"
 		    fi
-                    if test "${ROCM_PATH}/lib/rocprofiler/metrics.xml"x != x ; then
-                        export HSA_ENABLE_INTERRUPTS=0
-		        export HSA_TOOLS_LIB=librocprofiler64.so
-		        export ROCP_TOOL_LIB=libhpcrun.so
-		        export ROCP_METRICS="${ROCM_PATH}/lib/rocprofiler/metrics.xml"
-		        export ROCP_HSA_INTERCEPT=1
-		        export AMD_DIRECT_DISPATCH=0
-                    fi
+		    export HSA_ENABLE_INTERRUPTS=0
+		    export ROCP_TOOL_LIB=libhpcrun.so
+		    export ROCP_HSA_INTERCEPT=1
+		    export AMD_DIRECT_DISPATCH=0
 		    ;;
 
 		gpu=nvidia* )
@@ -527,11 +528,9 @@ do
 	    ;;
 
 	-L | -l | --list-events )
-           if test "${ROCM_PATH}/lib/rocprofiler/metrics.xml"x != x ; then
-	        export HSA_TOOLS_LIB=librocprofiler64.so
-	        export ROCP_TOOL_LIB=libhpcrun.so
-		export ROCP_METRICS="${ROCM_PATH}/lib/rocprofiler/metrics.xml"
-            fi
+	    if test "$opt_have_rocm" = yes; then
+		export ROCP_TOOL_LIB=libhpcrun.so
+	    fi
 	    export HPCRUN_EVENT_LIST=LIST
 	    ;;
 
@@ -588,6 +587,14 @@ do
 	-olr | --only-local-ranks )
 	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_LOCAL_RANKS="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	--rocprofiler-path )
+	    non_empty "$1" || die "missing argument for $arg"
+	    rocm_envs_rocprofiler_path="$1"
 	    shift
 	    ;;
 
@@ -725,6 +732,41 @@ if test "$namespace_multiple"x = x ; then
   fi
 fi
 
+#------------------------------------------------------------
+# Environment setup
+#------------------------------------------------------------
+
+# Set up the environment needed to monitor ROCm applications. If we can't find a file we
+# leave the variable blank and checks in hpcrun will detect and report the error.
+if test "$opt_have_rocm" = yes; then
+    export ROCP_METRICS=
+    export HSA_TOOLS_LIB=
+
+    # Fill in ROCP_METRICS and HSA_TOOLS_LIB from the ROCProfiler installation
+    if test "$rocm_envs_rocprofiler_path"; then
+	for trial in \
+	    "${rocm_envs_rocprofiler_path}/lib/rocprofiler/metrics.xml" \
+	    "${rocm_envs_rocprofiler_path}/lib/metrics.xml" \
+	    "${rocm_envs_rocprofiler_path}/rocprofiler/lib/metrics.xml"
+	do
+	    if test -f "$trial"; then
+		export ROCP_METRICS="$trial"
+		break
+	    fi
+	done
+
+	for trial in \
+	    "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.1" \
+	    "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.2" \
+	    "${rocm_envs_rocprofiler_path}/rocprofiler/lib/librocprofiler64.so.1"
+	do
+	    if test -f "$trial"; then
+		export HSA_TOOLS_LIB="$trial"
+		break
+	    fi
+	done
+    fi
+fi
 
 #------------------------------------------------------------
 # Pre-Launch Sanity Checks

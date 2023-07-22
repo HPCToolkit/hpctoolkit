@@ -369,19 +369,6 @@ dump_counter_info
   printf("\n");
 }
 
-
-static const char *
-rocprofiler_path
-(
- void
-)
-{
-  const char *path = "librocprofiler64.so";
-
-  return path;
-}
-
-
 // Depending on the `kind`, access to the corresponding union field
 // to extract the value of the counter.  Cast the value to the
 // gpu_counter_value_t required by the gpu_activity.
@@ -823,7 +810,8 @@ rocprofiler_init
   // We usually bind GPU vendor library in finalize_event_list.
   // But here we must do early binding to query supported list of counters
   if (rocprofiler_bind() != DYNAMIC_BINDING_STATUS_OK) {
-    EEMSG("hpcrun: unable to bind to AMD rocprofiler library %s\n", dlerror());
+    EEMSG("hpcrun: unable to bind to AMD rocprofiler library: %s\n", dlerror());
+    EEMSG("hpcrun: see hpcrun --help message for instruction on how to provide a rocprofiler install");
     monitor_real_exit(-1);
   }
 #endif
@@ -880,7 +868,11 @@ rocprofiler_bind
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
-  CHK_DLOPEN(rocprofiler, rocprofiler_path(), RTLD_NOW | RTLD_GLOBAL);
+  const char* rocprofiler_path = getenv("HSA_TOOLS_LIB");
+  if (rocprofiler_path == NULL) {
+    return DYNAMIC_BINDING_STATUS_ERROR;
+  }
+  CHK_DLOPEN(rocprofiler, rocprofiler_path, RTLD_NOW | RTLD_GLOBAL);
   hpcrun_force_dlopen(false);
 
 #define ROCPROFILER_BIND(fn) \
