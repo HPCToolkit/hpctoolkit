@@ -112,7 +112,7 @@ typedef struct gtpin_hpcrun_api_t {
   void (*hpcrun_thread_init_mem_pool_once)
   (int, cct_ctxt_t *, hpcrun_trace_type_t, bool);
 
-  cct_node_t *(*hpcrun_cct_insert_instruction_child)(cct_node_t *, int32_t);
+  cct_node_t *(*hpcrun_cct_insert_instruction_child)(cct_node_t *, uintptr_t);
   cct_node_t *(*hpcrun_cct_insert_ip_norm)(cct_node_t *, ip_normalized_t, bool);
   void (*hpcrun_cct_walk_node_1st)(cct_node_t *, cct_op_t, cct_op_arg_t);
 

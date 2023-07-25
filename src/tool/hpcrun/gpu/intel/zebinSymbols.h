@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*- // technically C99
-
 // * BeginRiceCopyright *****************************************************
 //
 // --------------------------------------------------------------------------
@@ -41,88 +39,39 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   gtpin-instrumentation.h
+// File: zebin-symbols.h
 //
 // Purpose:
-//   define API for instrumenting Intel GPU binaries with GTPin
+//   interface to determine cubin symbol relocation values that will be used
+//   by hpcstruct
 //
 //***************************************************************************
 
-#ifndef gtpin_instrumentation_h
-#define gtpin_instrumentation_h
+#ifndef zebinSymbols_h
+#define zebinSymbols_h
 
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-//*****************************************************************************
-// system include files
-//*****************************************************************************
-
-#include <stdint.h>
+#include "symbolVector.h"
 
 
 
-//*****************************************************************************
-// local include files
-//*****************************************************************************
-
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/gpu/gpu-instrumentation.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/utilities/ip-normalized.h>
-
-#include "gtpin-hpcrun-api.h"
-
-
-
-//*****************************************************************************
+//******************************************************************************
 // interface functions
-//*****************************************************************************
+//******************************************************************************
 
-void
-gtpin_instrumentation_options
+SymbolVector *
+collectZebinSymbols
 (
-  gpu_instrumentation_t *
+ const char *zebin_ptr,
+ size_t zebin_len
 );
 
 
-void
-gtpin_produce_runtime_callstack
-(
-  gpu_op_ccts_t *
-);
-
-
-void
-gtpin_process_block_instructions
-(
-  cct_node_t *
-);
-
-
-void
-gtpin_hpcrun_api_set
-(
-  gtpin_hpcrun_api_t *
-);
-
-
-ip_normalized_t
-gtpin_lookup_kernel_ip
-(
-  const char *kernel_name
-);
-
-
-
-#ifdef __cplusplus
-};
-#endif
 
 #endif

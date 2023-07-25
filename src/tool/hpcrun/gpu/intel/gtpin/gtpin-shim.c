@@ -116,6 +116,7 @@ static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 static void (*gtpin_instrumentation_options_fn)(gpu_instrumentation_t *);
 static void (*gtpin_produce_runtime_callstack_fn)(gpu_op_ccts_t *);
 static void (*gtpin_process_block_instructions_fn)(cct_node_t *);
+static uintptr_t (*gtpin_lookup_kernel_ip_fn)(const char *kernel_name);
 
 
 
@@ -149,6 +150,7 @@ static void init()
   gtpin_instrumentation_options_fn = dlsym(hpcrun_gtpinlib, "gtpin_instrumentation_options");
   gtpin_produce_runtime_callstack_fn = dlsym(hpcrun_gtpinlib, "gtpin_produce_runtime_callstack");
   gtpin_process_block_instructions_fn = dlsym(hpcrun_gtpinlib, "gtpin_process_block_instructions");
+  gtpin_lookup_kernel_ip_fn = dlsym(hpcrun_gtpinlib, "gtpin_lookup_kernel_ip");
 }
 
 
@@ -157,22 +159,45 @@ static void init()
 // interface operations
 //*****************************************************************************
 
-void gtpin_instrumentation_options(gpu_instrumentation_t *instrumentation)
+void
+gtpin_instrumentation_options
+(
+  gpu_instrumentation_t *instrumentation
+)
 {
   pthread_once(&once_control, init);
   gtpin_instrumentation_options_fn(instrumentation);
 }
 
 
-void gtpin_produce_runtime_callstack(gpu_op_ccts_t *op_ccts)
+void
+gtpin_produce_runtime_callstack
+(
+  gpu_op_ccts_t *op_ccts
+)
 {
   pthread_once(&once_control, init);
   gtpin_produce_runtime_callstack_fn(op_ccts);
 }
 
 
-void gtpin_process_block_instructions(cct_node_t *node)
+void 
+gtpin_process_block_instructions
+(
+  cct_node_t *node
+)
 {
   pthread_once(&once_control, init);
   gtpin_process_block_instructions_fn(node);
+}
+
+
+uintptr_t 
+gtpin_lookup_kernel_ip
+(
+  const char *kernel_name
+)
+{
+  pthread_once(&once_control, init);
+  return gtpin_lookup_kernel_ip_fn(kernel_name);
 }

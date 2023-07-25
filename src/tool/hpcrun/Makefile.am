@@ -574,9 +574,11 @@ pkglib_LTLIBRARIES += libhpcrun_gtpin_cxx.la
 libhpcrun_gtpin_cxx_la_CPPFLAGS  = -g $(MY_INCLUDE_DIRS) -I$(top_srcdir)/src/tool/hpcrun/unwind/x86-family
 libhpcrun_gtpin_cxx_la_CXXFLAGS  = @HOST_CXXFLAGS@
 
-libhpcrun_gtpin_cxx_la_SOURCES   = gpu/intel/gtpin/gtpin-instrumentation.cpp
+INTEL_GPU_SYMBOLS = gpu/intel/patchTokenSymbols.c gpu/intel/symbolVector.c gpu/intel/zebinSymbols.c
+
+libhpcrun_gtpin_cxx_la_SOURCES   = gpu/intel/gtpin/gtpin-instrumentation.cpp $(INTEL_GPU_SYMBOLS)
 libhpcrun_gtpin_cxx_la_LDFLAGS   = -Wl,-Bsymbolic
-libhpcrun_gtpin_cxx_la_LIBADD = -L$(TBB_LIB_DIR) -ltbb -ltbbmalloc -ldl
+libhpcrun_gtpin_cxx_la_LIBADD = $(PROF_LEAN_A)  -L$(LIBELF_LIB) -lelf -L$(TBB_LIB_DIR) -ltbb -ltbbmalloc -ldl
 
 endif
 

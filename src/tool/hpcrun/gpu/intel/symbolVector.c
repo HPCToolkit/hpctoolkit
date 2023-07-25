@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*- // technically C99
-
 // * BeginRiceCopyright *****************************************************
 //
 // --------------------------------------------------------------------------
@@ -41,88 +39,94 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   gtpin-instrumentation.h
+// File: symbolVector.h
 //
 // Purpose:
-//   define API for instrumenting Intel GPU binaries with GTPin
+//   type to represent symbol names and values in a binary
 //
 //***************************************************************************
 
-#ifndef gtpin_instrumentation_h
-#define gtpin_instrumentation_h
+//******************************************************************************
+// global includes 
+//******************************************************************************
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 
-#ifdef __cplusplus
-extern "C"
+
+//******************************************************************************
+// local includes 
+//******************************************************************************
+
+#include "symbolVector.h"
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+SymbolVector *
+symbolVectorNew
+(
+  int nsymbols
+)
 {
-#endif
-
-//*****************************************************************************
-// system include files
-//*****************************************************************************
-
-#include <stdint.h>
-
-
-
-//*****************************************************************************
-// local include files
-//*****************************************************************************
-
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/gpu/gpu-instrumentation.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/utilities/ip-normalized.h>
-
-#include "gtpin-hpcrun-api.h"
-
-
-
-//*****************************************************************************
-// interface functions
-//*****************************************************************************
-
-void
-gtpin_instrumentation_options
-(
-  gpu_instrumentation_t *
-);
+  SymbolVector *v = (SymbolVector *) malloc(sizeof(SymbolVector));
+  v->nsymbols = 0;
+  v->symbolValue = (unsigned long *) calloc(nsymbols, sizeof(unsigned long));
+  v->symbolName = (const char **) calloc(nsymbols, sizeof(const char *));
+  return v;
+}
 
 
 void
-gtpin_produce_runtime_callstack
+symbolVectorAppend
 (
-  gpu_op_ccts_t *
-);
+  SymbolVector *v,
+  const char *symbolName,
+  unsigned long symbolValue
+)
+{
+  unsigned int i = v->nsymbols; 
+
+  v->symbolValue[i] = symbolValue;
+  v->symbolName[i] = strdup(symbolName);
+
+  v->nsymbols++; 
+}
 
 
 void
-gtpin_process_block_instructions
+symbolVectorFree
 (
-  cct_node_t *
-);
+  SymbolVector *v
+)
+{
+  for (int i=0; i < v->nsymbols; i++) {
+    free(v->symbolName[i]);
+  }
+  free(v->symbolName);
+  free(v->symbolValue);
+  free(v);
+}
 
 
 void
-gtpin_hpcrun_api_set
+symbolVectorPrint
 (
-  gtpin_hpcrun_api_t *
-);
-
-
-ip_normalized_t
-gtpin_lookup_kernel_ip
-(
-  const char *kernel_name
-);
-
-
-
-#ifdef __cplusplus
-};
-#endif
-
-#endif
+  SymbolVector *v,
+  const char *kind
+)
+{
+  fprintf(stderr, "%s\n", kind);
+  for (int i=0; i < v->nsymbols; i++) {
+    fprintf(stderr, "  0x%lx %s\n", v->symbolValue[i], v->symbolName[i]);
+  }
+  fprintf(stderr, "\n");
+}

@@ -99,6 +99,8 @@ extern "C"
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/gpu/intel/patchTokenSymbols.h>
+#include <hpcrun/gpu/intel/zebinSymbols.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/gpu-metrics.h>
@@ -108,6 +110,7 @@ extern "C"
 #include <monitor.h>
 };
 
+#include <lib/profile/util/locked_unordered.hpp>
 #include <lib/profile/util/locked_unordered.hpp>
 
 
@@ -133,10 +136,26 @@ public:
 };
 
 
+class MyHashKernelName {
+public:
+  std::size_t operator()(const std::string &name) const {
+    return std::hash<std::string>()(name);
+  }
+};
+
+
+class MyHashElfBinary {
+public:
+  std::size_t operator()(const std::string &name) const {
+    return std::hash<std::string>()(name);
+  }
+};
+
+
 class MyHashFunctionKernelId {
 public:
-  std::size_t operator()(const GtKernelId &pair) const {
-    return std::hash<uint16_t>()(pair);
+  std::size_t operator()(const GtKernelId &id) const {
+    return std::hash<uint16_t>()(id);
   }
 };
 
@@ -208,16 +227,18 @@ struct BasicBlock {
   uint32_t simdWidth;
   uint64_t activeSimdLanes;
 
+  ip_normalized_t kernel_ip;
+
   BasicBlock(){};
 
-  BasicBlock(const IGtCfg &cfg, const IGtBbl &bbl, uint32_t simdWidthIn, bool simd);
+  BasicBlock(const IGtCfg &cfg, const IGtBbl &bbl, uint32_t simdWidthIn, ip_normalized_t _kernel_ip, bool simd);
 };
 
 
 class KernelProfile
 {
 public:
-  uint32_t loadmapModuleId;
+  ip_normalized_t kernel_ip;
   GtProfileArray opcodeProfile;
   GtProfileArray simdProfile;
   GtProfileArray latencyProfile;
@@ -237,7 +258,7 @@ public:
    const IGtGenCoder &coder, const GtProfileArray &profileArray,
    uint32_t recordNum);
 
-  KernelProfile(uint32_t loadmapModuleIdIn) : loadmapModuleId(loadmapModuleIdIn) {
+  KernelProfile(ip_normalized_t _kernel_ip) : kernel_ip(_kernel_ip) {
     simdGroupsCount = 0;
   }
 
@@ -275,7 +296,11 @@ static thread_local std::map<std::string, CorrelationData> correlation_map;
 
 static locked_unordered_map<std::pair<uint16_t, uintptr_t>, BasicBlock, std::mutex, MyHashFunction> block_map;
 static locked_unordered_map<GtKernelId, KernelProfile, std::mutex, MyHashFunctionKernelId> _kernels;
-static locked_unordered_map<GtKernelId, uint32_t, std::mutex, MyHashFunctionKernelId> hash_map;
+static locked_unordered_map<GtKernelId, ip_normalized_t, std::mutex, MyHashFunctionKernelId> kernelIdToKernelIpMap;
+
+static locked_unordered_map<std::string, ip_normalized_t, std::mutex, MyHashKernelName> kernelNameToKernelIpMap;
+
+static locked_unordered_map<std::string, bool, std::mutex, MyHashElfBinary> elf_binary_map;
 
 // memoized result of GTPin_GetCore
 static IGtCore *igt_core = NULL;
@@ -286,6 +311,8 @@ static bool latency_knob = false;
 static bool simd_knob = false;
 
 static gtpin_hpcrun_api_t *gtpin_hpcrun_api;
+
+static ip_normalized_t ipNormalizedEmpty = {.lm_id = 0, .lm_ip = 0};
 
 
 
@@ -459,9 +486,67 @@ calculate_instruction_latencies
 }
 
 
-static int find_or_add_loadmap_module
+uint32_t
+patchTokenKernelLoadModuleId
+(const char *kernelName,
+ const char *path,
+ char *pathSuffix // pointer to terminating NULL in path
+)
+{
+  char kernelNameHash[CRYPTO_HASH_STRING_LENGTH];
+  *kernelNameHash = 0;
+
+  // compute crypto hash of kernel name into kernelNameHash
+  gtpin_hpcrun_api->crypto_compute_hash_string(kernelName, strlen(kernelName), kernelNameHash, sizeof(kernelNameHash));
+
+  // add kernel name hash as suffix to load module path
+  strcpy(pathSuffix, kernelNameHash);
+
+  // create loadmap entry of the form <binary hash>.gpubin.<kernel name hash>
+  uint16_t loadModuleId = gtpin_hpcrun_api->gpu_binary_loadmap_insert(path, true);
+
+  return loadModuleId;
+}
+
+
+static void
+recordPatchTokenKernelIps
+(char *ptKernel,
+ uint32_t ptKernelSize,
+ char *path) {
+  char *pathSuffix = path + strlen(path);
+  *pathSuffix++ = '.';
+  SymbolVector *symbols = collectPatchTokenSymbols(ptKernel, ptKernelSize);
+  fprintf(stderr, "\nPatch Token KernelIps\n");
+  for (int i = 0; i < symbols->nsymbols; i++) {
+    const char *kernelName = symbols->symbolName[i];
+    uint16_t loadModuleId = patchTokenKernelLoadModuleId(kernelName, path, pathSuffix);
+    ip_normalized_t kernelIp = {.lm_id = loadModuleId, .lm_ip = symbols->symbolValue[i]};
+    kernelNameToKernelIpMap.try_emplace(std::string(kernelName), kernelIp);
+    fprintf(stderr,"{%d, 0x%lx} %s\n", kernelIp.lm_id, kernelIp.lm_ip, kernelName);
+  }
+  symbolVectorFree(symbols);
+}
+
+
+static void
+recordZebinKernelIps
+(char *kernel_elf,
+ uint32_t kernel_elf_size,
+ char *path) {
+  uint16_t loadModuleId = gtpin_hpcrun_api->gpu_binary_loadmap_insert(path, true);
+  SymbolVector *symbols = collectZebinSymbols(kernel_elf, kernel_elf_size);
+  for (int i = 0; i < symbols->nsymbols; i++) {
+    ip_normalized_t kernelIp = {.lm_id = loadModuleId, .lm_ip = symbols->symbolValue[i]};
+    kernelNameToKernelIpMap.try_emplace(std::string(symbols->symbolName[i]), kernelIp);
+  }
+  symbolVectorFree(symbols);
+}
+
+
+static ip_normalized_t find_or_add_loadmap_module
 (const IGtKernel &kernel) {
-  auto it = hash_map.find(kernel.Id());
+  auto it = kernelIdToKernelIpMap.find(kernel.Id());
 
   if (it) {
     return *it;
@@ -473,48 +558,58 @@ static int find_or_add_loadmap_module
   char *kernel_elf = (char *)kernel.Elf().data();
   uint32_t kernel_elf_size = kernel.Elf().size();
 
-  if (kernel_elf_size == 0) return -1;
-
-  char file_name[CRYPTO_HASH_STRING_LENGTH];
-  memset(file_name, 0, sizeof(file_name));
-  gtpin_hpcrun_api->crypto_compute_hash_string(kernel_elf, kernel_elf_size, file_name, sizeof(file_name));
-
-  char kernel_name_hash[CRYPTO_HASH_STRING_LENGTH];
-  memset(kernel_name_hash, 0, sizeof(kernel_name_hash));
-  gtpin_hpcrun_api->crypto_compute_hash_string(kernel_name, strlen(kernel_name), kernel_name_hash, sizeof(kernel_name_hash));
-
-  char path[PATH_MAX];
-  memset(path, 0, sizeof(path));
-
-  char *thename = file_name;
-
-  gtpin_hpcrun_api->gpu_binary_path_generate(thename, path);
-
-  gtpin_hpcrun_api->gpu_binary_store(path, kernel_elf, kernel_elf_size);
+  if (kernel_elf_size == 0) return ipNormalizedEmpty;
 
   gpu_binary_kind_t bkind = gtpin_hpcrun_api->binary_kind(kernel_elf, kernel_elf_size);
 
-  switch (bkind){
-  case gpu_binary_kind_intel_patch_token:
-    strcat(path, ".");
-    strncat(path, kernel_name_hash, CRYPTO_HASH_STRING_LENGTH);
-  case gpu_binary_kind_elf:
-    break;
-  case gpu_binary_kind_unknown:
+  if (bkind == gpu_binary_kind_unknown) {
     if (kernel_elf_size > 4) {
       const char *magic = kernel_elf;
       fprintf(stderr, "FATAL: hpcrun failure: gtpin presented unknown binary kind: "
-              "%c%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
+          "%c%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
     } else {
       fprintf(stderr, "FATAL: hpcrun failure: gtpin presented unknown binary kind\n");
     }
     gtpin_hpcrun_api->real_exit(-1);
   }
 
-  auto hash = gtpin_hpcrun_api->gpu_binary_loadmap_insert(path, true);
-  hash_map.try_emplace(kernel.Id(), hash);
+  char file_name[CRYPTO_HASH_STRING_LENGTH];
+  *file_name = 0;
+  gtpin_hpcrun_api->crypto_compute_hash_string(kernel_elf, kernel_elf_size, file_name, sizeof(file_name));
 
-  return hash;
+  auto binary_processed = elf_binary_map.find(file_name);
+
+  if (!binary_processed) {
+    char path[PATH_MAX];
+    *path = 0;
+
+    gtpin_hpcrun_api->gpu_binary_path_generate(file_name, path);
+
+    gtpin_hpcrun_api->gpu_binary_store(path, kernel_elf, kernel_elf_size);
+
+    if (bkind == gpu_binary_kind_elf) {
+      // Intel zeBinary
+      recordZebinKernelIps(kernel_elf, kernel_elf_size, path);
+    } else { 
+      // Intel Patch Token binary
+      recordPatchTokenKernelIps(kernel_elf, kernel_elf_size, path);
+    }
+
+    elf_binary_map.try_emplace(strdup(file_name), true);
+  }
+
+  // invariant: 
+  //   after a binary has been processed, each kernel in the binary will have
+  //   an entry in this map
+  auto kernelIp =
+    kernelNameToKernelIpMap.find(std::string(kernel_name));
+
+  // invariant:
+  //   after a kernel has been presented to find_or_add_loadmap_module, 
+  //   it will have an entry in the kernelIdToKernelIpMap
+  kernelIdToKernelIpMap.try_emplace(kernel.Id(), *kernelIp);
+
+  return *kernelIp;
 }
 
 
@@ -539,7 +634,7 @@ create_igt_kernel_node
 
 static void
 process_block_activity
-(uint32_t loadmapModuleId,
+(ip_normalized_t kernel_ip,
  CorrelationData &correlation_data,
  BasicBlock &basicBlock)
 {
@@ -553,8 +648,8 @@ process_block_activity
   gpu_activity_t ga;
   memset(&ga.details.kernel_block, 0, sizeof(gpu_kernel_block_t));
 
-  ga.details.kernel_block.pc.lm_id = (uint16_t)loadmapModuleId;
-  ga.details.kernel_block.pc.lm_ip = (uintptr_t)basicBlock.instructions[0].offset;
+  ga.details.kernel_block.pc.lm_id = kernel_ip.lm_id;
+  ga.details.kernel_block.pc.lm_ip = kernel_ip.lm_ip + basicBlock.instructions[0].offset;
   ga.details.kernel_block.execution_count = basicBlock.executionCount;
   ga.details.kernel_block.latency = basicBlock.latency;
   ga.details.kernel_block.active_simd_lanes = basicBlock.activeSimdLanes;
@@ -598,11 +693,12 @@ BasicBlock::BasicBlock
 (const IGtCfg &cfg,
  const IGtBbl &bbl,
  uint32_t simdWidthIn,
+ ip_normalized_t _kernel_ip,
  bool simd = false) :
   executionCount(0),
   latency(0),
   simdWidth(simdWidthIn),
-  activeSimdLanes(0) {
+  activeSimdLanes(0), kernel_ip(_kernel_ip) {
   std::set<SimdGroup> simdMap;
 
   for (const IGtIns *ins : bbl.Instructions()) {
@@ -663,11 +759,11 @@ KernelProfile::instrument
     opcodeProfile.Allocate(allocator);
 
     for (const IGtBbl *bbl : cfg.Bbls()) {
-      BasicBlock basicBlock = BasicBlock(cfg, *bbl, instrument.Kernel().SimdWidth(), simd_knob);
+      BasicBlock basicBlock = BasicBlock(cfg, *bbl, instrument.Kernel().SimdWidth(), kernel_ip, simd_knob);
       basicBlocks.push_back(basicBlock);
       simdGroupsCount += basicBlock.simdGroups.size();
 
-      block_map[std::make_pair(loadmapModuleId, basicBlock.instructions[0].offset)] = basicBlock;
+      block_map[std::make_pair(kernel_ip.lm_id, kernel_ip.lm_ip + basicBlock.instructions[0].offset)] = basicBlock;
 
       GtGenProcedure proc;
       opcodeProfile.ComputeAddress(coder, proc, _addrReg, bbl->Id());
@@ -696,11 +792,11 @@ KernelProfile::instrument
 
 
     for (const IGtBbl *bbl : bbls) {
-      BasicBlock basicBlock = BasicBlock(cfg, *bbl, instrument.Kernel().SimdWidth(), simd_knob);
+      BasicBlock basicBlock = BasicBlock(cfg, *bbl, instrument.Kernel().SimdWidth(), kernel_ip, simd_knob);
       basicBlocks.push_back(basicBlock);
       simdGroupsCount += basicBlock.simdGroups.size();
 
-      block_map[std::make_pair(loadmapModuleId, basicBlock.instructions[0].offset)] = basicBlock;
+      block_map[std::make_pair(kernel_ip.lm_id, kernel_ip.lm_ip + basicBlock.instructions[0].offset)] = basicBlock;
 
       GtGenProcedure preCode;
       GeneratePreCode(preCode, coder);
@@ -812,7 +908,7 @@ KernelProfile::gatherMetrics
     // std::cout << "BLOCK WITH ID: " << index << " HAS LATENCY: " << bbl.latency << std::endl;
 
     ++index;
-    process_block_activity(loadmapModuleId, correlation_data, bbl);
+    process_block_activity(kernel_ip, correlation_data, bbl);
 
   }
 }
@@ -821,9 +917,9 @@ KernelProfile::gatherMetrics
 void
 GTPinInstrumentation::OnKernelBuild
 (IGtKernelInstrument &instrument) {
-  int id = find_or_add_loadmap_module(instrument.Kernel());
-  if (id >= 0) {
-    KernelProfile kernelProfile = KernelProfile(id);
+  ip_normalized_t kernel_ip = find_or_add_loadmap_module(instrument.Kernel());
+  if (kernel_ip.lm_id != 0) {
+    KernelProfile kernelProfile = KernelProfile(kernel_ip);
     kernelProfile.instrument(instrument);
     _kernels.try_emplace(instrument.Kernel().Id(), kernelProfile);
   }
@@ -1010,7 +1106,7 @@ gtpin_process_block_instructions
 
     for (const Instruction &instruction : basicBlock.instructions) {
       uint64_t scalarSimdLoss = simd_knob && instruction.execSize == 1 ? basicBlock.simdWidth - 1 : 0;
-      cct_node_t *child = gtpin_hpcrun_api->hpcrun_cct_insert_instruction_child(block, instruction.offset);
+      cct_node_t *child = gtpin_hpcrun_api->hpcrun_cct_insert_instruction_child(block, basicBlock.kernel_ip.lm_ip + instruction.offset);
       gtpin_hpcrun_api->attribute_instruction_metrics
         (child,
          {.execution_count = executionCount,
@@ -1021,4 +1117,20 @@ gtpin_process_block_instructions
           .scalar_simd_loss = scalarSimdLoss});
     }
   }
+}
+
+
+ip_normalized_t
+gtpin_lookup_kernel_ip
+(
+  const char *kernelName
+)
+{
+  auto kernelIp = kernelNameToKernelIpMap.find(std::string(kernelName));
+
+  if (kernelIp) {
+    return *kernelIp;
+  }
+
+  return ipNormalizedEmpty;
 }

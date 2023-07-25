@@ -297,20 +297,22 @@ level0_command_begin
   if (command_node->type == LEVEL0_KERNEL) {
     ip_normalized_t kernel_ip;
     ze_kernel_handle_t kernel = command_node->details.kernel.kernel;
+    size_t name_size = 0;
+    zeKernelGetName(kernel, &name_size, NULL);
+    char* kernel_name = malloc(name_size);
+    zeKernelGetName(kernel, &name_size, kernel_name);
 #ifdef ENABLE_GTPIN
     if (level0_gtpin_enabled()) {
-      kernel_ip.lm_id = get_load_module(kernel);
-      kernel_ip.lm_ip = 0;
+      kernel_ip = gtpin_lookup_kernel_ip(kernel_name);
+#if 0
+      assert(kernel_ip.lm_id == get_load_module(kernel));
+#endif
     } else
 #endif  // ENABLE_GTPIN
     {
-      size_t name_size = 0;
-      zeKernelGetName(kernel, &name_size, NULL);
-      char* kernel_name = malloc(name_size);
-      zeKernelGetName(kernel, &name_size, kernel_name);
       kernel_ip = gpu_kernel_table_get(kernel_name, LOGICAL_MANGLING_CPP);
-      free(kernel_name);
     }
+    free(kernel_name);
 
     cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
     command_node->kernel =
