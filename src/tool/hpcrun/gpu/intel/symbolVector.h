@@ -59,7 +59,7 @@
 typedef struct SymbolVector {
   int nsymbols;
   unsigned long *symbolValue;
-  const char **symbolName;
+  char **symbolName;
 } SymbolVector;
 
 

@@ -60,9 +60,11 @@
 //******************************************************************************
 
 typedef enum {
-  gpu_binary_kind_intel_patch_token = 0,
-  gpu_binary_kind_elf = 1,
-  gpu_binary_kind_unknown = 2
+  gpu_binary_kind_malformed = 0,
+  gpu_binary_kind_unknown = 1,
+  gpu_binary_kind_empty = 2,
+  gpu_binary_kind_elf = 3,
+  gpu_binary_kind_intel_patch_token = 4
 } gpu_binary_kind_t;
 
 

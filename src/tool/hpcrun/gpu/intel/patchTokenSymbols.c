@@ -49,8 +49,8 @@
 // system includes
 //******************************************************************************
 
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
 
 
@@ -58,7 +58,6 @@
 // local includes
 //******************************************************************************
 
-#include "../gpu-binary.h"
 #include "symbolVector.h"
 
 
@@ -67,7 +66,7 @@
 // macros
 //******************************************************************************
 
-#define DEBUG_PATCH_TOKEN 0
+#define DEBUG_PATCH_TOKEN_SYMBOLS 0
 
 
 
@@ -162,7 +161,9 @@ collectPatchTokenSymbols
       cursor += kernel_header->elf1Length + kernel_header->elf2Length;
     }
 
-    if (DEBUG_PATCH_TOKEN) symbolVectorPrint(symbols, "Patch Token Binary Symbols");
+    if (DEBUG_PATCH_TOKEN_SYMBOLS) {
+      symbolVectorPrint(symbols, "Patch Token Binary Symbols");
+    }
 
     return symbols;
   }

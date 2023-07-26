@@ -98,6 +98,8 @@ gpu_binary_kind
  size_t mem_size
 )
 {
+  if (mem_size == 0) return gpu_binary_kind_empty;
+
   if (mem_ptr != 0 && mem_size > sizeof(uint32_t)) {
     uint32_t *magic = (uint32_t *) mem_ptr;
 
@@ -106,9 +108,10 @@ gpu_binary_kind
 
     // Is this an ELF binary?
     if (*magic == *elf_magic) return gpu_binary_kind_elf;
-  }
 
-  return gpu_binary_kind_unknown;
+    return gpu_binary_kind_unknown;
+  }
+  return gpu_binary_kind_malformed;
 }
 
 

@@ -46,7 +46,7 @@
 //
 // Purpose:
 //   determine zebin symbol values so that gtpin can relocate
-//   instruction-level measurements to match the non-overlapping function
+//   instruction-level measurements relative to the non-overlapping function
 //   addresses in the binary
 //
 //***************************************************************************
@@ -55,8 +55,6 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -78,9 +76,13 @@
 // macros
 //******************************************************************************
 
-#ifndef NULL
+#undef  NULL
 #define NULL 0
-#endif
+
+#undef  EM_INTELGT
+#define EM_INTELGT 205	// Intel Graphics Technology
+
+#define DEBUG_ZEBIN_SYMBOLS 0
 
 
 
@@ -92,14 +94,6 @@ typedef struct Elf_SectionVector {
    int nsections;
    Elf_Scn **sections;
 } Elf_SectionVector;
-
-
-
-//******************************************************************************
-// global variables
-//******************************************************************************
-
-int dump_zebin_symbols = 1;
 
 
 
@@ -165,7 +159,7 @@ elfGetSectionVector
 }
 
 
-const char *
+static const char *
 getSymbolString(
   char *zebin_ptr,
   Elf *elf,
@@ -195,7 +189,6 @@ collectSymbolsHelper
 {
   SymbolVector *symbols = NULL;
   int nsymbols;
-  assert (shdr->sh_type == SHT_SYMTAB);
   if (shdr->sh_entsize > 0) { // avoid divide by 0
     nsymbols = shdr->sh_size / shdr->sh_entsize;
     if (nsymbols <= 0) return NULL;
@@ -206,7 +199,7 @@ collectSymbolsHelper
   // get header for symbol names section
   Elf_Scn *syms = sections->sections[shdr->sh_link];
   GElf_Shdr syms_shdr;
-  if (!gelf_getshdr(syms, &syms_shdr)) assert(0);
+  if (!gelf_getshdr(syms, &syms_shdr)) return NULL;
   Elf64_Off symbolSectionOffset = syms_shdr.sh_offset;
 
   Elf_Data *datap = elf_getdata(scn, NULL);
@@ -308,7 +301,7 @@ collectZebinSymbols
     if (ehdr) {
       if (ehdr->e_machine == EM_INTELGT) {
         symbols = computeSymbolOffsets(zebin_ptr, elf, &eh);
-        if (dump_zebin_symbols) {
+        if (DEBUG_ZEBIN_SYMBOLS) {
           symbolVectorPrint(symbols, "zeBinary Symbols");
         }
         elf_end(elf);

@@ -103,11 +103,11 @@ static gtpin_hpcrun_api_t gtpin_hpcrun_api = {
   .gpu_activity_channel_get = gpu_activity_channel_get,
   .attribute_instruction_metrics = attribute_instruction_metrics,
   .crypto_compute_hash_string = crypto_compute_hash_string,
-  .hpcrun_cct_insert_instruction_child = hpcrun_cct_insert_instruction_child,
   .gpu_op_ccts_get = gpu_op_ccts_get,
   .gpu_binary_loadmap_insert = gpu_binary_loadmap_insert,
   .gpu_binary_store = gpu_binary_store,
   .hpcrun_cct_insert_ip_norm = hpcrun_cct_insert_ip_norm,
+  .hpcrun_cct_parent = hpcrun_cct_parent,
   .hpcrun_cct_walk_node_1st = hpcrun_cct_walk_node_1st
 };
 

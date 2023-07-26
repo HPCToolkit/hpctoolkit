@@ -164,14 +164,20 @@ level0_binary_process
   case gpu_binary_kind_elf:
     TMSG(LEVEL0, "INFO: hpcrun Level Zero binary kind: ELF");
     break;
+  case gpu_binary_kind_empty:
+    TMSG(LEVEL0, "WARNING: hpcrun: Level Zero presented an empty GPU binary.\n"
+         "Instruction-level may not be possible for kernels in this binary");
+    break;
   case gpu_binary_kind_unknown:
-    if (size > 4) {
-      const char *magic = (const char *) buf;
-      EEMSG("WARNING: hpcrun: Level Zero presented unknown binary kind: "
-            "%c%c%c%c\n", magic[0], magic[1], magic[2], magic[3]);
-    } else {
-      EEMSG("WARNING: hpcrun: Level Zero presented unknown binary kind\n");
-    }
+    const char *magic = (const char *) buf;
+    TMSG(LEVEL0, "WARNING: hpcrun: Level Zero presented unknown binary kind: magic number='%c%c%c%c'\n"
+         "Instruction-level may not be possible for kernels in this binary", 
+          magic[0], magic[1], magic[2], magic[3]);
+    break;
+  case gpu_binary_kind_malformed:
+    TMSG(LEVEL0, "WARNING: hpcrun: Level Zero presented a malformed GPU binary.\n"
+         "Instruction-level may not be possible for kernels in this binary");
+    break;
   }
 
   level0_module_handle_map_insert(module, hash_buf, bkind);

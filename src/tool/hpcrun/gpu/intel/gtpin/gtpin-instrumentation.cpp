@@ -125,6 +125,28 @@ using namespace hpctoolkit::util;
 
 
 //*****************************************************************************
+// macros
+//*****************************************************************************
+
+#define GTPIN_KERNEL_IP_DEBUG 0
+
+#define GTPIN_PATCH_TOKEN_DEBUG 0
+#define GTPIN_ZEBIN_DEBUG 0
+
+#if GTPIN_PATCH_TOKEN_DEBUG
+#define PRINT_PATCH_TOKEN_IPS(x) x
+#else
+#define PRINT_PATCH_TOKEN_IPS(x)
+#endif
+
+#if GTPIN_ZEBIN_DEBUG
+#define PRINT_ZEBIN_IPS(x) x
+#else
+#define PRINT_ZEBIN_IPS(x)
+#endif
+
+
+//*****************************************************************************
 // type declarations
 //*****************************************************************************
 
@@ -510,6 +532,42 @@ patchTokenKernelLoadModuleId
 
 
 static void
+dumpKernelIp
+(
+  uint16_t lmId,
+  uintptr_t lmIp,
+  const char *name
+)
+{
+  fprintf(stderr,"{%03d, 0x%016lx} %s\n", lmId, lmIp, name);
+}
+
+
+static void
+dumpKernelIpsOnce
+(
+  void
+)
+{
+  fprintf(stderr, "\nGTPin Kernels\n");
+  for (auto &kernel: kernelNameToKernelIpMap.citerate()) {
+    dumpKernelIp(kernel.second.lm_id, kernel.second.lm_ip, kernel.first.c_str());
+  }
+}
+
+
+static void
+dumpKernelIps
+(
+  void
+)
+{
+  static pthread_once_t once_control = PTHREAD_ONCE_INIT;
+  pthread_once(&once_control, dumpKernelIpsOnce);
+}
+
+
+static void
 recordPatchTokenKernelIps
 (char *ptKernel,
  uint32_t ptKernelSize,
@@ -517,13 +575,13 @@ recordPatchTokenKernelIps
   char *pathSuffix = path + strlen(path);
   *pathSuffix++ = '.';
   SymbolVector *symbols = collectPatchTokenSymbols(ptKernel, ptKernelSize);
-  fprintf(stderr, "\nPatch Token KernelIps\n");
+  PRINT_PATCH_TOKEN_IPS(fprintf(stderr, "\nPatch Token KernelIps\n"));
   for (int i = 0; i < symbols->nsymbols; i++) {
     const char *kernelName = symbols->symbolName[i];
     uint16_t loadModuleId = patchTokenKernelLoadModuleId(kernelName, path, pathSuffix);
     ip_normalized_t kernelIp = {.lm_id = loadModuleId, .lm_ip = symbols->symbolValue[i]};
     kernelNameToKernelIpMap.try_emplace(std::string(kernelName), kernelIp);
-    fprintf(stderr,"{%d, 0x%lx} %s\n", kernelIp.lm_id, kernelIp.lm_ip, kernelName);
+    PRINT_PATCH_TOKEN_IPS(dumpKernelIp(kernelIp.lm_id, kernelIp.lm_ip, kernelName));
   }
   symbolVectorFree(symbols);
 }
@@ -536,9 +594,12 @@ recordZebinKernelIps
  char *path) {
   uint16_t loadModuleId = gtpin_hpcrun_api->gpu_binary_loadmap_insert(path, true);
   SymbolVector *symbols = collectZebinSymbols(kernel_elf, kernel_elf_size);
+  PRINT_ZEBIN_IPS(fprintf(stderr, "\nZebin KernelIps\n"));
   for (int i = 0; i < symbols->nsymbols; i++) {
+    const char *kernelName = symbols->symbolName[i];
     ip_normalized_t kernelIp = {.lm_id = loadModuleId, .lm_ip = symbols->symbolValue[i]};
-    kernelNameToKernelIpMap.try_emplace(std::string(symbols->symbolName[i]), kernelIp);
+    kernelNameToKernelIpMap.try_emplace(std::string(kernelName), kernelIp);
+    PRINT_ZEBIN_IPS(dumpKernelIp(kernelIp.lm_id, kernelIp.lm_ip, kernelName));
   }
   symbolVectorFree(symbols);
 }
@@ -558,7 +619,11 @@ static ip_normalized_t find_or_add_loadmap_module
   char *kernel_elf = (char *)kernel.Elf().data();
   uint32_t kernel_elf_size = kernel.Elf().size();
 
-  if (kernel_elf_size == 0) return ipNormalizedEmpty;
+  if (kernel_elf_size == 0) {
+    fprintf(stderr, "hpcrun: no instruction-level measurement for kernel '%s'"
+            " - GTPin binary empty!\n", kernel_name);
+    return ipNormalizedEmpty;
+  }
 
   gpu_binary_kind_t bkind = gtpin_hpcrun_api->binary_kind(kernel_elf, kernel_elf_size);
 
@@ -985,7 +1050,7 @@ GTPinInstrumentation::OnKernelComplete
 // interface to Intel's gtpin C++ library
 //*****************************************************************************
 
-void
+static void
 gtpin_find_core
 (void)
 {
@@ -1036,7 +1101,7 @@ gtpin_instrumentation_options
   latency_knob = instrumentation->attribute_latency;
   collect_latency = instrumentation->attribute_latency;
   simd_knob = instrumentation->analyze_simd;
-#if 0
+#if 1
   // this is the way things should work
   count_knob = !latency_knob && (instrumentation->count_instructions || simd_knob);
 #else
@@ -1088,6 +1153,9 @@ gtpin_produce_runtime_callstack
 void
 gtpin_process_block_instructions
 (cct_node_t *root) {
+
+  if (GTPIN_KERNEL_IP_DEBUG) dumpKernelIps();
+
   std::vector<std::pair<cct_node_t *, BasicBlock>> data_vector;
   gtpin_hpcrun_api->hpcrun_cct_walk_node_1st(root, visit_block, &data_vector);
 
@@ -1104,9 +1172,14 @@ gtpin_process_block_instructions
       calculate_instruction_latencies(basicBlock.instructions, block_metrics.execution_count, block_metrics.latency);
     }
 
+    uint16_t blockLmId = basicBlock.kernel_ip.lm_id;
+    uintptr_t blockLmIp = basicBlock.kernel_ip.lm_ip;
+    cct_node_t *blockParent =   gtpin_hpcrun_api->hpcrun_cct_parent(block);
+    const bool not_unwound = false;
     for (const Instruction &instruction : basicBlock.instructions) {
       uint64_t scalarSimdLoss = simd_knob && instruction.execSize == 1 ? basicBlock.simdWidth - 1 : 0;
-      cct_node_t *child = gtpin_hpcrun_api->hpcrun_cct_insert_instruction_child(block, basicBlock.kernel_ip.lm_ip + instruction.offset);
+      ip_normalized_t instructionIp = {.lm_id = blockLmId, .lm_ip = blockLmIp + instruction.offset};
+      cct_node_t *child = gtpin_hpcrun_api->hpcrun_cct_insert_ip_norm(blockParent, instructionIp, not_unwound);
       gtpin_hpcrun_api->attribute_instruction_metrics
         (child,
          {.execution_count = executionCount,

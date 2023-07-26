@@ -542,14 +542,6 @@ void get_cct_node_id(cct_node_t* node, uint16_t* lm_id, uintptr_t* lm_ip)
   *lm_ip = node->addr.ip_norm.lm_ip;
 }
 
-cct_node_t*
-hpcrun_cct_insert_instruction_child(cct_node_t* block, uintptr_t offset)
-{
-  ip_normalized_t ip;
-  ip.lm_id = block->addr.ip_norm.lm_id;
-  ip.lm_ip = offset;
-  return hpcrun_cct_insert_ip_norm(block->parent, ip, false);
-}
 
 cct_node_t*
 hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm, bool unwound)
