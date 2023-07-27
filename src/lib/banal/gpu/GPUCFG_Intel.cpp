@@ -101,7 +101,7 @@
 // macros
 //******************************************************************************
 
-#define DEBUG_CFG                  1
+#define DEBUG_CFG                  0
 #define DEBUG_INSTRUCTION_STAT     0
 #define DEBUG_INSTRUCTION_ANALYZER 0
 
