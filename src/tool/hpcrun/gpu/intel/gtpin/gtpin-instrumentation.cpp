@@ -99,8 +99,8 @@ extern "C"
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
-#include <hpcrun/gpu/intel/patchTokenSymbols.h>
-#include <hpcrun/gpu/intel/zebinSymbols.h>
+#include <hpcrun/gpu/intel/binaries/patchTokenSymbols.h>
+#include <hpcrun/gpu/intel/binaries/zebinSymbols.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/gpu-metrics.h>
@@ -1101,7 +1101,7 @@ gtpin_instrumentation_options
   latency_knob = instrumentation->attribute_latency;
   collect_latency = instrumentation->attribute_latency;
   simd_knob = instrumentation->analyze_simd;
-#if 1
+#if 0
   // this is the way things should work
   count_knob = !latency_knob && (instrumentation->count_instructions || simd_knob);
 #else

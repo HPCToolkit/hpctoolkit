@@ -938,11 +938,12 @@ libhpcrun_gprof_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @OPT_ENABLE_GTPIN_TRUE@	$(PROF_LEAN_A)
 am__libhpcrun_gtpin_cxx_la_SOURCES_DIST =  \
 	gpu/intel/gtpin/gtpin-instrumentation.cpp \
-	gpu/intel/patchTokenSymbols.c gpu/intel/symbolVector.c \
-	gpu/intel/zebinSymbols.c
-@OPT_ENABLE_GTPIN_TRUE@am__objects_50 = gpu/intel/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo \
-@OPT_ENABLE_GTPIN_TRUE@	gpu/intel/libhpcrun_gtpin_cxx_la-symbolVector.lo \
-@OPT_ENABLE_GTPIN_TRUE@	gpu/intel/libhpcrun_gtpin_cxx_la-zebinSymbols.lo
+	gpu/intel/binaries/patchTokenSymbols.c \
+	gpu/intel/binaries/symbolVector.c \
+	gpu/intel/binaries/zebinSymbols.c
+@OPT_ENABLE_GTPIN_TRUE@am__objects_50 = gpu/intel/binaries/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo \
+@OPT_ENABLE_GTPIN_TRUE@	gpu/intel/binaries/libhpcrun_gtpin_cxx_la-symbolVector.lo \
+@OPT_ENABLE_GTPIN_TRUE@	gpu/intel/binaries/libhpcrun_gtpin_cxx_la-zebinSymbols.lo
 @OPT_ENABLE_GTPIN_TRUE@am_libhpcrun_gtpin_cxx_la_OBJECTS = gpu/intel/gtpin/libhpcrun_gtpin_cxx_la-gtpin-instrumentation.lo \
 @OPT_ENABLE_GTPIN_TRUE@	$(am__objects_50)
 libhpcrun_gtpin_cxx_la_OBJECTS = $(am_libhpcrun_gtpin_cxx_la_OBJECTS)
@@ -2145,7 +2146,7 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_GTPIN_TRUE@	-I$(top_srcdir)/src/tool/hpcrun/unwind/x86-family \
 @OPT_ENABLE_GTPIN_TRUE@	$(am__append_62)
 @OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_cxx_la_CXXFLAGS = @HOST_CXXFLAGS@
-@OPT_ENABLE_GTPIN_TRUE@INTEL_GPU_SYMBOLS = gpu/intel/patchTokenSymbols.c gpu/intel/symbolVector.c gpu/intel/zebinSymbols.c
+@OPT_ENABLE_GTPIN_TRUE@INTEL_GPU_SYMBOLS = gpu/intel/binaries/patchTokenSymbols.c gpu/intel/binaries/symbolVector.c gpu/intel/binaries/zebinSymbols.c
 @OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_cxx_la_SOURCES = gpu/intel/gtpin/gtpin-instrumentation.cpp $(INTEL_GPU_SYMBOLS)
 @OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_cxx_la_LDFLAGS = -Wl,-Bsymbolic
 @OPT_ENABLE_GTPIN_TRUE@libhpcrun_gtpin_cxx_la_LIBADD = $(PROF_LEAN_A)  -L$(LIBELF_LIB) -lelf -L$(TBB_LIB_DIR) -ltbb -ltbbmalloc -ldl
@@ -3515,18 +3516,21 @@ libhpcrun_gprof.la: $(libhpcrun_gprof_la_OBJECTS) $(libhpcrun_gprof_la_DEPENDENC
 gpu/intel/gtpin/libhpcrun_gtpin_cxx_la-gtpin-instrumentation.lo:  \
 	gpu/intel/gtpin/$(am__dirstamp) \
 	gpu/intel/gtpin/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/$(am__dirstamp):
-	@$(MKDIR_P) gpu/intel
-	@: > gpu/intel/$(am__dirstamp)
-gpu/intel/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) gpu/intel/$(DEPDIR)
-	@: > gpu/intel/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo:  \
-	gpu/intel/$(am__dirstamp) gpu/intel/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/libhpcrun_gtpin_cxx_la-symbolVector.lo:  \
-	gpu/intel/$(am__dirstamp) gpu/intel/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/libhpcrun_gtpin_cxx_la-zebinSymbols.lo:  \
-	gpu/intel/$(am__dirstamp) gpu/intel/$(DEPDIR)/$(am__dirstamp)
+gpu/intel/binaries/$(am__dirstamp):
+	@$(MKDIR_P) gpu/intel/binaries
+	@: > gpu/intel/binaries/$(am__dirstamp)
+gpu/intel/binaries/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/intel/binaries/$(DEPDIR)
+	@: > gpu/intel/binaries/$(DEPDIR)/$(am__dirstamp)
+gpu/intel/binaries/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo:  \
+	gpu/intel/binaries/$(am__dirstamp) \
+	gpu/intel/binaries/$(DEPDIR)/$(am__dirstamp)
+gpu/intel/binaries/libhpcrun_gtpin_cxx_la-symbolVector.lo:  \
+	gpu/intel/binaries/$(am__dirstamp) \
+	gpu/intel/binaries/$(DEPDIR)/$(am__dirstamp)
+gpu/intel/binaries/libhpcrun_gtpin_cxx_la-zebinSymbols.lo:  \
+	gpu/intel/binaries/$(am__dirstamp) \
+	gpu/intel/binaries/$(DEPDIR)/$(am__dirstamp)
 
 libhpcrun_gtpin_cxx.la: $(libhpcrun_gtpin_cxx_la_OBJECTS) $(libhpcrun_gtpin_cxx_la_DEPENDENCIES) $(EXTRA_libhpcrun_gtpin_cxx_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libhpcrun_gtpin_cxx_la_LINK) $(am_libhpcrun_gtpin_cxx_la_rpath) $(libhpcrun_gtpin_cxx_la_OBJECTS) $(libhpcrun_gtpin_cxx_la_LIBADD) $(LIBS)
@@ -4120,8 +4124,8 @@ mostlyclean-compile:
 	-rm -f gpu/blame-shifting/*.lo
 	-rm -f gpu/blame-shifting/opencl/*.$(OBJEXT)
 	-rm -f gpu/blame-shifting/opencl/*.lo
-	-rm -f gpu/intel/*.$(OBJEXT)
-	-rm -f gpu/intel/*.lo
+	-rm -f gpu/intel/binaries/*.$(OBJEXT)
+	-rm -f gpu/intel/binaries/*.lo
 	-rm -f gpu/intel/gtpin/*.$(OBJEXT)
 	-rm -f gpu/intel/gtpin/*.lo
 	-rm -f gpu/intel/level0/*.$(OBJEXT)
@@ -4383,9 +4387,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/opencl/$(DEPDIR)/libhpcrun_la-opencl-blame.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/gtpin/$(DEPDIR)/libhpcrun_gtpin_cxx_la-gtpin-instrumentation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/gtpin/$(DEPDIR)/libhpcrun_la-gtpin-shim.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/level0/$(DEPDIR)/libhpcrun_la-level0-api.Plo@am__quote@
@@ -6666,26 +6670,26 @@ libhpcrun_gprof_la-gprof.lo: gprof.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gprof_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_gprof_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_gprof_la-gprof.lo `test -f 'gprof.c' || echo '$(srcdir)/'`gprof.c
 
-gpu/intel/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo: gpu/intel/patchTokenSymbols.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpu/intel/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo -MD -MP -MF gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Tpo -c -o gpu/intel/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo `test -f 'gpu/intel/patchTokenSymbols.c' || echo '$(srcdir)/'`gpu/intel/patchTokenSymbols.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Tpo gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/patchTokenSymbols.c' object='gpu/intel/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/intel/binaries/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo: gpu/intel/binaries/patchTokenSymbols.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpu/intel/binaries/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo -MD -MP -MF gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Tpo -c -o gpu/intel/binaries/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo `test -f 'gpu/intel/binaries/patchTokenSymbols.c' || echo '$(srcdir)/'`gpu/intel/binaries/patchTokenSymbols.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Tpo gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-patchTokenSymbols.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/binaries/patchTokenSymbols.c' object='gpu/intel/binaries/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpu/intel/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo `test -f 'gpu/intel/patchTokenSymbols.c' || echo '$(srcdir)/'`gpu/intel/patchTokenSymbols.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpu/intel/binaries/libhpcrun_gtpin_cxx_la-patchTokenSymbols.lo `test -f 'gpu/intel/binaries/patchTokenSymbols.c' || echo '$(srcdir)/'`gpu/intel/binaries/patchTokenSymbols.c
 
-gpu/intel/libhpcrun_gtpin_cxx_la-symbolVector.lo: gpu/intel/symbolVector.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpu/intel/libhpcrun_gtpin_cxx_la-symbolVector.lo -MD -MP -MF gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Tpo -c -o gpu/intel/libhpcrun_gtpin_cxx_la-symbolVector.lo `test -f 'gpu/intel/symbolVector.c' || echo '$(srcdir)/'`gpu/intel/symbolVector.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Tpo gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/symbolVector.c' object='gpu/intel/libhpcrun_gtpin_cxx_la-symbolVector.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/intel/binaries/libhpcrun_gtpin_cxx_la-symbolVector.lo: gpu/intel/binaries/symbolVector.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpu/intel/binaries/libhpcrun_gtpin_cxx_la-symbolVector.lo -MD -MP -MF gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Tpo -c -o gpu/intel/binaries/libhpcrun_gtpin_cxx_la-symbolVector.lo `test -f 'gpu/intel/binaries/symbolVector.c' || echo '$(srcdir)/'`gpu/intel/binaries/symbolVector.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Tpo gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-symbolVector.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/binaries/symbolVector.c' object='gpu/intel/binaries/libhpcrun_gtpin_cxx_la-symbolVector.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpu/intel/libhpcrun_gtpin_cxx_la-symbolVector.lo `test -f 'gpu/intel/symbolVector.c' || echo '$(srcdir)/'`gpu/intel/symbolVector.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpu/intel/binaries/libhpcrun_gtpin_cxx_la-symbolVector.lo `test -f 'gpu/intel/binaries/symbolVector.c' || echo '$(srcdir)/'`gpu/intel/binaries/symbolVector.c
 
-gpu/intel/libhpcrun_gtpin_cxx_la-zebinSymbols.lo: gpu/intel/zebinSymbols.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpu/intel/libhpcrun_gtpin_cxx_la-zebinSymbols.lo -MD -MP -MF gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Tpo -c -o gpu/intel/libhpcrun_gtpin_cxx_la-zebinSymbols.lo `test -f 'gpu/intel/zebinSymbols.c' || echo '$(srcdir)/'`gpu/intel/zebinSymbols.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Tpo gpu/intel/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/zebinSymbols.c' object='gpu/intel/libhpcrun_gtpin_cxx_la-zebinSymbols.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/intel/binaries/libhpcrun_gtpin_cxx_la-zebinSymbols.lo: gpu/intel/binaries/zebinSymbols.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpu/intel/binaries/libhpcrun_gtpin_cxx_la-zebinSymbols.lo -MD -MP -MF gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Tpo -c -o gpu/intel/binaries/libhpcrun_gtpin_cxx_la-zebinSymbols.lo `test -f 'gpu/intel/binaries/zebinSymbols.c' || echo '$(srcdir)/'`gpu/intel/binaries/zebinSymbols.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Tpo gpu/intel/binaries/$(DEPDIR)/libhpcrun_gtpin_cxx_la-zebinSymbols.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/binaries/zebinSymbols.c' object='gpu/intel/binaries/libhpcrun_gtpin_cxx_la-zebinSymbols.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpu/intel/libhpcrun_gtpin_cxx_la-zebinSymbols.lo `test -f 'gpu/intel/zebinSymbols.c' || echo '$(srcdir)/'`gpu/intel/zebinSymbols.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_gtpin_cxx_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpu/intel/binaries/libhpcrun_gtpin_cxx_la-zebinSymbols.lo `test -f 'gpu/intel/binaries/zebinSymbols.c' || echo '$(srcdir)/'`gpu/intel/binaries/zebinSymbols.c
 
 sample-sources/libhpcrun_io_la-io-over.lo: sample-sources/io-over.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_io_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_io_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_io_la-io-over.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_io_la-io-over.Tpo -c -o sample-sources/libhpcrun_io_la-io-over.lo `test -f 'sample-sources/io-over.c' || echo '$(srcdir)/'`sample-sources/io-over.c
@@ -9734,7 +9738,7 @@ clean-libtool:
 	-rm -rf gpu/amd/.libs gpu/amd/_libs
 	-rm -rf gpu/blame-shifting/.libs gpu/blame-shifting/_libs
 	-rm -rf gpu/blame-shifting/opencl/.libs gpu/blame-shifting/opencl/_libs
-	-rm -rf gpu/intel/.libs gpu/intel/_libs
+	-rm -rf gpu/intel/binaries/.libs gpu/intel/binaries/_libs
 	-rm -rf gpu/intel/gtpin/.libs gpu/intel/gtpin/_libs
 	-rm -rf gpu/intel/level0/.libs gpu/intel/level0/_libs
 	-rm -rf gpu/nvidia/.libs gpu/nvidia/_libs
@@ -10003,8 +10007,8 @@ distclean-generic:
 	-rm -f gpu/blame-shifting/$(am__dirstamp)
 	-rm -f gpu/blame-shifting/opencl/$(DEPDIR)/$(am__dirstamp)
 	-rm -f gpu/blame-shifting/opencl/$(am__dirstamp)
-	-rm -f gpu/intel/$(DEPDIR)/$(am__dirstamp)
-	-rm -f gpu/intel/$(am__dirstamp)
+	-rm -f gpu/intel/binaries/$(DEPDIR)/$(am__dirstamp)
+	-rm -f gpu/intel/binaries/$(am__dirstamp)
 	-rm -f gpu/intel/gtpin/$(DEPDIR)/$(am__dirstamp)
 	-rm -f gpu/intel/gtpin/$(am__dirstamp)
 	-rm -f gpu/intel/level0/$(DEPDIR)/$(am__dirstamp)
@@ -10088,7 +10092,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	clean-pkglibLTLIBRARIES mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/blame-shifting/$(DEPDIR) gpu/blame-shifting/opencl/$(DEPDIR) gpu/intel/$(DEPDIR) gpu/intel/gtpin/$(DEPDIR) gpu/intel/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/ompt/$(DEPDIR) gpu/opencl/$(DEPDIR) gpu/opencl/intel/$(DEPDIR) gpu/opencl/intel/maps/$(DEPDIR) gpu/opencl/intel/papi/$(DEPDIR) logical/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/blame-shifting/$(DEPDIR) gpu/blame-shifting/opencl/$(DEPDIR) gpu/intel/binaries/$(DEPDIR) gpu/intel/gtpin/$(DEPDIR) gpu/intel/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/ompt/$(DEPDIR) gpu/opencl/$(DEPDIR) gpu/opencl/intel/$(DEPDIR) gpu/opencl/intel/maps/$(DEPDIR) gpu/opencl/intel/papi/$(DEPDIR) logical/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -10137,7 +10141,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/blame-shifting/$(DEPDIR) gpu/blame-shifting/opencl/$(DEPDIR) gpu/intel/$(DEPDIR) gpu/intel/gtpin/$(DEPDIR) gpu/intel/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/ompt/$(DEPDIR) gpu/opencl/$(DEPDIR) gpu/opencl/intel/$(DEPDIR) gpu/opencl/intel/maps/$(DEPDIR) gpu/opencl/intel/papi/$(DEPDIR) logical/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/blame-shifting/$(DEPDIR) gpu/blame-shifting/opencl/$(DEPDIR) gpu/intel/binaries/$(DEPDIR) gpu/intel/gtpin/$(DEPDIR) gpu/intel/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/ompt/$(DEPDIR) gpu/opencl/$(DEPDIR) gpu/opencl/intel/$(DEPDIR) gpu/opencl/intel/maps/$(DEPDIR) gpu/opencl/intel/papi/$(DEPDIR) logical/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

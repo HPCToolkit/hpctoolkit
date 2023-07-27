@@ -574,7 +574,7 @@ pkglib_LTLIBRARIES += libhpcrun_gtpin_cxx.la
 libhpcrun_gtpin_cxx_la_CPPFLAGS  = -g $(MY_INCLUDE_DIRS) -I$(top_srcdir)/src/tool/hpcrun/unwind/x86-family
 libhpcrun_gtpin_cxx_la_CXXFLAGS  = @HOST_CXXFLAGS@
 
-INTEL_GPU_SYMBOLS = gpu/intel/patchTokenSymbols.c gpu/intel/symbolVector.c gpu/intel/zebinSymbols.c
+INTEL_GPU_SYMBOLS = gpu/intel/binaries/patchTokenSymbols.c gpu/intel/binaries/symbolVector.c gpu/intel/binaries/zebinSymbols.c
 
 libhpcrun_gtpin_cxx_la_SOURCES   = gpu/intel/gtpin/gtpin-instrumentation.cpp $(INTEL_GPU_SYMBOLS)
 libhpcrun_gtpin_cxx_la_LDFLAGS   = -Wl,-Bsymbolic
