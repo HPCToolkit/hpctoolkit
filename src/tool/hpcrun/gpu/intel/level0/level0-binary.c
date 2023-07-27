@@ -169,10 +169,12 @@ level0_binary_process
          "Instruction-level may not be possible for kernels in this binary");
     break;
   case gpu_binary_kind_unknown:
+    {
     const char *magic = (const char *) buf;
     TMSG(LEVEL0, "WARNING: hpcrun: Level Zero presented unknown binary kind: magic number='%c%c%c%c'\n"
          "Instruction-level may not be possible for kernels in this binary", 
           magic[0], magic[1], magic[2], magic[3]);
+    }
     break;
   case gpu_binary_kind_malformed:
     TMSG(LEVEL0, "WARNING: hpcrun: Level Zero presented a malformed GPU binary.\n"
