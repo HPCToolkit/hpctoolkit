@@ -172,7 +172,7 @@ level0_binary_process
     {
     const char *magic = (const char *) buf;
     TMSG(LEVEL0, "WARNING: hpcrun: Level Zero presented unknown binary kind: magic number='%c%c%c%c'\n"
-         "Instruction-level may not be possible for kernels in this binary", 
+         "Instruction-level may not be possible for kernels in this binary",
           magic[0], magic[1], magic[2], magic[3]);
     }
     break;
