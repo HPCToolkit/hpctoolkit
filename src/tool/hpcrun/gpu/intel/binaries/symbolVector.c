@@ -50,7 +50,7 @@
 //***************************************************************************
 
 //******************************************************************************
-// global includes 
+// global includes
 //******************************************************************************
 
 #include <stdlib.h>
@@ -60,7 +60,7 @@
 
 
 //******************************************************************************
-// local includes 
+// local includes
 //******************************************************************************
 
 #include "symbolVector.h"
@@ -93,12 +93,12 @@ symbolVectorAppend
   unsigned long symbolValue
 )
 {
-  unsigned int i = v->nsymbols; 
+  unsigned int i = v->nsymbols;
 
   v->symbolValue[i] = symbolValue;
   v->symbolName[i] = strdup(symbolName);
 
-  v->nsymbols++; 
+  v->nsymbols++;
 }
 
 

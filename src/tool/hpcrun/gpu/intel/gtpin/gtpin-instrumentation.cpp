@@ -655,7 +655,7 @@ static ip_normalized_t find_or_add_loadmap_module
     if (bkind == gpu_binary_kind_elf) {
       // Intel zeBinary
       recordZebinKernelIps(kernel_elf, kernel_elf_size, path);
-    } else { 
+    } else {
       // Intel Patch Token binary
       recordPatchTokenKernelIps(kernel_elf, kernel_elf_size, path);
     }
@@ -663,14 +663,14 @@ static ip_normalized_t find_or_add_loadmap_module
     elf_binary_map.try_emplace(strdup(file_name), true);
   }
 
-  // invariant: 
+  // invariant:
   //   after a binary has been processed, each kernel in the binary will have
   //   an entry in this map
   auto kernelIp =
     kernelNameToKernelIpMap.find(std::string(kernel_name));
 
   // invariant:
-  //   after a kernel has been presented to find_or_add_loadmap_module, 
+  //   after a kernel has been presented to find_or_add_loadmap_module,
   //   it will have an entry in the kernelIdToKernelIpMap
   kernelIdToKernelIpMap.try_emplace(kernel.Id(), *kernelIp);
 

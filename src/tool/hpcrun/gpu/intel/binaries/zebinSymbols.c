@@ -146,7 +146,7 @@ elfGetSectionVector
 
       // placeholder for empty section 0 so that section number
       // indices into the vector will work as expected
-      v->sections[i++] = 0; 
+      v->sections[i++] = 0;
 
       // collect the real sections
       while ((scn = elf_nextscn(elf, scn)) != NULL) {
@@ -170,7 +170,7 @@ getSymbolString(
 {
   const char *map_start = (const char *) zebin_ptr;
   const char *symbol_names = (const char *)(map_start + symbolSectionOffset);
-  const char *symbol_name = symbol_names + symbol_name_index; 
+  const char *symbol_name = symbol_names + symbol_name_index;
   return symbol_name;
 }
 
@@ -214,14 +214,14 @@ collectSymbolsHelper
         int symtype = GELF_ST_TYPE(sym.st_info);
         if (sym.st_shndx == SHN_UNDEF) continue;
         switch(symtype) {
-          case STT_FUNC: 
+          case STT_FUNC:
             {
               const char *name = getSymbolString(zebin_ptr, elf, sections, symbolSectionOffset, sym.st_name);
               if (strcmp(name, "_entry") == 0) break; // ignore symbols named _entry
               symbolVectorAppend(symbols, name, sym.st_value);
               break;
             }
-          default: 
+          default:
             break;
         }
       }

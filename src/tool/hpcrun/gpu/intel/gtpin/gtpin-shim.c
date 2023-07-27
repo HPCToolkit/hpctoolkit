@@ -181,7 +181,7 @@ gtpin_produce_runtime_callstack
 }
 
 
-void 
+void
 gtpin_process_block_instructions
 (
   cct_node_t *node
@@ -192,7 +192,7 @@ gtpin_process_block_instructions
 }
 
 
-uintptr_t 
+uintptr_t
 gtpin_lookup_kernel_ip
 (
   const char *kernel_name
