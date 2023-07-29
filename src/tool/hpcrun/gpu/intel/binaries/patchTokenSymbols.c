@@ -1,6 +1,7 @@
-// -*-Mode: C++;-*- // technically C99
-
 // * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,119 +42,131 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//*****************************************************************************
+
+//***************************************************************************
+
+//******************************************************************************
 // system includes
-//*****************************************************************************
+//******************************************************************************
 
-#include <stdlib.h>
-#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
 
-//*****************************************************************************
+
+
+//******************************************************************************
 // local includes
-//*****************************************************************************
+//******************************************************************************
 
-#include "level0-binary.h"
-#include "level0-handle-map.h"
-#include "lib/prof-lean/crypto-hash.h"
-#include "lib/prof-lean/spinlock.h"
+#include "symbolVector.h"
 
 
 
 //******************************************************************************
-// local variables
+// macros
 //******************************************************************************
 
-static level0_handle_map_entry_t *module_map_root = NULL;
+#define DEBUG_PATCH_TOKEN_SYMBOLS 0
 
-static level0_handle_map_entry_t *module_free_list = NULL;
 
-static spinlock_t module_lock = SPINLOCK_UNLOCKED;
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef struct PatchTokenBinaryHeader {
+  uint32_t magicNumber;
+  uint32_t binaryVersion;
+  uint32_t binaryLength;
+  uint32_t deviceId;
+  uint32_t steppingId;
+  uint32_t gpuPtrBytes;
+  uint32_t kernelCount;
+} IntelPatchTokenBinaryHeader;
+
+
+typedef struct PatchTokenKernelHeader {
+  uint32_t kernelNameLength;
+  uint32_t elf1Length;
+  uint32_t elf2Length;
+} IntelPatchTokenKernelHeader;
+
+
 
 //******************************************************************************
 // private operations
 //******************************************************************************
 
-void
-level0_module_handle_map_insert
+// round val to nearest multiple of x
+static uint32_t
+roundToMultiple
 (
-  ze_module_handle_t module,
-  char* hash_buf
+  uint32_t val,
+  uint32_t x
 )
 {
-  spinlock_lock(&module_lock);
-
-  uint64_t key = (uint64_t)module;
-  level0_handle_map_entry_t *entry =
-    level0_handle_map_entry_new(&module_free_list, key, (level0_data_node_t*)hash_buf);
-  level0_handle_map_insert(&module_map_root, entry);
-
-  spinlock_unlock(&module_lock);
+  return x * ((val + (x - 1)) / x);
 }
+
+
+static uint32_t
+computeKernelNameSize
+(
+ uint32_t kernelNameLength
+)
+{
+  return roundToMultiple(kernelNameLength, sizeof(uint32_t));
+}
+
+
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-void
-level0_binary_process
+SymbolVector *
+collectPatchTokenSymbols
 (
-  ze_module_handle_t module
+ const char *patchTokenPtr,
+ size_t patchTokenLength
 )
 {
-  // Get the debug binary
-  size_t size;
-  zetModuleGetDebugInfo(
-    module,
-    ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
-    &size,
-    NULL
-  );
+  const char *cursor = patchTokenPtr;
 
-  uint8_t* buf = (uint8_t*) malloc(size);
-  zetModuleGetDebugInfo(
-    module,
-    ZET_MODULE_DEBUG_INFO_FORMAT_ELF_DWARF,
-    &size,
-    buf
-  );
+  const IntelPatchTokenBinaryHeader *header =
+    (const IntelPatchTokenBinaryHeader *) cursor;
 
-  // Generate a hash for the binary
-  char *hash_buf = (char *) malloc(CRYPTO_HASH_STRING_LENGTH);
-  crypto_compute_hash_string(buf, size, hash_buf, CRYPTO_HASH_STRING_LENGTH);
+  // skip past binary header
+  cursor += sizeof(IntelPatchTokenBinaryHeader);
 
-  level0_module_handle_map_insert(module, hash_buf);
-}
+  int nsymbols = header->kernelCount;
 
-char*
-level0_module_handle_map_lookup
-(
-  ze_module_handle_t module
-)
-{
-  spinlock_lock(&module_lock);
+  if (nsymbols != 0) {
+    SymbolVector *symbols = symbolVectorNew(nsymbols);
 
-  uint64_t key = (uint64_t)module;
-  level0_handle_map_entry_t *entry =
-    level0_handle_map_lookup(&module_map_root, key);
-  char *result = (char*) (*level0_handle_map_entry_data_get(entry));
-  spinlock_unlock(&module_lock);
-  return result;
-}
+    for (uint32_t i = 0; i < nsymbols; ++i) {
+      const IntelPatchTokenKernelHeader *kernel_header =
+        (const IntelPatchTokenKernelHeader *) cursor;
 
-void
-level0_module_handle_map_delete
-(
-  ze_module_handle_t module
-)
-{
-  spinlock_lock(&module_lock);
+      // skip past kernel header
+      cursor += sizeof(IntelPatchTokenKernelHeader);
 
-  uint64_t key = (uint64_t)module;
-  level0_handle_map_delete(
-    &module_map_root,
-    &module_free_list,
-    key
-  );
+      // add kernel name to symbol table
+      symbolVectorAppend(symbols, cursor, 0);
 
-  spinlock_unlock(&module_lock);
+      // skip past kernel name
+      cursor += computeKernelNameSize(kernel_header->kernelNameLength);
+
+      // skip past kernel binaries
+      cursor += kernel_header->elf1Length + kernel_header->elf2Length;
+    }
+
+    if (DEBUG_PATCH_TOKEN_SYMBOLS) {
+      symbolVectorPrint(symbols, "Patch Token Binary Symbols");
+    }
+
+    return symbols;
+  }
+
+  return 0;
 }

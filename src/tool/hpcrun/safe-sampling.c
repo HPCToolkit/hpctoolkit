@@ -1,3 +1,5 @@
+// -*-Mode: C++;-*- // technically C99
+
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -42,67 +44,17 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "safe-sampling.h"
 
-//***************************************************************************
-
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
-
-//***************************************************************************
-// Dyninst includes
-//***************************************************************************
-
-#include <CFG.h>
-
-
-
-//***************************************************************************
-// HPCToolkit includes
-//***************************************************************************
-
-#include "GPUCFG.hpp"   // GPUParse
-
-
-
-//***************************************************************************
-// begin namespaces
-//***************************************************************************
-
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
-
-
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
-
-
-
-//***************************************************************************
-// end namespaces
-//***************************************************************************
-
-}
+// functions exported to a separate library namespace
+int
+hpcrun_safe_enter_noinline(void)
+{
+  return hpcrun_safe_enter();
 }
 
-#endif
+void
+hpcrun_safe_exit_noinline(void)
+{
+  hpcrun_safe_exit();
+}

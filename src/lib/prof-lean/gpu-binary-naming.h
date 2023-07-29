@@ -1,7 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+
 // * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -42,67 +41,18 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef gpu_binary_naming_h
+#define gpu_binary_naming_h
 
-//***************************************************************************
+//*****************************************************************************
+// macros
+//*****************************************************************************
 
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
+#define GPU_BINARY_NAME           "gpubin"
 
-//***************************************************************************
-// Dyninst includes
-//***************************************************************************
-
-#include <CFG.h>
-
-
-
-//***************************************************************************
-// HPCToolkit includes
-//***************************************************************************
-
-#include "GPUCFG.hpp"   // GPUParse
+#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
+#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
 
 
-
-//***************************************************************************
-// begin namespaces
-//***************************************************************************
-
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
-
-
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
-
-
-
-//***************************************************************************
-// end namespaces
-//***************************************************************************
-
-}
-}
 
 #endif

@@ -51,8 +51,6 @@
 //
 //***************************************************************************
 
-
-
 //*****************************************************************************
 // system include files
 //*****************************************************************************
@@ -65,8 +63,10 @@
 // local include files
 //*****************************************************************************
 
-#include "external_functions.h"
+#include "gtpin-hpcrun-api.h"
+
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/gpu/gpu-binary.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-correlation.h>
 #include <hpcrun/gpu/gpu-instrumentation.h>
@@ -77,8 +77,9 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <include/gpu-binary.h>
+
 #include <lib/prof-lean/crypto-hash.h>
+
 #include <monitor.h>
 
 
@@ -87,29 +88,35 @@
 // local data
 //*****************************************************************************
 
-static external_functions_t external_functions = {
-    .gpu_binary_path_generate = gpu_binary_path_generate,
-    .gpu_operation_multiplexer_push = gpu_operation_multiplexer_push,
-    .fetch_block_metrics = fetch_block_metrics,
-    .get_cct_node_id = get_cct_node_id,
-    .cstack_ptr_set = cstack_ptr_set,
-    .hpcrun_nanotime = hpcrun_nanotime,
-    .hpcrun_thread_init_mem_pool_once = hpcrun_thread_init_mem_pool_once,
-    .gpu_activity_channel_get = gpu_activity_channel_get,
-    .attribute_instruction_metrics = attribute_instruction_metrics,
-    .crypto_compute_hash_string = crypto_compute_hash_string,
-    .hpcrun_cct_insert_instruction_child = hpcrun_cct_insert_instruction_child,
-    .gpu_op_ccts_get = gpu_op_ccts_get,
-    .gpu_binary_loadmap_insert = gpu_binary_loadmap_insert,
-    .gpu_binary_store = gpu_binary_store,
-    .hpcrun_cct_insert_ip_norm = hpcrun_cct_insert_ip_norm,
-    .hpcrun_cct_walk_node_1st = hpcrun_cct_walk_node_1st};
+static gtpin_hpcrun_api_t gtpin_hpcrun_api = {
+  .safe_enter = hpcrun_safe_enter_noinline,
+  .safe_exit = hpcrun_safe_exit_noinline,
+  .real_exit = monitor_real_exit,
+  .binary_kind = gpu_binary_kind,
+  .gpu_binary_path_generate = gpu_binary_path_generate,
+  .gpu_operation_multiplexer_push = gpu_operation_multiplexer_push,
+  .fetch_block_metrics = fetch_block_metrics,
+  .get_cct_node_id = get_cct_node_id,
+  .cstack_ptr_set = cstack_ptr_set,
+  .hpcrun_nanotime = hpcrun_nanotime,
+  .hpcrun_thread_init_mem_pool_once = hpcrun_thread_init_mem_pool_once,
+  .gpu_activity_channel_get = gpu_activity_channel_get,
+  .attribute_instruction_metrics = attribute_instruction_metrics,
+  .crypto_compute_hash_string = crypto_compute_hash_string,
+  .gpu_op_ccts_get = gpu_op_ccts_get,
+  .gpu_binary_loadmap_insert = gpu_binary_loadmap_insert,
+  .gpu_binary_store = gpu_binary_store,
+  .hpcrun_cct_insert_ip_norm = hpcrun_cct_insert_ip_norm,
+  .hpcrun_cct_parent = hpcrun_cct_parent,
+  .hpcrun_cct_walk_node_1st = hpcrun_cct_walk_node_1st
+};
 
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
 
 static void (*gtpin_instrumentation_options_fn)(gpu_instrumentation_t *);
 static void (*gtpin_produce_runtime_callstack_fn)(gpu_op_ccts_t *);
-static void (*process_block_instructions_fn)(cct_node_t *);
+static void (*gtpin_process_block_instructions_fn)(cct_node_t *);
+static uintptr_t (*gtpin_lookup_kernel_ip_fn)(const char *kernel_name);
 
 
 
@@ -122,30 +129,28 @@ static void init()
   Lmid_t scope = getenv("HPCRUN_GTPIN_VISIBLE") ? LM_ID_BASE : LM_ID_NEWLM;
   void *hpcrun_gtpinlib = dlmopen(scope, "libhpcrun_gtpin_cxx.so",
 				  RTLD_LOCAL | RTLD_LAZY);
-    if (hpcrun_gtpinlib == NULL)
-    {
-        EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
-        monitor_real_exit(-1);
-    }
+  if (hpcrun_gtpinlib == NULL) {
+    EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
+    monitor_real_exit(-1);
+  }
 
-    void *malloc_lib = dlopen("libtbbmalloc.so.2", RTLD_LAZY | RTLD_GLOBAL);
-    if (malloc_lib == NULL)
-    {
-        EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
-        monitor_real_exit(-1);
-    }
+  void *malloc_lib = dlopen("libtbbmalloc.so.2", RTLD_LAZY | RTLD_GLOBAL);
+  if (malloc_lib == NULL) {
+    EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
+    monitor_real_exit(-1);
+  }
 
-    void (*init_external_functions_fn)(external_functions_t *) = dlsym(hpcrun_gtpinlib, "init_external_functions");
-    if (init_external_functions_fn == NULL)
-    {
-        EEMSG("FATAL: hpcrun failure: unable to connect to HPCToolkit's gtpin support library: %s", dlerror());
-        monitor_real_exit(-1);
-    }
-    init_external_functions_fn(&external_functions);
+  void (*gtpin_hpcrun_api_set_fn)(gtpin_hpcrun_api_t *) = dlsym(hpcrun_gtpinlib, "gtpin_hpcrun_api_set");
+  if (gtpin_hpcrun_api_set_fn == NULL) {
+    EEMSG("FATAL: hpcrun failure: unable to connect to HPCToolkit's gtpin support library: %s", dlerror());
+    monitor_real_exit(-1);
+  }
+  gtpin_hpcrun_api_set_fn(&gtpin_hpcrun_api);
 
-    gtpin_instrumentation_options_fn = dlsym(hpcrun_gtpinlib, "gtpin_instrumentation_options");
-    gtpin_produce_runtime_callstack_fn = dlsym(hpcrun_gtpinlib, "gtpin_produce_runtime_callstack");
-    process_block_instructions_fn = dlsym(hpcrun_gtpinlib, "process_block_instructions");
+  gtpin_instrumentation_options_fn = dlsym(hpcrun_gtpinlib, "gtpin_instrumentation_options");
+  gtpin_produce_runtime_callstack_fn = dlsym(hpcrun_gtpinlib, "gtpin_produce_runtime_callstack");
+  gtpin_process_block_instructions_fn = dlsym(hpcrun_gtpinlib, "gtpin_process_block_instructions");
+  gtpin_lookup_kernel_ip_fn = dlsym(hpcrun_gtpinlib, "gtpin_lookup_kernel_ip");
 }
 
 
@@ -154,20 +159,45 @@ static void init()
 // interface operations
 //*****************************************************************************
 
-void gtpin_instrumentation_options(gpu_instrumentation_t *instrumentation)
+void
+gtpin_instrumentation_options
+(
+  gpu_instrumentation_t *instrumentation
+)
 {
-    pthread_once(&once_control, init);
-    gtpin_instrumentation_options_fn(instrumentation);
+  pthread_once(&once_control, init);
+  gtpin_instrumentation_options_fn(instrumentation);
 }
 
-void gtpin_produce_runtime_callstack(gpu_op_ccts_t *op_ccts)
+
+void
+gtpin_produce_runtime_callstack
+(
+  gpu_op_ccts_t *op_ccts
+)
 {
-    pthread_once(&once_control, init);
-    gtpin_produce_runtime_callstack_fn(op_ccts);
+  pthread_once(&once_control, init);
+  gtpin_produce_runtime_callstack_fn(op_ccts);
 }
 
-void process_block_instructions(cct_node_t *node)
+
+void
+gtpin_process_block_instructions
+(
+  cct_node_t *node
+)
 {
-    pthread_once(&once_control, init);
-    process_block_instructions_fn(node);
+  pthread_once(&once_control, init);
+  gtpin_process_block_instructions_fn(node);
+}
+
+
+uintptr_t
+gtpin_lookup_kernel_ip
+(
+  const char *kernel_name
+)
+{
+  pthread_once(&once_control, init);
+  return gtpin_lookup_kernel_ip_fn(kernel_name);
 }

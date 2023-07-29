@@ -252,6 +252,7 @@ Analysis::Raw::writeAsText_profiledb(const char* filenm, bool easygrep)
           switch(elem.kind) {
           case IDTUPLE_SUMMARY: std::cout << "SUMMARY"; break;
           case IDTUPLE_NODE: std::cout << "NODE"; break;
+          case IDTUPLE_RANK: std::cout << "RANK"; break;
           case IDTUPLE_THREAD: std::cout << "THREAD"; break;
           case IDTUPLE_GPUDEVICE: std::cout << "GPUDEVICE"; break;
           case IDTUPLE_GPUCONTEXT: std::cout << "GPUCONTEXT"; break;

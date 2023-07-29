@@ -81,10 +81,10 @@
 
 #include <lib/banal/Struct-Inline.hpp>
 
-#include <lib/banal/gpu/ReadCudaCFG.hpp>
+#include <lib/banal/gpu/GPUCFG_Cuda.hpp>
 
 #ifdef ENABLE_IGC
-#include <lib/banal/gpu/ReadIntelCFG.hpp>
+#include <lib/banal/gpu/GPUCFG_Intel.hpp>
 #endif // ENABLE_IGC
 
 #include <include/hpctoolkit-config.h>
@@ -318,12 +318,12 @@ main(int argc, char **argv)
     CodeObject *code_obj = NULL;
 
     if (cuda_file) { // don't run parseapi on cuda binary
-      parsable = readCudaCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
+      parsable = buildCudaGPUCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
     } else if (intel_file) { // don't run parseapi on intel binary
       #ifdef ENABLE_IGC
       // this thread count for performing backward slicing has been selected after some manual runs of hpcstruct
       int threads = 5;
-      parsable = readIntelCFG(search_path, elfFile, symtab, true, false, threads, &code_src, &code_obj);
+      parsable = buildIntelGPUCFG(search_path, elfFile, symtab, true, false, threads, &code_src, &code_obj);
       #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);

@@ -112,16 +112,16 @@
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
+#include "gpu/GPUCFG_Cuda.hpp"
+
 #ifdef USE_XED_FOR_GAPS
 extern "C" {
 #include <xed-interface.h>
 }
 #endif
 
-#include "gpu/ReadCudaCFG.hpp"
-
 #ifdef ENABLE_IGC
-#include "gpu/ReadIntelCFG.hpp"
+#include "gpu/GPUCFG_Intel.hpp"
 #endif // ENABLE_IGC
 
 #ifdef ENABLE_OPENMP
@@ -805,7 +805,7 @@ makeStructure(string filename,
     if (cuda_file) { // don't run parseapi on cuda binary
       cuda_arch = elfFile->getArch();
       cubin_size = elfFile->getLength();
-      parsable = readCudaCFG(search_path, elfFile, the_symtab,
+      parsable = buildCudaGPUCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
       has_calls = structOpts.compute_gpu_cfg;
     }
@@ -813,7 +813,7 @@ makeStructure(string filename,
       intel_gpu_arch = 1;
 #ifdef ENABLE_IGC
       bool compute_intel_gpu_cfg = true;
-      parsable = readIntelCFG(search_path, elfFile, the_symtab,
+      parsable = buildIntelGPUCFG(search_path, elfFile, the_symtab,
 			      compute_intel_gpu_cfg, false,
 			      structOpts.jobs, &code_src, &code_obj);
       has_calls = compute_intel_gpu_cfg;

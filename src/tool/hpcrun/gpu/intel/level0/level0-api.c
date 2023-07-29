@@ -75,7 +75,7 @@
 #include <hpcrun/gpu/gpu-kernel-table.h>
 
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
+#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
 #endif
 
 //******************************************************************************

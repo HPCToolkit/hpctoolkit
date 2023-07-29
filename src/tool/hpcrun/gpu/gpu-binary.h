@@ -1,7 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+
 // * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -42,67 +41,86 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//***************************************************************************
-
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
-
-//***************************************************************************
-// Dyninst includes
-//***************************************************************************
-
-#include <CFG.h>
+#ifndef gpu_binary_h
+#define gpu_binary_h
 
 
+//******************************************************************************
+// system include
+//******************************************************************************
 
-//***************************************************************************
-// HPCToolkit includes
-//***************************************************************************
-
-#include "GPUCFG.hpp"   // GPUParse
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 
 
-//***************************************************************************
-// begin namespaces
-//***************************************************************************
-
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
+//******************************************************************************
 // type declarations
-//***************************************************************************
+//******************************************************************************
 
-
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
+typedef enum {
+  gpu_binary_kind_malformed = 0,
+  gpu_binary_kind_unknown = 1,
+  gpu_binary_kind_empty = 2,
+  gpu_binary_kind_elf = 3,
+  gpu_binary_kind_intel_patch_token = 4
+} gpu_binary_kind_t;
 
 
 
-//***************************************************************************
-// end namespaces
-//***************************************************************************
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+gpu_binary_kind_t
+gpu_binary_kind
+(
+ const char *mem_ptr,
+ size_t mem_size
+);
+
+
+bool
+gpu_binary_store
+(
+  const char *file_name,
+  const void *binary,
+  size_t binary_size
+);
+
+void
+gpu_binary_path_generate
+(
+  const char *file_name,
+  char *path
+);
+
+
+// returns the loadmap id
+uint32_t
+gpu_binary_loadmap_insert
+(
+  const char *device_file,
+  bool mark_used
+);
+
+
+bool
+gpu_binary_save
+(
+ const char *mem_ptr,
+ size_t mem_size,
+ bool mark_used,
+ uint32_t *loadmap_module_id
+);
+
+#if defined(__cplusplus)
 }
-}
+#endif
 
 #endif

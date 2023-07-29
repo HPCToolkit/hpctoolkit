@@ -61,12 +61,21 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// Dyninst
+//***************************************************************************
+// Dyninst includes
+//***************************************************************************
+
 #include <Graph.h>                  // Graph
 #include <slicing.h>                // Slicer
 #include <Symtab.h>
 #include <CodeSource.h>
 #include <CodeObject.h>
+
+
+
+//***************************************************************************
+// Intel IGA
+//***************************************************************************
 
 #include <iga/kv.hpp>
 
@@ -79,27 +88,47 @@
 #include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>
 
-#include "DotCFG.hpp"
+#include "GPUCFG.hpp"
 #include "GPUCFGFactory.hpp"
 #include "GPUFunction.hpp"
 #include "GPUBlock.hpp"
 #include "GPUCodeSource.hpp"
-#include "ReadIntelCFG.hpp"
+#include "GPUCFG_Intel.hpp"
+
+
 
 //******************************************************************************
 // macros
 //******************************************************************************
 
-#define DEBUG 0
+#define DEBUG_CFG                  0
+#define DEBUG_INSTRUCTION_STAT     0
+#define DEBUG_INSTRUCTION_ANALYZER 0
 
 #define MAX_STR_SIZE 1024
 #define INTEL_GPU_DEBUG_SECTION_NAME "Intel(R) OpenCL Device Debug"
-#define INSTRUCTION_ANALYZER_DEBUG 0
 
 
 
 //******************************************************************************
-// local definitions
+// type declarations
+//******************************************************************************
+
+class IntelGPUInstDumper : public GPUParse::GPUInstDumper {
+public:
+  IntelGPUInstDumper(GPUParse::Function &_function, KernelView &_kv) :
+    GPUInstDumper(_function), kv(_kv) {}
+  void dump(GPUParse::Inst* inst);
+private:
+  KernelView &kv;
+};
+
+using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
+
+
+
+//******************************************************************************
+// local variables
 //******************************************************************************
 
 static int TRACK_LIMIT = 8;
@@ -107,11 +136,15 @@ static int TRACK_LIMIT = 8;
 
 
 //******************************************************************************
+// namespace imports
+//******************************************************************************
 
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
+
+
 
 //******************************************************************************
 // private functions
@@ -119,8 +152,7 @@ using namespace InstructionAPI;
 
 static std::string
 getOpString(iga::Op op) {
-  switch (op)
-  {
+  switch (op) {
     case iga::Op::ADD:      return "ADD";
     case iga::Op::ADDC:     return "ADDC";
     case iga::Op::AND:      return "AND";
@@ -200,7 +232,9 @@ getOpString(iga::Op op) {
   }
 }
 
-#if DEBUG
+
+#if DEBUG_INSTRUCTION_STAT
+
 static std::string getKindString(iga::Kind kind) {
   switch (kind)
   {
@@ -217,8 +251,7 @@ static std::string getKindString(iga::Kind kind) {
 
 static std::string getRegNameString(iga::RegName reg)
 {
-  switch (reg)
-  {
+  switch (reg) {
     case iga::RegName::GRF_R:       return  "GRF";
     case iga::RegName::ARF_NULL:    return  "AREG_NULL";
     case iga::RegName::ARF_A:       return  "AREG_A";
@@ -236,17 +269,14 @@ static std::string getRegNameString(iga::RegName reg)
     case iga::RegName::ARF_SP:      return  "AREG_SP";
     case iga::RegName::ARF_MME:     return  "AREG_MME";
     case iga::RegName::ARF_FC:      return  "AREG_FC";
-    default: //iga::RegName::INVALID
-                                    //assert(false && "illegal ARF");
-                                    return "REG_INVALID";
+    default:                        return  "REG_INVALID";
   }
 }
 
 
 static std::string getIGATypeString(iga::Type type)
 {
-    switch (type)
-    {
+    switch (type) {
     case iga::Type::UB:   return "Type_UB";
     case iga::Type::B:    return "Type_B";
     case iga::Type::UW:   return "Type_UW";
@@ -262,17 +292,14 @@ static std::string getIGATypeString(iga::Type type)
     case iga::Type::V:    return "Type_V";
     case iga::Type::VF:   return "Type_VF";
     case iga::Type::NF:   return "Type_NF";
-    default: //iga::Type::INVALID
-        //assert(false && "illegal type");
-        return "Type_INVALID";
+    default:              return "Type_INVALID";
     }
 }
 
 
 static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
 {
-    switch (predCtrl)
-    {
+    switch (predCtrl) {
       case iga::PredCtrl::SEQ:        return "PRED_DEFAULT";
       case iga::PredCtrl::ANY2H:      return "PRED_ANY2H";
       case iga::PredCtrl::ANY4H:      return "PRED_ANY4H";
@@ -286,11 +313,10 @@ static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
       case iga::PredCtrl::ALL32H:     return "PRED_ALL32H";
       case iga::PredCtrl::ANYV:       return "PRED_ANYV";
       case iga::PredCtrl::ALLV:       return "PRED_ALLV";
-      default:   //iga::PredCtrl::NONE;
-        //assert(false && "illegal predicate control");
-        return "PRED_NONE";
+      default:                        return "PRED_NONE";
     }
 }
+
 #endif
 
 
@@ -350,7 +376,6 @@ addCustomFunctionObject
 
   // After injecting symbol, we can parse inlining info
   symtab->parseTypesNow();
-  symtab->parseFunctionRanges();
 }
 
 
@@ -370,7 +395,7 @@ getIntelInstructionStat
   int execSize = (int)kv.getExecutionSize(offset); // returns iga::ExecSize
   int32_t noSrcReg = kv.getNumberOfSources(offset);
 
-#if DEBUG
+#if DEBUG_INSTRUCTION_STAT
   std::cout << "offset: " << offset << ". asm: " << inst_asm_text << std::endl;
   std::cout << "\n" "opcode:" << op << "\n";
   std::cout << "\n" "number of source registers: " << noSrcReg;
@@ -395,7 +420,7 @@ getIntelInstructionStat
       continue;
     }
 
-#if DEBUG
+#if DEBUG_INSTRUCTION_STAT
     iga::Kind srcRegKind = kv.getSrcRegKind(offset, i);
     std::cout << "\nSrcreg no: " << i << "\n  register: " << srcRegNo << ", subregister: " << srcSubRegNo
       << ", srcDataType: " << getIGATypeString(srcDataType)
@@ -449,7 +474,7 @@ getIntelInstructionStat
         base1 += (horzStride * elementSize);
       }
 
-#if DEBUG
+#if DEBUG_INSTRUCTION_STAT
       iga::Kind dstRegKind = kv.getDstRegKind(offset);
       std::cout << "\ndstRegNo: " << dstRegNo << ", subregister: " << dstSubRegNo
         << ", DataType: " << getIGATypeString(dstDataType)
@@ -489,8 +514,11 @@ getIntelInstructionStat
   // CE, ExecMask and DMask
   iga::PredCtrl pred = kv.getPredicate(offset);
   bool invPred = kv.isInversePredicate(offset);
-  // int32_t flagReg = kv.getFlagReg(offset);
-  // int32_t flagSubReg = kv.getFlagSubReg(offset);
+
+#if FLAGREG
+  int32_t flagReg = kv.getFlagReg(offset);
+  int32_t flagSubReg = kv.getFlagSubReg(offset);
+#endif
 
   GPUParse::InstructionStat::PredicateFlag predFlag;
   if (pred == iga::PredCtrl::NONE) {
@@ -501,9 +529,12 @@ getIntelInstructionStat
     predFlag = GPUParse::InstructionStat::PredicateFlag::PREDICATE_TRUE;
   }
 
-#if DEBUG
+#if DEBUG_INSTRUCTION_STAT
   std::cout << "\npred: " << getIGAPredCtrlString(pred) << ",invPred: " << invPred
-    << ", flag register: " << flagReg << ", flag subregister: " << flagSubReg;
+#if FLAGREG
+    << ", flag register: " << flagReg << ", flag subregister: " << flagSubReg
+#endif
+  << std::endl;
 #endif
 
   auto *inst_stat = new GPUParse::InstructionStat(op, offset, predFlag, dsts, srcs);
@@ -577,7 +608,7 @@ trackDependency
     auto addr = slice_node->addr();
     auto *slice_inst = inst_stat_map.at(addr);
 
-    if (INSTRUCTION_ANALYZER_DEBUG) {
+    if (DEBUG_INSTRUCTION_ANALYZER) {
       std::cout << "find inst_addr " << inst_addr << " <- addr: " << addr;
     }
 
@@ -596,7 +627,7 @@ trackDependency
       }
     }
 
-    if (INSTRUCTION_ANALYZER_DEBUG) {
+    if (DEBUG_INSTRUCTION_ANALYZER) {
       std::cout << " reg " << reg_id << std::endl;
     }
 
@@ -640,7 +671,6 @@ sliceIntelInstructions
 (
  const Dyninst::ParseAPI::CodeObject::funclist &func_set,
  std::vector<GPUParse::Function *> &functions,
- std::string function_name,
  int threads
 )
 {
@@ -688,7 +718,7 @@ sliceIntelInstructions
       auto inst_addr = inst_iter.first;
       auto *inst_stat = inst_stat_map.at(inst_addr);
 
-      if (INSTRUCTION_ANALYZER_DEBUG) {
+      if (DEBUG_INSTRUCTION_ANALYZER) {
         //std::cout << "try to find inst_addr " << inst_addr << std::endl;
       }
 
@@ -713,7 +743,6 @@ sliceIntelInstructions
 #endif
         Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
         g = s.backwardSlice(p);
-        //bool status = g->printDOT(function_name + ".dot");
         g->exitNodes(exit_begin, exit_end);
 
         for (; exit_begin != exit_end; ++exit_begin) {
@@ -785,24 +814,124 @@ createDefUseEdges
 }
 
 
-static void
-parseIntelCFG
+static uint32_t
+addrToOffset
 (
- char *text_section,
- int text_section_size,
+  Address function_start,
+  Address addr
+)
+{
+  return addr - function_start;
+}
+
+
+static uint32_t
+addrToOffset
+(
+  Address function_start,
+  int32_t addr
+)
+{
+  uint32_t function_start_lower_bits = function_start;
+  uint32_t addr_lower_bits = addr;
+  uint32_t offset = addr_lower_bits - function_start_lower_bits;
+
+  return offset;
+}
+
+
+static void
+getJumpTargetOffsets
+(
+  KernelView &kv,
+  int32_t offset,
+  Address function_start,
+  std::vector<uint32_t> &jump_target_offsets
+)
+{
+  int32_t targets[KV_MAX_TARGETS_PER_INSTRUCTION];
+  //----------------------------------------------------------------------
+  // Intel claims to be returning absolute addresses for jump target PCs.
+  // However, we have observed zeBinaries with function symbols
+  // that have 48 bit addresses. Thus, absolute addresses for jump targets
+  // in such functions won't fit into 32 bits!!! Nor is it appropriate to
+  // use SIGNED numbers for jump target absolute addresses.
+  //
+  // Note: despite what Intel's documentation says, the targets are 32-bit
+  // unsigned values
+  //----------------------------------------------------------------------
+  size_t count = kv.getInstTargets(offset, targets);
+
+  // convert 32-bit absolute unsigned addresses into relative offsets from
+  // function_start for convenience
+  for (unsigned int i = 0; i < count; i++) {
+    jump_target_offsets.push_back(targets[i]);
+  }
+}
+
+
+static void
+ensureBlockIsTarget
+(
+  std::vector<GPUParse::Target*> &targets,
+  GPUParse::Block *block,
+  GPUParse::Inst *inst,
+  TargetType type
+)
+{
+  bool blockIsTarget = false;
+  for (auto *target : targets) {
+    if (target->block == block) {
+      blockIsTarget = true;
+      break;
+    }
+  }
+
+  if (!blockIsTarget) {
+    targets.push_back(new GPUParse::Target(inst, block, type));
+  }
+}
+
+
+void
+IntelGPUInstDumper::dump(GPUParse::Inst* inst)
+{
+  auto inst_offset = addrToOffset(function.address, inst->offset);
+  size_t n = kv.getInstSyntax(inst_offset, NULL, 0);
+  assert(n < MAX_STR_SIZE);
+
+  char inst_str[MAX_STR_SIZE];
+  inst_str[n] = '\0';
+  auto fmt_opts = IGA_FORMATTING_OPTS_DEFAULT; // see iga.h
+  kv.getInstSyntax(inst_offset, inst_str, n, fmt_opts);
+
+  std::cout << "      " << std::hex << inst->offset << std::dec << ": " << inst_str << std::endl;
+}
+
+
+static void
+recoverIntelCFG
+(
+ char *fn_start,
+ size_t fn_length,
  GPUParse::Function &function,
  bool du_graph_wanted
 )
 {
-  KernelView kv(IGA_GEN9, text_section, text_section_size);
+  KernelView kv(IGA_XE_HPC, fn_start, fn_length);
   std::map<int, GPUParse::Block *> block_offset_map;
 
-  int offset = 0;
-  int block_id = 0;
+  Address offset = 0;
+  Address endOffset = fn_length;
 
-  // Construct basic blocks
-  while (offset < text_section_size) {
-    auto *block = new GPUParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id));
+  unsigned long block_id = 0;
+
+  // construct basic blocks
+  while (offset < endOffset) {
+    Address position = offset + function.address;
+    auto *block =
+      new GPUParse::Block(block_id, position,
+        function.name + "_" + std::to_string(block_id));
     block_id++;
 
     function.blocks.push_back(block);
@@ -812,13 +941,13 @@ parseIntelCFG
     GPUParse::Inst *inst;
     if (du_graph_wanted) {
       auto *inst_stat = getIntelInstructionStat(kv, offset);
-      inst = new GPUParse::IntelInst(offset, size, inst_stat);
+      inst = new GPUParse::IntelInst(position, size, inst_stat);
     } else {
-      inst = new GPUParse::IntelInst(offset, size);
+      inst = new GPUParse::IntelInst(position, size);
     }
     block->insts.push_back(std::move(inst));
 
-    while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
+    while (!kv.isInstTarget(offset + size) && (offset + size < fn_length)) {
       offset += size;
       size = kv.getInstSize(offset);
       if (size == 0) {
@@ -826,104 +955,153 @@ parseIntelCFG
         break;
       }
 
-      char inst_asm_text[MAX_STR_SIZE] = { 0 };
-      size_t length;
-      int32_t size = kv.getInstSize(offset);
-      if (size == 0) {
-        return;
-      }
-
-      length = kv.getInstSyntax(offset, inst_asm_text, MAX_STR_SIZE);
-      assert(length > 0);
       auto *inst_stat = getIntelInstructionStat(kv, offset);
-      inst = new GPUParse::IntelInst(offset, size, inst_stat);
+      position = offset + function.address;
+      inst = new GPUParse::IntelInst(position, size, inst_stat);
       block->insts.push_back(std::move(inst));
     }
 
-    if (kv.getOpcode(offset) == iga::Op::CALL || kv.getOpcode(offset) == iga::Op::CALLA) {
+    auto opcode = kv.getOpcode(offset);
+    if (opcode == iga::Op::CALL ||  opcode == iga::Op::CALLA) {
       inst->is_call = true;
     }
+
     offset += size;
   }
 
-  using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
-
-  // Construct targets
-  std::array<int, KV_MAX_TARGETS_PER_INSTRUCTION + 1> jump_targets;
+  // construct targets
   for (size_t i = 0; i < function.blocks.size(); ++i) {
     auto *block = function.blocks[i];
     auto *inst = block->insts.back();
-    size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
 
-    if (i != function.blocks.size() - 1) {
-      // Add a fall through edge
-      // The last block and the end of thread (EOT) block do not have a fall through
-      int next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
+    auto inst_offset = addrToOffset(function.address, inst->offset);
 
-      bool eot_inst = kv.getOpcodeGroup(inst->offset) == KV_OPGROUP_SEND_EOT;
-      bool while_inst = kv.getOpcodeGroup(inst->offset) == KV_OPGROUP_WHILE;
-      bool pred_inst = kv.getPredicate(inst->offset) != iga::PredCtrl::NONE;
-      bool join_inst = kv.getOpcode(inst->offset) == iga::Op::JOIN;
-      if ((pred_inst || while_inst || jump_targets_count == 0) && !eot_inst) {
-        jump_targets[jump_targets_count] = next_block_start_offset;
-        jump_targets_count += 1;
-      } else if (join_inst) {
-        // Join is not a branch
-        jump_targets[jump_targets_count - 1] = next_block_start_offset;
+    // obtain offsets of jump targets, if any
+    std::vector<uint32_t> jump_target_offsets;
+    getJumpTargetOffsets(kv, inst_offset, function.address, jump_target_offsets);
+
+    auto opCodeGroup = kv.getOpcodeGroup(inst_offset);
+    bool eot_inst = opCodeGroup == KV_OPGROUP_SEND_EOT;
+    bool pred_inst = kv.getPredicate(inst_offset) != iga::PredCtrl::NONE;
+
+    // consider adding a fall through edge unless this is an end of thread (EOT)
+    // instruction that is not predicated
+    if (!eot_inst || pred_inst) {
+      if (i != function.blocks.size() - 1) {
+        // Add a fall through edge
+        // The last block and the end of thread (EOT) block do not have a fall through
+        int next_block_offset =
+          addrToOffset(function.address, function.blocks[i + 1]->insts.front()->offset);
+
+        bool while_inst = opCodeGroup == KV_OPGROUP_WHILE;
+        bool join_inst = kv.getOpcode(inst_offset) == iga::Op::JOIN;
+        if ((pred_inst || while_inst || jump_target_offsets.size() == 0) || join_inst) {
+          jump_target_offsets.push_back(next_block_offset);
+        }
       }
     }
 
-    for (size_t j = 0; j < jump_targets_count; j++) {
-      auto *target_block = block_offset_map.at(jump_targets[j]);
+    for (size_t j = 0; j < jump_target_offsets.size(); j++) {
+      auto *target_block = block_offset_map.at(jump_target_offsets[j]);
 
       TargetType type = TargetType::COND_TAKEN;
       if (inst->is_call) {
-        // XXX(Keren): since we parse each instruction individually,
-        // we only see CALL_FT edges within a function
+        // call fall through edge to next instruction
         type = TargetType::CALL_FT;
       } else if (target_block->insts.front()->offset == inst->offset + inst->size) {
-        // Fallthrough
+        // fall through edge to target_block, which immediately follows instruction inst
         type = TargetType::DIRECT;
       }
 
-      // Jump
-      bool added = false;
-      for (auto *target : block->targets) {
-        if (target->block == target_block) {
-          added = true;
-        }
-      }
-      if (!added) {
-        block->targets.push_back(new GPUParse::Target(inst, target_block, type));
-      }
+      ensureBlockIsTarget(block->targets, target_block, inst, type);
     }
   }
 
-  if (DEBUG) {
-    // Instruction buffer
-    char inst_str[MAX_STR_SIZE];
+  if (DEBUG_CFG) {
+    IntelGPUInstDumper intelGPUInstDumper(function, kv);
+    dumpFunction(function, intelGPUInstDumper);
+  }
+}
 
-    for (auto *block : function.blocks) {
-      std::cout << std::hex;
-      std::cout << block->name << ": [" << block->insts.front()->offset << ", " << block->insts.back()->offset << "]" << std::endl;
 
-      for (auto *inst : block->insts) {
-        size_t n = kv.getInstSyntax(inst->offset, NULL, 0);
-        assert(n < MAX_STR_SIZE);
+static void
+parseGPUFunction
+(
+ std::vector<GPUParse::Function *> &functions,
+ char *fn_start,
+ size_t fn_length,
+ std::string &fn_name,
+ Offset fn_address,
+ bool du_graph_wanted
+)
+{
+  if (fn_length > 0) {
+    GPUParse::Function *function = new GPUParse::Function(0, fn_name.c_str(), fn_address);
+    recoverIntelCFG(fn_start, fn_length, *function, du_graph_wanted);
+    functions.push_back(function);
+  }
+}
 
-        inst_str[n] = '\0';
-        auto fmt_opts = IGA_FORMATTING_OPTS_DEFAULT; // see iga.h
-        kv.getInstSyntax(inst->offset, inst_str, n, fmt_opts);
 
-        std::cout << std::hex << inst->offset << std::dec << inst_str << std::endl;
-      }
+static void
+exportCfgIntoDyninst
+(
+  std::vector<GPUParse::Function *> &functions,
+  Dyninst::SymtabAPI::Symtab *the_symtab,
+  Dyninst::ParseAPI::CodeSource **code_src,
+  Dyninst::ParseAPI::CodeObject **code_obj
+)
+{
+  CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+  *code_src = new GPUCodeSource(functions, the_symtab);
+  *code_obj = new CodeObject(*code_src, cfg_fact);
+}
 
-      for (auto *target : block->targets) {
-        std::cout << "\t" << block->name << "->" << target->block->name << std::endl;
-      }
-      std::cout << std::dec;
+
+static void
+recoverCfgPatchTokenBinary
+(
+  const std::string &search_path,
+  ElfFile *elfFile,
+  bool du_graph_wanted,
+  std::string &fn_name,
+  Dyninst::SymtabAPI::Symtab *the_symtab,
+  Dyninst::ParseAPI::CodeSource **code_src,
+  Dyninst::ParseAPI::CodeObject **code_obj,
+  std::vector<GPUParse::Function *> &functions
+)
+{
+  Address fn_address = 0;
+  char *fn_text = NULL;
+  auto fn_size = elfFile->getTextSection(&fn_text);
+  parseGPUFunction(functions, fn_text, fn_size, fn_name, fn_address, du_graph_wanted);
+}
+
+
+static void
+recoverCfgZeBinary
+(
+  const std::string &search_path,
+  ElfFile *elfFile,
+  bool du_graph_wanted,
+  Dyninst::SymtabAPI::Symtab *the_symtab,
+  Dyninst::ParseAPI::CodeSource **code_src,
+  Dyninst::ParseAPI::CodeObject **code_obj,
+  std::vector<GPUParse::Function *> &functions
+)
+{
+  std::vector<Symbol *> symbols;
+  the_symtab->getAllSymbolsByType(symbols, Symbol::ST_FUNCTION);
+  for (auto &symbol : symbols) {
+    Region *region = symbol->getRegion();
+    char *fn_text = ((char *) region->getPtrToRawData()) +
+      (symbol->getOffset() - region->getMemOffset());;
+    auto fn_size = symbol->getSize();
+    auto fn_name = symbol->getTypedName();
+    auto fn_address = symbol->getOffset();
+    if (fn_name != "_entry") {
+      parseGPUFunction(functions, fn_text, fn_size, fn_name, fn_address, du_graph_wanted);
     }
-    std::cout << std::dec;
   }
 }
 
@@ -933,7 +1111,7 @@ parseIntelCFG
 //******************************************************************************
 
 bool
-readIntelCFG
+buildIntelGPUCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
@@ -945,50 +1123,53 @@ readIntelCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
-  // An Intel GPU binary for a kernel does not contain a function symbol for the kernel
-  // in its symbol table. Without a function symbol in the symbol table, Dyninst will not
-  // associate line map entries with addresses in the kernel. To cope with this defect of
-  // binaries for Intel GPU kernels, we add a function symbol for the kernel to its Dyninst
-  // symbol table.
-  auto function_name = elfFile->getGPUKernelName();
-  addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
+  Region *reg = NULL;
+  std::vector<GPUParse::Function *> functions;
 
-  if (cfg_wanted) {
-    char *text_section = NULL;
-    auto text_section_size = elfFile->getTextSection(&text_section);
-    if (text_section_size == 0) {
-      *code_src = new SymtabCodeSource(the_symtab);
-      *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
-
-      return false;
+  bool isZeBinary = the_symtab->findRegion(reg, ".ze_info");
+  if (isZeBinary) {
+    if (cfg_wanted) {
+      recoverCfgZeBinary(search_path, elfFile, du_graph_wanted, the_symtab,
+                         code_src, code_obj, functions);
     }
+  } else {
+    // An Intel GPU binary for a kernel does not contain a function symbol for the kernel
+    // in its symbol table. Without a function symbol in the symbol table, Dyninst will not
+    // associate line map entries with addresses in the kernel. To cope with this defect of
+    // binaries for Intel GPU kernels, we add a function symbol for the kernel to its Dyninst
+    // symbol table.
+    auto fn_name = elfFile->getGPUKernelName();
+    addCustomFunctionObject(fn_name, the_symtab); //adds a dummy function object
 
-    GPUParse::Function function(0, function_name);
-    parseIntelCFG(text_section, text_section_size, function, du_graph_wanted);
-    std::vector<GPUParse::Function *> functions = {&function};
+    if (cfg_wanted) {
+      recoverCfgPatchTokenBinary(search_path, elfFile, du_graph_wanted, fn_name,
+                                 the_symtab, code_src, code_obj, functions);
+    }
+  }
 
-    CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-    *code_src = new GPUCodeSource(functions, the_symtab);
-    *code_obj = new CodeObject(*code_src, cfg_fact);
-    (*code_obj)->parse();
+  bool builtCFG = functions.size() > 0;
 
+  if (builtCFG) {
+    exportCfgIntoDyninst(functions, the_symtab, code_src, code_obj);
     if (du_graph_wanted) {
       std::string elf_filePath = elfFile->getFileName();
       const char *delimiter = ".gpubin";
       size_t delim_loc = elf_filePath.find(delimiter);
       std::string du_filePath = elf_filePath.substr(0, delim_loc + 7);
       du_filePath += ".du";
-      sliceIntelInstructions((*code_obj)->funcs(), functions, function_name, jobs);
+      sliceIntelInstructions((*code_obj)->funcs(), functions, jobs);
       createDefUseEdges(functions, du_filePath);
     }
-
-    return true;
+  } else {
+    *code_src = new SymtabCodeSource(the_symtab);
+    *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
   }
 
-  *code_src = new SymtabCodeSource(the_symtab);
-  *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
+  // parse function ranges eagerly here because doing it lazily
+  // causes a race on Dyninst::Symtab::func_lookup
+  the_symtab->parseFunctionRanges();
 
-  return false;
+  return builtCFG;
 }
 
 

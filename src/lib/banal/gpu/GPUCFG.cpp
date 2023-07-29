@@ -42,67 +42,101 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-//***************************************************************************
-
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
-
-//***************************************************************************
-// Dyninst includes
-//***************************************************************************
-
-#include <CFG.h>
+#include "GPUCFG.hpp"
 
 
+//******************************************************************************
+// namespace imports
+//******************************************************************************
 
-//***************************************************************************
-// HPCToolkit includes
-//***************************************************************************
-
-#include "GPUCFG.hpp"   // GPUParse
+using namespace GPUParse;
 
 
 
 //***************************************************************************
-// begin namespaces
+// private operations
 //***************************************************************************
 
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
-
-
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
-
-
-
-//***************************************************************************
-// end namespaces
-//***************************************************************************
-
-}
+static void
+dumpBlockInstructions(
+  std::vector<GPUParse::Inst*> &insts,
+  GPUInstDumper &idump
+)
+{
+  if (insts.size() > 0) {
+    std::cout << "    instructions:\n";
+    std::cout << std::hex;
+    for (auto *inst : insts) {
+      idump.dump(inst);
+    }
+    std::cout << std::dec;
+  }
 }
 
-#endif
+
+static void
+dumpBlockTargets
+(
+ std::vector<GPUParse::Target*> &targets
+)
+{
+  std::cout << "    targets: {";
+  if (targets.size() > 0) {
+    const char *separator = "";
+    std::cout << std::hex;
+    for (auto *target : targets) {
+      std::cout << separator << target->block->startAddress();
+      separator = ", ";
+    }
+    std::cout << std::dec;
+  }
+  std::cout << "}" << std::endl;
+}
+
+
+static void
+dumpBlock(
+ GPUParse::Block *block,
+ GPUInstDumper &idump
+)
+{
+  std::cout << "\n  block [" << std::hex
+            << block->startAddress() << ", "
+            << block->endAddress()
+            << std::dec << ")"
+            << std::endl;
+  dumpBlockInstructions(block->insts, idump);
+  dumpBlockTargets(block->targets);
+}
+
+
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
+void GPUInstDumper::dump(GPUParse::Inst* inst)
+{
+  // force vtable generation for this virtual function
+}
+
+
+void
+GPUParse::dumpFunction
+(
+  GPUParse::Function &function,
+  GPUInstDumper &idump
+)
+{
+  std::cout << "-----------------------------------------------------------------\n"
+            << "Function " << function.name << "\n"
+            << "-----------------------------------------------------------------\n";
+  for (auto *block : function.blocks) {
+    dumpBlock(block, idump);
+  }
+  std::cout << "\n\n";
+}

@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*- // technically C99
-
 // * BeginRiceCopyright *****************************************************
 //
 // --------------------------------------------------------------------------
@@ -41,35 +39,94 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef level0_binary_h
-#define level0_binary_h
 
-//*****************************************************************************
+//***************************************************************************
+//
+// File: symbolVector.h
+//
+// Purpose:
+//   type to represent symbol names and values in a binary
+//
+//***************************************************************************
+
+//******************************************************************************
+// global includes
+//******************************************************************************
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+
+
+//******************************************************************************
 // local includes
-//*****************************************************************************
+//******************************************************************************
 
-#include "level0-api.h"
+#include "symbolVector.h"
+
+
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
+SymbolVector *
+symbolVectorNew
+(
+  int nsymbols
+)
+{
+  SymbolVector *v = (SymbolVector *) malloc(sizeof(SymbolVector));
+  v->nsymbols = 0;
+  v->symbolValue = (unsigned long *) calloc(nsymbols, sizeof(unsigned long));
+  v->symbolName = (const char **) calloc(nsymbols, sizeof(const char *));
+  return v;
+}
+
+
 void
-level0_binary_process
+symbolVectorAppend
 (
-  ze_module_handle_t module
-);
+  SymbolVector *v,
+  const char *symbolName,
+  unsigned long symbolValue
+)
+{
+  unsigned int i = v->nsymbols;
 
-char*
-level0_module_handle_map_lookup
-(
-  ze_module_handle_t module
-);
+  v->symbolValue[i] = symbolValue;
+  v->symbolName[i] = strdup(symbolName);
+
+  v->nsymbols++;
+}
+
 
 void
-level0_module_handle_map_delete
+symbolVectorFree
 (
-  ze_module_handle_t module
-);
+  SymbolVector *v
+)
+{
+  for (int i=0; i < v->nsymbols; i++) {
+    free(v->symbolName[i]);
+  }
+  free(v->symbolName);
+  free(v->symbolValue);
+  free(v);
+}
 
-#endif
+
+void
+symbolVectorPrint
+(
+  SymbolVector *v,
+  const char *kind
+)
+{
+  fprintf(stderr, "%s\n", kind);
+  for (int i=0; i < v->nsymbols; i++) {
+    fprintf(stderr, "  0x%lx %s\n", v->symbolValue[i], v->symbolName[i]);
+  }
+  fprintf(stderr, "\n");
+}

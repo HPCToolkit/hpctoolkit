@@ -1,8 +1,5 @@
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,65 +41,63 @@
 
 
 //***************************************************************************
-
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
-
-//***************************************************************************
-// Dyninst includes
-//***************************************************************************
-
-#include <CFG.h>
-
-
-
-//***************************************************************************
-// HPCToolkit includes
+//
+// File: symbol-vector.h
+//
+// Purpose:
+//   type to represent symbol names and values in a binary
+//
 //***************************************************************************
 
-#include "GPUCFG.hpp"   // GPUParse
+#ifndef symbolVector_h
+#define symbolVector_h
+
+//******************************************************************************
+// type definitions
+//******************************************************************************
+
+typedef struct SymbolVector {
+  int nsymbols;
+  unsigned long *symbolValue;
+  char **symbolName;
+} SymbolVector;
 
 
 
-//***************************************************************************
-// begin namespaces
-//***************************************************************************
+//******************************************************************************
+// interface functions
+//******************************************************************************
 
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
+SymbolVector *
+symbolVectorNew
+(
+  int nsymbols
+);
 
 
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
+void
+symbolVectorAppend
+(
+  SymbolVector *v,
+  const char *symbolName,
+  unsigned long symbolValue
+);
 
 
+void
+symbolVectorFree
+(
+  SymbolVector *v
+);
 
-//***************************************************************************
-// end namespaces
-//***************************************************************************
 
-}
-}
+void
+symbolVectorPrint
+(
+  SymbolVector *symbols,
+  const char *kind
+);
+
+
 
 #endif

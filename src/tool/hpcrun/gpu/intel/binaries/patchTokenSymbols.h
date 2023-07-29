@@ -1,8 +1,5 @@
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,65 +41,37 @@
 
 
 //***************************************************************************
-
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
-
-//***************************************************************************
-// Dyninst includes
-//***************************************************************************
-
-#include <CFG.h>
-
-
-
-//***************************************************************************
-// HPCToolkit includes
+//
+// File: patchTokenSymbols.h
+//
+// Purpose:
+//   interface to determine cubin symbol relocation values that will be used
+//   by hpcstruct
+//
 //***************************************************************************
 
-#include "GPUCFG.hpp"   // GPUParse
+#ifndef patchTokenSymbols_h
+#define patchTokenSymbols_h
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include "symbolVector.h"
 
 
 
-//***************************************************************************
-// begin namespaces
-//***************************************************************************
+//******************************************************************************
+// interface functions
+//******************************************************************************
 
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
+SymbolVector *
+collectPatchTokenSymbols
+(
+ const char *patch_token_ptr,
+ size_t patch_token_len
+);
 
 
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
-
-
-
-//***************************************************************************
-// end namespaces
-//***************************************************************************
-
-}
-}
 
 #endif

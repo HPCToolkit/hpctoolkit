@@ -151,8 +151,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 // local includes
 //***************************************************************************
 
-#include <include/gpu-binary.h>
-
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/main.h> // hpcrun_force_dlopen
@@ -160,6 +158,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
+#include <hpcrun/gpu/gpu-binary.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id.h>

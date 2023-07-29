@@ -1,7 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+
 // * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -42,67 +41,43 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef level0_binary_h
+#define level0_binary_h
 
-//***************************************************************************
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
+#include <hpcrun/gpu/gpu-binary.h>
 
-//***************************************************************************
-// Dyninst includes
-//***************************************************************************
-
-#include <CFG.h>
-
-
-
-//***************************************************************************
-// HPCToolkit includes
-//***************************************************************************
-
-#include "GPUCFG.hpp"   // GPUParse
+#include "level0-api.h"
 
 
 
-//***************************************************************************
-// begin namespaces
-//***************************************************************************
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
+void
+level0_binary_process
+(
+  ze_module_handle_t module
+);
 
 
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
+void
+level0_module_handle_map_lookup
+(
+  ze_module_handle_t module,
+  const char **hash_string,
+  gpu_binary_kind_t *bkind
+);
 
 
-
-//***************************************************************************
-// end namespaces
-//***************************************************************************
-
-}
-}
+void
+level0_module_handle_map_delete
+(
+  ze_module_handle_t module
+);
 
 #endif

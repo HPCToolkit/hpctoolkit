@@ -61,30 +61,59 @@
 // local includes
 //******************************************************************************
 
-#include <include/gpu-binary.h>
+
 #include <hpcrun/files.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/loadmap.h>
 #include <lib/prof-lean/crypto-hash.h>
+#include <lib/prof-lean/gpu-binary-naming.h>
 #include <lib/prof-lean/spinlock.h>
 
-#ifdef ENABLE_IGC
-#include <igc/ocl_igc_shared/executable_format/patch_list.h>
-#endif
-
-
+#include "gpu-binary.h"
 
 //******************************************************************************
 // static data
 //******************************************************************************
 
-static spinlock_t binary_store_lock = SPINLOCK_UNLOCKED;
 static const char elf_magic_string[] = ELFMAG;
 static const uint32_t *elf_magic = (uint32_t *) elf_magic_string;
+
+// magic number for an Intel 'Patch Token' binary. this constant comes from
+// Intel's igc/ocl_igc_shared/executable_format/patch_list.h, which can't be
+// imported here because the file is C++. good grief.
+static const uint32_t MAGIC_INTEL_PATCH_TOKEN = 0x494E5443; // 'I', 'N', 'T', 'C'
+
+static spinlock_t binary_store_lock = SPINLOCK_UNLOCKED;
+
+
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+gpu_binary_kind_t
+gpu_binary_kind
+(
+ const char *mem_ptr,
+ size_t mem_size
+)
+{
+  if (mem_size == 0) return gpu_binary_kind_empty;
+
+  if (mem_ptr != 0 && mem_size > sizeof(uint32_t)) {
+    uint32_t *magic = (uint32_t *) mem_ptr;
+
+    // Is this an Intel 'Patch Token' binary?
+    if (*magic == MAGIC_INTEL_PATCH_TOKEN) return gpu_binary_kind_intel_patch_token;
+
+    // Is this an ELF binary?
+    if (*magic == *elf_magic) return gpu_binary_kind_elf;
+
+    return gpu_binary_kind_unknown;
+  }
+  return gpu_binary_kind_malformed;
+}
+
 
 bool
 gpu_binary_validate_magic
@@ -93,21 +122,7 @@ gpu_binary_validate_magic
  size_t mem_size
 )
 {
-  if (mem_ptr == 0) return false;
-
-  if (mem_size < sizeof(uint32_t)) return false;
-
-  uint32_t *magic = (uint32_t *) mem_ptr;
-
-#ifdef ENABLE_IGC
-  // Is this an Intel 'Patch Token' binary?
-  if (*magic == MAGIC_CL) return true;
-#endif
-
-  // Is this an ELF binary?
-  if (*magic == *elf_magic) return true;
-
-  return false;
+  return gpu_binary_kind(mem_ptr, mem_size) != gpu_binary_kind_unknown;
 }
 
 

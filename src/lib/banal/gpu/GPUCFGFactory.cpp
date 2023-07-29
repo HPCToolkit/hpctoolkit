@@ -1,11 +1,86 @@
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2023, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+
+//***************************************************************************
+
+//***************************************************************************
+// system includes
+//***************************************************************************
+#include <iostream>
+
+
+
+//***************************************************************************
+// local includes
+//***************************************************************************
+
 #include "GPUCFGFactory.hpp"
 #include "GPUFunction.hpp"
-#include <iostream>
+
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
 
 #define DEBUG_GPU_CFGFACTORY 0
 
+
+
+//***************************************************************************
+// begin namespaces
+//***************************************************************************
+
 namespace Dyninst {
 namespace ParseAPI {
+
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
 
 Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
   std::string name, CodeObject * obj, CodeRegion * region,
@@ -17,8 +92,8 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
 
       bool first_entry = true;
       if (DEBUG_GPU_CFGFACTORY) {
-        std::cout << "Function: " << function->name << " addr: 0x" <<
-          std::hex << addr << std::dec << std::endl;
+        std::cout << "******\nFunction: " << function->name
+		  << " addr: 0x" << std::hex << addr << std::dec << std::endl;
       }
       for (auto *block : function->blocks) {
         auto arch = block->insts.front()->arch;
@@ -29,9 +104,10 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
 
         {
           tbb::concurrent_hash_map<size_t, GPUBlock *>::accessor a;
-          if (_block_filter.insert(a, std::make_pair(block->id, nullptr))) {
+          if (_block_filter.insert(a, std::make_pair(block->address, nullptr))) {
             if (DEBUG_GPU_CFGFACTORY) {
-              std::cout << "New block: " << block->name << " id: " << block->id << std::endl;
+              std::cout << "New block: " << block->name << " id: " << block->id
+		        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
             }
             std::vector<std::pair<Offset, size_t>> inst_offsets;
             for (auto *inst : block->insts) {
@@ -45,7 +121,8 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             blocks_.add(ret_block);
           } else {
             if (DEBUG_GPU_CFGFACTORY) {
-              std::cout << "Old block: " << block->name << " id: " << block->id << std::endl;
+              std::cout << "Old block: " << block->name << " id: " << block->id
+		        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
             }
             ret_block = a->second;
           }
@@ -63,9 +140,10 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           GPUBlock *ret_target_block = NULL;
           {
             tbb::concurrent_hash_map<size_t, GPUBlock *>::accessor a;
-            if (_block_filter.insert(a, std::make_pair(target->block->id, nullptr))) {
+            if (_block_filter.insert(a, std::make_pair(target->block->address, nullptr))) {
               if (DEBUG_GPU_CFGFACTORY) {
-                std::cout << "New block: " << target->block->name << " id: " << target->block->id << std::endl;
+                std::cout << "New block: " << target->block->name << " id: " << target->block->id
+		          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
               }
               std::vector<std::pair<Offset, size_t>> inst_offsets;
               for (auto *inst : target->block->insts) {
@@ -79,7 +157,8 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
               blocks_.add(ret_target_block);
             } else {
               if (DEBUG_GPU_CFGFACTORY) {
-                std::cout << "Old block: " << target->block->name << " id: " << target->block->id << std::endl;
+                std::cout << "Old block: " << target->block->name << " id: " << target->block->id
+		          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
               }
               ret_target_block = a->second;
             }
@@ -88,7 +167,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           Edge *ret_edge = new Edge(ret_block, ret_target_block, target->type);
           ret_edge->ignore_index();
           if (DEBUG_GPU_CFGFACTORY) {
-            std::cout << "Edge: "<< " -> " << target->block->name << std::endl;
+            std::cout << "Edge: "<< block->name << " -> " << target->block->name << std::endl;
           }
           ret_edge->install();
           edges_.add(ret_edge);
@@ -104,5 +183,10 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
   // add edges
 }
 
+
+
+//***************************************************************************
+// end namespaces
+//***************************************************************************
 }
 }

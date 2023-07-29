@@ -66,16 +66,16 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
+#include <hpcrun/gpu/gpu-binary.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
-#include "include/gpu-binary.h"
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
+#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
 #endif
 #include <hpcrun/gpu/opencl/intel/papi/papi-metric-collector.h>
 #include <hpcrun/messages/messages.h>

@@ -45,14 +45,21 @@
 
 //***************************************************************************
 
-#ifndef BANAL_GPU_GPU_BLOCK_H
-#define BANAL_GPU_GPU_BLOCK_H
+#ifndef BANAL_GPU_READ_CUDA_CFG_HPP
+#define BANAL_GPU_READ_CUDA_CFG_HPP
+
+//***************************************************************************
+// system includes
+//***************************************************************************
+
+#include <string>
 
 //***************************************************************************
 // Dyninst includes
 //***************************************************************************
 
-#include <CFG.h>
+#include <CodeSource.h>
+#include <CodeObject.h>
 
 
 
@@ -60,49 +67,24 @@
 // HPCToolkit includes
 //***************************************************************************
 
-#include "GPUCFG.hpp"   // GPUParse
+#include <lib/binutils/VMAInterval.hpp>
+#include <lib/binutils/ElfHelper.hpp>
 
 
 
 //***************************************************************************
-// begin namespaces
+// interface operations
 //***************************************************************************
 
-namespace Dyninst {
-namespace ParseAPI {
-
-
-
-//***************************************************************************
-// type declarations
-//***************************************************************************
-
-
-class PARSER_EXPORT GPUBlock : public Block {
-public:
-  GPUBlock(CodeObject * o, CodeRegion * r,
-    Address start, Address end, Address last,
-    std::vector<GPUParse::Inst *> insts, Architecture arch);
-
-  virtual ~GPUBlock() {}
-
-  virtual void getInsns(Insns &insns) const;
-
-  virtual void enable_latency_blame();
-
-private:
-  std::vector<GPUParse::Inst *> _insts;
-  Architecture _arch;
-  bool latency_blame_enabled = false;
-};
-
-
-
-//***************************************************************************
-// end namespaces
-//***************************************************************************
-
-}
-}
+bool
+buildCudaGPUCFG
+(
+ const std::string &search_path,
+ ElfFile *elfFile,
+ Dyninst::SymtabAPI::Symtab *the_symtab,
+ bool cfg_wanted,
+ Dyninst::ParseAPI::CodeSource **code_src,
+ Dyninst::ParseAPI::CodeObject **code_obj
+);
 
 #endif

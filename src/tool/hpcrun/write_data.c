@@ -81,8 +81,8 @@
 #include <lib/support-lean/OSUtil.h>
 
 #ifdef ENABLE_GTPIN
-#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
-#include <hpcrun/gpu/level0/level0-api.h>
+#include <hpcrun/gpu/intel/gtpin/gtpin-instrumentation.h>
+#include <hpcrun/gpu/intel/level0/level0-api.h>
 #endif
 
 //*****************************************************************************
@@ -479,7 +479,7 @@ int hpcrun_write_profile_data(core_profile_trace_data_t *cptd)
 #ifdef ENABLE_GTPIN
   if (level0_gtpin_enabled()) {
     for (epoch_t *epoch = cptd->epoch; epoch; epoch = epoch->next) {
-      process_block_instructions(epoch->csdata.top);
+      gtpin_process_block_instructions(epoch->csdata.top);
     }
   }
 #endif

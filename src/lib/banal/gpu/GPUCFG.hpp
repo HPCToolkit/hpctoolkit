@@ -1,5 +1,56 @@
-#ifndef BANAL_GPU_DOT_CFG_H
-#define BANAL_GPU_DOT_CFG_H
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2023, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+
+//***************************************************************************
+
+#ifndef GPUCFG_hpp
+#define GPUCFG_hpp
+
+//***************************************************************************
+// system includes
+//***************************************************************************
 
 #include <algorithm>
 #include <iostream>
@@ -8,14 +59,39 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
-// dyninst
+
+
+
+//***************************************************************************
+// Dyninst includes
+//***************************************************************************
+
 #include <CFG.h>
+
+
+
+//***************************************************************************
+// HPCToolkit includes
+//***************************************************************************
 
 #include <include/hpctoolkit-config.h>
 
+
+
+//***************************************************************************
+// begin namespace
+//***************************************************************************
+
 namespace GPUParse {
 
+
+
+//***************************************************************************
+// type declarations
+//***************************************************************************
+
 typedef Dyninst::Architecture Arch;
+typedef Dyninst::Address Address;
 
 
 struct InstructionStat {
@@ -177,7 +253,7 @@ struct InstructionStat {
 
 
 struct Inst {
-  int offset;
+  Address offset;
   int size;
   bool dual_first;
   bool dual_second;
@@ -192,16 +268,16 @@ struct Inst {
   Arch arch;
   InstructionStat *inst_stat;
 
-  Inst(int offset, int size, Arch arch, InstructionStat *inst_stat) : offset(offset), size(size), dual_first(false), dual_second(false),
+  Inst(Address offset, int size, Arch arch, InstructionStat *inst_stat) : offset(offset), size(size), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false), arch(arch), inst_stat(inst_stat) {}
 
   // Constructor for dummy inst
-  Inst(int offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
+  Inst(Address offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false), arch(arch) {}
 
-  Inst(int offset, int size) : Inst(offset, size, Dyninst::Arch_none) {}
+  Inst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_none) {}
 
-  explicit Inst(int offset) : Inst(offset, 0) {}
+  explicit Inst(Address offset) : Inst(offset, 0) {}
 };
 
 
@@ -209,11 +285,11 @@ struct Inst {
 
 struct IntelInst : public Inst {
   // Constructor for dummy inst
-  IntelInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_intelGen9) {}
+  IntelInst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_intelGen9) {}
 
-  IntelInst(int offset, int size, InstructionStat *inst_stat) : Inst(offset, size, Dyninst::Arch_intelGen9, inst_stat) {}
+  IntelInst(Address offset, int size, InstructionStat *inst_stat) : Inst(offset, size, Dyninst::Arch_intelGen9, inst_stat) {}
 
-  explicit IntelInst(int offset) : Inst(offset, 0, Dyninst::Arch_intelGen9) {}
+  explicit IntelInst(Address offset) : Inst(offset, 0, Dyninst::Arch_intelGen9) {}
 };
 
 #endif
@@ -221,9 +297,9 @@ struct IntelInst : public Inst {
 
 struct CudaInst : public Inst {
   // Constructor for dummy inst
-  CudaInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_cuda) {}
+  CudaInst(Address offset, int size) : Inst(offset, size, Dyninst::Arch_cuda) {}
 
-  explicit CudaInst(int offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
+  explicit CudaInst(Address offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
 
   // Cuda instruction constructor
   CudaInst(std::string &inst_str) : CudaInst(0, 0) {
@@ -339,15 +415,15 @@ struct Target {
 
 struct Block {
   size_t id;
-  int address;
+  Address address;
   int begin_offset;
   std::vector<Inst *> insts;
   std::vector<Target *> targets;
   std::string name;
 
-  Block(size_t id, int address, const std::string &name) : id(id), address(address), name(name) {}
+  Block(size_t _id, Address _address, const std::string &_name) : id(_id), address(_address), name(_name) {}
 
-  Block(size_t id, const std::string &name) : Block(id, 0, name) {}
+  Block(size_t _id, const std::string &_name) : Block(_id, 0, _name) {}
 
   bool operator<(const Block &other) const {
     if (this->insts.size() == 0) {
@@ -357,6 +433,16 @@ struct Block {
     } else {
       return this->insts[0]->offset < other.insts[0]->offset;
     }
+  }
+
+  Address startAddress() {
+    auto firstInstruction = insts.front();
+    return firstInstruction->offset;
+  }
+
+  Address endAddress() {
+    auto lastInstruction = insts.back();
+    return lastInstruction->offset + lastInstruction->size;
   }
 
   ~Block() {
@@ -376,10 +462,10 @@ struct Function {
   std::vector<Block *> blocks;
   size_t id;
   std::string name;
-  int address;
+  Address address;
 
-  Function(size_t id, const std::string &name) : id(id), name(name),
-    address(0) {}
+  Function(size_t _id, const std::string &_name, Address _address) : id(_id), name(_name),
+    address(_address) {}
 
   ~Function() {
     for (auto *block : blocks) {
@@ -421,6 +507,28 @@ struct Call {
   Call(Inst *inst, Block *block, Function *caller_function, Function *callee_function) :
     inst(inst), block(block), caller_function(caller_function), callee_function(callee_function) {}
 };
+
+
+class GPUInstDumper {
+public:
+  GPUInstDumper(GPUParse::Function &_function) : function(_function) {};
+  virtual void dump(GPUParse::Inst* inst);
+protected:
+  GPUParse::Function &function;
+};
+
+void
+dumpFunction
+(
+  GPUParse::Function &function,
+  GPUInstDumper &idump
+);
+
+
+
+//***************************************************************************
+// end namespace
+//***************************************************************************
 
 }
 

@@ -506,7 +506,6 @@ do
 			die "HPCToolkit was not compiled with GTPin support enabled"
 		    fi
 		    gtpin_libdir="${gtpin_lib_path}"
-		    export ZET_ENABLE_API_TRACING_EXP=1
 		    export ZET_ENABLE_PROGRAM_INSTRUMENTATION=1
 		    export ZE_ENABLE_TRACING_LAYER=1
 		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"

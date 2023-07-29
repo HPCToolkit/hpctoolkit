@@ -41,72 +41,88 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef gpu_binary_h
-#define gpu_binary_h
+//***************************************************************************
+//
+// File:
+//   gtpin-instrumentation.h
+//
+// Purpose:
+//   define API for instrumenting Intel GPU binaries with GTPin
+//
+//***************************************************************************
+
+#ifndef gtpin_instrumentation_h
+#define gtpin_instrumentation_h
+
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 //*****************************************************************************
-// macros
+// system include files
 //*****************************************************************************
 
-#define GPU_BINARY_NAME           "gpubin"
-
-#define GPU_BINARY_SUFFIX         "." GPU_BINARY_NAME
-#define GPU_BINARY_DIRECTORY      GPU_BINARY_NAME "s"
-
-//******************************************************************************
-// system include
-//******************************************************************************
-
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 
 
 
-//******************************************************************************
-// interface operations
-//******************************************************************************
+//*****************************************************************************
+// local include files
+//*****************************************************************************
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/gpu/gpu-instrumentation.h>
+#include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/utilities/ip-normalized.h>
 
-bool
-gpu_binary_store
-(
-  const char *file_name,
-  const void *binary,
-  size_t binary_size
-);
+#include "gtpin-hpcrun-api.h"
+
+
+
+//*****************************************************************************
+// interface functions
+//*****************************************************************************
 
 void
-gpu_binary_path_generate
+gtpin_instrumentation_options
 (
-  const char *file_name,
-  char *path
+  gpu_instrumentation_t *
 );
 
 
-// returns the loadmap id
-uint32_t
-gpu_binary_loadmap_insert
+void
+gtpin_produce_runtime_callstack
 (
-  const char *device_file,
-  bool mark_used
+  gpu_op_ccts_t *
 );
 
 
-bool
-gpu_binary_save
+void
+gtpin_process_block_instructions
 (
- const char *mem_ptr,
- size_t mem_size,
- bool mark_used,
- uint32_t *loadmap_module_id
+  cct_node_t *
 );
 
-#if defined(__cplusplus)
-}
+
+void
+gtpin_hpcrun_api_set
+(
+  gtpin_hpcrun_api_t *
+);
+
+
+ip_normalized_t
+gtpin_lookup_kernel_ip
+(
+  const char *kernel_name
+);
+
+
+
+#ifdef __cplusplus
+};
 #endif
 
 #endif
