@@ -75,7 +75,8 @@ if has_rocm
   }
 endif
 
-_make_tar = find_program(files('make-tar'))
+_make_tar = configure_file(input: files('make-tar'), output: '@PLAINNAME@.venv',
+                           command: venv_shebang)
 foreach suite, contents : _contents
   debug(f'Creating custom_target for fresh-testdata-@suite@.tar.xz')
   _cmd = [_make_tar, '@OUTPUT@']

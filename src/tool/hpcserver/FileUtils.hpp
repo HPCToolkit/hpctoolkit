@@ -139,8 +139,8 @@ namespace TraceviewerServer
 				struct stat dirInfo;
 				bool err = (stat(fullPath.c_str(), &dirInfo) != 0);
 				bool isDir = S_ISDIR(dirInfo.st_mode);
-				bool aFile = !(err || isDir);
-				if (aFile)
+				bool isFile = !(err || isDir);
+				if (isFile)
 					validFiles.push_back(fullPath);
 
 			}

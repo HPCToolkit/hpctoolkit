@@ -1,3 +1,4 @@
+import collections.abc
 import functools
 import json
 import shutil
@@ -9,10 +10,15 @@ from yaspin import yaspin  # type: ignore[import]
 
 from .command import Command, ShEnv
 from .meson import MesonMachineFile
-from .spack import Spack
+from .spack import Compiler
+from .spack import proxy as spack_proxy
 from .spec import DependencyMode, SpackEnv, VerConSpec
 
-__all__ = ("AutogenEnv", "DevEnv")
+__all__ = ("AutogenEnv", "DevEnv", "InvalidSpecificationError")
+
+
+class InvalidSpecificationError(ValueError):
+    pass
 
 
 class AutogenEnv(SpackEnv):
@@ -43,8 +49,12 @@ class AutogenEnv(SpackEnv):
     def autoreconf(self) -> Command:
         return Command(self.packages["autoconf"].prefix / "bin" / "autoreconf")
 
-    def generate(self, template: dict | None = None) -> None:
-        self.generate_explicit(self._SPECS, DependencyMode.ANY, template=template)
+    def generate(
+        self, unresolve: collections.abc.Collection[str] = (), template: dict | None = None
+    ) -> None:
+        self.generate_explicit(
+            self._SPECS, DependencyMode.ANY, unresolve=unresolve, template=template
+        )
 
 
 class DevEnv(SpackEnv):
@@ -59,13 +69,13 @@ class DevEnv(SpackEnv):
             case "papi" | "python" | "opencl":
                 return True
             case "cuda":
-                return bool(Spack.get().fetch_external_versions("cuda"))
+                return bool(spack_proxy.fetch_external_versions("cuda"))
             case "rocm":
-                return bool(Spack.get().fetch_external_versions("hip"))
+                return bool(spack_proxy.fetch_external_versions("hip"))
             case "level0":
-                return bool(Spack.get().fetch_external_versions("oneapi-level-zero"))
+                return bool(spack_proxy.fetch_external_versions("oneapi-level-zero"))
             case "gtpin":
-                return bool(Spack.get().fetch_external_versions("intel-gtpin"))
+                return bool(spack_proxy.fetch_external_versions("intel-gtpin"))
             case _:
                 raise ValueError(feature)
 
@@ -80,9 +90,10 @@ class DevEnv(SpackEnv):
         opencl: bool,
         python: bool,
         papi: bool,
-        optional_papi: bool,
         mpi: bool,
     ) -> None:
+        if gtpin and not level0:
+            raise InvalidSpecificationError("level0 must be true if gtpin is true")
         super().__init__(root)
         self.cuda = cuda
         self.rocm = rocm
@@ -91,7 +102,6 @@ class DevEnv(SpackEnv):
         self.opencl = opencl
         self.python = python
         self.papi = papi
-        self.optional_papi = optional_papi
         self.mpi = mpi
 
     @classmethod
@@ -113,7 +123,6 @@ class DevEnv(SpackEnv):
             opencl=flag("opencl"),
             python=flag("python"),
             papi=flag("papi"),
-            optional_papi=flag("optional_papi"),
             mpi=flag("mpi"),
         )
 
@@ -126,7 +135,6 @@ class DevEnv(SpackEnv):
             "opencl": self.opencl,
             "python": self.python,
             "papi": self.papi,
-            "optional_papi": self.optional_papi,
             "mpi": self.mpi,
         }
 
@@ -138,12 +146,19 @@ class DevEnv(SpackEnv):
         yes = click.style("YES", fg="green", bold=True)
         no = click.style("NO", fg="red", bold=True)
 
+        if self.recommended_compiler is None:
+            comp = "(undefined)"
+        elif not self.recommended_compiler:
+            comp = f"{self.recommended_compiler} (unavailable)"
+        else:
+            comp = f"{self.recommended_compiler}"
+
         return f"""\
-    Compiler             : {self.recommended_compiler.spec if self.recommended_compiler else '(undefined)'}
+    Rec. Compiler        : {comp}
     hpcprof-mpi          : {yes if self.mpi else no}
 
   {click.style("CPU Features", bold=True)}
-    PAPI                 : {"BOTH" if self.optional_papi else yes if self.papi else no}
+    PAPI                 : {yes if self.papi else no}
     Python               : {yes if self.python else no}
 
   {click.style("GPU Support", bold=True)}
@@ -190,6 +205,7 @@ class DevEnv(SpackEnv):
                 VerConSpec("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
                 VerConSpec("zlib +shared @1.2.13:"),
                 VerConSpec("libunwind +xz +pic @1.6.2:"),
+                VerConSpec("libpfm4 @4.11.0:"),
                 VerConSpec("xerces-c transcoder=iconv @3.2.3:"),
                 VerConSpec("libiberty +pic @2.37:"),
                 VerConSpec("intel-xed +pic @2022.04.17:", when="arch.satisfies('target=x86_64:')"),
@@ -201,10 +217,8 @@ class DevEnv(SpackEnv):
             | self._py_specs
         )
 
-        if self.papi or self.optional_papi:
+        if self.papi:
             result.add(VerConSpec("papi @6.0.0.1:"))
-        if not self.papi or self.optional_papi:
-            result.add(VerConSpec("libpfm4 @4.11.0:"))
         if self.cuda:
             result.add(VerConSpec("cuda @10.2.89:"))
         if self.level0 or self.gtpin:
@@ -224,8 +238,13 @@ class DevEnv(SpackEnv):
 
         return result
 
-    def generate(self, mode: DependencyMode, template: dict | None = None) -> None:
-        self.generate_explicit(self._specs, mode, template=template)
+    def generate(
+        self,
+        mode: DependencyMode,
+        unresolve: collections.abc.Collection[str] = (),
+        template: dict | None = None,
+    ) -> None:
+        self.generate_explicit(self._specs, mode, unresolve=unresolve, template=template)
         with open(self.root / "dev.json", "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f)
 
@@ -239,14 +258,28 @@ class DevEnv(SpackEnv):
             pkg = self.packages[s.package]
             packages.add(pkg)
             packages |= pkg.dependencies
-        Spack.get().view_add(
-            self._pyview, *sorted(packages, key=lambda p: p.fullhash), spack_env=self.root
-        )
+        self.spack.view_add(self._pyview, *sorted(packages, key=lambda p: p.fullhash))
 
-    def _m_binaries(self, native: MesonMachineFile) -> None:
-        assert self.recommended_compiler
-        native.add_binary("c", self.recommended_compiler.cc)
-        native.add_binary("cpp", self.recommended_compiler.cpp)
+    def _m_binaries(self, native: MesonMachineFile, *, compiler: Compiler | None = None) -> None:
+        assert self.recommended_compiler is not None
+        if compiler is not None:
+            if not compiler:
+                raise ValueError(compiler)
+            if not compiler.compatible_with(self.recommended_compiler):
+                click.echo(
+                    click.style("WARNING", fg="yellow")
+                    + f": Requested compiler {compiler} may not be compatible with recommended compiler {self.recommended_compiler}, this may not work!"
+                )
+            native.add_binary("c", compiler.cc)
+            native.add_binary("cpp", compiler.cpp)
+        elif self.recommended_compiler:
+            native.add_binary("c", self.recommended_compiler.cc)
+            native.add_binary("cpp", self.recommended_compiler.cpp)
+        else:
+            click.echo(
+                click.style("WARNING", fg="yellow")
+                + f": Recommended compiler {self.recommended_compiler} is unavailable, Meson will use its own defaults instead!"
+            )
         native.add_binary("autoreconf", self.packages["autoconf"].prefix / "bin" / "autoreconf")
         native.add_binary("autoconf", self.packages["autoconf"].prefix / "bin" / "autoconf")
         native.add_binary("aclocal", self.packages["automake"].prefix / "bin" / "aclocal")
@@ -259,10 +292,12 @@ class DevEnv(SpackEnv):
         native.add_binary("python3", self._pyview / "bin" / "python3")
         native.add_binary("python", self._pyview / "bin" / "python3")
         if self.mpi:
-            native.add_binary("mpicxx", self.which("mpicxx", VerConSpec("mpi")).path)
+            native.add_binary(
+                "mpicxx", self.which("mpicxx", VerConSpec("mpi"), check_arg=None).path
+            )
             native.add_binary("mpiexec", self.which("mpiexec", VerConSpec("mpi")).path)
         if self.cuda:
-            native.add_binary("cuda", self.which("nvcc", VerConSpec("cuda")).path)
+            native.add_binary("cuda", self.which("nvcc", VerConSpec("cuda"), check_arg=None).path)
             native.add_binary("nvdisasm", self.which("nvdisasm", VerConSpec("cuda")).path)
 
     def _m_prefixes(self, native: MesonMachineFile) -> None:
@@ -273,6 +308,7 @@ class DevEnv(SpackEnv):
         native.add_property("prefix_tbb", self.packages["intel-tbb"].prefix)
         native.add_property("prefix_libmonitor", self.packages["libmonitor"].prefix)
         native.add_property("prefix_libunwind", self.packages["libunwind"].prefix)
+        native.add_property("prefix_perfmon", self.packages["libpfm4"].prefix)
         native.add_property("prefix_xerces", self.packages["xerces-c"].prefix)
         native.add_property("prefix_lzma", self.packages["xz"].prefix)
         native.add_property("prefix_zlib", self.packages["zlib"].prefix)
@@ -281,10 +317,8 @@ class DevEnv(SpackEnv):
             native.add_property("prefix_xed", self.packages["intel-xed"].prefix)
         native.add_property("prefix_memkind", self.packages["memkind"].prefix)
         native.add_property("prefix_yaml_cpp", self.packages["yaml-cpp"].prefix)
-        if self.papi or self.optional_papi:
+        if self.papi:
             native.add_property("prefix_papi", self.packages["papi"].prefix)
-        if not self.papi or self.optional_papi:
-            native.add_property("prefix_perfmon", self.packages["libpfm4"].prefix)
         if self.opencl:
             native.add_property("prefix_opencl", self.packages["opencl-c-headers"].prefix)
         if self.gtpin:
@@ -300,12 +334,12 @@ class DevEnv(SpackEnv):
         if self.cuda:
             native.add_property("prefix_cuda", self.packages["cuda"].prefix)
 
-    def populate(self, dev_root: Path | None, meson: Command) -> None:
+    def populate(self, *, compiler: Compiler | None = None) -> None:
         """Populate the development environment with all the files needed to use it."""
         self._populate_pyview()
 
         native = MesonMachineFile()
-        self._m_binaries(native)
+        self._m_binaries(native, compiler=compiler)
         self._m_prefixes(native)
         # FIXME: Eventually we should set the defaults for the feature options here in the native
         # file, but that tends to interfere with options specified on the command line.
@@ -314,26 +348,30 @@ class DevEnv(SpackEnv):
         native_path = self.root / "meson_native.ini"
         native.save(native_path)
 
-        if dev_root is not None:
-            self.builddir.mkdir(exist_ok=True)
-            with yaspin(text="Configuring build directory"):
-                meson(
-                    "setup",
-                    "--wipe",
-                    f"--native-file={native_path}",
-                    f"--prefix={self.installdir}",
-                    f"-Dhpcprof_mpi={'enabled' if self.mpi else 'disabled'}",
-                    f"-Dpapi={'enabled' if self.papi else 'disabled'}",
-                    f"-Dpython={'enabled' if self.python else 'disabled'}",
-                    f"-Dopencl={'enabled' if self.opencl else 'disabled'}",
-                    f"-Dlevel0={'enabled' if self.level0 else 'disabled'}",
-                    f"-Dgtpin={'enabled' if self.gtpin else 'disabled'}",
-                    f"-Drocm={'enabled' if self.rocm else 'disabled'}",
-                    f"-Dcuda={'enabled' if self.cuda else 'disabled'}",
-                    self.builddir,
-                    dev_root,
-                    output=False,
-                )
+    def setup(self, dev_root: Path, meson: Command) -> None:
+        """Set up the build directory for this development environment. Must already be populated."""
+        native_path = self.root / "meson_native.ini"
+        assert native_path.is_file()
+
+        self.builddir.mkdir(exist_ok=True)
+        with yaspin(text="Configuring build directory"):
+            meson(
+                "setup",
+                "--wipe",
+                f"--native-file={native_path}",
+                f"--prefix={self.installdir}",
+                f"-Dhpcprof_mpi={'enabled' if self.mpi else 'disabled'}",
+                f"-Dpapi={'enabled' if self.papi else 'disabled'}",
+                f"-Dpython={'enabled' if self.python else 'disabled'}",
+                f"-Dopencl={'enabled' if self.opencl else 'disabled'}",
+                f"-Dlevel0={'enabled' if self.level0 else 'disabled'}",
+                f"-Dgtpin={'enabled' if self.gtpin else 'disabled'}",
+                f"-Drocm={'enabled' if self.rocm else 'disabled'}",
+                f"-Dcuda={'enabled' if self.cuda else 'disabled'}",
+                self.builddir,
+                dev_root,
+                output=False,
+            )
 
     @property
     def _pyview(self) -> Path:

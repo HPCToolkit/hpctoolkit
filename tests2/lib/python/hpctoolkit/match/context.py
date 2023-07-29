@@ -23,7 +23,7 @@ _MatchAnySingleton = _MatchAny()
 def _coercion(func):
     @functools.wraps(func)
     def wrapper(cls, val):
-        if isinstance(val, (_MatchAny, cls)):
+        if isinstance(val, _MatchAny | cls):
             return val
         return func(cls, val)
 
@@ -52,7 +52,7 @@ def _coercion_to_exact(exact: type | types.UnionType):
     def apply(func):
         @functools.wraps(func)
         def wrapper(cls, val):
-            if isinstance(val, (_MatchAny, cls)):
+            if isinstance(val, _MatchAny | cls):
                 return val
             if isinstance(val, exact):
                 return _MatchExact(val)

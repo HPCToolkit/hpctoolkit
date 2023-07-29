@@ -9,8 +9,7 @@ workflow:
 
 
 stages:
-- setup:gen
-- setup:build
+- setup
 - validate
 - test
 - lint
@@ -32,6 +31,14 @@ variables:
   GET_SOURCES_ATTEMPTS: 3
   ARTIFACTS_DOWNLOAD_ATTEMPTS: 3
   EXECUTOR_JOB_SECTION_ATTEMPTS: 3
+
+  DEPS_IMAGES_REPO:
+    description: Sibling GitLab project to generate deps images
+    value: hpctoolkit/hpctoolkit-deps
+
+  DEPS_IMAGES:
+    description: URL (prefix) of the container registries to pull deps images from
+    value: registry.gitlab.com/hpctoolkit/hpctoolkit-deps
 
 
 default:
@@ -62,204 +69,77 @@ default:
     CCACHE_MAXFILES: '0'
 
 #----------------------------------------------
-# Phase 1: setup:*
+# Phase 1: Fetch (and if desired build) the deps images
 #----------------------------------------------
 
-# Identify the latest develop-snapshot image built by Spack
-setup:identify:
-  stage: .pre
-  image:
-    name: quay.io/skopeo/stable
-    entrypoint: ['']
-  variables:
-    GIT_STRATEGY: none
+# Produce the request.jsons for generating images, along with the URLs and SHA256s
+request:
+  stage: setup
+  image: docker.io/python:3.10-bullseye
+  tags: [saas-linux-small-amd64]
   script:
-  - yum install -y jq
-  - skopeo list-tags docker://ghcr.io/spack/ubuntu-focal > tags.json
-  - jq --raw-output '.Tags | map(select(test("^develop-[\\d-]+"))) | sort | reverse | .[0]' tags.json > spacktag.txt
-  - echo "SPACKTAG=$(cat spacktag.txt)" > spacktag.env
-  artifacts:
-    reports:
-      dotenv: spacktag.env
+  - artifacts_url="$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/$CI_JOB_ID/artifacts"
 
-# Generate a matrix of Dockerfiles for all the "spins" we test in CI
-setup:gen:
-  stage: setup:gen
-  image:
-    name: ghcr.io/spack/fedora37:$SPACKTAG
-    entrypoint: ['spack-env']
-  variables:
-    GIT_SUBMODULE_STRATEGY: none
-    MODE: '--any'
-  needs: ['setup:identify']
-  before_script:
-  - spack --version
-  - yum list installed python3-devel || yum install -y python3-devel
-  # Prepare to generate spins
-  - mkdir imgctxs/
-  - sed -i "s/{SPACKTAG}/$SPACKTAG/g" ci/spins/*.yaml
-  - |
-    genimg() {
-      set -x
+  - ./dev generate-request --any --template ci/templates/request.yaml latest.json
+  - sha256sum latest.json > latest.json.sha
+  - echo "DIGEST_latest=$(cut -d' ' -f1 latest.json.sha)" >> request.env
+  - echo "REQUEST_URL_latest=$artifacts_url/latest.json" >> request.env
 
-      # Generate the devenv using the appropriate arguments
-      ./dev generate "$MODE" imgctxs/"$1" \
-        --template ci/spins/base.yaml --template ci/spins/"$1".yaml || return $?
-      # Insert the symlink needed to access the templates
-      ln -sr ci/templates imgctxs/"$1"/templates || return $?
-      # Generate the complete Dockerfile
-      (cd imgctxs/"$1" && spack --env-dir=. containerize > Dockerfile) || return $?
-      if echo "$1" | grep -q fedora; then
-        # The Fedoras do not have (or need) EPEL. See https://github.com/spack/spack/issues/37765
-        sed -i -e 's/yum install -y epel-release \&\&//g' imgctxs/"$1"/Dockerfile || return $?
-      fi
-      # The Spack recipe doesn't quite handle APT with update:false right.
-      # See https://github.com/spack/spack/issues/37772
-      sed -i -e 's/apt-get -yqq install/apt-get -yqq update \&\& \0/g' imgctxs/"$1"/Dockerfile || return $?
-      # Clean up the mess
-      rm -r imgctxs/"$1"/.spack-env/ || return $?
-      rm imgctxs/"$1"/.gitignore imgctxs/"$1"/templates || return $?
+  - ./dev generate-request --minimum --template ci/templates/request.yaml minimum.json
+  - sha256sum minimum.json > minimum.json.sha
+  - echo "DIGEST_minimum=$(cut -d' ' -f1 minimum.json.sha)" >> request.env
+  - echo "REQUEST_URL_minimum=$artifacts_url/minimum.json" >> request.env
 
-      set +x
-    }
-  script:
-  - if test "$CI_COMMIT_REF_PROTECTED" = "true"; then export MODE="--latest"; fi
-  # CPU-only spins
-  - genimg leap15
-  - genimg almalinux8
-  - genimg ubuntu20.04
-  - genimg fedora37
-  # CUDA spins
-  - genimg cuda10.2
-  - genimg cuda11.6.2
-  - genimg cuda11.8.0
-  - genimg cuda12.0.1
-  # ROCm spins
-  - genimg rocm5.1.3
-  - genimg rocm5.2.3
-  - genimg rocm5.3.2
-  - genimg rocm5.4.2
-  # Level 0 + GTPin spins
-  - genimg lvlz2022.2-gtpin3.0
-  - genimg lvlz2022.2-gtpin3.2.2
-  - genimg lvlz2022.3.1-gtpin3.0
-  - genimg lvlz2022.3.1-gtpin3.2.2
-  - genimg lvlz2023.0.0-gtpin3.0
-  - genimg lvlz2023.0.0-gtpin3.2.2
+  - ./dev generate-request --autogen --template ci/templates/request.yaml autogen.json
+  - sha256sum autogen.json > autogen.json.sha
+  - echo "DIGEST_autogen=$(cut -d' ' -f1 autogen.json.sha)" >> request.env
+  - echo "REQUEST_URL_autogen=$artifacts_url/autogen.json" >> request.env
   artifacts:
     paths:
-    - imgctxs/
-setup:gen min:
-  extends: setup:gen
-  variables:
-    MODE: '--minimum'
-setup:gen autogen:
-  extends: setup:gen
-  variables:
-    MODE: '--autogen'
-  script:
-  # We only need one spin for the autogen job
-  - genimg ubuntu20.04
-  - echo '{}' > imgctxs/ubuntu20.04/dev.json
-
-# For each spin generated in above, build an image for it below
-.setup:build:
-  stage: setup:build
-  image: quay.io/buildah/stable
-  needs: [setup:gen]
-  variables:
-    GIT_SUBMODULE_STRATEGY: none
-  before_script:
-  # Log into the registry
-  - sudo -u build buildah login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  - IMAGE=$BASE${EXT:+-}$EXT
-  # Set up the cache and command
-  - mkdir -p .buildah-cache/
-  - chown -R build:build .buildah-cache/
-  - ln -s $CI_PROJECT_DIR/.buildah-cache/ /var/tmp/buildah-cache-$(id -u build)
-  - bdah() { sudo -Eu build buildah "$@"; }
-  script:
-  - test "$SPIN"
-  - test "$MODE"
-  - cache="$CI_REGISTRY_IMAGE/cache"
-  - tag="$CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA-$SPIN-$ARCH"
-  - cp ci/templates/cuda.repo.amd64 imgctxs/"$SPIN"/
-  # Build the image we will use moving forward
-  - >-
-    bdah build --secret id=spack_mirrors,src="$SBCACHE_YAML"
-    --layers --cache-from="$cache" --cache-to="$cache"
-    --tag="$tag" --arch="$ARCH" --format=docker
-    imgctxs/"$SPIN"/
-  # Push up the built image, and save the digest
-  - bdah push --digestfile=digest "$tag"
-  # Propagate an environment variable to refer to this image in later jobs
-  - slug="$(echo "${ARCH}_${SPIN}_${MODE}" | sed 's/[^a-zA-Z0-9_]/_/g')"
-  - echo "IMAGE_$slug=$tag@$(cat digest)" | tee out.env
-  artifacts:
+    - latest.json
+    - minimum.json
+    - autogen.json
     reports:
-      dotenv: out.env
+      dotenv: request.env
 
-'setup:build: [amd64]':
-  extends: .setup:build
-  tags: [saas-linux-small-amd64, huge-fs]
+# Add buttons to trigger (re-)building the dependencies images from the request.jsons
+deps build:
+  stage: setup
+  when: manual
+  needs: [request]
+  trigger:
+    project: $DEPS_IMAGES_REPO
+    strategy: depend
   variables:
-    ARCH: amd64
-    MODE: main
-  parallel:
-    matrix:
-    - SPIN:
-      # CPU-only spins
-      - leap15
-      - almalinux8
-      - ubuntu20.04
-      - fedora37
-      # CUDA spins
-      - cuda10.2
-      - cuda11.6.2
-      - cuda11.8.0
-      - cuda12.0.1
-      # ROCm spins
-      - rocm5.1.3
-      - rocm5.2.3
-      - rocm5.3.2
-      - rocm5.4.2
-      # Level 0 + GTPin spins
-      - lvlz2022.2-gtpin3.0
-      - lvlz2022.2-gtpin3.2.2
-      - lvlz2022.3.1-gtpin3.0
-      - lvlz2022.3.1-gtpin3.2.2
-      - lvlz2023.0.0-gtpin3.0
-      - lvlz2023.0.0-gtpin3.2.2
-'setup:build min: [amd64]':
-  extends: 'setup:build: [amd64]'
-  needs: [setup:gen min]
+    DEPS_SOURCE: $REQUEST_URL_latest
+    DEPS_BUILD: >-
+      leap15/v1
+      almalinux8/v1
+      ubuntu20.04/v1
+      fedora37/v1
+      cuda/v1:10.2
+      cuda/v2:11.6
+      cuda/v2:11.8
+      cuda/v2:12.0
+      rocm/v1:5.1
+      rocm/v1:5.2
+      rocm/v1:5.3
+      rocm/v1:5.4
+      lvlz-gtpin/v1:2022.2-3.0
+      lvlz-gtpin/v1:2022.2-3.2
+      lvlz-gtpin/v1:2022.3-3.0
+      lvlz-gtpin/v1:2022.3-3.2
+      lvlz-gtpin/v1:2023.0-3.0
+      lvlz-gtpin/v1:2023.0-3.2
+deps build min:
+  extends: deps build
   variables:
-    MODE: minimum
-
-'setup:build: [arm64]':
-  extends: .setup:build
-  tags: [rice-linux-small-arm64, huge-fs]
+    DEPS_SOURCE: $REQUEST_URL_minimum
+deps build autogen:
+  extends: deps build
   variables:
-    ARCH: arm64
-    MODE: main
-  parallel:
-    matrix:
-    - SPIN:
-      - ubuntu20.04
-'setup:build min: [arm64]':
-  extends: 'setup:build: [arm64]'
-  needs: [setup:gen min]
-  variables:
-    MODE: minimum
-
-'setup:build autogen':
-  extends: .setup:build
-  needs: [setup:gen autogen]
-  tags: [saas-linux-small-amd64]
-  variables:
-    ARCH: amd64
-    SPIN: ubuntu20.04
-    MODE: fixed
+    DEPS_SOURCE: $REQUEST_URL_autogen
+    DEPS_BUILD: ubuntu20.04/v1
 
 #-----------------------------------
 # Phase N: lint
@@ -282,8 +162,8 @@ precommit:
 # (by a big orange exclaimation point) but not blocked by upstream Spack.
 'spack install: [amd64]':
   stage: lint
-  image: $IMAGE_amd64_ubuntu20_04_main
-  needs: ['setup:build: [amd64]: [ubuntu20.04]']
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
+  needs: [request, deps check]
   tags: [saas-linux-small-amd64]
   rules:
   - if: $CI_COMMIT_REF_PROTECTED == "true"
@@ -293,8 +173,6 @@ precommit:
     key: spack
     when: always
     paths: [.spack.git]
-  variables:
-    GIT_SUBMODULE_STRATEGY: none
   parallel:
     matrix:
     - VARIANTS:
@@ -302,6 +180,8 @@ precommit:
       - +papi
       - ~papi
   before_script:
+  - apt-get update -yqq
+  - apt-get install -yqq git git-lfs gcc g++ make patch tar gzip unzip bzip2 xz-utils zstd file gnupg2 eatmydata
   # Ensure we have Git and Git LFS
   - git --version
   - git lfs --version
@@ -313,13 +193,16 @@ precommit:
         https://github.com/spack/spack.git .spack.git || exit $?
     fi
   - git -C .spack.git fetch --verbose origin +develop:develop
-  - git clone --shared --branch=develop .spack.git .spack
-  - export PATH="$(realpath .spack)"/bin:"$PATH"
+  - git clone --shared --branch=develop .spack.git /tmp/spack
+  - export PATH=/tmp/spack/bin:"$PATH"
+  # Override any generic settings that were set in the deps image
+  - spack -D /opt/environment config add 'packages:hpctoolkit:require::[]'
+  - spack -D /opt/environment config add 'packages:all:require::[]'
+  # Register this clone of HPCToolkit as the source for Spack to build `hpctoolkit @develop-ci` from
+  - spack -D /opt/environment develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
   # Spack out a representative HPCToolkit. All dependencies should already be built.
-  - >-
-    eatmydata spack install --fail-fast --add
-    "hpctoolkit @git.${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-${CI_COMMIT_SHA}}=develop
-    ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
+  - eatmydata spack -D /opt/environment install --fail-fast --add --only=package
+    "hpctoolkit @=develop-ci ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
 
 #-----------------------------------
 # Phase 2: validate
@@ -328,23 +211,27 @@ precommit:
 # The two devenvs must be consistent with the current version of the ./dev scriptsuite.
 deps check:
   stage: validate
-  image: $IMAGE_amd64_ubuntu20_04_main
-  needs: ['setup:build: [amd64]: [ubuntu20.04]']
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
   tags: [saas-linux-small-amd64]
   script:
-  - ./dev populate /opt/spack-environment
+  - ./dev os-install -y -c gcc git file diffutils
+  - &spack_clone
+    - git clone --depth=1 https://github.com/spack/spack.git /tmp/spack
+    - export PATH=/tmp/spack/bin/:"$PATH"
+  - ./dev populate /opt/environment
 
 
 # The Autogoo for the HEAD commit (at least) must be in-sync before we build
 autoreconf:
   stage: validate
-  image: $IMAGE_amd64_ubuntu20_04_fixed
-  needs: ['setup:build autogen']
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_autogen
   tags: [saas-linux-small-amd64]
   variables:
     GIT_SUBMODULE_STRATEGY: none
   script:
-  - ./dev autogen --custom-env /opt/spack-environment --skip-install
+  - ./dev os-install -y git git-lfs
+  - *spack_clone
+  - ./dev autogen --custom-env /opt/environment --skip-install
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
   - |
     if test -s changes; then
@@ -368,13 +255,15 @@ autoreconf:
 .buildmany:
   stage: test
   script:
-  - ./dev populate /opt/spack-environment
+  - ./dev os-install -y -c "$JOB_CC" git file diffutils tar eatmydata ccache
+  - *spack_clone
+  - ./dev populate -c "$JOB_CC" /opt/environment
   # Run the build script for a wide sweep of configurations. Use some Python to help.
   - rm -rf logs/
   - >-
-    eatmydata ./dev buildfe -d /opt/spack-environment --
+    eatmydata ./dev buildfe -d /opt/environment --
     -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a check-install
-    --ccache-stats --fail-fast --reproducible ${OS_NATIVE_FILE:+-C--native-file=$OS_NATIVE_FILE} -s "$SPEC"
+    --ccache-stats --fail-fast --reproducible -s "$SPEC"
   after_script:
   - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
   artifacts:
@@ -398,61 +287,44 @@ autoreconf:
 
 'buildmany: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_almalinux8_main
-  needs:
-  - 'setup:build: [amd64]: [almalinux8]'
-  - &deps_check
-    job: deps check
-    artifacts: false
-  - &autoreconf
-    job: autoreconf
-    artifacts: false
+  image: $DEPS_IMAGES/almalinux8/v1:latest-$DIGEST_latest
   parallel: {matrix: [{JOB_CC: gcc=8}]}
 'buildmany: [amd64, ubuntu20.04]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_ubuntu20_04_main
-  needs: ['setup:build: [amd64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
   parallel: {matrix: [{JOB_CC: [gcc-9, gcc-10, clang-10]}]}
 'buildmany: [arm64, ubuntu20.04]':
   extends: .buildmany arm64 cpu
-  image: $IMAGE_arm64_ubuntu20_04_main
-  needs: ['setup:build: [arm64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
   parallel: {matrix: [{JOB_CC: gcc-10}]}
 'buildmany: [amd64, leap15]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_leap15_main
-  needs: ['setup:build: [amd64]: [leap15]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/leap15/v1:latest-$DIGEST_latest
   parallel: {matrix: [{JOB_CC: gcc-11}]}
 'buildmany: [amd64, fedora37]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_fedora37_main
-  needs: ['setup:build: [amd64]: [fedora37]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/fedora37/v1:latest-$DIGEST_latest
   parallel: {matrix: [{JOB_CC: [gcc=12, clang=15]}]}
 
 'buildmany min: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_almalinux8_minimum
-  needs: ['setup:build min: [amd64]: [almalinux8]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/almalinux8/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: gcc=8}]}
 'buildmany min: [amd64, ubuntu20.04]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_ubuntu20_04_minimum
-  needs: ['setup:build min: [amd64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: [gcc-9, gcc-10, clang-10]}]}
 'buildmany min: [arm64, ubuntu20.04]':
   extends: .buildmany arm64 cpu
-  image: $IMAGE_arm64_ubuntu20_04_minimum
-  needs: ['setup:build min: [arm64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: gcc-10}]}
 'buildmany min: [amd64, leap15]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_leap15_minimum
-  needs: ['setup:build min: [amd64]: [leap15]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/leap15/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: gcc-11}]}
 'buildmany min: [amd64, fedora37]':
   extends: .buildmany amd64 cpu
-  image: $IMAGE_amd64_fedora37_minimum
-  needs: ['setup:build min: [amd64]: [fedora37]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/fedora37/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: [gcc=12, clang=15]}]}
 
 
@@ -461,45 +333,38 @@ autoreconf:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    OS_NATIVE_FILE: ./ci/native/cuda.ini
     SPEC: '+cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
-'buildmany: [amd64, cuda12.0.1]':
+'buildmany: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
-  image: $IMAGE_amd64_cuda12_0_1_main
-  needs: ['setup:build: [amd64]: [cuda12.0.1]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:12.0-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, cuda11.8.0]':
+'buildmany: [amd64, cuda11.8]':
   extends: .buildmany amd64 cuda
-  image: $IMAGE_amd64_cuda11_8_0_main
-  needs: ['setup:build: [amd64]: [cuda11.8.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
 'buildmany: [amd64, cuda10.2]':
   extends: .buildmany amd64 cuda
-  image: $IMAGE_amd64_cuda10_2_main
-  needs: ['setup:build: [amd64]: [cuda10.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v1:10.2-$DIGEST_latest
   variables:
     JOB_CC: gcc=8
     SPEC: &cuda102_min_spec '+cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
-'buildmany min: [amd64, cuda12.0.1]':
+'buildmany min: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
-  image: $IMAGE_amd64_cuda12_0_1_minimum
-  needs: ['setup:build min: [amd64]: [cuda12.0.1]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:12.0-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, cuda11.8.0]':
+'buildmany min: [amd64, cuda11.8]':
   extends: .buildmany amd64 cuda
-  image: $IMAGE_amd64_cuda11_8_0_minimum
-  needs: ['setup:build min: [amd64]: [cuda11.8.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 'buildmany min: [amd64, cuda10.2]':
   extends: .buildmany amd64 cuda
-  image: $IMAGE_amd64_cuda10_2_minimum
-  needs: ['setup:build min: [amd64]: [cuda10.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v1:10.2-$DIGEST_latest
   variables:
     JOB_CC: gcc=8
     SPEC: *cuda102_min_spec
@@ -509,56 +374,47 @@ autoreconf:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    OS_NATIVE_FILE: ./ci/native/rocm.ini
     SPEC: '~cuda +rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
-'buildmany: [amd64, rocm5.1.3]':
+'buildmany: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_1_3_main
-  needs: ['setup:build: [amd64]: [rocm5.1.3]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, rocm5.2.3]':
+'buildmany: [amd64, rocm5.2]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_2_3_main
-  needs: ['setup:build: [amd64]: [rocm5.2.3]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, rocm5.3.2]':
+'buildmany: [amd64, rocm5.3]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_3_2_main
-  needs: ['setup:build: [amd64]: [rocm5.3.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, rocm5.4.2]':
+'buildmany: [amd64, rocm5.4]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_4_2_main
-  needs: ['setup:build: [amd64]: [rocm5.4.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
 
-'buildmany min: [amd64, rocm5.1.3]':
+'buildmany min: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_1_3_minimum
-  needs: ['setup:build min: [amd64]: [rocm5.1.3]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, rocm5.2.3]':
+'buildmany min: [amd64, rocm5.2]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_2_3_minimum
-  needs: ['setup:build min: [amd64]: [rocm5.2.3]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, rocm5.3.2]':
+'buildmany min: [amd64, rocm5.3]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_3_2_minimum
-  needs: ['setup:build min: [amd64]: [rocm5.3.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, rocm5.4.2]':
+'buildmany min: [amd64, rocm5.4]':
   extends: .buildmany amd64 rocm
-  image: $IMAGE_amd64_rocm5_4_2_minimum
-  needs: ['setup:build min: [amd64]: [rocm5.4.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 
@@ -567,80 +423,67 @@ autoreconf:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    OS_NATIVE_FILE: ./ci/native/lvlz-gtpin.ini
     SPEC: '~cuda ~rocm +level0 !debug (mpi papi opencl python gtpin valgrind_debug)[~<1]'
 
 'buildmany: [amd64, lvlz2022.2, gtpin3.0]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_2_gtpin3_0_main
-  needs: ['setup:build: [amd64]: [lvlz2022.2-gtpin3.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.0-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2022.2, gtpin3.2.2]':
+'buildmany: [amd64, lvlz2022.2, gtpin3.2]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_2_gtpin3_2_2_main
-  needs: ['setup:build: [amd64]: [lvlz2022.2-gtpin3.2.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.2-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2022.3.1, gtpin3.0]':
+'buildmany: [amd64, lvlz2022.3, gtpin3.0]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_3_1_gtpin3_0_main
-  needs: ['setup:build: [amd64]: [lvlz2022.3.1-gtpin3.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.0-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2022.3.1, gtpin3.2.2]':
+'buildmany: [amd64, lvlz2022.3, gtpin3.2]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_3_1_gtpin3_2_2_main
-  needs: ['setup:build: [amd64]: [lvlz2022.3.1-gtpin3.2.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.2-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2023.0.0, gtpin3.0]':
+'buildmany: [amd64, lvlz2023.0, gtpin3.0]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2023_0_0_gtpin3_0_main
-  needs: ['setup:build: [amd64]: [lvlz2023.0.0-gtpin3.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.0-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2023.0.0, gtpin3.2.2]':
+'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2023_0_0_gtpin3_2_2_main
-  needs: ['setup:build: [amd64]: [lvlz2023.0.0-gtpin3.2.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.2-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
 
 'buildmany min: [amd64, lvlz2022.2, gtpin3.0]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_2_gtpin3_0_minimum
-  needs: ['setup:build min: [amd64]: [lvlz2022.2-gtpin3.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.0-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2022.2, gtpin3.2.2]':
+'buildmany min: [amd64, lvlz2022.2, gtpin3.2]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_2_gtpin3_2_2_minimum
-  needs: ['setup:build min: [amd64]: [lvlz2022.2-gtpin3.2.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.2-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2022.3.1, gtpin3.0]':
+'buildmany min: [amd64, lvlz2022.3, gtpin3.0]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_3_1_gtpin3_0_minimum
-  needs: ['setup:build min: [amd64]: [lvlz2022.3.1-gtpin3.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.0-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2022.3.1, gtpin3.2.2]':
+'buildmany min: [amd64, lvlz2022.3, gtpin3.2]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2022_3_1_gtpin3_2_2_minimum
-  needs: ['setup:build min: [amd64]: [lvlz2022.3.1-gtpin3.2.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.2-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2023.0.0, gtpin3.0]':
+'buildmany min: [amd64, lvlz2023.0, gtpin3.0]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2023_0_0_gtpin3_0_minimum
-  needs: ['setup:build min: [amd64]: [lvlz2023.0.0-gtpin3.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.0-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2023.0.0, gtpin3.2.2]':
+'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
   extends: .buildmany amd64 lvlz
-  image: $IMAGE_amd64_lvlz2023_0_0_gtpin3_2_2_minimum
-  needs: ['setup:build min: [amd64]: [lvlz2023.0.0-gtpin3.2.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.2-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 
@@ -665,24 +508,26 @@ autoreconf:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
-  - ./dev populate /opt/spack-environment
+  - ./dev os-install -y -c "$JOB_CC" git file diffutils tar make eatmydata ccache
+  - *spack_clone
+  - ./dev populate -c "$JOB_CC" /opt/environment
   - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 $JOB_MESON_TEST_OPTS"
   - rm -rf logs/
   # For semifresh runs, regenerate some of the test data before testing. Use some Python to help.
   - >-
     test -z "$REGEN" ||
-    eatmydata ./dev buildfe -d /opt/spack-environment --
+    eatmydata ./dev buildfe -d /opt/environment --
     -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
     --ccache-stats --fail-fast --fresh-unpack --reproducible
-    ${OS_NATIVE_FILE:+-C--native-file=$OS_NATIVE_FILE} -1 -s "$SPEC"
+    -1 -s "$SPEC"
   # Run the test suite for the configuration of interest. Use some Python to help.
   - >-
-    eatmydata ./dev buildfe -d /opt/spack-environment --
+    eatmydata ./dev buildfe -d /opt/environment --
     -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
     --test-opt=--maxfail=10 --test-opt=--repeat=${JOB_TEST_REPEAT:-7}
     ${JOB_TEST_SUITE:+--test-opt=--suite=$JOB_TEST_SUITE}
     --ccache-stats --fail-fast --test-junit-copyout --reproducible
-    ${OS_NATIVE_FILE:+-C--native-file=$OS_NATIVE_FILE} -1 -s "$SPEC"
+    -1 -s "$SPEC"
 
   after_script:
   - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
@@ -697,16 +542,14 @@ autoreconf:
 
 'check amd64: [cpu]':
   extends: .check
-  image: $IMAGE_amd64_ubuntu20_04_main
-  needs: ['setup:build: [amd64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
   tags: [saas-linux-large-amd64, cpu/perf]
   variables: &vars_check_cpu
     JOB_CC: gcc-10
     SPEC: '+mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
 'check min amd64: [cpu]':
   extends: .check
-  image: $IMAGE_amd64_ubuntu20_04_minimum
-  needs: ['setup:build min: [amd64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
   tags: [saas-linux-large-amd64, cpu/perf]
   variables: *vars_check_cpu
 'check semifresh amd64: [cpu]':
@@ -716,16 +559,14 @@ autoreconf:
 
 'check arm64: [cpu]':
   extends: .check
-  image: $IMAGE_arm64_ubuntu20_04_main
-  needs: ['setup:build: [arm64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
   tags: [rice-linux-small-arm64, cpu/perf]
   variables:
     <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
 'check min arm64: [cpu]':
   extends: .check
-  image: $IMAGE_arm64_ubuntu20_04_minimum
-  needs: ['setup:build min: [arm64]: [ubuntu20.04]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
   tags: [rice-linux-small-arm64, cpu/perf]
   variables:
     <<: *vars_check_cpu
@@ -735,64 +576,56 @@ autoreconf:
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
-'check amd64: [+cuda, 11.6.2]':
+'check amd64: [+cuda, 11.6]':
   extends: .check
-  image: $IMAGE_amd64_cuda11_6_2_main
-  needs: ['setup:build: [amd64]: [cuda11.6.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:11.6-$DIGEST_latest
   tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables: &vars_check_cuda
-    OS_NATIVE_FILE: ./ci/native/cuda.ini
     JOB_CC: gcc-9
     SPEC: +mpi +debug ~valgrind_debug +papi +python ~opencl +cuda ~rocm ~level0
     JOB_TEST_SUITE: cuda
-'check min amd64: [+cuda, 11.6.2]':
+'check min amd64: [+cuda, 11.6]':
   extends: .check
-  image: $IMAGE_amd64_cuda11_6_2_minimum
-  needs: ['setup:build min: [amd64]: [cuda11.6.2]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:11.6-$DIGEST_minimum
   tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
   variables: *vars_check_cuda
-'check semifresh amd64: [+cuda, 11.6.2]':
-  extends: 'check amd64: [+cuda, 11.6.2]'
+'check semifresh amd64: [+cuda, 11.6]':
+  extends: 'check amd64: [+cuda, 11.6]'
   tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0, cpu/perf]
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-nvidia'
 
-'check amd64: [+cuda, 11.8.0]':
+'check amd64: [+cuda, 11.8]':
   extends: .check
-  image: $IMAGE_amd64_cuda11_8_0_main
-  needs: ['setup:build: [amd64]: [cuda11.8.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_latest
   tags: [saas-linux-large-amd64]
   variables:
     <<: *vars_check_cuda
     NVIDIA_VISIBLE_DEVICES: ''  # Disallow GPU access
-'check min amd64: [+cuda, 11.8.0]':
+'check min amd64: [+cuda, 11.8]':
   extends: .check
-  image: $IMAGE_amd64_cuda11_8_0_minimum
-  needs: ['setup:build min: [amd64]: [cuda11.8.0]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
   tags: [saas-linux-large-amd64]
   variables:
     <<: *vars_check_cuda
     NVIDIA_VISIBLE_DEVICES: ''  # Disallow GPU access
-'check semifresh amd64: [+cuda, 11.8.0]':
-  extends: 'check amd64: [+cuda, 11.8.0]'
+'check semifresh amd64: [+cuda, 11.8]':
+  extends: 'check amd64: [+cuda, 11.8]'
   tags: [saas-linux-large-amd64, cpu/perf]
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-sw-cuda'
 
 'check amd64: [+rocm]':
   extends: .check
-  image: $IMAGE_amd64_rocm5_2_3_main
-  needs: ['setup:build: [amd64]: [rocm5.2.3]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_latest
   tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
   variables: &vars_check_rocm
-    OS_NATIVE_FILE: ./ci/native/rocm.ini
     JOB_CC: gcc-9
     SPEC: +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda +rocm ~level0
     JOB_TEST_SUITE: rocm
 'check min amd64: [+rocm]':
   extends: .check
-  image: $IMAGE_amd64_rocm5_2_3_minimum
-  needs: ['setup:build min: [amd64]: [rocm5.2.3]', *deps_check, *autoreconf]
+  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_minimum
   tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
   variables: *vars_check_rocm
 'check semifresh amd64: [+rocm]':
@@ -808,8 +641,8 @@ fresh testdata:
   image: docker.io/alpine
   needs:
   - 'check semifresh amd64: [cpu]'
-  - 'check semifresh amd64: [+cuda, 11.6.2]'
-  - 'check semifresh amd64: [+cuda, 11.8.0]'
+  - 'check semifresh amd64: [+cuda, 11.6]'
+  - 'check semifresh amd64: [+cuda, 11.8]'
   - 'check semifresh amd64: [+rocm]'
   when: always
   variables:
@@ -820,9 +653,9 @@ fresh testdata:
   # Unpack all the tarballs to the temporary directory
   - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-none.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-cpu.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6.2]'/regen/*/fresh-testdata-nvidia.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6]'/regen/*/fresh-testdata-nvidia.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [+rocm]'/regen/*/fresh-testdata-amd.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8.0]'/regen/*/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8]'/regen/*/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
   # Repack into a single tarball
   - tar c -Jf testdata.tar.xz -C /tmp/result .
   artifacts:

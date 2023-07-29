@@ -168,6 +168,7 @@ _autogoo_args = [
     '--with-memkind=@0@'.format(memkind_exdep.get_variable(internal: 'prefix')),
     '--with-yaml-cpp=@0@'.format(yaml_cpp_exdep.get_variable(internal: 'prefix')),
 ]
+_autogoo_env = {}
 if xed_exdep.found()
     _autogoo_args += ['--with-xed=@0@'.format(xed_exdep.get_variable(internal: 'prefix'))]
 endif
@@ -216,6 +217,12 @@ _autogoo_args += [
     'CC=@0@'.format(' '.join(_cc.cmd_array())),
     'CXX=@0@'.format(' '.join(_cpp.cmd_array())),
 ]
+if mpicxx.found()
+    _autogoo_env += {
+        'OMPI_CXX': ' '.join(_cpp.cmd_array()),
+        'MPICH_CXX': ' '.join(_cpp.cmd_array()),
+    }
+endif
 
 # Collect and translate the raw compiler flags
 _c2flags = ['-Wstack-usage=65536']
@@ -266,15 +273,17 @@ _autogoo_args += [
 # Run ./configure to configure the project as a whole
 message('Running ./configure ...')
 run_command(files('meson'/'configure'), 'autotools-build', files('configure'), _autogoo_args,
-            check: true, capture: false)
+            check: true, capture: false, env: _autogoo_env)
 
 # Build and install by deferring to a parallel make
 _makepy = files('meson'/'make')
 _autogoo_builddir = meson.project_build_root()/'autotools-build'
-run_target('makeclean', command: [_make, '-C', _autogoo_builddir, 'clean'])
-custom_target('make -j', command: [python, _makepy, _make, '-C', _autogoo_builddir], console: true,
+_makecmd = [_make, '-C', _autogoo_builddir, 'MAKE=@0@'.format(_make.full_path())]
+run_target('makeclean', command: _makecmd + ['clean'], env: _autogoo_env)
+custom_target('make -j', command: [python, _makepy] + _makecmd, console: true, env: _autogoo_env,
               build_always_stale: true, build_by_default: true, output: 'nothing.txt')
-meson.add_install_script(python, _makepy, _make, '-C', _autogoo_builddir, 'install')
+meson.add_install_script(python, _makepy, _make, '-C', _autogoo_builddir,
+                         'MAKE=@0@'.format(_make.full_path()), 'install')
 
 # Once HPCToolkit is installed, they'll be in these paths
 hpcrun = get_option('prefix') / 'bin' / 'hpcrun'

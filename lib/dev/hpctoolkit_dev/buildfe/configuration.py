@@ -761,8 +761,8 @@ class Manifest:
             listing -= found
             for fn in not_found:
                 if isinstance(fn, tuple):
-                    fn, msg = fn
-                    errors.append(f"! {fn.as_posix()}\n  ^ {textwrap.indent(msg, '    ')}")
+                    fn2, msg = fn
+                    errors.append(f"! {fn2.as_posix()}\n  ^ {textwrap.indent(msg, '    ')}")
                 else:
                     errors.append(f"- {fn.as_posix()}")
             n_uninstalled += len(not_found)

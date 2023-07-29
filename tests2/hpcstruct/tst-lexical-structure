@@ -418,7 +418,9 @@ class Tag:
         return tag
 
 
-def parse_sources(sources: collections.abc.Iterable[Path], *, debug: bool, binary: str) -> Tag:
+def parse_sources(  # noqa: C901
+    sources: collections.abc.Iterable[Path], *, debug: bool, binary: str
+) -> Tag:
     # pylint: disable=too-many-locals
     definitions: dict[str, list[Tag]] = {}
     def_parser = Tag.predefined_parser()

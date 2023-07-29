@@ -69,6 +69,7 @@ class Command:
         except subprocess.CalledProcessError as e:
             if e.stdout:
                 sys.stdout.write(e.stdout)
+                sys.stdout.flush()
             raise
 
     def capture(
@@ -96,6 +97,7 @@ class Command:
         except subprocess.CalledProcessError as e:
             if error_output:
                 sys.stdout.write(e.stdout)
+                sys.stdout.flush()
             raise
         return proc.stdout
 

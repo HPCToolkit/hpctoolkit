@@ -85,7 +85,7 @@ def from_path_extended(
         # Attempt 3: It's a YAML file containing a serialized database or otherwise
         with open(src, encoding="utf-8") as f, contextlib.suppress(ruamel.yaml.YAMLError):
             result = ruamel.yaml.YAML(typ="safe").load(f)
-            if isinstance(result, (base.DatabaseBase, base.DatabaseFile)):
+            if isinstance(result, base.DatabaseBase | base.DatabaseFile):
                 return result
 
     # All attempts failed, give up

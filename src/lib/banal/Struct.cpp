@@ -66,6 +66,7 @@
 #include <sys/types.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -99,6 +100,7 @@
 #include <CodeSource.h>
 #include <Function.h>
 #include <Instruction.h>
+#include <InstructionDecoder.h>
 #include <Module.h>
 #include <Region.h>
 #include <Symtab.h>
@@ -112,6 +114,13 @@
 
 #include "gpu/GPUCFG_Cuda.hpp"
 
+#ifdef USE_XED_FOR_GAPS
+extern "C" {
+#include <xed-interface.h>
+}
+#endif
+
+#include "gpu/ReadCudaCFG.hpp"
 
 #ifdef ENABLE_IGC
 #include "gpu/GPUCFG_Intel.hpp"
@@ -145,7 +154,11 @@ using namespace std;
 #define DEBUG_SHOW_GAPS   0
 #define DEBUG_SKEL_SUMMARY  0
 
-#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS
+#define DEBUG_UNKNOWN_CALLBACK  0
+#define DEBUG_NEW_GAPS  0
+
+#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS || DEBUG_NEW_GAPS  \
+    || DEBUG_SKEL_SUMMARY || DEBUG_UNKNOWN_CALLBACK
 #define DEBUG_ANY_ON  1
 #else
 #define DEBUG_ANY_ON  0
@@ -155,6 +168,10 @@ using namespace std;
 #define WORK_LIST_PCT  0.05
 
 static int merge_irred_loops = 1;
+
+#ifdef USE_XED_FOR_GAPS
+static int fix_unknown_x86_instns = 1;
+#endif
 
 
 //******************************************************************************
@@ -170,12 +187,16 @@ static const string & unknown_link = UNKNOWN_LINK;
 static Symtab * the_symtab = NULL;
 static int cuda_arch = 0;
 static int intel_gpu_arch = 0;
+
 // We relocate the symbols and line maps of cubins to 'original_offset+cubin_size'
 // to handle the cases in which relocated offsets conflicts with original information
 static size_t cubin_size = 0;
 
-
 static BAnal::Struct::Options opts;
+
+#if DEBUG_ANY_ON
+static mutex debug_mutex;
+#endif
 
 //----------------------------------------------------------------------
 
@@ -273,6 +294,9 @@ debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
 
 static void
 debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
+
+static void
+debugNewGaps(CodeObject *, string);
 
 #else  // ! DEBUG_ANY_ON
 
@@ -537,6 +561,118 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
 //----------------------------------------------------------------------
 
+// InstructionAPI implements an "unknown instruction" callback on
+// x86_64.  When it finds a byte sequence that it can't decode as a
+// valid instruction, it calls this callback, we try it with XED and
+// return an n-byte fake no-op.
+//
+#ifdef USE_XED_FOR_GAPS
+
+#define MY_BUF_SIZE (XED_MAX_INSTRUCTION_BYTES + 4)
+
+InstructionAPI::Instruction
+myXedCallback(InstructionDecoder::buffer seqn)
+{
+  uint8_t buf[MY_BUF_SIZE];
+  Instruction ret;
+
+  // copy into array of uint8_t for xed
+  int buf_len = 0;
+  for (auto p = seqn.start; p != seqn.end; ++p) {
+    buf[buf_len] = (uint8_t) *p;
+    buf_len++;
+
+    if (buf_len >= MY_BUF_SIZE) {
+      break;
+    }
+  }
+
+  xed_decoded_inst_t xedd;
+  xed_state_t dstate;
+  unsigned int xed_len = 0;
+
+  // test beginning of buffer
+  xed_state_zero(&dstate);
+  dstate.mmode = XED_MACHINE_MODE_LONG_64;
+  xed_decoded_inst_zero_set_mode(&xedd, &dstate);
+
+  int xed_error = xed_decode(&xedd, buf, buf_len);
+  bool is_valid = (xed_error == XED_ERROR_NONE);
+
+  if (is_valid && fix_unknown_x86_instns) {
+    //
+    // valid instruction at beginning of buffer -- return a dyninst
+    // fake no-op, all we care about is the length, since we don't
+    // expect any control flow here
+    //
+    xed_len = xed_decoded_inst_get_length(&xedd);
+    ret = Instruction {
+      { e_nop, "nop", Arch_x86_64 },
+      xed_len,
+      seqn.start,
+      Arch_x86_64
+    };
+  }
+  else {
+    //
+    // invalid instruction
+    //
+    ret = Instruction {};
+  }
+
+#if DEBUG_UNKNOWN_CALLBACK
+
+  int start;
+  bool is_troll = false;
+
+  if (! is_valid) {
+    //
+    // try trolling for next instruction, but do not fix.
+    // if found, then likely dyninst is out of sync
+    //
+    for (start = 1; start < buf_len; start++) {
+      xed_state_zero(&dstate);
+      dstate.mmode = XED_MACHINE_MODE_LONG_64;
+      xed_decoded_inst_zero_set_mode(&xedd, &dstate);
+      xed_error = xed_decode(&xedd, buf + start, buf_len - start);
+
+      if (xed_error == XED_ERROR_NONE) {
+	is_troll = true;
+	xed_len = xed_decoded_inst_get_length(&xedd);
+	break;
+      }
+    }
+  }
+
+  // serialize the output to allow for multiple threads.
+  // we could sprintf() to a buffer and then dump all at once
+  debug_mutex.lock();
+
+  printf("unknown: ");
+  for (int i = 0; i < buf_len; i++) {
+    printf(" %02x", buf[i]);
+  }
+  if (is_valid) {
+    printf("  valid: %d%s\n",
+	   xed_len, (fix_unknown_x86_instns ? "  (fix)" : ""));
+  }
+  else if (is_troll) {
+    printf("  troll: %d, %d\n", start, xed_len);
+  }
+  else {
+    printf("  error:\n");
+  }
+
+  debug_mutex.unlock();
+
+#endif  // DEBUG_UNKNOWN_CALLBACK
+
+  return ret;
+}
+#endif  // USE_XED_FOR_GAPS
+
+//----------------------------------------------------------------------
+
 //
 // Display time and space usage per phase in makeStructure.
 //
@@ -556,7 +692,6 @@ printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
 
   cout << endl;
 }
-
 
 //
 // makeStructure -- the main entry point for hpcstruct realmain().
@@ -580,6 +715,10 @@ makeStructure(string filename,
   struct rusage  ru_init, ru_symtab, ru_parse, ru_fini;
 
   opts = structOpts;
+
+#ifdef USE_XED_FOR_GAPS
+  xed_tables_init();
+#endif
 
 #ifdef ENABLE_OPENMP
   omp_set_num_threads(opts.jobs_symtab);
@@ -629,6 +768,15 @@ makeStructure(string filename,
     the_symtab = symtab;
     bool cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
+#ifdef USE_XED_FOR_GAPS
+    // for now, only use callback on x86 cpu binaries
+    if (symtab->getArchitecture() == Arch_x86_64) {
+      InstructionDecoder::unknown_instruction::register_callback(&myXedCallback);
+    } else {
+      InstructionDecoder::unknown_instruction::unregister_callback();
+    }
+#endif
+
     // pre-compute line map info
     vector <Module *> modVec;
     the_symtab->getAllModules(modVec);
@@ -654,26 +802,28 @@ makeStructure(string filename,
 #endif
 
     bool intel_file = elfFile->isIntelGPUFile();
-
     bool has_calls;
+
     if (cuda_file) { // don't run parseapi on cuda binary
       cuda_arch = elfFile->getArch();
       cubin_size = elfFile->getLength();
       parsable = buildCudaGPUCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
       has_calls = structOpts.compute_gpu_cfg;
-    } else if (intel_file) { // don't run parseapi on intel binary
+    }
+    else if (intel_file) { // don't run parseapi on intel binary
       intel_gpu_arch = 1;
-      #ifdef ENABLE_IGC
+#ifdef ENABLE_IGC
       bool compute_intel_gpu_cfg = true;
       parsable = buildIntelGPUCFG(search_path, elfFile, the_symtab,
 			      compute_intel_gpu_cfg, false,
 			      structOpts.jobs, &code_src, &code_obj);
       has_calls = compute_intel_gpu_cfg;
-      #else  // ENABLE_IGC
+#else
       has_calls = false;
-      #endif  // ENABLE_IGC
-    } else {
+#endif  // ENABLE_IGC
+    }
+    else {
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();
@@ -743,6 +893,10 @@ makeStructure(string filename,
       printTime("total: ", &tv_init, &ru_init, &tv_fini, &ru_fini);
       cout << "\nnum funcs: " << wlPrint.size() << "\n" << endl;
     }
+
+#if DEBUG_NEW_GAPS
+    debugNewGaps(code_obj, elfFile->getFileName());
+#endif
 
     // if this is the last (or only) elf file, then don't bother with
     // piecemeal cleanup.
@@ -1688,6 +1842,8 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
   }
 
 #if DEBUG_SHOW_GAPS
+  debug_mutex.lock();
+
   auto pit = ginfo->procMap.begin();
   ProcInfo * pinfo = pit->second;
 
@@ -1707,6 +1863,8 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
   else {
     cout << "\ngaps: alt-file\n";
   }
+
+  debug_mutex.unlock();
 #endif
 }
 
@@ -2891,7 +3049,101 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
   }
 }
 
-#endif  // DEBUG_CFG_SOURCE
+//----------------------------------------------------------------------
+
+#if DEBUG_NEW_GAPS
+
+// Search for unclaimed regions (gaps) between basic blocks.  Some
+// compilers insert cold regions inside other functions, so we need to
+// analyze all blocks together.
+//
+static void
+debugNewGaps(CodeObject * code_obj, string elfFilename)
+{
+  long num_gaps = 0;
+  long num_gaps_16 = 0;
+  long num_gaps_64 = 0;
+  long num_gaps_256 = 0;
+  long num_gaps_other = 0;
+
+  long size_gaps = 0;
+  long size_gaps_16 = 0;
+  long size_gaps_64 = 0;
+  long size_gaps_256 = 0;
+  long size_gaps_other = 0;
+
+  //
+  // get list of all blocks and sort by start address
+  //
+  const CodeObject::funclist & funcList = code_obj->funcs();
+  vector <Block *> blockVec;
+
+  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit) {
+    ParseAPI::Function * func = *fit;
+    const ParseAPI::Function::blocklist & blist = func->blocks();
+
+    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      Block * block = *bit;
+      blockVec.push_back(block);
+    }
+  }
+
+  std::sort(blockVec.begin(), blockVec.end(), BlockLessThan);
+
+  //
+  // compare adjacent blocks
+  //
+  Block * prev_block = blockVec[0];
+
+  for (long n = 1; n < blockVec.size(); n++) {
+    Block * block = blockVec[n];
+    long size = block->start() - prev_block->end();
+
+    if (size > 0) {
+      cout << "gap: prev block: 0x" << hex << prev_block->start()
+	   << "  end: 0x" << prev_block->end()
+	   << "  next: 0x" << block->start()
+	   << "  size: 0x" << size
+	   << dec << " (" << size << ")\n";
+
+      num_gaps++;
+      size_gaps += size;
+
+      if (size < 16) {
+	  num_gaps_16++;
+	  size_gaps_16 += size;
+      }
+      else if (size < 64) {
+	  num_gaps_64++;
+	  size_gaps_64 += size;
+      }
+      else if (size < 256) {
+	  num_gaps_256++;
+	  size_gaps_256 += size;
+      }
+      else {
+	  num_gaps_other++;
+	  size_gaps_other += size;
+      }
+    }
+
+    prev_block = block;
+  }
+
+  printf("\nnum gaps: %8ld    size: %10ld\n"
+	 "under 16: %8ld    size: %10ld\n"
+	 "under 64: %8ld    size: %10ld\n"
+	 "under 256: %7ld    size: %10ld\n"
+	 "other:    %8ld    size: %10ld\n",
+	 num_gaps, size_gaps, num_gaps_16, size_gaps_16,
+	 num_gaps_64, size_gaps_64, num_gaps_256, size_gaps_256,
+	 num_gaps_other, size_gaps_other);
+
+  cout << endl;
+}
+
+#endif  // DEBUG_NEW_GAPS
+#endif  // DEBUG_ANY_ON
 
 }  // namespace Struct
 }  // namespace BAnal

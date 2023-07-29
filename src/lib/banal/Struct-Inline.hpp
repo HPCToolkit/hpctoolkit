@@ -164,7 +164,7 @@ public:
 };
 
 
-// Compare (file, line, proc) indices lexigraphically.
+// Compare (file, line, proc) indices lexicographically.
 class FLPCompare {
 public:
   bool operator() (const FLPIndex t1, const FLPIndex t2) const

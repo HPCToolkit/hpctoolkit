@@ -26,7 +26,7 @@ def _pretty_path(path: collections.abc.Iterable[str | int], obj) -> list[str]:
     """
     result = [""]
     for p in path:
-        assert isinstance(p, (int, str))
+        assert isinstance(p, int | str)
         if isinstance(obj, StructureBase):
             assert isinstance(p, str)
             if obj.shorthand is not None:
@@ -341,7 +341,7 @@ class StrictDiff(DiffStrategy):
             all_vb = b_dict[ka]
             if len(all_va) == 1 and len(all_va) == len(all_vb):
                 # The key provides an unambiguous match, so use that
-                self._update(list(all_va)[0], list(all_vb)[0])
+                self._update(next(iter(all_va)), next(iter(all_vb)))
                 continue
 
             # Build up a list of all perfect matches. We only consider ambiguity when it wouldn't
@@ -363,7 +363,7 @@ class StrictDiff(DiffStrategy):
                 to_rm = []
                 for va, good_vbs in matches.items():
                     if len(good_vbs) == 1:
-                        to_rm.append((va, list(good_vbs)[0]))
+                        to_rm.append((va, next(iter(good_vbs))))
                 for va, vb in to_rm:
                     self._update(va, vb)
                     del matches[va]

@@ -17679,8 +17679,8 @@ $as_echo "$as_me: objcopy is $OBJCOPY" >&6;}
 # C compiler checks
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C comiler for tests ***" >&5
-$as_echo "$as_me: *** Using C comiler for tests ***" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C compiler for tests ***" >&5
+$as_echo "$as_me: *** Using C compiler for tests ***" >&6;}
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -17871,8 +17871,8 @@ _ACEOF
 # C++ compiler checks
 #-------------------------------------------------
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C++ comiler for tests ***" >&5
-$as_echo "$as_me: *** Using C++ comiler for tests ***" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: *** Using C++ compiler for tests ***" >&5
+$as_echo "$as_me: *** Using C++ compiler for tests ***" >&6;}
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -22396,6 +22396,51 @@ fi
 
 #-------------------------------------------------
 
+# Test if dyninst supports the unknown instruction API.
+# For now, use this only on x86 with XED.
+
+use_xed_for_gaps=no
+
+if test "$DYNINST" != no && test "$XED2" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dyninst unknown instruction support" >&5
+$as_echo_n "checking for dyninst unknown instruction support... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <Instruction.h>
+#include <InstructionDecoder.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+Instruction mycallback(InstructionDecoder::buffer buf)
+{
+  return Instruction{};
+}
+void install_callback(void)
+{
+  InstructionDecoder::unknown_instruction::register_callback(mycallback);
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  use_xed_for_gaps=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_xed_for_gaps" >&5
+$as_echo "$use_xed_for_gaps" >&6; }
+fi
+
+if test "$use_xed_for_gaps" = yes ; then
+
+$as_echo "#define USE_XED_FOR_GAPS 1" >>confdefs.h
+
+  dyninst_features="$dyninst_features unknown-instn"
+fi
+
+#-------------------------------------------------
+
 # Test if dyninst supports cuda.
 
 use_cuda=no
@@ -22521,6 +22566,10 @@ $as_echo "#define DYNINST_SUPPORTS_INTEL_GPU 1" >>confdefs.h
 fi
 
 #-------------------------------------------------
+
+dyninst_features=`echo $dyninst_features`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: dyninst features: $dyninst_features" >&5
+$as_echo "$as_me: dyninst features: $dyninst_features" >&6;}
 
 # Restore C++ flags from dyninst tests
 
@@ -27448,8 +27497,6 @@ fi
 #-------------------------------------------------
 # Summary of the config options.
 #-------------------------------------------------
-
-dyninst_features=`echo $dyninst_features`
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: -------------------" >&5
 $as_echo "$as_me: -------------------" >&6;}

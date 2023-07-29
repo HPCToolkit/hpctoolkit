@@ -36,7 +36,7 @@ def colorize_str(color, string):
 @contextlib.contextmanager
 def section(header, collapsed=False, color=None):
     """Wrap any text printed to stdout in this context manager as a GitLab collapsible section."""
-    global _section_counter
+    global _section_counter  # noqa: PLW0603
     _section_counter += 1
     codename = "section_" + str(_section_counter) + "_" + random.randbytes(8).hex()
     opts = "[collapsed=true]" if collapsed else ""

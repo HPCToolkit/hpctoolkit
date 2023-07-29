@@ -20,7 +20,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: February 22, 2023.
+#  Last revised: July 11, 2023.
 #
 packages:
 
@@ -113,7 +113,7 @@ packages:
   # 2-field numbers ending with "0".
   #
   hpcviewer:
-    version: [2023.02]
+    version: [2023.04]
 
 
   # binutils -- only used for old versions
@@ -144,7 +144,7 @@ packages:
   # interfere with another package's needs.
   #
   boost:
-    version:  [1.77.0]
+    version:  [1.81.0]
     variants: >
       +atomic +chrono +date_time +filesystem +system +thread +timer
       +graph +regex +shared +multithreaded
@@ -182,17 +182,18 @@ packages:
   # 0.184 fixes a bug in binaries compiled with gcc 11.x.
   # dyninst 12.0.1 requires latest elfutils >= 0.186.
   #
-  # +bzip2, +xz are for reading compressed sections.
+  # +bzip2, +xz no longer exist (always on)
   # ~nls is used to avoid building gettext.
   #
   elfutils:
-    version:  [0.188]
-    variants: +bzip2 +xz ~nls
+    version:  [0.189]
+    variants: ~nls
 
 
   # intel-tbb -- used by dyninst as part of parallel parsing.
   #
-  # Use 2020.3, dyninst can't handle later versions (not yet).
+  # Use 2020.3 for now, dyninst master can handle later versions, but
+  # not 12.3.0 release.
   #
   # Note: add ~tm for very old x86 or AMD or KNL systems that don't
   # support transactional memory (no-op on non-x86).
@@ -212,7 +213,7 @@ packages:
   # +pic is now required to link with hpcrun
   #
   intel-xed:
-    version:  [2022.04.17]
+    version:  [2023.04.16]
     variants: +debug +pic
 
 
@@ -228,8 +229,11 @@ packages:
   #
   # +pic is needed to link with dyninst shared library.
   #
+  # Note: need to quote "2.40" to avoid looking like floating point
+  # number 2.4 (it's a yaml thing).
+  #
   libiberty:
-    version:  [2.37]
+    version:  ["2.40"]
     variants: +pic
 
 
@@ -257,7 +261,7 @@ packages:
   # Normally want the latest version to support recent CPU types.
   #
   libpfm4:
-    version:  [4.11.0]
+    version:  [4.13.0]
 
 
   # libunwind -- used in hpcrun to help with unwinding.
@@ -318,12 +322,12 @@ packages:
   # xz (lzma) -- used by elfutils and libunwind to read compressed
   # sections.
   #
-  # Currently, hpcrun won't link correctly with 5.2.7 and later.
+  # Avoid 5.2.7 (hpcrun won't link), but 5.2.10 or later is ok.
   #
   # +pic is required for linking with hpcrun.
   #
   xz:
-    version:  [5.2.6]
+    version:  [5.2.10]
     variants: +pic
 
 

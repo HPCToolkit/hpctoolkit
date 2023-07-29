@@ -186,6 +186,9 @@
 /* Use system byteswap.h */
 #undef USE_SYSTEM_BYTESWAP
 
+/* use dyninst and xed for unknown instructions */
+#undef USE_XED_FOR_GAPS
+
 /* Version number of package */
 #undef VERSION
 

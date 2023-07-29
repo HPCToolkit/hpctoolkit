@@ -73,7 +73,7 @@ class StructureBase:
         """Return a short 1-line string that can be used to describe this object, or None if the
         class name is a sufficient shorthand for this object.
         """
-        return None  # noqa: RET501
+        return None
 
     def __str__(self) -> str:
         sh = self.shorthand
@@ -84,13 +84,13 @@ class StructureBase:
         """List the fields that objects of this type "own". Recursing only through "owned" fields
         will result in a perfect tree iteration rather than a DAG iteration.
         """
-        return dataclasses.fields(cls)
+        return dataclasses.fields(cls)  # type: ignore[arg-type]
 
     def __getstate__(self) -> dict[str, typing.Any]:
-        return {f.name: getattr(self, f.name) for f in dataclasses.fields(self)}
+        return {f.name: getattr(self, f.name) for f in dataclasses.fields(self)}  # type: ignore[arg-type]
 
     def __setstate__(self, state: dict[str, typing.Any]):
-        for f in dataclasses.fields(self):
+        for f in dataclasses.fields(self):  # type: ignore[arg-type]
             if f.name not in state:
                 raise ValueError(f"Attempt to load invalid serialized state: no field {f.name}")
             setattr(self, f.name, state[f.name])
@@ -136,7 +136,7 @@ def canonical_paths(obj: StructureBase) -> dict[StructureBase, tuple[str | int, 
                 del path[-1]
         elif isinstance(o, dict):
             for k, v in o.items():
-                assert isinstance(k, (str, int))
+                assert isinstance(k, str | int)
                 path.append(k)
                 add(v, path)
                 del path[-1]
@@ -226,7 +226,8 @@ class DatabaseFile(StructureBase):
             warnings.warn(
                 UnsupportedFormatWarning(
                     f"This implementation is only able to read version <={major:d}.{minor:d}, got v{in_major:d}.{in_minor:d}. Some data may be skipped."
-                )
+                ),
+                stacklevel=1,
             )
         return in_minor
 
