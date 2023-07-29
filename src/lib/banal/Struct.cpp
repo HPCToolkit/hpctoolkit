@@ -120,8 +120,6 @@ extern "C" {
 }
 #endif
 
-#include "gpu/ReadCudaCFG.hpp"
-
 #ifdef ENABLE_IGC
 #include "gpu/GPUCFG_Intel.hpp"
 #endif // ENABLE_IGC
