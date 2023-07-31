@@ -1,5 +1,6 @@
 import collections.abc
 import copy
+import enum
 import functools
 import json
 import os
@@ -11,15 +12,23 @@ from pathlib import Path
 
 import click
 import ruamel.yaml
+import spiqa
+import spiqa.syntax as sp_syntax
 from yaspin import yaspin  # type: ignore[import]
 
 from .command import Command
 from .meson import MesonMachineFile
 from .spack import Compiler, Package, Spack, preferred_compiler
 from .spack import proxy as spack_proxy
-from .spec import DependencyMode, VerConSpec, resolve_specs
 
-__all__ = ("DevEnv", "InvalidSpecificationError")
+__all__ = ("DependencyMode", "DevEnv", "InvalidSpecificationError")
+
+
+@enum.unique
+class DependencyMode(enum.Enum):
+    LATEST = "--latest"
+    MINIMUM = "--minimum"
+    ANY = "--any"
 
 
 class InvalidSpecificationError(ValueError):
@@ -79,6 +88,10 @@ class DevEnv:
     @functools.cached_property
     def spack(self) -> Spack:
         return Spack(self.root)
+
+    @functools.cached_property
+    def livespack(self) -> spiqa.LiveSpack:
+        return spiqa.live_obj(env=self.root)
 
     @functools.cached_property
     def packages(self) -> dict[str, Package]:
@@ -178,72 +191,80 @@ class DevEnv:
 """
 
     @functools.cached_property
-    def _py_specs(self) -> set[VerConSpec]:
-        """Generate the set of Python extensions that need to be installed, as VerConSpecs."""
+    def _py_specs(self) -> set[sp_syntax.Spec]:
+        """Generate the set of Python extensions that need to be installed, as Specs."""
         return {
-            VerConSpec("py-poetry-core @1.2.0:"),
-            VerConSpec("py-pytest @7.2.1:"),
-            VerConSpec("py-ruamel-yaml @0.17.16:"),
-            VerConSpec("py-click @8.1.3:"),
-            VerConSpec("py-pyparsing @3.0.9:"),
+            sp_syntax.Spec.parse("py-poetry-core @1.2.0:"),
+            sp_syntax.Spec.parse("py-pytest @7.2.1:"),
+            sp_syntax.Spec.parse("py-ruamel-yaml @0.17.16:"),
+            sp_syntax.Spec.parse("py-click @8.1.3:"),
+            sp_syntax.Spec.parse("py-pyparsing @3.0.9:"),
         }
 
     @functools.cached_property
-    def _specs(self) -> set[VerConSpec]:
-        """Generate the set of Spack specs that will need to be installed for the given config, as VerConSpecs."""
-        result: set[VerConSpec] = (
+    def _specs(
+        self,
+    ) -> collections.abc.Mapping[str | None, collections.abc.Collection[sp_syntax.Spec]]:
+        """Generate the set of Spack Specs that will need to be installed for the given config.
+
+        The Specs are grouped by their `when:` clause.
+        """
+        result: dict[str | None, set[sp_syntax.Spec]] = collections.defaultdict(set)
+        result[None] = (
             {
                 # NB: Meson is required as a build tool, but does not need to be included in the devenv
                 # itself. It is instead installed separately in a venv by __main__.py.
-                VerConSpec("autoconf @2.69"),
-                VerConSpec("automake @1.15.1"),
-                VerConSpec("libtool @2.4.6"),
-                VerConSpec("m4"),
-                VerConSpec("gmake"),
-                VerConSpec(
+                sp_syntax.Spec.parse("autoconf @2.69"),
+                sp_syntax.Spec.parse("automake @1.15.1"),
+                sp_syntax.Spec.parse("libtool @2.4.6"),
+                sp_syntax.Spec.parse("m4"),
+                sp_syntax.Spec.parse("gmake"),
+                sp_syntax.Spec.parse(
                     """boost @1.70.0:
                 +atomic +date_time +filesystem +system +thread +timer +graph +regex
                 +shared +multithreaded
                 visibility=global"""
                 ),
-                VerConSpec("bzip2 @1.0.8:"),
-                VerConSpec("dyninst @12.3.0:"),
-                VerConSpec("elfutils ~nls @0.186:"),
-                VerConSpec("intel-tbb +shared @2020.3"),
-                VerConSpec("libmonitor +hpctoolkit ~dlopen @2023.03.15:"),
-                VerConSpec("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
-                VerConSpec("zlib +shared @1.2.13:"),
-                VerConSpec("libunwind +xz +pic @1.6.2:"),
-                VerConSpec("libpfm4 @4.11.0:"),
-                VerConSpec("xerces-c transcoder=iconv @3.2.3:"),
-                VerConSpec("libiberty +pic @2.37:"),
-                VerConSpec("intel-xed +pic @2022.04.17:", when="arch.satisfies('target=x86_64:')"),
-                VerConSpec("memkind"),
-                VerConSpec("yaml-cpp +shared @0.7.0:"),
-                VerConSpec("pkgconfig"),
-                VerConSpec("python +ctypes +lzma +bz2 +zlib @3.10.8:"),
+                sp_syntax.Spec.parse("bzip2 @1.0.8:"),
+                sp_syntax.Spec.parse("dyninst @12.3.0:"),
+                sp_syntax.Spec.parse("elfutils ~nls @0.186:"),
+                sp_syntax.Spec.parse("intel-tbb +shared @2020.3"),
+                sp_syntax.Spec.parse("libmonitor +hpctoolkit ~dlopen @2023.03.15:"),
+                sp_syntax.Spec.parse("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
+                sp_syntax.Spec.parse("zlib +shared @1.2.13:"),
+                sp_syntax.Spec.parse("libunwind +xz +pic @1.6.2:"),
+                sp_syntax.Spec.parse("libpfm4 @4.11.0:"),
+                sp_syntax.Spec.parse("xerces-c transcoder=iconv @3.2.3:"),
+                sp_syntax.Spec.parse("libiberty +pic @2.37:"),
+                sp_syntax.Spec.parse("memkind"),
+                sp_syntax.Spec.parse("yaml-cpp +shared @0.7.0:"),
+                sp_syntax.Spec.parse("pkgconfig"),
+                sp_syntax.Spec.parse("python +ctypes +lzma +bz2 +zlib @3.10.8:"),
             }
             | self._py_specs
         )
+        result["arch.satisfies('target=x86_64:')"] = {
+            sp_syntax.Spec.parse("intel-xed +pic @2022.04.17:")
+        }
 
         if self.papi:
-            result.add(VerConSpec("papi @6.0.0.1:"))
+            result[None].add(sp_syntax.Spec.parse("papi @6.0.0.1:"))
         if self.cuda:
-            result.add(VerConSpec("cuda @10.2.89:"))
+            result[None].add(sp_syntax.Spec.parse("cuda @10.2.89:"))
         if self.level0 or self.gtpin:
-            result.add(VerConSpec("oneapi-level-zero @1.7.15:"))
+            result[None].add(sp_syntax.Spec.parse("oneapi-level-zero @1.7.15:"))
         if self.gtpin:
-            result.add(VerConSpec("intel-gtpin @3.0:"))
-            result.add(VerConSpec("oneapi-igc"))
+            result[None].add(sp_syntax.Spec.parse("intel-gtpin @3.0:"))
+            result[None].add(sp_syntax.Spec.parse("oneapi-igc"))
         if self.opencl:
-            result.add(VerConSpec("opencl-c-headers @2022.01.04:"))
+            result[None].add(sp_syntax.Spec.parse("opencl-c-headers @2022.01.04:"))
         if self.rocm:
-            result.add(VerConSpec("hip @5.1.3:"))
-            result.add(VerConSpec("hsa-rocr-dev @5.1.3:"))
-            result.add(VerConSpec("roctracer-dev @5.1.3:"))
-            result.add(VerConSpec("rocprofiler-dev @5.1.3:"))
+            result[None].add(sp_syntax.Spec.parse("hip @5.1.3:"))
+            result[None].add(sp_syntax.Spec.parse("hsa-rocr-dev @5.1.3:"))
+            result[None].add(sp_syntax.Spec.parse("roctracer-dev @5.1.3:"))
+            result[None].add(sp_syntax.Spec.parse("rocprofiler-dev @5.1.3:"))
         if self.mpi:
-            result.add(VerConSpec("mpi"))
+            result[None].add(sp_syntax.Spec.parse("mpi"))
 
         return result
 
@@ -276,6 +297,8 @@ class DevEnv:
         """Generate the Spack environment."""
         yaml = ruamel.yaml.YAML(typ="safe")
         yaml.default_flow_style = False
+        if mode == DependencyMode.LATEST:
+            outerspack = spiqa.live_obj()
 
         self.root.mkdir(exist_ok=True)
 
@@ -288,11 +311,21 @@ class DevEnv:
 
         sp.setdefault("concretizer", {})["unify"] = True
         sp["definitions"] = [d for d in contents["spack"].get("definitions", []) if "_dev" not in d]
-        for when, subspecs in sorted(
-            resolve_specs(self._specs, mode, unresolve=unresolve).items(),
-            key=lambda kv: kv[0] or "",
-        ):
-            clause: dict[str, str | list[str]] = {"_dev": sorted(subspecs)}
+        for when, subspecs in sorted(self._specs.items(), key=lambda kv: kv[0] or ""):
+            clause_specs = []
+            for spec in subspecs:
+                match (DependencyMode.ANY if spec.root.package in unresolve else mode):
+                    case DependencyMode.ANY:
+                        clause_specs.append(spec)
+                    case DependencyMode.MINIMUM:
+                        clause_specs.append(spec.with_root(spec.root.with_minimized_versions))
+                    case DependencyMode.LATEST:
+                        clause_specs.append(
+                            spec.with_root(outerspack.maximize_node_versions(spec.root))
+                        )
+            clause: dict[str, str | list[str]] = {
+                "_dev": sorted([str(spec) for spec in clause_specs])
+            }
             if when is not None:
                 clause["when"] = when
             sp["definitions"].append(clause)
@@ -319,7 +352,7 @@ class DevEnv:
             raise click.ClickException(f"spack install failed with code {e.returncode}") from e
 
     def which(
-        self, command: str, spec: VerConSpec, *, check_arg: str | None = "--version"
+        self, command: str, spec: sp_syntax.Spec, *, check_arg: str | None = "--version"
     ) -> Command:
         path = self.package(str(spec)).load["PATH"]
         cmd = shutil.which(command, path=path)
@@ -339,7 +372,7 @@ class DevEnv:
 
         packages = set()
         for s in self._py_specs:
-            pkg = self.packages[s.package]
+            pkg = self.packages[s.root.package]
             packages.add(pkg)
             packages |= pkg.dependencies
         self.spack.view_add(self._pyview, *sorted(packages, key=lambda p: p.fullhash))
@@ -377,12 +410,14 @@ class DevEnv:
         native.add_binary("python", self._pyview / "bin" / "python3")
         if self.mpi:
             native.add_binary(
-                "mpicxx", self.which("mpicxx", VerConSpec("mpi"), check_arg=None).path
+                "mpicxx", self.which("mpicxx", sp_syntax.Spec.parse("mpi"), check_arg=None).path
             )
-            native.add_binary("mpiexec", self.which("mpiexec", VerConSpec("mpi")).path)
+            native.add_binary("mpiexec", self.which("mpiexec", sp_syntax.Spec.parse("mpi")).path)
         if self.cuda:
-            native.add_binary("cuda", self.which("nvcc", VerConSpec("cuda"), check_arg=None).path)
-            native.add_binary("nvdisasm", self.which("nvdisasm", VerConSpec("cuda")).path)
+            native.add_binary(
+                "cuda", self.which("nvcc", sp_syntax.Spec.parse("cuda"), check_arg=None).path
+            )
+            native.add_binary("nvdisasm", self.which("nvdisasm", sp_syntax.Spec.parse("cuda")).path)
 
     def _m_prefixes(self, native: MesonMachineFile) -> None:
         native.add_property("prefix_boost", self.packages["boost"].prefix)

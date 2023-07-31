@@ -24,10 +24,9 @@ from . import schema
 from .buildfe import logs
 from .buildfe._main import main as buildfe_main
 from .command import Command
-from .envs import DevEnv, InvalidSpecificationError
+from .envs import DependencyMode, DevEnv, InvalidSpecificationError
 from .spack.system import OSClass, SystemCompiler
 from .spack.system import translate as os_translate
-from .spec import DependencyMode
 
 __all__ = ("main",)
 
@@ -862,7 +861,7 @@ FEATURE_PACKAGES: dict[str, collections.abc.Collection[str]] = {
     "rocm": ("hip", "hsa-rocr-dev", "rocprofiler-dev", "roctracer-dev"),
     "level0": ("oneapi-level-zero",),
     "gtpin": ("intel-gtpin",),
-    "igc": ("oneapi-igc"),
+    "igc": ("oneapi-igc",),
 }
 
 
