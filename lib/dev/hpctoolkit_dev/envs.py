@@ -2,59 +2,22 @@ import collections.abc
 import functools
 import json
 import shutil
-import typing
 from pathlib import Path
 
 import click
 from yaspin import yaspin  # type: ignore[import]
 
-from .command import Command, ShEnv
+from .command import Command
 from .meson import MesonMachineFile
 from .spack import Compiler
 from .spack import proxy as spack_proxy
 from .spec import DependencyMode, SpackEnv, VerConSpec
 
-__all__ = ("AutogenEnv", "DevEnv", "InvalidSpecificationError")
+__all__ = ("DevEnv", "InvalidSpecificationError")
 
 
 class InvalidSpecificationError(ValueError):
     pass
-
-
-class AutogenEnv(SpackEnv):
-    """Variant of a SpackEnv for the ./autogen environment."""
-
-    _SPECS: typing.ClassVar[frozenset[VerConSpec]] = frozenset(
-        {
-            VerConSpec("autoconf @2.69"),
-            VerConSpec("automake @1.15.1"),
-            VerConSpec("libtool @2.4.6"),
-            VerConSpec("m4"),
-        }
-    )
-
-    def environ(self) -> ShEnv:
-        overlay = {
-            "AUTOCONF": str(self.packages["autoconf"].prefix / "bin" / "autoconf"),
-            "ACLOCAL": str(self.packages["automake"].prefix / "bin" / "aclocal"),
-            "AUTOHEADER": str(self.packages["autoconf"].prefix / "bin" / "autoheader"),
-            "AUTOM4TE": str(self.packages["autoconf"].prefix / "bin" / "autom4te"),
-            "AUTOMAKE": str(self.packages["automake"].prefix / "bin" / "automake"),
-            "LIBTOOLIZE": str(self.packages["libtool"].prefix / "bin" / "libtoolize"),
-            "M4": str(self.packages["m4"].prefix / "bin" / "m4"),
-        }
-        return ShEnv("").extend(overlay)
-
-    @property
-    def autoreconf(self) -> Command:
-        return Command(self.packages["autoconf"].prefix / "bin" / "autoreconf")
-
-    def generate(
-        self, unresolve: collections.abc.Collection[str] = (), template: dict | None = None
-    ) -> None:
-        self.generate_explicit(
-            self._SPECS, DependencyMode.ANY, unresolve=unresolve, template=template
-        )
 
 
 class DevEnv(SpackEnv):
