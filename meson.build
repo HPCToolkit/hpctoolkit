@@ -115,6 +115,7 @@ _autoenv = {
 }
 message('Running ./autogen ...')
 run_command(files('meson'/'autogen'),
+    # The following files are read during the autogen process
     files('configure.ac'),
     files('doc'/'Makefile.am'),
     files('doc'/'man'/'Makefile.am'),
@@ -148,6 +149,22 @@ run_command(files('meson'/'autogen'),
     files('src'/'tool'/'hpcprof'/'Makefile.am'),
     files('lib'/'Makefile.am'),
     files('tests'/'Makefile.am'),
+    # The following files are read by ./configure, but we put them here so that Meson regenerates
+    # automatically when any of them change.
+    # Passed to AC_CONFIG_FILES(...):
+    files('doc/man/HPCToolkitVersionInfo.tex.in'),
+    files('tests/Makefile.spack.in'),
+    files('src/tool/hpcrun/scripts/hpcrun.in'),
+    files('src/tool/hpcrun/scripts/hpclink.in'),
+    files('src/tool/hpcrun/scripts/hpcsummary.in'),
+    files('src/tool/hpcproftt/hpcproftt.in'),
+    files('src/tool/hpcstruct/hpcstruct.in'),
+    files('src/tool/hpcstruct/dotgraph.in'),
+    files('tests/run-sort.in'),
+    # Passed to AC_SUBST_FILE(...):
+    files('config/copyright-hash'),
+    files('config/export-hpctoolkit'),
+    files('config/launch-options'),
     check: true, capture: false, env: _autoenv)
 
 # Generate the full set of --with-* arguments for ./configure. This propagates the dependencies to
