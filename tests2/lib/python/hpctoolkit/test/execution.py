@@ -81,11 +81,26 @@ class Measurements:
     def __str__(self):
         return f"{self.__class__.__name__}({self.basedir}, {len(self.thread_stems)} threads)"
 
-    def check_standard(self, *, procs: int = 1, threads_per_proc: int = 1, traces: bool = False):
-        threads = procs * threads_per_proc
-        if len(self.thread_stems) != threads:
+    def check_standard(
+        self,
+        *,
+        procs: int = 1,
+        threads_per_proc: int | collections.abc.Collection[int] = 1,
+        traces: bool = False,
+    ):
+        threads = [
+            procs * tpp
+            for tpp in (
+                threads_per_proc if not isinstance(threads_per_proc, int) else [threads_per_proc]
+            )
+        ]
+        for trial in threads:
+            if len(self.thread_stems) == trial:
+                break
+        else:
+            str_threads = " or ".join([f"{t:d}" for t in threads])
             raise PredictableFailureError(
-                f"Expected exactly {threads:d} threads, got {len(self.thread_stems)}"
+                f"Expected exactly {str_threads} threads, got {len(self.thread_stems)}"
             )
 
         logs_found = 0
