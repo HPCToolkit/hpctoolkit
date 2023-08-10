@@ -119,6 +119,8 @@ deps build:
       rocm/v1:5.2
       rocm/v1:5.3
       rocm/v1:5.4
+      rocm/v1:5.5
+      rocm/v1:5.6
       lvlz-gtpin/v1:2022.2-3.0
       lvlz-gtpin/v1:2022.2-3.2
       lvlz-gtpin/v1:2022.3-3.0
@@ -376,6 +378,16 @@ validate:
   image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
+'buildmany: [amd64, rocm5.5]':
+  extends: .buildmany amd64 rocm
+  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_latest
+  variables:
+    JOB_CC: gcc-9
+'buildmany: [amd64, rocm5.6]':
+  extends: .buildmany amd64 rocm
+  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_latest
+  variables:
+    JOB_CC: gcc-9
 
 'buildmany min: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
@@ -395,6 +407,16 @@ validate:
 'buildmany min: [amd64, rocm5.4]':
   extends: .buildmany amd64 rocm
   image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_minimum
+  variables:
+    JOB_CC: gcc-9
+'buildmany min: [amd64, rocm5.5]':
+  extends: .buildmany amd64 rocm
+  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_minimum
+  variables:
+    JOB_CC: gcc-9
+'buildmany min: [amd64, rocm5.6]':
+  extends: .buildmany amd64 rocm
+  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 
@@ -595,22 +617,97 @@ validate:
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-sw-cuda'
 
-'check amd64: [+rocm]':
+'check amd64: [+rocm, 5.1]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_latest
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
+  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_latest
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.1]
+  before_script: &bscript_check_rocm
+  - export LD_LIBRARY_PATH=/opt/rocm/lib:"$LD_LIBRARY_PATH"
   variables: &vars_check_rocm
     JOB_CC: gcc-9
     SPEC: +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda +rocm ~level0
     JOB_TEST_SUITE: rocm
-'check min amd64: [+rocm]':
+'check min amd64: [+rocm, 5.1]':
+  extends: 'check amd64: [+rocm, 5.1]'
+  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_minimum
+'check semifresh amd64: [+rocm, 5.1]':
+  extends: 'check amd64: [+rocm, 5.1]'
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.1, cpu/perf]
+  variables:
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
+
+'check amd64: [+rocm, 5.2]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_minimum
+  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_latest
   tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
+  before_script: *bscript_check_rocm
   variables: *vars_check_rocm
-'check semifresh amd64: [+rocm]':
-  extends: 'check amd64: [+rocm]'
+'check min amd64: [+rocm, 5.2]':
+  extends: 'check amd64: [+rocm, 5.2]'
+  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_minimum
+'check semifresh amd64: [+rocm, 5.2]':
+  extends: 'check amd64: [+rocm, 5.2]'
   tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2, cpu/perf]
+  variables:
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
+
+'check amd64: [+rocm, 5.3]':
+  extends: .check
+  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_latest
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.3]
+  before_script: *bscript_check_rocm
+  variables: *vars_check_rocm
+'check min amd64: [+rocm, 5.3]':
+  extends: 'check amd64: [+rocm, 5.3]'
+  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_minimum
+'check semifresh amd64: [+rocm, 5.3]':
+  extends: 'check amd64: [+rocm, 5.3]'
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.3, cpu/perf]
+  variables:
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
+
+'check amd64: [+rocm, 5.4]':
+  extends: .check
+  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_latest
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.4]
+  before_script: *bscript_check_rocm
+  variables: *vars_check_rocm
+'check min amd64: [+rocm, 5.4]':
+  extends: 'check amd64: [+rocm, 5.4]'
+  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_minimum
+'check semifresh amd64: [+rocm, 5.4]':
+  extends: 'check amd64: [+rocm, 5.4]'
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.4, cpu/perf]
+  variables:
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
+
+'check amd64: [+rocm, 5.5]':
+  extends: .check
+  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_latest
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.5]
+  before_script: *bscript_check_rocm
+  variables: *vars_check_rocm
+'check min amd64: [+rocm, 5.5]':
+  extends: 'check amd64: [+rocm, 5.5]'
+  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_minimum
+'check semifresh amd64: [+rocm, 5.5]':
+  extends: 'check amd64: [+rocm, 5.5]'
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.5, cpu/perf]
+  variables:
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
+
+'check amd64: [+rocm, 5.6]':
+  extends: .check
+  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_latest
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.6]
+  before_script: *bscript_check_rocm
+  variables: *vars_check_rocm
+'check min amd64: [+rocm, 5.6]':
+  extends: 'check amd64: [+rocm, 5.6]'
+  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_minimum
+'check semifresh amd64: [+rocm, 5.6]':
+  extends: 'check amd64: [+rocm, 5.6]'
+  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.6, cpu/perf]
   variables:
     REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
 
@@ -623,7 +720,7 @@ fresh testdata:
   - 'check semifresh amd64: [cpu]'
   - 'check semifresh amd64: [+cuda, 11.6]'
   - 'check semifresh amd64: [+cuda, 11.8]'
-  - 'check semifresh amd64: [+rocm]'
+  - 'check semifresh amd64: [+rocm, 5.2]'
   when: always
   variables:
     GIT_SUBMODULE_STRATEGY: none
@@ -634,7 +731,7 @@ fresh testdata:
   - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-none.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-cpu.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6]'/regen/*/fresh-testdata-nvidia.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+rocm]'/regen/*/fresh-testdata-amd.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+rocm, 5.2]'/regen/*/fresh-testdata-amd.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8]'/regen/*/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
   # Repack into a single tarball
   - tar c -Jf testdata.tar.xz -C /tmp/result .
