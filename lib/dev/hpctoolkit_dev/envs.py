@@ -1,63 +1,32 @@
 import collections.abc
+import copy
 import functools
 import json
+import os
 import shutil
+import subprocess
+import textwrap
 import typing
 from pathlib import Path
 
 import click
+import ruamel.yaml
 from yaspin import yaspin  # type: ignore[import]
 
-from .command import Command, ShEnv
+from .command import Command
 from .meson import MesonMachineFile
-from .spack import Compiler
+from .spack import Compiler, Package, Spack, preferred_compiler
 from .spack import proxy as spack_proxy
-from .spec import DependencyMode, SpackEnv, VerConSpec
+from .spec import DependencyMode, VerConSpec, resolve_specs
 
-__all__ = ("AutogenEnv", "DevEnv", "InvalidSpecificationError")
+__all__ = ("DevEnv", "InvalidSpecificationError")
 
 
 class InvalidSpecificationError(ValueError):
     pass
 
 
-class AutogenEnv(SpackEnv):
-    """Variant of a SpackEnv for the ./autogen environment."""
-
-    _SPECS: typing.ClassVar[frozenset[VerConSpec]] = frozenset(
-        {
-            VerConSpec("autoconf @2.69"),
-            VerConSpec("automake @1.15.1"),
-            VerConSpec("libtool @2.4.6"),
-            VerConSpec("m4"),
-        }
-    )
-
-    def environ(self) -> ShEnv:
-        overlay = {
-            "AUTOCONF": str(self.packages["autoconf"].prefix / "bin" / "autoconf"),
-            "ACLOCAL": str(self.packages["automake"].prefix / "bin" / "aclocal"),
-            "AUTOHEADER": str(self.packages["autoconf"].prefix / "bin" / "autoheader"),
-            "AUTOM4TE": str(self.packages["autoconf"].prefix / "bin" / "autom4te"),
-            "AUTOMAKE": str(self.packages["automake"].prefix / "bin" / "automake"),
-            "LIBTOOLIZE": str(self.packages["libtool"].prefix / "bin" / "libtoolize"),
-            "M4": str(self.packages["m4"].prefix / "bin" / "m4"),
-        }
-        return ShEnv("").extend(overlay)
-
-    @property
-    def autoreconf(self) -> Command:
-        return Command(self.packages["autoconf"].prefix / "bin" / "autoreconf")
-
-    def generate(
-        self, unresolve: collections.abc.Collection[str] = (), template: dict | None = None
-    ) -> None:
-        self.generate_explicit(
-            self._SPECS, DependencyMode.ANY, unresolve=unresolve, template=template
-        )
-
-
-class DevEnv(SpackEnv):
+class DevEnv:
     """Variant of a SpackEnv for development environments (devenvs)."""
 
     @classmethod
@@ -94,7 +63,10 @@ class DevEnv(SpackEnv):
     ) -> None:
         if gtpin and not level0:
             raise InvalidSpecificationError("level0 must be true if gtpin is true")
-        super().__init__(root)
+        self.root = root.resolve()
+        if self.root.exists() and not self.root.is_dir():
+            raise FileExistsError(self.root)
+        self._package_cache: dict[str, Package | None] = {}
         self.cuda = cuda
         self.rocm = rocm
         self.level0 = level0
@@ -103,6 +75,43 @@ class DevEnv(SpackEnv):
         self.python = python
         self.papi = papi
         self.mpi = mpi
+
+    @functools.cached_property
+    def spack(self) -> Spack:
+        return Spack(self.root)
+
+    @functools.cached_property
+    def packages(self) -> dict[str, Package]:
+        """Fetch all packages installed in this environment."""
+        return {p.package: p for p in self.spack.fetch_all(concretized=True)}
+
+    def package(self, spec: str) -> Package:
+        """Fetch an individual package installed in this environment."""
+        return self.spack.fetch(spec, concretized=True)
+
+    @staticmethod
+    def validate_name(_ctx, _param, name: str) -> str:
+        if os.sep in name:
+            raise click.BadParameter("slashes are invalid in environment names")
+        if name[0] == "_":
+            raise click.BadParameter("names starting with '_' are reserved for internal use")
+        return name
+
+    def exists(self) -> bool:
+        """Run some basic validation on the environment to determine if it even exists yet."""
+        return (
+            self.root.is_dir()
+            and (self.root / "spack.yaml").is_file()
+            and (self.root / "spack.lock").is_file()
+        )
+
+    @property
+    def recommended_compiler(self) -> Compiler | None:
+        return (
+            preferred_compiler(p.compiler for p in self.packages.values())
+            if self.exists()
+            else None
+        )
 
     @classmethod
     def restore(cls, root: Path) -> "DevEnv":
@@ -238,15 +247,90 @@ class DevEnv(SpackEnv):
 
         return result
 
+    @classmethod
+    def _yaml_merge(cls, dst: collections.abc.MutableMapping, src: collections.abc.Mapping):
+        for k, v in src.items():
+            if (
+                isinstance(v, collections.abc.Mapping)
+                and k in dst
+                and isinstance(dst[k], collections.abc.MutableMapping)
+            ):
+                cls._yaml_merge(dst[k], v)
+            else:
+                dst[k] = v
+
+    GITIGNORE: typing.ClassVar[str] = textwrap.dedent(
+        """\
+    # File created by the HPCToolkit ./dev script
+    /**
+    !/spack.yaml
+    """
+    )
+
     def generate(
         self,
         mode: DependencyMode,
         unresolve: collections.abc.Collection[str] = (),
         template: dict | None = None,
     ) -> None:
-        self.generate_explicit(self._specs, mode, unresolve=unresolve, template=template)
+        """Generate the Spack environment."""
+        yaml = ruamel.yaml.YAML(typ="safe")
+        yaml.default_flow_style = False
+
+        self.root.mkdir(exist_ok=True)
+
+        contents: dict[str, typing.Any] = {
+            "spack": copy.deepcopy(template) if template is not None else {}
+        }
+        sp = contents.setdefault("spack", {})
+        if "view" not in sp:
+            sp["view"] = False
+
+        sp.setdefault("concretizer", {})["unify"] = True
+        sp["definitions"] = [d for d in contents["spack"].get("definitions", []) if "_dev" not in d]
+        for when, subspecs in sorted(
+            resolve_specs(self._specs, mode, unresolve=unresolve).items(),
+            key=lambda kv: kv[0] or "",
+        ):
+            clause: dict[str, str | list[str]] = {"_dev": sorted(subspecs)}
+            if when is not None:
+                clause["when"] = when
+            sp["definitions"].append(clause)
+
+        if "$_dev" not in sp.setdefault("specs", []):
+            sp["specs"].append("$_dev")
+
+        with open(self.root / "spack.yaml", "w", encoding="utf-8") as f:
+            yaml.dump(contents, f)
+
+        with open(self.root / ".gitignore", "w", encoding="utf-8") as f:
+            f.write(self.GITIGNORE)
+
         with open(self.root / "dev.json", "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f)
+
+        (self.root / "spack.lock").unlink(missing_ok=True)
+
+    def install(self) -> None:
+        """Install the Spack environment."""
+        try:
+            self.spack.install("--fail-fast")
+        except subprocess.CalledProcessError as e:
+            raise click.ClickException(f"spack install failed with code {e.returncode}") from e
+
+    def which(
+        self, command: str, spec: VerConSpec, *, check_arg: str | None = "--version"
+    ) -> Command:
+        path = self.package(str(spec)).load["PATH"]
+        cmd = shutil.which(command, path=path)
+        if cmd is None:
+            raise RuntimeError(f"Unable to find {command} in path {path}")
+
+        result = Command(cmd)
+        if check_arg is not None:
+            result(check_arg, output=False)
+
+        return result
 
     def _populate_pyview(self) -> None:
         """Populate the pyview with all Python extensions. Basically an expensive venv."""

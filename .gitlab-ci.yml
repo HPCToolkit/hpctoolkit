@@ -89,16 +89,10 @@ request:
   - sha256sum minimum.json > minimum.json.sha
   - echo "DIGEST_minimum=$(cut -d' ' -f1 minimum.json.sha)" >> request.env
   - echo "REQUEST_URL_minimum=$artifacts_url/minimum.json" >> request.env
-
-  - ./dev generate-request --autogen --template ci/templates/request.yaml autogen.json
-  - sha256sum autogen.json > autogen.json.sha
-  - echo "DIGEST_autogen=$(cut -d' ' -f1 autogen.json.sha)" >> request.env
-  - echo "REQUEST_URL_autogen=$artifacts_url/autogen.json" >> request.env
   artifacts:
     paths:
     - latest.json
     - minimum.json
-    - autogen.json
     reports:
       dotenv: request.env
 
@@ -135,11 +129,6 @@ deps build min:
   extends: deps build
   variables:
     DEPS_SOURCE: $REQUEST_URL_minimum
-deps build autogen:
-  extends: deps build
-  variables:
-    DEPS_SOURCE: $REQUEST_URL_autogen
-    DEPS_BUILD: ubuntu20.04/v1
 
 #-----------------------------------
 # Phase N: lint
@@ -163,7 +152,10 @@ precommit:
 'spack install: [amd64]':
   stage: lint
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
-  needs: [request, deps check]
+  needs:
+  - job: request
+  - job: validate
+    artifacts: false
   tags: [saas-linux-small-amd64]
   rules:
   - if: $CI_COMMIT_REF_PROTECTED == "true"
@@ -209,29 +201,17 @@ precommit:
 #-----------------------------------
 
 # The two devenvs must be consistent with the current version of the ./dev scriptsuite.
-deps check:
+validate:
   stage: validate
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
   tags: [saas-linux-small-amd64]
   script:
-  - ./dev os-install -y -c gcc git file diffutils
+  - ./dev os-install -y -c gcc git git-lfs file diffutils
   - &spack_clone
     - git clone --depth=1 https://github.com/spack/spack.git /tmp/spack
     - export PATH=/tmp/spack/bin/:"$PATH"
   - ./dev populate /opt/environment
-
-
-# The Autogoo for the HEAD commit (at least) must be in-sync before we build
-autoreconf:
-  stage: validate
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_autogen
-  tags: [saas-linux-small-amd64]
-  variables:
-    GIT_SUBMODULE_STRATEGY: none
-  script:
-  - ./dev os-install -y git git-lfs
-  - *spack_clone
-  - ./dev autogen --custom-env /opt/environment --skip-install
+  # Detect any changes to the main source directory
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
   - |
     if test -s changes; then

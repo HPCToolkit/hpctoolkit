@@ -1,24 +1,13 @@
 import collections
 import collections.abc
-import copy
 import enum
 import functools
-import os
 import re
-import shutil
-import subprocess
-import textwrap
-import typing
-from pathlib import Path
 
-import click
-import ruamel.yaml
-
-from .command import Command
-from .spack import Compiler, Package, Spack, Version, preferred_compiler
+from .spack import Version
 from .spack import proxy as spack_proxy
 
-__all__ = ("DependencyMode", "VerConSpec", "SpackEnv")
+__all__ = ("DependencyMode", "VerConSpec")
 
 
 @enum.unique
@@ -178,139 +167,3 @@ def resolve_specs(
             bits |= spec.specs_for(mode, unresolve=unresolve)
         result[when] = bits
     return result
-
-
-if os.environ.get("CI") == "true":
-    UPDATE_MSG = "\n  In CI: the reused merge-base image is out-of-date. Try updating the branch."
-else:
-    UPDATE_MSG = ""
-
-
-class SpackEnv:
-    """Abstraction for a single managed Spack environment."""
-
-    def __init__(self, root: Path) -> None:
-        self.root = root.resolve()
-        if self.root.exists() and not self.root.is_dir():
-            raise FileExistsError(self.root)
-        self._package_cache: dict[str, Package | None] = {}
-
-    @functools.cached_property
-    def spack(self) -> Spack:
-        return Spack(self.root)
-
-    @functools.cached_property
-    def packages(self) -> dict[str, Package]:
-        """Fetch all packages installed in this environment."""
-        return {p.package: p for p in self.spack.fetch_all(concretized=True)}
-
-    def package(self, spec: str) -> Package:
-        """Fetch an individual package installed in this environment."""
-        return self.spack.fetch(spec, concretized=True)
-
-    @staticmethod
-    def validate_name(_ctx, _param, name: str) -> str:
-        if os.sep in name:
-            raise click.BadParameter("slashes are invalid in environment names")
-        if name[0] == "_":
-            raise click.BadParameter("names starting with '_' are reserved for internal use")
-        return name
-
-    def exists(self) -> bool:
-        """Run some basic validation on the environment to determine if it even exists yet."""
-        return (
-            self.root.is_dir()
-            and (self.root / "spack.yaml").is_file()
-            and (self.root / "spack.lock").is_file()
-        )
-
-    @property
-    def recommended_compiler(self) -> Compiler | None:
-        return (
-            preferred_compiler(p.compiler for p in self.packages.values())
-            if self.exists()
-            else None
-        )
-
-    @classmethod
-    def _yaml_merge(cls, dst: collections.abc.MutableMapping, src: collections.abc.Mapping):
-        for k, v in src.items():
-            if (
-                isinstance(v, collections.abc.Mapping)
-                and k in dst
-                and isinstance(dst[k], collections.abc.MutableMapping)
-            ):
-                cls._yaml_merge(dst[k], v)
-            else:
-                dst[k] = v
-
-    GITIGNORE: typing.ClassVar[str] = textwrap.dedent(
-        """\
-    # File created by the HPCToolkit ./dev script
-    /**
-    !/spack.yaml
-    """
-    )
-
-    def generate_explicit(
-        self,
-        specs: collections.abc.Collection[VerConSpec],
-        mode: DependencyMode,
-        unresolve: collections.abc.Collection[str] = (),
-        template: dict | None = None,
-    ) -> None:
-        """Generate the Spack environment."""
-        yaml = ruamel.yaml.YAML(typ="safe")
-        yaml.default_flow_style = False
-
-        self.root.mkdir(exist_ok=True)
-
-        contents: dict[str, typing.Any] = {
-            "spack": copy.deepcopy(template) if template is not None else {}
-        }
-        sp = contents.setdefault("spack", {})
-        if "view" not in sp:
-            sp["view"] = False
-
-        sp.setdefault("concretizer", {})["unify"] = True
-        sp["definitions"] = [d for d in contents["spack"].get("definitions", []) if "_dev" not in d]
-        for when, subspecs in sorted(
-            resolve_specs(specs, mode, unresolve=unresolve).items(),
-            key=lambda kv: kv[0] or "",
-        ):
-            clause: dict[str, str | list[str]] = {"_dev": sorted(subspecs)}
-            if when is not None:
-                clause["when"] = when
-            sp["definitions"].append(clause)
-
-        if "$_dev" not in sp.setdefault("specs", []):
-            sp["specs"].append("$_dev")
-
-        with open(self.root / "spack.yaml", "w", encoding="utf-8") as f:
-            yaml.dump(contents, f)
-
-        with open(self.root / ".gitignore", "w", encoding="utf-8") as f:
-            f.write(self.GITIGNORE)
-
-        (self.root / "spack.lock").unlink(missing_ok=True)
-
-    def install(self) -> None:
-        """Install the Spack environment."""
-        try:
-            self.spack.install("--fail-fast")
-        except subprocess.CalledProcessError as e:
-            raise click.ClickException(f"spack install failed with code {e.returncode}") from e
-
-    def which(
-        self, command: str, spec: VerConSpec, *, check_arg: str | None = "--version"
-    ) -> Command:
-        path = self.package(str(spec)).load["PATH"]
-        cmd = shutil.which(command, path=path)
-        if cmd is None:
-            raise RuntimeError(f"Unable to find {command} in path {path}")
-
-        result = Command(cmd)
-        if check_arg is not None:
-            result(check_arg, output=False)
-
-        return result
