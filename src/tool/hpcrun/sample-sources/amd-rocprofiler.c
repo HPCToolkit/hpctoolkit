@@ -189,6 +189,16 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+  const char* rocp_metrics = getenv("ROCP_METRICS");
+  const char* hsa_tools_lib = getenv("HSA_TOOLS_LIB");
+  if (rocp_metrics == NULL || rocp_metrics[0] == '\0'
+      || hsa_tools_lib == NULL || hsa_tools_lib[0] == '\0') {
+    display_header(stdout, "AMD GPU hardware counter events");
+    printf("ROCProfiler was not found, AMD hardware counters are not available.\n");
+    printf("See hpcrun --help message for information on how to provide a ROCProfiler install.\n\n");
+    return;
+  }
+
   // initialize rocprofiler so that it assembles a list of supported hardware
   // counters
   rocprofiler_init();
