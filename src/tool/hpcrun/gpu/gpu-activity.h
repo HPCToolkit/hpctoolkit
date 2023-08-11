@@ -348,6 +348,8 @@ typedef struct gpu_host_correlation_t {
   uint64_t host_correlation_id;
 } gpu_host_correlation_t;
 
+typedef double gpu_counter_value_t;
+
 typedef struct gpu_counter_t {
   uint32_t correlation_id;
   int total_counters;
@@ -355,7 +357,7 @@ typedef struct gpu_counter_t {
   // be responsible for allocating memory.
   // The function that attributes the structure should
   // be responsible for deallocating the memory.
-  uint64_t *values;
+  gpu_counter_value_t *values;
 } gpu_counter_t;
 
 // a type that can be used to access start and end times

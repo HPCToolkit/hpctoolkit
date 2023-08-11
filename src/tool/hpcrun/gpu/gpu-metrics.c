@@ -271,7 +271,7 @@ gpu_metrics_attribute_metric_real
 (
  metric_data_list_t *metrics,
  int metric_index,
- float value
+ double value
 )
 {
   hpcrun_metric_std_inc(metric_index, metrics, (cct_metric_data_t){.r = value});
@@ -665,7 +665,7 @@ gpu_metrics_attribute_counter
     hpcrun_reify_metric_set(cct_node, gpu_counter_hpcrun_metric_id_array[0]);
 
   for (int i = 0; i < c->total_counters; ++i) {
-    gpu_metrics_attribute_metric_int(metrics, gpu_counter_hpcrun_metric_id_array[i], c->values[i]);
+    gpu_metrics_attribute_metric_real(metrics, gpu_counter_hpcrun_metric_id_array[i], c->values[i]);
   }
 
   free(c->values);
@@ -1057,7 +1057,7 @@ void gpu_metrics_GPU_CTR_enable(
   {
     gpu_counter_hpcrun_metric_id_array[i] = hpcrun_set_new_metric_desc_and_period(
         GPU_COUNTER_METRIC_KIND_INFO, counter_name[i], counter_desc[i],
-        MetricFlags_ValFmt_Int, 1, metric_property_none);
+        MetricFlags_ValFmt_Real, 1, metric_property_none);
   }
 
   hpcrun_close_kind(GPU_COUNTER_METRIC_KIND_INFO);
