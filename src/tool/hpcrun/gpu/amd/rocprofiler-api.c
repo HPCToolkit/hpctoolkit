@@ -50,6 +50,7 @@
 #include <rocprofiler/rocprofiler.h>
 #include <rocprofiler/activity.h>
 
+#include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
@@ -59,7 +60,7 @@
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 
-#include <hpcrun/safe-sampling.h>
+#include <hpcrun/thread_data.h>
 #include <hpcrun/sample-sources/libdl.h>
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
@@ -326,11 +327,11 @@ rocprofiler_path
 }
 
 // Depending on the `kind`, access to the corresponding union field
-// to extract the value of the counter. Cast the vaslue to the uint64_t
-// required by the gpu_activity.
+// to extract the value of the counter.  Cast the value to the
+// gpu_counter_value_t required by the gpu_activity.
 // Are we losing any data by doing the cast?
 // How about adding the explicit inline attribute?
-static uint64_t
+static gpu_counter_value_t
 decode_counter_value
 (
   const rocprofiler_data_t* cnt_data
@@ -339,16 +340,15 @@ decode_counter_value
   switch (cnt_data->kind)
   {
   case ROCPROFILER_DATA_KIND_UNINIT:
-
-    return (uint64_t) 0;
+    return (gpu_counter_value_t) 0;
   case ROCPROFILER_DATA_KIND_INT32:
-    return (uint64_t) cnt_data->result_int32;
+    return (gpu_counter_value_t) cnt_data->result_int32;
   case ROCPROFILER_DATA_KIND_INT64:
-    return (uint64_t) cnt_data->result_int64;
+    return (gpu_counter_value_t) cnt_data->result_int64;
   case ROCPROFILER_DATA_KIND_FLOAT:
-    return (uint64_t) cnt_data->result_float;
+    return (gpu_counter_value_t) cnt_data->result_float;
   case ROCPROFILER_DATA_KIND_DOUBLE:
-    return (uint64_t) cnt_data->result_double;
+    return (gpu_counter_value_t) cnt_data->result_double;
   default:
       // The `rocprofiler_data_kind_t` hold 6 possible values, but the union
       // present within the `rocprofiler_data_t` has 5 fields of different
@@ -357,7 +357,7 @@ decode_counter_value
       // Furthermore, I do not know how to parse ROCPROFILER_DATA_KIND_BYTES,
       // In both cases, I decided to crash the program to see how frequent this is.
     assert(false);
-    return (uint64_t) 0;
+    return (gpu_counter_value_t) 0;
   }
 }
 
@@ -387,7 +387,8 @@ translate_rocprofiler_output
   // which is not monitored. So, this function will not be called
   // inside a signal handler and we can call malloc.
   // The memory is freed when we attribute this gpu_activity_t.
-  ga->details.counters.values = (uint64_t*) malloc(sizeof(uint64_t) * feature_count);
+  ga->details.counters.values =
+    (gpu_counter_value_t *) malloc(sizeof(gpu_counter_value_t) * feature_count);
 
   // rocprofiler should pass metric results in the same order
   // that we pass metrics as input to rocprofiler
