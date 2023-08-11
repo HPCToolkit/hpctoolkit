@@ -42,6 +42,15 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <ctype.h>
+#include <stdlib.h>
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
@@ -70,9 +79,20 @@
 #define DEBUG 0
 
 #include "hpcrun/gpu/gpu-print.h"
+
+
+
 //******************************************************************************
 // macros
 //******************************************************************************
+
+#define DEBUG_UNIQUE_COUNTERS 0
+
+#if DEBUG_UNIQUE_COUNTERS
+#define DUMP_COUNTER_INFO(array, n, label) dump_counter_info(array, n, label)
+#else
+#define DUMP_COUNTER_INFO(array, n, label)
+#endif
 
 
 #define PUBLIC_API __attribute__((visibility("default")))
@@ -106,6 +126,12 @@
     abort(); \
   }						\
 }
+
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
 // Vladimir: TODO: We might not need this data structure anymore?
 typedef struct {
@@ -182,6 +208,12 @@ typedef struct context_entry_s {
   FILE* file_handle;
 } context_entry_t;
 
+typedef struct {
+  const char *name;
+  const char *desc;
+} counter_info_t;
+
+
 
 //******************************************************************************
 // local variables
@@ -198,9 +230,12 @@ static bool rocprofiler_initialized = false;
 
 // total number of counters supported by rocprofiler,
 // an array of their string names, and an array of their description
-static int total_counters = 0;
-static const char** counter_name = NULL;
-static const char** counter_description = NULL;
+static int total_counters_all = 0;
+static int total_counters_useful = 0;
+static int total_counters_unique = 0;
+
+static counter_info_t *counter_info_useful = NULL;
+static counter_info_t *counter_info_unique = NULL;
 
 // the list of counters specified at the command line
 static int *is_specified_by_user = NULL;
@@ -310,9 +345,29 @@ ROCPROFILER_FN
   )
 );
 
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static void
+dump_counter_info
+(
+  counter_info_t *ctrs,
+  int n,
+  const char *label
+)
+{
+  printf("--------------------------------------------------\n");
+  printf("%s\n",label);
+  printf("--------------------------------------------------\n");
+  for(int i=0; i<n; i++) {
+    printf("%-29s %s\n", ctrs[i].name, ctrs[i].desc);
+  }
+  printf("\n");
+}
+
 
 static const char *
 rocprofiler_path
@@ -324,6 +379,7 @@ rocprofiler_path
 
   return path;
 }
+
 
 // Depending on the `kind`, access to the corresponding union field
 // to extract the value of the counter. Cast the vaslue to the uint64_t
@@ -361,6 +417,7 @@ decode_counter_value
   }
 }
 
+
 static void
 translate_rocprofiler_output
 (
@@ -396,6 +453,7 @@ translate_rocprofiler_output
     ga->details.counters.values[i] = decode_counter_value(&p->data);
   }
 }
+
 
 // Profiling completion handler
 // Dump and delete the context entry
@@ -449,13 +507,15 @@ rocprofiler_context_handler
   return false;
 }
 
+
 static hsa_status_t
 rocprofiler_dispatch_callback
 (
   const rocprofiler_callback_data_t* callback_data,
   void* arg,
   rocprofiler_group_t* group
-) {
+)
+{
   if (total_requested == 0) return HSA_STATUS_SUCCESS;
 
   // Initialize and set all fields to 0, so use calloc
@@ -509,6 +569,7 @@ rocprofiler_dispatch_callback
   return status;
 }
 
+
 static hsa_status_t
 total_counter_accumulator
 (
@@ -516,53 +577,164 @@ total_counter_accumulator
   void *data
 )
 {
-  total_counters += 1;
+  total_counters_all += 1;
   return HSA_STATUS_SUCCESS;
 }
 
+
+static bool
+counter_is_useful
+(
+  const rocprofiler_info_data_t *info
+)
+{
+  // for now, only handle single instance metrics
+  // because we don't index metrics
+  if (info->metric.instances != 1) return false;
+
+  //  no expression is certainly OK
+  if (!info->metric.expr) return true;
+
+  // examine each divide in the expression, if any
+  // only a divide by a constant is OK
+  const char *rest = info->metric.expr;
+  for(;;) {
+    const char *divide = strchr(rest, '/');
+
+    // if the rest of the expression has no divide, it is OK
+    if (!divide) return true;
+
+    // advance past the divide
+    rest = ++divide;
+
+    // if not constant divisor, unacceptable
+    if (!isdigit(*rest)) return false;
+  } while (rest);
+
+  return true;
+}
+
+
 static hsa_status_t
-counter_info_accumulator
+collect_useful_counters
 (
   const rocprofiler_info_data_t info,
   void *data
 )
 {
-  if (getenv("HPCRUN_PRINT_ROCPROFILER_COUNTER_DETAILS")) {
-    printf("Enter counter_info_accumulator\n");
-    printf("\tname %s\n", info.metric.name);
-    printf("\tinstances %d\n", info.metric.instances);
-    printf("\texpr %s\n", info.metric.expr);
-    printf("\tblock name %s\n", info.metric.block_name);
-    printf("\tblock_counters %d\n", info.metric.block_counters);
+  char *action;
+  if (counter_is_useful(&info)) {
+    counter_info_useful[total_counters_useful].name = strdup(info.metric.name);
+    counter_info_useful[total_counters_useful].desc = strdup(info.metric.description);
+    total_counters_useful += 1;
+    action = "add";
+  } else {
+    action = "skip";
   }
-  counter_name[total_counters] = strdup(info.metric.name);
-  counter_description[total_counters] = strdup(info.metric.description);
-  total_counters += 1;
+
+  if (getenv("HPCRUN_PRINT_ROCPROFILER_COUNTER_DETAILS")) {
+    printf("%4s ", action);
+    printf("block=%-4s ", info.metric.block_name);
+    printf("ctrs=%-2d ", info.metric.block_counters);
+    printf("instances=%-2d ", info.metric.instances);
+    printf("name %-29s ", info.metric.name);
+    printf("expr %s\n", info.metric.expr);
+  }
   return HSA_STATUS_SUCCESS;
 }
+
+
+static int
+counter_info_cmp
+(
+  const void *c1,
+  const void *c2
+)
+{
+#define ci_name(c) (((counter_info_t *)c)->name)
+  return strcmp(ci_name(c1), ci_name(c2));
+#undef ci_name
+}
+
+
+static counter_info_t *
+last_unique_counter
+(
+  void
+)
+{
+  return &counter_info_unique[total_counters_unique - 1];
+}
+
+
+static void
+append_unique_counter
+(
+  counter_info_t *ctr
+)
+{
+  counter_info_t *unique = last_unique_counter() + 1;
+  unique->name = ctr->name;
+  unique->desc = ctr->desc;
+  total_counters_unique++;
+}
+
+
+static void
+collect_unique_counters
+(
+  void
+)
+{
+  if (total_counters_all > 0) {
+    counter_info_useful = (counter_info_t *) malloc(total_counters_all * sizeof(counter_info_t));
+
+    // collect information about useful counters
+    HPCRUN_ROCPROFILER_CALL(rocprofiler_iterate_info,
+      (NULL, ROCPROFILER_INFO_KIND_METRIC, collect_useful_counters, NULL));
+
+    DUMP_COUNTER_INFO(counter_info_useful, total_counters_useful, "before sort");
+
+    // sort the counters
+    qsort(counter_info_useful, total_counters_useful, sizeof(counter_info_t), counter_info_cmp);
+
+    DUMP_COUNTER_INFO(counter_info_useful, total_counters_useful, "after sort");
+
+    //--------------------
+    // remove duplicates
+    //--------------------
+
+    counter_info_unique = (counter_info_t *) malloc(total_counters_useful * sizeof(counter_info_t));
+
+    // keep the first counter
+    append_unique_counter(&counter_info_useful[0]);
+
+    for (int i = 1; i < total_counters_useful; i++) {
+      // keep this counter if not same as previous
+      if (counter_info_cmp(last_unique_counter(), &counter_info_useful[i]) != 0) {
+        append_unique_counter(&counter_info_useful[i]);
+      }
+    }
+    DUMP_COUNTER_INFO(counter_info_unique, total_counters_unique, "unique counters");
+  }
+}
+
 
 static void
 initialize_counter_information
 (
-
+  void
 )
 {
   // First we iterate over all counters to get the total
   HPCRUN_ROCPROFILER_CALL(rocprofiler_iterate_info,
     (NULL, ROCPROFILER_INFO_KIND_METRIC, total_counter_accumulator, NULL));
 
-  // Allocate information array
-  counter_name = (const char**) malloc(total_counters * sizeof(const char*));
-  counter_description = (const char**) malloc(total_counters * sizeof(const char*));
+  collect_unique_counters();
 
-  // Fill in name and description string for each counter
-  total_counters = 0;
-  HPCRUN_ROCPROFILER_CALL(rocprofiler_iterate_info,
-    (NULL, ROCPROFILER_INFO_KIND_METRIC, counter_info_accumulator, NULL));
-
-  // Allocate an array to record whether a counter is asked by the user
-  is_specified_by_user = (int*) malloc(total_counters * sizeof(int));
-  memset(is_specified_by_user, 0, total_counters * sizeof(int));
+  // Allocate an array to record whether a counter is requested by the user
+  is_specified_by_user = (int*) malloc(total_counters_unique * sizeof(int));
+  memset(is_specified_by_user, 0, total_counters_unique * sizeof(int));
 }
 
 // TODO: We no longer record binaries for ROCm, so no need for this callback
@@ -604,10 +776,11 @@ extern PUBLIC_API void OnUnloadTool() {
   // will refuse to work
 }
 
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
 
 void
 rocprofiler_start_kernel
@@ -633,7 +806,7 @@ void rocprofiler_stop_kernel(){
 void
 rocprofiler_init
 (
- void
+  void
 )
 {
   if (rocprofiler_initialized) {
@@ -684,11 +857,12 @@ rocprofiler_register_counter_callbacks
   HPCRUN_ROCPROFILER_CALL(rocprofiler_set_queue_callbacks, (callbacks_ptrs, callbacks_data));
 }
 
+
 void
 rocprofiler_fini
 (
- void *args,
- int how
+  void *args,
+  int how
 )
 {
   HPCRUN_ROCPROFILER_CALL(rocprofiler_remove_queue_callbacks, ());
@@ -696,11 +870,10 @@ rocprofiler_fini
 }
 
 
-
 int
 rocprofiler_bind
 (
- void
+  void
 )
 {
 #ifndef HPCRUN_STATIC_LINK
@@ -739,14 +912,16 @@ rocprofiler_wait_context_callback
   while (context_callback_finish == 0);
 }
 
+
 int
 rocprofiler_total_counters
 (
   void
 )
 {
-  return total_counters;
+  return total_counters_unique;
 }
+
 
 const char*
 rocprofiler_counter_name
@@ -754,9 +929,10 @@ rocprofiler_counter_name
   int idx
 )
 {
-  if (idx < 0 || idx >= total_counters || counter_name == NULL) return NULL;
-  return counter_name[idx];
+  if (idx < 0 || idx >= total_counters_unique || counter_info_unique == NULL) return NULL;
+  return counter_info_unique[idx].name;
 }
+
 
 const char*
 rocprofiler_counter_description
@@ -764,9 +940,10 @@ rocprofiler_counter_description
   int idx
 )
 {
-  if (idx < 0 || idx >= total_counters || counter_description == NULL) return NULL;
-  return counter_description[idx];
+  if (idx < 0 || idx >= total_counters_unique || counter_info_unique == NULL) return NULL;
+  return counter_info_unique[idx].desc;
 }
+
 
 int
 rocprofiler_match_event
@@ -774,8 +951,8 @@ rocprofiler_match_event
   const char *ev_str
 )
 {
-  for (int i = 0; i < total_counters; i++) {
-    if (strcmp(ev_str, counter_name[i]) == 0) {
+  for (int i = 0; i < total_counters_unique; i++) {
+    if (strcmp(ev_str, counter_info_unique[i].name) == 0) {
       is_specified_by_user[i] = 1;
       return 1;
     }
@@ -783,12 +960,14 @@ rocprofiler_match_event
   return 0;
 }
 
+
 void
 rocprofiler_finalize_event_list
 (
+  void
 )
 {
-  for (int i = 0; i < total_counters; i++) {
+  for (int i = 0; i < total_counters_unique; i++) {
     if (is_specified_by_user[i] == 1) {
       total_requested += 1;
     }
@@ -801,18 +980,19 @@ rocprofiler_finalize_event_list
   requested_counter_description = (const char**) malloc(sizeof(const char*) * total_requested);
 
   int cur_id = 0;
-  for (int i = 0; i < total_counters; i++) {
+  for (int i = 0; i < total_counters_unique; i++) {
     if (is_specified_by_user[i] == 1) {
       rocprofiler_input[cur_id].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-      rocprofiler_input[cur_id].name = counter_name[i];
-      requested_counter_name[cur_id] = counter_name[i];
-      requested_counter_description[cur_id] = counter_description[i];
+      rocprofiler_input[cur_id].name = counter_info_unique[i].name;
+      requested_counter_name[cur_id] = counter_info_unique[i].name;
+      requested_counter_description[cur_id] = counter_info_unique[i].desc;
       cur_id += 1;
     }
   }
 
   gpu_metrics_GPU_CTR_enable(total_requested, requested_counter_name, requested_counter_description);
 }
+
 
 void
 rocprofiler_uri_setup
