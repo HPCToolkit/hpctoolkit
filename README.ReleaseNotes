@@ -1,4 +1,147 @@
 ----------------------------------------
+HPCToolkit 2023.08.0
+----------------------------------------
+
+HPCToolkit Release Notes
+
+Enhancements
+- Hpcrun
+   - Intel GPUs
+     - Improve support for Intel GPUs (hpctoolkit/hpctoolkit!873)
+       - recognize Intel EM_INTELGT GPU ELF binaries
+       - refactor the code to both Intel Patch Token binaries and Intel
+         zeBinaries, even in the same execution.
+       - fix race between gtpin instrumentation-based measurement and
+         measurement via asynchronous sampling
+       - improve GTPin support for instruction counting and latency
+         measurements
+       - adjust Level0 attribution to kernels to work with GTPin
+     - Reduce level0 measurement overhead by having a measurment thread sleep
+       rather than actively spinning
+   - AMD GPUs
+     - Improve support for ROCm hardware counters
+       - only offer counters and derived metrics that make sense to
+         aggregate throughout an execution. this means hiding metrics
+         that compute percents per kernel launch.
+       - add support for aggregate ROCm counters such as TCC_HIT_sum
+       - manage all counters as double precision
+     - Improve cross-version ROCm compatibility
+       - support ROCm versions 5.1.x through 5.6.x
+     - Ignore rocprofiler-created thread (hpctoolkit/hpctoolkit!868)
+   - NVIDIA GPUs
+     - Reverse call order when unsubscribing from CUPTI
+   - General
+     - Suppress reversed GPU intervals (hpctoolkit/hpctoolkit!848)
+     - Resolution boost for CPU traces using -tt (hpctoolkit/hpctoolkit!837)
+     - Fetch MPI rank from environment vars (hpctoolkit/hpctoolkit!850)
+     - Abort samples that have too many stack frames to unwind
+     - Attribute openmp target operation outside a target region
+     - Fix support for monitoring Cray OpenMP (hpctoolkit/hpctoolkit!863)
+     - Fix Clang 15 support
+- Hpcstruct
+   - Add new support for analyzing Intel ZeBinaries for GPUs. Integrate with
+     support for analyzing Intel Patch Token binaries.
+   - Add support for dyninst's unknown instruction API
+     - Support parsing of Intel Sapphire Rapids binaries with AMX instructions,
+       which are not understood by Dyninst using the unknown instruction API by
+       using Intel's Xed to skip over these instructions to continue machine
+       code parsing.
+   - Use new hpcproflm utility to identify CPU and GPU binaries referenced by a
+     measurements directory.
+- Hpcprof
+   - Unify logical Functions in MPI programs
+     - Logical functions, identified by names, are used for Python and GPU
+       kernels. Unify names across MPI ranks.
+   - Repeat pread/pwrite on I/O truncation (hpctoolkit/hpctoolkit!858)
+   - Fix source file path names in meta.db (hpctoolkit/hpctoolkit!853)
+   - Keep loop contexts separate based on address (hpctoolkit/hpctoolkit!834)
+     - The difference is that binary loops come from binary analysis, and so
+       have a "point" (Module + offset) in addition to the
+       "line" (File + lineno).  This enables loops on the same line
+       (from loop fission from a Structfile) to remain distinct.
+      - The "point" is added to the loop contexts in the meta.db using the
+        optional "point" flex fields, thus requiring no change to the meta.db
+        format.
+    - Don't crash on error copying source files (hpctoolkit/hpctoolkit!841)
+- Hpcproflm
+     - A new helper utility for hpcstruct that computes load modules
+       - Employ parallelism when scanning a measurement database to determine
+         what CPU and GPU binaries are involved in the execution.
+- Hpcproftt
+     - Output name for RANK id tuple
+- Hpcviewer
+   - Free allocated resources to reduce memory footprint
+   - Fix issue #68 (memory leaks) and issue #317 (incorrect trace scope)
+   - Fix issue #311 (plot graph) and #312 (a database file is missing)
+   - Improve hpcdata for better id tuple sorting by using
+     integer and byte comparison instead of strings.
+   - Update hpcdata to fix miscellaneous issues:
+     #17, #309, #313, #314, #315, #317, #324, #329, #327, #328,
+     #340
+   - Fix issue #316: graph tooltip by not using system's tooltip
+   - Fix issue #331, fix dark theme, remove unused classes.
+     Closes #219, #134, and #331
+   - Fix issue #325 (incorrect id tuple)
+   - Fix issues #321, #309, and #312
+   - Fix code smells
+   - Fix issue #111 (wording consistency)
+   - Update hpcviewer CI to latest practices
+     - Pre-commit: Discourage working in main branch
+     - All jobs now can run on the GitLab shared Runners.
+     - `precommit` now uses a stock Python image.
+     - The `test` jobs now use an X11 + WM image from a new dedicated
+       repository: https://gitlab.com/hpctoolkit/x11-wm-docker
+- Documentation
+     - Fix doc and download page of hpcviewer
+     - Update build instructions, packages.yaml.
+- Continuous integration
+     - Completely overhaul CI infrastructure.
+     - Extend the ROCm testing matrix
+     - Add new CI jobs to test the full breadth of ROCm versions. Now all ROCm
+       versions 5.1-5.6 are tested both in `buildmany` and `check` capacities.
+     - Outsource deps images construction
+     - Don't use the Spack public buildcache
+- Testing infrastructure improvements
+     - Add test for hpcrun -L
+     - Allow +1 CPU thread in ROCm tests
+     - Correct Python for make-tar
+- Meson builds
+    - Add support for managing configuration, building, and testing with Meson
+           We will eventually [convert the whole build system to Meson][1].
+        Meson is as a rule much more restrictive than Autotools, so the details
+        of our software is built will need to change. IMO for the better.
+           Here, we provide a foundation for building with Meson by adding
+        support for the `meson setup/compile/install/test` sequence. This gives
+        a Meson skeleton to start with before converting the build system.
+        ./dev meson ...` runs `meson ...` in devenvs for development purposes.
+          The `tests2/` regression test suite is the first flesh on this
+        skeleton, it is part of the Meson build and contains no Autotools. As
+        such, a Mesonic build will always contain the tests2/ suite, and this
+        test suite can only be run in a Mesonic build via `./dev meson test`.
+        (This also provides a better CLI for testing than `make installcheck`
+        ever could.) Note that, unlike a typical Meson build, this test suite
+        needs to be run after a `./dev meson install`.
+          For consistency, the dev.buildfe and CI now only perform builds using
+        this Mesonic build sequence, instead of through Autotools. This will
+        make build system refactors easier moving forward as well. The `+tests2`
+        variant has been removed, it is now always on.
+          Unlike Autotools, Meson provides feature-based options to select what
+        features to enable, e.g. `-Dmetric_papi=enabled`. The dependencies in a
+        devenv are provided by a generated Meson "native" file, and the Meson
+        code handles the argument/CFLAGS composition to pass to Autotools.
+        As such, `./dev env` is no longer needed and has been removed.
+          Meson has a richer configuration space for optimization and debug
+        flags. The Meson code will translate a number of these into their base
+        CFLAGS and inject them into the Autotools build. The built-in options
+        supported are `buildtype`, `debug`, `optimization`, `warning_level`,
+        `werror`, `c_std`, `cpp_std`, `c_args` and `cpp_args`. See the Meson
+        docs for what these all mean.
+          The actual build happens within Autotools, there is very little change
+        to that part of the build system. You can, for now, build "raw" with
+       Autotools and get a working HPCToolkit, but Meson is recommended.
+   - Fetch default compilers from Spack
+
+----------------------------------------
 HPCToolkit 2023.03.01
 ----------------------------------------
 
