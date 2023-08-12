@@ -1,11 +1,11 @@
+_args = []
+if has_rocm
+  _args += ['--rocprofiler-path', rocm_profiler_exdep.get_variable(internal: 'prefix')]
+endif
+
 _tst = configure_file(input: files('tst-list-metrics'), output: '@PLAINNAME@.venv',
                       command: venv_shebang)
-test('Listing metrics does not error', _tst, env: hpctoolkit_pyenv, suite: ['hpcrun'],
-     should_fail:
-      # FIXME: hpcrun -L currently doesn't work if `librocprofiler64.so` is a linker script, which changed
-      # in the ROCm 5.6.0 release.
-      # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/784
-      has_rocm and not fs.is_symlink(rocm_profiler_exdep.get_variable(internal: 'prefix') / 'lib' / 'librocprofiler64.so'))
+test('Listing metrics does not error', _tst, args: _args, env: hpctoolkit_pyenv, suite: ['hpcrun'])
 
 subdir('cpu')
 subdir('gpu/cuda')

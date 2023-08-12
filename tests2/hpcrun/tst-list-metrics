@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+
 import click
 from hpctoolkit.test.execution import hpcrun
 
 
 @click.command()
-def test_list_metrics():
+@click.option(
+    "--rocprofiler-path",
+    type=click.Path(exists=True, file_okay=False, readable=True, resolve_path=True, path_type=Path),
+    help="Path to the rocprofiler install root",
+)
+def test_list_metrics(*, rocprofiler_path: Path | None):
     """Test that hpcrun can list the metrics it supports without error."""
-    hpcrun("-L", cmd=[])
+    exargs: list[str] = []
+    if rocprofiler_path is not None:
+        exargs += ["--rocprofiler-path", str(rocprofiler_path)]
+    hpcrun("-L", *exargs, cmd=[])
 
 
 if __name__ == "__main__":
-    test_list_metrics()  # pylint: disable=no-value-for-parameter)
+    test_list_metrics()  # pylint: disable=no-value-for-parameter,missing-kwoa

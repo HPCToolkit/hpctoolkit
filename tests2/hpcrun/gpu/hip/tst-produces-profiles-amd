@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+
 import click
 from hpctoolkit.test.execution import hpcrun
 
@@ -11,13 +13,30 @@ from hpctoolkit.test.execution import hpcrun
 )
 @click.option("--trace", is_flag=True, help="Enable tracing (hpcrun -t)")
 @click.option("--ttrace", is_flag=True, help="Enable boosted tracing (hpcrun -tt)")
+@click.option(
+    "--rocprofiler-path",
+    type=click.Path(exists=True, file_okay=False, readable=True, resolve_path=True, path_type=Path),
+    required=True,
+    help="Path to the rocprofiler install root",
+)
 @click.argument("cmd", nargs=-1, required=True)
 def test_produces_profiles(
-    procs: int, threads_per_proc: int, trace: bool, ttrace: bool, cmd: tuple[str]
+    procs: int,
+    threads_per_proc: int,
+    trace: bool,
+    ttrace: bool,
+    rocprofiler_path: Path,
+    cmd: tuple[str],
 ):
     """Test that measuring CMD with ROCm support produces an expected number of profiles."""
     with hpcrun(
-        "-e", "gpu=amd", ("-t" if trace else None), ("-tt" if ttrace else None), cmd=cmd
+        "-e",
+        "gpu=amd",
+        "--rocprofiler-path",
+        str(rocprofiler_path),
+        ("-t" if trace else None),
+        ("-tt" if ttrace else None),
+        cmd=cmd,
     ) as meas:
         meas.check_standard(
             procs=procs,
