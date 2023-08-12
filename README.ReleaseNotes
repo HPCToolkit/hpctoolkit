@@ -16,7 +16,7 @@ Enhancements
        - improve GTPin support for instruction counting and latency
          measurements
        - adjust Level0 attribution to kernels to work with GTPin
-     - Reduce level0 measurement overhead by having a measurment thread sleep
+     - Reduce level0 measurement overhead by having a measurement thread sleep
        rather than actively spinning
    - AMD GPUs
      - Improve support for ROCm hardware counters
