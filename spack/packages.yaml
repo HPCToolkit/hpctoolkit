@@ -97,7 +97,7 @@ packages:
   # Note: +mpi is currently disabled for develop.
   #
   # hpctoolkit:
-  #   version:  [2023.03.01, develop]
+  #   version:  [2023.08.0, develop]
   #   variants: +papi +viewer
 
 
@@ -113,7 +113,7 @@ packages:
   # 2-field numbers ending with "0".
   #
   hpcviewer:
-    version: [2023.04]
+    version: [2023.07]
 
 
   # binutils -- only used for old versions
