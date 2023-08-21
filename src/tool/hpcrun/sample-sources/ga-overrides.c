@@ -182,125 +182,125 @@ extern global_array_t *GA;
 // macros
 //***************************************************************************
 
-#define def_isSampled_blocking()					\
-  def_isSampled();							\
+#define def_isSampled_blocking()                                        \
+  def_isSampled();                                                      \
   def_timeBeg(isSampled);
 
 
-#define def_isSampled_nonblocking()					\
-  def_isSampled();							\
+#define def_isSampled_nonblocking()                                     \
+  def_isSampled();                                                      \
   def_timeBeg(isSampled);
 
 
-#define def_isSampled()							\
-  bool isSampled = false;						\
-  thread_data_t* threadData = hpcrun_get_thread_data();			\
-  {									\
-    lushPthr_t* xxx = &threadData->pthr_metrics;			\
-    xxx->doIdlenessCnt++;						\
-    if (xxx->doIdlenessCnt == hpcrun_ga_period) {			\
-      xxx->doIdlenessCnt = 0;						\
-      isSampled = true;							\
-    }									\
+#define def_isSampled()                                                 \
+  bool isSampled = false;                                               \
+  thread_data_t* threadData = hpcrun_get_thread_data();                 \
+  {                                                                     \
+    lushPthr_t* xxx = &threadData->pthr_metrics;                        \
+    xxx->doIdlenessCnt++;                                               \
+    if (xxx->doIdlenessCnt == hpcrun_ga_period) {                       \
+      xxx->doIdlenessCnt = 0;                                           \
+      isSampled = true;                                                 \
+    }                                                                   \
   }
 
 
-#define def_timeBeg(isSampled)						\
-  uint64_t timeBeg = 0;      						\
-  if (isSampled) {							\
-    timeBeg = time_getTSC(); /* cycles */				\
+#define def_timeBeg(isSampled)                                          \
+  uint64_t timeBeg = 0;                                                 \
+  if (isSampled) {                                                      \
+    timeBeg = time_getTSC(); /* cycles */                               \
   }
 
 
 //***************************************************************************
 
-#define doSample_1sided_blocking(g_a, lo, hi)				\
-  if (isSampled) {							\
-    double latency = timeElapsed(timeBeg);				\
-    uint64_t nbytes = bytesXfr(g_a, lo, hi);				\
-									\
-    doSample(g_a,							\
-	     doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),		\
-	     doMetric(hpcrun_ga_metricId_latency, latency, r),		\
-	     doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),		\
-	     doMetric(dataMetricId, nbytes, i));			\
+#define doSample_1sided_blocking(g_a, lo, hi)                           \
+  if (isSampled) {                                                      \
+    double latency = timeElapsed(timeBeg);                              \
+    uint64_t nbytes = bytesXfr(g_a, lo, hi);                            \
+                                                                        \
+    doSample(g_a,                                                       \
+             doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),             \
+             doMetric(hpcrun_ga_metricId_latency, latency, r),          \
+             doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),          \
+             doMetric(dataMetricId, nbytes, i));                        \
   }
 
 
-#define doSample_1sided_nonblocking(g_a, lo, hi)			\
-  if (isSampled) {							\
-    double latency = timeElapsed(timeBeg);				\
-    uint64_t nbytes = bytesXfr(g_a, lo, hi);				\
-									\
-    /* record time, cctNode, metricVec in nbhandle */			\
-    /* complete in: wait or sync */					\
-									\
-    doSample(g_a,							\
-	     doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),		\
-	     doMetric(hpcrun_ga_metricId_latency, latency, r),		\
-	     doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),		\
-	     doMetric(dataMetricId, nbytes, i));			\
+#define doSample_1sided_nonblocking(g_a, lo, hi)                        \
+  if (isSampled) {                                                      \
+    double latency = timeElapsed(timeBeg);                              \
+    uint64_t nbytes = bytesXfr(g_a, lo, hi);                            \
+                                                                        \
+    /* record time, cctNode, metricVec in nbhandle */                   \
+    /* complete in: wait or sync */                                     \
+                                                                        \
+    doSample(g_a,                                                       \
+             doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),             \
+             doMetric(hpcrun_ga_metricId_latency, latency, r),          \
+             doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),          \
+             doMetric(dataMetricId, nbytes, i));                        \
   }
 
 
-#define doSample_collective_blocking()					\
-  if (isSampled) {							\
-    double latency = timeElapsed(timeBeg);				\
-									\
-    doSample(G_A_NULL,							\
-	     doMetric(hpcrun_ga_metricId_collectiveOp, 1, i),		\
-	     doMetric(hpcrun_ga_metricId_latency, latency, r),		\
-	     do0(),							\
-	     do0());							\
+#define doSample_collective_blocking()                                  \
+  if (isSampled) {                                                      \
+    double latency = timeElapsed(timeBeg);                              \
+                                                                        \
+    doSample(G_A_NULL,                                                  \
+             doMetric(hpcrun_ga_metricId_collectiveOp, 1, i),           \
+             doMetric(hpcrun_ga_metricId_latency, latency, r),          \
+             do0(),                                                     \
+             do0());                                                    \
   }
 
 
-#define doSample(g_a, do1, do2, do3, do4)				\
-{									\
+#define doSample(g_a, do1, do2, do3, do4)                               \
+{                                                                       \
   bool safe = false;                                                    \
-  if ((safe = hpcrun_safe_enter())) {					\
-    ucontext_t uc;							\
-    getcontext(&uc);							\
-									\
-    hpcrun_ga_metricId_dataDesc_t* ga_desc = NULL;			\
-    unsigned int dataMetricId = HPCTRACE_FMT_MetricId_NULL;			\
-									\
-    if (g_a != G_A_NULL) {						\
-      int idx = ga_getDataIdx(g_a);					\
-      if (hpcrun_ga_dataIdx_isValid(idx)) {				\
-	ga_desc = hpcrun_ga_metricId_dataTbl_find(idx);			\
-	dataMetricId = ga_desc->metricId;				\
-      }									\
-    }									\
-      									\
-    /* N.B.: when tracing, this call generates a trace record */	\
-    /* TODO: should return a 'metric_set_t*' */				\
-    sample_val_t smplVal =						\
-      hpcrun_sample_callpath(&uc, dataMetricId, 			\
+  if ((safe = hpcrun_safe_enter())) {                                   \
+    ucontext_t uc;                                                      \
+    getcontext(&uc);                                                    \
+                                                                        \
+    hpcrun_ga_metricId_dataDesc_t* ga_desc = NULL;                      \
+    unsigned int dataMetricId = HPCTRACE_FMT_MetricId_NULL;                     \
+                                                                        \
+    if (g_a != G_A_NULL) {                                              \
+      int idx = ga_getDataIdx(g_a);                                     \
+      if (hpcrun_ga_dataIdx_isValid(idx)) {                             \
+        ga_desc = hpcrun_ga_metricId_dataTbl_find(idx);                 \
+        dataMetricId = ga_desc->metricId;                               \
+      }                                                                 \
+    }                                                                   \
+                                                                        \
+    /* N.B.: when tracing, this call generates a trace record */        \
+    /* TODO: should return a 'metric_set_t*' */                         \
+    sample_val_t smplVal =                                              \
+      hpcrun_sample_callpath(&uc, dataMetricId,                         \
                (hpcrun_metricVal_t) {.i=0},     \
-			     0/*skipInner*/, 1/*isSync*/, NULL);	\
-    									\
-    /* namespace: g_a, ga_desc, dataMetricId, smplVal, metricVec */	\
-    metric_data_list_t* metricVec =					\
-      metricVec = hpcrun_get_metric_data_list(smplVal.sample_node);	\
-    do1;								\
-    do2;								\
-    do3;								\
-    do4;								\
-    									\
-    if (safe) hpcrun_safe_exit();					\
-  }									\
+                             0/*skipInner*/, 1/*isSync*/, NULL);        \
+                                                                        \
+    /* namespace: g_a, ga_desc, dataMetricId, smplVal, metricVec */     \
+    metric_data_list_t* metricVec =                                     \
+      metricVec = hpcrun_get_metric_data_list(smplVal.sample_node);     \
+    do1;                                                                \
+    do2;                                                                \
+    do3;                                                                \
+    do4;                                                                \
+                                                                        \
+    if (safe) hpcrun_safe_exit();                                       \
+  }                                                                     \
 }
 
 
-#define doMetric(metricIdExpr, metricIncr, type)			\
-{									\
-  int mId = (metricIdExpr); /* eval only once */			\
-  if (mId >= 0 && mId != HPCTRACE_FMT_MetricId_NULL) {			\
-    /*TMSG(GA, "doMetric: %d", nbytes); */				\
-    hpcrun_metric_std_inc(mId, metricVec,				\
-	   (cct_metric_data_t){.type = metricIncr * hpcrun_ga_period}); \
-  }									\
+#define doMetric(metricIdExpr, metricIncr, type)                        \
+{                                                                       \
+  int mId = (metricIdExpr); /* eval only once */                        \
+  if (mId >= 0 && mId != HPCTRACE_FMT_MetricId_NULL) {                  \
+    /*TMSG(GA, "doMetric: %d", nbytes); */                              \
+    hpcrun_metric_std_inc(mId, metricVec,                               \
+           (cct_metric_data_t){.type = metricIncr * hpcrun_ga_period}); \
+  }                                                                     \
 }
 
 
@@ -363,15 +363,15 @@ ga_setDataIdx(Integer g_a, int idx)
 //      pnga_allocate()
 
 typedef logical ga_create_fn_t(Integer type, Integer ndim,
-			       Integer *dims, char* name,
-			       Integer *chunk, Integer *g_a);
+                               Integer *dims, char* name,
+                               Integer *chunk, Integer *g_a);
 
 MONITOR_EXT_DECLARE_REAL_FN(ga_create_fn_t, real_pnga_create);
 
 logical
 MONITOR_EXT_WRAP_NAME(pnga_create)(Integer type, Integer ndim,
-				   Integer *dims, char* name,
-				   Integer *chunk, Integer *g_a)
+                                   Integer *dims, char* name,
+                                   Integer *chunk, Integer *g_a)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_pnga_create, pnga_create);
 
@@ -553,8 +553,8 @@ MONITOR_EXT_WRAP_NAME(pnga_nbwait)(Integer *nbhandle)
   if (isSampled) {
     double latency = timeElapsed(timeBeg);
     doSample(G_A_NULL,
-	     doMetric(hpcrun_ga_metricId_latency, latency, r),
-	     do0(), do0(), do0());
+             doMetric(hpcrun_ga_metricId_latency, latency, r),
+             do0(), do0(), do0());
   }
 }
 

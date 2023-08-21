@@ -96,9 +96,9 @@
 // macros
 //*****************************************************************************
 
-#define FOREACH_OMPT_DATA_OP(macro)				     \
-  macro(op, ompt_target_data_alloc, ompt_tgt_alloc)		     \
-  macro(op, ompt_target_data_delete, ompt_tgt_delete)		     \
+#define FOREACH_OMPT_DATA_OP(macro)                                  \
+  macro(op, ompt_target_data_alloc, ompt_tgt_alloc)                  \
+  macro(op, ompt_target_data_delete, ompt_tgt_delete)                \
   macro(op, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
   macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout)
 
@@ -371,45 +371,45 @@ ompt_dump
 {
   if (r) {
     printf("r=%p type=%d time=%lu thread_id=%lu target_id=0x%lx\n",
-	   r, r->type, r->time, r->thread_id, r->target_id);
+           r, r->type, r->time, r->thread_id, r->target_id);
 
     switch (r->type) {
     case ompt_callback_target:
       // case ompt_callback_target_emi:
       {
-	ompt_record_target_t target_rec = r->record.target;
-	printf("\tTarget task: kind=%d endpoint=%d device=%d task_id=%lu target_id=0x%lx codeptr=%p\n",
-	       target_rec.kind, target_rec.endpoint, target_rec.device_num,
-	       target_rec.task_id, target_rec.target_id, target_rec.codeptr_ra);
-	break;
+        ompt_record_target_t target_rec = r->record.target;
+        printf("\tTarget task: kind=%d endpoint=%d device=%d task_id=%lu target_id=0x%lx codeptr=%p\n",
+               target_rec.kind, target_rec.endpoint, target_rec.device_num,
+               target_rec.task_id, target_rec.target_id, target_rec.codeptr_ra);
+        break;
       }
     case ompt_callback_target_data_op:
       // case ompt_callback_target_data_op_emi:
       {
-	ompt_record_target_data_op_t target_data_op_rec =
-	  r->record.target_data_op;
-	printf("\tTarget data op: host_op_id=%lu optype=%d src_addr=%p "
-	       "src_device=%d dest_addr=%p dest_device=%d bytes=%lu "
-	       "end_time=%lu duration=%luus codeptr=%p\n",
-	       target_data_op_rec.host_op_id, target_data_op_rec.optype,
-	       target_data_op_rec.src_addr, target_data_op_rec.src_device_num,
-	       target_data_op_rec.dest_addr, target_data_op_rec.dest_device_num,
-	       target_data_op_rec.bytes, target_data_op_rec.end_time,
-	       target_data_op_rec.end_time - r->time,
-	       target_data_op_rec.codeptr_ra);
-	break;
+        ompt_record_target_data_op_t target_data_op_rec =
+          r->record.target_data_op;
+        printf("\tTarget data op: host_op_id=%lu optype=%d src_addr=%p "
+               "src_device=%d dest_addr=%p dest_device=%d bytes=%lu "
+               "end_time=%lu duration=%luus codeptr=%p\n",
+               target_data_op_rec.host_op_id, target_data_op_rec.optype,
+               target_data_op_rec.src_addr, target_data_op_rec.src_device_num,
+               target_data_op_rec.dest_addr, target_data_op_rec.dest_device_num,
+               target_data_op_rec.bytes, target_data_op_rec.end_time,
+               target_data_op_rec.end_time - r->time,
+               target_data_op_rec.codeptr_ra);
+        break;
       }
     case ompt_callback_target_submit:
       // case ompt_callback_target_submit_emi:
       {
-	ompt_record_target_kernel_t target_kernel_rec = r->record.target_kernel;
-	printf("\tTarget kernel: host_op_id=%lu requested_num_teams=%u "
-	       "granted_num_teams=%u end_time=%lu duration=%luus\n",
-	       target_kernel_rec.host_op_id,
-	       target_kernel_rec.requested_num_teams,
-	       target_kernel_rec.granted_num_teams, target_kernel_rec.end_time,
-	       target_kernel_rec.end_time - r->time);
-	break;
+        ompt_record_target_kernel_t target_kernel_rec = r->record.target_kernel;
+        printf("\tTarget kernel: host_op_id=%lu requested_num_teams=%u "
+               "granted_num_teams=%u end_time=%lu duration=%luus\n",
+               target_kernel_rec.host_op_id,
+               target_kernel_rec.requested_num_teams,
+               target_kernel_rec.granted_num_teams, target_kernel_rec.end_time,
+               target_kernel_rec.end_time - r->time);
+        break;
       }
     default:
       assert(0);
@@ -446,7 +446,7 @@ ompt_finalize_flush
   ompt_device_entry_t *e = device_list;
   while (e) {
     PRINT("ompt_finalize_flush flush id=%d device=%p\n",
-	  e->device_id, e->device);
+          e->device_id, e->device);
     if (ompt_need_flush) ompt_flush_trace(e->device);
     e = e->next;
   }
@@ -469,7 +469,7 @@ ompt_finalize_shutdown
   ompt_device_entry_t *e = device_list;
   while (e) {
     PRINT("ompt_stop_trace id=%d device=%p\n",
-	  e->device_id, e->device);
+          e->device_id, e->device);
     if (ompt_stop_trace) ompt_stop_trace(e->device);
     e = e->next;
   }
@@ -526,7 +526,7 @@ ompt_buffer_complete
       // advance the cursor to the next record
       // status will be 0 if there is no next record
       status = ompt_advance_buffer_cursor(device, buffer, bytes, current,
-					  &current);
+                                          &current);
     }
   }
 
@@ -547,7 +547,7 @@ ompt_trace_configure(ompt_device_t *device)
 
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_buffer_request,
-		   ompt_buffer_complete);
+                   ompt_buffer_complete);
 
   // resume thread tracking
   monitor_enable_new_threads();
@@ -714,7 +714,7 @@ ompt_submit_callback_emi
   PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);
 
   hpcrun_ompt_op_id_notify(endpoint, *host_op_id,
-			   get_placeholder_norm(hpcrun_placeholder_ompt_tgt_kernel));
+                           get_placeholder_norm(hpcrun_placeholder_ompt_tgt_kernel));
 
   PRINT("ompt_submit_callback exit->target_id %" PRIu64 "\n", target_id);
 }
@@ -761,15 +761,15 @@ prepare_device
 
   device_finalizer_flush.fn = ompt_finalize_flush;
   device_finalizer_register(device_finalizer_type_flush,
-			    &device_finalizer_flush);
+                            &device_finalizer_flush);
 
   device_finalizer_shutdown.fn = ompt_finalize_shutdown;
   device_finalizer_register(device_finalizer_type_shutdown,
-			    &device_finalizer_shutdown);
+                            &device_finalizer_shutdown);
 
   device_finalizer_trace.fn = ompt_finalize_trace;
   device_finalizer_register(device_finalizer_type_shutdown,
-			    &device_finalizer_trace);
+                            &device_finalizer_trace);
 
   ompt_set_callback
     (ompt_callback_device_initialize, ompt_device_initialize);

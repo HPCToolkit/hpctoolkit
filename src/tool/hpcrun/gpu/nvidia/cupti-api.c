@@ -100,19 +100,19 @@ int flush_signal;
 #define FLUSH_ALARM_SIGALLOC() \
   flush_signal = linuxtimer_newsignal()
 
-#define FLUSH_ALARM_SET()						\
-  linuxtimer_create(&flush_alarm, CLOCK_REALTIME, flush_signal);	\
-  monitor_sigaction(linuxtimer_getsignal(&flush_alarm),			\
-		    &flush_alarm_handler, 0, NULL);			\
+#define FLUSH_ALARM_SET()                                               \
+  linuxtimer_create(&flush_alarm, CLOCK_REALTIME, flush_signal);        \
+  monitor_sigaction(linuxtimer_getsignal(&flush_alarm),                 \
+                    &flush_alarm_handler, 0, NULL);                     \
   linuxtimer_set(&flush_alarm, FLUSH_ALARM_SECONDS, 0, 0)
 
-#define FLUSH_ALARM_CLEAR()			\
+#define FLUSH_ALARM_CLEAR()                     \
   linuxtimer_set(&flush_alarm, 0, 0, 0)
 
 #define FLUSH_ALARM_FIRED() \
   setjmp(flush_jump_buf)
 
-#define FLUSH_ALARM_FINI()			\
+#define FLUSH_ALARM_FINI()                      \
   linuxtimer_delete(&flush_alarm)
 
 
@@ -139,7 +139,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #endif
 
 #if CUPTI_FLUSH_HANG_WORKAROUND_TEST
-#define FLUSH_ALARM_TEST()			\
+#define FLUSH_ALARM_TEST()                      \
   sleep(20)
 #else
 #define FLUSH_ALARM_TEST()
@@ -834,7 +834,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-		PRINT("\nDriver API:  -----------------%s\n", cd->functionName );
+                PRINT("\nDriver API:  -----------------%s\n", cd->functionName );
 
     bool ompt_runtime_api_flag = ompt_runtime_status_get();
 
@@ -992,12 +992,12 @@ cupti_subscriber_callback
 
     bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags,gpu_placeholder_type_kernel);
 
-//		PRINT("DRIVER: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
-//					 is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_api_flag, cd->callbackSite);
+//              PRINT("DRIVER: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
+//                                       is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_api_flag, cd->callbackSite);
 
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
     if (is_valid_op && !cupti_runtime_api_flag && !ompt_runtime_api_flag) {
-			if (cd->callbackSite == CUPTI_API_ENTER) {
+                        if (cd->callbackSite == CUPTI_API_ENTER) {
         // A driver API cannot be implemented by other driver APIs, so we get an id
         // and unwind when the API is entered
 
@@ -1015,12 +1015,12 @@ cupti_subscriber_callback
         if (is_kernel_op) {
           cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
-	  gpu_cct_insert(kernel_ph, kernel_ip);
+          gpu_cct_insert(kernel_ph, kernel_ip);
 
           cct_node_t *trace_ph =
-	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+            gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
-	  gpu_cct_insert(trace_ph, kernel_ip);
+          gpu_cct_insert(trace_ph, kernel_ip);
         }
 
 
@@ -1036,14 +1036,14 @@ cupti_subscriber_callback
         uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
-			}
+                        }
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
         gpu_cct_insert(cupti_kernel_ph, kernel_ip);
       }
       if (cupti_trace_ph != NULL) {
-	gpu_cct_insert(cupti_trace_ph, kernel_ip);
+        gpu_cct_insert(cupti_trace_ph, kernel_ip);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
@@ -1057,7 +1057,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
-		PRINT("\nRuntime API:  -----------------%s\n", cd->functionName );
+                PRINT("\nRuntime API:  -----------------%s\n", cd->functionName );
 
     bool is_valid_op = false;
     bool is_kernel_op __attribute__((unused)) = false; // used only by PRINT when debugging
@@ -1153,8 +1153,8 @@ cupti_subscriber_callback
         break;
     }
 
-//		PRINT("RUNTIME: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
-//					 is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_status_get(), cd->callbackSite);
+//              PRINT("RUNTIME: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
+//                                       is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_status_get(), cd->callbackSite);
 
     if (is_valid_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
@@ -1184,7 +1184,7 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-	gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
@@ -1305,7 +1305,7 @@ cupti_buffer_completion_callback
     do {
       status = cupti_buffer_cursor_advance(buffer, validSize, &cupti_activity);
       if (status) {
-				cupti_activity_process(cupti_activity);
+                                cupti_activity_process(cupti_activity);
         ++processed;
       }
     } while (status);
@@ -1469,7 +1469,7 @@ cupti_callbacks_unsubscribe
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
-		    (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
+                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
   HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 }
@@ -1581,11 +1581,11 @@ cupti_activity_flush
     if (!FLUSH_ALARM_FIRED()) {
       FLUSH_ALARM_SET();
       HPCRUN_CUPTI_CALL_NOERROR
-	(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+        (cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
       FLUSH_ALARM_TEST();
       FLUSH_ALARM_CLEAR();
     }
-    FLUSH_ALARM_FINI();			\
+    FLUSH_ALARM_FINI();                 \
   }
 }
 

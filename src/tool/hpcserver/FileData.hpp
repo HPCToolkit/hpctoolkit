@@ -63,10 +63,10 @@
 using namespace std;
 namespace TraceviewerServer
 {
-	struct FileData
-	{
-		string fileXML;
-		string fileTrace;
-	};
+        struct FileData
+        {
+                string fileXML;
+                string fileTrace;
+        };
 }
 #endif

@@ -206,7 +206,7 @@ private:
 // TODO: integrate with Tree::writeXML()
 void
 writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
-	 bool prettyPrint = true);
+         bool prettyPrint = true);
 
 
 } // namespace Struct
@@ -288,7 +288,7 @@ public:
   virtual ~ANode()
   {
     DIAG_DevMsgIf(0, "~ANode::ANode: " << toString_id()
-		  << " " << std::hex << this << std::dec);
+                  << " " << std::hex << this << std::dec);
   }
 
   // clone: return a shallow copy, unlinked from the tree
@@ -506,7 +506,7 @@ public:
 
   virtual std::ostream&
   writeXML(std::ostream& os = std::cout, unsigned int oFlags = 0,
-	   const char* pre = "") const;
+           const char* pre = "") const;
 
   void
   ddumpXML() const;
@@ -533,20 +533,20 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
   virtual std::ostream&
   dumpmePath(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 protected:
   bool
   writeXML_pre(std::ostream& os = std::cout, unsigned int oFlags = 0,
-	       const char* prefix = "") const;
+               const char* prefix = "") const;
 
   void
   writeXML_post(std::ostream& os = std::cout, unsigned int oFlags = 0,
-		const char* prefix = "") const;
+                const char* prefix = "") const;
 private:
   void
   ctorCheck() const;
@@ -574,9 +574,9 @@ public:
 class ACodeNode : public ANode {
 protected:
   ACodeNode(ANodeTy ty, ANode* parent = NULL,
-	   SrcFile::ln begLn = ln_NULL,
-	   SrcFile::ln endLn = ln_NULL,
-	   VMA begVMA = 0, VMA endVMA = 0)
+           SrcFile::ln begLn = ln_NULL,
+           SrcFile::ln endLn = ln_NULL,
+           VMA begVMA = 0, VMA endVMA = 0)
     : ANode(ty, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
   {
     m_lineno_frozen = false;
@@ -654,11 +654,11 @@ public:
   checkLineRange(SrcFile::ln begLn, SrcFile::ln endLn)
   {
     DIAG_Assert(Logic::equiv(begLn == ln_NULL, endLn == ln_NULL),
-		"ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
+                "ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(begLn <= endLn,
-		"ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
+                "ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(Logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
-		"ACodeNode::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
+                "ACodeNode::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
   }
 
   void
@@ -708,9 +708,9 @@ public:
 
   bool
   containsInterval(SrcFile::ln begLn, SrcFile::ln endLn,
-		   int beg_epsilon, int end_epsilon) const
+                   int beg_epsilon, int end_epsilon) const
   { return (containsLine(begLn, beg_epsilon, end_epsilon)
-	    && containsLine(endLn, beg_epsilon, end_epsilon)); }
+            && containsLine(endLn, beg_epsilon, end_epsilon)); }
 
   ACodeNode*
   ACodeNodeWithLine(SrcFile::ln ln) const;
@@ -766,7 +766,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 protected:
   // NOTE: currently designed for PROCs
@@ -901,7 +901,7 @@ public:
 
   virtual std::ostream&
   writeXML(std::ostream& os = std::cout, unsigned int oFlags = 0,
-	   const char* pre = "") const;
+           const char* pre = "") const;
 
   // --------------------------------------------------------
   // debugging
@@ -909,7 +909,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 protected:
 private:
@@ -950,14 +950,14 @@ private:
 class Group: public ACodeNode {
 public:
   Group(const char* nm, ANode* parent,
-	int begLn = ln_NULL, int endLn = ln_NULL)
+        int begLn = ln_NULL, int endLn = ln_NULL)
     : ACodeNode(TyGroup, parent, begLn, endLn, 0, 0)
   {
     Ctor(nm, parent);
   }
 
   Group(const std::string& nm, ANode* parent,
-	     int begLn = ln_NULL, int endLn = ln_NULL)
+             int begLn = ln_NULL, int endLn = ln_NULL)
     : ACodeNode(TyGroup, parent, begLn, endLn, 0, 0)
   {
     Ctor(nm.c_str(), parent);
@@ -989,7 +989,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 private:
   void
@@ -1149,12 +1149,12 @@ public:
 
   virtual std::ostream&
   writeXML(std::ostream& os = std::cout, unsigned int oFlags = 0,
-	   const char* pre = "") const;
+           const char* pre = "") const;
 
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
   void
   dumpmaps() const;
@@ -1184,7 +1184,7 @@ protected:
   {
     const VMAIntervalSet& vmaset = x->vmaSet();
     for (VMAIntervalSet::const_iterator it = vmaset.begin();
-	 it != vmaset.end(); ++it) {
+         it != vmaset.end(); ++it) {
       const VMAInterval& vmaint = *it;
       DIAG_MsgIf(0, vmaint.toString());
       mp->insert(std::make_pair(vmaint, x));
@@ -1198,7 +1198,7 @@ protected:
   {
     const VMAIntervalSet& vmaset = x->vmaSet();
     for (VMAIntervalSet::const_iterator it = vmaset.begin();
-	 it != vmaset.end(); ++it) {
+         it != vmaset.end(); ++it) {
       const VMAInterval& vmaint = *it;
       mp->erase(vmaint);
     }
@@ -1326,7 +1326,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 private:
   void
@@ -1401,8 +1401,8 @@ public:
   // Note: currently sets hasSymbolic() to false on creation
   static Proc*
   demand(File* file, const std::string& name, const std::string& linkname,
-	 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL,
-	 bool* didCreate = NULL);
+         SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL,
+         bool* didCreate = NULL);
 
   static Proc*
   demand(File* file, const std::string& name)
@@ -1474,7 +1474,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 private:
   void
@@ -1524,17 +1524,17 @@ public:
   // Create/Destroy
   // --------------------------------------------------------
   Alien(ACodeNode* parent, const char* filenm, const char* procnm,
-	     const char* displaynm,
-	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+             const char* displaynm,
+             SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
   {
     Ctor(parent, filenm, procnm, displaynm);
   }
 
   Alien(ACodeNode* parent,
-	     const std::string& filenm, const std::string& procnm,
-	     const std::string& displaynm,
-	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+             const std::string& filenm, const std::string& procnm,
+             const std::string& displaynm,
+             SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyAlien, parent, begLn, endLn, 0, 0)
   {
     Ctor(parent, filenm.c_str(), procnm.c_str(), displaynm.c_str());
@@ -1596,7 +1596,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 private:
   void
@@ -1633,13 +1633,13 @@ public:
   // Create/Destroy
   // --------------------------------------------------------
   Loop(ACodeNode* parent, std::string &filenm,
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+            SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
     : ACodeNode(TyLoop, parent, begLn, endLn, 0, 0)
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
     setFile(filenm);
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile) ||
-		(t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
+                (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
   }
 
   void setFile(std::string filenm);
@@ -1669,7 +1669,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
   const std::string&
   fileName() const
@@ -1707,7 +1707,7 @@ public:
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile)
-		|| (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
+                || (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
 
 #if 0
     // if parent is proc or alien, add to stmt map
@@ -1786,7 +1786,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 private:
   StmtType m_stmt_type;
@@ -1834,7 +1834,7 @@ public:
 
   virtual std::ostream&
   dumpme(std::ostream& os = std::cerr, unsigned int oFlags = 0,
-	 const char* pre = "") const;
+         const char* pre = "") const;
 
 private:
   void RelocateRef();

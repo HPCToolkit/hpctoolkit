@@ -50,10 +50,10 @@
 //
 // Author:  John Mellor-Crummey                               October 1993
 //
-// rjf	2-21-98 Replaced previous versions of PointerStack with
+// rjf  2-21-98 Replaced previous versions of PointerStack with
 //              a self-contained implementation for efficiency and
-//		to avoid using templates when building runtime libraries
-//		on machines on which the compiler itself does not run.
+//              to avoid using templates when building runtime libraries
+//              on machines on which the compiler itself does not run.
 //***************************************************************************
 
 #ifndef PointerStack_h
@@ -102,8 +102,8 @@ public:
     // eraxxon: changed to eliminate comparison between unsigned/signed
     if (topElement >= 0) {
       return (depth <= (unsigned int)topElement)
-	? theStack[topElement - depth]
-	: (void *) 0 ;
+        ? theStack[topElement - depth]
+        : (void *) 0 ;
     } else {
       return (void *) 0 ;
     }

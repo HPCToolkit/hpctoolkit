@@ -213,8 +213,8 @@ hpcrun_trampoline_insert(cct_node_t* node)
       void* ra = *((void**) ra_loc);
       if (RETURN_ADDRESS_IS_MARKED(ra)) {
           frame->ra_val = ra; // ra_val of the first RA marked frame may have been reset. Take a copy of the value of marked RA
-		  break; // RA has already been marked
-	  }
+                  break; // RA has already been marked
+          }
 
       *((void**) ra_loc) = (void*)((unsigned long)ra | 1);
       frame->ra_val = *((void**) ra_loc); // Take a copy of the value of marked RA

@@ -68,25 +68,25 @@
 
 #define DEBUG 0
 
-#define st_insert				\
+#define st_insert                               \
   typed_splay_insert(context)
 
-#define st_lookup				\
+#define st_lookup                               \
   typed_splay_lookup(context)
 
-#define st_delete				\
+#define st_delete                               \
   typed_splay_delete(context)
 
-#define st_forall				\
+#define st_forall                               \
   typed_splay_forall(context)
 
-#define st_count				\
+#define st_count                                \
   typed_splay_count(context)
 
-#define st_alloc(free_list)			\
+#define st_alloc(free_list)                     \
   typed_splay_alloc(free_list, kernel_context_map_entry_t)
 
-#define st_free(free_list, node)		\
+#define st_free(free_list, node)                \
   typed_splay_free(free_list, node)
 
 

@@ -1768,7 +1768,7 @@ typedef int cond_init_fcn(pthread_cond_t *, const pthread_condattr_t *);
 typedef int cond_destroy_fcn(pthread_cond_t *);
 typedef int cond_wait_fcn(pthread_cond_t *, pthread_mutex_t *);
 typedef int cond_timedwait_fcn(pthread_cond_t *, pthread_mutex_t *,
-			       const struct timespec *);
+                               const struct timespec *);
 typedef int cond_signal_fcn(pthread_cond_t *);
 
 #ifdef HPCRUN_STATIC_LINK
@@ -1796,7 +1796,7 @@ static cond_signal_fcn *real_cond_broadcast = NULL;
 
 int
 MONITOR_EXT_WRAP_NAME(pthread_cond_init)(pthread_cond_t* cond,
-					 const pthread_condattr_t* attr)
+                                         const pthread_condattr_t* attr)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_cond_init, pthread_cond_init);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
@@ -1815,7 +1815,7 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_destroy)(pthread_cond_t* cond)
 
 int
 MONITOR_EXT_WRAP_NAME(pthread_cond_wait)(pthread_cond_t* cond,
-					 pthread_mutex_t* mutex)
+                                         pthread_mutex_t* mutex)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_cond_wait, pthread_cond_wait);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }
@@ -1836,8 +1836,8 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_wait)(pthread_cond_t* cond,
 
 int
 MONITOR_EXT_WRAP_NAME(pthread_cond_timedwait)(pthread_cond_t* cond,
-					      pthread_mutex_t* mutex,
-					      const struct timespec* tspec)
+                                              pthread_mutex_t* mutex,
+                                              const struct timespec* tspec)
 {
   MONITOR_EXT_GET_NAME_WRAP(real_cond_timedwait, pthread_cond_timedwait);
   if (0) { TMSG(MONITOR_EXTS, "%s", __func__); }

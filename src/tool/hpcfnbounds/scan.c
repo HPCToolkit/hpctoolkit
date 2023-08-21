@@ -69,91 +69,91 @@ decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t 
   unsignedFunctionAddr = 0ull;
   advance = 0;
 
-	switch(fdeAddrOpType) {
-		case DW_EH_PE_absptr:
-			unsignedBaseAddr = 0ull;
-		case DW_EH_PE_pcrel:
-		case DW_EH_PE_indirect:		// personality only
-		case DW_EH_PE_indpcrel:		// personality only
-			unsignedBaseAddr = decodeRecord->ehSecAddr;  // native uint64_t
-			unsignedBaseAddr += (decodeRecord->totalOffset);
-			break;
-		case DW_EH_PE_textrel:
-			unsignedBaseAddr = decodeRecord->textSecAddr;
-			break;
-		case DW_EH_PE_datarel:
-			unsignedBaseAddr = decodeRecord->dataSecAddr;
-			break;
-		//
-		// These cases do not apply.
-		//
-		case DW_EH_PE_funcrel:
-		case DW_EH_PE_aligned:
-		default:
-			fprintf(stderr, "FNB2: Error in eh_frame %s, unsupported address operation type %.2x\n",
-					errString, fdeAddrOpType);
+        switch(fdeAddrOpType) {
+                case DW_EH_PE_absptr:
+                        unsignedBaseAddr = 0ull;
+                case DW_EH_PE_pcrel:
+                case DW_EH_PE_indirect:         // personality only
+                case DW_EH_PE_indpcrel:         // personality only
+                        unsignedBaseAddr = decodeRecord->ehSecAddr;  // native uint64_t
+                        unsignedBaseAddr += (decodeRecord->totalOffset);
+                        break;
+                case DW_EH_PE_textrel:
+                        unsignedBaseAddr = decodeRecord->textSecAddr;
+                        break;
+                case DW_EH_PE_datarel:
+                        unsignedBaseAddr = decodeRecord->dataSecAddr;
+                        break;
+                //
+                // These cases do not apply.
+                //
+                case DW_EH_PE_funcrel:
+                case DW_EH_PE_aligned:
+                default:
+                        fprintf(stderr, "FNB2: Error in eh_frame %s, unsupported address operation type %.2x\n",
+                                        errString, fdeAddrOpType);
       *adv = 0;
-			return EHF_DECDWRF_ERROR;
-			break;
-	}
+                        return EHF_DECDWRF_ERROR;
+                        break;
+        }
 
-	switch (fdeAddrDecodeType) {
-		case DW_EH_PE_absptr:
+        switch (fdeAddrDecodeType) {
+                case DW_EH_PE_absptr:
       unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_UNSIGNED);
       unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
       advance += sizeof(uint64_t);
-			break;
-		case DW_EH_PE_uleb128:
-			unsignedRelAddr = decodeULEB128(streamPtr, &l);
-			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+                        break;
+                case DW_EH_PE_uleb128:
+                        unsignedRelAddr = decodeULEB128(streamPtr, &l);
+                        unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
       advance += l;
-			break;
-		case DW_EH_PE_udata2:
+                        break;
+                case DW_EH_PE_udata2:
       unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint16_t),EHF_UER_UNSIGNED);
-			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+                        unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
       advance += sizeof(uint16_t);
-			break;
-		case DW_EH_PE_udata4:
+                        break;
+                case DW_EH_PE_udata4:
       unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint32_t),EHF_UER_UNSIGNED);
-			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+                        unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
       advance += sizeof(uint32_t);
-			break;
-		case DW_EH_PE_udata8:
+                        break;
+                case DW_EH_PE_udata8:
       unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_UNSIGNED);
-			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+                        unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
       advance += sizeof(uint64_t);
-			break;
-		//
-		// if the relative part is signed, we assume the base has
-		// the high bit clear (i.e. non-negative for signed arithmetic).
-		// This should always be so in user space.  If it's not, we need a
-		// special addition routine that does negate subtract of the addend.
-		//
-		case DW_EH_PE_sleb128:
-			signedRelAddr = decodeSLEB128(streamPtr, &l);
-			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+                        break;
+                //
+                // if the relative part is signed, we assume the base has
+                // the high bit clear (i.e. non-negative for signed arithmetic).
+                // This should always be so in user space.  If it's not, we need a
+                // special addition routine that does negate subtract of the addend.
+                //
+                case DW_EH_PE_sleb128:
+                        signedRelAddr = decodeSLEB128(streamPtr, &l);
+                        unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
       advance += l;
-			break;
-		case DW_EH_PE_sdata2:
+                        break;
+                case DW_EH_PE_sdata2:
       signedRelAddr = (int64_t) unalignedEndianRead(streamPtr,sizeof(uint16_t),EHF_UER_SIGNED);
-			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+                        unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
       advance += sizeof(uint16_t);
-		case DW_EH_PE_sdata4:
+                case DW_EH_PE_sdata4:
       signedRelAddr = (int64_t) unalignedEndianRead(streamPtr,sizeof(uint32_t),EHF_UER_SIGNED);
-			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+                        unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
       advance += sizeof(uint32_t);
-			break;
-		case DW_EH_PE_sdata8:
+                        break;
+                case DW_EH_PE_sdata8:
       signedRelAddr = (int64_t) unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_SIGNED);
-			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+                        unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
       advance += sizeof(uint64_t);
-		default:
-			fprintf(stderr, "FNB2: Error in eh_frame %s, unsupported address decode type %.2x\n",
+                default:
+                        fprintf(stderr, "FNB2: Error in eh_frame %s, unsupported address decode type %.2x\n",
         errString, fdeAddrDecodeType);
       *adv = 0;
-			return EHF_DECDWRF_ERROR;
-			break;
-	}
+                        return EHF_DECDWRF_ERROR;
+                        break;
+        }
 
   *adv = advance;
   return unsignedFunctionAddr;

@@ -73,44 +73,44 @@
 
 namespace TraceviewerServer
 {
-	using namespace std;
+        using namespace std;
 
-	typedef int SocketFD;
-	class DataSocketStream
-	{
-	public:
-		DataSocketStream(int, bool);
-		void acceptSocket();
-		DataSocketStream();
+        typedef int SocketFD;
+        class DataSocketStream
+        {
+        public:
+                DataSocketStream(int, bool);
+                void acceptSocket();
+                DataSocketStream();
 
-		int getPort();
+                int getPort();
 
-		virtual ~DataSocketStream();
+                virtual ~DataSocketStream();
 
-		virtual void writeInt(int);
-		virtual void writeLong(Long);
-		virtual void writeDouble(double);
-		virtual void writeRawData(char*, int);
-		virtual void writeString(string);
-		virtual void writeShort(short);
+                virtual void writeInt(int);
+                virtual void writeLong(Long);
+                virtual void writeDouble(double);
+                virtual void writeRawData(char*, int);
+                virtual void writeString(string);
+                virtual void writeShort(short);
 
-		virtual void flush();
+                virtual void flush();
 
-		int readInt();
-		Long readLong();
-		string readString();
-		double readDouble();
-		short readShort();
-		char readByte();
+                int readInt();
+                Long readLong();
+                string readString();
+                double readDouble();
+                short readShort();
+                char readByte();
 
-		SocketFD getDescriptor();
-	private:
-		int port;
-		SocketFD socketDesc;
-		SocketFD unopenedSocketFD;
-		void checkForErrors(int);
-		FILE* file;
-	};
+                SocketFD getDescriptor();
+        private:
+                int port;
+                SocketFD socketDesc;
+                SocketFD unopenedSocketFD;
+                void checkForErrors(int);
+                FILE* file;
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* DATASOCKETSTREAM_H_ */

@@ -137,23 +137,23 @@ gpu_instrumentation_options_set
 
       // analyze options
       while(token) {
-	if (strcmp(token, INST_COUNT) == 0) {
-	  options->count_instructions = true;
+        if (strcmp(token, INST_COUNT) == 0) {
+          options->count_instructions = true;
   #if ENABLE_LATENCY_ANALYSIS
-	} else if (strcmp(token, INST_LATENCY) == 0) {
-	  options->attribute_latency = true;
+        } else if (strcmp(token, INST_LATENCY) == 0) {
+          options->attribute_latency = true;
   #endif
   #if ENABLE_SIMD_ANALYSIS
-	} else if (strcmp(token, INST_SIMD) == 0) {
-	  options->analyze_simd = true;
+        } else if (strcmp(token, INST_SIMD) == 0) {
+          options->analyze_simd = true;
   #endif
-	} else if (strcmp(token, INST_SILENT) == 0) {
-	  options->silent = true;
-	} else {
-	  fprintf(stderr, "hpcrun ERROR: while parsing GPU instrumentation knobs, unrecognized knob '%s'\n", token);
-	  exit(-1);
-	}
-	token = strtok(NULL, delimiter);
+        } else if (strcmp(token, INST_SILENT) == 0) {
+          options->silent = true;
+        } else {
+          fprintf(stderr, "hpcrun ERROR: while parsing GPU instrumentation knobs, unrecognized knob '%s'\n", token);
+          exit(-1);
+        }
+        token = strtok(NULL, delimiter);
       }
       break;
 
@@ -164,7 +164,7 @@ gpu_instrumentation_options_set
 #else
     if (*ostr) {
       fprintf(stderr, "hpcrun ERROR: unexpected text encountered parsing GPU"
-	      " setting '%s'\n", ostr);
+              " setting '%s'\n", ostr);
       exit(-1);
     }
 #endif

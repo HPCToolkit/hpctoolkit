@@ -84,14 +84,14 @@ sanitize
   const char *in
 )
 {
-	char *result = out;
-	while (*in != 0) {
- 	  // filter out unprintable characters
+        char *result = out;
+        while (*in != 0) {
+          // filter out unprintable characters
           if (isprint(*in)) *out++ = *in++;
           else in++;
-	}
-	*out = 0;
-	return result;
+        }
+        *out = 0;
+        return result;
 }
 
 static void
@@ -124,7 +124,7 @@ printw(FILE *output, const char *name, const char *desc_unsanitized)
           if (len > MAX_EVENT_NAME) {
             fprintf(output, "%s\n", name);
           } else {
-	    name_ptr = name;
+            name_ptr = name;
           }
         }
         fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);

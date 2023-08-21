@@ -10,7 +10,7 @@
 // local includes
 //******************************************************************************
 
-#include "blame-kernel-map.h"		// kernel_node_t, queue_node_t
+#include "blame-kernel-map.h"           // kernel_node_t, queue_node_t
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>

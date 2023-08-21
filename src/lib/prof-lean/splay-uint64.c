@@ -227,19 +227,19 @@ splay_uint64_count
 
 #define N 20
 
-#define st_insert				\
+#define st_insert                               \
   typed_splay_insert(int)
 
-#define st_lookup				\
+#define st_lookup                               \
   typed_splay_lookup(int)
 
-#define st_delete				\
+#define st_delete                               \
   typed_splay_delete(int)
 
-#define st_forall				\
+#define st_forall                               \
   typed_splay_forall(int)
 
-#define st_count				\
+#define st_count                                \
   typed_splay_count(int)
 
 
@@ -304,7 +304,7 @@ printnode
   if (order == splay_preorder_visit) (*depth)++;
   if (order == splay_inorder_visit) {
     printf("%*s%ld%*s%ld\n", *depth, "", node->key,
-	   60-*depth-digits(node->key), "", node->mysquared);
+           60-*depth-digits(node->key), "", node->mysquared);
   }
   if (order == splay_postorder_visit) (*depth)--;
 }

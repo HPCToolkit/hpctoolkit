@@ -93,13 +93,13 @@ enum IterStackEnumType {
 class IteratorStack: public StackableIterator {
 public:
   enum TraversalOrder { Unordered, PreOrder, PostOrder,
-			ReversePreOrder, ReversePostOrder,
-			PreAndPostOrder };
+                        ReversePreOrder, ReversePostOrder,
+                        PreAndPostOrder };
 
 public:
 
   IteratorStack(TraversalOrder torder,
-		IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
+                IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
   ~IteratorStack();
 
   void *CurrentUpCall() const;
@@ -110,11 +110,11 @@ public:
   // pop all but one iterator off the stack; reset the one left
   void Reset(); // same traversal order as before
   void Reset(TraversalOrder torder,
-	     IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
+             IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
 
   // empty the stack and reset the state to that as if freshly constructed
   void ReConstruct(TraversalOrder torder,
-		   IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
+                   IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
 
   bool IsValid() const;
 

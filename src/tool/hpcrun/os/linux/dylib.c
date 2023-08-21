@@ -102,9 +102,9 @@ struct dylib_fmbn_s {
 
 #define SEG_SIZE(info, seg) ((info)->dlpi_phdr[seg].p_memsz)
 
-#define SEG_IS_EXECUTABLE_CODE(info, seg)	\
-    (((info) != NULL) &&		\
-     ((info)->dlpi_phdr != NULL) &&	\
+#define SEG_IS_EXECUTABLE_CODE(info, seg)       \
+    (((info) != NULL) &&                \
+     ((info)->dlpi_phdr != NULL) &&     \
      ((info)->dlpi_phdr[seg].p_type == PT_LOAD) && \
      ((info)->dlpi_phdr[seg].p_flags & PF_X))
 
@@ -115,7 +115,7 @@ struct dylib_fmbn_s {
 
 static int
 dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
-					   size_t size, void *fargs_v);
+                                           size_t size, void *fargs_v);
 
 
 
@@ -129,9 +129,9 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
 
 int
 dylib_find_module_containing_addr(void* addr,
-				  char* module_name,
-				  void** start,
-				  void** end)
+                                  char* module_name,
+                                  void** start,
+                                  void** end)
 {
   int retval = 0; // not found
   struct dylib_fmca_s arg;
@@ -160,7 +160,7 @@ dylib_find_module_containing_addr(void* addr,
 
 static void
 dylib_get_segment_bounds(struct dl_phdr_info *info,
-			 struct dylib_seg_bounds_s *bounds)
+                         struct dylib_seg_bounds_s *bounds)
 {
   int j;
   char *start = (char *) -1;
@@ -175,9 +175,9 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
       long size = SEG_SIZE(info, j);
       // don't adjust info unless segment has positive size
       if (size > 0) {
-	char *eaddr = saddr + size;
-	if (saddr < start) start = saddr;
-	if (eaddr >= end) end = eaddr;
+        char *eaddr = saddr + size;
+        if (saddr < start) start = saddr;
+        if (eaddr >= end) end = eaddr;
       }
     }
   }
@@ -189,7 +189,7 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
 
 static int
 dylib_find_module_containing_addr_callback(struct dl_phdr_info* info,
-					   size_t size, void* fargs_v)
+                                           size_t size, void* fargs_v)
 {
   struct dylib_fmca_s* fargs = (struct dylib_fmca_s*) fargs_v;
   dylib_get_segment_bounds(info, &fargs->bounds);

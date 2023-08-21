@@ -75,7 +75,7 @@
 //
 //
 HashTableSortedIterator::HashTableSortedIterator(const HashTable* theHashTable,
-						 EntryCompareFunctPtr const _EntryCompare)
+                                                 EntryCompareFunctPtr const _EntryCompare)
 {
   sortedEntries = (void **) NULL;
   hashTable = (HashTable*) theHashTable;

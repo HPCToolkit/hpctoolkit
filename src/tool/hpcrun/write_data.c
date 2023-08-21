@@ -259,8 +259,8 @@ write_epochs(FILE *fs, core_profile_trace_data_t *cptd, epoch_t *epoch, hpcrun_f
 #if 0
     if (ENABLED(SKIP_WRITE_EMPTY_EPOCH)){
       if (hpcrun_empty_cct_bundle(&(s->csdata))){
-	EMSG("Empty cct encountered: it is not written out");
-	continue;
+        EMSG("Empty cct encountered: it is not written out");
+        continue;
       }
     }
 #endif
@@ -281,9 +281,9 @@ write_epochs(FILE *fs, core_profile_trace_data_t *cptd, epoch_t *epoch, hpcrun_f
 
     TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.bits);
     hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
-			       default_measurement_granularity,
-			       "TODO:epoch-name","TODO:epoch-value",
-			       NULL);
+                               default_measurement_granularity,
+                               "TODO:epoch-name","TODO:epoch-value",
+                               NULL);
 #endif
 
     //

@@ -478,7 +478,7 @@ hpcrun_thread_data_init
   td->tramp_retn_addr   = NULL;
   td->tramp_loc         = NULL;
   td->cached_bt_buf_beg = hpcrun_malloc(sizeof(frame_t)
-					* CACHED_BACKTRACE_SIZE);
+                                        * CACHED_BACKTRACE_SIZE);
   td->cached_bt_frame_beg = td->cached_bt_buf_beg + CACHED_BACKTRACE_SIZE;
   td->cached_bt_buf_frame_end = td->cached_bt_frame_beg;
   td->tramp_frame       = NULL;
@@ -655,7 +655,7 @@ dump_cpuset
     int i;
     for (i = 0; i < CPU_SETSIZE; i++) {
       if (CPU_ISSET(i, cpuset)) {
-	printf("%d ", i);
+        printf("%d ", i);
       }
     }
     printf("}\n");
@@ -700,12 +700,12 @@ hpcrun_thread_core_bindings
     if (count < 8) { // no CPU currently supports more than 8 SMT threads
       int i;
       for (i = 0; i < CPU_SETSIZE; i++) {
-	if (CPU_ISSET(i, &cpuset)) {
-	  if (cpuset_dense_region(&cpuset, i, count - 1)) {
-	    core_id = i;
-	  }
-	  break;
-	}
+        if (CPU_ISSET(i, &cpuset)) {
+          if (cpuset_dense_region(&cpuset, i, count - 1)) {
+            core_id = i;
+          }
+          break;
+        }
       }
     }
   }

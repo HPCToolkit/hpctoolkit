@@ -70,8 +70,8 @@ clBuildProgram
 )
 {
   return hpcrun_clBuildProgram(program, num_devices, device_list,
-			options, pfn_notify,
-			user_data);
+                        options, pfn_notify,
+                        user_data);
 }
 #endif // ENABLE_GTPIN
 
@@ -114,7 +114,7 @@ clCreateCommandQueueWithProperties
 )
 {
   return hpcrun_clCreateCommandQueueWithProperties(
-			      context, device, properties, errcode_ret);
+                              context, device, properties, errcode_ret);
 }
 
 
@@ -134,8 +134,8 @@ clEnqueueNDRangeKernel
 {
   return hpcrun_clEnqueueNDRangeKernel(
        command_queue, ocl_kernel, work_dim, global_work_offset,
-	global_work_size, local_work_size, num_events_in_wait_list,
-	event_wait_list, event);
+        global_work_size, local_work_size, num_events_in_wait_list,
+        event_wait_list, event);
 }
 
 cl_int
@@ -171,8 +171,8 @@ clEnqueueReadBuffer
 {
   return hpcrun_clEnqueueReadBuffer(
       command_queue, buffer, blocking_read, offset,
-	  cb, ptr, num_events_in_wait_list,
-	  event_wait_list, event);
+          cb, ptr, num_events_in_wait_list,
+          event_wait_list, event);
 }
 
 cl_int
@@ -270,11 +270,11 @@ clReleaseKernel
 cl_int
 clWaitForEvents
 (
-	cl_uint num_events,
-	const cl_event* event_list
+        cl_uint num_events,
+        const cl_event* event_list
 )
 {
-	return hpcrun_clWaitForEvents(num_events, event_list);
+        return hpcrun_clWaitForEvents(num_events, event_list);
 }
 
 
@@ -291,8 +291,8 @@ clReleaseCommandQueue
 cl_int
 clFinish
 (
-	cl_command_queue command_queue
+        cl_command_queue command_queue
 )
 {
-	return hpcrun_clFinish(command_queue);
+        return hpcrun_clFinish(command_queue);
 }

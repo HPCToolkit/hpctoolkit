@@ -94,7 +94,7 @@ typedef struct cskiplist_s cskiplist_t;
  * string representation of a node in the skip list.
  */
 typedef void (*cskl_node_tostr)(void* node_val, int node_height, int max_height,
-	char str[], int max_cskl_str_len);
+        char str[], int max_cskl_str_len);
 
 
 //******************************************************************************
@@ -109,12 +109,12 @@ cskl_init();
 
 cskiplist_t*
 cskl_new(
-	void *lsentinel,
-	void *rsentinel,
-	int maxheight,
-	val_cmp compare,
-	val_cmp inrange,
-	mem_alloc m_alloc);
+        void *lsentinel,
+        void *rsentinel,
+        int maxheight,
+        val_cmp compare,
+        val_cmp inrange,
+        mem_alloc m_alloc);
 
 void
 cskl_free(void* node);
@@ -136,7 +136,7 @@ cskl_inrange_find(cskiplist_t *cskl, void *val);
 
 csklnode_t *
 cskl_insert(cskiplist_t *cskl, void *value,
-	    mem_alloc m_alloc);
+            mem_alloc m_alloc);
 
 bool
 cskl_delete(cskiplist_t *cskl, void *value);
@@ -157,7 +157,7 @@ cskl_inrange_del_bulk_unsynch(cskiplist_t *cskl, void *low, void *high, mem_free
  */
 void
 cskl_levels_tostr (int height, int max_height, char str[],
-	int max_cskl_str_len);
+        int max_cskl_str_len);
 
 /*
  * append the node string to the current cskiplist string
@@ -171,7 +171,7 @@ cskl_append_node_str(char nodestr[], char csklstr[], int max_cskl_str_len);
  */
 void
 cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr,
-	char csklstr[], int max_cskl_str_len);
+        char csklstr[], int max_cskl_str_len);
 
 void
 cskl_dump(cskiplist_t *cskl, cskl_node_tostr node_tostr);

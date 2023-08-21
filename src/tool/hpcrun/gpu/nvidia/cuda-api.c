@@ -105,8 +105,8 @@
   if (error_result != cudaSuccess) {                                \
     ETMSG(CUDA, "cuda runtime %s returned %d", #fn,                 \
           (int) error_result);                                      \
-    exit(-1);							    \
-  }								    \
+    exit(-1);                                                       \
+  }                                                                 \
 }
 
 
@@ -114,8 +114,8 @@
 // device capability
 //----------------------------------------------------------------------
 
-#define COMPUTE_MAJOR_TURING 	7
-#define COMPUTE_MINOR_TURING 	5
+#define COMPUTE_MAJOR_TURING    7
+#define COMPUTE_MINOR_TURING    5
 
 #define DEVICE_IS_TURING(major, minor)      \
   ((major == COMPUTE_MAJOR_TURING) && (minor == COMPUTE_MINOR_TURING))

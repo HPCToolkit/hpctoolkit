@@ -122,11 +122,11 @@ typedef struct ppc64recipe_s{
 
 unwind_interval *
 new_ui(
-	char *startaddr,
-	sp_ty_t sp_ty,
-	ra_ty_t ra_ty,
-	int sp_arg,
-	int ra_arg);
+        char *startaddr,
+        sp_ty_t sp_ty,
+        ra_ty_t ra_ty,
+        int sp_arg,
+        int ra_arg);
 
 #if 0
 ppc64recipe_t *
@@ -151,9 +151,9 @@ ui_cmp(unwind_interval* ux, unwind_interval* uy)
   ppc64recipe_t *x = UWI_RECIPE(ux);
   ppc64recipe_t *y = UWI_RECIPE(uy);
   return ((x->sp_ty  == y->sp_ty) &&
-	  (x->ra_ty  == y->ra_ty) &&
-	  (x->sp_arg == y->sp_arg) &&
-	  (x->ra_arg == y->ra_arg));
+          (x->ra_ty  == y->ra_ty) &&
+          (x->sp_arg == y->sp_arg) &&
+          (x->ra_arg == y->ra_arg));
 }
 
 void

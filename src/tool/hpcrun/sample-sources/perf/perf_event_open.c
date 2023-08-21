@@ -41,9 +41,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <unistd.h>		// pid_t
-#include <asm/unistd.h>		// __NR_perf_event_open
-#include <linux/perf_event.h>	// perf data structure
+#include <unistd.h>             // pid_t
+#include <asm/unistd.h>         // __NR_perf_event_open
+#include <linux/perf_event.h>   // perf data structure
 
 //----------------------------------------------------------
 // create a new event

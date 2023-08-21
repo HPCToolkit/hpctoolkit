@@ -247,8 +247,8 @@ Args::parse(int argc, const char* const argv[])
     /*if (parser.isOpt("verbose")) {
       int verb = 1;
       if (parser.isOptArg("verbose")) {
-	const string& arg = parser.getOptArg("verbose");
-	verb = (int)CmdLineParser::toLong(arg);
+        const string& arg = parser.getOptArg("verbose");
+        verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }*/
@@ -262,13 +262,13 @@ Args::parse(int argc, const char* const argv[])
       const string& arg = parser.getOptArg("port");
       mainPort = (int) CmdLineParser::toLong(arg);
       if (mainPort < 1024 && mainPort != 0)
-         	  ARG_ERROR("Ports must be greater than 1024.")
+                  ARG_ERROR("Ports must be greater than 1024.")
     }
     if (parser.isOpt("xmlport")) {
       const string& arg = parser.getOptArg("xmlport");
       xmlPort = (int) CmdLineParser::toLong(arg);
       if (xmlPort < 1024 && xmlPort > 1)
-    	   ARG_ERROR("Ports must be greater than 1024.")
+           ARG_ERROR("Ports must be greater than 1024.")
     }
   }
   catch (const CmdLineParser::ParseError& x) {
@@ -304,7 +304,7 @@ Args::setHPCHome()
   char * home = getenv(HPCTOOLKIT.c_str());
   if (home == NULL) {
     cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
-	 << endl;
+         << endl;
     exit(1);
   }
 

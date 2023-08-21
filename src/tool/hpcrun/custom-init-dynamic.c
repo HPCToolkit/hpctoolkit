@@ -86,12 +86,12 @@ hpcrun_do_custom_init(void)
     if (custom_fns) {
       void (*hpcrun_custom_init)(void) = (void (*)(void)) dlsym(custom_fns, "hpcrun_custom_init");
       if (hpcrun_custom_init) {
-	TMSG(CUSTOM_INIT, "Before call to custom_init");
-	hpcrun_custom_init();
-	TMSG(CUSTOM_INIT, "Return from custom_init");
+        TMSG(CUSTOM_INIT, "Before call to custom_init");
+        hpcrun_custom_init();
+        TMSG(CUSTOM_INIT, "Return from custom_init");
       }
       else {
-	TMSG(CUSTOM_INIT, "could not dynamically load hpcrun_custom_init procedure");
+        TMSG(CUSTOM_INIT, "could not dynamically load hpcrun_custom_init procedure");
       }
       monitor_real_dlclose(custom_fns);
     }

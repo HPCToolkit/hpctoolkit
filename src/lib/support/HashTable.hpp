@@ -313,10 +313,10 @@ public:
 
   // Must be called after creating object
   void Create (const unsigned int entrySize, unsigned int initialSize,
-	       HashFunctFunctPtr    const HashFunctCallback,
-	       RehashFunctFunctPtr  const RehashFunctCallback,
-	       EntryCompareFunctPtr const EntryCompareCallback,
-	       EntryCleanupFunctPtr const EntryCleanupCallback);
+               HashFunctFunctPtr    const HashFunctCallback,
+               RehashFunctFunctPtr  const RehashFunctCallback,
+               EntryCompareFunctPtr const EntryCompareCallback,
+               EntryCleanupFunctPtr const EntryCleanupCallback);
 
   // Must be called before deleting object
   void Destroy ();
@@ -324,9 +324,9 @@ public:
   bool operator==(HashTable& rhsTab);
 
   void  AddEntry (void* entry,
-		  AddEntryFunctPtr const AddEntryCallback = 0, ...);
+                  AddEntryFunctPtr const AddEntryCallback = 0, ...);
   void  DeleteEntry (void* entry,
-		     DeleteEntryFunctPtr const DeleteEntryCallback = 0, ...);
+                     DeleteEntryFunctPtr const DeleteEntryCallback = 0, ...);
   void* QueryEntry (const void* entry) const;
   int   GetEntryIndex (const void* entry) const;
   void* GetEntryByIndex (const unsigned int index) const;
@@ -379,7 +379,7 @@ public:
   HashTableIterator(const HashTable* theHashTable);
   virtual ~HashTableIterator();
 
-  void  operator ++(int);		// prefix
+  void  operator ++(int);               // prefix
   void* Current() const;
   void  Reset();
 

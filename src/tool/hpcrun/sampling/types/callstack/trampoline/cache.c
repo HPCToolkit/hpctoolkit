@@ -53,7 +53,7 @@
    depth of 1 refers to the last element of the array. */
 static int
 cache_set(hpcrun_cct_t* x, unsigned int depth, void* ip,
-	  hpcrun_cct_node_t* node)
+          hpcrun_cct_node_t* node)
 {
     unsigned int i;
 

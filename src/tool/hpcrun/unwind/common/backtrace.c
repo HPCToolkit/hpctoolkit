@@ -132,7 +132,7 @@ hpcrun_bt_dump(frame_t* unwind, const char* tag)
       lush_assoc_info2str(as_str, sizeof(as_str), x->as_info);
       lush_lip2str(lip_str, sizeof(lip_str), x->lip);
       EMSG("%s: ip.lm_id = %d | ip.lm_ip = %p | lip %s", as_str,
-	   x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str);
+           x->ip_norm.lm_id, x->ip_norm.lm_ip, lip_str);
       msg_cnt++;
       if (msg_cnt > msg_limit) {
         EMSG("!!! message limit !!!");
@@ -156,7 +156,7 @@ hpcrun_bt_init(backtrace_t* bt, size_t size)
 
 frame_t*
 hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
-		   int skip)
+                   int skip)
 {
   // N.B.: INVARIANT: bt_inner < bt_outer
   int nFrames = bt_outer - bt_inner;
@@ -166,7 +166,7 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
     // for now, do not support M chords
     lush_assoc_t as = lush_assoc_info__get_assoc(bt_inner[i].as_info);
     assert(as == LUSH_ASSOC_NULL || as == LUSH_ASSOC_1_to_1 ||
-	   as == LUSH_ASSOC_1_to_0);
+           as == LUSH_ASSOC_1_to_0);
   }
   return &bt_inner[skip];
 }
@@ -192,8 +192,8 @@ hpcrun_backtrace_setup()
 //
 bool
 hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
-					ucontext_t* context,
-					int skipInner)
+                                        ucontext_t* context,
+                                        int skipInner)
 {
   TMSG(BT, "Generate backtrace (no tramp), skip inner = %d, hpcrun_no_unwind = %s",
     skipInner, (hpcrun_no_unwind == true ? "true" : "false") );
@@ -221,7 +221,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
   int attempts = 0;
   const int max_attempts = max_unwind_attempts == 0 ? 1000 : max_unwind_attempts;
-  do {	// loop over frames in the callstack
+  do {  // loop over frames in the callstack
     void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
@@ -237,20 +237,20 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
     else if (ENABLED(USE_TRAMP) && hpcrun_trampoline_at_entry(ip)) {
       if (ret == STEP_ERROR){
-	// we are about to enter the trampoline code to synchronously
-	// record a return. for now, simply do nothing ...
-	// FIXME: with a bit more effort, we could charge
-	//        the sample to the return address in the caller.
-	hpcrun_unw_drop();
+        // we are about to enter the trampoline code to synchronously
+        // record a return. for now, simply do nothing ...
+        // FIXME: with a bit more effort, we could charge
+        //        the sample to the return address in the caller.
+        hpcrun_unw_drop();
       }
       else {
-	// we have encountered a trampoline in the middle of an unwind.
-	bt->has_tramp = true;
-	// no need to unwind further. the outer frames are already known.
+        // we have encountered a trampoline in the middle of an unwind.
+        bt->has_tramp = true;
+        // no need to unwind further. the outer frames are already known.
         TMSG(TRAMP, "--CURRENT UNWIND FINDS TRAMPOLINE @ (sp:%p, bp:%p", cursor.sp, cursor.bp);
-	bt->fence = FENCE_TRAMP;
-	ret = STEP_STOP;
-	break;
+        bt->fence = FENCE_TRAMP;
+        ret = STEP_STOP;
+        break;
       }
     } // end the check for trampoline interactions
 
@@ -259,7 +259,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
     td->btbuf_cur->cursor = cursor;
     //Broken if HPC_UNW_LITE defined
     hpcrun_unw_get_ip_norm_reg(&td->btbuf_cur->cursor,
-			       &td->btbuf_cur->ip_norm);
+                               &td->btbuf_cur->ip_norm);
     td->btbuf_cur->ra_loc = NULL;
 
     td->btbuf_cur->the_function = cursor.the_function;
@@ -270,7 +270,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
     //    If set, do not unwind from the leaf PC
 
     if (hpcrun_no_unwind == true) {
-      ret = STEP_STOP;	// force the unwind to be stopped
+      ret = STEP_STOP;  // force the unwind to be stopped
       // But replicate the side effects of calling hpcrun_unw_step
       bt->fence = cursor.fence;
 
@@ -327,7 +327,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       //        Eventually, this will need to be addressed
       //
       EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d) when TRAMP is on.",
-	   skipInner);
+           skipInner);
     }
     else {
       TMSG(BT, "* BEFORE Skip inner correction, bt_beg = %p", bt_beg);
@@ -358,11 +358,11 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 //
 bool
 hpcrun_generate_backtrace(backtrace_info_t* bt,
-			  ucontext_t* context, int skipInner)
+                          ucontext_t* context, int skipInner)
 {
   bool ret = hpcrun_generate_backtrace_no_trampoline(bt,
-						     context,
-						     skipInner);
+                                                     context,
+                                                     skipInner);
   if (! ret ) return false;
 
   thread_data_t* td = hpcrun_get_thread_data();
@@ -399,12 +399,12 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
       size_t old_frame_count = td->cached_bt_buf_frame_end - td->tramp_frame;
       TMSG(TRAMP, "Check: Old frame count = %d ?= %d (computed frame count)",
-	   old_frame_count, td->cached_frame_count);
+           old_frame_count, td->cached_frame_count);
 
       size_t n_cached_frames = new_frame_count - 1;
       hpcrun_cached_bt_adjust_size(n_cached_frames + old_frame_count);
       TMSG(TRAMP, "cached trace size = (new frames) %d + (old frames) %d = %d",
-	   n_cached_frames, old_frame_count, n_cached_frames + old_frame_count);
+           n_cached_frames, old_frame_count, n_cached_frames + old_frame_count);
 
       // the old suffix is already in place
       // update pointers and put the new prefix in place.
@@ -414,7 +414,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       td->tramp_frame = td->cached_bt_frame_beg + n_cached_frames;
 
       TMSG(TRAMP, "Check: tramp ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
-	   td->tramp_frame->ra_loc, *((void**) td->tramp_frame->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
+           td->tramp_frame->ra_loc, *((void**) td->tramp_frame->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
 
       // When recursive frames are merged in CCT, special handling is needed.
       if (!hpcrun_get_retain_recursion_mode()) {
@@ -499,9 +499,9 @@ lush_lip2str(char* buf, size_t len, lush_lip_t* lip)
   if (lip) {
     for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
       if (i != 0) {
-	*(buf++) = ' ';
-	*(buf) = '\0';
-	len--;
+        *(buf++) = ' ';
+        *(buf) = '\0';
+        len--;
       }
       int num = hpcrun_msg_ns(buf, len, "0x%"PRIx64, lip->data8[i]);
       buf += num;

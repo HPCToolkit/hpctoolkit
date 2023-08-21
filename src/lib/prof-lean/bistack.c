@@ -140,7 +140,7 @@ typedef struct {
   int value;
 } typed_stack_elem(int); //int_q_element_t
 
-typedef s_element_ptr_t typed_stack_elem_ptr(int);	 //int_q_elem_ptr_t
+typedef s_element_ptr_t typed_stack_elem_ptr(int);       //int_q_elem_ptr_t
 typedef bistack_t typed_bistack(int);
 
 //typed_queue_elem_ptr(int) queue;

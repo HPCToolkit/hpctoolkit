@@ -72,9 +72,9 @@
 //#include <stdlib.h>
 //#include <unistd.h>
 
-#include	<elf.h>
-#include	<libelf.h>
-#include	<gelf.h>
+#include        <elf.h>
+#include        <libelf.h>
+#include        <gelf.h>
 
 
 //***************************************************************************
@@ -215,7 +215,7 @@ module_ignore_map_module_lookup
 )
 {
   return module_ignore_map_lookup(module->dso_info->start_addr,
-				  module->dso_info->end_addr);
+                                  module->dso_info->end_addr);
 }
 
 
@@ -281,7 +281,7 @@ search_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
         }
       }
     }
-	}
+        }
   return -1;
 }
 

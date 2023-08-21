@@ -562,7 +562,7 @@ print_node(cct_node_t* node, unsigned int indent)
 {
   while(indent-- > 0) putchar(' ');
   printf("%d (%p) (lm_id = %d lm_ip = %p)\n", node->persistent_id, node,
-	 node->addr.ip_norm.lm_id, (void *) node->addr.ip_norm.lm_ip);
+         node->addr.ip_norm.lm_id, (void *) node->addr.ip_norm.lm_ip);
 }
 
 
@@ -778,7 +778,7 @@ hpcrun_cct_walk_child_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg
 {
   if (!cct) return;
   walk_child_lrs(cct->children, op, arg, level+1,
-		 hpcrun_cct_walk_child_1st_w_level);
+                 hpcrun_cct_walk_child_1st_w_level);
   op(cct, arg, level);
 }
 
@@ -791,7 +791,7 @@ hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg,
   if (!cct) return;
   op(cct, arg, level);
   walk_child_lrs(cct->children, op, arg, level+1,
-		 hpcrun_cct_walk_node_1st_w_level);
+                 hpcrun_cct_walk_node_1st_w_level);
 }
 
 //
@@ -1062,7 +1062,7 @@ attach_to_a(cct_node_t* node, cct_op_arg_t arg, size_t l)
 
 void
 hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
-		 merge_op_t merge, merge_op_arg_t arg)
+                 merge_op_t merge, merge_op_arg_t arg)
 {
   if (hpcrun_cct_is_leaf (cct_a) && hpcrun_cct_is_leaf(cct_b)) {
     // nothing to clean, because cct_b is leaf

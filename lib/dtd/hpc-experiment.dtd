@@ -1,32 +1,32 @@
 <!-- ******************************************************************** -->
-<!-- HPCToolkit Experiment DTD						  -->
-<!-- Version 2.2							  -->
+<!-- HPCToolkit Experiment DTD                                            -->
+<!-- Version 2.2                                                          -->
 <!-- ******************************************************************** -->
 <!ELEMENT HPCToolkitExperiment (Header, (SecCallPathProfile|SecFlatProfile)*)>
 <!ATTLIST HPCToolkitExperiment
-	  version CDATA #REQUIRED>
+          version CDATA #REQUIRED>
 
   <!-- ****************************************************************** -->
 
   <!-- Info/NV: flexible name-value pairs: (n)ame; (t)ype; v=value -->
   <!ELEMENT Info (NV*)>
   <!ATTLIST Info
-	    n CDATA #IMPLIED>
+            n CDATA #IMPLIED>
   <!ELEMENT NV EMPTY>
   <!ATTLIST NV
-	    n CDATA #REQUIRED
-	    t CDATA #IMPLIED
-	    v CDATA #REQUIRED>
+            n CDATA #REQUIRED
+            t CDATA #IMPLIED
+            v CDATA #REQUIRED>
 
   <!-- ****************************************************************** -->
-  <!-- Header								  -->
+  <!-- Header                                                             -->
   <!-- ****************************************************************** -->
   <!ELEMENT Header (Info*)>
   <!ATTLIST Header
-	    n CDATA #REQUIRED>
+            n CDATA #REQUIRED>
 
   <!-- ****************************************************************** -->
-  <!-- Section Header							  -->
+  <!-- Section Header                                                     -->
   <!-- ****************************************************************** -->
   <!ELEMENT SecHeader (IdentifierNameTable?, MetricTable?, MetricDBTable?, TraceDBTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
 
@@ -53,33 +53,33 @@
     <!--   fmt: format; show; -->
     <!ELEMENT Metric (MetricFormula*, Info?)>
     <!ATTLIST Metric
-	      i            CDATA #REQUIRED
-	      o	           CDATA #IMPLIED
-	      n            CDATA #REQUIRED
-	      md           CDATA #IMPLIED
-	      mp           CDATA #IMPLIED
-	      es           CDATA #IMPLIED
-	      em           CDATA #IMPLIED
-	      ep           CDATA #IMPLIED
-	      v            (raw|final|derived-incr|derived) "raw"
-	      t            (inclusive|exclusive|nil) "nil"
-	      partner      CDATA #IMPLIED
-	      fmt          CDATA #IMPLIED
-	      show         (1|0|2|3|4) "1"
-	      show-percent (1|0) "1">
+              i            CDATA #REQUIRED
+              o            CDATA #IMPLIED
+              n            CDATA #REQUIRED
+              md           CDATA #IMPLIED
+              mp           CDATA #IMPLIED
+              es           CDATA #IMPLIED
+              em           CDATA #IMPLIED
+              ep           CDATA #IMPLIED
+              v            (raw|final|derived-incr|derived) "raw"
+              t            (inclusive|exclusive|nil) "nil"
+              partner      CDATA #IMPLIED
+              fmt          CDATA #IMPLIED
+              show         (1|0|2|3|4) "1"
+              show-percent (1|0) "1">
 
     <!-- MetricFormula represents derived metrics: (t)ype; (frm): formula -->
     <!ELEMENT MetricFormula (Info?)>
     <!ATTLIST MetricFormula
-	      t   (combine|finalize|view) "finalize"
-	      i   CDATA #IMPLIED
-	      frm CDATA #REQUIRED>
+              t   (combine|finalize|view) "finalize"
+              i   CDATA #IMPLIED
+              frm CDATA #REQUIRED>
 
     <!-- Metric data, used in sections: (n)ame [from Metric]; v=value -->
     <!ELEMENT M EMPTY>
     <!ATTLIST M
-	      n CDATA #REQUIRED
-	      v CDATA #REQUIRED>
+              n CDATA #REQUIRED
+              v CDATA #REQUIRED>
 
     <!-- MetricDBTable: -->
     <!ELEMENT MetricDBTable (MetricDB)*>
@@ -92,14 +92,14 @@
     <!--   db-header-sz:   size (in bytes) of a db file header -->
     <!ELEMENT MetricDB EMPTY>
     <!ATTLIST MetricDB
-	      i              CDATA #REQUIRED
-	      n              CDATA #REQUIRED
-	      t              (inclusive|exclusive|nil) "nil"
-	      partner        CDATA #IMPLIED
-	      db-glob        CDATA #IMPLIED
-	      db-id          CDATA #IMPLIED
-	      db-num-metrics CDATA #IMPLIED
-	      db-header-sz   CDATA #IMPLIED>
+              i              CDATA #REQUIRED
+              n              CDATA #REQUIRED
+              t              (inclusive|exclusive|nil) "nil"
+              partner        CDATA #IMPLIED
+              db-glob        CDATA #IMPLIED
+              db-id          CDATA #IMPLIED
+              db-num-metrics CDATA #IMPLIED
+              db-header-sz   CDATA #IMPLIED>
 
     <!-- TraceDBTable: -->
     <!ELEMENT TraceDBTable (TraceDB?)>
@@ -110,28 +110,28 @@
     <!--   db-max-time: max ending time stamp (global) -->
     <!ELEMENT TraceDB EMPTY>
     <!ATTLIST TraceDB
-	      i            CDATA #REQUIRED
-	      u            CDATA #IMPLIED
-	      db-glob      CDATA #IMPLIED
-	      db-min-time  CDATA #IMPLIED
-	      db-max-time  CDATA #IMPLIED
-	      db-header-sz CDATA #IMPLIED>
+              i            CDATA #REQUIRED
+              u            CDATA #IMPLIED
+              db-glob      CDATA #IMPLIED
+              db-min-time  CDATA #IMPLIED
+              db-max-time  CDATA #IMPLIED
+              db-header-sz CDATA #IMPLIED>
 
     <!-- LoadModuleTable assigns a short name to a load module -->
     <!ELEMENT LoadModuleTable (LoadModule)*>
 
     <!ELEMENT LoadModule (Info?)>
     <!ATTLIST LoadModule
-	      i CDATA #REQUIRED
-	      n CDATA #REQUIRED>
+              i CDATA #REQUIRED
+              n CDATA #REQUIRED>
 
     <!-- FileTable assigns a short name to a file -->
     <!ELEMENT FileTable (File)*>
 
     <!ELEMENT File (Info?)>
     <!ATTLIST File
-	      i CDATA #REQUIRED
-	      n CDATA #REQUIRED>
+              i CDATA #REQUIRED
+              n CDATA #REQUIRED>
 
     <!-- ProcedureTable assigns a short name to a procedure -->
     <!ELEMENT ProcedureTable (Procedure)*>
@@ -144,25 +144,25 @@
     <!-- 3: invisible in hpcviewer, but visible in hpctraceviewer  -->
     <!ELEMENT Procedure (Info?)>
     <!ATTLIST Procedure
-	      i CDATA #REQUIRED
-	      n CDATA #REQUIRED
-	      f CDATA #IMPLIED
-	      v CDATA #IMPLIED>
+              i CDATA #REQUIRED
+              n CDATA #REQUIRED
+              f CDATA #IMPLIED
+              v CDATA #IMPLIED>
 
     <!-- IdentifierNameTable: -->
     <!ELEMENT IdentifierNameTable (Identifier)*>
     <!ELEMENT Identifier EMPTY>
     <!ATTLIST Identifier
-	      i CDATA #REQUIRED
-	      n CDATA #REQUIRED>
+              i CDATA #REQUIRED
+              n CDATA #REQUIRED>
 
   <!-- ****************************************************************** -->
-  <!-- Section: Call path profile					  -->
+  <!-- Section: Call path profile                                         -->
   <!-- ****************************************************************** -->
   <!ELEMENT SecCallPathProfile (SecHeader, SecCallPathProfileData)>
   <!ATTLIST SecCallPathProfile
-	    i CDATA #REQUIRED
-	    n CDATA #REQUIRED>
+            i CDATA #REQUIRED
+            n CDATA #REQUIRED>
 
     <!ELEMENT SecCallPathProfileData (PF|M)*>
       <!-- Procedure frame -->
@@ -177,44 +177,44 @@
       <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
       <!ELEMENT PF (PF|Pr|L|C|S|M)*>
       <!ATTLIST PF
-		i  CDATA #IMPLIED
-		s  CDATA #IMPLIED
-		n  CDATA #REQUIRED
-		lm CDATA #IMPLIED
-		f  CDATA #IMPLIED
-		l  CDATA #IMPLIED
-		str  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
+                i  CDATA #IMPLIED
+                s  CDATA #IMPLIED
+                n  CDATA #REQUIRED
+                lm CDATA #IMPLIED
+                f  CDATA #IMPLIED
+                l  CDATA #IMPLIED
+                str  CDATA #IMPLIED
+                v  CDATA #IMPLIED>
       <!-- Procedure (static): GOAL: replace with 'P' -->
       <!ELEMENT Pr (Pr|L|C|S|M)*>
       <!ATTLIST Pr
                 i  CDATA #IMPLIED
-		s  CDATA #IMPLIED
+                s  CDATA #IMPLIED
                 n  CDATA #REQUIRED
-		lm CDATA #IMPLIED
-		f  CDATA #IMPLIED
+                lm CDATA #IMPLIED
+                f  CDATA #IMPLIED
                 l  CDATA #IMPLIED
-		a  (1|0) "0"
-		str  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
+                a  (1|0) "0"
+                str  CDATA #IMPLIED
+                v  CDATA #IMPLIED>
       <!-- Callsite (a special StatementRange) -->
       <!ELEMENT C (PF|M)*>
       <!ATTLIST C
-		i CDATA #IMPLIED
-		it CDATA #IMPLIED
-		s CDATA #IMPLIED
-		f CDATA #IMPLIED
-		l CDATA #IMPLIED
-		str CDATA #IMPLIED
-		v CDATA #IMPLIED>
+                i CDATA #IMPLIED
+                it CDATA #IMPLIED
+                s CDATA #IMPLIED
+                f CDATA #IMPLIED
+                l CDATA #IMPLIED
+                str CDATA #IMPLIED
+                v CDATA #IMPLIED>
 
   <!-- ****************************************************************** -->
-  <!-- Section: Flat profile						  -->
+  <!-- Section: Flat profile                                              -->
   <!-- ****************************************************************** -->
   <!ELEMENT SecFlatProfile (SecHeader, SecFlatProfileData)>
   <!ATTLIST SecFlatProfile
-	    i CDATA #REQUIRED
-	    n CDATA #REQUIRED>
+            i CDATA #REQUIRED
+            n CDATA #REQUIRED>
 
     <!ELEMENT SecFlatProfileData (LM|M)*>
       <!-- Load module: (i)d; (n)ame; (v)ma-range-set -->
@@ -222,7 +222,7 @@
       <!ATTLIST LM
                 i CDATA #IMPLIED
                 n CDATA #REQUIRED
-		v CDATA #IMPLIED>
+                v CDATA #IMPLIED>
       <!-- File -->
       <!ELEMENT F (P|L|S|M)*>
       <!ATTLIST F
@@ -234,8 +234,8 @@
                 i CDATA #IMPLIED
                 n CDATA #REQUIRED
                 l CDATA #IMPLIED
-		str CDATA #IMPLIED
-		v CDATA #IMPLIED>
+                str CDATA #IMPLIED
+                v CDATA #IMPLIED>
       <!-- Alien (Note 1) -->
       <!ELEMENT A (A|L|S|C|M)*>
       <!ATTLIST A
@@ -243,27 +243,27 @@
                 f CDATA #IMPLIED
                 n CDATA #IMPLIED
                 l CDATA #IMPLIED
-		str CDATA #IMPLIED
-		v CDATA #IMPLIED>
+                str CDATA #IMPLIED
+                v CDATA #IMPLIED>
       <!-- Loop (Note 1,2) -->
       <!ELEMENT L (A|Pr|L|S|C|M)*>
       <!ATTLIST L
-		i CDATA #IMPLIED
-		s CDATA #IMPLIED
-		l CDATA #IMPLIED
-	        f CDATA #IMPLIED
-		str CDATA #IMPLIED
-		v CDATA #IMPLIED>
+                i CDATA #IMPLIED
+                s CDATA #IMPLIED
+                l CDATA #IMPLIED
+                f CDATA #IMPLIED
+                str CDATA #IMPLIED
+                v CDATA #IMPLIED>
       <!-- Statement (Note 2) -->
       <!--   (it): trace record identifier -->
       <!ELEMENT S (S|M)*>
       <!ATTLIST S
-		i  CDATA #IMPLIED
-		it CDATA #IMPLIED
-		s  CDATA #IMPLIED
-		f CDATA #IMPLIED
-		l  CDATA #IMPLIED
-		str  CDATA #IMPLIED
-		v  CDATA #IMPLIED>
+                i  CDATA #IMPLIED
+                it CDATA #IMPLIED
+                s  CDATA #IMPLIED
+                f CDATA #IMPLIED
+                l  CDATA #IMPLIED
+                str  CDATA #IMPLIED
+                v  CDATA #IMPLIED>
       <!-- Note 1: Contained Cs may not contain PFs -->
       <!-- Note 2: The 's' attribute is not used for flat profiles -->

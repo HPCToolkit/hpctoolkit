@@ -120,7 +120,7 @@ static bool check_limit = true;    // by default, limit messages
 //*****************************************************************************
 
 static void create_msg(char *buf, size_t buflen, bool add_thread_id,
-		       const char *tag, const char *fmt, va_list_box* box);
+                       const char *tag, const char *fmt, va_list_box* box);
 
 //*****************************************************************************
 // interface operations
@@ -158,7 +158,7 @@ hpcrun_pmsg(const char *tag, const char *fmt, ...)
 // like pmsg, except echo message to stderr when flag is set
 void
 hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
-		   const char *fmt ,...)
+                   const char *fmt ,...)
 {
   if (debug_flag_get(flag) == 0){
     return;
@@ -172,7 +172,7 @@ hpcrun_pmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
 // like nmsg, except echo message to stderr when flag is set
 void
 hpcrun_nmsg_stderr(bool echo_stderr, pmsg_category flag, const char *tag,
-		   const char *fmt ,...)
+                   const char *fmt ,...)
 {
   if (debug_flag_get(flag) == 0){
     return;
@@ -214,8 +214,8 @@ hpcrun_amsg(const char *fmt,...)
 
 void
 hpcrun_write_msg_to_log(bool echo_stderr, bool add_thread_id,
-			const char *tag,
-			const char *fmt, va_list_box* box)
+                        const char *tag,
+                        const char *fmt, va_list_box* box)
 {
   char buf[MSG_BUF_SIZE];
 
@@ -275,7 +275,7 @@ safely_get_tid_str(char* buf, size_t len)
 
 static void
 create_msg(char *buf, size_t buflen, bool add_thread_id, const char *tag,
-	   const char *fmt, va_list_box* box)
+           const char *fmt, va_list_box* box)
 {
   char fstr[MSG_BUF_SIZE];
 

@@ -49,8 +49,8 @@ my $the_usage =
 \n";
 
 my @the_options = ('version|v',
-		   'help|h',
-		   );
+                   'help|h',
+                   );
 
 sub usage() {
   print $the_usage;

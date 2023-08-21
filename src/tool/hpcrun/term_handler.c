@@ -89,7 +89,7 @@ hpcrun_setup_term()
   int ret = monitor_sigaction(SIGTERM, &hpcrun_term_handler, 0, NULL);
   if (ret != 0) {
     EMSG("hpcrun_setup_term: unable to install SIGTERM handler",
-	 __FILE__, __LINE__);
+         __FILE__, __LINE__);
   }
 
   return ret;

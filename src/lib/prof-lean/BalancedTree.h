@@ -120,7 +120,7 @@ BalancedTreeNode_alloc(BalancedTree_alloc_fn_t alloc, size_t dataSz)
 
 void
 BalancedTreeNode_init(BalancedTreeNode_t* x,
-		      void* key, BalancedTreeNode_t* parent);
+                      void* key, BalancedTreeNode_t* parent);
 
 
 //***************************************************************************
@@ -141,7 +141,7 @@ typedef struct BalancedTree
 
 void
 BalancedTree_init(BalancedTree_t* tree,
-		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz);
+                  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz);
 
 
 static inline unsigned int

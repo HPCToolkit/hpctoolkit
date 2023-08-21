@@ -128,8 +128,8 @@ AC_DEFUN([HPC_DEF_IS_COMPILER_MAKING_STATIC_BINARIES],
 ],
                       [char* hpctoolkit = "hpctoolkit;"])],
                     [if HPC_isBinaryStaticallyLinked conftest$EXEEXT ; then
-		       isStaticallyLinked=yes
-		     fi],
+                       isStaticallyLinked=yes
+                     fi],
                     [isStaticallyLinked="no"])
 
      AC_MSG_RESULT([${isStaticallyLinked}])

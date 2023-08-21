@@ -8,6 +8,6 @@ git branch:  $git_version
 spack spec:  $spack_spec
 install dir: $HPCTOOLKIT
 EOF
-	exit 0
-	;;
+        exit 0
+        ;;
 esac

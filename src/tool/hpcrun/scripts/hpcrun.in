@@ -200,8 +200,8 @@ cat <<EOF
   -tt, --ttrace        Enhanced resolution tracing. Generate a call path trace that
                        includes both sample and kernel launches on the CPU in
                        addition to a call path profile. Since additional non-sample
-					   elements are added, any statistical properties of the CPU
-					   traces are disturbed.
+                                           elements are added, any statistical properties of the CPU
+                                           traces are disturbed.
 
   --omp-serial-only    When profiling using the OMPT interface for OpenMP,
                        suppress all samples not in serial code.
@@ -341,8 +341,8 @@ EOF
 non_empty()
 {
     case "x$1" in
-	x | x-* ) return 1 ;;
-	* ) return 0 ;;
+        x | x-* ) return 1 ;;
+        * ) return 0 ;;
     esac
 }
 
@@ -381,300 +381,300 @@ do
     arg="$1" ; shift
     case "$arg" in
 
-	-md | --monitor-debug )
-	    export MONITOR_DEBUG=1
-	    ;;
+        -md | --monitor-debug )
+            export MONITOR_DEBUG=1
+            ;;
 
-	-d | --debug )
-	    export HPCRUN_WAIT=1
-	    ;;
+        -d | --debug )
+            export HPCRUN_WAIT=1
+            ;;
 
-	-dd | --dynamic-debug )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
-	    shift
-	    ;;
+        -dd | --dynamic-debug )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
+            shift
+            ;;
 
-	-ad | --audit-debug )
-	    export HPCRUN_AUDIT_DEBUG=1
-	    ;;
+        -ad | --audit-debug )
+            export HPCRUN_AUDIT_DEBUG=1
+            ;;
 
-	-ck | --control-knob )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
-	    shift
-	    ;;
+        -ck | --control-knob )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
+            shift
+            ;;
 
-	-nu | --no-unwind )
-	    export HPCRUN_NO_UNWIND=1
-	    ;;
+        -nu | --no-unwind )
+            export HPCRUN_NO_UNWIND=1
+            ;;
 
-	-h | -help | --help )
-	    usage
-	    ;;
+        -h | -help | --help )
+            usage
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-a | --attribution )
-	    non_empty "$1" || die "missing argument for $arg"
-	    case "$1" in
-	        flat )
-		    export HPCRUN_NO_UNWIND=1
-		    ;;
+        -a | --attribution )
+            non_empty "$1" || die "missing argument for $arg"
+            case "$1" in
+                flat )
+                    export HPCRUN_NO_UNWIND=1
+                    ;;
 
-		python )
-		    if test "$opt_enable_python" != yes; then
-			die "HPCToolkit was not compiled with Python support enabled"
-		    fi
-		    export HPCRUN_LOGICAL_PYTHON=1
-		    ;;
+                python )
+                    if test "$opt_enable_python" != yes; then
+                        die "HPCToolkit was not compiled with Python support enabled"
+                    fi
+                    export HPCRUN_LOGICAL_PYTHON=1
+                    ;;
 
-		* )
-		    die "Invalid argument for $arg: $1"
-		    ;;
-	    esac
-	    shift
-	    ;;
+                * )
+                    die "Invalid argument for $arg: $1"
+                    ;;
+            esac
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-e | --event )
-	    non_empty "$1" || die "missing argument for $arg"
-	    case "$1" in
-	        GA* )
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_ga.so"
-		    ;;
+        -e | --event )
+            non_empty "$1" || die "missing argument for $arg"
+            case "$1" in
+                GA* )
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_ga.so"
+                    ;;
 
-		IO* )
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_io.so"
-		    ;;
+                IO* )
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_io.so"
+                    ;;
 
-		MEMLEAK* )
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_memleak.so"
-		    ;;
+                MEMLEAK* )
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_memleak.so"
+                    ;;
 
-		DATACENTRIC* )
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_datacentric.so"
-		    ;;
+                DATACENTRIC* )
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_datacentric.so"
+                    ;;
 
-		PTHREAD_WAIT* )
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_pthread.so"
-		    ;;
+                PTHREAD_WAIT* )
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_pthread.so"
+                    ;;
 
-		CPU_GPU_IDLE* )
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gpu.so"
-		    ;;
+                CPU_GPU_IDLE* )
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gpu.so"
+                    ;;
 
-		MPI* )
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so"
-		    ;;
+                MPI* )
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so"
+                    ;;
 
-		gpu=amd | rocprof::* )
-		    if test "$opt_have_rocm" != yes ; then
-			die "HPCToolkit was not compiled with AMD ROCm support enabled"
-		    fi
-		    export HSA_ENABLE_INTERRUPTS=0
-		    export ROCP_TOOL_LIB=libhpcrun.so
-		    export ROCP_HSA_INTERCEPT=1
-		    export AMD_DIRECT_DISPATCH=0
-		    ;;
+                gpu=amd | rocprof::* )
+                    if test "$opt_have_rocm" != yes ; then
+                        die "HPCToolkit was not compiled with AMD ROCm support enabled"
+                    fi
+                    export HSA_ENABLE_INTERRUPTS=0
+                    export ROCP_TOOL_LIB=libhpcrun.so
+                    export ROCP_HSA_INTERCEPT=1
+                    export AMD_DIRECT_DISPATCH=0
+                    ;;
 
-		gpu=nvidia* )
-		    if test "$opt_have_cuda" != yes ; then
-			die "HPCToolkit was not compiled with NVIDIA CUDA support enabled"
-		    fi
-		    ;;
+                gpu=nvidia* )
+                    if test "$opt_have_cuda" != yes ; then
+                        die "HPCToolkit was not compiled with NVIDIA CUDA support enabled"
+                    fi
+                    ;;
 
-		gpu=opencl )
-		    if test "$opt_have_opencl" != yes ; then
-			die "HPCToolkit was not compiled with OpenCL support enabled"
-		    fi
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
-		    ;;
+                gpu=opencl )
+                    if test "$opt_have_opencl" != yes ; then
+                        die "HPCToolkit was not compiled with OpenCL support enabled"
+                    fi
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
+                    ;;
 
-		gpu=level0 )
-		    if test "$opt_have_level0" != yes ; then
-			die "HPCToolkit was not compiled with Level0 support enabled"
-		    fi
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"
-		    ;;
+                gpu=level0 )
+                    if test "$opt_have_level0" != yes ; then
+                        die "HPCToolkit was not compiled with Level0 support enabled"
+                    fi
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"
+                    ;;
 
-		gpu=level0,inst* )
-		    if test "$opt_have_level0" != yes ; then
-			die "HPCToolkit was not compiled with Level0 support enabled"
-		    fi
-		    if test "$opt_have_gtpin" != yes ; then
-			die "HPCToolkit was not compiled with GTPin support enabled"
-		    fi
-		    gtpin_libdir="${gtpin_lib_path}"
-		    export ZET_ENABLE_PROGRAM_INSTRUMENTATION=1
-		    export ZE_ENABLE_TRACING_LAYER=1
-		    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"
-		    export HPCRUN_AUDIT_FAKE_AUDITOR=1
-		    namespace_default=single_if_auditing
-		    ;;
+                gpu=level0,inst* )
+                    if test "$opt_have_level0" != yes ; then
+                        die "HPCToolkit was not compiled with Level0 support enabled"
+                    fi
+                    if test "$opt_have_gtpin" != yes ; then
+                        die "HPCToolkit was not compiled with GTPin support enabled"
+                    fi
+                    gtpin_libdir="${gtpin_lib_path}"
+                    export ZET_ENABLE_PROGRAM_INSTRUMENTATION=1
+                    export ZE_ENABLE_TRACING_LAYER=1
+                    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so"
+                    export HPCRUN_AUDIT_FAKE_AUDITOR=1
+                    namespace_default=single_if_auditing
+                    ;;
 
-	    esac
-	    case "$HPCRUN_EVENT_LIST" in
-		'' )
-		    HPCRUN_EVENT_LIST="$1"
-		    ;;
+            esac
+            case "$HPCRUN_EVENT_LIST" in
+                '' )
+                    HPCRUN_EVENT_LIST="$1"
+                    ;;
 
-		* )
-		    HPCRUN_EVENT_LIST="$HPCRUN_EVENT_LIST $1"
-		    ;;
-	    esac
-	    shift
-	    ;;
+                * )
+                    HPCRUN_EVENT_LIST="$HPCRUN_EVENT_LIST $1"
+                    ;;
+            esac
+            shift
+            ;;
 
-	-L | -l | --list-events )
-	    if test "$opt_have_rocm" = yes; then
-		export ROCP_TOOL_LIB=libhpcrun.so
-	    fi
-	    export HPCRUN_EVENT_LIST=LIST
-	    ;;
+        -L | -l | --list-events )
+            if test "$opt_have_rocm" = yes; then
+                export ROCP_TOOL_LIB=libhpcrun.so
+            fi
+            export HPCRUN_EVENT_LIST=LIST
+            ;;
 
-	-ds | --delay-sampling )
-	    export HPCRUN_DELAY_SAMPLING=1
-	    ;;
+        -ds | --delay-sampling )
+            export HPCRUN_DELAY_SAMPLING=1
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
- 	-c | --count )
- 	    export HPCRUN_PERF_COUNT="$1"
-	    shift
-	    ;;
+        -c | --count )
+            export HPCRUN_PERF_COUNT="$1"
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-t | --trace )
-		if test "$HPCRUN_TRACE"; then
-			die "-t/--trace is incompatible with -tt/--ttrace"
-		fi
-	    export HPCRUN_TRACE=1
-	    ;;
+        -t | --trace )
+                if test "$HPCRUN_TRACE"; then
+                        die "-t/--trace is incompatible with -tt/--ttrace"
+                fi
+            export HPCRUN_TRACE=1
+            ;;
 
-	-tt | --ttrace )
-		if test "$HPCRUN_TRACE"; then
-			die "-tt/--ttrace is incompatible with -t/--trace"
-		fi
-	    export HPCRUN_TRACE=2
-	    ;;
+        -tt | --ttrace )
+                if test "$HPCRUN_TRACE"; then
+                        die "-tt/--ttrace is incompatible with -t/--trace"
+                fi
+            export HPCRUN_TRACE=2
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	--fnbounds-eager-shutdown )
-	    export HPCRUN_FNBOUNDS_SHUTDOWN=1
-	    ;;
+        --fnbounds-eager-shutdown )
+            export HPCRUN_FNBOUNDS_SHUTDOWN=1
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-js | --jobs-symtab )
-	    # Deprecated
-	    shift
-	    ;;
+        -js | --jobs-symtab )
+            # Deprecated
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-o | --output )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_OUT_PATH="$1"
-	    shift
-	    ;;
+        -o | --output )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_OUT_PATH="$1"
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-olr | --only-local-ranks )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_LOCAL_RANKS="$1"
-	    shift
-	    ;;
+        -olr | --only-local-ranks )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_LOCAL_RANKS="$1"
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	--rocprofiler-path )
-	    non_empty "$1" || die "missing argument for $arg"
-	    rocm_envs_rocprofiler_path="$1"
-	    shift
-	    ;;
+        --rocprofiler-path )
+            non_empty "$1" || die "missing argument for $arg"
+            rocm_envs_rocprofiler_path="$1"
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	--disable-gprof )
-	    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gprof.so"
-	    ;;
+        --disable-gprof )
+            preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gprof.so"
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	--omp-serial-only )
-	    export HPCRUN_OMP_SERIAL_ONLY=1
-	    ;;
+        --omp-serial-only )
+            export HPCRUN_OMP_SERIAL_ONLY=1
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	--namespace-multiple )
-	    non_empty "$namespace_single" && die "can't use both --namespace-single and --namespace-multiple"
-	    namespace_multiple=yes
-	    ;;
+        --namespace-multiple )
+            non_empty "$namespace_single" && die "can't use both --namespace-single and --namespace-multiple"
+            namespace_multiple=yes
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	--namespace-single )
-	    non_empty "$namespace_multiple" && die "can't use both --namespace-single and --namespace-multiple"
-	    namespace_single=yes
-	    ;;
+        --namespace-single )
+            non_empty "$namespace_multiple" && die "can't use both --namespace-single and --namespace-multiple"
+            namespace_single=yes
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-r | --retain-recursion )
-	    export HPCRUN_RETAIN_RECURSION=1
-	    ;;
+        -r | --retain-recursion )
+            export HPCRUN_RETAIN_RECURSION=1
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-m | --merge-threads )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_MERGE_THREADS="$1"
-	    shift
-	    ;;
+        -m | --merge-threads )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_MERGE_THREADS="$1"
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-lm | --low-memsize )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_LOW_MEMSIZE="$1"
-	    shift
-	    ;;
+        -lm | --low-memsize )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_LOW_MEMSIZE="$1"
+            shift
+            ;;
 
-	-ms | --memsize )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_MEMSIZE="$1"
-	    shift
-	    ;;
+        -ms | --memsize )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_MEMSIZE="$1"
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	-f | -fp | --process-fraction )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_PROCESS_FRACTION="$1"
-	    shift
-	    ;;
+        -f | -fp | --process-fraction )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_PROCESS_FRACTION="$1"
+            shift
+            ;;
 
-	-mp | --memleak-prob )
-	    non_empty "$1" || die "missing argument for $arg"
-	    export HPCRUN_MEMLEAK_PROB="$1"
-	    shift
-	    ;;
+        -mp | --memleak-prob )
+            non_empty "$1" || die "missing argument for $arg"
+            export HPCRUN_MEMLEAK_PROB="$1"
+            shift
+            ;;
 
-	# --------------------------------------------------
+        # --------------------------------------------------
 
-	--disable-auditor-got-rewriting )
-	    export HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT=1
-	    ;;
+        --disable-auditor-got-rewriting )
+            export HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT=1
+            ;;
 
-	--disable-auditor )
-	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
-	    ;;
+        --disable-auditor )
+            export HPCRUN_AUDIT_FAKE_AUDITOR=1
+            ;;
 
         --enable-auditor )
             unset HPCRUN_AUDIT_FAKE_AUDITOR
@@ -686,18 +686,18 @@ do
 
         # --------------------------------------------------
 
-	-- )
-	    break
-	    ;;
+        -- )
+            break
+            ;;
 
-	-* )
-	    die "unknown or invalid option: $arg"
-	    ;;
+        -* )
+            die "unknown or invalid option: $arg"
+            ;;
 
-	* )
-	    set -- "$arg" "$@"
-	    break
-	    ;;
+        * )
+            set -- "$arg" "$@"
+            break
+            ;;
     esac
 done
 
@@ -711,9 +711,9 @@ export HPCRUN_EVENT_LIST
 # There must be a command to run, unless -L is set.
 if test -z "$1" ; then
     if test "$HPCRUN_EVENT_LIST" = LIST ; then
-	set -- /bin/ls
+        set -- /bin/ls
     else
-	die "no command to profile"
+        die "no command to profile"
     fi
 fi
 
@@ -744,27 +744,27 @@ if test "$opt_have_rocm" = yes; then
 
     # Fill in ROCP_METRICS and HSA_TOOLS_LIB from the ROCProfiler installation
     if test "$rocm_envs_rocprofiler_path"; then
-	for trial in \
-	    "${rocm_envs_rocprofiler_path}/lib/rocprofiler/metrics.xml" \
-	    "${rocm_envs_rocprofiler_path}/lib/metrics.xml" \
-	    "${rocm_envs_rocprofiler_path}/rocprofiler/lib/metrics.xml"
-	do
-	    if test -f "$trial"; then
-		export ROCP_METRICS="$trial"
-		break
-	    fi
-	done
+        for trial in \
+            "${rocm_envs_rocprofiler_path}/lib/rocprofiler/metrics.xml" \
+            "${rocm_envs_rocprofiler_path}/lib/metrics.xml" \
+            "${rocm_envs_rocprofiler_path}/rocprofiler/lib/metrics.xml"
+        do
+            if test -f "$trial"; then
+                export ROCP_METRICS="$trial"
+                break
+            fi
+        done
 
-	for trial in \
-	    "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.1" \
-	    "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.2" \
-	    "${rocm_envs_rocprofiler_path}/rocprofiler/lib/librocprofiler64.so.1"
-	do
-	    if test -f "$trial"; then
-		export HSA_TOOLS_LIB="$trial"
-		break
-	    fi
-	done
+        for trial in \
+            "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.1" \
+            "${rocm_envs_rocprofiler_path}/lib/librocprofiler64.so.2" \
+            "${rocm_envs_rocprofiler_path}/rocprofiler/lib/librocprofiler64.so.1"
+        do
+            if test -f "$trial"; then
+                export HSA_TOOLS_LIB="$trial"
+                break
+            fi
+        done
     fi
 fi
 
@@ -779,16 +779,16 @@ command="$1"
 case "$command" in
     */* ) ;;
     * )
-	OLDIFS="$IFS"
-	IFS=:
-	for dir in $PATH ; do
-	    if test -x "${dir}/${command}" ; then
-		command="${dir}/${command}"
-		break
-	    fi
-	done
-	IFS="$OLDIFS"
-	;;
+        OLDIFS="$IFS"
+        IFS=:
+        for dir in $PATH ; do
+            if test -x "${dir}/${command}" ; then
+                command="${dir}/${command}"
+                break
+            fi
+        done
+        IFS="$OLDIFS"
+        ;;
 esac
 
 # Sanity checks before launch.
@@ -806,14 +806,14 @@ if test -x "$command" && test "$file_exists" = yes ; then
     cmd_file_out=`file -L "$command" 2>/dev/null`
     echo "$cmd_file_out" | grep -E -i -e 'elf.*dynamic' >/dev/null 2>&1
     if test $? -eq 0 ; then
-	appl_bit=`expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
-	file_out=`file -L "${hpcrun_dir}/libhpcrun.so"`
-	hpcrun_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
-	if test "$appl_bit" != "$hpcrun_bit" ; then
-	    echo "hpcrun: cannot profile application: $command" 1>&2
-	    echo "application is $appl_bit but hpctoolkit is $hpcrun_bit" 1>&2
-	    exit 1
-	fi
+        appl_bit=`expr "$cmd_file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+        file_out=`file -L "${hpcrun_dir}/libhpcrun.so"`
+        hpcrun_bit=`expr "$file_out" : '.*ELF.*\([0-9][0-9].bit\)'`
+        if test "$appl_bit" != "$hpcrun_bit" ; then
+            echo "hpcrun: cannot profile application: $command" 1>&2
+            echo "application is $appl_bit but hpctoolkit is $hpcrun_bit" 1>&2
+            exit 1
+        fi
     fi
     #
     # For static binaries, verify that hpcrun is linked in.  Use
@@ -821,12 +821,12 @@ if test -x "$command" && test "$file_exists" = yes ; then
     #
     echo "$cmd_file_out" | grep -E -i -e 'elf.*static' >/dev/null 2>&1
     if test $? -eq 0 ; then
-	strings "$command" 2>&1 | grep -e hpcrun >/dev/null 2>&1
-	if test $? -ne 0 ; then
-	    echo "hpcrun: static binary is missing libhpcrun: $command" 1>&2
-	    echo "rebuild the application with hpclink" 1>&2
-	    exit 1
-	fi
+        strings "$command" 2>&1 | grep -e hpcrun >/dev/null 2>&1
+        if test $? -ne 0 ; then
+            echo "hpcrun: static binary is missing libhpcrun: $command" 1>&2
+            echo "rebuild the application with hpclink" 1>&2
+            exit 1
+        fi
     fi
 fi
 

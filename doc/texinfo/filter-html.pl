@@ -28,8 +28,8 @@ while ($_ = <PART1>) {
 
 while ($_ = <>) {
     if (m/<title/) {
-	print "  $_";
-	last;
+        print "  $_";
+        last;
     }
 }
 
@@ -54,20 +54,20 @@ print "\n";
 
 while ($_ = <>) {
     if (m/<body/) {
-	last;
+        last;
     }
 }
 
 while ($_ = <>) {
     if (m/<h/) {
-	print $_;
-	last;
+        print $_;
+        last;
     }
 }
 
 while ($_ = <>) {
     if (m|</body|) {
-	last;
+        last;
     }
     print $_;
 }

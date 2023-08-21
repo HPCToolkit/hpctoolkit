@@ -46,11 +46,11 @@
 #include "x86-unwind-interval.h"
 
 static char intel_align32_signature[] = {
- 0x53,                      	// push   %rbx
+ 0x53,                          // push   %rbx
  0x48, 0x89, 0xe3,              // mov    %rsp,%rbx
  0x48, 0x83, 0xe4, 0xe0,        // and    $0xffffffffffffffe0,%rsp
- 0x55,                      	// push   %rbp
- 0x55,                      	// push   %rbp
+ 0x55,                          // push   %rbp
+ 0x55,                          // push   %rbp
  0x48, 0x8b, 0x6b, 0x08,        // mov    0x8(%rbx),%rbp
  0x48, 0x89, 0x6c, 0x24, 0x08,  // mov    %rbp,0x8(%rsp)
  0x48, 0x89, 0xe5,              // mov    %rsp,%rbp

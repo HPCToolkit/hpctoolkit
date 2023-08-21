@@ -46,10 +46,10 @@ static std::map<const char *, std::string *, FilenameCompare> fileNameMap;
 //------------------------------------------------------------------------------
 std::string &getRealPath(const char *name)
 {
-	std::string *&thename = fileNameMap[name];
+        std::string *&thename = fileNameMap[name];
         if (thename == NULL) {
-		//  the filename is not in the list. Add it.
-		thename  = new std::string(RealPath(name));
-	}
- 	return *thename;
+                //  the filename is not in the list. Add it.
+                thename  = new std::string(RealPath(name));
+        }
+        return *thename;
 }

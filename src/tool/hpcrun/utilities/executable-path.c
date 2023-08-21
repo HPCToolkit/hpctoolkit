@@ -58,8 +58,8 @@
  */
 
 static int assemble_fullpath(const char *prefix, const int terminator,
-			     const char *suffix, char *result,
-			     char *result_end);
+                             const char *suffix, char *result,
+                             char *result_end);
 
 
 
@@ -80,7 +80,7 @@ static int assemble_fullpath(const char *prefix, const int terminator,
  */
 char *
 executable_path(const char *filename, const char *path_list,
-		char *executable_name)
+                char *executable_name)
 {
   if (!access(filename, F_OK)) return realpath(filename, executable_name);
   else {
@@ -105,7 +105,7 @@ executable_path(const char *filename, const char *path_list,
        * prefix
        */
       failure = assemble_fullpath(path_prefix, (colon ? ':' : 0), filename,
-				  path, &path[PATH_MAX - 1]);
+                                  path, &path[PATH_MAX - 1]);
       if (failure) return NULL;
 
       /* if the file is present at path, return its real path in
@@ -153,7 +153,7 @@ strtcpy(char *dest, const char *src, const int t, char *dest_end)
 
 static int
 assemble_fullpath(const char *prefix, const int terminator,
-		  const char *suffix, char *result, char *result_end)
+                  const char *suffix, char *result, char *result_end)
 {
   char *end;
 

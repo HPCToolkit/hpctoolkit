@@ -139,8 +139,8 @@ hpcrun_dso_new()
 
 dso_info_t*
 hpcrun_dso_make(const char* name, void** table,
-		struct fnbounds_file_header* fh,
-		void* startaddr, void* endaddr, unsigned long map_size)
+                struct fnbounds_file_header* fh,
+                void* startaddr, void* endaddr, unsigned long map_size)
 {
   dso_info_t* x = hpcrun_dso_new();
 
@@ -194,7 +194,7 @@ void
 hpcrun_dso_dump(dso_info_t* x)
 {
   printf("%p-%p %s [dso_info_t *%p, table=%p, nsymbols=%ld, relocatable=%d]\n",
-	 x->start_addr, x->end_addr, x->name,
+         x->start_addr, x->end_addr, x->name,
          x, x->table, x->nsymbols, x->is_relocatable);
 }
 
@@ -307,13 +307,13 @@ hpcrun_loadmap_findByAddr(void* begin, void* end)
     TMSG(LOADMAP, "\tload module %s", x->name);
     if (x->dso_info) {
       TMSG(LOADMAP, "\t\t [%lx, %lx) table [%lx, %lx)",
-	   (uintptr_t) x->dso_info->start_addr,
-	   (uintptr_t) x->dso_info->end_addr,
-	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[0] +
-				  x->dso_info->start_to_ref_dist) : -1),
-	   ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[x->dso_info->nsymbols -1] +
-				  x->dso_info->start_to_ref_dist) : -1)
-	   );
+           (uintptr_t) x->dso_info->start_addr,
+           (uintptr_t) x->dso_info->end_addr,
+           ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[0] +
+                                  x->dso_info->start_to_ref_dist) : -1),
+           ((uintptr_t) x->dso_info->table ? ((uintptr_t) x->dso_info->table[x->dso_info->nsymbols -1] +
+                                  x->dso_info->start_to_ref_dist) : -1)
+           );
       if (x->dso_info->start_addr <= begin && end <= x->dso_info->end_addr) {
         TMSG(LOADMAP, "       --->%s", x->name);
         hpcrun_loadModule_flags_set(x, LOADMAP_ENTRY_ANALYZE);
@@ -497,9 +497,9 @@ hpcrun_loadmap_map(dso_info_t* dso)
     msg = "(reuse)";
   }
   else {
-	lm = hpcrun_loadModule_new(dso->name);
-	lm->dso_info = dso;
-	hpcrun_loadmap_pushFront(lm);
+        lm = hpcrun_loadModule_new(dso->name);
+        lm->dso_info = dso;
+        hpcrun_loadmap_pushFront(lm);
 
 #if UW_RECIPE_MAP_DEBUG
         fprintf(stderr, "hpcrun_loadmap_map: '%s' start=%p end=%p\n",

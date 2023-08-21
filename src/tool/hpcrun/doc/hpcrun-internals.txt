@@ -1,22 +1,22 @@
 ISSUES
-	augment libunwind to support call stack surgery
-		find return address of current frame (when at a sample)
-		replace return address of current frame
+        augment libunwind to support call stack surgery
+                find return address of current frame (when at a sample)
+                replace return address of current frame
 
-	might need to know what register holds the return address in the epilogue of the stack procedure
+        might need to know what register holds the return address in the epilogue of the stack procedure
 
 possible assumption: when a procedure calls another one, assume the caller stores the return address in ra. the trampoline is not set up to restore  the return address into an arbitrary register so it is available in the register after return. resolution: the trampoline would need to inspect the procedure desccriptor of the callee and make sure the return address was restored to the entry register of the callee.
 
 issue for register frame procedures (and perhaps stack frame procedures too)
 alpha procedure descriptors don't record
-	clobbering of ra
-	restore of ra
+        clobbering of ra
+        restore of ra
 
 upon longjmp:
-	lose information about return counts for frames between source frame and target frame on call stack
+        lose information about return counts for frames between source frame and target frame on call stack
 
-	note: not safe to take samples during longjmp processing
-	to determine if the trampoline needs to be moved, we
+        note: not safe to take samples during longjmp processing
+        to determine if the trampoline needs to be moved, we
 
 assumption that program stack is contiguous, which is not always true
 this may be a problem for user-level threads, or programming languages that support heap-based stack frames or segments
@@ -604,57 +604,57 @@ Code can often be shared between the exception handling portions and the
 Tersely described, this is what the datafile format looks like:
 
 File
-  header	FileHeader
-  data		CsProfData
-  epochs	EpochsTable
-  num_trees	uint32; the number of trees to be read
-  tramp_samples	uint64; the total number of samples taken in the trampoline
-  trees		Tree[num_trees]; the trees collected
+  header        FileHeader
+  data          CsProfData
+  epochs        EpochsTable
+  num_trees     uint32; the number of trees to be read
+  tramp_samples uint64; the total number of samples taken in the trampoline
+  trees         Tree[num_trees]; the trees collected
 
 FileHeader
-  magic		10 bytes; "HPC_CSPROF" (no trailing null)
-  version	5 bytes; "01.00" (no trailing null)
+  magic         10 bytes; "HPC_CSPROF" (no trailing null)
+  version       5 bytes; "01.00" (no trailing null)
   endianness    1 byte; 'l' or 'b'
   num_chunks    8 bytes; not used
 
 CsProfData
-  target	hpcfile_string; name of executable, not used
-  num_metrics	uint32; number of metrics to be read
+  target        hpcfile_string; name of executable, not used
+  num_metrics   uint32; number of metrics to be read
   Metric
-    event_name		hpcfile_string; description of the metric
-    flags		hpcfile_number; descriptive flags (async, etc.)
-    sample_period	hpcfile_number; metric sample period
+    event_name          hpcfile_string; description of the metric
+    flags               hpcfile_number; descriptive flags (async, etc.)
+    sample_period       hpcfile_number; metric sample period
 
 EpochsTable
-  num_epochs	uint32; number of epochs to be read
+  num_epochs    uint32; number of epochs to be read
   Epoch
-    num_modules		uint32; number of load modules in the epoch
+    num_modules         uint32; number of load modules in the epoch
     Module
-      name_length	uint32; number of characters in module name
-      module_name	byte[name_length];
-      virtual_address	uint64; where the module prefers to be mapped
-      mapped_address	uint64; actual address at which the module was mapped
+      name_length       uint32; number of characters in module name
+      module_name       byte[name_length];
+      virtual_address   uint64; where the module prefers to be mapped
+      mapped_address    uint64; actual address at which the module was mapped
 
 TreeId
-  magic		10 bytes; "HPC_CSTREE" (no trailing null)
-  version	5 bytes; "01.0T"
-  endianness	1 byte; 'l' or 'b'
+  magic         10 bytes; "HPC_CSTREE" (no trailing null)
+  version       5 bytes; "01.0T"
+  endianness    1 byte; 'l' or 'b'
 
 Tree
-  id		TreeId
-  vma_size	uint32; probably '8'
-  uint_size	uint32; probably '8'
-  num_nodes	uint64;
-  epoch_number	uint32; epoch index in the epoch table
+  id            TreeId
+  vma_size      uint32; probably '8'
+  uint_size     uint32; probably '8'
+  num_nodes     uint64;
+  epoch_number  uint32; epoch index in the epoch table
   # node 0 is the root of the tree
-  nodes		TreeNode[num_nodes]; the actual nodes of the tree
+  nodes         TreeNode[num_nodes]; the actual nodes of the tree
 
 TreeNode
-  id		uint64; used to index into the node array
-  parent	uint64; id of this node's parent
-  ip		uint64; ip of this node
-  sp		uint64; sp of this node
-  metrics	uint64[CsProfData.num_metrics]; metrics taken at this node
+  id            uint64; used to index into the node array
+  parent        uint64; id of this node's parent
+  ip            uint64; ip of this node
+  sp            uint64; sp of this node
+  metrics       uint64[CsProfData.num_metrics]; metrics taken at this node
 
 * Debugging hints
 

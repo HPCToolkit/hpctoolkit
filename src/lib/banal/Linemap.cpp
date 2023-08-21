@@ -176,7 +176,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
     }
     else {
       cout << "  " << setw(6) << lineno
-	   << "    " << m_str_tab.index2str(file_index) << "\n";
+           << "    " << m_str_tab.index2str(file_index) << "\n";
     }
 #endif
 
@@ -192,7 +192,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
       // don't overwrite a valid entry with empty info
       auto it = m_line_map.find(addr);
       if (it == m_line_map.end()) {
-	m_line_map[addr] = LineMapInfo(m_empty_index, 0);
+        m_line_map[addr] = LineMapInfo(m_empty_index, 0);
       }
     }
   }
@@ -245,7 +245,7 @@ LineMap::do_dwarf(ElfFile *elfFile)
   // iterate over comp units
   for (num = 0;; num++) {
     ret = dwarf_next_cu_header_d(dw_dbg, 1, &cu_hdr_len, &cu_vers, NULL, NULL,
-		NULL, NULL, NULL, NULL, &cu_hdr_off, NULL, &dw_error);
+                NULL, NULL, NULL, NULL, &cu_hdr_off, NULL, &dw_error);
 
     if (ret == DW_DLV_NO_ENTRY) {
       break;
@@ -293,8 +293,8 @@ LineMap::readFile(ElfFile *elfFile)
 
   for (auto it = m_line_map.begin(); it != m_line_map.end(); ++it) {
     cout << "0x" << hex << it->first << dec
-	 << "  " << setw(6) << it->second.line
-	 << "    " << m_str_tab.index2str(it->second.file) << "\n";
+         << "  " << setw(6) << it->second.line
+         << "    " << m_str_tab.index2str(it->second.file) << "\n";
   }
 #endif
 }

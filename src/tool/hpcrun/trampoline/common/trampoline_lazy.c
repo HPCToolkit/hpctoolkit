@@ -116,7 +116,7 @@ bool
 hpcrun_trampoline_interior(void* addr)
 {
   return ((void*)hpcrun_trampoline < addr
-	  && addr <= (void*)hpcrun_trampoline_end);
+          && addr <= (void*)hpcrun_trampoline_end);
 }
 
 
@@ -167,8 +167,8 @@ hpcrun_trampoline_advance(void)
   }
   else if (! ok_to_advance (td->tramp_frame->ra_loc, current_frame_sp) ) {
     EMSG("Encountered bad advance of trampoline ( target > stack_bottom or target < current\n"
-	 "%p(target) %p(current) %p(bottom)",
-	 td->tramp_frame->ra_loc, current_frame_sp, monitor_stack_bottom());
+         "%p(target) %p(current) %p(bottom)",
+         td->tramp_frame->ra_loc, current_frame_sp, monitor_stack_bottom());
   }
   else if (! parent) {
     TMSG(TRAMP, "No parent node, trampoline self-removes");
@@ -220,10 +220,10 @@ hpcrun_trampoline_remove(void)
   if (td->tramp_present){
     TMSG(TRAMP, "removing live trampoline from %p", td->tramp_loc);
     TMSG(TRAMP, "confirm trampoline @ location: ra@tramp loc = %p == %p (tramp)",
-	 *((void**)td->tramp_loc), hpcrun_trampoline);
+         *((void**)td->tramp_loc), hpcrun_trampoline);
     if (*((void**)td->tramp_loc) != hpcrun_trampoline) {
       EMSG("INTERNAL ERROR: purported trampoline location does NOT have a trampoline:"
-	   " loc %p: %p != %p", td->tramp_loc, *((void**)td->tramp_loc), hpcrun_trampoline);
+           " loc %p: %p != %p", td->tramp_loc, *((void**)td->tramp_loc), hpcrun_trampoline);
     }
     else {
       *((void**)td->tramp_loc) = td->tramp_retn_addr;

@@ -70,53 +70,53 @@ namespace TraceviewerServer
 ProgressBar::ProgressBar(string name, unsigned long tasksToComplete) {
 
 
-	tasks = tasksToComplete;
-	tasksComplete = 0;
-	colsFilled = 0;
-	label = name;
-	struct winsize w;
-	int ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-	if (ret == -1 || w.ws_col == 0)
-		w.ws_col = DEFAULT_TERMINAL_WIDTH;
-	usableWidth = w.ws_col - 10 - name.length();
-	DEBUGCOUT(2) << "Usable width: " << usableWidth << endl;
+        tasks = tasksToComplete;
+        tasksComplete = 0;
+        colsFilled = 0;
+        label = name;
+        struct winsize w;
+        int ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+        if (ret == -1 || w.ws_col == 0)
+                w.ws_col = DEFAULT_TERMINAL_WIDTH;
+        usableWidth = w.ws_col - 10 - name.length();
+        DEBUGCOUT(2) << "Usable width: " << usableWidth << endl;
 
-	update();
+        update();
 }
 void ProgressBar::incrementProgress(unsigned long tasks){
-	tasksComplete += tasks;
-	update();
+        tasksComplete += tasks;
+        update();
 }
 
 void ProgressBar::incrementProgress(){
-	tasksComplete++;
-	update();
+        tasksComplete++;
+        update();
 }
 
 void ProgressBar::update() {
 
-	int percentage = (int)((100ULL*tasksComplete)/tasks);
-	int newColsFilled = (percentage * usableWidth) / 100;
-	if (colsFilled != newColsFilled){
-		//Changed enough that we should do an update
-		colsFilled = newColsFilled;
+        int percentage = (int)((100ULL*tasksComplete)/tasks);
+        int newColsFilled = (percentage * usableWidth) / 100;
+        if (colsFilled != newColsFilled){
+                //Changed enough that we should do an update
+                colsFilled = newColsFilled;
 
-		putchar('\r');
-		printf("%s: %3d%% [",label.c_str(), percentage);
-		int i = 0;
-		for (; i < colsFilled; i++) {
-			putchar('=');
-		}
-		putchar('>');
-		for (; i < usableWidth; i++) {
-			putchar(' ');
-		}
-		putchar(']');
-		fflush(stdout);
-	}
+                putchar('\r');
+                printf("%s: %3d%% [",label.c_str(), percentage);
+                int i = 0;
+                for (; i < colsFilled; i++) {
+                        putchar('=');
+                }
+                putchar('>');
+                for (; i < usableWidth; i++) {
+                        putchar(' ');
+                }
+                putchar(']');
+                fflush(stdout);
+        }
 }
 
 ProgressBar::~ProgressBar() {
-	putchar('\n');
+        putchar('\n');
 }
 }

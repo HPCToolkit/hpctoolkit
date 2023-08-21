@@ -89,7 +89,7 @@ static sample_source_globals_t *ssg = NULL;
 
 static void call_sampling_methods(sampling_method method, thread_data_t *td);
 static void call_sampling_method(sampling_source_globals_t *g,
-				 sampling_method method, thread_data_t *td);
+                                 sampling_method method, thread_data_t *td);
 
 
 
@@ -143,7 +143,7 @@ call_sampling_methods(sampling_method mid, thread_data_t* td)
 
 static void
 call_sampling_method(sampling_source_globals_t* g,
-		     sampling_method mid, thread_data_t* td)
+                     sampling_method mid, thread_data_t* td)
 {
   (g->methods[mid])(td);
 }

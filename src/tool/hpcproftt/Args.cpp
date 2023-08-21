@@ -98,14 +98,14 @@ static const char* usage_summary =
 "profile-file [profile-file]*\n";
 
 static const char* usage_details =
-		 "hpcproftt generates textual dumps of call path profiles\n"
-		 "recorded by hpcrun.  The profile list may contain one or\n"
-		 "more call path profiles.\n"
-		 "\n"
-		 "Options:\n"
-		 "  -V, --version        Print version information.\n"
-		 "  -h, --help           Print this help.\n"
-		 "  -l, --lm             Print the load modules only.\n"
+                 "hpcproftt generates textual dumps of call path profiles\n"
+                 "recorded by hpcrun.  The profile list may contain one or\n"
+                 "more call path profiles.\n"
+                 "\n"
+                 "Options:\n"
+                 "  -V, --version        Print version information.\n"
+                 "  -h, --help           Print this help.\n"
+                 "  -l, --lm             Print the load modules only.\n"
      "  -g, --grep           Show the sparse metrics in a format that is easy to grep.\n";
 
 #define CLP CmdLineParser
@@ -275,23 +275,23 @@ Args::parseArg_metric(Args* args, const string& value, const char* errTag)
   if (value == "thread") {
     if (args) {
       Analysis::Args::MetricFlg_set(args->prof_metrics,
-				    Analysis::Args::MetricFlg_Thread);
+                                    Analysis::Args::MetricFlg_Thread);
     }
   }
   else if (value == "sum") {
     if (args) {
       Analysis::Args::MetricFlg_clear(args->prof_metrics,
-				      Analysis::Args::MetricFlg_StatsAll);
+                                      Analysis::Args::MetricFlg_StatsAll);
       Analysis::Args::MetricFlg_set(args->prof_metrics,
-				    Analysis::Args::MetricFlg_StatsSum);
+                                    Analysis::Args::MetricFlg_StatsSum);
     }
   }
   else if (value == "stats") {
     if (args) {
       Analysis::Args::MetricFlg_clear(args->prof_metrics,
-				      Analysis::Args::MetricFlg_StatsSum);
+                                      Analysis::Args::MetricFlg_StatsSum);
       Analysis::Args::MetricFlg_set(args->prof_metrics,
-				    Analysis::Args::MetricFlg_StatsAll);
+                                    Analysis::Args::MetricFlg_StatsAll);
     }
   }
   else {

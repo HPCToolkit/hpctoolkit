@@ -80,7 +80,7 @@
 #define NULL 0
 
 #undef  EM_INTELGT
-#define EM_INTELGT 205	// Intel Graphics Technology
+#define EM_INTELGT 205  // Intel Graphics Technology
 
 #define DEBUG_ZEBIN_SYMBOLS 0
 

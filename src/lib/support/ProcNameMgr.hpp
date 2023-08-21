@@ -131,20 +131,20 @@ private:
 
   bool
   isGenerated(const std::string& x,
-	      const std::string& pfx, const std::string& sfx)
+              const std::string& pfx, const std::string& sfx)
   {
     bool isSane = (x.length() > (pfx.length() + sfx.length()));
     size_t sfx_pos = x.length() - sfx.length();
 
     // test suffix first because it fails more than the prefix comparison
     return (isSane &&
-	    x.compare(sfx_pos, sfx.length(), sfx) == 0 &&
-	    x.compare(0, pfx.length(), pfx) == 0);
+            x.compare(sfx_pos, sfx.length(), sfx) == 0 &&
+            x.compare(0, pfx.length(), pfx) == 0);
   }
 
   std::string
   basename(const std::string& x,
-	   const std::string& pfx, const std::string& sfx)
+           const std::string& pfx, const std::string& sfx)
   {
     // Assume: x.length() > (pfx.length() + sfx.length())
     int len = x.length() - pfx.length() - sfx.length();

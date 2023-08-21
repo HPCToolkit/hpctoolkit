@@ -124,11 +124,11 @@ is_cilkprogram(void* addr, char* lm_buffer /*helper storage*/);
 
 extern int
 LUSHI_init(int argc, char** argv,
-	   lush_agentid_t           aid,
-	   LUSHCB_malloc_fn_t       malloc_fn,
-	   LUSHCB_free_fn_t         free_fn,
-	   LUSHCB_step_fn_t         step_fn,
-	   LUSHCB_loadmap_find_fn_t loadmap_fn)
+           lush_agentid_t           aid,
+           LUSHCB_malloc_fn_t       malloc_fn,
+           LUSHCB_free_fn_t         free_fn,
+           LUSHCB_step_fn_t         step_fn,
+           LUSHCB_loadmap_find_fn_t loadmap_fn)
 {
   MY_lush_aid = aid;
 
@@ -244,34 +244,34 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   else if (cur_seg == UnwSeg_CilkSched) {
     switch (csr->u.ty) {
       case UnwTy_Master:
-	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
-	break;
+        lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+        break;
       case UnwTy_WorkerLcl:
-	if (csr->u.prev_seg == UnwSeg_User
-	    && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
-	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
-    	}
-	else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
-	}
-	else {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
-	}
-	break;
+        if (csr->u.prev_seg == UnwSeg_User
+            && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
+          lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
+          csr_set_flag(csr, UnwFlg_HaveLCtxt);
+        }
+        else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
+          lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
+        }
+        else {
+          lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+        }
+        break;
       case UnwTy_Worker:
-	if (csr->u.prev_seg == UnwSeg_User
-	    && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
-	  csr_set_flag(csr, UnwFlg_HaveLCtxt);
-	}
-	else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
-	}
-	else {
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
-	}
-	break;
+        if (csr->u.prev_seg == UnwSeg_User
+            && !csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
+          lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
+          csr_set_flag(csr, UnwFlg_HaveLCtxt);
+        }
+        else if (csr_is_flag(csr, UnwFlg_HaveLCtxt)) {
+          lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0); // skip
+        }
+        else {
+          lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+        }
+        break;
       default: EEMSG("FIXME: default case (assert)\n");
     }
   }
@@ -309,18 +309,18 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
 }
 
 
-#define SET_LIP_AND_TY(cl, lip, ty)					\
-  if (!cl) {								\
-    cilk_ip_set(lip, ip_normalized_NULL_lval);				\
-    ty = LUSH_STEP_END_CHORD;						\
-  }									\
-  else {								\
-    /* NOTE: interior lips should act like a return address; */		\
-    /*   therefore, we add 1                                 */		\
-    ip_normalized_t ip =						\
-      hpcrun_normalize_ip(CILKFRM_PROC(cl->frame) + 1, NULL);		\
-    cilk_ip_set(lip, ip);						\
-    ty = LUSH_STEP_CONT;						\
+#define SET_LIP_AND_TY(cl, lip, ty)                                     \
+  if (!cl) {                                                            \
+    cilk_ip_set(lip, ip_normalized_NULL_lval);                          \
+    ty = LUSH_STEP_END_CHORD;                                           \
+  }                                                                     \
+  else {                                                                \
+    /* NOTE: interior lips should act like a return address; */         \
+    /*   therefore, we add 1                                 */         \
+    ip_normalized_t ip =                                                \
+      hpcrun_normalize_ip(CILKFRM_PROC(cl->frame) + 1, NULL);           \
+    cilk_ip_set(lip, ip);                                               \
+    ty = LUSH_STEP_CONT;                                                \
   }
 
 extern lush_step_t
@@ -402,23 +402,23 @@ init_lcursor(lush_cursor_t* cursor)
       csr->u.ty = (cactus_stack) ? UnwTy_Worker : UnwTy_WorkerLcl;
 
       if (CILK_WS_has_stolen(ws) && !cactus_stack) {
-	// Sometimes we are hammered in the middle of a Cilk operation
-	// where the cactus stack pointer becomes NULL, even though
-	// logical context 'should' exist (e.g., Cilk_sync before a
-	// return).  The result is that we cannot obtain the logical
-	// context and therefore cannot locate the unwind correctly
-	// within the CCT.
-	//
-	// To avoid such bad unwinds, we use the simple heuristic of
-	// requiring a cactus stack pointer if the worker has become a
-	// thief. It is not a perfect solution since a worker may have
-	// stolen the main routine; however, this is an exceptional
-	// case.
-	//
-	// FIXME: the best solution is to find the smallest window
-	// within the scheduler code and set a flag.  But I found that
-	// this is easier said than done.
-	return 1;
+        // Sometimes we are hammered in the middle of a Cilk operation
+        // where the cactus stack pointer becomes NULL, even though
+        // logical context 'should' exist (e.g., Cilk_sync before a
+        // return).  The result is that we cannot obtain the logical
+        // context and therefore cannot locate the unwind correctly
+        // within the CCT.
+        //
+        // To avoid such bad unwinds, we use the simple heuristic of
+        // requiring a cactus stack pointer if the worker has become a
+        // thief. It is not a perfect solution since a worker may have
+        // stolen the main routine; however, this is an exceptional
+        // case.
+        //
+        // FIXME: the best solution is to find the smallest window
+        // within the scheduler code and set a flag.  But I found that
+        // this is easier said than done.
+        return 1;
       }
     }
 
@@ -476,7 +476,7 @@ classify_by_unw_segment(cilk_cursor_t* csr)
 
       // FIXME: sometimes the above test is not correct... OVERRIDE
       if (cur_seg == UnwSeg_CilkRT && csr_is_flag(csr, UnwFlg_SeenUser)) {
-	cur_seg = UnwSeg_CilkSched;
+        cur_seg = UnwSeg_CilkSched;
       }
     }
     else {
@@ -555,8 +555,8 @@ LUSHI_lip_write()
 
 extern bool
 LUSHI_do_metric(uint64_t incrMetricIn,
-		bool* doMetric, bool* doMetricIdleness,
-		uint64_t* incrMetric, double* incrMetricIdleness)
+                bool* doMetric, bool* doMetricIdleness,
+                uint64_t* incrMetric, double* incrMetricIdleness)
 {
   // INVARIANT: at least one thread is working
   // INVARIANT: ws is non-NULL

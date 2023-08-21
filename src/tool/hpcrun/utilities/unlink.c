@@ -81,29 +81,29 @@ do_unlink_tree(char *path, int path_len, int max_len)
      * Use unlink(2) for anything that's not a directory.
      */
     if (lstat(path, &sb) != 0)
-	return (1);
+        return (1);
     if (! S_ISDIR(sb.st_mode))
-	return (unlink(path) ? 1 : 0);
+        return (unlink(path) ? 1 : 0);
 
     /*
      * Recursively unlink directory entries, except "." and "..".
      */
     dirp = opendir(path);
     if (dirp == NULL)
-	return (1);
+        return (1);
     num_failures = 0;
     path[path_len] = '/';
     while ((dent = readdir(dirp)) != NULL) {
-	if (strncmp(dent->d_name, ".", 2) == 0 ||
-	    strncmp(dent->d_name, "..", 3) == 0)
-	    continue;
-	len = strlen(dent->d_name);
-	if (path_len + len + 2 >= max_len) {
-	    num_failures++;
-	} else {
-	    strcpy(&path[path_len + 1], dent->d_name);
-	    num_failures += do_unlink_tree(path, path_len + len + 1, max_len);
-	}
+        if (strncmp(dent->d_name, ".", 2) == 0 ||
+            strncmp(dent->d_name, "..", 3) == 0)
+            continue;
+        len = strlen(dent->d_name);
+        if (path_len + len + 2 >= max_len) {
+            num_failures++;
+        } else {
+            strcpy(&path[path_len + 1], dent->d_name);
+            num_failures += do_unlink_tree(path, path_len + len + 1, max_len);
+        }
     }
     path[path_len] = 0;
     closedir(dirp);
@@ -112,7 +112,7 @@ do_unlink_tree(char *path, int path_len, int max_len)
      * Finally, rmdir(2) the directory.
      */
     if (rmdir(path) != 0)
-	num_failures++;
+        num_failures++;
 
     return (num_failures);
 }
@@ -132,7 +132,7 @@ unlink_tree(char *path)
 
     len = strlen(path);
     if (len >= BUF_LEN)
-	return (1);
+        return (1);
     strcpy(buf, path);
     return do_unlink_tree(buf, len, BUF_LEN);
 }

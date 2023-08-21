@@ -172,7 +172,7 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc)
 
 int
 hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
-			  hpcfmt_alloc_fn alloc)
+                          hpcfmt_alloc_fn alloc)
 {
 
   char tag[HPCRUN_FMT_EpochTagLen + 1];
@@ -204,8 +204,8 @@ hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
 
 int
 hpcrun_fmt_epochHdr_fwrite(FILE* fs, epoch_flags_t flags,
-			   uint64_t measurementGranularity,
-			   ...)
+                           uint64_t measurementGranularity,
+                           ...)
 {
   va_list args;
   va_start(args, measurementGranularity);
@@ -235,7 +235,7 @@ hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs)
   fprintf(fs, "[epoch-hdr:\n");
   fprintf(fs, "  (flags: 0x%"PRIx64")\n", ehdr->flags.bits);
   fprintf(fs, "  (measurement-granularity: %"PRIu64")\n",
-	  ehdr->measurementGranularity);
+          ehdr->measurementGranularity);
   hpcfmt_nvpairList_fprint(&(ehdr->nvps), fs, "  ");
   fprintf(fs, "]\n");
 
@@ -286,7 +286,7 @@ hpcrun_metricVal_t hpcrun_metricVal_ZERO = { .bits = 0 };
 
 int
 hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl,
-		FILE* fs, double fmtVersion, hpcfmt_alloc_fn alloc)
+                FILE* fs, double fmtVersion, hpcfmt_alloc_fn alloc)
 {
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(metric_tbl->len), fs));
@@ -345,8 +345,8 @@ hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc)
 
 int
 hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
-			    double GCC_ATTR_UNUSED fmtVersion,
-			    hpcfmt_alloc_fn alloc)
+                            double GCC_ATTR_UNUSED fmtVersion,
+                            hpcfmt_alloc_fn alloc)
 {
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->name), fs, alloc));
   HPCFMT_ThrowIfError(hpcfmt_str_fread(&(x->description), fs, alloc));
@@ -354,7 +354,7 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* fs,
 
   // FIXME: tallent: temporarily support old non-portable convention
   if ( !(x->flags.fields.ty == MetricFlags_Ty_Raw
-	   || x->flags.fields.ty == MetricFlags_Ty_Final)
+           || x->flags.fields.ty == MetricFlags_Ty_Final)
        || x->flags.fields.unused1 != 0) {
     fseek(fs, -sizeof(x->flags), SEEK_CUR);
 
@@ -414,17 +414,17 @@ int
 hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* fs, const char* pre, uint32_t id)
 {
   fprintf(fs, "%s[(id: %d) (nm: %s) (desc: %s) "
-	  "((ty: %d) (val-ty: %d) (val-fmt: %d) (partner: %u) (show: %d) (showPercent: %d)) "
-	  "(period: %"PRIu64") (formula: %s) (format: %s)\n" ,
-	  pre, id, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
-	  (int)x->flags.fields.ty, (int)x->flags.fields.valTy,
-	  (int)x->flags.fields.valFmt,
-	  (unsigned int)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
-	  x->period,
-	  hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
+          "((ty: %d) (val-ty: %d) (val-fmt: %d) (partner: %u) (show: %d) (showPercent: %d)) "
+          "(period: %"PRIu64") (formula: %s) (format: %s)\n" ,
+          pre, id, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
+          (int)x->flags.fields.ty, (int)x->flags.fields.valTy,
+          (int)x->flags.fields.valFmt,
+          (unsigned int)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
+          x->period,
+          hpcfmt_str_ensure(x->formula), hpcfmt_str_ensure(x->format));
   fprintf(fs, "    (frequency: %d) (multiplexed: %d) (period-mean: %f) (num-samples: %d)]\n",
           (int)x->is_frequency_metric, (int)x->aux_info.is_multiplexed,
-		  x->aux_info.threshold_mean,  (int) x->aux_info.num_samples);
+                  x->aux_info.threshold_mean,  (int) x->aux_info.num_samples);
   return HPCFMT_OK;
 }
 
@@ -575,7 +575,7 @@ hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc)
 
 int
 hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* fs,
-			      hpcfmt_alloc_fn alloc)
+                              hpcfmt_alloc_fn alloc)
 {
   //int ret = 10;
   HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(x->id), fs));
@@ -601,7 +601,7 @@ int
 hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "%s[(id: %u) (nm: %s) (flg: 0x%"PRIx64")]\n",
-	  pre, (unsigned int)x->id, x->name, x->flags);
+          pre, (unsigned int)x->id, x->name, x->flags);
   return HPCFMT_OK;
 }
 
@@ -622,7 +622,7 @@ hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc)
 
  int
 hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
-			  epoch_flags_t flags, FILE* fs)
+                          epoch_flags_t flags, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id_parent, fs));
@@ -655,7 +655,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 
 int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
-			   epoch_flags_t flags, FILE* fs)
+                           epoch_flags_t flags, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id_parent, fs));
@@ -687,19 +687,19 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 #if 0
 int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
-			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
-			   const char* pre)
+                           epoch_flags_t flags, const metric_tbl_t* metricTbl,
+                           const char* pre)
 #else
 //YUMENG: no need to parse metricTbl for sparse format
 int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
-			   epoch_flags_t flags, const char* pre)
+                           epoch_flags_t flags, const char* pre)
 #endif
 {
   // N.B.: convert 'id' and 'id_parent' to ints so leaf flag
   // (negative) is apparent
   fprintf(fs, "%s[node: (id: %d) (id-parent: %d) ",
-	  pre, (int)x->id, (int)x->id_parent);
+          pre, (int)x->id, (int)x->id_parent);
 
   if (flags.fields.isLogicalUnwind) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
@@ -747,11 +747,11 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     switch (mflags.fields.valFmt) {
       default:
       case MetricFlags_ValFmt_Int:
-	fprintf(fs, " %"PRIu64, x->metrics[i].i);
-	break;
+        fprintf(fs, " %"PRIu64, x->metrics[i].i);
+        break;
       case MetricFlags_ValFmt_Real:
-	fprintf(fs, " %g", x->metrics[i].r);
-	break;
+        fprintf(fs, " %g", x->metrics[i].r);
+        break;
     }
 
     if (i + 1 < x->num_metrics) {
@@ -961,7 +961,7 @@ hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
   fprintf(fs, "%s id tuple:", double_pre);
   id_tuple_fprint(&(x->id_tuple),fs);
   fprintf(fs, "%s(number of non-zero metrics: %ld)\n%s(number of non-zero cct nodes: %d)\n%s]\n",
-	  double_pre, x->num_vals, double_pre, x->num_nz_cct_nodes, pre);
+          double_pre, x->num_vals, double_pre, x->num_nz_cct_nodes, pre);
 
   if(easy_grep){
     HPCFMT_ThrowIfError(hpcrun_fmt_sparse_metrics_fprint_grep_helper(x, fs, metricTbl, pre));
@@ -1549,7 +1549,7 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs)
 
 int
 hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			 FILE* fs)
+                         FILE* fs)
 {
   int ret = HPCFMT_OK;
 
@@ -1575,7 +1575,7 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 int
 hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  hpcio_outbuf_t* outbuf)
+                          hpcio_outbuf_t* outbuf)
 {
   const int bufSZ = sizeof(hpctrace_fmt_datum_t);
   unsigned char buf[bufSZ];
@@ -1613,7 +1613,7 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 
 int
 hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  FILE* outfs)
+                          FILE* outfs)
 {
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->comp, outfs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->cpId, outfs));
@@ -1626,7 +1626,7 @@ hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 
 char*
 hpctrace_fmt_datum_swrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  char* buf)
+                          char* buf)
 {
   buf = hpcfmt_int8_swrite(x->comp, buf);
   buf = hpcfmt_int4_swrite(x->cpId, buf);
@@ -1639,7 +1639,7 @@ hpctrace_fmt_datum_swrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 
 int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  FILE* fs)
+                          FILE* fs)
 {
   fprintf(fs, "(%llu, %u", HPCTRACE_FMT_GET_TIME(x->comp), x->cpId);
   if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS)) {

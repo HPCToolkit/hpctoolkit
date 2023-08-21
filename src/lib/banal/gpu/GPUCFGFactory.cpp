@@ -93,7 +93,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
       bool first_entry = true;
       if (DEBUG_GPU_CFGFACTORY) {
         std::cout << "******\nFunction: " << function->name
-		  << " addr: 0x" << std::hex << addr << std::dec << std::endl;
+                  << " addr: 0x" << std::hex << addr << std::dec << std::endl;
       }
       for (auto *block : function->blocks) {
         auto arch = block->insts.front()->arch;
@@ -107,7 +107,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           if (_block_filter.insert(a, std::make_pair(block->address, nullptr))) {
             if (DEBUG_GPU_CFGFACTORY) {
               std::cout << "New block: " << block->name << " id: " << block->id
-		        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
+                        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
             }
             std::vector<std::pair<Offset, size_t>> inst_offsets;
             for (auto *inst : block->insts) {
@@ -122,7 +122,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           } else {
             if (DEBUG_GPU_CFGFACTORY) {
               std::cout << "Old block: " << block->name << " id: " << block->id
-		        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
+                        << " addr: 0x" << std::hex << block->address << std::dec << std::endl;
             }
             ret_block = a->second;
           }
@@ -143,7 +143,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             if (_block_filter.insert(a, std::make_pair(target->block->address, nullptr))) {
               if (DEBUG_GPU_CFGFACTORY) {
                 std::cout << "New block: " << target->block->name << " id: " << target->block->id
-		          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
+                          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
               }
               std::vector<std::pair<Offset, size_t>> inst_offsets;
               for (auto *inst : target->block->insts) {
@@ -158,7 +158,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             } else {
               if (DEBUG_GPU_CFGFACTORY) {
                 std::cout << "Old block: " << target->block->name << " id: " << target->block->id
-		          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
+                          << " addr: 0x" << std::hex << target->block->address << std::dec << std::endl;
               }
               ret_target_block = a->second;
             }

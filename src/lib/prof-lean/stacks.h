@@ -71,13 +71,13 @@
 #define stacks_macro_body_ignore(x) ;
 #define stacks_macro_body_show(x) x
 
-#define typed_stack_declare_type(type)		\
+#define typed_stack_declare_type(type)          \
   typedef typed_stack_elem(type) * typed_stack_elem_ptr(type)
 
-#define typed_stack_declare(type, flavor)		\
+#define typed_stack_declare(type, flavor)               \
   typed_stack(type, flavor, stacks_macro_body_ignore)
 
-#define typed_stack_impl(type, flavor)			\
+#define typed_stack_impl(type, flavor)                  \
   typed_stack(type, flavor, stacks_macro_body_show)
 
 // routine name for a stack operation
@@ -186,7 +186,7 @@
  (typed_stack_elem_ptr(type) *s, \
   void (*fn)(typed_stack_elem(type) *, void *), void *arg) \
   macro({ \
-    stack_op(qtype,forall)((s_element_ptr_t *) s, (stack_forall_fn_t) fn, arg);	\
+    stack_op(qtype,forall)((s_element_ptr_t *) s, (stack_forall_fn_t) fn, arg); \
   })
 
 

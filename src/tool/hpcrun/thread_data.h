@@ -92,8 +92,8 @@ typedef struct gpu_data_t {
   // maintain the total number of threads (global: think shared
   // blaming) at synchronize (could be device/stream/...)
   uint64_t accum_num_sync_threads;
-	// holds the number of times the above accum_num_sync_threads
-	// is updated
+        // holds the number of times the above accum_num_sync_threads
+        // is updated
   uint64_t accum_num_samples;
 } gpu_data_t;
 
@@ -119,8 +119,8 @@ typedef struct gpu_data_t {
     thread_locks package
         (each of the 'lock' elements is true if this thread owns the lock.
          locks must be released in an exceptional situation)
-	fnbounds_lock
-	splay_lock
+        fnbounds_lock
+        splay_lock
     sample source package
        event_set
        ss_state

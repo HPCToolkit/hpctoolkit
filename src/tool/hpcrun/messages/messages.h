@@ -118,9 +118,9 @@ void hpcrun_nmsg(pmsg_category flag, const char* tag, const char *fmt,...);
 extern void hpcrun_pmsg(const char* tag, const char *fmt,...);
 
 void hpcrun_pmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag,
-			const char *fmt,...);
+                        const char *fmt,...);
 void hpcrun_nmsg_stderr(bool echo_stderr,pmsg_category flag, const char* tag,
-			const char *fmt,...);
+                        const char *fmt,...);
 void hpcrun_stderr_log_msg(bool copy_to_log, const char *fmt,...);
 void hpcrun_exit_on_error(int ret, int ret_expected, const char *fmt,...);
 

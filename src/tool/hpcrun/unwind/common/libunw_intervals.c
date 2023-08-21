@@ -243,8 +243,8 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 
 #if DEBUG_LIBUNWIND_INTERFACE
   if (libunwind_debug) {
-	printf("ip = %p (%d, %lx) the_function=%p (%d,%lx) ",
-	cursor->pc_unnorm, cursor->pc_norm.lm_id, cursor->pc_norm.lm_ip,
+        printf("ip = %p (%d, %lx) the_function=%p (%d,%lx) ",
+        cursor->pc_unnorm, cursor->pc_norm.lm_id, cursor->pc_norm.lm_ip,
         func_start_pc, cursor->the_function.lm_id, cursor->the_function.lm_ip);
   }
 #endif
@@ -283,7 +283,7 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
   // full unwind: stop at libmonitor fence.  this is where we hope the
   // unwind stops.
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
-		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
+                   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
 
 #if DEBUG_LIBUNWIND_INTERFACE
   if (libunwind_debug) {
@@ -365,9 +365,9 @@ struct builder
 
 static int
 dwarf_reg_states_callback(void *token,
-			  void *rs,
-			  size_t size,
-			  unw_word_t start_ip, unw_word_t end_ip)
+                          void *rs,
+                          size_t size,
+                          unw_word_t start_ip, unw_word_t end_ip)
 {
   struct builder *b = token;
   bitree_uwi_t *u = bitree_uwi_malloc(b->uw, size);

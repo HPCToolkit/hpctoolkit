@@ -213,7 +213,7 @@ cubin_id_map_insert
 
     if (cubin_id < cubin_id_map_root->cubin_id) {
       cubin_id_map_entry_t *entry =
-	cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
+        cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
       TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
       entry->left = cubin_id_map_root->left;
@@ -222,7 +222,7 @@ cubin_id_map_insert
       cubin_id_map_root = entry;
     } else if (cubin_id > cubin_id_map_root->cubin_id) {
       cubin_id_map_entry_t *entry =
-	cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
+        cubin_id_map_entry_new(cubin_id, vector, hpctoolkit_module_id);
       TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
       entry->left = cubin_id_map_root;
@@ -295,8 +295,8 @@ cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
       hpcrun_loadmap_lock();
       load_module_t *lm = hpcrun_loadmap_findById(ip.lm_id);
       if (lm) {
-	hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
-	entry->load_module_unused = false;
+        hpcrun_loadModule_flags_set(lm, LOADMAP_ENTRY_ANALYZE);
+        entry->load_module_unused = false;
       }
       hpcrun_loadmap_unlock();
     }

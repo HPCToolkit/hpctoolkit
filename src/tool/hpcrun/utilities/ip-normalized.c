@@ -107,7 +107,7 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
     for (;;){
       char* l = fgets(linebuf, sizeof(linebuf), loadmap);
       if (feof(loadmap)) {
-	break;
+        break;
       }
       EMSG("  %s", l);
     }

@@ -69,22 +69,22 @@ class ProgressBar {
 private:
 typedef uint64_t unsigned long;
 
-	static const int DEFAULT_TERMINAL_WIDTH = 80;
+        static const int DEFAULT_TERMINAL_WIDTH = 80;
 
-	int usableWidth;
-	int colsFilled;
-	unsigned long tasks;
-	int tasksComplete;
-	string label;
-	void update();
+        int usableWidth;
+        int colsFilled;
+        unsigned long tasks;
+        int tasksComplete;
+        string label;
+        void update();
 public:
-	ProgressBar(string name, unsigned long tasksToComplete);
+        ProgressBar(string name, unsigned long tasksToComplete);
 
-	void incrementProgress(unsigned long tasks);
-	/**Call every time a task is completed */
-	void incrementProgress();
+        void incrementProgress(unsigned long tasks);
+        /**Call every time a task is completed */
+        void incrementProgress();
 
-	virtual ~ProgressBar();
+        virtual ~ProgressBar();
 };
 }
 #endif /* PROGRESSBAR_HPP_ */

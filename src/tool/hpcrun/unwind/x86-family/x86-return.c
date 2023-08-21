@@ -73,7 +73,7 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
       unwind_interval *u = iarg->restored_canonical;
       do {
         // fix offset
-	x86recipe_t *xr = UWI_RECIPE(u);
+        x86recipe_t *xr = UWI_RECIPE(u);
         xr->reg.sp_ra_pos -= offset;
         xr->reg.sp_bp_pos -= offset;
       } while (u != iarg->current && (u = UWI_NEXT(u)));
@@ -86,17 +86,17 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
       unwind_interval *start = iarg->restored_canonical;
       unwind_interval *u = start;
       do {
-	x86recipe_t *xr = UWI_RECIPE(u);
+        x86recipe_t *xr = UWI_RECIPE(u);
         if (xr->reg.bp_status != BP_HOSED) {
-	  start = NULL;
+          start = NULL;
         } else if (start == NULL)
-	  start = u;
-      }	while (u != iarg->current && (u = UWI_NEXT(u)));
+          start = u;
+      } while (u != iarg->current && (u = UWI_NEXT(u)));
       u = start;
       do {
-	x86recipe_t *xr = UWI_RECIPE(u);
+        x86recipe_t *xr = UWI_RECIPE(u);
         xr->reg.bp_status = BP_UNCHANGED;
-      }	while (u != iarg->current && (u = UWI_NEXT(u)));
+      } while (u != iarg->current && (u = UWI_NEXT(u)));
     }
   }
   if (UWI_RECIPE(iarg->current)->reg.bp_status == BP_SAVED) {

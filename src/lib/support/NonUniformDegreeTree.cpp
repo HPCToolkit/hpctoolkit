@@ -162,7 +162,7 @@ void NonUniformDegreeTreeNode::unlink()
     } else {
       // fix link from parent to the ring if necessary
       if (m_parent->m_children == this)
-	m_parent->m_children = m_next_sibling;
+        m_parent->m_children = m_next_sibling;
 
       // relink predecessor's forward link
       m_prev_sibling->m_next_sibling = m_next_sibling;
@@ -214,7 +214,7 @@ NonUniformDegreeTreeNode::maxDepth(unsigned int parentDepth)
 
 std::string
 NonUniformDegreeTreeNode::toString(unsigned int GCC_ATTR_UNUSED oFlags,
-				   const char* GCC_ATTR_UNUSED pfx) const
+                                   const char* GCC_ATTR_UNUSED pfx) const
 {
   return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);
 }
@@ -233,11 +233,11 @@ NonUniformDegreeTreeNode::toString(unsigned int GCC_ATTR_UNUSED oFlags,
 
 NonUniformDegreeTreeIterator::NonUniformDegreeTreeIterator(
                                   const NonUniformDegreeTreeNode* root,
-				  TraversalOrder torder,
-				  NonUniformDegreeTreeEnumType how) :
+                                  TraversalOrder torder,
+                                  NonUniformDegreeTreeEnumType how) :
   IteratorStack(torder, (how == NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY)
                             ? ITER_STACK_ENUM_LEAVES_ONLY
-		            : ITER_STACK_ENUM_ALL_NODES)
+                            : ITER_STACK_ENUM_ALL_NODES)
 {
   StackableIterator* top = 0;
   if (how == NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NON_ROOTS)
@@ -268,7 +268,7 @@ NonUniformDegreeTreeIterator::IteratorToPushIfAny(void *current)
       Push(new SingletonIterator(node, PostVisit));
     } else {
       if (stop->VisitType() == PreVisit) {
-	Push(new SingletonIterator(node, PostVisit));
+        Push(new SingletonIterator(node, PostVisit));
       } else return 0;
     }
   }

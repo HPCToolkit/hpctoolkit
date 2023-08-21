@@ -223,14 +223,14 @@ convert_pcsampling
 )
 {
   TMSG(CUPTI_ACTIVITY, "source %u, functionId %u, pc 0x%x, corr %u, "
-	"samples %u, latencySamples %u, stallReason %u\n",
-	activity->sourceLocatorId,
-	activity->functionId,
-	activity->pcOffset,
-	activity->correlationId,
-	activity->samples,
-	activity->latencySamples,
-	activity->stallReason);
+        "samples %u, latencySamples %u, stallReason %u\n",
+        activity->sourceLocatorId,
+        activity->functionId,
+        activity->pcOffset,
+        activity->correlationId,
+        activity->samples,
+        activity->latencySamples,
+        activity->stallReason);
 
   ga->kind = GPU_ACTIVITY_PC_SAMPLING;
 
@@ -350,7 +350,7 @@ convert_kernel
   uint32_t blockThreads = 0;
   uint32_t blockSharedMemory = 0;
   cupti_occupancy_analyze(activity, &activeWarpsPerSM, &maxActiveWarpsPerSM,
-			  &threadRegisters, &blockThreads, &blockSharedMemory);
+                          &threadRegisters, &blockThreads, &blockSharedMemory);
 
   ga->details.kernel.activeWarpsPerSM = activeWarpsPerSM;
   ga->details.kernel.maxActiveWarpsPerSM = maxActiveWarpsPerSM;
@@ -594,7 +594,7 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
     convert_pcsampling_record_info
-				(ga, (CUpti_ActivityPCSamplingRecordInfo *)activity);
+                                (ga, (CUpti_ActivityPCSamplingRecordInfo *)activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_MEMCPY2:

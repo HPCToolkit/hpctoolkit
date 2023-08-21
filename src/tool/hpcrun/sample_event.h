@@ -107,13 +107,13 @@ hpcrun_sample_val_init(sample_val_t* x)
 extern void hpcrun_trace_node(cct_node_t *node);
 
 extern sample_val_t hpcrun_sample_callpath(void *context, int metricId,
-		                   hpcrun_metricVal_t metricIncr,
-				   int skipInner, int isSync, sampling_info_t *data);
+                                   hpcrun_metricVal_t metricIncr,
+                                   int skipInner, int isSync, sampling_info_t *data);
 
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);
 
 extern cct_node_t* hpcrun_sample_callpath_w_bt(void *context,
-					       int metricId, uint64_t metricIncr,
-					       bt_mut_fn bt_fn, bt_fn_arg arg,
-					       int isSync);
+                                               int metricId, uint64_t metricIncr,
+                                               bt_mut_fn bt_fn, bt_fn_arg arg,
+                                               int isSync);
 #endif // sample_event_h

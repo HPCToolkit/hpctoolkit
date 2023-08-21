@@ -98,7 +98,7 @@
 
 #define PUBLIC_API __attribute__((visibility("default")))
 
-#define FORALL_ROCPROFILER_ROUTINES(macro)			\
+#define FORALL_ROCPROFILER_ROUTINES(macro)                      \
   macro(rocprofiler_open)   \
   macro(rocprofiler_close)   \
   macro(rocprofiler_get_metrics) \
@@ -119,13 +119,13 @@
 
 #define HPCRUN_ROCPROFILER_CALL(fn, args) \
 {      \
-  hsa_status_t status = ROCPROFILER_FN_NAME(fn) args;	\
-  if (status != HSA_STATUS_SUCCESS) {		\
+  hsa_status_t status = ROCPROFILER_FN_NAME(fn) args;   \
+  if (status != HSA_STATUS_SUCCESS) {           \
     const char* error_string = NULL; \
     rocprofiler_error_string(&error_string); \
     fprintf(stderr, "ERROR: %s\n", error_string); \
     abort(); \
-  }						\
+  }                                             \
 }
 
 
@@ -256,12 +256,12 @@ ROCPROFILER_FN
 (
  rocprofiler_open,
  (
-    hsa_agent_t agent,			// GPU handle
-    rocprofiler_feature_t* features,	// [in/out] profiling feature array
-    uint32_t feature_count,			// profiling feature count
-    rocprofiler_t** context,		// [out] profiling context handle
-    uint32_t mode,				// profiling mode mask
-    rocprofiler_properties_t* properties	// profiler properties
+    hsa_agent_t agent,                  // GPU handle
+    rocprofiler_feature_t* features,    // [in/out] profiling feature array
+    uint32_t feature_count,                     // profiling feature count
+    rocprofiler_t** context,            // [out] profiling context handle
+    uint32_t mode,                              // profiling mode mask
+    rocprofiler_properties_t* properties        // profiler properties
  )
 );
 
@@ -269,7 +269,7 @@ ROCPROFILER_FN
 (
   rocprofiler_close,
   (
-    rocprofiler_t* context		// [in] profiling context
+    rocprofiler_t* context              // [in] profiling context
   )
 );
 
@@ -277,7 +277,7 @@ ROCPROFILER_FN
 (
   rocprofiler_get_metrics,
   (
-    rocprofiler_t* context		// [in/out] profiling context
+    rocprofiler_t* context              // [in/out] profiling context
   )
 );
 
@@ -318,9 +318,9 @@ ROCPROFILER_FN
 (
   rocprofiler_iterate_info,
   (
-    const hsa_agent_t* agent,			// [in] GPU handle, NULL for all
+    const hsa_agent_t* agent,                   // [in] GPU handle, NULL for all
                                   // GPU agents
-    rocprofiler_info_kind_t kind,			// kind of iterated info
+    rocprofiler_info_kind_t kind,                       // kind of iterated info
     hsa_status_t (*callback)(const rocprofiler_info_data_t info, void *data), // callback
     void *data
   )
@@ -338,11 +338,11 @@ ROCPROFILER_FN
 (
   rocprofiler_get_group,
   (
-    rocprofiler_t* context,			  // [in/out] profiling context,
+    rocprofiler_t* context,                       // [in/out] profiling context,
                                   //  will be returned as
                                   //  a part of the group structure
-    uint32_t index,				        // [in] group index
-    rocprofiler_group_t* group		// [out] profiling group
+    uint32_t index,                                     // [in] group index
+    rocprofiler_group_t* group          // [out] profiling group
   )
 );
 

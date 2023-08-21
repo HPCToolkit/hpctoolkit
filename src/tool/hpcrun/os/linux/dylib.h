@@ -59,9 +59,9 @@
 //*****************************************************************************
 
 int dylib_find_module_containing_addr(void *addr,
-				      // output parameters
-				      char *module_name,
-				      void **start,
-				      void **end);
+                                      // output parameters
+                                      char *module_name,
+                                      void **start,
+                                      void **end);
 
 #endif

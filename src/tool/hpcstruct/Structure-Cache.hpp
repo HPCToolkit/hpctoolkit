@@ -72,14 +72,14 @@
 //      That subdirectory contains a file named "hpcstruct" which is the fully
 //      processed structure file for the binary.
 //      The gaps file, when generated with "--show-gaps", will be named gaps, in
-//	the same subdirectory
+//      the same subdirectory
 //
 //    GPU binaries are handled slightly differently.  The name of the GPU binary
 //      The structure file when generated with "--gpucfg no", the default, will be named hpcstruct
 //      The structure file when generated with "--gpucfg yes" will be named hpcstruct+gpucfg
 //
 //    If a GPU binary is reprocessed with a different --gpucfg value, there may be
-//	three different files in that subdirectory: hpcstruct, hpcstruct+gpucfg, and gaps
+//      three different files in that subdirectory: hpcstruct, hpcstruct+gpucfg, and gaps
 //
 
 #ifndef Structure_Cache_hpp

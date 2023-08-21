@@ -80,12 +80,12 @@ using std::string;
 
 // Canonicalize C++ templates and overloading: Compute a 'generic'
 // name for a templated function type:
-//   f<...>            		       --> f<>
-//   f<...>()          		       --> f<>()
-//   f<...>(T<...>* x) 		       --> f<>(T<>* x)
-//   f<...>::foo()     		       --> f<>::foo()
+//   f<...>                            --> f<>
+//   f<...>()                          --> f<>()
+//   f<...>(T<...>* x)                 --> f<>(T<>* x)
+//   f<...>::foo()                     --> f<>::foo()
 //   f<resultT(objT::*)(a1,a2)>::foo() --> f<>::foo()
-//   f(T<...>* x)      		       --> f(T<>* x)
+//   f(T<...>* x)                      --> f(T<>* x)
 //
 // Be careful!
 //   operator<<()      --> (no change)
@@ -112,15 +112,15 @@ ProcNameMgr::canonicalizeCppTemplate(const std::string& name)
 
       bool save_c = (nesting == 0);
       if (c == '<') {
-	nesting++;
+        nesting++;
       }
       else if (c == '>') {
-	nesting--;
+        nesting--;
       }
       save_c = (save_c || (nesting == 0));
 
       if (save_c) {
-	x += c;
+        x += c;
       }
     }
 

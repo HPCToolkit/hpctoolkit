@@ -94,9 +94,9 @@
                                 ".set   mips2\n\t"                      \
                                 "sync\n\t"                              \
                                 ".set   mips0"                          \
-				: /* no output */                       \
-				: /* no input */                        \
-				: "memory")
+                                : /* no output */                       \
+                                : /* no input */                        \
+                                : "memory")
 
 #elif defined(__i386__)
 #define rmb() asm volatile("lock; addl $0,0(%%esp)" ::: "memory")

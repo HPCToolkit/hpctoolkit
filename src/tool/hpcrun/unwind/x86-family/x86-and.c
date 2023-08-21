@@ -67,13 +67,13 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
     if (x86_isReg_SP(reg0)) {
       x86recipe_t *xr = UWI_RECIPE(iarg->current);
       if (xr->reg.bp_status != BP_UNCHANGED) {
-	//----------------------------------------------------------------------
-	// we are adjusting the stack pointer via 'and' instruction
-	//----------------------------------------------------------------------
-	next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg);
+        //----------------------------------------------------------------------
+        // we are adjusting the stack pointer via 'and' instruction
+        //----------------------------------------------------------------------
+        next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg);
       } else {
-	// remember that SP was adjusted by masking bits
-	iarg->sp_realigned = true;
+        // remember that SP was adjusted by masking bits
+        iarg->sp_realigned = true;
       }
     }
   }

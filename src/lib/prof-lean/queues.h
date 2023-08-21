@@ -69,102 +69,102 @@
 //*****************************************************************************
 
 // routine name for a queue operation
-#define queue_op(qtype, op)			\
+#define queue_op(qtype, op)                     \
   qtype ## _ ## op
 
 // typed queue pointer
-#define typed_queue_elem_ptr(type)		\
+#define typed_queue_elem_ptr(type)              \
   type ## _ ## q_element_ptr_t
 
-#define typed_queue_elem(type)			\
+#define typed_queue_elem(type)                  \
   type ## _ ## q_element_t
 
-#define typed_queue_elem_fn(type, fn)		\
+#define typed_queue_elem_fn(type, fn)           \
   type ## _ ## q_element_ ## fn
 
 // routine name for a typed queue operation
-#define typed_queue_op(type, qtype, op)		\
+#define typed_queue_op(type, qtype, op)         \
   type ## _ ## qtype ## _ ## op
 
 // ptr set routine name for a typed queue
-#define typed_queue_elem_ptr_set(type, qtype)	\
+#define typed_queue_elem_ptr_set(type, qtype)   \
   typed_queue_op(type, qtype, ptr_set)
 
 // ptr get routine name for a typed queue
-#define typed_queue_elem_ptr_get(type, qtype)	\
+#define typed_queue_elem_ptr_get(type, qtype)   \
   typed_queue_op(type, qtype, ptr_get)
 
 // swap routine name for a typed queue
-#define typed_queue_swap(type, qtype)		\
+#define typed_queue_swap(type, qtype)           \
   typed_queue_op(type, qtype, swap)
 
 // push routine name for a typed queue
-#define typed_queue_push(type, qtype)		\
+#define typed_queue_push(type, qtype)           \
   typed_queue_op(type, qtype, push)
 
 // pop routine name for a typed queue
-#define typed_queue_pop(type, qtype)		\
+#define typed_queue_pop(type, qtype)            \
   typed_queue_op(type, qtype, pop)
 
 // steal routine name for a typed queue
-#define typed_queue_steal(type, qtype)		\
+#define typed_queue_steal(type, qtype)          \
   typed_queue_op(type, qtype, steal)
 
 
 // define typed wrappers for a queue type
-#define typed_queue(type, qtype)				\
-  void								\
-  typed_queue_elem_ptr_set(type, qtype)				\
-    (typed_queue_elem_ptr(type) *e,				\
-     typed_queue_elem(type) *v)					\
-  {								\
-    queue_op(qtype,ptr_set)((q_element_ptr_t *) e,		\
-			    (q_element_t *) v);			\
-  }								\
-  								\
-  typed_queue_elem(type) *					\
-  typed_queue_elem_ptr_get(type, qtype)				\
-    (typed_queue_elem_ptr(type) *e)				\
-  {								\
-    typed_queue_elem(type) *r =	(typed_queue_elem(type) *)	\
-      queue_op(qtype,ptr_get)((q_element_ptr_t *) e);		\
-    return r;							\
-  }								\
-  								\
-  typed_queue_elem(type) *					\
-  typed_queue_swap(type, qtype)					\
-    (typed_queue_elem_ptr(type) *q, typed_queue_elem(type) *v)	\
-  {								\
-    typed_queue_elem(type) *e = (typed_queue_elem(type) *)	\
-      queue_op(qtype,swap)((q_element_ptr_t *) q,		\
-			   (q_element_t *) v);			\
-    return e;							\
-  }								\
-  								\
-  void								\
-  typed_queue_push(type, qtype)					\
-    (typed_queue_elem_ptr(type) *q, typed_queue_elem(type) *e)	\
-  {								\
-    queue_op(qtype,push)((q_element_ptr_t *) q,			\
-			 (q_element_t *) e);			\
-  }								\
-  								\
-  typed_queue_elem(type) *					\
-  typed_queue_pop(type, qtype)					\
-  (typed_queue_elem_ptr(type) *q)				\
-  {								\
-    typed_queue_elem(type) *e = (typed_queue_elem(type) *)	\
-      queue_op(qtype,pop)((q_element_ptr_t *) q);		\
-    return e;							\
-  }								\
-  								\
-  typed_queue_elem(type) *					\
-  typed_queue_steal(type, qtype)				\
-  (typed_queue_elem_ptr(type) *q)				\
-  {								\
-    typed_queue_elem(type) *e = (typed_queue_elem(type) *)	\
-      queue_op(qtype,steal)((q_element_ptr_t *) q);		\
-    return e;							\
+#define typed_queue(type, qtype)                                \
+  void                                                          \
+  typed_queue_elem_ptr_set(type, qtype)                         \
+    (typed_queue_elem_ptr(type) *e,                             \
+     typed_queue_elem(type) *v)                                 \
+  {                                                             \
+    queue_op(qtype,ptr_set)((q_element_ptr_t *) e,              \
+                            (q_element_t *) v);                 \
+  }                                                             \
+                                                                \
+  typed_queue_elem(type) *                                      \
+  typed_queue_elem_ptr_get(type, qtype)                         \
+    (typed_queue_elem_ptr(type) *e)                             \
+  {                                                             \
+    typed_queue_elem(type) *r = (typed_queue_elem(type) *)      \
+      queue_op(qtype,ptr_get)((q_element_ptr_t *) e);           \
+    return r;                                                   \
+  }                                                             \
+                                                                \
+  typed_queue_elem(type) *                                      \
+  typed_queue_swap(type, qtype)                                 \
+    (typed_queue_elem_ptr(type) *q, typed_queue_elem(type) *v)  \
+  {                                                             \
+    typed_queue_elem(type) *e = (typed_queue_elem(type) *)      \
+      queue_op(qtype,swap)((q_element_ptr_t *) q,               \
+                           (q_element_t *) v);                  \
+    return e;                                                   \
+  }                                                             \
+                                                                \
+  void                                                          \
+  typed_queue_push(type, qtype)                                 \
+    (typed_queue_elem_ptr(type) *q, typed_queue_elem(type) *e)  \
+  {                                                             \
+    queue_op(qtype,push)((q_element_ptr_t *) q,                 \
+                         (q_element_t *) e);                    \
+  }                                                             \
+                                                                \
+  typed_queue_elem(type) *                                      \
+  typed_queue_pop(type, qtype)                                  \
+  (typed_queue_elem_ptr(type) *q)                               \
+  {                                                             \
+    typed_queue_elem(type) *e = (typed_queue_elem(type) *)      \
+      queue_op(qtype,pop)((q_element_ptr_t *) q);               \
+    return e;                                                   \
+  }                                                             \
+                                                                \
+  typed_queue_elem(type) *                                      \
+  typed_queue_steal(type, qtype)                                \
+  (typed_queue_elem_ptr(type) *q)                               \
+  {                                                             \
+    typed_queue_elem(type) *e = (typed_queue_elem(type) *)      \
+      queue_op(qtype,steal)((q_element_ptr_t *) q);             \
+    return e;                                                   \
   }
 
 

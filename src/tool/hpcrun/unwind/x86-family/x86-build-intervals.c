@@ -123,9 +123,9 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
 
   // handle return is different if there are any bp frames
 
-  iarg.bp_frames_found 	     = false;
-  iarg.bp_just_pushed  	     = false;
-  iarg.sp_realigned  	     = false;
+  iarg.bp_frames_found       = false;
+  iarg.bp_just_pushed        = false;
+  iarg.sp_realigned          = false;
 
   iarg.rax_rbp_equivalent_at = NULL;
   iarg.canonical_interval    = NULL;
@@ -135,44 +135,44 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
   if (noisy) dump_ui(iarg.current, true);
 
   while (iarg.ins < end) {
-	if (noisy && dump_ins) {
-	  x86_dump_ins(iarg.ins);
-	}
-	xed_decoded_inst_zero_keep_mode(xptr);
-	xed_error = xed_decode(xptr, (uint8_t*) iarg.ins, 15);
+        if (noisy && dump_ins) {
+          x86_dump_ins(iarg.ins);
+        }
+        xed_decoded_inst_zero_keep_mode(xptr);
+        xed_error = xed_decode(xptr, (uint8_t*) iarg.ins, 15);
 
-	if (xed_error != XED_ERROR_NONE) {
+        if (xed_error != XED_ERROR_NONE) {
 #if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
-	  amd_decode_t decode_res;
-	  adv_amd_decode(&decode_res, iarg.ins);
-	  if (decode_res.success) {
-		if (decode_res.weak) {
-		  // keep count of successes that are not robust
-		}
-		iarg.ins += decode_res.len;
-		continue;
-	  }
+          amd_decode_t decode_res;
+          adv_amd_decode(&decode_res, iarg.ins);
+          if (decode_res.success) {
+                if (decode_res.weak) {
+                  // keep count of successes that are not robust
+                }
+                iarg.ins += decode_res.len;
+                continue;
+          }
 #endif // ENABLE_XOP and HOST_CPU_x86_64
-	  error_count++; /* note the error      */
-	  iarg.ins++;         /* skip this byte      */
-	  continue;      /* continue onward ... */
-	}
+          error_count++; /* note the error      */
+          iarg.ins++;         /* skip this byte      */
+          continue;      /* continue onward ... */
+        }
 
-	// ensure that we don't move past the end of the interval because of a misaligned instruction
-	void *nextins = nextInsn(&iarg, xptr);
-	if (nextins > end) break;
+        // ensure that we don't move past the end of the interval because of a misaligned instruction
+        void *nextins = nextInsn(&iarg, xptr);
+        if (nextins > end) break;
 
-	next = process_inst(xptr, &iarg);
+        next = process_inst(xptr, &iarg);
 
-	if (next != iarg.current) {
-	  link_ui(iarg.current, next);
-	  iarg.current = next;
-	  count++;
+        if (next != iarg.current) {
+          link_ui(iarg.current, next);
+          iarg.current = next;
+          count++;
 
-	  if (noisy) dump_ui(iarg.current, true);
-	}
-	iarg.ins += xed_decoded_inst_get_length(xptr);
-	UWI_END_ADDR(iarg.current) = (uintptr_t)iarg.ins;
+          if (noisy) dump_ui(iarg.current, true);
+        }
+        iarg.ins += xed_decoded_inst_get_length(xptr);
+        UWI_END_ADDR(iarg.current) = (uintptr_t)iarg.ins;
   }
 
   UWI_END_ADDR(iarg.current) = (uintptr_t)end;
@@ -196,11 +196,11 @@ static bool
 x86_ui_same_data(x86recipe_t *proto, x86recipe_t *cand)
 {
   return ( (proto->ra_status == cand->ra_status) &&
-	  (proto->reg.sp_ra_pos == cand->reg.sp_ra_pos) &&
-	  (proto->reg.sp_bp_pos == cand->reg.sp_bp_pos) &&
-	  (proto->reg.bp_status == cand->reg.bp_status) &&
-	  (proto->reg.bp_ra_pos == cand->reg.bp_ra_pos) &&
-	  (proto->reg.bp_bp_pos == cand->reg.bp_bp_pos) );
+          (proto->reg.sp_ra_pos == cand->reg.sp_ra_pos) &&
+          (proto->reg.sp_bp_pos == cand->reg.sp_bp_pos) &&
+          (proto->reg.bp_status == cand->reg.bp_status) &&
+          (proto->reg.bp_ra_pos == cand->reg.bp_ra_pos) &&
+          (proto->reg.bp_bp_pos == cand->reg.bp_bp_pos) );
 }
 
 // NOTE: following routine has an additional side effect!
@@ -223,8 +223,8 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
   int num_freed = 0;
   TMSG(COALESCE,"coalescing interval list starting @ %p",ui);
   if (! ui) {
-	TMSG(COALESCE,"  --interval list empty, so no work");
-	return num_freed;
+        TMSG(COALESCE,"  --interval list empty, so no work");
+        return num_freed;
   }
 
   unwind_interval *first   = ui;
@@ -235,37 +235,37 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
 
   TMSG(COALESCE," starting prototype interval =");
   if (ENABLED(COALESCE)){
-	dump_ui_log(current);
+        dump_ui_log(current);
   }
   for (; ui; ui = UWI_NEXT(ui)) {
-	TMSG(COALESCE,"comparing this interval to prototype:");
-	if (ENABLED(COALESCE)){
-	  dump_ui_log(ui);
-	}
+        TMSG(COALESCE,"comparing this interval to prototype:");
+        if (ENABLED(COALESCE)){
+          dump_ui_log(ui);
+        }
 
-	routine_has_tail_calls =
-		routine_has_tail_calls || UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
+        routine_has_tail_calls =
+                routine_has_tail_calls || UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
 
-	if (x86_ui_same_data(UWI_RECIPE(current), UWI_RECIPE(ui))){
-	  UWI_END_ADDR(current) = UWI_END_ADDR(ui);
-	  bitree_uwi_set_rightsubtree(current, UWI_NEXT(ui));
-	  UWI_RECIPE(current)->has_tail_calls =
-		  UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
-	  // disconnect ui's right subtree and free ui:
-	  bitree_uwi_set_rightsubtree(ui, NULL);
-	  bitree_uwi_free(NATIVE_UNWINDER, ui);
-	  ++num_freed;
+        if (x86_ui_same_data(UWI_RECIPE(current), UWI_RECIPE(ui))){
+          UWI_END_ADDR(current) = UWI_END_ADDR(ui);
+          bitree_uwi_set_rightsubtree(current, UWI_NEXT(ui));
+          UWI_RECIPE(current)->has_tail_calls =
+                  UWI_RECIPE(current)->has_tail_calls || UWI_RECIPE(ui)->has_tail_calls;
+          // disconnect ui's right subtree and free ui:
+          bitree_uwi_set_rightsubtree(ui, NULL);
+          bitree_uwi_free(NATIVE_UNWINDER, ui);
+          ++num_freed;
 
-	  ui = current;
-	  TMSG(COALESCE,"Intervals match! Extended interval:");
-	  if (ENABLED(COALESCE)){
-		dump_ui_log(current);
-	  }
-	}
-	else {
-	  TMSG(COALESCE,"Interval does not match prototype. Reset prototype to current interval");
-	  current = ui;
-	}
+          ui = current;
+          TMSG(COALESCE,"Intervals match! Extended interval:");
+          if (ENABLED(COALESCE)){
+                dump_ui_log(current);
+          }
+        }
+        else {
+          TMSG(COALESCE,"Interval does not match prototype. Reset prototype to current interval");
+          current = ui;
+        }
   }
 
   // update first interval with collected info

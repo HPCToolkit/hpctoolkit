@@ -112,7 +112,7 @@ level0_event_map_insert
   level0_handle_map_insert(&event_map_root, entry);
 
   PRINT("level0 event map insert: handle=%p (entry=%p)\n",
-	 command_list_handle, new_entry);
+         command_list_handle, new_entry);
 
   spinlock_unlock(&event_map_lock);
 }

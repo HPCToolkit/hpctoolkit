@@ -100,7 +100,7 @@ fnbounds_init(const char *executable_name)
 
   dso_info_t *dso =
     hpcrun_dso_make(executable_name, (void*)hpcrun_nm_addrs,
-		    &fh, lm_beg_fn, lm_end_fn, lm_size);
+                    &fh, lm_beg_fn, lm_end_fn, lm_size);
   fnbounds_executable_dso = hpcrun_loadmap_map(dso);
   hpcrun_loadModule_flags_set(fnbounds_executable_dso, LOADMAP_ENTRY_ANALYZE);
 
@@ -137,7 +137,7 @@ fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm)
 {
   load_module_t* lm_ = fnbounds_executable_dso;
   int ret = fnbounds_table_lookup((void*)hpcrun_nm_addrs, hpcrun_nm_addrs_len,
-				  ip, start, end);
+                                  ip, start, end);
   if (lm) {
     *lm = lm_;
   }

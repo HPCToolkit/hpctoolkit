@@ -201,8 +201,8 @@ public:
 
   // constructor by index
   StmtInfo(VMA vm, int ln, long file, long base, long line,
-	   const std::string & device_tag,
-	   bool call = false, bool sink = false, VMA targ = 0)
+           const std::string & device_tag,
+           bool call = false, bool sink = false, VMA targ = 0)
   {
     vma = vm;
     len = ln;
@@ -217,9 +217,9 @@ public:
 
   // constructor by string name
   StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
-	   const std::string & filenm, long line,
-	   const std::string & device_tag,
-	   bool call = false, bool sink = false, VMA targ = 0)
+           const std::string & filenm, long line,
+           const std::string & device_tag,
+           bool call = false, bool sink = false, VMA targ = 0)
   {
     vma = vm;
     len = ln;
@@ -289,7 +289,7 @@ public:
   bool  irred;
 
   LoopInfo(TreeNode *nod, FLPSeqn &pth, const std::string &nm, VMA vma,
-	   long file, long base, long line, bool ir = false)
+           long file, long base, long line, bool ir = false)
   {
     node = nod;
     path = pth;

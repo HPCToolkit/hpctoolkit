@@ -176,9 +176,9 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tOperation-level monitoring of OpenMP offloading.\n"
-	 "\t\tCollect timing information on GPU kernel invocations,\n"
-	 "\t\tmemory copies, etc.\n",
-	 OPENMP_TARGET);
+         "\t\tCollect timing information on GPU kernel invocations,\n"
+         "\t\tmemory copies, etc.\n",
+         OPENMP_TARGET);
   printf("\n");
 #endif
 }

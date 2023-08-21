@@ -93,7 +93,7 @@ CMETHOD_FN(store_metric_id, int event_idx, int metric_id)
 
   if (event_idx >= n_events) {
     EMSG("Trying to store metric_id(=%d) for an invalid event index(=%d)."
-	 "Only %d events recorded for sample source %s", metric_id, event_idx, n_events, self->name);
+         "Only %d events recorded for sample source %s", metric_id, event_idx, n_events, self->name);
     return;
   }
   _ev_t* current_event  = &(_p->events[event_idx]);
@@ -127,7 +127,7 @@ hpcrun_event2metric(sample_source_t* ss, int event_idx)
 
   if (event_idx >= n_events) {
     TMSG(SAMPLE_SOURCE, "Trying to fetch metric %d an invalid event index."
-	 "Only %d events recorded for sample source %s. Returning -1", event_idx, n_events, ss->name);
+         "Only %d events recorded for sample source %s. Returning -1", event_idx, n_events, ss->name);
     return -1; // Returning 0 is be misleading, as metric id 0 can be used by other events.
   }
   _ev_t* current_event  = &(_p->events[event_idx]);
@@ -172,13 +172,13 @@ hpcrun_display_papi_error(void)
     STDERR_MSG("%s: PAPI_library_init() failed as unavailable.\n"
         "Probably, the kernel is missing a module for accessing the hardware\n"
         "performance counters (perf_events, perfmon or perfctr).\n",
-	warning);
+        warning);
   }
   else if (papi_error == HPCRUN_PAPI_ERROR_VERSION) {
     STDERR_MSG("%s: PAPI_library_init() failed with version mismatch.\n"
         "Probably, HPCToolkit is out of sync with PAPI, or else PAPI is\n"
-	"out of sync with the kernel.\n",
-	warning);
+        "out of sync with the kernel.\n",
+        warning);
   }
 }
 
@@ -201,7 +201,7 @@ hpcrun_ssfail_unknown(char *event)
   hpcrun_display_papi_error();
 
   STDERR_MSG("%s: event %s is unknown or unsupported.\n%s",
-	     prefix, event, hpcrun_L);
+             prefix, event, hpcrun_L);
   exit(1);
 }
 
@@ -209,7 +209,7 @@ void
 hpcrun_ssfail_unsupported(char *source, char *event)
 {
   EEMSG("%s: %s event %s is not supported on this platform.\n%s",
-	prefix, source, event, hpcrun_L);
+        prefix, source, event, hpcrun_L);
   exit(1);
 }
 
@@ -217,7 +217,7 @@ void
 hpcrun_ssfail_derived(char *source, char *event)
 {
   EEMSG("%s: %s event %s is a derived event and thus cannot be profiled.\n%s",
-	prefix, source, event, hpcrun_L);
+        prefix, source, event, hpcrun_L);
   exit(1);
 }
 
@@ -225,8 +225,8 @@ void
 hpcrun_ssfail_all_derived(char *source)
 {
   EEMSG("%s: All %s events are derived.  To use proxy sampling,\n"
-	"at least one event must support hardware overflow (eg, PAPI_TOT_CYC).\n",
-	prefix, source);
+        "at least one event must support hardware overflow (eg, PAPI_TOT_CYC).\n",
+        prefix, source);
   exit(1);
 }
 
@@ -234,9 +234,9 @@ void
 hpcrun_ssfail_conflict(char *source, char *event)
 {
   EEMSG("%s: %s event %s cannot be profiled in this sequence.\n"
-	"Either it conflicts with another event, or it exceeds the number of\n"
-	"hardware counters.\n%s",
-	prefix, source, event, hpcrun_L);
+        "Either it conflicts with another event, or it exceeds the number of\n"
+        "hardware counters.\n%s",
+        prefix, source, event, hpcrun_L);
   exit(1);
 }
 
@@ -244,7 +244,7 @@ void
 hpcrun_ssfail_start(char *source)
 {
   EEMSG("%s: sample source %s failed to start.\n"
-	"Check the event list and the HPCToolkit installation and try again.\n%s",
-	prefix, source, hpcrun_L);
+        "Check the event list and the HPCToolkit installation and try again.\n%s",
+        prefix, source, hpcrun_L);
   exit(1);
 }

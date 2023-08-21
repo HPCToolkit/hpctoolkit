@@ -49,7 +49,7 @@
 // include files
 //******************************************************************************
 
-#include	"fnbounds.h"
+#include        "fnbounds.h"
 
 
 
@@ -219,15 +219,15 @@ print_elf_header64
 
   /* Program Header */
   fprintf(stderr, "FNB2: Program Header\t= ");
-  fprintf(stderr, "0x%08lx\n", elf_header->e_phoff);		/* start */
-  fprintf(stderr, "FNB2: \t\t  %d entries\n", elf_header->e_phnum);	/* num entry */
-  fprintf(stderr, "FNB2: \t\t  %d bytes\n", elf_header->e_phentsize);	/* size/entry */
+  fprintf(stderr, "0x%08lx\n", elf_header->e_phoff);            /* start */
+  fprintf(stderr, "FNB2: \t\t  %d entries\n", elf_header->e_phnum);     /* num entry */
+  fprintf(stderr, "FNB2: \t\t  %d bytes\n", elf_header->e_phentsize);   /* size/entry */
 
   /* Section header starts at */
   fprintf(stderr, "FNB2: Section Header\t= ");
-  fprintf(stderr, "0x%08lx\n", elf_header->e_shoff);		/* start */
-  fprintf(stderr, "FNB2: \t\t  %d entries\n", elf_header->e_shnum);	/* num entry */
-  fprintf(stderr, "FNB2: \t\t  %d bytes\n", elf_header->e_shentsize);	/* size/entry */
+  fprintf(stderr, "0x%08lx\n", elf_header->e_shoff);            /* start */
+  fprintf(stderr, "FNB2: \t\t  %d entries\n", elf_header->e_shnum);     /* num entry */
+  fprintf(stderr, "FNB2: \t\t  %d bytes\n", elf_header->e_shentsize);   /* size/entry */
   fprintf(stderr, "FNB2: \t\t  0x%08x (string table offset)\n", elf_header->e_shstrndx);
 
   /* File flags (Machine specific)*/
@@ -237,7 +237,7 @@ print_elf_header64
    * INTEL implements NO flags.
    * ARM implements a few.
    * Add support below to parse ELF file flags on ARM
-   * 	 	 	 	 */
+   *                             */
   int32_t ef = elf_header->e_flags;
   if (ef & EF_ARM_RELEXEC)
     fprintf(stderr, ",RELEXEC ");
@@ -280,7 +280,7 @@ print_elf_header64
   /* MSB of flags contains ARM EABI version */
   fprintf(stderr, "FNB2: ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
 
-  fprintf(stderr, "FNB2: \n");	/* End of ELF header */
+  fprintf(stderr, "FNB2: \n");  /* End of ELF header */
 }
 
 // dump program headers
@@ -319,7 +319,7 @@ print_program_headers64
     fprintf(stderr, "\n");
   }
 
-  fprintf(stderr, "FNB2: \n");	/* end of program header table */
+  fprintf(stderr, "FNB2: \n");  /* end of program header table */
 }
 
 // dump section header info
@@ -374,5 +374,5 @@ print_section_headers64
 
   } while (section != NULL);
 
-  fprintf(stderr, "FNB2: \n");	/* end of section header table */
+  fprintf(stderr, "FNB2: \n");  /* end of section header table */
 }

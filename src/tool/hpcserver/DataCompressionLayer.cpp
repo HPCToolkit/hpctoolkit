@@ -70,144 +70,144 @@ using namespace std;
 namespace TraceviewerServer
 {
 
-	DataCompressionLayer::DataCompressionLayer()
-	{
+        DataCompressionLayer::DataCompressionLayer()
+        {
 
-		//See: http://www.zlib.net/zpipe.c
+                //See: http://www.zlib.net/zpipe.c
 
-		bufferIndex = 0;
-		posInCompBuffer = 0;
+                bufferIndex = 0;
+                posInCompBuffer = 0;
 
-		inBuf = new char[BUFFER_SIZE];
-		outBuf = new unsigned char[BUFFER_SIZE];
-		outBufferCurrentSize = BUFFER_SIZE;
+                inBuf = new char[BUFFER_SIZE];
+                outBuf = new unsigned char[BUFFER_SIZE];
+                outBufferCurrentSize = BUFFER_SIZE;
 
-		progMonitor = NULL;
+                progMonitor = NULL;
 
-		compressor.zalloc = Z_NULL;
-		compressor.zfree = Z_NULL;
-		compressor.opaque = Z_NULL;
-		int ret = deflateInit(&compressor, -1);
-		if (ret != Z_OK)
-			throw ret;
+                compressor.zalloc = Z_NULL;
+                compressor.zfree = Z_NULL;
+                compressor.opaque = Z_NULL;
+                int ret = deflateInit(&compressor, -1);
+                if (ret != Z_OK)
+                        throw ret;
 
-	}
+        }
 
-	DataCompressionLayer::DataCompressionLayer(z_stream customCompressor, ProgressBar* _progMonitor)
-	{
-		bufferIndex = 0;
-		posInCompBuffer = 0;
+        DataCompressionLayer::DataCompressionLayer(z_stream customCompressor, ProgressBar* _progMonitor)
+        {
+                bufferIndex = 0;
+                posInCompBuffer = 0;
 
-		inBuf = new char[BUFFER_SIZE];
-		outBuf = new unsigned char[BUFFER_SIZE];
-		outBufferCurrentSize = BUFFER_SIZE;
+                inBuf = new char[BUFFER_SIZE];
+                outBuf = new unsigned char[BUFFER_SIZE];
+                outBufferCurrentSize = BUFFER_SIZE;
 
-		progMonitor = _progMonitor;
-		compressor = customCompressor;
-	}
+                progMonitor = _progMonitor;
+                compressor = customCompressor;
+        }
 
-	void DataCompressionLayer::writeInt(int toWrite)
-	{
-		makeRoom(4);
-		ByteUtilities::writeInt(inBuf + bufferIndex, toWrite);
-		bufferIndex += 4;
-		pInc(4);
-	}
-	void DataCompressionLayer::writeLong(uint64_t toWrite)
-	{
-		makeRoom(8);
-		ByteUtilities::writeLong(inBuf + bufferIndex, toWrite);
-		bufferIndex += 8;
-		pInc(8);
-	}
-	void DataCompressionLayer::writeDouble(double toWrite)
-	{
-		makeRoom(8);
-		ByteUtilities::writeLong(inBuf + bufferIndex, ByteUtilities::convertDoubleToLong(toWrite));
-		bufferIndex += 8;
-		pInc(8);
-	}
-	void DataCompressionLayer::writeFile(FILE* toWrite)
-	{
-		while (!feof(toWrite))
-		{
-			makeRoom(BUFFER_SIZE);
-			assert(bufferIndex == 0);
-			unsigned int read= fread(inBuf, sizeof(char), BUFFER_SIZE, toWrite);
-			bufferIndex += read;
-			pInc(read);
-		}
-		flush();
-	}
-	void DataCompressionLayer::flush()
-	{
-		softFlush(Z_FINISH);
-	}
-	void DataCompressionLayer::makeRoom(int count)
-	{
-		if (count + bufferIndex > BUFFER_SIZE)
-			softFlush(Z_NO_FLUSH);
-	}
-	void DataCompressionLayer::softFlush(int flushType)
-	{
+        void DataCompressionLayer::writeInt(int toWrite)
+        {
+                makeRoom(4);
+                ByteUtilities::writeInt(inBuf + bufferIndex, toWrite);
+                bufferIndex += 4;
+                pInc(4);
+        }
+        void DataCompressionLayer::writeLong(uint64_t toWrite)
+        {
+                makeRoom(8);
+                ByteUtilities::writeLong(inBuf + bufferIndex, toWrite);
+                bufferIndex += 8;
+                pInc(8);
+        }
+        void DataCompressionLayer::writeDouble(double toWrite)
+        {
+                makeRoom(8);
+                ByteUtilities::writeLong(inBuf + bufferIndex, ByteUtilities::convertDoubleToLong(toWrite));
+                bufferIndex += 8;
+                pInc(8);
+        }
+        void DataCompressionLayer::writeFile(FILE* toWrite)
+        {
+                while (!feof(toWrite))
+                {
+                        makeRoom(BUFFER_SIZE);
+                        assert(bufferIndex == 0);
+                        unsigned int read= fread(inBuf, sizeof(char), BUFFER_SIZE, toWrite);
+                        bufferIndex += read;
+                        pInc(read);
+                }
+                flush();
+        }
+        void DataCompressionLayer::flush()
+        {
+                softFlush(Z_FINISH);
+        }
+        void DataCompressionLayer::makeRoom(int count)
+        {
+                if (count + bufferIndex > BUFFER_SIZE)
+                        softFlush(Z_NO_FLUSH);
+        }
+        void DataCompressionLayer::softFlush(int flushType)
+        {
 
-		/* run deflate() on input until output buffer not full, finish
-		 compression if all of source has been read in */
+                /* run deflate() on input until output buffer not full, finish
+                 compression if all of source has been read in */
 
-		//Adapted from http://www.zlib.net/zpipe.c
-		compressor.avail_in = bufferIndex;
-		compressor.next_in = (unsigned char*)inBuf;
-		do
-		{
-			compressor.avail_out = outBufferCurrentSize - posInCompBuffer;
-			assert(outBufferCurrentSize > posInCompBuffer);
-			DEBUGCOUT(2) << "Avail out: " << outBufferCurrentSize - posInCompBuffer<<endl;
-			compressor.next_out = outBuf + posInCompBuffer;
-			int ret = deflate(&compressor, flushType); /* no bad return value */
-			if (ret == Z_STREAM_ERROR)
-				cerr<<"zlib stream error."<<endl;	/* state not clobbered */
+                //Adapted from http://www.zlib.net/zpipe.c
+                compressor.avail_in = bufferIndex;
+                compressor.next_in = (unsigned char*)inBuf;
+                do
+                {
+                        compressor.avail_out = outBufferCurrentSize - posInCompBuffer;
+                        assert(outBufferCurrentSize > posInCompBuffer);
+                        DEBUGCOUT(2) << "Avail out: " << outBufferCurrentSize - posInCompBuffer<<endl;
+                        compressor.next_out = outBuf + posInCompBuffer;
+                        int ret = deflate(&compressor, flushType); /* no bad return value */
+                        if (ret == Z_STREAM_ERROR)
+                                cerr<<"zlib stream error."<<endl;       /* state not clobbered */
 
-			posInCompBuffer  = outBufferCurrentSize - compressor.avail_out;
-			if (posInCompBuffer == outBufferCurrentSize)
-				//Shoot, our output buffer is full...
-				growOutputBuffer();
+                        posInCompBuffer  = outBufferCurrentSize - compressor.avail_out;
+                        if (posInCompBuffer == outBufferCurrentSize)
+                                //Shoot, our output buffer is full...
+                                growOutputBuffer();
 
-		} while (compressor.avail_out == 0);
-		assert(compressor.avail_in == 0);
+                } while (compressor.avail_out == 0);
+                assert(compressor.avail_in == 0);
 
-		bufferIndex = 0;
-	}
+                bufferIndex = 0;
+        }
 
-	void DataCompressionLayer::growOutputBuffer()
-	{
-		unsigned char* newBuffer = new unsigned char[outBufferCurrentSize * BUFFER_GROW_FACTOR];
-		copy(outBuf, outBuf + outBufferCurrentSize, newBuffer);
+        void DataCompressionLayer::growOutputBuffer()
+        {
+                unsigned char* newBuffer = new unsigned char[outBufferCurrentSize * BUFFER_GROW_FACTOR];
+                copy(outBuf, outBuf + outBufferCurrentSize, newBuffer);
 
-		delete[] outBuf;
+                delete[] outBuf;
 
-		outBufferCurrentSize*= BUFFER_GROW_FACTOR;
-		outBuf = newBuffer;
-	}
+                outBufferCurrentSize*= BUFFER_GROW_FACTOR;
+                outBuf = newBuffer;
+        }
 
-	void DataCompressionLayer::pInc(unsigned int count)
-	{
-		if (progMonitor != NULL)
-			progMonitor->incrementProgress(count);
-	}
+        void DataCompressionLayer::pInc(unsigned int count)
+        {
+                if (progMonitor != NULL)
+                        progMonitor->incrementProgress(count);
+        }
 
-	unsigned char* DataCompressionLayer::getOutputBuffer()
-	{
-		return outBuf;
-	}
-	int DataCompressionLayer::getOutputLength()
-	{
-		return posInCompBuffer;
-	}
-	DataCompressionLayer::~DataCompressionLayer()
-	{
-		deflateEnd(&compressor);
-		delete[] inBuf;
-		delete[] outBuf;
-	}
+        unsigned char* DataCompressionLayer::getOutputBuffer()
+        {
+                return outBuf;
+        }
+        int DataCompressionLayer::getOutputLength()
+        {
+                return posInCompBuffer;
+        }
+        DataCompressionLayer::~DataCompressionLayer()
+        {
+                deflateEnd(&compressor);
+                delete[] inBuf;
+                delete[] outBuf;
+        }
 
 } /* namespace TraceviewerServer */

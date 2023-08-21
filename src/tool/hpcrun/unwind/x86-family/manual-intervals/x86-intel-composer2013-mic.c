@@ -78,7 +78,7 @@ x86_adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
   // NOTE: the two signatures above are the same length. The next three lines of code below depend upon that.
   int siglen = sizeof(intelmic_comp13_for_main_signature);
   if (len > siglen && ((strncmp((char *)intelmic_comp13_for_main_signature, ins, siglen) == 0) ||
-		       (strncmp((char *)intelmic_comp13_kmp_alloc_thread_signature, ins, siglen) == 0))) {
+                       (strncmp((char *)intelmic_comp13_kmp_alloc_thread_signature, ins, siglen) == 0))) {
     // signature matched
     unwind_interval *ui = stat->first;
 
@@ -86,8 +86,8 @@ x86_adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
     while(ui) {
        x86recipe_t *xr = UWI_RECIPE(ui);
        if (xr->ra_status == RA_STD_FRAME){
-    	xr->reg.bp_ra_pos = 8;
-    	xr->reg.bp_bp_pos = 0;
+        xr->reg.bp_ra_pos = 8;
+        xr->reg.bp_bp_pos = 0;
       }
       ui = UWI_NEXT(ui);
     }

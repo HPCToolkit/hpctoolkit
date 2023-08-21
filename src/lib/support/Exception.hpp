@@ -113,10 +113,10 @@ namespace Diagnostics {
     // constructor/destructor
     // -------------------------------------------------------
     Exception(const char* x,
-	      const char* filenm = NULL, unsigned int lineno = 0);
+              const char* filenm = NULL, unsigned int lineno = 0);
 
     Exception(const std::string x,
-	      const char* filenm = NULL, unsigned int lineno = 0);
+              const char* filenm = NULL, unsigned int lineno = 0);
 
     virtual ~Exception();
 
@@ -143,7 +143,7 @@ namespace Diagnostics {
 
   protected:
     void Ctor(const std::string& x,
-	      const char* filenm = NULL, unsigned int lineno = 0);
+              const char* filenm = NULL, unsigned int lineno = 0);
 
     std::string mWhat;
     std::string mWhere;
@@ -156,10 +156,10 @@ namespace Diagnostics {
     // constructor/destructor
     // -------------------------------------------------------
     FatalException(const char* x,
-		   const char* filenm = NULL, unsigned int lineno = 0);
+                   const char* filenm = NULL, unsigned int lineno = 0);
 
     FatalException(const std::string x,
-		   const char* filenm = NULL, unsigned int lineno = 0);
+                   const char* filenm = NULL, unsigned int lineno = 0);
 
     virtual ~FatalException();
 

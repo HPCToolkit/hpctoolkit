@@ -95,7 +95,7 @@ static void handle_any_dlerror();
 
 int
 lush_agent__init(lush_agent_t* x, int id, const char* path,
-		 lush_agent_pool_t* pool)
+                 lush_agent_pool_t* pool)
 {
   x->id = id;
 
@@ -106,7 +106,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
   x->dlhandle = monitor_real_dlopen(path, RTLD_LAZY);
   handle_any_dlerror();
 
-#define CALL_DLSYM(BASE, X, ID, HANDLE)	       \
+#define CALL_DLSYM(BASE, X, ID, HANDLE)        \
   BASE->X[ID] = (X ## _fn_t)dlsym(HANDLE, #X); \
   handle_any_dlerror()
 
@@ -123,10 +123,10 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
 #undef CALL_DLSYM
 
   pool->LUSHI_init[x->id](0, NULL, id,
-			  (LUSHCB_malloc_fn_t)NULL,
-			  (LUSHCB_free_fn_t)NULL,
-			  (LUSHCB_step_fn_t)hpcrun_unw_step,
-			  LUSHCB_loadmap_find);
+                          (LUSHCB_malloc_fn_t)NULL,
+                          (LUSHCB_free_fn_t)NULL,
+                          (LUSHCB_step_fn_t)hpcrun_unw_step,
+                          LUSHCB_loadmap_find);
   return 0;
 }
 
@@ -229,7 +229,7 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
 
 void
 lush_init_unw(lush_cursor_t* cursor,
-	      lush_agent_pool_t* apool, ucontext_t* context)
+              lush_agent_pool_t* apool, ucontext_t* context)
 {
   memset(cursor, 0, sizeof(*cursor));
 

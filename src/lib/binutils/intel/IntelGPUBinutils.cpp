@@ -179,11 +179,11 @@ findIntelGPUBins
       // Compute hash for the kernel name
       char kernel_name_hash[CRYPTO_HASH_STRING_LENGTH];
       crypto_compute_hash_string(kernel_name.c_str(),
-				 kernel_name.size(),
-				 kernel_name_hash, sizeof(kernel_name_hash));
+                                 kernel_name.size(),
+                                 kernel_name_hash, sizeof(kernel_name_hash));
 
       std::string real_kernel_name =
-	file_name + "." + std::string((char *)kernel_name_hash);
+        file_name + "." + std::string((char *)kernel_name_hash);
 
       auto elf_file = new ElfFile;
       if (elf_file->open(kernel_buffer, kernel_size, real_kernel_name)) {

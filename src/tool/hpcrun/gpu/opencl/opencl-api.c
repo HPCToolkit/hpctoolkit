@@ -130,7 +130,7 @@
   macro(clSetEventCallback) \
   macro(clReleaseKernel)  \
   macro(clWaitForEvents)  \
-  macro(clFinish)	\
+  macro(clFinish)       \
   macro(clReleaseKernel)  \
   macro(clReleaseCommandQueue)
 
@@ -528,7 +528,7 @@ opencl_device_count
   cl_uint num_devices;
 
   cl_int ret = cl_get_program_info(program, CL_PROGRAM_NUM_DEVICES,
-				   sizeof(cl_uint), &num_devices, 0);
+                                   sizeof(cl_uint), &num_devices, 0);
 
   if (ret != CL_SUCCESS) num_devices = 0;
 
@@ -545,7 +545,7 @@ opencl_binary_sizes
 )
 {
   cl_int ret = cl_get_program_info(program, CL_PROGRAM_BINARY_SIZES,
-				   device_count * sizeof(size_t), binary_sizes, 0);
+                                   device_count * sizeof(size_t), binary_sizes, 0);
   return ret;
 }
 
@@ -577,18 +577,18 @@ opencl_binaries
       if (binaries == 0) goto no_binaries;
 
       for(i = 0; i < num_devices; i++){
-	if (binary_sizes[i] > 0) {
-	  binaries[i] = (unsigned char *) malloc(binary_sizes[i]);
-	  if (binaries[i] == 0) goto not_all_binaries;
-	} else {
-	  binaries[i] = 0;
-	}
+        if (binary_sizes[i] > 0) {
+          binaries[i] = (unsigned char *) malloc(binary_sizes[i]);
+          if (binaries[i] == 0) goto not_all_binaries;
+        } else {
+          binaries[i] = 0;
+        }
       }
     }
   }
 
   cl_int ret = cl_get_program_info(program, CL_PROGRAM_BINARIES,
-				   num_devices * sizeof(unsigned char *), binaries, 0);
+                                   num_devices * sizeof(unsigned char *), binaries, 0);
 
   if (ret != CL_SUCCESS) goto error;
 
@@ -1103,10 +1103,10 @@ opencl_activity_completion_callback
   }
 
   if (is_opencl_blame_shifting_enabled() && cb_data->kind == GPU_ACTIVITY_KERNEL && event_command_exec_status == CL_COMPLETE) {
-		opencl_kernel_epilogue(event);
-	}
+                opencl_kernel_epilogue(event);
+        }
 
-	if (cb_data->internal_event) {
+        if (cb_data->internal_event) {
     HPCRUN_OPENCL_CALL(clReleaseEvent, (event));
   }
 
@@ -1193,9 +1193,9 @@ hpcrun_clBuildProgram
   #endif
   cl_int ret =
     HPCRUN_OPENCL_CALL(clBuildProgram,
-		       (program, num_devices, device_list,
-			options_with_debug_flags, clBuildProgramCallback,
-			user_data));
+                       (program, num_devices, device_list,
+                        options_with_debug_flags, clBuildProgramCallback,
+                        user_data));
   free(options_with_debug_flags);
 
   {
@@ -1204,10 +1204,10 @@ hpcrun_clBuildProgram
     size_t *binary_sizes;
     if (opencl_binaries(program, &num_devices, &binaries, &binary_sizes)) {
       for (cl_uint i = 0; i < num_devices; i++) {
-	if (binary_sizes[i] > 0) {
-	  opencl_write_debug_binary(binaries[i], binary_sizes[i]);
-	  free(binaries[i]);
-	}
+        if (binary_sizes[i] > 0) {
+          opencl_write_debug_binary(binaries[i], binary_sizes[i]);
+          free(binaries[i]);
+        }
       }
       free(binary_sizes);
       free(binaries);
@@ -1264,9 +1264,9 @@ hpcrun_clCreateCommandQueue
     recordQueueContext(queue, context);
   }
 
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_queue_prologue(queue);
-	}
+        if(is_opencl_blame_shifting_enabled()) {
+                opencl_queue_prologue(queue);
+        }
   return queue;
 }
 
@@ -1335,9 +1335,9 @@ hpcrun_clCreateCommandQueueWithProperties
     recordQueueContext(queue, context);
   }
 
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_queue_prologue(queue);
-	}
+        if(is_opencl_blame_shifting_enabled()) {
+                opencl_queue_prologue(queue);
+        }
 
   if (optimization_check && *errcode_ret == CL_SUCCESS) {
     recordQueueContext(queue, context);
@@ -1401,9 +1401,9 @@ hpcrun_clEnqueueNDRangeKernel
 
   opencl_subscriber_callback(kernel_info);
 
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_kernel_prologue(*eventp, module_id);
-	}
+        if(is_opencl_blame_shifting_enabled()) {
+                opencl_kernel_prologue(*eventp, module_id);
+        }
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
                 "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
@@ -1652,8 +1652,8 @@ hpcrun_clSetKernelArg
 cl_int
 hpcrun_clWaitForEvents
 (
-	cl_uint num_events,
-	const cl_event* event_list
+        cl_uint num_events,
+        const cl_event* event_list
 )
 {
   ETMSG(OPENCL, "clWaitForEvents called");
@@ -1692,7 +1692,7 @@ hpcrun_clReleaseMemObject
   if (optimization_check && status == CL_SUCCESS) {
     clearBufferEntry(mem);
   }
-	return status;
+        return status;
 }
 
 
@@ -1755,7 +1755,7 @@ get_numeric_hash_id_for_string
 cl_int
 hpcrun_clFinish
 (
-	cl_command_queue command_queue
+        cl_command_queue command_queue
 )
 {
   ETMSG(OPENCL, "clFinish called");
@@ -1790,7 +1790,7 @@ opencl_blame_shifting_enable
 )
 {
   ENABLE_BLAME_SHIFTING = true;
-	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
+        ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
 }
 
 

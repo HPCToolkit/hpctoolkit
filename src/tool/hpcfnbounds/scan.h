@@ -56,7 +56,7 @@
 #include  <elf.h>
 #include  <libelf.h>
 #include  <gelf.h>
-#include 	<dwarf.h>
+#include        <dwarf.h>
 
 typedef struct __ehRecord {
   Elf_Scn   *ehHdrSection;
@@ -94,14 +94,14 @@ typedef struct __ehDecodeRecord {
 
 
 // prototypes
-uint64_t	pltscan(Elf *e, GElf_Shdr sh);
-uint64_t	pltsecscan(Elf *e, GElf_Shdr sh);
-uint64_t	initscan(Elf *e, GElf_Shdr sh);
-uint64_t	textscan(Elf *e, GElf_Shdr sh);
-uint64_t	finiscan(Elf *e, GElf_Shdr sh);
-uint64_t	altinstr_replacementscan(Elf *e, GElf_Shdr sh);
-uint64_t	ehframescan(Elf *e, ehRecord_t *ehRecord);
-uint64_t 	skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag);
+uint64_t        pltscan(Elf *e, GElf_Shdr sh);
+uint64_t        pltsecscan(Elf *e, GElf_Shdr sh);
+uint64_t        initscan(Elf *e, GElf_Shdr sh);
+uint64_t        textscan(Elf *e, GElf_Shdr sh);
+uint64_t        finiscan(Elf *e, GElf_Shdr sh);
+uint64_t        altinstr_replacementscan(Elf *e, GElf_Shdr sh);
+uint64_t        ehframescan(Elf *e, ehRecord_t *ehRecord);
+uint64_t        skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag);
 uint64_t  decodeULEB128(uint8_t *input, uint64_t *sizeInBytes);
 int64_t   decodeSLEB128(uint8_t *input, uint64_t *sizeInBytes);
 uint64_t  decodeDwarfAddress(uint8_t *, ehDecodeRecord_t *, uint64_t *, char *);
@@ -115,11 +115,11 @@ uint64_t  unalignedEndianRead(uint8_t *, size_t, uint64_t);
 #define EHF_CIE_EXTREC    (0xfffffffful)
 #define EHF_FDE_DMASK     (0x0f)
 #define EHF_FDE_OMASK     (0xf0)
-#define EHF_CF_DONE	      (0)
-#define EHF_CF_CONT	      (1)
-#define EHF_WO_TYPE	      (1)
-#define EHF_WO_FS	        (2)
-#define EHF_TP_CIE	      (0)
+#define EHF_CF_DONE           (0)
+#define EHF_CF_CONT           (1)
+#define EHF_WO_TYPE           (1)
+#define EHF_WO_FS               (2)
+#define EHF_TP_CIE            (0)
 #define EHF_SLEB128_ERROR (-1)
 #define EHF_ULEB128_ERROR (0xffffffffffffffffull)
 #define EHF_DECDWRF_ERROR (0xffffffffffffffffull)

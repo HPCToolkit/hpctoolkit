@@ -92,25 +92,25 @@ HasANodeTy(const ANode& node, long type)
 
 const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyRoot).c_str(), ANode::TyRoot),
+              ANode::ANodeTyToName(ANode::TyRoot).c_str(), ANode::TyRoot),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyGroup).c_str(), ANode::TyGroup),
+              ANode::ANodeTyToName(ANode::TyGroup).c_str(), ANode::TyGroup),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyLM).c_str(), ANode::TyLM),
+              ANode::ANodeTyToName(ANode::TyLM).c_str(), ANode::TyLM),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyFile).c_str(), ANode::TyFile),
+              ANode::ANodeTyToName(ANode::TyFile).c_str(), ANode::TyFile),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyProc).c_str(), ANode::TyProc),
+              ANode::ANodeTyToName(ANode::TyProc).c_str(), ANode::TyProc),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyAlien).c_str(), ANode::TyAlien),
+              ANode::ANodeTyToName(ANode::TyAlien).c_str(), ANode::TyAlien),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyLoop).c_str(), ANode::TyLoop),
+              ANode::ANodeTyToName(ANode::TyLoop).c_str(), ANode::TyLoop),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyStmt).c_str(), ANode::TyStmt),
+              ANode::ANodeTyToName(ANode::TyStmt).c_str(), ANode::TyStmt),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyRef).c_str(), ANode::TyRef),
+              ANode::ANodeTyToName(ANode::TyRef).c_str(), ANode::TyRef),
   ANodeFilter(HasANodeTy,
-	      ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
+              ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
 };
 
 
@@ -130,9 +130,9 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
 
 ANodeSortedIterator::
 ANodeSortedIterator(const ANode* node,
-		    ANodeSortedIterator::cmp_fptr_t compare_fn,
-		    const ANodeFilter* filterFunc,
-		    bool leavesOnly)
+                    ANodeSortedIterator::cmp_fptr_t compare_fn,
+                    const ANodeFilter* filterFunc,
+                    bool leavesOnly)
 {
   ANodeIterator it(node, filterFunc, leavesOnly);
   for (ANode* cur = NULL; (cur = it.current()); it++) {
@@ -188,8 +188,8 @@ ANodeSortedIterator::cmpById(const void* a, const void* b)
 
 ANodeSortedChildIterator::
 ANodeSortedChildIterator(const ANode* node,
-			 ANodeSortedIterator::cmp_fptr_t compare_fn,
-			 const ANodeFilter* f)
+                         ANodeSortedIterator::cmp_fptr_t compare_fn,
+                         const ANodeFilter* f)
 {
   ANodeChildIterator it(node, f);
   for (ANode* cur = NULL; (cur = it.current()); it++) {

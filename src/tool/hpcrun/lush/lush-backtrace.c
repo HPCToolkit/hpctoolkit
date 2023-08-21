@@ -88,7 +88,7 @@
 
 static frame_t*
 canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
-		   unsigned int pchord_len, unsigned int lchord_len);
+                   unsigned int pchord_len, unsigned int lchord_len);
 
 
 //***************************************************************************
@@ -105,9 +105,9 @@ bool is_lush_agent = false;
 
 cct_node_t*
 lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-		   int metricId,
+                   int metricId,
                    hpcrun_metricVal_t metricIncr,
-		   int skipInner, int isSync)
+                   int skipInner, int isSync)
 {
   // ---------------------------------------------------------
   // Record backtrace if:
@@ -125,8 +125,8 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   if (metricId == lush_agents->metric_time) {
     lush_agentid_t aid = 1; // TODO: multiple agents
     if (lush_agents->LUSHI_do_metric[aid](metricIncr.i,
-					  &doMetric, &doMetricIdleness,
-					  &incrMetric, &incrMetricIdleness)) {
+                                          &doMetric, &doMetricIdleness,
+                                          &incrMetric, &incrMetricIdleness)) {
       //aidMetricIdleness = aid; // case 1
     }
   }
@@ -160,7 +160,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   lush_step_t ty = LUSH_STEP_NULL;
 
   while ( (ty = lush_step_bichord(&cursor)) != LUSH_STEP_END_PROJ
-	  && ty != LUSH_STEP_ERROR ) {
+          && ty != LUSH_STEP_ERROR ) {
     lush_agentid_t aid = lush_cursor_get_aid(&cursor);
     lush_assoc_t as = lush_cursor_get_assoc(&cursor);
 
@@ -181,7 +181,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
       //unw_word_t ip = lush_cursor_get_ip(&cursor);
       ip_normalized_t ip_norm = lush_cursor_get_ip_norm(&cursor);
       TMSG(LUNW, "IP:  lm-id = %d and lm-ip = %p", ip_norm.lm_id,
-	   ip_norm.lm_ip);
+           ip_norm.lm_ip);
       td->btbuf_cur->ip_norm = ip_norm;
 
       pchord_len++;
@@ -201,14 +201,14 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
       TMSG(LUNW, "LIP: %p", *((void**)lip));
 
       if (lush_assoc_is_a_to_1(as)) {
-	if (!lip_persistent) {
-	  lip_persistent = lush_lip_clone(lip);
-	}
-	// else: lip_persistent is already set
+        if (!lip_persistent) {
+          lip_persistent = lush_lip_clone(lip);
+        }
+        // else: lip_persistent is already set
       }
       else {
-	// INVARIANT: as must be 1-to-M
-	lip_persistent = lush_lip_clone(lip);
+        // INVARIANT: as must be 1-to-M
+        lip_persistent = lush_lip_clone(lip);
       }
       td->btbuf_cur->lip = lip_persistent;
 
@@ -247,14 +247,14 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
   cct_node_t* node = NULL;
   node = hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
-					      bt_end, bt_beg,
-					      metricIncr, NULL);
+                                              bt_end, bt_beg,
+                                              metricIncr, NULL);
 
   if (doMetricIdleness) {
     // lush_agentid_t aid = aidMetricIdleness;
     int mid = lush_agents->metric_idleness;
     cct_metric_data_increment(mid, node,
-			      (cct_metric_data_t){.r = incrMetricIdleness});
+                              (cct_metric_data_t){.r = incrMetricIdleness});
   }
 
   // FIXME: register active return
@@ -266,7 +266,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 // returns the end of the chord (exclusive)
 static frame_t*
 canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
-		   unsigned int pchord_len, unsigned int lchord_len)
+                   unsigned int pchord_len, unsigned int lchord_len)
 {
   // Set assoc and fill empty p-notes/l-notes
 

@@ -60,4 +60,4 @@ queue_map_entry_queue_node_get
  queue_map_entry_t *entry
 );
 
-#endif		// blame_queue_map_h_
+#endif          // blame_queue_map_h_

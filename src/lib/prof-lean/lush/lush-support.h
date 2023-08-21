@@ -148,7 +148,7 @@ enum lush_assoc {
   LUSH_ASSOC_M_to_0 = MKASSOC1(2, LUSH_ASSOC_CLASS_a_to_0), // M-to-0
 
   LUSH_ASSOC_1_to_1 = MKASSOC2(3, LUSH_ASSOC_CLASS_a_to_1,
-			          LUSH_ASSOC_CLASS_1_to_a), // 1-to-1
+                                  LUSH_ASSOC_CLASS_1_to_a), // 1-to-1
 
   LUSH_ASSOC_M_to_1 = MKASSOC1(4, LUSH_ASSOC_CLASS_a_to_1), // M-to-1
 
@@ -230,7 +230,7 @@ static inline bool
 lush_assoc_class_eq(lush_assoc_t x, lush_assoc_t y)
 {
   return ( ((x) == (y)) /* handles x == y == LUSH_ASSOC_NULL */
-	   || (lush_assoc_class(x) & lush_assoc_class(y)) );
+           || (lush_assoc_class(x) & lush_assoc_class(y)) );
 }
 
 static inline bool
@@ -261,8 +261,8 @@ lush_assoc_info__set_assoc(lush_assoc_info_t& x, lush_assoc_t new_as)
   x->u.as = (new_as);
 }
 #else
-#define lush_assoc_info__set_assoc(/*lush_assoc_info_t*/ x,	    \
-				   /*lush_assoc_t*/ new_as)	    \
+#define lush_assoc_info__set_assoc(/*lush_assoc_info_t*/ x,         \
+                                   /*lush_assoc_t*/ new_as)         \
   (x).u.as = (new_as)
 #endif
 
@@ -273,8 +273,8 @@ lush_assoc_info__set_path_len(lush_assoc_info_t& x, uint32_t new_len)
   x->.u.len = (new_len);
 }
 #else
-#define lush_assoc_info__set_path_len(/*lush_assoc_info_t*/ x,	\
-				      /*uint32_t*/ new_len)	\
+#define lush_assoc_info__set_path_len(/*lush_assoc_info_t*/ x,  \
+                                      /*uint32_t*/ new_len)     \
   (x).u.len = (new_len)
 #endif
 
@@ -327,8 +327,8 @@ static inline bool
 lush_lip_eq(const lush_lip_t* x, const lush_lip_t* y)
 {
   return ((x == y) || (x && y
-		       && x->data8[0] == y->data8[0]
-		       && x->data8[1] == y->data8[1]));
+                       && x->data8[0] == y->data8[0]
+                       && x->data8[1] == y->data8[1]));
 }
 
 static inline bool

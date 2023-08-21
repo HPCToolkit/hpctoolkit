@@ -114,7 +114,7 @@ time_getTime_us(clockid_t clockid, uint64_t* time)
     return 1;
   }
   *time = (time_cvtNanosecToMicrosecs(ts.tv_nsec)
-	   + time_cvtSecToMicrosecs(ts.tv_sec));
+           + time_cvtSecToMicrosecs(ts.tv_sec));
   return 0;
 }
 
@@ -173,12 +173,12 @@ time_getTSC()
 
   uint32_t hi, lo, tmp;
   asm volatile("0:               \n"
-	       "\tmftbu   %0     \n"
-	       "\tmftb    %1     \n"
-	       "\tmftbu   %2     \n"
-	       "\tcmpw    %2,%0  \n"
-	       "\tbne     0b     \n"
-	       : "=r" (hi), "=r" (lo), "=r" (tmp));
+               "\tmftbu   %0     \n"
+               "\tmftb    %1     \n"
+               "\tmftbu   %2     \n"
+               "\tcmpw    %2,%0  \n"
+               "\tbne     0b     \n"
+               : "=r" (hi), "=r" (lo), "=r" (tmp));
   tsc = (((uint64_t)hi) << 32) | ((uint64_t)lo);
 
 #else

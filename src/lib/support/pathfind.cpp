@@ -69,8 +69,8 @@ using namespace std; // For compatibility with non-std C headers
 
 char*
 pathfind(const char* pathList,
-	 const char* name,
-	 const char* mode)
+         const char* name,
+         const char* mode)
 {
   static __thread char* result = NULL;
   int   accessFlags = 0;
@@ -143,8 +143,8 @@ pathfind(const char* pathList,
 int
 main (int argc, const char *argv[])
 {
-  int	i;
-  char*	res;
+  int   i;
+  char* res;
 
   for (i = 1; i < argc; i++) {
     res = pathfind (getenv ("PATH"), argv[i], "r");

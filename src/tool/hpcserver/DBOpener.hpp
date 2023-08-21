@@ -68,19 +68,19 @@ using namespace std;
 namespace TraceviewerServer
 {
 
-	class DBOpener
-	{
-	public:
-		DBOpener();
-		virtual ~DBOpener();
+        class DBOpener
+        {
+        public:
+                DBOpener();
+                virtual ~DBOpener();
 
-		SpaceTimeDataController* openDbAndCreateStdc(string);
-	private:
-		static const unsigned int MIN_TRACE_SIZE = 32 + 8 + 24
-				+ SIZE_OF_TRACE_RECORD * 2;
-		static bool verifyDatabase(string, FileData*);
+                SpaceTimeDataController* openDbAndCreateStdc(string);
+        private:
+                static const unsigned int MIN_TRACE_SIZE = 32 + 8 + 24
+                                + SIZE_OF_TRACE_RECORD * 2;
+                static bool verifyDatabase(string, FileData*);
 
-	};
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* LOCALDBOPENER_H_ */

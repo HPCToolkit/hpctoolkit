@@ -158,9 +158,9 @@ is_papi_c_cuda(const char* name)
 
 static void CUPTIAPI
 hpcrun_cuda_kernel_callback(void* userdata,
-			    CUpti_CallbackDomain domain,
-			    CUpti_CallbackId cbid,
-			    const CUpti_CallbackData* cbInfo)
+                            CUpti_CallbackDomain domain,
+                            CUpti_CallbackId cbid,
+                            const CUpti_CallbackData* cbInfo)
 {
   TMSG(CUDA, "Got Kernel Callback");
 
@@ -175,7 +175,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
   // This callback is enabled only for kernel launch; anything else is an error.
   if (cbid != CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020) {
     hpcrun_abort("CUDA CUPTI callback seen for unexpected "
-		 "interface operation: callback id  %d\n", cbid);
+                 "interface operation: callback id  %d\n", cbid);
   }
 
   if (cbInfo->callbackSite == CUPTI_API_ENTER) {
@@ -191,7 +191,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
     int ret = PAPI_start(cudaEventSet);
     if (ret != PAPI_OK){
       EMSG("CUDA monitoring failed to start. PAPI_start failed with %s (%d)",
-	   PAPI_strerror(ret), ret);
+           PAPI_strerror(ret), ret);
     }
   }
   TMSG(CUDA, "Past (or done with) CUDA -ENTER- portion");
@@ -208,7 +208,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
     int ret = PAPI_stop(cudaEventSet, eventValues);
     if (ret != PAPI_OK){
       EMSG("CUDA monitoring failed to -stop-. PAPI_stop failed with %s (%d)",
-	   PAPI_strerror(ret), ret);
+           PAPI_strerror(ret), ret);
     }
     TMSG(CUDA,"stopped CUDA monitoring w event set %d",cudaEventSet);
 
@@ -221,15 +221,15 @@ hpcrun_cuda_kernel_callback(void* userdata,
     {
       int i;
       for (i = 0; i < nevents; i++)
-	{
-	  int metric_id = hpcrun_event2metric(self, i);
+        {
+          int metric_id = hpcrun_event2metric(self, i);
 
-	  TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
-	  hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/,
-				 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/,
-				 0/*isSync*/, NULL);
-	  TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
-	}
+          TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
+          hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/,
+                                 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/,
+                                 0/*isSync*/, NULL);
+          TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
+        }
     }
     TMSG(CUDA,"unblocking async event in CUDA event handler");
     if (safe) hpcrun_safe_exit();

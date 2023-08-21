@@ -121,15 +121,15 @@ public:
   bool analyze_gpu_binaries ;     // default: true
   bool compute_gpu_cfg;
   std::string meas_dir;
-  bool is_from_makefile;	// set true if -M argument is seen
-  cachestat_t cache_stat;	// reflects cache interactions for the binary
+  bool is_from_makefile;        // set true if -M argument is seen
+  cachestat_t cache_stat;       // reflects cache interactions for the binary
 
   // Parsed Data: optional arguments
   std::string searchPathStr;          // default: "."
   std::string dbgProcGlob;
 
   bool pretty_print_output;       // default: false
-  bool useBinutils;		  // default: false
+  bool useBinutils;               // default: false
   bool show_gaps;                 // default: false
   bool nocache;                   // default: false
 

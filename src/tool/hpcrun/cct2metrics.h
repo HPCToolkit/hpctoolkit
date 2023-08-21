@@ -63,8 +63,8 @@ typedef enum {SET, INCR} update_metric_t;
 
 static inline void
 cct_metric_data_update(int metric_id,
-			  cct_node_t* x, update_metric_t type,
-			  cct_metric_data_t incr)
+                          cct_node_t* x, update_metric_t type,
+                          cct_metric_data_t incr)
 {
   metric_data_list_t *set = hpcrun_reify_metric_set(x, metric_id);
 
@@ -77,16 +77,16 @@ cct_metric_data_update(int metric_id,
 
 static inline void
 cct_metric_data_set(int metric_id,
-			  cct_node_t* x,
-			  cct_metric_data_t val)
+                          cct_node_t* x,
+                          cct_metric_data_t val)
 {
   cct_metric_data_update(metric_id, x, SET, val);
 }
 
 static inline void
 cct_metric_data_increment(int metric_id,
-			  cct_node_t* x,
-			  cct_metric_data_t incr)
+                          cct_node_t* x,
+                          cct_metric_data_t incr)
 {
   cct_metric_data_update(metric_id, x, INCR, incr);
 }

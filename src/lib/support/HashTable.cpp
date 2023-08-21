@@ -210,7 +210,7 @@ void HashTable::Destroy ()
        for (unsigned int entryIndex = 0; entryIndex < nextSlot; entryIndex++)
          {
            EntryCleanup(cEntries);
-	   cEntries += entrySize;
+           cEntries += entrySize;
          }
        delete [] (char*)entries;
        delete [] (char*)indexSet;
@@ -481,7 +481,7 @@ void HashTable::Dump ()
 
       for (i =0; stp.Current(); stp++, i++) {
          cout << i << " : indx " << GetEntryIndex(stp.Current())
-		   << " : ptr  " << stp.Current() << endl;
+                   << " : ptr  " << stp.Current() << endl;
       }
    } else {
       cout << "     NOT CREATED" << endl;
@@ -654,20 +654,20 @@ int HashTable::QueryIndexSet (const void* entry, const bool addingEntry) const
 //
 //  The indexSet table can overflow for two very different reasons:
 //
-//  (1)	It is full.  This only happens with a reasonably good distribution
-//	from the Hash function.  (Check the collision limit code in
-//	HashTableIndexSet().  If we get here with a full table, we should add
-//	a reasonable increment -- after all, the indexSet table is designed
-//	to be a sparse table.  (See the code in HashTable() that picks the
-//	indexSet set size as a function of the number of requested slots.)
+//  (1) It is full.  This only happens with a reasonably good distribution
+//      from the Hash function.  (Check the collision limit code in
+//      HashTableIndexSet().  If we get here with a full table, we should add
+//      a reasonable increment -- after all, the indexSet table is designed
+//      to be a sparse table.  (See the code in HashTable() that picks the
+//      indexSet set size as a function of the number of requested slots.)
 //
 //  (2) We're getting bad behavior from the hash function and the table
-//	is moderately full.  (The combination of a table that is over
-//	50% full and an insertion that has more than ten probes triggers
-//	an overflow.)  In this case, we'd like to change the distribution.
-//	Typically, two factors make a difference here: the density of
-//	entries in the indexSet table and numerical properties involving
-//	the MOD operation in the hash function.
+//      is moderately full.  (The combination of a table that is over
+//      50% full and an insertion that has more than ten probes triggers
+//      an overflow.)  In this case, we'd like to change the distribution.
+//      Typically, two factors make a difference here: the density of
+//      entries in the indexSet table and numerical properties involving
+//      the MOD operation in the hash function.
 //
 //   So, after much discussion and some limited experimentation, we chose
 //   the following scheme.  The indexSet set size is enlarged by roughly the
@@ -704,7 +704,7 @@ void HashTable::OverflowIndexSet()
   else
     {                                   // big table => more careful choice
        size  = nextSlot & 0xFFFFFFFE;   // make it even
-       size += indexSetSize;	        // add number of entries to index set
+       size += indexSetSize;            // add number of entries to index set
     }
 
 # ifdef DEBUG
@@ -853,7 +853,7 @@ int StringEntryCompare (const void* entry1, const void* entry2)
 //
 //
 static unsigned int DefaultHashFunct (const void* GCC_ATTR_UNUSED entry,
-			      const unsigned int GCC_ATTR_UNUSED size)
+                              const unsigned int GCC_ATTR_UNUSED size)
 {
   DIAG_Die("Failure to specify HashFunct function.");
   return 0;
@@ -880,7 +880,7 @@ static unsigned int DefaultRehashFunct (const unsigned int oldHashValue, const u
 //
 //
 static int DefaultEntryCompare (const void* GCC_ATTR_UNUSED entry1,
-				const void* GCC_ATTR_UNUSED entry2)
+                                const void* GCC_ATTR_UNUSED entry2)
 {
   DIAG_Die("Failure to specify EntryCompare function.");
   return 0;

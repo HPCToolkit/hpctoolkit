@@ -154,7 +154,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd, hpcrun_trace_type_t type)
     cptd->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
 
     ret = hpcio_outbuf_attach(&cptd->trace_outbuf, fd, cptd->trace_buffer,
-			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED, hpcrun_malloc);
+                              HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED, hpcrun_malloc);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
@@ -194,9 +194,9 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd, hpcrun_trace_type_t type)
 void
 hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, unsigned int metric_id, uint64_t nanotime)
 {
-	if (tracing && hpcrun_sample_prob_active()) {
+        if (tracing && hpcrun_sample_prob_active()) {
         hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, INT_MAX, nanotime);
-	}
+        }
 }
 
 __thread uint64_t prev_nanotime = 0;

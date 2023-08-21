@@ -275,7 +275,7 @@ hpcstruct_cache_needs_cleanup
 
     // ignore "." and ".."
     if ((strcmp(d->d_name, ".") == 0) ||
-	(strcmp(d->d_name, "..") == 0)) continue;
+        (strcmp(d->d_name, "..") == 0)) continue;
 
     if (strcmp(hash, d->d_name) == 0) {
       // file is present; make sure it is properly formatted
@@ -286,13 +286,13 @@ hpcstruct_cache_needs_cleanup
         // an improperly formatted file is present
         fprintf (stderr, "  file %s is not a correctly formatted cache file\n", fname );
 
-	// set the name of incorrect file to be returned for replacement
+        // set the name of incorrect file to be returned for replacement
         ret = strdup(d->d_name);
-	break;
+        break;
 
       } else {
         // fprintf (stderr, "  file %s is a correctly formatted cache file\n", fname );
-        continue;	// Shouldn't this be "break;"  ??
+        continue;       // Shouldn't this be "break;"  ??
       }
 
     } else {
@@ -640,8 +640,8 @@ setup_cache_dir
     // no cache directory specified,
     if (warn) {
       DIAG_MsgIf_GENERIC
-	("ADVICE: ", warn, "See the usage message for how to use "
-	 "a structure cache to accelerate analysis of CPU and GPU binaries\n");
+        ("ADVICE: ", warn, "See the usage message for how to use "
+         "a structure cache to accelerate analysis of CPU and GPU binaries\n");
       warn = false;
     }
     return NULL;

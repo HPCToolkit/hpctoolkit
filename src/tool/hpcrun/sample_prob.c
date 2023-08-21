@@ -210,7 +210,7 @@ hpcrun_sample_prob_mesg(void)
 {
   if (prob_str_broken && (! prob_str_mesg) && sample_prob_ans) {
     EMSG("malformed probability in %s (%s), using default value of %f",
-	 HPCRUN_SAMPLE_PROB, sample_prob_str, DEFAULT_PROB);
+         HPCRUN_SAMPLE_PROB, sample_prob_str, DEFAULT_PROB);
     prob_str_mesg = 1;
   }
 }

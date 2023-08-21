@@ -101,11 +101,11 @@ static lush_agentid_t MY_lush_aid;
 
 extern int
 LUSHI_init(int argc, char** argv,
-	   lush_agentid_t           aid,
-	   LUSHCB_malloc_fn_t       malloc_fn,
-	   LUSHCB_free_fn_t         free_fn,
-	   LUSHCB_step_fn_t         step_fn,
-	   LUSHCB_loadmap_find_fn_t loadmap_fn)
+           lush_agentid_t           aid,
+           LUSHCB_malloc_fn_t       malloc_fn,
+           LUSHCB_free_fn_t         free_fn,
+           LUSHCB_step_fn_t         step_fn,
+           LUSHCB_loadmap_find_fn_t loadmap_fn)
 {
   MY_lush_aid = aid;
 
@@ -226,8 +226,8 @@ LUSHI_lip_write()
 
 extern bool
 LUSHI_do_metric(uint64_t incrMetricIn,
-		bool* doMetric, bool* doMetricIdleness,
-		uint64_t* incrMetric, double* incrMetricIdleness)
+                bool* doMetric, bool* doMetricIdleness,
+                uint64_t* incrMetric, double* incrMetricIdleness)
 {
   lushPthr_t* pthr = &TD_GET(pthr_metrics);
   bool isWorking = pthr->is_working;

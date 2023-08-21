@@ -217,9 +217,9 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\t\tComprehensive operation-level monitoring on an AMD GPU.\n"
-	 "\t\tCollect timing information on GPU kernel invocations,\n"
-	 "\t\tmemory copies, etc.\n",
-	 AMD_ROCM);
+         "\t\tCollect timing information on GPU kernel invocations,\n"
+         "\t\tmemory copies, etc.\n",
+         AMD_ROCM);
   printf("\n");
 }
 

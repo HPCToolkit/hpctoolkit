@@ -79,25 +79,25 @@
 // macros
 //*****************************************************************************
 
-#define st_insert				\
+#define st_insert                               \
   typed_splay_insert(device)
 
-#define st_lookup				\
+#define st_lookup                               \
   typed_splay_lookup(device)
 
-#define st_delete				\
+#define st_delete                               \
   typed_splay_delete(device)
 
-#define st_forall				\
+#define st_forall                               \
   typed_splay_forall(device)
 
-#define st_count				\
+#define st_count                                \
   typed_splay_count(device)
 
-#define st_alloc(free_list)			\
+#define st_alloc(free_list)                     \
   typed_splay_alloc(free_list, cuda_device_map_entry_t)
 
-#define st_free(free_list, node)		\
+#define st_free(free_list, node)                \
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node

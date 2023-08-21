@@ -84,11 +84,11 @@
 
 #define HPCRUN_HIP_API_CALL(fn, args)                              \
 {                                                                   \
-  hipError_t error_result = HIP_FN_NAME(fn) args;		    \
-  if (error_result != hipSuccess) {				    \
+  hipError_t error_result = HIP_FN_NAME(fn) args;                   \
+  if (error_result != hipSuccess) {                                 \
     ETMSG(CUDA, "hip api %s returned %d", #fn, (int) error_result);    \
-    exit(-1);							    \
-  }								    \
+    exit(-1);                                                       \
+  }                                                                 \
 }
 
 #define FORALL_HIP_ROUTINES(macro)             \

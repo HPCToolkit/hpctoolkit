@@ -130,8 +130,8 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
       // if only_func is a non-NULL character string, only produce
       // output for this function
       if (strcmp(only_func, func->name().c_str()) != 0) {
-	// name doesn't match only_func
-	continue;
+        // name doesn't match only_func
+        continue;
       }
     }
 
@@ -140,9 +140,9 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
     int num;
 
     *dotFile << "// --------------------------------------------------\n"
-	     << "// Procedure: '" << func->name() << "'\n\n"
-	     << "digraph \"" << func->name() << "\" {\n"
-	     << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
+             << "// Procedure: '" << func->name() << "'\n\n"
+             << "digraph \"" << func->name() << "\" {\n"
+             << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
 
     const ParseAPI::Function::blocklist & blist = func->blocks();
 
@@ -155,7 +155,7 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
       blockNum[block] = num;
 
       *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
-	       << "\\n0x" << block->end() << dec << "\" ];\n";
+               << "\\n0x" << block->end() << dec << "\" ];\n";
 
     }
     int endNum = num + 1;
@@ -175,10 +175,10 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
       num++;
 
       for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
-	mit = blockNum.find((*eit)->trg());
-	if (mit != blockNum.end()) {
-	  *dotFile << "  " << num << " -> " << mit->second << ";\n";
-	}
+        mit = blockNum.find((*eit)->trg());
+        if (mit != blockNum.end()) {
+          *dotFile << "  " << num << " -> " << mit->second << ";\n";
+        }
       }
     }
 
@@ -188,7 +188,7 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
       Block * block = *bit;
       mit = blockNum.find(block);
       if (mit != blockNum.end()) {
-	*dotFile << "  " << mit->second << " -> " << endNum << ";\n";
+        *dotFile << "  " << mit->second << " -> " << endNum << ";\n";
       }
     }
 
@@ -230,18 +230,18 @@ getOptions(int argc, char **argv, Options & opts)
     }
     else if (arg == "-f") {
       if (n + 1 >= argc) {
-	usage("missing arg for -f");
+        usage("missing arg for -f");
       }
       opts.func = argv[n + 1];
       n += 2;
     }
     else if (arg == "-j") {
       if (n + 1 >= argc) {
-	usage("missing arg for -j");
+        usage("missing arg for -j");
       }
       opts.jobs = atoi(argv[n + 1]);
       if (opts.jobs <= 0) {
-	errx(1, "bad arg for -j: %s", argv[n + 1]);
+        errx(1, "bad arg for -j: %s", argv[n + 1]);
       }
       n += 2;
     }

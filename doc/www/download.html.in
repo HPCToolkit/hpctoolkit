@@ -51,23 +51,23 @@ in addition to profile views, eliminating the need for a separate <tt>hpctracevi
 
 <h2>Requirements</h2>
 <ul>
-	<li>On all platforms: Java 11 or 17 </li>
-	<li>On Linux: GTK 3.20 or newer</li>
+        <li>On all platforms: Java 11 or 17 </li>
+        <li>On Linux: GTK 3.20 or newer</li>
 </ul>
 <h3> Installing Java</h3>
 The instructions to install Java:
 <ol>
-	<li>Download Java JDK
-		<ul>
-			<li>Recommended: <code>spack install openjdk</code></li>
-			<li>Or download from:
-				<ul>
-					<li><a href="https://adoptopenjdk.net">AdoptOpenJDK</a> or <a href="https://adoptium.net/">Adoptium</a> for the newer JDK versions</li>
-					<li><a href="https://www.oracle.com/java/technologies/javase-downloads.html">Oracle</a> </li>
-				</ul>
-		</ul>
-	</li>
-	<li>Set <b><code>JAVA_HOME</code></b> environment variable to the installed directory</li>
+        <li>Download Java JDK
+                <ul>
+                        <li>Recommended: <code>spack install openjdk</code></li>
+                        <li>Or download from:
+                                <ul>
+                                        <li><a href="https://adoptopenjdk.net">AdoptOpenJDK</a> or <a href="https://adoptium.net/">Adoptium</a> for the newer JDK versions</li>
+                                        <li><a href="https://www.oracle.com/java/technologies/javase-downloads.html">Oracle</a> </li>
+                                </ul>
+                </ul>
+        </li>
+        <li>Set <b><code>JAVA_HOME</code></b> environment variable to the installed directory</li>
 </ol>
 
 

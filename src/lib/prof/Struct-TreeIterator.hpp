@@ -155,7 +155,7 @@ public:
     while ( (x_base = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
       ANode* x = static_cast<ANode*>(x_base);
       if ((m_filter == NULL) || m_filter->apply(*x)) {
-	break;
+        break;
       }
       const_cast<ANodeChildIterator*>(this)->operator++();
     }
@@ -195,13 +195,13 @@ public:
   // If filter == NULL enumerate all entries; otherwise, only entries
   // with filter->fct(e) == true
   ANodeIterator(const ANode* root,
-		const ANodeFilter* filter = NULL,
-		bool leavesOnly = false,
-		TraversalOrder torder = PreOrder)
+                const ANodeFilter* filter = NULL,
+                bool leavesOnly = false,
+                TraversalOrder torder = PreOrder)
     : NonUniformDegreeTreeIterator(root, torder,
-				   ((leavesOnly)
-				    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
-				    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
+                                   ((leavesOnly)
+                                    ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
+                                    : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES)),
       m_filter(filter)
   { }
 
@@ -218,7 +218,7 @@ public:
     while ( (x_base = NonUniformDegreeTreeIterator::Current()) ) {
       ANode* x = static_cast<ANode*>(x_base);
       if ((m_filter == NULL) || m_filter->apply(*x)) {
-	break;
+        break;
       }
       const_cast<ANodeIterator*>(this)->operator++();
     }
@@ -247,9 +247,9 @@ public:
 
 public:
   ANodeSortedIterator(const ANode* node,
-		      cmp_fptr_t compare_fn,
-		      const ANodeFilter* filterFunc = NULL,
-		      bool leavesOnly = true);
+                      cmp_fptr_t compare_fn,
+                      const ANodeFilter* filterFunc = NULL,
+                      bool leavesOnly = true);
 
   ~ANodeSortedIterator()
   {
@@ -290,8 +290,8 @@ private:
 class ANodeSortedChildIterator {
 public:
   ANodeSortedChildIterator(const ANode* root,
-			   ANodeSortedIterator::cmp_fptr_t compare_fn,
-			   const ANodeFilter* filterFunc = NULL);
+                           ANodeSortedIterator::cmp_fptr_t compare_fn,
+                           const ANodeFilter* filterFunc = NULL);
 
   ~ANodeSortedChildIterator()
   {

@@ -181,7 +181,7 @@ outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
   while (amt_done < outbuf->in_use) {
     errno = 0;
     ret = write(outbuf->fd, outbuf->buf_start + amt_done,
-		outbuf->in_use - amt_done);
+                outbuf->in_use - amt_done);
 
     // Check for short writes.  Note: EINTR is not failure.
     if (ret > 0 || (ret == 0 && errno == EINTR)) {
@@ -195,9 +195,9 @@ outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
       // and I want to rethink this case anyway.  So, this will do for
       // now. (krentel)
       if (amt_done > 0) {
-	memmove(outbuf->buf_start, outbuf->buf_start + amt_done,
-		outbuf->in_use - amt_done);
-	outbuf->in_use = amt_done;
+        memmove(outbuf->buf_start, outbuf->buf_start + amt_done,
+                outbuf->in_use - amt_done);
+        outbuf->in_use = amt_done;
       }
       return HPCFMT_ERR;
     }
@@ -273,8 +273,8 @@ hpcio_outbuf_write(hpcio_outbuf_t *outbuf, const void *data, size_t size)
     if (size > outbuf->buf_size - outbuf->in_use) {
       outbuf_flush_buffer(outbuf);
       if (outbuf->in_use == outbuf->buf_size) {
-	// flush failed, no space
-	break;
+        // flush failed, no space
+        break;
       }
     }
 

@@ -267,7 +267,7 @@ TD_GET(gpu_data.is_thread_at_cuda_sync) = false;                                
 HPCRUN_ASYNC_UNBLOCK_SPIN_UNLOCK
 
 #define ASYNC_MEMCPY_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner) \
-	ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)
+        ASYNC_KERNEL_PROLOGUE(streamId, event_node, context, cct_node, stream, skip_inner)
 
 #define ASYNC_MEMCPY_EPILOGUE(event_node, cct_node, stream, count, kind)                                          \
 TD_GET(gpu_data.overload_state) = WORKING_STATE;                                                                  \
@@ -367,39 +367,39 @@ hpcrun_safe_exit(); } while(0)
 #define PopulateGPUFunctionPointers(basename, library)                             \
   char *error;                                                                     \
                                                                                    \
-  dlerror(); 									   \
+  dlerror();                                                                       \
   void* dlsym_arg = RTLD_NEXT;                                                     \
-  void* try = dlsym(dlsym_arg, basename ## FunctionPointer[0].functionName);	   \
-  if ((error=dlerror()) || (! try)) {						   \
-    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+  void* try = dlsym(dlsym_arg, basename ## FunctionPointer[0].functionName);       \
+  if ((error=dlerror()) || (! try)) {                                              \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
       fprintf(stderr, "RTLD_NEXT argument fails for " #basename " (%s)\n",         \
-	      (! try) ? "trial function pointer = NULL" : "dlerror != NULL");	   \
-    dlerror();									   \
-    dlsym_arg = monitor_real_dlopen(#library, RTLD_LAZY);			   \
+              (! try) ? "trial function pointer = NULL" : "dlerror != NULL");      \
+    dlerror();                                                                     \
+    dlsym_arg = monitor_real_dlopen(#library, RTLD_LAZY);                          \
     if (! dlsym_arg) {                                                             \
-      fprintf(stderr, "fallback dlopen of " #library " failed,"			   \
-	      " dlerror message = '%s'\n", dlerror());				   \
-      monitor_real_abort();							   \
+      fprintf(stderr, "fallback dlopen of " #library " failed,"                    \
+              " dlerror message = '%s'\n", dlerror());                             \
+      monitor_real_abort();                                                        \
     }                                                                              \
     if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
       fprintf(stderr, "Going forward with " #basename " overrides using " #library "\n"); \
   }                                                                                \
-  else										   \
-    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+  else                                                                             \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
       fprintf(stderr, "Going forward with " #basename " overrides using RTLD_NEXT\n"); \
   for (int i = 0; i < sizeof(basename ## FunctionPointer)/sizeof(basename ## FunctionPointer[0]); i++) { \
     dlerror();                                                                     \
-    basename ## FunctionPointer[i].generic =					   \
-      dlsym(dlsym_arg, basename ## FunctionPointer[i].functionName);		   \
-    if (getenv("DEBUG_HPCRUN_GPU_CONS"))					   \
+    basename ## FunctionPointer[i].generic =                                       \
+      dlsym(dlsym_arg, basename ## FunctionPointer[i].functionName);               \
+    if (getenv("DEBUG_HPCRUN_GPU_CONS"))                                           \
       fprintf(stderr, #basename "Fnptr[%d] @ %p for %s = %p\n",                    \
-	      i, & basename ## FunctionPointer[i].generic,			   \
-	      basename ## FunctionPointer[i].functionName,			   \
-	      basename ## FunctionPointer[i].generic);				   \
+              i, & basename ## FunctionPointer[i].generic,                         \
+              basename ## FunctionPointer[i].functionName,                         \
+              basename ## FunctionPointer[i].generic);                             \
     if ((error = dlerror()) != NULL) {                                             \
-      EEMSG("%s: during dlsym \n", error);					   \
-      monitor_real_abort();							   \
-    }										   \
+      EEMSG("%s: during dlsym \n", error);                                         \
+      monitor_real_abort();                                                        \
+    }                                                                              \
   }
 
 /******************************************************************************
@@ -789,8 +789,8 @@ static struct stream_to_id_map_t *splay_delete(cudaStream_t stream)
     if (stream != stream_to_id_tree_root->stream) {
         spinlock_unlock(&g_stream_id_lock);
         TMSG(CUDA, "trying to deleting stream %p, but not in splay tree (root = %p)", stream, stream_to_id_tree_root->stream);
-	//        monitor_real_abort();
-	return NULL;
+        //        monitor_real_abort();
+        return NULL;
     }
 
     result = stream_to_id_tree_root;
@@ -1085,15 +1085,15 @@ static uint32_t cleanup_finished_events() {
 
                 //FIX ME: deleting Elapsed time to handle context destruction....
                 //static uint64_t deleteMeTime = 0;
-		TMSG(CUDA, "BEFORE: EventElapsedRT(%p, %p)\n", g_start_of_world_event, current_event->event_start);
-		cudaError_t err1 = Cuda_RTcall(cudaEventElapsedTime)(&elapsedTime,
-								   g_start_of_world_event,
-								   current_event->event_start);
-		// soft failure
-		if (err1 != cudaSuccess) {
-		  EMSG("cudaEventElaspsedTime failed");
-		  break;
-		}
+                TMSG(CUDA, "BEFORE: EventElapsedRT(%p, %p)\n", g_start_of_world_event, current_event->event_start);
+                cudaError_t err1 = Cuda_RTcall(cudaEventElapsedTime)(&elapsedTime,
+                                                                   g_start_of_world_event,
+                                                                   current_event->event_start);
+                // soft failure
+                if (err1 != cudaSuccess) {
+                  EMSG("cudaEventElaspsedTime failed");
+                  break;
+                }
 
                 assert(elapsedTime > 0);
 
@@ -2030,11 +2030,11 @@ gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node,  int metric_dc)
     //SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
     if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
       for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
-	//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
-	//increment (either one of them).
-	cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
-	    .r = metric_incr / g_active_threads}
-	  );
+        //TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
+        //increment (either one of them).
+        cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
+            .r = metric_incr / g_active_threads}
+          );
       }
     }
   }
@@ -2048,7 +2048,7 @@ gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node,  int metric_dc)
     if(TD_GET(gpu_data.overload_state) == OVERLOADABLE_STATE) {
       // Increment gpu_overload_potential_metric_id  by metric_incr
       cct_metric_data_increment(gpu_overload_potential_metric_id, node, (cct_metric_data_t) {
-	  .i = metric_incr});
+          .i = metric_incr});
     }
 
     // GPU is idle iff   ipc_data->outstanding_kernels == 0
@@ -2056,14 +2056,14 @@ gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node,  int metric_dc)
     // There is no better solution yet since we dont know which GPU card we should be looking for idleness.
     if(g_do_shared_blaming){
       if ( !ipc_data || ipc_data->outstanding_kernels == 0) { // GPU device is truly idle i.e. no other process is keeping it busy
-	// Increment gpu_ilde by metric_incr
-	cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-	    .i = metric_incr});
+        // Increment gpu_ilde by metric_incr
+        cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
+            .i = metric_incr});
       }
     } else {
       // Increment gpu_ilde by metric_incr
       cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-	  .i = metric_incr});
+          .i = metric_incr});
     }
 
   }

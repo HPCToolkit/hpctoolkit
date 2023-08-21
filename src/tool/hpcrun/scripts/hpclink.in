@@ -216,80 +216,80 @@ verb=:
 while test "x$1" != x
 do
     case "$1" in
-	-h | --help )
-	    usage
-	    ;;
-	-dw | --double-wrap )
-	    double_wrap=yes
-	    shift
-	    ;;
-	--disable-gprof )
-	    gprof_wrap="${libhpcrun_dir}/libhpcrun_gprof_wrap.a"
-	    test -f "$gprof_wrap" || die "unable to find: $gprof_wrap"
-	    extra_hpc_files="$extra_hpc_files $gprof_wrap"
-	    extra_wrap_names="$extra_wrap_names __monstartup _mcleanup mcount _mcount"
-	    undef_names="$undef_names __monstartup"
-	    shift
-	    ;;
-	-fe | -front-end | --front-end )
-	    test "x$2" != x || die "missing argument for --front-end"
-	    front_end_dir="$2"
-	    shift ; shift
-	    ;;
-	-io | --io )
-	    io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
-	    test -f "$io_wrap" || die "unable to find: $io_wrap"
-	    extra_hpc_files="$extra_hpc_files $io_wrap"
-	    extra_wrap_names="$extra_wrap_names read write fread fwrite"
-	    undef_names="$undef_names fwrite"
-	    shift
-	    ;;
-	-ga | --ga )
-	    ga_wrap="${libhpcrun_dir}/libhpcrun_ga_wrap.a"
-	    test -f "$ga_wrap" || die "unable to find: $ga_wrap"
-	    extra_hpc_files="$extra_hpc_files $ga_wrap"
-	    extra_wrap_names="$extra_wrap_names \
+        -h | --help )
+            usage
+            ;;
+        -dw | --double-wrap )
+            double_wrap=yes
+            shift
+            ;;
+        --disable-gprof )
+            gprof_wrap="${libhpcrun_dir}/libhpcrun_gprof_wrap.a"
+            test -f "$gprof_wrap" || die "unable to find: $gprof_wrap"
+            extra_hpc_files="$extra_hpc_files $gprof_wrap"
+            extra_wrap_names="$extra_wrap_names __monstartup _mcleanup mcount _mcount"
+            undef_names="$undef_names __monstartup"
+            shift
+            ;;
+        -fe | -front-end | --front-end )
+            test "x$2" != x || die "missing argument for --front-end"
+            front_end_dir="$2"
+            shift ; shift
+            ;;
+        -io | --io )
+            io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
+            test -f "$io_wrap" || die "unable to find: $io_wrap"
+            extra_hpc_files="$extra_hpc_files $io_wrap"
+            extra_wrap_names="$extra_wrap_names read write fread fwrite"
+            undef_names="$undef_names fwrite"
+            shift
+            ;;
+        -ga | --ga )
+            ga_wrap="${libhpcrun_dir}/libhpcrun_ga_wrap.a"
+            test -f "$ga_wrap" || die "unable to find: $ga_wrap"
+            extra_hpc_files="$extra_hpc_files $ga_wrap"
+            extra_wrap_names="$extra_wrap_names \
                 pnga_create pnga_create_handle \
                 pnga_get pnga_put pnga_acc \
                 pnga_nbget pnga_nbput pnga_nbacc pnga_nbwait \
                 pnga_brdcst pnga_gop pnga_sync"
-	    undef_names="$undef_names pnga_create"
-	    shift
-	    ;;
-	-memleak | --memleak )
-	    memleak_wrap="${libhpcrun_dir}/libhpcrun_memleak_wrap.a"
-	    test -f "$memleak_wrap" || die "unable to find: $memleak_wrap"
-	    extra_hpc_files="$extra_hpc_files $memleak_wrap"
-	    extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
-	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
-	    undef_names="$undef_names malloc"
-	    shift
-	    ;;
-	-plugin | --plugin )
-	    test "x$2" != x || die "missing argument for --plugin"
-	    my_plugin_list="${my_plugin_list} $2"
-	    shift ; shift
-	    ;;
-	-u | --undefined )
-	    test "x$2" != x || die "missing argument for -u"
-	    undef_names="${undef_names} $2"
-	    shift ; shift
-	    ;;
-	-v | --verbose )
-	    verbose=yes
-	    verb=mesg
-	    shift
-	    ;;
-	-- )
-	    shift
-	    break
-	    ;;
-	-* )
-	    die "unknown option: $1"
-	    ;;
-	* )
-	    break
-	    ;;
+            undef_names="$undef_names pnga_create"
+            shift
+            ;;
+        -memleak | --memleak )
+            memleak_wrap="${libhpcrun_dir}/libhpcrun_memleak_wrap.a"
+            test -f "$memleak_wrap" || die "unable to find: $memleak_wrap"
+            extra_hpc_files="$extra_hpc_files $memleak_wrap"
+            extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
+            extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
+            undef_names="$undef_names malloc"
+            shift
+            ;;
+        -plugin | --plugin )
+            test "x$2" != x || die "missing argument for --plugin"
+            my_plugin_list="${my_plugin_list} $2"
+            shift ; shift
+            ;;
+        -u | --undefined )
+            test "x$2" != x || die "missing argument for -u"
+            undef_names="${undef_names} $2"
+            shift ; shift
+            ;;
+        -v | --verbose )
+            verbose=yes
+            verb=mesg
+            shift
+            ;;
+        -- )
+            shift
+            break
+            ;;
+        -* )
+            die "unknown option: $1"
+            ;;
+        * )
+            break
+            ;;
     esac
 done
 
@@ -328,8 +328,8 @@ for plugin in $my_plugin_list
 do
     $verb "plugin: $plugin"
     case "$plugin" in
-	/* ) conf_file="$plugin" ;;
-	* )  conf_file="${libhpcrun_dir}/plugins/${plugin}" ;;
+        /* ) conf_file="$plugin" ;;
+        * )  conf_file="${libhpcrun_dir}/plugins/${plugin}" ;;
     esac
     my_plugin_dir=`dirname "$conf_file"`
     test -f "$conf_file" || die "missing plugin config file: $conf_file"
@@ -340,13 +340,13 @@ do
     hpclink_undefined_names=
     . "$conf_file"
     for file in $hpclink_files ; do
-	case "$file" in
-	    /* ) abs_file="$file" ;;
-	    * )  abs_file="${my_plugin_dir}/${file}" ;;
-	esac
-	test -f "$abs_file" || die "missing plugin file: $abs_file"
-	$verb "plugin file: $abs_file"
-	extra_plugin_files="$extra_plugin_files $abs_file"
+        case "$file" in
+            /* ) abs_file="$file" ;;
+            * )  abs_file="${my_plugin_dir}/${file}" ;;
+        esac
+        test -f "$abs_file" || die "missing plugin file: $abs_file"
+        $verb "plugin file: $abs_file"
+        extra_plugin_files="$extra_plugin_files $abs_file"
     done
     $verb "plugin wrap names: $hpclink_wrap_names"
     $verb "plugin undefined names: $hpclink_undefined_names"
@@ -371,22 +371,22 @@ prev_arg=no
 for arg in "$@"
 do
     if test "x$prev_arg" = x-o ; then
-	appl_out="$arg"
+        appl_out="$arg"
     else
-	case "$arg" in
-	    -l?* )
-		copy=yes
-		for lib in $no_repeat_list ; do
-		    if test "x$arg" = "x-l$lib" ; then
-			copy=no
-			break
-		    fi
-		done
-		if test "$copy" = yes ; then
-		    appl_libs="$appl_libs $arg"
-		fi
-		;;
-	esac
+        case "$arg" in
+            -l?* )
+                copy=yes
+                for lib in $no_repeat_list ; do
+                    if test "x$arg" = "x-l$lib" ; then
+                        copy=no
+                        break
+                    fi
+                done
+                if test "$copy" = yes ; then
+                    appl_libs="$appl_libs $arg"
+                fi
+                ;;
+        esac
     fi
     prev_arg="$arg"
 done
@@ -483,16 +483,16 @@ while :
 do
     mesg "preliminary link $num ..."
     if test "$verbose" = yes ; then
-	echo "$command $@"
-	echo
+        echo "$command $@"
+        echo
     fi
 
     rm -f "$cmd_out"
     command_line_args="$*"
     $command "$@" >"$cmd_out" 2>&1
     if test $? -eq 0 && test -f "$appl_out" ; then
-	success=yes
-	break
+        success=yes
+        break
     fi
 
     # If the link fails, parse the compiler output for 'undefined
@@ -503,27 +503,27 @@ do
     do
         name=
         if echo "$line" | grep -E -i -e 'undef.*__wrap_' >/dev/null 2>&1 ; then
-	    name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
-	elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1 ; then
-	    name=main
-	fi
-	if test "x$name" != x ; then
-	    echo "$extra_undef_opts" | grep -e " $name " >/dev/null 2>&1
-	    if test $? -ne 0 ; then
-		set -- "${linker_prefix},--undefined=${name}" "$@"
-		extra_undef_opts="$extra_undef_opts -u $name "
-		new_undef_list="$new_undef_list $name"
-	    fi
-	fi
+            name=`expr "$line" : '.*\(__wrap_[A-Za-z0-9_]*\)'`
+        elif echo "$line" | grep -E -i -e 'undef.*main' >/dev/null 2>&1 ; then
+            name=main
+        fi
+        if test "x$name" != x ; then
+            echo "$extra_undef_opts" | grep -e " $name " >/dev/null 2>&1
+            if test $? -ne 0 ; then
+                set -- "${linker_prefix},--undefined=${name}" "$@"
+                extra_undef_opts="$extra_undef_opts -u $name "
+                new_undef_list="$new_undef_list $name"
+            fi
+        fi
     done
     if test "$verbose" = yes ; then
-	mesg "new undefined symbols: $new_undef_list"
-	echo
+        mesg "new undefined symbols: $new_undef_list"
+        echo
     fi
 
     # quit when there are no new undefined references
     if test "x$new_undef_list" = x ; then
-	break
+        break
     fi
 
     num=`expr $num + 1`

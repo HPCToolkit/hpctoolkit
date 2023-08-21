@@ -81,10 +81,10 @@
 #define INIT_TIME(x) x.tv_sec = 0; x.tv_nsec = 0;
 
 typedef int ppoll_fn (struct pollfd *, nfds_t,
-		      const struct timespec *, const sigset_t *);
+                      const struct timespec *, const sigset_t *);
 
 typedef int pselect_fn (int, fd_set *, fd_set *, fd_set *,
-			const struct timespec *, const sigset_t *);
+                        const struct timespec *, const sigset_t *);
 
 #ifdef HPCRUN_STATIC_LINK
 extern ppoll_fn    __real_ppoll;
@@ -214,8 +214,8 @@ MONITOR_EXT_WRAP_NAME(ppoll)
       // zero so the kernel sets ret and errno correctly.
       //
       if (my_timeout.tv_sec < 0 || my_timeout.tv_nsec < 0) {
-	my_timeout.tv_sec = 0;
-	my_timeout.tv_nsec = 0;
+        my_timeout.tv_sec = 0;
+        my_timeout.tv_nsec = 0;
       }
     }
   }
@@ -277,8 +277,8 @@ MONITOR_EXT_WRAP_NAME(pselect)
       // zero so the kernel sets ret and errno correctly.
       //
       if (my_timeout.tv_sec < 0 || my_timeout.tv_nsec < 0) {
-	my_timeout.tv_sec = 0;
-	my_timeout.tv_nsec = 0;
+        my_timeout.tv_sec = 0;
+        my_timeout.tv_nsec = 0;
       }
     }
   }

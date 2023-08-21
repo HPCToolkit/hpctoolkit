@@ -126,7 +126,7 @@ perf_split_retained_node(
 
   // get the necessary sibling to node
   cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node),
-					       &sibling_addr, true);
+                                               &sibling_addr, true);
 
   return sibling;
 }
@@ -428,12 +428,12 @@ perf_util_attr_init(
   switch (precise_ip_type) {
     case PERF_EVENT_AUTODETECT_SKID:
             precise_ip = perf_skid_set_max_precise_ip(attr);
-	    break;
+            break;
     case PERF_EVENT_SKID_ERROR:
     case PERF_EVENT_SKID_ARBITRARY:
-	    // check the HPCRUN_PRECISE_IP env variable
-	    precise_ip = perf_skid_get_precise_ip(attr);
-	    break;
+            // check the HPCRUN_PRECISE_IP env variable
+            precise_ip = perf_skid_get_precise_ip(attr);
+            break;
     default:
             precise_ip = precise_ip_type;
   }

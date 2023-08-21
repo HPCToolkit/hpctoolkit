@@ -72,22 +72,22 @@
 namespace TraceviewerServer
 {
 
-	class LargeByteBuffer
-	{
-	public:
-		LargeByteBuffer(std::string, int);
-		virtual ~LargeByteBuffer();
-		FileOffset size();
-		Long getLong(FileOffset);
-		int getInt(FileOffset);
-	private:
-		static uint64_t lcm(uint64_t, uint64_t);
-		static uint64_t getRamSize();
-		vector<VersatileMemoryPage> masterBuffer;
-		int numPages;
-		LRUList<VersatileMemoryPage>* pageManagementList;
+        class LargeByteBuffer
+        {
+        public:
+                LargeByteBuffer(std::string, int);
+                virtual ~LargeByteBuffer();
+                FileOffset size();
+                Long getLong(FileOffset);
+                int getInt(FileOffset);
+        private:
+                static uint64_t lcm(uint64_t, uint64_t);
+                static uint64_t getRamSize();
+                vector<VersatileMemoryPage> masterBuffer;
+                int numPages;
+                LRUList<VersatileMemoryPage>* pageManagementList;
 
-	};
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* LARGEBYTEBUFFER_H_ */

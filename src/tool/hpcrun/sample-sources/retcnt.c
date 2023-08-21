@@ -203,7 +203,7 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\t\tEach time a procedure returns, the return count for that\n"
-	 "\t\tprocedure is incremented\n"
+         "\t\tprocedure is incremented\n"
          "(experimental feature, x86 only)\n", HPCRUN_METRIC_RetCnt);
   printf("\n");
 }
@@ -235,8 +235,8 @@ hpcrun_retcnt_inc(cct_node_t* node, int incr)
 
   TMSG(TRAMP, "Increment retcnt (metric id = %d), by %d", metric_id, incr);
   cct_metric_data_increment(metric_id,
-			    node,
-			    (cct_metric_data_t){.i = incr});
+                            node,
+                            (cct_metric_data_t){.i = incr});
 }
 
 #else

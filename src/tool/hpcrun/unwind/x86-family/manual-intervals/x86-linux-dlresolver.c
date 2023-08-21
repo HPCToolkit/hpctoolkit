@@ -93,13 +93,13 @@ x86_adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_
 
   if (matches(ins, len, dl_runtime_resolve_signature_1) ||
       matches(ins, len, dl_runtime_resolve_signature_2)) {
-	// one of the signatures matched
-	unwind_interval *ui = stat->first;
-	while(ui) {
-	  UWI_RECIPE(ui)->reg.sp_ra_pos += 16;
-	  ui = UWI_NEXT(ui);
-	}
-	return 1;
+        // one of the signatures matched
+        unwind_interval *ui = stat->first;
+        while(ui) {
+          UWI_RECIPE(ui)->reg.sp_ra_pos += 16;
+          ui = UWI_NEXT(ui);
+        }
+        return 1;
   }
   return 0;
 }

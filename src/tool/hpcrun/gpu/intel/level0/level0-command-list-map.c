@@ -131,7 +131,7 @@ level0_commandlist_map_insert
   level0_handle_map_insert(&commandlist_map_root, entry);
 
   PRINT("level0 commandlist map insert: handle=%p (entry=%p)\n",
-	 command_list_handle, entry);
+         command_list_handle, entry);
 
   spinlock_unlock(&commandlist_map_lock);
 }

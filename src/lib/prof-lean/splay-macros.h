@@ -121,40 +121,40 @@
     struct type dummy_node;                                                          \
     struct type *ltree_max, *rtree_min, *yy;                                         \
     if ((root) != NULL) {                                                            \
-	ltree_max = rtree_min = &dummy_node;                                         \
-	for (;;) {                                                                   \
+        ltree_max = rtree_min = &dummy_node;                                         \
+        for (;;) {                                                                   \
             if (lt((key), (root)->lt_field)) {                                       \
-		if ((yy = (root)->left) == NULL){                                     \
-		    break;  }                                                         \
-		if (lt((key), yy->lt_field)) {                                       \
-		    (root)->left = yy->right;                                        \
-		    yy->right = (root);                                              \
-		    (root) = yy;                                                     \
-		    if ((yy = (root)->left) == NULL){                                 \
-			break;  }                                                     \
-		}                                                                    \
-		rtree_min->left = (root);                                            \
-		rtree_min = (root); 												\
-	    } else if (gt((key), (root)->gt_field)) {                                \
-		if ((yy = (root)->right) == NULL) {                                   \
-		    break; }                                                          \
-		if (gt((key), yy->gt_field)) {                                       \
-		    (root)->right = yy->left;                                        \
-		    yy->left = (root);                                               \
-		    (root) = yy;                                                     \
-		    if ((yy = (root)->right) == NULL){                                \
-			break; }                                                      \
-		}                                                                    \
-		ltree_max->right = (root);                                           \
-		ltree_max = (root);  												\
-	    } else                                                                   \
-		break;                                                               \
-	    (root) = yy;                                                             \
-	}                                                                            \
-	ltree_max->right = (root)->left;                                             \
-	rtree_min->left = (root)->right;                                             \
-	(root)->left = dummy_node.right;                                             \
-	(root)->right = dummy_node.left;                                             \
+                if ((yy = (root)->left) == NULL){                                     \
+                    break;  }                                                         \
+                if (lt((key), yy->lt_field)) {                                       \
+                    (root)->left = yy->right;                                        \
+                    yy->right = (root);                                              \
+                    (root) = yy;                                                     \
+                    if ((yy = (root)->left) == NULL){                                 \
+                        break;  }                                                     \
+                }                                                                    \
+                rtree_min->left = (root);                                            \
+                rtree_min = (root);                                                                                             \
+            } else if (gt((key), (root)->gt_field)) {                                \
+                if ((yy = (root)->right) == NULL) {                                   \
+                    break; }                                                          \
+                if (gt((key), yy->gt_field)) {                                       \
+                    (root)->right = yy->left;                                        \
+                    yy->left = (root);                                               \
+                    (root) = yy;                                                     \
+                    if ((yy = (root)->right) == NULL){                                \
+                        break; }                                                      \
+                }                                                                    \
+                ltree_max->right = (root);                                           \
+                ltree_max = (root);                                                                                             \
+            } else                                                                   \
+                break;                                                               \
+            (root) = yy;                                                             \
+        }                                                                            \
+        ltree_max->right = (root)->left;                                             \
+        rtree_min->left = (root)->right;                                             \
+        (root)->left = dummy_node.right;                                             \
+        (root)->right = dummy_node.left;                                             \
     }
 
 
@@ -169,7 +169,7 @@
 #define lcl_builtin_lt(a, b) ((a) < (b))
 #define lcl_builtin_gt(a, b) ((a) > (b))
 
-#define REGULAR_SPLAY_TREE(type, root, key, value, left, right)	\
+#define REGULAR_SPLAY_TREE(type, root, key, value, left, right) \
   GENERAL_SPLAY_TREE(type, root, key, value, value, left, right, lcl_builtin_lt, lcl_builtin_gt)
 
 /*
@@ -195,7 +195,7 @@
 #define lcl_intvl_lt(a, b) ((a) < (b))
 #define lcl_intvl_gt(a, b) ((a) >= (b))
 
-#define INTERVAL_SPLAY_TREE(type, root, key, start, end, left, right)	\
+#define INTERVAL_SPLAY_TREE(type, root, key, start, end, left, right)   \
   GENERAL_SPLAY_TREE(type, root, key, start, end, left, right, lcl_intvl_lt, lcl_intvl_gt)
 
 #endif  /* ! _SPLAY_TREE_MACROS_ */

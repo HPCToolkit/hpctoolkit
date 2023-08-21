@@ -53,7 +53,7 @@
 
 //#include "gpu_blame-cuda-runtime-header.h"
 //#include "gpu_blame-cuda-driver-header.h"
-#include <lib/prof-lean/stdatomic.h>		// atomic_uint_fast64_t
+#include <lib/prof-lean/stdatomic.h>            // atomic_uint_fast64_t
 #include <hpcrun/core_profile_trace_data.h>
 #include <hpcrun/main.h>
 

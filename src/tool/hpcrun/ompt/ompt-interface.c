@@ -282,11 +282,11 @@ ompt_register_mutex_metrics
   kind_info_t *mut_kind = hpcrun_metrics_new_kind();
   omp_mutex_blame_info.wait_metric_id =
     hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_WAIT",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+                                    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   omp_mutex_blame_info.blame_metric_id =
     hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_BLAME",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+                                    MetricFlags_ValFmt_Int, 1, metric_property_none);
   hpcrun_close_kind(mut_kind);
 }
 
@@ -301,11 +301,11 @@ ompt_register_idle_metrics
   kind_info_t *idl_kind = hpcrun_metrics_new_kind();
   omp_idle_blame_info.idle_metric_id =
     hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_IDLE",
-				    MetricFlags_ValFmt_Real, 1, metric_property_none);
+                                    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   omp_idle_blame_info.work_metric_id =
     hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_WORK",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+                                    MetricFlags_ValFmt_Int, 1, metric_property_none);
   hpcrun_close_kind(idl_kind);
 }
 
@@ -1036,7 +1036,7 @@ hpcrun_ompt_get_thread_num(int level)
     int thread_num = 0;
 
     ompt_get_task_info_fn(level, &task_type_flags, &task_data,
-			  &task_frame, &parallel_data, &thread_num);
+                          &task_frame, &parallel_data, &thread_num);
     //printf("Task frame pointer = %p\n", task_frame);
     return thread_num;
   }

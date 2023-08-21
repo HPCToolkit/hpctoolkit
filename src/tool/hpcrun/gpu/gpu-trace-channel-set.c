@@ -188,7 +188,7 @@ gpu_trace_channel_set_insert
   // clear the entry's next ptr
   channel_stack_elem_ptr_set(e, 0);
 
-	  // add the entry to the channel stack
+          // add the entry to the channel stack
   typed_stack_elem_ptr(gpu_trace_channel_ptr_t) * gpu_trace_channel_stack = gpu_trace_channel_stack_ptr;
   channel_stack_push(&gpu_trace_channel_stack[set_index], e);
 }

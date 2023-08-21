@@ -142,19 +142,19 @@ metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
 
 int hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
-				    MetricFlags_ValFmt_t valFmt, size_t period,
-				    metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
+                                    MetricFlags_ValFmt_t valFmt, size_t period,
+                                    metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
 int hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
-		        const char *description,
-				MetricFlags_ValFmt_t valFmt, size_t period,
-				metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
+                        const char *description,
+                                MetricFlags_ValFmt_t valFmt, size_t period,
+                                metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
 int hpcrun_set_new_metric_desc_and_period(kind_info_t *kind, const char* name, const char *description,
-				      MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+                                      MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 
 int hpcrun_set_new_metric_info_and_period(kind_info_t *kind, const char* name,
-					  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+                                          MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 
 int hpcrun_set_new_metric_info(kind_info_t *kind, const char* name);
 
@@ -164,9 +164,9 @@ void hpcrun_set_metric_name(int metric_id, char* name);
 
 extern cct_metric_data_t* hpcrun_metric_set_loc(metric_data_list_t* rv, int id);
 extern void hpcrun_metric_std_set(int metric_id, metric_data_list_t* set,
-				  hpcrun_metricVal_t value);
+                                  hpcrun_metricVal_t value);
 extern void hpcrun_metric_std_inc(int metric_id, metric_data_list_t* set,
-				  hpcrun_metricVal_t incr);
+                                  hpcrun_metricVal_t incr);
 extern metric_data_list_t* hpcrun_new_metric_data_list(int metric_id);
 extern metric_data_list_t* hpcrun_new_metric_data_list_kind(kind_info_t *kind);
 extern metric_data_list_t* hpcrun_new_metric_data_list_kind_final(kind_info_t *kind);
@@ -175,8 +175,8 @@ extern metric_data_list_t* hpcrun_new_metric_data_list_kind_final(kind_info_t *k
 // copy a metric set
 //
 extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
-					 metric_data_list_t* list,
-					 int num_metrics);
+                                         metric_data_list_t* list,
+                                         int num_metrics);
 
 //
 // make a sparse copy - YUMENG
@@ -184,7 +184,7 @@ extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 //extern void datalist_display(metric_data_list_t *data_list);
 
 extern uint64_t hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* metric_ids,
-					 metric_data_list_t* list, int initializing_offset);
+                                         metric_data_list_t* list, int initializing_offset);
 
 extern uint64_t hpcrun_metric_sparse_count(metric_data_list_t* list);
 

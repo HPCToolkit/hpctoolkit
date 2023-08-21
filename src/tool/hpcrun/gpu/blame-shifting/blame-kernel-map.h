@@ -70,4 +70,4 @@ kernel_map_entry_kernel_node_get
  kernel_map_entry_t *entry
 );
 
-#endif		// gpu_blame_kernel_map_h_
+#endif          // gpu_blame_kernel_map_h_

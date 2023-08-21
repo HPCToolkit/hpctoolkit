@@ -192,8 +192,8 @@ iteratorPair
 VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
 {
   DIAG_DevMsgIf(DBG, "VMAIntervalSet::insert [begin]\n"
-		<< "  this: " << toString() << endl
-		<< "  add : " << x.toString());
+                << "  this: " << toString() << endl
+                << "  add : " << x.toString());
 
   // empty interval
   if (x.empty()) {
@@ -315,7 +315,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       VMAIntervalSet::iterator end = ub;
       My_t::erase(begin(), ++end);
       if (x.end() < ub_end) {
-	My_t::insert( VMAInterval(x.end(), ub_end) );
+        My_t::insert( VMAInterval(x.end(), ub_end) );
       }
     }
   }
@@ -326,7 +326,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       // Case 2a: erase [lb, end()); insert [lb->beg(), x.beg())
       My_t::erase(lb, end());
       if (lb_beg < x.beg()) {
-	My_t::insert( VMAInterval(lb_beg, x.beg()) );
+        My_t::insert( VMAInterval(lb_beg, x.beg()) );
       }
     }
   }
@@ -337,7 +337,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       // Case 2b: erase [lb, ub); insert [lb->beg(), x.beg())
       My_t::erase(lb, ub);
       if (lb_beg < x.beg()) {
-	My_t::insert( VMAInterval(lb_beg, x.beg()) );
+        My_t::insert( VMAInterval(lb_beg, x.beg()) );
       }
     }
     else if (lb->end() < x.beg() && ub->beg() <= x.end()) {
@@ -346,7 +346,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       VMAIntervalSet::iterator end = ub;
       My_t::erase(++beg, ++end);
       if (x.end() < ub_end) {
-	My_t::insert( VMAInterval(x.end(), ub_end) );
+        My_t::insert( VMAInterval(x.end(), ub_end) );
       }
     }
     else if ( !(lb->end() < x.beg() && x.end() < ub->beg()) ) {

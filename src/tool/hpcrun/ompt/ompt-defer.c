@@ -175,12 +175,12 @@ omp_resolve
       prefix = hpcrun_cct_insert_path_return_leaf(root,  prefix);
 #else
       prefix = hpcrun_cct_insert_path_return_leaf
-	((td->core_profile_trace_data.epoch->csdata).tree_root, prefix);
+        ((td->core_profile_trace_data.epoch->csdata).tree_root, prefix);
 #endif
     }
     else {
       prefix = hpcrun_cct_insert_path_return_leaf
-	((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
+        ((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
 
       //FIXME: Get region_data_t and update refcnt
 //      ompt_region_map_refcnt_update(partial_region_id, 1L);
@@ -373,7 +373,7 @@ resolve_cntxt
     ompt_region_map_entry_t *record = ompt_region_map_lookup(innermost_region_id);
     if (!record || (ompt_region_map_entry_refcnt_get(record) == 0)) {
       EMSG("no record found innermost_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ",
-	   innermost_region_id, initial_td_region, td->region_id);
+           innermost_region_id, initial_td_region, td->region_id);
     }
   }
 #endif
@@ -655,7 +655,7 @@ register_to_all_regions
               : region_stack[i-1].notification->unresolved_cct;
 
       if (current_el->notification->region_data->region_id == 0) {
-	deferred_resolution_breakpoint();
+        deferred_resolution_breakpoint();
       }
       // insert cct as child of the parent_cct
       new_cct =
@@ -1264,7 +1264,7 @@ provide_callpath_for_regions_if_needed
       top_prefix = top_cct(bottom_prefix);
       prefix = copy_prefix(top_prefix, bottom_prefix);
       if (!prefix) {
-	deferred_resolution_breakpoint();
+        deferred_resolution_breakpoint();
         return;
       }
       current_notification->region_data->call_path = prefix;
@@ -1363,8 +1363,8 @@ provide_callpath_for_end_of_the_region
 
         prefix = copy_prefix(top_prefix, bottom_prefix);
         if (!prefix) {
-	  deferred_resolution_breakpoint();
-	  return;
+          deferred_resolution_breakpoint();
+          return;
         }
         ending_region->call_path = prefix;
 
@@ -1375,7 +1375,7 @@ provide_callpath_for_end_of_the_region
                && UINT64_T(current_frame->exit_frame.ptr) == 0) {
         // FIXME: check what this means
         // Note: this happens
-	deferred_resolution_breakpoint();
+        deferred_resolution_breakpoint();
     } else if (UINT64_T(current_frame->exit_frame.ptr) == 0
                && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
 
@@ -1387,7 +1387,7 @@ provide_callpath_for_end_of_the_region
         // copy prefix
         prefix = copy_prefix(top_prefix, bottom_prefix);
         if (!prefix) {
-	  deferred_resolution_breakpoint();
+          deferred_resolution_breakpoint();
           return;
         }
 

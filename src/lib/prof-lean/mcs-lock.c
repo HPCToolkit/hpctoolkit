@@ -137,8 +137,8 @@ mcs_trylock(mcs_lock_t *l, mcs_node_t *me)
   mcs_node_t *oldme = mcs_nil;
   return
     atomic_compare_exchange_strong_explicit(&l->tail, &oldme, me,
-					    memory_order_acq_rel,
-					    memory_order_relaxed);
+                                            memory_order_acq_rel,
+                                            memory_order_relaxed);
 }
 
 
@@ -161,8 +161,8 @@ mcs_unlock(mcs_lock_t *l, mcs_node_t *me)
     mcs_node_t *oldme = me;
 
     if (atomic_compare_exchange_strong_explicit(&l->tail, &oldme, mcs_nil,
-						memory_order_release,
-						memory_order_relaxed)) {
+                                                memory_order_release,
+                                                memory_order_relaxed)) {
       //------------------------------------------------------------------
       // I removed myself from the queue; I will never have a
       // successor, so I'm done

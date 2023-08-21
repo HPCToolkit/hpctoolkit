@@ -146,7 +146,7 @@ bgp_event_name_to_code(const char *name)
 
   for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
     if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, buf) >= 0
-	&& strcmp(name, buf) == 0) {
+        && strcmp(name, buf) == 0) {
       return ev;
     }
   }
@@ -213,8 +213,8 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     threshold = myself->evl.events[k].thresh;
     if (counter >= threshold) {
       if (safe) {
-	hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
-			       1, 0, 0, NULL);
+        hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
+                               1, 0, 0, NULL);
       }
       BGP_UPC_Set_Counter_Value(ev, 0);
       BGP_UPC_Set_Counter_Threshold_Value(ev, threshold);
@@ -285,7 +285,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     code = bgp_event_name_to_code(name);
     if (code < 0) {
       EMSG("unexpected failure in UPC process_event_list(): "
-	   "unable to find code for event %s", event);
+           "unable to find code for event %s", event);
       hpcrun_ssfail_unsupported("UPC", event);
     }
     METHOD_CALL(self, store_event, code, threshold);
@@ -305,7 +305,7 @@ METHOD_FN(process_event_list, int lush_metrics)
         MetricFlags_ValFmt_Int, threshold, metric_property_none);
     self->evl.events[k].metric_id = metric_id;
     TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
-	 name, code, threshold, metric_id);
+         name, code, threshold, metric_id);
   }
 
   hpcrun_close_kind(upc_kind);
@@ -330,7 +330,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
   if (Kernel_PhysicalProcessorID() != 0) {
     EMSG("Warning: unable to sample in this process/thread "
-	 "due to BlueGene hardware limitations (not core 0).");
+         "due to BlueGene hardware limitations (not core 0).");
     return;
   }
 
@@ -341,17 +341,17 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ret = BGP_UPC_Set_Counter_Value(ev, 0);
     if (ret < 0) {
       EMSG("Warning: unable to sample on this node "
-	   "due to BlueGene hardware limitations.");
+           "due to BlueGene hardware limitations.");
       return;
     }
     ret = BGP_UPC_Set_Counter_Threshold_Value(ev, self->evl.events[k].thresh);
     if (ret < 0) {
       EMSG("Warning: unable to sample on this node "
-	   "due to BlueGene hardware limitations.");
+           "due to BlueGene hardware limitations.");
       return;
     }
     TMSG(UPC, "monitor event %s(%d), threshold %ld",
-	 name, ev, self->evl.events[k].thresh);
+         name, ev, self->evl.events[k].thresh);
   }
 
   myself = self;
@@ -419,8 +419,8 @@ METHOD_FN(display_events)
   num_total = 0;
   for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
     if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, name) >= 0
-	&& BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
-	&& strstr(name, "PU0") != NULL) {
+        && BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
+        && strstr(name, "PU0") != NULL) {
       printf("%-35s\t%s\n", name, trim_event_desc(desc));
       num_total++;
     }
@@ -437,8 +437,8 @@ METHOD_FN(display_events)
   num_total = 0;
   for (ev = BGP_UPC_MINIMUM_EVENT_ID; ev <= BGP_UPC_MAXIMUM_EVENT_ID; ev++) {
     if (BGP_UPC_Get_Event_Name(ev, EVENT_NAME_SIZE, name) >= 0
-	&& BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
-	&& strstr(name, "PU0") == NULL) {
+        && BGP_UPC_Get_Event_Description(ev, 2040, desc) >= 0
+        && strstr(name, "PU0") == NULL) {
       printf("%-35s\t%s\n", name, trim_event_desc(desc));
       num_total++;
     }

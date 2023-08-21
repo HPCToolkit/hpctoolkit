@@ -51,12 +51,12 @@
 
 
 static char icc_variant_signature[] = {
-  0x53,      	    	  // push %ebx
-  0x8b, 0xdc, 	    	  // mov  %esp,%ebx
-  0x83,0xe4,0xe0,   	  // and  $0xffffffe0,%esp
-  0x55,	            	  // push %ebp
-  0x55,	            	  // push %ebp
-  0x8b, 0x6b, 0x04, 	  // mov  0x4(%ebx),%ebp
+  0x53,                   // push %ebx
+  0x8b, 0xdc,             // mov  %esp,%ebx
+  0x83,0xe4,0xe0,         // and  $0xffffffe0,%esp
+  0x55,                   // push %ebp
+  0x55,                   // push %ebp
+  0x8b, 0x6b, 0x04,       // mov  0x4(%ebx),%ebp
   0x89, 0x6c, 0x24, 0x04, // mov  %ebp,0x4(%esp)
   0x8b, 0xec,             // mov  %esp,%ebp
 };

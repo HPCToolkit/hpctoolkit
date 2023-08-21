@@ -108,8 +108,8 @@ hpcrun_dso_new();
 // Allocates and initializes a dso_info_t
 dso_info_t*
 hpcrun_dso_make(const char* name, void** table,
-		struct fnbounds_file_header* fh,
-		void* startaddr, void* endaddr, unsigned long map_size);
+                struct fnbounds_file_header* fh,
+                void* startaddr, void* endaddr, unsigned long map_size);
 
 
 // ---------------------------------------------------------

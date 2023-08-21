@@ -552,17 +552,17 @@ inline T ANNOTATE_UNPROTECTED_READ(const volatile T& x) {
    return result;
 }
 /* Apply ANNOTATE_BENIGN_RACE_SIZED to a static variable. */
-#define ANNOTATE_BENIGN_RACE_STATIC(static_var, description)		\
-   namespace {								\
-      static class static_var##_annotator				\
-      {									\
-      public:								\
-	 static_var##_annotator()					\
-	 {								\
-	    ANNOTATE_BENIGN_RACE_SIZED(&static_var, sizeof(static_var),	\
-				       #static_var ": " description);	\
-	 }								\
-      } the_##static_var##_annotator;					\
+#define ANNOTATE_BENIGN_RACE_STATIC(static_var, description)            \
+   namespace {                                                          \
+      static class static_var##_annotator                               \
+      {                                                                 \
+      public:                                                           \
+         static_var##_annotator()                                       \
+         {                                                              \
+            ANNOTATE_BENIGN_RACE_SIZED(&static_var, sizeof(static_var), \
+                                       #static_var ": " description);   \
+         }                                                              \
+      } the_##static_var##_annotator;                                   \
    }
 #endif
 

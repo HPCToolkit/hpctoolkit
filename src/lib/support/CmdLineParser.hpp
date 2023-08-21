@@ -183,8 +183,8 @@ public:
     bool operator==(const OptArgDesc& x) const
     {
       return (swShort == x.swShort && swLong == x.swLong
-	      && kind == x.kind && dupKind == x.dupKind
-	      && dupArgSep == x.dupArgSep);
+              && kind == x.kind && dupKind == x.dupKind
+              && dupArgSep == x.dupArgSep);
     }
 
     bool
@@ -215,12 +215,12 @@ public:
   class Exception : public Diagnostics::Exception {
   public:
     Exception(const char* x,
-	      const char* filenm = NULL, unsigned int lineno = 0)
+              const char* filenm = NULL, unsigned int lineno = 0)
       : Diagnostics::Exception(x, filenm, lineno)
       { }
 
     Exception(std::string x,
-	      const char* filenm = NULL, unsigned int lineno = 0)
+              const char* filenm = NULL, unsigned int lineno = 0)
       : Diagnostics::Exception(x, filenm, lineno)
       { }
 
@@ -230,12 +230,12 @@ public:
   class ParseError : public Exception {
   public:
     ParseError(const char* x,
-	       const char* filenm = NULL, unsigned int lineno = 0)
+               const char* filenm = NULL, unsigned int lineno = 0)
       : Exception(x, filenm, lineno)
       { }
 
     ParseError(std::string x,
-	       const char* filenm = NULL, unsigned int lineno = 0)
+               const char* filenm = NULL, unsigned int lineno = 0)
       : Exception(x, filenm, lineno)
       { }
 
@@ -247,12 +247,12 @@ public:
   class InternalError : public Exception {
   public:
     InternalError(const char* x,
-		  const char* filenm = NULL, unsigned int lineno = 0)
+                  const char* filenm = NULL, unsigned int lineno = 0)
       : Exception(x, filenm, lineno)
       { }
 
     InternalError(std::string x,
-		  const char* filenm = NULL, unsigned int lineno = 0)
+                  const char* filenm = NULL, unsigned int lineno = 0)
       : Exception(x, filenm, lineno)
       { }
 
@@ -269,7 +269,7 @@ public:
   // ---------------------------------------------------------
   CmdLineParser();
   CmdLineParser(const OptArgDesc* optArgDescs,
-		int argc, const char* const argv[]);
+                int argc, const char* const argv[]);
   ~CmdLineParser();
 
   // -------------------------------------------------------
@@ -281,7 +281,7 @@ public:
   // optional and required arguments.
   void
   parse(const OptArgDesc* optArgDescs,
-	int argc, const char* const argv[]);
+        int argc, const char* const argv[]);
 
   // -------------------------------------------------------
   // Parsed Data: Command
@@ -429,14 +429,14 @@ private:
 
   const OptArgDesc*
   findOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
-	      bool errOnMultipleMatches = true);
+              bool errOnMultipleMatches = true);
 
   void
   addOption(const OptArgDesc& odesc, const SwDesc& swdesc);
 
   void
   addOption(const OptArgDesc& odesc,
-	    const std::string& sw, const std::string& arg);
+            const std::string& sw, const std::string& arg);
 
 private:
   std::string command;           // command name

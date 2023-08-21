@@ -164,7 +164,7 @@ RealPathMgr::realpath(string& pathNm) const
       // use cached value
       const string& pathNm_real = it->second;
       if (pathNm_real[0] == '/') { // optimization: only copy if fully resolved
-	pathNm = pathNm_real;
+        pathNm = pathNm_real;
       }
 
       // since 'pathNm_orig' was not in map, ensure it is
@@ -177,22 +177,22 @@ RealPathMgr::realpath(string& pathNm) const
       string pathNm_real = pathNm;
 
       if (m_searchPaths.empty()) {
-	pathNm_real = RealPath(pathNm.c_str());
+        pathNm_real = RealPath(pathNm.c_str());
       }
       else {
-	const char* pathNm_pf;
+        const char* pathNm_pf;
 
-	if (m_pathFindMgr != NULL) {
-	  pathNm_pf =
-	    m_pathFindMgr->pathfind(m_searchPaths.c_str(), pathNm.c_str(), "r");
-	}
-	else {
-	  pathNm_pf =
-	    PathFindMgr::singleton().pathfind(m_searchPaths.c_str(), pathNm.c_str(), "r");
-	}
-	if (pathNm_pf) {
-	  pathNm_real = pathNm_pf;
-	}
+        if (m_pathFindMgr != NULL) {
+          pathNm_pf =
+            m_pathFindMgr->pathfind(m_searchPaths.c_str(), pathNm.c_str(), "r");
+        }
+        else {
+          pathNm_pf =
+            PathFindMgr::singleton().pathfind(m_searchPaths.c_str(), pathNm.c_str(), "r");
+        }
+        if (pathNm_pf) {
+          pathNm_real = pathNm_pf;
+        }
       }
 
       pathNm = pathNm_real;
@@ -242,7 +242,7 @@ RealPathMgr::toString(unsigned int flags) const
 
 std::ostream&
 RealPathMgr::dump(std::ostream& os, unsigned int GCC_ATTR_UNUSED flags,
-		  const char* pfx) const
+                  const char* pfx) const
 {
   os << pfx << "[ RealPathMgr:" << std::endl;
   for (MyMap::const_iterator it = m_cache.begin(); it != m_cache.end(); ++it) {

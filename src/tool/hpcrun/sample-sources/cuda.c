@@ -113,9 +113,9 @@
  *****************************************************************************/
 
 static void hpcrun_cuda_kernel_callback(void *userdata,
-					CUpti_CallbackDomain domain,
-					CUpti_CallbackId cbid,
-					const CUpti_CallbackData *cbInfo);
+                                        CUpti_CallbackDomain domain,
+                                        CUpti_CallbackId cbid,
+                                        const CUpti_CallbackData *cbInfo);
 
 static void check_cupti_error(int err, char *cuptifunc);
 
@@ -143,7 +143,7 @@ METHOD_FN(init)
     STDERR_MSG("Fatal error: PAPI_library_init() failed with version mismatch.\n"
         "HPCToolkit was compiled with version 0x%x but run on version 0x%x.\n"
         "Check the HPCToolkit installation and try again.",
-	PAPI_VER_CURRENT, ret);
+        PAPI_VER_CURRENT, ret);
     exit(1);
   }
   self->state = INIT;
@@ -182,8 +182,8 @@ METHOD_FN(start)
   TMSG(CUDA,"start called");
 
   cuptiErr = cuptiSubscribe(&subscriber,
-			    (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback,
-			    (void *) NULL);
+                            (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback,
+                            (void *) NULL);
   check_cupti_error(cuptiErr, "cuptiSubscribe");
 
   cuptiErr = cuptiEnableCallback(1, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API,
@@ -200,7 +200,7 @@ METHOD_FN(thread_fini_action)
   int rval = PAPI_unregister_thread();
   if (rval != PAPI_OK) {
     TMSG(CUDA, "warning: CUDA PAPI_unregister_thread (%d): %s.",
-	rval, PAPI_strerror(rval));
+        rval, PAPI_strerror(rval));
   }
 }
 
@@ -249,13 +249,13 @@ METHOD_FN(shutdown)
   rval = PAPI_cleanup_eventset(eventSet);
   if (rval != PAPI_OK) {
     TMSG(CUDA, "warning: CUDA PAPI_cleanup_eventset (%d): %s.",
-	rval, PAPI_strerror(rval));
+        rval, PAPI_strerror(rval));
   }
 
   rval = PAPI_destroy_eventset(&eventSet);
   if (rval != PAPI_OK) {
     TMSG(CUDA, "warning: CUDA PAPI_destroy_eventset (%d): %s.",
-	rval, PAPI_strerror(rval));
+        rval, PAPI_strerror(rval));
   }
 
   td->eventSet[self->evset_idx] = PAPI_NULL;
@@ -282,7 +282,7 @@ METHOD_FN(supports_event,const char *ev_str)
   long th;
 
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th,
-			   NO_THRESHOLD);
+                           NO_THRESHOLD);
 
   // handle only events for the CUDA component
   if (strncmp(evtmp, CUDA_PREFIX, strlen(CUDA_PREFIX)) == 0) {
@@ -307,15 +307,15 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     TMSG(CUDA,"checking event spec = %s",event);
     if (hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh,
-				 NO_THRESHOLD)) {
+                                 NO_THRESHOLD)) {
       AMSG("WARNING: %s is specified with a sampling threshold. "
-	   "No thresholds supported for CUDA events", name);
+           "No thresholds supported for CUDA events", name);
     }
     ret = PAPI_event_name_to_code(name, &evcode);
     if (ret != PAPI_OK) {
       EMSG("unexpected failure in PAPI process_event_list(): "
-	   "PAPI_event_name_to_code() returned %s (%d)",
-	   PAPI_strerror(ret), ret);
+           "PAPI_event_name_to_code() returned %s (%d)",
+           PAPI_strerror(ret), ret);
       hpcrun_ssfail_unsupported("PAPI", name);
     }
     if (PAPI_query_event(evcode) != PAPI_OK) {
@@ -363,7 +363,7 @@ METHOD_FN(gen_event_set,int lush_metrics)
   TMSG(CUDA,"PAPI_create_eventset = %d, eventSet = %d", ret, eventSet);
   if (ret != PAPI_OK) {
     hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s",
-		 ret, PAPI_strerror(ret));
+                 ret, PAPI_strerror(ret));
   }
 
   int nevents = (self->evl).nevents;
@@ -373,8 +373,8 @@ METHOD_FN(gen_event_set,int lush_metrics)
     TMSG(CUDA, "PAPI_add_event(eventSet=%d, event_code=%x)", eventSet, evcode);
     if (ret != PAPI_OK) {
       EMSG("failure in PAPI gen_event_set(): "
-	   "PAPI_add_event() returned: %s (%d)",
-	   PAPI_strerror(ret), ret);
+           "PAPI_add_event() returned: %s (%d)",
+           PAPI_strerror(ret), ret);
       event_fatal_error(evcode, ret);
     }
   }
@@ -399,7 +399,7 @@ METHOD_FN(display_events)
 #ifdef PAPI_COMPONENT_STUFF_FIGURED_OUT
   const PAPI_component_info_t *pci = PAPI_get_component_info(1);
   printf("PAPI component name '%s' '%s' '%s' '%s'\n", pci->name, pci->version,
-	 pci->support_version, pci->kernel_version);
+         pci->support_version, pci->kernel_version);
 #endif // PAPI_COMPONENT_STUFF_FIGURED_OUT
 
   num_total = 0;
@@ -412,9 +412,9 @@ METHOD_FN(display_events)
     if (PAPI_query_event(ev) == PAPI_OK) {
       PAPI_event_code_to_name(ev, name);
       if (strncmp(name, CUDA_PREFIX, strlen(CUDA_PREFIX)) == 0 || 1) {
-      	PAPI_get_event_info(ev, &info);
-      	num_total++;
-      	printf("%-30s\t%s\n", name, info.long_descr);
+        PAPI_get_event_info(ev, &info);
+        num_total++;
+        printf("%-30s\t%s\n", name, info.long_descr);
       }
     }
     ret = PAPI_enum_event(&ev, PAPI_ENUM_EVENTS);
@@ -461,16 +461,16 @@ check_cupti_error(int err, char *cuptifunc)
     cuptiGetResultString(err, &errstr);
 #ifdef CUPTI_ERRORS_UNMYSTIFIED
     hpcrun_abort("error: CUDA CUPTI API function '%s' "
-		 "failed with message '%s' \n", cuptifunc, errstr);
+                 "failed with message '%s' \n", cuptifunc, errstr);
 #endif // CUPTI_ERRORS_UNMYSTIFIED
   }
 }
 
 void CUPTIAPI
 hpcrun_cuda_kernel_callback(void *userdata,
-			    CUpti_CallbackDomain domain,
-			    CUpti_CallbackId cbid,
-			    const CUpti_CallbackData *cbInfo)
+                            CUpti_CallbackDomain domain,
+                            CUpti_CallbackId cbid,
+                            const CUpti_CallbackData *cbInfo)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   sample_source_t* self = &obj_name();
@@ -481,7 +481,7 @@ hpcrun_cuda_kernel_callback(void *userdata,
   // This callback is enabled only for kernel launch; anything else is an error.
   if (cbid != CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020) {
     hpcrun_abort("CUDA CUPTI callback seen for unexpected "
-		 "interface operation: callback id  %d\n", cbid);
+                 "interface operation: callback id  %d\n", cbid);
   }
 
   if (cbInfo->callbackSite == CUPTI_API_ENTER) {
@@ -491,7 +491,7 @@ hpcrun_cuda_kernel_callback(void *userdata,
     int ret = PAPI_start(cudaEventSet);
     if (ret != PAPI_OK){
       EMSG("CUDA monitoring failed to start. PAPI_start failed with %s (%d)",
-	   PAPI_strerror(ret), ret);
+           PAPI_strerror(ret), ret);
     }
   }
 
@@ -513,15 +513,15 @@ hpcrun_cuda_kernel_callback(void *userdata,
     {
       int i;
       for (i = 0; i < nevents; i++)
-	{
-	  int metric_id = hpcrun_event2metric(&_cuda_obj, i);
+        {
+          int metric_id = hpcrun_event2metric(&_cuda_obj, i);
 
-	  TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
-	  hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/,
-				 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/,
-				 0/*isSync*/, NULL);
-	  TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
-	}
+          TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
+          hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/,
+                                 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/,
+                                 0/*isSync*/, NULL);
+          TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
+        }
     }
     TMSG(CUDA,"unblocking async event in CUDA event handler");
     hpcrun_async_unblock();

@@ -212,12 +212,12 @@ typedef struct metric_desc_properties_t {
 
 extern int
 hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
-			  hpcfmt_alloc_fn alloc);
+                          hpcfmt_alloc_fn alloc);
 
 extern int
 hpcrun_fmt_epochHdr_fwrite(FILE* out, epoch_flags_t flags,
-			   uint64_t measurementGranularity,
-			   ...);
+                           uint64_t measurementGranularity,
+                           ...);
 
 extern int
 hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* out);
@@ -320,7 +320,7 @@ extern const hpcrun_metricFlags_t hpcrun_metricFlags_NULL;
 #if 0
 static inline bool
 hpcrun_metricFlags_isFlag(hpcrun_metricFlags_t flagbits,
-			  hpcrun_metricFlags_t f)
+                          hpcrun_metricFlags_t f)
 {
   return (flagbits & f);
 }
@@ -328,7 +328,7 @@ hpcrun_metricFlags_isFlag(hpcrun_metricFlags_t flagbits,
 
 static inline void
 hpcrun_metricFlags_setFlag(hpcrun_metricFlags_t* flagbits,
-			   hpcrun_metricFlags_t f)
+                           hpcrun_metricFlags_t f)
 {
   *flagbits = (*flagbits | f);
 }
@@ -336,7 +336,7 @@ hpcrun_metricFlags_setFlag(hpcrun_metricFlags_t* flagbits,
 
 static inline void
 hpcrun_metricFlags_unsetFlag(hpcrun_metricFlags_t* flagbits,
-			     hpcrun_metricFlags_t f)
+                             hpcrun_metricFlags_t f)
 {
   *flagbits = (*flagbits & ~f);
 }
@@ -404,7 +404,7 @@ typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metr
 
 extern int
 hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
-			   double fmtVersion, hpcfmt_alloc_fn alloc);
+                           double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
@@ -418,7 +418,7 @@ hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 extern int
 hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
-			    double fmtVersion, hpcfmt_alloc_fn alloc);
+                            double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
 hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
@@ -484,14 +484,14 @@ hpcrun_fmt_loadmap_free(loadmap_t* loadmap, hpcfmt_free_fn dealloc);
 
 extern int
 hpcrun_fmt_loadmapEntry_fread(loadmap_entry_t* x, FILE* infs,
-			      hpcfmt_alloc_fn alloc);
+                              hpcfmt_alloc_fn alloc);
 
 extern int
 hpcrun_fmt_loadmapEntry_fwrite(loadmap_entry_t* x, FILE* outfs);
 
 extern int
 hpcrun_fmt_loadmapEntry_fprint(loadmap_entry_t* x, FILE* outfs,
-			       const char* pre);
+                               const char* pre);
 
 extern void
 hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc);
@@ -557,22 +557,22 @@ hpcrun_fmt_cct_node_init(hpcrun_fmt_cct_node_t* x)
 // N.B.: assumes space for metrics has been allocated
 extern int
 hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
-			  epoch_flags_t flags, FILE* fs);
+                          epoch_flags_t flags, FILE* fs);
 
 extern int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
-			   epoch_flags_t flags, FILE* fs);
+                           epoch_flags_t flags, FILE* fs);
 
 #if 0
 extern int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
-			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
-			   const char* pre);
+                           epoch_flags_t flags, const metric_tbl_t* metricTbl,
+                           const char* pre);
 #else
 //YUMENG: no need to parse metricTbl for sparse format
 extern int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
-			   epoch_flags_t flags,const char* pre);
+                           epoch_flags_t flags,const char* pre);
 #endif
 
 // --------------------------------------------------------------------------
@@ -666,7 +666,7 @@ hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
 
 extern int
 hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
-			   const metric_tbl_t* metricTbl, const char* pre, bool easy_grep);
+                           const metric_tbl_t* metricTbl, const char* pre, bool easy_grep);
 
 int
 hpcrun_fmt_sparse_metrics_fprint_grep_helper(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
@@ -912,24 +912,24 @@ typedef struct hpctrace_fmt_datum_t {
 
 int
 hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			 FILE* fs);
+                         FILE* fs);
 
 int
 hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  hpcio_outbuf_t* outbuf);
+                          hpcio_outbuf_t* outbuf);
 
 // N.B.: not async safe
 int
 hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  FILE* outfs);
+                          FILE* outfs);
 
 char*
 hpctrace_fmt_datum_swrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  char* buf);
+                          char* buf);
 
 int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
-			  FILE* fs);
+                          FILE* fs);
 
 
 //***************************************************************************

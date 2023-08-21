@@ -18,8 +18,8 @@
 #define NUM_NODES 10
 
 static struct {
-  bitree_uwi_t *tree;		// global free unwind interval tree
-  mcs_lock_t lock;		// lock for tree
+  bitree_uwi_t *tree;           // global free unwind interval tree
+  mcs_lock_t lock;              // lock for tree
   mem_alloc alloc;
 } GF[NUM_UNWINDERS];
 
@@ -42,7 +42,7 @@ bitree_uwi_init(mem_alloc m_alloc)
 // constructors
 bitree_uwi_t*
 bitree_uwi_malloc(unwinder_t uw,
-		  size_t recipe_size)
+                  size_t recipe_size)
 {
   if (!_lf_uwi_tree[uw]) {
     mcs_node_t me;
@@ -50,15 +50,15 @@ bitree_uwi_malloc(unwinder_t uw,
       // the global free list is locked, so use it
       _lf_uwi_tree[uw] = GF[uw].tree;
       if (_lf_uwi_tree[uw])
-	GF[uw].tree = bitree_uwi_leftsubtree(_lf_uwi_tree[uw]);
+        GF[uw].tree = bitree_uwi_leftsubtree(_lf_uwi_tree[uw]);
       mcs_unlock(&GF[uw].lock, &me);
       if (_lf_uwi_tree[uw])
-	bitree_uwi_set_leftsubtree(_lf_uwi_tree[uw], NULL);
+        bitree_uwi_set_leftsubtree(_lf_uwi_tree[uw], NULL);
     }
     if (!_lf_uwi_tree[uw])
       _lf_uwi_tree[uw] =
-	(bitree_uwi_t *)binarytree_listalloc(sizeof(uwi_t) + recipe_size,
-					     NUM_NODES, GF[uw].alloc);
+        (bitree_uwi_t *)binarytree_listalloc(sizeof(uwi_t) + recipe_size,
+                                             NUM_NODES, GF[uw].alloc);
   }
 
   bitree_uwi_t *top = _lf_uwi_tree[uw];
@@ -108,16 +108,16 @@ bitree_uwi_rightsubtree(bitree_uwi_t *tree)
 
 void
 bitree_uwi_set_leftsubtree(
-	bitree_uwi_t *tree,
-	bitree_uwi_t* subtree)
+        bitree_uwi_t *tree,
+        bitree_uwi_t* subtree)
 {
   binarytree_set_leftsubtree((binarytree_t*) tree, (binarytree_t*)subtree);
 }
 
 void
 bitree_uwi_set_rightsubtree(
-	bitree_uwi_t *tree,
-	bitree_uwi_t* subtree)
+        bitree_uwi_t *tree,
+        bitree_uwi_t* subtree)
 {
   binarytree_set_rightsubtree((binarytree_t*) tree, (binarytree_t*)subtree);
 }
@@ -174,7 +174,7 @@ bitree_uwi_t*
 bitree_uwi_find(bitree_uwi_t *tree, uwi_t *val)
 {
   binarytree_t *found =
-	  binarytree_find((binarytree_t*)tree, uwi_t_cmp, val);
+          binarytree_find((binarytree_t*)tree, uwi_t_cmp, val);
   return (bitree_uwi_t*)found;
 }
 
@@ -192,7 +192,7 @@ bitree_uwi_t*
 bitree_uwi_inrange(bitree_uwi_t *tree, uintptr_t address)
 {
   binarytree_t * found =
-	  binarytree_find((binarytree_t*)tree, uwi_t_inrange, (void*)address);
+          binarytree_find((binarytree_t*)tree, uwi_t_inrange, (void*)address);
   return (bitree_uwi_t*)found;
 }
 
@@ -243,12 +243,12 @@ static void
 
 void
 bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents,
-			   char treestr[], unwinder_t uw)
+                           char treestr[], unwinder_t uw)
 {
   // allocate and clear a string buffer
   char uwibuff[MAX_UWI_STR];
   uwibuff[0] = 0;
 
   binarytree_tostring_indent((binarytree_t*)tree,
-	  uwi_t_tostr[uw], uwibuff, indents, treestr);
+          uwi_t_tostr[uw], uwibuff, indents, treestr);
 }

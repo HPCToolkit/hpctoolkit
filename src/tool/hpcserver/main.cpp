@@ -67,25 +67,25 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	if (!TraceviewerServer::Communication::basicInit(argc, argv))
-		return 0;
+        if (!TraceviewerServer::Communication::basicInit(argc, argv))
+                return 0;
 
-	Args args(argc, argv);
-	TraceviewerServer::useCompression = args.compression;
-	TraceviewerServer::xmlPortNumber = args.xmlPort;
-	TraceviewerServer::mainPortNumber = args.mainPort;
+        Args args(argc, argv);
+        TraceviewerServer::useCompression = args.compression;
+        TraceviewerServer::xmlPortNumber = args.xmlPort;
+        TraceviewerServer::mainPortNumber = args.mainPort;
 
-	try
-	{
-		TraceviewerServer::Communication::run();
-	}
-	catch (TraceviewerServer::ErrorCode& e)
-	{//We had some sort of error. If it hasn't been handled by this point, we just close.
-		DEBUGCOUT(1) << "Error on closing was " << hex << e << endl;
-	}
+        try
+        {
+                TraceviewerServer::Communication::run();
+        }
+        catch (TraceviewerServer::ErrorCode& e)
+        {//We had some sort of error. If it hasn't been handled by this point, we just close.
+                DEBUGCOUT(1) << "Error on closing was " << hex << e << endl;
+        }
 
 
-	TraceviewerServer::Communication::closeServer();
+        TraceviewerServer::Communication::closeServer();
 
-	return 0;
+        return 0;
 }

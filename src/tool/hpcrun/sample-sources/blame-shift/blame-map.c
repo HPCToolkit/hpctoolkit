@@ -195,7 +195,7 @@ blame_map_init(blame_entry_t table[])
 
 void
 blame_map_add_blame(blame_entry_t table[],
-		    uint64_t obj, uint32_t metric_value)
+                    uint64_t obj, uint32_t metric_value)
 {
   uint32_t obj_id = blame_map_obj_id(obj);
   uint32_t index = blame_map_hash(obj);
@@ -214,7 +214,7 @@ blame_map_add_blame(blame_entry_t table[],
     if(obj_at_index == obj_id) {
 #ifdef LOSSLESS_BLAME
       if (atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, newval.combined,
-						  memory_order_relaxed, memory_order_relaxed))
+                                                  memory_order_relaxed, memory_order_relaxed))
         break;
 #else
       // the atomicity is not needed here, but it is the easiest way to write this
@@ -223,24 +223,24 @@ blame_map_add_blame(blame_entry_t table[],
 #endif
     } else {
       if(newval.parts.obj_id == 0) {
-	newval.combined = blame_map_entry(obj, metric_value);
+        newval.combined = blame_map_entry(obj, metric_value);
 #ifdef LOSSLESS_BLAME
-	if ((atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, newval.combined,
-						     memory_order_relaxed, memory_order_relaxed)))
+        if ((atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, newval.combined,
+                                                     memory_order_relaxed, memory_order_relaxed)))
           break;
-	// otherwise, try again
+        // otherwise, try again
 #else
         // the atomicity is not needed here, but it is the easiest way to write this
         atomic_store(&table[index].value, newval.combined);
-	break;
+        break;
 #endif
       }
       else {
-	EMSG("leaked blame %d\n", metric_value);
-	// entry in use for another object's blame
-	// in this case, since it isn't easy to shift
-	// our blame efficiently, we simply drop it.
-	break;
+        EMSG("leaked blame %d\n", metric_value);
+        // entry in use for another object's blame
+        // in this case, since it isn't easy to shift
+        // our blame efficiently, we simply drop it.
+        break;
       }
     }
   }
@@ -265,7 +265,7 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
     if(entry_obj_id == obj_id) {
 #ifdef LOSSLESS_BLAME
       if (!atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, zero,
-						  memory_order_relaxed, memory_order_relaxed))
+                                                  memory_order_relaxed, memory_order_relaxed))
         continue; // try again on failure
 #else
       table[index].all = 0;

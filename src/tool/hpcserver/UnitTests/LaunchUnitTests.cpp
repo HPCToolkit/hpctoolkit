@@ -64,8 +64,8 @@ extern void lruTest();
 
 int main(int argc, char** argv)
 {
-	lruTest();
-	compressionTest();
-	progBarTest();
-	filterTest();
+        lruTest();
+        compressionTest();
+        progBarTest();
+        filterTest();
 }

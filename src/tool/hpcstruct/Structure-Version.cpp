@@ -108,8 +108,8 @@ getVersion(const char *structFileName)
       // extract version string from the line
       std::regex version("\\d+.\\d+");
       if (regex_search(line, match, version)) {
-	result = match.str();
-	break;
+        result = match.str();
+        break;
       }
     }
   }

@@ -86,8 +86,8 @@ sub outputstring
 {
     my ($file) = @_;
     unless (open(READ_FILE, "<$file")) {
-	print "unable to open input file ", $file, ".\n";
-	return;
+        print "unable to open input file ", $file, ".\n";
+        return;
     };
     #$out = $file;
     #$out =~ s/\.dtd$//;
@@ -100,10 +100,10 @@ sub outputstring
     my $prev = -1;
     print STDOUT "\"";
     while (<READ_FILE>) {
-	my $line = $_;
-	chomp($line);
-	$line =~ s/"/\\"/g; # escape quotes
-	printf STDOUT "%s\\n", $line;
+        my $line = $_;
+        chomp($line);
+        $line =~ s/"/\\"/g; # escape quotes
+        printf STDOUT "%s\\n", $line;
     };
     printf STDOUT "\";\n";
 

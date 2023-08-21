@@ -22,7 +22,7 @@ dolog (){
         END {if (tot)
                  for (a in troll)
                      printf("%s\t%d\t(troll failure = %d)\n",a,troll[a],fail[a])
-    	 else
+         else
                  printf("no failures found\n")
             }
     ' | sort -n -r --key=2 > $DF
@@ -56,7 +56,7 @@ fi
 if [ -n "$*" ]; then
     for f in "$@"; do
         dolog "$f"
-	echo
+        echo
     done
 else
     dolog

@@ -59,7 +59,7 @@
 /*
  * DataOutputStream.h
  *
- *	The equivalent of the Java type DataOutputStream
+ *      The equivalent of the Java type DataOutputStream
  *
  *  Created on: Jul 9, 2012
  *      Author: pat2
@@ -71,16 +71,16 @@
 #include "ByteUtilities.hpp"
 namespace TraceviewerServer
 {
-	using namespace std;
-	class DataOutputFileStream: public ofstream
-	{
-	public:
-		DataOutputFileStream(const char*, openmode mode = ios_base::binary | ios_base::out);
-		virtual ~DataOutputFileStream();
-		void writeInt(int);
-		void writeLong(Long);
-	private:
-	};
+        using namespace std;
+        class DataOutputFileStream: public ofstream
+        {
+        public:
+                DataOutputFileStream(const char*, openmode mode = ios_base::binary | ios_base::out);
+                virtual ~DataOutputFileStream();
+                void writeInt(int);
+                void writeLong(Long);
+        private:
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* DATAOUTPUTFILESTREAM_H_ */

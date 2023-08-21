@@ -86,62 +86,62 @@ void Communication::sendParseInfo(uint64_t minBegTime, uint64_t maxEndTime, int 
 void Communication::sendParseOpenDB(string pathToDB) {}
 
 void Communication::sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,
-			Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution)
+                        Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution)
 {
 
-	ImageTraceAttributes* correspondingAttributes = contr->attributes;
+        ImageTraceAttributes* correspondingAttributes = contr->attributes;
 
-	correspondingAttributes->begProcess = processStart;
-	correspondingAttributes->endProcess = processEnd;
-	correspondingAttributes->numPixelsH = horizontalResolution;
-	correspondingAttributes->numPixelsV = verticalResolution;
-	correspondingAttributes->begTime =  timeStart;
-	correspondingAttributes->endTime =  timeEnd;
-	correspondingAttributes->lineNum = 0;
+        correspondingAttributes->begProcess = processStart;
+        correspondingAttributes->endProcess = processEnd;
+        correspondingAttributes->numPixelsH = horizontalResolution;
+        correspondingAttributes->numPixelsV = verticalResolution;
+        correspondingAttributes->begTime =  timeStart;
+        correspondingAttributes->endTime =  timeEnd;
+        correspondingAttributes->lineNum = 0;
 
 
 }
 void Communication::sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller)
 {
-	// TODO: Make this so that the Lines get sent as soon as they are
-	// filled.
+        // TODO: Make this so that the Lines get sent as soon as they are
+        // filled.
 
-	controller->fillTraces();
-	for (int i = 0; i < controller->tracesLength; i++)
-	{
+        controller->fillTraces();
+        for (int i = 0; i < controller->tracesLength; i++)
+        {
 
-		ProcessTimeline* timeline = controller->traces[i];
-		stream->writeInt( timeline->line());
-		vector<TimeCPID> data = *timeline->data->listCPID;
-		stream->writeInt( data.size());
-		// Begin time
-		stream->writeLong( data[0].timestamp);
-		//End time
-		stream->writeLong( data[data.size() - 1].timestamp);
+                ProcessTimeline* timeline = controller->traces[i];
+                stream->writeInt( timeline->line());
+                vector<TimeCPID> data = *timeline->data->listCPID;
+                stream->writeInt( data.size());
+                // Begin time
+                stream->writeLong( data[0].timestamp);
+                //End time
+                stream->writeLong( data[data.size() - 1].timestamp);
 
-		DataCompressionLayer comprStr;
+                DataCompressionLayer comprStr;
 
-		vector<TimeCPID>::iterator it;
-		DEBUGCOUT(2) << "Sending process timeline with " << data.size() << " entries" << endl;
+                vector<TimeCPID>::iterator it;
+                DEBUGCOUT(2) << "Sending process timeline with " << data.size() << " entries" << endl;
 
 
-		Time currentTime = data[0].timestamp;
-		for (it = data.begin(); it != data.end(); ++it)
-		{
-			comprStr.writeInt( (int)(it->timestamp - currentTime));
-			comprStr.writeInt( it->cpid);
-			currentTime = it->timestamp;
-		}
-		comprStr.flush();
-		int outputBufferLen = comprStr.getOutputLength();
-		char* outputBuffer = (char*)comprStr.getOutputBuffer();
+                Time currentTime = data[0].timestamp;
+                for (it = data.begin(); it != data.end(); ++it)
+                {
+                        comprStr.writeInt( (int)(it->timestamp - currentTime));
+                        comprStr.writeInt( it->cpid);
+                        currentTime = it->timestamp;
+                }
+                comprStr.flush();
+                int outputBufferLen = comprStr.getOutputLength();
+                char* outputBuffer = (char*)comprStr.getOutputBuffer();
 
-		stream->writeInt(outputBufferLen);
+                stream->writeInt(outputBufferLen);
 
-		stream->writeRawData(outputBuffer, outputBufferLen);
-		prog->incrementProgress();
-	}
-	stream->flush();
+                stream->writeRawData(outputBuffer, outputBufferLen);
+                prog->incrementProgress();
+        }
+        stream->flush();
 }
 
 void Communication::sendStartFilter(int count, bool excludeMatches)
@@ -154,14 +154,14 @@ void Communication::sendFilter(BinaryRepresentationOfFilter filt)
 
 bool Communication::basicInit(int argc, char** argv)
 {
-	return true;
+        return true;
 }
 void Communication::run()
 {
-	TraceviewerServer::Server();
+        TraceviewerServer::Server();
 }
 void Communication::closeServer()
 {
-	cout<<"Server done, closing..."<<endl;
+        cout<<"Server done, closing..."<<endl;
 }
 }

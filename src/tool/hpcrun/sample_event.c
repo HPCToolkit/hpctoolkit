@@ -143,8 +143,8 @@ record_partial_unwind(
   TMSG(PARTIAL_UNW, "recording partial unwind from segv");
   hpcrun_stats_num_samples_partial_inc();
   return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
-//					      false, bt_beg, bt_last,
-					      false, metricId, metricIncr, data);
+//                                            false, bt_beg, bt_last,
+                                              false, metricId, metricIncr, data);
 }
 
 
@@ -211,8 +211,8 @@ hpcrun_trace_node(cct_node_t *node)
 
 sample_val_t
 hpcrun_sample_callpath(void* context, int metricId,
-		       hpcrun_metricVal_t metricIncr,
-		       int skipInner, int isSync, sampling_info_t *data)
+                       hpcrun_metricVal_t metricIncr,
+                       int skipInner, int isSync, sampling_info_t *data)
 {
 
 
@@ -410,7 +410,7 @@ hpcrun_gen_thread_ctxt(void* context)
   else {
     cct_bundle_t* cct = &(td->epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-				 metricId, metricIncr);
+                                 metricId, metricIncr);
     hpcrun_cleanup_partial_unwind();
   }
 #endif
