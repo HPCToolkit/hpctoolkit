@@ -61,9 +61,6 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0
   hooks:
-  # Prettify JSON files so they look consistent
-  - id: pretty-format-json
-    args: [--autofix, --no-sort-keys]
   # Remove trailing whitespace
   - id: trailing-whitespace
     exclude: &generated_text |
@@ -152,7 +149,6 @@ repos:
     - pyparsing >=3.0.9, <4
     - pyelftools >=0.29, <0.30
     - spiqa @ https://gitlab.com/hpctoolkit/spiqa/-/package_files/89718791/download  # 0.3.0
-    - types-jsonschema
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
@@ -183,9 +179,6 @@ repos:
 - repo: https://github.com/python-jsonschema/check-jsonschema
   rev: '0.23.3'
   hooks:
-  # Validate the schemas based on their metaschemas
-  - id: check-metaschema
-    files: \.schema\.json$
   # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
   - id: check-gitlab-ci
 

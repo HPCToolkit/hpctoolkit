@@ -1,9 +1,9 @@
-import base64
 import collections
 import contextlib
 import dataclasses
+import functools
 import itertools
-import json
+import operator
 import os
 import re
 import shlex
@@ -17,10 +17,9 @@ import venv
 from pathlib import Path
 
 import click
-import jsonschema
 import ruamel.yaml
+import spiqa.untrusted as sp_untrusted
 
-from . import schema
 from .buildfe import logs
 from .buildfe._main import main as buildfe_main
 from .command import Command
@@ -818,51 +817,10 @@ def generate(
         click.echo(f"    $ {line}")
 
 
-def pack_for_request(env: DevEnv, features: collections.abc.Collection[str] = ()) -> dict:
-    """Take a generated Env and produce the contents for a request JSON."""
-    root = env.root
-    with (root / "spack.yaml").open("r", encoding="utf-8") as spackyamlf:
-        spack = ruamel.yaml.YAML(typ="safe").load(spackyamlf)["spack"]
-
-    files: dict[str, dict[str, str]] = {}
-    for path in root.rglob("*"):
-        if path.parent == root and path.name == "spack.yaml":
-            # Handled in a later pass
-            continue
-
-        try:
-            data = {"text": path.read_text(encoding="utf-8", errors="strict")}
-        except ValueError:
-            data = {"base64": base64.b64encode(path.read_bytes()).decode("ascii")}
-        files[f"/{path.relative_to(root).as_posix()}"] = data
-
-    return {
-        "ifAvailable": sorted(features),
-        "spack": spack,
-        "files": files,
-    }
-
-
-# Translation table between DevEnv keyword arguments and their required request features
-FEATURE_FLAGS: dict[str, collections.abc.Collection[str]] = {
-    "cuda": ("cuda",),
-    "rocm": ("rocm",),
-    "level0": ("level0",),
-    "gtpin": ("gtpin", "igc"),  # Implies level0
-    "opencl": (),
-    "python": (),
-    "papi": (),
-    "mpi": (),
-}
-
-# Translation table between request features and external Spack packages
-FEATURE_PACKAGES: dict[str, collections.abc.Collection[str]] = {
-    "cuda": ("cuda",),
-    "rocm": ("hip", "hsa-rocr-dev", "rocprofiler-dev", "roctracer-dev"),
-    "level0": ("oneapi-level-zero",),
-    "gtpin": ("intel-gtpin",),
-    "igc": ("oneapi-igc",),
-}
+FEATS_CUDA = sp_untrusted.Features.CUDA
+FEATS_ROCM = sp_untrusted.Features.ROCM
+FEATS_LEVEL0 = sp_untrusted.Features.LEVEL0
+FEATS_GTPIN = sp_untrusted.Features.GTPIN | sp_untrusted.Features.IGC
 
 
 @main.command
@@ -920,44 +878,33 @@ def generate_request(
         if "dev" in env_template:
             del env_template["dev"]
 
+    contents = sp_untrusted.Bundle()
     with tempfile.TemporaryDirectory() as tmpd_str:
-        tmpd = Path(tmpd_str).resolve(strict=True)
+        for feats_tuple in itertools.product(
+            *[
+                (feat, sp_untrusted.Features(0))
+                for feat in [FEATS_CUDA, FEATS_ROCM, FEATS_LEVEL0, FEATS_GTPIN]
+            ]
+        ):
+            feats = functools.reduce(operator.or_, feats_tuple)
 
-        contents: list[dict] = []
-        # Iterate over the actionable configuration space
-        flag_space = sorted(flag for flag, feats in FEATURE_FLAGS.items() if feats)
-        for r in range(len(flag_space), -1, -1):
-            for flags in itertools.combinations(flag_space, r):
-                try:
-                    denv = DevEnv(
-                        tmpd / ("root " + " ".join(flags)),
-                        **{
-                            flag: flag in flags or not feats
-                            for flag, feats in FEATURE_FLAGS.items()
-                        },
-                    )
-                except InvalidSpecificationError:
-                    continue
-
-                unresolve: set[str] = {
-                    pkg
-                    for flag in flags
-                    for feat in FEATURE_FLAGS[flag]
-                    for pkg in FEATURE_PACKAGES[feat]
-                }
-                denv.generate(mode, unresolve=unresolve, template=env_template)
-
-                feats: set[str] = set()
-                for flag in flags:
-                    feats |= set(FEATURE_FLAGS[flag])
-                contents.append(pack_for_request(denv, feats))
-
-    result = {
-        "version": 2,
-        "contents": contents,
-    }
-    jsonschema.validate(result, schema.request)
-    json.dump(result, request, sort_keys=True, separators=(",", ":"))
+            try:
+                denv = DevEnv(
+                    Path(tmpd_str).resolve(strict=True) / ("root " + " ".join(feats.codenames)),
+                    cuda=FEATS_CUDA in feats,
+                    rocm=FEATS_ROCM in feats,
+                    level0=FEATS_LEVEL0 in feats,
+                    gtpin=FEATS_GTPIN in feats,
+                    opencl=True,
+                    python=True,
+                    papi=True,
+                    mpi=True,
+                )
+            except InvalidSpecificationError:
+                continue
+            denv.generate(mode, unresolve=feats.packages, template=env_template)
+            contents.append(denv.bundle, requires=feats)
+    contents.dump(request)
 
 
 @main.command

@@ -16,6 +16,7 @@ import ruamel.yaml
 import spiqa
 import spiqa.live
 import spiqa.syntax as sp_syntax
+import spiqa.untrusted
 from yaspin import yaspin  # type: ignore[import]
 
 from .command import Command
@@ -351,6 +352,19 @@ class DevEnv:
             self.sp_livespack.install(log_output=False)
         except subprocess.CalledProcessError as e:
             raise click.ClickException(f"spack install failed with code {e.returncode}") from e
+
+    @functools.cached_property
+    def bundle(self) -> spiqa.untrusted.ResolvedBundle:
+        with (self.root / "spack.yaml").open("r", encoding="utf-8") as spackyamlf:
+            env = ruamel.yaml.YAML(typ="safe").load(spackyamlf)
+
+        files: dict[os.PathLike | str, bytes] = {}
+        for path in self.root.rglob("*"):
+            if path.parent == self.root and path.name == "spack.yaml":
+                continue  # Handled above
+            files[path.relative_to(self.root)] = path.read_bytes()
+
+        return spiqa.untrusted.ResolvedBundle(env, user_files=files)
 
     def which(self, command: str, package: str, *, check_arg: str | None = "--version") -> Command:
         path = self.sp_spack.find(package).prefix
