@@ -59,9 +59,9 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS =
 
 if OPT_LIBUNWIND_STATIC
-    SUBDIRS += libunwind
+SUBDIRS += libunwind
 endif
 
 if OPT_LZMA_STATIC
-    SUBDIRS += lzma
+SUBDIRS += lzma
 endif

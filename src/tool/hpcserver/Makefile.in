@@ -556,8 +556,8 @@ MYCFLAGS = @HOST_CFLAGS@   $(MYMPIFLAGS) $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS) $(HPC_IFLAGS) @XERCES_IFLAGS@
 MYLDFLAGS = -lz
 MYLDADD = \
-        @HOST_LIBTREPOSITORY@ \
-        $(HPCLIB_Support)
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_Support)
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcserver_CXX = $(CXX)
@@ -1167,10 +1167,10 @@ uninstall-am: uninstall-binPROGRAMS
 
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
-    rm -f "$2" ;  \
-    mv -f "$1" "$2" ;  \
-  fi
+	if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+		rm -f "$2" ;  \
+		mv -f "$1" "$2" ;  \
+	fi
 endef
 
 #############################################################################

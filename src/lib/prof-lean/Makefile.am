@@ -85,7 +85,7 @@ MYSOURCES = \
 	mcs-lock.h mcs-lock.c \
 	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
-        urand.h urand.c \
+	urand.h urand.c \
 	usec_time.h usec_time.c \
 	\
 	BalancedTree.h BalancedTree.c \
@@ -125,9 +125,9 @@ MYSOURCES = \
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) -I$(LIBELF_INC)
 
 if IS_HOST_AR
-  MYAR = @HOST_AR@
+MYAR = @HOST_AR@
 else
-  MYAR = $(AR) cru
+MYAR = $(AR) cru
 endif
 
 MYLIBADD =

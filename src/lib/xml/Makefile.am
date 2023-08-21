@@ -82,9 +82,9 @@ MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
 
 if IS_HOST_AR
-  MYAR = @HOST_AR@
+MYAR = @HOST_AR@
 else
-  MYAR = $(AR) cru
+MYAR = $(AR) cru
 endif
 
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -117,7 +117,7 @@ $(srcdir)/%.dtd.h : $(top_srcdir)/lib/dtd/%.dtd
 	$(srcdir)/makedtdstring $<  > $@
 
 $(srcdir)/%.dtd.version.h : $(top_srcdir)/lib/dtd/%.dtd
-	 awk -f $(srcdir)/dtd-version.awk < $< > $@
+	awk -f $(srcdir)/dtd-version.awk < $< > $@
 
 #############################################################################
 # Common rules

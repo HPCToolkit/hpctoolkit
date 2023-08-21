@@ -149,10 +149,10 @@ host_triplet = @host@
 # 	gpu/gpu-api.c
 #	trampoline/common/trampoline.c
 @HOST_CPU_PPC_TRUE@am__append_8 = \
-@HOST_CPU_PPC_TRUE@        trampoline/common/trampoline_eager.c
+@HOST_CPU_PPC_TRUE@	trampoline/common/trampoline_eager.c
 
 @HOST_CPU_PPC_FALSE@am__append_9 = \
-@HOST_CPU_PPC_FALSE@        trampoline/common/trampoline_lazy.c
+@HOST_CPU_PPC_FALSE@	trampoline/common/trampoline_lazy.c
 
 @OPT_ENABLE_PERF_EVENT_TRUE@am__append_10 = \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/event_custom.c  \
@@ -1923,10 +1923,10 @@ CUPTI_BASE = @OPT_CUPTI@
 PLUGIN_CONFIG_FILES = ga io memleak pthread
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
-        unwind/common/unw-throw.c
+	unwind/common/unw-throw.c
 
 UNW_COMMON_FILES = \
-        $(UNW_UNIV_FILES)				\
+	$(UNW_UNIV_FILES)				\
 	unwind/common/binarytree_uwi.c			\
 	unwind/common/interval_t.c			\
 	unwind/common/libunw_intervals.c		\
@@ -1935,7 +1935,7 @@ UNW_COMMON_FILES = \
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
-       $(UNW_COMMON_FILES) \
+	$(UNW_COMMON_FILES) \
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/amd-xop.c                     \
 	unwind/x86-family/x86-cold-path.c		\
@@ -1963,13 +1963,13 @@ UNW_X86_INCLUDE_DIRS = \
 	-I$(XED2_INC)
 
 UNW_PPC64_FILES = \
-        $(UNW_COMMON_FILES) \
+	$(UNW_COMMON_FILES) \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/common/default_validation_summary.c
 
 UNW_PPC64_INCLUDE_DIRS = \
-        -I$(srcdir)/unwind/ppc64
+	-I$(srcdir)/unwind/ppc64
 
 UNW_PPC64_LD_FLAGS = 
 
@@ -1980,21 +1980,21 @@ UNW_PPC64_LD_FLAGS =
 # library component are handled via the LIBUNWIND
 # configuration
 UNW_LIBUNW_FILES = \
-       $(UNW_COMMON_FILES) \
-       unwind/generic-libunwind/libunw-unwind.c \
-       unwind/common/default_validation_summary.c
+	$(UNW_COMMON_FILES) \
+	unwind/generic-libunwind/libunw-unwind.c \
+	unwind/common/default_validation_summary.c
 
 UNW_LIBUNW_INCLUDE_DIRS = \
-       -I$(srcdir)/unwind/generic-libunwind
+	-I$(srcdir)/unwind/generic-libunwind
 
 UNW_LIBUNW_LD_FLAGS = 
 UNW_MIPS_FILES = \
-        $(UNW_COMMON_FILES) \
+	$(UNW_COMMON_FILES) \
 	unwind/mips/mips-unwind.c \
 	unwind/mips/mips-unwind-interval.c
 
 UNW_MIPS_INCLUDE_DIRS = \
-        -I$(srcdir)/unwind/mips
+	-I$(srcdir)/unwind/mips
 
 UNW_MIPS_LD_FLAGS = 
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 -DLOCAL_BUILD=1 \
@@ -2073,7 +2073,7 @@ MY_DYNAMIC_FILES = fnbounds/fnbounds_client.c \
 	custom-init-dynamic.c $(am__append_19)
 MY_STATIC_FILES = \
 	fnbounds/fnbounds_static.c      \
-        custom-init-static.c
+	custom-init-static.c
 
 MY_LINUX_DYNAMIC_FILES = \
 	os/linux/dylib.c
@@ -2082,18 +2082,18 @@ MY_MIPS_FILES = \
 	unwind/common/default_validation_summary.c
 
 MY_PPC_FILES = \
-        trampoline/ppc64/ppc64-tramp.s \
-        \
-        utilities/arch/ppc64/ppc64-context-pc.c
+	trampoline/ppc64/ppc64-tramp.s \
+	\
+	utilities/arch/ppc64/ppc64-context-pc.c
 
 MY_X86_FILES = \
-        trampoline/x86-family/x86-tramp.S \
-        \
-        utilities/arch/x86-family/x86-context-pc.c
+	trampoline/x86-family/x86-tramp.S \
+	\
+	utilities/arch/x86-family/x86-context-pc.c
 
 MY_IA64_FILES = \
-        trampoline/ia64/ia64-tramp.s \
-        utilities/arch/ia64/ia64-context-pc.c
+	trampoline/ia64/ia64-tramp.s \
+	utilities/arch/ia64/ia64-context-pc.c
 
 MY_AARCH64_FILES = \
 	trampoline/aarch64/aarch64-tramp.c \
@@ -2120,7 +2120,7 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-gpu-api.c
 
 @OPT_ENABLE_OPENCL_TRUE@MY_OPENCL_FILES = \
-@OPT_ENABLE_OPENCL_TRUE@  sample-sources/opencl.c \
+@OPT_ENABLE_OPENCL_TRUE@	sample-sources/opencl.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-api.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-memory-manager.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-activity-translate.c \
@@ -2178,38 +2178,38 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_LEVEL0_TRUE@libhpcrun_level0_la_LDFLAGS = -Wl,-Bsymbolic
 MY_UPC_FILES = sample-sources/upc.c
 MY_INCLUDE_DIRS = \
-        -I$(top_srcdir)/src/tool       \
-        -I$(srcdir)/messages           \
-        -I$(srcdir)/fnbounds           \
-        -I$(srcdir)/memory             \
-        -I$(srcdir)/os/linux           \
-        -I$(srcdir)/cct                \
-        -I$(srcdir)/ompt               \
-        -I$(srcdir)/unwind/common      \
-        -I$(srcdir)/utilities          \
-        $(HPC_IFLAGS)                  \
-        $(LIBUNWIND_IFLAGS)            \
-        $(OPT_GTPIN_IFLAGS)            \
-        $(ROCM_INC_FLGS)               \
-        -I$(LIBELF_INC)                \
-        -I$(LIBMONITOR_INC)            \
-        $(GOTCHA_IFLAGS)               \
-        $(TBB_IFLAGS)                  \
-        $(OPENCL_IFLAGS)               \
-        $(OPT_CUDA_IFLAGS)             \
-        $(OPT_CUPTI_IFLAGS)
+	-I$(top_srcdir)/src/tool       \
+	-I$(srcdir)/messages           \
+	-I$(srcdir)/fnbounds           \
+	-I$(srcdir)/memory             \
+	-I$(srcdir)/os/linux           \
+	-I$(srcdir)/cct                \
+	-I$(srcdir)/ompt               \
+	-I$(srcdir)/unwind/common      \
+	-I$(srcdir)/utilities          \
+	$(HPC_IFLAGS)                  \
+	$(LIBUNWIND_IFLAGS)            \
+	$(OPT_GTPIN_IFLAGS)            \
+	$(ROCM_INC_FLGS)               \
+	-I$(LIBELF_INC)                \
+	-I$(LIBMONITOR_INC)            \
+	$(GOTCHA_IFLAGS)               \
+	$(TBB_IFLAGS)                  \
+	$(OPENCL_IFLAGS)               \
+	$(OPT_CUDA_IFLAGS)             \
+	$(OPT_CUPTI_IFLAGS)
 
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
 
 MY_PPC_INCLUDE_DIRS = \
-        -I$(srcdir)/utilities/arch/ppc64
+	-I$(srcdir)/utilities/arch/ppc64
 
 MY_X86_INCLUDE_DIRS = \
-        -I$(srcdir)/utilities/arch/x86-family
+	-I$(srcdir)/utilities/arch/x86-family
 
 MY_IA64_INCLUDE_DIRS = \
-        -I$(srcdir)/utilities/arch/ia64
+	-I$(srcdir)/utilities/arch/ia64
 
 MY_AARCH64_INCLUDE_DIRS = \
 	-I$(srcdir)/utilities/arch/aarch64
@@ -10195,10 +10195,10 @@ uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
-    rm -f "$2" ;  \
-    mv -f "$1" "$2" ;  \
-  fi
+	if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+		rm -f "$2" ;  \
+		mv -f "$1" "$2" ;  \
+	fi
 endef
 
 #############################################################################
@@ -10231,7 +10231,7 @@ install-exec-hook:
 install-data-hook:
 	mkdir -p "$(DESTDIR)$(plugin_instdir)"
 	-for file in $(PLUGIN_CONFIG_FILES) ; do \
-	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
+		cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
 	done
 
 %.cpp.pp : %.cpp

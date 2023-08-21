@@ -875,10 +875,10 @@ uninstall-am:
 
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
-    rm -f "$2" ;  \
-    mv -f "$1" "$2" ;  \
-  fi
+	if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+		rm -f "$2" ;  \
+		mv -f "$1" "$2" ;  \
+	fi
 endef
 
 #############################################################################
@@ -892,7 +892,7 @@ $(srcdir)/%.dtd.h : $(top_srcdir)/lib/dtd/%.dtd
 	$(srcdir)/makedtdstring $<  > $@
 
 $(srcdir)/%.dtd.version.h : $(top_srcdir)/lib/dtd/%.dtd
-	 awk -f $(srcdir)/dtd-version.awk < $< > $@
+	awk -f $(srcdir)/dtd-version.awk < $< > $@
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@
