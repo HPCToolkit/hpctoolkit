@@ -10,11 +10,11 @@ from pathlib import Path
 
 import click
 import ruamel.yaml
+from spiqa.syntax import CompilerSpec, Version
 from yaspin import yaspin  # type: ignore[import]
 
 from ..command import Command, ShEnv
 from .abc import CompilerBase, PackageBase, SpackBase
-from .util import Version
 
 yaml = ruamel.yaml.YAML(typ="safe")
 
@@ -25,29 +25,30 @@ class ProxyCompiler(CompilerBase):
 
     @classmethod
     @functools.lru_cache
-    def create(cls, spack: "ProxySpack", name: str, version: str) -> "ProxyCompiler":
-        return cls(spack, name, Version(version.removeprefix("=")))
+    def create(cls, spack: "ProxySpack", spec: CompilerSpec) -> "ProxyCompiler":
+        return cls(spack, spec)
 
-    def __init__(self, spack: "ProxySpack", name: str, version: Version) -> None:
+    def __init__(self, spack: "ProxySpack", spec: CompilerSpec) -> None:
         self._spack = spack
-        self._name = name
-        self._version = version
+        if not hasattr(spec.versions, "singleton"):
+            raise ValueError(f"Must be a concrete compiler: {spec}")
+        self._spec = spec
 
     def __str__(self) -> str:
-        return f"%{self.spec}"
+        return self.spec
 
     @property
     def spec(self) -> str:
         """Spack spec for the compiler represented here."""
-        return f"{self._name}@={self._version}"
+        return str(self._spec)
 
     @property
     def name(self) -> str:
-        return self._name
+        return self._spec.compiler
 
     @property
     def version(self) -> Version:
-        return self._version
+        return self._spec.versions.singleton
 
     @functools.cached_property
     def fake_compiler_yaml_dir(self) -> tempfile.TemporaryDirectory:
@@ -81,7 +82,9 @@ class ProxyCompiler(CompilerBase):
     def _info(self) -> tuple[str, str] | None:
         try:
             with yaspin(text=f"Fetching info on compiler {self.spec}"):
-                data = self._spack.capture("compiler", "info", self.spec, error_output=False)
+                data = self._spack.capture(
+                    "compiler", "info", self.spec.removeprefix("%"), error_output=False
+                )
         except subprocess.CalledProcessError:
             return None
 
@@ -131,23 +134,17 @@ class ProxyPackage(PackageBase):
         return cls(spack, encoded)
 
     ENCODED_DELIMITER = "|NEXT|"
-    ENCODED_FORMAT = (
-        "({hash}({name}@={version} {/hash:7}({name}({compiler.name}@{compiler.version})"
-        + ENCODED_DELIMITER
-    )
+    ENCODED_FORMAT = "({hash}({name}@={version} {/hash:7}({name}({%compiler})" + ENCODED_DELIMITER
     ENCODED_REGEX = re.compile(
         r"\((?P<fullhash>[^(]+)\((?P<pretty>[^(]+)\((?P<package>[^(]+)\((?P<compiler>[^)]+)\)"
     )
-    COMPILER_REGEX = re.compile(r"([a-zA-Z0-9_][a-zA-Z0-9_-]*)@(=?[a-zA-Z0-9_][a-zA-Z_0-9.-]*)")
 
     def __init__(self, spack: "ProxySpack", encoded: str) -> None:
         self._spack = spack
         if not (m := self.ENCODED_REGEX.fullmatch(encoded)):
             raise ValueError(f"Invalid encoded package: {encoded!r}")
         self._fullhash, self._pretty, self._package = m["fullhash"], m["pretty"], m["package"]
-        if not (mc := self.COMPILER_REGEX.fullmatch(m["compiler"])):
-            raise RuntimeError(f"Unable to parse Spack compiler: {m['compiler']}")
-        self._compiler = ProxyCompiler.create(self._spack, mc[1], mc[2])
+        self._compiler = ProxyCompiler.create(self._spack, CompilerSpec.parse(m["compiler"]))
 
     def __str__(self) -> str:
         try:
@@ -396,9 +393,9 @@ def packages_yaml() -> dict:
 def fetch_external_versions(pkg: str) -> list[Version]:
     """Probe Spack for the versions of a package supplied as externals."""
     return [
-        Version(ver[1])
+        Version(ver[0][1:])
         for ext in packages_yaml().get("packages", {}).get(pkg, {}).get("externals", [])
-        if (ver := Version.SPEC_VERSION_REGEX.search(ext.get("spec", "")))
+        if (ver := re.search("@" + Version.REGEX.pattern, ext.get("spec", "")))
     ]
 
 

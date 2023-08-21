@@ -2,8 +2,9 @@ import abc
 import typing
 from pathlib import Path
 
+from spiqa.syntax import Version
+
 from ..command import ShEnv
-from .util import Version
 
 
 class CompilerBase(abc.ABC):

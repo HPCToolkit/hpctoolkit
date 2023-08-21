@@ -4,9 +4,8 @@ import typing
 from .abc import CompilerBase as Compiler
 from .proxy import ProxyPackage as Package
 from .proxy import ProxySpack as Spack
-from .util import Version
 
-__all__ = ("Version", "Compiler", "Package", "Spack")
+__all__ = ("Compiler", "Package", "Spack")
 
 C = typing.TypeVar("C", bound=Compiler)
 
