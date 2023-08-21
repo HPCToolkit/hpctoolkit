@@ -1,0 +1,7 @@
+# The latex2man LaTeX code is external, do not touch.
+[/hpctoolkit-latex2man.trans]
+trim_trailing_whitespace = unset
+insert_final_newline = unset
+indent_style = unset
+indent_size = unset
+max_line_length = unset

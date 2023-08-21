@@ -1,0 +1,5 @@
+# The Makefile langauge requires tabs, so only use tabs for indentation in Makefiles.
+[Makeinclude.*]
+indent_style = tab
+tab_width = 8
+indent_size = tab
