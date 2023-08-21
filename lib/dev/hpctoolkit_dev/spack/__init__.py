@@ -2,10 +2,9 @@ import collections.abc
 import typing
 
 from .abc import CompilerBase as Compiler
-from .proxy import ProxyPackage as Package
 from .proxy import ProxySpack as Spack
 
-__all__ = ("Compiler", "Package", "Spack")
+__all__ = ("Compiler", "Spack")
 
 C = typing.TypeVar("C", bound=Compiler)
 

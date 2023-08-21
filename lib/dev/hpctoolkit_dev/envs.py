@@ -2,6 +2,7 @@ import collections.abc
 import copy
 import enum
 import functools
+import itertools
 import json
 import os
 import shutil
@@ -13,13 +14,13 @@ from pathlib import Path
 import click
 import ruamel.yaml
 import spiqa
+import spiqa.live
 import spiqa.syntax as sp_syntax
 from yaspin import yaspin  # type: ignore[import]
 
 from .command import Command
 from .meson import MesonMachineFile
-from .spack import Compiler, Package, Spack, preferred_compiler
-from .spack import proxy as spack_proxy
+from .spack import Compiler, Spack, preferred_compiler
 
 __all__ = ("DependencyMode", "DevEnv", "InvalidSpecificationError")
 
@@ -41,19 +42,20 @@ class DevEnv:
     @classmethod
     def default(cls, feature: str) -> bool:
         """Determine the default setting for an 'auto' feature."""
+        spack = spiqa.live_obj()
         match feature:
             case "mpi":
                 return False  # Too much trouble to autoguess
             case "papi" | "python" | "opencl":
                 return True
             case "cuda":
-                return bool(spack_proxy.fetch_external_versions("cuda"))
+                return bool(spack.external_versions("cuda"))
             case "rocm":
-                return bool(spack_proxy.fetch_external_versions("hip"))
+                return bool(spack.external_versions("hip"))
             case "level0":
-                return bool(spack_proxy.fetch_external_versions("oneapi-level-zero"))
+                return bool(spack.external_versions("oneapi-level-zero"))
             case "gtpin":
-                return bool(spack_proxy.fetch_external_versions("intel-gtpin"))
+                return bool(spack.external_versions("intel-gtpin"))
             case _:
                 raise ValueError(feature)
 
@@ -75,7 +77,7 @@ class DevEnv:
         self.root = root.resolve()
         if self.root.exists() and not self.root.is_dir():
             raise FileExistsError(self.root)
-        self._package_cache: dict[str, Package | None] = {}
+        self._package_cache: dict[str, spiqa.query.Package | None] = {}
         self.cuda = cuda
         self.rocm = rocm
         self.level0 = level0
@@ -90,17 +92,8 @@ class DevEnv:
         return Spack(self.root)
 
     @functools.cached_property
-    def livespack(self) -> spiqa.LiveSpack:
-        return spiqa.live_obj(env=self.root)
-
-    @functools.cached_property
-    def packages(self) -> dict[str, Package]:
-        """Fetch all packages installed in this environment."""
-        return {p.package: p for p in self.spack.fetch_all(concretized=True)}
-
-    def package(self, spec: str) -> Package:
-        """Fetch an individual package installed in this environment."""
-        return self.spack.fetch(spec, concretized=True)
+    def sp_spack(self) -> spiqa.Spack:
+        return spiqa.query_obj(env=self.root)
 
     @staticmethod
     def validate_name(_ctx, _param, name: str) -> str:
@@ -121,7 +114,11 @@ class DevEnv:
     @property
     def recommended_compiler(self) -> Compiler | None:
         return (
-            preferred_compiler(p.compiler for p in self.packages.values())
+            preferred_compiler(
+                self.spack.compiler_info(cspec)
+                for pkg in self.sp_spack.all_packages
+                if (cspec := pkg.spec.root.compiler) is not None
+            )
             if self.exists()
             else None
         )
@@ -347,17 +344,18 @@ class DevEnv:
     def install(self) -> None:
         """Install the Spack environment."""
         try:
-            self.spack.install("--fail-fast")
+            spiqa.live_obj(env=self.root).install(log_output=False)
         except subprocess.CalledProcessError as e:
             raise click.ClickException(f"spack install failed with code {e.returncode}") from e
 
-    def which(
-        self, command: str, spec: sp_syntax.Spec, *, check_arg: str | None = "--version"
-    ) -> Command:
-        path = self.package(str(spec)).load["PATH"]
+    def which(self, command: str, package: str, *, check_arg: str | None = "--version") -> Command:
+        path = self.sp_spack.find(package).prefix
+        if path is None:
+            raise RuntimeError(f"No prefix for {package!r}")
+        path /= "bin"
         cmd = shutil.which(command, path=path)
         if cmd is None:
-            raise RuntimeError(f"Unable to find {command} in path {path}")
+            raise RuntimeError(f"Unable to find {command!r} in path {path!r}")
 
         result = Command(cmd)
         if check_arg is not None:
@@ -369,13 +367,16 @@ class DevEnv:
         """Populate the pyview with all Python extensions. Basically an expensive venv."""
         if self._pyview.exists():
             shutil.rmtree(self._pyview)
-
-        packages = set()
-        for s in self._py_specs:
-            pkg = self.packages[s.root.package]
-            packages.add(pkg)
-            packages |= pkg.dependencies
-        self.spack.view_add(self._pyview, *sorted(packages, key=lambda p: p.fullhash))
+        self.spack.view_add(
+            self._pyview,
+            *sorted(
+                itertools.chain.from_iterable(
+                    self.sp_spack.find(spec.root.package).and_dependencies
+                    for spec in self._py_specs
+                ),
+                key=lambda p: p.fullhash,
+            ),
+        )
 
     def _m_binaries(self, native: MesonMachineFile, *, compiler: Compiler | None = None) -> None:
         assert self.recommended_compiler is not None
@@ -397,61 +398,63 @@ class DevEnv:
                 click.style("WARNING", fg="yellow")
                 + f": Recommended compiler {self.recommended_compiler} is unavailable, Meson will use its own defaults instead!"
             )
-        native.add_binary("autoreconf", self.packages["autoconf"].prefix / "bin" / "autoreconf")
-        native.add_binary("autoconf", self.packages["autoconf"].prefix / "bin" / "autoconf")
-        native.add_binary("aclocal", self.packages["automake"].prefix / "bin" / "aclocal")
-        native.add_binary("autoheader", self.packages["autoconf"].prefix / "bin" / "autoheader")
-        native.add_binary("autom4te", self.packages["autoconf"].prefix / "bin" / "autom4te")
-        native.add_binary("automake", self.packages["automake"].prefix / "bin" / "automake")
-        native.add_binary("libtoolize", self.packages["libtool"].prefix / "bin" / "libtoolize")
-        native.add_binary("m4", self.packages["m4"].prefix / "bin" / "m4")
-        native.add_binary("make", self.packages["gmake"].prefix / "bin" / "make")
+        native.add_binary("autoreconf", self.which("autoreconf", "autoconf"))
+        native.add_binary("autoconf", self.which("autoconf", "autoconf"))
+        native.add_binary("aclocal", self.which("aclocal", "automake"))
+        native.add_binary("autoheader", self.which("autoheader", "autoconf"))
+        native.add_binary("autom4te", self.which("autom4te", "autoconf"))
+        native.add_binary("automake", self.which("automake", "automake"))
+        native.add_binary("libtoolize", self.which("libtoolize", "libtool"))
+        native.add_binary("m4", self.which("m4", "m4"))
+        native.add_binary("make", self.which("make", "gmake"))
         native.add_binary("python3", self._pyview / "bin" / "python3")
         native.add_binary("python", self._pyview / "bin" / "python3")
         if self.mpi:
-            native.add_binary(
-                "mpicxx", self.which("mpicxx", sp_syntax.Spec.parse("mpi"), check_arg=None).path
-            )
-            native.add_binary("mpiexec", self.which("mpiexec", sp_syntax.Spec.parse("mpi")).path)
+            native.add_binary("mpicxx", self.which("mpicxx", "mpi", check_arg=None))
+            native.add_binary("mpiexec", self.which("mpiexec", "mpi"))
         if self.cuda:
-            native.add_binary(
-                "cuda", self.which("nvcc", sp_syntax.Spec.parse("cuda"), check_arg=None).path
-            )
-            native.add_binary("nvdisasm", self.which("nvdisasm", sp_syntax.Spec.parse("cuda")).path)
+            native.add_binary("cuda", self.which("nvcc", "cuda", check_arg=None))
+            native.add_binary("nvdisasm", self.which("nvdisasm", "cuda"))
 
     def _m_prefixes(self, native: MesonMachineFile) -> None:
-        native.add_property("prefix_boost", self.packages["boost"].prefix)
-        native.add_property("prefix_bzip", self.packages["bzip2"].prefix)
-        native.add_property("prefix_dyninst", self.packages["dyninst"].prefix)
-        native.add_property("prefix_elfutils", self.packages["elfutils"].prefix)
-        native.add_property("prefix_tbb", self.packages["intel-tbb"].prefix)
-        native.add_property("prefix_libmonitor", self.packages["libmonitor"].prefix)
-        native.add_property("prefix_libunwind", self.packages["libunwind"].prefix)
-        native.add_property("prefix_perfmon", self.packages["libpfm4"].prefix)
-        native.add_property("prefix_xerces", self.packages["xerces-c"].prefix)
-        native.add_property("prefix_lzma", self.packages["xz"].prefix)
-        native.add_property("prefix_zlib", self.packages["zlib"].prefix)
-        native.add_property("prefix_libiberty", self.packages["libiberty"].prefix)
-        if "intel-xed" in self.packages:
-            native.add_property("prefix_xed", self.packages["intel-xed"].prefix)
-        native.add_property("prefix_memkind", self.packages["memkind"].prefix)
-        native.add_property("prefix_yaml_cpp", self.packages["yaml-cpp"].prefix)
+        def prefix(pkg: str | spiqa.query.Package) -> Path:
+            result = (self.sp_spack.find(pkg) if isinstance(pkg, str) else pkg).prefix
+            if result is None:
+                raise RuntimeError(f"No prefix for package: {pkg!r}")
+            return result
+
+        native.add_property("prefix_boost", prefix("boost"))
+        native.add_property("prefix_bzip", prefix("bzip2"))
+        native.add_property("prefix_dyninst", prefix("dyninst"))
+        native.add_property("prefix_elfutils", prefix("elfutils"))
+        native.add_property("prefix_tbb", prefix("intel-tbb"))
+        native.add_property("prefix_libmonitor", prefix("libmonitor"))
+        native.add_property("prefix_libunwind", prefix("libunwind"))
+        native.add_property("prefix_perfmon", prefix("libpfm4"))
+        native.add_property("prefix_xerces", prefix("xerces-c"))
+        native.add_property("prefix_lzma", prefix("xz"))
+        native.add_property("prefix_zlib", prefix("zlib"))
+        native.add_property("prefix_libiberty", prefix("libiberty"))
+        if xed_set := self.sp_spack.find_all("intel-xed"):
+            native.add_property("prefix_xed", prefix(next(iter(xed_set))))
+        native.add_property("prefix_memkind", prefix("memkind"))
+        native.add_property("prefix_yaml_cpp", prefix("yaml-cpp"))
         if self.papi:
-            native.add_property("prefix_papi", self.packages["papi"].prefix)
+            native.add_property("prefix_papi", prefix("papi"))
         if self.opencl:
-            native.add_property("prefix_opencl", self.packages["opencl-c-headers"].prefix)
+            native.add_property("prefix_opencl", prefix("opencl-c-headers"))
         if self.gtpin:
-            native.add_property("prefix_gtpin", self.packages["intel-gtpin"].prefix)
-            native.add_property("prefix_igc", self.packages["oneapi-igc"].prefix)
+            native.add_property("prefix_gtpin", prefix("intel-gtpin"))
+            native.add_property("prefix_igc", prefix("oneapi-igc"))
         if self.level0 or self.gtpin:
-            native.add_property("prefix_level0", self.packages["oneapi-level-zero"].prefix)
+            native.add_property("prefix_level0", prefix("oneapi-level-zero"))
         if self.rocm:
-            native.add_property("prefix_rocm_hip", self.packages["hip"].prefix)
-            native.add_property("prefix_rocm_hsa", self.packages["hsa-rocr-dev"].prefix)
-            native.add_property("prefix_rocm_tracer", self.packages["roctracer-dev"].prefix)
-            native.add_property("prefix_rocm_profiler", self.packages["rocprofiler-dev"].prefix)
+            native.add_property("prefix_rocm_hip", prefix("hip"))
+            native.add_property("prefix_rocm_hsa", prefix("hsa-rocr-dev"))
+            native.add_property("prefix_rocm_tracer", prefix("roctracer-dev"))
+            native.add_property("prefix_rocm_profiler", prefix("rocprofiler-dev"))
         if self.cuda:
-            native.add_property("prefix_cuda", self.packages["cuda"].prefix)
+            native.add_property("prefix_cuda", prefix("cuda"))
 
     def populate(self, *, compiler: Compiler | None = None) -> None:
         """Populate the development environment with all the files needed to use it."""
