@@ -95,6 +95,10 @@ class DevEnv:
     def sp_spack(self) -> spiqa.Spack:
         return spiqa.query_obj(env=self.root)
 
+    @functools.cached_property
+    def sp_livespack(self) -> spiqa.LiveSpack:
+        return spiqa.live_obj(env=self.root)
+
     @staticmethod
     def validate_name(_ctx, _param, name: str) -> str:
         if os.sep in name:
@@ -344,7 +348,7 @@ class DevEnv:
     def install(self) -> None:
         """Install the Spack environment."""
         try:
-            spiqa.live_obj(env=self.root).install(log_output=False)
+            self.sp_livespack.install(log_output=False)
         except subprocess.CalledProcessError as e:
             raise click.ClickException(f"spack install failed with code {e.returncode}") from e
 
@@ -367,14 +371,10 @@ class DevEnv:
         """Populate the pyview with all Python extensions. Basically an expensive venv."""
         if self._pyview.exists():
             shutil.rmtree(self._pyview)
-        self.spack.view_add(
+        self.sp_livespack.project(
             self._pyview,
-            *sorted(
-                itertools.chain.from_iterable(
-                    self.sp_spack.find(spec.root.package).and_dependencies
-                    for spec in self._py_specs
-                ),
-                key=lambda p: p.fullhash,
+            itertools.chain.from_iterable(
+                self.sp_spack.find(spec.root.package).and_dependencies for spec in self._py_specs
             ),
         )
 

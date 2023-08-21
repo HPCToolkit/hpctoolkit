@@ -141,24 +141,6 @@ class ProxySpack(SpackBase):
         if not self.spack_env.is_dir() or not (self.spack_env / "spack.yaml").is_file():
             raise ValueError(f"Path is not a Spack environment: {self.spack_env}")
 
-    def __call__(
-        self,
-        /,
-        *args: str | Path,
-        env: collections.abc.Mapping[str, str] | None = None,
-        stdinput: str | None = None,
-        output: bool = True,
-        cwd: Path | None = None,
-    ) -> None:
-        return self.real(
-            f"--env-dir={self.spack_env}",
-            *args,
-            env=env,
-            stdinput=stdinput,
-            output=output,
-            cwd=cwd,
-        )
-
     def capture(
         self,
         /,
@@ -179,28 +161,3 @@ class ProxySpack(SpackBase):
 
     def compiler_info(self, /, compiler: CompilerSpec) -> ProxyCompiler:
         return ProxyCompiler.create(self, compiler)
-
-    def view_add(
-        self,
-        /,
-        target: Path,
-        *packages: spiqa.query.Package,
-        env: collections.abc.Mapping[str, str] | None = None,
-        cwd: Path | None = None,
-    ):
-        if len(packages) > 1:
-            text = f"Adding {len(packages):d} packages to view"
-        else:
-            text = f"Adding {', '.join([str(p) for p in packages])} to view"
-        with yaspin(text=text):
-            self(
-                "view",
-                "--dependencies=no",
-                "add",
-                "--ignore-conflicts",
-                target,
-                *[str(p.spec) for p in packages],
-                env=env,
-                cwd=cwd,
-                output=False,
-            )
