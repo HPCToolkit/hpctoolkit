@@ -149,7 +149,7 @@ ompt_device_map_delete_root
   } else {
     ompt_device_map_root->left =
       ompt_device_map_splay(ompt_device_map_root->left,
-			   ompt_device_map_root->device_id);
+                           ompt_device_map_root->device_id);
     ompt_device_map_root->left->right = ompt_device_map_root->right;
     ompt_device_map_root = ompt_device_map_root->left;
   }

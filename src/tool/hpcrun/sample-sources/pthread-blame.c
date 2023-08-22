@@ -224,12 +224,12 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
     // update appropriate wait metric as well
     int wait_metric = (pthread_blame.state == Blocked) ? blockwait_metric_id : spinwait_metric_id;
     TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",
-	 metric_incr, state2str(pthread_blame.state),
-	 hpcrun_cct_persistent_id(node));
+         metric_incr, state2str(pthread_blame.state),
+         hpcrun_cct_persistent_id(node));
     metric_data_list_t* metrics = hpcrun_reify_metric_set(node, metric_id);
     hpcrun_metric_std_inc(wait_metric,
-			  metrics,
-			  (cct_metric_data_t) {.i = metric_incr});
+                          metrics,
+                          (cct_metric_data_t) {.i = metric_incr});
   }
 }
 
@@ -284,7 +284,7 @@ pthread_directed_blame_accept(void* obj)
     getcontext(&uc);
     hpcrun_safe_enter();
     hpcrun_sample_callpath(&uc, get_blame_metric_id(),
-	(hpcrun_metricVal_t) {.i=blame},
+        (hpcrun_metricVal_t) {.i=blame},
         SKIP_ONE_FRAME, 1, NULL);
     hpcrun_safe_exit();
   }
@@ -387,8 +387,8 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tShift the blame for waiting for a lock to the lock holder.\n"
-	 "\t\tOnly suitable for threaded programs.\n",
-	 PTHREAD_EVENT_NAME);
+         "\t\tOnly suitable for threaded programs.\n",
+         PTHREAD_EVENT_NAME);
   printf("\n");
 }
 

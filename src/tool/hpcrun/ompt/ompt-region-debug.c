@@ -170,9 +170,9 @@ rn_print
 )
 {
   printf("region %p id 0x%lx notification %p notification->next %14p thread %3d "
-	 "region->region_id 0x%lx      %s\n", rn->region,
-	 rn->region_id, rn->notification, rn->notification->next.next, rn->thread_id, rn->region->region_id,
-	 what);
+         "region->region_id 0x%lx      %s\n", rn->region,
+         rn->region_id, rn->notification, rn->notification->next.next, rn->thread_id, rn->region->region_id,
+         what);
 }
 
 
@@ -208,7 +208,7 @@ rn_queue_drop
   }
 
   printf("rn_queue_drop failed: (region %p, id 0x%lx, thread %3d)",
-	 region, notification->region_id, thread_id);
+         region, notification->region_id, thread_id);
 }
 
 
@@ -294,12 +294,12 @@ hpcrun_ompt_region_check
    ompt_region_data_t *e = global_region_list;
    while (e) {
      printf("region %p region id 0x%lx call_path = %p queue head = %p\n",
-	    e, e->region_id, e->call_path, atomic_load(&e->queue.head));
+            e, e->region_id, e->call_path, atomic_load(&e->queue.head));
 
      ompt_notification_t *n = (ompt_notification_t *) atomic_load(&e->queue.head);
      while(n) {
        printf("   notification %p region %p region_id 0x%lx threads_queue %p unresolved_cct %p next %p\n",
-	      n, n->region_data, n->region_id, n->threads_queue, n->unresolved_cct, n->next.next);
+              n, n->region_data, n->region_id, n->threads_queue, n->unresolved_cct, n->next.next);
        n = (ompt_notification_t *) n->next.next;
      }
      e = (ompt_region_data_t *) e->next_region;

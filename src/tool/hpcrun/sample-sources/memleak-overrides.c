@@ -226,7 +226,7 @@ splay_insert(struct leakinfo_s *node)
       memleak_tree_root->right = NULL;
     } else {
       TMSG(MEMLEAK, "memleak splay tree: unable to insert %p (already present)",
-	   node->memblock);
+           node->memblock);
       assert(0);
     }
   }
@@ -370,7 +370,7 @@ memleak_same_page(void *p1, void *p2)
 //
 static int
 memleak_get_malloc_loc(void *sys_ptr, size_t bytes, size_t align,
-		       void **appl_ptr, leakinfo_t **info_ptr)
+                       void **appl_ptr, leakinfo_t **info_ptr)
 {
 #if MEMLEAK_USE_HYBRID_LAYOUT
   if ( (! ENABLED(MEMLEAK_NO_HEADER)) && align == 0
@@ -426,9 +426,9 @@ memleak_get_free_loc(void *appl_ptr, void **sys_ptr, leakinfo_t **info_ptr)
   num_errors++;
   if (num_errors < 100) {
     AMSG("MEMLEAK: Warning: memory corruption in leakinfo node: %p "
-	 "sys: %p appl: %p magic: 0x%lx context: %p bytes: %ld memblock: %p",
-	 *info_ptr, *sys_ptr, appl_ptr, (*info_ptr)->magic, (*info_ptr)->context,
-	 (*info_ptr)->bytes, (*info_ptr)->memblock);
+         "sys: %p appl: %p magic: 0x%lx context: %p bytes: %ld memblock: %p",
+         *info_ptr, *sys_ptr, appl_ptr, (*info_ptr)->magic, (*info_ptr)->context,
+         (*info_ptr)->bytes, (*info_ptr)->memblock);
   }
   *info_ptr = NULL;
   return MEMLEAK_LOC_NONE;
@@ -440,15 +440,15 @@ memleak_get_free_loc(void *appl_ptr, void **sys_ptr, leakinfo_t **info_ptr)
 //
 static void
 memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
-		     leakinfo_t *info_ptr, size_t bytes, ucontext_t *uc,
-		     int loc)
+                     leakinfo_t *info_ptr, size_t bytes, ucontext_t *uc,
+                     int loc)
 {
   char *loc_str;
 
   if (info_ptr == NULL) {
     TMSG(MEMLEAK, "Warning: %s: bytes: %ld sys: %p appl: %p info: %p "
-	 "(NULL leakinfo pointer, this should not happen)",
-	 name, bytes, sys_ptr, appl_ptr, info_ptr);
+         "(NULL leakinfo pointer, this should not happen)",
+         name, bytes, sys_ptr, appl_ptr, info_ptr);
     return;
   }
 
@@ -487,7 +487,7 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 //
 static void *
 memleak_malloc_helper(const char *name, size_t bytes, size_t align,
-		      int clear, ucontext_t *uc, int *ret)
+                      int clear, ucontext_t *uc, int *ret)
 {
   void *sys_ptr, *appl_ptr;
   leakinfo_t *info_ptr;
@@ -527,12 +527,12 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
   // inactive or failed malloc
   if (! active) {
     TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (%s)",
-	 name, bytes, sys_ptr, inactive_mesg);
+         name, bytes, sys_ptr, inactive_mesg);
     return sys_ptr;
   }
   if (sys_ptr == NULL) {
     TMSG(MEMLEAK, "%s: bytes: %ld, sys: %p (failed)",
-	 name, bytes, sys_ptr);
+         name, bytes, sys_ptr);
     return sys_ptr;
   }
 
@@ -553,7 +553,7 @@ memleak_malloc_helper(const char *name, size_t bytes, size_t align,
 //
 static void
 memleak_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
-		    leakinfo_t *info_ptr, int loc)
+                    leakinfo_t *info_ptr, int loc)
 {
   char *loc_str;
 
@@ -830,7 +830,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
     }
     appl_ptr = real_realloc(sys_ptr, bytes);
     TMSG(MEMLEAK, "realloc: bytes: %ld ptr: %p (%s)",
-	 bytes, appl_ptr, inactive_mesg);
+         bytes, appl_ptr, inactive_mesg);
     goto finish;
   }
 

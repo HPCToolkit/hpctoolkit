@@ -87,6 +87,7 @@ static void open_makefile ( string &makefile_name, fstream &makefile);
 static void verify_measurements_directory(string &measurements_dir);
 
 // Contents of Makefile to be generated for the directory
+// editorconfig-checker-disable
 static const char* analysis_makefile = R"EOF(
 #*******************************************************************************
 # a helper template makefile used by hpcstruct at runtime
@@ -228,10 +229,10 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		# inform the user the analysis is starting
 		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
-		    echo  \ begin parallel analysis of CPU binary $$cpubin_name \(size = $$nbytes, threads = $(THREADS)\)
-		    PARSTAT=parallel
+			echo  \ begin parallel analysis of CPU binary $$cpubin_name \(size = $$nbytes, threads = $(THREADS)\)
+			PARSTAT=parallel
 		else
-		    echo \ begin concurrent analysis of CPU binary $$cpubin_name \(size = $$nbytes, threads = 1\)
+			echo \ begin concurrent analysis of CPU binary $$cpubin_name \(size = $$nbytes, threads = 1\)
 		fi
 
 		#  invoke hpcstruct on the CPU binary in the measurements directory
@@ -241,12 +242,12 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		# See if there is anything to worry about in the warnings file
 		#  suppress any ADVICE, INFO, DEBUG, and CACHESTAT lines and any blank lines;
 		#  it's an error if anything remains
-                #
+		#
 		errs=`sed 's/^$//INFO/g;' $$warn_name |grep -v DEBUG | grep -v CACHESTAT | grep -v INFO | grep -v ADVICE | wc -l`
 
 		# echo DEBUG errs = XX $$errs XX
 		if [ $${errs} -eq 1 ] ; then
-		    echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
+			echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 		fi
 
 		# extract the status relative to the cache
@@ -277,10 +278,10 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 		# tell user we're starting
 		PARSTAT=concurrent
 		if test $(THREADS) -gt 1 ; then
-		    PARSTAT=parallel
-		    echo \ begin parallel [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \(size = $$nbytes, threads = $(THREADS)\)
+			PARSTAT=parallel
+			echo \ begin parallel [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \(size = $$nbytes, threads = $(THREADS)\)
 		else
-		    echo \ begin concurrent [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \(size = $$nbytes, threads = 1\)
+			echo \ begin concurrent [gpucfg=$(GPUBIN_CFG)] analysis of GPU binary $$gpubin_name \(size = $$nbytes, threads = 1\)
 		fi
 
 		# invoke hpcstruct to process the gpu binary
@@ -295,7 +296,7 @@ $(STRUCTS_DIR)/%-gpucfg-$(GPUBIN_CFG).hpcstruct: $(GPUBIN_DIR)/%
 		# echo DEBUG errs = XX $$errs XX
 
 		if [ $${errs} -eq 1 ] ; then
-		    echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
+			echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
 		fi
 
 		# extract the status relative to the cache
@@ -332,6 +333,7 @@ clean:
 	@rm -f $(CW)
 	@rm -f $(GW)
 )EOF";
+// editorconfig-checker-enable
 
 
 //
@@ -415,8 +417,8 @@ doMeasurementsDir
       // check that the cache is writable
       //
       if (!hpcstruct_cache_writable(cpath)) {
-	DIAG_EMsg("hpcstruct cache directory " << cpath << " not writable");
-	exit(1);
+        DIAG_EMsg("hpcstruct cache directory " << cpath << " not writable");
+        exit(1);
       }
     }
   }
@@ -429,17 +431,17 @@ doMeasurementsDir
 
   // Write the header with definitions to the makefile
   makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
- 	   << "GPUBIN_CFG = "   << gpucfg << "\n"
-	   << "CPU_ANALYZE = "  << args.analyze_cpu_binaries << "\n"
-	   << "GPU_ANALYZE = "  << args.analyze_gpu_binaries << "\n"
-	   << "PAR_SIZE = "     << args.parallel_analysis_threshold << "\n"
-	   << "JOBS = "         << jobs << "\n"
-	   << "SJOBS = "        << small_jobs << "\n"
-	   << "STHREADS = "     << small_threads << "\n"
-	   << "LJOBS = "        << jobs/pthreads << "\n"
-	   << "LTHREADS = "     << pthreads << "\n"
-	   << "PROFLM = "       << hpcproflm_path << "\n"
-	   << "STRUCT= "        << hpcstruct_path << "\n";
+           << "GPUBIN_CFG = "   << gpucfg << "\n"
+           << "CPU_ANALYZE = "  << args.analyze_cpu_binaries << "\n"
+           << "GPU_ANALYZE = "  << args.analyze_gpu_binaries << "\n"
+           << "PAR_SIZE = "     << args.parallel_analysis_threshold << "\n"
+           << "JOBS = "         << jobs << "\n"
+           << "SJOBS = "        << small_jobs << "\n"
+           << "STHREADS = "     << small_threads << "\n"
+           << "LJOBS = "        << jobs/pthreads << "\n"
+           << "LTHREADS = "     << pthreads << "\n"
+           << "PROFLM = "       << hpcproflm_path << "\n"
+           << "STRUCT= "        << hpcstruct_path << "\n";
 
   if (!cache_path.empty()) {
     makefile << "CACHE= "       << cache_path << "\n";
@@ -500,7 +502,7 @@ verify_measurements_directory
       string file_name(ent->d_name);
       if (file_name.find(".hpcrun") != string::npos) {
         has_hpcrun = true;
-	break;
+        break;
       }
     }
     closedir(dir);

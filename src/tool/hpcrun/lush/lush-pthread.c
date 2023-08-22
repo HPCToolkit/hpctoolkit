@@ -159,18 +159,18 @@ lushPthr_processInit()
 
   // LUSH_PTHR_FN_TY == 3
   BalancedTree_init(&globals.ps_syncObjToData, hpcrun_malloc,
-		    sizeof(lushPtr_SyncObjData_t));
+                    sizeof(lushPtr_SyncObjData_t));
 
   lushPthr_mem_beg = (void*)lushPthr_mem;
   lushPthr_mem_end = (void*)lushPthr_mem + lushPthr_memSize;
 
   // align with next cache line
   atomic_store_explicit(&lushPthr_mem_ptr,
-			(uintptr_t)(lushPthr_mem_beg
-					     + lushPthr_maxValueOfLock
-					     + (HOST_CACHE_LINE_SZ - 1))
-				 & (uintptr_t)~(HOST_CACHE_LINE_SZ - 1),
-			memory_order_relaxed);
+                        (uintptr_t)(lushPthr_mem_beg
+                                             + lushPthr_maxValueOfLock
+                                             + (HOST_CACHE_LINE_SZ - 1))
+                                 & (uintptr_t)~(HOST_CACHE_LINE_SZ - 1),
+                        memory_order_relaxed);
 
 #if (LUSH_PTHR_FN_TY == 3)
   // sanity check

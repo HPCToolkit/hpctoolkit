@@ -144,8 +144,8 @@ hpcrun_clCreateBuffer
 cl_int
 hpcrun_clWaitForEvents
 (
-	cl_uint num_events,
-	const cl_event* event_list
+        cl_uint num_events,
+        const cl_event* event_list
 );
 
 

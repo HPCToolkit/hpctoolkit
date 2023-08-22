@@ -260,25 +260,25 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("gpu=level0\tOperation-level monitoring for GPU-accelerated applications\n"
-	 "\t\trunning atop Intel's Level Zero runtime. Collect timing \n"
-	 "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
-	 "\n");
+         "\t\trunning atop Intel's Level Zero runtime. Collect timing \n"
+         "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
+         "\n");
 #ifdef ENABLE_GTPIN
   printf("gpu=level0,inst=<comma-separated list of options>\n"
-	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
-	 "\t\trunning atop Intel's Level Zero runtime. Collect timing\n"
-	 "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
-	 "\t\tWhen running on Intel GPUs, use optional instrumentation\n"
-	 "\t\twithin GPU kernels to collect one or more of the following:\n"
-	 "\t\t  count:   count how many times each GPU instruction executes\n"
+         "\t\tOperation-level monitoring for GPU-accelerated applications\n"
+         "\t\trunning atop Intel's Level Zero runtime. Collect timing\n"
+         "\t\tinformation for GPU kernel invocations, memory copies, etc.\n"
+         "\t\tWhen running on Intel GPUs, use optional instrumentation\n"
+         "\t\twithin GPU kernels to collect one or more of the following:\n"
+         "\t\t  count:   count how many times each GPU instruction executes\n"
 #if ENABLE_LATENCY_ANALYSIS
-	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
+         "\t\t  latency: approximately attribute latency to GPU instructions\n"
 #endif
 #if ENABLE_SIMD_ANALYSIS
-	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
+         "\t\t  simd:    analyze utilization of SIMD lanes\n"
 #endif
-	 "\t\t  silent:  silence warnings from instrumentation\n"
-	 "\n");
+         "\t\t  silent:  silence warnings from instrumentation\n"
+         "\n");
 #endif
 }
 

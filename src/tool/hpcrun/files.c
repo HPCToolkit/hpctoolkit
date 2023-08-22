@@ -269,7 +269,7 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
   for (;;) {
     errno = 0;
     ret = snprintf(name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
-		   executable_name, rank, thread, id->host, mypid, id->gen, suffix);
+                   executable_name, rank, thread, id->host, mypid, id->gen, suffix);
     if (ret > PATH_MAX) {
       fd = -1;
       errno = ENAMETOOLONG;
@@ -296,7 +296,7 @@ hpcrun_open_file(int rank, int thread, const char *suffix, int flags)
   // Failure to open is a fatal error.
   if (fd < 0) {
     hpcrun_abort("hpctoolkit: unable to open %s file: '%s': %s",
-		 suffix, name, strerror(errno));
+                 suffix, name, strerror(errno));
   }
 
   return fd;
@@ -328,7 +328,7 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
   }
 
   ret = snprintf(old_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
-	         executable_name, 0, thread, earlyid.host, mypid, earlyid.gen, suffix);
+                 executable_name, 0, thread, earlyid.host, mypid, earlyid.gen, suffix);
   if (ret > PATH_MAX) {
     ret = -1;
     errno = ENAMETOOLONG;
@@ -338,7 +338,7 @@ hpcrun_rename_file(int rank, int thread, const char *suffix)
   for (;;) {
     errno = 0;
     ret = snprintf(new_name, PATH_MAX, FILENAME_TEMPLATE, output_directory,
-		   executable_name, rank, thread, lateid.host, mypid, lateid.gen, suffix);
+                   executable_name, rank, thread, lateid.host, mypid, lateid.gen, suffix);
     if (ret > PATH_MAX) {
       ret = -1;
       errno = ENAMETOOLONG;
@@ -362,9 +362,9 @@ warn:
   // Failure to rename is a loud warning.
   if (ret < 0) {
     EEMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
-	  suffix, old_name, new_name, strerror(errno));
+          suffix, old_name, new_name, strerror(errno));
     EMSG("hpctoolkit: unable to rename %s file: '%s' -> '%s': %s",
-	 suffix, old_name, new_name, strerror(errno));
+         suffix, old_name, new_name, strerror(errno));
   }
 
   return ret;
@@ -425,7 +425,7 @@ hpcrun_files_set_directory()
   int ret = mkdir(path, 0755);
   if (ret != 0 && errno != EEXIST) {
     hpcrun_abort("hpcrun: could not create output directory `%s': %s",
-		 path, strerror(errno));
+                 path, strerror(errno));
   }
 
   char* rpath = realpath(path, output_directory);
@@ -607,7 +607,7 @@ hpcrun_save_vdso()
       // my process is the designated writer of [vdso]
 
       if (write(fd, vdso_addr, vdso_len) != vdso_len) {
-	// write error; attempt to close file and
+        // write error; attempt to close file and
         // jump to error reporting. no checking on close
         // necessary. we are reporting an error anyway
         error = errno;

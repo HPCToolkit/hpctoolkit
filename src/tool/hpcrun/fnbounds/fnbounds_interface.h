@@ -78,7 +78,7 @@ fnbounds_release_lock(void);
 // All IPs are *normalized.*
 int
 fnbounds_table_lookup(void **table, int length, void *ip,
-		      void **start, void **end);
+                      void **start, void **end);
 
 
 #include "fnbounds_table_interface.h"

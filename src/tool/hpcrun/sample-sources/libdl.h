@@ -85,18 +85,18 @@
 
 #define DYN_FN_NAME(f) f ## _fn
 
-#define CHK_DLOPEN(h, lib, flags)					\
-  void* h = dlopen(lib, flags);						\
-  if (!h) {								\
-    return DYNAMIC_BINDING_STATUS_ERROR;				\
+#define CHK_DLOPEN(h, lib, flags)                                       \
+  void* h = dlopen(lib, flags);                                         \
+  if (!h) {                                                             \
+    return DYNAMIC_BINDING_STATUS_ERROR;                                \
   }
 
-#define CHK_DLSYM(h, fn) {						\
-    dlerror();								\
-    DYN_FN_NAME(fn) = dlsym(h, #fn);					\
-    if (DYN_FN_NAME(fn) == 0) {						\
-      return DYNAMIC_BINDING_STATUS_ERROR;				\
-    }									\
+#define CHK_DLSYM(h, fn) {                                              \
+    dlerror();                                                          \
+    DYN_FN_NAME(fn) = dlsym(h, #fn);                                    \
+    if (DYN_FN_NAME(fn) == 0) {                                         \
+      return DYNAMIC_BINDING_STATUS_ERROR;                              \
+    }                                                                   \
   }
 
 #endif

@@ -68,92 +68,92 @@
 namespace TraceviewerServer
 {
 //Forward declarations so we don't need to include the class just to have a pointer to it
-	class DataCompressionLayer;
+        class DataCompressionLayer;
 
 
-	class MPICommunication
-	{
-	public:
-		static const int SOCKET_SERVER = 0; //The rank of the node that is doing all the socket comm
+        class MPICommunication
+        {
+        public:
+                static const int SOCKET_SERVER = 0; //The rank of the node that is doing all the socket comm
 
-		typedef struct
-		{
-			char path[1024];
-		} open_file_command;
-		typedef struct
-		{
-			uint32_t processStart;
-			uint32_t processEnd;
-			Time timeStart;
-			Time timeEnd;
-			uint32_t verticalResolution;
-			uint32_t horizontalResolution;
-		} get_data_command;
-		typedef struct
-		{
-			Time minBegTime;
-			Time maxEndTime;
-			int headerSize;
-		} more_info_command;
+                typedef struct
+                {
+                        char path[1024];
+                } open_file_command;
+                typedef struct
+                {
+                        uint32_t processStart;
+                        uint32_t processEnd;
+                        Time timeStart;
+                        Time timeEnd;
+                        uint32_t verticalResolution;
+                        uint32_t horizontalResolution;
+                } get_data_command;
+                typedef struct
+                {
+                        Time minBegTime;
+                        Time maxEndTime;
+                        int headerSize;
+                } more_info_command;
 
-		typedef struct
-		{
-			int count;
-			bool excludeMatches;
-		} filter_header_command;
-		typedef struct
-		{
-			int command;
-			union
-			{
+                typedef struct
+                {
+                        int count;
+                        bool excludeMatches;
+                } filter_header_command;
+                typedef struct
+                {
+                        int command;
+                        union
+                        {
 
-				open_file_command ofile;
-				get_data_command gdata;
-				more_info_command minfo;
-				filter_header_command filt;
-			};
-		} CommandMessage;
+                                open_file_command ofile;
+                                get_data_command gdata;
+                                more_info_command minfo;
+                                filter_header_command filt;
+                        };
+                } CommandMessage;
 
 
-		typedef struct
-		{
-			int rankID;
-			int traceLinesSent;
-		} DoneMessage;
+                typedef struct
+                {
+                        int rankID;
+                        int traceLinesSent;
+                } DoneMessage;
 
-		typedef struct
-		{
-			int rankID;
+                typedef struct
+                {
+                        int rankID;
 
-			int line;
-			int entries;
-			Time begtime;
-			Time endtime;
-			int compressedSize;//In Bytes
-		} DataHeader;
+                        int line;
+                        int entries;
+                        Time begtime;
+                        Time endtime;
+                        int compressedSize;//In Bytes
+                } DataHeader;
 
-		typedef struct
-		{
-			int tag;
-			union
-			{
-				DataHeader data;
-				DoneMessage done;
-			};
-		} ResultMessage;
+                typedef struct
+                {
+                        int tag;
+                        union
+                        {
+                                DataHeader data;
+                                DoneMessage done;
+                        };
+                } ResultMessage;
 
-		typedef struct
-		{
-			ResultMessage* header;
-			bool compressed;
-			union{
-				DataCompressionLayer* compMsg;
-				unsigned char* message;
-			};
-			MPI::Request headerRequest;
-			MPI::Request bodyRequest;
-		} ResultBufferLocations;
-	};
+                typedef struct
+                {
+                        ResultMessage* header;
+                        bool compressed;
+                        union{
+                                DataCompressionLayer* compMsg;
+                                unsigned char* message;
+                        };
+                        MPI::Request headerRequest;
+                        MPI::Request bodyRequest;
+                } ResultBufferLocations;
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* MPICOMMUNICATION_H_ */

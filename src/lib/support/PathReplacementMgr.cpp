@@ -125,7 +125,7 @@ PathReplacementMgr::replace(const string& path) const
 // return:   A bool indicatin if a.first.size() < b.first.size().
 static bool
 compare_as_strings(const PathReplacementMgr::StringPair& a,
-		   const PathReplacementMgr::StringPair& b)
+                   const PathReplacementMgr::StringPair& b)
 {
   return a.first.size() > b.first.size();
 }
@@ -136,5 +136,5 @@ PathReplacementMgr::addPath(const string& oldPath, const string& newPath)
 {
   m_pathReplacement.push_back(StringPair(oldPath, newPath));
   std::stable_sort(m_pathReplacement.begin(), m_pathReplacement.end(),
-		   compare_as_strings);
+                   compare_as_strings);
 }

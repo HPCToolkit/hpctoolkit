@@ -127,15 +127,15 @@ hpcrun_extract_threshold
       //  the default threshold; otherwise, the value 0 was supplied and
       //  intended.
       if (endptr == input_string) {
-	value = default_value;
-	if (type == THRESH_FREQ) {
-	  // FIXME: Laksono: we have some choices
-	  //
-	  //   Should the type be changed to THRESH_VALUE here?
-	  //
-	  //   Should we just signal an error and quit? Perhaps we are here
-	  //   because of a typo.
-	}
+        value = default_value;
+        if (type == THRESH_FREQ) {
+          // FIXME: Laksono: we have some choices
+          //
+          //   Should the type be changed to THRESH_VALUE here?
+          //
+          //   Should we just signal an error and quit? Perhaps we are here
+          //   because of a typo.
+        }
       }
     }
 

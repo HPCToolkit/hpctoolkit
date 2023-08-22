@@ -67,35 +67,35 @@
 
 namespace TraceviewerServer
 {
-	extern bool useCompression;
-	extern int mainPortNumber;
-	extern int xmlPortNumber;
-	class Server
-	{
+        extern bool useCompression;
+        extern int mainPortNumber;
+        extern int xmlPortNumber;
+        class Server
+        {
 
-	public:
-		Server();
-		virtual ~Server();
-		static int main(int argc, char *argv[]);
+        public:
+                Server();
+                virtual ~Server();
+                static int main(int argc, char *argv[]);
 
-	private:
-		int runConnection(DataSocketStream*, DataSocketStream* xmlSocket);
-		void sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket);
+        private:
+                int runConnection(DataSocketStream*, DataSocketStream* xmlSocket);
+                void sendDBOpenedSuccessfully(DataSocketStream* socket, DataSocketStream* xmlSocket);
 
-		void parseInfo(DataSocketStream*);
-		SpaceTimeDataController* parseOpenDB(DataSocketStream*);
-		void filter(DataSocketStream*);
-		void getAndSendData(DataSocketStream*);
-		void sendXML(DataSocketStream*);
-		void sendDBOpenFailed(DataSocketStream*);
-		void checkProtocolVersions(DataSocketStream* receiver);
+                void parseInfo(DataSocketStream*);
+                SpaceTimeDataController* parseOpenDB(DataSocketStream*);
+                void filter(DataSocketStream*);
+                void getAndSendData(DataSocketStream*);
+                void sendXML(DataSocketStream*);
+                void sendDBOpenFailed(DataSocketStream*);
+                void checkProtocolVersions(DataSocketStream* receiver);
 
-		SpaceTimeDataController* controller;
+                SpaceTimeDataController* controller;
 
-		//Currently not really used, but pretty necessary for future extensions
-		int agreedUponProtocolVersion;
-		static const int SERVER_PROTOCOL_MAX_VERSION = 0x00010001;
+                //Currently not really used, but pretty necessary for future extensions
+                int agreedUponProtocolVersion;
+                static const int SERVER_PROTOCOL_MAX_VERSION = 0x00010001;
 
-	};
+        };
 }/* namespace TraceviewerServer */
 #endif /* Server_H_ */

@@ -114,13 +114,13 @@ typedef union {
 
 #define HPCFMT_List(t) list_of_ ## t
 
-#define HPCFMT_ListRep(t)			\
-  struct HPCFMT_List(t) {			\
-    uint32_t len;				\
-    t* lst;					\
+#define HPCFMT_ListRep(t)                       \
+  struct HPCFMT_List(t) {                       \
+    uint32_t len;                               \
+    t* lst;                                     \
   }
 
-#define HPCFMT_List_declare(t)			\
+#define HPCFMT_List_declare(t)                  \
   typedef HPCFMT_ListRep(t) HPCFMT_List(t)
 
 
@@ -342,19 +342,19 @@ HPCFMT_List_declare(hpcfmt_nvpair_t);
 
 int
 hpcfmt_nvpairList_fread(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
-			FILE* infs, hpcfmt_alloc_fn alloc);
+                        FILE* infs, hpcfmt_alloc_fn alloc);
 
 int
 hpcfmt_nvpairList_fprint(const HPCFMT_List(hpcfmt_nvpair_t)* nvps,
-			 FILE* fs, const char* pre);
+                         FILE* fs, const char* pre);
 
 const char*
 hpcfmt_nvpairList_search(const HPCFMT_List(hpcfmt_nvpair_t)* lst,
-			 const char* name);
+                         const char* name);
 
 void
 hpcfmt_nvpairList_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
-		       hpcfmt_free_fn dealloc);
+                       hpcfmt_free_fn dealloc);
 
 
 //***************************************************************************
@@ -367,10 +367,10 @@ hpcfmt_nvpairList_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 // --------------------------------------------------------------
 typedef struct metric_aux_info_s {
 
-	bool   is_multiplexed;  // flag if the event is multiplexed
-	double threshold_mean;  // average threshold (if multiplexed)
+        bool   is_multiplexed;  // flag if the event is multiplexed
+        double threshold_mean;  // average threshold (if multiplexed)
 
-	uint64_t num_samples;   // number of samples
+        uint64_t num_samples;   // number of samples
 
 } metric_aux_info_t;
 

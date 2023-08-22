@@ -74,7 +74,7 @@
 //
 
 typedef struct spinlock_s {
-	atomic_long thelock;
+        atomic_long thelock;
 } spinlock_t;
 
 #define SPINLOCK_UNLOCKED_VALUE (-1L)
@@ -113,7 +113,7 @@ spinlock_lock(spinlock_t *l)
   /* test-and-set lock */
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
   while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
-						memory_order_acquire, memory_order_relaxed)) {
+                                                memory_order_acquire, memory_order_relaxed)) {
     old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
 }
@@ -140,8 +140,8 @@ limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
   while (limit-- > 0 &&
-	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
-						memory_order_acquire, memory_order_relaxed)) {
+         !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
+                                                memory_order_acquire, memory_order_relaxed)) {
     old_lockval = SPINLOCK_UNLOCKED_VALUE;
   }
   return (limit + 1 > 0);
@@ -162,7 +162,7 @@ hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
   while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
-						memory_order_acquire, memory_order_relaxed)) {
+                                                memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
     if (old_lockval == locked_val)
@@ -195,8 +195,8 @@ hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
   while (limit-- > 0 &&
-	 !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
-						memory_order_acquire, memory_order_relaxed)) {
+         !atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
+                                                memory_order_acquire, memory_order_relaxed)) {
     // if we are already locked by the same id, prevent deadlock by
     // abandoning lock acquisition
     if (old_lockval == locked_val)

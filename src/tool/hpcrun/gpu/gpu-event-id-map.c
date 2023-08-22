@@ -70,25 +70,25 @@
 
 #include "gpu-print.h"
 
-#define st_insert				\
+#define st_insert                               \
   typed_splay_insert(event_id)
 
-#define st_lookup				\
+#define st_lookup                               \
   typed_splay_lookup(event_id)
 
-#define st_delete				\
+#define st_delete                               \
   typed_splay_delete(event_id)
 
-#define st_forall				\
+#define st_forall                               \
   typed_splay_forall(event_id)
 
-#define st_count				\
+#define st_count                                \
   typed_splay_count(event_id)
 
-#define st_alloc(free_list)			\
+#define st_alloc(free_list)                     \
   typed_splay_alloc(free_list, gpu_event_id_map_entry_t)
 
-#define st_free(free_list, node)		\
+#define st_free(free_list, node)                \
   typed_splay_free(free_list, node)
 
 

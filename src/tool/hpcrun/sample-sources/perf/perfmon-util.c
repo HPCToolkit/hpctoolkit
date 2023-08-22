@@ -107,12 +107,12 @@ typedef struct {
 // Constants
 //******************************************************************************
 
-#define MAX_EVENT_NAME_CHARS 	256
-#define MAX_EVENT_DESC_CHARS 	4096
+#define MAX_EVENT_NAME_CHARS    256
+#define MAX_EVENT_DESC_CHARS    4096
 
-#define EVENT_IS_PROFILABLE	 0
+#define EVENT_IS_PROFILABLE      0
 #define EVENT_MAY_NOT_PROFILABLE 1
-#define EVENT_FATAL_ERROR	-1
+#define EVENT_FATAL_ERROR       -1
 
 //******************************************************************************
 // forward declarations
@@ -235,7 +235,7 @@ show_event_info(pfm_event_info_t *info)
 
       if (test_pmu(buffer) == 0) {
         display_event_info(stdout, buffer, ainfo.desc);
-	continue;
+        continue;
       }
 
       // the counter may not be profilable. Perhaps requires more attributes/masks

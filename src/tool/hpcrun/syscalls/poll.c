@@ -149,14 +149,14 @@ MONITOR_EXT_WRAP_NAME(poll)
       clock_gettime(CLOCK_REALTIME, &now);
 
       timeout = init_timeout - THOUSAND * (now.tv_sec - start.tv_sec)
-	  - (now.tv_nsec - start.tv_nsec) / MILLION;
+          - (now.tv_nsec - start.tv_nsec) / MILLION;
 
       //
       // if timeout has expired, then call one more time with timeout
       // zero so the kernel sets ret and errno correctly.
       //
       if (timeout < 0) {
-	timeout = 0;
+        timeout = 0;
       }
     }
   }

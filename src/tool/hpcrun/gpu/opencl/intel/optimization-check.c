@@ -159,11 +159,11 @@ record_intel_optimization_metrics
 void
 isQueueInInOrderExecutionMode
 (
-	const cl_command_queue_properties *properties
+        const cl_command_queue_properties *properties
 )
 {
   // if properties is not specified an in-order host command queue is created for the specified device
-	bool inorder = !properties ? true : !(*properties && CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+        bool inorder = !properties ? true : !(*properties && CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
   if (inorder) {
     cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);

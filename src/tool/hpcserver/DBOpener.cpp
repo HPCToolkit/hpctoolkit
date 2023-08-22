@@ -67,109 +67,109 @@
 
 namespace TraceviewerServer
 {
-	#define XML_FILENAME "experiment.xml"
-	#define TRACE_FILENAME "experiment.mt"
+        #define XML_FILENAME "experiment.xml"
+        #define TRACE_FILENAME "experiment.mt"
 
-	DBOpener::DBOpener()
-	{
+        DBOpener::DBOpener()
+        {
 
-	}
+        }
 
-	DBOpener::~DBOpener()
-	{
-		//stdcl, which is the only dynamically allocated thing, gets closed later because
-		//it makes sense to have it persist even after the opener.
-	}
-	SpaceTimeDataController* stdcl;
-	SpaceTimeDataController* DBOpener::openDbAndCreateStdc(string pathToDB)
-	{
-		FileData location;
-		FileData* ptrLocation = &location;
-		bool hasDatabase = false;
-		hasDatabase = verifyDatabase(pathToDB, ptrLocation);
+        DBOpener::~DBOpener()
+        {
+                //stdcl, which is the only dynamically allocated thing, gets closed later because
+                //it makes sense to have it persist even after the opener.
+        }
+        SpaceTimeDataController* stdcl;
+        SpaceTimeDataController* DBOpener::openDbAndCreateStdc(string pathToDB)
+        {
+                FileData location;
+                FileData* ptrLocation = &location;
+                bool hasDatabase = false;
+                hasDatabase = verifyDatabase(pathToDB, ptrLocation);
 
-		// If it still doesn't have a database, we assume that the user doesn't
-		// want to open a database, so we return null, which makes the calling method return false.
-		if (!hasDatabase)
-			return NULL;
+                // If it still doesn't have a database, we assume that the user doesn't
+                // want to open a database, so we return null, which makes the calling method return false.
+                if (!hasDatabase)
+                        return NULL;
 
-		stdcl = new SpaceTimeDataController(ptrLocation);
-		return stdcl;
-	}
-	/****
-	 * Check if the directory is correct or not. If it is correct, it returns
-	 * the XML file and the trace file
-	 *
-	 * @param directory
-	 *            (in): the input directory
-	 * @param statusMgr
-	 *            (in): status bar
-	 * @param experimentFile
-	 *            (out): XML file
-	 * @param traceFile
-	 *            (out): trace file
-	 * @return true if the directory is valid, false otherwise
-	 *
-	 */
-	bool DBOpener::verifyDatabase(string directory, FileData* location)
-	{
+                stdcl = new SpaceTimeDataController(ptrLocation);
+                return stdcl;
+        }
+        /****
+         * Check if the directory is correct or not. If it is correct, it returns
+         * the XML file and the trace file
+         *
+         * @param directory
+         *            (in): the input directory
+         * @param statusMgr
+         *            (in): status bar
+         * @param experimentFile
+         *            (out): XML file
+         * @param traceFile
+         *            (out): trace file
+         * @return true if the directory is valid, false otherwise
+         *
+         */
+        bool DBOpener::verifyDatabase(string directory, FileData* location)
+        {
 
-		DEBUGCOUT(2) << "Checking " <<directory<<endl;
+                DEBUGCOUT(2) << "Checking " <<directory<<endl;
 
-		if (FileUtils::existsAndIsDir(directory))
-		{
+                if (FileUtils::existsAndIsDir(directory))
+                {
 
-			DEBUGCOUT(2) << "\tExists and is a directory"<<endl;
+                        DEBUGCOUT(2) << "\tExists and is a directory"<<endl;
 
-			location->fileXML = FileUtils::combinePaths(directory, XML_FILENAME);
+                        location->fileXML = FileUtils::combinePaths(directory, XML_FILENAME);
 
-			DEBUGCOUT(2) << "\tTrying to open "<<location->fileXML<<endl;
+                        DEBUGCOUT(2) << "\tTrying to open "<<location->fileXML<<endl;
 
-			if (FileUtils::exists(location->fileXML))
-			{
+                        if (FileUtils::exists(location->fileXML))
+                        {
 
-				DEBUGCOUT(2) <<"\tXML file is not null"<<endl;
+                                DEBUGCOUT(2) <<"\tXML file is not null"<<endl;
 
-				try
-				{
-					std::string outputFile = FileUtils::combinePaths(directory, TRACE_FILENAME);
+                                try
+                                {
+                                        std::string outputFile = FileUtils::combinePaths(directory, TRACE_FILENAME);
 
-					DEBUGCOUT(2) <<"\tTrying to open "<<outputFile<<endl;
+                                        DEBUGCOUT(2) <<"\tTrying to open "<<outputFile<<endl;
 
-					MergeDataAttribute att = MergeDataFiles::merge(directory, "*.hpctrace",
-							outputFile);
+                                        MergeDataAttribute att = MergeDataFiles::merge(directory, "*.hpctrace",
+                                                        outputFile);
 
-					DEBUGCOUT(2) <<"\tMerge resulted in "<<att<<endl;
+                                        DEBUGCOUT(2) <<"\tMerge resulted in "<<att<<endl;
 
-					if (att != FAIL_NO_DATA)
-					{
-						location->fileTrace = outputFile;
-						if (FileUtils::getFileSize(location->fileTrace) > MIN_TRACE_SIZE)
-						{
-							return true;
-						}
-						else
-						{
-							cerr << "Warning! Trace file " << location->fileTrace << "is too small: "
-									<< FileUtils::getFileSize(location->fileTrace) << " bytes." << endl;
-							return false;
-						}
-					}
-					else
-					{
-						cerr << "Error: trace file(s) does not exist or fail to open "
-								<< outputFile << endl;
-					}
+                                        if (att != FAIL_NO_DATA)
+                                        {
+                                                location->fileTrace = outputFile;
+                                                if (FileUtils::getFileSize(location->fileTrace) > MIN_TRACE_SIZE)
+                                                {
+                                                        return true;
+                                                }
+                                                else
+                                                {
+                                                        cerr << "Warning! Trace file " << location->fileTrace << "is too small: "
+                                                                        << FileUtils::getFileSize(location->fileTrace) << " bytes." << endl;
+                                                        return false;
+                                                }
+                                        }
+                                        else
+                                        {
+                                                cerr << "Error: trace file(s) does not exist or fail to open "
+                                                                << outputFile << endl;
+                                        }
 
-				} catch (int err)
-				{
-					cerr << "Error code: " << err << endl;
-				}
+                                } catch (int err)
+                                {
+                                        cerr << "Error code: " << err << endl;
+                                }
 
-			}
+                        }
 
-		}
-		return false;
-	}
+                }
+                return false;
+        }
 
 } /* namespace TraceviewerServer */

@@ -56,4 +56,4 @@ opencl_sync_epilogue
  uint16_t num_sync_events
 );
 
-#endif 	//blame_shift_opencl_h
+#endif  //blame_shift_opencl_h

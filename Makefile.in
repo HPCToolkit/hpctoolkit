@@ -885,10 +885,10 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 
 
 define copy-libs
-    if test "$1" = yes ; then \
-	( cd "$2" && tar cf - $3 2>/dev/null ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
-	true ; \
-    fi
+	if test "$1" = yes ; then \
+		( cd "$2" && tar cf - $3 2>/dev/null ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
+		true ; \
+	fi
 endef
 
 install-exec-local:
@@ -899,11 +899,11 @@ install-exec-local:
 	@echo "Copying external package libraries ..."
 	@$(mkinstalldirs) "$(EXT_LIBS_DIR)"
 	@for lib in $(BOOST_COPY_LIST) ; do  \
-	    $(call copy-libs,$(BOOST_COPY),$(BOOST_LIB_DIR),libboost_"$$lib"*so*) ;  \
+		$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB_DIR),libboost_"$$lib"*so*) ;  \
 	done
 	@$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
 	@for lib in common dynElf dynDwarf instructionAPI parseAPI symtabAPI ; do  \
-	    $(call copy-libs,$(DYNINST_COPY),$(DYNINST_LIB_DIR),lib"$$lib"*so*) ;  \
+		$(call copy-libs,$(DYNINST_COPY),$(DYNINST_LIB_DIR),lib"$$lib"*so*) ;  \
 	done
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf.a)
@@ -927,15 +927,15 @@ install-exec-local:
 #  $2 = glob pattern for library name
 #
 define strip-debug
-    if cd "$1" 2>/dev/null ; then  \
-	for lib in $2 ; do  \
-	    if test -f "$$lib" && test ! -L "$$lib" ; then  \
-		echo "$$lib" ;  \
-		objcopy --strip-debug "$$lib" ;  \
-	    fi ;  \
-	    true ; \
-	done ;  \
-    fi
+	if cd "$1" 2>/dev/null ; then  \
+		for lib in $2 ; do  \
+			if test -f "$$lib" && test ! -L "$$lib" ; then  \
+				echo "$$lib" ;  \
+				objcopy --strip-debug "$$lib" ;  \
+			fi ;  \
+			true ; \
+		done ;  \
+	fi
 endef
 
 @OPT_STRIP_HPCRUN_LIBS_TRUE@install-exec-hook:

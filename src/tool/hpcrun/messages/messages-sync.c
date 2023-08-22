@@ -175,7 +175,7 @@ messages_fini(void)
       unsigned long pid = (unsigned long) getpid();
 
       STDERR_MSG("hpctoolkit warning: executable '%s' (pid=%ld) "
-	      "prematurely closed hpctoolkit's log file", exec, pid);
+              "prematurely closed hpctoolkit's log file", exec, pid);
     }
     //----------------------------------------------------------------------
     // if this is an execution of an MPI program, we opened the log file

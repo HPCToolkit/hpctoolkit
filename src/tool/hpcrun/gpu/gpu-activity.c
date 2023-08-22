@@ -75,13 +75,13 @@
 
 #define UNIT_TEST 0
 
-#define FORALL_OPENCL_KINDS(macro)					\
-  macro(GPU_ACTIVITY_UNKNOWN)							\
+#define FORALL_OPENCL_KINDS(macro)                                      \
+  macro(GPU_ACTIVITY_UNKNOWN)                                                   \
   macro(GPU_ACTIVITY_KERNEL)           \
   macro(GPU_ACTIVITY_MEMCPY)
 
-#define FORALL_OPENCL_MEM_TYPES(macro)					\
-  macro(GPU_MEMCPY_UNK)							\
+#define FORALL_OPENCL_MEM_TYPES(macro)                                  \
+  macro(GPU_MEMCPY_UNK)                                                 \
   macro(GPU_MEMCPY_H2D)           \
   macro(GPU_MEMCPY_D2H)
 

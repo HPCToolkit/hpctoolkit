@@ -78,7 +78,7 @@
 
 #define PRECISE_IP_CHAR_MODIFIER 'p'
 
-#define PRECISE_IP_SUFFIX   	 ":p"
+#define PRECISE_IP_SUFFIX        ":p"
 #define PRECISE_IP_MAX_SUFFIX    ":P"
 
 #define DELIMITER_HOWOFTEN    '@'
@@ -180,18 +180,18 @@ perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
   // if there's a change in the specification, we need to change
   // this one too (unfortunately)
   for(int i=perf_skid_flavors-1; i>=0; i--) {
-	attr->precise_ip = perf_skid_precision[i];
+        attr->precise_ip = perf_skid_precision[i];
 
-	// ask sys to "create" the event
-	// it returns -1 if it fails.
-	int ret = perf_event_open(attr,
-			THREAD_SELF, CPU_ANY,
-			GROUP_FD, PERF_FLAGS);
-	if (ret >= 0) {
-	  close(ret);
-	  // just quit when the returned value is correct
-	  return attr->precise_ip;
-	}
+        // ask sys to "create" the event
+        // it returns -1 if it fails.
+        int ret = perf_event_open(attr,
+                        THREAD_SELF, CPU_ANY,
+                        GROUP_FD, PERF_FLAGS);
+        if (ret >= 0) {
+          close(ret);
+          // just quit when the returned value is correct
+          return attr->precise_ip;
+        }
   }
   return 0;
 }
@@ -315,10 +315,10 @@ int
 main (int argc, char *argv[])
 {
   char *ev[] = {"cycles:p", "cycles:pp", "cycles", "cycles::popo:peer",
-	  	"cycles::popo:oeer:ppp", "cycles::popo:peer:p", "cycles@100",
-	  	"cycles::popo:oeer:p@100", "cycles::popo:peer:p@f10",
- 		"cycles::popo:peer:ppp@5050", "cycles::popo:peer:pp",
- 		"cs:P", "cs:Pp", "cs:pppp", "cs:P@10000" };
+                "cycles::popo:oeer:ppp", "cycles::popo:peer:p", "cycles@100",
+                "cycles::popo:oeer:p@100", "cycles::popo:peer:p@f10",
+                "cycles::popo:peer:ppp@5050", "cycles::popo:peer:pp",
+                "cs:P", "cs:Pp", "cs:pppp", "cs:P@10000" };
   int num_events = sizeof(ev)/sizeof(ev[9]);
   int i;
 

@@ -152,15 +152,15 @@ int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
       open_word ++;
 
       /*
-	If the current word length is near the line width it will be
-	hard to fit it all on a line, so we should just leave as much
-	of it as possible on this line. Remove the fraction if you
-	only want longer words to break.
+        If the current word length is near the line width it will be
+        hard to fit it all on a line, so we should just leave as much
+        of it as possible on this line. Remove the fraction if you
+        only want longer words to break.
       */
       if (open_word + close_word > w * 0.8)
       {
-	l = w;
-	break;
+        l = w;
+        break;
       }
     }
 
@@ -173,8 +173,8 @@ int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
     {
       if (s[p + i] == '\n')
       {
-	l = i;
-	break;
+        l = i;
+        break;
       }
     }
 
@@ -197,7 +197,7 @@ int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
       len = (int *) realloc(len, sizeof(int) * allocated);
 
       if (line == NULL || len == NULL)
-	goto cleanup;
+        goto cleanup;
     }
 
     /*

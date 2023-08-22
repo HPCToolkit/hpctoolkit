@@ -154,8 +154,8 @@ public:
   overlaps(VMAInterval x) const
   {
     return (contains(x)
-	    || (x.beg() <= beg() && beg() <  x.end())
-	    || (x.beg() <  end() && end() <= x.end()));
+            || (x.beg() <= beg() && beg() <  x.end())
+            || (x.beg() <  end() && end() <= x.end()));
   }
 
   // contains: does this interval contain x
@@ -206,7 +206,7 @@ inline bool
 operator<(const VMAInterval& x, const VMAInterval& y)
 {
   return ((x.beg() < y.beg()) ||
-	  ((x.beg() == y.beg()) && (x.end() < y.end())));
+          ((x.beg() == y.beg()) && (x.end() < y.end())));
 }
 
 class lt_VMAInterval {
@@ -449,10 +449,10 @@ public:
     for ( ; lb_r != this->rend(); ++lb_r) {
       const VMAInterval& vmaint = lb_r->first;
       if (vmaint.contains(toFind)) {
-	return --(lb_r.base()); // adjust for reverse iterators
+        return --(lb_r.base()); // adjust for reverse iterators
       }
       else if (vmaint < toFind) {
-      	break; // !vmaint.contains(toFind) AND (toFind > vmaint)
+        break; // !vmaint.contains(toFind) AND (toFind > vmaint)
       }
     }
 

@@ -381,7 +381,7 @@ The following examples lists some useful events for different processor architec
 
 \subsection{Sample sources}
 
-%\newcommand{\	exttt{perf\_events}}{{\tt perf\_events}}
+%\newcommand{\  exttt{perf\_events}}{{\tt perf\_events}}
 
 \Prog{hpcrun} uses Linux perf\_events (default on Linux platform) and optionally the PAPI library to provide access to hardware performance counter events.
 It is important to note that on most out-of-order pipelined architectures, a hardware counter interrupt is not precisely attributed to the instruction that induced the counter to overflow.
@@ -412,12 +412,12 @@ An event name is case insensitive and is defined as followed:
 \end{verbatim}
 
 \begin{itemize}
-	\item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
-	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted.
-	\item \textbf{unit\_mask}.  This designate an optional sub-events. Some events can be refined using sub-events. An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
-	\item \textbf{modifier}.  A modifier is an optional filter which modifies how the event counts. Modifiers have a type and a value specified after the equal sign.
-		For boolean type modifiers, without specifying the value, the presence of the modifier is interpreted as meaning true. Events may support multiple modifiers, by repeating the \texttt{:modifier|:modifier=val} pattern.
-	\begin{itemize}
+        \item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
+        \item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted.
+        \item \textbf{unit\_mask}.  This designate an optional sub-events. Some events can be refined using sub-events. An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
+        \item \textbf{modifier}.  A modifier is an optional filter which modifies how the event counts. Modifiers have a type and a value specified after the equal sign.
+                For boolean type modifiers, without specifying the value, the presence of the modifier is interpreted as meaning true. Events may support multiple modifiers, by repeating the \texttt{:modifier|:modifier=val} pattern.
+        \begin{itemize}
                 \item \textbf{precise\_ip}. For some events, it is possible to control the amount of skid.
 Skid is a measure of how many instructions may execute between an event and the PC where the event is reported.
 Smaller skid enables more accurate attribution of events to instructions. Without a skid modifier, hpcrun allows arbitrary skid because some architectures
@@ -435,7 +435,7 @@ but no samples will be delivered.
 
 Some capabilities of HPCToolkit's \texttt{perf\_events} Interface include:
 \begin{itemize}
-	\item \textbf{Frequency-based sampling.}
+        \item \textbf{Frequency-based sampling.}
 Rather than picking a sample period for a hardware counter,
 the Linux \texttt{perf\_events} interface enables one to specify the desired sampling frequency
 and have the kernel automatically select and adjust the period

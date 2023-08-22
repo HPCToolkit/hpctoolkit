@@ -106,11 +106,11 @@ public:
 
 void
 makeStructure(std::string filename,
-	      std::ostream * outFile,
-	      std::ostream * gapsFile,
-	      std::string gaps_filenm,
-	      std::string search_path,
-	      Struct::Options & opts);
+              std::ostream * outFile,
+              std::ostream * gapsFile,
+              std::string gaps_filenm,
+              std::string search_path,
+              Struct::Options & opts);
 
 } // namespace Struct
 } // namespace BAnal

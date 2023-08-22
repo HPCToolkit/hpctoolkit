@@ -172,9 +172,9 @@ doSingleBinary
   BAnal::Struct::Options opts;
 
   opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
-	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
-	   args.compute_gpu_cfg, args.parallel_analysis_threshold,
-	   args.pretty_print_output);
+           args.analyze_cpu_binaries, args.analyze_gpu_binaries,
+           args.compute_gpu_cfg, args.parallel_analysis_threshold,
+           args.pretty_print_output);
   if (args.show_gaps && args.out_filenm == "-") {
     DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
     exit(1);
@@ -283,11 +283,11 @@ doSingleBinary
       std::cout << " begin " << mode.c_str() <<" [gpucfg=" << (args.compute_gpu_cfg == true ? "yes" : "no")
         << "] analysis of " "GPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << ")" << std::endl;
+        << ", threads = " << args.jobs << ")" << std::endl;
     } else {
       std::cout << " begin " << mode.c_str() << " analysis of CPU binary "
         << args.in_filenm.c_str() << " (size = " << sb->st_size
-	<< ", threads = " << args.jobs << ")" << std::endl;
+        << ", threads = " << args.jobs << ")" << std::endl;
     }
   }
 
@@ -295,12 +295,12 @@ doSingleBinary
   //  Caching is embedded in this call
   //
   hpcstruct.init(cache_path_directory.c_str(), cache_flat_entry.c_str(),
-		 structure_name.c_str(), hpcstruct_path.c_str());
+                 structure_name.c_str(), hpcstruct_path.c_str());
 
 #if 0
   std::cerr << "DEBUG hpcinit, path_dir " << cache_path_directory.c_str() << std::endl
-	<< "DEBUG   flat entry " << cache_flat_entry.c_str() << "  name " << structure_name.c_str()
-	<< "  path " <<  hpcstruct_path.c_str() << std::endl;
+        << "DEBUG   flat entry " << cache_flat_entry.c_str() << "  name " << structure_name.c_str()
+        << "  path " <<  hpcstruct_path.c_str() << std::endl;
 #endif
 
   // See if the user requested show_gaps
@@ -311,7 +311,7 @@ doSingleBinary
     std::string gaps_path =
       std::string(hpcstruct_path) + std::string(".gaps");
     gaps.init(cache_path_directory.c_str(), cache_flat_entry.c_str(), "gaps",
-	      gaps_path.c_str());
+              gaps_path.c_str());
   }
 
 #if 0
@@ -325,8 +325,8 @@ doSingleBinary
     gaps.open();
     try {
       BAnal::Struct::makeStructure(args.in_filenm, hpcstruct.getStream(),
-				   gaps.getStream(), gaps.getName(),
-				   args.searchPathStr, opts);
+                                   gaps.getStream(), gaps.getName(),
+                                   args.searchPathStr, opts);
     } catch (int n) {
       error = n;
     }

@@ -72,8 +72,8 @@
 #define T Fmt_T
 
 #define pad(n,c) do { int nn = (n); \
-	while (nn-- > 0) \
-		put((c), cl); } while (0)
+        while (nn-- > 0) \
+                put((c), cl); } while (0)
 
 //
 // Useful constants for floating point manipulation
@@ -84,21 +84,21 @@
 // 308 decimal digits = max # of digits to left of decimal point (when not using scientific notation
 //
 //
-#define	MAXEXP		308
+#define MAXEXP          308
 
 //
 // 128 bit fraction takes up 39 decimal digits; max reasonable precision
 //
-#define	MAXFRACT	39
+#define MAXFRACT        39
 
 //
 // default precisions
 //
-#define	DEFPREC		6
-#define	DEFLPREC	14
+#define DEFPREC         6
+#define DEFLPREC        14
 
 // max digits to left + max digits to right + decimal point
-#define	FPBUF_LEN	(MAXEXP+MAXFRACT+1)
+#define FPBUF_LEN       (MAXEXP+MAXFRACT+1)
 
 //***********************************
 // structures and data types
@@ -454,7 +454,7 @@ hpcrun_msg_puts(const char *str, int len,
 
 void
 hpcrun_msg_fmt(int put(int c, void *), void *cl,
-	const char *fmt, ...)
+        const char *fmt, ...)
 {
   va_list_box box;
   va_start(box.ap, fmt);

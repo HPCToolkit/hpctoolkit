@@ -61,4 +61,4 @@ papi_kernel_map_entry_kernel_node_get
  papi_kernel_map_entry_t *entry
 );
 
-#endif		// gpu_papi_kernel_map_h_
+#endif          // gpu_papi_kernel_map_h_

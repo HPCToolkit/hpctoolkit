@@ -94,11 +94,11 @@ namespace StrUtil {
 
 void
 tokenize_char(const std::string& tokenstr, const char* delim,
-	      std::vector<std::string>& tokenvec);
+              std::vector<std::string>& tokenvec);
 
 void
 tokenize_str(const std::string& tokenstr, const char* delim,
-	      std::vector<std::string>& tokenvec);
+              std::vector<std::string>& tokenvec);
 
 
 // --------------------------------------------------------------------------

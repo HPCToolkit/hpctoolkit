@@ -77,7 +77,7 @@ struct IteratorStackS {
 
 
 IteratorStack::IteratorStack(TraversalOrder torder,
-			     IterStackEnumType _enumType)
+                             IterStackEnumType _enumType)
 {
   iteratorStackRepr = new IteratorStackS;
   InitTraversal(torder, _enumType);
@@ -142,9 +142,9 @@ void IteratorStack::operator++(int)
     if (top->IsValid() == false) {
       bool popped = false;
       while ((Top()->IsValid() == false) &&
-	     (iteratorStackRepr->pstack.Depth() > 1)) {
-	FreeTop();
-	popped = true;
+             (iteratorStackRepr->pstack.Depth() > 1)) {
+        FreeTop();
+        popped = true;
       }
       if (popped && (enumType == ITER_STACK_ENUM_LEAVES_ONLY))
         continue;
@@ -160,7 +160,7 @@ void IteratorStack::operator++(int)
 
 
 void IteratorStack::ReConstruct(TraversalOrder torder,
-				IterStackEnumType _enumType)
+                                IterStackEnumType _enumType)
 {
   InitTraversal(torder, _enumType);
   FreeStack(0);
@@ -273,7 +273,7 @@ void IteratorStack::FreeStack(int maxDepth)
 
 
 void IteratorStack::InitTraversal(TraversalOrder torder,
-				  IterStackEnumType _enumType)
+                                  IterStackEnumType _enumType)
 {
   clientTraversalOrder = torder;
   enumType = _enumType;
@@ -287,7 +287,7 @@ void IteratorStack::InitTraversal(TraversalOrder torder,
 //  traversalOrder = PreAndPostOrder;  // reversed by IteratorToPushIfAny
   else {
     DIAG_Assert((torder == PreOrder) || (torder == PostOrder) ||
-		(torder == PreAndPostOrder), "");
+                (torder == PreAndPostOrder), "");
     traversalOrder = torder;
   }
 }
@@ -312,7 +312,7 @@ void IteratorStack::DumpUpCall()
 //****************************************************************************
 
 SingletonIterator::SingletonIterator(const void* singletonValue,
-				     TraversalVisitType vtype)
+                                     TraversalVisitType vtype)
   : value(singletonValue), done(false), visitType(vtype)
 {
 }

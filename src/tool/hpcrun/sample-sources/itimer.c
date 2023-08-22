@@ -322,11 +322,11 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
 
   if (safe) {
     TMSG(ITIMER_HANDLER, "starting %s: value = (%d,%d), interval = (%d,%d)",
-	 the_event_name,
-	 itval_start.it_value.tv_sec,
-	 itval_start.it_value.tv_usec,
-	 itval_start.it_interval.tv_sec,
-	 itval_start.it_interval.tv_usec);
+         the_event_name,
+         itval_start.it_value.tv_sec,
+         itval_start.it_value.tv_usec,
+         itval_start.it_interval.tv_sec,
+         itval_start.it_interval.tv_usec);
   }
 
   ret = hpcrun_start_timer(td);
@@ -549,13 +549,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   kind_info_t *timer_kind = hpcrun_metrics_new_kind();
   int metric_id =
     hpcrun_set_new_metric_info_and_period(timer_kind, the_metric_name, MetricFlags_ValFmt_Real,
-					  sample_period, metric_property_time);
+                                          sample_period, metric_property_time);
   METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
     int mid_idleness =
       hpcrun_set_new_metric_info_and_period(timer_kind, IDLE_METRIC_NAME,
-					    MetricFlags_ValFmt_Real,
-					    sample_period, metric_property_time);
+                                            MetricFlags_ValFmt_Real,
+                                            sample_period, metric_property_time);
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
   }
@@ -592,18 +592,18 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tReal clock time used by the thread in microseconds.\n"
-	 "\t\tBased on the CLOCK_REALTIME timer with the SIGEV_THREAD_ID\n"
-	 "\t\textension.  Includes time blocked in the kernel, and may\n"
-	 "\t\tbreak the invocation of some syscalls that are sensitive to EINTR.\n",
-	 REALTIME_EVENT_NAME);
+         "\t\tBased on the CLOCK_REALTIME timer with the SIGEV_THREAD_ID\n"
+         "\t\textension.  Includes time blocked in the kernel, and may\n"
+         "\t\tbreak the invocation of some syscalls that are sensitive to EINTR.\n",
+         REALTIME_EVENT_NAME);
 #ifndef ENABLE_CLOCK_REALTIME
   printf("\t\tNot available on this system.\n");
 #endif
   printf("\n");
   printf("%s  \tCPU clock time used by the thread in microseconds.  Based\n"
-	 "\t\ton the CLOCK_THREAD_CPUTIME_ID timer with the SIGEV_THREAD_ID\n"
-	 "\t\textension.\n",
-	 CPUTIME_EVENT_NAME);
+         "\t\ton the CLOCK_THREAD_CPUTIME_ID timer with the SIGEV_THREAD_ID\n"
+         "\t\textension.\n",
+         CPUTIME_EVENT_NAME);
 #ifndef ENABLE_CLOCK_CPUTIME
   printf("\t\tNot available on this system.\n");
 #endif
@@ -710,7 +710,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   };
 
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
-					    0/*skipInner*/, 0/*isSync*/, &info);
+                                            0/*skipInner*/, 0/*isSync*/, &info);
 
   if(sv.sample_node) {
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);

@@ -70,23 +70,23 @@
 
 #define FORALL_INDEXED_METRIC_KINDS(macro) \
   macro(GMEM, 0)                           \
-  macro(GMSET, 1)			   \
-  macro(GPU_INST_STALL, 2)		   \
-  macro(GXCOPY, 3)			   \
-  macro(GSYNC, 4)			   \
-  macro(GGMEM, 5)			   \
+  macro(GMSET, 1)                          \
+  macro(GPU_INST_STALL, 2)                 \
+  macro(GXCOPY, 3)                         \
+  macro(GSYNC, 4)                          \
+  macro(GGMEM, 5)                          \
   macro(GLMEM, 6)
 
 #define FORALL_SCALAR_METRIC_KINDS(macro)                        \
   macro(GBR, 7)                                                  \
-  macro(GICOPY, 8)						 \
-  macro(GPU_INST, 9)						 \
-  macro(GTIMES, 10)						 \
-  macro(KINFO, 12)						 \
-  macro(GSAMP, 13)						 \
-  macro(GXFER, 14)						 \
-  macro(INTEL_OPTIMIZATION, 15)					 \
-  macro(BLAME_SHIFT, 16)					 \
+  macro(GICOPY, 8)                                               \
+  macro(GPU_INST, 9)                                             \
+  macro(GTIMES, 10)                                              \
+  macro(KINFO, 12)                                               \
+  macro(GSAMP, 13)                                               \
+  macro(GXFER, 14)                                               \
+  macro(INTEL_OPTIMIZATION, 15)                                  \
+  macro(BLAME_SHIFT, 16)                                         \
   macro(GPU_UTILIZATION, 17)
 
 
@@ -688,22 +688,22 @@ gpu_metrics_attribute_link
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT),
-				   m->staticSharedMemory);
+                                   m->staticSharedMemory);
 
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_RCV),
-				   m->dynamicSharedMemory);
+                                   m->dynamicSharedMemory);
 
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT_TP),
-				   m->localMemoryTotal);
+                                   m->localMemoryTotal);
 
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XRCV_TP),
-				   m->activeWarpsPerSM);
+                                   m->activeWarpsPerSM);
 
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XMIT_COUNT),
-				   m->activeWarpsPerSM);
+                                   m->activeWarpsPerSM);
 
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_XFER_XRCV_COUNT),
-				   m->activeWarpsPerSM);
+                                   m->activeWarpsPerSM);
 #endif
 }
 #endif

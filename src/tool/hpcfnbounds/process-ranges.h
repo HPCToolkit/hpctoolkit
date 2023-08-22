@@ -52,7 +52,7 @@
 void process_range_init();
 
 void process_range(const char *name, long offset, void *vstart, void *vend,
-		   DiscoverFnTy fn_discovery);
+                   DiscoverFnTy fn_discovery);
 
 bool range_contains_control_flow(void *vstart, void *vend);
 

@@ -238,12 +238,12 @@ contains_tail_call_to_f(void *callee, void *target_fn)
     case XED_ICLASS_JMP:
     case XED_ICLASS_JMP_FAR:
       {
-	void *target = x86_get_branch_target(ins, xptr);
-	if ((target >= routine_end) || (target < routine_start)) {
-	  // tail call
-	  if (target == target_fn) return UNW_ADDR_CONFIRMED;
-	  status = UNW_ADDR_PROBABLE_TAIL;
-	}
+        void *target = x86_get_branch_target(ins, xptr);
+        if ((target >= routine_end) || (target < routine_start)) {
+          // tail call
+          if (target == target_fn) return UNW_ADDR_CONFIRMED;
+          status = UNW_ADDR_PROBABLE_TAIL;
+        }
       }
       break;
     default:
@@ -272,8 +272,8 @@ confirm_tail_call(void *addr, void *target_fn)
   unwindr_info_t unwr_info;
   bool found = uw_recipe_map_lookup(callee, NATIVE_UNWINDER, &unwr_info);
   if (found && (unwr_info.treestat == READY)
-	  && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
-	return contains_tail_call_to_f(callee, target_fn);
+          && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
+        return contains_tail_call_to_f(callee, target_fn);
 
   return status_is_wrong();
 }
@@ -336,8 +336,8 @@ confirm_plt_call(void *addr, void *callee)
   unwindr_info_t unwr_info;
   bool found = uw_recipe_map_lookup(plt_callee, NATIVE_UNWINDER, &unwr_info);
   if (found && (unwr_info.treestat == READY)
-	  && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
-	return contains_tail_call_to_f(plt_callee, callee);
+          && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
+        return contains_tail_call_to_f(plt_callee, callee);
 
 #endif
 
@@ -348,7 +348,7 @@ static int
 return_addr_valid(void *addr, unwindr_info_t *unwr_info)
 {
   return (uw_recipe_map_lookup(addr, NATIVE_UNWINDER, unwr_info) &&
-	  unwr_info->treestat != NEVER);
+          unwr_info->treestat != NEVER);
 }
 
 //****************************************************************************
@@ -380,8 +380,8 @@ deep_validate_return_addr(void* addr, void* generic)
   validation_status result = confirm_plt_call(addr, callee);
   if (result != UNW_ADDR_WRONG) {
     TMSG(VALIDATE_UNW,
-	 "Instruction preceding %p is a call through the PLT to this routine. Unwind confirmed",
-	 addr);
+         "Instruction preceding %p is a call through the PLT to this routine. Unwind confirmed",
+         addr);
     return result;
   }
   result = confirm_tail_call(addr, callee);

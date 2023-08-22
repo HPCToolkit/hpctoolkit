@@ -58,7 +58,7 @@ extern void *__real_realloc(void *ptr, size_t size);
 #if 0
 extern int __real_sigprocmask(int, const sigset_t *, sigset_t *);
 extern int __real_sigaction(int sig, const struct sigaction *act,
-			  struct sigaction *oact);
+                          struct sigaction *oact);
 extern sig_t __real_signal(int sig, sig_t func);
 
 int __wrap_sigprocmask(int mask, const sigset_t *set1, sigset_t *set2){

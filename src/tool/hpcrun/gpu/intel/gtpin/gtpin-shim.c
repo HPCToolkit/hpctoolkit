@@ -128,7 +128,7 @@ static void init()
 {
   Lmid_t scope = getenv("HPCRUN_GTPIN_VISIBLE") ? LM_ID_BASE : LM_ID_NEWLM;
   void *hpcrun_gtpinlib = dlmopen(scope, "libhpcrun_gtpin_cxx.so",
-				  RTLD_LOCAL | RTLD_LAZY);
+                                  RTLD_LOCAL | RTLD_LAZY);
   if (hpcrun_gtpinlib == NULL) {
     EEMSG("FATAL: hpcrun failure: unable to load HPCToolkit's gtpin support library: %s", dlerror());
     monitor_real_exit(-1);

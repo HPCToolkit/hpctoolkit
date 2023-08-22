@@ -166,8 +166,8 @@ xml::substitute(const char* str, const string* fromStrs, const string* toStrs)
     for (/*curSub = 0*/; curSub < numSubs; curSub++) {
       curSubLn = fromStrs[curSub].length();
       if ((strLn-i >= curSubLn) &&
-	  (strncmp(str+i, fromStrs[curSub].c_str(), curSubLn) == 0)) {
-	break; // only one substitution possible per position
+          (strncmp(str+i, fromStrs[curSub].c_str(), curSubLn) == 0)) {
+        break; // only one substitution possible per position
       }
     }
 

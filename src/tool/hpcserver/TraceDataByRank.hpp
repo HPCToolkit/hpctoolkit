@@ -69,36 +69,36 @@
 namespace TraceviewerServer
 {
 
-	class TraceDataByRank
-	{
-	public:
+        class TraceDataByRank
+        {
+        public:
 
-		TraceDataByRank(FilteredBaseData*, int, int, int);
-		virtual ~TraceDataByRank();
+                TraceDataByRank(FilteredBaseData*, int, int, int);
+                virtual ~TraceDataByRank();
 
-		void getData(Time timeStart, Time timeRange, double pixelLength);
-		int sampleTimeLine(FileOffset minLoc, FileOffset maxLoc, int startPixel, int endPixel, int minIndex, double pixelLength, Time startingTime);
-		FileOffset findTimeInInterval(Time time, FileOffset l_boundOffset, FileOffset r_boundOffset);
+                void getData(Time timeStart, Time timeRange, double pixelLength);
+                int sampleTimeLine(FileOffset minLoc, FileOffset maxLoc, int startPixel, int endPixel, int minIndex, double pixelLength, Time startingTime);
+                FileOffset findTimeInInterval(Time time, FileOffset l_boundOffset, FileOffset r_boundOffset);
 
 
 
-		vector<TimeCPID>* listCPID;
-		int rank;
-	private:
-		FilteredBaseData* data;
+                vector<TimeCPID>* listCPID;
+                int rank;
+        private:
+                FilteredBaseData* data;
 
-		FileOffset minloc;
-		FileOffset maxloc;
-		int numPixelsH;
+                FileOffset minloc;
+                FileOffset maxloc;
+                int numPixelsH;
 
-		FileOffset getAbsoluteLocation(FileOffset);
+                FileOffset getAbsoluteLocation(FileOffset);
 
-		FileOffset getRelativeLocation(FileOffset);
-		void addSample(unsigned int, TimeCPID);
-		TimeCPID getData(FileOffset);
-		Long getNumberOfRecords(FileOffset, FileOffset);
-		void postProcess();
-	};
+                FileOffset getRelativeLocation(FileOffset);
+                void addSample(unsigned int, TimeCPID);
+                TimeCPID getData(FileOffset);
+                Long getNumberOfRecords(FileOffset, FileOffset);
+                void postProcess();
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* TRACEDATABYRANKLOCAL_H_ */

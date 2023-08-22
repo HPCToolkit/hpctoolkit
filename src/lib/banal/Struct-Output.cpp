@@ -237,9 +237,9 @@ printStructFileBegin(ostream * os, ostream * gaps, string filenm)
 
   if (gaps != NULL) {
     *gaps << "This file describes the unclaimed vma ranges (gaps) in the control\n"
-	  << "flow graph for the following file.  This is mostly for debugging and\n"
-	  << "improving ParseAPI.\n\n"
-	  << filenm << "\n";
+          << "flow graph for the following file.  This is mostly for debugging and\n"
+          << "improving ParseAPI.\n\n"
+          << filenm << "\n";
     gaps_line = 5;
   }
 }
@@ -329,7 +329,7 @@ printFileEnd(ostream * os, FileInfo * finfo)
 //
 void
 earlyFormatProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo,
-		bool do_gaps, HPC::StringTable & strTab)
+                bool do_gaps, HPC::StringTable & strTab)
 {
   if (os == NULL || finfo == NULL || ginfo == NULL
       || pinfo == NULL || pinfo->root == NULL) {
@@ -379,7 +379,7 @@ earlyFormatProc(ostream * os, FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pi
 //
 void
 finalPrintProc(ostream * os, ostream * gaps, string & buf, string & gaps_filenm,
-	       FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo)
+               FileInfo * finfo, GroupInfo * ginfo, ProcInfo * pinfo)
 {
   // if no index or gaps, then nothing to translate, just dump 'buf'
   // directly to 'os'
@@ -414,7 +414,7 @@ finalPrintProc(ostream * os, ostream * gaps, string & buf, string & gaps_filenm,
 
     default:
       cerr << "internal error (unknown marker) in hpcstruct: "
-	   << buf.substr(pos, 3) << "\n";
+           << buf.substr(pos, 3) << "\n";
       break;
     }
 
@@ -441,9 +441,9 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
   }
 
   *gaps << "\nfunc:  " << pinfo->prettyName << "\n"
-	<< "link:  " << pinfo->linkName << "\n"
-	<< "file:  " << finfo->fileName << "  line: " << pinfo->line_num << "\n"
-	<< "0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n\n";
+        << "link:  " << pinfo->linkName << "\n"
+        << "file:  " << finfo->fileName << "  line: " << pinfo->line_num << "\n"
+        << "0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n\n";
   gaps_line += 6;
 
   doIndent(os, 3);
@@ -470,15 +470,15 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
     long len = end - start;
 
     *gaps << "gap:  0x" << hex << start << "--0x" << end
-	  << dec << "  (" << len << ")\n";
+          << dec << "  (" << len << ")\n";
     gaps_line++;
 
     doIndent(os, 5);
     *os << "<S"
-	<< INDEX
-	<< NUMBER("l", gaps_line)
-	<< VRANGE(start, len)
-	<< "/>\n";
+        << INDEX
+        << NUMBER("l", gaps_line)
+        << VRANGE(start, len)
+        << "/>\n";
   }
 
   doIndent(os, 4);
@@ -500,7 +500,7 @@ doGaps(ostream * os, ostream * gaps, string gaps_file,
 //
 static void
 doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
-	   HPC::StringTable & strTab)
+           HPC::StringTable & strTab)
 {
   if (root == NULL) {
     return;
@@ -525,15 +525,15 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     // in same file (but must be known).  stmts with unknown file/line
     // do not need a guard alien.
     if (sinfo->line_num > 0
-	&& (sinfo->base_index != scope.base_index || sinfo->line_num < scope.line_num))
+        && (sinfo->base_index != scope.base_index || sinfo->line_num < scope.line_num))
     {
       auto ait = alienMap.find(sinfo->base_index);
       if (ait != alienMap.end()) {
-	node = ait->second;
+        node = ait->second;
       }
       else {
-	node = new TreeNode(sinfo->file_index);
-	alienMap[sinfo->base_index] = node;
+        node = new TreeNode(sinfo->file_index);
+        alienMap[sinfo->base_index] = node;
       }
     }
     else {
@@ -553,15 +553,15 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     // in same file (but must be known).  loops with unknown file/line
     // do not need a guard alien.
     if (linfo->line_num > 0
-	&& (linfo->base_index != scope.base_index || linfo->line_num < scope.line_num))
+        && (linfo->base_index != scope.base_index || linfo->line_num < scope.line_num))
     {
       auto ait = alienMap.find(linfo->base_index);
       if (ait != alienMap.end()) {
-	node = ait->second;
+        node = ait->second;
       }
       else {
-	node = new TreeNode(linfo->file_index);
-	alienMap[linfo->base_index] = node;
+        node = new TreeNode(linfo->file_index);
+        alienMap[linfo->base_index] = node;
       }
     }
     else {
@@ -588,12 +588,12 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     // guard alien
     doIndent(os, depth);
     *os << "<A"
-	<< INDEX_MARKER
-	<< NUMBER("l", alien_scope.line_num)
-	<< STRING("f", strTab.index2str(file_index))
-	<< STRING("n", GUARD_NAME)
-	<< " v=\"{}\""
-	<< ">\n";
+        << INDEX_MARKER
+        << NUMBER("l", alien_scope.line_num)
+        << STRING("f", strTab.index2str(file_index))
+        << STRING("n", GUARD_NAME)
+        << " v=\"{}\""
+        << ">\n";
 
     doStmtList(os, depth + 1, node);
     doLoopList(os, depth + 1, node, strTab);
@@ -623,23 +623,23 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     // empty proc name.
     doIndent(os, depth);
     *os << "<A"
-	<< INDEX_MARKER
-	<< NUMBER("l", flp.line_num)
-	<< STRING("f", strTab.index2str(flp.file_index))
-	<< STRING("n", "")
-	<< " v=\"{}\""
-	<< ">\n";
+        << INDEX_MARKER
+        << NUMBER("l", flp.line_num)
+        << STRING("f", strTab.index2str(flp.file_index))
+        << STRING("n", "")
+        << " v=\"{}\""
+        << ">\n";
 
     // inner, callee alien.  use proc name from flp call site, but
     // file and line from subtree.
     doIndent(os, depth + 1);
     *os << "<A"
-	<< INDEX_MARKER
-	<< NUMBER("l", subscope.line_num)
-	<< STRING("f", strTab.index2str(subscope.file_index))
-	<< STRING("n", callname)
-	<< " v=\"{}\""
-	<< ">\n";
+        << INDEX_MARKER
+        << NUMBER("l", subscope.line_num)
+        << STRING("f", strTab.index2str(subscope.file_index))
+        << STRING("n", callname)
+        << " v=\"{}\""
+        << ">\n";
 
     doTreeNode(os, depth + 2, subtree, subscope, strTab);
 
@@ -679,11 +679,11 @@ doStmtList(ostream * os, int depth, TreeNode * node)
       auto mit = lineMap.find(sinfo->line_num);
 
       if (mit != lineMap.end()) {
-	vset = mit->second;
+        vset = mit->second;
       }
       else {
-	vset = new VMAIntervalSet;
-	lineMap[sinfo->line_num] = vset;
+        vset = new VMAIntervalSet;
+        lineMap[sinfo->line_num] = vset;
       }
       vset->insert(sinfo->vma, sinfo->vma + sinfo->len);
     }
@@ -698,10 +698,10 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 
     doIndent(os, depth);
     *os << "<S"
-	<< INDEX_MARKER
-	<< NUMBER("l", line)
-	<< " v=\"" << vset->toString() << "\""
-	<< "/>\n";
+        << INDEX_MARKER
+        << NUMBER("l", line)
+        << " v=\"" << vset->toString() << "\""
+        << "/>\n";
 
     delete vset;
   }
@@ -712,9 +712,9 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 
     doIndent(os, depth);
     *os << "<C"
-	<< INDEX_MARKER
-	<< NUMBER("l", sinfo->line_num)
-	<< VRANGE(sinfo->vma, sinfo->len);
+        << INDEX_MARKER
+        << NUMBER("l", sinfo->line_num)
+        << VRANGE(sinfo->vma, sinfo->len);
 
     if (! sinfo->is_sink && ENABLE_TARGET_FIELD) {
       *os << HEX("t", sinfo->target);
@@ -740,11 +740,11 @@ doLoopList(ostream * os, int depth, TreeNode * node, HPC::StringTable & strTab)
 
     doIndent(os, depth);
     *os << "<L"
-	<< INDEX_MARKER
-	<< NUMBER("l", linfo->line_num)
-	<< STRING("f", strTab.index2str(linfo->file_index))
-	<< VRANGE(linfo->entry_vma, 1)
-	<< ">\n";
+        << INDEX_MARKER
+        << NUMBER("l", linfo->line_num)
+        << STRING("f", strTab.index2str(linfo->file_index))
+        << VRANGE(linfo->entry_vma, 1)
+        << ">\n";
 
     doTreeNode(os, depth + 1, linfo->node, scope, strTab);
 
@@ -785,9 +785,9 @@ locateTree(TreeNode * node, ScopeInfo & scope, HPC::StringTable & strTab, bool u
       FLPIndex flp = nit->first;
 
       if (flp.file_index != empty_index) {
-	scope.file_index = flp.file_index;
-	scope.base_index = flp.base_index;
-	goto found_file;
+        scope.file_index = flp.file_index;
+        scope.base_index = flp.base_index;
+        goto found_file;
       }
     }
 
@@ -796,9 +796,9 @@ locateTree(TreeNode * node, ScopeInfo & scope, HPC::StringTable & strTab, bool u
       LoopInfo * linfo = *lit;
 
       if (linfo->file_index != empty_index) {
-	scope.file_index = linfo->file_index;
-	scope.base_index = linfo->base_index;
-	goto found_file;
+        scope.file_index = linfo->file_index;
+        scope.base_index = linfo->base_index;
+        goto found_file;
       }
     }
 
@@ -807,9 +807,9 @@ locateTree(TreeNode * node, ScopeInfo & scope, HPC::StringTable & strTab, bool u
       StmtInfo * sinfo = sit->second;
 
       if (sinfo->file_index != empty_index) {
-	scope.file_index = sinfo->file_index;
-	scope.base_index = sinfo->base_index;
-	goto found_file;
+        scope.file_index = sinfo->file_index;
+        scope.base_index = sinfo->base_index;
+        goto found_file;
       }
     }
   }
@@ -824,7 +824,7 @@ found_file:
     FLPIndex flp = nit->first;
 
     if (flp.base_index == scope.base_index && flp.line_num > 0
-	&& flp.line_num < scope.line_num) {
+        && flp.line_num < scope.line_num) {
       scope.line_num = flp.line_num;
     }
   }
@@ -833,7 +833,7 @@ found_file:
     LoopInfo * linfo = *lit;
 
     if (linfo->base_index == scope.base_index && linfo->line_num > 0
-	&& linfo->line_num < scope.line_num) {
+        && linfo->line_num < scope.line_num) {
       scope.line_num = linfo->line_num;
     }
   }
@@ -848,7 +848,7 @@ found_file:
     StmtInfo * sinfo = sit->second;
 
     if (sinfo->base_index == scope.base_index && sinfo->line_num > 0
-	&& sinfo->line_num < scope.line_num) {
+        && sinfo->line_num < scope.line_num) {
       scope.line_num = sinfo->line_num;
     }
   }

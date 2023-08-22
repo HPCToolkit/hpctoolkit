@@ -104,16 +104,16 @@ hpcrun_cold_code_fixup(unwind_interval *first, unwind_interval *current, unwind_
   int ra_offset = xr->reg.sp_ra_pos;
   int bp_offset = xr->reg.sp_bp_pos;
   if (ra_offset == 0) {
-	TMSG(COLD_CODE,"  --warm code calling routine has offset 0,"
-		" so no action taken");
-	return;
+        TMSG(COLD_CODE,"  --warm code calling routine has offset 0,"
+                " so no action taken");
+        return;
   }
   TMSG(COLD_CODE,"  --updating sp_ra_pos with offset %d",ra_offset);
   unwind_interval *intv = first;
   do {
         xr = UWI_RECIPE(intv);
-	xr->reg.sp_ra_pos += ra_offset;
-	xr->reg.sp_bp_pos += bp_offset;
+        xr->reg.sp_ra_pos += ra_offset;
+        xr->reg.sp_bp_pos += bp_offset;
   } while (intv != current && (intv = UWI_NEXT(intv)));
 }
 
@@ -133,7 +133,7 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
     if (branch_target < iarg->beg || iarg->end <= branch_target) {
       // this is a possible cold code routine
       TMSG(COLD_CODE,"potential cold code jmp detected in routine starting @"
-	   " %p (location in routine = %p)",iarg->beg,ins);
+           " %p (location in routine = %p)",iarg->beg,ins);
 
       unwindr_info_t unwr_info;
       if( !uw_recipe_map_lookup_noinsert(branch_target, NATIVE_UNWINDER, &unwr_info) ) {
@@ -144,9 +144,9 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
       void *beg = (void*)unwr_info.interval.start;
       if (branch_target == beg) {
-    	TMSG(COLD_CODE,"  --jump is a regular tail call,"
-	     " NOT a cold code return");
-	return false;
+        TMSG(COLD_CODE,"  --jump is a regular tail call,"
+             " NOT a cold code return");
+        return false;
       }
 
       // store the address of the branch, in case this turns out to be a
@@ -180,11 +180,11 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
   xed_error = xed_decode(xptr, (uint8_t *)possible_call, 15);
 
   TMSG(COLD_CODE,"  --trying to confirm a cold code 'call' from addr %p",
-	  possible_call);
+          possible_call);
   if (xed_error != XED_ERROR_NONE) {
-	TMSG(COLD_CODE,"  --addr %p has xed decode error when attempting confirm",
-		possible_call);
-	return false;
+        TMSG(COLD_CODE,"  --addr %p has xed decode error when attempting confirm",
+                possible_call);
+        return false;
   }
 
   xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
@@ -205,16 +205,16 @@ confirm_cold_path_call(void *loc, interval_arg_t *iarg)
   case XED_ICLASS_JRCXZ:
   case XED_ICLASS_JS:
   case XED_ICLASS_JZ:
-	TMSG(COLD_CODE,"  --conditional branch confirmed @ %p", possible_call);
-	void *the_call = x86_get_branch_target(possible_call, xptr);
-	TMSG(COLD_CODE,"  --comparing 'call' to %p to start of cold path %p",
-		the_call, routine);
-	return (the_call == routine);
-	break;
+        TMSG(COLD_CODE,"  --conditional branch confirmed @ %p", possible_call);
+        void *the_call = x86_get_branch_target(possible_call, xptr);
+        TMSG(COLD_CODE,"  --comparing 'call' to %p to start of cold path %p",
+                the_call, routine);
+        return (the_call == routine);
+        break;
   default:
-	TMSG(COLD_CODE,"  --No conditional branch @ %p, so NOT a cold call",
-		possible_call);
-	return false;
+        TMSG(COLD_CODE,"  --No conditional branch @ %p, so NOT a cold call",
+                possible_call);
+        return false;
   }
   EMSG("confirm cold path call shouldn't get here!");
   return false;

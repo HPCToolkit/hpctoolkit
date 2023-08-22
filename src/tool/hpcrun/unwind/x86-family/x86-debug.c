@@ -74,7 +74,7 @@ x86_dump_intervals(void *addr, int noisy)
 {
   unwindr_info_t unwr_info;
   if (!uw_recipe_map_lookup(addr, NATIVE_UNWINDER, &unwr_info))
-	  EMSG("x86_dump_intervals: bounds of addr %p taken, but no bounds known", addr);
+          EMSG("x86_dump_intervals: bounds of addr %p taken, but no bounds known", addr);
   void * s = (void*)unwr_info.interval.start;
   void * e = (void*)unwr_info.interval.end;
 
@@ -110,8 +110,8 @@ x86_dump_ins(void *ins)
   if (xed_error == XED_ERROR_NONE) {
     xed_decoded_inst_dump(xptr, inst_buf, sizeof(inst_buf));
     sprintf(errbuf, "(%p, %d bytes, %s) %s \n" , ins,
-	    xed_decoded_inst_get_length(xptr),
-	    xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
+            xed_decoded_inst_get_length(xptr),
+            xed_iclass_enum_t2str(iclass(xptr)), inst_buf);
   }
   else {
 #if defined(ENABLE_XOP) && defined (HOST_CPU_x86_64)
@@ -119,14 +119,14 @@ x86_dump_ins(void *ins)
     adv_amd_decode(&decode_res, ins);
     if (decode_res.success) {
       if (decode_res.weak)
-	sprintf(errbuf, "(%p, %d bytes) weak AMD XOP \n", ins, (int) decode_res.len);
+        sprintf(errbuf, "(%p, %d bytes) weak AMD XOP \n", ins, (int) decode_res.len);
       else
-	sprintf(errbuf, "(%p, %d bytes) robust AMD XOP \n", ins, (int) decode_res.len);
+        sprintf(errbuf, "(%p, %d bytes) robust AMD XOP \n", ins, (int) decode_res.len);
     }
     else
 #endif // ENABLE_XOP and HOST_CPU_x86_64
       sprintf(errbuf, "x86_dump_ins: xed decode error addr=%p, code = %d\n",
-	      ins, (int) xed_error);
+              ins, (int) xed_error);
   }
   EMSG(errbuf);
   fprintf(stderr, errbuf);

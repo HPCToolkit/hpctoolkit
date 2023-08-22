@@ -185,7 +185,7 @@ stack_dump
     const char* lm_name = (lm) ? lm->name : "(null)";
 
     EMSG("ip = %p (%p), sp = %p, load module = %s",
-	 ip, x->ip_norm.lm_ip, x->cursor.sp, lm_name);
+         ip, x->ip_norm.lm_ip, x->cursor.sp, lm_name);
   }
   EMSG("-----%s end", tag);
   EMSG("<0x%lx>\n", region_id);
@@ -450,8 +450,8 @@ ompt_elide_runtime_frame(
     //  are equal. there is nothing to elide at this step.
     //-------------------------------------------------------------------------
     if ((fp_enter(frame1) == fp_exit(frame0)) &&
-	(ff_is_appl(FF(frame0, exit)) &&
-	 ff_is_rt(FF(frame1, enter))))
+        (ff_is_appl(FF(frame0, exit)) &&
+         ff_is_rt(FF(frame1, enter))))
       continue;
 
 
@@ -499,7 +499,7 @@ ompt_elide_runtime_frame(
       //------------------------------------
       // The prefvous version DON'T DELETE
       memmove(*bt_inner+(reenter1-exit0+1), *bt_inner,
-	      (exit0 - *bt_inner)*sizeof(frame_t));
+              (exit0 - *bt_inner)*sizeof(frame_t));
 
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
 
@@ -749,7 +749,7 @@ ompt_backtrace_finalize
 //      resolve_cntxt();
       }
       if (!ompt_eager_context)
-	resolve_cntxt();
+        resolve_cntxt();
     }
     uint64_t region_id = TD_GET(region_id);
 
@@ -837,15 +837,15 @@ ompt_cct_cursor_finalize
 
       cct_node_t *prefix = lookup_region_id(region_id);
       if (prefix) {
-	      // full context is available now. use it.
-	      cct_cursor = prefix;
+              // full context is available now. use it.
+              cct_cursor = prefix;
       } else {
-	      // full context is not available. if the there is a node for region_id in
-	      // the unresolved tree, use it as the cursor to anchor the sample for now.
-	      // it will be resolved later. otherwise, use the default cursor.
-	      prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root,
+              // full context is not available. if the there is a node for region_id in
+              // the unresolved tree, use it as the cursor to anchor the sample for now.
+              // it will be resolved later. otherwise, use the default cursor.
+              prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root,
           &(ADDR2(UNRESOLVED, region_id)));
-	      if (prefix) cct_cursor = prefix;
+              if (prefix) cct_cursor = prefix;
       }
 #endif
     }

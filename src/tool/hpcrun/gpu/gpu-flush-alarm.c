@@ -146,10 +146,10 @@ gpu_flush_alarm_set
   gpu_flush_alarm_msg = client_msg;
 
   linuxtimer_create(&gpu_flush_alarm_timer, CLOCK_REALTIME,
-		    gpu_flush_alarm_signal);
+                    gpu_flush_alarm_signal);
 
   monitor_sigaction(linuxtimer_getsignal(&gpu_flush_alarm_timer),
-		    &gpu_flush_alarm_handler, 0, NULL);
+                    &gpu_flush_alarm_handler, 0, NULL);
 
   linuxtimer_set(&gpu_flush_alarm_timer, GPU_FLUSH_ALARM_TIMEOUT_SECONDS, 0, 0);
 }

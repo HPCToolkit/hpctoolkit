@@ -89,4 +89,4 @@ kcd_free_helper
  kernel_cleanup_data_t *node
 );
 
-#endif		// gpu_blame_kernel_cleanup_map_h_
+#endif          // gpu_blame_kernel_cleanup_map_h_

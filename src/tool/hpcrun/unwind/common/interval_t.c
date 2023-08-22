@@ -34,10 +34,10 @@ interval_t_inrange(void* lhs, void* val)
   uintptr_t address = (uintptr_t)val;
   // special boundary case:
   if (address == UINTPTR_MAX && interval->start == UINTPTR_MAX) {
-	return 0;
+        return 0;
   }
   else {
-	return (address < interval->start)? 1: (address < interval->end)? 0: -1;
+        return (address < interval->start)? 1: (address < interval->end)? 0: -1;
   }
 }
 
@@ -50,7 +50,7 @@ interval_t_tostr(void* ptrinterval, char result[])
 {
   interval_t* ptr_interval = (interval_t*)ptrinterval;
   snprintf(result, MAX_INTERVAL_STR, "%s%18p%s%18p%s",
-		   "[", (void*)ptr_interval->start, " ... ", (void*)ptr_interval->end, ")");
+                   "[", (void*)ptr_interval->start, " ... ", (void*)ptr_interval->end, ")");
 }
 
 void

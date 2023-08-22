@@ -81,16 +81,16 @@ endif
 endif
 
 if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
+SUBDIRS += \
 	hpcrun \
 	hpcfnbounds
 endif
 
 if OPT_ENABLE_MPI
-  SUBDIRS += hpcprof-mpi
+SUBDIRS += hpcprof-mpi
 
 if OPT_ENABLE_HPCSERVER
-  SUBDIRS += hpcserver/mpi
+SUBDIRS += hpcserver/mpi
 endif
 endif
 

@@ -179,7 +179,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_ga_period = periodDefault;
   char evName[32];
   hpcrun_extract_ev_thresh(evStr, sizeof(evName), evName,
-			   (long*)&hpcrun_ga_period, periodDefault);
+                           (long*)&hpcrun_ga_period, periodDefault);
 
   TMSG(GA, "GA: %s sampling period: %"PRIu64, evName, hpcrun_ga_period);
 
@@ -193,7 +193,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // exposed latency
   hpcrun_ga_metricId_latency =
     hpcrun_set_new_metric_info_and_period(ga_kind, "latency (us)",
-					  MetricFlags_ValFmt_Real, 1, metric_property_none);
+                                          MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // exposed excess latency
   //hpcrun_ga_metricId_latencyExcess = hpcrun_set_new_metric_info("exs lat (us)");

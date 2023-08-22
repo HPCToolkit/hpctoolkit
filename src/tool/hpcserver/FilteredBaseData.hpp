@@ -71,32 +71,32 @@
 using std::vector;
 namespace TraceviewerServer
 {
-	class FilteredBaseData {
-	public:
-		FilteredBaseData(string filename, int _headerSize);
-		virtual ~FilteredBaseData();
+        class FilteredBaseData {
+        public:
+                FilteredBaseData(string filename, int _headerSize);
+                virtual ~FilteredBaseData();
 
-		void setFilters(FilterSet _filter);
+                void setFilters(FilterSet _filter);
 
-		FileOffset getMinLoc(int pseudoRank);
-		FileOffset getMaxLoc(int pseudoRank);
-		int64_t getLong(FileOffset position);
-		int getInt(FileOffset position);
-		int getNumberOfRanks();
-		int* getProcessIDs();
-		short* getThreadIDs();
-	private:
+                FileOffset getMinLoc(int pseudoRank);
+                FileOffset getMaxLoc(int pseudoRank);
+                int64_t getLong(FileOffset position);
+                int getInt(FileOffset position);
+                int getNumberOfRanks();
+                int* getProcessIDs();
+                short* getThreadIDs();
+        private:
 
-		void filter();
+                void filter();
 
-		BaseDataFile* baseDataFile;
-		OffsetPair* baseOffsets;
-		FilterSet currentlyAppliedFilter;
-		//Maps the pseudoranks the program asks for from the unfiltered
-		//pool to the real ranks from the filtered pool.
-		vector<int> rankMapping;
-		int headerSize;
-	};
+                BaseDataFile* baseDataFile;
+                OffsetPair* baseOffsets;
+                FilterSet currentlyAppliedFilter;
+                //Maps the pseudoranks the program asks for from the unfiltered
+                //pool to the real ranks from the filtered pool.
+                vector<int> rankMapping;
+                int headerSize;
+        };
 
 
 }

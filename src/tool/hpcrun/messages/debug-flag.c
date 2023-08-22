@@ -224,7 +224,7 @@ debug_flag_dump()
   for (int i=0; i < N_DBG_CATEGORIES; i++){
     if (i < N_DBG_CATEGORIES){
       fprintf(stderr,"debug flag %s = %d\n", debug_flag_name_get(i),
-	      debug_flag_get(i));
+              debug_flag_get(i));
     } else {
       fprintf(stderr,"debug flag (unknown) = %d\n", i);
     }
@@ -297,7 +297,7 @@ debug_flag_process_string(char *in, int debug_initialization)
     int ii = debug_flag_name_lookup(f);
     if (ii >= 0){
       if (debug_initialization) {
-	fprintf(stderr, "\tdebug flag token value = %d\n\n", ii);
+        fprintf(stderr, "\tdebug flag token value = %d\n\n", ii);
       }
       debug_flag_set(ii,1);
     }

@@ -148,13 +148,13 @@ Profile::make(const char* fnm, FILE* outfs, bool sm_easyToGrep) //YUMENG: last a
   if (!fs) {
     if (errno == ENOENT)
       fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n",
-	      fnm);
+              fnm);
     else if (errno == EACCES)
       fprintf(stderr, "ERROR: failed to open file '%s': file access denied\n",
-	      fnm);
+              fnm);
     else
       fprintf(stderr, "ERROR: failed to open file '%s': system failure\n",
-	      fnm);
+              fnm);
     prof_abort(-1);
   }
 
@@ -172,7 +172,7 @@ Profile::make(const char* fnm, FILE* outfs, bool sm_easyToGrep) //YUMENG: last a
 
 int
 Profile::fmt_fread(FILE* infs,
-		   std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep)
+                   std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep)
 {
   int ret;
 
@@ -204,7 +204,7 @@ Profile::fmt_fread(FILE* infs,
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
     fprintf(stderr, "ERROR: error reading 'fmt-hdr' in '%s': either the file "
-	    "is not a profile or it is corrupted\n", filename);
+            "is not a profile or it is corrupted\n", filename);
     prof_abort(-1);
   }
   //YUMENG check if the ending position match the recorded in footer
@@ -237,9 +237,9 @@ Profile::fmt_fread(FILE* infs,
 
     try {
       ret = fmt_epoch_fread(infs, hdr, footer,
-			    ctxtStr, filename, outfs, sm_easyToGrep);
+                            ctxtStr, filename, outfs, sm_easyToGrep);
       //if (ret == HPCFMT_EOF) {
-	    //  break;
+            //  break;
       // }
     }
     catch (const Diagnostics::Exception& x) {
@@ -278,9 +278,9 @@ Profile::fmt_fread(FILE* infs,
 
 int
 Profile::fmt_epoch_fread(FILE* infs,
-			 const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
-			 std::string ctxtStr, const char* filename,
-			 FILE* outfs, bool sm_easyToGrep)
+                         const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
+                         std::string ctxtStr, const char* filename,
+                         FILE* outfs, bool sm_easyToGrep)
 {
   using namespace Prof;
 
@@ -339,19 +339,19 @@ Profile::fmt_epoch_fread(FILE* infs,
 
         loadmap_entry_t* x = &loadmap_tbl.lst[i];
 
-	// make sure we eliminate the <vmlinux> and <vdso> load modules
-	// These modules have prefix '<' and hopefully it doesn't change
-	if ((x->name != NULL && x->name[0] != '<') &&
+        // make sure we eliminate the <vmlinux> and <vdso> load modules
+        // These modules have prefix '<' and hopefully it doesn't change
+        if ((x->name != NULL && x->name[0] != '<') &&
             (x->flags & LOADMAP_ENTRY_ANALYZE)) {
 
-	  // for any gpubin, erase any kernel name hash following
-	  // "gpubin" in a load module name
-	  string name(x->name);
-	  size_t pos = name.find("gpubin.");
-	  if (pos != string::npos) name.erase(pos+gpubin_suffix_len);
+          // for any gpubin, erase any kernel name hash following
+          // "gpubin" in a load module name
+          string name(x->name);
+          size_t pos = name.find("gpubin.");
+          if (pos != string::npos) name.erase(pos+gpubin_suffix_len);
 
           fprintf(outfs, "%s\n", name.c_str());
-	}
+        }
       }
       // hack: case for hpcproftt with --lm option
       // by returning HPCFMT_EOF we force hpcproftt to exit the loop
@@ -444,7 +444,7 @@ Profile::fmt_epoch_fread(FILE* infs,
     size_t ext_pos = traceFileName.find(ext_prof);
     if (ext_pos != string::npos) {
       traceFileName.replace(traceFileName.begin() + ext_pos,
-			    traceFileName.end(), ext_trace);
+                            traceFileName.end(), ext_trace);
       // DIAG_Assert(FileUtil::isReadable(traceFileName));
     }
   }
@@ -553,13 +553,13 @@ Profile::fmt_epoch_fread(FILE* infs,
 #if 0
 int
 Profile::fmt_cct_fread(Profile& prof, FILE* infs, unsigned int rFlags,
-		       const metric_tbl_t& metricTbl,
-		       std::string ctxtStr, FILE* outfs)
+                       const metric_tbl_t& metricTbl,
+                       std::string ctxtStr, FILE* outfs)
 #else
 //YUMENG: no need to parse metricTbl for sparse format
 int
 Profile::fmt_cct_fread(FILE* infs,
-		       std::string ctxtStr, FILE* outfs)
+                       std::string ctxtStr, FILE* outfs)
 #endif
 {
 
@@ -618,11 +618,11 @@ Profile::fmt_cct_fread(FILE* infs,
 
 #if 0
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
-				 &metricTbl, "  ");
+                                 &metricTbl, "  ");
 #else
 //YUMENG: No metric info
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, flags,
-				  "  ");
+                                  "  ");
 #endif
     }
 
@@ -644,7 +644,7 @@ Profile::fmt_cct_fread(FILE* infs,
       double res = eval.Eval(expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
         // the formula syntax looks "correct". Update the the metric value
-      	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
+        hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
       }
     }
 #endif

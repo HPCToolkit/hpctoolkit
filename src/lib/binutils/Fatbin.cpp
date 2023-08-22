@@ -82,11 +82,11 @@
 //******************************************************************************
 
 
-#define CUDA_FATBIN_SECTION  	".nvFatBinSegment"
+#define CUDA_FATBIN_SECTION     ".nvFatBinSegment"
 #define CUDA_FATBIN_DATASECTION ".nv_fatbin"
 
-#define CUDA_FATBIN_MAGIC 	0x466243b1
-#define CUDA_FATBIN_VERSION 	1
+#define CUDA_FATBIN_MAGIC       0x466243b1
+#define CUDA_FATBIN_VERSION     1
 
 #define DEBUG_WRITE_FATBIN 0
 
@@ -132,7 +132,7 @@ recordIfNvFatbin
 {
 #if 0
   bool isFatbin = strcmp(elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name),
-			 CUDA_FATBIN_DATASECTION) == 0;
+                         CUDA_FATBIN_DATASECTION) == 0;
   if (isFatbin) {
     NvidiaFatBinHeader_t *fatbin =
       (NvidiaFatBinHeader_t *) elfSectionGetData(obj_ptr, shdr);
@@ -214,7 +214,7 @@ findCubinSections
       if (recordIfNvFatbin(obj_ptr, elf, ehdr, scn, shdr)) {
         count++;
       } else if (recordIfCubin(elfFile, obj_ptr, elf, ehdr, scn,
-			       shdr, elfFileVector)) {
+                               shdr, elfFileVector)) {
         count++;
       }
     }
@@ -256,7 +256,7 @@ findCubins
 
   if (sections) {
     success = findCubinSections(elfFile, elfFile->getMemory(), elf,
-			     sections, elfFileVector);
+                             sections, elfFileVector);
     if (DEBUG_WRITE_FATBIN) {
       writeCubins(elfFileVector);
     }

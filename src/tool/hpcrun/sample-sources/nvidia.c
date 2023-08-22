@@ -210,8 +210,8 @@ typedef enum cupti_activities_flags {
   CUPTI_KERNEL_INVOCATION    = 4,
   CUPTI_KERNEL_EXECUTION     = 8,
   CUPTI_DRIVER               = 16,
-  CUPTI_RUNTIME	             = 32,
-  CUPTI_OVERHEAD	     = 64
+  CUPTI_RUNTIME              = 32,
+  CUPTI_OVERHEAD             = 64
 } cupti_activities_flags_t;
 
 
@@ -321,7 +321,7 @@ METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING)
-																							|| hpcrun_ev_is(ev_str, NVIDIA_CUDA_NV_LINK);
+                                                                                                                                                                                        || hpcrun_ev_is(ev_str, NVIDIA_CUDA_NV_LINK);
 #else
   return false;
 #endif
@@ -359,26 +359,26 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
 
-	for (; event != NULL; event = next_tok()) {
-		if (hpcrun_ev_is(event, NVIDIA_CUDA)) {
-			trace_frequency =
-			(frequency == frequency_default) ? trace_frequency_default : frequency;
-			gpu_monitoring_trace_sample_frequency_set(trace_frequency);
-		} else if (hpcrun_ev_is(event, NVIDIA_CUDA_PC_SAMPLING)) {
-			pc_sampling_frequency = (frequency == frequency_default) ?
-															pc_sampling_frequency_default : frequency;
+        for (; event != NULL; event = next_tok()) {
+                if (hpcrun_ev_is(event, NVIDIA_CUDA)) {
+                        trace_frequency =
+                        (frequency == frequency_default) ? trace_frequency_default : frequency;
+                        gpu_monitoring_trace_sample_frequency_set(trace_frequency);
+                } else if (hpcrun_ev_is(event, NVIDIA_CUDA_PC_SAMPLING)) {
+                        pc_sampling_frequency = (frequency == frequency_default) ?
+                                                                                                                        pc_sampling_frequency_default : frequency;
 
-			gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
+                        gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
 
-			gpu_metrics_GPU_INST_enable(); // instruction counts
+                        gpu_metrics_GPU_INST_enable(); // instruction counts
 
-			gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
+                        gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
 
     // pc sampling cannot be on with concurrent kernels
     kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
-    }	else if (hpcrun_ev_is(event, NVIDIA_CUDA_NV_LINK)) {
+    }   else if (hpcrun_ev_is(event, NVIDIA_CUDA_NV_LINK)) {
       gpu_metrics_GXFER_enable();
     }
   }
@@ -401,11 +401,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   // Register hpcrun callbacks
   device_finalizer_flush.fn = cupti_device_flush;
   device_finalizer_register(device_finalizer_type_flush,
-			    &device_finalizer_flush);
+                            &device_finalizer_flush);
 
   device_finalizer_shutdown.fn = cupti_device_shutdown;
   device_finalizer_register(device_finalizer_type_shutdown,
-			    &device_finalizer_shutdown);
+                            &device_finalizer_shutdown);
 
   // Get control knobs
   int device_buffer_size;
@@ -453,7 +453,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
   device_finalizer_register(device_finalizer_type_shutdown,
-			    &device_trace_finalizer_shutdown);
+                            &device_trace_finalizer_shutdown);
 
   monitor_enable_new_threads();
 }
@@ -478,18 +478,18 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tComprehensive operation-level monitoring of CUDA on NVIDIA GPUs.\n"
-	 "\t\tCollect timing information on GPU kernel invocations,\n"
-	 "\t\tmemory copies (implicit and explicit), driver and runtime\n"
-	 "\t\tactivity, and overhead.\n",
-	 NVIDIA_CUDA);
+         "\t\tCollect timing information on GPU kernel invocations,\n"
+         "\t\tmemory copies (implicit and explicit), driver and runtime\n"
+         "\t\tactivity, and overhead.\n",
+         NVIDIA_CUDA);
   printf("\n");
   printf("%s\tComprehensive monitoring on an NVIDIA GPU as described above\n"
-	 "\t\t" "with the addition of PC sampling. PC sampling attributes\n"
-	 "\t\t" "STALL reasons to individual GPU instructions. PC sampling also\n"
-	 "\t\t" "records aggregate statistics about the TOTAL number of samples measured,\n"
-	 "\t\t" "the number of samples EXPECTED, and the number of samples DROPPED.\n"
-	 "\t\t" "GPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
-	 NVIDIA_CUDA_PC_SAMPLING);
+         "\t\t" "with the addition of PC sampling. PC sampling attributes\n"
+         "\t\t" "STALL reasons to individual GPU instructions. PC sampling also\n"
+         "\t\t" "records aggregate statistics about the TOTAL number of samples measured,\n"
+         "\t\t" "the number of samples EXPECTED, and the number of samples DROPPED.\n"
+         "\t\t" "GPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
+         NVIDIA_CUDA_PC_SAMPLING);
   printf("\n");
 }
 

@@ -53,4 +53,4 @@ ak_map_clear
  void
 );
 
-#endif		// gpu_blame_opencl_active_kernels_map_h_
+#endif          // gpu_blame_opencl_active_kernels_map_h_

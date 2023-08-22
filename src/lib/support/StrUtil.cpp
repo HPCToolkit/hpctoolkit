@@ -101,7 +101,7 @@ namespace StrUtil {
 
 void
 tokenize_char(const std::string& tokenstr, const char* delim,
-	      std::vector<std::string>& tokenvec)
+              std::vector<std::string>& tokenvec)
 {
   const size_t sz = tokenstr.size();
   for (size_t begp = 0, endp = 0; begp < sz; begp = endp+1) {
@@ -122,7 +122,7 @@ tokenize_char(const std::string& tokenstr, const char* delim,
 
 void
 tokenize_str(const std::string& tokenstr, const char* delim,
-	     std::vector<std::string>& tokenvec)
+             std::vector<std::string>& tokenvec)
 {
   const int delimsz = strlen(delim);
   const size_t sz = tokenstr.size();

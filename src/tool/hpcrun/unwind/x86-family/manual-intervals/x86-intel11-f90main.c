@@ -73,8 +73,8 @@ x86_adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
     while(ui) {
        x86recipe_t *xr = UWI_RECIPE(ui);
        if (xr->ra_status == RA_STD_FRAME){
-    	xr->reg.bp_ra_pos = 8;
-    	xr->reg.bp_bp_pos = 0;
+        xr->reg.bp_ra_pos = 8;
+        xr->reg.bp_bp_pos = 0;
       }
       ui = UWI_NEXT(ui);
     }

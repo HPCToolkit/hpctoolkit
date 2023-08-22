@@ -70,92 +70,92 @@
 
 namespace TraceviewerServer
 {
-	static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
+        static int MAX_PAGES_TO_ALLOCATE_AT_ONCE = 0;
 
-	VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, int _size, FileDescriptor _file, LRUList<VersatileMemoryPage>* pageManagementList)
-	{
-		startPoint = _startPoint;
-		size = _size;
-		mostRecentlyUsed = pageManagementList;
-		index = mostRecentlyUsed->addNewUnused(this);
-		file = _file;
-		isMapped = false;
-		if (MAX_PAGES_TO_ALLOCATE_AT_ONCE <1)
-			cerr<<"Set max pages before creating any VersatileMemoryPages"<<endl;
-	}
+        VersatileMemoryPage::VersatileMemoryPage(FileOffset _startPoint, int _size, FileDescriptor _file, LRUList<VersatileMemoryPage>* pageManagementList)
+        {
+                startPoint = _startPoint;
+                size = _size;
+                mostRecentlyUsed = pageManagementList;
+                index = mostRecentlyUsed->addNewUnused(this);
+                file = _file;
+                isMapped = false;
+                if (MAX_PAGES_TO_ALLOCATE_AT_ONCE <1)
+                        cerr<<"Set max pages before creating any VersatileMemoryPages"<<endl;
+        }
 
-	void VersatileMemoryPage::setMaxPages(int pages)
-	{
-		MAX_PAGES_TO_ALLOCATE_AT_ONCE = pages;
-	}
+        void VersatileMemoryPage::setMaxPages(int pages)
+        {
+                MAX_PAGES_TO_ALLOCATE_AT_ONCE = pages;
+        }
 
-	VersatileMemoryPage::~VersatileMemoryPage()
-	{
-		if (isMapped)
-			unmapPage();
-	}
-	char* VersatileMemoryPage::get()
-	{
+        VersatileMemoryPage::~VersatileMemoryPage()
+        {
+                if (isMapped)
+                        unmapPage();
+        }
+        char* VersatileMemoryPage::get()
+        {
 
-		if (!isMapped)
-		{
-			mapPage();
-		}
-		mostRecentlyUsed->putOnTop(index);
+                if (!isMapped)
+                {
+                        mapPage();
+                }
+                mostRecentlyUsed->putOnTop(index);
 
-		return page;
-	}
+                return page;
+        }
 
-	void VersatileMemoryPage::mapPage()
-	{
+        void VersatileMemoryPage::mapPage()
+        {
 
-		DEBUGCOUT(1) << "Mapping page "<< index<< " "<<mostRecentlyUsed->getUsedPageCount() << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
+                DEBUGCOUT(1) << "Mapping page "<< index<< " "<<mostRecentlyUsed->getUsedPageCount() << " / " << MAX_PAGES_TO_ALLOCATE_AT_ONCE << endl;
 
-		if (isMapped)
-		{
-			cerr << "Trying to double map!"<<endl;
-			return;
-		}
-		if (mostRecentlyUsed->getUsedPageCount() >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
-		{
+                if (isMapped)
+                {
+                        cerr << "Trying to double map!"<<endl;
+                        return;
+                }
+                if (mostRecentlyUsed->getUsedPageCount() >= MAX_PAGES_TO_ALLOCATE_AT_ONCE)
+                {
 
-			VersatileMemoryPage* toRemove = mostRecentlyUsed->getLast();
+                        VersatileMemoryPage* toRemove = mostRecentlyUsed->getLast();
 
-			DEBUGCOUT(1)<<"Kicking " << toRemove->index << " out"<<endl;
+                        DEBUGCOUT(1)<<"Kicking " << toRemove->index << " out"<<endl;
 
-			if (toRemove->isMapped != true)
-				cerr << "Least recently used one isn't even mapped?"<<endl;
+                        if (toRemove->isMapped != true)
+                                cerr << "Least recently used one isn't even mapped?"<<endl;
 
-			toRemove->unmapPage();
-			mostRecentlyUsed->removeLast();
-		}
-		page = (char*)mmap(0, size, MAP_PROT, MAP_FLAGS, file, startPoint);
-		if (page == MAP_FAILED)
-		{
-			cerr << "Mapping returned error " << strerror(errno) << endl;
-			cerr << "off_t size =" << sizeof(off_t) << "mapping size=" << size << " MapProt=" <<MAP_PROT
-					<< " MapFlags=" << MAP_FLAGS << " fd=" << file << " Start point=" << startPoint << endl;
-			fflush(NULL);
-			exit(-1);
-		}
+                        toRemove->unmapPage();
+                        mostRecentlyUsed->removeLast();
+                }
+                page = (char*)mmap(0, size, MAP_PROT, MAP_FLAGS, file, startPoint);
+                if (page == MAP_FAILED)
+                {
+                        cerr << "Mapping returned error " << strerror(errno) << endl;
+                        cerr << "off_t size =" << sizeof(off_t) << "mapping size=" << size << " MapProt=" <<MAP_PROT
+                                        << " MapFlags=" << MAP_FLAGS << " fd=" << file << " Start point=" << startPoint << endl;
+                        fflush(NULL);
+                        exit(-1);
+                }
 
 
-		isMapped = true;
-		mostRecentlyUsed->addAgain(index);
-	}
-	void VersatileMemoryPage::unmapPage()
-	{
-		if (!isMapped)
-		{
-			cerr << "Trying to double unmap!"<<endl;
-			return;
-		}
-		munmap(page, size);
+                isMapped = true;
+                mostRecentlyUsed->addAgain(index);
+        }
+        void VersatileMemoryPage::unmapPage()
+        {
+                if (!isMapped)
+                {
+                        cerr << "Trying to double unmap!"<<endl;
+                        return;
+                }
+                munmap(page, size);
 
-		isMapped = false;
+                isMapped = false;
 
-		DEBUGCOUT(1) << "Unmapped a page"<<endl;
+                DEBUGCOUT(1) << "Unmapped a page"<<endl;
 
-	}
+        }
 
 } /* namespace TraceviewerServer */

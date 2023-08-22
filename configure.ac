@@ -83,8 +83,8 @@ m4_include(config/hpc-cxxutils.m4)
 
 AC_INIT([hpctoolkit], [2023.08.99-next],
         [hpctoolkit-forum@rice.edu],
-	[hpctoolkit],
-	[http://hpctoolkit.org/])
+        [hpctoolkit],
+        [http://hpctoolkit.org/])
 AC_COPYRIGHT([Copyright (c) 2002-2023, Rice University.
 See the file README.License for details.])
 
@@ -174,12 +174,12 @@ fi
 AC_MSG_RESULT([$git_version])
 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION],
-	  ["${PACKAGE_VERSION}"],
-	  [HPCToolkit version])
+          ["${PACKAGE_VERSION}"],
+          [HPCToolkit version])
 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION_STRING],
-	  ["A member of HPCToolkit, version ${PACKAGE_VERSION}"],
-	  [HPCToolkit version string])
+          ["A member of HPCToolkit, version ${PACKAGE_VERSION}"],
+          [HPCToolkit version string])
 
 # If this is a spack build, then try to identify the spack spec.
 
@@ -1504,7 +1504,7 @@ case "$enable_mpi_search" in
     case "$MPICXX" in
       /* )
         AC_MSG_NOTICE([Cray MPI wrapper: $MPICXX])
-	;;
+        ;;
       * )
         AC_MSG_WARN([unable to find the Cray MPI C++ wrapper (CC) on your PATH])
         AC_MSG_ERROR([check that this system is Cray and CC is the MPI wrapper])
@@ -1517,7 +1517,7 @@ case "$enable_mpi_search" in
     case "$MPICXX" in
       /* )
         AC_MSG_NOTICE([Blue Gene MPI wrapper: $MPICXX])
-	;;
+        ;;
       * )
         AC_MSG_WARN([unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH])
         AC_MSG_ERROR([check that this system is Blue Gene and mpicxx is the MPI wrapper])
@@ -1737,7 +1737,7 @@ case "$host_cpu" in
         ;;
       * )
         if test -d /bgsys/drivers ; then enable_bgq=yes
-	else enable_bgq=no
+        else enable_bgq=no
         fi
         ;;
     esac
@@ -1843,7 +1843,7 @@ ext_wordsize=unknown
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
   [AS_HELP_STRING([--with-externals=PATH],
-	  [path to hpctoolkit-externals build or install directory])],
+          [path to hpctoolkit-externals build or install directory])],
   [],
   [with_externals=no])
 
@@ -2070,18 +2070,18 @@ case "$with_spack" in
         spack_minor=`echo $ver | awk -F. '{print $2}'`
 
         if test "x$spack_minor" != x ; then
-	  have_spack_version=yes
-	else
+          have_spack_version=yes
+        else
           AC_MSG_WARN([unable to identify spack compiler version: $with_spack])
-	  warn_identify_compiler=yes
-	  warn_identify_compiler_mesg="$warn_identify_compiler_mesg spack"
+          warn_identify_compiler=yes
+          warn_identify_compiler_mesg="$warn_identify_compiler_mesg spack"
         fi
-	;;
+        ;;
       * )
         AC_MSG_WARN([not using the GNU compiler for spack prereqs: $with_spack])
         warn_non_gnu=yes
         warn_non_gnu_mesg="$warn_non_gnu_mesg spack"
-	;;
+        ;;
     esac
     ;;
 esac
@@ -2154,10 +2154,10 @@ case "$BOOST" in
       dir="${BOOST}/$lib"
       for f in "$dir"/libboost*system*.so* ; do
         if test -f "$f" ; then
-	  BOOST_LIB_DIR="$dir"
-	  BOOST_COPY=yes
-	  break 2
-	fi
+          BOOST_LIB_DIR="$dir"
+          BOOST_COPY=yes
+          break 2
+        fi
       done
     done
     if test "$BOOST_COPY" != yes ; then
@@ -2231,7 +2231,7 @@ case "$BZIP" in
       bzip_lib="${BZIP}/$lib"
       if test -f "${bzip_lib}/libbz2.so" ; then
         BZIP_LIB="$bzip_lib"
-	break
+        break
       fi
     done
     if test "$BZIP_LIB" = no ; then
@@ -2288,8 +2288,8 @@ case "${DYNINST}" in
       dir="${DYNINST}/$lib"
       if test -f "${dir}/libparseAPI.so" ; then
         DYNINST_LIB_DIR="$dir"
-	DYNINST_COPY=yes
-	break
+        DYNINST_COPY=yes
+        break
       fi
     done
     if test "$DYNINST_COPY" != yes ; then
@@ -2335,7 +2335,7 @@ LIBELF_COPY=no
 case "$LIBELF" in
   /* )
     if test ! -f "${LIBELF}/include/libelf.h" \
-	&& test ! -f "${LIBELF}/include/libelf/libelf.h"
+        && test ! -f "${LIBELF}/include/libelf/libelf.h"
     then
       AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
     fi
@@ -2345,10 +2345,10 @@ case "$LIBELF" in
     LIBELF_INC="${LIBELF}/include"
     for lib in $multilib_path ; do
       if test -f "${LIBELF}/${lib}/libelf.so" \
-	 && test -f "${LIBELF}/${lib}/libdw.so"
+         && test -f "${LIBELF}/${lib}/libdw.so"
       then
         LIBELF_LIB="${LIBELF}/${lib}"
-	break
+        break
       fi
     done
     if test "$LIBELF_LIB" = no ; then
@@ -2399,8 +2399,8 @@ case "$LIBIBERTY" in
       file="${LIBIBERTY}/${lib}/libiberty.a"
       if test -f "$file" ; then
         LIBIBERTY_LIBS="$file"
-	found_libiberty=yes
-	break
+        found_libiberty=yes
+        break
       fi
     done
     num_pkgs=`expr 1 + $num_pkgs`
@@ -2429,7 +2429,7 @@ LIBMONITOR="$default_libmonitor_prefix"
 
 AC_ARG_WITH([libmonitor],
   [AS_HELP_STRING([--with-libmonitor=PATH],
-  	    [path to libmonitor install directory])],
+            [path to libmonitor install directory])],
   [LIBMONITOR="$withval"],
   [])
 
@@ -2529,15 +2529,15 @@ case "$LIBUNWIND" in
       ldir="${LIBUNWIND}/$lib"
       if test -f "${ldir}/libunwind.so" ; then
         LIBUNWIND_LDFLAGS_DYN="-L${ldir} -lunwind"
-	LIBUNWIND_LIB_DIR="$ldir"
-	libunwind_exists=yes
-	libunwind_dynamic=yes
+        LIBUNWIND_LIB_DIR="$ldir"
+        libunwind_exists=yes
+        libunwind_dynamic=yes
       fi
       if test -f "${ldir}/libunwind.a" ; then
         LIBUNWIND_LDFLAGS_STAT="${ldir}/libunwind.a"
-	LIBUNWIND_LIB_DIR="$ldir"
-	libunwind_exists=yes
-	libunwind_static=yes
+        LIBUNWIND_LIB_DIR="$ldir"
+        libunwind_exists=yes
+        libunwind_static=yes
       fi
       if test "$libunwind_exists" = yes ; then
         break
@@ -2682,16 +2682,16 @@ case "$LZMA" in
       ldir="${LZMA}/$lib"
       if test -f "${ldir}/liblzma.so" ; then
         LZMA_LDFLAGS_DYN="-L${ldir} -llzma"
-	LZMA_COPY=yes
-	LZMA_LIB_DIR="$ldir"
+        LZMA_COPY=yes
+        LZMA_LIB_DIR="$ldir"
         lzma_exists=yes
-	lzma_dynamic=yes
+        lzma_dynamic=yes
       fi
       if test -f "${ldir}/liblzma.a" ; then
         LZMA_LDFLAGS_STAT="${ldir}/liblzma.a"
-	LZMA_LIB_DIR="$ldir"
+        LZMA_LIB_DIR="$ldir"
         lzma_exists=yes
-	lzma_static=yes
+        lzma_static=yes
       fi
       if test "$lzma_exists" = yes ; then
         break
@@ -2798,7 +2798,7 @@ case "$MEMKIND" in
     for lib in $multilib_path ; do
       if test -f "${MEMKIND}/${lib}/libmemkind.so" ; then
         MEMKIND_LIBDIR="${MEMKIND}/$lib"
-	break
+        break
       fi
     done
     if test "x$MEMKIND_LIBDIR" = x ; then
@@ -2861,21 +2861,21 @@ case "$OPT_PAPI" in
       if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
       then
         OPT_PAPI_LIBPATH="$lib_dir"
-	if test -f "${lib_dir}/libpapi.so" ; then
+        if test -f "${lib_dir}/libpapi.so" ; then
           OPT_PAPI_DYNAMIC=yes
-	  OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
-	  if test -f "${lib_dir}/libpfm.so" ; then
-	    OPT_PAPI_LDFLAGS="${OPT_PAPI_LDFLAGS} -lpfm"
-	  fi
+          OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
+          if test -f "${lib_dir}/libpfm.so" ; then
+            OPT_PAPI_LDFLAGS="${OPT_PAPI_LDFLAGS} -lpfm"
+          fi
         fi
         if test -f "${lib_dir}/libpapi.a" ; then
           OPT_PAPI_STATIC=yes
-	  OPT_PAPI_LIBS_STAT="${lib_dir}/libpapi.a"
-	  if test -f "${lib_dir}/libpfm.a" ; then
-	    OPT_PAPI_LIBS_STAT="${OPT_PAPI_LIBS_STAT} ${lib_dir}/libpfm.a"
-	  fi
-	fi
-	break
+          OPT_PAPI_LIBS_STAT="${lib_dir}/libpapi.a"
+          if test -f "${lib_dir}/libpfm.a" ; then
+            OPT_PAPI_LIBS_STAT="${OPT_PAPI_LIBS_STAT} ${lib_dir}/libpfm.a"
+          fi
+        fi
+        break
       fi
     done
 
@@ -3129,14 +3129,14 @@ case "$PERFMON" in
       if test -f "${lib_dir}/libpfm.so" || test -f "${lib_dir}/libpfm.a"
       then
         PERFMON_LIB="$lib_dir"
-	PERFMON_COPY=yes
-	if test -f "${lib_dir}/libpfm.so" ; then
-	  PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
+        PERFMON_COPY=yes
+        if test -f "${lib_dir}/libpfm.so" ; then
+          PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
         fi
         if test -f "${lib_dir}/libpfm.a" ; then
-	  PERFMON_LDFLAGS_STAT="${lib_dir}/libpfm.a"
+          PERFMON_LDFLAGS_STAT="${lib_dir}/libpfm.a"
           PERFMON_STATIC=yes
-	fi
+        fi
         break
       fi
     done
@@ -3350,10 +3350,10 @@ case "$TBB" in
       dir="${TBB}/$lib"
       for f in "$dir"/libtbb*.so* ; do
         if test -f "$f" ; then
-	  TBB_LIB_DIR="$dir"
-	  TBB_COPY=yes
-	  break 2
-	fi
+          TBB_LIB_DIR="$dir"
+          TBB_COPY=yes
+          break 2
+        fi
       done
     done
     if test "$TBB_COPY" != yes ; then
@@ -3417,7 +3417,7 @@ XED2="$default_xed_prefix"
 
 AC_ARG_WITH([xed],
   [AS_HELP_STRING([--with-xed=PATH],
-  	    [path to intel xed install directory])],
+            [path to intel xed install directory])],
   [XED2="$withval"],
   [])
 
@@ -3587,7 +3587,7 @@ case "$YAMLCPP" in
       if test -f "${YAMLCPP}/${lib}/libyaml-cpp.so" ; then
         YAMLCPP_LDFLAGS="-L${YAMLCPP}/${lib}"
         YAMLCPP_LIB="${YAMLCPP}/${lib}"
-	break
+        break
       fi
     done
     if test "x$YAMLCPP_LDFLAGS" = x ; then
@@ -3643,8 +3643,8 @@ case "$ZLIB" in
     for lib in $multilib_path ; do
       if test -f "${ZLIB}/${lib}/libz.so" && test -f "${ZLIB}/${lib}/libz.a" ; then
         ZLIB_LIB="${ZLIB}/${lib}"
-	ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
-	break
+        ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
+        break
       fi
     done
     if test "$ZLIB_LIB" = no ; then
@@ -3833,8 +3833,8 @@ if test "$DYNINST" != no ; then
       ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
       if test $? -eq 0 ; then
         parse_openmp=yes
-	dyninst_features="$dyninst_features openmp"
-	break
+        dyninst_features="$dyninst_features openmp"
+        break
       fi
     done
   fi
@@ -3850,8 +3850,8 @@ if test "$DYNINST" != no ; then
       ldd "$symtabapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
       if test $? -eq 0 ; then
         symtab_openmp=yes
-	dyninst_features="$dyninst_features par-symtab"
-	break
+        dyninst_features="$dyninst_features par-symtab"
+        break
       fi
     done
   fi
@@ -3985,7 +3985,7 @@ AM_CONDITIONAL(OPT_BUILD_TOOL_ALL, [test $enable_back_end = no])
 
 AC_ARG_ENABLE([hpcrun],
   [AS_HELP_STRING([--enable-hpcrun],
-	  [build hpcrun (default yes)])],
+          [build hpcrun (default yes)])],
   [],
   [enable_hpcrun=yes])
 
@@ -4040,7 +4040,7 @@ OPT_ENABLE_HPCRUN_STATIC="yes"
 
 AC_ARG_ENABLE([hpcrun-static],
   AS_HELP_STRING([--enable-hpcrun-static],
-	  [build hpcrun for statically linked executables (default yes)]),
+          [build hpcrun for statically linked executables (default yes)]),
   [case "${enableval}" in
      yes) OPT_ENABLE_HPCRUN_STATIC="yes" ;;
      no)  OPT_ENABLE_HPCRUN_STATIC="no" ;;

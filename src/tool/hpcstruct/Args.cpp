@@ -86,7 +86,7 @@ using std::string;
 //*************************** Forward Declarations **************************
 
 // Cf. DIAG_Die.
-#define ARG_ERROR(streamArgs)					     \
+#define ARG_ERROR(streamArgs)                                        \
   { std::ostringstream WeIrDnAmE;                                    \
     WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
     printError(std::cerr, WeIrDnAmE.str());                          \
@@ -179,8 +179,8 @@ Options: Control caching of structure files
 Options: Override parallelism defaults
   -j <num>, --jobs <num> Specify the number of threads to be used. <num>
                        OpenMP threads will be used to analyze any large
-		       binaries. A pool of <num> threads will be used to
-		       analyze small binaries.
+                       binaries. A pool of <num> threads will be used to
+                       analyze small binaries.
   --psize <psize>      hpcstruct will consider any binary of at least
                        <psize> bytes as large. hpcstruct will use more
                        OpenMP threads to analyze large binaries than
@@ -377,8 +377,8 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("debug")) {
       int dbg = 1;
       if (parser.isOptArg("debug")) {
-	const string& arg = parser.getOptArg("debug");
-	dbg = (int)CmdLineParser::toLong(arg);
+        const string& arg = parser.getOptArg("debug");
+        dbg = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
@@ -393,8 +393,8 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("verbose")) {
       int verb = 1;
       if (parser.isOptArg("verbose")) {
-	const string& arg = parser.getOptArg("verbose");
-	verb = (int)CmdLineParser::toLong(arg);
+        const string& arg = parser.getOptArg("verbose");
+        verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
@@ -491,15 +491,15 @@ Args::parse(int argc, const char* const argv[])
       StrUtil::tokenize_str(arg, CLP_SEPARATOR, replacePaths);
 
       for (unsigned int i = 0; i < replacePaths.size(); ++i) {
-	int occurancesOfEquals =
-	  Analysis::Util::parseReplacePath(replacePaths[i]);
+        int occurancesOfEquals =
+          Analysis::Util::parseReplacePath(replacePaths[i]);
 
-	if (occurancesOfEquals > 1) {
-	  ARG_ERROR("Too many occurrences of \'=\'; make sure to escape any \'=\' in your paths");
-	}
-	else if(occurancesOfEquals == 0) {
-	  ARG_ERROR("The \'=\' between the old path and new path is missing");
-	}
+        if (occurancesOfEquals > 1) {
+          ARG_ERROR("Too many occurrences of \'=\'; make sure to escape any \'=\' in your paths");
+        }
+        else if(occurancesOfEquals == 0) {
+          ARG_ERROR("The \'=\' between the old path and new path is missing");
+        }
       }
     }
 #endif
@@ -522,14 +522,14 @@ Args::parse(int argc, const char* const argv[])
     struct stat sb;
     if (stat(in_filenm.c_str(), &sb) == 0 && !S_ISDIR(sb.st_mode)) {
       if (out_filenm.empty()) {
-	string base_filenm = FileUtil::basename(in_filenm);
-	out_filenm = base_filenm + ".hpcstruct";
+        string base_filenm = FileUtil::basename(in_filenm);
+        out_filenm = base_filenm + ".hpcstruct";
       }
     }
 #if 0
     fprintf(stderr, "DEBUG in_filenm = `%s', is_from_makefile = %s\n",
-	in_filenm.c_str(),
-	(is_from_makefile == true ? "true" : (is_from_makefile == false? "false" : "bad value" ) ) );
+        in_filenm.c_str(),
+        (is_from_makefile == true ? "true" : (is_from_makefile == false? "false" : "bad value" ) ) );
 #endif
 
   }

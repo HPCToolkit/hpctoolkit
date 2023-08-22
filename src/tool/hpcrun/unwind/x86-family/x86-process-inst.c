@@ -76,24 +76,24 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
   case XED_ICLASS_JMP:
   case XED_ICLASS_JMP_FAR:
-	next = process_unconditional_branch(xptr, irdebug, iarg);
-	if (hpcrun_is_cold_code(xptr, iarg)) {
-	  TMSG(COLD_CODE,"  --cold code routine detected!");
-	  TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
+        next = process_unconditional_branch(xptr, irdebug, iarg);
+        if (hpcrun_is_cold_code(xptr, iarg)) {
+          TMSG(COLD_CODE,"  --cold code routine detected!");
+          TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
 
-	  unwindr_info_t unwr_info;
-	  bool found = uw_recipe_map_lookup(iarg->return_addr, NATIVE_UNWINDER, &unwr_info);
+          unwindr_info_t unwr_info;
+          bool found = uw_recipe_map_lookup(iarg->return_addr, NATIVE_UNWINDER, &unwr_info);
 #if UWRECIPE_DEBUG
-	  assert(found);
+          assert(found);
 #endif
-	  bitree_uwi_t *ui = unwr_info.btuwi;
+          bitree_uwi_t *ui = unwr_info.btuwi;
 
-	  TMSG(COLD_CODE,"got unwind interval from hpcrun_addr_to_interval");
-	  if (ENABLED(COLD_CODE)) {
-		dump_ui_stderr(ui);
-	  }
-	  // Fixup current intervals w.r.t. the warm code interval
-	  hpcrun_cold_code_fixup(iarg->first, iarg->current, ui);
+          TMSG(COLD_CODE,"got unwind interval from hpcrun_addr_to_interval");
+          if (ENABLED(COLD_CODE)) {
+                dump_ui_stderr(ui);
+          }
+          // Fixup current intervals w.r.t. the warm code interval
+          hpcrun_cold_code_fixup(iarg->first, iarg->current, ui);
     }
 
     break;

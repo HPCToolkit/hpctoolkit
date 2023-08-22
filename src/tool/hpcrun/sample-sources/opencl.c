@@ -211,8 +211,8 @@ METHOD_FN(process_event_list, int lush_metrics)
       opencl_optimization_check_enable();
       gpu_metrics_INTEL_OPTIMIZATION_enable();
     } else if (hpcrun_ev_is(event_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
-			opencl_blame_shifting_enable();
-		} else if (hpcrun_ev_is(event_name, ENABLE_INTEL_GPU_UTILIZATION)) {
+                        opencl_blame_shifting_enable();
+                } else if (hpcrun_ev_is(event_name, ENABLE_INTEL_GPU_UTILIZATION)) {
       // papi metric collection for OpenCL
       intel_papi_setup();
       gpu_metrics_gpu_utilization_enable();
@@ -259,9 +259,9 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("gpu=opencl\tOperation-level monitoring for OpenCL on a CPU or GPU.\n"
-	 "\t\tCollect timing information for GPU kernel invocations,\n"
-	 "\t\tmemory copies, etc.\n"
-	 "\n");
+         "\t\tCollect timing information for GPU kernel invocations,\n"
+         "\t\tmemory copies, etc.\n"
+         "\n");
 
 #if 0
 // these options can't be enabled without further work.
@@ -270,16 +270,16 @@ METHOD_FN(display_events)
 // zeBinary becomes the standard across both.
 #ifdef ENABLE_GTPIN
   printf("gpu=opencl,inst=<comma-separated list of options>\n"
-	 "\t\tOperation-level monitoring for GPU-accelerated applications\n"
-	 "\t\trunning on an Intel GPU atop Intel's OpenCL runtime. Collect\n"
-	 "\t\ttiming information for GPU kernel invocations, memory copies, etc.\n"
-	 "\t\tUse optional instrumentation within GPU kernels to collect\n"
-	 "\t\tone or more of the following:\n"
-	 "\t\t  count:   count how many times each GPU instruction executes\n"
-	 "\t\t  latency: approximately attribute latency to GPU instructions\n"
-	 "\t\t  simd:    analyze utilization of SIMD lanes\n"
-	 "\t\t  silent:  silence warnings from instrumentation\n"
-	 "\n");
+         "\t\tOperation-level monitoring for GPU-accelerated applications\n"
+         "\t\trunning on an Intel GPU atop Intel's OpenCL runtime. Collect\n"
+         "\t\ttiming information for GPU kernel invocations, memory copies, etc.\n"
+         "\t\tUse optional instrumentation within GPU kernels to collect\n"
+         "\t\tone or more of the following:\n"
+         "\t\t  count:   count how many times each GPU instruction executes\n"
+         "\t\t  latency: approximately attribute latency to GPU instructions\n"
+         "\t\t  simd:    analyze utilization of SIMD lanes\n"
+         "\t\t  silent:  silence warnings from instrumentation\n"
+         "\n");
 #endif
 
   printf("%s\tIntel Optimization suggestions.\n"

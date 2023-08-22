@@ -19639,7 +19639,7 @@ case "$enable_mpi_search" in
       /* )
         { $as_echo "$as_me:${as_lineno-$LINENO}: Cray MPI wrapper: $MPICXX" >&5
 $as_echo "$as_me: Cray MPI wrapper: $MPICXX" >&6;}
-	;;
+        ;;
       * )
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your PATH" >&5
 $as_echo "$as_me: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your PATH" >&2;}
@@ -19654,7 +19654,7 @@ $as_echo "$as_me: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your 
       /* )
         { $as_echo "$as_me:${as_lineno-$LINENO}: Blue Gene MPI wrapper: $MPICXX" >&5
 $as_echo "$as_me: Blue Gene MPI wrapper: $MPICXX" >&6;}
-	;;
+        ;;
       * )
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH" >&5
 $as_echo "$as_me: WARNING: unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH" >&2;}
@@ -19951,7 +19951,7 @@ case "$host_cpu" in
         ;;
       * )
         if test -d /bgsys/drivers ; then enable_bgq=yes
-	else enable_bgq=no
+        else enable_bgq=no
         fi
         ;;
     esac
@@ -20364,20 +20364,20 @@ $as_echo "$as_me: checking that CC matches the spack compiler: $base" >&6;}
         spack_minor=`echo $ver | awk -F. '{print $2}'`
 
         if test "x$spack_minor" != x ; then
-	  have_spack_version=yes
-	else
+          have_spack_version=yes
+        else
           { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to identify spack compiler version: $with_spack" >&5
 $as_echo "$as_me: WARNING: unable to identify spack compiler version: $with_spack" >&2;}
-	  warn_identify_compiler=yes
-	  warn_identify_compiler_mesg="$warn_identify_compiler_mesg spack"
+          warn_identify_compiler=yes
+          warn_identify_compiler_mesg="$warn_identify_compiler_mesg spack"
         fi
-	;;
+        ;;
       * )
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: not using the GNU compiler for spack prereqs: $with_spack" >&5
 $as_echo "$as_me: WARNING: not using the GNU compiler for spack prereqs: $with_spack" >&2;}
         warn_non_gnu=yes
         warn_non_gnu_mesg="$warn_non_gnu_mesg spack"
-	;;
+        ;;
     esac
     ;;
 esac
@@ -20454,10 +20454,10 @@ case "$BOOST" in
       dir="${BOOST}/$lib"
       for f in "$dir"/libboost*system*.so* ; do
         if test -f "$f" ; then
-	  BOOST_LIB_DIR="$dir"
-	  BOOST_COPY=yes
-	  break 2
-	fi
+          BOOST_LIB_DIR="$dir"
+          BOOST_COPY=yes
+          break 2
+        fi
       done
     done
     if test "$BOOST_COPY" != yes ; then
@@ -20535,7 +20535,7 @@ case "$BZIP" in
       bzip_lib="${BZIP}/$lib"
       if test -f "${bzip_lib}/libbz2.so" ; then
         BZIP_LIB="$bzip_lib"
-	break
+        break
       fi
     done
     if test "$BZIP_LIB" = no ; then
@@ -20595,8 +20595,8 @@ case "${DYNINST}" in
       dir="${DYNINST}/$lib"
       if test -f "${dir}/libparseAPI.so" ; then
         DYNINST_LIB_DIR="$dir"
-	DYNINST_COPY=yes
-	break
+        DYNINST_COPY=yes
+        break
       fi
     done
     if test "$DYNINST_COPY" != yes ; then
@@ -20645,7 +20645,7 @@ LIBELF_COPY=no
 case "$LIBELF" in
   /* )
     if test ! -f "${LIBELF}/include/libelf.h" \
-	&& test ! -f "${LIBELF}/include/libelf/libelf.h"
+        && test ! -f "${LIBELF}/include/libelf/libelf.h"
     then
       as_fn_error $? "unable to find libelf.h in: $LIBELF" "$LINENO" 5
     fi
@@ -20655,10 +20655,10 @@ case "$LIBELF" in
     LIBELF_INC="${LIBELF}/include"
     for lib in $multilib_path ; do
       if test -f "${LIBELF}/${lib}/libelf.so" \
-	 && test -f "${LIBELF}/${lib}/libdw.so"
+         && test -f "${LIBELF}/${lib}/libdw.so"
       then
         LIBELF_LIB="${LIBELF}/${lib}"
-	break
+        break
       fi
     done
     if test "$LIBELF_LIB" = no ; then
@@ -20712,8 +20712,8 @@ case "$LIBIBERTY" in
       file="${LIBIBERTY}/${lib}/libiberty.a"
       if test -f "$file" ; then
         LIBIBERTY_LIBS="$file"
-	found_libiberty=yes
-	break
+        found_libiberty=yes
+        break
       fi
     done
     num_pkgs=`expr 1 + $num_pkgs`
@@ -20848,15 +20848,15 @@ case "$LIBUNWIND" in
       ldir="${LIBUNWIND}/$lib"
       if test -f "${ldir}/libunwind.so" ; then
         LIBUNWIND_LDFLAGS_DYN="-L${ldir} -lunwind"
-	LIBUNWIND_LIB_DIR="$ldir"
-	libunwind_exists=yes
-	libunwind_dynamic=yes
+        LIBUNWIND_LIB_DIR="$ldir"
+        libunwind_exists=yes
+        libunwind_dynamic=yes
       fi
       if test -f "${ldir}/libunwind.a" ; then
         LIBUNWIND_LDFLAGS_STAT="${ldir}/libunwind.a"
-	LIBUNWIND_LIB_DIR="$ldir"
-	libunwind_exists=yes
-	libunwind_static=yes
+        LIBUNWIND_LIB_DIR="$ldir"
+        libunwind_exists=yes
+        libunwind_static=yes
       fi
       if test "$libunwind_exists" = yes ; then
         break
@@ -21055,16 +21055,16 @@ case "$LZMA" in
       ldir="${LZMA}/$lib"
       if test -f "${ldir}/liblzma.so" ; then
         LZMA_LDFLAGS_DYN="-L${ldir} -llzma"
-	LZMA_COPY=yes
-	LZMA_LIB_DIR="$ldir"
+        LZMA_COPY=yes
+        LZMA_LIB_DIR="$ldir"
         lzma_exists=yes
-	lzma_dynamic=yes
+        lzma_dynamic=yes
       fi
       if test -f "${ldir}/liblzma.a" ; then
         LZMA_LDFLAGS_STAT="${ldir}/liblzma.a"
-	LZMA_LIB_DIR="$ldir"
+        LZMA_LIB_DIR="$ldir"
         lzma_exists=yes
-	lzma_static=yes
+        lzma_static=yes
       fi
       if test "$lzma_exists" = yes ; then
         break
@@ -21203,7 +21203,7 @@ case "$MEMKIND" in
     for lib in $multilib_path ; do
       if test -f "${MEMKIND}/${lib}/libmemkind.so" ; then
         MEMKIND_LIBDIR="${MEMKIND}/$lib"
-	break
+        break
       fi
     done
     if test "x$MEMKIND_LIBDIR" = x ; then
@@ -21271,21 +21271,21 @@ case "$OPT_PAPI" in
       if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
       then
         OPT_PAPI_LIBPATH="$lib_dir"
-	if test -f "${lib_dir}/libpapi.so" ; then
+        if test -f "${lib_dir}/libpapi.so" ; then
           OPT_PAPI_DYNAMIC=yes
-	  OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
-	  if test -f "${lib_dir}/libpfm.so" ; then
-	    OPT_PAPI_LDFLAGS="${OPT_PAPI_LDFLAGS} -lpfm"
-	  fi
+          OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
+          if test -f "${lib_dir}/libpfm.so" ; then
+            OPT_PAPI_LDFLAGS="${OPT_PAPI_LDFLAGS} -lpfm"
+          fi
         fi
         if test -f "${lib_dir}/libpapi.a" ; then
           OPT_PAPI_STATIC=yes
-	  OPT_PAPI_LIBS_STAT="${lib_dir}/libpapi.a"
-	  if test -f "${lib_dir}/libpfm.a" ; then
-	    OPT_PAPI_LIBS_STAT="${OPT_PAPI_LIBS_STAT} ${lib_dir}/libpfm.a"
-	  fi
-	fi
-	break
+          OPT_PAPI_LIBS_STAT="${lib_dir}/libpapi.a"
+          if test -f "${lib_dir}/libpfm.a" ; then
+            OPT_PAPI_LIBS_STAT="${OPT_PAPI_LIBS_STAT} ${lib_dir}/libpfm.a"
+          fi
+        fi
+        break
       fi
     done
 
@@ -21611,14 +21611,14 @@ case "$PERFMON" in
       if test -f "${lib_dir}/libpfm.so" || test -f "${lib_dir}/libpfm.a"
       then
         PERFMON_LIB="$lib_dir"
-	PERFMON_COPY=yes
-	if test -f "${lib_dir}/libpfm.so" ; then
-	  PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
+        PERFMON_COPY=yes
+        if test -f "${lib_dir}/libpfm.so" ; then
+          PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
         fi
         if test -f "${lib_dir}/libpfm.a" ; then
-	  PERFMON_LDFLAGS_STAT="${lib_dir}/libpfm.a"
+          PERFMON_LDFLAGS_STAT="${lib_dir}/libpfm.a"
           PERFMON_STATIC=yes
-	fi
+        fi
         break
       fi
     done
@@ -21920,10 +21920,10 @@ case "$TBB" in
       dir="${TBB}/$lib"
       for f in "$dir"/libtbb*.so* ; do
         if test -f "$f" ; then
-	  TBB_LIB_DIR="$dir"
-	  TBB_COPY=yes
-	  break 2
-	fi
+          TBB_LIB_DIR="$dir"
+          TBB_COPY=yes
+          break 2
+        fi
       done
     done
     if test "$TBB_COPY" != yes ; then
@@ -22191,7 +22191,7 @@ case "$YAMLCPP" in
       if test -f "${YAMLCPP}/${lib}/libyaml-cpp.so" ; then
         YAMLCPP_LDFLAGS="-L${YAMLCPP}/${lib}"
         YAMLCPP_LIB="${YAMLCPP}/${lib}"
-	break
+        break
       fi
     done
     if test "x$YAMLCPP_LDFLAGS" = x ; then
@@ -22250,8 +22250,8 @@ case "$ZLIB" in
     for lib in $multilib_path ; do
       if test -f "${ZLIB}/${lib}/libz.so" && test -f "${ZLIB}/${lib}/libz.a" ; then
         ZLIB_LIB="${ZLIB}/${lib}"
-	ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
-	break
+        ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
+        break
       fi
     done
     if test "$ZLIB_LIB" = no ; then
@@ -22496,8 +22496,8 @@ $as_echo_n "checking if parseapi built with openmp... " >&6; }
       ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
       if test $? -eq 0 ; then
         parse_openmp=yes
-	dyninst_features="$dyninst_features openmp"
-	break
+        dyninst_features="$dyninst_features openmp"
+        break
       fi
     done
   fi
@@ -22515,8 +22515,8 @@ $as_echo_n "checking if symtab built with openmp... " >&6; }
       ldd "$symtabapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
       if test $? -eq 0 ; then
         symtab_openmp=yes
-	dyninst_features="$dyninst_features par-symtab"
-	break
+        dyninst_features="$dyninst_features par-symtab"
+        break
       fi
     done
   fi

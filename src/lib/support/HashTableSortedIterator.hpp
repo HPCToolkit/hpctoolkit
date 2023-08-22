@@ -99,7 +99,7 @@ class HashTableSortedIterator
 {
 public:
   HashTableSortedIterator(const HashTable* theHashTable,
-			  EntryCompareFunctPtr const _EntryCompare);
+                          EntryCompareFunctPtr const _EntryCompare);
   virtual ~HashTableSortedIterator();
 
   void  operator ++(int);

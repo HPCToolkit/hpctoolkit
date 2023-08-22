@@ -71,4 +71,4 @@ sync_epilogue
  uint16_t num_sync_events
 );
 
-#endif 	//blame_h
+#endif  //blame_h

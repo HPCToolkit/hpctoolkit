@@ -171,7 +171,7 @@ ompt_parallel_begin_internal
   if (ompt_eager_context_p()) {
      region_data->call_path =
        ompt_parallel_begin_context(region_id,
-				   flags & ompt_parallel_invoker_program);
+                                   flags & ompt_parallel_invoker_program);
   }
 }
 
@@ -404,7 +404,7 @@ ompt_region_freelist_get
   // but check this one more time
   ompt_region_data_t* r =
     (ompt_region_data_t*) wfq_dequeue_private(&public_region_freelist,
-					      OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
+                                              OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
   return r;
 }
 

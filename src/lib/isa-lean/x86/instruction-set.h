@@ -76,28 +76,28 @@ extern "C" {
 #define X86_ISREG(REG) \
 static inline bool \
 x86_isReg_ ## REG  (xed_reg_enum_t reg) \
-{ 					\
-  return (				\
-	  reg == XED_REG_R ## REG  ||   \
-	  reg == XED_REG_E ## REG  ||   \
-	  reg == XED_REG_ ## REG  );	\
+{                                       \
+  return (                              \
+          reg == XED_REG_R ## REG  ||   \
+          reg == XED_REG_E ## REG  ||   \
+          reg == XED_REG_ ## REG  );    \
 }
 #else
 #define X86_ISREG(REG) \
 static inline bool \
 x86_isReg_ ## REG  (xed_reg_enum_t reg) \
-{ 					\
-  return (			        \
-	  reg == XED_REG_E ## REG  ||   \
-	  reg == XED_REG_ ## REG  );	\
+{                                       \
+  return (                              \
+          reg == XED_REG_E ## REG  ||   \
+          reg == XED_REG_ ## REG  );    \
 }
 #endif
 
-#define X86_ISREG_R(REG) 	 	\
-static inline bool 		 	\
+#define X86_ISREG_R(REG)                \
+static inline bool                      \
 x86_isReg_R ## REG (xed_reg_enum_t reg) \
-{				 	\
-  return (reg == XED_REG_R ## REG ); 	\
+{                                       \
+  return (reg == XED_REG_R ## REG );    \
 }
 
 //***************************************************************************

@@ -66,7 +66,7 @@
 
 unwind_interval *
 process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug,
-			     interval_arg_t *iarg)
+                             interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
 

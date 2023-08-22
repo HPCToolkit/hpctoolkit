@@ -89,7 +89,7 @@ gpu_application_thread_correlation_callback_impl
 
   cct_node_t *node =
     hpcrun_sample_callpath(&uc, zero_metric_id,
-			   zero_metric_incr, 0, 1, NULL).sample_node;
+                           zero_metric_incr, 0, 1, NULL).sample_node;
 
   hpcrun_safe_exit();
 

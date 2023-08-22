@@ -84,7 +84,7 @@
 #define working(bi) (bi->working())
 
 #define atomic_add(loc, value) \
-	atomic_fetch_add_explicit(loc, value, memory_order_relaxed)
+        atomic_fetch_add_explicit(loc, value, memory_order_relaxed)
 
 
 /******************************************************************************
@@ -195,7 +195,7 @@ undirected_blame_sample(void* arg, int metric_id, cct_node_t *node,
       double idleness = (idle_threads/working_threads) * metric_value;
 
       cct_metric_data_increment(bi->idle_metric_id, node,
-				(cct_metric_data_t){.r = idleness});
+                                (cct_metric_data_t){.r = idleness});
     }
 
     cct_metric_data_increment(bi->work_metric_id, node,

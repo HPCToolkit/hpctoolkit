@@ -89,25 +89,25 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       //----------------------------------------------------------------------
       xed_reg_enum_t reg1 = xed_decoded_inst_get_reg(xptr, op1_name);
       if (x86_isReg_BP(reg1) ||
-	(x86_isReg_AX(reg1) && (iarg->rax_rbp_equivalent_at == iarg->ins))){
-	//--------------------------------------------------------------------
-	// register being stored is BP (or a copy in RAX)
-	//--------------------------------------------------------------------
-	if (reg.bp_status == BP_UNCHANGED) {
-	  //==================================================================
-	  // instruction: save caller's BP into the stack
-	  // action:      create a new interval with
-	  //                (1) BP status reset to BP_SAVED
-	  //                (2) BP position relative to the stack pointer set
-	  //                    to the offset from SP
-	  //==================================================================
-	  reg.bp_status = BP_SAVED;
-	  reg.sp_bp_pos = xed_decoded_inst_get_memory_displacement(xptr, 0);
-	  next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg);
-	  hw_tmp->uwi = next;
-	  hw_tmp->state =
-	    HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED);
-	}
+        (x86_isReg_AX(reg1) && (iarg->rax_rbp_equivalent_at == iarg->ins))){
+        //--------------------------------------------------------------------
+        // register being stored is BP (or a copy in RAX)
+        //--------------------------------------------------------------------
+        if (reg.bp_status == BP_UNCHANGED) {
+          //==================================================================
+          // instruction: save caller's BP into the stack
+          // action:      create a new interval with
+          //                (1) BP status reset to BP_SAVED
+          //                (2) BP position relative to the stack pointer set
+          //                    to the offset from SP
+          //==================================================================
+          reg.bp_status = BP_SAVED;
+          reg.sp_bp_pos = xed_decoded_inst_get_memory_displacement(xptr, 0);
+          next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg);
+          hw_tmp->uwi = next;
+          hw_tmp->state =
+            HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED);
+        }
       }
     }
   } else if ((op1_name == XED_OPERAND_MEM0) && (op0_name == XED_OPERAND_REG0)) {
@@ -120,35 +120,35 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       // register being loaded is BP
       //--------------------------------------------------------------------
       if (reg.bp_status != BP_UNCHANGED) {
-	int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
-	xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0);
-	if (x86_isReg_SP(basereg) && (offset == reg.sp_bp_pos)) {
-	  //================================================================
-	  // instruction: restore BP from its saved location in the stack
-	  // action:      create a new interval with BP status reset to
-	  //              BP_UNCHANGED
-	  //================================================================
-	  reg.bp_status = BP_UNCHANGED;
-	  next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
-	} else {
-	  //================================================================
-	  // instruction: BP is loaded from a memory address DIFFERENT from
-	  // its saved location in the stack
-	  // action:      create a new interval with BP status reset to
-	  //              BP_HOSED
-	  //================================================================
-	  if (reg.bp_status != BP_HOSED) {
-	    reg.bp_status = BP_HOSED;
-	    next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
-	    if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED,
-			      HW_BP_OVERWRITTEN) &&
-		(UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == UWI_RECIPE(next)->reg.sp_ra_pos)) {
-	      hw_tmp->uwi = next;
-	      hw_tmp->state =
-		HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
-	    }
-	  }
-	}
+        int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
+        xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0);
+        if (x86_isReg_SP(basereg) && (offset == reg.sp_bp_pos)) {
+          //================================================================
+          // instruction: restore BP from its saved location in the stack
+          // action:      create a new interval with BP status reset to
+          //              BP_UNCHANGED
+          //================================================================
+          reg.bp_status = BP_UNCHANGED;
+          next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
+        } else {
+          //================================================================
+          // instruction: BP is loaded from a memory address DIFFERENT from
+          // its saved location in the stack
+          // action:      create a new interval with BP status reset to
+          //              BP_HOSED
+          //================================================================
+          if (reg.bp_status != BP_HOSED) {
+            reg.bp_status = BP_HOSED;
+            next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
+            if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED,
+                              HW_BP_OVERWRITTEN) &&
+                (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == UWI_RECIPE(next)->reg.sp_ra_pos)) {
+              hw_tmp->uwi = next;
+              hw_tmp->state =
+                HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
+            }
+          }
+        }
       }
     } else if (x86_isReg_SP(reg0)) {
       //--------------------------------------------------------------------
@@ -156,14 +156,14 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       //--------------------------------------------------------------------
       xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, 0);
       if (x86_isReg_SP(basereg)) {
-	//================================================================
-	// instruction: restore SP from a saved location in the stack
-	// action:      create a new interval with SP status reset to
-	//              BP_UNCHANGED
-	//================================================================
-	reg.sp_ra_pos = 0;
-	reg.bp_ra_pos = 0;
-	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
+        //================================================================
+        // instruction: restore SP from a saved location in the stack
+        // action:      create a new interval with SP status reset to
+        //              BP_UNCHANGED
+        //================================================================
+        reg.sp_ra_pos = 0;
+        reg.bp_ra_pos = 0;
+        next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
       }
     }
   } else if ((op0_name == XED_OPERAND_REG0) && (op1_name == XED_OPERAND_REG1)){
@@ -191,24 +191,24 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       next = new_ui(nextInsn(iarg, xptr), RA_STD_FRAME, &reg);
       if (iarg->sp_realigned) {
         // SP was previously realigned. correct RA offsets based on typical
-	// frame layout in these circumstances.
+        // frame layout in these circumstances.
 
-	// assume RA is in word below BP
+        // assume RA is in word below BP
         UWI_RECIPE(next)->reg.bp_ra_pos =
-	  (UWI_RECIPE(next)->reg.bp_bp_pos + x86_bp_size(reg0));
+          (UWI_RECIPE(next)->reg.bp_bp_pos + x86_bp_size(reg0));
 
-	// RA offset wrt SP is the same, since SP == BP
-	UWI_RECIPE(next)->reg.sp_ra_pos = UWI_RECIPE(next)->reg.bp_ra_pos;
+        // RA offset wrt SP is the same, since SP == BP
+        UWI_RECIPE(next)->reg.sp_ra_pos = UWI_RECIPE(next)->reg.bp_ra_pos;
 
-	// once we've handled SP realignment in the routine prologue, we can
-	// ignore it for the rest of the routine.
-	iarg->sp_realigned = false;
+        // once we've handled SP realignment in the routine prologue, we can
+        // ignore it for the rest of the routine.
+        iarg->sp_realigned = false;
       }
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED,
-			HW_BP_OVERWRITTEN)) {
-	hw_tmp->uwi = next;
-	hw_tmp->state =
-	  HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
+                        HW_BP_OVERWRITTEN)) {
+        hw_tmp->uwi = next;
+        hw_tmp->state =
+          HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
       }
     } else if (x86_isReg_BP(reg1) && x86_isReg_AX(reg0)) {
       //====================================================================
@@ -217,22 +217,22 @@ process_move(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
       iarg->rax_rbp_equivalent_at = nextInsn(iarg, xptr);
     } else if (x86_isReg_BP(reg0)) {
       if (reg.bp_status != BP_HOSED){
-	//==================================================================
-	// instruction: move some NON-special register to BP
-	// state:       bp_status is NOT BP_HOSED
-	// action:      begin a new RA_SP_RELATIVE,BP_HOSED interval
-	//==================================================================
-	reg.bp_status = BP_HOSED;
-	reg.bp_ra_pos = reg.sp_ra_pos;
-	reg.bp_bp_pos = reg.sp_bp_pos;
-	next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
-	if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED,
-			  HW_BP_OVERWRITTEN) &&
-	    (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == UWI_RECIPE(next)->reg.sp_ra_pos)) {
-	  hw_tmp->uwi = next;
-	  hw_tmp->state =
-	    HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
-	}
+        //==================================================================
+        // instruction: move some NON-special register to BP
+        // state:       bp_status is NOT BP_HOSED
+        // action:      begin a new RA_SP_RELATIVE,BP_HOSED interval
+        //==================================================================
+        reg.bp_status = BP_HOSED;
+        reg.bp_ra_pos = reg.sp_ra_pos;
+        reg.bp_bp_pos = reg.sp_bp_pos;
+        next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
+        if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED,
+                          HW_BP_OVERWRITTEN) &&
+            (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == UWI_RECIPE(next)->reg.sp_ra_pos)) {
+          hw_tmp->uwi = next;
+          hw_tmp->state =
+            HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
+        }
       }
     }
   }

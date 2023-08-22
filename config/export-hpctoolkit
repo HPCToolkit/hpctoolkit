@@ -23,9 +23,9 @@ valid_hpctoolkit_hash()
     ret=1
 
     if test -f "$hfile" ; then
-	inst_hash=$(cat "$hfile")
-	test "$config_hash" = "$inst_hash"
-	ret=$?
+        inst_hash=$(cat "$hfile")
+        test "$config_hash" = "$inst_hash"
+        ret=$?
     fi
     return $ret
 }
@@ -41,8 +41,8 @@ found_dir=no
 
 if test "$hash_value" != no ; then
     if valid_hpctoolkit_hash "$prefix" "$hash_value" ; then
-	HPCTOOLKIT="$prefix"
-	found_dir=yes
+        HPCTOOLKIT="$prefix"
+        found_dir=yes
     fi
 fi
 
@@ -53,14 +53,14 @@ fi
 if test "$found_dir" = no && test "$hash_value" != no ; then
     script="$0"
     if test -L "$script" ; then
-	script=$(realpath "$script")
+        script=$(realpath "$script")
     fi
     dir=$(dirname "$script")
     dir=$( cd "${dir}/${hpc_path_to_root}" 2>/dev/null && /bin/pwd )
 
     if valid_hpctoolkit_hash "$dir" "$hash_value" ; then
-	HPCTOOLKIT="$dir"
-	found_dir=yes
+        HPCTOOLKIT="$dir"
+        found_dir=yes
     fi
 fi
 
@@ -69,7 +69,7 @@ fi
 
 if test "$found_dir" = no && test "$hash_value" != no ; then
     if valid_hpctoolkit_hash "$HPCTOOLKIT" "$hash_value" ; then
-	found_dir=yes
+        found_dir=yes
     fi
 fi
 
@@ -79,10 +79,10 @@ fi
 
 if test "$found_dir" = no ; then
     if valid_hpctoolkit_dir "$prefix" ; then
-	HPCTOOLKIT="$prefix"
-	found_dir=yes
+        HPCTOOLKIT="$prefix"
+        found_dir=yes
     elif valid_hpctoolkit_dir "$HPCTOOLKIT" ; then
-	found_dir=yes
+        found_dir=yes
     fi
 fi
 

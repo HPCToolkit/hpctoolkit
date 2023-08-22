@@ -84,12 +84,12 @@ public:
   class Exception : public Diagnostics::Exception {
   public:
     Exception(const char* x,
-	      const char* filenm = NULL, unsigned int lineno = 0)
+              const char* filenm = NULL, unsigned int lineno = 0)
       : Diagnostics::Exception(x, filenm, lineno)
       { }
 
     Exception(std::string x,
-	      const char* filenm = NULL, unsigned int lineno = 0)
+              const char* filenm = NULL, unsigned int lineno = 0)
       : Diagnostics::Exception(x, filenm, lineno)
       { }
 

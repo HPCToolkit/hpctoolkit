@@ -29,16 +29,16 @@ generic_pair_t_new(void* first, void* second, mem_alloc m_alloc)
 
 void
 generic_pair_t_tostr(generic_pair_t* gen_pair,
-					  val_tostr first_tostr, char firststr[],
-					  val_tostr second_tostr, char secondstr[], char str[])
+                                          val_tostr first_tostr, char firststr[],
+                                          val_tostr second_tostr, char secondstr[], char str[])
 {
   if (gen_pair) {
-	first_tostr(gen_pair->first, firststr);
-	second_tostr(gen_pair->second, secondstr);
-	snprintf(str, strlen(firststr) + strlen(secondstr) + 6, "%s%s%s%s%s",
-		"(", firststr, ",  ", secondstr, ")");
+        first_tostr(gen_pair->first, firststr);
+        second_tostr(gen_pair->second, secondstr);
+        snprintf(str, strlen(firststr) + strlen(secondstr) + 6, "%s%s%s%s%s",
+                "(", firststr, ",  ", secondstr, ")");
   }
   else {
-	strcpy(str, "");
+        strcpy(str, "");
   }
 }

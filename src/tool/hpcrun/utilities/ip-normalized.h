@@ -89,8 +89,8 @@ static inline bool
 ip_normalized_eq(const ip_normalized_t* a, const ip_normalized_t* b)
 {
   return ( (a == b) || (a && b
-			&& a->lm_id == b->lm_id
-			&& a->lm_ip == b->lm_ip) );
+                        && a->lm_id == b->lm_id
+                        && a->lm_ip == b->lm_ip) );
 }
 
 

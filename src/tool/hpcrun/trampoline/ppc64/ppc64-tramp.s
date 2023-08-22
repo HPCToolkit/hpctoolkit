@@ -9,5 +9,5 @@ hpcrun_trampoline:
 hpcrun_trampoline_end:
         blr
         .size   hpcrun_trampoline,.-hpcrun_trampoline
-        .ident  "GCC:	 (GNU) 4.1.2 20070115 (SUSE Linux)"
+        .ident  "GCC:    (GNU) 4.1.2 20070115 (SUSE Linux)"
         .section        .note.GNU-stack,"",@progbits

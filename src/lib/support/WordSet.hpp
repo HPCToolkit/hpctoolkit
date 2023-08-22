@@ -91,8 +91,8 @@ public:
   using HashTable::NumberOfEntries;
 
   void Dump(std::ostream& file = std::cerr,
-	    const char* name = "",
-	    const char* indent = "");
+            const char* name = "",
+            const char* indent = "");
 
 private:
   //-------------------------------------------------------------

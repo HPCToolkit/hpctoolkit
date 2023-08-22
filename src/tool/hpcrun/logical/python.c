@@ -337,7 +337,7 @@ static bool has_symbol(Elf *e, GElf_Shdr* secHead, Elf_Scn *section, const char*
         return true;
       }
     }
-	}
+        }
   return false;
 }
 

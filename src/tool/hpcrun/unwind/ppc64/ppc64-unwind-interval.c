@@ -165,7 +165,7 @@ ppc64recipe_tostr(void* recipe, char str[])
   // TODO
   ppc64recipe_t *ppc64recipe = (ppc64recipe_t*)recipe;
   snprintf(str, MAX_RECIPE_STR, "%s%d",
-	  "ppc64recipe sp_ty = ", ppc64recipe->sp_ty);
+          "ppc64recipe sp_ty = ", ppc64recipe->sp_ty);
 }
 
 void
@@ -342,7 +342,7 @@ isInsn_STWUX(uint32_t insn, int Ra)
   // stwux Rs Ra Rb: store Rs at (Ra + Rb); set Ra to (Ra + Rb)
   const int Rs = 0, Rb = 0, Rc = 0x0;
   return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
-	  == PPC_INSN_X(PPC_OP_STWUX, Rs, Ra, Rb, Rc));
+          == PPC_INSN_X(PPC_OP_STWUX, Rs, Ra, Rb, Rc));
 }
 
 static inline bool
@@ -351,7 +351,7 @@ isInsn_STDUX(uint32_t insn, int Ra)
   // stdux Rs Ra Rb: store Rs at (Ra + Rb); set Ra to (Ra + Rb)
   const int Rs = 0, Rb = 0, Rc = 0x0;
   return ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
-	  == PPC_INSN_X(PPC_OP_STDUX, Rs, Ra, Rb, Rc));
+          == PPC_INSN_X(PPC_OP_STDUX, Rs, Ra, Rb, Rc));
 }
 
 
@@ -369,7 +369,7 @@ isInsn_MR(uint32_t insn, int Ra)
   // mr Ra Rs = or Ra Rs Rb where Rs = Rb
   const int Rs = 0, Rc = 0x0;
   bool isMoveToRa = ((insn & (PPC_OP_X_MASK | PPC_OPND_REG_A_MASK))
-		     == PPC_INSN_X(PPC_OP_MR, Rs, Ra, Rs, Rc));
+                     == PPC_INSN_X(PPC_OP_MR, Rs, Ra, Rs, Rc));
   bool isRsEqRb = (PPC_OPND_REG_S(insn) == PPC_OPND_REG_B(insn));
   return (isMoveToRa && isRsEqRb);
 }
@@ -598,11 +598,11 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     // move return address from LR (to 'reg')
     //--------------------------------------------------
     if (UWI_RECIPE(ui)->ra_ty == RATy_Reg &&
-	UWI_RECIPE(ui)->ra_arg == PPC_REG_LR &&
-	isInsn_MFLR(*cur_insn, &reg)) {
+        UWI_RECIPE(ui)->ra_arg == PPC_REG_LR &&
+        isInsn_MFLR(*cur_insn, &reg)) {
       nxt_ui =
-    	  new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
-    		  UWI_RECIPE(ui)->sp_arg, reg);
+          new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
+                  UWI_RECIPE(ui)->sp_arg, reg);
       ui = nxt_ui;
     }
     //--------------------------------------------------
@@ -611,8 +611,8 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     else if (isInsn_MTLR(*cur_insn, &reg)) {
       // TODO: could scan backwards based on 'reg' (e.g., isInsn_LWZ)
       nxt_ui =
-    	  new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
-    		  UWI_RECIPE(ui)->sp_arg, PPC_REG_LR);
+          new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
+                  UWI_RECIPE(ui)->sp_arg, PPC_REG_LR);
       ui = nxt_ui;
     }
     //--------------------------------------------------
@@ -620,17 +620,17 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //   (may come before or after frame allocation)
     //--------------------------------------------------
     else if (UWI_RECIPE(ui)->ra_ty == RATy_Reg &&
-	     UWI_RECIPE(ui)->ra_arg >= PPC_REG_R0 &&
-	     isInsn_STW(*cur_insn, UWI_RECIPE(ui)->ra_arg, PPC_REG_SP)) {
+             UWI_RECIPE(ui)->ra_arg >= PPC_REG_R0 &&
+             isInsn_STW(*cur_insn, UWI_RECIPE(ui)->ra_arg, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
         nxt_ui =
-        	new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
-        		UWI_RECIPE(ui)->sp_arg, ra_disp);
+                new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
+                        UWI_RECIPE(ui)->sp_arg, ra_disp);
         ui = nxt_ui;
 
-	canon_ui = nxt_ui;
+        canon_ui = nxt_ui;
       }
     }
     //--------------------------------------------------
@@ -638,17 +638,17 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     //   (may come before or after frame allocation)
     //--------------------------------------------------
     else if (UWI_RECIPE(ui)->ra_ty == RATy_Reg &&
-	     UWI_RECIPE(ui)->ra_arg >= PPC_REG_R0 &&
-	     isInsn_STD(*cur_insn, UWI_RECIPE(ui)->ra_arg, PPC_REG_SP)) {
+             UWI_RECIPE(ui)->ra_arg >= PPC_REG_R0 &&
+             isInsn_STD(*cur_insn, UWI_RECIPE(ui)->ra_arg, PPC_REG_SP)) {
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP_DS(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
         nxt_ui =
-        	new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
-        		UWI_RECIPE(ui)->sp_arg, ra_disp);
+                new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_SPRel,
+                        UWI_RECIPE(ui)->sp_arg, ra_disp);
         ui = nxt_ui;
 
-	canon_ui = nxt_ui;
+        canon_ui = nxt_ui;
       }
     }
     //--------------------------------------------------
@@ -658,10 +658,10 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       int sp_disp = getSPDispFromUI(ui);
       int ra_disp = PPC_OPND_DISP(*cur_insn);
       if (getRADispFromSPDisp(sp_disp) == ra_disp) {
-	nxt_ui =
-		new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
-			UWI_RECIPE(ui)->sp_arg, PPC_REG_R0);
-	ui = nxt_ui;
+        nxt_ui =
+                new_ui(nextInsn(cur_insn), UWI_RECIPE(ui)->sp_ty, RATy_Reg,
+                        UWI_RECIPE(ui)->sp_arg, PPC_REG_R0);
+        ui = nxt_ui;
       }
     }
     //--------------------------------------------------
@@ -671,10 +671,10 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     else if (isInsn_STWU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
       int sp_disp = - PPC_OPND_DISP(*cur_insn);
       int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
-		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
+                    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
-    	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, ra_arg);
+          new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+                  sp_disp, ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -686,10 +686,10 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     else if (isInsn_STDU(*cur_insn, PPC_REG_SP, PPC_REG_SP)) {
       int sp_disp = - PPC_OPND_DISP_DS(*cur_insn);
       int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
-		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
+                    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
-    	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, ra_arg);
+          new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+                  sp_disp, ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -697,8 +697,8 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     else if (isInsn_STWUX(*cur_insn, PPC_REG_SP)) {
       int sp_disp = -1; // N.B. currently we do not track this
       nxt_ui =
-    	  new_ui(nextInsn(cur_insn),SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, UWI_RECIPE(ui)->ra_arg);
+          new_ui(nextInsn(cur_insn),SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+                  sp_disp, UWI_RECIPE(ui)->ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -706,8 +706,8 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     else if (isInsn_STDUX(*cur_insn, PPC_REG_SP)) {
       int sp_disp = -1; // N.B. currently we do not track this
       nxt_ui =
-    	  new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
-    		  sp_disp, UWI_RECIPE(ui)->ra_arg);
+          new_ui(nextInsn(cur_insn), SPTy_SPRel, UWI_RECIPE(ui)->ra_ty,
+                  sp_disp, UWI_RECIPE(ui)->ra_arg);
       ui = nxt_ui;
 
       canon_ui = nxt_ui;
@@ -716,30 +716,30 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     // deallocate frame: reset SP to parents's SP
     //--------------------------------------------------
     else if (isInsn_ADDI(*cur_insn, PPC_REG_SP, PPC_REG_SP)
-	     && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
+             && (PPC_OPND_DISP(*cur_insn) == getSPDispFromUI(ui))) {
       int sp_disp = - PPC_OPND_DISP(*cur_insn);
       int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
-		    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
+                    UWI_RECIPE(ui)->ra_arg + sp_disp : UWI_RECIPE(ui)->ra_arg);
       nxt_ui =
-    	  new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
-    		  PPC_REG_SP, ra_arg);
+          new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
+                  PPC_REG_SP, ra_arg);
       ui = nxt_ui;
     }
     else if (isInsn_MR(*cur_insn, PPC_REG_SP) &&
-	     PPC_OPND_REG_S(*cur_insn) != PPC_REG_SP) {
+             PPC_OPND_REG_S(*cur_insn) != PPC_REG_SP) {
       // Move Register r1 <- rx where rx != r1
       // N.B. To be sure the MR restores SP, we would have to track
       // registers.  As a sanity check, test for a non-zero frame size
       int sp_disp = getSPDispFromUI(ui);
       if (sp_disp != 0) {
-	// adjust the RA offset by SP offset prior to the restore
+        // adjust the RA offset by SP offset prior to the restore
         int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
                       (UWI_RECIPE(ui)->ra_arg - sp_disp) :
-		      UWI_RECIPE(ui)->ra_arg);
-	nxt_ui =
-		new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
-		       PPC_REG_SP, ra_arg);
-	ui = nxt_ui;
+                      UWI_RECIPE(ui)->ra_arg);
+        nxt_ui =
+                new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
+                       PPC_REG_SP, ra_arg);
+        ui = nxt_ui;
       }
     }
     //--------------------------------------------------
@@ -750,82 +750,82 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       // interior return
       //--------------------------------------------------
       if (isInsn_BLR(*cur_insn)) {
-	// TODO: ensure that frame has been deallocated and mtlr issued
-	// and adjust intervals if necessary.
+        // TODO: ensure that frame has been deallocated and mtlr issued
+        // and adjust intervals if necessary.
 
-	// Restore the canonical interval, if necessary.
-	if (!ui_cmp(ui, canon_ui)) {
-	  nxt_ui =
-	    new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
-		   UWI_RECIPE(canon_ui)->ra_ty,
-		   UWI_RECIPE(canon_ui)->sp_arg,
-		   UWI_RECIPE(canon_ui)->ra_arg);
-	  ui = nxt_ui;
-	}
+        // Restore the canonical interval, if necessary.
+        if (!ui_cmp(ui, canon_ui)) {
+          nxt_ui =
+            new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
+                   UWI_RECIPE(canon_ui)->ra_ty,
+                   UWI_RECIPE(canon_ui)->sp_arg,
+                   UWI_RECIPE(canon_ui)->ra_arg);
+          ui = nxt_ui;
+        }
       }
       //--------------------------------------------------
       // branch that sets the LR: must revert to canonical
       // interval where RA is in the stack
       //--------------------------------------------------
       else if ((isInsn_BCL(*cur_insn) || isInsn_BCLA(*cur_insn) ||
-		isInsn_BCLRL(*cur_insn) || isInsn_BCCTRL(*cur_insn)) &&
-	       ((UWI_RECIPE(ui)->ra_ty == RATy_Reg) &&
-		(UWI_RECIPE(ui)->ra_arg == PPC_REG_LR))) {
-	// Restore the canonical interval beginning at the current instruction
-	// if necessary
-	//
-	// note: when construction the interval below, our use of the
-	// address of the current instruction rather than that of the
-	// next instruction is unusual. we do this because the current
-	// instruction clobbers LR. when we do unwinds, we use the
-	// unwind recipe that covers the address 1 byte before the
-	// return address. this means that for a return address of the
-	// next instruction, we will use the recipe that begins with
-	// the address of this instruction. thus, for this
-	// instruction, we must make sure that the unwinder uses the
-	// RA in the stack and not the LR because that is the right thing to
-	// do after this instruction has executed.
-	if (!ui_cmp(ui, canon_ui)) {
-	  nxt_ui =
-	    new_ui(currentInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
-		   UWI_RECIPE(canon_ui)->ra_ty,
-		   UWI_RECIPE(canon_ui)->sp_arg,
-		   UWI_RECIPE(canon_ui)->ra_arg);
-	  ui = nxt_ui;
-	}
+                isInsn_BCLRL(*cur_insn) || isInsn_BCCTRL(*cur_insn)) &&
+               ((UWI_RECIPE(ui)->ra_ty == RATy_Reg) &&
+                (UWI_RECIPE(ui)->ra_arg == PPC_REG_LR))) {
+        // Restore the canonical interval beginning at the current instruction
+        // if necessary
+        //
+        // note: when construction the interval below, our use of the
+        // address of the current instruction rather than that of the
+        // next instruction is unusual. we do this because the current
+        // instruction clobbers LR. when we do unwinds, we use the
+        // unwind recipe that covers the address 1 byte before the
+        // return address. this means that for a return address of the
+        // next instruction, we will use the recipe that begins with
+        // the address of this instruction. thus, for this
+        // instruction, we must make sure that the unwinder uses the
+        // RA in the stack and not the LR because that is the right thing to
+        // do after this instruction has executed.
+        if (!ui_cmp(ui, canon_ui)) {
+          nxt_ui =
+            new_ui(currentInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
+                   UWI_RECIPE(canon_ui)->ra_ty,
+                   UWI_RECIPE(canon_ui)->sp_arg,
+                   UWI_RECIPE(canon_ui)->ra_arg);
+          ui = nxt_ui;
+        }
       }
       //--------------------------------------------------
       // unconditional branch when stack pointer for
       // the caller in SP
       //--------------------------------------------------
       else if ((isInsn_B(*cur_insn) || isInsn_BA(*cur_insn)) &&
-	       ((UWI_RECIPE(ui)->sp_ty == SPTy_Reg) &&
-		UWI_RECIPE(ui)->sp_arg == PPC_REG_SP)) {
-	uint32_t *target = branchTarget(*cur_insn, cur_insn);
-	//--------------------------------------------------
-	// recognize an interior tail call if branch target is
-	// outside the current function.
-	//
-	// note: we don't track when the return address may still be
-	// in the link register after being saved in the stack.  as a
-	// result, we shouldn't demand that we know that the return
-	// address is in the link register to recognize a tail call.
-	// the lack of link register tracking caused a failure to
-	// recognize a tail call in __xlf_malloc.
-	//   ((UWI_RECIPE(ui)->ra_ty == RATy_Reg) &&
-	//    (UWI_RECIPE(ui)->ra_arg == PPC_REG_LR))
-	// --------------------------------------------------
-	if (target >= end_insn || target < (uint32_t *) beg_insn) {
-	  // Restore the canonical interval, if necessary.
-	  if (!ui_cmp(ui, canon_ui)) {
-	    nxt_ui =
-	      new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
-		     UWI_RECIPE(canon_ui)->ra_ty,
-		     UWI_RECIPE(canon_ui)->sp_arg,
-		     UWI_RECIPE(canon_ui)->ra_arg);
-	    ui = nxt_ui;
-	  }
-	}
+               ((UWI_RECIPE(ui)->sp_ty == SPTy_Reg) &&
+                UWI_RECIPE(ui)->sp_arg == PPC_REG_SP)) {
+        uint32_t *target = branchTarget(*cur_insn, cur_insn);
+        //--------------------------------------------------
+        // recognize an interior tail call if branch target is
+        // outside the current function.
+        //
+        // note: we don't track when the return address may still be
+        // in the link register after being saved in the stack.  as a
+        // result, we shouldn't demand that we know that the return
+        // address is in the link register to recognize a tail call.
+        // the lack of link register tracking caused a failure to
+        // recognize a tail call in __xlf_malloc.
+        //   ((UWI_RECIPE(ui)->ra_ty == RATy_Reg) &&
+        //    (UWI_RECIPE(ui)->ra_arg == PPC_REG_LR))
+        // --------------------------------------------------
+        if (target >= end_insn || target < (uint32_t *) beg_insn) {
+          // Restore the canonical interval, if necessary.
+          if (!ui_cmp(ui, canon_ui)) {
+            nxt_ui =
+              new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty,
+                     UWI_RECIPE(canon_ui)->ra_ty,
+                     UWI_RECIPE(canon_ui)->sp_arg,
+                     UWI_RECIPE(canon_ui)->ra_arg);
+            ui = nxt_ui;
+          }
+        }
       }
     }
 

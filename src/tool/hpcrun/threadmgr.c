@@ -116,7 +116,7 @@ static spinlock_t threaddata_lock = SPINLOCK_UNLOCKED;
 static void
 adjust_thread_count(int32_t val)
 {
-	atomic_fetch_add_explicit(&threadmgr_active_threads, val, memory_order_relaxed);
+        atomic_fetch_add_explicit(&threadmgr_active_threads, val, memory_order_relaxed);
 }
 
 static int32_t
@@ -222,21 +222,21 @@ finalize_all_thread_data(void *arg)
 void
 hpcrun_threadmgr_thread_new()
 {
-	adjust_thread_count(1);
+        adjust_thread_count(1);
 }
 
 
 void
 hpcrun_threadmgr_thread_delete()
 {
-	adjust_thread_count(-1);
+        adjust_thread_count(-1);
 }
 
 
 int
 hpcrun_threadmgr_thread_count()
 {
-	return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
+        return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
 }
 
 /**
@@ -354,7 +354,7 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separat
     cct_node_t *node  = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
     if (node) {
       hpcrun_trace_append(&(data->core_profile_trace_data), node, 0,
-			  HPCTRACE_FMT_DLCA_NULL, 0);
+                          HPCTRACE_FMT_DLCA_NULL, 0);
     }
   }
 

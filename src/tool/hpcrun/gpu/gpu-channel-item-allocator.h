@@ -59,13 +59,13 @@
 // macros
 //******************************************************************************
 
-#define channel_item_alloc(channel, channel_item_type)		\
-  (channel_item_type *) channel_item_alloc_helper		\
+#define channel_item_alloc(channel, channel_item_type)          \
+  (channel_item_type *) channel_item_alloc_helper               \
   ((bichannel_t *) channel, sizeof(channel_item_type))
 
-#define channel_item_free(channel, item)			\
-    channel_item_free_helper					\
-    ((bichannel_t *) channel,					\
+#define channel_item_free(channel, item)                        \
+    channel_item_free_helper                                    \
+    ((bichannel_t *) channel,                                   \
      (s_element_t *) item)
 
 

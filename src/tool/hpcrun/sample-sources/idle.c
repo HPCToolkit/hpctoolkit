@@ -97,7 +97,7 @@
  *****************************************************************************/
 
 static void idle_metric_process_blame_for_sample(void* arg, int metric_id,
-						 cct_node_t *node, int metric_value);
+                                                 cct_node_t *node, int metric_value);
 
 
 
@@ -148,7 +148,7 @@ METHOD_FN(start)
   if (!blame_shift_source_available(bs_type_timer) &&
       !blame_shift_source_available(bs_type_cycles)) {
     STDERR_MSG("HPCToolkit: IDLE metric needs either a REALTIME, "
-	       "CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
+               "CPUTIME, WALLCLOCK, or PAPI_TOT_CYC source.");
     monitor_real_exit(1);
   }
 }
@@ -173,7 +173,7 @@ METHOD_FN(shutdown)
     STDERR_MSG("HPCToolkit: IDLE metric specified without a plugin that measures "
         "idleness and work.\n"
         "For dynamic binaries, specify an appropriate plugin with an argument to hpcrun.\n"
-	"For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
+        "For static binaries, specify an appropriate plugin with an argument to hpclink.\n");
     monitor_real_exit(1);
   }
 

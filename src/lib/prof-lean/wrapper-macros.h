@@ -22,34 +22,34 @@
 #define VA_DECLARE_ARG(type_t, x) type_t x
 
 #define VA_DECLARE_ARGS20(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS18(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS18(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS18(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS16(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS16(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS16(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS14(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS14(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS14(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS12(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS12(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS12(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS10(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS10(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS10(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS8(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS8(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS8(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS6(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS6(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS6(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS4(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS4(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS4(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS2(__VA_ARGS__)
+        VA_DECLARE_ARG(type_t, x), VA_DECLARE_ARGS2(__VA_ARGS__)
 
 #define VA_DECLARE_ARGS2(type_t, x, ...) \
-	VA_DECLARE_ARG(type_t, x)
+        VA_DECLARE_ARG(type_t, x)
 
 #define VA_DECLARE_ARGS1(type_t, ...) type_t
 
@@ -64,34 +64,34 @@
 #define VA_CALL_ARG(type_t, x) x
 
 #define VA_CALL_ARGS20(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS18(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS18(__VA_ARGS__)
 
 #define VA_CALL_ARGS18(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS16(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS16(__VA_ARGS__)
 
 #define VA_CALL_ARGS16(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS14(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS14(__VA_ARGS__)
 
 #define VA_CALL_ARGS14(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS12(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS12(__VA_ARGS__)
 
 #define VA_CALL_ARGS12(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS10(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS10(__VA_ARGS__)
 
 #define VA_CALL_ARGS10(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS8(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS8(__VA_ARGS__)
 
 #define VA_CALL_ARGS8(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS6(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS6(__VA_ARGS__)
 
 #define VA_CALL_ARGS6(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS4(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS4(__VA_ARGS__)
 
 #define VA_CALL_ARGS4(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x), VA_CALL_ARGS2(__VA_ARGS__)
+        VA_CALL_ARG(type_t, x), VA_CALL_ARGS2(__VA_ARGS__)
 
 #define VA_CALL_ARGS2(type_t, x, ...) \
-	VA_CALL_ARG(type_t, x)
+        VA_CALL_ARG(type_t, x)
 
 #define VA_CALL_ARGS1(type_t,  ...)
 
@@ -124,7 +124,7 @@
 //    helper macro that expands to twentyone placeholder arguments followed
 //    by a 0.
 //*****************************************************************************
-#define __twentyone_and_0__					\
+#define __twentyone_and_0__                                     \
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 0
 
 
@@ -135,8 +135,8 @@
 //    that argument list is completely expanded before calling
 //    _VA_SELECT22_INTERNAL
 //*****************************************************************************
-#define _VA_SELECT22_INTERNAL(_0,_1,_2,_3,_4,_5,_6,_7,			\
-			      _8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,...) _21
+#define _VA_SELECT22_INTERNAL(_0,_1,_2,_3,_4,_5,_6,_7,                  \
+                              _8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20,_21,...) _21
 
 #define _VA_SELECT22(...) _VA_SELECT22_INTERNAL(__VA_ARGS__)
 
@@ -145,20 +145,20 @@
 // VA_COUNT_ARGS: macro that expands to the number of arguments
 // WARNING: will give unpredictable results if more than 16 arguments supplied.
 //*****************************************************************************
-#define VA_COUNT_ARGS(...)						\
-    _VA_SELECT22(_VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__),		\
-		 __VA_ARGS__,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
+#define VA_COUNT_ARGS(...)                                              \
+    _VA_SELECT22(_VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__),         \
+                 __VA_ARGS__,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1)
 
 
-#define X_ARGS(...)						\
+#define X_ARGS(...)                                             \
     _VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__)
 //*****************************************************************************
 // ONE_IF_EMPTY: expand to a 1 if a non-zero number of arguments are supplied.
 // WARNING: will give unpredictable results if more than 16 arguments supplied.
 //*****************************************************************************
-#define ONE_IF_NONEMPTY(...)						\
-    _VA_SELECT22(_VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__),		\
-		 __VA_ARGS__,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
+#define ONE_IF_NONEMPTY(...)                                            \
+    _VA_SELECT22(_VA_CONCAT3(__twentyone,_and_0__,__VA_ARGS__),         \
+                 __VA_ARGS__,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1)
 
 
 //*****************************************************************************
@@ -172,35 +172,35 @@
 // VA_COMMA_IF_NONEMPTY:
 //    macro that expands to a comma if the argument list is not empty.
 //*****************************************************************************
-#define VA_COMMA_IF_NONEMPTY(...)				\
-	VA_CONCAT2_EVAL(VA_COMMA,ONE_IF_NONEMPTY(__VA_ARGS__))
+#define VA_COMMA_IF_NONEMPTY(...)                               \
+        VA_CONCAT2_EVAL(VA_COMMA,ONE_IF_NONEMPTY(__VA_ARGS__))
 
 
 //*****************************************************************************
 // VA_DECLARE_ARGS:
 //    assembles a function declaration argument list with type variable pairs
 //*****************************************************************************
-#define VA_DECLARE_ARGS(...)					\
-    VA_CONCAT2_EVAL(VA_DECLARE_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(		\
-	__VA_ARGS__)
+#define VA_DECLARE_ARGS(...)                                    \
+    VA_CONCAT2_EVAL(VA_DECLARE_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(                \
+        __VA_ARGS__)
 
 
 //*****************************************************************************
 // VA_CALL_ARGS:
 //    assembles a function argument list containing just a list of variables
 //*****************************************************************************
-#define VA_CALL_ARGS(...)					\
-    VA_CONCAT2_EVAL(VA_CALL_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(		\
-	 __VA_ARGS__)
+#define VA_CALL_ARGS(...)                                       \
+    VA_CONCAT2_EVAL(VA_CALL_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(           \
+         __VA_ARGS__)
 
-#define VA_FN_CALL(fn, ...)					\
-    fn(VA_CONCAT2_EVAL(VA_CALL_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(		\
-	__VA_ARGS__))
+#define VA_FN_CALL(fn, ...)                                     \
+    fn(VA_CONCAT2_EVAL(VA_CALL_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(                \
+        __VA_ARGS__))
 
 
-#define VA_FN_DECLARE(tfn, fn, ...)					\
-    tfn fn(VA_CONCAT2_EVAL(VA_DECLARE_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(		\
-	__VA_ARGS__))
+#define VA_FN_DECLARE(tfn, fn, ...)                                     \
+    tfn fn(VA_CONCAT2_EVAL(VA_DECLARE_ARGS,VA_COUNT_ARGS(__VA_ARGS__))(         \
+        __VA_ARGS__))
 
 
 // Test cases: anytime you change these macros, make sure these tests pass.

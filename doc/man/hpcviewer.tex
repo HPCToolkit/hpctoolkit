@@ -84,9 +84,9 @@ Print a help message.
 
 
 \item[\Opt{-jh}, \Opt{--java-heap} <size>]
-  	Set the JVM maximum heap size for this execution of  \Prog{hpcviewer}. The value of \texttt{size} must be
-	in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either
-	3076M or 3G.
+        Set the JVM maximum heap size for this execution of  \Prog{hpcviewer}. The value of \texttt{size} must be
+        in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either
+        3076M or 3G.
 
 
 \end{Description}
@@ -103,12 +103,12 @@ Finally, the \emph{metric} dimension constitutes program measurements performed 
 The following table summarizes different views supported by hpcviewer:
 
 \begin{Table}{3}\\
-	View & Dimension & Note \\\hline
-	Profile view - Table  & Tree node context x Metrics  & display the tree and its associated metrics \\
-	Profile view - Thread & Tree node context x Metrics  & display the tree and its metrics for a set of execution contexts \\
-	Profile view - Graph  & Execution contexts x Metrics & display a metric of a specific tree node for all execution contexts \\
-	Trace view - Main     & Execution contexts x Time    & display execution context behavior over time \\
-	Trace view - Depth    & Tree node context  x Time    & display call stacks over time of an execution context \\\hline
+        View & Dimension & Note \\\hline
+        Profile view - Table  & Tree node context x Metrics  & display the tree and its associated metrics \\
+        Profile view - Thread & Tree node context x Metrics  & display the tree and its metrics for a set of execution contexts \\
+        Profile view - Graph  & Execution contexts x Metrics & display a metric of a specific tree node for all execution contexts \\
+        Trace view - Main     & Execution contexts x Time    & display execution context behavior over time \\
+        Trace view - Depth    & Tree node context  x Time    & display call stacks over time of an execution context \\\hline
 \end{Table}
 
 
@@ -142,7 +142,7 @@ This view organizes performance data according to the static structure of an app
 All costs incurred in \emph{any} calling context by a procedure are aggregated together in the flat view.
 
 \item \textbf{Thread view}
-	This view displays the metric values of \emph{execution contexts}.
+        This view displays the metric values of \emph{execution contexts}.
 An execution context is an abstraction of a measure of code execution such as threads and processes.
 To activate the view, select a thread or a set of execution contexts by clicking the thread-view button from the Top-down view.
 On the execution context selection window, select the checkbox of the execution contexts of interest.
@@ -218,7 +218,7 @@ by entering a spreadsheet-style formula.
 One can also edit the name of a metric column or even edit the formula of a derived metric.
 
 \item \textbf{Resize metric columns}. Resizing metric columns based on either the width of the data
-	or the width of both the data and the column's label.
+        or the width of both the data and the column's label.
 
 \item \textbf{CSV export}. Write data from the current table to a file
 in standard CSV (Comma Separated Values) format.
@@ -279,14 +279,14 @@ and the \emph{Histogram} graph displays a barchart of metric value distributions
 
 Notes:
 \begin{itemize}
-	\item the plot graph’s execution context have the following notation:
+        \item the plot graph’s execution context have the following notation:
 \begin{verbatim}
 <process_id> . <thread_id>
 \end{verbatim}
-	Hence, if the ranks are 0.0, 0.1, . . . 31.0, 31.1 it means MPI process 0 has two threads:
+        Hence, if the ranks are 0.0, 0.1, . . . 31.0, 31.1 it means MPI process 0 has two threads:
 thread 0 and thread 1 (similarly with MPI process 31).
-	\item In the Profile view, operations on any GPU stream execution context are reported by the thread that offloaded them onto the GPU stream.
-	\item Currently, it is only possible to generate scatter plots for metrics directly collected by
+        \item In the Profile view, operations on any GPU stream execution context are reported by the thread that offloaded them onto the GPU stream.
+        \item Currently, it is only possible to generate scatter plots for metrics directly collected by
 \Prog{hpcrun}, which excludes derived metrics created by \Prog{hpcviewer}.
 \end{itemize}
 
@@ -335,7 +335,7 @@ It comprises of three different parts.
   The view shows a list of procedures and the estimated execution percentage for each for the time interval currently shown in the Trace view.
 
 \item \textbf{GPU Blame view} (tab in top, right pane)
-	This view shows the list of procedures that cause GPU idleness displayed in the trace view.
+        This view shows the list of procedures that cause GPU idleness displayed in the trace view.
 
 
 \item \textbf{Mini map view} (right, bottom):
@@ -347,7 +347,7 @@ Note:
 \begin{itemize}
 \item GPUs are very fast, hence the time interval during which a GPU operation is active may be very short. A problem for users is that it may be hard to locate short GPU operations that are separated by long intervals of idleness in the trace. Such operations will often be invisible because
  when hpcviewer renders a pixel in a trace, it will not show a GPU operation unless the time point at the left edge of the pixel's associated time interval falls within the time interval of the GPU operation.
- 	To force hpcviewer to render a GPU operation if any GPU operation is active within the time interval associated with a pixel, one can enable \emph{Expose GPU traces} by clicking the menu \textbf{File} - \textbf{Preferences} and click the \textbf{Traces} page, then check the \emph{Expose GPU traces} option.
+        To force hpcviewer to render a GPU operation if any GPU operation is active within the time interval associated with a pixel, one can enable \emph{Expose GPU traces} by clicking the menu \textbf{File} - \textbf{Preferences} and click the \textbf{Traces} page, then check the \emph{Expose GPU traces} option.
 \\
 Warning: enabling this option causes trace statistics to be unreliable because GPU activity will be overrepresented.
 \end{itemize}
@@ -363,13 +363,13 @@ Main view is divided into two parts: the top part which contains \emph{action pa
 The buttons in the action pane are the following:
 \begin{itemize}
 
-	\item \textbf{Home} : Reset the view configuration into the original view, i.e., viewing traces for all times and processes.
-	\item \textbf{Horiontal zoom in / out} : Zoom in/out the time dimension of the traces.
-	\item \textbf{Vertical zoom in / out} : Zoom in/out the process dimension of the traces.
-	\item \textbf{Navigation buttons} : Navigate the trace view to the left, right, up and bottom, respectively. It is also possible to navigate with the arrow keys in the keyboard. Since Trace view does not support scrool bars, the only way to navigate is through navigation buttons (or arrow keys).
-	\item \textbf{Undo} : Cancel the action of zoom or navigation and returning back to the previous view configuration.
-	\item \textbf{Redo} : Redo of previously undo change of view configuration.
-	\item \textbf{Save/Load a view configuration} : Save/load a saved view configuration.
+        \item \textbf{Home} : Reset the view configuration into the original view, i.e., viewing traces for all times and processes.
+        \item \textbf{Horiontal zoom in / out} : Zoom in/out the time dimension of the traces.
+        \item \textbf{Vertical zoom in / out} : Zoom in/out the process dimension of the traces.
+        \item \textbf{Navigation buttons} : Navigate the trace view to the left, right, up and bottom, respectively. It is also possible to navigate with the arrow keys in the keyboard. Since Trace view does not support scrool bars, the only way to navigate is through navigation buttons (or arrow keys).
+        \item \textbf{Undo} : Cancel the action of zoom or navigation and returning back to the previous view configuration.
+        \item \textbf{Redo} : Redo of previously undo change of view configuration.
+        \item \textbf{Save/Load a view configuration} : Save/load a saved view configuration.
 A view configuration file contains the information of the current dimension of time and process, the depth and the position of the crosshair.
 It is recommended to store the view configuration file in the same directory as the database to ensure that the view configuration file matches well with the database since the file does not store which database it is associated with.
 Although it is possible to open a view configuration file which is associated from different database, it is highly not recommended since each database has different time/process dimensions and depth.
@@ -534,7 +534,7 @@ One can also edit the name of a metric column or even edit the formula of a deri
 
    \begin{itemize}
      \item \textbf{Show database raw's XML}
- 	Enable one to request display of raw XML representation for performance data.
+        Enable one to request display of raw XML representation for performance data.
   \end{itemize}
 
 \end{itemize}

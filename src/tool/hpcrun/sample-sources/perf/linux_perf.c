@@ -463,9 +463,9 @@ perf_thread_fini(int nevents, event_thread_t *event_thread)
   for(int i=0; i<nevents; i++) {
     if (!event_thread) {
        continue; // in some situations, it is possible a shutdown signal is delivered
-       	         // while hpcrun is in the middle of abort.
-		 // in this case, all information is null and we shouldn't
-		 // start profiling.
+                 // while hpcrun is in the middle of abort.
+                 // in this case, all information is null and we shouldn't
+                 // start profiling.
     }
     if (event_thread[i].fd >= 0) {
       close(event_thread[i].fd);
@@ -832,8 +832,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   size_t size = sizeof(event_info_t) * num_events;
   event_desc = (event_info_t*) hpcrun_malloc(size);
   if (event_desc == NULL) {
-	  EMSG("Unable to allocate %d bytes", size);
-	  return;
+          EMSG("Unable to allocate %d bytes", size);
+          return;
   }
   memset(event_desc, 0, size);
 
@@ -865,7 +865,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     if (event_desc[i].metric_custom != NULL) {
       if (event_desc[i].metric_custom->register_fn != NULL) {
-    	// special registration for customized event
+        // special registration for customized event
         event_desc[i].metric_custom->register_fn( lnux_kind, &event_desc[i] );
         METHOD_CALL(self, store_event, event_desc[i].attr.config, threshold);
         continue;
@@ -964,7 +964,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 {
   TMSG(LINUX_PERF, "gen_event_set");
 
-  int nevents 	  = (self->evl).nevents;
+  int nevents     = (self->evl).nevents;
 
   // -------------------------------------------------------------------------
   // TODO: we need to fix this allocation.

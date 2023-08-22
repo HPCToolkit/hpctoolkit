@@ -76,10 +76,10 @@
 #define channel_steal \
   typed_bichannel_steal(gpu_activity_t)
 
-#define gpu_activity_alloc(channel)		\
+#define gpu_activity_alloc(channel)             \
   channel_item_alloc(channel, gpu_activity_t)
 
-#define gpu_activity_free(channel, item)	\
+#define gpu_activity_free(channel, item)        \
   channel_item_free(channel, item)
 
 

@@ -4,7 +4,7 @@
 // system includes
 //******************************************************************************
 
-#include <math.h>															// pow
+#include <math.h>                                                                                                                       // pow
 
 
 
@@ -129,7 +129,7 @@ opencl_kernel_epilogue
     if (get_gpu_utilization_flag()) {
       papi_metric_collection_at_kernel_end(event_id);
     }
-		kernel_epilogue(event_id, kernel_start, kernel_end);
+                kernel_epilogue(event_id, kernel_start, kernel_end);
 
   } else {
     EMSG("clGetEventProfilingInfo failed");
@@ -181,4 +181,4 @@ opencl_sync_epilogue
   hpcrun_safe_exit();
 }
 
-#endif	// ENABLE_OPENCL
+#endif  // ENABLE_OPENCL

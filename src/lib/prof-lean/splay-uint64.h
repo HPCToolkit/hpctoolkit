@@ -60,11 +60,11 @@ typedef void (*splay_fn_t)
 
 
 // declare typed interface functions
-#define typed_splay_declare(type)		\
+#define typed_splay_declare(type)               \
   typed_splay(type, splay_macro_body_ignore)
 
 // implementation of typed interface functions
-#define typed_splay_impl(type)			\
+#define typed_splay_impl(type)                  \
   typed_splay(type, splay_macro_body_show)
 
 
@@ -111,7 +111,7 @@ typedef void (*splay_fn_t)
 #define typed_splay(type, macro) \
   static bool \
   typed_splay_insert(type) \
-  (typed_splay_node(type) **root, typed_splay_node(type) *node)	\
+  (typed_splay_node(type) **root, typed_splay_node(type) *node) \
   macro({ \
     return splay_op(insert)((splay_uint64_node_t **) root, (splay_uint64_node_t *) node); \
   }) \

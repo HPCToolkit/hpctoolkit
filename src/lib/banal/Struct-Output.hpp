@@ -76,10 +76,10 @@ void printFileBegin(ostream *, FileInfo *);
 void printFileEnd(ostream *, FileInfo *);
 
 void earlyFormatProc(ostream *, FileInfo *, GroupInfo *, ProcInfo *,
-		     bool, HPC::StringTable & strTab);
+                     bool, HPC::StringTable & strTab);
 
 void finalPrintProc(ostream *, ostream *, string &, string &,
-		    FileInfo *, GroupInfo *, ProcInfo *);
+                    FileInfo *, GroupInfo *, ProcInfo *);
 
 void setPrettyPrint(bool _pretty_print_output);
 

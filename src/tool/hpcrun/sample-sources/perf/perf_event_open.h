@@ -44,8 +44,8 @@
 #ifndef __PERF_EVENT_OPEN_H__
 #define __PERF_EVENT_OPEN_H__
 
-#include <unistd.h>		// pid_t
-#include <linux/perf_event.h>	// perf data structure
+#include <unistd.h>             // pid_t
+#include <linux/perf_event.h>   // perf data structure
 
 long
 perf_event_open(struct perf_event_attr *hw_event, pid_t pid,

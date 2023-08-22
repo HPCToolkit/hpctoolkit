@@ -72,25 +72,25 @@
 #include "../gpu-print.h"
 
 
-#define st_insert				\
+#define st_insert                               \
   typed_splay_insert(queue)
 
-#define st_lookup				\
+#define st_lookup                               \
   typed_splay_lookup(queue)
 
-#define st_delete				\
+#define st_delete                               \
   typed_splay_delete(queue)
 
-#define st_forall				\
+#define st_forall                               \
   typed_splay_forall(queue)
 
-#define st_count				\
+#define st_count                                \
   typed_splay_count(queue)
 
-#define st_alloc(free_list)			\
+#define st_alloc(free_list)                     \
   typed_splay_alloc(free_list, opencl_queue_map_entry_t)
 
-#define st_free(free_list, node)		\
+#define st_free(free_list, node)                \
   typed_splay_free(free_list, node)
 
 

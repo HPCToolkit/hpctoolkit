@@ -86,9 +86,9 @@
 
 int
 LUSHCB_loadmap_find(void* addr,
-		    char* module_name,
-		    void** start,
-		    void** end)
+                    char* module_name,
+                    void** start,
+                    void** end)
 {
   int r = 0;
 #ifdef HPCRUN_STATIC_LINK

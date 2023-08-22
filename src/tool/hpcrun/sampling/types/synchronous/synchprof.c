@@ -67,7 +67,7 @@ hpcrun_record_sample(unsigned long amount)
     /* FIXME: error checking */
     unw_get_context(&ctx);
     unw_init_local(&frame, &ctx);
-    unw_step(&frame);		/* step out into our caller */
+    unw_step(&frame);           /* step out into our caller */
 
     hpcrun_sample_callstack_from_frame(state, amount, &frame);
   }

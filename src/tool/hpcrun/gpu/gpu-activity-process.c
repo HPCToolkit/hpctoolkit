@@ -140,7 +140,7 @@ trace_item_set
     gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
 
   gpu_trace_item_produce(ti, cpu_submit_time, ga->details.interval.start,
-			 ga->details.interval.end, call_path_leaf);
+                         ga->details.interval.end, call_path_leaf);
 }
 
 
@@ -157,8 +157,8 @@ attribute_activity
   activity->cct_node = cct_node;
 
   PRINT("attributing activity to %p time = [%lu,%lu)\n",
-	cct_node, activity->details.interval.start,
-	activity->details.interval.end);
+        cct_node, activity->details.interval.start,
+        activity->details.interval.end);
 
   gpu_activity_channel_produce(channel, activity);
 }
@@ -341,7 +341,7 @@ gpu_correlation_process
     gpu_correlation_id_map_insert(gpu_correlation_id, host_correlation_id);
   } else {
     gpu_correlation_id_map_external_id_replace(gpu_correlation_id,
-					       host_correlation_id);
+                                               host_correlation_id);
   }
   PRINT("Correlation: native_correlation %u --> host_correlation %lu\n",
       gpu_correlation_id, host_correlation_id);
@@ -365,8 +365,8 @@ gpu_memset_process
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
-						  gpu_placeholder_type_memset);
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
+                                                  gpu_placeholder_type_memset);
 
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
@@ -395,7 +395,7 @@ gpu_function_process
 )
 {
   gpu_function_id_map_insert(activity->details.function.function_id,
-			     activity->details.function.pc);
+                             activity->details.function.pc);
   PRINT("Function id %u\n", activity->details.function.function_id);
 }
 
@@ -425,21 +425,21 @@ gpu_kernel_process
     if (host_op_entry != NULL) {
       cct_node_t *func_ph =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
-						  gpu_placeholder_type_trace);
+                                                  gpu_placeholder_type_trace);
 
       cct_node_t *func_node = NULL;
 
       if (!ip_normalized_eq(&(activity->details.kernel.kernel_first_pc),
-			    &ip_normalized_NULL)) {
-	// the activity record specifies the first PC for the kernel
-	func_node = hpcrun_cct_insert_ip_norm
-	  (func_ph, activity->details.kernel.kernel_first_pc, true);
+                            &ip_normalized_NULL)) {
+        // the activity record specifies the first PC for the kernel
+        func_node = hpcrun_cct_insert_ip_norm
+          (func_ph, activity->details.kernel.kernel_first_pc, true);
       } else {
-	func_node = hpcrun_cct_children(func_ph);
-	if (func_node == NULL) {
-	  // in case placeholder doesn't have a child
-	  func_node = func_ph;
-	}
+        func_node = hpcrun_cct_children(func_ph);
+        if (func_node == NULL) {
+          // in case placeholder doesn't have a child
+          func_node = func_ph;
+        }
       }
 
       gpu_trace_item_t entry_trace;
@@ -451,23 +451,23 @@ gpu_kernel_process
 
       cct_node_t *kernel_ph =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
-						  gpu_placeholder_type_kernel);
+                                                  gpu_placeholder_type_kernel);
 
       cct_node_t *kernel_node;
       if (func_node == func_ph) {
-	// in case placeholder doesn't have a child
+        // in case placeholder doesn't have a child
         kernel_node = kernel_ph;
       } else {
-	// find the proper child of kernel_ph
-	cct_addr_t *addr = hpcrun_cct_addr(func_node);
-	kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm, true);
+        // find the proper child of kernel_ph
+        cct_addr_t *addr = hpcrun_cct_addr(func_node);
+        kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm, true);
       }
 
       attribute_activity(host_op_entry, activity, kernel_node);
     }
   } else {
     PRINT("Kernel execution correlation_id 0x%lx cannot be found\n",
-	  correlation_id);
+          correlation_id);
   }
 
   PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
@@ -556,7 +556,7 @@ gpu_synchronization_process
             {
               // Find the corresponding stream that records the event
               gpu_event_id_map_entry_t *event_id_entry =
-		gpu_event_id_map_lookup(event_id);
+                gpu_event_id_map_lookup(event_id);
               if (event_id_entry != NULL) {
                 context_id = gpu_event_id_map_entry_context_id_get(event_id_entry);
                 stream_id = gpu_event_id_map_entry_stream_id_get(event_id_entry);
@@ -568,7 +568,7 @@ gpu_synchronization_process
           default:
             // invalid
             PRINT("Synchronization correlation_id 0x%lx cannot be found\n",
-		  correlation_id);
+                  correlation_id);
         }
       }
       // TODO(Keren): handle event synchronization
@@ -604,7 +604,7 @@ gpu_cdpkernel_process
 
       cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
       if (func_node == NULL) {
-	// in case placeholder doesn't have a child
+        // in case placeholder doesn't have a child
         func_node = func_ph;
       }
 
@@ -680,10 +680,10 @@ gpu_memory_process
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-	(activity->details.memory.device_id,
+        (activity->details.memory.device_id,
    activity->details.memory.context_id,
-	 activity->details.memory.stream_id,
-	 &entry_trace);
+         activity->details.memory.stream_id,
+         &entry_trace);
 
       attribute_activity(host_op_entry, activity, host_op_node);
     }

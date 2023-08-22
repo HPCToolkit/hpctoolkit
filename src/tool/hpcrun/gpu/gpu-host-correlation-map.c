@@ -73,25 +73,25 @@
 #include "gpu-print.h"
 
 
-#define st_insert				\
+#define st_insert                               \
   typed_splay_insert(host_correlation)
 
-#define st_lookup				\
+#define st_lookup                               \
   typed_splay_lookup(host_correlation)
 
-#define st_delete				\
+#define st_delete                               \
   typed_splay_delete(host_correlation)
 
-#define st_forall				\
+#define st_forall                               \
   typed_splay_forall(host_correlation)
 
-#define st_count				\
+#define st_count                                \
   typed_splay_count(host_correlation)
 
-#define st_alloc(free_list)			\
+#define st_alloc(free_list)                     \
   typed_splay_alloc(free_list, gpu_host_correlation_map_entry_t)
 
-#define st_free(free_list, node)		\
+#define st_free(free_list, node)                \
   typed_splay_free(free_list, node)
 
 
@@ -201,7 +201,7 @@ gpu_host_correlation_map_lookup
   gpu_host_correlation_map_entry_t *result = st_lookup(&map_root, host_correlation_id);
 
   PRINT("host_correlation_map lookup: id=0x%lx (entry %p) (&map_root=%p) tid=%llu\n",
-	host_correlation_id, result, &map_root, (uint64_t) pthread_self());
+        host_correlation_id, result, &map_root, (uint64_t) pthread_self());
 
   return result;
 }
@@ -230,14 +230,14 @@ gpu_host_correlation_map_insert
   } else {
     gpu_host_correlation_map_entry_t *entry =
       gpu_host_correlation_map_entry_new(host_correlation_id, gpu_op_ccts,
-					 cpu_submit_time, activity_channel);
+                                         cpu_submit_time, activity_channel);
 
     st_insert(&map_root, entry);
 
     PRINT("host_correlation_map insert: correlation_id=0x%lx "
-	 "activity_channel=%p (entry=%p) (&map_root=%p) tid=%llu\n",
-	  host_correlation_id, activity_channel, entry, &map_root,
-	  (uint64_t) pthread_self());
+         "activity_channel=%p (entry=%p) (&map_root=%p) tid=%llu\n",
+          host_correlation_id, activity_channel, entry, &map_root,
+          (uint64_t) pthread_self());
   }
 }
 
@@ -252,7 +252,7 @@ gpu_host_correlation_map_samples_increase
   bool result = true;
 
   PRINT("correlation_map samples update: correlation_id=0x%lx (update %d)\n",
-	host_correlation_id, val);
+        host_correlation_id, val);
 
   gpu_host_correlation_map_entry_t *entry = st_lookup(&map_root, host_correlation_id);
 

@@ -259,7 +259,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
 
 size_t
 MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
-			      FILE *stream)
+                              FILE *stream)
 {
   ucontext_t uc;
   size_t ret;

@@ -60,7 +60,7 @@
 class FileOutputStream {
 public:
   FileOutputStream() : stream(0), buffer(0), use_cache(false),
-		       is_cached(false) {
+                       is_cached(false) {
   };
 
   // init is called to set up the output for writing the structure file
@@ -79,7 +79,7 @@ public:
   //    When it is not used, the output stream points to the actual output file.
   //
   void init(const char *cache_path_directory, const char *cache_flat_directory, const char *kind,
-	    const char *result) {
+            const char *result) {
     name = strdup(result);
     if (cache_path_directory && cache_path_directory[0] != 0) {
       use_cache = true;
@@ -105,17 +105,17 @@ public:
     bool needed = false;
     if (!name.empty()) {
       if (use_cache && (hpcstruct_cache_find(flat_name.c_str()) ||
-			hpcstruct_cache_find(stream_name.c_str()))) {
-	is_cached = true;
-	if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
+                        hpcstruct_cache_find(stream_name.c_str()))) {
+        is_cached = true;
+        if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
           global_args->cache_stat = CACHE_ENTRY_COPIED;
         }
       } else {
-	needed = true;
+        needed = true;
 #if 0
         std::cerr << "DEBUG needed set true, found cachestat = " << global_args->cache_stat << std::endl;
 #endif
-	if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
+        if ( ( global_args->cache_stat != CACHE_DISABLED) && ( global_args->cache_stat != CACHE_NOT_NAMED) ) {
           if ( global_args->cache_stat == CACHE_ENTRY_REMOVED ) {
             // A previous entry at that path was removed
             global_args->cache_stat = CACHE_ENTRY_REPLACED;
@@ -140,7 +140,7 @@ public:
     if(use_cache) {
       use_cache = false;
       if(hpcstruct_cache_find(flat_name.c_str())) {
-	      return flat_name;
+              return flat_name;
       }
       return stream_name;
     }
@@ -153,15 +153,15 @@ public:
     if (buffer) delete[] buffer;
     if (!name.empty()) {
       if (error) {
-	unlink(name.c_str());
+        unlink(name.c_str());
       } else {
-	if (use_cache) {
-	  if (hpcstruct_cache_find(flat_name.c_str())) {
-	    FileUtil::copy(name, flat_name);
-	  } else {
-	    FileUtil::copy(name, stream_name);
-	  }
-	}
+        if (use_cache) {
+          if (hpcstruct_cache_find(flat_name.c_str())) {
+            FileUtil::copy(name, flat_name);
+          } else {
+            FileUtil::copy(name, stream_name);
+          }
+        }
       }
     }
   };

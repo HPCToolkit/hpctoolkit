@@ -81,36 +81,36 @@ stack_troll(void **start_sp, unsigned int *ra_pos, validate_addr_fn_t validate_a
     switch (validate_addr(*sp, generic_arg)){
       case UNW_ADDR_CONFIRMED:
         TMSG(TROLL,"found a confirmed valid return address %p at sp = %p", \
-	     *sp, sp);
+             *sp, sp);
         *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
         return TROLL_VALID; // success
 
       case UNW_ADDR_PROBABLE_INDIRECT:
         TMSG(TROLL,"found a likely (from indirect call) valid return address %p at sp = %p", \
-	     *sp, sp);
+             *sp, sp);
         *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
         return TROLL_LIKELY; // success
 
       case UNW_ADDR_PROBABLE_TAIL:
         TMSG(TROLL,"found a likely (from tail call) valid return address %p at sp = %p", \
-	     *sp, sp);
+             *sp, sp);
         *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
         return TROLL_LIKELY; // success
 
       case UNW_ADDR_PROBABLE:
         TMSG(TROLL,"found a likely valid return address %p at sp = %p", \
-	     *sp, sp);
+             *sp, sp);
         *ra_pos = (uintptr_t)sp - (uintptr_t)start_sp;
         return TROLL_LIKELY; // success
 
       case UNW_ADDR_CYCLE:
         TMSG(TROLL_CHK,"infinite loop detected with return address %p at sp = %p", \
-	     *sp, sp);
+             *sp, sp);
         break;
 
       case UNW_ADDR_WRONG:
         TMSG(TROLL_CHK,"provably invalid return address %p at sp = %p", \
-	     *sp, sp);
+             *sp, sp);
         break;
 
       default:

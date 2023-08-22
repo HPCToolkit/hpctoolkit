@@ -1057,14 +1057,14 @@ gtpin_find_core
   void *handler = dlmopen(LM_ID_BASE, "libgtpin.so", RTLD_LOCAL | RTLD_LAZY);
   if (handler == NULL) {
     fprintf(stderr, "FATAL: hpcrun: unable to load Intel's gtpin library: "
-	    "%s\n", dlerror());
+            "%s\n", dlerror());
     gtpin_hpcrun_api->real_exit(-1);
   }
 
   IGtCore *(*getcore)() = (IGtCore * (*)()) dlsym(handler, "GTPin_GetCore");
   if (getcore == NULL) {
     fprintf(stderr, "FATAL: hpcrun: failed to bind function in Intel's"
-	    " gtpin library: %s\n", dlerror());
+            " gtpin library: %s\n", dlerror());
     gtpin_hpcrun_api->real_exit(-1);
   }
 

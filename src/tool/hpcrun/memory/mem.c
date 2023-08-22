@@ -292,8 +292,8 @@ hpcrun_malloc(size_t size)
     addr = hpcrun_mmap_anon(size);
     if (addr == NULL) {
       if (! out_of_mem_mesg) {
-	EMSG("%s: out of memory, shutting down sampling", __func__);
-	out_of_mem_mesg = 1;
+        EMSG("%s: out of memory, shutting down sampling", __func__);
+        out_of_mem_mesg = 1;
       }
       hpcrun_disable_sampling();
       num_failures++;
@@ -312,8 +312,8 @@ hpcrun_malloc(size_t size)
       hpcrun_make_memstore(mi);
     } else {
       if (! out_of_mem_mesg) {
-	EMSG("%s: out of memory, shutting down sampling", __func__);
-	out_of_mem_mesg = 1;
+        EMSG("%s: out of memory, shutting down sampling", __func__);
+        out_of_mem_mesg = 1;
       }
       hpcrun_disable_sampling();
     }
@@ -322,7 +322,7 @@ hpcrun_malloc(size_t size)
   // There is no memstore, for some reason.
   if (mi->mi_start == NULL) {
     TMSG(MALLOC, "%s: size = %ld, failure: no memstore",
-	 __func__, size);
+         __func__, size);
     num_failures++;
     return NULL;
   }
@@ -331,7 +331,7 @@ hpcrun_malloc(size_t size)
   addr = mi->mi_high - size;
   if (addr <= mi->mi_low) {
     TMSG(MALLOC, "%s: size = %ld, failure: out of memory",
-	 __func__, size);
+         __func__, size);
     num_failures++;
     return NULL;
   }
@@ -379,7 +379,7 @@ hpcrun_malloc_freeable(size_t size)
   if (addr >= mi->mi_high) {
     TD_GET(mem_low) = 1;
     TMSG(MALLOC, "%s: size = %ld, failure: temporary out of memory",
-	 __func__, size);
+         __func__, size);
     num_failures++;
     return NULL;
   }

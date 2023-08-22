@@ -91,7 +91,7 @@ struct lt_OptArgDesc
 {
   // return true if x < y; false otherwise
   bool operator()(const CmdLineParser::OptArgDesc& x,
-		  const CmdLineParser::OptArgDesc& y) const
+                  const CmdLineParser::OptArgDesc& y) const
   {
     // There are three possibilities:
     //   - both long switches are present
@@ -105,12 +105,12 @@ struct lt_OptArgDesc
     }
     else {
       if (x.swLong && y.swShort != 0) {
-	char y_str[2] = { y.swShort , '\0' };
-	return (strcmp(x.swLong, y_str) < 0);
+        char y_str[2] = { y.swShort , '\0' };
+        return (strcmp(x.swLong, y_str) < 0);
       }
       else {
-	char x_str[2] = { x.swShort , '\0' };
-	return (strcmp(x_str, y.swLong) < 0);
+        char x_str[2] = { x.swShort , '\0' };
+        return (strcmp(x_str, y.swLong) < 0);
       }
     }
   }
@@ -176,7 +176,7 @@ CmdLineParser::CmdLineParser()
 }
 
 CmdLineParser::CmdLineParser(const OptArgDesc* optArgDescs,
-			     int argc, const char* const argv[])
+                             int argc, const char* const argv[])
 {
   Ctor();
   parse(optArgDescs, argc, argv);
@@ -198,7 +198,7 @@ CmdLineParser::~CmdLineParser()
 
 void
 CmdLineParser::parse(const OptArgDesc* optArgDescsOrig,
-		     int argc, const char* const argv[])
+                     int argc, const char* const argv[])
 {
   reset();
   command = argv[0]; // always do first so it will be available after errors
@@ -234,39 +234,39 @@ CmdLineParser::parse(const OptArgDesc* optArgDescsOrig,
       // 1. Separate switch from any argument embedded within
       SwDesc swdesc = makeSwitchDesc(str);
       if (swdesc.sw.empty()) {
-	throw ParseError(MISSING_SWITCH); // must have been '-'
+        throw ParseError(MISSING_SWITCH); // must have been '-'
       }
 
       // 2. Find option descriptor from switch (checks for duplicate matches)
       const OptArgDesc* d = findOptDesc(optArgDescs, swdesc);
       if (!d) {
-	throw ParseError(UNKNOWN_SWITCH + swdesc.sw);
+        throw ParseError(UNKNOWN_SWITCH + swdesc.sw);
       }
 
       // 3. Find argument for switch (if any) [N.B. may advance iteration!]
       if (d->kind == ARG_NONE) {
-	if (!swdesc.arg.empty()) {
-	  string msg = "Invalid argument `" + swdesc.arg + "' to switch `"
-	    + swdesc.sw + "'";
-	  throw ParseError(msg);
-	}
+        if (!swdesc.arg.empty()) {
+          string msg = "Invalid argument `" + swdesc.arg + "' to switch `"
+            + swdesc.sw + "'";
+          throw ParseError(msg);
+        }
       }
       else if (d->kind == ARG_REQ || d->kind == ARG_OPT) {
-	if (swdesc.arg.empty()) {
-	  int nexti = i + 1;
-	  if (nexti < argc && argv[nexti]) {
-	    const char* nxt = argv[nexti];
-	    bool isarg_nxt =
-	      (d->isOptArgFn) ? isArg(nxt) && d->isOptArgFn(nxt) : isArg(nxt);
-	    if (isarg_nxt) {
-	      swdesc.arg = nxt;
-	      i = nexti; // increment iteration
-	    }
-	  }
-	}
-	if (swdesc.arg.empty() && d->kind == ARG_REQ) {
-	  throw ParseError(MISSING_ARG + swdesc.sw);
-	}
+        if (swdesc.arg.empty()) {
+          int nexti = i + 1;
+          if (nexti < argc && argv[nexti]) {
+            const char* nxt = argv[nexti];
+            bool isarg_nxt =
+              (d->isOptArgFn) ? isArg(nxt) && d->isOptArgFn(nxt) : isArg(nxt);
+            if (isarg_nxt) {
+              swdesc.arg = nxt;
+              i = nexti; // increment iteration
+            }
+          }
+        }
+        if (swdesc.arg.empty() && d->kind == ARG_REQ) {
+          throw ParseError(MISSING_ARG + swdesc.sw);
+        }
       }
 
       // 4. Add option switch and any argument to map
@@ -644,7 +644,7 @@ CmdLineParser::makeSwitchDesc(const char* str)
 // abbreviation).
 const CmdLineParser::OptArgDesc*
 CmdLineParser::findOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
-			   bool errOnMultipleMatches)
+                           bool errOnMultipleMatches)
 {
   // Note: Because there will never be very many options, we simply
   //   use a linear search.
@@ -660,14 +660,14 @@ CmdLineParser::findOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
   for (const OptArgDesc* p = optArgDescs; *p != OptArgDesc_NULL; ++p) {
     if (swdesc.isLong) {
       if (p->swLong && strncmp(p->swLong, swdesc.sw.c_str(), swLen) == 0) {
-	odesc = p;
-	break;
+        odesc = p;
+        break;
       }
     }
     else {
       if (p->swShort != 0 && p->swShort == swdesc.sw[0]) {
-	odesc = p;
-	break;
+        odesc = p;
+        break;
       }
     }
   }
@@ -684,16 +684,16 @@ CmdLineParser::findOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
     // it is different than 'm' then we do not want to generate an
     // ambiguous option error.
     bool isOk = (swdesc.isLong
-		 && (strcmp(odesc->swLong, swdesc.sw.c_str()) == 0)
-		 && (strcmp(odesc->swLong, m->swLong) != 0));
+                 && (strcmp(odesc->swLong, swdesc.sw.c_str()) == 0)
+                 && (strcmp(odesc->swLong, m->swLong) != 0));
     if (!isOk) {
       string msg = "Switch `";
       msg += swdesc.sw; msg += "' matches two different options: ";
       if (swdesc.isLong) {
-	msg += odesc->swLong; msg += ", "; msg += m->swLong;
+        msg += odesc->swLong; msg += ", "; msg += m->swLong;
       }
       else {
-	msg += odesc->swShort; msg += ", "; msg += m->swShort;
+        msg += odesc->swShort; msg += ", "; msg += m->swShort;
       }
       throw ParseError(msg);
     }
@@ -728,7 +728,7 @@ CmdLineParser::addOption(const OptArgDesc& odesc, const SwDesc& swdesc)
 // duplicates.
 void
 CmdLineParser::addOption(const OptArgDesc& odesc,
-			 const string& sw, const string& arg)
+                         const string& sw, const string& arg)
 {
   SwitchToArgMap::iterator it = switchToArgMap.find(sw);
   if (it == switchToArgMap.end()) {
@@ -746,15 +746,15 @@ CmdLineParser::addOption(const OptArgDesc& odesc,
 
     if (!arg.empty()) {
       if (!theArg) {
-	theArg = new string(arg);
+        theArg = new string(arg);
       }
       else {
-	if (odesc.dupKind == DUPOPT_CLOB) {
-	  *theArg = arg;
-	}
-	else if (odesc.dupKind == DUPOPT_CAT) {
-	  *theArg += odesc.dupArgSep + arg;
-	}
+        if (odesc.dupKind == DUPOPT_CLOB) {
+          *theArg = arg;
+        }
+        else if (odesc.dupKind == DUPOPT_CAT) {
+          *theArg += odesc.dupArgSep + arg;
+        }
       }
     }
   }

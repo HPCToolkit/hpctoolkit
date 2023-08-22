@@ -65,8 +65,8 @@
 using namespace std;
 struct TestData
 {
-	int index;
-	bool expensiveObjectInUse;
+        int index;
+        bool expensiveObjectInUse;
 };
 
 #include "../LRUList.hpp"
@@ -75,81 +75,81 @@ using TraceviewerServer::LRUList;
 
 void lruTest()
 {
-	#define OBJCOUNT 20
-	LRUList<TestData> list(OBJCOUNT);
+        #define OBJCOUNT 20
+        LRUList<TestData> list(OBJCOUNT);
 
-	srand(12);
-	bool inuse[OBJCOUNT];//Just for testing
-	for(int i = 0; i< OBJCOUNT; i++)
-	{
-		TestData* next = new TestData;
-		if (rand() % 2 == 0)
-		{
-			next->expensiveObjectInUse = true;
-			next->index = list.addNew(next);
-			inuse[next->index] = true;
-		}
-		else
-		{
-			next->expensiveObjectInUse = false;
-			next->index = list.addNewUnused(next);
-			inuse[next->index] = false;
-		}
-	}
-	assert(list.getTotalPageCount()==OBJCOUNT);
-	list.dump();
+        srand(12);
+        bool inuse[OBJCOUNT];//Just for testing
+        for(int i = 0; i< OBJCOUNT; i++)
+        {
+                TestData* next = new TestData;
+                if (rand() % 2 == 0)
+                {
+                        next->expensiveObjectInUse = true;
+                        next->index = list.addNew(next);
+                        inuse[next->index] = true;
+                }
+                else
+                {
+                        next->expensiveObjectInUse = false;
+                        next->index = list.addNewUnused(next);
+                        inuse[next->index] = false;
+                }
+        }
+        assert(list.getTotalPageCount()==OBJCOUNT);
+        list.dump();
 
-	for(int i = 0; i< 70; i++)
-	{
-		int x = rand() % OBJCOUNT;
-		if (inuse[x])
-			list.putOnTop(x);
-	}
-	for (int i = 0; i < OBJCOUNT; ++i) {
-		if (!inuse[i]){
-			inuse[i] = true;
-			list.addAgain(i);
-		}
-	}
-	list.dump();
-	assert(list.getUsedPageCount()==OBJCOUNT);
-	int count = OBJCOUNT;
-	for(int i = 0; i < OBJCOUNT; i++)
-		cout << i <<": " << inuse[i]<<endl;
-	for(int i = 0; i< 12; i++)
-	{
-		TestData* last = list.getLast();
-		last->expensiveObjectInUse = false;
-		inuse[last->index] = false;
-		list.removeLast();
-		assert(list.getUsedPageCount() == --count);
+        for(int i = 0; i< 70; i++)
+        {
+                int x = rand() % OBJCOUNT;
+                if (inuse[x])
+                        list.putOnTop(x);
+        }
+        for (int i = 0; i < OBJCOUNT; ++i) {
+                if (!inuse[i]){
+                        inuse[i] = true;
+                        list.addAgain(i);
+                }
+        }
+        list.dump();
+        assert(list.getUsedPageCount()==OBJCOUNT);
+        int count = OBJCOUNT;
+        for(int i = 0; i < OBJCOUNT; i++)
+                cout << i <<": " << inuse[i]<<endl;
+        for(int i = 0; i< 12; i++)
+        {
+                TestData* last = list.getLast();
+                last->expensiveObjectInUse = false;
+                inuse[last->index] = false;
+                list.removeLast();
+                assert(list.getUsedPageCount() == --count);
 
-		int ran;
-		if(inuse[ran = (rand()%OBJCOUNT)])
-			list.putOnTop(ran);
-		if(!inuse[ran = (rand()%OBJCOUNT)])
-		{
-			inuse[ran] = true;
-			list.addAgain(ran);
-			assert(list.getUsedPageCount() == ++count);
-		}
-	}
-	list.dump();
+                int ran;
+                if(inuse[ran = (rand()%OBJCOUNT)])
+                        list.putOnTop(ran);
+                if(!inuse[ran = (rand()%OBJCOUNT)])
+                {
+                        inuse[ran] = true;
+                        list.addAgain(ran);
+                        assert(list.getUsedPageCount() == ++count);
+                }
+        }
+        list.dump();
 
-	while (list.getUsedPageCount() > 0)
-	{
-		cout <<"Removing: "<< list.getLast()->index<<endl;
-		list.removeLast();
-		int dumpc = list.dump();
+        while (list.getUsedPageCount() > 0)
+        {
+                cout <<"Removing: "<< list.getLast()->index<<endl;
+                list.removeLast();
+                int dumpc = list.dump();
 
-		//assert(list.getUsedPageCount()==list.dump());
-	}
-	assert(list.getUsedPageCount()==0);
-	for(int i = 0; i< OBJCOUNT; i++)
-	{
-		list.addAgain(i);
-	}
-	assert(list.getUsedPageCount()==OBJCOUNT);
-	list.dump();
-	cout << "List operations did not crash and were probably successful"<<endl;
+                //assert(list.getUsedPageCount()==list.dump());
+        }
+        assert(list.getUsedPageCount()==0);
+        for(int i = 0; i< OBJCOUNT; i++)
+        {
+                list.addAgain(i);
+        }
+        assert(list.getUsedPageCount()==OBJCOUNT);
+        list.dump();
+        cout << "List operations did not crash and were probably successful"<<endl;
 }

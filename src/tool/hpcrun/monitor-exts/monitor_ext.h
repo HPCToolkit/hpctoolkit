@@ -76,17 +76,17 @@
 #define RTLD_NEXT  ((void *) -1L)
 #endif
 
-#define MONITOR_EXT_GET_DLSYM(var, name)  do {		\
-    if (var == NULL) {					\
-	const char *err_str;				\
-	dlerror();					\
-	var = dlsym(RTLD_NEXT, #name );			\
-	err_str = dlerror();				\
-	if (var == NULL) {				\
-	    hpcrun_abort("dlsym(%s) failed: %s", #name , err_str); \
-	}						\
-	TMSG(MONITOR_EXTS, "%s() = %p", #name , var);	\
-    }							\
+#define MONITOR_EXT_GET_DLSYM(var, name)  do {          \
+    if (var == NULL) {                                  \
+        const char *err_str;                            \
+        dlerror();                                      \
+        var = dlsym(RTLD_NEXT, #name );                 \
+        err_str = dlerror();                            \
+        if (var == NULL) {                              \
+            hpcrun_abort("dlsym(%s) failed: %s", #name , err_str); \
+        }                                               \
+        TMSG(MONITOR_EXTS, "%s() = %p", #name , var);   \
+    }                                                   \
 } while (0)
 
 #define MONITOR_EXT_WRAP_NAME(name)  name

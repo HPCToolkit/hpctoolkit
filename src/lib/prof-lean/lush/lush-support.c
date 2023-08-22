@@ -127,8 +127,8 @@ lush_lip_sprintf(char* str, const lush_lip_t* x)
     char* p = str;
     for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
       if (i != 0) {
-	sprintf(p, " ");
-	p++;
+        sprintf(p, " ");
+        p++;
       }
       num = sprintf(p, "0x%"PRIx64, x->data8[i]);
       p += num;

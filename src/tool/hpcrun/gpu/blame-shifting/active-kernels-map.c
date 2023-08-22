@@ -10,7 +10,7 @@
 // local includes
 //******************************************************************************
 
-#include "blame-kernel-map.h"		// kernel_node_t
+#include "blame-kernel-map.h"           // kernel_node_t
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>
@@ -67,7 +67,7 @@ static __thread active_kernels_entry_t *ak_map_root = NULL;
 static __thread active_kernels_entry_t *ak_map_free_list = NULL;
 
 static __thread spinlock_t ak_map_lock = SPINLOCK_UNLOCKED;
-static long __thread size = 0;	// this should be unique for every ak splay-tree
+static long __thread size = 0;  // this should be unique for every ak splay-tree
 
 
 

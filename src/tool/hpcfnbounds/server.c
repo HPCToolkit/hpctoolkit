@@ -261,7 +261,7 @@ send_funcs ()
       } else {
         if (verbose) {
           fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void *) );
-	}
+        }
 #endif
       }
       num_addrs = 0;
@@ -397,8 +397,8 @@ read_mesg(struct syserv_mesg *mesg)
   }
 #if DEBUG
   if (verbose) {
-	fprintf(stderr, "FNB2: Server read  message, type = %d, len = %ld\n",
-	    mesg->type, mesg->len);
+        fprintf(stderr, "FNB2: Server read  message, type = %d, len = %ld\n",
+            mesg->type, mesg->len);
   }
 #endif
 
@@ -420,8 +420,8 @@ write_mesg(int32_t type, int64_t len)
 
 #if DEBUG
   if (verbose) {
-	fprintf(stderr, "FNB2: Server write  message, type = %d, len = %ld\n",
-	    type, len);
+        fprintf(stderr, "FNB2: Server write  message, type = %d, len = %ld\n",
+            type, len);
   }
 #endif
   return write_all(fdout, &mesg, sizeof(mesg));

@@ -171,7 +171,7 @@ Tree::ddump() const
 
 void
 writeXML(std::ostream& os, const Prof::Struct::Tree& strctTree,
-	 bool prettyPrint)
+         bool prettyPrint)
 {
   static const char* structureDTD =
 #include <lib/xml/hpc-structure.dtd.h>
@@ -298,8 +298,8 @@ Group::Ctor(const char* nm, ANode* parent)
   DIAG_Assert(nm, "");
   ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGroup) || (t == TyLM)
-	      || (t == TyFile) || (t == TyProc) || (t == TyAlien)
-	      || (t == TyLoop), "");
+              || (t == TyFile) || (t == TyProc) || (t == TyAlien)
+              || (t == TyLoop), "");
   m_name = nm;
   ancestorRoot()->insertGroupMap(this);
 }
@@ -408,8 +408,8 @@ File::demand(LM* lm, const string& filenm)
     file = new File(nm_real, lm);
   }
   DIAG_DevMsgIf(DBG_FILE, "Struct::File::demand: " << note << endl
-		<< "\tin : " << filenm << endl
-		<< "\tout: " << file->name());
+                << "\tin : " << filenm << endl
+                << "\tout: " << file->name());
   return file;
 }
 
@@ -455,7 +455,7 @@ Proc::operator=(const Proc& x)
 
 Proc*
 Proc::demand(File* file, const string& name, const std::string& linkname,
-	     SrcFile::ln begLn, SrcFile::ln endLn, bool* didCreate)
+             SrcFile::ln begLn, SrcFile::ln endLn, bool* didCreate)
 {
   Proc* proc = file->findProc(name, linkname);
   if (!proc) {
@@ -530,11 +530,11 @@ RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
 
 void
 Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
-	    const char* displaynm)
+            const char* displaynm)
 {
   ANodeTy t = (parent) ? parent->type() : TyANY;
   DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyAlien)
-	      || (t == TyProc) || (t == TyLoop), "");
+              || (t == TyProc) || (t == TyLoop), "");
 
   m_filenm = (filenm) ? filenm : "";
   s_realpathMgr.realpath(m_filenm);
@@ -615,7 +615,7 @@ Ref::Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName)
       if (ptr == NULL) {  \
         return NULL;  \
       } else {  \
-	return dynamic_cast<derived*>(ptr);  \
+        return dynamic_cast<derived*>(ptr);  \
       } \
     }
 
@@ -842,7 +842,7 @@ ANode::mergePaths(ANode* lca, ANode* node_dst, ANode* node_src)
   ANodeList::iterator it_src = path_src.begin();
 
   for ( ; (it_dst != path_dst.end() && it_src != path_src.end());
-	++it_src, ++it_dst) {
+        ++it_src, ++it_dst) {
     ANode* x_src = *it_src;
     ANode* x_dst = *it_dst;
     if (isMergable(x_dst, x_src)) {
@@ -908,7 +908,7 @@ ANode::isMergable(ANode* node_dst, ANode* node_src)
     ACodeNode* dst0 = dynamic_cast<ACodeNode*>(node_dst);
     ACodeNode* src0 = dynamic_cast<ACodeNode*>(node_src);
     goodBnds = Logic::equiv(SrcFile::isValid(dst0->begLine(), dst0->endLine()),
-			    SrcFile::isValid(src0->begLine(), src0->endLine()));
+                            SrcFile::isValid(src0->begLine(), src0->endLine()));
   }
 
   return ((ty_dst == ty_src) && goodTy && goodBnds);
@@ -972,7 +972,7 @@ void
 File::insertProcMap(Proc* p)
 {
   DIAG_DevMsg(2, "File (" << this << "): mapping proc name '" << p->name()
-	      << "' to Proc* " << p);
+              << "' to Proc* " << p);
   m_procMap->insert(make_pair(p->name(), p)); // multimap
 }
 
@@ -1095,11 +1095,11 @@ File::findProc(const char* name, const char* linkname) const
   if (it != m_procMap->end()) {
     if (linkname && linkname[0] != '\0') {
       for ( ; (it != m_procMap->end() && strcmp(it->first.c_str(), name) == 0);
-	    ++it) {
-	Proc* p = it->second;
-	if (strcmp(p->linkName().c_str(), linkname) == 0) {
-	  return p; // found = p
-	}
+            ++it) {
+        Proc* p = it->second;
+        if (strcmp(p->linkName().c_str(), linkname) == 0) {
+          return p; // found = p
+        }
       }
     }
     else {
@@ -1205,9 +1205,9 @@ ACodeNode::relocate()
     // or iff that does not exist insert as first in sibling list
     ACodeNode* sibling = NULL;
     for (sibling = dynamic_cast<ACodeNode*>(prnt->lastChild()); sibling;
-	 sibling = dynamic_cast<ACodeNode*>(sibling->prevSibling())) {
+         sibling = dynamic_cast<ACodeNode*>(sibling->prevSibling())) {
       if (sibling->begLine() <= m_begLn) {
-	break;
+        break;
       }
     }
     if (sibling != NULL) {
@@ -1233,7 +1233,7 @@ ACodeNode::containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const
       int beg_delta = begLine() - ln; // > 0 if line is before beg
       int end_delta = ln - endLine(); // > 0 if end is before line
       return ((beg_delta > 0 && beg_delta <= beg_epsilon)
-	      || (end_delta > 0 && end_delta <= end_epsilon));
+              || (end_delta > 0 && end_delta <= end_epsilon));
     }
   }
   return false;
@@ -1251,15 +1251,15 @@ ACodeNode::ACodeNodeWithLine(SrcFile::ln ln) const
       fnd = dynamic_cast<ACodeNode*>(it.Current());
       DIAG_Assert(fnd, "");
       if  (fnd->containsLine(ln)) {
-	if (fnd->type() == TyStmt) {
-	  return fnd; // never look inside LINE_SCOPEs
-	}
+        if (fnd->type() == TyStmt) {
+          return fnd; // never look inside LINE_SCOPEs
+        }
 
-	// desired line might be in inner scope; however, it might be
-	// elsewhere because optimization left procedure with
-	// non-contiguous line ranges in scopes at various levels.
-	ACodeNode* inner = fnd->ACodeNodeWithLine(ln);
-	if (inner) return inner;
+        // desired line might be in inner scope; however, it might be
+        // elsewhere because optimization left procedure with
+        // non-contiguous line ranges in scopes at various levels.
+        ACodeNode* inner = fnd->ACodeNodeWithLine(ln);
+        if (inner) return inner;
       }
     }
   }
@@ -1282,11 +1282,11 @@ ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
 
       // Use lexicographic comparison for procedures
       if (x->type() == ANode::TyProc && y->type() == ANode::TyProc) {
-	Proc *px = (Proc*)x, *py = (Proc*)y;
-	int cmp1 = px->name().compare(py->name());
-	if (cmp1 != 0) { return cmp1; }
-	int cmp2 = px->linkName().compare(py->linkName());
-	if (cmp2 != 0) { return cmp2; }
+        Proc *px = (Proc*)x, *py = (Proc*)y;
+        int cmp1 = px->name().compare(py->name());
+        if (cmp1 != 0) { return cmp1; }
+        int cmp2 = px->linkName().compare(py->linkName());
+        if (cmp2 != 0) { return cmp2; }
       }
 
       // Use VMAInterval sets otherwise.
@@ -1295,19 +1295,19 @@ ACodeNode::compare(const ACodeNode* x, const ACodeNode* y)
       bool vmaSetsEqual = (!x_lt_y && !y_lt_x);
 
       if (vmaSetsEqual) {
-	// Try ranking a leaf node before a non-leaf node
-	if ( !(x->isLeaf() && y->isLeaf())) {
-	  if      (x->isLeaf()) { return -1; } // x < y
-	  else if (y->isLeaf()) { return  1; } // x > y
-	}
+        // Try ranking a leaf node before a non-leaf node
+        if ( !(x->isLeaf() && y->isLeaf())) {
+          if      (x->isLeaf()) { return -1; } // x < y
+          else if (y->isLeaf()) { return  1; } // x > y
+        }
 
-	// Give up!
-	return 0;
+        // Give up!
+        return 0;
       }
       else if (x_lt_y) { return -1; }
       else if (y_lt_x) { return  1; }
       else {
-	DIAG_Die(DIAG_Unimplemented);
+        DIAG_Die(DIAG_Unimplemented);
       }
     }
     else {
@@ -1572,8 +1572,8 @@ Alien::toXML(unsigned int oFlags) const
       // 3: check if alien's line range is within the function definition
       bool inc = SrcFile::include(proc->begLine(), proc->endLine(), begLine(), endLine());
       if (inc) {
-	// 4: add the link attribute to the function definition
-      	self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id()));
+        // 4: add the link attribute to the function definition
+        self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id()));
       }
 #endif
       self = self + " ln" + xml::MakeAttrStr(StrUtil::toStr(proc->id()));
@@ -1630,7 +1630,7 @@ ANode::writeXML_pre(ostream& os, unsigned int oFlags, const char* pfx) const
 
 void
 ANode::writeXML_post(ostream& os, unsigned int GCC_ATTR_UNUSED oFlags,
-		     const char* pfx) const
+                     const char* pfx) const
 {
   bool doTag = isVisible();
 
@@ -1934,11 +1934,11 @@ Ref::RelocateRef()
     // or iff that does not exist insert as first in sibling list
     ACodeNode* sibling;
     for (sibling = dynamic_cast<ACodeNode*>(prnt->lastChild());
-	 sibling; sibling = dynamic_cast<ACodeNode*>(sibling->prevSibling())) {
+         sibling; sibling = dynamic_cast<ACodeNode*>(sibling->prevSibling())) {
       Ref *ref = dynamic_cast<Ref*>(sibling);
       DIAG_Assert(ref == sibling, "");
       if (ref->endPos < begPos) {
-	break;
+        break;
       }
     }
     if (sibling != NULL) {

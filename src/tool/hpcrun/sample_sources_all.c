@@ -86,40 +86,40 @@
 // Function Defining Macros
 //*******************************************************************
 
-#define _AS0(n, necessary)					     \
+#define _AS0(n, necessary)                                           \
 void                                                                 \
 hpcrun_all_sources_ ##n(void)                                        \
-{								     \
+{                                                                    \
  if (necessary) { if (ignore_this_thread()) return; }                \
   TMSG(SS_ALL, "calling function %s", __func__);                     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
-    TMSG(SS_ALL,"sample source (%s) method call: %s",	             \
-	 ss->name, #n);            				     \
-    METHOD_CALL(ss, n);           				     \
-  }								     \
+    TMSG(SS_ALL,"sample source (%s) method call: %s",                \
+         ss->name, #n);                                              \
+    METHOD_CALL(ss, n);                                              \
+  }                                                                  \
 }
 
 #define _AS1(n,t,arg) \
 void                                                                 \
 hpcrun_all_sources_ ##n(t arg)                                       \
-{								     \
+{                                                                    \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
-    METHOD_CALL(ss, n, arg);			                     \
-  }								     \
+    METHOD_CALL(ss, n, arg);                                         \
+  }                                                                  \
 }
 
-#define _ASB(n)							     \
-bool								     \
-hpcrun_all_sources_ ##n(void)					     \
-{								     \
-  TMSG(SS_ALL, "checking %d sources",n_sources);		     \
+#define _ASB(n)                                                      \
+bool                                                                 \
+hpcrun_all_sources_ ##n(void)                                        \
+{                                                                    \
+  TMSG(SS_ALL, "checking %d sources",n_sources);                     \
   for(sample_source_t* ss = sample_sources; ss; ss = ss->next_sel) { \
-    if (! METHOD_CALL(ss, n)) {			                     \
+    if (! METHOD_CALL(ss, n)) {                                      \
       TMSG(SS_ALL, "%s not started",ss->name);                       \
-      return false;						     \
-    }								     \
-  }								     \
-  return true;							     \
+      return false;                                                  \
+    }                                                                \
+  }                                                                  \
+  return true;                                                       \
 }
 
 //
@@ -163,7 +163,7 @@ ignore_this_thread()
 
       if (strstr(all_str, myid_str)) {
         ignore_thread = THREAD_NOSAMPLING;
-	TMSG(IGNORE, "Thread %d ignore sampling", myid);
+        TMSG(IGNORE, "Thread %d ignore sampling", myid);
       }
     }
   }

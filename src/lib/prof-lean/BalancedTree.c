@@ -83,7 +83,7 @@ BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y);
 
 void
 BalancedTreeNode_init(BalancedTreeNode_t* x,
-		      void* key, BalancedTreeNode_t* parent)
+                      void* key, BalancedTreeNode_t* parent)
 {
   x->left = NULL;
   x->right = NULL;
@@ -101,7 +101,7 @@ BalancedTreeNode_init(BalancedTreeNode_t* x,
 
 void
 BalancedTree_init(BalancedTree_t* tree,
-		  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz)
+                  BalancedTree_alloc_fn_t allocFn, size_t nodeDataSz)
 {
   tree->root = NULL;
   tree->size = 0;
@@ -129,9 +129,9 @@ BalancedTree_insert(BalancedTree_t* tree, void* key)
   while (x != NULL && x->key != key) {
       x_parent = x;
       if (key < x->key)
-	x = x->left;
+        x = x->left;
       else
-	x = x->right;
+        x = x->right;
   }
   BalancedTreeNode_t* found;
   if (x != NULL)
@@ -158,44 +158,44 @@ BalancedTree_insert(BalancedTree_t* tree, void* key)
       BalancedTreeNode_t* x_gparent = x_gparent = x_parent->parent;
 
       if (x_parent == x_gparent->left) {
-	BalancedTreeNode_t* y = x_gparent->right;
-	if (y && y->color == BalancedTreeColor_RED) {
-	  x_parent->color = BalancedTreeColor_BLACK;
-	  y->color = BalancedTreeColor_BLACK;
-	  x_gparent->color = BalancedTreeColor_RED;
-	  x = x_gparent;
-	}
-	else {
-	  if (x == x_parent->right) {
-	    x = x_parent;
-	    BalancedTree_leftRotate(tree, x);
-	    x_parent = x->parent;
-	    x_gparent = x_parent->parent;
-	  }
-	  x_parent->color = BalancedTreeColor_BLACK;
-	  x_gparent->color = BalancedTreeColor_RED;
-	  BalancedTree_rightRotate(tree, x_gparent);
-	}
+        BalancedTreeNode_t* y = x_gparent->right;
+        if (y && y->color == BalancedTreeColor_RED) {
+          x_parent->color = BalancedTreeColor_BLACK;
+          y->color = BalancedTreeColor_BLACK;
+          x_gparent->color = BalancedTreeColor_RED;
+          x = x_gparent;
+        }
+        else {
+          if (x == x_parent->right) {
+            x = x_parent;
+            BalancedTree_leftRotate(tree, x);
+            x_parent = x->parent;
+            x_gparent = x_parent->parent;
+          }
+          x_parent->color = BalancedTreeColor_BLACK;
+          x_gparent->color = BalancedTreeColor_RED;
+          BalancedTree_rightRotate(tree, x_gparent);
+        }
       }
       else {
-	BalancedTreeNode_t* y = x_gparent->left;
-	if (y && y->color == BalancedTreeColor_RED) {
-	  x_parent->color = BalancedTreeColor_BLACK;
-	  y->color = BalancedTreeColor_BLACK;
-	  x_gparent->color = BalancedTreeColor_RED;
-	  x = x_gparent;
-	}
-	else {
-	  if (x == x_parent->left) {
-	    x = x_parent;
-	    BalancedTree_rightRotate(tree, x);
-	    x_parent = x->parent;
-	    x_gparent = x_parent->parent;
-	  }
-	  x_parent->color = BalancedTreeColor_BLACK;
-	  x_gparent->color = BalancedTreeColor_RED;
-	  BalancedTree_leftRotate(tree, x_gparent);
-	}
+        BalancedTreeNode_t* y = x_gparent->left;
+        if (y && y->color == BalancedTreeColor_RED) {
+          x_parent->color = BalancedTreeColor_BLACK;
+          y->color = BalancedTreeColor_BLACK;
+          x_gparent->color = BalancedTreeColor_RED;
+          x = x_gparent;
+        }
+        else {
+          if (x == x_parent->left) {
+            x = x_parent;
+            BalancedTree_rightRotate(tree, x);
+            x_parent = x->parent;
+            x_gparent = x_parent->parent;
+          }
+          x_parent->color = BalancedTreeColor_BLACK;
+          x_gparent->color = BalancedTreeColor_RED;
+          BalancedTree_leftRotate(tree, x_gparent);
+        }
       }
     }
 
@@ -284,11 +284,11 @@ BalancedTree_rightRotate(BalancedTree_t* tree, BalancedTreeNode_t* y)
 #if 0
 static void
 BalancedTree_foreach_rec(BalancedTreeNode_t*,
-			 BalancedTree_foreach_func, void*);
+                         BalancedTree_foreach_func, void*);
 
 void
 BalancedTree_foreach(BalancedTree_t* tree,
-		     BalancedTree_foreach_func func, void* data)
+                     BalancedTree_foreach_func func, void* data)
 {
   BalancedTree_foreach_rec(tree->root, func, data);
 }
@@ -296,7 +296,7 @@ BalancedTree_foreach(BalancedTree_t* tree,
 
 static void
 BalancedTree_foreach_rec(BalancedTreeNode_t* node,
-			 BalancedTree_foreach_func func, void* data)
+                         BalancedTree_foreach_func func, void* data)
 {
   if (node != NULL) {
     BalancedTree_foreach_rec(node->left, func, data);

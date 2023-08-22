@@ -5,7 +5,7 @@
 //******************************************************************************
 
 #include <monitor.h>                                                // monitor_real_abort
-#include <math.h>															// pow
+#include <math.h>                                                                                                                       // pow
 #include <stdbool.h>                          // bool
 #include <ucontext.h>                         // getcontext
 
@@ -17,7 +17,7 @@
 
 #include "blame-kernel-map.h"                                       // kernel_node_t
 #include "blame-queue-map.h"                                        // queue_node_t
-#include "blame-helper.h"              				                      // calculate_blame_for_active_kernels
+#include "blame-helper.h"                                                             // calculate_blame_for_active_kernels
 #include "blame.h"
 
 #include <hpcrun/cct/cct.h>                                         // cct_node_t
@@ -465,4 +465,4 @@ gpu_idle_blame
 #endif
 }
 
-#endif	// ENABLE_OPENCL
+#endif  // ENABLE_OPENCL

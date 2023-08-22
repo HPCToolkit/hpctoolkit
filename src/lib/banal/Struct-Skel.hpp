@@ -155,7 +155,7 @@ public:
   bool  gap_only;
 
   ProcInfo(ParseAPI::Function * fn, TreeNode * rt, string ln, string pn,
-	   long l, unsigned symindex = 0, bool gap = false)
+           long l, unsigned symindex = 0, bool gap = false)
   {
     func = fn;
     root = rt;

@@ -82,7 +82,7 @@ namespace ParseAPI {
   class PARSER_EXPORT GPUCodeSource : public /*Symtab */ CodeSource {
  public:
   GPUCodeSource(std::vector<GPUParse::Function *> &functions,
-		Dyninst::SymtabAPI::Symtab *s);
+                Dyninst::SymtabAPI::Symtab *s);
   ~GPUCodeSource() {}
 
  public:
@@ -99,11 +99,11 @@ namespace ParseAPI {
   virtual Architecture getArch() const { return Arch_cuda; }
 
   virtual bool nonReturning(Address /*func_entry*/) { return false; }
-	virtual bool nonReturningSyscall(int /*number*/) { return false; }
+        virtual bool nonReturningSyscall(int /*number*/) { return false; }
 
-	/* If the binary file type supplies per-function
-	 * TOC's (e.g. ppc64 Linux), override.
-	 */
+        /* If the binary file type supplies per-function
+         * TOC's (e.g. ppc64 Linux), override.
+         */
   virtual Address getTOC(Address) const { return _table_of_contents; }
 
   // statistics accessor

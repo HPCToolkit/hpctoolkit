@@ -82,7 +82,7 @@ void hpcrun_fini_process()
 }
 
 void hpcrun_epoch_get_loaded_modules(hpcrun_epoch_t *epoch,
-				     hpcrun_epoch_t *previous_epoch)
+                                     hpcrun_epoch_t *previous_epoch)
 {
   hpcrun_epoch_module_t *newmod;
 

@@ -64,7 +64,7 @@
 unwind_interval *find_first_bp_frame(unwind_interval *first);
 
 unwind_interval *find_first_non_decr(unwind_interval *first,
-				     unwind_interval *highwatermark);
+                                     unwind_interval *highwatermark);
 
 
 
@@ -74,7 +74,7 @@ unwind_interval *find_first_non_decr(unwind_interval *first,
 
 void
 reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
-	bool irdebug, interval_arg_t *iarg)
+        bool irdebug, interval_arg_t *iarg)
 {
   unwind_interval *current             = iarg->current;
   unwind_interval *first               = iarg->first;
@@ -91,13 +91,13 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
     } else if (iarg->canonical_interval) {
       x86recipe_t *xr = hw_uwi ? UWI_RECIPE(hw_uwi) : NULL;
       if (xr && xr->reg.bp_status != BP_UNCHANGED) {
-	bp_loc bp_status = UWI_RECIPE(iarg->canonical_interval)->reg.bp_status;
-	if ((bp_status == BP_UNCHANGED) ||
-	    ((bp_status == BP_SAVED) &&
+        bp_loc bp_status = UWI_RECIPE(iarg->canonical_interval)->reg.bp_status;
+        if ((bp_status == BP_UNCHANGED) ||
+            ((bp_status == BP_SAVED) &&
              (xr->reg.bp_status == BP_HOSED))) {
          set_ui_canonical(hw_uwi, iarg->canonical_interval);
          iarg->canonical_interval = hw_uwi;
-	}
+        }
       }
       first = iarg->canonical_interval;
     } else {
@@ -112,25 +112,25 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
       x86registers_t reg = r1->reg;
       ra_loc ra_status = r1->ra_status;
       bp_loc bp_status =
-    	  (xr->reg.bp_status == BP_HOSED) ? BP_HOSED : reg.bp_status;
+          (xr->reg.bp_status == BP_HOSED) ? BP_HOSED : reg.bp_status;
 #ifndef FIX_INTERVALS_AT_RETURN
       if (xr->ra_status != ra_status) ||
-	  xr->reg.bp_status != bp_status) ||
-	  xr->reg.sp_ra_pos != reg.sp_ra_pos) ||
-	  xr->reg.bp_ra_pos != reg.bp_ra_pos) ||
-	  xr->reg.bp_bp_pos != reg.bp_bp_pos) ||
-	  xr->reg.sp_bp_pos != reg.sp_bp_pos))
+          xr->reg.bp_status != bp_status) ||
+          xr->reg.sp_ra_pos != reg.sp_ra_pos) ||
+          xr->reg.bp_ra_pos != reg.bp_ra_pos) ||
+          xr->reg.bp_bp_pos != reg.bp_bp_pos) ||
+          xr->reg.sp_bp_pos != reg.sp_bp_pos))
 #endif
-	{
-	  reg.bp_status = bp_status;
-	*next = new_ui(nextInsn(iarg, xptr), ra_status, &reg);
-	iarg->restored_canonical = *next;
+        {
+          reg.bp_status = bp_status;
+        *next = new_ui(nextInsn(iarg, xptr), ra_status, &reg);
+        iarg->restored_canonical = *next;
         set_ui_canonical(*next, UWI_RECIPE(iarg->canonical_interval)->prev_canonical);
         if (r1->reg.bp_status != BP_HOSED && bp_status == BP_HOSED) {
           set_ui_canonical(*next, iarg->canonical_interval);
           iarg->canonical_interval = *next;
         }
-	return;
+        return;
       }
     }
   }
@@ -148,7 +148,7 @@ unwind_interval *
 find_first_bp_frame(unwind_interval *first)
 {
   while (first && (UWI_RECIPE(first)->ra_status != RA_BP_FRAME))
-	first = UWI_NEXT(first);
+        first = UWI_NEXT(first);
   return first;
 }
 
@@ -161,8 +161,8 @@ find_first_non_decr(unwind_interval *first, unwind_interval *highwatermark)
   int next_ra_pos;
   unwind_interval *next;
   while ((next = UWI_NEXT(first)) &&
-	 (sp_ra_pos <= (next_ra_pos = UWI_RECIPE(next)->reg.sp_ra_pos)) &&
-	 (first != highwatermark)) {
+         (sp_ra_pos <= (next_ra_pos = UWI_RECIPE(next)->reg.sp_ra_pos)) &&
+         (first != highwatermark)) {
     first = next;
     sp_ra_pos = next_ra_pos;
   }

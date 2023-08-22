@@ -109,9 +109,9 @@ int serv_verbose = 0;
 int noscan = 0;
 
 #include <stdio.h>
-FILE	*outf;
+FILE    *outf;
 
-char	*outfile;
+char    *outfile;
 
 #endif
 
@@ -608,8 +608,8 @@ hpcrun_syserv_init(void)
   // so exit.
   shutdown_server();
   EEMSG("hpcrun: unable to launch the hpcfnbounds server.\n"
-	"hpcrun: check that hpctoolkit is properly configured with dyninst\n"
-	"and its prereqs (boost, elfutils, libdwarf, bzip, libz, lzma).");
+        "hpcrun: check that hpctoolkit is properly configured with dyninst\n"
+        "and its prereqs (boost, elfutils, libdwarf, bzip, libz, lzma).");
   monitor_real_exit(1);
 
   return -1;
@@ -669,7 +669,7 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     shutdown_server();
     launch_server();
     if (write_mesg(SYSERV_QUERY, len) != SUCCESS
-	|| read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
+        || read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
     {
       EMSG("FNBOUNDS_CLIENT ERROR: unable to restart system server");
       shutdown_server();
@@ -748,12 +748,12 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   num_queries++;
   if (!mem_warning && fnb_info.memsize > (6 * mem_limit)/10) {
     EMSG("FNBOUNDS_CLIENT: warning: memory usage: %ld Meg",
-	 fnb_info.memsize / 1024);
+         fnb_info.memsize / 1024);
     mem_warning = 1;
   }
   if (num_queries >= MIN_NUM_QUERIES && fnb_info.memsize > mem_limit) {
     EMSG("FNBOUNDS_CLIENT: warning: memory usage: %ld Meg, restart server",
-	 fnb_info.memsize / 1024);
+         fnb_info.memsize / 1024);
     shutdown_server();
   }
 #endif
@@ -795,14 +795,14 @@ query_loop(void)
     }
     else {
       for (k = 0; k < fnb_hdr.num_entries; k++) {
-	fprintf(outf, "  %p\n", addr[k]);
+        fprintf(outf, "  %p\n", addr[k]);
       }
       fprintf(outf, "num symbols = %ld, offset = 0x%lx, reloc = %d\n",
-	     fnb_hdr.num_entries, fnb_hdr.reference_offset,
-	     fnb_hdr.is_relocatable);
+             fnb_hdr.num_entries, fnb_hdr.reference_offset,
+             fnb_hdr.is_relocatable);
 
       if (munmap(addr, fnb_hdr.mmap_size) != 0) {
-	err(1, "munmap failed");
+        err(1, "munmap failed");
       }
     }
   }
@@ -832,23 +832,23 @@ main(int argc, char *argv[])
         break;
       case 'o':
         if ( (i+1) >= argc) {
-	  errx(1, "outfile must be specified; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
-	}
-	i++;
-	outfile = argv[i];
-	outf = fopen(outfile, "w");
-	if (outf == NULL) {
-	    errx(1,"outfile fopen failed; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
-	}
+          errx(1, "outfile must be specified; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+        }
+        i++;
+        outfile = argv[i];
+        outf = fopen(outfile, "w");
+        if (outf == NULL) {
+            errx(1,"outfile fopen failed; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+        }
         break;
       default:
-	errx(1, "unknown flag; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
-	break;
+        errx(1, "unknown flag; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+        break;
       }
     } else {
       // no - flag; must be the path to the server
       server = argv[i];
-      break;	// from argument loop
+      break;    // from argument loop
     }
   }
   // Make sure the server is non-NULL

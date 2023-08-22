@@ -94,7 +94,7 @@ static hpcrun_kernel_callpath_t hpcrun_kernel_callpath;
 void
 hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp)
 {
-	hpcrun_kernel_callpath = kcp;
+        hpcrun_kernel_callpath = kcp;
 }
 
 static cct_node_t*
@@ -115,16 +115,16 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   ip_normalized_t parent_routine = {0, 0};
   for(; path_beg >= path_end; path_beg--){
     if ( (! retain_recursion) &&
-	 (path_beg >= path_end + 1) &&
+         (path_beg >= path_end + 1) &&
          ip_normalized_eq(&(path_beg->the_function), &(parent_routine)) &&
-	 ip_normalized_eq(&(path_beg->the_function), &((path_beg-1)->the_function))) {
+         ip_normalized_eq(&(path_beg->the_function), &((path_beg-1)->the_function))) {
       TMSG(REC_COMPRESS, "recursive routine compression!");
     }
     else {
       cct_addr_t tmp =
-	(cct_addr_t) {.as_info = path_beg->as_info,
-		      .ip_norm = path_beg->ip_norm,
-		      .lip = path_beg->lip};
+        (cct_addr_t) {.as_info = path_beg->as_info,
+                      .ip_norm = path_beg->ip_norm,
+                      .lip = path_beg->lip};
       TMSG(BT_INSERT, "inserting addr (%d, %p)", tmp.ip_norm.lm_id, tmp.ip_norm.lm_ip);
       cct = hpcrun_cct_insert_addr(cct, &tmp, true);
     }
@@ -138,8 +138,8 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-	int metricId, hpcrun_metricVal_t metricIncr,
-	int skipInner, int isSync, void *data);
+        int metricId, hpcrun_metricVal_t metricIncr,
+        int skipInner, int isSync, void *data);
 
 //
 //
@@ -192,9 +192,9 @@ hpcrun_cct_insert_backtrace(cct_node_t* treenode, frame_t* path_beg, frame_t* pa
 // See usage in header.
 cct_node_t*
 hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
-				     int metric_id,
-				     frame_t* path_beg, frame_t* path_end,
-				     cct_metric_data_t datum, void *data_aux)
+                                     int metric_id,
+                                     frame_t* path_beg, frame_t* path_end,
+                                     cct_metric_data_t datum, void *data_aux)
 {
   cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
 
@@ -220,14 +220,14 @@ hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
 
 cct_node_t*
 hpcrun_cct_insert_bt(cct_node_t* node,
-		     int metricId,
-		     backtrace_t* bt,
-		     cct_metric_data_t datum)
+                     int metricId,
+                     backtrace_t* bt,
+                     cct_metric_data_t datum)
 {
   return hpcrun_cct_insert_backtrace_w_metric(node, metricId,
-					      bt->beg + bt->len - 1,
-					      bt->beg,
-					      datum, NULL);
+                                              bt->beg + bt->len - 1,
+                                              bt->beg,
+                                              datum, NULL);
 }
 
 
@@ -247,20 +247,20 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 
 cct_node_t*
 hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-	             int metricId, hpcrun_metricVal_t metricIncr,
-		     int skipInner, int isSync, void *data)
+                     int metricId, hpcrun_metricVal_t metricIncr,
+                     int skipInner, int isSync, void *data)
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
     TMSG(LUSH,"lush backtrace2cct invoked");
     n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
-			   isSync);
+                           isSync);
   }
   else {
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
     n = help_hpcrun_backtrace2cct(cct, context,
-				  metricId, metricIncr,
-				  skipInner, isSync, data);
+                                  metricId, metricIncr,
+                                  skipInner, isSync, data);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -272,8 +272,8 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
 static cct_node_tt*
 help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-	       int metricId, uint64_t metricIncr,
-	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
+               int metricId, uint64_t metricIncr,
+               bt_mut_fn bt_fn, bt_fn_arg bt_arg);
 
 //
 // utility routine that does 3 things:
@@ -283,15 +283,15 @@ help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 //
 cct_node_tt*
 hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-	      int metricId, uint64_t metricIncr,
-	      bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
+              int metricId, uint64_t metricIncr,
+              bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
 {
   cct_node_tt* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
 #ifdef LATER
     TMSG(LUSH,"lush backtrace2cct invoked");
     n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
-			   isSync);
+                           isSync);
 #endif
   }
   else {
@@ -343,8 +343,8 @@ hpcrun_cct_record_backtrace(
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
                                      backtrace_info_t *bt, bool tramp_found,
-	                             int metricId, hpcrun_metricVal_t metricIncr,
-				     void *data)
+                                     int metricId, hpcrun_metricVal_t metricIncr,
+                                     void *data)
 {
   TMSG(FENCE, "Recording backtrace");
   TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d",
@@ -374,17 +374,17 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
        bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
   return hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
-					      bt->last, bt->begin,
-					      (cct_metric_data_t) metricIncr, data);
+                                              bt->last, bt->begin,
+                                              (cct_metric_data_t) metricIncr, data);
 
 }
 
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
-			  int metricId,
-			  hpcrun_metricVal_t metricIncr,
-			  int skipInner, int isSync, void *data)
+                          int metricId,
+                          hpcrun_metricVal_t metricIncr,
+                          int skipInner, int isSync, void *data)
 {
   bool tramp_found;
 
@@ -406,10 +406,10 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   // TMSG(GENERIC1, "tmain chk");
   if (ENABLED(CHECK_MAIN)) {
     if ( bt.fence == FENCE_MAIN &&
-	 ! bt.partial_unwind &&
-	 ! tramp_found &&
-	 (bt.last == bt.begin ||
-	  ! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt.last - 1)))) {
+         ! bt.partial_unwind &&
+         ! tramp_found &&
+         (bt.last == bt.begin ||
+          ! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt.last - 1)))) {
       hpcrun_bt_dump(TD_GET(btbuf_cur), "WRONG MAIN");
       hpcrun_stats_num_samples_dropped_inc();
       bt.partial_unwind = true;
@@ -424,14 +424,14 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
 
     TMSG(PARTIAL_UNW, "recording partial unwind from graceful failure, "
-	 "len partial unw = %d", (bt.last - bt.begin)+1);
+         "len partial unw = %d", (bt.last - bt.begin)+1);
     hpcrun_stats_num_samples_partial_inc();
   }
 
   cct_node_t* n =
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt,
-					 tramp_found,
-					 metricId, metricIncr, data);
+                                         tramp_found,
+                                         metricId, metricIncr, data);
 
   if (!ompt_eager_context_p()) {
     // FIXME vi3: a big hack

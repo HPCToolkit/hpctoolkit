@@ -101,7 +101,7 @@ Diagnostics_GetDiagnosticFilterLevel();
 // exception support.
 DIAG_EXTERN void
 Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
-					      unsigned int lineno);
+                                              unsigned int lineno);
 
 
 //****************************************************************************
@@ -154,7 +154,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 // a message string.  Example:
 //   if (...) DIAG_EMsg("bad val: '" << v << "'")
 
-#define DIAG_MsgIf_GENERIC(tag, ifexpr, streamArgs)		    \
+#define DIAG_MsgIf_GENERIC(tag, ifexpr, streamArgs)                 \
   if (ifexpr) {                                                     \
     DIAG_CERR << tag << streamArgs << DIAG_ENDL; }
 
@@ -172,10 +172,10 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
   DIAG_MsgIfCtd((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
 
-#define DIAG_DevMsgIf(ifexpr, streamArgs)		            \
+#define DIAG_DevMsgIf(ifexpr, streamArgs)                           \
   DIAG_MsgIf_GENERIC("msg*: ", ifexpr, streamArgs)
 
-#define DIAG_DevMsgIfCtd(ifexpr, streamArgs)		            \
+#define DIAG_DevMsgIfCtd(ifexpr, streamArgs)                        \
   DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
 
 #define DIAG_DevMsg(level, streamArgs)                              \

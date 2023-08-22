@@ -131,13 +131,13 @@ binarytree_rightsubtree(binarytree_t *tree);
  */
 void
 binarytree_set_leftsubtree(
-	binarytree_t *tree,
-	binarytree_t* subtree);
+        binarytree_t *tree,
+        binarytree_t* subtree);
 
 void
 binarytree_set_rightsubtree(
-	binarytree_t *tree,
-	binarytree_t* subtree);
+        binarytree_t *tree,
+        binarytree_t* subtree);
 
 // count the number of nodes in the binary tree.
 int
@@ -167,11 +167,11 @@ binarytree_find(binarytree_t *tree, val_cmp fn, void *val);
 // caller should provide the appropriate length for treestr.
 void
 binarytree_tostring(binarytree_t *root,
-					val_tostr valtostr_fun, char valstr[], char treestr[]);
+                                        val_tostr valtostr_fun, char valstr[], char treestr[]);
 
 void
 binarytree_tostring_indent(binarytree_t *tree, val_tostr tostr,
-						 char valstr[],	char* indents, char treestr[]);
+                                                 char valstr[], char* indents, char treestr[]);
 
 // compute the height of the binary tree.
 // the height of an empty tree is 0.

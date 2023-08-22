@@ -110,8 +110,8 @@
 
 
 #define IS_PARTIAL_ROOT(addr) \
-	(addr->ip_norm.lm_id == HPCRUN_PLACEHOLDER_LM) && \
-	(addr->ip_norm.lm_ip == hpcrun_placeholder_root_partial)
+        (addr->ip_norm.lm_id == HPCRUN_PLACEHOLDER_LM) && \
+        (addr->ip_norm.lm_ip == hpcrun_placeholder_root_partial)
 
 typedef struct cct_node_t cct_node_t;
 //
@@ -222,15 +222,15 @@ typedef void (*cct_op_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
 // visiting order: children first, then node
 //
 extern void hpcrun_cct_walk_child_1st_w_level(cct_node_t* cct,
-					      cct_op_t op,
-					      cct_op_arg_t arg, size_t level);
+                                              cct_op_t op,
+                                              cct_op_arg_t arg, size_t level);
 
 //
 // visiting order: node first, then children
 //
 extern void hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct,
-					     cct_op_t op,
-					     cct_op_arg_t arg, size_t level);
+                                             cct_op_t op,
+                                             cct_op_arg_t arg, size_t level);
 //
 // Top level walking routines:
 //  frequently, a walk will start with level = 0
@@ -239,14 +239,14 @@ extern void hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct,
 
 static inline
 void hpcrun_cct_walk_child_1st(cct_node_t* cct,
-			       cct_op_t op, cct_op_arg_t arg)
+                               cct_op_t op, cct_op_arg_t arg)
 {
   hpcrun_cct_walk_child_1st_w_level(cct, op, arg, 0);
 }
 
 static inline
 void hpcrun_cct_walk_node_1st(cct_node_t* cct,
-			      cct_op_t op, cct_op_arg_t arg)
+                              cct_op_t op, cct_op_arg_t arg)
 {
   hpcrun_cct_walk_node_1st_w_level(cct, op, arg, 0);
 }
@@ -309,7 +309,7 @@ typedef void* merge_op_arg_t;
 typedef void (*merge_op_t)(cct_node_t* a, cct_node_t*b, merge_op_arg_t arg);
 
 extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
-			     merge_op_t merge, merge_op_arg_t arg);
+                             merge_op_t merge, merge_op_arg_t arg);
 
 
 

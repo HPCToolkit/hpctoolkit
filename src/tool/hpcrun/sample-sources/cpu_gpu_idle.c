@@ -205,16 +205,16 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     blame_shift_register(&bs_entry);
 
     // The blame-shift registration for OPENCL and CUDA are kept in separate if-blocks and not if-else'd because someone may want to enable both
-		#ifdef ENABLE_OPENCL
-			opencl_blame_shifting_enable();
-		#endif
+                #ifdef ENABLE_OPENCL
+                        opencl_blame_shifting_enable();
+                #endif
 
-		#ifdef ENABLE_CUDA
-			// CUDA blame-shifting: (disabled because support is out-of-date)
-			// bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
-			// bs_entry.next = 0;
-			// blame_shift_register(&bs_entry);
-		#endif
+                #ifdef ENABLE_CUDA
+                        // CUDA blame-shifting: (disabled because support is out-of-date)
+                        // bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
+                        // bs_entry.next = 0;
+                        // blame_shift_register(&bs_entry);
+                #endif
 }
 
 

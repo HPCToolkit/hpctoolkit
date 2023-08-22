@@ -73,11 +73,11 @@
 //----------------------------------------------
 // flush alarm enabled
 //----------------------------------------------
-#define GPU_FLUSH_ALARM_SET(msg)		\
+#define GPU_FLUSH_ALARM_SET(msg)                \
   gpu_flush_alarm_set(msg)
-#define GPU_FLUSH_ALARM_CLEAR()			\
+#define GPU_FLUSH_ALARM_CLEAR()                 \
   gpu_flush_alarm_clear()
-#define GPU_FLUSH_ALARM_FIRED()			\
+#define GPU_FLUSH_ALARM_FIRED()                 \
   setjmp(gpu_flush_alarm_jump_buf)
 
 #else
@@ -94,7 +94,7 @@
 #endif
 
 #if GPU_FLUSH_ALARM_TEST_ENABLED
-#define GPU_FLUSH_ALARM_TEST()			\
+#define GPU_FLUSH_ALARM_TEST()                  \
   gpu_flush_alarm_test()
 #else
 #define GPU_FLUSH_ALARM_TEST()

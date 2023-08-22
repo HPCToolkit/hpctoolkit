@@ -67,130 +67,130 @@ namespace TraceviewerServer
 //ProcessTimeline** Traces;
 //int TracesLength;
 
-	SpaceTimeDataController::SpaceTimeDataController(FileData* locations)
-	{
-		attributes = new ImageTraceAttributes();
+        SpaceTimeDataController::SpaceTimeDataController(FileData* locations)
+        {
+                attributes = new ImageTraceAttributes();
 
-		//This could potentially be a problem if the header size is not the
-		//default because we might not be able to read the number of ranks correctly.
-		//For now, it's not an issue, and the data dependencies make changing this
-		//complicated.
-		dataTrace = new FilteredBaseData(locations->fileTrace, DEFAULT_HEADER_SIZE);
-		height = dataTrace->getNumberOfRanks();
-		experimentXML = locations->fileXML;
-		fileTrace = locations->fileTrace;
-		tracesInitialized = false;
+                //This could potentially be a problem if the header size is not the
+                //default because we might not be able to read the number of ranks correctly.
+                //For now, it's not an issue, and the data dependencies make changing this
+                //complicated.
+                dataTrace = new FilteredBaseData(locations->fileTrace, DEFAULT_HEADER_SIZE);
+                height = dataTrace->getNumberOfRanks();
+                experimentXML = locations->fileXML;
+                fileTrace = locations->fileTrace;
+                tracesInitialized = false;
 
-	}
+        }
 
 //called once the INFO packet has been received to add the information to the controller
-	void SpaceTimeDataController::setInfo(Time _minBegTime, Time _maxEndTime,
-			int _headerSize)
-	{
-		minBegTime = _minBegTime;
-		maxEndTime = _maxEndTime;
-		headerSize = _headerSize;
-		delete dataTrace;
-		dataTrace = new FilteredBaseData(fileTrace, headerSize);
-	}
+        void SpaceTimeDataController::setInfo(Time _minBegTime, Time _maxEndTime,
+                        int _headerSize)
+        {
+                minBegTime = _minBegTime;
+                maxEndTime = _maxEndTime;
+                headerSize = _headerSize;
+                delete dataTrace;
+                dataTrace = new FilteredBaseData(fileTrace, headerSize);
+        }
 
-	int SpaceTimeDataController::getNumRanks()
-	{
-		return height;
-	}
+        int SpaceTimeDataController::getNumRanks()
+        {
+                return height;
+        }
 
-	string SpaceTimeDataController::getExperimentXML()
-	{
-		return experimentXML;
-	}
+        string SpaceTimeDataController::getExperimentXML()
+        {
+                return experimentXML;
+        }
 
-	ProcessTimeline* SpaceTimeDataController::getNextTrace()
-	{
-		if (attributes->lineNum
-				< min(attributes->numPixelsV, attributes->endProcess - attributes->begProcess))
-		{
-			ProcessTimeline* toReturn  = new ProcessTimeline(*attributes, attributes->lineNum, dataTrace,
-					minBegTime + attributes->begTime, headerSize);
-			attributes->lineNum++;
-			return toReturn;
-		}
-		return NULL;
-	}
+        ProcessTimeline* SpaceTimeDataController::getNextTrace()
+        {
+                if (attributes->lineNum
+                                < min(attributes->numPixelsV, attributes->endProcess - attributes->begProcess))
+                {
+                        ProcessTimeline* toReturn  = new ProcessTimeline(*attributes, attributes->lineNum, dataTrace,
+                                        minBegTime + attributes->begTime, headerSize);
+                        attributes->lineNum++;
+                        return toReturn;
+                }
+                return NULL;
+        }
 
-	void SpaceTimeDataController::addNextTrace(ProcessTimeline* NextPtl)
-	{
-		if (NextPtl == NULL)
-			cerr << "Saving a null PTL?" << endl;
-		traces[NextPtl->line()] = NextPtl;
-	}
+        void SpaceTimeDataController::addNextTrace(ProcessTimeline* NextPtl)
+        {
+                if (NextPtl == NULL)
+                        cerr << "Saving a null PTL?" << endl;
+                traces[NextPtl->line()] = NextPtl;
+        }
 
-	//Don't call if in MPI mode
-	void SpaceTimeDataController::fillTraces()
-	{
-		//Traces might be null. resetTraces will fix that.
-		resetTraces();
+        //Don't call if in MPI mode
+        void SpaceTimeDataController::fillTraces()
+        {
+                //Traces might be null. resetTraces will fix that.
+                resetTraces();
 
 
-		//Taken straight from TimelineThread
-		ProcessTimeline* nextTrace = getNextTrace();
-		while (nextTrace != NULL)
-		{
-			nextTrace->readInData();
-			addNextTrace(nextTrace);
+                //Taken straight from TimelineThread
+                ProcessTimeline* nextTrace = getNextTrace();
+                while (nextTrace != NULL)
+                {
+                        nextTrace->readInData();
+                        addNextTrace(nextTrace);
 
-			nextTrace = getNextTrace();
-		}
-	}
+                        nextTrace = getNextTrace();
+                }
+        }
 
-	 int* SpaceTimeDataController::getValuesXProcessID()
-	{
-		return dataTrace->getProcessIDs();
-	}
-	 short* SpaceTimeDataController::getValuesXThreadID()
-	{
-		return dataTrace->getThreadIDs();
-	}
+         int* SpaceTimeDataController::getValuesXProcessID()
+        {
+                return dataTrace->getProcessIDs();
+        }
+         short* SpaceTimeDataController::getValuesXThreadID()
+        {
+                return dataTrace->getThreadIDs();
+        }
 
-	void SpaceTimeDataController::resetTraces()
-	{
+        void SpaceTimeDataController::resetTraces()
+        {
 
-		int numTraces = min(attributes->numPixelsV,
-				attributes->endProcess - attributes->begProcess);
+                int numTraces = min(attributes->numPixelsV,
+                                attributes->endProcess - attributes->begProcess);
 
-		deleteTraces();
+                deleteTraces();
 
-		traces = new ProcessTimeline*[numTraces];
-		tracesLength = numTraces;
-		tracesInitialized = true;
+                traces = new ProcessTimeline*[numTraces];
+                tracesLength = numTraces;
+                tracesInitialized = true;
 
-	}
-	void SpaceTimeDataController::applyFilters(FilterSet filters)
-	{
-		dataTrace->setFilters(filters);
-	}
-	void SpaceTimeDataController::deleteTraces()
-	{
-		if (tracesInitialized) {
+        }
+        void SpaceTimeDataController::applyFilters(FilterSet filters)
+        {
+                dataTrace->setFilters(filters);
+        }
+        void SpaceTimeDataController::deleteTraces()
+        {
+                if (tracesInitialized) {
 
-			for (int var = 0; var < tracesLength; var++)
-			{
-				delete (traces[var]);
-			}
-			delete[] traces;
-		}
-		traces = NULL;
-		tracesInitialized = false;
-	}
-	SpaceTimeDataController::~SpaceTimeDataController()
-	{
-		delete attributes;
-		delete dataTrace;
+                        for (int var = 0; var < tracesLength; var++)
+                        {
+                                delete (traces[var]);
+                        }
+                        delete[] traces;
+                }
+                traces = NULL;
+                tracesInitialized = false;
+        }
+        SpaceTimeDataController::~SpaceTimeDataController()
+        {
+                delete attributes;
+                delete dataTrace;
 
-		//The MPI implementation actually doesn't use the Traces array at all!
-		//It does call getNextTrace, but changedBounds is always true so
-		//tracesInitialized is always false for MPI
-		deleteTraces();
+                //The MPI implementation actually doesn't use the Traces array at all!
+                //It does call getNextTrace, but changedBounds is always true so
+                //tracesInitialized is always false for MPI
+                deleteTraces();
 
-	}
+        }
 
 } /* namespace TraceviewerServer */

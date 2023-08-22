@@ -135,8 +135,8 @@ ilmstat_btuwi_pair_cmp(void *lhs, void *rhs)
   ilmstat_btuwi_pair_t *l = (ilmstat_btuwi_pair_t*)lhs;
   ilmstat_btuwi_pair_t *r = (ilmstat_btuwi_pair_t*)rhs;
   return interval_t_cmp(
-	 &l->interval,
-	 &r->interval);
+         &l->interval,
+         &r->interval);
 }
 
 /*
@@ -161,10 +161,10 @@ static __thread  ilmstat_btuwi_pair_t *_lf_ilmstat_btuwi = NULL;  // thread loca
 
 static inline ilmstat_btuwi_pair_t *
 ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
-			 tree_stat_t treestat,
-			 load_module_t *lm,
-			 uintptr_t start,
-			 uintptr_t end)
+                         tree_stat_t treestat,
+                         load_module_t *lm,
+                         uintptr_t start,
+                         uintptr_t end)
 {
   atomic_store_explicit(&node->stat, treestat, memory_order_relaxed);
   node->lm = lm;
@@ -176,7 +176,7 @@ ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
 
 static inline ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *lm,
-	tree_stat_t treestat, mem_alloc m_alloc)
+        tree_stat_t treestat, mem_alloc m_alloc)
 {
   ilmstat_btuwi_pair_t* node = m_alloc(sizeof(*node));
   return ilmstat__btuwi_pair_init(node, treestat, lm, start, end);
@@ -199,11 +199,11 @@ pop_free_pair(ilmstat_btuwi_pair_t **list)
 
 static ilmstat_btuwi_pair_t*
 ilmstat_btuwi_pair_malloc(
-	uintptr_t start,
-	uintptr_t end,
-	load_module_t *lm,
-	tree_stat_t treestat,
-	mem_alloc m_alloc)
+        uintptr_t start,
+        uintptr_t end,
+        load_module_t *lm,
+        tree_stat_t treestat,
+        mem_alloc m_alloc)
 {
   if (!_lf_ilmstat_btuwi) {
     /*
@@ -216,21 +216,21 @@ ilmstat_btuwi_pair_malloc(
     bool acquired = mcs_trylock(&GFL_lock, &me);
     if (acquired) {
       if (GF_ilmstat_btuwi) {
-	// transfer a bunch of nodes the global free list to the local free list
-	int n = 0;
-	while (GF_ilmstat_btuwi && n < NUM_NODES) {
-	  ilmstat_btuwi_pair_t *head = pop_free_pair(&GF_ilmstat_btuwi);
-	  push_free_pair(&_lf_ilmstat_btuwi, head);
-	  n++;
-	}
+        // transfer a bunch of nodes the global free list to the local free list
+        int n = 0;
+        while (GF_ilmstat_btuwi && n < NUM_NODES) {
+          ilmstat_btuwi_pair_t *head = pop_free_pair(&GF_ilmstat_btuwi);
+          push_free_pair(&_lf_ilmstat_btuwi, head);
+          n++;
+        }
       }
       mcs_unlock(&GFL_lock, &me);
     }
     if (!_lf_ilmstat_btuwi) {
       /* add a bunch of nodes to _lf_ilmstat_btuwi */
       for (int i = 0; i < NUM_NODES; i++) {
-	ilmstat_btuwi_pair_t *node = m_alloc(sizeof(*node));
-	push_free_pair(&_lf_ilmstat_btuwi, node);
+        ilmstat_btuwi_pair_t *node = m_alloc(sizeof(*node));
+        push_free_pair(&_lf_ilmstat_btuwi, node);
       }
     }
   }
@@ -323,10 +323,10 @@ load_module_tostr(void* lm, char str[])
 {
   load_module_t* ldmod = (load_module_t*)lm;
   if (ldmod) {
-	snprintf(str, LDMOD_NAME_LEN, "%s%s%d", ldmod->name, " ", ldmod->id);
+        snprintf(str, LDMOD_NAME_LEN, "%s%s%d", ldmod->name, " ", ldmod->id);
   }
   else {
-	snprintf(str, LDMOD_NAME_LEN, "%s", "nil");
+        snprintf(str, LDMOD_NAME_LEN, "%s", "nil");
   }
 }
 
@@ -373,7 +373,7 @@ ildmod_stat_maxspaces()
 
 static void
 cskl_ilmstat_btuwi_any_node_tostr(void* nodeval, int node_height, int max_height,
-				  char str[], int max_cskl_str_len, unwinder_t uw)
+                                  char str[], int max_cskl_str_len, unwinder_t uw)
 {
   // build needed indentation to print the binary tree inside the skiplist:
   char indents[MAX_CSKIPLIST_STR];
@@ -393,7 +393,7 @@ cskl_ilmstat_btuwi_any_node_tostr(void* nodeval, int node_height, int max_height
   ildmod_stat_tostr(it_pair, firststr);
   bitree_uwi_tostring_indent(tree, indents, secondstr, uw);
   snprintf(itpairStr, strlen(firststr) + strlen(secondstr) + 6, "%s%s%s%s%s",
-	  "(", firststr, ",  ", secondstr, ")");
+          "(", firststr, ",  ", secondstr, ")");
 
   // add new line:
   cskl_append_node_str(itpairStr, str, max_cskl_str_len);
@@ -402,23 +402,23 @@ cskl_ilmstat_btuwi_any_node_tostr(void* nodeval, int node_height, int max_height
 
 static void
 cskl_ilmstat_btuwi_dwarf_node_tostr(void* nodeval, int node_height, int max_height,
-				    char str[], int max_cskl_str_len)
+                                    char str[], int max_cskl_str_len)
 {
   cskl_ilmstat_btuwi_any_node_tostr(nodeval, node_height, max_height, str, max_cskl_str_len,
-				    DWARF_UNWINDER);
+                                    DWARF_UNWINDER);
 }
 
 static void
 cskl_ilmstat_btuwi_native_node_tostr(void* nodeval, int node_height, int max_height,
-				     char str[], int max_cskl_str_len)
+                                     char str[], int max_cskl_str_len)
 {
   cskl_ilmstat_btuwi_any_node_tostr(nodeval, node_height, max_height, str, max_cskl_str_len,
-				    NATIVE_UNWINDER);
+                                    NATIVE_UNWINDER);
 }
 
 static void
 (*cskl_ilmstat_btuwi_node_tostr[NUM_UNWINDERS])(void* nodeval, int node_height, int max_height,
-						char str[], int max_cskl_str_len) =
+                                                char str[], int max_cskl_str_len) =
 {
   [DWARF_UNWINDER] = cskl_ilmstat_btuwi_dwarf_node_tostr,
   [NATIVE_UNWINDER] = cskl_ilmstat_btuwi_native_node_tostr
@@ -449,7 +449,7 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end, unwinder_t uw)
   uw_recipe_map_report("uw_recipe_map_poison", (void *) start, (void *) end);
 
   ilmstat_btuwi_pair_t* itpair =
-	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, my_alloc);
+          ilmstat_btuwi_pair_build(start, end, NULL, NEVER, my_alloc);
   csklnode_t *node = cskl_insert(unwinder_to_cskiplist[uw], itpair, my_alloc);
   if (itpair != (ilmstat_btuwi_pair_t*)node->val)
     ilmstat_btuwi_pair_free(itpair, uw);
@@ -498,8 +498,8 @@ static void (*cskl_ilmstat_btuwi_free[])(void *anode) =
 
 static bool
 uw_recipe_map_cmp_del_bulk_unsynch(
-	ilmstat_btuwi_pair_t* key,
-	unwinder_t uw)
+        ilmstat_btuwi_pair_t* key,
+        unwinder_t uw)
 {
   return cskl_cmp_del_bulk_unsynch(unwinder_to_cskiplist[uw], key, key, cskl_ilmstat_btuwi_free[uw]);
 }
@@ -507,7 +507,7 @@ uw_recipe_map_cmp_del_bulk_unsynch(
 static void
 uw_recipe_map_unpoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 {
-  ilmstat_btuwi_pair_t* ilmstat_btuwi =	uw_recipe_map_inrange_find(start, uw);
+  ilmstat_btuwi_pair_t* ilmstat_btuwi = uw_recipe_map_inrange_find(start, uw);
   if (ilmstat_btuwi == NULL)
     return;
 
@@ -640,14 +640,14 @@ uw_recipe_map_init(void)
 
   TMSG(UW_RECIPE_MAP, "init address-to-recipe map");
   ilmstat_btuwi_pair_t* lsentinel =
-	  ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, my_alloc );
+          ilmstat_btuwi_pair_build(0, 0, NULL, NEVER, my_alloc );
   ilmstat_btuwi_pair_t* rsentinel =
-	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, my_alloc );
+          ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, my_alloc );
   unwinder_t uw;
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
     unwinder_to_cskiplist[uw] =
       cskl_new(lsentinel, rsentinel, SKIPLIST_HEIGHT,
-	       ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
+               ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
   uw_recipe_map_notify_init();
 
@@ -704,7 +704,7 @@ uw_recipe_map_lookup_helper
           unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
           if (unwr_info->btuwi != NULL) {
             uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui,
-			   unwr_info->btuwi);
+                           unwr_info->btuwi);
           }
         } else {
           // reset oldstat to deferred

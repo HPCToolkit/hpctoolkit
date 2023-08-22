@@ -133,9 +133,9 @@ public:
     if (m_child_count > 0) {
       NonUniformDegreeTreeNode *next, *start = m_children;
       for (int i = m_child_count; i-- > 0; ) {
-	next = start->m_next_sibling;
-	delete start;
-	start = next;
+        next = start->m_next_sibling;
+        delete start;
+        start = next;
       }
     }
   }
@@ -236,7 +236,7 @@ protected:
 class NonUniformDegreeTreeNodeChildIterator : public StackableIterator {
 public:
   NonUniformDegreeTreeNodeChildIterator(const NonUniformDegreeTreeNode* parent,
-					bool _forward = true)
+                                        bool _forward = true)
     : m_parent(parent), currentChild(0), forward(_forward)
   {
     Reset();
@@ -257,11 +257,11 @@ public:
   {
     if (currentChild) {
       currentChild = (forward ? currentChild->NextSibling()
-   		              : currentChild->PrevSibling());
+                              : currentChild->PrevSibling());
       const NonUniformDegreeTreeNode* pastEnd =
-	forward ? m_parent->FirstChild() : m_parent->LastChild();
+        forward ? m_parent->FirstChild() : m_parent->LastChild();
       if (currentChild == pastEnd) {
-	currentChild = NULL;
+        currentChild = NULL;
       }
     }
   }

@@ -70,9 +70,9 @@ typedef struct opencl_h2d_map_entry_t opencl_h2d_map_entry_t;
 
 typedef void (*opencl_splay_fn_t)
 (
-	opencl_h2d_map_entry_t *,
-	splay_visit_t,
-	void *
+        opencl_h2d_map_entry_t *,
+        splay_visit_t,
+        void *
 );
 
 

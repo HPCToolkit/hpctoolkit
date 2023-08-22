@@ -96,10 +96,10 @@ elf_hash_compute
       void * ANYWHERE = 0;
       off_t NO_OFFSET = 0;
       void *data = mmap(ANYWHERE, data_len, PROT_READ, MAP_SHARED, fd,
-			NO_OFFSET);
+                        NO_OFFSET);
       if (data) {
         status = crypto_compute_hash_string(data, data_len, hash_string,
-					    hash_string_len);
+                                            hash_string_len);
         munmap(data, data_len);
       }
       close(fd);

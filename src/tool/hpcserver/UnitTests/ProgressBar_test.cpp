@@ -15,18 +15,18 @@ using namespace TraceviewerServer;
 void progBarTest() {
 
 
-	ProgressBar bar("Work", 83);
-	int q =0;
-	for (int i = 0; i < 12; i++) {
-		q++;
-		bar.incrementProgress();
-		usleep(100000*i);
-	}
-	for (int i = 0; i < 12; i++) {
-		q+= i;
-		bar.incrementProgress(i);
-		usleep(100000*(12-i));
-	}
-	bar.incrementProgress(83-q);
+        ProgressBar bar("Work", 83);
+        int q =0;
+        for (int i = 0; i < 12; i++) {
+                q++;
+                bar.incrementProgress();
+                usleep(100000*i);
+        }
+        for (int i = 0; i < 12; i++) {
+                q+= i;
+                bar.incrementProgress(i);
+                usleep(100000*(12-i));
+        }
+        bar.incrementProgress(83-q);
 
 }

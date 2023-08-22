@@ -2,8 +2,8 @@
 // system include
 //******************************************************************************
 
-#include <stdbool.h>												// bool
-#include <math.h>												    // pow
+#include <stdbool.h>                                                                                            // bool
+#include <math.h>                                                                                                   // pow
 
 
 
@@ -302,7 +302,7 @@ distribute_blame_to_kernels
         last_time = data->time;
         data = data->next;
         continue;
-      }	else {
+      } else {
         ak_helper_node akn = {data->time, last_time, active_kernels_size()};
         active_kernels_forall(splay_inorder, increment_blame_for_active_kernel, &akn);
         data = data->next;

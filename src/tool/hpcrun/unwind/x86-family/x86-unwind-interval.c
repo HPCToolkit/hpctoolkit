@@ -221,8 +221,8 @@ x86recipe_tostr(void* recipe, char str[])
   // TODO
   x86recipe_t* x86recipe = (x86recipe_t*)recipe;
   snprintf(str, MAX_RECIPE_STR, "%s%d%s%s",
-	  "x86recipe ", x86recipe->reg.sp_ra_pos,
-	  ": tail_call = ", x86recipe->has_tail_calls? "true": "false");
+          "x86recipe ", x86recipe->reg.sp_ra_pos,
+          ": tail_call = ", x86recipe->has_tail_calls? "true": "false");
 }
 
 void

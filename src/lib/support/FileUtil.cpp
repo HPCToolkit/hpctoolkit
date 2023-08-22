@@ -145,7 +145,7 @@ dirname(const char* fName)
 
 bool
 fnmatch(const std::vector<std::string>& patternVec,
-	const char* string, int flags)
+        const char* string, int flags)
 {
   for (unsigned int i = 0; i < patternVec.size(); ++i) {
     const std::string& pat = patternVec[i];
@@ -184,7 +184,7 @@ isDir(const char* path)
   struct stat sbuf;
   if (stat(path, &sbuf) == 0) {
     return (S_ISDIR(sbuf.st_mode)
-	    /*|| S_ISLNK(sbuf.st_mode) && isDir(readlink(path))*/);
+            /*|| S_ISLNK(sbuf.st_mode) && isDir(readlink(path))*/);
   }
   return false; // unknown
 }
@@ -238,10 +238,10 @@ copy(const char* dst, ...)
   DIAG_MsgIf(0, "FileUtil::copy: ... -> " << dst);
 
   int dstFd = open(dst, O_WRONLY | O_CREAT | O_TRUNC,
-		   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (dstFd < 0) {
     DIAG_Throw("Unable to write file in hpctoolkit database '"
-	       << dst << "' (" << strerror(errno) << ")");
+               << dst << "' (" << strerror(errno) << ")");
   }
 
   string errorMsg;
@@ -251,7 +251,7 @@ copy(const char* dst, ...)
     int srcFd = open(srcFnm, O_RDONLY);
     if ((srcFd < 0) || (dstFd < 0)) {
       errorMsg += (string("unable to open '") + srcFnm + "' ("
-		   + strerror(errno) + ")");
+                   + strerror(errno) + ")");
     }
     else {
       cpy(srcFd, dstFd);
@@ -264,7 +264,7 @@ copy(const char* dst, ...)
 
   if (!errorMsg.empty()) {
     DIAG_Msg(1, "Unable to copy file into hpctoolkit database: " <<
-	      errorMsg);
+              errorMsg);
   }
 }
 
@@ -353,8 +353,8 @@ mkdir(const char* dir)
     int ret = ::mkdir(x.c_str(), mode);
     if (ret != 0) {
       if (errno != EEXIST) {
-	DIAG_Throw(pathStr << "': Could not mkdir '"
-		   << x << "' (" << strerror(errno) << ")");
+        DIAG_Throw(pathStr << "': Could not mkdir '"
+                   << x << "' (" << strerror(errno) << ")");
       }
     }
   }
@@ -380,8 +380,8 @@ mkdirUnique(const char* dirnm)
       // qualifier 1: jobid
       const char* jobid_cstr = OSUtil_jobid();
       if (jobid_cstr) {
-	string dirnm1 = string(dirnm) + "-" + string(jobid_cstr);
-	dirnmVec.push_back(dirnm1);
+        string dirnm1 = string(dirnm) + "-" + string(jobid_cstr);
+        dirnmVec.push_back(dirnm1);
       }
 
       // qualifier 2: pid
@@ -392,20 +392,20 @@ mkdirUnique(const char* dirnm)
 
       // attempt to create alternative directories
       for (unsigned int i = 0; i < dirnmVec.size(); ++i) {
-	dirnm_new = dirnmVec[i];
-	DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying '" << dirnm_new << "'");
-	ret = ::mkdir(dirnm_new.c_str(), mkmode);
-	if (ret == 0) {
-	  is_done = true;
-	  break;
-	}
+        dirnm_new = dirnmVec[i];
+        DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying '" << dirnm_new << "'");
+        ret = ::mkdir(dirnm_new.c_str(), mkmode);
+        if (ret == 0) {
+          is_done = true;
+          break;
+        }
       }
 
       if (is_done) {
-	DIAG_Msg(1, "Created directory: " << dirnm_new);
+        DIAG_Msg(1, "Created directory: " << dirnm_new);
       }
       else {
-	DIAG_Die("Could not create an alternative to directory " << dirnm);
+        DIAG_Die("Could not create an alternative to directory " << dirnm);
       }
     }
     else {

@@ -75,9 +75,9 @@
 
 
 
-#define LOWER_NIBBLE_MASK 	(0x0f)
-#define UPPER_NIBBLE(c) 	((c >> 4) & LOWER_NIBBLE_MASK)
-#define LOWER_NIBBLE(c) 	(c  & LOWER_NIBBLE_MASK)
+#define LOWER_NIBBLE_MASK       (0x0f)
+#define UPPER_NIBBLE(c)         ((c >> 4) & LOWER_NIBBLE_MASK)
+#define LOWER_NIBBLE(c)         (c  & LOWER_NIBBLE_MASK)
 
 #define HEX_TO_ASCII(c) ((c > 9) ?  'a' + (c - 10) : ('0' + c))
 
@@ -269,7 +269,7 @@ main(int argc, char **argv)
   size_t read_result = fread(filebuf, 1, filesize, file);
   if (read_result != filesize) {
     printf("read(%s) failed. expected %ld bytes, got %ld bytes\n",
-	   filename, filesize, read_result);
+           filename, filesize, read_result);
     exit(-1);
   }
 
@@ -352,7 +352,7 @@ main(int argc, char **argv)
     printf("crypto_hash_to_hexstring - success - consistent output with long buffer\n");
   } else {
     printf("crypto_hash_to_hexstring - fail - inconsistent output with long buffer: %s vs. %s\n",
-	    buffer, long_buffer);
+            buffer, long_buffer);
     exit(-1);
   }
 

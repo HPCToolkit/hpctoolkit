@@ -49,7 +49,7 @@
 
 #include <stdio.h>
 
-typedef	enum DiscoverFnTy {
+typedef enum DiscoverFnTy {
   DiscoverFnTy_NULL = 0,
   DiscoverFnTy_Aggressive,
   DiscoverFnTy_Conservative,
@@ -63,7 +63,7 @@ bool consider_possible_fn_address(void *addr);
 long offset_for_fn(void *addr);
 
 void new_code_range(const char *name, void *start, void *end, long offset,
-		    DiscoverFnTy discover);
+                    DiscoverFnTy discover);
 
 void process_code_ranges();
 

@@ -5,7 +5,7 @@
 // local includes
 //******************************************************************************
 
-#include "blame-kernel-map.h"		// kernel_node_t, queue_node_t
+#include "blame-kernel-map.h"           // kernel_node_t, queue_node_t
 
 
 
@@ -21,4 +21,4 @@ calculate_blame_for_active_kernels
  unsigned long sync_end
 );
 
-#endif 	//blame_shift_helper_h
+#endif  //blame_shift_helper_h

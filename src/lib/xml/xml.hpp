@@ -105,8 +105,8 @@ namespace xml {
   class RWError { };
 
   enum {
-    ESC_FALSE =	(0 << 0),   /* Do not escape reserved XML chars */
-    ESC_TRUE  =	(1 << 0),   /* Escape reserved XML chars */
+    ESC_FALSE = (0 << 0),   /* Do not escape reserved XML chars */
+    ESC_TRUE  = (1 << 0),   /* Escape reserved XML chars */
     UNESC_FALSE = (0 << 0),
     UNESC_TRUE  = (1 << 0)
   };

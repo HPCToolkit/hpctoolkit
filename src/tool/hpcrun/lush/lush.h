@@ -115,7 +115,7 @@ struct lush_agent_pool {
 
 int
 lush_agent__init(lush_agent_t* x, int id, const char* path,
-		 lush_agent_pool_t* pool);
+                 lush_agent_pool_t* pool);
 
 int
 lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool);
@@ -136,7 +136,7 @@ lush_agent_pool__fini(lush_agent_pool_t* x);
 // not step to the first (innermost) bichord.
 void
 lush_init_unw(lush_cursor_t* cursor,
-	      lush_agent_pool_t* apool, ucontext_t* context);
+              lush_agent_pool_t* apool, ucontext_t* context);
 
 
 // Given a lush_cursor, step the cursor to the next (less deeply

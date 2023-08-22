@@ -89,6 +89,6 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
   hw_tmp->uwi = next;
   hw_tmp->state =
     HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED |
-		 HW_SP_DECREMENTED | HW_BP_OVERWRITTEN);
+                 HW_SP_DECREMENTED | HW_BP_OVERWRITTEN);
   return next;
 }

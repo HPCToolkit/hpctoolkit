@@ -172,7 +172,7 @@ public:
   MetricFlg_isSum(unsigned int flags)
   {
     return (MetricFlg_isSet(flags,  MetricFlg_StatsSum)
-	    || MetricFlg_isSet(flags, MetricFlg_StatsAll));
+            || MetricFlg_isSet(flags, MetricFlg_StatsAll));
   }
 
   unsigned int prof_metrics;
@@ -228,7 +228,7 @@ public:
 
     // composite flags
     TxtSum_ALL  = (TxtSum_fPgm | TxtSum_fLM | TxtSum_fFile | TxtSum_fProc
-		   | TxtSum_fLoop | TxtSum_fStmt)
+                   | TxtSum_fLoop | TxtSum_fStmt)
   };
 
   int/*TxtSum*/ txt_summary;

@@ -118,10 +118,10 @@
 //*********************************************************************
 
 #define PERFORM_RELOCATION(addr, offset) \
-	((void *) (((unsigned long) addr) + ((long) offset)))
+        ((void *) (((unsigned long) addr) + ((long) offset)))
 
 #define MAPPING_END(addr, length) \
-	((void *) (((unsigned long) addr) + ((unsigned long) length)))
+        ((void *) (((unsigned long) addr) + ((unsigned long) length)))
 
 
 //*********************************************************************
@@ -133,14 +133,14 @@
 
 static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 
-#define FNBOUNDS_LOCK  do {			\
-	spinlock_lock(&fnbounds_lock);		\
-	TD_GET(fnbounds_lock) = 1;		\
+#define FNBOUNDS_LOCK  do {                     \
+        spinlock_lock(&fnbounds_lock);          \
+        TD_GET(fnbounds_lock) = 1;              \
 } while (0)
 
-#define FNBOUNDS_UNLOCK  do {			\
-	spinlock_unlock(&fnbounds_lock);	\
-	TD_GET(fnbounds_lock) = 0;		\
+#define FNBOUNDS_UNLOCK  do {                   \
+        spinlock_unlock(&fnbounds_lock);        \
+        TD_GET(fnbounds_lock) = 0;              \
 } while (0)
 
 
@@ -198,14 +198,14 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
     if (dso->table) {
       // N.B.: works on normalized IPs
       int rv = fnbounds_table_lookup(dso->table, dso->nsymbols, ip_norm,
-				     (void**) start, (void**) end);
+                                     (void**) start, (void**) end);
 
       ret = (rv == 0);
       // Convert 'start' and 'end' into unnormalized IPs since they are
       // currently normalized.
       if (rv == 0 && dso->is_relocatable) {
-	*start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
-	*end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
+        *start = PERFORM_RELOCATION(*start, dso->start_to_ref_dist);
+        *end   = PERFORM_RELOCATION(*end  , dso->start_to_ref_dist);
       }
     }
   }

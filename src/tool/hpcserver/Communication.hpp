@@ -72,25 +72,25 @@
 namespace TraceviewerServer
 {
 enum ServerType {
-	NONE_EXIT_IMMEDIATELY = 0,
-	MASTER = 1,
-	SLAVE = 2
+        NONE_EXIT_IMMEDIATELY = 0,
+        MASTER = 1,
+        SLAVE = 2
 };
 
 class Communication {
 public:
 
-	static void sendParseInfo(Time minBegTime, Time maxEndTime, int headerSize);
-	static void sendParseOpenDB(string pathToDB);
-	static void sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,
-			Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution);
-	static void sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller);
-	static void sendStartFilter(int count, bool excludeMatches);
-	static void sendFilter(BinaryRepresentationOfFilter filt);
+        static void sendParseInfo(Time minBegTime, Time maxEndTime, int headerSize);
+        static void sendParseOpenDB(string pathToDB);
+        static void sendStartGetData(SpaceTimeDataController* contr, int processStart, int processEnd,
+                        Time timeStart, Time timeEnd, int verticalResolution, int horizontalResolution);
+        static void sendEndGetData(DataSocketStream* stream, ProgressBar* prog, SpaceTimeDataController* controller);
+        static void sendStartFilter(int count, bool excludeMatches);
+        static void sendFilter(BinaryRepresentationOfFilter filt);
 
-	static bool basicInit(int argc, char** argv);
-	static void run();
-	static void closeServer();
+        static bool basicInit(int argc, char** argv);
+        static void run();
+        static void closeServer();
 };
 }
 #endif /* COMMUNICATION_H_ */

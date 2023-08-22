@@ -38,7 +38,7 @@ generic_pair_t_new(void* first, void* second, mem_alloc m_alloc);
 
 void
 generic_pair_t_tostr(generic_pair_t* gen_pair,
-					  val_tostr first_tostr, char firststr[],
-					  val_tostr second_tostr, char secondstr[], char str[]);
+                                          val_tostr first_tostr, char firststr[],
+                                          val_tostr second_tostr, char secondstr[], char str[]);
 
 #endif /* __GENERIC_PAIR_H__ */

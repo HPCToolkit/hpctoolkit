@@ -117,7 +117,7 @@ Symtab *
 openSymtab(ElfFile *elfFile)
 {
   bool ret = Symtab::openFile(the_symtab, elfFile->getMemory(),
-			      elfFile->getLength(), elfFile->getFileName());
+                              elfFile->getLength(), elfFile->getFileName());
 
   if (! ret || the_symtab == NULL) {
     DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
@@ -185,13 +185,13 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
       // inlined functions, so we have to decide this ourselves
       string procnm = func->getName();
       string prettynm =
-	  (procnm == "") ? UNKNOWN_PROC : BinUtil::demangleProcName(procnm);
+          (procnm == "") ? UNKNOWN_PROC : BinUtil::demangleProcName(procnm);
 
 #if DEBUG_INLINE_SEQNS
       cout << "\n0x" << hex << addr << dec
-	   << "  l=" << lineno << "  file:  " << filenm << "\n"
-	   << "0x" << hex << addr << "  symtab:  " << procnm << "\n"
-	   << "0x" << addr << dec << "  demang:  " << prettynm << "\n";
+           << "  l=" << lineno << "  file:  " << filenm << "\n"
+           << "0x" << hex << addr << "  symtab:  " << procnm << "\n"
+           << "0x" << addr << dec << "  demang:  " << prettynm << "\n";
 #endif
 
       nodelist.push_front(InlineNode(filenm, prettynm, lineno));
@@ -252,11 +252,11 @@ StmtMap::insert(StmtInfo * sinfo)
   if (left == NULL || left_end < vma) {
     // intervals don't overlap, insert new one
     info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
-			sinfo->is_call, sinfo->is_sink, sinfo->target);
+                        sinfo->is_call, sinfo->is_sink, sinfo->target);
     (*this)[vma] = info;
   }
   else if (left->base_index == base && left->line_num == line
-	   && !left->is_call && !sinfo->is_call)
+           && !left->is_call && !sinfo->is_call)
   {
     // intervals overlap and match file and line (and not calls).
     // merge with left stmt
@@ -270,7 +270,7 @@ StmtMap::insert(StmtInfo * sinfo)
     if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
       vma = left_end;
       info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
-			  sinfo->is_call, sinfo->is_sink, sinfo->target);
+                          sinfo->is_call, sinfo->is_sink, sinfo->target);
       (*this)[vma] = info;
     }
   }
@@ -279,7 +279,7 @@ StmtMap::insert(StmtInfo * sinfo)
   if (info != NULL && right != NULL && end_vma >= right->vma)
   {
     if (right->base_index == base && right->line_num == line
-	&& !info->is_call && !right->is_call)
+        && !info->is_call && !right->is_call)
     {
       // intervals overlap and match file and line (and not calls).
       // merge with right stmt

@@ -94,7 +94,7 @@ PYTHON = python
 #-----------------------------------------------------------
 
 if OPT_BGQ_BACKEND
-  SUBDIRS = utilities/bgq-cnk
+SUBDIRS = utilities/bgq-cnk
 endif
 
 pkglibdir = @my_pkglibdir@
@@ -113,39 +113,39 @@ BUILT_SOURCES =
 CLEANFILES =
 
 if OPT_BUILD_FRONT_END
-  pkglibexec_SCRIPTS += scripts/hpcsummary
-  pkglibexec_SCRIPTS += scripts/hpclog
-  include_HEADERS += hpctoolkit.h
+pkglibexec_SCRIPTS += scripts/hpcsummary
+pkglibexec_SCRIPTS += scripts/hpclog
+include_HEADERS += hpctoolkit.h
 endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
-  noinst_LTLIBRARIES = libhpcrun.la
-  pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
-  pkglib_LTLIBRARIES += libhpcrun_audit.la
-  pkglib_LTLIBRARIES += libhpcrun_dlmopen.la
-  pkglib_LTLIBRARIES += libhpcrun_ga.la
-  pkglib_LTLIBRARIES += libhpcrun_gprof.la
-  pkglib_LTLIBRARIES += libhpcrun_io.la
-  pkglib_LTLIBRARIES += libhpcrun_memleak.la
-  pkglib_LTLIBRARIES += libhpcrun_pthread.la
-  pkglib_LTLIBRARIES += libhpctoolkit.la
-  bin_SCRIPTS += scripts/hpcrun
+noinst_LTLIBRARIES = libhpcrun.la
+pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
+pkglib_LTLIBRARIES += libhpcrun_audit.la
+pkglib_LTLIBRARIES += libhpcrun_dlmopen.la
+pkglib_LTLIBRARIES += libhpcrun_ga.la
+pkglib_LTLIBRARIES += libhpcrun_gprof.la
+pkglib_LTLIBRARIES += libhpcrun_io.la
+pkglib_LTLIBRARIES += libhpcrun_memleak.la
+pkglib_LTLIBRARIES += libhpcrun_pthread.la
+pkglib_LTLIBRARIES += libhpctoolkit.la
+bin_SCRIPTS += scripts/hpcrun
 endif
 
 if OPT_ENABLE_HPCRUN_STATIC
-  noinst_PROGRAMS  = libhpcrun.o
-  pkglib_LIBRARIES += libhpcrun_wrap.a
-  pkglib_LIBRARIES += libhpcrun_ga_wrap.a
-  pkglib_LIBRARIES += libhpcrun_gprof_wrap.a
-  pkglib_LIBRARIES += libhpcrun_io_wrap.a
-  pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
-  pkglib_LIBRARIES += libhpcrun_pthread_wrap.a
-  pkglib_LIBRARIES += libhpctoolkit.a
-  bin_SCRIPTS += scripts/hpclink
+noinst_PROGRAMS  = libhpcrun.o
+pkglib_LIBRARIES += libhpcrun_wrap.a
+pkglib_LIBRARIES += libhpcrun_ga_wrap.a
+pkglib_LIBRARIES += libhpcrun_gprof_wrap.a
+pkglib_LIBRARIES += libhpcrun_io_wrap.a
+pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
+pkglib_LIBRARIES += libhpcrun_pthread_wrap.a
+pkglib_LIBRARIES += libhpctoolkit.a
+bin_SCRIPTS += scripts/hpclink
 endif
 
 if OPT_ENABLE_MPI_WRAP
-  pkglib_LTLIBRARIES += libhpcrun_mpi.la
+pkglib_LTLIBRARIES += libhpcrun_mpi.la
 endif
 
 
@@ -187,17 +187,17 @@ PLUGIN_CONFIG_FILES = ga io memleak pthread
 # Disable the ibm-xlomp plugin in favor of the new openmp tools
 # interface.
 if FALSE
-  PLUGIN_CONFIG_FILES += ibm-xlomp
-  pkglib_LIBRARIES += libibm_xlomp_wrappers.a
-  libibm_xlomp_wrappers_a_SOURCES = plugins/ibm-xlomp-wrappers.c
+PLUGIN_CONFIG_FILES += ibm-xlomp
+pkglib_LIBRARIES += libibm_xlomp_wrappers.a
+libibm_xlomp_wrappers_a_SOURCES = plugins/ibm-xlomp-wrappers.c
 endif
 
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
-        unwind/common/unw-throw.c
+	unwind/common/unw-throw.c
 
 UNW_COMMON_FILES = \
-        $(UNW_UNIV_FILES)				\
+	$(UNW_UNIV_FILES)				\
 	unwind/common/binarytree_uwi.c			\
 	unwind/common/interval_t.c			\
 	unwind/common/libunw_intervals.c		\
@@ -206,7 +206,7 @@ UNW_COMMON_FILES = \
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
-       $(UNW_COMMON_FILES) \
+	$(UNW_COMMON_FILES) \
 	unwind/x86-family/x86-all.c			\
 	unwind/x86-family/amd-xop.c                     \
 	unwind/x86-family/x86-cold-path.c		\
@@ -234,13 +234,13 @@ UNW_X86_INCLUDE_DIRS = \
 	-I$(XED2_INC)
 
 UNW_PPC64_FILES = \
-        $(UNW_COMMON_FILES) \
+	$(UNW_COMMON_FILES) \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/common/default_validation_summary.c
 
 UNW_PPC64_INCLUDE_DIRS = \
-        -I$(srcdir)/unwind/ppc64
+	-I$(srcdir)/unwind/ppc64
 
 UNW_PPC64_LD_FLAGS =
 
@@ -252,22 +252,22 @@ UNW_PPC64_LD_FLAGS =
 # configuration
 
 UNW_LIBUNW_FILES = \
-       $(UNW_COMMON_FILES) \
-       unwind/generic-libunwind/libunw-unwind.c \
-       unwind/common/default_validation_summary.c
+	$(UNW_COMMON_FILES) \
+	unwind/generic-libunwind/libunw-unwind.c \
+	unwind/common/default_validation_summary.c
 
 UNW_LIBUNW_INCLUDE_DIRS = \
-       -I$(srcdir)/unwind/generic-libunwind
+	-I$(srcdir)/unwind/generic-libunwind
 
 UNW_LIBUNW_LD_FLAGS =
 
 UNW_MIPS_FILES = \
-        $(UNW_COMMON_FILES) \
+	$(UNW_COMMON_FILES) \
 	unwind/mips/mips-unwind.c \
 	unwind/mips/mips-unwind-interval.c
 
 UNW_MIPS_INCLUDE_DIRS = \
-        -I$(srcdir)/unwind/mips
+	-I$(srcdir)/unwind/mips
 
 UNW_MIPS_LD_FLAGS =
 
@@ -282,9 +282,9 @@ MY_BASE_FILES =				\
 	\
 	main.h main.c			\
 	disabled.c			\
-        closure-registry.c              \
-        cct_insert_backtrace.c          \
-        cct_backtrace_finalize.c        \
+	closure-registry.c              \
+	cct_insert_backtrace.c          \
+	cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -307,7 +307,7 @@ MY_BASE_FILES =				\
 	sample-sources/blame-shift/undirected.c    \
 	sample-sources/omp-mutex.c      \
 	sample-sources/omp-idle.c       \
-        sample-sources/common.c         \
+	sample-sources/common.c         \
 	sample-sources/display.c		\
 	sample-sources/exclude.c	\
 	sample-sources/ga.c		\
@@ -317,8 +317,8 @@ MY_BASE_FILES =				\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
-        sample-sources/retcnt.c         \
-        sample-sources/sync.c           \
+	sample-sources/retcnt.c         \
+	sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	sample-sources/sample-filters.c \
 	segv_handler.c			\
@@ -441,10 +441,10 @@ MY_BASE_FILES =				\
 
 if HOST_CPU_PPC
 MY_BASE_FILES +=			\
-        trampoline/common/trampoline_eager.c
+	trampoline/common/trampoline_eager.c
 else
 MY_BASE_FILES +=			\
-        trampoline/common/trampoline_lazy.c
+	trampoline/common/trampoline_lazy.c
 endif
 
 if OPT_ENABLE_PERF_EVENT
@@ -480,11 +480,11 @@ MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-        custom-init-dynamic.c
+	custom-init-dynamic.c
 
 MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c      \
-        custom-init-static.c
+	custom-init-static.c
 
 MY_LINUX_DYNAMIC_FILES = 		\
 	os/linux/dylib.c
@@ -494,18 +494,18 @@ MY_MIPS_FILES = \
 	unwind/common/default_validation_summary.c
 
 MY_PPC_FILES = \
-        trampoline/ppc64/ppc64-tramp.s \
-        \
-        utilities/arch/ppc64/ppc64-context-pc.c
+	trampoline/ppc64/ppc64-tramp.s \
+	\
+	utilities/arch/ppc64/ppc64-context-pc.c
 
 MY_X86_FILES = \
-        trampoline/x86-family/x86-tramp.S \
-        \
-        utilities/arch/x86-family/x86-context-pc.c
+	trampoline/x86-family/x86-tramp.S \
+	\
+	utilities/arch/x86-family/x86-context-pc.c
 
 MY_IA64_FILES = \
-        trampoline/ia64/ia64-tramp.s \
-        utilities/arch/ia64/ia64-context-pc.c
+	trampoline/ia64/ia64-tramp.s \
+	utilities/arch/ia64/ia64-context-pc.c
 
 MY_AARCH64_FILES = \
 	trampoline/aarch64/aarch64-tramp.c \
@@ -514,11 +514,11 @@ MY_AARCH64_FILES = \
 if OPT_PAPI_COMPONENT
 MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_INTEL
 MY_PAPI_FILES = \
-    sample-sources/papi-c.c \
-    sample-sources/papi-c-extended-info.c \
+	sample-sources/papi-c.c \
+	sample-sources/papi-c-extended-info.c \
 	sample-sources/papi-c-intel.c
 else
-    MY_PAPI_FILES = sample-sources/papi.c
+MY_PAPI_FILES = sample-sources/papi.c
 endif
 
 MY_PAPI_FILES += \
@@ -526,7 +526,7 @@ MY_PAPI_FILES += \
 	gpu/opencl/intel/papi/papi-metric-collector.c
 
 if OPT_PAPI_CUPTI
-    MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+MY_PAPI_FILES += sample-sources/papi-c-cupti.c
 endif
 
 if OPT_ENABLE_CUPTI
@@ -543,7 +543,7 @@ endif
 
 if OPT_ENABLE_OPENCL
 MY_OPENCL_FILES = \
-  sample-sources/opencl.c \
+	sample-sources/opencl.c \
 	gpu/opencl/opencl-api.c \
 	gpu/opencl/opencl-memory-manager.c \
 	gpu/opencl/opencl-activity-translate.c \
@@ -622,43 +622,43 @@ MY_UPC_FILES = sample-sources/upc.c
 # BG/Q backend requires special treatment to avoid deadlocks
 #
 if OPT_BGQ_BACKEND
-   MY_CPP_DEFINES += -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
+MY_CPP_DEFINES += -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
 endif
 
 MY_INCLUDE_DIRS =   \
-        -I$(top_srcdir)/src/tool       \
-        -I$(srcdir)/messages           \
-        -I$(srcdir)/fnbounds           \
-        -I$(srcdir)/memory             \
-        -I$(srcdir)/os/linux           \
-        -I$(srcdir)/cct                \
-        -I$(srcdir)/ompt               \
-        -I$(srcdir)/unwind/common      \
-        -I$(srcdir)/utilities          \
-        $(HPC_IFLAGS)                  \
-        $(LIBUNWIND_IFLAGS)            \
-        $(OPT_GTPIN_IFLAGS)            \
-        $(ROCM_INC_FLGS)               \
-        -I$(LIBELF_INC)                \
-        -I$(LIBMONITOR_INC)            \
-        $(GOTCHA_IFLAGS)               \
-        $(TBB_IFLAGS)                  \
-        $(OPENCL_IFLAGS)               \
-        $(OPT_CUDA_IFLAGS)             \
-        $(OPT_CUPTI_IFLAGS)
+	-I$(top_srcdir)/src/tool       \
+	-I$(srcdir)/messages           \
+	-I$(srcdir)/fnbounds           \
+	-I$(srcdir)/memory             \
+	-I$(srcdir)/os/linux           \
+	-I$(srcdir)/cct                \
+	-I$(srcdir)/ompt               \
+	-I$(srcdir)/unwind/common      \
+	-I$(srcdir)/utilities          \
+	$(HPC_IFLAGS)                  \
+	$(LIBUNWIND_IFLAGS)            \
+	$(OPT_GTPIN_IFLAGS)            \
+	$(ROCM_INC_FLGS)               \
+	-I$(LIBELF_INC)                \
+	-I$(LIBMONITOR_INC)            \
+	$(GOTCHA_IFLAGS)               \
+	$(TBB_IFLAGS)                  \
+	$(OPENCL_IFLAGS)               \
+	$(OPT_CUDA_IFLAGS)             \
+	$(OPT_CUPTI_IFLAGS)
 
 
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
 
 MY_PPC_INCLUDE_DIRS = 		\
-        -I$(srcdir)/utilities/arch/ppc64
+	-I$(srcdir)/utilities/arch/ppc64
 
 MY_X86_INCLUDE_DIRS =		\
-        -I$(srcdir)/utilities/arch/x86-family
+	-I$(srcdir)/utilities/arch/x86-family
 
 MY_IA64_INCLUDE_DIRS =         \
-        -I$(srcdir)/utilities/arch/ia64
+	-I$(srcdir)/utilities/arch/ia64
 
 MY_AARCH64_INCLUDE_DIRS = \
 	-I$(srcdir)/utilities/arch/aarch64
@@ -728,7 +728,7 @@ libhpcrun_la_CPPFLAGS =			\
 	$(MY_INCLUDE_DIRS)
 
 if OPT_BGQ_BACKEND
-  libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
+libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
 endif
 
 libhpcrun_fake_audit_la_CPPFLAGS =	\
@@ -745,7 +745,7 @@ libhpcrun_o_CPPFLAGS =			\
 	$(MY_INCLUDE_DIRS)
 
 if OPT_BGQ_BACKEND
-  libhpcrun_o_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
+libhpcrun_o_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
 endif
 
 libhpcrun_wrap_a_CPPFLAGS =		\
@@ -922,25 +922,25 @@ endif
 #-----------------------------------------------------------
 
 if HOST_OS_LINUX
-  libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
+libhpcrun_la_SOURCES += $(MY_LINUX_DYNAMIC_FILES)
 endif
 
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS)
 
 if HOST_CPU_MIPS
-  libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
-  libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
-  libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_ga_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_io_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_pthread_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
+libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
+libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_ga_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_io_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_io_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
@@ -950,100 +950,100 @@ endif
 # 8.3.9.2, Objects created with both libtool and without.
 
 if HOST_CPU_PPC
-  libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
-  libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
-  libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_gprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_pthread_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-  libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
+libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
+libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_gprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
 endif
 
 if HOST_CPU_X86_FAMILY
-  libhpcrun_la_SOURCES  += $(MY_X86_FILES)
-  libhpcrun_o_SOURCES   += $(MY_X86_FILES)
-  libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_la_SOURCES  += $(MY_X86_FILES)
+libhpcrun_o_SOURCES   += $(MY_X86_FILES)
+libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
 if OPT_ENABLE_GTPIN
-  libhpcrun_gtpin_cxx_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_gtpin_cxx_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 endif
-  libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-  libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS)
-  libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_gprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_pthread_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS)
+libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_gprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_IA64
-  libhpcrun_la_SOURCES  += $(MY_IA64_FILES)
-  libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
-  libhpcrun_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_o_CPPFLAGS  += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_ga_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_io_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_memleak_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
-  libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_la_SOURCES  += $(MY_IA64_FILES)
+libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
+libhpcrun_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_o_CPPFLAGS  += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_ga_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_io_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_io_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+libhpcrun_mpi_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 endif
 
 if HOST_CPU_AARCH64
-  libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
-  libhpcrun_o_SOURCES   += $(MY_AARCH64_FILES)
-  libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
-  libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
-  libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_gprof_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_mpi_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
+libhpcrun_o_SOURCES   += $(MY_AARCH64_FILES)
+libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
+libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_gprof_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+libhpcrun_mpi_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 endif
 
 if OPT_PAPI_DYNAMIC
-  libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
-  libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
-  libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
+libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
+libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
+libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
 
-  MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
+MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
 
 if OPT_ENABLE_CUPTI
-  libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
-  libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
-  libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
+libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
+libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 
-  MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
+MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
 endif
 
 if OPT_PAPI_CUPTI
@@ -1057,24 +1057,24 @@ MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_ROCM
 endif
 
 if OPT_PAPI_STATIC
-  libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
-  libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
-  libhpcrun_o_LDADD     += $(OPT_PAPI_LIBS_STAT)
+libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
+libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
+libhpcrun_o_LDADD     += $(OPT_PAPI_LIBS_STAT)
 
-  MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
+MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
 
 if OPT_ENABLE_UPC
-  libhpcrun_la_SOURCES  += $(MY_UPC_FILES)
-  libhpcrun_o_SOURCES   += $(MY_UPC_FILES)
-  libhpcrun_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
-  libhpcrun_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
-  libhpcrun_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
+libhpcrun_la_SOURCES  += $(MY_UPC_FILES)
+libhpcrun_o_SOURCES   += $(MY_UPC_FILES)
+libhpcrun_la_CPPFLAGS += $(OPT_UPC_IFLAGS)
+libhpcrun_o_CPPFLAGS  += $(OPT_UPC_IFLAGS)
+libhpcrun_la_LDFLAGS  += $(OPT_UPC_LDFLAGS)
 endif
 
 if OPT_ENABLE_LUSH_PTHREADS
-  libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
-  libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
+libhpcrun_la_CPPFLAGS += -DLUSH_PTHREADS
+libhpcrun_o_CPPFLAGS  += -DLUSH_PTHREADS
 endif
 
 
@@ -1083,60 +1083,60 @@ endif
 #-----------------------------------------------------------
 
 if UNW_X86
-  UNW_SOURCE_FILES = $(UNW_X86_FILES)
-  UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
-  UNW_STATIC_LD_FLAGS =  $(XED2_HPCLINK_LIBS)
+UNW_SOURCE_FILES = $(UNW_X86_FILES)
+UNW_INCLUDE_DIRS = $(UNW_X86_INCLUDE_DIRS)
+UNW_STATIC_LD_FLAGS =  $(XED2_HPCLINK_LIBS)
 endif
 
 if UNW_PPC64
-  UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
-  UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
-  UNW_DYNAMIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
-  UNW_STATIC_LD_FLAGS =  $(UNW_PPC64_LD_FLAGS)
+UNW_SOURCE_FILES = $(UNW_PPC64_FILES)
+UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
+UNW_DYNAMIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
+UNW_STATIC_LD_FLAGS =  $(UNW_PPC64_LD_FLAGS)
 endif
 
 if OPT_ENABLE_PYTHON
-  libhpcrun_la_SOURCES += logical/python.c
-  libhpcrun_la_CFLAGS += @OPT_PYTHON_IFLAGS@
+libhpcrun_la_SOURCES += logical/python.c
+libhpcrun_la_CFLAGS += @OPT_PYTHON_IFLAGS@
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
-  libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
+libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
+libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
+libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
+libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
 
 if OPT_ENABLE_ROCM
-  libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
-  libhpcrun_la_CFLAGS   += $(ROCM_INC_FLGS)
+libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
+libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
+libhpcrun_la_CFLAGS   += $(ROCM_INC_FLGS)
 
-  MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
+MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
 endif
 
 if OPT_ENABLE_LEVEL0
-  libhpcrun_la_SOURCES  += $(MY_LEVEL0_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_LEVEL0
-  libhpcrun_la_CFLAGS   += $(OPT_LEVEL0_IFLAGS)
+libhpcrun_la_SOURCES  += $(MY_LEVEL0_FILES)
+libhpcrun_la_CPPFLAGS += -DENABLE_LEVEL0
+libhpcrun_la_CFLAGS   += $(OPT_LEVEL0_IFLAGS)
 
-  MY_CPP_DEFINES  += -DHPCRUN_SS_LEVEL0
+MY_CPP_DEFINES  += -DHPCRUN_SS_LEVEL0
 endif
 
 if OPT_ENABLE_OPENCL
-  libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_OPENCL
-  libhpcrun_la_CPPFLAGS += $(OPT_OCL_BH_IFLAGS)
-  libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
+libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
+libhpcrun_la_CPPFLAGS += -DENABLE_OPENCL
+libhpcrun_la_CPPFLAGS += $(OPT_OCL_BH_IFLAGS)
+libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
 
-  MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
+MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
 endif
 
 if UNW_LIBUNW
-  UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
-  UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
-  UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
-  UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
+UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
+UNW_INCLUDE_DIRS = $(UNW_LIBUNW_INCLUDE_DIRS)
+UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
+UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
 
 libhpcrun_dlmopen_la_SOURCES   = dlmopen/dlmopen.c
@@ -1201,18 +1201,18 @@ MY_AGENT_TBB_CFLAGS = \
 
 if OPT_ENABLE_LUSH
 if OPT_WITH_CILK
-  pkglib_LTLIBRARIES       += libagent-cilk.la
-  libagent_cilk_la_SOURCES  = $(MY_AGENT_CILK_SOURCES)
-  libagent_cilk_la_CFLAGS   = $(MY_AGENT_CILK_CFLAGS)
+pkglib_LTLIBRARIES       += libagent-cilk.la
+libagent_cilk_la_SOURCES  = $(MY_AGENT_CILK_SOURCES)
+libagent_cilk_la_CFLAGS   = $(MY_AGENT_CILK_CFLAGS)
 endif
 
-  pkglib_LTLIBRARIES       += libagent-pthread.la
-  libagent_pthread_la_SOURCES  = $(MY_AGENT_PTHREAD_SOURCES)
-  libagent_pthread_la_CFLAGS   = $(MY_AGENT_PTHREAD_CFLAGS)
+pkglib_LTLIBRARIES       += libagent-pthread.la
+libagent_pthread_la_SOURCES  = $(MY_AGENT_PTHREAD_SOURCES)
+libagent_pthread_la_CFLAGS   = $(MY_AGENT_PTHREAD_CFLAGS)
 
-  pkglib_LTLIBRARIES       += libagent-tbb.la
-  libagent_tbb_la_SOURCES  = $(MY_AGENT_TBB_SOURCES)
-  libagent_tbb_la_CFLAGS   = $(MY_AGENT_TBB_CFLAGS)
+pkglib_LTLIBRARIES       += libagent-tbb.la
+libagent_tbb_la_SOURCES  = $(MY_AGENT_TBB_SOURCES)
+libagent_tbb_la_CFLAGS   = $(MY_AGENT_TBB_CFLAGS)
 endif
 
 
@@ -1281,7 +1281,7 @@ endif
 install-data-hook:
 	mkdir -p "$(DESTDIR)$(plugin_instdir)"
 	-for file in $(PLUGIN_CONFIG_FILES) ; do \
-	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
+		cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
 	done
 
 

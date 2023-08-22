@@ -165,7 +165,7 @@ lushPthr_attribToCallPath(uint64_t idlenessIncr)
   getcontext(&context); // FIXME: check for errors
   smpl = hpcrun_sample_callpath(&context, lush_agents->metric_time,
                                 (hpcrun_metricVal_t) {.i=0},
-				1/*skipInner*/, 1/*isSync*/, NULL);
+                                1/*skipInner*/, 1/*isSync*/, NULL);
   hpcrun_safe_exit();
 
   return smpl.sample_node;
@@ -190,7 +190,7 @@ lushPthr_thread_fini_ty1(lushPthr_t* x)
 
 static inline void
 lushPthr_mutexLock_pre_ty1(lushPthr_t* restrict x,
-			   pthread_mutex_t* restrict lock)
+                           pthread_mutex_t* restrict lock)
 {
   // N.B.: There is a small window where we could be sampled.  Rather
   // than setting an 'ignore-sample' flag, we currently depend upon
@@ -202,7 +202,7 @@ lushPthr_mutexLock_pre_ty1(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexLock_post_ty1(lushPthr_t* restrict x,
-			    pthread_mutex_t* restrict lock)
+                            pthread_mutex_t* restrict lock)
 {
   lushPthr_endSmplIdleness(x);
   x->is_working = true;
@@ -214,7 +214,7 @@ lushPthr_mutexLock_post_ty1(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexTrylock_post_ty1(lushPthr_t* restrict x,
-			       pthread_mutex_t* restrict lock)
+                               pthread_mutex_t* restrict lock)
 {
   x->is_working = true; // same
 }
@@ -222,7 +222,7 @@ lushPthr_mutexTrylock_post_ty1(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexUnlock_post_ty1(lushPthr_t* restrict x,
-			      pthread_mutex_t* restrict lock)
+                              pthread_mutex_t* restrict lock)
 {
   x->is_working = true; // same
 }
@@ -230,7 +230,7 @@ lushPthr_mutexUnlock_post_ty1(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinLock_pre_ty1(lushPthr_t* restrict x,
-			  atomic_pthread_spinlock_t* restrict lock)
+                          atomic_pthread_spinlock_t* restrict lock)
 {
   x->is_working = false;
   return lock;
@@ -239,7 +239,7 @@ lushPthr_spinLock_pre_ty1(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinLock_post_ty1(lushPthr_t* restrict x,
-			   atomic_pthread_spinlock_t* restrict lock)
+                           atomic_pthread_spinlock_t* restrict lock)
 {
   x->is_working = true;
 }
@@ -247,7 +247,7 @@ lushPthr_spinLock_post_ty1(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinTrylock_pre_ty1(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   return lock;
 }
@@ -255,7 +255,7 @@ lushPthr_spinTrylock_pre_ty1(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinTrylock_post_ty1(lushPthr_t* restrict x,
-			      atomic_pthread_spinlock_t* restrict lock)
+                              atomic_pthread_spinlock_t* restrict lock)
 {
   x->is_working = true; // same
 }
@@ -263,7 +263,7 @@ lushPthr_spinTrylock_post_ty1(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinUnlock_pre_ty1(lushPthr_t* restrict x,
-			    atomic_pthread_spinlock_t* restrict lock)
+                            atomic_pthread_spinlock_t* restrict lock)
 {
   return lock;
 }
@@ -271,7 +271,7 @@ lushPthr_spinUnlock_pre_ty1(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinUnlock_post_ty1(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   x->is_working = true; // same
 }
@@ -279,7 +279,7 @@ lushPthr_spinUnlock_post_ty1(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinDestroy_pre_ty1(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   return lock;
 }
@@ -287,7 +287,7 @@ lushPthr_spinDestroy_pre_ty1(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinDestroy_post_ty1(lushPthr_t* restrict x,
-			      atomic_pthread_spinlock_t* restrict lock)
+                              atomic_pthread_spinlock_t* restrict lock)
 {
 }
 
@@ -444,7 +444,7 @@ lushPthr_unlock_ty2(lushPthr_t* x)
 
 static inline void
 lushPthr_mutexLock_pre_ty2(lushPthr_t* restrict x,
-			   pthread_mutex_t* restrict lock)
+                           pthread_mutex_t* restrict lock)
 {
   lushPthr_lock_pre_ty2(x);
 }
@@ -452,7 +452,7 @@ lushPthr_mutexLock_pre_ty2(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexLock_post_ty2(lushPthr_t* restrict x,
-			    pthread_mutex_t* restrict lock)
+                            pthread_mutex_t* restrict lock)
 {
   lushPthr_lock_post_ty2(x);
 }
@@ -460,7 +460,7 @@ lushPthr_mutexLock_post_ty2(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexTrylock_post_ty2(lushPthr_t* restrict x,
-			       pthread_mutex_t* restrict lock)
+                               pthread_mutex_t* restrict lock)
 {
   lushPthr_trylock_ty2(x);
 }
@@ -468,7 +468,7 @@ lushPthr_mutexTrylock_post_ty2(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexUnlock_post_ty2(lushPthr_t* restrict x,
-			      pthread_mutex_t* restrict lock)
+                              pthread_mutex_t* restrict lock)
 {
   lushPthr_unlock_ty2(x);
 }
@@ -476,7 +476,7 @@ lushPthr_mutexUnlock_post_ty2(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinLock_pre_ty2(lushPthr_t* restrict x,
-			  atomic_pthread_spinlock_t* restrict lock)
+                          atomic_pthread_spinlock_t* restrict lock)
 {
   lushPthr_lock_pre_ty2(x);
   return lock;
@@ -485,7 +485,7 @@ lushPthr_spinLock_pre_ty2(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinLock_post_ty2(lushPthr_t* restrict x,
-			   atomic_pthread_spinlock_t* restrict lock)
+                           atomic_pthread_spinlock_t* restrict lock)
 {
   lushPthr_lock_post_ty2(x);
 }
@@ -493,7 +493,7 @@ lushPthr_spinLock_post_ty2(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinTrylock_pre_ty2(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   return lock;
 }
@@ -501,7 +501,7 @@ lushPthr_spinTrylock_pre_ty2(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinTrylock_post_ty2(lushPthr_t* restrict x,
-			      atomic_pthread_spinlock_t* restrict lock)
+                              atomic_pthread_spinlock_t* restrict lock)
 {
   lushPthr_trylock_ty2(x);
 }
@@ -509,7 +509,7 @@ lushPthr_spinTrylock_post_ty2(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinUnlock_pre_ty2(lushPthr_t* restrict x,
-			    atomic_pthread_spinlock_t* restrict lock)
+                            atomic_pthread_spinlock_t* restrict lock)
 {
   return lock;
 }
@@ -517,7 +517,7 @@ lushPthr_spinUnlock_pre_ty2(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinUnlock_post_ty2(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   lushPthr_unlock_ty2(x);
 }
@@ -525,7 +525,7 @@ lushPthr_spinUnlock_post_ty2(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinDestroy_pre_ty2(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   return lock;
 }
@@ -533,7 +533,7 @@ lushPthr_spinDestroy_pre_ty2(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinDestroy_post_ty2(lushPthr_t* restrict x,
-			      atomic_pthread_spinlock_t* restrict lock)
+                              atomic_pthread_spinlock_t* restrict lock)
 {
 }
 
@@ -616,7 +616,7 @@ lushPthr_destroySyncDataPointer(atomic_pthread_spinlock_t* lock)
 // lushPthr_freelstEnq: push x on the tail
 static inline void
 lushPthr_freelstEnq(lushPthr_t* restrict pthr,
-		    lushPtr_SyncObjData_t* restrict x)
+                    lushPtr_SyncObjData_t* restrict x)
 {
   x->next = NULL;
   if (!pthr->freelstTail) {
@@ -664,7 +664,7 @@ lushPthr_freelstDeq(lushPthr_t* pthr)
 
 static inline lushPtr_SyncObjData_t*
 lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
-			      atomic_pthread_spinlock_t* restrict lock)
+                              atomic_pthread_spinlock_t* restrict lock)
 {
   lushPtr_SyncObjData_t* x = lushPthr_freelstDeq(pthr);
   if (!x) {
@@ -677,8 +677,8 @@ lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
 #if (LUSH_DBG_STATS)
   atomic_fetch_add_explicit(&DBG_numLockAlloc, 1, memory_order_relaxed);
   long lockAllocCur = (((atomic_load_explicit(&lushPthr_mem_ptr, memory_order_relaxed) - lushPthr_mem_beg)
-			/ sizeof(lushPtr_SyncObjData_t))
-		       - 1 - DBG_numLockFreelistCur);
+                        / sizeof(lushPtr_SyncObjData_t))
+                       - 1 - DBG_numLockFreelistCur);
   atomic_store_explicit(&DBG_maxLockAllocCur, MAX(DBG_maxLockAllocCur, lockAllocCur), memory_order_relaxed);
 #endif
   return x;
@@ -687,7 +687,7 @@ lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
 
 static inline lushPtr_SyncObjData_t*
 lushPthr_demandSyncObjData_spin(lushPthr_t* restrict pthr,
-				atomic_pthread_spinlock_t* restrict lock)
+                                atomic_pthread_spinlock_t* restrict lock)
 {
   // test-and-test-and-set
   if (!lushPthr_isSyncDataPointer(atomic_load_explicit(lock, memory_order_relaxed))) {
@@ -699,13 +699,13 @@ lushPthr_demandSyncObjData_spin(lushPthr_t* restrict pthr,
       // CAS returns *old* value iff successful
       int32_t oldval = atomic_load_explicit(lock, memory_order_relaxed);
       if (lushPthr_isSyncDataPointer(oldval)) {
-	break;
+        break;
       }
 
       atomic_store_explicit(&data->lock.spin, oldval, memory_order_relaxed);
       isWinner = (atomic_exchange_explicit(lock, newval, memory_order_relaxed) == oldval);
       if (isWinner) {
-	break;
+        break;
       }
     }
 
@@ -721,7 +721,7 @@ lushPthr_demandSyncObjData_spin(lushPthr_t* restrict pthr,
 
 static inline lushPtr_SyncObjData_t*
 lushPthr_demandCachedSyncObjData_spin(lushPthr_t* restrict pthr,
-				      atomic_pthread_spinlock_t* restrict lock)
+                                      atomic_pthread_spinlock_t* restrict lock)
 {
   if ((void*)lock != pthr->cache_syncObj) {
     pthr->cache_syncObj = (void*)lock;
@@ -772,7 +772,7 @@ lushPthr_demandSyncObjData(lushPthr_t* restrict x, void* restrict syncObj)
 
 static inline lushPtr_SyncObjData_t*
 lushPthr_demandCachedSyncObjData(lushPthr_t* restrict pthr,
-				 void* restrict syncObj)
+                                 void* restrict syncObj)
 {
   if (syncObj != pthr->cache_syncObj) {
     pthr->cache_syncObj = syncObj;
@@ -795,11 +795,11 @@ lushPthr_spin_lock(atomic_pthread_spinlock_t* lock)
       lushPtr_SyncObjData_t* data = lushPthr_getSyncDataPointer(*lock);
       lock = &data->lock.spin;
       while (true) {
-	while (atomic_load_explicit(lock, memory_order_relaxed) <= lushPthr_LockValMax) {;}
-	if (atomic_exchange_explicit(lock, lushPthr_LockValMax, memory_order_relaxed)
-	    == lushPthr_UnlckVal) {
-	  return 0; // success
-	}
+        while (atomic_load_explicit(lock, memory_order_relaxed) <= lushPthr_LockValMax) {;}
+        if (atomic_exchange_explicit(lock, lushPthr_LockValMax, memory_order_relaxed)
+            == lushPthr_UnlckVal) {
+          return 0; // success
+        }
       }
     }
     // ------------------------------------------------------------
@@ -807,7 +807,7 @@ lushPthr_spin_lock(atomic_pthread_spinlock_t* lock)
     // ------------------------------------------------------------
     while (atomic_load_explicit(lock, memory_order_relaxed) <= lushPthr_LockValMax) {;}
     if (atomic_exchange_explicit(lock, lushPthr_LockValMax, memory_order_relaxed)
-	== lushPthr_UnlckVal) {
+        == lushPthr_UnlckVal) {
       return 0; // success
     }
   }
@@ -880,7 +880,7 @@ lushPthr_thread_fini_ty3(lushPthr_t* x)
 
 static inline void
 lushPthr_mutexLock_pre_ty3(lushPthr_t* restrict x,
-			   pthread_mutex_t* restrict lock)
+                           pthread_mutex_t* restrict lock)
 {
   lushPtr_SyncObjData_t* syncData =
     lushPthr_demandCachedSyncObjData(x, (void*)lock);
@@ -898,7 +898,7 @@ lushPthr_mutexLock_pre_ty3(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
-			    pthread_mutex_t* restrict lock)
+                            pthread_mutex_t* restrict lock)
 {
   x->is_working = true;
   lushPthr_endSmplIdleness(x);
@@ -912,15 +912,15 @@ lushPthr_mutexLock_post_ty3(lushPthr_t* restrict x,
     int mid = lush_agents->metric_idleness;
     double idleness = x->idleness;
     cct_metric_data_increment(mid,
-			      node,
-			      (cct_metric_data_t){.r = idleness});
+                              node,
+                              (cct_metric_data_t){.r = idleness});
   }
 }
 
 
 static inline void
 lushPthr_mutexTrylock_post_ty3(lushPthr_t* restrict x,
-			       pthread_mutex_t* restrict lock)
+                               pthread_mutex_t* restrict lock)
 {
   x->is_working = true; // same
 }
@@ -928,7 +928,7 @@ lushPthr_mutexTrylock_post_ty3(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_mutexUnlock_post_ty3(lushPthr_t* restrict x,
-			      pthread_mutex_t* restrict lock)
+                              pthread_mutex_t* restrict lock)
 {
   x->is_working = true; // same
 
@@ -945,7 +945,7 @@ lushPthr_mutexUnlock_post_ty3(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinLock_pre_ty3(lushPthr_t* restrict x,
-			  atomic_pthread_spinlock_t* restrict lock)
+                          atomic_pthread_spinlock_t* restrict lock)
 {
   lushPtr_SyncObjData_t* syncData =
     lushPthr_demandCachedSyncObjData_spin(x, lock);
@@ -962,7 +962,7 @@ lushPthr_spinLock_pre_ty3(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinLock_post_ty3(lushPthr_t* restrict x,
-			   atomic_pthread_spinlock_t* restrict lock)
+                           atomic_pthread_spinlock_t* restrict lock)
 {
   x->is_working = true;
   x->syncObjData = NULL;
@@ -971,7 +971,7 @@ lushPthr_spinLock_post_ty3(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinTrylock_pre_ty3(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   lushPtr_SyncObjData_t* syncData =
     lushPthr_demandCachedSyncObjData_spin(x, lock);
@@ -981,7 +981,7 @@ lushPthr_spinTrylock_pre_ty3(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinTrylock_post_ty3(lushPthr_t* restrict x,
-			      atomic_pthread_spinlock_t* restrict lock)
+                              atomic_pthread_spinlock_t* restrict lock)
 {
   x->is_working = true; // same
 }
@@ -989,7 +989,7 @@ lushPthr_spinTrylock_post_ty3(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinUnlock_pre_ty3(lushPthr_t* restrict x,
-			    atomic_pthread_spinlock_t* restrict lock)
+                            atomic_pthread_spinlock_t* restrict lock)
 {
   lushPtr_SyncObjData_t* syncData =
     lushPthr_demandCachedSyncObjData_spin(x, lock);
@@ -999,7 +999,7 @@ lushPthr_spinUnlock_pre_ty3(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinUnlock_post_ty3(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   x->is_working = true; // same
 
@@ -1014,7 +1014,7 @@ lushPthr_spinUnlock_post_ty3(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinDestroy_pre_ty3(lushPthr_t* restrict x,
-			     atomic_pthread_spinlock_t* restrict lock)
+                             atomic_pthread_spinlock_t* restrict lock)
 {
   atomic_pthread_spinlock_t* real_lock = lock;
   int lockval = atomic_load_explicit(real_lock, memory_order_relaxed);
@@ -1028,7 +1028,7 @@ lushPthr_spinDestroy_pre_ty3(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinDestroy_post_ty3(lushPthr_t* restrict x,
-			      atomic_pthread_spinlock_t* restrict lock)
+                              atomic_pthread_spinlock_t* restrict lock)
 {
   if (lushPthr_isSyncDataPointer(atomic_load_explicit(lock, memory_order_relaxed))) {
     lushPtr_SyncObjData_t* syncData = lushPthr_getSyncDataPointer(*lock);
@@ -1105,8 +1105,8 @@ lushPthr_mutexLock_post(lushPthr_t* restrict x, pthread_mutex_t* restrict lock)
 // trylock: thread may acquire lock, but always continues (never blocks)
 static inline void
 lushPthr_mutexTrylock_post(lushPthr_t* restrict x,
-			   pthread_mutex_t* restrict lock,
-			   int result)
+                           pthread_mutex_t* restrict lock,
+                           int result)
 {
   if (result != 0) {
     return; // lock was not acquired -- epoch remains the same
@@ -1121,7 +1121,7 @@ lushPthr_mutexTrylock_post(lushPthr_t* restrict x,
 // unlock: thread releases lock and continues
 static inline void
 lushPthr_mutexUnlock_post(lushPthr_t* restrict x,
-			  pthread_mutex_t* restrict lock)
+                          pthread_mutex_t* restrict lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "mUnlock", NULL); }
 
@@ -1136,7 +1136,7 @@ lushPthr_mutexUnlock_post(lushPthr_t* restrict x,
 // lock_pre: thread blocks/sleeps
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinLock_pre(lushPthr_t* restrict x,
-		      atomic_pthread_spinlock_t* lock)
+                      atomic_pthread_spinlock_t* lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sLock[", (void*)lock); }
 
@@ -1147,7 +1147,7 @@ lushPthr_spinLock_pre(lushPthr_t* restrict x,
 // lock_post: thread acquires lock and continues
 static inline void
 lushPthr_spinLock_post(lushPthr_t* restrict x,
-		       atomic_pthread_spinlock_t* restrict lock)
+                       atomic_pthread_spinlock_t* restrict lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sLock]", (void*)lock); }
 
@@ -1158,7 +1158,7 @@ lushPthr_spinLock_post(lushPthr_t* restrict x,
 // trylock_pre:
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinTrylock_pre(lushPthr_t* restrict x,
-			 atomic_pthread_spinlock_t* restrict lock)
+                         atomic_pthread_spinlock_t* restrict lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sTrylock[", (void*)lock); }
 
@@ -1169,8 +1169,8 @@ lushPthr_spinTrylock_pre(lushPthr_t* restrict x,
 // trylock_post: thread may acquire lock, but always continues (never blocks)
 static inline void
 lushPthr_spinTrylock_post(lushPthr_t* restrict x,
-			  atomic_pthread_spinlock_t* restrict lock,
-			  int result)
+                          atomic_pthread_spinlock_t* restrict lock,
+                          int result)
 {
   if (result != 0) {
     return; // lock was not acquired -- epoch remains the same
@@ -1185,7 +1185,7 @@ lushPthr_spinTrylock_post(lushPthr_t* restrict x,
 // unlock_pre:
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinUnlock_pre(lushPthr_t* restrict x,
-			atomic_pthread_spinlock_t* restrict lock)
+                        atomic_pthread_spinlock_t* restrict lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sUnlock[", (void*)lock); }
 
@@ -1196,7 +1196,7 @@ lushPthr_spinUnlock_pre(lushPthr_t* restrict x,
 // unlock_post: thread releases lock and continues
 static inline void
 lushPthr_spinUnlock_post(lushPthr_t* restrict x,
-			 atomic_pthread_spinlock_t* restrict lock)
+                         atomic_pthread_spinlock_t* restrict lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sUnlock]", (void*)lock); }
 
@@ -1206,7 +1206,7 @@ lushPthr_spinUnlock_post(lushPthr_t* restrict x,
 
 static inline atomic_pthread_spinlock_t*
 lushPthr_spinDestroy_pre(lushPthr_t* restrict x,
-			 atomic_pthread_spinlock_t* restrict lock)
+                         atomic_pthread_spinlock_t* restrict lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sDstroy[", (void*)lock); }
 
@@ -1216,7 +1216,7 @@ lushPthr_spinDestroy_pre(lushPthr_t* restrict x,
 
 static inline void
 lushPthr_spinDestroy_post(lushPthr_t* restrict x,
-			  atomic_pthread_spinlock_t* restrict lock)
+                          atomic_pthread_spinlock_t* restrict lock)
 {
   if (LUSH_PTHR_DBG) { lushPthr_dump(x, "sDstroy]", (void*)lock); }
 

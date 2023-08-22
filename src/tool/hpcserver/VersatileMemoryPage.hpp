@@ -69,35 +69,35 @@ using namespace std;
 namespace TraceviewerServer
 {
 
-	class VersatileMemoryPage
-	{
-	public:
-		VersatileMemoryPage();
-		VersatileMemoryPage(FileOffset, int, FileDescriptor, LRUList<VersatileMemoryPage>* pageManagementList);
-		virtual ~VersatileMemoryPage();
-		static void setMaxPages(int);
-		char* get();
-	private:
-		void mapPage();
-		void unmapPage();
+        class VersatileMemoryPage
+        {
+        public:
+                VersatileMemoryPage();
+                VersatileMemoryPage(FileOffset, int, FileDescriptor, LRUList<VersatileMemoryPage>* pageManagementList);
+                virtual ~VersatileMemoryPage();
+                static void setMaxPages(int);
+                char* get();
+        private:
+                void mapPage();
+                void unmapPage();
 
-		FileOffset startPoint;
-		int size;
-		char* page;
-		int index;
-		FileDescriptor file;
+                FileOffset startPoint;
+                int size;
+                char* page;
+                int index;
+                FileDescriptor file;
 
-		bool isMapped;
-		LRUList<VersatileMemoryPage>* mostRecentlyUsed;
+                bool isMapped;
+                LRUList<VersatileMemoryPage>* mostRecentlyUsed;
 
-		// Use MAP_POPULATE if available
+                // Use MAP_POPULATE if available
 #ifdef MAP_POPULATE
-		static const int MAP_FLAGS = MAP_SHARED | MAP_POPULATE;
+                static const int MAP_FLAGS = MAP_SHARED | MAP_POPULATE;
 #else
-		static const int MAP_FLAGS = MAP_SHARED
+                static const int MAP_FLAGS = MAP_SHARED
 #endif
-		static const int MAP_PROT = PROT_READ;
-	};
+                static const int MAP_PROT = PROT_READ;
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* VERSATILEMEMORYPAGE_H_ */

@@ -48,7 +48,7 @@
 
 int
 fnbounds_table_lookup(void **table, int length, void *ip,
-		      void **start, void **end)
+                      void **start, void **end)
 {
   int lo, mid, high;
   int last = length - 1;

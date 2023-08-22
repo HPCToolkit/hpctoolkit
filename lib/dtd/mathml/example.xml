@@ -5,7 +5,7 @@
     <plus/>
        <apply>
         <power/>
-	       <ci>x</ci>
+               <ci>x</ci>
                   <cn>2</cn>
               </apply>
               <apply>

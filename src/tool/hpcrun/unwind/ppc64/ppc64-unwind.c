@@ -125,7 +125,7 @@ hpcrun_check_fence(void* ip);
 
 static void
 save_registers(hpcrun_unw_cursor_t* cursor, void *pc, void *bp, void *sp,
-	       void *ra)
+               void *ra)
 {
   cursor->pc_unnorm = pc;
   cursor->bp        = bp;
@@ -169,7 +169,7 @@ hpcrun_check_fence(void* ip)
 
 static int
 hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
-			  void** reg_value)
+                          void** reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc_unnorm;
@@ -180,7 +180,7 @@ hpcrun_unw_get_unnorm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 
 static int
 hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
-			ip_normalized_t* reg_value)
+                        ip_normalized_t* reg_value)
 {
   assert(reg_id == UNW_REG_IP);
   *reg_value = cursor->pc_norm;
@@ -232,15 +232,15 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 void *
 getNxtPCFromReg(hpcrun_unw_cursor_t* cursor)
 {
-	unwind_interval *intvl = cursor->unwr_info.btuwi;
-	if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
-		if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
-			return (void*)(cursor->ctxt->uc_mcontext.regs->link);
-		} else {
-			return (void*)(cursor->ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
-		}
-	}
-	return 0;
+        unwind_interval *intvl = cursor->unwr_info.btuwi;
+        if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
+                if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
+                        return (void*)(cursor->ctxt->uc_mcontext.regs->link);
+                } else {
+                        return (void*)(cursor->ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
+                }
+        }
+        return 0;
 }
 
 
@@ -262,21 +262,21 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
-	intvl = cursor->unwr_info.btuwi;
-	  if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
-	    if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
-	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
+        intvl = cursor->unwr_info.btuwi;
+          if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
+            if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
+              cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
               cursor->ra_loc = &(ctxt->uc_mcontext.regs->link);
-	    }
-	    else {
-	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
+            }
+            else {
+              cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
               cursor->ra_loc = &(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
-	    }
-	  }
+            }
+          }
   }
   else {
     EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
-	 cursor->pc_unnorm);
+         cursor->pc_unnorm);
   }
 
   compute_normalized_ips(cursor);
@@ -386,42 +386,42 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   //-----------------------------------------------------------
   bool found = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
-	nxt_intvl = cursor->unwr_info.btuwi;
+        nxt_intvl = cursor->unwr_info.btuwi;
   }
 
   // if nxt_pc is invalid for some reason...
   if (!nxt_intvl) {
-	TMSG(UNW, "warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
+        TMSG(UNW, "warning: bad nxt pc=%p; sp=%p, fp=%p...", nxt_pc, sp, fp);
 
-	//-------------------------------------------------------------------
-	// If this is a leaf frame, assume the interval didn't correctly
-	// track the return address.  Try one frame deeper.
-	//-------------------------------------------------------------------
-	void** try_sp = NULL;
-	if (!isInteriorFrm) {
-	  try_sp = *nxt_sp;
+        //-------------------------------------------------------------------
+        // If this is a leaf frame, assume the interval didn't correctly
+        // track the return address.  Try one frame deeper.
+        //-------------------------------------------------------------------
+        void** try_sp = NULL;
+        if (!isInteriorFrm) {
+          try_sp = *nxt_sp;
 
-	  // Sanity check SP: Once in a while SP is clobbered.
-	  if (isPossibleParentSP(nxt_sp, try_sp)) {
-		nxt_pc = getNxtPCFromSP(try_sp);
+          // Sanity check SP: Once in a while SP is clobbered.
+          if (isPossibleParentSP(nxt_sp, try_sp)) {
+                nxt_pc = getNxtPCFromSP(try_sp);
     ra_loc = (void*)getNxtPCLocFromSP(try_sp);
-		bool found2 = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
-		if (found2) {
-		  nxt_intvl = cursor->unwr_info.btuwi;
-		  if (nxt_pc > 0) nxt_pc -= 1; // Move to caller
-		}
-	  }
-	}
+                bool found2 = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
+                if (found2) {
+                  nxt_intvl = cursor->unwr_info.btuwi;
+                  if (nxt_pc > 0) nxt_pc -= 1; // Move to caller
+                }
+          }
+        }
 
-	if (!nxt_intvl) {
-	  TMSG(UNW, "error: skip-frame failed: nxt pc=%p, sp=%p; try sp=%p",
-		  nxt_pc, nxt_sp, try_sp);
-	  return STEP_ERROR;
-	}
+        if (!nxt_intvl) {
+          TMSG(UNW, "error: skip-frame failed: nxt pc=%p, sp=%p; try sp=%p",
+                  nxt_pc, nxt_sp, try_sp);
+          return STEP_ERROR;
+        }
 
-	// INVARIANT: 'try_sp' is valid
-	nxt_sp = try_sp;
-	TMSG(UNW, "skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
+        // INVARIANT: 'try_sp' is valid
+        nxt_sp = try_sp;
+        TMSG(UNW, "skip-frame: nxt pc=%p, sp=%p", nxt_pc, nxt_sp);
   }
   // INVARIANT: At this point, 'nxt_intvl' is valid
 

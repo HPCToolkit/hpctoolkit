@@ -253,7 +253,7 @@ private:
   //                   by symlinks.
   const char*
   pathfind_slow(const char* pathList, const char* name, const char* mode,
-		std::set<std::string>& seenPaths);
+                std::set<std::string>& seenPaths);
 
 
   // Resolves all '..' and '.' in 'path' in reference to itself. Does

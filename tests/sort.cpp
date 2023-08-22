@@ -22,30 +22,30 @@ int main(int argc, char **argv)
     N = 80000;
 
     if (argc > 1) {
-	N = atol(argv[1]);
+        N = atol(argv[1]);
     }
 
     sum = 0;
     for (n = 1; n <= N; n += 2) {
-	olist.push_front(n);
-	olist.push_back(n + 1);
-	sum += 2 * n + 1;
+        olist.push_front(n);
+        olist.push_back(n + 1);
+        sum += 2 * n + 1;
     }
 
     cout << "orig list:  " << N << "  " << sum << endl;
 
     sum = 0;
     while (olist.size() > 0) {
-	auto min = olist.begin();
+        auto min = olist.begin();
 
-	for (auto it = olist.begin(); it != olist.end(); ++it) {
-	    if (*it < *min) {
-		min = it;
-	    }
-	}
-	sum += *min;
-	nlist.push_back(*min);
-	olist.erase(min);
+        for (auto it = olist.begin(); it != olist.end(); ++it) {
+            if (*it < *min) {
+                min = it;
+            }
+        }
+        sum += *min;
+        nlist.push_back(*min);
+        olist.erase(min);
     }
 
     cout << "new list:   " << N << "  " << sum << endl;

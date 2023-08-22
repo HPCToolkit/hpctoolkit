@@ -66,7 +66,7 @@ typedef struct events_list_s {
 //*************************** Local variables **************************
 
 static SLIST_HEAD(event_list_head, events_list_s) list_events_head =
-	SLIST_HEAD_INITIALIZER(event_list_head);
+        SLIST_HEAD_INITIALIZER(event_list_head);
 
 
 //*************************** Interfaces **************************
@@ -78,8 +78,8 @@ event_custom_find(const char *name)
 
   // check if we already have the event
   SLIST_FOREACH(item, &list_events_head, entries) {
-	if (item != NULL &&	strcasecmp(item->event->name, name)==0)
-	  return item->event;
+        if (item != NULL &&     strcasecmp(item->event->name, name)==0)
+          return item->event;
   }
   return NULL;
 }
@@ -114,7 +114,7 @@ event_custom_register(event_custom_t *event)
 
   events_list_t *list_item = (events_list_t *) hpcrun_malloc(sizeof(events_list_t));
   if (list_item == NULL)
-	return -1;
+        return -1;
 
   list_item->event = event;
 

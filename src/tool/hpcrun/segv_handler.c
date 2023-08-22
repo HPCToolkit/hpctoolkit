@@ -98,7 +98,7 @@ typedef struct segv_list_s {
 //*************************** Local variables **************************
 
 static SLIST_HEAD(segv_list_head, segv_list_s) list_cb_head =
-	SLIST_HEAD_INITIALIZER(segv_list_head);
+        SLIST_HEAD_INITIALIZER(segv_list_head);
 
 //***************************************************************************
 // catch SIGSEGVs
@@ -149,7 +149,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     segv_list_t *item;
     SLIST_FOREACH(item, &list_cb_head, entries) {
       if (item->callback != NULL)
-	(*item->callback)();
+        (*item->callback)();
     }
 
     (*hpcrun_get_real_siglongjmp())(it->jb, 9);
@@ -185,8 +185,8 @@ hpcrun_setup_segv()
 // Interface for callback registerations when a segv occurs.
 // The callback function will be called when a segv happens.
 // Returns: 0 if the function is already registered,
-//  	1 if the function is now added to the list
-//  	-1 if there's something wrong
+//      1 if the function is now added to the list
+//      -1 if there's something wrong
 // Warnning: this function is not thread safe.
 
 int
@@ -202,7 +202,7 @@ hpcrun_segv_register_cb( hpcrun_sig_callback_t cb )
 
   list_item = (segv_list_t*) hpcrun_malloc(sizeof(segv_list_t));
   if (list_item == NULL)
-	return -1;
+        return -1;
   list_item->callback = cb;
 
   // add the callback into the list

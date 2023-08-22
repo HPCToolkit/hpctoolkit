@@ -124,16 +124,16 @@ nobase_dist_doc_DATA = $(MYDATA)
 # For MacOS add/remove: | tr '\n' ' '
 
 MY_AWKVARS= \
-  -v varhdr="`cat $(srcdir)/style/header-hpctoolkit.html | tr '\n' ' '`" \
-  -v varftr="`cat $(srcdir)/style/footer-hpctoolkit.html | tr '\n' ' '`"
+	-v varhdr="`cat $(srcdir)/style/header-hpctoolkit.html | tr '\n' ' '`" \
+	-v varftr="`cat $(srcdir)/style/footer-hpctoolkit.html | tr '\n' ' '`"
 
 MY_AWKPROG = '\
-  BEGIN { } \
-  /@header-hpctoolkit@/ { printf "%s", varhdr ; next; } \
-  /@footer-hpctoolkit@/ { printf "%s", varftr ; next; } \
-  { print; } \
-  END { } \
-  '
+	BEGIN { } \
+	/@header-hpctoolkit@/ { printf "%s", varhdr ; next; } \
+	/@footer-hpctoolkit@/ { printf "%s", varftr ; next; } \
+	{ print; } \
+	END { } \
+'
 
 MY_VARSRCS = \
 	$(srcdir)/style/header-hpctoolkit.html \
@@ -151,13 +151,13 @@ hpc: $(MYSOURCES_IN) $(MYSOURCES_TGT)
 $(abs_srcdir)/publications.html.in : # $(MY_PUBS) # avoid auto regeneration
 	@echo "*** BIB2XHTML_ROOT=$(BIB2XHTML_ROOT) ***"
 	@if test -x $(BIB2XHTML) ; then \
-	  cd $(BIB2XHTML_ROOT) && \
-	    $(BIB2XHTML) -s unsort -i -d pubs-overview     $(MY_PUBS) $@ && \
-	    $(BIB2XHTML) -s unsort -i -d pubs-hpctoolkit-a $(MY_PUBS) $@ && \
-	    $(BIB2XHTML) -s unsort -i -d pubs-hpctoolkit-b $(MY_PUBS) $@ && \
-	    $(BIB2XHTML) -s unsort -i -d pubs-prediction   $(MY_PUBS) $@ ; \
+		cd $(BIB2XHTML_ROOT) && \
+		$(BIB2XHTML) -s unsort -i -d pubs-overview     $(MY_PUBS) $@ && \
+		$(BIB2XHTML) -s unsort -i -d pubs-hpctoolkit-a $(MY_PUBS) $@ && \
+		$(BIB2XHTML) -s unsort -i -d pubs-hpctoolkit-b $(MY_PUBS) $@ && \
+		$(BIB2XHTML) -s unsort -i -d pubs-prediction   $(MY_PUBS) $@ ; \
 	else \
-	  echo "*** Cannot run $(BIB2XHTML) ***" ; \
+		echo "*** Cannot run $(BIB2XHTML) ***" ; \
 	fi
 
 $(srcdir)/%.html : $(srcdir)/%.html.in $(MY_VARSRCS)

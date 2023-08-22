@@ -117,8 +117,8 @@ fnmatch(const std::string pattern, const char* string, int flags = 0)
 
 bool
 fnmatch(const std::vector<std::string>& patternVec,
-	const char* string,
-	int flags = 0);
+        const char* string,
+        int flags = 0);
 
 
 // ---------------------------------------------------------

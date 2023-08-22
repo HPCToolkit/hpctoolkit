@@ -556,7 +556,7 @@ MYSOURCES = \
 	mcs-lock.h mcs-lock.c \
 	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
-        urand.h urand.c \
+	urand.h urand.c \
 	usec_time.h usec_time.c \
 	\
 	BalancedTree.h BalancedTree.c \
@@ -1250,10 +1250,10 @@ uninstall-am:
 
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
-    rm -f "$2" ;  \
-    mv -f "$1" "$2" ;  \
-  fi
+	if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+		rm -f "$2" ;  \
+		mv -f "$1" "$2" ;  \
+	fi
 endef
 
 #############################################################################

@@ -106,9 +106,9 @@ elf_section_info
 
       // return info if section has target name
       if (strcmp(section_name, sec_name) == 0) {
-	*section = binary + shdr.sh_offset;
-	*section_size = shdr.sh_size;
-	return true;
+        *section = binary + shdr.sh_offset;
+        *section_size = shdr.sh_size;
+        return true;
       }
     }
 

@@ -229,15 +229,15 @@ doFunctionList(WorkEnv &, FileInfo *, GroupInfo *, bool);
 
 static LoopList *
 doLoopTree(WorkEnv &, FileInfo *, GroupInfo *, ParseAPI::Function *,
-	   BlockSet &, LoopTreeNode *);
+           BlockSet &, LoopTreeNode *);
 
 static TreeNode *
 doLoopLate(WorkEnv &, GroupInfo *, ParseAPI::Function *,
-	   BlockSet &, Loop *, const string &);
+           BlockSet &, Loop *, const string &);
 
 static void
 doBlock(WorkEnv &, GroupInfo *, ParseAPI::Function *,
-	BlockSet &, Block *, TreeNode *);
+        BlockSet &, Block *, TreeNode *);
 
 static void
 addGaps(WorkEnv & env, FileInfo *, GroupInfo *);
@@ -247,7 +247,7 @@ getStatement(StatementVector &, Offset, SymtabAPI::Function *);
 
 static LoopInfo *
 findLoopHeader(WorkEnv & env, FileInfo *, GroupInfo *, ParseAPI::Function *,
-	       TreeNode *, Loop *, const string &);
+               TreeNode *, Loop *, const string &);
 
 static TreeNode *
 deleteInlinePrefix(WorkEnv &, TreeNode *, Inline::InlineSeqn);
@@ -263,7 +263,7 @@ doUnparsableFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo);
 
 static void
 doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
-		     TreeNode * root);
+                     TreeNode * root);
 
 //----------------------------------------------------------------------
 
@@ -288,7 +288,7 @@ debugEdges(Block * block);
 
 static void
 debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
-	  vector <Edge *> &, HeaderList &, RealPathMgr *);
+          vector <Edge *> &, HeaderList &, RealPathMgr *);
 
 static void
 debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
@@ -467,7 +467,7 @@ EdgeLessThan(Edge * e1, Edge * e2)
 {
   return (e1->trg()->start() < e2->trg()->start())
       || (e1->trg()->start() == e2->trg()->start()
-	  && e1->src()->last() < e2->src()->last());
+          && e1->src()->last() < e2->src()->last());
 }
 
 // Sort Work Items by the expected 'cost' of their proc group, largest
@@ -635,9 +635,9 @@ myXedCallback(InstructionDecoder::buffer seqn)
       xed_error = xed_decode(&xedd, buf + start, buf_len - start);
 
       if (xed_error == XED_ERROR_NONE) {
-	is_troll = true;
-	xed_len = xed_decoded_inst_get_length(&xedd);
-	break;
+        is_troll = true;
+        xed_len = xed_decoded_inst_get_length(&xedd);
+        break;
       }
     }
   }
@@ -652,7 +652,7 @@ myXedCallback(InstructionDecoder::buffer seqn)
   }
   if (is_valid) {
     printf("  valid: %d%s\n",
-	   xed_len, (fix_unknown_x86_instns ? "  (fix)" : ""));
+           xed_len, (fix_unknown_x86_instns ? "  (fix)" : ""));
   }
   else if (is_troll) {
     printf("  troll: %d, %d\n", start, xed_len);
@@ -676,7 +676,7 @@ myXedCallback(InstructionDecoder::buffer seqn)
 //
 static void
 printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
-	  struct timeval *tv_now, struct rusage *ru_now)
+          struct timeval *tv_now, struct rusage *ru_now)
 {
   gettimeofday(tv_now, NULL);
   getrusage(RUSAGE_SELF, ru_now);
@@ -685,8 +685,8 @@ printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
     + ((float)(tv_now->tv_usec - tv_prev->tv_usec))/1000000.0;
 
   printf("%s  %8.1f sec  %8ld meg  %8ld meg", label, delta,
-	 (ru_now->ru_maxrss - ru_prev->ru_maxrss)/1024,
-	 ru_now->ru_maxrss/1024);
+         (ru_now->ru_maxrss - ru_prev->ru_maxrss)/1024,
+         ru_now->ru_maxrss/1024);
 
   cout << endl;
 }
@@ -703,11 +703,11 @@ printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
 //
 void
 makeStructure(string filename,
-	      ostream * outFile,
-	      ostream * gapsFile,
-	      string gaps_filenm,
-	      string search_path,
-	      Struct::Options & structOpts)
+              ostream * outFile,
+              ostream * gapsFile,
+              string gaps_filenm,
+              string search_path,
+              Struct::Options & structOpts)
 {
   struct timeval tv_init, tv_symtab, tv_parse, tv_fini;
   struct rusage  ru_init, ru_symtab, ru_parse, ru_fini;
@@ -745,9 +745,9 @@ makeStructure(string filename,
 
     if (opts.show_time) {
       cout << "file:  " << elfFile->getFileName() << "\n"
-	   << "symtab threads: " << opts.jobs_symtab
-	   << "  parse: " << opts.jobs_parse
-	   << "  struct: " << opts.jobs_struct << "\n\n";
+           << "symtab threads: " << opts.jobs_symtab
+           << "  parse: " << opts.jobs_parse
+           << "  struct: " << opts.jobs_struct << "\n\n";
       printTime("init:  ", &tv_init, &ru_init, &tv_init, &ru_init);
     }
 
@@ -814,8 +814,8 @@ makeStructure(string filename,
 #ifdef ENABLE_IGC
       bool compute_intel_gpu_cfg = true;
       parsable = buildIntelGPUCFG(search_path, elfFile, the_symtab,
-			      compute_intel_gpu_cfg, false,
-			      structOpts.jobs, &code_src, &code_obj);
+                              compute_intel_gpu_cfg, false,
+                              structOpts.jobs, &code_src, &code_obj);
       has_calls = compute_intel_gpu_cfg;
 #else
       has_calls = false;
@@ -864,19 +864,19 @@ makeStructure(string filename,
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName(), has_calls);
 
-#pragma omp parallel  default(none)				\
-    shared(wlPrint, wlLaunch, num_done, output_mtx)		\
+#pragma omp parallel  default(none)                             \
+    shared(wlPrint, wlLaunch, num_done, output_mtx)             \
     firstprivate(outFile, gapsFile, search_path, gaps_filenm, parsable)
     {
 #pragma omp for  schedule(dynamic, 1)
       for (unsigned int i = 0; i < wlLaunch.size(); i++) {
-	doWorkItem(wlLaunch[i], search_path, parsable, gapsFile != NULL);
+        doWorkItem(wlLaunch[i], search_path, parsable, gapsFile != NULL);
 
-	// the printing must be single threaded
-	if (output_mtx.try_lock()) {
-	  printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
-	  output_mtx.unlock();
-	}
+        // the printing must be single threaded
+        if (output_mtx.try_lock()) {
+          printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
+          output_mtx.unlock();
+        }
       }
     }  // end parallel
 
@@ -900,7 +900,7 @@ makeStructure(string filename,
     // piecemeal cleanup.
     if (i + 1 < elfFileVector->size()) {
       for (unsigned int i = 0; i < wlPrint.size(); i++) {
-	delete wlPrint[i];
+        delete wlPrint[i];
       }
 
       delete code_obj;
@@ -1000,7 +1000,7 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
       total_cost += cost;
 
       WorkItem * witem =
-	new WorkItem(finfo, ginfo, (git == group_begin), (next_git == group_end), cost);
+        new WorkItem(finfo, ginfo, (git == group_begin), (next_git == group_end), cost);
 
       wlPrint.push_back(witem);
     }
@@ -1050,7 +1050,7 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
 //
 static void
 printWorkList(WorkList & workList, unsigned int & num_done, ostream * outFile,
-	      ostream * gapsFile, string & gaps_filenm)
+              ostream * gapsFile, string & gaps_filenm)
 {
   while (num_done < workList.size() && workList[num_done]->is_done.load()) {
     ANNOTATE_HAPPENS_AFTER(&workList[num_done]->is_done);
@@ -1068,7 +1068,7 @@ printWorkList(WorkList & workList, unsigned int & num_done, ostream * outFile,
       string buf = witem->obuf.str();
 
       Output::finalPrintProc(outFile, gapsFile, buf, gaps_filenm,
-			     finfo, ginfo, pinfo);
+                             finfo, ginfo, pinfo);
     }
 
     if (witem->last_proc) {
@@ -1111,8 +1111,8 @@ makeCodeMap(RegionMap & codeMap)
     codeMap[start] = reg;
 
     DEBUG_SKEL("code region:  0x" << hex << start
-	       << "--0x" << (start + reg->getMemSize()) << dec
-	       << "  " << reg->getRegionName() << "\n");
+               << "--0x" << (start + reg->getMemSize()) << dec
+               << "  " << reg->getRegionName() << "\n");
   }
 
 #if DEBUG_MAKE_SKEL
@@ -1126,8 +1126,8 @@ makeCodeMap(RegionMap & codeMap)
 
     if (mod != NULL) {
       cout << "module:  0x" << hex << mod->addr() << dec
-	   << "  (lang " << mod->language() << ")"
-	   << "  " << mod->fullName() << "\n";
+           << "  (lang " << mod->language() << ")"
+           << "  " << mod->fullName() << "\n";
     }
   }
 #endif
@@ -1171,7 +1171,7 @@ findCodeRegion(RegionMap & codeMap, VMA vma)
 //
 static void
 getProcLineMap(StatementVector & svec, Offset vma, Offset end,
-	       SymtabAPI::Function * sym_func)
+               SymtabAPI::Function * sym_func)
 {
   svec.clear();
 
@@ -1272,7 +1272,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
 //
 static void
 addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
-	SymtabAPI::Function * sym_func, VMA start, VMA end, bool alt_file = false)
+        SymtabAPI::Function * sym_func, VMA start, VMA end, bool alt_file = false)
 {
   // locate in file map, or else insert
   FileInfo * finfo = NULL;
@@ -1337,9 +1337,9 @@ getFuncNames(SymtabAPI::Function * sym_func, string & prettynm, string & linknm)
     // sort by: longer mangled name (more info), or else by
     // alphabetically lower name (arbitrary).
     if (mit == mangled_begin
-	|| (new_mangled.length() > linknm.length())
-	|| (new_mangled.length() == linknm.length()
-	    && new_mangled.compare(linknm) < 0))
+        || (new_mangled.length() > linknm.length())
+        || (new_mangled.length() == linknm.length()
+            && new_mangled.compare(linknm) < 0))
     {
       linknm = new_mangled;
       prettynm = BinUtil::demangleProcName(linknm);
@@ -1413,14 +1413,14 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
     }
 
     DEBUG_SKEL("symbol:  0x" << hex << sym_start << "--0x" << sym_end
-	       << "  next:  0x" << next_vma
-	       << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n");
+               << "  next:  0x" << next_vma
+               << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n");
 
     // symtab doesn't recognize plt funcs and puts them in the wrong
     // region.  to be a valid symbol, the func entry must lie within
     // the symbol's region.
     if (found && sym_func != NULL && region != NULL
-	&& reg_start <= vma && vma < reg_end)
+        && reg_start <= vma && vma < reg_end)
     {
       string filenm = unknown_base;
       string linknm = unknown_link + vma_str;
@@ -1586,14 +1586,14 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
         num++;
 
         cout << "\nentry:   0x" << hex << pinfo->entry_vma << dec
-	     << "  (" << num << "/" << size << ")\n"
-	     << "group:   0x" << hex << ginfo->start
-	     << "--0x" << ginfo->end << dec << "\n"
-	     << "file:    " << finfo->fileName << "\n"
-	     << "link:    " << pinfo->linkName << "\n"
-	     << "pretty:  " << pinfo->prettyName << "\n"
-	     << "parse:   " << pinfo->func->name() << "\n"
-	     << "line:    " << pinfo->line_num << "\n";
+             << "  (" << num << "/" << size << ")\n"
+             << "group:   0x" << hex << ginfo->start
+             << "--0x" << ginfo->end << dec << "\n"
+             << "file:    " << finfo->fileName << "\n"
+             << "link:    " << pinfo->linkName << "\n"
+             << "pretty:  " << pinfo->prettyName << "\n"
+             << "parse:   " << pinfo->func->name() << "\n"
+             << "line:    " << pinfo->line_num << "\n";
       }
     }
   }
@@ -1688,11 +1688,11 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
-	   << " -> 0x" << call_it->first << dec << "\n";
+           << " -> 0x" << call_it->first << dec << "\n";
       for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
         cout << "inline:  l=" << pit->getLineNum()
-	     << "  f='" << pit->getFileName()
-	     << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
+             << "  f='" << pit->getFileName()
+             << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
       }
     }
 #endif
@@ -1745,7 +1745,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
     if (! ginfo->alt_file) {
       for (auto bit = bvec.begin(); bit != bvec.end(); ++bit) {
         Block * block = *bit;
-	covered.insert(block->start(), block->end());
+        covered.insert(block->start(), block->end());
       }
       coveredFuncs.insert(entry_addr);
     }
@@ -1761,7 +1761,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
     // (alt-file) and use the symtab file for gaps only.
     if (pinfo->gap_only) {
       DEBUG_CFG("\nskipping full parse (gap only) for function:  '"
-		<< func->name() << "'\n");
+                << func->name() << "'\n");
       continue;
     }
 
@@ -1777,7 +1777,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
     for (auto bit = bvec.begin(); bit != bvec.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
-	doBlock(env, ginfo, func, visited, block, root);
+        doBlock(env, ginfo, func, visited, block, root);
       }
     }
 
@@ -1798,23 +1798,23 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
 
 #if DEBUG_CFG_SOURCE
     cout << "\nfinal inline tree:  (" << num << "/" << num_funcs << ")"
-	 << "  link='" << pinfo->linkName << "'\n"
-	 << "parse:  '" << func->name() << "'\n";
+         << "  link='" << pinfo->linkName << "'\n"
+         << "parse:  '" << func->name() << "'\n";
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
-	   << " -> 0x" << call_it->first << dec << "\n";
+           << " -> 0x" << call_it->first << dec << "\n";
       for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
         cout << "inline:  l=" << pit->getLineNum()
-	     << "  f='" << pit->getFileName()
-	     << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
+             << "  f='" << pit->getFileName()
+             << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
       }
     }
     cout << "\n";
     debugInlineTree(root, NULL, *(env.strTab), 0, true);
     cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
-	 << "  link='" << pinfo->linkName << "'\n"
-	 << "parse:  '" << func->name() << "'\n";
+         << "  link='" << pinfo->linkName << "'\n"
+         << "parse:  '" << func->name() << "'\n";
 #endif
   }
 
@@ -1854,9 +1854,9 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
 
   if (! ginfo->alt_file) {
     cout << "\ncovered:\n"
-	 << covered.toString() << "\n"
-	 << "\ngaps:\n"
-	 << ginfo->gapSet.toString() << "\n";
+         << covered.toString() << "\n"
+         << "\ngaps:\n"
+         << ginfo->gapSet.toString() << "\n";
   }
   else {
     cout << "\ngaps: alt-file\n";
@@ -1876,7 +1876,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
 //
 static LoopList *
 doLoopTree(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
-	   ParseAPI::Function * func, BlockSet & visited, LoopTreeNode * ltnode)
+           ParseAPI::Function * func, BlockSet & visited, LoopTreeNode * ltnode)
 {
   LoopList * myList = new LoopList;
 
@@ -1943,7 +1943,7 @@ doLoopTree(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
 //
 static TreeNode *
 doLoopLate(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
-	   BlockSet & visited, Loop * loop, const string & loopName)
+           BlockSet & visited, Loop * loop, const string & loopName)
 {
   TreeNode * root = new TreeNode;
 
@@ -1970,7 +1970,7 @@ doLoopLate(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 //
 static void
 doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
-	BlockSet & visited, Block * block, TreeNode * root)
+        BlockSet & visited, Block * block, TreeNode * root)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -2028,7 +2028,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     // a call must be the last instruction in the block
     if (next_it == imap.end() && is_call) {
       addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line,
-		    device, is_call, is_sink, target);
+                    device, is_call, is_sink, target);
     }
     else {
       addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, device);
@@ -2070,7 +2070,7 @@ doUnparsableFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 
 static void
 doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
-		     TreeNode * root)
+                     TreeNode * root)
 {
   LineMapCache lmcache (ginfo->sym_func, env.realPath);
 
@@ -2125,7 +2125,7 @@ addGaps(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 
         string device;
         addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma,
-		      filenm, line, device);
+                      filenm, line, device);
         vma = end;
       }
       else {
@@ -2134,7 +2134,7 @@ addGaps(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 
         string device;
         addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma,
-		      finfo->fileName, pinfo->line_num, device);
+                      finfo->fileName, pinfo->line_num, device);
         vma = end;
       }
     }
@@ -2158,8 +2158,8 @@ addGaps(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 //
 static LoopInfo *
 findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
-	       ParseAPI::Function * func, TreeNode * root, Loop * loop,
-	       const string & loopName)
+               ParseAPI::Function * func, TreeNode * root, Loop * loop,
+               const string & loopName)
 {
   HPC::StringTable * strTab = env.strTab;
   long empty_index = strTab->str2index("");
@@ -2209,7 +2209,7 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       if (! svec.empty()) {
         filenm = svec[0]->getFile();
         line = svec[0]->getLine();
-	env.realPath->realpath(filenm);
+        env.realPath->realpath(filenm);
       }
 
       InlineSeqn seqn;
@@ -2225,8 +2225,8 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       // inline sequence as vector of flp index
       clist[src_vma].flp_path.clear();
       for (auto it = seqn.begin(); it != seqn.end(); ++it) {
-	InlineNode node = *it;
-	clist[src_vma].flp_path.push_back(FLPIndex(*strTab, node));
+        InlineNode node = *it;
+        clist[src_vma].flp_path.push_back(FLPIndex(*strTab, node));
       }
     }
   }
@@ -2280,14 +2280,14 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       VMA vma = cit->first;
 
       if (root->stmtMap.member(vma)) {
-	DEBUG_CFG("exit cond at this level:  0x" << hex << vma << dec << "\n");
+        DEBUG_CFG("exit cond at this level:  0x" << hex << vma << dec << "\n");
         goto found_level;
       }
 
       // reparented stmts must also match file name
       StmtInfo * sinfo = stmts.findStmt(vma);
       if (sinfo != NULL && sinfo->base_index == flp.base_index) {
-	DEBUG_CFG("unable to reparent stmts:  0x" << hex << vma << dec << "\n");
+        DEBUG_CFG("unable to reparent stmts:  0x" << hex << vma << dec << "\n");
         goto found_level;
       }
     }
@@ -2306,9 +2306,9 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
     depth_root++;
 
     DEBUG_CFG("inline:  l=" << flp.line_num
-	      << "  f='" << strTab->index2str(flp.file_index)
-	      << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
-	      << "'\n");
+              << "  f='" << strTab->index2str(flp.file_index)
+              << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
+              << "'\n");
   }
 #if DEBUG_CFG_SOURCE
   if (root->nodeMap.size() > 1) {
@@ -2334,9 +2334,9 @@ found_level:
     for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
       FLPIndex flp = nit->first;
       cout << "inline:  l=" << flp.line_num
-	   << "  f='" << strTab->index2str(flp.file_index)
-	   << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
-	   << "'\n";
+           << "  f='" << strTab->index2str(flp.file_index)
+           << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
+           << "'\n";
     }
   }
 #endif
@@ -2376,10 +2376,10 @@ found_level:
       HeaderInfo * info = &(cit->second);
 
       if (info->depth == depth_root && info->base_index != empty_index
-	  && info->base_index == proc_base) {
+          && info->base_index == proc_base) {
         file_ans = proc_file;
         base_ans = proc_base;
-	DEBUG_CFG("file: exit cond at top-level func\n");
+        DEBUG_CFG("file: exit cond at top-level func\n");
         goto found_file;
       }
     }
@@ -2393,10 +2393,10 @@ found_level:
       HeaderInfo * info = &(cit->second);
 
       if (info->depth == depth_root && info->base_index != empty_index
-	  && info->base_index == flp.base_index) {
+          && info->base_index == flp.base_index) {
         file_ans = flp.file_index;
         base_ans = flp.base_index;
-	DEBUG_CFG("file: exit cond at inline subtree\n");
+        DEBUG_CFG("file: exit cond at inline subtree\n");
         goto found_file;
       }
     }
@@ -2477,16 +2477,16 @@ found_file:
     HeaderInfo * info = &(cit->second);
 
     if (info->depth == depth_root
-	&& info->base_index == base_ans
-	&& info->line_num > 0)
+        && info->base_index == base_ans
+        && info->line_num > 0)
     {
       long line = info->line_num;
 
       if (line_ans == 0 || line < line_ans) {
-	line_ans = line;
+        line_ans = line;
       }
       DEBUG_CFG("line:  " << line << "  (exit cond at loop level)  0x"
-		<< hex << cit->first << dec << "\n");
+                << hex << cit->first << dec << "\n");
     }
   }
 
@@ -2498,17 +2498,17 @@ found_file:
     HeaderInfo * info = &(cit->second);
 
     if (info->depth > depth_root
-	&& info->flp_path[depth_root].base_index == base_ans
-	&& info->flp_path[depth_root].line_num > 0)
+        && info->flp_path[depth_root].base_index == base_ans
+        && info->flp_path[depth_root].line_num > 0)
     {
       long line = info->flp_path[depth_root].line_num;
 
       if (line_ans == 0 || line < line_ans) {
-	line_ans = line;
+        line_ans = line;
       }
       DEBUG_CFG("line:  " << line << "  (exit cond at loop +"
-		<< (info->depth - depth_root) << ")  0x"
-		<< hex << cit->first << dec << "\n");
+                << (info->depth - depth_root) << ")  0x"
+                << hex << cit->first << dec << "\n");
     }
   }
 
@@ -2523,7 +2523,7 @@ found_file:
       long line = linfo->line_num;
 
       if (line_ans == 0 || line < line_ans) {
-	line_ans = line;
+        line_ans = line;
       }
       DEBUG_CFG("line:  "  << line_ans << "  (subloop)  " << linfo->name << "\n");
     }
@@ -2531,7 +2531,7 @@ found_file:
 found_line:
 
   DEBUG_CFG("\nheader:  l=" << line_ans << "  f='"
-	    << strTab->index2str(file_ans) << "'\n");
+            << strTab->index2str(file_ans) << "'\n");
 
   vector <Block *> entryBlocks;
   loop->getLoopEntries(entryBlocks);
@@ -2542,8 +2542,8 @@ found_line:
   }
 
   LoopInfo *info = new LoopInfo(root, path, loopName, entry_vma,
-				file_ans, base_ans, line_ans,
-				entryBlocks.size() > 1);
+                                file_ans, base_ans, line_ans,
+                                entryBlocks.size() > 1);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nreparented inline tree:  " << loopName
@@ -2580,22 +2580,22 @@ deleteInlinePrefix(WorkEnv & env, TreeNode * root, Inline::InlineSeqn prefix)
 
       // statements
       for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
-	stmts.insert(sit->second);
+        stmts.insert(sit->second);
       }
       root->stmtMap.clear();
 
       // loops
       for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
-	loops.push_back(*lit);
+        loops.push_back(*lit);
       }
       root->loopList.clear();
 
       // subtrees
       for (auto it = root->nodeMap.begin(); it != root->nodeMap.end(); ++it) {
-	TreeNode * node = it->second;
-	if (node != subtree) {
-	  mergeInlineEdge(subtree, it->first, node);
-	}
+        TreeNode * node = it->second;
+        if (node != subtree) {
+          mergeInlineEdge(subtree, it->first, node);
+        }
       }
       root->nodeMap.clear();
       delete root;
@@ -2669,7 +2669,7 @@ mergeIrredLoops(WorkEnv & env, LoopInfo * L1)
       DEBUG_CFG("merge: " << L2->name << " into " << L1->name << "\n");
 
       for (auto it2 = list2.begin(); it2 != list2.end(); ++it2) {
-	newList.push_back(*it2);
+        newList.push_back(*it2);
       }
       list2.clear();
       mergeInlineTree(node1, node2);
@@ -2800,7 +2800,7 @@ debugElfHeader(ElfFile * elfFile)
 
 static void
 debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
-		string label)
+                string label)
 {
   ParseAPI::Function * func = pinfo->func;
   Address entry_addr = func->addr();
@@ -2820,7 +2820,7 @@ debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
 
 static void
 debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line,
-	  RealPathMgr * realPath)
+          RealPathMgr * realPath)
 
 {
   cout << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
@@ -2832,8 +2832,8 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line,
   // list is outermost to innermost
   for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
     cout << INDENT << "inline:  l=" << nit->getLineNum()
-	 << "  f='" << nit->getFileName()
-	 << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
+         << "  f='" << nit->getFileName()
+         << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
   }
 }
 
@@ -2871,7 +2871,7 @@ debugEdges(Block * block)
     Edge * edge = *eit;
 
     cout << "  0x" << edge->trg()->start()
-	 << " (" << edgeType(edge->type());
+         << " (" << edgeType(edge->type());
 
     if (edge->interproc()) {
       cout << ", interproc";
@@ -2907,9 +2907,9 @@ debugAddr(GroupInfo * ginfo, VMA vma, RealPathMgr * realPath)
 
 static void
 debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
-	  Loop * loop, const string & loopName,
-	  vector <Edge *> & backEdges, HeaderList & clist,
-	  RealPathMgr * realPath)
+          Loop * loop, const string & loopName,
+          vector <Edge *> & backEdges, HeaderList & clist,
+          RealPathMgr * realPath)
 {
   vector <Block *> entBlocks;
   int num_ents = loop->getLoopEntries(entBlocks);
@@ -2956,11 +2956,11 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     }
 
     cout << "0x" << hex << vma << dec
-	 << "  " << (info->is_src ? "src " : "cond")
-	 << "  excl: " << info->is_excl
-	 << "  depth: " << info->depth
-	 << "  l=" << line
-	 << "  f='" << filenm << "'\n";
+         << "  " << (info->is_src ? "src " : "cond")
+         << "  excl: " << info->is_excl
+         << "  depth: " << info->depth
+         << "  l=" << line
+         << "  f='" << filenm << "'\n";
   }
 }
 
@@ -2972,7 +2972,7 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
 //
 static void
 debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
-		int depth, bool expand_loops)
+                int depth, bool expand_loops)
 {
   // treat node as a detached loop with FLP seqn above it.
   if (info != NULL) {
@@ -2984,9 +2984,9 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
       FLPIndex flp = *pit;
 
       cout << "inline:  l=" << flp.line_num
-	   << "  f='" << strTab.index2str(flp.file_index)
-	   << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
-	   << "'\n";
+           << "  f='" << strTab.index2str(flp.file_index)
+           << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
+           << "'\n";
       depth++;
     }
 
@@ -2994,9 +2994,9 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
       cout << INDENT;
     }
     cout << "loop:  " << info->name
-	 << (info->irred ? "  (irred)" : "")
-	 << "  l=" << info->line_num
-	 << "  f='" << strTab.index2str(info->file_index) << "'\n";
+         << (info->irred ? "  (irred)" : "")
+         << "  l=" << info->line_num
+         << "  f='" << strTab.index2str(info->file_index) << "'\n";
     depth++;
   }
 
@@ -3008,9 +3008,9 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
       cout << INDENT;
     }
     cout << "stmt:  0x" << hex << sinfo->vma << dec
-	 << " (" << sinfo->len << (sinfo->is_call ? "/c" : "") << ")"
-	 << "  l=" << sinfo->line_num
-	 << "  f='" << strTab.index2str(sinfo->file_index) << "'\n";
+         << " (" << sinfo->len << (sinfo->is_call ? "/c" : "") << ")"
+         << "  l=" << sinfo->line_num
+         << "  f='" << strTab.index2str(sinfo->file_index) << "'\n";
   }
 
   // recur on the subtrees
@@ -3021,9 +3021,9 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
       cout << INDENT;
     }
     cout << "inline:  l=" << flp.line_num
-	 << "  f='"  << strTab.index2str(flp.file_index)
-	 << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
-	 << "'\n";
+         << "  f='"  << strTab.index2str(flp.file_index)
+         << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
+         << "'\n";
 
     debugInlineTree(nit->second, NULL, strTab, depth + 1, expand_loops);
   }
@@ -3037,9 +3037,9 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
     }
 
     cout << "loop:  " << info->name
-	 << (info->irred ? "  (irred)" : "")
-	 << "  l=" << info->line_num
-	 << "  f='" << strTab.index2str(info->file_index) << "'\n";
+         << (info->irred ? "  (irred)" : "")
+         << "  l=" << info->line_num
+         << "  f='" << strTab.index2str(info->file_index) << "'\n";
 
     if (expand_loops) {
       debugInlineTree(info->node, NULL, strTab, depth + 1, expand_loops);
@@ -3099,29 +3099,29 @@ debugNewGaps(CodeObject * code_obj, string elfFilename)
 
     if (size > 0) {
       cout << "gap: prev block: 0x" << hex << prev_block->start()
-	   << "  end: 0x" << prev_block->end()
-	   << "  next: 0x" << block->start()
-	   << "  size: 0x" << size
-	   << dec << " (" << size << ")\n";
+           << "  end: 0x" << prev_block->end()
+           << "  next: 0x" << block->start()
+           << "  size: 0x" << size
+           << dec << " (" << size << ")\n";
 
       num_gaps++;
       size_gaps += size;
 
       if (size < 16) {
-	  num_gaps_16++;
-	  size_gaps_16 += size;
+          num_gaps_16++;
+          size_gaps_16 += size;
       }
       else if (size < 64) {
-	  num_gaps_64++;
-	  size_gaps_64 += size;
+          num_gaps_64++;
+          size_gaps_64 += size;
       }
       else if (size < 256) {
-	  num_gaps_256++;
-	  size_gaps_256 += size;
+          num_gaps_256++;
+          size_gaps_256 += size;
       }
       else {
-	  num_gaps_other++;
-	  size_gaps_other += size;
+          num_gaps_other++;
+          size_gaps_other += size;
       }
     }
 
@@ -3129,13 +3129,13 @@ debugNewGaps(CodeObject * code_obj, string elfFilename)
   }
 
   printf("\nnum gaps: %8ld    size: %10ld\n"
-	 "under 16: %8ld    size: %10ld\n"
-	 "under 64: %8ld    size: %10ld\n"
-	 "under 256: %7ld    size: %10ld\n"
-	 "other:    %8ld    size: %10ld\n",
-	 num_gaps, size_gaps, num_gaps_16, size_gaps_16,
-	 num_gaps_64, size_gaps_64, num_gaps_256, size_gaps_256,
-	 num_gaps_other, size_gaps_other);
+         "under 16: %8ld    size: %10ld\n"
+         "under 64: %8ld    size: %10ld\n"
+         "under 256: %7ld    size: %10ld\n"
+         "other:    %8ld    size: %10ld\n",
+         num_gaps, size_gaps, num_gaps_16, size_gaps_16,
+         num_gaps_64, size_gaps_64, num_gaps_256, size_gaps_256,
+         num_gaps_other, size_gaps_other);
 
   cout << endl;
 }

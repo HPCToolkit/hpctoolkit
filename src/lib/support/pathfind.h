@@ -73,8 +73,8 @@ extern "C" {
 
 extern char*
 pathfind(const char* pathList,
-	 const char* name,
-	 const char* mode);
+         const char* name,
+         const char* mode);
 
 #ifdef __cplusplus
 }

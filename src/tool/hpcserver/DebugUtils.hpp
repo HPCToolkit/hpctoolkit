@@ -70,14 +70,14 @@ using namespace std;
 #endif
 
 #define DEBUGCOUT(a) if (DEBUG > (a))\
-						cout
+                                                cout
 
 #define LOGTIMESTAMPEDMSG(msg) \
 {\
-	timeval t; \
-	t.tv_sec = 0; t.tv_usec = 0; \
-	gettimeofday(&t, NULL); \
-	clog << t.tv_sec*1000000 + t.tv_usec<<"\t" << msg << endl;\
+        timeval t; \
+        t.tv_sec = 0; t.tv_usec = 0; \
+        gettimeofday(&t, NULL); \
+        clog << t.tv_sec*1000000 + t.tv_usec<<"\t" << msg << endl;\
 }
 
 

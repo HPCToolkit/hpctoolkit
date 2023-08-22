@@ -66,7 +66,7 @@
 
 static void*
 actual_get_branch_target(void *ins, xed_decoded_inst_t *xptr,
-		   xed_operand_values_t *vals)
+                   xed_operand_values_t *vals)
 {
   int offset = xed_operand_values_get_branch_displacement_int32(vals);
 

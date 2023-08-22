@@ -11,9 +11,9 @@ using namespace std;
 using namespace TraceviewerServer;
 
 void filterTest (){
-	Filter f(Range(1,5,1), Range(0,3,1));
+        Filter f(Range(1,5,1), Range(0,3,1));
 
-	bool b = f.matches(1,2);
+        bool b = f.matches(1,2);
 
-	cout << "Include (1,2) " << (b ? "true" : "false") <<endl;
+        cout << "Include (1,2) " << (b ? "true" : "false") <<endl;
 }

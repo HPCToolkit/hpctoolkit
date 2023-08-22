@@ -175,7 +175,7 @@ METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
   printf("Available %s %s blame shifting preset events\n",
-	 stringify(BLAME_LAYER), stringify(BLAME_TYPE));
+         stringify(BLAME_LAYER), stringify(BLAME_TYPE));
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
@@ -184,9 +184,9 @@ METHOD_FN(display_events)
          "\t\tblame for waiting to code holding the mutex.\n",
 #else
   printf("%s\tWhen idle in the %s layer, shift blame to code being\n"
-	 "\t\texecuted at present by working threads.\n",
+         "\t\texecuted at present by working threads.\n",
 #endif
-	 stringify(BLAME_NAME), stringify(BLAME_LAYER));
+         stringify(BLAME_NAME), stringify(BLAME_LAYER));
 
   printf("\n");
 }

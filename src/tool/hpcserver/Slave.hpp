@@ -67,20 +67,20 @@
 namespace TraceviewerServer
 {
 
-	class Slave
-	{
-	public:
+        class Slave
+        {
+        public:
 
-		Slave();
-		virtual ~Slave();
-		void run();
+                Slave();
+                virtual ~Slave();
+                void run();
 
-	private:
-		SpaceTimeDataController* controller;
-		int getData(MPICommunication::CommandMessage*);
-		// Removes all sent messages from the queue
-		void cleanSent(list<MPICommunication::ResultBufferLocations*>& buffers, bool wait);
-	};
+        private:
+                SpaceTimeDataController* controller;
+                int getData(MPICommunication::CommandMessage*);
+                // Removes all sent messages from the queue
+                void cleanSent(list<MPICommunication::ResultBufferLocations*>& buffers, bool wait);
+        };
 
 } /* namespace TraceviewerServer */
 #endif /* SLAVE_H_ */
