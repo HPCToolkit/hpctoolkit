@@ -11,7 +11,16 @@ click = "^8.1.3"
 ruamel-yaml = "^0.17.16"
 yaspin = "^2.3.0"
 pyelftools = "^0.29"
-jsonschema = "^4.18.3"
+spiqa = {version = "^0.3.0", source = "spiqa"}
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "spiqa"
+url = "https://gitlab.com/api/v4/projects/47920083/packages/pypi/simple"
+priority = "explicit"
 
 [tool.poetry.scripts]
 dev = "hpctoolkit_dev.__main__:main"

@@ -61,7 +61,7 @@ if ! test -f "$bootstrap_venv"/bin/dev \
 
     python3 -m venv --clear --upgrade-deps "$bootstrap_venv" || exit $?
     "$bootstrap_venv"/bin/python3 -m pip --quiet install --require-virtualenv --editable \
-      "$here"/lib/dev \
+      "$here"/lib/dev --extra-index-url https://gitlab.com/api/v4/projects/47920083/packages/pypi/simple \
       || exit $?
   } >&2
 fi
