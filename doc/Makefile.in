@@ -500,8 +500,6 @@ MANUAL = HPCToolkit-users-manual.pdf
 # Automake rules
 #############################################################################
 SUBDIRS = \
-	www \
-	\
 	man
 
 loosedocsdir = $(docdir)

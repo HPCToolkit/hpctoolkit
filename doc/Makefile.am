@@ -75,8 +75,6 @@ MANUAL = HPCToolkit-users-manual.pdf
 #############################################################################
 
 SUBDIRS = \
-	www \
-	\
 	man
 
 loosedocsdir = $(docdir)
