@@ -105,7 +105,6 @@ deps build:
   variables:
     DEPS_SOURCE: $REQUEST_URL_latest
     DEPS_BUILD: >-
-      leap15/v1
       almalinux8/v1
       ubuntu20.04/v1
       fedora38/v1
@@ -119,11 +118,6 @@ deps build:
       rocm/v1:5.4
       rocm/v1:5.5
       rocm/v1:5.6
-      lvlz-gtpin/v1:2022.2-3.0
-      lvlz-gtpin/v1:2022.2-3.2
-      lvlz-gtpin/v1:2022.3-3.0
-      lvlz-gtpin/v1:2022.3-3.2
-      lvlz-gtpin/v1:2023.0-3.0
       lvlz-gtpin/v1:2023.0-3.2
 deps build min:
   extends: deps build
@@ -252,18 +246,13 @@ validate:
     paths:
     - logs/
     when: always
+  variables:
+    SPEC: '~cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
 # CPU-only spins
 .buildmany amd64 cpu:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
-  variables:
-    SPEC: '~cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
-.buildmany arm64 cpu:
-  extends: .buildmany
-  tags: [rice-linux-small-arm64]
-  variables:
-    SPEC: '~cuda ~rocm ~level0 +debug +valgrind_debug (mpi papi opencl python)[~<1]'
 
 'buildmany: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
@@ -314,7 +303,6 @@ validate:
   image: $DEPS_IMAGES/cuda/v1:10.2-$DIGEST_latest
   variables:
     JOB_CC: gcc=8
-    SPEC: &cuda102_min_spec '+cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
 'buildmany min: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
@@ -331,7 +319,6 @@ validate:
   image: $DEPS_IMAGES/cuda/v1:10.2-$DIGEST_latest
   variables:
     JOB_CC: gcc=8
-    SPEC: *cuda102_min_spec
 
 # ROCm spins
 .buildmany amd64 rocm:
@@ -345,26 +332,6 @@ validate:
   image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, rocm5.2]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
-'buildmany: [amd64, rocm5.3]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
-'buildmany: [amd64, rocm5.4]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
-'buildmany: [amd64, rocm5.5]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
 'buildmany: [amd64, rocm5.6]':
   extends: .buildmany amd64 rocm
   image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_latest
@@ -374,26 +341,6 @@ validate:
 'buildmany min: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
   image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, rocm5.2]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, rocm5.3]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, rocm5.4]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, rocm5.5]':
-  extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 'buildmany min: [amd64, rocm5.6]':
@@ -409,62 +356,12 @@ validate:
   variables:
     SPEC: '~cuda ~rocm +level0 !debug (mpi papi opencl python gtpin valgrind_debug)[~<1]'
 
-'buildmany: [amd64, lvlz2022.2, gtpin3.0]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.0-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2022.2, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.2-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2022.3, gtpin3.0]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.0-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2022.3, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.2-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
-'buildmany: [amd64, lvlz2023.0, gtpin3.0]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.0-$DIGEST_latest
-  variables:
-    JOB_CC: gcc-9
 'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
   extends: .buildmany amd64 lvlz
   image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.2-$DIGEST_latest
   variables:
     JOB_CC: gcc-9
 
-'buildmany min: [amd64, lvlz2022.2, gtpin3.0]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.0-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2022.2, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.2-3.2-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2022.3, gtpin3.0]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.0-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2022.3, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2022.3-3.2-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
-'buildmany min: [amd64, lvlz2023.0, gtpin3.0]':
-  extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.0-$DIGEST_minimum
-  variables:
-    JOB_CC: gcc-9
 'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
   extends: .buildmany amd64 lvlz
   image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.2-$DIGEST_minimum
@@ -555,10 +452,6 @@ validate:
   variables:
     <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
-'check semifresh arm64: [cpu]':
-  extends: 'check arm64: [cpu]'
-  variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
 
 'check amd64: [+cuda, 11.6]':
   extends: .check
@@ -568,36 +461,22 @@ validate:
     JOB_CC: gcc-9
     SPEC: +mpi +debug ~valgrind_debug +papi +python ~opencl +cuda ~rocm ~level0
     JOB_TEST_SUITE: cuda
-'check min amd64: [+cuda, 11.6]':
-  extends: .check
-  image: $DEPS_IMAGES/cuda/v2:11.6-$DIGEST_minimum
-  tags: [rice-linux-large-amd64-gpu-p100]
-  variables: *vars_check_cuda
-'check semifresh amd64: [+cuda, 11.6]':
-  extends: 'check amd64: [+cuda, 11.6]'
-  tags: [rice-linux-large-bare-amd64-gpu-p100]
-  variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-nvidia'
 
 'check amd64: [+cuda, 11.8]':
   extends: .check
   image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_latest
-  tags: [saas-linux-large-amd64]
-  variables:
-    <<: *vars_check_cuda
-    NVIDIA_VISIBLE_DEVICES: ''  # Disallow GPU access
+  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0]
+  variables: *vars_check_cuda
 'check min amd64: [+cuda, 11.8]':
   extends: .check
   image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
-  tags: [saas-linux-large-amd64]
-  variables:
-    <<: *vars_check_cuda
-    NVIDIA_VISIBLE_DEVICES: ''  # Disallow GPU access
+  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0]
+  variables: *vars_check_cuda
 'check semifresh amd64: [+cuda, 11.8]':
   extends: 'check amd64: [+cuda, 11.8]'
   tags: [rice-linux-large-bare-amd64]
   variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-sw-cuda'
+    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-nvidia -a fresh-testdata-sw-cuda'
 
 'check amd64: [+rocm, 5.1]':
   extends: .check
@@ -609,14 +488,6 @@ validate:
     JOB_CC: gcc-9
     SPEC: +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda +rocm ~level0
     JOB_TEST_SUITE: rocm
-'check min amd64: [+rocm, 5.1]':
-  extends: 'check amd64: [+rocm, 5.1]'
-  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_minimum
-'check semifresh amd64: [+rocm, 5.1]':
-  extends: 'check amd64: [+rocm, 5.1]'
-  tags: [rice-linux-large-bare-amd64-gpu-amd]
-  variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
 
 'check amd64: [+rocm, 5.2]':
   extends: .check
@@ -624,14 +495,6 @@ validate:
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
-'check min amd64: [+rocm, 5.2]':
-  extends: 'check amd64: [+rocm, 5.2]'
-  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_minimum
-'check semifresh amd64: [+rocm, 5.2]':
-  extends: 'check amd64: [+rocm, 5.2]'
-  tags: [rice-linux-large-bare-amd64-gpu-amd]
-  variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
 
 'check amd64: [+rocm, 5.3]':
   extends: .check
@@ -639,14 +502,6 @@ validate:
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
-'check min amd64: [+rocm, 5.3]':
-  extends: 'check amd64: [+rocm, 5.3]'
-  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_minimum
-'check semifresh amd64: [+rocm, 5.3]':
-  extends: 'check amd64: [+rocm, 5.3]'
-  tags: [rice-linux-large-bare-amd64-gpu-amd]
-  variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
 
 'check amd64: [+rocm, 5.4]':
   extends: .check
@@ -654,14 +509,6 @@ validate:
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
-'check min amd64: [+rocm, 5.4]':
-  extends: 'check amd64: [+rocm, 5.4]'
-  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_minimum
-'check semifresh amd64: [+rocm, 5.4]':
-  extends: 'check amd64: [+rocm, 5.4]'
-  tags: [rice-linux-large-bare-amd64-gpu-amd]
-  variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
 
 'check amd64: [+rocm, 5.5]':
   extends: .check
@@ -669,14 +516,6 @@ validate:
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
-'check min amd64: [+rocm, 5.5]':
-  extends: 'check amd64: [+rocm, 5.5]'
-  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_minimum
-'check semifresh amd64: [+rocm, 5.5]':
-  extends: 'check amd64: [+rocm, 5.5]'
-  tags: [rice-linux-large-bare-amd64-gpu-amd]
-  variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
 
 'check amd64: [+rocm, 5.6]':
   extends: .check
@@ -700,9 +539,8 @@ fresh testdata:
   image: docker.io/alpine
   needs:
   - 'check semifresh amd64: [cpu]'
-  - 'check semifresh amd64: [+cuda, 11.6]'
   - 'check semifresh amd64: [+cuda, 11.8]'
-  - 'check semifresh amd64: [+rocm, 5.2]'
+  - 'check semifresh amd64: [+rocm, 5.6]'
   when: always
   variables:
     GIT_SUBMODULE_STRATEGY: none
@@ -712,9 +550,9 @@ fresh testdata:
   # Unpack all the tarballs to the temporary directory
   - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-none.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-cpu.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.6]'/regen/*/fresh-testdata-nvidia.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+rocm, 5.2]'/regen/*/fresh-testdata-amd.tar.xz -C /tmp/result"
   - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8]'/regen/*/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8]'/regen/*/fresh-testdata-nvidia.tar.xz -C /tmp/result"
+  - "tar x -af logs/'check semifresh amd64: [+rocm, 5.6]'/regen/*/fresh-testdata-amd.tar.xz -C /tmp/result"
   # Repack into a single tarball
   - tar c -Jf testdata.tar.xz -C /tmp/result .
   artifacts:
