@@ -233,7 +233,7 @@ class DevEnv:
                 sp_syntax.Spec.parse("intel-tbb +shared @2020.3"),
                 sp_syntax.Spec.parse("libmonitor +hpctoolkit ~dlopen @2023.03.15:"),
                 sp_syntax.Spec.parse("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
-                sp_syntax.Spec.parse("zlib +shared @1.2.13:"),
+                sp_syntax.Spec.parse("zlib +shared @1.2.13:1.2"),
                 sp_syntax.Spec.parse("libunwind +xz +pic @1.6.2:"),
                 sp_syntax.Spec.parse("libpfm4 @4.11.0:"),
                 sp_syntax.Spec.parse("xerces-c transcoder=iconv @3.2.3:"),
