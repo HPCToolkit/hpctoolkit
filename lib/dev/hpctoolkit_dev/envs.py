@@ -394,6 +394,10 @@ class DevEnv:
 
     def _m_binaries(self, native: MesonMachineFile, *, compiler: Compiler | None = None) -> None:
         assert self.recommended_compiler is not None
+
+        ccache_path = shutil.which("ccache")
+        ccache = [Command(ccache_path)] if ccache_path else []
+
         if compiler is not None:
             if not compiler:
                 raise ValueError(compiler)
@@ -402,16 +406,17 @@ class DevEnv:
                     click.style("WARNING", fg="yellow")
                     + f": Requested compiler {compiler} may not be compatible with recommended compiler {self.recommended_compiler}, this may not work!"
                 )
-            native.add_binary("c", compiler.cc)
-            native.add_binary("cpp", compiler.cpp)
+            native.add_binary("c", [*ccache, compiler.cc])
+            native.add_binary("cpp", [*ccache, compiler.cpp])
         elif self.recommended_compiler:
-            native.add_binary("c", self.recommended_compiler.cc)
-            native.add_binary("cpp", self.recommended_compiler.cpp)
+            native.add_binary("c", [*ccache, self.recommended_compiler.cc])
+            native.add_binary("cpp", [*ccache, self.recommended_compiler.cpp])
         else:
             click.echo(
                 click.style("WARNING", fg="yellow")
                 + f": Recommended compiler {self.recommended_compiler} is unavailable, Meson will use its own defaults instead!"
             )
+
         native.add_binary("autoreconf", self.which("autoreconf", "autoconf"))
         native.add_binary("autoconf", self.which("autoconf", "autoconf"))
         native.add_binary("aclocal", self.which("aclocal", "automake"))

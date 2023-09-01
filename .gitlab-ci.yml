@@ -232,27 +232,49 @@ validate:
   - ./dev os-install -y -c "$JOB_CC" git file diffutils tar eatmydata ccache
   - *spack_clone
   - ./dev populate -c "$JOB_CC" /opt/environment
-  # Run the build script for a wide sweep of configurations. Use some Python to help.
-  - rm -rf logs/
-  - >-
-    eatmydata ./dev buildfe -d /opt/environment --
-    -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a check-install
-    --ccache-stats --fail-fast --reproducible -s "$SPEC"
+  - mkdir -p logs/"$CI_JOB_NAME"
+  - |
+    build() {
+      id="$1"
+      logfile=logs/"$CI_JOB_NAME"/"$id".log
+      shift
+
+      echo -e "\e[32m$ ./dev meson -d /opt/environment -- configure $*\e[0m"
+      ./dev meson -d /opt/environment -- configure "$@" || return $?
+      echo -e "\e[32m$ ./dev meson -d /opt/environment compile && ./dev meson -d /opt/environment install\e[0m"
+      { ./dev meson -d /opt/environment compile -j$(./dev nproc --soft) && ./dev meson -d /opt/environment install; } > "$logfile" 2>&1 \
+        || { code=$?; cat "$logfile"; return $code; }
+      echo -e "\e[32m$ ./dev validate-install -d /opt/environment\e[0m"
+      ./dev validate-install -d /opt/environment || return $?
+    }
+  - |
+    for buildtype in debugoptimized release; do
+      build $buildtype-all    -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nopapi -Dbuildtype=$buildtype -Dpapi=disabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nopy   -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=disabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-noocl  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=disabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-nompi  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=disabled -Dvalgrind_annotations=true $COMMON_SETTINGS || exit $?
+      build $buildtype-noval  -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=false $COMMON_SETTINGS || exit $?
+    done
   after_script:
-  - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
+  - |
+    echo "To reproduce:"
+    echo "    cd path/to/hpctoolkit"
+    echo "    podman run --rm -it -v ./:/hpctoolkit -v /hpctoolkit/.devenv --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
+  - ./dev cc-diagnostics cq.json logs/"$CI_JOB_NAME"/*.log
   artifacts:
     reports:
       codequality: cq.json
     paths:
     - logs/
     when: always
-  variables:
-    SPEC: '~cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
 
 # CPU-only spins
 .buildmany amd64 cpu:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
+  variables:
+    COMMON_SETTINGS: '-Dcuda=disabled -Drocm=disabled -Dlevel0=disabled'
 
 'buildmany: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
@@ -286,7 +308,7 @@ validate:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    SPEC: '+cuda ~rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
+    COMMON_SETTINGS: '-Dcuda=enabled -Drocm=disabled -Dlevel0=disabled'
 
 'buildmany: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
@@ -325,7 +347,7 @@ validate:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    SPEC: '~cuda +rocm ~level0 !debug (mpi papi opencl python valgrind_debug)[~<1]'
+    COMMON_SETTINGS: '-Dcuda=disabled -Drocm=enabled -Dlevel0=disabled'
 
 'buildmany: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
@@ -354,7 +376,13 @@ validate:
   extends: .buildmany
   tags: [saas-linux-small-amd64]
   variables:
-    SPEC: '~cuda ~rocm +level0 !debug (mpi papi opencl python gtpin valgrind_debug)[~<1]'
+    COMMON_SETTINGS: '-Dcuda=disabled -Drocm=disabled -Dlevel0=enabled -Dgtpin=enabled'
+  script:
+  - !reference [.buildmany, script]
+  - |
+    for buildtype in debugoptimized release; do
+      build $buildtype-nogtpin -Dbuildtype=$buildtype -Dpapi=enabled -Dpython=enabled -Dopencl=enabled -Dhpcprof_mpi=enabled -Dvalgrind_annotations=true $COMMON_SETTINGS -Dgtpin=disabled || exit $?
+    done
 
 'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
   extends: .buildmany amd64 lvlz
@@ -389,37 +417,56 @@ validate:
     OMPI_ALLOW_RUN_AS_ROOT: 1
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
-  - ./dev os-install -y -c "$JOB_CC" git file diffutils tar make eatmydata ccache
-  - *spack_clone
-  - ./dev populate -c "$JOB_CC" /opt/environment
-  - export MESON_TEST_OPTS="$MESON_TEST_OPTS --maxfail 10 --repeat 7 $JOB_MESON_TEST_OPTS"
-  - rm -rf logs/
-  # For semifresh runs, regenerate some of the test data before testing. Use some Python to help.
-  - >-
-    test -z "$REGEN" ||
-    eatmydata ./dev buildfe -d /opt/environment --
-    -l "logs/$CI_JOB_NAME/regen" -c "$JOB_CC" ${REGEN}
-    --ccache-stats --fail-fast --fresh-unpack --reproducible
-    -1 -s "$SPEC"
-  # Run the test suite for the configuration of interest. Use some Python to help.
-  - >-
-    eatmydata ./dev buildfe -d /opt/environment --
-    -l "logs/$CI_JOB_NAME" -c "$JOB_CC" -a test
-    --test-opt=--maxfail=10 --test-opt=--repeat=${JOB_TEST_REPEAT:-7}
-    ${JOB_TEST_SUITE:+--test-opt=--suite=$JOB_TEST_SUITE}
-    --ccache-stats --fail-fast --test-junit-copyout --reproducible
-    -1 -s "$SPEC"
-
+  - &check_setup
+    - ./dev os-install -y -c "$JOB_CC" git file diffutils tar make eatmydata ccache
+    - *spack_clone
+    - export MESON_TESTTHREADS=$(./dev nproc --soft)
+    - mkdir logs/
+    - logfile=logs/"$CI_JOB_NAME".log
+    - rm -f "$logfile"
+    - ./dev populate -c "$JOB_CC" /opt/environment
+  - &check_compile
+    - ./dev meson -d /opt/environment compile -j$(./dev nproc --soft) >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
+    - ./dev meson -d /opt/environment install >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
+  - &check_test
+    - ./dev meson -d /opt/environment test --maxfail=10 --repeat=${JOB_TEST_REPEAT:-7} ${JOB_TEST_SUITE:+--suite=$JOB_TEST_SUITE}
   after_script:
-  - ./ci/scripts/merge-cq cq.json logs/**/*.cq.json
+  - |
+    echo "To reproduce:"
+    echo "    cd path/to/hpctoolkit"
+    echo "    podman run --rm -it -v ./:/hpctoolkit -v /hpctoolkit/.devenv --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
+  - &check_after
+    - ./dev cc-diagnostics cq.json logs/"$CI_JOB_NAME".log
+    - cp -t "$CI_PROJECT_DIR"/ /opt/environment/builddir/meson-logs/testlog.junit.xml
 
-  artifacts:
+  artifacts: &check_artifacts
     reports:
       codequality: cq.json
       junit: '*.junit.xml'
     paths:
     - logs/
     when: always
+.check semifresh job:
+  script:
+  - *check_setup
+  - *check_compile
+  - ./dev meson -d /opt/environment compile $(printf 'tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
+  - mkdir -p testdata/"$CI_JOB_NAME"
+  - cp -t testdata/"$CI_JOB_NAME"/ $(printf '/opt/environment/builddir/tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
+  - for suite in $REGEN_SUITES; do tar xJvf /opt/environment/builddir/tests2/data/fresh-testdata-$suite.tar.xz || exit $?; done
+  - *check_compile
+  - *check_test
+  after_script:
+  - |
+    echo "To reproduce:"
+    echo "    cd path/to/hpctoolkit"
+    echo "    podman run --rm -it -v ./:/hpctoolkit -v /hpctoolkit/.devenv --workdir /hpctoolkit -e JOB_CC=$JOB_CC -e REGEN_SUITES='$REGEN_SUITES' $CI_JOB_IMAGE"
+  - *check_after
+  artifacts:
+    <<: *check_artifacts
+    paths:
+    - logs/
+    - testdata/
 
 'check amd64: [cpu]':
   extends: .check
@@ -434,9 +481,9 @@ validate:
   tags: [rice-linux-large-bare-amd64]
   variables: *vars_check_cpu
 'check semifresh amd64: [cpu]':
-  extends: 'check amd64: [cpu]'
+  extends: ['check amd64: [cpu]', .check semifresh job]
   variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu'
+    REGEN_SUITES: none cpu
 
 'check arm64: [cpu]':
   extends: .check
@@ -459,7 +506,6 @@ validate:
   tags: [rice-linux-large-amd64-gpu-p100]
   variables: &vars_check_cuda
     JOB_CC: gcc-9
-    SPEC: +mpi +debug ~valgrind_debug +papi +python ~opencl +cuda ~rocm ~level0
     JOB_TEST_SUITE: cuda
 
 'check amd64: [+cuda, 11.8]':
@@ -473,10 +519,10 @@ validate:
   tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0]
   variables: *vars_check_cuda
 'check semifresh amd64: [+cuda, 11.8]':
-  extends: 'check amd64: [+cuda, 11.8]'
+  extends: ['check amd64: [+cuda, 11.8]', .check semifresh job]
   tags: [rice-linux-large-bare-amd64]
   variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-nvidia -a fresh-testdata-sw-cuda'
+    REGEN_SUITES: none cpu nvidia sw-cuda
 
 'check amd64: [+rocm, 5.1]':
   extends: .check
@@ -486,7 +532,6 @@ validate:
   - export LD_LIBRARY_PATH=/opt/rocm/lib:"$LD_LIBRARY_PATH"
   variables: &vars_check_rocm
     JOB_CC: gcc-9
-    SPEC: +mpi +debug +valgrind_debug +papi +python ~opencl ~cuda +rocm ~level0
     JOB_TEST_SUITE: rocm
 
 'check amd64: [+rocm, 5.2]':
@@ -527,10 +572,10 @@ validate:
   extends: 'check amd64: [+rocm, 5.6]'
   image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_minimum
 'check semifresh amd64: [+rocm, 5.6]':
-  extends: 'check amd64: [+rocm, 5.6]'
+  extends: ['check amd64: [+rocm, 5.6]', .check semifresh job]
   tags: [rice-linux-large-bare-amd64-gpu-amd]
   variables:
-    REGEN: '-a fresh-testdata-none -a fresh-testdata-cpu -a fresh-testdata-amd'
+    REGEN_SUITES: none cpu amd
 
 
 # Repackage the fresh testdata generated during the `check semifresh` jobs
@@ -548,11 +593,11 @@ fresh testdata:
   - apk add xz
   - mkdir /tmp/result
   # Unpack all the tarballs to the temporary directory
-  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-none.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [cpu]'/regen/*/fresh-testdata-cpu.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8]'/regen/*/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+cuda, 11.8]'/regen/*/fresh-testdata-nvidia.tar.xz -C /tmp/result"
-  - "tar x -af logs/'check semifresh amd64: [+rocm, 5.6]'/regen/*/fresh-testdata-amd.tar.xz -C /tmp/result"
+  - "tar x -af testdata/'check semifresh amd64: [cpu]'/fresh-testdata-none.tar.xz -C /tmp/result"
+  - "tar x -af testdata/'check semifresh amd64: [cpu]'/fresh-testdata-cpu.tar.xz -C /tmp/result"
+  - "tar x -af testdata/'check semifresh amd64: [+cuda, 11.8]'/fresh-testdata-sw-cuda.tar.xz -C /tmp/result"
+  - "tar x -af testdata/'check semifresh amd64: [+cuda, 11.8]'/fresh-testdata-nvidia.tar.xz -C /tmp/result"
+  - "tar x -af testdata/'check semifresh amd64: [+rocm, 5.6]'/fresh-testdata-amd.tar.xz -C /tmp/result"
   # Repack into a single tarball
   - tar c -Jf testdata.tar.xz -C /tmp/result .
   artifacts:
