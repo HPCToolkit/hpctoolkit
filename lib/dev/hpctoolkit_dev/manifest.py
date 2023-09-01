@@ -359,6 +359,26 @@ class Manifest:
             "valloc",
         }
     )
+    SYMBOLS_LIBHPCRUN_OPENCL = frozenset(
+        {
+            "clBuildProgram",
+            "clCreateBuffer",
+            "clCreateCommandQueue",
+            "clCreateCommandQueueWithProperties",
+            "clCreateContext",
+            "clEnqueueMapBuffer",
+            "clEnqueueNDRangeKernel",
+            "clEnqueueReadBuffer",
+            "clEnqueueTask",
+            "clEnqueueWriteBuffer",
+            "clFinish",
+            "clReleaseCommandQueue",
+            "clReleaseKernel",
+            "clReleaseMemObject",
+            "clSetKernelArg",
+            "clWaitForEvents",
+        }
+    )
     SYMBOLS_LIBHPCRUN_PTHREAD = frozenset(
         {
             "override_lookup",
@@ -520,42 +540,40 @@ class Manifest:
 
     def __init__(self, *, mpi: bool, rocm: bool):
         """Given a set of variant-keywords, determine the install manifest as a list of ManifestFiles."""
-
-        def so(n):
-            return r"\.so" + r"\.\d+" * n.__index__()
-
         hpcrun_symbols = self.SYMBOLS_LIBHPCRUN
         if rocm:
             hpcrun_symbols |= self.SYMBOLS_LIBHPCRUN_ROCM
         hpcrun_extra = re.compile(r"^hpcrun_.+$")
 
+        ext_so = [r"\.so(\.\d+)+", r"-\d+(\.\d+)*\.so"]
         self.files = [
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_atomic-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_atomic", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_chrono", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_date_time-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_date_time", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_filesystem-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_filesystem", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_graph-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_graph", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_regex-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_regex", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_system-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_system", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_thread-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_thread", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_timer-mt", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_timer", ".so", so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libbz2", ".so", so(1), so(2), so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libcommon", ".so", so(2), so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libdw", ".so", so(1), r"-\d+\.\d+\.so"),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libdynDwarf", ".so", so(2), so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libdynElf", ".so", so(1), r"-\d+\.\d+\.so"),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libelf", ".so", so(1), r"-\d+\.\d+\.so"),
-            _ManifestExtLib(
-                "lib/hpctoolkit/ext-libs/libinstructionAPI", ".so", so(1), r"-\d+\.\d+\.so"
-            ),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_atomic-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_atomic", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_chrono-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_chrono", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_date_time-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_date_time", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_filesystem-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_filesystem", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_graph-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_graph", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_regex-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_regex", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_system-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_system", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_thread-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_thread", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_timer-mt", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libboost_timer", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libbz2", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libcommon", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libdw", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libdynDwarf", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libdynElf", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libelf", ".a"),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libelf", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libinstructionAPI", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/liblzma", ".so", *ext_so),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libmonitor_wrap", ".a"),
             _ManifestExtLib(
                 "lib/hpctoolkit/ext-libs/libmonitor",
@@ -564,16 +582,17 @@ class Manifest:
                 ".so.0.0.0",
                 symbols=_SymbolManifest(self.SYMBOLS_LIBMONITOR, allow_extra=True),
             ),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libparseAPI", ".so", so(2), so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libpfm", ".so", so(1), so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libsymtabAPI", ".so", so(2), so(3)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libtbb", ".so", so(1)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libtbbmalloc_proxy", ".so", so(1)),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libtbbmalloc", ".so", so(1)),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libparseAPI", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libpfm", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libsymtabAPI", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libtbb", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libtbbmalloc_proxy", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libtbbmalloc", ".so", *ext_so),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libxerces-c", ".a"),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libxerces-c", ".so", r"-\d+.\d+\.so"),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libxerces-c", ".so", *ext_so),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libyaml-cpp", ".so", *ext_so),
             _ManifestExtLib("lib/hpctoolkit/ext-libs/libz", ".a"),
-            _ManifestExtLib("lib/hpctoolkit/ext-libs/libz", ".so", so(1), so(3)),
+            _ManifestExtLib("lib/hpctoolkit/ext-libs/libz", ".so", *ext_so),
             _ManifestFile("bin/hpclink"),
             _ManifestFile("bin/hpcprof"),
             _ManifestFile("bin/hpcrun"),
@@ -587,15 +606,22 @@ class Manifest:
             _ManifestFile("lib/hpctoolkit/libhpcrun_fake_audit.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_fake_audit.la"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_ga.a"),
+            _ManifestFile("lib/hpctoolkit/libhpcrun_ga_wrap.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_ga.la"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_gprof.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_gprof.la"),
+            _ManifestFile("lib/hpctoolkit/libhpcrun_gprof_wrap.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_io.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_io.la"),
+            _ManifestFile("lib/hpctoolkit/libhpcrun_io_wrap.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_memleak.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_memleak.la"),
+            _ManifestFile("lib/hpctoolkit/libhpcrun_memleak_wrap.a"),
+            _ManifestFile("lib/hpctoolkit/libhpcrun_opencl.a"),
+            _ManifestFile("lib/hpctoolkit/libhpcrun_opencl.la"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_pthread.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_pthread.la"),
+            _ManifestFile("lib/hpctoolkit/libhpcrun_pthread_wrap.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun_wrap.a"),
             _ManifestFile("lib/hpctoolkit/libhpcrun.o"),
             _ManifestFile(
@@ -619,6 +645,8 @@ class Manifest:
             _ManifestFile("libexec/hpctoolkit/hpcplatform"),
             _ManifestFile("libexec/hpctoolkit/hpcproftt-bin"),
             _ManifestFile("libexec/hpctoolkit/hpcproftt"),
+            _ManifestFile("libexec/hpctoolkit/hpcproflm"),
+            _ManifestFile("libexec/hpctoolkit/hpcstruct-bin"),
             _ManifestFile("libexec/hpctoolkit/hpcsummary"),
             _ManifestFile("libexec/hpctoolkit/hpctracedump"),
             _ManifestFile("share/doc/hpctoolkit/FORMATS.md"),
@@ -711,6 +739,13 @@ class Manifest:
                 ".0",
                 "",
                 symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_MEMLEAK),
+            ),
+            _ManifestLib(
+                "lib/hpctoolkit/libhpcrun_opencl.so",
+                ".0.0.0",
+                ".0",
+                "",
+                symbols=_SymbolManifest(self.SYMBOLS_LIBHPCRUN_OPENCL),
             ),
             _ManifestLib(
                 "lib/hpctoolkit/libhpcrun_pthread.so",
