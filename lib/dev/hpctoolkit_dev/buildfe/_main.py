@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 from .action import Action, SummaryResult, action_sequence
-from .buildsys import Build, CheckInstallManifest, FreshTestData, Install, Setup, Test
+from .buildsys import Build, FreshTestData, Install, Setup, Test
 from .configuration import (
     Compilers,
     ConcreteSpecification,
@@ -28,7 +28,6 @@ actions: dict[str, tuple[type[Action], ...]] = {
     "setup": (Setup,),
     "build": (Build,),
     "install": (Install,),
-    "check-install": (CheckInstallManifest,),
     "test": (Test,),
 }
 for suite, cls in FreshTestData.suites.items():

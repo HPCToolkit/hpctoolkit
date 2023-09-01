@@ -24,6 +24,7 @@ from .buildfe import logs
 from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import DependencyMode, DevEnv, InvalidSpecificationError
+from .manifest import Manifest
 from .spack.system import OSClass, SystemCompiler
 from .spack.system import translate as os_translate
 
@@ -597,6 +598,49 @@ def meson(
     )
     env = DevEnv.restore(devenv.root)
     obj.meson.execl(*args, cwd=env.builddir)
+
+
+@main.command
+@click.option(
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(exists=True, flag="-d"),
+    help="Validate the install in a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(exists=True, flag="-n"),
+    help="Validate the install in a named devenv",
+)
+@click.option(
+    "-w", "--ignore-warnings/--no-ignore-warnings", help="Ignore warnings, only print full errors"
+)
+def validate_install(
+    *, devenv_by_dir: Env | None, devenv_by_name: Env | None, ignore_warnings: bool
+) -> None:
+    """Validate the most recent installation in a devenv."""
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
+    )
+    del devenv_by_dir
+    del devenv_by_name
+    env = DevEnv.restore(devenv.root)
+    results = Manifest(mpi=env.mpi, rocm=env.rocm).check(env.installdir)
+
+    if not ignore_warnings:
+        for warn in sorted(results.warnings, key=lambda w: w.subject):
+            click.secho(f"W: {warn}", fg="yellow")
+    for fail in sorted(results.failures, key=lambda f: f.subject):
+        click.secho(f"E: {fail}", fg="red")
+    if results.failures:
+        raise click.ClickException(f"Encountered {len(results.failures)} errors during validation")
+    if not ignore_warnings and results.warnings:
+        click.secho(f"Encountered {len(results.warnings)} warnings during validation", fg="yellow")
+    else:
+        click.secho("Install tree validated successfully! ✨ 🍰 ✨", fg="green")
 
 
 @main.command
