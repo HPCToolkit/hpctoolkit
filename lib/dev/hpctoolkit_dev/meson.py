@@ -1,3 +1,4 @@
+import collections.abc
 from pathlib import Path
 
 from .command import Command
@@ -22,14 +23,24 @@ class MesonMachineFile:
             return "'{}'".format(str(value).replace("'", "\\'"))
         return None
 
-    def add_binary(self, name: str, path: Path | Command) -> None:
+    def _iter_norm(self, value: collections.abc.Sequence[str | Path | int]) -> str:
+        if len(value) == 1:
+            return self._norm(value[0])
+        return "[" + ", ".join(self._norm(v) for v in value) + "]"
+
+    def add_binary(
+        self, name: str, command: Path | Command | collections.abc.Iterable[Path | Command]
+    ) -> None:
         if name in self._binaries:
             raise KeyError(name)
-        if isinstance(path, Command):
-            path = path.path
-        if not path.is_file():
-            raise FileNotFoundError(path)
-        self._binaries[name] = self._norm(path)
+        paths = [
+            (part.path if isinstance(part, Command) else part)
+            for part in ([command] if isinstance(command, Path | Command) else command)
+        ]
+        for path in paths:
+            if not path.is_file():
+                raise FileNotFoundError(path)
+        self._binaries[name] = self._iter_norm(paths)
 
     def add_property(self, name: str, value: str | Path | int) -> None:
         if name in self._properties:

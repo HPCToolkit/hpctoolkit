@@ -2,7 +2,10 @@ import collections
 import contextlib
 import dataclasses
 import functools
+import hashlib
 import itertools
+import json
+import linecache
 import operator
 import os
 import re
@@ -20,10 +23,11 @@ import click
 import ruamel.yaml
 import spiqa.untrusted as sp_untrusted
 
-from .buildfe import logs
-from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import DependencyMode, DevEnv, InvalidSpecificationError
+from .manifest import Manifest
+from .resources import nproc as nproc_soft
+from .resources import nproc_max
 from .spack.system import OSClass, SystemCompiler
 from .spack.system import translate as os_translate
 
@@ -283,6 +287,34 @@ def main(obj: DevState, /, *, isolated: bool, traceback: bool) -> None:
         obj.named_environment_root = obj.project_root / ".devenv"
 
     obj.traceback = traceback
+
+
+@main.command
+@click.option(
+    "--hard",
+    "mode",
+    flag_value="hard",
+    default=True,
+    help="Report exactly how many CPU cores are available",
+)
+@click.option(
+    "--soft",
+    "mode",
+    flag_value="soft",
+    help="Report slightly more cores than present for very small core counts",
+)
+def nproc(*, mode: str) -> None:
+    """Report the number of CPU cores available.
+
+    Just like the Linux nproc, but aware of CGroups(v2).
+    """
+    match mode:
+        case "hard":
+            click.echo(f"{nproc_max():d}")
+        case "soft":
+            click.echo(f"{nproc_soft():d}")
+        case _:
+            raise AssertionError(mode)
 
 
 feature = click.Choice(["enabled", "disabled", "auto"], case_sensitive=False)
@@ -597,6 +629,161 @@ def meson(
     )
     env = DevEnv.restore(devenv.root)
     obj.meson.execl(*args, cwd=env.builddir)
+
+
+@main.command
+@click.option(
+    "-d",
+    "--directory",
+    "devenv_by_dir",
+    type=DevEnvType(exists=True, flag="-d"),
+    help="Validate the install in a devenv directory",
+)
+@click.option(
+    "-n",
+    "--name",
+    "devenv_by_name",
+    type=DevEnvByName(exists=True, flag="-n"),
+    help="Validate the install in a named devenv",
+)
+@click.option(
+    "-w", "--ignore-warnings/--no-ignore-warnings", help="Ignore warnings, only print full errors"
+)
+def validate_install(
+    *, devenv_by_dir: Env | None, devenv_by_name: Env | None, ignore_warnings: bool
+) -> None:
+    """Validate the most recent installation in a devenv."""
+    devenv = resolve_devenv(
+        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
+    )
+    del devenv_by_dir
+    del devenv_by_name
+    env = DevEnv.restore(devenv.root)
+    results = Manifest(mpi=env.mpi, rocm=env.rocm).check(env.installdir)
+
+    if not ignore_warnings:
+        for warn in sorted(results.warnings, key=lambda w: w.subject):
+            click.secho(f"W: {warn}", fg="yellow")
+    for fail in sorted(results.failures, key=lambda f: f.subject):
+        click.secho(f"E: {fail}", fg="red")
+    if results.failures:
+        raise click.ClickException(f"Encountered {len(results.failures)} errors during validation")
+    if not ignore_warnings and results.warnings:
+        click.secho(f"Encountered {len(results.warnings)} warnings during validation", fg="yellow")
+    else:
+        click.secho("Install tree validated successfully! ✨ 🍰 ✨", fg="green")
+
+
+def _gcc_to_cq(project_root: Path, line: str) -> dict | None:
+    # Compiler warning regex:
+    #     {path}.{extension}:{line}:{column}: {severity}: {message} [{flag(s)}]
+    mat = re.fullmatch(
+        r"^(.*)\.([a-z+]{1,3}):(\d+):(\d+:)?\s+(warning|error):\s+(.*)\s+\[((\w|-|=)*)\]$",
+        line.strip("\n"),
+    )
+    if not mat:
+        return None
+
+    report: dict[str, typing.Any] = {
+        "type": "issue",
+        "check_name": mat.group(7),  # flag(2)
+        "description": mat.group(6),  # message
+        "categories": ["compiler"],
+        "location": {},
+    }
+
+    path = Path(mat.group(1) + "." + mat.group(2))
+    if path.is_absolute() and not path.is_relative_to(project_root):
+        return None
+    if not path.is_absolute():
+        # Strip off prefixes and see if we can find the file we're looking for
+        for i in range(1, len(path.parts) - 1):
+            newpath = project_root / Path(*path.parts[i:])
+            if newpath.is_file():
+                path = newpath
+                break
+        else:
+            return None
+    report["location"]["path"] = path.relative_to(project_root).as_posix()
+
+    lineno = int(mat.group(3))
+    if len(mat.group(4)) > 0:
+        col = int(mat.group(4)[:-1])
+        report["location"]["positions"] = {"begin": {"line": lineno, "column": col}}
+    else:
+        report["location"]["lines"] = {"begin": lineno}
+
+    match mat.group(5):
+        case "warning":
+            report["severity"] = "major"
+        case "error":
+            report["severity"] = "critical"
+    assert "severity" in report
+
+    # The fingerprint is the hash of the report in JSON form, with parts masked out
+    report["fingerprint"] = hashlib.md5(
+        json.dumps(
+            report
+            | {
+                "location": report["location"]
+                | {"positions": None, "lines": None, "line": linecache.getline(str(path), lineno)}
+            },
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    return report
+
+
+@main.command
+@click.argument("output", type=click.File(mode="w", encoding="utf-8"))
+@click.argument("logfiles", type=click.File(), nargs=-1)
+@dev_pass_obj
+def cc_diagnostics(
+    obj: DevState, /, *, output: typing.TextIO, logfiles: collections.abc.Sequence[typing.TextIO]
+) -> None:
+    """Scan the given LOGFILES for GCC/Clang diagnostics, and generate a Code Climate report.
+
+    Also report a summary with the counts of detected warnings and errors.
+    """
+    if not obj.project_root:
+        raise click.ClickException(
+            "cc-diagnostics only operates within an HPCToolkit project checkout"
+        )
+
+    reports = []
+    warnings, errors = 0, 0
+    for logfile in logfiles:
+        for line in logfile:
+            cq = _gcc_to_cq(obj.project_root, line)
+            if cq is not None:
+                reports.append(cq)
+                match cq["severity"]:
+                    case "major":
+                        warnings += 1
+                    case "critical":
+                        errors += 1
+            elif re.match(r"[^:]+:(\d+:){1,2}\s+warning:", line):  # Warning from GCC
+                warnings += 1
+            elif re.match(r"[^:]+:(\d+:){1,2}\s+error:", line) or re.match(
+                r"[^:]+:\s+undefined reference to", line
+            ):  # Error from GCC or ld
+                errors += 1
+
+    # Unique the reports by their fingerprints before saving. We don't care which report we end
+    # up with so long as we get one.
+    reports_by_fp = {rep["fingerprint"]: rep for rep in reports}
+    reports = list(reports_by_fp.values())
+    del reports_by_fp
+
+    json.dump(reports, output)
+    if errors > 0:
+        click.secho(f"Found {errors:d} errors and {warnings:d} warnings in the logs", fg="red")
+    elif warnings > 0:
+        click.secho(f"Found {warnings:d} warnings in the logs", fg="yellow")
+    else:
+        click.secho("Found no diagnostics in the given logs", fg="green")
+
+    click.echo(f"Generated {len(reports):d} Code Climate reports")
 
 
 @main.command
@@ -940,49 +1127,6 @@ Devenv successfully created! You may now use Meson commands, Eg.:
     $ ./dev meson -d {shlex.quote(str(devenv.root))} install
     $ ./dev meson -d {shlex.quote(str(devenv.root))} test"""
         )
-    else:
-        click.echo(
-            f"""
-Devenv has been populated but not configured. Use via the buildfe:
-    $ ./dev buildfe -d {shlex.quote(str(devenv.root))} -- ..."""
-        )
-
-
-@main.command(add_help_option=False, context_settings={"ignore_unknown_options": True})
-@click.option(
-    "-d",
-    "--directory",
-    "devenv_by_dir",
-    type=DevEnvType(exists=True, flag="-d"),
-    help="Run within a devenv directory",
-)
-@click.option(
-    "-n",
-    "--name",
-    "devenv_by_name",
-    type=DevEnvByName(exists=True, flag="-n"),
-    help="Run within a named devenv",
-)
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-@dev_pass_obj
-def buildfe(
-    obj: DevState,
-    devenv_by_dir: Env | None,
-    devenv_by_name: Env | None,
-    args: collections.abc.Collection[str],
-) -> None:
-    """Run the build frontend with the given ARGS."""
-    devenv = resolve_devenv(
-        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
-    )
-    del devenv_by_dir
-    del devenv_by_name
-    if not obj.project_root:
-        raise click.ClickException("buildfe only operates within an HPCToolkit project checkout")
-
-    env = DevEnv.restore(devenv.root)
-    os.chdir(obj.project_root)
-    buildfe_main(obj.meson.path, [*args, str(env.root)])
 
 
 @main.command
@@ -1032,13 +1176,12 @@ def os_install(
         to_install |= comp.os_packages(osclass)
 
     # Do the installation
-    with logs.section(f"Installing packages {' '.join(to_install)}", collapsed=True):
-        try:
-            if precmd is not None:
-                precmd()
-            cmd(*to_install)
-        except subprocess.CalledProcessError as e:
-            raise click.ClickException("Install commands failed, see above errors.") from e
+    try:
+        if precmd is not None:
+            precmd()
+        cmd(*to_install)
+    except subprocess.CalledProcessError as e:
+        raise click.ClickException("Install commands failed, see above errors.") from e
 
 
 if __name__ == "__main__":
