@@ -28,6 +28,8 @@ from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import DependencyMode, DevEnv, InvalidSpecificationError
 from .manifest import Manifest
+from .resources import nproc as nproc_soft
+from .resources import nproc_max
 from .spack.system import OSClass, SystemCompiler
 from .spack.system import translate as os_translate
 
@@ -287,6 +289,34 @@ def main(obj: DevState, /, *, isolated: bool, traceback: bool) -> None:
         obj.named_environment_root = obj.project_root / ".devenv"
 
     obj.traceback = traceback
+
+
+@main.command
+@click.option(
+    "--hard",
+    "mode",
+    flag_value="hard",
+    default=True,
+    help="Report exactly how many CPU cores are available",
+)
+@click.option(
+    "--soft",
+    "mode",
+    flag_value="soft",
+    help="Report slightly more cores than present for very small core counts",
+)
+def nproc(*, mode: str) -> None:
+    """Report the number of CPU cores available.
+
+    Just like the Linux nproc, but aware of CGroups(v2).
+    """
+    match mode:
+        case "hard":
+            click.echo(f"{nproc_max():d}")
+        case "soft":
+            click.echo(f"{nproc_soft():d}")
+        case _:
+            raise AssertionError(mode)
 
 
 feature = click.Choice(["enabled", "disabled", "auto"], case_sensitive=False)
