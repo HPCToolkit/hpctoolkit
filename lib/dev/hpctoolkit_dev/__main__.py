@@ -2,7 +2,10 @@ import collections
 import contextlib
 import dataclasses
 import functools
+import hashlib
 import itertools
+import json
+import linecache
 import operator
 import os
 import re
@@ -641,6 +644,118 @@ def validate_install(
         click.secho(f"Encountered {len(results.warnings)} warnings during validation", fg="yellow")
     else:
         click.secho("Install tree validated successfully! ✨ 🍰 ✨", fg="green")
+
+
+def _gcc_to_cq(project_root: Path, line: str) -> dict | None:
+    # Compiler warning regex:
+    #     {path}.{extension}:{line}:{column}: {severity}: {message} [{flag(s)}]
+    mat = re.fullmatch(
+        r"^(.*)\.([a-z+]{1,3}):(\d+):(\d+:)?\s+(warning|error):\s+(.*)\s+\[((\w|-|=)*)\]$",
+        line.strip("\n"),
+    )
+    if not mat:
+        return None
+
+    report: dict[str, typing.Any] = {
+        "type": "issue",
+        "check_name": mat.group(7),  # flag(2)
+        "description": mat.group(6),  # message
+        "categories": ["compiler"],
+        "location": {},
+    }
+
+    path = Path(mat.group(1) + "." + mat.group(2))
+    if path.is_absolute() and not path.is_relative_to(project_root):
+        return None
+    if not path.is_absolute():
+        # Strip off prefixes and see if we can find the file we're looking for
+        for i in range(1, len(path.parts) - 1):
+            newpath = project_root / Path(*path.parts[i:])
+            if newpath.is_file():
+                path = newpath
+                break
+        else:
+            return None
+    report["location"]["path"] = path.relative_to(project_root).as_posix()
+
+    lineno = int(mat.group(3))
+    if len(mat.group(4)) > 0:
+        col = int(mat.group(4)[:-1])
+        report["location"]["positions"] = {"begin": {"line": lineno, "column": col}}
+    else:
+        report["location"]["lines"] = {"begin": lineno}
+
+    match mat.group(5):
+        case "warning":
+            report["severity"] = "major"
+        case "error":
+            report["severity"] = "critical"
+    assert "severity" in report
+
+    # The fingerprint is the hash of the report in JSON form, with parts masked out
+    report["fingerprint"] = hashlib.md5(
+        json.dumps(
+            report
+            | {
+                "location": report["location"]
+                | {"positions": None, "lines": None, "line": linecache.getline(str(path), lineno)}
+            },
+            sort_keys=True,
+        ).encode("utf-8")
+    ).hexdigest()
+    return report
+
+
+@main.command
+@click.argument("output", type=click.File(mode="w", encoding="utf-8"))
+@click.argument("logfiles", type=click.File(), nargs=-1)
+@dev_pass_obj
+def cc_diagnostics(
+    obj: DevState, /, *, output: typing.TextIO, logfiles: collections.abc.Sequence[typing.TextIO]
+) -> None:
+    """Scan the given LOGFILES for GCC/Clang diagnostics, and generate a Code Climate report.
+
+    Also report a summary with the counts of detected warnings and errors.
+    """
+    if not obj.project_root:
+        raise click.ClickException(
+            "cc-diagnostics only operates within an HPCToolkit project checkout"
+        )
+
+    reports = []
+    warnings, errors = 0, 0
+    for logfile in logfiles:
+        for line in logfile:
+            cq = _gcc_to_cq(obj.project_root, line)
+            if cq is not None:
+                reports.append(cq)
+                match cq["severity"]:
+                    case "major":
+                        warnings += 1
+                    case "critical":
+                        errors += 1
+            elif re.match(r"[^:]+:(\d+:){1,2}\s+warning:", line):  # Warning from GCC
+                warnings += 1
+            elif re.match(r"[^:]+:(\d+:){1,2}\s+error:", line) or re.match(
+                r"[^:]+:\s+undefined reference to", line
+            ):  # Error from GCC or ld
+                errors += 1
+
+    # Unique the reports by their fingerprints before saving. We don't care which report we end
+    # up with so long as we get one.
+    reports_by_fp = {rep["fingerprint"]: rep for rep in reports}
+    reports = list(reports_by_fp.values())
+    del reports_by_fp
+
+    json.dump(reports, output)
+    if errors > 0:
+        click.secho(f"Found {errors:d} errors and {warnings:d} warnings in the logs", fg="red")
+    elif warnings > 0:
+        click.secho(f"Found {warnings:d} warnings in the logs", fg="yellow")
+    else:
+        click.secho("Found no diagnostics in the given logs", fg="green")
+
+    click.echo(f"Generated {len(reports):d} Code Climate reports")
 
 
 @main.command
