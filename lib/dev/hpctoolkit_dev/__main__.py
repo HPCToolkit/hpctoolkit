@@ -23,8 +23,6 @@ import click
 import ruamel.yaml
 import spiqa.untrusted as sp_untrusted
 
-from .buildfe import logs
-from .buildfe._main import main as buildfe_main
 from .command import Command
 from .envs import DependencyMode, DevEnv, InvalidSpecificationError
 from .manifest import Manifest
@@ -1129,49 +1127,6 @@ Devenv successfully created! You may now use Meson commands, Eg.:
     $ ./dev meson -d {shlex.quote(str(devenv.root))} install
     $ ./dev meson -d {shlex.quote(str(devenv.root))} test"""
         )
-    else:
-        click.echo(
-            f"""
-Devenv has been populated but not configured. Use via the buildfe:
-    $ ./dev buildfe -d {shlex.quote(str(devenv.root))} -- ..."""
-        )
-
-
-@main.command(add_help_option=False, context_settings={"ignore_unknown_options": True})
-@click.option(
-    "-d",
-    "--directory",
-    "devenv_by_dir",
-    type=DevEnvType(exists=True, flag="-d"),
-    help="Run within a devenv directory",
-)
-@click.option(
-    "-n",
-    "--name",
-    "devenv_by_name",
-    type=DevEnvByName(exists=True, flag="-n"),
-    help="Run within a named devenv",
-)
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-@dev_pass_obj
-def buildfe(
-    obj: DevState,
-    devenv_by_dir: Env | None,
-    devenv_by_name: Env | None,
-    args: collections.abc.Collection[str],
-) -> None:
-    """Run the build frontend with the given ARGS."""
-    devenv = resolve_devenv(
-        devenv_by_dir, devenv_by_name, DevEnvByName(exists=True, flag="-n", default=True)
-    )
-    del devenv_by_dir
-    del devenv_by_name
-    if not obj.project_root:
-        raise click.ClickException("buildfe only operates within an HPCToolkit project checkout")
-
-    env = DevEnv.restore(devenv.root)
-    os.chdir(obj.project_root)
-    buildfe_main(obj.meson.path, [*args, str(env.root)])
 
 
 @main.command
@@ -1221,13 +1176,12 @@ def os_install(
         to_install |= comp.os_packages(osclass)
 
     # Do the installation
-    with logs.section(f"Installing packages {' '.join(to_install)}", collapsed=True):
-        try:
-            if precmd is not None:
-                precmd()
-            cmd(*to_install)
-        except subprocess.CalledProcessError as e:
-            raise click.ClickException("Install commands failed, see above errors.") from e
+    try:
+        if precmd is not None:
+            precmd()
+        cmd(*to_install)
+    except subprocess.CalledProcessError as e:
+        raise click.ClickException("Install commands failed, see above errors.") from e
 
 
 if __name__ == "__main__":
