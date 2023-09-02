@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from .command import Command
+
 
 class MesonMachineFile:
     """Formatter for Meson native/cross files. The format is a little like INI or TOML but the
@@ -20,9 +22,11 @@ class MesonMachineFile:
             return "'{}'".format(str(value).replace("'", "\\'"))
         return None
 
-    def add_binary(self, name: str, path: Path) -> None:
+    def add_binary(self, name: str, path: Path | Command) -> None:
         if name in self._binaries:
             raise KeyError(name)
+        if isinstance(path, Command):
+            path = path.path
         if not path.is_file():
             raise FileNotFoundError(path)
         self._binaries[name] = self._norm(path)

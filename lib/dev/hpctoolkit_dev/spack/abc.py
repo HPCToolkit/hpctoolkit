@@ -2,8 +2,7 @@ import abc
 import typing
 from pathlib import Path
 
-from ..command import ShEnv
-from .util import Version
+from spiqa.syntax import Version
 
 
 class CompilerBase(abc.ABC):
@@ -66,56 +65,6 @@ class CompilerBase(abc.ABC):
             return self.version >= other.version
         # At this point they seem equal. Either option is fine, return something.
         return False
-
-
-class PackageBase(abc.ABC):
-    """Descriptor object representing a Spack-installed Package."""
-
-    @abc.abstractmethod
-    def __str__(self) -> str:
-        """Return a representation of the Package in Spack spec syntax. Preferably human-readable
-        but do not trigger Spack calls.
-        """
-
-    @property
-    @abc.abstractmethod
-    def fullhash(self) -> str:
-        """Full hash identifying the installed Package. Base32 string."""
-
-    @property
-    @abc.abstractmethod
-    def spec(self) -> str:
-        """Identifier for the unique Package as a Spack spec. Not human-readable, see pretty."""
-
-    @property
-    @abc.abstractmethod
-    def package(self) -> str:
-        """Name of the Spack package that was installed to make this Package."""
-
-    @property
-    @abc.abstractmethod
-    def pretty(self) -> str:
-        """Pretty name for the installed Package. Looks nicer than the fullhash."""
-
-    @property
-    @abc.abstractmethod
-    def compiler(self) -> CompilerBase:
-        """Spack identifier for the compiler used to build this Package."""
-
-    @property
-    @abc.abstractmethod
-    def prefix(self) -> Path:
-        """Installation prefix where the Package is installed."""
-
-    @property
-    @abc.abstractmethod
-    def dependencies(self) -> frozenset["PackageBase"]:
-        """Set of all (transitive and run-type) dependencies of this Package."""
-
-    @property
-    @abc.abstractmethod
-    def load(self) -> ShEnv:
-        """Generate the environment produces when this package gets loaded."""
 
 
 class SpackBase(abc.ABC):

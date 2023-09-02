@@ -6,9 +6,9 @@ import typing
 from pathlib import Path
 
 import click
+from spiqa.syntax import Version
 
 from .abc import CompilerBase
-from .util import Version
 
 
 class OSClass(enum.Enum):
