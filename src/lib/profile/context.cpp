@@ -173,7 +173,7 @@ void ContextFlowGraph::handler(std::function<MetricHandling(const Metric&)> h) {
 }
 
 void ContextFlowGraph::freeze(const std::function<util::optional_ref<ContextFlowGraph>(const Scope&)>& create) {
-  assert(m_templates.empty() == !m_handler && "FlowGraph::Templates only make sense with a handler!");
+  assert((m_templates.empty() || m_handler) && "FlowGraph::Templates only make sense with a handler!");
 
   // Sort the templates reverse-lexographically by their paths, to make it
   // easier for us to calculate the interior factors later.
@@ -231,7 +231,7 @@ const std::function<ContextFlowGraph::MetricHandling(const Metric&)>& ContextFlo
 
 bool ContextFlowGraph::empty() const {
   m_frozen_once.wait();
-  return !m_handler;
+  return m_templates.empty();
 }
 
 const std::unordered_set<Scope>& ContextFlowGraph::entries() const {
