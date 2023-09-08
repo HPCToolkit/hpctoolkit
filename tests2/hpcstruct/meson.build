@@ -22,7 +22,10 @@ _tst = configure_file(input: files('tst-consistent'), output: '@PLAINNAME@.venv'
                       command: venv_shebang)
 foreach name, struct : testdata_struct_current
   _threads = [1, 16]
-  _args = [struct.get('binary', {'binary': ''})['binary'], struct['structfile']]
+  _args = [
+    struct.get('binary', {'binary': '--skip=test-binaries submodule was not cloned'})['binary'],
+    struct['structfile'],
+  ]
   _suffix = ''
   if struct['gpucfg']
     _args += ['--gpucfg']
@@ -35,14 +38,14 @@ foreach name, struct : testdata_struct_current
 
   # FIXME: Multithread cases frequently fail consistency for CUDA binaries.
   # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/733
-  if struct['binary']['arch_tags'][0].startswith('cuda::')
+  if 'binary' in struct and struct['binary']['arch_tags'][0].startswith('cuda::')
     _threads = [1]
   endif
 
   foreach threads : _threads
     test(f'Analysis of @name@ is consistent (-j@threads@@_suffix@)',
          _tst, args: _args + [f'-j@threads@'],
-         env: hpctoolkit_pyenv, suite: 'hpcstruct', is_parallel: '--skip' in _args or threads == 1,
+         env: hpctoolkit_pyenv, suite: 'hpcstruct', is_parallel: 'binary' not in struct or threads == 1,
     )
   endforeach
 endforeach
