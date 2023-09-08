@@ -291,16 +291,21 @@ validate:
   image: $DEPS_IMAGES/fedora38/v1:latest-$DIGEST_latest
   parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
 
+.buildmany min:
+  variables:
+    # Submodules should not be necessary for correct configuration
+    GIT_SUBMODULE_STRATEGY: none
+
 'buildmany min: [amd64, almalinux8]':
-  extends: .buildmany amd64 cpu
+  extends: [.buildmany amd64 cpu, .buildmany min]
   image: $DEPS_IMAGES/almalinux8/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: gcc=8}]}
 'buildmany min: [amd64, ubuntu20.04]':
-  extends: .buildmany amd64 cpu
+  extends: [.buildmany amd64 cpu, .buildmany min]
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: [clang-10]}]}
 'buildmany min: [amd64, fedora38]':
-  extends: .buildmany amd64 cpu
+  extends: [.buildmany amd64 cpu, .buildmany min]
   image: $DEPS_IMAGES/fedora38/v1:latest-$DIGEST_minimum
   parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
 
@@ -329,17 +334,17 @@ validate:
     JOB_CC: gcc=8
 
 'buildmany min: [amd64, cuda12.0]':
-  extends: .buildmany amd64 cuda
+  extends: [.buildmany amd64 cuda, .buildmany min]
   image: $DEPS_IMAGES/cuda/v2:12.0-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 'buildmany min: [amd64, cuda11.8]':
-  extends: .buildmany amd64 cuda
+  extends: [.buildmany amd64 cuda, .buildmany min]
   image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 'buildmany min: [amd64, cuda10.2]':
-  extends: .buildmany amd64 cuda
+  extends: [.buildmany amd64 cuda, .buildmany min]
   image: $DEPS_IMAGES/cuda/v1:10.2-$DIGEST_latest
   variables:
     JOB_CC: gcc=8
@@ -363,12 +368,12 @@ validate:
     JOB_CC: gcc-9
 
 'buildmany min: [amd64, rocm5.1]':
-  extends: .buildmany amd64 rocm
+  extends: [.buildmany amd64 rocm, .buildmany min]
   image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
 'buildmany min: [amd64, rocm5.6]':
-  extends: .buildmany amd64 rocm
+  extends: [.buildmany amd64 rocm, .buildmany min]
   image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
@@ -393,7 +398,7 @@ validate:
     JOB_CC: gcc-9
 
 'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
-  extends: .buildmany amd64 lvlz
+  extends: [.buildmany amd64 lvlz, .buildmany min]
   image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.2-$DIGEST_minimum
   variables:
     JOB_CC: gcc-9
