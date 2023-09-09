@@ -1,8 +1,6 @@
 # Only spawn workflows for MRs or protected branches
 workflow:
   rules:
-  - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
-    when: never
   - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_PROTECTED != "true"
     when: never
   - when: always
