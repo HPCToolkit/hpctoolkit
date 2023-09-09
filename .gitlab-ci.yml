@@ -1,8 +1,6 @@
 # Only spawn workflows for MRs or protected branches
 workflow:
   rules:
-  - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"'
-    when: never
   - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_REF_PROTECTED != "true"
     when: never
   - when: always
@@ -473,14 +471,14 @@ validate:
 'check amd64: [cpu]':
   extends: .check
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
-  tags: [saas-linux-large-amd64, cpu/perf]
+  tags: [rice-linux-large-bare-amd64]
   variables: &vars_check_cpu
     JOB_CC: gcc-10
     SPEC: '+mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
 'check min amd64: [cpu]':
   extends: .check
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
-  tags: [saas-linux-large-amd64, cpu/perf]
+  tags: [rice-linux-large-bare-amd64]
   variables: *vars_check_cpu
 'check semifresh amd64: [cpu]':
   extends: ['check amd64: [cpu]', .check semifresh job]
@@ -490,14 +488,14 @@ validate:
 'check arm64: [cpu]':
   extends: .check
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
-  tags: [rice-linux-small-arm64, cpu/perf]
+  tags: [rice-linux-small-bare-arm64]
   variables:
     <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
 'check min arm64: [cpu]':
   extends: .check
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
-  tags: [rice-linux-small-arm64, cpu/perf]
+  tags: [rice-linux-small-bare-arm64]
   variables:
     <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
@@ -505,7 +503,7 @@ validate:
 'check amd64: [+cuda, 11.6]':
   extends: .check
   image: $DEPS_IMAGES/cuda/v2:11.6-$DIGEST_latest
-  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.6, gpu/nvidia>6.0]
+  tags: [rice-linux-large-amd64-gpu-p100]
   variables: &vars_check_cuda
     JOB_CC: gcc-9
     JOB_TEST_SUITE: cuda
@@ -513,23 +511,23 @@ validate:
 'check amd64: [+cuda, 11.8]':
   extends: .check
   image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_latest
-  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0]
+  tags: [rice-linux-large-amd64-gpu-p100]
   variables: *vars_check_cuda
 'check min amd64: [+cuda, 11.8]':
   extends: .check
   image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
-  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0]
+  tags: [rice-linux-large-amd64-gpu-p100]
   variables: *vars_check_cuda
 'check semifresh amd64: [+cuda, 11.8]':
   extends: ['check amd64: [+cuda, 11.8]', .check semifresh job]
-  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0, cpu/perf]
+  tags: [rice-linux-large-bare-amd64-gpu-p100]
   variables:
     REGEN_SUITES: none cpu nvidia sw-cuda
 
 'check amd64: [+rocm, 5.1]':
   extends: .check
   image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_latest
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.1]
+  tags: [rice-linux-large-amd64-gpu-amd]
   before_script: &bscript_check_rocm
   - export LD_LIBRARY_PATH=/opt/rocm/lib:"$LD_LIBRARY_PATH"
   variables: &vars_check_rocm
@@ -539,35 +537,35 @@ validate:
 'check amd64: [+rocm, 5.2]':
   extends: .check
   image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_latest
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.2]
+  tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.3]':
   extends: .check
   image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_latest
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.3]
+  tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.4]':
   extends: .check
   image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_latest
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.4]
+  tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.5]':
   extends: .check
   image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_latest
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.5]
+  tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.6]':
   extends: .check
   image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_latest
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.6]
+  tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 'check min amd64: [+rocm, 5.6]':
@@ -575,7 +573,7 @@ validate:
   image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_minimum
 'check semifresh amd64: [+rocm, 5.6]':
   extends: ['check amd64: [+rocm, 5.6]', .check semifresh job]
-  tags: [rice-linux-large-amd64+amd, gpu/amd/usrspace:5.6, cpu/perf]
+  tags: [rice-linux-large-bare-amd64-gpu-amd]
   variables:
     REGEN_SUITES: none cpu amd
 
