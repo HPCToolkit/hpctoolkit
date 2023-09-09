@@ -1,5 +1,6 @@
 default_language_version:
   python: python3
+default_stages: [pre-commit]
 
 # NB: The hooks in this file are listed in a particular order to reduce the number of times
 # pre-commit has to run before getting an all-clear.
@@ -180,6 +181,7 @@ repos:
   hooks:
   # Identify common spelling mistakes in code and comments
   - id: codespell
+    stages: [pre-commit, commit-msg]
     args: ['--config', '.codespellrc']
     exclude: |
       (?x)^(
