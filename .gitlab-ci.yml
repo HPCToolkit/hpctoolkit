@@ -511,16 +511,16 @@ validate:
 'check amd64: [+cuda, 11.8]':
   extends: .check
   image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_latest
-  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0]
+  tags: [rice-linux-large-amd64-gpu-p100]
   variables: *vars_check_cuda
 'check min amd64: [+cuda, 11.8]':
   extends: .check
   image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
-  tags: [rice-linux-large-amd64+nvidia, gpu/nvidia/usrspace:11.8, gpu/nvidia>6.0]
+  tags: [rice-linux-large-amd64-gpu-p100]
   variables: *vars_check_cuda
 'check semifresh amd64: [+cuda, 11.8]':
   extends: ['check amd64: [+cuda, 11.8]', .check semifresh job]
-  tags: [rice-linux-large-bare-amd64]
+  tags: [rice-linux-large-bare-amd64-gpu-p100]
   variables:
     REGEN_SUITES: none cpu nvidia sw-cuda
 
