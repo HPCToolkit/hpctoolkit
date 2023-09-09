@@ -12,7 +12,7 @@ repos:
 # ------------------------------------------------------------------------------------
 
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.9.0
+  rev: v3.10.1
   hooks:
   # Automatically elide older Python syntax and replace with newer ones
   - id: pyupgrade
@@ -21,7 +21,7 @@ repos:
     exclude: '^src/tool/hpcrun/sample-sources/make-wrappers.py$'
 
 - repo: https://github.com/charliermarsh/ruff-pre-commit
-  rev: 'v0.0.278'
+  rev: 'v0.0.287'
   hooks:
   # Run a number of Python linters in Rust. Not completely feature-parity with Python-based linters,
   # but can autofix a number of issues before they run. Also wicked fast.
@@ -32,22 +32,13 @@ repos:
         ^src/tool/hpcrun/sample-sources/make-wrappers\.py$    # XXX: Old bitrotted Py <2.7 script
       )
 
-- repo: https://github.com/python-poetry/poetry
-  rev: '1.5.0'
-  hooks:
-  # Ensure the poetry.lock files are in-sync with the pyproject.toml files
-  - id: poetry-lock
-    args: [-C, tests2/lib/python/, --check]
-  - id: poetry-lock
-    args: [-C, lib/dev/, --check]
-
 
 # ------------------------------------------------------------------------------------
 #  Formatting hooks:  Hooks that alter the syntax but not semantics of files
 # ------------------------------------------------------------------------------------
 
 - repo: https://github.com/psf/black
-  rev: '23.7.0'
+  rev: '23.9.0'
   hooks:
   # Blacken all Python code, except allow slightly longer line lengths
   - id: black
@@ -119,18 +110,16 @@ repos:
     exclude: *generated_text
 
 - repo: https://github.com/python-poetry/poetry
-  rev: '1.5.0'
+  rev: '1.6.0'
   hooks:
   # Ensure the pyproject.toml files are valid for Poetry
   - id: poetry-check
-    args: [-C, tests2/lib/python/]
-    files: ^tests2/lib/python/pyproject\.toml$
+    args: [-C, tests2/lib/python/, --lock]
   - id: poetry-check
-    args: [-C, lib/dev/]
-    files: ^lib/dev/pyproject\.toml$
+    args: [-C, lib/dev/, --lock]
 
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.4.1
+  rev: v1.5.1
   hooks:
  # Run static checks on the Python code
   - id: mypy
@@ -147,7 +136,7 @@ repos:
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
-  rev: v2.17.4
+  rev: v2.17.5
   hooks:
   # Run the aggressive static Python linter
   - id: pylint
@@ -172,7 +161,7 @@ repos:
     args: ['--shell=sh', '--exclude=SC2154']
 
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: '0.23.3'
+  rev: '0.26.3'
   hooks:
   # Validate the GitLab CI scripts against the schema. Doesn't catch everything but helps
   - id: check-gitlab-ci
