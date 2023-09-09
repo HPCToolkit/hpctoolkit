@@ -8,7 +8,7 @@ def check_fields(*names: str, cls: type | None = None):
 
         def apply(func):
             hints = typing.get_type_hints(func)
-            cls = hints[list(hints.keys())[0]]
+            cls = hints[next(iter(hints.keys()))]
             got = frozenset(f.name for f in dataclasses.fields(cls))
             assert (
                 got == expected
