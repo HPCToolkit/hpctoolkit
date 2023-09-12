@@ -132,6 +132,9 @@ struct cct_node_t {
   struct cct_node_t* left;
   struct cct_node_t* right;
 
+  // Splay sibling to return to after processing this node. In other words, the previous node
+  // pushed onto the stack during a DFS of the splay tree.
+  struct cct_node_t* previous;
 };
 
 #if 0
@@ -144,6 +147,8 @@ static struct {
   cct_addr_t* addr;
 } splay_cache;
 #endif
+
+typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
 
 //
 // ******************* Local Routines ********************
@@ -188,6 +193,7 @@ cct_node_create(cct_addr_t* addr, bool unwound, cct_node_t* parent)
   node->children = NULL;
   node->left = NULL;
   node->right = NULL;
+  node->previous = NULL;
 
   node->is_leaf = false;
   node->unwound = unwound;
@@ -226,28 +232,70 @@ splay(cct_node_t* cct, cct_addr_t* addr)
 // helper for walking functions
 //
 
+// Prepare the given splay tree for a postorder depth-first walk, returning the first node to visit.
 //
-// lrs abbreviation for "left-right-self"
+// NOTE: Do not use directly, use the higher-level `spack_walk_*` iteration functions instead.
 //
-static void
-walk_child_lrs(cct_node_t* cct,
-               cct_op_t op, cct_op_arg_t arg, size_t level,
-               void (*wf)(cct_node_t* n, cct_op_t o, cct_op_arg_t a, size_t l))
-{
-  if (!cct) return;
-
-  walk_child_lrs(cct->left, op, arg, level, wf);
-  walk_child_lrs(cct->right, op, arg, level, wf);
-  wf(cct, op, arg, level);
+// The first node visited in a postorder DFS is the leftmost descendant of `cur`, this leaf node is
+// returned. For every node `cct` between `cur` and this leaf (including the leaf), `cct->previous`
+// is set to its parent node as uncovered during the traversal. This maintains the invariant that,
+// for the duration that `cct` and descendants are being walked, `cct->previous` will be returned to
+// by the postorder DFS after the subtree rooted at `cct` has been completely visited.
+static cct_node_t* splay_postorder_first(cct_node_t* cur) {
+  while (cur->left != NULL || cur->right != NULL) {
+    cct_node_t* next = (cur->left != NULL) ? cur->left : cur->right;
+    next->previous = cur;
+    cur = next;
+  }
+  return cur;
 }
 
-static void
-walkset_l(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg, size_t level)
-{
-  if (! cct) return;
-  walkset_l(cct->left, fn, arg, level);
-  walkset_l(cct->right, fn, arg, level);
-  fn(cct, arg, level);
+// Get the first node "operated on" in a postorder traversal of the subtree rooted at root.
+//
+// If there are no nodes to walk (i.e. the argument is `NULL`), returns `NULL`.
+// See splay_walk_next for more details.
+static cct_node_t* splay_walk_init(cct_node_t* root) {
+  if (root == NULL) return NULL;
+  assert(root->previous == NULL && "Attempt to walk the same tree in parallel");
+
+  // First node in the iteration is always the leftmost child.
+  return splay_postorder_first(root);
+}
+
+// Get the next node "operated on" in a postorder traversal of a cct node subtree, given the last
+// node "operated on." Returns `NULL` when the traversal has completed.
+//
+// The usual pattern for performance a traversal follows this pattern:
+//
+// ```c
+// for (cct_node_t* node = splay_walk_init(root); node != NULL; node = splay_walk_next(node)) {
+//   // ... operate on node ...
+//   // Note that the following statements are NOT allowed inside this loop:
+//   splay_walk_init(/* any descendant of root, including node */);
+//   break;
+// }
+// ```
+static cct_node_t* splay_walk_next(cct_node_t* last) {
+  assert(last != NULL);
+  // In postorder traversal, last and all of its children have been handled.
+  // So "pop" last from the DFS stack. The new top of the stack is last's parent node.
+  cct_node_t* parent = last->previous;
+  last->previous = NULL;
+
+  // The root of the traversal has no previous node, so if so the traversal is complete.
+  if (parent == NULL) return NULL;
+
+  // If last has a right (direct) sibling, that is next in the traversal.
+  if (last == parent->left && parent->right != NULL) {
+    // Push the right sibling onto the stack...
+    parent->right->previous = parent;
+    // ...then descend to the leftmost child of the right sibling.
+    return splay_postorder_first(parent->right);
+  }
+
+  // Otherwise, all of parent's children have been handled.
+  // Next to process is parent itself.
+  return parent;
 }
 
 //
@@ -771,37 +819,92 @@ hpcrun_cct_retained(cct_node_t* x)
 //
 
 //
-// visiting order: children first, then node
+// visiting order: children first, then node (postorder)
 //
-void
-hpcrun_cct_walk_child_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg, size_t level)
-{
-  if (!cct) return;
-  walk_child_lrs(cct->children, op, arg, level+1,
-		 hpcrun_cct_walk_child_1st_w_level);
+void hpcrun_cct_walk_child_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg, size_t level) {
+  if (cct == NULL) return;
+
+  cct_node_t* cur = cct;
+  do {
+    // At this point, cur has not been walked yet. If it has children, init a walk through its
+    // children splay tree and start iterating through them first.
+    if (cur->children != NULL) {
+      cur = splay_walk_init(cur->children);
+      ++level;
+      continue;
+    }
+
+    while (cur != cct) {
+      // cur is next in the traversal at this point, always.
+      op(cur, arg, level);
+
+      // Attempt to iterate to the next of cur's siblings. If there is a next sibling to iterate to,
+      // it has not been walked yet, so go back to the top of the loop and walk it.
+      cct_node_t* next = splay_walk_next(cur);
+      if (next != NULL) {
+        cur = next;
+        break;
+      }
+
+      // Otherwise, cur is the last of its parent's children that have been walked. Now the
+      // parent (and its siblings) go next in the walk.
+      cur = cur->parent;
+      level--;
+    }
+
+    // When all the children of cct are walked, cur will be set to cct at this point. Break out of
+    // this loop when that happens.
+  } while(cur != cct);
+
+  // At this point, every node has been traversed except for cct, which is always traversed last.
   op(cct, arg, level);
 }
 
 //
-// visiting order: node first, then children
+// visiting order: node first, then children (preorder)
 //
-void
-hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg, size_t level)
-{
-  if (!cct) return;
-  op(cct, arg, level);
-  walk_child_lrs(cct->children, op, arg, level+1,
-		 hpcrun_cct_walk_node_1st_w_level);
+void hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg, size_t level) {
+  if (cct == NULL) return;
+
+  cct_node_t* cur = cct;
+  do {
+    // At this point, cur needs to be traversed before any of its children.
+    op(cur, arg, level);
+
+    // At this point, cur has not been walked yet. If it has children, init a walk through its
+    // children splay tree and traverse the first child before continuing.
+    if(cur->children != NULL) {
+      cur = splay_walk_init(cur->children);
+      level++;
+      continue;
+    }
+
+    while(cur != cct) {
+      // Attempt to iterate to the next of cur's siblings. If there is a next sibling to iterate to,
+      // it (nor its children) have not been walked yet, so go back to the top of the loop with it.
+      cct_node_t* next = splay_walk_next(cur);
+      if(next != NULL) {
+        cur = next;
+        break;
+      }
+
+      // Otherwise, cur is the last of its parent's children that have been walked. Now the
+      // parent's siblings go next in the walk.
+      cur = cur->parent;
+      level--;
+    }
+
+    // When all the children of cct are walked, cur will be set to cct at this point. Break out of
+    // this loop when that happens.
+  } while(cur != cct);
 }
 
-//
-// utility walker for cct sets (part of the substructure of a cct)
-//
-void
-hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg)
-{
-  if(!cct->children) return;
-  walkset_l(cct->children, fn, arg, 0);
+// Iterate over the children of a cct node
+void hpcrun_walk_children(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg) {
+  // A cct node's children are stored in a splay tree, just iterate over them.
+  for (cct_node_t* node = splay_walk_init(cct); node != NULL; node = splay_walk_next(node)) {
+    fn(node, arg, 0);
+  }
 }
 
 //
@@ -1019,8 +1122,8 @@ walkset_l_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg, size_t lev
   return fn(cct, arg, level);
 }
 
-void
-hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg)
+static void
+hpcrun_walk_children_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg)
 {
   if(! cct->children) return;
   // should children be disconnected
@@ -1072,13 +1175,13 @@ hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
       // FIXME: vi3 bug because cct_b->children has the same addr as cct_a
     cct_a->children = cct_b->children;
     // whole cct->children splay tree is used as kids of cct_a,
-    // enough to disconnect children from cct_b (that's why hpcrun_cct_walkset is called)
-    hpcrun_cct_walkset(cct_b, attach_to_a, (cct_op_arg_t) cct_a);
+    // enough to disconnect children from cct_b (that's why hpcrun_walk_children is called)
+    hpcrun_walk_children(cct_b, attach_to_a, (cct_op_arg_t) cct_a);
     cct_b->children = NULL;
   }
   else {
     mjarg_t local = (mjarg_t) {.targ = cct_a, .fn = merge, .arg = arg};
-    hpcrun_cct_walkset_merge(cct_b, merge_or_join, (cct_op_arg_t) &local);
+    hpcrun_walk_children_merge(cct_b, merge_or_join, (cct_op_arg_t) &local);
   }
 }
 

@@ -261,9 +261,9 @@ void hpcrun_cct_walk_node_1st(cct_node_t* cct,
 extern void hpcrun_walk_path(cct_node_t* node, cct_op_t op, cct_op_arg_t arg);
 
 //
-// utility walker for cct sets (part of the substructure of a cct)
+// Iterate through the children of a cct node.
 //
-extern void hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
+extern void hpcrun_walk_children(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
 //
 // Writing operation
 //
@@ -325,9 +325,6 @@ void cct_remove_my_subtree(cct_node_t* cct);
 
 
 
-// for hpcrun_cct_walkset_merge
-typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
-extern void hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg);
 
 
 // copy cct node
