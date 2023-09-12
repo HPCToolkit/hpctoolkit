@@ -6,6 +6,17 @@ project('hpctoolkit', 'c', 'cpp',
 fs = import('fs')
 pymod = import('python')
 
+# Find Python. This is a hard requirement since we use Python for the regression test suite as well.
+python = pymod.find_installation('python3',
+  modules: [
+    'click',
+    'ruamel.yaml',
+    'pytest',
+    'pyparsing',
+  ])
+assert(python.language_version().version_compare('>=3.10'),
+       'Need Python >=3.10, got @0@'.format(python.language_version()))
+
 # Translate from prefixes to Meson dependency objects. They are missing most pieces like compiler
 # args and such, but they are closer to the Mesonic.
 foreach package : [
@@ -46,9 +57,6 @@ if not papi_exdep.found()
 else
     perfmon_exdep = dependency('', required: false)
 endif
-
-# Find Python. This is a hard requirement since we use Python for the regression test suite as well.
-python = pymod.find_installation('python3')
 
 opencl_exdep = dependency('external opencl', required: get_option('opencl'))
 level0_exdep = dependency('external level0', required: get_option('level0'))
