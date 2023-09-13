@@ -206,7 +206,7 @@ if perfmon_exdep.found()
     _autogoo_args += ['--with-perfmon=@0@'.format(perfmon_exdep.get_variable(internal: 'prefix'))]
 endif
 if get_option('python').enable_auto_if(python.found()).enabled()
-    _autogoo_args += ['--with-python=@0@'.format(python.full_path() + '-config')]
+    _autogoo_args += ['--with-python=@0@'.format(python.get_variable('BINDIR') / fs.stem(python.full_path()) + '-config')]
 endif
 if opencl_exdep.found()
     _autogoo_args += ['--with-opencl=@0@'.format(opencl_exdep.get_variable(internal: 'prefix'))]
