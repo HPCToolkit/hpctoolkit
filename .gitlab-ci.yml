@@ -108,7 +108,7 @@ deps build:
       leap15/v1
       almalinux8/v1
       ubuntu20.04/v1
-      fedora37/v1
+      fedora38/v1
       cuda/v1:10.2
       cuda/v2:11.6
       cuda/v2:11.8
@@ -272,19 +272,11 @@ validate:
 'buildmany: [amd64, ubuntu20.04]':
   extends: .buildmany amd64 cpu
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
-  parallel: {matrix: [{JOB_CC: [gcc-9, gcc-10, clang-10]}]}
-'buildmany: [arm64, ubuntu20.04]':
-  extends: .buildmany arm64 cpu
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
-  parallel: {matrix: [{JOB_CC: gcc-10}]}
-'buildmany: [amd64, leap15]':
+  parallel: {matrix: [{JOB_CC: [clang-10]}]}
+'buildmany: [amd64, fedora38]':
   extends: .buildmany amd64 cpu
-  image: $DEPS_IMAGES/leap15/v1:latest-$DIGEST_latest
-  parallel: {matrix: [{JOB_CC: gcc-11}]}
-'buildmany: [amd64, fedora37]':
-  extends: .buildmany amd64 cpu
-  image: $DEPS_IMAGES/fedora37/v1:latest-$DIGEST_latest
-  parallel: {matrix: [{JOB_CC: [gcc=12, clang=15]}]}
+  image: $DEPS_IMAGES/fedora38/v1:latest-$DIGEST_latest
+  parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
 
 'buildmany min: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
@@ -293,19 +285,11 @@ validate:
 'buildmany min: [amd64, ubuntu20.04]':
   extends: .buildmany amd64 cpu
   image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
-  parallel: {matrix: [{JOB_CC: [gcc-9, gcc-10, clang-10]}]}
-'buildmany min: [arm64, ubuntu20.04]':
-  extends: .buildmany arm64 cpu
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
-  parallel: {matrix: [{JOB_CC: gcc-10}]}
-'buildmany min: [amd64, leap15]':
+  parallel: {matrix: [{JOB_CC: [clang-10]}]}
+'buildmany min: [amd64, fedora38]':
   extends: .buildmany amd64 cpu
-  image: $DEPS_IMAGES/leap15/v1:latest-$DIGEST_minimum
-  parallel: {matrix: [{JOB_CC: gcc-11}]}
-'buildmany min: [amd64, fedora37]':
-  extends: .buildmany amd64 cpu
-  image: $DEPS_IMAGES/fedora37/v1:latest-$DIGEST_minimum
-  parallel: {matrix: [{JOB_CC: [gcc=12, clang=15]}]}
+  image: $DEPS_IMAGES/fedora38/v1:latest-$DIGEST_minimum
+  parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
 
 
 # CUDA spins
