@@ -1,0 +1,19 @@
+#!/bin/sh
+
+"$1"/bin/python -m pip \
+  --no-input  `# Don't prompt for input` \
+  --no-cache-dir  `# Don't use the cache` \
+  --disable-pip-version-check  `# Don't check the PyPI for newer versions of Pip itself` \
+  --require-virtualenv  `# Ensure we're running in the virtual environment` \
+  install \
+  --no-build-isolation  `# Don't clear variables like PYTHONPATH` \
+  --no-warn-script-location  `# Don't warn about bin/ not being on the PATH` \
+  --no-index  `# Don't query the PyPI for anything` \
+  --editable  `# Ensure updates to the source propagate to the installation` \
+  "$2" || exit $?
+
+{
+  echo '#!/bin/sh'
+  echo 'exec' "$1"/bin/hpctesttool '"$@"'
+} > "$3"
+chmod +x "$3"

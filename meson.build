@@ -92,11 +92,9 @@ mpicxx = find_program('mpicxx', required: get_option('hpcprof_mpi'))
 # Usage: [mpiexec, '<# of ranks>', command...]
 mpiexec = find_program('mpiexec', required: get_option('hpcprof_mpi').disabled() ? get_option('hpcprof_mpi') : false)
 if mpiexec.found()
-    mpiexec_str = ';'.join(mpiexec.full_path(), '-host', 'localhost', '-n')
-    mpiexec = [mpiexec, '-host', 'localhost', '-n']
+    mpiexec = [mpiexec.full_path(), '-host', 'localhost:1000', '-n']
 else
     _sh = find_program('sh')
-    mpiexec_str = ';'.join(_sh.full_path(), '-c', 'exit 77')
     mpiexec = [_sh, '-c', 'exit 77']
 endif
 
@@ -172,7 +170,7 @@ run_command(files('meson'/'autogen'),
     files('config/copyright-hash'),
     files('config/export-hpctoolkit'),
     files('config/launch-options'),
-    check: true, capture: false, env: _autoenv)
+    check: true, env: _autoenv)
 
 # Generate the full set of --with-* arguments for ./configure. This propagates the dependencies to
 # the actual build.
@@ -297,7 +295,7 @@ _autogoo_args += [
 # Run ./configure to configure the project as a whole
 message('Running ./configure ...')
 run_command(files('meson'/'configure'), 'autotools-build', files('configure'), _autogoo_args,
-            check: true, capture: false, env: _autogoo_env)
+            check: true, env: _autogoo_env)
 
 # Build and install by deferring to a parallel make
 _makepy = files('meson'/'make')
@@ -309,14 +307,8 @@ custom_target('make -j', command: [python, _makepy] + _makecmd, console: true, e
 meson.add_install_script(python, _makepy, _make, '-C', _autogoo_builddir,
                          'MAKE=@0@'.format(_make.full_path()), 'install')
 
-# Once HPCToolkit is installed, they'll be in these paths
-hpcrun = get_option('prefix') / 'bin' / 'hpcrun'
-hpcstruct = get_option('prefix') / 'bin' / 'hpcstruct'
-hpcprof = get_option('prefix') / 'bin' / 'hpcprof'
-if get_option('hpcprof_mpi').enable_auto_if(mpicxx.found()).enabled()
-  hpcprof_mpi = get_option('prefix') / 'bin' / 'hpcprof-mpi'
-endif
 # --- END AUTOGOO STUB -----------------------
 
-# Regression tests are in the tests2 subdir, for now.
-subdir('tests2')
+subdir('src')
+subdir('lib')
+subdir('tests2')  # FIXME: Eventually rename this to just tests/
