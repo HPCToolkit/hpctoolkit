@@ -7,13 +7,7 @@ fs = import('fs')
 pymod = import('python')
 
 # Find Python. This is a hard requirement since we use Python for the regression test suite as well.
-python = pymod.find_installation('python3',
-  modules: [
-    'click',
-    'ruamel.yaml',
-    'pytest',
-    'pyparsing',
-  ])
+python = pymod.find_installation('python3')
 assert(python.language_version().version_compare('>=3.10'),
        'Need Python >=3.10, got @0@'.format(python.language_version()))
 

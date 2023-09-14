@@ -3,7 +3,8 @@
 
 # Instantiate a venv to install the Python package into, at setup-time.
 _venv = meson.current_build_dir() / '.venv'
-run_command(python, '-m', 'venv', '--system-site-packages', _venv, check: true)
+run_command('rm', '-f', meson.current_build_dir() / 'hpctesttool', check: true)
+run_command(python, '-m', 'venv', '--clear', _venv, check: true)
 _venv_python = find_program(_venv / 'bin' / 'python')
 
 # At build time, install the Python package into the venv.

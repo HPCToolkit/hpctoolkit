@@ -19,6 +19,12 @@ hpctesttool = "hpctesttool.__main__:main"
 xfail_strict = true
 junit_suite_name = "py-hpctesttool"
 
+# These are dependencies that are you will never need, but are needed for the vendoring deps.
+[tool.poetry.group.implicit]
+optional = true
+[tool.poetry.group.implicit.dependencies]
+poetry-core = "^1.7.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
