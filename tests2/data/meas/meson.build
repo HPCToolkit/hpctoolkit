@@ -7,11 +7,6 @@ _exe_loops = executable('testmeas-loops', files('loops.c'),
     dependencies: dependency('openmp'))
 
 _run = [find_program(files('run')), hpctesttool, hpcrun, hpcstruct]
-# FIXME: nvdisasm must be on the PATH for hpcstruct to operate on CUDA binaries
-# See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/799
-if has_cuda
-  _run = [path_env, '--prepend-path', fs.parent(nvdisasm.full_path())] + _run
-endif
 
 _measurements = {
   # `small` is designed to contain 3-4 samples scattered through a tiny, easy-to-understand
