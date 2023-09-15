@@ -1,4 +1,4 @@
-if not add_languages('cuda', native: false, required: get_option('cuda'))
+if not has_cuda
   subdir_done()
 endif
 
