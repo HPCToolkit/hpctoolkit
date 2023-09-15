@@ -23530,6 +23530,12 @@ case "$CUDA" in
     if test "x$OPT_CUDA_LDFLAGS" = x ; then
       as_fn_error $? "unable to find libcudart.so in: $CUDA" "$LINENO" 5
     fi
+
+    if test ! -f "${CUDA}/bin/nvdisasm" || test ! -x "${CUDA}/bin/nvdisasm"; then
+      as_fn_error $? "unable to find nvdisasm in: $CUDA" "$LINENO" 5
+    fi
+    OPT_CUDA_NVDISASM_PATH="${CUDA}/bin/nvdisasm"
+
     OPT_HAVE_CUDA=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
@@ -23557,6 +23563,11 @@ if test "$OPT_HAVE_CUDA" = yes ; then
 $as_echo "#define OPT_HAVE_CUDA 1" >>confdefs.h
 
 fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define CUDA_NVDISASM_PATH "$OPT_CUDA_NVDISASM_PATH"
+_ACEOF
 
 
 cat >>confdefs.h <<_ACEOF

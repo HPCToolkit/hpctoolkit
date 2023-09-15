@@ -115,18 +115,6 @@ using namespace InstructionAPI;
 //***************************************************************************
 
 static bool
-test_nvdisasm()
-{
-  // check whether nvdisasm works
-  int retval = system("nvdisasm > /dev/null") == 0;
-  if (!retval) {
-    std::cout << "WARNING: nvdisasm is not available on your path to analyze control flow in NVIDIA CUBINs" << std::endl;
-  }
-  return retval;
-}
-
-
-static bool
 dumpCubin
 (
  const std::string &cubin,
@@ -225,7 +213,7 @@ parseDotCFG
   for (auto *symbol : symbols) {
     if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
       auto index = symbol->getIndex();
-      const std::string cmd = "nvdisasm -fun " +
+      const std::string cmd = CUDA_NVDISASM_PATH " -fun " +
         std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
       if (system(cmd.c_str()) == 0) {
         parsed_function_symbols.push_back(symbol);
@@ -376,7 +364,7 @@ parseDotCFG
     }
 
     const std::string dot_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".dot";
-    std::string cmd = "nvdisasm -cfg -poff -fun ";
+    std::string cmd = CUDA_NVDISASM_PATH " -cfg -poff -fun ";
     for (auto *symbol : parsed_function_symbols) {
       auto index = symbol->getIndex();
       cmd += std::to_string(index) + ",";
@@ -419,10 +407,10 @@ buildCudaGPUCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
-  static bool compute_cfg = cfg_wanted && test_nvdisasm();
   bool dump_cubin_success = false;
 
-  if (compute_cfg) {
+#ifdef OPT_HAVE_CUDA
+  if (cfg_wanted) {
     std::string filename = getFilename();
     std::string cubin = filename;
     std::string dot = filename + ".dot";
@@ -442,6 +430,7 @@ buildCudaGPUCFG
       return true;
     }
   }
+#endif
 
   *code_src = new SymtabCodeSource(the_symtab);
   *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);

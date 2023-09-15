@@ -359,8 +359,6 @@ doMeasurementsDir
   char *path = getenv("PATH");
   string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
 
-  // Assume that nvdisasm is on the user's path; if not BAnal will complain
-
   setenv("PATH", new_path.c_str(), 1);
 
   // Construct full paths for hpcproflm and hpcstruct

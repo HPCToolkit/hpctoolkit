@@ -4553,6 +4553,12 @@ case "$CUDA" in
     if test "x$OPT_CUDA_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libcudart.so in: $CUDA])
     fi
+
+    if test ! -f "${CUDA}/bin/nvdisasm" || test ! -x "${CUDA}/bin/nvdisasm"; then
+      AC_MSG_ERROR([unable to find nvdisasm in: $CUDA])
+    fi
+    OPT_CUDA_NVDISASM_PATH="${CUDA}/bin/nvdisasm"
+
     OPT_HAVE_CUDA=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
@@ -4571,6 +4577,8 @@ if test "$OPT_HAVE_CUDA" = yes ; then
   AC_DEFINE([OPT_HAVE_CUDA], [1], [Have support for cuda])
 fi
 
+AC_DEFINE_UNQUOTED([CUDA_NVDISASM_PATH], ["$OPT_CUDA_NVDISASM_PATH"],
+  ["Path to CUDA nvdisasm utility"])
 AC_DEFINE_UNQUOTED([CUDA_INSTALL_PREFIX],
   ["$CUDA"], ["Cuda install prefix"])
 
