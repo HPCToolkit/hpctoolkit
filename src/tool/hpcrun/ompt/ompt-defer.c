@@ -326,7 +326,7 @@ resolve_cntxt
       // the region we are in now (if any) differs from the region where
       // the last sample was received.
       TMSG(DEFER_CTXT, "exited region 0x%lx; attempting to resolve contexts", td->region_id);
-      hpcrun_cct_walkset(tbd_cct, omp_resolve_and_free, td);
+      hpcrun_walk_children(tbd_cct, omp_resolve_and_free, td);
     }
   }
 
@@ -388,7 +388,7 @@ resolve_cntxt_fini
 {
   //printf("Resolving for thread... region = %d\n", td->region_id);
   //printf("Root children = %p\n", td->core_profile_trace_data.epoch->csdata.unresolved_root->children);
-  hpcrun_cct_walkset(td->core_profile_trace_data.epoch->csdata.unresolved_root,
+  hpcrun_walk_children(td->core_profile_trace_data.epoch->csdata.unresolved_root,
                      omp_resolve_and_free, td);
 }
 
@@ -785,7 +785,7 @@ update_any_unresolved_regions
 )
 {
   void *no_arg = 0;
-  hpcrun_cct_walkset(root, update_unresolved_node, no_arg);
+  hpcrun_walk_children(root, update_unresolved_node, no_arg);
 }
 
 
