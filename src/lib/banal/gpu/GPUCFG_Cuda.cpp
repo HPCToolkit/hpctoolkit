@@ -396,44 +396,34 @@ getFilename
 }
 
 
-bool
+void
 buildCudaGPUCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab,
- bool cfg_wanted,
  Dyninst::ParseAPI::CodeSource **code_src,
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
   bool dump_cubin_success = false;
 
-#ifdef OPT_HAVE_CUDA
-  if (cfg_wanted) {
-    std::string filename = getFilename();
-    std::string cubin = filename;
-    std::string dot = filename + ".dot";
+  std::string filename = getFilename();
+  std::string cubin = filename;
+  std::string dot = filename + ".dot";
 
-    dump_cubin_success = dumpCubin(cubin, elfFile);
-    if (!dump_cubin_success) {
-      std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl;
-    } else {
-      std::vector<GPUParse::Function *> functions;
-      parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
-      CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-      *code_src = new GPUCodeSource(functions, the_symtab);
-      *code_obj = new CodeObject(*code_src, cfg_fact);
-      (*code_obj)->parse();
-      unlink(dot.c_str());
-      unlink(cubin.c_str());
-      return true;
-    }
+  dump_cubin_success = dumpCubin(cubin, elfFile);
+  if (!dump_cubin_success) {
+    std::cout << "ERROR: unable to write a cubin to the file system to analyze its CFG" << std::endl;
+    throw 1;
   }
-#endif
 
-  *code_src = new SymtabCodeSource(the_symtab);
-  *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
-
-  return false;
+  std::vector<GPUParse::Function *> functions;
+  parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
+  CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+  *code_src = new GPUCodeSource(functions, the_symtab);
+  *code_obj = new CodeObject(*code_src, cfg_fact);
+  (*code_obj)->parse();
+  unlink(dot.c_str());
+  unlink(cubin.c_str());
 }

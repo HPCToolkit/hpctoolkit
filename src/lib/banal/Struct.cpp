@@ -805,9 +805,21 @@ makeStructure(string filename,
     if (cuda_file) { // don't run parseapi on cuda binary
       cuda_arch = elfFile->getArch();
       cubin_size = elfFile->getLength();
-      parsable = buildCudaGPUCFG(search_path, elfFile, the_symtab,
-        structOpts.compute_gpu_cfg, &code_src, &code_obj);
-      has_calls = structOpts.compute_gpu_cfg;
+      if (structOpts.compute_gpu_cfg) {
+#ifdef OPT_HAVE_CUDA
+        buildCudaGPUCFG(search_path, elfFile, the_symtab, &code_src, &code_obj);
+        parsable = true;
+        has_calls = true;
+#else
+        DIAG_EMsg("CFG requested for CUDA binary " << inputFile.fileName() << " but hpcstruct was not built with CUDA support");
+        throw 1;
+#endif
+      } else {
+        code_src = new SymtabCodeSource(the_symtab);
+        code_obj = new CodeObject(code_src, NULL, NULL, false, true);
+        parsable = false;
+        has_calls = false;
+      }
     }
     else if (intel_file) { // don't run parseapi on intel binary
       intel_gpu_arch = 1;

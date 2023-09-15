@@ -23562,12 +23562,12 @@ if test "$OPT_HAVE_CUDA" = yes ; then
 
 $as_echo "#define OPT_HAVE_CUDA 1" >>confdefs.h
 
-fi
-
 
 cat >>confdefs.h <<_ACEOF
 #define CUDA_NVDISASM_PATH "$OPT_CUDA_NVDISASM_PATH"
 _ACEOF
+
+fi
 
 
 cat >>confdefs.h <<_ACEOF

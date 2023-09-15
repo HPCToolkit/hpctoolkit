@@ -4575,10 +4575,10 @@ AM_CONDITIONAL([OPT_ENABLE_CUDA], [test "$OPT_HAVE_CUDA" = yes])
 
 if test "$OPT_HAVE_CUDA" = yes ; then
   AC_DEFINE([OPT_HAVE_CUDA], [1], [Have support for cuda])
+  AC_DEFINE_UNQUOTED([CUDA_NVDISASM_PATH], ["$OPT_CUDA_NVDISASM_PATH"],
+    ["Path to CUDA nvdisasm utility"])
 fi
 
-AC_DEFINE_UNQUOTED([CUDA_NVDISASM_PATH], ["$OPT_CUDA_NVDISASM_PATH"],
-  ["Path to CUDA nvdisasm utility"])
 AC_DEFINE_UNQUOTED([CUDA_INSTALL_PREFIX],
   ["$CUDA"], ["Cuda install prefix"])
 
