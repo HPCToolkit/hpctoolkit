@@ -1,202 +1,23 @@
-#!/usr/bin/env python3
+#!/bin/sh -ex
 
-import collections.abc
-import dataclasses
-import difflib
-import os
-import re
-import shutil
-import subprocess
-import sys
-import typing
-from pathlib import Path
-from xml.etree import ElementTree as XmlET
+hpctesttool="$1"
+hpcstruct="$2"
+canonical="$3"
+shift 3  # Remaining arguments go to hpcstruct
 
-import click
-from hpctoolkit.test.execution import hpcstruct
+for arg in "$@"; do
+  case "$arg" in
+  --skip*)
+    if [ "$arg" != "--skip" ]; then
+      echo "$arg" | cut -d= -f2-
+    fi
+    exit 77
+    ;;
+  esac
+done
 
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
 
-def iter_xml(root: XmlET.Element) -> collections.abc.Iterator[tuple[XmlET.Element, bool]]:
-    """Iterate over an XML element tree in depth-first order with exit callbacks. Returns each
-    element in the tree exactly twice, along with a boolean indicating with this is the first time
-    incountering the element.
-    """
-    stack: list[tuple[XmlET.Element, bool]] = [(root, True)]
-    while stack:
-        elem, enter = stack.pop()
-        yield elem, enter
-        if enter:
-            stack.append((elem, False))
-            for subelem in elem:
-                stack.append((subelem, True))
-
-
-@dataclasses.dataclass(eq=True, order=True, frozen=True)
-class VRange:
-    min_addr: int
-    max_addr: int
-
-    def __add__(self, other: typing.Union["VRange", None]) -> "VRange":
-        if other is None:
-            return self
-        return self.__class__(
-            min(self.min_addr, other.min_addr), max(self.max_addr, other.max_addr)
-        )
-
-    __radd__ = __add__
-
-    @classmethod
-    def parse(cls, v: str | None) -> typing.Union["VRange", None]:
-        if v is None or v == "{}":
-            return None
-        if v[0] != "{" or v[-1] != "}":
-            raise ValueError(f"Invalid v=* attribute: {v!r}")
-
-        result = None
-        for part in v[1:-1].split():
-            mat = re.fullmatch(r"\[0x([0-9a-f]+)-0x([0-9a-f]+)\)", part)
-            if not mat:
-                raise ValueError(f"Invalid v=* range: {part!r} (from {v!r})")
-            result += cls(int(mat.group(1), base=16), int(mat.group(2), base=16))
-        return result
-
-
-def canonical_form(file: typing.BinaryIO) -> list[str]:  # noqa: C901
-    data = XmlET.parse(file)
-
-    # 1. Calculate a VRange for each element, based on the address range ("v") and children
-    ranges: dict[XmlET.Element, VRange] = {}
-    for elem, enter in iter_xml(data.getroot()):
-        if enter:
-            continue  # Post-order to ensure we have ranges for children
-        vrange = VRange.parse(elem.get("v"))
-        for child in elem:
-            vrange += ranges[child]
-        if vrange is None:
-            raise ValueError(f"No address range for element {elem}")
-        ranges[elem] = vrange
-
-    # 2. Sort the children of each element by their address ranges
-    children: dict[XmlET.Element, list[XmlET.Element]] = {}
-    for elem in data.iter():
-        children[elem] = sorted(elem, key=lambda e: ranges[e], reverse=True)  # noqa: F821
-    del ranges
-    for parent, new_children in children.items():
-        parent[:] = new_children
-    del children
-
-    # 3a. Strip and canonicalize the identifier attribute ("i") from all tags
-    for elem in data.iter():
-        if elem.get("i") is not None:
-            elem.set("i", "<<ID>>")
-    # 3b. Strip the static identifier attribute ("s") from <P> tags
-    for elem in data.iter("P"):
-        if elem.get("s") is not None:
-            del elem.attrib["s"]
-    # 3c. Strip and canonicalize the load module path ("n") from <LM> tags
-    for elem in data.iter("LM"):
-        if elem.get("n") is not None:
-            elem.set("n", "<<BINARY PATH>>")
-    # 3d. Strip parent paths from source file paths ("n" or "f") from <F>, <A> and <L> tags
-    for elem in data.iter("F"):
-        fn = elem.get("n")
-        if fn is not None and "/" in fn:
-            elem.set("n", "<<PARENT PATH>>/" + fn.rsplit("/", 1)[1])
-    for tag in ("A", "L"):
-        for elem in data.iter(tag):
-            fn = elem.get("f")
-            if fn is not None and "/" in fn:
-                elem.set("f", "<<PARENT PATH>>/" + fn.rsplit("/", 1)[1])
-
-    # 4. Output the canonical form of the element tree
-    depth = 0
-    result: list[str] = []
-    for elem, enter in iter_xml(data.getroot()):
-        if enter:
-            depth += 1
-            attrs = " ".join(f"{k}={elem.get(k)!r}" for k in sorted(elem.keys()))
-            result.append("  " * depth + f"<{elem.tag} {attrs}>\n")
-        else:
-            result.append("  " * depth + f"</{elem.tag}>\n")
-            depth -= 1
-    return result
-
-
-NVIDIA_MAGIC = b"\x7fELF\x02\x01\x01\x33\x07\0\0\0\0\0\0\0\x02\0\xbe\0"
-
-
-def check_gpucfg_supported(binary: Path, *, nvdisasm: Path | None):
-    """Check if we expect --gpucfg yes to work for the given binary.
-    Raises a ClickException if anything looks like it won't work.
-    """
-    # Read a prefix from the binary to assist with identification
-    with open(binary, "rb") as f:
-        prefix = f.read(20)
-
-    if prefix.startswith(NVIDIA_MAGIC):
-        # hpcstruct will be using nvdisasm from the PATH to parse this binary.
-        # Add the nvdisasm we want to actually test onto the PATH for this part.
-        if nvdisasm is None:
-            click.echo("Skipping: nvdisasm not found, --gpucfg yes will not work")
-            sys.exit(77)
-        os.environ["PATH"] = f"{nvdisasm.parent}:{os.environ['PATH']}"
-        if not (found := shutil.which("nvdisasm")) or not nvdisasm.samefile(found):
-            raise RuntimeError("Setting PATH did not allow finding nvdisasm!")
-        # Run nvdisasm ourselves and determine if it will work.
-        proc = subprocess.run([nvdisasm, binary], stdout=subprocess.DEVNULL, check=False)
-        if proc.returncode != 0:
-            click.echo("Skipping: nvdisasm failed to parse binary, --gpucfg yes will not work")
-            sys.exit(77)
-
-
-def skip(ctx, _param, value: str):
-    if not value or ctx.resilient_parsing:
-        return
-    click.echo(f"SKIP: {value}")
-    ctx.exit(77)
-
-
-@click.command()
-@click.option(
-    "--skip",
-    is_eager=True,
-    callback=skip,
-    expose_value=False,
-    help="Skip this test completely with a short message",
-)
-@click.argument(
-    "binary", type=click.Path(exists=True, readable=True, dir_okay=False, path_type=Path)
-)
-@click.argument("structfile", type=click.File("rb"))
-@click.option(
-    "-j", "threads", type=int, default=1, help="Use the given number of threads for analysis"
-)
-@click.option("--gpucfg/--no-gpucfg", default=False, help="Enable GPU CFG parsing")
-@click.option(
-    "--nvdisasm",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="nvdisasm to use when parsing Nvidia binaries",
-)
-def test_consistent(
-    *,
-    binary: Path,
-    structfile: typing.BinaryIO,
-    threads: int,
-    gpucfg: bool,
-    nvdisasm: Path | None,
-):
-    """Test that analysis of BINARY generates a result identical to STRUCTFILE."""
-    if gpucfg:
-        check_gpucfg_supported(binary, nvdisasm=nvdisasm)
-
-    expected = canonical_form(structfile)
-    with hpcstruct(binary, "--gpucfg", "yes" if gpucfg else "no", threads=threads) as f:
-        got = canonical_form(f)
-        if got != expected:
-            for line in difflib.unified_diff(expected, got):
-                click.echo(line, nl=False)
-            raise click.ClickException("Differences found between obtained and expected structure!")
-
-
-if __name__ == "__main__":
-    test_consistent()  # pylint: disable=no-value-for-parameter,missing-kwoa
+"$hpcstruct" -o "$tmpdir"/s.hpcstruct --nocache "$@"
+"$hpctesttool" test struct-compare "$tmpdir"/s.hpcstruct "$canonical"

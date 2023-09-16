@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ "$1" = "--prepend-path" ]; then
+  export PATH="$2":"$PATH"
+  shift 2
+fi
+
+exec "$@"

@@ -6,6 +6,11 @@ project('hpctoolkit', 'c', 'cpp',
 fs = import('fs')
 pymod = import('python')
 
+# Find Python. This is a hard requirement since we use Python for the regression test suite as well.
+python = pymod.find_installation('python3')
+assert(python.language_version().version_compare('>=3.10'),
+       'Need Python >=3.10, got @0@'.format(python.language_version()))
+
 # Translate from prefixes to Meson dependency objects. They are missing most pieces like compiler
 # args and such, but they are closer to the Mesonic.
 foreach package : [
@@ -47,9 +52,6 @@ else
     perfmon_exdep = dependency('', required: false)
 endif
 
-# Find Python. This is a hard requirement since we use Python for the regression test suite as well.
-python = pymod.find_installation('python3')
-
 opencl_exdep = dependency('external opencl', required: get_option('opencl'))
 level0_exdep = dependency('external level0', required: get_option('level0'))
 _gtpin_f = get_option('gtpin').require(level0_exdep.found(),
@@ -84,11 +86,9 @@ mpicxx = find_program('mpicxx', required: get_option('hpcprof_mpi'))
 # Usage: [mpiexec, '<# of ranks>', command...]
 mpiexec = find_program('mpiexec', required: get_option('hpcprof_mpi').disabled() ? get_option('hpcprof_mpi') : false)
 if mpiexec.found()
-    mpiexec_str = ';'.join(mpiexec.full_path(), '-host', 'localhost', '-n')
-    mpiexec = [mpiexec, '-host', 'localhost', '-n']
+    mpiexec = [mpiexec.full_path(), '-host', 'localhost:1000', '-n']
 else
     _sh = find_program('sh')
-    mpiexec_str = ';'.join(_sh.full_path(), '-c', 'exit 77')
     mpiexec = [_sh, '-c', 'exit 77']
 endif
 
@@ -165,7 +165,7 @@ run_command(files('meson'/'autogen'),
     files('config/copyright-hash'),
     files('config/export-hpctoolkit'),
     files('config/launch-options'),
-    check: true, capture: false, env: _autoenv)
+    check: true, env: _autoenv)
 
 # Generate the full set of --with-* arguments for ./configure. This propagates the dependencies to
 # the actual build.
@@ -199,7 +199,7 @@ if perfmon_exdep.found()
     _autogoo_args += ['--with-perfmon=@0@'.format(perfmon_exdep.get_variable(internal: 'prefix'))]
 endif
 if get_option('python').enable_auto_if(python.found()).enabled()
-    _autogoo_args += ['--with-python=@0@'.format(python.full_path() + '-config')]
+    _autogoo_args += ['--with-python=@0@'.format(python.get_variable('BINDIR') / fs.stem(python.full_path()) + '-config')]
 endif
 if opencl_exdep.found()
     _autogoo_args += ['--with-opencl=@0@'.format(opencl_exdep.get_variable(internal: 'prefix'))]
@@ -290,7 +290,7 @@ _autogoo_args += [
 # Run ./configure to configure the project as a whole
 message('Running ./configure ...')
 run_command(files('meson'/'configure'), 'autotools-build', files('configure'), _autogoo_args,
-            check: true, capture: false, env: _autogoo_env)
+            check: true, env: _autogoo_env)
 
 # Build and install by deferring to a parallel make
 _makepy = files('meson'/'make')
@@ -302,14 +302,8 @@ custom_target('make -j', command: [python, _makepy] + _makecmd, console: true, e
 meson.add_install_script(python, _makepy, _make, '-C', _autogoo_builddir,
                          'MAKE=@0@'.format(_make.full_path()), 'install')
 
-# Once HPCToolkit is installed, they'll be in these paths
-hpcrun = get_option('prefix') / 'bin' / 'hpcrun'
-hpcstruct = get_option('prefix') / 'bin' / 'hpcstruct'
-hpcprof = get_option('prefix') / 'bin' / 'hpcprof'
-if get_option('hpcprof_mpi').enable_auto_if(mpicxx.found()).enabled()
-  hpcprof_mpi = get_option('prefix') / 'bin' / 'hpcprof-mpi'
-endif
 # --- END AUTOGOO STUB -----------------------
 
-# Regression tests are in the tests2 subdir, for now.
-subdir('tests2')
+subdir('src')
+subdir('lib')
+subdir('tests2')  # FIXME: Eventually rename this to just tests/
