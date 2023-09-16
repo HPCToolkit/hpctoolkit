@@ -1,6 +1,8 @@
 testdata_root = 'tests2/data/'
 testdata_srcroot = meson.project_source_root()
 
+path_env = find_program(files('path-env'))
+
 subdir('meas')
 subdir('dbase')
 subdir('bin')
@@ -119,11 +121,9 @@ if has_rocm
   }
 endif
 
-_make_tar = configure_file(input: files('make-tar'), output: '@PLAINNAME@.venv',
-                           command: venv_shebang)
 foreach suite, contents : _contents
   debug(f'Creating custom_target for fresh-testdata-@suite@.tar.xz')
-  _cmd = [_make_tar, '@OUTPUT@']
+  _cmd = [hpctesttool, 'test', 'tarball-files', '@OUTPUT@']
   _i = 0
   foreach content : contents
     assert('gen' in content, f'Invalid content #@_i@ in suite @suite@')

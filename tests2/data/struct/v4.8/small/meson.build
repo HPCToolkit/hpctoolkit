@@ -80,13 +80,18 @@ foreach name, variants : _structfiles
       _bin = testdata_bin[_binname]
       _attrs += {'binary': _bin}
 
-      _cmd = [_struct, '@INPUT@', '@OUTPUT@', features.get('gpucfg', false) ? '--gpucfg' : '--no-gpucfg']
+      _cmd = [hpcstruct, '--nocache', '@INPUT@', '-o', '@OUTPUT@',
+              '-j1', '--gpucfg=' + (features.get('gpucfg', false) ? 'yes' : 'no')]
+
+      # FIXME: nvdisasm must be on the PATH for hpcstruct to operate on CUDA binaries
+      # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/799
       if has_cuda
-        _cmd += ['--nvdisasm', nvdisasm.full_path()]
+        _cmd = ['--prepend-path', fs.parent(nvdisasm.full_path())] + _cmd
       endif
 
+      _cmd = [path_env] + _cmd
       _gen = custom_target(output: _out_structfile,
-          command: _cmd, input: _bin['binary'], env: hpctoolkit_pyenv,
+          command: _cmd, input: _bin['binary'], env: _env,
           build_always_stale: true, build_by_default: false)
       _gen_attrs = {
         'gen': {

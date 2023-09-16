@@ -1,0 +1,8 @@
+[project]
+name = "ruamel.yaml.clib"
+description = "Fake shim package for ruamel.yaml.clib to make Pip happy"
+version = "0.2.7"
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"

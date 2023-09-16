@@ -2,7 +2,6 @@ import collections.abc
 import copy
 import enum
 import functools
-import itertools
 import json
 import os
 import shutil
@@ -193,17 +192,6 @@ class DevEnv:
 """
 
     @functools.cached_property
-    def _py_specs(self) -> set[sp_syntax.Spec]:
-        """Generate the set of Python extensions that need to be installed, as Specs."""
-        return {
-            sp_syntax.Spec.parse("py-poetry-core @1.2.0:"),
-            sp_syntax.Spec.parse("py-pytest @7.2.1:"),
-            sp_syntax.Spec.parse("py-ruamel-yaml @0.17.16:"),
-            sp_syntax.Spec.parse("py-click @8.1.3:"),
-            sp_syntax.Spec.parse("py-pyparsing @3.0.9:"),
-        }
-
-    @functools.cached_property
     def _specs(
         self,
     ) -> collections.abc.Mapping[str | None, collections.abc.Collection[sp_syntax.Spec]]:
@@ -212,39 +200,36 @@ class DevEnv:
         The Specs are grouped by their `when:` clause.
         """
         result: dict[str | None, set[sp_syntax.Spec]] = collections.defaultdict(set)
-        result[None] = (
-            {
-                # NB: Meson is required as a build tool, but does not need to be included in the devenv
-                # itself. It is instead installed separately in a venv by __main__.py.
-                sp_syntax.Spec.parse("autoconf @2.69"),
-                sp_syntax.Spec.parse("automake @1.15.1"),
-                sp_syntax.Spec.parse("libtool @2.4.6"),
-                sp_syntax.Spec.parse("m4"),
-                sp_syntax.Spec.parse("gmake"),
-                sp_syntax.Spec.parse(
-                    """boost @1.70.0:
+        result[None] = {
+            # NB: Meson is required as a build tool, but does not need to be included in the devenv
+            # itself. It is instead installed separately in a venv by __main__.py.
+            sp_syntax.Spec.parse("autoconf @2.69"),
+            sp_syntax.Spec.parse("automake @1.15.1"),
+            sp_syntax.Spec.parse("libtool @2.4.6"),
+            sp_syntax.Spec.parse("m4"),
+            sp_syntax.Spec.parse("gmake"),
+            sp_syntax.Spec.parse(
+                """boost @1.70.0:
                 +atomic +date_time +filesystem +system +thread +timer +graph +regex
                 +shared +multithreaded
                 visibility=global"""
-                ),
-                sp_syntax.Spec.parse("bzip2 @1.0.8:"),
-                sp_syntax.Spec.parse("dyninst @12.3.0:"),
-                sp_syntax.Spec.parse("elfutils ~nls @0.186:"),
-                sp_syntax.Spec.parse("intel-tbb +shared @2020.3"),
-                sp_syntax.Spec.parse("libmonitor +hpctoolkit ~dlopen @2023.03.15:"),
-                sp_syntax.Spec.parse("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
-                sp_syntax.Spec.parse("zlib +shared @1.2.13:1.2"),
-                sp_syntax.Spec.parse("libunwind +xz +pic @1.6.2:"),
-                sp_syntax.Spec.parse("libpfm4 @4.11.0:"),
-                sp_syntax.Spec.parse("xerces-c transcoder=iconv @3.2.3:"),
-                sp_syntax.Spec.parse("libiberty +pic @2.37:"),
-                sp_syntax.Spec.parse("memkind"),
-                sp_syntax.Spec.parse("yaml-cpp +shared @0.7.0:"),
-                sp_syntax.Spec.parse("pkgconfig"),
-                sp_syntax.Spec.parse("python +ctypes +lzma +bz2 +zlib @3.10.8:"),
-            }
-            | self._py_specs
-        )
+            ),
+            sp_syntax.Spec.parse("bzip2 @1.0.8:"),
+            sp_syntax.Spec.parse("dyninst @12.3.0:"),
+            sp_syntax.Spec.parse("elfutils ~nls @0.186:"),
+            sp_syntax.Spec.parse("intel-tbb +shared @2020.3"),
+            sp_syntax.Spec.parse("libmonitor +hpctoolkit ~dlopen @2023.03.15:"),
+            sp_syntax.Spec.parse("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
+            sp_syntax.Spec.parse("zlib +shared @1.2.13:1.2"),
+            sp_syntax.Spec.parse("libunwind +xz +pic @1.6.2:"),
+            sp_syntax.Spec.parse("libpfm4 @4.11.0:"),
+            sp_syntax.Spec.parse("xerces-c transcoder=iconv @3.2.3:"),
+            sp_syntax.Spec.parse("libiberty +pic @2.37:"),
+            sp_syntax.Spec.parse("memkind"),
+            sp_syntax.Spec.parse("yaml-cpp +shared @0.7.0:"),
+            sp_syntax.Spec.parse("pkgconfig"),
+            sp_syntax.Spec.parse("python +ctypes +lzma +bz2 +zlib @3.10.8:"),
+        }
         result["arch.satisfies('target=x86_64:')"] = {
             sp_syntax.Spec.parse("intel-xed +pic @2022.04.17:")
         }
@@ -381,17 +366,6 @@ class DevEnv:
 
         return result
 
-    def _populate_pyview(self) -> None:
-        """Populate the pyview with all Python extensions. Basically an expensive venv."""
-        if self._pyview.exists():
-            shutil.rmtree(self._pyview)
-        self.sp_livespack.project(
-            self._pyview,
-            itertools.chain.from_iterable(
-                self.sp_spack.find(spec.root.package).and_dependencies for spec in self._py_specs
-            ),
-        )
-
     def _m_binaries(self, native: MesonMachineFile, *, compiler: Compiler | None = None) -> None:
         assert self.recommended_compiler is not None
 
@@ -426,8 +400,8 @@ class DevEnv:
         native.add_binary("libtoolize", self.which("libtoolize", "libtool"))
         native.add_binary("m4", self.which("m4", "m4"))
         native.add_binary("make", self.which("make", "gmake"))
-        native.add_binary("python3", self._pyview / "bin" / "python3")
-        native.add_binary("python", self._pyview / "bin" / "python3")
+        native.add_binary("python3", self.which("python3", "python"))
+        native.add_binary("python", self.which("python3", "python"))
         if self.mpi:
             native.add_binary("mpicxx", self.which("mpicxx", "mpi", check_arg=None))
             native.add_binary("mpiexec", self.which("mpiexec", "mpi"))
@@ -477,8 +451,6 @@ class DevEnv:
 
     def populate(self, *, compiler: Compiler | None = None) -> None:
         """Populate the development environment with all the files needed to use it."""
-        self._populate_pyview()
-
         native = MesonMachineFile()
         self._m_binaries(native, compiler=compiler)
         self._m_prefixes(native)
@@ -513,10 +485,6 @@ class DevEnv:
                 dev_root,
                 output=False,
             )
-
-    @property
-    def _pyview(self) -> Path:
-        return self.root / "_pyview"
 
     @property
     def builddir(self) -> Path:

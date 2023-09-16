@@ -1,22 +1,19 @@
-#!/usr/bin/env python3
+#!/bin/sh -ex
 
-import click
-from hpctoolkit.test.execution import Measurements, hpcprof
+hpctesttool="$1"
+hpcprof="$2"
+meas="$3"
 
+trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp --directory --tmpdir=.)
 
-@click.command()
-@click.argument("measurements", type=click.Path(exists=True, readable=True, file_okay=False))
-def test_flags_effective(measurements: str):
-    """Test that hpcprof flags are effective when analyzing MEASUREMENTS."""
-    meas = Measurements(measurements)
-    has_traces = any(meas.tracefile(stem) for stem in meas.thread_stems)
+if ls -1 "$meas"/*.hpctrace > /dev/null 2>&1
+then tracearg=--trace
+else tracearg=--no-trace
+fi
 
-    with hpcprof(meas) as db:
-        db.check_standard(tracedb=has_traces)
+"$hpcprof" -j1 -o "$tmpdir"/d.1 "$meas"
+"$hpctesttool" test check-db "$tracearg" "$tmpdir/d.1"
 
-    with hpcprof(meas, "--no-traces") as db:
-        db.check_standard(tracedb=False)
-
-
-if __name__ == "__main__":
-    test_flags_effective()  # pylint: disable=no-value-for-parameter
+"$hpcprof" -j1 -o "$tmpdir"/d.2 --no-traces "$meas"
+"$hpctesttool" test check-db --no-trace "$tmpdir/d.2"
