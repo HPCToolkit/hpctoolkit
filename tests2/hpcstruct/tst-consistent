@@ -157,6 +157,13 @@ def skip(ctx, _param, value: str):
 
 
 @click.command()
+@click.option(
+    "--skip",
+    is_eager=True,
+    callback=skip,
+    expose_value=False,
+    help="Skip this test completely with a short message",
+)
 @click.argument(
     "binary", type=click.Path(exists=True, readable=True, dir_okay=False, path_type=Path)
 )
@@ -171,7 +178,12 @@ def skip(ctx, _param, value: str):
     help="nvdisasm to use when parsing Nvidia binaries",
 )
 def test_consistent(
-    *, binary: Path, structfile: typing.BinaryIO, threads: int, gpucfg: bool, nvdisasm: Path | None
+    *,
+    binary: Path,
+    structfile: typing.BinaryIO,
+    threads: int,
+    gpucfg: bool,
+    nvdisasm: Path | None,
 ):
     """Test that analysis of BINARY generates a result identical to STRUCTFILE."""
     if gpucfg:
