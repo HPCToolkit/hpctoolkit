@@ -99,6 +99,14 @@ endif
 # can remain as-is when the switch occurs, reducing some of the complexity that goes with this sort
 # of thing.
 
+# Autotools only supports one LDFLAGS option, so warn if the user tries to give different flags for
+# different languages.
+if get_option('c_link_args') != get_option('cpp_link_args')
+  warning('Setting \'cpp_link_args\' and \'c_link_args\' to different values will not behave as expected!')
+  warning('Some pure-C libraries in this project are linked using \'cpp_link_args\' instead of \'c_link_args\'.')
+  warning('Set these two variables to the same value to silence this warning.')
+endif
+
 # Regenerate the Autogoo during the Meson configuration phase. This technically edits the source
 # tree, which is really *really* bad, but we don't have another option at this stage.
 _make = find_program('make')
@@ -167,8 +175,8 @@ run_command(files('meson'/'autogen'),
     files('config/launch-options'),
     check: true, env: _autoenv)
 
-# Generate the full set of --with-* arguments for ./configure. This propagates the dependencies to
-# the actual build.
+# Generate the full set of --with-* arguments and LDFLAGS for ./configure.
+# This propagates the dependencies to the actual build.
 _autogoo_args = [
     '--@0@-valgrind-annotations'.format(get_option('valgrind_annotations') ? 'enable' : 'disable'),
     '--with-boost=@0@'.format(boost_exdep.get_variable(internal: 'prefix')),
@@ -185,32 +193,53 @@ _autogoo_args = [
     '--with-memkind=@0@'.format(memkind_exdep.get_variable(internal: 'prefix')),
     '--with-yaml-cpp=@0@'.format(yaml_cpp_exdep.get_variable(internal: 'prefix')),
 ]
+_ldflags = get_option('cpp_link_args')
+_ldflags += boost_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += bzip_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += dyninst_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += elfutils_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += tbb_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += libmonitor_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += libunwind_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += xerces_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += lzma_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += zlib_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += libiberty_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += memkind_exdep.get_variable(internal: 'link_args', default_value: '').split()
+_ldflags += yaml_cpp_exdep.get_variable(internal: 'link_args', default_value: '').split()
 _autogoo_env = {}
 if xed_exdep.found()
     _autogoo_args += ['--with-xed=@0@'.format(xed_exdep.get_variable(internal: 'prefix'))]
+    _ldflags += xed_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif
 if mpicxx.found()
     _autogoo_args += ['MPICXX=@0@'.format(mpicxx.full_path())]
 endif
 if papi_exdep.found()
     _autogoo_args += ['--with-papi=@0@'.format(papi_exdep.get_variable(internal: 'prefix'))]
+    _ldflags += papi_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif
 if perfmon_exdep.found()
     _autogoo_args += ['--with-perfmon=@0@'.format(perfmon_exdep.get_variable(internal: 'prefix'))]
+    _ldflags += perfmon_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif
 if get_option('python').enable_auto_if(python.found()).enabled()
     _autogoo_args += ['--with-python=@0@'.format(python.get_variable('BINDIR') / fs.stem(python.full_path()) + '-config')]
 endif
 if opencl_exdep.found()
     _autogoo_args += ['--with-opencl=@0@'.format(opencl_exdep.get_variable(internal: 'prefix'))]
+    _ldflags += opencl_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif
 if level0_exdep.found()
     _autogoo_args += ['--with-level0=@0@'.format(level0_exdep.get_variable(internal: 'prefix'))]
+    _ldflags += level0_exdep.get_variable(internal: 'link_args', default_value: '').split()
     if gtpin_exdep.found() and igc_exdep.found()
         _autogoo_args += [
             '--with-gtpin=@0@'.format(gtpin_exdep.get_variable(internal: 'prefix')),
             '--with-igc=@0@'.format(igc_exdep.get_variable(internal: 'prefix')),
         ]
+        _ldflags += gtpin_exdep.get_variable(internal: 'link_args', default_value: '').split()
+        _ldflags += igc_exdep.get_variable(internal: 'link_args', default_value: '').split()
     endif
 endif
 if has_rocm
@@ -220,9 +249,14 @@ if has_rocm
         '--with-rocm-tracer=@0@'.format(rocm_tracer_exdep.get_variable(internal: 'prefix')),
         '--with-rocm-profiler=@0@'.format(rocm_profiler_exdep.get_variable(internal: 'prefix')),
     ]
+    _ldflags += rocm_hip_exdep.get_variable(internal: 'link_args', default_value: '').split()
+    _ldflags += rocm_hsa_exdep.get_variable(internal: 'link_args', default_value: '').split()
+    _ldflags += rocm_tracer_exdep.get_variable(internal: 'link_args', default_value: '').split()
+    _ldflags += rocm_profiler_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif
 if has_cuda
     _autogoo_args += ['--with-cuda=@0@'.format(cuda_exdep.get_variable(internal: 'prefix'))]
+    _ldflags += cuda_exdep.get_variable(internal: 'link_args', default_value: '').split()
 endif
 
 # Set the compilers that should be used for compilations
@@ -279,6 +313,7 @@ _autogoo_args += [
     '--enable-plain',
     'CFLAGS=@0@'.format(' '.join(_c2flags + _cflags)),
     'CXXFLAGS=@0@'.format(' '.join(_c2flags + _cppflags)),
+    'LDFLAGS=@0@'.format(' '.join(_ldflags))
 ]
 
 # Translate any last built-in Meson options that have clean translations
