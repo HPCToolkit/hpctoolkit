@@ -40,8 +40,8 @@ foreach name, struct : testdata_struct_current
   if 'binary' in struct and struct['binary']['arch_tags'][0].startswith('cuda::')
     _threads = [1]
 
-    # Skip in the required support is not present
-    if not has_cuda
+    # Skip if the required support is not present
+    if struct['gpucfg'] and not has_cuda
       _args += ['--skip']
     endif
   endif
