@@ -121,6 +121,8 @@
 #define OMPT_TARGET_API_FUNCTION(return_type, fn, args)  \
   OMPT_API_FUNCTION(return_type, fn, args)
 
+#if 0
+// documentation: list of all target functions
 #define FOREACH_OMPT_TARGET_FN(macro) \
   macro(ompt_get_device_time) \
   macro(ompt_translate_time) \
@@ -133,8 +135,16 @@
   macro(ompt_get_record_ompt) \
   macro(ompt_get_record_abstract) \
   macro(ompt_advance_buffer_cursor)
+#endif
 
-
+// target functions currently used in this file
+#define FOREACH_OMPT_TARGET_FN(macro) \
+  macro(ompt_set_trace_ompt) \
+  macro(ompt_start_trace) \
+  macro(ompt_stop_trace) \
+  macro(ompt_flush_trace) \
+  macro(ompt_get_record_ompt) \
+  macro(ompt_advance_buffer_cursor)
 
 //*****************************************************************************
 // type declarations
@@ -324,16 +334,21 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
 }
 
 
-void
+bool
 ompt_bind_names(ompt_function_lookup_t lookup)
 {
+  bool success = true;
+
 #define ompt_bind_name(fn) \
   fn = (fn ## _t ) lookup(#fn); \
-  PRINT("look up function %s, got %p\n", #fn, fn);
+  PRINT("look up function %s, got %p\n", #fn, fn); \
+  if (fn == NULL) success = false;
 
   FOREACH_OMPT_TARGET_FN(ompt_bind_name)
 
 #undef ompt_bind_name
+
+  return success;
 }
 
 
@@ -443,12 +458,15 @@ ompt_finalize_flush
 {
   PRINT("ompt_finalize_flush enter\n");
 
-  ompt_device_entry_t *e = device_list;
-  while (e) {
-    PRINT("ompt_finalize_flush flush id=%d device=%p\n",
-          e->device_id, e->device);
-    if (ompt_need_flush) ompt_flush_trace(e->device);
-    e = e->next;
+  // only try to flush devices if we have a flush function
+  if (ompt_flush_trace) {
+    ompt_device_entry_t *e = device_list;
+    while (e) {
+      PRINT("ompt_finalize_flush flush id=%d device=%p\n",
+            e->device_id, e->device);
+      if (ompt_need_flush) ompt_flush_trace(e->device);
+      e = e->next;
+    }
   }
 
   gpu_application_thread_process_activities();
@@ -563,12 +581,12 @@ ompt_device_initialize(int device_num,
 {
   PRINT("ompt_device_initialize->%s, %d\n", type, device_num);
 
-  if (lookup) {
-    ompt_bind_names(lookup);
-
-    ompt_trace_configure(device);
+  if (lookup == 0) {
+    EEMSG("WARNING: runtime OMPT support for monitoring OpenMP offloading is incomplete");
+  } else if (ompt_bind_names(lookup) == false) {
+    EEMSG("WARNING: runtime is missing OMPT support required by HPCToolkit to monitor OpenMP offloading");
   } else {
-    EEMSG("WARNING: OMPT GPU monitoring not supported by vendor runtime");
+    ompt_trace_configure(device);
   }
 
 #ifdef ENABLE_CUDA
