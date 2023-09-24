@@ -23883,8 +23883,8 @@ $as_echo_n "checking for gtpin... " >&6; }
 
 case "$GTPIN" in
   /* )
-    if test ! -f "${GTPIN}/Include/gtpin.h" ; then
-      as_fn_error $? "unable to find gtpin.h in: $GTPIN" "$LINENO" 5
+    if test ! -f "${GTPIN}/Include/api/gtpin_api.h" ; then
+      as_fn_error $? "unable to find gtpin_api.h in: $GTPIN" "$LINENO" 5
     fi
     OPT_GTPIN_IFLAGS="-DENABLE_GTPIN -I${GTPIN}/Include -I${GTPIN}/Include/ged/intel64/"
 
