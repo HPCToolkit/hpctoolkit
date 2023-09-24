@@ -4844,8 +4844,8 @@ AC_MSG_CHECKING([for gtpin])
 
 case "$GTPIN" in
   /* )
-    if test ! -f "${GTPIN}/Include/gtpin.h" ; then
-      AC_MSG_ERROR([unable to find gtpin.h in: $GTPIN])
+    if test ! -f "${GTPIN}/Include/api/gtpin_api.h" ; then
+      AC_MSG_ERROR([unable to find gtpin_api.h in: $GTPIN])
     fi
     OPT_GTPIN_IFLAGS="-DENABLE_GTPIN -I${GTPIN}/Include -I${GTPIN}/Include/ged/intel64/"
 
