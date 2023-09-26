@@ -80,7 +80,6 @@ SPDX-License-Identifier: MIT
 //*****************************************************************************
 
 #include <api/gtpin_api.h>
-#include <gtpin.h>
 
 
 
