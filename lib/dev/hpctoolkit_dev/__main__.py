@@ -441,7 +441,7 @@ def create(
             mpi=feature2bool("mpi", mpi),
         )
         click.echo(env.describe())
-        env.generate(mode)
+        env.generate(mode, obj.project_root)
         env.install()
         env.populate(compiler=compiler)
         try:
@@ -547,7 +547,7 @@ def update(
         prior = prior["spack"]
 
     click.echo(env.describe())
-    env.generate(mode, template=prior)
+    env.generate(mode, obj.project_root, template=prior)
     env.install()
     env.populate(compiler=compiler)
     try:
@@ -924,7 +924,9 @@ def template_merge(base: dict, overlay: dict) -> dict:
     help="Use the given Spack environment template. Additional templates will be merged recursively.",
     multiple=True,
 )
+@dev_pass_obj
 def generate(
+    obj: DevState,
     *,
     devenv: Env,
     mode: DependencyMode,
@@ -946,6 +948,7 @@ def generate(
     needs to be manually installed, e.g. for a container image.
     """
     # pylint: disable=too-many-arguments
+    assert obj.project_root
 
     presteps: list[str] = []
     poststeps: list[str] = []
@@ -988,7 +991,7 @@ def generate(
             mpi=feature2bool("mpi", mpi),
         )
         click.echo(denv.describe())
-        denv.generate(mode, template=env_template)
+        denv.generate(mode, obj.project_root, template=env_template)
         presteps.append(f"./dev edit -d {nice_devenv}   # (optional)")
         poststeps.append(f"./dev populate {nice_devenv}")
     except KeyboardInterrupt:
@@ -1042,7 +1045,9 @@ FEATS_GTPIN = sp_untrusted.Features.GTPIN | sp_untrusted.Features.IGC
     help="Use the given Spack environment template. Additional templates will be merged recursively.",
     multiple=True,
 )
+@dev_pass_obj
 def generate_request(
+    obj: DevState,
     *,
     request: typing.TextIO,
     mode: DependencyMode,
@@ -1053,6 +1058,8 @@ def generate_request(
     This command is primarily used internally by CI. It probably isn't what you are looking for,
     consider `./dev create`.
     """
+    assert obj.project_root
+
     env_template: dict | None = None
     if template:
         yaml = ruamel.yaml.YAML(typ="safe")
@@ -1089,7 +1096,7 @@ def generate_request(
                 )
             except InvalidSpecificationError:
                 continue
-            denv.generate(mode, unresolve=feats.packages, template=env_template)
+            denv.generate(mode, obj.project_root, unresolve=feats.packages, template=env_template)
             contents.append(denv.bundle, requires=feats)
     contents.dump(request)
 
