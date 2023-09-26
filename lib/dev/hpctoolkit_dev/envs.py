@@ -191,47 +191,39 @@ class DevEnv:
     Intel Instrumentation: {yes if self.gtpin else no}
 """
 
-    @functools.cached_property
     def _specs(
-        self,
+        self, project_root: Path
     ) -> collections.abc.Mapping[str | None, collections.abc.Collection[sp_syntax.Spec]]:
         """Generate the set of Spack Specs that will need to be installed for the given config.
 
         The Specs are grouped by their `when:` clause.
         """
         result: dict[str | None, set[sp_syntax.Spec]] = collections.defaultdict(set)
-        result[None] = {
-            # NB: Meson is required as a build tool, but does not need to be included in the devenv
-            # itself. It is instead installed separately in a venv by __main__.py.
-            sp_syntax.Spec.parse("autoconf @2.69"),
-            sp_syntax.Spec.parse("automake @1.15.1"),
-            sp_syntax.Spec.parse("libtool @2.4.6"),
-            sp_syntax.Spec.parse("m4"),
-            sp_syntax.Spec.parse("gmake"),
-            sp_syntax.Spec.parse(
-                """boost @1.70.0:
-                +atomic +date_time +filesystem +system +thread +timer +graph +regex
-                +shared +multithreaded
-                visibility=global"""
-            ),
-            sp_syntax.Spec.parse("bzip2 @1.0.8:"),
-            sp_syntax.Spec.parse("dyninst @12.3.0:"),
-            sp_syntax.Spec.parse("elfutils ~nls @0.186:"),
-            sp_syntax.Spec.parse("intel-tbb +shared @2020.3"),
-            sp_syntax.Spec.parse("libmonitor +hpctoolkit ~dlopen @2023.03.15:"),
-            sp_syntax.Spec.parse("xz +pic libs=static @5.2.5:5.2.6,5.2.10:"),
-            sp_syntax.Spec.parse("zlib +shared @1.2.13:1.2"),
-            sp_syntax.Spec.parse("libunwind +xz +pic @1.6.2:"),
-            sp_syntax.Spec.parse("libpfm4 @4.11.0:"),
-            sp_syntax.Spec.parse("xerces-c transcoder=iconv @3.2.3:"),
-            sp_syntax.Spec.parse("libiberty +pic @2.37:"),
-            sp_syntax.Spec.parse("memkind"),
-            sp_syntax.Spec.parse("yaml-cpp +shared @0.7.0:"),
+
+        # Parse the predefined environments to define the core dependencies.
+        # NB: Meson is required as a build tool, but does not need to be included in the devenv
+        # itself. It is instead installed separately in a venv by __main__.py.
+        yaml = ruamel.yaml.YAML(typ="safe")
+        for subproject in ("spack-deps", "autotools"):
+            with (project_root / "subprojects" / subproject / "spack.yaml").open(
+                "r", encoding="utf-8"
+            ) as f:
+                raw_env = yaml.load(f)["spack"]
+            result[None] |= {
+                sp_syntax.Spec.parse(spec) for spec in raw_env["specs"] if not spec.startswith("$")
+            }
+            for definition in raw_env.get("definitions", []):
+                names = set(definition) - {"when"}
+                assert len(names) == 1
+                result[definition.get("when")] |= {
+                    sp_syntax.Spec.parse(spec)
+                    for spec in definition[next(iter(names))]
+                    if not spec.startswith("$")
+                }
+
+        result[None] |= {
             sp_syntax.Spec.parse("pkgconfig"),
-            sp_syntax.Spec.parse("python +ctypes +lzma +bz2 +zlib @3.10.8:"),
-        }
-        result["arch.satisfies('target=x86_64:')"] = {
-            sp_syntax.Spec.parse("intel-xed +pic @2022.04.17:")
+            sp_syntax.Spec.parse("python @3.10.8: +bz2 +ctypes +lzma +zlib"),
         }
 
         if self.papi:
@@ -278,6 +270,7 @@ class DevEnv:
     def generate(
         self,
         mode: DependencyMode,
+        project_root: Path,
         unresolve: collections.abc.Collection[str] = (),
         template: dict | None = None,
     ) -> None:
@@ -298,7 +291,7 @@ class DevEnv:
 
         sp.setdefault("concretizer", {})["unify"] = True
         sp["definitions"] = [d for d in contents["spack"].get("definitions", []) if "_dev" not in d]
-        for when, subspecs in sorted(self._specs.items(), key=lambda kv: kv[0] or ""):
+        for when, subspecs in sorted(self._specs(project_root).items(), key=lambda kv: kv[0] or ""):
             clause_specs = []
             for spec in subspecs:
                 match (DependencyMode.ANY if spec.root.package in unresolve else mode):
@@ -391,15 +384,6 @@ class DevEnv:
                 + f": Recommended compiler {self.recommended_compiler} is unavailable, Meson will use its own defaults instead!"
             )
 
-        native.add_binary("autoreconf", self.which("autoreconf", "autoconf"))
-        native.add_binary("autoconf", self.which("autoconf", "autoconf"))
-        native.add_binary("aclocal", self.which("aclocal", "automake"))
-        native.add_binary("autoheader", self.which("autoheader", "autoconf"))
-        native.add_binary("autom4te", self.which("autom4te", "autoconf"))
-        native.add_binary("automake", self.which("automake", "automake"))
-        native.add_binary("libtoolize", self.which("libtoolize", "libtool"))
-        native.add_binary("m4", self.which("m4", "m4"))
-        native.add_binary("make", self.which("make", "gmake"))
         native.add_binary("python3", self.which("python3", "python"))
         native.add_binary("python", self.which("python3", "python"))
         if self.mpi:
@@ -416,22 +400,6 @@ class DevEnv:
                 raise RuntimeError(f"No prefix for package: {pkg!r}")
             return result
 
-        native.add_property("prefix_boost", prefix("boost"))
-        native.add_property("prefix_bzip", prefix("bzip2"))
-        native.add_property("prefix_dyninst", prefix("dyninst"))
-        native.add_property("prefix_elfutils", prefix("elfutils"))
-        native.add_property("prefix_tbb", prefix("intel-tbb"))
-        native.add_property("prefix_libmonitor", prefix("libmonitor"))
-        native.add_property("prefix_libunwind", prefix("libunwind"))
-        native.add_property("prefix_perfmon", prefix("libpfm4"))
-        native.add_property("prefix_xerces", prefix("xerces-c"))
-        native.add_property("prefix_lzma", prefix("xz"))
-        native.add_property("prefix_zlib", prefix("zlib"))
-        native.add_property("prefix_libiberty", prefix("libiberty"))
-        if xed_set := self.sp_spack.find_all("intel-xed"):
-            native.add_property("prefix_xed", prefix(next(iter(xed_set))))
-        native.add_property("prefix_memkind", prefix("memkind"))
-        native.add_property("prefix_yaml_cpp", prefix("yaml-cpp"))
         if self.papi:
             native.add_property("prefix_papi", prefix("papi"))
         if self.opencl:
@@ -473,6 +441,10 @@ class DevEnv:
                 "--wipe",
                 f"--native-file={native_path}",
                 f"--prefix={self.installdir}",
+                "-Dspack-deps:spack_mode=find",
+                f"-Dspack-deps:spack_env={self.root.resolve(strict=True)}",
+                "-Dautotools:spack_mode=find",
+                f"-Dautotools:spack_env={self.root.resolve(strict=True)}",
                 f"-Dhpcprof_mpi={'enabled' if self.mpi else 'disabled'}",
                 f"-Dpapi={'enabled' if self.papi else 'disabled'}",
                 f"-Dpython={'enabled' if self.python else 'disabled'}",

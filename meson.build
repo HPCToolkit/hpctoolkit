@@ -14,53 +14,51 @@ assert(python.language_version().version_compare('>=3.10'),
 # Translate from prefixes to Meson dependency objects. They are missing most pieces like compiler
 # args and such, but they are closer to the Mesonic.
 foreach package : [
-    'boost', 'bzip', 'dyninst', 'elfutils', 'tbb', 'libmonitor', 'libunwind', 'xerces', 'lzma',
-    'zlib', 'libiberty', 'xed', 'memkind', 'yaml_cpp', 'papi', 'perfmon', 'opencl', 'gtpin',
-    'igc', 'level0', 'rocm_hip', 'rocm_hsa', 'rocm_tracer', 'rocm_profiler', 'cuda',
+  'boost', 'bzip', 'dyninst', 'elfutils', 'tbb', 'libmonitor', 'libunwind', 'xerces', 'lzma',
+  'zlib', 'libiberty', 'xed', 'memkind', 'yaml_cpp', 'papi', 'perfmon', 'opencl', 'gtpin',
+  'igc', 'level0', 'rocm_hip', 'rocm_hsa', 'rocm_tracer', 'rocm_profiler', 'cuda',
 ]
-    _p = meson.get_external_property(f'prefix_@package@', '')
-    if _p != ''
-        _p = fs.expanduser(_p)
-        assert(fs.is_absolute(_p), f'property \'prefix_@package@\' must be an absolute path')
-        assert(fs.is_dir(_p), f'property \'prefix_@package@\' must be a directory')
-        _d = declare_dependency(variables: {'prefix': _p})
-    else
-        _d = dependency('', required: false)
-    endif
-    meson.override_dependency(f'external @package@', _d)
+  _p = meson.get_external_property(f'prefix_@package@', '')
+  if _p != ''
+    _p = fs.expanduser(_p)
+    assert(fs.is_absolute(_p), f'property \'prefix_@package@\' must be an absolute path')
+    assert(fs.is_dir(_p), f'property \'prefix_@package@\' must be a directory')
+    meson.override_dependency(f'@package@-hpctoolkit', declare_dependency(variables: {'prefix': _p}))
+  endif
 endforeach
 
 # Collect all the dependencies we require for HPCToolkit
-boost_exdep = dependency('external boost')
-bzip_exdep = dependency('external bzip')
-dyninst_exdep = dependency('external dyninst')
-elfutils_exdep = dependency('external elfutils')
-tbb_exdep = dependency('external tbb')
-libmonitor_exdep = dependency('external libmonitor')
-libunwind_exdep = dependency('external libunwind')
-xerces_exdep = dependency('external xerces')
-lzma_exdep = dependency('external lzma')
-zlib_exdep = dependency('external zlib')
-libiberty_exdep = dependency('external libiberty')
-xed_exdep = dependency('external xed', required: host_machine.cpu_family() in ['x86', 'x86_64'])
-memkind_exdep = dependency('external memkind')
-yaml_cpp_exdep = dependency('external yaml_cpp')
-papi_exdep = dependency('external papi', required: get_option('papi'))
+boost_exdep = dependency('boost-hpctoolkit', fallback: ['spack-deps', 'boost_dep'])
+bzip_exdep = dependency('bzip-hpctoolkit', fallback: ['spack-deps', 'bzip_dep'])
+dyninst_exdep = dependency('dyninst-hpctoolkit', fallback: ['spack-deps', 'dyninst_dep'])
+elfutils_exdep = dependency('elfutils-hpctoolkit', fallback: ['spack-deps', 'elfutils_dep'])
+tbb_exdep = dependency('tbb-hpctoolkit', fallback: ['spack-deps', 'tbb_dep'])
+libmonitor_exdep = dependency('libmonitor-hpctoolkit', fallback: ['spack-deps', 'libmonitor_dep'])
+libunwind_exdep = dependency('libunwind-hpctoolkit', fallback: ['spack-deps', 'libunwind_dep'])
+xerces_exdep = dependency('xerces-hpctoolkit', fallback: ['spack-deps', 'xerces_dep'])
+lzma_exdep = dependency('lzma-hpctoolkit', fallback: ['spack-deps', 'lzma_dep'])
+zlib_exdep = dependency('zlib-hpctoolkit', fallback: ['spack-deps', 'zlib_dep'])
+libiberty_exdep = dependency('libiberty-hpctoolkit', fallback: ['spack-deps', 'libiberty_dep'])
+xed_exdep = dependency('xed-hpctoolkit', required: host_machine.cpu_family() in ['x86', 'x86_64'],
+                       fallback: ['spack-deps', 'xed_dep'])
+memkind_exdep = dependency('memkind-hpctoolkit', fallback: ['spack-deps', 'memkind_dep'])
+yaml_cpp_exdep = dependency('yaml_cpp-hpctoolkit', fallback: ['spack-deps', 'yaml_cpp_dep'])
+papi_exdep = dependency('papi-hpctoolkit', required: get_option('papi'))
 if not papi_exdep.found()
-    perfmon_exdep = dependency('external perfmon')
+    perfmon_exdep = dependency('perfmon-hpctoolkit', fallback: ['spack-deps', 'perfmon_dep'])
 else
     perfmon_exdep = dependency('', required: false)
 endif
 
-opencl_exdep = dependency('external opencl', required: get_option('opencl'))
-level0_exdep = dependency('external level0', required: get_option('level0'))
+opencl_exdep = dependency('opencl-hpctoolkit', required: get_option('opencl'))
+level0_exdep = dependency('level0-hpctoolkit', required: get_option('level0'))
 _gtpin_f = get_option('gtpin').require(level0_exdep.found(),
     error_message: 'gtpin is only available with level0')
-gtpin_exdep = dependency('external gtpin', required: _gtpin_f)
-igc_exdep = dependency('external igc', required: _gtpin_f)
+gtpin_exdep = dependency('gtpin-hpctoolkit', required: _gtpin_f)
+igc_exdep = dependency('igc-hpctoolkit', required: _gtpin_f)
 
 # Find CUDA language support.
-cuda_exdep = dependency('external cuda', required: get_option('cuda'))
+cuda_exdep = dependency('cuda-hpctoolkit', required: get_option('cuda'))
 has_cuda = cuda_exdep.found()
 if has_cuda
     add_languages('cuda', native: false, required: true)
@@ -68,10 +66,10 @@ if has_cuda
 endif
 
 # Find HIP language support.
-rocm_hip_exdep = dependency('external rocm_hip', required: get_option('rocm'))
-rocm_hsa_exdep = dependency('external rocm_hsa', required: get_option('rocm'))
-rocm_tracer_exdep = dependency('external rocm_tracer', required: get_option('rocm'))
-rocm_profiler_exdep = dependency('external rocm_profiler', required: get_option('rocm'))
+rocm_hip_exdep = dependency('rocm_hip-hpctoolkit', required: get_option('rocm'))
+rocm_hsa_exdep = dependency('rocm_hsa-hpctoolkit', required: get_option('rocm'))
+rocm_tracer_exdep = dependency('rocm_tracer-hpctoolkit', required: get_option('rocm'))
+rocm_profiler_exdep = dependency('rocm_profiler-hpctoolkit', required: get_option('rocm'))
 has_rocm = rocm_hip_exdep.found() and rocm_hsa_exdep.found() \
            and rocm_tracer_exdep.found() and rocm_profiler_exdep.found()
 if has_rocm
@@ -107,18 +105,43 @@ if get_option('c_link_args') != get_option('cpp_link_args')
   warning('Set these two variables to the same value to silence this warning.')
 endif
 
+# Fetch the Autotools. We're very picky about the versions, so if we can't find a version we fall
+# back to the subproject that will handle it for us.
+foreach binary : ['make', 'm4']
+  _prog = find_program(binary, native: true, required: false)
+  if not _prog.found()
+    _prog = subproject('autotools').get_variable(binary, dependency('', required: false))
+    if not _prog.found()
+      # Re-run as required to throw a suitable error message
+      _prog = find_program(binary, native: true, required: true)
+    endif
+  endif
+  set_variable('_'+binary, _prog)
+endforeach
+foreach binary, version : {'autoreconf': '=2.69', 'autoconf': '=2.69', 'aclocal': '=1.15.1',
+    'autoheader': '=2.69', 'autom4te': '=2.69', 'automake': '=1.15.1', 'libtoolize': '=2.4.6'}
+  _prog = find_program(binary, version: version, native: true, required: false)
+  if not _prog.found()
+    _prog = subproject('autotools').get_variable(binary, dependency('', required: false))
+    if not _prog.found()
+      # Re-run as required to throw a suitable error message
+      _prog = find_program(binary, version: version, native: true, required: true)
+    endif
+  endif
+  set_variable('_'+binary, _prog)
+endforeach
+
 # Regenerate the Autogoo during the Meson configuration phase. This technically edits the source
 # tree, which is really *really* bad, but we don't have another option at this stage.
-_make = find_program('make')
 _autoenv = {
-    'AUTORECONF': find_program('autoreconf', version: '=2.69').full_path(),
-    'AUTOCONF': find_program('autoconf', version: '=2.69').full_path(),
-    'ACLOCAL': find_program('aclocal', version: '=1.15.1').full_path(),
-    'AUTOHEADER': find_program('autoheader', version: '=2.69').full_path(),
-    'AUTOM4TE': find_program('autom4te', version: '=2.69').full_path(),
-    'AUTOMAKE': find_program('automake', version: '=1.15.1').full_path(),
-    'LIBTOOLIZE': find_program('libtoolize', version: '=2.4.6').full_path(),
-    'M4': find_program('m4').full_path(),
+    'AUTORECONF': _autoreconf.full_path(),
+    'AUTOCONF': _autoconf.full_path(),
+    'ACLOCAL': _aclocal.full_path(),
+    'AUTOHEADER': _autoheader.full_path(),
+    'AUTOM4TE': _autom4te.full_path(),
+    'AUTOMAKE': _automake.full_path(),
+    'LIBTOOLIZE': _libtoolize.full_path(),
+    'M4': _m4.full_path(),
     'MAKE': _make.full_path(),
 }
 message('Running ./autogen ...')
