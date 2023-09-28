@@ -135,8 +135,12 @@ To start, write a native file listing the install prefix(es) and/or binaries of 
 python = '...'
 
 [properties]
-prefix_elfutils = '...'
-prefix_dyninst = '...'
+prefix_elfutils = '.../elfutils/'
+prefix_dyninst = '.../dyninst/'
+
+[built-in options]
+c_link_args = ['-Wl,-rpath=.../elfutils/lib', '-Wl,-rpath=.../dyninst/lib']
+cpp_link_args = ['-Wl,-rpath=.../elfutils/lib', '-Wl,-rpath=.../dyninst/lib']
 ```
 
 <details>
@@ -195,6 +199,9 @@ Then configure your build by passing the file you have just written as a `--nati
 ```console
 $ meson setup --native-file .../my-native-file.ini ...
 ```
+
+Note that the libraries for any dependencies provided this way must be available at runtime.
+Common solutions are to extend `LD_LIBRARY_PATH`, or to pass `-Wl,-rpath` arguments during the link as shown in the example above.
 
 If all dependencies are provided by native files, you may also set `-D<subproject>:spack_mode=no` (the default), which removes the dependency on Spack.
 Native files may be saved to `~/.local/share/meson/native` for convenient access across many builds, see the [official documentation][meson native file] for details.
