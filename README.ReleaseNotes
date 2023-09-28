@@ -1,4 +1,28 @@
 ----------------------------------------
+HPCToolkit 2023.08.1
+----------------------------------------
+
+HPCToolkit Release Notes
+
+Bug fixes
+- Fix compilation failures on GCC 13.x (!915)
+- hpcrun:
+   - Fix compilation failures with GTPin 3.6 (!936)
+   - Fix crash when using an OpenMP implementation that incompletely
+     implements OMPT (!935)
+   - Ignore threads created during CUPTI initialization (!909)
+- hpcstruct:
+   - Fix incorrect output for Nvidia GPU binaries containing multiple device
+     functions (#797)
+- hpcprof:
+   - Fix crash when processing PC sampling data (-e gpu=nvidia,pc) if hpcstruct
+     failed to identify calls in the Nvidia GPU binary (!918)
+
+Other changes
+- hpcrun:
+   - Avoid recursion when traversing profiled CCT data structure (!758)
+
+----------------------------------------
 HPCToolkit 2023.08.0
 ----------------------------------------
 
