@@ -58,7 +58,6 @@
 
 #include "lib/prof-lean/spinlock.h"
 
-#include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "lib/prof-lean/stdatomic.h"
@@ -318,7 +317,8 @@ static inline void hpcrun_logical_substack_pop(logical_region_stack_t* s, logica
 /// \param N Number of frames to unwind "up" from this (caller's) frame.
 #define hpcrun_logical_frame_cursor(CUR, N) ({    \
   ucontext_t ctx;                                 \
-  assert(getcontext(&ctx) == 0);                  \
+  if (getcontext(&ctx) != 0)                       \
+    hpcrun_terminate();                           \
   hpcrun_logical_frame_cursor_real(&ctx, CUR, N); \
 })
 __attribute__((always_inline))

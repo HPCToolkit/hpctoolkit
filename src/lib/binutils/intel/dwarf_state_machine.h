@@ -42,9 +42,8 @@ class DwarfStateMachine {
   DwarfStateMachine(const uint8_t* data, uint32_t size,
                     const Dwarf32Header* header)
       : data_(data), size_(size), header_(header) {
-    assert(data_ != nullptr);
-    assert(size_ > 0);
-    assert(header_ != nullptr);
+    if (data_ == nullptr || size_ == 0 || header_ == nullptr)
+      std::abort();
   }
 
   DwarfLineInfo Run() {
@@ -66,7 +65,8 @@ class DwarfStateMachine {
 
  private:
   const uint8_t* RunSpecial(const uint8_t* ptr) {
-    assert(*ptr >= header_->opcode_base);
+    if (*ptr < header_->opcode_base)
+      std::abort();
 
     uint8_t adjusted_opcode = (*ptr) - header_->opcode_base;
     uint8_t operation_advance = adjusted_opcode / header_->line_range;
@@ -77,7 +77,8 @@ class DwarfStateMachine {
     UpdateLineInfo();
 
     ++ptr;
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
     return ptr;
   }
 
@@ -85,8 +86,8 @@ class DwarfStateMachine {
     uint8_t opcode = *ptr;
     ++ptr;
 
-    assert(opcode < header_->opcode_base);
-    assert(ptr < data_ + size_);
+    if (opcode >= header_->opcode_base || ptr >= data_ + size_)
+      std::abort();
 
     switch (opcode) {
       case DW_LNS_COPY: {
@@ -97,8 +98,8 @@ class DwarfStateMachine {
         uint32_t operation_advance = 0;
         bool done = false;
         ptr = utils::leb128::Decode32(ptr, operation_advance, done);
-        assert(done);
-        assert(ptr < data_ + size_);
+        if (!done || ptr >= data_ + size_)
+          std::abort();
         UpdateAddress(operation_advance);
         UpdateOperation(operation_advance);
         break;
@@ -107,8 +108,8 @@ class DwarfStateMachine {
         int32_t line = 0;
         bool done = false;
         ptr = utils::leb128::Decode32(ptr, line, done);
-        assert(done);
-        assert(ptr < data_ + size_);
+        if (!done || ptr >= data_ + size_)
+          std::abort();
         state_.line += line;
         break;
       }
@@ -116,8 +117,8 @@ class DwarfStateMachine {
         uint32_t file = 0;
         bool done = false;
         ptr = utils::leb128::Decode32(ptr, file, done);
-        assert(done);
-        assert(ptr < data_ + size_);
+        if (!done || ptr >= data_ + size_)
+          std::abort();
         state_.file = file;
         break;
       }
@@ -125,8 +126,8 @@ class DwarfStateMachine {
         uint32_t column = 0;
         bool done = false;
         ptr = utils::leb128::Decode32(ptr, column, done);
-        assert(done);
-        assert(ptr < data_ + size_);
+        if (!done || ptr >= data_ + size_)
+          std::abort();
         break;
       }
       case DW_LNS_NEGATE_STMT:
@@ -142,14 +143,15 @@ class DwarfStateMachine {
       case DW_LNS_FIXED_ADVANCE_PC: {
         uint16_t advance = *((uint16_t*)ptr);
         ptr += sizeof(uint16_t);
-        assert(ptr < data_ + size_);
+        if (ptr >= data_ + size_)
+          std::abort();
         state_.address += advance;
         state_.operation = 0;
         break;
       }
       default: {
-        assert(0); // Not supported
-        break;
+        assert(false && "Unsupported DWARF opcode");
+        std::abort();
       }
     }
 
@@ -157,36 +159,44 @@ class DwarfStateMachine {
   }
 
   const uint8_t* RunExtended(const uint8_t* ptr) {
-    assert(*ptr == 0);
+    if (*ptr != 0)
+      std::abort();
     ++ptr;
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
 
     uint8_t size = *ptr;
-    assert(size > 0);
+    if (size == 0)
+      std::abort();
     ++ptr;
-    assert(ptr < data_ + size_);
+    if (ptr >= data_ + size_)
+      std::abort();
 
     uint8_t opcode = *ptr;
     ++ptr;
-    assert(ptr <= data_ + size_);
+    if (ptr > data_ + size_)
+      std::abort();
 
     switch (opcode) {
       case DW_LNS_END_SEQUENCE: {
-        assert(ptr == data_ + size_);
+        if (ptr != data_ + size_)
+          std::abort();
         UpdateLineInfo();
         break;
       }
       case DW_LNE_SET_ADDRESS: {
         uint64_t address = *((const uint64_t*)ptr);
-        assert(size - 1 == sizeof(uint64_t));
+        if (size - 1 != sizeof(uint64_t))
+          std::abort();
         ptr += sizeof(uint64_t);
-        assert(ptr < data_ + size_);
+        if (ptr >= data_ + size_)
+          std::abort();
         state_.address = address;
         break;
       }
       default: {
-        assert(0); // Not supported
-        break;
+        assert(false && "Unsupported DWARF opcode");
+        std::abort();
       }
     }
 

@@ -45,7 +45,6 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
 
 
 
@@ -59,6 +58,7 @@
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
 #include <lib/prof-lean/stdatomic.h>
+#include <messages/messages.h>
 
 #include "gpu-operation-item.h"
 #include "gpu-operation-item-process.h"
@@ -107,7 +107,8 @@ gpu_memcpy_process
   gpu_activity_t *activity = &it->activity;
   gpu_activity_channel_t *channel = it->channel;
 
-  assert(activity->cct_node != NULL);
+  if (activity->cct_node == NULL)
+    hpcrun_terminate();
 
   gpu_trace_item_t entry_trace;
 

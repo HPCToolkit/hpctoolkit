@@ -211,7 +211,7 @@ hpcrun_get_thread_data_specific
 {
   thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
   if (!ret){
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   return ret;
 }
@@ -579,7 +579,7 @@ hpcrun_expand_btbuf
 
   if(td->btbuf_sav > td->btbuf_end) {
     EMSG("Invariant btbuf_sav > btbuf_end violated");
-    monitor_real_abort();
+    hpcrun_terminate();
   }
 
   /* copy frames from old to new */

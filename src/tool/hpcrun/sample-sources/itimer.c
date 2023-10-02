@@ -57,7 +57,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
@@ -359,7 +358,7 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
 
   if (ret != 0) {
     EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal") );
-    monitor_real_abort();
+    hpcrun_terminate();
   }
 
   TD_GET(ss_state)[self->sel_idx] = START;
@@ -692,7 +691,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   if (ret != 0) {
     EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal") );
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   // compute the difference between it and the previous event on this thread
   metric_incr = cur_time_us - TD_GET(last_time_us);

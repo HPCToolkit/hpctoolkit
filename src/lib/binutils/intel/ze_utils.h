@@ -48,7 +48,8 @@ inline void GetIntelDeviceAndDriver(ze_device_type_t type,
 
   std::vector<ze_driver_handle_t> driver_list(driver_count, nullptr);
   status = zeDriverGet(&driver_count, driver_list.data());
-  assert(status == ZE_RESULT_SUCCESS);
+  if (status != ZE_RESULT_SUCCESS)
+    std::abort();
 
   for (uint32_t i = 0; i < driver_count; ++i) {
     uint32_t device_count = 0;
@@ -59,13 +60,15 @@ inline void GetIntelDeviceAndDriver(ze_device_type_t type,
 
     std::vector<ze_device_handle_t> device_list(device_count, nullptr);
     status = zeDeviceGet(driver_list[i], &device_count, device_list.data());
-    assert(status == ZE_RESULT_SUCCESS);
+    if (status != ZE_RESULT_SUCCESS)
+      std::abort();
 
     for (uint32_t j = 0; j < device_count; ++j) {
       ze_device_properties_t props;
       props.version = ZE_DEVICE_PROPERTIES_VERSION_CURRENT;
       status = zeDeviceGetProperties(device_list[j], &props);
-      assert(status == ZE_RESULT_SUCCESS);
+      if (status != ZE_RESULT_SUCCESS)
+        std::abort();
 
       if (props.type == type && strstr(props.name, "Intel") != nullptr) {
         device = device_list[j];
@@ -79,22 +82,26 @@ inline void GetIntelDeviceAndDriver(ze_device_type_t type,
 }
 
 inline std::string GetDeviceName(ze_device_handle_t device) {
-  assert(device != nullptr);
+  if (device == nullptr)
+    std::abort();
   ze_result_t status = ZE_RESULT_SUCCESS;
   ze_device_properties_t props;
   props.version = ZE_DEVICE_PROPERTIES_VERSION_CURRENT;
   status = zeDeviceGetProperties(device, &props);
-  assert(status == ZE_RESULT_SUCCESS);
+  if (status != ZE_RESULT_SUCCESS)
+    std::abort();
   return props.name;
 }
 
 static int GetMetricId(zet_metric_group_handle_t group, std::string name) {
-  assert(group != nullptr);
+  if (group == nullptr)
+    std::abort();
 
   ze_result_t status = ZE_RESULT_SUCCESS;
   uint32_t metric_count = 0;
   status = zetMetricGet(group, &metric_count, nullptr);
-  assert(status == ZE_RESULT_SUCCESS);
+  if (status != ZE_RESULT_SUCCESS)
+    std::abort();
 
   if (metric_count == 0) {
     return -1;
@@ -102,14 +109,16 @@ static int GetMetricId(zet_metric_group_handle_t group, std::string name) {
 
   std::vector<zet_metric_handle_t> metric_list(metric_count, nullptr);
   status = zetMetricGet(group, &metric_count, metric_list.data());
-  assert(status == ZE_RESULT_SUCCESS);
+  if (status != ZE_RESULT_SUCCESS)
+    std::abort();
 
   int target = -1;
   for (uint32_t i = 0; i < metric_count; ++i) {
     zet_metric_properties_t metric_props = {};
     metric_props.version = ZET_METRIC_PROPERTIES_VERSION_CURRENT;
     status = zetMetricGetProperties(metric_list[i], &metric_props);
-    assert(status == ZE_RESULT_SUCCESS);
+    if (status != ZE_RESULT_SUCCESS)
+      std::abort();
 
     if (name == metric_props.name) {
       target = i;
@@ -123,26 +132,30 @@ static int GetMetricId(zet_metric_group_handle_t group, std::string name) {
 static zet_metric_group_handle_t FindMetricGroup(
     ze_device_handle_t device, std::string name,
     zet_metric_group_sampling_type_t type) {
-  assert(device != nullptr);
+  if (device == nullptr)
+    std::abort();
 
   ze_result_t status = ZE_RESULT_SUCCESS;
   uint32_t group_count = 0;
   status = zetMetricGroupGet(device, &group_count, nullptr);
-  assert(status == ZE_RESULT_SUCCESS);
+  if (status != ZE_RESULT_SUCCESS)
+    std::abort();
   if (group_count == 0) {
     return nullptr;
   }
 
   std::vector<zet_metric_group_handle_t> group_list(group_count, nullptr);
   status = zetMetricGroupGet(device, &group_count, group_list.data());
-  assert(status == ZE_RESULT_SUCCESS);
+  if (status != ZE_RESULT_SUCCESS)
+    std::abort();
 
   zet_metric_group_handle_t target = nullptr;
   for (uint32_t i = 0; i < group_count; ++i) {
     zet_metric_group_properties_t group_props = {};
     group_props.version = ZET_METRIC_GROUP_PROPERTIES_VERSION_CURRENT;
     status = zetMetricGroupGetProperties(group_list[i], &group_props);
-    assert(status == ZE_RESULT_SUCCESS);
+    if (status != ZE_RESULT_SUCCESS)
+      std::abort();
 
     if (name == group_props.name && type == group_props.samplingType) {
       target = group_list[i];

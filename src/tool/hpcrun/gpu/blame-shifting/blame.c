@@ -445,8 +445,7 @@ gpu_idle_blame
   if (ret != 0) {
     EMSG("time_getTimeReal (clock_gettime) failed!");
     spinlock_unlock(&itimer_blame_lock);
-    monitor_real_abort();
-    return;
+    hpcrun_terminate();
   }
 
   // metric_incr is in microseconds. converting to sec

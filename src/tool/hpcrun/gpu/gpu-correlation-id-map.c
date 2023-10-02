@@ -45,7 +45,7 @@
 // system includes
 //*****************************************************************************
 
-#include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -59,6 +59,7 @@
 #include "gpu-correlation-id-map.h"
 #include "gpu-splay-allocator.h"
 
+#include "messages/errors.h"
 
 
 //*****************************************************************************
@@ -188,7 +189,7 @@ gpu_correlation_id_map_insert
   if (st_lookup(&map_root, gpu_correlation_id)) {
     // fatal error: correlation_id already present; a
     // correlation should be inserted only once.
-    assert(0);
+    hpcrun_terminate();
   } else {
     gpu_correlation_id_map_entry_t *entry =
       gpu_correlation_id_map_entry_new(gpu_correlation_id, host_correlation_id);

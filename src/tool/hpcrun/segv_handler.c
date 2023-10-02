@@ -119,7 +119,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     // -----------------------------------------------------
     if (ENABLED(UNW_SEGV_STOP)){
       EMSG("Unwind segv abort enabled ... Aborting!!");
-      monitor_real_abort();
+      hpcrun_terminate();
     }
 
     EMSG("error: segv encountered");
@@ -139,7 +139,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
         EMSG("error: segv handler: invalid jmpbuf");
         // N.B. to handle this we need an 'outer' jump buffer that captures
         // the context right as we enter the sampling-trigger signal handler.
-        monitor_real_abort();
+        hpcrun_terminate();
       }
     }
 
@@ -158,7 +158,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
   else {
     // pass segv to another handler
     TMSG(SEGV, "NON unwind segv encountered");
-    return 1; // monitor_real_abort(); // TEST
+    return 1;
   }
 }
 

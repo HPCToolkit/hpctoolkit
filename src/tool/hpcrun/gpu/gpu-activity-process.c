@@ -202,7 +202,8 @@ gpu_memcpy_process
           gpu_placeholder_type_copy);
       }
 
-      assert(host_op_node != NULL);
+      if (host_op_node == NULL)
+        hpcrun_terminate();
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
@@ -646,7 +647,8 @@ gpu_memory_placeholder
   case GPU_MEM_OP_ALLOC: return gpu_placeholder_type_alloc;
   case GPU_MEM_OP_DELETE: return gpu_placeholder_type_delete;
   default:
-    assert(0);
+    assert(false && "Invalid memory placeholder");
+    hpcrun_terminate();
   }
   return gpu_placeholder_type_alloc;
 }
@@ -672,7 +674,8 @@ gpu_memory_process
       gpu_placeholder_type_t ph = gpu_memory_placeholder(activity);
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
-      assert(host_op_node != NULL);
+      if (host_op_node == NULL)
+        hpcrun_terminate();
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
 
@@ -742,7 +745,8 @@ gpu_counter_process
       gpu_placeholder_type_t ph = gpu_placeholder_type_kernel;
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
-      assert(host_op_node != NULL);
+      if (host_op_node == NULL)
+        hpcrun_terminate();
 
       cct_node_t *func_node = hpcrun_cct_children(host_op_node); // only child
       cct_node_t *kernel_node;

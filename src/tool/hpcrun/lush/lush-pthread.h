@@ -671,7 +671,8 @@ lushPthr_makeSyncObjData_spin(lushPthr_t* restrict pthr,
     x = lushPthr_malloc(sizeof(lushPtr_SyncObjData_t));
   }
   if (!x) {
-    assert(0 && "LUSH/Pthreads: exhausted lock memory");
+    assert(false && "LUSH/Pthreads: exhausted lock memory");
+    hpcrun_terminate();
   }
   lushPtr_SyncObjData_init(x);
 #if (LUSH_DBG_STATS)

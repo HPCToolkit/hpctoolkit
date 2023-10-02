@@ -5,6 +5,8 @@
 #include "gpu-context-stream-id-map.h"
 #include "stream-tracing.h"
 
+#include <assert.h>
+
 extern atomic_ullong stream_counter;
 
 cupti_context_stream_id_map_entry_t *cupti_context_stream_id_map_root = NULL;
@@ -123,7 +125,8 @@ cupti_context_stream_id_map_insert
         } else {
             // correlation_id already present: fatal error since a correlation_id
             //   should only be inserted once
-            assert(0);
+            assert(false && "correlation_id should only be inserted once");
+            hpcrun_terminate();
         }
     }
     cupti_context_stream_id_map_root = entry;

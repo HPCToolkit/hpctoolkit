@@ -191,18 +191,21 @@ set_gpu_instruction_fields
 {
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(activity_correlation_id);
-  assert(cid_map_entry);
+  if (!cid_map_entry)
+    hpcrun_terminate();
 
   uint64_t host_correlation_id =
     gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
 
   gpu_host_correlation_map_entry_t *host_correlation_entry =
     gpu_host_correlation_map_lookup(host_correlation_id);
-  assert(host_correlation_entry);
+  if (!host_correlation_entry)
+    hpcrun_terminate();
 
   gpu_function_id_map_entry_t *fid_map_entry =
     gpu_function_id_map_lookup(function_id);
-  assert(fid_map_entry);
+  if (!fid_map_entry)
+    hpcrun_terminate();
 
   ip_normalized_t pc = gpu_function_id_map_entry_pc_get(fid_map_entry);
 

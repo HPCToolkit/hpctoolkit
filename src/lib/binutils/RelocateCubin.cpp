@@ -174,7 +174,8 @@ applyRelocation(void *addr, unsigned rel_type, uint64_t rel_value)
     uint32_t *addr32 = (uint32_t *) addr;
     *addr32 = rel_value;
   } else {
-    assert(0);
+    assert(false && "Invalid relocation type");
+    std::abort();
   }
 }
 
@@ -459,7 +460,8 @@ relocateSymbolsHelper
 {
   Elf_SymbolVector *symbol_values = NULL;
   std::size_t nsymbols = 0;
-  assert (shdr->sh_type == SHT_SYMTAB);
+  if (shdr->sh_type != SHT_SYMTAB)
+    std::abort();
   if (shdr->sh_entsize > 0) { // avoid divide by 0
     nsymbols = shdr->sh_size / shdr->sh_entsize;
   }

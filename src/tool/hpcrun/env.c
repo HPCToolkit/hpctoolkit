@@ -59,6 +59,8 @@ const char* HPCRUN_EVENT_LIST      = "HPCRUN_EVENT_LIST";
 const char* HPCRUN_MEMSIZE         = "HPCRUN_MEMSIZE";
 const char* HPCRUN_LOW_MEMSIZE     = "HPCRUN_LOW_MEMSIZE";
 
+const char* HPCRUN_ABORT_LIBC      = "HPCRUN_ABORT_LIBC";
+
 //
 // Returns: true if 'name' is in the environment and set to a true
 // (non-zero) value.

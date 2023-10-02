@@ -124,7 +124,7 @@ unsigned int ThreadAttributes::metricTimepointDisorder(const Metric& m) const no
   return it->second.second;
 }
 void ThreadAttributes::metricTimepointStats(const Metric& m, unsigned long long cnt, unsigned int disorder) {
-  bool newElem = m_metricTimepointStats.insert({m, {cnt, disorder}}).second;
+  [[maybe_unused]] bool newElem = m_metricTimepointStats.insert({m, {cnt, disorder}}).second;
   assert(newElem && "Attempt to overwrite previously set timepoint stats!");
 }
 
@@ -212,7 +212,7 @@ uint64_t ThreadAttributes::FinalizeState::CountingLookupMap::get(uint64_t k) {
   auto it = map.find(k);
   if(it != map.end()) return it->second;
   uint64_t v = map.size();
-  bool ok = map.insert({k, v}).second;
+  [[maybe_unused]] bool ok = map.insert({k, v}).second;
   assert(ok);
   return v;
 }

@@ -67,7 +67,6 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/select.h>
-#include <assert.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -118,7 +117,8 @@ find_select(void)
   real_select = (select_fn *) dlsym(RTLD_NEXT, "select");
 #endif
 
-  assert(real_select);
+  if (real_select == NULL)
+    hpcrun_terminate();  // select is not available
 }
 
 

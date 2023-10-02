@@ -66,9 +66,8 @@ Once::Caller::~Caller() {
 
 Once::Caller Once::signal() {
   std::thread::id old;
-  auto ok = callerId.compare_exchange_strong(old, std::this_thread::get_id(),
-                                             std::memory_order_acquire,
-                                             std::memory_order_relaxed);
+  [[maybe_unused]] auto ok = callerId.compare_exchange_strong(old, std::this_thread::get_id(),
+      std::memory_order_acquire, std::memory_order_relaxed);
   assert(ok && "Once cannot be signal()'d more than once!");
   return Caller(*this);
 }

@@ -56,7 +56,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include <signal.h>
 #include <sys/time.h>           /* setitimer() */
@@ -221,7 +220,7 @@ METHOD_FN(start)
   int ret = time_getTimeCPU(&TD_GET(last_time_us));
   if (ret != 0) {
     EMSG("time_getTimeCPU (clock_gettime) failed!");
-    abort();
+    hpcrun_terminate();
   }
 #endif
 
@@ -399,7 +398,7 @@ _tst_signal_handler(int sig, siginfo_t* siginfo, void* context)
     int ret = time_getTimeCPU(&cur_time_us);
     if (ret != 0) {
       EMSG("time_getTimeCPU (clock_gettime) failed!");
-      abort();
+      hpcrun_terminate();
     }
     metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif

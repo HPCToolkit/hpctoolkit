@@ -51,7 +51,6 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <stdbool.h>
-#include <assert.h>
 
 #include <sys/types.h>
 #include <ucontext.h>

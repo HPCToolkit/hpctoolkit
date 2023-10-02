@@ -49,7 +49,6 @@
  * system includes
  *****************************************************************************/
 
-#include <assert.h>
 #include <errno.h>
 #include <sys/mman.h>
 #include <string.h>

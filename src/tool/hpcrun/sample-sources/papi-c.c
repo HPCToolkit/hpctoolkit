@@ -156,7 +156,8 @@ get_event_index(sample_source_t *self, int event_code)
     int evcode = self->evl.events[i].event;
     if (event_code == evcode) return i;
   }
-  assert(0);
+  assert(false && "Invalid event_code!");
+  hpcrun_terminate();
 }
 
 //
@@ -291,7 +292,7 @@ METHOD_FN(thread_init)
   int retval = PAPI_thread_init(pthread_self);
   if (retval != PAPI_OK) {
     EEMSG("PAPI_thread_init NOT ok, retval = %d", retval);
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   TMSG(PAPI, "thread init OK");
 }
@@ -305,7 +306,7 @@ METHOD_FN(thread_init_action)
   int retval = PAPI_register_thread();
   if (retval != PAPI_OK) {
     EEMSG("PAPI_register_thread NOT ok, retval = %d", retval);
-    monitor_real_abort();
+    hpcrun_terminate();
   }
   TMSG(PAPI, "register thread ok");
 }
@@ -593,7 +594,8 @@ METHOD_FN(process_event_list, int lush_metrics)
         hpcrun_set_new_metric_info_and_period(papi_kind, "idleness",
                                               MetricFlags_ValFmt_Real,
                                               self->evl.events[i].thresh, prop);
-      assert(num_lush_metrics == 1 && (i == (nevents - 1)));
+      if (num_lush_metrics != 1 || i != (nevents - 1))
+        hpcrun_terminate();
       lush_agents->metric_time = metric_id;
       lush_agents->metric_idleness = mid_idleness;
     }

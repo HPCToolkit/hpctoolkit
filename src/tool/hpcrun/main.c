@@ -48,6 +48,7 @@
 // system include files
 //***************************************************************************
 
+#include <assert.h>
 #include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -160,18 +161,6 @@ extern void hpcrun_set_retain_recursion_mode(bool mode);
 
 #ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
 extern void hpcrun_dump_intervals(void* addr);
-#endif
-
-
-//***************************************************************************
-// macros
-//***************************************************************************
-
-#define MONITOR_INITIALIZE 1
-
-#if  MONITOR_INITIALIZE == 0
-#define monitor_initialize() \
-    assert(0 && "entry into hpctoolkit prior to initialization");
 #endif
 
 
@@ -483,7 +472,7 @@ abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
 {
   long pid = (long) getpid();
   EEMSG("hpcrun: abort timeout activated in process %ld", pid);
-  monitor_real_abort();
+  hpcrun_terminate();
 
   return 0; /* keep compiler happy, but can't get here */
 }
@@ -732,7 +721,8 @@ hpcrun_aux_cleanup_t * hpcrun_process_aux_cleanup_add( void (*func) (void *), vo
 // Caller needs to ensure that the entry is safe.
 void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node)
 {
-  assert (node != NULL);
+  if (node == NULL)
+    hpcrun_terminate();
   spinlock_lock(&hpcrun_aux_cleanup_lock);
   if (node->prev) {
     if (node->next) {

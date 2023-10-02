@@ -1048,7 +1048,8 @@ opencl_subscriber_callback
       }
 
     default:
-      assert(0);
+      assert(false && "Invalid activity kind!");
+      hpcrun_terminate();
   }
 
   cct_node_t *api_node =
@@ -1356,7 +1357,8 @@ getKernelModuleId
   cl_int status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &kernel_name_size);
   char kernel_name[kernel_name_size];
   status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, kernel_name_size, kernel_name, NULL);
-  assert(status == CL_SUCCESS);
+  if (status != CL_SUCCESS)
+    hpcrun_terminate();
   uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, kernel_name_size);
   opencl_kernel_loadmap_map_entry_t *e = opencl_kernel_loadmap_map_lookup(kernel_name_id);
   uint32_t module_id = LOADMAP_INVALID_MODULE_ID;

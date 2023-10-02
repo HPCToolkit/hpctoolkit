@@ -15,6 +15,7 @@
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>
 #include <lib/prof-lean/spinlock.h>
+#include <messages/messages.h>
 
 
 
@@ -130,12 +131,12 @@ active_kernels_insert
   spinlock_lock(&ak_map_lock);
   if (ak_lookup(&ak_map_root, ak_id)) {
     spinlock_unlock(&ak_map_lock);
-    assert(0);  // entry for a given key should be inserted only once
-  } else {
-    active_kernels_entry_t *entry = ak_node_new(ak_id, kernel_node);
-    ak_insert(&ak_map_root, entry);
-    size++;
+    assert(false && "entry for a given key should be inserted only once");
+    hpcrun_terminate();
   }
+  active_kernels_entry_t *entry = ak_node_new(ak_id, kernel_node);
+  ak_insert(&ak_map_root, entry);
+  size++;
   spinlock_unlock(&ak_map_lock);
 }
 

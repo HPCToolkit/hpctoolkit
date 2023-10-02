@@ -92,16 +92,19 @@ class GenSymbolsDecoder {
       const iOpenCL::SKernelDebugDataHeaderIGC* kernel_header =
         reinterpret_cast<const iOpenCL::SKernelDebugDataHeaderIGC*>(ptr);
       ptr += sizeof(iOpenCL::SKernelDebugDataHeaderIGC);
-      assert(ptr <= data_ + size_);
+      if (ptr > data_ + size_)
+        std::abort();
 
       const char* current_kernel_name = reinterpret_cast<const char*>(ptr);
       uint32_t aligned_kernel_name_size = sizeof(uint32_t) *
         (1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
       ptr += aligned_kernel_name_size;
-      assert(ptr <= data_ + size_);
+      if (ptr > data_ + size_)
+        std::abort();
 
       if (kernel_name == current_kernel_name) {
-        assert(kernel_header->SizeGenIsaDbgInBytes == 0);
+        if (kernel_header->SizeGenIsaDbgInBytes != 0)
+          std::abort();
 
         ElfParser parser(ptr, kernel_header->SizeVisaDbgInBytes);
         if (!parser.IsValid()) {
@@ -112,10 +115,12 @@ class GenSymbolsDecoder {
       }
 
       ptr += kernel_header->SizeVisaDbgInBytes;
-      assert(ptr <= data_ + size_);
+      if (ptr > data_ + size_)
+        std::abort();
 
       ptr += kernel_header->SizeGenIsaDbgInBytes;
-      assert(ptr <= data_ + size_);
+      if (ptr > data_ + size_)
+        std::abort();
     }
 
     return ElfParser(nullptr, 0);

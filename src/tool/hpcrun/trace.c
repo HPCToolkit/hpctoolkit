@@ -181,7 +181,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd, hpcrun_trace_type_t type)
     case HPCRUN_NO_TRACE:
     default:
       assert(false && "Invalid trace type!");
-      // TODO: hpcrun_terminate()
+      hpcrun_terminate();
     }
 
     ret = hpctrace_fmt_hdr_outbuf(flags, cptd->trace_outbuf);
@@ -207,7 +207,8 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, unsigned 
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
     int ret = gettimeofday(&tv, NULL);
-    assert(ret == 0 && "in trace_append: gettimeofday failed!");
+    if (ret != 0)
+      hpcrun_terminate();  // gettimeofday failed!
     uint64_t nanotime = ((uint64_t)tv.tv_usec
                          + (((uint64_t)tv.tv_sec) * 1000000)) * 1000;
     if (sampling_period > 0 && prev_nanotime != 0 && nanotime - prev_nanotime > TRACE_GAP_FACTOR * sampling_period) {
@@ -325,7 +326,7 @@ hpcrun_trace_file_validate(int valid, char *op)
 {
   if (!valid) {
     EMSG("unable to %s trace file\n", op);
-    monitor_real_abort();
+    hpcrun_terminate();
   }
 }
 

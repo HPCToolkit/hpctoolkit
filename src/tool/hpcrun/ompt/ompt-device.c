@@ -51,6 +51,7 @@
  *****************************************************************************/
 
 #include <sys/param.h>
+#include <assert.h>
 
 
 
@@ -364,7 +365,8 @@ ompt_buffer_request
 {
   *bytes = BUFFER_SIZE;
   *buffer = (ompt_buffer_t *)malloc(*bytes);
-  assert(buffer);
+  if (!*buffer)
+    hpcrun_terminate();  // OOM
 }
 
 
@@ -427,7 +429,8 @@ ompt_dump
         break;
       }
     default:
-      assert(0);
+      assert(false && "Invalid record type");
+      hpcrun_terminate();
       break;
     }
   }

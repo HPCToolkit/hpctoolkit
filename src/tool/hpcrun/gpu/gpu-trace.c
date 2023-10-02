@@ -45,7 +45,6 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
 #include <pthread.h>
 #include <unistd.h>
 

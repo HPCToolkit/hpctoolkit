@@ -1,7 +1,8 @@
 project('hpctoolkit', 'c', 'cpp',
   meson_version: '>=1.1.0',
   license: 'BSD-3-Clause',
-  default_options: ['buildtype=debugoptimized', 'c_std=gnu11', 'cpp_std=gnu++17', 'cuda_std=c++14'])
+  default_options: ['buildtype=debugoptimized', 'c_std=gnu11', 'cpp_std=gnu++17', 'cuda_std=c++14',
+                    'b_ndebug=if-release'])
 
 fs = import('fs')
 pymod = import('python')
@@ -317,7 +318,8 @@ endif
 if get_option('werror')
     _c2flags = ['-Werror']
 endif
-if get_option('b_ndebug') == 'true'
+if get_option('b_ndebug') == 'true' or \
+   get_option('b_ndebug') == 'if-release' and get_option('buildtype') == 'release'
     _c2flags += ['-DNDEBUG']
 endif
 

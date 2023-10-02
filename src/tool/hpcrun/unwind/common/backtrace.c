@@ -50,7 +50,6 @@
 //***************************************************************************
 
 #include <stdbool.h>
-#include <assert.h>
 #include <stdlib.h>
 
 #include <sys/types.h>
@@ -165,8 +164,9 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
   for (int i = 0; i < skip; ++i) {
     // for now, do not support M chords
     lush_assoc_t as = lush_assoc_info__get_assoc(bt_inner[i].as_info);
-    assert(as == LUSH_ASSOC_NULL || as == LUSH_ASSOC_1_to_1 ||
-           as == LUSH_ASSOC_1_to_0);
+    if (as != LUSH_ASSOC_NULL && as != LUSH_ASSOC_1_to_1 &&
+        as != LUSH_ASSOC_1_to_0)
+      hpcrun_terminate();
   }
   return &bt_inner[skip];
 }

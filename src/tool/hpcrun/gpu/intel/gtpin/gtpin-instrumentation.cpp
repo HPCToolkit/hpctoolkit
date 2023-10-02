@@ -1131,7 +1131,8 @@ gtpin_instrumentation_options
 void
 gtpin_produce_runtime_callstack
 (gpu_op_ccts_t *op_ccts) {
-  assert(correlation_head.next != NULL);
+  if (correlation_head.next == NULL)
+    std::abort();
   CorrelationData *correlation_data = correlation_head.next;
 
   correlation_map[correlation_data->correlation_id] = {

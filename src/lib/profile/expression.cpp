@@ -85,7 +85,7 @@ double Expression::evaluate(double x) const {
 
 Expression::Expression(Kind kind, std::vector<Expression> in_args)
   : m_kind(kind), m_data(std::move(in_args)) {
-  const auto& args = std::get<std::vector<Expression>>(m_data);
+  [[maybe_unused]] const auto& args = std::get<std::vector<Expression>>(m_data);
   switch(m_kind) {
   case Kind::constant:
   case Kind::subexpression:

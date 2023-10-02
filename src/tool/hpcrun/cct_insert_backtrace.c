@@ -396,7 +396,8 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 
   bool success = hpcrun_generate_backtrace(&bt, context, skipInner);
 
-  assert(!success == bt.partial_unwind);
+  if (!success != bt.partial_unwind)
+    hpcrun_terminate();
 
   tramp_found = bt.has_tramp;
 

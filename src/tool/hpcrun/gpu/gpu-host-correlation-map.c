@@ -45,7 +45,6 @@
 // system includes
 //******************************************************************************
 
-#include <assert.h>
 #include <string.h>
 
 
@@ -57,6 +56,7 @@
 #include <lib/prof-lean/splay-uint64.h>
 
 #include <hpcrun/cct/cct.h>
+#include <messages/errors.h>
 
 #include "gpu-host-correlation-map.h"
 #include "gpu-op-placeholders.h"
@@ -225,7 +225,7 @@ gpu_host_correlation_map_insert
     } else {
       // fatal error: host_correlation id already present; a
       // correlation should be inserted only once.
-      assert(0);
+      hpcrun_terminate();
     }
   } else {
     gpu_host_correlation_map_entry_t *entry =

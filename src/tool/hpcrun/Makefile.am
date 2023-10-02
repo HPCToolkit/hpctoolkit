@@ -362,6 +362,7 @@ MY_BASE_FILES =				\
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
+	messages/errors.c	        \
 	gpu/gpu-activity.c 		\
 	gpu/gpu-activity-channel.c 	\
 	gpu/gpu-activity-process.c 	\
