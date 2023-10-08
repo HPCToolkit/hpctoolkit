@@ -30,14 +30,6 @@ variables:
   ARTIFACTS_DOWNLOAD_ATTEMPTS: 3
   EXECUTOR_JOB_SECTION_ATTEMPTS: 3
 
-  DEPS_IMAGES_REPO:
-    description: Sibling GitLab project to generate deps images
-    value: hpctoolkit/hpctoolkit-deps
-
-  DEPS_IMAGES:
-    description: URL (prefix) of the container registries to pull deps images from
-    value: registry.gitlab.com/hpctoolkit/hpctoolkit-deps
-
 
 default:
   # Most jobs can be interrupted and should be retried if failed for mysterious reasons
@@ -67,62 +59,304 @@ default:
     CCACHE_MAXFILES: '0'
 
 #----------------------------------------------
-# Phase 1: Fetch (and if desired build) the deps images
+# Phase 0: Construct the predeps images
 #----------------------------------------------
 
-# Produce the request.jsons for generating images, along with the URLs and SHA256s
-request:
-  stage: setup
-  image: docker.io/python:3.10-bullseye
-  tags: [saas-linux-small-amd64]
-  script:
-  - artifacts_url="$CI_API_V4_URL/projects/$CI_PROJECT_ID/jobs/$CI_JOB_ID/artifacts"
+include:
+# First build images that just contain the Spack-built dependencies. Since these are bound to
+# a particular OS+ARCH, they can be shared between multiple final images, so we do this build
+# first so that we don't end up rebuilding Spack packages a whole bunch of times.
+- component: &ci_predeps gitlab.com/blue42u/ci.predeps@0.0.1
+  inputs:
+    name: spack-almalinux8-amd64
+    context_dir: ci/predeps-spack/
+    build_args: SPACKOS=almalinux8
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
+- component: *ci_predeps
+  inputs:
+    name: spack-ubuntu20.04-amd64
+    context_dir: ci/predeps-spack/
+    build_args: SPACKOS=ubuntu-focal
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
+- component: *ci_predeps
+  inputs:
+    name: spack-ubuntu20.04-arm64
+    context_dir: ci/predeps-spack/
+    build_args: SPACKOS=ubuntu-focal
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
+    platform: linux/arm64
+    job_tag: rice-linux-medium-arm64
+- component: *ci_predeps
+  inputs:
+    name: spack-fedora37-amd64
+    context_dir: ci/predeps-spack/
+    build_args: SPACKOS=fedora37
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
 
-  - ./dev generate-request --any --template ci/templates/request.yaml latest.json
-  - sha256sum latest.json > latest.json.sha
-  - echo "DIGEST_latest=$(cut -d' ' -f1 latest.json.sha)" >> request.env
-  - echo "REQUEST_URL_latest=$artifacts_url/latest.json" >> request.env
+# Minimum variant, where all versions of Spack-built software are locked to their minimum allowed.
+- component: *ci_predeps
+  inputs:
+    name: spack-min-almalinux8-amd64
+    context_dir: ci/predeps-spack/
+    build_args: |-
+      SPACKOS=almalinux8
+      VERMODE=minimum
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
+- component: *ci_predeps
+  inputs:
+    name: spack-min-ubuntu20.04-amd64
+    context_dir: ci/predeps-spack/
+    build_args: |-
+      SPACKOS=ubuntu-focal
+      VERMODE=minimum
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
+- component: *ci_predeps
+  inputs:
+    name: spack-min-ubuntu20.04-arm64
+    context_dir: ci/predeps-spack/
+    build_args: |-
+      SPACKOS=ubuntu-focal
+      VERMODE=minimum
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
+    platform: linux/arm64
+    job_tag: rice-linux-medium-arm64
+- component: *ci_predeps
+  inputs:
+    name: spack-min-fedora37-amd64
+    context_dir: ci/predeps-spack/
+    build_args: |-
+      SPACKOS=fedora37
+      VERMODE=minimum
+    secrets: id=spack_mirrors,src=$SBCACHE_YAML  # pragma: allowlist secret
 
-  - ./dev generate-request --minimum --template ci/templates/request.yaml minimum.json
-  - sha256sum minimum.json > minimum.json.sha
-  - echo "DIGEST_minimum=$(cut -d' ' -f1 minimum.json.sha)" >> request.env
-  - echo "REQUEST_URL_minimum=$artifacts_url/minimum.json" >> request.env
-  artifacts:
-    paths:
-    - latest.json
-    - minimum.json
-    reports:
-      dotenv: request.env
+# These images are based on classic distrobutions and contain no vendor software
+- component: *ci_predeps
+  inputs:
+    name: almalinux8-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=quay.io/almalinux/almalinux:8
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_ALMALINUX8_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: ubuntu20.04-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/ubuntu:20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: ubuntu20.04-arm64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/ubuntu:20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_ARM64}
+    platform: linux/arm64
+    job_tag: rice-linux-medium-arm64
+- component: *ci_predeps
+  inputs:
+    name: fedora38-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/fedora:38
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_FEDORA37_AMD64}
 
-# Add buttons to trigger (re-)building the dependencies images from the request.jsons
-deps build:
-  stage: setup
-  when: manual
-  needs: [request]
-  trigger:
-    project: $DEPS_IMAGES_REPO
-    strategy: depend
-  variables:
-    DEPS_SOURCE: $REQUEST_URL_latest
-    DEPS_BUILD: >-
-      almalinux8/v1
-      ubuntu20.04/v1
-      fedora38/v1
-      cuda/v1:10.2
-      cuda/v2:11.6
-      cuda/v2:11.8
-      cuda/v2:12.0
-      rocm/v1:5.1
-      rocm/v1:5.2
-      rocm/v1:5.3
-      rocm/v1:5.4
-      rocm/v1:5.5
-      rocm/v1:5.6
-      lvlz-gtpin/v1:2023.0-3.2
-deps build min:
-  extends: deps build
-  variables:
-    DEPS_SOURCE: $REQUEST_URL_minimum
+- component: *ci_predeps
+  inputs:
+    name: min-almalinux8-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=quay.io/almalinux/almalinux:8
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_ALMALINUX8_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: min-ubuntu20.04-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/ubuntu:20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: min-ubuntu20.04-arm64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/ubuntu:20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_ARM64}
+    platform: linux/arm64
+    job_tag: rice-linux-medium-arm64
+- component: *ci_predeps
+  inputs:
+    name: min-fedora38-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/fedora:38
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_FEDORA37_AMD64}
+
+# Images based on (containing) Nvidia's CUDA Toolkit
+- component: *ci_predeps
+  inputs:
+    name: cuda11.6-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/nvidia/cuda:11.6.2-devel-ubuntu20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: cuda11.8-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: cuda12.0-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/nvidia/cuda:12.0.1-devel-ubuntu20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+
+- component: *ci_predeps
+  inputs:
+    name: min-cuda11.8-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: min-cuda12.0-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/nvidia/cuda:12.0.1-devel-ubuntu20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64}
+
+# Images based on (containing) AMD's ROCm
+- component: *ci_predeps
+  inputs:
+    name: rocm5.1-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.1.3
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: rocm5.2-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.2.3
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: rocm5.3-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.3.2
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: rocm5.4-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.4.2
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: rocm5.5-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.5.1
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: rocm5.6-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.6
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+
+- component: *ci_predeps
+  inputs:
+    name: min-rocm5.1-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.1.3
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: min-rocm5.6-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/rocm/dev-ubuntu-20.04:5.6
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64}
+
+# Image(s) based on (containing) Intel's Level Zero, IGC, GTPin, etc.
+- component: *ci_predeps
+  inputs:
+    name: intel-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/intel/oneapi-runtime:devel-ubuntu20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_UBUNTU20_04_AMD64}
+- component: *ci_predeps
+  inputs:
+    name: min-intel-amd64
+    context_dir: ci/predeps/
+    build_args: |-
+      BASE=docker.io/intel/oneapi-runtime:devel-ubuntu20.04
+      SPACKDEPS=${PREDEPS_IMAGE_SPACK_MIN_UBUNTU20_04_AMD64}
+
+'predeps: [almalinux8-amd64]':
+  needs: ['predeps: [spack-almalinux8-amd64]']
+'predeps: [ubuntu20.04-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [ubuntu20.04-arm64]':
+  needs: ['predeps: [spack-ubuntu20.04-arm64]']
+'predeps: [fedora38-amd64]':
+  needs: ['predeps: [spack-fedora37-amd64]']
+
+'predeps: [min-almalinux8-amd64]':
+  needs: ['predeps: [spack-min-almalinux8-amd64]']
+'predeps: [min-ubuntu20.04-amd64]':
+  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
+'predeps: [min-ubuntu20.04-arm64]':
+  needs: ['predeps: [spack-min-ubuntu20.04-arm64]']
+'predeps: [min-fedora38-amd64]':
+  needs: ['predeps: [spack-min-fedora37-amd64]']
+
+'predeps: [cuda11.6-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [cuda11.8-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [cuda12.0-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+
+'predeps: [min-cuda11.8-amd64]':
+  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
+'predeps: [min-cuda12.0-amd64]':
+  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
+
+'predeps: [rocm5.1-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [rocm5.2-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [rocm5.3-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [rocm5.4-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [rocm5.5-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [rocm5.6-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+
+'predeps: [min-rocm5.1-amd64]':
+  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
+'predeps: [min-rocm5.6-amd64]':
+  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
+
+'predeps: [intel-amd64]':
+  needs: ['predeps: [spack-ubuntu20.04-amd64]']
+'predeps: [min-intel-amd64]':
+  needs: ['predeps: [spack-min-ubuntu20.04-amd64]']
 
 #-----------------------------------
 # Phase N: lint
@@ -145,9 +379,9 @@ precommit:
 # (by a big orange exclaimation point) but not blocked by upstream Spack.
 'spack install: [amd64]':
   stage: lint
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   needs:
-  - job: request
+  - job: 'predeps: [ubuntu20.04-amd64]'
   - job: validate
     artifacts: false
   tags: [saas-linux-small-amd64]
@@ -197,7 +431,7 @@ precommit:
 # The two devenvs must be consistent with the current version of the ./dev scriptsuite.
 validate:
   stage: validate
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   tags: [saas-linux-small-amd64]
   script:
   - ./dev os-install -y -c gcc git git-lfs file diffutils
@@ -278,15 +512,15 @@ validate:
 
 'buildmany: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
-  image: $DEPS_IMAGES/almalinux8/v1:latest-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ALMALINUX8_AMD64
   parallel: {matrix: [{JOB_CC: gcc=8}]}
 'buildmany: [amd64, ubuntu20.04]':
   extends: .buildmany amd64 cpu
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   parallel: {matrix: [{JOB_CC: [clang-10]}]}
 'buildmany: [amd64, fedora38]':
   extends: .buildmany amd64 cpu
-  image: $DEPS_IMAGES/fedora38/v1:latest-$DIGEST_latest
+  image: $PREDEPS_IMAGE_FEDORA38_AMD64
   parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
 
 .buildmany min:
@@ -296,15 +530,15 @@ validate:
 
 'buildmany min: [amd64, almalinux8]':
   extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $DEPS_IMAGES/almalinux8/v1:latest-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_ALMALINUX8_AMD64
   parallel: {matrix: [{JOB_CC: gcc=8}]}
 'buildmany min: [amd64, ubuntu20.04]':
   extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
   parallel: {matrix: [{JOB_CC: [clang-10]}]}
 'buildmany min: [amd64, fedora38]':
   extends: [.buildmany amd64 cpu, .buildmany min]
-  image: $DEPS_IMAGES/fedora38/v1:latest-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
   parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
 
 
@@ -317,35 +551,25 @@ validate:
 
 'buildmany: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
-  image: $DEPS_IMAGES/cuda/v2:12.0-$DIGEST_latest
+  image: $PREDEPS_IMAGE_CUDA12_0_AMD64
   variables:
     JOB_CC: gcc-9
 'buildmany: [amd64, cuda11.8]':
   extends: .buildmany amd64 cuda
-  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_latest
+  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
   variables:
     JOB_CC: gcc-9
-'buildmany: [amd64, cuda10.2]':
-  extends: .buildmany amd64 cuda
-  image: $DEPS_IMAGES/cuda/v1:10.2-$DIGEST_latest
-  variables:
-    JOB_CC: gcc=8
 
 'buildmany min: [amd64, cuda12.0]':
   extends: [.buildmany amd64 cuda, .buildmany min]
-  image: $DEPS_IMAGES/cuda/v2:12.0-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_CUDA12_0_AMD64
   variables:
     JOB_CC: gcc-9
 'buildmany min: [amd64, cuda11.8]':
   extends: [.buildmany amd64 cuda, .buildmany min]
-  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_CUDA11_8_AMD64
   variables:
     JOB_CC: gcc-9
-'buildmany min: [amd64, cuda10.2]':
-  extends: [.buildmany amd64 cuda, .buildmany min]
-  image: $DEPS_IMAGES/cuda/v1:10.2-$DIGEST_latest
-  variables:
-    JOB_CC: gcc=8
 
 # ROCm spins
 .buildmany amd64 rocm:
@@ -356,23 +580,23 @@ validate:
 
 'buildmany: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
   variables:
     JOB_CC: gcc-9
 'buildmany: [amd64, rocm5.6]':
   extends: .buildmany amd64 rocm
-  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_6_AMD64
   variables:
     JOB_CC: gcc-9
 
 'buildmany min: [amd64, rocm5.1]':
   extends: [.buildmany amd64 rocm, .buildmany min]
-  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_ROCM_5_1_AMD64
   variables:
     JOB_CC: gcc-9
 'buildmany min: [amd64, rocm5.6]':
   extends: [.buildmany amd64 rocm, .buildmany min]
-  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_ROCM5_6_AMD64
   variables:
     JOB_CC: gcc-9
 
@@ -391,13 +615,13 @@ validate:
 
 'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
   extends: .buildmany amd64 lvlz
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.2-$DIGEST_latest
+  image: $PREDEPS_IMAGE_INTEL_AMD64
   variables:
     JOB_CC: gcc-9
 
 'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
   extends: [.buildmany amd64 lvlz, .buildmany min]
-  image: $DEPS_IMAGES/lvlz-gtpin/v1:2023.0-3.2-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_INTEL_AMD64
   variables:
     JOB_CC: gcc-9
 
@@ -475,14 +699,14 @@ validate:
 
 'check amd64: [cpu]':
   extends: .check
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
+  image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   tags: [rice-linux-large-bare-amd64]
   variables: &vars_check_cpu
     JOB_CC: gcc-10
     SPEC: '+mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
 'check min amd64: [cpu]':
   extends: .check
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
   tags: [rice-linux-large-bare-amd64]
   variables: *vars_check_cpu
 'check semifresh amd64: [cpu]':
@@ -492,14 +716,14 @@ validate:
 
 'check arm64: [cpu]':
   extends: .check
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_latest
+  image: $PREDEPS_IMAGE_UBUNTU20_04_ARM64
   tags: [rice-linux-small-bare-arm64]
   variables:
     <<: *vars_check_cpu
     JOB_TEST_REPEAT: 1
 'check min arm64: [cpu]':
   extends: .check
-  image: $DEPS_IMAGES/ubuntu20.04/v1:latest-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_ARM64
   tags: [rice-linux-small-bare-arm64]
   variables:
     <<: *vars_check_cpu
@@ -507,7 +731,7 @@ validate:
 
 'check amd64: [+cuda, 11.6]':
   extends: .check
-  image: $DEPS_IMAGES/cuda/v2:11.6-$DIGEST_latest
+  image: $PREDEPS_IMAGE_CUDA11_6_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
   variables: &vars_check_cuda
     JOB_CC: gcc-9
@@ -515,12 +739,12 @@ validate:
 
 'check amd64: [+cuda, 11.8]':
   extends: .check
-  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_latest
+  image: $PREDEPS_IMAGE_CUDA11_8_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
   variables: *vars_check_cuda
 'check min amd64: [+cuda, 11.8]':
   extends: .check
-  image: $DEPS_IMAGES/cuda/v2:11.8-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_CUDA11_8_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
   variables: *vars_check_cuda
 'check semifresh amd64: [+cuda, 11.8]':
@@ -531,7 +755,7 @@ validate:
 
 'check amd64: [+rocm, 5.1]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.1-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_1_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: &bscript_check_rocm
   - export LD_LIBRARY_PATH=/opt/rocm/lib:"$LD_LIBRARY_PATH"
@@ -541,41 +765,41 @@ validate:
 
 'check amd64: [+rocm, 5.2]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.2-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_2_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.3]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.3-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_3_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.4]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.4-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_4_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.5]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.5-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_5_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 
 'check amd64: [+rocm, 5.6]':
   extends: .check
-  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_latest
+  image: $PREDEPS_IMAGE_ROCM5_6_AMD64
   tags: [rice-linux-large-amd64-gpu-amd]
   before_script: *bscript_check_rocm
   variables: *vars_check_rocm
 'check min amd64: [+rocm, 5.6]':
   extends: 'check amd64: [+rocm, 5.6]'
-  image: $DEPS_IMAGES/rocm/v1:5.6-$DIGEST_minimum
+  image: $PREDEPS_IMAGE_MIN_ROCM5_6_AMD64
 'check semifresh amd64: [+rocm, 5.6]':
   extends: ['check amd64: [+rocm, 5.6]', .check semifresh job]
   tags: [rice-linux-large-bare-amd64-gpu-amd]
