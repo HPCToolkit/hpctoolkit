@@ -415,30 +415,25 @@ precommit:
   - git -C .spack.git fetch --verbose origin +develop:develop
   - git clone --shared --branch=develop .spack.git /tmp/spack
   - export PATH=/tmp/spack/bin:"$PATH"
-  # Override any generic settings that were set in the deps image
-  - spack -D /opt/environment config add 'packages:hpctoolkit:require::[]'
-  - spack -D /opt/environment config add 'packages:all:require::[]'
-  # Register this clone of HPCToolkit as the source for Spack to build `hpctoolkit @develop-ci` from
-  - spack -D /opt/environment develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
+  # Use a (temporary) Spack environment so that Spack will build from the current sources
+  - spack env create -d /tmp/env
+  - spack -D /tmp/env config add config:install_tree:root:/opt/software/
+  - spack -D /tmp/env develop --no-clone --path "$CI_PROJECT_DIR" hpctoolkit@develop-ci
+  - spack -D /tmp/env add "hpctoolkit @=develop-ci ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
   # Spack out a representative HPCToolkit. All dependencies should already be built.
-  - eatmydata spack -D /opt/environment install --fail-fast --add --only=package
-    "hpctoolkit @=develop-ci ~viewer ~mpi ~debug +opencl ~cuda ~rocm ~level_zero $VARIANTS"
+  - eatmydata spack -D /tmp/env install --fail-fast --only=package hpctoolkit
 
 #-----------------------------------
 # Phase 2: validate
 #-----------------------------------
 
-# The two devenvs must be consistent with the current version of the ./dev scriptsuite.
+# Ensure the autogoo is still up-to-date
 validate:
   stage: validate
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   tags: [saas-linux-small-amd64]
   script:
-  - ./dev os-install -y -c gcc git git-lfs file diffutils
-  - &spack_clone
-    - git clone --depth=1 https://github.com/spack/spack.git /tmp/spack
-    - export PATH=/tmp/spack/bin/:"$PATH"
-  - ./dev populate /opt/environment
+  - meson setup --native-file image.ini /tmp/builddir
   # Detect any changes to the main source directory
   - git status --porcelain=v1 --untracked-files=no > changes || exit $?
   - |
@@ -462,10 +457,10 @@ validate:
 # at a time. With the exception of +debug, which is flipped at will.
 .buildmany:
   stage: test
+  variables:
+    JOB_CC: gcc
   script:
-  - ./dev os-install -y -c "$JOB_CC" git file diffutils tar eatmydata ccache
-  - *spack_clone
-  - ./dev populate -c "$JOB_CC" /opt/environment
+  - meson setup --native-file image.ini --native-file "$JOB_CC".ini --prefix /tmp/installdir /tmp/builddir
   - mkdir -p logs/"$CI_JOB_NAME"
   - |
     build() {
@@ -473,13 +468,15 @@ validate:
       logfile=logs/"$CI_JOB_NAME"/"$id".log
       shift
 
-      echo -e "\e[32m$ ./dev meson -d /opt/environment -- configure $*\e[0m"
-      ./dev meson -d /opt/environment -- configure "$@" || return $?
-      echo -e "\e[32m$ ./dev meson -d /opt/environment compile && ./dev meson -d /opt/environment install\e[0m"
-      { ./dev meson -d /opt/environment compile -j$(./dev nproc --soft) && ./dev meson -d /opt/environment install; } > "$logfile" 2>&1 \
+      echo -e "\e[32m$ meson configure $* /tmp/builddir\e[0m"
+      meson configure "$@" /tmp/builddir || return $?
+      echo -e "\e[32m$ meson compile -C /tmp/builddir && meson install -C /tmp/builddir\e[0m"
+      { meson compile -C /tmp/builddir && meson install -C /tmp/builddir; } > "$logfile" 2>&1 \
         || { code=$?; cat "$logfile"; return $code; }
-      echo -e "\e[32m$ ./dev validate-install -d /opt/environment\e[0m"
-      ./dev validate-install -d /opt/environment || return $?
+
+      # TODO: Restore this validation pass somewhere.
+      # echo -e "\e[32m$ ./dev validate-install -d /opt/environment\e[0m"
+      # ./dev validate-install -d /opt/environment || return $?
     }
   - |
     for buildtype in debugoptimized release; do
@@ -494,8 +491,9 @@ validate:
   - |
     echo "To reproduce:"
     echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit -v /hpctoolkit/.devenv --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
-  - ./dev cc-diagnostics cq.json logs/"$CI_JOB_NAME"/*.log
+    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
+  # TODO: Restore this diagnostics scanning later in the pipeline.
+  # - ./dev cc-diagnostics cq.json logs/"$CI_JOB_NAME"/*.log
   artifacts:
     reports:
       codequality: cq.json
@@ -513,15 +511,15 @@ validate:
 'buildmany: [amd64, almalinux8]':
   extends: .buildmany amd64 cpu
   image: $PREDEPS_IMAGE_ALMALINUX8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc=8}]}
+  parallel: {matrix: [{JOB_CC: gcc}]}
 'buildmany: [amd64, ubuntu20.04]':
   extends: .buildmany amd64 cpu
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang-10]}]}
+  parallel: {matrix: [{JOB_CC: [clang10]}]}
 'buildmany: [amd64, fedora38]':
   extends: .buildmany amd64 cpu
   image: $PREDEPS_IMAGE_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
+  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
 
 .buildmany min:
   variables:
@@ -531,15 +529,15 @@ validate:
 'buildmany min: [amd64, almalinux8]':
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_ALMALINUX8_AMD64
-  parallel: {matrix: [{JOB_CC: gcc=8}]}
+  parallel: {matrix: [{JOB_CC: gcc}]}
 'buildmany min: [amd64, ubuntu20.04]':
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_UBUNTU20_04_AMD64
-  parallel: {matrix: [{JOB_CC: [clang-10]}]}
+  parallel: {matrix: [{JOB_CC: [clang10]}]}
 'buildmany min: [amd64, fedora38]':
   extends: [.buildmany amd64 cpu, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_FEDORA38_AMD64
-  parallel: {matrix: [{JOB_CC: [gcc=13, clang=16]}]}
+  parallel: {matrix: [{JOB_CC: [gcc, clang]}]}
 
 
 # CUDA spins
@@ -552,24 +550,16 @@ validate:
 'buildmany: [amd64, cuda12.0]':
   extends: .buildmany amd64 cuda
   image: $PREDEPS_IMAGE_CUDA12_0_AMD64
-  variables:
-    JOB_CC: gcc-9
 'buildmany: [amd64, cuda11.8]':
   extends: .buildmany amd64 cuda
   image: $PREDEPS_IMAGE_CUDA11_8_AMD64
-  variables:
-    JOB_CC: gcc-9
 
 'buildmany min: [amd64, cuda12.0]':
   extends: [.buildmany amd64 cuda, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_CUDA12_0_AMD64
-  variables:
-    JOB_CC: gcc-9
 'buildmany min: [amd64, cuda11.8]':
   extends: [.buildmany amd64 cuda, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_CUDA11_8_AMD64
-  variables:
-    JOB_CC: gcc-9
 
 # ROCm spins
 .buildmany amd64 rocm:
@@ -581,24 +571,16 @@ validate:
 'buildmany: [amd64, rocm5.1]':
   extends: .buildmany amd64 rocm
   image: $PREDEPS_IMAGE_ROCM5_1_AMD64
-  variables:
-    JOB_CC: gcc-9
 'buildmany: [amd64, rocm5.6]':
   extends: .buildmany amd64 rocm
   image: $PREDEPS_IMAGE_ROCM5_6_AMD64
-  variables:
-    JOB_CC: gcc-9
 
 'buildmany min: [amd64, rocm5.1]':
   extends: [.buildmany amd64 rocm, .buildmany min]
-  image: $PREDEPS_IMAGE_MIN_ROCM_5_1_AMD64
-  variables:
-    JOB_CC: gcc-9
+  image: $PREDEPS_IMAGE_MIN_ROCM5_1_AMD64
 'buildmany min: [amd64, rocm5.6]':
   extends: [.buildmany amd64 rocm, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_ROCM5_6_AMD64
-  variables:
-    JOB_CC: gcc-9
 
 # Level 0 + GTPin spins
 .buildmany amd64 lvlz:
@@ -616,14 +598,10 @@ validate:
 'buildmany: [amd64, lvlz2023.0, gtpin3.2]':
   extends: .buildmany amd64 lvlz
   image: $PREDEPS_IMAGE_INTEL_AMD64
-  variables:
-    JOB_CC: gcc-9
 
 'buildmany min: [amd64, lvlz2023.0, gtpin3.2]':
   extends: [.buildmany amd64 lvlz, .buildmany min]
   image: $PREDEPS_IMAGE_MIN_INTEL_AMD64
-  variables:
-    JOB_CC: gcc-9
 
 
 # Build single versions of the codebase and run unit tests through `make check`
@@ -647,26 +625,24 @@ validate:
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
   script:
   - &check_setup
-    - ./dev os-install -y -c "$JOB_CC" git file diffutils tar make eatmydata ccache
-    - *spack_clone
-    - export MESON_TESTTHREADS=$(./dev nproc --soft)
     - mkdir logs/
     - logfile=logs/"$CI_JOB_NAME".log
     - rm -f "$logfile"
-    - ./dev populate -c "$JOB_CC" /opt/environment
+    - meson setup --native-file image.ini --prefix /tmp/installdir /tmp/builddir
   - &check_compile
-    - ./dev meson -d /opt/environment compile -j$(./dev nproc --soft) >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
-    - ./dev meson -d /opt/environment install >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
+    - meson compile -C /tmp/builddir >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
+    - meson install -C /tmp/builddir >> "$logfile" 2>&1 || { code=$?; cat "$logfile"; exit $code; }
   - &check_test
-    - ./dev meson -d /opt/environment test --maxfail=10 --repeat=${JOB_TEST_REPEAT:-7} ${JOB_TEST_SUITE:+--suite=$JOB_TEST_SUITE}
+    - meson test -C /tmp/builddir --maxfail=10 --repeat=${JOB_TEST_REPEAT:-7} ${JOB_TEST_SUITE:+--suite=$JOB_TEST_SUITE}
   after_script:
   - |
     echo "To reproduce:"
     echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit -v /hpctoolkit/.devenv --workdir /hpctoolkit -e JOB_CC=$JOB_CC $CI_JOB_IMAGE"
+    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit $CI_JOB_IMAGE"
   - &check_after
-    - ./dev cc-diagnostics cq.json logs/"$CI_JOB_NAME".log
-    - cp -t "$CI_PROJECT_DIR"/ /opt/environment/builddir/meson-logs/testlog.junit.xml
+    # TODO: Restore this diagnostics scanning later in the pipeline.
+    # - ./dev cc-diagnostics cq.json logs/"$CI_JOB_NAME".log
+    - cp -t "$CI_PROJECT_DIR"/ /tmp/builddir/meson-logs/testlog.junit.xml
 
   artifacts: &check_artifacts
     reports:
@@ -679,17 +655,17 @@ validate:
   script:
   - *check_setup
   - *check_compile
-  - ./dev meson -d /opt/environment compile $(printf 'tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
+  - meson compile -C /tmp/builddir $(printf 'tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
   - mkdir -p testdata/"$CI_JOB_NAME"
-  - cp -t testdata/"$CI_JOB_NAME"/ $(printf '/opt/environment/builddir/tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
-  - for suite in $REGEN_SUITES; do tar xJvf /opt/environment/builddir/tests2/data/fresh-testdata-$suite.tar.xz || exit $?; done
+  - cp -t testdata/"$CI_JOB_NAME"/ $(printf '/tmp/builddir/tests2/data/fresh-testdata-%s.tar.xz\n' $REGEN_SUITES)
+  - for suite in $REGEN_SUITES; do tar xJvf /tmp/builddir/tests2/data/fresh-testdata-$suite.tar.xz || exit $?; done
   - *check_compile
   - *check_test
   after_script:
   - |
     echo "To reproduce:"
     echo "    cd path/to/hpctoolkit"
-    echo "    podman run --rm -it -v ./:/hpctoolkit -v /hpctoolkit/.devenv --workdir /hpctoolkit -e JOB_CC=$JOB_CC -e REGEN_SUITES='$REGEN_SUITES' $CI_JOB_IMAGE"
+    echo "    podman run --rm -it -v ./:/hpctoolkit --workdir /hpctoolkit -e REGEN_SUITES='$REGEN_SUITES' $CI_JOB_IMAGE"
   - *check_after
   artifacts:
     <<: *check_artifacts
@@ -702,7 +678,6 @@ validate:
   image: $PREDEPS_IMAGE_UBUNTU20_04_AMD64
   tags: [rice-linux-large-bare-amd64]
   variables: &vars_check_cpu
-    JOB_CC: gcc-10
     SPEC: '+mpi +debug +valgrind_debug +papi +python ~opencl ~cuda ~rocm ~level0'
 'check min amd64: [cpu]':
   extends: .check
@@ -734,7 +709,6 @@ validate:
   image: $PREDEPS_IMAGE_CUDA11_6_AMD64
   tags: [rice-linux-large-amd64-gpu-p100]
   variables: &vars_check_cuda
-    JOB_CC: gcc-9
     JOB_TEST_SUITE: cuda
 
 'check amd64: [+cuda, 11.8]':
@@ -760,7 +734,6 @@ validate:
   before_script: &bscript_check_rocm
   - export LD_LIBRARY_PATH=/opt/rocm/lib:"$LD_LIBRARY_PATH"
   variables: &vars_check_rocm
-    JOB_CC: gcc-9
     JOB_TEST_SUITE: rocm
 
 'check amd64: [+rocm, 5.2]':
