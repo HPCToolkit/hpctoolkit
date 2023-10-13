@@ -46,7 +46,7 @@
 
 #include "logical.hpp"
 
-#include "lib/support-lean/demangle.h"
+#include "lib/support-lean/hpctoolkit_demangle.h"
 #include "lib/prof-lean/hpcfmt.h"
 
 #include <cstring>

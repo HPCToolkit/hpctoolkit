@@ -46,7 +46,7 @@
 
 #include "kernelsyms.hpp"
 
-#include "lib/support-lean/demangle.h"
+#include "lib/support-lean/hpctoolkit_demangle.h"
 #include "pipeline.hpp"
 #include "../util/lzmastream.hpp"
 

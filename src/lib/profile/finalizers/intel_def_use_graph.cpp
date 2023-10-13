@@ -60,7 +60,7 @@
 
 #include "intel_def_use_graph.hpp"
 #include "pipeline.hpp"
-#include <lib/support-lean/demangle.h>
+#include <lib/support-lean/hpctoolkit_demangle.h>
 
 
 using namespace hpctoolkit;
