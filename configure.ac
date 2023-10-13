@@ -669,8 +669,8 @@ my_demangle_ldflags=""
 
 # Options: Default for GCC
 if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-  my_opt_cflags="-g -O0 -Wall -Wstack-usage=65536"
-  my_opt_cxxflags="-g -O0 -Wall -Wstack-usage=65536"
+  my_opt_cflags="-g -Og -Wall -Wstack-usage=65536"
+  my_opt_cxxflags="-g -Og -Wall -Wstack-usage=65536"
 else
   # On some compilers, -g implies -O0.  Make sure -O3 takes precedence!
   my_opt_cflags="-g -O3 -Wall -Wstack-usage=65536 -DNDEBUG"
