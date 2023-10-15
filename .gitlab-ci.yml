@@ -473,10 +473,6 @@ validate:
       echo -e "\e[32m$ meson compile -C /tmp/builddir && meson install -C /tmp/builddir\e[0m"
       { meson compile -C /tmp/builddir && meson install -C /tmp/builddir; } > "$logfile" 2>&1 \
         || { code=$?; cat "$logfile"; return $code; }
-
-      # TODO: Restore this validation pass somewhere.
-      # echo -e "\e[32m$ ./dev validate-install -d /opt/environment\e[0m"
-      # ./dev validate-install -d /opt/environment || return $?
     }
   - |
     for buildtype in debugoptimized release; do
