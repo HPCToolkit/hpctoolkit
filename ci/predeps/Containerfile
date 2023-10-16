@@ -1,0 +1,55 @@
+ARG BASE
+FROM $BASE
+
+# Some images set problematic environment variables. Wipe those out first for safety.
+ENV PYTHONPATH=
+ENV PKG_CONFIG_PATH=
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV CPATH=
+ENV LIBRARY_PATH=
+ENV LD_LIBRARY_PATH=
+ENV CMAKE_PREFIX_PATH=
+
+# Install the required packages along with all the Meson native files for system bits
+COPY native/ /usr/share/meson/native/
+RUN --mount=type=bind,target=/src/context \
+  /src/context/install-os-packages.sh
+
+# Install a up-to-date versions of Meson and Ninja, using a suitable Python
+RUN --mount=type=bind,target=/src/context \
+  /src/context/best-python.sh -m pip install 'meson[ninja]>=1.1.0,<2'
+
+# Copy in the Spack-built dependencies and such
+ARG SPACKDEPS
+COPY --from=$SPACKDEPS /opt/software /opt/software
+COPY --from=$SPACKDEPS /opt/environment /opt/environment
+COPY --from=$SPACKDEPS /usr/share/meson/native/spack_env.ini /usr/share/meson/native/image.ini
+
+# Merge together the "patch" Meson native files to produce the final native file for the image.
+RUN --mount=type=bind,target=/src/context \
+  do_patch() { \
+    if test -e /usr/share/meson/native/"$1".patch.ini; then \
+      /src/context/best-python.sh /src/context/patch-native.py \
+        /usr/share/meson/native/image.ini /usr/share/meson/native/"$1".patch.ini \
+      && rm /usr/share/meson/native/"$1".patch.ini; \
+    fi; \
+  } \
+  && do_patch cuda \
+  && do_patch rocm \
+  && do_patch level-zero \
+  && do_patch gtpin \
+  && ! test -e /usr/share/meson/native/*.patch.ini
+
+# At this point the image should be complete. Test the image before continuing to ensure it
+# actually does in fact work as intended. We play some tricks with bind-mounting to keep from
+# leaving behind any mark on the image here.
+# TODO: Currently the project_dir bind-mount needs to be rw, because Autotools.
+RUN --mount=type=bind,target=/src/context \
+    --mount=type=bind,from=project_dir,target=/src/hpctoolkit,rw \
+    --mount=type=bind,from=scratch,target=/tmp/tmpdir,rw \
+  /src/context/verify-image.sh /src/hpctoolkit /tmp/tmpdir/builddir
+
+# Clean up empty directories created by bind-mounts
+RUN \
+  rm -rfv /src/context /tmp/tmpdir /src/hpctoolkit \
+  && rmdir --ignore-fail-on-non-empty /src

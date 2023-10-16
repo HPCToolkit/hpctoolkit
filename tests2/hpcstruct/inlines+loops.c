@@ -7,6 +7,7 @@ volatile int unconstant_k = 2;
 volatile int x = 17;
 
 // DECLARE: !!S^ <S/* i=* l=inparbounds v=*
+// DECLARE: !!A^ dbg:<A* i=* f=* l=* n="" v="{}" <*>* </A
 
 // FIXME: See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/730
 // DECLARE: !!PS^ dbg:<A? i=* f=file[nodbg:*] l=line v="{}" n="<inline>" <S/? i=* l=line v=* </A <S/* i=* l=inparbounds v=*
@@ -71,20 +72,20 @@ void f3_3() {  // CHECK: <P i=* l=inbounds n="f3_3"[*] ln="f3_3" v=* !!PS^
 // 4. Interleaved loops + inlined calls
 void f4_1() {  // CHECK: <P i=* l=inbounds n="f4_1"[*] ln="f4_1" v=* !!PS^
   x += unconstant_k;  // CHECK: <S/ i=* l=line v=*
-  for(volatile int i = 0; i < unconstant_i; i++) {  // CHECK: <L i=* f=file[nodbg:*] l=line v=* !!S^
+  for(volatile int i = 0; i < unconstant_i; i++) {  // CHECK: !!A^ <L i=* f=file[nodbg:*] l=line v=* !!S^
     f_inlined();  // CHECK: dbg:<A i=* f=* l=* n="" v="{}" !f_inlined </A
   }  // CHECK: </L
 }  // CHECK: </P
 void f4_2() {  // CHECK: <P i=* l=inbounds n="f4_2"[*] ln="f4_2" v=* !!PS^
   x += unconstant_k;  // CHECK: <S/ i=* l=line v=*
-  for(volatile int i = 0; i < unconstant_i; i++) {  // CHECK: <L i=* f=file[nodbg:*] l=line v=* !!S^
+  for(volatile int i = 0; i < unconstant_i; i++) {  // CHECK: !!A^ <L i=* f=file[nodbg:*] l=line v=* !!S^
     f_inlined_loop();  // CHECK: dbg:<A i=* f=* l=* n="" v="{}" !f_inlined_loop </A
   }  // CHECK: </L
 }  // CHECK: </P
 void f4_3() {  // CHECK: <P i=* l=inbounds n="f4_3"[*] ln="f4_3" v=* !!PS^
   x += unconstant_k;  // CHECK: <S/ i=* l=line v=*
-  for(volatile int i = 0; i < unconstant_i; i++) {  // CHECK: <L i=* f=file[nodbg:*] l=line v=* !!S^
-    for(volatile int j = 0; j < unconstant_j; j++) {  // CHECK: <L i=* f=file[nodbg:*] l=line v=* !!S^
+  for(volatile int i = 0; i < unconstant_i; i++) {  // CHECK: !!A^ <L i=* f=file[nodbg:*] l=line v=* !!S^
+    for(volatile int j = 0; j < unconstant_j; j++) {  // CHECK: !!A^ <L i=* f=file[nodbg:*] l=line v=* !!S^
       f_inlined_loop();  // CHECK: dbg:<A i=* f=* l=* n="" v="{}" !f_inlined_loop </A
     }  // CHECK: </L
   }  // CHECK: </L
