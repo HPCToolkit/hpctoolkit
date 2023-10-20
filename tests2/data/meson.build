@@ -1,8 +1,6 @@
 testdata_root = 'tests2/data/'
 testdata_srcroot = meson.project_source_root()
 
-path_env = find_program(files('path-env'))
-
 subdir('meas')
 subdir('dbase')
 subdir('bin')

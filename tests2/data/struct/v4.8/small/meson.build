@@ -83,13 +83,11 @@ foreach name, variants : _structfiles
       _cmd = [hpcstruct, '--nocache', '@INPUT@', '-o', '@OUTPUT@',
               '-j1', '--gpucfg=' + (features.get('gpucfg', false) ? 'yes' : 'no')]
 
-      # FIXME: nvdisasm must be on the PATH for hpcstruct to operate on CUDA binaries
-      # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/799
-      if has_cuda
-        _cmd = ['--prepend-path', fs.parent(nvdisasm.full_path())] + _cmd
+      if features.get('gpucfg', false) and _bin['arch_tags'][0].startswith('cuda::') and not has_cuda
+        # We aren't compiled with GPU CFG support for CUDA binaries. Don't emit any tests.
+        continue
       endif
 
-      _cmd = [path_env] + _cmd
       _gen = custom_target(output: _out_structfile,
           command: _cmd, input: _bin['binary'], env: _env,
           build_always_stale: true, build_by_default: false)

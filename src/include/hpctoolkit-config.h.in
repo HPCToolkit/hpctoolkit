@@ -3,6 +3,9 @@
 /* "Cuda install prefix" */
 #undef CUDA_INSTALL_PREFIX
 
+/* "Path to CUDA nvdisasm utility" */
+#undef CUDA_NVDISASM_PATH
+
 /* "CUPTI install prefix" */
 #undef CUPTI_INSTALL_PREFIX
 

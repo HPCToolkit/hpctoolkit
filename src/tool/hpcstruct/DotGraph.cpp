@@ -318,7 +318,13 @@ main(int argc, char **argv)
     CodeObject *code_obj = NULL;
 
     if (cuda_file) { // don't run parseapi on cuda binary
-      parsable = buildCudaGPUCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
+#ifdef OPT_HAVE_CUDA
+      buildCudaGPUCFG(search_path, elfFile, symtab, &code_src, &code_obj);
+      parsable = true;
+#else
+      std::cerr << "ERROR: CFG requested for CUDA binary but hpcstruct was not compiled with CUDA support\n";
+      throw 1;
+#endif
     } else if (intel_file) { // don't run parseapi on intel binary
       #ifdef ENABLE_IGC
       // this thread count for performing backward slicing has been selected after some manual runs of hpcstruct

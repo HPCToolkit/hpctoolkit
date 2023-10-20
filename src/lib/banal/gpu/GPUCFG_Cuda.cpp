@@ -115,18 +115,6 @@ using namespace InstructionAPI;
 //***************************************************************************
 
 static bool
-test_nvdisasm()
-{
-  // check whether nvdisasm works
-  int retval = system("nvdisasm > /dev/null") == 0;
-  if (!retval) {
-    std::cout << "WARNING: nvdisasm is not available on your path to analyze control flow in NVIDIA CUBINs" << std::endl;
-  }
-  return retval;
-}
-
-
-static bool
 dumpCubin
 (
  const std::string &cubin,
@@ -225,7 +213,7 @@ parseDotCFG
   for (auto *symbol : symbols) {
     if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
       auto index = symbol->getIndex();
-      const std::string cmd = "nvdisasm -fun " +
+      const std::string cmd = CUDA_NVDISASM_PATH " -fun " +
         std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
       if (system(cmd.c_str()) == 0) {
         parsed_function_symbols.push_back(symbol);
@@ -376,7 +364,7 @@ parseDotCFG
     }
 
     const std::string dot_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".dot";
-    std::string cmd = "nvdisasm -cfg -poff -fun ";
+    std::string cmd = CUDA_NVDISASM_PATH " -cfg -poff -fun ";
     for (auto *symbol : parsed_function_symbols) {
       auto index = symbol->getIndex();
       cmd += std::to_string(index) + ",";
@@ -408,43 +396,34 @@ getFilename
 }
 
 
-bool
+void
 buildCudaGPUCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab,
- bool cfg_wanted,
  Dyninst::ParseAPI::CodeSource **code_src,
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
-  static bool compute_cfg = cfg_wanted && test_nvdisasm();
   bool dump_cubin_success = false;
 
-  if (compute_cfg) {
-    std::string filename = getFilename();
-    std::string cubin = filename;
-    std::string dot = filename + ".dot";
+  std::string filename = getFilename();
+  std::string cubin = filename;
+  std::string dot = filename + ".dot";
 
-    dump_cubin_success = dumpCubin(cubin, elfFile);
-    if (!dump_cubin_success) {
-      std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl;
-    } else {
-      std::vector<GPUParse::Function *> functions;
-      parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
-      CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-      *code_src = new GPUCodeSource(functions, the_symtab);
-      *code_obj = new CodeObject(*code_src, cfg_fact);
-      (*code_obj)->parse();
-      unlink(dot.c_str());
-      unlink(cubin.c_str());
-      return true;
-    }
+  dump_cubin_success = dumpCubin(cubin, elfFile);
+  if (!dump_cubin_success) {
+    std::cout << "ERROR: unable to write a cubin to the file system to analyze its CFG" << std::endl;
+    throw 1;
   }
 
-  *code_src = new SymtabCodeSource(the_symtab);
-  *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
-
-  return false;
+  std::vector<GPUParse::Function *> functions;
+  parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
+  CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+  *code_src = new GPUCodeSource(functions, the_symtab);
+  *code_obj = new CodeObject(*code_src, cfg_fact);
+  (*code_obj)->parse();
+  unlink(dot.c_str());
+  unlink(cubin.c_str());
 }

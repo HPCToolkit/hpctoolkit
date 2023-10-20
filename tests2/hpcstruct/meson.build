@@ -28,27 +28,20 @@ foreach name, struct : testdata_struct_current
   ]
   _suffix = struct['gpucfg'] ? '+gpucfg' : ''
 
-  # FIXME: nvdisasm must be on the PATH for hpcstruct to operate on CUDA binaries
-  # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/799
-  _env = environment()
-  if has_cuda
-    _env.prepend('PATH', fs.parent(nvdisasm.full_path()))
-  endif
-
   # FIXME: Multithread cases frequently fail consistency for CUDA binaries.
   # See https://gitlab.com/hpctoolkit/hpctoolkit/-/issues/733
   if 'binary' in struct and struct['binary']['arch_tags'][0].startswith('cuda::')
     _threads = [1]
 
-    # Skip in the required support is not present
-    if not has_cuda
-      _args += ['--skip']
+    # If the required support is not available, do not emit any tests.
+    if struct['gpucfg'] and not has_cuda
+      continue
     endif
   endif
 
   foreach threads : _threads
     test(f'Analysis of @name@ is consistent (-j@threads@@_suffix@)',
-         _tst, args: _args + [f'-j@threads@'], env: _env,
+         _tst, args: _args + [f'-j@threads@'],
          suite: 'hpcstruct', is_parallel: 'binary' not in struct or threads == 1,
     )
   endforeach

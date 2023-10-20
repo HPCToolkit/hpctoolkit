@@ -66,7 +66,6 @@ endif
 
 MYSOURCES = \
 	gpu/GPUCFG.cpp  \
-	gpu/GPUCFG_Cuda.cpp \
 	gpu/GPUCFG_Intel.cpp \
 	gpu/GPUCFGFactory.cpp  \
 	gpu/GPUFunction.cpp  \
@@ -77,6 +76,10 @@ MYSOURCES = \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
+
+if OPT_ENABLE_CUDA
+MYSOURCES += gpu/GPUCFG_Cuda.cpp
+endif
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
