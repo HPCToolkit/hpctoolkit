@@ -475,7 +475,9 @@ class Module(StructureBase):
 
     @yaml_object
     class Flags(BitFlags, yaml_tag="!meta.db/v4/Module.Flags"):
-        pass  # Reserved for future use
+        # Flag bits reserved for future use. This entry may be removed once
+        # bits are allocated.
+        RESERVED = EnumEntry(33, min_version=0x100)
 
     flags: Flags
     path: str
@@ -619,7 +621,9 @@ class Function(StructureBase):
 
     @yaml_object
     class Flags(BitFlags, yaml_tag="!meta.db/v4/Function.Flags"):
-        pass  # Reserved for future use
+        # Flag bits reserved for future use. This entry may be removed once
+        # bits are allocated.
+        RESERVED = EnumEntry(33, min_version=0x100)
 
     name: str
     module: Module | None
