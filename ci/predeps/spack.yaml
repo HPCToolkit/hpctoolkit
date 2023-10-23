@@ -64,9 +64,9 @@ spack:
     - intel-xed @2022.08.11
   # Autotools. These specs should stay in-sync with subprojects/autotools/spack.yaml
   - core:
-    - 'autoconf @2.69'
-    - 'automake @1.15.1'
-    - 'libtool @2.4.6'
+    - 'autoconf'
+    - 'automake'
+    - 'libtool'
     - 'm4'
     - 'gmake'
   # Optional dependencies.
