@@ -22441,6 +22441,48 @@ fi
 
 #-------------------------------------------------
 
+# Test if dyninst uses the new getContainingModule() API or the old
+# findModuleByOffset() for finding the module that contains an address.
+
+use_get_containing_module=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst supports getContainingModule" >&5
+$as_echo_n "checking if dyninst supports getContainingModule... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <Symtab.h>
+#include <Module.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+Module * myModule(Symtab *sym, Offset off)
+{
+  return sym->getContainingModule(off);
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  use_get_containing_module=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_get_containing_module" >&5
+$as_echo "$use_get_containing_module" >&6; }
+fi
+
+if test "$use_get_containing_module" = yes ; then
+
+$as_echo "#define USE_GET_CONTAINING_MODULE 1" >>confdefs.h
+
+  dyninst_features="$dyninst_features contain-module"
+fi
+
+#-------------------------------------------------
+
 # Test if dyninst supports cuda.
 
 use_cuda=no

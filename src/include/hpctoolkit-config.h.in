@@ -180,6 +180,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* use getContainingModule API */
+#undef USE_GET_CONTAINING_MODULE
+
 /* use Level Zero */
 #undef USE_LEVEL0
 

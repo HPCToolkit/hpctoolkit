@@ -538,7 +538,14 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
   }
 
   // else look for other modules
+  // the API changed in dyninst in Oct 2023
   if (svec.empty()) {
+#ifdef USE_GET_CONTAINING_MODULE
+    auto *mod = the_symtab->getContainingModule(vma);
+    if (mod) {
+      mod->getSourceLines(svec, vma /*+ cubin_size*/);
+    }
+#else
     set <Module *> modSet;
     the_symtab->findModuleByOffset(modSet, vma);
 
@@ -548,6 +555,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
         break;
       }
     }
+#endif
   }
 
   // a known file and unknown line is now legal, but we require that

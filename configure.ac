@@ -3788,6 +3788,37 @@ fi
 
 #-------------------------------------------------
 
+# Test if dyninst uses the new getContainingModule() API or the old
+# findModuleByOffset() for finding the module that contains an address.
+
+use_get_containing_module=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst supports getContainingModule])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <Symtab.h>
+#include <Module.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+Module * myModule(Symtab *sym, Offset off)
+{
+  return sym->getContainingModule(off);
+}
+]])], [use_get_containing_module=yes])
+
+  AC_MSG_RESULT([$use_get_containing_module])
+fi
+
+if test "$use_get_containing_module" = yes ; then
+  AC_DEFINE(USE_GET_CONTAINING_MODULE, 1, [use getContainingModule API])
+  dyninst_features="$dyninst_features contain-module"
+fi
+
+#-------------------------------------------------
+
 # Test if dyninst supports cuda.
 
 use_cuda=no
