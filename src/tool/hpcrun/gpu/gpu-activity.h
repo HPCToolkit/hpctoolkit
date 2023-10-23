@@ -57,6 +57,13 @@
 #include <lib/prof-lean/stacks.h>
 #include <hpcrun/utilities/ip-normalized.h>
 
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
+
+
 //******************************************************************************
 // forward declarations
 //******************************************************************************
@@ -203,6 +210,9 @@ typedef struct gpu_pc_sampling_info_t {
 
 // a special flush record to notify all operations have been consumed
 typedef struct gpu_flush_t {
+#ifdef __cplusplus
+  std::
+#endif
   atomic_bool *wait;
 } gpu_flush_t;
 

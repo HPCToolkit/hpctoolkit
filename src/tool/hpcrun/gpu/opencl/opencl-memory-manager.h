@@ -51,9 +51,13 @@
 //******************************************************************************
 
 #include <lib/prof-lean/bistack.h>
-#include <stdatomic.h>
 #include <hpcrun/gpu/gpu-activity.h>
 
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 
 //************************ Forward Declarations ******************************

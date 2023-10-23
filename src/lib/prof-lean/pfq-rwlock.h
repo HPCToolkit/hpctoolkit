@@ -100,6 +100,9 @@
 typedef mcs_node_t pfq_rwlock_node_t;
 
 typedef struct bigbool {
+#ifdef __cplusplus
+  std::
+#endif
   atomic_bool bit cache_aligned;
 } bigbool;
 
@@ -107,8 +110,17 @@ typedef struct {
   //----------------------------------------------------------------------------
   // reader management
   //----------------------------------------------------------------------------
+#ifdef __cplusplus
+  std::
+#endif
   atomic_uint_least32_t rin cache_aligned;  // = 0
+#ifdef __cplusplus
+  std::
+#endif
   atomic_uint_least32_t rout cache_aligned;  // = 0
+#ifdef __cplusplus
+  std::
+#endif
   atomic_uint_least32_t last cache_aligned;  // = WRITER_PRESENT
   bigbool writer_blocking_readers[2]; // false
 

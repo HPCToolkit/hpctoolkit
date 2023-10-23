@@ -7,7 +7,11 @@
 
 #include <hpcrun/cct/cct.h>                   // cct_node_t
 #include <hpcrun/gpu/gpu-activity.h>          // gpu_activity_channel_t
-#include <stdatomic.h>          // _Atomic
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 
 

@@ -11,8 +11,13 @@
 #include <lib/prof-lean/splay-macros.h>
 #include <monitor.h>
 #include "trace.h"
-#include <stdatomic.h>
 #include <tool/hpcrun/threadmgr.h>
+
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 typedef struct stream_activity_data_s {
     cct_node_t *node;

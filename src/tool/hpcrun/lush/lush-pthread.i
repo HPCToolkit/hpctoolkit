@@ -72,14 +72,19 @@
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
-#include <stdatomic.h>
 #include <lib/prof-lean/BalancedTree.h>
+
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -99,7 +104,11 @@ extern atomic_long DBG_maxLockAllocCur;
 extern atomic_long DBG_numLockFreelistCur;
 #endif
 
-typedef _Atomic(int) atomic_pthread_spinlock_t;
+typedef
+#ifdef __cplusplus
+  std::
+#endif
+  atomic_int atomic_pthread_spinlock_t;
 
 typedef struct lushPtr_SyncObjData {
 
@@ -108,6 +117,9 @@ typedef struct lushPtr_SyncObjData {
     //pthread_mutex_t  mutexlock
   } lock GCC_ATTR_VAR_CACHE_ALIGN;
 
+#ifdef __cplusplus
+  std::
+#endif
   atomic_uint_least64_t idleness GCC_ATTR_VAR_CACHE_ALIGN;
   void*    cct_node;
   bool isBlockingWork;
@@ -121,6 +133,9 @@ typedef struct lushPtr_SyncObjData {
 static inline void
 lushPtr_SyncObjData_init(lushPtr_SyncObjData_t* x)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   atomic_store_explicit(&x->idleness, 0, memory_order_relaxed);
   x->cct_node = NULL;
   x->isBlockingWork = false;
@@ -150,14 +165,29 @@ typedef struct lushPthr {
   // -------------------------------------------------------
   // process wide metrics
   // -------------------------------------------------------
+#ifdef __cplusplus
+  std::
+#endif
   atomic_long* ps_num_procs;        // available processor cores
+#ifdef __cplusplus
+  std::
+#endif
   atomic_long* ps_num_threads;
 
+#ifdef __cplusplus
+  std::
+#endif
   atomic_long* ps_num_working;      // working (W_l) + (W_c) + (W_o)
+#ifdef __cplusplus
+  std::
+#endif
   atomic_long* ps_num_working_lock; // working (W_l)
   //    ps_num_working_othr  // working (W_c) + (W_o)
 
   //    ps_num_idle_lock     // idleness (I_l)
+#ifdef __cplusplus
+  std::
+#endif
   atomic_long* ps_num_idle_cond;    // idleness (I_cl) + (I_cv)
 
   // -------------------------------------------------------
@@ -181,13 +211,20 @@ typedef struct lushPthr {
 
 extern void* lushPthr_mem_beg; // memory begin
 extern void* lushPthr_mem_end; // memory end
-typedef _Atomic(uintptr_t) lushPthr_mem_ptr_t;
+typedef
+#ifdef __cplusplus
+  std::
+#endif
+  atomic_uintptr_t lushPthr_mem_ptr_t;
 extern lushPthr_mem_ptr_t lushPthr_mem_ptr; // current pointer
 
 
 static inline void*
 lushPthr_malloc(size_t size)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   char *memEnd = (char*)atomic_fetch_add_explicit(&lushPthr_mem_ptr, size, memory_order_relaxed);
   if (memEnd < (char *)lushPthr_mem_end) {
     return (memEnd - size);
@@ -199,7 +236,7 @@ lushPthr_malloc(size_t size)
 // **************************************************************************
 
 #if defined(__cplusplus)
-} /* extern "C" */
+}  // extern "C"
 #endif
 
 #endif /* lush_pthreads_i */

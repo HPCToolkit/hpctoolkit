@@ -75,7 +75,7 @@
 
 //*************************** Forward Declarations **************************
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -191,8 +191,8 @@ lush_forcestep_pnote(lush_cursor_t* cursor);
 
 //***************************************************************************
 
-#if defined(__cplusplus)
-} /* extern "C" */
+#ifdef __cplusplus
+}  // extern "C"
 #endif
 
 #endif /* lush_lush_h */

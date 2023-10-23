@@ -66,8 +66,13 @@
 // global includes
 //******************************************************************************
 
-#include "stdatomic.h"
 #include <stdbool.h>
+
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 
 //******************************************************************************
@@ -75,13 +80,25 @@
 //******************************************************************************
 
 typedef struct mcs_node_s {
+#ifndef __cplusplus
   _Atomic(struct mcs_node_s*) next;
+#else
+  std::atomic<struct mcs_node_s*> next;
+#endif
+
+#ifdef __cplusplus
+  std::
+#endif
   atomic_bool blocked;
 } mcs_node_t;
 
 
 typedef struct {
+#ifndef __cplusplus
   _Atomic(mcs_node_t *) tail;
+#else
+  std::atomic<mcs_node_t *> tail;
+#endif
 } mcs_lock_t;
 
 
@@ -99,6 +116,9 @@ typedef struct {
 static inline void
 mcs_init(mcs_lock_t *l)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   atomic_init(&l->tail, mcs_nil);
 }
 

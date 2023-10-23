@@ -60,7 +60,11 @@
 // local includes
 //*****************************************************************************
 
-#include "stdatomic.h"
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 
 

@@ -75,7 +75,7 @@
 
 //*************************** Forward Declarations **************************
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -85,11 +85,6 @@ extern "C" {
 //   2. Facility for maintaining active marker
 //   3. Runtime concurrency information
 // **************************************************************************
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 // --------------------------------------------------------------------------
 // Initialization/Finalization
@@ -175,16 +170,12 @@ LUSHI_DECL(int, LUSHI_lip_write, ());
 LUSHI_DECL(bool, LUSHI_do_metric, (uint64_t incrMetricIn, bool* doMetric, bool* doMetricIdleness, uint64_t* incrMetric, double* incrMetricIdleness));
 
 
-#ifdef __cplusplus
-}
-#endif
-
 // **************************************************************************
 
 #undef LUSHI_DECL
 
-#if defined(__cplusplus)
-} /* extern "C" */
+#ifdef __cplusplus
+}  // extern "C"
 #endif
 
 #endif /* lush_lushi_h */

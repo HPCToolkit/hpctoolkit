@@ -109,7 +109,7 @@ LUSHI_DECL(int, LUSHCB_loadmap_find, (void* addr,
                                       void** end));
 
 #ifdef __cplusplus
-}
+}  // extern "C"
 #endif
 
 // **************************************************************************

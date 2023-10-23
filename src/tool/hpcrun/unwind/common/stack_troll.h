@@ -62,7 +62,7 @@ typedef enum {
   troll_status stack_troll(void **start_sp, unsigned int *ra_pos, validate_addr_fn_t validate_addr, void *generic_arg);
 
 #ifdef __cplusplus
-}
+}  // extern "C"
 #endif
 
 #endif /* STACK_TROLL_H */

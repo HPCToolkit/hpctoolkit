@@ -59,7 +59,11 @@
 // local includes
 //******************************************************************************
 
+#ifndef __cplusplus
 #include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 #include <hpcrun/cct/cct.h>
 

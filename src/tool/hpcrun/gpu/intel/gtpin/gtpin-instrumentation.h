@@ -54,12 +54,6 @@
 #ifndef gtpin_instrumentation_h
 #define gtpin_instrumentation_h
 
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 //*****************************************************************************
 // system include files
 //*****************************************************************************
@@ -80,6 +74,9 @@ extern "C"
 #include "gtpin-hpcrun-api.h"
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //*****************************************************************************
 // interface functions
@@ -122,7 +119,7 @@ gtpin_lookup_kernel_ip
 
 
 #ifdef __cplusplus
-};
+}  // extern "C"
 #endif
 
 #endif

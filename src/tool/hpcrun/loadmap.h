@@ -62,7 +62,12 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+
+#ifndef __cplusplus
 #include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 #include "fnbounds_file_header.h"
 
@@ -138,6 +143,9 @@ typedef struct load_module_t
   struct dl_phdr_info phdr_info;
   struct load_module_t* next;
   struct load_module_t* prev;
+#ifdef __cplusplus
+  std::
+#endif
   atomic_int flags;
 } load_module_t;
 

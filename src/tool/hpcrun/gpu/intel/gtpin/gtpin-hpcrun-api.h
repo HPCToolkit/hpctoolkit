@@ -75,6 +75,12 @@
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
+
 
 //*****************************************************************************
 // local include files
@@ -99,7 +105,11 @@ typedef struct gtpin_hpcrun_api_t {
   gpu_activity_channel_t *(*gpu_activity_channel_get)(void);
 
   void (*gpu_operation_multiplexer_push)
-  (gpu_activity_channel_t *, atomic_int *, gpu_activity_t *);
+  (gpu_activity_channel_t *,
+#ifdef __cplusplus
+  std::
+#endif
+  atomic_int *, gpu_activity_t *);
 
   void (*hpcrun_thread_init_mem_pool_once)
   (int, cct_ctxt_t *, hpcrun_trace_type_t, bool);
