@@ -76,7 +76,7 @@
 
 #include "OSUtil.h"
 #include <include/linux_info.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 
 //*************************** macros **************************
 

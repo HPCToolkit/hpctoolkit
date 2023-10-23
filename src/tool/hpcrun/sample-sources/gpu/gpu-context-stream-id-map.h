@@ -11,7 +11,7 @@
 #include <lib/prof-lean/splay-macros.h>
 #include <monitor.h>
 #include "trace.h"
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <tool/hpcrun/threadmgr.h>
 
 typedef struct stream_activity_data_s {

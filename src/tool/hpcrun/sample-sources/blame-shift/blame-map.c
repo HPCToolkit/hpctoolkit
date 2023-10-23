@@ -62,7 +62,7 @@
 #include "blame-map.h"
 
 #include <hpcrun/messages/messages.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <memory/hpcrun-malloc.h>
 
 /******************************************************************************

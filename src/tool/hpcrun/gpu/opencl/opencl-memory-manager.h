@@ -51,7 +51,7 @@
 //******************************************************************************
 
 #include <lib/prof-lean/bistack.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <hpcrun/gpu/gpu-activity.h>
 
 

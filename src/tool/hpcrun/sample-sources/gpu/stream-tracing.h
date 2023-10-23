@@ -7,7 +7,7 @@
 
 #include <lib/prof-lean/producer_wfq.h>
 #include <tool/hpcrun/thread_data.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <tool/hpcrun/cct/cct.h>
 _Atomic(bool) stop_streams;
 atomic_ullong stream_counter;

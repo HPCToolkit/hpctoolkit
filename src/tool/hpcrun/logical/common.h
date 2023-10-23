@@ -60,7 +60,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "lib/prof-lean/stdatomic.h"
+#include <stdatomic.h>
 
 // --------------------------------------
 // Logical stack and mutator functions

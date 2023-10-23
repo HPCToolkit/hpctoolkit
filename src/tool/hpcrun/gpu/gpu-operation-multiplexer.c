@@ -55,7 +55,7 @@
 
 #include <hpcrun/control-knob.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 
 #define DEBUG 0
 

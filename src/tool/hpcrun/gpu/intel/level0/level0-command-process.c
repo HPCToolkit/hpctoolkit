@@ -72,7 +72,7 @@
 #include <hpcrun/logical/common.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <lib/prof-lean/crypto-hash.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <lib/prof-lean/usec_time.h>
 
 #include <monitor.h>

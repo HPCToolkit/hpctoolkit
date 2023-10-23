@@ -62,7 +62,7 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 
 #include "fnbounds_file_header.h"
 

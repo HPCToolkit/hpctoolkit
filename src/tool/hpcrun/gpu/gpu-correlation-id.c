@@ -45,7 +45,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 
 #include "gpu-correlation-id.h"
 
