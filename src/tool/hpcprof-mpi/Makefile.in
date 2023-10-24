@@ -231,12 +231,9 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
-BOOST_COPY = @BOOST_COPY@
-BOOST_COPY_LIST = @BOOST_COPY_LIST@
 BOOST_IFLAGS = @BOOST_IFLAGS@
 BOOST_LFLAGS = @BOOST_LFLAGS@
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
-BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
 CCAS = @CCAS@
@@ -261,7 +258,6 @@ DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
-DYNINST_COPY = @DYNINST_COPY@
 DYNINST_IFLAGS = @DYNINST_IFLAGS@
 DYNINST_LFLAGS = @DYNINST_LFLAGS@
 DYNINST_LIB_DIR = @DYNINST_LIB_DIR@
@@ -288,7 +284,6 @@ HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
 HPCLINK_CC = @HPCLINK_CC@
 HPCLINK_LD_FLAGS = @HPCLINK_LD_FLAGS@
 HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
-HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -297,15 +292,20 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
-LIBELF_COPY = @LIBELF_COPY@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
 LIBIBERTY_IFLAGS = @LIBIBERTY_IFLAGS@
 LIBIBERTY_LIBS = @LIBIBERTY_LIBS@
-LIBMONITOR_COPY = @LIBMONITOR_COPY@
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
-LIBMONITOR_RUN_DIR = @LIBMONITOR_RUN_DIR@
 LIBMONITOR_WRAP_NAMES = @LIBMONITOR_WRAP_NAMES@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -319,7 +319,6 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
-LZMA_COPY = @LZMA_COPY@
 LZMA_IFLAGS = @LZMA_IFLAGS@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
@@ -384,7 +383,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERFMON_CFLAGS = @PERFMON_CFLAGS@
-PERFMON_COPY = @PERFMON_COPY@
 PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
 PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
 PERFMON_LIB = @PERFMON_LIB@
@@ -395,13 +393,11 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
-TBB_COPY = @TBB_COPY@
 TBB_IFLAGS = @TBB_IFLAGS@
 TBB_LFLAGS = @TBB_LFLAGS@
 TBB_LIB_DIR = @TBB_LIB_DIR@
 TBB_PROXY_LIB = @TBB_PROXY_LIB@
 VERSION = @VERSION@
-XED2_COPY = @XED2_COPY@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 XED2_HPCRUN_LIBS = @XED2_HPCRUN_LIBS@
 XED2_INC = @XED2_INC@
@@ -409,18 +405,15 @@ XED2_LIB_DIR = @XED2_LIB_DIR@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_PROF_MPI_LIBS = @XED2_PROF_MPI_LIBS@
 XERCES = @XERCES@
-XERCES_COPY = @XERCES_COPY@
 XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 YAMLCPP = @YAMLCPP@
-YAMLCPP_COPY = @YAMLCPP_COPY@
 YAMLCPP_IFLAGS = @YAMLCPP_IFLAGS@
 YAMLCPP_LDFLAGS = @YAMLCPP_LDFLAGS@
 YAMLCPP_LDLIBS = @YAMLCPP_LDLIBS@
 YAMLCPP_LIB = @YAMLCPP_LIB@
-ZLIB_COPY = @ZLIB_COPY@
 ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 ZLIB_LIB = @ZLIB_LIB@
@@ -457,7 +450,6 @@ host_alias = @host_alias@
 host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
-hpc_ext_libs_dir = @hpc_ext_libs_dir@
 hpclink_extra_wrap_names = @hpclink_extra_wrap_names@
 htmldir = @htmldir@
 includedir = @includedir@
@@ -516,15 +508,6 @@ HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
-EXT_LIBS = lib/hpctoolkit/ext-libs
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 MYSOURCES = \
 	main.cpp tree.cpp \
@@ -534,8 +517,6 @@ MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(am__append_1)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BOOST_IFLAGS@ \
 	$(am__append_2)
 MYLDFLAGS = \
-	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
-	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
 	-lstdc++fs \
 	@HPCPROFMPI_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
@@ -543,9 +524,6 @@ MYLDFLAGS = \
 	@LZMA_PROF_MPI_LIBS@ \
 	@YAMLCPP_LDFLAGS@ \
 	-L@LIBELF_LIB@ -ldw -lelf
-
-LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT = \
-	-Wl,--disable-new-dtags -Wl,-rpath='@HPCRUN_LIBCXX_PATH@'
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
@@ -563,7 +541,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcprof_mpi_SOURCES = $(MYSOURCES)
 hpcprof_mpi_CFLAGS = $(MYCFLAGS)
 hpcprof_mpi_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_mpi_LDFLAGS = $(MYLDFLAGS) $(LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT)
+hpcprof_mpi_LDFLAGS = $(MYLDFLAGS)
 hpcprof_mpi_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 

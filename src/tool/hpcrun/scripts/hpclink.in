@@ -25,7 +25,6 @@
 @launch_script_vars@
 
 # Relative paths are relative to HPCTOOLKIT.
-ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
@@ -181,10 +180,6 @@ hpc_path_to_root=..
 @export_hpctoolkit@
 
 # Relative paths are relative to HPCTOOLKIT.
-case "$ext_libs_dir" in
-    /* ) ;;
-    * )  ext_libs_dir="${HPCTOOLKIT}/${ext_libs_dir}" ;;
-esac
 case "$hpcfnbounds_dir" in
     /* ) ;;
     * ) hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
@@ -197,9 +192,6 @@ case "$libmonitor_dir" in
     /* ) ;;
     * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
 esac
-
-LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
-export LD_LIBRARY_PATH
 
 #------------------------------------------------------------
 # Step 1 -- Parse linker options, our options first.
@@ -434,7 +426,7 @@ done
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
 
-libelf="${ext_libs_dir}/libelf.a"
+libelf="@LIBELF_LIB@/libelf.a"
 set -- $undef_args $wrap_args $libhpcrun "$libelf" "$@"
 set -- "$@" "${nm_addrs}.o"
 
@@ -446,7 +438,7 @@ libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
 set -- "$@" "$libmonitor" $extra_plugin_files
 
-set -- "$@" "${ext_libs_dir}/libz.a"
+set -- "$@" "@ZLIB_HPCLINK_LIB@"
 
 # FIXME: shouldn't always need pthread, and shouldn't ever need dl.
 set -- "$@" -ldl -lrt -lpthread

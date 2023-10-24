@@ -56,11 +56,20 @@ foreach package, spec : specs
     _hash = _find_hash.stdout().strip().split()[0]
     _find_prefix = run_command(spack, 'find', '--format={prefix}', f'/@_hash@', check: true)
     _find_version = run_command(spack, 'find', '--format={version}', f'/@_hash@', check: true)
+
+    _link_args = []
+    foreach libdir : ['lib64', 'lib']
+      if fs.is_dir(_find_prefix.stdout().strip() / libdir)
+        _link_args += ['-Wl,-rpath=@0@'.format(_find_prefix.stdout().strip() / libdir)]
+      endif
+    endforeach
+
     _basic_deps += {
       package: declare_dependency(
         version: _find_version.stdout().strip(),
         variables: {
           'prefix': _find_prefix.stdout().strip(),
+          'link_args': ' '.join(_link_args),
         },
       )
     }

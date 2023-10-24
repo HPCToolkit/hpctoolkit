@@ -20,6 +20,49 @@ m4 = '{{ pfxpath("m4", "bin/m4") }}'
 make = '{{ pfxpath("gmake", "bin/make") }}'
 python = '{{ pfxpath("python", "bin/python") }}'
 
+[built-in options]
+{%- macro rpath(spec) -%}
+  {%- if spack_prefix(spec) -%}
+    {%- for libdir in ["lib64", "lib"] %}'-Wl,-rpath={{ pfxpath(spec, libdir) }}', {% endfor -%}
+  {%- endif -%}
+{%- endmacro %}
+c_link_args = [
+    {{ rpath("boost") }}
+    {{ rpath("bzip2") }}
+    {{ rpath("dyninst") }}
+    {{ rpath("elfutils") }}
+    {{ rpath("intel-tbb") }}
+    {{ rpath("libmonitor") }}
+    {{ rpath("libunwind") }}
+    {{ rpath("xerces-c") }}
+    {{ rpath("xz") }}
+    {{ rpath("zlib") }}
+    {{ rpath("libiberty") }}
+    {{ rpath("intel-xed") }}
+    {{ rpath("memkind") }}
+    {{ rpath("yaml-cpp") }}
+    {{ rpath("papi") }}
+    {{ rpath("libpfm4") }}
+  ]
+cpp_link_args = [
+    {{ rpath("boost") }}
+    {{ rpath("bzip2") }}
+    {{ rpath("dyninst") }}
+    {{ rpath("elfutils") }}
+    {{ rpath("intel-tbb") }}
+    {{ rpath("libmonitor") }}
+    {{ rpath("libunwind") }}
+    {{ rpath("xerces-c") }}
+    {{ rpath("xz") }}
+    {{ rpath("zlib") }}
+    {{ rpath("libiberty") }}
+    {{ rpath("intel-xed") }}
+    {{ rpath("memkind") }}
+    {{ rpath("yaml-cpp") }}
+    {{ rpath("papi") }}
+    {{ rpath("libpfm4") }}
+  ]
+
 [properties]
 prefix_boost = '{{ pfxpath("boost") }}'
 prefix_bzip = '{{ pfxpath("bzip2") }}'

@@ -16,12 +16,14 @@ class MesonMachineFile:
         self._project_options: dict[str, str] = {}
         self._builtin_options: dict[str, str] = {}
 
-    def _norm(self, value: str | Path | int) -> str:
+    def _norm(self, value: str | Path | int | collections.abc.Iterable[str | Path | int]) -> str:
         if isinstance(value, int):
             return f"{value:d}"
         if isinstance(value, str | Path):
             return "'{}'".format(str(value).replace("'", "\\'"))
-        return None
+        if isinstance(value, collections.abc.Iterable):
+            return "\n  ".join(["["] + [self._norm(v) + "," for v in value] + ["]"])
+        raise TypeError(type(value))
 
     def _iter_norm(self, value: collections.abc.Sequence[str | Path | int]) -> str:
         if len(value) == 1:
@@ -47,10 +49,18 @@ class MesonMachineFile:
             raise KeyError(name)
         self._properties[name] = self._norm(value)
 
+    def add_builtin_option(
+        self, name: str, value: str | Path | int | collections.abc.Iterable[str | Path | int]
+    ) -> None:
+        if name in self._properties:
+            raise KeyError(name)
+        self._builtin_options[name] = self._norm(value)
+
     def save(self, target: Path) -> None:
         sections = {
             "binaries": self._binaries,
             "properties": self._properties,
+            "built-in options": self._builtin_options,
         }
 
         with open(target, "w", encoding="utf-8") as f:

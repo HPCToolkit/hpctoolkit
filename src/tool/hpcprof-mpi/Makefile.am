@@ -70,8 +70,6 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-EXT_LIBS = lib/hpctoolkit/ext-libs
-
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
@@ -88,8 +86,6 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BOOST_IFLAGS@
 
 
 MYLDFLAGS = \
-	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
-	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
 	-lstdc++fs \
 	@HPCPROFMPI_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
@@ -97,9 +93,6 @@ MYLDFLAGS = \
 	@LZMA_PROF_MPI_LIBS@ \
 	@YAMLCPP_LDFLAGS@ \
 	-L@LIBELF_LIB@ -ldw -lelf
-
-LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT = \
-	-Wl,--disable-new-dtags -Wl,-rpath='@HPCRUN_LIBCXX_PATH@'
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
@@ -131,7 +124,7 @@ bin_PROGRAMS = hpcprof-mpi
 hpcprof_mpi_SOURCES  = $(MYSOURCES)
 hpcprof_mpi_CFLAGS   = $(MYCFLAGS)
 hpcprof_mpi_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_mpi_LDFLAGS  = $(MYLDFLAGS) $(LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT)
+hpcprof_mpi_LDFLAGS  = $(MYLDFLAGS)
 hpcprof_mpi_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
