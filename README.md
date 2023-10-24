@@ -34,7 +34,7 @@ Available optional features:
 - `+level0`: Enable Level Zero metrics (`-e gpu=level0`). Requires Level Zero (see next section).
 - `+gtpin`: Enable Level Zero instrumentation metrics (`-e gpu=level0,inst`). Requires IGC and GTPin (see next section).
 - `+opencl`: Enable OpenCL metrics (`-e gpu=opencl`). Requires OpenCL (see next section).
-- `+rocm`: Enable ROCm metrics (`-e gpu=rocm`). Requires ROCm (see next section).
+- `+rocm`: Enable ROCm metrics (`-e gpu=amd`). Requires ROCm (see next section).
 
 ### Providing system dependencies
 
@@ -102,7 +102,7 @@ Available configuration options:
 - `-Dlevel0=(disabled|auto|enabled)`: Enable Level Zero metrics (`-e gpu=level0`). Requires Level Zero.
 - `-Dgtpin=(disabled|auto|enabled)`: Also enable Level Zero instrumentation metrics (`-e gpu=level0,inst`). Requires Level Zero, IGC and GTPin.
 - `-Dopencl=(disabled|auto|enabled)`: Enable OpenCL metrics (`-e gpu=opencl`). Requires OpenCL.
-- `-Drocm=(disabled|auto|enabled)`: Enable ROCm metrics (`-e gpu=rocm`). Requires ROCm.
+- `-Drocm=(disabled|auto|enabled)`: Enable ROCm metrics (`-e gpu=amd`). Requires ROCm.
 - `-Dvalgrind_annotations=(false|true)`: Inject annotations for debugging with Valgrind.
 
 Note that many of the features above require additional dependencies that will not be installed by Spack. See [Providing and customizing dependencies](#providing-and-customizing-dependencies) below for instructions on how to provide these dependencies.
@@ -135,8 +135,12 @@ To start, write a native file listing the install prefix(es) and/or binaries of 
 python = '...'
 
 [properties]
-prefix_elfutils = '...'
-prefix_dyninst = '...'
+prefix_elfutils = '.../elfutils/'
+prefix_dyninst = '.../dyninst/'
+
+[built-in options]
+c_link_args = ['-Wl,-rpath=.../elfutils/lib', '-Wl,-rpath=.../dyninst/lib']
+cpp_link_args = ['-Wl,-rpath=.../elfutils/lib', '-Wl,-rpath=.../dyninst/lib']
 ```
 
 <details>
@@ -148,6 +152,7 @@ All configurable native file fields
 [binaries]
 c = '...'  # C compiler, may also be a list, e.g. ['ccache', '.../my-gcc']
 cxx = '...' # C++ compiler, may also be a list, e.g. ['ccache', '.../my-g++']
+cuda = '...' # NVCC compiler, may also be a list, e.g. ['ccache', '.../my-nvcc']
 mpicxx = '...'  # MPI C++ compiler
 spack = '...'  # Spack command used for fallback dependencies
 autoreconf = '...'
@@ -179,6 +184,7 @@ prefix_yaml_cpp = '...'  # libyaml-cpp
 prefix_papi = '...'  # libpapi
 prefix_perfmon = '...'  # libpfm4
 prefix_opencl = '...'  # Headers-only, opencl-c-headers
+prefix_cuda = '...'  # https://developer.nvidia.com/cuda-toolkit
 prefix_gtpin = '...'  # https://www.intel.com/content/www/us/en/developer/articles/tool/gtpin.html
 prefix_igc = '...'  # https://github.com/intel/intel-graphics-compiler
 prefix_level0 = '...'  # Part of https://www.oneapi.io/
@@ -195,6 +201,9 @@ Then configure your build by passing the file you have just written as a `--nati
 ```console
 $ meson setup --native-file .../my-native-file.ini ...
 ```
+
+Note that the libraries for any dependencies provided this way must be available at runtime.
+Common solutions are to extend `LD_LIBRARY_PATH`, or to pass `-Wl,-rpath` arguments during the link as shown in the example above.
 
 If all dependencies are provided by native files, you may also set `-D<subproject>:spack_mode=no` (the default), which removes the dependency on Spack.
 Native files may be saved to `~/.local/share/meson/native` for convenient access across many builds, see the [official documentation][meson native file] for details.

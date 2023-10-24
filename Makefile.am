@@ -110,21 +110,7 @@ SUBDIRS += tests
 # Note: *-local and *-hook are special automake versions of the
 # regular target. *-hook runs *after* install has completed
 
-#
-# Copy the libraries in pattern ($3) from absolute directory ($2) to a
-# local directory below prefix, and do the copy if ($1) is 'yes'.
-# It's up to configure to decide if the library exists, whether to
-# copy it and where to put it, so we don't treat errors as fatal here.
-#
 BASE_LIBS_DIR = $(DESTDIR)$(pkglibdir)
-EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
-
-define copy-libs
-	if test "$1" = yes ; then \
-		( cd "$2" && tar cf - $3 2>/dev/null ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
-		true ; \
-	fi
-endef
 
 hash_file = $(BASE_LIBS_DIR)/hash-file
 hash_value = @hash_value@
@@ -134,27 +120,6 @@ install-exec-local:
 	@$(mkinstalldirs) "$(BASE_LIBS_DIR)"
 	rm -f "$(hash_file)"
 	echo "$(hash_value)" > "$(hash_file)"
-	@echo "Copying external package libraries ..."
-	@$(mkinstalldirs) "$(EXT_LIBS_DIR)"
-	@for lib in $(BOOST_COPY_LIST) ; do  \
-		$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB_DIR),libboost_"$$lib"*so*) ;  \
-	done
-	@$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
-	@for lib in common dynElf dynDwarf instructionAPI parseAPI symtabAPI ; do  \
-		$(call copy-libs,$(DYNINST_COPY),$(DYNINST_LIB_DIR),lib"$$lib"*so*) ;  \
-	done
-	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
-	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf.a)
-	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libdw*so*)
-	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
-	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
-	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB_DIR),liblzma.so*)
-	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
-	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
-	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)
-	@$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
-	@$(call copy-libs,$(YAMLCPP_COPY),$(YAMLCPP_LIB),libyaml-cpp.so*)
-	@$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
 
 #
 # Strip the debug sections from the libraries (ours and externals)

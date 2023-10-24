@@ -866,7 +866,7 @@ SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -Wl,-rpath=$$ORIGIN	-ldl
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
@@ -1261,7 +1261,7 @@ if OPT_ENABLE_HPCRUN
 	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
 	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(OPENCL_NAMES) \
 		$(LIBOMPTARGET_NAMES) $(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
-	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
+	$(CC) -shared $(WORK_DYN)/part2.o $(LDFLAGS) $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
 	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)
 else
 	@echo "skipping libhpcrun.so"

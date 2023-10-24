@@ -80,9 +80,6 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ -fopenmp $(HPC_IFLAGS)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@
 
-LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT = \
-	-Wl,--disable-new-dtags -Wl,-rpath='@HPCRUN_LIBCXX_PATH@'
-
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_ProfLean) \
@@ -104,7 +101,7 @@ pkglibexec_PROGRAMS = hpcproflm
 hpcproflm_SOURCES   = $(MYSOURCES)
 hpcproflm_CFLAGS    = $(MYCFLAGS)
 hpcproflm_CXXFLAGS  = $(MYCXXFLAGS)
-hpcproflm_LDFLAGS   = $(MYLDFLAGS) $(LIBSTDCXX_RPATH_WHEN_NO_LAUNCHSCRIPT)
+hpcproflm_LDFLAGS   = $(MYLDFLAGS)
 hpcproflm_LDADD     = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)

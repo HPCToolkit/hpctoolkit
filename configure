@@ -725,32 +725,27 @@ OPT_BUILD_FRONT_END_TRUE
 OPT_BUILD_BACK_END_FALSE
 OPT_BUILD_BACK_END_TRUE
 BACK_END_LABEL
-ZLIB_COPY
 ZLIB_HPCLINK_LIB
 ZLIB_LIB
 ZLIB_INC
 OPT_USE_ZLIB_FALSE
 OPT_USE_ZLIB_TRUE
 YAMLCPP_LIB
-YAMLCPP_COPY
 YAMLCPP_LDLIBS
 YAMLCPP_LDFLAGS
 YAMLCPP_IFLAGS
 YAMLCPP
 XERCES_LIB
-XERCES_COPY
 XERCES_LDLIBS
 XERCES_LDFLAGS
 XERCES_IFLAGS
 XERCES
-XED2_COPY
 XED2_PROF_MPI_LIBS
 XED2_HPCLINK_LIBS
 XED2_HPCRUN_LIBS
 XED2_LIB_FLAGS
 XED2_LIB_DIR
 XED2_INC
-TBB_COPY
 TBB_LIB_DIR
 TBB_PROXY_LIB
 TBB_LFLAGS
@@ -772,7 +767,6 @@ OPT_ENABLE_PERF_EVENT_TRUE
 PERF_EVENT_PARANOID
 OPT_PERFMON_FALSE
 OPT_PERFMON_TRUE
-PERFMON_COPY
 PERFMON_LDFLAGS_STAT
 PERFMON_LDFLAGS_DYN
 PERFMON_LIB
@@ -786,7 +780,6 @@ MEMKIND_LIBDIR
 OPT_LZMA_STATIC_FALSE
 OPT_LZMA_STATIC_TRUE
 LZMA_LIB_DIR
-LZMA_COPY
 LZMA_PROF_MPI_LIBS
 LZMA_LDFLAGS_STAT
 LZMA_LDFLAGS_DYN
@@ -804,27 +797,19 @@ LIBUNWIND_LDFLAGS_STAT
 LIBUNWIND_LDFLAGS_DYN
 LIBUNWIND_IFLAGS
 LIBMONITOR_WRAP_NAMES
-LIBMONITOR_RUN_DIR
-LIBMONITOR_COPY
 LIBMONITOR_LIB
 LIBMONITOR_INC
 LIBIBERTY_LIBS
 LIBIBERTY_IFLAGS
-LIBELF_COPY
 LIBELF_LIB
 LIBELF_INC
-DYNINST_COPY
 DYNINST_LIB_DIR
 DYNINST_LFLAGS
 DYNINST_IFLAGS
 BZIP_LIB
-BZIP_COPY
-BOOST_COPY_LIST
-BOOST_COPY
 BOOST_LIB_DIR
 BOOST_LFLAGS
 BOOST_IFLAGS
-hpc_ext_libs_dir
 hash_value
 hash_fcn
 OPT_UPC_LDFLAGS
@@ -850,7 +835,6 @@ OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
 MPICXX
 OPENMP_FLAG
-HPCRUN_LIBCXX_PATH
 cxx17_flag
 CXX17_FLAG
 HPCLINK_CC
@@ -19230,50 +19214,6 @@ fi
 
 
 
-#-------------------------------------------------
-
-# Find location of libstdc++.
-#
-# Try --print-file-name first.  If that doesn't work, then try ldd.
-# If --print-file-name works, then its answer is more reliable because
-# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
-# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
-#
-# Of course, --print-file-name and libstdc++.so are GNU-specific.
-# (Intel icc seems to support both, but computes an answer based on
-# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
-# here?
-
-libcxx_file=`${CXX} -print-file-name=libstdc++.so`
-
-case "$libcxx_file" in
-  /* ) ;;
-  * )
-    src="hpc_hello.$$.cc"
-    obj="hpc_hello.$$.out"
-    rm -f "$src" "$obj"
-    cat <<"EOF" >"$src"
-main(){}
-EOF
-    ${CXX} -o "$obj" "$src"
-    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
-    rm -f "$src" "$obj"
-    ;;
-esac
-
-libcxx_dir=`dirname $libcxx_file`
-libcxx_base=`basename $libcxx_file`
-HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
-
-case "$HPCRUN_LIBCXX_PATH" in
-  /* ) { $as_echo "$as_me:${as_lineno-$LINENO}: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&5
-$as_echo "$as_me: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&6;} ;;
-  * )  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find libstdc++.so" >&5
-$as_echo "$as_me: WARNING: unable to find libstdc++.so" >&2;} ;;
-esac
-
-
-
 
 #-------------------------------------------------
 # CXXFLAGS for extended C++ alignment: -faligned-new
@@ -20089,18 +20029,6 @@ $as_echo "$as_me: launch script hash: $hash_value" >&6;}
 
 
 
-#----------------------------------------------------------------------------
-# Prerequisites: external libraries
-#----------------------------------------------------------------------------
-
-#
-# Directory relative to hpctoolkit's prefix where we put external
-# package libraries, if we want to copy them.
-#
-hpc_ext_libs_dir=lib/hpctoolkit/ext-libs
-
-
-
 #-------------------------------------------------
 # Option: --with-externals=PATH
 #
@@ -20431,13 +20359,7 @@ fi
 BOOST_IFLAGS=
 BOOST_LFLAGS=
 BOOST_LIB_DIR=
-BOOST_COPY=no
 
-# The copy list should include all libraries that any version of
-# dyninst would use (but no more).  But copy-libs won't fail on a
-# missing library, so it doesn't have to be exact.
-
-BOOST_COPY_LIST='atomic chrono date_time filesystem graph regex system thread timer'
 BOOST_NEEDED_LIST='graph regex system'
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for boost" >&5
@@ -20455,12 +20377,11 @@ case "$BOOST" in
       for f in "$dir"/libboost*system*.so* ; do
         if test -f "$f" ; then
           BOOST_LIB_DIR="$dir"
-          BOOST_COPY=yes
           break 2
         fi
       done
     done
-    if test "$BOOST_COPY" != yes ; then
+    if test -z "$BOOST_LIB_DIR" ; then
       as_fn_error $? "invalid boost directory: $BOOST" "$LINENO" 5
     fi
     num_pkgs=`expr 1 + $num_pkgs`
@@ -20482,14 +20403,9 @@ if test "x$BOOST_LIB_DIR" != x ; then
   for lib in $BOOST_NEEDED_LIST ; do
     if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
       boost_lflag_list="${boost_lflag_list} -lboost_$lib"
+      boost_lib_list="${boost_lib_list} $lib"
     else
       as_fn_error $? "boost ${lib} is required" "$LINENO" 5
-    fi
-  done
-
-  for lib in $BOOST_COPY_LIST ; do
-    if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
-      boost_lib_list="${boost_lib_list} $lib"
     fi
   done
 
@@ -20504,8 +20420,6 @@ fi
 
 
 
-
-
 #-------------------------------------------------
 # Option: --with-bzip=PATH
 #-------------------------------------------------
@@ -20514,7 +20428,6 @@ fi
 # prereq.  Toolkit doesn't directly call bzip, so we don't need an
 # include path here.  Note: this package is not built in externals.
 
-BZIP_COPY=no
 BZIP_LIB=no
 
 BZIP="$default_bzip_prefix"
@@ -20541,7 +20454,6 @@ case "$BZIP" in
     if test "$BZIP_LIB" = no ; then
       as_fn_error $? "unable to find libbz2.so in: $BZIP" "$LINENO" 5
     fi
-    BZIP_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -20553,7 +20465,6 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $BZIP" >&5
 $as_echo "$BZIP" >&6; }
-
 
 
 
@@ -20576,7 +20487,6 @@ fi
 DYNINST_IFLAGS=
 DYNINST_LFLAGS=
 DYNINST_LIB_DIR=
-DYNINST_COPY=no
 dyninst_features=
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dyninst" >&5
@@ -20595,11 +20505,10 @@ case "${DYNINST}" in
       dir="${DYNINST}/$lib"
       if test -f "${dir}/libparseAPI.so" ; then
         DYNINST_LIB_DIR="$dir"
-        DYNINST_COPY=yes
         break
       fi
     done
-    if test "$DYNINST_COPY" != yes ; then
+    if test -z "$DYNINST_LIB_DIR" ; then
       as_fn_error $? "invalid dyninst directory: $DYNINST" "$LINENO" 5
     fi
     DYNINST_LFLAGS="-L${DYNINST_LIB_DIR} -lparseAPI -linstructionAPI -lsymtabAPI"
@@ -20615,7 +20524,6 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $DYNINST" >&5
 $as_echo "$DYNINST" >&6; }
-
 
 
 
@@ -20640,7 +20548,6 @@ $as_echo_n "checking for elfutils... " >&6; }
 
 LIBELF_INC=no
 LIBELF_LIB=no
-LIBELF_COPY=no
 
 case "$LIBELF" in
   /* )
@@ -20664,7 +20571,6 @@ case "$LIBELF" in
     if test "$LIBELF_LIB" = no ; then
       as_fn_error $? "unable to find libelf.so or libdw.so in: $LIBELF" "$LINENO" 5
     fi
-    LIBELF_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -20676,7 +20582,6 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
-
 
 
 
@@ -20755,7 +20660,6 @@ case "${LIBMONITOR}" in
   /* )
     LIBMONITOR_INC="${LIBMONITOR}/include"
     LIBMONITOR_BIN=${LIBMONITOR}/bin
-    LIBMONITOR_LIB=${LIBMONITOR}/lib
     if test -f "${LIBMONITOR_INC}/monitor.h" ; then :
     else
       as_fn_error $? "invalid libmonitor directory: $LIBMONITOR" "$LINENO" 5
@@ -20770,13 +20674,9 @@ case "${LIBMONITOR}" in
       LIBMONITOR_WRAP_NAMES=`nm "$wrap_file" | grep __wrap_ |
         $SED -e 's/.*__wrap_//' | tr '\n' ' '`
     fi
-    LIBMONITOR_COPY=yes
-    LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
-    LIBMONITOR_COPY=no
-    LIBMONITOR_RUN_DIR=no
     ;;
   * )
     as_fn_error $? "libmonitor directory must be absolute path: $LIBMONITOR" "$LINENO" 5
@@ -20788,8 +20688,6 @@ $as_echo "$LIBMONITOR" >&6; }
 
 echo "libmonitor wrap names:" >&5
 echo "$LIBMONITOR_WRAP_NAMES" >&5
-
-
 
 
 
@@ -21023,7 +20921,6 @@ LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
 LZMA_PROF_MPI_LIBS=
 
-LZMA_COPY=no
 LZMA_LIB_DIR=
 
 lzma_exists=no
@@ -21055,7 +20952,6 @@ case "$LZMA" in
       ldir="${LZMA}/$lib"
       if test -f "${ldir}/liblzma.so" ; then
         LZMA_LDFLAGS_DYN="-L${ldir} -llzma"
-        LZMA_COPY=yes
         LZMA_LIB_DIR="$ldir"
         lzma_exists=yes
         lzma_dynamic=yes
@@ -21160,7 +21056,6 @@ if test $? = 0 ; then
 else
   LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
 fi
-
 
 
 
@@ -21512,7 +21407,6 @@ fi
 
 PERFMON=no
 PERFMON_STATIC=no
-PERFMON_COPY=no
 OPT_PERFMON=no
 
 PERFMON_CFLAGS=
@@ -21611,7 +21505,6 @@ case "$PERFMON" in
       if test -f "${lib_dir}/libpfm.so" || test -f "${lib_dir}/libpfm.a"
       then
         PERFMON_LIB="$lib_dir"
-        PERFMON_COPY=yes
         if test -f "${lib_dir}/libpfm.so" ; then
           PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
         fi
@@ -21629,7 +21522,6 @@ case "$PERFMON" in
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
 esac
-
 
 
 
@@ -21904,7 +21796,6 @@ TBB_IFLAGS=
 TBB_LFLAGS=
 TBB_PROXY_LIB=
 TBB_LIB_DIR=
-TBB_COPY=no
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for tbb" >&5
 $as_echo_n "checking for tbb... " >&6; }
@@ -21921,12 +21812,11 @@ case "$TBB" in
       for f in "$dir"/libtbb*.so* ; do
         if test -f "$f" ; then
           TBB_LIB_DIR="$dir"
-          TBB_COPY=yes
           break 2
         fi
       done
     done
-    if test "$TBB_COPY" != yes ; then
+    if test -z "$TBB_LIB_DIR" ; then
       as_fn_error $? "invalid tbb directory: $TBB" "$LINENO" 5
     fi
     num_pkgs=`expr 1 + $num_pkgs`
@@ -21967,7 +21857,6 @@ fi
 
 
 
-
 #-------------------------------------------------
 # Option: --with-xed=PATH
 #-------------------------------------------------
@@ -21981,7 +21870,6 @@ XED2_LIB_FLAGS=
 XED2_HPCRUN_LIBS=
 XED2_HPCLINK_LIBS=
 XED2_PROF_MPI_LIBS=
-XED2_COPY=no
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
 
@@ -22103,7 +21991,6 @@ fi
 
 
 
-
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
 #-------------------------------------------------
@@ -22139,17 +22026,13 @@ XERCES_LDLIBS="-lxerces-c"
 #esac
 
 
-if test "$XERCES" = no ; then
-  XERCES_COPY=no
-else
-  XERCES_COPY=yes
+if test "$XERCES" != no ; then
   XERCES_LIB="${XERCES}/lib"
   num_pkgs=`expr 1 + $num_pkgs`
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${XERCES}" >&5
 $as_echo "${XERCES}" >&6; }
-
 
 
 
@@ -22178,7 +22061,6 @@ fi
 YAMLCPP_IFLAGS=
 YAMLCPP_LDFLAGS=
 YAMLCPP_LDLIBS=
-YAMLCPP_COPY=no
 
 case "$YAMLCPP" in
   /* )
@@ -22197,7 +22079,6 @@ case "$YAMLCPP" in
     if test "x$YAMLCPP_LDFLAGS" = x ; then
       as_fn_error $? "unable to find libyaml-cpp.so in: $YAMLCPP" "$LINENO" 5
     fi
-    YAMLCPP_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -22209,7 +22090,6 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $YAMLCPP" >&5
 $as_echo "$YAMLCPP" >&6; }
-
 
 
 
@@ -22239,7 +22119,6 @@ $as_echo_n "checking zlib... " >&6; }
 ZLIB_INC=no
 ZLIB_LIB=no
 ZLIB_HPCLINK_LIB=no
-ZLIB_COPY=no
 
 case "$ZLIB" in
   /* )
@@ -22257,7 +22136,6 @@ case "$ZLIB" in
     if test "$ZLIB_LIB" = no ; then
       as_fn_error $? "unable to find zlib.so or zlib.a in: $ZLIB" "$LINENO" 5
     fi
-    ZLIB_COPY=yes
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
@@ -22277,7 +22155,6 @@ else
   OPT_USE_ZLIB_TRUE='#'
   OPT_USE_ZLIB_FALSE=
 fi
-
 
 
 
@@ -22694,10 +22571,6 @@ if test "$enable_back_end" = yes ; then
 fi
 back_end_label=
 BACK_END_LABEL=
-
-if test "$enable_back_end" = yes ; then
-  XERCES_COPY=no
-fi
 
 
 
