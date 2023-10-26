@@ -2322,10 +2322,10 @@ found_libiberty=no
 case "$LIBIBERTY" in
   /* )
     # demangle.h must exist
-    if test -f "${LIBIBERTY}/include/demangle.h" \
-       || test -f "${LIBIBERTY}/include/libiberty/demangle.h"
-    then
+    if test -f "${LIBIBERTY}/include/demangle.h" ; then
       LIBIBERTY_IFLAGS="-I${LIBIBERTY}/include"
+    elif test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
+      LIBIBERTY_IFLAGS="-I${LIBIBERTY}/include/libiberty"
     else
       AC_MSG_ERROR([unable to find libiberty/demangle.h in: $LIBIBERTY])
     fi

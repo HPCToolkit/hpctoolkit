@@ -20617,10 +20617,10 @@ found_libiberty=no
 case "$LIBIBERTY" in
   /* )
     # demangle.h must exist
-    if test -f "${LIBIBERTY}/include/demangle.h" \
-       || test -f "${LIBIBERTY}/include/libiberty/demangle.h"
-    then
+    if test -f "${LIBIBERTY}/include/demangle.h" ; then
       LIBIBERTY_IFLAGS="-I${LIBIBERTY}/include"
+    elif test -f "${LIBIBERTY}/include/libiberty/demangle.h" ; then
+      LIBIBERTY_IFLAGS="-I${LIBIBERTY}/include/libiberty"
     else
       as_fn_error $? "unable to find libiberty/demangle.h in: $LIBIBERTY" "$LINENO" 5
     fi
