@@ -245,12 +245,12 @@ void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
             }
             if (!find_target) {
               if (DEBUG_CUDA_CFGPARSER) {
-                std::cout << "Function (" << function->name << ") call (" << callee_function->name << ") at " << inst->offset << std::endl;
+                std::cout << "Function (" << function->name << ") call (" << callee_function->name << ") at 0x" << std::hex << inst->offset << std::dec << std::endl;
               }
               block->targets.push_back(new Target(inst, callee_function->blocks[0], TargetType::CALL));
             } else {
               if (DEBUG_CUDA_CFGPARSER) {
-                std::cout << "Call link exists (" << function->name << ") call (" << callee_function->name << ") at " << inst->offset << " " << t->type << std::endl;
+                std::cout << "Call link exists (" << function->name << ") call (" << callee_function->name << ") at 0x" << std::hex << inst->offset << std::dec << " " << t->type << std::endl;
               }
             }
           } else {
