@@ -115,8 +115,6 @@ repos:
   # Ensure the pyproject.toml files are valid for Poetry
   - id: poetry-check
     args: [-C, lib/python/, --lock]
-  - id: poetry-check
-    args: [-C, lib/dev/, --lock]
 
 - repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.5.1
