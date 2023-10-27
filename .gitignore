@@ -3,18 +3,18 @@ __pycache__/
 !.gitlab-ci.yml
 !/.pre-commit-config.yaml
 !.prospector.yaml
- Makefile.in
- aclocal.m4
- config/ar-lib
- config/compile
- config/config.guess
- config/config.sub
- config/depcomp
- config/install-sh
- config/libtool.m4
- config/ltmain.sh
- config/missing
- config/mkinstalldir
- config/test-driver
- configure
- src/include/hpctoolkit-config.h.in
+Makefile.in
+aclocal.m4
+config/ar-lib
+config/compile
+config/config.guess
+config/config.sub
+config/depcomp
+config/install-sh
+config/libtool.m4
+config/ltmain.sh
+config/missing
+config/mkinstalldir
+config/test-driver
+configure
+src/include/hpctoolkit-config.h.in
