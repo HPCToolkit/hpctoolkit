@@ -144,7 +144,7 @@ _autoenv = {
     'M4': _m4.full_path(),
     'MAKE': _make.full_path(),
 }
-message('Running ./autogen ...')
+message('Generating Autotools files ...')
 run_command(files('meson'/'autogen'),
     # The following files are read during the autogen process
     files('configure.ac'),

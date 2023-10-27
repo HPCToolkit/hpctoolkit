@@ -14,4 +14,5 @@ find "$MESON_SOURCE_ROOT"/{doc,lib,meson,spack,src,tests,tests2,tools}/ -name 'M
 done || exit $?
 
 cd "$MESON_SOURCE_ROOT" || exit $?
+"$LIBTOOLIZE" --force --install --copy --verbose || exit $?
 exec "$AUTORECONF" --force --install --verbose
