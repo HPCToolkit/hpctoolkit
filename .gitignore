@@ -4,5 +4,7 @@ __pycache__/
 !/.pre-commit-config.yaml
 !.prospector.yaml
 Makefile.in
-aclocal.m4
-configure
+/aclocal.m4
+/configure
+/configure~
+/autom4te.cache/
