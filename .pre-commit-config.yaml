@@ -64,9 +64,8 @@ repos:
   hooks:
   # Remove trailing whitespace
   - id: trailing-whitespace
-    exclude: &generated_text |
+    exclude: &vendored |
       (?x)^(
-        configure | (.*/|)Makefile\.in |    # Autogoo has tons of trailing whitespace
         src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
         tests2/data/dbase/[^/]+\.d/.* |    # Generated test data
         tests2/data/meas/[^/]+\.m/.* |    # Generated test data
@@ -74,7 +73,7 @@ repos:
       )$
   # All files must end in a single newline (or be perfectly empty)
   - id: end-of-file-fixer
-    exclude: *generated_text
+    exclude: *vendored
   # Remove the UTF8 BOM from the start of any files
   - id: fix-byte-order-marker
   # Ensure files have consistent endings. (This operates in the worktree, Git also normalizes the index)
@@ -116,7 +115,7 @@ repos:
   - id: editorconfig-checker
     alias: ec
     args: [-disable-indent-size, -disable-max-line-length]
-    exclude: *generated_text
+    exclude: *vendored
 
 - repo: https://github.com/python-poetry/poetry
   rev: '1.6.0'
@@ -163,8 +162,8 @@ repos:
   hooks:
   # Find common errors in shell scripts using shellcheck
   - id: shellcheck
-    # Exclude Autotools files, they don't pass shellcheck (which is a really bad sign!)
-    exclude: '^(configure$|config/)'
+    # Exclude scripts used for Autotools, they don't pass shellcheck (which is a really bad sign!)
+    exclude: '^config/'
   - id: shellcheck
     # These files get injected into the launch scripts manually with a lot of context, so we have
     # to give it a few extra arguments to get these through.
@@ -187,8 +186,6 @@ repos:
     args: ['--config', '.codespellrc']
     exclude: |
       (?x)^(
-        config/(ltmain\.sh|depcomp|config\.guess|config\.sub|libtool\.m4) |    # Autotools files with code misspellings
-        configure |
         lib/dtd/mathml/.*\.ent |    # MathML follows LaTeX's habit of funny names for math symbols
         tools/latex2man/.* |    # External code
         src/extern/valgrind/[^/]+\.h |    # External Valgrind headers
@@ -201,6 +198,5 @@ repos:
   - id: detect-secrets
     exclude: |
       (?x)^(
-        configure |  # Some of the M4 fragments contain sensitive keywords
         .*\.hpcstruct |  # Structfiles have lots of high-entropy strings
       )$
