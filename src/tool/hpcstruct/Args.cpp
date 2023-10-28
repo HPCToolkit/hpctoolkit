@@ -72,6 +72,8 @@ using std::string;
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <cstdlib>
+
 //*************************** User Include Files ****************************
 
 #include <include/hpctoolkit-config.h>
@@ -239,6 +241,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "psize",        CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  { 's',  "stack",        CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
   { 'c',  "cache",        CLP::ARG_REQ,  CLP::DUPOPT_ERR,   NULL,  NULL },
   {  0 ,  "nocache",      CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
@@ -400,6 +403,33 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("debug-proc")) {
       dbgProcGlob = parser.getOptArg("debug-proc");
+    }
+
+    // Stack size to use for OpenMP threads.
+    {
+      const char* orig_stacksize = std::getenv("OMP_STACKSIZE");
+      std::string new_stacksize;
+      if (orig_stacksize == nullptr || orig_stacksize[0] == '\0') {
+        // OMP_STACKSIZE is empty, we want either the user value or default
+        new_stacksize = parser.isOpt("stack") ? parser.getOptArg("stack") : "32M";
+      } else if (parser.isOpt("stack")) {
+        // If OMP_STACKSIZE is already set, we only override it if it differs from the user value.
+        if (parser.getOptArg("stack") != std::string(orig_stacksize)) {
+          new_stacksize = parser.getOptArg("stack");
+        }
+      }
+
+      // If we need to change OMP_STACKSIZE, we need to restart from the beginning of the process
+      // because OpenMP will have read the value before now. So set it and re-exec ourselves.
+      if (!new_stacksize.empty()) {
+        setenv("OMP_STACKSIZE", new_stacksize.c_str(), 1);
+        if (argc > 0) {
+          execvp(argv[0], (char**)argv);
+          std::cerr << getCmd()
+                    << ": exec failed, unable to alter OMP_STACKSIZE"
+                    << std::endl;
+        }
+      }
     }
 
     // Number of openmp threads (jobs, jobs-parse)

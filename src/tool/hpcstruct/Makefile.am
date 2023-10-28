@@ -140,13 +140,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
-bin_SCRIPTS = hpcstruct
-pkglibexec_PROGRAMS = hpcstruct-bin dotgraph
+bin_PROGRAMS = hpcstruct
+pkglibexec_PROGRAMS = dotgraph
 
-hpcstruct_bin_SOURCES  = $(MYSOURCES)
-hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
-hpcstruct_bin_LDADD    = $(MYLDADD)
+hpcstruct_SOURCES  = $(MYSOURCES)
+hpcstruct_CXXFLAGS = $(MYCXXFLAGS)
+hpcstruct_LDFLAGS  = $(MYLDFLAGS)
+hpcstruct_LDADD    = $(MYLDADD)
 
 dotgraph_SOURCES  = DotGraph.cpp
 dotgraph_CXXFLAGS = $(MYCXXFLAGS)
