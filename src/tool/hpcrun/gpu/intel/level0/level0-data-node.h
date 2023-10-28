@@ -59,7 +59,11 @@
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
-#include <lib/prof-lean/stdatomic.h>
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 //******************************************************************************
 // type declarations

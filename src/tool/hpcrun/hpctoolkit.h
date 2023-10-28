@@ -56,7 +56,7 @@ void hpctoolkit_sampling_stop(void);
 int  hpctoolkit_sampling_is_active(void);
 
 #ifdef __cplusplus
-}
+} // extern "C"
 #endif
 
 #endif  // ! _HPCTOOLKIT_H_

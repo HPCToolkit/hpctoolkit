@@ -70,7 +70,7 @@
 #include "trace.h"
 #include "sample_sources_all.h"
 
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
 
 #include <include/queue.h>

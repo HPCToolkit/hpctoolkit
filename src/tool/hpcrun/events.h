@@ -68,6 +68,10 @@
 #ifndef _event_h
 #define _event_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct papi_event {
   int code;                 /* PAPI event code */
   const char *name;         /* PAPI event name */
@@ -75,21 +79,16 @@ typedef struct papi_event {
 } papi_event_t;
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+extern papi_event_t hpcrun_event_table[];
 
-  extern papi_event_t hpcrun_event_table[];
+const papi_event_t *hpcrun_event_by_name(const char *name);
+const papi_event_t *hpcrun_event_by_code(int code);
 
-  const papi_event_t *hpcrun_event_by_name(const char *name);
-  const papi_event_t *hpcrun_event_by_code(int code);
-
-  void hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
-  void hpcrun_write_event(FILE* fs, const papi_event_t* e);
+void hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
+void hpcrun_write_event(FILE* fs, const papi_event_t* e);
 
 #ifdef __cplusplus
-}
+}  // extern "C"
 #endif
-
 
 #endif

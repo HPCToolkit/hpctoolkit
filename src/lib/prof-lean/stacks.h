@@ -60,7 +60,11 @@
 // local includes
 //*****************************************************************************
 
-#include "stdatomic.h"
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 
 
@@ -196,7 +200,11 @@
 //*****************************************************************************
 
 typedef struct s_element_ptr_t {
+#ifndef __cplusplus
   _Atomic(struct s_element_ptr_t *) aptr;
+#else
+  std::atomic<struct s_element_ptr_t *> aptr;
+#endif
 } s_element_ptr_t;
 
 

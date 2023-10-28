@@ -88,7 +88,7 @@
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-uint64.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <lib/prof-lean/usec_time.h>
 
 #include "opencl-api.h"

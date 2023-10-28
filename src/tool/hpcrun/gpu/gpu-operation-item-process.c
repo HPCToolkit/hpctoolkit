@@ -57,7 +57,7 @@
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <messages/messages.h>
 
 #include "gpu-operation-item.h"

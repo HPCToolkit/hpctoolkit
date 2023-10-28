@@ -7,7 +7,11 @@
 
 #include "blame-kernel-map.h"
 #include <hpcrun/cct/cct.h>                   // cct_node_t
-#include <lib/prof-lean/stdatomic.h>          // _Atomic
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 
 

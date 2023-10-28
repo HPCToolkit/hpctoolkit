@@ -48,6 +48,13 @@
 #include <hpcrun/thread_data.h>
 #include "gpu-operation-channel.h"
 
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
+
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -94,6 +101,9 @@ void
 gpu_operation_multiplexer_push
 (
  gpu_activity_channel_t *initiator_channel,
+#ifdef __cplusplus
+ std::
+#endif
  atomic_int *initiator_pending_operations,
  gpu_activity_t *gpu_activity
 );

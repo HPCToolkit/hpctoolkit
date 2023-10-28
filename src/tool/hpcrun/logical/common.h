@@ -60,7 +60,11 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "lib/prof-lean/stdatomic.h"
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 // --------------------------------------
 // Logical stack and mutator functions
@@ -372,7 +376,10 @@ typedef struct logical_metadata_store_t {
 
   /// Load module identifier used to refer to this particular metadata store.
   /// Don't access directly, call #hpcrun_logical_metadata_lmid instead.
-  _Atomic(uint16_t) lm_id;
+#ifdef __cplusplus
+  std::
+#endif
+  atomic_uint_fast16_t lm_id;
 
   /// Full path to the metadata output file.
   char* path;
@@ -416,6 +423,9 @@ extern void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t*);
 /// \returns Load module id to use for #hpcrun_logical_metadata_ipnorm to refer
 ///          to this metadata store.
 static inline uint16_t hpcrun_logical_metadata_lmid(logical_metadata_store_t* store) {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   uint16_t ret = atomic_load_explicit(&store->lm_id, memory_order_relaxed);
   if(ret == 0) {
     spinlock_lock(&store->lock);

@@ -70,7 +70,7 @@
 
 //*************************** Forward Declarations **************************
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -92,8 +92,8 @@ void hpcrun_memory_reinit(void);
 void hpcrun_reclaim_freeable_mem(void);
 void hpcrun_memory_summary(void);
 
-#if defined(__cplusplus)
-} /* extern "C" */
+#ifdef __cplusplus
+}  // extern "C"
 #endif
 
 #endif // CSPROF_MALLOC_H

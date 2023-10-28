@@ -13,7 +13,7 @@
 
 #include <hpcrun/memory/hpcrun-malloc.h>    // hpcrun_malloc
 #include <lib/prof-lean/splay-uint64.h>     // splay_visit_t
-#include <lib/prof-lean/stdatomic.h>        // atomic_fetch_add
+#include <stdatomic.h>        // atomic_fetch_add
 
 #include "blame-kernel-map.h"               // kernel_node_t
 #include "active-kernels-map.h"             // active_kernels_*

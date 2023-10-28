@@ -2,7 +2,11 @@
 // Created by ax4 on 7/31/19.
 //
 
-#include "stdatomic.h"
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 #ifndef HPCTOOLKIT_PRODUCER_WFQ_H
 #define HPCTOOLKIT_PRODUCER_WFQ_H

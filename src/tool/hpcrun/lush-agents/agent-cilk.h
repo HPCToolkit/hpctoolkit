@@ -81,7 +81,7 @@
 
 //*************************** Forward Declarations **************************
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -270,7 +270,7 @@ CILKFRM_PROC(CilkStackFrame* x) {
 // **************************************************************************
 
 #if defined(__cplusplus)
-} /* extern "C" */
+}  // extern "C"
 #endif
 
 #endif /* lush_agents_agent_cilk_h */

@@ -88,19 +88,15 @@
 
 #include <lib/support-lean/timer.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //*************************** Forward Declarations **************************
 
 #define LUSH_PTHR_FN_TY 1
 
 #define LUSH_PTHR_DBG 0
-
-
-//*************************** Forward Declarations **************************
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 //***************************************************************************
 //
@@ -1252,8 +1248,7 @@ lushPthr_condwait_post(lushPthr_t* x)
 // **************************************************************************
 
 #if defined(__cplusplus)
-} /* extern "C" */
+}  // extern "C"
 #endif
-
 
 #endif /* lush_pthreads_h */

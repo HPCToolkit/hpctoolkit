@@ -77,7 +77,7 @@
 
 //*************************** Forward Declarations **************************
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -120,8 +120,8 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 
 // **************************************************************************
 
-#if defined(__cplusplus)
-} /* extern "C" */
+#ifdef __cplusplus
+}  // extern "C"
 #endif
 
 #endif /* lush_lush_backtrace_h */

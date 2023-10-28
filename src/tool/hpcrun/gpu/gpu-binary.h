@@ -53,6 +53,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 //******************************************************************************
@@ -72,10 +75,6 @@ typedef enum {
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 gpu_binary_kind_t
 gpu_binary_kind
@@ -119,8 +118,8 @@ gpu_binary_save
  uint32_t *loadmap_module_id
 );
 
-#if defined(__cplusplus)
-}
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif

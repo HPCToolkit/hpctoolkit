@@ -67,14 +67,21 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "stdatomic.h"
+#ifndef __cplusplus
+#include <stdatomic.h>
+#else
+#include <atomic>
+#endif
 
 //
 // Simple spin lock.
 //
 
 typedef struct spinlock_s {
-        atomic_long thelock;
+#ifdef __cplusplus
+  std::
+#endif
+  atomic_long thelock;
 } spinlock_t;
 
 #define SPINLOCK_UNLOCKED_VALUE (-1L)
@@ -88,6 +95,9 @@ typedef struct spinlock_s {
 static inline void
 spinlock_init(spinlock_t *l)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   atomic_init(&l->thelock, SPINLOCK_UNLOCKED_VALUE);
 }
 
@@ -95,6 +105,9 @@ static inline
 void
 spinlock_unlock(spinlock_t *l)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   atomic_store_explicit(&l->thelock, SPINLOCK_UNLOCKED_VALUE, memory_order_release);
 }
 
@@ -103,6 +116,9 @@ static inline
 bool
 spinlock_is_locked(spinlock_t *l)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   return (atomic_load_explicit(&l->thelock, memory_order_relaxed) != SPINLOCK_UNLOCKED_VALUE);
 }
 
@@ -110,6 +126,9 @@ static inline
 void
 spinlock_lock(spinlock_t *l)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   /* test-and-set lock */
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
   while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, SPINLOCK_LOCKED_VALUE,
@@ -133,6 +152,9 @@ static inline
 bool
 limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   if (limit == 0) {
     spinlock_lock(l);
     return true;
@@ -160,6 +182,9 @@ static inline
 bool
 hwt_cas_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   long old_lockval = SPINLOCK_UNLOCKED_VALUE;
   while (!atomic_compare_exchange_weak_explicit(&l->thelock, &old_lockval, locked_val,
                                                 memory_order_acquire, memory_order_relaxed)) {
@@ -190,6 +215,9 @@ static inline
 bool
 hwt_limit_spinlock_lock(spinlock_t* l, size_t limit, long locked_val)
 {
+#ifdef __cplusplus
+  using namespace std;
+#endif
   if (limit == 0)
     return hwt_cas_spinlock_lock(l, limit, locked_val);
 

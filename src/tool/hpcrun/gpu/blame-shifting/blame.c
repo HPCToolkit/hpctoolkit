@@ -29,7 +29,7 @@
 #include <hpcrun/safe-sampling.h>                                   // hpcrun_safe_enter, hpcrun_safe_exit
 
 #include <lib/prof-lean/spinlock.h>                                 // spinlock_t, SPINLOCK_UNLOCKED
-#include <lib/prof-lean/stdatomic.h>                                // atomic_fetch_add
+#include <stdatomic.h>                                // atomic_fetch_add
 #include <lib/support-lean/timer.h>                                 // time_getTimeReal
 
 

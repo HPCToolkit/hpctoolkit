@@ -62,7 +62,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/stdatomic.h>
+#include <stdatomic.h>
 #include <lib/support-lean/OSUtil.h>
 
 #include <hpcrun/cct/cct.h>
