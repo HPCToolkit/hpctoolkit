@@ -238,9 +238,7 @@ run_command(
   files('src/tool/hpcrun/scripts/hpcrun.in'),
   files('src/tool/hpcrun/scripts/hpclink.in'),
   files('src/tool/hpcrun/scripts/hpcsummary.in'),
-  files('src/tool/hpcproftt/hpcproftt.in'),
   files('src/tool/hpcstruct/hpcstruct.in'),
-  files('src/tool/hpcstruct/dotgraph.in'),
   files('tests/run-sort.in'),
   # Passed to AC_SUBST_FILE(...):
   files('config/copyright-hash'),

@@ -141,18 +141,17 @@ pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
 bin_SCRIPTS = hpcstruct
-pkglibexec_SCRIPTS = dotgraph
-pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
+pkglibexec_PROGRAMS = hpcstruct-bin dotgraph
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcstruct_bin_LDADD    = $(MYLDADD)
 
-dotgraph_bin_SOURCES  = DotGraph.cpp
-dotgraph_bin_CXXFLAGS = $(MYCXXFLAGS)
-dotgraph_bin_LDFLAGS  = $(MYLDFLAGS)
-dotgraph_bin_LDADD    = $(MYLDADD)
+dotgraph_SOURCES  = DotGraph.cpp
+dotgraph_CXXFLAGS = $(MYCXXFLAGS)
+dotgraph_LDFLAGS  = $(MYLDFLAGS)
+dotgraph_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

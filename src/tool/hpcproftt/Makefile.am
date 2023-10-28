@@ -125,19 +125,15 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
-pkglibexec_PROGRAMS = hpcproftt-bin
-pkglibexec_SCRIPTS = hpcproftt
+pkglibexec_PROGRAMS = hpcproftt
 
-hpcproftt_bin_SOURCES   = $(MYSOURCES)
-hpcproftt_bin_CFLAGS    = $(MYCFLAGS)
-hpcproftt_bin_CXXFLAGS  = $(MYCXXFLAGS)
-hpcproftt_bin_LDFLAGS   = $(MYLDFLAGS)
-hpcproftt_bin_LDADD     = $(MYLDADD)
+hpcproftt_SOURCES   = $(MYSOURCES)
+hpcproftt_CFLAGS    = $(MYCFLAGS)
+hpcproftt_CXXFLAGS  = $(MYCXXFLAGS)
+hpcproftt_LDFLAGS   = $(MYLDFLAGS)
+hpcproftt_LDADD     = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
-
-install-exec-hook:
-	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcproftt-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcproftt$(EXEEXT))
 
 
 #############################################################################
