@@ -69,13 +69,12 @@ def nproc_max() -> int:
 def nproc() -> int:
     """Get the recommended number of processes that should be used for parallel operations."""
     np = nproc_max()
-    match np:
-        case 1:
-            return 2  # Minor parallelism
-        case 2:
-            return 3  # Minor parallelism
-        case _:
-            return np
+    if np == 1:
+        return 2  # Minor parallelism
+    elif np == 2:
+        return 3  # Minor parallelism
+    else:
+        return np
 
 
 if __name__ == "__main__":
