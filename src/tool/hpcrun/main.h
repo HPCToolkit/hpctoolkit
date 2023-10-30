@@ -58,7 +58,6 @@ extern bool hpcrun_is_initialized();
 
 extern bool hpcrun_is_safe_to_sync(const char* fn);
 extern void hpcrun_set_safe_to_sync(void);
-extern void hpcrun_set_real_siglongjmp(void);
 
 extern void hpcrun_force_dlopen(bool forced);
 
@@ -68,8 +67,6 @@ extern void hpcrun_force_dlopen(bool forced);
 extern char* hpcrun_get_execname(void);
 
 typedef void siglongjmp_fcn(sigjmp_buf, int);
-
-siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);
 
 typedef struct hpcrun_aux_cleanup_t  hpcrun_aux_cleanup_t;
 

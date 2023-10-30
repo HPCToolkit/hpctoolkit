@@ -158,7 +158,7 @@ hpcrun_drop_sample(void)
 {
   TMSG(DROP, "dropping sample");
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+  siglongjmp(it->jb, 9);
 }
 
 static cct_node_t *

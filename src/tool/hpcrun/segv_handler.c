@@ -152,7 +152,7 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
         (*item->callback)();
     }
 
-    (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+    siglongjmp(it->jb, 9);
     return 0;
   }
   else {

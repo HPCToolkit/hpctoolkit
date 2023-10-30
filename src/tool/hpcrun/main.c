@@ -503,15 +503,13 @@ hpcrun_set_abort_timeout()
 // ** local routines & data to support interval dumping **
 //------------------------------------
 
-siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
-
 #ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
 static sigjmp_buf ivd_jb;
 
 static int
 dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 {
-  (*hpcrun_get_real_siglongjmp())(ivd_jb, 9);
+  siglongjmp(ivd_jb, 9);
   return 0;
 }
 #endif
@@ -1460,92 +1458,6 @@ monitor_reset_stacksize(size_t old_size)
   return new_size;
 }
 
-
-//***************************************************************************
-// (sig)longjmp for trampoline (via monitor extensions)
-//***************************************************************************
-
-// FIXME: Comment-out the overrides of longjmp() and siglongjmp() for
-// now.  We currently don't use them and _FORTIFY_SOURCE in newer gnu
-// libc breaks this code.
-//
-// Before re-enabling, we need to better understand how gnu libc and
-// <bits/setjmp2.h> map longjmp() and siglongjmp() to __longjmp_chk()
-// and what is the right way to intercept them.  Also, find a way
-// around the 3-1 name mapping.
-//
-// Note: be sure to reset 'monitor_wrap_names' in hpclink.
-
-#if 1
-
-static siglongjmp_fcn *real_siglongjmp = NULL;
-
-siglongjmp_fcn*
-hpcrun_get_real_siglongjmp(void)
-{
-  return real_siglongjmp;
-}
-
-void
-hpcrun_set_real_siglongjmp(void)
-{
-  MONITOR_EXT_GET_NAME(real_siglongjmp, siglongjmp);
-}
-
-#else
-
-typedef void longjmp_fcn(jmp_buf, int);
-
-#ifdef HPCRUN_STATIC_LINK
-extern longjmp_fcn    __real_longjmp;
-extern siglongjmp_fcn __real_siglongjmp;
-#endif
-
-static longjmp_fcn    *real_longjmp = NULL;
-static siglongjmp_fcn *real_siglongjmp = NULL;
-
-
-siglongjmp_fcn*
-hpcrun_get_real_siglongjmp(void)
-{
-  return real_siglongjmp;
-}
-
-void
-hpcrun_set_real_siglongjmp(void)
-{
-  MONITOR_EXT_GET_NAME_WRAP(real_siglongjmp, siglongjmp);
-}
-
-void
-MONITOR_EXT_WRAP_NAME(longjmp)(jmp_buf buf, int val)
-{
-  hpcrun_safe_enter();
-  MONITOR_EXT_GET_NAME_WRAP(real_longjmp, longjmp);
-
-  hpcrun_safe_exit();
-  (*real_longjmp)(buf, val);
-
-  // Never reached, but silence a compiler warning.
-  EEMSG("return from real longjmp(), should never get here");
-  _exit(1);
-}
-
-
-void
-MONITOR_EXT_WRAP_NAME(siglongjmp)(sigjmp_buf buf, int val)
-{
-  hpcrun_safe_enter();
-  hpcrun_get_real_siglongjmp();
-
-  hpcrun_safe_exit();
-  (*real_siglongjmp)(buf, val);
-
-  // Never reached, but silence a compiler warning.
-  EEMSG("return from real siglongjmp(), should never get here");
-  _exit(1);
-}
-#endif
 
 //***************************************************************************
 // thread control (via our monitoring extensions)
