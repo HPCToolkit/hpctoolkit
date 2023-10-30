@@ -284,6 +284,7 @@ MY_BASE_FILES =				\
 	utilities/first_func.c		\
 	\
 	main.h main.c			\
+	foil/foil.c			\
 	disabled.c			\
 	closure-registry.c              \
 	cct_insert_backtrace.c          \
@@ -314,11 +315,15 @@ MY_BASE_FILES =				\
 	sample-sources/display.c		\
 	sample-sources/exclude.c	\
 	sample-sources/ga.c		\
+	sample-sources/ga-overrides.c	\
 	sample-sources/io.c 		\
+	sample-sources/io-over.c	\
 	sample-sources/itimer.c		\
 	sample-sources/idle.c		\
 	sample-sources/memleak.c	\
+	sample-sources/memleak-overrides.c	\
 	sample-sources/pthread-blame.c  \
+	sample-sources/pthread-blame-overrides.c	\
 	sample-sources/none.c           \
 	sample-sources/retcnt.c         \
 	sample-sources/sync.c           \
@@ -419,11 +424,6 @@ MY_BASE_FILES =				\
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\
-	syscalls/poll.c	\
-	syscalls/ppoll.c \
-	syscalls/select.c \
-	syscalls/sysv_signal.c \
-	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/hpcrun-nanotime.h  utilities/hpcrun-nanotime.c  \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -483,7 +483,14 @@ MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-	custom-init-dynamic.c
+	custom-init-dynamic.c		\
+	foil/hpctoolkit-preload.c	\
+	foil/monitor-preload.c		\
+	foil/ompt-preload.c		\
+	foil/syscalls/poll-preload.c	\
+	foil/syscalls/ppoll-preload.c	\
+	foil/syscalls/select-preload.c	\
+	foil/syscalls/sysv_signal-preload.c
 
 MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c      \
@@ -565,7 +572,7 @@ MY_OPENCL_FILES = \
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
-libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
+libhpcrun_opencl_la_SOURCES   = foil/opencl-preload.c
 libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
 libhpcrun_opencl_la_LDFLAGS   += $(OPT_OCL_BH_LDFLAGS)
 endif
@@ -593,7 +600,8 @@ MY_ROCM_FILES =\
 	gpu/amd/hip-api.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c \
-	gpu/amd/rocprofiler-api.c
+	gpu/amd/rocprofiler-api.c \
+	foil/rocm-preload.c
 endif
 
 if OPT_ENABLE_LEVEL0
@@ -689,35 +697,33 @@ libhpcrun_o_SOURCES = 			\
 
 
 libhpcrun_wrap_a_SOURCES =		\
-	monitor-exts/openmp.c
+	foil/hpctoolkit-wrap.c	\
+	foil/monitor-wrap.c		\
+	foil/ompt-wrap.c		\
+	foil/syscalls/poll-wrap.c	\
+	foil/syscalls/ppoll-wrap.c	\
+	foil/syscalls/select-wrap.c	\
+	foil/syscalls/sysv_signal-wrap.c
 
-libhpcrun_ga_la_SOURCES = 		\
-	sample-sources/ga-overrides.c
+libhpcrun_ga_la_SOURCES = foil/ga-preload.c
 
-libhpcrun_ga_wrap_a_SOURCES = 		\
-	sample-sources/ga-overrides.c
+libhpcrun_ga_wrap_a_SOURCES = foil/ga-wrap.c
 
-libhpcrun_gprof_la_SOURCES = gprof.c
+libhpcrun_gprof_la_SOURCES = foil/gprof-preload.c
 
-libhpcrun_gprof_wrap_a_SOURCES = gprof.c
+libhpcrun_gprof_wrap_a_SOURCES = foil/gprof-wrap.c
 
-libhpcrun_io_la_SOURCES = 		\
-	sample-sources/io-over.c
+libhpcrun_io_la_SOURCES = foil/io-preload.c
 
-libhpcrun_io_wrap_a_SOURCES = 		\
-	sample-sources/io-over.c
+libhpcrun_io_wrap_a_SOURCES = foil/io-wrap.c
 
-libhpcrun_memleak_la_SOURCES = 		\
-	sample-sources/memleak-overrides.c
+libhpcrun_memleak_la_SOURCES = foil/memleak-preload.c
 
-libhpcrun_memleak_wrap_a_SOURCES = 	\
-	sample-sources/memleak-overrides.c
+libhpcrun_memleak_wrap_a_SOURCES = foil/memleak-wrap.c
 
-libhpcrun_pthread_la_SOURCES = 		\
-	sample-sources/pthread-blame-overrides.c
+libhpcrun_pthread_la_SOURCES = foil/pthread-blame-preload.c
 
-libhpcrun_pthread_wrap_a_SOURCES = 	\
-	sample-sources/pthread-blame-overrides.c
+libhpcrun_pthread_wrap_a_SOURCES = foil/pthread-blame-wrap.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	./mpi-overrides.c
@@ -940,6 +946,7 @@ MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS)
 if HOST_CPU_MIPS
 libhpcrun_la_SOURCES  += $(MY_MIPS_FILES)
 libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
@@ -963,6 +970,7 @@ if HOST_CPU_PPC
 libhpcrun_la_SOURCES  += $(MY_PPC_FILES)
 libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
 libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -982,6 +990,7 @@ endif
 if HOST_CPU_X86_FAMILY
 libhpcrun_la_SOURCES  += $(MY_X86_FILES)
 libhpcrun_o_SOURCES   += $(MY_X86_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_X86_INCLUDE_DIRS)
 if OPT_ENABLE_GTPIN
@@ -1007,6 +1016,7 @@ endif
 if HOST_CPU_IA64
 libhpcrun_la_SOURCES  += $(MY_IA64_FILES)
 libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_IA64_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
@@ -1023,6 +1033,7 @@ endif
 if HOST_CPU_AARCH64
 libhpcrun_la_SOURCES  += $(MY_AARCH64_FILES)
 libhpcrun_o_SOURCES   += $(MY_AARCH64_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
 libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -1156,6 +1167,7 @@ libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
+libhpcrun_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)

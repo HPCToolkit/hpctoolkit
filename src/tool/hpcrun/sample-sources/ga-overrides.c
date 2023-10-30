@@ -62,6 +62,7 @@
 // system includes
 //***************************************************************************
 
+#include "ga-overrides.h"
 #include <sys/types.h>
 #include <stdio.h>
 #include <ucontext.h>
@@ -81,8 +82,8 @@
 #include <trace.h>
 
 #include <messages/messages.h>
-#include <monitor-exts/monitor_ext.h>
 #include <sample-sources/ga.h>
+#include <sample-sources/ga-overrides.h>
 
 #include <lib/support-lean/timer.h>
 
@@ -90,84 +91,6 @@
 //***************************************************************************
 // type definitions
 //***************************************************************************
-
-// FIXME: temporarily import GA 5.2 declarations.  Unfortunately, some
-// of these declarations are only in the source tree (as opposed to
-// the installation), so currently there is no clean solution.
-
-// Need: field for a profiler
-
-// ${GA-install}/include/typesf2c.h
-// ${GA-build}/gaf2c/typesf2c.h
-// ${GA-src}/gaf2c/typesf2c.h.in [F2C_INTEGER_C_TYPE]
-typedef int Integer; // integer size
-typedef Integer logical;
-
-// ${GA-install}/include/armci.h
-// ${GA-src}/armci/src/include/armci.h
-typedef long armci_size_t;
-
-// ${GA-install}/include/gacommon.h
-// ${GA-src}/global/src/gacommon.h
-#define GA_MAX_DIM 7
-
-// ${GA-src}/global/src/gaconfig.h
-#define MAXDIM  GA_MAX_DIM
-
-// ${GA-src}/global/src/globalp.h
-#define GA_OFFSET   1000
-
-// ${GA-src}/global/src/base.h
-#define FNAM        31              /* length of array names   */
-
-typedef Integer C_Integer;
-typedef armci_size_t C_Long;
-
-typedef struct {
-       short int  ndim;             /* number of dimensions                 */
-       short int  irreg;            /* 0-regular; 1-irregular distribution  */
-       int  type;                   /* data type in array                   */
-       int  actv;                   /* activity status, GA is allocated     */
-       int  actv_handle;            /* handle is created                    */
-       C_Long   size;               /* size of local data in bytes          */
-       int  elemsize;               /* sizeof(datatype)                     */
-       int  ghosts;                 /* flag indicating presence of ghosts   */
-       long lock;                   /* lock                                 */
-       long id;                     /* ID of shmem region / MA handle       */
-       C_Integer  dims[MAXDIM];     /* global array dimensions              */
-       C_Integer  chunk[MAXDIM];    /* chunking                             */
-       int  nblock[MAXDIM];         /* number of blocks per dimension       */
-       C_Integer  width[MAXDIM];    /* boundary cells per dimension         */
-       C_Integer  first[MAXDIM];    /* (Mirrored only) first local element  */
-       C_Integer  last[MAXDIM];     /* (Mirrored only) last local element   */
-       C_Long  shm_length;          /* (Mirrored only) local shmem length   */
-       C_Integer  lo[MAXDIM];       /* top/left corner in local patch       */
-       double scale[MAXDIM];        /* nblock/dim (precomputed)             */
-       char **ptr;                  /* arrays of pointers to remote data    */
-       C_Integer  *mapc;            /* block distribution map               */
-       char name[FNAM+1];           /* array name                           */
-       int p_handle;                /* pointer to processor list for array  */
-       double *cache;               /* store for frequently accessed ptrs   */
-       int corner_flag;             /* flag for updating corner ghost cells */
-       int block_flag;              /* flag to indicate block-cyclic data   */
-       int block_sl_flag;           /* flag to indicate block-cyclic data   */
-                                    /* using ScaLAPACK format               */
-       C_Integer block_dims[MAXDIM];/* array of block dimensions            */
-       C_Integer num_blocks[MAXDIM];/* number of blocks in each dimension   */
-       C_Integer block_total;       /* total number of blocks in array      */
-                                    /* using restricted arrays              */
-       C_Integer *rstrctd_list;     /* list of processors with data         */
-       C_Integer num_rstrctd;       /* number of processors with data       */
-       C_Integer has_data;          /* flag that processor has data         */
-       C_Integer rstrctd_id;        /* rank of processor in restricted list */
-       C_Integer *rank_rstrctd;     /* ranks of processors with data        */
-
-#ifdef ENABLE_CHECKPOINT
-       int record_id;               /* record id for writing ga to disk     */
-#endif
-} global_array_t;
-
-extern global_array_t *GA;
 
 #define gam_CountElems(ndim, lo, hi, pelems){                        \
   int _d;                                                            \
@@ -214,12 +137,12 @@ extern global_array_t *GA;
 
 //***************************************************************************
 
-#define doSample_1sided_blocking(g_a, lo, hi)                           \
+#define doSample_1sided_blocking(GA, g_a, lo, hi)                       \
   if (isSampled) {                                                      \
     double latency = timeElapsed(timeBeg);                              \
-    uint64_t nbytes = bytesXfr(g_a, lo, hi);                            \
+    uint64_t nbytes = bytesXfr(GA, g_a, lo, hi);                        \
                                                                         \
-    doSample(g_a,                                                       \
+    doSample(GA, g_a,                                                   \
              doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),             \
              doMetric(hpcrun_ga_metricId_latency, latency, r),          \
              doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),          \
@@ -227,15 +150,15 @@ extern global_array_t *GA;
   }
 
 
-#define doSample_1sided_nonblocking(g_a, lo, hi)                        \
+#define doSample_1sided_nonblocking(GA, g_a, lo, hi)                    \
   if (isSampled) {                                                      \
     double latency = timeElapsed(timeBeg);                              \
-    uint64_t nbytes = bytesXfr(g_a, lo, hi);                            \
+    uint64_t nbytes = bytesXfr(GA, g_a, lo, hi);                        \
                                                                         \
     /* record time, cctNode, metricVec in nbhandle */                   \
     /* complete in: wait or sync */                                     \
                                                                         \
-    doSample(g_a,                                                       \
+    doSample(GA, g_a,                                                   \
              doMetric(hpcrun_ga_metricId_onesidedOp, 1, i),             \
              doMetric(hpcrun_ga_metricId_latency, latency, r),          \
              doMetric(hpcrun_ga_metricId_bytesXfr, nbytes, i),          \
@@ -243,11 +166,11 @@ extern global_array_t *GA;
   }
 
 
-#define doSample_collective_blocking()                                  \
+#define doSample_collective_blocking(GA)                                \
   if (isSampled) {                                                      \
     double latency = timeElapsed(timeBeg);                              \
                                                                         \
-    doSample(G_A_NULL,                                                  \
+    doSample(GA, G_A_NULL,                                              \
              doMetric(hpcrun_ga_metricId_collectiveOp, 1, i),           \
              doMetric(hpcrun_ga_metricId_latency, latency, r),          \
              do0(),                                                     \
@@ -255,7 +178,7 @@ extern global_array_t *GA;
   }
 
 
-#define doSample(g_a, do1, do2, do3, do4)                               \
+#define doSample(GA, g_a, do1, do2, do3, do4)                           \
 {                                                                       \
   bool safe = false;                                                    \
   if ((safe = hpcrun_safe_enter())) {                                   \
@@ -266,7 +189,7 @@ extern global_array_t *GA;
     unsigned int dataMetricId = HPCTRACE_FMT_MetricId_NULL;                     \
                                                                         \
     if (g_a != G_A_NULL) {                                              \
-      int idx = ga_getDataIdx(g_a);                                     \
+      int idx = ga_getDataIdx(GA, g_a);                                 \
       if (hpcrun_ga_dataIdx_isValid(idx)) {                             \
         ga_desc = hpcrun_ga_metricId_dataTbl_find(idx);                 \
         dataMetricId = ga_desc->metricId;                               \
@@ -320,7 +243,7 @@ timeElapsed(uint64_t timeBeg)
 
 
 static inline unsigned int
-bytesXfr(Integer g_a, Integer* lo, Integer* hi)
+bytesXfr(global_array_t* GA, Integer g_a, Integer* lo, Integer* hi)
 {
   // TODO: can this information be communicated from the runtime
   // rather than being (re?)computed here?
@@ -335,7 +258,7 @@ bytesXfr(Integer g_a, Integer* lo, Integer* hi)
 
 
 static inline int
-ga_getDataIdx(Integer g_a)
+ga_getDataIdx(global_array_t* GA, Integer g_a)
 {
   // FIXME: use a profiling slot rather than 'lock'
   Integer ga_hndl = GA_OFFSET + g_a;
@@ -344,7 +267,7 @@ ga_getDataIdx(Integer g_a)
 
 
 static inline void
-ga_setDataIdx(Integer g_a, int idx)
+ga_setDataIdx(global_array_t* GA, Integer g_a, int idx)
 {
   Integer ga_hndl = GA_OFFSET + g_a;
   GA[ga_hndl].lock = idx;
@@ -362,19 +285,11 @@ ga_setDataIdx(Integer g_a, int idx)
 //      pnga_set_*
 //      pnga_allocate()
 
-typedef logical ga_create_fn_t(Integer type, Integer ndim,
-                               Integer *dims, char* name,
-                               Integer *chunk, Integer *g_a);
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_create_fn_t, real_pnga_create);
-
 logical
-MONITOR_EXT_WRAP_NAME(pnga_create)(Integer type, Integer ndim,
-                                   Integer *dims, char* name,
-                                   Integer *chunk, Integer *g_a)
+foilbase_pnga_create(ga_create_fn_t* real_pnga_create, global_array_t* GA,
+    Integer type, Integer ndim, Integer *dims, char* name,
+    Integer *chunk, Integer *g_a)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_create, pnga_create);
-
   // collective
   logical ret = real_pnga_create(type, ndim, dims, name, chunk, g_a);
 
@@ -383,21 +298,14 @@ MONITOR_EXT_WRAP_NAME(pnga_create)(Integer type, Integer ndim,
   idx = hpcrun_ga_dataIdx_new(name);
 #endif
 
-  ga_setDataIdx(*g_a, idx);
+  ga_setDataIdx(GA, *g_a, idx);
 
   return ret;
 }
 
-
-typedef Integer ga_create_handle_fn_t();
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_create_handle_fn_t, real_pnga_create_handle);
-
 Integer
-MONITOR_EXT_WRAP_NAME(pnga_create_handle)()
+foilbase_pnga_create_handle(ga_create_handle_fn_t* real_pnga_create_handle, global_array_t* GA)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_create_handle, pnga_create_handle);
-
   // collective
   Integer g_a = real_pnga_create_handle();
 
@@ -407,7 +315,7 @@ MONITOR_EXT_WRAP_NAME(pnga_create_handle)()
   idx = hpcrun_ga_dataIdx_new(name);
 #endif
 
-  ga_setDataIdx(g_a, idx);
+  ga_setDataIdx(GA, g_a, idx);
 
   return g_a;
 }
@@ -428,53 +336,39 @@ MONITOR_EXT_WRAP_NAME(pnga_create_handle)()
 // blocking get, put, acc, ...
 //***************************************************************************
 
-typedef void ga_getput_fn_t(Integer g_a, Integer* lo, Integer* hi, void* buf, Integer* ld);
-
-typedef void ga_acc_fn_t(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, void *alpha);
-
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_getput_fn_t, real_pnga_get);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_get)(Integer g_a, Integer* lo, Integer* hi, void* buf, Integer* ld)
+foilbase_pnga_get(ga_getput_fn_t* real_pnga_get, global_array_t* GA, Integer g_a, Integer* lo,
+                  Integer* hi, void* buf, Integer* ld)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_get, pnga_get);
-
   def_isSampled_blocking();
 
   real_pnga_get(g_a, lo, hi, buf, ld);
 
-  doSample_1sided_blocking(g_a, lo, hi);
+  doSample_1sided_blocking(GA, g_a, lo, hi);
 }
 
 
-MONITOR_EXT_DECLARE_REAL_FN(ga_getput_fn_t, real_pnga_put);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_put)(Integer g_a, Integer* lo, Integer* hi, void* buf, Integer* ld)
+foilbase_pnga_put(ga_getput_fn_t* real_pnga_put, global_array_t* GA, Integer g_a, Integer* lo,
+                  Integer* hi, void* buf, Integer* ld)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_put, pnga_put);
-
   def_isSampled_blocking();
 
   real_pnga_put(g_a, lo, hi, buf, ld);
 
-  doSample_1sided_blocking(g_a, lo, hi);
+  doSample_1sided_blocking(GA, g_a, lo, hi);
 }
 
 
-MONITOR_EXT_DECLARE_REAL_FN(ga_acc_fn_t, real_pnga_acc);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_acc)(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, void *alpha)
+foilbase_pnga_acc(ga_acc_fn_t* real_pnga_acc, global_array_t* GA, Integer g_a, Integer *lo,
+                  Integer *hi, void *buf, Integer *ld, void *alpha)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_acc, pnga_acc);
-
   def_isSampled_blocking();
 
   real_pnga_acc(g_a, lo, hi, buf, ld, alpha);
 
-  doSample_1sided_blocking(g_a, lo, hi);
+  doSample_1sided_blocking(GA, g_a, lo, hi);
 }
 
 
@@ -485,65 +379,44 @@ MONITOR_EXT_WRAP_NAME(pnga_acc)(Integer g_a, Integer *lo, Integer *hi, void *buf
 // non-blocking get, put, acc, ...
 //***************************************************************************
 
-typedef void ga_nbgetput_fn_t(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, Integer *nbhandle);
-
-typedef void ga_nbacc_fn_t(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, void *alpha, Integer *nbhandle);
-
-typedef void ga_nbwait_fn_t(Integer *nbhandle);
-
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_nbgetput_fn_t, real_pnga_nbget);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_nbget)(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, Integer *nbhandle)
+foilbase_pnga_nbget(ga_nbgetput_fn_t* real_pnga_nbget, global_array_t* GA, Integer g_a, Integer *lo,
+                    Integer *hi, void *buf, Integer *ld, Integer *nbhandle)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbget, pnga_nbget);
-
   def_isSampled_nonblocking();
 
   real_pnga_nbget(g_a, lo, hi, buf, ld, nbhandle);
 
-  doSample_1sided_nonblocking(g_a, lo, hi);
+  doSample_1sided_nonblocking(GA, g_a, lo, hi);
 }
 
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_nbgetput_fn_t, real_pnga_nbput);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_nbput)(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, Integer *nbhandle)
+foilbase_pnga_nbput(ga_nbgetput_fn_t* real_pnga_nbput, global_array_t* GA, Integer g_a, Integer *lo,
+                    Integer *hi, void *buf, Integer *ld, Integer *nbhandle)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbput, pnga_nbput);
-
   def_isSampled_nonblocking();
 
   real_pnga_nbput(g_a, lo, hi, buf, ld, nbhandle);
 
-  doSample_1sided_nonblocking(g_a, lo, hi);
+  doSample_1sided_nonblocking(GA, g_a, lo, hi);
 }
 
 
-MONITOR_EXT_DECLARE_REAL_FN(ga_nbacc_fn_t, real_pnga_nbacc);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_nbacc)(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, void *alpha, Integer *nbhandle)
+foilbase_pnga_nbacc(ga_nbacc_fn_t* real_pnga_nbacc, global_array_t* GA, Integer g_a, Integer *lo,
+                    Integer *hi, void *buf, Integer *ld, void *alpha, Integer *nbhandle)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbacc, pnga_nbacc);
-
   def_isSampled_nonblocking();
 
   real_pnga_nbacc(g_a, lo, hi, buf, ld, alpha, nbhandle);
 
-  doSample_1sided_nonblocking(g_a, lo, hi);
+  doSample_1sided_nonblocking(GA, g_a, lo, hi);
 }
 
 
-MONITOR_EXT_DECLARE_REAL_FN(ga_nbwait_fn_t, real_pnga_nbwait);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_nbwait)(Integer *nbhandle)
+foilbase_pnga_nbwait(ga_nbwait_fn_t* real_pnga_nbwait, global_array_t* GA, Integer *nbhandle)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_nbwait, pnga_nbwait);
-
   // FIXME: measure only if tagged
   def_isSampled();
   def_timeBeg(isSampled);
@@ -552,7 +425,7 @@ MONITOR_EXT_WRAP_NAME(pnga_nbwait)(Integer *nbhandle)
 
   if (isSampled) {
     double latency = timeElapsed(timeBeg);
-    doSample(G_A_NULL,
+    doSample(GA, G_A_NULL,
              doMetric(hpcrun_ga_metricId_latency, latency, r),
              do0(), do0(), do0());
   }
@@ -563,63 +436,44 @@ MONITOR_EXT_WRAP_NAME(pnga_nbwait)(Integer *nbhandle)
 // collectives: brdcst
 //***************************************************************************
 
-typedef void ga_brdcst_fn_t(Integer type, void *buf, Integer len, Integer originator);
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_brdcst_fn_t, real_pnga_brdcst);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_brdcst)(Integer type, void *buf, Integer len, Integer originator)
+foilbase_pnga_brdcst(ga_brdcst_fn_t* real_pnga_brdcst, global_array_t* GA, Integer type, void *buf,
+                     Integer len, Integer originator)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_brdcst, pnga_brdcst);
-
   def_isSampled_blocking();
 
   real_pnga_brdcst(type, buf, len, originator);
 
-  doSample_collective_blocking();
+  doSample_collective_blocking(GA);
 }
 
 
-typedef void ga_gop_fn_t(Integer type, void *x, Integer n, char *op);
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_gop_fn_t, real_pnga_gop);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_gop)(Integer type, void *x, Integer n, char *op)
+foilbase_pnga_gop(ga_gop_fn_t* real_pnga_gop, global_array_t* GA, Integer type, void *x, Integer n,
+                  char *op)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_gop, pnga_gop);
-
   def_isSampled_blocking();
 
   real_pnga_gop(type, x, n, op);
 
-  doSample_collective_blocking();
+  doSample_collective_blocking(GA);
 }
 
 
-typedef void ga_sync_fn_t();
-
-MONITOR_EXT_DECLARE_REAL_FN(ga_sync_fn_t, real_pnga_sync);
-
 void
-MONITOR_EXT_WRAP_NAME(pnga_sync)()
+foilbase_pnga_sync(ga_sync_fn_t* real_pnga_sync, global_array_t* GA)
 {
-  MONITOR_EXT_GET_NAME_WRAP(real_pnga_sync, pnga_sync);
-
   def_isSampled_blocking();
 
   real_pnga_sync();
 
-  doSample_collective_blocking();
+  doSample_collective_blocking(GA);
 }
 
 
 // TODO: ga_pgroup_sync
-typedef void ga_pgroup_sync_fn_t(Integer grp_id);
 
 
 // TODO: ga_pgroup_dgop
-typedef void ga_pgroup_gop_fn_t(Integer p_grp, Integer type, void *x, Integer n, char *op);
-
 
 //***************************************************************************

@@ -4575,6 +4575,9 @@ if test "$OPT_HAVE_OPENCL" = yes ; then
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+if test "$OPT_HAVE_OPENCL" = yes; then
+  AC_DEFINE([ENABLE_OPENCL], [1], [Enable OpenCL monitoring])
+fi
 
 AC_MSG_RESULT([$OPENCL])
 

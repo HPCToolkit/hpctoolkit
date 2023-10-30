@@ -44,82 +44,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-// $HeadURL$
+//------------------------------------------------------------------------------
+// File: sysv_signal.c
 //
 // Purpose:
-// This file provides an API for the application to start and stop
-// sampling with explicit function calls in the application source.
-//
-// Note:
-// (1) The actions are process-wide.
-//
-// (2) The start and stop functions turn the sample sources on and off
-// in the current thread.  The sources in the other threads continue
-// to run but don't unwind and don't record samples.  Stopping
-// sampling in all threads is more complicated because it would have
-// to be done in a signal handler which can't really be done safely.
-//
-// (3) Sampling is initially on.  If you want it initially off, then
-// set HPCRUN_DELAY_SAMPLING in the environment.
-//
-//***************************************************************************
+//   translate calls to deprecated __sysv_signal into calls to signal,
+//   which gets intercepted by libmonitor. __sysv_signal is not intercepted
+//   by libmonitor.
+//------------------------------------------------------------------------------
 
-#include <stdlib.h>
+#define _GNU_SOURCE
 
-#include "env.h"
-#include "sample_sources_all.h"
-#include "start-stop.h"
+#include "../foil.h"
 
-static int sampling_is_active = 1;
-static int dont_reinit = 0;
+#include <signal.h>
+#include <stdio.h>
 
 
-//***************************************************************************
-// interface functions
-//***************************************************************************
-
-void
-hpcrun_start_stop_internal_init(void)
+HPCRUN_EXPOSED __sighandler_t __sysv_signal(int signo, __sighandler_t handler)
 {
-  // Make sure we don't run init twice.  This is for the case that the
-  // application turns sampling on/off and then forks.  We want to
-  // preserve the state across fork and not reset it in the child.
-  if (dont_reinit) {
-    return;
-  }
-
-  sampling_is_active = ! hpcrun_get_env_bool("HPCRUN_DELAY_SAMPLING");
-  dont_reinit = 1;
-}
-
-
-int
-foilbase_hpctoolkit_sampling_is_active(void)
-{
-  return sampling_is_active;
-}
-
-
-void
-foilbase_hpctoolkit_sampling_start(void)
-{
-  sampling_is_active = 1;
-  dont_reinit = 1;
-  if (! SAMPLE_SOURCES(started)) {
-    SAMPLE_SOURCES(start);
-  }
-}
-
-
-void
-foilbase_hpctoolkit_sampling_stop(void)
-{
-  sampling_is_active = 0;
-  dont_reinit = 1;
-  if (SAMPLE_SOURCES(started)) {
-    SAMPLE_SOURCES(stop);
-  }
+  return signal(signo, handler);
 }

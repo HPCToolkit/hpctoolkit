@@ -468,6 +468,7 @@ static void optimize_object_plt(const object_t* obj) {
 // interface operations
 //******************************************************************************
 
+__attribute__((visibility("default")))
 unsigned int la_version(unsigned int version) {
   if(version < 1) return 0;
 
@@ -510,6 +511,7 @@ unsigned int la_version(unsigned int version) {
 }
 
 
+__attribute__((visibility("default")))
 unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
   // Fill in the basics of what we know about this object
   object_t* obj = malloc(sizeof *obj);
@@ -714,6 +716,7 @@ static void mainlib_connected(const char* vdso_path) {
 
 
 
+__attribute__((visibility("default")))
 uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
                        uintptr_t *refcook, uintptr_t *defcook,
                        unsigned int *flags, const char *symname) {
@@ -721,6 +724,7 @@ uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
     optimize_object_plt((object_t*)*refcook);
   return sym->st_value;
 }
+__attribute__((visibility("default")))
 uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        uintptr_t *refcook, uintptr_t *defcook,
                        unsigned int *flags, const char *symname) {
@@ -731,6 +735,7 @@ uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
 
 
 
+__attribute__((visibility("default")))
 void la_activity(uintptr_t* cookie, unsigned int flag) {
   static unsigned int previous = LA_ACT_CONSISTENT;
 
@@ -771,6 +776,7 @@ static void mainlib_disconnect() {
     fprintf(stderr, "[audit] Auditor has now disconnected\n");
 }
 
+__attribute__((visibility("default")))
 unsigned int la_objclose(uintptr_t* cookie) {
   if(*cookie == 0) {
     // Ignored binary, apparently things went wrong on the other side.

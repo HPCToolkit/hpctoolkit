@@ -14,7 +14,7 @@
 //******************************************************************************
 
 cl_int
-hpcrun_clBuildProgram
+foilbase_clBuildProgram
 (
  cl_program program,
  cl_uint num_devices,
@@ -26,7 +26,7 @@ hpcrun_clBuildProgram
 
 
 cl_context
-hpcrun_clCreateContext
+foilbase_clCreateContext
 (
   const cl_context_properties *properties,
   cl_uint num_devices,
@@ -38,7 +38,7 @@ hpcrun_clCreateContext
 
 
 cl_command_queue
-hpcrun_clCreateCommandQueue
+foilbase_clCreateCommandQueue
 (
  cl_context context,
  cl_device_id device,
@@ -48,7 +48,7 @@ hpcrun_clCreateCommandQueue
 
 
 cl_command_queue
-hpcrun_clCreateCommandQueueWithProperties
+foilbase_clCreateCommandQueueWithProperties
 (
  cl_context context,
  cl_device_id device,
@@ -58,7 +58,7 @@ hpcrun_clCreateCommandQueueWithProperties
 
 
 cl_int
-hpcrun_clEnqueueNDRangeKernel
+foilbase_clEnqueueNDRangeKernel
 (
  cl_command_queue command_queue,
  cl_kernel ocl_kernel,
@@ -74,7 +74,7 @@ hpcrun_clEnqueueNDRangeKernel
 
 // this is a simplified version of clEnqueueNDRangeKernel, TODO: check if code duplication can be avoided
 cl_int
-hpcrun_clEnqueueTask
+foilbase_clEnqueueTask
 (
  cl_command_queue command_queue,
  cl_kernel kernel,
@@ -85,7 +85,7 @@ hpcrun_clEnqueueTask
 
 
 cl_int
-hpcrun_clEnqueueReadBuffer
+foilbase_clEnqueueReadBuffer
 (
  cl_command_queue command_queue,
  cl_mem buffer,
@@ -100,7 +100,7 @@ hpcrun_clEnqueueReadBuffer
 
 
 cl_int
-hpcrun_clEnqueueWriteBuffer
+foilbase_clEnqueueWriteBuffer
 (
  cl_command_queue command_queue,
  cl_mem buffer,
@@ -115,7 +115,7 @@ hpcrun_clEnqueueWriteBuffer
 
 
 void*
-hpcrun_clEnqueueMapBuffer
+foilbase_clEnqueueMapBuffer
 (
  cl_command_queue command_queue,
  cl_mem buffer,
@@ -131,7 +131,7 @@ hpcrun_clEnqueueMapBuffer
 
 
 cl_mem
-hpcrun_clCreateBuffer
+foilbase_clCreateBuffer
 (
  cl_context context,
  cl_mem_flags flags,
@@ -142,7 +142,7 @@ hpcrun_clCreateBuffer
 
 
 cl_int
-hpcrun_clWaitForEvents
+foilbase_clWaitForEvents
 (
         cl_uint num_events,
         const cl_event* event_list
@@ -150,14 +150,14 @@ hpcrun_clWaitForEvents
 
 
 cl_int
-hpcrun_clFinish
+foilbase_clFinish
 (
  cl_command_queue command_queue
 );
 
 
 cl_int
-hpcrun_clSetKernelArg
+foilbase_clSetKernelArg
 (
  cl_kernel kernel,
  cl_uint arg_index,
@@ -167,21 +167,21 @@ hpcrun_clSetKernelArg
 
 
 cl_int
-hpcrun_clReleaseMemObject
+foilbase_clReleaseMemObject
 (
  cl_mem mem
 );
 
 
 cl_int
-hpcrun_clReleaseKernel
+foilbase_clReleaseKernel
 (
  cl_kernel kernel
 );
 
 
 cl_int
-hpcrun_clReleaseCommandQueue
+foilbase_clReleaseCommandQueue
 (
  cl_command_queue command_queue
 );

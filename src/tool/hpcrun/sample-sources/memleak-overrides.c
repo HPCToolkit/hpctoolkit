@@ -91,7 +91,6 @@
 #include <messages/messages.h>
 #include <safe-sampling.h>
 #include <sample_event.h>
-#include <monitor-exts/monitor_ext.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
 
@@ -606,8 +605,7 @@ memleak_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
 // Use mmap and hpcrun_malloc instead.
 
 int
-MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment,
-                                      size_t bytes)
+foilbase_posix_memalign(void **memptr, size_t alignment, size_t bytes)
 {
   ucontext_t uc;
   int ret = 0;
@@ -631,7 +629,7 @@ MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment,
 
 
 void *
-MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
+foilbase_memalign(size_t boundary, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -654,7 +652,7 @@ MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
 
 
 void *
-MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
+foilbase_valloc(size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -677,7 +675,7 @@ MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
 
 
 void *
-MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
+foilbase_malloc(size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -700,7 +698,7 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 
 
 void *
-MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
+foilbase_calloc(size_t nmemb, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -733,7 +731,7 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 // system ptr or else free() will crash.
 //
 void
-MONITOR_EXT_WRAP_NAME(free)(void *ptr)
+foilbase_free(void *ptr)
 {
   leakinfo_t *info_ptr;
   void *sys_ptr;
@@ -767,7 +765,7 @@ finish:
 
 
 void *
-MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
+foilbase_realloc(void *ptr, size_t bytes)
 {
   ucontext_t uc;
   leakinfo_t *info_ptr;

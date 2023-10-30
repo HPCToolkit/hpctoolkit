@@ -48,4 +48,14 @@
 #ifndef __MEMLEAK_OVERRIDES_H__
 #define __MEMLEAK_OVERRIDES_H__
 
+#include <stddef.h>
+
+extern int foilbase_posix_memalign(void **memptr, size_t alignment, size_t bytes);
+extern void *foilbase_memalign(size_t boundary, size_t bytes);
+extern void *foilbase_valloc(size_t bytes);
+extern void *foilbase_malloc(size_t bytes);
+extern void *foilbase_calloc(size_t nmemb, size_t bytes);
+extern void foilbase_free(void *ptr);
+extern void *foilbase_realloc(void *ptr, size_t bytes);
+
 #endif

@@ -44,58 +44,50 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*
- * Macros for extending monitor's overrides.
- */
+#include "foil.h"
+#include "sample-sources/memleak-overrides.h"
+#include <unistd.h>
+#include <stdlib.h>
+#include <malloc.h>
 
-#ifndef _MONITOR_EXT_H_
-#define _MONITOR_EXT_H_
+extern typeof(posix_memalign) __wrap_posix_memalign;
+HPCRUN_EXPOSED int __wrap_posix_memalign(void **memptr, size_t alignment, size_t bytes) {
+  LOOKUP_FOIL_BASE(base, posix_memalign);
+  return base(memptr, alignment, bytes);
+}
 
-#include <pthread.h>
-#  include <messages/messages.h>
+extern typeof(memalign) __wrap_memalign;
+HPCRUN_EXPOSED void *__wrap_memalign(size_t boundary, size_t bytes) {
+  LOOKUP_FOIL_BASE(base, memalign);
+  return base(boundary, bytes);
+}
 
-#ifdef HPCRUN_STATIC_LINK
+extern typeof(valloc) __wrap_valloc;
+HPCRUN_EXPOSED void *__wrap_valloc(size_t bytes) {
+  LOOKUP_FOIL_BASE(base, valloc);
+  return base(bytes);
+}
 
-#define MONITOR_EXT_CONCAT(x, y) x ## y
+extern typeof(malloc) __wrap_malloc;
+HPCRUN_EXPOSED void *__wrap_malloc(size_t bytes) {
+  LOOKUP_FOIL_BASE(base, malloc);
+  return base(bytes);
+}
 
-// N.B.: the 'name' argument to MONITOR_EXT_WRAP_NAME() will be macro
-// expanded once because of MONITOR_EXT_CONCAT()
-#define MONITOR_EXT_WRAP_NAME(name)  MONITOR_EXT_CONCAT(__wrap_, name)
-#define MONITOR_EXT_GET_NAME(var, name)  var = & name
-#define MONITOR_EXT_GET_NAME_WRAP(var, name)  var = & __real_ ## name
+extern typeof(calloc) __wrap_calloc;
+HPCRUN_EXPOSED void *__wrap_calloc(size_t nmemb, size_t bytes) {
+  LOOKUP_FOIL_BASE(base, calloc);
+  return base(nmemb, bytes);
+}
 
-#define MONITOR_EXT_DECLARE_REAL_FN(type, realname) \
-    extern type MONITOR_EXT_CONCAT(__, realname); \
-    static type * realname = NULL
+extern typeof(free) __wrap_free;
+HPCRUN_EXPOSED void __wrap_free(void *ptr) {
+  LOOKUP_FOIL_BASE(base, free);
+  return base(ptr);
+}
 
-#else  /* HPCRUN DYNAMIC */
-
-#include <dlfcn.h>
-
-#ifndef RTLD_NEXT
-#define RTLD_NEXT  ((void *) -1L)
-#endif
-
-#define MONITOR_EXT_GET_DLSYM(var, name)  do {          \
-    if (var == NULL) {                                  \
-        const char *err_str;                            \
-        dlerror();                                      \
-        var = dlsym(RTLD_NEXT, #name );                 \
-        err_str = dlerror();                            \
-        if (var == NULL) {                              \
-            hpcrun_abort("dlsym(%s) failed: %s", #name , err_str); \
-        }                                               \
-        TMSG(MONITOR_EXTS, "%s() = %p", #name , var);   \
-    }                                                   \
-} while (0)
-
-#define MONITOR_EXT_WRAP_NAME(name)  name
-#define MONITOR_EXT_GET_NAME(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
-#define MONITOR_EXT_GET_NAME_WRAP(var, name)  MONITOR_EXT_GET_DLSYM(var, name)
-
-#define MONITOR_EXT_DECLARE_REAL_FN(type, realname) \
-    static type * realname = NULL
-
-#endif  /* HPCRUN_STATIC_LINK */
-
-#endif  /* ! _MONITOR_EXT_H_ */
+extern typeof(realloc) __wrap_realloc;
+HPCRUN_EXPOSED void *__wrap_realloc(void *ptr, size_t bytes) {
+  LOOKUP_FOIL_BASE(base, realloc);
+  return base(ptr, bytes);
+}

@@ -77,7 +77,7 @@ typedef struct shadow_map_entry_t {
   auditor_map_entry_t entry;
 } shadow_map_entry_t;
 static shadow_map_entry_t* shadow_map;
-pthread_mutex_t shadow_lock;
+static pthread_mutex_t shadow_lock;
 
 // Storage for all the bits we need
 static auditor_exports_t exports;
@@ -110,6 +110,7 @@ static int self_scan_dl(struct dl_phdr_info* map, size_t sz, void* vp) {
 
 // Initialization can happen from multiple locations, but always looks like this:
 static bool initialized = false;
+__attribute__((visibility("default")))
 void hpcrun_init_fake_auditor() {
   if(initialized) return;
   initialized = true;
@@ -322,6 +323,7 @@ void mainlib_disconnect() {
 }
 
 // The remainder here is overloads for dl* that update as per the usual
+__attribute__((visibility("default")))
 void* dlopen(const char* fn, int flags) {
   if(!real_dlopen)
     return ((void*(*)(const char*, int))dlsym(RTLD_NEXT, "dlopen"))(fn, flags);
@@ -333,6 +335,7 @@ void* dlopen(const char* fn, int flags) {
   }
   return out;
 }
+__attribute__((visibility("default")))
 void* dlmopen(Lmid_t lmid, const char* fn, int flags) {
   if(!real_dlmopen)
     return ((void*(*)(Lmid_t, const char*, int))dlsym(RTLD_NEXT, "dlmopen"))(lmid, fn, flags);
@@ -345,6 +348,7 @@ void* dlmopen(Lmid_t lmid, const char* fn, int flags) {
   }
   return out;
 }
+__attribute__((visibility("default")))
 int dlclose(void* handle) {
   if(!real_dlclose)
     return ((int(*)(void*))dlsym(RTLD_NEXT, "dlclose"))(handle);

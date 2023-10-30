@@ -44,23 +44,29 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// stubs to override gprof support to avoid conflicts with hpcrun
-// NOTE: avoids core dump on ppc64le
+#include "foil.h"
+#include "sample-sources/io-over.h"
 
-#include <monitor-exts/monitor_ext.h>
+extern typeof(read) __wrap_read;
+HPCRUN_EXPOSED ssize_t __wrap_read(int fd, void* buf, size_t count) {
+  LOOKUP_FOIL_BASE(base, read);
+  return base(fd, buf, count);
+}
 
-void
-MONITOR_EXT_WRAP_NAME(__monstartup) (void)
-{ }
+extern typeof(write) __wrap_write;
+HPCRUN_EXPOSED ssize_t __wrap_write(int fd, const void* buf, size_t count) {
+  LOOKUP_FOIL_BASE(base, write);
+  return base(fd, buf, count);
+}
 
-void
-MONITOR_EXT_WRAP_NAME(_mcleanup) (void)
-{ }
+extern typeof(fread) __wrap_fread;
+HPCRUN_EXPOSED size_t __wrap_fread(void* ptr, size_t size, size_t count, FILE* stream) {
+  LOOKUP_FOIL_BASE(base, fread);
+  return base(ptr, size, count, stream);
+}
 
-void
-MONITOR_EXT_WRAP_NAME(mcount) (void)
-{ }
-
-void
-MONITOR_EXT_WRAP_NAME(_mcount) (void)
-{ }
+extern typeof(fwrite) __wrap_fwrite;
+HPCRUN_EXPOSED size_t __wrap_fwrite(const void *ptr, size_t size, size_t count, FILE *stream) {
+  LOOKUP_FOIL_BASE(base, fwrite);
+  return base(ptr, size, count, stream);
+}

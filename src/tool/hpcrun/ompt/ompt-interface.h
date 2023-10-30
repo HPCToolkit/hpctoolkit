@@ -287,5 +287,11 @@ ompt_set_callback_internal
   ompt_callback_t callback
 );
 
+extern ompt_start_tool_result_t *
+foilbase_ompt_start_tool
+(
+ unsigned int omp_version,
+ const char *runtime_version
+);
 
 #endif // _OMPT_INTERFACE_H_

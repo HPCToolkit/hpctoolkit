@@ -669,7 +669,7 @@ ompt_finalize
 
 
 ompt_start_tool_result_t *
-ompt_start_tool
+foilbase_ompt_start_tool
 (
  unsigned int omp_version,
  const char *runtime_version
