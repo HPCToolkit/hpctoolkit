@@ -1,16 +1,18 @@
-import collections.abc
 import dataclasses
 import re
 import typing
 from xml.etree import ElementTree as XmlET
 
+if typing.TYPE_CHECKING:
+    import collections.abc
 
-def iter_xml(root: XmlET.Element) -> collections.abc.Iterator[tuple[XmlET.Element, bool]]:
+
+def iter_xml(root: XmlET.Element) -> "collections.abc.Iterator[typing.Tuple[XmlET.Element, bool]]":
     """Iterate over an XML element tree in depth-first order with exit callbacks. Returns each
     element in the tree exactly twice, along with a boolean indicating with this is the first time
     incountering the element.
     """
-    stack: list[tuple[XmlET.Element, bool]] = [(root, True)]
+    stack: typing.List[typing.Tuple[XmlET.Element, bool]] = [(root, True)]
     while stack:
         elem, enter = stack.pop()
         yield elem, enter
@@ -35,7 +37,7 @@ class VRange:
     __radd__ = __add__
 
     @classmethod
-    def parse(cls, v: str | None) -> typing.Union["VRange", None]:
+    def parse(cls, v: typing.Optional[str]) -> typing.Union["VRange", None]:
         if v is None or v == "{}":
             return None
         if v[0] != "{" or v[-1] != "}":
@@ -50,11 +52,11 @@ class VRange:
         return result
 
 
-def canonical_form(file: typing.BinaryIO) -> list[str]:  # noqa: C901
+def canonical_form(file: typing.BinaryIO) -> typing.List[str]:  # noqa: C901
     data = XmlET.parse(file)
 
     # 1. Calculate a VRange for each element, based on the address range ("v") and children
-    ranges: dict[XmlET.Element, VRange] = {}
+    ranges: typing.Dict[XmlET.Element, VRange] = {}
     for elem, enter in iter_xml(data.getroot()):
         if enter:
             continue  # Post-order to ensure we have ranges for children
@@ -66,7 +68,7 @@ def canonical_form(file: typing.BinaryIO) -> list[str]:  # noqa: C901
         ranges[elem] = vrange
 
     # 2. Sort the children of each element by their address ranges
-    children: dict[XmlET.Element, list[XmlET.Element]] = {}
+    children: typing.Dict[XmlET.Element, typing.List[XmlET.Element]] = {}
     for elem in data.iter():
         children[elem] = sorted(elem, key=lambda e: ranges[e], reverse=True)  # noqa: F821
     del ranges
@@ -99,7 +101,7 @@ def canonical_form(file: typing.BinaryIO) -> list[str]:  # noqa: C901
 
     # 4. Output the canonical form of the element tree
     depth = 0
-    result: list[str] = []
+    result: typing.List[str] = []
     for elem, enter in iter_xml(data.getroot()):
         if enter:
             depth += 1

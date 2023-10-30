@@ -1,16 +1,19 @@
 import collections
-import collections.abc
 import functools
 import os
 import shlex
 import subprocess
 import sys
+import typing
 from pathlib import Path
 
 from .errors import PredictableFailureError
 
+if typing.TYPE_CHECKING:
+    import collections.abc
 
-def _subproc_run(arg0, cmd, *args, wrapper: collections.abc.Iterable[str] = (), **kwargs):
+
+def _subproc_run(arg0, cmd, *args, wrapper: "collections.abc.Iterable[str]" = (), **kwargs):
     msg = f"--- --- Running command: {' '.join([shlex.quote(str(s)) for s in [*wrapper] + [arg0] + cmd[1:]])}"
     print(msg, flush=True)
     print(msg, file=sys.stderr, flush=True)
@@ -22,7 +25,9 @@ def _identify_mpiexec(ranks: int):
         raise RuntimeError("mpiexec not available, cannot continue! Run under meson devenv!")
     mpiexec = [*os.environ["HPCTOOLKIT_DEV_MPIEXEC"].split(";"), f"{ranks:d}"]
 
-    def attempt(args: collections.abc.Iterable[str]) -> collections.abc.Iterable[str] | None:
+    def attempt(
+        args: "collections.abc.Iterable[str]",
+    ) -> typing.Optional["collections.abc.Iterable[str]"]:
         proc = subprocess.run(
             mpiexec + list(args) + ["echo"],
             check=False,
@@ -83,7 +88,7 @@ class Measurements:
         self,
         *,
         procs: int = 1,
-        threads_per_proc: int | collections.abc.Collection[int] = 1,
+        threads_per_proc: typing.Union[int, "collections.abc.Collection[int]"] = 1,
         traces: bool = False,
     ):
         threads = [

@@ -1,5 +1,4 @@
 import abc
-import collections.abc
 import re
 import string
 import typing
@@ -8,18 +7,27 @@ from pathlib import Path
 
 import pyparsing as pp
 
+if typing.TYPE_CHECKING:
+    import collections.abc
+
 
 class ValueLike(abc.ABC):
     @abc.abstractmethod
     def as_value(
-        self, *, bounds: tuple[int, int], par_bounds: tuple[int, int] | None = None
+        self,
+        *,
+        bounds: typing.Tuple[int, int],
+        par_bounds: typing.Optional[typing.Tuple[int, int]] = None,
     ) -> "Value":
         pass
 
 
 class Value(ValueLike):
     def as_value(
-        self, *, bounds: tuple[int, int], par_bounds: tuple[int, int] | None = None
+        self,
+        *,
+        bounds: typing.Tuple[int, int],
+        par_bounds: typing.Optional[typing.Tuple[int, int]] = None,
     ) -> "Value":
         return self
 
@@ -45,7 +53,10 @@ class InboundsPlaceholder(ValueLike):
         return "<inparbounds>" if self.parent_bounds else "<inbounds>"
 
     def as_value(
-        self, *, bounds: tuple[int, int], par_bounds: tuple[int, int] | None = None
+        self,
+        *,
+        bounds: typing.Tuple[int, int],
+        par_bounds: typing.Optional[typing.Tuple[int, int]] = None,
     ) -> typing.Union["IntRangeValue", "AnyValue"]:
         if self.parent_bounds:
             return (
@@ -57,18 +68,16 @@ class InboundsPlaceholder(ValueLike):
 
     @classmethod
     def parser(cls, *, debug: bool) -> pp.ParserElement:
-        def lift(toks: pp.ParseResults) -> InboundsPlaceholder | IntRangeValue:
+        def lift(toks: pp.ParseResults) -> typing.Union[InboundsPlaceholder, IntRangeValue]:
             if not debug:
                 return IntRangeValue(0)
-            match toks[0]:
-                case "inbounds":
-                    return cls(parent=False)
-                case "inparbounds":
-                    return cls(parent=True)
-                case _:
-                    raise AssertionError
+            if toks[0] == "inbounds":
+                return cls(parent=False)
+            if toks[0] == "inparbounds":
+                return cls(parent=True)
+            raise AssertionError
 
-        val = pp.Literal("inbounds") | "inparbounds"
+        val = pp.Literal("inbounds") | "inparbounds"  # pylint: disable=unsupported-binary-operation
         val.set_parse_action(lift)
         return val
 
@@ -86,7 +95,7 @@ class AnyValue(Value):
 
 
 class LiteralValue(Value):
-    def __init__(self, literal: str, *, bracket_suffix: bool | None = False):
+    def __init__(self, literal: str, *, bracket_suffix: typing.Optional[bool] = False):
         self.literal = literal
         self.bracket_suffix = bracket_suffix
 
@@ -129,7 +138,7 @@ class LiteralValue(Value):
         )
 
         @bsuffix.set_parse_action
-        def parse_brackets(toks: pp.ParseResults) -> list[bool | None]:
+        def parse_brackets(toks: pp.ParseResults) -> typing.List[typing.Optional[bool]]:
             if toks.always:
                 return [True]
             if toks.opt:
@@ -158,7 +167,7 @@ class LiteralValue(Value):
 
 
 class IntRangeValue(Value):
-    def __init__(self, min_val: int, max_val: int | None = None, *, plus: int = 0):
+    def __init__(self, min_val: int, max_val: typing.Optional[int] = None, *, plus: int = 0):
         if plus < 0:
             raise ValueError(plus)
         if max_val is not None and min_val > max_val:
@@ -200,7 +209,9 @@ class IntRangeValue(Value):
         )
 
 
-def dict_to_attrs(d: collections.abc.Mapping[str, typing.Any], *, r: bool = False) -> list[str]:
+def dict_to_attrs(
+    d: "collections.abc.Mapping[str, typing.Any]", *, r: bool = False
+) -> typing.List[str]:
     return [f"{k}={repr(v) if r else v}" for k, v in d.items()]
 
 
@@ -208,13 +219,13 @@ class Tag:
     def __init__(
         self,
         tag: str,
-        attrs: collections.abc.Mapping[str, ValueLike],
-        children: collections.abc.Iterable["Tag"],
+        attrs: "collections.abc.Mapping[str, ValueLike]",
+        children: "collections.abc.Iterable[Tag]",
         *,
         match_multiple: bool = False,
         match_none: bool = False,
         allow_extra_children: bool = False,
-        line_bounds: tuple[int, int],
+        line_bounds: typing.Tuple[int, int],
     ):
         self.tag = tag
         self.attrs = attrs
@@ -241,7 +252,7 @@ class Tag:
             super().__init__("Uncaught MatchFailureError exception!")
             self.msg = msg
 
-    def match(self, elem: XmlET.Element) -> str | None:
+    def match(self, elem: XmlET.Element) -> typing.Optional[str]:
         if not self._matches_root(elem):
             return f"Root tag failed to match: <{elem.tag} {elem.attrib}> does not match {self}"
 
@@ -252,7 +263,7 @@ class Tag:
             return e.msg
 
     def _matches_root(
-        self, elem: XmlET.Element, *, par_bounds: tuple[int, int] | None = None
+        self, elem: XmlET.Element, *, par_bounds: typing.Optional[typing.Tuple[int, int]] = None
     ) -> bool:
         return (
             elem.tag == self.tag
@@ -263,7 +274,7 @@ class Tag:
             )
         )
 
-    def _match_children(self, elem: XmlET.Element, path: str | None = None) -> None:
+    def _match_children(self, elem: XmlET.Element, path: typing.Optional[str] = None) -> None:
         path = (
             path + "/" if path is not None else ""
         ) + f"{self.tag}({self.line_bounds[0]}-{self.line_bounds[1]})"
@@ -340,7 +351,7 @@ class Tag:
         ).set_name("attribute")[...]
 
         @attrs.set_parse_action
-        def lift_attrs(toks: pp.ParseResults) -> dict[str, Value]:
+        def lift_attrs(toks: pp.ParseResults) -> typing.Dict[str, Value]:
             return {a.key: a.value for a in toks}
 
         dbg_prefix = pp.Opt(pp.Literal("dbg:")("debugonly") | pp.Literal("nodbg:")("nodebugonly"))
@@ -350,7 +361,7 @@ class Tag:
         ).set_name("short-tag") - attrs("attrs")
 
         @shorthand_tag.set_parse_action
-        def lift_shorthand(s: str, loc: int, toks: pp.ParseResults) -> list[Tag]:
+        def lift_shorthand(s: str, loc: int, toks: pp.ParseResults) -> typing.List[Tag]:
             if (toks.debugonly and not debug) or (toks.nodebugonly and debug):
                 return []
             m_multi, m_none = toks.mode
@@ -389,7 +400,7 @@ class Tag:
         )
 
         @paired_tag.set_parse_action
-        def lift(s: str, loc: int, toks: pp.ParseResults) -> list[Tag]:
+        def lift(s: str, loc: int, toks: pp.ParseResults) -> typing.List[Tag]:
             if (toks.debugonly and not debug) or (toks.nodebugonly and debug):
                 return list(toks.children)
             if toks.opentag != toks.closetag:
@@ -415,29 +426,29 @@ class Tag:
 
 
 def parse_sources(  # noqa: C901
-    sources: collections.abc.Iterable[Path], *, debug: bool, binary: str
+    sources: "collections.abc.Iterable[Path]", *, debug: bool, binary: str
 ) -> Tag:
     # pylint: disable=too-many-locals
-    definitions: dict[str, list[Tag]] = {}
+    definitions: typing.Dict[str, typing.List[Tag]] = {}
     def_parser = Tag.predefined_parser()
 
     @def_parser.set_parse_action
-    def expand(toks: pp.ParseResults) -> list[Tag]:
+    def expand(toks: pp.ParseResults) -> typing.List[Tag]:
         return definitions[toks.name]
 
-    macros: dict[str, str] = {}
+    macros: typing.Dict[str, str] = {}
 
     def expand_macro(m) -> str:
         return macros[m[1]]
 
-    result: Tag | None = None
+    result: typing.Optional[Tag] = None
     for source in sources:
         file = source.resolve(strict=True).as_posix()
         parser = Tag.parser(def_parser, file=file, binary=binary, debug=debug)
 
         macros = {}
-        lines: list[str] = []
-        in_def: tuple[str, list[str]] | None = None
+        lines: typing.List[str] = []
+        in_def: typing.Optional[typing.Tuple[str, typing.List[str]]] = None
         with open(source, encoding="utf-8") as f:
             for line in f:
                 lines.append("")
@@ -447,44 +458,48 @@ def parse_sources(  # noqa: C901
                 mat = re.search(r"\b(CHECK|DECLARE|DEFINE|ENDDEFINE):\s+(.+)", line)
                 if not mat:
                     continue
-                match mat[1]:
-                    case "DECLARE":
-                        bits = mat[2].split(maxsplit=1)
-                        name = bits[0]
-                        value = bits[1]
-                        if not name.startswith("!!"):
-                            raise ValueError("DECLARE macros must start with '!!'")
-                        macros[name[2:]] = value
-                    case "DEFINE":
-                        if in_def is not None:
-                            raise ValueError("Nested DEFINEs not allowed")
-                        if not mat[2].startswith("!"):
-                            raise ValueError("DEFINE subcheck names must start with '!'")
-                        in_def = (mat[2][1:].strip(), [""] * len(lines))
-                        if re.search(r"\s", in_def[0]):
-                            raise ValueError("DEFINE subcheck names must not contain spaces")
-                        if in_def[0] in definitions:
-                            raise ValueError(f"Attempt to re-DEFINE macro !{in_def[0]}")
-                    case "ENDDEFINE":
-                        if in_def is None:
-                            raise ValueError("ENDDEFINE without a prior DEFINE")
-                        if not mat[2].startswith("!") or in_def[0] != mat[2][1:].strip():
-                            raise ValueError(
-                                f"Mismatched ENDDEFINE for macro !{in_def[0]}, got {mat[2].strip()}"
-                            )
-                        definitions[in_def[0]] = list(
-                            parser.parse_string("\n".join(in_def[1]), parse_all=True)
+                if mat[1] == "DECLARE":
+                    bits = mat[2].split(maxsplit=1)
+                    name = bits[0]
+                    value = bits[1]
+                    if not name.startswith("!!"):
+                        raise ValueError("DECLARE macros must start with '!!'")
+                    macros[name[2:]] = value
+                elif mat[1] == "DEFINE":
+                    if in_def is not None:
+                        raise ValueError("Nested DEFINEs not allowed")
+                    if not mat[2].startswith("!"):
+                        raise ValueError("DEFINE subcheck names must start with '!'")
+                    in_def = (mat[2][1:].strip(), [""] * len(lines))
+                    if re.search(r"\s", in_def[0]):
+                        raise ValueError("DEFINE subcheck names must not contain spaces")
+                    if in_def[0] in definitions:
+                        raise ValueError(f"Attempt to re-DEFINE macro !{in_def[0]}")
+                elif mat[1] == "ENDDEFINE":
+                    if in_def is None:
+                        raise ValueError("ENDDEFINE without a prior DEFINE")
+                    def_name, def_lines = in_def  # pylint: disable=unpacking-non-sequence
+                    if not mat[2].startswith("!") or def_name != mat[2][1:].strip():
+                        raise ValueError(
+                            f"Mismatched ENDDEFINE for macro !{def_name}, got {mat[2].strip()}"
                         )
-                        in_def = None
-                    case "CHECK":
-                        expr = re.sub(
-                            r"!!(\S+)",
-                            expand_macro,
-                            mat[2],
-                        )
-                        (in_def[1] if in_def is not None else lines)[-1] = " " * mat.start(2) + expr
-                    case _:
-                        raise AssertionError
+                    definitions[def_name] = list(
+                        parser.parse_string("\n".join(def_lines), parse_all=True)
+                    )
+                    in_def = None
+                elif mat[1] == "CHECK":
+                    expr = re.sub(
+                        r"!!(\S+)",
+                        expand_macro,
+                        mat[2],
+                    )
+                    (
+                        in_def[1]  # pylint: disable=unsubscriptable-object
+                        if in_def is not None
+                        else lines
+                    )[-1] = (" " * mat.start(2) + expr)
+                else:
+                    raise AssertionError
 
         if in_def is not None:
             raise ValueError(f"Missing ENDDEFINE for !{in_def[0]} at EOF")

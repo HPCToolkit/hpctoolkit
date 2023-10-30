@@ -1,5 +1,6 @@
 import argparse
 import sys
+import typing
 from pathlib import Path, PurePath
 
 import ruamel.yaml
@@ -31,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(rawargs: list[str]) -> int:
+def main(rawargs: typing.List[str]) -> int:
     args = build_parser().parse_args(rawargs)
 
     data = from_path_extended(args.src, subdir=args.subdir)

@@ -25,7 +25,7 @@ def assert_good_traversal(obj, seen=None):
     if seen is None:
         seen = set()
 
-    if obj is None or isinstance(obj, str | int | float | base.Enumeration | base.BitFlags):
+    if obj is None or isinstance(obj, (str, int, float, base.Enumeration, base.BitFlags)):
         pass
     elif isinstance(obj, base.StructureBase):
         assert obj not in seen, f"Object {obj!r} was observed twice during the traversal!"
@@ -35,7 +35,7 @@ def assert_good_traversal(obj, seen=None):
     elif isinstance(obj, dict):
         for k, v in obj.items():
             assert isinstance(
-                k, str | int | float | base.Enumeration | base.BitFlags
+                k, (str, int, float, base.Enumeration, base.BitFlags)
             ), f"Bad traversal, observed invalid key {k!r}"
             assert_good_traversal(v, seen=seen)
     elif isinstance(obj, list):

@@ -1,4 +1,4 @@
-if not get_option('python').enable_auto_if(python.found()).enabled()
+if not pyconfig.found()
   subdir_done()
 endif
 

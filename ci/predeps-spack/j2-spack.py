@@ -7,7 +7,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def spack_prefix_real(env: str, spec: str) -> str:
     spack = shutil.which("spack")
     if not spack:

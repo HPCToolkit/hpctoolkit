@@ -1,7 +1,6 @@
 import abc
 import collections.abc
 import functools
-import types
 import typing
 
 from hpctesttool.formats.v4 import metadb
@@ -23,7 +22,7 @@ _MatchAnySingleton = _MatchAny()
 def _coercion(func):
     @functools.wraps(func)
     def wrapper(cls, val):
-        if isinstance(val, _MatchAny | cls):
+        if isinstance(val, (_MatchAny, cls)):
             return val
         return func(cls, val)
 
@@ -48,11 +47,11 @@ class _MatchExact:
         return _MatchExact(val)
 
 
-def _coercion_to_exact(exact: type | types.UnionType):
+def _coercion_to_exact(exact):
     def apply(func):
         @functools.wraps(func)
         def wrapper(cls, val):
-            if isinstance(val, _MatchAny | cls):
+            if isinstance(val, (_MatchAny, cls)):
                 return val
             if isinstance(val, exact):
                 return _MatchExact(val)
@@ -127,12 +126,12 @@ class MatchFile:
             + ")"
         )
 
-    def itermatch(self, fs: metadb.SourceFiles) -> collections.abc.Iterator[metadb.File]:
+    def itermatch(self, fs: metadb.SourceFiles) -> "collections.abc.Iterator[metadb.File]":
         """Iterate over all matching Files."""
         return filter(self.matches, fs.files)
 
     @classmethod
-    @_coercion_to_exact(metadb.File | None)
+    @_coercion_to_exact(typing.Optional[metadb.File])
     def coerce(cls, val) -> "MatchFile":
         return cls(path=val)
 
@@ -158,12 +157,12 @@ class MatchModule:
             + ")"
         )
 
-    def itermatch(self, lm: metadb.LoadModules) -> collections.abc.Iterator[metadb.Module]:
+    def itermatch(self, lm: metadb.LoadModules) -> "collections.abc.Iterator[metadb.Module]":
         """Iterate over all matching Modules."""
         return filter(self.matches, lm.modules)
 
     @classmethod
-    @_coercion_to_exact(metadb.Module | None)
+    @_coercion_to_exact(typing.Optional[metadb.Module])
     def coerce(cls, val) -> "MatchModule":
         return cls(path=val)
 
@@ -176,9 +175,9 @@ class MatchFunction:
         *,
         name=_MatchAnySingleton,
         module=_MatchAnySingleton,
-        offset: int | _MatchAny = _MatchAnySingleton,
+        offset: typing.Union[int, _MatchAny] = _MatchAnySingleton,
         file=_MatchAnySingleton,
-        line: int | _MatchAny = _MatchAnySingleton,
+        line: typing.Union[int, _MatchAny] = _MatchAnySingleton,
     ):
         self._submatch = {
             "name": MatchStr.coerce(name),
@@ -201,12 +200,12 @@ class MatchFunction:
             + ")"
         )
 
-    def itermatch(self, fs: metadb.Functions) -> collections.abc.Iterator[metadb.Function]:
+    def itermatch(self, fs: metadb.Functions) -> "collections.abc.Iterator[metadb.Function]":
         """Iterate over all matching Functions."""
         return filter(self.matches, fs.functions)
 
     @classmethod
-    @_coercion_to_exact(metadb.Function | None)
+    @_coercion_to_exact(typing.Optional[metadb.Function])
     def coerce(cls, val) -> "MatchFunction":
         return cls(name=val)
 
@@ -238,7 +237,7 @@ class MatchEntryPoint:
             + ")"
         )
 
-    def itermatch(self, ct: metadb.ContextTree) -> collections.abc.Iterator[metadb.EntryPoint]:
+    def itermatch(self, ct: metadb.ContextTree) -> "collections.abc.Iterator[metadb.EntryPoint]":
         """Iterate over all EntryPoints that satisfy this matcher's requirements."""
         return filter(self.matches, ct.entry_points)
 
@@ -268,9 +267,9 @@ class MatchCtx:
         lexical_type=_MatchAnySingleton,
         function=_MatchAnySingleton,
         file=_MatchAnySingleton,
-        line: int | _MatchAny = _MatchAnySingleton,
+        line: typing.Union[int, _MatchAny] = _MatchAnySingleton,
         module=_MatchAnySingleton,
-        offset: int | _MatchAny = _MatchAnySingleton,
+        offset: typing.Union[int, _MatchAny] = _MatchAnySingleton,
     ):
         self._submatch = {
             "relation": self._coerce_relation(relation),
@@ -296,8 +295,8 @@ class MatchCtx:
         )
 
     def itermatch(
-        self, c: metadb.Context | metadb.EntryPoint
-    ) -> collections.abc.Iterator[metadb.Context]:
+        self, c: typing.Union[metadb.Context, metadb.EntryPoint]
+    ) -> "collections.abc.Iterator[metadb.Context]":
         """Iterate over all child Contexts that satisfy the requirements."""
         return filter(self.matches, c.children)
 

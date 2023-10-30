@@ -23,8 +23,8 @@ def scaled_range(start: int, cnt: int, step: int):
         yield start + i * step
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!profile.db/v4")
+@dataclasses.dataclass(eq=False)
 class ProfileDB(DatabaseFile):
     """The profile.db file format."""
 
@@ -32,7 +32,6 @@ class ProfileDB(DatabaseFile):
     max_minor_version = 0
     format_code = b"prof"
     footer_code = b"_prof.db"
-    yaml_tag: typing.ClassVar[str] = "!profile.db/v4"
 
     profile_infos: "ProfileInfos"
 
@@ -54,19 +53,17 @@ class ProfileDB(DatabaseFile):
         )
 
     @functools.cached_property
-    def profile_map(self) -> dict[int, "Profile"]:
+    def profile_map(self) -> typing.Dict[int, "Profile"]:
         """Mapping from a profIndex to the Profile it represents."""
         return dict(enumerate(self.profile_infos.profiles))
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!profile.db/v4/ProfileInfos")
+@dataclasses.dataclass(eq=False)
 class ProfileInfos(StructureBase):
     """Section containing header metadata for the profiles in this database."""
 
-    yaml_tag: typing.ClassVar[str] = "!profile.db/v4/ProfileInfos"
-
-    profiles: list["Profile"]
+    profiles: typing.List["Profile"]
 
     __struct = VersionedStructure(
         "<",
@@ -91,21 +88,19 @@ class ProfileInfos(StructureBase):
         )
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!profile.db/v4/Profile")
+@dataclasses.dataclass(eq=False)
 class Profile(StructureBase):
     """Information on a single profile."""
 
-    yaml_tag: typing.ClassVar[str] = "!profile.db/v4/Profile"
-
-    @yaml_object
-    class Flags(BitFlags, yaml_tag="!profile.db/v4/Profile.Flags"):
+    @yaml_object(yaml_tag="!profile.db/v4/Profile.Flags")
+    class Flags(BitFlags):
         # Added in v4.0
         is_summary = EnumEntry(0, min_version=0)
 
     id_tuple: typing.Optional["IdentifierTuple"]
     flags: Flags
-    values: dict[int, dict[int, float]]
+    values: typing.Dict[int, typing.Dict[int, float]]
 
     __struct = VersionedStructure(
         "<",
@@ -200,14 +195,12 @@ class Profile(StructureBase):
         return representer.represent_mapping(cls.yaml_tag, state)
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!profile.db/v4/IdentifierTuple")
+@dataclasses.dataclass(eq=False)
 class IdentifierTuple(StructureBase):
     """Single hierarchical identifier tuple."""
 
-    yaml_tag: typing.ClassVar[str] = "!profile.db/v4/IdentifierTuple"
-
-    ids: list["Identifier"]
+    ids: typing.List["Identifier"]
 
     # NB: Although this structure is extendable, its total size is fixed
     size: typing.ClassVar[int] = 0x08
@@ -237,13 +230,11 @@ class IdentifierTuple(StructureBase):
         )
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!profile.db/v4/Identifier")
+@dataclasses.dataclass(eq=False)
 class Identifier(StructureBase):
-    yaml_tag: typing.ClassVar[str] = "!profile.db/v4/Identifier"
-
-    @yaml_object
-    class Flags(BitFlags, yaml_tag="!profile.db/v4/Identifier.Flags"):
+    @yaml_object(yaml_tag="!profile.db/v4/Identifier.Flags")
+    class Flags(BitFlags):
         # Added in v4.0
         is_physical = EnumEntry(0, min_version=0)
 

@@ -8,21 +8,26 @@ mkdir wheels/
 trap 'rm -f "$tmpfile"' EXIT
 tmpfile=$(mktemp --tmpdir=.)
 
+# Download a wheel for Pip
+python -m pip download \
+  --platform none --python-version 38 \
+  --no-deps -d wheels/ pip
+
 # Download all the wheels
 poetry export --with=implicit -f requirements.txt -o "$tmpfile"
 sed -i 's/;.*\\$/\\/' "$tmpfile"
 python3 -m pip download \
-  --platform none --python-version 310 \
+  --platform none --python-version 38 \
   --require-hashes \
   --no-deps -r "$tmpfile" -d wheels/
 
 # Delete and replace any sdists. They aren't portable, we need to hack them.
 find wheels/ -type f -not -name '*.whl' -printf '%P\n' | while read -r sdist; do
   case "$sdist" in
-  ruamel.yaml.clib-0.2.7.tar.gz)
+  ruamel.yaml.clib-0.2.8.tar.gz)
     python3 -m build --wheel shims/ruamel.yaml.clib/ || exit $?
-    rm wheels/ruamel.yaml.clib-0.2.7.tar.gz || exit $?
-    cp shims/ruamel.yaml.clib/dist/ruamel_yaml_clib-0.2.7-py2.py3-none-any.whl wheels/ || exit $?
+    rm wheels/ruamel.yaml.clib-0.2.8.tar.gz || exit $?
+    cp shims/ruamel.yaml.clib/dist/ruamel_yaml_clib-0.2.8-py2.py3-none-any.whl wheels/ || exit $?
     ;;
   *)
     echo "Unsupported sdist: $sdist"

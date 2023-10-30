@@ -18,6 +18,7 @@ do_pip() {
     "$@"
 }
 
+do_pip --upgrade pip || exit $?
 do_pip poetry.core || exit $?
 do_pip \
   --force-reinstall  `# Always reinstall the tool if we make it here` \

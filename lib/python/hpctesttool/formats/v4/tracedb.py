@@ -17,8 +17,8 @@ __all__ = [
 ]
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!trace.db/v4")
+@dataclasses.dataclass(eq=False)
 class TraceDB(DatabaseFile):
     """The trace.db file format."""
 
@@ -26,7 +26,6 @@ class TraceDB(DatabaseFile):
     max_minor_version = 0
     format_code = b"trce"
     footer_code = b"trace.db"
-    yaml_tag: typing.ClassVar[str] = "!trace.db/v4"
 
     ctx_traces: "ContextTraceHeadersSection"
 
@@ -47,19 +46,17 @@ class TraceDB(DatabaseFile):
         )
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!trace.db/v4/ContextTraceHeaders")
+@dataclasses.dataclass(eq=False)
 class ContextTraceHeadersSection(StructureBase):
     """trace.db Context Trace Headers section."""
-
-    yaml_tag: typing.ClassVar[str] = "!trace.db/v4/ContextTraceHeaders"
 
     class TimestampMinMax(typing.TypedDict):
         min: int
         max: int
 
     timestamp_range: TimestampMinMax
-    traces: list["ContextTrace"]
+    traces: typing.List["ContextTrace"]
 
     __struct = VersionedStructure(
         "<",
@@ -87,15 +84,13 @@ class ContextTraceHeadersSection(StructureBase):
         )
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!trace.db/v4/ContextTrace")
+@dataclasses.dataclass(eq=False)
 class ContextTrace(StructureBase):
     """Header for a single trace of Contexts."""
 
-    yaml_tag: typing.ClassVar[str] = "!trace.db/v4/ContextTrace"
-
     prof_index: int
-    line: list["ContextTraceElement"]
+    line: typing.List["ContextTraceElement"]
 
     __struct = VersionedStructure(
         "<",
@@ -150,11 +145,9 @@ class ContextTrace(StructureBase):
         )
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!trace.db/v4/ContextTraceElement")
+@dataclasses.dataclass(eq=False)
 class ContextTraceElement(StructureBase):
-    yaml_tag: typing.ClassVar[str] = "!trace.db/v4/ContextTraceElement"
-
     timestamp: int
     ctx_id: int
 

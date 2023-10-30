@@ -10,18 +10,17 @@ __all__ = [
 ]
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!db/v4")
+@dataclasses.dataclass(eq=False)
 class Database(DatabaseBase):
     """Top-level database object for major version 4 of the database formats."""
 
     major_version: typing.ClassVar[int] = 4
-    yaml_tag: typing.ClassVar[str] = "!db/v4"
 
     meta: metadb.MetaDB
     profile: profiledb.ProfileDB
     context: cctdb.ContextDB
-    trace: tracedb.TraceDB | None
+    trace: typing.Optional[tracedb.TraceDB]
 
     @classmethod
     def from_dir(cls, dbdir: Path):

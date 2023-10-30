@@ -1,11 +1,14 @@
 import runpy
 import sys
+import typing
 from pathlib import Path
 
 import click
 
 
-def gtest_out(ctx: click.Context, param: click.Parameter, value: str | Path | None) -> Path | None:
+def gtest_out(
+    ctx: click.Context, param: click.Parameter, value: typing.Optional[typing.Union[str, Path]]
+) -> typing.Optional[Path]:
     if value is None or isinstance(value, Path):
         return value
 
@@ -21,7 +24,7 @@ def gtest_out(ctx: click.Context, param: click.Parameter, value: str | Path | No
 @click.option("--gtest_output", type=click.UNPROCESSED, callback=gtest_out)
 @click.argument("args", type=click.UNPROCESSED, nargs=-1)
 @click.pass_context
-def main(ctx: click.Context, gtest_output: Path | None, args: tuple[str]):
+def main(ctx: click.Context, gtest_output: typing.Optional[Path], args: typing.Tuple[str]):
     """Invoke PyTest but translate (some) GTest arguments into PyTest first."""
     sys.argv = [sys.argv[0], *ctx.args, *list(args)]
     if gtest_output is not None:

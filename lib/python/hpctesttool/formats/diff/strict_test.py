@@ -3,6 +3,8 @@ import copy
 import dataclasses
 import io
 import math
+import sys
+import typing
 
 import pytest
 
@@ -481,7 +483,18 @@ class DummyDiff(DiffStrategy):
         pass
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="Precise floating-point math requires Python 3.9"
+)
 def test_float_compare():
+    if typing.TYPE_CHECKING:
+
+        def nextafter(x: float, y: float, steps: int = 1) -> float:
+            return x + y / steps
+
+    else:
+        nextafter = math.nextafter  # novm
+
     # NB: We do all this as if the calculations were done with a 4-bit mantissa. This makes the
     # ULPs nice and big for the purposes of testing.
     prec = 4
@@ -491,28 +504,28 @@ def test_float_compare():
     # Test the edge cases
     sa = StrictAccuracy(DummyDiff(), grace=1, precision=prec)
     assert sa._float_cmp(0.0, -0.0) == 0.0
-    assert sa._float_cmp(math.nextafter(0, -1), math.nextafter(0, 1)) == CmpError.bad_sign
+    assert sa._float_cmp(nextafter(0, -1), nextafter(0, 1)) == CmpError.bad_sign
     assert sa._float_cmp(0.5, 2.0) == CmpError.exp_diff
 
     # Test the boundaries in the normalized region
     sa = StrictAccuracy(DummyDiff(), grace=1, precision=prec)
     assert sa._float_cmp(0.5, 0.5) == 0.0
-    assert sa._float_cmp(0.5, math.nextafter(0.5, 1)) == 0.0
+    assert sa._float_cmp(0.5, nextafter(0.5, 1)) == 0.0
     assert sa._float_cmp(0.5, 0.5 + ulp0) == 0.0
-    assert sa._float_cmp(0.5, math.nextafter(0.5 + ulp0, 1)) == pytest.approx(ulp0)
+    assert sa._float_cmp(0.5, nextafter(0.5 + ulp0, 1)) == pytest.approx(ulp0)
     sa = StrictAccuracy(DummyDiff(), grace=2, precision=prec)
     assert sa._float_cmp(0.5, 0.5) == 0.0
-    assert sa._float_cmp(0.5, math.nextafter(0.5, 1)) == 0.0
+    assert sa._float_cmp(0.5, nextafter(0.5, 1)) == 0.0
     assert sa._float_cmp(0.5, 0.5 + 2 * ulp0) == 0.0
-    assert sa._float_cmp(0.5, math.nextafter(0.5 + 2 * ulp0, 1)) == pytest.approx(2 * ulp0)
+    assert sa._float_cmp(0.5, nextafter(0.5 + 2 * ulp0, 1)) == pytest.approx(2 * ulp0)
 
     # Test the boundaries across neighboring exponents
     sa = StrictAccuracy(DummyDiff(), grace=1, precision=prec)
-    assert sa._float_cmp(math.nextafter(1.0, 0), math.nextafter(1.0 + ulp1, 0)) == 0.0
-    assert sa._float_cmp(math.nextafter(1.0, 0), 1.0 + ulp1) == pytest.approx(ulp0)
+    assert sa._float_cmp(nextafter(1.0, 0), nextafter(1.0 + ulp1, 0)) == 0.0
+    assert sa._float_cmp(nextafter(1.0, 0), 1.0 + ulp1) == pytest.approx(ulp0)
     sa = StrictAccuracy(DummyDiff(), grace=2, precision=prec)
-    assert sa._float_cmp(math.nextafter(1.0, 0), math.nextafter(1.0 + 2 * ulp1, 0)) == 0.0
-    assert sa._float_cmp(math.nextafter(1.0, 0), 1.0 + 2 * ulp1) == pytest.approx(2 * ulp0)
+    assert sa._float_cmp(nextafter(1.0, 0), nextafter(1.0 + 2 * ulp1, 0)) == 0.0
+    assert sa._float_cmp(nextafter(1.0, 0), 1.0 + 2 * ulp1) == pytest.approx(2 * ulp0)
 
 
 def test_accuracy_of_invalid_diff():

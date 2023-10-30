@@ -2,7 +2,7 @@ import dataclasses
 import typing
 
 
-def check_fields(*names: str, cls: type | None = None):
+def check_fields(*names: str, cls: typing.Optional[type] = None):
     expected = frozenset(names)
     if cls is None:
 

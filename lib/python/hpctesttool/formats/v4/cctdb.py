@@ -21,8 +21,8 @@ def scaled_range(start: int, cnt: int, step: int):
         yield start + i * step
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!cct.db/v4")
+@dataclasses.dataclass(eq=False)
 class ContextDB(DatabaseFile):
     """The cct.db file format."""
 
@@ -30,7 +30,6 @@ class ContextDB(DatabaseFile):
     max_minor_version = 0
     format_code = b"ctxt"
     footer_code = b"__ctx.db"
-    yaml_tag: typing.ClassVar[str] = "!cct.db/v4"
 
     ctx_infos: "ContextInfos"
 
@@ -51,14 +50,12 @@ class ContextDB(DatabaseFile):
         )
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!cct.db/v4/ContextInfos")
+@dataclasses.dataclass(eq=False)
 class ContextInfos(StructureBase):
     """Section containing header metadata for the contexts in this database."""
 
-    yaml_tag: typing.ClassVar[str] = "!cct.db/v4/ContextInfos"
-
-    contexts: list["PerContext"]
+    contexts: typing.List["PerContext"]
 
     __struct = VersionedStructure(
         "<",
@@ -92,14 +89,12 @@ class ContextInfos(StructureBase):
         )
 
 
-@yaml_object
-@dataclasses.dataclass(eq=False, kw_only=True)
+@yaml_object(yaml_tag="!cct.db/v4/PerContext")
+@dataclasses.dataclass(eq=False)
 class PerContext(StructureBase):
     """Information on a single context."""
 
-    yaml_tag: typing.ClassVar[str] = "!cct.db/v4/PerContext"
-
-    values: dict[int, dict[int, float]]
+    values: typing.Dict[int, typing.Dict[int, float]]
 
     __struct = VersionedStructure(
         "<",
@@ -136,7 +131,7 @@ class PerContext(StructureBase):
         self._metric_map = meta.raw_metric_map
 
     @property
-    def shorthand(self) -> str | None:
+    def shorthand(self) -> typing.Optional[str]:
         if hasattr(self, "_context"):
             return "for " + (self._context.shorthand if self._context is not None else "<root>")
         if hasattr(self, "_ctx_id"):

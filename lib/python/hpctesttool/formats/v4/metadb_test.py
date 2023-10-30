@@ -3,6 +3,7 @@ import dataclasses
 import io
 import struct
 import sys
+import typing
 from pathlib import Path
 
 import pytest
@@ -91,7 +92,7 @@ def test_context_deep_recursion():
     ctx_s = struct.Struct("<QQ LBBBB H6x")
     assert ctx_s.size == 0x20
 
-    def mkctx(*, pchild: int | None, ctx_id: int) -> bytes:
+    def mkctx(*, pchild: typing.Optional[int], ctx_id: int) -> bytes:
         return ctx_s.pack(
             ctx_s.size if pchild is not None else 0, pchild or 0, ctx_id, 0, 1, 0, 0, 0
         )

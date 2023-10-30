@@ -20,13 +20,13 @@ from .base import AccuracyStrategy, DiffHunk, DiffStrategy
 __all__ = ["MonotonicHunk", "FixedAlteredHunk", "StrictDiff", "StrictAccuracy"]
 
 
-def _pretty_path(path: collections.abc.Iterable[str | int], obj) -> list[str]:
+def _pretty_path(path: "collections.abc.Iterable[typing.Union[str, int]]", obj) -> typing.List[str]:
     """Given a canonical path to a field of obj, generate a list of lines suitable for printing,
     except for indentation.
     """
     result = [""]
     for p in path:
-        assert isinstance(p, int | str)
+        assert isinstance(p, (int, str))
         if isinstance(obj, StructureBase):
             assert isinstance(p, str)
             if obj.shorthand is not None:
@@ -144,10 +144,10 @@ SValT = typing.TypeVar("SValT", bound=StructureBase)
 class StrictDiff(DiffStrategy):
     """Strict DiffStrategy that only accepts matches with no semantic differences."""
 
-    _contexts: list[dict[StructureBase, StructureBase]]
-    removed: set[StructureBase]
-    added: set[StructureBase]
-    altered: dict[StructureBase, StructureBase]
+    _contexts: typing.List[typing.Dict[StructureBase, StructureBase]]
+    removed: typing.Set[StructureBase]
+    added: typing.Set[StructureBase]
+    altered: typing.Dict[StructureBase, StructureBase]
 
     def __init__(self, a, b):
         super().__init__(a, b)
@@ -210,7 +210,7 @@ class StrictDiff(DiffStrategy):
             c[a] = b
             assert len(c) == len(set(c.values()))
 
-    def _presume(self, a: SValT | None, b: SValT | None) -> bool:
+    def _presume(self, a: typing.Optional[SValT], b: typing.Optional[SValT]) -> bool:
         """Assert that a == b from a prior _update. In other words, deny any context mapping in
         which a != b. Returns False if that would result in no contexts at all.
         """
@@ -228,7 +228,9 @@ class StrictDiff(DiffStrategy):
         a: ValT,
         b: ValT,
         *,
-        key: tuple[dict[ValT, SValT], dict[ValT, SValT]] | None = None,
+        key: typing.Optional[
+            typing.Tuple[typing.Dict[ValT, SValT], typing.Dict[ValT, SValT]]
+        ] = None,
         raw_base_eq: bool = False,
     ) -> bool:
         """Assert that a == b from a prior _update, but understands the key keyword argument of _key_m.
@@ -282,17 +284,17 @@ class StrictDiff(DiffStrategy):
         return self._key(o, side_a=False)
 
     def _key_m(
-        self, o, *, side_a: bool, key: tuple[dict, dict] | None = None
+        self, o, *, side_a: bool, key: typing.Optional[typing.Tuple[dict, dict]] = None
     ) -> collections.abc.Hashable:
         return self._key(key[0 if side_a else 1][o] if key is not None else o, side_a=side_a)
 
     def _key_ma(
-        self, o: typing.Any, *, key: tuple[dict, dict] | None = None
+        self, o: typing.Any, *, key: typing.Optional[typing.Tuple[dict, dict]] = None
     ) -> collections.abc.Hashable:
         return self._key_m(o, side_a=True, key=key)
 
     def _key_mb(
-        self, o: typing.Any, *, key: tuple[dict, dict] | None = None
+        self, o: typing.Any, *, key: typing.Optional[typing.Tuple[dict, dict]] = None
     ) -> collections.abc.Hashable:
         return self._key_m(o, side_a=False, key=key)
 
@@ -312,7 +314,7 @@ class StrictDiff(DiffStrategy):
         return o
 
     def _sequential_update(
-        self, a: collections.abc.Iterable[SValT], b: collections.abc.Iterable[SValT]
+        self, a: "collections.abc.Iterable[SValT]", b: "collections.abc.Iterable[SValT]"
     ):
         """Update the Diff-state presuming a[i] == b[i] for every possible i."""
         for ea, eb in itertools.zip_longest(a, b):
@@ -324,7 +326,7 @@ class StrictDiff(DiffStrategy):
                 self._update(ea, eb)
 
     def _isomorphic_update(  # noqa: C901
-        self, a: collections.abc.Iterable[SValT], b: collections.abc.Iterable[SValT]
+        self, a: "collections.abc.Iterable[SValT]", b: "collections.abc.Iterable[SValT]"
     ):
         """Update the Diff-state assuming a == b when _key(a) == _key(b), ignoring order between
         the two sequences.
@@ -346,7 +348,7 @@ class StrictDiff(DiffStrategy):
 
             # Build up a list of all perfect matches. We only consider ambiguity when it wouldn't
             # result in match failure later on down the line.
-            matches: dict[SValT, set[SValT]] = {}
+            matches: typing.Dict[SValT, typing.Set[SValT]] = {}
             for va in all_va:
                 matches[va] = set()
                 for vb in all_vb:
@@ -394,7 +396,7 @@ class StrictDiff(DiffStrategy):
                 assert len(vb_list) == len(va_list)
                 if len(set(vb_list)) == len(vb_list):  # No overlap allowed
                     with self._preserve_state():
-                        for va, vb in zip(va_list, vb_list, strict=True):
+                        for va, vb in zip(va_list, vb_list):
                             self._update(va, vb)
                         final_contexts.extend(self._contexts)
             if final_contexts:
@@ -412,11 +414,11 @@ class StrictDiff(DiffStrategy):
 
     def _delegated_update(
         self,
-        a: collections.abc.Iterable[tuple[SValT, StructureBase | None]],
-        b: collections.abc.Iterable[tuple[SValT, StructureBase | None]],
+        a: "collections.abc.Iterable[typing.Tuple[SValT, typing.Optional[StructureBase]]]",
+        b: "collections.abc.Iterable[typing.Tuple[SValT, typing.Optional[StructureBase]]]",
     ):
         """Update the Diff-state presuming that a[0] == b[0] if a[1] == b[1] in the current Diff-state."""
-        b_dict: dict[StructureBase, SValT] = {}
+        b_dict: typing.Dict[StructureBase, SValT] = {}
         for vb, db in b:
             if db is None:
                 self.added.add(vb)
@@ -909,7 +911,9 @@ class StrictAccuracy(AccuracyStrategy):
         for a2b in diff.contexts():
             self._diffcontext = a2b
             self.failed_cnt, self.total_cnt = 0, 0
-            self.failures: dict[tuple[float, float, float | CmpError], list[str]] = {}
+            self.failures: typing.Dict[
+                typing.Tuple[float, float, typing.Union[float, CmpError]], typing.List[str]
+            ] = {}
             for a, b in a2b.items():
                 self._compare(a, b)
             if (
@@ -954,21 +958,20 @@ class StrictAccuracy(AccuracyStrategy):
                 a, b, diff = key
                 paths = self.failures[key]
 
-                match diff:
-                    case CmpError.bad_sign:
-                        why = "values have differing signs"
-                    case CmpError.exp_diff:
-                        why = "values differ by more than a power of 2"
-                    case _ if isinstance(diff, float):
-                        exp_a, exp_b = math.frexp(abs(a))[1], math.frexp(abs(b))[1]
-                        exp = (
-                            f"{exp_a:d}"
-                            if exp_a == exp_b
-                            else f"({min(exp_a,exp_b):d}|{max(exp_a,exp_b):d})"
-                        )
-                        why = f"difference of {diff:f} * 2^{exp} = {diff*self._norm2ulp} ULPs"
-                    case _:
-                        raise AssertionError(f"Invalid diff value: {diff!r}")
+                if diff == CmpError.bad_sign:
+                    why = "values have differing signs"
+                elif diff == CmpError.exp_diff:
+                    why = "values differ by more than a power of 2"
+                elif isinstance(diff, float):
+                    exp_a, exp_b = math.frexp(abs(a))[1], math.frexp(abs(b))[1]
+                    exp = (
+                        f"{exp_a:d}"
+                        if exp_a == exp_b
+                        else f"({min(exp_a,exp_b):d}|{max(exp_a,exp_b):d})"
+                    )
+                    why = f"difference of {diff:f} * 2^{exp} = {diff*self._norm2ulp} ULPs"
+                else:
+                    raise AssertionError(f"Invalid diff value: {diff!r}")
 
                 print(f"  - {a:f} != {b:f}: {why} (abs diff {abs(a-b):f})", file=out)
                 print(
@@ -979,7 +982,7 @@ class StrictAccuracy(AccuracyStrategy):
                     file=out,
                 )
 
-    def _float_cmp(self, a: float, b: float) -> float | CmpError:
+    def _float_cmp(self, a: float, b: float) -> typing.Union[float, CmpError]:
         """Compare two floats and return 0.0 if the two are equal. If not, returns the
         normalized difference or a CmpError indicating the error.
         """
@@ -1012,7 +1015,9 @@ class StrictAccuracy(AccuracyStrategy):
         diff = (1.0 - a_m) + (b_m - 0.5)
         return 0.0 if diff <= self._grace else diff
 
-    def _base_compare(self, a: float, b: float, *path: str | tuple[int, int]) -> None:
+    def _base_compare(
+        self, a: float, b: float, *path: typing.Union[str, typing.Tuple[int, int]]
+    ) -> None:
         """Compare two floats and mark the comparison as successful or not."""
         self.total_cnt += 1
         diff = self._float_cmp(a, b)
@@ -1036,11 +1041,11 @@ class StrictAccuracy(AccuracyStrategy):
 
     def _zip_by_id(
         self,
-        a: dict[int, ValT],
-        b: dict[int, ValT],
-        id2a: dict[int, ObjT] | None,
-        b2id: typing.Callable[[ObjT], int] | None,
-    ) -> collections.abc.Iterable[tuple[tuple[int, int], ValT, ValT]]:
+        a: typing.Dict[int, ValT],
+        b: typing.Dict[int, ValT],
+        id2a: typing.Optional[typing.Dict[int, ObjT]],
+        b2id: typing.Optional[typing.Callable[[ObjT], int]],
+    ) -> "collections.abc.Iterable[typing.Tuple[typing.Tuple[int, int], ValT, ValT]]":
         if id2a is not None:
             assert b2id is not None
             for id_a in a:
@@ -1061,7 +1066,7 @@ class StrictAccuracy(AccuracyStrategy):
 
     @_compare.register
     def _(self, a: v4.profiledb.Profile, b: v4.profiledb.Profile):
-        ctx_map: dict[int, v4.metadb.Context] | None
+        ctx_map: typing.Optional[typing.Dict[int, v4.metadb.Context]]
         ctx_map, met_map, met_b2id = [None] * 3
         if isinstance(self.diff.a, v4.Database):
             assert isinstance(self.diff.b, v4.Database)
@@ -1091,8 +1096,8 @@ class StrictAccuracy(AccuracyStrategy):
 
     @_compare.register
     def _(self, a: v4.cctdb.PerContext, b: v4.cctdb.PerContext):
-        prof_map: dict[int, v4.profiledb.Profile] | None
-        met_map: dict[int, v4.metadb.PropagationScopeInstance] | None
+        prof_map: typing.Optional[typing.Dict[int, v4.profiledb.Profile]]
+        met_map: typing.Optional[typing.Dict[int, v4.metadb.PropagationScopeInstance]]
         prof_map, prof_b2id, met_map = [None] * 3
         if isinstance(self.diff.a, v4.Database):
             assert isinstance(self.diff.b, v4.Database)

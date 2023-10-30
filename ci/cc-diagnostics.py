@@ -20,7 +20,7 @@ def _gcc_to_cq(project_root: Path, line: str) -> dict:
     if not mat:
         return {}
 
-    report: dict[str, typing.Any] = {
+    report: typing.Dict[str, typing.Any] = {
         "type": "issue",
         "check_name": mat.group(7),  # flag(2)
         "description": mat.group(6),  # message

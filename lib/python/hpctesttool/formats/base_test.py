@@ -1,5 +1,6 @@
 import dataclasses
 import io
+import typing
 
 import pytest
 import ruamel.yaml
@@ -65,8 +66,10 @@ def test_db_struct():
         )
     )
     data_v0 = {"szSec1": 0x10, "pSec1": 0x1050, "szSec2": 0x20, "pSec2": 0x1060}
-    data_v1 = data_v0 | {"szSec4": 0x40, "pSec4": 0x1080}
-    data_v2 = data_v1 | {"szSec3": 0x30, "pSec3": 0x1070}
+    data_v1 = data_v0.copy()
+    data_v1.update({"szSec4": 0x40, "pSec4": 0x1080})
+    data_v2 = data_v1.copy()
+    data_v2.update({"szSec3": 0x30, "pSec3": 0x1070})
 
     assert struct.unpack_file(0, file, 0) == data_v0
     assert struct.unpack_file(1, file, 0) == data_v1
@@ -79,11 +82,11 @@ def test_canonical_paths():
         a: int
         b: int
 
-    @dataclasses.dataclass(eq=False, kw_only=True)
+    @dataclasses.dataclass(eq=False)
     class Y(StructureBase):
         x: X
-        y: list[X]
-        z: dict[str, X]
+        y: typing.List[X]
+        z: typing.Dict[str, X]
 
     a = Y(x=X(1, 2), y=[X(3, 4), X(5, 6)], z={"a": X(7, 8), "b": X(9, 10)})
     assert canonical_paths(a) == {
@@ -103,7 +106,7 @@ def dump_to_string(yaml, data) -> str:
 
 
 def test_enumeration():
-    class Test(Enumeration, yaml_tag="!enum.test"):
+    class Test(Enumeration):
         value1 = EnumEntry(1, min_version=0)
         value2 = EnumEntry(2, min_version=0)
         value3 = EnumEntry(3, min_version=1)
@@ -116,10 +119,12 @@ def test_enumeration():
 
 
 def test_enumeration_yaml():
-    class Test(Enumeration, yaml_tag="!enum.test"):
+    class Test(Enumeration):
         value1 = EnumEntry(1, min_version=0)
         value2 = EnumEntry(2, min_version=0)
         value3 = EnumEntry(3, min_version=0)
+
+    Test.yaml_tag = "!enum.test"
 
     y = ruamel.yaml.YAML(typ="safe")
     y.register_class(Test)
@@ -132,7 +137,7 @@ def test_enumeration_yaml():
 
 
 def test_flags():
-    class Test(BitFlags, yaml_tag="!flags.test"):
+    class Test(BitFlags):
         flag1 = EnumEntry(0, min_version=0)
         flag2 = EnumEntry(1, min_version=0)
         flag3 = EnumEntry(2, min_version=1)
@@ -148,11 +153,13 @@ def test_flags():
 
 
 def test_flags_yaml():
-    class Test(BitFlags, yaml_tag="!flags.test"):
+    class Test(BitFlags):
         flag1 = EnumEntry(0, min_version=0)
         flag2 = EnumEntry(1, min_version=0)
         flag3 = EnumEntry(2, min_version=0)
         aaa_flag4 = EnumEntry(3, min_version=0)
+
+    Test.yaml_tag = "!flags.test"
 
     y = ruamel.yaml.YAML(typ="safe")
     y.register_class(Test)
