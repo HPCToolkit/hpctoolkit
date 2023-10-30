@@ -137,9 +137,7 @@ repos:
     - ruamel.yaml >=0.17.16, <0.18
     - click >=8.1.5, <9
     - pyparsing >=3.0.9, <4
-    - pyelftools >=0.29, <0.30
     - Jinja2 >=3.1, <4
-    - spiqa @ https://gitlab.com/hpctoolkit/spiqa/-/package_files/89718791/download  # 0.3.0
     exclude: *py_excludes
 
 - repo: https://github.com/PyCQA/pylint
@@ -149,7 +147,6 @@ repos:
   - id: pylint
     additional_dependencies:
     - ruamel.yaml >=0.17.32, <0.18
-    - spiqa @ https://gitlab.com/hpctoolkit/spiqa/-/package_files/89718791/download  # 0.3.0
     - pylint-pytest
     exclude: *py_excludes
 
