@@ -233,8 +233,8 @@ lushPthr_dump(lushPthr_t* x, const char* nm, void* lock)
   }
   EMSG("lushPthr/%s:\t lck: %p->%#x->%d", nm, lock, lckval, lushval);
 #else
-  EMSG("lushPthr/%s:\t is_wrking %d, num_lck %d, cnd_lck %d | "
-       "# wrking %ld, wrking_lck %ld, idle_cnd %ld | "
+  EMSG("lushPthr/%s:\t is_working %d, num_lock %d, cond_lock %d | "
+       "# working %ld, working_lock %ld, idle_cond %ld | "
        "# procs %ld, threads %d",
        nm, x->is_working, x->num_locks, x->cond_lock,
        atomic_load_explicit(x->ps_num_working, memory_order_relaxed),

@@ -51,4 +51,4 @@ max-public-methods=20
 max-parents=7
 max-attributes=11
 max-module-lines=1000
-max-args=7
+max-args=8

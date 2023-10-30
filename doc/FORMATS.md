@@ -346,8 +346,8 @@ The Performance Metrics section starts with the following header:
 `0d:`|u8|`szScopeInst`            |4.0| Size of the {PSI} structure, currently 16
 `0e:`|u8|`szSummary`              |4.0| Size of the {SS} structure, currently 24
 |    |
-`10:`|{PS}[`nScopes`]*|`pScopes`  |4.0| Descriptions of propgation scopes
-`18:`|u16|`nScopes`               |4.0| Number of propgation scopes
+`10:`|{PS}[`nScopes`]*|`pScopes`  |4.0| Descriptions of propagation scopes
+`18:`|u16|`nScopes`               |4.0| Number of propagation scopes
 `1a:`|u8|`szScope`                |4.0| Size of the {PS} structure, currently 16
 `1b:`|| **END**                      || Extendable, see [Reader compatibility]
 

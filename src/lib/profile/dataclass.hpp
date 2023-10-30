@@ -57,7 +57,7 @@ class DataClass {
 public:
   ~DataClass() = default;
 
-  // Default constructor corrosponds to the empty set
+  // Default constructor corresponds to the empty set
   constexpr DataClass() noexcept : mask() {};
 
 private:
@@ -182,7 +182,7 @@ class ExtensionClass {
 public:
   ~ExtensionClass() = default;
 
-  // Default constructor corrosponds to the empty set
+  // Default constructor corresponds to the empty set
   ExtensionClass() noexcept : mask() {};
 
 private:

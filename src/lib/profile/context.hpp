@@ -277,7 +277,7 @@ private:
 /// quite enough, the arguments to F may differ between roots (A's) and cause
 /// significant performance differences that we want to preserve. The solution
 /// is to add "reconstruction groups," FlowGraphs in the group only distribute
-/// to roots also in their reconstruction groups. These groups are identifed by
+/// to roots also in their reconstruction groups. These groups are identified by
 /// 64-bit integers and can be thought of as a way to associate events grouped
 /// in "time," rather than by calling context.
 ///

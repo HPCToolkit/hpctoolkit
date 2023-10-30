@@ -125,7 +125,7 @@ public:
   Function& operator=(Function&&) = default;
   Function& operator=(const Function&) = default;
 
-  // Comparible
+  // Comparable
   bool operator==(const Function& o) const noexcept {
     return m_module == o.m_module && m_offset == o.m_offset && m_name == o.m_name
            && ((!m_file && !o.m_file)
