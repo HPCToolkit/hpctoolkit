@@ -90,7 +90,8 @@ MYCXXFLAGS = \
 	$(DYNINST_IFLAGS)  \
 	$(IGC_IFLAGS) \
 	$(MD_IFLAGS) \
-	$(TBB_IFLAGS)
+	$(TBB_IFLAGS) \
+	-fvisibility=hidden
 
 if HOST_CPU_X86_FAMILY
 MYCXXFLAGS += -I$(XED2_INC)
