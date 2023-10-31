@@ -51,6 +51,14 @@ repos:
   - id: isort
     args: [--profile, black, --line-length=100]
 
+- repo: https://github.com/executablebooks/mdformat
+  rev: 0.7.17
+  hooks:
+  # Format CommonMark (Markdown) files to have a consistent style.
+  - id: mdformat
+    # Currently only limited to the README
+    files: ^README\.md$
+
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.5.0
   hooks:
